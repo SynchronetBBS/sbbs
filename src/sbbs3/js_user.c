@@ -45,7 +45,8 @@ static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
 
 typedef struct
 {
-	uint	usernumber;
+	user_t	user;
+	BOOL	cached;
 	scfg_t*	cfg;
 
 } private_t;
@@ -122,7 +123,16 @@ enum {
 	,USER_PROP_EMAILPERDAY
 	,USER_PROP_POSTSPERDAY
 	,USER_PROP_FREECDTPERDAY
+	,USER_PROP_CACHED
 };
+
+static void js_getuserdat(private_t* p)
+{
+	if(!p->cached) {
+		if(getuserdat(p->cfg,&p->user)==0)
+			p->cached=TRUE;
+	}
+}
 
 
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -132,7 +142,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	ulong		val=0;
     jsint       tiny;
 	JSString*	js_str;
-	user_t		user;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -140,229 +149,232 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		return(JS_FALSE);
 	}
 
-	user.number=p->usernumber;
-	getuserdat(p->cfg,&user);
+	js_getuserdat(p);
 
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
 		case USER_PROP_NUMBER:
-			val=user.number;
+			val=p->user.number;
 			break;
 		case USER_PROP_ALIAS: 
-			s=user.alias;
+			s=p->user.alias;
 			break;
 		case USER_PROP_NAME:
-			s=user.name;
+			s=p->user.name;
 			break;
 		case USER_PROP_HANDLE:
-			s=user.handle;
+			s=p->user.handle;
 			break;
 		case USER_PROP_NOTE:
-			s=user.note;
+			s=p->user.note;
 			break;
 		case USER_PROP_COMP:
-			s=user.comp;
+			s=p->user.comp;
 			break;
 		case USER_PROP_COMMENT:
-			s=user.comment;
+			s=p->user.comment;
 			break;
 		case USER_PROP_NETMAIL:
-			s=user.netmail;
+			s=p->user.netmail;
 			break;
 		case USER_PROP_EMAIL:
 			s=usermailaddr(p->cfg, tmp
-				,p->cfg->inetmail_misc&NMAIL_ALIAS ? user.alias : user.name);
+				,p->cfg->inetmail_misc&NMAIL_ALIAS ? p->user.alias : p->user.name);
 			break;
 		case USER_PROP_ADDRESS:
-			s=user.address;
+			s=p->user.address;
 			break;
 		case USER_PROP_LOCATION:
-			s=user.location;
+			s=p->user.location;
 			break;
 		case USER_PROP_ZIPCODE:
-			s=user.zipcode;
+			s=p->user.zipcode;
 			break;
 		case USER_PROP_PASS:
-			s=user.pass;
+			s=p->user.pass;
 			break;
 		case USER_PROP_PHONE:
-			s=user.phone;
+			s=p->user.phone;
 			break;
 		case USER_PROP_BIRTH:
-			s=user.birth;
+			s=p->user.birth;
 			break;
 		case USER_PROP_AGE:
-			val=getage(p->cfg,user.birth);
+			val=getage(p->cfg,p->user.birth);
 			break;
 		case USER_PROP_MODEM:
-			s=user.modem;
+			s=p->user.modem;
 			break;
 		case USER_PROP_LASTON:
-			val=user.laston;
+			val=p->user.laston;
 			break;
 		case USER_PROP_FIRSTON:
-			val=user.firston;
+			val=p->user.firston;
 			break;
 		case USER_PROP_EXPIRE:
-			val=user.expire;
+			val=p->user.expire;
 			break;
 		case USER_PROP_PWMOD: 
-			val=user.pwmod;
+			val=p->user.pwmod;
 			break;
 		case USER_PROP_LOGONS:
-			val=user.logons;
+			val=p->user.logons;
 			break;
 		case USER_PROP_LTODAY:
-			val=user.ltoday;
+			val=p->user.ltoday;
 			break;
 		case USER_PROP_TIMEON:
-			val=user.timeon;
+			val=p->user.timeon;
 			break;
 		case USER_PROP_TEXTRA:
-			val=user.textra;
+			val=p->user.textra;
 			break;
 		case USER_PROP_TTODAY:
-			val=user.ttoday;
+			val=p->user.ttoday;
 			break;
 		case USER_PROP_TLAST: 
-			val=user.tlast;
+			val=p->user.tlast;
 			break;
 		case USER_PROP_POSTS: 
-			val=user.posts;
+			val=p->user.posts;
 			break;
 		case USER_PROP_EMAILS: 
-			val=user.emails;
+			val=p->user.emails;
 			break;
 		case USER_PROP_FBACKS: 
-			val=user.fbacks;
+			val=p->user.fbacks;
 			break;
 		case USER_PROP_ETODAY:	
-			val=user.etoday;
+			val=p->user.etoday;
 			break;
 		case USER_PROP_PTODAY:
-			val=user.ptoday;
+			val=p->user.ptoday;
 			break;
 		case USER_PROP_ULB:
-			val=user.ulb;
+			val=p->user.ulb;
 			break;
 		case USER_PROP_ULS:
-			val=user.uls;
+			val=p->user.uls;
 			break;
 		case USER_PROP_DLB:
-			val=user.dlb;
+			val=p->user.dlb;
 			break;
 		case USER_PROP_DLS:
-			val=user.dls;
+			val=p->user.dls;
 			break;
 		case USER_PROP_CDT:
-			val=user.cdt;
+			val=p->user.cdt;
 			break;
 		case USER_PROP_MIN:
-			val=user.min;
+			val=p->user.min;
 			break;
 		case USER_PROP_LEVEL:
-			val=user.level;
+			val=p->user.level;
 			break;
 		case USER_PROP_FLAGS1:
-			val=user.flags1;
+			val=p->user.flags1;
 			break;
 		case USER_PROP_FLAGS2:
-			val=user.flags2;
+			val=p->user.flags2;
 			break;
 		case USER_PROP_FLAGS3:
-			val=user.flags3;
+			val=p->user.flags3;
 			break;
 		case USER_PROP_FLAGS4:
-			val=user.flags4;
+			val=p->user.flags4;
 			break;
 		case USER_PROP_EXEMPT:
-			val=user.exempt;
+			val=p->user.exempt;
 			break;
 		case USER_PROP_REST:
-			val=user.rest;
+			val=p->user.rest;
 			break;
 		case USER_PROP_ROWS:
-			val=user.rows;
+			val=p->user.rows;
 			break;
 		case USER_PROP_SEX:
-			sprintf(tmp,"%c",user.sex);
+			sprintf(tmp,"%c",p->user.sex);
 			s=tmp;
 			break;
 		case USER_PROP_MISC:
-			val=user.misc;
+			val=p->user.misc;
 			break;
 		case USER_PROP_LEECH:
-			val=user.leech;
+			val=p->user.leech;
 			break;
 		case USER_PROP_CURSUB:
-			s=user.cursub;
+			s=p->user.cursub;
 			break;
 		case USER_PROP_CURDIR:
-			s=user.curdir;
+			s=p->user.curdir;
 			break;
 		case USER_PROP_CURXTRN:
-			s=user.curxtrn;
+			s=p->user.curxtrn;
 			break;
 
 		case USER_PROP_FREECDT:
-			val=user.freecdt;
+			val=p->user.freecdt;
 			break;
 		case USER_PROP_XEDIT:
-			if(user.xedit>0 && user.xedit<=p->cfg->total_xedits)
-				s=p->cfg->xedit[user.xedit-1]->code;
+			if(p->user.xedit>0 && p->user.xedit<=p->cfg->total_xedits)
+				s=p->cfg->xedit[p->user.xedit-1]->code;
 			else
 				s=""; /* internal editor */
 			break;
 		case USER_PROP_SHELL:
-			s=p->cfg->shell[user.shell]->code;
+			s=p->cfg->shell[p->user.shell]->code;
 			break;
 		case USER_PROP_QWK:
-			val=user.qwk;
+			val=p->user.qwk;
 			break;
 		case USER_PROP_TMPEXT:
-			s=user.tmpext;
+			s=p->user.tmpext;
 			break;
 		case USER_PROP_CHAT:
-			val=user.chat;
+			val=p->user.chat;
 			break;
 		case USER_PROP_NS_TIME:
-			val=user.ns_time;
+			val=p->user.ns_time;
 			break;
 		case USER_PROP_PROT:
-			sprintf(tmp,"%c",user.prot);
+			sprintf(tmp,"%c",p->user.prot);
 			s=tmp;
 			break;
 		case USER_PROP_LOGONTIME:
-			val=user.logontime;
+			val=p->user.logontime;
 			break;
 		case USER_PROP_TIMEPERCALL:
-			val=p->cfg->level_timepercall[user.level];
+			val=p->cfg->level_timepercall[p->user.level];
 			break;
 		case USER_PROP_TIMEPERDAY:
-			val=p->cfg->level_timeperday[user.level];
+			val=p->cfg->level_timeperday[p->user.level];
 			break;
 		case USER_PROP_CALLSPERDAY:
-			val=p->cfg->level_callsperday[user.level];
+			val=p->cfg->level_callsperday[p->user.level];
 			break;
 		case USER_PROP_LINESPERMSG:
-			val=p->cfg->level_linespermsg[user.level];
+			val=p->cfg->level_linespermsg[p->user.level];
 			break;
 		case USER_PROP_POSTSPERDAY:
-			val=p->cfg->level_postsperday[user.level];
+			val=p->cfg->level_postsperday[p->user.level];
 			break;
 		case USER_PROP_EMAILPERDAY:
-			val=p->cfg->level_emailperday[user.level];
+			val=p->cfg->level_emailperday[p->user.level];
 			break;
 		case USER_PROP_FREECDTPERDAY:
-			val=p->cfg->level_freecdtperday[user.level];
+			val=p->cfg->level_freecdtperday[p->user.level];
 			break;
 		case USER_PROP_MAIL_WAITING:
-			val=getmail(p->cfg,user.number,/* sent? */FALSE);
+			val=getmail(p->cfg,p->user.number,/* sent? */FALSE);
 			break;
 		case USER_PROP_MAIL_PENDING:
-			val=getmail(p->cfg,user.number,/* sent? */TRUE);
+			val=getmail(p->cfg,p->user.number,/* sent? */TRUE);
 			break;
+
+		case USER_PROP_CACHED:
+			*vp = BOOLEAN_TO_JSVAL(p->cached);
+			return(JS_TRUE);	/* intentional early return */
 
 		default:	
 			/* This must not set vp in order for child objects to work (stats and security) */
@@ -387,6 +399,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	JSString*	js_str;
 	private_t*	p;
+	int32		usernumber;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -403,154 +416,163 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case USER_PROP_NUMBER:
-			JS_ValueToInt32(cx, *vp, (jsint*)&p->usernumber);
+			JS_ValueToInt32(cx, *vp, &usernumber);
+			if(usernumber!=p->user.number)
+				p->user.number=(ushort)usernumber;
 			break;
 		case USER_PROP_ALIAS:
 			/* update USER.DAT */
-			putuserrec(p->cfg,p->usernumber,U_ALIAS,LEN_ALIAS,str);
+			putuserrec(p->cfg,p->user.number,U_ALIAS,LEN_ALIAS,str);
 
 			/* update NAME.DAT */
-			getuserrec(p->cfg,p->usernumber,U_MISC,8,tmp);
+			getuserrec(p->cfg,p->user.number,U_MISC,8,tmp);
 			usermisc=ahtoul(tmp);
 			if(!(usermisc&DELETED))
-				putusername(p->cfg,p->usernumber,str);
+				putusername(p->cfg,p->user.number,str);
 			break;
 		case USER_PROP_NAME:
-			putuserrec(p->cfg,p->usernumber,U_NAME,LEN_NAME,str);
+			putuserrec(p->cfg,p->user.number,U_NAME,LEN_NAME,str);
 			break;
 		case USER_PROP_HANDLE:
-			putuserrec(p->cfg,p->usernumber,U_HANDLE,LEN_HANDLE,str);
+			putuserrec(p->cfg,p->user.number,U_HANDLE,LEN_HANDLE,str);
 			break;
 		case USER_PROP_NOTE:		 
-			putuserrec(p->cfg,p->usernumber,U_NOTE,LEN_NOTE,str);
+			putuserrec(p->cfg,p->user.number,U_NOTE,LEN_NOTE,str);
 			break;
 		case USER_PROP_COMP:		 
-			putuserrec(p->cfg,p->usernumber,U_COMP,LEN_COMP,str);
+			putuserrec(p->cfg,p->user.number,U_COMP,LEN_COMP,str);
 			break;
 		case USER_PROP_COMMENT:	 
-			putuserrec(p->cfg,p->usernumber,U_COMMENT,LEN_COMMENT,str);
+			putuserrec(p->cfg,p->user.number,U_COMMENT,LEN_COMMENT,str);
 			break;
 		case USER_PROP_NETMAIL:	 
-			putuserrec(p->cfg,p->usernumber,U_NETMAIL,LEN_NETMAIL,str);
+			putuserrec(p->cfg,p->user.number,U_NETMAIL,LEN_NETMAIL,str);
 			break;
 		case USER_PROP_ADDRESS:	 
-			putuserrec(p->cfg,p->usernumber,U_ADDRESS,LEN_ADDRESS,str);
+			putuserrec(p->cfg,p->user.number,U_ADDRESS,LEN_ADDRESS,str);
 			break;
 		case USER_PROP_LOCATION:	 
-			putuserrec(p->cfg,p->usernumber,U_LOCATION,LEN_LOCATION,str);
+			putuserrec(p->cfg,p->user.number,U_LOCATION,LEN_LOCATION,str);
 			break;
 		case USER_PROP_ZIPCODE:	 
-			putuserrec(p->cfg,p->usernumber,U_ZIPCODE,LEN_ZIPCODE,str);
+			putuserrec(p->cfg,p->user.number,U_ZIPCODE,LEN_ZIPCODE,str);
 			break;
 		case USER_PROP_PHONE:  	 
-			putuserrec(p->cfg,p->usernumber,U_PHONE,LEN_PHONE,str);
+			putuserrec(p->cfg,p->user.number,U_PHONE,LEN_PHONE,str);
 			break;
 		case USER_PROP_BIRTH:  	 
-			putuserrec(p->cfg,p->usernumber,U_BIRTH,LEN_BIRTH,str);
+			putuserrec(p->cfg,p->user.number,U_BIRTH,LEN_BIRTH,str);
 			break;
 		case USER_PROP_MODEM:     
-			putuserrec(p->cfg,p->usernumber,U_MODEM,LEN_MODEM,str);
+			putuserrec(p->cfg,p->user.number,U_MODEM,LEN_MODEM,str);
 			break;
 		case USER_PROP_ROWS:		 
-			putuserrec(p->cfg,p->usernumber,U_ROWS,0,str);	/* base 10 */
+			putuserrec(p->cfg,p->user.number,U_ROWS,0,str);	/* base 10 */
 			break;
 		case USER_PROP_SEX:		 
-			putuserrec(p->cfg,p->usernumber,U_SEX,0,strupr(str));	/* single char */
+			putuserrec(p->cfg,p->user.number,U_SEX,0,strupr(str));	/* single char */
 			break;
 		case USER_PROP_CURSUB:	 
-			putuserrec(p->cfg,p->usernumber,U_CURSUB,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURSUB,0,strupr(str));
 			break;
 		case USER_PROP_CURDIR:	 
-			putuserrec(p->cfg,p->usernumber,U_CURDIR,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURDIR,0,strupr(str));
 			break;
 		case USER_PROP_CURXTRN:	 
-			putuserrec(p->cfg,p->usernumber,U_CURXTRN,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURXTRN,0,strupr(str));
 			break;
 		case USER_PROP_XEDIT: 	 
-			putuserrec(p->cfg,p->usernumber,U_XEDIT,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_XEDIT,0,strupr(str));
 			break;
 		case USER_PROP_SHELL: 	 
-			putuserrec(p->cfg,p->usernumber,U_COMP,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_COMP,0,strupr(str));
 			break;
 		case USER_PROP_MISC:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_MISC,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_MISC,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_QWK:		 
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_QWK,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_QWK,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CHAT:		 
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_CHAT,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_CHAT,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_TMPEXT:	 
-			putuserrec(p->cfg,p->usernumber,U_TMPEXT,0,str);
+			putuserrec(p->cfg,p->user.number,U_TMPEXT,0,str);
 			break;
 		case USER_PROP_NS_TIME:	 
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_NS_TIME,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_NS_TIME,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_PROT:	
-			putuserrec(p->cfg,p->usernumber,U_PROT,0,strupr(str)); /* single char */
+			putuserrec(p->cfg,p->user.number,U_PROT,0,strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:	 
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_LOGONTIME,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_LOGONTIME,0,ultoa(val,tmp,16));
 			break;
 			
 		/* security properties*/
 		case USER_PROP_PASS:	
-			putuserrec(p->cfg,p->usernumber,U_PASS,LEN_PASS,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_PASS,LEN_PASS,strupr(str));
 			break;
 		case USER_PROP_PWMOD:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_PWMOD,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_PWMOD,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_LEVEL: 
-			putuserrec(p->cfg,p->usernumber,U_LEVEL,0,str);
+			putuserrec(p->cfg,p->user.number,U_LEVEL,0,str);
 			break;
 		case USER_PROP_FLAGS1:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_FLAGS1,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_FLAGS1,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS2:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_FLAGS2,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_FLAGS2,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS3:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_FLAGS3,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_FLAGS3,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS4:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_FLAGS4,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_FLAGS4,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_EXEMPT:
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_EXEMPT,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_EXEMPT,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_REST:	
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_REST,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_REST,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CDT:	
-			putuserrec(p->cfg,p->usernumber,U_CDT,0,str);
+			putuserrec(p->cfg,p->user.number,U_CDT,0,str);
 			break;
 		case USER_PROP_FREECDT:
-			putuserrec(p->cfg,p->usernumber,U_FREECDT,0,str);
+			putuserrec(p->cfg,p->user.number,U_FREECDT,0,str);
 			break;
 		case USER_PROP_MIN:	
-			putuserrec(p->cfg,p->usernumber,U_MIN,0,str);
+			putuserrec(p->cfg,p->user.number,U_MIN,0,str);
 			break;
 		case USER_PROP_TEXTRA:  
-			putuserrec(p->cfg,p->usernumber,U_TEXTRA,0,str);
+			putuserrec(p->cfg,p->user.number,U_TEXTRA,0,str);
 			break;
 		case USER_PROP_EXPIRE:  
 			if(JS_ValueToInt32(cx,*vp,&val))
-				putuserrec(p->cfg,p->usernumber,U_EXPIRE,0,ultoa(val,tmp,16));
+				putuserrec(p->cfg,p->user.number,U_EXPIRE,0,ultoa(val,tmp,16));
 			break;
+
+		case USER_PROP_CACHED:
+			JS_ValueToBoolean(cx, *vp, &p->cached);
+			return(JS_TRUE);	/* intentional early return */
+
 	}
+	p->cached=FALSE;
+
 
 	return(JS_TRUE);
 }
@@ -594,6 +616,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"newscan_date"		,USER_PROP_NS_TIME	 	,0, /* Alias */			310},
 	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		310},
 	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		310},
+	{	"cached"			,USER_PROP_CACHED		,USER_PROP_FLAGS,		31301},
 	{0}
 };
 
@@ -633,6 +656,7 @@ static char* user_prop_desc[] = {
 	,"new file scan date/time (time_t format)"
 	,"file transfer protocol (command key)"
 	,"logon time (time_t format)"
+	,"record is currently cached in memory"
 	,NULL
 };
 #endif
@@ -787,7 +811,6 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uchar*		ar;
 	JSString*	js_str;
-	user_t		user;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -798,10 +821,9 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	ar = arstr(NULL,JS_GetStringBytes(js_str),p->cfg);
 
-	user.number=p->usernumber;
-	getuserdat(p->cfg,&user);
+	js_getuserdat(p);
 
-	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,&user));
+	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,&p->user));
 
 	if(ar!=NULL && ar!=nular)
 		free(ar);
@@ -922,7 +944,8 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 
 	p->cfg = scfg;
-	p->usernumber = user.number;
+	p->user = user;
+	p->cached = (user.number==0 ? FALSE : TRUE);
 
 	JS_SetPrivate(cx, obj, p);	/* Must do this before calling js_DefineSyncMethods() */
 
@@ -979,7 +1002,8 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 		return(NULL);
 
 	p->cfg = cfg;
-	p->usernumber = usernumber;
+	p->user.number = usernumber;
+	p->cached = FALSE;
 
 	JS_SetPrivate(cx, userobj, p);	
 
