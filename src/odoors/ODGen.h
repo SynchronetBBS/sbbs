@@ -122,6 +122,11 @@
                            "(C) Copyright 1991-2001 by Brian Pirie]\n\r"
 #define OD_VER_FULLNAME    "OpenDoors 6.24/Win32"
 #endif /* ODPLAT_WIN32 */
+#ifdef ODPLAT_NIX
+#define OD_VER_SIGNON      "[OpenDoors 6.24/*nix - " \
+                           "(C) Copyright 1991-2001 by Brian Pirie]\n\r"
+#define OD_VER_FULLNAME    "OpenDoors 6.24/*nix"
+#endif /* ODPLAT_NIX */
 
 
 /* COMPILER DEPENDENT DEFINITIONS. */
