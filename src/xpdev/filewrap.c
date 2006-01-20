@@ -92,7 +92,6 @@ int DLLCALL lock(int fd, long pos, long len)
 		int	flags;
 		if((flags=fcntl(fd,F_GETFL))==-1)
 			return -1;
-
 		if(flags==O_RDONLY)
 			alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 		else
@@ -167,7 +166,7 @@ int DLLCALL sopen(const char *fn, int access, int share, ...)
 	if ((fd = open(fn, access, pmode)) < 0)
 		return -1;
 
-	if (share == SH_DENYNO) /* no lock needed */
+	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
 		return fd;
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
 	/* use fcntl (doesn't work correctly with threads) */
