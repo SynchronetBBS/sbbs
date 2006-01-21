@@ -3463,7 +3463,7 @@ void node_thread(void* arg)
 		lprintf(LOG_INFO,"Node %d Checking for inactive/expired user records..."
 			,sbbs->cfg.node_num);
 		lastusernum=lastuser(&sbbs->cfg);
-		for(usernum=2;usernum<=lastusernum;usernum++) {
+		for(usernum=1;usernum<=lastusernum;usernum++) {
 
 			sprintf(str,"%5u of %-5u",usernum,lastusernum);
 			status(str);
@@ -3486,6 +3486,9 @@ void node_thread(void* arg)
 
 			if(strcmp(user.alias,uname))
 				putusername(&sbbs->cfg,user.number,user.alias);
+
+			if(user.number==1)
+				continue;	/* skip expiration/inactivity checks for user #1 */
 
 			if(!(user.misc&(DELETED|INACTIVE))
 				&& user.expire && (ulong)user.expire<=(ulong)now) {
