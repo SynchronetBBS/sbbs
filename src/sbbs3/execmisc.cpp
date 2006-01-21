@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,6 +37,32 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "xpprintf.h"
+
+static char* format_string(sbbs_t* sbbs, csi_t* csi)
+{
+	char*		fmt;
+	void*		vp;
+	long*		lp;
+	unsigned	i;
+	unsigned	args;
+
+	fmt=xp_asprintf_start((char*)csi->ip);
+	while(*(csi->ip++));	/* Find '\0' terminator */
+	args=*(csi->ip++); 		/* total args */
+	for(i=0;i<args;i++) {
+		if((vp=sbbs->getstrvar(csi,*(long *)csi->ip))==NULL) {
+			if((lp=sbbs->getintvar(csi,*(long *)csi->ip))==NULL)
+				fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,0);
+			else
+				fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,*lp); 
+		}
+		else
+			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,*(char **)vp);
+		csi->ip+=4; 
+	}
+	return xp_asprintf_end(fmt);
+}
 
 int sbbs_t::exec_misc(csi_t* csi, char *path)
 {
@@ -45,7 +71,6 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 	uint 	i=0,j;
 	long	l,*lp=NULL,*lp1=NULL,*lp2=NULL;
 	void	*vp;
-	va_list arglist[64];
 	struct	dirent *de;
     struct  tm tm;
 
@@ -66,30 +91,16 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case VAR_PRINTF:
 				case VAR_PRINTF_LOCAL:
 					op=*(csi->ip-1);
-					strcpy(str,(char*)csi->ip);
-					while(*(csi->ip++));	/* Find NULL */
-					j=*(csi->ip++); 		/* total args */
-					for(i=0;i<j;i++) {
-						vp=getstrvar(csi,*(long *)csi->ip);
-						if(!vp) {
-							lp=getintvar(csi,*(long *)csi->ip);
-							if(!lp)
-								arglist[i]=0;
-							else
-								arglist[i]=(char *)*lp; }
-						else
-							arglist[i]=*(char **)vp;
-						csi->ip+=4; }
-					vsnprintf(tmp,sizeof(tmp),str,(char*)arglist);
-					tmp[sizeof(tmp)-1]=0;
+					p=format_string(this, csi);
 					if(op==VAR_PRINTF)
-						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT|P_NOATCODES);
+						putmsg(cmdstr(p,path,csi->str,buf),P_SAVEATR|P_NOABORT|P_NOATCODES);
 					else {
 						if(online==ON_LOCAL)
-							eprintf(LOG_INFO,"%s",cmdstr(tmp,path,csi->str,buf));
+							eprintf(LOG_INFO,"%s",cmdstr(p,path,csi->str,buf));
 						else
-							lputs(LOG_INFO,cmdstr(tmp,path,csi->str,buf));
+							lputs(LOG_INFO,cmdstr(p,path,csi->str,buf));
 					}
+					free(p);
 					return(0);
 				case SHOW_VARS:
 					bprintf("shell     str=(%08lX) %s\r\n"
@@ -490,25 +501,11 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case FORMAT_STR_VAR:
 					pp=getstrvar(csi,*(long *)csi->ip);
 					csi->ip+=4; /* Skip variable name */
-					strcpy(str,(char *)csi->ip);
-					while(*(csi->ip++));	/* Find NULL */
-					j=*(csi->ip++); 		/* total args */
-					for(i=0;i<j;i++) {
-						vp=getstrvar(csi,*(long *)csi->ip);
-						if(!vp) {
-							lp=getintvar(csi,*(long *)csi->ip);
-							if(!lp)
-								arglist[i]=0;
-							else
-								arglist[i]=(char *)*lp; }
-						else
-							arglist[i]=*(char **)vp;
-						csi->ip+=4; }
-					vsnprintf(tmp,sizeof(tmp),str,(char *)arglist);
-					tmp[sizeof(tmp)-1]=0;
-					cmdstr(tmp,path,csi->str,str);
+					p=format_string(this, csi);
+					cmdstr(p,path,csi->str,str);
 					if(pp)
 						*pp=copystrvar(csi,*pp,str);
+					free(p);
 					return(0);
 				case FORMAT_TIME_STR:
 					pp=getstrvar(csi,*(long *)csi->ip);
@@ -1299,27 +1296,12 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case FIO_PRINTF:
 					lp1=getintvar(csi,*(long *)csi->ip);
 					csi->ip+=4;
-					strcpy(str,(char *)csi->ip);
-					while(*(csi->ip++));	/* Find NULL */
-					j=*(csi->ip++); 		/* total args */
-					for(i=0;i<j;i++) {
-						vp=getstrvar(csi,*(long *)csi->ip);
-						if(!vp) {
-							lp2=getintvar(csi,*(long *)csi->ip);
-							if(!lp2)
-								arglist[i]=0;
-							else
-								arglist[i]=(char *)*lp2; 
-						} else
-							arglist[i]=*(char **)vp;
-						csi->ip+=4; 
-					}
-					vsnprintf(tmp,sizeof(tmp),str,(char *)arglist);
-					tmp[sizeof(tmp)-1]=0;
+					p=format_string(this, csi);
 					if(lp1 && *lp1) {
-						cmdstr(tmp,path,csi->str,str);
+						cmdstr(p,path,csi->str,str);
 						fwrite(str,1,strlen(str),(FILE *)*lp1); 
 					}
+					free(p);
 					return(0);
 				case FIO_SET_ETX:
 					csi->etx=*(csi->ip++);
