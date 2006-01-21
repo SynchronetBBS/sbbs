@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1022,6 +1022,9 @@ extern "C" {
 
 	/* js_file.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent);
+
+	/* js_sprintf.c */
+	DLLEXPORT char*		DLLCALL js_sprintf(JSContext* cx, uint argn, uintN argc, jsval *argv);
 
 	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);

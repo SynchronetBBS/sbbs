@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1297,10 +1297,6 @@ static JSBool
 js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
-    uintN		i;
-	JSString *	fmt;
-    JSString *	str;
-	va_list		arglist[64];
 	private_t*	p;
 
 	*rval = JSVAL_FALSE;
@@ -1313,34 +1309,13 @@ js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if((fmt=JS_ValueToString(cx, argv[0]))==NULL) {
-		JS_ReportError(cx,"JS_ValueToString failed");
-		return(JS_FALSE);
-	}
-
-	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
-
-    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
-		if(JSVAL_IS_DOUBLE(argv[i]))
-			arglist[i-1]=(char*)(unsigned long)*JSVAL_TO_DOUBLE(argv[i]);
-		else if(JSVAL_IS_INT(argv[i]))
-			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
-		else {
-			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
-				JS_ReportError(cx,"JS_ValueToString failed");
-			    return(JS_FALSE);
-			}
-			arglist[i-1]=JS_GetStringBytes(str);
-		}
-	}
-
-	if((cp=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL) {
-		JS_ReportError(cx,"JS_vsmprintf failed");
+	if((cp=js_sprintf(cx, 0, argc, argv))==NULL) {
+		JS_ReportError(cx,"js_sprintf failed");
 		return(JS_FALSE);
 	}
 
 	*rval = INT_TO_JSVAL(fwrite(cp,1,strlen(cp),p->fp));
-	JS_smprintf_free(cp);
+	free(cp);
 	
     return(JS_TRUE);
 }

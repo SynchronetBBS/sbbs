@@ -42,9 +42,6 @@
 #include "base64.h"
 #include "htmlansi.h"
 #include "ini_file.h"
-#ifdef USE_XP_PRINTF
-	#include "xpprintf.h"
-#endif
 
 #define MAX_ANSI_SEQ	16
 #define MAX_ANSI_PARAMS	8
@@ -284,82 +281,19 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(success);
 }
 
-#ifdef USE_XP_PRINTF
-
-static JSBool
-js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char*		fmt;
-    uintN		i;
-    JSString*	str;
-
-	if((fmt=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
-		return(JS_FALSE);
-
-	fmt=xp_asprintf_start(fmt);
-    for(i=1; i<argc; i++) {
-		if(JSVAL_IS_DOUBLE(argv[i]))
-			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,*JSVAL_TO_DOUBLE(argv[i]));
-		else if(JSVAL_IS_INT(argv[i]))
-			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[i]));
-		else if(JSVAL_IS_BOOLEAN(argv[i]) && xp_printf_get_type(fmt)!=XP_PRINTF_TYPE_CHARP)
-			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_BOOLEAN(argv[i]));
-		else {
-			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
-				JS_ReportError(cx,"JS_ValueToString failed");
-			    return(JS_FALSE);
-			}
-			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,JS_GetStringBytes(str));
-		}
-	}
-
-	fmt=xp_asprintf_end(fmt);
-	
-	str = JS_NewStringCopyZ(cx, fmt);
-	free(fmt);
-
-	if(str==NULL)
-		return(JS_FALSE);
-
-	*rval = STRING_TO_JSVAL(str);
-    return(JS_TRUE);
-}
-
-#else
-
 static JSBool
 js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
-	char*		fmt;
-    uintN		i;
-    JSString *	str;
-	va_list		arglist[64];
+    JSString*	str;
 
-	if((fmt=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+	if((p=js_sprintf(cx, 0, argc, argv))==NULL) {
+		JS_ReportError(cx,"js_sprintf failed");
 		return(JS_FALSE);
-
-	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
-
-    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
-		if(JSVAL_IS_DOUBLE(argv[i]))
-			arglist[i-1]=(char*)(unsigned long)*JSVAL_TO_DOUBLE(argv[i]);
-		else if(JSVAL_IS_INT(argv[i]))
-			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
-		else {
-			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
-				JS_ReportError(cx,"JS_ValueToString failed");
-			    return(JS_FALSE);
-			}
-			arglist[i-1]=JS_GetStringBytes(str);
-		}
 	}
-	
-	if((p=JS_vsmprintf(fmt,(char*)arglist))==NULL)
-		return(JS_FALSE);
 
 	str = JS_NewStringCopyZ(cx, p);
-	JS_smprintf_free(p);
+	free(p);
 
 	if(str==NULL)
 		return(JS_FALSE);
@@ -367,9 +301,6 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = STRING_TO_JSVAL(str);
     return(JS_TRUE);
 }
-
-#endif
-
 
 static JSBool
 js_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)

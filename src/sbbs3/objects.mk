@@ -52,6 +52,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_queue$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_server$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_socket$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_system$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_user$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_xtrn_area$(OFILE)\
