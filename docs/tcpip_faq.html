@@ -105,6 +105,11 @@ IP address.
 <br><tt>0000 !SEND INVALID DNS server address</tt>
 <br><tt>0000 !SEND ERROR -1 obtaining MX records for someserver.com from 192.168.1.1</tt>
 <p>The configured DNS server IP address should usually be set to that of your ISP's primary DNS server.
+<p>Note: Synchronet v3.13b can automatically detect and use your DNS server's correct IP address during run-time.
+This feature is enabled by configuring the DNS server IP address in the mail server configuration to <i>blank</i>
+or <tt>&lt;auto&gt;</tt>.
+<br>You'll know this feature is active when you see log lines similar to the following:
+<br><tt>0000 SEND using auto-detected DNS server address: 206.13.29.12</tt>
 <p>
 <li>Your firewall, Internet Service Provider, or Anti-Virus software is blocking, intercepting, or filtering
 outbound connections to TCP port 25 (many consumer-class ISPs do this). 
@@ -287,6 +292,9 @@ To work-around this problem, you can either increase the
 <tt>BindRetryCount</tt> and/or <tt>BindRetryDelay</tt> values
 in your <tt>ctrl/sbbs.ini</tt> file, or you can add the following line to your <tt>ctrl/sockopts.cfg</tt> file:
 <p><tt>REUSEADDR 1</tt>
+</p>
+Or, if running Synchronet v3.13b or later, your <tt>ctrl/sockopts.ini</tt> file:
+<p><tt>REUSEADDR=1</tt>
 </p>
 
 <a name="bandwidth"><hr></a>
