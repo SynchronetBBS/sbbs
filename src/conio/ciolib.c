@@ -456,6 +456,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 				if(len==maxlen) {
 					str[len+2]=0;
 					*((unsigned char *)(str+1))=(unsigned char)len;
+					ciolib_putch('\r');
 					ciolib_putch('\n');
 					return(&str[2]);
 				}
@@ -464,6 +465,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 	}
 	str[len+2]=0;
 	*((unsigned char *)(str+1))=(unsigned char)len;
+	ciolib_putch('\r');
 	ciolib_putch('\n');
 	return(&str[2]);
 }
