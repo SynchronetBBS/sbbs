@@ -3,4 +3,6 @@ Features/Changes which will break the API and so must go into v7
 - Do not pack the od_control structure in memory.  This is plain silly.
 - Do not use the BOOL type in od_control or in any of the public functions.
   Using it causes problems with stuff that defines a BOOL as a different
-  size.  For example, xpdev uses int as a BOOL whereas OpenDoors uses a char
+  size.  For example, xpdev uses int as a BOOL whereas OpenDoors uses a char.
+- Support telnet IAC escaping, add an item to the od_control struct to
+  keep track of the current status of IAC escapes.
