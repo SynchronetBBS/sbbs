@@ -435,7 +435,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 	CIOLIB_INIT();
 	
 	maxlen=*(unsigned char *)str;
-	while((ch=ciolib_getche())!='\n' && ch !='\r') {
+	while((ch=ciolib_getch())!='\n' && ch !='\r') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
 				ciolib_getche();
@@ -451,6 +451,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 				len--;
 				break;
 			default:
+				ciolib_putch(ch);
 				str[(len++)+2]=ch;
 				if(len==maxlen) {
 					str[len+2]=0;
@@ -460,6 +461,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 				break;
 		}
 	}
+	ciolib_putch(ch);
 	str[len+2]=0;
 	*((unsigned char *)(str+1))=(unsigned char)len;
 	return(&str[2]);
