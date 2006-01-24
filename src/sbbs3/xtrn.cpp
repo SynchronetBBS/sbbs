@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -254,6 +254,31 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
     return(outbuf);
 }
 
+static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
+{
+	char*	p;
+	char	str[MAX_PATH+1];
+	char	name[64];
+	char	base[64];
+	unsigned i;
+
+	if(mode&EX_NATIVE)
+		return(TRUE);
+
+    SAFECOPY(str,cmdline);				/* Set str to program name only */
+	truncstr(str," ");
+    SAFECOPY(name,getfname(str));
+	SAFECOPY(base,name);
+	if((p=getfext(base))!=NULL)
+		*p=0;
+
+    for(i=0;i<cfg->total_natvpgms;i++)
+        if(stricmp(name,cfg->natvpgm[i]->name)==0
+		|| stricmp(base,cfg->natvpgm[i]->name)==0)
+            break;
+    return(i<cfg->total_natvpgms);
+}
+
 #define XTRN_LOADABLE_MODULE								\
 	if(cmdline[0]=='*') {   /* Baja module or JavaScript */	\
 		SAFECOPY(str,cmdline+1);							\
@@ -342,7 +367,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	char*	env_strings;
 	const char* p_startup_dir;
 	char	path[MAX_PATH+1];
-	char	fname[MAX_PATH+1];
     char	fullcmdline[MAX_PATH+1];
 	char	realcmdline[MAX_PATH+1];
 	char	comspec_str[MAX_PATH+1];
@@ -394,15 +418,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	attr(cfg.color[clr_external]);		/* setup default attributes */
 
-    SAFECOPY(str,cmdline);				/* Set str to program name only */
-	truncstr(str," ");
-    SAFECOPY(fname,getfname(str));
-
-    for(i=0;i<cfg.total_natvpgms;i++)
-        if(!stricmp(fname,cfg.natvpgm[i]->name))
-            break;
-    if(i<cfg.total_natvpgms || mode&EX_NATIVE)
-        native=true;
+	native = native_executable(&cfg, cmdline, mode);
 
 	if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline)) 
 		sprintf(comspec_str,"%s /C ", comspec);
@@ -1276,15 +1292,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	attr(cfg.color[clr_external]);  /* setup default attributes */
 
+	native = native_executable(&cfg, cmdline, mode);
+
     SAFECOPY(str,cmdline);			/* Set fname to program name only */
 	truncstr(str," ");
     SAFECOPY(fname,getfname(str));
-
-    for(i=0;i<cfg.total_natvpgms;i++)
-        if(!stricmp(fname,cfg.natvpgm[i]->name))
-            break;
-    if(i<cfg.total_natvpgms || mode&EX_NATIVE)
-        native=true;
 
 	sprintf(fullpath,"%s%s",startup_dir,fname);
 	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.' && fexist(fullpath))
