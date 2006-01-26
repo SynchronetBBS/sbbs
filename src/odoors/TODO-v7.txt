@@ -6,3 +6,5 @@ Features/Changes which will break the API and so must go into v7
   size.  For example, xpdev uses int as a BOOL whereas OpenDoors uses a char.
 - Support telnet IAC escaping, add an item to the od_control struct to
   keep track of the current status of IAC escapes.
+- Fix up the local display for Win32.  It's horribly slow currently.
+  Possibly just dust of the DOS stuff and use ciolib?
