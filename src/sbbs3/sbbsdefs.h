@@ -200,6 +200,7 @@ typedef struct {
 									/* Bit values for prot[x].misc */
 #define PROT_DSZLOG		(1<<0)      /* Supports DSZ Log */
 #define PROT_NATIVE		(1<<1)		/* Native (32-bit) executable */
+#define PROT_SOCKET		(1<<2)		/* Use socket I/O, not stdio on *nix */
 
 									/* Bit values in netmail_misc */
 

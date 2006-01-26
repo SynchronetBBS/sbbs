@@ -231,7 +231,8 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
 #ifdef __unix__		/* file xfer progs must use stdio on Unix */
-	ex_mode|=(EX_INR|EX_OUTR|EX_BIN);
+	if(!(prot->misc&PROT_SOCKET))
+		ex_mode|=(EX_INR|EX_OUTR|EX_BIN);
 #endif
 
 	i=external(cmdline,ex_mode,p);

@@ -813,10 +813,12 @@ This is a list of file transfer protocols that can be used to transfer
 files either to or from a remote user. For each protocol, you can
 specify the mnemonic (hot-key) to use to specify that protocol, the
 command line to use for uploads, downloads, batch uploads, batch
-downloads, bi-directional file transfers, and the support of DSZLOG. If
-the protocol doesn't support a certain method of transfer, or you don't
-wish it to be available for a certain method of transfer, leave the
-command line for that method blank.
+downloads, bi-directional file transfers, support of DSZLOG, and (for
+*nix only) if it uses socket I/O or the more common stdio.
+
+If the protocol doesn't support a certain method of transfer, or you
+don't wish it to be available for a certain method of transfer, leave
+the command line for that method blank.
 */
 				i=uifc.list(i,0,0,50,&prot_dflt,NULL,"File Transfer Protocols",opt);
 				if(i==-1)
@@ -892,6 +894,8 @@ command line for that method blank.
 						,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
 					sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
 						,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
+					sprintf(opt[j++],"%-30.30s%s",	 "Socket I/O"
+						,cfg.prot[i]->misc&PROT_SOCKET ? "Yes":"No");
 					opt[j][0]=0;
 					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,70,&prot_opt,0
 						,"File Transfer Protocol",opt)) {
@@ -964,6 +968,19 @@ command line for that method blank.
 							if((l==0 && !(cfg.prot[i]->misc&PROT_DSZLOG))
 								|| (l==1 && cfg.prot[i]->misc&PROT_DSZLOG)) {
 								cfg.prot[i]->misc^=PROT_DSZLOG;
+								uifc.changes=1; 
+							}
+							break; 
+						case 10:
+							l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
+							strcpy(opt[0],"Yes");
+							strcpy(opt[1],"No");
+							opt[2][0]=0;
+							l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
+								,"Uses Socket I/O",opt);
+							if((l==0 && !(cfg.prot[i]->misc&PROT_SOCKET))
+								|| (l==1 && cfg.prot[i]->misc&PROT_SOCKET)) {
+								cfg.prot[i]->misc^=PROT_SOCKET;
 								uifc.changes=1; 
 							}
 							break; 
