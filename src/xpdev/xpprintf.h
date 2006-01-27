@@ -71,6 +71,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
+void xp_asprintf_free(char *format);
 char *xp_asprintf_start(const char *format);
 char *xp_asprintf_next(char *format, int type, ...);
 char *xp_asprintf_end(char *format);
