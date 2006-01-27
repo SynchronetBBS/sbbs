@@ -357,7 +357,7 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
 
-	free(p);
+	js_sprintf_free(p);
 
     return(JS_TRUE);
 }

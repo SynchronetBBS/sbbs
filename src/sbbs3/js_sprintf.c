@@ -65,3 +65,9 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	return xp_asprintf_end(p);
 
 }
+
+void DLLCALL
+js_sprintf_free(char* p)
+{
+	xp_asprintf_free(p);
+}

@@ -1025,6 +1025,7 @@ extern "C" {
 
 	/* js_sprintf.c */
 	DLLEXPORT char*		DLLCALL js_sprintf(JSContext* cx, uint argn, uintN argc, jsval *argv);
+	DLLEXPORT void		DLLCALL js_sprintf_free(char *);
 
 	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
