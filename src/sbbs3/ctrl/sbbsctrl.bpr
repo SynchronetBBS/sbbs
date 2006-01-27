@@ -122,7 +122,7 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=13
-Release=0
+Release=1
 Build=0
 Debug=0
 PreRelease=0
@@ -135,13 +135,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.13.0.0
+FileVersion=3.13.1.0
 InternalName=
-LegalCopyright=(C) 2005 Rob Swindell
+LegalCopyright=(C) 2006 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
-ProductVersion=3.13a
+ProductVersion=3.13b
 Comments=
 
 [HistoryLists\hlIncludePath]
