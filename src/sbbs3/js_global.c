@@ -293,7 +293,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	str = JS_NewStringCopyZ(cx, p);
-	free(p);
+	js_sprintf_free(p);
 
 	if(str==NULL)
 		return(JS_FALSE);

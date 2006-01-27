@@ -1315,7 +1315,7 @@ js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	*rval = INT_TO_JSVAL(fwrite(cp,1,strlen(cp),p->fp));
-	free(cp);
+	js_sprintf_free(cp);
 	
     return(JS_TRUE);
 }
