@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -56,7 +56,7 @@ __fastcall TAboutBoxForm::TAboutBoxForm(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
 {
-    Memo->Lines->Clear();
+    Credits->Lines->Clear();
 
     DWORD i;
     unsigned int len=GetFileVersionInfoSize(
@@ -65,7 +65,7 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         );
     BYTE* buf=(BYTE *)malloc(len);
     if(buf==NULL) {
-        Memo->Lines->Add("MALLOC ERROR!");
+        Credits->Lines->Add("MALLOC ERROR!");
         return;
     }
     GetFileVersionInfo(
@@ -104,15 +104,15 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         ,__DATE__, __TIME__, compiler
         );
 
-    Memo->Lines->Add(bbs_ver());
-    Memo->Lines->Add(mail_ver());
-    Memo->Lines->Add(ftp_ver());
-    Memo->Lines->Add(web_ver());    
-    Memo->Lines->Add(services_ver());
-    Memo->Lines->Add(ver);
-    Memo->Lines->Add("Synchronet Local Spy ANSI Terminal Emulation"
+    Credits->Lines->Add(bbs_ver());
+    Credits->Lines->Add(mail_ver());
+    Credits->Lines->Add(ftp_ver());
+    Credits->Lines->Add(web_ver());    
+    Credits->Lines->Add(services_ver());
+    Credits->Lines->Add(ver);
+    Credits->Lines->Add("Synchronet Local Spy ANSI Terminal Emulation"
         + CopyRight);
-    Memo->Lines->Add(AnsiString(js_ver())
+    Credits->Lines->Add(AnsiString(js_ver())
         + " (c) 1998 Netscape Communications Corp.");
 }
 //---------------------------------------------------------------------------
@@ -124,7 +124,13 @@ void __fastcall TAboutBoxForm::WebPageLabelClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TAboutBoxForm::LogoClick(TObject *Sender)
 {
-    ShellExecute(Handle, "open", "http://www.synchro.net",
+    ShellExecute(Handle, "open", ((TImage*)Sender)->Hint.c_str(),
+        NULL,NULL,SW_SHOWDEFAULT);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutBoxForm::CreditsClick(TObject *Sender)
+{
+    ShellExecute(Handle, "open", ((TMemo*)Sender)->Hint.c_str(),
         NULL,NULL,SW_SHOWDEFAULT);
 }
 //---------------------------------------------------------------------------
