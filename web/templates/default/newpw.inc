@@ -17,7 +17,7 @@
       </tr>
       <tr>
         <td>New Password: </td><td><input type="password" name="newpass1" size="8" maxlength="8" value="" />
-      Retype New Password: <input type="password" name="newpass2" size="8" maxlength="8" value="" /></td>
+      Retype New Password: <input type="password" name="newpass2" size="8" maxlength="16" value="" /></td>
       </tr>
       <tr>
         <td colspan="2" align="center"><input type="submit" value="Change Password" /></td>
