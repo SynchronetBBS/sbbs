@@ -1377,8 +1377,20 @@ int SDL_main_env(int argc, char **argv, char **env)
 			sdl.gotfuncs=FALSE;
 		}
 #else
-		if(sdl.Init(SDL_INIT_VIDEO))
+
+		/*
+		 * On Linux, SDL doesn't properly detect availability of the
+		 * framebuffer apparently.  This results in remote connections
+		 * displaying on the local framebuffer... a definate no-no.
+		 * This ugly hack attempts to prevent this... of course, remote X11
+		 * connections must still be allowed.
+		 */
+		if(getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL)
 			sdl.gotfuncs=FALSE;
+		else {
+			if(sdl.Init(SDL_INIT_VIDEO))
+				sdl.gotfuncs=FALSE;
+		}
 #endif
 		if(sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
 			/* Unacceptable drivers */
