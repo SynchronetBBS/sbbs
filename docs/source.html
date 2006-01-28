@@ -11,10 +11,11 @@
 <UL>
 	<LI>Anonymous FTP (for official source code releases): 
 	<UL>
-		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230b.zip">v2.30b for DOS and OS/2</A> (1997)
-		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc300c.zip">v3.00c for Win32</A> (2001) 
-		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.zip">v3.12a for Win32</A> (2004) 
-		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.tgz">v3.12a for Linux-x86</A> (2004)
+		<LI><A href="ftp://vert.synchro.net/Synchronet_Archive/ssrc230b.zip">v2.30b for DOS and OS/2</A> (1997)
+		<LI><A href="ftp://vert.synchro.net/Synchronet_Archive/ssrc300c.zip">v3.00c for Win32</A> (2001) 
+		<LI><A href="ftp://vert.synchro.net/Synchronet_Archive/ssrc312a.zip">v3.12a for Win32</A> (2004) 
+		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.zip">Nightly-archive for Win32</A> (Current) 
+		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.tgz">Nightly-archive for Linux-x86</A> (Current)
 	</UL>
 	<p>
   	<LI>Anonymous <A href="http://www.cvshome.org/">CVS</A> 
@@ -56,7 +57,7 @@
 	</ul>
 	    <li>Win32 batch file to get/update required modules using the
         <a href="ftp://ftp.synchro.net/cvs-win32.zip">
-        command-line CVS client</a>:<ul>
+        Win32 command-line CVS client</a>:<ul>
   		<li>
         <a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/checkout.bat">
         checkout.bat</a></li>
@@ -93,7 +94,9 @@ which require <i>Borland C++ Builder</i>, and the FOSSIL drivers, which require 
 I use <i>Microsoft Visual C++ 6</i> for most of the non-GUI portions of Synchronet
 because it has a better debugger and more solid IDE (in my opinion).
 However, Borland provides a much better GUI framework (VCL) with <i>C++ Builder</i> and 
-a handy console I/O library (conio) not present in Microsoft's C run-time library.
+a handy console I/O library (conio) not present in Microsoft's C run-time library
+(Note: Stephen Hurd has created a portable conio-compatible library for Win32, so this Microsoft omission
+is no longer a factor).
 <p>
 Even though I use <i>Microsoft Visual C++</i> to build most of the Synchronet command-line utilities
 and all the DLLs, you may use <i>Borland C++</i> or <i>C++ Builder</i> instead, if you prefer.
@@ -123,7 +126,9 @@ and the <tt>.bpr</tt> files are used by <i> C++ Builder</i>.
     and most utilities (e.g. addfiles.exe, baja.exe, etc.)
 	<td>src/sbbs3/build.bat<br>src/sbbs3/sbbs3.dsw<br>src/sbbs3/*.dsp<td>msvc6
 <tr valign=top><td>src/sbbs3/Makefile<td>bcc32
-<tr valign=top><td>scfg.exe<td>src/sbbs3/scfg/Makefile<td>bcc32
+<tr valign=top><td rowspan=2>scfg.exe<td>src/sbbs3/scfg/build.bat<br>src/sbbs3/scfg/scfg.dsw<br>src/sbbs3/scfg/scfg.dsp<br>
+	<td>msvc6
+<tr valign=top><td>src/sbbs3/scfg/Makefile<td>bcc32
 <tr valign=top><td>echocfg.exe<td>src/sbbs3/Makefile<td>bcc32
 <tr valign=top><td>sbbsctrl.exe<td>src/sbbs3/ctrl/build.bat<br>src/sbbs3/ctrl/sbbsctrl.bpr<td>bcb6
 <tr valign=top><td>chat.exe<td>src/sbbs3/chat/chat.bpr<td>bcb6
@@ -148,20 +153,24 @@ Compiler legend:<br>
 <ol>
 <li>Install Visual C++ (if you haven't already)
 <li>Get the Synchronet source and library files (if you haven't already)
-<li>Load <tt>src\sbbs3\sbbs3.dsw</tt> into Visual Studio
-<li>Select the Build->Batch Build... menu option
-<li>Check all boxes
-<li>Click the Build button
+<li>Edit <tt>src\sbbs3\build.bat</tt> (if necessary) to point to your MSVC installation directory
+<li>At a command prompt, go to the Synchronet <tt>src\sbbs3</tt> directory and run <tt>build.bat</tt>
+<li>At a command prompt, go to the Synchronet <tt>src\sbbs3\scfg</tt> directory and run <tt>build.bat</tt>
 </ol>
 You can now copy the DLL and executables from the following directories into your Synchronet <tt>EXEC</tt> directory:
 <ul><tt>
 <li>src\sbbs3\msvc.win32.dll.release
 <li>src\sbbs3\msvc.win32.exe.release
+<li>src\sbbs3\scfg\msvc.win32.exe.release
+<li>src\sbbs3\scfg\msvc.win32.exe.release\scfghelp.*
 </tt></ul>
 <p>
 If the DLLs you just built are from a more recent version of Synchronet than your Synchronet Control Panel executable (<tt>sbbsctrl.exe</tt>),
 you will need to use <tt>sbbs.exe</tt> or <tt>sbbsNTsvcs.exe</tt> instead of <tt>sbbsctrl.exe</tt> to run Synchronet.
+<p>
 See <tt>docs\sbbscon.txt</tt> for more details on using the console mode version of Synchronet.
+<br>
+See <tt>docs\sbbsNTsvcs.txt</tt> for more details on using the NT services version of Synchronet.
 <p>
 <h3>Step-by-step Instructions (using Borland C++ Builder)</h3>
 <ol>
@@ -190,7 +199,10 @@ If you only have the free Borland command-line C++ compiler, all of the above st
 referencing the <tt>src\sbbs3\ctrl</tt> directory. Also, if the DLLs you built are from a more recent version of
 Synchronet than your Synchronet Control Panel executable (<tt>sbbsctrl.exe</tt>), you will need to use <tt>sbbs.exe</tt> (or <tt>sbbsmono.exe</tt>)
 to run Synchronet.
+<p>
 See <tt>docs\sbbscon.txt</tt> for more details on using the console mode version of Synchronet.
+<br>
+See <tt>docs\sbbsNTsvcs.txt</tt> for more details on using the NT services version of Synchronet.
 <p>
 <hr>
 <H2>History (as of October 2000)</H2>
@@ -528,7 +540,7 @@ not be merged into the code base for any reason, I will make my best effort to
 explain to the submitting developer the reasons why and offer advice on how to
 remedy the situation, if at all possible. </p>
 </font>
-<p align="right"><font face="Arial" size="1">Copyright © 2004 Rob Swindell
+<p align="right"><font face="Arial" size="1">Copyright © 2006 Rob Swindell
 <br>$Id$</font></p>
 </BODY>
 </HTML>
