@@ -133,7 +133,7 @@ function str_cmds(str)
 			if(bbs.check_syspass()) {
 				write(bbs.text(Filename));
 				if((str=console.getstr("",60))!=null) {
-					editfile(str);
+					console.editfile(str);
 				}
 			}
 		}
