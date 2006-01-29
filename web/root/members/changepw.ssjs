@@ -38,6 +38,9 @@ else
 if(newpw1.length < 4) {
     template.resultmsg="New Password must be a minimum of 4 characters. Please Re-Enter.";
 }
+if(newpw2.length > 8) {
+    template.resultmsg="Verification Password too long.  Passwords must be a maximum of 8 characters. Please Re-Enter.";
+}
 else
 if(newpw1 != newpw2) {
     template.resultmsg="New Passwords do not match. Please Re-Enter.";
@@ -54,9 +57,15 @@ if(success)
 else
     template.response='<a href="' + backurl + '">Back to Change Password Page</a>';
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("changepw.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 
