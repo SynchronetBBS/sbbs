@@ -343,9 +343,10 @@ function Lightbar_getval(current)
 		/* Get input */
 		/*
 		 * ToDo: K_GETSTR is to ensure that the users SPIN mode isn't used
-		 * This is a hack.
+		 * This is a hack which triples the time that an ESC takes to be
+		 * procesed.
 		 */
-		var key=console.getkey(K_UPPER|K_GETSTR);
+		var key=console.getkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0));
 		if(this.hotkeys.indexOf(key)!=-1)
 			return(key);
 		switch(key) {
