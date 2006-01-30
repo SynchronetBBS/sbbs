@@ -144,8 +144,8 @@ enum {
 	,"startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"answer time, in time_t format"
 	,"logon time, in time_t format"
-	,"file newscan time, in time_t format"
-	,"previous newscan time, in time_t format"
+	,"curren file new-scan time, in time_t format"
+	,"previous file new-scan time, in time_t format"
 	,"online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
 	,"time left (in seconds)"
 	,"time of next exclusive event (in time_t format), or 0 if none"
@@ -2589,8 +2589,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display system information")
 	,310
 	},		
-	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[subboard]")
-	,JSDOCSTR("display message sub-board information (current <i>subboard</i>, if unspecified)")
+	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[sub-board]")
+	,JSDOCSTR("display message sub-board information (current <i>sub-board</i>, if unspecified)")
 	,310
 	},		
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	JSDOCSTR("[directory]")
@@ -2669,7 +2669,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("list extended file information for files in the specified file directory")
 	,310
 	},		
-	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board [,number mode] [,object reply_header]")
+	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board] [,number mode] [,object reply_header]")
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
 		"with optinal <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
@@ -2813,7 +2813,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},		
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("number time")
-	,JSDOCSTR("confirm or change newscan time, returns new newscan time value (time_t format)")
+	,JSDOCSTR("confirm or change a new-scan time, returns the new new-scan time value (time_t format)")
 	,310
 	},		
 	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
