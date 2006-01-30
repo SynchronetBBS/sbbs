@@ -676,6 +676,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_TAB		(1L<<18)	/* Treat TAB key as CR						*/
 #define K_LEFTEXIT	(1L<<19)	/* Allow exit by backspacing/arrowing left	*/
 #define K_USEOFFSET	(1L<<20)	/* Use getstr_offset for cursor	position	*/
+#define K_NOSPIN	(1L<<21)	/* Do not honor the user's spinning cursor	*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */

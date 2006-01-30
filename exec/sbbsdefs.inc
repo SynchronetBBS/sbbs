@@ -2,7 +2,7 @@
 
 # Baja include file defining various Synchronet related constants
 
-# $id: $
+# $Id$
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -165,6 +165,9 @@
 !define K_COLD		.16	# Possible cold key mode
 !define K_NOECHO	.17	# Don't echo input
 !define K_TAB		.18	# Treat TAB as CR
+!define K_LEFTEXIT	.19
+!define K_USEOFFSET	.20
+!define K_NOSPIN	.21	# Ignore user's spinning cursor setting
 
 				# Bits in 'mode' for PRINTFILE function
 !define P_NOABORT	.0	# Disallows abortion of a message
