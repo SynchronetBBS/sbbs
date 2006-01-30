@@ -174,7 +174,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		api->esc_delay=25;
 
 #ifdef NCURSES_VERSION_MAJOR
-	if(cio_api.mode==CIOLIB_MODE_CURSES) {
+	if(cio_api.mode==CIOLIB_MODE_CURSES || cio_api.mode==CIOLIB_MODE_CURSES_IBM)
 		ESCDELAY=api->esc_delay;
 #endif
 
