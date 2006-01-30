@@ -174,7 +174,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		api->esc_delay=25;
 
 	if(cio_api.ESCDELAY)
-		cio_api.ESCDELAY=api->esc_delay;
+		*(cio_api.ESCDELAY)=api->esc_delay;
 
     if(api->scrn_len!=0) {
         switch(api->scrn_len) {
