@@ -202,6 +202,9 @@ int try_curses_init(int mode)
 		cio_api.hidemouse=curs_hidemouse;
 		cio_api.suspend=curs_suspend;
 		cio_api.resume=curs_resume;
+#ifdef NCURSES_VERSION_MAJOR
+		cio_api.ESCDELAY=&ESCDELAY;
+#endif
 		return(1);
 	}
 	return(0);

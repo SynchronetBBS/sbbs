@@ -244,6 +244,7 @@ typedef struct {
 	int		(*setfont)		(int font, int force);
 	int		(*getfont)		(void);
 	int		(*loadfont)		(char *filename);
+	int		*ESCDELAY;
 } cioapi_t;
 
 CIOLIBEXPORTVAR cioapi_t cio_api;
