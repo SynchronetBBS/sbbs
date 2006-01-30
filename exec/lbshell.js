@@ -246,6 +246,10 @@ while(1) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
 				if(str=='?') {
+					if(!user.compare_ars("SYSOP"))
+						str='HELP';
+				}
+				if(str=='?') {
 					bbs.menu("sysmain");
 					console.pause();
 					bbs.menu("sysxfer");
