@@ -341,6 +341,10 @@ function Lightbar_getval(current)
 		last_cur=this.current;
 
 		/* Get input */
+		/*
+		 * ToDo: K_GETSTR is to ensure that the users SPIN mode isn't used
+		 * This is a hack.
+		 */
 		var key=console.getkey(K_UPPER|K_GETSTR);
 		if(this.hotkeys.indexOf(key)!=-1)
 			return(key);
