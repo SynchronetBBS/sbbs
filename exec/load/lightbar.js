@@ -341,7 +341,7 @@ function Lightbar_getval(current)
 		last_cur=this.current;
 
 		/* Get input */
-		var key=console.getkey(K_UPPER);
+		var key=console.getkey(K_UPPER|K_GETSTR);
 		if(this.hotkeys.indexOf(key)!=-1)
 			return(key);
 		switch(key) {
