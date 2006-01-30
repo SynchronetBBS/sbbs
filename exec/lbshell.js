@@ -72,7 +72,7 @@ mainbar.add("|Settings","S");
 	settingsmenu.rpadding="\xb3";
 	settingsmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	settingsmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	settingsmenu.add("|User Config","U",24,undefined,undefined,user.compare_ars("REST G"));
+	settingsmenu.add("|User Config","U",24);
 	settingsmenu.add("|Message Scan Config","M",24);
 	settingsmenu.add("To |You Scan Config","Y",24);
 	settingsmenu.add("Message |Pointers","P",24);
