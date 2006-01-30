@@ -671,7 +671,7 @@ function str_cmds(str)
 //# Quiet Node
 	if(user.compare_ars("exempt Q")) {
 		if(str=="HELP")
-			writeln("QUIET\tToggles quit setting (you are not lised as online).");
+			writeln("QUIET\tToggles quiet setting (you are not lised as online).");
 		if(str=="QUIET") {
 			if(user.compare_ars("QUIET"))
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
