@@ -51,8 +51,8 @@ function Lightbar(items)
 	this.direction=0;
 	this.hfg=1;
 	this.hbg=7;
-	this.hfg=8;
-	this.hbg=1;
+	this.dfg=8;
+	this.dbg=1;
 	this.kfg=15;
 	this.khfg=15;
 	this.current=0;
@@ -283,7 +283,9 @@ function Lightbar_getval(current)
 					if(width > -1 && k > width)
 						break;
 					if(this.items[i].text.substr(j,1)=='|') {
-						if(!this.items[i].disabled) {
+						if(this.items[i].disabled)
+							console.attributes=dattr;
+						else {
 							if(this.current==i)
 								console.attributes=kcattr;
 							else
@@ -349,7 +351,7 @@ function Lightbar_getval(current)
 						if(this.current==0)
 							this.current=this.items.length;
 						this.current--;
-					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
+					} while(this.items[this.current].disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_DOWN:
@@ -358,7 +360,7 @@ function Lightbar_getval(current)
 						this.current++;
 						if(this.current==this.items.length)
 							this.current=0;
-					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
+					} while(this.items[this.current].disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_LEFT:
@@ -367,7 +369,7 @@ function Lightbar_getval(current)
 						if(this.current==0)
 							this.current=this.items.length;
 						this.current--;
-					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
+					} while(this.items[this.current].disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_RIGHT:
@@ -376,12 +378,12 @@ function Lightbar_getval(current)
 						this.current++;
 						if(this.current==this.items.length)
 							this.current=0;
-					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
+					} while(this.items[this.current].disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_HOME:
 				this.current=0;
-				while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined) {
+				while(this.items[this.current].disabled || this.items[this.current].retval==undefined) {
 					this.current++;
 					if(this.current==this.items.length)
 						this.current=0;
@@ -389,7 +391,7 @@ function Lightbar_getval(current)
 				break;
 			case KEY_END:
 				this.current=this.items.length-1;
-				while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined) {
+				while(this.items[this.current].disabled || this.items[this.current].retval==undefined) {
 					if(this.current==0)
 						this.current=this.items.length;
 					this.current--;
@@ -571,7 +573,9 @@ function Lightbar_draw(current)
 			if(width > -1 && k > width)
 				break;
 			if(this.items[i].text.substr(j,1)=='|') {
-				if(!this.items[i].disabled) {
+				if(this.items[i].disabled)
+					console.attributes=dattr;
+				else {
 					if(this.current==i)
 						console.attributes=kcattr;
 					else
