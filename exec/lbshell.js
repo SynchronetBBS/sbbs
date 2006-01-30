@@ -245,8 +245,11 @@ while(1) {
 			if(!console.aborted) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
-				if(str=='?')
+				if(str=='?') {
 					bbs.menu("sysmain");
+					console.pause();
+					bbs.menu("sysxfer");
+				}
 				else
 					str_cmds(str);
 				console.pause();
