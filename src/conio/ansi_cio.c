@@ -54,7 +54,7 @@
 #include "ciolib.h"
 #include "ansi_cio.h"
 
-#define	ANSI_TIMEOUT	500
+int	CIOLIB_ANSI_TIMEOUT=500;
 
 sem_t	got_key;
 sem_t	got_input;
@@ -410,7 +410,7 @@ static void ansi_keyparse(void *par)
 
 		switch(gotesc) {
 			case 1:	/* Escape Sequence */
-				timeout=ANSI_TIMEOUT;
+				timeout=CIOLIB_ANSI_TIMEOUT;
 				seq[strlen(seq)+1]=0;
 				seq[strlen(seq)]=ch;
 				if(strlen(seq)>=sizeof(seq)-2) {
@@ -455,7 +455,7 @@ static void ansi_keyparse(void *par)
 					seq[0]=27;
 					seq[1]=0;
 					gotesc=1;
-					timeout=ANSI_TIMEOUT;
+					timeout=CIOLIB_ANSI_TIMEOUT;
 					/* Need more keys... keep going... */
 					sem_post(&goahead);
 					break;

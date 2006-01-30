@@ -230,6 +230,7 @@ int try_ansi_init(int mode)
 		cio_api.getch=ansi_getch;
 		cio_api.getche=ansi_getche;
 		cio_api.textmode=ansi_textmode;
+		cio_api.ESCDELAY=&CIOLIB_ANSI_TIMEOUT;
 		return(1);
 	}
 	return(0);

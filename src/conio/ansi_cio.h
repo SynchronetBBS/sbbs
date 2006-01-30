@@ -39,6 +39,7 @@
 #endif
 
 #include "ciolib.h"
+extern int	CIOLIB_ANSI_TIMEOUT;
 
 #ifdef __cplusplus
 extern "C" {
