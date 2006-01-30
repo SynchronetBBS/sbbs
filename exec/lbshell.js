@@ -293,7 +293,6 @@ while(1) {
 								console.putmsg(bbs.text(R_Download));
 								break;
 							}
-							str=todo_padfname(str);
 							if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_DOWNLOAD)) {
 								var s=0;
 								console.putmsg(bbs.text(SearchingAllDirs));
@@ -387,7 +386,6 @@ while(1) {
 						str=bbs.get_filespec();
 						if(str==null)
 							break file;
-						str=todo_padfname(str);
 						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
 							var s=0;
 							console.putmsg(bbs.text(SearchingAllDirs));
@@ -528,7 +526,6 @@ while(1) {
 							str=bbs.get_filespec();
 							if(str==null)
 								break fileremove;
-							str=todo_padfname(str);
 							if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
 								var s=0;
 								console.putmsg(bbs.text(SearchingAllDirs));
@@ -581,7 +578,6 @@ while(1) {
 							str=bbs.get_filespec();
 							if(str==null)
 								break fileview;
-							str=todo_padfname(str);
 							if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
 								console.putmsg(bbs.text(SearchingAllDirs));
 								for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
@@ -1133,29 +1129,6 @@ function todo_getfiles(lib, dir)
 {
 	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
 	return(file_size(path)/22);	/* F_IXBSIZE */
-}
-
-function todo_padfname(fname) {
-	var name='';
-	var ext='';
-
-	var dotpos=fname.lastIndexOf('.');
-	if(dotpos > -1) {
-		name=fname.substr(0,dotpos);
-		ext=fname.substr(dotpos+1);
-	}
-	else {
-		name=fname;
-	}
-	if(name.length > 8) {
-		/* Hack... make long specs match */
-		name=name.substr(0,7)+'*';
-	}
-	if(ext.length > 3) {
-		/* Hack... make long specs match */
-		ext=ext.substr(0,2)+'*';
-	}
-	return(format("%-8.8s-3.3s",name,ext));
 }
 
 function clear_screen()
