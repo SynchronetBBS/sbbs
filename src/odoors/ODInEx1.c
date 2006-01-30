@@ -476,6 +476,7 @@ malloc_error:
       od_control.user_rip = FALSE;
       od_control.user_attribute = 0x06;
       od_control.user_screen_length = 23;
+      od_control.user_screenwidth = 80;
       od_control.od_page_pausing = TRUE;
       od_control.od_page_len = 15;
    }
