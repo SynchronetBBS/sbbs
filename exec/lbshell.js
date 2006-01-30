@@ -642,7 +642,7 @@ while(1) {
 							switch(xfercfgmenu.getval()) {
 								case 'S':
 									clear_screen();
-									bbs.get_newscantime(bbs.new_file_time);
+									bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
 									draw_main(true);
 									settingsmenu.draw();
 									break;
