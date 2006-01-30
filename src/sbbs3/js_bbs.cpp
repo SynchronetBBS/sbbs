@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2210,6 +2210,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=0;
 	char*		fspec=ALLFILES;
+	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -2233,7 +2234,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 
-	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode));
+	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,padfname(fspec,buf),0 /* tofile */,mode));
 	return(JS_TRUE);
 }
 
@@ -2243,6 +2244,7 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 {
 	long		mode=FI_INFO;
 	char*		fspec=ALLFILES;
+	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -2266,7 +2268,7 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		}
 	}
 
-	*rval = INT_TO_JSVAL(sbbs->listfileinfo(dirnum,fspec,mode));
+	*rval = INT_TO_JSVAL(sbbs->listfileinfo(dirnum,padfname(fspec,buf),mode));
 	return(JS_TRUE);
 }
 
@@ -2645,25 +2647,25 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("send bulk private e-mail")
 	,310
 	},		
-	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory]")
 	,JSDOCSTR("upload file to file directory specified by number or internal code")
 	,310
 	},		
-	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory]")
 	,JSDOCSTR("add files (already in local storage path) to file directory "
 		"specified by number or internal code")
 	,310
 	},		
-	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory]")
 	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	,310
 	},		
-	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
+	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory] [,string filespec] [,number mode]")
 	,JSDOCSTR("list files in the specified file directory, "
 		"optionally specifying a file specification (wildcards) and <i>mode</i> (bitfield)")
 	,310
 	},		
-	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
+	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory] [,string filespec] [,number mode]")
 	,JSDOCSTR("list extended file information for files in the specified file directory")
 	,310
 	},		
