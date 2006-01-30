@@ -122,7 +122,7 @@ mainbar.add("|Messages","M");
 	messagemenu.add("|Browse New Scan","B",24);
 	messagemenu.add("|QWK Packet Transfer","Q",24);
 	messagemenu.add("|Post a Message","P",24,undefined,undefined,user.compare_ars("REST P"));
-	if(user.compare_ars("REST M") && (mgs_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+	if(user.compare_ars("REST N") && (mgs_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
 		messagemenu.items[6].disabed=true;
 	messagemenu.add("Read/Post |Auto-Message","A",24);
 	messagemenu.add("|Find Text in Messages","F",24);
@@ -797,7 +797,7 @@ while(1) {
 		case 'M':
 			done=0;
 			while(!done) {
-				if(user.compare_ars("REST M") && (mgs_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+				if(user.compare_ars("REST N") && (mgs_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
 					messagemenu.items[6].disabed=true;
 				switch(messagemenu.getval()) {
 					case 'N':
