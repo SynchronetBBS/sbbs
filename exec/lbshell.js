@@ -47,7 +47,7 @@ mainbar.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T")
 		fileinfo.ypos=4;
 		fileinfo.lpadding="\xb3";
 		fileinfo.rpadding="\xb3";
-		fileinfo.hotkeys=KEY_LEFT+"\b\x7f\x1b";
+		fileinfo.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 		fileinfo.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 		fileinfo.add("File |Transfer Policy","T",32);
 		fileinfo.add("Information on Current |Directory","D",32);
@@ -82,7 +82,7 @@ mainbar.add("|Settings","S");
 		xfercfgmenu.ypos=6;
 		xfercfgmenu.lpadding="\xb3";
 		xfercfgmenu.rpadding="\xb3";
-		xfercfgmenu.hotkeys=KEY_LEFT+"\b\x7f\x1b";
+		xfercfgmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 		xfercfgmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 		xfercfgmenu.add("|Set New Scan Time","S",28);
 		xfercfgmenu.add("Toggle |Batch Flag","B",28);
@@ -166,7 +166,7 @@ mainbar.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("RES
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
 		// Generate the menu for each section
 		xtrnsecs[j]=new Lightbar;
-		xtrnsecs[j].hotkeys=KEY_RIGHT+"\b\x7f\x1b";
+		xtrnsecs[j].hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
 		for(k=0; k<xtrn_area.sec_list[j].prog_list.length; k++) {
 			if(xtrn_area.sec_list[j].prog_list[k].name.length > xtrnsecprogwidth)
 				xtrnsecprogwidth=xtrn_area.sec_list[j].prog_list[k].name.length;
@@ -210,7 +210,7 @@ mainbar.add("|Info","I");
 		userlists.ypos=6;
 		userlists.lpadding="\xb3";
 		userlists.rpadding="\xb3";
-		userlists.hotkeys=KEY_RIGHT+"\b\x7f\x1b";
+		userlists.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
 		userlists.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
 		userlists.add("|Logons Today","L",12);
 		userlists.add("|Sub-Board","S",12);
@@ -359,6 +359,11 @@ while(1) {
 									clear_screen();
 									bbs.list_users(UL_DIR);
 									console.pause();
+									break;
+								case KEY_RIGHT:
+									main_right();
+									info_done=1;
+									done=1;
 									break;
 								case KEY_LEFT:
 								case '\b':
@@ -658,6 +663,11 @@ while(1) {
 									break;
 								case 'E':
 									user.settings ^= USER_EXTDESC;
+									break;
+								case KEY_RIGHT:
+									main_right();
+									xfercfgdone=1;
+									done=1;
 									break;
 								case KEY_LEFT:
 								case '\b':
@@ -1009,7 +1019,8 @@ while(1) {
 			var curr_xtrnsec=0;
 			var x_sec;
 			var x_prog;
-			while(1) {
+			done=false;
+			while(!done) {
 				x_sec=xtrnsec.getval();
 				if(x_sec==KEY_LEFT)
 					x_sec=xtrnsec.current-1;
@@ -1023,6 +1034,11 @@ while(1) {
 				curr_xtrnsec=parseInt(x_sec);
 				while(1) {
 					x_prog=xtrnsecs[curr_xtrnsec].getval();
+					if(x_prog==KEY_LEFT) {
+						main_left();
+						done=1;
+						break;
+					}
 					if(x_prog==KEY_RIGHT)
 						break;
 					if(x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b')
@@ -1073,6 +1089,9 @@ while(1) {
 					case 'U':
 						userlistloop: while(1) {
 							switch(userlists.getval()) {
+								case KEY_LEFT:
+									main_left();
+									break infoloop;
 								case KEY_RIGHT:
 								case '\b':
 								case '\x7f':
