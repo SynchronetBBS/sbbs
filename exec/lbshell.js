@@ -1201,7 +1201,7 @@ function main_right()
 		mainbar.current++;
 		if(mainbar.current==mainbar.items.length)
 			mainbar.current=0;
-	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined))
+	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined)
 	next_key=mainbar.items[mainbar.current].retval;
 	if(next_key=='G' || next_key==';')
 		next_key='';
@@ -1213,7 +1213,7 @@ function main_left()
 		if(mainbar.current==0)
 			mainbar.current=mainbar.items.length;
 		mainbar.current--;
-	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined))
+	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined)
 	next_key=mainbar.items[mainbar.current].retval;
 	if(next_key=='G' || next_key==';')
 		next_key='';
