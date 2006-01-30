@@ -26,6 +26,8 @@ if(this.SYS_CLOSED==undefined)
  *  bg: Background colour of a non-current item
  *  hfg: Foreground colour of a current item
  *  hbg: Background colour of a current item
+ *  dfg: Foreground colour of a disabled item
+ *  dbg: Background colour of a disabled item
  *  kfg: Hotkey forground colour for non-current item
  *  khfg: Hotkey foreground colour for current item
  *  current: Index of currently highlighted item
@@ -49,6 +51,8 @@ function Lightbar(items)
 	this.direction=0;
 	this.hfg=1;
 	this.hbg=7;
+	this.hfg=8;
+	this.hbg=1;
 	this.kfg=15;
 	this.khfg=15;
 	this.current=0;
@@ -69,7 +73,7 @@ function Lightbar(items)
 		this.items=items;
 }
 
-function Lightbar_additem(txt, retval, width, lpadding, rpadding)
+function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled)
 {
 	var item=new Object;
 
@@ -86,6 +90,8 @@ function Lightbar_additem(txt, retval, width, lpadding, rpadding)
 		item.lpadding=lpadding;
 	if(rpadding!=undefined)
 		item.rpadding=rpadding;
+	if(disabled!=undefined)
+		item.disabled=disabled;
 	this.items.push(item);
 }
 
@@ -122,6 +128,7 @@ function Lightbar_getval(current)
 {
 	var attr=this.bg<<4|this.fg;
 	var cattr=this.hbg<<4|this.hfg;
+	var dattr=this.dbg<<4|this.dfg;
 	var kattr=this.bg<<4|this.kfg;
 	var kcattr=this.hbg<<4|this.khfg;
 	var ret=undefined;
@@ -155,7 +162,7 @@ function Lightbar_getval(current)
 			return(null);
 	}
 	var orig_cur=this.current;
-	while(this.items[this.current].retval==undefined) {
+	while(this.items[this.current].retval==undefined || this.items[this.current].disabled) {
 		this.current++;
 		if(this.current==this.items.length)
 			this.current=0;
@@ -250,16 +257,24 @@ function Lightbar_getval(current)
 					if(this.align==1) {
 						if(this.current==i)
 							console.attributes=cattr;
-						else
-							console.attributes=attr;
+						else {
+							if(this.items[i].disabled)
+								console.attributes=dattr;
+							else
+								console.attributes=attr;
+						}
 						for(;k<width-cleaned.length;k++)
 							console.write(' ');
 					}
 					if(this.align==2) {
 						if(this.current==i)
 							console.attributes=cattr;
-						else
-							console.attributes=attr;
+						else {
+							if(this.items[i].disabled)
+								console.attributes=dattr;
+							else
+								console.attributes=attr;
+						}
 						for(;k<(width-cleaned.length)/2;k++)
 							console.write(' ');
 					}
@@ -268,25 +283,35 @@ function Lightbar_getval(current)
 					if(width > -1 && k > width)
 						break;
 					if(this.items[i].text.substr(j,1)=='|') {
-						if(this.current==i)
-							console.attributes=kcattr;
-						else
-							console.attributes=kattr;
+						if(!this.items[i].disabled) {
+							if(this.current==i)
+								console.attributes=kcattr;
+							else
+								console.attributes=kattr;
+						}
 						j++;
 					}
 					else {
 						if(this.current==i)
 							console.attributes=cattr;
-						else
-							console.attributes=attr;
+						else {
+							if(this.items[i].disabled)
+								console.attributes=dattr;
+							else
+								console.attributes=attr;
+						}
 					}
 					console.write(this.items[i].text.substr(j,1));
 					k++;
 				}
 				if(this.current==i)
 					console.attributes=cattr;
-				else
-					console.attributes=attr;
+				else {
+					if(this.items[i].disabled)
+						console.attributes=dattr;
+					else
+						console.attributes=attr;
+				}
 				while(k<width) {
 					console.write(" ");
 					k++;
@@ -324,7 +349,7 @@ function Lightbar_getval(current)
 						if(this.current==0)
 							this.current=this.items.length;
 						this.current--;
-					} while(this.items[this.current].retval==undefined);
+					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_DOWN:
@@ -333,7 +358,7 @@ function Lightbar_getval(current)
 						this.current++;
 						if(this.current==this.items.length)
 							this.current=0;
-					} while(this.items[this.current].retval==undefined);
+					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_LEFT:
@@ -342,7 +367,7 @@ function Lightbar_getval(current)
 						if(this.current==0)
 							this.current=this.items.length;
 						this.current--;
-					} while(this.items[this.current].retval==undefined);
+					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_RIGHT:
@@ -351,12 +376,12 @@ function Lightbar_getval(current)
 						this.current++;
 						if(this.current==this.items.length)
 							this.current=0;
-					} while(this.items[this.current].retval==undefined);
+					} while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined);
 				}
 				break;
 			case KEY_HOME:
 				this.current=0;
-				while(this.items[this.current].retval==undefined) {
+				while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined) {
 					this.current++;
 					if(this.current==this.items.length)
 						this.current=0;
@@ -364,7 +389,7 @@ function Lightbar_getval(current)
 				break;
 			case KEY_END:
 				this.current=this.items.length-1;
-				while(this.items[this.current].retval==undefined) {
+				while(this.items[this.current]!=disabled || this.items[this.current].retval==undefined) {
 					if(this.current==0)
 						this.current=this.items.length;
 					this.current--;
@@ -378,7 +403,7 @@ function Lightbar_getval(current)
 				break;
 			default:
 				for(i=0; i<this.items.length; i++) {
-					if(this.items[i].text.indexOf('|'+key)!=-1 || this.items[i].text.indexOf('|'+key.toLowerCase())!=-1) {
+					if((!this.items[i].disabled) && (this.items[i].text.indexOf('|'+key)!=-1 || this.items[i].text.indexOf('|'+key.toLowerCase())!=-1)) {
 						if(this.items[i].retval==undefined)
 							continue;
 						this.current=i;
@@ -396,6 +421,7 @@ function Lightbar_draw(current)
 {
 	var attr=this.bg<<4|this.fg;
 	var cattr=this.hbg<<4|this.hfg;
+	var dattr=this.dbg<<4|this.dfg;
 	var kattr=this.bg<<4|this.kfg;
 	var kcattr=this.hbg<<4|this.khfg;
 	var ret=undefined;
@@ -428,7 +454,7 @@ function Lightbar_draw(current)
 			return;
 	}
 	var orig_cur=this.current;
-	while(this.items[this.current].retval==undefined) {
+	while(this.items[this.current].retval==undefined || this.items[this.current].disabled) {
 		this.current++;
 		if(this.current==this.items.length)
 			this.current=0;
@@ -519,16 +545,24 @@ function Lightbar_draw(current)
 			if(this.align==1) {
 				if(this.current==i)
 					console.attributes=cattr;
-				else
-					console.attributes=attr;
+				else {
+					if(this.items[i].disabled)
+						console.attributes=dattr;
+					else
+						console.attributes=attr;
+				}
 				for(;k<width-cleaned.length;k++)
 					console.write(' ');
 			}
 			if(this.align==2) {
 				if(this.current==i)
 					console.attributes=cattr;
-				else
-					console.attributes=attr;
+				else {
+					if(this.items[i].disabled)
+						console.attributes=dattr;
+					else
+						console.attributes=attr;
+				}
 				for(;k<(width-cleaned.length)/2;k++)
 					console.write(' ');
 			}
@@ -537,25 +571,35 @@ function Lightbar_draw(current)
 			if(width > -1 && k > width)
 				break;
 			if(this.items[i].text.substr(j,1)=='|') {
-				if(this.current==i)
-					console.attributes=kcattr;
-				else
-					console.attributes=kattr;
+				if(!this.items[i].disabled) {
+					if(this.current==i)
+						console.attributes=kcattr;
+					else
+						console.attributes=kattr;
+				}
 				j++;
 			}
 			else {
 				if(this.current==i)
 					console.attributes=cattr;
-				else
-					console.attributes=attr;
+				else {
+					if(this.items[i].disabled)
+						console.attributes=dattr;
+					else
+						console.attributes=attr;
+				}
 			}
 			console.write(this.items[i].text.substr(j,1));
 			k++;
 		}
 		if(this.current==i)
 			console.attributes=cattr;
-		else
-			console.attributes=attr;
+		else {
+			if(this.items[i].disabled)
+				console.attributes=dattr;
+			else
+				console.attributes=attr;
+		}
 		while(k<width) {
 			console.write(" ");
 			k++;
