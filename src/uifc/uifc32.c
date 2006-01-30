@@ -173,10 +173,8 @@ int uifcini32(uifcapi_t* uifcapi)
 	if(api->esc_delay < 10)
 		api->esc_delay=25;
 
-#ifdef NCURSES_VERSION_MAJOR
-	if(cio_api.mode==CIOLIB_MODE_CURSES || cio_api.mode==CIOLIB_MODE_CURSES_IBM)
+	if(cio_api.ESCDELAY)
 		ESCDELAY=api->esc_delay;
-#endif
 
     if(api->scrn_len!=0) {
         switch(api->scrn_len) {
