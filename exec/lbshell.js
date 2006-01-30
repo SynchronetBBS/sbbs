@@ -269,7 +269,7 @@ while(1) {
 			while(!done) {
 				file: switch(filemenu.getval()) {
 					case KEY_LEFT:
-						mainbar.current=mainbar.items.length-1;
+						main_left();
 						done=1;
 						break;
 					case '\b':
@@ -331,8 +331,7 @@ while(1) {
 						break;
 					case KEY_RIGHT:
 						if(filemenu.items[filemenu.current].retval!='I') {
-							mainbar.current++;
-							next_key='S';
+							main_right();
 							done=1;
 							break;
 						}
@@ -639,8 +638,7 @@ while(1) {
 						break;
 					case KEY_RIGHT:
 						if(settingsmenu.items[settingsmenu.current].retval!='F') {
-							next_key='E';
-							mainbar.current++;
+							main_right();
 							done=1;
 							break;
 						}
@@ -697,8 +695,7 @@ while(1) {
 						draw_main(true);
 						break;
 					case KEY_LEFT:
-						mainbar.current--;
-						next_key='F';
+						main_left();
 						done=1;
 						break;
 					case '\b':
@@ -777,14 +774,12 @@ while(1) {
 						draw_main(true);
 						break;
 					case KEY_RIGHT:
-						mainbar.current++;
+						main_right();
 						done=1;
-						next_key='M';
 						break;
 					case KEY_LEFT:
-						mainbar.current--;
+						main_left();
 						done=1;
-						next_key='S';
 						break;
 					case '\b':
 					case '\x7f':
@@ -931,14 +926,12 @@ while(1) {
 						draw_main(true);
 						break;
 					case KEY_RIGHT:
-						mainbar.current++;
+						main_right();
 						done=1;
-						next_key='C';
 						break;
 					case KEY_LEFT:
-						mainbar.current--;
+						main_left();
 						done=1;
-						next_key='E';
 						break;
 					case '\b':
 					case '\x7f':
@@ -997,14 +990,12 @@ while(1) {
 						user.chat_settings ^= CHAT_SPLITP;
 						break;
 					case KEY_RIGHT:
-						mainbar.current++;
+						main_right();
 						done=1;
-						next_key='x';
 						break;
 					case KEY_LEFT:
-						mainbar.current--;
+						main_left();
 						done=1;
-						next_key='M';
 						break;
 					case '\b':
 					case '\x7f':
@@ -1074,9 +1065,8 @@ while(1) {
 						break;
 					case KEY_LEFT:
 						if(infomenu.items[infomenu.current].retval!='U') {
-							mainbar.current--;
+							main_left();
 							done=1;
-							next_key='x';
 							break infoloop;
 						}
 						// Fall-through
@@ -1119,7 +1109,7 @@ while(1) {
 						draw_main(true);
 						break infoloop;
 					case KEY_RIGHT:
-						mainbar.current++;
+						main_right();
 						done=1;
 						break infoloop;
 					case '\b':
@@ -1203,4 +1193,28 @@ function draw_main(topline)
 	console.gotoxy(1,console.screen_rows);
 	console.cleartoeol();
 	console.gotoxy(1,1);
+}
+
+function main_right()
+{
+	do {
+		mainbar.current++;
+		if(mainbar.current==mainbar.items.length)
+			mainbar.current=0;
+	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined))
+	next_key=mainbar.items[mainbar.current].retval;
+	if(next_key=='G' || next_key==';')
+		next_key='';
+}
+
+function main_left()
+{
+	do {
+		if(mainbar.current==0)
+			mainbar.current=mainbar.items.length;
+		mainbar.current--;
+	} while(mainbar.items[mainbar.current].disabled || mainbar.items[mainbar.current].retval==undefined))
+	next_key=mainbar.items[mainbar.current].retval;
+	if(next_key=='G' || next_key==';')
+		next_key='';
 }
