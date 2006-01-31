@@ -1,11 +1,24 @@
 /* $Id$ */
 
+var is_sysop=false;
+
+if(user.number==1 || user.security.level>=90)
+	is_sysop=true;
+
 template.topnav=new Array;
 
 if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")
     template.topnav.push({html: '<span class="tlink">Home</span>'});
 else
     template.topnav.push({html: '<a class="tlink" href="/">Home</a>'});
+
+if(is_sysop) {
+if(http_request.virtual_path=="/members/viewprofile.ssjs")
+    template.topnav.push({html: '<span class="tlink">View/Edit Profile</span>'});
+} else {
+if(http_request.virtual_path=="/members/viewprofile.ssjs")
+    template.topnav.push({html: '<span class="tlink">Viewing Profile</span>'});
+}
 
 if(http_request.virtual_path=="/members/newpw.ssjs")
     template.topnav.push({html: '<span class="tlink">Changing Password</span>'});
@@ -40,7 +53,10 @@ if(http_request.virtual_path=="/members/editprofile.ssjs")
     template.topnav.push({html: '<span class="tlink">Edit Your Profile</span>'});
 
 if(http_request.virtual_path=="/members/themes.ssjs")
-    template.topnav.push({html: '<span class="tlink">HTML Themes</span>'});
+    template.topnav.push({html: '<span class="tlink">Choose HTML Theme</span>'});
+
+if(http_request.virtual_path=="/members/picktheme.ssjs")
+    template.topnav.push({html: '<span class="tlink">HTML Theme Changed</span>'});
 
 if(http_request.virtual_path=="/msgs/index.ssjs" || http_request.virtual_path=="/msgs")
     template.topnav.push({html: '<span class="tlink">Message Groups</span>'});
