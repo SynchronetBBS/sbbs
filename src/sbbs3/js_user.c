@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -828,14 +828,160 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(ar!=NULL && ar!=nular)
 		free(ar);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
+static JSBool
+js_posted_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	count=1;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &count);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_posted_msg(p->cfg, &p->user, count));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_sent_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	count=1;
+	BOOL	feedback;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &count);
+	if(argc>1)
+		JS_ValueToBoolean(cx, argv[1], &feedback);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_sent_email(p->cfg, &p->user, count, feedback));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_downloaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	files=1;
+	int32	bytes=0;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &bytes);
+	if(argc>1)
+		JS_ValueToInt32(cx, argv[1], &files);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_downloaded(p->cfg, &p->user, files, bytes));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_uploaded_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	files=1;
+	int32	bytes=0;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &bytes);
+	if(argc>1)
+		JS_ValueToInt32(cx, argv[1], &files);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_uploaded(p->cfg, &p->user, files, bytes));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_adjust_credits(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	count=0;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &count);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_adjust_credits(p->cfg, &p->user, count));
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_adjust_minutes(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int32	count=0;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if(argc)
+		JS_ValueToInt32(cx, argv[0], &count);
+
+	js_getuserdat(p);
+
+	*rval = BOOLEAN_TO_JSVAL(user_adjust_minutes(p->cfg, &p->user, count));
+
+	return JS_TRUE;
+}
 
 static jsSyncMethodSpec js_user_functions[] = {
-	{"compare_ars",	js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
+	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
 	,JSDOCSTR("Verify user meets access requirements string")
 	,310
+	},		
+	{"adjust_credits",	js_adjust_credits,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("count")
+	,JSDOCSTR("Adjust user's credits by <i>count</i> (negative to subtract)")
+	,31301
+	},		
+	{"adjust_minutes",	js_adjust_minutes,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("count")
+	,JSDOCSTR("Adjust user's extra minutes <i>count</i> (negative to subtract)")
+	,31301
+	},		
+	{"posted_message",	js_posted_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[count]")
+	,JSDOCSTR("Adjust user's posted-messages statistics by <i>count</i> (default: 1) (negative to subtract)")
+	,31301
+	},		
+	{"sent_email",		js_sent_email,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[count] [,bool feedback]")
+	,JSDOCSTR("Adjust user's email/feedback-sent statistics by <i>count</i> (default: 1) (negative to subtract)")
+	,31301
+	},		
+	{"uploaded_file",	js_uploaded_file,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("[bytes] [,files]")
+	,JSDOCSTR("Adjust user's files/bytes-uploaded statistics")
+	,31301
+	},		
+	{"downloaded_file",	js_downloaded_file,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("[bytes] [,files]")
+	,JSDOCSTR("Adjust user's files/bytes-downloaded statistics")
+	,31301
 	},		
 	{0}
 };
