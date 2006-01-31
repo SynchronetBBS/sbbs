@@ -855,7 +855,7 @@ js_sent_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 {
 	private_t*	p;
 	int32	count=1;
-	BOOL	feedback;
+	BOOL	feedback=FALSE;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
