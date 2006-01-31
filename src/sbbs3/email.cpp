@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -301,16 +301,11 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 		return(false); 
 	}
 
-	if(usernumber==1) {
-		useron.fbacks++;
+	if(usernumber==1)
 		logon_fbacks++;
-		putuserrec(&cfg,useron.number,U_FBACKS,5,ultoa(useron.fbacks,tmp,10)); }
-	else {
-		useron.emails++;
+	else
 		logon_emails++;
-		putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); }
-	useron.etoday++;
-	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
+	user_sent_email(&cfg, &useron, usernumber, 1);
 	bprintf(text[Emailed],username(&cfg,usernumber,tmp),usernumber);
 	sprintf(str,"%s sent e-mail to %s #%d"
 		,useron.alias,username(&cfg,usernumber,tmp),usernumber);

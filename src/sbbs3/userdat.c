@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1873,6 +1873,76 @@ void DLLCALL subtract_cdt(scfg_t* cfg, user_t* user, long amt)
 	}
 	else    /* no free credits */
 		user->cdt=adjustuserrec(cfg, user->number,U_CDT,10,-amt);
+}
+
+BOOL DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	user->posts	=(ushort)adjustuserrec(cfg, user->number, U_POSTS, 5, count);
+	user->ptoday=(ushort)adjustuserrec(cfg, user->number, U_PTODAY, 5, count);
+
+	return(TRUE);
+}
+
+BOOL DLLCALL user_sent_email(scfg_t* cfg, user_t* user, unsigned to_user, int count)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	if(to_user==1)
+		user->fbacks=(ushort)adjustuserrec(cfg, user->number, U_FBACKS, 5, count);
+	else
+		user->emails=(ushort)adjustuserrec(cfg, user->number, U_EMAILS, 5, count);
+	user->etoday=(ushort)adjustuserrec(cfg, user->number, U_ETODAY, 5, count);
+
+	return(TRUE);
+}
+
+BOOL DLLCALL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	user->dls=(ushort)adjustuserrec(cfg, user->number, U_DLS, 5, files);
+	user->dlb=adjustuserrec(cfg, user->number, U_DLB, 10, bytes);
+
+	return(TRUE);
+}
+
+BOOL DLLCALL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	user->uls=(ushort)adjustuserrec(cfg, user->number, U_ULS, 5, files);
+	user->ulb=adjustuserrec(cfg, user->number, U_ULB, 10, bytes);
+
+	return(TRUE);
+}
+
+BOOL DLLCALL user_credits_adjusted(scfg_t* cfg, user_t* user, long amount)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	if(amount<0)	/* subtract */
+		subtract_cdt(cfg, user, -amount);
+	else			/* add */
+		user->cdt=adjustuserrec(cfg, user->number, U_CDT, 10, amount);
+
+	return(TRUE);
+}
+
+BOOL DLLCALL user_minutes_adjusted(scfg_t* cfg, user_t* user, long amount)
+{
+	if(user==NULL)
+		return(FALSE);
+
+	user->min=adjustuserrec(cfg, user->number, U_MIN, 10, amount);
+
+	return(TRUE);
 }
 
 /****************************************************************************/

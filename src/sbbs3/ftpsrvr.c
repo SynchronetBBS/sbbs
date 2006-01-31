@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1566,8 +1566,7 @@ static void send_thread(void* arg)
 		}	
 
 		if(xfer.credits) {
-			xfer.user->dls=(ushort)adjustuserrec(&scfg, xfer.user->number,U_DLS,5,1);
-			xfer.user->dlb=adjustuserrec(&scfg, xfer.user->number,U_DLB,10,total);
+			user_downloaded(&scfg, xfer.user, 1, total);
 			if(xfer.dir>=0 && !is_download_free(&scfg,xfer.dir,xfer.user))
 				subtract_cdt(&scfg, xfer.user, xfer.credits);
 		}
@@ -1837,9 +1836,7 @@ static void receive_thread(void* arg)
 			/**************************/
 			/* Update Uploader's Info */
 			/**************************/
-			if(!xfer.append && xfer.filepos==0)
-				xfer.user->uls=(short)adjustuserrec(&scfg, xfer.user->number,U_ULS,5,1);
-			xfer.user->ulb=adjustuserrec(&scfg, xfer.user->number,U_ULB,10,total);
+			user_uploaded(&scfg, xfer.user, (!xfer.append && xfer.filepos==0) ? 1:0, total);
 			if(scfg.dir[f.dir]->up_pct && scfg.dir[f.dir]->misc&DIR_CDTUL) { /* credit for upload */
 				if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps)    /* Give min instead of cdt */
 					xfer.user->min=adjustuserrec(&scfg,xfer.user->number,U_MIN,10

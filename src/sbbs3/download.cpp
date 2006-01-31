@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -67,8 +67,7 @@ void sbbs_t::downloadfile(file_t* f)
 	/****************************/
 	/* Update Downloader's Info */
 	/****************************/
-	useron.dls=(ushort)adjustuserrec(&cfg,useron.number,U_DLS,5,1);
-	useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,10,length);
+	user_downloaded(&cfg, &useron, 1, length);
 	if(!is_download_free(&cfg,f->dir,&useron))
 		subtract_cdt(&cfg,&useron,f->cdt);
 	/**************************/

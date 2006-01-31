@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -108,6 +108,14 @@ DLLEXPORT void	DLLCALL subtract_cdt(scfg_t*, user_t*, long amt);
 DLLEXPORT int	DLLCALL user_rec_len(int offset);
 DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user);
 DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr, char* username, char* fname);
+
+/* New atomic numeric user field adjustment functions: */
+DLLEXPORT BOOL	DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count);
+DLLEXPORT BOOL	DLLCALL user_sent_email(scfg_t* cfg, user_t* user, unsigned to_user, int count);
+DLLEXPORT BOOL	DLLCALL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes);
+DLLEXPORT BOOL	DLLCALL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes);
+DLLEXPORT BOOL	DLLCALL user_credits_adjusted(scfg_t* cfg, user_t* user, long amount);
+DLLEXPORT BOOL	DLLCALL user_minutes_adjusted(scfg_t* cfg, user_t* user, long amount);
 
 #ifdef __cplusplus
 }
