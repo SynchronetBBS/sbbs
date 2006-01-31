@@ -45,6 +45,7 @@ template.Theme_CSS_File=Themes[CurrTheme].css;
 template.server=server;
 template.system=system;
 
+
 function Nz(value, valifundefined)
 {
     if(valifundefined==undefined)
@@ -55,11 +56,11 @@ function Nz(value, valifundefined)
 }
 
 function write_template(filename)  {
-    var fname='../web/templates/'+Themes[CurrTheme].dir+'/'+filename;
+    var fname='../web/templates/'+Themes[CurrTheme].theme_dir+'/'+filename;
     if(!file_exists(fname)) {
-        fname='../web/templates/'+Themes[DefaultTheme].dir+'/'+filename;
+        fname='../web/templates/'+Themes[DefaultTheme].theme_dir+'/'+filename;
         if(!file_exists(fname))
-            fname='../web/templates/'+Themes["Default"].dir+'/'+filename;
+            fname='../web/templates/'+Themes["Default"].theme_dir+'/'+filename;
     }
     var inc=new File(fname);
     if(!inc.open("r",true,1024)) {

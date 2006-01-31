@@ -11,6 +11,12 @@ var show_gender=true;
 var show_location=true;
 var show_age=true;
 
+/* If User #1 or is.operator and show_ip is set to true, */
+/* Then the Author info will post the last known IP from */
+/* user.note                                             */
+
+var show_ip=true;
+
 /*       If you want to remove QWk FTP downloads       */
 /* change this to false.  Moved from leftnav_html.ssjs */
 
@@ -26,13 +32,16 @@ if(user.number!=0) {
 	if(file_exists(prefs_dir + format("%04d.html_prefs",user.number))); {
 		prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
 		if(prefsfile.open("r",false)) {
-			if(prefsfile.iniGetValue(null, 'SortDate', '')!='');
+			if(prefsfile.iniGetValue(null, 'SortDate', '')!='')
 				var SortDate=prefsfile.iniGetValue(null, 'SortDate', '');
 			prefsfile.close();
 		}
 		prefsfile=new File(prefs_dir + '/'+format("%04d.html_prefs",user.number));
-		if(SortDate!='') {
+		if(SortDate=='' && !file_exists(prefs_dir + format("%04d.html_prefs",user.number))) {
+			SortDate="descending";
 			if(prefsfile.open("w+",false)) {
+				prefsfile.iniSetValue('User Info', 'Alias', user.alias);
+				prefsfile.iniSetValue('User Info', 'Name', user.name);
 				prefsfile.iniSetValue('Messaging', 'SortDate', SortDate);
        			prefsfile.close();
 			}

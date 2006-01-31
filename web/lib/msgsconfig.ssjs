@@ -1,9 +1,11 @@
+/* $Id$ */
+
 max_messages=20;
-max_pages=30;
-next_msg_html='<img src="/graphics/next1.gif" alt="Next Message" title="Next Message" border="0" />';
-no_next_msg_html='<img src="/graphics/next1_light.gif" alt="No More Messages" title="No More Messages" />';
-prev_msg_html='<img src="/graphics/prev1.gif" alt="Previous Message" title="Previous Message" border="0" />';
-no_prev_msg_html='<img src="/graphics/prev1_light.gif" alt="No More Messages" title="No More Messages" />';
+max_pages=20;
+next_msg_html='<img src="' + template.image_dir + '/next1.gif" alt="Next Message" title="Next Message" border="0" />';
+no_next_msg_html='<img src="' + template.image_dir + '/next1_light.gif" alt="No More Messages" title="No More Messages" />';
+prev_msg_html='<img src="' + template.image_dir + '/prev1.gif" alt="Previous Message" title="Previous Message" border="0" />';
+no_prev_msg_html='<img src="' + template.image_dir + '/prev1_light.gif" alt="No More Messages" title="No More Messages" />';
 next_page_html="NEXT";
 prev_page_html="PREV";
 showall_subs_enable_html="Show all subs";

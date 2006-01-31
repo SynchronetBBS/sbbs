@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 load("../web/lib/msgsconfig.ssjs");

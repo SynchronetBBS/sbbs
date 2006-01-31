@@ -1,3 +1,5 @@
+/* $Id$ */
+
 function count_attachments(hdr, body)
 {
 	var Message=new Array;
