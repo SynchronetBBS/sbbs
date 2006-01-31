@@ -13,3 +13,5 @@ Features/Changes which will break the API and so must go into v7
 - Audit for small send()s in general.
 - Possibly improve the output thread and make *nix multi-threaded for block
   buffering ala Synchronet.
+- Change to 24-line default.  This means fixing the personalities, and the
+  screen stuff.
