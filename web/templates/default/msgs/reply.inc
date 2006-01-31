@@ -23,7 +23,7 @@
       <td class="replymsg" colspan="2"><textarea class="replymsg" name=body rows="20" cols="79" wrap="hard">%%body%%</textarea></td>
       </tr>
     <tr>
-      <td align="center" class="replymsg" colspan="2"><input type="image" src="/graphics/@@reply_button@@" value="Post Reply" /></td>
+      <td align="center" class="replymsg" colspan="2"><input type="image" src="@@image_dir@@/@@reply_button@@" value="Post Reply" /></td>
     </tr>
   </tbody>
 </table>

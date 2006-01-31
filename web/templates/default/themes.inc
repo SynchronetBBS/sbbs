@@ -12,7 +12,7 @@
             <form action="picktheme.ssjs" method="post">
                 <br />
                 @@theme_list@@<br /><br />
-                <input type="image" src="/graphics/select_theme.gif" name="Select Theme" value="Select Theme" />
+                <input type="image" src="@@image_dir@@/select_theme.gif" name="Select Theme" value="Select Theme" />
             </form>
         </td>
         </tr>

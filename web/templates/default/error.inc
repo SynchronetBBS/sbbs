@@ -4,13 +4,13 @@
     
         <table align="center" width="90%"  border="0" cellspacing="0" cellpadding="0">
   <tr>
-    <td class="ltn"><img src="/graphics/gblnav_left.gif" width="5" height="32" alt="" /></td>
+    <td class="ltn"><img src="@@image_dir@@/gblnav_left.gif" width="5" height="32" alt="" /></td>
     <td class="tn">
       <a class="tlink" href="/">Home</a>
       <span class="terror">Error!</span>
       
     </td>
-    <td class="rtn"><img src="/graphics/glbnav_right.gif" width="5" height="32" alt="" /></td>
+    <td class="rtn"><img src="@@image_dir@@/glbnav_right.gif" width="5" height="32" alt="" /></td>
   </tr>
 </table>
 
@@ -21,7 +21,7 @@
         
 <table align="center" bgcolor="#EEEEEE" width="90%"  border="0" cellspacing="0" cellpadding="0">
   <tr>
-    <td width="1%" valign="top" align="left"><img alt="" src="/graphics/tl_curve_grey.gif" height="6" width="6" /></td>
+    <td width="1%" valign="top" align="left"><img alt="" src="@@image_dir@@/tl_curve_grey.gif" height="6" width="6" /></td>
     <td>
     <table width="100%"  border="0" cellspacing="0" cellpadding="0">
   <tr>

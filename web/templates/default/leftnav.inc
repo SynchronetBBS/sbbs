@@ -4,7 +4,7 @@
         
 <table align="center" bgcolor="#EEEEEE" width="90%"  border="0" cellspacing="0" cellpadding="0">
   <tr>
-    <td width="1%" valign="top" align="left"><img alt="" src="/graphics/tl_curve_grey.gif" height="6" width="6" /></td>
+    <td width="1%" valign="top" align="left"><img alt="" src="@@image_dir@@/tl_curve_grey.gif" height="6" width="6" /></td>
     <td>
     <table width="100%"  border="0" cellspacing="0" cellpadding="0">
   <tr>

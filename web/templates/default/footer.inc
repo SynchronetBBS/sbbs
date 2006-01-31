@@ -1,7 +1,9 @@
 <!-- $Id$ -->
 
+<!-- Begin Footer -->
+
     </td>
-    <td width="1%" valign="top" align="right"><img alt="" src="/graphics/tr_curve_grey.gif" height="6" width="6" /></td>
+    <td width="1%" valign="top" align="right"><img alt="" src="@@image_dir@@/tr_curve_grey.gif" height="6" width="6" /></td>
   </tr>
 </table>
     </td>
@@ -13,7 +15,7 @@
     <tr>
       <td>
           <div align="left">
-         <!-- <a href="http://www.synchro.net/"><img src="/graphics/sync_pbgj1_grey_bg.gif" title="Powered by: Synchronet" alt="Powered by: Synchronet" width="175" height="85" border="0" /></a></div> -->
+         <!-- <a href="http://www.synchro.net/"><img src="@@image_dir@@/sync_pbgj1_grey_bg.gif" title="Powered by: Synchronet" alt="Powered by: Synchronet" width="175" height="85" border="0" /></a></div> -->
           <font size="-3">
             <a class="footer" href="http://www.synchro.net/">@@server:version@@</a><br />
             <a class="footer" href="http://www.synchro.net/">@@system:version_notice@@</a>

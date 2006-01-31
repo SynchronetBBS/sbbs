@@ -6,7 +6,7 @@
 
 
 <div align="center">
-@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new" method="post"><input type="image" src="/graphics/'+template.post_button_image+'" value="'+template.post_button+'" /></form>':''@@
+@@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub='+template.sub.code+'&amp;post=new" method="post"><input type="image" src="' + template.image_dir + '/' + template.post_button_image+'" value="' + template.post_button + '" /></form>':''@@
 @@JS:template.show_choice==undefined ? '' : '(' + template.show_choice + ')<br /><br />'@@
 </div>
 
@@ -15,7 +15,7 @@
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
      @@JS:template.can_delete?'<th class="msglist"><input name="SelectAll" title="Select All Messages" type="checkbox" onclick="checkBoxes(this.form, this.checked)" /></th>':''@@
-    <th class="msglist"><img src="/graphics/attach_black.gif" title="Attachment?" alt="Attachment?" width="10" height="13" border="0" /></th>
+    <th class="msglist"><img src="@@image_dir@@/attach_black.gif" title="Attachment?" alt="Attachment?" width="10" height="13" border="0" /></th>
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
     <th class="msglist">To</th>
@@ -27,7 +27,7 @@
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
     @@JS:template.can_delete?'<td align=center><input name="number" value="'+RepeatObj.number+'" type="checkbox" /></td>':''@@
        <td align="center">
-            @@JS:if(RepeatObj.attachments>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
+            @@JS:if(RepeatObj.attachments>0) '<img alt="Attachment" src="'+ template.image_dir + '/attach_black.gif" />'; else '&nbsp;';@@
        </td>
        <td>
           @@JS:if(sub=='mail' && !(RepeatObj.attr & MSG_READ)) '<b>';@@
@@ -53,7 +53,7 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="/graphics/delete_messages.gif" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input class="msg" type="image" src="'+ template.image_dir + '/delete_messages.gif" /></div>':''@@
 </form>
         
 <script type="text/javascript">

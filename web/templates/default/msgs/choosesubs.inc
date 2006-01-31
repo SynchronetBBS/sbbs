@@ -32,7 +32,7 @@
 </tr>
 <<END REPEAT subs>>
 <tr>
-  <td colspan="6" class="sublist" align="center"><input type="image" src="/graphics/update_new_scan.gif" value="Update New Scan" /></td>
+  <td colspan="6" class="sublist" align="center"><input type="image" src="@@image_dir@@/update_new_scan.gif" value="Update New Scan" /></td>
 </tr>
 </table>
 </form>
