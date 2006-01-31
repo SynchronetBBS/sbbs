@@ -8,3 +8,8 @@ Features/Changes which will break the API and so must go into v7
   keep track of the current status of IAC escapes.
 - Fix up the local display for Win32.  It's horribly slow currently.
   Possibly just dust of the DOS stuff and use ciolib?
+- Make output functions take an optional position and attribute to cut down
+  on small send()s.
+- Audit for small send()s in general.
+- Possibly improve the output thread and make *nix multi-threaded for block
+  buffering ala Synchronet.
