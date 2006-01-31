@@ -472,7 +472,7 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 		}
 
 		if(funcs[i].ver) {
-			if((ver=funcs[i].ver<10000)		/* auto convert 313 to 31300 */
+			if((ver=funcs[i].ver) < 10000)		/* auto convert 313 to 31300 */
 				ver*=100;
 			val = INT_TO_JSVAL(ver);
 			JS_SetProperty(cx,method, "ver", &val);
