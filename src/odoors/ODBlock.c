@@ -185,9 +185,9 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
                if(od_control.od_full_put) break;
 
                /* If both buffers have space characters. */
-               if(*pchMemory==*pchTest && (*pchTest==' ' || *pchTest=='\0'))
+               if((*pchMemory==' ' || *pchMemory==0) && (*pchTest==' ' || *pchTest=='\0'))
                {
-                  /* If colours differ, then stop comparison loop. */
+                  /* If background colours differ, then stop comparison loop. */
                   if((pchTest[1]&0x70) != (pchMemory[1]&0x70))
                   {
                      break;
@@ -195,7 +195,7 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
                }
 
                /* If both have different character and colour attributes. */
-               else if(*((int *)pchTest) != *((int *)pchMemory))
+               else if(*((WORD *)pchTest) != *((WORD *)pchMemory))
                {
                   /* Then stop comparison loop now. */
                   break;
