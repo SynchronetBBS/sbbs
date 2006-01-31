@@ -111,11 +111,11 @@ DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* ho
 
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count);
-DLLEXPORT BOOL	DLLCALL user_sent_email(scfg_t* cfg, user_t* user, unsigned to_user, int count);
+DLLEXPORT BOOL	DLLCALL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback);
 DLLEXPORT BOOL	DLLCALL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes);
 DLLEXPORT BOOL	DLLCALL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes);
-DLLEXPORT BOOL	DLLCALL user_credits_adjusted(scfg_t* cfg, user_t* user, long amount);
-DLLEXPORT BOOL	DLLCALL user_minutes_adjusted(scfg_t* cfg, user_t* user, long amount);
+DLLEXPORT BOOL	DLLCALL user_adjust_credits(scfg_t* cfg, user_t* user, long amount);
+DLLEXPORT BOOL	DLLCALL user_adjust_minutes(scfg_t* cfg, user_t* user, long amount);
 
 #ifdef __cplusplus
 }

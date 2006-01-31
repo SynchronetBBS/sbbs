@@ -305,7 +305,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 		logon_fbacks++;
 	else
 		logon_emails++;
-	user_sent_email(&cfg, &useron, usernumber, 1);
+	user_sent_email(&cfg, &useron, 1, usernumber==1);
 	bprintf(text[Emailed],username(&cfg,usernumber,tmp),usernumber);
 	sprintf(str,"%s sent e-mail to %s #%d"
 		,useron.alias,username(&cfg,usernumber,tmp),usernumber);

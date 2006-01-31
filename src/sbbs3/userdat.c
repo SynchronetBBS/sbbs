@@ -1886,12 +1886,12 @@ BOOL DLLCALL user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	return(TRUE);
 }
 
-BOOL DLLCALL user_sent_email(scfg_t* cfg, user_t* user, unsigned to_user, int count)
+BOOL DLLCALL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 {
 	if(user==NULL)
 		return(FALSE);
 
-	if(to_user==1)
+	if(feedback)
 		user->fbacks=(ushort)adjustuserrec(cfg, user->number, U_FBACKS, 5, count);
 	else
 		user->emails=(ushort)adjustuserrec(cfg, user->number, U_EMAILS, 5, count);
@@ -1922,7 +1922,7 @@ BOOL DLLCALL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes)
 	return(TRUE);
 }
 
-BOOL DLLCALL user_credits_adjusted(scfg_t* cfg, user_t* user, long amount)
+BOOL DLLCALL user_adjust_credits(scfg_t* cfg, user_t* user, long amount)
 {
 	if(user==NULL)
 		return(FALSE);
@@ -1935,7 +1935,7 @@ BOOL DLLCALL user_credits_adjusted(scfg_t* cfg, user_t* user, long amount)
 	return(TRUE);
 }
 
-BOOL DLLCALL user_minutes_adjusted(scfg_t* cfg, user_t* user, long amount)
+BOOL DLLCALL user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 {
 	if(user==NULL)
 		return(FALSE);
