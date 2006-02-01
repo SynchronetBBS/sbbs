@@ -1,7 +1,7 @@
 <!-- $Id$ -->
 
 <!-- Main Content -->  
-    
+<td class="main" valign="top" >    
 <center>
     (<b>%%required%%</b> indicates required fields)<br /><br />
     %%err_message%%
