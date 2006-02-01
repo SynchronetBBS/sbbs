@@ -5,8 +5,51 @@ load("../web/lib/mime_decode.ssjs");
 
 template.txtbodybgwht=0;
 
+template.author_avatar = '';
+
+/*  If you want to disable display of certain .inc files  */
+/* for a specific theme declare it like this in the .ssjs */
+/* file corresponding to the page you want to overide the */
+/*           default display type for the theme			  */
+
+if(CurrTheme=="NightShade") {
+	do_leftnav=false;
+	do_rightnav=false;
+}
+
 if(msgbase.open!=undefined && msgbase.open()==false) {
     error(msgbase.last_error);
+}
+
+/* Check author info if message base is local and display it */
+/*    on the new expanded message read page for new theme    */
+
+var hdr=msgbase.get_msg_header(false,m);
+
+
+
+if(hdr.from_ext!=undefined) {
+	template.u_num = hdr.from_ext;
+	usr = new User(template.u_num);
+	template.author_firston = strftime("%m/%d/%y",usr.stats.firston_date);
+	template.author_posts = usr.stats.total_posts;
+	if((user.compare_ars(msg_area.sub[sub].operator_ars) && msg_area.sub[sub].operator_ars != '' || user.number==1) && show_ip==true) {
+		template.author_ip='IP: ' + usr.note + '<br /><br />';
+	}
+	template.author_ismod = '<br />Member<br /><br />';
+	if(usr.compare_ars(msg_area.sub[sub].operator_ars) && msg_area.sub[sub].operator_ars != '' || usr.number==1)
+		template.author_ismod = '<br />Moderator<br /><br />';
+	if(file_exists(prefs_dir + format("%04d.html_prefs",usr.number))); {
+		prefsfile=new File(prefs_dir + format("%04d.html_prefs",usr.number));
+		if(prefsfile.open("r",false)) {
+			if(prefsfile.iniGetValue('Profile', 'Avatar', '')!='') {
+				template.author_avatar=prefsfile.iniGetValue('Profile', 'Avatar', '');
+				var display_info=true;
+			} else
+			template.author_avatar = template.image_dir + "/nothumbnail.jpg";
+			prefsfile.close();
+		}
+	}
 }
 
 template.can_delete=can_delete(m);
@@ -14,8 +57,7 @@ template.can_delete=can_delete(m);
 if(sub=='mail') {
     template.group=new Object;
     template.group.name="E-Mail";
-}
-else {
+} else {
     template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 }
 
@@ -125,10 +167,16 @@ if(tmp!=undefined)
 else
     template.nextlink=no_next_msg_html;
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
-load("../web/lib/leftnav_html.ssjs");
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
+	load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/msg.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 
 msgs_done();

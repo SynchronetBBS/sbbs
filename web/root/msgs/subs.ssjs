@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/msgslib.ssjs");
 
 var ShowAll=(http_request.query.show_all_subs != undefined
@@ -28,7 +30,8 @@ else {
 }
 template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 
-write_template("header.inc");
+if(do_header)
+	write_template("header.inc");
 
 template.group=msg_area.grp[grp];
 template.subs=new Array;
@@ -46,7 +49,7 @@ for(s in msg_area.grp[grp].sub_list) {
 			if(lastdate!=undefined && lastdate != null) {
 				lastdate=lastdate.time;
 				if(lastdate>0)
-					lastdate=strftime("%b-%d-%y",lastdate);
+					lastdate=strftime("%b-%d-%y %H:%M",lastdate);
 			}
         }
         msgbase.close();
@@ -56,9 +59,14 @@ for(s in msg_area.grp[grp].sub_list) {
 	template.subs.push(thissub);
 }
 
-load("../web/lib/topnav_html.ssjs");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/subs.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 
 msgs_done();

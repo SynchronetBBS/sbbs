@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/template.ssjs");
 load("../web/lib/msgslib.ssjs");
 
@@ -58,10 +60,17 @@ if(http_request.query.Action=="Delete") {
 }
 template.sub_code=sub;
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/management.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
+
 
 msgs_done();

@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/msgslib.ssjs");
 
 if(sub==undefined)
@@ -90,7 +92,13 @@ if(sub=='mail' || (!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANON
 
 if(!msgbase.save_msg(hdrs,client,body)) {
 	error(msgbase.last_error);
-}
+} else {
+	if(sub=='mail') {
+		user.sent_email();
+	}
+	else
+		user.posted_message();
+} 
 
 /* Mark original message for replied */
 if(hdrs.thread_orig!=undefined)  {
@@ -104,10 +112,17 @@ if(hdrs.thread_orig!=undefined)  {
 
 http_reply.status="201 Created";
 title="Message posted";
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
+
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/posted.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 
 msgs_done();

@@ -221,7 +221,6 @@ if(sub!='mail')  {
     }
 }
 
-write_template("header.inc");
 last_offset=msgarray.length-1-offset;
 first_offset = offset;
 max_first_offset= offset+msgarray.length-1-offset;
@@ -245,6 +244,9 @@ if(DateDescending) {
      if(hdr==null)
           continue;
      template.messages[displayed.toString()]=hdr;
+	 template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,15);
+	 template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,15);
+	 template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,20);
      template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset));
      template.messages[displayed.toString()].offset=msgarray[last_offset].offset;
      displayed++;
@@ -255,8 +257,11 @@ if(DateDescending) {
       var hdr=clean_msg_headers(msgbase.get_msg_header(true,msgarray[first_offset].offset),0);
       if(hdr==null)
           continue;
-      template.messages[displayed.toString()]=hdr;
-      template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[first_offset].offset));
+	  template.messages[displayed.toString()]=hdr;
+	  template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,15);
+	  template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,15);
+	  template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,20);
+	  template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[first_offset].offset));
       template.messages[displayed.toString()].offset=msgarray[first_offset].offset;
       displayed++;
   }
@@ -270,8 +275,40 @@ if(sub=='mail') {
     template.post_button_image="new_message.gif";
 }           
 
-load("../web/lib/topnav_html.ssjs");
-load("../web/lib/leftnav_html.ssjs");
+if(http_request.query["sort"]!=undefined)
+	template.messages.sort(alphasort);
+
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
+	load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/msgs.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 msgs_done();
+
+function alphasort (a,b)
+{
+	if(http_request.query["sort"]==undefined)
+		return(0);
+	var sortby=http_request.query["sort"]
+	var au;
+	var bu;
+	if(a[sortby].toUpperCase!=undefined)
+		au=a[sortby].toUpperCase();
+	else
+		au=a[sortby];
+	if(b[sortby].toUpperCase!=undefined)
+		bu=b[sortby].toUpperCase();
+	else
+		bu=b[sortby];
+	if(au<bu)
+		return -1;
+	if(bu>au)
+		return 1;
+	return 0;
+}

@@ -40,9 +40,11 @@ template.nup=((this.login==undefined)?system.newuser_magic_word:system.newuser_p
 
 /* System is closed to new users */
 if(system.settings & SYS_CLOSED) {
-    write_template("header.inc");
+	if(do_header)
+	    write_template("header.inc");
     write("This system is closed to new users, sorry.");
-    write_template("footer.inc");
+	if(do_footer)
+	    write_template("footer.inc");
     exit(0);
 }
 
@@ -346,15 +348,21 @@ else {
     nuser.editor=http_request.query.editor;
 
     template.title="New user created";
-    write_template("header.inc");
-    load("../web/lib/topnav_html.ssjs");
-    load("../web/lib/leftnav_html.ssjs");
+	if(do_header)
+	    write_template("header.inc");
+	if(do_topnav)
+	    load("../web/lib/topnav_html.ssjs");
+	if(do_leftnav)
+	    load("../web/lib/leftnav_html.ssjs");
+	if(do_rightnav)
+		write_template("rightnav.inc");
     if(http_request.query.netmail != undefined && http_request.query.netmail != '')
         template.response=format("<p>Your account has been created and the password has been mailed to: %s.</p>" ,http_request.query.netmail);
     else
         template.response=format("<p>Your account has been created and the password is: %s </p>" ,newpw);
     write_template("newuser_created.inc");
-    write_template("footer.inc");
+    if(do_footer)
+	write_template("footer.inc");
 
 prefs_dir=system.data_dir + 'user/';
 
@@ -368,11 +376,17 @@ prefsfile=new File(prefs_dir + '/'+format("%04d.html_prefs",nuser.number));
 }
 
 function showform() {
-    write_template("header.inc");
-    load("../web/lib/topnav_html.ssjs");
-    load("../web/lib/leftnav_html.ssjs");
+	if(do_header)
+	    write_template("header.inc");
+	if(do_topnav)
+	    load("../web/lib/topnav_html.ssjs");
+	if(do_leftnav)
+    	load("../web/lib/leftnav_html.ssjs");
+	if(do_rightnav)
+		write_template("rightnav.inc");
     write_template("newuser.inc");
-    write_template("footer.inc");
+	if(do_footer)
+		write_template("footer.inc");
     exit(0);
 }
 

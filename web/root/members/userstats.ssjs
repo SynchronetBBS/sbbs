@@ -22,11 +22,17 @@ else
 i=i ? 100/i : user.stats.total_posts > user.stats.total_logons ? 100 : 0;
 template.pinfo=parseInt(i);
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("userstats.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");
 
 function addcommas(num)
 {

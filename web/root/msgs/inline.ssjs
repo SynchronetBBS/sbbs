@@ -1,3 +1,5 @@
+/* $Id$ */
+
 /* 
  * Inline attachment FS emulator
  * Request attachments in the form:

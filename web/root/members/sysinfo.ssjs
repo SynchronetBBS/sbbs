@@ -1,8 +1,13 @@
+/* $Id$ */
+
 load("../web/lib/template.ssjs");
 
 var sub="";
 
 template.title= system.name+ " - System Information";
+
+if(CurrTheme=="NightShade")
+	do_rightnav = false;
 
 template.sysinfo="";
 f=new File(system.text_dir+"system.msg");
@@ -106,8 +111,14 @@ for(addr in system.fido_addr_list) {
 	template.fidoaddrs[addr].address=system.fido_addr_list[addr];
 }
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)
 load("../web/lib/leftnav_html.ssjs");
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("sysinfo.inc");
-write_template("footer.inc");
+if(do_footer)
+	write_template("footer.inc");

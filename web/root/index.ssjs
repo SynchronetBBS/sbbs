@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: */
 
 load("../web/lib/template.ssjs");
 
@@ -8,11 +8,14 @@ http_reply.header.pragma='no-cache';
 http_reply.header.expires='0';
 http_reply.header['cache-control']='must-revalidate';
 
-write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
-load("../web/lib/leftnav_html.ssjs");
+if(do_header)
+    write_template("header.inc");
+if(do_topnav)        
+    load("../web/lib/topnav_html.ssjs");
+if(do_leftnav)        
+    load("../web/lib/leftnav_html.ssjs");
 
-/* Main Page Stats */
+/* Main Page Stats - might move to global_defs.ssjs */
 
     total=time()-system.uptime;
     days   = Math.floor(total/(24*60*60));
@@ -44,31 +47,6 @@ load("../web/lib/leftnav_html.ssjs");
     var port = host.indexOf(':');
     if(port>=0)
         host=host.slice(0,port);
-    
-    if(telnet_port=="23")
-      telnet_port="";
-    else 
-      telnet_port = ":" + telnet_port;
-    if(rlogin_port=="513")
-      rlogin_port="";
-    else 
-      rlogin_port = ":" + rlogin_port;
-    if(ftp_port=="21")
-      ftp_port="";
-    else 
-      ftp_port = ":" + ftp_port;
-    if(irc_port=="6667")
-      irc_port="";
-    else 
-      irc_port = ":" + irc_port;
-    if(nntp_port=="119")
-      nntp_port="";
-    else
-      nntp_port = ":" + nntp_port;
-    if(gopher_port=="70")
-      gopher_port='';
-    else 
-      gopher_port = ":" + gopher_port;        
         
 	template.additional_services ='[' + ("java telnet".link("telnet/")) + '] ';
     template.additional_services+='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
@@ -78,8 +56,11 @@ load("../web/lib/leftnav_html.ssjs");
     template.additional_services+='[' + ("news".link("news://"+host +nntp_port)) + '] ';
     template.additional_services+='[' + ("gopher".link("gopher://"+host +gopher_port)) + '] ';
 
+if(do_rightnav)
+        write_template("rightnav.inc");
 write_template("main.inc");
-write_template("footer.inc");
+if(do_footer)    
+    write_template("footer.inc");
 
 function addcommas(num)
 {
