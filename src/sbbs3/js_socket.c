@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -704,7 +704,7 @@ static JSBool
 js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
-	int32		len;
+	int32		len=512;
 	JSString*	str;
 
 	private_t*	p;
@@ -1222,16 +1222,16 @@ static jsSyncMethodSpec js_socket_functions[] = {
 		"optionally specifying a network interface (via <i>ip_address</i>)")
 	,311
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout]")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=<tt>10.0</tt>]")
 	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
 	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
 	,311
 	},
-	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
+	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
 	,310
 	},
-	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
+	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	JSDOCSTR("")					
 	,JSDOCSTR("accept an incoming connection, returns a new <i>Socket</i> object representing the new connection")
 	,310
 	},
@@ -1244,38 +1244,38 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,JSDOCSTR("send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets")
 	,310
 	},
-	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
 	,JSDOCSTR("send an entire file over the socket")
 	,310
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
-	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number value [,number bytes]")
+	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
 	,JSDOCSTR("send a binary integer over the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
-	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
 	,310
 	},
-	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer")
 	,310
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
-	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>]")
 	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	,310
 	},
-	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[bool binary] [,maxlen or int_size]")
+	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[binary=<tt>false</tt>] [,maxlen=<tt>512</tt> or int_size=<tt>4</tt>]")
 	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
 	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>"
 	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
 	,311
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
-	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
+	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt>]")
 	,JSDOCSTR("receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
@@ -1289,11 +1289,11 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	,310
 	},
-	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument]")
+	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument=<tt>0</tt>]")
 	,JSDOCSTR("send socket IOCTL (advanced)")					
 	,310
 	},
-	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[number timeout] [,bool write]")
+	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
 	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), "
 	"default timeout value is 0.0 seconds (immediate timeout)")
 	,310
