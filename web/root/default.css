@@ -3,7 +3,7 @@
 /* This is the default CSS file */
 
 body { 
-    font-size:10pt; 
+    font-size:12px;; 
     font-family: Arial,sans-serif; 
     color: #333333; 
     line-height: 1; 
@@ -56,7 +56,7 @@ h2 {
 /* User Greeting */
 
 #Greeting { 
-    font: 85% Verdana,sans-serif; 
+    font: 9px Verdana,sans-serif; 
     position: absolute; 
     top: 10px; 
     right: 30px; 
@@ -209,30 +209,39 @@ a.tlink2:hover {
     padding-bottom: 90px; 
     padding-top:10px; 
     background-color: #eeeeee; 
-    font: small Verdana,sans-serif;  
+    font: small Verdana,sans-serif; 
+	margin: 0px; 
 }
 
 #sectionLinks { 
-    margin: 0px; 
+	margin: 0px;
     padding: 0px 10px 0px 0px; 
 }
 
 #sectionLinks ul, li{
+    margin: 0px;
 	list-style: none; 
 }
 
 #sectionLinks a:link, #sectionLinks a:visited { 
-    display: block; 
+	display: block;
+	text-align: left;
     border-top: 1px solid #ffffff; 
     border-left: 1px solid #ffffff; 
     border-bottom: 1px solid #000000; 
     border-right: 1px solid #000000; 
     background-image:  url("/images/default/bg_nav.jpg"); 
-    font-size:small; 
-    font-weight: bold; 
-    padding: 3px 0px 3px 10px; 
+	font-size: 12px;
+    font-weight: bold;
+    padding: 3px 3px 3px 10px;
+	margin-bottom: 0px;
+	margin-top: 0px; 
     color: #21536A; 
     text-decoration:none; 
+}
+
+html>body #sectionLinks a:link, #sectionLinks a:visited { 
+	margin-left: -39px;
 }
 
 #sectionLinks a:hover{ 
