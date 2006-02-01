@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -371,27 +371,27 @@ static JSClass js_internal_class = {
 };
 
 static jsSyncMethodSpec js_functions[] = {
-	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("string script")
+	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
 	,311
 	},		
-	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("bool forced")
+	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("forced=<tt>true</tt>")
 	,JSDOCSTR("perform a garbage collection operation (freeing memory for unused allocated objects), "
 		"if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, "
 		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
 	,311
 	},
-	{"on_exit",			js_on_exit,			1,	JSTYPE_VOID,	JSDOCSTR("string to_eval")
-	,JSDOCSTR("add a string to evaluate/execute (LIFO) upon script's termination")
+	{"on_exit",			js_on_exit,			1,	JSTYPE_VOID,	JSDOCSTR("to_eval")
+	,JSDOCSTR("add a string to evaluate/execute (LIFO stack) upon script's termination")
 	,313
 	},
-	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [, bool fatal]")
+	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [,fatal=<tt>false</tt>]")
 	,JSDOCSTR("report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
 	"if <i>fatal</i> is <i>true</i>, immediately terminates script")
 	,313
 	},
-	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object child")
+	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object")
 	,JSDOCSTR("return the parent of the specified object")
 	,313
 	},

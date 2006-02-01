@@ -1664,8 +1664,8 @@ static char* file_prop_desc[] = {
 
 
 static jsSyncMethodSpec js_file_functions[] = {
-	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
-	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, "
+	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"w+\"</tt>] [,shareable=<tt>false</tt>] [,buffer_length]")
+	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buffer_length</i> defaults to 2048 bytes, "
 		"mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br>"
 		"<tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br>"
 		"<tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br>"
@@ -1683,67 +1683,67 @@ static jsSyncMethodSpec js_file_functions[] = {
 		)
 	,310
 	},		
-	{"close",			js_close,			0,	JSTYPE_VOID,	""
+	{"close",			js_close,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("close file")
 	,310
 	},		
-	{"remove",			js_delete,			0,	JSTYPE_BOOLEAN, ""
+	{"remove",			js_delete,			0,	JSTYPE_BOOLEAN, JSDOCSTR("")
 	,JSDOCSTR("remove the file from the disk")
 	,310
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
-	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
+	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, JSDOCSTR("")
 	,JSDOCSTR("clears the current error value (AKA clearError)")
 	,310
 	},
-	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
+	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("flush/commit buffers to disk")
 	,310
 	},
-	{"rewind",			js_rewind,			0,	JSTYPE_BOOLEAN,	""
+	{"rewind",			js_rewind,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("repositions the file pointer (<i>position</i>) to the beginning of a file "
 		"and clears error and end-of-file indicators")
 	,311
 	},
-	{"truncate",		js_truncate,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[length]")
+	{"truncate",		js_truncate,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[length=<tt>0</tt>]")
 	,JSDOCSTR("changes the file <i>length</i> (default: 0) and repositions the file pointer "
 	"(<i>position</i>) to the new end-of-file")
 	,31301
 	},
-	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
+	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>]")
 	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
 	,310
 	},		
-	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
+	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>]")
 	,JSDOCSTR("unlock file record for exclusive access")
 	,310
 	},		
-	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<i>file_length</i>-<i>file_position</i>]")
 	,JSDOCSTR("read a string from file (optionally unix-to-unix or base64 decoding in the process), "
 		"<i>maxlen</i> defaults to the current length of the file minus the current file position")
 	,310
 	},
-	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
 	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters")
 	,310
 	},		
-	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes]")
+	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt>]")
 	,JSDOCSTR("read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)")
 	,310
 	},
-	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
+	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	JSDOCSTR("")
 	,JSDOCSTR("read all lines into an array of strings")
 	,310
 	},
-	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
+	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
 	,310
 	},
-	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[string text]")
+	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[text]")
 	,JSDOCSTR("write a line-feed terminated string to the file")
 	,310
 	},
-	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes]")
+	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
 	,JSDOCSTR("write a binary integer to the file, default number of <i>bytes</i> is 4 (32-bits)")
 	,310
 	},
@@ -1751,24 +1751,24 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write an array of strings to file")
 	,310
 	},		
-	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("string format [,args]")
+	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("format [,args]")
 	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
 	,310
 	},
-	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	JSDOCSTR("[prefix]")
+	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	JSDOCSTR("[prefix=<i>none</i>]")
 	,JSDOCSTR("parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
 		"and return the section names as an <i>array of strings</i>, "
 		"optionally, only those section names that begin with the specified <i>prefix</i>")
 	,311
 	},
-	{"iniGetKeys",		js_iniGetKeys,		1,	JSTYPE_ARRAY,	JSDOCSTR("[section]")
+	{"iniGetKeys",		js_iniGetKeys,		1,	JSTYPE_ARRAY,	JSDOCSTR("[section=<i>root</i>]")
 	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
 		"and return the key names as an <i>array of strings</i>. "
 		"if <i>section</i> is undefined, returns key names from the <i>root</i> section")
 	,311
 	},
-	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_UNDEF,	JSDOCSTR("section, key [,default]")
+	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_UNDEF,	JSDOCSTR("section, key [,default=<i>none</i>]")
 	,JSDOCSTR("parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
 		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
 		"to parse a key from the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
@@ -1776,13 +1776,13 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"determined by the type of <i>default</i> value specified")
 	,311
 	},
-	{"iniSetValue",		js_iniSetValue,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key, value")
+	{"iniSetValue",		js_iniSetValue,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key, [value=<i>none</i>]")
 	,JSDOCSTR("set the specified <i>key</i> to the specified <i>value</i> in the specified <i>section</i> "
 		"of a <tt>.ini</tt> file. "
 		"to set a key in the <i>root</i> section, pass <i>null</i> for <i>section</i>. ")
 	,312
 	},
-	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section]")
+	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>]")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys and values as properties of an object. "
 		"if <i>section</i> is undefined, returns key and values from the <i>root</i> section")
@@ -1794,7 +1794,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"to write an object in the <i>root</i> section, pass <i>null</i> for <i>section</i>. ")
 	,312
 	},
-	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix]")
+	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix=<i>none</i>]")
 	,JSDOCSTR("parse all sections from a .ini file and return all (non-<i>root</i>) sections "
 		"in an array of objects with each section's keys as properties of each object. "
 		"<i>name_property</i> is the name of the property to create to contain the section's name "
@@ -1803,7 +1803,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"if a <i>prefix</i> is specified, it is removed from each section's name" )
 	,311
 	},
-	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("object array [,name_property]")
+	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("object array [,name_property=<tt>\"name\"</tt>]")
 	,JSDOCSTR("write an array of objects to a .ini file, each object in its own section named "
 	"after the object's <i>name_property</i> (default: <tt>name</tt>)")
 	,312

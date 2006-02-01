@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1335,11 +1335,11 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
 	,311
 	},
-	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
+	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("alias")
 	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	,310
 	},		
-	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [,bool sysop_alias]")
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username [,sysop_alias=<tt>true</tt>]")
 	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
@@ -1349,24 +1349,24 @@ static jsSyncMethodSpec js_system_functions[] = {
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip")
 	,310
 	},
-	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
+	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename, find_string")
 	,JSDOCSTR("search text/filename.can for pseudo-regexp")
 	,310
 	},		
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename, find_string")
 	,JSDOCSTR("search any file for pseudo-regexp")
 	,310
 	},		
-	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone]")
+	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
 	,JSDOCSTR("convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
 	,310
 	},		
-	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
+	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
 	,JSDOCSTR("convert time_t integer into a time string, "
 		"defaults to current time if <i>time</i> not specified")
 	,310
 	},		
-	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
+	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
 	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
 		"defaults to current date if <i>time</i> not specified")
 	,310
@@ -1387,19 +1387,19 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("add an IP address (with comment) to the system's IP filter file")
 	,311
 	},		
-	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("number node")
+	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("node_number")
 	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
 	,311
 	},		
-	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("number node, string message")
+	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("node_number, message_text")
 	,JSDOCSTR("send a node a short text message, delivered immediately")
 	,310
 	},		
-	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("number user")
+	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("user_number")
 	,JSDOCSTR("returns any short text messages waiting for the specified user")
 	,311
 	},		
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, string message")
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, message_text")
 	,JSDOCSTR("sends a user a short text message, delivered immediately or during next logon")
 	,310
 	},		
@@ -1417,7 +1417,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 		"(<b>only functional on UNIX systems</b>)")
 	,311
 	},
-	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string password")
+	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
 	,JSDOCSTR("compares the supplied <i>password</i> against the system password and return's <i>true</i> if it matches")
 	,311
 	},
