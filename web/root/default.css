@@ -1,5 +1,7 @@
 /* $Id$ */
 
+/* This is the default CSS file */
+
 body { 
     font-size:10pt; 
     font-family: Arial,sans-serif; 
@@ -8,6 +10,10 @@ body {
     margin: 0px; 
     padding: 0px; 
     background: #cccccc url("/images/default/bg_grad.jpg") fixed; 
+}
+
+li {
+	list-style: none;
 }
 
 /* Main Anchor Style */
@@ -209,6 +215,10 @@ a.tlink2:hover {
 #sectionLinks { 
     margin: 0px; 
     padding: 0px 10px 0px 0px; 
+}
+
+#sectionLinks ul, li{
+	list-style: none; 
 }
 
 #sectionLinks a:link, #sectionLinks a:visited { 
