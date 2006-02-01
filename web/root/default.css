@@ -7,7 +7,7 @@ body {
     line-height: 1; 
     margin: 0px; 
     padding: 0px; 
-    background: #cccccc url("/graphics/bg_grad.jpg") fixed; 
+    background: #cccccc url("/images/default/bg_grad.jpg") fixed; 
 }
 
 /* Main Anchor Style */
@@ -72,26 +72,26 @@ h2 {
     padding: 0px; 
     margin-left: auto; 
     margin-right: auto; 
-    background-image:  url("/graphics/glbnav_background.gif"); 
+    background-image:  url("/images/default/glbnav_background.gif"); 
 }
 
 td.ltn { 
     text-align:left; 
     width:1%; 
     background-color: #cccccc; 
-    background-image: url(graphics/tnav_bg.gif); 
+    background-image: url(/images/default/tnav_bg.gif); 
 }
 
 td.tn { 
     background-color: #cccccc; 
-    background-image: url(graphics/tnav_bg.gif); 
+    background-image: url(/images/default/tnav_bg.gif); 
 }
 
 td.rtn { 
     text-align:right; 
     width:1%; 
     background-color: #cccccc; 
-    background-image: url(graphics/tnav_bg.gif); 
+    background-image: url(/images/default/tnav_bg.gif); 
 }
 
 #Top_Nav img { 
@@ -149,7 +149,7 @@ a.tlink2, a.tlink2:visited {
 }
 
 a.tlink:hover { 
-    background-image:  url("/graphics/tnav_selected.gif"); 
+    background-image:  url("/images/default/tnav_selected.gif"); 
     text-decoration: underline; 
 }
 
@@ -196,7 +196,7 @@ a.tlink2:hover {
 /* Site Navigation (Left Nav) */
 
 #pageNav { 
-    background-image:url(graphics/sync_pbgj1_grey_bg.gif); 
+    background-image:url(/images/default/sync_pbgj1_grey_bg.gif); 
     background-position: bottom left; 
     background-repeat:no-repeat; 
     width:180px; 
@@ -217,7 +217,7 @@ a.tlink2:hover {
     border-left: 1px solid #ffffff; 
     border-bottom: 1px solid #000000; 
     border-right: 1px solid #000000; 
-    background-image:  url("/graphics/bg_nav.jpg"); 
+    background-image:  url("/images/default/bg_nav.jpg"); 
     font-size:small; 
     font-weight: bold; 
     padding: 3px 0px 3px 10px; 
