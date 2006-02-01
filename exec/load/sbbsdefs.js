@@ -295,6 +295,7 @@ var   UFLAG_Z		=(1<<25)
 						    	/********************************************/
     							/* Bits in 'mode' for getkey and getstr     */
 							    /********************************************/
+var   K_NONE		=0			/* No special behavior						*/
 var   K_UPPER 		=(1<<0)		/* Converts all letters to upper case		*/
 var   K_UPRLWR		=(1<<1)		/* Upper/Lower case automatically			*/
 var   K_NUMBER		=(1<<2)		/* Allow numbers only						*/
@@ -322,9 +323,10 @@ var   K_NOSPIN      =(1<<21)	/* Do not honor user's spinning cursor		*/
 						    	/********************************************/
     							/* Bits in 'mode' for putmsg and printfile  */
 							    /********************************************/
+var   P_NONE		=0			/* No special behavior						*/
 var   P_NOABORT  	=(1<<0)		/* Disallows abortion of a message          */
 var   P_SAVEATR		=(1<<1)		/* Save the new current attributres after	*/
-					    		/* msg has printed */
+					    		/* msg has printed							*/
 var   P_NOATCODES	=(1<<2)		/* Don't allow @ codes                      */
 var   P_OPENCLOSE	=(1<<3)		/* Open and close the file					*/
 var   P_NOPAUSE		=(1<<4)		/* Disable screen pause						*/
@@ -505,6 +507,7 @@ var   FILE_ANON 	=(1<<1)		/* Anonymous upload							*/
 					    		/********************************************/
 								/* Bits in the mode of bbs.exec()           */
 					    		/********************************************/
+var	  EX_NONE		=0			/* No special behavior						*/
 var   EX_SH			=(1<<0)		/* Use system shell to load other process   */
 var   EX_OUTR		=(1<<1)		/* Copy DOS output to remote                */
 var   EX_OUTL 		=(1<<2)		/* Use _lputc() for local DOS output		*/
@@ -534,6 +537,7 @@ var   EVENT_DOWNLOAD=7			/* Execute after file downloaded			*/
 					    		/********************************************/
 								/* Bits in mode of bbs.telnet_gate()		*/
 					    		/********************************************/
+var   TG_NONE		=0			/* No special behavior						*/
 var   TG_ECHO		=(1<<0)		/* Turn on telnet echo						*/
 var   TG_CRLF		=(1<<1)		/* Expand sole CR to CRLF					*/
 var   TG_LINEMODE	=(1<<2)		/* Send entire lines only					*/
@@ -555,6 +559,7 @@ var TELNET_MODE_OFF	=(1<<3)		/* Not a telnet connection					*/
 					    		/********************************************/
 								/* Bits in mode of bbs.scan_posts()			*/
 					    		/********************************************/
+var SCAN_READ		=0			/* Just normal read prompt					*/
 var	SCAN_CONST		=(1<<0)		/* Continuous message scanning				*/
 var	SCAN_NEW		=(1<<1)		/* New scanning								*/
 var	SCAN_BACK		=(1<<2)		/* Scan the last message if no new			*/
@@ -576,6 +581,7 @@ var SCAN_CFG_YONLY	=(1<<8)		/* Auto-scan for new messages to you only	*/
 								/* Bits in mode for bbs.scan_dirs()			*/
 								/* bbs.list_files() & bbs.list_file_info()	*/
 								/********************************************/
+var FL_NONE			=0			/* No special behavior						*/
 var FL_ULTIME		=(1<<0)		/* List files by upload time                */
 var FL_DLTIME		=(1<<1)		/* List files by download time              */
 var FL_NO_HDR		=(1<<2)		/* Don't list directory header              */
@@ -693,6 +699,7 @@ var MAIL_ALL			=3		/* all mail (ignores usernumber arg)		*/
 								/********************************************/
 								/* 'mode' bits for bbs.email()/netmail()	*/
 								/********************************************/
+var WM_NONE			=0			/* No special behavior						*/
 var WM_EXTDESC		=(1<<0)		/* Writing extended file description		*/
 var WM_EMAIL		=(1<<1)		/* Writing e-mail							*/
 var WM_NETMAIL		=(1<<2)		/* Writing NetMail							*/
