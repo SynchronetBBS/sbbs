@@ -2436,7 +2436,41 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			find=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
 	}
 
+	if(*find)
+		mode|=SCAN_FIND;
+
 	*rval = BOOLEAN_TO_JSVAL(sbbs->scanposts(subnum,mode,find)==0);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_listmsgs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		find="";
+	long		mode=0;
+	long		start=0;
+	uint		subnum;
+	sbbs_t*		sbbs;
+	uintN		argn=0;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = INT_TO_JSVAL(0);
+
+	subnum=get_subnum(cx,sbbs,argv[argn++]);
+
+	if(subnum>=sbbs->cfg.total_subs) 	// invalid sub-board
+		return(JS_TRUE);
+
+	if(JSVAL_IS_NUMBER(argv[argn]))
+		JS_ValueToInt32(cx,argv[argn++],(int32*)&mode);
+	if(JSVAL_IS_NUMBER(argv[argn]))
+		JS_ValueToInt32(cx,argv[argn++],(int32*)&start);
+	if(JSVAL_IS_STRING(argv[argn]))
+		find=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
+
+	*rval = INT_TO_JSVAL(sbbs->listsub(subnum,mode,start,find));
 	return(JS_TRUE);
 }
 
@@ -2697,10 +2731,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("scan directories for files")
 	,310
 	},		
-	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,string find]")
-	,JSDOCSTR("scan posts in the specified message sub-board (number or internal code), "
-		"optionally search for 'find' string")
+	{"scan_posts",		js_scanposts,		1,	JSTYPE_ALIAS },
+	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,string find]")
+	,JSDOCSTR("scan messages in the specified message sub-board (number or internal code), "
+		"optionally search for 'find' string (AKA scan_posts)")
 	,310
+	},		
+	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,message_number=<tt>0</tt>] [,string find]")
+	,JSDOCSTR("list messages in the specified message sub-board (number or internal code), "
+		"optionally search for 'find' string, returns number of messages listed")
+	,31301
 	},		
 	/* menuing */
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
