@@ -1454,6 +1454,7 @@ void output_thread(void* arg)
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	fd_set		socket_set;
 	struct timeval tv;
+	ulong		mss=IO_THREAD_BUF_SIZE;
 
 	thread_up(TRUE /* setuid */);
 
@@ -1468,13 +1469,36 @@ void output_thread(void* arg)
     sbbs->output_thread_running = true;
 	sbbs->console|=CON_R_ECHO;
 
+#ifdef TCP_MAXSEG
+	/*
+	 * Auto-tune the highwater mark to be the negotiated MSS for the
+     * socket (when possible)
+	 */
+	if(!sbbs->outbuf.highwater_mark) {
+		socklen_t	sl;
+		sl=sizeof(i);
+		if(!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_MAXSEG, &i, &sl)) {
+			/* Check for sanity... */
+			if(i>100) {
+				sbbs->outbuf.highwater_mark=i;
+				lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
+				mss=sbbs->outbuf.highwater_mark;
+				if(mss>IO_THREAD_BUF_SIZE) {
+					mss=IO_THREAD_BUF_SIZE;
+					lprintf(LOG_DEBUG,"MSS (%d) is higher than IO_THREAD_BUF_SIZE (%d)",i,IO_THREAD_BUF_SIZE);
+				}
+			}
+		}
+	}
+#endif
+
 	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
 		 * at this point, but it would get too clumsy imho - Deuce
 		 *
 		 * Actually, another option would just be to have the size
-		 * of the linear buffer equal to the MTU... any larger and
+		 * of the linear buffer equal to the MSS... any larger and
 		 * you could have small sends off the end.  this would
 		 * probobly be even clumbsier
 		 */
@@ -1503,6 +1527,9 @@ void output_thread(void* arg)
 					,node, avail, sizeof(buf));
                	avail=sizeof(buf);
            	}
+			/* If we know the MSS, use it as the max send() size. */
+			if(avail>mss)
+				avail=mss;
            	buftop=RingBufRead(&sbbs->outbuf, buf, avail);
            	bufbot=0;
 		}
