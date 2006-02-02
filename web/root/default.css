@@ -2,6 +2,7 @@
 
 /* This is the default CSS file */
 
+
 body { 
     font-size:12px;; 
     font-family: Arial,sans-serif; 
@@ -85,7 +86,7 @@ td.ltn {
     text-align:left; 
     width:1%; 
     background-color: #cccccc; 
-    background-image: url(/images/default/tnav_bg.gif); 
+    background-image: url("/images/default/tnav_bg.gif"); 
 }
 
 td.tn { 
@@ -223,7 +224,7 @@ a.tlink2:hover {
 	list-style: none; 
 }
 
-#sectionLinks a:link, #sectionLinks a:visited { 
+#sectionLinks a:link { 
 	display: block;
 	text-align: left;
     border-top: 1px solid #ffffff; 
@@ -238,6 +239,16 @@ a.tlink2:hover {
 	margin-top: 0px; 
     color: #21536A; 
     text-decoration:none; 
+}
+
+#sectionLinks a:visited { 
+	display: block;
+    border-top: 1px solid #ffffff; 
+    border-left: 1px solid #ffffff; 
+    border-bottom: 1px solid #000000; 
+    border-right: 1px solid #000000; 
+    padding: 3px 3px 3px 10px;
+    background-image:  url("/images/default/bg_nav.jpg"); 
 }
 
 html>body #sectionLinks a:link, #sectionLinks a:visited { 
@@ -266,8 +277,7 @@ html>body #sectionLinks a:link, #sectionLinks a:visited {
     border-left: 1px solid #ffffff; 
     border-bottom: 1px solid #000000; 
     border-right: 1px solid #000000; 
-    font-weight: bold; 
-    font-size:smaller; 
+    font-size:10px;; 
     padding: 3px 30px 3px 10px; 
     color: #7788ff; 
     text-decoration: none; 

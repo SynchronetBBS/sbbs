@@ -20,7 +20,7 @@ var show_ip=true;
 /*       If you want to remove QWk FTP downloads       */
 /* change this to false.  Moved from leftnav_html.ssjs */
 
-var doQWK = false;
+var doQWK = true;
 
 /* End of User Changable Variables */
 

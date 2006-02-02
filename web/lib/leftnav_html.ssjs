@@ -15,7 +15,7 @@
             host=host.slice(0,port);
     template.ftp_url += host; 
     if(ftp_port!=21)
-        template.ftp_url += ":" + ftp_port;
+        template.ftp_url += ftp_port;
     template.ftpidx ="/00index.html?$" + new Date().valueOf().toString(36);
     template.ftpqwk = "/" + system.qwk_id.toLowerCase() + ".qwk";
  }
@@ -31,21 +31,16 @@ else
 
 if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     template.leftnav.push({html: '<li><a href="/msgs">Message Groups</a></li>' });
-
+    
 /*
-
+    
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/msgs.ssjs'  || http_request.virtual_path == '/msgs/post.ssjs' || http_request.virtual_path == '/msgs/reply.ssjs' || http_request.virtual_path == '/msgs/savemsg.ssjs' || http_request.virtual_path == '/msgs/subinfo.ssjs' || http_request.virtual_path == '/msgs/subs.ssjs')) {
-  template.leftnav.push({ html: '<span class="sectionSubLinks">' });
   for(s in msg_area.grp_list)
-        template.leftnav.push({html: '<li class="sectionSubLinks"><a class="sectionSubLinks" href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
-  template.leftnav.push({ html: '</span>' });
+        template.leftnav.push({html: '<li><a href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
 }
-
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs')) {
-    template.leftnav.push({ html: '<span class="sectionSubLinks">' });
     for(s in msg_area.grp_list)
-            template.leftnav.push({html: '<li class="sectionSubLinks"><a class="sectionSubLinks" href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
-    template.leftnav.push({ html: '</span>' });
+            template.leftnav.push({html: '<li><a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
 }
 
 */
@@ -58,7 +53,7 @@ if(user.number==0 || user.security.restrictions&UFLAG_G) {
     }
 else
     if(doQWK)
-    template.leftnav.push({ html: '<li><a href="' + template.ftp_url + template.ftpqwk + '">Download QWK Packet</a></li>' });
+    template.leftnav.push({ html: '<li><!--[if gte IE 7]><span style="margin-left: 39px;"><![endif]--><a href="' + template.ftp_url + template.ftpqwk + '">Download QWK</a><!--[if gte IE 7]></span><![endif]--></li>' });
 //  template.leftnav.push({ html: '</ul>' });
 
 write_template("leftnav.inc");
