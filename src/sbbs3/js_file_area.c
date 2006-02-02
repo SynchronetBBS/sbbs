@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -397,24 +397,26 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "link", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ul_ar,user))
-				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			if(user==NULL 
+				|| (chk_ar(cfg,cfg->dir[d]->ul_ar,user) && !(user->rest&FLAG('U'))))
+				val=JSVAL_TRUE;
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "can_upload", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->dir[d]->dl_ar,user))
-				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			if(user==NULL 
+				|| (chk_ar(cfg,cfg->dir[d]->dl_ar,user) && !(user->rest&FLAG('D'))))
+				val=JSVAL_TRUE;
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "can_download", &val))
 				return(NULL);
 
 			if(is_download_free(cfg,d,user))
-				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+				val=JSVAL_TRUE;
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "is_exempt", &val))
 				return(NULL);
 
@@ -422,9 +424,9 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				&& (user->level>=SYSOP_LEVEL 
 					|| (cfg->dir[d]->op_ar[0]!=0 
 						&& chk_ar(cfg,cfg->dir[d]->op_ar,user))))
-				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+				val=JSVAL_TRUE;
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
 				return(NULL);
 
