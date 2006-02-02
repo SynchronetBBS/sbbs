@@ -26,200 +26,261 @@ load("str_cmds.js");
 var str;
 const LBShell_Attr=0x37;
 
-var mainbar=new Lightbar;
-mainbar.direction=1;
-mainbar.xpos=2;
-mainbar.ypos=1;
-mainbar.hotkeys=KEY_DOWN+";";
-mainbar.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T"));
+function Mainbar()
+{
+	this.direction=1;
+	this.xpos=2;
+	this.ypos=1;
+	this.hotkeys=KEY_DOWN+";";
+	this.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T"));
+	this.add("|Settings","S");
+	this.add("|Email","E");
+	this.add("|Messages","M");
+	this.add("|Chat","C",undefined,undefined,undefined,user.compare_ars("REST C"));
+	this.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("REST X"));
+	this.add("|Info","I");
+	this.add("|Goodbye","G");
+	this.add("Commands",";");
+}
+Mainbar.prototype=new Lightbar;
+var mainbar=new Mainbar;
+
 	var filemenu=new Lightbar;
-	filemenu.xpos=1;
-	filemenu.ypos=2;
-	filemenu.lpadding="\xb3";
-	filemenu.rpadding="\xb3";
-	filemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	filemenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	filemenu.add("|List files","L",19);
-	filemenu.add("|Download","D",19,undefined,undefined,user.compare_ars("REST D"));
-	filemenu.add("File |Info       -->","I",19);
-		var fileinfo=new Lightbar;
-		fileinfo.xpos=22;
-		fileinfo.ypos=4;
-		fileinfo.lpadding="\xb3";
-		fileinfo.rpadding="\xb3";
-		fileinfo.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-		fileinfo.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		fileinfo.add("File |Transfer Policy","T",32);
-		fileinfo.add("Information on Current |Directory","D",32);
-		fileinfo.add("|Users With Access to Current Dir","U",32);
-		fileinfo.add("|Your File Transfer Statistics","Y",32);
-		fileinfo.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	filemenu.add("|Extended File Info","E",19);
-	filemenu.add("|Search Descriptions","S",19);
-	filemenu.add("Search |Filenames","F",19);
-	filemenu.add("|Change Directory","C",19);
-	filemenu.add("|New File Scan","N",19);
-	filemenu.add("|Batch Transfer Menu","B",19,undefined,undefined,user.compare_ars("REST U AND REST D"));
-	filemenu.add("|Remove/Edit File","R",19);
-	filemenu.add("|Upload File","U",19,undefined,undefined,user.compare_ars("REST U"));
-	filemenu.add("|View File","V",19);
-	filemenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("|Settings","S");
-	var settingsmenu=new Lightbar;
-	settingsmenu.xpos=7;
-	settingsmenu.ypos=2;
-	settingsmenu.lpadding="\xb3";
-	settingsmenu.rpadding="\xb3";
-	settingsmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	settingsmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	settingsmenu.add("|User Config","U",24);
-	settingsmenu.add("|Message Scan Config","M",24);
-	settingsmenu.add("To |You Scan Config","Y",24);
-	settingsmenu.add("Message |Pointers","P",24);
-	settingsmenu.add("|File Xfer Config     -->","F",24);
-		var xfercfgmenu=new Lightbar;
-		xfercfgmenu.xpos=33;
-		xfercfgmenu.ypos=6;
-		xfercfgmenu.lpadding="\xb3";
-		xfercfgmenu.rpadding="\xb3";
-		xfercfgmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-		xfercfgmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		xfercfgmenu.add("|Set New Scan Time","S",28);
-		xfercfgmenu.add("Toggle |Batch Flag","B",28);
-		xfercfgmenu.add("Toggle |Extended Descriptions","E",28);
-		xfercfgmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	settingsmenu.add("|Re-Init Message Pointers","R",24);
-	settingsmenu.add("|Toggle Paging","T",24);
-	settingsmenu.add("|Activity Alerts On/Off","A",24);
-	settingsmenu.add("Minute |Bank","B",24);
-	settingsmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("|Email","E");
-	var emailmenu=new Lightbar;
-	emailmenu.xpos=17;
-	emailmenu.ypos=2;
-	emailmenu.lpadding="\xb3";
-	emailmenu.rpadding="\xb3";
-	emailmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	emailmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	emailmenu.add("|Send Mail","S",24,undefined,undefined,user.compare_ars("REST E"));
-	emailmenu.add("Send |NetMail","N",24,undefined,undefined,user.compare_ars("REST M OR REST E"));
-	emailmenu.add("Send |Feedback to Sysop","F",24,undefined,undefined,user.compare_ars("REST S"));
-	emailmenu.add("|Read Mail Sent To You","R",24);
-	emailmenu.add("Read Mail |You Have Sent","Y",24,undefined,undefined,user.compare_ars("REST K"));
-	emailmenu.add("|Upload File To a Mailbox","U",24);
-	emailmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("|Messages","M");
-	var messagemenu=new Lightbar;
-	messagemenu.xpos=24;
-	messagemenu.ypos=2;
-	messagemenu.lpadding="\xb3";
-	messagemenu.rpadding="\xb3";
-	messagemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	messagemenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	messagemenu.add("|New Message Scan","N",24);
-	messagemenu.add("|Read Message Prompt","R",24);
-	messagemenu.add("|Continuous New Scan","C",24);
-	messagemenu.add("|Browse New Scan","B",24);
-	messagemenu.add("|QWK Packet Transfer","Q",24);
-	messagemenu.add("|Post a Message","P",24,undefined,undefined,user.compare_ars("REST P"));
+function Filemenu()
+{
+	this.xpos=1;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|List files","L",19);
+	this.add("|Download","D",19,undefined,undefined,user.compare_ars("REST D"));
+	this.add("File |Info       -->","I",19);
+	this.add("|Extended File Info","E",19);
+	this.add("|Search Descriptions","S",19);
+	this.add("Search |Filenames","F",19);
+	this.add("|Change Directory","C",19);
+	this.add("|New File Scan","N",19);
+	this.add("|Batch Transfer Menu","B",19,undefined,undefined,user.compare_ars("REST U AND REST D"));
+	this.add("|Remove/Edit File","R",19);
+	this.add("|Upload File","U",19,undefined,undefined,user.compare_ars("REST U"));
+	this.add("|View File","V",19);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Filemenu.prototype=new Lightbar;
+var filemenu=new Filemenu;
+
+function Fileinfo()
+{
+	this.xpos=22;
+	this.ypos=4;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("File |Transfer Policy","T",32);
+	this.add("Information on Current |Directory","D",32);
+	this.add("|Users With Access to Current Dir","U",32);
+	this.add("|Your File Transfer Statistics","Y",32);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Fileinfo.prototype=new Lightbar;
+var fileinfo=new Fileinfo;
+
+function Settingsmenu()
+{
+	this.xpos=7;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|User Config","U",24);
+	this.add("|Message Scan Config","M",24);
+	this.add("To |You Scan Config","Y",24);
+	this.add("Message |Pointers","P",24);
+	this.add("|File Xfer Config     -->","F",24);
+	this.add("|Re-Init Message Pointers","R",24);
+	this.add("|Toggle Paging","T",24);
+	this.add("|Activity Alerts On/Off","A",24);
+	this.add("Minute |Bank","B",24);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Settingsmenu.prototype=new Lightbar;
+var settingsmenu=new Settingsmenu;
+
+function Xfercfgmenu()
+{
+	this.xpos=33;
+	this.ypos=6;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|Set New Scan Time","S",28);
+	this.add("Toggle |Batch Flag","B",28);
+	this.add("Toggle |Extended Descriptions","E",28);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Xfercfgmenu.prototype=new Lightbar;
+var xfercfgmenu=new Xfercfgmenu;
+
+function Emailmenu()
+{
+	this.xpos=17;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|Send Mail","S",24,undefined,undefined,user.compare_ars("REST E"));
+	this.add("Send |NetMail","N",24,undefined,undefined,user.compare_ars("REST M OR REST E"));
+	this.add("Send |Feedback to Sysop","F",24,undefined,undefined,user.compare_ars("REST S"));
+	this.add("|Read Mail Sent To You","R",24);
+	this.add("Read Mail |You Have Sent","Y",24,undefined,undefined,user.compare_ars("REST K"));
+	this.add("|Upload File To a Mailbox","U",24);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Emailmenu.prototype=new Lightbar;
+var emailmenu=new Emailmenu;
+
+function Messagemenu()
+{
+	this.xpos=24;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|New Message Scan","N",24);
+	this.add("|Read Message Prompt","R",24);
+	this.add("|Continuous New Scan","C",24);
+	this.add("|Browse New Scan","B",24);
+	this.add("|QWK Packet Transfer","Q",24);
+	this.add("|Post a Message","P",24,undefined,undefined,user.compare_ars("REST P"));
 	if(user.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
-		messagemenu.items[6].disabed=true;
-	messagemenu.add("Read/Post |Auto-Message","A",24);
-	messagemenu.add("|Find Text in Messages","F",24);
-	messagemenu.add("|Scan For Messages To You","S",24);
-	messagemenu.add("|Jump To New Sub-Board","J",24);
-	messagemenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("|Chat","C",undefined,undefined,undefined,user.compare_ars("REST C"));
-	var chatmenu=new Lightbar;
-	chatmenu.xpos=34;
-	chatmenu.ypos=2;
-	chatmenu.lpadding="\xb3";
-	chatmenu.rpadding="\xb3";
-	chatmenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	chatmenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	chatmenu.add("|Join/Initiate Multinode Chat","J",39);
-	chatmenu.add("Join/Initiate |Private Node to Node Chat","P",39);
-	chatmenu.add("|Chat With The SysOp","C",39);
-	chatmenu.add("|Talk With The System Guru","T",39);
-	chatmenu.add("|Finger (Query) A Remote User or System","F",39);
-	chatmenu.add("I|RC Chat","R",39);
-	chatmenu.add("|InterBBS Instant Messages","I",39);
-	chatmenu.add("|Toggle Split Screen Private Chat","S",39);
-	chatmenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("REST X"));
-	// Generate menus of available xtrn sections.
-	var xtrnsec=new Lightbar;
-	var bars40="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
-	xtrnsec.xpos=40;
-	xtrnsec.ypos=2;
-	xtrnsec.lpadding="\xb3";
-	xtrnsec.rpadding="\xb3";
-	xtrnsec.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	var xtrnsecs=new Array(xtrn_area.sec_list.length);
+		this.items[6].disabed=true;
+	this.add("Read/Post |Auto-Message","A",24);
+	this.add("|Find Text in Messages","F",24);
+	this.add("|Scan For Messages To You","S",24);
+	this.add("|Jump To New Sub-Board","J",24);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Messagemenu.prototype=new Lightbar;
+var messagemenu=new Messagemenu;
+
+function Chatmenu()
+{
+	this.xpos=34;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|Join/Initiate Multinode Chat","J",39);
+	this.add("Join/Initiate |Private Node to Node Chat","P",39);
+	this.add("|Chat With The SysOp","C",39);
+	this.add("|Talk With The System Guru","T",39);
+	this.add("|Finger (Query) A Remote User or System","F",39);
+	this.add("I|RC Chat","R",39);
+	this.add("|InterBBS Instant Messages","I",39);
+	this.add("|Toggle Split Screen Private Chat","S",39);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Chatmenu.prototype=new Lightbar;
+var chatmenu=new Chatmenu;
+
+var bars40="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
+// Generate menus of available xtrn sections.
+function Xtrnsecs()
+{
+	this.xpos=40;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
 	var xtrnsecwidth=0;
 	var j;
-	var k;
-	var xtrnsecprogwidth=0;
 	for(j=0; j<xtrn_area.sec_list.length && j<console.screen_rows-2; j++) {
-		xtrnsecprogwidth=0;
 		if(xtrn_area.sec_list[j].name.length > xtrnsecwidth)
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
-		// Generate the menu for each section
-		xtrnsecs[j]=new Lightbar;
-		xtrnsecs[j].hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
-		for(k=0; k<xtrn_area.sec_list[j].prog_list.length; k++) {
-			if(xtrn_area.sec_list[j].prog_list[k].name.length > xtrnsecprogwidth)
-				xtrnsecprogwidth=xtrn_area.sec_list[j].prog_list[k].name.length;
-		}
-		if(xtrnsecprogwidth>37)
-			xtrnsecprogwidth=37;
-		if(xtrn_area.sec_list[j].prog_list.length+3+j <= console.screen_rows)
-			xtrnsecs[j].ypos=j+2;
-		else
-			xtrnsecs[j].ypos=console.screen_rows-k-1;
-		xtrnsecs[j].xpos=40-xtrnsecprogwidth-2;
-		xtrnsecs[j].lpadding="\xb3";
-		xtrnsecs[j].rpadding="\xb3";
-		xtrnsecs[j].add("\xda"+bars40.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
-		for(k=0; k<xtrn_area.sec_list[j].prog_list.length && k<console.screen_rows-3; k++)
-			xtrnsecs[j].add(xtrn_area.sec_list[j].prog_list[k].name,k.toString(),xtrnsecprogwidth);
-		xtrnsecs[j].add("\xc0"+bars40.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 	}
 	xtrnsecwidth += 4;
 	if(xtrnsecwidth>37)
 		xtrnsecwidth=37;
-	xtrnsec.add("\xda"+bars40.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
+	this.add("\xda"+bars40.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list.length; j++)
-		xtrnsec.add("<-- "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
-	xtrnsec.add("\xc0"+bars40.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
-mainbar.add("|Info","I");
-	var infomenu=new Lightbar;
-	infomenu.xpos=51;
-	infomenu.ypos=2;
-	infomenu.lpadding="\xb3";
-	infomenu.rpadding="\xb3";
-	infomenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	infomenu.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	infomenu.add("System |Information","I",25);
-	infomenu.add("Synchronet |Version Info","V",25);
-	infomenu.add("Info on Current |Sub-Board","S",25);
-	infomenu.add("|Your Statistics","Y",25);
-	infomenu.add("<-- |User Lists","U",25);
-		var userlists=new Lightbar;
-		userlists.xpos=37;
-		userlists.ypos=6;
-		userlists.lpadding="\xb3";
-		userlists.rpadding="\xb3";
-		userlists.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
-		userlists.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		userlists.add("|Logons Today","L",12);
-		userlists.add("|Sub-Board","S",12);
-		userlists.add("|All","A",12);
-		userlists.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-	infomenu.add("|Text Files","T",25);
-	infomenu.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-mainbar.add("|Goodbye","G");
-mainbar.add("Commands",";");
+		this.add("<-- "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
+	this.add("\xc0"+bars40.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
+}
+Xtrnsecs.prototype=new Lightbar;
+var xtrnsec=new Xtrnsecs;
+
+function Xtrnsec(sec)
+{
+	var j=0;
+
+	xtrnsecprogwidth=0;
+	this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
+		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
+			xtrnsecprogwidth=xtrn_area.sec_list[sec].prog_list[j].name.length;
+	}
+	if(xtrnsecprogwidth>37)
+		xtrnsecprogwidth=37;
+	if(xtrn_area.sec_list[sec].prog_list.length+3+sec <= console.screen_rows)
+		this.ypos=sec+2;
+	else
+		this.ypos=console.screen_rows-j-1;
+	this.xpos=40-xtrnsecprogwidth-2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.add("\xda"+bars40.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
+		this.add(xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+	this.add("\xc0"+bars40.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
+}
+Xtrnsec.prototype=new Lightbar;
+var xtrnsecs=new Array();
+var j;
+for(j=0; j<xtrn_area.sec_list.length; j++)
+	xtrnsecs[j]=new Xtrnsec(j);
+
+function Infomenu()
+{
+	this.xpos=51;
+	this.ypos=2;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("System |Information","I",25);
+	this.add("Synchronet |Version Info","V",25);
+	this.add("Info on Current |Sub-Board","S",25);
+	this.add("|Your Statistics","Y",25);
+	this.add("<-- |User Lists","U",25);
+	this.add("|Text Files","T",25);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Infomenu.prototype=new Lightbar;
+var infomenu=new Infomenu;
+
+function Userlists()
+{
+	this.xpos=37;
+	this.ypos=6;
+	this.lpadding="\xb3";
+	this.rpadding="\xb3";
+	this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
+	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+	this.add("|Logons Today","L",12);
+	this.add("|Sub-Board","S",12);
+	this.add("|All","A",12);
+	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+}
+Userlists.prototype=new Lightbar;
+var userlists=new Userlists;
 
 draw_main(true);
 var next_key='';
