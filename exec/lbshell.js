@@ -684,7 +684,11 @@ while(1) {
 				switch(settingsmenu.getval()) {
 					case 'U':
 						clear_screen();
+						var oldshell=user.command_shell;
 						bbs.user_config();
+						/* Still using this shell? */
+						if(user.command_shell != oldshell)
+							exit(0);
 						draw_main(true);
 						break;
 					case 'M':
