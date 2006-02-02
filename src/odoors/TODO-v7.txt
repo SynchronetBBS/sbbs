@@ -15,3 +15,4 @@ Features/Changes which will break the API and so must go into v7
   buffering ala Synchronet.
 - Change to 24-line default.  This means fixing the personalities, and the
   screen stuff.
+- Autodetect if passed handle is a socket (Like I did for MyCroft doors)
