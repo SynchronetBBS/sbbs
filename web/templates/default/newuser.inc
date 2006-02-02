@@ -1,6 +1,7 @@
 <!-- $Id$ -->
 
-<!-- Main Content -->  
+<!-- Main Content -->
+
 <td class="main" valign="top" >    
 <center>
     (<b>%%required%%</b> indicates required fields)<br /><br />
@@ -62,7 +63,7 @@
             <td class="newuser">&nbsp;</td>
             <td class="newuser">
                 <br />
-                <input type="button" value="Join!" />
+                <input type="image" src="@@image_dir@@/join.gif" value="Join!" />
             </td>
             </tr>
         </table>
