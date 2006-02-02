@@ -553,16 +553,16 @@ public:
 	BOOL	newuser(void);					/* Get new user							*/
 	void	backout(void);
 
-	/* readmsgs.cpp */
-	int		scanposts(uint subnum, long mode, char *find);	/* Scan sub-board */
-	int		searchsub(uint subnum, char *search);	/* Search for string on sub */
-	int		searchsub_toyou(uint subnum);
+	/* text_sec.cpp */
 	int		text_sec(void);						/* Text sections */
-	void	listmsgs(int subnum, post_t * post, long i, long posts);
+
+	/* readmsgs.cpp */
+	int		scanposts(uint subnum, long mode, char* find);	/* Scan sub-board */
+	long	listsub(uint subnum, long mode, long start, char* search);
+	long	listmsgs(uint subnum, long mode, post_t* post, long start, long posts);
+	long	searchposts(uint subnum, post_t* post, long start, long msgs, char* find);
+	long	showposts_toyou(post_t* post, ulong start, long posts);
 	void	msghdr(smbmsg_t* msg);
-	int		searchposts(uint subnum, post_t * post, long start, long msgs
-				,char *search);
-	void	showposts_toyou(post_t * post, ulong start, long posts);
 
 	/* chat.cpp */
 	void	chatsection(void);

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -43,15 +43,15 @@ int sbbs_t::sub_op(uint subnum)
 }
 
 
-void sbbs_t::listmsgs(int subnum, post_t *post, long i, long posts)
+long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 {
 	char ch;
 	smbmsg_t msg;
-
+	long listed=0;
 
 	bputs(text[MailOnSystemLstHdr]);
 	msg.total_hfields=0;
-	while(i<posts && !msgabort()) {
+	for(;i<posts && !msgabort();i++) {
 		if(msg.total_hfields)
 			smb_freemsgmem(&msg);
 		msg.total_hfields=0;
@@ -59,6 +59,8 @@ void sbbs_t::listmsgs(int subnum, post_t *post, long i, long posts)
 		if(!loadmsg(&msg,post[i].number))
 			break;
 		smb_unlockmsghdr(&smb,&msg);
+		if(mode&SCAN_NEW && msg.hdr.number<=subscan[subnum].ptr)
+			continue;
 		if(msg.hdr.attr&MSG_DELETE)
 			ch='-';
 		else if((!stricmp(msg.to,useron.alias) || !stricmp(msg.to,useron.name))
@@ -76,8 +78,10 @@ void sbbs_t::listmsgs(int subnum, post_t *post, long i, long posts)
 			,msg.subj);
 		smb_freemsgmem(&msg);
 		msg.total_hfields=0;
-		i++; 
+		listed++;
 	}
+
+	return(listed);
 }
 
 char *binstr(uchar *buf, ushort length)
@@ -378,8 +382,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
 
@@ -447,14 +451,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_READ,smb.file,i);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
 	smb_unlocksmbhdr(&smb);
@@ -793,7 +797,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				domsg=0;
 				if((i=get_start_msg(this,&smb))<0)
 					break;
-				listmsgs(subnum,post,i,smb.msgs);
+				listmsgs(subnum,0,post,i,smb.msgs);
 				sys_status&=~SS_ABORT;
 				break;
 			case 'M':   /* Reply to last post in mail */
@@ -870,7 +874,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				i=smb.curmsg+11;
 				if(i>smb.msgs)
 					i=smb.msgs;
-				listmsgs(subnum,post,smb.curmsg+1,i);
+				listmsgs(subnum,0,post,smb.curmsg+1,i);
 				smb.curmsg=i-1;
 				if(subscan[subnum].ptr<post[smb.curmsg].number)
 					subscan[subnum].ptr=post[smb.curmsg].number;
@@ -1106,39 +1110,43 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 }
 
 /****************************************************************************/
-/* This function will search the specified sub-board for messages that      */
-/* contain the string 'search'.                                             */
-/* Returns number of messages found.                                        */
+/* This function lists all messages in sub-board							*/
+/* Returns number of messages found/displayed.                              */
 /****************************************************************************/
-int sbbs_t::searchsub(uint subnum, char *search)
+long sbbs_t::listsub(uint subnum, long mode, long start, char* search)
 {
-	int 	i,found;
+	int 	i;
 	long	posts;
-	ulong	total;
+	long	displayed;
 	post_t	*post;
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
 		return(0); 
 	}
-	total=getposts(&cfg,subnum);
-	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	SAFEPRINTF2(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
 	post=loadposts(&posts,subnum,0,LP_BYSELF|LP_OTHERS);
 	bprintf(text[SearchSubFmt]
-		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,posts,total);
-	found=searchposts(subnum,post,0,posts,search);
+		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,posts /* total? */);
+	if(mode&SCAN_FIND)
+		displayed=searchposts(subnum, post, start, posts, search);
+	else if(mode&SCAN_TOYOU)
+		displayed=showposts_toyou(post, start, posts);
+	else
+		displayed=listmsgs(subnum, mode, post, start, posts);
 	if(posts)
 		free(post);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
-	return(found);
+
+	return(displayed);
 }
 
 /****************************************************************************/
@@ -1147,7 +1155,7 @@ int sbbs_t::searchsub(uint subnum, char *search)
 /* title). 'msgs' is the total number of valid messages.                    */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-int sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
+long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 	, char *search)
 {
 	char	*buf,ch;
@@ -1197,7 +1205,7 @@ int sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 /* Will search the messages pointed to by 'msg' for message to the user on  */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-void sbbs_t::showposts_toyou(post_t *post, ulong start, long posts)
+long sbbs_t::showposts_toyou(post_t *post, ulong start, long posts)
 {
 	char	str[128];
 	ushort	namecrc,aliascrc,sysop;
@@ -1241,47 +1249,6 @@ void sbbs_t::showposts_toyou(post_t *post, ulong start, long posts)
 
 	if(msg.total_hfields)
 		smb_freemsgmem(&msg);
+
+	return(found);
 }
-
-/****************************************************************************/
-/* This function will search the specified sub-board for messages that		*/
-/* are sent to the currrent user.											*/
-/* returns number of messages found 										*/
-/****************************************************************************/
-int sbbs_t::searchsub_toyou(uint subnum)
-{
-	int 	i;
-	long	posts;
-	ulong	total;
-	post_t	*post;
-
-	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
-		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
-		return(0); 
-	}
-	total=getposts(&cfg,subnum);
-	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
-	smb.retry_time=cfg.smb_retry_time;
-	smb.subnum=subnum;
-	if((i=smb_open(&smb))!=0) {
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); 
-	}
-	post=loadposts(&posts,subnum,0,0);
-	bprintf(text[SearchSubFmt]
-		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,total);
-	if(posts) {
-		if(post)
-			free(post);
-		post=loadposts(&posts,subnum,0,LP_BYSELF|LP_OTHERS);
-		showposts_toyou(post,0,posts); 
-	}
-	if(post)
-		free(post);
-	smb_close(&smb);
-	smb_stack(&smb,SMB_STACK_POP);
-	return(posts);
-}
-
-
