@@ -1,1 +1,0 @@
-@SYSOP@ welcomes you to @BBS@!

@@ -1,3 +1,0 @@
-libnspr4.so *must* be in the library search path, or libjs must be compiled with
-the libnspr4 path in the runtime search path.
-
