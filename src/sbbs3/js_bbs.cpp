@@ -2234,7 +2234,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 
-	if(!(mode&FL_FINDDESC))
+	if(!(mode&(FL_FINDDESC|FL_EXFIND)))
 		fspec=padfname(fspec,buf);
 
 	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode));
