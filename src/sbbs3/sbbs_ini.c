@@ -309,7 +309,13 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"LastNode",4);
 
 		bbs->outbuf_highwater_mark
-			=iniGetShortInt(list,section,"OutbufHighwaterMark",1024);
+			=iniGetShortInt(list,section,"OutbufHighwaterMark"
+#ifdef TCP_MAXSEG	/* Auto-tune if possible.  Would this be defined here? */
+			,0
+#else
+			,1024
+#endif
+			);
 		bbs->outbuf_drain_timeout
 			=iniGetShortInt(list,section,"OutbufDrainTimeout",10);
 
@@ -611,7 +617,13 @@ void sbbs_read_ini(
 			=iniGetBitField(list,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
 		web->outbuf_highwater_mark
-			=iniGetShortInt(list,section,"OutbufHighwaterMark",1024);
+			=iniGetShortInt(list,section,"OutbufHighwaterMark"
+#ifdef TCP_MAXSEG	/* Auto-tune if possible.  Would this be defined here? */
+			,0
+#else
+			,1024
+#endif
+			);
 		web->outbuf_drain_timeout
 			=iniGetShortInt(list,section,"OutbufDrainTimeout",10);
 
