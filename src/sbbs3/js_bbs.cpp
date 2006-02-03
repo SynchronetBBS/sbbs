@@ -2234,7 +2234,10 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 
-	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,padfname(fspec,buf),0 /* tofile */,mode));
+	if(!(mode&FL_FINDDESC))
+		fspec=padfname(fspec,buf);
+
+	*rval = INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode));
 	return(JS_TRUE);
 }
 
@@ -2694,9 +2697,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	,310
 	},		
-	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FL_NONE</tt>]")
+	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
 	,JSDOCSTR("list files in the specified file directory, "
-		"optionally specifying a file specification (wildcards) and <i>mode</i> (bitfield)")
+		"optionally specifying a file specification (wildcards) or a description search string, "
+		"and <i>mode</i> (bitfield)")
 	,310
 	},		
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FI_INFO</tt>]")
