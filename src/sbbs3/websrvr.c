@@ -1594,6 +1594,40 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 	free(lckey);
 }
 
+#if 0
+static void js_parse_multipart(http_session_t * session, char *p)  {
+	size_t		key_len;
+	size_t		value_len;
+	char		*lp;
+	char		*key;
+	char		*value;
+
+	if(p == NULL)
+		return;
+
+	lp=p;
+
+	while((key_len=strcspn(lp,"="))!=0)  {
+		key=lp;
+		lp+=key_len;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
+		value_len=strcspn(lp,"&");
+		value=lp;
+		lp+=value_len;
+		if(*lp) {
+			*lp=0;
+			lp++;
+		}
+		unescape(value);
+		unescape(key);
+		js_add_queryval(session, key, value);
+	}
+}
+#endif
+
 static void js_parse_query(http_session_t * session, char *p)  {
 	size_t		key_len;
 	size_t		value_len;
@@ -1658,6 +1692,37 @@ static BOOL parse_headers(http_session_t * session)
 					break;
 				case HEAD_TYPE:
 					add_env(session,"CONTENT_TYPE",value);
+					if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
+						/*
+						 * We need to parse out the files based on RFC1867
+						 *
+						 * And example reponse looks like this:
+						 * Content-type: multipart/form-data, boundary=AaB03x
+						 * 
+						 * --AaB03x
+						 * content-disposition: form-data; name="field1"
+						 * 
+						 * Joe Blow
+						 * --AaB03x
+						 * content-disposition: form-data; name="pics"
+						 * Content-type: multipart/mixed, boundary=BbC04y
+						 * 
+						 * --BbC04y
+						 * Content-disposition: attachment; filename="file1.txt"
+						 * 
+						 * Content-Type: text/plain
+						 * 
+						 * ... contents of file1.txt ...
+						 * --BbC04y
+						 * Content-disposition: attachment; filename="file2.gif"
+						 * Content-type: image/gif
+						 * Content-Transfer-Encoding: binary
+						 * 
+						 * ...contents of file2.gif...
+						 * --BbC04y--
+						 * --AaB03x--						 
+						 */
+					}
 					break;
 				case HEAD_IFMODIFIED:
 					session->req.if_modified_since=decode_date(value);
@@ -3786,10 +3851,34 @@ void http_output_thread(void *arg)
 	int		avail;
 	int		chunked;
 	int		i;
+	int		mss=OUTBUF_LEN;
 
 	obuf=&(session->outbuf);
 	pthread_mutex_init(&session->outbuf_write,NULL);
 	session->outbuf_write_initialized=1;
+
+#ifdef TCP_MAXSEG
+	/*
+	 * Auto-tune the highwater mark to be the negotiated MSS for the
+	 * socket (when possible)
+	 */
+	if(!obuf->highwater_mark) {
+		socklen_t   sl;
+		sl=sizeof(i);
+		if(!getsockopt(session->socket, IPPROTO_TCP, TCP_MAXSEG, &i, &sl)) {
+			/* Check for sanity... */
+			if(i>100) {
+				obuf->highwater_mark=i;
+				lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
+				mss=obuf->highwater_mark;
+				if(mss>OUTBUF_LEN) {
+					mss=OUTBUF_LEN;
+					lprintf(LOG_DEBUG,"MSS (%d) is higher than OUTBUF_LEN (%d)",i,OUTBUF_LEN);
+				}
+			}
+		}
+	}
+#endif
 
 	thread_up(TRUE /* setuid */);
     while(session->socket!=INVALID_SOCKET && !terminate_server) {
@@ -3812,8 +3901,8 @@ void http_output_thread(void *arg)
          * into linear buffer.
          */
         len=avail=RingBufFull(obuf);
-        if(avail>sizeof(buf)-12)
-            len=avail=sizeof(buf);
+		if(avail>mss)
+			len=avail=mss;
 
 		/* 
 		 * Read the current value of write_chunked... since we wait until the
