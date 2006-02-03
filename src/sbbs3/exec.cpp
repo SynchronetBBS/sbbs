@@ -624,7 +624,7 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	if(js_scope==NULL || js_script==NULL) {
 		JS_ReportPendingException(js_cx);	/* Added Feb-2-2006, rswindell */
-		errormsg(WHERE,ERR_EXEC,path,0);
+		errormsg(WHERE,"compiling",path,0);
 		return(-1);
 	}
 

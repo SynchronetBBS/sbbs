@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -217,13 +217,12 @@ void sbbs_t::logch(char ch, bool comma)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG and NODE.LOG         */
 /****************************************************************************/
-void sbbs_t::errormsg(int line, const char *source, char action, const char *object
+void sbbs_t::errormsg(int line, const char *source, const char* action, const char *object
 					  ,ulong access, const char *extinfo)
 {
 	const char*	src;
     char	str[2048];
 	char 	tmp[512];
-    char*	actstr;
 
 	/* prevent recursion */
 	if(errormsg_inside)
@@ -232,7 +231,7 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 
 	/* Don't log path to source code */
 	src=getfname(source);
-
+#if 0
 	switch(action) {
 		case ERR_OPEN:
 			actstr="opening";
@@ -286,6 +285,7 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 			actstr="UNKNOWN"; 
 			break;
 	}
+#endif
 	sprintf(str,"Node %d !ERROR %d "
 #ifdef _WIN32
 		"(WinError %d) "
@@ -295,12 +295,12 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 #ifdef _WIN32
 		,GetLastError()
 #endif
-		,src, line, actstr, object, access);
+		,src, line, action, object, access);
 	if(online==ON_LOCAL)
 		eprintf(LOG_ERR,"%s",str);
 	else {
 		lprintf(LOG_ERR,"%s",str);
-		bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
+		bprintf("\7\r\nERROR -   action: %s",action);   /* tell user about error */
 		bprintf("\7\r\n          object: %s",object);
 		bprintf("\7\r\n          access: %ld",access);
 		if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1)
@@ -316,7 +316,7 @@ void sbbs_t::errormsg(int line, const char *source, char action, const char *obj
 	}
 	sprintf(str,"\r\n    source: %s\r\n      line: %d\r\n    action: %s\r\n"
 		"    object: %s\r\n    access: %ld"
-		,src,line,actstr,object,access);
+		,src,line,action,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
 		sprintf(tmp," (0x%lX)",access);
 		strcat(str,tmp); }

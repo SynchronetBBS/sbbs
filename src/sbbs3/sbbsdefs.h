@@ -281,26 +281,23 @@ typedef struct {
 									/* Bit values for cfg.msg_misc				*/
 #define MM_REALNAME	(1<<16)			/* Allow receipt of e-mail using real names	*/
 
-
-enum {								/* errormsg() codes */
-	 ERR_OPEN						/* opening a file */
-	,ERR_CLOSE						/* close a file */
-	,ERR_FDOPEN 					/* associating a stream with fd */
-	,ERR_READ						/* reading from file */
-	,ERR_WRITE						/* writing to file */
-	,ERR_REMOVE 					/* removing a file */
-	,ERR_ALLOC						/* allocating memory */
-	,ERR_CHK						/* checking */
-	,ERR_LEN						/* file length */
-	,ERR_EXEC						/* executing */
-	,ERR_CHDIR						/* changing directory */
-	,ERR_CREATE 					/* creating */
-	,ERR_LOCK						/* locking */
-	,ERR_UNLOCK 					/* unlocking */
-    ,ERR_TIMEOUT					/* timeout waiting for resource */
-    ,ERR_IOCTL						/* IOCTL error */
-	,ERR_SEEK						/* SEEKing error */
-	};
+									/* errormsg() codes */
+#define ERR_OPEN	"opening"		/* opening a file */
+#define ERR_CLOSE	"closing"		/* close a file */
+#define ERR_FDOPEN	"fdopen"		/* associating a stream with fd */
+#define ERR_READ	"reading"		/* reading from file */
+#define ERR_WRITE	"writing"		/* writing to file */
+#define ERR_REMOVE 	"removing"		/* removing a file */
+#define ERR_ALLOC	"allocating"	/* allocating memory */
+#define ERR_CHK		"checking"		/* checking */
+#define ERR_LEN		"checking length"
+#define ERR_EXEC	"executing"		/* executing */
+#define ERR_CREATE	"creating" 		/* creating */
+#define ERR_LOCK	"locking"		/* locking */
+#define ERR_UNLOCK 	"unlocking"		/* unlocking */
+#define ERR_TIMEOUT	"timeout"		/* timeout waiting for resource */	
+#define ERR_IOCTL	"sending IOCTL"	/* IOCTL error */
+#define ERR_SEEK	"seeking"		/* SEEKing error */
 
 enum {                              /* Values for dir[x].sort */
      SORT_NAME_A                    /* Sort by filename, ascending */

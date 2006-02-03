@@ -674,7 +674,7 @@ public:
 	void	errorlog(char *text);			/* Logs errors to ERROR.LOG and NODE.LOG */
 	bool	errorlog_inside;
 	bool	errormsg_inside;
-	void	errormsg(int line, const char *file, char action, const char *object
+	void	errormsg(int line, const char *file, const char* action, const char *object
 				,ulong access, const char *extinfo=NULL);
 	
 	/* qwk.cpp */
