@@ -576,7 +576,7 @@ function Server_Work() {
 					ns.info = my_server.realname;
 					ns.socket = my_server.socket;
 					delete Unregistered[my_server.id];
-					ns.finalize_server_connect("QWK");
+					ns.finalize_server_connect("QWK",true);
 					break;
 				} else if (dest_server) {
 					if (dest_server == -1)
@@ -697,16 +697,34 @@ function Server_Work() {
 			var cm_array;
 
 			if (cmd[3]) {
-				var mode_args = "";
+				var incoming_modes = new Array;
 				var tmp_modeargs = 0;
 
 				for (tmpmc in cmd[3]) {
-					if ((cmd[3][tmpmc] == "k") ||
-					    (cmd[3][tmpmc] == "l")) {
+					var my_modechar = cmd[3][tmpmc];
+					if (my_modechar == "+")
+						continue;
+					if ((my_modechar == "k") ||
+					    (my_modechar == "l")) {
 						tmp_modeargs++;
-						mode_args += cmd[3 + tmp_modeargs];
+						incoming_modes[my_modechar] = cmd[3 + tmp_modeargs];
+					} else {
+						incoming_modes[my_modechar] = true;
 					}
 				}
+
+				/* Reconstruct our modes into a string now */
+				var mode_args_chars = "+";
+				var mode_args_args = "";
+				for (my_mc in incoming_modes) {
+					mode_args_chars += my_mc;
+					if ((my_mc == "k") || (my_mc == "l")) {
+						mode_args_args += " " + incoming_modes[my_mc];
+					}
+				}
+				var mode_args = mode_args_chars + mode_args_args;
+
+				/* The following corrects a bug in Bahamut.. */
 				if ((cmd[4] == "") && cmd[5])
 					tmp_modeargs++;
 				

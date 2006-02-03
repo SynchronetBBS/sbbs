@@ -127,30 +127,32 @@ function terminate_everything(terminate_reason, error) {
 	exit(error);
 }
 
-function searchbyserver(server_name,ignore_wildcards) {
+function search_server_only(server_name) {
 	if (!server_name)
 		return 0;
-	if ((ignore_wildcards &&
-	    (servername.toUpperCase() == server_name.toUpperCase()) ) ||
-	   (!ignore_wildcards && IRC_match(servername,server_name)) )
-		return -1; // the server passed to us is our own.
 	for(thisServer in Servers) {
 		var Server=Servers[thisServer];
-		if ((ignore_wildcards && 
-		    (Server.nick.toUpperCase() == server_name.toUpperCase())) ||
-		   (!ignore_wildcards &&
-		     IRC_match(Server.nick,server_name) ) )
+		if (IRC_match(Server.nick,server_name))
 			return Server;
 	}
-	// No wildcards implies not doing searches on nicks, either.
-	if (ignore_wildcards)
+	if (IRC_match(servername,server_name))
+		return -1; // the server passed to us is our own.
+	// No success.
+	return 0;
+}
+
+function searchbyserver(servnick) {
+	if (!servnick)
 		return 0;
-	// if we've had no success so far, try nicknames and glean a server
-	// from there.
-	for(thisNick in Users) {
-		var Nick=Users[thisNick];
-		if (IRC_match(Nick.nick,server_name))
-			return searchbyserver(Nick.servername);
+	var server_try = search_server_only(servnick);
+	if (server_try) {
+		return server_try;
+	} else {
+		for(thisNick in Users) {
+			var Nick=Users[thisNick];
+			if (IRC_match(Nick.nick,servnick))
+				return search_server_only(Nick.servername);
+		}
 	}
 	return 0; // looks like we failed after all that hard work :(
 }
@@ -407,7 +409,7 @@ function connect_to_server(this_cline,the_port) {
 		new_id = "id" + next_client_id;
 		next_client_id++;
 		Unregistered[new_id]=new Unregistered_Client(new_id,connect_sock);
-		Unregistered[new_id].sentps = true;
+		Unregistered[new_id].sendps = false; // Don't do P/S pair again
 	}
 	this_cline.lastconnect = time();
 }
@@ -785,7 +787,7 @@ while (!server.terminated) {
 	for(thisCL in CLines) {
 		my_cline = CLines[thisCL];
 		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
-		    !searchbyserver(my_cline.servername,true) &&
+		    (search_server_only(my_cline.servername) < 1) &&
 		     ((time() - my_cline.lastconnect) >
 		     YLines[my_cline.ircclass].connfreq)
 		   ) {
@@ -2762,13 +2764,13 @@ function IRCClient_check_sendq() {
 	}
 }
 
-function IRCClient_finalize_server_connect(states) {
+function IRCClient_finalize_server_connect(states,sendps) {
 	hcc_counter++;
 	gnotice("Link with " + this.nick + "[unknown@" + this.hostname +
 		"] established, states: " + states);
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	if (!this.sentps) {
+	if (sendps) {
 		for (cl in CLines) {
 			if(IRC_match(this.nick,CLines[cl].servername)) {
 				this.rawout("PASS " + CLines[cl].password + " :" + states);

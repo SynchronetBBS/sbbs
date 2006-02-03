@@ -27,7 +27,6 @@ function Unregistered_Client(id,socket) {
 	////////// VARIABLES
 	// Bools/Flags that change depending on connection state.
 	this.pinged = false;	   // Sent PING?
-	this.sentps = false;	   // Sent PASS/SERVER?
 	this.local = true;	   // FIXME: this is redundant.
 	this.criteria_met = false; // Have we met registration criteria?
 	// Variables containing user/server information as we receive it.
@@ -42,6 +41,7 @@ function Unregistered_Client(id,socket) {
 	this.ip = socket.remote_ip_address;
 	this.pending_resolve = false;
 	this.pending_resolve_time = time();
+	this.sendps = true; // Send the PASS/SERVER pair by default.
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
 	////////// FUNCTIONS
@@ -198,7 +198,7 @@ function Unregistered_Commands() {
 				}
 			}
 			if ( (!this_nline ||
-			      ( (this_nline.password == "*") && !this.sentps &&
+			      ( (this_nline.password == "*") && 
 				!(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
 			     ) && !qwk_slave) {
 				this.quit("Server not configured.");
@@ -237,7 +237,7 @@ function Unregistered_Commands() {
 					}
 				}
 			}
-			new_server.finalize_server_connect("TS");
+			new_server.finalize_server_connect("TS",this.sendps);
 			break;
 		case "USER":
 			if (this.uprefix)
