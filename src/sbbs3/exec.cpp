@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -623,6 +623,7 @@ long sbbs_t::js_execfile(const char *cmd)
 	}
 
 	if(js_scope==NULL || js_script==NULL) {
+		JS_ReportPendingException(js_cx);	/* Added Feb-2-2006, rswindell */
 		errormsg(WHERE,ERR_EXEC,path,0);
 		return(-1);
 	}
