@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1914,50 +1914,14 @@ void bail(int code)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG in the text dir.     */
 /****************************************************************************/
-void errormsg(int line, char *source,  char action, char *object, ulong access)
+void errormsg(int line, char* source,  char* action, char* object, ulong access)
 {
-    char actstr[256];
-
 	char scrn_buf[MAX_BFLN];
     gettext(1,1,80,uifc.scrn_len,scrn_buf);
     clrscr();
-
-    switch(action) {
-        case ERR_OPEN:
-            strcpy(actstr,"opening");
-            break;
-        case ERR_CLOSE:
-            strcpy(actstr,"closeing");
-            break;
-        case ERR_FDOPEN:
-            strcpy(actstr,"fdopen");
-            break;
-        case ERR_READ:
-            strcpy(actstr,"reading");
-            break;
-        case ERR_WRITE:
-            strcpy(actstr,"writing");
-            break;
-        case ERR_REMOVE:
-            strcpy(actstr,"removing");
-            break;
-        case ERR_ALLOC:
-            strcpy(actstr,"allocating memory");
-            break;
-        case ERR_CHK:
-            strcpy(actstr,"checking");
-            break;
-        case ERR_LEN:
-            strcpy(actstr,"checking length");
-            break;
-        case ERR_EXEC:
-            strcpy(actstr,"executing");
-            break;
-        default:
-            strcpy(actstr,"UNKNOWN"); }
     printf("ERROR -     line: %d\n",line);
     printf("            file: %s\n",source);
-    printf("          action: %s\n",actstr);
+    printf("          action: %s\n",action);
     printf("          object: %s\n",object);
     printf("          access: %ld (%lx)\n",access,access);
     printf("\nHit enter to continue...");
