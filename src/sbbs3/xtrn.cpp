@@ -288,8 +288,6 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 			*p=0; 											\
 		} else												\
 			main_csi.str[0]=0;								\
-		if(!strchr(str,'.'))								\
-			strcat(str,".bin");								\
 		return(exec_bin(str,&main_csi));					\
 	}														
 #ifdef JAVASCRIPT
