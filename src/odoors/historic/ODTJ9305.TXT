@@ -1,0 +1,724 @@
+The
+OPENDOORS  TECH  JOURNAL
+Volume 93, Number 5                                          July 20th, 1993
+
+"The Greatest Thing to happen to Journalism Since Real People"
+                                                                                                                                      	
+This Issue:     A Word from the Editor - Scott Burkett
+                The Open Door - Brian Pirie (not!)
+                The Fidonet OPENDOORS Echo - Latest FAQ
+                Opendoors Tech Corner - ColorToString();       
+                In Search Of - The Art of Debugging
+                Review: VID v2.01 - The Virus Information Door
+                OpenDoors Snippets!
+                OpenDoors Tech Journal Information
+                                                                                                                                      	
+----------------------------------------------------------------------------
+                        A Word from the Editor:
+----------------------------------------------------------------------------
+
+Finally!  After months of long-distance mail polling, the OPENDOORS echo is
+now residing on the North American fidonet backbone!  Yep.  Sorry, Ma Bell.
+More on this later, and now .... the rest of the story.  Sorry Paul Harvey.
+
+Listen up children, today's editorial survey question is one which is sure to 
+draw quite a bit of flak from programmers around the globe.  Which is the 
+better stimulant, Jolt Cola or Maxwell House? :-)
+
+DoorNet!  That's right.  Strange things are amiss at the Circle-K!  Look for
+an OPENDOORS conference (both mail and file based) to appear soon on the
+DoorNet backbone listing.  Thanks go out to Vince Jacobs for his work on
+getting this implemented.  This should make ODTJ and OD distribution a bit
+easier on all of us.  There has been mention of gating the current fidonet
+OPENDOORS echo through to Doornet.  I applaud this idea and welcome it with
+much grandiose.  Ahem.
+
+On another wavelength entirely, several hundred netmail messages were lost
+from Under the Nile's mail machine a few weeks ago.  Unfortunately, there
+were a few requests for product announcements contained therein.  If the
+authors would be so kind as to send them back in, we will gladly publish
+them in the next edition.  Danke!
+                                 
+On a serious note, my gerbil died.  Peace, and a bottle of hair grease....
+
+(Scott, it's time for your medication....yes, mother)
+
+----------------------------------------------------------------------------
+                     THE OPEN DOOR - By Brian Pirie
+----------------------------------------------------------------------------
+
+Unfortunately (I know, I know), Brian was unavailable for this issue.  I
+finally tracked him down in Tibet, busily polling the local populace for
+new ideas for the 4.20 release.  At any rate, look for him in ODTJ #6, along
+with (hopefully) OpenDoors 4.20... :-)
+
+----------------------------------------------------------------------------
+               OPENDOORS Echo FAQ - Frequently Asked Questions
+----------------------------------------------------------------------------
+By: Brian Pirie                                                                                                                                 
+July 17th, 1993
+
+ABOUT THIS FAQ
+--------------
+
+This document is a collection of frequently asked questions and answers.
+If you have any questions about OpenDoors or the OPENDOORS echo, please
+first refer to this FAQ. Not only will this help to reduce unnecessary
+trafic in the echo, but it will also provide you with the answer to many
+questions much more quickly than you would have otherwise.
+
+If you have any suggestions for additions or changes to this FAQ, please
+direct them to the moderator, Brian Pirie (FidoNet: 1:243/8, Internet:
+brian@bpecomm.ocunix.on.ca).
+
+Since the OPENDOORS echo and this FAQ are currently under a state of
+change, this FAQ will be posted on a very regular basis for the time
+being. In the future, the FAQ will probably be automatically posted on a
+bi-weekly basis.
+
+CONTENTS
+--------
+
+ 1.) What are the rules of the OPENDOORS echo?
+ 2.) What IS OpenDoors?
+ 3.) Where can I get a copy of OpenDoors?
+ 4.) What is the newest version of OpenDoors?
+ 5.) How much does OpenDoors cost?
+ 6.) Is the OpenDoors source code available?
+ 7.) Are there beta test versions of OpenDoors?
+ 8.) How can I contact the author of OpenDoors?
+ 9.) What IS the OpenDoors echo?
+10.) What about the echo archives?
+11.) How can I get help with OpenDoors or BBS door/utility programming?
+12.) What guidelines are there for posting source code?
+
+1.) WHAT ARE THE RULES OF THE OPENDOORS ECHO?
+    ----------------------------------------
+
+The rules of the OPENDOORS echo are few and far between. The most
+important rules are those that are standard to all EchoMail conferences
+that are distributed as a part of the FidoNet backbone distribution
+system. The echo may not be used for illegal purposes, nor is profane
+language accepted. Beyond this, your are trusted to use your own
+judgement. While it is important to have as high a "signal to noise
+ratio" as possible, it is also important to recognize the diverse group
+of people you are communicating with though the OPENDOORS echo. There is
+a wide range of technical knowledge, knowledge of network etiquette, and
+personal background. If you can try to be as understanding and helpful
+as possible, your doing so will help to keep friction and flaming to a
+minimum.
+
+Since the participants in the OPENDOORS echo are generally all
+programmers, it seems natural that they will want to tell the world
+about the programs they have written. For this reason, announcements of
+new programs - either written with OpenDoors or of interest to the
+participants of this echo - is encourage. However, advertising of new
+programs is not the primary purpose of the echo. For this reason, we
+would ask that you refrain from posting the same advertisment message
+more than once within a reasonable length of time (perhaps a month).
+
+If you are having any difficulty with the OPENDOORS echo - technical,
+social, or otherwise - please feel more than free to contact the
+moderator, Brian Pirie (1:243/8).
+
+2.) WHAT IS OPENDOORS?
+    -----------------
+
+OpenDoors is a Turbo C(++) / Borland C++ door programming toolkit used
+by well over 100 door programmers around the world. OpenDoors handles
+all of the details of door programming, such as communicating with the
+modem, interfacing with virtually any BBS package, maintaining status
+lines, monitoring carrier detect and user timeouts, handling sysop
+function keys such as DOS shell or chat, providing advanced ANSI/AVATAR
+graphics support, and much more.
+
+OpenDoors is designed to allow you to write door programs just as you
+would write any other C program, without requiring any additional effort
+or knowledge. You can easily create fully functional door programs with
+just a few lines of code. OpenDoors is so easy to use that many
+OpenDoors programmers have begun using it with no programming
+experience.
+
+OpenDoors directly interfaces with all of the most popular BBS packages
+including RemoteAccess, QuickBBS, Telegard, Wildcat, PC-Board, Maximus,
+Renegade, EzyCom, RBBS-PC, Spitfire, SuperBBS, RoboBoard, WWIV and many
+others. In addition, OpenDoors allows the sysop to specify custom door
+information file formats to permit your doors to run on virtually any
+BBS system.
+
+Included with OpenDoors are a number of example doors that you can
+compile, alter, or use as a basis for your own doors. Among these
+example doors are a voting booth type door and an ANSI music
+demonstration door, and dozens of sample doors within the door
+programming tutorial manual.
+
+OpenDoors also provides a number of special features that you can
+optionally include in your doors, such as transparent configuation file
+support, logfile support, FILES.BBS listing, and many advanced
+ANSI/AVATAR graphics routines.
+ 
+3.) WHERE CAN I GET A COPY OF OPENDOORS?
+    -----------------------------------
+
+Below is a short table listing sites from which the newest version of
+OpenDoors is available, as of April 19th, 1993. In addition to the sites
+listed below, the newest verion of OpenDoors will likely be available
+from any system that carries "Programmer's Distribution Network" files.
+Also, if you send a self-addressed envelope, along with either a 3-1/2"
+or 5-1/4" (360K) diskette, and $2.00 to cover postage, I would be happy
+to mail the newest version of OpenDoors to you. My address is listed in
+section 8.
+
+Also, the most recent list of OpenDoors distribution sites is always
+available for download or file request from my system, in the file
+OD_SITES.ZIP. If you are interested in becoming an official OpenDoors
+distribution site, please see the file included in the OD_SITES.ZIP
+archive.
+
+-------------------------------------------------------------------------------
+                                    FIDONET
+LOCATION                            ADDRESS       DATA NUMBER     MODEM
+-------------------------------------------------------------------------------
+Sydney, Australia                   3:712/618     +61 2 552 3255  (v.32/PEP)
+Sydney, Australia                   3:714/906     +61 2 977 6820  (v.32bis/HST)
+Lancaster Park, Alberta, Canada     1:342/49      +1 403 973 3856 (v.32bis/HST)
+Saint John, New Brunswick, Canada   1:255/7       +1 506 652 7292 (v.32bis)
+Ottawa, Ontario, Canada             1:243/8       +1 613 526 4466 (v.32)
+Mascouche, Quebec, Canada           1:167/235     +1 514 968 1709 (v.32bis)
+Trieste, Italy                      2:333/603     +39 40 3783111  (v.32bis/HST)
+Paraparaumu, New Zealand            3:771/180     +64 4 298 4194  (v.32bis)
+Cambridge, United Kingdom           2:440/34      +44 223 301487  (v.32bis)
+Ipswich, Suffolk, United Kingdom    2:440/107     +44 473 692882  (v.32bis)
+Ipswich, Suffolk, United Kingdom    2:440/112     +44 473 87450   (v.32bis)
+Mildenhall, Suffolk, United Kingdom 2:440/37      +44 638 718623  (v.32bis/HST)
+San Jose, California, USA           1:143/324     +1 408 265 4660 (v.32)
+San Ramon, California, USA          1:161/610     +1 510 830 4616 (v.32bis/HST)
+Fort Myers, Florida, USA            1:371/26      +1 813 939 3009 (v.32bis/HST)
+Columbus, Georgia, USA              1:3613/12     +1 706 596 8126 (v.32)
+Chicago, Illinois, USA              1:115/743     +1 312 587 8756 (v.32bis/HST)
+Baltimore, Maryland, USA            1:261/1062    +1 410 256 1979 (v.32bis)
+Minneapolis, Minnesota, USA         1:282/1016    +1 612 378 7783 (v.32bis)
+Muskogee, Oklahoma, USA             1:3813/309    +1 918 687 1612 (v.32bis)
+-------------------------------------------------------------------------------
+ 
+4.) WHAT IS THE NEWEST VERSION OF OPENDOORS?
+    ---------------------------------------
+
+Version 4.10 is the most recently released version of OpenDoors. There
+is a more recent beta-test version of OpenDoors. For information on this
+beta-test version, see section 7.
+ 
+5.) HOW MUCH DOES OPENDOORS COST?
+    ----------------------------
+
+OpenDoors is distributed on a try-before-you-buy basis. You can pickup a
+copy of OpenDoors from any of the OpenDoors distribution sites, listed
+above, to have a closer look at the package. However, if you wish to
+continue using OpenDoors after the three week trial period, you must
+purchase an OpenDoors registration. Full details on registering
+OpenDoors is included in the OpenDoors manual. However, a brief table
+listing the prices within a number of countries is listed below:
+
+        -----------------------------------------------
+                                 REGISTRATION
+        REGISTRATION ONLY        AND SOURCE CODE
+        -----------------------------------------------
+        34 Canadian Dollars      68 Canadian Dollars
+        28 US Dollars            56 US Dollars
+        18 British Pounds        36 British Pounds
+        150 French Francs        300 French Francs
+        44 German Marks          88 German Marks
+        50 Netherland Gilders    100 Netherland Gilders
+        39 Australian Dollars    78 Australian Dollars
+        -----------------------------------------------
+ 
+6.) IS THE OPENDOORS SOURCE CODE AVAILABLE?
+    --------------------------------------
+
+Yes, the OpenDoors source code is available, at a cost equal to the
+registration, to registered users. Both the regisration and source code
+may also be purchased at the same time, for a cost equal to twice the
+normal registration fee. When you purchase the OpenDoors source code,
+the most recent version of the source code is sent to directly. Also,
+you will be entitled to free upgrades to all future versions of the
+source code. Whenever you wish to pick up a new version of the source
+code, you may download it from the OpenDoors support BBS, arrange to
+pick it up via a FidoNet-compatible mailer (simply send me a message
+asking me to place the source code package "on hold" for you to poll and
+pick up), or by sending a diskette and self-addressed diskette mailer.
+ 
+7.) ARE THERE BETA TEST VERSIONS OF OPENDOORS?
+    -----------------------------------------
+
+Yes. The beta test versions of OpenDoors are available to registered
+OpenDoors users. However, keep in mind that the beta test version has
+some new features that are still under development, and has not yet been
+thoroughly tested. To save space, the documentation is not included with
+the beta test version. As such, it is assumed that you also have the
+most recent non-beta version of OpenDoors. The most recent beta version
+may be file-requested from 1:243/8 as OD_BETA
+  
+8.) HOW CAN I CONTACT THE AUTHOR OF OPENDOORS?
+    -----------------------------------------
+
+If you wish to contact the author of OpenDoors, Brian Pirie, please feel
+free to do so. I may be reached by any of the following means:
+
+        FidoNet NetMail   : 1:243/8
+
+        Internet EMail    : brian@bpecomm.ocunix.on.ca
+
+        Modem (BBS)       : +1 613 526 4466
+
+        Conventional Mail : Brian Pirie
+                            Apt. #1416 - 2201 Riverside Drive
+                            Ottawa, Ontario
+                            K1H 8K9
+                            Canada
+ 
+9.) WHAT IS THE OPENDOORS ECHO?
+    --------------------------
+
+The OPENDOORS echomail conference is devoted to OpenDoors and BBS door /
+utility programming in general. The OPENDOORS echo serves as a place
+where people working with OpenDoors can share ideas, source code
+examples, and other tricks and techniques. Through the OPENDOORS echo
+you can receive help with OpenDoors and programming in general. Also
+available through the OPENDOORS echo is information on future versions
+of OpenDoors and recent developments of concern to BBS door and utility
+programmers. The OPENDOORS echo is also place for suggestions for future
+versions of OpenDoors, OpenDoors bug reports, a place to announce the
+availablility of your programs, and much more information of interest to
+OpenDoors programmers. There are participants in the OpenDoors echo from
+throughout Canada and the U.S., as well as people in Europe and
+Australia.
+
+10.) WHAT ABOUT THE ECHO ARCHIVES?
+     ----------------------------
+
+Although we attempt to answer the most commonly asked questions in this
+FAQ, there is so much discussed in the OPENDOORS echo that it is
+impossible to address every possible question. As such, you may be
+interested in referring to the OPENDOORS echo archives, in order to
+learn more about OpenDoors and BBS door/utility programming in general.
+
+The OPENDOORS echo archives are prepared on a monthly basis, and
+are available from the moderators system. Currently, the following
+archives are available for request from 1:243/8 or download from the BBS
+at +1 613 526 4466:
+
+ODJUL92.ZIP    42776  Discussion from the OpenDoors echo, July '92
+ODAUG92.ZIP    35432  Discussion from the OpenDoors echo, August '92
+ODSEP92.ZIP    36308  Discussion from the OpenDoors echo, September '92
+ODOCT92.ZIP    30922  Discussion from the OpenDoors echo, October '92
+ODNOV92.ZIP    34844  Discussion from the OpenDoors echo, November '92
+ODDEC92.ZIP    53647  Discussion from the OpenDoors echo, December '92
+ODJAN93.ZIP    24683  Discussion from the OpenDoors echo, January '93
+ODFEB93.ZIP    41562  Discussion from the OpenDoors echo, February '93
+ODMAR93.ZIP    24080  Discussion from the OpenDoors echo, March '93
+ODAPR93.ZIP    30027  Discussion from the OpenDoors echo, April '93
+ODMAY93.ZIP    39440  Discussion from the OpenDoors echo, May '93
+ODJUN93.ZIP    56615  Discussion from the OpenDoors echo, June '93
+
+11.) HOW CAN I GET HELP WITH OPENDOORS OR BBS DOOR/UTILITY PROGRAMMING?
+     -----------------------------------------------------------------
+
+If you have any problems with a program, please feel more than free to
+post a message here, asking for help. Afterall, that is one of the
+central purposes of this echo. However, try to keep the following points
+in mind when asking a question. Doing so will help others to better
+understand your problem, and as such will help them help you.
+
+          A.) If you are having a problem with a program, try to
+              describe as much about the problem as possible. If you
+              can, precisely how to reproduce the problem. If you wish
+              to do so, posting source code can also be of great
+              advantage. For more information on posting source code in
+              the echo, please see section 12.
+
+          B.) Explain what steps you have already taken in trying to
+              solve your problem. This will allow others to pick up from
+              where you have become "stuck", and not suggest solutions
+              that you have already tried yourself.
+
+
+
+12.) WHAT GUIDELINES ARE THERE FOR POSTING SOURCE CODE?
+     -------------------------------------------------
+
+You are more than welcome to post source code in this echo. If you do
+so, please keep the following guidelines in mind.
+
+          A.) Unless you explicitly say otherwise, any source code
+              posted in this echo will be considered to be released to
+              the public domain. If you have some source code that you
+              do not wish others to copy, don't post it here!
+
+          B.) For your source code to be useful to others, it has to be
+              understandable. Adding comments can be of great benifit to
+              someoone trying to understand your code.
+
+          C.) If you are posting a program written with OpenDoors,
+              please be sure that you do NOT include your registration
+              key in the source code!
+
+----------------------------------------------------------------------------
+               OpenDoors Tech Corner: ColorToString()        
+----------------------------------------------------------------------------
+             
+             Authored by: Brian Pirie, OpenDoors author
+
+/* Function to convert an integer color attribute to an OpenDoors */
+/* style color description string, in the format:                 */
+/*                                                                */
+/*         [Flashing] [Bright] [Foreground] on [Background]       */
+/*                                                                */
+/* The function takes two parameters, an unsigned integer         */
+/* representing the input color, and a pointer to a string where  */
+/* the colour description should be output. Be sure that this     */
+/* string is large enough to hold the largest possible color      */
+/* description string. (If the code is not altered, the largest   */
+/* possible string will be 35 characters, including the null      */
+/* terminator                                                     */
+
+void ColorToString(unsigned int color, char *outString)
+{
+   /* Array containing names of various colors */
+   static char colorString[8][33]={"Black",
+                                   "Blue",
+                                   "Green",
+                                   "Cyan",
+                                   "Red",
+                                   "Magenta",
+                                   "Yellow",
+                                   "White"};
+
+   /* Initialize string */
+   outString[0]='\0';
+
+   /* If flashing bit is set, output "Flashing" string + space */
+   if(color & 0x80) {
+      strcat(outString, "Flashing ");
+   }
+
+   /* If bright bit is set, output "Bright" string + space */
+   if(color & 0x08) {
+      strcat(outString, "Bright ");
+   }
+
+   /* Output foreground color */
+   strcat(outString, colorString[color & 0x07]);
+
+   /* Output the word "on" with a space before & after */
+   strcat(outString, " on ");
+
+   /* Output background color */
+   strcat(outString, colorString[(color & 0x70) >> 4]);
+}
+
+Editor's Note:  Brian was kind enough to put this function together for us
+upon request for a function to perform the reverse of the od_color_config()
+function.  I had to add a bracket or two that was left out (he did mention
+that it was untested code!), but it works like a champ.
+
+----------------------------------------------------------------------------
+                 In Search Of - The Art of Debugging
+                        By Mark Williamson
+----------------------------------------------------------------------------
+
+It happens.  The inevitable.  You have spent so many hours trying to
+write the most optimized, cleanest code possible.  But your best efforts
+are laid to rest when some verocious little creature pops up, seemingly
+at random, and wreaks havoc on all your efforts.
+
+What causes these bugs to appear?  Can it be programming style?  Or a
+forgotten temporary variable?  Where, or where, is that bug!
+
+If this has happened to you, don't feel bad.  50 percent of your time
+programming will be devoted to the debugging cycle.  Many books have
+been written that are devoted to the art of programming style, debugging
+and the development cycle.  I will only touch on a couple of pointers to
+get you started in the right direction in locating that invisible target
+called so affectionately, the "bug."
+
+Case scenario:  I was working on a program that would shell to DOS using
+one of the OD_SPAWN... functions.  OPENDOOR.DOC discusses in
+good detail how to use either of these functions.  But, being the eager
+programmer that I am, I happily went about my way after I read what I
+thought I needed to know.  The program in question uses a temporary
+directory to store files extracted from .ZIP/.ARJ/etc.. archive files.
+As the program was running, it worked just great.  Unpacked the files
+using PKZIP.  Repacked them using ARJ.
+
+Then I tried it again.  That's when it all fell apart for me.
+Unwillingly, I just started a four-day straight debugging session,
+lasting until the wee hours of the night.
+
+Point one:  Always read the docs...thoroughly!
+
+During this four day debugging frenzy I removed 20 or more variables I
+didn't need, rewrote five functions to be more independent and portable
+(ie modular programming) and greatly optimized the program overall.
+
+But I still couldn't find the bug.
+
+Here's a sample of the code:
+
+    od_set_cursor(15,20);
+	od_printf("`bright cyan`Unpacking");
+    error=run_it(progname,unpackcommand);     // see the run_it function
+                                              // below.
+    if(error==0){
+	    od_set_cursor(15,33);
+        od_printf("`bright green`лллллллллллллллллллллллл `bright cyan` Ok    ");
+	}
+
+The above code did not do as it appears it should.  In fact, as soon as
+the trace feature of Turbo C++ 3.0 hit the line that prints out the bar
+and the word "Ok", what actually was printed out was something like
+this:
+
+
+           Unpacking :\BBSFILES\BBSUPLOADS\CHKZIP.ZIP
+
+but not:
+
+           Unpacking лллллллллллллллллллллллл  Ok
+
+Now remember, I hadn't read the section on the od_swapping_path variable
+yet.
+
+The OD_SPAWN.. functions will swap to either EMS memory or DISK.  The
+variable od_control.od_swapping_path is empty by default, which equates
+to the CURRENT DIRECTORY!.  Thus, when my utility unpacked/repacked the
+files, it packed up the swap file also.  Then, when I ran it the second
+and future times on the same archive file, I was overwriting the swap
+file!  Effectively overwriting the program's data and code segments.
+
+Lesson learned:  Read the docs..first.  Don't use the old tried and
+untrue "If all else fails, read the docs."  Read them first.  Read them
+several times.
+
+How to debug:
+
+If your compiler has a trace feature, use it.
+
+Put all the variables in the watch window that could possibly have any
+bearing on the function your are testing.  Look for suspicious changes
+in values when the variable has not been 'touched'.
+
+Minimize global variable useage.  This makes portability difficult.  If
+you write functions that do not rely on any outside information except
+that which is passed as an parameter, then it will be much easier to use
+the same functions over and over, throughout many of your projects.
+
+Use descriptive variables.  C gives you much luxury in the length of
+your variable names.  Use this to the max.  How many times have you
+scratched your head and wondered "what does this one do?"
+
+Use descriptive function names.  See above
+
+Read other programmer's source for ideas.  Many times you will probably
+be reinventing the wheel.  Read the C snippets for ideas.  Check out
+some other source code to see how it's done elsewhere.  This may give
+you much needed insight into the art of programming style.
+
+And last but not least.. Use comment lines!  Don't be vague.  Commenting
+your source code will most likely help only one person.  You.  But, you
+are the only one that matters anyway right?
+
+Good luck and press on!
+
+Mark Williamson
+Software Solutions
+Fido 1:214/54
+
+Home of Labtest 2.00 - The Definitive Upload Processor
+Written entirely in Turbo C++ 3.0 using Brian Pirie's Open Doors 4.1
+
+
+----------------------------------------------------------------------------
+                          REVIEW: VID v2.01
+----------------------------------------------------------------------------
+
+VID v2.01, the BBS Virus Information Door from Cairo Research Labs, is now
+available!
+
+The original VID was designed to provide a quick online virus reference for 
+BBS users, but has quickly evolved into quite a bit more!  Thanks to a 
+tremendous response from Sysops around the world, VID has provided BBS users 
+with quick, accurate viral assessments while online on their favorite BBS 
+system.
+
+What's New in This Release?
+
+  o Over 100 new viruses added, bringing the total up to 1,557 entries.
+
+  o Cleaned up display in several of the search and list options,
+    including multi-column virus listings (Thanks to Chris Koziol).
+
+  o Provided an option for online documentation for end-users.
+
+  * Due to an internal problem in the original 2.00 release, you must
+    use v2.01+ to use any new enhancement modules.  The database
+    structures have changed a bit.
+
+  * The periodic VID integrity check has been enhanced.  VID now
+    stores its integrity information in a file called SANITY.CHK.
+    Ensure that this file resides in the VID directory!
+          
+  * In the 2.00 release, the VIDDEF.TBL file had to reside in the
+    path.  This was causing a message subsystem initialization error
+    if VID could not locate this file in the path!  VID now looks in
+    the current directory first. (Thanks to Steve Pepin)
+
+  ! In the Behavior search, although the default answer is "Ignore",
+    the prompt showed the default as "No".  Fixed! (Steve Pepin).
+
+  ! If VID was typed alone with no arguments, the old switches from
+    the 1.10 release were displayed! Fixed! (Steve Pepin, again!).
+                  
+  ! VID now handles extraneous spaces in registration keys.  This 
+    occurred when clipping a key from a netmail message.  Squashed! 
+    (Thanks to Bart Holiman).
+
+  ! In the 2.0 datafiles, the "Stealth" flag on several viruses was
+    not set properly.  Squashed!
+
+FREQ:     VID - This will get you the VID engine, documentation, Lite-level
+                database, and any release notes.  165K in size (VID201.ZIP).
+
+      VIDPLUS - This will get you the VID+ modules.  You must have the VID
+                engine (above) for this to be functional!  This expands
+                to around 1.5MB or so.  323K in size (VP0793.ZIP).
+
+         FROM - Under the Nile BBS, 1:3613/12, 14.4 USR
+                (706) 596-8126
+
+---------------------------------------------------------------------------
+                       OPENDOORS SNIPPPPPPPPPETS!!!!!!
+----------------------------------------------------------------------------
+By : Mark Williamson			 
+
+The previous post of this code had a little error.  In the fill_box()
+function, remove the od_clr_scr().  I had put that in for test purposes.  Sorry
+bout that!
+
+/********************************************************************/
+
+I would like to submit this code for the next issue of ODTJ.  Please
+post my name and bbs info in the ODTJ with this code:
+
+/******************************************************
+* fill_box() by Mark Williamson, Software Solutions BBS
+*               Fidonet 1:214/54, (209)997-0224
+*
+* This code will paint a box in the
+* specified color using the specified
+* character using ansi/avatar graphics.
+* Note that this does not make a border!
+* Only 'fills' a block on the screen.
+* Can be used to clear just parts of a screen.
+*
+* Call the function with the following parameters:
+*
+*   int srow,scol:  Starting row,col of the box
+*   int erow,ecol:  Ending row,col of the box
+*   int attrib:     od_set_attrib() style color code
+*   char fill_char: The character to use to paint the
+*                   block.  Use ' ' to clear a block.
+*
+*   This code is placed in the public domain.
+******************************************************/
+
+#include <stdio.h>
+#include "opendoor.h"
+
+void fill_box(int srow, int scol, int erow, int ecol,
+              int attrib, char fill_char);
+
+void main(void)
+{
+    fill_box(3,10,13,40,0x1f,'А');
+}
+
+void fill_box(int srow, int scol, int erow, int ecol,
+              int attrib,char fill_char)
+{
+   int line_len,x;
+   if(srow<1) srow=1;
+   if(erow>24) erow=24;
+   if(scol<1) scol=1;
+   if(ecol>80) ecol=80;
+   line_len=ecol-scol;
+/*   od_clr_scr();                     OOPS!  TAKE THIS LINE OUT */
+   od_set_attrib(attrib);
+   for(x=srow;x<erow+1;x++) {
+      od_set_cursor(x,scol);
+      od_repeat(fill_char,line_len);
+      }
+}
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+// The following function provided by Brian Pirie
+// during a telephone conversation with Brian and myself
+//
+// Arguments:  Prog - the path/filename of the program to run
+//             command_line - path/filename of the program and any
+//             command line arguments the program needs.
+//
+// Example:    prog = "PKUNZIP"
+//             command_line = "PKUNZIP TESTFILE.ZIP"
+//
+// Return value:  errorlevel of child process
+int run_it(char *prog,char *command_line)
+{
+    char *arg[3];
+    arg[0]=prog;
+    arg[1]=command_line;
+    arg[2]=NULL;
+    strcpy(arg[1],strshl(arg[1],strlen(prog)));
+    return(od_spawnvpe(P_WAIT,prog,arg,NULL));
+}
+
+----------------------------------------------------------------------------
+                 OpenDoors Tech Journal Information
+----------------------------------------------------------------------------
+
+Editors: Scott Burkett
+         Under the Nile BBS
+         1:3613/12@fidonet.org
+	 Scott.Burkett@f12.n3613.z1.fidonet.org (Internet EMail)
+	 (706) 596-8126 14.4 USR 
+         1113 29th Street
+         Columbus, GA 31902
+
+         Brian Pirie
+         BP ECOMM Systems
+         1:243/8@fidonet.org
+         brian@bpecomm.ocunix.on.ca (Internet EMail)
+         (613) 526-4466 14.4
+         1416 - 2201 Riverside Drive
+         Ottawa, Ontario
+         Canada
+         K1H 8K9
+
+Published by and for programmers and users of the OpenDoors C Communications
+Library and BBS Interface Kit by Pirie Enterprises.  It is a compilation of
+tips, reviews, and tidbits pertaining to BBS programming and general usage.
+The opinions expressed in this publication do not necessarily represent those
+of its editors, the OpenDoors author, or other contributors.
+
+OBTAINING COPIES:  The latest copy of the OpenDoors Tech Journal will always
+be available under the magic name of TECHD (for the DOS version), and TECHW
+(for the Windows .WRI version) at both of the systems listed above.
+
+SUBMISSIONS: You are encouraged to submit articles for publication in the
+journal.  Please send all items to one of the afore-mentioned systems via BBS
+upload or mailer file/attach.
+
+----------------------------------------------------------------------------
+   ->< End of The OpenDoors Tech Journal - Volume 93 Issue Number 5 ><-
+----------------------------------------------------------------------------
+ 	

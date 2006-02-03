@@ -1,0 +1,46 @@
+                         OpenDoors tips package #3
+
+                                    ---
+
+           (C) Copyright 1994, Brian Pirie. All Rights Reserved.
+
+
+This package includes a collection of tips and utility functions to help
+those using the OpenDoors door programming toolkit. You are free to use
+these tips and included source code as you wish, without any fee or
+royalty.
+
+
+This package includes the following tip files:
+
+Tip #1.  Drawing horizontal bar graphs using od_repeat().
+         Files: tip1.txt, tip1.c
+
+Tip #2.  Transferring files using DSZ.
+         Files: tip2.txt, tip2.c
+
+Tip #3.  A generic paged viewing / selection routine, and text file
+         viewing door that uses the paged viewing routine.
+         Files: tip3.txt, pageview.c, pageview.h, fileview.c, bpfind.h
+
+Tip #4.  Command-line processing for many standard door-related command
+         line options.
+         Files: tip4.txt,tip4.c, cmdline.c, cmdline.h
+
+
+How to contact the author
+-------------------------
+
+I can be reached by any of the following means:
+
+   Internet email : brianp@bpecomm.ocunix.on.ca
+
+Fidonet Crashmail : 1:243/8 (you must poll for a response)
+
+Modem (24hrs/day) : +1 613 526 4466
+
+Conventional mail : Brian Pirie
+                    #1416 - 2201 Riverside Drive
+                    Ottawa, Ontario
+                    K1H 8K9
+                    Canada

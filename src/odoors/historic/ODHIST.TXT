@@ -1,0 +1,809 @@
+                     OpenDoors Door Programming Toolkit History
+                     ------------------------------------------
+
+This document describes the development history of the OpenDoors door
+programming toolkit. This document is divided into two sections. The
+first section provides a brief timeline of the OpenDoors releases since
+version 1.00. The second section provides detailed information on the
+changes and enhancements that were made for each version.
+
+
+OPENDOORS TIME LINE
+-------------------
+
+VERSION   RELEASE DATE      HIGHLIGHTS
+-------------------------------------------------------------------------------
+1.00      Fall, 1990        Initial beta version
+1.10      Winter, 1991      First public release
+1.20      Spring, 1991      Minor enhancments, including RA 1.00 support
+1.30      Spring, 1991      A Few bug fixes
+1.40      Spring, 1991      Message customizability
+2.00      Summer, 1991      AVATAR support, improved ANSI support
+2.10      Summer, 1991      Added od_printf() and a new registration key system
+2.20      Summer, 1991      Further customizability, DesqView support
+2.30      Summer, 1991      Minor bug fix
+3.00      Fall, 1991        Beta release, with RA system file support
+3.10      Fall, 1991        Public release with bug fixes from 3.00
+3.20      Winter, 1992      Support for enhanced FILES.BBS format
+3.30      Winter, 1992      Further bug fiexes
+3.40      May, 1992         Full locked-BPS rate support
+4.00      July, 1992        New manual, inline colour setting with od_printf()
+4.10      February, 1993    Configuration file and log file systems
+5.00      September, 1994   Built-in serial I/O, multiple compiler support
+
+
+
+DETAILED HISTORY OF OPENDOORS EVOLUTION
+---------------------------------------
+
+VERSION 1.00   Initial beta test version of the OpenDoors doordriver. Proved to
+               be very bug-free.
+
+
+VERSION 1.10   First public release.
+
+
+VERSION 1.20   Made several changes:
+
+                    - Support for the new RemoteAccess 1.00 enhanced
+                      exitinfo.bbs file, with many extra pieces of information.
+
+                    - Added a Alt-K function key to allow the sysop to
+                      temporarily disable the user's keyboard
+
+                    - Added full support for turning on and off status line.
+                      Status line has been changed slightly in format, and [F9]
+                      help function key added.
+
+                    - Improved sysop chat mode (added multi-colour and wordwrap)
+
+                    - Fixed up shell-to-DOS to automatically shell to the
+                      command processor specified in COMSPEC instead of always
+                      using COMMAND.COM. OpenDoors now also returns to system to
+                      the drive and directory it was in before DOS shell was
+                      issued.
+
+                    - Added support for the new RemoteAccess "sysop next" key.
+
+
+VERSION 1.30   A few quick changes to perfect all the features of this version
+               before beginning major development work on OpenDoors 2.00. Fixed
+               two problems:
+
+                    - The status line can no longer be turned back on by the
+                      sysop using F1 - F9 keys when a door program has disable
+                      the status line itself.
+
+                    - A rather major problem was fixed for use of OpenDoors in
+                      conjunction with RA 1.00. We accidentally forgot to save
+                      some of the data that is unused in previous versions, but
+                      is now used in the new version. This bug caused some
+                      unexpected problems, including damage to the USERSXI.BBS
+                      file.
+
+
+VERSION 1.40   Another maintenance release. This version should now function
+               perfectly when used in conjunction with older versions of Turbo
+               C. Other changes in this version include:
+
+                    - Better error recovery in the case that the door
+                      information file has been damaged.
+
+                    - OpenDoors was made more customizable, including allowing
+                      the programmer to alter the various OpenDoors messages,
+                      and provisions for user defined function keys for the
+                      sysop. (ie, it is now possible for the programmer to make
+                      Alt-Y another hotkey for the sysop)
+
+
+VERSION 2.00   Another release, adding a number of new features, such as:
+
+                    - Added support for AVATAR graphics. OpenDoors will
+                      automatically detect the presence of AVATAR graphics mode
+                      when running under Remote Access, and will allow your door
+                      to toggle it when running under other BBS systems.
+
+                    - Improved ANSI routines. Added some new functions, and
+                      changed existing functions to send more efficient ANSI
+                      codes in some circumstances.
+
+                    - The "Sysop Next" key should now work correctly with RA
+                      1.00 and later.
+
+
+VERSION 2.10   Changes in this version include:
+
+                    - Implementation of a registration key-code to allow
+                      registered users to more easily upgrade to new versions.
+
+                    - Added an od_printf() function for ease of formatted output
+                      from within OpenDoors.
+
+
+VERSION 2.20   More improvements, including:
+
+                    - Fixing of some minor bugs, such as incorrect handling of
+                      the path to DORINFO1.DEF/EXITINFO.BBS files.
+
+                    - Added support for more customization, such as hooks for
+                      functions that will be called before and after Shell to
+                      DOS and sysop chat.
+
+                    - OpenDoors is now DesqView aware. OpenDoors will
+                      automatically detect the presence of DesqView, and uses
+                      the DesqView `virtual screen buffer' for screen display if
+                      present.
+
+                    - A QuickBBS 2.75 compatibility problem has also been fixed.
+
+
+VERSION 2.30   Fixed a small bug in the registration system.
+
+
+VERSION 3.00   A major upgrade, released as a beta-test version, including the
+               following additions/changes:
+
+                    - Eliminated many bugs.
+
+                    - Added support for door information files from: WWIV, PC-
+                      Board, Spitfire, WildCat, GAP, TriTel and others.
+
+                    - Added .ASC/.ANS/.AVT file display support with automatic
+                      interpretation of QBBS/SuperBBS/RA control characters.
+
+                    - Added ALT-D key to drop the user back to the BBS without
+                      hanging up.
+
+                    - Added direct access to RA style configuration, file area,
+                      message area, external protocols, event configuration,
+                      caller history, users online, menu files, user base and
+                      other system files.
+
+                    - Added complete set of message base manipulation routines,
+                      with full support for the RA 1.01 message base locking
+                      scheme.
+
+                    - The user manual has also been re-written in order to make
+                      it easier to work with.
+
+
+VERSION 3.10   The following bug fixes and changes have been made since the
+               release of the beta version, 3.00:
+
+                    - Time fields in messages are now correctly formatted
+
+                    - Corrected a bug in the od_set_attrib function where the
+                      intensity setting would not correctly be transmitted to
+                      the remote when using ANSI graphics.
+
+                    - Fixed a bug in the re-writing of the DORINFO1.DEF which
+                      cause sysop and user's last names to be corrupted.
+
+                    - Registered users may now disable the display of copyright
+                      and registration information when the door starts up.
+
+
+VERSION 3.20   A few more changes and bug fixes were made since version 3.10,
+               including:
+
+                    - Fixed the FILES.BBS lister to correctly support FILES.BBS
+                      files located in directories other than the default dir,
+                      and added page pausing to the FILES.BBS lister.
+
+
+VERSION 3.30   The following changes and bug fixes were made since version 3.20:
+
+                    - OpenDoors no longer re-writes the DORINFO1.DEF upon
+                      exiting. No BBS's are known to actually make use of the
+                      information changed in DORINFO1.DEF, and re-writing this
+                      file was causing more troubles than it was worth.
+
+                    - The od_msg_read_hdr() function's NEXT_MESSAGE command now
+                      works correctly.
+
+                    - Added an od_errno variable to assist in debugging of
+                      programs written with the BBS file engine portion of
+                      OpenDoors.
+
+
+VERSION 3.40   A minor upgrade version, with the following changes:
+
+                    - Fixed a compatibility problem with some locked baud rates.
+                      Now, if OpenDoors receives a baud rate the door
+                      information file that is not supported in the FOSSIL
+                      definitions, it will continue without setting the baud
+                      rate. (Whereas before, OpenDoors would report an error and
+                      exit.)
+
+                    - Made some changes to the manual, and included a utility to
+                      remove the extended-ASCII characters from the manual to
+                      ease printing on some printers.
+
+
+VERSION 4.00   This version is a major overhaul of the entire OpenDoors package,
+               including a great many enhancements and additions. As of version
+               4.00, OpenDoors is available as two separate packages - the door
+               programming toolkit (this package), and the BBS interface package
+               (which is available separately) Among the major changes to
+               version 4.00 of the OpenDoors door programming toolkit are:
+
+                    - A complete re-organization of the manual, including the
+                      re-writing of a large portion of the manual. In order to
+                      ease printing on some printers, the manual has been re-
+                      formatted in order that it no longer contains extended
+                      ASCII characters. More thorough documentation on the
+                      OpenDoors functions and structures was written, along with
+                      the addition of many more examples. Also added to the
+                      manual are an index, glossary and other features intended
+                      to make the reference manual an even more powerful and
+                      flexible tool.
+
+                    - Full support for the changes to RemoteAccess 1.10/1.11 has
+                      been added for version 4.00. These include the addition of
+                      some new fields stored in the EXITINFO.BBS door
+                      information file, and proper adjusting of the user's time
+                      remaining online. Version 4.00 also now has full support
+                      for the new QuickBBS-specific EXITINFO.BBS file.
+
+                    - All of the text displayed by OpenDoors is now fully
+                      customizable using od_control structure variables. This
+                      permits both greater door customization, and adds the
+                      ability to write 100% non-English doors and programs.
+
+                    - The OpenDoors status lines have been changed. OpenDoors
+                      now provides additional user information through multiple
+                      RemoteAccess-style status lines, accessible through the
+                      F2, F3, etc. keys. Also, the status line may now be turned
+                      off by using the F10 key, allowing the sysop to view all
+                      25-lines of the information displayed by a door program. A
+                      new function od_set_statusline(), permits program
+                      selection of the current status line setting.
+
+                    - OpenDoors now allows colour codes to be embedded in
+                      od_printf() functions, to eliminate the need for long
+                      chains of alternating od_disp_str(), od_set_colour() /
+                      od_set_attrib() function calls.
+
+                    - A new formatted input function, od_edit_str() has been
+                      added for use in door programs running in ANSI or AVATAR
+                      graphics mode. The od_edit_str() function features
+                      advanced line editing capabilities which are normally
+                      found only in non-door programs, such as inserting or
+                      deleting text from the middle of a string, moving the
+                      cursor with the arrow keys, and so on. The od_edit_str()
+                      function also provides input formatting, allowing you to
+                      force the user's input into any format you wish, from
+                      phone number formats to date formats to username formats.
+                      The od_edit_str() also provides special modes for
+                      implementing features such as password input, field input
+                      (where the user may move from one field to another using
+                      arrow/tab keys), input field highlighting, editing
+                      existing strings, auto-delete, and much more. The old
+                      od_input_str() function still provides a subset of these
+                      features which do not require ANSI or AVATAR graphics.
+
+                    - New functions have been added to the door driver module of
+                      OpenDoors. Among these, are an od_putch() function for
+                      displaying one character at a time, and an od_spawn()
+                      function, for easily executing other programs from within
+                      OpenDoors. The od_spawn() function automatically saves the
+                      contents of the current door screen, system drive and
+                      directory, and provides a separate screen on which the
+                      spawned-to program can execute. The od_draw_box() function
+                      allows you to easily display windows in door programs,
+                      using ANSI or AVATAR graphics codes. Also added is are
+                      od_carrier(), od_set_statusline() and od_edit_str()
+                      functions, mentioned elsewhere.
+
+                    - More changes have been made in order to permit greater
+                      customization and flexibility of OpenDoors. An
+                      od_carrier() function has been added to detect the state
+                      of the carrier detect signal in programs that disable
+                      OpenDoor's internal carrier detection. Also, it is now
+                      possible to shut down OpenDoors without exiting via the
+                      od_exit() function.
+
+                    - OpenDoors now yeilds the processor to other executing
+                      tasks in multitasking environments (ie. DesqView), when
+                      the door is inactive or waiting for input.
+
+                    - The door driver function od_clr_scr() now only checks the
+                      user's screen clearing setting if that information is
+                      available from the door information file. If the
+                      information is not available, the od_clr_scr() function
+                      will always clear the screen.
+
+                    - Many other small changes were also made for version 4.00.
+                      Among these, you now have access to the user's reason for
+                      chat and you can switch the pause and stop keys on and off
+                      during listing of available files or displaying a text
+                      file. Also, previous versions of OpenDoors would read the
+                      user's information from the first door information file
+                      found. Instead, version 4.00 now reads the most recently
+                      created door information file. A bug in the od_clr_line()
+                      function has also been fixed.
+
+
+VERSION 4.10   A great deal of work has been done between version 4.00 and 4.10
+               of OpenDoors. This work falls into three major categories: bug
+               fixes, improved performance, and new features. In fact, enough
+               changes and improvements have been made that this version really
+               ought to be numbered 5.00. Below is a summary of the changes that
+               have occurred since version 4.00:
+                    - Much of the door information file interfacing code has
+                      been revamped, in order that OpenDoors now works correctly
+                      with the newest versions of the BBS packages it supports.
+                      OpenDoors now differentiates between three different
+                      DOOR.SYS formats - the DoorWay format, the PC-Board / GAP
+                      format, and the Wildcat format. Also, the SFDOORS.DAT code
+                      has been fixed to correctly work with the newest version
+                      of Spitfire.
+
+                    - OpenDoors will now attempt to swap itself and your entire
+                      door program to expanded memory or disk when the sysop
+                      shells to DOS, or when you call one of the od_spawn...()
+                      functions. Memory swapping may be configured in a number
+                      of ways, or even disabled. The OpenDoors swapping code
+                      adds only 2K to the door's .EXE file size.
+
+                    - OpenDoors now includes a new od_spawnvpe() function. In
+                      addition to the features of the "quick-spawn" od_spawn()
+                      function, od_spawnvpe() also returns the errorlevel the
+                      called program returned, allows you to alter the
+                      environment passed to the child process, and uses the same
+                      parameter format as the C spawnvpe() function. (see page
+                      117)
+
+                    - The od_page() function now checks the sysop paging hours,
+                      set in the OpenDoors control structure. If the user
+                      attempts to page the sysop outside of the defined paging
+                      hours, he or she will be notified that the sysop is not
+                      available.
+
+                    - OpenDoors now includes a configuration file sub-system
+                      that you may choose to include in your OpenDoors programs.
+                      This sub-system automatically parses the configuration
+                      file you specify, responding to any of the built-in
+                      configuration commands, and passing configuration options
+                      specific to your program back to you. With only a single
+                      line of code on your part, this sub-system will allow
+                      people running your program to configure many options such
+                      as sysop paging hours, system directories, maximum time
+                      within the door, etc. It also allows the sysop to provide
+                      information that may not be supplied by their particular
+                      BBS software, such as modem settings, the system's name
+                      and so on. In addition to all these built in commands, you
+                      can add your own configuration options, such as display
+                      colours, registration key numbers and other information
+                      needed by your program - without the need to write your
+                      own configuration file parsing routines. (See page 76)
+
+                    - OpenDoors now supports custom, sysop-defined door
+                      information file (drop file) formats. By defining a custom
+                      door information file format in the cofiguration file,
+                      OpenDoors door programs can now be made to run directly
+                      under BBS packages that use proprietary file formats that
+                      are not directly supported by OpenDoors. (see page 78)
+
+                    - In order to make doors written with OpenDoors even more
+                      foolproof for the sysop to setup, an intelligent door
+                      information file (drop file) locator has been added.
+                      OpenDoors will automatically search for a door information
+                      file in the directory specified by the configuration file,
+                      the directory specified by your door's source code, the
+                      current directory, and the directory pointed to by the
+                      environment variables used by any of a number of BBS
+                      packages.
+
+                    - OpenDoors now includes a log file sub-system that you may
+                      choose to include in your programs. The log file system
+                      handles all access and formatting of the logfile, allowing
+                      the programmer to make log file entries by simple function
+                      calls such as od_write_log("User downloading file");.
+                      Also, since the log file system is closely integrated with
+                      the rest of OpenDoors, choosing to include the logfile
+                      system in a program causes OpenDoors to automatically
+                      output the most common logfile entries for events such as
+                      the user paging sysop, the user hanging up, sysop chatting
+                      with the user, user inactivity timeouts, and so on. (see
+                      page 89)
+
+                    - OpenDoors 4.00 would not always correctly turn on and off
+                      high intensity or flashing colour attributes in ANSI mode.
+                      The ANSI colour handling code has been reworked for
+                      version 4.10, to eliminate these problems.
+
+                    - An od_get_answer() function has been added, which can be
+                      used to easily permit only certain keys to be pressed in
+                      response to a prompt. For instance, to get a Yes/No
+                      response from the user, use od_get_answer("YN"); (see page
+                      66)
+
+                    - A popular addition to OpenDoors 4.00 was the ability to
+                      change the current display colour within od_printf()
+                      format strings, using imbedded control characters.
+                      However, the programmer was forced to use a rather cryptic
+                      two-byte control sequence, where the second character of
+                      the sequence contained an 8-bit colour attribute value. It
+                      is now possible to change the display colour within
+                      od_printf() by specifying the names of the desired
+                      foreground and background colours, delimited by a set of
+                      BACK-QUOTE (`) characters. For example:
+
+          od_printf("`Red` THIS TEXT IS RED `Blue` THIS TEXT IS BLUE");
+          od_printf("`Flashing bright green on dark green` AND THIS IS GREEN");
+
+                      (see page 93)
+
+                    - Version 4.10 would not correctly "freeze" the user's time
+                      during DOS shell and sysop page operations, when the door
+                      was operating under RemoteAccess 1.11. This has been
+                      fixed.
+
+                    - A new variable, od_spawn_freeze_time, has been added to
+                      the OpenDoors control structure. When set to FALSE, the
+                      user's time remaining continues to be deducted during the
+                      execution of any of the od_spawn... functions. When set to
+                      TRUE, the user's time remaining is frozen during the
+                      execution of an od_spawn... function.
+
+                    - The current directory is now correctly restored to its
+                      original setting after the sysop returns from a DOS shell,
+                      and after calls to the od_spawn... functions.
+
+                    - A number of people were experiencing difficulty using the
+                      od_edit_str() function in version 4.00. A number of
+                      improvements to this function's logic have been made in an
+                      attempt to make od_edit_str() more foolproof to use. Also,
+                      a new flag setting, EDIT_FLAG_LEAVE_BLANK has been added.
+                      However, there were a few reports of problems which we
+                      were not able to reproduce. If you are still having
+                      difficulty with this function, please carefully re-read
+                      the section of the manual pertaining to it's use. In
+                      particular, be sure that your difficulty is not resulting
+                      from the flag settings you are using. If you still suspect
+                      a bug in this function, please include with your bug
+                      report the source code that is causing the problem.
+
+                    - Page pausing within the od_send_file() and od_list_files()
+                      (FILES.BBS listing routine) functions can now be disabled
+                      and re-enabled by the programmer.
+
+                    - The "Continue? [Y/n/=]" end of screen prompt and response
+                      keys are now fully customizable.
+
+                    - The od_list_files() FILES.BBS listing function now works
+                      correctly in all memory models. The function has also been
+                      fixed to correctly handle cases where the trailing
+                      backslash is not supplied in the path parameter.
+
+                    - The actual BBS line (node) number is now displayed on the
+                      default status line, provided that this information is
+                      supplied by the BBS software.
+
+                    - It is now possible to detect whether keystrokes originated
+                      from the remote or local keyboard. This is a feature that
+                      is useful in some special applications, such as split-
+                      screen sysop chat programs.
+
+                    - Version 4.00 would not always correctly display the status
+                      lines, if there was information missing from the
+                      EXITINFO.BBS file. This has been fixed. In addition, the
+                      "next event" information is now correctly displayed on the
+                      status lines. Also, if the user's birthday is available,
+                      their age will also be calculated and displayed on the
+                      status line.
+
+                    - If you temporarily disable inactivity timeouts, OpenDoors
+                      will no longer automatically trigger and inactivity
+                      timeout as soon as you re-enable this feature.
+
+                    - A new function, od_hotkey_menu(), has been added to
+                      facilitate displaying a menu with "hot keys". Like the
+                      od_send_file() function, od_hotkey_menu() will display an
+                      ASCII, ANSI or AVATAR file. However, od_hotkey_menu() also
+                      allows you to pass a string listing possible hot keys. If
+                      the user presses any of these keys while the menu is being
+                      displayed, menu display will immediately cease, and the
+                      function will return the key pressed by the user. (See
+                      page 71)
+
+                    - The od_send_file() (the ASCII/ANSI/AVATAR file display
+                      routine) no longer sends the EOF character if it happens
+                      to exist at the end of a file.
+
+                    - In addition to the EZVote OpenDoors tutorial door, an
+                      number of other example doors are now included in the
+                      OpenDoors package.
+
+                    - A few errors have been corrected in the documentation, and
+                      additional information has been added about the new
+                      features in this version.
+
+
+
+VERSION 5.00   Version 5.00 represents several major steps forward for
+               OpenDoors. In addition to numerous bug fixes and minor
+               improvements, a number of major new features have been added to
+               this version. These include an optional multiple personality
+               system which allow the sysop to choose the status line and
+               function key style they prefer. This version also adds text-mode
+               support for RIP (Remote Imaging Protocol) graphics, and adds a
+               group of advanced ANSI/AVATAR/RIP functions for scrolling areas
+               of the screen, saving and restoring portions of the screen and
+               creating pop-up windows and menus. Also new in this version is
+               support for compilers other than Borland/Turbo C(++), such as
+               compilers from Microsoft. Version 5.00 also adds built-in
+               communications support, making the use of a FOSSIL driver
+               optional. Furthermore, direct support for additional BBS systems
+               has been added. The list below provides more detail of the
+               changes and new features in version 5.00:
+
+                    - The nonstop key ([=]) now works correctly during
+                      FILES.BBS listing.
+
+                    - New door information file formats now supported include:
+                      RA 2.00 EXITINFO.BBS.
+
+                    - If the TASK environment variable is set, OpenDoors will
+                      now use its value to determine the current node number.
+
+                    - The od_control.od_spawn_freeze_time variable now works
+                      correctly. Previously, the user's time would always be
+                      frozen during od_spawn...() execution, regardless of the
+                      value of this variable.
+
+                    - A new feature known as the "Multiple Personality System"
+                      has been added to this version. If you choose to include
+                      the Multiple Personality System in a door, the sysop will
+                      be able to specify which of a number of "personalities"
+                      should be used. Each personality defines the statusline
+                      appearance and function keys seen by the sysop, and has
+                      no effect on the door's operation from the user's
+                      standpoint. OpenDoors 5.00 includes personality
+                      definitions for WildCat, RemoteAccess, PC-Board, and it's
+                      own simplified RA style status lines. You can also define
+                      your own personalities by writing a personality
+                      definition function. If your choose not to include the
+                      Multiple Personality System in a door, you will still be
+                      able to define which single personality you wish
+                      OpenDoors to use.
+
+                    - This version of OpenDoors can be used with a larger
+                      variety of compilers than where supported by the previous
+                      version. OpenDoors 5.00 is known to work with all
+                      versions of Turbo C, Turbo C++, Borland C++, Microsoft C,
+                      Microsoft C++, Quick C and Visual C++. It should also
+                      work with any other MS-DOS based ANSI C compiler that
+                      supports the Microsoft/DOS .OBJect and .LIBrary file
+                      formats.
+
+                    - A new diagnostics feature has been added to OpenDoors,
+                      which allows you to determine the reason for the most
+                      recent OpenDoors function failure. When any OpenDoors
+                      function returns a failure condition, it also sets the
+                      new od_control.od_error variable to indicate the reason
+                      for the failure.
+
+                    - Added additional definitions to OPENDOOR.H, to map names
+                      of OpenDoors functions and variables with the word
+                      "colour" from the U.S. spelling "color". In other words,
+                      both od_set_colour() and od_set_color() are now
+                      recognized by OpenDoors.
+
+                    - The od_list_files() now supports more intelligent path
+                      specifications. If the parameter to od_list_files() is
+                      NULL or empty, it will search for a FILES.BBS file in the
+                      current directory. If a directory path is specified, it
+                      will look for a FILES.BBS in that directory. If a full
+                      directory and filename are specified, the specified
+                      filename will be used in place of FILES.BBS.
+
+                    - To save space, the compact memory model library is no
+                      longer included in the normal OpenDoors package. The
+                      compact memory model library is now available seperately.
+
+                    - A new function, od_set_dtr(), has been added to allow the
+                      DTR line to the modem to be manually controlled. This can
+                      be useful in writing programs where you wish to force the
+                      modem to hangup, such as a call-back verification door.
+
+                    - Added additional support for various DOS multitasking
+                      environments. OpenDoors is now specifically Microsoft
+                      Windows aware. OpenDoors also now gives up time to other
+                      waiting tasks when it is idle during chat mode.
+
+                    - The od_edit_str() "M" mode now capitializes a character
+                      following a dash '-' character.
+
+                    - When transmitting more than one character at a time,
+                      OpenDoors now uses the FOSSIL trasfer block function,
+                      instead of multiple calls to the transfer character
+                      function. This should help to improve performance over
+                      high speed connections when running on slow PCs or under
+                      multitasking environments.
+
+                    - OpenDoors 4.10 would not correctly change the display
+                      colour from high-intensity back to low-intensity. This
+                      problem has been fixed.
+
+                    - OpenDoors now recognizes DORINFO?.DEF filenames with
+                      alphabetical identifiers (ie, DORINFOA.DEF thru
+                      DORINFOZ.DEF) for nodes 10 thru 35.
+
+                    - Improvements have been made to the logfile system. An
+                      exit at errorlevel zero no longer causes garbage to be
+                      written to the logfile. The logfile functions have been
+                      made more reliable when operating under low stack
+                      availability conditions. In the past, if a large number
+                      of local variables where allocated on the stack, the
+                      logfile functions would fail, often writing garbage to
+                      the logfile. When the user pages the sysop for chat, the
+                      user's reason for wishing a chat is also written to the
+                      logfile.
+
+                    - Support for text-mode RIP (Remote Imaging Protocol)
+                      graphics has been added. Because this version of
+                      OpenDoors always operates in DOS text-mode, none of the
+                      graphics mode RIP features (such as drawing lines,
+                      circles and displaying icons) will appear on the local
+                      screen. Plans for a version of OpenDoors that will
+                      operate in graphics mode and optionally display graphics
+                      locally are currently under consideration. In this
+                      version, RIP support includes a number of new features.
+                      OpenDoors will now recognize the RIP setting passed in an
+                      RA 2.00 EXITINFO.BBS file and WildCat DOOR.SYS file, and
+                      also allows the RIP setting to be specified in a custom
+                      door information file. The od_send_file() and
+                      od_hotkey_menu() functions will now search for files with
+                      .RIP, .AVT, .ANS and .ASC extensions. When displaying RIP
+                      graphics to the remote user, a pop-up window appears on
+                      the local screen, indicating to the sysop which file is
+                      being displayed.
+
+                    - A set of new functions have been added to permit advanced
+                      screen manipulations. These functions include
+                      od_gettext() and od_puttext() to save and restore
+                      portions of the screen, and od_save_screen() and
+                      od_restore_screen() to save and restore the entire
+                      screen. od_scroll() can be used to scroll any portion of
+                      the screen upwards or downwards. od_save_screen() and
+                      od_restore_screen() will operate in any mode, but the
+                      other functions require ANSI/AVATAR/RIP mode to be
+                      available.
+
+                    - Three additional functions, od_window_create(),
+                      od_window_remove() and od_popup_menu(), have been added
+                      to facilitate the creation of popup windows and menus.
+                      When such a window or menu is removed from the screen,
+                      the are of the screen "under" the window is returned to
+                      it's original state. This allows you to create multiple
+                      overlapping windows within a door program. The
+                      od_popup_menu() function creates a popup window with a
+                      menu from a simple menu definition string. The user can
+                      select an option from this menu by pressing the key
+                      associated with an option, or by moving a menu selection
+                      bar using their arrow keys. These three functions require
+                      an ANSI/AVATAR/RIP mode to be available.
+
+                    - A new function, od_chat() has been added, to allow you to
+                      explicitly invoke the OpenDoors chat mode from within
+                      your program.
+
+                    - A new setting variable, od_control.od_always_clear has
+                      been added. When set to TRUE, od_clr_scr() will always
+                      clear the screen, regardless of the user's screen
+                      clearing setting. When set to FALE, od_clr_scr() will
+                      only clear the screen if the user has screen clearing
+                      enabled.
+
+                    - It is now possible to configure the errorlevels OpenDoors
+                      exits with under various circumstances, such as when the
+                      user runs out of time remaining online. See the
+                      od_control.od_errorlevel variable
+
+                    - A new setting variable, od_control.od_force_local, can be
+                      used to easily force OpenDoors to operate in local mode.
+                      Using this variable you can easily add a command line
+                      parameter such as "-local" to allow the sysop to force
+                      your door to operate in local mode. When OpenDoors is
+                      forced into local mode using this variable, it does not
+                      look for a door information file, and uses default
+                      settings for the user's name, etc.
+
+                    - OPENDOOR.H now sets structure packing to single byte
+                      alignment for the od_control structure when Borland and
+                      Microsoft compilers are being used. In the past,
+                      programmers using OpenDoors have experienced difficulties
+                      the od_control structure when the compiler has been set
+                      to use word packing.
+
+                    - OpenDoors now closes the FOSSIL driver prior to
+                      performing a spawn or sysop DOS shell. This allows doors
+                      or other communications programs which use the FOSSIL
+                      driver to be executed while the door's execution is
+                      suspended.
+
+                    - When used with a FOSSIL driver, OpenDoors normally
+                      changes the BPS rate to that passed from the BBS (if the
+                      BBS passes a valid FOSSIL BPS rate). This BPS rate
+                      setting may now be disabled by setting the
+                      DIS_BPS_SETTING bit of the od_control.od_disable
+                      variable.
+
+                    - A function hook has been added to allow you to install a
+                      function to be called whenever od_kernel() executes
+                      (od_control.od_ker_exec). Another function hook,
+                      od_control.od_time_msg_func, can be installed to override
+                      OpenDoor's time limit warning messages.
+
+                    - A new array, od_control.od_hot_function, allows the you
+                      to define functions to be called when any of the
+                      programmer-defined sysop hotkeys have been pressed.
+
+                    - A function hook, od_control.od_no_file_func, has been
+                      added. This function will be called whenever OpenDoors is
+                      unable to find or read a door information file. This
+                      allows you to add your own door information file reader,
+                      or to provide a local login prompt when no door
+                      information file is present.
+
+                    - Previously, OpenDoors would stop correctly updating the
+                      user's remaining time at midnight when running under
+                      certain BIOSes. This problem has been fixed.
+
+                    - The current display colour attribute can now be accessed
+                      through an control structure member,
+                      od_control.od_cur_attrib.
+
+                    - od_send_file() and od_hotkey_menu() no longer pause with
+                      a "Continue?" prompt prematurely in files that have line
+                      lengths greater than 254 characters.
+
+                    - The local keyboard may now be disabled by setting the
+                      DIS_LOCAL_INPUT bit of od_control.od_disable. This only
+                      affects the sysop's input in circumstances that input is
+                      also accepted from the remote user; this setting has no
+                      effect on the sysop function keys.
+
+                      A new function hook:                      -
+
+                         void (*od_control.od_local_input)(int);
+
+                      has been added. If set, this function will be called
+                      whenever the sysop presses a non-sysop-function key on
+                      the local keyboard.
+
+                    - od_control.od_clear_on_exit now controls whether the
+                      screen is cleared before shelling or executing
+                      od_spawn...(), in addition to before OpenDoors shuts
+                      down.
+
+                    - od_page() now restores the original display colour before
+                      returning.
+
+                    - It is now possible to display an entire string of
+                      characters with terminal emulation, using the new
+                      function od_disp_emu().
+
+                    - OpenDoors will now display a small popup window when
+                      disconnecting the current connection.
+
+                    - A new variable, od_control.od_in_buf_size, can now be set
+                      prior to calling any OpenDoors function to set the size
+                      of OpenDoors combined local/remote keyboard input buffer.
+                      By default, this buffer is 256 bytes in size.
+
+                    - Previously, there were a number of OpenDoors API
+                      functions that would not correctly initialize OpenDoors
+                      if they were the first function called in the program.
+                      This has been fixed.
+
+                    - To facilitate setting of bps rates up to 115,200,
+                      od_control.baud is now an unsigned long.
+
+                    - A new setting, od_control.od_no_ra_codes, has been added
+                      to disable the use of RemoteAccess/QuickBBS control codes
+                      by od_send_file()/od_hotkey_menu()/od_disp_emu(). The
+                      RemoteAccess/QuickBBS ASCII 1 "pause for key" is also now
+                      recognized.

@@ -1,0 +1,2244 @@
+ÚÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¿
+³ Ü  Ü                             Ü                  ³ Volume 94  Issue 2  ³
+³ÜÛÜ Û   Ûßß     ÜÜÜ ÛßÛ Ûßß ÛÛÜ ÜÜÛ ÜÜÜ ÜÜÜ ÜÜÜ Ûßß  ³ September 23, 1994  ³
+³ Û  ÛßÛ Ûß      Û Û ÛÜÛ Ûß  Û Ş Û Û Û Û Û Û Û   ßßÛ  ³                     ³
+³ ÛÛ Û Û ÛÛÛ     ÛÛÛ Û   ÛÛÛ Û Ş ÛÛÛ ÛÛÛ ÛÛÛ Û   ÛÛÛ  ³ "The greatest thing ³
+³ Ü          Ü                               Ü        ³  to happen to       ³
+³ÜÛÜ Ûßß ÜÜÜ Û         Û ÜÜÜ Û Û ÜÜÜ ÛÛÜ ßßÛ Û        ³  journalism since   ³
+³ Û  Ûß  Û   ÛßÛ     İ Û Û Û Û Û Û   Û Ş ÛßÛ Û        ³  Real People!"      ³
+³ ÛÛ ÛÛÛ ÛÛÛ Û Û     ÛÛÛ ÛÛÛ ÛÛÛ Û   Û Ş ÛÛÛ ÛÛÛ      ³                     ³
+³                                                     ³ Ed: Scott Burkett   ³
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+In this action-packed issue:
+
+        - A Word from the Editor
+        - OpenDoors 5.0 Released!
+        - OpenDoors 5.0 Changes
+        - Bits 'n Bytes 'n Data types
+        - Adding InterBBS Capabilities to OpenDoors programs
+        - Opendoors Tech Corner - Inside OD 5.0's Internal Async Routines
+        - Opendoors Tech Corner - Adding Local Mode Functionality
+        - Opendoors Tech Corner - Finding physical cursor position in OD 5.0
+        - Opendoors Tech Corner - Using UP/DOWN Arrow Keys in OD 5.0
+        - Opendoors Tech Corner - Drawing bar graphs with OD!
+        - Opendoors Tech Corner - Obtaining Names/Passwords in ASCII Mode
+        - Opendoors Tech Corner - Files Transfers under OpenDoors
+        - Opendoors Tech Corner - Comparing file stamps
+        - Opendoors Tech Corner - Generating Fidonet *.MSG Messages
+        - Code Snippets!
+        - Opendoors Release Notice: BCHECKERS v1.2
+        - Opendoors Release Notice: BFE 4.00.2r
+        - Opendoors Release Notice: GIF View Preview Door v1.0
+        - Opendoors Release Notice: Operation: Office v.05
+        - OpenDoors Tech Journal Information
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ A Word from the Editor ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßß
+
+By: Scott Burkett
+
+After many months of toiling, sweating, complaining, and otherwise
+groveling - it is now official - OpenDoors v5.0 has arrived!  Brian has
+once again displayed his ability to provide his customers with simply
+the best C-based door kit in existence.
+
+I've moved!  Actually, I'm still moving.  My wife and I just moved to
+the Tampa Bay, Florida area and so far, so good!  Actually, the author
+of RemoteAccess, Andrew Milner lives in Clearwater now - supposedly owns
+his own bar.  I would go looking him up, but I'm afraid what might
+happen if Andrew and I spent too much time together with his alcohol
+supply.  Such is life.
+
+If you haven't noticed by now, this issue is big - no, huge is more like
+it.  I've been saving bits and pieces here and there.  Actually, I was
+waiting on OD 5.0 to be released, and the pile just kept growing.  I
+am convinced that the only reason Brian finally released 5.0, was to
+diminish my growing stack of code snippets.... :-)
+
+Just a reminder, but please be sure to send me any release notices for
+your latest OpenDoors creations!  Without being notified, chances are,
+it won't appear in ODTJ.  Free advertising is nice, isn't it.... :-)
+
+Alles Klaar und spater! (Until the next issue...)
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors 5.0 Released! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+By: Brian Pirie
+
+This edition of the ODTJ marks the release of OpenDoors 5.00.  Version 5.00
+embodies some major steps forward for OpenDoors, including built-in
+asynchronous serial I/O capabilities, support for non-Borland C compilers
+such as Microsoft C, and a set of new advanced screen, window and popup menu
+functions. Many small enhancements have also been made, along with many
+efficiency improvements. As the long "new features and enhancements" list for
+version 5.00 will testify, this new release is one of the largest upgrades
+ever made to the capabilities of OpenDoors. Version 5.00 has also been more
+extensively tested than any previous version of OpenDoors, making it one of
+the most stable and efficient foundations on which you could choose to build
+your on-line software.
+
+Yet, even with all of the improvements that have been made for OpenDoors
+5.00, work is already going ahead for version 5.10. The aim of version 5.10
+won't be so much to add new features, as to improve on already existing
+features. More efficiency improvements and greater flexibility is the goal of
+OpenDoors 5.10.
+
+What will come after OpenDoors 5.10? More than anything else, the future
+directions of OpenDoors is guided by the programmers who work with it. Your
+suggestions, ideas and even bug reports will determine what enhancements will
+continue to be made to OpenDoors. Please don't hesitate to pass along any
+changes that you would like to see in future versions of OpenDoors! I am also
+interested to find out how much interest there would be in the following:
+
+-   An OS/2-specific version of OpenDoors
+-   A Windows-specific version of OpenDoors
+-   Graphics-mode RIP support
+-   A programmer-configurable door installation/configuration utility
+    that would work in conjunction with the OpenDoors configuration file
+    system.
+-   A multi-node file system that would facilitate easy implementation
+    of multi-node doors with the ability to send messages between nodes
+    and control concurrent access to configuration and user files.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors 5.0 Released! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+By: Brian Pirie
+
+Version 5.00 represents several major steps forward for OpenDoors. In
+addition to numerous bug fixes and minor improvements, a number of major
+new features have been added to this version. These include an optional
+multiple personality system which allow the sysop to choose the status
+line and function key style they prefer. This version also adds
+text-mode support for RIP (Remote Imaging Protocol) graphics, and adds a
+group of advanced ANSI/AVATAR/RIP functions for scrolling areas of the
+screen, saving and restoring portions of the screen and creating pop-up
+windows and menus. Also new in this version is support for compilers
+other than Borland/Turbo C(++), such as compilers from Microsoft.
+Version 5.00 also adds built-in communications support, making the use
+of a FOSSIL driver optional. Furthermore, direct support for additional
+BBS systems has been added.
+
+The list below provides more detail of the changes and new features in
+version 5.00. For a summary of changes made for previous versions of
+OpenDoors, refer to the OpenDoors History file that is available from my
+system.
+
+     - The nonstop key ([=]) now works correctly during FILES.BBS
+       listing.
+
+     - New door information file formats now supported include: RA 2.00
+       EXITINFO.BBS.
+
+     - If the TASK environment variable is set, OpenDoors will now use
+       its value to determine the current node number.
+
+     - The od_control.od_spawn_freeze_time variable now works correctly.
+       Previously, the user's time would always be frozen during
+       od_spawn...() execution, regardless of the value of this
+       variable.
+
+     - A new feature known as the "Multiple Personality System" has been
+       added to this version. If you choose to include the Multiple
+       Personality System in a door, the sysop will be able to specify
+       which of a number of "personalities" should be used. Each
+       personality defines the statusline appearance and function keys
+       seen by the sysop, and has no effect on the door's operation from
+       the user's standpoint. OpenDoors 5.00 includes personality
+       definitions for WildCat, RemoteAccess, PC-Board, and it's own
+       simplified RA style status lines. You can also define your own
+       personalities by writing a personality definition function. If
+       your choose not to include the Multiple Personality System in a
+       door, you will still be able to define which single personality
+       you wish OpenDoors to use.
+
+     - This version of OpenDoors can be used with a larger variety of
+       compilers than where supported by the previous version. OpenDoors
+       5.00 is known to work with all versions of Turbo C, Turbo C++,
+       Borland C++, Microsoft C, Microsoft C++, Quick C and Visual C++.
+       It should also work with any other MS-DOS based ANSI C compiler
+       that supports the Microsoft/DOS .OBJect and .LIBrary file
+       formats.
+
+     - A new diagnostics feature has been added to OpenDoors, which
+       allows you to determine the reason for the most recent OpenDoors
+       function failure. When any OpenDoors function returns a failure
+       condition, it also sets the new od_control.od_error variable to
+       indicate the reason for the failure.
+
+     - Added additional definitions to OPENDOOR.H, to map names of
+       OpenDoors functions and variables with the word "colour" from the
+       U.S. spelling "color". In other words, both od_set_colour() and
+       od_set_color() are now recognized by OpenDoors.
+
+     - The od_list_files() now supports more intelligent path
+       specifications. If the parameter to od_list_files() is NULL or
+       empty, it will search for a FILES.BBS file in the current
+       directory. If a directory path is specified, it will look for a
+       FILES.BBS in that directory. If a full directory and filename are
+       specified, the specified filename will be used in place of
+       FILES.BBS.
+
+     - To save space, the compact memory model library is no longer
+       included in the normal OpenDoors package. The compact memory
+       model library is now available seperately.
+
+     - A new function, od_set_dtr(), has been added to allow the DTR
+       line to the modem to be manually controlled. This can be useful
+       in writing programs where you wish to force the modem to hangup,
+       such as a call-back verification door.
+
+     - Added additional support for various DOS multitasking
+       environments. OpenDoors is now specifically Microsoft Windows
+       aware. OpenDoors also now gives up time to other waiting tasks
+       when it is idle during chat mode.
+
+     - The od_edit_str() "M" mode now capitializes a character following
+       a dash '-' character.
+
+     - When transmitting more than one character at a time, OpenDoors
+       now uses the FOSSIL trasfer block function, instead of multiple
+       calls to the transfer character function. This should help to
+       improve performance over high speed connections when running on
+       slow PCs or under multitasking environments.
+
+     - OpenDoors 4.10 would not correctly change the display colour from
+       high-intensity back to low-intensity. This problem has been
+       fixed.
+
+     - OpenDoors now recognizes DORINFO?.DEF filenames with alphabetical
+       identifiers (ie, DORINFOA.DEF thru DORINFOZ.DEF) for nodes 10
+       thru 35.
+
+     - Improvements have been made to the logfile system. An exit at
+       errorlevel zero no longer causes garbage to be written to the
+       logfile. The logfile functions have been made more reliable when
+       operating under low stack availability conditions. In the past,
+       if a large number of local variables where allocated on the
+       stack, the logfile functions would fail, often writing garbage to
+       the logfile. When the user pages the sysop for chat, the user's
+       reason for wishing a chat is also written to the logfile.
+
+     - Support for text-mode RIP (Remote Imaging Protocol) graphics has
+       been added. Because this version of OpenDoors always operates in
+       DOS text-mode, none of the graphics mode RIP features (such as
+       drawing lines, circles and displaying icons) will appear on the
+       local screen. Plans for a version of OpenDoors that will operate
+       in graphics mode and optionally display graphics locally are
+       currently under consideration. In this version, RIP support
+       includes a number of new features. OpenDoors will now recognize
+       the RIP setting passed in an RA 2.00 EXITINFO.BBS file and
+       WildCat DOOR.SYS file, and also allows the RIP setting to be
+       specified in a custom door information file. The od_send_file()
+       and od_hotkey_menu() functions will now search for files with
+       .RIP, .AVT, .ANS and .ASC extensions. When displaying RIP
+       graphics to the remote user, a pop-up window appears on the local
+       screen, indicating to the sysop which file is being displayed.
+
+     - A set of new functions have been added to permit advanced screen
+       manipulations. These functions include od_gettext() and
+       od_puttext() to save and restore portions of the screen, and
+       od_save_screen() and od_restore_screen() to save and restore the
+       entire screen. od_scroll() can be used to scroll any portion of
+       the screen upwards or downwards. od_save_screen() and
+       od_restore_screen() will operate in any mode, but the other
+       functions require ANSI/AVATAR/RIP mode to be available.
+
+     - Three additional functions, od_window_create(),
+       od_window_remove() and od_popup_menu(), have been added to
+       facilitate the creation of popup windows and menus. When such a
+       window or menu is removed from the screen, the are of the screen
+       "under" the window is returned to it's original state. This
+       allows you to create multiple overlapping windows within a door
+       program. The od_popup_menu() function creates a popup window with
+       a menu from a simple menu definition string. The user can select
+       an option from this menu by pressing the key associated with an
+       option, or by moving a menu selection bar using their arrow keys.
+       These three functions require an ANSI/AVATAR/RIP mode to be
+       available.
+
+     - A new function, od_chat() has been added, to allow you to
+       explicitly invoke the OpenDoors chat mode from within your
+       program.
+
+     - A new setting variable, od_control.od_always_clear has been
+       added. When set to TRUE, od_clr_scr() will always clear the
+       screen, regardless of the user's screen clearing setting. When
+       set to FALE, od_clr_scr() will only clear the screen if the user
+       has screen clearing enabled.
+
+     - It is now possible to configure the errorlevels OpenDoors exits
+       with under various circumstances, such as when the user runs out
+       of time remaining online. See the od_control.od_errorlevel
+       variable
+
+     - A new setting variable, od_control.od_force_local, can be used to
+       easily force OpenDoors to operate in local mode. Using this
+       variable you can easily add a command line parameter such as
+       "-local" to allow the sysop to force your door to operate in
+       local mode. When OpenDoors is forced into local mode using this
+       variable, it does not look for a door information file, and uses
+       default settings for the user's name, etc.
+
+     - OPENDOOR.H now sets structure packing to single byte alignment
+       for the od_control structure when Borland and Microsoft compilers
+       are being used. In the past, programmers using OpenDoors have
+       experienced difficulties the od_control structure when the
+       compiler has been set to use word packing.
+
+     - OpenDoors now closes the FOSSIL driver prior to performing a
+       spawn or sysop DOS shell. This allows doors or other
+       communications programs which use the FOSSIL driver to be
+       executed while the door's execution is suspended.
+
+     - When used with a FOSSIL driver, OpenDoors normally changes the
+       BPS rate to that passed from the BBS (if the BBS passes a valid
+       FOSSIL BPS rate). This BPS rate setting may now be disabled by
+       setting the DIS_BPS_SETTING bit of the od_control.od_disable
+       variable.
+
+     - A function hook has been added to allow you to install a function
+       to be called whenever od_kernel() executes
+       (od_control.od_ker_exec). Another function hook,
+       od_control.od_time_msg_func, can be installed to override
+       OpenDoor's time limit warning messages.
+
+     - A new array, od_control.od_hot_function, allows the you to define
+       functions to be called when any of the programmer-defined sysop
+       hotkeys have been pressed.
+
+     - A function hook, od_control.od_no_file_func, has been added. This
+       function will be called whenever OpenDoors is unable to find or
+       read a door information file. This allows you to add your own
+       door information file reader, or to provide a local login prompt
+       when no door information file is present.
+
+     - Previously, OpenDoors would stop correctly updating the user's
+       remaining time at midnight when running under certain BIOSes.
+       This problem has been fixed.
+
+     - The current display colour attribute can now be accessed through
+       an control structure member, od_control.od_cur_attrib.
+
+     - od_send_file() and od_hotkey_menu() no longer pause with a
+       "Continue?" prompt prematurely in files that have line lengths
+       greater than 254 characters.
+
+     - The local keyboard may now be disabled by setting the
+       DIS_LOCAL_INPUT bit of od_control.od_disable. This only affects
+       the sysop's input in circumstances that input is also accepted
+       from the remote user; this setting has no effect on the sysop
+       function keys.
+
+       A new function hook:
+
+          void (*od_control.od_local_input)(int);
+
+       has been added. If set, this function will be called whenever the
+       sysop presses a non-sysop-function key on the local keyboard.
+
+     - od_control.od_clear_on_exit now controls whether the screen is
+       cleared before shelling or executing od_spawn...(), in addition
+       to before OpenDoors shuts down.
+
+     - od_page() now restores the original display colour before
+       returning.
+
+     - It is now possible to display an entire string of characters with
+       terminal emulation, using the new function od_disp_emu().
+
+     - OpenDoors will now display a small popup window when
+       disconnecting the current connection.
+
+     - A new variable, od_control.od_in_buf_size, can now be set prior
+       to calling any OpenDoors function to set the size of OpenDoors
+       combined local/remote keyboard input buffer. By default, this
+       buffer is 256 bytes in size.
+
+     - Previously, there were a number of OpenDoors API functions that
+       would not correctly initialize OpenDoors if they were the first
+       function called in the program. This has been fixed.
+
+     - To facilitate setting of bps rates up to 115,200, od_control.baud
+       is now an unsigned long.
+
+     - A new setting, od_control.od_no_ra_codes, has been added to
+       disable the use of RemoteAccess/QuickBBS control codes by
+       od_send_file()/od_hotkey_menu()/od_disp_emu(). The
+       RemoteAccess/QuickBBS ASCII 1 "pause for key" is also now
+       recognized.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Bits and Bytes and Data Types ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ InterBBS Capabilities are Here! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+*** Editor's Note: The following is the press release for Brian's
+InterBBS add-on library for OpenDoors.  It can be obtained by FREQ'ing
+IBBS from either his system or mine.  Enjoy!
+
+BBS "door" programs have always allowed operators of online computer
+services, such as electronic bulletin board systems, to easily expand the
+services provided by their systems. Doors have greatly increased the
+flexibility and usability of BBS systems. A recent trend in door development
+has been to allow doors running on one BBS system to be linked to doors
+running on other systems, often through existing mail networks. While these
+networks have traditionally provided private and conference (echo) mail
+services and file sharing capabilities, they can also be useful in providing
+links between special applications that wish to share information with one
+another.
+
+By taking advantage of existing mail network technology, BBS door developers
+have been able to add a new dimension to the software they create. Among the
+new ideas that have proven successful have been distributed BBS listing
+services, distributed file listing services and games that share top-score
+lists or even allow players to compete with people playing the game hundreds
+or thousands of miles away. The possibilities are really limited only by the
+imagination of the door software developer.
+
+This package is designed to assist in writing Inter-BBS door programs that
+can communicate across FTSC-compatible mail networks, such as FidoNet. Using
+this package, you can:
+
+       - Send information messages through any FTSC-compatible mailer
+         that supports *.MSG format netmail, including FrontDoor,
+         InterMail, BinkleyTerm, D'Bridge, and others.
+
+       - Send messages containing either textual or binary data. This
+         information is stored in the message body, to allow the message
+         to be sent either directly (CrashMail) or by routed netmail.
+
+       - Easily send information to just one other system, or all
+         systems running the door. This allows you to implement both
+         centralized and de-centralized information distribution
+         schemes.
+
+This package includes the source code for an example skiing game door that
+maintains a high score list across multiple BBSes. This game requires the
+OpenDoors door programming toolkit to be compiled. However, the Inter-BBS
+Toolkit itself can also be use in doors that are not written with OpenDoors.
+
+The Inter-BBS Toolkit is available free of charge, and the package includes
+the complete C source code. This source code has been written for Borland C
+and C++ compilers, but may easily be modified for use with other C compilers.
+With the source code, you are able to customize or expand the capabilities of
+the Inter-BBS Toolkit as you wish.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Tech Corner ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßß
+
+-----------------------------------------------------------------------------
+                Inside OD 5.0's Internal Async Routines
+                     By: Brian Pirie/Scott Burkett
+-----------------------------------------------------------------------------
+
+ > Just a quick thought, but it would be nice if we could have
+ > access to the low level communication functions (both fossil and
+ > internal).  The standard od...() functions work great for doors,
+ > but for critical timing matters such as protocols, etc, it
+ > doesn't fly.  I am using my own fossil system for the timing
+ > essential portions of BFE, for example.
+
+I will consider adding these functions to the documented OpenDoors interface. In
+the meantime, they are as follows:
+
+int _com_carrier(void);           /* TRUE if DCD is high */
+void _com_clear_inbound(void);    /* Clears outbound buffer */
+void _com_clear_outbound(void);   /* Clears inbound buffer */
+void _com_close(void);            /* Closes serial port */
+void _com_dtr(char high);         /* TRUE raises DTR, FALSE lowers DTR */
+char _com_getchar(void);          /* Returns next char from modem */
+void _com_ini(void);              /* Opens serial port */
+char _com_inbound(void);          /* FALSE if inbound buffer is empty */
+char _com_outbound(void);         /* FALSE if outbound buffer is empty */
+void _com_sendchar(char ch);      /* Sends character to modem */
+                                  /* Sends multiple chars to modem */
+void _com_send_buf(char *buffer,int size);
+
+These functions assume that the door is not operating in local mode. Do not
+call com_getchar() unless the _com_inbound() returns TRUE.
+
+-----------------------------------------------------------------------------
+                    Adding Local Mode Functionality
+                            By: Brian Pirie
+-----------------------------------------------------------------------------
+
+OpenDoors 5.00 now permits you to easily force your door to operate in local
+mode by setting the od_force_local variable. Normally OpenDoors will use a
+default user name, but you can also use this feature to easily provide a
+local login prompt for your door. The following example shows how you might
+do this:
+
+(This code might look long, but keep in mind that most of it is comments!)
+
+#include "opendoor.h"
+
+int main(int argc, char *argv[])
+   {
+   int counter;
+   char valid_login = TRUE;
+
+   /* Check for /LOCAL command-line parameter */
+   for(counter = 1; counter < argc; ++counter)
+      {
+      strupr(argv[counter]); /* Do this with care! */
+      if(strcmp(argv[counter], "/LOCAL")==0)
+         {
+         /* We are operating in local mode */
+         od_control.od_force_local = TRUE;
+
+         /* Let user login */
+         do {
+            /* Prompt for user name */
+            printf("User Name : ");
+
+            /* Get name from user. Note that it would be better  */
+            /* to use a console input routine that limits the    */
+            /* number of characters that can be inputted by the  */
+            /* user, to prevent od_user_name from being overrun. */
+            /* I use gets() here for simplicity.                 */
+            gets(od_control.od_user_name);
+
+            /* At this point, if you have a user file for your door */
+            /* you might want to check whether the user's name is   */
+            /* valid. If it is not valid, you can set valid_login   */
+            /* to false, to cause door to prompt for a new name.    */
+            /* (Keep in mind that you should provide some way for a */
+            /* new user to log in locally!)                         */
+         } while(!valid_login);
+
+         /* Perform main door operations */
+         doormain();
+
+         /* Exit program */
+         return(0);
+         }
+      }
+
+   /* If we get to this point, then there is no /LOCAL parameter. So, */
+   /* we should operate normally */
+
+   /* Perform main door operations */
+   doormain();
+
+   /* Exit program */
+   return(0);
+   }
+
+
+void doormain(void)
+   {
+   /* Initialize OpenDoors */
+   od_init();
+
+   /* Door's main processing, common to remote and local modes, */
+   /* here */
+   }
+
+-----------------------------------------------------------------------------
+               Finding physical cursor position in OD 5.0
+-----------------------------------------------------------------------------
+                             (Brian Pirie)
+
+ > Quick question:  Is there a method to determine the current
+ > location of the cursor, without keeping track of it manually?  I
+ > vaguely recall a thread about this subject, but can't find it
+ > for the life of me...
+
+In 5.00, the following two variables:
+
+   extern unsigned char phys_curx;
+   extern unsigned char phys_cury;
+
+store the current location of the cursor on the local screen.
+
+-----------------------------------------------------------------------------
+                 Using UP/DOWN Arrow Keys in OpenDoors 5.0
+-----------------------------------------------------------------------------
+                   (Taken from the OPENDOORS echo)
+
+ > Any news on when the next beta will be out, and also do you plan
+ > on allowing support for use of the UP/DOWN arrow keys?
+
+This has been fixed in the 5.00/beta-8 package. The following program
+demonstrates a door which displays a simple message when the up or down arrow
+key is pressed. Since OpenDoors defaults to using the up and down arrow keys
+for adjusting the user's time limit, such a program has to use different keys
+for this purpose. This program reassigns the [Page Up] and [Page Down] keys
+to be used for adjusting the user's remaining time.
+
+/* Simple program to demonstrate using arrow keys within an OpenDoors door */
+/* program. Since the arrow keys are normally used locally to adjust the   */
+/* user's time up or down, you must choose different keys to adjust the    */
+/* time limit. This program simply loops, displaying the word "up" if the  */
+/* up arrow is pressed, "down" if the down arrow is pressed, and exiting   */
+/* if the enter key is pressed.                                            */
+
+#include "opendoor.h"
+
+main()
+   {
+   int choice;
+   char pressed;
+   long timer;
+
+   /* Notice call to od_init() here! */
+   od_init();
+
+   /* Reassign PageUp and PageDown to increase/decrease time */
+   /* Remember to do this after od_init() or your first call to any OpenDoors */
+   /* function. */
+   od_control.key_lesstime = 0x5100;   /* Scan code for Page Down */
+   od_control.key_moretime = 0x4900;   /* Scan code for Page Up */
+
+   od_disp_str("Press up and down arrows keys. Press Enter when done\r\n");
+
+   for(;;)
+      {
+      pressed = od_get_key(TRUE);
+
+      /* Check for ANSI arrow key sequences */
+      if(pressed==27)
+         {
+         timer=(*(long far *)0x46cL)+2L;
+         while(timer>*(long far *)0x46cL && (pressed=od_get_key(FALSE))==0)
+            {
+            od_kernel();
+            }
+
+         if(pressed != '[')
+            {
+            continue;
+            }
+         else
+            {
+            timer=(*(long far *)0x46cL)+9L;
+            while(timer>*(long far *)0x46cL && (pressed=od_get_key(FALSE))==0)
+               {
+               od_kernel();
+               }
+            if(pressed == 0) continue;
+            switch(pressed)
+               {
+               case 'A':
+                  goto up_arrow;
+
+               case 'B':
+                  goto down_arrow;
+               }
+            }
+         }
+
+      /* Check for doorway / local arrow key sequences */
+      else if(pressed==0)
+         {
+         /* Get the next key from the keyboard */
+         timer=(*(long far *)0x46cL)+9L;
+         while(timer>*(long far *)0x46cL && (pressed=od_get_key(FALSE))==0)
+            {
+            od_kernel();
+            }
+         if(pressed == 0) continue;
+
+         /* Respond appropriately */
+         switch(pressed)
+            {
+            case 0x48:
+up_arrow:
+               od_disp_str("Up Arrow.\r\n");
+               break;
+
+            case 0x50:
+down_arrow:
+               od_disp_str("Down Arrow.\r\n");
+               break;
+            }
+         }
+      /* exit program if user presses CR or LF */
+      else if (pressed == '\n' || pressed == '\r')
+         {
+         break;
+         }
+      }
+
+
+   /* Note that od_exit() is now optional in OpenDoors 5.00/beta-8        */
+   /* If you allow the program to return from the main() function without */
+   /* first calling od_exit(), the od_exit() code will automatically be   */
+   /* performed. Note, however, that this does not allow OpenDoors to     */
+   /* determine the errorlevel being used, in order to report the         */
+   /* errorlevel in the logfile.                                          */
+   return(0);
+   }
+
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Drawing Bar Graphs with OD! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+By: Brian Pirie
+
+Many different types of programs can be enhanced by the use of graphical
+information. Often, this graphical information can take the form of
+horizontal bar graphs.
+
+An easy way to draw horizontal bars in door programs written with
+OpenDoors, is to use the od_repeat() function. Not only does od_repeat()
+allow you to easily form a bar by repeating a particular character the
+specified number of times, but it is also a very efficient way to do so.
+od_repeat() will take advantage of terminal emulation optimizations,
+when available. For instance, a character can be repeated any number of
+times with AVATAR by sending a short 3-byte sequence that specifies the
+character and number of times to repeat.
+
+How do you calculate the number of character to use to form a bar in
+your graph? The DrawHorizontalBar() function, which is provided below,
+will do this calculation for you. Simply provide the value to be
+represented by this bar, the minimum and maximum possible values, and
+the maximum number of character to use to draw the bar. For example, if
+you are graphing percentages (which could range from 0% to 100%), and
+wanted the graph to fit in a space of 40 columns, you would use:
+
+    DrawHorizontalBar(nPercent, 0, 100, 40);
+
+Below the listing for the DrawHorizontalBar() function is a complete program
+which demonstrates the DrawHorizontalBar() function as called from another
+function that will create complete horizontal bar graphs. This second function,
+DrawGraphOfPercentages(), takes an array of titles, and array of values
+corresponding to each title, and draws a complete bar graph from this
+information.
+
+
+/* Function to draw a horizontal bar, given a value, the minimum and maximum */
+/* possible values, and the number of characters the horizontal bar should   */
+/* extended for the maximum value.                                           */
+void DrawHorizontalBar(int nValue, int nMinValue, int nMaxValue,
+   int nMaxChars)
+{
+   /* Determine lenght of bar */
+   int nBarChars = ((nValue - nMinValue) * nMaxChars) / nMaxValue;
+
+   if(od_control.user_ansi || od_control.user_avatar)
+   {
+      /* If ANSI or AVATAR graphics are available, assume that IBM extended */
+      /* ASCII is also available. This function uses character 220 to form  */
+      /* bars that are 1/2 the height of the line. You might also want to   */
+      /* try character 119, which will form bars that are the entire height */
+      /* of the line.                                                       */
+      od_repeat(220, nBarChars);
+   }
+   else
+   {
+      /* In ASCII mode, the bar is formed by the '=' character. */
+      od_repeat('=', nBarChars);
+   }
+}
+
+----- ex_graph.c example program follows ------------------------------
+
+/* Includes */
+#include "opendoor.h"
+
+/* Function prototypes. */
+void DrawHorizontalBar(int nValue, int nMinValue, int nMaxValue,
+   int nMaxChars);
+void DrawGraphOfPercentages(int nItems, int *panPercentages,
+   char **papszTitles, char bTitleColor, char bGraphColor,
+   int nTitleWidth, int nGraphWidth);
+
+
+/* Main function - program execution begins here. */
+main()
+{
+   char *apszTitles[7] = {"Sunday", "Monday", "Tuesday", "Wednesday",
+                          "Thursday", "Friday", "Saturday"};
+   int anValues[7] = {50, 75, 100, 25, 83, 0, 43};
+
+   od_printf("`bright green`Test graph:\n\r");
+
+   DrawGraphOfPercentages(7, anValues, apszTitles, 0x02, 0x0f, 20, 50);
+
+   od_get_key(TRUE);
+
+   return(0);
+}
+
+/* Function to draw horizontal graph of percentages with titles, to */
+/* demonstrate the use of the DrawHorizontalBar() function.         */
+/* No titles should have more than nTitleWidth characters.          */
+void DrawGraphOfPercentages(int nItems, int *panPercentages,
+   char **papszTitles, char bTitleColor, char bGraphColor,
+   int nTitleWidth, int nGraphWidth)
+{
+   int nCurrentItem;
+
+   /* Loop for each item (line) in the graph. */
+   for(nCurrentItem = 0; nCurrentItem < nItems; ++nCurrentItem)
+   {
+      /* Set display color for title text. */
+      od_set_attrib(bTitleColor);
+
+      /* Add spaces to right-align all titles. */
+      od_repeat(' ', nTitleWidth - strlen(papszTitles[nCurrentItem]));
+
+      /* Display the title. */
+      od_disp_str(papszTitles[nCurrentItem]);
+
+      /* Add space between title and graph. */
+      od_printf(" ");
+
+      /* Set display color for graph. */
+      od_set_attrib(bGraphColor);
+
+      /* Draw bar graph for this line. */
+      DrawHorizontalBar(panPercentages[nCurrentItem], 0, 100, nGraphWidth);
+
+      /* Move to the next line. */
+      od_printf("\n\r");
+   }
+}
+
+
+/* Function to draw a horizontal bar, given a value, the minimum and maximum */
+/* possible values, and the number of characters the horizontal bar should   */
+/* extended for the maximum value.                                           */
+void DrawHorizontalBar(int nValue, int nMinValue, int nMaxValue,
+   int nMaxChars)
+{
+   /* Determine lenght of bar */
+   int nBarChars = ((nValue - nMinValue) * nMaxChars) / nMaxValue;
+
+   if(od_control.user_ansi || od_control.user_avatar)
+   {
+      /* If ANSI or AVATAR graphics are available, assume that IBM extended */
+      /* ASCII is also available. This function uses character 220 to form  */
+      /* bars that are 1/2 the height of the line. You might also want to   */
+      /* try character 119, which will form bars that are the entire height */
+      /* of the line.                                                       */
+      od_repeat(220, nBarChars);
+   }
+   else
+   {
+      /* In ASCII mode, the bar is formed by the '=' character. */
+      od_repeat('=', nBarChars);
+   }
+}
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Obtaining Names/Passwords in ASCII Mode ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+By: Brett Barnes, THE TOWER BBS 071 636 3957, England
+
+#include <stdio.h>
+#include <string.h>
+#include "opendoor.h"
+
+void Get_Password(char *string, int length);
+void Get_Full_Name(char *string, int length);
+
+void Get_Password(char *string, int length)
+{
+int key;
+int count = 0;
+
+    od_clear_keybuffer();
+    while((key = od_get_key(TRUE)) != 13)
+    {
+        if(key == 0)
+            od_get_key(TRUE);
+
+        if(key >= 32 && key <= 127 && count < length)
+        {
+            string[count++] = key;
+            od_putch('*');
+        }
+        if(key == '\b' && count > 0)
+        {
+            od_putch('\b');
+            od_putch(' ');
+            od_putch('\b');
+            count--;
+            string[count] = '\0';
+        }
+    }
+    strupr(string);/*make string uppercase*/
+}
+
+void Get_Full_Name(char *string, int length)
+{
+int key;
+int count = 0;
+
+    od_clear_keybuffer();
+    while((key = od_get_key(TRUE)) != 13)/* Drops out when Enter key*/
+    {
+        if(key == 0)
+            od_get_key(TRUE);/*cancels prob with DEL key*/
+        /*If key = valid ascii code */
+        if(key >= 32 && key <= 127 && count < length)
+        {
+       /*if uppercase */    if(key >= 65 && key <= 90)
+                key = key+32;/*convert to lowercase*/
+            if(count == 0 && key >= 97 && key <= 122)
+                key = key-32;/*convert to uppercase*/
+            else
+                if(string[count-1] == ' ' && key >= 97 && key <= 122)
+                key = key-32;/*convert to uppercase*/
+        /*Stop spaces being put in first*/
+            if(key != 32)
+            {
+                string[count++] = key;
+                od_putch(key);
+            }
+            else if(count > 0)
+            {
+                string[count++] = key;
+                od_putch(key);
+            }
+        }
+        if(key == '\b' && count > 0)/*If Backspace*/
+        {
+            od_putch('\b');
+            od_putch(' ');
+            od_putch('\b');
+            count--;
+            string[count] = '\0';
+        }
+    }
+}
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ File Transfers Under OpenDoors ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+By: Brian Pirie, taken from the OPENDOORS echomail conference:
+
+Often, it can be useful or necessary to send and receive files between
+a program using OpenDoors, and the remote user's system. To allow file
+uploading and downloadeding, you can either implement the common file
+transfer protocols as part of your program, or you can call an external
+file transfer program, such as DSZ. This tip demonstrates how you can
+call DSZ using OpenDoors.
+
+In order to see this program in action, you should run a terminal
+program on one machine, and connect to second machine that will run this
+example program. (You could also do this in two different windows on one
+machine.) The demonstration program will ask whether you want to upload
+or download files, and will then prompt you for the file transfer protocol
+to use and the filename to transfer. Once this is done, DSZ is invoked
+to perform the file transfer. As such, DSZ will need to be installed on
+the machine that will run the example program.
+
+The tip2.c program provides a function that you can use to perform file
+transfers. This function is defined as follows:
+
+  int TransferFile(char *pszFilename, eProtocol Protocol, char bReceive)
+
+The first parameter should contain the name of the file or files to be
+transfered. The second parameter should specify the file transfer
+protocol to use, and should be one of the following enumerated
+constants:
+
+   XModem
+   XModemCRC
+   XModem1K
+   YModem
+   YModemG
+   ZModem
+
+The third parameter specifies whether the file is being send (FALSE) or
+received (TRUE). From the user's perspective, sending the file means
+downloading, and receiving the file means uploading.
+
+The TransferFile() function returns TRUE if the file transfer was
+completed, and FALSE if it was not.
+
+If the DSZ program is not present in the system's PATH or the current
+directory, then the global variable szDSZFilename must be set to the
+full path and filename of the DSZ program. This could be done by adding
+a custom OpenDoors configuration file line with a keyword such as
+"DSZPath".
+
+The first part of the tip2.c program discussed in the previous message
+follows:
+
+/* tip2.c - Example program to demonstrate how to send or receive files */
+/*          using DSZ, from within an OpenDoors program.                */
+
+/* Include required header files. */
+#include <stdio.h>
+#include <assert.h>
+#include "opendoor.h"
+
+/* File transfer protocol enumeration. */
+typedef enum
+{
+   XModem,
+   XModemCRC,
+   XModem1K,
+   YModem,
+   YModemG,
+   ZModem
+} eProtocol;
+
+/* Function prototypes. */
+int TransferFile(
+   char *pszFilename,
+   eProtocol Protocol,
+   char bReceive);
+eProtocol ChooseProtocol(void);
+void AddParameter(
+   char **papszArguments,
+   int *pnCount,
+   char *pszNewArgument);
+
+/* Manifest constants. */
+#define ARGS_ARRAY_SIZE 10
+
+/* Global variable with DSZ filename. */
+char szDSZFilename[80] = "DSZ";
+
+
+/* Program's execution begins here. */
+main()
+{
+   char chAnswer;
+   char bReceive;
+   eProtocol Protocol;
+   char szFilename[73];
+   int bSuccess;
+
+   od_printf("OpenDoors file transfer demo.\n\r\n\r");
+
+   /* Get file transfer direction from user. */
+   od_printf("Do you wish to [U]pload or [D]ownload? ");
+   chAnswer = od_get_answer("UD");
+   if(chAnswer == 'U')
+   {
+      od_printf("Upload\n\r\n\r");
+      bReceive = TRUE;
+   }
+   else
+   {
+      od_printf("Download\n\r\n\r");
+      bReceive = FALSE;
+   }
+
+   /* Get file transfer protocol from user. */
+   Protocol = ChooseProtocol();
+
+   /* Get filename. */
+   od_printf("\n\rEnter filename(s) : ");
+   od_input_str(szFilename, 72, ' ', 255);
+   od_printf("\n\r");
+
+   /* Perform file transfer. */
+   bSuccess = TransferFile(szFilename, Protocol, bReceive);
+
+   /* Display result of file transfer to user. */
+   od_clr_scr();
+   if(bSuccess)
+   {
+      od_printf("File transfer successful.\n\r");
+   }
+   else
+   {
+      od_printf("File transfer not completed.\n\r");
+   }
+
+   /* Prompt user to exit program. */
+   od_printf("Press [Enter] to return to BBS.\n\r");
+   od_get_answer("\n\r");
+
+   /* Return control to calling BBS software. */
+   od_exit(0, FALSE);
+
+   return(0);
+}
+
+
+/* Function to allow user to choose a file transfer protocol. */
+eProtocol ChooseProtocol(void)
+{
+   eProtocol Protocol;
+   char chAnswer;
+
+   od_printf("Available file transfer protocols:\n\r");
+   od_printf("    [X] XModem\n\r");
+   od_printf("    [C] XModem/CRC\n\r");
+   od_printf("    [1] XModem/1K\n\r");
+   od_printf("    [Y] YModem\n\r");
+   od_printf("    [G] YModem-G\n\r");
+   od_printf("    [Z] ZModem\n\r\n\r");
+   od_printf("Please select a protocol: ");
+
+   chAnswer = od_get_answer("XC1YGZ");
+
+   switch(chAnswer)
+   {
+      case 'X':
+         od_printf("XModem\n\r");
+         Protocol = XModem;
+         break;
+      case 'C':
+         od_printf("XModem/CRC\n\r");
+         Protocol = XModemCRC;
+         break;
+      case '1':
+         od_printf("XModem/1K\n\r");
+         Protocol = XModem1K;
+         break;
+      case 'Y':
+         od_printf("YModem\n\r");
+         Protocol = YModem;
+         break;
+      case 'G':
+         od_printf("YModem-G\n\r");
+         Protocol = YModemG;
+         break;
+      case 'Z':
+      default:
+         od_printf("ZModem\n\r");
+         Protocol = ZModem;
+         break;
+   }
+
+   return(Protocol);
+}
+
+/* Function to send or receive a file to/from remote system. */
+int TransferFile(
+   char *pszFilename,
+   eProtocol Protocol,
+   char bReceive)
+{
+   char szPort[7];
+   char *apszArguments[ARGS_ARRAY_SIZE];
+   int nArgCount = 0;
+
+   /* Filename cannot be NULL. */
+   assert(pszFilename != NULL);
+
+   /* Ensure that we are not operating in local mode. */
+   if(od_control.baud == 0)
+   {
+      od_printf("Operating in local mode;"
+                " file transfer not possible.\n\r");
+      return(FALSE);
+   }
+
+   /* Generate DSZ command line */
+
+   /* Begin with executable filename. */
+   AddParameter(apszArguments, &nArgCount, szDSZFilename);
+
+   /* Add port parameter. */
+   AddParameter(apszArguments, &nArgCount, "port");
+   sprintf(szPort, "%d", od_control.port + 1);
+   AddParameter(apszArguments, &nArgCount, szPort);
+
+   /* Restrict inbound files to current drive and directory. */
+   AddParameter(apszArguments, &nArgCount, "restrict");
+
+   /* Generate DSZ protocol parameters from specified protocol. */
+   if(bReceive)
+   {
+      switch(Protocol)
+      {
+         case XModem:
+         case XModem1K:
+            AddParameter(apszArguments, &nArgCount, "rx");
+            break;
+         case XModemCRC:
+            AddParameter(apszArguments, &nArgCount, "rc");
+            break;
+         case YModem:
+            AddParameter(apszArguments, &nArgCount, "rb");
+            break;
+         case YModemG:
+            AddParameter(apszArguments, &nArgCount, "rb");
+            AddParameter(apszArguments, &nArgCount, "-g");
+            break;
+         case ZModem:
+            AddParameter(apszArguments, &nArgCount, "rz");
+            break;
+         default:
+            assert(FALSE);
+      }
+   }
+   else
+   {
+      switch(Protocol)
+      {
+         case XModem:
+         case XModemCRC:
+            AddParameter(apszArguments, &nArgCount, "sx");
+            break;
+         case XModem1K:
+            AddParameter(apszArguments, &nArgCount, "sx");
+            AddParameter(apszArguments, &nArgCount, "-k");
+            break;
+         case YModem:
+         case YModemG:
+            AddParameter(apszArguments, &nArgCount, "sb");
+            break;
+         case ZModem:
+            AddParameter(apszArguments, &nArgCount, "sz");
+            break;
+         default:
+            assert(FALSE);
+      }
+   }
+
+   /* Add filename parameter to command line. */
+   AddParameter(apszArguments, &nArgCount, pszFilename);
+
+   /* Display prompt to user providing */
+   od_printf("Begin your transfer now,"
+             " or press [Ctrl]-[X] several times to abort.\n\r");
+
+   /* Execute command using the OpenDoors od_spawn() function. */
+   return(od_spawnvpe(P_WAIT, apszArguments[0], apszArguments,
+                      NULL) == 0);
+}
+
+
+/* Function to add next parameter to array of parameters to pass to */
+/* od_spawnvpe().                                                   */
+void AddParameter(
+   char **papszArguments,
+   int *pnCount,
+   char *pszNewArgument)
+{
+   assert(*pnCount < ARGS_ARRAY_SIZE - 1);
+   assert(papszArguments != NULL);
+   assert(pnCount != NULL);
+   assert(pszNewArgument != NULL);
+
+   /* Add next argument to array. */
+   papszArguments[(*pnCount)++] = pszNewArgument;
+
+   /* Ensure that the array is always NULL-terminated. */
+   papszArguments[*pnCount] = NULL;
+}
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Comparing File Stamps ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßß
+
+By: Brian Pirie, taken from the OPENDOORS echomail conference:
+
+ > I am trying to find a way to basically look at a files date and
+ > then determine if it is older than say 10 days old?
+ > I looked thru all of my manuals, and sample programs and could
+ > find no examples, so I thought I would turn to the experts here.
+ > If anyone can give me help I would greatly appreciate it!
+
+For others who were wondering about this problem, the program below will
+display the names of all files in the current directory that are more than
+10 days old.
+
+If you ran the program at 10:35:20 on Friday, August 5th, a file dated
+10:35:20 on Tuesday, July 26th (or later) would not be displayed, but a file
+dated 10:35:18 on Tuesday, July 26th (or earlier) would be displayed.
+(DOS's file time is only accurate to the nearest 2 seconds.)
+
+**** Editor's Note: To further explain Brian's information, here is a
+brief explanation of why DOS file time stamps are only accurate to the
+nearest two seconds.  The file's time field is set when you create the file,
+and updated thereafter whenever you close the file, but *only* if
+information has been written to the file.  This field is not updated if
+the file is merely read, copied, or renamed.  When the time field gets
+updated, though, the new time is retrieved from the system clock.  The
+following is a breakdown of the meaning of each bit in the time field:
+
+        FEDCAB98 76543210
+
+        xxxxx              = Hours
+             xxx xxx       = Minutes
+                    xxxxx  = Two second increments
+
+The hour is contained in five bits (on a 24 hour clock), and the minutes
+in six bits.  Because this only leaves 5 bits in which to store the
+seconds, DOS divides the actual value by two (2).  A little known fact
+about the file time field, is that if all bits in both bytes are set to
+zero (0), the DIR command will not show any time.  Ok, back to Brian's
+snippet (sorry!).
+
+Included in this file is a function named DIRToCTime(), which converts the
+DOS file time format to the C time_t format.
+                       
+/* This example program will display the names of all files that are */
+/* more than ten days old.                                           */
+
+#include <dir.h>
+#include <dos.h>
+#include <time.h>
+#include <stdlib.h>
+
+time_t DIRToCTime(unsigned uDate, unsigned uTime);
+
+#define SECONDS_PER_DAY (60 * 60 * 24)
+
+main()
+{
+   struct ffblk DirEntry;
+   time_t CurrentTime = time(NULL);
+   time_t FileTime;
+   double dElapsedSeconds;
+   double dElapsedDays;
+
+   if(!findfirst("*.*", &DirEntry, FA_ARCH))
+   {
+      do
+      {
+         /* This loop repeats for every found file ... */
+
+         /* Convert the file's time as returned by findfirst() to a time_t. */
+         FileTime = DIRToCTime(DirEntry.ff_fdate, DirEntry.ff_ftime);
+
+         /* Determine the number of seconds that have elapsed between the */
+         /* two times.                                                    */
+         dElapsedSeconds = difftime(CurrentTime, FileTime);
+
+         /* Determine the number of days that have elapsed. */
+         dElapsedDays = dElapsedSeconds / SECONDS_PER_DAY;
+
+         /* If more than ten 24-hour periods have elapsed, display filename. */
+         if(dElapsedDays > 10)
+         {
+            printf("%s is more than ten days old.\n", DirEntry.ff_name);
+         }
+      } while(!findnext(&DirEntry));
+   }
+
+   return(0);
+}
+
+
+time_t DIRToCTime(unsigned uDate, unsigned uTime)
+{
+   struct tm TimeStruct;
+
+   TimeStruct.tm_sec = (uTime & 0x001f) * 2;
+   TimeStruct.tm_min = (uTime & 0x07e0) >> 5;
+   TimeStruct.tm_hour = (uTime & 0xf800) >> 11;
+   TimeStruct.tm_mday = uDate & 0x001f;
+   TimeStruct.tm_mon = ((uDate & 0x01e0) >> 5) - 1;
+   TimeStruct.tm_year = 80 + ((uDate & 0xfe00) >> 9);
+
+   return(mktime(&TimeStruct));
+}
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Generating Fidonet *.MSG Messages ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+By: Mark Williamson, taken from the OPENDOORS echomail conference:
+
+/* NETMAIL.C : This little jewel will write send a netmail message to
+               the names and addresses listed in NAMES.LST. This file
+               has the format of:
+
+               First Lastname
+               Zone Node Net Point  (point is optional)
+
+               example:
+
+               Mark Williamson
+               1 202 750 <0>
+
+               When the program loads, it will load the editor EDIT.EXE.
+               Just change the line system("EDIT.EXE") to load your editor.
+               This program expects to find a file NET.MSG.
+
+               This program is public domain <G>.
+               The attribute used in this program is CRASH KILL SENT.
+
+               Look in the Fidonet Technical Specifications for the full
+               structures and meaning of each field.
+*/
+
+#include <dos.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <alloc.h>
+#include <bp.h>
+#include <string.h>
+
+static char msghdr[50],year[5],msgfile[80],firstname[30];
+char *msgtext,select;
+void writefido(void);
+
+char  *strrep(char *str, char *oldstr, char *newstr)
+{
+          int OldLen, NewLen;
+          char *p, *q;
+
+          if(NULL == (p = strstr(str, oldstr)))
+                return p;
+          OldLen = strlen(oldstr);
+          NewLen = strlen(newstr);
+          memmove(q = p+NewLen, p+OldLen, strlen(p+OldLen)+1);
+          memcpy(p, newstr, NewLen);
+          return q;
+}
+
+/* *.MSG format: */
+struct {
+         char from[36],
+                  to[36],
+                  subject[72],
+                  datetime[20];
+             int  timesread,
+                  destnode,
+                  orignode,
+                  cost,
+                  orignet,
+                  destnet,
+                  destzone,
+                  origzone,
+                  destpoint,
+                  origpoint,
+                  replyto,
+                  attribute,
+                  nextreply;
+        } Msg;
+
+
+char buffer[89];
+void main(void)
+{
+
+   FILE *fp,*fp2;
+   struct tm *time_now;
+   time_t secs_now;
+   char zone[10],node[10],net[10],point[10];
+
+   /* load your editor to create/change the message. */
+
+   system("EDIT C:\\NET.MSG");
+   if(access("C:\\NET.MSG",0)!=0) return;
+
+   /* open the name list */
+
+   fp=fopen("C:\\NAMES.LST","rt");
+   if(fp==NULL) return;
+   time(&secs_now);
+   Msg.timesread=0;
+   Msg.cost=0;
+
+
+   strcpy(Msg.from,"Mark Williamson");
+   strcpy(Msg.subject,"Labtest Beta Message"); /* remember, the subject */
+                                               /* for a file attach message */
+                                               /* is the full path and file */
+                                               /* name of the file(s) to send
+*/
+                                               /* be sure to set the correct
+*/
+                                               /* message attribute to send */
+                                               /* or request files. */
+
+
+   Msg.attribute=0x0183;
+
+   /* change this to your fido address */
+   Msg.orignode=750;
+   Msg.orignet=202;
+   Msg.origzone=1;
+   Msg.origpoint=0;
+   Msg.replyto=0;
+   Msg.nextreply=0;
+   time_now=localtime(&secs_now);
+   strftime(Msg.datetime,20,"%a %d %b %y %X",time_now);
+   while(!feof(fp))
+   {
+           Msg.destnode=Msg.destpoint=Msg.destnet=0;
+           Msg.destzone=1;
+
+           if(fgets(buffer,88,fp)==NULL) break;
+           buffer[strlen(buffer)-1]=0;
+           strcpy(Msg.to,buffer);
+           if(fgets(buffer,88,fp)==NULL) break;
+           buffer[strlen(buffer)-1]=0;
+           zone[0]=point[0]=node[0]=net[0]=0;
+           sscanf(buffer,"%s %s %s %s",zone,net,node,point);
+           Msg.destnode=atoi(node);
+           Msg.destpoint=atoi(point);
+           Msg.destzone=atoi(zone);
+           Msg.destnet=atoi(net);
+
+           ultoa(bp(Msg.to,199309),registerkey,10);
+           fp2=fopen("C:\\NET.MSG","rb");
+           msgtext=(char *)malloc(filelength(fp)+1000);
+           memset(msgtext,0,filelength(fp)+1000);
+           fread(msgtext,filelength(fp),1,fp2);
+           fclose(fp2);
+           sscanf(Msg.to,"%s",firstname);
+
+
+           /* here are some macros to make auto replacement easier. */
+           /* this is great for form letters, kinda personnalizes the */
+           /* message.*/
+
+           strrep(msgtext,"@FIRST@",firstname);
+           printf("\nWriting message to: %s, %s:%s/%s%s%s",
+                     Msg.to,
+                     zone,net,
+                     node,Msg.
+                     destpoint!=0?".":"",
+                     Msg.destpoint!=0?point:"");
+           writefido();
+           free(msgtext);
+   }
+   fclose(fp);
+}
+
+void writefido(void)
+{
+     int count=250;  /* this controls the starting point.  */
+                     /* this function will count down until */
+                     /* finds a *.MSG.  It will then increment */
+                     /* by one and write the message.  There */
+                     /* is probably a better way, but you know. */
+                     /* set this number higher if you have lots */
+                     /* of netmail messages. */
+
+         char firstname[20];
+         FILE *fp;
+         tzset();
+
+          /* Fido *.msgs use a MSGID line which is preceded by */
+          /* a CONTROL-A.  Then your fido address, a carriage  */
+         /* return, CONTROL-A and the name of the program that */
+         /* created the message and version number, then another */
+         /* carriage return. */
+         strcpy(msghdr,"\x01MSGID: 1:202/750\r\x01PID: MM 1.0\r");
+
+         /* this begins our loop to find the last written */
+         /* netmail message in your netmail directory */
+         sprintf(msgfile,"C:\\RA\\MAIL\\%d.MSG",count);
+         while(access(msgfile,0))
+            sprintf(msgfile,"C:\\RA\\MAIL\\%d.MSG",--count);
+
+         /* got this far, we have a number! */
+         /* increment it by one to get the next available slot */
+         sprintf(msgfile,"C:\\RA\\MAIL\\%d.MSG",++count);
+         fp=fopen(msgfile,"wb");
+         if(fp==NULL) puts("\nError opening file...");
+         else
+         {
+           fwrite(&Msg,sizeof(Msg),1,fp);
+           fwrite(&msghdr,strlen(msghdr),1,fp);
+           fwrite(msgtext,strlen(msgtext),1,fp);
+           fwrite("\0x00",1,1,fp);
+           fclose(fp);
+         }
+}
+
+That's it!  This is a simple program I wrote to send form letters to numerous
+people who needed to have the same information.  This could be done in
+Frontdoor with the ALT-L forward command, but then it was much more fun
+creating something and knowing watching it work!
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ Code Snippets! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßß
+
+Sample code to validate credit card numbers
+Posted in the OPENDOORS echo by Robert La Ferte,
+Original by Andrue Carr
+
+/*
+**  Testcard.c 1.0 Copyright (C) 1993 by DruId Software.
+*/
+
+#include <conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int formula(char card[23],int len);
+
+// actual formula for creditcard!
+// this can be used to build the last CRC digit by changing the len by 1
+// it is mainly used to make sure the card is a correct card by verifying
+// the last CRC digit against the rest of the card.
+// the formula will run all the numbers in the card but the last one
+// which is the CRC digit.  if the number the formula kicks out is the
+// same as the last digit of the card then it is a valid credit card
+// if not then its not correct. this is what a ZON machine uses to
+// determine if it is a good number or not. If you need more help
+// let me know and i can explain this better:
+// Andrue Carr: fido: 1:331/201, SL_net: 250:502/1294, ISG 91:5/201
+//              Acmenet: 400:508/201
+// box 473, West Tisbury, mass 02575 (Over Board BBS (508)693-5344)
+
+int formula(char card[23], int len)
+{
+    int     x,
+            xcard = 0,
+            y;
+
+    for(x = 0; x <= len; x++)
+    {
+        if(len % 2)
+        {
+            if(x % 2)
+                y = (card[x] - 48) * 2;
+            else
+                y = (card[x] - 48);
+        }
+        else
+        {
+            if(x % 2)
+                y = (card[x] - 48);
+            else
+                y = (card[x] - 48) * 2;
+        }
+       if(y >= 10)
+           y = (y - 10) + 1;
+
+       xcard += y;
+    }
+
+    x = (10 - (xcard % 10));
+
+    if(x == 10)
+        x = 0;
+
+    return(x);              // send back the computed check digit!
+}
+
+void main(int argc, char *argv[])
+{
+    int i = 0,
+        size = 0;
+
+    if(argc < 2)
+    {
+            // testcard.exe [cardnumber]  if no card# then error
+        cputs("\007No credit card entered");
+        exit(1);
+    }
+
+    size = strlen(argv[1]);
+
+    i = formula(argv[1], (size - 2));
+
+    // check for all but crc digit
+    // if the number returned from formula() isnt the last digit
+    // of the actual card number then it isnt valid!
+
+    if(i != (argv[1][size - 1] - 48))
+        cputs("\007     -> Invalid Card!");
+    else
+        cputs("     -> Valid Card");
+
+    exit(0);
+}
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Release Notice: BCHECKERS 1.2! ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+BCHECKERS -- Version 1.2 -- is released!
+========================================
+
+** NOW SUPPORTS RA 2.00+! **
+
+As a sysop of a FidoNet BBS, I was disappointed in the lack of a good,
+non-interactive checkers door. Sure, there were some that allowed inter-
+node play and the like, but these were expensive and few offered any
+decent ANSI graphics and the simple ability to have callers make moves
+on alternate logons. I also wanted to try my hand at programming in C,
+having learned a number of other programming languages. BCheckers is the
+result of this effort; and at only $10 is a bargain in shareware.
+
+BCheckers offers the following sysop features (and more I've probably
+overlooked in these docs):
+
+-  As you would expect, BCheckers monitors carrier detect functions, to
+   automatically recover when a user drops carrier.
+
+-  Includes a fully-adjustable inactivity timeout monitor. A warning is
+   sent 5 seconds before the caller is ejected.
+
+-  Share-aware file i/o for use in multi-node BBS systems. You must have
+   DOS's SHARE.EXE loaded for multi-node use.
+
+-  Supports most popular BBS door information files, such as DORINFO1.DEF,
+   EXITINFO.BBS, CHAIN.TXT, DOOR.SYS, etc.
+
+-  Displays and updates a QuickBBS-style status line, with information
+   available to the sysop such as user name, location, baud rate, time left,
+   function keys, ANSI and AVATAR settings, and so on.
+
+-  Keeps track of a user "wants-chat" indicator, just like the one in
+   RemoteAccess, QuickBBS and other BBS systems. Allows for sysop page from
+   the door, and integrated chat mode.
+
+-  Provides the sysop with all the standard function keys for adjusting user
+   time, hanging up on or even locking out the user -- and sysop shell to DOS.
+
+-  Full support for locked baud-rates of up to 38,400 baud, using the FOSSIL
+   driver for maximum compatibility with any system. If a FOSSIL is not
+   available, BCheckers will use its own communications routines. Auto-detect
+   of local operation.
+
+-  BCheckers is also DesqView and Windows aware.
+
+New features:
+
+-  Minor bug fix to the Hall of Fame generation and key recognition code.
+
+-  Minor cosmetic improvements.
+
+-  Altered prompts slightly to alleviate problems with some modems when
+   using XON/XOFF handshaking.
+
+BCHECKERS is coming soon to a DOORNET or DDSDOORS distribution site in your
+area, or you can freq the latest version directly from the author at FidoNet
+node 1:231/710 using the "magic name" of BCHECK. Alternatively, the door can
+be downloaded from the H.O.M.E. BBS at (317)539-6579. The next release will
+have a "play against the computer" mode! Upgrades will be free, but a new
+registration will increase by $5. Register now, while it's still cheap!
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Release Notice: BFE v4.00.2r ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+BFE v4.00.2r, the flexible telecommunications front end system from
+Southeastern DataLINK, is now available!
+
+BFE is a BBS front-end system that was designed to provide sysops with a
+fast, efficient method of "connecting" things at the front end of their
+site.  
+
+BFE features include:
+
+ * Custom multi-level menus, with RIP graphics support
+ * Item and/or menu level password protection with daily scheduling
+ * Hotkey items or SlashCommand(tm) mode
+ * Attractive internal menuing scheme to ease your work load
+ * Support for custom user menus (for aspiring sysops and artists)
+ * Support for popup lightbar menus
+ * Design and employ interactive full-screen data entry forms
+ * Full Multinode/Multiuser Compatibility
+ * Internal DOS-to-UNIX gateway!  Give your users the power of UNIX.
+ * The gateway services can also be used to gate calls to a packet radio
+ * Client/server approach to the UNIX gateway.  Provide interactive access
+ * Provide *REAL* UUCP sessions from your UNIX server to your DOS callers
+ * Intuitive menu-driven setup and customization facility (BFE/Setup)
+ * Feature packed "C" like Script system
+ * Run automated scripts, even offline in a maintenance role.
+ * WFC (Wait-For-Caller) module to handle non-mailer sites (reg. only)
+ * DESQview *and* MS-Windows aware
+ * Configurable for security concerns
+ * Complete carrier monitoring and timeout checking
+ * Use any of 11 standard dropfiles, or define custom ones
+ * Run as a normal door or as a frontend (Dropfile not required!)
+ * Complete support for ANSI/ASCII/AVATAR/RIP users
+ * Configurable automatic ANSI and RIP detection schemes
+ * File transfer system with support for external protocols
+ * Run remote jobs, such as batch files, programs, other doors, etc.
+ * Internal remote shells to the operating system
+ * Built in chat/paging system with hourly/daily time restrictions
+ * Split screen chat mode, along with line chat mode for TTY users
+ * *Total* configurability
+
+What's changed since the last release?
+
+        o New mailing address and contact information for Southeastern
+          DataLINK:
+                      Address: 13500 Feather Sound Circle West
+                               Suite 1313
+                               Clearwater, FL 34622
+                         Data: (813) 572-6817
+                        Voice: (813) 573-5078
+                     Internet: scottb@sedl.com  - Scott Burkett
+                               sales@sedl.com   - Sales Q/A
+                               support@sedl.com - Technical support
+                      Fidonet: 1:3603/500
+
+        o BFE now supports "Before" and "After" scripts for each menu option
+          in your control files.  The BEFORE scripts are called
+          immedicately after the user presses the key corresponding to
+          the menu option, but before the menu option's actions are
+          carried out.  The AFTER scripts are executed upon completion
+          of the menu item selected, and before returning to the BFE
+          menu system.  These scripts should be located in the SCRIPTS
+          directory (configured in BFE/Setup), and should be named as
+          per the following naming convention:
+
+                BEFORE scripts:  <CTLFILENAME>.B<HOTKEY>
+                 AFTER scripts:  <CTLFILENAME>.A<HOTKEY>
+
+          For example, if in your MAIN control file, you have a menu
+          option which uses the "1" key as the hotkey, the BEFORE and
+          AFTER scripts would be named "MAIN.B1" and "MAIN.A1".
+
+        o NEW SCRIPT COMMANDS:
+
+                CompareStr() - Compares a string with the contents of the
+                               internal script buffer.
+
+        o NEW SAMPLE SCRIPTS:
+
+                GETPASS.SCR - Demonstrates the use of the CompareStr()
+                              function call.
+
+        o BFE's menu handler now sports a rudimentary line noise "filter".
+
+        o All of the text used during user system logins is now
+          configurable in the language file.
+
+        * BFE's internal comm routines now supports all IRQ lines from
+          1 to 15.  In addition, full support for 16550A FIFO buffers is
+          in place as well.
+
+        * The RA "personality" now accurately mimics the latest version
+          of the RA status line.
+
+        * Quite a bit of code cleanup in this release.
+
+        * Several additional checks are now in place for the BFE setup
+          sanity check, which verifies the BFE path setup.
+
+        * When opening a .CTL file under BFE/Setup, it now defaults to open
+          an "existing" .CTL file, instead of creating a new one.  (Thanks
+          to George Bynum for this suggestion).
+
+        * Quite a few changes and additions in the BFE user manual (including
+          WFC, BFE/Gateway, and BFE/Setup).
+
+        * The "p" identifier has been removed from the end of the normal
+          archive naming convention, as it was confusing OS/2 users.  It
+          has been replaced by an "r", which means "public (r)elease".
+
+        * The fossil buffers are now flushed before every gateway session
+          is initiated.  This was inserted in order to make BFE's internal
+          serial gateway more "friendly" towards packet radio systems.
+          (Thanks to Mark Stanchin).
+
+        * A popup "dialog" box will appear whenever BFE is dropping
+          carrier, informing you of such.
+
+        * The WFC module for registered users will now place both the
+          COM port number *and* the fossil port number into the
+          DOBBSx.BAT files.
+
+        ! The displayfile() script function should no longer give erroneous
+          password prompts if a password was used to get into the script
+          to begin with. (Thanks to Mark Stanchin).
+
+        o A new dot command has been added to BFE/Formgen.  The ".type"
+          keyword will direct Formgen to output information in either
+          "delimited" format (default), or "linear".  Thanks to Dana
+          Meli-Wischman.
+
+        ! In certain situations, BFE would force the caller to hit a key
+          twice before the keystroke was registered.  Squashed.
+
+        ! BFE/Gateway sessions should now properly monitor the caller's
+          carrier signal.
+
+        ! ANSI detection would fail under certain situations.  Squashed.
+
+        o The BFE registration system has been revamped completely.  If you
+          are a previously registered user of BFE, please contact us for your
+          new key file.
+
+        o Marketing strategy has been updated, and now includes three very
+          distinct levels of BFE registration.
+
+        o New Module:   BFE/Node Monitor for DESQview systems.  BFEMON is a
+          compact monitoring system designed for sites running BFE in a
+          multinode environment.  This module is made available free of charge
+          to registered users of BFE. (+)
+
+        o New Module: BFE/WFC - The Wait For Caller module is designed to
+          provide a flexible method of handling inbound calls on non-mailer
+          nodes.  It's features include:
+
+                - DESQview/Win31/OS2 Aware
+                - Intuitive menu-driven setup and windowed environment
+                - Internal screen blanker
+                - Full support for 50 line VGA mode
+                - Designed with multinode systems in mind
+                - Custom connect strings for FAX, UUCP, etc.
+                - FOSSIL driven, for maximum compatibility
+                - Full internal event system
+
+          The WFC module is made available free of charge to registered users
+          of BFE. (+)
+
+        o New subsystem: BFE/FormGen - a powerful full screen data entry form
+          designer is now included as part of the base BFE package.
+
+        o BFE/Setup now includes an internal user file editor. :-)
+
+        o BFE now supports non-fossil sites by providing an internal serial
+          communications system.  This adds three new command line switches:
+
+                -i = No fossil!  Use internal routines
+                -u = COMx Base Address (i.e. -u03F8)
+                -v = COMx IRQ Line (i.e. -v4)
+
+        o The time adjustment sysop keys (formerly cursor up/down) have been
+          remapped to pageup and pagedown.
+
+        o Multiline descriptions with embedded colors are now available.  In
+          BFE/Setup, the description field is now two lines long.  Also, BFE
+          now supports embedded color tokens in the description field, thus
+          allowing you to highlight certain portions of the description of
+          each menu item.  ** NOTE:  BFE will not automatically align the
+          two lines of text if the first one wraps around!  This will be
+          taken care of in a future release, but for now, you will have to
+          space them out accordingly.
+
+        o When using BFE's internal files system for providing downloads,
+          the file "FILES.BBS" is no longer assumed. :-)  Now, you must
+          provide the full path *AND* filename of the file to be used as the
+          list file.  This allows you to keep your list files in one shared
+          directory.  In addition, the full path is no longer needed in the
+          list files.  If the path is not given, BFE will look for each file
+          in the directory the list file resides in.
+
+        o New Language File Keywords (Thanks to Michael Stumpp)
+
+                PASSWORD   - "Enter password" prompt - Default is "Password:"
+                Y_CONTINUE - Key used to continue in "more" prompting
+                N_CONTINUE - Key used to stop in "more" prompting
+                S_CONTINUE - Key used to go nonstop in "more" prompting
+
+        o BFE's internal user system now has an additional mode of operation.
+          This "Exclusive" mode is identical to the full user system, but
+          will not allow new users at all.  This may come in handy if you
+          wish to allow only "registered" users on certain nodes, or if you
+          run a "member's only" BBS.  (Thanks to Dana Meli-Wischman).
+
+        o NEW SCRIPT COMMANDS:
+
+                FormGen() - Processes a BFE/FormGen Entry Form
+
+                SaveScreen() - Saves contents of current screen
+
+                RestoreScreen() - Restores contents of saved screens
+
+                PopupMenu() - Creates a configurable popup menu
+
+                RemoveFile() - Removes the passed filename (deletes it)
+
+                MakeCustomSem() - Creates a CUSTOM.nnn semaphore in the
+                                  IPC directory.
+
+                RemCustomSem() - Removes CUSTOM.nnn semaphore from IPC dir.
+                
+                NoConsoleLogging() - Temporarily disables console logging
+                                     while in a BFE gateway session. (+)
+
+                ConsoleLogging() - Re-enables console logging in BFE gateway
+                                   sessions. (+)
+
+                DisableServerStr() - Temporarily disables BFE's remote server
+                                     strings. (+)
+
+                EnableServerStr() - Re-enables remote server strings. (+)
+
+                SetAccess() - Adjusts the caller's security level
+
+                UpdateUserRecord() - Update's user's record in user file
+
+        o RIP support updated - when BFE is displaying a RIP file to user,
+          the appropriate ANSI or ASCII version will be displayed locally
+          on the sysop's console.  Note that this doesn't include the
+          default BFE internal menus, although it will in the future.
+
+        o A new utility called COLORUPD.EXE has been provided.  This program
+          will read the default color configuration stored in the GLOBALS.CFG
+          file, and will update the color maps of all .CTL files in the
+          current directory.  This program is distributed in the \UTILS
+          subdirectory in the distribution archive.  The source (COLORUDP.C)
+          is located in the \DEVKIT subdirectory.  Thanks to Keith Ross for
+          this suggestion.
+
+        o If using the BFE User System, BFE will now export the user's name
+          and password to two environment variables in the DOS master
+          environment upon exiting on an errorlevel (USERNAME and PASSWORD
+          are the new environment variables) This should make automatic
+          logins through BFE a bit easier, as you can now pass the name and
+          password on the command line to your BBS packages.
+
+        o Now, a special "log text" field is attached to each menu item.
+          This field serves two purposes:
+
+                - It is used in the log file for the task to describe each
+                  event.
+
+                - It is used in the menu item selector screen in BFE/Setup,
+                  in place of the description field.
+
+          If no log text is supplied, the normal description will be used.
+
+        o The macro system has been completely revamped, and the following
+          new macros are available:
+
+                %U  = User's name
+                %W  = User's password
+                %H  = User's handle
+
+        o BFE will now periodically perform an Integrity check, to ensure
+          that pertinent system files have not been altered by viruses or
+          intruders.
+
+        o Some sample .CTL files are now included under (\SAMPLES\CTL).
+          These will be updated further as more features are added to the
+          product.
+
+        o New networking semaphore files implemented (nnn = node number):
+
+                 SHELL.nnn  - User/sysop in DOS shell
+                  XFER.nnn  - User transferring a file
+                  CHAT.nnn  - User either paging or in a chat session
+               FORMGEN.nnn  - User in a BFE/FormGen Entry Form
+                CUSTOM.nnn  - Custom user-defined semaphores
+
+        o New fields in BFE/Setup:
+
+                Default .CTL file Path (for BFE control files)
+                Default .FRM file Path (for BFE/Formgen files)
+                Default .SCR file Path (for BFE/Script files)
+                Default .ANS file Path (for ANS/ASC/AVT/RIP files)
+
+        o New script hook:  This script will be executed automatically
+          if it exists when a new user has logged into the system.
+
+        * The graphics detection routines have been replaced, and should
+          perform much smoother now.
+
+        * Three new fields have been added to the user file.  They are
+          handle, home phone, and work phone.
+
+        * The documentation has been completely reorganized.
+
+        * BFE will no longer automatically put a divider line in between
+          normal and global commands when using the internal menus.  If you
+          want a divider line, you can just add it to the top of your
+          global menu. :-)
+
+        * When displaying standard ASCII files, BFE will now default to light
+          gray on black.  In previous releases, the color of the text would
+          appear in the color of the user input.
+                                                            
+        * When running external processes (other doors, in particular), BFE
+          will now de-initialize the fossil driver, and re-initialize it upon
+          re-entry.  This was due to the fact that some doors left the fossil
+          driver in quite a shabby state after exiting, so bad, in fact, that
+          BFE would function normally, but not be seen on the remote end!
+
+        * Gateway sessions will now flow much smoother.  So smooth, in fact,
+          that we actually ran a SCO/UNIX UUCP session through it. :-) (+)
+
+        * BFE now tries to avoid the use of high bit ascii characters when
+          running with ASCII callers.  If any of you have seen ANSI emulation
+          under UNIX terminal packages, you know why... :-)
+
+        * Password protection now covers an entire file list when downloading
+          from protected areas.  In previous releases, the user had to enter
+          the password for each file.  Sounds stupid, doesn't it?  It was.
+
+        * Rewrote the import message file routines when using external
+          editors.  You should no longer lose characters under certain
+          word wrapping conditions.
+
+FREQ:  BFE from:  Southeastern DataLINK Zoom 28.8  1:3603/500 (813) 572-6817
+       345K in size
+
+ FTP:  ftp.csn.org:~/crlhq/bfe4002r.zip
+
+Previously registered users of BFE should contact us through the normal
+support channels (email, netmail, dialup) to request your new serialization
+keys.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Release Notice: GIF View Preview Door v1.0 ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+Greetings All, from Lone Wolf Software!
+
+****************************************************************
+*                    GIF View Preview Door                     *
+*         FileName: VUGIF10.ZIP   FileSize: 590k               *
+****************************************************************
+
+FEATURES............
+
+o Tag up to 50 GIFs for download.
+o Users can convert GIF files to JPG files for fast file transfers.
+o Internal file base engine for super quick file handling.
+o RIPterm users can view the JPG files while ON LINE!
+o Converts large GIF files to small (often less than 10k) JPG files
+  that transfer fast. RIPterm users can tag, convert and view GIFs
+  while on line in under 30 seconds at 14,400 baud.
+o Non RIPterm users (ANSI callers) can use many popular graphic
+  file viewers like CShow or The Graphics Work Shop to view JPG
+  preview files to see if they want to download the actual GIF.
+o State of the art sysop management tools, file base editor, and
+  built in GIF graphic file viewer.
+o Others may say "On Line GIF Viewing", but they require you to log
+  off to view the graphic file, that's not on line viewing. This
+  door actually lets RIPterm users view the JPG / GIF while still
+  on line.
+o Extensive use of RIP through out, both to the user and the sysop.
+o Option to disable RIP on either local or remote end.
+
+FREQ the file VUGIF10.ZIP from 1:3813/309 or call the board at
+1-918-687-1612 at speeds up to 19,200.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Release Notice: Operation: Office v0.5 ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+                        Operation: Office v0.5
+                        ----------------------
+                          An OmniWare Product
+                          -------------------
+                           by Mike Aleksiuk
+
+Get your latest copy from...
+
+Name:        C.R.I.S.I.S. HQ
+Number:      686-0449
+Node Number: 1:134/31
+Magic Name:  OPOFF
+File Name:   OPOFFV05.ZIP
+Place:       Calgary, AB, Canada
+
+        In this exciting new game, we have you set in the unexciting
+role of an "office worker".  But last night you overheard your boss
+talking to someone... and for no apparent reason, you decide to kill
+him!  The challenge is about to begin...
+
+        Supports all major dropfiles (DOOR.SYS, DORINFO?.DEF, etc).
+Configure specific game settings.  Usable player editor for registered
+users.  Unregistered users may only delete/look at the player information.
+
+        Features
+        --------
+
+        - chat with other players in a "one-liner" fashion
+        - use the phone
+        - listen to the radio
+        - many different enemies to fight, many different things to buy
+        - work to make money
+
+        Beta Gamma Wanna-Be
+        -------------------
+
+        Version 0.5 is the "Beta Gamma Wanna-Be" version of Operation:
+Office.  In other words, it is a gamma/wide beta, for all to test.  It
+is fully functioning, but still needs to be refined.
+
+        A Few Future Features
+        ---------------------
+
+        - personal player phone numbers!
+        - much more detailed fight method!
+        - more enemies!
+
+        Please send all comments/bug reports via FidoNet netmail to
+1:134/21.10, or conventional mail at the address stated within the
+SysOp documentation.  Unfortunately, I don't have the time/money to
+return all of your messages... Sorry!
+
+Mike Aleksiuk, Author of "O:O"
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³ OpenDoors Tech Journal Information ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+Editors: Scott Burkett
+         Southeastern DataLINK BBS
+         1:3603/500@fidonet.org
+         scottb@sedl.com (Internet EMail)
+         root@sedl.com (Internet EMail)
+         (813) 572-6817 28.8 Zoom!
+         13500 Feather Sound Circle West
+         Suite #1313
+         Clearwater, FL 34622
+
+         Brian Pirie
+         BP ECOMM Systems
+         1:243/8@fidonet.org
+         brian@bpecomm.ocunix.on.ca (Internet EMail)
+         75122,2303 (Compuserve)
+         (613) 526-4466 14.4
+         1416 - 2201 Riverside Drive
+         Ottawa, Ontario
+         Canada
+         K1H 8K9
+
+Published by and for programmers and users of the OpenDoors Door
+Programming Toolkit.  It is a compilation of tips, reviews, and tidbits
+pertaining to BBS programming and general usage. The opinions expressed
+in this publication do not necessarily represent those of its editors,
+the OpenDoors author, or other contributors.
+
+OBTAINING COPIES:  The latest copy of the OpenDoors Tech Journal will always
+be available under the magic name of ODTJ.
+
+SUBMISSIONS: You are encouraged to submit articles for publication in the
+journal.  Please send all items to one of the afore-mentioned systems via BBS
+upload or mailer file/attach.
+
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+   ->< End of The OpenDoors Tech Journal - Volume 94 Issue Number 2 ><-
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+

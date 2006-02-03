@@ -1,0 +1,82 @@
+Many people have admired the paged question selection facility in the
+OpenDoors 5.00 EZVote example door. EZVote allows the user to choose
+questions from a list of up to 200 questions, by displaying one page
+of questions at a time. The user is able to page up or down in the list
+of quesitons, select a question from the list, or return to the main
+menu. A prompt at the bottom of the screen shows the current page
+number, and a list of options that are currently available. For
+instance, when displaying the first of two pages, this prompt indicates
+that the user can move to the next page, but not the previous page.
+
+This OpenDoors Tip shows a generic function that provides the same sorts
+of capabilities that are seen in the EZVote example door, in a form that
+can be re-used in many different programs. This function, named
+PagedViewer(), can be used for displaying multi-paged messages, text
+files, or for permitting selection from a potentially very long list of
+items. To use the PagedViewer() in a program, you should add the
+pageview.c file to your project file / makefile, and #include the
+pageview.h file in any source file that calls PagedViewer().
+
+The prototype for the PagedViewer() function is as follows:
+
+          int PagedViewer(
+             int nInitialLine,
+             int nTotalLines,
+             void (*pDisplayCallback)(int nLine, void *pCallbackData),
+             void *pCallbackData,
+             BOOL bAllowSelection,
+             char *pszTitle,
+             int nPageSize);
+
+The nInitialLine parameter specifies the line to begin viewing at.
+Normally this would be 0, but you may wish to pass a different value to
+this function to force the viewer to begin on a page other than the
+first. Using this parameter, you can have the user return to
+the page they were previously viewing, rather than returning to the
+first page and having to again find their original location.
+
+The nTotalLines parameter specifies the total number of lines that can
+be viewed, and can be any value greater than or equal to 0.
+
+The pDisplayCallback parameter must be a pointer to a function that the
+PagedViewer will call to display a particular line of the file at the
+current location. When PagedViewer() calls your function, it will pass
+the line number to be displayed, along with the value originally passed
+to PagedViewer() in pCallbackData. The provided function should simply
+display the text for the specified line number, without a trailing CR/LF
+sequence, and then return.
+
+The pCallbackData can point to any data that you wish PagedViewer() to
+pass to your callback function, or may be NULL if you do not wish to use
+this feature.
+
+The bAllowSelection parameter should be TRUE if the user should be able
+to make a selection from the list, and FALSE if they should not. If
+bAllowSelection is TRUE, PagedViewer() will display a letter beside each
+line, and allow the user to select a line by pressing the corresponding
+letter. If you are using PagedViewer() to display a text file or
+message, you will want to set bAllowSelection to FALSE. If you are using
+PagedViewer() to display a list of items from which the user can select,
+you will want to set bAllowSelection to TRUE.
+
+The pszTitle parameter can point to a title to be displayed at the top
+of each page, and could be something like ("Select a message"). If you
+do not wish to have a title displayed, set this parameter to NULL.
+
+The nPageSize parameter specifies the number of lines that should be
+displayed on each page. If you do not wish to have the local screen
+(with a two line status line) to be scrolled while displaying the list,
+the maximum page size you should use is 21 if no title is being
+displayed, and 19 if a title is being displayed.
+
+The included fileview.c text file viewing program demonstrates the use
+of PagedViewer(). The fileview.c door can be setup to allow the user to
+view one or more files. If setup to view multiple files, the program
+first displays a list of files that the user can select to view.
+The fileview.c program uses PagedViewer() in two places - for providing
+the list of files and for displaying the file itself. As such, the user
+can page up or down in the list of files, select a file to view, and
+then page up or down in the file. When the user selects quit while
+viewing the file, they are returned to the list of files to possibly
+select another file. When the user selects quit from the list of files,
+the door returns control to the calling BBS software.

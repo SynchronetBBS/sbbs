@@ -1,0 +1,55 @@
+Many different types of programs can be enhanced by the use of graphical
+information. Often, this graphical information can take the form of
+horizontal bar graphs.
+
+An easy way to draw horizontal bars in door programs written with
+OpenDoors, is to use the od_repeat() function. Not only does od_repeat()
+allow you to easily form a bar by repeating a particular character the
+specified number of times, but it is also a very efficient way to do so.
+od_repeat() will take advantage of terminal emulation optimizations,
+when available. For instance, a character can be repeated any number of
+times with AVATAR by sending a short 3-byte sequence that specifies the
+character and number of times to repeat.
+
+How do you calculate the number of character to use to form a bar in
+your graph? The DrawHorizontalBar() function, which is provided below,
+will do this calculation for you. Simply provide the value to be
+represented by this bar, the minimum and maximum possible values, and
+the maximum number of character to use to draw the bar. For example, if
+you are graphing percentages (which could range from 0% to 100%), and
+wanted the graph to fit in a space of 40 columns, you would use:
+
+    DrawHorizontalBar(nPercent, 0, 100, 40);
+
+The included tip1.c is a complete program which demonstrates the
+DrawHorizontalBar() function as called from another function that will
+create complete horizontal bar graphs. This second function,
+DrawGraphOfPercentages(), takes an array of titles, and array of values
+corresponding to each title, and draws a complete bar graph from this
+information.
+
+
+/* Function to draw a horizontal bar, given a value, the minimum and maximum */
+/* possible values, and the number of characters the horizontal bar should   */
+/* extended for the maximum value.                                           */
+void DrawHorizontalBar(int nValue, int nMinValue, int nMaxValue,
+   int nMaxChars)
+{
+   /* Determine lenght of bar */
+   int nBarChars = ((nValue - nMinValue) * nMaxChars) / nMaxValue;
+
+   if(od_control.user_ansi || od_control.user_avatar)
+   {
+      /* If ANSI or AVATAR graphics are available, assume that IBM extended */
+      /* ASCII is also available. This function uses character 220 to form  */
+      /* bars that are 1/2 the height of the line. You might also want to   */
+      /* try character 119, which will form bars that are the entire height */
+      /* of the line.                                                       */
+      od_repeat(220, nBarChars);
+   }
+   else
+   {
+      /* In ASCII mode, the bar is formed by the '=' character. */
+      od_repeat('=', nBarChars);
+   }
+}

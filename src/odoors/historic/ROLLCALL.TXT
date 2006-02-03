@@ -1,0 +1,173 @@
+----------------------------------------------------------------------------
+                       The OpenDoors Rollcall!
+----------------------------------------------------------------------------
+
+The OpenDoors Roll Call is a compilation of BBS utilities and doors that were
+authored using Brian Pirie's OpenDoors package.  If you would like to see
+your products listed in this section, send the following information to either
+Brian Pirie or myself (via netmail, echomail, or snailmail):
+
+                         Product Name
+                         Author Name
+                         Description
+                         Price
+                         FREQ Address/BBS Number
+                         FREQ Name
+                         Latest Version
+
+----------------------------------------------------------------------------
+
+Auto-Message
+------------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Message to next caller door.
+Price:
+
+BFE (BBS Front End System)
+--------------------------
+Author(s): Scott Burkett - Cairo Research Labs
+version: 1.30.2à
+Requestable from: 1:3613/12
+Freq name: BFE
+Description: Complete BBS carousel, front end menu builder, remote jobs, etc
+Price: $10
+
+BID (BBS Information Door)
+--------------------------
+Author(s): Brian Pirie - Pirie Enterprises
+version: 2.00
+Requestable from: 1:243/8
+Freq name: BID
+Description: A door to introduce new BBS users to the world of BBSing
+Price: Freeware
+
+CALL-BACK
+---------
+Author(s): Don Laverdure
+version: 4.02
+Requestable from: 1:249/124
+Freq name: CB-402.ARJ
+Description: Callback verifier door for RA/SBBS/QBBS systems
+Price: unknown/Shareware
+
+EZVote
+------
+Author(s): Brian Pirie - Pirie Enterprises
+version: 4.10
+Requestable from: 1:243/8
+Freq name: EZVOTE
+Description: A user voting door for use with most BBS systems
+Price: Freeware
+
+Flame-Thrower
+-------------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Users leave next caller a flaming one-liner.
+Price:
+
+Node-Door
+---------
+Author(s): Don Laverdure
+Version: 2.11
+Requestable from: 1:249/124
+Freq name: ND-211.ARJ
+Description: Nodelist browser door for raw nodelists.
+Price: unknown/Shareware
+
+
+RegPRO
+------
+Author(s): Scott Burkett - Cairo Research Labs
+Version: 2.60
+Requestable from: 3613/12
+Freq name: REGPRO
+Description: Online BBS Fullscreen Entry Form/User Questionnaire System
+Price: $10/Shareware
+
+ROBO TAPE
+---------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version: 2.00
+Requestable from: 1:3813/309, 62:9600/0, 75:400/0  Anytime But ZMH.
+Freq name: ROBOT200.ARJ
+Description: BBS Tape Access Door
+Price: $10/Shareware
+
+TBM (Turbo Bulletin Manager)
+----------------------------
+Author(s): Scott Burkett - Cairo Research Labs
+Version: 2.50
+Requestable from: 3613/12
+Freq name: TBM
+Description: BBS Bulletin Manager/Tons of features/Most BBS Systems
+Price: $10/Shareware
+
+Tic-Tac-Toe
+-----------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Plays just like the real thing.
+Price:
+
+Triple Dare
+-----------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Try and outdraw the dealer! Great graphics.
+Price:
+
+Turbo Poll
+----------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Very graphical voting booth door
+Price:
+
+Turbo Quotes
+------------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Randomly displays quotes to users
+Price:
+
+Users-Info
+----------
+Author(s): Vince Jacobs - Lone Wolf Software
+Version:
+Requestable from:
+Freq name:
+Description: Displays Exteneded Info about users and prints it out.
+Price:
+
+VID (Virus Information Door)
+----------------------------
+Author(s): Scott Burkett - Cairo Research Labs
+Version: 2.00
+Requestable from: 3613/12
+Freq name: VID and VIDPLUS (Enhancement Module)
+Description: Online Virus Reference Database for most BBS types
+Price: $10/Shareware
+
+VKill
+-----
+Author(s): Scott Burkett - Cairo Research Labs
+Version: 3.00a
+Requestable from: 1:3613/12
+Freq name: VKILL
+Description: Upload Integrity Door for Maximus CBCS
+Price: $10/Shareware
+

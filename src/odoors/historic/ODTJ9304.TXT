@@ -1,0 +1,447 @@
+The
+OPENDOORS  TECH  JOURNAL
+Volume 93, Number 4                                          June 21st, 1993
+
+"The Greatest Thing to happen to Journalism Since Real People"
+                                                                                                                                      	
+This Issue:     A Word from the Editor - Scott Burkett
+                The Open Door - Brian Pirie
+                The OPENDOORS Echo
+                Where's the Source? - John Kristoff
+                Opendoors Tech Corner - Dropfile Location Logic
+                Review: BFE v1.30.2à
+                OpendDoors Snippets!
+                OpenDoors Roll Call
+                OpenDoors Distribution Network Sites
+                OpenDoors Tech Journal Information
+                                                                                                                                      	
+----------------------------------------------------------------------------
+                        A Word from the Editor:
+----------------------------------------------------------------------------
+
+Another day, another fifty cents.  Welcome once again to that info-filled,
+free-as-can-be periodical dedicated to the proposition that all C-based door 
+libraries are not equal!
+
+ODTJ is getting read worldwide.  Yup.  You know what that means?  Aside from
+the fact that it provides a wonderful forum for OD coders to share ideas and
+information, it provides:
+
+                         FREE ADVERTISING!
+
+Man!  With the distribution we are getting, ODTJ is the perfect place to
+advertise that new door!  I'll leave the rest up to you guys....
+
+All in all this is a decent issue.  It will probably be the last issue before
+the 4.20 release of OpenDoors (it should be a doozy).  On a side note, our
+BBS (Under the Nile) is not running on a USR 14.4 Sportster.  Too cool.
+
+That's it.  No more words of wisdom this month.  No more ranting and raving
+on and on about how RIP is inevitably gonna die.... :-)
+
+Alles Klaar und spater!
+
+----------------------------------------------------------------------------
+                     THE OPEN DOOR - By Brian Pirie
+----------------------------------------------------------------------------
+
+** Editor's Note **
+
+Has anyone seen this guy?  Seriously, rumor has it that Brian is up to some-
+thing *BIG*.  Of course, once the rumors have been resolved, our readers will
+be the first to know!  Why?  Because we have inquiring minds.  Hrmpf!  Look
+for Brian next month....or the next month....or the.....ad infinitum.
+
+----------------------------------------------------------------------------
+                             OPENDOORS Echo!
+----------------------------------------------------------------------------
+                                                                                                                                      		
+OPENDOORS is an internationally distributed echo designed for discussion of
+BBS door/utility programming, and in particular, Brian Pirie's OpenDoors C
+Library!
+
+The OPENDOORS Echo was created by a group of dedicated BBS door and utility
+programmers and designers, in order to promote discussions on BBS utility
+programming techniques, tasks, standards, and trends. This echo is not just
+for BBS door authors!  Discussion of practically any aspect of BBS programming
+is encouraged.  Brian Pirie, the author of OpenDoors is available for tech
+support, as are his beta-testers.
+
+The echo is not currently on the FidoNet backbone, but a feed is more than
+likely available at your favorite ODN Support Site.  Efforts are under way
+to put OPENDOORS on the fido backbone...stay tuned!
+
+----------------------------------------------------------------------------
+                        Where's the Source?
+----------------------------------------------------------------------------
+          By: John Kristoff, The Crossroads BBS (1:115/743)
+
+There seems to be a problem with source code for BBS related utilities and
+door programs being released.  Why is this?  I know we have BinkleyTerm,
+Maximus and a handful of others, but how many door games do you see that come
+with actual source code?  I don't think I've seen any.  In fact, the only
+door program that I've seen the entire source for is Brian's RAVote.
+
+Not that I expect the source code for TradeWars (even if I wanted it), but I
+find it surprising that so many door programmers are so greedy.  I started
+teaching myself C because I'm sick of relying on other authors.  I wouldn't
+be surprised if many other small time programmers have done the same.  I've
+always thought that the BBS community, and computer networks in general, are
+one of the most free, open and chaotic cultures our planet has ever seen.
+So I can't understand why people request $10, $25 or more for a files list
+generator, a simple voting booth door or those other 'dime a dozen' programs.
+
+Don't get me wrong, I pay for quality software and I have at least a dozen
+shareware programs registered.  However, if I was to register every program
+I've wanted to use for more than 30 days, I would be in the poor house.
+There are just simply too many trivial programs in which I feel their price
+isn't justified for lack of programmer committment, exhorborant price, or
+just simply the value of the product.  I'm not looking for a free ride, but
+I am looking for quite a bit more respect from my fellow programmers.  For
+users, the hobby is relatively cheap, but for sysops, it's a different story.
+Well, at least if you're honest. Us sysops have enough to worry about in
+terms of phone bills, trouble users, hardware, updates and upgrades... and so
+on.
+
+I'm including a text, simliar to this message with all programs I write to
+encourage the programmers for sysops to write free or cheap software.  I plan
+on releasing all my BBS related utilities and door programs as freeware or
+public domain (even if that is all they're worth). It's my way of giving
+something back to the community that has given me so much.  I encourage you
+to do the same, or at the very least, with some of your less popular programs.
+
+John Kristoff
+The Crossroads BBS
+(312) 587-8756
+Chicago, IL
+FidoNet: 1:115/743
+Internet: jkristof@mica.meddean.luc.edu
+
+
+** Editor's response:
+
+While I am somewhat in agreeance with John on this subject, I must also play
+devil's advocate, and come to the aid of door writers who produce solid
+products, often without the availability of source.  Source code availability
+for shareware products is simply not available, for obvious reasons.  The
+author(s) of the product cannot make source available, as potential customers
+could simply recompile the source, and effectively use the software without
+properly registering it with the author(s).  In my own case, I choose not
+to distribute source code for this reason.  For smaller, freeware titles, I
+suppose I never considered the fact that other programmers would want to
+peek at my code.  As far as price goes, I have a set $10 registration fee for
+all of my door packages, a price which I consider to be extremely low for the
+quality of my products.
+
+Very interesting point, John...anyone out there have any feelings on this?
+
+----------------------------------------------------------------------------
+              OpenDoors Tech Corner: Dropfile Location Logic
+----------------------------------------------------------------------------
+
+At this time, OpenDoors searches for the door information file (aka dropfile)
+in the following order:
+
+   1.) First, if there was a custom door information file format
+       defined in the OpenDoors configuration file, OpenDoors will
+       begin by looking for this file. OpenDoors searches for the
+       custom information file in the following order:
+             A.) The path defined in the info_path variable
+                 (which can be set by your door code and over-
+                 ridden by the configuration file BBSDir setting)
+             B.) The directory which was the current default dir
+                 at door startup time
+             C.) If any of the following environment variables
+                 exist, OpenDoors will then search for the file
+                 in the directories pointed to by these variables,
+                 in the following order:
+                              RA
+                              QUICK
+                              PCB
+                              BBS
+
+   2.) If no custom door information file was found / defined,
+       OpenDoors will then search for door information files
+       corresponding to one of the built in formats. It will search
+       for these files in the same directories, and same order, as
+       it does for the custom door information file (A - C). Within
+       each directory, it will search for files with the following
+       filenames:
+
+                         CHAIN.TXT
+                         SFDOORS.DAT
+                         DOOR.SYS
+                         CALLINFO.BBS
+                         DORINFO1.DEF
+                         DORINFOx.DEF, where x is the node number
+                                       set by your program, if
+                                       x != 1.
+
+       As soon as it finds a directory containing one of these
+       filenames, OpenDoors will stop it's door information file
+       search phase. It then begins to decide what to do with what
+       it has found. If more than one of the above filenames was
+       found in the directory in question, OpenDoors will read the
+       file with the most recent date and time stamp. This is intended
+       to overcome abiguities that can arise when a door information
+       file conversion program is being used, and a number of
+       different door information files may still exist in the
+       directory. In such a case, it is assumed that the most recently
+       created file is the one that should be used. If more than one
+       file exist with an identical date and time, OpenDoors will use
+       the file that is closer to the beginning of the above list. (ie
+       they are listed in their order of priority)
+
+       Once OpenDoors has decided which file it is going to use, it
+       may have still more decision-making to do. In the case of
+       door information file names that correspond to more than one
+       format (such as DOOR.SYS), OpenDoors will examine the file
+       to determine which format it actually is. If a dorinfo?.def
+       file is found, OpenDoors will then also search for an
+       EXITINFO.BBS file. (An EXITINFO.BBS file is always acompanyed
+       by a DORINFO?.DEF file, as it does not include all the
+       information needed by even the most basic of doors). Again,
+       if an EXITINFO.BBS file is found, OpenDoors must determine
+       which of the many EXITINFO.BBS formats it is actually dealing
+       with.
+
+       This may all sound rather complicated, but it is a well thought-
+       out strategy that is intended to asure that the correct door
+       information file will be located and used in the vast majority
+       of cases. (and to think - it does all this in the blink of an
+       eye!)
+
+----------------------------------------------------------------------------
+                          REVIEW: BFE v1.30.2à
+----------------------------------------------------------------------------
+
+BFE v1.30.2à, the flexible BBS front end system from Cairo Research Labs is
+now available!  This is an alpha release of the upcoming 1.30 version of
+BFE.
+
+BFE is a BBS front-end system that was designed to provide sysops with a
+method of running more than one BBS from the same line.  In addition, it has
+a wealth of other options available to put in on the front-end of your BBS,
+such as allowing file transfers, ANSI/ASCII file viewing, shelling to DOS
+from remote, running external programs and batch files, and much more!
+
+BFE was designed to be called from a front-end mailer, such as Frontdoor or
+Binkleyterm.  Instead of spawning directly to the BBS system, it presents
+a menu to the user, which details his immediate options.  These options can
+range from several different BBS systems, remote jobs, literally anything
+you can think of!  The BFE system can also be configured to be called
+straight from your BBS software itself, in essence, running as a normal
+door, using one of several popular BBS dropfile formats.  Read onward....
+
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³   Features  ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ßßßßßßßßßßßßßß
+
+        * Complete support for ANSI/ASCII/AVATAR users (Auto ANSI detect!)
+        * *TRUE* Multinode/Multiuser Compatibility!
+        * DESQview aware!
+        * Configurable for security concerns!
+        * Custom multi-level menus with item-level password protection!
+        * Complete carrier monitoring and timeout checking
+        * Use any of 11 standard dropfiles, or define custom ones!
+        * Run as a normal door or as a frontend!  Dropfile not required!
+        * Complete BBS carousel - run multiple BBS systems
+        * ASCII/ANSI/AVATAR file support
+        * File transfer system with support for external protocols
+        * Run remote jobs, such as batch files, programs, other doors, etc.
+        * Remote OS shells!
+        * Built in chat mode
+        * Much more!
+        
+ ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+Ü³   What's New in This Release?  ³
+ÛÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ     o New  * Change  ! Fix
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+        o *Major* code cleanup and internal re-documenting and optimizing.
+          This will be done every periodically in order for the product to
+          continue to grow.
+        
+        o New beta naming convention:   MAJOR.MINOR.REV (Staging Level)
+          (i.e. this is 1.30.2à, v1.30, rev. 2, in alpha staging)
+
+        o Custom user input using the new PROMPT keyword!  Now, you can 
+          utilize custom input as the value for SECONDARY data fields for 
+          *any* menu type in BFE!
+        
+        o New keywords: NOPASSPARMS and PROCESS.  These are used to directly
+          manipulate the way that BFE performs calls to external processes.
+          When used with the PROMPT keyword above, just about anything can 
+          be called, in any order, with any arguments!
+          
+        o The COLOVERRIDE option has been added, to allow each individual
+          menu option to use its own unique color.  This overrides the global
+          DESCRIPCOL keyword in each .CTL file.  (Thanks to Chris Koziol)
+
+        o Upload capability now in place!  This involved changes to the
+          PROTOCOL.BFE file, and adding a new type "U" option.
+          
+        ! If BFE cannot locate ASCII/ANSI/AVATAR screens at display time,
+          it will log an error entry into the logfile, and will no longer
+          wait for a remote keystroke to continue. (Thanks to R. Guevarra) 
+
+        o Generic File Transfer System now in place!  The new system allows
+          the use of configurable external protocols (no more hardcoded DSZ!)
+
+        o WELCOMESCREEN option added, to provide a global intro screen to be
+          displayed upon entering the BFE system (shown once only).  As with
+          all of the file display capabilities of BFE, the file can be in
+          ASCII, ANSI, or in AVATAR formats.  BFE will display the one which
+          best fits the user's terminal settings.
+
+        o The "time to next event" option has been put back into the system,
+          and is now passed via a new "-t" switch. (i.e. -t60, -t%3, etc).
+          This value is passed to external procedures (Type "R").
+
+        * The "O" type (Remote OS Shell) now utilizes the COMSPEC environment
+          variable to locate the command processor.  The command processor
+          was formerly specified in the SECONDARY field.  Previously, if
+          this value was keyed in wrong, it resulted in BFE locking up
+          the system.  Using COMSPEC should make this a bit cleaner.
+
+        o Still more documentation changes!
+
+FREQ:  BFE from:  Under the Nile! 14.4/v.32   1:3613/12 (706) 596-8126
+       93K                      
+                
+Scott Burkett,
+Cairo Research Labs
+
+----------------------------------------------------------------------------
+                       OPENDOORS SNIPPPPPPPPPETS!!!!!!
+----------------------------------------------------------------------------
+
+By: Mark Williamson, Software Solutions (1:214/54)
+
+Here's yet another way to center your favorite text string:
+
+void str_center(int line,char *string,char *color)
+{
+    int col = 40 - (strlen(string) / 2);
+
+    /* This method uses the length of the string to center it.  So,
+       you would get strange results if you embedded control codes
+       in your string.
+    */
+
+    if(od_control.user_ansi) {         // This way allows you to specify
+       od_set_cursor(line,col);        // the line to put the text on.
+       od_printf(color);               // Use the `white on blue` code types
+       od_disp_str(string);
+    }
+    else {
+       od_repeat(' ',col);             // This method uses the CURRENT
+       od_disp_str(string);            // line the cursor happens to be on.
+    }
+    return;
+}
+
+Mark Williamson
+Software Solutions BBS
+1:214/54
+Lemoore CA
+(209)997-0224
+v32/v42bis
+Open access to first time callers.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+By: Mark Williamson, Software Solutions (1:214/54)
+
+/******************************************************
+* fill_box() by Mark Williamson, Software Solutions BBS
+*               Fidonet 1:214/54, (209)997-0224
+*
+* This code will paint a box in the
+* specified color using the specified
+* character using ansi/avatar graphics.
+* Note that this does not make a border!
+* Only 'fills' a block on the screen.
+* Can be used to clear just parts of a screen.
+*
+* Call the function with the following parameters:
+*
+*   int srow,scol:  Starting row,col of the box
+*   int erow,ecol:  Ending row,col of the box
+*   int attrib:     od_set_attrib() style color code
+*   char fill_char: The character to use to paint the
+*                   block.  Use ' ' to clear a block.
+*
+*   This code is placed in the public domain.
+******************************************************/
+
+#include <stdio.h>
+#include "opendoor.h"
+
+void fill_box(int srow, int scol, int erow, int ecol,
+              int attrib, char fill_char);
+
+void main(void)
+{
+    fill_box(3,10,13,40,0x1f,'°');
+}
+
+void fill_box(int srow, int scol, int erow, int ecol,
+              int attrib,char fill_char)
+{
+   int line_len,x;
+   if(srow<1) srow=1;
+   if(erow>24) erow=24;
+   if(scol<1) scol=1;
+   if(ecol>80) ecol=80;
+   line_len=ecol-scol;
+   od_clr_scr();
+   od_set_attrib(attrib);
+   for(x=srow;x<erow+1;x++) {
+      od_set_cursor(x,scol);
+      od_repeat(fill_char,line_len);
+      }
+}
+
+
+----------------------------------------------------------------------------
+                 OpenDoors Tech Journal Information
+----------------------------------------------------------------------------
+
+Editors: Scott Burkett
+         Under the Nile BBS
+         1:3613/12@fidonet.org
+         56:101/2@intlnet.org
+         (706) 596-8126 14.4     
+         1113 29th Street
+         Columbus, GA 31902
+
+         Brian Pirie
+         BP ECOMM Systems
+         1:243/8@fidonet.org
+         Brian.Pirie@f8.n243.z1.fidonet.org (Internet EMail)
+         (613) 526-4466 14.4
+         1416 - 2201 Riverside Drive
+         Ottawa, Ontario
+         Canada
+         K1H 8K9
+
+Published by and for programmers and users of the OpenDoors C Communications
+Library and BBS Interface Kit by Pirie Enterprises.  It is a compilation of
+tips, reviews, and tidbits pertaining to BBS programming and general usage.
+The opinions expressed in this publication do not necessarily represent those
+of its editors, the OpenDoors author, or other contributors.
+
+OBTAINING COPIES:  The latest copy of the OpenDoors Tech Journal will always
+be available under the magic name of TECHD (for the DOS version), and TECHW
+(for the Windows .WRI version) at both of the systems listed above.
+
+SUBMISSIONS: You are encouraged to submit articles for publication in the
+journal.  Please send all items to one of the afore-mentioned systems via BBS
+upload or mailer file/attach.
+
+----------------------------------------------------------------------------
+   ->< End of The OpenDoors Tech Journal - Volume 93 Issue Number 4 ><-
+----------------------------------------------------------------------------
+ 	

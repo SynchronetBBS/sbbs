@@ -1,0 +1,45 @@
+Often, it can be useful or necessary to send and receive files between
+a program using OpenDoors, and the remote user's system. To allow file
+uploading and downloadeding, you can either implement the common file
+transfer protocols as part of your program, or you can call an external
+file transfer program, such as DSZ. This tip demonstrates how you can
+call DSZ using OpenDoors.
+
+In order to see this program in action, you should run a terminal
+program on one machine, and connect to second machine that will run this
+example program. (You could also do this in two different windows on one
+machine.) The demonstration program will ask whether you want to upload
+or download files, and will then prompt you for the file transfer protocol
+to use and the filename to transfer. Once this is done, DSZ is invoked
+to perform the file transfer. As such, DSZ will need to be installed on
+the machine that will run the example program.
+
+The tip2.c source file provides a function that you can use to perform
+file transfers. This function is defined as follows:
+
+  int TransferFile(char *pszFilename, eProtocol Protocol, char bReceive)
+
+The first parameter should contain the name of the file or files to be
+transfered. The second parameter should specify the file transfer
+protocol to use, and should be one of the following enumerated
+constants:
+
+   XModem
+   XModemCRC
+   XModem1K
+   YModem
+   YModemG
+   ZModem
+
+The third parameter specifies whether the file is being send (FALSE) or
+received (TRUE). From the user's perspective, sending the file means
+downloading, and receiving the file means uploading.
+
+The TransferFile() function returns TRUE if the file transfer was
+completed, and FALSE if it was not.
+
+If the DSZ program is not present in the system's PATH or the current
+directory, then the global variable szDSZFilename must be set to the
+full path and filename of the DSZ program. This could be done by adding
+a custom OpenDoors configuration file line with a keyword such as
+"DSZPath".

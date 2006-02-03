@@ -1,0 +1,50 @@
+It is common for BBS door programs to accept command line parameters
+that permit various door-related settings, such as the serial port, baud
+rate, and node number. This tip demonstrates how you can do this when
+working with OpenDoors. This tip is presented in the following files:
+
+   cmdline.h   - Header file for command line processing function.
+   cmdline.c   - Implementation of command line processing function.
+   tip4.c      - Example of a program that uses the command line
+		 processing function.
+
+The cmdline.c module implements the ParseStandardCommandLine() function,
+which takes as its parameters the same argc and argv parameters that are
+passed to the main() function of any C program. The
+ParseStandardCommandLine() function then sets the appropriate OpenDoors
+settings based on the following optional command-line parameters:
+
+   -L or -LOCAL      - Causes door to operate in local mode, without
+		       requiring a door information (drop) file.
+   -B x or -BPS x    - Sets the bps (baud) rate to use.
+   -P x or -PORT x   - Sets the serial port to use, were 0=COM1, 1=COM2,
+		       etc.
+   -N x or -NODE x   - Sets the node number to use.
+   -?, -H or -HELP   - Displays command-line help and exits
+   -PERSONALITY x    - Sets the sysop status line / function key
+		       personality to use.
+   -MAXTIME x	     - Sets the maximum number of minutes that any
+		       user will be permitted to access the door.
+   -ADDRESS x	     - Sets serial port address, to be used if FOSSIL
+		       driver is not being used.
+   -IRQ x	     - Sets the serial port IRQ line, to be used if
+		       FOSSIL driver is not being used.
+   -NOFOSSIL	     - Disables use of FOSSIL driver, even if it is
+		       present.
+   -NOFIFO	     - Disables use of 16550 FIFO buffers (only if
+		       FOSSIL driver is not being used).
+   -DROPFILE x	     - Door information file directory or
+		       directory+filename.
+   -USERNAME x	     - Name of user who is currently online.
+   -TIMELEFT x	     - User's time remaining online.
+   -SECURITY x	     - User's security level.
+   -LOCATION x	     - Location from which user is calling.
+
+Note that any information that is available from the door information
+file overrides information provided on the command-line. If sufficient
+parameters are provided on the command-line, the door can be operated
+without a door information file. In order to do this, cmdline.c provides
+a callback function that you can hook into od_control.od_no_file_func,
+as demonstrated in tip4.c.
+
+Case is not sensitive in the names of command line arguments.
