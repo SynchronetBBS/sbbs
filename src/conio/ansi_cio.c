@@ -182,24 +182,27 @@ cfmakeraw(struct termios *t)
 }
 #endif
 
+/* Do NOT call this to output to the last column of the last row. */
+/* ONLY call this for chars which will move the cursor */
 void ansi_sendch(char ch)
 {
 	if(!ch)
 		ch=' ';
-	if(ansi_row<ansi_rows-1 || (ansi_row==ansi_rows-1 && ansi_col<ansi_cols-1)) {
-		ansi_col++;
-		if(ansi_col>=ansi_cols) {
-			ansi_col=0;
-			ansi_row++;
-			if(ansi_row>=ansi_rows) {
-				ansi_col=ansi_cols-1;
-				ansi_row=ansi_rows-1;
-			}
+	ansi_col++;
+	if(ansi_col>=ansi_cols) {
+		/* Column 80 sux0rz */
+		force_move=1;
+		ansi_col=0;
+		ansi_row++;
+		if(ansi_row>=ansi_rows) {
+			ansi_col=ansi_cols-1;
+			ansi_row=ansi_rows-1;
 		}
-		fwrite(&ch,1,1,stdout);
-		if(ch<' ')
-			force_move=1;
 	}
+	fwrite(&ch,1,1,stdout);
+	/* We sent a control char... better make the next movement explicit */
+	if(ch<' ' && ch > 0)
+		force_move=1;
 }
 
 void ansi_sendstr(char *str,int len)
@@ -249,6 +252,8 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 				continue;
 			ansivmem[y*ansi_cols+x]=sch;
 			ansi_gotoxy(x+1,y+1);
+			if(y>=ansi_rows-1 && x>=ansi_cols-1)
+				continue;
 			if(attrib!=sch>>8) {
 				textattr(sch>>8);
 				attrib=sch>>8;
@@ -555,7 +560,7 @@ int ansi_putch(int ch)
 			}
 			break;
 		case 7:		/* Bell */
-			ansi_sendch(7);
+			ansi_sendstr("\007",1);
 			break;
 		case '\t':
 			for(i=0;i<10;i++) {
@@ -599,79 +604,87 @@ void ansi_gotoxy(int x, int y)
 {
 	char str[16];
 
+	str[0]=0;
 	if(x < 1
 		|| x > ansi_cols
 		|| y < 1
 		|| y > ansi_rows)
 		return;
+
+	/* Movement forced... always send position code */
 	if(force_move) {
-		force_move=0;
 		sprintf(str,"\033[%d;%dH",y,x);
-	}
-	else {
-		/*
-		 * If we're moving to column one, we can use \r
-		 * Only use it if we're not already there though :-)
-		 */
-		if(x==1 && ansi_col != 0) {
-			ansi_sendch('\r');
-			force_move=0;
-			ansi_col=0;
-		}
-		/* If we're already on the correct column */
-		if(x==ansi_col+1) {
-			/* We're already in the right place! */
-			if(y==ansi_row+1) {
-				str[0]=0;
-			}
-			else {
-				/* We need to move up */
-				if(y<ansi_row+1) {
-					/* Only one, no number required */
-					if(y==ansi_row)
-						strcpy(str,"\033[A");
-					else
-						sprintf(str,"\033[%dA",ansi_row+1-y);
-				}
-				/* Need to move down */
-				else {
-					/* Only one row */
-					if(y==ansi_row+2)
-						strcpy(str,"\033[B");
-					else
-						sprintf(str,"\033[%dB",y-ansi_row-1);
-				}
-			}
-		}
-		/* We need to change the column at least */
-		else {
-			/* We're on the right row, just move left or right */
-			if(y==ansi_row+1) {
-				/* Move left */
-				if(x<ansi_col+1) {
-					if(x==ansi_col)
-						strcpy(str,"\033[D");
-					else
-						sprintf(str,"\033[%dD",ansi_col+1-x);
-				}
-				/* Move right */
-				else {
-					if(x==ansi_col+2)
-						strcpy(str,"\033[C");
-					else
-						sprintf(str,"\033[%dC",x-ansi_col-1);
-				}
-			}
-			/* Do a full move then... row and col need changing. */
-			else {
-				sprintf(str,"\033[%d;%dH",y,x);
-			}
-		}
+		ansi_sendstr(str,-1);
+		force_move=0;
+		ansi_row=y-1;
+		ansi_col=x-1;
+		return;
 	}
 
+	/* Moving to col 1 (and not already there)... use \r */
+	if(x==1 && ansi_col) {
+		ansi_sendstr("\r",1);
+		ansi_col=0;
+	}
+
+	/* Do we even NEED to move? */
+	if(x==ansi_col+1 && y==ansi_row+1)
+		return;
+
+	/* If we're already on the correct column */
+	if(x==ansi_col+1) {
+		/* Do we need to move up? */
+		if(y<ansi_row+1) {
+			if(y==ansi_row)
+				/* Only up one */
+				strcpy(str,"\033[A");
+			else
+				sprintf(str,"\033[%dA",ansi_row+1-y);
+			ansi_sendstr(str,-1);
+			ansi_row=y-1;
+			return;
+		}
+
+		/* We must have to move down then. */
+		/* Only one, use a newline */
+		if(y==ansi_row+2)
+			strcpy(str,"\n");
+		else
+			sprintf(str,"\033[%dB",y-ansi_row-1);
+		ansi_sendstr(str,-1);
+		ansi_row=y-1;
+		return;
+	}
+
+	/* Ok, we need to change the column then... is the row right though? */
+	if(y==ansi_row+1) {
+		/* Do we need to move left then? */
+		if(x<ansi_col+1) {
+			if(x==ansi_col)
+				strcpy(str,"\033[D");
+			else
+				sprintf(str,"\033[%dD",ansi_col+1-x);
+			ansi_sendstr(str,-1);
+			ansi_col=x-1;
+			return;
+		}
+
+		/* Must need to move right then */
+		if(x==ansi_col+2)
+			strcpy(str,"\033[C");
+		else
+			sprintf(str,"\033[%dC",x-ansi_col-1);
+		ansi_sendstr(str,-1);
+		ansi_col=x-1;
+		return;
+	}
+
+	/* Changing the row and the column... better use a fill movement then. */
+	sprintf(str,"\033[%d;%dH",y,x);
 	ansi_sendstr(str,-1);
 	ansi_row=y-1;
 	ansi_col=x-1;
+	return;
 }
 
 void ansi_gettextinfo(struct text_info *info)
