@@ -40,6 +40,8 @@ void save_font_files(struct font_files *fonts)
 	str_list_t	fontnames;
 	int		i;
 
+	if(safe_mode)
+		return;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	if((inifile=fopen(inipath,"r"))!=NULL) {
 		ini_file=iniReadFile(inifile);
@@ -316,7 +318,7 @@ void font_management(void)
 					show_filepick=1;
 					break;
 			}
-			if(show_filepick) {
+			if(show_filepick && !safe_mode) {
 				int result;
 				struct file_pick fpick;
 				char	*savbuf;

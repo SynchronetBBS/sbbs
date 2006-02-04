@@ -39,6 +39,7 @@ struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 unsigned char *scrollback_buf=NULL;
 unsigned int  scrollback_lines=0;
+int	safe_mode=0;
 
 #ifdef _WINSOCKAPI_
 
@@ -355,6 +356,9 @@ int main(int argc, char **argv)
 				case 'T':
 					conn_type=CONN_TYPE_TELNET;
 					break;
+				case 'S':
+					safe_mode=1;
+					break;
                 default:
 					goto USAGE;
            }
@@ -533,6 +537,7 @@ int main(int argc, char **argv)
         "-l# =  set screen lines to # (default=auto-detect)\n"
 		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
+		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"\n"
 		"URL format is: [(rlogin|telnet)://][user[:password]@]domainname[:port]\n"
 		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"

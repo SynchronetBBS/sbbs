@@ -16,7 +16,15 @@
 #include "zmodem.h"
 #include "crc32.h"
 
+#ifdef GUTS_BUILTIN
+#include "gutsz.h"
+#endif
+
+#ifdef GUTS_BUILTIN
+#define	BUFSIZE	1
+#else
 #define	BUFSIZE	2048
+#endif
 static char recvbuf[BUFSIZE];
 
 #define DUMP
@@ -119,6 +127,7 @@ void update_status(struct bbslist *bbs, int speed)
 {
 	char buf[160];
 	char nbuf[LIST_NAME_MAX+10+11+1];	/* Room for "Name (Logging) (115300)" and terminator */
+						/* SAFE and Logging should me be possible. */
 	int oldscroll;
 	int olddmc;
 	struct	text_info txtinfo;
@@ -143,6 +152,8 @@ void update_status(struct bbslist *bbs, int speed)
 	gotoxy(1,1);
 	_wscroll=0;
 	strcpy(nbuf, bbs->name);
+	if(safe_mode)
+		strcat(nbuf, " (SAFE)");
 	if(cterm.log)
 		strcat(nbuf, " (Logging)");
 	if(speed)
@@ -535,6 +546,9 @@ void begin_upload(char *uldir, BOOL autozm)
 			,""
 		};
 
+	if(safe_mode)
+		return;
+
 	init_uifc(FALSE, FALSE);
 	result=filepick(&uifc, "Upload", &fpick, uldir, NULL, UIFC_FP_ALLOWENTRY);
 	
@@ -569,6 +583,191 @@ void begin_upload(char *uldir, BOOL autozm)
 	}
 	uifcbail();
 }
+
+#ifdef GUTS_BUILTIN
+static int guts_lputs(void* cbdata, int level, const char* str)
+{
+	struct GUTS_info *gi=cbdata;
+	/* ToDo: Do something usefull here. */
+	/* fprintf(stderr,"%s\n",str); */
+	return(0);
+}
+
+void guts_zmodem_progress(void* cbdata, ulong current_pos)
+{
+	struct GUTS_info *gi=cbdata;
+	/* ToDo: Do something usefull here. */
+	return;
+}
+
+static int guts_send_byte(void* cbdata, uchar ch, unsigned timeout)
+{
+	int	i;
+	struct GUTS_info *gi=cbdata;
+
+	if(!socket_check(gi->oob_socket, NULL, &i, timeout*1000))
+		return(-1);
+
+	if(!i)
+		return(-1);
+
+	if(send(gi->oob_socket,&ch,1,0)==-1)
+		return(-1);
+
+	return(0);
+}
+
+static int guts_recv_byte(void* cbdata, unsigned timeout)
+{
+	BOOL	data_waiting;
+	BYTE	ch;
+	struct GUTS_info *gi=cbdata;
+
+	if(!socket_check(gi->oob_socket, &data_waiting, NULL, timeout*1000))
+		return(-1);
+
+	if(!data_waiting)
+		return(-1);
+
+	if(recv(gi->oob_socket,&ch,1,0)!=1)
+		return(-1);
+
+	return(ch);
+}
+
+static BOOL guts_is_connected(void* cbdata)
+{
+	struct GUTS_info *gi=cbdata;
+	return socket_check(gi->oob_socket,NULL,NULL,0);
+}
+
+BOOL guts_data_waiting(void* cbdata, unsigned timeout)
+{
+	BOOL rd;
+	struct GUTS_info *gi=cbdata;
+
+	if(!socket_check(gi->oob_socket,&rd,NULL,timeout*1000))
+		return(FALSE);
+	return(rd);
+}
+
+void zmodem_download(char *download_dir);
+
+void guts_background_download(void *cbdata)
+{
+	struct GUTS_info gi=*(struct GUTS_info *)cbdata;
+
+	zmodem_t	zm;
+	ulong		bytes_received;
+
+	zmodem_init(&zm
+		,&gi
+		,guts_lputs, guts_zmodem_progress
+		,guts_send_byte,guts_recv_byte,guts_is_connected
+		,guts_data_waiting);
+
+	/* ToDo: This would be a good time to detach or something. */
+	zmodem_recv_files(&zm,gi.files[0],&bytes_received);
+
+	oob_close(&gi);
+}
+
+void guts_background_upload(void *cbdata)
+{
+	struct GUTS_info gi=*(struct GUTS_info *)cbdata;
+
+	zmodem_t	zm;
+	ulong	fsize;
+	FILE*	fp;
+
+	if((fp=fopen(gi.files[0],"rb"))==NULL) {
+		fprintf(stderr,"Error %d opening %s for read",errno,gi.files[0]);
+		return;
+	}
+
+	setvbuf(fp,NULL,_IOFBF,0x10000);
+
+	zmodem_init(&zm
+		,&gi
+		,guts_lputs, guts_zmodem_progress
+		,guts_send_byte,guts_recv_byte,guts_is_connected
+		,guts_data_waiting);
+
+	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
+
+	fsize=filelength(fileno(fp));
+
+	if(zmodem_send_file(&zm, gi.files[0], fp
+		,/* ZRQINIT? */TRUE, /* start_time */NULL, /* sent_bytes */ NULL))
+		zmodem_get_zfin(&zm);
+
+	fclose(fp);
+
+	oob_close(&gi);
+}
+
+void guts_transfer(struct bbslist *bbs)
+{
+	struct GUTS_info gi;
+
+	if(safe_mode)
+		return;
+	setup_defaults(&gi);
+	gi.socket=conn_socket;
+	gi.telnet=bbs->conn_type==CONN_TYPE_TELNET;
+	gi.server=FALSE;
+	gi.use_daemon=FALSE;
+	gi.orig=FALSE;
+
+	if(negotiation(&gi)) {
+		oob_close(&gi);
+		return;
+	}
+
+	/* Authentication Phase */
+	if(!gi.inband) {
+		if(authenticate(&gi)) {
+			oob_close(&gi);
+			return;
+		}
+	}
+
+	if(gi.inband) {
+		if(gi.direction==UPLOAD)
+			begin_upload(bbs->uldir, TRUE);
+		else
+			zmodem_download(bbs->dldir);
+		oob_close(&gi);
+	}
+	else {
+		if(gi.direction==UPLOAD) {
+			int		result;
+			struct file_pick fpick;
+
+			init_uifc(FALSE, FALSE);
+			result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
+
+			if(result==-1 || fpick.files<1) {
+				filepick_free(&fpick);
+				uifcbail();
+				return;
+			}
+			strListPush(&gi.files, fpick.selected[0]);
+			filepick_free(&fpick);
+
+			uifcbail();
+
+			_beginthread(guts_background_upload, 0, &gi);
+		}
+		else {
+			strListPush(&gi.files, bbs->dldir);
+			_beginthread(guts_background_download, 0, &gi);
+		}
+	}
+
+	return;
+}
+#endif
 
 void ascii_upload(FILE *fp, char *path)
 {
@@ -645,6 +844,8 @@ void zmodem_download(char *download_dir)
 	int			files_received;
 	ulong		bytes_received;
 
+	if(safe_mode)
+		return;
 #if 0
 	bufbot=buftop=0;	/* purge our receive buffer */
 #endif
@@ -720,6 +921,8 @@ void font_control(struct bbslist *bbs)
 	struct	text_info txtinfo;
 	int i,j,k;
 
+	if(safe_mode)
+		return;
    	gettextinfo(&txtinfo);
 	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -755,6 +958,8 @@ void capture_control(struct bbslist *bbs)
 	struct	text_info txtinfo;
 	int i,j;
 
+	if(safe_mode)
+		return;
    	gettextinfo(&txtinfo);
 	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -835,13 +1040,21 @@ void capture_control(struct bbslist *bbs)
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
+#ifdef GUTS_BUILTIN
+	unsigned char prn[1024];
+#else
 	unsigned char prn[BUFSIZE];
+#endif
 	int	key;
 	int i,j,k;
 	unsigned char *p;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrqbuf[5];
+#ifdef GUTS_BUILTIN
+	BYTE gutsinit[] = { ESC, '[', '{' };	/* For GUTS auto-transfers */
+	BYTE gutsbuf[3];
+#endif
 	int	inch;
 	long double nextchar=0;
 	long double lastchar=0;
@@ -865,6 +1078,9 @@ BOOL doterm(struct bbslist *bbs)
 	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
+#ifdef GUTS_BUILTIN
+	gutsbuf[0]=0;
+#endif
 
 	/* Main input loop */
 	oldmc=hold_update;
@@ -899,6 +1115,35 @@ BOOL doterm(struct bbslist *bbs)
 						lastchar = xp_timer();
 						nextchar = lastchar + 1/(long double)(speed/10);
 					}
+
+#ifdef GUTS_BUILTIN
+					if(!gutsbuf[0]) {
+						if(inch == gutsinit[0]) {
+							gutsbuf[0]=inch;
+							gutsbuf[1]=0;
+							continue;
+						}
+					}
+					else {		/* Already have the start of the sequence */
+						j=strlen(gutsbuf);
+						if(inch == gutsinit[j]) {
+							gutsbuf[j]=inch;
+							gutsbuf[++j]=0;
+							if(j==sizeof(gutsinit)) /* Have full sequence */
+								guts_transfer(bbs);
+						}
+						else {
+							gutsbuf[j++]=inch;
+							cterm_write(gutsbuf, j, prn, sizeof(prn), &speed);
+							if(prn[0])
+								conn_send(prn,strlen(prn),0);
+							updated=TRUE;
+							gutsbuf[0]=0;
+						}
+						continue;
+					}
+#endif
+
 					if(!zrqbuf[0]) {
 						if(inch == zrqinit[0] || inch == zrinit[0]) {
 							zrqbuf[0]=inch;
@@ -911,7 +1156,7 @@ BOOL doterm(struct bbslist *bbs)
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
 							zrqbuf[++j]=0;
-							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
+							if(j==sizeof(zrqinit)) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								if(!strcmp(zrqbuf, zrqinit))
 									zmodem_download(bbs->dldir);
 								else

@@ -302,9 +302,11 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				if(!confirm("Quit editing?", NULL))
 					continue;
 #endif
-				if((listfile=fopen(listpath,"w"))!=NULL) {
-					iniWriteFile(listfile,inifile);
-					fclose(listfile);
+				if(!safe_mode) {
+					if((listfile=fopen(listpath,"w"))!=NULL) {
+						iniWriteFile(listfile,inifile);
+						fclose(listfile);
+					}
 				}
 				strListFreeStrings(inifile);
 				return(changed);
@@ -534,6 +536,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	FILE *listfile;
 	str_list_t	inifile;
 
+	if(safe_mode)
+		return;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -574,6 +578,8 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 	FILE *listfile;
 	str_list_t	inifile;
 
+	if(safe_mode)
+		return;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -657,9 +663,11 @@ void change_settings(void)
 		}
 	}
 write_ini:
-	if((inifile=fopen(inipath,"w"))!=NULL) {
-		iniWriteFile(inifile,inicontents);
-		fclose(inifile);
+	if(!safe_mode) {
+		if((inifile=fopen(inipath,"w"))!=NULL) {
+			iniWriteFile(inifile,inicontents);
+			fclose(inifile);
+		}
 	}
 }
 
@@ -800,6 +808,13 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Max List size reached!");
 								break;
 							}
+							if(safe_mode) {
+								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
+												"SyncTERM is currently running in safe mode.  This means you cannot add to the\n"
+												"BBS list.";
+								uifc.msg("Cannot edit list in safe mode");
+								break;
+							}
 		#ifdef PCM
 							if(!confirm("Add new Entry?",NULL))
 								continue;
@@ -851,6 +866,13 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("It's gone, calm down man!");
 								break;
 							}
+							if(safe_mode) {
+								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
+												"SyncTERM is currently running in safe mode.  This means you cannot remove from the\n"
+												"BBS list.";
+								uifc.msg("Cannot edit list in safe mode");
+								break;
+							}
 							sprintf(str,"Delete %s?",list[opt]->name);
 							i=1;
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
@@ -867,6 +889,13 @@ struct bbslist *show_bbslist(int mode)
 							oldopt=-1;
 							break;
 						case MSK_EDIT:
+							if(safe_mode) {
+								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
+												"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
+												"BBS list.";
+								uifc.msg("Cannot edit list in safe mode");
+								break;
+							}
 		#ifdef PCM
 							if(!confirm("Edit this entry?",NULL))
 								continue;
@@ -885,6 +914,13 @@ struct bbslist *show_bbslist(int mode)
 				}
 				else {
 					if(mode==BBSLIST_EDIT) {
+						if(safe_mode) {
+							uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
+											"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
+											"BBS list.";
+							uifc.msg("Cannot edit list in safe mode");
+							break;
+						}
 		#ifdef PCM
 						if(!confirm("Edit this entry?",NULL))
 							continue;
@@ -996,7 +1032,7 @@ struct bbslist *show_bbslist(int mode)
 						}
 						break;
 					case 3:			/* Font management */
-						font_management();
+						if(!safe_mode) font_management();
 						break;
 					case 4:			/* Program settings */
 						change_settings();
