@@ -217,6 +217,7 @@ void ansi_sendstr(char *str,int len)
 int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 {
 	int x,y;
+	int cx,cy,i,j;
 	unsigned char *out;
 	WORD	sch;
 	struct text_info	ti;
@@ -240,25 +241,103 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 
 	out=fill;
 	attrib=ti.attribute;
-	for(y=sy-1;y<ey;y++) {
-		for(x=sx-1;x<ex;x++) {
-			sch=*(out++);
-			if(sch==27)
-				sch=' ';
-			if(sch==0)
-				sch=' ';
-			sch |= (*(out++))<<8;
-			if(ansivmem[y*ansi_cols+x]==sch)
-				continue;
-			ansivmem[y*ansi_cols+x]=sch;
-			ansi_gotoxy(x+1,y+1);
-			if(y>=ansi_rows-1 && x>=ansi_cols-1)
-				continue;
-			if(attrib!=sch>>8) {
-				textattr(sch>>8);
-				attrib=sch>>8;
+
+	i=0;		/* Did a nasty. */
+	/* Check if this is a nasty scroll */
+
+	/* Check if this is a nasty screen clear... */
+	j=0;		/* We can clearscreen */
+	if(sx==1 && sy==1 && ex==ti.screenwidth && ey==ti.screenheight && (*out==' ' || *out==0)) {
+		j=1;		/* We can clearscreen */
+		for(cy=sy-1;cy<ey;cy++) {
+			for(cx=sx-1;cx<ex;cx++) {
+				if(out[(cy*ti.screenwidth+cx)*2]!=*out
+						|| out[(cy*ti.screenwidth+cx)*2+1]!=*(out+1)) {
+					j=0;
+					cx=ex;
+					cy=ey;
+				}
 			}
-			ansi_sendch((char)(sch&0xff));
+		}
+	}
+	if(j) {
+		textattr(*(out+1));
+		/* Many terminals make ESC[2J home the cursor */
+		ansi_sendstr("\033[2J\033[1;1H",-1);
+		ansi_col=0;
+		ansi_row=0;
+		memcpy(ansivmem,out,ti.screenwidth*ti.screenheight*2);
+		i=1;
+	}
+	if(!i) {
+		for(y=sy-1;y<ey;y++) {
+			for(x=sx-1;x<ex;x++) {
+				/*
+				 * Check if we can use clear2eol now... this means  the rest of the
+				 * chars on the line are the same attr, and are all spaces or NULLs
+				 * Also, if there's less than four chars left, it's not worth it.
+				 */
+				i=0;	/* number of differing chars from screen */
+				j=1;	/* Can use clrtoeol? */
+				for(cx=x; cx<ti.screenwidth; cx++) {
+					/* Compare to source buffer */
+					if(cx<ex) {
+						/* a blank? */
+						if(*(out+(cx-x)*2)==' ' || *(out+(cx-x)*2)==0) {
+							/* same colour? */
+							if(*(out+(cx-x)*2+1)==*(out+1)) {
+								/* Is it any change? */
+								if(*((WORD *)(out+(cx-x)*2)) != ansivmem[y*2+cx])
+									/* And it's different! */
+									i++;
+							}
+							else {
+								j=0;
+								break;
+							}
+						}
+						else {
+							j=0;
+							break;
+						}
+					}
+					else {
+						/* Compare to screen */
+						/* a blank? */
+						if((ansivmem[y*2+cx]&0xff)!=' ' && (ansivmem[y*2+cx]&0xff)!=0) {
+							j=0;
+							break;
+						}
+					}
+				}
+				if(j && i>3) {
+					ansi_gotoxy(x+1,y+1);
+					textattr(*(out+1));
+					ansi_sendstr("\033[K",-1);
+					for(cx=x; cx<ex; cx++) {
+						ansivmem[y*ansi_cols+cx]=*(out++);
+						ansivmem[y*ansi_cols+cx]|=(*(out++))<<8;
+					}
+					break;
+				}
+				sch=*(out++);
+				if(sch==27)
+					sch=' ';
+				if(sch==0)
+					sch=' ';
+				sch |= (*(out++))<<8;
+				if(ansivmem[y*ansi_cols+x]==sch)
+					continue;
+				ansivmem[y*ansi_cols+x]=sch;
+				ansi_gotoxy(x+1,y+1);
+				if(y>=ansi_rows-1 && x>=ansi_cols-1)
+					continue;
+				if(attrib!=sch>>8) {
+					textattr(sch>>8);
+					attrib=sch>>8;
+				}
+				ansi_sendch((char)(sch&0xff));
+			}
 		}
 	}
 
@@ -610,6 +689,8 @@ void ansi_gotoxy(int x, int y)
 		|| y < 1
 		|| y > ansi_rows)
 		return;
+
+	/* ToDo optimizations: use tabs for horizontal movement to tabstops */
 
 	/* Movement forced... always send position code */
 	if(force_move) {
