@@ -75,8 +75,10 @@ enum {
 
 	,BBS_PROP_CURGRP
 	,BBS_PROP_CURSUB
+	,BBS_PROP_CURSUB_CODE
 	,BBS_PROP_CURLIB
 	,BBS_PROP_CURDIR
+	,BBS_PROP_CURDIR_CODE
 
 	,BBS_PROP_CONNECTION		/* READ ONLY */
 	,BBS_PROP_RLOGIN_NAME
@@ -172,8 +174,10 @@ enum {
 
 	,"current message group"
 	,"current message sub-board"
+	,"current message sub-board internal code"
 	,"current file library"
 	,"current file directory"
+	,"current file directory internal code"
 
 	,"remote connection type"
 	,"rlogin name"
@@ -339,12 +343,21 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(sbbs->curgrp<sbbs->usrgrps)
 				val=sbbs->cursub[sbbs->curgrp];
 			break;
+		case BBS_PROP_CURSUB_CODE:
+			if(sbbs->cursubnum<sbbs->cfg.total_subs)
+				p=sbbs->cfg.sub[sbbs->cursubnum]->code;
+			break;
+
 		case BBS_PROP_CURLIB:
 			val=sbbs->curlib;
 			break;
 		case BBS_PROP_CURDIR:
 			if(sbbs->curlib<sbbs->usrlibs)
 				val=sbbs->curdir[sbbs->curlib];
+			break;
+		case BBS_PROP_CURDIR_CODE:
+			if(sbbs->curdirnum<sbbs->cfg.total_dirs)
+				p=sbbs->cfg.dir[sbbs->curdirnum]->code;
 			break;
 
 		case BBS_PROP_CONNECTION:
@@ -705,6 +718,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				sbbs->curgrp=val;
 			break;
 		case BBS_PROP_CURSUB:
+		case BBS_PROP_CURSUB_CODE:
 			if(p!=NULL) {	/* set by code */
 				for(uint i=0;i<sbbs->usrgrps;i++)
 					for(uint j=0;j<sbbs->usrsubs[i];j++)
@@ -732,6 +746,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				sbbs->curlib=val;
 			break;
 		case BBS_PROP_CURDIR:
+		case BBS_PROP_CURDIR_CODE:
 			if(p!=NULL) {	/* set by code */
 				for(uint i=0;i<sbbs->usrlibs;i++)
 					for(uint j=0;j<sbbs->usrdirs[i];j++)
@@ -812,8 +827,10 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"file_cmds"			,BBS_PROP_FILE_CMDS		,JSPROP_ENUMERATE	,310},
 	{	"curgrp"			,BBS_PROP_CURGRP		,JSPROP_ENUMERATE	,310},
 	{	"cursub"			,BBS_PROP_CURSUB		,JSPROP_ENUMERATE	,310},
+	{	"cursub_code"		,BBS_PROP_CURSUB_CODE	,JSPROP_ENUMERATE	,31301},
 	{	"curlib"			,BBS_PROP_CURLIB		,JSPROP_ENUMERATE	,310},
 	{	"curdir"			,BBS_PROP_CURDIR		,JSPROP_ENUMERATE	,310},
+	{	"curdir_code"		,BBS_PROP_CURDIR_CODE	,JSPROP_ENUMERATE	,31301},
 	{	"connection"		,BBS_PROP_CONNECTION	,PROP_READONLY		,310},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,310},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,310},
