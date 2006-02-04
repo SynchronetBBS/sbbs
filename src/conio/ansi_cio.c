@@ -609,23 +609,33 @@ void ansi_gotoxy(int x, int y)
 		sprintf(str,"\033[%d;%dH",y,x);
 	}
 	else {
-		if(x==1 && ansi_col != 0 && ansi_row<ansi_row-1) {
+		/*
+		 * If we're moving to column one, we can use \r
+		 * Only use it if we're not already there though :-)
+		 */
+		if(x==1 && ansi_col != 0) {
 			ansi_sendch('\r');
 			force_move=0;
 			ansi_col=0;
 		}
+		/* If we're already on the correct column */
 		if(x==ansi_col+1) {
+			/* We're already in the right place! */
 			if(y==ansi_row+1) {
 				str[0]=0;
 			}
 			else {
+				/* We need to move up */
 				if(y<ansi_row+1) {
+					/* Only one, no number required */
 					if(y==ansi_row)
 						strcpy(str,"\033[A");
 					else
 						sprintf(str,"\033[%dA",ansi_row+1-y);
 				}
+				/* Need to move down */
 				else {
+					/* Only one row */
 					if(y==ansi_row+2)
 						strcpy(str,"\033[B");
 					else
@@ -633,14 +643,18 @@ void ansi_gotoxy(int x, int y)
 				}
 			}
 		}
+		/* We need to change the column at least */
 		else {
+			/* We're on the right row, just move left or right */
 			if(y==ansi_row+1) {
+				/* Move left */
 				if(x<ansi_col+1) {
 					if(x==ansi_col)
 						strcpy(str,"\033[D");
 					else
 						sprintf(str,"\033[%dD",ansi_col+1-x);
 				}
+				/* Move right */
 				else {
 					if(x==ansi_col+2)
 						strcpy(str,"\033[C");
@@ -648,6 +662,7 @@ void ansi_gotoxy(int x, int y)
 						sprintf(str,"\033[%dC",x-ansi_col-1);
 				}
 			}
+			/* Do a full move then... row and col need changing. */
 			else {
 				sprintf(str,"\033[%d;%dH",y,x);
 			}
