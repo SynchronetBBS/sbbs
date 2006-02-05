@@ -12,6 +12,7 @@
 	<li><a href="#ports">What inbound ports do I need to open in my firewall?</a>
 	<li><a href="#private_ip">How come my friends can't connect to my BBS at my IP address?</a>
 	<li><a href="#public_ip">What is my public IP address?</a>
+	<li><a href="#relay_smtp">Why can't I relay Internet e-mail through my BBS?</a>
 	<li><a href="#tx_smtp">Why can't I send Internet e-mail from my BBS?</a>
 	<li><a href="#rx_smtp">Why can't my BBS receive Internet e-mail or inter-BBS instant messages?</a>
 	<li><a href="#ftp_connect">Why can't users connect to my FTP server?</a>
@@ -83,6 +84,49 @@ If you use a <i><a href=dyndns.txt>Dynamic DNS</a></i> service to get a hostname
 they can usually correctly determine your public IP address automatically, even if your IP address changes.
 So you don't <b>need</b> to necessarily know what it is.
 </p>
+
+<a name="relay_smtp"><hr></a>
+<p>
+<b>Question:</b><br>
+<i>Why can't I <b>relay Internet e-mail</b> through my BBS?</i>
+<p>
+<b>Answer:</b>
+<br>Indications of this problem are error messages similar to the following in your Synchronet Mail Server window/log output:
+<br><tt>0504 !SMTP ILLEGAL RELAY ATTEMPT from &lt;yourname@yourhost.org&gt; [192.168.0.2] to someuser@somehost.com</tt>
+<br>Where the <i>from</i> address is that of your mail sending host and the <i>to</i> address is that of an external mail recipient
+that <b>you</b> are attempting to send e-mail to.
+<p>It is common and normal to see "illegal relay attempts" from remote systems
+that have happened on your mail server and are probing it to determine if it is an "Open Relay".
+<p>So called "Open Relays" (mail servers that allow any and every host to relay mail through them) are a major source of SPAM on the Internet
+and are highly discouraged.
+<p>By default, the Synchronet Mail Server <b>disallows</b> the <i>relaying</i> of SMTP e-mail messages
+received for an external recipient (not destined for a local BBS user account).
+<p>
+You <b>can</b> allow specific hosts or users to relay e-mail through your mail server by either:
+<ol>
+	<li>Entering the sending host's IP address or hostname in your <tt>ctrl/relay.cfg</tt> file.
+	<br>This file may be edited with the SBBSCTRL:Mail->Edit->Allowed Relay List menu option.
+	<p>
+	or:
+	<p>
+	<li>Use SMTP authentication:
+	<ol type=a>
+	<li>Enable the mail server configuration option to allow authenticated users to relay mail.
+	<br>This can be done by adding <tt>ALLOW_RELAY</tt> to the <tt>Options</tt> key of the
+	<tt>[mail]</tt> section of your <tt>ctrl/sbbs.ini</tt> file.
+	<br>Or, if using SBBSCTRL, checking the "Allow Authenticated Users to Relay Mail" checkbox
+		on the SMTP tab of the Mail Server Configuration dialog.
+	<p>
+	<li>Configure your e-mail client to use SMTP authentication to login to your mail server using
+	your BBS user name (i.e. alias) and password.
+	</ol>
+	<br>This Synchronet Mail Server supports the following SMTP authentication schemes:
+		<ul>
+			<li>PLAIN
+			<li>LOGIN
+			<li>CRAM-MD5
+		</ul>
+</ol>
 
 <a name="tx_smtp"><hr></a>
 <p>
