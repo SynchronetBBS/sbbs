@@ -29,15 +29,16 @@ var doQWK = true;
 prefs_dir=system.data_dir + 'user/';
 
 if(user.number!=0) {
-	if(file_exists(prefs_dir + format("%04d.html_prefs",user.number))); {
+	if(file_exists(prefs_dir + format("%04d.html_prefs",user.number))) {
 		prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
 		if(prefsfile.open("r",false)) {
 			if(prefsfile.iniGetValue(null, 'SortDate', '')!='')
 				var SortDate=prefsfile.iniGetValue(null, 'SortDate', '');
 			prefsfile.close();
 		}
+	}
 		prefsfile=new File(prefs_dir + '/'+format("%04d.html_prefs",user.number));
-		if(SortDate=='' && !file_exists(prefs_dir + format("%04d.html_prefs",user.number))) {
+		if(!file_exists(prefs_dir + format("%04d.html_prefs",user.number))) {
 			SortDate="descending";
 			if(prefsfile.open("w+",false)) {
 				prefsfile.iniSetValue('User Info', 'Alias', user.alias);
@@ -45,8 +46,7 @@ if(user.number!=0) {
 				prefsfile.iniSetValue('Messaging', 'SortDate', SortDate);
        			prefsfile.close();
 			}
-       	}
-	}
+		}
 }
 
 /* Set default template.info */
@@ -80,16 +80,61 @@ else
 		} else
         template.user_greeting="Welcome, "+user.alias+ ".";
 
-/* Gives RAW port number - must be prepended with ":" for URI's */
+/* Sets the hostname */
 
-template.http_port = http_port;
+/* Gives number prepended with ":" for URI's */
+
+if(telnet_port=="23")
+telnet_port="";
+else
+telnet_port = ":" + telnet_port;
+if(rlogin_port=="513")
+rlogin_port="";
+else 
+rlogin_port = ":" + rlogin_port;
+if(http_port=="80")
+http_port='';
+else
+http_port = ":" + http_port;
+if(ftp_port=="21")
+ftp_port="";
+else 
+ftp_port = ":" + ftp_port;
+if(irc_port=="6667")
+irc_port="";
+else 
+irc_port = ":" + irc_port;
+if(nntp_port=="119")
+nntp_port="";
+else
+nntp_port = ":" + nntp_port;
+if(gopher_port=="70")
+gopher_port='';
+else 
+gopher_port = ":" + gopher_port;
+if(finger_port=="79")
+finger_port='';
+else 
+finger_port = ":" + finger_port;
+if(pop3_port=="110")
+pop3_port='';
+else 
+pop3_port = ":" + pop3_port;
+if(smtp_port=="25")
+smtp_port='';
+else 
+smtp_port = ":" + smtp_port;
+
+template.host=host;
+template.telnet_port=telnet_port;
+template.rlogin_port=rlogin_port;
+template.http_port=http_port;
+template.ftp_port=ftp_port;
+template.smtp_port=smtp_port;
+template.pop3_port=pop3_port;
 template.irc_port = irc_port;
-template.ftp_port = ftp_port;
 template.nntp_port = nntp_port;
 template.gopher_port = gopher_port;
 template.finger_port = finger_port;
-template.telnet_port = telnet_port;
-template.rlogin_port = rlogin_port;
-template.smtp_port = smtp_port;
-template.pop3_port = pop3_port;
+
 
