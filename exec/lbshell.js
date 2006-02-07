@@ -462,8 +462,7 @@ while(1) {
 				if(x_sec==KEY_LEFT)
 					x_sec=xtrnsec.current-1;
 				if(x_sec==KEY_RIGHT) {
-					next_key='I';
-					mainbar.current++;
+					main_right();
 					break;
 				}
 				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
@@ -681,11 +680,13 @@ function main_left()
 function show_filemenu()
 {
 	var cur=1;
+	var nd=false;
 	while(1) {
 		var filemenu=new Filemenu();
 		var ret;
 		var i;
 		var j;
+		filemenu.nodraw=nd;
 		filemenu.current=cur;
 
 		ret=filemenu.getval();
@@ -827,6 +828,7 @@ function show_filemenu()
 							return;
 						default:	// Anything else will escape.
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -874,6 +876,7 @@ function show_filemenu()
 							return;
 						default:	// Anything else will escape.
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -924,6 +927,7 @@ function show_filemenu()
 							return;
 						default:	// Anything else will escape.
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -961,6 +965,7 @@ function show_filemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -1014,6 +1019,7 @@ function show_filemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -1165,6 +1171,7 @@ function show_filemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 				}
@@ -1202,6 +1209,7 @@ function show_filemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							filemenu.nodraw=true;
 							break file;
 					}
 					cur=typemenu.current;
@@ -1209,12 +1217,14 @@ function show_filemenu()
 				break;
 		}
 		cur=filemenu.current;
+		nd=filemenu.nodraw;
 	}
 }
 
 function show_messagemenu()
 {
 	var cur=1;
+	var nd=false;
 
 	while(!done) {
 		var i;
@@ -1222,6 +1232,7 @@ function show_messagemenu()
 		var ret;
 		var messagemenu=new Messagemenu();
 		messagemenu.current=cur;
+		messagemenu.nodraw=nd;
 
 		ret=messagemenu.getval();
 		if(ret==KEY_RIGHT) {
@@ -1386,6 +1397,7 @@ function show_messagemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							messagemenu.nodraw=true;
 							break message;
 					}
 				}
@@ -1444,6 +1456,7 @@ function show_messagemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							messagemenu.nodraw=true;
 							break message;
 					}
 				}
@@ -1503,6 +1516,7 @@ function show_messagemenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							messagemenu.nodraw=true;
 							break message;
 					}
 				}
@@ -1524,6 +1538,7 @@ function show_messagemenu()
 				break;
 		}
 		cur=messagemenu.current;
+		nd=messagemenu.nodraw;
 	}
 }
 
@@ -1539,6 +1554,8 @@ function show_emailmenu()
 		var i;
 		var j;
 		var ret;
+
+		/* Nothing dynamic, so we don't need to save/restore nodraw */
 
 		ret=emailmenu.getval();
 		if(ret==KEY_RIGHT) {
@@ -1632,6 +1649,7 @@ function show_emailmenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							emailmenu.nodraw=true;
 							break email;
 					}
 				}
@@ -1665,6 +1683,8 @@ function show_chatmenu()
 		var i;
 		var j;
 		var ret;
+
+		/* Nothing dynamic, so we don't need to save/restore nodraw */
 
 		ret=chatmenu.getval();
 		if(ret==KEY_RIGHT) {
@@ -1757,6 +1777,7 @@ function show_chatmenu()
 							return;
 						default:
 							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							chatmenu.nodraw=true;
 							break chat;
 					}
 				}
