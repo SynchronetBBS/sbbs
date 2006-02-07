@@ -86,12 +86,18 @@ function Graphic_load(filename)
 	var y;
 	var f=new File(filename);
 
-	f.open("rb",true);
+	if(!(f.open("rb",true))
+		return(false);
 	for(y=0; y<this.height; y++) {
 		for(x=0; x<this.width; x++) {
 			this.data[x][y]=new Object;
+			if(f.eof)
+				return(false);
 			this.data[x][y].ch=f.read(1);
+			if(f.eof)
+				return(false);
 			this.data[x][y].attr=f.readBin(1);
 		}
 	}
+	return(true);
 }
