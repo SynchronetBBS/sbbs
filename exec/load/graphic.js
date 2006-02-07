@@ -5,36 +5,40 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
-function Graphic(width,height,attribute,char)
+function Graphic(w,h,attr,ch)
 {
-	if(char==undefined)
-		this.char=' ';
+	if(ch==undefined)
+		this.ch=' ';
 	else
-		this.char=char;
-	if(attribute==undefined)
+		this.ch=ch;
+	if(attr==undefined)
 		this.attribute=7;
 	else
-		this.attribute=attribute;
-	if(height==undefined)
+		this.attribute=attr;
+	if(h==undefined)
 		this.height=24;
 	else
-		this.height=height;
-	if(width==undefined)
+		this.height=h;
+	if(w==undefined)
 		this.width=80;
 	else
-		this.width=width;
+		this.width=w;
 
-	this.data=new Array(width,height);
+	this.data=new Array(w);
 	var x;
 	var y;
 	for(y=0; y<this.height; y++) {
 		for(x=0; x<this.width; x++) {
+			if(y==0) {
+				this.data[x]=new Array(h);
+			}
 			this.data[x][y]=new Object;
-			this.data[x][y].char=char;
-			this.data[x][y].attr=attribute;
+			this.data[x][y].ch=ch;
+			this.data[x][y].attr=attr;
 		}
 	}
 	this.draw=Graphic_draw;
+	this.load=Graphic_load;
 }
 
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
@@ -58,20 +62,36 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 		alert("Attempt to draw from outside of graphic");
 		return(false)
 	}
-	if(xpos+width > console.screen_columns || ypos+height > console.screen_rows) {
+	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
 		alert("Attempt to draw outside of screen");
 		return(false);
 	}
 	for(y=0;y<height; y++) {
-		gotoxy(xpos,ypos+y);
+		console.gotoxy(xpos,ypos+y);
 		for(x=0; x<width; x++) {
 			// Do not draw to the bottom left corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr;
-				console.write(this.data[x+xoff][y+yoff].char;
+				console.write(this.data[x+xoff][y+yoff].ch);
 			}
 		}
 	}
 	return(true);
+}
+
+function Graphic_load(filename)
+{
+	var x;
+	var y;
+	var f=new File(filename);
+
+	f.open("rb",true);
+	for(y=0; y<this.height; y++) {
+		for(x=0; x<this.width; x++) {
+			this.data[x][y]=new Object;
+			this.data[x][y].ch=f.read(1);
+			this.data[x][y].attr=f.readBin(1);
+		}
+	}
 }
