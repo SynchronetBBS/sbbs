@@ -317,12 +317,12 @@ function Xtrnsecs()
 		if(xtrn_area.sec_list[j].name.length > xtrnsecwidth)
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
 	}
-	xtrnsecwidth += 4;
+	xtrnsecwidth += 2;
 	if(xtrnsecwidth>37)
 		xtrnsecwidth=37;
 	this.add("\xda"+bars80.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list.length; j++)
-		this.add("<-- "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
+		this.add("< "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsecs.prototype=new Lightbar;
@@ -372,7 +372,7 @@ function Infomenu()
 	this.add("Synchronet |Version Info","V",25);
 	this.add("Info on Current |Sub-Board","S",25);
 	this.add("|Your Statistics","Y",25);
-	this.add("<-- |User Lists","U",25);
+	this.add("< |User Lists","U",25);
 	this.add("|Text Files","T",25);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
