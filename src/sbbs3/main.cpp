@@ -1516,12 +1516,12 @@ void output_thread(void* arg)
 
 			/* Wait for full buffer or drain timeout */
 			if(sbbs->outbuf.highwater_mark) {
-				if(avail<sbbs->outbuf.highwater_mark)
+				if(avail<sbbs->outbuf.highwater_mark) {
 					sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
-				else
+					/* We (potentially) blocked, so get fill level again */
+		    		avail=RingBufFull(&sbbs->outbuf);
+				} else
 					sem_trywait(&sbbs->outbuf.highwater_sem);	
-				/* We (potentially) blocked, so get fill level again */
-		    	avail=RingBufFull(&sbbs->outbuf);
 			}
 
 			/*
