@@ -3883,25 +3883,26 @@ void http_output_thread(void *arg)
 	thread_up(TRUE /* setuid */);
     while(session->socket!=INVALID_SOCKET && !terminate_server) {
 
-        /* Wait for something to output in the RingBuffer */
-        if(!RingBufFull(obuf)) {
+		/* Wait for something to output in the RingBuffer */
+		if((avail=RingBufFull(obuf))==0) {	/* empty */
 			if(sem_trywait_block(&obuf->sem,1000))
-	            continue;
+				continue;
+			/* Check for spurious sem post... */
+			if((avail=RingBufFull(obuf))==0)
+				continue;
 		}
 		else
 			sem_trywait(&obuf->sem);
 
-        /* Check for spurious sem post... */
-        if(!RingBufFull(obuf))
-            continue;
-
-        /* Wait for full buffer or drain timeout */
-		if(RingBufFull(obuf)<obuf->highwater_mark) {
-	        if(obuf->highwater_mark)
-    	        sem_trywait_block(&obuf->highwater_sem,startup->outbuf_drain_timeout);
+		/* Wait for full buffer or drain timeout */
+		if(obuf->highwater_mark) {
+			if(avail<obuf->highwater_mark) {
+				sem_trywait_block(&obuf->highwater_sem,startup->outbuf_drain_timeout);
+				/* We (potentially) blocked, so get fill level again */
+		    	avail=RingBufFull(obuf);
+			} else
+				sem_trywait(&obuf->highwater_sem);
 		}
-		else
-			sem_trywait(&obuf->highwater_sem);
 
         /*
          * At this point, there's something to send and,
@@ -3909,7 +3910,7 @@ void http_output_thread(void *arg)
          * passed or we've hit highwater.  Read ring buffer
          * into linear buffer.
          */
-        len=avail=RingBufFull(obuf);
+        len=avail;
 		if(avail>mss)
 			len=(avail=mss);
 
