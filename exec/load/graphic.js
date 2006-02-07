@@ -86,7 +86,7 @@ function Graphic_load(filename)
 	var y;
 	var f=new File(filename);
 
-	if(!(f.open("rb",true))
+	if(!(f.open("rb",true)))
 		return(false);
 	for(y=0; y<this.height; y++) {
 		for(x=0; x<this.width; x++) {
