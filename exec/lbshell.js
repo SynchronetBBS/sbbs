@@ -185,7 +185,6 @@ function Fileinfo()
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
 Fileinfo.prototype=new Lightbar;
-var fileinfo=new Fileinfo;
 
 function Settingsmenu()
 {
@@ -401,9 +400,10 @@ while(1) {
 	var key=next_key;
 	var extra_select=false;
 	next_key='';
-	draw_main(false);
 	if(key=='')
 		key=mainbar.getval()
+	else
+		mainbar.draw();
 	extra_select=false;
 	if(key==KEY_DOWN) {
 		key=mainbar.items[mainbar.current].retval;
@@ -435,7 +435,7 @@ while(1) {
 				draw_main(true);
 			}
 			else
-				draw_main(false);
+				clear_area(1,2,console.screen_columns,1,true);
 			break;
 		case 'F':
 			show_filemenu();
@@ -471,22 +471,24 @@ while(1) {
 				while(1) {
 					x_prog=xtrnsecs[curr_xtrnsec].getval();
 					if(x_prog==KEY_LEFT) {
+						cleararea(xtrnsecs[curr_xtrnsec].xpos,xtrnsecs[curr_xtrnsec].ypos,xtrnsecs[curr_xtrnsec].items[0].text.length,xtrnsecs[curr_xtrnsec].items.length,true);
+						cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
 						main_left();
 						done=1;
 						break;
 					}
-					if(x_prog==KEY_RIGHT)
+					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
+						/* We *cannot* clear to eol since we're to the left of the parent. */
+						cleararea(xtrnsecs[curr_xtrnsec].xpos,xtrnsecs[curr_xtrnsec].ypos,xtrnsecs[curr_xtrnsec].items[0].text.length,xtrnsecs[curr_xtrnsec].items.length,false);
 						break;
-					if(x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b')
-						break;
+					}
 					clear_screen();
 					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					draw_main(true);
 					xtrnsec.draw();
 				}
-				draw_main(false);
 			}
-			draw_main(false);
+			cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
 			break;
 		case 'V':
 			infoloop: while(1) {
@@ -517,6 +519,7 @@ while(1) {
 						break;
 					case KEY_LEFT:
 						if(infomenu.items[infomenu.current].retval!='U') {
+							cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 							main_left();
 							done=1;
 							break infoloop;
@@ -526,12 +529,14 @@ while(1) {
 						userlistloop: while(1) {
 							switch(userlists.getval()) {
 								case KEY_LEFT:
+									cleararea(userlists.xpos,userlists.ypos,userlists.items[0].text.length,userlists.items.length,false);
 									main_left();
 									break infoloop;
 								case KEY_RIGHT:
 								case '\b':
 								case '\x7f':
 								case '\x1b':
+									cleararea(userlists.xpos,userlists.ypos,userlists.items[0].text.length,userlists.items.length,false);
 									break userlistloop;
 								case 'L':
 									clear_screen();
@@ -556,7 +561,6 @@ while(1) {
 									break;
 							}
 						}
-						draw_main(false);
 						break;
 					case 'T':
 						clear_screen();
@@ -564,16 +568,18 @@ while(1) {
 						draw_main(true);
 						break infoloop;
 					case KEY_RIGHT:
+						cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 						main_right();
 						done=1;
 						break infoloop;
 					case '\b':
 					case '\x7f':
 					case '\x1b':
+						cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 						break infoloop;
 				}
 			}
-			draw_main(false);
+			cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 			break;
 		case 'G':
 			if(!extra_select)
@@ -605,49 +611,10 @@ function draw_main(topline)
 	 * Called to re-display the main menu.
 	 * topline is false when the top line doesn't need redrawing.
 	 */
-	if(topline) {
-		console.gotoxy(1,1);
-		console.attributes=0x17;
-		console.cleartoeol();
-	}
-	mainbar.draw();
-	var i;
-	console.gotoxy(1,1);
-	console.attributes=LBShell_Attr;
-	for(i=1;i<console.screen_rows-9;i++) {
-		console.line_counter=0;
-		console.write("\n");
-		console.cleartoeol();
-	}
-	/*
-	 * If you want a background ANSI or something for the menus,
-	 * this is the place to draw it from.
-	 */
-	console.gotoxy(1,console.screen_rows-8);
-	console.line_counter=0;
-	console.putmsg("\x01n \x01n\x01h\xdc\xdc\xdc\xdc \xdb \xdc\xdc  \xdc\xdc\xde\xdb \xdc \xdc\xdc\xdc\xdc \xdc\xdc \xdc\xdc  \xdc\xdc\xdc\xdc\xdc\xdc\xdc \x01n\x01b\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc ");
-	console.gotoxy(1,console.screen_rows-7);
-	console.putmsg("\x01h\x01c\x016\xdf\x01n\x01c\xdc\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01n\x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\xdc\xdc\x01h\xdf \x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n\x01c\xdc\xdc \xdc\x01bgj \xdb\x01w\x014@TIME-L@ @DATE@  \x01y\x01h@BOARDNAME-L19@ \x01n ");
-	console.gotoxy(1,console.screen_rows-6);
-	console.putmsg("\x01n  \x01b\x01h\x014\xdf\x01n\x01b\xdd\x01h\xdf\x014\xdf\x010\xdf \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010  \x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010   \x014\xdf\x010   \x014\x01n\x01b\xdb\x01h\x01w\x014Last On\x01k: \x01n\x014@LASTDATEON@  \x01h\x01cNode \x01k\x01n\x01c\x014@NODE-L3@ \x01wUp \x01c@UPTIME-L8@\x01n ");
-	console.gotoxy(1,console.screen_rows-5);
-	console.putmsg("\x01n\x01b \xdf\xdf  \xdf  \xdf \xdb\xdd\xdf\xdf\xdf\xdf \xdb\xdd  \xdb\xdb\xdf\xdf  \xdf \xdb\xdd\xdf\xdf\xdf \xdf   \xdb\x014\x01h\x01wFirstOn\x01k:\x01n\x014 @SINCE@  \x01h\x01cCalls\x01n\x01c\x014@SERVED-R4@ \x01wof\x01c @TCALLS-L7@\x01n ");
-	console.gotoxy(1,console.screen_rows-4);
-	console.putmsg("\x01n                                       \x01b\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf ");
-	console.line_counter=0;
-	console.gotoxy(1,console.screen_rows-3);
-	console.attributes=7;
-	console.cleartoeol();
-	console.putmsg(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@ [\x01h@SN@\x01n\x01c] @SUB@\x01n\r\n");
-	console.gotoxy(1,console.screen_rows-2);
-	console.cleartoeol();
-	console.putmsg(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@ (\x01h@DN@\x01n\x01c) @DIR@\x01n\r\n");
-	console.gotoxy(1,console.screen_rows-1);
-	console.attributes=LBShell_Attr;
-	console.cleartoeol();
-	console.gotoxy(1,console.screen_rows);
-	console.cleartoeol();
-	console.gotoxy(1,1);
+	if(topline)
+		cleararea(1,1,console.screen_columns,console.screen_rows,true);
+	else
+		cleararea(1,2,console.screen_columns,console.screen_rows,true);
 }
 
 function main_right()
@@ -696,13 +663,16 @@ function show_filemenu()
 		}
 		file: switch(ret) {
 			case KEY_LEFT:
+				cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
 				main_left();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
+				cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
 				return;
 			case KEY_RIGHT:
+				cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
 				main_right();
 				return;
 			case 'C':
@@ -823,11 +793,12 @@ function show_filemenu()
 							filemenu.draw();
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
 							main_right();
 							return;
 						default:	// Anything else will escape.
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -871,11 +842,12 @@ function show_filemenu()
 							filemenu.draw();
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:	// Anything else will escape.
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -922,11 +894,12 @@ function show_filemenu()
 							filemenu.draw();
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:	// Anything else will escape.
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -960,11 +933,12 @@ function show_filemenu()
 							bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -1014,11 +988,12 @@ function show_filemenu()
 							draw_main(true);
 							filemenu.draw();
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -1166,11 +1141,12 @@ function show_filemenu()
 						case 'S':
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -1200,15 +1176,16 @@ function show_filemenu()
 						case 'S':
 							/* Need to clear for shorter menu */
 							if(user.settings & USER_EXTDESC)
-								clearlines(typemenu.xpos+typemenu.items[0].text.length-1,typemenu.ypos,typemenu.items.length);
+								cleararea(typemenu.xpos+typemenu.items[0].text.length-1,typemenu.ypos,1,typemenu.items.length,true);
 							user.settings ^= USER_EXTDESC;
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
 							break file;
 					}
@@ -1241,13 +1218,16 @@ function show_messagemenu()
 		}
 		message: switch(ret) {
 			case KEY_LEFT:
+				cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
 				main_left();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
+				cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
 				return;
 			case KEY_RIGHT:
+				cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
 				main_right();
 				return;
 			case 'C':
@@ -1392,11 +1372,12 @@ function show_messagemenu()
 							bbs.reinit_msg_ptrs()
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
 							break message;
 					}
@@ -1451,11 +1432,12 @@ function show_messagemenu()
 							messagemenu.draw();
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
 							break message;
 					}
@@ -1511,11 +1493,12 @@ function show_messagemenu()
 							messagemenu.draw();
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
 							break message;
 					}
@@ -1564,13 +1547,16 @@ function show_emailmenu()
 		}
 		email: switch(ret) {
 			case KEY_LEFT:
+				cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
 				main_left();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
+				cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
 				return;
 			case KEY_RIGHT:
+				cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
 				main_right();
 				return;
 			case 'S':
@@ -1644,11 +1630,12 @@ function show_emailmenu()
 							draw_main(true);
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							emailmenu.nodraw=true;
 							break email;
 					}
@@ -1693,13 +1680,16 @@ function show_chatmenu()
 		}
 		chat: switch(ret) {
 			case KEY_LEFT:
+				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
 				main_left();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
+				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
 				return;
 			case KEY_RIGHT:
+				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
 				main_right();
 				return;
 			case 'J':
@@ -1762,7 +1752,7 @@ function show_chatmenu()
 					switch(typemenu.getval()) {
 						case 'S':
 							if(user.chat_settings&CHAT_SPLITP)
-								clearlines(typemenu.xpos+typemenu.items[0].text.length-1,typemenu.ypos,typemenu.items.length);
+								cleararea(typemenu.xpos+typemenu.items[0].text.length-1,typemenu.ypos,1,typemenu.items.length,true);
 							user.chat_settings ^= CHAT_SPLITP;
 							break;
 						case 'V':
@@ -1772,11 +1762,12 @@ function show_chatmenu()
 							user.chat_settings ^= CHAT_NOACT;
 							break;
 						case KEY_RIGHT:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							main_right();
 							return;
 						default:
-							clearlines(typemenu.xpos,typemenu.ypos,typemenu.items.length);
+							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							chatmenu.nodraw=true;
 							break chat;
 					}
@@ -1807,25 +1798,151 @@ function show_settingsmenu()
 				draw_main(true);
 				break;
 			case KEY_RIGHT:
+				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
 				main_right();
 				return;
 			case KEY_LEFT:
+				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
 				main_left();
 				return;
 			case '\b':
 			case '\x7f':
 			case '\x1b':
+				cleararea(settingsmenu.xpos,settingsmenu.ypos,settingsmenu.items[0].text.length,settingsmenu.items.length,true);
 				return;
 		}
 	}
 }
 
-function clearlines(x,y,count)
+function cleararea(xpos,ypos,width,height,eol_allowed)
 {
-	var i;
-	console.attributes=LBShell_Attr;
-	for(i=0; i<count;i++) {
-		console.gotoxy(x,y+i);
-		console.cleartoeol();
+	/*
+	 * This function "clears" an area of the screen to the
+	 * background.
+	 * eol_allowed indicates that you can clear to eol without
+	 * breaking anything.
+	 */
+	var x;
+	var y;
+
+	for(y=ypos; y<ypos+height; y++) {
+		if(eol_allowed) {
+			if(y==1) {
+				console.gotoxy(1,1);
+				console.attributes=0x17;
+				console.cleartoeol();
+				mainbar.draw();
+			}
+			else if(y<console.screen_rows-8) {
+				console.gotoxy(xpos,y);
+				console.attributes=LBShell_Attr;
+				console.cleartoeol();
+			}
+			else {
+				console.gotoxy(1,y);
+				switch(y) {
+					case console.screen_rows-8:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n \x01n\x01h\xdc\xdc\xdc\xdc \xdb \xdc\xdc  \xdc\xdc\xde\xdb \xdc \xdc\xdc\xdc\xdc \xdc\xdc \xdc\xdc  \xdc\xdc\xdc\xdc\xdc\xdc\xdc \x01n\x01b\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc ");
+						break;
+					case console.screen_rows-7:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01h\x01c\x016\xdf\x01n\x01c\xdc\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01n\x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\xdc\xdc\x01h\xdf \x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n\x01c\xdc\xdc \xdc\x01bgj \xdb\x01w\x014@TIME-L@ @DATE@  \x01y\x01h@BOARDNAME-L19@ \x01n ");
+						break;
+					case console.screen_rows-6:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n  \x01b\x01h\x014\xdf\x01n\x01b\xdd\x01h\xdf\x014\xdf\x010\xdf \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010  \x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010   \x014\xdf\x010   \x014\x01n\x01b\xdb\x01h\x01w\x014Last On\x01k: \x01n\x014@LASTDATEON@  \x01h\x01cNode \x01k\x01n\x01c\x014@NODE-L3@ \x01wUp \x01c@UPTIME-L8@\x01n ");
+						break;
+					case console.screen_rows-5:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n\x01b \xdf\xdf  \xdf  \xdf \xdb\xdd\xdf\xdf\xdf\xdf \xdb\xdd  \xdb\xdb\xdf\xdf  \xdf \xdb\xdd\xdf\xdf\xdf \xdf   \xdb\x014\x01h\x01wFirstOn\x01k:\x01n\x014 @SINCE@  \x01h\x01cCalls\x01n\x01c\x014@SERVED-R4@ \x01wof\x01c @TCALLS-L7@\x01n ");
+						break;
+					case console.screen_rows-4:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n                                       \x01b\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf ");
+						break;
+					case console.screen_rows-3:
+						console.attributes=7;
+						console.cleartoeol();
+						console.putmsg(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@ [\x01h@SN@\x01n\x01c] @SUB@\x01n\r\n");
+						break;
+					case console.screen_rows-2:
+						console.attributes=7;
+						console.cleartoeol();
+						console.putmsg(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@ (\x01h@DN@\x01n\x01c) @DIR@\x01n\r\n");
+						break;
+					case console.screen_rows-1:
+						console.attributes=LBShell_Attr;
+						console.cleartoeol();
+						break;
+					case console.screen_rows:
+						console.attributes=LBShell_Attr;
+						console.cleartoeol();
+						break;
+				}
+			}
+		}
+		else {
+			/* Not allowed to clear to eol... */
+			/*
+			 * Right now, we're ***assuming*** that second-level menus are
+			 * never touching the bottom stuff.
+			 */
+			if(y==1) {
+				console.gotoxy(1,1);
+				console.attributes=0x17;
+				console.cleartoeol();
+				mainbar.draw();
+			}
+			else if(y<console.screen_rows-8) {
+				console.attributes=LBShell_Attr;
+				console.gotoxy(xpos,y);
+				for(x=xpos; x<xpos+width; x++)
+					console.write(' ');
+			}
+			else {
+				console.gotoxy(1,y);
+				switch(y) {
+					case console.screen_rows-8:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n \x01n\x01h\xdc\xdc\xdc\xdc \xdb \xdc\xdc  \xdc\xdc\xde\xdb \xdc \xdc\xdc\xdc\xdc \xdc\xdc \xdc\xdc  \xdc\xdc\xdc\xdc\xdc\xdc\xdc \x01n\x01b\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc\xdc ");
+						break;
+					case console.screen_rows-7:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01h\x01c\x016\xdf\x01n\x01c\xdc\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01n\x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\x01h\x016\xdf\x01n\x01c\xdc\xdc\xdc\x01h\xdf \x016\xdf\x01n \x01h\x016\xdf\x01n \x01c\xdc \x01h\x016\xdf\x01n \x01h\x016\xdf\x01n\x01c\xdc\xdc \xdc\x01bgj \xdb\x01w\x014@TIME-L@ @DATE@  \x01y\x01h@BOARDNAME-L19@ \x01n ");
+						break;
+					case console.screen_rows-6:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n  \x01b\x01h\x014\xdf\x01n\x01b\xdd\x01h\xdf\x014\xdf\x010\xdf \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010  \x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x01n\x01b\xdd\x01h\x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010 \x014\xdf\x010   \x014\xdf\x010   \x014\x01n\x01b\xdb\x01h\x01w\x014Last On\x01k: \x01n\x014@LASTDATEON@  \x01h\x01cNode \x01k\x01n\x01c\x014@NODE-L3@ \x01wUp \x01c@UPTIME-L8@\x01n ");
+						break;
+					case console.screen_rows-5:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n\x01b \xdf\xdf  \xdf  \xdf \xdb\xdd\xdf\xdf\xdf\xdf \xdb\xdd  \xdb\xdb\xdf\xdf  \xdf \xdb\xdd\xdf\xdf\xdf \xdf   \xdb\x014\x01h\x01wFirstOn\x01k:\x01n\x014 @SINCE@  \x01h\x01cCalls\x01n\x01c\x014@SERVED-R4@ \x01wof\x01c @TCALLS-L7@\x01n ");
+						break;
+					case console.screen_rows-4:
+						console.attributes=LBShell_Attr;
+						console.putmsg("\x01n                                       \x01b\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf\xdf ");
+						break;
+					case console.screen_rows-3:
+						console.attributes=7;
+						console.cleartoeol();
+						console.putmsg(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@ [\x01h@SN@\x01n\x01c] @SUB@\x01n\r\n");
+						break;
+					case console.screen_rows-2:
+						console.attributes=7;
+						console.cleartoeol();
+						console.putmsg(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@ (\x01h@DN@\x01n\x01c) @DIR@\x01n\r\n");
+						break;
+					case console.screen_rows-1:
+						console.attributes=LBShell_Attr;
+						console.cleartoeol();
+						break;
+					case console.screen_rows:
+						console.attributes=LBShell_Attr;
+						console.cleartoeol();
+						break;
+				}
+			}
+		}
 	}
 }
