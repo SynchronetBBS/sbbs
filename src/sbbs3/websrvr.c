@@ -3868,7 +3868,7 @@ void http_output_thread(void *arg)
 		if(!getsockopt(session->socket, IPPROTO_TCP, TCP_MAXSEG, &i, &sl)) {
 			/* Check for sanity... */
 			if(i>100) {
-				obuf->highwater_mark=i;
+				obuf->highwater_mark=i-12;
 				lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
 				mss=obuf->highwater_mark;
 				if(mss>OUTBUF_LEN) {
@@ -3882,17 +3882,26 @@ void http_output_thread(void *arg)
 
 	thread_up(TRUE /* setuid */);
     while(session->socket!=INVALID_SOCKET && !terminate_server) {
+
         /* Wait for something to output in the RingBuffer */
-        if(sem_trywait_block(&obuf->sem,1000))
-            continue;
+        if(!RingBufFull(obuf)) {
+			if(sem_trywait_block(&obuf->sem,1000))
+	            continue;
+		}
+		else
+			sem_trywait(&obuf->sem);
 
         /* Check for spurious sem post... */
         if(!RingBufFull(obuf))
             continue;
 
         /* Wait for full buffer or drain timeout */
-        if(obuf->highwater_mark)
-            sem_trywait_block(&obuf->highwater_sem,startup->outbuf_drain_timeout);
+		if(RingBufFull(obuf)<obuf->highwater_mark) {
+	        if(obuf->highwater_mark)
+    	        sem_trywait_block(&obuf->highwater_sem,startup->outbuf_drain_timeout);
+		}
+		else
+			sem_trywait(&obuf->highwater_sem);
 
         /*
          * At this point, there's something to send and,
@@ -3902,7 +3911,7 @@ void http_output_thread(void *arg)
          */
         len=avail=RingBufFull(obuf);
 		if(avail>mss)
-			len=avail=mss;
+			len=(avail=mss);
 
 		/* 
 		 * Read the current value of write_chunked... since we wait until the

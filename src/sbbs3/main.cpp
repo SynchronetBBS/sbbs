@@ -1504,16 +1504,24 @@ void output_thread(void* arg)
 		 */
 		if(bufbot == buftop) {
 			/* Wait for something to output in the RingBuffer */
-			if(sem_trywait_block(&sbbs->outbuf.sem,1000))
-				continue;
+			if(!RingBufFull(&sbbs->outbuf)) {
+				if(sem_trywait_block(&sbbs->outbuf.sem,1000))
+					continue;
+			}
+			else
+				sem_trywait(&sbbs->outbuf.sem);
 
 			/* Check for spurious sem post... */
 			if(!RingBufFull(&sbbs->outbuf))
 				continue;
 
 			/* Wait for full buffer or drain timeout */
-			if(sbbs->outbuf.highwater_mark)
-				sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
+			if(RingBufFull(&sbbs->outbuf)<sbbs->outbuf.highwater_mark) {
+				if(sbbs->outbuf.highwater_mark)
+					sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
+			}
+			else
+				sem_trywait(&sbbs->outbuf.highwater_sem);
 
 			/*
 			 * At this point, there's something to send and,
