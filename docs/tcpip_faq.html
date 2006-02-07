@@ -91,13 +91,17 @@ So you don't <b>need</b> to necessarily know what it is.
 <i>Why can't I <b>relay Internet e-mail</b> through my BBS?</i>
 <p>
 <b>Answer:</b>
-<br>Indications of this problem are error messages similar to the following in your Synchronet Mail Server window/log output:
+<br>Indications of this problem include error messages in your e-mail client similar to the following:
+<br><tt>553 Relaying through this server requires authentication. Please authenticate before sending.</tt>
+<br><tt>550 Relay not allowed.</tt>
+<br>
+Or error messages similar to the following in your Synchronet Mail Server window/log output:
 <br><tt>0504 !SMTP ILLEGAL RELAY ATTEMPT from &lt;yourname@yourhost.org&gt; [192.168.0.2] to someuser@somehost.com</tt>
 <br>Where the <i>from</i> address is that of your mail sending host and the <i>to</i> address is that of an external mail recipient
 that <b>you</b> are attempting to send e-mail to.
 <p>It is common and normal to see "illegal relay attempts" from remote systems
 that have happened on your mail server and are probing it to determine if it is an "Open Relay".
-<p>So called "Open Relays" (mail servers that allow any and every host to relay mail through them) are a major source of SPAM on the Internet
+So called "Open Relays" (mail servers that allow any and every host to relay mail through them) are a major source of SPAM on the Internet
 and are highly discouraged.
 <p>By default, the Synchronet Mail Server <b>disallows</b> the <i>relaying</i> of SMTP e-mail messages
 received for an external recipient (not destined for a local BBS user account).
@@ -120,11 +124,13 @@ You <b>can</b> allow specific hosts or users to relay e-mail through your mail s
 	<li>Configure your e-mail client to use SMTP authentication to login to your mail server using
 	your BBS user name (i.e. alias) and password.
 	</ol>
-	<br>This Synchronet Mail Server supports the following SMTP authentication schemes:
+	<br>The Synchronet Mail Server supports the following SMTP authentication schemes:
 		<ul>
 			<li>PLAIN
 			<li>LOGIN
 			<li>CRAM-MD5
+				<br>(Note: password case sensitivity
+				can be an issue when using CRAM-MD5 authentication)
 		</ul>
 </ol>
 
