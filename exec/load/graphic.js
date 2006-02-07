@@ -39,6 +39,7 @@ function Graphic(w,h,attr,ch)
 	}
 	this.draw=Graphic_draw;
 	this.load=Graphic_load;
+	this.write=Graphic_write;
 }
 
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
@@ -100,4 +101,22 @@ function Graphic_load(filename)
 		}
 	}
 	return(true);
+}
+
+function Graphic_write(xpos, ypos, txt, attr)
+{
+	var x=xpos-1;
+	var y=ypos-1;
+	var p=0;
+
+	while(p<txt.length && x<=this.width && y<=this.height) {
+		this.data[x][y].ch=txt.substr(p,1);
+		if(attr!=undefined)
+			this.data[x][y].attr=attr;
+		x++;
+		if(x>=this.width) {
+			x=0;
+			y++;
+		}
+	}
 }
