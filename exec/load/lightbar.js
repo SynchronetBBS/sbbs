@@ -19,6 +19,12 @@ if(this.SYS_CLOSED==undefined)
  *         width - The width of this item.  If not specified, is the width of
  *                 the text.  Otherwise, the text is truncated or padded with
  *				   spaces to fit the width.
+ *         lpadding - the string that is displated before THIS item and is not
+ *				      highlighted
+ *         rpadding - the string that is displated after THIS item and is not
+ *				      highlighted
+ *         disabled - Indicates that this item is disabled and cannot be
+ *				      selected
  *  direction: 0 for vertical, 1 for horizontal.
  *			   Horizontal menus always have one space of padding added between
  *             items.
@@ -41,6 +47,8 @@ if(this.SYS_CLOSED==undefined)
  *  hblanks: The number of horizontal blanks between items for horizontal menus.
  *  hotkeys: A string of keys which will immediately return the key value rather
  *         than a retval
+ *  nodraw: Indicates that the lightbar does not need to be redrawn on next entry.
+ *			This is reset to false on every return
  */
 function Lightbar(items)
 {
@@ -73,7 +81,7 @@ function Lightbar(items)
 		this.items=items;
 }
 
-function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled)
+function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled, nodraw)
 {
 	var item=new Object;
 
@@ -92,6 +100,8 @@ function Lightbar_additem(txt, retval, width, lpadding, rpadding, disabled)
 		item.rpadding=rpadding;
 	if(disabled!=undefined)
 		item.disabled=disabled;
+	if(nodraw!=undefined)
+		item.nodraw=nodraw;
 	this.items.push(item);
 }
 
@@ -117,6 +127,7 @@ function Lightbar_failsafe_getval()
 		return(undefined);
 	this.current=i;
 	retval=this.items[i].retval;
+	this.nodraw=false;
 
 	return(retval);
 }
@@ -158,8 +169,10 @@ function Lightbar_getval(current)
 	if(this.current<0 || this.current >= this.items.length) {
 		alert("current parameter is out of range!");
 		this.current=0;
-		if(this.items.length<=0)
+		if(this.items.length<=0) {
+			this.nodraw=false;
 			return(null);
+		}
 	}
 	var orig_cur=this.current;
 	while(this.items[this.current].retval==undefined || this.items[this.current].disabled) {
@@ -168,6 +181,7 @@ function Lightbar_getval(current)
 			this.current=0;
 		if(this.current==orig_cur) {
 			alert("No items with a return value!");
+			this.nodraw=false;
 			return(undefined);
 		}
 	}
@@ -184,6 +198,7 @@ function Lightbar_getval(current)
 			if(this.items[i].width==undefined) {
 				if(this.items[i]==undefined) {
 					alert("Sparse items array!");
+					this.nodraw=false;
 					return(null);
 				}
 				if(this.items[i].text==undefined) {
@@ -200,7 +215,8 @@ function Lightbar_getval(current)
 		}
 	}
 
-	this.draw();
+	if(!this.nodraw)
+		this.draw();
 	last_cur=this.current;
 
 	/* Main loop */
@@ -221,10 +237,12 @@ function Lightbar_getval(current)
 			// Some basic validation.
 			if(this.items[i]==undefined) {
 				alert("Sparse items array!");
+				this.nodraw=false;
 				return(this.failsafe_getval());
 			}
 			if(this.items[i].text==undefined) {
 				alert("No text for item "+i+"!");
+				this.nodraw=false;
 				return(this.failsafe_getval());
 			}
 			var cleaned=this.items[i].text;
@@ -332,11 +350,14 @@ function Lightbar_getval(current)
 		}
 		if(item_count==0) {
 			alert("No items with a return value!");
+			this.nodraw=false;
 			return(undefined);
 		}
 		console.gotoxy(cursx,cursy);
-		if(ret!=undefined)
+		if(ret!=undefined) {
+			this.nodraw=false;
 			return(ret);
+		}
 
 		last_cur=this.current;
 
@@ -347,8 +368,10 @@ function Lightbar_getval(current)
 		 * procesed.
 		 */
 		var key=console.getkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0));
-		if(this.hotkeys.indexOf(key)!=-1)
+		if(this.hotkeys.indexOf(key)!=-1) {
+			this.nodraw=false;
 			return(key);
+		}
 		switch(key) {
 			case KEY_UP:
 				if(this.direction==0) {
@@ -404,6 +427,7 @@ function Lightbar_getval(current)
 				break;
 			case '\r':
 			case '\n':
+				this.nodraw=false;
 				if(this.items[this.current].retval==undefined)
 					return(undefined);
 				return(this.items[this.current].retval);
