@@ -109,7 +109,7 @@ function Graphic_write(xpos, ypos, txt, attr)
 	var y=ypos-1;
 	var p=0;
 
-	while(p<txt.length && x<=this.width && y<=this.height) {
+	while(p<txt.length && x<this.width && y<this.height) {
 		this.data[x][y].ch=txt.substr(p,1);
 		if(attr!=undefined)
 			this.data[x][y].attr=attr;
