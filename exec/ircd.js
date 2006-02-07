@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2005 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 load("sbbsdefs.js");
@@ -1537,8 +1537,8 @@ function IRCClient_do_info() {
 	this.numeric(371, ":Deuce (Stephen Hurd): Resident Perl guru and Saskatchewan zealot.");
 	this.numeric(371, ":   Originally converted the IRCd to be object-oriented, various small");
 	this.numeric(371, ":   hacks, and lots of guidance.");
-	this.numeric(371, ":Greets to: Arrak, DWC, Foobar, Grey Fox/Zero/Unpaid, Grimp, Kufat,");
-	this.numeric(371, ":   Palom, Psyko, Torke, and all the #square oldbies.");
+	this.numeric(371, ":Greets to: Arrak, Elayne, Elvish Merchant, Foobar, Grimp, Kufat,");
+	this.numeric(371, ":   Nex, Palom, Psyko, Shaun, Torke, and all the #square oldbies.");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":Synchronet " + system.full_version);
 	this.numeric(371, ":Compiled with " + system.compiled_with + " at " + system.compiled_when);

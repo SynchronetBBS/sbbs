@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2005 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Server to server operation is governed here.
 //
@@ -695,11 +695,13 @@ function Server_Work() {
 
 			var chan_members;
 			var cm_array;
+			var mode_args;
 
 			if (cmd[3]) {
 				var incoming_modes = new Array;
-				var tmp_modeargs = 0;
+				var tmp_modeargs = 3;
 
+				/* Parse the modes and break them down */
 				for (tmpmc in cmd[3]) {
 					var my_modechar = cmd[3][tmpmc];
 					if (my_modechar == "+")
@@ -707,7 +709,7 @@ function Server_Work() {
 					if ((my_modechar == "k") ||
 					    (my_modechar == "l")) {
 						tmp_modeargs++;
-						incoming_modes[my_modechar] = cmd[3 + tmp_modeargs];
+						incoming_modes[my_modechar] = cmd[tmp_modeargs];
 					} else {
 						incoming_modes[my_modechar] = true;
 					}
@@ -722,13 +724,14 @@ function Server_Work() {
 						mode_args_args += " " + incoming_modes[my_mc];
 					}
 				}
-				var mode_args = mode_args_chars + mode_args_args;
+				mode_args = mode_args_chars + mode_args_args;
 
 				/* The following corrects a bug in Bahamut.. */
 				if ((cmd[4] == "") && cmd[5])
 					tmp_modeargs++;
 				
-				chan_members = IRC_string(cmdline,4+tmp_modeargs).split(' ');
+				tmp_modeargs++; /* Jump to start of string */
+				chan_members = IRC_string(cmdline,tmp_modeargs).split(' ');
 
 				if (chan_members == "") {
 					umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to SJOIN empty channel " + cmd[2] + " before processing.");
@@ -781,12 +784,8 @@ function Server_Work() {
 				if (!ThisOrigin.local ||
 				    (chan.created == parseInt(cmd[1])))
 					bounce_modes = false;
-				if (chan.created >= parseInt(cmd[1])) {
-					if (mode_args)
-						this.set_chanmode(chan, cmd[3] + " " + mode_args, bounce_modes);
-					else
-						this.set_chanmode(chan, cmd[3], bounce_modes);
-				}
+				if (chan.created >= parseInt(cmd[1]))
+					this.set_chanmode(chan, mode_args, bounce_modes);
 
 				var num_sync_modes = 0;
 				var push_sync_modes = "+";
