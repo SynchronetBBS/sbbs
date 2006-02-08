@@ -16,3 +16,8 @@ Features/Changes which will break the API and so must go into v7
 - Change to 24-line default.  This means fixing the personalities, and the
   screen stuff.
 - Autodetect if passed handle is a socket (Like I did for MyCroft doors)
+- We need some non-socket way of dealing with I/O for Win32.  Something that
+  operates along the lines of stdio on *nix.  When BBSs commonly start doing
+  SSH, is the door supposed to do SSH also?  A local socket would work, but it
+  seems like the Wrong Thing.  The main reason stdio is out is that there's no
+  standard way of passing hangup info etc.
