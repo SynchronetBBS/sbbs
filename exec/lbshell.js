@@ -305,6 +305,8 @@ Chatmenu.prototype=new Lightbar;
 // Generate menus of available xtrn sections.
 function Xtrnsecs()
 {
+	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 	this.items=new Array();
 	this.xpos=40;
 	this.ypos=2;
@@ -317,12 +319,12 @@ function Xtrnsecs()
 		if(xtrn_area.sec_list[j].name.length > xtrnsecwidth)
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
 	}
-	xtrnsecwidth += 2;
+	xtrnsecwidth += 4;
 	if(xtrnsecwidth>37)
 		xtrnsecwidth=37;
 	this.add("\xda"+bars80.substr(0,xtrnsecwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list.length; j++)
-		this.add("< "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
+		this.add("< |"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsecs.prototype=new Lightbar;
@@ -330,6 +332,7 @@ var xtrnsec=new Xtrnsecs;
 
 function Xtrnsec(sec)
 {
+	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	this.items=new Array();
 	var j=0;
 
@@ -339,6 +342,7 @@ function Xtrnsec(sec)
 		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
 			xtrnsecprogwidth=xtrn_area.sec_list[sec].prog_list[j].name.length;
 	}
+	xtrnsecprogwidth+=2;
 	if(xtrnsecprogwidth>37)
 		xtrnsecprogwidth=37;
 	if(xtrn_area.sec_list[sec].prog_list.length+3+sec <= console.screen_rows)
@@ -350,7 +354,7 @@ function Xtrnsec(sec)
 	this.rpadding="\xb3";
 	this.add("\xda"+bars80.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
-		this.add(xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+		this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsec.prototype=new Lightbar;
