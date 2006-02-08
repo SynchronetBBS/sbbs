@@ -655,7 +655,7 @@ void sbbs_t::attr(int atr)
 		}
 	}
 	if((atr&0x70) != (curatr&0x70)) {
-		switch(atr&0x07) {
+		switch(atr&0x70) {
 			case BG_BLACK:
 				strcat(str,"40;");
 				break;
