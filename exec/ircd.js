@@ -1528,7 +1528,7 @@ function IRCClient_do_info() {
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.1b ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":  IRCd Copyright 2003-2005 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":  IRCd Copyright 2003-2006 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
