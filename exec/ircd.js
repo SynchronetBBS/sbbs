@@ -181,7 +181,7 @@ function parse_nline_flags(flags) {
 				nline_flags |= NLINE_CHECK_WITH_QWKMASTER;
 				break;
 			case "d":
-				nline_flags |= NLINE_IS_DREAMHAVEN;
+				nline_flags |= NLINE_IS_DREAMFORGE;
 				break;
 			default:
 				log(LOG_WARNING,"!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");
@@ -410,6 +410,7 @@ function connect_to_server(this_cline,the_port) {
 		next_client_id++;
 		Unregistered[new_id]=new Unregistered_Client(new_id,connect_sock);
 		Unregistered[new_id].sendps = false; // Don't do P/S pair again
+		Unregistered[new_id].outgoing = true; /* Outgoing Connection */
 	}
 	this_cline.lastconnect = time();
 }

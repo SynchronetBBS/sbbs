@@ -42,6 +42,7 @@ function Unregistered_Client(id,socket) {
 	this.pending_resolve = false;
 	this.pending_resolve_time = time();
 	this.sendps = true; // Send the PASS/SERVER pair by default.
+	this.outgoing = false; /* We're an incoming connection by default */
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
 	////////// FUNCTIONS
@@ -200,7 +201,7 @@ function Unregistered_Commands() {
 			if ( (!this_nline ||
 			      ( (this_nline.password == "*") && 
 				!(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
-			     ) && !qwk_slave) {
+			     ) && !qwk_slave && !this.outgoing) {
 				this.quit("Server not configured.");
 				return 0;
 			}
