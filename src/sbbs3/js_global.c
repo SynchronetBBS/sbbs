@@ -2264,7 +2264,7 @@ js_wildmatch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	BOOL		case_sensitive=FALSE;
 	BOOL		path=FALSE;
 	char*		fname;
-	char*		spec;
+	char*		spec="*";
 	uintN		argn=0;
 
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
@@ -2273,10 +2273,11 @@ js_wildmatch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((fname=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
 		return(JS_FALSE);
 
-	if((spec=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
-		return(JS_FALSE);
+	if(argn<argc && argv[argn]!=JSVAL_VOID)
+		if((spec=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL) 
+			return(JS_FALSE);
 
-	if(argn<argc)
+	if(argn<argc && argv[argn]!=JSVAL_VOID)
 		JS_ValueToBoolean(cx, argv[argn++], &path);
 	
 	if(case_sensitive)
@@ -2656,7 +2657,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string")
 	,310
 	},
-	{"wildmatch",		js_wildmatch,		3,	JSTYPE_BOOLEAN, JSDOCSTR("[case_sensitive=<tt>false</tt>,] string, pattern [,path=<tt>false</tt>]")
+	{"wildmatch",		js_wildmatch,		2,	JSTYPE_BOOLEAN, JSDOCSTR("[case_sensitive=<tt>false</tt>,] string [,pattern=<tt>"*"</tt>] [,path=<tt>false</tt>]")
 	,JSDOCSTR("returns <tt>true</tt> if the <i>string</i> matches the wildcard <i>pattern</i> (wildcard supported are '*' and '?'), "
 	"if <i>path</i> is <tt>true</tt>, '*' will not match path delimeter characters (e.g. '/')")
 	,31301
