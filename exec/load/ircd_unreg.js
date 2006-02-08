@@ -199,9 +199,9 @@ function Unregistered_Commands() {
 				}
 			}
 			if ( (!this_nline ||
-			      ( (this_nline.password == "*") && 
-				!(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
-			     ) && !qwk_slave && !this.outgoing) {
+			      ( (this_nline.password == "*") && !this.outgoing
+				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
+			     ) && !qwk_slave) {
 				this.quit("Server not configured.");
 				return 0;
 			}
