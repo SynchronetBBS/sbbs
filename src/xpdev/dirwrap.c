@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -900,6 +900,29 @@ BOOL DLLCALL wildmatch(const char *fname, const char *spec, BOOL path)
 	if(*specp==*fnamep)
 		return(TRUE);
 	return(FALSE);
+}
+
+/****************************************************************************/
+/* Matches file name against filespec, ignoring case						*/
+/****************************************************************************/
+BOOL DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path)
+{
+	char* s1;
+	char* s2;
+	BOOL result;
+
+	if((s1=strdup(fname))==NULL)
+		return(FALSE);
+	if((s2=strdup(fname))==NULL) {
+		free(s1);
+		return(FALSE);
+	}
+	strupr(s1);
+	strupr(s2);
+	result = wildmatch(s1, s2, path);
+	free(s1);
+	free(s2);
+	return(result);
 }
 
 /****************************************************************************/
