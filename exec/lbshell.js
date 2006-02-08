@@ -50,7 +50,6 @@ function Mainbar()
 	this.add("Commands",";");
 }
 Mainbar.prototype=new Lightbar;
-var mainbar=new Mainbar;
 
 function top_bar(width)
 {
@@ -209,23 +208,6 @@ function Settingsmenu()
 }
 Settingsmenu.prototype=new Lightbar;
 
-function Xfercfgmenu()
-{
-	this.items=new Array();
-	this.xpos=33;
-	this.ypos=6;
-	this.lpadding="\xb3";
-	this.rpadding="\xb3";
-	this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b";
-	this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-	this.add("|Set New Scan Time","S",28);
-	this.add("Toggle |Batch Flag","B",28);
-	this.add("Toggle |Extended Descriptions","E",28);
-	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-}
-Xfercfgmenu.prototype=new Lightbar;
-var xfercfgmenu=new Xfercfgmenu;
-
 function Emailmenu()
 {
 	var width=24;
@@ -243,7 +225,6 @@ function Emailmenu()
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
 Emailmenu.prototype=new Lightbar;
-var emailmenu=new Emailmenu;
 
 function Messagemenu()
 {
@@ -308,7 +289,7 @@ Chatmenu.prototype=new Lightbar;
 // Generate menus of available xtrn sections.
 function Xtrnsecs()
 {
-	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*():;<>";
 
 	this.items=new Array();
 	this.xpos=40;
@@ -331,11 +312,10 @@ function Xtrnsecs()
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsecs.prototype=new Lightbar;
-var xtrnsec=new Xtrnsecs;
 
 function Xtrnsec(sec)
 {
-	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*():;<>";
 	this.items=new Array();
 	var j=0;
 
@@ -361,10 +341,6 @@ function Xtrnsec(sec)
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsec.prototype=new Lightbar;
-var xtrnsecs=new Array();
-var j;
-for(j=0; j<xtrn_area.sec_list.length; j++)
-	xtrnsecs[j]=new Xtrnsec(j);
 
 function Infomenu()
 {
@@ -384,7 +360,6 @@ function Infomenu()
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
 Infomenu.prototype=new Lightbar;
-var infomenu=new Infomenu;
 
 function Userlists()
 {
@@ -401,7 +376,8 @@ function Userlists()
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 }
 Userlists.prototype=new Lightbar;
-var userlists=new Userlists;
+
+var mainbar=new Mainbar;
 
 draw_main(true);
 var next_key='';
@@ -467,6 +443,7 @@ while(1) {
 			var x_sec;
 			var x_prog;
 			done=false;
+			var xtrnsec=new Xtrnsecs;
 			while(!done) {
 				x_sec=xtrnsec.getval();
 				if(x_sec==KEY_LEFT)
@@ -478,10 +455,11 @@ while(1) {
 				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
 					break;
 				curr_xtrnsec=parseInt(x_sec);
+				var this_xtrnsec=new Xtrnsec(curr_xtrnsec);
 				while(1) {
-					x_prog=xtrnsecs[curr_xtrnsec].getval();
+					x_prog=this_xtrnsec.getval();
 					if(x_prog==KEY_LEFT) {
-						cleararea(xtrnsecs[curr_xtrnsec].xpos,xtrnsecs[curr_xtrnsec].ypos,xtrnsecs[curr_xtrnsec].items[0].text.length,xtrnsecs[curr_xtrnsec].items.length,true);
+						cleararea(this_xtrnsec.xpos,this_xtrnsec.ypos,this_xtrnsec.items[0].text.length,this_xtrnsec.items.length,true);
 						cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
 						main_left();
 						done=1;
@@ -489,7 +467,7 @@ while(1) {
 					}
 					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
 						/* We *cannot* clear to eol since we're to the left of the parent. */
-						cleararea(xtrnsecs[curr_xtrnsec].xpos,xtrnsecs[curr_xtrnsec].ypos,xtrnsecs[curr_xtrnsec].items[0].text.length,xtrnsecs[curr_xtrnsec].items.length,false);
+						cleararea(this_xtrnsec.xpos,this_xtrnsec.ypos,this_xtrnsec.items[0].text.length,this_xtrnsec.items.length,true);
 						break;
 					}
 					clear_screen();
@@ -501,6 +479,7 @@ while(1) {
 			cleararea(xtrnsec.xpos,xtrnsec.ypos,xtrnsec.items[0].text.length,xtrnsec.items.length,true);
 			break;
 		case 'V':
+			var infomenu=new Infomenu;
 			infoloop: while(1) {
 				switch(infomenu.getval()) {
 					case 'I':
@@ -535,6 +514,7 @@ while(1) {
 						}
 						// Fall-through
 					case 'U':
+						var userlists=new Userlists;
 						userlistloop: while(1) {
 							switch(userlists.getval()) {
 								case KEY_LEFT:
