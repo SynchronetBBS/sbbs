@@ -874,7 +874,7 @@ function rawout(str) {
 		return 0;
 	}
 
-	if (!this.sendq.bytes && !sendsock.send(str + "\r\n"))
+	if (this.sendq.bytes || !sendsock.send(str + "\r\n"))
 		this.sendq.add(str);
 }
 
@@ -901,7 +901,7 @@ function originatorout(str,origin) {
 		return 0;
 	}
 
-	if (!this.sendq.bytes && !sendsock.send(send_data + "\r\n"))
+	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
 		this.sendq.add(send_data);
 }
 
@@ -922,7 +922,7 @@ function ircout(str) {
 	}
 
 	send_data = ":" + servername + " " + str;
-	if (!this.sendq.bytes && !sendsock.send(send_data + "\r\n"))
+	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
 		this.sendq.add(send_data);
 }
 
