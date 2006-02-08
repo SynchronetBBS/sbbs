@@ -526,7 +526,6 @@ while(1) {
 						break;
 					case KEY_LEFT:
 						if(infomenu.items[infomenu.current].retval!='U') {
-							cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 							main_left();
 							done=1;
 							break infoloop;
@@ -575,14 +574,12 @@ while(1) {
 						draw_main(true);
 						break infoloop;
 					case KEY_RIGHT:
-						cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 						main_right();
 						done=1;
 						break infoloop;
 					case '\b':
 					case '\x7f':
 					case '\x1b':
-						cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 						break infoloop;
 				}
 			}
