@@ -23,7 +23,10 @@ bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
 load("str_cmds.js");
 var str;
 const LBShell_Attr=0x37;
-var BackGround=new Graphic(80,23,LBShell_Attr,' ');
+var size=file_size(system.text_dir+"lbshell_bg.bin");
+size/=2;	// Divide by two for attr/char pairs
+size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
+var BackGround=new Graphic(80,size,LBShell_Attr,' ');
 var use_bg=BackGround.load(system.text_dir+"lbshell_bg.bin");
 var bars80="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 var spaces80="                                                                               ";
@@ -1838,7 +1841,16 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 			ypos++;
 			height--;
 		}
-		BackGround.draw(xpos,ypos,width,height,xpos-1,ypos-2);
+		if(height-(ypos-2)>BackGround.height) {
+			BackGround.draw(xpos,ypos,width,BackGround.height-(ypos-2),xpos-1,ypos-2);
+			for(y=ypos+(BackGround.height-(ypos-2));y<=console.screen_rows;y++) {
+				console.gotoxy(1,y);
+				console.attributes=LBShell_Attr;
+				console.cleartoeol();
+			}
+		}
+		else
+			BackGround.draw(xpos,ypos,width,height,xpos-1,ypos-2);
 		return;
 	}
 	for(y=ypos; y<ypos+height; y++) {
