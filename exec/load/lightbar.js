@@ -484,6 +484,7 @@ function Lightbar_draw(current)
 		if(this.items.length<=0)
 			return;
 	}
+
 	var orig_cur=this.current;
 	while(this.items[this.current].retval==undefined || this.items[this.current].disabled) {
 		this.current++;
@@ -496,6 +497,7 @@ function Lightbar_draw(current)
 	}
 
 	/* Check that a horizontal lightbar fits on the screen */
+	/* ToDo: This is pretty expensive... do we NEED this?
 	if(this.direction==1) {
 		var end=this.xpos;
 		var i;
@@ -521,11 +523,12 @@ function Lightbar_draw(current)
 				end+=this.items[i].width
 			}
 		}
-	}
+	} */
 
 	var i;
 	var j;
 	var k;
+	var ch;
 
 	/* Draw items */
 	var curx=this.xpos;
@@ -545,35 +548,53 @@ function Lightbar_draw(current)
 			alert("No text for item "+i+"!");
 			return;
 		}
-		var cleaned=this.items[i].text;
 
+		// Set up a cleaned version for length calculations.
+		var cleaned=this.items[i].text;
 		cleaned=cleaned.replace(/\|/g,'');
+
+		/*
+		 * Calculate the width.  Forced width, item width, text width
+		 * In that order.  First one wins.
+		 */
 		if(this.force_width>0)
 			width=this.force_width;
 		else {
-			width=cleaned.length;
 			if(this.items[i].width!=undefined)
 				width=this.items[i].width;
+			else
+				width=cleaned.length;
 		}
+
+		// Set up padding variables
 		var lpadding=this.lpadding;
 		var rpadding=this.rpadding;
 		if(this.items[i].lpadding!=undefined)
 			lpadding=this.items[i].lpadding;
 		if(this.items[i].rpadding!=undefined)
 			rpadding=this.items[i].rpadding;
+
+		// Move to the start of this line
 		console.gotoxy(curx, cury);
+
+		// Output the padding
 		if(lpadding != undefined && lpadding != null) {
 			console.attributes=attr;
 			console.write(lpadding);
-			curx+= lpadding.length;
+			curx+=lpadding.length;
 		}
+
+		// If this is the current selection, remember the location as we'll
+		// move the cursor back here later.
 		if(i==this.current) {
 			cursx=curx;
 			cursy=cury;
 		}
+
+		/* Pad at the left if right aligned or centered */
 		k=0;
 		if(cleaned.length < width) {
-			if(this.align==1) {
+			if(this.align==1 || this.align==2) {
 				if(this.current==i)
 					console.attributes=cattr;
 				else {
@@ -582,26 +603,22 @@ function Lightbar_draw(current)
 					else
 						console.attributes=attr;
 				}
-				for(;k<width-cleaned.length;k++)
-					console.write(' ');
-			}
-			if(this.align==2) {
-				if(this.current==i)
-					console.attributes=cattr;
-				else {
-					if(this.items[i].disabled)
-						console.attributes=dattr;
-					else
-						console.attributes=attr;
-				}
-				for(;k<(width-cleaned.length)/2;k++)
+				for(;k<(width-cleaned.length)/this.align;k++)
 					console.write(' ');
 			}
 		}
+		
+		// Output each char.
 		for(j=0; j<this.items[i].text.length; j++) {
+			// Check if we've gone past width somehow
 			if(width > -1 && k > width)
 				break;
-			if(this.items[i].text.substr(j,1)=='|') {
+
+			// Get next char.
+			ch=this.items[i].text.substr(j,1);
+			// Is this a hotkey?
+			if(ch=='|') {
+				// Yep, change attributes and get next char
 				if(this.items[i].disabled)
 					console.attributes=dattr;
 				else {
@@ -611,8 +628,10 @@ function Lightbar_draw(current)
 						console.attributes=kattr;
 				}
 				j++;
+				ch=this.items[i].text.substr(j,1);
 			}
 			else {
+				// Make sure the attribute is correct.
 				if(this.current==i)
 					console.attributes=cattr;
 				else {
@@ -622,9 +641,11 @@ function Lightbar_draw(current)
 						console.attributes=attr;
 				}
 			}
-			console.write(this.items[i].text.substr(j,1));
+			console.write(ch);
 			k++;
 		}
+		
+		// Set correct attribute for right width padding
 		if(this.current==i)
 			console.attributes=cattr;
 		else {
@@ -633,15 +654,24 @@ function Lightbar_draw(current)
 			else
 				console.attributes=attr;
 		}
+
+		// Add any required spaces to bring it up to width
 		while(k<width) {
 			console.write(" ");
 			k++;
 		}
+
+		// Ouput the right padding
 		if(rpadding != undefined && rpadding != null) {
 			console.attributes=attr;
 			console.write(rpadding);
 			curx+= rpadding.length;
 		}
+
+		/*
+		 * If we're vertical, move to next line.  Otherwise, write the correct
+		 * number of spaces.
+		 */
 		if(this.direction==0) {
 			cury++;
 			curx=this.xpos;
@@ -654,6 +684,8 @@ function Lightbar_draw(current)
 				curx++;
 			}
 		}
+
+		// This item is valid... make note of that.
 		if(this.items[i].retval!=undefined)
 			item_count++;
 	}
@@ -661,4 +693,7 @@ function Lightbar_draw(current)
 		alert("No items with a return value!");
 		return;
 	}
+	
+	// Move cursor to the current selection
+	console.gotoxy(cursx,cursy);
 }
