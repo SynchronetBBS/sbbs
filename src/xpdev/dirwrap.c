@@ -913,7 +913,7 @@ BOOL DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path)
 
 	if((s1=strdup(fname))==NULL)
 		return(FALSE);
-	if((s2=strdup(fname))==NULL) {
+	if((s2=strdup(spec))==NULL) {
 		free(s1);
 		return(FALSE);
 	}
