@@ -611,7 +611,7 @@ void sbbs_t::attr(int atr)
 	if(curatr==atr) /* text hasn't changed. don't send codes */
 		return;
 
-#if 1
+#if 0
 	strcpy(str,"\033[");
 	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
