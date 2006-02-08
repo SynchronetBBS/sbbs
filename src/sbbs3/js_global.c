@@ -2259,6 +2259,31 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_wildmatch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	BOOL		path=FALSE;
+	char*		fname;
+	char*		spec;
+
+	if(JSVAL_IS_VOID(argv[0]) || JSVAL_IS_VOID(argv[1]))
+		return(JS_TRUE);
+
+	if((fname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	if((spec=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>2)
+		JS_ValueToBoolean(cx, argv[2], &path);
+	
+	*rval = BOOLEAN_TO_JSVAL(wildmatch(fname, spec, path));
+
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_freediskspace(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		unit=0;
@@ -2625,6 +2650,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string")
 	,310
+	},
+	{"wildmatch",		js_wildmatch,		2,	JSTYPE_BOOLEAN, JSDOCSTR("string, pattern [,path=<tt>false</tt>]")
+	,JSDOCSTR("returns <tt>true</tt> if the <i>string</i> matches the wildcard <i>pattern</i> (wildcard supported are '*' and '?'), "
+	"if <i>path</i> is <tt>true</tt>, '*' will not match path delimeter characters (e.g. '/')")
+	,31301
 	},
 	{"backslash",		js_backslash,		1,	JSTYPE_STRING,	JSDOCSTR("path")
 	,JSDOCSTR("returns directory path with trailing (platform-specific) path delimeter "
