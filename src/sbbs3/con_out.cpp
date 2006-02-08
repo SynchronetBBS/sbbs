@@ -594,6 +594,7 @@ void sbbs_t::ctrl_a(char x)
 /****************************************************************************/
 void sbbs_t::attr(int atr)
 {
+	char	str[16];
 
 	if(!(useron.misc&ANSI))
 		return;
@@ -610,6 +611,82 @@ void sbbs_t::attr(int atr)
 	if(curatr==atr) /* text hasn't changed. don't send codes */
 		return;
 
+#if 1
+	strcpy(str,"\033[");
+	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
+		|| atr==LIGHTGRAY) {
+		strcat(str,"0;");
+		curatr=LIGHTGRAY;
+	}
+	if(atr&BLINK) {                     /* special attributes */
+		if(!(curatr&BLINK))
+			strcat(str,"5;");
+	}
+	if(atr&HIGH) {
+		if(!(curatr&HIGH))
+			strcat(str,"1;"); 
+	}
+	if((atr&0x07) != (curatr&0x07)) {
+		switch(atr&0x07) {
+			case BLACK:
+				strcat(str,"30;");
+				break;
+			case RED:
+				strcat(str,"31;");
+				break;
+			case GREEN:
+				strcat(str,"32;");
+				break;
+			case BROWN:
+				strcat(str,"33;");
+				break;
+			case BLUE:
+				strcat(str,"34;");
+				break;
+			case MAGENTA:
+				strcat(str,"35;");
+				break;
+			case CYAN:
+				strcat(str,"36;");
+				break;
+			case LIGHTGRAY:
+				strcat(str,"37;");
+				break;
+		}
+	}
+	if((atr&0x70) != (curatr&0x70)) {
+		switch(atr&0x07) {
+			case BG_BLACK:
+				strcat(str,"40;");
+				break;
+			case BG_RED:
+				strcat(str,"41;");
+				break;
+			case BG_GREEN:
+				strcat(str,"42;");
+				break;
+			case BG_BROWN:
+				strcat(str,"43;");
+				break;
+			case BG_BLUE:
+				strcat(str,"44;");
+				break;
+			case BG_MAGENTA:
+				strcat(str,"45;");
+				break;
+			case BG_CYAN:
+				strcat(str,"46;");
+				break;
+			case BG_LIGHTGRAY:
+				strcat(str,"47;");
+				break;
+		}
+	}
+	if(strlen(str)==2)
+		return;
+	str[strlen(str)-1]='m';
+	rputs(str);
+#else
 	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
 		rputs(ansi(ANSI_NORMAL));
@@ -693,6 +770,7 @@ void sbbs_t::attr(int atr)
 		if((curatr&0x70)!=BG_LIGHTGRAY)
 			rputs(ansi(BG_LIGHTGRAY)); 
 	}
+#endif
 
 	curatr=atr;
 }
