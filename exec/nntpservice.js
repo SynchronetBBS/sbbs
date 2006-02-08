@@ -244,9 +244,11 @@ while(client.socket.is_connected && !quit) {
 			break;
 
 		case "LIST":
-			if(cmd[1]==undefined || cmd[1].length==0) {
+			if(cmd[1]==undefined || cmd[1].length==0
+				|| cmd[1].toUpperCase()=="ACTIVE") {	// RFC 2980 2.1.2
+				pattern=cmd[2];
  				writeln("215 list of newsgroups follows");
-				if(include_mail && user.security.level == 99) {
+				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern)) {
 					msgbase=new MsgBase("mail");
 					if(msgbase.open()==true) {
 						writeln(format("mail %u %u n", msgbase.last_msg, msgbase.first_msg));
@@ -255,6 +257,8 @@ while(client.socket.is_connected && !quit) {
 				}
 				for(g in msg_area.grp_list)
 					for(s in msg_area.grp_list[g].sub_list) {
+						if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
+							continue;
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						if(msgbase.open!=undefined && msgbase.open()==false)
 							continue;
@@ -269,15 +273,20 @@ while(client.socket.is_connected && !quit) {
 				writeln(".");	// end of list
 			}
 			else if(cmd[1].toUpperCase()=="NEWSGROUPS") {	// RFC 2980 2.1.6
+			pattern=cmd[2];
 				writeln("215 list of newsgroups and descriptions follows");
-				if(include_mail && user.security.level == 99)
+				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern))
 					writeln("mail complete mail database");
-				for(g in msg_area.grp_list)
-					for(s in msg_area.grp_list[g].sub_list)
+				for(g in msg_area.grp_list) {
+					for(s in msg_area.grp_list[g].sub_list) {
+						if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
+							continue;
 						writeln(format("%s %s"
 							,msg_area.grp_list[g].sub_list[s].newsgroup
 							,msg_area.grp_list[g].sub_list[s].description
 							));
+					}
+				}
 				writeln(".");	// end of list
 			}
 			else if(cmd[1].toUpperCase()=="OVERVIEW.FMT") {	// RFC 2980 2.1.7
@@ -307,15 +316,20 @@ while(client.socket.is_connected && !quit) {
 			break;
 
 		case "XGTITLE":
+			pattern=cmd[2];
 			writeln("282 list of newsgroups follows");
-			if(include_mail && user.security.level == 99)
+			if(include_mail && user.security.level == 99 && wildmatch("mail", pattern))
 				writeln("mail complete mail database");
-			for(g in msg_area.grp_list)
-				for(s in msg_area.grp_list[g].sub_list)
+			for(g in msg_area.grp_list) {
+				for(s in msg_area.grp_list[g].sub_list) {
+					if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
+						continue;
 					writeln(format("%s %s"
 						,msg_area.grp_list[g].sub_list[s].newsgroup
 						,msg_area.grp_list[g].sub_list[s].description
 						));
+				}
+			}
 			writeln(".");	// end of list
 			break;
 
