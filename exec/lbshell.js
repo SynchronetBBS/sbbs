@@ -1761,7 +1761,7 @@ function show_chatmenu()
 				}
 				break;
 		}
-		cur=emailmenu.current;
+		cur=chatmenu.current;
 	}
 }
 
