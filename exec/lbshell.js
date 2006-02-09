@@ -1312,7 +1312,7 @@ function show_messagemenu()
 				break;
 			case 'N':
 				var typemenu=new Lightbar;
-				var width=23;
+				var width=29;
 				if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
 					width=8+msg_area.grp_list[bbs.curgrp].name.length;
 				if(width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
