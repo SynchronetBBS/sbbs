@@ -1406,7 +1406,9 @@ function show_messagemenu()
 						case 'A':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-							bbs.scan_subs(SCAN_TOYOU);
+							for(j=0; j<msg_area.grp_list.length; j++)
+								for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
+									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
 							draw_main(true);
 							messagemenu.draw();
 							break;
