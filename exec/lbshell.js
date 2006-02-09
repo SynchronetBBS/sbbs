@@ -907,17 +907,24 @@ function show_filemenu()
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'B':
+							clear_screen();
 							bbs.batch_download();
 							/* Redraw just in case */
 							draw_main(true);
 							filemenu.draw();
 							break;
 						case 'N':
+							clear_screen();
 							var spec=bbs.get_filespec();
 							bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
+							draw_main(true);
+							filemenu.draw();
 							break;
 						case 'U':
+							clear_screen();
 							bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
+							draw_main(true);
+							filemenu.draw();
 							break;
 						case KEY_RIGHT:
 							cleararea(filemenu.xpos,filemenu.ypos,filemenu.items[0].text.length,filemenu.items.length,true);
