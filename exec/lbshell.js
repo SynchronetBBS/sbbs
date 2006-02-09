@@ -963,21 +963,25 @@ function show_filemenu()
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'C':	// Current dir
+							clear_screen();
 							bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
 							draw_main(true);
 							filemenu.draw();
 							break;
 						case 'P':	// Upload dir
+							clear_screen();
 							bbs.upload_file(file_area.upload_dir);
 							draw_main(true);
 							filemenu.draw();
 							break;
 						case 'S':	// Sysop dir
+							clear_screen();
 							bbs.upload_file(file_area.sysop_dir);
 							draw_main(true);
 							filemenu.draw();
 							break;
 						case 'U':	// To user
+							clear_screen();
 							bbs.upload_file(file_area.user_dir);
 							draw_main(true);
 							filemenu.draw();
