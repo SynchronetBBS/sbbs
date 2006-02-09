@@ -1521,6 +1521,12 @@ function show_messagemenu()
 				bbs.qwk_sec();
 				draw_main(true);
 				break;
+			case 'V':
+				clear_screen();
+				bbs.sub_info();
+				console.pause();
+				draw_main(true);
+				break;
 		}
 		cur=messagemenu.current;
 		nd=messagemenu.nodraw;
