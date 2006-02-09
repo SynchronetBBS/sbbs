@@ -1705,7 +1705,7 @@ function show_chatmenu()
 				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
 				main_right();
 				return;
-			case 'J':
+			case 'M':
 				clear_screen();
 				bbs.multinode_chat();
 				draw_main(true);
@@ -1741,7 +1741,7 @@ function show_chatmenu()
 					bbs.exec("?irc -a "+str);
 				draw_main(true);
 				break;
-			case 'M':
+			case 'I':
 				clear_screen();
 				bbs.exec("?sbbsimsg");
 				draw_main(true);
