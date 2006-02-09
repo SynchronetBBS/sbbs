@@ -1582,6 +1582,7 @@ function show_emailmenu()
 							clear_screen();
 							bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
 							draw_main(true);
+							emailmenu.draw();
 							break;
 						case 'L':
 							clear_screen();
@@ -1599,6 +1600,7 @@ function show_emailmenu()
 								}
 							}
 							draw_main(true);
+							emailmenu.draw();
 							break;
 						case 'A':
 							clear_screen();
@@ -1610,6 +1612,7 @@ function show_emailmenu()
 									bbs.email(i,WM_EMAIL|WM_FILE);
 							}
 							draw_main(true);
+							emailmenu.draw();
 							break;
 						case 'R':
 							clear_screen();
@@ -1622,6 +1625,7 @@ function show_emailmenu()
 							if(str!=null && str !="")
 								bbs.netmail(str,i);
 							draw_main(true);
+							emailmenu.draw();
 							break;
 						case 'T':
 							clear_screen();
@@ -1630,6 +1634,7 @@ function show_emailmenu()
 							if(str!=null && str!="")
 								bbs.netmail(str,WM_FILE);
 							draw_main(true);
+							emailmenu.draw();
 							break;
 						case KEY_RIGHT:
 							cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
