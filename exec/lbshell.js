@@ -1336,7 +1336,7 @@ function show_messagemenu()
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 							for(j=0; j<msg_area.grp_list.length; j++) {
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+								for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
 									bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_NEW);
 							}
 							draw_main(true);
