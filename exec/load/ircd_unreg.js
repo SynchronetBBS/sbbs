@@ -149,7 +149,7 @@ function Unregistered_Commands() {
 		case "PASS":
 			if (!cmd[1] || this.password)
 				break;
-			this.password = cmd[1];
+			this.password = IRC_string(cmd[1]);
 			break;
 		case "PONG":
 			this.pinged = false;
@@ -238,6 +238,8 @@ function Unregistered_Commands() {
 					}
 				}
 			}
+			if (this_nline.flags&NLINE_IS_DREAMFORGE)
+				new_server.type = DREAMFORGE;
 			new_server.finalize_server_connect("TS",this.sendps);
 			break;
 		case "USER":

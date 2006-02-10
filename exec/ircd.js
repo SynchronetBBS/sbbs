@@ -85,6 +85,10 @@ const max_topiclen = 307;	// Maximum length of topic per channel
 const max_kicklen = 307;	// Maximum length of kick reasons
 const max_who = 100;		// Maximum replies to WHO for non-oper users
 
+/* Server types */
+const BAHAMUT = 1;
+const DREAMFORGE = 2;
+
 var default_port = 6667;
 
 ////////// Functions not linked to an object //////////
