@@ -321,6 +321,7 @@ function Xtrnsec(sec)
 
 	xtrnsecprogwidth=0;
 	this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b";
+	// Figure out the correct width
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
 		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
 			xtrnsecprogwidth=xtrn_area.sec_list[sec].prog_list[j].name.length;
@@ -1849,7 +1850,7 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 			ypos++;
 			height--;
 		}
-		if(height-(ypos-2)>BackGround.height) {
+		if(height+(ypos-2)>BackGround.height) {
 			BackGround.draw(xpos,ypos,width,BackGround.height-(ypos-2),xpos-1,ypos-2);
 			for(y=ypos+(BackGround.height-(ypos-2));y<=console.screen_rows;y++) {
 				console.gotoxy(1,y);
