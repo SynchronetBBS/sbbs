@@ -40,6 +40,8 @@ function Graphic(w,h,attr,ch)
 	this.draw=Graphic_draw;
 	this.load=Graphic_load;
 	this.write=Graphic_write;
+	this.scroll=Graphic_scroll;
+	this.putmsg=Graphic_putmsg;
 }
 
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
@@ -60,7 +62,7 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 	if(yoff==undefined)
 		yoff=0;
 	if(xoff+width > this.width || yoff+height > this.height) {
-		alert("Attempt to draw from outside of graphic");
+		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
 		return(false)
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
@@ -147,6 +149,8 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
+	var x=xpos-1;
+	var y=ypos-1;
 
 	if(curattr==undefined)
 		curattr=this.attribute;
