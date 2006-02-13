@@ -110,13 +110,144 @@ function Graphic_write(xpos, ypos, txt, attr)
 	var p=0;
 
 	while(p<txt.length && x<this.width && y<this.height) {
-		this.data[x][y].ch=txt.substr(p,1);
+		this.data[x][y].ch=txt.substr(p++,1);
 		if(attr!=undefined)
 			this.data[x][y].attr=attr;
 		x++;
 		if(x>=this.width) {
 			x=0;
 			y++;
+		}
+	}
+}
+
+function Graphic_putmsg(xpos, ypos, txt, attr)
+{
+	var curattr=attr;
+	var ch;
+
+	if(curattr==undefined)
+		curattr=this.attribute;
+	/* Expand @-codes */
+	txt=txt.replace(/@(.*)@/g,
+		function (str, code, offset, s) {
+			return bbs.atcode(code);
+		}
+	);
+	/* ToDo: Expand \1D, \1T, \1<, \1Z */
+	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
+	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
+
+	while(p<txt.length && x<this.width && y<this.height) {
+		ch=txt.substr(p++,1);
+		switch(ch) {
+			case '\1':		/* CTRL-A code */
+				ch=txt.substr(p++,1);
+				switch(ch) {
+					case '\1':	/* A "real" ^A code */
+						this.data[x][y].ch=ch;
+						this.data[x][y].attr=curattr;
+						x++;
+						if(x>=this.width) {
+							x=0;
+							y++;
+						}
+						break;
+					case 'K':	/* Black */
+						curattr=(curattr)&0x8f;
+						break;
+					case 'R':	/* Red */
+						curattr=((curattr)&0xff)|RED;
+						break;
+					case 'G':	/* Green */
+						curattr=((curattr)&0xf8)|GREEN;
+						break;
+					case 'Y':	/* Yellow */
+						curattr=((curattr)&0xf8)|BROWN;
+						break;
+					case 'B':	/* Blue */
+						curattr=((curattr)&0xf8)|BLUE;
+						break;
+					case 'M':	/* Magenta */
+						curattr=((curattr)&0xf8)|MAGENTA;
+						break;
+					case 'C':	/* Cyan */
+						curattr=((curattr)&0xf8)|CYAN;
+						break;
+					case 'W':	/* White */
+						curattr=((curattr)&0xf8)|LIGHTGRAY;
+						break;
+					case '0':	/* Black */
+						curattr=(curattr)&0x8f;
+						break;
+					case '1':	/* Red */
+						curattr=((curattr)&0x8f)|(RED<<4);
+						break;
+					case '2':	/* Green */
+						curattr=((curattr)&0x8f)|(GREEN<<4);
+						break;
+					case '3':	/* Yellow */
+						curattr=((curattr)&0x8f)|(BROWN<<4);
+						break;
+					case '4':	/* Blue */
+						curattr=((curattr)&0x8f)|(BLUE<<4);
+						break;
+					case '5':	/* Magenta */
+						curattr=((curattr)&0x8f)|(MAGENTA<<4);
+						break;
+					case '6':	/* Cyan */
+						curattr=((curattr)&0x8f)|(CYAN<<4);
+						break;
+					case '7':	/* White */
+						curattr=((curattr)&0x8f)|(LIGHTGRAY<<4);
+						break;
+					case 'H':	/* High Intensity */
+						curattr|=HIGH;
+						break;
+					case 'I':	/* Blink */
+						curattr|=BLINK;
+						break;
+					case 'N':	/* Normal (ToDo: Does this do ESC[0?) */
+						curattr=7;
+						break;
+					case '-':	/* Normal if High, Blink, or BG */
+						if(curattr & 0xf8)
+							curattr=7;
+						break;
+					case '_':	/* Normal if blink/background */
+						if(curattr & 0xf0)
+							curattr=7;
+						break;
+					case '[':	/* CR */
+						x=0;
+						break;
+					case ']':	/* LF */
+						y++;
+						break;
+					default:	/* Other stuff... specifically, check for right movement */
+						if(ch.charCodeAt(0)>127) {
+							x+=ch.charCodeAt(0)-127;
+							if(x>=this.width)
+								x=this.width-1;
+						}
+				}
+				break;
+			case '\7':		/* Beep */
+				break;
+			case '\r':
+				x=0;
+				break;
+			case '\n':
+				y++;
+				break;
+			default:
+				this.data[x][y].ch=txt.substr(p,1);
+				this.data[x][y].attr=curattr;
+				x++;
+				if(x>=this.width) {
+					x=0;
+					y++;
+				}
 		}
 	}
 }
