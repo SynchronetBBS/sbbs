@@ -31,6 +31,44 @@ var use_bg=BackGround.load(system.text_dir+"lbshell_bg.bin");
 var bars80="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 var spaces80="                                                                               ";
 
+function get_message()
+{
+	var displayed=false;
+	var msg;
+
+	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW) {
+		console.attributes=7;
+		console.gotoxy(1,console.screen_rows-3);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-2);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-1);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-3);
+		bbs.get_telegram(user.number);
+	}
+	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG) {
+		console.attributes=7;
+		console.gotoxy(1,console.screen_rows-3);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-2);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-1);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-3);
+		bbs.get_node_message(bbs.node_num);
+	}
+}
+
+function message_callback()
+{
+	get_message();
+}
+
 function Mainbar()
 {
 	/* ToDo: They all need this... feels like a bug to ME */
@@ -48,6 +86,8 @@ function Mainbar()
 	this.add("|View","V");
 	this.add("|Goodbye","G");
 	this.add("Commands",";");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Mainbar.prototype=new Lightbar;
 
@@ -147,6 +187,8 @@ function Filemenu()
 		,"S",width
 	);
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Filemenu.prototype=new Lightbar;
 
@@ -171,6 +213,8 @@ function Filedirmenu(x, y, changenewscan)
 	if(changenewscan)
 		this.add("Change New Scan |Date","N",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Filedirmenu.prototype=new Lightbar;
 
@@ -188,6 +232,8 @@ function Fileinfo()
 	this.add("|Users With Access to Dir","U",32);
 	this.add("|Your File Transfer Statistics","Y",32);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Fileinfo.prototype=new Lightbar;
 
@@ -205,6 +251,8 @@ function Settingsmenu()
 	this.add("|User Configuration","U",width);
 	this.add("Minute |Bank","B",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Settingsmenu.prototype=new Lightbar;
 
@@ -223,6 +271,8 @@ function Emailmenu()
 	this.add("|Read Inbox","R",width);
 	this.add("Read Sent |Messages","M",width,undefined,undefined,user.compare_ars("REST K"));
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Emailmenu.prototype=new Lightbar;
 
@@ -260,6 +310,8 @@ function Messagemenu()
 	this.add("|QWK Packet Transfer Menu","Q",width);
 	this.add("|View Information on Sub","V",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Messagemenu.prototype=new Lightbar;
 
@@ -283,6 +335,8 @@ function Chatmenu()
 	this.add("InterBBS |Instant Messages","I",width);
 	this.add(format_opt("|Settings",width,true),"S",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Chatmenu.prototype=new Lightbar;
 
@@ -359,6 +413,8 @@ function Infomenu()
 	this.add("< |User Lists","U",25);
 	this.add("|Text Files","T",25);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Infomenu.prototype=new Lightbar;
 
@@ -375,6 +431,8 @@ function Userlists()
 	this.add("|Sub-Board","S",12);
 	this.add("|All","A",12);
 	this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Userlists.prototype=new Lightbar;
 
@@ -422,7 +480,7 @@ while(1) {
 				draw_main(true);
 			}
 			else
-				clear_area(1,2,console.screen_columns,1,true);
+				cleararea(1,2,console.screen_columns,1,true);
 			break;
 		case 'F':
 			show_filemenu();
@@ -905,6 +963,8 @@ function show_filemenu()
 				typemenu.add('By |Name/File spec','N',17);
 				typemenu.add('From |User','U',17);
 				typemenu.add(bottom_bar(17),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'B':
@@ -961,6 +1021,8 @@ function show_filemenu()
 				typemenu.add('To |Sysop Only','S',width,undefined,undefined,file_area.sysop_dir==undefined);
 				typemenu.add('To Specific |User(s)','U',width,undefined,undefined,file_area.user_dir==undefined);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'C':	// Current dir
@@ -1054,6 +1116,8 @@ function show_filemenu()
 				typemenu.add('|Users with Access to Dir','U',width);
 				typemenu.add('Your File Transfer |Statistics','S',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'C':
@@ -1168,6 +1232,8 @@ function show_filemenu()
 					typemenu.add('Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S',width);
 					typemenu.add(bottom_bar(width),undefined,undefined,"","");
 					typemenu.current=cur;
+					typemenu.timeout=100;
+					typemenu.callback=message_callback;
 					switch(typemenu.getval()) {
 						case 'B':
 							user.settings ^= USER_BATCHFLAG;
@@ -1331,6 +1397,8 @@ function show_messagemenu()
 				typemenu.add('Change New Scan |Pointers','P',width);
 				typemenu.add('|Reset New Scan Pointers','R',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'A':
@@ -1403,6 +1471,8 @@ function show_messagemenu()
 				typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
 				typemenu.add('Change Your Scan |Configuration','C',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'A':
@@ -1465,6 +1535,8 @@ function show_messagemenu()
 				typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
 				typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'A':
@@ -1585,6 +1657,8 @@ function show_emailmenu()
 				typemenu.add('To |Remote User','R',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
 				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
+				typemenu.timeout=100;
+				typemenu.callback=message_callback;
 				while(1) {
 					switch(typemenu.getval()) {
 						case 'S':
@@ -1765,6 +1839,8 @@ function show_chatmenu()
 					typemenu.add("Set A|vailability "+(user.chat_settings&CHAT_NOPAGE?"On":"Off"),'V',width);
 					typemenu.add("Set Activity |Alerts "+(user.chat_settings&CHAT_NOACT?"On":"Off"),'A',width);
 					typemenu.add(bottom_bar(width),undefined,undefined,"","");
+					typemenu.timeout=100;
+					typemenu.callback=message_callback;
 					switch(typemenu.getval()) {
 						case 'S':
 							if(user.chat_settings&CHAT_SPLITP)
@@ -1983,3 +2059,4 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 		}
 	}
 }
+
