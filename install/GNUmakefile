@@ -96,7 +96,7 @@ all: binaries baja externals
 
 binaries:	sbbs3 scfg umonitor uedit
 
-externals:	sbj sbl dpoker
+externals:	sbj sbl dpoker tbd
 
 sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
@@ -121,6 +121,9 @@ sbl:	run
 
 dpoker:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+
+tbd:	run
+	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 
 install: all
 ifeq ($(INSTALL),UNIX)
