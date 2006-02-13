@@ -121,7 +121,29 @@ function Graphic_write(xpos, ypos, txt, attr)
 	}
 }
 
-function Graphic_putmsg(xpos, ypos, txt, attr)
+function Graphic_scroll(lines)
+{
+	var x;
+	var y;
+
+	if(lines<1)	/* Do not (yet... ToDo) allow negative scroll */
+		return;
+
+	for(y=lines; y<this.height; y++) {
+		for(x=0; x<this.width; x++) {
+			this.data[x][y-lines].ch=this.data[x][y].ch;
+			this.data[x][y-lines].attr=this.data[x][y].attr;
+		}
+	}
+	for(y=height-lines; y<this.height; y++) {
+		for(x=0; x<this.width; x++) {
+			this.data[x][y-lines].ch=this.ch;
+			this.data[x][y-lines].attr=this.attribute;
+		}
+	}
+}
+
+function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
@@ -151,6 +173,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr)
 						if(x>=this.width) {
 							x=0;
 							y++;
+							if(scroll && y==this.height) {
+								this.scroll(1);
+								y--;
+							}
 						}
 						break;
 					case 'K':	/* Black */
@@ -223,6 +249,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr)
 						break;
 					case ']':	/* LF */
 						y++;
+						if(scroll && y==this.height) {
+							this.scroll(1);
+							y--;
+						}
 						break;
 					default:	/* Other stuff... specifically, check for right movement */
 						if(ch.charCodeAt(0)>127) {
@@ -239,6 +269,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr)
 				break;
 			case '\n':
 				y++;
+				if(scroll && y==this.height) {
+					this.scroll(1);
+					y--;
+				}
 				break;
 			default:
 				this.data[x][y].ch=txt.substr(p,1);
@@ -247,6 +281,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr)
 				if(x>=this.width) {
 					x=0;
 					y++;
+					if(scroll && y==this.height) {
+						this.scroll(1);
+						y--;
+					}
 				}
 		}
 	}
