@@ -821,6 +821,22 @@ read_dorinfox:
 
              od_control.port=szIFTemp[3]-'1';
 
+             /* Check for COM0:STDIO */
+             if(!strncmp(szIFTemp,"COM0:STDIO",10))
+                od_control.od_com_method=COM_STDIO;
+
+             /* Check for COM0:SOCKET### */
+             if(!strncmp(szIFTemp,"COM0:SOCKET",11)) {
+                od_control.od_com_method=COM_SOCKET;
+                od_control.od_open_handle=atoi(szIFTemp+11);
+             }
+
+             /* Check for COM0:HANDLE### */
+             if(!strncmp(szIFTemp,"COM0:HANDLE",11)) {
+                od_control.od_com_method=COM_WIN32;
+                od_control.od_open_handle=atoi(szIFTemp+11);
+             }
+
              /* Read line 2. */
              if(fgets((char *)apszDropFileInfo[0], 80, pfDropFile) == NULL)
              {
