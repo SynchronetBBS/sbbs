@@ -828,6 +828,7 @@ read_dorinfox:
              /* Check for COM0:SOCKET### */
              if(!strncmp(szIFTemp,"COM0:SOCKET",11)) {
                 od_control.od_com_method=COM_SOCKET;
+		od_control.od_use_socket = TRUE;
                 od_control.od_open_handle=atoi(szIFTemp+11);
              }
 
