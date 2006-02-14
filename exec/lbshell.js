@@ -38,6 +38,12 @@ function get_message()
 
 	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW) {
 		console.attributes=7;
+		console.gotoxy(1,console.screen_rows-6);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-5);
+		console.cleartoeol();
+		console.gotoxy(1,console.screen_rows-4);
+		console.cleartoeol();
 		console.gotoxy(1,console.screen_rows-3);
 		console.cleartoeol();
 		console.gotoxy(1,console.screen_rows-2);
@@ -46,7 +52,7 @@ function get_message()
 		console.cleartoeol();
 		console.gotoxy(1,console.screen_rows);
 		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-3);
+		console.gotoxy(1,console.screen_rows-6);
 		bbs.get_telegram(user.number);
 	}
 	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG) {
