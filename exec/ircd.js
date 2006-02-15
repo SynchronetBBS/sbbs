@@ -1397,9 +1397,9 @@ function IRCClient_global(target,type_str,send_str) {
 			Client.originatorout(global_str,this);
 	}
 	global_str = ":" + this.nick + " " + global_str;
-	if(this.local)
+	if(this.local && this.parent) /* Incoming from a local server */
 		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(global_str);
-	else if (this.flags&OLINE_CAN_GGNOTICE)
+	else if (this.flags&OLINE_CAN_GGNOTICE) /* From a local oper */
 		server_bcast_to_servers(global_str);
 	return 1;
 }
