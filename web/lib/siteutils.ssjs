@@ -10,6 +10,14 @@ var portnum="";
 
 template.name_logo='<h1 id="siteName">' + system.name + '</h1>';
 
+if((host = http_request.vhost)==undefined)
+    host = http_request.host;
+if(host==undefined || !host.length)
+    host = system.host_name;
+var port = host.indexOf(':');
+if(port>=0)
+    host=host.slice(0,port);
+
 var http_port = 80;
 var irc_port = 6667;
 var ftp_port = 21;
@@ -40,31 +48,6 @@ if(file.open("r")) {
     finger_port = file.iniGetValue("finger","port",finger_port);
     file.close();
 } 
-
-if(telnet_port=="23")
-  telnet_port="";
-else 
-  telnet_port = ":" + telnet_port;
-if(rlogin_port=="513")
-  rlogin_port="";
-else 
-  rlogin_port = ":" + rlogin_port;
-if(ftp_port=="21")
-  ftp_port="";
-else 
-  ftp_port = ":" + ftp_port;
-if(irc_port=="6667")
-  irc_port="";
-else 
-	irc_port = ":" + irc_port;
-if(nntp_port=="119")
-  nntp_port="";
-else
-  nntp_port = ":" + nntp_port;
-if(gopher_port=="70")
-  gopher_port='';
-else 
-  gopher_port = ":" + gopher_port;  
 
 if(this.web_root_dir!=undefined && file_exists(web_root_dir + template.image_dir + "/logo.png"))
     template.name_logo='<div id="siteName"><img src="' + template.image_dir + '/logo.png" style="float: left; height: 75px; width: 225px;" alt="Synchronet" title="Synchronet" /></div>';
@@ -97,14 +80,6 @@ if(CurrTheme=="NightShade") {
     template.total_email = addcommas(system.stats.total_email);
     template.total_files = addcommas(system.stats.total_files);
 
-    if((host = http_request.vhost)==undefined)
-        host = http_request.host;
-    if(host==undefined || !host.length)
-        host = system.host_name;
-    var port = host.indexOf(':');
-    if(port>=0)
-        host=host.slice(0,port);
-        
 	template.additional_services ='[' + ("java telnet".link("telnet/")) + '] ';
     template.additional_services+='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
     template.additional_services+='[' + ("rlogin".link("rlogin://"+host +rlogin_port)) + '] ';
