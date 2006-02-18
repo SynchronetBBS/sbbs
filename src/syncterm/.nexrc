@@ -1,0 +1,5 @@
+:set ts=4
+:set ai
+:set extended
+:set ruler
+:set showmatch
