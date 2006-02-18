@@ -501,7 +501,8 @@ function Server_Work() {
 					}
 				}
 				var true_hops = parseInt(NewNick.hops)+1;
-				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode(true) + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname);
+				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode(true) + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname,BAHAMUT);
+				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 :" + NewNick.realname,DREAMFORGE);
 			} else { // we're a user changing our nick.
 				var ctuc = cmd[1].toUpperCase();
 				if ((Users[ctuc])&&Users[ctuc].nick.toUpperCase() !=
@@ -871,7 +872,8 @@ function Server_Work() {
 				ThisOrigin.channels[chan.nam.toUpperCase()] = chan;
 				chan.users[ThisOrigin.id] = ThisOrigin;
 				ThisOrigin.bcast_to_channel(chan, "JOIN " + chan.nam, false);
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam,BAHAMUT);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " JOIN " + chan.nam,DREAMFORGE);
 			}
 			break;
 		case "SQUIT":
@@ -1008,7 +1010,6 @@ function Server_Work() {
 				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
 					break; // someone messed up.
-				log("dest_server: " + dest_server);
 				dest_server.rawout(":" + ThisOrigin.nick + " VERSION :" + dest_server.nick);
 			}
 			break;
@@ -1203,7 +1204,12 @@ function IRCClient_server_chan_info(sni_chan) {
 	if (this.type == DREAMFORGE) {
 		var df_chan_occs = sni_chan.occupants().split(' ');
 		for (dfocc in df_chan_occs) {
-			this.rawout(":" + df_chan_occs[dfocc] + " JOIN " + sni_chan.nam);
+			var cmember = df_chan_occs[dfocc];
+			if (cmember[0] == "@")
+				cmember = cmember.slice(1);
+			if (cmember[0] == "+")
+				cmember = cmember.slice(1);
+			this.rawout(":" + cmember + " JOIN " + sni_chan.nam);
 		}
 		this.ircout("MODE " + sni_chan.nam + " " + sni_chan.chanmode(true) + " " + sni_chan.created);
 	} else { /* Bahamut */

@@ -380,7 +380,9 @@ function Unregistered_Welcome() {
 		") [" + this.ip + "] {" + hcc_counter + "}");
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	server_bcast_to_servers("NICK " + this.nick + " 1 " + new_user.created + " + " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(new_user.ip) + " :" + this.realname);
+	var nickstr = "NICK " + this.nick + " 1 " + new_user.created + " ";
+	server_bcast_to_servers(nickstr + "+ " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(new_user.ip) + " :" + this.realname,BAHAMUT);
+	server_bcast_to_servers(nickstr + this.uprefix + " " + this.hostname + " " + servername + " 0 " + " :" + this.realname,DREAMFORGE);
 	// we're no longer unregistered.
 	delete Unregistered[this.id];
 	delete this;

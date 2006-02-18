@@ -104,6 +104,8 @@ function true_array_len(my_array) {
 }
 
 function ip_to_int(ip) {
+	if (!ip)
+		return 0;
 	var quads = ip.split(".");
 	var addr = (quads[0]&0xff)<<24;
 	addr|=(quads[1]&0xff)<<16;

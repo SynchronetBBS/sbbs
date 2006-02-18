@@ -598,7 +598,7 @@ function IRCClient_do_join(chan_name,join_key) {
 		}
 		if (chan_name[0] != "&")
 			server_bcast_to_servers(":" + this.nick + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam,BAHAMUT);
-			server_bcast_to_servers(":" + this.nick + " JOIN " + Channels[chan].created,DREAMFORGE);
+			server_bcast_to_servers(":" + this.nick + " JOIN " + Channels[chan].nam + " " + Channels[chan].created,DREAMFORGE);
 	} else {
 		// create a new channel
 		Channels[chan]=new Channel(chan);
