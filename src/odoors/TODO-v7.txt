@@ -21,3 +21,6 @@ Features/Changes which will break the API and so must go into v7
   SSH, is the door supposed to do SSH also?  A local socket would work, but it
   seems like the Wrong Thing.  The main reason stdio is out is that there's no
   standard way of passing hangup info etc.
+- Check the timestamp on the dropfile... do not use an old one!  Add and
+  od_control variable to prevent this behaviour.
+
