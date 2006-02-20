@@ -449,6 +449,9 @@ function Server_Work() {
 						break;
 					}
 				}
+				var uprefixptr = 5; /* Bahamut */
+				if (this.type == DREAMFORGE)
+					uprefixptr = 4;
 				if (!this.hub) {
 					if(!this.check_nickname(cmd[1],true)) {
 						gnotice("Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1] + ", killed.");
@@ -459,12 +462,12 @@ function Server_Work() {
 					cmd[3] = time(); // Force TS on nick.
 					cmd[7] = this.nick // Force server name
 				} else { // if we're a hub
-					var test_server = searchbyserver(cmd[7]);
+					var test_server = searchbyserver(cmd[uprefixptr+2]);
 					if (!test_server || (this.nick !=
 					    test_server.parent)) {
 						if (debug && test_server)
 							log(LOG_DEBUG,"this.nick: " + this.nick + " test_server.parent: " + test_server.parent);
-						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce nick from server not behind it: " + cmd[1] + "@" + cmd[7]);
+						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce nick from server not behind it: " + cmd[1] + "@" + cmd[uprefixptr+2]);
 						this.ircout("KILL " + cmd[1] + " :Invalid Origin.");
 						break;
 					}
@@ -477,9 +480,6 @@ function Server_Work() {
 				NewNick.nick = cmd[1];
 				NewNick.hops = cmd[2];
 				NewNick.created = cmd[3];
-				var uprefixptr = 5; /* Bahamut */
-				if (this.type == DREAMFORGE)
-					uprefixptr = 4;
 				NewNick.uprefix = cmd[uprefixptr];
 				NewNick.hostname = cmd[uprefixptr+1];
 				NewNick.servername = cmd[uprefixptr+2];
@@ -495,7 +495,7 @@ function Server_Work() {
 				if (this.type == BAHAMUT)
 					NewNick.setusermode(cmd[4]);
 				for (u in ULines) {
-					if (ULines[u] == cmd[7]) {
+					if (ULines[u] == cmd[uprefixptr+2]) {
 						NewNick.uline = true;
 						break;
 					}

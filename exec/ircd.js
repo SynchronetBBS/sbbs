@@ -406,10 +406,25 @@ function connect_to_server(this_cline,the_port) {
 	connect_sock = new Socket();
 	connect_sock.bind(0,server.interface_ip_address);
 	connect_sock.connect(this_cline.host,the_port,ob_sock_timeout);
+
+	var sendts = true; /* Assume Bahamut */
+
+	for (nl in NLines) {
+		var mynl = NLines[nl];
+		if ((mynl.flags&NLINE_IS_DREAMFORGE) && 
+		    (mynl.servername == this_cline.servername)) {
+			sendts = false;
+			break;
+		}
+	}
+
 	if (connect_sock.is_connected) {
 		umode_notice(USERMODE_ROUTING,"Routing",
 			"Connected!  Sending info...");
-		connect_sock.send("PASS " + this_cline.password + " :TS\r\n");
+		var sendstr = "PASS " + this_cline.password;
+		if (sendts)
+			sendstr += " :TS";
+		connect_sock.send(sendstr + "\r\n");
 		connect_sock.send("CAPAB " + server_capab + "\r\n");
 		connect_sock.send("SERVER " + servername + " 1 :" + serverdesc + "\r\n");
 		new_id = "id" + next_client_id;
