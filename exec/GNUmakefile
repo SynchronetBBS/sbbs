@@ -44,14 +44,3 @@ all : 	bullseye.bin \
 
 %.bin : %.src $(BAJAPATH)
 	@$(BAJAPATH) /q $<
-
-devel : tags cscope.out
-
-tags: cscope.files
-	exctags -VL cscope.files
-
-cscope.out: cscope.files
-	cscope -b
-
-cscope.files::
-	find . -name '*.js' > cscope.files
