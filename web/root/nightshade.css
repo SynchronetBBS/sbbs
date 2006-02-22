@@ -1,0 +1,910 @@
+/* NightShade Theme */
+
+/* $Id$ */
+
+ body {
+	margin: 0px;
+	padding: 0px;
+	font-size: 11pt;
+	font-family: georgia, times, "times new roman", serif; 
+	color: #9DAAD9;
+	font-weight: normal;
+	background: #1f2346;
+}
+
+ a:link {
+	color: #0099CC;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #06A;
+	text-decoration: none;
+}
+
+a:hover ,a:active {
+	color: #fff;
+	text-decoration: underline;
+
+}
+
+ div#banner {
+	border-bottom: 1px solid #000;
+	margin-bottom: 0px;
+}
+
+ div#banner h1 {
+	margin: 0;
+	padding: .3em 0 .3em .5em;
+	font-size: 30px;
+	font-weight: normal;
+	float: left;
+}
+
+ div#greeting {
+	margin: 0;
+	padding: 15px 5px 5px 5px;
+	font-size: 11px;
+	font-weight: normal;
+	float: right;
+}
+
+div#breadcrumb {
+	border: solid 5px #0c3356;
+	background-color: #3f4568;	
+	margin-left: 10px;
+	margin-right: 10px;
+	padding-bottom: 3px;
+	margin-top:5px;
+}
+
+ div#container {
+	background-color: #1f2346;
+}
+
+ div#container2 {
+	background-color: #1f2346;
+}
+
+ div#navcontainer {
+ 	margin-left: 10px;
+	padding-top: 3px;
+	padding-bottom: 10px;
+	float: left;
+	width: 190px;
+ 	border: solid 5px #0c3356;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	margin-left: 5px;
+	margin-top: 10px;
+}
+
+html>body #navcontainer {
+  margin-left: 10px;
+  margin-top: 0px;
+  margin-bottom: 10px;
+} 
+
+ div#navigation {
+	float: left;
+	width: 180px;
+}
+
+ div#navigation h4 {
+ 	font-size: 16px;
+	text-align: center;
+	background-color: #3f4568;
+	height: 20px;
+	margin: 0px;
+	padding: 0px;
+}
+
+ div#navigation ul {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+ div#navigation ul li { 
+	margin-top: 4px;
+	margin-bottom: 4px;
+	padding: 0;
+	height: 0px;
+}
+
+ .sectionSubLinks {
+ 	margin-left: 25px;
+	margin-top: 4px;
+	margin-bottom: 4px;
+ 	color: #CC3399;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+ ul.sectionSubLinks {
+	margin-top: 4px;
+	margin-bottom: 4px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	margin-top: 0px;
+	margin-bottom: 0px;	
+}
+
+ li.sectionSubLinks {
+	margin-top: 4px;
+	margin-bottom: 4px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+
+ a.sectionSubLinks {
+ 	color: #CC3399;
+}
+
+ html>body #navigation ul li {
+	height: 25px;
+}
+
+ #navigation ul li a {
+ 	position: relative;
+ 	font-weight: bold;
+	display: block; 
+	margin-left: 7px;
+	padding: 3px 5px 3px 10px;
+	text-decoration: none;
+	color: #567194;
+	border-top: solid 1px #89a3b7;
+	border-left: solid 1px white;
+	border-bottom: solid 1px black;
+	border-right: solid 1px black;
+}
+
+ #navigation ul li a:hover {
+	color: #fff;
+	text-decoration: underline;
+	border-top: solid 1px black;
+	border-left: solid 1px black;
+	border-bottom: solid 1px #89a3b7;
+	border-right: solid 1px white;
+}
+
+ div#more_invisible {
+	width: 200px;
+	float: right;
+	margin-top: 10px; 
+	margin-right: 10px;
+	margin-bottom: 10px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	margin-right: 5px;
+	margin-top: 10px; 
+ }
+
+html>body #more_invisible {
+	margin-right: 10px;
+	margin-top: 0px;
+
+}
+
+ div#morecontainer {
+	padding: 3px;
+ 	border: solid 5px #0c3356;
+	background-color: #3f4568;
+}
+
+ html>body #morecontainer {
+	margin-right: 0px;
+	margin-top: 0px;
+}
+
+ div#more {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+}
+
+ div#right_nodelistcontainer {
+	margin-bottom: 10px;
+	padding: 3px;
+ 	border: solid 5px #0c3356;
+	background-color: #3f4568;
+}
+
+ div#right_nodelist {
+ 	font-weight: normal;
+	font-size: 11px;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+}
+
+.stats {
+	width: 100%;
+	background-color: #1f2346;
+	padding: 0;
+}
+
+.stats2 {
+	background-color: #3f4568;
+}
+
+.stats3 {
+	font-size: 16px;
+	background-color: #3f4568;
+}
+
+.r_nodelist {
+	background-color: #1f2346;
+	padding: 0;
+}
+
+.r_nodelist2 {
+	width: 100%;
+	background-color: #3f4568;
+}
+
+.r_nodelist3 {
+	font-size: 16px;
+	background-color: #3f4568;
+}
+
+ div#nodelist {
+ 	height: 1%;
+ 	font-weight: normal;
+	margin: 5px;
+	padding: 5px 5px 5px 5px;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	overflow: auto;
+}
+
+ html>body #nodelist {
+ 	padding: 5px 5px 5px 5px;
+}
+
+.nlist {
+	height: 1%;
+	width: 100%;
+	background-color: #1f2346;
+	padding: 0;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	width: auto;
+}
+
+ html>body .nlist {
+ 	height: 1%;
+ 	width: 100%
+}
+
+.nlist2 {
+	background-color: #3f4568;
+}
+
+.newuser {
+	height: 1%;
+	width: 100%;
+	background-color: #1f2346;
+	padding: 0;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	width: 95%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+ html>body .newuser {
+ 	width: 100%
+}
+
+.newuser2 {
+	background-color: #3f4568;
+}
+
+ div#usrlist {
+	width: 90%;
+ 	height: 1%;
+ 	font-weight: normal;
+	padding: 5px 5px 5px 5px;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	margin-left: auto;
+	margin-right: auto;
+	overflow: auto;
+}
+
+.userlist {
+	background-color: #1f2346;
+	padding: 0
+}
+
+.userlist2 {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.userlist2 a {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.userlist2right {
+	background-color: #3f4568;
+	text-align: right;
+}
+
+ div#usrstats {
+ 	height: 1%;
+	width: 90%;
+ 	font-weight: normal;
+	margin: 5px;
+	padding: 5px 5px 5px 5px;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	margin-left: auto;
+	margin-right: auto;
+	overflow: auto;
+}
+
+ html>body div#usrstats {
+	text-align: left;
+	padding: 5px 5px 5px 0px;
+}
+
+.userstats2 {
+	background-color: #1f2346;
+	padding: 0
+}
+
+.userstats {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.userstats a {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.userstatsright {
+	background-color: #3f4568;
+	text-align: right;
+}
+
+table.lastcallers {
+	height: 1%;
+    padding: 0px; 
+    border-top: 2px solid #000000; 
+    border-left: 2px solid #000000; 
+    border-bottom: 2px solid #8fb8bc; 
+    border-right: 2px solid #8fb8bc; 
+    font-size: 11px; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #3f4568;
+	overflow: auto;
+}
+
+ div#grplist {
+ 	height: 1%;
+ 	margin-left: auto;
+	margin-right: auto;
+ 	font-weight: normal;
+	margin: 5px;;
+	padding: 5px 5px 5px 5px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	overflow: auto;
+}
+
+ html>body #grplist {
+	padding: 5px 5px 5px 5px;
+}
+
+.grouplist {
+	background-color: #1f2346;
+	padding: 0;
+	text-align: left;
+}
+
+.grouplist2 {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.grouplist2r {
+	background-color: #3f4568;
+	text-align: right;
+}
+
+ div#subslist {
+ 	height: 1%;
+	width: 90%;
+ 	font-weight: normal;
+	margin: 5px;
+	padding: 5px 5px 5px 5px;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	margin-left: auto;
+	margin-right: auto;
+	overflow: auto;
+}
+
+ html>body div#subslist {
+	text-align: left;
+	padding: 5px 5px 5px 0px;
+}
+
+.sublist {
+	background-color: #1f2346;
+	padding: 0
+}
+
+.sublist2 {
+	background-color: #3f4568;
+	text-align: left;
+}
+
+.sublist2center {
+	background-color: #3f4568;
+	text-align: center;
+}
+
+ div#sbinfo {
+ 	font-weight: normal;
+	margin: 5px;
+	padding: 5px 5px 5px 5px;
+	background-color: #3f4568;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+}
+
+ html>body #sbinfo {
+	padding: 5px 5px 5px 5px;
+}
+
+table.subinfo {
+	height: 1%; 
+    width: 45%; 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #1f2346; 
+}
+
+td.subinfbold { 
+    width: 1%; 
+    font-weight: bold; 
+	background-color: #3f4568;
+}
+
+td.subinfo { 
+    white-space: nowrap; 
+    font-weight: bold; 
+	background-color: #3f4568;
+}
+
+td.subinfonwr { 
+    white-space: nowrap; 
+	background-color: #3f4568;
+}
+
+.msglistA {
+	background-color: #1f2346;
+	padding: 0;
+	white-space: normal;
+}
+
+.msglistB {
+	background-color: #3f4568;
+	white-space: normal;
+}
+
+.msglist1 {
+	background-color: #2e3456;
+	font-size: 12px;
+}
+
+.msglist2 {
+	background-color: #3f4568;
+	font-size: 12px;
+}
+
+ div#msgs {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+	width: 95%;
+	overflow: auto;
+}
+
+ html>body #msgs {
+ 	width: auto;
+}
+
+ div#msgs a {
+ 	font-size: 14px;
+}
+
+ div#msg {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+	overflow: auto;
+}
+
+ html>body #msg {
+ 	padding: 5px 5px 5px 5px;
+}
+
+ div#post {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+}
+
+ div#msgposted {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+}
+
+ html>body #msgposted {
+	padding: 5px 5px 5px 5px;
+}
+
+.msgtableA {
+	background-color: #1f2346;
+	padding: 0;
+}
+
+.msgtableB {
+	background-color: #3f4568;
+	padding: 5px;
+}
+
+.msgtableC {
+	background-color: #3f4568;
+	padding: 5px;
+	white-space: nowrap;
+}
+
+.msgtableD {
+	text-align: center;
+}
+
+.msgtableE {
+	background-color: #3f4568;
+	text-align: center;
+}
+
+pre { 
+    background-color: black; 
+    color: #aaaaaa; 
+    font-family: monospace; 
+    padding: 3px; 
+    font-size:11pt; 
+}
+
+pre.leftalign { 
+    background-color: black; 
+    color: #aaaaaa; 
+    text-align: left; 
+    font-family: monospace;	
+    padding: 3px; 
+    font-size: 11pt;
+	overflow: auto;
+}
+
+pre.leftalignwht { 
+    background-color: white; 
+    color: #000000; 
+    text-align: left; 
+    font-family: monospace;	
+    padding: 3px; 
+    font-size: 11pt; 
+	overflow: auto;
+}
+
+.sublist2lft {
+	text-align: left;
+	background-color: #3f4568;
+}
+
+.sublist2right {
+	text-align: right;
+	background-color: #3f4568;
+}
+
+ div#contentcontainer {
+ 	position: relative;
+ 	border: solid 5px #0c3356;
+ 	padding-left: 5px;
+	padding-right: 5px;
+	margin-top: 10px;
+	margin-left: 220px;
+	margin-right: 220px;
+	margin-bottom: 10px;
+	background-color: #3f4568;
+	voice-family: "\"}\""; 
+	voice-family:inherit;
+}
+
+ div#contentcontainer2 {
+ 	position: relative;
+ 	border: solid 5px #0c3356;
+ 	padding-left: 5px;
+	padding-right: 5px;
+	margin: 20px;
+	background-color: #3f4568;
+	voice-family: "\"}\""; 
+	voice-family:inherit;
+}
+
+ div#contentcontainer3 {
+ 	position: relative;
+ 	border: solid 5px #0c3356;
+	margin-top: 10px;
+	margin-left: 220px;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	background-color: #3f4568;
+	voice-family: "\"}\""; 
+	voice-family:inherit;
+}
+
+ div#content {
+	font-weight: normal;
+	background-color: #3f4568;
+	line-height: 150%;
+	background: url(wolf3.gif) no-repeat fixed center ; 
+}
+
+ div#content p {
+ 	margin: 0px;
+	font-family: georgia, times, "times new roman", serif; 
+}
+
+ div#content h2 {
+	font-size: 2em;
+	color: #036;
+	margin: 0;
+	padding-top: 1em;
+	font-weight: normal;
+}
+
+ div#content2 {
+	font-weight: normal;
+	background-color: #3f4568;
+}
+
+ div#content2 p {
+ 	margin: 0px;
+	font-family: georgia, times, "times new roman", serif; 
+}
+
+ div#content2 h2 {
+	font-size: 2em;
+	color: #036;
+	margin: 0;
+	padding-top: 1em;
+	font-weight: normal;
+}
+
+ .cleardiv {
+	clear: both;
+}
+
+ html>body .cleardiv {
+	clear: both;
+	height: 1px;
+}
+
+ .cleardiv2 {
+	clear: both;
+	border-bottom: 1px solid #000;
+}
+
+ html>body .cleardiv2 {
+	clear: both;
+	height: 1px;
+	border-bottom: 1px solid #000;
+}
+
+ div#footer {
+ 	float: left;
+	clear: both;
+	padding: 5px 10px;
+	text-align: left;
+	font-size: 10px;
+}
+
+div#footer a {
+	text-decoration: none;
+}
+
+div#footer a:hover, a:active {
+	text-decoration: underline;
+}
+
+ div#footerright {
+ 	float: right;
+	padding: 5px 10px;
+	text-align: right;
+	font-size: 10px;
+}
+
+div#footerright a {
+	text-decoration: none;
+}
+
+div#footerright a:hover, a:active {
+	text-decoration: underline;
+}
+
+ div#main_nodelist {
+  	background-color: #1f2346;
+}
+
+ div#main_nodelist table {
+ 	background-color: #3f4568;
+}
+
+/* From original syncronet.css for top links */
+
+.tlink { 
+    color: #567194;
+    margin: 0px;
+	padding-left: 3px;
+}
+
+.terror { 
+    font-size: small; 
+    color: #FF0000; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+}
+
+a.tlink, a.tlink:visited { 
+    font-size: smaller; 
+    color: #567194;
+    font-weight: bold; 
+    margin: 0px;
+	padding-bottom: 0px;
+	padding-left: 5px;
+	padding-right: 5px;
+    border-right: 1px solid #8fb8bc; 
+    text-decoration:none; 
+}
+
+a.tlink2, a.tlink2:visited { 
+    font-size: smaller; 
+    color: #567194;
+    font-weight: bold; 
+    margin: 0px;
+	padding-bottom: 0px;
+	padding-left: 5px;
+	padding-right: 5px;
+    text-decoration:none; 
+}
+
+a.tlink:hover { 
+    text-decoration: underline;
+	color: #FFFFFF;
+}
+
+a.tlink2:hover { 
+    text-decoration: underline;
+	color: #FFFFFF;
+}
+
+table.postmsg { 
+    margin-left: auto; 
+    margin-right: auto; 
+    font-size:11pt;
+	background-color: #1f2346;
+}
+
+td.postmsg {
+	background-color: #3f4568;
+}
+
+input.postmsg { 
+    background-color: black; 
+    color: #aaaaaa;
+	border: solid 1px #8fb8bc; 
+}
+
+textarea.postmsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+	border: solid 1px #8fb8bc; 
+}
+
+table.posted { 
+    margin-left: auto; 
+    margin-right: auto; 
+	background-color: #1f2346;
+}
+
+td.posted { 
+	background-color: #3f4568;
+}
+
+p.posted { 
+    text-align: center; 
+}
+
+table.replymsg { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #3f4568;
+}
+
+td.replymsg { 
+    background-color: #3f4568;
+}
+
+textarea.replymsg { 
+    background-color: black; 
+    color: #aaaaaa;
+	border: solid 1px #8fb8bc;
+}
+
+input.replymsg { 
+    background-color: black; 
+    color: #aaaaaa; 
+	border: solid 1px #8fb8bc;
+}
+
+ div#sinfo {
+ 	font-weight: normal;
+	margin: 0;
+	padding: 5px 5px 5px 5px;
+	voice-family: "\"}\"";
+	voice-family:inherit;
+	padding: 5px 5px 0px 5px;
+}
+
+ html>body #sinfo {
+	padding: 5px 5px 5px 5px;
+}
+
+table.sysinfo { 
+    margin-left: auto; 
+    margin-right: auto; 
+    background-color: #1f2346; 
+}
+
+td.sysinfo { 
+    background-color: #3f4568;
+	text-align:left;
+} 
+
+td.sysinforight { 
+    background-color: #3f4568;
+	text-align:right;
+} 
