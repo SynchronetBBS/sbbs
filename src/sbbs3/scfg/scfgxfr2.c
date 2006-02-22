@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -36,6 +36,34 @@
 #include "scfg.h"
 
 #define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
+
+void create_raw_dir_list(const char* list_file)
+{
+	char	path[MAX_PATH+1];
+	char*	p;
+	glob_t	g;
+	int		gi;
+	FILE*	fp;
+
+	SAFECOPY(path, list_file);
+	if((p=getfname(path))!=NULL)
+		*p=0;
+	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory",path,sizeof(path)-1
+		,K_EDIT)<1)
+		return;
+	strcat(path,ALLFILES);
+	if((fp=fopen(list_file,"w"))==NULL) {
+		SAFEPRINTF2(path,"Create Failure (%u): %s", errno, list_file);
+		uifc.msg(path);
+		return; 
+	}
+	glob(path,GLOB_ONLYDIR,NULL,&g);
+   	for(gi=0;gi<g.gl_pathc;gi++)
+		fprintf(fp,"%s\n",getfname(g.gl_pathv[gi]));
+	globfree(&g);
+	fclose(fp);
+}
+
 
 void xfer_cfg()
 {
@@ -422,6 +450,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 				strcpy(opt[k++],"DIRS.TXT    (Synchronet)");
                 strcpy(opt[k++],"FILEBONE.NA (Fido)");
 				strcpy(opt[k++],"DIRS.RAW    (Raw)");
+				strcpy(opt[k++],"Directory Listing...");
 				opt[k][0]=0;
 				k=0;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -437,12 +466,28 @@ command: DIR /ON /AD /B > DIRS.RAW
 					backslash(str);
 					strcat(str,"dirs.raw");
 				}
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
-					,str,sizeof(str)-1,K_EDIT)<=0)
-                    break;
+				if(k==3)
+					create_raw_dir_list(tmpnam(str));
+				else {
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
+						,str,sizeof(str)-1,K_EDIT)<=0)
+						break;
+					if(k==2 && !fexistcase(str)) {
+						strcpy(opt[0],"Yes");
+						strcpy(opt[1],"No");
+						opt[2][0]=0;
+						j=0;
+						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
+							,"File doesn't exist, create it?",opt)==0)
+							create_raw_dir_list(str);
+					}
+				}
+				if(!fexistcase(str))
+					break;
 				if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 					uifc.msg("Open Failure");
-                    break; }
+                    break; 
+				}
 				uifc.pop("Importing Areas...");
 				while(!feof(stream)) {
 					if(!fgets(str,128,stream)) break;
@@ -458,7 +503,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 					p=str;
 					while(*p && *p<=' ') p++;
 
-					if(k==2) { /* raw */
+					if(k>=2) { /* raw */
 						SAFECOPY(tmp_code,p);
 						SAFECOPY(tmpdir.lname,p);
 						SAFECOPY(tmpdir.sname,p);
