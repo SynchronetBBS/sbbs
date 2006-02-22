@@ -1577,7 +1577,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	else
 		js_str = JS_NewStringCopyZ(cx, tmpbuf);
 
-	free(tmpbuf);
+	free(tmpbuf);	/* assertion here, Feb-20-2006 */
 	if(js_str==NULL)
 		return(JS_FALSE);
 
