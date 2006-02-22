@@ -49,7 +49,7 @@ if(file.open("r")) {
     file.close();
 } 
 
-if(this.web_root_dir!=undefined && file_exists(web_root_dir + template.image_dir + "/logo.png"))
+if(this.web_root_dir!=undefined && file_exists(web_root_dir + template.image_dir + "/logo.gif"))
     template.name_logo='<div id="siteName"><img src="' + template.image_dir + '/logo.gif" style="float: left; alt="Synchronet" title="Synchronet" /></div>';
 
 /*  System Stats */
