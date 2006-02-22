@@ -55,7 +55,7 @@ if(this.web_root_dir!=undefined && file_exists(web_root_dir + template.image_dir
 /*  System Stats */
 
 
-if(CurrTheme=="NightShade") {
+if(do_extra) {
 	
     total=time()-system.uptime;
     days   = Math.floor(total/(24*60*60));

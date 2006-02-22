@@ -16,6 +16,7 @@ Themes["Default"].do_topnav=true;
 Themes["Default"].do_leftnav=true;
 Themes["Default"].do_rightnav=false;
 Themes["Default"].do_footer=true;
+Themes["Default"].do_extra=false;
 
 Themes["NightShade"]=new Object;
 Themes["NightShade"].desc="NightShade";
@@ -27,3 +28,5 @@ Themes["NightShade"].do_topnav=true;
 Themes["NightShade"].do_leftnav=true;
 Themes["NightShade"].do_rightnav=true;
 Themes["NightShade"].do_footer=true;
+Themes["NightShade"].do_extra=true;
+

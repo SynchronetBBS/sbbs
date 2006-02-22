@@ -23,7 +23,7 @@
 
 template.leftnav=new Array;
 
-if(CurrTheme=="NightShade") {
+if(do_extra) {
 if(user.number==0 || user.security.restrictions&UFLAG_G)
     
     template.leftnav.push({html: '<li><a href="/login.ssjs">Login</a></li><li><a href="/newuser.ssjs">New User</a></li>' });

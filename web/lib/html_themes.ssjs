@@ -15,6 +15,7 @@ var do_topnav = true;
 var do_leftnav = true;
 var do_rightnav = true;
 var do_footer = true;
+var do_extra = false;
 
 /* Read in current users selected theme if it exists */
 if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
@@ -33,6 +34,7 @@ do_topnav = Themes[CurrTheme].do_topnav;
 do_leftnav = Themes[CurrTheme].do_leftnav;
 do_rightnav = Themes[CurrTheme].do_rightnav;
 do_footer = Themes[CurrTheme].do_footer;
+do_extra = Themes[CurrTheme].do_extra;
 template.image_dir = Themes[CurrTheme].image_dir;
 
 if(http_request.query.force_ssjs_theme != undefined) {

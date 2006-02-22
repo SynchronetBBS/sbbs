@@ -12,7 +12,7 @@ template.author_avatar = '';
 /* file corresponding to the page you want to overide the */
 /*           default display type for the theme			  */
 
-if(CurrTheme=="NightShade") {
+if(do_extra) {
 	do_leftnav=false;
 	do_rightnav=false;
 }
