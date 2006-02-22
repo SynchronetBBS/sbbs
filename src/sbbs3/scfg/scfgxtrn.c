@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1187,8 +1187,13 @@ specific user event, select the event. Otherwise, select No.
 				if(cfg.xtrn[i]->event!=k) {
 					cfg.xtrn[i]->event=k;
 					uifc.changes=TRUE; }
-				if(!cfg.xtrn[i]->event)
+				if(!cfg.xtrn[i]->event) {
+					if(cfg.xtrn[i]->misc&EVENTONLY) {
+						cfg.xtrn[i]->misc&=~EVENTONLY;
+						uifc.changes=TRUE; 
+					}
 					break;
+				}
 				k=cfg.xtrn[i]->misc&EVENTONLY ? 0:1;
                 strcpy(opt[0],"Yes");
                 strcpy(opt[1],"No");
