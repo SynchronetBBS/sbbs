@@ -52,21 +52,21 @@ if(file_exists(prefs_dir +format("%04d.html_prefs",u.number))) {
 
 
 if(usr.icq==undefined)
-	usr.icq='Unavailable';
+	usr.icq='';
 if(usr.msn==undefined)
-	usr.msn='Unavailable';
+	usr.msn='';
 if(usr.yahoo==undefined)
-	usr.yahoo='Unavailable';
+	usr.yahoo='';
 if(usr.aim==undefined)
-	usr.aim='Unavailable';
+	usr.aim='';
 if(usr.homepage==undefined)
-	usr.homepage='Unavailable';
+	usr.homepage='';
 if(usr.hobbies==undefined)
-	usr.hobbies='Unavailable';
+	usr.hobbies='';
 if(usr.picture==undefined)
-	usr.picture='Unavailable';
+	usr.picture='';
 if(usr.avatar==undefined)
-	usr.avatar='Unavailable';
+	usr.avatar='';
 
 if(is_sysop) {
 	template.profile.push({html: '<h1>Edit/View Profile</h1>' });
@@ -99,9 +99,9 @@ if(is_sysop) {
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Yahoo :</td><td class="userstats" align="left"><input type="text" name="yahoo" size="50" maxlength="50" value="' + usr.yahoo + '" /></td></tr>' });
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">AIM :</td><td class="userstats" align="left"><input type="text" name="aim" size="50" maxlength="50" value="' + usr.aim + '" /></td></tr>' });
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Homepage :</td><td class="userstats" align="left"><input type="text" name="homepage" size="50" maxlength="50" value="' + usr.homepage + '" /></td></tr>' });
-	template.profile.push({html: '<tr><td class="userstatsright" align="right">Hobbies :</td><td class="userstats" align="left"><input type="textarea" size="50" name="hobbies" value="' + usr.hobbies + '" /></td></tr>' });
-	template.profile.push({html: '<tr><td class="userstatsright" align="right">Picture (Link): </td><td class="userstats" align="left"><input type="textarea" size="50" name="picture" value="' + usr.picture + '" /></td></tr>' });
-	template.profile.push({html: '<tr><td class="userstatsright" align="right">Avatar (Link): </td><td class="userstats" align="left"><input type="textarea" size="50" name="avatar" value="' + usr.avatar + '" /></td></tr>' });
+	template.profile.push({html: '<tr><td class="userstatsright" align="right">Hobbies :</td><td class="userstats" align="left"><input type="text" size="50" name="hobbies" value="' + usr.hobbies + '" /></td></tr>' });
+	template.profile.push({html: '<tr><td class="userstatsright" align="right">Picture (Link): </td><td class="userstats" align="left"><input type="text" size="50" name="picture" value="' + usr.picture + '" /></td></tr>' });
+	template.profile.push({html: '<tr><td class="userstatsright" align="right">Avatar (Link): </td><td class="userstats" align="left"><input type="text" size="50" name="avatar" value="' + usr.avatar + '" /></td></tr>' });
 	template.profile.push({html: '<tr><td class="userstatsright">&nbsp;</td><td class="userstats"><br /><input type="submit" value="Update Profile" /></td></tr></table></form><br />' });	
 
 } else {
@@ -140,11 +140,11 @@ if(is_sysop) {
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">AIM: </td><td class="userstats" align="left">' + usr.aim + '</td></tr>' });
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Homepage: </td><td class="userstats" align="left">' + usr.homepage + '</td></tr>' });
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Hobbies: </td><td class="userstats" align="left">' + usr.hobbies + '</td></tr>' });
-	if(usr.picture=='Unavailable')
-	template.profile.push({html: '<tr><td class="userstatsright" align="right">Picture (Link): </td><td class="userstats" align="left">' + usr.picture + '</td></tr>' });
+	if(usr.picture=='')
+	template.profile.push({html: '<tr><td class="userstatsright" align="right" width="60%">Picture (Link): </td><td class="userstats" align="left">' + usr.picture + '</td></tr>' });
 	else
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Picture (Link): </td><td class="userstats" align="left"><a href="' + usr.picture + '">View Picture</a></td></tr>' });
-	if(usr.avatar=='Unavailable')
+	if(usr.avatar=='')
 		template.profile.push({html: '<tr><td class="userstatsright" align="right">Avatar (Link): </td><td class="userstats" align="left">' + usr.avatar + '</td></tr>' });
 	else
 	template.profile.push({html: '<tr><td class="userstatsright" align="right">Avatar (Link): </td><td class="userstats" align="left"><a href="' + usr.avatar + '">View Avatar</a></td></tr>' });
