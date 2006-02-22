@@ -10,8 +10,6 @@ grp = http_request.query.msg_grp;
 template.group=msg_area.grp[grp];
 template.subs=new Array;
 
-write_template("header.inc");
-
 for(obj in http_request.query) {
       if(obj.substr(0,4)=='sub-') {
         sub = obj.slice(4);
