@@ -2,6 +2,11 @@
 
 var is_sysop=false;
 
+if(http_request.header.referer!=undefined) {
+var p = http_request.header.referer.indexOf("/members/");
+var virtual_referer=http_request.header.referer.slice(p)
+}
+
 if(user.number==1 || user.security.level>=90)
 	is_sysop=true;
 
@@ -12,14 +17,6 @@ if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")
 else
     template.topnav.push({html: '<a class="tlink" href="/">Home</a>'});
 
-if(is_sysop) {
-if(http_request.virtual_path=="/members/viewprofile.ssjs")
-    template.topnav.push({html: '<span class="tlink">View/Edit Profile</span>'});
-} else {
-if(http_request.virtual_path=="/members/viewprofile.ssjs")
-    template.topnav.push({html: '<span class="tlink">Viewing Profile</span>'});
-}
-
 if(http_request.virtual_path=="/members/newpw.ssjs")
     template.topnav.push({html: '<span class="tlink">Changing Password</span>'});
 
@@ -28,6 +25,16 @@ if(http_request.virtual_path=="/members/changepw.ssjs")
     
 if(http_request.virtual_path=="/nodelist.ssjs")
     template.topnav.push({html: '<span class="tlink">Who\'s Online</span>'});
+
+if(http_request.virtual_path=="/members/viewprofile.ssjs" && virtual_referer=="/members/userlist.ssjs") {
+	if(is_sysop) {
+		if(http_request.virtual_path=="/members/viewprofile.ssjs")
+		    template.topnav.push({html: '<span class="tlink">View/Edit Profile</span>'});
+		} else {
+		if(http_request.virtual_path=="/members/viewprofile.ssjs")
+		    template.topnav.push({html: '<span class="tlink">Viewing Profile</span>'});
+		}
+}	
 
 if(http_request.virtual_path=="/members/userlist.ssjs")
     template.topnav.push({html: '<span class="tlink">User List</span>'});
@@ -38,10 +45,21 @@ if(http_request.virtual_path=="/newuser.ssjs")
 if(http_request.virtual_path=="/members/lastcallers.ssjs")
     template.topnav.push({html: '<span class="tlink">Last Callers</span>'});
 
+if(http_request.virtual_path=="/irc/index.ssjs")
+    template.topnav.push({html: '<span class="tlink">IRC Chat</span>'});
+
 if(http_request.virtual_path=="/members/info.ssjs")
     template.topnav.push({html: '<span class="tlink">Information Menu</span>'});
-else if(http_request.virtual_path=="/members/userstats.ssjs" || http_request.virtual_path=="/members/sysinfo.ssjs" || http_request.virtual_path=="/members/editprofile.ssjs")
+else if(http_request.virtual_path=="/members/userstats.ssjs" || http_request.virtual_path=="/members/sysinfo.ssjs" || http_request.virtual_path=="/members/editprofile.ssjs" || (http_request.virtual_path=="/members/viewprofile.ssjs" && virtual_referer!="/members/userlist.ssjs"))
     template.topnav.push({html: '<a class="tlink" href="/members/info.ssjs">Information Menu</a>'});
+
+if(is_sysop) {
+if(http_request.virtual_path=="/members/viewprofile.ssjs" && virtual_referer!="/members/userlist.ssjs")
+    template.topnav.push({html: '<span class="tlink">View/Edit Profile</span>'});
+} else {
+if(http_request.virtual_path=="/members/viewprofile.ssjs" && virtual_referer!="/members/userlist.ssjs")
+    template.topnav.push({html: '<span class="tlink">Viewing Profile</span>'});
+}
 
 if(http_request.virtual_path=="/members/userstats.ssjs")
     template.topnav.push({html: '<span class="tlink">Your Information</span>'});
