@@ -158,7 +158,9 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	if(curattr==undefined)
 		curattr=this.attribute;
 	/* Expand @-codes */
-	txt=txt.replace(/@(.*)@/g,
+	if(txt==undefined || txt==null || txt.length==0)
+		return(0);
+	txt=txt.toString().replace(/@(.*)@/g,
 		function (str, code, offset, s) {
 			return bbs.atcode(code);
 		}
