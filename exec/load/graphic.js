@@ -137,10 +137,10 @@ function Graphic_scroll(lines)
 			this.data[x][y-lines].attr=this.data[x][y].attr;
 		}
 	}
-	for(y=height-lines; y<this.height; y++) {
+	for(y=this.height-lines; y<this.height; y++) {
 		for(x=0; x<this.width; x++) {
-			this.data[x][y-lines].ch=this.ch;
-			this.data[x][y-lines].attr=this.attribute;
+			this.data[x][y].ch=this.ch;
+			this.data[x][y].attr=this.attribute;
 		}
 	}
 }
@@ -151,6 +151,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	var ch;
 	var x=xpos-1;
 	var y=ypos-1;
+	var p=0;
 
 	if(curattr==undefined)
 		curattr=this.attribute;
@@ -168,7 +169,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 		ch=txt.substr(p++,1);
 		switch(ch) {
 			case '\1':		/* CTRL-A code */
-				ch=txt.substr(p++,1);
+				ch=txt.substr(p++,1).toUpperCase();
 				switch(ch) {
 					case '\1':	/* A "real" ^A code */
 						this.data[x][y].ch=ch;
@@ -177,17 +178,17 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						if(x>=this.width) {
 							x=0;
 							y++;
-							if(scroll && y==this.height) {
+							if(scroll && y>=this.height) {
 								this.scroll(1);
 								y--;
 							}
 						}
 						break;
 					case 'K':	/* Black */
-						curattr=(curattr)&0x8f;
+						curattr=(curattr)&0xf8;
 						break;
 					case 'R':	/* Red */
-						curattr=((curattr)&0xff)|RED;
+						curattr=((curattr)&0xf8)|RED;
 						break;
 					case 'G':	/* Green */
 						curattr=((curattr)&0xf8)|GREEN;
@@ -253,7 +254,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						break;
 					case ']':	/* LF */
 						y++;
-						if(scroll && y==this.height) {
+						if(scroll && y>=this.height) {
 							this.scroll(1);
 							y--;
 						}
@@ -273,19 +274,19 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				break;
 			case '\n':
 				y++;
-				if(scroll && y==this.height) {
+				if(scroll && y>=this.height) {
 					this.scroll(1);
 					y--;
 				}
 				break;
 			default:
-				this.data[x][y].ch=txt.substr(p,1);
+				this.data[x][y].ch=ch;
 				this.data[x][y].attr=curattr;
 				x++;
 				if(x>=this.width) {
 					x=0;
 					y++;
-					if(scroll && y==this.height) {
+					if(scroll && y>=this.height) {
 						this.scroll(1);
 						y--;
 					}
