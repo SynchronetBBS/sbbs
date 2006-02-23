@@ -299,4 +299,5 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				}
 		}
 	}
+	return(scrolls);
 }
