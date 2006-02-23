@@ -483,7 +483,7 @@ js_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		ch=(char)i;
 	}
 
-	str[0]=toupper(ch)&~0x20;
+	str[0]=toupper(ch)&~0x40;
 	str[1]=0;
 
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
