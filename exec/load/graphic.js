@@ -145,6 +145,7 @@ function Graphic_scroll(lines)
 	}
 }
 
+/* Returns the number of times scrolled */
 function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
@@ -152,6 +153,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	var x=xpos-1;
 	var y=ypos-1;
 	var p=0;
+	var scrolls=0;
 
 	if(curattr==undefined)
 		curattr=this.attribute;
@@ -179,6 +181,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 							x=0;
 							y++;
 							if(scroll && y>=this.height) {
+								scrolls++;
 								this.scroll(1);
 								y--;
 							}
@@ -255,6 +258,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					case ']':	/* LF */
 						y++;
 						if(scroll && y>=this.height) {
+							scrolls++;
 							this.scroll(1);
 							y--;
 						}
@@ -275,6 +279,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			case '\n':
 				y++;
 				if(scroll && y>=this.height) {
+					scrolls++;
 					this.scroll(1);
 					y--;
 				}
@@ -287,6 +292,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					x=0;
 					y++;
 					if(scroll && y>=this.height) {
+						scrolls++;
 						this.scroll(1);
 						y--;
 					}
