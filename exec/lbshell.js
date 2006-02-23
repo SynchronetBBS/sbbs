@@ -16,63 +16,109 @@
 //#
 //################################# Begins Here #################################
 
+/* Adjustable settings */
+const LBShell_Attr=0x37;
+const MessageWindow_Attr=7;
+const MessageTimeout=50;		/* 100ths of a second */
+
+
 load("sbbsdefs.js");
 load("lightbar.js");
 load("graphic.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
 load("str_cmds.js");
 var str;
-const LBShell_Attr=0x37;
 var size=file_size(system.text_dir+"lbshell_bg.bin");
 size/=2;	// Divide by two for attr/char pairs
 size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
 var BackGround=new Graphic(80,size,LBShell_Attr,' ');
 var use_bg=BackGround.load(system.text_dir+"lbshell_bg.bin");
+var MessageWindow=new Graphic(80,console.screen_rows,MessageWindow_Attr,' ');
 var bars80="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 var spaces80="                                                                               ";
-
+var msg_rows=0;
+var msg_timeouts=new Array();
+var lastmessage_time=0;
+var lastmessage_type=0;
 function get_message()
 {
-	var displayed=false;
-	var msg;
+	var rows=0;
 
-	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW) {
-		console.attributes=7;
-		console.gotoxy(1,console.screen_rows-6);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-5);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-4);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-3);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-2);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-1);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-6);
-		bbs.get_telegram(user.number);
-	}
-	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG) {
-		console.attributes=7;
-		console.gotoxy(1,console.screen_rows-3);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-2);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-1);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows);
-		console.cleartoeol();
-		console.gotoxy(1,console.screen_rows-3);
-		bbs.get_node_message(bbs.node_num);
-	}
+	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_telegram(user.number),MessageWindow_Attr,true);
+	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_node_message(bbs.node_num),MessageWindow_Attr,true);
+	return(rows);
 }
 
 function message_callback()
 {
-	get_message();
+	var rows;
+	var display=false;
+	var i;
+	var old_rows=msg_rows;
+
+	rows=get_message();
+	if(rows>0) {
+		display=true;
+		/* 
+		 * ToDo: This currently assumes that the
+		 * current menu is the only one protruding into the message window
+		 * This would not be correct with (for example) 20 external areas
+		 * and 20 externals in one area
+		 */
+		 
+		/* Create new timeout object. */
+		if(rows > console.screen_rows-1)
+			rows=console.screen_rows-1;
+		var timeout=new Object;
+		timeout.ticks=0;
+		timeout.rows=rows;
+		msg_timeouts.push(timeout);
+		msg_rows+=rows;
+		if(msg_rows > console.screen_rows-1) {
+			/* Find and remove older messages that have scrolled off the top (or at least partially). */
+			for(i=0; i<msg_timeouts.length; i++) {
+				timeout=msg_timeouts.shift();
+				msg_rows -= timeout.rows;
+				if(msg_rows < console.screen_rows-1)
+					break;
+			}
+		}
+		console.beep();
+	}
+	/* Increment the ticks and expire as necessary */
+	for(i=0; i<msg_timeouts.length; i++) {
+		msg_timeouts[i].ticks++;
+		if(msg_timeouts[i].ticks>=MessageTimeout) {
+			msg_rows -= msg_timeouts[i].rows;
+			i--;
+			msg_timeouts.shift();
+			display=true;
+		}
+	}
+	if(display) {
+		var display_rows=old_rows;
+		if(msg_rows>old_rows)
+			display_rows=msg_rows;
+		// Is this lightbar inside of the message window?
+		if(this.ypos+this.items.length-1 /* Last Used Row */ > console.screen_rows-display_rows /* Row above top row of message window */) {
+			/* Draw to left of lightbar */
+			if(this.xpos>1)
+				cleararea(1,console.screen_rows-display_rows+1,this.xpos-1,display_rows,false);
+			/* Draw below lightbar */
+			i=this.ypos+this.items[0].length;
+			if(i<=console.screen_rows)
+				cleararea(this.xpos,i,this.items[0].length,console.screen_rows-i+1,true);
+			/* Draw to right of lightbar */
+			i=this.xpos+this.items[0].length;
+			if(i<=console.screen_columns)
+				cleararea(i,console.screen_rows-display_rows+1,console.screen_columns-i+1,display_rows,true);
+		}
+		else
+			/* We can draw the whole thing. */
+			cleararea(1,console.screen_rows-display_rows+1,console.screen_columns,display_rows);
+	}
 }
 
 function Mainbar()
@@ -370,6 +416,8 @@ function Xtrnsecs()
 	for(j=0; j<xtrn_area.sec_list.length; j++)
 		this.add("< |"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[j].name,j.toString(),xtrnsecwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Xtrnsecs.prototype=new Lightbar;
 
@@ -400,6 +448,8 @@ function Xtrnsec(sec)
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
 		this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
+	this.timeout=100;
+	this.callback=message_callback;
 }
 Xtrnsec.prototype=new Lightbar;
 
@@ -1924,6 +1974,16 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 	var y;
 
 	if(use_bg) {
+		var bgx;
+		var bgy;
+		var bgw;
+		var bbh;
+		var bgxo;
+		var bgyo;
+		var between;
+		var mtop;
+
+		/* Redraw main menu line if asked */
 		if(ypos==1) {
 			console.gotoxy(1,1);
 			console.attributes=0x17;
@@ -1932,16 +1992,48 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 			ypos++;
 			height--;
 		}
-		if(height+(ypos-2)>BackGround.height) {
-			BackGround.draw(xpos,ypos,width,BackGround.height-(ypos-2),xpos-1,ypos-2);
-			for(y=ypos+(BackGround.height-(ypos-2));y<=console.screen_rows;y++) {
-				console.gotoxy(1,y);
-				console.attributes=LBShell_Attr;
-				console.cleartoeol();
-			}
+
+		/* Calculate the position of the top line of the message window */
+		mtop=console.screen_rows-msg_rows+1;
+
+		/* Calculate the correct values for the Bagkround draw */
+		bgx=xpos;
+		bgy=ypos;
+		bgxo=xpos-1;	/* zero-based */
+		bgyo=ypos-2;	/* zero-based and make allowance for top line (The top of BackGround is at line 2) */
+		bgw=width;
+		bgh=mtop-ypos;	/* Height is here to the message window */
+		if(bgyo+bgh>BackGround.height)	/* Too high? */
+			bgh=BackGround.height-bgyo;
+		if(ypos+bgh > mtop)
+			bgh=mtop-ypos;
+		if(bgw>0 && bgh>0) {	/* Anything to draw? */
+			BackGround.draw(bgx,bgy,bgw,bgh,bgxo,bgyo);
+			/* Decrement height, increment ypos to account for drawn area */
+			ypos+=bgh;
+			height-=bgh;
 		}
-		else
-			BackGround.draw(xpos,ypos,width,height,xpos-1,ypos-2);
+		if(height<=0)	/* All done? */
+			return;
+
+		while(height>0 && ypos < mtop) {
+			console.gotoxy(1,ypos);
+			console.attributes=LBShell_Attr;
+			console.cleartoeol();
+			ypos++;
+			height--;
+		}
+		if(height<=0)	/* All done? */
+			return;
+
+		/* Calculate the correct values for the MessageWindow draw */
+		bgx=xpos;
+		bgy=ypos;
+		bgxo=xpos-1;	/* zero-based */
+		bgyo=ypos-2;
+		bgw=width;
+		bgh=height;		/* The rest is all message baby */
+		MessageWindow.draw(bgx,bgy,bgw,bgh,bgxo,bgyo);
 		return;
 	}
 	for(y=ypos; y<ypos+height; y++) {
