@@ -56,10 +56,10 @@ function handle_a_ctrlkey(key)
 			clear_screen();
 			console.handle_ctrlkey(key);
 			redraw=true;
-			break;
 			draw_main(true);
 			for(i=0; i<menus_displayed.length; i++)
 				menus_displayed[i].draw();
+			break;
 	}
 	console.pause;
 }
