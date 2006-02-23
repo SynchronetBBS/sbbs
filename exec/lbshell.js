@@ -46,22 +46,24 @@ var orig_passthru=console.ctrlkey_passthru;
 function handle_a_ctrlkey(key)
 {
 	var i;
+	var pause=false;
 	switch(key) {
 		case ctrl('O'):	/* CTRL-O - Pause */
 			break;
 		case ctrl('U'):	/* CTRL-U User List */
 		case ctrl('T'):	/* CTRL-T Time Info */
 		case ctrl('K'):	/* CTRL-K Control Key Menu */
+			pause=true;
 		case ctrl('P'):	/* Ctrl-P Messages */
 			clear_screen();
 			console.handle_ctrlkey(key);
-			redraw=true;
+			if(pause)
+				console.pause();
 			draw_main(true);
 			for(i=0; i<menus_displayed.length; i++)
 				menus_displayed[i].draw();
 			break;
 	}
-	console.pause;
 }
 
 function get_message()
