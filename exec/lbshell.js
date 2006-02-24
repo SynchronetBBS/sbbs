@@ -776,11 +776,11 @@ function clear_screen()
 	 * If you'd like a header before non-menu stuff, this is the place to put
 	 * it.
 	 */
-	/* We are going to a line-mode thing... re-enable CTRL keys. */
-	console.ctrlkey_passthru=orig_passthru;
 
 	console.attributes=7;
 	console.clear();
+	/* We are going to a line-mode thing... re-enable CTRL keys. */
+	console.ctrlkey_passthru=orig_passthru;
 }
 
 function draw_main(topline)
