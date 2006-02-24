@@ -201,8 +201,9 @@ void dump(BYTE* buf, int len)
 /* Zmodem Stuff */
 int log_level = LOG_INFO;
 
-static void zmodem_check_abort(zmodem_t* zm)
+static BOOL zmodem_check_abort(void* vp)
 {
+	zmodem_t* zm = (zmodem_t*)vp;
 	if(zm!=NULL && kbhit()) {
 		switch(getch()) {
 			case ESC:
@@ -213,6 +214,7 @@ static void zmodem_check_abort(zmodem_t* zm)
 				break;
 		}
 	}
+	return(zm->cancelled);
 }
 
 #if defined(__BORLANDC__)
@@ -223,7 +225,7 @@ static int lputs(void* cbdata, int level, const char* str)
 	char msg[512];
 	int chars;
 
-	zmodem_check_abort((zmodem_t*)cbdata);
+	zmodem_check_abort(cbdata);
 
 #if defined(_WIN32) && defined(_DEBUG) && TRUE
 	sprintf(msg,"SyncTerm: %s",str);
@@ -289,7 +291,7 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 	int			old_hold;
 	zmodem_t*	zm=(zmodem_t*)cbdata;
 
-	zmodem_check_abort(zm);
+	zmodem_check_abort(cbdata);
 	
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= zm->current_file_size) {
@@ -664,6 +666,7 @@ void guts_background_download(void *cbdata)
 		,&gi
 		,guts_lputs, guts_zmodem_progress
 		,guts_send_byte,guts_recv_byte,guts_is_connected
+		,NULL /* is_cancelled */
 		,guts_data_waiting);
 
 	/* ToDo: This would be a good time to detach or something. */
@@ -691,6 +694,7 @@ void guts_background_upload(void *cbdata)
 		,&gi
 		,guts_lputs, guts_zmodem_progress
 		,guts_send_byte,guts_recv_byte,guts_is_connected
+		,NULL /* is_cancelled */
 		,guts_data_waiting);
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
@@ -817,7 +821,10 @@ void zmodem_upload(FILE *fp, char *path)
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
-		,send_byte,recv_byte,is_connected,data_waiting);
+		,send_byte,recv_byte
+		,is_connected
+		,zmodem_check_abort
+		,data_waiting);
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 	
@@ -854,7 +861,10 @@ void zmodem_download(char *download_dir)
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
-		,send_byte,recv_byte,is_connected,data_waiting);
+		,send_byte,recv_byte
+		,is_connected
+		,zmodem_check_abort
+		,data_waiting);
 
 	files_received=zmodem_recv_files(&zm,download_dir,&bytes_received);
 
