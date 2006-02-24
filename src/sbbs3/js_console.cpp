@@ -233,6 +233,38 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			SAFECOPY(sbbs->question,JS_GetStringBytes(str));
 			break;
 		case CON_PROP_CTRLKEY_PASSTHRU:
+			if(JSVAL_IS_STRING(*vp)) {
+				/* op can be 0 for replace, + for add, or - for remove */
+				int op=0;
+				char *s;
+				char ctrl;
+
+				if((str=JS_ValueToString(cx, *vp))==NULL)
+					break;
+				val=sbbs->cfg.ctrlkey_passthru;
+				for(s=JS_GetStringBytes(str); *s; s++) {
+					if(*s=='+')
+						op=1;
+					else if(*s=='-')
+						op=2;
+					else {
+						if(!op) {
+							val=0;
+							op=1;
+						}
+						ctrl=toupper(*s);
+						ctrl&=0x1f;			/* Ensure it fits */
+						switch(op) {
+							case 1:		/* Add to the set */
+								val |= 1<<ctrl;
+								break;
+							case 2:		/* Remove from the set */
+								val &= ~(1<<ctrl);
+								break;
+						}
+					}
+				}
+			}
 			sbbs->cfg.ctrlkey_passthru=val;
 			break;
 		default:
@@ -291,7 +323,14 @@ static char* con_prop_desc[] = {
 	,"current yes/no question (set by yesno and noyes)"
 	,"cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
 	,"control key pass-through bitmask, set bits represent control key combinations "
-		"<i>not</i> handled by <tt>inkey()</tt> method"
+		"<i>not</i> handled by <tt>inkey()</tt> method "
+		"This may optionally be specified as a string of characters. "
+		"The format if this string is [+-][@-_] if neither plus nor minus is "
+		"the first character, the value will be replaced by one constructed "
+		"from the string.  A + indicates that characters following will be "
+		"added to the set, and a - indicates they should be removed. "
+		"ex: <tt>console.ctrlkey_passthru="-UP+AB"</tt> will clear CTRL-U and "
+		"CTRL-P and set CTRL-A and CTRL-B."
 	,"number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
 	,"number of bytes available in the input buffer	- <small>READ ONLY</small>"
 	,"number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
