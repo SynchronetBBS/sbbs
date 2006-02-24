@@ -100,8 +100,10 @@ pthread_mutex_t pthread_mutex_initializer(void);
 
 #ifdef _DEBUG
 #if defined (__FreeBSD__) || defined (__OpenBSD__)
+#include <pthread_np.h>
 #define	SetThreadName(c)	pthread_set_name_np(pthread_self(),c)
-#endif
+#else
+#define SetThreadName(c)
 #else
 #define SetThreadName(c)
 #endif
