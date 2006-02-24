@@ -1,8 +1,8 @@
 var xpos=1;
-var ypos=1;
 var topline=0;								/* Index into line[] of line at edit_top */
 var line=new Array();
-var edit_top=1;								/* First line of edit window */
+var edit_top=2;								/* First line of edit window */
+var ypos=edit_top;
 var edit_bottom=console.screen_rows;		/* Last line of edit window */
 var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
 var curattr=7;								/* Current attribute */
@@ -36,7 +36,7 @@ function Line_draw(ypos)
 		console.attributes=this.attr[i];
 		console.write(this.text.substr(i-1,1));
 	}
-	if(i<80) {
+	if(i<81) {
 		console.attributes=7;
 		console.cleartoeol();
 	}
@@ -86,7 +86,7 @@ function add_new_line_below()
  */
 function next_line()
 {
-	if(topline+ypos-edit_top>=line.length)
+	if(topline+ypos-edit_top>=line.length-1)
 		line.push(new Line(curattr));
 	ypos++;
 	if(ypos>edit_top+lines_on_screen-1) {
@@ -135,6 +135,17 @@ function try_next_line()
 		console.beep();
 }
 
+function status_line()
+{
+	console.gotoxy(1,1);
+	if(insert)
+		console.write("Insert Mode");
+	else
+		console.write("Overwrite Mode");
+	console.cleartoeol();
+	console.gotoxy(xpos,ypos);
+}
+
 /* ToDo: Optimize movement... */
 function edit()
 {
@@ -142,7 +153,8 @@ function edit()
 
 	console.gotoxy(xpos,ypos);
 	while(1) {
-		key=console.inkey(1000);
+		status_line();
+		key=console.inkey(0,10000);
 		if(key=='')
 			continue;
 		switch(key) {
@@ -178,9 +190,18 @@ function edit()
 			case '\x07':
 				break;
 			case '\x08':	/* Backspace */
-				/* ToDo: Backspace onto the previous row and re-wrap... */
-				if(xpos==0) {
+				if(xpos>1) {
+					line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-2)
+							+line[ypos-edit_top+topline].text.substr(xpos-1);
+					line[ypos-edit_top+topline].attr.splice(ypos,1);
+					xpos--;
 				}
+				else {
+					/* ToDo: Backspace onto the previous row and re-wrap... */
+					console.beep();
+				}
+				line[ypos-edit_top+topline].draw(ypos);
+				break;
 			case '\x09':	/* TAB... ToDo expand to spaces */
 				break;
 			case '\x0a':	/* KEY_DOWN */
@@ -198,7 +219,12 @@ function edit()
 				console.gotoxy(xpos,ypos);
 				break;
 			case '\x0e':
-			case '\x0f':
+			case '\x0f':	/* CTRL-O */
+				if(insert)
+					insert=false;
+				else
+					insert=true;
+				break;
 			case '\x10':
 			case '\x11':	/* CTRL-Q */
 				return;
@@ -228,7 +254,11 @@ function edit()
 				break;
 			case '\x1f':
 				break;
-			case '\xf7':	/* DELETE */
+			case '\x7f':	/* DELETE */
+				line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-1)
+						+line[ypos-edit_top+topline].text.substr(xpos);
+				line[ypos-edit_top+topline].attr.splice(xpos,1);
+				line[ypos-edit_top+topline].draw(ypos);
 				break;
 			default:		/* Insert the char */
 				if(insert) {
@@ -244,6 +274,7 @@ function edit()
 					line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-1)
 							+key
 							+line[ypos-edit_top+topline].text.substr(xpos);
+					line[ypos-edit_top+topline].attr[xpos]=curattr;
 				}
 				line[ypos-edit_top+topline].draw(ypos);
 				console.gotoxy(xpos,ypos);
@@ -261,6 +292,6 @@ function edit()
 }
 
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru=1<<17;
+console.ctrlkey_passthru="+PO";
 edit();
 console.ctrlkey_passthru=oldpass;
