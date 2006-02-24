@@ -275,6 +275,7 @@ typedef struct {
 	int			(*recv_byte)(void*, unsigned timeout);
 	void		(*progress)(void*, ulong current_pos);
 	BOOL		(*is_connected)(void*);
+	BOOL		(*is_cancelled)(void*);
 	BOOL		(*data_waiting)(void*, unsigned timeout);
 
 } zmodem_t;
@@ -285,6 +286,7 @@ void		zmodem_init(zmodem_t*, void* cbdata
 						,int	(*send_byte)(void*, BYTE ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout)
 						,BOOL	(*is_connected)(void*)
+						,BOOL	(*is_cancelled)(void*)
 						,BOOL	(*data_waiting)(void*, unsigned timeout)
 						);
 char*		zmodem_ver(char *buf);

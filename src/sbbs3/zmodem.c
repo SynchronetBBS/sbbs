@@ -71,6 +71,12 @@ static BOOL is_connected(zmodem_t* zm)
 	return(TRUE);
 }
 
+static BOOL is_cancelled(zmodem_t* zm)
+{
+	if(zm->is_cancelled!=NULL)
+		return(zm->cancelled=zm->is_cancelled(zm->cbdata));
+	return(zm->cancelled);
+}
 int zmodem_data_waiting(zmodem_t* zm, unsigned timeout)
 {
 	if(zm->data_waiting)
@@ -1105,7 +1111,7 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 		do {
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
-			if(zm->cancelled)
+			if(is_cancelled(zm))
 				return(ZCAN);
 		} while(c != ZPAD);
 
@@ -1167,9 +1173,9 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 			return INVHDR;
 		}
 
-	} while(zm->rxd_header_len == 0 && !zm->cancelled);
+	} while(zm->rxd_header_len == 0 && !is_cancelled(zm));
 
-	if(zm->cancelled)
+	if(is_cancelled(zm))
 		return(ZCAN);
 
 	/*
@@ -1419,7 +1425,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 					if((ack = zmodem_recv_header(zm)) != ZACK)
 						return(ack);
 
-					if(zm->cancelled)
+					if(is_cancelled(zm))
 						return(ZCAN);
 
 					if(zm->rxd_header_pos == (ulong)ftell(fp))
@@ -1452,7 +1458,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 		 */
 
 		while(zmodem_data_waiting(zm, zm->consecutive_errors ? 1000:0) 
-			&& !zm->cancelled && is_connected(zm)) {
+			&& !is_cancelled(zm) && is_connected(zm)) {
 			int type;
 			int c;
 			lprintf(zm,LOG_DEBUG,"Back-channel traffic detected:");
@@ -1466,7 +1472,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong* sent)
 			} else
 				lprintf(zm,LOG_DEBUG,"Received: %s",chr(c));
 		}
-		if(zm->cancelled)
+		if(is_cancelled(zm))
 			return(ZCAN);
 
 		zm->consecutive_errors = 0;
@@ -1535,7 +1541,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		lprintf(zm,LOG_WARNING,"Streaming disabled");
 
 	if(request_init) {
-		for(zm->errors=0; zm->errors<=zm->max_errors && !zm->cancelled && is_connected(zm); zm->errors++) {
+		for(zm->errors=0; zm->errors<=zm->max_errors && !is_cancelled(zm) && is_connected(zm); zm->errors++) {
 			lprintf(zm,LOG_INFO,"Sending ZRQINIT (%u of %u)"
 				,zm->errors+1,zm->max_errors+1);
 			i = zmodem_get_zrinit(zm);
@@ -1546,7 +1552,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			lprintf(zm,LOG_WARNING,"send_file: received header type %s"
 				,frame_desc(i));
 		}
-		if(zm->errors>=zm->max_errors || zm->cancelled)
+		if(zm->errors>=zm->max_errors || is_cancelled(zm))
 			return(FALSE);
 	}
 
@@ -1641,7 +1647,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		do {
 			type = zmodem_recv_header(zm);
-			if(zm->cancelled)
+			if(is_cancelled(zm))
 				return(FALSE);
 		} while(type == ZACK && is_connected(zm));
 
@@ -1693,7 +1699,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		if(!is_connected(zm))
 			return(FALSE);
 
-		if(type == ZFERR || type == ZABORT || zm->cancelled)
+		if(type == ZFERR || type == ZABORT || is_cancelled(zm))
 			return(FALSE);
 
 		if(sent != NULL)
@@ -1743,7 +1749,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 * and wait for zrinit. if it doesnt come then try again
 		 */
 
-		for(attempts=0;attempts<=zm->max_errors && !zm->cancelled && is_connected(zm);attempts++) {
+		for(attempts=0;attempts<=zm->max_errors && !is_cancelled(zm) && is_connected(zm);attempts++) {
 			lprintf(zm,LOG_INFO,"Sending End-of-File (ZEOF) frame (%u of %u)"
 				,attempts+1, zm->max_errors+1);
 			zmodem_send_zeof(zm);
@@ -1828,7 +1834,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_recei
 			skip=FALSE;
 			errors=zmodem_recv_file_data(zm,fp,flength(fpath));
 
-			for(;errors<=zm->max_errors && !zm->cancelled; errors++) {
+			for(;errors<=zm->max_errors && !is_cancelled(zm); errors++) {
 				if(zmodem_recv_header_and_check(zm))
 					break;
 			}
@@ -1889,11 +1895,11 @@ int zmodem_recv_init(zmodem_t* zm)
 	lprintf(zm,LOG_DEBUG,"recv_init");
 
 #if 0
-	while(is_connected(zm) && !zm->cancelled && (ch=zm->recv_byte(zm,0))!=NOINP)
+	while(is_connected(zm) && !is_cancelled(zm) && (ch=zm->recv_byte(zm,0))!=NOINP)
 		lprintf(zm,LOG_DEBUG,"Throwing out received: %s",chr((uchar)ch));
 #endif
 
-	for(errors=0; errors<=zm->max_errors && !zm->cancelled && is_connected(zm); errors++) {
+	for(errors=0; errors<=zm->max_errors && !is_cancelled(zm) && is_connected(zm); errors++) {
 		lprintf(zm,LOG_DEBUG,"Sending ZRINIT (%u of %u)"
 			,errors+1, zm->max_errors+1);
 		zmodem_send_zrinit(zm);
@@ -1977,7 +1983,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 	offset=ftell(fp);
 
 	while(errors<=zm->max_errors && is_connected(zm)
-		&& (ulong)ftell(fp) < zm->current_file_size && !zm->cancelled) {
+		&& (ulong)ftell(fp) < zm->current_file_size && !is_cancelled(zm)) {
 
 		if(i!=ENDOFFRAME)
 			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
@@ -2010,7 +2016,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 			if (type == TIMEOUT) {
 				return TIMEOUT;
 			}
-			if(zm->cancelled)
+			if(is_cancelled(zm))
 				return(ZCAN);
 
 		} while(type != ZDATA);
@@ -2019,7 +2025,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 			break;
 		lprintf(zm,LOG_WARNING,"Wrong ZDATA block (%lu vs %lu)", zm->rxd_header_pos, ftell(fp));
 
-	} while(!zm->cancelled && is_connected(zm));
+	} while(!is_cancelled(zm) && is_connected(zm));
 		
 	do {
 		type = zmodem_recv_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket),&n,TRUE);
@@ -2036,14 +2042,13 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 		if(zm->progress!=NULL)
 			zm->progress(zm->cbdata,ftell(fp));
 
-		if(zm->cancelled)
+		if(is_cancelled(zm))
 			return(ZCAN);
 
 	} while(type == FRAMEOK);
 
 	return type;
 }
-
 
 const char* zmodem_source(void)
 {
@@ -2063,6 +2068,7 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
+				,BOOL	(*is_cancelled)(void*)
 				,BOOL	(*data_waiting)(void*, unsigned timeout))
 {
 	memset(zm,0,sizeof(zmodem_t));
@@ -2086,5 +2092,6 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 	zm->send_byte=send_byte;
 	zm->recv_byte=recv_byte;
 	zm->is_connected=is_connected;
+	zm->is_cancelled=is_cancelled;
 	zm->data_waiting=data_waiting;
 }
