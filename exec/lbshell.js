@@ -790,7 +790,7 @@ function draw_main(topline)
 	 * topline is false when the top line doesn't need redrawing.
 	 */
 	/* Disable CTRL keys that we "know" how to handle. */
-	console.ctrlkey_passthru|=3246080;
+	console.ctrlkey_passthru="+KOPTU";
 	if(topline)
 		cleararea(1,1,console.screen_columns,console.screen_rows,true);
 	else
