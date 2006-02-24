@@ -104,6 +104,7 @@ pthread_mutex_t pthread_mutex_initializer(void);
 #define	SetThreadName(c)	pthread_set_name_np(pthread_self(),c)
 #else
 #define SetThreadName(c)
+#endif
 #else
 #define SetThreadName(c)
 #endif
