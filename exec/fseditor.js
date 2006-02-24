@@ -55,9 +55,8 @@ function scroll(count)
 	if(topline<0)
 		topline=0;
 	for(i=0; i<lines_on_screen; i++) {
-		console.gotoxy(1,edit_top+i);
 		if(line[i+topline]!=undefined)
-			line[i+topline].draw();
+			line[i+topline].draw(edit_top+i);
 		else {
 			console.attributes=7;
 			console.cleartoeol();
@@ -70,12 +69,11 @@ function scroll(count)
  */
 function add_new_line_below()
 {
-	line.splice(topline+ypos-edit_top+1,0,new Line);
+	line.splice(topline+ypos-edit_top+1,0,new Line(curattr));
 	/* Scroll lines below down */
 	for(i=ypos-edit_top+1; i<lines_on_screen; i++) {
-		console.gotoxy(1,edit_top+i);
-		if(line[i]!=undefined)
-			line[i+topline].draw();
+		if(line[i+topline]!=undefined)
+			line[i+topline].draw(edit_top+i);
 		else {
 			console.attributes=7;
 			console.cleartoeol();
@@ -89,7 +87,7 @@ function add_new_line_below()
 function next_line()
 {
 	if(topline+ypos-edit_top>=line.length)
-		line[line.length]=new Line(curattr);
+		line.push(new Line(curattr));
 	ypos++;
 	if(ypos>edit_top+lines_on_screen-1) {
 		scroll(1);		/* Scroll up one line */
@@ -247,7 +245,6 @@ function edit()
 							+key
 							+line[ypos-edit_top+topline].text.substr(xpos);
 				}
-				console.gotoxy(1,ypos);
 				line[ypos-edit_top+topline].draw(ypos);
 				console.gotoxy(xpos,ypos);
 				xpos++;
