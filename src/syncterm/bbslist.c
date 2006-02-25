@@ -152,7 +152,7 @@ void sort_list(struct bbslist **list)  {
 
 	while(swapped) {
 		swapped=0;
-		for(i=1;list[i-1]->name[0] && list[i]->name[0];i++) {
+		for(i=1;list[i]!=NULL && list[i-1]->name[0] && list[i]->name[0];i++) {
 			int	cmp=stricmp(list[i-1]->name,list[i]->name);
 			if(cmp>0) {
 				tmp=list[i];
@@ -198,7 +198,8 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
 	iniReadString(listfile,bbsname,"DownloadPath",home,entry->dldir);
 	iniReadString(listfile,bbsname,"UploadPath",home,entry->uldir);
-	entry->loglevel=iniReadInteger(listfile,bbsname,"LogLevel",LOG_INFO);
+	iniReadString(listfile,bbsname,"LogFile",home,entry->logfile);
+	entry->loglevel=iniReadEnum(listfile,bbsname,"LogLevel",log_levels,LOG_INFO);
 	if(entry->loglevel<LOG_INFO)
 		entry->loglevel=LOG_INFO;
 	entry->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
@@ -231,14 +232,16 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 		strListFreeStrings(bbses);
 	}
 
+#if 0	/* This isn't necessary (NULL is a sufficient) */
 	/* Add terminator */
 	list[*i]=(struct bbslist *)"";
+#endif
 }
 
 int edit_list(struct bbslist *item,char *listpath,int isdefault)
 {
-	char	opt[17][80];
-	char	*opts[17];
+	char	opt[17][80];	/* <- Beware of magic number! */
+	char	*opts[18];		/* <- Beware of magic number! */
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
@@ -249,6 +252,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 
 	for(i=0;i<17;i++)
 		opts[i]=opt[i];
+	opts[i]=NULL;	/* terminator */
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
 						"SyncTERM supports system-wide and per-user lists.  You may only edit entries"
@@ -283,12 +287,12 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Screen Mode       %s",screen_modes[item->screen_mode]);
 		sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
-		sprintf(opt[i++],"Upload Path       %s",item->uldir);
-		sprintf(opt[i++],"Debug Transfers   %s",item->loglevel<LOG_DEBUG?"No":"Yes");
-		sprintf(opt[i++],"Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
-		sprintf(opt[i++],"ANSI Music        %s",music_names[item->music]);
-		sprintf(opt[i++],"Font              %s",item->font);
-		opt[i++][0]=0;
+		sprintf(opt[i++], "Upload Path       %s",item->uldir);
+		sprintf(opt[i++], "Log File          %s",item->logfile);
+		sprintf(opt[i++], "Debug Transfers   %s",item->loglevel<LOG_DEBUG?"No":"Yes");
+		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
+		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
+		sprintf(opt[i++], "Font              %s",item->font);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -452,6 +456,16 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				break;
 			case 12:
 #ifdef PCM
+				if(!confirm("Edit Log File?",NULL))
+					continue;
+#endif
+				uifc.helpbuf=	"`Log File`\n\n"
+								"Enter the path to the optional log file.";
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT);
+				iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
+				break;
+			case 13:
+#ifdef PCM
 				if(!confirm("Edit BBS Log Level?",NULL))
 					continue;
 #endif
@@ -459,10 +473,10 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 					item->loglevel=LOG_INFO;
 				else
 					item->loglevel=LOG_DEBUG;
-				iniSetInteger(&inifile,itemname,"LogLevel",item->loglevel,&ini_style);
+				iniSetEnum(&inifile,itemname,"LogLevel",log_levels,item->loglevel,&ini_style);
 				changed=1;
 				break;
-			case 13:
+			case 14:
 #ifdef PCM
 				if(!confirm("Edit BBS Simulated BPS Rate?",NULL))
 					continue;
@@ -476,7 +490,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniSetInteger(&inifile,itemname,"BPSRate",item->bpsrate,&ini_style);
 				changed=1;
 				break;
-			case 14:
+			case 15:
 #ifdef PCM
 				if(!confirm("Edit BBS ANSI Music Setting?",NULL))
 					continue;
@@ -508,7 +522,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 					changed=1;
 				}
 				break;
-			case 15:
+			case 16:
 #ifdef PCM
 				if(!confirm("Edit BBS Font?",NULL))
 					continue;
@@ -562,7 +576,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,&ini_style);
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
-	iniSetInteger(&inifile,bbs->name,"LogLevel",bbs->loglevel,&ini_style);
+	iniSetString(&inifile,bbs->name,"LogFile",bbs->logfile,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"LogLevel",log_levels,bbs->loglevel,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
 	iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);
@@ -707,12 +722,16 @@ struct bbslist *show_bbslist(int mode)
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
 
+	memset(list,NULL,sizeof(list));
+	memset(&defaults,0,sizeof(defaults));
+
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
-	read_list(listpath, &list[0], &defaults, &listcount, USER_BBSLIST);
+	read_list(listpath, list, &defaults, &listcount, USER_BBSLIST);
 
 	/* System BBS List */
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
-	read_list(shared_list, &list[0], &defaults, &listcount, SYSTEM_BBSLIST);
+	if(stricmp(shared_list, listpath)) /* don't read the same list twice */
+		read_list(shared_list, list, &defaults, &listcount, SYSTEM_BBSLIST);
 
 	sort_list(list);
 	uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n";
@@ -768,7 +787,7 @@ struct bbslist *show_bbslist(int mode)
 							i=list[opt]->id;
 							if(edit_list(list[opt],listpath,FALSE)) {
 								sort_list(list);
-								for(j=0;list[j]->name[0];j++) {
+								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==i)
 										opt=j;
 								}
@@ -842,7 +861,7 @@ struct bbslist *show_bbslist(int mode)
 							else {
 								add_bbs(listpath,list[listcount-1]);
 								sort_list(list);
-								for(j=0;list[j]->name[0];j++) {
+								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==listcount-1)
 										opt=j;
 								}
@@ -850,7 +869,7 @@ struct bbslist *show_bbslist(int mode)
 							}
 							break;
 						case MSK_DEL:
-							if(!list[opt]->name[0]) {
+							if(list[opt]==NULL || !list[opt]->name[0]) {
 								uifc.helpbuf=	"`Calming down`\n\n"
 												"~ Some handy tips on calming down ~\n"
 												"Close your eyes, imagine yourself alone on a brilliant white beach...\n"
@@ -879,10 +898,10 @@ struct bbslist *show_bbslist(int mode)
 								break;
 							del_bbs(listpath,list[opt]);
 							free(list[opt]);
-							for(i=opt;list[i]->name[0];i++) {
+							for(i=opt;list[i]!=NULL && list[i]->name[0];i++) {
 								list[i]=list[i+1];
 							}
-							for(i=0;list[i]->name[0];i++) {
+							for(i=0;list[i]!=NULL && list[i]->name[0];i++) {
 								list[i]->id=i;
 							}
 							listcount--;
@@ -903,7 +922,7 @@ struct bbslist *show_bbslist(int mode)
 							i=list[opt]->id;
 							if(edit_list(list[opt],listpath,FALSE)) {
 								sort_list(list);
-								for(j=0;list[j]->name[0];j++) {
+								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==i)
 										opt=j;
 								}
@@ -928,7 +947,7 @@ struct bbslist *show_bbslist(int mode)
 						i=list[opt]->id;
 						if(edit_list(list[opt],listpath,FALSE)) {
 							sort_list(list);
-							for(j=0;list[j]->name[0];j++) {
+							for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 								if(list[j]->id==i)
 									opt=j;
 							}
