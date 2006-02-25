@@ -24,7 +24,7 @@
 #include "uifcinit.h"
 #include "window.h"
 
-char* syncterm_version = "SyncTERM 0.6"
+char* syncterm_version = "SyncTERM 0.7"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
@@ -40,6 +40,7 @@ char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 unsigned char *scrollback_buf=NULL;
 unsigned int  scrollback_lines=0;
 int	safe_mode=0;
+FILE* log_fp;
 
 #ifdef _WINSOCKAPI_
 
@@ -483,7 +484,21 @@ int main(int argc, char **argv)
 			term.nostatus=bbs->nostatus;
 			if(drawwin())
 				return(1);
+			if(log_fp==NULL && bbs->logfile[0])
+				log_fp=fopen(bbs->logfile,"a");
+			if(log_fp!=NULL) {
+				time_t now=time(NULL);
+				fprintf(log_fp,"%.15s Log opened\n", ctime(&now)+4);
+			}
+
 			exit_now=doterm(bbs);
+
+			if(log_fp!=NULL) {
+				time_t now=time(NULL);
+				fprintf(log_fp,"%.15s Log closed\n", ctime(&now)+4);
+				fclose(log_fp);
+				log_fp=NULL;
+			}
 			setfont(default_font,TRUE);
 			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
 				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
