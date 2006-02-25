@@ -216,6 +216,9 @@ static BOOL zmodem_check_abort(void* vp)
 	return(zm->cancelled);
 }
 
+extern FILE* log_fp;
+extern char *log_levels[];
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -224,10 +227,8 @@ static int lputs(void* cbdata, int level, const char* str)
 	char msg[512];
 	int chars;
 
-	zmodem_check_abort(cbdata);
-
 #if defined(_WIN32) && defined(_DEBUG) && TRUE
-	sprintf(msg,"SyncTerm: %s",str);
+	sprintf(msg,"SyncTerm: %s\n",str);
 	OutputDebugString(msg);
 #endif
 	if(level > log_level)
@@ -261,6 +262,9 @@ static int lputs(void* cbdata, int level, const char* str)
 	}
 	chars=cputs(msg);
 	gettextinfo(&log_ti);
+
+	if(log_fp!=NULL)
+		fprintf(log_fp,"%s: %s\n",log_levels[level], str);
 	return chars;
 }
 
@@ -1165,7 +1169,7 @@ BOOL doterm(struct bbslist *bbs)
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
 							zrqbuf[++j]=0;
-							if(j==sizeof(zrqinit)) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
+							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								if(!strcmp(zrqbuf, zrqinit))
 									zmodem_download(bbs->dldir);
 								else
