@@ -76,8 +76,8 @@ if(sub=='mail') {
 
 title="Reply to message";
 write_template("header.inc");
-load("../web/lib/topnav_html.ssjs");
-load("../web/lib/leftnav_html.ssjs");
+load(topnav_html);
+load(leftnav_html);
 write_template("msgs/reply.inc");
 write_template("footer.inc");
 

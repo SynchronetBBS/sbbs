@@ -1,8 +1,8 @@
 /* $Id$ */
 
 load("sbbsdefs.js");
-load("../web/lib/template.ssjs");
-load("../web/lib/msgsconfig.ssjs");
+load('../web/lib/template.ssjs');
+load(msgsconfig);
 
 // Use guest user if the current user is super-duper
 if(user.number==0 && this.login!=undefined)

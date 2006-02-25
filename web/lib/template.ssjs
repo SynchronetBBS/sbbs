@@ -32,14 +32,14 @@
 template=new Object;
 load("sbbsdefs.js");    // UFLAG_G
 load("../web/lib/html_themes.ssjs");
-load("../web/lib/siteutils.ssjs");  // Port Check & Logo Check
-load("../web/lib/global_defs.ssjs");  // Global Defs - User Alias and the like.
+load(siteutils);  // Port Check & Logo Check
+load(global_defs);  // Global Defs - User Alias and the like.
  
 if(http_request.virtual_path=="/nodelist.ssjs")
-    load("../web/lib/main_nodelist.ssjs"); // Who's Online Listing
+    load(main_nodelist); // Who's Online Listing
 http_reply.fast=true;
     
-load("../web/lib/leftnav_nodelist.ssjs"); // Left Side Navigation Node Listing
+load(leftnav_nodelist); // Left Side Navigation Node Listing
 
 template.Theme_CSS_File=Themes[CurrTheme].css;
 template.server=server;

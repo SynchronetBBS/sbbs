@@ -25,10 +25,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 /*    on the new expanded message read page for new theme    */
 
 var hdr=msgbase.get_msg_header(false,m);
-
-
-
-if(hdr.from_ext!=undefined) {
+if(hdr.from_ext != null) {
 	template.u_num = hdr.from_ext;
 	usr = new User(template.u_num);
 	template.author_firston = strftime("%m/%d/%y",usr.stats.firston_date);
@@ -74,10 +71,24 @@ else {
         error("You can't read messages in this sub!");
 }
 
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load(topnav_html);
+if(do_leftnav)
+	load(leftnav_html);
+if(do_rightnav)
+	write_template("rightnav.inc");
+
 if(sub=='mail')
     template.can_post=!(user.security.restrictions&UFLAG_E);
 else
     template.can_post=msg_area.sub[sub].can_post;
+
+max_display=Themes[CurrTheme].msgs_displayed + m;
+start_num = m;
+
+// for(i = start_num; i <= max_display ; i++) {
 
 template.idx=msgbase.get_msg_index(false,m);
 if(sub=='mail' && template.idx.to!=user.number)
@@ -114,7 +125,10 @@ if(msg.attachments!=undefined) {
 }
 
 if(template.hdr != null)  {
-    template.title="Message: "+template.hdr.subject;
+    if(Themes[CurrTheme].do_forumlook==true)
+	template.title="Reading Messages in "+msg_area.grp[msg_area.sub[sub].grp_name];
+	else
+	template.title="Message: "+template.hdr.subject;
 
     if(sub=='mail' || user.security.level>=90) {    /* Sysops can dump all message headers */
         template.hfields="<html><head><title>Message Header Fields</title></head>";
@@ -159,6 +173,8 @@ if(template.hdr.thread_first!=0) {
         template.replies.push(rhdr);
     }
 }
+
+
 if(tmp!=undefined)
     template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
 else
@@ -169,15 +185,12 @@ if(tmp!=undefined)
 else
     template.nextlink=no_next_msg_html;
 
-if(do_header)
-	write_template("header.inc");
-if(do_topnav)
-	load("../web/lib/topnav_html.ssjs");
-if(do_leftnav)
-	load("../web/lib/leftnav_html.ssjs");
-if(do_rightnav)
-	write_template("rightnav.inc");
+// m--;
+
 write_template("msgs/msg.inc");
+
+// }
+
 if(do_footer)
 	write_template("footer.inc");
 
