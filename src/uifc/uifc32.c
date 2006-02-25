@@ -894,7 +894,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				a=lbclr;
 			else
 				a=lclr|(bclr<<4);
-			if(i<opts) {
+			if(i<opts && option[i]!=NULL) {
 				b=strlen(option[i]);
 				if(b>longopt)
 					longopt=b;
