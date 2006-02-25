@@ -193,6 +193,9 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			strcat(fn,"SyncTERM");
 			break;
 	}
+#else
+	getcwd(fn, fnlen);
+	backslash(fn);
 #endif
 
 	/* Create if it doesn't exist */
