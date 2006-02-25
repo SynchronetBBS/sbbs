@@ -21,7 +21,7 @@ function Line(attr)
 	this.attr=new Array();
 	for(i=0; i<80; i++)
 		this.attr[i]=attr;
-	this.canwrap=true;
+	this.hardcr=false;
 	this.draw=Line_draw;
 }
 
@@ -119,9 +119,10 @@ function try_prev_line()
 		}
 		if(xpos>line[ypos-edit_top+topline].text.length+1)
 			xpos=line[ypos-edit_top+topline].text.length+1;
+		return(true);
 	}
-	else
-		console.beep();
+	console.beep();
+	return(false);
 }
 
 /*
@@ -137,9 +138,10 @@ function try_next_line()
 			scroll(1);		/* Scroll up one line */
 		if(xpos>line[ypos-edit_top+topline].text.length+1)
 			xpos=line[ypos-edit_top+topline].text.length+1;
+		return(true);
 	}
-	else
-		console.beep();
+	console.beep();
+	return(false);
 }
 
 function status_line()
@@ -154,6 +156,54 @@ function status_line()
 }
 
 /*
+ * "Unwraps" lines starting at l.  Appends stuff from the next line(s) unless there's a
+ * "hard" CR
+ */
+function unwrap_line(l)
+{
+	var ret=0;
+	var nline;
+	var done=false;
+	var words;
+	var space;
+	var re;
+
+	while(!done && line[l+1]!=undefined) {
+		/* There's a hardcr... all done now. */
+		if(line[l].hardcr)
+			break;
+		words='';
+		/* Trim whitespace from end */
+		line[l].text=line[l].text.replace(/\s+$/,'');
+		space=79-line[l].text.length-1;
+		if(space<1)
+			break;
+		/* Get first word(s) of next line */
+		re=new RegExp("^([^\\s]{1,"+space+"})(?![^\\s])","");
+		words=line[l+1].text.match(re);
+		if(words != null) {
+			line[l].text+=" "+words[1];
+			line[l].attr[line[l].attr.length]=curattr;
+			line[l].attr.splice(line[l].text.length,0,line[l+1].attr.slice(0,words[1].length));
+			line[l+1].text=line[l+1].text.substr(words[0].length+1);
+			line[l+1].attr.splice(0,words[0].length+1);
+			/* Trim spaces from the start of the line now. */
+			words=line[l+1].text.match(/^\s+/);
+			if(words!=null) {
+				line[l+1].text=line[l+1].text.substr(words[0].length);
+				line[l+1].attr.splice(0,words[0].length);
+			}
+		}
+		else
+			done=true;
+		redraw_line(l);
+		l++;
+	}
+	redraw_line(l);
+	return(ret);
+}
+
+/*
  * Wraps lines starting at l.  Returns the offset in line# l+1 where
  * the end of line# l ends.
  */
@@ -163,7 +213,7 @@ function wrap_line(l)
 	var nline;
 
 	while(line[l].text.length>79) {
-		if(line[l+1]==undefined)
+		if(line[l+1]==undefined || line[l].hardcr)
 			add_new_line_below(l);
 		nline=line[l].text.replace(/^(.*)\s+(.*?)$/,function (str, start, end, pos, s) {
 			line[l+1].text=end+" "+line[l+1].text;
@@ -173,6 +223,9 @@ function wrap_line(l)
 			line[l+1].attr.splice(end.length+1,0,curattr);
 			/* Trim whitespace from end */
 			line[l+1].text=line[l+1].text.replace(/\s+$/,'');
+			/* Move the hardcr */
+			line[l+1].hardcr=line[l].hardcr;
+			line[l].hardcr=false;
 			if(!ret)
 				ret=end.length+1;
 			return(start);
@@ -239,8 +292,10 @@ function edit()
 				}
 				else {
 					/* ToDo: Backspace onto the previous row and re-wrap... */
-					console.beep();
+					if(try_prev_line())
+						xpos=line[ypos-edit_top+topline].text.length+1;
 				}
+				unwrap_line(ypos-edit_top+topline);
 				redraw_line(ypos-edit_top+topline);
 				break;
 			case '\x09':	/* TAB... ToDo expand to spaces */
@@ -252,20 +307,24 @@ function edit()
 			case '\x0b':
 			case '\x0c':
 			case '\x0d':	/* CR */
-				/* ToDo: Break current line at current pos... */
-				if(insert)
+				if(insert) {
 					add_new_line_below(ypos-edit_top+topline);
-				next_line();
+					/* Move all this to the next line... */
+					line[ypos-edit_top+topline+1].text=line[ypos-edit_top+topline].text.substr(xpos-1);
+					line[ypos-edit_top+topline+1].attr.splice(0,0,line[ypos-edit_top+topline].attr.slice(xpos-1,line[ypos-edit_top+topline+1].text.length));
+					line[ypos-edit_top+topline+1].hardcr=line[ypos-edit_top+topline].hardcr;
+					line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-1);
+					line[ypos-edit_top+topline].attr.splice(xpos-1,line[ypos-edit_top+topline+1].text.length);
+					line[ypos-edit_top+topline].hardcr=true;
+					redraw_line(ypos-edit_top+topline);
+					redraw_line(ypos-edit_top+topline+1);
+				}
+				try_next_line();
 				xpos=1;
 				console.gotoxy(xpos,ypos);
 				break;
 			case '\x0e':
 			case '\x0f':	/* CTRL-O */
-				if(insert)
-					insert=false;
-				else
-					insert=true;
-				break;
 			case '\x10':
 			case '\x11':	/* CTRL-Q */
 				return;
@@ -274,6 +333,11 @@ function edit()
 			case '\x14':
 			case '\x15':
 			case '\x16':
+				if(insert)
+					insert=false;
+				else
+					insert=true;
+				break;
 			case '\x17':
 			case '\x18':
 			case '\x19':
@@ -299,6 +363,7 @@ function edit()
 				line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-1)
 						+line[ypos-edit_top+topline].text.substr(xpos);
 				line[ypos-edit_top+topline].attr.splice(xpos-1,1);
+				unwrap_line(ypos-edit_top+topline);
 				redraw_line(ypos-edit_top+topline);
 				break;
 			default:		/* Insert the char */
@@ -335,6 +400,6 @@ function edit()
 }
 
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+PO";
+console.ctrlkey_passthru="+PV";
 edit();
 console.ctrlkey_passthru=oldpass;
