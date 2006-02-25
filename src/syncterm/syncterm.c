@@ -41,6 +41,7 @@ unsigned char *scrollback_buf=NULL;
 unsigned int  scrollback_lines=0;
 int	safe_mode=0;
 FILE* log_fp;
+extern ini_style_t ini_style;
 
 #ifdef _WINSOCKAPI_
 
@@ -450,8 +451,8 @@ int main(int argc, char **argv)
 				if((listfile=fopen(listpath,"r"))!=NULL) {
 					inifile=iniReadFile(listfile);
 					fclose(listfile);
-					iniSetDateTime(&inifile,bbs->name,"LastConnected",TRUE,bbs->connected,NULL);
-					iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
+					iniSetDateTime(&inifile,bbs->name,"LastConnected",TRUE,bbs->connected,&ini_style);
+					iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,&ini_style);
 					if((listfile=fopen(listpath,"w"))!=NULL) {
 						iniWriteFile(listfile,inifile);
 						fclose(listfile);
