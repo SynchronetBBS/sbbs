@@ -14,7 +14,6 @@
 #include "menu.h"
 #include "dirwrap.h"
 #include "zmodem.h"
-#include "crc32.h"
 
 #ifdef GUTS_BUILTIN
 #include "gutsz.h"
