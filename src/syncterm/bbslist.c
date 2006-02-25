@@ -201,7 +201,7 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	iniReadString(listfile,bbsname,"UploadPath",home,entry->uldir);
 
 	/* Log Stuff */
-	iniReadString(listfile,bbsname,"LogFile",home,entry->logfile);
+	iniReadString(listfile,bbsname,"LogFile","",entry->logfile);
 	entry->xfer_loglevel=iniReadEnum(listfile,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
 	entry->telnet_loglevel=iniReadEnum(listfile,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
 
@@ -291,7 +291,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
 		sprintf(opt[i++], "Upload Path       %s",item->uldir);
 		sprintf(opt[i++], "Log File          %s",item->logfile);
-		sprintf(opt[i++], "Log Transfer      %s",log_level_desc[item->xfer_loglevel]);
+		sprintf(opt[i++], "Log Transfers     %s",log_level_desc[item->xfer_loglevel]);
 		sprintf(opt[i++], "Log Telnet Cmds   %s",log_level_desc[item->telnet_loglevel]);
 		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
