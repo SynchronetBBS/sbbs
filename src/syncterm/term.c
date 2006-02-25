@@ -218,6 +218,7 @@ static BOOL zmodem_check_abort(void* vp)
 
 extern FILE* log_fp;
 extern char *log_levels[];
+extern int	telnet_log_level;
 
 #if defined(__BORLANDC__)
 	#pragma argsused
@@ -231,7 +232,11 @@ static int lputs(void* cbdata, int level, const char* str)
 	sprintf(msg,"SyncTerm: %s\n",str);
 	OutputDebugString(msg);
 #endif
-	if(level > log_level)
+
+	if(log_fp!=NULL && level <= log_level)
+		fprintf(log_fp,"%s: %s\n",log_levels[level], str);
+
+	if(level > LOG_INFO)
 		return 0;
 
 	/* Assumes the receive window has been drawn! */
@@ -263,8 +268,6 @@ static int lputs(void* cbdata, int level, const char* str)
 	chars=cputs(msg);
 	gettextinfo(&log_ti);
 
-	if(log_fp!=NULL)
-		fprintf(log_fp,"%s: %s\n",log_levels[level], str);
 	return chars;
 }
 
@@ -1078,7 +1081,8 @@ BOOL doterm(struct bbslist *bbs)
 	BOOL	sleep;
 
 	speed = bbs->bpsrate;
-	log_level = bbs->loglevel;
+	log_level = bbs->xfer_loglevel;
+	telnet_log_level = bbs->telnet_loglevel;
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);

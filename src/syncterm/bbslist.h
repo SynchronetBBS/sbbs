@@ -54,7 +54,8 @@ struct bbslist {
 	char			dldir[MAX_PATH+1];
 	char			uldir[MAX_PATH+1];
 	char			logfile[MAX_PATH+1];
-	int				loglevel;
+	int				xfer_loglevel;
+	int				telnet_loglevel;
 	int				bpsrate;
 	int				music;
 	char			font[80];

@@ -19,6 +19,7 @@
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
+char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
 char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bps", "19.2Kbps", "38.4Kbps", "57.6Kbps", "76.8Kbps", "115.2Kbps", "Unlimited", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
@@ -198,10 +199,12 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
 	iniReadString(listfile,bbsname,"DownloadPath",home,entry->dldir);
 	iniReadString(listfile,bbsname,"UploadPath",home,entry->uldir);
+
+	/* Log Stuff */
 	iniReadString(listfile,bbsname,"LogFile",home,entry->logfile);
-	entry->loglevel=iniReadEnum(listfile,bbsname,"LogLevel",log_levels,LOG_INFO);
-	if(entry->loglevel<LOG_INFO)
-		entry->loglevel=LOG_INFO;
+	entry->xfer_loglevel=iniReadEnum(listfile,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
+	entry->telnet_loglevel=iniReadEnum(listfile,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
+
 	entry->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
 	entry->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
 	iniReadString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
@@ -240,8 +243,8 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 
 int edit_list(struct bbslist *item,char *listpath,int isdefault)
 {
-	char	opt[17][80];	/* <- Beware of magic number! */
-	char	*opts[18];		/* <- Beware of magic number! */
+	char	opt[18][80];	/* <- Beware of magic number! */
+	char	*opts[19];		/* <- Beware of magic number! */
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
@@ -250,7 +253,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 	char	tmp[LIST_NAME_MAX+1];
 	char	*itemname;
 
-	for(i=0;i<17;i++)
+	for(i=0;i<18;i++)		/* <- Beware of magic number! */
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
@@ -288,7 +291,8 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
 		sprintf(opt[i++], "Upload Path       %s",item->uldir);
 		sprintf(opt[i++], "Log File          %s",item->logfile);
-		sprintf(opt[i++], "Debug Transfers   %s",item->loglevel<LOG_DEBUG?"No":"Yes");
+		sprintf(opt[i++], "Log Transfer      %s",log_level_desc[item->xfer_loglevel]);
+		sprintf(opt[i++], "Log Telnet Cmds   %s",log_level_desc[item->telnet_loglevel]);
 		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++], "Font              %s",item->font);
@@ -456,27 +460,41 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				break;
 			case 12:
 #ifdef PCM
-				if(!confirm("Edit Log File?",NULL))
+				if(!confirm("Edit Log Filename?",NULL))
 					continue;
 #endif
-				uifc.helpbuf=	"`Log File`\n\n"
+				uifc.helpbuf=	"`Log Filename`\n\n"
 								"Enter the path to the optional log file.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
 				break;
 			case 13:
 #ifdef PCM
-				if(!confirm("Edit BBS Log Level?",NULL))
+				if(!confirm("Edit File Transfer Log Level?",NULL))
 					continue;
 #endif
-				if(item->loglevel==LOG_DEBUG)
-					item->loglevel=LOG_INFO;
-				else
-					item->loglevel=LOG_DEBUG;
-				iniSetEnum(&inifile,itemname,"LogLevel",log_levels,item->loglevel,&ini_style);
+				item->xfer_loglevel--;
+				if(item->xfer_loglevel<0)
+					item->xfer_loglevel=LOG_DEBUG;
+				else if(item->xfer_loglevel<LOG_ERR)
+					item->xfer_loglevel=0;
+				iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
 				changed=1;
 				break;
 			case 14:
+#ifdef PCM
+				if(!confirm("Edit Telnet Command Log Level?",NULL))
+					continue;
+#endif
+				item->telnet_loglevel--;
+				if(item->telnet_loglevel<0)
+					item->telnet_loglevel=LOG_DEBUG;
+				else if(item->telnet_loglevel<LOG_ERR)
+					item->telnet_loglevel=0;
+				iniSetEnum(&inifile,itemname,"TelnetLogLevel",log_levels,item->telnet_loglevel,&ini_style);
+				changed=1;
+				break;
+			case 15:
 #ifdef PCM
 				if(!confirm("Edit BBS Simulated BPS Rate?",NULL))
 					continue;
@@ -490,7 +508,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniSetInteger(&inifile,itemname,"BPSRate",item->bpsrate,&ini_style);
 				changed=1;
 				break;
-			case 15:
+			case 16:
 #ifdef PCM
 				if(!confirm("Edit BBS ANSI Music Setting?",NULL))
 					continue;
@@ -522,7 +540,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 					changed=1;
 				}
 				break;
-			case 16:
+			case 17:
 #ifdef PCM
 				if(!confirm("Edit BBS Font?",NULL))
 					continue;
@@ -577,7 +595,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"LogFile",bbs->logfile,&ini_style);
-	iniSetEnum(&inifile,bbs->name,"LogLevel",log_levels,bbs->loglevel,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"TransferLogLevel",log_levels,bbs->xfer_loglevel,&ini_style);
+	iniSetEnum(&inifile,bbs->name,"TelnetLogLevel",log_levels,bbs->telnet_loglevel,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
 	iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);

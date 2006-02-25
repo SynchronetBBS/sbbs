@@ -22,14 +22,14 @@ uchar	telnet_local_option[0x100];
 uchar	telnet_remote_option[0x100];
 
 extern FILE*	log_fp;
-extern int		log_level;
+int	telnet_log_level;
 
 static int lprintf(int level, const char *fmt, ...)
 {
 	char sbuf[1024];
 	va_list argptr;
 
-	if(log_fp==NULL || level > log_level)
+	if(log_fp==NULL || level > telnet_log_level)
 		return 0;
 
     va_start(argptr,fmt);
