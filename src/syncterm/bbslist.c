@@ -252,7 +252,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 
 	for(i=0;i<17;i++)
 		opts[i]=opt[i];
-	opts[i]=NULL;	/* terminator */
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
 						"SyncTERM supports system-wide and per-user lists.  You may only edit entries"
@@ -293,6 +292,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++], "Font              %s",item->font);
+		opts[i]=NULL;
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -711,7 +711,7 @@ struct bbslist *show_bbslist(int mode)
 					,"Screen Setup"
 					,"Font Management"
 					,"Program Settings"
-					,""
+					,NULL
 				};
 	int		at_settings=0;
 	struct mouse_event mevent;
