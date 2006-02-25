@@ -8,7 +8,7 @@
 <param name="CABINETS" value="irc.cab,securedirc.cab,pixx.cab" />
 
 <param name="nick" value="@@user_alias@@" />
-<param name="alternatenick" value="@@user_alias@@[???]" />
+<param name="alternatenick" value="@@user_handle@@???" />
 <param name="fullname" value="@@user_name@@" />
 <param name="host" value="runekeep.darktech.org" />
 <param name="gui" value="pixx">

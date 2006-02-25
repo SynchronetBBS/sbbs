@@ -4,7 +4,7 @@
 
 	<div id="breadcrumb">
       <<REPEAT topnav>>
-		@@topnav:html@@
+		<div id="tlink">@@topnav:html@@</div>
       <<END REPEAT topnav>>
 	</div>
 <div id="container">
