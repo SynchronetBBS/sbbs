@@ -8,7 +8,7 @@
 
 var portnum="";
 
-template.name_logo='<h1 id="siteName">' + system.name + '</h1>';
+template.name_logo=system.name;
 
 if((host = http_request.vhost)==undefined)
     host = http_request.host;

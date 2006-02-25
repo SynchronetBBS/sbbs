@@ -30,7 +30,7 @@
 
 
 
-@@name_logo@@
+<h1 id="siteName">@@name_logo@@</h1>
 
    <div id="Greeting"> 
         @@user_greeting@@

@@ -12,7 +12,7 @@
     <td valign="top" width="1%">
     <div id="pageNav"> 
         <div id="sectionLinks"> 
-			<ul><li><a href="/nodelist.ssjs">Who's Online</a></li><<REPEAT leftnav>>@@leftnav:html@@<<END REPEAT leftnav>><li><!--[if gte IE 7]><span style="margin-left: 39px;"><![endif]--><a href="@@ftp_url@@%%ftpidx%%">File Libraries</a><!--[if gte IE 7]></span><![endif]--></li></ul>
+			<a href="/nodelist.ssjs">Who's Online</a><<REPEAT leftnav>>@@leftnav:html@@<<END REPEAT leftnav>><a href="@@ftp_url@@%%ftpidx%%">File Libraries</a>
     	</div>
 
 <!-- start Nodelisting -->

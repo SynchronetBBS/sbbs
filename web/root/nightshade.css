@@ -22,7 +22,7 @@ a:visited {
 	text-decoration: none;
 }
 
-a:hover ,a:active {
+a:hover, a:active {
 	color: #fff;
 	text-decoration: underline;
 
@@ -774,10 +774,34 @@ div#footerright a:hover, a:active {
 
 /* From original syncronet.css for top links */
 
-.tlink { 
+div#tlink { 
     color: #567194;
-    margin: 0px;
-	padding-left: 3px;
+	display: inline;
+}
+
+div#tlink a { 
+    font-size: smaller; 
+    color: #567194;
+	margin-right: 5px;
+    font-weight: bold; 
+	padding-right: 5px;
+	padding-bottom: 0px;
+    border-right: 1px solid #8fb8bc; 
+    text-decoration:none; 
+}
+
+div#tlink a:visited { 
+    font-size: smaller; 
+    color: #567194;
+    font-weight: bold; 
+	padding-bottom: 0px;
+    border-right: 1px solid #8fb8bc; 
+    text-decoration:none; 
+}
+
+div#tlink a:hover { 
+    text-decoration: underline;
+	color: #FFFFFF;
 }
 
 .terror { 
@@ -786,18 +810,6 @@ div#footerright a:hover, a:active {
     font-weight: bold; 
     margin: 0px; 
     padding: 2px 5px 4px 5px; 
-}
-
-a.tlink, a.tlink:visited { 
-    font-size: smaller; 
-    color: #567194;
-    font-weight: bold; 
-    margin: 0px;
-	padding-bottom: 0px;
-	padding-left: 5px;
-	padding-right: 5px;
-    border-right: 1px solid #8fb8bc; 
-    text-decoration:none; 
 }
 
 a.tlink2, a.tlink2:visited { 
@@ -809,11 +821,6 @@ a.tlink2, a.tlink2:visited {
 	padding-left: 5px;
 	padding-right: 5px;
     text-decoration:none; 
-}
-
-a.tlink:hover { 
-    text-decoration: underline;
-	color: #FFFFFF;
 }
 
 a.tlink2:hover { 

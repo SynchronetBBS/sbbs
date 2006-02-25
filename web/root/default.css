@@ -25,7 +25,7 @@ a {
     text-decoration:none; 
 }
 a:visited { 
-    color: #336699;  
+    color: #000099;  
     font-weight: bold; 
     text-decoration:none; 
 }
@@ -121,14 +121,6 @@ td.rtn {
     position: absolute; 
 }
 
-.tlink { 
-    font-size: small; 
-    color: #7788ff; 
-    font-weight: bold; 
-    margin: 0px; 
-    padding: 2px 5px 4px 5px; 
-}
-
 .terror { 
     font-size: small; 
     color: #FF0000; 
@@ -137,17 +129,39 @@ td.rtn {
     padding: 2px 5px 4px 5px; 
 }
 
-a.tlink, a.tlink:visited { 
+#tlink { 
+	 position: fixed;
+	 top: 52px;
+	 left: 54px;
+	 float: left;	
+    font-size: small; 
+    color: #7788ff; 
+    font-weight: bold; 
+    margin: 0px; 
+    padding: 2px 5px 4px 5px; 
+}
+
+div#tlink a:visited {     
     font-size: small; 
     color: #000000; 
     font-weight: bold; 
-    margin: 0px; 
+    margin: 0px 5px 0px -5px; 
     padding: 2px 5px 4px 5px; 
     border-right: 1px solid #8fb8bc; 
     text-decoration:none; 
 }
 
-a.tlink2, a.tlink2:visited { 
+div#tlink a {     
+    font-size: small; 
+    color: #000000; 
+    font-weight: bold; 
+    margin: 0px 5px 0px -5px; 
+    padding: 2px 5px 4px 5px; 
+    border-right: 1px solid #8fb8bc; 
+    text-decoration:none; 
+}
+
+div#tlink a.tlink2, a.tlink2:visited {    
     color: #000000; 
     font-weight: bold; 
     margin: 0px; 
@@ -155,12 +169,12 @@ a.tlink2, a.tlink2:visited {
     text-decoration:none; 
 }
 
-a.tlink:hover { 
+div#tlink a:hover {  
     background-image:  url("/images/default/tnav_selected.gif"); 
-    text-decoration: underline; 
-}
+    text-decoration: underline;  
+} 
 
-a.tlink2:hover { 
+div#tlink a.tlink2:hover {    
     text-decoration: underline; 
 }
 
@@ -202,47 +216,49 @@ a.tlink2:hover {
 
 /* Site Navigation (Left Nav) */
 
-#pageNav { 
+#pageNav {
     background-image:url(/images/default/sync_pbgj1_grey_bg.gif); 
     background-position: bottom left; 
     background-repeat:no-repeat; 
-    width:180px; 
+    width:190px; 
     padding-bottom: 90px; 
     padding-top:10px; 
     background-color: #eeeeee; 
-    font: small Verdana,sans-serif; 
-	margin: 0px; 
+    font: small Verdana,sans-serif;  
+	 margin: 0px; 
 }
 
 #sectionLinks { 
-	margin: 0px;
-    padding: 0px 10px 0px 0px; 
+	 position: relative;
+	 left: 37px;
+	 margin: 0px;
+    padding: 0px 44px 0px 0px; 
 }
 
 #sectionLinks ul, li{
     margin: 0px;
-	list-style: none; 
+	 list-style: none; 
 }
 
-#sectionLinks a:link { 
-	display: block;
-	text-align: left;
+#sectionLinks a { 
+	 display: block;
+	 text-align: left;
     border-top: 1px solid #ffffff; 
     border-left: 1px solid #ffffff; 
     border-bottom: 1px solid #000000; 
     border-right: 1px solid #000000; 
     background-image:  url("/images/default/bg_nav.jpg"); 
-	font-size: 12px;
+	 font-size: 12px;
     font-weight: bold;
     padding: 3px 3px 3px 10px;
-	margin-bottom: 0px;
-	margin-top: 0px; 
+	 margin-bottom: 0px;
+	 margin-top: 0px; 
     color: #21536A; 
     text-decoration:none; 
 }
 
 #sectionLinks a:visited { 
-	display: block;
+	 display: block;
     border-top: 1px solid #ffffff; 
     border-left: 1px solid #ffffff; 
     border-bottom: 1px solid #000000; 
@@ -251,11 +267,11 @@ a.tlink2:hover {
     background-image:  url("/images/default/bg_nav.jpg"); 
 }
 
-html>body #sectionLinks a:link, #sectionLinks a:visited { 
+html>body #sectionLinks a:link, #sectionLinks a:visited {  
 	margin-left: -39px;
 }
 
-#sectionLinks a:hover{ 
+#sectionLinks a:hover{  
     border-top: 1px solid #000000; 
     border-left: 1px solid #000000; 
     border-right: 1px solid #ffffff; 
