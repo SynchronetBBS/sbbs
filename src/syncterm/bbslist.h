@@ -53,6 +53,7 @@ struct bbslist {
 	int				nostatus;
 	char			dldir[MAX_PATH+1];
 	char			uldir[MAX_PATH+1];
+	char			logfile[MAX_PATH+1];
 	int				loglevel;
 	int				bpsrate;
 	int				music;
