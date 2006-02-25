@@ -654,7 +654,7 @@ void change_settings(void)
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[2],"Scrollback Buffer Lines %d",settings.backlines);
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
+		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
 			case 0:
@@ -664,33 +664,35 @@ void change_settings(void)
 			case 1:
 				j=settings.startup_mode;
 				i=0;
-				for(;i!=-1;) {
-					switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
-						case -1:
-							continue;
-						default:
-							settings.startup_mode=j;
-							iniSetInteger(&inicontents,"SyncTERM","VideoMode",settings.startup_mode,&ini_style);
-							break;
-					}
+				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
+					case -1:
+						continue;
+					default:
+						settings.startup_mode=j;
+						iniSetInteger(&inicontents,"SyncTERM","VideoMode",settings.startup_mode,&ini_style);
+						break;
 				}
 				break;
 			case 2:
 				sprintf(str,"%d",settings.backlines);
-				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER)!=-1) {
+				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER|K_EDIT)!=-1) {
 					unsigned char *tmpscroll;
 
 					j=atoi(str);
-					tmpscroll=(unsigned char *)realloc(scrollback_buf,80*2*j);
-					if(tmpscroll == NULL) {
-						uifc.msg("Cannot allocate space for scrollback.");
-					}
+					if(j<1) {
+						uifc.msg("Cannot set lines to less than one.");
 					else {
-						if(scrollback_lines > j)
-							scrollback_lines=j;
-						scrollback_buf=tmpscroll;
-						settings.backlines=j;
-						iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);
+						tmpscroll=(unsigned char *)realloc(scrollback_buf,80*2*j);
+						if(tmpscroll == NULL) {
+							uifc.msg("Cannot allocate space for scrollback.");
+						}
+						else {
+							if(scrollback_lines > j)
+								scrollback_lines=j;
+							scrollback_buf=tmpscroll;
+							settings.backlines=j;
+							iniSetInteger(&inicontents,"SyncTERM","ScrollBackLines",settings.backlines,&ini_style);
+						}
 					}
 				}
 				break;
