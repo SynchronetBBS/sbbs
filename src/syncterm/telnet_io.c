@@ -21,16 +21,49 @@ char	terminal[TELNET_TERM_MAXLEN+1];
 uchar	telnet_local_option[0x100];
 uchar	telnet_remote_option[0x100];
 
-#define putcom(buf,len)	send(conn_socket, buf, len, 0)
+extern FILE*	log_fp;
+extern int		log_level;
+
+static int lprintf(int level, const char *fmt, ...)
+{
+	char sbuf[1024];
+	va_list argptr;
+
+	if(log_fp==NULL || level > log_level)
+		return 0;
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+    return(fprintf(log_fp, "%s\n", sbuf));
+}
+
+void putcom(BYTE* buf, size_t len)
+{
+	char	str[128];
+	char*	p=str;
+	size_t i;
+
+	for(i=0;i<len;i++)
+		p+=sprintf(p,"%02X ", buf[i]);
+
+	lprintf(LOG_DEBUG,"TX: %s", str);
+	send(conn_socket, buf, len, 0);
+}
 
 static void send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
 	
 	if(cmd<TELNET_WILL) {
+		lprintf(LOG_INFO,"TX Telnet command: %s"
+			,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
 		putcom(buf,2);
 	} else {
+		lprintf(LOG_INFO,"TX Telnet command: %s %s"
+			,telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
 		putcom(buf,3);
 	}
@@ -99,6 +132,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
 							,TELNET_IAC,TELNET_SE);
+						lprintf(LOG_INFO,"TX Telnet command: Terminal Type is ANSI");
 						putcom(buf,len);
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
@@ -109,6 +143,10 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
                 telnet_cmdlen=0;
             }
             else if(telnet_cmdlen>=3) {	/* telnet option negotiation */
+
+				lprintf(LOG_INFO,"RX Telnet command: %s %s"
+					,telnet_cmd_desc(command),telnet_opt_desc(option));
+
 				if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
 					if(telnet_local_option[option]!=command) {
 						switch(option) {
@@ -138,6 +176,8 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						buf[6]=term.height&0xff;
 						buf[7]=TELNET_IAC;
 						buf[8]=TELNET_SE;
+						lprintf(LOG_INFO,"TX Telnet command: Window Size is %u x %u"
+							,term.width, term.height);
 						putcom(buf,9);
 					}
 
@@ -169,24 +209,6 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     }
     return(outbuf);
 }
-
-#if defined(_WIN32) && defined(_DEBUG)
-static void dump(BYTE* buf, int len)
-{
-	char str[128];
-	int i,j;
-	size_t slen=0;
-
-	slen=sprintf(str,"dump: ");
-	for(i=0;i<len;i+=j) {
-		for(j=0;i+j<len && j<32;j++)
-			slen+=sprintf(str+slen,"%02X ",buf[i+j]);
-		OutputDebugString(str);
-		slen=sprintf(str,"dump: ");
-	}
-}
-#endif
-
 
 BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
 {
