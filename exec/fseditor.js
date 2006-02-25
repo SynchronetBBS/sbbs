@@ -253,15 +253,15 @@ function edit()
 			continue;
 		switch(key) {
 			/* We're getting all the CTRL keys here... */
-			case '\x00':
-			case '\x01':
+			case '\x00':	/* CTRL-@ (NULL) */
+			case '\x01':	/* CTRL-A */
 				break;
 			case '\x02':	/* KEY_HOME */
 				xpos=1;
 				console.gotoxy(xpos,ypos);
 				break;
-			case '\x03':
-			case '\x04':
+			case '\x03':	/* CTRL-C */
+			case '\x04':	/* CTRL-D */
 				break;
 			case '\x05':	/* KEY_END */
 				xpos=line[ypos-edit_top+topline].text.length+1;
@@ -281,7 +281,7 @@ function edit()
 				}
 				console.gotoxy(xpos,ypos);
 				break;
-			case '\x07':
+			case '\x07':	/* CTRL-G (Beep) */
 				break;
 			case '\x08':	/* Backspace */
 				if(xpos>1) {
@@ -304,8 +304,8 @@ function edit()
 				try_next_line();
 				console.gotoxy(xpos,ypos);
 				break;
-			case '\x0b':
-			case '\x0c':
+			case '\x0b':	/* CTRL-K */
+			case '\x0c':	/* CTRL-L */
 			case '\x0d':	/* CR */
 				if(insert) {
 					add_new_line_below(ypos-edit_top+topline);
@@ -323,27 +323,27 @@ function edit()
 				xpos=1;
 				console.gotoxy(xpos,ypos);
 				break;
-			case '\x0e':
+			case '\x0e':	/* CTRL-N */
 			case '\x0f':	/* CTRL-O */
-			case '\x10':
-			case '\x11':	/* CTRL-Q */
+			case '\x10':	/* CTRL-P */
+			case '\x11':	/* CTRL-Q (XOff) */
 				return;
-			case '\x12':
-			case '\x13':
-			case '\x14':
-			case '\x15':
-			case '\x16':
+			case '\x12':	/* CTRL-R */
+			case '\x13':	/* CTRL-S (Xon)  */
+			case '\x14':	/* CTRL-T */
+			case '\x15':	/* CTRL-U */
+			case '\x16':	/* CTRL-V */
 				if(insert)
 					insert=false;
 				else
 					insert=true;
 				break;
-			case '\x17':
-			case '\x18':
-			case '\x19':
-			case '\x1a':
-			case '\x1b':
-			case '\x1c':
+			case '\x17':	/* CTRL-W */
+			case '\x18':	/* CTRL-X */
+			case '\x19':	/* CTRL-Y */
+			case '\x1a':	/* CTRL-Z (EOF) */
+			case '\x1b':	/* ESC */
+			case '\x1c':	/* CTRL-\ */
 				break;
 			case '\x1d':	/* KEY_LEFT */
 				xpos--;
@@ -357,7 +357,7 @@ function edit()
 				try_prev_line();
 				console.gotoxy(xpos,ypos);
 				break;
-			case '\x1f':
+			case '\x1f':	/* CTRL-_ */
 				break;
 			case '\x7f':	/* DELETE */
 				line[ypos-edit_top+topline].text=line[ypos-edit_top+topline].text.substr(0,xpos-1)
