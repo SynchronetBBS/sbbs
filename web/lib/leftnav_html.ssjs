@@ -50,5 +50,5 @@ if(user.number==0 || user.security.restrictions&UFLAG_G) {
 	else
 	    if(doQWK)
 	    template.leftnav.push({ html: '<a href="' + template.ftp_url + template.ftpqwk + '">Download QWK Packet</a>' });
-}
+
 write_template("leftnav.inc");
