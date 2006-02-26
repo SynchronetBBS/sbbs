@@ -32,7 +32,13 @@ var size=file_size(system.text_dir+"lbshell_bg.bin");
 size/=2;	// Divide by two for attr/char pairs
 size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
 var BackGround=new Graphic(80,size,LBShell_Attr,' ');
-var use_bg=BackGround.load(system.text_dir+"lbshell_bg.bin");
+var bg_filename=system.text_dir+"lbshell_bg.bin";
+var bg_names;
+bg_names=directory(system.text_dir+"/backgrounds/*.bin");
+if(bg_names.length>0) {
+	bg_filename=bg_names[random(bg_names.length)];
+}
+var use_bg=BackGround.load(bg_filename);
 var MessageWindow=new Graphic(80,console.screen_rows,MessageWindow_Attr,' ');
 var bars80="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 var spaces80="                                                                               ";
