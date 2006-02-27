@@ -679,7 +679,7 @@ void change_settings(void)
 					unsigned char *tmpscroll;
 
 					j=atoi(str);
-					if(j<1) {
+					if(j<1)
 						uifc.msg("Cannot set lines to less than one.");
 					else {
 						tmpscroll=(unsigned char *)realloc(scrollback_buf,80*2*j);
