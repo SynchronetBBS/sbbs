@@ -471,7 +471,7 @@ function draw_colour_box()
 	console.attributes=(curattr&0xf8)|CYAN;
 	console.write("Cyan");
 	console.putmsg("\x01N \x01H\x01WW:");
-	console.attributes=(curattr&0xf8)|WHITE;
+	console.attributes=(curattr&0xf8)|LIGHTGRAY;
 	console.write("White");
 	console.attributes=7;
 	console.cleartoeol();
@@ -498,7 +498,7 @@ function draw_colour_box()
 	console.attributes=(curattr&0x8f)|(CYAN<<4);
 	console.write("Cyan");
 	console.putmsg("\x01N \x01H\x01W7:");
-	console.attributes=(curattr&0x8f)|(WHITE<<4);
+	console.attributes=(curattr&0x8f)|(LIGHTGRAY<<4);
 	console.write("White");
 	console.attributes=7;
 	console.cleartoeol();
