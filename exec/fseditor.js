@@ -920,5 +920,6 @@ function edit()
 
 var oldpass=console.ctrlkey_passthru;
 console.ctrlkey_passthru="+ACLQRVWXZ";
+console.clear();
 edit();
 console.ctrlkey_passthru=oldpass;
