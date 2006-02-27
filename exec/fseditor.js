@@ -102,8 +102,8 @@ function add_new_line_below(l)
 	/* Scroll lines below down (if on display) */
 	for(i=l+1; i<topline+lines_on_screen; i++) {
 		/* No need to scroll 'em if they aren't there... we're inserting remember? */
-		if(line[l]!=undefined)
-			draw_line(l);
+		if(line[i]!=undefined)
+			draw_line(i);
 	}
 }
 
@@ -207,7 +207,12 @@ function unwrap_line(l)
 	var ret=-1;
 	var first=true;
 
-	while(!done && line[l]!=undefined && line[l+1]!=undefined) {
+	while(!done && line[l+1]!=undefined) {
+		if(line[l]==undefined) {
+			draw_line(l);
+			l++;
+			break;
+		}
 		/* There's a hardcr... all done now. */
 		if(line[l].hardcr)
 			break;
@@ -265,6 +270,13 @@ function unwrap_line(l)
 			if(line[l+1].text.length==0) {
 				line[l].hardcr=line[l+1].hardcr;
 				line.splice(l+1,1);
+				/* 
+				 * We deleted a line... now we need to redraw that line
+				 *  and everything after it.
+				 */
+				var i;
+				for(i=l+1;i<topline+lines_on_screen;i++)
+					draw_line(i);
 			}
 			done=true;
 		}
@@ -493,7 +505,7 @@ function edit()
 					line[ypos].text=line[ypos].text.substr(0,xpos);
 					line[ypos].attr=line[ypos].attr.substr(0,xpos);
 					line[ypos].hardcr=true;
-					draw_line(ypos);
+					draw_line(ypos,xpos);
 					if(line[ypos].kludged) {
 						line[ypos+1].kludged=true;
 						line[ypos].kludged=false;
