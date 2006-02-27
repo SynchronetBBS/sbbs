@@ -125,7 +125,7 @@ if(msg.attachments!=undefined) {
 }
 
 if(template.hdr != null)  {
-    if(Themes[CurrTheme].do_forumlook==true)
+    if(Themes[CurrTheme].do_forumlook==true && sub!='mail')
 	template.title="Reading Messages in "+msg_area.grp[msg_area.sub[sub].grp_name];
 	else
 	template.title="Message: "+template.hdr.subject;
