@@ -1,5 +1,7 @@
 /* ToDo: At what point should trailing whitespace be removed? */
 
+load("sbbsdefs.js");
+
 var line=new Array();
 var xpos=0;									/* Current xpos of insert point */
 var last_xpos=-1;							/* The xpos you'd like to be at.  -1 when not valid
@@ -52,6 +54,7 @@ function draw_line(l,x,clear)
 	yp=l-topline+edit_top;
 	/* Does this line even exist? */
 	if(line[l]==undefined) {
+		console.attributes=7;
 		console.gotoxy(x+1,yp);
 		console.cleartoeol();
 	}
@@ -181,16 +184,17 @@ function set_cursor()
 var lastinsert=false;
 function status_line()
 {
-	if(insert != lastinsert) {
-		lastinsert=insert;
-		console.gotoxy(1,1);
-		if(insert)
-			console.write("Insert Mode");
-		else
-			console.write("Overwrite Mode");
-		console.cleartoeol();
-		set_cursor();
-	}
+	console.gotoxy(1,1);
+	console.attributes=7;
+	if(insert)
+		console.write("Insert Mode    ");
+	else
+		console.write("Overwrite Mode ");
+	console.attributes=curattr;
+	console.write("Current Colour");
+	console.attributes=7;
+	console.cleartoeol();
+	set_cursor();
 }
 
 /*
@@ -418,21 +422,179 @@ function rewrap(cant_unwrap_prev, cant_unwrap, cant_wrap)
 	return(redrawn);
 }
 
+function erase_colour_box()
+{
+	if(ypos-topline<3) {
+		draw_line(topline+lines_on_screen-3);
+		draw_line(topline+lines_on_screen-2);
+		draw_line(topline+lines_on_screen-1);
+	}
+	else {
+		draw_line(topline);
+		draw_line(topline+1);
+		draw_line(topline+2);
+	}
+	set_cursor();
+}
+
+function draw_colour_box()
+{
+	/*
+	 * Try to draw at the top unless the cursor is too close... then do it at
+	 * the bottom.
+	 */
+	if(ypos-topline<3)
+		console.gotoxy(1,edit_bottom-2);
+	else
+		console.gotoxy(1,edit_top);
+
+	console.attributes=7;
+	console.write("Foreground:");
+	console.putmsg("\x01N \x01H\x01WK:");
+	console.attributes=curattr&0xf8;
+	console.write("Black");
+	console.putmsg("\x01N \x01H\x01WR:");
+	console.attributes=(curattr&0xf8)|RED;
+	console.write("Red");
+	console.putmsg("\x01N \x01H\x01WG:");
+	console.attributes=(curattr&0xf8)|GREEN;
+	console.write("Green");
+	console.putmsg("\x01N \x01H\x01WY:");
+	console.attributes=(curattr&0xf8)|BROWN;
+	console.write("Yellow");
+	console.putmsg("\x01N \x01H\x01WB:");
+	console.attributes=(curattr&0xf8)|BLUE;
+	console.write("Blue");
+	console.putmsg("\x01N \x01H\x01WM:");
+	console.attributes=(curattr&0xf8)|MAGENTA;
+	console.write("Magenta");
+	console.putmsg("\x01N \x01H\x01WC:");
+	console.attributes=(curattr&0xf8)|CYAN;
+	console.write("Cyan");
+	console.putmsg("\x01N \x01H\x01WW:");
+	console.attributes=(curattr&0xf8)|WHITE;
+	console.write("White");
+	console.attributes=7;
+	console.cleartoeol();
+	console.write("\r\nBackground:");
+	console.putmsg("\x01N \x01H\x01W0:");
+	console.attributes=curattr&0x8f;
+	console.write("Black");
+	console.putmsg("\x01N \x01H\x01W1:");
+	console.attributes=(curattr&0x8f)|(RED<<4);
+	console.write("Red");
+	console.putmsg("\x01N \x01H\x01W2:");
+	console.attributes=(curattr&0x8f)|(GREEN<<4);
+	console.write("Green");
+	console.putmsg("\x01N \x01H\x01W3:");
+	console.attributes=(curattr&0x8f)|(BROWN<<4);
+	console.write("Yellow");
+	console.putmsg("\x01N \x01H\x01W4:");
+	console.attributes=(curattr&0x8f)|(BLUE<<4);
+	console.write("Blue");
+	console.putmsg("\x01N \x01H\x01W5:");
+	console.attributes=(curattr&0x8f)|(MAGENTA<<4);
+	console.write("Magenta");
+	console.putmsg("\x01N \x01H\x01W6:");
+	console.attributes=(curattr&0x8f)|(CYAN<<4);
+	console.write("Cyan");
+	console.putmsg("\x01N \x01H\x01W7:");
+	console.attributes=(curattr&0x8f)|(WHITE<<4);
+	console.write("White");
+	console.attributes=7;
+	console.cleartoeol();
+	console.write("\r\nSpecial:");
+	console.putmsg("\x01N \x01H\x01WH:");
+	console.attributes=curattr|0x08;
+	console.write("High Intensity");
+	console.putmsg("\x01N \x01H\x01WI:");
+	console.attributes=curattr|0x80;
+	console.write("Blinking");
+	console.putmsg("\x01N \x01H\x01WN:");
+	console.attributes=7;
+	console.write("Normal");
+	console.attributes=7;
+	console.write("  Choose Colour: ");
+	console.cleartoeol();
+}
+
 /* ToDo: Optimize movement... */
 function edit()
 {
 	var key;
 
-	set_cursor();
+	status_line();
 	while(1) {
-		status_line();
 		key=console.inkey(0,10000);
 		if(key=='')
 			continue;
 		switch(key) {
 			/* We're getting all the CTRL keys here... */
 			case '\x00':	/* CTRL-@ (NULL) */
-			case '\x01':	/* CTRL-A */
+			case '\x01':	/* CTRL-A (Colour) */
+				draw_colour_box();
+				key=console.getkey(K_UPPER);
+				switch(key) {
+					case 'K':
+						curattr&=0xf8;
+						break;
+					case 'R':
+						curattr=(curattr&0xf8)|RED;
+						break;
+					case 'G':
+						curattr=(curattr&0xf8)|GREEN;
+						break;
+					case 'Y':
+						curattr=(curattr&0xf8)|BROWN;
+						break;
+					case 'B':
+						curattr=(curattr&0xf8)|BLUE;
+						break;
+					case 'M':
+						curattr=(curattr&0xf8)|MAGENTA;
+						break;
+					case 'C':
+						curattr=(curattr&0xf8)|CYAN;
+						break;
+					case 'W':
+						curattr=(curattr&0xf8)|LIGHTGRAY;
+						break;
+					case '0':
+						curattr=(curattr&0x8f);
+						break;
+					case '1':
+						curattr=(curattr&0x8f)|(RED<<4);
+						break;
+					case '2':
+						curattr=(curattr&0x8f)|(GREEN<<4);
+						break;
+					case '3':
+						curattr=(curattr&0x8f)|(BROWN<<4);
+						break;
+					case '4':
+						curattr=(curattr&0x8f)|(BLUE<<4);
+						break;
+					case '5':
+						curattr=(curattr&0x8f)|(MAGENTA<<4);
+						break;
+					case '6':
+						curattr=(curattr&0x8f)|(CYAN<<4);
+						break;
+					case '7':
+						curattr=(curattr&0x8f)|(LIGHTGRAY<<4);
+						break;
+					case 'H':
+						curattr|=0x08;
+						break;
+					case 'I':
+						curattr|=0x80;
+						break;
+					case 'N':
+						curattr=7;
+						break;
+				}
+				status_line();
+				erase_colour_box();
 				break;
 			case '\x02':	/* KEY_HOME */
 				xpos=0;
@@ -526,8 +688,9 @@ function edit()
 			case '\x13':	/* CTRL-S (Xon)  */
 			case '\x14':	/* CTRL-T */
 			case '\x15':	/* CTRL-U */
-			case '\x16':	/* CTRL-V */
+			case '\x16':	/* CTRL-V (Toggle insert mode) */
 				insert=!insert;
+				status_line();
 				break;
 			case '\x17':	/* CTRL-W */
 			case '\x18':	/* CTRL-X */
@@ -599,6 +762,6 @@ function edit()
 }
 
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+PV";
+console.ctrlkey_passthru="+APV";
 edit();
 console.ctrlkey_passthru=oldpass;
