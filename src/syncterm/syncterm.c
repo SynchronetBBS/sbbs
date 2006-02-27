@@ -166,7 +166,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		SAFECOPY(oldlst, home);
 		strcat(oldlst, "/syncterm.lst");
 	}
-#ifdef SHGFP_TYPE_CURRENT
+#ifdef CSIDL_FLAG_CREATE
 	if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
 		switch(SHGetFolderPath(NULL, CSIDL_PERSONAL|CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, fn)) {
 			case E_FAIL:
