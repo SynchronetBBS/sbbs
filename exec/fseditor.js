@@ -650,6 +650,22 @@ function edit()
 				set_cursor();
 				break;
 			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
+				/* Delete Line */
+				/* ToDo: Should this kill last_xpos? */
+				if(line.length==1)
+					line[0]=new Line;
+				else
+					line.splice(ypos,1);
+				if(ypos>=line.length)
+					ypos=line.length-1;
+				if(last_xpos>=0)
+					xpos=last_xpos;
+				if(xpos>line[ypos].text.length)
+					xpos=line[ypos].text.length;
+				var i;
+				for(i=ypos; i<=line.length; i++)
+					draw_line(i);
+				set_cursor();
 				break;
 			case '\x05':	/* KEY_END */
 				last_xpos=-1;
