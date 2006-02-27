@@ -446,7 +446,7 @@ function draw_colour_box()
 	else
 		colour_box_displayed=edit_top;
 
-	gotoxy(1,colour_box_displayed);
+	console.gotoxy(1,colour_box_displayed);
 	console.attributes=7;
 	console.write("Foreground:");
 	console.putmsg("\x01N \x01H\x01WK:");
