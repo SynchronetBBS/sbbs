@@ -13,6 +13,8 @@ var edit_top=2;								/* First line of edit window */
 var edit_bottom=console.screen_rows;		/* Last line of edit window */
 var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
 var curattr=7;								/* Current attribute */
+var colour_box_displayed=0;					/* Row the colour box is displayed
+												on. used for redraw */
 /* Create an initial line... this may not be necessary when replying */
 line[0]=new Line();
 
@@ -424,17 +426,13 @@ function rewrap(cant_unwrap_prev, cant_unwrap, cant_wrap)
 
 function erase_colour_box()
 {
-	if(ypos-topline<3) {
-		draw_line(topline+lines_on_screen-3);
-		draw_line(topline+lines_on_screen-2);
-		draw_line(topline+lines_on_screen-1);
-	}
-	else {
-		draw_line(topline);
-		draw_line(topline+1);
-		draw_line(topline+2);
+	if(colour_box_displayed) {
+		draw_line(colour_box_displayed-edit_top+topline);
+		draw_line(colour_box_displayed-edit_top+topline+1);
+		draw_line(colour_box_displayed-edit_top+topline+2);
 	}
 	set_cursor();
+	colour_box_displayed=0;
 }
 
 function draw_colour_box()
@@ -444,9 +442,9 @@ function draw_colour_box()
 	 * the bottom.
 	 */
 	if(ypos-topline<3)
-		console.gotoxy(1,edit_bottom-2);
+		colour_box_displayed=edit_bottom-2;
 	else
-		console.gotoxy(1,edit_top);
+		colour_box_displayed=edit_top;
 
 	console.attributes=7;
 	console.write("Foreground:");
@@ -518,6 +516,21 @@ function draw_colour_box()
 	console.cleartoeol();
 }
 
+/* Redraws the current screen */
+/* *should* redraw at any prompt. */
+function redraw_screen()
+{
+	status_line();
+	if(colour_box_displayed)
+		draw_colour_box();
+	for(i=edit_top; i<=edit_bottom; i++) {
+		if(i>colour_box_displayed && i<colour_box_displayed+3)
+			continue;
+		draw_line(i-edit_top+topline);
+	}
+	set_cursor();
+}
+
 /* ToDo: Optimize movement... */
 function edit()
 {
@@ -532,76 +545,111 @@ function edit()
 			/* We're getting all the CTRL keys here... */
 			case '\x00':	/* CTRL-@ (NULL) */
 			case '\x01':	/* CTRL-A (Colour) */
+				key='';
 				draw_colour_box();
-				key=console.getkey(K_UPPER);
-				switch(key) {
-					case 'K':
-						curattr&=0xf8;
-						break;
-					case 'R':
-						curattr=(curattr&0xf8)|RED;
-						break;
-					case 'G':
-						curattr=(curattr&0xf8)|GREEN;
-						break;
-					case 'Y':
-						curattr=(curattr&0xf8)|BROWN;
-						break;
-					case 'B':
-						curattr=(curattr&0xf8)|BLUE;
-						break;
-					case 'M':
-						curattr=(curattr&0xf8)|MAGENTA;
-						break;
-					case 'C':
-						curattr=(curattr&0xf8)|CYAN;
-						break;
-					case 'W':
-						curattr=(curattr&0xf8)|LIGHTGRAY;
-						break;
-					case '0':
-						curattr=(curattr&0x8f);
-						break;
-					case '1':
-						curattr=(curattr&0x8f)|(RED<<4);
-						break;
-					case '2':
-						curattr=(curattr&0x8f)|(GREEN<<4);
-						break;
-					case '3':
-						curattr=(curattr&0x8f)|(BROWN<<4);
-						break;
-					case '4':
-						curattr=(curattr&0x8f)|(BLUE<<4);
-						break;
-					case '5':
-						curattr=(curattr&0x8f)|(MAGENTA<<4);
-						break;
-					case '6':
-						curattr=(curattr&0x8f)|(CYAN<<4);
-						break;
-					case '7':
-						curattr=(curattr&0x8f)|(LIGHTGRAY<<4);
-						break;
-					case 'H':
-						curattr|=0x08;
-						break;
-					case 'I':
-						curattr|=0x80;
-						break;
-					case 'N':
-						curattr=7;
-						break;
+				while(key=='') {
+					key=console.getkey(K_UPPER);
+					switch(key) {
+						case 'K':
+							curattr&=0xf8;
+							break;
+						case 'R':
+							curattr=(curattr&0xf8)|RED;
+							break;
+						case 'G':
+							curattr=(curattr&0xf8)|GREEN;
+							break;
+						case 'Y':
+							curattr=(curattr&0xf8)|BROWN;
+							break;
+						case 'B':
+							curattr=(curattr&0xf8)|BLUE;
+							break;
+						case 'M':
+							curattr=(curattr&0xf8)|MAGENTA;
+							break;
+						case 'C':
+							curattr=(curattr&0xf8)|CYAN;
+							break;
+						case 'W':
+							curattr=(curattr&0xf8)|LIGHTGRAY;
+							break;
+						case '0':
+							curattr=(curattr&0x8f);
+							break;
+						case '1':
+							curattr=(curattr&0x8f)|(RED<<4);
+							break;
+						case '2':
+							curattr=(curattr&0x8f)|(GREEN<<4);
+							break;
+						case '3':
+							curattr=(curattr&0x8f)|(BROWN<<4);
+							break;
+						case '4':
+							curattr=(curattr&0x8f)|(BLUE<<4);
+							break;
+						case '5':
+							curattr=(curattr&0x8f)|(MAGENTA<<4);
+							break;
+						case '6':
+							curattr=(curattr&0x8f)|(CYAN<<4);
+							break;
+						case '7':
+							curattr=(curattr&0x8f)|(LIGHTGRAY<<4);
+							break;
+						case 'H':
+							curattr|=0x08;
+							break;
+						case 'I':
+							curattr|=0x80;
+							break;
+						case 'N':
+							curattr=7;
+							break;
+						case ctrl('R'):
+							redraw_screen();
+							key='';
+							break;
+						case "\x1b":	/* ESC */
+							break;
+						default:
+							console.beep();
+							key='';
+							break;
+					}
 				}
 				status_line();
 				erase_colour_box();
 				break;
 			case '\x02':	/* KEY_HOME */
+				last_xpos=-1;
 				xpos=0;
 				set_cursor();
 				break;
-			case '\x03':	/* CTRL-C */
-			case '\x04':	/* CTRL-D */
+			case '\x03':	/* CTRL-C (Center Line) */
+				last_xpos=-1;
+				line[ypos].hardcr=true;
+				/* Trim leading/trailing whitespace */
+				line[ypos].text=line[ypos].text.replace(/^(\s*)(.*?)\s*$/,function (str, leading, t, offset, s) {
+					line[ypos].attr=line[ypos].attr.substr(leading.length, t.length);
+					xpos -= leading.length;
+					if(xpos<0)
+						xpos=0;
+					return(t);
+				});
+				var add=parseInt((80-line[ypos].text.length)/2);
+				for(add=parseInt((80-line[ypos].text.length)/2); add>0; add--) {
+					line[ypos].text=' '+line[ypos].text;
+					line[ypos].attr=ascii(curattr)+line[ypos].attr;
+					xpos++;
+				}
+				if(xpos>line[ypos].length)
+					xpos=line[ypos].length;
+				draw_line(ypos);
+				set_cursor();
+				break;
+			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 				break;
 			case '\x05':	/* KEY_END */
 				last_xpos=-1;
@@ -648,14 +696,20 @@ function edit()
 				break;
 			case '\x09':	/* TAB... ToDo expand to spaces */
 				break;
-			case '\x0a':	/* KEY_DOWN */
+			case '\x0a':	/* KEY_DOWN (Insert Line in SyncEdit) */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_next_line();
 				set_cursor();
 				break;
 			case '\x0b':	/* CTRL-K */
-			case '\x0c':	/* CTRL-L */
+				break;
+			case '\x0c':	/* CTRL-L (Insert Line) */
+				/* ToDo: Should this kill last_xpos? */
+				add_new_line_below(ypos-1);
+				xpos=0;
+				set_cursor();
+				break;
 			case '\x0d':	/* CR */
 				last_xpos=-1;
 				if(insert) {
@@ -680,23 +734,110 @@ function edit()
 				set_cursor();
 				break;
 			case '\x0e':	/* CTRL-N */
-			case '\x0f':	/* CTRL-O */
+				break;
+			case '\x0f':	/* CTRL-O (Quick Save in SyncEdit) */
+				break;
 			case '\x10':	/* CTRL-P */
-			case '\x11':	/* CTRL-Q (XOff) */
+				break;
+			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				return;
-			case '\x12':	/* CTRL-R */
+			case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+				redraw_screen();
+				break;
 			case '\x13':	/* CTRL-S (Xon)  */
-			case '\x14':	/* CTRL-T */
-			case '\x15':	/* CTRL-U */
+				break;
+			case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
+				break;
+			case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
+				break;
 			case '\x16':	/* CTRL-V (Toggle insert mode) */
 				insert=!insert;
 				status_line();
 				break;
-			case '\x17':	/* CTRL-W */
-			case '\x18':	/* CTRL-X */
-			case '\x19':	/* CTRL-Y */
-			case '\x1a':	/* CTRL-Z (EOF) */
-			case '\x1b':	/* ESC */
+			case '\x17':	/* CTRL-W (Delete Word) */
+				last_xpos=-1;
+				/* Remove trailing part of word */
+				while(line[ypos].text.length>xpos
+						&& line[ypos].text.substr(xpos,1).search(/\s/)==-1) {
+					line[ypos].text=line[ypos].text.substr(0,xpos)
+							+line[ypos].text.substr(xpos+1);
+					line[ypos].attr=line[ypos].attr.substr(0,xpos)
+							+line[ypos].attr.substr(xpos+1);
+				}
+				/* Remove leading part */
+				while(xpos>0
+						&& line[ypos].text.substr(xpos-1,1).search(/\s/)==-1) {
+					line[ypos].text=line[ypos].text.substr(0,xpos-1)
+							+line[ypos].text.substr(xpos);
+					line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
+							+line[ypos].attr.substr(xpos);
+					xpos--;
+				}
+				/* 
+				 * Remove Space...
+				 * Note that no matter what, we should delete a space.
+				 * We're either deleting the space from the end of the word if
+				 * this was the first word on the line, or the one before the
+				 * word otherwise.  This puts the cursor on the previous word
+				 * if there is one and the next word if there isn't.  This
+				 * allows multiple ^W to keep deleteing words in all cases.
+				 */
+				if(xpos) {
+					/* Delete space before the deleted word */
+					line[ypos].text=line[ypos].text.substr(0,xpos-1)
+							+line[ypos].text.substr(xpos);
+					line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
+							+line[ypos].attr.substr(xpos);
+					xpos--;
+				}
+				else {
+					/* Delete space after the word */
+					line[ypos].text=line[ypos].text.substr(1);
+					line[ypos].attr=line[ypos].attr.substr(1);
+				}
+				draw_line(ypos,xpos);
+				set_cursor();
+				break;
+			case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
+				if(last_xpos==-1)
+					last_xpos=xpos;
+				if(ypos>=line.length-1) {
+					console.beep();
+					break;
+				}
+				ypos+=lines_on_screen;
+				if(ypos>line.length-1)
+					ypos=line.length-1;
+				var i;
+				for(i=edit_top; i<=edit_bottom; i++)
+					draw_line(i-edit_top+topline);
+				xpos=last_xpos;
+				if(xpos>line[ypos].text.length)
+					xpos=line[ypos].text.length;
+				set_cursor();
+				break;
+			case '\x19':	/* CTRL-Y (Delete Line in SyncEdit) */
+				break;
+			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
+				if(last_xpos==-1)
+					last_xpos=xpos;
+				if(ypos==0) {
+					console.beep();
+					break;
+				}
+				ypos-=lines_on_screen;
+				if(ypos<0)
+					ypos=0;
+				var i;
+				for(i=edit_top; i<=edit_bottom; i++)
+					draw_line(i-edit_top+topline);
+				xpos=last_xpos;
+				if(xpos>line[ypos].text.length)
+					xpos=line[ypos].text.length;
+				set_cursor();
+				break;
+			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
+				break;
 			case '\x1c':	/* CTRL-\ */
 				break;
 			case '\x1d':	/* KEY_LEFT */
@@ -762,6 +903,6 @@ function edit()
 }
 
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+APV";
+console.ctrlkey_passthru="+ACLQRVWXZ";
 edit();
 console.ctrlkey_passthru=oldpass;
