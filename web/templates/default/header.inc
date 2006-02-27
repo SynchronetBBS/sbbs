@@ -23,12 +23,10 @@
 </style>
 <![endif]-->
 
-<!-- Remove comment tages for text System Name below -->
-<!-- <h1 id="siteName">@@system:name@@</h1> -->
-
-<!-- Comment out or delete below <span> for no logo display -->
-
-
+<!--[if gte IE 5.5000]>
+	<script src="/js/pngfix.js" type="text/javascript">
+	</script>
+<![endif]-->
 
 <h1 id="siteName">@@name_logo@@</h1>
 

@@ -43,6 +43,12 @@ html>body #more_invisible {
 }
 </style>
 <![endif]-->
+
+<!--[if gte IE 5.5000]>
+	<script src="/js/pngfix.js" type="text/javascript">
+	</script>
+<![endif]-->
+
 	<div id="banner">
 		@@name_logo@@
 		<div id="greeting">
