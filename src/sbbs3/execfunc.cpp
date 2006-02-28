@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,7 +40,7 @@
 
 int sbbs_t::exec_function(csi_t *csi)
 {
-	char	str[256],ch;
+	char	str[256];
 	char 	tmp[512];
 	uchar*	p;
 	int		s;
@@ -357,25 +357,7 @@ int sbbs_t::exec_function(csi_t *csi)
 
 		case CS_FILE_SEND:
 
-			csi->logic=LOGIC_FALSE;
-			xfer_prot_menu(XFER_DOWNLOAD);
-			mnemonics(text[ProtocolOrQuit]);
-			strcpy(str,"Q");
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(str,tmp); }
-			ch=(char)getkeys(str,0);
-			if(ch=='Q' || sys_status&SS_ABORT) {
-				return(0); }
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
-					break;
-			if(i<cfg.total_prots) {
-				if(protocol(cfg.prot[i],XFER_DOWNLOAD,csi->str,csi->str,false)==0)
-					csi->logic=LOGIC_TRUE;
-				autohangup(); 
-			}
+			csi->logic=sendfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 
 		case CS_FILE_PUT:
@@ -384,26 +366,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				return(0);
 
 		case CS_FILE_RECEIVE:
-			csi->logic=LOGIC_FALSE;
-			xfer_prot_menu(XFER_UPLOAD);
-			mnemonics(text[ProtocolOrQuit]);
-			strcpy(str,"Q");
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(str,tmp); }
-			ch=(char)getkeys(str,0);
-			if(ch=='Q' || sys_status&SS_ABORT) {
-				lncntr=0;
-				return(0); }
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
-					break;
-			if(i<cfg.total_prots) {
-				if(protocol(cfg.prot[i],XFER_UPLOAD,csi->str,csi->str,true)==0)
-					csi->logic=LOGIC_TRUE;
-				autohangup(); 
-			}
+			csi->logic=recvfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 
 		case CS_FILE_UPLOAD_BULK:

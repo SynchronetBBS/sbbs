@@ -1579,6 +1579,32 @@ js_batchaddlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 }
 
 static JSBool
+js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->sendfile(JS_GetStringBytes(JS_ValueToString(cx, argv[0]))));
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_recvfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->recvfile(JS_GetStringBytes(JS_ValueToString(cx, argv[0]))));
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_temp_xfer(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -2626,7 +2652,15 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("list_filename")
 	,JSDOCSTR("add file list to batch download queue")
 	,310
-	},		
+	},
+	{"send_file",		js_sendfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("send specified filename (complete path) to user via user-prompted protocol")
+	,31301
+	},
+	{"receive_file",	js_recvfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
+	,JSDOCSTR("received specified filename (complete path) frome user via user-prompted protocol")
+	,31301
+	},
 	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("enter the temporary file tranfer menu")
 	,310

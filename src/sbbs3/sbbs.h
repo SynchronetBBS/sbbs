@@ -608,6 +608,8 @@ public:
 	void	autohangup(void);
 	bool	checkdszlog(file_t*);
 	bool	checkprotresult(prot_t*, int error, file_t*);
+	bool	sendfile(char* fname);
+	bool	recvfile(char* fname);
 
 	/* file.cpp */
 	void	fileinfo(file_t* f);

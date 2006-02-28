@@ -614,8 +614,7 @@ function str_cmds(str)
 
 		if(str=="HELP") {
 			writeln("GET [path]");
-			writeln("\tToDo: This *should* download the specified file");
-			writeln("\tThis is not currently possible from JS however.");
+			writeln("\tDownload the specified file");
 		}
 		if(word=="GET") {
 			str=str.substr(3);
@@ -633,15 +632,13 @@ function str_cmds(str)
 			if(!bbs.check_syspass())
 				return;
 
-			// ToDo "GET" not implemented
-			writeln("\r\nFILE_GET not implemented!");
+			bbs.send_file(str);
 			return;
 		}
 
 		if(str=="HELP") {
 			writeln("PUT [path]");
-			writeln("\tToDo: This *should* upload the specified file");
-			writeln("\tThis is not currently possible from JS however.");
+			writeln("\tUpload the specified file");
 		}
 		if(word=="PUT") {
 			str=str.substr(3);
@@ -659,8 +656,7 @@ function str_cmds(str)
 			if(!bbs.check_syspass())
 				return;
 
-			// ToDo "PUT" not implemented
-			writeln("\r\nPUT not implemented!");
+			bbs.receive_file(str);
 			return;
 		}
 	}
