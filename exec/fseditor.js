@@ -15,6 +15,9 @@ var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
 var curattr=7;								/* Current attribute */
 var colour_box_displayed=0;					/* Row the colour box is displayed
 												on. used for redraw */
+var graphics_box_displayed=0;				/* Row the graphic box is displayed
+var graphics_list_displayed=0;				/* Row the graphic list is displayed
+												on. used for redraw */
 /* Create an initial line... this may not be necessary when replying */
 line[0]=new Line();
 
@@ -424,6 +427,153 @@ function rewrap(cant_unwrap_prev, cant_unwrap, cant_wrap)
 	return(redrawn);
 }
 
+function draw_graphic_box()
+{
+	if(ypos==topline)
+		graphics_box_displayed=edit_bottom;
+	else
+		graphics_box_displayed=edit_top;
+
+	console.attributes=7;
+	console.gotoxy(1,graphics_box_displayed);
+	if(lines_on_screen < 15) {
+		/* Not enough room for the graphics list (40 chars) */
+		console.putmsg("Enter Graphics Code (\x01HCTRL-C\x01N to cancel): ");
+	}
+	else {
+		/* 54 chars displayed */
+		console.putmsg("Enter Graphics Code (\x01H?\x01N for a list, \x01HCTRL-C\x01N to cancel): ");
+	}
+	console.attributes=31;
+	console.write(format("%3.3s",""));
+}
+
+function erase_graphic_box()
+{
+	draw_line(topline+graphics_box_displayed-edit_top);
+}
+
+function get_graphic()
+{
+	var key='';
+	var inp='';
+	var ch='';
+	var inppos;
+
+	draw_graphic_box();
+	while(1) {
+		if(lines_on_screen<15)
+			console.gotoxy(41,graphics_box_displayed);
+		else
+			console.gotoxy(55,graphics_box_displayed);
+		console.attributes=31;
+		console.write(format("%-3.3s",inp));
+		/* Not enough room to display the graphic reference */
+		if(lines_on_screen<15)
+			console.gotoxy(41+inp.length,graphics_box_displayed);
+		else
+			console.gotoxy(55+inp.length,graphics_box_displayed);
+		ch=console.inkey(0,10000);
+		switch(ch) {
+			case '':
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				switch(inp.length) {
+					case 0:
+						if(ch!='1' && ch!='2') {
+							console.beep();
+							ch='';
+						}
+						break;
+					case 1:
+						if(inp.substr(0,1)=='1' && ch<'2') {
+							console.beep();
+							ch='';
+						}
+						if(inp.substr(0,1)=='2' && ch>'5') {
+							console.beep();
+							ch='';
+						}
+						break;
+					case 2:
+						if(inp.substr(0,2)=='25' && ch>'5') {
+							console.beep();
+							ch='';
+						}
+						if(inp.substr(0,2)=='12' && ch<'8') {
+							console.beep();
+							ch='';
+						}
+						break;
+					default:
+						console.beep();
+						ch='';
+						break;
+				}
+				inp=inp+ch;
+				break;
+			case ctrl('R'):
+				redraw_screen();
+				break;
+			case '\x08':	/* Backspace */
+				inp=inp.substr(0,inp.length-1);
+				break;
+			case '\x0d':	/* CR */
+				if(inp.length<3) {
+					console.beep();
+					break;
+				}
+				erase_graphic_box();
+				return(ascii(parseInt(inp)));
+			case '\x03':	/* CTRL-C */
+				erase_graphic_box();
+				return('');
+			case '?':
+				/* Draws a graphics reference box then waits for a keypress. */
+				if(lines_on_screen<15) {
+					console.beep();
+					break;
+				}
+
+				var l;
+				var x;
+				if(graphics_box_displayed==edit_top)
+					l=graphics_box_displayed+1;
+				else
+					l=graphics_box_displayed-15;
+				console.gotoxy(1,l);
+				console.attributes=7;
+				for(x=128; x<256; x++) {
+					console.write(' ');
+					console.attributes=curattr;
+					console.write(ascii(x));
+					console.attributes=7;
+					console.write(':'+x+'  ');
+				}
+				console.cleartoeol();
+				console.gotoxy(1,l+13);
+				console.putmsg("PRESS ANY KEY TO CONTINUE");
+				console.cleartoeol();
+				console.getkey();
+				for(x=0; x<15; x++)
+					draw_line(topline+l-edit_top+x);
+				break;
+			default:
+				console.beep();
+				break;
+		}
+	}
+}
+
 function erase_colour_box()
 {
 	if(colour_box_displayed) {
@@ -524,6 +674,8 @@ function redraw_screen()
 	status_line();
 	if(colour_box_displayed)
 		draw_colour_box();
+	if(graphic_box_displayed)
+		draw_graphic_box();
 	for(i=edit_top; i<=edit_bottom; i++) {
 		if(i>colour_box_displayed && i<colour_box_displayed+3)
 			continue;
@@ -673,8 +825,6 @@ function edit()
 					}
 				}
 				set_cursor();
-				break;
-			case '\x07':	/* CTRL-G (Beep) */
 				break;
 			case '\x08':	/* Backspace */
 				last_xpos=-1;
@@ -888,6 +1038,12 @@ function edit()
 					draw_line(ypos,xpos);
 				set_cursor();
 				break;
+			case '\x07':	/* CTRL-G (Beep) */
+				/* Enter Graphic Character */
+				key=get_graphic();
+				if(key=='')
+					break;
+				/* Fall-Through */
 			default:		/* Insert the char */
 				last_xpos=-1;
 				/*
