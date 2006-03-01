@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2469,16 +2469,9 @@ static BOOL exec_cgi(http_session_t *session)
 
 		/* Execute command */
 		if(get_cgi_handler(cgipath, sizeof(cgipath))) {
-			char *comspec;
-			comspec=getenv("SHELL");
-			if(comspec==NULL)
-#ifdef _PATH_BSHELL
-				comspec=_PATH_BSHELL;
-#else
-				comspec="/bin/sh";
-#endif
+			char* shell=os_cmdshell();
 			lprintf(LOG_INFO,"%04d Using handler %s to execute %s",session->socket,cgipath,cmdline);
-			execle(comspec,comspec,"-c",cgipath,NULL,env_list);
+			execle(shell,shell,"-c",cgipath,NULL,env_list);
 		}
 		else {
 			execle(cmdline,cmdline,NULL,env_list);
@@ -3848,10 +3841,10 @@ void http_output_thread(void *arg)
 	char	*bufdata;
 	int		failed=0;
 	int		len;
-	int		avail;
+	unsigned avail;
 	int		chunked;
 	int		i;
-	int		mss=OUTBUF_LEN;
+	unsigned mss=OUTBUF_LEN;
 
 	obuf=&(session->outbuf);
 	pthread_mutex_init(&session->outbuf_write,NULL);

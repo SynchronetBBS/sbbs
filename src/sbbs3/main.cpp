@@ -2475,30 +2475,9 @@ bool sbbs_t::init()
 		local_addr=addr.sin_addr.s_addr;
 	}
 
-	comspec=getenv(
-#ifdef __unix__
-		"SHELL"
-#else
-		"COMSPEC"
-#endif
-		);
-	if(comspec==NULL) {
-		errormsg(WHERE, ERR_CHK, 
-#ifdef __unix__
-		"SHELL"
-#else
-		"COMSPEC"
-#endif
-		" environment variable", 0);
-#if defined(__unix__)
-	#if defined(_PATH_BSHELL)
-		comspec =  _PATH_BSHELL;
-	#else
-		comspec = "/bin/sh";
-	#endif
-#else
+	if((comspec=os_cmdshell())==NULL) {
+		errormsg(WHERE, ERR_CHK, OS_CMD_SHELL_ENV_VAR" environment variable", 0);
 		return(false);
-#endif
 	}
 
 	md(cfg.temp_dir);
