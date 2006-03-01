@@ -181,7 +181,7 @@ function str_cmds(str)
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				bbs.exec(get_arg(str),EX_OUTR|EX_INR|EX_OUTL);
+				bbs.exec(get_arg(str),EX_OUTR|EX_INR);
 			}
 			return;
 		}
@@ -194,7 +194,7 @@ function str_cmds(str)
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				bbs.exec(get_arg(str),EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+				bbs.exec(get_arg(str),EX_OUTR|EX_INR|EX_NATIVE);
 			}
 			return;
 		}
@@ -231,7 +231,7 @@ function str_cmds(str)
 			writeln("\texecutes the node utility with the passed parameters.");
 		}
 		if(word=="NODE") {
-			bbs.exec(system.exec_dir+str.toLowerCase(), EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+			bbs.exec(system.exec_dir+str.toLowerCase(), EX_OUTR|EX_INR|EX_NATIVE);
 			return;
 		}
 
@@ -277,7 +277,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
-			bbs.exec(system.exec_dir+"slog /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog /p",EX_OUTR|EX_INR|EX_NATIVE);
 			return;
 		}
 
@@ -287,12 +287,12 @@ function str_cmds(str)
 			writeln("\tIf # is omitted, uses the current node.");
 		}
 		if(str=="NLOG") {
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_OUTR|EX_INR|EX_NATIVE);
 			return;
 		}
 		if(word=="NLOG") {
 			str=str.substr(5);
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_arg(str)+" /p",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_arg(str)+" /p",EX_OUTR|EX_INR|EX_NATIVE);
 			return;
 		}
 
@@ -335,20 +335,19 @@ function str_cmds(str)
 		}
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
-				bbs.exec("command.com",EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+				bbs.exec("command.com",EX_OUTR|EX_INR|EX_NATIVE);
 			}
 			return;
 		}
 
 		if(str=="HELP")
 			writeln("SHELL\tExecutes the native shell (COMSPEC or SHELL env variable).");
-		// ToDo: Isn't there a JS thing that tells me this one?
 		if(str=="SHELL") {	// Unix shell (-i for interactive)
 			if(bbs.check_syspass()) {
 				if(system.platform != 'Win32')
-					bbs.exec(bbs.cmdstr("%y -i"),EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+					bbs.exec(system.cmd_shell+" -i"	,EX_OUTR|EX_INR|EX_NATIVE);
 				else
-					bbs.exec(bbs.cmdstr("%y"),EX_OUTR|EX_INR|EX_OUTL|EX_NATIVE);
+					bbs.exec(system.cmd_shell		,EX_OUTR|EX_INR|EX_NATIVE);
 			}
 			return;
 		}
