@@ -451,6 +451,7 @@ function draw_graphic_box()
 function erase_graphic_box()
 {
 	draw_line(topline+graphics_box_displayed-edit_top);
+	graphics_box_displayed=0;
 }
 
 function get_graphic()
