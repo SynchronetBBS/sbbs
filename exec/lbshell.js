@@ -784,6 +784,7 @@ function clear_screen()
 	 */
 
 	console.attributes=7;
+	console.line_counter=0;
 	console.clear();
 	/* We are going to a line-mode thing... re-enable CTRL keys. */
 	console.ctrlkey_passthru=orig_passthru;
@@ -912,6 +913,7 @@ function show_filemenu()
 						if(file_exists(system.text_dir+"menu/dirs"+(bbs.curlib+1)))
 							bbs.menu("dirs"+(bbs.curlib+1));
 						else {
+							console.line_counter=0;
 							 console.clear();
 							 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
 							 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
@@ -1582,6 +1584,7 @@ function show_messagemenu()
 					if(file_exists(system.text_dir+"menu/subs"+(bbs.curgrp+1)))
 						bbs.menu("subs"+(bbs.curgrp+1));
 					else {
+						console.line_counter=0;
 						console.clear();
 						console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description),P_SAVEATR);
 						for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) {
