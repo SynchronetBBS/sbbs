@@ -371,6 +371,22 @@ char* DLLCALL os_version(char *str)
 	return(str);
 }
 
+char* DLLCALL os_cmdshell(void)
+{
+	char*	shell=getenv(OS_CMD_SHELL_ENV_VAR);
+
+#if !defined(__unix__)
+	if(shell==NULL)
+#ifdef _PATH_BSHELL
+		shell=_PATH_BSHELL;
+#else
+		shell="/bin/sh";
+#endif
+#endif
+
+	return(shell);
+}
+
 #if !defined(__unix__)
 
 /****************************************************************************/
