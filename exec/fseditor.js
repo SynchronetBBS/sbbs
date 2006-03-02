@@ -686,20 +686,25 @@ function redraw_screen()
 }
 
 /*
- * Converts the current lines to a single string and returns it... 
- * soft and colour are bools indicating that soft CRs should become hard, and
+ * Converts the current lines to a single string and returns and array.
+ * the array contains two strings... the first string is the text string and the
+ * second string is the attribute string.  If embed_colour is true, the second
+ * string is blank.
+ * 
+ * soft and embed_colour are bools indicating that soft CRs should become hard, and
  * colour codes should be added
  */
-function make_string(soft,colour)
+function make_strings(soft,embed_colour)
 {
 	var i;
 	var str='';
+	var attrs='';
 	/* ToDo: Do we want to explicitly init the attr if it's normal? */
 	var lastattr=7;
 	var thisattr;
 
 	for(i=0; i<line.length; i++) {
-		if(colour) {
+		if(embed_colour) {
 			for(j=0;j<line[i].length;j++) {
 				if((thisattr=ascii(line[i].substr(j,1)))!=lastattr) {
 					/* Disable HIGH and BLINK if required */
@@ -773,15 +778,23 @@ function make_string(soft,colour)
 			}
 		}
 		else {
-			str.=line[i].text;
+			str+=line[i].text;
+			attrs+=line[i].attr;
 		}
 		if(soft || line[i].hardcr) {
 			/* Trim whitespace */
-			str=str.replace(/\s*$/,'');
+			str=str.replace(/(\s*)$/,function (str, spaces, offset, s) {
+				if(!embed_colour) {
+					/* Remove attributes for trimmed spaces */
+					attrs=attrs.substr(0,attrs.length-spaces.length);
+				}
+				return('');
+			});
 			str+='\n';
+			attrs+=attrs.substr(-1);
 		}
 	}
-	return(str);
+	return([str,attrs]);
 }
 
 /* ToDo: Optimize movement... */
