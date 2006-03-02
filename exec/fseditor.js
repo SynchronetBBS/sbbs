@@ -775,8 +775,11 @@ function make_string(soft,colour)
 		else {
 			str.=line[i].text;
 		}
-		if(soft || line[i].hardcr)
+		if(soft || line[i].hardcr) {
+			/* Trim whitespace */
+			str=str.replace(/\s*$/,'');
 			str+='\n';
+		}
 	}
 	return(str);
 }
