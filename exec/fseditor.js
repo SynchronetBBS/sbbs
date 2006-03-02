@@ -685,6 +685,102 @@ function redraw_screen()
 	set_cursor();
 }
 
+/*
+ * Converts the current lines to a single string and returns it... 
+ * soft and colour are bools indicating that soft CRs should become hard, and
+ * colour codes should be added
+ */
+function make_string(soft,colour)
+{
+	var i;
+	var str='';
+	/* ToDo: Do we want to explicitly init the attr if it's normal? */
+	var lastattr=7;
+	var thisattr;
+
+	for(i=0; i<line.length; i++) {
+		if(colour) {
+			for(j=0;j<line[i].length;j++) {
+				if((thisattr=ascii(line[i].substr(j,1)))!=lastattr) {
+					/* Disable HIGH and BLINK if required */
+					if((!(thisattr&0x80) && lastattr&0x80) || (!(thisattr&0x08) && lastattr&0x08)) {
+						lastattr=7;
+						str+='\x01N';
+					}
+					if(thisattr&0x80 && (!lastattr&0x80))			/* Blink */
+						str+='\x01I';
+					if(thisattr&0x08 && (!lastattr&0x08))			/* High Intensity */
+						str+='\x01H';
+					if(thisattr&0x07 != lastattr&0x07) {
+						switch(thisattr&0x07) {
+							case 0:
+								str+='\x01K';
+								break;
+							case 1:
+								str+='\x01R';
+								break;
+							case 2:
+								str+='\x01G';
+								break;
+							case 3:
+								str+='\x01Y';
+								break;
+							case 4:
+								str+='\x01B';
+								break;
+							case 5:
+								str+='\x01M';
+								break;
+							case 6:
+								str+='\x01C';
+								break;
+							case 7:
+								str+='\x01W';
+								break;
+						}
+					}
+					if(thisattr&0x70 != lastattr&0x70) {
+						switch((thisattr&0x70)>>4) {
+							case 0:
+								str+='\x010';
+								break;
+							case 1:
+								str+='\x011';
+								break;
+							case 2:
+								str+='\x012';
+								break;
+							case 3:
+								str+='\x013';
+								break;
+							case 4:
+								str+='\x014';
+								break;
+							case 5:
+								str+='\x015';
+								break;
+							case 6:
+								str+='\x016';
+								break;
+							case 7:
+								str+='\x017';
+								break;
+						}
+					}
+					lastattr=thisattr;
+				}
+				str+=line[i].substr(j,1);
+			}
+		}
+		else {
+			str.=line[i].text;
+		}
+		if(soft || line[i].hardcr)
+			str+='\n';
+	}
+	return(str);
+}
+
 /* ToDo: Optimize movement... */
 function edit()
 {
@@ -1007,7 +1103,7 @@ function edit()
 				break;
 			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
 				break;
-			case '\x1c':	/* CTRL-\ */
+			case '\x1c':	/* CTRL-\ (RegExp) */
 				break;
 			case '\x1d':	/* KEY_LEFT */
 				last_xpos=-1;
