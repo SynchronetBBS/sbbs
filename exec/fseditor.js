@@ -1368,8 +1368,13 @@ var oldpass=console.ctrlkey_passthru;
 console.ctrlkey_passthru="+ACGLOQRVWXYZ";
 console.clear();
 var f=new File(system.node_dir+"QUOTES.TXT");
-if(f.open("r",false))
+if(f.open("r",false)) {
 	line=make_lines(quote_msg(f.read()),'');
+	ypos=line.length;
+	if(ypos>=topline+lines_on_screen)
+		topline=ypos-lines_on_screen+1;
+	line.push(new Line());
+}
 file='';	/* Free up the memory */
 edit();
 console.ctrlkey_passthru=oldpass;
