@@ -317,6 +317,8 @@ function wrap_line(l)
 	var m2;
 
 	while(1) {
+		if(line[l]==undefined)
+			return(ret);
 		/* Get line length without trailing whitespace */
 		m=line[l].text.match(/^(.*?)\s*$/);
 		if(m!=null) {
@@ -871,13 +873,13 @@ function make_strings(soft,embed_colour)
 			for(j=0;j<line[i].text.length;j++) {
 				if((thisattr=ascii(line[i].attr.substr(j,1)))!=lastattr) {
 					/* Disable HIGH and BLINK if required */
-					if((!(thisattr&0x80) && lastattr&0x80) || (!(thisattr&0x08) && lastattr&0x08)) {
+					if(((!(thisattr&0x80)) && (lastattr&0x80)) || ((!(thisattr&0x08)) && (lastattr&0x08))) {
 						lastattr=7;
 						str+='\x01N';
 					}
-					if(thisattr&0x80 && (!lastattr&0x80))			/* Blink */
+					if((thisattr&0x80) && (!(lastattr&0x80)))			/* Blink */
 						str+='\x01I';
-					if(thisattr&0x08 && (!lastattr&0x08))			/* High Intensity */
+					if((thisattr&0x08) && (!(lastattr&0x08)))			/* High Intensity */
 						str+='\x01H';
 					if((thisattr&0x07) != (lastattr&0x07)) {
 						switch(thisattr&0x07) {
