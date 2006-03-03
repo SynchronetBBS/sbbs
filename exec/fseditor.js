@@ -868,8 +868,8 @@ function make_strings(soft,embed_colour)
 
 	for(i=0; i<line.length; i++) {
 		if(embed_colour) {
-			for(j=0;j<line[i].length;j++) {
-				if((thisattr=ascii(line[i].substr(j,1)))!=lastattr) {
+			for(j=0;j<line[i].text.length;j++) {
+				if((thisattr=ascii(line[i].attr.substr(j,1)))!=lastattr) {
 					/* Disable HIGH and BLINK if required */
 					if((!(thisattr&0x80) && lastattr&0x80) || (!(thisattr&0x08) && lastattr&0x08)) {
 						lastattr=7;
@@ -879,65 +879,65 @@ function make_strings(soft,embed_colour)
 						str+='\x01I';
 					if(thisattr&0x08 && (!lastattr&0x08))			/* High Intensity */
 						str+='\x01H';
-					if(thisattr&0x07 != lastattr&0x07) {
+					if((thisattr&0x07) != (lastattr&0x07)) {
 						switch(thisattr&0x07) {
-							case 0:
+							case BLACK:
 								str+='\x01K';
 								break;
-							case 1:
+							case RED:
 								str+='\x01R';
 								break;
-							case 2:
+							case GREEN:
 								str+='\x01G';
 								break;
-							case 3:
+							case BROWN:
 								str+='\x01Y';
 								break;
-							case 4:
+							case BLUE:
 								str+='\x01B';
 								break;
-							case 5:
+							case MAGENTA:
 								str+='\x01M';
 								break;
-							case 6:
+							case CYAN:
 								str+='\x01C';
 								break;
-							case 7:
+							case WHITE:
 								str+='\x01W';
 								break;
 						}
 					}
-					if(thisattr&0x70 != lastattr&0x70) {
+					if((thisattr&0x70) != (lastattr&0x70)) {
 						switch((thisattr&0x70)>>4) {
-							case 0:
+							case BLACK:
 								str+='\x010';
 								break;
-							case 1:
+							case RED:
 								str+='\x011';
 								break;
-							case 2:
+							case GREEN:
 								str+='\x012';
 								break;
-							case 3:
+							case BROWN:
 								str+='\x013';
 								break;
-							case 4:
+							case BLUE:
 								str+='\x014';
 								break;
-							case 5:
+							case MAGENTA:
 								str+='\x015';
 								break;
-							case 6:
+							case CYAN:
 								str+='\x016';
 								break;
-							case 7:
+							case WHITE:
 								str+='\x017';
 								break;
 						}
 					}
 					lastattr=thisattr;
 				}
-				str+=line[i].substr(j,1);
+				str+=line[i].text.substr(j,1);
 			}
 		}
 		else {
@@ -953,11 +953,11 @@ function make_strings(soft,embed_colour)
 				}
 				return('');
 			});
-			str+='\n';
-			attrs+=attrs.substr(-1);
+			str+='\r\n';
+			attrs+=attrs.substr(-1)+attrs.substr(-1);
 		}
 	}
-	return([str,attrs]);
+	return(new Array(str,attrs));
 }
 
 /* ToDo: Optimize movement... */
@@ -1162,11 +1162,13 @@ function edit()
 				break;
 			case '\x0e':	/* CTRL-N */
 				break;
-			case '\x0f':	/* CTRL-O (Quick Save in SyncEdit) */
+			case '\x0f':	/* CTRL-O (Quick Save/exit in SyncEdit) */
 				var f=new File(system.temp_dir+"INPUT.MSG");
+				f.open("w");
 				var s=make_strings(true,true);
 				f.write(s[0]);
-				break;
+				f.close();
+				return;
 			case '\x10':	/* CTRL-P */
 				break;
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
@@ -1363,7 +1365,7 @@ var old_status=bbs.sys_status;
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACLQRVWXZ";
+console.ctrlkey_passthru="+ACGLOQRVWXYZ";
 console.clear();
 var f=new File(system.node_dir+"QUOTES.TXT");
 if(f.open("r",false))
