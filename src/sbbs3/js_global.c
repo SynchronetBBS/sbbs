@@ -715,6 +715,10 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((outbuf=(char*)malloc((strlen(inbuf)*strlen(prefix))+1))==NULL)
 		return(JS_FALSE);
 
+	len-=strlen(prefix);
+	if(len<=0)
+		return(JS_FALSE);
+
 	if((linebuf=(char*)malloc(len+1))==NULL)
 		return(JS_FALSE);
 
