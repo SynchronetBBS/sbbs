@@ -184,6 +184,7 @@ function set_cursor()
 	if(xpos>80)
 		xpos=80;
 	console.gotoxy(x,y);
+	console.attributes=curattr;
 }
 
 var lastinsert=false;
@@ -686,7 +687,157 @@ function redraw_screen()
 }
 
 /*
- * Converts the current lines to a single string and returns and array.
+ * Converts a pair of strings to an array of lines.
+ * 
+ * str:          The text of the message.
+ * attr:         An attribute string of the message
+ * nl_is_hardcr: Indicates that every NL is a hard cr
+ */
+function make_lines(str, attr, nl_is_hardcr)
+{
+	nl=new Array();
+	var oldstr=str;
+	var oldattr=attr;
+	thisattr=7;
+
+	/* Fix up the attr string to match str in length... 
+	 * strip/interpret ^A and strip CRs
+	 */
+	str='';
+	attr='';
+	while(oldstr.length) {
+		if(oldattr.length) {
+			thisattr=ascii(oldattr.substr(0,1));
+			oldattr=oldattr.substr(1);
+		}
+		switch(oldstr.substr(0,1)) {
+			case '\r':
+				oldstr=oldstr.substr(1);
+				break;
+			case '\x01':
+				oldstr=oldstr.substr(1);
+				switch(oldstr.substr(0,1)) {
+					case 'K':
+						thisattr&=0xf8;
+						break;
+					case 'R':
+						thisattr=(thisattr&0xf8)|RED;
+						break;
+					case 'G':
+						thisattr=(thisattr&0xf8)|GREEN;
+						break;
+					case 'Y':
+						thisattr=(thisattr&0xf8)|BROWN;
+						break;
+					case 'B':
+						thisattr=(thisattr&0xf8)|BLUE;
+						break;
+					case 'M':
+						thisattr=(thisattr&0xf8)|MAGENTA;
+						break;
+					case 'C':
+						thisattr=(thisattr&0xf8)|CYAN;
+						break;
+					case 'W':
+						thisattr=(thisattr&0xf8)|LIGHTGRAY;
+						break;
+					case '0':
+						thisattr=(thisattr&0x8f);
+						break;
+					case '1':
+						thisattr=(thisattr&0x8f)|(RED<<4);
+						break;
+					case '2':
+						thisattr=(thisattr&0x8f)|(GREEN<<4);
+						break;
+					case '3':
+						thisattr=(thisattr&0x8f)|(BROWN<<4);
+						break;
+					case '4':
+						thisattr=(thisattr&0x8f)|(BLUE<<4);
+						break;
+					case '5':
+						thisattr=(thisattr&0x8f)|(MAGENTA<<4);
+						break;
+					case '6':
+						thisattr=(thisattr&0x8f)|(CYAN<<4);
+						break;
+					case '7':
+						thisattr=(thisattr&0x8f)|(LIGHTGRAY<<4);
+						break;
+					case 'H':
+						thisattr|=0x08;
+						break;
+					case 'I':
+						thisattr|=0x80;
+						break;
+					case 'N':
+						thisattr=7;
+						break;
+					case '\x01':
+						str=str+'\x01';
+						attr=attr+ascii(thisattr);
+						break;
+					default:
+				}
+				oldstr=oldstr.substr(1);
+				break;
+			default:
+				str=str+oldstr.substr(0,1);
+				oldstr=oldstr.substr(1);
+				attr=attr+ascii(thisattr);
+		}
+	}
+	while(str.length>0) {
+		var m=str.match(/^(.{0,79} *)(\n?)/);
+		if(m!=null) {
+			/* We have zero or more characters followed by zero or more spaces followed by zero or one \n */
+			nl[nl.length]=new Line;
+			nl[nl.length-1].text=m[1]+m[2];
+			nl[nl.length-1].attr=attr.substr(0,nl[nl.length-1].text.length);
+			str=str.substr(m[0].length);
+			attr=attr.substr(m[0].length);
+			if(nl_is_hardcr) {
+				if(m[3].length>0)
+					nl[nl.length-1].hardcr=true;
+			}
+			else {
+				/* Deduce if this is a hard or soft CR as follows */
+				/* If the next char is a nl, or whitespace, it is hard. */
+				/* If there is room for the first word of the next line on this
+				 * line, it is hard */
+				/* Otherwise, it is soft. */
+
+				/* Next line starts with whitespace - is hard */
+				if(str.search(/^\s/)!=-1)
+					nl[nl.length-1].hardcr=true;
+				else {
+					/* Get first word of next line */
+					var m2=str.match(/^(.*\s)/);
+					if(m2!=null) {
+						if(m[1].length+m2[1].length<80)
+							nl[nl.length-1].hardcr=true;
+					}
+				}
+			}
+			/* If we have 79 chars in a row with no spaces and not a whitspace
+			 * on the end, and the forst char of the next line isn't whitespace,
+			 * we have a kludged line */
+			if(nl[nl.length-1].text.length==79 && nl[nl.length-1].text.search(/\s/)==-1 && str.search(/^\s/)==-1)
+				nl[nl.length-1].kludged=true;
+		}
+		else {
+			/* Not sure how THIS could happen */
+			alert("The impossible happened.");
+			console.pause();
+			exit();
+		}
+	}
+	return(nl);
+}
+
+/*
+ * Converts the current lines to a single string and returns an array.
  * the array contains two strings... the first string is the text string and the
  * second string is the attribute string.  If embed_colour is true, the second
  * string is blank.
@@ -782,7 +933,7 @@ function make_strings(soft,embed_colour)
 			attrs+=line[i].attr;
 		}
 		if(soft || line[i].hardcr) {
-			/* Trim whitespace */
+			/* Trim whitespace from end */
 			str=str.replace(/(\s*)$/,function (str, spaces, offset, s) {
 				if(!embed_colour) {
 					/* Remove attributes for trimmed spaces */
