@@ -16,8 +16,6 @@ var curattr=7;								/* Current attribute */
 var colour_box_displayed=0;					/* Row the colour box is displayed
 												on. used for redraw */
 var graphics_box_displayed=0;				/* Row the graphic box is displayed
-var graphics_list_displayed=0;				/* Row the graphic list is displayed
-												on. used for redraw */
 /* Create an initial line... this may not be necessary when replying */
 line[0]=new Line();
 
@@ -72,11 +70,11 @@ function draw_line(l,x,clear)
 
 		/* ToDo we need to optimize cursor movement somehow... */
 		console.gotoxy(x+1,yp);
-		for(; x<line[l].text.length && x<80; x++) {
+		for(; x<line[l].text.length && x<79; x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
 			console.write(line[l].text.substr(x,1));
 		}
-		if(clear && x<80) {
+		if(clear && x<79) {
 			console.attributes=7;
 			console.cleartoeol();
 		}
@@ -216,6 +214,7 @@ function unwrap_line(l)
 	var lines=0;
 	var ret=-1;
 	var first=true;
+	var old_lines=line.length;
 
 	while(!done && line[l+1]!=undefined) {
 		if(line[l]==undefined) {
@@ -295,8 +294,14 @@ function unwrap_line(l)
 		l++;
 		first=false;
 	}
-	if(lines>0)
-		draw_line(l);
+	if(lines>0) {
+		draw_line(l++);
+	}
+	if(old_lines!=line.length) {
+		/* We need to redraw everything... line(s) deleted */
+		for(;l>line.length;l++)
+			draw_line(l);
+	}
 	return(ret);
 }
 
@@ -676,10 +681,12 @@ function redraw_screen()
 	status_line();
 	if(colour_box_displayed)
 		draw_colour_box();
-	if(graphic_box_displayed)
+	if(graphics_box_displayed)
 		draw_graphic_box();
 	for(i=edit_top; i<=edit_bottom; i++) {
-		if(i>colour_box_displayed && i<colour_box_displayed+3)
+		if(colour_box_displayed>0 && i>=colour_box_displayed && i<colour_box_displayed+3)
+			continue;
+		if(graphics_box_displayed>0 && i==graphics_box_displayed)
 			continue;
 		draw_line(i-edit_top+topline);
 	}
@@ -716,7 +723,7 @@ function make_lines(str, attr, nl_is_hardcr)
 				break;
 			case '\x01':
 				oldstr=oldstr.substr(1);
-				switch(oldstr.substr(0,1)) {
+				switch(oldstr.substr(0,1).toUpperCase()) {
 					case 'K':
 						thisattr&=0xf8;
 						break;
@@ -793,12 +800,12 @@ function make_lines(str, attr, nl_is_hardcr)
 		if(m!=null) {
 			/* We have zero or more characters followed by zero or more spaces followed by zero or one \n */
 			nl[nl.length]=new Line;
-			nl[nl.length-1].text=m[1]+m[2];
+			nl[nl.length-1].text=m[1];
 			nl[nl.length-1].attr=attr.substr(0,nl[nl.length-1].text.length);
 			str=str.substr(m[0].length);
 			attr=attr.substr(m[0].length);
 			if(nl_is_hardcr) {
-				if(m[3].length>0)
+				if(m[2].length>0)
 					nl[nl.length-1].hardcr=true;
 			}
 			else {
@@ -818,6 +825,11 @@ function make_lines(str, attr, nl_is_hardcr)
 						if(m[1].length+m2[1].length<80)
 							nl[nl.length-1].hardcr=true;
 					}
+				}
+				/* Add trailing space if needed */
+				if((!nl[nl.length-1].hardcr) && nl[nl.length-1].text.search(/\s^/)==-1) {
+					nl[nl.length-1].text+=' ';
+					nl[nl.length-1].attr+=nl[nl.length-1].attr.substr(-1);
 				}
 			}
 			/* If we have 79 chars in a row with no spaces and not a whitspace
@@ -953,7 +965,7 @@ function edit()
 {
 	var key;
 
-	status_line();
+	redraw_screen();
 	while(1) {
 		key=console.inkey(0,10000);
 		if(key=='')
@@ -1220,9 +1232,11 @@ function edit()
 					console.beep();
 					break;
 				}
-				ypos+=lines_on_screen;
+				ypos+=lines_on_screen-1;
 				if(ypos>line.length-1)
 					ypos=line.length-1;
+				if(ypos>=topline+lines_on_screen)
+					topline=ypos-lines_on_screen+1;
 				var i;
 				for(i=edit_top; i<=edit_bottom; i++)
 					draw_line(i-edit_top+topline);
@@ -1257,9 +1271,11 @@ function edit()
 					console.beep();
 					break;
 				}
-				ypos-=lines_on_screen;
+				ypos-=lines_on_screen-1;
 				if(ypos<0)
 					ypos=0;
+				if(topline>ypos)
+					topline=ypos;
 				var i;
 				for(i=edit_top; i<=edit_bottom; i++)
 					draw_line(i-edit_top+topline);
@@ -1340,8 +1356,16 @@ function edit()
 	}
 }
 
+var old_status=bbs.sys_status;
+bbs.sys_status&=~SS_PAUSEON;
+bbs.sys_status&=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
 console.ctrlkey_passthru="+ACLQRVWXZ";
 console.clear();
+var f=new File(system.node_dir+"QUOTES.TXT");
+if(f.open("r",false))
+	line=make_lines(quote_msg(f.read()),'');
+file='';	/* Free up the memory */
 edit();
 console.ctrlkey_passthru=oldpass;
+bbs.sys_status=old_status;
