@@ -1163,6 +1163,9 @@ function edit()
 			case '\x0e':	/* CTRL-N */
 				break;
 			case '\x0f':	/* CTRL-O (Quick Save in SyncEdit) */
+				var f=new File(system.temp_dir+"INPUT.MSG");
+				var s=make_strings(true,true);
+				f.write(s[0]);
 				break;
 			case '\x10':	/* CTRL-P */
 				break;
@@ -1358,7 +1361,7 @@ function edit()
 
 var old_status=bbs.sys_status;
 bbs.sys_status&=~SS_PAUSEON;
-bbs.sys_status&=SS_PAUSEOFF;
+bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
 console.ctrlkey_passthru="+ACLQRVWXZ";
 console.clear();
