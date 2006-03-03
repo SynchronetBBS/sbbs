@@ -726,7 +726,7 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(i=l=0;inbuf[i];i++) {
 		if(l==0)
 			strcat(outbuf,prefix);
-		if(l<len)
+		if(l<len || inbuf[i]=='\n' || inbuf[i]=='\r')
 			linebuf[l++]=inbuf[i];
 		if(inbuf[i]=='\n') {
 			strncat(outbuf,linebuf,l);
