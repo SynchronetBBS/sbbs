@@ -112,7 +112,7 @@ if(msg.type=="plain") {
     }
     /* Plain text */
     else {
-        template.body=word_wrap(template.body,80);
+        template.body=word_wrap(template.body);
         template.body=html_encode(template.body,true,false,false,false);
     }
 }

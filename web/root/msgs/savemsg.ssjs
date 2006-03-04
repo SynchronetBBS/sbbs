@@ -38,7 +38,7 @@ else {
 
 var body=http_request.query.body[0];
 body=body.replace(/([^\r])\n/g,"$1\r\n");
-body=word_wrap(body, 80);
+body=word_wrap(body);
 
 hdrs.from=user.alias;
 hdrs.from_ext=user.number;
