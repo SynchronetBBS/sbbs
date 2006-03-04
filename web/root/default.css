@@ -130,10 +130,9 @@ td.rtn {
 }
 
 #tlink { 
-	 position: fixed;
-	 top: 52px;
-	 left: 54px;
-	 float: left;	
+	top: 52px;
+	left: 54px;
+	float: left;	
     font-size: small; 
     color: #7788ff; 
     font-weight: bold; 
