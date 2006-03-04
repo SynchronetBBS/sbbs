@@ -612,8 +612,11 @@ static JSBool
 js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		l,len=79;
-	ulong		i,k;
-	int			col=1;
+	int32		oldlen=79;
+	int32		crcount;
+	ulong		i,k,t;
+	int			ocol=1;
+	int			icol=1;
 	uchar*		inbuf;
 	char*		outbuf;
 	char*		linebuf;
@@ -631,54 +634,146 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>1)
 		JS_ValueToInt32(cx,argv[1],&len);
 
+	if(argc>2)
+		JS_ValueToInt32(cx,argv[2],&oldlen);
+
 	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes */
 		return(JS_FALSE);
 
 	outbuf[0]=0;
-	for(i=l=0;inbuf[i];) {
-		if(inbuf[i]=='\r' || inbuf[i]==FF) {
-			strncat(outbuf,linebuf,l);
-			l=0;
-			col=1;
+	for(i=l=0; inbuf[i]; i++) {
+		switch(inbuf[i]) {
+			case '\r':
+				crcount++;
+				break;
+			case '\n':
+				if(!inbuf[i+1]) {			/* EOF */
+					linebuf[l++]='\r';
+					linebuf[l++]='\n';
+					strncat(outbuf, linebuf, l);
+					l=0;
+					ocol=1;
+				}
+				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
+					linebuf[l++]='\r';
+					linebuf[l++]='\n';
+					strncat(outbuf, linebuf, l);
+					l=0;
+					ocol=1;
+				}
+				else {
+					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
+						/* k will equal the length of the first word on the next line */
+						for(k=0; inbuf[i+1+k] && (!isspace(inbuf[i+1+k])); k++);
+						if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
+							linebuf[l++]='\r';
+							linebuf[l++]='\n';
+							strncat(outbuf, linebuf, l);
+							l=0;
+							ocol=1;
+						}
+						else {		/* Not a hard CR... add space if needed */
+							if(!isspace(linebuf[l-1]))
+								linebuf[l++]=' ';
+						}
+					}
+					else {			/* Not a hard CR... add space if needed */
+							if(!isspace(linebuf[l-1]))
+								linebuf[l++]=' ';
+					}
+				}
+				icol=1;
+				break;
+			case '\x1f':	/* Delete... meaningless... strip. */
+				break;
+			case '\b':		/* Backspace... handle if possible, but don't go crazy. */
+				if(l>0) {
+					if(l>1 && linebuf[l-2]=='\x01') {
+						if(linebuf[l-1]=='\x01') {
+							ocol--;
+							icol--;
+						}
+						l-=2;
+					}
+					else {
+						l--;
+						ocol--;
+						icol--;
+					}
+				}
+				break;
+			case '\t':		/* TAB */
+				linebuf[l++]=inbuf[i];
+				/* Can't ever wrap on whitespace remember. */
+				icol++;
+				ocol++;
+				while(ocol%8)
+					ocol++;
+				while(icol%8)
+					icol++;
+				break;
+			case '\x01':	/* CTRL-A */
+				linebuf[l++]=inbuf[i++];
+				if(inbuf[i]!='\x01') {
+					linebuf[l++]=inbuf[i];
+					break;
+				}
+			default:
+				linebuf[l++]=inbuf[i];
+				ocol++;
+				icol++;
+				if(ocol>len && !isspace(inbuf[i])) {		/* Need to wrap here */
+					/* Find the start of the last word */
+					k=l;									/* Original next char */
+					l--;									/* Move back to the last char */
+					while(!isspace(linebuf[l]) && l>0)		/* Move back to the last non-space char */
+						l--;
+					if(l==0) {		/* Couldn't wrap... must chop. */
+						l=k;
+						while(linebuf[l-2]=='\x01' && linebuf[l-1]!='\x01')
+							l-=2;
+						if(linebuf[l-1]=='\x01')
+							l--;
+						l--;
+					}
+					t=l+1;									/* Store start position of next line */
+					/* Move to start of whitespace */
+					while(l>0 && isspace(l))
+						l--;
+					strncat(outbuf, linebuf, l+1);
+					strcat(outbuf, "\r\n");
+					/* Move trailing words to start of buffer. */
+					if(k-t>0)							/* k-1 is the last char position.  t is the start of the next line position */
+						memmove(linebuf, linebuf+t, k-t);
+					l=k-t;
+					/* Find new ocol */
+					for(ocol=1,t=0; t<l; t++) {
+						switch(linebuf[t]) {
+							case '\x01':	/* CTRL-A */
+								if(linebuf[t+1]!='\x01')
+									break;
+								t++;
+								/* Fall-through */
+							default:
+								ocol++;
+						}
+					}
+				}
 		}
-		else if(inbuf[i]=='\t') {
-			if((col%8)==0)
-				col++;
-			col+=(col%8);
-		} else if(inbuf[i]==CTRL_A && inbuf[i+1]!=0) {
-			if(l<(len*2)) {
-				strncpy(linebuf+l,inbuf+i,2);
-				l+=2;
-			}
-			i+=2;
-			continue;
-		} else if(inbuf[i]>=' ')
-			col++;
-		linebuf[l]=inbuf[i++];
-		if(col<=len) {
-			l++;
-			continue;
-		}
-		/* wrap line here */
-		k=l;
-		while(k && linebuf[k]>' ' && linebuf[k-1]!=CTRL_A) k--;
-		if(k==0)	/* continuous printing chars, no word wrap possible */
-			strncat(outbuf,linebuf,l+1);
-		else {
-			i-=(l-k);	/* rewind to start of next word */
-			linebuf[k]=0;
-			truncsp(linebuf);
-			strcat(outbuf,linebuf);
-		}
-		strcat(outbuf,"\r\n");
-		/* skip white space (but no more than one LF) for starting of new line */
-		while(inbuf[i] && inbuf[i]<=' ' && inbuf[i]!='\n' && inbuf[i]!=CTRL_A) i++;	
-		if(inbuf[i]=='\n') i++;
-		l=0;
-		col=1;
 	}
-	if(l)	/* remainder */
+	/* Trailing bits. */
+	if(l) {
+		linebuf[l++]='\r';
+		linebuf[l++]='\n';
 		strncat(outbuf,linebuf,l);
+	}
+	/* If there were no CRs in the input, strip all CRs */
+	if(!crcount) {
+		for(inbuf=outbuf; *inbuf; inbuf++) {
+			if(*inbuf=='\r')
+				memmove(inbuf, inbuf+1, strlen(inbuf));
+		}
+	}
 
 	js_str = JS_NewStringCopyZ(cx, outbuf);
 	free(outbuf);
