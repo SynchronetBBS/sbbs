@@ -624,6 +624,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		prefix=NULL;
 	int			prefix_len=0;
 	int			prefix_bytes=0;
+	int			tmp_prefix_len;
+	int			tmp_prefix_bytes;
 	int			quote_count=0;
 	JSString*	js_str;
 
@@ -651,6 +653,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(handle_quotes) {
 		if((prefix=(char *)malloc((len*2)+2))==NULL) /* room for ^A codes */
 			return(JS_FALSE);
+		prefix[0]=0;
 	}
 
 	outbuf[0]=0;
@@ -673,102 +676,140 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 						k=prefix_bytes;
 						prefix_bytes=0;
 						prefix_len=0;
+						tmp_prefix_bytes=0;
+						tmp_prefix_len=0;
 						quote_count=0;
-						while(t && t<6) {
-							prefix_bytes++;
+						while(t) {
+							tmp_prefix_bytes++;
 							/* Skip CTRL-A codes */
-							while(inbuf[i+prefix_bytes]=='\x01') {
-								k++;
-								if(inbuf[i+prefix_bytes]=='\x01')
+							while(inbuf[i+tmp_prefix_bytes]=='\x01') {
+								tmp_prefix_bytes++;
+								if(inbuf[i+tmp_prefix_bytes]=='\x01')
 									break;
-								k++;
+								tmp_prefix_bytes++;
 							}
-							prefix_len++;
+							tmp_prefix_len++;
 							switch(t) {
 								case 1:		/* At start of possible quote (Next char should be space) */
-									if(inbuf[i+prefix_bytes]!=' ') {
-										if(prefix_bytes>1)
-											t=6;
-										else
-											t=0;
-									}
+									if(inbuf[i+tmp_prefix_bytes]!=' ')
+										t=0;
 									else
 										t++;
 									break;
 								case 2:		/* At start of nick (next char should be alphanum or '>') */
-									if(inbuf[i+prefix_bytes]==' ')
+									if(inbuf[i+tmp_prefix_bytes]==' ' || inbuf[i+tmp_prefix_bytes]==0)
 										t=0;
 									else {
-										if(inbuf[i+prefix_bytes]=='>')
+										if(inbuf[i+tmp_prefix_bytes]=='>')
 											t=5;
 										else
 											t++;
 									}
 									break;
 								case 3:		/* At second nick initial (next char should be alphanum or '>') */
-									if(inbuf[i+prefix_bytes]==' ')
+									if(inbuf[i+tmp_prefix_bytes]==' ' || inbuf[i+tmp_prefix_bytes]==0)
 										t=0;
-									else {
-										if(inbuf[i+prefix_bytes]=='>')
-											t=5;
-										else
-											t++;
-									}
+									else if(inbuf[i+tmp_prefix_bytes]=='>')
+										t=5;
+									else
+										t++;
 									break;
-								case 4:		/* After two regular chars, next should HAS to be a '>') */
-									if(inbuf[i+prefix_bytes]!='>')
+								case 4:		/* After two regular chars, next HAS to be a '>') */
+									if(inbuf[i+tmp_prefix_bytes]!='>')
 										t=0;
 									else
 										t++;
 									break;
 								case 5:		/* At '>' next char must be a space */
-									if(inbuf[i+prefix_bytes]!=' ')
+									if(inbuf[i+tmp_prefix_bytes]!=' ')
 										t=0;
 									else {
-										t++;
+										t=1;
+										prefix_len=tmp_prefix_len;
+										prefix_bytes=tmp_prefix_bytes;
 										quote_count++;
+										/* Some editors don't put double spaces in between */
+										if(inbuf[i+tmp_prefix_bytes+1]!=' ')
+											t++;
 									}
+									break;
+								default:
+									t=0;
 									break;
 							}
 						}
-						if(!t) {
-							prefix_bytes=0;
-							prefix_len=0;
-							prefix[0]=0;
-						}
-						else {
-							/* New prefix (different len, or different text)?  Force a new line and copy the new prefix */
-							if(prefix_bytes != k || (!memcmp(prefix,inbuf+i+1,prefix_bytes+1))) {
-								memcpy(prefix,inbuf+i+1,prefix_bytes);
-								prefix[prefix_bytes]=0;
-								linebuf[l++]='\r';
-								linebuf[l++]='\n';
-								strncat(outbuf, linebuf, l);
-								if(prefix)
-									strcpy(linebuf,prefix);
-								l=prefix_bytes;
-								ocol=prefix_len+1;
-								i++;	/* Do not keep the space (ie: cheat) for the first line of this quote block */
-							}
-							i+=prefix_bytes-1;	/* Keep the space (kinda a cheat... don't tell anyone) */
-						}
-						/* Now, if the NEXT char is also whitespace, it's still a hardcr... so there. */
-						if(isspace(inbuf[i+1])) {
+						/* Terminate the prefix (yes, even before copying it) */
+						prefix[prefix_bytes]=0;
+						/* If there is no prefix, it is a hardcr */
+						if(!quote_count) {
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
 							strncat(outbuf, linebuf, l);
-							if(prefix)
+							l=0;
+							ocol=1;
+						}
+						else {
+							/* If there's a new prefix, it is a hardcr */
+							if(prefix_bytes != k || (memcmp(prefix,inbuf+i+1,prefix_bytes))) {
+								memcpy(prefix,inbuf+i+1,prefix_bytes);
+								linebuf[l++]='\r';
+								linebuf[l++]='\n';
+								strncat(outbuf, linebuf, l);
 								strcpy(linebuf,prefix);
-							l=prefix_bytes;
-							ocol=prefix_len+1;
+								l=prefix_bytes;
+								ocol=prefix_len+1;
+								/* Move the input pointer offset to the last char (a space) of the prefix */
+								i+=prefix_bytes;
+							}
+							else {
+								/* Move the input pointer offset to the last char (a space) of the prefix */
+								i+=prefix_bytes;
+								/* If the next char is whitespace, it is a hardcr */
+								if(isspace(inbuf[i+1])) {
+									linebuf[l++]='\r';
+									linebuf[l++]='\n';
+									strncat(outbuf, linebuf, l);
+									strcpy(linebuf,prefix);
+									l=prefix_bytes;
+									ocol=prefix_len+1;
+								}
+								else {
+									/*
+									 * It is *not* a hardcr, so we may need to add a trailing space
+									 * this is a copy/paste from below.
+									 */
+									if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
+										/* k will equal the length of the first word on the next line */
+										for(k=0; inbuf[i+1+k] && (!isspace(inbuf[i+1+k])); k++);
+										if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
+											linebuf[l++]='\r';
+											linebuf[l++]='\n';
+											strncat(outbuf, linebuf, l);
+											strcpy(linebuf,prefix);
+											l=prefix_bytes;
+											ocol=prefix_len+1;
+										}
+										else {		/* Not a hard CR... add space if needed */
+											if(!isspace(linebuf[l-1])) {
+												linebuf[l++]=' ';
+												ocol++;
+											}
+										}
+									}
+									else {			/* Not a hard CR... add space if needed */
+										if(!isspace(linebuf[l-1])) {
+											linebuf[l++]=' ';
+											ocol++;
+										}
+									}
+								}
+							}
 						}
 					}
 					else {
 						linebuf[l++]='\r';
 						linebuf[l++]='\n';
 						strncat(outbuf, linebuf, l);
-						if(prefix)
-							strcpy(linebuf,prefix);
 						l=0;
 						ocol=1;
 					}
@@ -787,13 +828,17 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 							ocol=prefix_len+1;
 						}
 						else {		/* Not a hard CR... add space if needed */
-							if(!isspace(linebuf[l-1]))
+							if(!isspace(linebuf[l-1])) {
 								linebuf[l++]=' ';
+								ocol++;
+							}
 						}
 					}
 					else {			/* Not a hard CR... add space if needed */
-							if(!isspace(linebuf[l-1]))
-								linebuf[l++]=' ';
+						if(!isspace(linebuf[l-1])) {
+							linebuf[l++]=' ';
+							ocol++;
+						}
 					}
 				}
 				icol=prefix_len+1;
@@ -908,7 +953,7 @@ static JSBool
 js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		len=79;
-	int			i,l;
+	int			i,l,clen;
 	uchar*		inbuf;
 	char*		outbuf;
 	char*		linebuf;
@@ -938,14 +983,24 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	outbuf[0]=0;
+	clen=0;
 	for(i=l=0;inbuf[i];i++) {
-		if(l==0)
+		if(l==0)	/* Do not use clen here since if the line starts with ^A, could stay at zero */
 			strcat(outbuf,prefix);
-		if(l<len || inbuf[i]=='\n' || inbuf[i]=='\r')
+		if(clen<len || inbuf[i]=='\n' || inbuf[i]=='\r')
 			linebuf[l++]=inbuf[i];
+		if(inbuf[i]=='\x01') {		/* Handle CTRL-A */
+			linebuf[l++]=inbuf[++i];
+			if(inbuf[i]=='\x01')
+				clen++;
+		}
+		else
+			clen++;
+		/* ToDo: Handle TABs etc. */
 		if(inbuf[i]=='\n') {
 			strncat(outbuf,linebuf,l);
 			l=0;
+			clen=0;
 		}
 	}
 	if(l)	/* remainder */
