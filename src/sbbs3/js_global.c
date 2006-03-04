@@ -614,12 +614,16 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int32		l,len=79;
 	int32		oldlen=79;
 	int32		crcount;
+	JSBool		handle_quotes=JS_TRUE;
 	ulong		i,k,t;
 	int			ocol=1;
 	int			icol=1;
 	uchar*		inbuf;
 	char*		outbuf;
 	char*		linebuf;
+	char*		prefix=NULL;
+	int			prefix_len=0;
+	int			prefix_bytes=0;
 	JSString*	js_str;
 
 	if(JSVAL_IS_VOID(argv[0]))
@@ -637,8 +641,16 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>2)
 		JS_ValueToInt32(cx,argv[2],&oldlen);
 
+	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
+		handle_quotes=JSVAL_TO_BOOLEAN(argv[3]);
+
 	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes */
 		return(JS_FALSE);
+
+	if(handle_quotes) {
+		if((prefix=(char *)malloc((len*2)+2))==NULL) /* room for ^A codes */
+			return(JS_FALSE);
+	}
 
 	outbuf[0]=0;
 	for(i=l=0; inbuf[i]; i++) {
@@ -654,12 +666,97 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					l=0;
 					ocol=1;
 				}
-				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
-					linebuf[l++]='\r';
-					linebuf[l++]='\n';
-					strncat(outbuf, linebuf, l);
-					l=0;
-					ocol=1;
+				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. or quoted */
+					if(handle_quotes) {
+						/* k will be the new prefix_bytes */
+						t=1;
+						k=prefix_bytes;
+						prefix_bytes=0;
+						prefix_len=0;
+						while(t && t<6) {
+							prefix_bytes++;
+							/* Skip CTRL-A codes */
+							while(inbuf[i+prefix_bytes]=='\x01') {
+								k++;
+								if(inbuf[i+prefix_bytes]=='\x01')
+									break;
+								k++;
+							}
+							prefix_len++;
+							switch(t) {
+								case 1:		/* At start of possible quote (Next char should be space) */
+									if(inbuf[i+prefix_bytes]!=' ') {
+										if(prefix_bytes>1)
+										t=6;
+									}
+									else
+										t++;
+									break;
+								case 2:		/* At start of nick (next char should be alphanum or '>') */
+									if(inbuf[i+prefix_bytes]==' ')
+										t=0;
+									else {
+										if(inbuf[i+prefix_bytes]=='>')
+											t=5;
+										else
+											t++;
+									}
+									break;
+								case 3:		/* At second nick initial (next char should be alphanum or '>') */
+									if(inbuf[i+prefix_bytes]==' ')
+										t=0;
+									else {
+										if(inbuf[i+prefix_bytes]=='>')
+											t=5;
+										else
+											t++;
+									}
+									break;
+								case 4:		/* After two regular chars, next should HAS to be a '>') */
+									if(inbuf[i+prefix_bytes]!='>')
+										t=0;
+									else
+										t++;
+									break;
+								case 5:		/* At '>' next char must be a space */
+									if(inbuf[i+prefix_bytes]!=' ')
+										t=0;
+									else
+										t++;
+									break;
+							}
+						}
+						if(!t) {
+							prefix_bytes=0;
+							prefix_len=0;
+							prefix[0]=0;
+						}
+						else {
+							/* New prefix (different len, or different text)?  Force a new line and copy the new prefix */
+							if(prefix_bytes != k || (!memcmp(prefix,inbuf+i+1,prefix_bytes+1))) {
+								memcpy(prefix,inbuf+i+1,prefix_bytes);
+								prefix[prefix_bytes]=0;
+								linebuf[l++]='\r';
+								linebuf[l++]='\n';
+								strncat(outbuf, linebuf, l);
+								if(prefix)
+									strcpy(linebuf,prefix);
+								l=prefix_bytes;
+								ocol=prefix_len;
+								i++;	/* Do not keep the space (ie: cheat) for the first line of this quote block */
+							}
+							i+=prefix_bytes-1;	/* Keep the space (kinda a cheat... don't tell anyone) */
+						}
+					}
+					else {
+						linebuf[l++]='\r';
+						linebuf[l++]='\n';
+						strncat(outbuf, linebuf, l);
+						if(prefix)
+							strcpy(linebuf,prefix);
+						l=prefix_bytes;
+						ocol=prefix_len;
+					}
 				}
 				else {
 					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
@@ -669,8 +766,10 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
 							strncat(outbuf, linebuf, l);
-							l=0;
-							ocol=1;
+							if(prefix)
+								strcpy(linebuf,prefix);
+							l=prefix_bytes;
+							ocol=prefix_len;
 						}
 						else {		/* Not a hard CR... add space if needed */
 							if(!isspace(linebuf[l-1]))
@@ -743,11 +842,15 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					strncat(outbuf, linebuf, l+1);
 					strcat(outbuf, "\r\n");
 					/* Move trailing words to start of buffer. */
+					l=prefix_bytes;
 					if(k-t>0)							/* k-1 is the last char position.  t is the start of the next line position */
-						memmove(linebuf, linebuf+t, k-t);
-					l=k-t;
+						memmove(linebuf+l, linebuf+t, k-t);
+					if(prefix)
+						memcpy(linebuf,prefix,prefix_bytes);
+					ocol=prefix_len;
+					l+=k-t;
 					/* Find new ocol */
-					for(ocol=1,t=0; t<l; t++) {
+					for(ocol=prefix_len+1,t=0; t<l; t++) {
 						switch(linebuf[t]) {
 							case '\x01':	/* CTRL-A */
 								if(linebuf[t+1]!='\x01')
@@ -777,6 +880,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_str = JS_NewStringCopyZ(cx, outbuf);
 	free(outbuf);
+	if(prefix)
+		free(prefix);
 	if(js_str==NULL)
 		return(JS_FALSE);
 
@@ -2887,8 +2992,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return a decoded HTML-encoded text string")
 	,311
 	},
-	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt>]")
-	,JSDOCSTR("returns a word-wrapped version of the text string argument, <i>line_length</i> defaults to <i>79</i>")
+	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt> [, orig_line_length=<tt>79</tt> [, handle_quotes=<tt>true</tt>]]]]")
+	,JSDOCSTR("returns a word-wrapped version of the text string argument optionally handing quotes magically, "
+		"<i>line_length</i> defaults to <i>79</i> <i>orig_line_length</i> defaults to <i>79</i> "
+		"and <i>handle_quotes</i> defaults to <i>true</i>")
 	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt>] [,prefix=<tt>\" > \"</tt>]")
