@@ -1371,7 +1371,7 @@ console.ctrlkey_passthru="+ACGLOQRVWXYZ";
 console.clear();
 var f=new File(system.node_dir+"QUOTES.TXT");
 if(f.open("r",false)) {
-	line=make_lines(quote_msg(word_wrap(f.read(),76),''));
+	line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
 	ypos=line.length;
 	if(ypos>=topline+lines_on_screen)
 		topline=ypos-lines_on_screen+1;
