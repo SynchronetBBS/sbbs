@@ -764,7 +764,16 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	i=0;
 	if(handle_quotes && (quote_count=get_prefix(inbuf, &prefix_bytes, &prefix_len))) {
 		i+=prefix_bytes;
-		memcpy(prefix,inbuf,prefix_bytes);
+		if(prefix_len>len/3*2) {
+			/* This prefix is insane (more than 2/3rds of the new width) hack it down to size */
+			/* Since we're hacking it, we will always end up with a hardcr on this line. */
+			/* ToDo: Something prettier would be nice. */
+			sprintf(prefix," %d> ",quote_count);
+			prefix_len=strlen(prefix);
+			prefix_bytes=strlen(prefix);
+		}
+		else
+			memcpy(prefix,inbuf,prefix_bytes);
 		strncpy(linebuf,prefix,prefix_bytes);
 		l=prefix_bytes;
 		ocol=prefix_len+1;
@@ -790,7 +799,16 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				}
 				/* If there's a new prefix, it is a hardcr */
 				else if(prefix_bytes != old_prefix_bytes || (memcmp(prefix,inbuf+i+1-prefix_bytes,prefix_bytes))) {
-					memcpy(prefix,inbuf+i+1-prefix_bytes,prefix_bytes);
+					if(prefix_len>len/3*2) {
+						/* This prefix is insane (more than 2/3rds of the new width) hack it down to size */
+						/* Since we're hacking it, we will always end up with a hardcr on this line. */
+						/* ToDo: Something prettier would be nice. */
+						sprintf(prefix," %d> ",quote_count);
+						prefix_len=strlen(prefix);
+						prefix_bytes=strlen(prefix);
+					}
+					else
+						memcpy(prefix,inbuf+i+1-prefix_bytes,prefix_bytes);
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
 					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
