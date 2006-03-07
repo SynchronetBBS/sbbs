@@ -691,6 +691,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int			icol=1;
 	uchar*		inbuf;
 	char*		outbuf;
+	char*		outp;
 	char*		linebuf;
 	char*		prefix=NULL;
 	int			prefix_len=0;
@@ -707,6 +708,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if((outbuf=(char*)malloc((strlen(inbuf)*3)+1))==NULL)
 		return(JS_FALSE);
+	outp=outbuf;
 
 	if(argc>1)
 		JS_ValueToInt32(cx,argv[1],&len);
@@ -752,7 +754,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				if(!inbuf[i+1]) {			/* EOF */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					strncat(outbuf, linebuf, l);
+					memcpy(outp, linebuf, l);
+					outp+=l;
 					l=0;
 					ocol=1;
 				}
@@ -761,7 +764,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					memcpy(prefix,inbuf+i+1-prefix_bytes,prefix_bytes);
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					strncat(outbuf, linebuf, l);
+					memcpy(outp, linebuf, l);
+					outp+=l;
 					strncpy(linebuf,prefix,prefix_bytes);
 					l=prefix_bytes;
 					ocol=prefix_len+1;
@@ -770,7 +774,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					strncat(outbuf, linebuf, l);
+					memcpy(outp, linebuf, l);
+					outp+=l;
 					l=0;
 					ocol=1;
 				}
@@ -781,7 +786,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 						if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
-							strncat(outbuf, linebuf, l);
+							memcpy(outp, linebuf, l);
+							outp+=l;
 							if(prefix)
 								strcpy(linebuf,prefix);
 							l=prefix_bytes;
@@ -859,8 +865,10 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					/* Move to start of whitespace */
 					while(l>0 && isspace(l))
 						l--;
-					strncat(outbuf, linebuf, l+1);
-					strcat(outbuf, "\r\n");
+					memcpy(outp, linebuf, l+1);
+					outp+=l+1;
+					*(outp++)='\r';
+					*(outp++)='\n';
 					/* Move trailing words to start of buffer. */
 					l=prefix_bytes;
 					if(k-t>0)							/* k-1 is the last char position.  t is the start of the next line position */
@@ -888,8 +896,10 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(l) {
 		linebuf[l++]='\r';
 		linebuf[l++]='\n';
-		strncat(outbuf,linebuf,l);
+		memcpy(outp, linebuf, l);
+		outp+=l;
 	}
+	*outp=0;
 	/* If there were no CRs in the input, strip all CRs */
 	if(!crcount) {
 		for(inbuf=outbuf; *inbuf; inbuf++) {
