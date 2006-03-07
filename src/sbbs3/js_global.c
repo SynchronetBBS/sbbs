@@ -608,6 +608,77 @@ js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static int get_prefix(char *text, int *bytes, int *len)
+{
+	int		tmp_prefix_bytes,tmp_prefix_len;
+	int		expect;
+	int		depth;
+
+	*bytes=0;
+	*len=0;
+	tmp_prefix_bytes=0;
+	tmp_prefix_len=0;
+	depth=0;
+	expect=1;
+	if(text[0]!=' ')
+		expect=2;
+	while(expect) {
+		tmp_prefix_bytes++;
+		/* Skip CTRL-A codes */
+		while(text[tmp_prefix_bytes-1]=='\x01') {
+			tmp_prefix_bytes++;
+			if(text[tmp_prefix_bytes-1]=='\x01')
+				break;
+			tmp_prefix_bytes++;
+		}
+		tmp_prefix_len++;
+		if(text[tmp_prefix_bytes-1]==0 || text[tmp_prefix_bytes-1]=='\n' || text[tmp_prefix_bytes-1]=='\r')
+			break;
+		switch(expect) {
+			case 1:		/* At start of possible quote (Next char should be space) */
+				if(text[tmp_prefix_bytes-1]!=' ')
+					expect=0;
+				else
+					expect++;
+				break;
+			case 2:		/* At start of nick (next char should be alphanum or '>') */
+			case 3:		/* At second nick initial (next char should be alphanum or '>') */
+			case 4:		/* At third nick initial (next char should be alphanum or '>') */
+				if(text[tmp_prefix_bytes-1]==' ' || text[tmp_prefix_bytes-1]==0)
+					expect=0;
+				else
+					if(text[tmp_prefix_bytes-1]=='>')
+						expect=6;
+					else
+						expect++;
+				break;
+			case 5:		/* After three regular chars, next HAS to be a '>') */
+				if(text[tmp_prefix_bytes-1]!='>')
+					expect=0;
+				else
+					expect++;
+				break;
+			case 6:		/* At '>' next char must be a space */
+				if(text[tmp_prefix_bytes-1]!=' ')
+					expect=0;
+				else {
+					expect=1;
+					*len=tmp_prefix_len;
+					*bytes=tmp_prefix_bytes;
+					depth++;
+					/* Some editors don't put double spaces in between */
+					if(text[tmp_prefix_bytes]!=' ')
+						expect++;
+				}
+				break;
+			default:
+				expect=0;
+				break;
+		}
+	}
+	return(depth);
+}
+
 static JSBool
 js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -624,9 +695,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		prefix=NULL;
 	int			prefix_len=0;
 	int			prefix_bytes=0;
-	int			tmp_prefix_len;
-	int			tmp_prefix_bytes;
 	int			quote_count=0;
+	int			old_prefix_bytes=0;
 	JSString*	js_str;
 
 	if(JSVAL_IS_VOID(argv[0]))
@@ -657,12 +727,28 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	outbuf[0]=0;
-	for(i=l=0; inbuf[i]; i++) {
+	/* Get prefix from the first line (ouch) */
+	l=0;
+	i=0;
+	if(handle_quotes && (quote_count=get_prefix(inbuf, &prefix_bytes, &prefix_len))) {
+		i+=prefix_bytes;
+		memcpy(prefix,inbuf,prefix_bytes);
+		strncpy(linebuf,prefix,prefix_bytes);
+		l=prefix_bytes;
+		ocol=prefix_len+1;
+		icol=prefix_len+1;
+		old_prefix_bytes=prefix_bytes;
+	}
+	for(; inbuf[i]; i++) {
 		switch(inbuf[i]) {
 			case '\r':
 				crcount++;
 				break;
 			case '\n':
+				if(handle_quotes && (quote_count=get_prefix(inbuf+i+1, &prefix_bytes, &prefix_len))) {
+					/* Move the input pointer offset to the last char of the prefix */
+					i+=prefix_bytes;
+				}
 				if(!inbuf[i+1]) {			/* EOF */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
@@ -670,157 +756,23 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					l=0;
 					ocol=1;
 				}
-				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. or quoted */
-					if(handle_quotes) {
-						t=1;
-						k=prefix_bytes;
-						prefix_bytes=0;
-						prefix_len=0;
-						tmp_prefix_bytes=0;
-						tmp_prefix_len=0;
-						quote_count=0;
-						while(t) {
-							tmp_prefix_bytes++;
-							/* Skip CTRL-A codes */
-							while(inbuf[i+tmp_prefix_bytes]=='\x01') {
-								tmp_prefix_bytes++;
-								if(inbuf[i+tmp_prefix_bytes]=='\x01')
-									break;
-								tmp_prefix_bytes++;
-							}
-							tmp_prefix_len++;
-							switch(t) {
-								case 1:		/* At start of possible quote (Next char should be space) */
-									if(inbuf[i+tmp_prefix_bytes]!=' ')
-										t=0;
-									else
-										t++;
-									break;
-								case 2:		/* At start of nick (next char should be alphanum or '>') */
-									if(inbuf[i+tmp_prefix_bytes]==' ' || inbuf[i+tmp_prefix_bytes]==0)
-										t=0;
-									else {
-										if(inbuf[i+tmp_prefix_bytes]=='>')
-											t=6;
-										else
-											t++;
-									}
-									break;
-								case 3:		/* At second nick initial (next char should be alphanum or '>') */
-									if(inbuf[i+tmp_prefix_bytes]==' ' || inbuf[i+tmp_prefix_bytes]==0)
-										t=0;
-									else {
-										if(inbuf[i+tmp_prefix_bytes]=='>')
-											t=6;
-										else
-											t++;
-									}
-									break;
-								case 4:		/* At third nick initial (next char should be alphanum or '>') */
-									if(inbuf[i+tmp_prefix_bytes]!='>')
-										t=0;
-									else
-										t++;
-									break;
-								case 5:		/* After three regular chars, next HAS to be a '>') */
-									if(inbuf[i+tmp_prefix_bytes]!='>')
-										t=0;
-									else
-										t++;
-									break;
-								case 6:		/* At '>' next char must be a space */
-									if(inbuf[i+tmp_prefix_bytes]!=' ')
-										t=0;
-									else {
-										t=1;
-										prefix_len=tmp_prefix_len;
-										prefix_bytes=tmp_prefix_bytes;
-										quote_count++;
-										/* Some editors don't put double spaces in between */
-										if(inbuf[i+tmp_prefix_bytes+1]!=' ')
-											t++;
-									}
-									break;
-								default:
-									t=0;
-									break;
-							}
-						}
-						/* Terminate the prefix (yes, even before copying it) */
-						prefix[prefix_bytes]=0;
-						/* If there is no prefix, it is a hardcr */
-						if(!quote_count) {
-							linebuf[l++]='\r';
-							linebuf[l++]='\n';
-							strncat(outbuf, linebuf, l);
-							l=0;
-							ocol=1;
-						}
-						else {
-							/* If there's a new prefix, it is a hardcr */
-							if(prefix_bytes != k || (memcmp(prefix,inbuf+i+1,prefix_bytes))) {
-								memcpy(prefix,inbuf+i+1,prefix_bytes);
-								linebuf[l++]='\r';
-								linebuf[l++]='\n';
-								strncat(outbuf, linebuf, l);
-								strcpy(linebuf,prefix);
-								l=prefix_bytes;
-								ocol=prefix_len+1;
-								/* Move the input pointer offset to the last char (a space) of the prefix */
-								i+=prefix_bytes;
-							}
-							else {
-								/* Move the input pointer offset to the last char (a space) of the prefix */
-								i+=prefix_bytes;
-								/* If the next char is whitespace, it is a hardcr */
-								if(isspace(inbuf[i+1])) {
-									linebuf[l++]='\r';
-									linebuf[l++]='\n';
-									strncat(outbuf, linebuf, l);
-									strcpy(linebuf,prefix);
-									l=prefix_bytes;
-									ocol=prefix_len+1;
-								}
-								else {
-									/*
-									 * It is *not* a hardcr, so we may need to add a trailing space
-									 * this is a copy/paste from below.
-									 */
-									if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
-										/* k will equal the length of the first word on the next line */
-										for(k=0; inbuf[i+1+k] && (!isspace(inbuf[i+1+k])); k++);
-										if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
-											linebuf[l++]='\r';
-											linebuf[l++]='\n';
-											strncat(outbuf, linebuf, l);
-											strcpy(linebuf,prefix);
-											l=prefix_bytes;
-											ocol=prefix_len+1;
-										}
-										else {		/* Not a hard CR... add space if needed */
-											if(!isspace(linebuf[l-1])) {
-												linebuf[l++]=' ';
-												ocol++;
-											}
-										}
-									}
-									else {			/* Not a hard CR... add space if needed */
-										if(!isspace(linebuf[l-1])) {
-											linebuf[l++]=' ';
-											ocol++;
-										}
-									}
-								}
-							}
-						}
-					}
-					else {
-						linebuf[l++]='\r';
-						linebuf[l++]='\n';
-						strncat(outbuf, linebuf, l);
-						l=0;
-						ocol=1;
-					}
+				/* If there's a new prefix, it is a hardcr */
+				else if(prefix_bytes != old_prefix_bytes || (memcmp(prefix,inbuf+i+1-prefix_bytes,prefix_bytes))) {
+					memcpy(prefix,inbuf+i+1-prefix_bytes,prefix_bytes);
+					linebuf[l++]='\r';
+					linebuf[l++]='\n';
+					strncat(outbuf, linebuf, l);
+					strncpy(linebuf,prefix,prefix_bytes);
+					l=prefix_bytes;
+					ocol=prefix_len+1;
+					old_prefix_bytes=prefix_bytes;
+				}
+				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
+					linebuf[l++]='\r';
+					linebuf[l++]='\n';
+					strncat(outbuf, linebuf, l);
+					l=0;
+					ocol=1;
 				}
 				else {
 					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
