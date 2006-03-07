@@ -948,7 +948,7 @@ function make_strings(soft,embed_colour)
 		}
 		if(soft || line[i].hardcr) {
 			/* Trim whitespace from end */
-			str=str.replace(/(\s*)$/,function (str, spaces, offset, s) {
+			str=str.replace(/([ \t]*)$/,function (str, spaces, offset, s) {
 				if(!embed_colour) {
 					/* Remove attributes for trimmed spaces */
 					attrs=attrs.substr(0,attrs.length-spaces.length);
