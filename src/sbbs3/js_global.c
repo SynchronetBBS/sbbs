@@ -679,6 +679,34 @@ static int get_prefix(char *text, int *bytes, int *len)
 	return(depth);
 }
 
+static void outbuf_append(char **outbuf, char **outp, char *append, int len, int *outlen)
+{
+	char	*p;
+
+	/* Terminate outbuf */
+	**outp=0;
+	/* Check if there's room */
+	if(*outp - *outbuf + len < *outlen) {
+		memcpy(*outp, append, len);
+		*outp+=len;
+		return;
+	}
+	/* Not enough room, double the size. */
+	*outlen *= 2;
+	p=realloc(*outbuf, *outlen);
+	if(p==NULL) {
+		/* Can't do it. */
+		*outlen/=2;
+		return;
+	}
+	/* Set outp for new buffer */
+	*outp=p+(*outp - *outbuf);
+	*outbuf=p;
+	memcpy(*outp, append, len);
+	*outp+=len;
+	return;
+}
+
 static JSBool
 js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -698,6 +726,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int			prefix_bytes=0;
 	int			quote_count=0;
 	int			old_prefix_bytes=0;
+	int			outbuf_size=0;
 	JSString*	js_str;
 
 	if(JSVAL_IS_VOID(argv[0]))
@@ -706,7 +735,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
-	if((outbuf=(char*)malloc((strlen(inbuf)*3)+1))==NULL)
+	outbuf_size=strlen(inbuf)*3+1;
+	if((outbuf=(char*)malloc(outbuf_size))==NULL)
 		return(JS_FALSE);
 	outp=outbuf;
 
@@ -754,8 +784,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				if(!inbuf[i+1]) {			/* EOF */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					memcpy(outp, linebuf, l);
-					outp+=l;
+					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
 					l=0;
 					ocol=1;
 				}
@@ -764,8 +793,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					memcpy(prefix,inbuf+i+1-prefix_bytes,prefix_bytes);
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					memcpy(outp, linebuf, l);
-					outp+=l;
+					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
 					strncpy(linebuf,prefix,prefix_bytes);
 					l=prefix_bytes;
 					ocol=prefix_len+1;
@@ -774,8 +802,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
-					memcpy(outp, linebuf, l);
-					outp+=l;
+					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
 					l=0;
 					ocol=1;
 				}
@@ -786,8 +813,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 						if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
-							memcpy(outp, linebuf, l);
-							outp+=l;
+							outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
 							if(prefix)
 								strcpy(linebuf,prefix);
 							l=prefix_bytes;
@@ -865,20 +891,15 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					/* Move to start of whitespace */
 					while(l>0 && isspace(l))
 						l--;
-					memcpy(outp, linebuf, l+1);
-					outp+=l+1;
-					*(outp++)='\r';
-					*(outp++)='\n';
+					outbuf_append(&outbuf, &outp, linebuf, l+1, &outbuf_size);
+					outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
 					/* Move trailing words to start of buffer. */
 					l=prefix_bytes;
 					if(k-t>0)							/* k-1 is the last char position.  t is the start of the next line position */
 						memmove(linebuf+l, linebuf+t, k-t);
-					if(prefix)
-						memcpy(linebuf,prefix,prefix_bytes);
-					ocol=prefix_len+1;
 					l+=k-t;
 					/* Find new ocol */
-					for(ocol=prefix_len+1,t=0; t<l; t++) {
+					for(ocol=prefix_len+1,t=prefix_bytes; t<l; t++) {
 						switch(linebuf[t]) {
 							case '\x01':	/* CTRL-A */
 								if(linebuf[t+1]!='\x01')
@@ -896,8 +917,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(l) {
 		linebuf[l++]='\r';
 		linebuf[l++]='\n';
-		memcpy(outp, linebuf, l);
-		outp+=l;
+		outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
 	}
 	*outp=0;
 	/* If there were no CRs in the input, strip all CRs */
