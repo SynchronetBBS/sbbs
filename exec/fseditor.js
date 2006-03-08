@@ -798,55 +798,70 @@ function make_lines(str, attr, nl_is_hardcr)
 		}
 	}
 	while(str.length>0) {
-		var m=str.match(/^(.{0,79} *)(\n?)/);
-		if(m!=null) {
-			/* We have zero or more characters followed by zero or more spaces followed by zero or one \n */
-			nl[nl.length]=new Line;
-			nl[nl.length-1].text=m[1];
-			nl[nl.length-1].attr=attr.substr(0,nl[nl.length-1].text.length);
-			str=str.substr(m[0].length);
-			attr=attr.substr(m[0].length);
-			if(nl_is_hardcr) {
-				if(m[2].length>0)
-					nl[nl.length-1].hardcr=true;
-			}
-			else {
-				/* Deduce if this is a hard or soft CR as follows */
-				/* If the next char is a nl, or whitespace, it is hard. */
-				/* If there is room for the first word of the next line on this
-				 * line, it is hard */
-				/* Otherwise, it is soft. */
+		var done=false;
 
-				/* Next line starts with whitespace - is hard */
-				if(str.search(/^\s/)!=-1)
-					nl[nl.length-1].hardcr=true;
-				else {
-					/* Get first word of next line */
-					var m2=str.match(/^(.*\s)/);
-					if(m2!=null) {
-						if(m[1].length+m2[1].length<80)
+		nl[nl.length]=new Line;
+		while(str.length>0 && !done) {
+			switch(str.substr(0,1)) {
+				case '\n':
+					str=str.substr(1);
+					attr=attr.substr(1);
+					done=true;
+					if(nl_is_hardcr)
+						nl[nl.length-1].hardcr=true;
+					else {
+						/* Deduce if this is a hard or soft CR as follows */
+						/* If the next char is a nl, or whitespace, it is hard. */
+						/* If there is room for the first word of the next line on this
+						 * line, it is hard */
+						/* Otherwise, it is soft. */
+						if(str.substr(0,1)==' ' || str.substr(0,1)=='\t')
 							nl[nl.length-1].hardcr=true;
+						else {
+							var len;
+							for(len=0; str.length>=len && str.substr(len,1)!=' ' && str.substr(len,1)!='\t'; len++);
+							if(nl[nl.length-1].text.length+len < 80)
+								nl[nl.length-1].hardcr=true;
+						}
 					}
-				}
-				/* Add trailing space if needed */
-				if((!nl[nl.length-1].hardcr) && nl[nl.length-1].text.search(/\s^/)==-1) {
-					nl[nl.length-1].text+=' ';
-					nl[nl.length-1].attr+=nl[nl.length-1].attr.substr(-1);
-				}
+					break;
+				case ' ':		/* Whitespace... never wrap here. */
+				case '\t':
+					nl[nl.length-1].text+=str.substr(0,1);
+					nl[nl.length-1].attr+=attr.substr(0,1);
+					str=str.substr(1);
+					attr=attr.substr(1);
+					break;
+				default:		/* Printable char... may need to wrap */
+					if(nl[nl.length-1].text.length>79) {	/* Need to have wrapped */
+						var offset;
+						for(offset=nl[nl.length-1].text.length-1; offset>=0; offset--) {
+							if(nl[nl.length-1].text.substr(offset,1)!=' ' && nl[nl.length-1].text.substr(offset,1)!='\t') {
+								str=nl[nl.length-1].text.substr(offset)+str;
+								attr=nl[nl.length-1].attr.substr(offset)+attr;
+								break;
+							}
+						}
+						if(offset==-1) {
+							/* There were no spaces this line. */
+							nl[nl.length-1].text=str.substr(0,79);
+							nl[nl.length-1].attr=attr.substr(0,79);
+							nl[nl.length-1].kludged=true;
+							str=str.substr(79);
+							attr=attr.substr(79);
+						}
+						done=true;
+					}
+					else {
+						nl[nl.length-1].text+=str.substr(0,1);
+						nl[nl.length-1].attr+=attr.substr(0,1);
+						str=str.substr(1);
+						attr=attr.substr(1);
+					}
 			}
-			/* If we have 79 chars in a row with no spaces and not a whitspace
-			 * on the end, and the forst char of the next line isn't whitespace,
-			 * we have a kludged line */
-			if(nl[nl.length-1].text.length==79 && nl[nl.length-1].text.search(/\s/)==-1 && str.search(/^\s/)==-1)
-				nl[nl.length-1].kludged=true;
-		}
-		else {
-			/* Not sure how THIS could happen */
-			alert("The impossible happened.");
-			console.pause();
-			exit();
 		}
 	}
+
 	return(nl);
 }
 
