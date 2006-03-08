@@ -705,105 +705,91 @@ function redraw_screen()
 function make_lines(str, attr, nl_is_hardcr)
 {
 	nl=new Array();
-	var oldstr=str;
-	var oldattr=attr;
 	var spos=0;
 	var apos=0;
 	thisattr=7;
 
-	/* Fix up the attr string to match str in length... 
-	 * strip/interpret ^A and strip CRs
-	 */
-	str='';
-	attr='';
-	while(spos < oldstr.length) {
-		if(apos < oldattr.length) {
-			thisattr=ascii(oldattr.charAt(apos));
-			apos++;
-		}
-		switch(oldstr.charAt(spos)) {
-			case '\r':
-				break;
-			case '\x01':
-				spos++;
-				switch(oldstr.charAt(spos).toUpperCase()) {
-					case 'K':
-						thisattr&=0xf8;
-						break;
-					case 'R':
-						thisattr=(thisattr&0xf8)|RED;
-						break;
-					case 'G':
-						thisattr=(thisattr&0xf8)|GREEN;
-						break;
-					case 'Y':
-						thisattr=(thisattr&0xf8)|BROWN;
-						break;
-					case 'B':
-						thisattr=(thisattr&0xf8)|BLUE;
-						break;
-					case 'M':
-						thisattr=(thisattr&0xf8)|MAGENTA;
-						break;
-					case 'C':
-						thisattr=(thisattr&0xf8)|CYAN;
-						break;
-					case 'W':
-						thisattr=(thisattr&0xf8)|LIGHTGRAY;
-						break;
-					case '0':
-						thisattr=(thisattr&0x8f);
-						break;
-					case '1':
-						thisattr=(thisattr&0x8f)|(RED<<4);
-						break;
-					case '2':
-						thisattr=(thisattr&0x8f)|(GREEN<<4);
-						break;
-					case '3':
-						thisattr=(thisattr&0x8f)|(BROWN<<4);
-						break;
-					case '4':
-						thisattr=(thisattr&0x8f)|(BLUE<<4);
-						break;
-					case '5':
-						thisattr=(thisattr&0x8f)|(MAGENTA<<4);
-						break;
-					case '6':
-						thisattr=(thisattr&0x8f)|(CYAN<<4);
-						break;
-					case '7':
-						thisattr=(thisattr&0x8f)|(LIGHTGRAY<<4);
-						break;
-					case 'H':
-						thisattr|=0x08;
-						break;
-					case 'I':
-						thisattr|=0x80;
-						break;
-					case 'N':
-						thisattr=7;
-						break;
-					case '\x01':
-						str+='\x01';
-						attr+=ascii(thisattr);
-						break;
-					default:
-				}
-				break;
-			default:
-				str+=oldstr.charAt(spos);
-				attr=attr+ascii(thisattr);
-		}
-		spos++;
-	}
-	spos=0;
 	while(spos < str.length) {
 		var done=false;
 
 		nl[nl.length]=new Line;
 		while(spos < str.length && !done) {
+			if(apos < attr.length) {
+				thisattr=ascii(attr.charAt(apos));
+				apos++;
+			}
 			switch(str.charAt(spos)) {
+				case '\r':
+					spos++;
+					break;
+				case '\x01':
+					spos++;
+					switch(str.charAt(spos).toUpperCase()) {
+						case 'K':
+							thisattr&=0xf8;
+							break;
+						case 'R':
+							thisattr=(thisattr&0xf8)|RED;
+							break;
+						case 'G':
+							thisattr=(thisattr&0xf8)|GREEN;
+							break;
+						case 'Y':
+							thisattr=(thisattr&0xf8)|BROWN;
+							break;
+						case 'B':
+							thisattr=(thisattr&0xf8)|BLUE;
+							break;
+						case 'M':
+							thisattr=(thisattr&0xf8)|MAGENTA;
+							break;
+						case 'C':
+							thisattr=(thisattr&0xf8)|CYAN;
+							break;
+						case 'W':
+							thisattr=(thisattr&0xf8)|LIGHTGRAY;
+							break;
+						case '0':
+							thisattr=(thisattr&0x8f);
+							break;
+						case '1':
+							thisattr=(thisattr&0x8f)|(RED<<4);
+							break;
+						case '2':
+							thisattr=(thisattr&0x8f)|(GREEN<<4);
+							break;
+						case '3':
+							thisattr=(thisattr&0x8f)|(BROWN<<4);
+							break;
+						case '4':
+							thisattr=(thisattr&0x8f)|(BLUE<<4);
+							break;
+						case '5':
+							thisattr=(thisattr&0x8f)|(MAGENTA<<4);
+							break;
+						case '6':
+							thisattr=(thisattr&0x8f)|(CYAN<<4);
+							break;
+						case '7':
+							thisattr=(thisattr&0x8f)|(LIGHTGRAY<<4);
+							break;
+						case 'H':
+							thisattr|=0x08;
+							break;
+						case 'I':
+							thisattr|=0x80;
+							break;
+						case 'N':
+							thisattr=7;
+							break;
+						case '\x01':
+							/* ToDo: This needs to fall through to the wrapping stuff. */
+							nl[nl.length-1].text+=str.charAt(spos);
+							nl[nl.length-1].attr+=ascii(thisattr);
+							break;
+					}
+					spos++;
+					break;
 				case '\n':
 					spos++;
 					done=true;
@@ -828,7 +814,7 @@ function make_lines(str, attr, nl_is_hardcr)
 				case ' ':		/* Whitespace... never wrap here. */
 				case '\t':
 					nl[nl.length-1].text+=str.charAt(spos);
-					nl[nl.length-1].attr+=attr.charAt(spos);
+					nl[nl.length-1].attr+=ascii(thisattr);
 					spos++;
 					break;
 				default:		/* Printable char... may need to wrap */
@@ -851,7 +837,7 @@ function make_lines(str, attr, nl_is_hardcr)
 					}
 					else {
 						nl[nl.length-1].text+=str.charAt(spos);
-						nl[nl.length-1].attr+=attr.charAt(spos);
+						nl[nl.length-1].attr+=ascii(thisattr);
 						spos++;
 					}
 			}
