@@ -707,6 +707,8 @@ function make_lines(str, attr, nl_is_hardcr)
 	nl=new Array();
 	var oldstr=str;
 	var oldattr=attr;
+	var spos=0;
+	var apos=0;
 	thisattr=7;
 
 	/* Fix up the attr string to match str in length... 
@@ -714,18 +716,17 @@ function make_lines(str, attr, nl_is_hardcr)
 	 */
 	str='';
 	attr='';
-	while(oldstr.length) {
-		if(oldattr.length) {
-			thisattr=ascii(oldattr.substr(0,1));
-			oldattr=oldattr.substr(1);
+	while(spos < oldstr.length) {
+		if(apos < oldattr.length) {
+			thisattr=ascii(oldattr.charAt(apos));
+			apos++;
 		}
-		switch(oldstr.substr(0,1)) {
+		switch(oldstr.charAt(spos)) {
 			case '\r':
-				oldstr=oldstr.substr(1);
 				break;
 			case '\x01':
-				oldstr=oldstr.substr(1);
-				switch(oldstr.substr(0,1).toUpperCase()) {
+				spos++;
+				switch(oldstr.charAt(spos).toUpperCase()) {
 					case 'K':
 						thisattr&=0xf8;
 						break;
@@ -784,28 +785,27 @@ function make_lines(str, attr, nl_is_hardcr)
 						thisattr=7;
 						break;
 					case '\x01':
-						str=str+'\x01';
-						attr=attr+ascii(thisattr);
+						str+='\x01';
+						attr+=ascii(thisattr);
 						break;
 					default:
 				}
-				oldstr=oldstr.substr(1);
 				break;
 			default:
-				str=str+oldstr.substr(0,1);
-				oldstr=oldstr.substr(1);
+				str+=oldstr.charAt(spos);
 				attr=attr+ascii(thisattr);
 		}
+		spos++;
 	}
-	while(str.length>0) {
+	spos=0;
+	while(spos < str.length) {
 		var done=false;
 
 		nl[nl.length]=new Line;
-		while(str.length>0 && !done) {
-			switch(str.substr(0,1)) {
+		while(spos < str.length && !done) {
+			switch(str.charAt(spos)) {
 				case '\n':
-					str=str.substr(1);
-					attr=attr.substr(1);
+					spos++;
 					done=true;
 					if(nl_is_hardcr)
 						nl[nl.length-1].hardcr=true;
@@ -815,11 +815,11 @@ function make_lines(str, attr, nl_is_hardcr)
 						/* If there is room for the first word of the next line on this
 						 * line, it is hard */
 						/* Otherwise, it is soft. */
-						if(str.substr(0,1)==' ' || str.substr(0,1)=='\t')
+						if(str.charAt(spos)==' ' || str.charAt(spos)=='\t')
 							nl[nl.length-1].hardcr=true;
 						else {
 							var len;
-							for(len=0; str.length>=len && str.substr(len,1)!=' ' && str.substr(len,1)!='\t'; len++);
+							for(len=0; str.length>=len+spos && str.charAt(spos+len)!=' ' && str.charAt(spos+len,1)!='\t'; len++);
 							if(nl[nl.length-1].text.length+len < 80)
 								nl[nl.length-1].hardcr=true;
 						}
@@ -827,36 +827,32 @@ function make_lines(str, attr, nl_is_hardcr)
 					break;
 				case ' ':		/* Whitespace... never wrap here. */
 				case '\t':
-					nl[nl.length-1].text+=str.substr(0,1);
-					nl[nl.length-1].attr+=attr.substr(0,1);
-					str=str.substr(1);
-					attr=attr.substr(1);
+					nl[nl.length-1].text+=str.charAt(spos);
+					nl[nl.length-1].attr+=attr.charAt(spos);
+					spos++;
 					break;
 				default:		/* Printable char... may need to wrap */
 					if(nl[nl.length-1].text.length>79) {	/* Need to have wrapped */
 						var offset;
 						for(offset=nl[nl.length-1].text.length-1; offset>=0; offset--) {
-							if(nl[nl.length-1].text.substr(offset,1)!=' ' && nl[nl.length-1].text.substr(offset,1)!='\t') {
-								str=nl[nl.length-1].text.substr(offset)+str;
-								attr=nl[nl.length-1].attr.substr(offset)+attr;
+							if(nl[nl.length-1].text.charAt(offset)!=' ' && nl[nl.length-1].text.charAt(offset)!='\t') {
+								/* ToDo: Verify/test this... it's probobly wrong */
+								spos-=nl[nl.length-1].text.length-1-offset;
+								spos--;
 								break;
 							}
 						}
 						if(offset==-1) {
 							/* There were no spaces this line. */
-							nl[nl.length-1].text=str.substr(0,79);
-							nl[nl.length-1].attr=attr.substr(0,79);
 							nl[nl.length-1].kludged=true;
-							str=str.substr(79);
-							attr=attr.substr(79);
+							spos--;
 						}
 						done=true;
 					}
 					else {
-						nl[nl.length-1].text+=str.substr(0,1);
-						nl[nl.length-1].attr+=attr.substr(0,1);
-						str=str.substr(1);
-						attr=attr.substr(1);
+						nl[nl.length-1].text+=str.charAt(spos);
+						nl[nl.length-1].attr+=attr.charAt(spos);
+						spos++;
 					}
 			}
 		}
