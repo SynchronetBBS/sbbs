@@ -1173,8 +1173,8 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct
 	dst.w=vs->charwidth*vs->scaling;
 	dst.h=vs->charheight*vs->scaling;
 	src.x=0;
-	src.w=vs->charwidth;
-	src.h=vs->charheight;
+	src.w=vs->charwidth*vs->scaling;
+	src.h=vs->charheight*vs->scaling;
 	src.y=vs->charheight*vs->scaling;
 	ch=sch & 0xff;
 	if((sch >>15) && !(vs->blink))
