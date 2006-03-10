@@ -3867,12 +3867,10 @@
 			      <property name="spacing">0</property>
 
 			      <child>
-				<widget class="GtkComboBoxEntry" id="comboboxentry1">
+				<widget class="GtkComboBox" id="cCommandShell">
 				  <property name="visible">True</property>
-				  <property name="items" translatable="yes">Item1
-Item2</property>
+				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
-				  <property name="has_frame">True</property>
 				  <property name="focus_on_click">True</property>
 				</widget>
 				<packing>
@@ -4470,10 +4468,10 @@ Item2</property>
 				  </child>
 
 				  <child>
-				    <widget class="GtkComboBoxEntry" id="comboboxentry2">
+				    <widget class="GtkComboBox" id="cExternalEditor">
 				      <property name="visible">True</property>
+				      <property name="items" translatable="yes">Temp</property>
 				      <property name="add_tearoffs">False</property>
-				      <property name="has_frame">True</property>
 				      <property name="focus_on_click">True</property>
 				    </widget>
 				    <packing>
@@ -5004,10 +5002,10 @@ Item2</property>
 			      </child>
 
 			      <child>
-				<widget class="GtkComboBoxEntry" id="comboboxentry3">
+				<widget class="GtkComboBox" id="cDefaultDownloadProtocol">
 				  <property name="visible">True</property>
+				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
-				  <property name="has_frame">True</property>
 				  <property name="focus_on_click">True</property>
 				</widget>
 				<packing>
@@ -5060,10 +5058,10 @@ Item2</property>
 			      </child>
 
 			      <child>
-				<widget class="GtkComboBoxEntry" id="comboboxentry4">
+				<widget class="GtkComboBox" id="cTempQWKFileType">
 				  <property name="visible">True</property>
+				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
-				  <property name="has_frame">True</property>
 				  <property name="focus_on_click">True</property>
 				</widget>
 				<packing>

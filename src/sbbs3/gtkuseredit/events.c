@@ -240,6 +240,9 @@ void load_user(GtkWidget *wiggy, gpointer data)
 			sprintf(str,"%u",user.min);
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
+
+	/* Statistics */
+	
 }
 
 int update_current_user(int new_user)
