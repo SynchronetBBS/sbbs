@@ -25,113 +25,221 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		return;
 	}
 
-	/* Alias */
-	w=glade_xml_get_widget(xml, "eUserAlias");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the alias widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.alias);
+	/* Peronal Tab */
+		/* Alias */
+		w=glade_xml_get_widget(xml, "eUserAlias");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the alias widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.alias);
 
-	/* Real Name */
-	w=glade_xml_get_widget(xml, "eRealName");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the real name widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.name);
+		/* Real Name */
+		w=glade_xml_get_widget(xml, "eRealName");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the real name widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.name);
 
-	/* Computer */
-	w=glade_xml_get_widget(xml, "eComputer");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the computer widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.comp);
+		/* Computer */
+		w=glade_xml_get_widget(xml, "eComputer");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the computer widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.comp);
 
-	/* NetMail */
-	w=glade_xml_get_widget(xml, "eNetMail");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the netmail widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.netmail);
+		/* NetMail */
+		w=glade_xml_get_widget(xml, "eNetMail");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the netmail widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.netmail);
 
-	/* Phone */
-	w=glade_xml_get_widget(xml, "ePhone");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the phone widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.phone);
+		/* Phone */
+		w=glade_xml_get_widget(xml, "ePhone");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the phone widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.phone);
 
-	/* Note */
-	w=glade_xml_get_widget(xml, "eNote");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the note widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.note);
+		/* Note */
+		w=glade_xml_get_widget(xml, "eNote");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the note widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.note);
 
-	/* Comment */
-	w=glade_xml_get_widget(xml, "eComment");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the comment widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.comment);
+		/* Comment */
+		w=glade_xml_get_widget(xml, "eComment");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the comment widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.comment);
 
-	/* Gender */
-	w=glade_xml_get_widget(xml, "eGender");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the gender widget\n");
-	else {
-		str[0]=user.sex;
-		str[1]=0;
-		gtk_entry_set_text(GTK_ENTRY(w),str);
-	}
+		/* Gender */
+		w=glade_xml_get_widget(xml, "eGender");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the gender widget\n");
+		else {
+			str[0]=user.sex;
+			str[1]=0;
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
 
-	/* Connection */
-	w=glade_xml_get_widget(xml, "eConnection");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the connection widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.modem);
+		/* Connection */
+		w=glade_xml_get_widget(xml, "eConnection");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the connection widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.modem);
 
-	/* Chat Handle */
-	w=glade_xml_get_widget(xml, "eHandle");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the handle widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.handle);
+		/* Chat Handle */
+		w=glade_xml_get_widget(xml, "eHandle");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the handle widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.handle);
 
-	/* Birthdate */
-	w=glade_xml_get_widget(xml, "eBirthdate");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the birthdate widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.birth);
+		/* Birthdate */
+		w=glade_xml_get_widget(xml, "eBirthdate");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the birthdate widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.birth);
 
-	/* Password */
-	w=glade_xml_get_widget(xml, "ePassword");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the password widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.pass);
+		/* Password */
+		w=glade_xml_get_widget(xml, "ePassword");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the password widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.pass);
 
-	/* Address */
-	w=glade_xml_get_widget(xml, "eAddress");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the address widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.address);
+		/* Address */
+		w=glade_xml_get_widget(xml, "eAddress");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the address widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.address);
 
-	/* Location */
-	w=glade_xml_get_widget(xml, "eLocation");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the location widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.location);
+		/* Location */
+		w=glade_xml_get_widget(xml, "eLocation");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the location widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.location);
 
-	/* Postal/ZIP code */
-	w=glade_xml_get_widget(xml, "eZip");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get the postal/zip code widget\n");
-	else
-		gtk_entry_set_text(GTK_ENTRY(w),user.zipcode);
+		/* Postal/ZIP code */
+		w=glade_xml_get_widget(xml, "eZip");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the postal/zip code widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.zipcode);
+
+		/* Postal/ZIP code */
+		w=glade_xml_get_widget(xml, "eZip");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the postal/zip code widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.zipcode);
+
+	/* Security Tab */
+		/* Level */
+		w=glade_xml_get_widget(xml, "eLevel");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the level widget\n");
+		else {
+			sprintf(str,"%u",user.level);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Expiration */
+		w=glade_xml_get_widget(xml, "eExpiration");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expiration widget\n");
+		else {
+			unixtodstr(&cfg, user.expire, str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Flag Sets */
+		w=glade_xml_get_widget(xml, "eFlagSet1");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the flag set 1 widget\n");
+		else {
+			ltoaf(user.flags1, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+		w=glade_xml_get_widget(xml, "eFlagSet2");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the flag set 2 widget\n");
+		else {
+			ltoaf(user.flags2, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+		w=glade_xml_get_widget(xml, "eFlagSet3");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the flag set 3 widget\n");
+		else {
+			ltoaf(user.flags3, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+		w=glade_xml_get_widget(xml, "eFlagSet4");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the flag set 4 widget\n");
+		else {
+			ltoaf(user.flags4, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Exemptions */
+		w=glade_xml_get_widget(xml, "eExemptions");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the exemptions widget\n");
+		else {
+			ltoaf(user.exempt, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Restrictions */
+		w=glade_xml_get_widget(xml, "eRestrictions");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the restrictions widget\n");
+		else {
+			ltoaf(user.rest, str);
+			truncsp(str);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Credits */
+		w=glade_xml_get_widget(xml, "eCredits");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the credits widget\n");
+		else {
+			sprintf(str,"%u",user.cdt);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Free Credits */
+		w=glade_xml_get_widget(xml, "eFreeCredits");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the free credits widget\n");
+		else {
+			sprintf(str,"%u",user.freecdt);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		/* Minutes */
+		w=glade_xml_get_widget(xml, "eMinutes");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the minutes widget\n");
+		else {
+			sprintf(str,"%u",user.min);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
 }
 
 int update_current_user(int new_user)

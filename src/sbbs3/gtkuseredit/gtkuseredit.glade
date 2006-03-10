@@ -1418,7 +1418,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="entry26">
+			<widget class="GtkEntry" id="eCredits">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1457,7 +1457,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="entry27">
+			<widget class="GtkEntry" id="eFreeCredits">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1497,7 +1497,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="entry28">
+			<widget class="GtkEntry" id="eMinutes">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1571,7 +1571,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkEntry" id="entry24">
+		    <widget class="GtkEntry" id="eLevel">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="editable">True</property>
@@ -1616,7 +1616,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkEntry" id="entry25">
+		    <widget class="GtkEntry" id="eExpiration">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="editable">True</property>
@@ -1716,7 +1716,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="entry29">
+			<widget class="GtkEntry" id="eExemptions">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1755,7 +1755,7 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="entry30">
+			<widget class="GtkEntry" id="eRestrictions">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
@@ -1938,7 +1938,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry31">
+			    <widget class="GtkEntry" id="eFlagSet1">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -1960,29 +1960,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry32">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">26</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">26</property>
-			    </widget>
-			    <packing>
-			      <property name="left_attach">1</property>
-			      <property name="right_attach">2</property>
-			      <property name="top_attach">1</property>
-			      <property name="bottom_attach">2</property>
-			      <property name="y_options"></property>
-			    </packing>
-			  </child>
-
-			  <child>
-			    <widget class="GtkEntry" id="entry33">
+			    <widget class="GtkEntry" id="eFlagSet3">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2004,7 +1982,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry34">
+			    <widget class="GtkEntry" id="eFlagSet4">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2021,6 +1999,28 @@
 			      <property name="right_attach">2</property>
 			      <property name="top_attach">3</property>
 			      <property name="bottom_attach">4</property>
+			      <property name="y_options"></property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkEntry" id="eFlagSet2">
+			      <property name="visible">True</property>
+			      <property name="can_focus">True</property>
+			      <property name="editable">True</property>
+			      <property name="visibility">True</property>
+			      <property name="max_length">26</property>
+			      <property name="text" translatable="yes"></property>
+			      <property name="has_frame">True</property>
+			      <property name="invisible_char">*</property>
+			      <property name="activates_default">False</property>
+			      <property name="width_chars">26</property>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">1</property>
+			      <property name="right_attach">2</property>
+			      <property name="top_attach">1</property>
+			      <property name="bottom_attach">2</property>
 			      <property name="y_options"></property>
 			    </packing>
 			  </child>
