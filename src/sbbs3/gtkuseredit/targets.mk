@@ -1,0 +1,5 @@
+GTKUSEREDIT	=	$(EXEODIR)$(DIRSEP)gtkuseredit$(EXEFILE)
+
+all: xpdev-mt smblib $(MTOBJODIR) $(EXEODIR) $(GTKUSEREDIT)
+
+$(GTKUSEREDIT):	$(XPDEV-MT_LIB) $(SMBLIB)
