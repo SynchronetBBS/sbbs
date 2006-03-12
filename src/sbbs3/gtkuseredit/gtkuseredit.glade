@@ -2219,7 +2219,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry47">
+				<widget class="GtkEntry" id="eDownloadsTotal">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2242,7 +2242,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry48">
+				<widget class="GtkEntry" id="eDownloadsBytes">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2265,7 +2265,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry49">
+				<widget class="GtkEntry" id="eDownloadsLeech">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2434,7 +2434,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry50">
+				<widget class="GtkEntry" id="eEmailTotal">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2457,7 +2457,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry51">
+				<widget class="GtkEntry" id="eEmailToday">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2480,7 +2480,7 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="entry52">
+				<widget class="GtkEntry" id="eEmailToSysop">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
 				  <property name="editable">True</property>
@@ -2686,7 +2686,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry43">
+			    <widget class="GtkEntry" id="eTotalTimeOn">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2709,7 +2709,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry44">
+			    <widget class="GtkEntry" id="eTimeOnToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2732,7 +2732,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry45">
+			    <widget class="GtkEntry" id="eTimeOnLastCall">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2755,7 +2755,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry46">
+			    <widget class="GtkEntry" id="eTimeOnExtra">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2898,7 +2898,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry41">
+			    <widget class="GtkEntry" id="eTotalUploads">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -2921,7 +2921,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry42">
+			    <widget class="GtkEntry" id="eUploadBytes">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3036,7 +3036,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry35">
+			    <widget class="GtkEntry" id="eFirstOn">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3087,7 +3087,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry36">
+			    <widget class="GtkEntry" id="eLastOn">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3230,7 +3230,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry37">
+			    <widget class="GtkEntry" id="eLogonsTotal">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3253,7 +3253,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry38">
+			    <widget class="GtkEntry" id="eLogonsToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3396,7 +3396,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry39">
+			    <widget class="GtkEntry" id="eTotalPosts">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -3419,7 +3419,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="entry40">
+			    <widget class="GtkEntry" id="ePostsToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
