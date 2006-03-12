@@ -14,6 +14,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 {
 	GtkWidget	*w;
 	char		str[1024];
+	gboolean	b;
 
 	user.number=current_user;
 	if(user.number < 1 || user.number > totalusers) {
@@ -24,6 +25,32 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		fprintf(stderr,"Error loading user %d.\n",current_user);
 		return;
 	}
+
+	/* Toolbar indicators */
+		b=user.misc&DELETED?TRUE:FALSE;
+		w=glade_xml_get_widget(xml, "bDelete");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the deleted toolbar widget\n");
+		else
+			gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),b);
+		w=glade_xml_get_widget(xml, "delete1");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the deleted menu widget\n");
+		else
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w),b);
+
+		b=user.misc&INACTIVE?TRUE:FALSE;
+		w=glade_xml_get_widget(xml, "bRemove");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the removed toolbar widget\n");
+		else
+			gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),b);
+		w=glade_xml_get_widget(xml, "remove1");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the remove menu widget\n");
+		else
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w),b);
+		
 
 	/* Peronal Tab */
 		/* Alias */
@@ -468,4 +495,42 @@ void show_about_box(GtkWidget *w, gpointer data)
 {
 	GladeXML *ab;
 	ab=glade_xml_new("gtkuseredit.glade", "AboutWindow", NULL);
+}
+
+void user_toggle_delete(GtkWidget *t, gpointer data)
+{
+	gboolean	deleted;
+	GtkWidget	*w;
+
+	g_object_get(G_OBJECT(t), "active", &deleted, NULL);
+
+	w=glade_xml_get_widget(xml, "bDelete");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the deleted toolbar widget\n");
+	else
+		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),deleted);
+	w=glade_xml_get_widget(xml, "delete1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the deleted menu widget\n");
+	else
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w),deleted);
+}
+
+void user_toggle_inactive(GtkWidget *t, gpointer data)
+{
+	gboolean	inactive;
+	GtkWidget	*w;
+
+	g_object_get(G_OBJECT(t), "active", &inactive, NULL);
+
+	w=glade_xml_get_widget(xml, "bRemove");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the removed toolbar widget\n");
+	else
+		gtk_toggle_tool_button_set_active(GTK_TOGGLE_TOOL_BUTTON(w),inactive);
+	w=glade_xml_get_widget(xml, "remove1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the remove menu widget\n");
+	else
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(w),inactive);
 }

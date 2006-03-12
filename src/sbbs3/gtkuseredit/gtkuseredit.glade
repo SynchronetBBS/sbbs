@@ -70,20 +70,22 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="delete2">
+		    <widget class="GtkCheckMenuItem" id="delete1">
 		      <property name="visible">True</property>
-		      <property name="label">gtk-delete</property>
-		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="delete_user" last_modification_time="Fri, 10 Mar 2006 02:20:53 GMT"/>
+		      <property name="label" translatable="yes">_Delete</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <signal name="activate" handler="user_toggle_delete" last_modification_time="Sun, 12 Mar 2006 01:51:53 GMT"/>
 		    </widget>
 		  </child>
 
 		  <child>
-		    <widget class="GtkImageMenuItem" id="remove1">
+		    <widget class="GtkCheckMenuItem" id="remove1">
 		      <property name="visible">True</property>
-		      <property name="label">gtk-remove</property>
-		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="disable_user" last_modification_time="Fri, 10 Mar 2006 02:20:53 GMT"/>
+		      <property name="label" translatable="yes">_Remove</property>
+		      <property name="use_underline">True</property>
+		      <property name="active">False</property>
+		      <signal name="activate" handler="user_toggle_inactive" last_modification_time="Sun, 12 Mar 2006 01:52:33 GMT"/>
 		    </widget>
 		  </child>
 
@@ -144,7 +146,7 @@
 	  <property name="show_arrow">True</property>
 
 	  <child>
-	    <widget class="GtkToolButton" id="newuserbutton">
+	    <widget class="GtkToolButton" id="bNewUser">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">New</property>
 	      <property name="use_underline">True</property>
@@ -178,7 +180,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton9">
+	    <widget class="GtkToolButton" id="bRefresh">
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">Refresh</property>
 	      <property name="use_underline">True</property>
@@ -195,15 +197,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton10">
+	    <widget class="GtkToggleToolButton" id="bDelete">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Delete</property>
-	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-delete</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
-	      <property name="is_important">True</property>
-	      <signal name="clicked" handler="delete_user" last_modification_time="Fri, 10 Mar 2006 02:24:05 GMT"/>
+	      <property name="is_important">False</property>
+	      <property name="active">False</property>
+	      <signal name="toggled" handler="user_toggle_delete" last_modification_time="Sun, 12 Mar 2006 01:50:28 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
@@ -212,13 +213,14 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkToolButton" id="toolbutton11">
+	    <widget class="GtkToggleToolButton" id="bRemove">
 	      <property name="visible">True</property>
 	      <property name="stock_id">gtk-remove</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
-	      <property name="is_important">True</property>
-	      <signal name="clicked" handler="disable_user" last_modification_time="Fri, 10 Mar 2006 02:25:11 GMT"/>
+	      <property name="is_important">False</property>
+	      <property name="active">False</property>
+	      <signal name="toggled" handler="user_toggle_inactive" last_modification_time="Sun, 12 Mar 2006 01:51:10 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>
