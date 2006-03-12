@@ -181,3 +181,8 @@ function idx_to_user(fromidx)
 	}
 	return(istouser);
 }
+
+function make_links(str) {
+   	var str_link=str.replace(/((http|https|ftp|telnet|gopher|irc)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(:[a-zA-Z0-9]*)?\/?([a-zA-Z0-9\-\._\?\,\/\\\+&%\$#\=~]*))/gi,'<a href="$1" target="_blank">$1</a>');
+	return(str_link)
+}

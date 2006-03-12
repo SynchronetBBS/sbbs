@@ -109,11 +109,13 @@ if(msg.type=="plain") {
     /* ANSI */
     if(template.body.indexOf('\x1b[')>=0 || template.body.indexOf('\x01')>=0) {
         template.body=html_encode(template.body,true,false,true,true);
+		template.body=make_links(template.body);
     }
     /* Plain text */
     else {
-        template.body=word_wrap(template.body);
+        template.body=word_wrap(template.body,80);
         template.body=html_encode(template.body,true,false,false,false);
+		template.body=make_links(template.body);
     }
 }
 if(msg.attachments!=undefined) {
