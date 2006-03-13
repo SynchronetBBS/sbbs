@@ -3566,7 +3566,7 @@
 					  <property name="spacing">0</property>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton10">
+					    <widget class="GtkCheckButton" id="cUserAUTOTERM">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Auto-Detect</property>
@@ -3585,10 +3585,10 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton11">
+					    <widget class="GtkCheckButton" id="cUserNO_EXASCII">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes">Extended ASCII</property>
+					      <property name="label" translatable="yes">No Extended ASCII</property>
 					      <property name="use_underline">True</property>
 					      <property name="relief">GTK_RELIEF_NORMAL</property>
 					      <property name="focus_on_click">True</property>
@@ -3604,7 +3604,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton12">
+					    <widget class="GtkCheckButton" id="cUserANSI">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">ANSI</property>
@@ -3623,7 +3623,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton13">
+					    <widget class="GtkCheckButton" id="cUserCOLOR">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Colour</property>
@@ -3642,7 +3642,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton14">
+					    <widget class="GtkCheckButton" id="cUserRIP">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">RIP</property>
@@ -3661,7 +3661,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton15">
+					    <widget class="GtkCheckButton" id="cUserWIP">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">WIP</property>
@@ -3680,7 +3680,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton16">
+					    <widget class="GtkCheckButton" id="cUserUPAUSE">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Pause</property>
@@ -3699,10 +3699,10 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton17">
+					    <widget class="GtkCheckButton" id="cUserCOLDKEYS">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
-					      <property name="label" translatable="yes">Hot Keys</property>
+					      <property name="label" translatable="yes">No Hot Keys</property>
 					      <property name="use_underline">True</property>
 					      <property name="relief">GTK_RELIEF_NORMAL</property>
 					      <property name="focus_on_click">True</property>
@@ -3718,7 +3718,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton18">
+					    <widget class="GtkCheckButton" id="cUserSPIN">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Spinning Cursor</property>
@@ -3783,7 +3783,7 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkEntry" id="entry54">
+				    <widget class="GtkEntry" id="eRows">
 				      <property name="visible">True</property>
 				      <property name="can_focus">True</property>
 				      <property name="editable">True</property>
@@ -3883,10 +3883,10 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkCheckButton" id="checkbutton19">
+				<widget class="GtkCheckButton" id="cUserEXPERT">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
-				  <property name="label" translatable="yes">Export Menu Mode</property>
+				  <property name="label" translatable="yes">Expert Menu Mode</property>
 				  <property name="use_underline">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
@@ -3988,7 +3988,7 @@
 				      <property name="spacing">0</property>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton20">
+					<widget class="GtkCheckButton" id="cUserASK_NSCAN">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Ask for New Message Scan</property>
@@ -4007,7 +4007,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton21">
+					<widget class="GtkCheckButton" id="cUserASK_SSCAN">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Ask for Your Message Scan</property>
@@ -4026,7 +4026,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton22">
+					<widget class="GtkCheckButton" id="cUserCURSUB">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Remember Current Sub-Board</property>
@@ -4045,7 +4045,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton23">
+					<widget class="GtkCheckButton" id="cUserQUIET">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Quiet Mode (Q exempt)</property>
@@ -4064,7 +4064,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton24">
+					<widget class="GtkCheckButton" id="cUserAUTOLOGON">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Auto-Logon via IP (V exempt)</property>
@@ -4160,7 +4160,7 @@
 				      <property name="spacing">0</property>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton25">
+					<widget class="GtkCheckButton" id="cUserCHAT_ECHO">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Multinode Chat Echo</property>
@@ -4179,7 +4179,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton26">
+					<widget class="GtkCheckButton" id="cUserCHAT_ACTION">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Multinode Chat Actions</property>
@@ -4198,10 +4198,10 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton27">
+					<widget class="GtkCheckButton" id="cUserCHAT_NOPAGE">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
-					  <property name="label" translatable="yes">Available for Internode Chat</property>
+					  <property name="label" translatable="yes">Not Available for Internode Chat</property>
 					  <property name="use_underline">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
@@ -4217,10 +4217,10 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton28">
+					<widget class="GtkCheckButton" id="cUserCHAT_NOACT">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
-					  <property name="label" translatable="yes">Multinode Activity Alerts</property>
+					  <property name="label" translatable="yes">No Multinode Activity Alerts</property>
 					  <property name="use_underline">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
@@ -4236,7 +4236,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton29">
+					<widget class="GtkCheckButton" id="cUserCHAT_SPLITP">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Split-screen Private Chat</property>
@@ -4386,7 +4386,7 @@
 					  <property name="spacing">0</property>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton30">
+					    <widget class="GtkCheckButton" id="cUserNETMAIL">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Forward Email to NetMail</property>
@@ -4405,7 +4405,7 @@
 					  </child>
 
 					  <child>
-					    <widget class="GtkCheckButton" id="checkbutton31">
+					    <widget class="GtkCheckButton" id="cUserCLRSCRN">
 					      <property name="visible">True</property>
 					      <property name="can_focus">True</property>
 					      <property name="label" translatable="yes">Clear Screen Between Messages</property>
@@ -4564,7 +4564,7 @@
 				      <property name="spacing">0</property>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton32">
+					<widget class="GtkCheckButton" id="cUserQWK_FILES">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include New Files List</property>
@@ -4583,7 +4583,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton33">
+					<widget class="GtkCheckButton" id="cUserQWK_EMAIL">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include Unread Email</property>
@@ -4602,7 +4602,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton34">
+					<widget class="GtkCheckButton" id="cUserQWK_ALLMAIL">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include ALL Email</property>
@@ -4621,7 +4621,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton35">
+					<widget class="GtkCheckButton" id="cUserQWK_DELMAIL">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Delete Email After Download</property>
@@ -4640,7 +4640,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton36">
+					<widget class="GtkCheckButton" id="cUserQWK_BYSELF">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include Messages From Self</property>
@@ -4659,7 +4659,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton37">
+					<widget class="GtkCheckButton" id="cUserQWK_EXPCTLA">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Expand Ctrl-A Codes to ANSI</property>
@@ -4678,10 +4678,10 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton38">
+					<widget class="GtkCheckButton" id="cUserQWK_RETCTLA">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
-					  <property name="label" translatable="yes">Strip Ctrl-A Codes</property>
+					  <property name="label" translatable="yes">Retain Ctrl-A Codes</property>
 					  <property name="use_underline">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
@@ -4697,7 +4697,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton39">
+					<widget class="GtkCheckButton" id="cUserQWK_ATTACH">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include File Attachments</property>
@@ -4716,10 +4716,10 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton40">
+					<widget class="GtkCheckButton" id="cUserQWK_NOINDEX">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
-					  <property name="label" translatable="yes">Include Index Files</property>
+					  <property name="label" translatable="yes">Do Not Include Index Files</property>
 					  <property name="use_underline">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
@@ -4735,7 +4735,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton41">
+					<widget class="GtkCheckButton" id="cUserQWK_TZ">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include Time Zone (@TZ)</property>
@@ -4754,7 +4754,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton42">
+					<widget class="GtkCheckButton" id="cUserQWK_VIA">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Include Seen-Bys (@VIA)</property>
@@ -4773,7 +4773,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton43">
+					<widget class="GtkCheckButton" id="cUserQWK_NOCTRL">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Extraneous Control Files</property>
@@ -4882,7 +4882,7 @@
 				      <property name="spacing">0</property>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton44">
+					<widget class="GtkCheckButton" id="cUserANFSCAN">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Auto-New Scan</property>
@@ -4901,7 +4901,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton45">
+					<widget class="GtkCheckButton" id="cUserEXTDESC">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Extended Descriptions</property>
@@ -4920,7 +4920,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton46">
+					<widget class="GtkCheckButton" id="cUserBATCHFLAG">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Batch Flagging</property>
@@ -4939,7 +4939,7 @@
 				      </child>
 
 				      <child>
-					<widget class="GtkCheckButton" id="checkbutton47">
+					<widget class="GtkCheckButton" id="cUserAUTOHANG">
 					  <property name="visible">True</property>
 					  <property name="can_focus">True</property>
 					  <property name="label" translatable="yes">Auto-Hangup After Transfer</property>
@@ -5153,7 +5153,7 @@
 	      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 	      <child>
-		<widget class="GtkTextView" id="textview1">
+		<widget class="GtkTextView" id="tExtendedComment">
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="editable">True</property>
@@ -5348,48 +5348,16 @@
   </child>
 </widget>
 
-<widget class="GtkWindow" id="AboutWindow">
-  <property name="width_request">272</property>
-  <property name="height_request">118</property>
-  <property name="visible">True</property>
-  <property name="title" translatable="yes">About Menu Editor</property>
-  <property name="type">GTK_WINDOW_TOPLEVEL</property>
-  <property name="window_position">GTK_WIN_POS_NONE</property>
-  <property name="modal">False</property>
-  <property name="resizable">False</property>
-  <property name="destroy_with_parent">True</property>
-  <property name="icon_name">gtk-about</property>
-  <property name="decorated">True</property>
-  <property name="skip_taskbar_hint">False</property>
-  <property name="skip_pager_hint">False</property>
-  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
-  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
-  <property name="focus_on_map">True</property>
-  <property name="urgency_hint">False</property>
-
-  <child>
-    <widget class="GtkLabel" id="label73">
-      <property name="visible">True</property>
-      <property name="label" translatable="yes">GNU GPL, Copyright 2006, Rob Swindell.
-
-Written By Stephen Hurd
-
-Blah Blah Blah.</property>
-      <property name="use_underline">False</property>
-      <property name="use_markup">False</property>
-      <property name="justify">GTK_JUSTIFY_CENTER</property>
-      <property name="wrap">False</property>
-      <property name="selectable">False</property>
-      <property name="xalign">0.5</property>
-      <property name="yalign">0.5</property>
-      <property name="xpad">0</property>
-      <property name="ypad">0</property>
-      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
-      <property name="width_chars">-1</property>
-      <property name="single_line_mode">False</property>
-      <property name="angle">0</property>
-    </widget>
-  </child>
+<widget class="GtkAboutDialog" id="AboutWindow">
+  <property name="destroy_with_parent">False</property>
+  <property name="name" translatable="yes">Synchronet User Editor</property>
+  <property name="copyright" translatable="yes">Copyright 2006 by Rob Swindell</property>
+  <property name="comments" translatable="yes">This program may be distributed under the terms of the GNU General Public Licence Version 2.</property>
+  <property name="wrap_license">False</property>
+  <property name="website">http://www.synchro.net/</property>
+  <property name="website_label" translatable="yes">www.synchro.net</property>
+  <property name="authors">Stephen Hurd</property>
+  <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
 </widget>
 
 </glade-interface>

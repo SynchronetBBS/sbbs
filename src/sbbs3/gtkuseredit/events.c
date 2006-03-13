@@ -439,6 +439,153 @@ void load_user(GtkWidget *wiggy, gpointer data)
 			sprintf(str, "%hu", user.fbacks);
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
+
+	/* Settings */
+		w=glade_xml_get_widget(xml, "cUserAUTOTERM");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the autoterm widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&AUTOTERM);
+
+		w=glade_xml_get_widget(xml, "cUserNO_EXASCII");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the no exascii widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&NO_EXASCII);
+
+		w=glade_xml_get_widget(xml, "cUserANSI");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ansi widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ANSI);
+
+		w=glade_xml_get_widget(xml, "cUserCOLOR");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the color widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&COLOR);
+
+		w=glade_xml_get_widget(xml, "cUserRIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the RIP widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&RIP);
+
+		w=glade_xml_get_widget(xml, "cUserWIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the WIP widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&WIP);
+
+		w=glade_xml_get_widget(xml, "cUserUPAUSE");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the upause widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&UPAUSE);
+
+		w=glade_xml_get_widget(xml, "cUserCOLDKEYS");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the coldkeys widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&COLDKEYS);
+
+		w=glade_xml_get_widget(xml, "cUserSPIN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the spin widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&SPIN);
+
+		w=glade_xml_get_widget(xml, "cUserRIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the RIP widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&RIP);
+
+		w=glade_xml_get_widget(xml, "eRows");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the rows widget\n");
+		else {
+			sprintf(str, "%hhu", user.rows);
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+
+		w=glade_xml_get_widget(xml, "cCommandShell");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the command shell widget\n");
+		else
+			gtk_combo_box_set_active(GTK_COMBO_BOX(w),user.shell);
+
+		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expert widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&EXPERT);
+
+		w=glade_xml_get_widget(xml, "cUserASK_NSCAN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ask new scan widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ASK_NSCAN);
+
+		w=glade_xml_get_widget(xml, "cUserASK_SSCAN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ask to you scan widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&ASK_SSCAN);
+
+		w=glade_xml_get_widget(xml, "cUserCURSUB");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the save current sub widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&CURSUB);
+
+		w=glade_xml_get_widget(xml, "cUserQUIET");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the quiet mode widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&QUIET);
+
+		w=glade_xml_get_widget(xml, "cUserAUTOLOGON");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the auto logon widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&AUTOLOGON);
+
+		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expert widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&EXPERT);
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_ECHO");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat echo widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_ECHO);
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_ACTION");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat action widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_ACTION);
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_NOPAGE");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat nopage widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_NOPAGE);
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_NOACT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat no activity widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_NOACT);
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_SPLITP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat split personal widget\n");
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.chat&CHAT_SPLITP);
 }
 
 int update_current_user(int new_user)
@@ -491,10 +638,15 @@ void last_user(GtkWidget *w, gpointer data)
 	update_current_user(totalusers);
 }
 
-void show_about_box(GtkWidget *w, gpointer data)
+void show_about_box(GtkWidget *unused, gpointer data)
 {
-	GladeXML *ab;
-	ab=glade_xml_new("gtkuseredit.glade", "AboutWindow", NULL);
+	GtkWidget	*w;
+	w=glade_xml_get_widget(xml, "AboutWindow");
+	if(w==NULL) {
+		fprintf(stderr,"Cannot get about window widget\n");
+		return;
+	}
+	gtk_widget_show(GTK_WIDGET(w));
 }
 
 void user_toggle_delete(GtkWidget *t, gpointer data)
