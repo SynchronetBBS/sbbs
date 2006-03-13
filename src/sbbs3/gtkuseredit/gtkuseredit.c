@@ -63,6 +63,7 @@ int refresh_globals(void)
 	/* Re-add combobox values */
 	for(i=0; i<cfg.total_shells; i++)
 		gtk_combo_box_append_text(GTK_COMBO_BOX(cCommandShell), cfg.shell[i]->name);
+	gtk_combo_box_append_text(GTK_COMBO_BOX(cExternalEditor), "Internal Editor");
 	for(i=0; i<cfg.total_xedits; i++)
 		gtk_combo_box_append_text(GTK_COMBO_BOX(cExternalEditor), cfg.xedit[i]->name);
 	for(i=0; i<cfg.total_prots; i++)
