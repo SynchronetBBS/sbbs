@@ -126,6 +126,9 @@ DWORD					services_svc_config_size;
 
 DWORD	MaxLogLen=20000;
 int     threads=1;
+time_t  initialized=0;
+static	str_list_t recycle_semfiles;
+static  str_list_t shutdown_semfiles;
 
 static void thread_up(void* p, BOOL up, BOOL setuid)
 {
@@ -2224,6 +2227,12 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         return;
     }
 
+	recycle_semfiles=semfile_list_init(cfg.ctrl_dir,"recycle","ctrl");
+   	semfile_list_check(&initialized,recycle_semfiles);
+
+	shutdown_semfiles=semfile_list_init(cfg.ctrl_dir,"shutdown","ctrl");
+	semfile_list_check(&initialized,shutdown_semfiles);
+
     if(!(cfg.sys_misc&SM_LOCAL_TZ)) {
     	if(putenv("TZ=UTC0")) {
         	Application->MessageBox("Error setting timezone"
@@ -2334,6 +2343,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     NodeForm->Timer->Enabled=true;
     ClientForm->Timer->Enabled=true;
+
+    SemFileTimer->Interval=global.sem_chk_freq;
+    SemFileTimer->Enabled=true;
 
     StatsTimer->Interval=cfg.node_stat_check*1000;
 	StatsTimer->Enabled=true;
@@ -3131,6 +3143,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SAFECOPY(global.ctrl_dir,PropertiesDlg->CtrlDirEdit->Text.c_str());
         SAFECOPY(global.temp_dir,PropertiesDlg->TempDirEdit->Text.c_str());
         global.sem_chk_freq=PropertiesDlg->SemFreqUpDown->Position;
+        SemFileTimer->Interval=global.sem_chk_freq;
 
         /* Copy global values to server startup structs */
         /* We don't support per-server unique values here (yet) */
@@ -3262,6 +3275,7 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 	FtpRecycleExecute(Sender);
 	WebRecycleExecute(Sender);
 	MailRecycleExecute(Sender);
+    TelnetRecycleExecute(Sender);
 	ServicesRecycleExecute(Sender);
 
 	char error[256];
@@ -3271,7 +3285,9 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }
+   	semfile_list_check(&initialized,recycle_semfiles);
 
+#if 0   /* This appears to be redundant */
     node_t node;
     for(int i=0;i<cfg.sys_nodes;i++) {
     	int file;
@@ -3281,6 +3297,7 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
         if(NodeForm->putnodedat(i+1,&node,file))
             break;
     }
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -3678,6 +3695,23 @@ void __fastcall TMainForm::ViewFile(AnsiString filename, AnsiString Caption)
         TextFileEditForm->Memo->ReadOnly=true;
         TextFileEditForm->ShowModal();
         delete TextFileEditForm;
+    }
+}
+//---------------------------------------------------------------------------
+
+
+
+void __fastcall TMainForm::SemFileTimerTick(TObject *Sender)
+{
+    char* p;
+
+    if((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL) {
+	    StatusBar->Panels->Items[4]->Text=AnsiString(p) + " signaled";
+        Close();
+    }
+    else if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+	    StatusBar->Panels->Items[4]->Text=AnsiString(p) + " signaled";
+        ReloadConfigExecute(Sender);
     }
 }
 //---------------------------------------------------------------------------
