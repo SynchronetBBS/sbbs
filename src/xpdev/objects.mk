@@ -17,6 +17,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)link_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)netwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)sockwrap$(OFILE) \
+	$(OBJODIR)$(DIRSEP)semfile$(OFILE) \
 	$(OBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)strwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpbeep$(OFILE) \
@@ -36,6 +37,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)semwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)netwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)sockwrap$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)semfile$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)strwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)threadwrap$(OFILE) \

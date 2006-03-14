@@ -114,6 +114,10 @@ SOURCE=.\netwrap.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\semfile.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\sockwrap.c
 # End Source File
 # Begin Source File
