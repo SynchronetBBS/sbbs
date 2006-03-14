@@ -712,7 +712,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		l,len=79;
 	int32		oldlen=79;
-	int32		crcount;
+	int32		crcount=0;
 	JSBool		handle_quotes=JS_TRUE;
 	ulong		i,k,t;
 	int			ocol=1;
