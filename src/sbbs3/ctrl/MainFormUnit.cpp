@@ -129,6 +129,7 @@ int     threads=1;
 time_t  initialized=0;
 static	str_list_t recycle_semfiles;
 static  str_list_t shutdown_semfiles;
+bool    terminating=false;
 
 static void thread_up(void* p, BOOL up, BOOL setuid)
 {
@@ -1117,7 +1118,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 	CanClose=false;
 
     if(TelnetStop->Enabled && !bbsServiceEnabled()) {
-     	if(TelnetForm->ProgressBar->Position
+     	if(!terminating && TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Telnet Server?"
         	,"Telnet Server In Use", MB_OKCANCEL)!=IDOK)
             return;
@@ -1125,7 +1126,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 	}
 
     if(MailStop->Enabled && !mailServiceEnabled()) {
-    	if(MailForm->ProgressBar->Position
+    	if(!terminating && MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
         	,"Mail Server In Use", MB_OKCANCEL)!=IDOK)
             return;
@@ -1133,7 +1134,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     }
 
     if(FtpStop->Enabled && !ftpServiceEnabled()) {
-    	if(FtpForm->ProgressBar->Position
+    	if(!terminating && FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
 	       	,"FTP Server In Use", MB_OKCANCEL)!=IDOK)
             return;
@@ -1141,7 +1142,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     }
 
     if(WebStop->Enabled && !webServiceEnabled()) {
-    	if(WebForm->ProgressBar->Position
+    	if(!terminating && WebForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Web Server?"
 	       	,"Web Server In Use", MB_OKCANCEL)!=IDOK)
             return;
@@ -3707,6 +3708,7 @@ void __fastcall TMainForm::SemFileTimerTick(TObject *Sender)
 
     if((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL) {
 	    StatusBar->Panels->Items[4]->Text=AnsiString(p) + " signaled";
+        terminating=true;
         Close();
     }
     else if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
