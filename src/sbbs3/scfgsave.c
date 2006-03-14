@@ -1124,8 +1124,5 @@ void DLLCALL refresh_cfg(scfg_t* cfg)
             break;
     }
 
-	SAFEPRINTF(str,"%srecycle.ftp",cfg->ctrl_dir);		ftouch(str);
-	SAFEPRINTF(str,"%srecycle.web",cfg->ctrl_dir);		ftouch(str);
-	SAFEPRINTF(str,"%srecycle.mail",cfg->ctrl_dir);		ftouch(str);
-	SAFEPRINTF(str,"%srecycle.services",cfg->ctrl_dir);	ftouch(str);
+	SAFEPRINTF(str,"%srecycle",cfg->ctrl_dir);		ftouch(str);
 }
