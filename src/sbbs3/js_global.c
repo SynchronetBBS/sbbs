@@ -608,7 +608,7 @@ js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static int get_prefix(char *text, int *bytes, int *len)
+static int get_prefix(char *text, int *bytes, int *len, int maxlen)
 {
 	int		tmp_prefix_bytes,tmp_prefix_len;
 	int		expect;
@@ -675,6 +675,9 @@ static int get_prefix(char *text, int *bytes, int *len)
 				expect=0;
 				break;
 		}
+	}
+	if(*bytes >= maxlen) {
+		lprintf(LOG_CRIT, "Prefix bytes %u is larger than buffer (%u) here: %*.*s",*bytes,maxlen,maxlen,maxlen,text);
 	}
 	return(depth);
 }
@@ -762,7 +765,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	/* Get prefix from the first line (ouch) */
 	l=0;
 	i=0;
-	if(handle_quotes && (quote_count=get_prefix(inbuf, &prefix_bytes, &prefix_len))) {
+	if(handle_quotes && (quote_count=get_prefix(inbuf, &prefix_bytes, &prefix_len, len*2+2))) {
 		i+=prefix_bytes;
 		if(prefix_len>len/3*2) {
 			/* This prefix is insane (more than 2/3rds of the new width) hack it down to size */
@@ -786,7 +789,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				crcount++;
 				break;
 			case '\n':
-				if(handle_quotes && (quote_count=get_prefix(inbuf+i+1, &prefix_bytes, &prefix_len))) {
+				if(handle_quotes && (quote_count=get_prefix(inbuf+i+1, &prefix_bytes, &prefix_len, len*2+2))) {
 					/* Move the input pointer offset to the last char of the prefix */
 					i+=prefix_bytes;
 				}
