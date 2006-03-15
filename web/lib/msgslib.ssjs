@@ -183,6 +183,8 @@ function idx_to_user(fromidx)
 }
 
 function make_links(str) {
-   	   	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news)\:\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w]*)?(?:\/(?:[\w\-._\?\,\/\\\+&%\$#\=~\*]*))?[^,.\(\)&\s]/gi,'<a href="$&" target="_blank">$&</a>');
-	return(str)
+	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news)\:\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w]*)?(?:\/(?:[\w\-._\?\,\/\\\+&%\$#\=~\*]*))?[^,.\(\)&\s]/gi,function(str) {
+		var ret='<a href="'+html_decode(str)+'" target="_blank">'+str+'</a>';
+		return(ret);}
+	);
 }
