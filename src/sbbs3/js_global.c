@@ -987,7 +987,7 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(len<=0)
 		return(JS_FALSE);
 
-	if((linebuf=(char*)malloc(len+1))==NULL)
+	if((linebuf=(char*)malloc(len*2+2))==NULL)	/* (Hopefully) Room for ^A codes.  ToDo */
 		return(JS_FALSE);
 
 	outbuf[0]=0;
