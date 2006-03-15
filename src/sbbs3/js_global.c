@@ -785,6 +785,11 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		old_prefix_bytes=prefix_bytes;
 	}
 	for(; inbuf[i]; i++) {
+		if(l>=len*2+2) {
+			l-=4;
+			linebuf[l]=0;
+			lprintf(LOG_CRIT, "Word wrap line buffer exceeded... munging line %s",linebuf);
+		}
 		switch(inbuf[i]) {
 			case '\r':
 				crcount++;
