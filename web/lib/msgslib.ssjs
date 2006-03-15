@@ -187,4 +187,5 @@ function make_links(str) {
 		var ret='<a href="'+html_decode(str)+'" target="_blank">'+str+'</a>';
 		return(ret);}
 	);
+	return(str);
 }
