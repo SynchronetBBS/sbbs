@@ -678,6 +678,7 @@ static int get_prefix(char *text, int *bytes, int *len, int maxlen)
 	}
 	if(*bytes >= maxlen) {
 		lprintf(LOG_CRIT, "Prefix bytes %u is larger than buffer (%u) here: %*.*s",*bytes,maxlen,maxlen,maxlen,text);
+		*bytes=maxlen-1;
 	}
 	return(depth);
 }
