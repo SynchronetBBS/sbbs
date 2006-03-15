@@ -753,11 +753,11 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
 		handle_quotes=JSVAL_TO_BOOLEAN(argv[3]);
 
-	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes */
+	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
 		return(JS_FALSE);
 
 	if(handle_quotes) {
-		if((prefix=(char *)malloc((len*2)+2))==NULL) /* room for ^A codes */
+		if((prefix=(char *)malloc((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
 			return(JS_FALSE);
 		prefix[0]=0;
 	}
@@ -847,14 +847,14 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 							ocol=prefix_len+1;
 						}
 						else {		/* Not a hard CR... add space if needed */
-							if(!isspace(linebuf[l-1])) {
+							if(l<1 || !isspace(linebuf[l-1])) {
 								linebuf[l++]=' ';
 								ocol++;
 							}
 						}
 					}
 					else {			/* Not a hard CR... add space if needed */
-						if(!isspace(linebuf[l-1])) {
+						if(l<1 || !isspace(linebuf[l-1])) {
 							linebuf[l++]=' ';
 							ocol++;
 						}
@@ -904,15 +904,16 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					/* Find the start of the last word */
 					k=l;									/* Original next char */
 					l--;									/* Move back to the last char */
-					while(!isspace(linebuf[l]) && l>0)		/* Move back to the last non-space char */
+					while((!isspace(linebuf[l])) && l>0)		/* Move back to the last non-space char */
 						l--;
 					if(l==0) {		/* Couldn't wrap... must chop. */
 						l=k;
-						while(linebuf[l-2]=='\x01' && linebuf[l-1]!='\x01')
+						while(l>1 && linebuf[l-2]=='\x01' && linebuf[l-1]!='\x01')
 							l-=2;
-						if(linebuf[l-1]=='\x01')
+						if(l>0 && linebuf[l-1]=='\x01')
 							l--;
-						l--;
+						if(l>0)
+							l--;
 					}
 					t=l+1;									/* Store start position of next line */
 					/* Move to start of whitespace */
