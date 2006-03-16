@@ -2372,6 +2372,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	nodefile_fp=NULL;
 	node_ext_fp=NULL;
 	current_msg=NULL;
+	mnestr=NULL;
 
 #ifdef JAVASCRIPT
 	js_runtime=NULL;	/* runtime */
@@ -2381,13 +2382,15 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	for(i=0;i<TOTAL_TEXT;i++)
 		text[i]=text_sav[i]=global_text[i];
 
-	memset(&main_csi,0,sizeof(main_csi));
-	memset(&thisnode,0,sizeof(thisnode));
-	memset(&useron,0,sizeof(useron));
-	memset(&inbuf,0,sizeof(inbuf));
-	memset(&outbuf,0,sizeof(outbuf));
-	memset(&smb,0,sizeof(smb));
+	ZERO_VAR(main_csi);
+	ZERO_VAR(thisnode);
+	ZERO_VAR(useron);
+	ZERO_VAR(inbuf);
+	ZERO_VAR(outbuf);
+	ZERO_VAR(smb);
+	ZERO_VAR(nodesync_user);
 
+	action=NODE_MAIN;
 	global_str_vars=0;
 	global_str_var=NULL;
 	global_str_var_name=NULL;
