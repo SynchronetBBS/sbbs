@@ -183,12 +183,19 @@ function idx_to_user(fromidx)
 }
 
 function make_links(str) {
-	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
-//					 | Protocol                                    |Hostname  |TLD     | Port        | Path                                  |
-		var ret='<a href="'+str+'" target="_blank">'+str+'</a>';
+	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\r\n\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
+//					 | Protocol                                    |Hostname  |TLD     | Port        | Path allow line breaks in path (will be stripped)
+		var text=str;
+		var uri=str;
+		var extra='';
 		var m=str.match(/^(.*)(&gt;|[,.\)])$/);
-		if(m!=null)
-			ret='<a href="'+m[1]+'" target="_blank">'+m[1]+'</a>'+m[2];
+		if(m!=null) {
+			text=m[1];
+			uri=m[1];
+			extra=m[2];
+		}
+		uri=uri.replace(/[\r\n]/g,'');
+		var ret='<a href="'+uri+'" target="_blank">'+text+'</a>'+extra;
 		return(ret);}
 	);
 	return(str);
