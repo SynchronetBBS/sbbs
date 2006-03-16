@@ -183,9 +183,9 @@ function idx_to_user(fromidx)
 }
 
 function make_links(str) {
-	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news)\:\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w]*)?(?:\/(?:[\w\-._\?\,\/\\\+&amp;%\$#\=~\*]*))?[^,.\(\)&\s]/gi,function(str) {
+	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news)\:\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w]*)?(?:\/(?:[\w\-._\?\,\/\\\+&amp;%\$#\=~\*]*))?[^,.\(\)<>&\s]/gi,function(str) {
 		var ret='<a href="'+str+'" target="_blank">'+str+'</a>';
 		return(ret);}
-	); 
+	);
 	return(str);
 }
