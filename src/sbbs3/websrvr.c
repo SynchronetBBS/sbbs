@@ -881,7 +881,7 @@ static BOOL get_xjs_handler(char* ext, http_session_t* session)
 {
 	size_t	i;
 
-	if(ext==NULL || xjs_handlers==NULL)
+	if(ext==NULL || xjs_handlers==NULL || ext[0]==0)
 		return(FALSE);
 
 	for(i=0;xjs_handlers[i]!=NULL;i++) {
