@@ -188,11 +188,16 @@ function make_links(str) {
 		var text=str;
 		var uri=str;
 		var extra='';
-		var m=str.match(/^([\x00-\xff]*?)((?:&gt;|[\r\n,.\)])+)$/);
+		var m=str.match(/^([\x00-\xff]*?)((?:\r?\n\r?\n).*)$)
+		if(m!=null) {
+			str=m[1];
+			extra=m[2];
+		}
+		m=str.match(/^([\x00-\xff]*?)((?:&gt;|[\r\n,.\)])+)$/);
 		if(m!=null) {
 			text=m[1];
 			uri=m[1];
-			extra=m[2];
+			extra=m[2]+extra;
 		}
 		uri=uri.replace(/[\r\n]/g,'');
 		var ret='<a href="'+uri+'" target="_blank">'+text+'</a>'+extra;
