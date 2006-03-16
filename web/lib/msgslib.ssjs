@@ -183,16 +183,11 @@ function idx_to_user(fromidx)
 }
 
 function make_links(str) {
-	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\r\n\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
+	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
 //					 | Protocol                                    |Hostname  |TLD     | Port        | Path allow line breaks in path (will be stripped)
 		var text=str;
 		var uri=str;
 		var extra='';
-		var m=str.match(/^([\x00-\xff]*?)((?:\r?\n\r?\n).*)$/)
-		if(m!=null) {
-			str=m[1];
-			extra=m[2];
-		}
 		m=str.match(/^([\x00-\xff]*?)((?:&gt;|[\r\n,.\)])+)$/);
 		if(m!=null) {
 			text=m[1];
