@@ -186,7 +186,7 @@ function make_links(str) {
 	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w]*)?(?:\/(?:[\w\-._\?\,\/\\\+&amp;%\$#\=~\*]*))?/gi,function(str) {
 //					 | Protocol                                    |Hostname					  | Path                                     |
 		var ret='<a href="'+str+'" target="_blank">'+str+'</a>';
-		var m=str.match(/^(.*)(&gt;|[^,.\(\)\s])$/);
+		var m=str.match(/^(.*)(&gt;|[,.\)])$/);
 		if(m!=null)
 			ret='<a href="'+m[1]+'" target="_blank">'+m[1]+'</a>'+m[2];
 		return(ret);}
