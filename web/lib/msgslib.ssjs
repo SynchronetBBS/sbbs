@@ -187,7 +187,7 @@ function make_links(str) {
 		var ret='<a href="'+str+'" target="_blank">'+str+'</a>';
 		var m=str.match(/^(.*)(&gt;.*)$/);
 		if(m!=null)
-			var ret='<a href="'+m[1]+'" target="_blank">'+m[1]+'</a>'+m[2];
+			ret='<a href="'+m[1]+'" target="_blank">'+m[1]+'</a>'+m[2];
 		return(ret);}
 	);
 	return(str);
