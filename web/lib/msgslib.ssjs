@@ -188,7 +188,7 @@ function make_links(str) {
 		var text=str;
 		var uri=str;
 		var extra='';
-		var m=str.match(/^(.*)(&gt;|[\r\n,.\)]+)$/);
+		var m=str.match(/^(.*)((?:&gt;|[\r\n,.\)])+)$/);
 		if(m!=null) {
 			text=m[1];
 			uri=m[1];
