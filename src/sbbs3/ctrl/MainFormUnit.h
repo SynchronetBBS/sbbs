@@ -438,6 +438,7 @@ public:		// User declarations
     void __fastcall WriteFont(AnsiString, TFont*);
     void __fastcall EditFile(AnsiString filename, AnsiString Caption="Edit");
     void __fastcall ViewFile(AnsiString filename, AnsiString Caption);
+    void __fastcall reload_config(void);    
     BOOL __fastcall bbsServiceEnabled(void);
     BOOL __fastcall ftpServiceEnabled(void);
     BOOL __fastcall webServiceEnabled(void);
