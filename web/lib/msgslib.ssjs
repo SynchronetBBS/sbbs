@@ -184,7 +184,7 @@ function idx_to_user(fromidx)
 
 function make_links(str) {
 	str=str.replace(/(?:http|https|ftp|telnet|gopher|irc|news):\/\/[\w\-\.]+\.[a-zA-Z]+(?::[\w-+_%]*)?(?:\/(?:[\w\-._\?\,\/\\\+&;%\$#\=~\*]*))?/gi,function(str) {
-//					 | Protocol                                    |Hostname  |TLD     | Port        | Path allow line breaks in path (will be stripped)
+//					 | Protocol                                    |Hostname  |TLD     | Port        | Path									  |
 		var text=str;
 		var uri=str;
 		var extra='';
