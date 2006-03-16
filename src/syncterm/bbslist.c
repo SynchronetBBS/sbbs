@@ -743,7 +743,7 @@ struct bbslist *show_bbslist(int mode)
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
 
-	memset(list,NULL,sizeof(list));
+	memset(list,0,sizeof(list));
 	memset(&defaults,0,sizeof(defaults));
 
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
