@@ -188,7 +188,7 @@ function make_links(str) {
 		var text=str;
 		var uri=str;
 		var extra='';
-		var m=str.match(/^([\x00-\xff]*?)((?:\r?\n\r?\n).*)$)
+		var m=str.match(/^([\x00-\xff]*?)((?:\r?\n\r?\n).*)$/)
 		if(m!=null) {
 			str=m[1];
 			extra=m[2];
