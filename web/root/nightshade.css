@@ -1,6 +1,6 @@
 /* NightShade Theme */
 
-/* $Id: */
+/* $Id$ */
 
  body {
 	margin: 0px;
@@ -440,7 +440,7 @@ table.lastcallers {
 	padding: 5px 5px 0px 5px;
 	margin-left: auto;
 	margin-right: auto;
-	overflow: auto;
+	overflow: hidden;
 }
 
  html>body div#subslist {
