@@ -4,6 +4,8 @@ load("../web/lib/template.ssjs");
 
 var sub="";
 
+template.title="Last Few Callers to " +system.name;
+
 if(do_extra)
 	do_rightnav=false;
 
