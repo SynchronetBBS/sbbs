@@ -4,8 +4,8 @@ load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
 template.txtbodybgwht=0;
-
 template.author_avatar = '';
+
 
 /*  If you want to disable display of certain .inc files  */
 /* for a specific theme declare it like this in the .ssjs */
@@ -71,15 +71,6 @@ else {
         error("You can't read messages in this sub!");
 }
 
-if(do_header)
-	write_template("header.inc");
-if(do_topnav)
-	load(topnav_html);
-if(do_leftnav)
-	load(leftnav_html);
-if(do_rightnav)
-	write_template("rightnav.inc");
-
 if(sub=='mail')
     template.can_post=!(user.security.restrictions&UFLAG_E);
 else
@@ -118,6 +109,7 @@ if(msg.type=="plain") {
 		template.body=make_links(template.body);
     }
 }
+
 if(msg.attachments!=undefined) {
     template.attachments=new Object;
     for(att in msg.attachments) {
@@ -128,10 +120,10 @@ if(msg.attachments!=undefined) {
 
 if(template.hdr != null)  {
     if(Themes[CurrTheme].do_forumlook==true && sub!='mail')
-	template.title="Reading Messages in "+msg_area.grp[msg_area.sub[sub].grp_name];
+		template.title="Reading Messages in "+msg_area.grp_list[msg_area.sub[sub].grp_number].description + " -> " + msg_area.sub[sub].description;
 	else
-	template.title="Message: "+template.hdr.subject;
-
+		template.title="Message: "+template.hdr.subject;
+	
     if(sub=='mail' || user.security.level>=90) {    /* Sysops can dump all message headers */
         template.hfields="<html><head><title>Message Header Fields</title></head>";
         template.hfields+="<body>";
@@ -189,6 +181,14 @@ else
 
 // m--;
 
+if(do_header)
+	write_template("header.inc");
+if(do_topnav)
+	load(topnav_html);
+if(do_leftnav)
+	load(leftnav_html);
+if(do_rightnav)
+	write_template("rightnav.inc");
 write_template("msgs/msg.inc");
 
 // }
