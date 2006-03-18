@@ -102,52 +102,20 @@ html>body #navcontainer {
 
  div#navigation ul {
 	list-style-type: none;
-	padding: 0;
 	margin: 0;
+	padding-left: 0;
 }
 
- div#navigation ul li { 
+ div#navigation li { 
 	margin-top: 4px;
 	margin-bottom: 4px;
-	padding: 0;
-	height: 0px;
 }
 
- .sectionSubLinks {
- 	margin-left: 25px;
-	margin-top: 4px;
-	margin-bottom: 4px;
- 	color: #CC3399;
-	voice-family: "\"}\"";
-	voice-family:inherit;
-	margin-top: 0px;
-	margin-bottom: 0px;
-}
-
- ul.sectionSubLinks {
-	margin-top: 4px;
-	margin-bottom: 4px;
-	voice-family: "\"}\"";
-	voice-family:inherit;
-	margin-top: 0px;
-	margin-bottom: 0px;	
-}
-
- li.sectionSubLinks {
-	margin-top: 4px;
-	margin-bottom: 4px;
-	voice-family: "\"}\"";
-	voice-family:inherit;
-	margin-top: 0px;
-	margin-bottom: 0px;
-}
-
- a.sectionSubLinks {
- 	color: #CC3399;
+ #sublinks a {
+	color: white;
 }
 
  html>body #navigation ul li {
-	height: 25px;
 }
 
  #navigation ul li a {
@@ -164,13 +132,17 @@ html>body #navcontainer {
 	border-right: solid 1px black;
 }
 
- #navigation ul li a:hover {
+ #navigation a:hover {
 	color: #fff;
 	text-decoration: underline;
 	border-top: solid 1px black;
 	border-left: solid 1px black;
 	border-bottom: solid 1px #89a3b7;
 	border-right: solid 1px white;
+}
+
+ #sublinks {
+ 	color: white;
 }
 
  div#more_invisible {

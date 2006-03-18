@@ -22,6 +22,7 @@
 
 
 template.leftnav=new Array;
+template.sublinks=new Array;
 
 if(user.number==0 || user.security.restrictions&UFLAG_G)
     
@@ -31,19 +32,14 @@ else
 
 if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     template.leftnav.push({html: '<li><a href="/msgs">Message Groups</a></li>' });
-
-if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/msgs.ssjs'  || http_request.virtual_path == '/msgs/post.ssjs' || http_request.virtual_path == '/msgs/reply.ssjs' || http_request.virtual_path == '/msgs/savemsg.ssjs' || http_request.virtual_path == '/msgs/subinfo.ssjs' || http_request.virtual_path == '/msgs/subs.ssjs')) {
-  for(s in msg_area.grp_list)
-        template.leftnav.push({html: '<li><a href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
-}
+if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/msgs.ssjs'  || http_request.virtual_path == '/msgs/post.ssjs' || http_request.virtual_path == '/msgs/reply.ssjs' || http_request.virtual_path == '/msgs/savemsg.ssjs' || http_request.virtual_path == '/msgs/subinfo.ssjs' || http_request.virtual_path == '/msgs/subs.ssjs'))
+	do_sublinks();
 if(user.number==0 || user.security.restrictions&UFLAG_G) {
     }
 else
     template.leftnav.push({html: '<li><a href="/msgs/choosegroup.ssjs">Set Message Scan</a></li>' });
-if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs')) {
-    for(s in msg_area.grp_list)
-            template.leftnav.push({html: '<li><a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
-}
+if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs'))
+	do_sublinks_settings();
 if(user.number==0 || user.security.restrictions&UFLAG_G) {
     }
 else
@@ -51,3 +47,15 @@ else
     template.leftnav.push({ html: '<li><a href="' + template.ftp_url + template.ftpqwk + '">Download QWK</a></li>' });
 	
 write_template("leftnav.inc");
+
+function do_sublinks() {
+for(s in msg_area.grp_list)
+        template.leftnav.push({html: '<li><a style="color: #AACCFF; margin-left: 15px; margin-right: 15px; font-size: 11px;" onmouseover="this.style.color=\'white\'" onmouseout="this.style.color=\'#aaccff\'" href="/msgs/subs.ssjs?msg_grp='+msg_area.grp_list[s].name+'">'+msg_area.grp_list[s].description+'</a></li>' });
+	return(template.sublinks);
+}
+
+function do_sublinks_settings() {
+	    for(s in msg_area.grp_list)
+            template.leftnav.push({html: '<li><a style="color: #AACCFF; margin-left: 15px; margin-right: 15px; font-size: 11px;" onmouseover="this.style.color=\'white\'" onmouseout="this.style.color=\'#aaccff\'" href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a></li>' });
+	return(template.sublinks);
+}
