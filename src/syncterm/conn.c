@@ -115,7 +115,6 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 	SOCKADDR_IN	saddr;
 	char	*p;
 	unsigned int	neta;
-	int	i;
 
 	init_uifc(TRUE, TRUE);
 	con_type=conn_type;
