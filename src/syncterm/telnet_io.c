@@ -69,7 +69,7 @@ static void send_telnet_cmd(uchar cmd, uchar opt)
 	}
 }
 
-static void request_telnet_opt(uchar cmd, uchar opt)
+void request_telnet_opt(uchar cmd, uchar opt)
 {
 	if(cmd==TELNET_DO || cmd==TELNET_DONT) {	/* remote option */
 		if(telnet_remote_option[opt]==telnet_opt_ack(cmd))
