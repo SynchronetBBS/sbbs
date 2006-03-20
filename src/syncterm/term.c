@@ -14,6 +14,7 @@
 #include "menu.h"
 #include "dirwrap.h"
 #include "zmodem.h"
+#include "telnet_io.h"
 
 #ifdef GUTS_BUILTIN
 #include "gutsz.h"
@@ -124,7 +125,6 @@ void mousedrag(unsigned char *scrollback)
 
 void update_status(struct bbslist *bbs, int speed)
 {
-	char buf[160];
 	char nbuf[LIST_NAME_MAX+10+11+1];	/* Room for "Name (Logging) (115300)" and terminator */
 						/* SAFE and Logging should me be possible. */
 	int oldscroll;
@@ -228,7 +228,7 @@ static int lputs(void* cbdata, int level, const char* str)
 	char msg[512];
 	int chars;
 
-#if defined(_WIN32) && defined(_DEBUG) && TRUE
+#if defined(_WIN32) && defined(_DEBUG) && FALSE
 	sprintf(msg,"SyncTerm: %s\n",str);
 	OutputDebugString(msg);
 #endif
@@ -344,7 +344,7 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 		cputs("\r\n");
 		cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
 			,(long)(((float)current_pos/(float)zm->current_file_size)*100.0));
-		l = 60*((float)current_pos/(float)zm->current_file_size);
+		l = (long)(60*((float)current_pos/(float)zm->current_file_size));
 		cprintf("[%*.*s%*s]", l, l, 
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
@@ -400,6 +400,20 @@ static int recv_byte(void* unused, unsigned timeout)
 	return(ch);
 }
 
+void purge_recv(void)
+{
+	int ch;
+	unsigned count=0;
+
+	lprintf(LOG_NOTICE,"Purging receive buffer...");
+	YIELD();
+	while((ch=recv_byte(NULL,0)) >= 0) {
+		YIELD();
+		count++;
+	}
+	lprintf(LOG_NOTICE,"%u bytes purged");
+}
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -438,10 +452,10 @@ void draw_transfer_window(char* title)
 	gettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf);
 	memset(outline, YELLOW | (BLUE<<4), sizeof(outline));
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
-		outline[i] = 0xcd;	/* Double horizontal line */
+		outline[i] = (char)0xcd;	/* Double horizontal line */
 	}
-	outline[0]=0xc9;
-	outline[sizeof(outline)-2]=0xbb;
+	outline[0]=(char)0xc9;
+	outline[sizeof(outline)-2]=(char)0xbb;
 	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);\
 
 	/* Title */
@@ -453,20 +467,20 @@ void draw_transfer_window(char* title)
 	cprintf("%s",title);
 
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
-		outline[i] = 0xc4;	/* Single horizontal line */
+		outline[i] = (char)0xc4;	/* Single horizontal line */
 	}
-	outline[0] = 0xc7;	/* 0xcc */
-	outline[sizeof(outline)-2]=0xb6;	/* 0xb6 */
+	outline[0] = (char)0xc7;	/* 0xcc */
+	outline[sizeof(outline)-2]=(char)0xb6;	/* 0xb6 */
 	puttext(left, top+6, left + TRANSFER_WIN_WIDTH - 1, top+6, outline);
 
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
-		outline[i] = 0xcd;	/* Double horizontal line */
+		outline[i] = (char)0xcd;	/* Double horizontal line */
 	}
-	outline[0]=0xc8;
-	outline[sizeof(outline)-2]=0xbc;
+	outline[0]=(char)0xc8;
+	outline[sizeof(outline)-2]=(char)0xbc;
 	puttext(left, top + TRANSFER_WIN_HEIGHT - 1, left+TRANSFER_WIN_WIDTH - 1, top + TRANSFER_WIN_HEIGHT - 1, outline);
-	outline[0]=0xba;
-	outline[sizeof(outline)-2]=0xba;
+	outline[0]=(char)0xba;
+	outline[sizeof(outline)-2]=(char)0xba;
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
 		outline[i] = ' ';
 	}
@@ -537,10 +551,26 @@ void erase_transfer_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-void ascii_upload(FILE *fp, char *path);
-void zmodem_upload(FILE *fp, char *path);
+static binary_mode_on(struct bbslist *bbs)
+{
+	if(bbs->conn_type == CONN_TYPE_TELNET) {
+		request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
+		request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
+	}
+}
 
-void begin_upload(char *uldir, BOOL autozm)
+static binary_mode_off(struct bbslist *bbs)
+{
+	if(bbs->conn_type == CONN_TYPE_TELNET) {
+		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
+		request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
+	}
+}
+
+void ascii_upload(FILE *fp, char *path);
+void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
+
+void begin_upload(struct bbslist *bbs, BOOL autozm)
 {
 	char	str[MAX_PATH*2+1];
 	char	path[MAX_PATH+1];
@@ -558,7 +588,7 @@ void begin_upload(char *uldir, BOOL autozm)
 		return;
 
 	init_uifc(FALSE, FALSE);
-	result=filepick(&uifc, "Upload", &fpick, uldir, NULL, UIFC_FP_ALLOWENTRY);
+	result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 	
 	if(result==-1 || fpick.files<1) {
 		filepick_free(&fpick);
@@ -577,12 +607,12 @@ void begin_upload(char *uldir, BOOL autozm)
 	setvbuf(fp,NULL,_IOFBF,0x10000);
 
 	if(autozm) 
-		zmodem_upload(fp, path);
+		zmodem_upload(bbs, fp, path);
 	else {
 		i=0;
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
 			case 0:
-				zmodem_upload(fp, path);
+				zmodem_upload(bbs, fp, path);
 				break;
 			case 1:
 				ascii_upload(fp, path);
@@ -659,7 +689,7 @@ BOOL guts_data_waiting(void* cbdata, unsigned timeout)
 	return(rd);
 }
 
-void zmodem_download(char *download_dir);
+void zmodem_download(struct bbslist *bbs);
 
 void guts_background_download(void *cbdata)
 {
@@ -744,9 +774,9 @@ void guts_transfer(struct bbslist *bbs)
 
 	if(gi.inband) {
 		if(gi.direction==UPLOAD)
-			begin_upload(bbs->uldir, TRUE);
+			begin_upload(bbs, TRUE);
 		else
-			zmodem_download(bbs->dldir);
+			zmodem_download(bbs);
 		oob_close(&gi);
 	}
 	else {
@@ -817,13 +847,14 @@ void ascii_upload(FILE *fp, char *path)
 	fclose(fp);
 }
 
-void zmodem_upload(FILE *fp, char *path)
+void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
 	zmodem_t	zm;
 	ulong	fsize;
 
 	draw_transfer_window("Zmodem Upload");
 
+	binary_mode_on(bbs);
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
@@ -845,13 +876,14 @@ void zmodem_upload(FILE *fp, char *path)
 
 	fclose(fp);
 
+	binary_mode_off(bbs);
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
 
 	erase_transfer_window();
 }
 
-void zmodem_download(char *download_dir)
+void zmodem_download(struct bbslist *bbs)
 {
 	zmodem_t	zm;
 	int			files_received;
@@ -864,6 +896,7 @@ void zmodem_download(char *download_dir)
 #endif
 	draw_transfer_window("Zmodem Download");
 
+	binary_mode_on(bbs);
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
@@ -872,11 +905,17 @@ void zmodem_download(char *download_dir)
 		,zmodem_check_abort
 		,data_waiting);
 
-	files_received=zmodem_recv_files(&zm,download_dir,&bytes_received);
+	files_received=zmodem_recv_files(&zm,bbs->dldir,&bytes_received);
+
+#if 0
+	if(zm.local_abort)
+		purge_recv();
+#endif
 
 	if(files_received>1)
 		lprintf(LOG_INFO,"Received %u files (%lu bytes) successfully", files_received, bytes_received);
 
+	binary_mode_off(bbs);
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
 
@@ -888,7 +927,7 @@ void music_control(struct bbslist *bbs)
 {
 	char *buf;
 	struct	text_info txtinfo;
-	int i,j;
+	int i;
 	char *opts[4]={
 			 "ESC[| ANSI Music only"
 			,"ESC[N (BANSI-Style) and ESC[| ANSI Music"
@@ -1062,7 +1101,7 @@ BOOL doterm(struct bbslist *bbs)
 	unsigned char prn[BUFSIZE];
 #endif
 	int	key;
-	int i,j,k;
+	int i,j;
 	unsigned char *p;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
@@ -1175,9 +1214,9 @@ BOOL doterm(struct bbslist *bbs)
 							zrqbuf[++j]=0;
 							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
 								if(!strcmp(zrqbuf, zrqinit))
-									zmodem_download(bbs->dldir);
+									zmodem_download(bbs);
 								else
-									begin_upload(bbs->uldir, TRUE);
+									begin_upload(bbs, TRUE);
 								zrqbuf[0]=0;
 							}
 						}
@@ -1288,7 +1327,7 @@ BOOL doterm(struct bbslist *bbs)
 					if(!confirm("Begin download?",NULL))
 						continue;
 #endif
-					zmodem_download(bbs->dldir);
+					zmodem_download(bbs);
 					showmouse();
 					break;
 				case 0x2100:	/* ALT-F */
@@ -1328,7 +1367,7 @@ BOOL doterm(struct bbslist *bbs)
 					if(!confirm("Begin upload?",NULL))
 						continue;
 #endif
-					begin_upload(bbs->uldir, FALSE);
+					begin_upload(bbs, FALSE);
 					showmouse();
 					break;
 				case 17:		/* CTRL-Q */
@@ -1404,14 +1443,14 @@ BOOL doterm(struct bbslist *bbs)
 							if(!confirm("Begin upload?",NULL))
 								continue;
 #endif
-							begin_upload(bbs->uldir, FALSE);
+							begin_upload(bbs, FALSE);
 							break;
 						case 4:
 #ifdef PCM
 							if(!confirm("Begin download?",NULL))
 								continue;
 #endif
-							zmodem_download(bbs->dldir);
+							zmodem_download(bbs);
 							break;
 						case 7:
 #ifdef PCM
