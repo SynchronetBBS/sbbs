@@ -1,11 +1,11 @@
 CC	= bcc32
 CXX	= bcc32
-XPDEV_SRC	=	\stripper\modelbrowser\xpdev
-ODOOR_SRC	=	..
-UIFC_SRC	=	\stripper\modelbrowser\uifc
+XPDEV_SRC	=	..\..\..\conio
+ODOOR_SRC	=	..\..\..\odoors
+CONIO_SRC	=	..\..\..\conio
 CFLAGS = ${CFLAGS} -O2
 #CFLAGS = ${CFLAGS} -g
-CFLAGS = ${CFLAGS} -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC}
+CFLAGS = ${CFLAGS} -I${ODOOR_SRC} -I${XPDEV_SRC} -I${CONIO_SRC}
 # Needed for struct alignment!
 #CFLAGS += -fshort-enums
 LDFLAGS = ${LDFLAGS} -L${ODOOR_SRC}
