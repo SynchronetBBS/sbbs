@@ -53,7 +53,7 @@ nyibbs : nyibbs.cpp ibbsny.obj filewrap.obj genwrap.obj dirwrap.obj
 	$(CXX) $(CFLAGS) ${LDFLAGS} nyibbs.cpp ibbsny.obj filewrap.obj genwrap.obj dirwrap.obj -e../nyibbs
 
 nyedit : nyedit.cpp nyedit.h filewrap.obj genwrap.obj dirwrap.obj
-	$(CXX) $(CFLAGS) ${LDFLAGS} nyedit.cpp filewrap.obj genwrap.obj dirwrap.obj ODoors.lib -e../nyedit
+	$(CXX) $(CFLAGS) ${LDFLAGS} nyedit.cpp filewrap.obj genwrap.obj dirwrap.obj ODoorW.lib -e../nyedit
 
 clean :
 	rm -f *.obj
