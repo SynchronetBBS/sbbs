@@ -1,6 +1,6 @@
 CC	= bcc32
 CXX	= bcc32
-XPDEV_SRC	=	..\..\..\conio
+XPDEV_SRC	=	..\..\..\xpdev
 ODOOR_SRC	=	..\..\..\odoors
 CONIO_SRC	=	..\..\..\conio
 CFLAGS = ${CFLAGS} -O2
