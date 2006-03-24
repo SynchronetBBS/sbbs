@@ -425,7 +425,7 @@ tIBResult       IBGet(tIBInfo * pInfo, char *pBuffer, INT16 nMaxBufferSize) {
 	return (eNoMoreMessages);
 }
 
-tIBResult       IBGetLen(tIBInfo * pInfo, long *msgnum, INT16 *nBufferLen) {
+tIBResult       IBGetLen(tIBInfo * pInfo, INT32 *msgnum, INT16 *nBufferLen) {
 	tIBResult       ToReturn;
 	glob_t          DirEntry;
 	DWORD           lwCurrentMsgNum;
