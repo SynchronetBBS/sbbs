@@ -41,7 +41,7 @@ ny2008.obj : ny2008.cpp
 	$(CXX) $(CFLAGS) -c ny2008.cpp
 
 ny2008 : ny2008.obj ibbsny.obj second.obj igmsup.obj ibbsny.obj fights.obj dirwrap.obj filewrap.obj genwrap.obj chatadd.obj
-	$(CXX) $(CFLAGS) ${LDFLAGS} ny2008.obj chatadd.obj dirwrap.obj filewrap.obj genwrap.obj fights.obj ibbsny.obj igmsup.obj second.obj ODoors.lib -e../ny2008
+	$(CXX) $(CFLAGS) ${LDFLAGS} ny2008.obj chatadd.obj dirwrap.obj filewrap.obj genwrap.obj fights.obj ibbsny.obj igmsup.obj second.obj ODoorW.lib -e../ny2008
 
 aedit : aedit.cpp
 	$(CXX) $(CFLAGS) ${LDFLAGS} aedit.cpp -e../aedit
