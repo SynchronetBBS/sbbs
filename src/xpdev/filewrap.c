@@ -171,6 +171,13 @@ int DLLCALL unlock(int fd, long pos, long len)
  * Deny   R |2 C C  N N N  Y Y Y  N N N  Y Y Y
  * None   W |C C C  N N N  N N N  Y Y Y  Y Y Y
  *        RW|C C C  N N N  N N N  N N N  Y Y Y
+ * 
+ * Legend:
+ * Y = open succeeds, 
+ * N = open fails with error code 05h. 
+ * C = open fails, INT 24 generated. 
+ * 1 = open succeeds if file read-only, else fails with error code. 
+ * 2 = open succeeds if file read-only, else fails with INT 24 
  */
 #if !defined(__QNX__)
 int DLLCALL sopen(const char *fn, int access, int share, ...)
