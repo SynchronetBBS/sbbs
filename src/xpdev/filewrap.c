@@ -144,6 +144,34 @@ int DLLCALL unlock(int fd, long pos, long len)
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
+/*
+ * This is how it *SHOULD* work:
+ * Values of DOS 2-6.22 file sharing behavior: 
+ *          | Second and subsequent Opens 
+ * First    |Compat Deny   Deny   Deny   Deny 
+ * Open     |       All    Write  Read   None 
+ *          |R W RW R W RW R W RW R W RW R W RW
+ * - - - - -| - - - - - - - - - - - - - - - - -
+ * Compat R |Y Y Y  N N N  1 N N  N N N  1 N N
+ *        W |Y Y Y  N N N  N N N  N N N  N N N
+ *        RW|Y Y Y  N N N  N N N  N N N  N N N
+ * - - - - -|
+ * Deny   R |C C C  N N N  N N N  N N N  N N N
+ * All    W |C C C  N N N  N N N  N N N  N N N
+ *        RW|C C C  N N N  N N N  N N N  N N N
+ * - - - - -|
+ * Deny   R |2 C C  N N N  Y N N  N N N  Y N N
+ * Write  W |C C C  N N N  N N N  Y N N  Y N N
+ *        RW|C C C  N N N  N N N  N N N  Y N N
+ * - - - - -| 
+ * Deny   R |C C C  N N N  N Y N  N N N  N Y N
+ * Read   W |C C C  N N N  N N N  N Y N  N Y N
+ *        RW|C C C  N N N  N N N  N N N  N Y N
+ * - - - - -| 
+ * Deny   R |2 C C  N N N  Y Y Y  N N N  Y Y Y
+ * None   W |C C C  N N N  N N N  Y Y Y  Y Y Y
+ *        RW|C C C  N N N  N N N  N N N  Y Y Y
+ */
 #if !defined(__QNX__)
 int DLLCALL sopen(const char *fn, int access, int share, ...)
 {
