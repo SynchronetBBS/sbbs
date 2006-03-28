@@ -1847,7 +1847,7 @@ static void smtp_thread(void* arg)
 	char		str[512];
 	char		tmp[128];
 	char		value[INI_MAX_VALUE_LEN];
-	char**		sec_list;
+	str_list_t	sec_list;
 	char*		section;
 	char		buf[1024],*p,*tp,*cp;
 	char		hdrfield[512];
@@ -4197,6 +4197,7 @@ void DLLCALL mail_server(void* arg)
 						iniReadBool(fp,sec_list[i],"native",FALSE);
 				}
 			}
+			iniFreeStringList(sec_list);
 			iniCloseFile(fp);
 		}
 
