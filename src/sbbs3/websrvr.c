@@ -4126,6 +4126,7 @@ void http_session_thread(void* arg)
 	close_socket(session.socket);
 	session.socket=INVALID_SOCKET;
 	sem_wait(&session.output_thread_terminated);
+	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
 
 	active_clients--;
@@ -4293,6 +4294,7 @@ void http_logging_thread(void* arg)
 		fclose(logfile);
 		logfile=NULL;
 	}
+	sem_destroy(&log_sem);
 	thread_down();
 	lprintf(LOG_DEBUG,"%04d http logging thread terminated",server_socket);
 
