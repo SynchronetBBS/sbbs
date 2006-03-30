@@ -1144,8 +1144,9 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	if(userobj==NULL)
 		return(NULL);
 
-	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
-		return(NULL);
+	if((p=JS_GetPrivate(cx, userobj)) == NULL)	/* Uses existing private pointer: Fix memory leak? */
+		if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
+			return(NULL);
 
 	p->cfg = cfg;
 	p->user.number = usernumber;
