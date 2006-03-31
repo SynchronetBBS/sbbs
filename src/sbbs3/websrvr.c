@@ -116,7 +116,6 @@ static named_string_t** cgi_handlers;
 static named_string_t** xjs_handlers;
 
 /* Logging stuff */
-sem_t	log_sem;
 link_list_t	log_list;
 struct log_data {
 	char	*hostname;
@@ -777,7 +776,6 @@ static void close_request(http_session_t * session)
 		now=time(NULL);
 		localtime_r(&now,&session->req.ld->completed);
 		listPushNode(&log_list,session->req.ld);
-		sem_post(&log_sem);
 		session->req.ld=NULL;
 	}
 
@@ -4233,7 +4231,7 @@ void http_logging_thread(void* arg)
 		char	timestr[128];
 		char	sizestr[100];
 
-		sem_wait(&log_sem);
+		listSemWait(&log_list);
 		if(terminate_http_logging_thread)
 			break;
 
@@ -4294,7 +4292,6 @@ void http_logging_thread(void* arg)
 		fclose(logfile);
 		logfile=NULL;
 	}
-	sem_destroy(&log_sem);
 	thread_down();
 	lprintf(LOG_DEBUG,"%04d http logging thread terminated",server_socket);
 
@@ -4525,12 +4522,11 @@ void DLLCALL web_server(void* arg)
 
 		lprintf(LOG_INFO,"%04d Web Server thread started", server_socket);
 
-		listInit(&log_list,/* flags */ LINK_LIST_MUTEX);
+		listInit(&log_list,/* flags */ LINK_LIST_MUTEX|LINK_LIST_SEMAPHORE);
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
 			/********************/
 			/* Start log thread */
 			/********************/
-			sem_init(&log_sem,0,0);
 			_beginthread(http_logging_thread, 0, startup->logfile_base);
 		}
 
@@ -4707,7 +4703,7 @@ void DLLCALL web_server(void* arg)
 
 		if(http_logging_thread_running) {
 			terminate_http_logging_thread=TRUE;
-			sem_post(&log_sem);
+			listSemPost(&log_list);
 			mswait(100);
 		}
 		if(http_logging_thread_running) {
