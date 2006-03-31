@@ -4525,7 +4525,7 @@ void DLLCALL web_server(void* arg)
 
 		lprintf(LOG_INFO,"%04d Web Server thread started", server_socket);
 
-		listInit(&log_list,/* flags */ 0);
+		listInit(&log_list,/* flags */ LINK_LIST_MUTEX);
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
 			/********************/
 			/* Start log thread */
