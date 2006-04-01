@@ -461,10 +461,9 @@ static list_node_t* DLLCALL list_add_node(link_list_t* list, list_node_t* node, 
 	MUTEX_LOCK(list);
 
 	node->list = list;
-	node->prev = after;
-
 	if(after==LAST_NODE)					/* e.g. listPushNode() */
 		after=list->last;
+	node->prev = after;
 
 	if(after==list->last)					/* append to list */
 		list->last = node;
