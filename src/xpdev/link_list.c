@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -77,7 +77,7 @@ link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 	return(list);
 }
 
-BOOL listFreeNodeData(list_node_t* node)
+BOOL DLLCALL listFreeNodeData(list_node_t* node)
 {
 	if(node!=NULL && node->data!=NULL && !(node->flags&LINK_LIST_NODE_LOCKED)) {
 		free(node->data);
@@ -87,7 +87,7 @@ BOOL listFreeNodeData(list_node_t* node)
 	return(FALSE);
 }
 
-long listFreeNodes(link_list_t* list)
+long DLLCALL listFreeNodes(link_list_t* list)
 {
 	list_node_t* node;
 	list_node_t* next;
@@ -116,7 +116,7 @@ long listFreeNodes(link_list_t* list)
 	return(list->count);
 }
 
-BOOL listFree(link_list_t* list)
+BOOL DLLCALL listFree(link_list_t* list)
 {
 	if(list==NULL)
 		return(FALSE);
@@ -140,7 +140,7 @@ BOOL listFree(link_list_t* list)
 	return(TRUE);
 }
 
-long listAttach(link_list_t* list)
+long DLLCALL listAttach(link_list_t* list)
 {
 	if(list==NULL)
 		return(-1);
@@ -152,7 +152,7 @@ long listAttach(link_list_t* list)
 	return(list->refs);
 }
 
-long listDettach(link_list_t* list)
+long DLLCALL listDettach(link_list_t* list)
 {
 	int refs;
 
@@ -282,7 +282,7 @@ list_node_t* DLLCALL listFindNode(const link_list_t* list, const void* data, siz
 	return(node);
 }
 
-str_list_t listStringList(const link_list_t* list)
+str_list_t DLLCALL listStringList(const link_list_t* list)
 {
 	list_node_t*	node;
 	str_list_t		str_list;
@@ -306,7 +306,7 @@ str_list_t listStringList(const link_list_t* list)
 	return(str_list);
 }
 
-str_list_t listSubStringList(const list_node_t* node, long max)
+str_list_t DLLCALL listSubStringList(const list_node_t* node, long max)
 {
 	long			count;
 	str_list_t		str_list;
@@ -329,7 +329,7 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	return(str_list);
 }
 
-void* listFreeStringList(str_list_t list)
+void* DLLCALL listFreeStringList(str_list_t list)
 {
 	strListFree(&list);
 	return(list);
@@ -453,7 +453,7 @@ BOOL DLLCALL listUnlockNode(list_node_t* node)
 	return(TRUE);
 }
 
-static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_node_t* after)
+static list_node_t* DLLCALL list_add_node(link_list_t* list, list_node_t* node, list_node_t* after)
 {
 	if(list==NULL)
 		return(NULL);
@@ -462,6 +462,9 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 
 	node->list = list;
 	node->prev = after;
+
+	if(after==LAST_NODE)					/* e.g. listPushNode() */
+		after=list->last;
 
 	if(after==list->last)					/* append to list */
 		list->last = node;
@@ -521,7 +524,7 @@ long DLLCALL listAddNodes(link_list_t* list, void** data, list_node_t* after)
 	return(i);
 }
 
-list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_t* after)
+list_node_t* DLLCALL listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_t* after)
 {
 	list_node_t*	node;
 	void*			buf;
@@ -539,7 +542,7 @@ list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length,
 	return(node);
 }
 
-list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* after)
+list_node_t* DLLCALL listAddNodeString(link_list_t* list, const char* str, list_node_t* after)
 {
 	list_node_t*	node;
 	char*			buf;
@@ -634,8 +637,11 @@ void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_dat
 	if(list==NULL)
 		return(NULL);
 
+	/* Should these lines be mutex protected? */
 	if(node==FIRST_NODE)
 		node=list->first;
+	if(node==LAST_NODE)
+		node=list->last;
 	if(node==NULL)
 		return(NULL);
 
@@ -668,7 +674,7 @@ void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_dat
 	return(data);
 }
 
-long listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOOL free_data)
+long DLLCALL listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOOL free_data)
 {
 	long count;
 
