@@ -103,8 +103,8 @@ void init_mouse(void)
 	memset(&state,0,sizeof(state));
 	state.click_timeout=0;
 	state.multi_timeout=300;
-	listInit(&state.input,LINK_LIST_SEMAPHORE);
-	listInit(&state.output,LINK_LIST_SEMAPHORE);
+	listInit(&state.input,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+	listInit(&state.output,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 	ciolib_mouse_initialized=1;
 }
 
