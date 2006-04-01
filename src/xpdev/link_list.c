@@ -629,25 +629,19 @@ link_list_t* DLLCALL listExtract(link_list_t* dest_list, const list_node_t* node
 	return(list);
 }
 
-void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_data)
+static void* list_remove_node(link_list_t* list, list_node_t* node, BOOL free_data)
 {
 	void*	data;
 
-	if(list==NULL)
-		return(NULL);
-
-	/* Should these lines be mutex protected? */
 	if(node==FIRST_NODE)
 		node=list->first;
-	if(node==LAST_NODE)
+	else if(node==LAST_NODE)
 		node=list->last;
 	if(node==NULL)
 		return(NULL);
 
 	if(node->flags&LINK_LIST_NODE_LOCKED)
 		return(NULL);
-
-	MUTEX_LOCK(list);
 
 	if(node->prev!=NULL)
 		node->prev->next = node->next;
@@ -667,6 +661,20 @@ void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_dat
 
 	if(list->count)
 		list->count--;
+
+	return(data);
+}
+
+void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_data)
+{
+	void*	data;
+
+	if(list==NULL)
+		return(NULL);
+
+	MUTEX_LOCK(list);
+
+	data = list_remove_node(list, node, free_data);
 
 	MUTEX_UNLOCK(list);
 
