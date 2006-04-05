@@ -157,17 +157,12 @@ while(client.socket.is_connected && !quit) {
 			}
 			switch(cmd[1].toUpperCase()) {
 				case "USER":
-					username='';
-					for(i=2;cmd[i]!=undefined;i++) {
-						if(i>2)
-							username+=' ';
-						username+=cmd[i];
-					}
+					username=cmd.slice(2).join(" ");
 					writeln("381 More authentication required");
 					break;
 				case "PASS":
 					logout();
-					if(login(username,cmd[2])) {
+					if(login(username,cmd.slice(2).join(" "))) {
 						if(no_anonymous && user.security.restrictions&UFLAG_G) {
 							writeln("502 Anonymous/Guest logins disallowed");
 							logout();
@@ -273,7 +268,7 @@ while(client.socket.is_connected && !quit) {
 				writeln(".");	// end of list
 			}
 			else if(cmd[1].toUpperCase()=="NEWSGROUPS") {	// RFC 2980 2.1.6
-			pattern=cmd[2];
+				pattern=cmd[2];
 				writeln("215 list of newsgroups and descriptions follows");
 				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern))
 					writeln("mail complete mail database");
