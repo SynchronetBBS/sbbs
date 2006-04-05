@@ -502,9 +502,6 @@ function process_contribution(header, body, list)
 		return(false);
 	}
 
-	// Convert from RFC822 to Synchronet-compatible
-	header = convert_msg_header(header);
-
 	if(msg_area.sub[list.sub.toLowerCase()].is_moderated)
 		header.attr |= MSG_MODERATED;
 
