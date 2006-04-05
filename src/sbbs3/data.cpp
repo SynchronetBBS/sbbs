@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -190,6 +190,7 @@ void sbbs_t::gettimeleft(void)
 		tm.tm_hour=cfg.event[i]->time/60;
 		tm.tm_min=cfg.event[i]->time%60;
 		tm.tm_sec=0;
+		tm.tm_isdst=-1;	/* Do not adjust for DST */
 		thisevent=mktime(&tm);
 
 		if(localtime_r(&cfg.event[i]->last,&last_tm)==NULL)

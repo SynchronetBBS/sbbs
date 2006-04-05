@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -96,6 +96,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	tm.tm_hour=((hdrblk[16]&0xf)*10)+(hdrblk[17]&0xf);
 	tm.tm_min=((hdrblk[19]&0xf)*10)+(hdrblk[20]&0xf);
 	tm.tm_sec=0;
+	tm.tm_isdst=-1;	/* Do not adjust for DST */
 
 	msg.hdr.when_written.time=mktime(&tm);
 	if(!(useron.rest&FLAG('Q')) && !fromhub)
