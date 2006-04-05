@@ -104,7 +104,7 @@ cmdkey L
 	end_cmd
 
 cmdkey D
-	xtrn_section
+	exec_bin xtrn_sec
 	end_cmd
 
 cmdkey A

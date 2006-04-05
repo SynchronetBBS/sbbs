@@ -247,11 +247,11 @@ cmdstr NEWS
 	end_cmd
 
 cmdstr DOOR
-	xtrn_section
-        end_cmd
+	exec_bin xtrn_sec
+    end_cmd
 
 cmdstr OPEN
-	xtrn_section
+	exec_bin xtrn_sec
 	end_cmd
 
 compare_word "OPEN "

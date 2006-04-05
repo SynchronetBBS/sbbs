@@ -130,7 +130,7 @@ if_true
 
 compare_str "doors"
 if_true
-	xtrn_section
+	exec_bin xtrn_sec
 	return
 	end_if
 

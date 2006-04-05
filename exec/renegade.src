@@ -150,7 +150,7 @@ cmdkey N
 	end_cmd
 
 cmdkey O
-        xtrn_section
+        exec_bin xtrn_sec
         end_cmd
 
 cmdkey P
