@@ -28,7 +28,7 @@ var maxlengths={alias:25,name:25,handle:8,netmail:60,address:30,location:30,zipc
 var err=0;
 template.err_message='';
 var gender='';
-var pwchars='ACDEFHJKLMNPQRTUVWXY3479!?-=+&%*()';
+var pwchars='ACDEFHJKLMNPQRTUVWXY3479!?-=+&*()';	// Removed '%', rswindell
 var newpw='';
 template.title=system.name+" new user signup";
 
