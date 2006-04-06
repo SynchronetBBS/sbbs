@@ -294,7 +294,7 @@ for(var l in list_array) {
 
 		hdr.replyto_net_type = NET_INTERNET;
 		hdr.replyto_net_addr = list.address;
-		if(list.subject_mod==true)
+		if(list.subject_mod==true && hdr.subject.indexOf("[" + list.name + "]")==-1)
 			hdr.subject = "[" + list.name + "] " + hdr.subject;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
 			log(LOG_ERR,format("ListServer: %s !ERROR %s saving mail message"
