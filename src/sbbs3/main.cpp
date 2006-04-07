@@ -2332,6 +2332,8 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	client_ident[0]=0;
 
 	terminal[0]=0;
+	rlogin_name[0]=0;
+	rlogin_pass[0]=0;
 
 	/* Init some important variables */
 
