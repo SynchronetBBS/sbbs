@@ -503,8 +503,8 @@ BOOL DLLCALL fexistcase(char *path)
 	long	handle;
 	struct _finddata_t f;
 
-	if(!strchr(path,'*') && !strchr(path,'?'))
-		return(fnameexist(path));
+	if(access(path,0)==-1 && !strchr(path,'*') && !strchr(path,'?'))
+		return(FALSE);
 
 	if((handle=_findfirst((char*)path,&f))==-1)
 		return(FALSE);
