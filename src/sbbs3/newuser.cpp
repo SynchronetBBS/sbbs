@@ -363,7 +363,7 @@ BOOL sbbs_t::newuser()
 			useron.shell=i; 
 	}
 
-	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron,true))) {
+	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron,true)) {
 		SAFECOPY(useron.pass, rlogin_pass);
 	}
 	else {
