@@ -418,6 +418,21 @@ long DLLCALL flength(const char *filename)
 #endif
 }
 
+
+/****************************************************************************/
+/* Checks the file system for the existence of one or more files.			*/
+/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* 'filespec' may *NOT* contain wildcards!									*/
+/****************************************************************************/
+static BOOL fnameexist(const char *filename)
+{
+	if(access(filename,0)==-1)
+		return(FALSE);
+	if(!isdir(filename))
+		return(TRUE);
+	return(FALSE);
+}
+
 /****************************************************************************/
 /* Checks the file system for the existence of one or more files.			*/
 /* Returns TRUE if it exists, FALSE if it doesn't.                          */
@@ -430,8 +445,8 @@ BOOL DLLCALL fexist(const char *filespec)
 	long	handle;
 	struct _finddata_t f;
 
-	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
-		return(FALSE);
+	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(fnameexist(filespec));
 
 	if((handle=_findfirst((char*)filespec,&f))==-1)
 		return(FALSE);
@@ -450,8 +465,8 @@ BOOL DLLCALL fexist(const char *filespec)
 	glob_t g;
     int c;
 
-	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
-		return(FALSE);
+	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(fnameexist(filespec));
 
     /* start the search */
     glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
@@ -488,8 +503,8 @@ BOOL DLLCALL fexistcase(char *path)
 	long	handle;
 	struct _finddata_t f;
 
-	if(access(path,0)==-1 && !strchr(path,'*') && !strchr(path,'?'))
-		return(FALSE);
+	if(!strchr(path,'*') && !strchr(path,'?'))
+		return(fnameexist(path));
 
 	if((handle=_findfirst((char*)path,&f))==-1)
 		return(FALSE);
@@ -513,6 +528,9 @@ BOOL DLLCALL fexistcase(char *path)
 	int  i;
 	glob_t	glb;
 	
+	if(!strchr(path,'*') && !strchr(path,'?') && fnameexist(path))
+		return(TRUE);
+
 	SAFECOPY(globme,path);
 	p=getfname(globme);
 	SAFECOPY(fname,p);
