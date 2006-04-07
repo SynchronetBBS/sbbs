@@ -363,12 +363,7 @@ BOOL sbbs_t::newuser()
 			useron.shell=i; 
 	}
 
-	if(rlogin_pass[0]
-		&& (strnicmp(useron.alias,rlogin_pass,strlen(rlogin_pass))==0
-		||  strnicmp(useron.name ,rlogin_pass,strlen(rlogin_pass))==0))
-		rlogin_pass[0]=0;	/* Don't use insecure RLogin password */
-
-	if(rlogin_pass[0]) {
+	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron,true))) {
 		SAFECOPY(useron.pass, rlogin_pass);
 	}
 	else {
