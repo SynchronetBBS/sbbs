@@ -237,7 +237,7 @@ typedef struct {
 #ifdef SAFECOPY_USES_SPRINTF
 #define SAFECOPY(dst,src)				sprintf(dst,"%.*s",(int)sizeof(dst)-1,src)
 #else
-#define SAFECOPY(dst,src)				(strncpy(dst,src,sizeof(dst)), dst[(int)sizeof(dst)-1]=0)
+#define SAFECOPY(dst,src)				(((dst)==(src))?0:(strncpy(dst,src,sizeof(dst)), dst[(int)sizeof(dst)-1]=0))
 #endif
 #define TERMINATE(str)					str[sizeof(str)-1]=0
 #if (defined __FreeBSD__) || (defined __NetBSD__) || (defined __OpenBSD__) || (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__))
