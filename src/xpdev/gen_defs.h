@@ -233,13 +233,17 @@ typedef struct {
 /* Handy String Macros */
 /***********************/
 
+/* Null-Terminate an ASCIIZ char array */
+#define TERMINATE(str)					str[sizeof(str)-1]=0
+
 /* This is a bound-safe version of strcpy basically - only works with fixed-length arrays */
 #ifdef SAFECOPY_USES_SPRINTF
 #define SAFECOPY(dst,src)				sprintf(dst,"%.*s",(int)sizeof(dst)-1,src)
-#else
-#define SAFECOPY(dst,src)				((((char *)(dst))==((char *)(src)))?0:(strncpy(dst,src,sizeof(dst)), dst[(int)sizeof(dst)-1]=0))
+#else	/* strncpy is faster */
+#define SAFECOPY(dst,src)				(strncpy(dst,src,sizeof(dst)), TERMINATE(dst))
 #endif
-#define TERMINATE(str)					str[sizeof(str)-1]=0
+
+/* Bound-safe version of sprintf() - only works with fixed-length arrays */
 #if (defined __FreeBSD__) || (defined __NetBSD__) || (defined __OpenBSD__) || (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__))
 /* *BSD *nprintf() is already safe */
 #define SAFEPRINTF(dst,fmt,arg)			snprintf(dst,sizeof(dst),fmt,arg)
