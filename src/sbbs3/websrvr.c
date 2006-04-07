@@ -1376,14 +1376,27 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	DWORD	i;
 	BOOL	rd;
 	DWORD	chucked=0;
+	fd_set	rd_set;
+	struct	timeval tv;
 
 	for(i=0;TRUE;) {
-		if(!socket_check(session->socket,&rd,NULL,startup->max_inactivity*1000) 
-			|| !rd || recv(session->socket, &ch, 1, 0)!=1)  {
-			session->req.keep_alive=FALSE;
-			session->req.finished=TRUE;
-			return(-1);        /* time-out */
+		if(session->socket==INVALID_SOCKET)
+			return(-1);
+		FD_ZERO(&rd_set);
+		FD_SET(session->socket,&rd_set);
+		/* Convert timeout from ms to sec/usec */
+		tv.tv_sec=startup->max_inactivity;
+		tv.tv_usec=0;
+		switch(select(session->socket+1,&rd_set,NULL,NULL,&tv)) {
+			case 1:
+				break;
+			default:
+				/* Timeout, select() error, etc */
+				return(-1);
 		}
+
+		if(recv(session->socket, &ch, 1, 0)!=1)
+			return(-1);
 
 		if(ch=='\n')
 			break;
@@ -4286,6 +4299,7 @@ void http_logging_thread(void* arg)
 		FREE_AND_NULL(ld->request);
 		FREE_AND_NULL(ld->referrer);
 		FREE_AND_NULL(ld->agent);
+		FREE_AND_NULL(ld->vhost);
 		FREE_AND_NULL(ld);
 	}
 	if(logfile!=NULL) {
