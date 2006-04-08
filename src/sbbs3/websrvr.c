@@ -1395,6 +1395,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 		switch(select(session->socket+1,&rd_set,NULL,NULL,&tv)) {
 			case 1:
 				break;
+			case -1:
+				close_socket(&session->socket);
 			default:
 				/* Timeout, select() error, etc */
 				return(-1);
