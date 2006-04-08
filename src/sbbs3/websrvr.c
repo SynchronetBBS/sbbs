@@ -429,7 +429,7 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 	size_t	sent=0;
 	size_t	avail;
 
-	while(!terminate_server && sent < len) {
+	while(sent < len) {
 		avail=RingBufFree(&session->outbuf);
 		if(!avail) {
 			SLEEP(1);
@@ -442,20 +442,20 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 	return(sent);
 }
 
-static int sock_sendbuf(SOCKET sock, const char *buf, size_t len, BOOL *failed)
+static int sock_sendbuf(SOCKET *sock, const char *buf, size_t len, BOOL *failed)
 {
 	size_t sent=0;
 	int result;
 
-	while(sent<len) {
-		result=sendsocket(sock,buf+sent,len-sent);
+	while(sent<len && *sock!=INVALID_SOCKET) {
+		result=sendsocket(*sock,buf+sent,len-sent);
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==ECONNRESET) 
-				lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",sock);
+				lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",*sock);
 			else if(ERROR_VALUE==ECONNABORTED) 
-				lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",sock);
+				lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",*sock);
 			else
-				lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",sock,ERROR_VALUE);
+				lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",*sock,ERROR_VALUE);
 			break;
 		}
 		sent+=result;
@@ -707,22 +707,23 @@ static SOCKET open_socket(int type)
 	return(sock);
 }
 
-static int close_socket(SOCKET sock)
+static int close_socket(SOCKET *sock)
 {
 	int		result;
 
-	if(sock==INVALID_SOCKET)
+	if(sock==NULL || *sock==INVALID_SOCKET)
 		return(-1);
 
-	shutdown(sock,SHUT_RDWR);	/* required on Unix */
-	result=closesocket(sock);
+	shutdown(*sock,SHUT_RDWR);	/* required on Unix (Huh? - Deuce) */
+	result=closesocket(*sock);
+	*sock=INVALID_SOCKET;
 	if(startup!=NULL && startup->socket_open!=NULL) {
 		startup->socket_open(startup->cbdata,FALSE);
 	}
 	sockets--;
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
+			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
 	}
 
 	return(result);
@@ -736,12 +737,12 @@ static void drain_outbuf(http_session_t * session)
 	/* Force the output thread to go NOW */
 	sem_post(&(session->outbuf.highwater_sem));
 	/* ToDo: This should probobly timeout eventually... */
-	while(RingBufFull(&session->outbuf) && session->socket!=INVALID_SOCKET && !terminate_server)
+	while(RingBufFull(&session->outbuf) && session->socket!=INVALID_SOCKET)
 		SLEEP(1);
 	/* Lock the mutex to ensure data has been sent */
-	while(session->socket!=INVALID_SOCKET && !terminate_server && !session->outbuf_write_initialized)
+	while(session->socket!=INVALID_SOCKET && !session->outbuf_write_initialized)
 		SLEEP(1);
-	if(session->socket==INVALID_SOCKET || terminate_server)
+	if(session->socket==INVALID_SOCKET)
 		return;
 	pthread_mutex_lock(&session->outbuf_write);		/* Win32 Access violation here on Jan-11-2006 - shutting down webserver while in use */
 	pthread_mutex_unlock(&session->outbuf_write);
@@ -788,10 +789,12 @@ static void close_request(http_session_t * session)
 	FREE_AND_NULL(session->req.error_dir);
 	FREE_AND_NULL(session->req.cgi_dir);
 	FREE_AND_NULL(session->req.realm);
-	if(!session->req.keep_alive) {
+	/*
+	 * This causes all active http_session_threads to terminate.
+	 */
+	if((!session->req.keep_alive) || terminate_server) {
 		drain_outbuf(session);
-		close_socket(session->socket);
-		session->socket=INVALID_SOCKET;
+		close_socket(&session->socket);
 	}
 	if(session->socket==INVALID_SOCKET)
 		session->finished=TRUE;
@@ -1397,8 +1400,13 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 				return(-1);
 		}
 
-		if(recv(session->socket, &ch, 1, 0)!=1)
-			return(-1);
+		switch(recv(session->socket, &ch, 1, 0)) {
+			case -1:
+				if(errno!=EAGAIN)
+					close_socket(&session->socket);
+			case 0:
+				return(-1);
+		}
 
 		if(ch=='\n')
 			break;
@@ -1490,7 +1498,7 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 	return(i);
 }
 
-int recvbufsocket(int sock, char *buf, long count)
+int recvbufsocket(SOCKET *sock, char *buf, long count)
 {
 	int		rd=0;
 	int		i;
@@ -1501,11 +1509,15 @@ int recvbufsocket(int sock, char *buf, long count)
 		return(0);
 	}
 
-	while(rd<count && socket_check(sock,NULL,NULL,startup->max_inactivity*1000))  {
-		i=recv(sock,buf+rd,count-rd,0);
-		if(i<=0)  {
-			*buf=0;
-			return(0);
+	while(rd<count && socket_check(*sock,NULL,NULL,startup->max_inactivity*1000))  {
+		i=recv(*sock,buf+rd,count-rd,0);
+		switch(i) {
+			case -1:
+				if(errno!=EAGAIN)
+					close_socket(sock);
+			case 0:
+				*buf=0;
+				return(0);
 		}
 
 		rd+=i;
@@ -1913,8 +1925,10 @@ static BOOL get_request_headers(http_session_t * session)
 
 	while(sockreadline(session,head_line,sizeof(head_line)-1)>0) {
 		/* Multi-line headers */
-		while((recvfrom(session->socket,&next_char,1,MSG_PEEK,NULL,0)>0)
+		while((i=recvfrom(session->socket,&next_char,1,MSG_PEEK,NULL,0)>0)
 			&& (next_char=='\t' || next_char==' ')) {
+			if(i==-1 && errno != EAGAIN)
+				close_socket(&session->socket);
 			i=strlen(head_line);
 			if(i>sizeof(head_line)-1) {
 				lprintf(LOG_ERR,"%04d !ERROR long multi-line header. The web server is broken!", session->socket);
@@ -3808,7 +3822,7 @@ int read_post_data(http_session_t * session)
 				}
 				session->req.post_data=p;
 				/* read new data */
-				bytes_read=recvbufsocket(session->socket,session->req.post_data+session->req.post_len,ch_len);
+				bytes_read=recvbufsocket(&session->socket,session->req.post_data+session->req.post_len,ch_len);
 				if(!bytes_read) {
 					send_error(session,error_500);
 					return(FALSE);
@@ -3824,7 +3838,7 @@ int read_post_data(http_session_t * session)
 		else {
 			i = session->req.post_len;
 			if(i < (MAX_POST_LEN+1) && (session->req.post_data=malloc(i+1)) != NULL)
-				session->req.post_len=recvbufsocket(session->socket,session->req.post_data,i);
+				session->req.post_len=recvbufsocket(&session->socket,session->req.post_data,i);
 			else  {
 				lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,i);
 				send_error(session,"413 Request entity too large");
@@ -3886,7 +3900,11 @@ void http_output_thread(void *arg)
 #endif
 
 	thread_up(TRUE /* setuid */);
-    while(session->socket!=INVALID_SOCKET && !terminate_server) {
+	/*
+	 * Do *not* exit on terminate_server... wait for session thread
+	 * to close the socket and set it to INVALID_SOCKET
+	 */
+    while(session->socket!=INVALID_SOCKET) {
 
 		/* Wait for something to output in the RingBuffer */
 		if((avail=RingBufFull(obuf))==0) {	/* empty */
@@ -3942,7 +3960,7 @@ void http_output_thread(void *arg)
 		}
 
 		if(!failed)
-			sock_sendbuf(session->socket, buf, len, &failed);
+			sock_sendbuf(&session->socket, buf, len, &failed);
 		pthread_mutex_unlock(&session->outbuf_write);
     }
 	pthread_mutex_destroy(&session->outbuf_write);
@@ -3982,7 +4000,7 @@ void http_session_thread(void* arg)
 	/* Start up the output buffer */
 	if(RingBufInit(&(session.outbuf), OUTBUF_LEN)) {
 		lprintf(LOG_ERR,"%04d Canot create output ringbuffer!", session.socket);
-		close_socket(session.socket);
+		close_socket(&session.socket);
 		thread_down();
 		session_threads--;
 		return;
@@ -4012,8 +4030,7 @@ void http_session_thread(void* arg)
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 		if(trashcan(&scfg,host_name,"host")) {
-			close_socket(session.socket);
-			session.socket=INVALID_SOCKET;
+			close_socket(&session.socket);
 			sem_wait(&session.output_thread_terminated);
 			RingBufDispose(&session.outbuf);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
@@ -4025,8 +4042,7 @@ void http_session_thread(void* arg)
 
 	/* host_ip wasn't defined in http_session_thread */
 	if(trashcan(&scfg,session.host_ip,"ip")) {
-		close_socket(session.socket);
-		session.socket=INVALID_SOCKET;
+		close_socket(&session.socket);
 		sem_wait(&session.output_thread_terminated);
 		RingBufDispose(&session.outbuf);
 		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
@@ -4054,7 +4070,7 @@ void http_session_thread(void* arg)
 
 	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
 
-	while(!session.finished && server_socket!=INVALID_SOCKET) {
+	while(!session.finished) {
 		init_error=FALSE;
 	    memset(&(session.req), 0, sizeof(session.req));
 		redirp=NULL;
@@ -4070,7 +4086,7 @@ void http_session_thread(void* arg)
 		}
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
 				 && !session.finished && !session.req.finished 
-				 && server_socket!=INVALID_SOCKET) {
+				 && session.socket!=INVALID_SOCKET) {
 			SAFECOPY(session.req.status,"200 OK");
 			session.req.send_location=NO_LOCATION;
 			if(session.req.headers==NULL) {
@@ -4139,8 +4155,7 @@ void http_session_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	close_socket(session.socket);
-	session.socket=INVALID_SOCKET;
+	close_socket(&session.socket);
 	sem_wait(&session.output_thread_terminated);
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
@@ -4170,8 +4185,10 @@ static void cleanup(int code)
 {
 	free_cfg(&scfg);
 
-	while(session_threads)
-		SLEEP(1);
+	while(session_threads) {
+		lprintf(LOG_INFO,"#### Web Server waiting on %d active session threads",session_threads);
+		SLEEP(1000);
+	}
 	listFree(&log_list);
 
 	mime_types=iniFreeNamedStringList(mime_types);
@@ -4183,8 +4200,7 @@ static void cleanup(int code)
 	semfile_list_free(&shutdown_semfiles);
 
 	if(server_socket!=INVALID_SOCKET) {
-		close_socket(server_socket);
-		server_socket=INVALID_SOCKET;
+		close_socket(&server_socket);
 	}
 
 	update_clients();
@@ -4247,17 +4263,21 @@ void http_logging_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d http logging thread started", server_socket);
 
-	for(;!terminate_http_logging_thread;) {
+	for(;;) {
 		struct log_data *ld;
 		char	timestr[128];
 		char	sizestr[100];
 
 		listSemWait(&log_list);
-		if(terminate_http_logging_thread)
-			break;
 
 		ld=listShiftNode(&log_list);
+		/*
+		 * Because the sem is posted when terminate_http_logging_thread is set, this will
+		 * ensure that all pending log entries are written to disk
+		 */
 		if(ld==NULL) {
+			if(terminate_http_logging_thread)
+				break;
 			lprintf(LOG_ERR,"%04d http logging thread received NULL linked list log entry"
 				,server_socket);
 			continue;
@@ -4280,6 +4300,10 @@ void http_logging_thread(void* arg)
 			if(ld->status) {
 				sprintf(sizestr,"%d",ld->size);
 				strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
+				/*
+				 * In case of a termination, do no block for a lock... just discard
+				 * the output.
+				 */
 				while(lock(fileno(logfile),0,1) && !terminate_http_logging_thread) {
 					SLEEP(10);
 				}
@@ -4668,7 +4692,7 @@ void DLLCALL web_server(void* arg)
 			SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
-				close_socket(client_socket);
+				close_socket(&client_socket);
 				continue;
 			}
 
@@ -4676,7 +4700,7 @@ void DLLCALL web_server(void* arg)
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				mswait(3000);
-				close_socket(client_socket);
+				close_socket(&client_socket);
 				continue;
 			}
 
@@ -4690,7 +4714,7 @@ void DLLCALL web_server(void* arg)
 				lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
 					,client_socket, sizeof(http_session_t));
 				mswait(3000);
-				close_socket(client_socket);
+				close_socket(&client_socket);
 				continue;
 			}
 
