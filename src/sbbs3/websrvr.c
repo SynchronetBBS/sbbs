@@ -207,6 +207,9 @@ typedef struct  {
 
 	/* Client info */
 	client_t		client;
+
+	/* Synchronization stuff */
+	pthread_mutex_t	struct_filled;
 } http_session_t;
 
 enum { 
@@ -710,11 +713,15 @@ static SOCKET open_socket(int type)
 static int close_socket(SOCKET *sock)
 {
 	int		result;
+	fd_set	rd_set;
+	char	tmp[1024];
+	struct timeval tv;
 
 	if(sock==NULL || *sock==INVALID_SOCKET)
 		return(-1);
 
-	shutdown(*sock,SHUT_RDWR);	/* required on Unix (Huh? - Deuce) */
+	/* required to ensure all data is send when SO_LINGER is off (Not functional on Win32) */
+	shutdown(*sock,SHUT_RDWR);
 	result=closesocket(*sock);
 	*sock=INVALID_SOCKET;
 	if(startup!=NULL && startup->socket_open!=NULL) {
@@ -3983,10 +3990,15 @@ void http_session_thread(void* arg)
 	SOCKET			socket;
 	char			redir_req[MAX_REQUEST_LINE+1];
 	char			*redirp;
-	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
+	http_session_t	session;
 	int				loop_count;
 	BOOL			init_error;
 
+	pthread_mutex_lock(&((http_session_t*)arg)->struct_filled);
+	pthread_mutex_unlock(&((http_session_t*)arg)->struct_filled);
+	pthread_mutex_destroy(&((http_session_t*)arg)->struct_filled);
+
+	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
 	FREE_AND_NULL(arg);
 
 	socket=session.socket;
@@ -4648,6 +4660,19 @@ void DLLCALL web_server(void* arg)
 				}
 			}	
 
+			/* Startup next session thread */
+			if((session=malloc(sizeof(http_session_t)))==NULL) {
+				lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
+					,client_socket, sizeof(http_session_t));
+				mswait(3000);
+				continue;
+			}
+			memset(session, 0, sizeof(http_session_t));
+   			session->socket=INVALID_SOCKET;
+			pthread_mutex_init(&session->struct_filled,NULL);
+			pthread_mutex_lock(&session->struct_filled);
+			_beginthread(http_session_thread, 0, session);
+
 			/* now wait for connection */
 
 			FD_ZERO(&socket_set);
@@ -4658,19 +4683,24 @@ void DLLCALL web_server(void* arg)
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0)
+				if(i==0) {
 					continue;
+					pthread_mutex_unlock(&session->struct_filled);
+				}
 				if(ERROR_VALUE==EINTR)
 					lprintf(LOG_INFO,"Web Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_INFO,"Web Server socket closed");
 				else
 					lprintf(LOG_WARNING,"!ERROR %d selecting socket",ERROR_VALUE);
+				pthread_mutex_unlock(&session->struct_filled);
 				continue;
 			}
 
-			if(server_socket==INVALID_SOCKET)	/* terminated */
+			if(server_socket==INVALID_SOCKET) {	/* terminated */
+				pthread_mutex_unlock(&session->struct_filled);
 				break;
+			}
 
 			client_addr_len = sizeof(client_addr);
 
@@ -4681,15 +4711,19 @@ void DLLCALL web_server(void* arg)
 			}
 			else {
 				lprintf(LOG_NOTICE,"!NO SOCKETS set by select");
+				pthread_mutex_unlock(&session->struct_filled);
 				continue;
 			}
 
 			if(client_socket == INVALID_SOCKET)	{
 				lprintf(LOG_WARNING,"!ERROR %d accepting connection", ERROR_VALUE);
 #ifdef _WIN32
-				if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+				if(WSAGetLastError()==WSAENOBUFS) {	/* recycle (re-init WinSock) on this error */
+					pthread_mutex_unlock(&session->struct_filled);
 					break;
+				}
 #endif
+				pthread_mutex_unlock(&session->struct_filled);
 				continue;
 			}
 
@@ -4700,6 +4734,7 @@ void DLLCALL web_server(void* arg)
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
 				close_socket(&client_socket);
+				pthread_mutex_unlock(&session->struct_filled);
 				continue;
 			}
 
@@ -4708,6 +4743,7 @@ void DLLCALL web_server(void* arg)
 					,client_socket, startup->max_clients);
 				mswait(3000);
 				close_socket(&client_socket);
+				pthread_mutex_unlock(&session->struct_filled);
 				continue;
 			}
 
@@ -4717,15 +4753,6 @@ void DLLCALL web_server(void* arg)
 				,client_socket
 				,host_ip, host_port);
 
-			if((session=malloc(sizeof(http_session_t)))==NULL) {
-				lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
-					,client_socket, sizeof(http_session_t));
-				mswait(3000);
-				close_socket(&client_socket);
-				continue;
-			}
-
-			memset(session, 0, sizeof(http_session_t));
 			SAFECOPY(session->host_ip,host_ip);
 			session->addr=client_addr;
    			session->socket=client_socket;
@@ -4738,7 +4765,7 @@ void DLLCALL web_server(void* arg)
 			session->js_runtime=js_runtime;
 #endif
 
-			_beginthread(http_session_thread, 0, session);
+			pthread_mutex_unlock(&session->struct_filled);
 			served++;
 		}
 
