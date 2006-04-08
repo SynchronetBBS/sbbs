@@ -1404,9 +1404,13 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 		switch(recv(session->socket, &ch, 1, 0)) {
 			case -1:
-				if(errno!=EAGAIN)
+				if(errno!=EAGAIN) {
 					close_socket(&session->socket);
+					return(-1);
+				}
+				break;
 			case 0:
+				close_socket(&session->socket);
 				return(-1);
 		}
 
@@ -1518,6 +1522,7 @@ int recvbufsocket(SOCKET *sock, char *buf, long count)
 				if(errno!=EAGAIN)
 					close_socket(sock);
 			case 0:
+				close_socket(sock);
 				*buf=0;
 				return(0);
 		}
