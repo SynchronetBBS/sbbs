@@ -310,7 +310,6 @@ char *xp_asprintf_next(char *format, int type, ...)
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
 	int				modifier=0;
-	char			*fmt_start;
 	int				correct_type=0;
 	char			num_str[128];		/* More than enough room for a 256-bit int */
 	size_t			width=0;
@@ -326,7 +325,6 @@ char *xp_asprintf_next(char *format, int type, ...)
 	format_len=strlen(format+sizeof(size_t))+sizeof(size_t)+1;
 	this_format[0]=0;
 	fmt=this_format;
-	fmt_start=p;
 	*(fmt++)=*(p++);
 
 	/*
