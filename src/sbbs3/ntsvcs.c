@@ -79,8 +79,8 @@ typedef struct {
 	DWORD*					options;
 	BOOL*					recycle_now;
 	DWORD*					log_mask;
-	void					(*thread)(void* arg);
-	void					(*terminate)(void);
+	void DLLCALL			(*thread)(void* arg);
+	void DLLCALL			(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
 	HANDLE					event_handle;
@@ -339,7 +339,7 @@ static int svc_lputs(void* p, int level, char* str)
 				NULL,					/* no user security identifier */
 				1,						/* one string */
 				0,						/* no data */
-				&str,					/* pointer to string array */
+				(LPCSTR*)&str,			/* pointer to string array */
 				NULL);					/* pointer to data */
 	}
 
@@ -992,7 +992,7 @@ static void start_service(SC_HANDLE hSCManager, char* name, char* disp_name
 		printf("Already running\n");
 	else {
 		/* Start the service */
-		if(StartService( hService, argc, argv))
+		if(StartService(hService, argc, (LPCTSTR*)argv))
 		{
 			while(QueryServiceStatus(hService, &status) && status.dwCurrentState == SERVICE_START_PENDING)
 				Sleep(1000);
@@ -1193,12 +1193,12 @@ int main(int argc, char** argv)
 
 	SERVICE_TABLE_ENTRY  ServiceDispatchTable[] = 
     { 
-        { bbs.name,			bbs_start		}, 
-		{ ftp.name,			ftp_start		},
-		{ web.name,			web_start		},
-		{ mail.name,		mail_start		},
-		{ services.name,	services_start	},
-        { NULL,				NULL			}	/* Terminator */
+        { NTSVC_NAME_BBS,		bbs_start		}, 
+		{ NTSVC_NAME_FTP,		ftp_start		},
+		{ NTSVC_NAME_WEB,		web_start		},
+		{ NTSVC_NAME_MAIL,		mail_start		},
+		{ NTSVC_NAME_SERVICES,	services_start	},
+        { NULL,					NULL			}	/* Terminator */
     }; 
 
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
