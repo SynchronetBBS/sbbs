@@ -4684,8 +4684,8 @@ void DLLCALL web_server(void* arg)
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
 				if(i==0) {
-					continue;
 					pthread_mutex_unlock(&session->struct_filled);
+					continue;
 				}
 				if(ERROR_VALUE==EINTR)
 					lprintf(LOG_INFO,"Web Server listening interrupted");
