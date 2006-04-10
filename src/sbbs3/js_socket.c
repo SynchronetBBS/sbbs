@@ -869,26 +869,38 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 {
 	int			opt;
 	int			level;
-	socklen_t	len;
 	int			val;
 	private_t*	p;
+	LINGER		linger;
+	void*		vp=&val;
+	socklen_t	len=sizeof(val);
+
+	*rval = INT_TO_JSVAL(-1);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
-	opt = getSocketOptionByName(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
-	len = sizeof(val);
+	if((opt = getSocketOptionByName(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level)) == -1)
+		return(JS_TRUE);
 
-	if(opt!=-1 && getsockopt(p->sock, level, opt, (void*)&val, &len)==0) {
-		dbprintf(FALSE, p, "option %d = %d",opt,val);
+	if(opt == SO_LINGER) {
+		vp=&linger;
+		len=sizeof(linger);
+	}
+	if(getsockopt(p->sock, level, opt, vp, &len)==0) {
+		if(opt == SO_LINGER) {
+			if(linger.l_onoff==TRUE)
+				val = linger.l_linger;
+			else
+				val = 0;
+		}
 		JS_NewNumberValue(cx,val,rval);
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "error %d getting option %d"
 			,ERROR_VALUE,opt);
-		*rval = INT_TO_JSVAL(-1);
 	}
 
 	return(JS_TRUE);
@@ -902,6 +914,10 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	int			level;
 	int32		val=1;
 	private_t*	p;
+	LINGER		linger;
+	void*		vp=&val;
+	socklen_t	len=sizeof(val);
+
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -911,8 +927,19 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	opt = getSocketOptionByName(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
 	JS_ValueToInt32(cx,argv[1],&val);
 
+	if(opt == SO_LINGER) {
+		if(val) {
+			linger.l_onoff = TRUE;
+			linger.l_linger = (ushort)val;
+		} else {
+			ZERO_VAR(linger);
+		}
+		vp=&linger;
+		len=sizeof(linger);
+	}
+
 	*rval = BOOLEAN_TO_JSVAL(
-		setsockopt(p->sock, level, opt, (char*)&val, sizeof(val))==0);
+		setsockopt(p->sock, level, opt, vp, len)==0);
 	p->last_error=ERROR_VALUE;
 
 	return(JS_TRUE);
