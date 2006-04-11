@@ -1,0 +1,25 @@
+To build SyncTERM, you *will need* the following bits from the Synchronet CVS
+tree:
+
+src/build/*
+src/conio/*
+src/sbbs3/telnet.c
+src/sbbs3/telnet.h
+src/sbbs3/zmodem.c
+src/sbbs3/zmodem.h
+src/sbbs3/xmodem.h
+src/smblib/crc16.c
+src/smblic/crc16.h
+src/smblib/crc32.c
+src/smblic/crc32.h
+src/syncterm/*
+src/uifc/*
+src/xpdev/*
+
+The directory structure under src *must* be kept intact.  Once you have all
+this in place, a simple "make" should build everything you need.  If you're
+using *nix you must use GNU Make... under some systems (Such a most BSDs) this
+is optional and installed as "gmake" rather than "make".
+
+Refer to src/build/Common.gmake or src/build/Common.bmake for details of some
+of the make options the build system supports.
