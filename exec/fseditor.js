@@ -1263,8 +1263,13 @@ function edit()
 				if(xpos>line[ypos].text.length)
 					xpos=line[ypos].text.length;
 				var i;
-				for(i=ypos; i<=line.length; i++)
+				console.write("\033[M");	/* Delete Line */
+				/* Redraw bottom line */
+				draw_line(topline+lines_on_screen-1);
+				/* Old used to redraw everything after current
+				for(i=ypos; i<topline+lines_on_screen; i++)
 					draw_line(i);
+				*/
 				set_cursor();
 				break;
 				break;
@@ -1375,6 +1380,8 @@ if(f.open("r",false)) {
 	line.push(new Line());
 }
 file='';	/* Free up the memory */
+/* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
+console.write("\033[=1M");
 edit();
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
