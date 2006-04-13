@@ -2,7 +2,7 @@
 
 /* Set default theme name */
 
-var DefaultTheme="NightShade";
+var DefaultTheme="Default";
 
 /* Edit this bit to add/remove/modify theme descriptions, dirs */
 
