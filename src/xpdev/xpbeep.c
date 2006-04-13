@@ -15,7 +15,12 @@
 	#elif SOUNDCARD_H_IN==3
 		#include <linux/soundcard.h>
 	#else
-		#warning Cannot find soundcard.h
+		#ifndef USE_ALSA
+			#warning Cannot find soundcard.h
+		#endif
+	#endif
+	#ifdef USE_ALSA_SOUND
+		#include <alsa/asoundlib.h>
 	#endif
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
@@ -40,9 +45,41 @@
 #define S_RATE	22050
 
 static BOOL sound_device_open_failed=FALSE;
+static BOOL alsa_device_open_failed=FALSE;
 
 #define WAVE_PI	3.14159265358979323846
 #define WAVE_TPI 6.28318530717958647692
+
+#ifdef USE_ALSA_SOUND
+struct alsa_api_struct {
+	int		(*snd_pcm_open)
+				(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
+	int		(*snd_pcm_hw_params_malloc)
+				(snd_pcm_hw_params_t **ptr);
+	int		(*snd_pcm_hw_params_any)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
+	int		(*snd_pcm_hw_params_set_access)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_access_t _access);
+	int		(*snd_pcm_hw_params_set_format)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_format_t val);
+	int		(*snd_pcm_hw_params_set_rate_near)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
+	int		(*snd_pcm_hw_params_set_channels)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, unsigned int val);
+	int		(*snd_pcm_hw_params)
+				(snd_pcm_t *pcm, snd_pcm_hw_params_t *params);
+	int		(*snd_pcm_prepare)
+				(snd_pcm_t *pcm);
+	void	(*snd_pcm_hw_params_free)
+				(snd_pcm_hw_params_t *obj);
+	int 	(*snd_pcm_close)
+				(snd_pcm_t *pcm);
+	snd_pcm_sframes_t (*snd_pcm_writei)
+				(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
+};
+
+struct alsa_api_struct *alsa_api=NULL;
+#endif
 
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
@@ -184,23 +221,95 @@ abrt:
 
 BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
+#if defined(USE_ALSA_SOUND) || defined(AFMT_U8)
+	unsigned char	wave[S_RATE*15/2+1];
+	int samples;
+#endif
+
+#ifdef USE_ALSA_SOUND
+	snd_pcm_t *playback_handle;
+	snd_pcm_hw_params_t *hw_params=NULL;
+	void *dl;
+#endif
+
 #ifdef AFMT_U8
 	int dsp;
 	int format=AFMT_U8;
 	int channels=1;
 	int	rate=S_RATE;
-	int samples;
 	int	fragsize=0x7fff0004;
 	int wr;
 	int	i;
-	unsigned char	wave[S_RATE*15/2+1];
+#endif
 
+#if defined(USE_ALSA_SOUND) || defined(AFMT_U8)
 	if(freq<17)
 		freq=17;
 	samples=S_RATE*duration/1000;
 	if(samples<=S_RATE/freq*2)
 		samples=S_RATE/freq*2;
 	makewave(freq,wave,samples,shape);
+#endif
+
+#ifdef USE_ALSA_SOUND
+	if(!alsa_device_open_failed) {
+		if(alsa_api==NULL) {
+			
+			if(((alsa_api=(struct alsa_api_struct *)malloc(sizeof(struct alsa_api_struct)))==NULL)
+					|| ((dl=dlopen("libasound.so",RTLD_LAZY))==NULL)
+					|| ((alsa_api->snd_pcm_open=dlsym(dl,"snd_pcm_open"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_malloc=dlsym(dl,"snd_pcm_hw_params_malloc"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_any=dlsym(dl,"snd_pcm_hw_params_any"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_access=dlsym(dl,"snd_pcm_hw_params_set_access"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_format=dlsym(dl,"snd_pcm_hw_params_set_format"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_rate_near=dlsym(dl,"snd_pcm_hw_params_set_rate_near"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_channels=dlsym(dl,"snd_pcm_hw_params_set_channels"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params=dlsym(dl,"snd_pcm_hw_params"))==NULL)
+					|| ((alsa_api->snd_pcm_prepare=dlsym(dl,"snd_pcm_prepare"))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_free=dlsym(dl,"snd_pcm_hw_params_free"))==NULL)
+					|| ((alsa_api->snd_pcm_close=dlsym(dl,"snd_pcm_close"))==NULL)
+					|| ((alsa_api->snd_pcm_writei=dlsym(dl,"snd_pcm_writei"))==NULL)
+					|| ((alsa_api->=dlsym(dl,""))==NULL)) {
+				FREE_AND_NULL(alsa_api);
+			}
+			if(alsa_api==NULL)
+				alsa_device_open_failed=TRUE;
+			else {
+			}
+		}
+		if(alsa_api!=NULL) {
+			if((alsa_api->snd_pcm_open(&playback_handle, argv[1], SND_PCM_STREAM_PLAYBACK, 0)<0)
+					|| (alsa_api->snd_pcm_hw_params_malloc(&hw_params)<0)
+					|| (alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params)<0)
+					|| (alsa_api->snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+					|| (alsa_api->snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_U8) < 0)
+					|| (alsa_api->snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, S_RATE, 0) < 0) 
+					|| (alsa_api->snd_pcm_hw_params_set_channels(playback_handle, hw_params, 1) < 0)
+					|| (alsa_api->snd_pcm_hw_params(playback_handle, hw_params) < 0)
+					|| (alsa_api->snd_pcm_prepare(playback_handle) < 0)) {
+				alsa_device_open_failed=TRUE;
+				if(hw_params!=NULL)
+					alsa_api->snd_pcm_hw_params_free(hw_params);
+				if(playback_handle!=NULL)
+					alsa_api->snd_pcm_close(playback_handle);
+			}
+			else {
+				alsa_api->snd_pcm_hw_params_free(hw_params);
+				if(alsa_api->snd_pcm_writei(playback_handle, wave, samples)!=samples)
+					alsa_device_open_failed=TRUE;
+				else {
+					alsa_api->snd_pcm_close (playback_handle);
+					return(TRUE);
+				}
+				alsa_api->snd_pcm_close (playback_handle);
+			}
+		}
+		if(alsa_device_open_failed)
+			FREE_AND_NULL(alsa_api);
+	}
+#endif
+
+#ifdef AFMT_U8
 	if(!sound_device_open_failed) {
 		if((dsp=open("/dev/dsp",O_WRONLY,0))<0) {
 			sound_device_open_failed=TRUE;
