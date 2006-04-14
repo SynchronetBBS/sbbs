@@ -136,16 +136,16 @@ writeln("<table border=0 width=100%>");
 writeln("<thead>");
 writeln("<tr bgcolor=white>");
 
-write(format("<th align=center width=7%>%sNode",font_color));
-write(format("<th align=center width=20%>%sUser",font_color));
-write(format("<th align=left>%sAction/Status",font_color));
+write("<th align=center width=7%>" + font_color + "Node");
+write("<th align=center width=20%>" + font_color + "User");
+write("<th align=left>" + font_color + "Action/Status");
 if(include_location) 
-	write(format("<th align=left>%sLocation",font_color));
+	write("<th align=left>" +font_color+ "Location");
 if(include_age_gender) {
-	write(format("<th align=center width=7%>%sAge",font_color));
-	write(format("<th align=center width=10%>%sGender\r\n",font_color));
+	write("<th align=center width=7%>" + font_color + "Age");
+	write("<th align=center width=10%>" + font_color + "Gender\r\n");
 }
-write(format("<th align=center width=10%>%sTime\r\n",font_color));
+write("<th align=center width=10%>" + font_color " +Time\r\n");
 writeln("</thead>");
 
 writeln("<tbody>");
