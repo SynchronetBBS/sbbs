@@ -1433,7 +1433,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	/* Terminate at length if longer */
 	if(i>length)
 		i=length;
-		
+
 	if(i>0 && buf[i-1]=='\r')
 		buf[--i]=0;
 	else
@@ -1939,7 +1939,7 @@ static BOOL get_request_headers(http_session_t * session)
 
 	while(sockreadline(session,head_line,sizeof(head_line)-1)>0) {
 		/* Multi-line headers */
-		while((i=recvfrom(session->socket,&next_char,1,MSG_PEEK,NULL,0)>0)
+		while((i=recv(session->socket,&next_char,1,MSG_PEEK)>0)
 			&& (next_char=='\t' || next_char==' ')) {
 			if(i==-1 && errno != EAGAIN)
 				close_socket(&session->socket);
