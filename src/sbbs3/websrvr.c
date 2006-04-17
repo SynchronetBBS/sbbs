@@ -4382,7 +4382,7 @@ void DLLCALL web_server(void* arg)
 	time_t			initialized=0;
 	char*			p;
 	char			compiler[32];
-	http_session_t *	session;
+	http_session_t *	session=NULL;
 	struct timeval tv;
 #ifdef ONE_JS_RUNTIME
 	JSRuntime*      js_runtime;
@@ -4671,17 +4671,19 @@ void DLLCALL web_server(void* arg)
 			}	
 
 			/* Startup next session thread */
-			if((session=malloc(sizeof(http_session_t)))==NULL) {
-				lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
-					,client_socket, sizeof(http_session_t));
-				mswait(3000);
-				continue;
+			if(session==NULL) {
+				if((session=malloc(sizeof(http_session_t)))==NULL) {
+					lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
+						,client_socket, sizeof(http_session_t));
+					mswait(3000);
+					continue;
+				}
+				memset(session, 0, sizeof(http_session_t));
+   				session->socket=INVALID_SOCKET;
+				pthread_mutex_init(&session->struct_filled,NULL);
+				pthread_mutex_lock(&session->struct_filled);
+				_beginthread(http_session_thread, 0, session);
 			}
-			memset(session, 0, sizeof(http_session_t));
-   			session->socket=INVALID_SOCKET;
-			pthread_mutex_init(&session->struct_filled,NULL);
-			pthread_mutex_lock(&session->struct_filled);
-			_beginthread(http_session_thread, 0, session);
 
 			/* now wait for connection */
 
@@ -4695,6 +4697,7 @@ void DLLCALL web_server(void* arg)
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
 				if(i==0) {
 					pthread_mutex_unlock(&session->struct_filled);
+					session=NULL;
 					continue;
 				}
 				if(ERROR_VALUE==EINTR)
@@ -4704,11 +4707,13 @@ void DLLCALL web_server(void* arg)
 				else
 					lprintf(LOG_WARNING,"!ERROR %d selecting socket",ERROR_VALUE);
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				continue;
 			}
 
 			if(server_socket==INVALID_SOCKET) {	/* terminated */
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				break;
 			}
 
@@ -4722,6 +4727,7 @@ void DLLCALL web_server(void* arg)
 			else {
 				lprintf(LOG_NOTICE,"!NO SOCKETS set by select");
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				continue;
 			}
 
@@ -4730,10 +4736,12 @@ void DLLCALL web_server(void* arg)
 #ifdef _WIN32
 				if(WSAGetLastError()==WSAENOBUFS) {	/* recycle (re-init WinSock) on this error */
 					pthread_mutex_unlock(&session->struct_filled);
+					session=NULL;
 					break;
 				}
 #endif
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				continue;
 			}
 
@@ -4745,6 +4753,7 @@ void DLLCALL web_server(void* arg)
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
 				close_socket(&client_socket);
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				continue;
 			}
 
@@ -4754,6 +4763,7 @@ void DLLCALL web_server(void* arg)
 				mswait(3000);
 				close_socket(&client_socket);
 				pthread_mutex_unlock(&session->struct_filled);
+				session=NULL;
 				continue;
 			}
 
@@ -4776,6 +4786,7 @@ void DLLCALL web_server(void* arg)
 #endif
 
 			pthread_mutex_unlock(&session->struct_filled);
+			session=NULL;
 			served++;
 		}
 
