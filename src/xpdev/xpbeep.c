@@ -31,9 +31,9 @@
 		#include <sys/kbio.h>
 		#include <sys/kbd.h>
 	#endif
-	#if defined(__OpenBSD__) || defined(__NetBSD__)
+	#if (defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H)
 		#include <machine/spkr.h>
-	#elif defined(__FreeBSD__)
+	#elif defined(__FreeBSD__) && defined(HAS_MACHINE_SPEAKER_H)
 		#include <machine/speaker.h>
 	#endif
 #endif
@@ -354,7 +354,7 @@ void DLLCALL unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#if (defined(__FreeBSD__) && defined(HAS_MACHINE_SPEAKER_H)) || ((defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H))
 	int speaker_fd=-1;
 	tone_t tone;
 

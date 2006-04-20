@@ -29,6 +29,14 @@ ifeq ($(shell if [ -c /dev/random ] ; then echo YES ; fi),YES)
  XPDEV-MT_CFLAGS	+=	-DHAS_DEV_RANDOM -DRANDOM_DEV=\"/dev/random\"
  XPDEV_CFLAGS		+=	-DHAS_DEV_RANDOM -DRANDOM_DEV=\"/dev/random\"
 endif
+ifeq ($(shell if [ -f /usr/include/machine/speaker.h ] ; then echo YES ; fi),YES)
+ XPDEV-MT_CFLAGS	+=	-DHAS_MACHINE_SPEAKER_H
+ XPDEV_CFLAGS		+=	-DHAS_MACHINE_SPEAKER_H
+endif
+ifeq ($(shell if [ -f /usr/include/machine/spkr.h ] ; then echo YES ; fi),YES)
+ XPDEV-MT_CFLAGS	+=	-DHAS_MACHINE_SPKR_H
+ XPDEV_CFLAGS		+=	-DHAS_MACHINE_SPKR_H
+endif
 
 # FreeBSD, OpenBSD, NetBSD, Linux, SunOS, and Darwin all have random()/srandom()
 ifeq ($(os),freebsd)
