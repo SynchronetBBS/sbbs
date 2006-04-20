@@ -51,9 +51,12 @@
 
 	#if defined(BSD)
 		#include <sys/mount.h>
+	#endif
 	#if defined(__FreeBSD__)
 		#include <sys/kbio.h>
 	#endif
+	#if defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */)
+		#include <sys/statvfs.h>
 	#endif
 
 	#include <sys/ioctl.h>	/* ioctl */
@@ -737,23 +740,23 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 	return(NumberOfFreeClusters*SectorsPerCluster*BytesPerSector);
 
 
-/* statfs is also used under FreeBSD */
-#elif defined(__GLIBC__) || defined(BSD)
+#elif defined(__solaris__) || (defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */))
 
-	struct statfs fs;
+	struct statvfs fs;
 
-    if (statfs(path, &fs) < 0)
+    if (statvfs(path, &fs) < 0)
     	return 0;
 
 	if(unit>1)
 		fs.f_bavail/=unit;
     return fs.f_bsize * fs.f_bavail;
     
-#elif defined(__solaris__)
+/* statfs is also used under FreeBSD (Though it *supports* statvfs() now too) */
+#elif defined(__GLIBC__) || defined(BSD)
 
-	struct statvfs fs;
+	struct statfs fs;
 
-    if (statvfs(path, &fs) < 0)
+    if (statfs(path, &fs) < 0)
     	return 0;
 
 	if(unit>1)
