@@ -206,6 +206,9 @@ endif
 ifeq ($(machine),power_macintosh)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
+ifeq ($(machine),mac68k)
+ CFLAGS +=      -D__BIG_ENDIAN__
+endif
 ifeq ($(machine),)
  machine	:=	$(os)
 else
