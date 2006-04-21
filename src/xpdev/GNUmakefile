@@ -13,7 +13,7 @@ endif
 MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
 # Executable Build Rule
-$(WRAPTEST): $(OBJODIR)/wraptest.o $(DEPS)
+$(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIBS)
 
