@@ -13,6 +13,7 @@ var optional_str="";
 var sub="";
 
 load("sbbsdefs.js");
+load("user_info_to_sysop.js");
 load("../web/lib/template.ssjs");
 
 template.required=required_str;
@@ -346,6 +347,12 @@ else {
     nuser.phone=http_request.query.phone;
     nuser.shell=http_request.query.shell;
     nuser.editor=http_request.query.editor;
+
+    sendUserInfoToSysop(
+    	nuser,
+    	system.name + " New User Information (web)",
+    	"" /* TODO: Create a comment textarea field, and put the result here */
+    );
 
     template.title="New user created";
 	if(do_header)
