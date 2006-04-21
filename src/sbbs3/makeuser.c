@@ -161,6 +161,7 @@ int main(int argc, char **argv)
 
 	user.shell=scfg.new_shell;
 	user.misc=(scfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
+	user.misc|=AUTOTERM;	/* No way to frob the default value... */
 	user.qwk=QWK_DEFAULT;
 	user.firston=now;
 	user.laston=now;	/* must set this or user may be purged prematurely */
