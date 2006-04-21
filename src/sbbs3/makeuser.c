@@ -173,6 +173,10 @@ int main(int argc, char **argv)
 
 	for(i=first_arg;i<argc;i++) {
 		if(argv[i][0]=='-') {
+			if(argv[i+1]==NULL) {
+				printf("%s",usage);
+				return(1);
+			}
 			switch(toupper(argv[i++][1])) {
 			case 'A':
 				SAFECOPY(user.address,argv[i]);
