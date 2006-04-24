@@ -1827,7 +1827,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				p=(char *)malloc(uch);
 				fread(p,uch,1,bin);
 				WRITE_NAME("COMPARE_ARS");
-				sprintf(strchr(src,0),"%s\n",decompile_ars(p,uch));
+				sprintf(strchr(src,0),"%s\n",decompile_ars((uchar*)p,uch));
 				free(p);
 				break;
 			case CS_TOGGLE_USER_MISC:
