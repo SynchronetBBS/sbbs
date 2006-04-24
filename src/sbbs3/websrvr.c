@@ -4646,6 +4646,10 @@ void DLLCALL web_server(void* arg)
 					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 						lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
 							,server_socket,p);
+						if(session!=NULL) {
+							pthread_mutex_unlock(&session->struct_filled);
+							session=NULL;
+						}
 						break;
 					}
 #if 0	/* unused */
@@ -4655,6 +4659,10 @@ void DLLCALL web_server(void* arg)
 					if(startup->recycle_now==TRUE) {
 						lprintf(LOG_INFO,"%04d Recycle semaphore signaled",server_socket);
 						startup->recycle_now=FALSE;
+						if(session!=NULL) {
+							pthread_mutex_unlock(&session->struct_filled);
+							session=NULL;
+						}
 						break;
 					}
 				}
@@ -4666,6 +4674,10 @@ void DLLCALL web_server(void* arg)
 							,server_socket))) {
 					startup->shutdown_now=FALSE;
 					terminate_server=TRUE;
+					if(session!=NULL) {
+						pthread_mutex_unlock(&session->struct_filled);
+						session=NULL;
+					}
 					break;
 				}
 			}	
@@ -4695,19 +4707,14 @@ void DLLCALL web_server(void* arg)
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0) {
-					pthread_mutex_unlock(&session->struct_filled);
-					session=NULL;
+				if(i==0)
 					continue;
-				}
 				if(ERROR_VALUE==EINTR)
 					lprintf(LOG_INFO,"Web Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_INFO,"Web Server socket closed");
 				else
 					lprintf(LOG_WARNING,"!ERROR %d selecting socket",ERROR_VALUE);
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
 				continue;
 			}
 
@@ -4726,8 +4733,6 @@ void DLLCALL web_server(void* arg)
 			}
 			else {
 				lprintf(LOG_NOTICE,"!NO SOCKETS set by select");
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
 				continue;
 			}
 
@@ -4740,8 +4745,6 @@ void DLLCALL web_server(void* arg)
 					break;
 				}
 #endif
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
 				continue;
 			}
 
@@ -4752,8 +4755,6 @@ void DLLCALL web_server(void* arg)
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
 				close_socket(&client_socket);
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
 				continue;
 			}
 
@@ -4762,8 +4763,6 @@ void DLLCALL web_server(void* arg)
 					,client_socket, startup->max_clients);
 				mswait(3000);
 				close_socket(&client_socket);
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
 				continue;
 			}
 
