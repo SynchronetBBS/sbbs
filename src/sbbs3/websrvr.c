@@ -713,9 +713,6 @@ static SOCKET open_socket(int type)
 static int close_socket(SOCKET *sock)
 {
 	int		result;
-	fd_set	rd_set;
-	char	tmp[1024];
-	struct timeval tv;
 
 	if(sock==NULL || *sock==INVALID_SOCKET)
 		return(-1);
@@ -1386,7 +1383,6 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 {
 	char	ch;
 	DWORD	i;
-	BOOL	rd;
 	DWORD	chucked=0;
 	fd_set	rd_set;
 	struct	timeval tv;
