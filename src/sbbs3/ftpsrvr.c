@@ -1773,6 +1773,9 @@ static void receive_thread(void* arg)
 			if(xfer.desc!=NULL && *xfer.desc!=0)	
 				SAFECOPY(f.desc,xfer.desc);
 
+			/* Necessary for DIR and LIB ARS keyword support in subsequent chk_ar()'s */
+			SAFECOPY(xfer.user->curdir, scfg.dir[f.dir]->code);
+
 			/* FILE_ID.DIZ support */
 			p=strrchr(f.name,'.');
 			if(p!=NULL && scfg.dir[f.dir]->misc&DIR_DIZ) {

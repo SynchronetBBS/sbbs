@@ -1246,6 +1246,46 @@ int DLLCALL putnmsg(scfg_t* cfg, int num, char *strin)
 	return(0);
 }
 
+static int getdirnum(scfg_t* cfg, char* code)
+{
+	size_t i;
+
+	for(i=0;i<cfg->total_dirs;i++)
+		if(stricmp(cfg->dir[i]->code,code)==0)
+			return(i);
+	return(-1);
+}
+
+static int getlibnum(scfg_t* cfg, char* code)
+{
+	size_t i;
+
+	for(i=0;i<cfg->total_dirs;i++)
+		if(stricmp(cfg->dir[i]->code,code)==0)
+			return(cfg->dir[i]->lib);
+	return(-1);
+}
+
+static int getsubnum(scfg_t* cfg, char* code)
+{
+	size_t i;
+
+	for(i=0;i<cfg->total_subs;i++)
+		if(stricmp(cfg->sub[i]->code,code)==0)
+			return(i);
+	return(-1);
+}
+
+static int getgrpnum(scfg_t* cfg, char* code)
+{
+	size_t i;
+
+	for(i=0;i<cfg->total_subs;i++)
+		if(stricmp(cfg->sub[i]->code,code)==0)
+			return(cfg->sub[i]->grp);
+	return(-1);
+}
+
 static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 {
 	BOOL	result,not,or,equal;
@@ -1446,28 +1486,67 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				(*ptrptr)++;
 				break;
 			case AR_GROUP:
-				result=not;
+				if(user==NULL)
+					result=not;
+				else {
+					l=getgrpnum(cfg,user->cursub);
+					if((equal && l!=i) || (!equal && l<i))
+						result=not;
+					else
+						result=!not;
+				}
 				(*ptrptr)++;
 				break;
 			case AR_SUB:
-				result=not;
+				if(user==NULL)
+					result=not;
+				else {
+					l=getsubnum(cfg,user->cursub);
+					if((equal && l!=i) || (!equal && l<i))
+						result=not;
+					else
+						result=!not;
+				}
 				(*ptrptr)++;
 				break;
 			case AR_SUBCODE:
+				if(user!=NULL && stricmp(user->cursub,(char *)*ptrptr)==0)
+					result=!not;
+				else
+					result=not;
 				result=not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				break;
 			case AR_LIB:
-				result=not;
+				if(user==NULL)
+					result=not;
+				else {
+					l=getlibnum(cfg,user->curdir);
+					if((equal && l!=i) || (!equal && l<i))
+						result=not;
+					else
+						result=!not;
+				}
 				(*ptrptr)++;
 				break;
 			case AR_DIR:
-				result=not;
+				if(user==NULL)
+					result=not;
+				else {
+					l=getdirnum(cfg,user->curdir);
+					if((equal && l!=i) || (!equal && l<i))
+						result=not;
+					else
+						result=!not;
+				}
 				(*ptrptr)++;
 				break;
 			case AR_DIRCODE:
-				result=not;
+				if(user!=NULL && stricmp(user->curdir,(char *)*ptrptr)==0)
+					result=!not;
+				else
+					result=not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				break;
