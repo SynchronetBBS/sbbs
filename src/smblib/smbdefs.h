@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -288,7 +288,8 @@
 #define USENETNEWSGROUPS	0xc1
 
 #define SMTPCOMMAND			0xd0		/* Aribtrary SMTP command */
-#define SMTPREVERSEPATH		0xd1		/* MAIL FROM: reverse path */
+#define SMTPREVERSEPATH		0xd1		/* MAIL FROM: argument, "reverse path" */
+#define SMTPFORWARDPATH		0xd2		/* RCPT TO: argument, "forward path" */
 
 #define SMTPSYSMSG			0xd8		/* for delivery failure notification */
 
@@ -569,7 +570,8 @@ typedef struct {				/* Message */
 				*replyto_ext,	/* Reply-to extension */
 				*id,			/* RFC822 Message-ID */
 				*reply_id,		/* RFC822 Reply-ID */
-				*reverse_path,	/* SMTP reverse-path */
+				*forward_path,	/* SMTP forward-path (RCPT TO: argument) */
+				*reverse_path,	/* SMTP reverse-path (MAIL FROM: argument) */
 				*path,			/* USENET Path */
 				*newsgroups,	/* USENET Newsgroups */
 				*ftn_pid,		/* FTN PID */
