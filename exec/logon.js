@@ -113,3 +113,10 @@ if(user.security.level==99				/* Sysop logging on */
 		user.security.flags4&=~UFLAG_G;	/* Turn off flag 4G to not ask again */
 	console.crlf();
 }
+
+// Change to "true" if you want your RLogin server to act as a door game server only
+if(false	
+	&& bbs.sys_status&SS_RLOGIN) {
+	bbs.xtrn_sec();
+	bbs.hangup();
+}
