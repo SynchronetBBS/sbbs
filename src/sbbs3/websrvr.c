@@ -2308,13 +2308,17 @@ static BOOL check_request(http_session_t * session)
 					if(wildmatch(filename,spec,TRUE)) {
 						if(iniReadString(file, spec, "AccessRequirements", session->req.ars,str)==str)
 							SAFECOPY(session->req.ars,str);
-						if(iniReadString(file, spec, "Realm", scfg.sys_name,str)==str)
+						if(iniReadString(file, spec, "Realm", scfg.sys_name,str)==str) {
+							FREE_AND_NULL(session->req.realm);
 							session->req.realm=strdup(str);
+						}
 						if(iniReadString(file, spec, "ErrorDirectory", error_dir,str)==str) {
+							FREE_AND_NULL(session->req.error_dir);
 							prep_dir(root_dir, str, sizeof(str));
 							session->req.error_dir=strdup(str);
 						}
 						if(iniReadString(file, spec, "CGIDirectory", cgi_dir,str)==str) {
+							FREE_AND_NULL(session->req.cgi_dir);
 							prep_dir(root_dir, str, sizeof(str));
 							session->req.cgi_dir=strdup(str);
 							recheck_dynamic=TRUE;
