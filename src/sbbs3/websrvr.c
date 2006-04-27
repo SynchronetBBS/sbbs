@@ -1091,7 +1091,8 @@ static void send_error(http_session_t * session, const char* message)
 {
 	char	error_code[4];
 	struct stat	sb;
-	char	sbuf[1024];
+	char	sbuf[MAX_PATH+1];
+	char	sbuf2[MAX_PATH+1];
 	BOOL	sent_ssjs=FALSE;
 
 	if(session->socket==INVALID_SOCKET)
@@ -1109,7 +1110,20 @@ static void send_error(http_session_t * session, const char* message)
 		 * ie: Don't "upgrade" to a 500 error
 		 */
 
-		sprintf(sbuf,"%s%s%s",session->req.error_dir?session->req.error_dir:error_dir,error_code,startup->ssjs_ext);
+		if(session->req.error_dir) {
+			/* We have a custom error director from webctrl.ini look there first */
+			sprintf(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
+			if(stat(sbuf,&sb)) {
+				/* No custom .ssjs error message... check for custom .html */
+				sprintf(sbuf2,"%s%s.html",session->req.error_dir,error_code);
+				if(stat(sbuf2,&sb)) {
+					/* Nope, no custom .html error either, check for global ssjs one */
+					sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+				}
+			}
+		}
+		else
+			sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			session->req.dynamic=IS_SSJS;
@@ -1133,7 +1147,13 @@ static void send_error(http_session_t * session, const char* message)
 		}
 	}
 	if(!sent_ssjs) {
-		sprintf(session->req.physical_path,"%s%s.html",session->req.error_dir?session->req.error_dir:error_dir,error_code);
+		if(session->req.error_dir) {
+			sprintf(session->req.physical_path,"%s%s.html",session->req.error_dir,error_code);
+			if(stat(session->req.physical_path,&sb))
+				sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+		}
+		else
+			sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code,startup->ssjs_ext);
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message,FALSE);
 		if(!stat(session->req.physical_path,&sb)) {
