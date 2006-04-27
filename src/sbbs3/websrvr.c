@@ -2149,6 +2149,9 @@ static BOOL check_extra_path(http_session_t * session)
 						return(TRUE);
 					}
 				}
+				/* rpath was an existing path and DID NOT contain an index. */
+				/* We do not allow scripts to mask existing dirs/files */
+				return(FALSE);
 			}
 
 			if(vp_slash==vpath)
@@ -2218,6 +2221,7 @@ static BOOL check_request(http_session_t * session)
 				lprintf(LOG_DEBUG,"%04d Checking for %s",session->socket,path);
 			if(!stat(path,&sb))
 				break;
+			SAFECOPY(path,session->req.physical_path);
 		}
 
 		/* Don't send 404 unless authourized... prevent info leak */
