@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-#define ADDFILES_VER "3.01"
+#define ADDFILES_VER "3.02"
 
 scfg_t scfg;
 
@@ -631,29 +631,30 @@ void synclist(char *inpath, int dirnum)
 	}
 }
 
-char *usage="\nusage: addfiles code [.alt_path] [-opts] [\"*user\"] +list "
+char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 			 "[desc_off] [size_off]"
-	"\n   or: addfiles code [.alt_path] [-opts] [\"*user\"]  file "
+	"\n   or: addfiles code [.alt_path] [-opts] file "
 		"\"description\"\n"
 	"\navailable opts:"
-	"\n       a    import ASCII only (no extended ASCII)"
-	"\n       b    synchronize database with file list (use with caution)"
-	"\n       c    do not remove extra spaces from file description"
-	"\n       d    delete list after import"
-	"\n       e    do not import extended descriptions"
-	"\n       f    include file date in descriptions"
-	"\n       t    include today's date in descriptions"
-	"\n       i    include added files in upload statistics"
-	"\n       n    do not update information for existing files"
-	"\n       o    update upload date only for existing files"
-	"\n       u    do not update upload date for existing files"
-	"\n       z    check for and import FILE_ID.DIZ and DESC.SDI"
-	"\n       k    keep original short description (not DIZ)"
-	"\n       s    search directory for files (no file list)"
-	"\n       l    specify library (short name) to Auto-ADD"
+	"\n       a         import ASCII only (no extended ASCII)"
+	"\n       b         synchronize database with file list (use with caution)"
+	"\n       c         do not remove extra spaces from file description"
+	"\n       d         delete list after import"
+	"\n       e         do not import extended descriptions"
+	"\n       f         include file date in descriptions"
+	"\n       t         include today's date in descriptions"
+	"\n       i         include added files in upload statistics"
+	"\n       n         do not update information for existing files"
+	"\n       o         update upload date only for existing files"
+	"\n       u         do not update upload date for existing files"
+	"\n       z         check for and import FILE_ID.DIZ and DESC.SDI"
+	"\n       k         keep original short description (not DIZ)"
+	"\n       s         search directory for files (no file list)"
+	"\n       l<lib>    specify library (short name) to Auto-ADD"
+	"\n       x<name>   specify uploader's user name (may require quotes)"
 	"\n"
-	"\nAuto-ADD:   use * in place of code for Auto-ADD of FILES.BBS"
-	"\n            use *filename to Auto-ADD a different filename"
+	"\nAuto-ADD:   use - in place of code for Auto-ADD of FILES.BBS"
+	"\n            use -filename to Auto-ADD a different filename"
 	"\n            use -l \"libname\" to only Auto-ADD files to a specific library"
 	"\n"
 	;
@@ -713,7 +714,11 @@ int main(int argc, char **argv)
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
 
-	if(argv[1][0]=='*') {
+	if(argv[1][0]=='*' || argv[1][0]=='-') {
+		if(argv[1][1]=='?') {
+			printf(usage);
+			exit(0);
+		}
 		if(argv[1][1])
 			SAFECOPY(auto_name,argv[1]+1);
 		mode|=AUTO_ADD;
@@ -725,7 +730,7 @@ int main(int argc, char **argv)
 		}
 
 		for(i=0;i<scfg.total_dirs;i++)
-			if(!stricmp(scfg.dir[i]->code,argv[1]))
+			if(!stricmp(scfg.dir[i]->code,argv[1])) /* use matchmatchi() instead? */
 				break;
 
 		if(i>=scfg.total_dirs) {
@@ -739,8 +744,8 @@ int main(int argc, char **argv)
 	strcpy(f.uler,"-> ADDFILES <-");
 
 	for(j=2;j<argc;j++) {
-		if(argv[j][0]=='*')     /* set the uploader name */
-			sprintf(f.uler,"%.25s",argv[j]+1);
+		if(argv[j][0]=='*')     /* set the uploader name (legacy) */
+			SAFECOPY(f.uler,argv[j]+1);
 		else 
 			if(argv[j][0]=='-'
 			|| argv[j][0]=='/'
@@ -772,6 +777,15 @@ int main(int argc, char **argv)
 							return(-1);
 						}
 						SAFECOPY(lib,argv[j]);
+						i=strlen(argv[j])-1;
+						break;
+					case 'X':
+						j++;
+						if(argv[j]==NULL) {
+							printf(usage);
+							return(-1);
+						}
+						SAFECOPY(f.uler,argv[j]);
 						i=strlen(argv[j])-1;
 						break;
 					case 'Z':
