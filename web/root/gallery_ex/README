@@ -1,0 +1,10 @@
+This is a sample set of simple photo gallery scripts.  This also serves as and
+example of usage of webctrl.ini for custom error pages.
+
+The pics directory contains subdirectories with .jpg files.
+
+When the gallery is initially viewed, the custom 404 error handler in the thumbs
+directory will generate a thumbnail for each picture assuming that ImageMagicks
+convert utility is installed and is in your path.
+
+Remove the access.ars file to allow public access to this dir.
