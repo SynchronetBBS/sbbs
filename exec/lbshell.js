@@ -602,7 +602,6 @@ while(1) {
 			var xtrnsec=new Xtrnsecs;
 			menus_displayed.push(xtrnsec);
 			while(!done) {
-				bbs.node_action=NODE_;
 				x_sec=xtrnsec.getval();
 				if(x_sec==KEY_LEFT)
 					x_sec=(xtrnsec.current-1).toString();
