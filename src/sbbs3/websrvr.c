@@ -2285,6 +2285,8 @@ static BOOL check_request(http_session_t * session)
 		sprintf(str,"%saccess.ars",curdir);
 		if(!stat(str,&sb)) {
 			/* NEVER serve up an access.ars file */
+			lprintf(LOG_WARN,"%04d !WARNING! access.ars support is depreciated and will be REMOVED very soon.",session->socket);
+			lprintf(LOG_WARN,"%04d !WARNING! access.ars found at %s.",session->socket,str);
 			if(!strcmp(path,str)) {
 				send_error(session,"403 Forbidden");
 				return(FALSE);
