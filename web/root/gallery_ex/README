@@ -7,4 +7,5 @@ When the gallery is initially viewed, the custom 404 error handler in the thumbs
 directory will generate a thumbnail for each picture assuming that ImageMagicks
 convert utility is installed and is in your path.
 
-Remove the access.ars file to allow public access to this dir.
+Remove the webctrl.ini file to allow public access to this dir... change the
+ARS string as appropriate to allow user-only access.
