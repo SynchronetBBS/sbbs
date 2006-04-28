@@ -2299,7 +2299,7 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 		bgxo=xpos-1;	/* zero-based */
 		bgyo=ypos-2;	/* zero-based and make allowance for top line (The top of BackGround is at line 2) */
 		bgw=width;
-		bgh=mtop-ypos;	/* Height is here to the message window */
+		bgh=height;
 		if(bgyo+bgh>BackGround.height)	/* Too high? */
 			bgh=BackGround.height-bgyo;
 		if(ypos+bgh > mtop)
