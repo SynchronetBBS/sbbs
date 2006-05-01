@@ -507,8 +507,8 @@ function process_contribution(header, body, list)
 	if(msg_area.sub[list.sub.toLowerCase()].is_moderated)
 		header.attr |= MSG_MODERATED;
 
-	// Remove [listname] from imported subject
-	header.subject=header.subject.replace(RegExp("\\["+listname+"\\]\\s*"), "");
+	// Remove [list.name] from imported subject
+	header.subject=header.subject.replace(RegExp("\\["+list.name+"\\]\\s*"), "");
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
 		log(LOG_ERR,format("ListServer: %s !ERROR %s saving message to sub: %s"
