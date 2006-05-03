@@ -117,9 +117,9 @@ static int vdd_op(BYTE op)
 	return(retval);
 }
 
-#if 0
+#ifdef HACKERY
 
-char win95int14[]={
+char win95int14_asm[]={
 	 0xCF	/* IRET */
 	,0x90	/* NOP */
 	,0x90
@@ -511,15 +511,31 @@ int main(int argc, char **argv)
 
 		oldint16=_dos_getvect(0x16);
 		oldint29=_dos_getvect(0x29);
-		if(mode==SBBSEXEC_MODE_FOSSIL)
+		if(mode==SBBSEXEC_MODE_FOSSIL) {
+#ifdef HACKERY
+			win95int14_asm[0]=0xea;	/* JMP */
+			(WORD *)win95int14_asm+1=((DWORD)(winNTint14))>>16;
+			(WORD *)win95int14_asm+3=((DWORD)(winNTint14))&0xffff;
+			_dos_setvect(0x14,(void(interrupt *)())win95int14_asm);
+#else
 			_dos_setvect(0x14,(void(interrupt *)())winNTint14); 
+#endif
+		}
 		if(mode&SBBSEXEC_MODE_DOS_IN)
 			_dos_setvect(0x16,winNTint16); 
 		if(mode&SBBSEXEC_MODE_DOS_OUT) 
 			_dos_setvect(0x29,winNTint29); 
 	}
-	else if(mode==SBBSEXEC_MODE_FOSSIL)	/* Windows 95/98/Millennium */
-		_dos_setvect(0x14,(void(interrupt *)())win95int14); 
+	else if(mode==SBBSEXEC_MODE_FOSSIL)	/* Windows 95/98/Millennium */ {
+#ifdef HACKERY
+		win95int14_asm[0]=0xea;	/* JMP */
+		(WORD *)win95int14_asm+1=((DWORD)(win95int14))>>16;
+		(WORD *)win95int14_asm+3=((DWORD)(win95int14))&0xffff;
+		_dos_setvect(0x14,(void(interrupt *)())win95int14_asm);
+#else
+		_dos_setvect(0x14,(void(interrupt *)())win95int14);
+#endif
+	}
 
 	_heapmin();
 	i=_spawnvp(_P_WAIT, arg[0], arg);
