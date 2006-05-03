@@ -360,7 +360,7 @@ var   UQ_NOUPRLWR	=(1<<19)	/* Don't force upper/lower case strings		*/
 					    		/********************************************/
 
 							    /********************************************/
-							    /* node.settings							*/
+							    /* bbs.node_settings						*/
 							    /********************************************/
 var   NM_ANSALARM	=(1<<0)		/* Alarm locally on answer					*/
 var   NM_WFCSCRN	=(1<<1)		/* Wait for call screen                     */
