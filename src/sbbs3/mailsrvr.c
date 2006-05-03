@@ -3689,30 +3689,33 @@ static void sendmail_thread(void* arg)
 					server=startup->relay_server;
 					port=startup->relay_port;
 				} else {
+					server=p;
 					tp=strrchr(p,':');	/* non-standard SMTP port */
 					if(tp!=NULL) {
 						*tp=0;
 						port=atoi(tp+1);
 					}
-					get_dns_server(dns_server,sizeof(dns_server));
-					if((dns=resolve_ip(dns_server))==INADDR_NONE) {
-						remove_msg_intransit(&smb,&msg);
-						lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
-							,dns_server);
-						continue;
+					if(port==0) {	/* No port specified, use MX look-up */
+						get_dns_server(dns_server,sizeof(dns_server));
+						if((dns=resolve_ip(dns_server))==INADDR_NONE) {
+							remove_msg_intransit(&smb,&msg);
+							lprintf(LOG_WARNING,"0000 !SEND INVALID DNS server address: %s"
+								,dns_server);
+							continue;
+						}
+						lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,dns_server);
+						if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
+							,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
+							,TIMEOUT_THREAD_WAIT/2))!=0) {
+							remove_msg_intransit(&smb,&msg);
+							lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
+								,i,p,startup->dns_server);
+							SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
+							bounce(&smb,&msg,err,FALSE);
+							continue;
+						}
+						server=mx;
 					}
-					lprintf(LOG_DEBUG,"0000 SEND getting MX records for %s from %s",p,dns_server);
-					if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
-						,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
-						,TIMEOUT_THREAD_WAIT/2))!=0) {
-						remove_msg_intransit(&smb,&msg);
-						lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
-							,i,p,startup->dns_server);
-						SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
-						bounce(&smb,&msg,err,FALSE);
-						continue;
-					}
-					server=mx;
 				}
 			}
 			if(!port)
