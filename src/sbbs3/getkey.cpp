@@ -238,9 +238,7 @@ char sbbs_t::getkey(long mode)
 			return(ch); 
 		}
 		if(sys_status&SS_USERON && !(sys_status&SS_LCHAT)) gettimeleft();
-		else if(online &&
-			((cfg.node_dollars_per_call && now-answertime>SEC_BILLING)
-			|| (now-answertime>SEC_LOGON && !(sys_status&SS_LCHAT)))) {
+		else if(online && now-answertime>SEC_LOGON && !(sys_status&SS_LCHAT)) {
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			console|=(CON_R_ECHO|CON_L_ECHO);
 			bputs(text[TakenTooLongToLogon]);

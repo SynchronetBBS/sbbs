@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -127,8 +127,6 @@ bool sbbs_t::answer()
 								logline("+!",str);
 							bputs(text[PasswordPrompt]);
 							console|=CON_R_ECHOX;
-							if(!(cfg.sys_misc&SM_ECHO_PW))
-								console|=CON_L_ECHOX;
 							getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
 							console&=~(CON_R_ECHOX|CON_L_ECHOX);
 						}

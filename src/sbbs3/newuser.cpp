@@ -51,6 +51,7 @@ BOOL sbbs_t::newuser()
 	long	kmode;
 	bool	usa;
 
+#if 0
 	if(cur_rate<cfg.node_minbps) {
 		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
 		sprintf(str,"%stooslow.msg",cfg.text_dir);
@@ -62,6 +63,7 @@ BOOL sbbs_t::newuser()
 		hangup();
 		return(FALSE); 
 	}
+#endif
 
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(thisnode.misc&NODE_LOCK) {
@@ -395,8 +397,6 @@ BOOL sbbs_t::newuser()
 		while(online) {
 			bprintf(text[NewUserPasswordVerify]);
 			console|=CON_R_ECHOX;
-			if(!(cfg.sys_misc&SM_ECHO_PW))
-				console|=CON_L_ECHOX;
 			str[0]=0;
 			getstr(str,LEN_PASS,K_UPPER);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);

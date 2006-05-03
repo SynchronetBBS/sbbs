@@ -1187,8 +1187,6 @@ void sbbs_t::change_user(void)
 			getuserrec(&cfg,i,U_PASS,8,tmp);
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
-			if(!(cfg.sys_misc&SM_ECHO_PW))
-				console|=CON_L_ECHOX;
 			getstr(str,8,K_UPPER);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			if(strcmp(str,tmp))

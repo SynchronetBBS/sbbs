@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -421,7 +421,6 @@ option to No.
 					,cfg.sec_warn);
 				sprintf(opt[i++],"%-27.27s%u seconds","Inactivity Disconnection"
 					,cfg.sec_hangup);
-				sprintf(tmp,"$%d.00",cfg.node_dollars_per_call);
 				sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
 				sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 				opt[i][0]=0;
