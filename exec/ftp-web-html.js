@@ -51,7 +51,7 @@ writeln("</title>");
 writeln("<meta name='GENERATOR' content='" + system.version + "'>");
 // The following line is necessary for IBM extended-ASCII in descriptions 
 writeln("<meta http-equiv='Content-Type' content='text/html; charset=IBM437'>");
-writeln('<link rel="stylesheet" type="text/css" href="http://' + format("%s:%u",system.host_name, http_port) + '/synchronet.css">');
+writeln('<link rel="stylesheet" type="text/css" href="http://' + format("%s:%u",system.host_name, http_port) + '/default.css">');
 
 writeln("</head>");
 writeln('<body style="background-image: url(http://' + format("%s:%u",system.host_name, http_port) +'/images/default/bg_grad.jpg)";>');
