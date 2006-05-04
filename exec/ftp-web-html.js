@@ -29,16 +29,12 @@ if(client.socket.local_port!=21)
 else
     port="";
 
-var hport="";    
-    
 var http_port = 80;
 var file = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
- if(file.open("r")) {
- http_port = file.iniGetValue("web","port",hport);
- file.close();
+if(file.open("r")) {
+	http_port = file.iniGetValue("web","port",80);
+	file.close();
 }
-if(http_port=="80")
-  http_port="";    
     
 writeln('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">');
 writeln("<html>");
@@ -55,10 +51,10 @@ writeln("</title>");
 writeln("<meta name='GENERATOR' content='" + system.version + "'>");
 // The following line is necessary for IBM extended-ASCII in descriptions 
 writeln("<meta http-equiv='Content-Type' content='text/html; charset=IBM437'>");
-writeln('<link rel="stylesheet" type="text/css" href="http://' + format("%s:%s",system.host_name, http_port) + '/synchronet.css">');
+writeln('<link rel="stylesheet" type="text/css" href="http://' + format("%s:%u",system.host_name, http_port) + '/synchronet.css">');
 
 writeln("</head>");
-writeln('<body style="background-image: url(http://' + format("%s:%s",system.host_name, http_port) +'/images/default/bg_grad.jpg)";>');
+writeln('<body style="background-image: url(http://' + format("%s:%u",system.host_name, http_port) +'/images/default/bg_grad.jpg)";>');
 //writeln(font_face);
 
 writeln('<table class="welcome_main" width="95%"><tr><td>');
@@ -186,12 +182,12 @@ if(!(user.security.restrictions&UFLAG_G) && system.matchuser("Guest")) { /* !Gue
 
 writeln('<table align="center" width="100%"  border="0" cellspacing="0" cellpadding="0">');
     writeln('<tr>');
-    writeln('<td style="background-image: url(http://' + format("%s:%s",system.host_name, http_port) + '/images/default/tnav_bg.gif); background-repeat: repeat-x; text-align: left;" width="1%"><img src="http://' + format("%s:%s"
+    writeln('<td style="background-image: url(http://' + format("%s:%u",system.host_name, http_port) + '/images/default/tnav_bg.gif); background-repeat: repeat-x; text-align: left;" width="1%"><img src="http://' + format("%s:%u"
         ,system.host_name
         ,http_port) 
         + '/images/default/tnav_left.gif" width="5" height="32" alt="" /></td>');
     writeln('<td style="background-image: url(http://' 
-        + format("%s:%s",system.host_name, http_port) 
+        + format("%s:%u",system.host_name, http_port) 
         + '/images/default/tnav_bg.gif); background-repeat: repeat-x;">');
         if(ftp.curlib.name==undefined) 
             writeln('<span class="tlink">FTP Server Root</span>');
@@ -210,7 +206,7 @@ if(ftp.curdir.name!=undefined)
 if(ftp.curdir.settings!=undefined && ftp.curdir.settings&DIR_FREE)
     write(" - FREE");
     writeln('</td>');
-    writeln('<td style="background-image: url(http://' + format("%s:%s",system.host_name, http_port) + '/images/default/tnav_bg.gif); background-repeat: repeat-x; text-align: right;" width="1%"><img src="http://' + format("%s:%s",system.host_name, http_port) 
+    writeln('<td style="background-image: url(http://' + format("%s:%u",system.host_name, http_port) + '/images/default/tnav_bg.gif); background-repeat: repeat-x; text-align: right;" width="1%"><img src="http://' + format("%s:%u",system.host_name, http_port) 
         + '/images/default/tnav_right.gif" width="5" height="32" alt="" /></td>');
     writeln('</tr>');
 writeln('</table>');
