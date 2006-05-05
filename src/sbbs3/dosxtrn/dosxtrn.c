@@ -44,6 +44,7 @@
 #include "vdd_func.h"
 #include "execvxd.h"
 #include "isvbop.h"			/* ddk\inc */
+#include "fossdefs.h"
 
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
@@ -63,6 +64,7 @@ BYTE	node_num=0;
 int		mode=0;
 DWORD	nodata=0;
 DWORD	polls_before_yield=10;
+int		revision;
 
 void (interrupt *oldint14)();
 void (interrupt *oldint16)();
@@ -208,24 +210,20 @@ void interrupt winNTint14(
 	WORD			buf_seg;
 	int				wr;
 	vdd_status_t	vdd_status;
-    struct {
-        WORD    info_size;
-        BYTE	curr_fossil;
-        BYTE	curr_rev;
-        DWORD	id_string;
-        WORD	inbuf_size;
-        WORD	inbuf_free;
-        WORD	outbuf_size;
-        WORD	outbuf_free;
-        BYTE	screen_width;
-        BYTE	screen_height;
-        BYTE	baud_rate;
-    } info= { sizeof(info), 5, 1, 0
-				,0,0
-				,0,0
-		        ,80,25
-		        ,1 /* 38400 */
-			};
+    fossil_info_t info = { 
+		 sizeof(info)
+		,FOSSIL_REVISION
+		,revision	/* driver revision */
+		,0			/* ID string pointer */	
+		,0,0		/* receive buffer size/free (overwritten later) */
+		,0,0		/* transmit buffer size/free (overwritten later) */
+        ,80,25		/* screen dimensions */
+					/* port settings (i.e. 38400 N-8-1): */
+        , FOSSIL_BAUD_RATE_38400<<FOSSIL_BAUD_RATE_SHIFT
+		| FOSSIL_PARITY_NONE<<FOSSIL_PARITY_SHIFT
+		| FOSSIL_DATA_BITS_8<<FOSSIL_DATA_BITS_SHIFT
+		| FOSSIL_STOP_BITS_1<<FOSSIL_STOP_BITS_SHIFT
+	};
 
 	switch(_ax>>8) {
 		case 0x00:	/* Initialize/Set baud rate */
@@ -408,9 +406,14 @@ int main(int argc, char **argv)
 	BOOL	success=FALSE;
 	WORD	seg;
 
+	sscanf("$Revision$", "%*s 1.%u", &revision);
+
 	if(argc<2) {
 		fprintf(stderr
-			,"This program is for the internal use of Synchronet BBS only\n");
+			,"Synchronet FOSSIL Driver (DOSXTRN) revision %u - Copyright %s Rob Swindell\n"
+			,revision, __DATE__+7);
+		fprintf(stderr
+			,"usage: dosxtrn <path/dosxtrn.env> [NT|95] [node_num] [mode] [polls_per_yield]\n");
 		return(1);
 	}
 
