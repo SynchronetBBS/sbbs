@@ -1,4 +1,4 @@
-Right-mouse problem
+Right-mouse problem (fixed?)
 Tab setup at start
 Effect thing weird (at startup only?)
 When Set color chosen from menu, top-line "Color" indicator appears - breaking menu
@@ -7,7 +7,6 @@ Load screen is horrible.
 Sauce Setup horrible.
 ESC from drawmode brings up About box (???)
 Fast mouse movement in draw modes leaves holes
-"View in 320x200" option broken... probobly always broken... remove.
 "Skins" to set the attributes and box style?  Some people may LIKE ugly.
 Set the application title to "SyncDraw" or something... currently left blank somehow.
 

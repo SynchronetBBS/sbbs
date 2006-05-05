@@ -27,10 +27,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#ifdef HAS_SVGALIB
-#include <vga.h>
-#endif
-
 #include <stdlib.h>
 #include <sys/types.h>
 
@@ -878,10 +874,6 @@ end:
 	return;
 }
 
-#ifdef HAS_SVGALIB
-#include"include/viewmode.h"
-#endif
-
 void
 setunderground(int Underg, int b)
 {
@@ -1116,11 +1108,6 @@ main(int argnum, char *args[])
 		case 0x7900:	/* ALT-2 */
 			InsCol();
 			break;
-#ifdef HAS_SVGALIB
-		case 0x2f00:	/* ALT-V */
-			viewmode();
-			break;
-#endif
 		case 0x1300:	/* ALT+R UNDO */
 			UndoLast();
 			break;
