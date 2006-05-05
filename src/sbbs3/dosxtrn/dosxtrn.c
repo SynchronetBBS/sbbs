@@ -65,6 +65,7 @@ int		mode=0;
 DWORD	nodata=0;
 DWORD	polls_before_yield=10;
 int		revision;
+char	id_string[128];
 
 void (interrupt *oldint14)();
 void (interrupt *oldint16)();
@@ -305,6 +306,7 @@ void interrupt winNTint14(
 			info.inbuf_free=info.inbuf_size-vdd_status.inbuf_full;
 			info.outbuf_size=vdd_status.outbuf_size;
 			info.outbuf_free=info.outbuf_size-vdd_status.outbuf_full;
+			info.id_string = id_string;
 
 			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0 
 				&& ++nodata>=polls_before_yield)
@@ -408,10 +410,11 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s 1.%u", &revision);
 
+	sprintf(id_string,"Synchronet FOSSIL Driver (DOSXTRN) revision %u", revision);
 	if(argc<2) {
 		fprintf(stderr
-			,"Synchronet FOSSIL Driver (DOSXTRN) revision %u - Copyright %s Rob Swindell\n"
-			,revision, __DATE__+7);
+			,"%s - Copyright %s Rob Swindell\n"
+			,id_string, __DATE__+7);
 		fprintf(stderr
 			,"usage: dosxtrn <path/dosxtrn.env> [NT|95] [node_num] [mode] [polls_per_yield]\n");
 		return(1);
