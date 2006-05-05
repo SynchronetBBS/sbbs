@@ -263,7 +263,7 @@ select_effekt(void)
 				draweffekt(12,11+x,x, "ABCabc123!@# Sample", 0);
 		}
 		ch = newgetch();
-		switch (tolower(ch)) {
+		switch (ch) {
 		case CIO_KEY_MOUSE:
 			getmouse(&me);
 			if(me.event==CIOLIB_BUTTON_3_CLICK)
@@ -278,6 +278,7 @@ select_effekt(void)
 					changecolor(y);
 			}
 			break;
+		case 'C':
 		case 'c':
 			changecolor(y);
 			break;
