@@ -1,14 +1,15 @@
 Right-mouse problem (fixed?)
 Tab setup at start
 Effect thing weird (at startup only?)
+"At start" may actually be "when .synctermrc is created"
 When Set color chosen from menu, top-line "Color" indicator appears - breaking menu
 Everything when chosen from the menu, hides the menu... is this a Good Thing?
-Load screen is horrible.
-Sauce Setup horrible.
+Load screen is horrible
+Sauce Setup horrible
 Help screen is horrible too
 ESC from drawmode brings up About box (???)
 Fast mouse movement in draw modes leaves holes
-"Skins" to set the attributes and box style?  Some people may LIKE ugly.
-Set the application title to "SyncDraw" or something... currently left blank somehow.
+"Skins" to set the attributes and box style?  Some people may LIKE ugly
+Set the application title to "SyncDraw" or something... currently left blank somehow
+syncdraw.config should become syncdraw.ini
 
-"At start" may actually be "when .synctermrc is created"
