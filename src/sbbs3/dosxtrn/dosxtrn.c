@@ -253,8 +253,8 @@ void interrupt winNTint14(
 				vdd_op(VDD_YIELD);
 			break;
 		case 0x04:	/* initialize */
-			_ax=0x1954;	/* magic number = success */
-			_bx=0x051B;	/* FOSSIL rev/maximum FOSSIL func supported */
+			_ax=FOSSIL_SIGNATURE;	/* magic number = success */
+			_bx=FOSSIL_REVISION<<8 | FOSSIL_FUNC_HIGHEST;	/* FOSSIL rev/maximum FOSSIL func supported */
 			break;
         case 0x08:	/* flush output buffer	*/
 			break;
@@ -469,9 +469,9 @@ int main(int argc, char **argv)
 	((BYTE*)int14stub)[3] = 0x90;	/* NOP */
 	((BYTE*)int14stub)[4] = 0x90;	/* NOP */
 	((BYTE*)int14stub)[5] = 0x90;	/* NOP */
-	((BYTE*)int14stub)[6] = 0x54;	/* FOSSIL sig */
-	((BYTE*)int14stub)[7] = 0x19;	/* FOSSIL sig */
-	((BYTE*)int14stub)[8] = 0x1B;	/* FOSSIL highest func supported */
+	((BYTE*)int14stub)[6] = FOSSIL_SIGNATURE&0xff;	/* FOSSIL sig (LSB) */
+	((BYTE*)int14stub)[7] = FOSSIL_SIGNATURE>>8;	/* FOSSIL sig (MSB) */
+	((BYTE*)int14stub)[8] = FOSSIL_FUNC_HIGHEST;	/* FOSSIL highest func supported */
 
 	if(NT) {	/* Windows NT/2000 */
 
