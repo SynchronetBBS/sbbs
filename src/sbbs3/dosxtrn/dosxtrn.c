@@ -217,12 +217,12 @@ void interrupt winNTint14(
 		,0			/* ID string pointer */	
 		,0,0		/* receive buffer size/free (overwritten later) */
 		,0,0		/* transmit buffer size/free (overwritten later) */
-        ,80,25		/* screen dimensions */
+        ,80,25		/* screen dimensions (cols, rows) */
 					/* port settings (i.e. 38400 N-8-1): */
-        , FOSSIL_BAUD_RATE_38400<<FOSSIL_BAUD_RATE_SHIFT
-		| FOSSIL_PARITY_NONE<<FOSSIL_PARITY_SHIFT
-		| FOSSIL_DATA_BITS_8<<FOSSIL_DATA_BITS_SHIFT
-		| FOSSIL_STOP_BITS_1<<FOSSIL_STOP_BITS_SHIFT
+        ,FOSSIL_BAUD_RATE_38400
+		|FOSSIL_PARITY_NONE
+		|FOSSIL_DATA_BITS_8
+		|FOSSIL_STOP_BITS_1
 	};
 
 	switch(_ax>>8) {
