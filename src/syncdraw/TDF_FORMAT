@@ -1,10 +1,14 @@
 <dig dig dig>
 It does use pascal strings...
-struct TDHeader {
-   /* Pascal string [23] - TheDraw Font signature */
+struct TDFileHeader {
+   /* Pascal string [19] - TheDraw Font signature */
    /* There may be unknown data after this string instead of a 23 char string */
    unsigned char    sig_len;
-   char             sig[23];
+   char             sig[19];
+};
+
+struct TDFontHeader {
+   char             bin_sig[4];	/* Binary sig ("\x55\xaa\x00\xff") */
    /* Pascal string [16] - Font name */
    unsigned char    name_len;
    char             name[16];
