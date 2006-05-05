@@ -9,6 +9,14 @@
 #include "options.h"
 #include "miscfunctions.h"
 
+enum {
+	 MOVE_NONE
+	,MOVE_UP
+	,MOVE_DOWN
+	,MOVE_RIGHT
+	,MOVE_LEFT
+};
+
 void 
 addlinestr(char *bottom, char *top, char *result)
 {
@@ -226,124 +234,124 @@ line2str(unsigned char ch, char *buffer)
 {
 	switch (ch) {
 		case 179:
-		strncpy(buffer, "SNSN", 5);
+		strcpy(buffer, "SNSN");
 		break;
 	case 180:
-		strncpy(buffer, "SNSS", 5);
+		strcpy(buffer, "SNSS");
 		break;
 	case 191:
-		strncpy(buffer, "NNSS", 5);
+		strcpy(buffer, "NNSS");
 		break;
 	case 217:
-		strncpy(buffer, "SNNS", 5);
+		strcpy(buffer, "SNNS");
 		break;
 	case 192:
-		strncpy(buffer, "SSNN", 5);
+		strcpy(buffer, "SSNN");
 		break;
 	case 218:
-		strncpy(buffer, "NSSN", 5);
+		strcpy(buffer, "NSSN");
 		break;
 	case 193:
-		strncpy(buffer, "SSNS", 5);
+		strcpy(buffer, "SSNS");
 		break;
 	case 194:
-		strncpy(buffer, "NSSS", 5);
+		strcpy(buffer, "NSSS");
 		break;
 	case 195:
-		strncpy(buffer, "SSSN", 5);
+		strcpy(buffer, "SSSN");
 		break;
 	case 196:
-		strncpy(buffer, "NSNS", 5);
+		strcpy(buffer, "NSNS");
 		break;
 	case 197:
-		strncpy(buffer, "SSSS", 5);
+		strcpy(buffer, "SSSS");
 		break;
 	case 181:
-		strncpy(buffer, "SNSD", 5);
+		strcpy(buffer, "SNSD");
 		break;
 	case 184:
-		strncpy(buffer, "NNSD", 5);
+		strcpy(buffer, "NNSD");
 		break;
 	case 190:
-		strncpy(buffer, "SNND", 5);
+		strcpy(buffer, "SNND");
 		break;
 	case 212:
-		strncpy(buffer, "SDNN", 5);
+		strcpy(buffer, "SDNN");
 		break;
 	case 213:
-		strncpy(buffer, "NDSN", 5);
+		strcpy(buffer, "NDSN");
 		break;
 	case 207:
-		strncpy(buffer, "SDND", 5);
+		strcpy(buffer, "SDND");
 		break;
 	case 209:
-		strncpy(buffer, "NDSD", 5);
+		strcpy(buffer, "NDSD");
 		break;
 	case 198:
-		strncpy(buffer, "SDSN", 5);
+		strcpy(buffer, "SDSN");
 		break;
 	case 216:
-		strncpy(buffer, "SDSD", 5);
+		strcpy(buffer, "SDSD");
 		break;
 	case 182:
-		strncpy(buffer, "DNDS", 5);
+		strcpy(buffer, "DNDS");
 		break;
 	case 183:
-		strncpy(buffer, "NNDS", 5);
+		strcpy(buffer, "NNDS");
 		break;
 	case 189:
-		strncpy(buffer, "DNNS", 5);
+		strcpy(buffer, "DNNS");
 		break;
 	case 211:
-		strncpy(buffer, "DSNN", 5);
+		strcpy(buffer, "DSNN");
 		break;
 	case 214:
-		strncpy(buffer, "NSDN", 5);
+		strcpy(buffer, "NSDN");
 		break;
 	case 208:
-		strncpy(buffer, "DSNS", 5);
+		strcpy(buffer, "DSNS");
 		break;
 	case 210:
-		strncpy(buffer, "NSDS", 5);
+		strcpy(buffer, "NSDS");
 		break;
 	case 199:
-		strncpy(buffer, "DSDN", 5);
+		strcpy(buffer, "DSDN");
 		break;
 	case 215:
-		strncpy(buffer, "DSDS", 5);
+		strcpy(buffer, "DSDS");
 		break;
 	case 185:
-		strncpy(buffer, "DNDD", 5);
+		strcpy(buffer, "DNDD");
 		break;
 	case 186:
-		strncpy(buffer, "DNDN", 5);
+		strcpy(buffer, "DNDN");
 		break;
 	case 187:
-		strncpy(buffer, "NNDD", 5);
+		strcpy(buffer, "NNDD");
 		break;
 	case 188:
-		strncpy(buffer, "DNND", 5);
+		strcpy(buffer, "DNND");
 		break;
 	case 200:
-		strncpy(buffer, "DDNN", 5);
+		strcpy(buffer, "DDNN");
 		break;
 	case 201:
-		strncpy(buffer, "NDDN", 5);
+		strcpy(buffer, "NDDN");
 		break;
 	case 202:
-		strncpy(buffer, "DDND", 5);
+		strcpy(buffer, "DDND");
 		break;
 	case 203:
-		strncpy(buffer, "NDDD", 5);
+		strcpy(buffer, "NDDD");
 		break;
 	case 204:
-		strncpy(buffer, "DDDN", 5);
+		strcpy(buffer, "DDDN");
 		break;
 	case 205:
-		strncpy(buffer, "NDND", 5);
+		strcpy(buffer, "NDND");
 		break;
 	case 206:
-		strncpy(buffer, "DDDD", 5);
+		strcpy(buffer, "DDDD");
 		break;
 	default:
 		buffer[0] = 0;
@@ -365,7 +373,7 @@ addtopage(int y, int x, char ch)
 void 
 drawline(void)
 {
-	int             a=0, b=0, c=0, d=0, ch, maxy = 22;
+	int             mv=MOVE_NONE, lmv=MOVE_NONE, ch, maxy = 22;
 	struct			text_info	ti;
 	struct			mouse_event	me;
 
@@ -391,16 +399,16 @@ drawline(void)
 			getmouse(&me);
 		switch (ch) {
 		case CIO_KEY_DOWN:
-			a = 1;
+			mv=MOVE_DOWN;
 			break;
 		case CIO_KEY_UP:
-			a = -1;
+			mv=MOVE_UP;
 			break;
 		case CIO_KEY_LEFT:
-			b = -1;
+			mv=MOVE_LEFT;
 			break;
 		case CIO_KEY_RIGHT:
-			b = 1;
+			mv=MOVE_RIGHT;
 			break;
 		}
 		if (CursorY > maxy) {
@@ -411,67 +419,116 @@ drawline(void)
 			LastLine = CursorY;
 		}
 		CursorCheck();
-		switch (a) {
-		case 1:
-			Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
-			if (d == -1)
-				addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][0]);
-			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][0]; */
-			else
-			if (d == 1)
-				addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][1]);
-			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][1]; */
-			else
-			addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][5]);
-			/*Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2] = CharSet[ActiveCharset][5]; */
+		switch (mv) {
+		case MOVE_UP:
+			switch(lmv) {
+				case MOVE_NONE:
+					Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][5]);
+					break;
+				case MOVE_UP:
+					Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][5]);
+					break;
+				case MOVE_DOWN:
+#if 0
+					Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][5]);
+#endif
+					break;
+				case MOVE_LEFT:
+					Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][2]);
+					break;
+				case MOVE_RIGHT:
+					Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][3]);
+					break;
+			}
 			break;
-		case -1:
-			Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2 + 1] = Attribute;
-			if (d == -1)
-				addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][2]);
-			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][2]; */
-			else
-			if (d == 1)
-				addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][3]);
-			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][3]; */
-			else
-			addtopage(CursorY + FirstLine + 1, CursorX * 2, CharSet[ActiveCharset][5]);
-			/*Screen[ActivePage][CursorY + FirstLine + 1][CursorX * 2] = CharSet[ActiveCharset][5]; */
+		case MOVE_DOWN:
+			switch(lmv) {
+				case MOVE_NONE:
+					Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][5]);
+					break;
+				case MOVE_UP:
+#if 0
+					Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][5]);
+#endif
+					break;
+				case MOVE_DOWN:
+					Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][5]);
+					break;
+				case MOVE_LEFT:
+					Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][0]);
+					break;
+				case MOVE_RIGHT:
+					Screen[ActivePage][CursorY + FirstLine - 1][CursorX * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine - 1, CursorX * 2, CharSet[ActiveCharset][1]);
+					break;
+			}
+			break;
+		case MOVE_LEFT:
+			switch(lmv) {
+				case MOVE_NONE:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX + 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX + 1) * 2, CharSet[ActiveCharset][4]);
+					break;
+				case MOVE_UP:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX + 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX + 1) * 2, CharSet[ActiveCharset][1]);
+					break;
+				case MOVE_DOWN:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX + 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX + 1) * 2, CharSet[ActiveCharset][3]);
+					break;
+				case MOVE_LEFT:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX + 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX + 1) * 2, CharSet[ActiveCharset][4]);
+					break;
+				case MOVE_RIGHT:
+#if 0
+					Screen[ActivePage][CursorY + FirstLine][(CursorX + 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX + 1) * 2, CharSet[ActiveCharset][4]);
+#endif
+					break;
+			}
+			break;
+		case MOVE_RIGHT:
+			switch(lmv) {
+				case MOVE_NONE:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX - 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX - 1) * 2, CharSet[ActiveCharset][4]);
+					break;
+				case MOVE_UP:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX - 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX - 1) * 2, CharSet[ActiveCharset][0]);
+					break;
+				case MOVE_DOWN:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX - 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX - 1) * 2, CharSet[ActiveCharset][2]);
+					break;
+				case MOVE_LEFT:
+#if 0
+					Screen[ActivePage][CursorY + FirstLine][(CursorX - 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX - 1) * 2, CharSet[ActiveCharset][4]);
+#endif
+					break;
+				case MOVE_RIGHT:
+					Screen[ActivePage][CursorY + FirstLine][(CursorX - 1) * 2 + 1] = Attribute;
+					addtopage(CursorY + FirstLine, (CursorX - 1) * 2, CharSet[ActiveCharset][4]);
+					break;
+			}
 			break;
 		}
-		switch (b) {
-		case 1:
-			Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 1] = Attribute;
-			if (c == 1)
-				addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][2]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][2]; */
-			else
-			if (c == -1)
-				addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][0]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][0]; */
-			else
-			addtopage(CursorY + FirstLine, CursorX * 2 - 2, CharSet[ActiveCharset][4]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 - 2] = CharSet[ActiveCharset][4]; */
-			break;
-
-		case -1:
-			Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 3] = Attribute;
-			if (c == 1)
-				addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][3]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][3]; */
-			else
-			if (c == -1)
-				addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][1]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][1]; */
-			else
-			addtopage(CursorY + FirstLine, CursorX * 2 + 2, CharSet[ActiveCharset][4]);
-			/*Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 2] = CharSet[ActiveCharset][4]; */
-			break;
+		if(mv != MOVE_NONE) {
+			lmv=mv;
+			mv=MOVE_NONE;
 		}
-		c = a;
-		d = b;
-		a = 0;
-		b = 0;
 		Statusline();
 		ShowScreen(0, 1);
 		Colors(Attribute);
