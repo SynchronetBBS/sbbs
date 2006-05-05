@@ -1101,114 +1101,105 @@ main(int argnum, char *args[])
 				a=27;;
 		}
 		switch (a) {
+		case CIO_KEY_MOUSE:
+			getmouse(&me);
+			break;
+		case 0x2c00:	/* ALT+Z - Blink on\off */
+			Attribute ^= 128;
+			break;
+		case 0x2500:	/* ALT+P - ASCII Chart */
+			putchacter(asciitable());
+			break;
+		case 0x7800:	/* ALT-1 */
+			DelCol();
+			break;
+		case 0x7900:	/* ALT-2 */
+			InsCol();
+			break;
+#ifdef HAS_SVGALIB
+		case 0x2f00:	/* ALT-V */
+			viewmode();
+			break;
+#endif
+		case 0x1300:	/* ALT+R UNDO */
+			UndoLast();
+			break;
+		case 0x2200:	/* ALT-G */
+			global();
+			break;
+		case 0x1600:	/* ALT+U PiCKUP COLOR */
+			Attribute = Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 1];
+			break;
+		case 0x1100:	/* ALT-W */
+			SelectOutline();
+			break;
+		case 0x1700:	/* ALT+I InsLine */
+			InsLine();
+			break;
+		case 0x1500:	/* ALT+Y - DelLine */
+			DelLine();
+			break;
+		case 0x1200:	/* ALT+E - Elite */
+			EliteMode = !EliteMode;
+			break;
+		case 0x2d00:	/* ALT+X - Exit */
+			exitprg();
+			break;
+		case 0x1e00:	/* ALT+A - Color */
+			Attribute = SelectColor();
+			break;
+		case 0x3100:	/* ALT+N - Font Mode */
+			FontMode = !FontMode;
+			Undo = 0;
+			SaveScreen();
+			break;
+		case 0x1f00:	/* ALT-S */
+			save();
+			break;
+		case 0x2e00:	/* ALT+C - ClearScreen */
+			ClearScreen();
+			break;
+		case 0x2600:	/* ALT-L */
+			load();
+			break;
+		case 0x1900:	/* ALT+P - SetPage */
+			SetPage();
+			break;
+		case 0x1400:	/* ALT-T */
+			tabsetup();
+			break;
+		case 0x2300:	/* alt+h help */
+			help();
+			break;
+		case 0x8200:	/* alt+- draw mode */
+			drawmode();
+			break;
+		case 0xa500:/* ALT+TAB */
+			CursorX = tabback(CursorX);
+			break;
+		case 0x3000:	/* ALT-B */
+			blockmode();
+			break;
+		case 0x2000:	/* ALT+D Draw Line Mode */
+			drawline();
+			break;
+		case 0x3200:	/* ALT-M */
+			select_effekt();
+			break;
+		case 0x2100:	/* ALT+F - Select Font */
+			a = SelectFont();
+			if (a > 0) {
+				SFont = a;
+				Openfont(SFont);
+			}
+			/* ActiveCharset=SelectCharSet(); */
+			break;
 		case 28:	/* PRiNT SCREEN - Toggle fullscreen on/off */
 			FullScreen = !FullScreen;
 			break;
 		case 27:	/* ESC - Menue Mode  */
-			if(!kbhit())
-				menuemode();
-			else {
-				a = getch();
-				if(a==0 || a==0xff)
-					a|=getch()<<8;
-				switch (tolower(a)) {
-				case CIO_KEY_MOUSE:
-					getmouse(&me);
-					break;
-				case 'z':	/* ALT+Z - Blink on\off */
-					Attribute ^= 128;
-					break;
-				case 'k':	/* ALT+P - ASCII Chart */
-					putchacter(asciitable());
-					break;
-				case '1':
-					DelCol();
-					break;
-				case '2':
-					InsCol();
-					break;
-#ifdef HAS_SVGALIB
-				case 'v':
-					viewmode();
-					break;
-#endif
-				case 'r':	/* ALT+R UNDO */
-					UndoLast();
-					break;
-				case 'g':
-					global          ();
-					break;
-				case 'u':	/* ALT+U PiCKUP COLOR */
-					Attribute = Screen[ActivePage][CursorY + FirstLine][CursorX * 2 + 1];
-					break;
-				case 'w':
-					SelectOutline();
-					break;
-				case 'i':	/* ALT+I InsLine */
-					InsLine();
-					break;
-				case 'y':	/* ALT+Y - DelLine */
-					DelLine();
-					break;
-				case 'e':	/* ALT+E - Elite */
-					EliteMode = !EliteMode;
-					break;
-				case 'x':	/* ALT+X - Exit */
-					exitprg();
-					break;
-				case 'a':	/* ALT+A - Color */
-					Attribute = SelectColor();
-					break;
-				case 'n':	/* ALT+N - Font Mode */
-					FontMode = !FontMode;
-					Undo = 0;
-					SaveScreen();
-					break;
-				case 's':
-					save();
-					break;
-				case 'c':	/* ALT+C - ClearScreen */
-					ClearScreen();
-					break;
-				case 'l':
-					load();
-					break;
-				case 'p':	/* ALT+P - SetPage */
-					SetPage();
-					break;
-				case 't':
-					tabsetup();
-					break;
-				case 'h':	/* alt+h help */
-					help();
-					break;
-				case '-':	/* alt+- draw mode */
-					drawmode();
-					break;
-				case 9:/* ALT+TAB */
-					CursorX = tabback(CursorX);
-					break;
-				case 'b':
-					blockmode();
-					break;
-				case 'd':	/* ALT+D Draw Line Mode */
-					drawline();
-					break;
-				case 'm':
-					select_effekt();
-					break;
-				case 'f':	/* ALT+F - Select Font */
-					a = SelectFont();
-					if (a > 0) {
-						SFont = a;
-						Openfont(SFont);
-					}
-					/* ActiveCharset=SelectCharSet(); */
-					break;
-				}
-			}
+			menuemode();
 			break;
-
 		case 1:	/* Next FG Colour */
 			fg = ((Attribute & 128) >> 3) | (Attribute & 15);
 			bg = (Attribute & 112) >> 4;
@@ -1302,9 +1293,9 @@ main(int argnum, char *args[])
 			}
 		}
 		for (b = 1; b <= 10; b++)
-			if (a == CIO_KEY_F(b)) {
-				putchacter(CharSet[ActiveCharset][b - 1]);
-			}
+		if (a == CIO_KEY_F(b)) {
+			putchacter(CharSet[ActiveCharset][b - 1]);
+		}
 		CursorCheck();
 	} while (1 == 1);
 }

@@ -1,8 +1,6 @@
 #include <ciolib.h>
 #include <keys.h>
 
-const char *altkeys="QWERTYUIOP!!!!ASDFGHJKL!!!!!ZXCVBNM";
-
 int 
 newgetch(void)
 {
@@ -11,31 +9,31 @@ newgetch(void)
 	ch = getch();
 	if(ch==0 || ch==0xff)
 		ch|=getch()<<8;
-	if (ch == 10)
-		ch = 13;
-	if (ch == 17)
+	/* Input translation */
+	switch(ch) {
+	case 10:
+		return(13);
+	/* CTRL-x to ALT-Fx for ncurses terminals */
+	case 17:
 		return CIO_KEY_ALT_F(1);
-	if (ch == 23)
+	case 23:
 		return CIO_KEY_ALT_F(2);
-	if (ch == 5)
+	case 5:
 		return CIO_KEY_ALT_F(3);
-	if (ch == 18)
+	case 18:
 		return CIO_KEY_ALT_F(4);
-	if (ch == 20)
+	case 20:
 		return CIO_KEY_ALT_F(5);
-	if (ch == 25)
+	case 25:
 		return CIO_KEY_ALT_F(6);
-	if (ch == 21)
+	case 21:
 		return CIO_KEY_ALT_F(7);
-	if (ch == 9)
+	case 9:
 		return CIO_KEY_ALT_F(8);
-	if (ch == 15)
+	case 15:
 		return CIO_KEY_ALT_F(9);
-	if (ch == 16)
+	case 16:
 		return CIO_KEY_ALT_F(10);
-	if (ch>=0x1000 && ch<=0x3200 && altkeys[(ch>>8)-16]!='!') {
-		ungetch(altkeys[(ch>>8)-16]);
-		return 27;
 	}
 	return ch;
 }
