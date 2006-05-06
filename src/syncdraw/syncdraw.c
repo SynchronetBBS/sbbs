@@ -1152,6 +1152,7 @@ main(int argnum, char *args[])
 			break;
 		case 0x2d00:	/* ALT+X - Exit */
 			exitprg();
+			return(0);
 			break;
 		case 0x1e00:	/* ALT+A - Color */
 			Attribute = SelectColor();

@@ -393,6 +393,5 @@ exitprg(void)
 		clrscr();
 		gotoxy(1, 1);
 		printf("Thanx 4 using this syncdraw\n");
-		exit(0);
 	}
 }
