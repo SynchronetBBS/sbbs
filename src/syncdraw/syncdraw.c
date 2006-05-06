@@ -1047,6 +1047,7 @@ main(int argnum, char *args[])
 	_wscroll=0;
 
 	initciolib(CIOLIB_MODE_AUTO);
+	settitle("SyncDraw");
 
 	CharSet[0] = NCharSet[0];
 	CharSet[1] = NCharSet[1];
