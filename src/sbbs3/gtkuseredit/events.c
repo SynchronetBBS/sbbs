@@ -242,57 +242,78 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		}
 
 		/* Flag Sets */
-		w=glade_xml_get_widget(xml, "eFlagSet1");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the flag set 1 widget\n");
-		else {
-			ltoaf(user.flags1, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+		strcpy(str,"tFlagSet1.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.flags1 & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
-		w=glade_xml_get_widget(xml, "eFlagSet2");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the flag set 2 widget\n");
-		else {
-			ltoaf(user.flags2, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+
+		strcpy(str,"tFlagSet2.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.flags2 & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
-		w=glade_xml_get_widget(xml, "eFlagSet3");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the flag set 3 widget\n");
-		else {
-			ltoaf(user.flags3, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+
+		strcpy(str,"tFlagSet3.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.flags3 & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
-		w=glade_xml_get_widget(xml, "eFlagSet4");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the flag set 4 widget\n");
-		else {
-			ltoaf(user.flags4, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+
+		strcpy(str,"tFlagSet4.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.flags4 & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
 
 		/* Exemptions */
-		w=glade_xml_get_widget(xml, "eExemptions");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the exemptions widget\n");
-		else {
-			ltoaf(user.exempt, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+		strcpy(str,"tExemptions.");
+		for(i=0;i<26;i++) {
+			str[11]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.exempt & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
 
 		/* Restrictions */
-		w=glade_xml_get_widget(xml, "eRestrictions");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the restrictions widget\n");
-		else {
-			ltoaf(user.rest, str);
-			truncsp(str);
-			gtk_entry_set_text(GTK_ENTRY(w),str);
+		strcpy(str,"tRestrictions.");
+		for(i=0;i<26;i++) {
+			str[13]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				b = (user.rest & (1L << i)) != 0;
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),b);
+			}
 		}
 
 		/* Credits */
