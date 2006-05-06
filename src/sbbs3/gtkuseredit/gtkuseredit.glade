@@ -165,6 +165,7 @@
 	  <child>
 	    <widget class="GtkToolButton" id="bSaveUser">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="label" translatable="yes">Save</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-save</property>
@@ -335,6 +336,7 @@
 	      <property name="invisible_char">*</property>
 	      <property name="activates_default">False</property>
 	      <property name="width_chars">25</property>
+	      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:20:53 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
@@ -373,7 +375,7 @@
 		  <property name="n_columns">4</property>
 		  <property name="homogeneous">False</property>
 		  <property name="row_spacing">0</property>
-		  <property name="column_spacing">0</property>
+		  <property name="column_spacing">10</property>
 
 		  <child>
 		    <widget class="GtkLabel" id="label16">
@@ -701,6 +703,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">25</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:20:15 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -735,12 +738,13 @@
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
 			  <property name="visibility">True</property>
-			  <property name="max_length">0</property>
+			  <property name="max_length">24</property>
 			  <property name="text" translatable="yes"></property>
 			  <property name="has_frame">True</property>
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
-			  <property name="width_chars">30</property>
+			  <property name="width_chars">25</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:20:44 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -781,6 +785,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">60</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:04 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -821,6 +826,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">12</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:16 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -861,6 +867,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">30</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:26 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -901,6 +908,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">60</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:34 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -941,6 +949,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">1</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:44 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -981,6 +990,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">8</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:21:59 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1021,6 +1031,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">8</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:09 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1061,6 +1072,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">8</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:18 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1101,6 +1113,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">8</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:28 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1180,6 +1193,7 @@
 				  <property name="invisible_char">*</property>
 				  <property name="activates_default">False</property>
 				  <property name="width_chars">30</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:39 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">0</property>
@@ -1203,6 +1217,7 @@
 				  <property name="invisible_char">*</property>
 				  <property name="activates_default">False</property>
 				  <property name="width_chars">10</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:57 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
@@ -1226,6 +1241,7 @@
 				  <property name="invisible_char">*</property>
 				  <property name="activates_default">False</property>
 				  <property name="width_chars">30</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:22:48 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">0</property>
@@ -1327,7 +1343,7 @@
 		  <property name="n_columns">2</property>
 		  <property name="homogeneous">False</property>
 		  <property name="row_spacing">0</property>
-		  <property name="column_spacing">0</property>
+		  <property name="column_spacing">10</property>
 
 		  <child>
 		    <widget class="GtkLabel" id="label26">
@@ -1420,17 +1436,17 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="eCredits">
+			<widget class="GtkSpinButton" id="sCredits">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">10</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
-			  <property name="width_chars">10</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			  <property name="snap_to_ticks">False</property>
+			  <property name="wrap">False</property>
+			  <property name="adjustment">1 0 4294969856 1000 100000 100000</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:29:42 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1459,17 +1475,17 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="eFreeCredits">
+			<widget class="GtkSpinButton" id="sFreeCredits">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">10</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
-			  <property name="width_chars">10</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			  <property name="snap_to_ticks">False</property>
+			  <property name="wrap">False</property>
+			  <property name="adjustment">1 0 4294969856 1000 100000 100000</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:29:53 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1499,17 +1515,17 @@
 		      <property name="spacing">0</property>
 
 		      <child>
-			<widget class="GtkEntry" id="eMinutes">
+			<widget class="GtkSpinButton" id="sMinutes">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="editable">True</property>
-			  <property name="visibility">True</property>
-			  <property name="max_length">10</property>
-			  <property name="text" translatable="yes"></property>
-			  <property name="has_frame">True</property>
-			  <property name="invisible_char">*</property>
-			  <property name="activates_default">False</property>
-			  <property name="width_chars">10</property>
+			  <property name="climb_rate">1</property>
+			  <property name="digits">0</property>
+			  <property name="numeric">True</property>
+			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			  <property name="snap_to_ticks">False</property>
+			  <property name="wrap">False</property>
+			  <property name="adjustment">1 0 4294967296 1000 100000 100000</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:30:04 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1545,7 +1561,7 @@
 		<widget class="GtkHBox" id="hbox21">
 		  <property name="visible">True</property>
 		  <property name="homogeneous">False</property>
-		  <property name="spacing">0</property>
+		  <property name="spacing">10</property>
 
 		  <child>
 		    <widget class="GtkLabel" id="label22">
@@ -1573,17 +1589,17 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkEntry" id="eLevel">
+		    <widget class="GtkSpinButton" id="sLevel">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
-		      <property name="editable">True</property>
-		      <property name="visibility">True</property>
-		      <property name="max_length">3</property>
-		      <property name="text" translatable="yes"></property>
-		      <property name="has_frame">True</property>
-		      <property name="invisible_char">*</property>
-		      <property name="activates_default">False</property>
-		      <property name="width_chars">3</property>
+		      <property name="climb_rate">1</property>
+		      <property name="digits">0</property>
+		      <property name="numeric">True</property>
+		      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+		      <property name="snap_to_ticks">False</property>
+		      <property name="wrap">False</property>
+		      <property name="adjustment">10 0 99 1 10 10</property>
+		      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:17:08 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1629,6 +1645,7 @@
 		      <property name="invisible_char">*</property>
 		      <property name="activates_default">False</property>
 		      <property name="width_chars">8</property>
+		      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:27:38 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -1653,7 +1670,7 @@
 		  <property name="n_columns">2</property>
 		  <property name="homogeneous">False</property>
 		  <property name="row_spacing">0</property>
-		  <property name="column_spacing">0</property>
+		  <property name="column_spacing">10</property>
 
 		  <child>
 		    <widget class="GtkLabel" id="label29">
@@ -1729,6 +1746,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">26</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:28:21 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1768,6 +1786,7 @@
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
 			  <property name="width_chars">26</property>
+			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:30:08 GMT"/>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -1825,7 +1844,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label31">
@@ -1951,6 +1970,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">26</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:27:46 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -1973,6 +1993,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">26</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:28:04 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -1995,6 +2016,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">26</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:28:12 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2017,6 +2039,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">26</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:27:55 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2134,7 +2157,7 @@
 			      <property name="n_columns">2</property>
 			      <property name="homogeneous">False</property>
 			      <property name="row_spacing">0</property>
-			      <property name="column_spacing">0</property>
+			      <property name="column_spacing">10</property>
 
 			      <child>
 				<widget class="GtkLabel" id="label55">
@@ -2221,63 +2244,113 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eDownloadsTotal">
+				<widget class="GtkHBox" id="hbox37">
 				  <property name="visible">True</property>
-				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkSpinButton" id="sDownloadsTotal">
+				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
+				      <property name="climb_rate">1</property>
+				      <property name="digits">0</property>
+				      <property name="numeric">True</property>
+				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				      <property name="snap_to_ticks">False</property>
+				      <property name="wrap">False</property>
+				      <property name="adjustment">0 0 65535 1 100 100</property>
+				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:50:57 GMT"/>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <placeholder/>
+				  </child>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
 				  <property name="right_attach">2</property>
 				  <property name="top_attach">0</property>
 				  <property name="bottom_attach">1</property>
-				  <property name="x_options"></property>
-				  <property name="y_options"></property>
+				  <property name="y_options">fill</property>
 				</packing>
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eDownloadsBytes">
+				<widget class="GtkHBox" id="hbox38">
 				  <property name="visible">True</property>
-				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkSpinButton" id="sDownloadsBytes">
+				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
+				      <property name="climb_rate">1</property>
+				      <property name="digits">0</property>
+				      <property name="numeric">True</property>
+				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				      <property name="snap_to_ticks">False</property>
+				      <property name="wrap">False</property>
+				      <property name="adjustment">0 0 4294967296 1000 100000 100000</property>
+				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:51:11 GMT"/>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <placeholder/>
+				  </child>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
 				  <property name="right_attach">2</property>
 				  <property name="top_attach">1</property>
 				  <property name="bottom_attach">2</property>
-				  <property name="x_options"></property>
-				  <property name="y_options"></property>
+				  <property name="x_options">fill</property>
+				  <property name="y_options">fill</property>
 				</packing>
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eDownloadsLeech">
+				<widget class="GtkHBox" id="hbox39">
 				  <property name="visible">True</property>
-				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkSpinButton" id="sDownloadsLeech">
+				      <property name="visible">True</property>
+				      <property name="can_focus">True</property>
+				      <property name="climb_rate">1</property>
+				      <property name="digits">0</property>
+				      <property name="numeric">True</property>
+				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				      <property name="snap_to_ticks">False</property>
+				      <property name="wrap">False</property>
+				      <property name="adjustment">0 0 255 1 10 10</property>
+				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:52:35 GMT"/>
+				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
+				  </child>
+
+				  <child>
+				    <placeholder/>
+				  </child>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
@@ -2349,7 +2422,7 @@
 			      <property name="n_columns">2</property>
 			      <property name="homogeneous">False</property>
 			      <property name="row_spacing">0</property>
-			      <property name="column_spacing">0</property>
+			      <property name="column_spacing">10</property>
 
 			      <child>
 				<widget class="GtkLabel" id="label58">
@@ -2436,17 +2509,17 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eEmailTotal">
+				<widget class="GtkSpinButton" id="sEmailTotal">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:58:38 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
@@ -2459,17 +2532,17 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eEmailToday">
+				<widget class="GtkSpinButton" id="sEmailToday">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:58:52 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
@@ -2482,17 +2555,17 @@
 			      </child>
 
 			      <child>
-				<widget class="GtkEntry" id="eEmailToSysop">
+				<widget class="GtkSpinButton" id="sEmailToSysop">
 				  <property name="visible">True</property>
 				  <property name="can_focus">True</property>
-				  <property name="editable">True</property>
-				  <property name="visibility">True</property>
-				  <property name="max_length">10</property>
-				  <property name="text" translatable="yes"></property>
-				  <property name="has_frame">True</property>
-				  <property name="invisible_char">*</property>
-				  <property name="activates_default">False</property>
-				  <property name="width_chars">10</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:59:55 GMT"/>
 				</widget>
 				<packing>
 				  <property name="left_attach">1</property>
@@ -2573,7 +2646,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label49">
@@ -2688,17 +2761,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTotalTimeOn">
+			    <widget class="GtkSpinButton" id="sTotalTimeOn">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:45:38 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2711,17 +2784,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTimeOnToday">
+			    <widget class="GtkSpinButton" id="sTimeOnToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:47:02 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2734,17 +2807,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTimeOnLastCall">
+			    <widget class="GtkSpinButton" id="sTimeOnLastCall">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:47:22 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2757,17 +2830,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTimeOnExtra">
+			    <widget class="GtkSpinButton" id="sTimeOnExtra">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:48:51 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -2841,7 +2914,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label47">
@@ -2900,48 +2973,81 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTotalUploads">
+			    <widget class="GtkHBox" id="hbox35">
 			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">0</property>
+
+			      <child>
+				<widget class="GtkSpinButton" id="sTotalUploads">
+				  <property name="visible">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:20 GMT"/>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<placeholder/>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
 			      <property name="right_attach">2</property>
 			      <property name="top_attach">0</property>
 			      <property name="bottom_attach">1</property>
-			      <property name="x_options"></property>
-			      <property name="y_options"></property>
+			      <property name="y_options">fill</property>
 			    </packing>
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eUploadBytes">
+			    <widget class="GtkHBox" id="hbox36">
 			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">10</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">10</property>
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">0</property>
+
+			      <child>
+				<widget class="GtkSpinButton" id="sUploadBytes">
+				  <property name="visible">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">0 0 4294967296 1000 100000 100000</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:11 GMT"/>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<placeholder/>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
 			      <property name="right_attach">2</property>
 			      <property name="top_attach">1</property>
 			      <property name="bottom_attach">2</property>
-			      <property name="x_options"></property>
-			      <property name="y_options"></property>
+			      <property name="x_options">fill</property>
+			      <property name="y_options">fill</property>
 			    </packing>
 			  </child>
 			</widget>
@@ -3007,7 +3113,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label41">
@@ -3049,6 +3155,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">8</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:30:59 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3100,6 +3207,7 @@
 			      <property name="invisible_char">*</property>
 			      <property name="activates_default">False</property>
 			      <property name="width_chars">8</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:31:07 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3173,7 +3281,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label43">
@@ -3232,17 +3340,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eLogonsTotal">
+			    <widget class="GtkSpinButton" id="sLogonsTotal">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">5</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">5</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:37:32 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3255,17 +3363,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eLogonsToday">
+			    <widget class="GtkSpinButton" id="sLogonsToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">5</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">5</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:49 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3339,7 +3447,7 @@
 			  <property name="n_columns">2</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">0</property>
-			  <property name="column_spacing">0</property>
+			  <property name="column_spacing">10</property>
 
 			  <child>
 			    <widget class="GtkLabel" id="label45">
@@ -3398,17 +3506,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="eTotalPosts">
+			    <widget class="GtkSpinButton" id="sTotalPosts">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">5</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">5</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:41 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3421,17 +3529,17 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkEntry" id="ePostsToday">
+			    <widget class="GtkSpinButton" id="sPostsToday">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">5</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			      <property name="width_chars">5</property>
+			      <property name="climb_rate">1</property>
+			      <property name="digits">0</property>
+			      <property name="numeric">True</property>
+			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+			      <property name="snap_to_ticks">False</property>
+			      <property name="wrap">False</property>
+			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:30 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -3576,6 +3684,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:26:59 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3595,6 +3704,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:27:10 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3614,6 +3724,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:27:20 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3633,6 +3744,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:27:32 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3652,6 +3764,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:27:46 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3671,6 +3784,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:27:56 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3690,6 +3804,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:28:05 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3709,6 +3824,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:28:17 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3728,6 +3844,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:28:28 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -3783,17 +3900,17 @@
 				  </child>
 
 				  <child>
-				    <widget class="GtkEntry" id="eRows">
+				    <widget class="GtkSpinButton" id="sRows">
 				      <property name="visible">True</property>
 				      <property name="can_focus">True</property>
-				      <property name="editable">True</property>
-				      <property name="visibility">True</property>
-				      <property name="max_length">3</property>
-				      <property name="text" translatable="yes"></property>
-				      <property name="has_frame">True</property>
-				      <property name="invisible_char">*</property>
-				      <property name="activates_default">False</property>
-				      <property name="width_chars">3</property>
+				      <property name="climb_rate">1</property>
+				      <property name="digits">0</property>
+				      <property name="numeric">True</property>
+				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
+				      <property name="snap_to_ticks">False</property>
+				      <property name="wrap">False</property>
+				      <property name="adjustment">1 0 255 1 10 10</property>
+				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 20:01:37 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="padding">0</property>
@@ -3874,6 +3991,7 @@
 				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
 				  <property name="focus_on_click">True</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:28:51 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -3893,6 +4011,7 @@
 				  <property name="active">False</property>
 				  <property name="inconsistent">False</property>
 				  <property name="draw_indicator">True</property>
+				  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:29:05 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -3998,6 +4117,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:29:24 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4017,6 +4137,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:29:33 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4036,6 +4157,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:29:42 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4055,6 +4177,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:29:51 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4074,6 +4197,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:03 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4170,6 +4294,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:15 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4189,6 +4314,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:24 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4208,6 +4334,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:32 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4227,6 +4354,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:42 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4246,6 +4374,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:30:53 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4396,6 +4525,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:08 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -4415,6 +4545,7 @@
 					      <property name="active">False</property>
 					      <property name="inconsistent">False</property>
 					      <property name="draw_indicator">True</property>
+					      <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:16 GMT"/>
 					    </widget>
 					    <packing>
 					      <property name="padding">0</property>
@@ -4475,6 +4606,7 @@
 				      <property name="items" translatable="yes">Temp</property>
 				      <property name="add_tearoffs">False</property>
 				      <property name="focus_on_click">True</property>
+				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:02 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="padding">0</property>
@@ -4574,6 +4706,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:33 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4593,6 +4726,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:41 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4612,6 +4746,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:51 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4631,6 +4766,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:06 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4650,6 +4786,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:13 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4669,6 +4806,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:21 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4688,6 +4826,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:34 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4707,6 +4846,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:41 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4726,6 +4866,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:33:50 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4745,6 +4886,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:34:02 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4764,6 +4906,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:34:09 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4783,6 +4926,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:34:17 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4892,6 +5036,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:25 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4911,6 +5056,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:33 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4930,6 +5076,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:42 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -4949,6 +5096,7 @@
 					  <property name="active">False</property>
 					  <property name="inconsistent">False</property>
 					  <property name="draw_indicator">True</property>
+					  <signal name="toggled" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:31:53 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -5009,6 +5157,7 @@
 				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
 				  <property name="focus_on_click">True</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:14 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -5065,6 +5214,7 @@
 				  <property name="items" translatable="yes">Temp</property>
 				  <property name="add_tearoffs">False</property>
 				  <property name="focus_on_click">True</property>
+				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 06:32:23 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -5266,6 +5416,7 @@
 		  <property name="activates_default">False</property>
 		  <property name="width_chars">5</property>
 		  <signal name="focus_out_event" handler="current_user_changed" last_modification_time="Fri, 10 Mar 2006 04:46:51 GMT"/>
+		  <signal name="insert_text" handler="digit_insert_text_handler" last_modification_time="Sat, 06 May 2006 07:35:40 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
