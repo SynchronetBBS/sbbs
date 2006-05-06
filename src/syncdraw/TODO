@@ -1,17 +1,18 @@
-Right-mouse problem (fixed?)
-Tab setup at start
-Effect thing weird (at startup only?)
-"At start" may actually be "when .synctermrc is created"
-When Set color chosen from menu, top-line "Color" indicator appears - breaking menu
-Everything when chosen from the menu, hides the menu... is this a Good Thing?
 Load screen is horrible
 Sauce Setup horrible
 Help screen is horrible too
-ESC from drawmode brings up About box (???)
+
+Problems when no .config file exists...
+Tab setup at start
+Effect thing weird (at startup only?)
+syncdraw.config should become syncdraw.ini
+The defaults would also take care of the first two problems.
+
+When Set color chosen from menu, top-line "Color" indicator appears - breaking menu
+ESC from drawmode brings up About box (Fixed?)
 Fast mouse movement in draw modes leaves holes
 "Skins" to set the attributes and box style?  Some people may LIKE ugly
-Set the application title to "SyncDraw" or something... currently left blank somehow
-syncdraw.config should become syncdraw.ini
+
 Properly save 80-column drawings... possibly warn first?
 	Best method (using movement codes) is as follows:
 		At Start of 80-column line:
