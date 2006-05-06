@@ -395,8 +395,11 @@ drawline(void)
 		}
 		while (ch != CIO_KEY_DOWN && ch != CIO_KEY_UP && ch != CIO_KEY_LEFT && ch != CIO_KEY_RIGHT && ch != 27 && ch != CIO_KEY_MOUSE);
 		CursorHandling(ch);
-		if(ch==CIO_KEY_MOUSE)
+		if(ch==CIO_KEY_MOUSE) {
 			getmouse(&me);
+			if(me.event==CIOLIB_BUTTON_3_CLICK)
+				ch=27;
+		}
 		switch (ch) {
 		case CIO_KEY_DOWN:
 			mv=MOVE_DOWN;
@@ -558,8 +561,11 @@ drawmode(void)
 			gotoxy( CursorX+1,CursorY + 1+1);
 		ch = newgetch();
 		CursorHandling(ch);
-		if(ch==CIO_KEY_MOUSE)
+		if(ch==CIO_KEY_MOUSE) {
 			getmouse(&me);
+			if(me.event==CIOLIB_BUTTON_3_CLICK)
+				ch=27;
+		}
 		if (CursorY > maxy) {
 			CursorY = maxy;
 			FirstLine++;

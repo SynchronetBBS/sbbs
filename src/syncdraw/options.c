@@ -115,6 +115,7 @@ clrline(void)
 char 
 ReadChar(void)
 {
+#if 0
 	int             ch, b;
 	struct			text_info	ti;
 	struct			mouse_event	me;
@@ -131,6 +132,9 @@ ReadChar(void)
 				return CharSet[ActiveCharset][b - 1];
 	} while ((ch > 255));
 	return ch;
+#else
+	return(asciitable());
+#endif
 }
 
 void 

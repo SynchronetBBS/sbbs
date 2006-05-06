@@ -935,6 +935,26 @@ asciitable(void)
 			if (x >= 16)
 				x -= 16;
 			break;
+		case CIO_KEY_HOME:
+			if(x)
+				x = (x / 16)*16;
+			break;
+		case CIO_KEY_END:
+			if(x)
+				x = (x / 16)*16;
+			x += 15;
+			break;
+		case CIO_KEY_PPAGE:
+			if(x)
+				x=x % 16;
+			break;
+		case CIO_KEY_NPAGE:
+			if(x)
+				x=x % 16;
+			x+=240;
+			break;
+		default:
+			return(ch);
 		}
 	} while (ch != 27 && ch != 13);
 	if (ch == 13 && x != 127)
