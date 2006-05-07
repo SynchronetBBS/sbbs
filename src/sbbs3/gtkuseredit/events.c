@@ -76,14 +76,16 @@ void load_user(GtkWidget *wiggy, gpointer data)
 	GtkTextIter	start;
 	GtkTextIter	end;
 
-	user.number=current_user;
-	if(user.number < 1 || user.number > totalusers) {
-		fprintf(stderr,"Attempted to load illegal user number %d.\n",user.number);
-		return;
-	}
-	if(getuserdat(&cfg, &user)) {
-		fprintf(stderr,"Error loading user %d.\n",current_user);
-		return;
+	if(current_user != 0) {
+		user.number=current_user;
+		if(user.number < 1 || user.number > totalusers) {
+			fprintf(stderr,"Attempted to load illegal user number %d.\n",user.number);
+			return;
+		}
+		if(getuserdat(&cfg, &user)) {
+			fprintf(stderr,"Error loading user %d.\n",current_user);
+			return;
+		}
 	}
 
 	/* Toolbar indicators */
@@ -845,10 +847,12 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			fprintf(stderr,"Cannot get the alias widget\n");
 		else {
 			strcpy(user.alias, gtk_entry_get_text(GTK_ENTRY(w)));
-			if(user.misc & DELETED)
-				putusername(&cfg, user.number, "");
-			else
-				putusername(&cfg, user.number, user.alias);
+			if(user.number) {
+				if(user.misc & DELETED)
+					putusername(&cfg, user.number, "");
+				else
+					putusername(&cfg, user.number, user.alias);
+			}
 		}
 
 		/* Real Name */
@@ -1775,14 +1779,72 @@ void save_user(GtkWidget *wiggy, gpointer data)
 			fclose(f);
 		}
 
-	putuserdat(&cfg, &user);
-
-	load_user(wiggy, data);
+	if(user.number) {
+		putuserdat(&cfg, &user);
+		load_user(wiggy, data);
+	}
+	else {
+		newuserdat(&cfg, &user);
+		update_current_user(user.number);
+	}
 }
 
 void new_user(GtkWidget *wiggy, gpointer data)
 {
-	/* ToDo */
+	GtkWidget	*eCurrentUser;
+	int			i;
+
+	memset(&user,0,sizeof(user));
+ 
+	/****************/   
+	/* Set Defaults */
+	/****************/
+ 
+	/* security */
+	user.level=cfg.new_level;
+	user.flags1=cfg.new_flags1;
+	user.flags2=cfg.new_flags2;
+	user.flags3=cfg.new_flags3;
+	user.flags4=cfg.new_flags4;
+	user.rest=cfg.new_rest;
+	user.exempt=cfg.new_exempt;
+ 
+	user.cdt=cfg.new_cdt;
+	user.min=cfg.new_min;
+	user.freecdt=cfg.level_freecdtperday[user.level];
+	 
+	if(cfg.total_fcomps)
+		strcpy(user.tmpext,cfg.fcomp[0]->ext);
+	else
+		strcpy(user.tmpext,"ZIP");
+	for(i=0;i<cfg.total_xedits;i++)
+		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit))
+			break;
+	if(i<cfg.total_xedits)
+		user.xedit=i+1;
+	 
+	user.shell=cfg.new_shell;
+	user.misc=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
+	user.misc|=AUTOTERM;    /* No way to frob the default value... */
+	user.qwk=QWK_DEFAULT;
+	user.firston=time(NULL);
+	user.laston=time(NULL);	/* must set this or user may be purged prematurely */
+	user.pwmod=time(NULL);
+	user.sex=' ';
+	user.prot=cfg.new_prot;
+
+	if(cfg.new_expire)
+		user.expire=time(NULL)+((long)cfg.new_expire*24L*60L*60L);
+
+	eCurrentUser=glade_xml_get_widget(xml, "eCurrentUser");
+	if(eCurrentUser==NULL) {
+		fprintf(stderr,"Cannot get the current user widget\n");
+		load_user(wiggy, data);
+		return;
+	}
+	gtk_entry_set_text(GTK_ENTRY(eCurrentUser), "New"	);
+	current_user=0;
+	load_user(wiggy, data);
 }
 
 int update_current_user(int new_user)
