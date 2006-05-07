@@ -20,6 +20,7 @@
 # JSLIB = Full path and filename to JavaScript library.
 # CVSTAG = CVS tag to pull
 # NO_X = Don't include build conio library (ciolib) for X
+# NO_GLADE = Don't build Glade-based sysop tools
 # X_PATH = /path/to/X (if not /usr/X11R6)
 
 ifndef DEBUG
@@ -92,9 +93,16 @@ ifdef X_PATH
  MKFLAGS	+=	X_PATH=$(X_PATH)
 endif
 
+# Check for GLADE
+ifndef NO_GTK
+ ifeq ($(shell pkg-config libglade-2.0 --exists && echo YES),YES)
+  USE_GLADE	:=	YES
+ endif
+endif
+
 all: binaries baja externals
 
-binaries:	sbbs3 scfg umonitor uedit
+binaries:	sbbs3 scfg umonitor uedit gtkuseredit
 
 externals:	sbj sbl dpoker tbd
 
@@ -124,6 +132,11 @@ dpoker:	run
 
 tbd:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+
+gtkuseredit:	src
+ifdef USE_GLADE
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkusereditor $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+endif
 
 install: all
 ifeq ($(INSTALL),UNIX)
@@ -163,6 +176,10 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libservices.so $(SBBSDIR)/exec/libservices.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
+ifdef USE_GLADE
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
+endif
 # kludge... must fix this to allow moz JS libs and such.  ToDo
 	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(BUILD)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
