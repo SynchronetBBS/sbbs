@@ -23,6 +23,23 @@ endif
 
 vpath %.c ..
 
+# Set up LD_RUN_PATH for run-time locating of the .so files
+PWD     :=      $(shell dirname `pwd`)
+ifdef SBBSDIR
+ ifeq ($(os),sunos)
+  LD_RUN_PATH   :=      $(SBBSDIR)/exec:$(PWD)/$(LIBODIR):/opt/sfw/gcc-3/lib
+ else
+  LD_RUN_PATH   :=      $(SBBSDIR)/exec:$(PWD)/$(LIBODIR)
+ endif
+else
+ ifeq ($(os),sunos) 
+  LD_RUN_PATH   :=      $(PWD)/$(LIBODIR):/opt/sfw/gcc-3/lib
+ else
+  LD_RUN_PATH   :=      $(PWD)/$(LIBODIR)
+ endif
+endif
+export LD_RUN_PATH
+
 CFLAGS	+=	$(SBBSDEFS) -I.. $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `pkg-config libglade-2.0 --cflags`
 # Hopefully, -Wl,-E exports all symbols dynamically everywhere.
 LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) `pkg-config libglade-2.0 --libs`
