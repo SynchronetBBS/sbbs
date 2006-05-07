@@ -73,6 +73,8 @@ void load_user(GtkWidget *wiggy, gpointer data)
 	gboolean	b;
 	int			i;
 	FILE		*f;
+	GtkTextIter	start;
+	GtkTextIter	end;
 
 	user.number=current_user;
 	if(user.number < 1 || user.number > totalusers) {
@@ -219,13 +221,6 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		else
 			gtk_entry_set_text(GTK_ENTRY(w),user.zipcode);
 
-		/* Postal/ZIP code */
-		w=glade_xml_get_widget(xml, "eZip");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the postal/zip code widget\n");
-		else
-			gtk_entry_set_text(GTK_ENTRY(w),user.zipcode);
-
 	/* Security Tab */
 		/* Level */
 		w=glade_xml_get_widget(xml, "sLevel");
@@ -364,15 +359,6 @@ void load_user(GtkWidget *wiggy, gpointer data)
 				unixtodstr(&cfg, user.laston, str);
 			else
 				strcpy(str,"Never");
-			gtk_entry_set_text(GTK_ENTRY(w),str);
-		}
-
-		/* First On */
-		w=glade_xml_get_widget(xml, "eFirstOn");
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the first on widget\n");
-		else {
-			unixtodstr(&cfg, user.firston, str);
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
 
@@ -747,7 +733,7 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 		w=glade_xml_get_widget(xml, "cUserQWK_RETCTLA");
 		if(w==NULL)
-			fprintf(stderr,"Cannot get the retail ctrl-a widget\n");
+			fprintf(stderr,"Cannot get the retain ctrl-a widget\n");
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_RETCTLA);
 
@@ -782,10 +768,15 @@ void load_user(GtkWidget *wiggy, gpointer data)
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.qwk&QWK_NOCTRL);
 
 	/* Extended Comment */
+		w=glade_xml_get_widget(xml, "tExtendedComment");
+
+		gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &start);
+		gtk_text_buffer_get_end_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &end);
+		gtk_text_buffer_delete(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &start, &end);
+
 		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 		f=fopen(str,"r");
 		if(f) {
-			w=glade_xml_get_widget(xml, "tExtendedComment");
 			while((i=fread(str,1,sizeof(str),f)))
 				gtk_text_buffer_insert_at_cursor(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), str,i);
 			fclose(f);
@@ -809,6 +800,984 @@ void load_user(GtkWidget *wiggy, gpointer data)
 void save_user(GtkWidget *wiggy, gpointer data)
 {
 	/* ToDo */
+	GtkWidget	*w;
+	char		str[1024];
+	gboolean	b;
+	int			i;
+	FILE		*f;
+	GtkTextIter	start;
+	GtkTextIter	end;
+
+	/* Toolbar indicators */
+		b=user.misc&DELETED?TRUE:FALSE;
+		w=glade_xml_get_widget(xml, "bDelete");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the deleted toolbar widget\n");
+		else {
+			switch(gtk_toggle_tool_button_get_active(GTK_TOGGLE_TOOL_BUTTON(w))) {
+				case 0:
+					user.misc &= ~DELETED;
+					break;
+				default:
+					user.misc |= DELETED;
+			}
+		}
+
+		b=user.misc&INACTIVE?TRUE:FALSE;
+		w=glade_xml_get_widget(xml, "bRemove");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the removed toolbar widget\n");
+		else {
+			switch(gtk_toggle_tool_button_get_active(GTK_TOGGLE_TOOL_BUTTON(w))) {
+				case 0:
+					user.misc &= ~INACTIVE;
+					break;
+				default:
+					user.misc |= INACTIVE;
+			}
+		}
+		
+
+	/* Peronal Tab */
+		/* Alias */
+		w=glade_xml_get_widget(xml, "eUserAlias");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the alias widget\n");
+		else {
+			strcpy(user.alias, gtk_entry_get_text(GTK_ENTRY(w)));
+			if(user.misc & DELETED)
+				putusername(&cfg, user.number, "");
+			else
+				putusername(&cfg, user.number, user.alias);
+		}
+
+		/* Real Name */
+		w=glade_xml_get_widget(xml, "eRealName");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the real name widget\n");
+		else
+			strcpy(user.name, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Computer */
+		w=glade_xml_get_widget(xml, "eComputer");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the computer widget\n");
+		else
+			strcpy(user.comp, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* NetMail */
+		w=glade_xml_get_widget(xml, "eNetMail");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the netmail widget\n");
+		else
+			strcpy(user.netmail, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Phone */
+		w=glade_xml_get_widget(xml, "ePhone");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the phone widget\n");
+		else
+			strcpy(user.phone,gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Note */
+		w=glade_xml_get_widget(xml, "eNote");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the note widget\n");
+		else
+			strcpy(user.note, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Comment */
+		w=glade_xml_get_widget(xml, "eComment");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the comment widget\n");
+		else
+			strcpy(user.comment, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Gender */
+		w=glade_xml_get_widget(xml, "eGender");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the gender widget\n");
+		else
+			user.sex=*(gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Connection */
+		w=glade_xml_get_widget(xml, "eConnection");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the connection widget\n");
+		else
+			strcpy(user.modem, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Chat Handle */
+		w=glade_xml_get_widget(xml, "eHandle");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the handle widget\n");
+		else
+			strcpy(user.handle, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Birthdate - Already done */
+
+		/* Password */
+		w=glade_xml_get_widget(xml, "ePassword");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the password widget\n");
+		else
+			strcpy(user.pass, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Address */
+		w=glade_xml_get_widget(xml, "eAddress");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the address widget\n");
+		else
+			strcpy(user.address, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Location */
+		w=glade_xml_get_widget(xml, "eLocation");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the location widget\n");
+		else
+			strcpy(user.location, gtk_entry_get_text(GTK_ENTRY(w)));
+
+		/* Postal/ZIP code */
+		w=glade_xml_get_widget(xml, "eZip");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the postal/zip code widget\n");
+		else
+			strcpy(user.zipcode, gtk_entry_get_text(GTK_ENTRY(w)));
+
+	/* Security Tab */
+		/* Level */
+		w=glade_xml_get_widget(xml, "sLevel");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the level widget\n");
+		else
+			user.level = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Expiration - Already done */
+
+		/* Flag Sets */
+		strcpy(str,"tFlagSet1.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.flags1 &= ~(1L<<i);
+						break;
+					default:
+						user.flags1 |= (1L<<i);
+				}
+			}
+		}
+
+		strcpy(str,"tFlagSet2.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.flags2 &= ~(1L<<i);
+						break;
+					default:
+						user.flags2 |= (1L<<i);
+				}
+			}
+		}
+
+		strcpy(str,"tFlagSet3.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.flags3 &= ~(1L<<i);
+						break;
+					default:
+						user.flags3 |= (1L<<i);
+				}
+			}
+		}
+
+		strcpy(str,"tFlagSet4.");
+		for(i=0;i<26;i++) {
+			str[9]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.flags4 &= ~(1L<<i);
+						break;
+					default:
+						user.flags4 |= (1L<<i);
+				}
+			}
+		}
+
+		/* Exemptions */
+		strcpy(str,"tExemptions.");
+		for(i=0;i<26;i++) {
+			str[11]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.exempt &= ~(1L<<i);
+						break;
+					default:
+						user.exempt |= (1L<<i);
+				}
+			}
+		}
+
+		/* Restrictions */
+		strcpy(str,"tRestrictions.");
+		for(i=0;i<26;i++) {
+			str[13]='A'+i;
+			w=glade_xml_get_widget(xml, str);
+			if(w==NULL)
+				fprintf(stderr,"Cannot get the %s widget\n",str);
+			else {
+				switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+					case 0:
+						user.rest &= ~(1L<<i);
+						break;
+					default:
+						user.rest |= (1L<<i);
+				}
+			}
+		}
+
+		/* Credits */
+		w=glade_xml_get_widget(xml, "sCredits");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the credits widget\n");
+		else
+			user.cdt = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Free Credits */
+		w=glade_xml_get_widget(xml, "sFreeCredits");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the free credits widget\n");
+		else
+			user.freecdt = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Minutes */
+		w=glade_xml_get_widget(xml, "sMinutes");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the minutes widget\n");
+		else
+			user.min = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+	/* Statistics */
+		/* First On - Already done */
+
+		/* Last On - Already done */
+
+		/* Total Logons */
+		w=glade_xml_get_widget(xml, "sLogonsTotal");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total logons widget\n");
+		else
+			user.logons = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Logons today */
+		w=glade_xml_get_widget(xml, "sLogonsToday");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the logons today widget\n");
+		else
+			user.ltoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Total Posts */
+		w=glade_xml_get_widget(xml, "sTotalPosts");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total posts widget\n");
+		else
+			user.posts = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Posts Today */
+		w=glade_xml_get_widget(xml, "sPostsToday");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the posts today widget\n");
+		else
+			user.ptoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Total Uploads */
+		w=glade_xml_get_widget(xml, "sTotalUploads");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total uploads widget\n");
+		else
+			user.uls = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Upload Bytes */
+		w=glade_xml_get_widget(xml, "sUploadBytes");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the upload bytes widget\n");
+		else
+			user.ulb = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Total Time On */
+		w=glade_xml_get_widget(xml, "sTotalTimeOn");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total time on widget\n");
+		else
+			user.timeon = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Time On Today */
+		w=glade_xml_get_widget(xml, "sTimeOnToday");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the time on today widget\n");
+		else
+			user.ttoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Time On Last Call */
+		w=glade_xml_get_widget(xml, "sTimeOnLastCall");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the last call time on widget\n");
+		else
+			user.tlast = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Time On Extra */
+		w=glade_xml_get_widget(xml, "sTimeOnExtra");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the extra time on widget\n");
+		else
+			user.textra = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Total Downloads */
+		w=glade_xml_get_widget(xml, "sDownloadsTotal");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total downloads widget\n");
+		else
+			user.dls = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Download Bytes */
+		w=glade_xml_get_widget(xml, "sDownloadsBytes");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the download bytes widget\n");
+		else
+			user.dlb = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Download Leeches */
+		w=glade_xml_get_widget(xml, "sDownloadsLeech");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the downloads leech widget\n");
+		else
+			user.leech = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Total Email */
+		w=glade_xml_get_widget(xml, "sEmailTotal");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the total email widget\n");
+		else
+			user.emails = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Email Today */
+		w=glade_xml_get_widget(xml, "sEmailToday");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the email today widget\n");
+		else
+			user.etoday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		/* Email To Sysop */
+		w=glade_xml_get_widget(xml, "sEmailToSysop");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the email to sysop widget\n");
+		else
+			user.fbacks = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+	/* Settings */
+		w=glade_xml_get_widget(xml, "cUserAUTOTERM");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the autoterm widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~AUTOTERM;
+					break;
+				default:
+					user.misc|=AUTOTERM;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserNO_EXASCII");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the no exascii widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~NO_EXASCII;
+					break;
+				default:
+					user.misc|=NO_EXASCII;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserANSI");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ansi widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~ANSI;
+					break;
+				default:
+					user.misc|=ANSI;
+			}
+		}
+				
+
+		w=glade_xml_get_widget(xml, "cUserCOLOR");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the color widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~COLOR;
+					break;
+				default:
+					user.misc|=COLOR;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserRIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the RIP widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~RIP;
+					break;
+				default:
+					user.misc|=RIP;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserWIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the WIP widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~WIP;
+					break;
+				default:
+					user.misc|=WIP;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserUPAUSE");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the upause widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~UPAUSE;
+					break;
+				default:
+					user.misc|=UPAUSE;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCOLDKEYS");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the coldkeys widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~COLDKEYS;
+					break;
+				default:
+					user.misc|=COLDKEYS;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserSPIN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the spin widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~SPIN;
+					break;
+				default:
+					user.misc|=SPIN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserRIP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the RIP widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~RIP;
+					break;
+				default:
+					user.misc|=RIP;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "sRows");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the rows widget\n");
+		else
+			user.rows = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(w));
+
+		w=glade_xml_get_widget(xml, "cCommandShell");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the command shell widget\n");
+		else
+			user.shell = gtk_combo_box_get_active(GTK_COMBO_BOX(w));
+
+		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expert widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~EXPERT;
+					break;
+				default:
+					user.misc&=~EXPERT;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserASK_NSCAN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ask new scan widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~ASK_NSCAN;
+					break;
+				default:
+					user.misc|=ASK_NSCAN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserASK_SSCAN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ask to you scan widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~ASK_SSCAN;
+					break;
+				default:
+					user.misc|=ASK_SSCAN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCURSUB");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the save current sub widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~CURSUB;
+					break;
+				default:
+					user.misc&=~CURSUB;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQUIET");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the quiet mode widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~QUIET;
+					break;
+				default:
+					user.misc|=QUIET;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserAUTOLOGON");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the auto logon widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~AUTOLOGON;
+					break;
+				default:
+					user.misc|=AUTOLOGON;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserEXPERT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expert widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~EXPERT;
+					break;
+				default:
+					user.misc|=EXPERT;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_ECHO");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat echo widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.chat&=~CHAT_ECHO;
+					break;
+				default:
+					user.chat|=CHAT_ECHO;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_ACTION");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat action widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.chat&=~CHAT_ACTION;
+					break;
+				default:
+					user.chat|=CHAT_ACTION;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_NOPAGE");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat nopage widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.chat&=~CHAT_NOPAGE;
+					break;
+				default:
+					user.chat|=CHAT_NOPAGE;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_NOACT");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat no activity widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.chat&=~CHAT_NOACT;
+					break;
+				default:
+					user.chat|=CHAT_NOACT;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCHAT_SPLITP");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the chat split personal widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.chat&=~CHAT_SPLITP;
+					break;
+				default:
+					user.chat&=~CHAT_SPLITP;
+			}
+		}
+
+	/* Msg/File Settings */
+
+		w=glade_xml_get_widget(xml, "cUserNETMAIL");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the netmail widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~NETMAIL;
+					break;
+				default:
+					user.misc|=NETMAIL;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the clear screen widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~CLRSCRN;
+					break;
+				default:
+					user.misc|=CLRSCRN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserANFSCAN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the ask new file scan widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~ANFSCAN;
+					break;
+				default:
+					user.misc|=ANFSCAN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserEXTDESC");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the extended descriptions widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~EXTDESC;
+					break;
+				default:
+					user.misc|=EXTDESC;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserBATCHFLAG");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the batch flagging widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~BATCHFLAG;
+					break;
+				default:
+					user.misc|=BATCHFLAG;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserAUTOHANG");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the auto hangup after transfer widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~AUTOHANG;
+					break;
+				default:
+					user.misc|=AUTOHANG;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserCLRSCRN");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the clear screen widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.misc&=~CLRSCRN;
+					break;
+				default:
+					user.misc|=CLRSCRN;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cExternalEditor");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the external editor widget\n");
+		else
+			user.xedit = gtk_combo_box_get_active(GTK_COMBO_BOX(w));
+
+		w=glade_xml_get_widget(xml, "cDefaultDownloadProtocol");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the default download protocol widget\n");
+		else
+			user.prot=cfg.prot[gtk_combo_box_get_active(GTK_COMBO_BOX(w))]->mnemonic;
+
+		w=glade_xml_get_widget(xml, "cTempQWKFileType");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the temp QWK file type widget\n");
+		else
+			strcpy(user.tmpext, cfg.fcomp[gtk_combo_box_get_active(GTK_COMBO_BOX(w))]->ext);
+
+		w=glade_xml_get_widget(xml, "cUserQWK_FILES");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include new files list widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_FILES;
+					break;
+				default:
+					user.qwk|=QWK_FILES;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_EMAIL");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include unread email widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_EMAIL;
+					break;
+				default:
+					user.qwk|=QWK_EMAIL;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_ALLMAIL");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include all email widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_ALLMAIL;
+					break;
+				default:
+					user.qwk|=QWK_ALLMAIL;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_DELMAIL");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the delete email widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_DELMAIL;
+					break;
+				default:
+					user.qwk|=QWK_DELMAIL;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_BYSELF");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include messages by self widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_BYSELF;
+					break;
+				default:
+					user.qwk|=QWK_BYSELF;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_EXPCTLA");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expand ctrl-a widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_EXPCTLA;
+					break;
+				default:
+					user.qwk|=QWK_EXPCTLA;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_RETCTLA");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the retain ctrl-a widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_RETCTLA;
+					break;
+				default:
+					user.qwk|=QWK_RETCTLA;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_ATTACH");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include attachments widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_ATTACH;
+					break;
+				default:
+					user.qwk|=QWK_ATTACH;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_NOINDEX");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the don't include index files widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_NOINDEX;
+					break;
+				default:
+					user.qwk|=QWK_NOINDEX;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_TZ");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include TZ widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_TZ;
+					break;
+				default:
+					user.qwk|=QWK_TZ;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_VIA");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include VIA widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_VIA;
+					break;
+				default:
+					user.qwk&=~QWK_VIA;
+			}
+		}
+
+		w=glade_xml_get_widget(xml, "cUserQWK_NOCTRL");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the include extraneous control files widget\n");
+		else {
+			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+				case 0:
+					user.qwk&=~QWK_NOCTRL;
+					break;
+				default:
+					user.qwk|=QWK_NOCTRL;
+			}
+		}
+
+	/* Extended Comment */
+		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
+		w=glade_xml_get_widget(xml, "tExtendedComment");
+		gtk_text_buffer_get_start_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &start);
+		gtk_text_buffer_get_end_iter(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)), &end);
+		f=fopen(str,"w");
+		if(f) {
+			fputs(gtk_text_buffer_get_text(gtk_text_view_get_buffer(GTK_TEXT_VIEW(w)),&start,&end,TRUE), f);
+			fclose(f);
+		}
+
+	putuserdat(&cfg, &user);
+
+	load_user(wiggy, data);
 }
 
 void new_user(GtkWidget *wiggy, gpointer data)

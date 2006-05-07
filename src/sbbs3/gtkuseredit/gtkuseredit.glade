@@ -8452,6 +8452,11 @@
 		  <property name="right_margin">0</property>
 		  <property name="indent">0</property>
 		  <property name="text" translatable="yes"></property>
+		  <signal name="backspace" handler="user_changed" last_modification_time="Sun, 07 May 2006 08:45:15 GMT"/>
+		  <signal name="cut_clipboard" handler="user_changed" last_modification_time="Sun, 07 May 2006 08:45:20 GMT"/>
+		  <signal name="delete_from_cursor" handler="user_changed" last_modification_time="Sun, 07 May 2006 08:45:26 GMT"/>
+		  <signal name="insert_at_cursor" handler="user_changed" last_modification_time="Sun, 07 May 2006 08:45:32 GMT"/>
+		  <signal name="paste_clipboard" handler="user_changed" last_modification_time="Sun, 07 May 2006 08:45:37 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
