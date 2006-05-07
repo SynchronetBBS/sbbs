@@ -123,11 +123,15 @@ int read_config(void)
 }
 
 int main(int argc, char *argv[]) {
+	char	glade_path[MAX_PATH+1];
+
     gtk_init(&argc, &argv);
     glade_init();
 
     /* load the interface */
-    xml = glade_xml_new("gtkuseredit.glade", "MainWindow", NULL);
+	strcpy(glade_path, argv[0]);
+	strcpy(getfname(glade_path), "gtkuseredit.glade");
+    xml = glade_xml_new(glade_path, "MainWindow", NULL);
     /* connect the signals in the interface */
     glade_xml_signal_autoconnect(xml);
 	/* Set up the global config stuff. */
