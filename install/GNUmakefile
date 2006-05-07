@@ -135,7 +135,7 @@ tbd:	run
 
 gtkuseredit:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkusereditor $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkuseredit $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 endif
 
 install: all
