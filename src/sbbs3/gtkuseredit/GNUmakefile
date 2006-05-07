@@ -23,26 +23,20 @@ endif
 
 vpath %.c ..
 
-# Set up LD_RUN_PATH for run-time locating of the .so files
-PWD     :=      $(shell dirname `pwd`)
-ifdef SBBSDIR
- ifeq ($(os),sunos)
-  LD_RUN_PATH   :=      $(SBBSDIR)/exec:$(PWD)/$(LIBODIR):/opt/sfw/gcc-3/lib
- else
-  LD_RUN_PATH   :=      $(SBBSDIR)/exec:$(PWD)/$(LIBODIR)
- endif
-else
- ifeq ($(os),sunos) 
-  LD_RUN_PATH   :=      $(PWD)/$(LIBODIR):/opt/sfw/gcc-3/lib
- else
-  LD_RUN_PATH   :=      $(PWD)/$(LIBODIR)
- endif
-endif
-export LD_RUN_PATH
-
 CFLAGS	+=	$(SBBSDEFS) -I.. $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `pkg-config libglade-2.0 --cflags`
 # Hopefully, -Wl,-E exports all symbols dynamically everywhere.
-LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) `pkg-config libglade-2.0 --libs`
+LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) `pkg-config libglade-2.0 --libs` $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
+
+# Because pkg-config for libglade uses --rpath, we need to also, LD_RUN_PATH
+# won't work.  :-(
+ifdef SBBSDIR
+ LDFLAGS	+=	-Wl,--rpath -Wl,$(SBBSDIR)/exec
+endif
+PARENT_DIR = $(shell dirname `pwd`)
+LDFLAGS	+=	-Wl,--rpath -Wl,$(PARENT_DIR)/$(LIBODIR)
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-Wl,--rpath -Wl,/opt/sfw/gcc-3/lib
+endif
 
 $(GTKUSEREDIT): $(OBJS)
 	@echo Linking $@
