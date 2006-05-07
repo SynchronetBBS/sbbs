@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     glade_init();
 
     /* load the interface */
-    xml = glade_xml_new("gtkuseredit.glade", NULL, NULL);
+    xml = glade_xml_new("gtkuseredit.glade", "MainWindow", NULL);
     /* connect the signals in the interface */
     glade_xml_signal_autoconnect(xml);
 	/* Set up the global config stuff. */

@@ -4,6 +4,8 @@
 #include "sbbs.h"
 #include "dirwrap.h"
 #include "xpbeep.h"
+#include "datewrap.h"
+#include "semwrap.h"
 
 #include "gtkuseredit.h"
 
@@ -237,7 +239,10 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the expiration widget\n");
 		else {
-			unixtodstr(&cfg, user.expire, str);
+			if(user.expire)
+				unixtodstr(&cfg, user.expire, str);
+			else
+				strcpy(str,"Never");
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
 
@@ -343,7 +348,10 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the first on widget\n");
 		else {
-			unixtodstr(&cfg, user.firston, str);
+			if(user.firston)
+				unixtodstr(&cfg, user.firston, str);
+			else
+				strcpy(str,"Never");
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
 
@@ -352,7 +360,10 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the last on widget\n");
 		else {
-			unixtodstr(&cfg, user.laston, str);
+			if(user.laston)
+				unixtodstr(&cfg, user.laston, str);
+			else
+				strcpy(str,"Never");
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
 
@@ -857,13 +868,15 @@ void last_user(GtkWidget *w, gpointer data)
 
 void show_about_box(GtkWidget *unused, gpointer data)
 {
-	GtkWidget	*w;
-	w=glade_xml_get_widget(xml, "AboutWindow");
-	if(w==NULL) {
-		fprintf(stderr,"Cannot get about window widget\n");
+	GladeXML	*axml;
+    axml = glade_xml_new("gtkuseredit.glade", "AboutWindow", NULL);
+	if(axml==NULL) {
+		fprintf(stderr,"Could not locate AboutWindow widget\n");
 		return;
 	}
-	gtk_widget_show(GTK_WIDGET(w));
+    /* connect the signals in the interface */
+    glade_xml_signal_autoconnect(axml);
+	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(axml, "AboutWindow")));
 }
 
 void user_toggle_delete(GtkWidget *t, gpointer data)
@@ -915,26 +928,229 @@ void find_user(GtkWidget *t, gpointer data)
 	if(w==NULL)
 		fprintf(stderr,"Cannot get the find user entry widget\n");
 	else {
-		nu=matchuser(&cfg, gtk_entry_get_text(GTK_ENTRY(w)), TRUE);
+		nu=matchuser(&cfg, (char *)gtk_entry_get_text(GTK_ENTRY(w)), TRUE);
 		if(nu==0) {
-			w=glade_xml_get_widget(xml, "NotFoundWindow");
-			if(w==NULL)
+			GladeXML	*cxml;
+			cxml = glade_xml_new("gtkuseredit.glade", "NotFoundWindow", NULL);
+		    /* connect the signals in the interface */
+		    glade_xml_signal_autoconnect(cxml);
+			if(cxml==NULL)
 				fprintf(stderr,"Could not locate NotFoundWindow widget\n");
-			else
-				gtk_widget_show(GTK_WIDGET(w));
+			gtk_window_present(GTK_WINDOW(glade_xml_get_widget(cxml, "NotFoundWindow")));
 		}
 		else
 			update_current_user(nu);
 	}
 }
 
-void close_notfoundwindow(GtkWidget *t, gpointer data)
+void close_this_window(GtkWidget *t, gpointer data)
+{
+	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(t)));
+}
+
+int got_date;
+
+void destroy_calendar_window(GtkWidget *t, gpointer data)
+{
+	if(!got_date)
+		gtk_main_quit();
+}
+
+void changed_day(GtkWidget *t, gpointer data)
+{
+	got_date=1;
+	gtk_main_quit();
+}
+
+int get_date(GtkWidget *t, isoDate_t *date)
+{
+	GladeXML	*cxml;
+	GtkWidget	*w;
+	GtkWidget	*win;
+	GtkWidget	*thiswin;
+	gint		x,x_off;
+	gint		y,y_off;
+	guint		year;
+	guint		month;
+	guint		day;
+	isoDate_t	odate=*date;
+
+	got_date=0;
+    cxml = glade_xml_new("gtkuseredit.glade", "CalendarWindow", NULL);
+	if(cxml==NULL) {
+		fprintf(stderr,"Could not locate Calendar Window XML\n");
+		return(-1);
+	}
+    /* connect the signals in the interface */
+    glade_xml_signal_autoconnect(cxml);
+	win=glade_xml_get_widget(cxml, "CalendarWindow");
+	if(win==NULL) {
+		fprintf(stderr,"Could not locate Calendar window\n");
+		return(-1);
+	}
+
+	thiswin = gtk_widget_get_toplevel(t);
+	if(thiswin==NULL) {
+		fprintf(stderr,"Could not locate main window\n");
+		return(-1);
+	}
+	if(!(gtk_widget_translate_coordinates(GTK_WIDGET(t)
+			,GTK_WIDGET(thiswin), 0, 0, &x_off, &y_off))) {
+		fprintf(stderr,"Could not get position of button in window");
+	}
+	gtk_window_get_position(GTK_WINDOW(thiswin), &x, &y);
+
+	gtk_window_move(GTK_WINDOW(win), x+x_off, y+y_off);
+
+	w=glade_xml_get_widget(cxml, "Calendar");
+	if(w==NULL) {
+		fprintf(stderr,"Could not locate Calendar widget\n");
+		return(-1);
+	}
+	gtk_calendar_select_month(GTK_CALENDAR(w), isoDate_month(*date)-1, isoDate_year(*date));
+	gtk_calendar_select_day(GTK_CALENDAR(w), isoDate_day(*date));
+	gtk_window_present(GTK_WINDOW(win));
+	/* Wait for window to close... */
+	gtk_main();
+	w=glade_xml_get_widget(cxml, "Calendar");
+	if(w==NULL)
+		return(-1);
+	gtk_calendar_get_date(GTK_CALENDAR(w), &year, &month, &day);
+	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(w))));
+	*date=isoDate_create(year, month+1, day);
+	return(odate!=*date);
+}
+
+void get_expiration(GtkWidget *t, gpointer data)
+{
+	isoDate_t	date;
+	GtkWidget	*w;
+	char		str[9];
+
+	date=time_to_isoDate(user.expire?user.expire:time(NULL));
+	if(!get_date(t, &date)) {
+		user.expire = isoDateTime_to_time(date,0);
+		user_changed(t, data);
+		w=glade_xml_get_widget(xml, "eExpiration");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expiration widget\n");
+		else {
+			if(user.expire)
+				unixtodstr(&cfg, user.expire, str);
+			else
+				strcpy(str,"Never");
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+	}
+}
+
+void clear_expire(GtkWidget *t, gpointer data)
 {
 	GtkWidget	*w;
 
-	w=glade_xml_get_widget(xml, "NotFoundWindow");
+	w=glade_xml_get_widget(xml, "eExpiration");
 	if(w==NULL)
-		fprintf(stderr,"Could not locate NotFoundWindow widget\n");
+		fprintf(stderr,"Cannot get the expiration widget\n");
+	user.expire=0;
+	gtk_entry_set_text(GTK_ENTRY(w),"Never");
+	user_changed(t,data);
+}
+
+void get_birthdate(GtkWidget *t, gpointer data)
+{
+	isoDate_t	date;
+	GtkWidget	*w;
+	int			year;
+	char		str[9];
+
+	year=atoi(user.birth+6)+1900;
+	if(year<Y2K_2DIGIT_WINDOW)
+		year+=100;
+	if(cfg.sys_misc&SM_EURODATE)
+		date=isoDate_create(year, atoi(user.birth+3), atoi(user.birth));
 	else
-		gtk_widget_hide(GTK_WIDGET(w));
+		date=isoDate_create(year, atoi(user.birth), atoi(user.birth+3));
+	if(!get_date(t, &date)) {
+		if(cfg.sys_misc&SM_EURODATE)
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_day(date),isoDate_month(date),isoDate_year(date));
+		else
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_month(date),isoDate_day(date),isoDate_year(date));
+		user_changed(t, data);
+		w=glade_xml_get_widget(xml, "eBirthdate");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the birthdate widget\n");
+		else
+			gtk_entry_set_text(GTK_ENTRY(w),user.birth);
+	}
+}
+
+
+void get_firston(GtkWidget *t, gpointer data)
+{
+	isoDate_t	date;
+	GtkWidget	*w;
+	char		str[9];
+
+	date=time_to_isoDate(user.firston?user.firston:time(NULL));
+	if(!get_date(t, &date)) {
+		user.firston = isoDateTime_to_time(date,0);
+		user_changed(t, data);
+		w=glade_xml_get_widget(xml, "eFirstOn");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the first on widget\n");
+		else {
+			if(user.firston)
+				unixtodstr(&cfg, user.firston, str);
+			else
+				strcpy(str,"Never");
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+	}
+}
+
+void clear_firston(GtkWidget *t, gpointer data)
+{
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(xml, "eFirstOn");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the first on widget\n");
+	user.firston=0;
+	gtk_entry_set_text(GTK_ENTRY(w),"Never");
+	user_changed(t,data);
+}
+
+void get_laston(GtkWidget *t, gpointer data)
+{
+	isoDate_t	date;
+	GtkWidget	*w;
+	char		str[9];
+
+	date=time_to_isoDate(user.laston?user.laston:time(NULL));
+	if(!get_date(t, &date)) {
+		user.laston = isoDateTime_to_time(date,0);
+		user_changed(t, data);
+		w=glade_xml_get_widget(xml, "eLastOn");
+		if(w==NULL)
+			fprintf(stderr,"Cannot get the expiration widget\n");
+		else {
+			if(user.laston)
+				unixtodstr(&cfg, user.laston, str);
+			else
+				strcpy(str,"Never");
+			gtk_entry_set_text(GTK_ENTRY(w),str);
+		}
+	}
+}
+
+void clear_laston(GtkWidget *t, gpointer data)
+{
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(xml, "eLastOn");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the expiration widget\n");
+	user.laston=0;
+	gtk_entry_set_text(GTK_ENTRY(w),"Never");
+	user_changed(t,data);
 }
