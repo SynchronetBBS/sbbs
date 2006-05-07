@@ -57,9 +57,11 @@ void create_raw_dir_list(const char* list_file)
 		uifc.msg(path);
 		return; 
 	}
-	glob(path,GLOB_ONLYDIR,NULL,&g);
-   	for(gi=0;gi<g.gl_pathc;gi++)
-		fprintf(fp,"%s\n",getfname(g.gl_pathv[gi]));
+	glob(path,0,NULL,&g);
+   	for(gi=0;gi<g.gl_pathc;gi++) {
+		if(isdir(g.gl_pathv[gi]))
+			fprintf(fp,"%s\n",getfname(g.gl_pathv[gi]));
+	}
 	globfree(&g);
 	fclose(fp);
 }
