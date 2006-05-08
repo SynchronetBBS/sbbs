@@ -552,7 +552,7 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 		if(*p=='-')
 			*p='_';
 	}
-	p=(char *)malloc(strlen(name)+strlen(value)+2);
+	p=(char *)alloca(strlen(name)+strlen(value)+2);
 	if(p==NULL) {
 		lprintf(LOG_WARNING,"%04d Cannot allocate memory for string", session->socket);
 		return;
@@ -562,7 +562,6 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 #endif
 	sprintf(p,"%s=%s",newname,value);
 	strListPush(&session->req.cgi_env,p);
-	free(p);
 }
 
 /***************************************/
@@ -942,7 +941,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			session->req.ld->status=atoi(status);
 		return(TRUE);
 	}
-	headers=malloc(MAX_HEADERS_SIZE);
+	headers=alloca(MAX_HEADERS_SIZE);
 	if(headers==NULL)  {
 		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
 		return(FALSE);
@@ -1057,7 +1056,6 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
 	send_file = (bufprint(session,headers) && send_file);
-	FREE_AND_NULL(headers);
 	drain_outbuf(session);
 	session->req.write_chunked=chunked;
 	return(send_file);
@@ -1636,17 +1634,15 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 	JSString*	js_str;
 	char		*lckey;
 
-	if((lckey=(char *)malloc(strlen(key)+1))==NULL)
+	if((lckey=(char *)alloca(strlen(key)+1))==NULL)
 		return;
 	strcpy(lckey,key);
 	strlwr(lckey);
 	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL) {
-		free(lckey);
 		return;
 	}
 	JS_DefineProperty(session->js_cx, session->js_header, lckey, STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-	free(lckey);
 }
 
 #if 0
@@ -3523,7 +3519,7 @@ js_write_template(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		return(JS_FALSE);
 	}
 
-	if((template=(char *)malloc(len))==NULL) {
+	if((template=(char *)alloca(len))==NULL) {
 		JS_ReportError(cx, "Unable to allocate %u bytes for template.", len);
 		return(JS_FALSE);
 	}
@@ -3558,7 +3554,6 @@ js_write_template(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	session->req.prev_write=TRUE;
 	js_write_template_part(cx, obj, template, len, NULL);
 
-	free(template);
 	return(JS_TRUE);
 }
 #endif
@@ -4113,7 +4108,7 @@ void http_session_thread(void* arg)
 	session.last_js_user_num=-1;
 	session.logon_time=0;
 
-	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+	session.subscan=(subscan_t*)alloca(sizeof(subscan_t)*scfg.total_subs);
 
 	while(!session.finished) {
 		init_error=FALSE;
@@ -4192,8 +4187,6 @@ void http_session_thread(void* arg)
 		session.js_runtime=NULL;
 	}
 #endif
-
-	FREE_AND_NULL(session.subscan);
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
