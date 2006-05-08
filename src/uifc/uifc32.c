@@ -2484,7 +2484,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(lines < height-2-pad-pad)
 		lines=height-2-pad-pad;
 
-	if((textbuf=(char *)alloca((width-2-pad-pad)*lines*2))==NULL) {
+	if((textbuf=(char *)malloc((width-2-pad-pad)*lines*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(width-2-pad-pad)*lines*2);
 		_setcursortype(cursor);
@@ -2597,6 +2597,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 		puttext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 	}
+	free(textbuf);
 	if(is_redraw)			/* Force redraw of menu also. */
 		reset_dynamic();
 	_setcursortype(cursor);
