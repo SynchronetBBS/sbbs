@@ -129,16 +129,6 @@ void allocfail(uint size)
     bail(1);
 }
 
-void freeopt(char** opt)
-{
-	int i;
-
-	for(i=0;i<(MAX_OPTS+1);i++)
-		free(opt[i]);
-
-	free(opt);
-}
-
 int confirm(char *prompt)
 {
 	int i=0;
@@ -239,10 +229,10 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -263,7 +253,6 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -338,10 +327,10 @@ int edit_logon(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -356,7 +345,6 @@ int edit_logon(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Logon Settings",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -402,10 +390,10 @@ int edit_chat(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -420,7 +408,6 @@ int edit_chat(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Chat Settings",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -460,7 +447,7 @@ int edit_shell(scfg_t *cfg, user_t *user)
 	int 	i,j;
 	char 	**opt;
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 
 
@@ -479,7 +466,6 @@ int edit_shell(scfg_t *cfg, user_t *user)
 			}
 			break;
 	}
-	free(opt);
 	return(0);
 }
 
@@ -493,10 +479,10 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -508,7 +494,6 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Command Shell",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -532,7 +517,7 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 	int 	i,j;
 	char 	**opt;
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 
 	getuserdat(cfg,user);
@@ -555,7 +540,6 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 			}
 			break;
 	}
-	free(opt);
 	return(0);
 }
 
@@ -570,10 +554,10 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -586,7 +570,6 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Message Options",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -615,7 +598,7 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
 	int		j=0;
 	char 	**opt;
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 
 	getuserdat(cfg,user);
@@ -635,7 +618,6 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
 			}
 			break;
 	}
-	free(opt);
 	return(0);
 }
 
@@ -658,10 +640,10 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -686,7 +668,6 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Command Shell",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -776,7 +757,7 @@ int edit_proto(scfg_t *cfg, user_t *user)
 	int		j=0;
 	char 	**opt;
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 
 	getuserdat(cfg,user);
@@ -802,7 +783,6 @@ int edit_proto(scfg_t *cfg, user_t *user)
 			}
 			break;
 	}
-	free(opt);
 	return(0);
 }
 
@@ -821,10 +801,10 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char 	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -844,7 +824,6 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"File Options",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -996,10 +975,10 @@ int edit_stats(scfg_t *cfg, user_t *user)
 	char	str[256];
 	time_t	temptime,temptime2;
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -1029,7 +1008,6 @@ int edit_stats(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Statistics",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -1280,10 +1258,10 @@ int edit_security(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -1304,7 +1282,6 @@ int edit_security(scfg_t *cfg, user_t *user)
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Security Settings",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 				break;
 			case 0:
@@ -1449,10 +1426,10 @@ int edit_personal(scfg_t *cfg, user_t *user)
 	char	onech[2];
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	j=0;
@@ -1478,7 +1455,6 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		uifc.changes=FALSE;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Personal Settings",opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 			case 0:
 				/* Real Name */
@@ -1608,10 +1584,10 @@ int edit_user(scfg_t *cfg, int usernum)
 	user_t	user;
 	char	str[256];
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	user.number=usernum;
@@ -1639,7 +1615,6 @@ int edit_user(scfg_t *cfg, int usernum)
 		sprintf(str,"Edit User: %d (%s)",user.number,user.name[0]?user.name:user.alias);
 		switch(uifc.list(WIN_ORG|WIN_ACT,0,0,0,&j,0,str,opt)) {
 			case -1:
-				freeopt(opt);
 				return(0);
 
 			case 0:
@@ -1693,7 +1668,7 @@ int finduser(scfg_t *cfg, user_t *user)
 	struct user_list **opt;
 	int done=0;
 
-	if((opt=(struct user_list **)malloc(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(struct user_list **)alloca(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
 		opt[i]=NULL;
@@ -1711,13 +1686,13 @@ int finduser(scfg_t *cfg, user_t *user)
 			getuserdat(cfg,user);
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL
 					|| user->number==un) {
-				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+				if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
 				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
-		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+		if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
@@ -1743,7 +1718,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 	struct user_list **opt;
 	int done=0;
 
-	if((opt=(struct user_list **)malloc(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(struct user_list **)alloca(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
 		opt[i]=NULL;
@@ -1757,13 +1732,13 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 			user->number=i;
 			getuserdat(cfg,user);
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL) {
-				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+				if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
 				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
-		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+		if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
@@ -2046,16 +2021,16 @@ int main(int argc, char** argv)  {
 		exit(1);
 	}
 
-	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)malloc(sizeof(char *)*MAX_OPTS))==NULL)
+	if((mopt=(char **)alloca(sizeof(char *)*MAX_OPTS))==NULL)
 		allocfail(sizeof(char *)*MAX_OPTS);
 	for(i=0;i<MAX_OPTS;i++)
-		if((mopt[i]=(char *)malloc(MAX_OPLN))==NULL)
+		if((mopt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
 	sprintf(title,"Synchronet User Editor %s-%s",revision,PLATFORM_DESC);
