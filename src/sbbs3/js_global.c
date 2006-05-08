@@ -589,6 +589,7 @@ js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
 		return(JS_FALSE);
 
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL)
 		return(JS_FALSE);
 
@@ -740,6 +741,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	outbuf_size=strlen(inbuf)*3+1;
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc(outbuf_size))==NULL)
 		return(JS_FALSE);
 	outp=outbuf;
@@ -753,11 +755,11 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
 		handle_quotes=JSVAL_TO_BOOLEAN(argv[3]);
 
-	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
+	if((linebuf=(char*)alloca((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
 		return(JS_FALSE);
 
 	if(handle_quotes) {
-		if((prefix=(char *)malloc((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
+		if((prefix=(char *)alloca((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
 			return(JS_FALSE);
 		prefix[0]=0;
 	}
@@ -964,8 +966,6 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_str = JS_NewStringCopyZ(cx, outbuf);
 	free(outbuf);
-	if(prefix)
-		free(prefix);
 	if(js_str==NULL)
 		return(JS_FALSE);
 
@@ -996,6 +996,7 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>2)
 		prefix=js_ValueToStringBytes(cx, argv[2], NULL);
 
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc((strlen(inbuf)*strlen(prefix))+1))==NULL)
 		return(JS_FALSE);
 
@@ -1003,7 +1004,7 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(len<=0)
 		return(JS_FALSE);
 
-	if((linebuf=(char*)malloc(len*2+2))==NULL)	/* (Hopefully) Room for ^A codes.  ToDo */
+	if((linebuf=(char*)alloca(len*2+2))==NULL)	/* (Hopefully) Room for ^A codes.  ToDo */
 		return(JS_FALSE);
 
 	outbuf[0]=0;
@@ -1323,6 +1324,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			ansi=ctrl_a;
 	}
 
+	/* TODO: This could probobly be too big for alloca() */
 	if((tmpbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
 		return(JS_FALSE);
 
@@ -1400,6 +1402,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		obsize=(strlen(tmpbuf)+(esccount+1)*MAX_COLOR_STRING)+1;
 		if(obsize<2048)
 			obsize=2048;
+		/* TODO: This could probobly be too big for alloca() */
 		if((outbuf=(uchar*)malloc(obsize))==NULL)
 		{
 			free(tmpbuf);
@@ -1901,6 +1904,7 @@ js_html_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if((inbuf=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc(strlen(inbuf)+1))==NULL)
 		return(JS_FALSE);
 
@@ -2002,6 +2006,8 @@ js_b64_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 
 	len=(inbuf_len*10)+1;
+
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc(len))==NULL)
 		return(JS_FALSE);
 
@@ -2039,6 +2045,8 @@ js_b64_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 
 	len=strlen(inbuf)+1;
+
+	/* TODO: This could probobly be too big for alloca() */
 	if((outbuf=(char*)malloc(len))==NULL)
 		return(JS_FALSE);
 
@@ -2648,7 +2656,7 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
-	if((index=(SOCKET *)malloc(sizeof(SOCKET)*limit))==NULL)
+	if((index=(SOCKET *)alloca(sizeof(SOCKET)*limit))==NULL)
 		return(JS_FALSE);
 
 	FD_ZERO(&socket_set);
@@ -2679,7 +2687,6 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 				break;
 		}
 	}
-	free(index);
 
     *rval = OBJECT_TO_JSVAL(rarray);
 
