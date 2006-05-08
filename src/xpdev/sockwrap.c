@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdlib.h>		/* malloc/free on FreeBSD */
+#include <stdlib.h>		/* alloca/free on FreeBSD */
 #include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
 #include <errno.h>		/* ENOMEM */
 #include <stdio.h>		/* SEEK_SET */
@@ -245,7 +245,7 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 		return(-1);
 	}
 		
-	if((buf=(char*)malloc(count))==NULL) {
+	if((buf=(char*)alloca(count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
 	}
@@ -255,13 +255,10 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 			return(-1);
 
 	rd=read(sock,buf,count);
-	if(rd!=count) {
-		free(buf);
+	if(rd!=count)
 		return(-1);
-	}
 
 	wr=write(file,buf,rd);
-	free(buf);
 
 	if(offset!=NULL)
 		(*offset)+=wr;
