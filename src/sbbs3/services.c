@@ -287,15 +287,13 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 	
-	if((buf=malloc(len))==NULL)
+	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
 	len=recv(client->socket,buf,len,0);
 
 	if(len>0)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,len));
-
-	free(buf);
 
 	return(JS_TRUE);
 }
@@ -313,15 +311,13 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 	
-	if((buf=malloc(len))==NULL)
+	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
 	len=recv(client->socket,buf,len,0);	/* Need to switch to sockreadline */
 
 	if(len>0)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,len));
-
-	free(buf);
 
 	return(JS_TRUE);
 }
@@ -986,6 +982,7 @@ static void js_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
 
+	SetThreadName("JS Service Thread");
 	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
@@ -1151,6 +1148,7 @@ static void js_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s static JavaScript service thread started", service->socket, service->protocol);
 
+	SetThreadName("JS Static Service Thread");
 	thread_up(TRUE /* setuid */);
 
 	memset(&service_client,0,sizeof(service_client));
@@ -1240,6 +1238,7 @@ static void native_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s static service thread started", socket, service->protocol);
 
+	SetThreadName("Native Static Service Thread");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _WIN32
@@ -1303,6 +1302,7 @@ static void native_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s service thread started", socket, service->protocol);
 
+	SetThreadName("Native Service Thread");
 	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
@@ -1615,6 +1615,8 @@ void DLLCALL services_thread(void* arg)
 	served=0;
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
+
+	SetThreadName("Services Thread");
 
 	do {
 
