@@ -138,14 +138,12 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	char	*buf;
 
 	gettextinfo(&ti);
-	if((buf=(char *)malloc(ti.screenwidth*ti.screenheight*2))==NULL) {
+	if((buf=(char *)alloca(ti.screenwidth*ti.screenheight*2))==NULL) {
 		return(-1);
 	}
 
-	if(getnodedat(cfg,nodenum,node,NULL)) {
-		free(buf);
+	if(getnodedat(cfg,nodenum,node,NULL))
 		return(-1);
-	}
 
 	username(cfg,node->useron,usrname);
 
@@ -154,29 +152,24 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 
 	sprintf(outpath,"%slchat.dab",cfg->node_path[nodenum-1]);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
-		free(buf);
+		,S_IREAD|S_IWRITE))==-1)
 		return(-1);
-	}
 
 	sprintf(inpath,"%schat.dab",cfg->node_path[nodenum-1]);
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
 		close(out);
-		free(buf);
 		return(-1);
     }
 
-	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
+	if((p=(char *)alloca(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
-		free(buf);
 		return(-1);
     }
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
 	write(out,p,PCHAT_LEN);
-	free(p);
 	lseek(in,0,SEEK_SET);
 	lseek(out,0,SEEK_SET);
 
@@ -276,7 +269,6 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		close(out);
 	togglechat(cfg,nodenum,node,FALSE);
 	puttext(1,1,ti.screenwidth,ti.screenheight,buf);
-	free(buf);
 	window(ti.winleft,ti.wintop,ti.winright,ti.wintop);
 	gotoxy(ti.curx,ti.cury);
 	textattr(ti.attribute);
