@@ -325,7 +325,7 @@ void font_management(void)
 				struct text_info	ti;
 
 				gettextinfo(&ti);
-				savbuf=(char *)malloc((ti.screenheight-2)*ti.screenwidth*2);
+				savbuf=(char *)alloca((ti.screenheight-2)*ti.screenwidth*2);
 				if(savbuf==NULL) {
 					uifc.msg("malloc() failure.");
 					continue;
@@ -338,7 +338,6 @@ void font_management(void)
 				}
 				filepick_free(&fpick);
 				puttext(1,2,ti.screenwidth,ti.screenheight-1,savbuf);
-				free(savbuf);
 			}
 		}
 	}

@@ -46,7 +46,7 @@ void viewofflinescroll(void)
 	x=wherex();
 	y=wherey();
     gettextinfo(&txtinfo);
-	scrnbuf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	scrnbuf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
 	uifcbail();
 	drawwin();
@@ -124,7 +124,6 @@ void viewofflinescroll(void)
 	}
 	init_uifc(TRUE, TRUE);
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
-	free(scrnbuf);
 	gotoxy(x,y);
 	return;
 }

@@ -79,7 +79,7 @@ void uifcmsg(char *msg, char *helpbuf)
     gettextinfo(&txtinfo);
 	i=uifc_initialized;
 	if(!i) {
-		buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+		buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	}
 	init_uifc(FALSE, FALSE);
@@ -92,7 +92,6 @@ void uifcmsg(char *msg, char *helpbuf)
 	if(!i) {
 		uifcbail();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
-		free(buf);
 	}
 }
 
@@ -111,7 +110,7 @@ int confirm(char *msg, char *helpbuf)
     gettextinfo(&txtinfo);
 	i=uifc_initialized;
 	if(!i) {
-		buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+		buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 		gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	}
 	init_uifc(FALSE, FALSE);
@@ -123,7 +122,6 @@ int confirm(char *msg, char *helpbuf)
 	if(!i) {
 		uifcbail();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
-		free(buf);
 	}
 	return(ret);
 }

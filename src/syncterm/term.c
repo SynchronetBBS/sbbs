@@ -53,8 +53,8 @@ void mousedrag(unsigned char *scrollback)
 	int lastchar;
 
 	sbufsize=term.width*2*term.height;
-	screen=(unsigned char*)malloc(sbufsize);
-	sbuffer=(unsigned char*)malloc(sbufsize);
+	screen=(unsigned char*)alloca(sbufsize);
+	sbuffer=(unsigned char*)alloca(sbufsize);
 	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 	while(1) {
 		key=getch();
@@ -90,7 +90,7 @@ void mousedrag(unsigned char *scrollback)
 						break;
 					default:
 						lines=abs(mevent.endy-mevent.starty)+1;
-						copybuf=malloc(endpos-startpos+4+lines*2);
+						copybuf=alloca(endpos-startpos+4+lines*2);
 						outpos=0;
 						lastchar=0;
 						for(pos=startpos;pos<=endpos;pos++) {
@@ -107,17 +107,12 @@ void mousedrag(unsigned char *scrollback)
 						copybuf[outpos]=0;
 						copytext(copybuf, strlen(copybuf));
 						puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
-						free(copybuf);
-						free(screen);
-						free(sbuffer);
 						return;
 				}
 				break;
 			default:
 				puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,screen);
 				ungetch(key);
-				free(screen);
-				free(sbuffer);
 				return;
 		}
 	}
@@ -935,7 +930,7 @@ void music_control(struct bbslist *bbs)
 	};
 
    	gettextinfo(&txtinfo);
-	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
@@ -967,7 +962,6 @@ void music_control(struct bbslist *bbs)
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	textattr(txtinfo.attribute);
 	gotoxy(txtinfo.curx,txtinfo.cury);
-	free(buf);
 }
 
 void font_control(struct bbslist *bbs)
@@ -979,7 +973,7 @@ void font_control(struct bbslist *bbs)
 	if(safe_mode)
 		return;
    	gettextinfo(&txtinfo);
-	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
@@ -1004,7 +998,6 @@ void font_control(struct bbslist *bbs)
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	textattr(txtinfo.attribute);
 	gotoxy(txtinfo.curx,txtinfo.cury);
-	free(buf);
 }
 
 void capture_control(struct bbslist *bbs)
@@ -1016,7 +1009,7 @@ void capture_control(struct bbslist *bbs)
 	if(safe_mode)
 		return;
    	gettextinfo(&txtinfo);
-	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
@@ -1089,7 +1082,6 @@ void capture_control(struct bbslist *bbs)
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 	textattr(txtinfo.attribute);
 	gotoxy(txtinfo.curx,txtinfo.cury);
-	free(buf);
 }
 
 BOOL doterm(struct bbslist *bbs)
@@ -1391,13 +1383,12 @@ BOOL doterm(struct bbslist *bbs)
 						struct	text_info txtinfo;
 
     					gettextinfo(&txtinfo);
-						buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+						buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 						i=0;
 						init_uifc(FALSE, FALSE);
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
 							uifcbail();
-							free(buf);
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
@@ -1410,7 +1401,6 @@ BOOL doterm(struct bbslist *bbs)
 						window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
 						textattr(txtinfo.attribute);
 						gotoxy(txtinfo.curx,txtinfo.cury);
-						free(buf);
 						showmouse();
 					}
 					break;
