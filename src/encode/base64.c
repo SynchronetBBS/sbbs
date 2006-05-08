@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "base64.h"
+#include "gen_defs.h"
 
 static const char * base64alphabet = 
  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -110,7 +111,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 		slen=strlen(source);
 	inp=source;
 	if(source==target)  {
-		tmpbuf=(char *)alloca(tlen);
+		tmpbuf=(char *)malloc(tlen);
 		if(tmpbuf==NULL)
 			return(-1);
 		outp=tmpbuf;
@@ -124,29 +125,40 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 		enc=*(inp++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
-		if(add_char(outp++, enc, done, outend))
+		if(add_char(outp++, enc, done, outend)) {
+			FREE_AND_NULL(tmpbuf);
 			return(-1);
+		}
 		enc=buf|((*inp & 0xF0) >> 4);
-		if(add_char(outp++, enc, done, outend))
+		if(add_char(outp++, enc, done, outend)) {
+			FREE_AND_NULL(tmpbuf);
 			return(-1);
+		}
 		if(inp==inend)
 			done=1;
 		buf=(*(inp++)<<2)&0x3C;
 		enc=buf|((*inp & 0xC0)>>6);
-		if(add_char(outp++, enc, done, outend))
+		if(add_char(outp++, enc, done, outend)) {
+			FREE_AND_NULL(tmpbuf);
 			return(-1);
+		}
 		if(inp==inend)
 			done=1;
 		enc=((int)*(inp++))&0x3F;
-		if(add_char(outp++, enc, done, outend))
+		if(add_char(outp++, enc, done, outend)) {
+			FREE_AND_NULL(tmpbuf);
 			return(-1);
+		}
 		if(inp==inend)
 			done=1;
 	}
 	if(outp<outend)
 		*outp=0;
-	if(target==source)
+	if(target==source) {
 		memcpy(target,tmpbuf,tlen);
+		free(tmpbuf);
+	}
+
 	return(outp-target);
 }
 
