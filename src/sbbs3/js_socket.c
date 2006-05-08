@@ -456,6 +456,7 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	len=filelength(file);
+	/* TODO: Probobly too big for alloca()... also, this is insane. */
 	if((buf=malloc(len))==NULL) {
 		close(file);
 		return(JS_TRUE);
@@ -552,14 +553,13 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)malloc(len+1))==NULL) {
+	if((buf=(char*)alloca(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
 	len = recv(p->sock,buf,len,0);
 	if(len<0) {
-		free(buf);
 		p->last_error=ERROR_VALUE;
 		*rval = JSVAL_NULL;
 		return(JS_TRUE);
@@ -567,7 +567,6 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	buf[len]=0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
-	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
@@ -646,21 +645,19 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	} else {		/* String Data */
 
-		if((buf=(char*)malloc(len+1))==NULL) {
+		if((buf=(char*)alloca(len+1))==NULL) {
 			JS_ReportError(cx,"Error allocating %u bytes",len+1);
 			return(JS_FALSE);
 		}
 
 		len = recvfrom(p->sock,buf,len,0,(SOCKADDR*)&addr,&addrlen);
 		if(len<0) {
-			free(buf);
 			p->last_error=ERROR_VALUE;
 			return(JS_TRUE);
 		}
 		buf[len]=0;
 
 		str = JS_NewStringCopyN(cx, buf, len);
-		free(buf);
 
 		if(str==NULL)
 			return(JS_FALSE);
@@ -717,13 +714,12 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)malloc(len+1))==NULL) {
+	if((buf=(char*)alloca(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 	len = recv(p->sock,buf,len,MSG_PEEK);
 	if(len<0) {
-		free(buf);
 		p->last_error=ERROR_VALUE;	
 		*rval = JSVAL_NULL;
 		return(JS_TRUE);
@@ -731,7 +727,6 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	buf[len]=0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
-	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
@@ -763,7 +758,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
-	if((buf=(char*)malloc(len+1))==NULL) {
+	if((buf=(char*)alloca(len+1))==NULL) {
 		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
@@ -781,7 +776,6 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(!rd) {
 			if(time(NULL)-start>timeout) {
-				free(buf);
 				dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
 				*rval = JSVAL_NULL;
 				return(JS_TRUE);	/* time-out */
@@ -805,7 +799,6 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		buf[i]=0;
 
 	str = JS_NewStringCopyZ(cx, buf);
-	free(buf);
 	if(str==NULL)
 		return(JS_FALSE);
 
