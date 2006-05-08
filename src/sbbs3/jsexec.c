@@ -280,7 +280,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
-	if((buf=malloc(len))==NULL)
+	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
 	rd=fread(buf,sizeof(char),len,stdin);
@@ -288,7 +288,6 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(rd>=0)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,rd));
 
-	free(buf);
     return(JS_TRUE);
 }
 
@@ -301,7 +300,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
-	if((buf=malloc(len+1))==NULL)
+	if((buf=alloca(len+1))==NULL)
 		return(JS_TRUE);
 
 	p=fgets(buf,len+1,stdin);
@@ -309,7 +308,6 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p!=NULL)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncnl(p)));
 
-	free(buf);
     return(JS_TRUE);
 }
 
