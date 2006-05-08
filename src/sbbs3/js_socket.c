@@ -455,6 +455,7 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((file=nopen(fname,O_RDONLY|O_BINARY))==-1)
 		return(JS_TRUE);
 
+#if 0
 	len=filelength(file);
 	/* TODO: Probobly too big for alloca()... also, this is insane. */
 	if((buf=malloc(len))==NULL) {
@@ -476,6 +477,16 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
 	}
 	free(buf);
+#else
+	len = sendfilesocket(p->sock, file, NULL, 0);
+	if(len > 0) {
+		dbprintf(FALSE, p, "sent %u bytes",len);
+		*rval = JSVAL_TRUE;
+	} else {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "send of %s failed",fname);
+	}
+#endif
 
 	return(JS_TRUE);
 }
