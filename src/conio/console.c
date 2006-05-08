@@ -460,7 +460,7 @@ video_update_text()
 	curscol=CursCol;
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
 
-    vmemc = (WORD *)malloc(DpyCols*(DpyRows+1)*sizeof(WORD));
+    vmemc = (WORD *)alloca(DpyCols*(DpyRows+1)*sizeof(WORD));
 	pthread_mutex_lock(&lines_mutex);
 	memcpy(vmemc, vmem, DpyCols*(DpyRows+1)*sizeof(WORD));
 	for (r = 0; r < (DpyRows+1); ++r) {
@@ -500,8 +500,6 @@ video_update_text()
 			   FW, (CursEnd + 1)*FontScale - (CursStart*FontScale));
 		flush=1;
 	}
-
-	free(vmemc);
 
 	or =cursrow;
 	oc =curscol;

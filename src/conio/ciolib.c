@@ -37,7 +37,7 @@
 #endif
 
 #include <stdarg.h>
-#include <stdlib.h>	/* malloc */
+#include <stdlib.h>	/* alloca */
 #include <stdio.h>
 
 #include <threadwrap.h>
@@ -68,6 +68,7 @@ static int lastmode=3;
 CIOLIBEXPORT int _wscroll=1;
 CIOLIBEXPORT int directvideo=0;
 CIOLIBEXPORT int hold_update=0;
+CIOLIBEXPORT int puttext_can_move=0;
 static int initialized=0;
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
@@ -415,18 +416,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int 
 
 	width=ex-sx;
 	height=ey-sy;
-	buf=(unsigned char *)malloc((width+1)*(height+1)*2);
+	buf=(unsigned char *)alloca((width+1)*(height+1)*2);
 	if(buf==NULL)
 		return(0);
-	if(!ciolib_gettext(sx,sy,ex,ey,buf)) {
-		free(buf);
+	if(!ciolib_gettext(sx,sy,ex,ey,buf))
 		return(0);
-	}
-	if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf)) {
-		free(buf);
+	if(!ciolib_puttext(dx,dy,dx+width,dy+height,buf))
 		return(0);
-	}
-	free(buf);
 	return(1);
 }
 
@@ -702,13 +698,12 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 
 	width=ti.winright-ti.curx+1;
 	height=1;
-	buf=(unsigned char *)malloc(width*height*2);
+	buf=(unsigned char *)alloca(width*height*2);
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
 	}
 	ciolib_puttext(ti.curx+ti.winleft-1,ti.cury+ti.wintop-1,ti.winright,ti.cury+ti.wintop-1,buf);
-	free(buf);
 }
 
 CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
@@ -724,14 +719,13 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 
 	width=ti.winright-ti.winleft+1;
 	height=ti.winbottom-ti.wintop+1;
-	buf=(unsigned char *)malloc(width*height*2);
+	buf=(unsigned char *)alloca(width*height*2);
 	for(i=0;i<width*height*2;) {
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
 	}
 	ciolib_puttext(ti.winleft,ti.wintop,ti.winright,ti.winbottom,buf);
 	ciolib_gotoxy(1,1);
-	free(buf);
 }
 
 CIOLIBEXPORT void CIOLIBCALL ciolib_delline(void)
@@ -781,7 +775,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
     ret=vsnprintf(NULL,0,fmat,argptr);
 	if(ret<0)
 		return(EOF);
-	str=(char *)malloc(ret+1);
+	str=(char *)alloca(ret+1);
 	if(str==NULL)
 		return(EOF);
 	ret=vsprintf(str,fmat,argptr);
@@ -791,9 +785,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 		ciolib_cputs(str);
 	else
 		ret=EOF;
-#ifndef _MSC_VER
-	free(str);
-#endif
     return(ret);
 }
 

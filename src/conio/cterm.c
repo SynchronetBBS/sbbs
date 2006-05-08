@@ -366,7 +366,7 @@ void scrolldown(void)
 	char *buf;
 	int i,j;
 
-	buf=(char *)malloc(cterm.width*(cterm.height-1)*2);
+	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
 	gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,buf);
 	puttext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	j=0;
@@ -375,7 +375,6 @@ void scrolldown(void)
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,buf);
-	free(buf);
 }
 
 void scrollup(void)
@@ -391,7 +390,7 @@ void scrollup(void)
 		}
 		gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,cterm.scrollback+(cterm.backpos-1)*cterm.width*2);
 	}
-	buf=(char *)malloc(cterm.width*(cterm.height-1)*2);
+	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
 	gettext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,buf);
 	j=0;
@@ -400,7 +399,6 @@ void scrollup(void)
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
-	free(buf);
 }
 
 void dellines(int lines)
@@ -408,7 +406,7 @@ void dellines(int lines)
 	char *buf;
 	int i,j;
 
-	buf=(char *)malloc(cterm.width*(cterm.height-1)*2);
+	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
 	gettext(cterm.x,cterm.y+wherey()+lines-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-lines,buf);
 	j=0;
@@ -417,7 +415,6 @@ void dellines(int lines)
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
-	free(buf);
 }
 
 void clear2bol(void)
@@ -425,14 +422,13 @@ void clear2bol(void)
 	char *buf;
 	int i,j;
 
-	buf=(char *)malloc((wherex()+1)*2);
+	buf=(char *)alloca((wherex()+1)*2);
 	j=0;
 	for(i=1;i<=wherex();i++) {
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x+1,cterm.y+wherey(),cterm.x+wherex(),cterm.y+wherey(),buf);
-	free(buf);
 }
 
 void clear2eol(void)
@@ -625,7 +621,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					switch(i) {
 						case 0:
 							clear2eol();
-							p2=(char *)malloc(cterm.width*2);
+							p2=(char *)alloca(cterm.width*2);
 							j=0;
 							for(i=0;i<cterm.width;i++) {
 								p2[j++]=' ';
@@ -634,11 +630,10 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							for(i=wherey()+1;i<=cterm.height;i++) {
 								puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
 							}
-							free(p2);
 							break;
 						case 1:
 							clear2bol();
-							p2=(char *)malloc(cterm.width*2);
+							p2=(char *)alloca(cterm.width*2);
 							j=0;
 							for(i=0;i<cterm.width;i++) {
 								p2[j++]=' ';
@@ -647,7 +642,6 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							for(i=wherey()-1;i>=1;i--) {
 								puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
 							}
-							free(p2);
 							break;
 						case 2:
 							clearscreen((char)cterm.attr);
@@ -665,14 +659,13 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							clear2bol();
 							break;
 						case 2:
-							p2=(char *)malloc(cterm.width*2);
+							p2=(char *)alloca(cterm.width*2);
 							j=0;
 							for(i=0;i<cterm.width;i++) {
 								p2[j++]=' ';
 								p2[j++]=cterm.attr;
 							}
 							puttext(cterm.x+1,cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
-							free(p2);
 							break;
 					}
 					break;
@@ -683,12 +676,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					if(i>cterm.height-wherey())
 						i=cterm.height-wherey();
 					if(i<cterm.height-wherey()) {
-						p2=(char *)malloc((cterm.height-wherey()-i)*cterm.width*2);
+						p2=(char *)alloca((cterm.height-wherey()-i)*cterm.width*2);
 						gettext(cterm.x+1,cterm.y+wherey(),cterm.x+cterm.width,wherey()+(cterm.height-wherey()-i),p2);
 						puttext(cterm.x+1,cterm.y+wherey()+i,cterm.x+cterm.width,wherey()+(cterm.height-wherey()),p2);
-						free(p2);
 					}
-					p2=(char *)malloc(cterm.width*2);
+					p2=(char *)alloca(cterm.width*2);
 					j=0;
 					for(k=0;k<cterm.width;k++) {
 						p2[j++]=' ';
@@ -697,7 +689,6 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					for(i=0;j<i;i++) {
 						puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
 					}
-					free(p2);
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
 					if(cterm.music_enable==CTERM_MUSIC_ENABLED) {
@@ -722,13 +713,12 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						i=1;
 					if(i>cterm.width-wherex())
 						i=cterm.width-wherex();
-					p2=(char *)malloc((cterm.width-wherex())*2);
+					p2=(char *)alloca((cterm.width-wherex())*2);
 					gettext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
 					memmove(p2,p2+(i*2),(cterm.width-wherex()-i)*2);
 					for(i=(cterm.width-wherex())*2-2;i>=wherex();i-=2)
 						p2[i]=' ';
 					puttext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
-					free(p2);
 					break;
 				case 'S':
 					i=atoi(cterm.escbuf+1);
@@ -1182,7 +1172,10 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	int j,k;
 	struct text_info	ti;
 	int	olddmc;
+	int oldptnm;
 
+	oldptnm=puttext_can_move;
+	puttext_can_move=1;
 	olddmc=hold_update;
 	hold_update=1;
 	if(retbuf!=NULL)
@@ -1397,6 +1390,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 #endif
 
 	hold_update=olddmc;
+	puttext_can_move=oldptnm;
 	gotoxy(wherex(),wherey());
 	return(retbuf);
 }

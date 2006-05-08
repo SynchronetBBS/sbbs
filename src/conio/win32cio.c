@@ -552,7 +552,7 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	reg.Right=right-1;
 	reg.Top=top-1;
 	reg.Bottom=bottom-1;
-	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		ReadConsoleOutput(h,ci,bs,bc,&reg);
 	for(y=0;y<=(bottom-top);y++) {
@@ -561,7 +561,6 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 			bu[(((y*bs.X)+x)*2)+1]=WintoDOSAttr(ci[(y*bs.X)+x].Attributes);
 		}
 	}
-	free(ci);
 	return 1;
 }
 
@@ -625,7 +624,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	reg.Right=right-1;
 	reg.Top=top-1;
 	reg.Bottom=bottom-1;
-	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	for(y=0;y<bs.Y;y++) {
 		for(x=0;x<bs.X;x++) {
 			ci[(y*bs.X)+x].Char.AsciiChar=bu[((y*bs.X)+x)*2];
@@ -634,7 +633,6 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	}
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		WriteConsoleOutput(h,ci,bs,bc,&reg);
-	free(ci);
 	return 1;
 }
 
