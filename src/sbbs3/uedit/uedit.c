@@ -229,9 +229,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(10+1)))==NULL)
+		allocfail(sizeof(char *)*(10+1));
+	for(i=0;i<(10+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -327,9 +327,9 @@ int edit_logon(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
+		allocfail(sizeof(char *)*(5+1));
+	for(i=0;i<(5+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -390,9 +390,9 @@ int edit_chat(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
+		allocfail(sizeof(char *)*(5+1));
+	for(i=0;i<(5+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -447,9 +447,8 @@ int edit_shell(scfg_t *cfg, user_t *user)
 	int 	i,j;
 	char 	**opt;
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-
+	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_shells+1)))==NULL)
+		allocfail(sizeof(char *)*(cfg->total_shells+1));
 
 	for(i=0;i<cfg->total_shells;i++) {
 		opt[i]=cfg->shell[i]->name;
@@ -466,6 +465,7 @@ int edit_shell(scfg_t *cfg, user_t *user)
 			}
 			break;
 	}
+
 	return(0);
 }
 
@@ -479,9 +479,9 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(2+1)))==NULL)
+		allocfail(sizeof(char *)*(2+1));
+	for(i=0;i<(2+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -517,8 +517,8 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 	int 	i,j;
 	char 	**opt;
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_xedits+1)))==NULL)
+		allocfail(sizeof(char *)*(cfg->total_xedits+1));
 
 	getuserdat(cfg,user);
 	opt[0]="None";
@@ -554,9 +554,9 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(3+1)))==NULL)
+		allocfail(sizeof(char *)*(3+1));
+	for(i=0;i<(3+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -598,8 +598,8 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
 	int		j=0;
 	char 	**opt;
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_fcomps+1)))==NULL)
+		allocfail(sizeof(char *)*(cfg->total_fcomps+1));
 
 	getuserdat(cfg,user);
 	for(i=0;i<cfg->total_fcomps;i++) {
@@ -640,9 +640,9 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(15+1)))==NULL)
+		allocfail(sizeof(char *)*(15+1));
+	for(i=0;i<(15+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -757,8 +757,8 @@ int edit_proto(scfg_t *cfg, user_t *user)
 	int		j=0;
 	char 	**opt;
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_prots+1)))==NULL)
+		allocfail(sizeof(char *)*(cfg->total_prots+1));
 
 	getuserdat(cfg,user);
 	opt[0]="None";
@@ -801,9 +801,9 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char 	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(6+1)))==NULL)
+		allocfail(sizeof(char *)*(6+1));
+	for(i=0;i<(6+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -975,9 +975,9 @@ int edit_stats(scfg_t *cfg, user_t *user)
 	char	str[256];
 	time_t	temptime,temptime2;
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(20+1)))==NULL)
+		allocfail(sizeof(char *)*(20+1));
+	for(i=0;i<(20+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -1258,9 +1258,9 @@ int edit_security(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(11+1)))==NULL)
+		allocfail(sizeof(char *)*(11+1));
+	for(i=0;i<(11+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -1426,9 +1426,9 @@ int edit_personal(scfg_t *cfg, user_t *user)
 	char	onech[2];
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(15+1)))==NULL)
+		allocfail(sizeof(char *)*(15+1));
+	for(i=0;i<(15+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -1584,9 +1584,9 @@ int edit_user(scfg_t *cfg, int usernum)
 	user_t	user;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(char *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(8+1)))==NULL)
+		allocfail(sizeof(char *)*(8+1));
+	for(i=0;i<(8+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -1660,6 +1660,14 @@ int edit_user(scfg_t *cfg, int usernum)
 	return(0);
 }
 
+void free_opts(char **opt)
+{
+	int i;
+	for(i=0; i<(MAX_OPTS+1); i++)
+		FREE_AND_NULL(opt[i]);
+	free(opt);
+}
+
 int finduser(scfg_t *cfg, user_t *user)
 {
 	int i,j,last;
@@ -1668,10 +1676,10 @@ int finduser(scfg_t *cfg, user_t *user)
 	struct user_list **opt;
 	int done=0;
 
-	if((opt=(struct user_list **)alloca(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
-		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
-	for(i=0;i<(MAX_OPTS+1);i++)
-		opt[i]=NULL;
+	last=lastuser(cfg);
+	if((opt=(struct user_list **)malloc(sizeof(struct user_list *)*(last+2)))==NULL)
+		allocfail(sizeof(struct user_list *)*(last+2));
+	memset(opt, 0, sizeof(struct user_list *)*(last+2));
 
 	str[0]=0;
 	uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Search String",str,LEN_NAME,K_EDIT);
@@ -1679,20 +1687,21 @@ int finduser(scfg_t *cfg, user_t *user)
 	/* User List */
 	done=0;
 	while(!done) {
-		last=lastuser(cfg);
 		j=0;
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			getuserdat(cfg,user);
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL
 					|| user->number==un) {
-				if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
+				FREE_AND_NULL(opt[j]);
+				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
 				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
-		if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
+		FREE_AND_NULL(opt[j]);
+		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
@@ -1705,6 +1714,8 @@ int finduser(scfg_t *cfg, user_t *user)
 				break;
 		}
 	}
+
+	free_opts((char **)opt);
 	return(0);
 }
 
@@ -1718,7 +1729,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 	struct user_list **opt;
 	int done=0;
 
-	if((opt=(struct user_list **)alloca(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(struct user_list **)malloc(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
 		opt[i]=NULL;
@@ -1732,12 +1743,14 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 			user->number=i;
 			getuserdat(cfg,user);
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL) {
-				if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
+				FREE_AND_NULL(opt[j]);
+				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
 				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
+		FREE_AND_NULL(opt[j]);
 		if((opt[j]=(struct user_list *)alloca(sizeof(struct user_list)))==NULL)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
@@ -1752,6 +1765,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 				break;
 		}
 	}
+	free_opts((char **)opt);
 	return(0);
 }
 
@@ -2021,15 +2035,15 @@ int main(int argc, char** argv)  {
 		exit(1);
 	}
 
-	if((opt=(char **)alloca(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
 	for(i=0;i<(MAX_OPTS+1);i++)
-		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
+		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)alloca(sizeof(char *)*MAX_OPTS))==NULL)
-		allocfail(sizeof(char *)*MAX_OPTS);
-	for(i=0;i<MAX_OPTS;i++)
+	if((mopt=(char **)alloca(sizeof(char *)*4))==NULL)
+		allocfail(sizeof(char *)*4);
+	for(i=0;i<4;i++)
 		if((mopt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -2115,6 +2129,7 @@ int main(int argc, char** argv)  {
 			}
 		}
 	}
+	free_opts(opt);
 }
 
 
