@@ -268,6 +268,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(uulen>=0) {
 			buf=uubuf;
 			len=uulen;
+		}
 	}
 
 	str = JS_NewStringCopyN(cx, buf, len);
