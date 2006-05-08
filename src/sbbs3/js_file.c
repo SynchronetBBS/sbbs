@@ -238,7 +238,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(len<0)
 		len=512;
 
-	if((buf=malloc(len+1))==NULL)
+	if((buf=alloca(len+1))==NULL)
 		return(JS_TRUE);
 
 	len = fread(buf,1,len,p->fp);
@@ -257,7 +257,7 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(p->uuencoded || p->b64encoded || p->yencoded) {
 		uulen=len*2;
-		if((uubuf=malloc(uulen))==NULL)
+		if((uubuf=alloca(uulen))==NULL)
 			return(JS_TRUE);
 		if(p->uuencoded)
 			uulen=uuencode(uubuf,uulen,buf,len);
@@ -266,16 +266,11 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		else
 			uulen=b64_encode(uubuf,uulen,buf,len);
 		if(uulen>=0) {
-			free(buf);
 			buf=uubuf;
 			len=uulen;
-		} else
-			free(uubuf);
 	}
 
 	str = JS_NewStringCopyN(cx, buf, len);
-
-	free(buf);
 
 	if(str==NULL)
 		return(JS_FALSE);
@@ -311,7 +306,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_FALSE);
 	}
 
-	if((buf=malloc(len))==NULL)
+	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
 	if(fgets(buf,len,p->fp)!=NULL) {
@@ -328,8 +323,6 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)	/* exception here Feb-12-2005 */
 			*rval = STRING_TO_JSVAL(js_str);			/* _CrtDbgBreak from _heap_alloc_dbg */
 	}
-
-	free(buf);
 
 	return(JS_TRUE);
 }
@@ -934,17 +927,15 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	len	= JS_GetStringLength(str);
 
 	if((p->uuencoded || p->b64encoded || p->yencoded)
-		&& len && (uubuf=malloc(len))!=NULL) {
+		&& len && (uubuf=alloca(len))!=NULL) {
 		if(p->uuencoded)
 			len=uudecode(uubuf,len,cp,len);
 		else if(p->yencoded)
 			len=ydecode(uubuf,len,cp,len);
 		else
 			len=b64_decode(uubuf,len,cp,len);
-		if(len<0) {
-			free(uubuf);
+		if(len<0)
 			return(JS_TRUE);
-		}
 		cp=uubuf;
 	}
 
@@ -962,22 +953,18 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(fwrite(cp,1,len,p->fp)==(size_t)len) {
 		if(tlen>len) {
 			len=tlen-len;
-			if((cp=malloc(len))==NULL) {
-				dbprintf(TRUE, p, "malloc failure of %u bytes", len);
+			if((cp=alloca(len))==NULL) {
+				dbprintf(TRUE, p, "alloca failure of %u bytes", len);
 				return(JS_TRUE);
 			}
 			memset(cp,p->etx,len);
 			fwrite(cp,1,len,p->fp);
-			free(cp);
 		}
 		dbprintf(FALSE, p, "wrote %u bytes",tlen);
 		*rval = JSVAL_TRUE;
 	} else 
 		dbprintf(TRUE, p, "write of %u bytes failed",len);
 		
-	if(uubuf!=NULL)
-		free(uubuf);
-
 	return(JS_TRUE);
 }
 
