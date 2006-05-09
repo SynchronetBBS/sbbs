@@ -78,9 +78,9 @@ long crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
-unsigned long sbbs_crc32(char *buf, unsigned long len)
+unsigned long crc32i(unsigned long crc, char *buf, unsigned long len)
 {
-	unsigned long l,crc=0xffffffff;
+	unsigned long l;
 
 	if(len==0 && buf!=NULL) 
 		len=strlen(buf);
