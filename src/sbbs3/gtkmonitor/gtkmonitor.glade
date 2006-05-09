@@ -532,11 +532,11 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="new_user_welcome_e-mail1">
+			    <widget class="GtkMenuItem" id="new_user_welcome_email1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">New User _Welcome E-mail</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_new_user_welcome_e-mail1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
+			      <signal name="activate" handler="on_new_user_welcome_email1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
 			    </widget>
 			  </child>
 
@@ -635,29 +635,29 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="e-mail_address_filter1">
+			    <widget class="GtkMenuItem" id="email_address_filter1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">E-mail _Address Filter</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_e-mail_address_filter1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
+			      <signal name="activate" handler="on_email_address_filter1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="e-mail_address_filter_message1">
+			    <widget class="GtkMenuItem" id="email_address_filter_message1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">E-mail Address Filter Message</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_e-mail_address_filter_message1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
+			      <signal name="activate" handler="on_email_address_filter_message1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="e-mail_subject_filter1">
+			    <widget class="GtkMenuItem" id="email_subject_filter1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">E-mail _Subject Filter</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_e-mail_subject_filter1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
+			      <signal name="activate" handler="on_email_subject_filter1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
 			    </widget>
 			  </child>
 
