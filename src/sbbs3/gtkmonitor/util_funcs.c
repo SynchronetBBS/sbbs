@@ -43,6 +43,22 @@ void edit_text_file(char *path, char *filename)
 	_beginthread(run_cmdline, 0, cmdline);
 }
 
+void touch_sem(char *path, char *filename)
+{
+	static char	cmdline[MAX_PATH*2];
+	char	p[MAX_PATH+1];
+
+	if(path != NULL) {
+		strcpy(p, path);
+		backslash(p);
+	}
+	else
+		p[0]=0;
+
+	strcat(p, filename);
+	ftouch(run_cmdline, 0, cmdline);
+}
+
 /* Assumes a 12 char outstr */
 char *getsizestr(char *outstr, long size, BOOL bytes) {
 	if(bytes) {

@@ -5,5 +5,6 @@ void view_text_file(char *path, char *filename);
 void edit_text_file(char *path, char *filename);
 char *getsizestr(char *outstr, long size, BOOL bytes);
 char *getnumstr(char *outstr, ulong size);
+void touch_sem(char *path, char *filename);
 
 #endif
