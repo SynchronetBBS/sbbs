@@ -1,7 +1,4 @@
-#include <gtk/gtk.h>
-#include <glade/glade.h>
-
-#include "sbbs.h"
+#include "gtkmonitor.h"
 #include "dirwrap.h"
 
 scfg_t		cfg;
