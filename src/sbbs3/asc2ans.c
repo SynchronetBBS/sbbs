@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <ctype.h>	/* toupper */
+#include <string.h>	/* strcmp */
 
 #define ANSI fprintf(out,"\x1b[")
 
