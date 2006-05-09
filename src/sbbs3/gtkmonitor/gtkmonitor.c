@@ -10,15 +10,8 @@ int			nodes=0;
 GtkListStore	*store = NULL;
 GtkTreeSelection *sel;
 
-int refresh_data(void);
-
-update_stats(gpointer data)
-{
-	refresh_data();
-}
-
 /* Refreshes global variables... ie: Number of users */
-int refresh_data(void)
+int refresh_data(gpointer data)
 {
 	char		str[1024];
 	char		str2[1024];
@@ -231,7 +224,7 @@ int refresh_data(void)
 	}
 
 	/* Setup the stats updater */
-	g_timeout_add(1000 /* Milliseconds */, update_stats, NULL);
+	g_timeout_add(1000 /* Milliseconds */, refresh_data, NULL);
 
 	return(0);
 }
@@ -258,7 +251,7 @@ int read_config(void)
     cfg.size=sizeof(cfg);
     SAFECOPY(cfg.ctrl_dir,ctrl_dir);
 
-	if(refresh_data())
+	if(refresh_data(NULL))
 		return(-1);
 	return(0);
 }
