@@ -1157,20 +1157,20 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="dns-based_blacklists1">
+			    <widget class="GtkMenuItem" id="dnsbased_blacklists1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">DNS-based Blacklists</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_dns-based_blacklists1_activate" last_modification_time="Thu, 09 Mar 2006 17:34:31 GMT"/>
+			      <signal name="activate" handler="on_dnsbased_blacklists1_activate" last_modification_time="Thu, 09 Mar 2006 17:34:31 GMT"/>
 			    </widget>
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="dns-blacklist_exempt_ips1">
+			    <widget class="GtkMenuItem" id="dnsblacklist_exempt_ips1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">DNS-blacklist Exempt IPs</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_dns-blacklist_exempt_ips1_activate" last_modification_time="Thu, 09 Mar 2006 17:34:31 GMT"/>
+			      <signal name="activate" handler="on_dnsblacklist_exempt_ips1_activate" last_modification_time="Thu, 09 Mar 2006 17:34:31 GMT"/>
 			    </widget>
 			  </child>
 
