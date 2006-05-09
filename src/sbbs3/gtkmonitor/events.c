@@ -239,3 +239,78 @@ void on_another_days_log3_activate(GtkWidget *wiggy, gpointer data) {
 	/* ToDo */
 }
 
+void on_ip_address_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"ip.can");
+}
+
+void on_ip_address_filter_silent1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"ip-silent.can");
+}
+
+void on_ip_address_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"badip.msg");
+}
+
+void on_host_name_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"host.can");
+}
+
+void on_host_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"badhost.msg");
+}
+
+void on_user_name_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"name.can");
+}
+
+void on_user_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"badname.msg");
+}
+
+void on_email_address_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"email.can");
+}
+
+void on_email_address_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"bademail.msg");
+}
+
+void on_email_subject_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"subject.can");
+}
+
+void on_file_name_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"file.can");
+}
+
+void on_file_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"badfile.msg");
+}
+
+void on_phone_number_filter1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"phone.can");
+}
+
+void on_phone_number_filter_message1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"badphone.msg");
+}
+
+void on_twit_list1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.ctrl_dir,"twitlist.cfg");
+}
+

@@ -47,5 +47,20 @@ void on_todays_log3_activate(GtkWidget *wiggy, gpointer data);
 void on_yesterdays_log3_activate(GtkWidget *wiggy, gpointer data);
 void on_another_days_log3_activate(GtkWidget *wiggy, gpointer data);
 
+void on_ip_address_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_ip_address_filter_silent1_activate(GtkWidget *wiggy, gpointer data);
+void on_ip_address_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_host_name_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_host_name_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_user_name_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_user_name_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_email_address_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_email_address_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_email_subject_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_file_name_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_file_name_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_phone_number_filter1_activate(GtkWidget *wiggy, gpointer data);
+void on_phone_number_filter_message1_activate(GtkWidget *wiggy, gpointer data);
+void on_twit_list1_activate(GtkWidget *wiggy, gpointer data);
 
 #endif

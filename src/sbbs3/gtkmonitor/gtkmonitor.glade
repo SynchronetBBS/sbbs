@@ -581,11 +581,11 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkMenuItem" id="ip_address_filter_(silent)1">
+			    <widget class="GtkMenuItem" id="ip_address_filter_silent1">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">IP Address Filter (silent)</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="on_ip_address_filter_(silent)1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
+			      <signal name="activate" handler="on_ip_address_filter_silent1_activate" last_modification_time="Thu, 09 Mar 2006 17:23:36 GMT"/>
 			    </widget>
 			  </child>
 
