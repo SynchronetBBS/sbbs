@@ -54,6 +54,6 @@ unsigned long fcrc32(FILE* fp, unsigned long len);
 #endif
 
 #define ucrc32(ch,crc) (crc32tbl[(crc^(ch))&0xff]^(crc>>8))
-#define crc32(x,y) crc32i(-1,x,y)
+#define crc32(x,y) crc32i(~0,x,y)
 
 #endif	/* Don't add anything after this line */
