@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 	else
 		in=stdin;
 
-	if(argc > 2 && (strcmp(argv[2],"-")) {
+	if(argc > 2 && (strcmp(argv[2],"-"))) {
 		if((out=fopen(argv[2],"wb"))==NULL) {
 			perror(argv[2]);
 			return(1);
