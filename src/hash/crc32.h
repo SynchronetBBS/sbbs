@@ -46,7 +46,7 @@ extern "C" {
 
 extern long crc32tbl[];
 
-unsigned long crc32(char* buf, unsigned long len);
+unsigned long sbbs_crc32(char* buf, unsigned long len);
 unsigned long fcrc32(FILE* fp, unsigned long len);
 
 #ifdef __cplusplus
