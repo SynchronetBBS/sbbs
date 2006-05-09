@@ -738,12 +738,12 @@
 			  <property name="can_focus">True</property>
 			  <property name="editable">True</property>
 			  <property name="visibility">True</property>
-			  <property name="max_length">24</property>
+			  <property name="max_length">30</property>
 			  <property name="text" translatable="yes"></property>
 			  <property name="has_frame">True</property>
 			  <property name="invisible_char">*</property>
 			  <property name="activates_default">False</property>
-			  <property name="width_chars">25</property>
+			  <property name="width_chars">30</property>
 			  <signal name="changed" handler="user_changed" last_modification_time="Thu, 23 Mar 2006 03:20:44 GMT"/>
 			</widget>
 			<packing>
