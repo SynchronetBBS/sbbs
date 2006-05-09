@@ -37,6 +37,9 @@
 
 #include <stdlib.h>		/* malloc and qsort */
 #include <string.h>		/* strtok */
+#if defined(_WIN32)
+ #include <malloc.h>    /* alloca() on Win32 */
+#endif
 #include "genwrap.h"	/* stricmp */
 #include "str_list.h"
 

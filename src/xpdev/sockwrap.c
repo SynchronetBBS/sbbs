@@ -40,6 +40,9 @@
 #include <errno.h>		/* ENOMEM */
 #include <stdio.h>		/* SEEK_SET */
 #include <string.h>
+#if defined(_WIN32)
+ #include <malloc.h>	/* alloca() on Win32 */
+#endif
 
 #include "genwrap.h"	/* SLEEP */
 #include "gen_defs.h"	/* BOOL/LOG_WARNING */
