@@ -1589,11 +1589,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& node.action==NODE_XTRN && node.aux==(xtrnnum+1)) {
 				if(node.status==NODE_QUIET) {
-					strcpy(str,cfg.sys_guru);
+					SAFECOPY(str,cfg.sys_guru);
 					c=cfg.sys_nodes+1; 
 				}
 				else if(node.misc&NODE_ANON)
-					strcpy(str,"UNKNOWN USER");
+					SAFECOPY(str,"UNKNOWN USER");
 				else
 					username(&cfg,node.useron,str);
 				bprintf(text[UserRunningXtrn],str
@@ -1606,44 +1606,45 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			return(false); 
 	}
 
-	sprintf(str,"%s/",cfg.xtrn[xtrnnum]->path);
-	strcpy(path,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
-	strcpy(dropdir,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
+	SAFECOPY(str,cfg.xtrn[xtrnnum]->path);
+	backslash(str);
+	SAFECOPY(path,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
+	SAFECOPY(dropdir,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
 
 	switch(cfg.xtrn[xtrnnum]->type) {
 		case XTRN_WWIV:
-			strcpy(name,"CHAIN.TXT");
+			SAFECOPY(name,"CHAIN.TXT");
 			break;
 		case XTRN_GAP:
-			strcpy(name,"DOOR.SYS");
+			SAFECOPY(name,"DOOR.SYS");
 			break;
 		case XTRN_RBBS:
 			sprintf(str,"DORINFO%X.DEF",cfg.node_num);
-			strcpy(name,str);
+			SAFECOPY(name,str);
 			break;
 		case XTRN_RBBS1:
-			strcpy(name,"DORINFO1.DEF");
+			SAFECOPY(name,"DORINFO1.DEF");
 			break;
 		case XTRN_WILDCAT:
-			strcpy(name,"CALLINFO.BBS");
+			SAFECOPY(name,"CALLINFO.BBS");
 			break;
 		case XTRN_PCBOARD:
-			strcpy(name,"PCBOARD.SYS");
+			SAFECOPY(name,"PCBOARD.SYS");
 			break;
 		case XTRN_UTI:
-			strcpy(name,"UTIDOOR.TXT");
+			SAFECOPY(name,"UTIDOOR.TXT");
 			break;
 		case XTRN_SR:
-			strcpy(name,"DOORFILE.SR");
+			SAFECOPY(name,"DOORFILE.SR");
 			break;
 		case XTRN_TRIBBS:
-			strcpy(name,"TRIBBS.SYS");
+			SAFECOPY(name,"TRIBBS.SYS");
 			break;
 		case XTRN_DOOR32:
-			strcpy(name,"DOOR32.SYS");
+			SAFECOPY(name,"DOOR32.SYS");
 			break;
 		default:
-			strcpy(name,"XTRN.DAT");
+			SAFECOPY(name,"XTRN.DAT");
 			break; 
 	}
 	if(cfg.xtrn[xtrnnum]->misc&XTRN_LWRCASE)
@@ -1656,9 +1657,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	putuserrec(&cfg,useron.number,U_CURXTRN,8,cfg.xtrn[xtrnnum]->code);
 
 	if(cfg.xtrn[xtrnnum]->misc&REALNAME)
-		strcpy(name,useron.name);
+		SAFECOPY(name,useron.name);
 	else
-		strcpy(name,useron.alias);
+		SAFECOPY(name,useron.alias);
 
 	gettimeleft();
 	tleft=timeleft+(cfg.xtrn[xtrnnum]->textra*60);
