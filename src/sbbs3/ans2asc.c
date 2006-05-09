@@ -48,21 +48,29 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	if(argc<3) {
+	if(argc<2) {
 		fprintf(stderr,"\nans2asc %s\n",revision);
-		fprintf(stderr,"\nusage: %s infile.ans outfile.asc\n",argv[0]);
+		fprintf(stderr,"\nusage: %s infile.ans [outfile.asc]\n",argv[0]);
 		return(0); 
 	}
 
-	if((in=fopen(argv[1],"rb"))==NULL) {
-		perror(argv[1]);
-		return(1); 
+	if(strcmp(argv[1],"-")) {
+		if((in=fopen(argv[1],"rb"))==NULL) {
+			perror(argv[1]);
+			return(1); 
+		}
 	}
+	else
+		in=stdin;
 
-	if((out=fopen(argv[2],"wb"))==NULL) {
-		perror(argv[2]);
-		return(1); 
+	if(argc > 2 && (strcmp(argv[2],"-")) {
+		if((out=fopen(argv[2],"wb"))==NULL) {
+			perror(argv[2]);
+			return(1);
+		}
 	}
+	else
+		out=stdout;
 
 	esc=0;
 	while((ch=fgetc(in))!=EOF) {
