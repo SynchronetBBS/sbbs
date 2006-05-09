@@ -675,10 +675,10 @@ void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the default download protocol widget\n");
 		else {
-			gtk_combo_box_set_active(GTK_COMBO_BOX(w),-1);
+			gtk_combo_box_set_active(GTK_COMBO_BOX(w),0);
 			for(i=0;i<cfg.total_prots;i++) {
 				if(cfg.prot[i]->mnemonic==user.prot) {
-					gtk_combo_box_set_active(GTK_COMBO_BOX(w),i);
+					gtk_combo_box_set_active(GTK_COMBO_BOX(w),i+1);
 					break;
 				}
 			}
@@ -1603,8 +1603,12 @@ void save_user(GtkWidget *wiggy, gpointer data)
 		w=glade_xml_get_widget(xml, "cDefaultDownloadProtocol");
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the default download protocol widget\n");
-		else
-			user.prot=cfg.prot[gtk_combo_box_get_active(GTK_COMBO_BOX(w))]->mnemonic;
+		else {
+			if(gtk_combo_box_get_active(GTK_COMBO_BOX(w))==0)
+				user.prot=' ';
+			else
+				user.prot=cfg.prot[gtk_combo_box_get_active(GTK_COMBO_BOX(w))-1]->mnemonic;
+		}
 
 		w=glade_xml_get_widget(xml, "cTempQWKFileType");
 		if(w==NULL)
