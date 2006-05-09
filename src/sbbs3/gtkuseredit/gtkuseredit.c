@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 			unsigned int	nu;
 			nu=matchuser(&cfg, argv[1], TRUE);
 			if(nu)
-				update_current_user(atoi(argv[1]));
+				update_current_user(nu);
 			else {
 				GladeXML        *cxml;
 				cxml = glade_xml_new("gtkuseredit.glade", "NotFoundWindow", NULL);
