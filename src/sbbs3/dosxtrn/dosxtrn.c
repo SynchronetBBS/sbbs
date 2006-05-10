@@ -230,14 +230,14 @@ void interrupt winNTint14(
 		case 0x00:	/* Initialize/Set baud rate */
 			_ax = PortStatus();
 			break;
-		case 0x01: /* write char to com port */
+		case 0x01: /* write char to com port, with wait */
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
 			vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			_ax = PortStatus();
 			nodata=0;
 			break;
-		case 0x02: /* read char from com port */
+		case 0x02: /* read char from com port, with wait */
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 			if(!_ax) {
@@ -289,14 +289,18 @@ void interrupt winNTint14(
 			else
 				nodata=0;
 			break;
-        case 0x18:	/* read bock */
-            _ax = vdd_buf(VDD_READ, _cx, _es, _di);
+        case 0x18:	/* read block, no wait */
+			vdd_getstatus(&vdd_status);
+			if(!vdd_status.inbuf_full)
+				_ax = 0; /* no data available */
+			else
+				_ax = vdd_buf(VDD_READ, _cx, _es, _di);
 			if(_ax == 0)
 				vdd_op(VDD_YIELD);
 			else
 				nodata=0;
 			break;
-        case 0x19:	/* write block */
+        case 0x19:	/* write block, no wait */
 			_ax = vdd_buf(VDD_WRITE, _cx, _es, _di);
 			nodata=0;
 			break;
