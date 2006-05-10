@@ -1,3 +1,4 @@
+#include "events.h"
 #include "gtkmonitor.h"
 #include "dirwrap.h"
 
@@ -41,6 +42,7 @@ int refresh_data(gpointer data)
 		nodes=0;
 		sel = gtk_tree_view_get_selection (GTK_TREE_VIEW (w));
 		gtk_tree_selection_set_mode (sel, GTK_SELECTION_SINGLE);
+		g_signal_connect (G_OBJECT (sel), "changed", G_CALLBACK (update_stats_callback), NULL);
 	}
 	else
 		gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &curr);
@@ -221,7 +223,8 @@ int refresh_data(gpointer data)
 	}
 
 	/* Setup the stats updater */
-	g_timeout_add(1000 /* Milliseconds */, refresh_data, NULL);
+	if(data != NULL)
+		g_timeout_add(1000 /* Milliseconds */, refresh_data, data);
 
 	return(0);
 }
@@ -248,16 +251,14 @@ int read_config(void)
     cfg.size=sizeof(cfg);
     SAFECOPY(cfg.ctrl_dir,ctrl_dir);
 
-	if(refresh_data(NULL))
+	/* Passing any non-NULL argument is required to set up the timeout */
+	if(refresh_data(refresh_data))
 		return(-1);
 	return(0);
 }
 
 int main(int argc, char *argv[]) {
 	char			glade_path[MAX_PATH+1];
-	GError			*error = NULL;
-	GtkIconTheme	*icon_theme;
-	GdkPixbuf		*pixbuf;
 
     gtk_init(&argc, &argv);
     glade_init();
