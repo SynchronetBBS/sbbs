@@ -30,6 +30,34 @@ int refresh_data(gpointer data)
         return(-1);
 	}
 
+	/* Update timed events */
+#if 0
+	w=glade_xml_get_widget(xml, "force_timed_event1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get timed event widget\n");
+	else {
+		GtkWidget *menu;
+
+		menu=gtk_menu_item_get_submenu(w);
+		if(menu!=NULL) {
+			GList *evts;
+			evts = gtk_container_get_children(GTK_CONTAINER(menu));
+
+			for(i=0; i<cfg.total_event; i++) {
+			}
+		}
+		else
+			fprintf(stderr,"Cannot get timed event submenu\n");
+	}
+
+	/* Update network call-outs */
+	w=glade_xml_get_widget(xml, "force_network_callout1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get network callout widget\n");
+	else {
+	}
+#endif
+
 	/* Update the node list stuff */
 	w=glade_xml_get_widget(xml, "lNodeList");
 

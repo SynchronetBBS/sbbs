@@ -2,6 +2,11 @@
 #include "gtkmonitor.h"
 #include "util_funcs.h"
 
+void update_stats_callback(GtkWidget *wiggy, gpointer data)
+{
+	refresh_data(NULL);
+}
+
 void on_guru_brain1_activate(GtkWidget *wiggy, gpointer data) {
 	edit_text_file(cfg.ctrl_dir,"guru.dat");
 }
@@ -104,7 +109,11 @@ void on_login_message1_activate(GtkWidget *wiggy, gpointer data)
 {
 	edit_text_file(cfg.text_dir,"ftplogin.txt");
 }
-#warning Missing ftpbadlogin.txt
+
+void on_failed_login_mesage1_activate(GtkWidget *wiggy, gpointer data)
+{
+	edit_text_file(cfg.text_dir,"ftpbadlogin.txt");
+}
 
 void on_hello_message1_activate(GtkWidget *wiggy, gpointer data)
 {
@@ -146,7 +155,11 @@ void on_error_log1_activate(GtkWidget *wiggy, gpointer data)
 	view_text_file(cfg.logs_dir,"error.log");
 }
 
-#warning Remove BBS stats form thinger.
+void on_statistics_log1_activate(GtkWidget *wiggy, gpointer data)
+{
+	view_stdout(cfg.exec_dir,"slog");
+}
+
 void on_todays_log1_activate(GtkWidget *wiggy, gpointer data)
 {
 	time_t	t;
@@ -179,64 +192,6 @@ void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
 void on_spam_log1_activate(GtkWidget *wiggy, gpointer data)
 {
 	view_text_file(cfg.logs_dir,"spam.log");
-}
-
-void on_todays_log2_activate(GtkWidget *wiggy, gpointer data)
-{
-	time_t	t;
-	struct tm *tm;
-	char	fn[20];
-
-	t=time(NULL);
-	tm=localtime(&t);
-	sprintf(fn,"logs/ms%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
-}
-
-void on_yesterdays_log2_activate(GtkWidget *wiggy, gpointer data)
-{
-	time_t	t;
-	struct tm *tm;
-	char	fn[20];
-
-	t=time(NULL);
-	t-=24*60*60;
-	tm=localtime(&t);
-	sprintf(fn,"logs/ms%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
-}
-
-void on_another_days_log2_activate(GtkWidget *wiggy, gpointer data) {
-	/* ToDo */
-}
-
-void on_todays_log3_activate(GtkWidget *wiggy, gpointer data)
-{
-	time_t	t;
-	struct tm *tm;
-	char	fn[20];
-
-	t=time(NULL);
-	tm=localtime(&t);
-	sprintf(fn,"logs/fs%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
-}
-
-void on_yesterdays_log3_activate(GtkWidget *wiggy, gpointer data)
-{
-	time_t	t;
-	struct tm *tm;
-	char	fn[20];
-
-	t=time(NULL);
-	t-=24*60*60;
-	tm=localtime(&t);
-	sprintf(fn,"logs/fs%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
-}
-
-void on_another_days_log3_activate(GtkWidget *wiggy, gpointer data) {
-	/* ToDo */
 }
 
 void on_ip_address_filter1_activate(GtkWidget *wiggy, gpointer data)
@@ -314,3 +269,115 @@ void on_twit_list1_activate(GtkWidget *wiggy, gpointer data)
 	edit_text_file(cfg.ctrl_dir,"twitlist.cfg");
 }
 
+void on_hack_attempt_log1_activate(GtkWidget *wiggy, gpointer data)
+{
+	view_text_file(cfg.logs_dir,"hack.log");
+}
+
+void on_configure1_activate(GtkWidget *wiggy, gpointer data)
+{
+	run_external(cfg.exec_dir,"scfg");
+}
+
+void on_edit3_activate(GtkWidget *wiggy, gpointer data)
+{
+	run_external(cfg.exec_dir,"gtkuseredit");
+}
+
+void on_truncate_deleted_users1_activate(GtkWidget *wiggy, gpointer data)
+{
+    int usernumber;
+    int deleted=0;
+    user_t user;
+    char str[128];
+
+    while((user.number=lastuser(&cfg))!=0) {
+        if(getuserdat(&cfg,&user)!=0)
+            break;
+        if(!(user.misc&DELETED))
+            break;
+        if(!del_lastuser(&cfg))
+            break;
+        deleted++;
+    }
+    sprintf(str,"%u Deleted User Records Removed",deleted);
+	display_message("Users Truncated", str);
+}
+
+void on_stop6_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown");
+}
+
+void on_recycle6_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle");
+}
+
+void on_stop1_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown.telnet");
+}
+
+void on_recycle5_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle.telnet");
+}
+
+void on_stop2_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown.mail");
+}
+
+void on_recycle1_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle.mail");
+}
+
+void on_stop3_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown.ftp");
+}
+
+void on_recycle2_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle.ftp");
+}
+
+void on_stop4_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown.web");
+}
+
+void on_recycle3_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle.web");
+}
+
+void on_stop5_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "shutdown.services");
+}
+
+void on_recycle4_activate(GtkWidget *wiggy, gpointer data)
+{
+	touch_sem(cfg.ctrl_dir, "recycle.services");
+}
+
+void on_statistics_pane1_activate(GtkWidget *wiggy, gpointer data)
+{
+	GtkWidget *w;
+
+	w=glade_xml_get_widget(xml, "StatisticsPane");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get the statistics pane.\n");
+	else {
+		switch(gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(wiggy))) {
+			case 0:
+				gtk_widget_hide(w);
+				break;
+			default:
+				gtk_widget_show(w);
+		}
+	}
+}

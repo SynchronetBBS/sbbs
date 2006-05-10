@@ -3,6 +3,8 @@
 
 #include <gtk/gtk.h>
 
+void update_stats_callback(GtkWidget *wiggy, gpointer data);
+
 void on_guru_brain1_activate(GtkWidget *wiggy, gpointer data);
 void on_text_strings1_activate(GtkWidget *wiggy, gpointer data);
 void on_default_colours1_activate(GtkWidget *wiggy, gpointer data);
