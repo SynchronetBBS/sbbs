@@ -89,6 +89,10 @@ LINK32=link.exe
 # Name "sbbsexec - Win32 Debug"
 # Begin Source File
 
+SOURCE=..\xpdev\genwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\ringbuf.c
 # End Source File
 # Begin Source File
