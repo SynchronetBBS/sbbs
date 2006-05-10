@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,20 +37,20 @@
 
 
 enum {
-	 VDD_OPEN
-	,VDD_CLOSE
-	,VDD_READ
-	,VDD_PEEK
-	,VDD_WRITE
-	,VDD_STATUS
-	,VDD_INBUF_PURGE
-	,VDD_INBUF_FULL
-	,VDD_INBUF_SIZE
-	,VDD_OUTBUF_PURGE
-	,VDD_OUTBUF_FULL
-	,VDD_OUTBUF_SIZE
-	,VDD_ONLINE
-	,VDD_YIELD
+	 VDD_OPEN				=0
+	,VDD_CLOSE				=1
+	,VDD_READ				=2
+	,VDD_PEEK				=3
+	,VDD_WRITE				=4
+	,VDD_STATUS				=5
+	,VDD_INBUF_PURGE		=6
+	,VDD_INBUF_FULL			=7
+	,VDD_INBUF_SIZE			=8
+	,VDD_OUTBUF_PURGE		=9
+	,VDD_OUTBUF_FULL		=10
+	,VDD_OUTBUF_SIZE		=11
+	,VDD_ONLINE				=12
+	,VDD_YIELD				=13
 };
 
 typedef struct {
