@@ -535,6 +535,7 @@ while(1) {
 	var extra_select=false;
 	next_key='';
 	bbs.node_action=NODE_MAIN;
+	bbs.nodesync();
 	if(key=='')
 		key=mainbar.getval()
 	else
@@ -838,6 +839,7 @@ function show_filemenu()
 	var cur=1;
 	var nd=false;
 	bbs.node_action=NODE_XFER;
+	bbs.nodesync();
 	while(1) {
 		var filemenu=new Filemenu();
 		var ret;
