@@ -40,6 +40,7 @@
 #include <vddsvc.h>
 #include "vdd_func.h"
 #include "ringbuf.h"
+#include "genwrap.h"
 #include "threadwrap.h"
 
 #define RINGBUF_SIZE_IN			10000
@@ -123,23 +124,30 @@ BYTE uart_divisor_latch_msb		= 0x00;
 	int log_level = LOG_WARNING;
 #endif
 
-DWORD	polls_before_yield=1000;
+DWORD	polls_before_yield=10;
 HANDLE	hungup_event=NULL;
 HANDLE	output_event=NULL;
 HANDLE	rdslot=INVALID_HANDLE_VALUE;
 HANDLE	wrslot=INVALID_HANDLE_VALUE;
 RingBuf	rdbuf;
 
-void lputs(int level, char* sbuf)
-{
-	if(level <= log_level)
-		OutputDebugString(sbuf);
+void lputs(int level, char* msg)
+{	
+	char buf[1024];
+	if(level > log_level)
+		return;
+
+	SAFEPRINTF(buf,"SBBS: %s\r\n", msg);
+	OutputDebugString(buf);
 }
 
 static void lprintf(int level, const char *fmt, ...)
 {
 	char sbuf[1024];
 	va_list argptr;
+
+	if(level > log_level)
+		return;
 
     va_start(argptr,fmt);
     _vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
@@ -215,23 +223,16 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static	DWORD	online_poll;
 	static	DWORD	status_poll;
 	static	DWORD	yields;
-#if defined(_DEBUG)
-	static	FILE*	fp=NULL;
-#endif
 
 	retval=0;
 	node_num=getBH();
 
-#if TRUE && defined(_DEBUG)
-	if(fp!=NULL)
-		fprintf(fp,"VDD_OP: %d\r\n",getBL());
-#endif
-	lprintf(LOG_DEBUG,"VDD_OP: %d", getBL());
+	lprintf(LOG_DEBUG,"VDD_OP: %d (arg=%X)", getBL(),getCX());
 
 	switch(getBL()) {
 
 		case VDD_OPEN:
-#if defined(_DEBUG)
+#if 0
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");
 #endif
@@ -242,11 +243,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				,MAILSLOT_WAIT_FOREVER 	/* Read timeout */
 				,NULL);
 			if(rdslot==INVALID_HANDLE_VALUE) {
-#if defined(_DEBUG)
-				if(fp!=NULL)
-					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
-						,GetLastError(),str);
-#endif
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
 				retval=1;
 				break;
 			}
@@ -260,11 +258,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				,FILE_ATTRIBUTE_NORMAL
 				,(HANDLE) NULL);
 			if(wrslot==INVALID_HANDLE_VALUE) {
-#if defined(_DEBUG)
-				if(fp!=NULL)
-					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
-						,GetLastError(),str);
-#endif
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
 				retval=2;
 				break;
 			}
@@ -280,11 +275,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				FALSE,				/* inherit flag  */
 				str);				/* pointer to event-object name  */
 			if(hungup_event==NULL) {
-#if defined(_DEBUG)
-				if(fp!=NULL)
-					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
-						,GetLastError(),str);
-#endif
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
 				retval=4;
 				break;
 			}
@@ -294,10 +286,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			online_poll=0;
 			yields=0;
 
-#if defined(_DEBUG)
-			if(fp!=NULL)
-				fprintf(fp,"VDD_OPEN: Opened successfully\r\n");
-#endif
+			lprintf(LOG_DEBUG,"VDD_OPEN: Opened successfully");
 
 			_beginthread(input_thread, 0, NULL);
 
@@ -305,16 +294,12 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_CLOSE:
-#if defined(_DEBUG)
-			if(fp!=NULL) {
-				fprintf(fp,"VDD_CLOSE: rdbuf=%u "
-					"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u\r\n"
-					,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll,yields);
-				fprintf(fp,"           read=%u bytes (in %u calls)\r\n",bytes_read,reads);
-				fprintf(fp,"           wrote=%u bytes (in %u calls)\r\n",bytes_written,writes);
-				fclose(fp);
-			}
-#endif
+			lprintf(LOG_DEBUG,"VDD_CLOSE: rdbuf=%u "
+				"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u"
+				,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll,yields);
+			lprintf(LOG_DEBUG,"           read=%u bytes (in %u calls)",bytes_read,reads);
+			lprintf(LOG_DEBUG,"           wrote=%u bytes (in %u calls)",bytes_written,writes);
+
 			CloseHandle(rdslot);
 			CloseHandle(wrslot);
 			if(hungup_event!=NULL)
@@ -340,10 +325,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_PEEK:
 			count = getCX();
-#if defined(_DEBUG)
-			if(count != 1 && fp!=NULL)
-				fprintf(fp,"VDD_PEEK of %d\r\n",count);
-#endif
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_PEEK of %d",count);
 
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
@@ -352,18 +335,13 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_WRITE:
 			count = getCX();
-#if defined(_DEBUG)
-			if(count != 1 && fp!=NULL)
-				fprintf(fp,"VDD_WRITE of %d\r\n",count);
-#endif
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_WRITE of %d",count);
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 			if(!WriteFile(wrslot,p,count,&retval,NULL)) {
-#if defined(_DEBUG)
-				if(fp!=NULL)
-					fprintf(fp,"!VDD_WRITE: WriteFile Error %d (size=%d)\r\n"
-						,GetLastError(),retval);
-#endif
+				lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
+					,GetLastError(),retval);
 				retval=0;
 			} else {
 				writes++;
@@ -376,10 +354,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			status_poll++;
 			count = getCX();
 			if(count != sizeof(vdd_status_t)) {
-#if defined(_DEBUG)
-				if(fp!=NULL)
-					fprintf(fp,"!VDD_STATUS: wrong size (%d!=%d)\r\n",count,sizeof(vdd_status_t));
-#endif
+				lprintf(LOG_DEBUG,"!VDD_STATUS: wrong size (%d!=%d)",count,sizeof(vdd_status_t));
 				retval=sizeof(vdd_status_t);
 				break;
 			}
@@ -414,18 +389,12 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 
 		case VDD_INBUF_PURGE:
-#if defined(_DEBUG)
-			if(fp!=NULL)
-				fprintf(fp,"!VDD_INBUF_PURGE: NOT IMPLEMENTED\r\n");
-#endif
+			lprintf(LOG_WARNING,"!VDD_INBUF_PURGE: NOT IMPLEMENTED");
 			retval=0;
 			break;
 
 		case VDD_OUTBUF_PURGE:
-#if defined(_DEBUG)
-			if(fp!=NULL)
-				fprintf(fp,"!VDD_OUTBUF_PURGE: NOT IMPLEMENTED\r\n");
-#endif
+			lprintf(LOG_WARNING,"!VDD_OUTBUF_PURGE: NOT IMPLEMENTED");
 			retval=0;
 			break;
 
@@ -476,11 +445,12 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			yields++;
 			break;
 
+		case VDD_CONFIG_YIELD:
+			polls_before_yield=getCX();
+			break;
+
 		default:
-#if defined(_DEBUG)
-			if(fp!=NULL)
-				fprintf(fp,"!UNKNOWN VDD_OP: %d\r\n",getBL());
-#endif
+			lprintf(LOG_ERR,"!UNKNOWN VDD_OP: %d",getBL());
 			break;
 	}
 	setAX((WORD)retval);
@@ -503,7 +473,7 @@ VOID uart_wrport(WORD port, BYTE data)
 			} else {
 				lprintf(LOG_DEBUG,"WRITE DATA: %02X", data);
 				if(!WriteFile(wrslot,&data,sizeof(BYTE),&retval,NULL)) {
-					lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)\r\n"
+					lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
 						,GetLastError(),retval);
 				} else {
 					SetEvent(output_event);
@@ -618,10 +588,16 @@ VOID uart_rdport(WORD port, PBYTE data)
 __declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason, 
 IN PCONTEXT Context OPTIONAL)
 {
+	char revision[16];
 	VDD_IO_HANDLERS  IOHandlers = { NULL };
 	VDD_IO_PORTRANGE PortRange;
 
-	lprintf(LOG_DEBUG,"VDDInitialize, Reason: %u", Reason);
+	sscanf("$Revision$", "%*s %s", revision);
+
+	lprintf(LOG_INFO,"Synchronet Virutal Device Driver, rev %s %s %s"
+		,revision, __DATE__, __TIME__);
+
+	lprintf(LOG_DEBUG,"VDDInitialize, Reason: 0x%lX", Reason);
 
 	/* Reason is always 0 (DLL_PROCESS_DETACH) which doesn't jive with the
 	   Microsoft NT DDK docs */
