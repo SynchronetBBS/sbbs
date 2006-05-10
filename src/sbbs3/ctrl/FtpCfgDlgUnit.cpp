@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -85,6 +85,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     AutoStartCheckBox->Checked=MainForm->FtpAutoStart;
     LogFileCheckBox->Checked=MainForm->FtpLogFile;
 
+    PasvIpLookupCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_LOOKUP_PASV_IP;
 	PasvPortLowEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_low);
   	PasvPortHighEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_high);
 
@@ -109,6 +110,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
 	HtmlIndexCheckBox->Checked
         =MainForm->ftp_startup.options&FTP_OPT_HTML_INDEX_FILE;
 	HtmlIndexCheckBoxClick(Sender);
+    PasvIpLookupCheckBoxClick(Sender);
 
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -214,6 +216,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->ftp_startup.options|=FTP_OPT_HTML_INDEX_FILE;
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_HTML_INDEX_FILE;
+    if(PasvIpLookupCheckBox->Checked==true)
+        MainForm->ftp_startup.options|=FTP_OPT_LOOKUP_PASV_IP;
+    else
+        MainForm->ftp_startup.options&=~FTP_OPT_LOOKUP_PASV_IP;
 
     MainForm->SaveIniSettings(Sender);
 }
@@ -272,4 +278,9 @@ void __fastcall TFtpCfgDlg::HtmlIndexCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TFtpCfgDlg::PasvIpLookupCheckBoxClick(TObject *Sender)
+{
+    PasvIpAddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
 
