@@ -67,6 +67,7 @@ void refresh_events(void)
 		else
 			fprintf(stderr,"Cannot get timed event submenu\n");
 	}
+	refresh_data(NULL);
 }
 
 /* Refreshes global variables... ie: Number of users */
