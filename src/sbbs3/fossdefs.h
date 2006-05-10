@@ -47,7 +47,7 @@
 /* FOSSIL functions (in AH) */
 #define FOSSIL_FUNC_SET_RATE	0x00
 #define FOSSIL_FUNC_PUT_CHAR	0x01	/* transmit with wait */
-#define FOSSIL_FUNC_GET_CHAR	0x02
+#define FOSSIL_FUNC_GET_CHAR	0x02	/* receive char, with wait */
 #define FOSSIL_FUNC_GET_STATUS	0x03
 #define FOSSIL_FUNC_INIT		0x04
 #define FOSSIL_FUNC_UNINIT		0x05
@@ -69,8 +69,8 @@
 #define FOSSIL_FUNC_BIOS_PRINT	0x15
 #define FOSSIL_FUNC_TIMER_CHAIN	0x16	/* insert/deleted timer callbacks */
 #define FOSSIL_FUNC_REBOOT		0x17
-#define FOSSIL_FUNC_READ_BLOCK	0x18	/* read block */
-#define FOSSIL_FUNC_WRITE_BLOCK	0x19	/* write block */
+#define FOSSIL_FUNC_READ_BLOCK	0x18	/* read block, no wait */
+#define FOSSIL_FUNC_WRITE_BLOCK	0x19	/* write block, no wait */
 #define FOSSIL_FUNC_BREAK		0x1a
 #define FOSSIL_FUNC_GET_INFO	0x1b
 
