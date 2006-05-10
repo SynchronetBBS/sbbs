@@ -295,6 +295,27 @@ and you're running Synchronet v3.13a (FTP Server Revision 1.296) or later:
 the <tt>PasvIpAddress</tt> value in the <tt>[FTP]</tt> section of your <tt>ctrl/sbbs.ini</tt> file to
 specify your <a href="#public_ip"><b>public</b> IP address</a>.
 <p>
+This problem can be identified (on the client) by finding a comma-separated <a href="#private_ip"><b>private</b> IP address</a>
+in the PASV response received from the FTP server (in response to a directory or file transfer request from the client).
+<p>Example:<p>
+<pre>
+# ftp yourbbs.synchro.net
+Connected to yourbbs.synchro.net (70.19.142.182).
+220 Please enter your user name.
+Name (yourbbs.synchro.net:root): anonymous
+331 User name okay, give your full e-mail address as password.
+Password:
+230 Guest logged in.
+ftp> passive
+Passive mode on.
+ftp> dir
+227 Entering Passive Mode (192,168,56,2,4,0) <b><--- IP address reported as 192.168.56.2 instead of 70.19.41.182</b>
+</pre>
+<p>Use an FTP client that supports passive mode <b>and</b> can display all the responses received-from
+the FTP server to help identify this particular problem. The FTP client must be running on a system <i>outside</i> your private network,
+so you may need a friend to assist you with this.
+
+<p>
 <li>If your firewall cannot dynamically open/forward FTP PASV data ports for incoming passive FTP data connections, you can
 specifiy a limited <i>range</i> of TCP port numbers to use for passive transfers by modifying the
 <tt>PasvPortLow</tt> and <tt>PasvPortHigh</tt> values in the <tt>[FTP]</tt> section of your
