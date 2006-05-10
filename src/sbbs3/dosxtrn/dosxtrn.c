@@ -98,7 +98,7 @@ static int vdd_buf(BYTE op, int count, WORD buf_seg, WORD buf_off)
 	return(retval);
 }
 
-static int vdd_op(BYTE op)
+static int vdd_op(BYTE op, WORD arg)
 {
 	int retval;
 
@@ -108,13 +108,16 @@ static int vdd_op(BYTE op)
 #endif
 	_asm {
 		push	bx
+		push	cx
 		mov		ax,	vdd
 		mov		bh,	node_num
 		mov		bl,	op
+		mov		cx, arg
 	}
 	DispatchCall();
 	_asm {
 		mov		retval, ax
+		pop		cx
 		pop		bx
 	}
 	return(retval);
@@ -242,7 +245,7 @@ void interrupt winNTint14(
 			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 			if(!_ax) {
 				_ax = 0x8000;	/* timed-out */
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 			} else {
 				_ax = ch;
 				nodata=0;
@@ -251,7 +254,7 @@ void interrupt winNTint14(
 		case 0x03:	/* request status */
 			_ax=PortStatus();
 			if(_ax==0x6088 && ++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 			break;
 		case 0x04:	/* initialize */
 			_ax=FOSSIL_SIGNATURE;	/* magic number = success */
@@ -260,10 +263,10 @@ void interrupt winNTint14(
         case 0x08:	/* flush output buffer	*/
 			break;
         case 0x09:	/* purge output buffer	*/
-			vdd_op(VDD_OUTBUF_PURGE);
+			vdd_op(VDD_OUTBUF_PURGE, 0);
 			break;
         case 0x0A:	/* purge input buffer	*/
-			vdd_op(VDD_INBUF_PURGE);
+			vdd_op(VDD_INBUF_PURGE, 0);
 			break;
 		case 0x0B:	/* write char to com port, no wait */
         	if(0 /*RingBufFree(&vm->out)<2 */) {
@@ -279,13 +282,13 @@ void interrupt winNTint14(
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full) {
 				_ax=0xffff;	/* no char available */
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 				break;
 			}
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
 			if(_ax == 0)
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 			else
 				nodata=0;
 			break;
@@ -296,7 +299,7 @@ void interrupt winNTint14(
 			else
 				_ax = vdd_buf(VDD_READ, _cx, _es, _di);
 			if(_ax == 0)
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 			else
 				nodata=0;
 			break;
@@ -314,7 +317,7 @@ void interrupt winNTint14(
 
 			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0 
 				&& ++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD);			
+				vdd_op(VDD_YIELD, 0);			
 
 			p = _MK_FP(_es,_di);
             wr=sizeof(info);
@@ -356,7 +359,7 @@ void interrupt winNTint16(
 				return;
 			} 
 			if(++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 			break;
     	case 0x01:	/* Get keyboard status */
         case 0x11:	/* Get enhanced keyboard status */
@@ -369,7 +372,7 @@ void interrupt winNTint16(
 				return;
 			}
 			if(++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD);
+				vdd_op(VDD_YIELD, 0);
 	        break;
 	}
 
@@ -411,6 +414,7 @@ int main(int argc, char **argv)
 	BOOL	NT=FALSE;
 	BOOL	success=FALSE;
 	WORD	seg;
+	WORD	w;
 
 	sscanf("$Revision$", "%*s 1.%u", &revision);
 
@@ -508,12 +512,18 @@ int main(int argc, char **argv)
 		fprintf(stderr,"mode=%d\n",mode);
 #endif
 
-		i=vdd_op(VDD_OPEN);
+		i=vdd_op(VDD_OPEN, 0);
 		if(i) {
 			fprintf(stderr,"!VDD_OPEN ERROR: %d\n",i);
 			UnRegisterModule();
 			return(-1);
 		}
+		/* Configure auto-yield (for UART/COM1 virtualization) */
+		if(polls_before_yield > 0xffff)
+			w = 0xffff;
+		else
+			w = polls_before_yield;
+		vdd_op(VDD_CONFIG_YIELD, w);
 		oldint16=_dos_getvect(0x16);
 		oldint29=_dos_getvect(0x29);
 		if(mode==SBBSEXEC_MODE_FOSSIL) {
@@ -545,7 +555,7 @@ int main(int argc, char **argv)
 	_dos_setvect(0x14,oldint14);
 
 	if(NT) {
-		vdd_op(VDD_CLOSE);
+		vdd_op(VDD_CLOSE, 0);
 
 		_dos_setvect(0x16,oldint16);
 		_dos_setvect(0x29,oldint29);
