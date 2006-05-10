@@ -433,7 +433,6 @@ static JSBool
 js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		fname;
-	char*		buf;
 	long		len;
 	int			file;
 	JSString*	str;
