@@ -8,6 +8,67 @@ int			nodes=0;
 GtkListStore	*store = NULL;
 GtkTreeSelection *sel;
 
+void refresh_events(void)
+{
+	int		i;
+	GtkWidget	*w;
+	GtkWidget	*menu;
+	char	str[1024];
+
+    /* Read .cfg files here */
+	free_cfg(&cfg);
+    if(!load_cfg(&cfg, NULL, TRUE, str)) {
+		fprintf(stderr,"Cannot load configuration data\n");
+        return;
+	}
+
+	/* Update timed events */
+	w=glade_xml_get_widget(xml, "force_timed_event1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get timed event widget\n");
+	else {
+		menu=gtk_menu_item_get_submenu(GTK_MENU_ITEM(w));
+		gtk_widget_destroy(GTK_WIDGET(menu));
+		menu=gtk_menu_new();
+		gtk_menu_item_set_submenu (GTK_MENU_ITEM (w), menu);
+		if(menu!=NULL) {
+			for(i=0; i<cfg.total_events; i++) {
+				w = gtk_menu_item_new_with_label(cfg.event[i]->code);
+				gtk_widget_show (w);
+				gtk_container_add (GTK_CONTAINER (menu), w);
+				g_signal_connect ((gpointer) w, "activate"
+						,G_CALLBACK (on_force_event)
+						,NULL);
+			}
+		}
+		else
+			fprintf(stderr,"Cannot get timed event submenu\n");
+	}
+
+	/* Update network call-outs */
+	w=glade_xml_get_widget(xml, "force_network_callout1");
+	if(w==NULL)
+		fprintf(stderr,"Cannot get network callout widget\n");
+	else {
+		menu=gtk_menu_item_get_submenu(GTK_MENU_ITEM(w));
+		gtk_widget_destroy(GTK_WIDGET(menu));
+		menu=gtk_menu_new();
+		gtk_menu_item_set_submenu (GTK_MENU_ITEM (w), menu);
+		if(menu!=NULL) {
+			for(i=0; i<cfg.total_qhubs; i++) {
+				w = gtk_menu_item_new_with_label(cfg.qhub[i]->id);
+				gtk_widget_show (w);
+				gtk_container_add (GTK_CONTAINER (menu), w);
+				g_signal_connect ((gpointer) w, "activate"
+						,G_CALLBACK (on_force_qnet)
+						,NULL);
+			}
+		}
+		else
+			fprintf(stderr,"Cannot get timed event submenu\n");
+	}
+}
+
 /* Refreshes global variables... ie: Number of users */
 int refresh_data(gpointer data)
 {
@@ -23,40 +84,6 @@ int refresh_data(gpointer data)
 	stats_t	sstats;
 	stats_t	nstats;
 	int		shownode;
-
-    /* Read .cfg files here */
-    if(!load_cfg(&cfg, NULL, TRUE, str)) {
-		fprintf(stderr,"Cannot load configuration data\n");
-        return(-1);
-	}
-
-	/* Update timed events */
-#if 0
-	w=glade_xml_get_widget(xml, "force_timed_event1");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get timed event widget\n");
-	else {
-		GtkWidget *menu;
-
-		menu=gtk_menu_item_get_submenu(w);
-		if(menu!=NULL) {
-			GList *evts;
-			evts = gtk_container_get_children(GTK_CONTAINER(menu));
-
-			for(i=0; i<cfg.total_event; i++) {
-			}
-		}
-		else
-			fprintf(stderr,"Cannot get timed event submenu\n");
-	}
-
-	/* Update network call-outs */
-	w=glade_xml_get_widget(xml, "force_network_callout1");
-	if(w==NULL)
-		fprintf(stderr,"Cannot get network callout widget\n");
-	else {
-	}
-#endif
 
 	/* Update the node list stuff */
 	w=glade_xml_get_widget(xml, "lNodeList");
@@ -261,7 +288,6 @@ int refresh_data(gpointer data)
 int read_config(void)
 {
 	char	ctrl_dir[MAX_PATH+1];
-	char	str[1024];
 	char	*p;
 
 	p=getenv("SBBSCTRL");
@@ -278,6 +304,9 @@ int read_config(void)
     memset(&cfg,0,sizeof(cfg));
     cfg.size=sizeof(cfg);
     SAFECOPY(cfg.ctrl_dir,ctrl_dir);
+
+	/* Read the ctrl struct */
+	refresh_events();
 
 	/* Passing any non-NULL argument is required to set up the timeout */
 	if(refresh_data(refresh_data))
@@ -300,6 +329,7 @@ int main(int argc, char *argv[]) {
     glade_xml_signal_autoconnect(xml);
 
 	/* Set up the global config stuff. */
+	memset(&cfg, 0, sizeof(cfg));
 	if(read_config())
 		return(1);
 

@@ -381,3 +381,32 @@ void on_statistics_pane1_activate(GtkWidget *wiggy, gpointer data)
 		}
 	}
 }
+
+void create_force_sem(GtkWidget *wiggy, gpointer data)
+{
+	gchar	*label;
+	char	fn[MAX_PATH+1];
+
+	label=(gchar *)gtk_label_get_text(GTK_LABEL(wiggy));
+	if(label != NULL) {
+		sprintf(fn,"%s%s.now",(gchar *)data, label);
+		touch_sem(cfg.data_dir, fn);
+	}
+}
+
+void on_force_event(GtkWidget *wiggy, gpointer data)
+{
+	/* There's only one child... so this is a bit of a cheat */
+	gtk_container_foreach(GTK_CONTAINER(wiggy), create_force_sem, "");
+}
+
+void on_force_qnet(GtkWidget *wiggy, gpointer data)
+{
+	/* There's only one child... so this is a bit of a cheat */
+	gtk_container_foreach(GTK_CONTAINER(wiggy), create_force_sem, "qnet/");
+}
+
+void on_reload_configuration1(GtkWidget *wiggy, gpointer data)
+{
+	refresh_events();
+}

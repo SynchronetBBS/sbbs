@@ -13,5 +13,6 @@ extern GtkListStore    *store;
 extern GtkTreeSelection *sel;
 
 int refresh_data(gpointer data);
+void refresh_events(void);
 
 #endif

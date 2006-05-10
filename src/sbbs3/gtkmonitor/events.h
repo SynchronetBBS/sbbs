@@ -64,5 +64,7 @@ void on_file_name_filter_message1_activate(GtkWidget *wiggy, gpointer data);
 void on_phone_number_filter1_activate(GtkWidget *wiggy, gpointer data);
 void on_phone_number_filter_message1_activate(GtkWidget *wiggy, gpointer data);
 void on_twit_list1_activate(GtkWidget *wiggy, gpointer data);
+void on_force_event(GtkWidget *wiggy, gpointer data);
+void on_force_qnet(GtkWidget *wiggy, gpointer data);
 
 #endif
