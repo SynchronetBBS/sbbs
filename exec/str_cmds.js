@@ -831,7 +831,7 @@ function display_node(node_num)
 		write(']'); }
 	if(node.errors)
 		printf(" %d error%s",node.errors, node.errors>1 ? 's' : '' );
-	printf("\n");
+	printf("\r\n");
 }
 
 function add_commas(val, pad)
