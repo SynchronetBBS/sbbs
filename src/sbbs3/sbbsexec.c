@@ -38,6 +38,7 @@
 #include <windows.h> 
 #include <stdio.h>
 #include <vddsvc.h>
+#include "uartdefs.h"
 #include "vdd_func.h"
 #include "ringbuf.h"
 #include "genwrap.h"
@@ -47,69 +48,10 @@
 #define DEFAULT_MAX_MSG_SIZE	4000
 #define LINEAR_RX_BUFLEN		5000
 
-/* UART Registers */
-#define UART_BASE				0
-#define UART_IER				1		/* interrupt enable */
-#define UART_IIR				2		/* interrupt identification */
-#define UART_FCR				2		/* FIFO control */
-#define UART_LCR				3		/* line control */
-#define UART_MCR				4		/* modem control */
-#define UART_LSR				5		/* line status */
-#define UART_MSR				6		/* modem status */
-#define UART_SCRATCH			7		/* scratch */
-#define UART_IO_RANGE			UART_SCRATCH
-
-const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR", "scratch" };
-
-#define UART_IER_MODEM_STATUS	(1<<3)
-#define UART_IER_RX_LINE_STATUS	(1<<2)
-#define UART_IER_TX_EMPTY		(1<<1)
-#define UART_IER_RX_DATA		(1<<0)
-
-#define UART_IIR_NO_INT_PENDING	0x01	/* Bit 0=0, Interrupt Pending */
-#define UART_IIR_INT_MASK		0x06
-#define UART_IIR_MODEM_STATUS	0x00
-#define UART_IIR_TX_EMPTY		0x02
-#define UART_IIR_RX_DATA		0x04
-#define UART_IIR_LINE_STATUS	0x06
-
-#define UART_LSR_FIFO_ERROR		(1<<7)
-#define UART_LSR_EMPTY_DATA		(1<<6)
-#define UART_LSR_EMPTY_XMIT		(1<<5)
-#define UART_LSR_BREAK			(1<<4)
-#define UART_LSR_FRAME_ERROR	(1<<3)
-#define UART_LSR_PARITY_ERROR	(1<<2)
-#define UART_LSR_OVERRUN_ERROR	(1<<1)
-#define UART_LSR_DATA_READY		(1<<0)
-
-#define UART_MSR_DCD			(1<<7)
-#define UART_MSR_RING			(1<<6)
-#define UART_MSR_DSR			(1<<5)
-#define UART_MSR_CTS			(1<<4)
-#define UART_MSR_DCD_CHANGE		(1<<3)
-#define UART_MSR_RING_CHANGE	(1<<2)
-#define UART_MSR_DSR_CHANGE		(1<<1)
-#define UART_MSR_CTS_CHANGE		(1<<0)
-
-#define UART_LCR_DLAB			(1<<7)
-#define UART_LCR_BREAK			(1<<6)
-#define UART_LCR_DATA_BITS		0x02		/* 8 data bits */
-
-/* I/O Ports */
-#define UART_COM1_IO_BASE		0x3f8
-#define UART_COM2_IO_BASE		0x2f8
-#define UART_COM3_IO_BASE		0x3e8
-#define UART_COM4_IO_BASE		0x2e8
-
-/* IRQs */
-#define UART_COM1_IRQ			4
-#define UART_COM2_IRQ			3
-
 /* UART Parameters and virtual registers */
 WORD uart_io_base				= UART_COM1_IO_BASE;	/* COM1 */
 BYTE uart_irq					= UART_COM1_IRQ;
 BYTE uart_ier_reg				= 0;
-BYTE uart_iir_reg				= UART_IIR_NO_INT_PENDING;
 BYTE uart_lcr_reg				= UART_LCR_DATA_BITS;
 BYTE uart_mcr_reg				= 0;
 BYTE uart_lsr_reg				= UART_LSR_EMPTY_DATA | UART_LSR_EMPTY_XMIT;
@@ -156,6 +98,28 @@ static void lprintf(int level, const char *fmt, ...)
     lputs(level,sbuf);
 }
 
+int pending_interrupts = 0;
+
+void assert_interrupt(BYTE intr)
+{
+	if(uart_ier_reg&intr) {				/* is interrupt enabled? */
+		pending_interrupts |= intr;		/* flag as pending */
+		SetEvent(interrupt_event);
+	}
+}
+
+void _cdecl interrupt_thread(void *arg)
+{
+	while(1) {
+		WaitForSingleObject(interrupt_event,1000);
+		if(pending_interrupts) {
+			lprintf(LOG_DEBUG,"VDDSimulateInterrupt (pending: %02X) - IER: %02X"
+				,pending_interrupts, uart_ier_reg);
+			VDDSimulateInterrupt(ICA_MASTER, uart_irq, 1);
+		}
+	}
+}
+
 void _cdecl input_thread(void* arg)
 {
 	char	buf[LINEAR_RX_BUFLEN];
@@ -177,29 +141,8 @@ void _cdecl input_thread(void* arg)
 		RingBufWrite(&rdbuf,buf,count);
 		/* Set the "Data ready" bit in the LSR */
 		uart_lsr_reg |= UART_LSR_DATA_READY;
-#if 0
-		if(uart_ier_reg&UART_IER_LINE_STATUS) {	/* assert rx data interrupt */
-			uart_iir_reg=(uart_iir_reg&~(UART_IIR_INT_MASK|UART_IIR_NO_INT_PENDING))|UART_IIR_LINE_STATUS;
-			lprintf(LOG_DEBUG,"input_thread: VDDSimulateInterrupt, IIR: %x", uart_iir_reg);
-			VDDSimulateInterrupt(ICA_MASTER, uart_irq, 1);
-		}
-#endif
-		if(uart_ier_reg&UART_IER_RX_DATA) {	/* assert rx data interrupt */
-			uart_iir_reg=(uart_iir_reg&~(UART_IIR_INT_MASK|UART_IIR_NO_INT_PENDING))|UART_IIR_RX_DATA;
-			SetEvent(interrupt_event);
-		}
-	}
-}
 
-void _cdecl interrupt_thread(void *arg)
-{
-	while(1) {
-		WaitForSingleObject(interrupt_event,1000);
-		while((uart_iir_reg&UART_IIR_NO_INT_PENDING)==0) {
-			lprintf(LOG_DEBUG,"VDDSimulateInterrupt, IIR: %x", uart_iir_reg);
-			VDDSimulateInterrupt(ICA_MASTER, uart_irq, 1);
-			Sleep(1);
-		}
+		assert_interrupt(UART_IER_RX_DATA); /* assert rx data interrupt */
 	}
 }
 
@@ -211,6 +154,16 @@ unsigned vdd_read(BYTE* p, unsigned count)
 		lprintf(LOG_ERR,"!VDD_READ: RingBufRead read 0");
 
 	return(count);
+}
+
+unsigned polls=0;
+unsigned yields=0;
+
+void vdd_yield()
+{
+	yields++;
+	lprintf(LOG_DEBUG,"Yielding (polls=%u, yields=%u)", polls, yields);
+	Sleep(1);
 }
 
 __declspec(dllexport) void __cdecl VDDDispatch(void) 
@@ -229,7 +182,6 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static  DWORD	inbuf_poll;
 	static	DWORD	online_poll;
 	static	DWORD	status_poll;
-	static	DWORD	yields;
 
 	retval=0;
 	node_num=getBH();
@@ -446,8 +398,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_YIELD:
-			Sleep(1);
-			yields++;
+			vdd_yield();
 			break;
 
 		case VDD_CONFIG_YIELD:
@@ -460,8 +411,6 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	}
 	setAX((WORD)retval);
 }
-
-unsigned polls=0;
 
 VOID uart_wrport(WORD port, BYTE data)
 {
@@ -481,9 +430,7 @@ VOID uart_wrport(WORD port, BYTE data)
 					lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
 						,GetLastError(),retval);
 				} else {
-					if(uart_ier_reg&UART_IER_TX_EMPTY)
-						uart_iir_reg=(uart_iir_reg&~(UART_IIR_INT_MASK|UART_IIR_NO_INT_PENDING))|UART_IIR_TX_EMPTY;
-					SetEvent(interrupt_event);
+					assert_interrupt(UART_IER_TX_EMPTY);
 					polls=0;
 				}
 			}
@@ -519,28 +466,32 @@ VOID uart_rdport(WORD port, PBYTE data)
 	int reg = port - uart_io_base;
 	static BYTE last_msr;
 	static BYTE last_lsr;
+	static BYTE last_yield;
+	BOOL yielded=FALSE;
+	DWORD avail;
 
 	lprintf(LOG_DEBUG,"read of port: %x (%s)", port, uart_reg_desc[reg]);
 
 	switch(reg) {
 		case UART_BASE:
-			if(uart_lcr_reg&UART_LCR_DLAB)
+			if(uart_lcr_reg&UART_LCR_DLAB) {
 				*data = uart_divisor_latch_lsb;
-			else if(RingBufFull(&rdbuf)) {
+				break;
+			}
+			if((avail=RingBufFull(&rdbuf))!=0) {
 				vdd_read(data,sizeof(BYTE));
 				lprintf(LOG_DEBUG,"READ DATA: 0x%02X", *data);
 				polls=0;
-				if(RingBufFull(&rdbuf)==0) {
-					/* Clear the data ready bit in the LSR */
-					uart_lsr_reg &= ~UART_LSR_DATA_READY;
-
-					/* Clear data ready interrupt identification and set no-interrupt pending bits in IIR */
-					if((uart_iir_reg&UART_IIR_INT_MASK) == UART_IIR_RX_DATA)
-						uart_iir_reg=(uart_iir_reg&~UART_IIR_INT_MASK)|UART_IIR_NO_INT_PENDING;
-				}
-				return;
+				avail--;
 			}
-			break;
+			if(avail==0) {
+				/* Clear the data ready bit in the LSR */
+				uart_lsr_reg &= ~UART_LSR_DATA_READY;
+
+				/* Clear data ready interrupt identification in IIR */
+				pending_interrupts &=~ UART_IER_RX_DATA;
+			}
+			return;	/* early return */
 		case UART_IER:
 			if(uart_lcr_reg&UART_LCR_DLAB)
 				*data = uart_divisor_latch_msb;
@@ -548,9 +499,23 @@ VOID uart_rdport(WORD port, PBYTE data)
 				*data = uart_ier_reg;
 			break;
 		case UART_IIR:
-			*data = uart_iir_reg;
-			uart_iir_reg|=UART_IIR_NO_INT_PENDING;
-			lprintf(LOG_DEBUG,"IER=%02X IIR=%02X", uart_ier_reg, uart_iir_reg);
+			/* Report IIR based on *priority* of pending interrupts */
+			if(pending_interrupts & UART_IER_LINE_STATUS)
+				*data = UART_IIR_LINE_STATUS;
+			else if(pending_interrupts & UART_IER_RX_DATA)
+				*data = UART_IIR_RX_DATA;
+			else if(pending_interrupts & UART_IER_TX_EMPTY) {
+				*data = UART_IIR_TX_EMPTY;
+				/* "Transmit Holding Register Empty" interrupt */
+				/*  is reset on read of IIR */
+				pending_interrupts &=~ UART_IER_TX_EMPTY;
+			}
+			else if(pending_interrupts & UART_IER_MODEM_STATUS)
+				*data = UART_IIR_MODEM_STATUS;
+			else
+				*data = UART_IIR_NONE;
+
+			SetEvent(interrupt_event);
 			break;
 		case UART_LCR:
 			*data = uart_lcr_reg;
@@ -559,21 +524,16 @@ VOID uart_rdport(WORD port, PBYTE data)
 			*data = uart_mcr_reg;
 			break;
 		case UART_LSR:
-			if(RingBufFull(&rdbuf))
-				uart_lsr_reg |= UART_LSR_DATA_READY;
-			else
-				uart_lsr_reg &=~ UART_LSR_DATA_READY;
 			*data = uart_lsr_reg;
 			if(uart_lsr_reg == last_lsr) {
-				if(polls_before_yield && polls++>=polls_before_yield)
-					Sleep(1);
+				if(polls_before_yield && polls++>=polls_before_yield && !last_yield)
+					vdd_yield(), yielded=TRUE;
 			} else {
 				polls=0;
 				last_lsr = uart_lsr_reg;
 			}
 			/* Clear line status interrupt pending */
-			if((uart_iir_reg&UART_IIR_INT_MASK) == UART_IIR_LINE_STATUS)
-				uart_iir_reg=(uart_iir_reg&~UART_IIR_INT_MASK)|UART_IIR_NO_INT_PENDING;
+			pending_interrupts &=~ UART_IER_LINE_STATUS;
 			break;
 		case UART_MSR:
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
@@ -582,15 +542,14 @@ VOID uart_rdport(WORD port, PBYTE data)
 				uart_msr_reg |= UART_MSR_DCD;
 			*data = uart_msr_reg;
 			if(uart_msr_reg == last_msr) {
-				if(polls_before_yield && polls++>=polls_before_yield)
-					Sleep(1);
+				if(polls_before_yield && polls++>=polls_before_yield && !last_yield)
+					vdd_yield(), yielded=TRUE;
 			} else {
 				polls=0;
 				last_msr = uart_msr_reg;
 			}
 			/* Clear modem status interrupt pending */
-			if((uart_iir_reg&UART_IIR_INT_MASK) == UART_IIR_MODEM_STATUS)
-				uart_iir_reg=(uart_iir_reg&~UART_IIR_INT_MASK)|UART_IIR_NO_INT_PENDING;
+			pending_interrupts &=~ UART_IER_MODEM_STATUS;
 			break;
 		case UART_SCRATCH:
 			*data = uart_scratch_reg;
@@ -600,6 +559,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 			break;
 	}
 
+	last_yield = yielded;	/* avoid consecutive yields */
 	lprintf(LOG_DEBUG, "returning 0x%02X", *data);
 }
 
