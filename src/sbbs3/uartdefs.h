@@ -59,7 +59,7 @@ const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR"
 
 #define UART_IIR_MODEM_STATUS	0x00
 #define UART_IIR_NONE			0x01	/* Bit 0=0, Interrupt Pending */
-#define UART_IIR_TX_EMPTY		0x02
+#define UART_IIR_TX_EMPTY		0x02	/* THRE (Transmit Holding Register Empty) */
 #define UART_IIR_RX_DATA		0x04
 #define UART_IIR_LINE_STATUS	0x06
 
