@@ -102,7 +102,7 @@ endif
 
 all: binaries baja externals
 
-binaries:	sbbs3 scfg umonitor uedit gtkuseredit
+binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat
 
 externals:	sbj sbl dpoker tbd
 
@@ -136,6 +136,11 @@ tbd:	run
 gtkuseredit:	src
 ifdef USE_GLADE
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkuseredit $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+endif
+
+gtkchat:	src
+ifdef USE_GLADE
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkchat $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 endif
 
 install: all
@@ -179,6 +184,7 @@ else
 ifdef USE_GLADE
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
 endif
 # kludge... must fix this to allow moz JS libs and such.  ToDo
 	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(BUILD)/*.so $(SBBSDIR)/exec/
