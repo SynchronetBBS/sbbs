@@ -34,6 +34,9 @@
 #include <windows.h>	/* INPUT_RECORD, etc. */
 #include <genwrap.h>
 #include <stdio.h>		/* stdin */
+#if defined(_WIN32)
+ #include <malloc.h>	/* alloca() on Win32 */
+#endif
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS

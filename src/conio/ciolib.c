@@ -39,6 +39,9 @@
 #include <stdarg.h>
 #include <stdlib.h>	/* alloca */
 #include <stdio.h>
+#if defined(_WIN32)
+ #include <malloc.h>	/* alloca() on Win32 */
+#endif
 
 #include <threadwrap.h>
 

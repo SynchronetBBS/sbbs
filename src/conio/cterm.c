@@ -34,6 +34,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+ #include <malloc.h>	/* alloca() on Win32 */
+#endif
 
 #include <genwrap.h>
 #include <xpbeep.h>
