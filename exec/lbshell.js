@@ -616,8 +616,13 @@ while(1) {
 					console.pause();
 					bbs.menu("sysxfer");
 				}
-				else
+				else {
+					var oldshell=user.command_shell;
 					str_cmds(str);
+					/* Still using this shell? */
+					if(user.command_shell != oldshell)
+						exit(0);
+				}
 				console.pause();
 				draw_main(true);
 			}
