@@ -49,6 +49,7 @@ var menus_displayed=new Array();
 var lastmessage_time=0;
 var lastmessage_type=0;
 var orig_passthru=console.ctrlkey_passthru;
+var hangup_now=false;
 
 function handle_a_ctrlkey(key)
 {
@@ -77,10 +78,52 @@ function get_message()
 {
 	var rows=0;
 
+	/* Update node action */
+	if(bbs.node_action != system.node_list[bbs.node_num-1].action)
+		system.node_list[bbs.node_num-1].action = bbs.node_action;
+
+	/* Check for messages */
 	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_telegram(user.number),MessageWindow_Attr,true);
 	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_node_message(bbs.node_num),MessageWindow_Attr,true);
+
+	/* Fix up node status */
+	if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
+		log("NODE STATUS FIXUP");
+		system.node_list[bbs.node_num-1].status=NODE_INUSE;
+	}
+
+	/* Check if user data has changed */
+	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
+		user.cached=FALSE;
+		system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
+	}
+
+	/* New day? */
+	if(!(system.status & SS_NEWDAY))
+		bbs.nodesync();
+
+	/* Interrupted? */
+	if(system.node_list[bbs.node_num-1].misc & NODE_INTR) {
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,bbs.text(CfgLibLstHdr),MessageWindow_Attr,true);
+		log("Interrupted");
+		hangup_now=true;
+	}
+
+	/* Sysop Chat? */
+	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,bbs.text(CfgLibLstHdr),MessageWindow_Attr,true);
+		bbs.private_chat();
+		draw_main(true);
+		for(i=0; i<menus_displayed.length; i++)
+			menus_displayed[i].draw();
+	}
+
+	/* Time left warning? */
+	if((bbs.timeleft/60)/(5-console.timeleft_warning) && (!user.compare_ars("SYSOP")))
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.timeleft/60,(timeleft/60)?"s":""),MessageWindow_Attr,true);
+
 	return(rows);
 }
 
@@ -152,6 +195,8 @@ function message_callback()
 			/* We can draw the whole thing. */
 			cleararea(1,console.screen_rows-display_rows+1,console.screen_columns,display_rows);
 	}
+	if(hangup_now)
+		bbs.hangup();
 }
 
 function Mainbar()
@@ -535,7 +580,6 @@ while(1) {
 	var extra_select=false;
 	next_key='';
 	bbs.node_action=NODE_MAIN;
-	bbs.nodesync();
 	if(key=='')
 		key=mainbar.getval()
 	else
@@ -839,7 +883,6 @@ function show_filemenu()
 	var cur=1;
 	var nd=false;
 	bbs.node_action=NODE_XFER;
-	bbs.nodesync();
 	while(1) {
 		var filemenu=new Filemenu();
 		var ret;
