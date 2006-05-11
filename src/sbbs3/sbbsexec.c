@@ -66,12 +66,13 @@ BYTE uart_divisor_latch_msb		= 0x00;
 	int log_level = LOG_WARNING;
 #endif
 
-DWORD	polls_before_yield=10;
-HANDLE	hungup_event=NULL;
-HANDLE	interrupt_event=NULL;
-HANDLE	rdslot=INVALID_HANDLE_VALUE;
-HANDLE	wrslot=INVALID_HANDLE_VALUE;
-RingBuf	rdbuf;
+unsigned	polls_before_yield=1000;
+unsigned	yield_interval=10;
+HANDLE		hungup_event=NULL;
+HANDLE		interrupt_event=NULL;
+HANDLE		rdslot=INVALID_HANDLE_VALUE;
+HANDLE		wrslot=INVALID_HANDLE_VALUE;
+RingBuf		rdbuf;
 
 void lputs(int level, char* msg)
 {	
@@ -177,11 +178,18 @@ unsigned vdd_read(BYTE* p, unsigned count)
 unsigned polls=0;
 unsigned yields=0;
 
-void vdd_yield()
+void yield()
 {
 	yields++;
 	lprintf(LOG_DEBUG,"Yielding (polls=%u, yields=%u)", polls, yields);
 	Sleep(1);
+}
+
+void maybe_yield()
+{
+	polls++;
+	if(polls_before_yield && polls>=polls_before_yield && (polls%yield_interval)==0)
+		yield();
 }
 
 __declspec(dllexport) void __cdecl VDDDispatch(void) 
@@ -416,7 +424,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_YIELD:
-			vdd_yield();
+			yield();
 			break;
 
 		case VDD_CONFIG_YIELD:
@@ -484,8 +492,6 @@ VOID uart_rdport(WORD port, PBYTE data)
 	int reg = port - uart_io_base;
 	static BYTE last_msr;
 	static BYTE last_lsr;
-	static BYTE last_yield;
-	BOOL yielded=FALSE;
 	DWORD avail;
 
 	lprintf(LOG_DEBUG,"read of port: %x (%s)", port, uart_reg_desc[reg]);
@@ -543,10 +549,9 @@ VOID uart_rdport(WORD port, PBYTE data)
 			break;
 		case UART_LSR:
 			*data = uart_lsr_reg;
-			if(uart_lsr_reg == last_lsr) {
-				if(polls_before_yield && polls++>=polls_before_yield && !last_yield)
-					vdd_yield(), yielded=TRUE;
-			} else {
+			if(uart_lsr_reg == last_lsr)
+				maybe_yield();
+			else {
 				polls=0;
 				last_lsr = uart_lsr_reg;
 			}
@@ -559,10 +564,9 @@ VOID uart_rdport(WORD port, PBYTE data)
 			else
 				uart_msr_reg |= UART_MSR_DCD;
 			*data = uart_msr_reg;
-			if(uart_msr_reg == last_msr) {
-				if(polls_before_yield && polls++>=polls_before_yield && !last_yield)
-					vdd_yield(), yielded=TRUE;
-			} else {
+			if(uart_msr_reg == last_msr)
+				maybe_yield();
+			else {
 				polls=0;
 				last_msr = uart_msr_reg;
 			}
@@ -577,7 +581,6 @@ VOID uart_rdport(WORD port, PBYTE data)
 			break;
 	}
 
-	last_yield = yielded;	/* avoid consecutive yields */
 	lprintf(LOG_DEBUG, "returning 0x%02X", *data);
 }
 
