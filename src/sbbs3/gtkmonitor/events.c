@@ -406,7 +406,106 @@ void on_force_qnet(GtkWidget *wiggy, gpointer data)
 	gtk_container_foreach(GTK_CONTAINER(wiggy), create_force_sem, "qnet/");
 }
 
-void on_reload_configuration1(GtkWidget *wiggy, gpointer data)
+void on_reload_configuration1_activate(GtkWidget *wiggy, gpointer data)
 {
 	refresh_events();
+}
+
+void toggle_node_bits(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	int	*bit=data;
+	int	fd;
+	char	*node_str;
+	int		n,i;
+	node_t	node;
+
+	gtk_tree_model_get(model, iter, 0, &node_str, -1);
+	n=atoi(node_str);
+
+	if((i=getnodedat(&cfg,n,&node,&fd)))
+		fprintf(stderr,"Error reading node %d data (%d)!",n,i);
+	else {
+		node.misc ^= *bit;
+		putnodedat(&cfg, n, &node, fd);
+	}
+}
+
+void lock_nodes(GtkWidget *wiggy, gpointer data)
+{
+	int		bit=NODE_LOCK;
+
+	gtk_tree_selection_selected_foreach(sel
+			,toggle_node_bits
+			,&bit);
+	refresh_data(NULL);
+}
+
+void down_nodes(GtkWidget *wiggy, gpointer data)
+{
+	int		bit=NODE_DOWN;
+
+	gtk_tree_selection_selected_foreach(sel
+			,toggle_node_bits
+			,&bit);
+	refresh_data(NULL);
+}
+
+void interrupt_nodes(GtkWidget *wiggy, gpointer data)
+{
+	int		bit=NODE_INTR;
+
+	gtk_tree_selection_selected_foreach(sel
+			,toggle_node_bits
+			,&bit);
+	refresh_data(NULL);
+}
+
+void rerun_nodes(GtkWidget *wiggy, gpointer data)
+{
+	int		bit=NODE_RRUN;
+
+	gtk_tree_selection_selected_foreach(sel
+			,toggle_node_bits
+			,&bit);
+	refresh_data(NULL);
+}
+
+void do_clear_errors(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	int	*bit=data;
+	int	fd;
+	char	*node_str;
+	int		n,i;
+	node_t	node;
+
+	gtk_tree_model_get(model, iter, 0, &node_str, -1);
+	n=atoi(node_str);
+
+	if((i=getnodedat(&cfg,n,&node,&fd)))
+		fprintf(stderr,"Error reading node %d data (%d)!",n,i);
+	else {
+		node.errors = 0;
+		putnodedat(&cfg, n, &node, fd);
+	}
+}
+
+void clear_errors(GtkWidget *wiggy, gpointer data)
+{
+	gtk_tree_selection_selected_foreach(sel
+			,do_clear_errors
+			,NULL);
+	refresh_data(NULL);
+}
+
+void on_about1_activate(GtkWidget *wiggy, gpointer data)
+{
+	GladeXML	*axml;
+    axml = glade_xml_new("gtkmonitor.glade", "AboutWindow", NULL);
+	if(axml==NULL) {
+		fprintf(stderr,"Could not locate AboutWindow widget\n");
+		return;
+	}
+    /* connect the signals in the interface */
+    glade_xml_signal_autoconnect(axml);
+	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(axml, "AboutWindow")));
 }
