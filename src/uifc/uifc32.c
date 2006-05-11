@@ -45,6 +45,7 @@
 #elif defined(_WIN32)
 	#include <share.h>
 	#include <windows.h>
+	#include <malloc.h>
 	#define mswait(x) Sleep(x)
 #endif
 
