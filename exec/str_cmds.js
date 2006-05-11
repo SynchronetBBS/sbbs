@@ -668,7 +668,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("QUIET\tToggles quiet setting (you are not lised as online).");
 		if(str=="QUIET") {
-			if(user.compare_ars("QUIET"))
+			if(system.node_list[bbs.node_num-1].status==NODE_QUIET)
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
 			else
 				system.node_list[bbs.node_num-1].status=NODE_QUIET;
