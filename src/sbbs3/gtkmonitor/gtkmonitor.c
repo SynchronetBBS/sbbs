@@ -19,7 +19,7 @@ void refresh_events(void)
     /* Read .cfg files here */
 	free_cfg(&cfg);
     if(!load_cfg(&cfg, NULL, TRUE, str)) {
-		fprintf(stderr,"Cannot load configuration data\n");
+		display_message("Load Error","Cannot load configuration data","gtk-dialog-error");
         return;
 	}
 
@@ -371,13 +371,13 @@ int read_config(void)
 
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
-		fprintf(stderr,"SBBSCTRL not set\n");
+		display_message("Environment Error","SBBSCTRL not set","gtk-dialog-error");
 		return(-1);
 	}
 	SAFECOPY(ctrl_dir, p);
 	prep_dir("",ctrl_dir,sizeof(ctrl_dir));
 	if(!isdir(ctrl_dir)) {
-		fprintf(stderr,"SBBSCTRL does not point to a directory\n");
+		display_message("Environment Errpr","SBBSCTRL does not point to a directory","gtk-dialog-error");
 		return(-1);
 	}
     memset(&cfg,0,sizeof(cfg));

@@ -50,12 +50,12 @@ void view_text_file(char *path, char *filename)
 	complete_path(p,path,filename);
 	if(!fexist(p)) {
 		sprintf(cmdline,"The file %s does not exist.",p);
-		display_message("File Does Not Exist", cmdline);
+		display_message("File Does Not Exist", cmdline, "gtk-dialog-error");
 	}
 	else {
 		if(access(p,R_OK)) {
 			sprintf(cmdline,"Cannot read the file %s... check your permissions.",p);
-			display_message("Cannot Read File", cmdline);
+			display_message("Cannot Read File", cmdline, "gtk-dialog-error");
 		}
 		else {
 			sprintf(cmdline, "xmessage -file %s", p);
@@ -156,7 +156,7 @@ char *getnumstr(char *outstr, ulong size) {
 	return(outstr);
 }
 
-void display_message(char *title, char *message)
+void display_message(char *title, char *message, char *icon)
 {
 	GtkWidget *dialog, *label;
 
@@ -166,13 +166,16 @@ void display_message(char *title, char *message)
 			,GTK_STOCK_OK
 			,GTK_RESPONSE_NONE
 			,NULL);
+	if(icon==NULL)
+		icon="gtk-info";
+	gtk_window_set_icon_name(GTK_WINDOW(dialog), icon);
 	label = gtk_label_new (message);
 
 	g_signal_connect_swapped (dialog
 			,"response"
 			,G_CALLBACK(gtk_widget_destroy)
             ,dialog);
-   gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
-                      label);
-   gtk_widget_show_all (dialog);
+	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
+			label);
+	gtk_widget_show_all (dialog);
 }

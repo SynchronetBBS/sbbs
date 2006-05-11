@@ -301,7 +301,7 @@ void on_truncate_deleted_users1_activate(GtkWidget *wiggy, gpointer data)
         deleted++;
     }
     sprintf(str,"%u Deleted User Records Removed",deleted);
-	display_message("Users Truncated", str);
+	display_message("Users Truncated", str, NULL);
 }
 
 void on_stop6_activate(GtkWidget *wiggy, gpointer data)
@@ -418,12 +418,15 @@ void toggle_node_bits(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter,
 	char	*node_str;
 	int		n,i;
 	node_t	node;
+	char	str[128];
 
 	gtk_tree_model_get(model, iter, 0, &node_str, -1);
 	n=atoi(node_str);
 
-	if((i=getnodedat(&cfg,n,&node,&fd)))
-		fprintf(stderr,"Error reading node %d data (%d)!",n,i);
+	if((i=getnodedat(&cfg,n,&node,&fd))) {
+		sprintf(str,"Error reading node %d data (%d)!",n,i);
+		display_message("Read Error", str, "gtk-dialog-error");
+	}
 	else {
 		node.misc ^= *bit;
 		putnodedat(&cfg, n, &node, fd);
@@ -477,12 +480,15 @@ void do_clear_errors(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, 
 	char	*node_str;
 	int		n,i;
 	node_t	node;
+	char	str[128];
 
 	gtk_tree_model_get(model, iter, 0, &node_str, -1);
 	n=atoi(node_str);
 
-	if((i=getnodedat(&cfg,n,&node,&fd)))
-		fprintf(stderr,"Error reading node %d data (%d)!",n,i);
+	if((i=getnodedat(&cfg,n,&node,&fd))) {
+		sprintf(str,"Error reading node %d data (%d)!",n,i);
+		display_message("Read Error",str,"gtk-dialog-error");
+	}
 	else {
 		node.errors = 0;
 		putnodedat(&cfg, n, &node, fd);
@@ -541,8 +547,10 @@ void edituseron_node(GtkWidget *wiggy, gpointer data)
 			,get_lastselected_node
 			,&i);
 
-	if((i=getnodedat(&cfg,i,&node,NULL)))
-		fprintf(stderr,"Error reading node data (%d)!",i);
+	if((i=getnodedat(&cfg,i,&node,NULL))) {
+		sprintf(str,"Error reading node data (%d)!",i);
+		display_message("Read Error",str,"gtk-dialog-error");
+	}
 	else {
 		sprintf(str,"gtkuseredit %d",node.useron);
 		run_external(cfg.exec_dir,str);
@@ -627,7 +635,7 @@ void quick_validate(int usernum, int set)
 	user.number=usernum;
 	if((res=getuserdat(&cfg,&user))) {
 		sprintf(str,"Error loading user %d.\n",usernum);
-		display_message("Load Error",str);
+		display_message("Load Error",str,"gtk-dialog-error");
 		return;
 	}
 	user.flags1=cfg.val_flags1[set];
@@ -645,7 +653,7 @@ void quick_validate(int usernum, int set)
 	user.level=cfg.val_level[set];
 	if((res=putuserdat(&cfg,&user))) {
 		sprintf(str,"Error saving user %d.\n",usernum);
-		display_message("Save Error",str);
+		display_message("Save Error",str,"gtk=dialog-error");
 	}
 }
 
@@ -982,8 +990,10 @@ void quickvalidate_useron_node(GtkWidget *wiggy, gpointer data)
 				,get_lastselected_node
 				,&i);
 
-		if((i=getnodedat(&cfg,i,&node,NULL)))
-			fprintf(stderr,"Error reading node data (%d)!",i);
+		if((i=getnodedat(&cfg,i,&node,NULL))) {
+			sprintf(str,"Error reading node data (%d)!",i);
+			display_message("Read Error",str,"gtk-dialog-error");
+		}
 		else {
 			quick_validate(node.useron, set);
 		}
