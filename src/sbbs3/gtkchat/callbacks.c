@@ -121,9 +121,10 @@ on_LocalText_key_press_event           (GtkWidget       *widget,
 				,&end
 		);
 	}
-	if(event->keyval >= 32 && event->keyval < 127) {
+	if(event->keyval == '\r' || event->keyval == '\n' || (event->keyval >= 32 && event->keyval < 127)) {
 		instr[1]=0;
 		instr[0]=event->keyval;
+		chat_write_byte(event->keyval);
 		outstr=g_convert(instr, 1, "UTF-8", "CP437", &inbytes, &outbytes, NULL);
 		gtk_text_buffer_insert_at_cursor(
 				 gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget))
