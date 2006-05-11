@@ -98,25 +98,43 @@ static void lprintf(int level, const char *fmt, ...)
     lputs(level,sbuf);
 }
 
+/* Mutex-protected pending interrupt "queue" */
 int pending_interrupts = 0;
+CRITICAL_SECTION interrupt_mutex;
 
-void assert_interrupt(BYTE intr)
+void set_interrupt_pending(BYTE intr, BOOL assert)
 {
-	if(uart_ier_reg&intr) {				/* is interrupt enabled? */
-		pending_interrupts |= intr;		/* flag as pending */
-		SetEvent(interrupt_event);
-	}
+	EnterCriticalSection(&interrupt_mutex);
+	if(assert) {
+		if(uart_ier_reg&intr)				/* is interrupt enabled? */
+			pending_interrupts |= intr;		/* flag as pending */
+	} else /* de-assert */
+		pending_interrupts &= ~intr;		/* remove as pending */
+	SetEvent(interrupt_event);
+	LeaveCriticalSection(&interrupt_mutex);
 }
+
+#define assert_interrupt(i)		set_interrupt_pending(i, TRUE)
+#define deassert_interrupt(i)	set_interrupt_pending(i, FALSE)
 
 void _cdecl interrupt_thread(void *arg)
 {
 	while(1) {
-		WaitForSingleObject(interrupt_event,1000);
-		if(pending_interrupts) {
+		if(WaitForSingleObject(interrupt_event,INFINITE)!=WAIT_OBJECT_0)
+			break;
+		if((uart_ier_reg&pending_interrupts) != 0) {
 			lprintf(LOG_DEBUG,"VDDSimulateInterrupt (pending: %02X) - IER: %02X"
 				,pending_interrupts, uart_ier_reg);
 			VDDSimulateInterrupt(ICA_MASTER, uart_irq, 1);
 		}
+#if 0
+		/* "Real 16550s should always reassert
+		 *  this interrupt whenever the transmitter is idle and
+		 *  the interrupt is enabled."
+		 */
+		if(pending_interrupts==0 && uart_ier_reg&UART_IER_TX_EMPTY)
+			pending_interrupts|=UART_IER_TX_EMPTY;
+#endif
 	}
 }
 
@@ -441,10 +459,9 @@ VOID uart_wrport(WORD port, BYTE data)
 				lprintf(LOG_DEBUG,"set divisor latch high byte: %02X", data);
 			} else
 				uart_ier_reg = data;
-			assert_interrupt(UART_IER_TX_EMPTY);
+			assert_interrupt(UART_IER_TX_EMPTY);	/* should this be re-asserted for all writes? */
 			break;
-		case UART_IIR:
-/*			uart_fcr_reg = data; */
+		case UART_IIR: /* FCR not supported */
 			break;
 		case UART_LCR:
 			uart_lcr_reg = data;
@@ -491,7 +508,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				uart_lsr_reg &= ~UART_LSR_DATA_READY;
 
 				/* Clear data ready interrupt identification in IIR */
-				pending_interrupts &=~ UART_IER_RX_DATA;
+				deassert_interrupt(UART_IER_RX_DATA);
 			}
 			return;	/* early return */
 		case UART_IER:
@@ -511,14 +528,12 @@ VOID uart_rdport(WORD port, PBYTE data)
 				*data = UART_IIR_TX_EMPTY;
 				/* "Transmit Holding Register Empty" interrupt */
 				/*  is reset on read of IIR */
-				pending_interrupts &=~ UART_IER_TX_EMPTY;
+				deassert_interrupt(UART_IER_TX_EMPTY);
 			}
 			else if(pending_interrupts & UART_IER_MODEM_STATUS)
 				*data = UART_IIR_MODEM_STATUS;
 			else
 				*data = UART_IIR_NONE;
-
-			SetEvent(interrupt_event);
 			break;
 		case UART_LCR:
 			*data = uart_lcr_reg;
@@ -536,7 +551,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				last_lsr = uart_lsr_reg;
 			}
 			/* Clear line status interrupt pending */
-			pending_interrupts &=~ UART_IER_LINE_STATUS;
+			deassert_interrupt(UART_IER_LINE_STATUS);
 			break;
 		case UART_MSR:
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
@@ -552,7 +567,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 				last_msr = uart_msr_reg;
 			}
 			/* Clear modem status interrupt pending */
-			pending_interrupts &=~ UART_IER_MODEM_STATUS;
+			deassert_interrupt(UART_IER_MODEM_STATUS);
 			break;
 		case UART_SCRATCH:
 			*data = uart_scratch_reg;
@@ -590,6 +605,7 @@ IN PCONTEXT Context OPTIONAL)
 	VDDInstallIOHook(hVDD, 1, &PortRange, &IOHandlers);
 
 	interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
+	InitializeCriticalSection(&interrupt_mutex);
 
 	_beginthread(interrupt_thread, 0, NULL);
 
