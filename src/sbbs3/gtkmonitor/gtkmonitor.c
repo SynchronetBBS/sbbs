@@ -14,6 +14,7 @@ void refresh_events(void)
 	GtkWidget	*w;
 	GtkWidget	*menu;
 	char	str[1024];
+	char	flags[33];
 
     /* Read .cfg files here */
 	free_cfg(&cfg);
@@ -68,6 +69,17 @@ void refresh_events(void)
 			fprintf(stderr,"Cannot get timed event submenu\n");
 	}
 	refresh_data(NULL);
+
+	/* Set up quick validation values */
+	w=glade_xml_get_widget(xml, "cNodeQuickValidate");
+	for(i=0; i<=10; i++)
+		gtk_combo_box_remove_text(GTK_COMBO_BOX(w),0);
+	gtk_combo_box_append_text(GTK_COMBO_BOX(w), "Quick Validation Sets");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(w), 0);
+	for(i=0;i<10;i++) {
+		sprintf(str,"%d  SL: %-2d  F1: %s",i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],flags));
+		gtk_combo_box_append_text(GTK_COMBO_BOX(w), str);
+	}
 }
 
 void add_to_stats(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
@@ -186,6 +198,8 @@ int refresh_data(gpointer data)
 		gtk_widget_set_sensitive(w, j);
 		w=glade_xml_get_widget(xml,"bEditUser");
 		gtk_widget_set_sensitive(w, j);
+		w=glade_xml_get_widget(xml,"cNodeQuickValidate");
+		gtk_widget_set_sensitive(w, j);
 	}
 	else {
 		w=glade_xml_get_widget(xml,"bChatWithUser");
@@ -193,6 +207,8 @@ int refresh_data(gpointer data)
 		w=glade_xml_get_widget(xml,"bSendMessageToUser");
 		gtk_widget_set_sensitive(w, FALSE);
 		w=glade_xml_get_widget(xml,"bEditUser");
+		gtk_widget_set_sensitive(w, FALSE);
+		w=glade_xml_get_widget(xml,"cNodeQuickValidate");
 		gtk_widget_set_sensitive(w, FALSE);
 	}
 

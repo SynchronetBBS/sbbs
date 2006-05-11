@@ -666,11 +666,12 @@ void on_userlist_quick_validate(GtkWidget *wiggy, gpointer data)
 
 	w=glade_xml_get_widget(lxml, "lUserList");
 	set=gtk_combo_box_get_active(GTK_COMBO_BOX(wiggy))-1;
-	if(set>=0)
+	if(set>=0) {
 		gtk_tree_selection_selected_foreach(gtk_tree_view_get_selection (GTK_TREE_VIEW (w))
 				,userlist_do_quick_validate
 				,&set);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(wiggy), 0);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(wiggy), 0);
+	}
 }
 
 /* Show user list */
@@ -967,3 +968,25 @@ void userlist_edituser(GtkWidget *wiggy, gpointer data)
 	run_external(cfg.exec_dir,str);
 }
 
+void quickvalidate_useron_node(GtkWidget *wiggy, gpointer data)
+{
+	char	str[MAX_PATH+1];
+	int		i;
+	int		set;
+	node_t	node;
+	GtkWidget	*w;
+
+	set=gtk_combo_box_get_active(GTK_COMBO_BOX(wiggy))-1;
+	if(set>=0) {
+		gtk_tree_selection_selected_foreach(sel
+				,get_lastselected_node
+				,&i);
+
+		if((i=getnodedat(&cfg,i,&node,NULL)))
+			fprintf(stderr,"Error reading node data (%d)!",i);
+		else {
+			quick_validate(node.useron, set);
+		}
+		gtk_combo_box_set_active(GTK_COMBO_BOX(wiggy), 0);
+	}
+}

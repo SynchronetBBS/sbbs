@@ -1692,6 +1692,40 @@
 	      <property name="homogeneous">True</property>
 	    </packing>
 	  </child>
+
+	  <child>
+	    <widget class="GtkToolItem" id="toolitem1">
+	      <property name="visible">True</property>
+	      <property name="visible_horizontal">True</property>
+	      <property name="visible_vertical">True</property>
+	      <property name="is_important">False</property>
+
+	      <child>
+		<widget class="GtkComboBox" id="cNodeQuickValidate">
+		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
+		  <property name="items" translatable="yes">Quick Validation Sets
+Set0
+Set1
+Set2
+Set3
+Set4
+Set5
+Set6
+Set7
+Set8
+Set9</property>
+		  <property name="add_tearoffs">False</property>
+		  <property name="focus_on_click">True</property>
+		  <signal name="changed" handler="quickvalidate_useron_node" last_modification_time="Thu, 11 May 2006 06:28:23 GMT"/>
+		</widget>
+	      </child>
+	    </widget>
+	    <packing>
+	      <property name="expand">False</property>
+	      <property name="homogeneous">False</property>
+	    </packing>
+	  </child>
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
