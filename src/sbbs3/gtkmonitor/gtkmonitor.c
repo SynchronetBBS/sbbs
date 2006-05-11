@@ -70,15 +70,6 @@ void refresh_events(void)
 	refresh_data(NULL);
 }
 
-void get_lastselected_node(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
-{
-	int	*i=data;
-	gchar	*node;
-
-	gtk_tree_model_get(model, iter, 0, &node, -1);
-	*i=atoi(node);
-}
-
 void add_to_stats(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
 {
 	stats_t	*nstats=data;
@@ -189,8 +180,6 @@ int refresh_data(gpointer data)
 		}
 		j=(node.status==NODE_QUIET || node.status==NODE_INUSE);
 
-		w=glade_xml_get_widget(xml,"bSpyOnNode");
-		gtk_widget_set_sensitive(w, j);
 		w=glade_xml_get_widget(xml,"bChatWithUser");
 		gtk_widget_set_sensitive(w, j);
 		w=glade_xml_get_widget(xml,"bSendMessageToUser");
@@ -199,8 +188,6 @@ int refresh_data(gpointer data)
 		gtk_widget_set_sensitive(w, j);
 	}
 	else {
-		w=glade_xml_get_widget(xml,"bSpyOnNode");
-		gtk_widget_set_sensitive(w, FALSE);
 		w=glade_xml_get_widget(xml,"bChatWithUser");
 		gtk_widget_set_sensitive(w, FALSE);
 		w=glade_xml_get_widget(xml,"bSendMessageToUser");

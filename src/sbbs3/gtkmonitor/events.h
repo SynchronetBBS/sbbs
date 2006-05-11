@@ -66,5 +66,8 @@ void on_phone_number_filter_message1_activate(GtkWidget *wiggy, gpointer data);
 void on_twit_list1_activate(GtkWidget *wiggy, gpointer data);
 void on_force_event(GtkWidget *wiggy, gpointer data);
 void on_force_qnet(GtkWidget *wiggy, gpointer data);
+void get_lastselected_node(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data);
+void chatwith_node(GtkWidget *wiggy, gpointer data);
+void close_this_window(GtkWidget *t, gpointer data);
 
 #endif

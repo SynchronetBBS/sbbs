@@ -509,3 +509,461 @@ void on_about1_activate(GtkWidget *wiggy, gpointer data)
     glade_xml_signal_autoconnect(axml);
 	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(axml, "AboutWindow")));
 }
+
+void get_lastselected_node(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	int	*i=data;
+	gchar	*node;
+
+	gtk_tree_model_get(model, iter, 0, &node, -1);
+	*i=atoi(node);
+}
+
+void chatwith_node(GtkWidget *wiggy, gpointer data)
+{
+	char	str[MAX_PATH+1];
+	int		i;
+
+	gtk_tree_selection_selected_foreach(sel
+			,get_lastselected_node
+			,&i);
+	sprintf(str,"gtkchat %d",i);
+	run_external(cfg.exec_dir,str);
+}
+
+void edituseron_node(GtkWidget *wiggy, gpointer data)
+{
+	char	str[MAX_PATH+1];
+	int		i;
+	node_t	node;
+
+	gtk_tree_selection_selected_foreach(sel
+			,get_lastselected_node
+			,&i);
+
+	if((i=getnodedat(&cfg,i,&node,NULL)))
+		fprintf(stderr,"Error reading node data (%d)!",i);
+	else {
+		sprintf(str,"gtkuseredit %d",node.useron);
+		run_external(cfg.exec_dir,str);
+	}
+}
+
+void close_this_window(GtkWidget *wiggy, gpointer data)
+{
+	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(wiggy)));
+}
+
+GladeXML		*lxml;
+
+void update_userlist_sensitive_callback(GtkTreeSelection *wiggy, gpointer data)
+{
+	GtkWidget	*w;
+	int selected;
+
+	w=glade_xml_get_widget(lxml, "bUserListEditUser");
+	selected=gtk_tree_selection_count_selected_rows(wiggy);
+	gtk_widget_set_sensitive(w, selected==1);
+}
+
+void update_userlist_item(GtkListStore *lstore, GtkTreeIter *curr, int usernum)
+{
+	char			sex[2];
+	char			first[9];
+	char			last[9];
+	user_t			user;
+
+	user.number=usernum;
+	getuserdat(&cfg, &user);
+	sex[0]=user.sex;
+	sex[1]=0;
+	unixtodstr(&cfg, user.firston, first);
+	unixtodstr(&cfg, user.laston, last);
+	gtk_list_store_set(lstore, curr
+		,0,user.number
+		,1,user.alias
+		,2,user.name
+		,3,user.level
+		,4,getage(&cfg, user.birth)
+		,5,sex
+		,6,user.location
+		,7,user.modem
+		,8,user.note
+		,9,user.comp
+		,10,user.phone
+		,11,user.netmail
+		,12,user.logons
+		,13,first
+		,14,last
+		,15,user.firston
+		,16,user.laston
+		,-1);
+}
+
+void update_userlist_callback(GtkWidget *wiggy, gpointer data)
+{
+	GtkWidget		*w;
+	GtkListStore	*lstore = NULL;
+	int				totalusers;
+	int				i;
+	GtkTreeIter		curr;
+
+	w=glade_xml_get_widget(lxml, "lUserList");
+	lstore=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(w)));
+	gtk_list_store_clear(lstore);
+	totalusers=lastuser(&cfg);
+	for(i=1; i<=totalusers; i++) {
+		gtk_list_store_insert(lstore, &curr, i-1);
+		update_userlist_item(lstore, &curr, i);
+	}
+}
+
+void quick_validate(int usernum, int set)
+{
+	user_t		user;
+	int			res;
+	char		str[1024];
+
+	user.number=usernum;
+	if((res=getuserdat(&cfg,&user))) {
+		sprintf(str,"Error loading user %d.\n",usernum);
+		display_message("Load Error",str);
+		return;
+	}
+	user.flags1=cfg.val_flags1[set];
+	user.flags2=cfg.val_flags2[set];
+	user.flags3=cfg.val_flags3[set];
+	user.flags4=cfg.val_flags4[set];
+	user.exempt=cfg.val_exempt[set];
+	user.rest=cfg.val_rest[set];
+	if(cfg.val_expire[set]) {
+		user.expire=time(NULL)
+			+(cfg.val_expire[set]*24*60*60);
+	}
+	else
+		user.expire=0;
+	user.level=cfg.val_level[set];
+	if((res=putuserdat(&cfg,&user))) {
+		sprintf(str,"Error saving user %d.\n",usernum);
+		display_message("Save Error",str);
+	}
+}
+
+void userlist_do_quick_validate(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	int	*set=data;
+	int	usernum;
+
+	gtk_tree_model_get(model, iter, 0, &usernum, -1);
+	quick_validate(usernum,*set);
+	update_userlist_item(GTK_LIST_STORE(model), iter, usernum);
+}
+
+void on_userlist_quick_validate(GtkWidget *wiggy, gpointer data)
+{
+	int		set;
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(lxml, "lUserList");
+	set=gtk_combo_box_get_active(GTK_COMBO_BOX(wiggy))-1;
+	if(set>=0)
+		gtk_tree_selection_selected_foreach(gtk_tree_view_get_selection (GTK_TREE_VIEW (w))
+				,userlist_do_quick_validate
+				,&set);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(wiggy), 0);
+}
+
+/* Show user list */
+on_list1_activate(GtkWidget *wiggy, gpointer data)
+{
+	GtkWidget		*w;
+	int				i;
+	char			str[1025];
+	char			flags[33];
+	GtkListStore	*lstore = NULL;
+	GtkTreeSelection *lsel;
+
+    lxml = glade_xml_new("gtkmonitor.glade", "UserListWindow", NULL);
+	if(lxml==NULL) {
+		fprintf(stderr,"Could not locate UserListWindow widget\n");
+		return;
+	}
+    /* connect the signals in the interface */
+    glade_xml_signal_autoconnect(lxml);
+
+	/* Set up user list */
+	w=glade_xml_get_widget(lxml, "lUserList");
+	lstore = gtk_list_store_new(17
+			,G_TYPE_INT
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_INT
+			,G_TYPE_INT
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_INT
+			,G_TYPE_STRING
+			,G_TYPE_STRING
+			,G_TYPE_INT
+			,G_TYPE_INT
+	);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(w), GTK_TREE_MODEL(lstore));
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,0
+			,"Num"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,0
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 0
+			)
+			,0
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,1
+			,"Alias"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,1
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 1
+			)
+			,1
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,2
+			,"Name"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,2
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 2
+			)
+			,2
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,3
+			,"Lev"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,3
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 3
+			)
+			,3
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,4
+			,"Age"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,4
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 4
+			)
+			,4
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,5
+			,"Sex"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,5
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 5
+			)
+			,5
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,6
+			,"Location"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,6
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 6
+			)
+			,6
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,7
+			,"Protocol"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,7
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 7
+			)
+			,7
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,8
+			,"Address"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,8
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 8
+			)
+			,8
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,9
+			,"Host Name"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,9
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 9
+			)
+			,9
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,10
+			,"Phone"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,10
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 10
+			)
+			,10
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,11
+			,"Email"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,11
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 11
+			)
+			,11
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,12
+			,"Logons"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,12
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 12
+			)
+			,12
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,13
+			,"First On"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,13
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 13
+			)
+			,15
+	);
+	gtk_tree_view_insert_column_with_attributes(
+			GTK_TREE_VIEW(w)
+			,14
+			,"Last On"
+			,gtk_cell_renderer_text_new()
+			,"text"
+			,14
+			,NULL);
+	gtk_tree_view_column_set_sort_column_id(
+			gtk_tree_view_get_column(
+					GTK_TREE_VIEW(w), 14
+			)
+			,16
+	);
+	lsel = gtk_tree_view_get_selection (GTK_TREE_VIEW (w));
+	gtk_tree_selection_set_mode (lsel, GTK_SELECTION_MULTIPLE);
+	g_signal_connect (G_OBJECT (lsel), "changed", G_CALLBACK (update_userlist_sensitive_callback), NULL);
+
+	/* Set up users */
+	update_userlist_callback(GTK_WIDGET(w), NULL);
+	update_userlist_sensitive_callback(lsel, NULL);
+
+	/* Set up quick validation values */
+	w=glade_xml_get_widget(lxml, "cQuickValidate");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(w), 0);
+	for(i=0;i<10;i++) {
+		sprintf(str,"%d  SL: %-2d  F1: %s",i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],flags));
+		gtk_combo_box_append_text(GTK_COMBO_BOX(w), str);
+	}
+
+	/* Show 'er to the user */
+	gtk_window_present(GTK_WINDOW(glade_xml_get_widget(lxml, "UserListWindow")));
+}
+
+void get_lastselected_user(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data)
+{
+	int	*i=data;
+	int	user;
+
+	gtk_tree_model_get(model, iter, 0, &user, -1);
+	*i=user;
+}
+
+void userlist_edituser(GtkWidget *wiggy, gpointer data)
+{
+	char	str[MAX_PATH+1];
+	int		i;
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(lxml, "lUserList");
+	gtk_tree_selection_selected_foreach(gtk_tree_view_get_selection (GTK_TREE_VIEW (w))
+			,get_lastselected_user
+			,&i);
+
+	sprintf(str,"gtkuseredit %d",i);
+	run_external(cfg.exec_dir,str);
+}
+
