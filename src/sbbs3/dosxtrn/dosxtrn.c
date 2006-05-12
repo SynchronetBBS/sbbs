@@ -62,8 +62,6 @@ static void truncsp(char *str)
 short	vdd=0;
 BYTE	node_num=0;
 int		mode=0;
-DWORD	nodata=0;
-DWORD	polls_before_yield=10;
 int		revision;
 char	id_string[128];
 
@@ -98,7 +96,7 @@ static int vdd_buf(BYTE op, int count, WORD buf_seg, WORD buf_off)
 	return(retval);
 }
 
-static int vdd_op(BYTE op, WORD arg)
+static int vdd_op(BYTE op)
 {
 	int retval;
 
@@ -112,12 +110,10 @@ static int vdd_op(BYTE op, WORD arg)
 		mov		ax,	vdd
 		mov		bh,	node_num
 		mov		bl,	op
-		mov		cx, arg
 	}
 	DispatchCall();
 	_asm {
 		mov		retval, ax
-		pop		cx
 		pop		bx
 	}
 	return(retval);
@@ -238,23 +234,21 @@ void interrupt winNTint14(
 			_asm mov buf_seg, ss;
 			vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			_ax = PortStatus();
-			nodata=0;
 			break;
 		case 0x02: /* read char from com port, with wait */
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 			if(!_ax) {
 				_ax = 0x8000;	/* timed-out */
-				vdd_op(VDD_YIELD, 0);
+				vdd_op(VDD_YIELD);
 			} else {
 				_ax = ch;
-				nodata=0;
 			}
 			break;
 		case 0x03:	/* request status */
 			_ax=PortStatus();
-			if(_ax==0x6088 && ++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD, 0);
+			if(_ax==0x6088)
+				vdd_op(VDD_MAYBE_YIELD);
 			break;
 		case 0x04:	/* initialize */
 			_ax=FOSSIL_SIGNATURE;	/* magic number = success */
@@ -263,10 +257,10 @@ void interrupt winNTint14(
         case 0x08:	/* flush output buffer	*/
 			break;
         case 0x09:	/* purge output buffer	*/
-			vdd_op(VDD_OUTBUF_PURGE, 0);
+			vdd_op(VDD_OUTBUF_PURGE);
 			break;
         case 0x0A:	/* purge input buffer	*/
-			vdd_op(VDD_INBUF_PURGE, 0);
+			vdd_op(VDD_INBUF_PURGE);
 			break;
 		case 0x0B:	/* write char to com port, no wait */
         	if(0 /*RingBufFree(&vm->out)<2 */) {
@@ -276,21 +270,18 @@ void interrupt winNTint14(
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
-			nodata=0;
 			break;
         case 0x0C:	/* non-destructive read-ahead */
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full) {
 				_ax=0xffff;	/* no char available */
-				vdd_op(VDD_YIELD, 0);
+				vdd_op(VDD_YIELD);
 				break;
 			}
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
 			if(_ax == 0)
-				vdd_op(VDD_YIELD, 0);
-			else
-				nodata=0;
+				vdd_op(VDD_YIELD);
 			break;
         case 0x18:	/* read block, no wait */
 			vdd_getstatus(&vdd_status);
@@ -299,13 +290,10 @@ void interrupt winNTint14(
 			else
 				_ax = vdd_buf(VDD_READ, _cx, _es, _di);
 			if(_ax == 0)
-				vdd_op(VDD_YIELD, 0);
-			else
-				nodata=0;
+				vdd_op(VDD_YIELD);
 			break;
         case 0x19:	/* write block, no wait */
 			_ax = vdd_buf(VDD_WRITE, _cx, _es, _di);
-			nodata=0;
 			break;
         case 0x1B:	/* driver info */
 			vdd_getstatus(&vdd_status);
@@ -315,9 +303,8 @@ void interrupt winNTint14(
 			info.outbuf_free=info.outbuf_size-vdd_status.outbuf_full;
 			info.id_string = id_string;
 
-			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0 
-				&& ++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD, 0);			
+			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0)
+				vdd_op(VDD_MAYBE_YIELD);
 
 			p = _MK_FP(_es,_di);
             wr=sizeof(info);
@@ -355,11 +342,9 @@ void interrupt winNTint16(
 				_asm mov buf_seg, ss;
 				vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 				_ax=ch;
-				nodata=0;
 				return;
 			} 
-			if(++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD, 0);
+			vdd_op(VDD_MAYBE_YIELD);
 			break;
     	case 0x01:	/* Get keyboard status */
         case 0x11:	/* Get enhanced keyboard status */
@@ -368,11 +353,9 @@ void interrupt winNTint16(
 				vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
                 flags&=~(1<<6);	/* clear zero flag */
                 _ax=ch;
-				nodata=0;
 				return;
 			}
-			if(++nodata>=polls_before_yield)
-				vdd_op(VDD_YIELD, 0);
+			vdd_op(VDD_MAYBE_YIELD);
 	        break;
 	}
 
@@ -393,7 +376,6 @@ void interrupt winNTint29(
 	ch=_ax&0xff;
 	_asm mov buf_seg, ss
 	vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
-	nodata=0;
 
 	_chain_intr(oldint29);
 }
@@ -424,7 +406,7 @@ int main(int argc, char **argv)
 			,"%s - Copyright %s Rob Swindell\n"
 			,id_string, __DATE__+7);
 		fprintf(stderr
-			,"usage: dosxtrn <path/dosxtrn.env> [NT|95] [node_num] [mode] [polls_per_yield]\n");
+			,"usage: dosxtrn <path/dosxtrn.env> [NT|95] [node_num] [mode]\n");
 		return(1);
 	}
 
@@ -440,8 +422,6 @@ int main(int argc, char **argv)
 		node_num=atoi(argv[3]);
 	if(argc>4)
 		mode=atoi(argv[4]);
-	if(argc>5)
-		polls_before_yield=atol(argv[5]);
 
 	if((fp=fopen(argv[1],"r"))==NULL) {
 		fprintf(stderr,"!Error opening %s\n",argv[1]);
@@ -512,18 +492,12 @@ int main(int argc, char **argv)
 		fprintf(stderr,"mode=%d\n",mode);
 #endif
 
-		i=vdd_op(VDD_OPEN, 0);
+		i=vdd_op(VDD_OPEN);
 		if(i) {
 			fprintf(stderr,"!VDD_OPEN ERROR: %d\n",i);
 			UnRegisterModule();
 			return(-1);
 		}
-		/* Configure auto-yield (for UART/COM1 virtualization) */
-		if(polls_before_yield > 0xffff)
-			w = 0xffff;
-		else
-			w = polls_before_yield;
-		vdd_op(VDD_CONFIG_YIELD, w);
 		oldint16=_dos_getvect(0x16);
 		oldint29=_dos_getvect(0x29);
 		if(mode==SBBSEXEC_MODE_FOSSIL) {
@@ -555,7 +529,7 @@ int main(int argc, char **argv)
 	_dos_setvect(0x14,oldint14);
 
 	if(NT) {
-		vdd_op(VDD_CLOSE, 0);
+		vdd_op(VDD_CLOSE);
 
 		_dos_setvect(0x16,oldint16);
 		_dos_setvect(0x29,oldint29);
