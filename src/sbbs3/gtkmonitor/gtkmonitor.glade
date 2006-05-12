@@ -66,6 +66,7 @@
 			  <child>
 			    <widget class="GtkMenuItem" id="text_file1">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">_Text File...</property>
 			      <property name="use_underline">True</property>
 			      <signal name="activate" handler="on_text_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:06:10 GMT"/>
@@ -75,6 +76,7 @@
 			  <child>
 			    <widget class="GtkMenuItem" id="javascript_file1">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">_JavaScript File...</property>
 			      <property name="use_underline">True</property>
 			      <signal name="activate" handler="on_javascript_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:06:10 GMT"/>
@@ -84,6 +86,7 @@
 			  <child>
 			    <widget class="GtkMenuItem" id="configuration_file1">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="label" translatable="yes">_Configuration File...</property>
 			      <property name="use_underline">True</property>
 			      <signal name="activate" handler="on_configuration_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:06:10 GMT"/>
@@ -103,6 +106,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="properties1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label">gtk-properties</property>
 		      <property name="use_stock">True</property>
 		      <signal name="activate" handler="on_properties1_activate" last_modification_time="Thu, 09 Mar 2006 17:06:10 GMT"/>
@@ -670,6 +674,7 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="preview_file1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Preview File</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_preview_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>
@@ -679,6 +684,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="edit_and_preview_file1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Edit and Preview File</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_edit_and_preview_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>
@@ -700,6 +706,7 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="edit_and_compile_baja_script1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Edit and Compile _Baja Script</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_edit_and_compile_baja_script1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>
@@ -1438,6 +1445,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="index1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Index</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_index1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
@@ -1445,6 +1453,7 @@
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image1355">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="stock">gtk-index</property>
 			  <property name="icon_size">1</property>
 			  <property name="xalign">0.5</property>
@@ -1459,6 +1468,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="sysop_manual1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Sysop Manual</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_sysop_manual1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
@@ -1480,6 +1490,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="frequently_asked_questions_(faq)1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Frequently Asked Questions (FAQ)</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_frequently_asked_questions_(faq)1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
@@ -1487,6 +1498,7 @@
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image1357">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="stock">gtk-dialog-info</property>
 			  <property name="icon_size">1</property>
 			  <property name="xalign">0.5</property>
