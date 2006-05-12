@@ -102,7 +102,7 @@ endif
 
 all: binaries baja externals
 
-binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat
+binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor
 
 externals:	sbj sbl dpoker tbd
 
@@ -141,6 +141,11 @@ endif
 gtkchat:	src
 ifdef USE_GLADE
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkchat $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
+endif
+
+gtkmonitor:	src
+ifdef USE_GLADE
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkmonitor $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 endif
 
 install: all
@@ -184,6 +189,10 @@ else
 ifdef USE_GLADE
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkmonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkmonitor $(SBBSDIR)/exec/gtkmonitor
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkmonitor/gtkmonitor.glade $(SBBSDIR)/exec/gtkmonitor.glade
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkmonitor/pixmaps/stock_help-chat.png $(SBBSDIR)/exec/stock_help-chat.png
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkmonitor/pixmaps/stock_mail-send.png $(SBBSDIR)/exec/stock_mail-send.png
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
 endif
 # kludge... must fix this to allow moz JS libs and such.  ToDo
