@@ -380,6 +380,25 @@ void interrupt winNTint29(
 	_chain_intr(oldint29);
 }
 
+/****************************************************************************/
+/* Return the filename portion of a full pathname							*/
+/****************************************************************************/
+char* getfname(const char* path)
+{
+	const char* fname;
+	const char* bslash;
+
+	fname=strrchr(path,'/');
+	bslash=strrchr(path,'\\');
+	if(bslash>fname)
+		fname=bslash;
+	if(fname!=NULL) 
+		fname++;
+	else 
+		fname=(char*)path;
+	return((char*)fname);
+}
+
 char *	DllName		="SBBSEXEC.DLL";
 char *	InitFunc	="VDDInitialize";
 char *	DispFunc	="VDDDispatch";
@@ -391,11 +410,12 @@ int main(int argc, char **argv)
 	char	dll[512];
 	char*	envvar[10];
 	char*	arg[16];
+	char*	prog;
 	int		i,c,d,envnum=0;
 	FILE*	fp;
 	BOOL	NT=FALSE;
 	BOOL	success=FALSE;
-	WORD	seg;
+	WORD	buf_seg;
 	WORD	w;
 
 	sscanf("$Revision$", "%*s 1.%u", &revision);
@@ -435,19 +455,18 @@ int main(int argc, char **argv)
 	for(c=0,d=1;cmdline[c];c++)	/* Break up command line */
 		if(cmdline[c]==' ') {
 			cmdline[c]=0;			/* insert nulls */
-			arg[d++]=cmdline+c+1; } /* point to the beginning of the next arg */
+			arg[d++]=cmdline+c+1;	/* point to the beginning of the next arg */
+		}
 	arg[d]=0;
 
 	while(!feof(fp)) {
 		if(!fgets(str, sizeof(str), fp))
 			break;
 		truncsp(str);
-		envvar[envnum]=malloc(strlen(str)+1);
-		if(envvar[envnum]==NULL) {
+		if((envvar[envnum]=strdup(str))==NULL) {
 			fprintf(stderr,"!MALLOC ERROR\n");
 			return(4);
 		}
-		strcpy(envvar[envnum],str);
 		_putenv(envvar[envnum++]);
 	}
 	fclose(fp);
@@ -491,6 +510,9 @@ int main(int argc, char **argv)
 		fprintf(stderr,"vdd handle=%d\n",vdd);
 		fprintf(stderr,"mode=%d\n",mode);
 #endif
+		prog=getfname(arg[0]);
+		_asm mov buf_seg, ss;
+		vdd_buf(VDD_PROGRAM, strlen(prog), buf_seg, (WORD)prog);
 
 		i=vdd_op(VDD_OPEN);
 		if(i) {
