@@ -51,7 +51,7 @@ enum {
 	,VDD_OUTBUF_SIZE		=11
 	,VDD_ONLINE				=12
 	,VDD_YIELD				=13
-	,VDD_CONFIG_YIELD		=14
+	,VDD_MAYBE_YIELD		=14
 };
 
 typedef struct {

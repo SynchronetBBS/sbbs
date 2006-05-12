@@ -43,6 +43,7 @@
 #include "ringbuf.h"
 #include "genwrap.h"
 #include "threadwrap.h"
+#include "ini_file.h"
 
 #define RINGBUF_SIZE_IN			10000
 #define DEFAULT_MAX_MSG_SIZE	4000
@@ -66,8 +67,7 @@ BYTE uart_divisor_latch_msb		= 0x00;
 	int log_level = LOG_WARNING;
 #endif
 
-unsigned	polls_before_yield=1000;
-unsigned	yield_interval=10;
+double		yield_interval=1.0;
 HANDLE		hungup_event=NULL;
 HANDLE		interrupt_event=NULL;
 HANDLE		rdslot=INVALID_HANDLE_VALUE;
@@ -175,21 +175,32 @@ unsigned vdd_read(BYTE* p, unsigned count)
 	return(count);
 }
 
-unsigned polls=0;
 unsigned yields=0;
 
 void yield()
 {
 	yields++;
-	lprintf(LOG_DEBUG,"Yielding (polls=%u, yields=%u)", polls, yields);
+	lprintf(LOG_DEBUG,"Yielding (yields=%u)", yields);
 	Sleep(1);
 }
 
+long double last_yield=0;
+
 void maybe_yield()
 {
-	polls++;
-	if(polls_before_yield && polls>=polls_before_yield && (polls%yield_interval)==0)
+	long double t;
+
+	t=xp_timer();
+
+	if((t-last_yield)*1000.0 >= yield_interval) {
 		yield();
+		last_yield=t;
+	}
+}
+
+void reset_yield()
+{
+	last_yield=xp_timer();
 }
 
 __declspec(dllexport) void __cdecl VDDDispatch(void) 
@@ -208,11 +219,14 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static  DWORD	inbuf_poll;
 	static	DWORD	online_poll;
 	static	DWORD	status_poll;
+	static	DWORD	vdd_yields;
+	static	DWORD	vdd_calls;
 
 	retval=0;
 	node_num=getBH();
 
 	lprintf(LOG_DEBUG,"VDD_OP: %d (arg=%X)", getBL(),getCX());
+	vdd_calls++;
 
 	switch(getBL()) {
 
@@ -279,9 +293,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_CLOSE:
-			lprintf(LOG_DEBUG,"VDD_CLOSE: rdbuf=%u "
-				"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u"
-				,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll,yields);
+			lprintf(LOG_INFO,"VDD_CLOSE: rdbuf=%u "
+				"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u vdd_yields=%u vdd_calls=%u"
+				,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll
+				,yields,vdd_yields,vdd_calls);
 			lprintf(LOG_DEBUG,"           read=%u bytes (in %u calls)",bytes_read,reads);
 			lprintf(LOG_DEBUG,"           wrote=%u bytes (in %u calls)",bytes_written,writes);
 
@@ -304,6 +319,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			retval=vdd_read(p, count);
 			reads++;
 			bytes_read+=retval;
+			reset_yield();
 			break;
 
 		case VDD_PEEK:
@@ -314,6 +330,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 			retval=RingBufPeek(&rdbuf,p,count);
+			reset_yield();
 			break;
 
 		case VDD_WRITE:
@@ -329,6 +346,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			} else {
 				writes++;
 				bytes_written+=retval;
+				reset_yield();
 			}
 			break;
 
@@ -424,11 +442,12 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_YIELD:
+			vdd_yields++;
 			yield();
 			break;
 
-		case VDD_CONFIG_YIELD:
-			polls_before_yield=getCX();
+		case VDD_MAYBE_YIELD:
+			maybe_yield();
 			break;
 
 		default:
@@ -457,7 +476,7 @@ VOID uart_wrport(WORD port, BYTE data)
 						,GetLastError(),retval);
 				} else {
 					assert_interrupt(UART_IER_TX_EMPTY);
-					polls=0;
+					reset_yield();
 				}
 			}
 			break;
@@ -490,8 +509,6 @@ VOID uart_wrport(WORD port, BYTE data)
 VOID uart_rdport(WORD port, PBYTE data)
 {
 	int reg = port - uart_io_base;
-	static BYTE last_msr;
-	static BYTE last_lsr;
 	DWORD avail;
 
 	lprintf(LOG_DEBUG,"read of port: %x (%s)", port, uart_reg_desc[reg]);
@@ -506,8 +523,8 @@ VOID uart_rdport(WORD port, PBYTE data)
 			if((avail=RingBufFull(&rdbuf))!=0) {
 				vdd_read(data,sizeof(BYTE));
 				lprintf(LOG_DEBUG,"READ DATA: 0x%02X", *data);
-				polls=0;
 				avail--;
+				reset_yield();
 			}
 			if(avail==0) {
 				/* Clear the data ready bit in the LSR */
@@ -549,12 +566,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 			break;
 		case UART_LSR:
 			*data = uart_lsr_reg;
-			if(uart_lsr_reg == last_lsr)
-				maybe_yield();
-			else {
-				polls=0;
-				last_lsr = uart_lsr_reg;
-			}
+			maybe_yield();
 			/* Clear line status interrupt pending */
 			deassert_interrupt(UART_IER_LINE_STATUS);
 			break;
@@ -564,12 +576,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 			else
 				uart_msr_reg |= UART_MSR_DCD;
 			*data = uart_msr_reg;
-			if(uart_msr_reg == last_msr)
-				maybe_yield();
-			else {
-				polls=0;
-				last_msr = uart_msr_reg;
-			}
+			maybe_yield();
 			/* Clear modem status interrupt pending */
 			deassert_interrupt(UART_IER_MODEM_STATUS);
 			break;
@@ -590,27 +597,70 @@ IN PCONTEXT Context OPTIONAL)
 	char revision[16];
 	VDD_IO_HANDLERS  IOHandlers = { NULL };
 	VDD_IO_PORTRANGE PortRange;
+	char	cwd[MAX_PATH+1];
+	char	ini_fname[MAX_PATH+1];
+	char*	section;
+	FILE*	fp;
+	BOOL	virtualize_uart=TRUE;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
+	GetCurrentDirectory(sizeof(cwd),cwd);
+	iniFileName(ini_fname, sizeof(ini_fname), cwd, "sbbsexec.ini");
+	if((fp=fopen(ini_fname,"r"))!=NULL) {
+
+		/* Read the root section of the sbbsexec.ini file */
+		log_level=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
+		if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
+			log_level=LOG_DEBUG;
+		yield_interval=iniReadFloat(fp,ROOT_SECTION,"YieldInterval",yield_interval);
+
+		/* [UART] section */
+		section="UART";
+		virtualize_uart=iniReadBool(fp,section,"Virtualize",TRUE);
+		switch(iniReadInteger(fp,section,"ComPort",1)) {
+			case 1:	/* COM1 */
+				uart_irq		=UART_COM1_IRQ;
+				uart_io_base	=UART_COM1_IO_BASE;
+				break;
+			case 2:	/* COM2 */
+				uart_irq		=UART_COM2_IRQ;
+				uart_io_base	=UART_COM2_IO_BASE;
+				break;
+			case 3:	/* COM3 */
+				uart_irq		=UART_COM3_IRQ;
+				uart_io_base	=UART_COM3_IO_BASE;
+				break;
+			case 4:	/* COM4 */
+				uart_irq		=UART_COM4_IRQ;
+				uart_io_base	=UART_COM4_IO_BASE;
+				break;
+		}
+		uart_irq=(BYTE)iniReadShortInt(fp,section,"IRQ",uart_irq);
+		uart_io_base=iniReadShortInt(fp,section,"Address",uart_io_base);
+		fclose(fp);
+	}
+
 	lprintf(LOG_INFO,"Synchronet Virutal Device Driver, rev %s %s %s"
 		,revision, __DATE__, __TIME__);
+	if(fp!=NULL)
+		lprintf(LOG_INFO,"Settings file: %s", ini_fname);
+	lprintf(LOG_INFO,"Yield interval: %f milliseconds", yield_interval);
 
-	lprintf(LOG_DEBUG,"VDDInitialize, Reason: 0x%lX", Reason);
+	if(virtualize_uart) {
 
-	/* Reason is always 0 (DLL_PROCESS_DETACH) which doesn't jive with the
-	   Microsoft NT DDK docs */
-	IOHandlers.inb_handler = uart_rdport;
-	IOHandlers.outb_handler = uart_wrport;
-	PortRange.First=uart_io_base;
-	PortRange.Last=uart_io_base + UART_IO_RANGE;
+		IOHandlers.inb_handler = uart_rdport;
+		IOHandlers.outb_handler = uart_wrport;
+		PortRange.First=uart_io_base;
+		PortRange.Last=uart_io_base + UART_IO_RANGE;
 
-	VDDInstallIOHook(hVDD, 1, &PortRange, &IOHandlers);
+		VDDInstallIOHook(hVDD, 1, &PortRange, &IOHandlers);
 
-	interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
-	InitializeCriticalSection(&interrupt_mutex);
+		interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
+		InitializeCriticalSection(&interrupt_mutex);
 
-	_beginthread(interrupt_thread, 0, NULL);
+		_beginthread(interrupt_thread, 0, NULL);
+	}
 
     return TRUE;
 }
