@@ -94,5 +94,7 @@ const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR"
 /* IRQs */
 #define UART_COM1_IRQ			4
 #define UART_COM2_IRQ			3
+#define UART_COM3_IRQ			4
+#define UART_COM4_IRQ			3
 
 #endif /* Don't add anything after this line */
