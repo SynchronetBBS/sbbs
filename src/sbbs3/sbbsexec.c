@@ -67,12 +67,16 @@ BYTE uart_divisor_latch_msb		= 0x00;
 	int log_level = LOG_WARNING;
 #endif
 
+BOOL		virtualize_uart=TRUE;
 double		yield_interval=1.0;
 HANDLE		hungup_event=NULL;
 HANDLE		interrupt_event=NULL;
 HANDLE		rdslot=INVALID_HANDLE_VALUE;
 HANDLE		wrslot=INVALID_HANDLE_VALUE;
+HANDLE		vdd_handle;
 RingBuf		rdbuf;
+str_list_t	ini;
+char		ini_fname[MAX_PATH+1];
 
 void lputs(int level, char* msg)
 {	
@@ -98,6 +102,52 @@ static void lprintf(int level, const char *fmt, ...)
     va_end(argptr);
     lputs(level,sbuf);
 }
+
+void parse_ini(char* program)
+{
+	char section[MAX_PATH+1];
+
+	lprintf(LOG_INFO,"Parsing %s section of %s"
+		,program==ROOT_SECTION ? "root" : program
+		,ini_fname);
+
+	/* Read the root section of the sbbsexec.ini file */
+	log_level=iniGetLogLevel(ini,program,"LogLevel",log_level);
+	if(iniGetBool(ini,program,"Debug",FALSE))
+		log_level=LOG_DEBUG;
+	yield_interval=iniGetFloat(ini,program,"YieldInterval",yield_interval);
+
+	/* [UART] section */
+	if(program==ROOT_SECTION)
+		SAFECOPY(section,"UART");
+	else
+		SAFEPRINTF(section,"%s.UART",program);
+	lprintf(LOG_INFO,"Parsing %s section of %s"
+		,section
+		,ini_fname);
+	virtualize_uart=iniGetBool(ini,section,"Virtualize",TRUE);
+	switch(iniGetInteger(ini,section,"ComPort",1)) {
+		case 1:	/* COM1 */
+			uart_irq		=UART_COM1_IRQ;
+			uart_io_base	=UART_COM1_IO_BASE;
+			break;
+		case 2:	/* COM2 */
+			uart_irq		=UART_COM2_IRQ;
+			uart_io_base	=UART_COM2_IO_BASE;
+			break;
+		case 3:	/* COM3 */
+			uart_irq		=UART_COM3_IRQ;
+			uart_io_base	=UART_COM3_IO_BASE;
+			break;
+		case 4:	/* COM4 */
+			uart_irq		=UART_COM4_IRQ;
+			uart_io_base	=UART_COM4_IO_BASE;
+			break;
+	}
+	uart_irq=(BYTE)iniGetShortInt(ini,section,"IRQ",uart_irq);
+	uart_io_base=iniGetShortInt(ini,section,"Address",uart_io_base);
+}
+
 
 /* Mutex-protected pending interrupt "queue" */
 int pending_interrupts = 0;
@@ -192,7 +242,7 @@ void maybe_yield()
 
 	t=xp_timer();
 
-	if((t-last_yield)*1000.0 >= yield_interval) {
+	if(yield_interval && (t-last_yield)*1000.0 >= yield_interval) {
 		yield();
 		last_yield=t;
 	}
@@ -201,260 +251,6 @@ void maybe_yield()
 void reset_yield()
 {
 	last_yield=xp_timer();
-}
-
-__declspec(dllexport) void __cdecl VDDDispatch(void) 
-{
-	char			str[512];
-	DWORD			count;
-	DWORD			msgs;
-	int				retval;
-	int				node_num;
-	BYTE*			p;
-	vdd_status_t*	status;
-	static  DWORD	writes;
-	static  DWORD	bytes_written;
-	static	DWORD	reads;
-	static  DWORD	bytes_read;
-	static  DWORD	inbuf_poll;
-	static	DWORD	online_poll;
-	static	DWORD	status_poll;
-	static	DWORD	vdd_yields;
-	static	DWORD	vdd_calls;
-
-	retval=0;
-	node_num=getBH();
-
-	lprintf(LOG_DEBUG,"VDD_OP: %d (arg=%X)", getBL(),getCX());
-	vdd_calls++;
-
-	switch(getBL()) {
-
-		case VDD_OPEN:
-#if 0
-			sprintf(str,"sbbsexec%d.log",node_num);
-			fp=fopen(str,"wb");
-#endif
-
-			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d",node_num);
-			rdslot=CreateMailslot(str
-				,LINEAR_RX_BUFLEN		/* Max message size (0=any) */
-				,MAILSLOT_WAIT_FOREVER 	/* Read timeout */
-				,NULL);
-			if(rdslot==INVALID_HANDLE_VALUE) {
-				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
-					,GetLastError(),str);
-				retval=1;
-				break;
-			}
-
-			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\rd%d",node_num);
-			wrslot=CreateFile(str
-				,GENERIC_WRITE
-				,FILE_SHARE_READ
-				,NULL
-				,OPEN_EXISTING
-				,FILE_ATTRIBUTE_NORMAL
-				,(HANDLE) NULL);
-			if(wrslot==INVALID_HANDLE_VALUE) {
-				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
-					,GetLastError(),str);
-				retval=2;
-				break;
-			}
-
-			if(RingBufInit(&rdbuf, RINGBUF_SIZE_IN)!=0) {
-				retval=3;
-				break;
-			}
-
-			sprintf(str,"sbbsexec_hungup%d",node_num);
-			hungup_event=OpenEvent(
-				EVENT_ALL_ACCESS,	/* access flag  */
-				FALSE,				/* inherit flag  */
-				str);				/* pointer to event-object name  */
-			if(hungup_event==NULL) {
-				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
-					,GetLastError(),str);
-				retval=4;
-				break;
-			}
-
-			status_poll=0;
-			inbuf_poll=0;
-			online_poll=0;
-			yields=0;
-
-			lprintf(LOG_DEBUG,"VDD_OPEN: Opened successfully");
-
-			_beginthread(input_thread, 0, NULL);
-
-			retval=0;
-			break;
-
-		case VDD_CLOSE:
-			lprintf(LOG_INFO,"VDD_CLOSE: rdbuf=%u "
-				"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u vdd_yields=%u vdd_calls=%u"
-				,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll
-				,yields,vdd_yields,vdd_calls);
-			lprintf(LOG_DEBUG,"           read=%u bytes (in %u calls)",bytes_read,reads);
-			lprintf(LOG_DEBUG,"           wrote=%u bytes (in %u calls)",bytes_written,writes);
-
-			CloseHandle(rdslot);
-			CloseHandle(wrslot);
-			if(hungup_event!=NULL)
-				CloseHandle(hungup_event);
-			RingBufDispose(&rdbuf);
-			status_poll=0;
-			retval=0;
-
-			break;
-
-		case VDD_READ:
-			count = getCX();
-			if(count != 1)
-				lprintf(LOG_DEBUG,"VDD_READ of %d",count);
-			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
-				,count,FALSE); 
-			retval=vdd_read(p, count);
-			reads++;
-			bytes_read+=retval;
-			reset_yield();
-			break;
-
-		case VDD_PEEK:
-			count = getCX();
-			if(count != 1)
-				lprintf(LOG_DEBUG,"VDD_PEEK of %d",count);
-
-			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
-				,count,FALSE); 
-			retval=RingBufPeek(&rdbuf,p,count);
-			reset_yield();
-			break;
-
-		case VDD_WRITE:
-			count = getCX();
-			if(count != 1)
-				lprintf(LOG_DEBUG,"VDD_WRITE of %d",count);
-			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
-				,count,FALSE); 
-			if(!WriteFile(wrslot,p,count,&retval,NULL)) {
-				lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
-					,GetLastError(),retval);
-				retval=0;
-			} else {
-				writes++;
-				bytes_written+=retval;
-				reset_yield();
-			}
-			break;
-
-		case VDD_STATUS:
-
-			status_poll++;
-			count = getCX();
-			if(count != sizeof(vdd_status_t)) {
-				lprintf(LOG_DEBUG,"!VDD_STATUS: wrong size (%d!=%d)",count,sizeof(vdd_status_t));
-				retval=sizeof(vdd_status_t);
-				break;
-			}
-			status = (vdd_status_t*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
-				,count,FALSE); 
-
-			status->inbuf_full=RingBufFull(&rdbuf);
-
-			/* OUTBUF FULL/SIZE */
-			if(!GetMailslotInfo(
-				wrslot,					/* mailslot handle  */
- 				&status->outbuf_size,	/* address of maximum message size  */
-				&status->outbuf_full,	/* address of size of next message  */
-				&msgs,					/* address of number of messages  */
- 				NULL					/* address of read time-out  */
-				)) {
-				status->outbuf_full=0;
-				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
-			}
-			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
-				status->outbuf_full=0;
-			status->outbuf_full*=msgs;
-			
-			/* ONLINE */
-			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
-				status->online=0;
-			else
-				status->online=1;
-
-			retval=0;	/* success */
-			break;
-
-
-		case VDD_INBUF_PURGE:
-			lprintf(LOG_WARNING,"!VDD_INBUF_PURGE: NOT IMPLEMENTED");
-			retval=0;
-			break;
-
-		case VDD_OUTBUF_PURGE:
-			lprintf(LOG_WARNING,"!VDD_OUTBUF_PURGE: NOT IMPLEMENTED");
-			retval=0;
-			break;
-
-		case VDD_INBUF_FULL:
-			retval=RingBufFull(&rdbuf);
-			inbuf_poll++;
-			break;
-
-		case VDD_INBUF_SIZE:
-			retval=RINGBUF_SIZE_IN;
-			break;
-
-		case VDD_OUTBUF_FULL:
-			if(!GetMailslotInfo(
-				wrslot,		/* mailslot handle  */
- 				NULL,		/* address of maximum message size  */
-				&retval,	/* address of size of next message  */
-				&msgs,		/* address of number of messages  */
- 				NULL		/* address of read time-out  */
-				))
-				retval=0;
-			if(retval==MAILSLOT_NO_MESSAGE)
-				retval=0;
-			retval*=msgs;
-			break;
-
-		case VDD_OUTBUF_SIZE:
-			if(!GetMailslotInfo(
-				wrslot,		/* mailslot handle  */
- 				&retval,	/* address of maximum message size  */
-				NULL,		/* address of size of next message  */
-				NULL,		/* address of number of messages  */
- 				NULL		/* address of read time-out  */
-				)) 
-				retval=DEFAULT_MAX_MSG_SIZE;
-			break;
-
-		case VDD_ONLINE:
-			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
-				retval=0;
-			else
-				retval=1;
-			online_poll++;
-			break;
-
-		case VDD_YIELD:
-			vdd_yields++;
-			yield();
-			break;
-
-		case VDD_MAYBE_YIELD:
-			maybe_yield();
-			break;
-
-		default:
-			lprintf(LOG_ERR,"!UNKNOWN VDD_OP: %d",getBL());
-			break;
-	}
-	setAX((WORD)retval);
 }
 
 VOID uart_wrport(WORD port, BYTE data)
@@ -591,76 +387,319 @@ VOID uart_rdport(WORD port, PBYTE data)
 	lprintf(LOG_DEBUG, "returning 0x%02X", *data);
 }
 
+__declspec(dllexport) void __cdecl VDDDispatch(void) 
+{
+	char			str[512];
+	DWORD			count;
+	DWORD			msgs;
+	int				retval;
+	int				node_num;
+	BYTE*			p;
+	vdd_status_t*	status;
+	static  DWORD	writes;
+	static  DWORD	bytes_written;
+	static	DWORD	reads;
+	static  DWORD	bytes_read;
+	static  DWORD	inbuf_poll;
+	static	DWORD	online_poll;
+	static	DWORD	status_poll;
+	static	DWORD	vdd_yields;
+	static	DWORD	vdd_calls;
+	VDD_IO_HANDLERS  IOHandlers = { NULL };
+	static VDD_IO_PORTRANGE PortRange;
+
+	retval=0;
+	node_num=getBH();
+
+	lprintf(LOG_DEBUG,"VDD_OP: %d (arg=%X)", getBL(),getCX());
+	vdd_calls++;
+
+	switch(getBL()) {
+
+		case VDD_OPEN:
+#if 0
+			sprintf(str,"sbbsexec%d.log",node_num);
+			fp=fopen(str,"wb");
+#endif
+
+			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d",node_num);
+			rdslot=CreateMailslot(str
+				,LINEAR_RX_BUFLEN		/* Max message size (0=any) */
+				,MAILSLOT_WAIT_FOREVER 	/* Read timeout */
+				,NULL);
+			if(rdslot==INVALID_HANDLE_VALUE) {
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
+				retval=1;
+				break;
+			}
+
+			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\rd%d",node_num);
+			wrslot=CreateFile(str
+				,GENERIC_WRITE
+				,FILE_SHARE_READ
+				,NULL
+				,OPEN_EXISTING
+				,FILE_ATTRIBUTE_NORMAL
+				,(HANDLE) NULL);
+			if(wrslot==INVALID_HANDLE_VALUE) {
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
+				retval=2;
+				break;
+			}
+
+			if(RingBufInit(&rdbuf, RINGBUF_SIZE_IN)!=0) {
+				retval=3;
+				break;
+			}
+
+			sprintf(str,"sbbsexec_hungup%d",node_num);
+			hungup_event=OpenEvent(
+				EVENT_ALL_ACCESS,	/* access flag  */
+				FALSE,				/* inherit flag  */
+				str);				/* pointer to event-object name  */
+			if(hungup_event==NULL) {
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
+				retval=4;
+				break;
+			}
+
+			status_poll=0;
+			inbuf_poll=0;
+			online_poll=0;
+			yields=0;
+
+			lprintf(LOG_INFO,"Yield interval: %f milliseconds", yield_interval);
+
+			if(virtualize_uart) {
+				lprintf(LOG_INFO,"Virtualizing UART (0x%x, IRQ %u)"
+					,uart_io_base, uart_irq);
+
+				IOHandlers.inb_handler = uart_rdport;
+				IOHandlers.outb_handler = uart_wrport;
+				PortRange.First=uart_io_base;
+				PortRange.Last=uart_io_base + UART_IO_RANGE;
+
+				VDDInstallIOHook(vdd_handle, 1, &PortRange, &IOHandlers);
+
+				interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
+				InitializeCriticalSection(&interrupt_mutex);
+
+				_beginthread(interrupt_thread, 0, NULL);
+			}
+
+			lprintf(LOG_DEBUG,"VDD_OPEN: Opened successfully");
+
+			_beginthread(input_thread, 0, NULL);
+
+			retval=0;
+			break;
+
+		case VDD_CLOSE:
+			lprintf(LOG_INFO,"VDD_CLOSE: rdbuf=%u "
+				"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u vdd_yields=%u vdd_calls=%u"
+				,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll
+				,yields,vdd_yields,vdd_calls);
+			lprintf(LOG_INFO,"           read=%u bytes (in %u calls)",bytes_read,reads);
+			lprintf(LOG_INFO,"           wrote=%u bytes (in %u calls)",bytes_written,writes);
+
+			if(virtualize_uart) {
+				lprintf(LOG_INFO,"Uninstalling Virtualizaed UART IO Hook");
+				VDDDeInstallIOHook(vdd_handle, 1, &PortRange);
+			}
+
+			CloseHandle(rdslot);
+			CloseHandle(wrslot);
+			if(hungup_event!=NULL)
+				CloseHandle(hungup_event);
+			RingBufDispose(&rdbuf);
+			status_poll=0;
+			retval=0;
+
+			break;
+
+		case VDD_READ:
+			count = getCX();
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_READ of %d",count);
+			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+			retval=vdd_read(p, count);
+			reads++;
+			bytes_read+=retval;
+			reset_yield();
+			break;
+
+		case VDD_PEEK:
+			count = getCX();
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_PEEK of %d",count);
+
+			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+			retval=RingBufPeek(&rdbuf,p,count);
+			reset_yield();
+			break;
+
+		case VDD_WRITE:
+			count = getCX();
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_WRITE of %d",count);
+			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+			if(!WriteFile(wrslot,p,count,&retval,NULL)) {
+				lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
+					,GetLastError(),retval);
+				retval=0;
+			} else {
+				writes++;
+				bytes_written+=retval;
+				reset_yield();
+			}
+			break;
+
+		case VDD_STATUS:
+
+			status_poll++;
+			count = getCX();
+			if(count != sizeof(vdd_status_t)) {
+				lprintf(LOG_DEBUG,"!VDD_STATUS: wrong size (%d!=%d)",count,sizeof(vdd_status_t));
+				retval=sizeof(vdd_status_t);
+				break;
+			}
+			status = (vdd_status_t*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+
+			status->inbuf_full=RingBufFull(&rdbuf);
+
+			/* OUTBUF FULL/SIZE */
+			if(!GetMailslotInfo(
+				wrslot,					/* mailslot handle  */
+ 				&status->outbuf_size,	/* address of maximum message size  */
+				&status->outbuf_full,	/* address of size of next message  */
+				&msgs,					/* address of number of messages  */
+ 				NULL					/* address of read time-out  */
+				)) {
+				status->outbuf_full=0;
+				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
+			}
+			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
+				status->outbuf_full=0;
+			status->outbuf_full*=msgs;
+			
+			/* ONLINE */
+			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
+				status->online=0;
+			else
+				status->online=1;
+
+			retval=0;	/* success */
+			break;
+
+		case VDD_INBUF_PURGE:
+			lprintf(LOG_WARNING,"!VDD_INBUF_PURGE: NOT IMPLEMENTED");
+			retval=0;
+			break;
+
+		case VDD_OUTBUF_PURGE:
+			lprintf(LOG_WARNING,"!VDD_OUTBUF_PURGE: NOT IMPLEMENTED");
+			retval=0;
+			break;
+
+		case VDD_INBUF_FULL:
+			retval=RingBufFull(&rdbuf);
+			inbuf_poll++;
+			break;
+
+		case VDD_INBUF_SIZE:
+			retval=RINGBUF_SIZE_IN;
+			break;
+
+		case VDD_OUTBUF_FULL:
+			if(!GetMailslotInfo(
+				wrslot,		/* mailslot handle  */
+ 				NULL,		/* address of maximum message size  */
+				&retval,	/* address of size of next message  */
+				&msgs,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
+				))
+				retval=0;
+			if(retval==MAILSLOT_NO_MESSAGE)
+				retval=0;
+			retval*=msgs;
+			break;
+
+		case VDD_OUTBUF_SIZE:
+			if(!GetMailslotInfo(
+				wrslot,		/* mailslot handle  */
+ 				&retval,	/* address of maximum message size  */
+				NULL,		/* address of size of next message  */
+				NULL,		/* address of number of messages  */
+ 				NULL		/* address of read time-out  */
+				)) 
+				retval=DEFAULT_MAX_MSG_SIZE;
+			break;
+
+		case VDD_ONLINE:
+			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
+				retval=0;
+			else
+				retval=1;
+			online_poll++;
+			break;
+
+		case VDD_YIELD:
+			vdd_yields++;
+			yield();
+			break;
+
+		case VDD_MAYBE_YIELD:
+			maybe_yield();
+			break;
+
+		case VDD_PROGRAM:
+			count = getCX();
+			if(count != 1)
+				lprintf(LOG_DEBUG,"VDD_WRITE of %d",count);
+			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+			lprintf(LOG_INFO,"Program: '%s'", p);
+			if(ini!=NULL)
+				parse_ini(p);
+			break;
+
+		default:
+			lprintf(LOG_ERR,"!UNKNOWN VDD_OP: %d",getBL());
+			break;
+	}
+	setAX((WORD)retval);
+}
+
 __declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason, 
 IN PCONTEXT Context OPTIONAL)
 {
-	char revision[16];
-	VDD_IO_HANDLERS  IOHandlers = { NULL };
-	VDD_IO_PORTRANGE PortRange;
+	char	revision[16];
 	char	cwd[MAX_PATH+1];
-	char	ini_fname[MAX_PATH+1];
-	char*	section;
 	FILE*	fp;
-	BOOL	virtualize_uart=TRUE;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
 	GetCurrentDirectory(sizeof(cwd),cwd);
 	iniFileName(ini_fname, sizeof(ini_fname), cwd, "sbbsexec.ini");
 	if((fp=fopen(ini_fname,"r"))!=NULL) {
-
-		/* Read the root section of the sbbsexec.ini file */
-		log_level=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
-		if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
-			log_level=LOG_DEBUG;
-		yield_interval=iniReadFloat(fp,ROOT_SECTION,"YieldInterval",yield_interval);
-
-		/* [UART] section */
-		section="UART";
-		virtualize_uart=iniReadBool(fp,section,"Virtualize",TRUE);
-		switch(iniReadInteger(fp,section,"ComPort",1)) {
-			case 1:	/* COM1 */
-				uart_irq		=UART_COM1_IRQ;
-				uart_io_base	=UART_COM1_IO_BASE;
-				break;
-			case 2:	/* COM2 */
-				uart_irq		=UART_COM2_IRQ;
-				uart_io_base	=UART_COM2_IO_BASE;
-				break;
-			case 3:	/* COM3 */
-				uart_irq		=UART_COM3_IRQ;
-				uart_io_base	=UART_COM3_IO_BASE;
-				break;
-			case 4:	/* COM4 */
-				uart_irq		=UART_COM4_IRQ;
-				uart_io_base	=UART_COM4_IO_BASE;
-				break;
-		}
-		uart_irq=(BYTE)iniReadShortInt(fp,section,"IRQ",uart_irq);
-		uart_io_base=iniReadShortInt(fp,section,"Address",uart_io_base);
+		ini=iniReadFile(fp);
 		fclose(fp);
+		parse_ini(ROOT_SECTION);
 	}
 
-	lprintf(LOG_INFO,"Synchronet Virutal Device Driver, rev %s %s %s"
+	lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
 		,revision, __DATE__, __TIME__);
 	if(fp!=NULL)
 		lprintf(LOG_INFO,"Settings file: %s", ini_fname);
-	lprintf(LOG_INFO,"Yield interval: %f milliseconds", yield_interval);
 
-	if(virtualize_uart) {
-
-		IOHandlers.inb_handler = uart_rdport;
-		IOHandlers.outb_handler = uart_wrport;
-		PortRange.First=uart_io_base;
-		PortRange.Last=uart_io_base + UART_IO_RANGE;
-
-		VDDInstallIOHook(hVDD, 1, &PortRange, &IOHandlers);
-
-		interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
-		InitializeCriticalSection(&interrupt_mutex);
-
-		_beginthread(interrupt_thread, 0, NULL);
-	}
+	vdd_handle=hVDD;
 
     return TRUE;
 }
