@@ -1000,3 +1000,86 @@ void quickvalidate_useron_node(GtkWidget *wiggy, gpointer data)
 		gtk_combo_box_set_active(GTK_COMBO_BOX(wiggy), 0);
 	}
 }
+
+char *select_filename(GtkWidget *wiggy, char *title, char *name, char *in_pattern, char *dir, char *fn)
+{
+	GtkWidget 		*chooser;
+	GtkFileFilter	*filter;
+	char			*search;
+	char			*next;
+	char			*p1,*p2;
+	char			*pattern;
+	char			pat[MAX_PATH+1];
+
+	chooser=gtk_file_chooser_dialog_new(title
+			,GTK_WINDOW(gtk_widget_get_toplevel(wiggy))
+			,GTK_FILE_CHOOSER_ACTION_OPEN
+			,GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL
+			,GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT
+			,NULL);
+	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(chooser), TRUE);
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser) ,dir);
+	filter=gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, name);
+	pattern=strdup(in_pattern);
+	search=pattern;
+	while((next=strtok(search, ";"))!=NULL) {
+		search=NULL;
+		pat[0]=0;
+		p2=pat;
+		for(p1=next;*p1;p1++) {
+			if(toupper(*p1)!=tolower(*p1)) {
+				*(p2++)='[';
+				*(p2++)=toupper(*p1);
+				*(p2++)=tolower(*p1);
+				*(p2++)=']';
+			}
+			else
+				*(p2++)=*p1;
+			*p2=0;
+		}
+		gtk_file_filter_add_pattern(filter, pat);
+	}
+	free(pattern);
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+	filter=gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "All Files");
+	gtk_file_filter_add_pattern(filter, "*");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(chooser), filter);
+	
+	switch(gtk_dialog_run(GTK_DIALOG(chooser))) {
+		case GTK_RESPONSE_ACCEPT:
+			strcpy(fn, gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser)));
+			break;
+		default:
+			fn[0]=0;
+	}
+	gtk_widget_destroy(chooser);
+	return(fn);
+}
+
+void on_text_file1_activate(GtkWidget *wiggy, gpointer data)
+{
+	char	fn[MAX_PATH+1];
+	select_filename(wiggy, "Edit Text File", "Text Files", "*.txt", cfg.text_dir, fn);
+	if(fn[0])
+		edit_text_file(NULL, fn);
+}
+
+void on_javascript_file1_activate(GtkWidget *wiggy, gpointer data)
+{
+	char	fn[MAX_PATH+1];
+	select_filename(wiggy, "Edit Javascript File", "Javascript Files", "*.js", cfg.exec_dir, fn);
+	if(fn[0])
+		edit_text_file(NULL, fn);
+}
+
+void on_configuration_file1_activate(GtkWidget *wiggy, gpointer data)
+{
+	char	fn[MAX_PATH+1];
+
+	select_filename(wiggy, "Edit Configuration File", "Configuration Files", "*.cfg;*.ini;*.conf", cfg.ctrl_dir, fn);
+	if(fn[0])
+		edit_text_file(NULL, fn);
+}
+
