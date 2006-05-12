@@ -150,7 +150,7 @@ void DLLCALL _splitpath(const char *path, char *drive, char *dir, char *fname, c
 /* This code _may_ work on other DOS-based platforms (e.g. OS/2)			*/
 /****************************************************************************/
 #if !defined(__unix__)
-static int glob_compare( const void *arg1, const void *arg2 )
+static int _cdecl glob_compare( const void *arg1, const void *arg2 )
 {
    /* Compare all of both strings: */
    return stricmp( * ( char** ) arg1, * ( char** ) arg2 );

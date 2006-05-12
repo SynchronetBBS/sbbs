@@ -297,22 +297,22 @@ size_t	strListMerge(str_list_t* list, str_list_t add_list)
 	return(i);
 }
 
-static int strListCompareAlpha(const void *arg1, const void *arg2)
+static int _cdecl strListCompareAlpha(const void *arg1, const void *arg2)
 {
    return stricmp(*(char**)arg1, *(char**)arg2);
 }
 
-static int strListCompareAlphaReverse(const void *arg1, const void *arg2)
+static int _cdecl strListCompareAlphaReverse(const void *arg1, const void *arg2)
 {
    return stricmp(*(char**)arg2, *(char**)arg1);
 }
 
-static int strListCompareAlphaCase(const void *arg1, const void *arg2)
+static int _cdecl strListCompareAlphaCase(const void *arg1, const void *arg2)
 {
    return strcmp(*(char**)arg1, *(char**)arg2);
 }
 
-static int strListCompareAlphaCaseReverse(const void *arg1, const void *arg2)
+static int _cdecl strListCompareAlphaCaseReverse(const void *arg1, const void *arg2)
 {
    return strcmp(*(char**)arg2, *(char**)arg1);
 }
