@@ -28,7 +28,11 @@ void run_external(char *path, char *filename)
 {
 	static char	cmdline[MAX_PATH*2];
 
+#ifdef SPAWN_WITH_THREADS
 	_beginthread(run_cmdline, 0, complete_path(cmdline,path,filename));
+#else
+	run_cmdline(complete_path(cmdline,path,filename));
+#endif
 }
 
 /* ToDo: This will need to read the command-line from a config file */
@@ -38,7 +42,11 @@ void view_stdout(char *path, char *filename)
 	char	p[MAX_PATH+1];
 
 	sprintf(cmdline, "%s | xmessage -file -", complete_path(p,path,filename));
+#ifdef SPAWN_WITH_THREADS
 	_beginthread(run_cmdline, 0, cmdline);
+#else
+	run_cmdline(cmdline);
+#endif
 }
 
 /* ToDo: This will need to read the command-line from a config file */
@@ -59,7 +67,11 @@ void view_text_file(char *path, char *filename)
 		}
 		else {
 			sprintf(cmdline, "xmessage -file %s", p);
+#ifdef SPAWN_WITH_THREADS
 			_beginthread(run_cmdline, 0, cmdline);
+#else
+			run_cmdline(cmdline);
+#endif
 		}
 	}
 }
@@ -71,7 +83,11 @@ void edit_text_file(char *path, char *filename)
 	char	p[MAX_PATH+1];
 
 	sprintf(cmdline, "xedit %s", complete_path(p,path,filename));
+#ifdef SPAWN_WITH_THREADS
 	_beginthread(run_cmdline, 0, cmdline);
+#else
+	run_cmdline(cmdline);
+#endif
 }
 
 void touch_sem(char *path, char *filename)

@@ -23,6 +23,7 @@ endif
 
 vpath %.c ..
 
+CFLAGS	+=	-DSPAWN_WITH_THREADS
 CFLAGS	+=	$(SBBSDEFS) -I.. $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `pkg-config libglade-2.0 --cflags`
 # Hopefully, -Wl,-E exports all symbols dynamically everywhere.
 LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) `pkg-config libglade-2.0 --libs` $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
