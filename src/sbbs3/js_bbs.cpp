@@ -1275,7 +1275,7 @@ js_logkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>1)
-		comma=JS_ValueToBoolean(cx,argv[1],&comma);
+		JS_ValueToBoolean(cx,argv[1],&comma);
 
 	if((p=JS_GetStringBytes(js_str))==NULL) {
 		*rval = JSVAL_FALSE;
@@ -2097,11 +2097,15 @@ static JSBool
 js_private_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
+	JSBool		local=false;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->privchat();
+	if(argc)
+		JS_ValueToBoolean(cx,argv[0],&local);
+
+	sbbs->privchat(local ? true:false);	// <- eliminates stupid msvc6 "performance warning"
 
 	return(JS_TRUE);
 }
@@ -2865,8 +2869,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("use the private inter-node message prompt")
 	,310
 	},		
-	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter private inter-node chat")
+	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("[local=<i>false</i>]")
+	,JSDOCSTR("enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)")
 	,310
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	JSDOCSTR("")
