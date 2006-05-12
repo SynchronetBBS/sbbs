@@ -111,7 +111,6 @@ function get_message()
 	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
 		// TODO: No way of calling bbs.priave_chat(true)
 		// bbs.private_chat();
-		console.pause();
 		bbs.nodesync();
 		draw_main(true);
 		for(i=0; i<menus_displayed.length; i++)
