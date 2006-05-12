@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib \ntddk\libfre\i386\ntvdm.lib /nologo /dll /map /machine:I386
+# ADD LINK32 \ntddk\libfre\i386\ntvdm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib /nologo /dll /map /machine:I386
 
 !ELSEIF  "$(CFG)" == "sbbsexec - Win32 Debug"
 
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBSEXEC_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /Gz /MTd /W3 /Gm /GX /ZI /Od /I "\ntddk\inc" /I "..\xpdev" /D "_DEBUG" /D "RINGBUF_MUTEX" /D "i386" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBSEXEC_EXPORTS" /D "RINGBUF_SEM" /YX /FD /GZ /c
+# ADD CPP /nologo /Gz /MTd /W3 /Gm /GX /ZI /Od /I "\ntddk\inc" /I "..\xpdev" /D "_DEBUG" /D "i386" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBSEXEC_EXPORTS" /D "RINGBUF_SEM" /D "RINGBUF_MUTEX" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib \ntddk\libchk\i386\ntvdm.lib /nologo /dll /incremental:no /map /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 \ntddk\libchk\i386\ntvdm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ws2_32.lib /nologo /dll /incremental:no /map /debug /machine:I386 /pdbtype:sept
 
 !ENDIF 
 
@@ -89,7 +89,19 @@ LINK32=link.exe
 # Name "sbbsexec - Win32 Debug"
 # Begin Source File
 
+SOURCE=..\xpdev\datewrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\dirwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\xpdev\genwrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\ini_file.c
 # End Source File
 # Begin Source File
 
@@ -102,6 +114,14 @@ SOURCE=.\sbbsexec.c
 # Begin Source File
 
 SOURCE=..\xpdev\semwrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\sockwrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\str_list.c
 # End Source File
 # Begin Source File
 
