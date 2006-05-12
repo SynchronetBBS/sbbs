@@ -199,12 +199,12 @@ void _cdecl input_thread(void* arg)
 		if(!ReadFile(rdslot,buf,sizeof(buf),&count,NULL)) {
 			if(GetLastError()==ERROR_HANDLE_EOF)	/* closed by VDD_CLOSE */
 				break;
-			lprintf(LOG_ERR,"!VDD_READ: ReadFile Error %d (size=%d)"
+			lprintf(LOG_ERR,"!input_thread: ReadFile Error %d (size=%d)"
 				,GetLastError(),count);
 			continue;
 		}
 		if(count==0) {
-			lprintf(LOG_ERR,"!VDD_READ: ReadFile read 0");
+			lprintf(LOG_ERR,"!input_thread: ReadFile read 0");
 			continue;
 		}
 		RingBufWrite(&rdbuf,buf,count);
@@ -252,6 +252,10 @@ void reset_yield()
 {
 	last_yield=xp_timer();
 }
+
+/***********************/
+/* UART Virtualization */
+/***********************/
 
 VOID uart_wrport(WORD port, BYTE data)
 {
@@ -386,6 +390,8 @@ VOID uart_rdport(WORD port, PBYTE data)
 
 	lprintf(LOG_DEBUG, "returning 0x%02X", *data);
 }
+
+/* VDD DOS Interface (mainly for FOSSIL driver in dosxtrn.exe) */
 
 __declspec(dllexport) void __cdecl VDDDispatch(void) 
 {
@@ -650,22 +656,20 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			online_poll++;
 			break;
 
-		case VDD_YIELD:
+		case VDD_YIELD:			/* forced yield */
 			vdd_yields++;
 			yield();
 			break;
 
-		case VDD_MAYBE_YIELD:
+		case VDD_MAYBE_YIELD:	/* yield if YieldInterval is enabled and expired */
 			maybe_yield();
 			break;
 
-		case VDD_PROGRAM:
+		case VDD_PROGRAM:		/* Inform VDD of program being executed */
 			count = getCX();
-			if(count != 1)
-				lprintf(LOG_DEBUG,"VDD_WRITE of %d",count);
-			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
+			p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
-			lprintf(LOG_INFO,"Program: '%s'", p);
+			lprintf(LOG_INFO,"Program name: '%s'", p);
 			if(ini!=NULL)
 				parse_ini(p);
 			break;
