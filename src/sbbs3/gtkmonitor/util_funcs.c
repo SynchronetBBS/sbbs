@@ -178,4 +178,5 @@ void display_message(char *title, char *message, char *icon)
 	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
 			label);
 	gtk_widget_show_all (dialog);
+	gtk_dialog_run(GTK_DIALOG(dialog));
 }
