@@ -1083,3 +1083,21 @@ void on_configuration_file1_activate(GtkWidget *wiggy, gpointer data)
 		edit_text_file(NULL, fn);
 }
 
+void on_edit_and_compile_baja_script1_activate(GtkWidget *wiggy, gpointer data)
+{
+	char	fn[MAX_PATH+1];
+	char	compile[MAX_PATH*2+1];
+
+	select_filename(wiggy, "Edit/Compile Baja Script", "BAJA Files", "*.src", cfg.exec_dir, fn);
+	if(!run_cmd_mutex_initalized) {
+		pthread_mutex_init(&run_cmd_mutex, NULL);
+		run_cmd_mutex_initalized=1;
+	}
+	if(fn[0])
+		edit_text_file(NULL, fn);
+	/* Spin on the lock waiting for the edit command to start */
+	while(!pthread_mutex_trylock(&run_cmd_mutex))
+		pthread_mutex_unlock(&run_cmd_mutex);
+	sprintf(compile, "baja %s", fn);
+	view_stdout(cfg.exec_dir,compile);
+}

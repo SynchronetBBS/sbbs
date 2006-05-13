@@ -703,7 +703,6 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="edit_and_compile_baja_script1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Edit and Compile _Baja Script</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_edit_and_compile_baja_script1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>

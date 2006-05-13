@@ -3,14 +3,24 @@
 #include "dirwrap.h"
 #include "threadwrap.h"
 #include "gtkmonitor.h"
+#include "semwrap.h"
+
+int run_cmd_mutex_initalized=0;
+pthread_mutex_t	run_cmd_mutex;
 
 void run_cmdline(void *cmdline)
 {
 	GtkWidget	*w;
 
+	if(!run_cmd_mutex_initalized) {
+		pthread_mutex_init(&run_cmd_mutex, NULL);
+		run_cmd_mutex_initalized=1;
+	}
+	pthread_mutex_lock(&run_cmd_mutex);
 	system((char *)cmdline);
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
+	pthread_mutex_unlock(&run_cmd_mutex);
 }
 
 char *complete_path(char *dest, char *path, char *filename)
@@ -85,6 +95,19 @@ void edit_text_file(char *path, char *filename)
 	GtkWidget	*w;
 
 	sprintf(cmdline, "xedit %s", complete_path(p,path,filename));
+	w=glade_xml_get_widget(xml, "MainWindow");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+	_beginthread(run_cmdline, 0, cmdline);
+}
+
+/* ToDo: This will need to read the command-line from a config file */
+void view_html_file(char *path, char *filename)
+{
+	static char	cmdline[MAX_PATH*2];
+	char	p[MAX_PATH+1];
+	GtkWidget	*w;
+
+	sprintf(cmdline, "mozilla-browser file://%s", complete_path(p,path,filename));
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	_beginthread(run_cmdline, 0, cmdline);
