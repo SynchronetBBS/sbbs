@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "dirwrap.h"
+
 #include "ciolib.h"
 #include "keys.h"
 #include "cterm.h"
@@ -80,6 +82,7 @@ int main(int argc, char **argv)
 	int		len;
 	int		speed;
 	char	*scrollbuf;
+	char	title[MAX_PATH+1];
 
 	textmode(C80);
 	gettextinfo(&ti);
@@ -100,10 +103,13 @@ int main(int argc, char **argv)
 			getch();
 			return(-1);
 		}
+		sprintf(title,"SyncView: %s",getfname(argv[1]));
 	}
 	else {
 		f=stdin;
+		strcpy(title,"SyncView: [stdin]");
 	}
+	settitle(title);
 	while((len=fread(buf, 1, BUF_SIZE, f))) {
 		cterm_write(buf, len, NULL, 0, &speed);
 	}
