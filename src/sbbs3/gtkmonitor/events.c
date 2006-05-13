@@ -1,4 +1,4 @@
-#include "events.h"
+
 #include "gtkmonitor.h"
 #include "util_funcs.h"
 
@@ -1100,4 +1100,19 @@ void on_edit_and_compile_baja_script1_activate(GtkWidget *wiggy, gpointer data)
 		pthread_mutex_unlock(&run_cmd_mutex);
 	sprintf(compile, "baja %s", fn);
 	view_stdout(cfg.exec_dir,compile);
+}
+
+void on_index1_activate(GtkWidget *wiggy, gpointer data)
+{
+	view_html_file(cfg.ctrl_dir,"../docs/index.htm");
+}
+
+void on_sysop_manual1_activate(GtkWidget *wiggy, gpointer data)
+{
+	view_html_file(cfg.ctrl_dir,"../docs/sysop.html");
+}
+
+void on_frequently_asked_questions_faq1_activate(GtkWidget *wiggy, gpointer data)
+{
+	view_text_file(cfg.ctrl_dir,"../docs/v3cfgfaq.txt");
 }

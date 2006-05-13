@@ -107,7 +107,7 @@ void view_html_file(char *path, char *filename)
 	char	p[MAX_PATH+1];
 	GtkWidget	*w;
 
-	sprintf(cmdline, "mozilla-browser file://%s", complete_path(p,path,filename));
+	sprintf(cmdline, "firefox file://%s", complete_path(p,path,filename));
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
 	_beginthread(run_cmdline, 0, cmdline);

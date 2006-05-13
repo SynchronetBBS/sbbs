@@ -1441,7 +1441,6 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="index1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Index</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_index1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
@@ -1464,7 +1463,6 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="sysop_manual1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Sysop Manual</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_sysop_manual1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
@@ -1486,7 +1484,6 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="frequently_asked_questions_(faq)1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">Frequently Asked Questions (FAQ)</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_frequently_asked_questions_(faq)1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
