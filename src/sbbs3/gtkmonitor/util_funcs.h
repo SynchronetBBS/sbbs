@@ -16,5 +16,6 @@ char *getsizestr(char *outstr, long size, BOOL bytes);
 char *getnumstr(char *outstr, ulong size);
 void touch_sem(char *path, char *filename);
 void display_message(char *title, char *message, char *icon);
+void view_ctrla_file(char *path, char *filename);
 
 #endif

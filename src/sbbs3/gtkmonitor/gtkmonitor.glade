@@ -671,7 +671,6 @@
 		  <child>
 		    <widget class="GtkMenuItem" id="preview_file1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Preview File</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_preview_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>
@@ -681,7 +680,6 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="edit_and_preview_file1">
 		      <property name="visible">True</property>
-		      <property name="sensitive">False</property>
 		      <property name="label" translatable="yes">_Edit and Preview File</property>
 		      <property name="use_underline">True</property>
 		      <signal name="activate" handler="on_edit_and_preview_file1_activate" last_modification_time="Thu, 09 Mar 2006 17:24:46 GMT"/>
@@ -1486,7 +1484,7 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Frequently Asked Questions (FAQ)</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_frequently_asked_questions_(faq)1_activate" last_modification_time="Thu, 09 Mar 2006 17:40:46 GMT"/>
+		      <signal name="activate" handler="on_frequently_asked_questions_faq1_activate" last_modification_time="Sat, 13 May 2006 08:48:24 GMT"/>
 
 		      <child internal-child="image">
 			<widget class="GtkImage" id="image1357">

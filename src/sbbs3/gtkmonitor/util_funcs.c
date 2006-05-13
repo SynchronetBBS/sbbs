@@ -101,6 +101,19 @@ void edit_text_file(char *path, char *filename)
 }
 
 /* ToDo: This will need to read the command-line from a config file */
+void view_ctrla_file(char *path, char *filename)
+{
+	static char	cmdline[MAX_PATH*2];
+	char	p[MAX_PATH+1];
+	GtkWidget	*w;
+
+	sprintf(cmdline, "%sasc2ans %s | %ssyncview -l", cfg.exec_dir, complete_path(p,path,filename), cfg.exec_dir);
+	w=glade_xml_get_widget(xml, "MainWindow");
+	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
+	_beginthread(run_cmdline, 0, cmdline);
+}
+
+/* ToDo: This will need to read the command-line from a config file */
 void view_html_file(char *path, char *filename)
 {
 	static char	cmdline[MAX_PATH*2];
