@@ -9,10 +9,8 @@ void run_cmdline(void *cmdline)
 	GtkWidget	*w;
 
 	system((char *)cmdline);
-#ifndef SPAWN_WITH_THREADS
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
-#endif
 }
 
 char *complete_path(char *dest, char *path, char *filename)
@@ -35,13 +33,9 @@ void run_external(char *path, char *filename)
 	static char	cmdline[MAX_PATH*2];
 	GtkWidget	*w;
 
-#ifdef SPAWN_WITH_THREADS
-	_beginthread(run_cmdline, 0, complete_path(cmdline,path,filename));
-#else
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	run_cmdline(complete_path(cmdline,path,filename));
-#endif
+	_beginthread(run_cmdline, 0, complete_path(cmdline,path,filename));
 }
 
 /* ToDo: This will need to read the command-line from a config file */
@@ -52,13 +46,9 @@ void view_stdout(char *path, char *filename)
 	GtkWidget	*w;
 
 	sprintf(cmdline, "%s | xmessage -file -", complete_path(p,path,filename));
-#ifdef SPAWN_WITH_THREADS
-	_beginthread(run_cmdline, 0, cmdline);
-#else
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	run_cmdline(cmdline);
-#endif
+	_beginthread(run_cmdline, 0, cmdline);
 }
 
 /* ToDo: This will need to read the command-line from a config file */
@@ -80,13 +70,9 @@ void view_text_file(char *path, char *filename)
 		}
 		else {
 			sprintf(cmdline, "xmessage -file %s", p);
-#ifdef SPAWN_WITH_THREADS
-			_beginthread(run_cmdline, 0, cmdline);
-#else
 			w=glade_xml_get_widget(xml, "MainWindow");
 			gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-			run_cmdline(cmdline);
-#endif
+			_beginthread(run_cmdline, 0, cmdline);
 		}
 	}
 }
@@ -99,13 +85,9 @@ void edit_text_file(char *path, char *filename)
 	GtkWidget	*w;
 
 	sprintf(cmdline, "xedit %s", complete_path(p,path,filename));
-#ifdef SPAWN_WITH_THREADS
-	_beginthread(run_cmdline, 0, cmdline);
-#else
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	run_cmdline(cmdline);
-#endif
+	_beginthread(run_cmdline, 0, cmdline);
 }
 
 void touch_sem(char *path, char *filename)
