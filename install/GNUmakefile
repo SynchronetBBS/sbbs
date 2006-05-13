@@ -102,7 +102,7 @@ endif
 
 all: binaries baja externals
 
-binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor
+binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor syncview
 
 externals:	sbj sbl dpoker tbd
 
@@ -147,6 +147,9 @@ gtkmonitor:	src
 ifdef USE_GLADE
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/gtkmonitor $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 endif
+
+syncview:
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/syncview $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 
 install: all
 ifeq ($(INSTALL),UNIX)
@@ -195,6 +198,7 @@ ifdef USE_GLADE
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkmonitor/pixmaps/stock_mail-send.png $(SBBSDIR)/exec/stock_mail-send.png
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
 endif
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
 # kludge... must fix this to allow moz JS libs and such.  ToDo
 	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(machine).$(BUILD)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
