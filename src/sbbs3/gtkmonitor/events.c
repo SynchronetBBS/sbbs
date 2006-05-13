@@ -1,3 +1,9 @@
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <fcntl.h>
+#include <string.h>
+#include <utime.h>
+#include <unistd.h>
 
 #include "gtkmonitor.h"
 #include "util_funcs.h"
@@ -1144,5 +1150,77 @@ void on_edit_and_preview_file1_activate(GtkWidget *wiggy, gpointer data)
 			pthread_mutex_unlock(&run_cmd_mutex);
 		sprintf(compile, "baja %s", fn);
 		view_ctrla_file(NULL, fn);
+	}
+}
+
+void sendmessageto_node(GtkWidget *wiggy, gpointer data)
+{
+	char	fn[MAX_PATH+1];
+	char	str[MAX_PATH+1];
+	int		i;
+	int		tmp;
+	node_t	node;
+	time_t	edited;
+	struct utimbuf tb;
+	char	*msg;
+
+	gtk_tree_selection_selected_foreach(sel
+			,get_lastselected_node
+			,&i);
+
+	if((i=getnodedat(&cfg,i,&node,NULL))) {
+		sprintf(str,"Error reading node data (%d)!",i);
+		display_message("Read Error",str,"gtk-dialog-error");
+	}
+	else {
+		strcpy(fn,"/tmp/gtkmonitor-msg-XXXXXXXX");
+		tmp=mkstemp(fn);
+		if(tmp!=-1) {
+			write(tmp,"\1n\1y\1hMessage From Sysop:\1w \n\n",30);
+			close(tmp);
+			/* Set modified time back one second so we can tell if the sysop
+			   saved the file or not */
+			edited=fdate(fn);
+			edited--;
+			tb.actime=edited;
+			tb.modtime=edited;
+			utime(fn, &tb);
+			/* If utime() failed for some reason, sleep for a second */
+			if(fdate(fn)!=edited)
+				SLEEP(1000);
+			edit_text_file(NULL, fn);
+			/* Spin on the lock waiting for the edit command to start */
+			while(!pthread_mutex_trylock(&run_cmd_mutex))
+				pthread_mutex_unlock(&run_cmd_mutex);
+			/* Now, spin on the lock waiting for it to *exit* */
+			while(pthread_mutex_trylock(&run_cmd_mutex)) {
+				/* Allow events to happen as normal */
+				while(gtk_events_pending()) {
+					if(gtk_main_iteration())
+						gtk_main_quit();
+				}
+				SLEEP(1);
+			}
+			pthread_mutex_unlock(&run_cmd_mutex);
+			/* Now, read the message back in and send to the user */
+			if(fdate(fn)!=edited) {
+				i=flength(fn);
+				if((msg=(char *)malloc(i))==NULL)
+					display_message("malloc() Error", "Cannot allocate enough memory for the message", "gtk-dialog-error");
+				else {
+					tmp=open(fn, O_RDONLY);
+					if(tmp==-1)
+						display_message("open() Error", "Cannot open temp message file", "gtk-dialog-error");
+					else {
+						if(read(tmp, msg, i)!=i)
+							display_message("read() Error", "Problem reading message file", "gtk-dialog-error");
+						else {
+							putsmsg(&cfg, node.useron, msg);
+						}
+					}
+					free(msg);
+				}
+			}
+		}
 	}
 }
