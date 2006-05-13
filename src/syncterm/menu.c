@@ -27,8 +27,8 @@ void viewscroll(void)
 	y=wherey();
 	uifcbail();
     gettextinfo(&txtinfo);
-	/* ToDo: Watch this... may be too large for alloca() */
-	scrollback=(char *)alloca((scrollback_buf==NULL?0:(term.width*2*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*2));
+	/* too large for alloca() */
+	scrollback=(char *)malloc((scrollback_buf==NULL?0:(term.width*2*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*2));
 	if(cterm.scrollback != NULL)
 		memcpy(scrollback,cterm.scrollback,term.width*2*settings.backlines);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
@@ -107,6 +107,7 @@ void viewscroll(void)
 	}
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
 	gotoxy(x,y);
+	free(scrollback);
 	return;
 }
 
