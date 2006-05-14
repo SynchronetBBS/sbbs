@@ -1255,15 +1255,15 @@ void on_properties1_activate(GtkWidget *wiggy, gpointer data)
 		case GTK_RESPONSE_OK:
 			/* Read out the new values */
 			w=glade_xml_get_widget(pxml,"eEditTextFile");
-			strcpy(gtkm_conf.edit_text_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			strcpy(gtkm_conf.edit_text_file,gtk_entry_get_text(GTK_ENTRY(w)));
 			w=glade_xml_get_widget(pxml,"eViewTextFile");
-			strcpy(gtkm_conf.view_text_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			strcpy(gtkm_conf.view_text_file,gtk_entry_get_text(GTK_ENTRY(w)));
 			w=glade_xml_get_widget(pxml,"eViewStdout");
-			strcpy(gtkm_conf.view_stdout,gtk_entry_set_text(GTK_ENTRY(w)));
+			strcpy(gtkm_conf.view_stdout,gtk_entry_get_text(GTK_ENTRY(w)));
 			w=glade_xml_get_widget(pxml,"eViewCtrlAFile");
-			strcpy(gtkm_conf.view_ctrla_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			strcpy(gtkm_conf.view_ctrla_file,gtk_entry_get_text(GTK_ENTRY(w)));
 			w=glade_xml_get_widget(pxml,"eViewHTMLFile");
-			strcpy(gtkm_conf.view_html_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			strcpy(gtkm_conf.view_html_file,gtk_entry_get_text(GTK_ENTRY(w)));
 			write_ini();
 	}
 	gtk_widget_destroy(dialog);
