@@ -86,6 +86,12 @@ void update_userlist_item(GtkListStore *lstore, GtkTreeIter *curr, int usernum)
 
 	user.number=usernum;
 	getuserdat(&cfg, &user);
+	if(arbuf) {
+		if(!chk_ar(&cfg, arbuf, &user)) {
+			gtk_list_store_remove(lstore, curr);
+			return;
+		}
+	}
 	sex[0]=user.sex;
 	sex[1]=0;
 	unixtodstr(&cfg, user.firston, first);
@@ -118,6 +124,13 @@ void update_userlist_callback(GtkWidget *wiggy, gpointer data)
 	int				totalusers;
 	int				i;
 	GtkTreeIter		curr;
+	char			str[1024];
+
+	free_cfg(&cfg);
+	if(!load_cfg(&cfg, NULL, TRUE, str)) {
+		display_message("Load Error","Cannot load configuration data","gtk-dialog-error");
+		return;
+    }
 
 	w=glade_xml_get_widget(lxml, "lUserList");
 	lstore=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(w)));
@@ -209,3 +222,21 @@ void userlist_edituser(GtkWidget *wiggy, gpointer data)
 	run_external(cfg.exec_dir,str);
 }
 
+void apply_ars_filter(GtkWidget *wiggy, gpointer data)
+{
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(lxml, "eArsFilter");
+	arbuf=arstr(NULL, (char *)gtk_entry_get_text(GTK_ENTRY(w)), &cfg);
+	update_userlist_callback(wiggy, data);
+}
+
+void clear_ars_filter(GtkWidget *wiggy, gpointer data)
+{
+	GtkWidget	*w;
+
+	w=glade_xml_get_widget(lxml, "eArsFilter");
+	gtk_entry_set_text(GTK_ENTRY(w),"");
+	arbuf=NULL;
+	update_userlist_callback(wiggy, data);
+}

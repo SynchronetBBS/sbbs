@@ -8,5 +8,6 @@
 
 extern GladeXML		*lxml;
 extern scfg_t		cfg;
+extern uchar		*arbuf;
 
 #endif

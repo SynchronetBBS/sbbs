@@ -4,8 +4,9 @@
 #include "events.h"
 #include "gtkuserlist.h"
 
-GladeXML		*lxml;
+GladeXML	*lxml;
 scfg_t		cfg;
+uchar		*arbuf=NULL;
 
 int main(int argc, char **argv)
 {
