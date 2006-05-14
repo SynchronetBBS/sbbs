@@ -8,16 +8,124 @@
 int run_cmd_mutex_initalized=0;
 pthread_mutex_t	run_cmd_mutex;
 
-void run_cmdline(void *cmdline)
+/*****************************************************************************/
+/* Returns command line generated from instr with %c replacments             */
+/*****************************************************************************/
+char *mycmdstr(char *instr, char *fpath)
+{
+    char str[256],str2[128];
+    int i,j,len;
+#if 0
+    char 	cmd[MAX_PATH+1];
+#else
+	char	*cmd;
+#endif
+
+	cmd=(char *)malloc(MAX_PATH+1);
+	if(cmd==NULL) {
+		display_message("malloc() Error", "Cannot allocate enough memory for the message", "gtk-dialog-error");
+		return(NULL);
+	}
+	len=strlen(instr);
+	for(i=j=0;i<len && j<128;i++) {
+		if(instr[i]=='%') {
+			i++;
+			cmd[j]=0;
+			switch(toupper(instr[i])) {
+				case 'F':   /* File path */
+					strcat(cmd,fpath);
+					break;
+				case 'G':   /* Temp directory */
+					if(cfg.temp_dir[0]!='\\' 
+							&& cfg.temp_dir[0]!='/' 
+							&& cfg.temp_dir[1]!=':') {
+						strcpy(str,cfg.ctrl_dir);
+						strcat(str,cfg.temp_dir);
+						if(FULLPATH(str2,str,40))
+							strcpy(str,str2);
+						backslash(str);
+						strcat(cmd,str);
+					}
+					else
+						strcat(cmd,cfg.temp_dir);
+					break;
+				case 'J':
+					if(cfg.data_dir[0]!='\\' 
+							&& cfg.data_dir[0]!='/' 
+							&& cfg.data_dir[1]!=':') {
+						strcpy(str,cfg.ctrl_dir);
+						strcat(str,cfg.data_dir);
+						if(FULLPATH(str2,str,40))
+							strcpy(str,str2);
+						backslash(str);
+						strcat(cmd,str);
+					}
+					else
+						strcat(cmd,cfg.data_dir);
+					break;
+				case 'K':
+					strcat(cmd,cfg.ctrl_dir);
+					break;
+				case 'O':   /* SysOp */
+					strcat(cmd,cfg.sys_op);
+					break;
+				case 'Q':   /* QWK ID */
+					strcat(cmd,cfg.sys_id);
+					break;
+				case '!':   /* EXEC Directory */
+					strcat(cmd,cfg.exec_dir);
+					break;
+                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+                    strcat(cmd,cfg.exec_dir);
+#endif
+                    break;
+				case '%':   /* %% for percent sign */
+					strcat(cmd,"%");
+					break;
+				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+					strcat(cmd,".exe");
+#endif
+					break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcpy(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strcat(cmd,str);
+					break;
+				default:    /* unknown specification */
+					sprintf(cmd,"ERROR Checking Command Line '%s'",instr);
+					display_message("Command line Error",cmd,"gtk-dialog-error");
+					free(cmd);
+					return(NULL);
+			}
+			j=strlen(cmd);
+		}
+		else
+			cmd[j++]=instr[i];
+	}
+	cmd[j]=0;
+
+	return(cmd);
+}
+
+void exec_cmdline(void *cmdline)
 {
 	GtkWidget	*w;
 
+	if(cmdline==NULL)
+		return;
 	if(!run_cmd_mutex_initalized) {
 		pthread_mutex_init(&run_cmd_mutex, NULL);
 		run_cmd_mutex_initalized=1;
 	}
 	pthread_mutex_lock(&run_cmd_mutex);
 	system((char *)cmdline);
+	free(cmdline);
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), TRUE);
 	pthread_mutex_unlock(&run_cmd_mutex);
@@ -32,12 +140,12 @@ char *complete_path(char *dest, char *path, char *filename)
 	else
 		dest[0]=0;
 
-	strcat(dest, filename);
-	fexistcase(dest);			/* Fixes upr/lwr case fname */
+	if(filename != NULL)
+		strcat(dest, filename);
+	fexistcase(dest);			/* TODO: Hack: Fixes upr/lwr case fname */
 	return(dest);
 }
 
-/* ToDo: This will need to read the command-line from a config file */
 void run_external(char *path, char *filename)
 {
 	static char	cmdline[MAX_PATH*2];
@@ -45,85 +153,19 @@ void run_external(char *path, char *filename)
 
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	_beginthread(run_cmdline, 0, complete_path(cmdline,path,filename));
+	complete_path(cmdline,path,filename);
+	_beginthread(exec_cmdline, 0, strdup(cmdline));
 }
 
-/* ToDo: This will need to read the command-line from a config file */
-void view_stdout(char *path, char *filename)
+void exec_cmdstr(char *cmdstr, char *path, char *filename)
 {
-	static char	cmdline[MAX_PATH*2];
-	char	p[MAX_PATH+1];
-	GtkWidget	*w;
-
-	sprintf(cmdline, "%s | xmessage -file -", complete_path(p,path,filename));
-	w=glade_xml_get_widget(xml, "MainWindow");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	_beginthread(run_cmdline, 0, cmdline);
-}
-
-/* ToDo: This will need to read the command-line from a config file */
-void view_text_file(char *path, char *filename)
-{
-	static char	cmdline[MAX_PATH*2];
 	char	p[MAX_PATH+1];
 	GtkWidget	*w;
 
 	complete_path(p,path,filename);
-	if(!fexist(p)) {
-		sprintf(cmdline,"The file %s does not exist.",p);
-		display_message("File Does Not Exist", cmdline, "gtk-dialog-error");
-	}
-	else {
-		if(access(p,R_OK)) {
-			sprintf(cmdline,"Cannot read the file %s... check your permissions.",p);
-			display_message("Cannot Read File", cmdline, "gtk-dialog-error");
-		}
-		else {
-			sprintf(cmdline, "xmessage -file %s", p);
-			w=glade_xml_get_widget(xml, "MainWindow");
-			gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-			_beginthread(run_cmdline, 0, cmdline);
-		}
-	}
-}
-
-/* ToDo: This will need to read the command-line from a config file */
-void edit_text_file(char *path, char *filename)
-{
-	static char	cmdline[MAX_PATH*2];
-	char	p[MAX_PATH+1];
-	GtkWidget	*w;
-
-	sprintf(cmdline, "xedit %s", complete_path(p,path,filename));
 	w=glade_xml_get_widget(xml, "MainWindow");
 	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	_beginthread(run_cmdline, 0, cmdline);
-}
-
-/* ToDo: This will need to read the command-line from a config file */
-void view_ctrla_file(char *path, char *filename)
-{
-	static char	cmdline[MAX_PATH*2];
-	char	p[MAX_PATH+1];
-	GtkWidget	*w;
-
-	sprintf(cmdline, "%sasc2ans %s | %ssyncview -l", cfg.exec_dir, complete_path(p,path,filename), cfg.exec_dir);
-	w=glade_xml_get_widget(xml, "MainWindow");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	_beginthread(run_cmdline, 0, cmdline);
-}
-
-/* ToDo: This will need to read the command-line from a config file */
-void view_html_file(char *path, char *filename)
-{
-	static char	cmdline[MAX_PATH*2];
-	char	p[MAX_PATH+1];
-	GtkWidget	*w;
-
-	sprintf(cmdline, "firefox file://%s", complete_path(p,path,filename));
-	w=glade_xml_get_widget(xml, "MainWindow");
-	gtk_widget_set_sensitive(GTK_WIDGET(w), FALSE);
-	_beginthread(run_cmdline, 0, cmdline);
+	_beginthread(exec_cmdline, 0, mycmdstr(cmdstr, p));
 }
 
 void touch_sem(char *path, char *filename)

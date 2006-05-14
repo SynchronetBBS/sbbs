@@ -14,156 +14,156 @@ void update_stats_callback(GtkWidget *wiggy, gpointer data)
 }
 
 void on_guru_brain1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.ctrl_dir,"guru.dat");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"guru.dat");
 }
 
 void on_text_strings1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.ctrl_dir,"text.dat");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"text.dat");
 }
 
 void on_default_colours1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.ctrl_dir,"attr.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"attr.cfg");
 }
 
 void on_nodes_full_message1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"nonodes.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"nonodes.txt");
 }
 
 void on_answer_screen1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"answer.asc");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"answer.asc");
 }
 
 void on_logon_message1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"menu/logon.asc");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"menu/logon.asc");
 }
 
 void on_auto_message1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"menu/auto.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"menu/auto.msg");
 }
 
 void on_zip_file_comment1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"zipmsg.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"zipmsg.txt");
 }
 
 void on_system_information1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"system.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"system.msg");
 }
 
 void on_new_user_message1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"newuser.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"newuser.msg");
 }
 
 void on_new_user_welcome_email1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"welcome.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"welcome.msg");
 }
 
 void on_new_user_password_failure1_activate(GtkWidget *wiggy, gpointer data) {
-	edit_text_file(cfg.text_dir,"nupguess.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"nupguess.msg");
 }
 
 void on_new_user_feedbakc_instructions1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"feedback.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"feedback.msg");
 }
 
 void on_allowed_rlogin_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"rlogin.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"rlogin.cfg");
 }
 
 void on_alias_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"alias.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"alias.cfg");
 }
 
 void on_domain_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"domains.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"domains.cfg");
 }
 
 void on_spam_bait_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"spambait.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"spambait.cfg");
 }
 
 void on_spam_block_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"spamblock.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"spamblock.cfg");
 }
 
 void on_allowed_relay_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"relay.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"relay.cfg");
 }
 
 void on_dnsbased_blacklists1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"dns_blacklist.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"dns_blacklist.cfg");
 }
 
 void on_dnsblacklist_exempt_ips1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"dnsbl_exempt.cfg.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"dnsbl_exempt.cfg.cfg");
 }
 
 void on_external_mail_processing1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"mailproc.ini");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"mailproc.ini");
 }
 
 void on_login_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ftplogin.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"ftplogin.txt");
 }
 
 void on_failed_login_mesage1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ftpbadlogin.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"ftpbadlogin.txt");
 }
 
 void on_hello_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ftphello.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"ftphello.txt");
 }
 
 void on_goodbye_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ftpbye.txt");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"ftpbye.txt");
 }
 
 void on_filename_aliases1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"ftpalias.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"ftpalias.cfg");
 }
 
 void on_mime_types1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"mime_types.ini");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"mime_types.ini");
 }
 
 void on_cgi_environment_variables1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"cgi_env.ini");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"cgi_env.ini");
 }
 
 void on_external_content_handlers1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"web_handler.ini");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"web_handler.ini");
 }
 
 void on_servicesini1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"services.ini");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"services.ini");
 }
 
 void on_error_log1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_text_file(cfg.logs_dir,"error.log");
+	exec_cmdstr(gtkm_conf.view_text_file ,cfg.logs_dir,"error.log");
 }
 
 void on_statistics_log1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_stdout(cfg.exec_dir,"slog");
+	exec_cmdstr(gtkm_conf.view_stdout ,cfg.exec_dir,"slog");
 }
 
 void on_todays_log1_activate(GtkWidget *wiggy, gpointer data)
@@ -175,7 +175,7 @@ void on_todays_log1_activate(GtkWidget *wiggy, gpointer data)
 	t=time(NULL);
 	tm=localtime(&t);
 	sprintf(fn,"logs/%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
+	exec_cmdstr(gtkm_conf.view_text_file, cfg.logs_dir,fn);
 }
 
 void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data)
@@ -188,7 +188,7 @@ void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data)
 	t-=24*60*60;
 	tm=localtime(&t);
 	sprintf(fn,"logs/%02d%02d%02d.log",tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
-	view_text_file(cfg.logs_dir,fn);
+	exec_cmdstr(gtkm_conf.view_text_file, cfg.logs_dir,fn);
 }
 
 void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
@@ -197,87 +197,87 @@ void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
 
 void on_spam_log1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_text_file(cfg.logs_dir,"spam.log");
+	exec_cmdstr(gtkm_conf.view_text_file, cfg.logs_dir,"spam.log");
 }
 
 void on_ip_address_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ip.can");
+	exec_cmdstr(gtkm_conf.edit_text_file, cfg.text_dir,"ip.can");
 }
 
 void on_ip_address_filter_silent1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"ip-silent.can");
+	exec_cmdstr(gtkm_conf.edit_text_file, cfg.text_dir,"ip-silent.can");
 }
 
 void on_ip_address_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"badip.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file, cfg.text_dir,"badip.msg");
 }
 
 void on_host_name_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"host.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"host.can");
 }
 
 void on_host_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"badhost.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"badhost.msg");
 }
 
 void on_user_name_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"name.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"name.can");
 }
 
 void on_user_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"badname.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"badname.msg");
 }
 
 void on_email_address_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"email.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"email.can");
 }
 
 void on_email_address_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"bademail.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"bademail.msg");
 }
 
 void on_email_subject_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"subject.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"subject.can");
 }
 
 void on_file_name_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"file.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"file.can");
 }
 
 void on_file_name_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"badfile.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"badfile.msg");
 }
 
 void on_phone_number_filter1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"phone.can");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"phone.can");
 }
 
 void on_phone_number_filter_message1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.text_dir,"badphone.msg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.text_dir,"badphone.msg");
 }
 
 void on_twit_list1_activate(GtkWidget *wiggy, gpointer data)
 {
-	edit_text_file(cfg.ctrl_dir,"twitlist.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"twitlist.cfg");
 }
 
 void on_hack_attempt_log1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_text_file(cfg.logs_dir,"hack.log");
+	exec_cmdstr(gtkm_conf.view_text_file,cfg.logs_dir,"hack.log");
 }
 
 void on_configure1_activate(GtkWidget *wiggy, gpointer data)
@@ -512,7 +512,8 @@ void clear_errors(GtkWidget *wiggy, gpointer data)
 void on_about1_activate(GtkWidget *wiggy, gpointer data)
 {
 	GladeXML	*axml;
-    axml = glade_xml_new("gtkmonitor.glade", "AboutWindow", NULL);
+
+    axml = glade_xml_new(glade_path, "AboutWindow", NULL);
 	if(axml==NULL) {
 		fprintf(stderr,"Could not locate AboutWindow widget\n");
 		return;
@@ -698,7 +699,7 @@ on_list1_activate(GtkWidget *wiggy, gpointer data)
 	GtkListStore	*lstore = NULL;
 	GtkTreeSelection *lsel;
 
-    lxml = glade_xml_new("gtkmonitor.glade", "UserListWindow", NULL);
+    lxml = glade_xml_new(glade_path, "UserListWindow", NULL);
 	if(lxml==NULL) {
 		fprintf(stderr,"Could not locate UserListWindow widget\n");
 		return;
@@ -1069,7 +1070,7 @@ void on_text_file1_activate(GtkWidget *wiggy, gpointer data)
 	char	fn[MAX_PATH+1];
 	select_filename(wiggy, "Edit Text File", "Text Files", "*.txt", cfg.text_dir, fn);
 	if(fn[0])
-		edit_text_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 }
 
 void on_javascript_file1_activate(GtkWidget *wiggy, gpointer data)
@@ -1077,7 +1078,7 @@ void on_javascript_file1_activate(GtkWidget *wiggy, gpointer data)
 	char	fn[MAX_PATH+1];
 	select_filename(wiggy, "Edit Javascript File", "Javascript Files", "*.js", cfg.exec_dir, fn);
 	if(fn[0])
-		edit_text_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 }
 
 void on_configuration_file1_activate(GtkWidget *wiggy, gpointer data)
@@ -1086,7 +1087,7 @@ void on_configuration_file1_activate(GtkWidget *wiggy, gpointer data)
 
 	select_filename(wiggy, "Edit Configuration File", "Configuration Files", "*.cfg;*.ini;*.conf", cfg.ctrl_dir, fn);
 	if(fn[0])
-		edit_text_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 }
 
 void on_edit_and_compile_baja_script1_activate(GtkWidget *wiggy, gpointer data)
@@ -1100,28 +1101,28 @@ void on_edit_and_compile_baja_script1_activate(GtkWidget *wiggy, gpointer data)
 		run_cmd_mutex_initalized=1;
 	}
 	if(fn[0]) {
-		edit_text_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 		/* Spin on the lock waiting for the edit command to start */
 		while(!pthread_mutex_trylock(&run_cmd_mutex))
 			pthread_mutex_unlock(&run_cmd_mutex);
 		sprintf(compile, "baja %s", fn);
-		view_stdout(cfg.exec_dir,compile);
+		exec_cmdstr(gtkm_conf.view_stdout,cfg.exec_dir,compile);
 	}
 }
 
 void on_index1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_html_file(cfg.ctrl_dir,"../docs/index.htm");
+	exec_cmdstr(gtkm_conf.view_html_file,cfg.ctrl_dir,"../docs/index.htm");
 }
 
 void on_sysop_manual1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_html_file(cfg.ctrl_dir,"../docs/sysop.html");
+	exec_cmdstr(gtkm_conf.view_html_file,cfg.ctrl_dir,"../docs/sysop.html");
 }
 
 void on_frequently_asked_questions_faq1_activate(GtkWidget *wiggy, gpointer data)
 {
-	view_text_file(cfg.ctrl_dir,"../docs/v3cfgfaq.txt");
+	exec_cmdstr(gtkm_conf.view_text_file,cfg.ctrl_dir,"../docs/v3cfgfaq.txt");
 }
 
 void on_preview_file1_activate(GtkWidget *wiggy, gpointer data)
@@ -1130,13 +1131,12 @@ void on_preview_file1_activate(GtkWidget *wiggy, gpointer data)
 
 	select_filename(wiggy, "Preview File", "ANSI/Ctrl-A Files", "*.ans;*.asc;*.msg", cfg.text_dir, fn);
 	if(fn[0])
-		view_ctrla_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.view_ctrla_file,NULL, fn);
 }
 
 void on_edit_and_preview_file1_activate(GtkWidget *wiggy, gpointer data)
 {
 	char	fn[MAX_PATH+1];
-	char	compile[MAX_PATH*2+1];
 
 	select_filename(wiggy, "Edit and Preview File", "ANSI/Ctrl-A Files", "*.ans;*.asc;*.msg", cfg.text_dir, fn);
 	if(!run_cmd_mutex_initalized) {
@@ -1144,12 +1144,11 @@ void on_edit_and_preview_file1_activate(GtkWidget *wiggy, gpointer data)
 		run_cmd_mutex_initalized=1;
 	}
 	if(fn[0]) {
-		edit_text_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 		/* Spin on the lock waiting for the edit command to start */
 		while(!pthread_mutex_trylock(&run_cmd_mutex))
 			pthread_mutex_unlock(&run_cmd_mutex);
-		sprintf(compile, "baja %s", fn);
-		view_ctrla_file(NULL, fn);
+		exec_cmdstr(gtkm_conf.view_ctrla_file, NULL, fn);
 	}
 }
 
@@ -1188,7 +1187,7 @@ void sendmessageto_node(GtkWidget *wiggy, gpointer data)
 			/* If utime() failed for some reason, sleep for a second */
 			if(fdate(fn)!=edited)
 				SLEEP(1000);
-			edit_text_file(NULL, fn);
+			exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 			/* Spin on the lock waiting for the edit command to start */
 			while(!pthread_mutex_trylock(&run_cmd_mutex))
 				pthread_mutex_unlock(&run_cmd_mutex);
@@ -1223,4 +1222,49 @@ void sendmessageto_node(GtkWidget *wiggy, gpointer data)
 			}
 		}
 	}
+}
+
+void on_properties1_activate(GtkWidget *wiggy, gpointer data)
+{
+	GladeXML	*pxml;
+	GtkWidget	*dialog;
+	GtkWidget	*w;
+
+    pxml = glade_xml_new(glade_path, "PreferencesDialog", NULL);
+	if(pxml==NULL) {
+		fprintf(stderr,"Could not locate PreferencesDialog widget\n");
+		return;
+	}
+	/* connect the signals in the interface */
+	glade_xml_signal_autoconnect(pxml);
+	dialog=glade_xml_get_widget(pxml, "PreferencesDialog");
+
+	/* Put in the current values */
+	w=glade_xml_get_widget(pxml,"eEditTextFile");
+	gtk_entry_set_text(GTK_ENTRY(w),gtkm_conf.edit_text_file);
+	w=glade_xml_get_widget(pxml,"eViewTextFile");
+	gtk_entry_set_text(GTK_ENTRY(w),gtkm_conf.view_text_file);
+	w=glade_xml_get_widget(pxml,"eViewStdout");
+	gtk_entry_set_text(GTK_ENTRY(w),gtkm_conf.view_stdout);
+	w=glade_xml_get_widget(pxml,"eViewCtrlAFile");
+	gtk_entry_set_text(GTK_ENTRY(w),gtkm_conf.view_ctrla_file);
+	w=glade_xml_get_widget(pxml,"eViewHTMLFile");
+	gtk_entry_set_text(GTK_ENTRY(w),gtkm_conf.view_html_file);
+
+	switch(gtk_dialog_run(GTK_DIALOG(dialog))) {
+		case GTK_RESPONSE_OK:
+			/* Read out the new values */
+			w=glade_xml_get_widget(pxml,"eEditTextFile");
+			strcpy(gtkm_conf.edit_text_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			w=glade_xml_get_widget(pxml,"eViewTextFile");
+			strcpy(gtkm_conf.view_text_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			w=glade_xml_get_widget(pxml,"eViewStdout");
+			strcpy(gtkm_conf.view_stdout,gtk_entry_set_text(GTK_ENTRY(w)));
+			w=glade_xml_get_widget(pxml,"eViewCtrlAFile");
+			strcpy(gtkm_conf.view_ctrla_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			w=glade_xml_get_widget(pxml,"eViewHTMLFile");
+			strcpy(gtkm_conf.view_html_file,gtk_entry_set_text(GTK_ENTRY(w)));
+			write_ini();
+	}
+	gtk_widget_destroy(dialog);
 }
