@@ -7,6 +7,80 @@
 
 #include "gtkmonitor.h"
 #include "util_funcs.h"
+#include "datewrap.h"
+
+int got_date=0;
+
+void destroy_calendar_window(GtkWidget *t, gpointer data)
+{
+	if(!got_date)
+		gtk_main_quit();
+}
+
+void changed_day(GtkWidget *t, gpointer data)
+{
+	got_date=1;
+	gtk_main_quit();
+}
+
+int get_date(GtkWidget *t, isoDate_t *date)
+{
+	GladeXML	*cxml;
+	GtkWidget	*w;
+	GtkWidget	*win;
+	GtkWidget	*thiswin;
+	gint		x,x_off;
+	gint		y,y_off;
+	guint		year;
+	guint		month;
+	guint		day;
+	isoDate_t	odate=*date;
+
+	got_date=0;
+    cxml = glade_xml_new(glade_path, "CalendarWindow", NULL);
+	if(cxml==NULL) {
+		fprintf(stderr,"Could not locate Calendar Window XML\n");
+		return(-1);
+	}
+    /* connect the signals in the interface */
+    glade_xml_signal_autoconnect(cxml);
+	win=glade_xml_get_widget(cxml, "CalendarWindow");
+	if(win==NULL) {
+		fprintf(stderr,"Could not locate Calendar window\n");
+		return(-1);
+	}
+
+	thiswin = gtk_widget_get_toplevel(t);
+	if(thiswin==NULL) {
+		fprintf(stderr,"Could not locate main window\n");
+		return(-1);
+	}
+	if(!(gtk_widget_translate_coordinates(GTK_WIDGET(t)
+			,GTK_WIDGET(thiswin), 0, 0, &x_off, &y_off))) {
+		fprintf(stderr,"Could not get position of button in window");
+	}
+	gtk_window_get_position(GTK_WINDOW(thiswin), &x, &y);
+
+	gtk_window_move(GTK_WINDOW(win), x+x_off, y+y_off);
+
+	w=glade_xml_get_widget(cxml, "Calendar");
+	if(w==NULL) {
+		fprintf(stderr,"Could not locate Calendar widget\n");
+		return(-1);
+	}
+	gtk_calendar_select_month(GTK_CALENDAR(w), isoDate_month(*date)-1, isoDate_year(*date));
+	gtk_calendar_select_day(GTK_CALENDAR(w), isoDate_day(*date));
+	gtk_window_present(GTK_WINDOW(win));
+	/* Wait for window to close... */
+	gtk_main();
+	w=glade_xml_get_widget(cxml, "Calendar");
+	if(w==NULL)
+		return(-1);
+	gtk_calendar_get_date(GTK_CALENDAR(w), &year, &month, &day);
+	gtk_widget_destroy(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(w))));
+	*date=isoDate_create(year, month+1, day);
+	return(odate!=*date);
+}
 
 void update_stats_callback(GtkWidget *wiggy, gpointer data)
 {
@@ -192,7 +266,14 @@ void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data)
 }
 
 void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
-	/* ToDo */
+	isoDate_t	date;
+	char	fn[20];
+	GtkWidget	*w;
+
+	date=time_to_isoDate(time(NULL));
+	get_date(wiggy, &date);
+	sprintf(fn,"logs/%02d%02d%02d.log",isoDate_month(date),isoDate_day(date),isoDate_year(date)%100);
+	exec_cmdstr(gtkm_conf.view_text_file, cfg.logs_dir, fn);
 }
 
 void on_spam_log1_activate(GtkWidget *wiggy, gpointer data)
