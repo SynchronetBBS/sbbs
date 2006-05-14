@@ -11,5 +11,6 @@ extern user_t	user;
 extern GladeXML *xml;
 extern int		totalusers;
 extern int		current_user;
+extern char		glade_path[MAX_PATH+1];
 
 #endif

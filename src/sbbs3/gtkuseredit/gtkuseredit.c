@@ -12,6 +12,7 @@ user_t	user;
 GladeXML *xml;
 int		totalusers=0;
 int		current_user=0;
+char	glade_path[MAX_PATH+1];
 
 /* Refreshes global variables... ie: Number of users */
 int refresh_globals(void)
@@ -124,7 +125,6 @@ int read_config(void)
 }
 
 int main(int argc, char *argv[]) {
-	char	glade_path[MAX_PATH+1];
 
     gtk_init(&argc, &argv);
     glade_init();
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 				update_current_user(nu);
 			else {
 				GladeXML        *cxml;
-				cxml = glade_xml_new("gtkuseredit.glade", "NotFoundWindow", NULL);
+				cxml = glade_xml_new(glade_path, "NotFoundWindow", NULL);
 				glade_xml_signal_autoconnect(cxml);
 				gtk_window_present(GTK_WINDOW(glade_xml_get_widget(cxml, "NotFoundWindow")));
 			}

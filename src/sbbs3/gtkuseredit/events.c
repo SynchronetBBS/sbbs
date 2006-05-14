@@ -1904,7 +1904,7 @@ void last_user(GtkWidget *w, gpointer data)
 void show_about_box(GtkWidget *unused, gpointer data)
 {
 	GladeXML	*axml;
-    axml = glade_xml_new("gtkuseredit.glade", "AboutWindow", NULL);
+    axml = glade_xml_new(glade_path, "AboutWindow", NULL);
 	if(axml==NULL) {
 		fprintf(stderr,"Could not locate AboutWindow widget\n");
 		return;
@@ -1966,7 +1966,7 @@ void find_user(GtkWidget *t, gpointer data)
 		nu=matchuser(&cfg, (char *)gtk_entry_get_text(GTK_ENTRY(w)), TRUE);
 		if(nu==0) {
 			GladeXML	*cxml;
-			cxml = glade_xml_new("gtkuseredit.glade", "NotFoundWindow", NULL);
+			cxml = glade_xml_new(glade_path, "NotFoundWindow", NULL);
 		    /* connect the signals in the interface */
 		    glade_xml_signal_autoconnect(cxml);
 			if(cxml==NULL)
@@ -2011,7 +2011,7 @@ int get_date(GtkWidget *t, isoDate_t *date)
 	isoDate_t	odate=*date;
 
 	got_date=0;
-    cxml = glade_xml_new("gtkuseredit.glade", "CalendarWindow", NULL);
+    cxml = glade_xml_new(glade_path, "CalendarWindow", NULL);
 	if(cxml==NULL) {
 		fprintf(stderr,"Could not locate Calendar Window XML\n");
 		return(-1);
