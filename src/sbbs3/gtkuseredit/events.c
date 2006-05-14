@@ -801,7 +801,6 @@ void load_user(GtkWidget *wiggy, gpointer data)
 
 void save_user(GtkWidget *wiggy, gpointer data)
 {
-	/* ToDo */
 	GtkWidget	*w;
 	char		str[1024];
 	gboolean	b;
