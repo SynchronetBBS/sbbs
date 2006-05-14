@@ -1187,6 +1187,10 @@ void sendmessageto_node(GtkWidget *wiggy, gpointer data)
 			/* If utime() failed for some reason, sleep for a second */
 			if(fdate(fn)!=edited)
 				SLEEP(1000);
+			if(!run_cmd_mutex_initalized) {
+				pthread_mutex_init(&run_cmd_mutex, NULL);
+				run_cmd_mutex_initalized=1;
+			}
 			exec_cmdstr(gtkm_conf.edit_text_file, NULL, fn);
 			/* Spin on the lock waiting for the edit command to start */
 			while(!pthread_mutex_trylock(&run_cmd_mutex))
