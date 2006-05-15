@@ -107,7 +107,7 @@ sub parse_defs
 		my $this_size=0;
 		chomp $line;
 		next if($line =~ /^\s*$/);
-		if($line =~ m/^\s*((?:char)|(?:INT16)|(?:WORD)|(?:INT32)|(?:DWORD)|(?:float))\s+([^\s]+)\s*;\s*$/) {
+		if($line =~ m/^\s*((?:char)|(?:BYTE)|(?:INT16)|(?:WORD)|(?:INT32)|(?:DWORD)|(?:float))\s+([^\s]+)\s*;\s*$/) {
 			my ($type, $name) = ($1, $2);
 			($p, $u, @newvars) = parse_line(\%sizes, $type, $name, 0);
 		}
@@ -202,6 +202,12 @@ sub pack_line
 			$packcode .= $tabs."*p = $name;\n";
 			$packcode .= $tabs."p++;\n";
 			$unpackcode .= $tabs."$name = *p;\n";
+			$unpackcode .= $tabs."p++;\n";
+		}
+		elsif($type eq 'BYTE') {
+			$packcode .= $tabs."*(BYTE)p = $name;\n";
+			$packcode .= $tabs."p++;\n";
+			$unpackcode .= $tabs."$name = *(BYTE)p;\n";
 			$unpackcode .= $tabs."p++;\n";
 		}
 		elsif($type eq 'INT16') {
