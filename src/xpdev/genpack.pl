@@ -205,9 +205,9 @@ sub pack_line
 			$unpackcode .= $tabs."p++;\n";
 		}
 		elsif($type eq 'BYTE') {
-			$packcode .= $tabs."*(BYTE)p = $name;\n";
+			$packcode .= $tabs."*(BYTE *)p = $name;\n";
 			$packcode .= $tabs."p++;\n";
-			$unpackcode .= $tabs."$name = *(BYTE)p;\n";
+			$unpackcode .= $tabs."$name = *(BYTE *)p;\n";
 			$unpackcode .= $tabs."p++;\n";
 		}
 		elsif($type eq 'INT16') {
