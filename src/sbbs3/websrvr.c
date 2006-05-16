@@ -2218,6 +2218,7 @@ static BOOL check_request(http_session_t * session)
 		if(!IS_PATH_DELIM(last_ch))  {
 			session->req.send_location=MOVED_PERM;
 			strcat(path,"/");
+			strcat(session->req.physical_path,"/");
 		}
 		last_ch=*lastchar(session->req.virtual_path);
 		if(!IS_PATH_DELIM(last_ch))  {
