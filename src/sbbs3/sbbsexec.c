@@ -42,9 +42,11 @@
 #include "vdd_func.h"
 #include "ringbuf.h"
 #include "genwrap.h"
+#include "dirwrap.h"
 #include "threadwrap.h"
 #include "ini_file.h"
 
+#define INI_FILENAME			"sbbsexec.ini"
 #define RINGBUF_SIZE_IN			10000
 #define DEFAULT_MAX_MSG_SIZE	4000
 #define LINEAR_RX_BUFLEN		5000
@@ -77,6 +79,7 @@ HANDLE		vdd_handle;
 RingBuf		rdbuf;
 str_list_t	ini;
 char		ini_fname[MAX_PATH+1];
+char		revision[16];
 
 void lputs(int level, char* msg)
 {	
@@ -106,6 +109,9 @@ static void lprintf(int level, const char *fmt, ...)
 void parse_ini(char* program)
 {
 	char section[MAX_PATH+1];
+
+	if(ini==NULL)	/* no initialization file */
+		return;
 
 	lprintf(LOG_INFO,"Parsing %s section of %s"
 		,program==ROOT_SECTION ? "root" : program
@@ -423,6 +429,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	switch(getBL()) {
 
 		case VDD_OPEN:
+
+			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
+				,revision, __DATE__, __TIME__);
 #if 0
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");
@@ -665,13 +674,37 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			maybe_yield();
 			break;
 
-		case VDD_PROGRAM:		/* Inform VDD of program being executed */
+		case VDD_LOAD_INI_FILE:	/* Load and parse settings file */
+			{
+				FILE*	fp;
+				char	cwd[MAX_PATH+1];
+
+				/* Check Current Working Directory first */
+				GetCurrentDirectory(sizeof(cwd),cwd);
+				iniFileName(ini_fname, sizeof(ini_fname), cwd, INI_FILENAME);
+
+				/* Check EXEC directory second */
+				if(!fexist(ini_fname)) {
+					count = getCX();
+					p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
+						,count,FALSE); 
+					iniFileName(ini_fname, sizeof(ini_fname), p, INI_FILENAME);
+				}
+				if((fp=fopen(ini_fname,"r"))!=NULL) {
+					ini=iniReadFile(fp);
+					fclose(fp);
+					parse_ini(ROOT_SECTION);
+				}
+				if(fp!=NULL)
+					lprintf(LOG_INFO,"Settings file: %s", ini_fname);
+			}
+			break;
+
+		case VDD_LOAD_INI_SECTION:	/* Parse (program-specific) sub-section of settings file */
 			count = getCX();
 			p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
-			lprintf(LOG_INFO,"Program name: '%s'", p);
-			if(ini!=NULL)
-				parse_ini(p);
+			parse_ini(p);
 			break;
 
 		default:
@@ -684,24 +717,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 __declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason, 
 IN PCONTEXT Context OPTIONAL)
 {
-	char	revision[16];
-	char	cwd[MAX_PATH+1];
-	FILE*	fp;
-
 	sscanf("$Revision$", "%*s %s", revision);
-
-	GetCurrentDirectory(sizeof(cwd),cwd);
-	iniFileName(ini_fname, sizeof(ini_fname), cwd, "sbbsexec.ini");
-	if((fp=fopen(ini_fname,"r"))!=NULL) {
-		ini=iniReadFile(fp);
-		fclose(fp);
-		parse_ini(ROOT_SECTION);
-	}
-
-	lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
-		,revision, __DATE__, __TIME__);
-	if(fp!=NULL)
-		lprintf(LOG_INFO,"Settings file: %s", ini_fname);
 
 	vdd_handle=hVDD;
 

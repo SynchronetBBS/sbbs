@@ -52,7 +52,8 @@ enum {
 	,VDD_ONLINE				=12
 	,VDD_YIELD				=13
 	,VDD_MAYBE_YIELD		=14
-	,VDD_PROGRAM			=15
+	,VDD_LOAD_INI_FILE		=15
+	,VDD_LOAD_INI_SECTION	=16
 };
 
 typedef struct {

@@ -407,7 +407,8 @@ int main(int argc, char **argv)
 {
 	char	str[128];
 	char	cmdline[128],*p;
-	char	dll[512];
+	char	dll[256];
+	char	exec_dir[128];
 	char*	envvar[10];
 	char*	arg[16];
 	char*	prog;
@@ -430,10 +431,10 @@ int main(int argc, char **argv)
 		return(1);
 	}
 
-	strcpy(dll,argv[0]);
-	p=strrchr(dll,'\\');
-	if(p!=NULL) *(p+1)=0;
-	strcat(dll,"SBBSEXEC.DLL");
+	sprintf(exec_dir,"%.*s",sizeof(exec_dir)-1,argv[0]);
+	p=getfname(exec_dir);
+	*p=0;
+	sprintf(dll,"%ssbbsexec.dll",exec_dir);
 	DllName=dll;
 
 	if(argc>2 && !strcmp(argv[2],"NT")) 
@@ -510,9 +511,12 @@ int main(int argc, char **argv)
 		fprintf(stderr,"vdd handle=%d\n",vdd);
 		fprintf(stderr,"mode=%d\n",mode);
 #endif
+		_asm mov buf_seg, ss;
+		vdd_buf(VDD_LOAD_INI_FILE, strlen(exec_dir), buf_seg, (WORD)exec_dir);
+
 		prog=getfname(arg[0]);
 		_asm mov buf_seg, ss;
-		vdd_buf(VDD_PROGRAM, strlen(prog), buf_seg, (WORD)prog);
+		vdd_buf(VDD_LOAD_INI_SECTION, strlen(prog), buf_seg, (WORD)prog);
 
 		i=vdd_op(VDD_OPEN);
 		if(i) {
