@@ -282,9 +282,19 @@ FreeBSD:
 A note on SysOp paging:
 For most systems, the BBS must either have write access to the sound card via
 /dev/dsp, or run as root to page the SysOp.  FreeBSD supports an alternative
-method which requires a custom kernel with the option:
+method which requires one of the following:
 
+On FreeBSD 4.x:
+A custom kernel with the following option in the config
 pseudo-device speaker
+
+On FreeBSD 5.x and higher:
+One of:
+1) A custom kernel with teh following option in the config
+device speaker
+2) The speaker module loaded by either:
+   - Running ``kldload speaker''
+   - The line ``speaker_load="YES"'' in /boot/loader.conf
 
 /dev/speaker should be read/writeable by the user the BBS runs as.
 
