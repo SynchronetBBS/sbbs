@@ -113,26 +113,24 @@ void parse_ini(char* program)
 	if(ini==NULL)	/* no initialization file */
 		return;
 
-	lprintf(LOG_INFO,"Parsing %s section of %s"
-		,program==ROOT_SECTION ? "root" : program
-		,ini_fname);
-
 	/* Read the root section of the sbbsexec.ini file */
 	log_level=iniGetLogLevel(ini,program,"LogLevel",log_level);
 	if(iniGetBool(ini,program,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 	yield_interval=iniGetFloat(ini,program,"YieldInterval",yield_interval);
 
+	lprintf(LOG_INFO,"Parsed %s section of %s"
+		,program==ROOT_SECTION ? "root" : program
+		,ini_fname);
+
 	/* [UART] section */
 	if(program==ROOT_SECTION)
 		SAFECOPY(section,"UART");
 	else
 		SAFEPRINTF(section,"%s.UART",program);
-	lprintf(LOG_INFO,"Parsing %s section of %s"
-		,section
-		,ini_fname);
-	virtualize_uart=iniGetBool(ini,section,"Virtualize",TRUE);
-	switch(iniGetInteger(ini,section,"ComPort",1)) {
+
+	virtualize_uart=iniGetBool(ini,section,"Virtualize",virtualize_uart);
+	switch(iniGetInteger(ini,section,"ComPort",0)) {
 		case 1:	/* COM1 */
 			uart_irq		=UART_COM1_IRQ;
 			uart_io_base	=UART_COM1_IO_BASE;
@@ -152,6 +150,10 @@ void parse_ini(char* program)
 	}
 	uart_irq=(BYTE)iniGetShortInt(ini,section,"IRQ",uart_irq);
 	uart_io_base=iniGetShortInt(ini,section,"Address",uart_io_base);
+
+	lprintf(LOG_INFO,"Parsed %s section of %s"
+		,section
+		,ini_fname);
 }
 
 
@@ -679,24 +681,25 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				FILE*	fp;
 				char	cwd[MAX_PATH+1];
 
-				/* Check Current Working Directory first */
-				GetCurrentDirectory(sizeof(cwd),cwd);
-				iniFileName(ini_fname, sizeof(ini_fname), cwd, INI_FILENAME);
-
-				/* Check EXEC directory second */
-				if(!fexist(ini_fname)) {
-					count = getCX();
-					p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
-						,count,FALSE); 
-					iniFileName(ini_fname, sizeof(ini_fname), p, INI_FILENAME);
-				}
+				/* Load exec/sbbsexec.ini first (setting default values) */
+				count = getCX();
+				p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
+					,count,FALSE); 
+				iniFileName(ini_fname, sizeof(ini_fname), p, INI_FILENAME);
 				if((fp=fopen(ini_fname,"r"))!=NULL) {
 					ini=iniReadFile(fp);
 					fclose(fp);
 					parse_ini(ROOT_SECTION);
 				}
-				if(fp!=NULL)
-					lprintf(LOG_INFO,"Settings file: %s", ini_fname);
+
+				/* Load cwd/sbbsexec.ini second (over-riding default values) */
+				GetCurrentDirectory(sizeof(cwd),cwd);
+				iniFileName(ini_fname, sizeof(ini_fname), cwd, INI_FILENAME);
+				if((fp=fopen(ini_fname,"r"))!=NULL) {
+					ini=iniReadFile(fp);
+					fclose(fp);
+					parse_ini(ROOT_SECTION);
+				}
 			}
 			break;
 
