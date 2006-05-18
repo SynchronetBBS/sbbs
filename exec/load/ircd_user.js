@@ -863,8 +863,7 @@ function User_Work() {
 				var str="NICK " + the_nick;
 				this.bcast_to_uchans_unique(str);
 				this.originatorout(str,this);
-				if (the_nick.toUpperCase() != this.nick.toUpperC
-ase()) {
+				if (the_nick.toUpperCase() != this.nick.toUpperCase()) {
 					this.created = time();
 					push_nickbuf(this.nick,the_nick);
 					// move our Users entry over.
