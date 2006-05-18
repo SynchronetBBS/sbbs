@@ -144,7 +144,7 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
-	DLLEXPORT int	DLLCALL sopen(const char* fn, int access, int share, ...);
+	DLLEXPORT int	DLLCALL sopen(const char* fn, int sh_access, int share, ...);
 	DLLEXPORT long	DLLCALL filelength(int fd);
 #endif
 

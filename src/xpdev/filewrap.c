@@ -180,7 +180,7 @@ int DLLCALL unlock(int fd, long pos, long len)
  * 2 = open succeeds if file read-only, else fails with INT 24 
  */
 #if !defined(__QNX__)
-int DLLCALL sopen(const char *fn, int access, int share, ...)
+int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
 {
 	int fd;
 	int pmode=S_IREAD;
@@ -192,13 +192,13 @@ int DLLCALL sopen(const char *fn, int access, int share, ...)
 #endif
     va_list ap;
 
-    if(access&O_CREAT) {
+    if(sh_access&O_CREAT) {
         va_start(ap,share);
         pmode = va_arg(ap,unsigned int);
         va_end(ap);
     }
 
-	if ((fd = open(fn, access, pmode)) < 0)
+	if ((fd = open(fn, sh_access, pmode)) < 0)
 		return -1;
 
 	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
