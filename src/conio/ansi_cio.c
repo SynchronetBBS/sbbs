@@ -222,7 +222,6 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 	struct text_info	ti;
 	int		attrib;
 	unsigned char *fill = (unsigned char*)buf;
-	char	str[16];
 
 	gettextinfo(&ti);
 

@@ -74,7 +74,6 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 {
 	char *p1, *p2, *p3;
 	struct	bbslist	*list[MAX_OPTS+1];
-	char	path[MAX_PATH+1];
 	char	listpath[MAX_PATH+1];
 	int		listcount=0, i;
 
@@ -301,9 +300,6 @@ int main(int argc, char **argv)
 	char	ext[MAX_PATH+1];
 	/* Command-line parsing vars */
 	char	url[MAX_PATH+1];
-	char	*p1;
-	char	*p2;
-	char	*p3;
 	int		i;
 	int	ciolib_mode=CIOLIB_MODE_AUTO;
 	str_list_t	inifile;

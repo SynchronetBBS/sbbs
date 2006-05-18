@@ -9,6 +9,10 @@
 #include "ini_file.h"
 #include <time.h>
 
+#if defined(_WIN32)
+	#include <malloc.h>	/* alloca() on Win32 */
+#endif
+
 #define LIST_NAME_MAX	30
 #define LIST_ADDR_MAX	64
 #define MAX_USER_LEN	30

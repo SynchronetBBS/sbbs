@@ -16,6 +16,8 @@
 #include "keys.h"
 #include "mouse.h"
 #include "cterm.h"
+#include "window.h"
+#include "term.h"
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
@@ -56,7 +58,7 @@ void viewofflinescroll(void)
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
-		if(top>scrollback_lines)
+		if(top>(int)scrollback_lines)
 			top=scrollback_lines;
 		puttext(((txtinfo.screenwidth-80)/2)+1,1,(txtinfo.screenwidth-80)/2+80,txtinfo.screenheight,scrollback_buf+(80*2*top));
 		cputs("Scrollback");
@@ -686,7 +688,7 @@ void change_settings(void)
 							uifc.msg("Cannot allocate space for scrollback.");
 						}
 						else {
-							if(scrollback_lines > j)
+							if(scrollback_lines > (unsigned)j)
 								scrollback_lines=j;
 							scrollback_buf=tmpscroll;
 							settings.backlines=j;
@@ -722,7 +724,6 @@ struct bbslist *show_bbslist(int mode)
 	char	str[128];
 	char	*YesNo[3]={"Yes","No",""};
 	char	title[1024];
-	char	currtitle[1024];
 	char	*p;
 	char	addy[LIST_ADDR_MAX+1];
 	char	*settings_menu[]= {
