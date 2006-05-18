@@ -163,6 +163,16 @@ static int ypos=1;
 static int currattr=7;
 static int modeidx=3;
 
+#if defined(_DEBUG)
+static void dputs(const char* str)
+{
+	char msg[1024];
+
+	SAFEPRINTF(msg,"%s\r\n",str);
+	OutputDebugString(msg);
+}
+#endif
+
 static void dprintf(const char* fmt, ...)
 {
 #if defined(_DEBUG)
@@ -173,7 +183,7 @@ static void dprintf(const char* fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    OutputDebugString(sbuf);
+    dputs(sbuf);
 #endif /* _DEBUG */
 }
 
