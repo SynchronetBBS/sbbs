@@ -863,13 +863,16 @@ function User_Work() {
 				var str="NICK " + the_nick;
 				this.bcast_to_uchans_unique(str);
 				this.originatorout(str,this);
-				this.created = time();
-				this.bcast_to_servers(str + " :" + this.created);
-				push_nickbuf(this.nick,the_nick);
-				// move our Users entry over.
-				Users[the_nick.toUpperCase()] = this;
-				delete Users[this.nick.toUpperCase()];
+				if (the_nick.toUpperCase() != this.nick.toUpperC
+ase()) {
+					this.created = time();
+					push_nickbuf(this.nick,the_nick);
+					// move our Users entry over.
+					Users[the_nick.toUpperCase()] = this;
+					delete Users[this.nick.toUpperCase()];
+				}
 				// finalize
+				this.bcast_to_servers(str + " :" + this.created);
 				this.nick = the_nick;
 			}
 			break;
