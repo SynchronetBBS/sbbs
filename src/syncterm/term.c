@@ -1286,6 +1286,9 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 					conn_send("\033[K",3,0);
 					break;
+				case CIO_KEY_DC:		/* "Delete" key, send ASCII 127 (DEL) */
+					conn_send("\x7f",1,0);
+					break;
 				case CIO_KEY_F(1):
 					conn_send("\033OP",3,0);
 					break;
