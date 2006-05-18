@@ -224,12 +224,12 @@ DLLEXPORT int DLLCALL	get_errno(void);
 #elif defined(__unix__) || defined(__APPLE__)
 
 	#if defined(_PTH_PTHREAD_H_)
-		#define SLEEP(x)		({ int y=x; struct timeval tv; \
-								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+		#define SLEEP(x)		({ int sleep_msecs=x; struct timeval tv; \
+								tv.tv_sec=(sleep_msecs/1000); tv.tv_usec=((sleep_msecs%1000)*1000); \
 								pth_nap(tv); })
 	#else
-		#define SLEEP(x)		({	int y=x; struct timeval tv; \
-								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+		#define SLEEP(x)		({	int sleep_msecs=x; struct timeval tv; \
+								tv.tv_sec=(sleep_msecs/1000); tv.tv_usec=((sleep_msecs%1000)*1000); \
 								select(0,NULL,NULL,NULL,&tv); })
 	#endif
 
