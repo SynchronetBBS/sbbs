@@ -645,6 +645,10 @@ read_dorinfox:
           {
             szIFTemp[strlen(szIFTemp) - 1] = '\0';
           }
+          if(szIFTemp[strlen(szIFTemp) - 1] == '\r')
+          {
+            szIFTemp[strlen(szIFTemp) - 1] = '\0';
+          }
           strncpy(od_control.system_name, szIFTemp, 39);
           od_control.system_name[39] = '\0';
 
@@ -898,6 +902,7 @@ read_dorinfox:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              szIFTemp[25]='\0';
              if(szIFTemp[strlen(szIFTemp)-1]=='\n') szIFTemp[strlen(szIFTemp)-1]='\0';
+             if(szIFTemp[strlen(szIFTemp)-1]=='\r') szIFTemp[strlen(szIFTemp)-1]='\0';
              strcpy(od_control.user_location,szIFTemp);
 
              /* Read line 12. */
@@ -916,6 +921,7 @@ read_dorinfox:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              szIFTemp[15]='\0';
              if(szIFTemp[strlen(szIFTemp)-1]=='\n') szIFTemp[strlen(szIFTemp)-1]='\0';
+             if(szIFTemp[strlen(szIFTemp)-1]=='\r') szIFTemp[strlen(szIFTemp)-1]='\0';
              strcpy(od_control.user_password,szIFTemp);
 
              /* Read line 15. */
@@ -1089,6 +1095,8 @@ again:
                 strncpy(od_control.user_comment,szIFTemp,79);
                 od_control.user_comment[79]='\0';
                 if(od_control.user_comment[strlen(od_control.user_comment)-1]=='\n')
+                   od_control.user_comment[strlen(od_control.user_comment)-1]='\0';
+                if(od_control.user_comment[strlen(od_control.user_comment)-1]=='\r')
                    od_control.user_comment[strlen(od_control.user_comment)-1]='\0';
 
                 /* Read line 54. */

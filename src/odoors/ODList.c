@@ -210,6 +210,10 @@ ODAPIDEF BOOL ODCALL od_list_files(char *pszFileSpec)
       {
          bUseNextLine = FALSE;
       }
+      if(szLine[strlen(szLine) - 1] == '\r')
+      {
+         szLine[strlen(szLine) - 1] = '\0';
+      }
 
       if(chLastControlKey != 0)
       {

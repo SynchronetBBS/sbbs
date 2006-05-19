@@ -1062,6 +1062,11 @@ void ODStringToName(char *pszToConvert)
    {
       pszToConvert[strlen(pszToConvert) - 1] = '\0';
    }
+   /* Trim any CR character that may be at the end of the string. */
+   if(pszToConvert[strlen(pszToConvert) - 1] == '\r')
+   {
+      pszToConvert[strlen(pszToConvert) - 1] = '\0';
+   }
 
    /* Change the first character to lower case. */
    *pszToConvert = toupper(*pszToConvert);
