@@ -23,4 +23,14 @@ Features/Changes which will break the API and so must go into v7
   standard way of passing hangup info etc.
 - Check the timestamp on the dropfile... do not use an old one!  Add and
   od_control variable to prevent this behaviour.
+- Add a bunch of status-line specific functions to allow new personalities:
+	od_status_set_cursor()
+	od_status_set_attrib()
+	od_status_puttext()
+	od_status_gettext()
+	od_status_printf()
+	od_status_disp_str()
+	od_status_putch()
+	od_status_addkey()
+	od_status_delkey()
 
