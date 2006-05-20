@@ -3797,7 +3797,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 					,cfg.area[i].exported,scfg.sub[cfg.area[i].sub]->code
 					,cfg.area[i].name);
 
-	export_time=((float)export_ticks)/(float)CLK_TCK;
+	export_time=((float)export_ticks)/(float)MSCLOCKS_PER_SEC;
 	if(cfg.log&LOG_TOTALS && exported && export_time) {
 		lprintf(LOG_INFO,"Exported: %5lu msgs in %.1f sec (%.1f/min %.1f/sec)"
 			,exported,export_time
@@ -4663,7 +4663,7 @@ int main(int argc, char **argv)
 					lprintf(LOG_INFO,"Duplicate: %5u detected in %s"
 						,cfg.area[i].dupes,cfg.area[i].name); } }
 
-		import_time=((float)import_ticks)/(float)CLK_TCK;
+		import_time=((float)import_ticks)/(float)MSCLOCKS_PER_SEC;
 		if(cfg.log&LOG_TOTALS && import_time && echomail) {
 			lprintf(LOG_INFO,"Imported: %5lu msgs in %.1f sec (%.1f/min %.1f/sec)"
 				,echomail,import_time
