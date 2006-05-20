@@ -64,9 +64,16 @@ BYTE	node_num=0;
 int		mode=0;
 int		revision;
 char	id_string[128];
+#ifdef DEBUG_INT_CALLS
+ulong	int14calls=0;
+ulong	int16calls=0;
+ulong	int21calls=0;
+ulong	int29calls=0;
+#endif
 
 void (interrupt *oldint14)();
 void (interrupt *oldint16)();
+void (interrupt *oldint21)();
 void (interrupt *oldint29)();
 
 static int vdd_buf(BYTE op, int count, WORD buf_seg, WORD buf_off)
@@ -225,6 +232,10 @@ void interrupt winNTint14(
 		|FOSSIL_STOP_BITS_1
 	};
 
+#ifdef DEBUG_INT_CALLS
+	int14calls++;
+#endif
+
 	switch(_ax>>8) {
 		case 0x00:	/* Initialize/Set baud rate */
 			_ax = PortStatus();
@@ -334,6 +345,10 @@ void interrupt winNTint16(
 	WORD			buf_seg;
 	vdd_status_t	status;
 
+#ifdef DEBUG_INT_CALLS
+	int16calls++;
+#endif
+
 	vdd_getstatus(&status);
  	switch(_ax>>8) {
     	case 0x00:	/* Read char from keyboard */
@@ -362,6 +377,29 @@ void interrupt winNTint16(
 	_chain_intr(oldint16);		
 }
 
+#ifdef DEBUG_DOSCALLS
+	DWORD doscalls[0x100];
+#endif
+
+void interrupt winNTint21(
+	unsigned _es, unsigned _ds,
+	unsigned _di, unsigned _si,
+	unsigned _bp, unsigned _sp,
+	unsigned _bx, unsigned _dx,
+	unsigned _cx, unsigned _ax,
+	)
+{
+#ifdef DEBUG_INT_CALLS
+	int21calls++;
+#endif
+	if(_ax>>8 == 0x2c)	/* GET_SYSTEM_TIME */
+		vdd_op(VDD_MAYBE_YIELD);
+#ifdef DEBUG_DOSCALLS
+	doscalls[_ax>>8]++;
+#endif
+	_chain_intr(oldint21);
+}
+
 void interrupt winNTint29(
 	unsigned _es, unsigned _ds,
 	unsigned _di, unsigned _si,
@@ -372,6 +410,9 @@ void interrupt winNTint29(
 {
 	char	ch;
 	WORD	buf_seg;
+#ifdef DEBUG_INT_CALLS
+	int29calls++;
+#endif
 
 	ch=_ax&0xff;
 	_asm mov buf_seg, ss
@@ -525,11 +566,13 @@ int main(int argc, char **argv)
 			return(-1);
 		}
 		oldint16=_dos_getvect(0x16);
+		oldint21=_dos_getvect(0x21);
 		oldint29=_dos_getvect(0x29);
 		if(mode==SBBSEXEC_MODE_FOSSIL) {
 			*(WORD*)((BYTE*)int14stub+1) = (WORD)winNTint14 - (WORD)&int14stub - 3;	/* jmp offset */
 			_dos_setvect(0x14,(void(interrupt *)())int14stub); 
 		}
+		_dos_setvect(0x21,winNTint21); 
 		if(mode&SBBSEXEC_MODE_DOS_IN)
 			_dos_setvect(0x16,winNTint16); 
 		if(mode&SBBSEXEC_MODE_DOS_OUT) 
@@ -558,11 +601,25 @@ int main(int argc, char **argv)
 		vdd_op(VDD_CLOSE);
 
 		_dos_setvect(0x16,oldint16);
+		_dos_setvect(0x21,oldint21);
 		_dos_setvect(0x29,oldint29);
 
 		/* Unregister VDD */
 		_asm mov ax, vdd;
 		UnRegisterModule();
+#ifdef DEBUG_INT_CALLS
+		fprintf(stderr,"int14h calls: %u\n", int14calls);
+		fprintf(stderr,"int16h calls: %u\n", int16calls);
+		fprintf(stderr,"int21h calls: %u\n", int21calls);
+		fprintf(stderr,"int29h calls: %u\n", int29calls);
+#endif
+#ifdef DEBUG_DOSCALLS
+		for(i=0;i<0x100;i++) {
+			if(doscalls[i]>100)
+				printf("int21h function %02X calls: %u\n"
+					,i, doscalls[i]);
+		}
+#endif
 	}
 	return(i);
 }
