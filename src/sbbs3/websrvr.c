@@ -449,17 +449,40 @@ static int sock_sendbuf(SOCKET *sock, const char *buf, size_t len, BOOL *failed)
 {
 	size_t sent=0;
 	int result;
+	fd_set	wr_set;
+	struct timeval tv;
 
 	while(sent<len && *sock!=INVALID_SOCKET) {
-		result=sendsocket(*sock,buf+sent,len-sent);
-		if(result==SOCKET_ERROR) {
-			if(ERROR_VALUE==ECONNRESET) 
-				lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",*sock);
-			else if(ERROR_VALUE==ECONNABORTED) 
-				lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",*sock);
-			else
-				lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",*sock,ERROR_VALUE);
-			break;
+		FD_ZERO(&wr_set);
+		FD_SET(*sock,&wr_set);
+		/* Convert timeout from ms to sec/usec */
+		tv.tv_sec=startup->max_inactivity;
+		tv.tv_usec=0;
+		switch(select(*sock+1,NULL,&wr_set,NULL,&tv)) {
+			case 1:
+				result=sendsocket(*sock,buf+sent,len-sent);
+				if(result==SOCKET_ERROR) {
+					if(ERROR_VALUE==ECONNRESET) 
+						lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",*sock);
+					else if(ERROR_VALUE==ECONNABORTED) 
+						lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",*sock);
+					else
+						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",*sock,ERROR_VALUE);
+					if(failed)
+						*failed=TRUE;
+					return(sent);
+				}
+				break;
+			case 0:
+				lprintf(LOG_WARNING,"%04d Timeout select()ing for write",*sock);
+				if(failed)
+					*failed=TRUE;
+				return(sent);
+			case -1:
+				lprintf(LOG_WARNING,"%04d !ERROR %d select()ing socket for write",*sock,ERROR_VALUE);
+				if(failed)
+					*failed=TRUE;
+				return(sent);
 		}
 		sent+=result;
 	}
@@ -1074,7 +1097,11 @@ static int sock_sendfile(http_session_t *session,char *path)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",session->socket,errno,path);
 	else {
 		while((i=read(file, buf, sizeof(buf)))>0) {
-			writebuf(session,buf,i);
+			if(writebuf(session,buf,i)!=i) {
+				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
+				return(0);
+			}
+			ret+=i;
 		}
 		close(file);
 	}
