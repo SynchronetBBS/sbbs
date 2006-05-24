@@ -495,6 +495,12 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 	return(0);
 }
 
+/* atexit() function */
+void sdl_exit(void)
+{
+	sdl.Quit();
+}
+
 /* Called from main thread only (Passes Event) */
 int sdl_init(int mode)
 {
@@ -518,8 +524,6 @@ int sdl_init(int mode)
 		fullscreen=1;
 
 	sdl_init_mode(3);
-
-	atexit(sdl.Quit);
 
 	sdl_user_func(SDL_USEREVENT_INIT);
 
@@ -1412,6 +1416,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 	}
 
 	if(sdl.gotfuncs) {
+		atexit(sdl_exit);
 		mp.argc=argc;
 		mp.argv=argv;
 		mp.env=env;
@@ -1559,7 +1564,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 
 								if(sdl_cursor!=NULL)
 									sdl.FreeSurface(sdl_cursor);
-								sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+								sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth*vstat.scaling, vstat.charheight*vstat.scaling, 8, 0, 0, 0, 0);
 						    	/* Update font. */
 						    	sdl_load_font(NULL);
 						    	sdl_setup_colours(win,0);
@@ -1626,7 +1631,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 									sdl_setup_colours(win,0);
 									if(sdl_cursor!=NULL)
 										sdl.FreeSurface(sdl_cursor);
-									sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth, vstat.charheight, 8, 0, 0, 0, 0);
+									sdl_cursor=sdl.CreateRGBSurface(SDL_SWSURFACE, vstat.charwidth*vstat.scaling, vstat.charheight*vstat.scaling, 8, 0, 0, 0, 0);
 									/* Update font. */
 									sdl_load_font(NULL);
 									sdl_full_screen_redraw(TRUE);
