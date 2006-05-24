@@ -1978,9 +1978,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("LastNode"))
             bbs_startup.last_node=Registry->ReadInteger("LastNode");
 
-        if(Registry->ValueExists("ExternalYield"))
-            bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
-
         if(Registry->ValueExists("OutbufHighwaterMark"))
             bbs_startup.outbuf_highwater_mark=Registry->ReadInteger("OutbufHighwaterMark");
         else

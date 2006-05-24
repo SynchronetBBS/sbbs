@@ -315,9 +315,6 @@ void sbbs_read_ini(
 		bbs->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
-		bbs->xtrn_polls_before_yield
-			=iniGetInteger(list,section,"ExternalYield",10);
-
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &bbs->js, &global->js);
 
@@ -752,9 +749,6 @@ BOOL sbbs_write_ini(
 		if(bbs->log_mask==global->log_mask)
 			iniRemoveValue(lp,section,strLogMask);
 		else if(!iniSetBitField(lp,section,strLogMask,log_mask_bits,bbs->log_mask,&style))
-			break;
-
-		if(!iniSetInteger(lp,section,"ExternalYield",bbs->xtrn_polls_before_yield,&style))
 			break;
 
 		/* JavaScript operating parameters */
