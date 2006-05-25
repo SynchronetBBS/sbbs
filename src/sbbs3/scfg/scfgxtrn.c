@@ -1263,7 +1263,7 @@ or you want to debug a program with a program not running correctly.
 If this online program requires a specific BBS data (drop) file
 format, select the file format from the list.
 */
-				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+				k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&k,0
 					,"BBS Drop File Type",opt);
 				if(k==-1)
 					break;
@@ -1277,7 +1277,7 @@ format, select the file format from the list.
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
 					k=cfg.xtrn[i]->misc&REALNAME ? 0:1;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Use Real Names",opt);
+					k=uifc.list(WIN_MID,0,0,0,&k,0,"Use Real Names",opt);
 					if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 						cfg.xtrn[i]->misc|=REALNAME;
 						uifc.changes=TRUE; }
@@ -1291,7 +1291,7 @@ format, select the file format from the list.
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
 					k=cfg.xtrn[i]->misc&XTRN_LWRCASE ? 0:1;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",opt);
+					k=uifc.list(WIN_MID,0,0,0,&k,0,"Lowercase Filename",opt);
 					if(k==0 && !(cfg.xtrn[i]->misc&XTRN_LWRCASE)) {
 						cfg.xtrn[i]->misc|=XTRN_LWRCASE;
 						uifc.changes=TRUE; 
