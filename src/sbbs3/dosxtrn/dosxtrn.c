@@ -58,7 +58,6 @@ static void truncsp(char *str)
 	while(c && (unsigned char)str[c-1]<=' ') c--;
 	str[c]=0;
 }
-
 short	vdd=0;
 BYTE	node_num=0;
 int		mode=0;
@@ -75,6 +74,7 @@ void (interrupt *oldint14)();
 void (interrupt *oldint16)();
 void (interrupt *oldint21)();
 void (interrupt *oldint29)();
+
 
 static int vdd_buf(BYTE op, int count, WORD buf_seg, WORD buf_off)
 {
@@ -101,6 +101,14 @@ static int vdd_buf(BYTE op, int count, WORD buf_seg, WORD buf_off)
 		pop		bx
 	}
 	return(retval);
+}
+
+static int vdd_str(BYTE op, char* str)
+{
+	WORD			buf_seg;
+
+	_asm mov buf_seg, ss;
+	return vdd_buf(op, strlen(str), buf_seg, (WORD)str);
 }
 
 static int vdd_op(BYTE op)
@@ -203,6 +211,10 @@ WORD PortStatus()
 	return(status);
 }
 
+#ifdef DEBUG_FOSSIL_CALLS
+	DWORD fossil_calls[0x100];
+#endif
+
 void interrupt winNTint14(
 	unsigned _es, unsigned _ds,
 	unsigned _di, unsigned _si,
@@ -233,6 +245,10 @@ void interrupt winNTint14(
 
 #ifdef DEBUG_INT_CALLS
 	int14calls++;
+#endif
+
+#ifdef DEBUG_FOSSIL_CALLS
+	fossil_calls[_ax>>8]++;
 #endif
 
 	switch(_ax>>8) {
@@ -376,8 +392,8 @@ void interrupt winNTint16(
 	_chain_intr(oldint16);		
 }
 
-#ifdef DEBUG_DOSCALLS
-	DWORD doscalls[0x100];
+#ifdef DEBUG_DOS_CALLS
+	DWORD dos_calls[0x100];
 #endif
 
 void interrupt winNTint21(
@@ -393,8 +409,8 @@ void interrupt winNTint21(
 #endif
 	if(_ax>>8 == 0x2c)	/* GET_SYSTEM_TIME */
 		vdd_op(VDD_MAYBE_YIELD);
-#ifdef DEBUG_DOSCALLS
-	doscalls[_ax>>8]++;
+#ifdef DEBUG_DOS_CALLS
+	dos_calls[_ax>>8]++;
 #endif
 	_chain_intr(oldint21);
 }
@@ -451,7 +467,6 @@ int main(int argc, char **argv)
 	char	exec_dir[128];
 	char*	envvar[10];
 	char*	arg[16];
-	char*	prog;
 	int		i,c,d,envnum=0;
 	FILE*	fp;
 	BOOL	NT=FALSE;
@@ -547,16 +562,17 @@ int main(int argc, char **argv)
 			fprintf(stderr,"Error %d loading %s\n",vdd,DllName);
 			return(-1);
 		}
+
 #if 0
 		fprintf(stderr,"vdd handle=%d\n",vdd);
 		fprintf(stderr,"mode=%d\n",mode);
 #endif
-		_asm mov buf_seg, ss;
-		vdd_buf(VDD_LOAD_INI_FILE, strlen(exec_dir), buf_seg, (WORD)exec_dir);
+		vdd_str(VDD_LOAD_INI_FILE, exec_dir);
 
-		prog=getfname(arg[0]);
-		_asm mov buf_seg, ss;
-		vdd_buf(VDD_LOAD_INI_SECTION, strlen(prog), buf_seg, (WORD)prog);
+		vdd_str(VDD_LOAD_INI_SECTION, getfname(arg[0]));
+
+		sprintf(str,"%s, rev %u, %s %s", __FILE__, revision, __DATE__, __TIME__);
+		vdd_str(VDD_DEBUG_OUTPUT, str);
 
 		i=vdd_op(VDD_OPEN);
 		if(i) {
@@ -603,22 +619,37 @@ int main(int argc, char **argv)
 		_dos_setvect(0x21,oldint21);
 		_dos_setvect(0x29,oldint29);
 
+		sprintf(str,"%s returned %d", arg[0], i);
+		vdd_str(VDD_DEBUG_OUTPUT, str);
+
+#ifdef DEBUG_INT_CALLS
+		sprintf(str,"int14h calls: %u", int14calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int16h calls: %u", int16calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int21h calls: %u", int21calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+		sprintf(str,"int29h calls: %u", int29calls);	vdd_str(VDD_DEBUG_OUTPUT, str);
+#endif
+#ifdef DEBUG_DOS_CALLS
+		for(i=0;i<0x100;i++) {
+			if(dos_calls[i]>100) {
+				sprintf(str,"int21h function %02X calls: %u\n"
+					,i, dos_calls[i]);
+				vdd_str(VDD_DEBUG_OUTPUT, str);
+			}
+		}
+#endif
+#ifdef DEBUG_FOSSIL_CALLS
+		for(i=0;i<0x100;i++) {
+			if(fossil_calls[i]>0) {
+				sprintf(str,"int14h function %02X calls: %u"
+					,i, fossil_calls[i]);
+				vdd_str(VDD_DEBUG_OUTPUT, str);			}
+		}
+#endif
+
 		/* Unregister VDD */
 		_asm mov ax, vdd;
 		UnRegisterModule();
-#ifdef DEBUG_INT_CALLS
-		fprintf(stderr,"int14h calls: %u\n", int14calls);
-		fprintf(stderr,"int16h calls: %u\n", int16calls);
-		fprintf(stderr,"int21h calls: %u\n", int21calls);
-		fprintf(stderr,"int29h calls: %u\n", int29calls);
-#endif
-#ifdef DEBUG_DOSCALLS
-		for(i=0;i<0x100;i++) {
-			if(doscalls[i]>100)
-				printf("int21h function %02X calls: %u\n"
-					,i, doscalls[i]);
-		}
-#endif
+
 	}
 	return(i);
 }
