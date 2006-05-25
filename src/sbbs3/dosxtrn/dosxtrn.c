@@ -113,7 +113,6 @@ static int vdd_op(BYTE op)
 #endif
 	_asm {
 		push	bx
-		push	cx
 		mov		ax,	vdd
 		mov		bh,	node_num
 		mov		bl,	op
