@@ -54,6 +54,7 @@ enum {
 	,VDD_MAYBE_YIELD		=14
 	,VDD_LOAD_INI_FILE		=15
 	,VDD_LOAD_INI_SECTION	=16
+	,VDD_DEBUG_OUTPUT		=17
 };
 
 typedef struct {

@@ -710,6 +710,13 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			parse_ini(p);
 			break;
 
+		case VDD_DEBUG_OUTPUT:	/* Send string to debug output */
+			count = getCX();
+			p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
+				,count,FALSE); 
+			lputs(LOG_INFO, p);
+			break;
+
 		default:
 			lprintf(LOG_ERR,"!UNKNOWN VDD_OP: %d",getBL());
 			break;
