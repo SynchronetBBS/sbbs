@@ -242,6 +242,7 @@ enum {
 
 typedef struct {
 	int		left,top,right,bot;
+	int		*cur,*bar;
     uchar*	buf;
 } win_t;
 
