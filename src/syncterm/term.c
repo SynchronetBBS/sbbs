@@ -397,12 +397,11 @@ static int recv_byte(void* unused, unsigned timeout)
 
 void purge_recv(void)
 {
-	int ch;
 	unsigned count=0;
 
 	lprintf(LOG_NOTICE,"Purging receive buffer...");
 	YIELD();
-	while((ch=recv_byte(NULL,0)) >= 0) {
+	while(recv_byte(NULL,0) >= 0) {
 		YIELD();
 		count++;
 	}
@@ -546,7 +545,7 @@ void erase_transfer_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-static binary_mode_on(struct bbslist *bbs)
+static void binary_mode_on(struct bbslist *bbs)
 {
 	if(bbs->conn_type == CONN_TYPE_TELNET) {
 		request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
@@ -554,7 +553,7 @@ static binary_mode_on(struct bbslist *bbs)
 	}
 }
 
-static binary_mode_off(struct bbslist *bbs)
+static void binary_mode_off(struct bbslist *bbs)
 {
 	if(bbs->conn_type == CONN_TYPE_TELNET) {
 		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
@@ -562,7 +561,7 @@ static binary_mode_off(struct bbslist *bbs)
 	}
 }
 
-void ascii_upload(FILE *fp, char *path);
+void ascii_upload(FILE *fp);
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 
 void begin_upload(struct bbslist *bbs, BOOL autozm)
@@ -610,7 +609,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 				zmodem_upload(bbs, fp, path);
 				break;
 			case 1:
-				ascii_upload(fp, path);
+				ascii_upload(fp);
 				break;
 		}
 	}
@@ -804,7 +803,7 @@ void guts_transfer(struct bbslist *bbs)
 }
 #endif
 
-void ascii_upload(FILE *fp, char *path)
+void ascii_upload(FILE *fp)
 {
 	char linebuf[1024+2];	/* One extra for terminator, one extra for added CR */
 	char *p;
@@ -949,8 +948,8 @@ void music_control(struct bbslist *bbs)
 				"so-called ANSI music replaced the Delete Line ANSI sequence.  Many\n"
 				"full-screen editors use DL, and to this day, some programs (Such as\n"
 				"BitchX) require it to run.\n\n"
-				"To deal with this, BananaCom decided to use what *they* though was an\n"
-				"unspecified escape code ESC[N for ANSI music.  Unfortunately, this is\n"
+				"To deal with this, BananaCom decided to use what *they* thought was an\n"
+				"unspecified escape code, ESC[N, for ANSI music.  Unfortunately, this is\n"
 				"broken also.  Although rarely implemented in BBS clients, ESC[N is\n"
 				"the erase field sequence.\n\n"
 				"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
