@@ -618,7 +618,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_INBUF_PURGE:
-			lprintf(LOG_WARNING,"!VDD_INBUF_PURGE: NOT IMPLEMENTED");
+			RingBufReInit(&rdbuf);
 			retval=0;
 			break;
 
