@@ -333,8 +333,10 @@ VOID uart_rdport(WORD port, PBYTE data)
 				lprintf(LOG_DEBUG,"READ DATA: 0x%02X", *data);
 				avail--;
 				reset_yield();
-			}
+			} else
+				*data=0;
 			if(avail==0) {
+				lprintf(LOG_DEBUG,"No more data");
 				/* Clear the data ready bit in the LSR */
 				uart_lsr_reg &= ~UART_LSR_DATA_READY;
 
