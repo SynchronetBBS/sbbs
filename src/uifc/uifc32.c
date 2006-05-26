@@ -973,7 +973,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							&& mevnt.starty<=(s_top+top+optheight)-bbrdrwidth-1
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 
-						(*cur)=(mevnt.starty)-(s_top+top+tbrdrwidth);
+						(*cur)=((mevnt.starty)-(s_top+top+tbrdrwidth))+(*cur-y+tbrdrwidth);
 						if(bar)
 							(*bar)=(*cur);
 						y=top+tbrdrwidth+((mevnt.starty)-(s_top+top+tbrdrwidth));
