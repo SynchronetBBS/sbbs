@@ -184,7 +184,7 @@ void playnote(int notenum, int notelen, int dotted)
 	}
 	duration-=pauselen;
 	if(notenum < 72 && notenum >= 0)
-		BEEP(((double)note_frequency[notenum])/1000,duration);
+		xpbeep(((double)note_frequency[notenum])/1000,duration);
 	else
 		SLEEP(duration);
 	SLEEP(pauselen);
