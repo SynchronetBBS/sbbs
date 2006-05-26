@@ -514,6 +514,10 @@ A, B, C, D, E, G, or P Plays the named note or pause from the current
 	### - Notelength as a reciprical of the fraction of a whole note to
 		play the note for.  For example, 4 would indicate a 1/4 note.
 		The default note length is 4.
+L### Set the notelength parameter for all following notes which do not have
+	one specified (ie: override the quarter-note default)  Leval note lengths
+	are 1-64 indicating the recibrical of the fraction (ie: 4 indicates a 1/4
+	note).
 <	Move the the next lowest octave.
 	Octave cannot go above six or below zero.
 >	Move to the next highest octave.

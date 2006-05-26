@@ -275,6 +275,17 @@ void play_music(void)
 				if(cterm.octave>6)
 					cterm.octave=6;
 				break;
+			case 'L':
+				out=numbuf;
+				while(isdigit(*(p+1)))
+					*(out++)=*(++p);
+				*out=0;
+				cterm.notelen=atoi(numbuf);
+				if(cterm.notelen<1)
+					cterm.notelen=1;
+				if(cterm.notelen>64)
+					cterm.notelen=64;
+				break;
 			case 'N':						/* Note by number */
 				if(isdigit(*(p+1))) {
 					out=numbuf;
