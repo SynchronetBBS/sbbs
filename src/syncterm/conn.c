@@ -151,7 +151,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 	memset(&saddr,0,sizeof(saddr));
 	saddr.sin_addr.s_addr = neta;
 	saddr.sin_family = AF_INET;
-	saddr.sin_port   = htons(port);
+	saddr.sin_port   = htons((WORD)port);
 
 	if(connect(conn_socket, (struct sockaddr *)&saddr, sizeof(saddr))) {
 		char str[LIST_ADDR_MAX+20];
