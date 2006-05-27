@@ -211,7 +211,7 @@ void playnote_thread(void *args)
 		}
 		duration-=pauselen;
 		if(note->notenum < 72 && note->notenum >= 0)
-			xpbeep(((double)note_frequency[note->notenum])/1000,duration);
+			BEEP(((double)note_frequency[note->notenum])/1000,duration);
 		else
 			SLEEP(duration);
 		SLEEP(pauselen);
@@ -1507,7 +1507,7 @@ void cterm_end(void)
 	}
 	if(playnote_thread_running) {
 		if(sem_trywait(&playnote_thread_terminated)==-1) {
-			listPushNode(&notes, NULL);
+			listSemPost(&notes);
 			sem_wait(&playnote_thread_terminated);
 		}
 		sem_destroy(&playnote_thread_terminated);
