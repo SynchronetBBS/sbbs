@@ -226,7 +226,7 @@ fprintf(stderr,"1\n");
 	if(sound_device_open_failed)
 		return(FALSE);
 	handle_type=SOUND_DEVICE_WIN32;
-	if(!sound_device_open_failed))
+	if(!sound_device_open_failed)
 		return(TRUE);
 #endif
 
@@ -328,6 +328,8 @@ BOOL xptone_close(void)
 	handle_type=SOUND_DEVICE_CLOSED;
 	sound_device_open_failed=FALSE;
 	alsa_device_open_failed=FALSE;
+
+	return(TRUE);
 }
 
 /********************************************************************************/
