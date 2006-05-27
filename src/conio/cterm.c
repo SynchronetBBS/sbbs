@@ -40,6 +40,9 @@
 
 #include <genwrap.h>
 #include <xpbeep.h>
+#include <link_list.h>
+#include <xpsem.h>
+#include <threadwrap.h>
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS
@@ -159,35 +162,63 @@ const uint note_frequency[]={	/* Hz*1000 */
 	,7458600
 	,7902200
 };
-void playnote(int notenum, int notelen, int dotted)
+
+struct note_params {
+	int notenum;
+	int	notelen;
+	int	dotted;
+	int	tempo;
+	int	noteshape;
+	int	foreground;
+};
+
+static int playnote_thread_running=FALSE;
+static link_list_t	notes;
+sem_t	playnote_thread_terminated;
+sem_t	note_completed_sem;
+
+void playnote_thread(void *args)
 {
 	/* Tempo is quarter notes per minute */
 	int duration;
 	int pauselen;
+	struct note_params *note;
 
-	if(dotted)
-		duration=360000/cterm.tempo;
-	else
-		duration=240000/cterm.tempo;
-	duration/=notelen;
-	switch(cterm.noteshape) {
-		case CTERM_MUSIC_STACATTO:
-			pauselen=duration/4;
+	playnote_thread_running=TRUE;
+	while(1) {
+		listSemWait(&notes);
+		note=listShiftNode(&notes);
+		if(note==NULL)
 			break;
-		case CTERM_MUSIC_LEGATO:
-			pauselen=0;
-			break;
-		case CTERM_MUSIC_NORMAL:
-		default:
-			pauselen=duration/8;
-			break;
+		if(note->dotted)
+			duration=360000/note->tempo;
+		else
+			duration=240000/note->tempo;
+		duration/=note->notelen;
+		switch(note->noteshape) {
+			case CTERM_MUSIC_STACATTO:
+				pauselen=duration/4;
+				break;
+			case CTERM_MUSIC_LEGATO:
+				pauselen=0;
+				break;
+			case CTERM_MUSIC_NORMAL:
+			default:
+				pauselen=duration/8;
+				break;
+		}
+		duration-=pauselen;
+		if(note->notenum < 72 && note->notenum >= 0)
+			xpbeep(((double)note_frequency[note->notenum])/1000,duration);
+		else
+			SLEEP(duration);
+		SLEEP(pauselen);
+		if(note->foreground)
+			sem_post(&note_completed_sem);
+		free(note);
 	}
-	duration-=pauselen;
-	if(notenum < 72 && notenum >= 0)
-		xpbeep(((double)note_frequency[notenum])/1000,duration);
-	else
-		SLEEP(duration);
-	SLEEP(pauselen);
+	playnote_thread_running=FALSE;
+	sem_post(&playnote_thread_terminated);
 }
 
 void play_music(void)
@@ -201,8 +232,11 @@ void play_music(void)
 	char	numbuf[10];
 	int		dotted;
 	int		notenum;
+	struct	note_params *np;
+	int		fore_count;
 
 	p=cterm.musicbuf;
+	fore_count=0;
 	if(cterm.music==1) {
 		switch(toupper(*p)) {
 			case 'F':
@@ -357,7 +391,22 @@ void play_music(void)
 					}
 				}
 				notenum+=offset;
+#if 1
+				np=(struct note_params *)malloc(sizeof(struct note_params));
+				if(np!=NULL) {
+					np->notenum=notenum;
+					np->notelen=notelen;
+					np->dotted=dotted;
+					np->tempo=cterm.tempo;
+					np->noteshape=cterm.noteshape;
+					np->foreground=cterm.musicfore;
+					listPushNode(&notes, np);
+					if(cterm.musicfore)
+						fore_count++;
+				}
+#else
 				playnote(notenum,notelen,dotted);
+#endif
 				break;
 			case '<':							/* Down one octave */
 				cterm.octave--;
@@ -373,6 +422,10 @@ void play_music(void)
 	}
 	cterm.music=0;
 	cterm.musicbuf[0]=0;
+	while(fore_count) {
+		sem_wait(&note_completed_sem);
+		fore_count--;
+	}
 }
 
 void scrolldown(void)
@@ -1089,6 +1142,23 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 		*out=0;
 	}
 	strcat(cterm.DA,"c");
+	/* Did someone call _init() without calling _end()? */
+	if(playnote_thread_running) {
+		if(sem_trywait(&playnote_thread_terminated)==-1) {
+			listPushNode(&notes, NULL);
+			sem_wait(&playnote_thread_terminated);
+		}
+		sem_destroy(&playnote_thread_terminated);
+		sem_destroy(&note_completed_sem);
+		listFree(&notes);
+	}
+	/* Fire up note playing thread */
+	if(!playnote_thread_running) {
+		listInit(&notes, LINK_LIST_SEMAPHORE);
+		sem_init(&note_completed_sem,0,0);
+		sem_init(&playnote_thread_terminated,0,0);
+		_beginthread(playnote_thread, 0, NULL);
+	}
 }
 
 void ctputs(char *buf)
@@ -1437,4 +1507,13 @@ void cterm_end(void)
 		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 		FREE_AND_NULL(conio_fontdata[i].desc);
 	}
+	if(playnote_thread_running) {
+		if(sem_trywait(&playnote_thread_terminated)==-1) {
+			listPushNode(&notes, NULL);
+			sem_wait(&playnote_thread_terminated);
+		}
+	}
+	sem_destroy(&playnote_thread_terminated);
+	sem_destroy(&note_completed_sem);
+	listFree(&notes);
 }

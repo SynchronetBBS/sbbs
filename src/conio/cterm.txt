@@ -476,8 +476,7 @@ Mx sets misc music parameters where x is one of the following:
 	F - Plays music in the foreground, waiting for music to complete
 	    playing before more characters are processed.
 	B - Play music in the background, allowing normal processing to
-	    continue.  This is ignored by CTerm.  All music is played in
-	    the foreground.
+	    continue.
 	N - "Normal" not legato, not stacatto
 	L - Play notes legato
 	S - Play notes stacatto
