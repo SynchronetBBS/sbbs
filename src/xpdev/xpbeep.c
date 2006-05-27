@@ -63,6 +63,8 @@ static int handle_type=SOUND_DEVICE_CLOSED;
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
 static	WAVEHDR			wh;
+static	WAVEHDR			silence;
+static	unsigned char	silence_data=128;
 static	unsigned char	wave[S_RATE*15/2+1];
 #endif
 
@@ -232,6 +234,24 @@ BOOL xptone_open(void)
 		waveOutClose(waveOut);
 		return(FALSE);
 	}
+	memset(&silence, 0, sizeof(silence));
+	silence.lpData=&silence_data;
+	silence.dwBufferLength=1;
+	silence.dwFlags=WHDR_BEGINLOOP|WHDR_ENDLOOP;
+	silence.dwLoops=0xffffffffUL;	/* Good for 54 hours of silence @ 22010 */
+	if(waveOutPrepareHeader(waveOut, &silence, sizeof(silence))!=MMSYSERR_NOERROR) {
+		waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
+		sound_device_open_failed=TRUE;
+		waveOutClose(waveOut);
+		return(FALSE);
+	}
+	if(waveOutWrite(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
+		waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
+		waveOutUnprepareHeader(waveOut, &silence, sizeof(wh));
+		sound_device_open_failed=TRUE;
+		waveOutClose(waveOut);
+		return(FALSE);
+	}
 	handle_type=SOUND_DEVICE_WIN32;
 	if(!sound_device_open_failed)
 		return(TRUE);
@@ -320,9 +340,12 @@ BOOL xptone_close(void)
 {
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
-		waveOutClose(waveOut);
+		waveOutBreakLoop(waveOut);
 		while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
 			SLEEP(1);
+		while(waveOutUnprepareHeader(waveOut, &silence, sizeof(silence))==WAVERR_STILLPLAYING)
+			SLEEP(1);
+		waveOutClose(waveOut);
 	}
 #endif
 
@@ -364,11 +387,14 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 
 	makewave(freq,wave,wh.dwBufferLength,shape);
 
-	if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR)
+	if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
 		success=TRUE;
-
-	while(!(wh.dwFlags & WHDR_DONE))
-		SLEEP(1);
+		waveOutBreakLoop(waveOut);
+		/* Put the silence back in */
+		waveOutWrite(waveOut, &silence, sizeof(silence));
+		while(!(wh.dwFlags & WHDR_DONE))
+			SLEEP(1);
+	}
 
 	if(must_close)
 		xptone_close();
