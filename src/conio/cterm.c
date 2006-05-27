@@ -1143,7 +1143,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	/* Did someone call _init() without calling _end()? */
 	if(playnote_thread_running) {
 		if(sem_trywait(&playnote_thread_terminated)==-1) {
-			listPushNode(&notes, NULL);
+			listSemPost(&notes);
 			sem_wait(&playnote_thread_terminated);
 		}
 		sem_destroy(&playnote_thread_terminated);
