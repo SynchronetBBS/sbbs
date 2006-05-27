@@ -391,7 +391,6 @@ void play_music(void)
 					}
 				}
 				notenum+=offset;
-#if 1
 				np=(struct note_params *)malloc(sizeof(struct note_params));
 				if(np!=NULL) {
 					np->notenum=notenum;
@@ -404,9 +403,6 @@ void play_music(void)
 					if(cterm.musicfore)
 						fore_count++;
 				}
-#else
-				playnote(notenum,notelen,dotted);
-#endif
 				break;
 			case '<':							/* Down one octave */
 				cterm.octave--;
