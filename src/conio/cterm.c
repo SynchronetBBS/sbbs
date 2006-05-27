@@ -185,10 +185,19 @@ void playnote_thread(void *args)
 	int duration;
 	int pauselen;
 	struct note_params *note;
+	int	device_open=FALSE;
 
 	playnote_thread_running=TRUE;
 	while(1) {
-		listSemWait(&notes);
+		if(device_open) {
+			if(!listSemTryWait(&notes)) {
+				xptone_close();
+				listSemWait(&notes);
+			}
+		}
+		else
+			listSemWait(&notes);
+		xptone_open();
 		note=listShiftNode(&notes);
 		if(note==NULL)
 			break;
