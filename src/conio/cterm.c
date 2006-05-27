@@ -1508,8 +1508,8 @@ void cterm_end(void)
 			listPushNode(&notes, NULL);
 			sem_wait(&playnote_thread_terminated);
 		}
+		sem_destroy(&playnote_thread_terminated);
+		sem_destroy(&note_completed_sem);
+		listFree(&notes);
 	}
-	sem_destroy(&playnote_thread_terminated);
-	sem_destroy(&note_completed_sem);
-	listFree(&notes);
 }
