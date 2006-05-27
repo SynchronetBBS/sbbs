@@ -33,6 +33,8 @@ enum WAVE_SHAPE {
 #ifdef __cplusplus
 extern "C" {
 #endif
+BOOL xptone_open(void);
+BOOL xptone_close(void);
 void xpbeep(double freq, DWORD duration);
 BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__
