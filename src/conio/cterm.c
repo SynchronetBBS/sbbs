@@ -1154,7 +1154,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	}
 	/* Fire up note playing thread */
 	if(!playnote_thread_running) {
-		listInit(&notes, LINK_LIST_SEMAPHORE);
+		listInit(&notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 		sem_init(&note_completed_sem,0,0);
 		sem_init(&playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, NULL);
