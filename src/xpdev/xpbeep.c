@@ -112,12 +112,10 @@ struct alsa_api_struct *alsa_api=NULL;
 void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
 {
 	int	i;
-	int j;
 	int midpoint;
 	double inc;
 	double pos;
 	BOOL endhigh;
-	BOOL starthigh;
 
 	midpoint=samples/2;
 	inc=8.0*atan(1.0);
@@ -341,8 +339,6 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
 	WAVEHDR			wh;
 	unsigned char	wave[S_RATE*15/2+1];
-	WORD* 			p;
-	DWORD			endTime;
 	BOOL			success=FALSE;
 	BOOL			must_close=FALSE;
 
