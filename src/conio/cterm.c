@@ -41,7 +41,9 @@
 #include <genwrap.h>
 #include <xpbeep.h>
 #include <link_list.h>
-#include <xpsem.h>
+#ifdef __unix__
+	#include <xpsem.h>
+#endif
 #include <threadwrap.h>
 
 #if (defined CIOLIB_IMPORTS)
