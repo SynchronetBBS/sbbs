@@ -208,7 +208,6 @@ BOOL xptone_open(void)
 	int	fragsize=0x7fff0004;
 #endif
 
-fprintf(stderr,"1\n");
 	/* Already open */
 	if(handle_type!=SOUND_DEVICE_CLOSED)
 		return(TRUE);
