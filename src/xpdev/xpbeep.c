@@ -62,6 +62,8 @@ static int handle_type=SOUND_DEVICE_CLOSED;
 
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
+static	WAVEHDR			wh;
+static	unsigned char	wave[S_RATE*15/2+1];
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -154,7 +156,7 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 				break;
 		}
 	}
-	
+
 	/* Now we have a "perfect" wave... 
 	 * we must clean it up now to avoid click/pop
 	 */
@@ -222,6 +224,14 @@ BOOL xptone_open(void)
 		sound_device_open_failed=TRUE;
 	if(sound_device_open_failed)
 		return(FALSE);
+	memset(&wh, 0, sizeof(wh));
+	wh.lpData=wave;
+	wh.dwBufferLength=S_RATE*15/2+1;
+	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
+		sound_device_open_failed=TRUE;
+		waveOutClose(waveOut);
+		return(FALSE);
+	}
 	handle_type=SOUND_DEVICE_WIN32;
 	if(!sound_device_open_failed)
 		return(TRUE);
@@ -309,8 +319,11 @@ BOOL xptone_open(void)
 BOOL xptone_close(void)
 {
 #ifdef _WIN32
-	if(handle_type==SOUND_DEVICE_WIN32)
+	if(handle_type==SOUND_DEVICE_WIN32) {
 		waveOutClose(waveOut);
+		while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+			SLEEP(1);
+	}
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -337,8 +350,6 @@ BOOL xptone_close(void)
 
 BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
-	WAVEHDR			wh;
-	unsigned char	wave[S_RATE*15/2+1];
 	BOOL			success=FALSE;
 	BOOL			must_close=FALSE;
 
@@ -347,19 +358,16 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 		xptone_open();
 	}
 
-	memset(&wh, 0, sizeof(wh));
-	wh.lpData=wave;
 	wh.dwBufferLength=S_RATE*duration/1000;
 	if(wh.dwBufferLength<=S_RATE/freq*2)
 		wh.dwBufferLength=S_RATE/freq*2;
 
 	makewave(freq,wave,wh.dwBufferLength,shape);
-	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
-		goto abrt;
+
 	if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR)
 		success=TRUE;
-abrt:
-	while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+
+	while(!(wh.dwFlags & WHDR_DONE))
 		SLEEP(1);
 
 	if(must_close)
