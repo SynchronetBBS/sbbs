@@ -648,10 +648,6 @@ function str_cmds(str)
 				if(str=="")
 					return;
 			}
-			if(!file_exists(str)) {
-				write(bbs.text(FileNotFound));
-				return;
-			}
 			if(!bbs.check_syspass())
 				return;
 
