@@ -532,3 +532,7 @@ low frequences.  The notes *sound* correct to me.  If anyone can give me
 an excellent reason to change them (and more correct integer values for all
 notes) I am willing to do that assuming the notes still sound "right".
 
+!!!PLEASE NOTE!!! If you are playing some ANSI Music then ask the user if they
+heard it, ALWAYS follow it with an 0x0b 0x0a is the shift lock character which
+*will* cause people with anything but an ANSI-BBS terminal (ie: *nix users using
+the bundled telnet app) to have their screen messed up.  0x0b "undoes" the 0x0a.
