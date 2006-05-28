@@ -200,6 +200,7 @@ xpdev:
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
+	set USE_SDL=$(USE_SDL)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -213,6 +214,7 @@ xpdev-mt:
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
+	set USE_SDL=$(USE_SDL)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -254,6 +256,7 @@ uifc:
 	set RELEASE=$(RELEASE)
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
+	set USE_SDL=$(USE_SDL)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
