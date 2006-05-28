@@ -355,6 +355,11 @@ typedef struct {
 
 /* Special hackery for SDL */
 #ifdef WITH_SDL
+	#include <SDL.h>
+
+	#ifdef main
+		#undef main
+	#endif
 	#define	main	XPDEV_main
 #endif
 
