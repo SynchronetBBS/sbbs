@@ -62,10 +62,12 @@ static int handle_type=SOUND_DEVICE_CLOSED;
 
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
-static	WAVEHDR			wh;
+static	WAVEHDR			*wh;
+static	WAVEHDR			wh_bufs[2];
 static	WAVEHDR			silence;
 static	unsigned char	silence_data=128;
-static	unsigned char	wave[S_RATE*15/2+1];
+static	unsigned char	wave[2][S_RATE*15/2+1];
+static	int				curr_wh=0;
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -226,10 +228,19 @@ BOOL xptone_open(void)
 		sound_device_open_failed=TRUE;
 	if(sound_device_open_failed)
 		return(FALSE);
-	memset(&wh, 0, sizeof(wh));
-	wh.lpData=wave;
-	wh.dwBufferLength=S_RATE*15/2+1;
-	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
+	memset(&wh_bufs, 0, sizeof(wh_bufs));
+	memset(wave, 128, sizeof(wave));	/* Ensure that if silence DOES timeout, you still get silence */
+	wh_bufs[0].lpData=wave;
+	wh_bufs[0].dwBufferLength=S_RATE*15/2+1;
+	if(waveOutPrepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]))!=MMSYSERR_NOERROR) {
+		sound_device_open_failed=TRUE;
+		waveOutClose(waveOut);
+		return(FALSE);
+	}
+	wh_bufs[1].lpData=wave;
+	wh_bufs[1].dwBufferLength=S_RATE*15/2+1;
+	if(waveOutPrepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]))!=MMSYSERR_NOERROR) {
+		waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]));
 		sound_device_open_failed=TRUE;
 		waveOutClose(waveOut);
 		return(FALSE);
@@ -240,13 +251,25 @@ BOOL xptone_open(void)
 	silence.dwFlags=WHDR_BEGINLOOP|WHDR_ENDLOOP;
 	silence.dwLoops=0xffffffffUL;	/* Good for 54 hours of silence @ 22010 */
 	if(waveOutPrepareHeader(waveOut, &silence, sizeof(silence))!=MMSYSERR_NOERROR) {
-		waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
+		waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]));
+		waveOutUnprepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]));
 		sound_device_open_failed=TRUE;
 		waveOutClose(waveOut);
 		return(FALSE);
 	}
-	if(waveOutWrite(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
-		waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
+	if(waveOutWrite(waveOut, &silence, sizeof(silence))!=MMSYSERR_NOERROR) {
+		waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]));
+		waveOutUnprepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]));
+		waveOutUnprepareHeader(waveOut, &silence, sizeof(wh));
+		sound_device_open_failed=TRUE;
+		waveOutClose(waveOut);
+		return(FALSE);
+	}
+	wh=&wh_bufs[0];
+	curr_wh=0;
+	if(waveOutWrite(waveOut, wh, sizeof(wh_bufs[0]))!=MMSYSERR_NOERROR) {
+		waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]));
+		waveOutUnprepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]));
 		waveOutUnprepareHeader(waveOut, &silence, sizeof(wh));
 		sound_device_open_failed=TRUE;
 		waveOutClose(waveOut);
@@ -341,7 +364,9 @@ BOOL xptone_close(void)
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
 		waveOutBreakLoop(waveOut);
-		while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+		while(waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]))==WAVERR_STILLPLAYING)
+			SLEEP(1);
+		while(waveOutUnprepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]))==WAVERR_STILLPLAYING)
 			SLEEP(1);
 		while(waveOutUnprepareHeader(waveOut, &silence, sizeof(silence))==WAVERR_STILLPLAYING)
 			SLEEP(1);
@@ -375,26 +400,34 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
 	BOOL			success=FALSE;
 	BOOL			must_close=FALSE;
+	WAVEHDR			*this_wh;
 
 	if(handle_type==SOUND_DEVICE_CLOSED) {
 		must_close=TRUE;
 		xptone_open();
 	}
 
-	wh.dwBufferLength=S_RATE*duration/1000;
-	if(wh.dwBufferLength<=S_RATE/freq*2)
-		wh.dwBufferLength=S_RATE/freq*2;
+	this_wh=wh;
+	wh->dwBufferLength=S_RATE*duration/1000;
+	if(wh->dwBufferLength<=S_RATE/freq*2)
+		wh->dwBufferLength=S_RATE/freq*2;
 
-	makewave(freq,wave,wh.dwBufferLength,shape);
+	makewave(freq,wave[curr_wh],wh.dwBufferLength,shape);
 
-	if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-		success=TRUE;
-		waveOutBreakLoop(waveOut);
-		/* Put the silence back in */
-		waveOutWrite(waveOut, &silence, sizeof(silence));
-		while(!(wh.dwFlags & WHDR_DONE))
-			SLEEP(1);
-	}
+	waveOutBreakLoop(waveOut);
+	success=TRUE;
+
+	/* Put the silence back in */
+	waveOutWrite(waveOut, &silence, sizeof(silence));
+
+	/* Prepare for next note */
+	curr_wh=1-curr_wh;
+	memset(wave[curr_wh], 128, sizeof(wave));	/* Ensure that if silence DOES timeout, you still get silence */
+	wh=wh_bufs[curr_wh];
+	waveOutWrite(waveOut, wh, sizeof(wh_bufs[0]));
+
+	while(!(this_wh->dwFlags & WHDR_DONE))
+		SLEEP(1);
 
 	if(must_close)
 		xptone_close();
