@@ -43,7 +43,9 @@
 #endif
 
 /* xpdev headers */
+#ifdef WITH_SDL
 #include "sdlfuncs.h"
+#endif
 #include "genwrap.h"
 #include "xpbeep.h"
 
