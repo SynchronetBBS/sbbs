@@ -414,5 +414,5 @@ int SDL_main_env(int argc, char **argv, char **env)
 	}
 	if(sdl_initialized)
 		atexit(sdl_exit);
-	return(CIOLIB_main(argc, argv, env));
+	return(XPDEV_main(argc, argv, env));
 }

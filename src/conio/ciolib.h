@@ -353,9 +353,4 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
 	#define loadfont(a)				ciolib_loadfont(a)
 #endif
 
-/* Special hackery for SDL */
-#ifdef WITH_SDL
-	#define	main	CIOLIB_main
-#endif
-
 #endif	/* Do not add anything after this line */

@@ -353,5 +353,9 @@ typedef struct {
 	#define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
+/* Special hackery for SDL */
+#ifdef WITH_SDL
+	#define	main	XPDEV_main
+#endif
 
 #endif /* Don't add anything after this #endif statement */
