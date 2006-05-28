@@ -222,7 +222,7 @@ void playnote_thread(void *args)
 		}
 		duration-=pauselen;
 		if(note->notenum < 72 && note->notenum >= 0)
-			BEEP(((double)note_frequency[note->notenum])/1000,duration);
+			xptone(((double)note_frequency[note->notenum])/1000,duration);
 		else
 			SLEEP(duration);
 		SLEEP(pauselen);
