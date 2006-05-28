@@ -15,23 +15,10 @@ endif
 
 ifdef WITH_SDL
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
- OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
 
 ifeq ($(os),netbsd)
  CFLAGS	+=	-DN_CURSES_LIB
-endif
-
-ifeq ($(os),darwin)
- ifdef WITH_SDL
-  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
- endif
-endif
-
-ifeq ($(os),darwin)
-$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 endif
 
 $(MTOBJODIR)$(DIRSEP)console$(OFILE).static:

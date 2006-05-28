@@ -12,6 +12,22 @@ ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
 endif
 MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
+ifdef WITH_SDL
+ MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
+endif
+
+ifeq ($(os),darwin)
+ ifdef WITH_SDL
+  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
+ endif
+endif
+
+ifeq ($(os),darwin)
+$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
+endif
+
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
