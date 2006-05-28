@@ -337,6 +337,26 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->InitSubSystem=dlsym(sdl_dll, "SDL_InitSubSystem"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->QuitSubSystem=dlsym(sdl_dll, "SDL_QuitSubSystem"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->OpenAudio=dlsym(sdl_dll, "SDL_OpenAudio"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->CloseAudio=dlsym(sdl_dll, "SDL_CloseAudio"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->PauseAudio=dlsym(sdl_dll, "SDL_PauseAudio"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
