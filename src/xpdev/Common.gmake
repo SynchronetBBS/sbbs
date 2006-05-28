@@ -104,9 +104,13 @@ ifdef WITH_SDL
   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
    XPDEV-MT_CFLAGS	+=	-DWITH_SDL
    XPDEV-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
+   XPDEV_CFLAGS	+=	-DWITH_SDL
+   XPDEV_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
    ifdef STATIC_SDL
     XPDEV-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
     XPDEV-MT_CFLAGS	+=	-DSTATIC_SDL
+    XPDEV-LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
+    XPDEV-CFLAGS	+=	-DSTATIC_SDL
    endif
   endif
  else
@@ -114,6 +118,9 @@ ifdef WITH_SDL
    XPDEV-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
    XPDEV-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
    XPDEV-MT_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
+   XPDEV_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   XPDEV_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
+   XPDEV_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
   endif
  endif
 endif
@@ -138,3 +145,4 @@ else
 endif
 
 XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
+XPDEV_CFLAGS	+=	-I$(X_HEADERS)

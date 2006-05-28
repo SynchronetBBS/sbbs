@@ -14,11 +14,13 @@ MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
 ifdef WITH_SDL
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
+ OBJS	+=	$(OBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
 
 ifeq ($(os),darwin)
  ifdef WITH_SDL
   MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
+  OBJS	+=	$(OBJODIR)$(DIRSEP)SDLMain$(OFILE)
  endif
 endif
 
