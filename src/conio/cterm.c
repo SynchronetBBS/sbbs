@@ -192,12 +192,14 @@ void playnote_thread(void *args)
 		if(device_open) {
 			if(!listSemTryWait(&notes)) {
 				xptone_close();
+				device_open=FALSE;
 				listSemWait(&notes);
 			}
 		}
 		else
 			listSemWait(&notes);
 		xptone_open();
+		device_open=TRUE;
 		note=listShiftNode(&notes);
 		if(note==NULL)
 			break;
