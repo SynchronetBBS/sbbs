@@ -1,3 +1,4 @@
+#include <stdlib.h>	/* getenv()/exit()/atexit() */
 #include <stdio.h>	/* NULL */
 
 #include "gen_defs.h"
@@ -12,6 +13,8 @@ static int sdl_funcs_loaded=0;
 static int sdl_initialized=0;
 static int sdl_audio_initialized=0;
 static int sdl_video_initialized=0;
+
+int XPDEV_main(int argc, char **argv, char **enviro);
 
 #ifdef STATIC_SDL
 int load_sdl_funcs(struct sdlfuncs *sdlf)
