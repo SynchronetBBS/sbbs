@@ -445,11 +445,10 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 
 		makewave(freq,wave,wh.dwBufferLength,shape);
 
-		if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR)
-			success=TRUE;
-
-		while(!(wh.dwFlags & WHDR_DONE))
-			SLEEP(1);
+		if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+			while(!(wh.dwFlags & WHDR_DONE))
+				SLEEP(1);
+		}
 	}
 #endif
 
