@@ -114,7 +114,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 #ifdef WITH_SDL
 int try_sdl_init(int mode)
 {
-	if(!sdl_init(mode)) {
+	if(!sdl_initciolib(mode)) {
 		cio_api.mouse=1;
 		cio_api.puttext=sdl_puttext;
 		cio_api.gettext=sdl_gettext;

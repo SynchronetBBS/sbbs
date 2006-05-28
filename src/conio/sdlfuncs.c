@@ -1,6 +1,16 @@
 #include <stdio.h>	/* NULL */
 
+#include "gen_defs.h"
 #include "sdlfuncs.h"
+
+#ifndef _WIN32
+struct sdlfuncs sdl;
+#endif
+
+static int sdl_funcs_loaded=0;
+static int sdl_initialized=0;
+static int sdl_audio_initialized=0;
+static int sdl_video_initialized=0;
 
 #ifdef STATIC_SDL
 int load_sdl_funcs(struct sdlfuncs *sdlf)
@@ -36,7 +46,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->EnableKeyRepeat=SDL_EnableKeyRepeat;
 	sdlf->GetWMInfo=SDL_GetWMInfo;
 	sdlf->GetError=SDL_GetError;
+	sdlf->InitSubSystem=SDL_InitSubSystem;
+	sdlf->QuitSubSystem=SDL_QuitSubSystem;
 	sdlf->gotfuncs=1;
+	sdl_funcs_loaded=1;
 	return(0);
 }
 #else
@@ -166,7 +179,16 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->InitSubSystem=GetProcAddress(sdl_dll, "SDL_InitSubSystem"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->QuitSubSystem=GetProcAddress(sdl_dll, "SDL_QuitSubSystem"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
+	sdl_funcs_loaded=1;
 	return(0);
 }
 #elif defined(__unix__)
@@ -291,8 +313,106 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	sdlf->gotfuncs=1;
+	sdl_funcs_loaded=1;
 	return(0);
 }
 #endif
 
 #endif
+
+int init_sdl_video(void)
+{
+	/* This is all handled in SDL_main_env() */
+	if(sdl_video_initialized)
+		return(0);
+	else
+		return(-1);
+}
+
+int init_sdl_audio(void)
+{
+	if(!sdl_initialized)
+		return(-1);
+	if(sdl_audio_initialized)
+		return(0);
+	if(sdl.InitSubSystem(SDL_INIT_AUDIO)==0) {
+		sdl_audio_initialized=TRUE;
+		return(0);
+	}
+	return(-1);
+}
+
+/* atexit() function */
+static void sdl_exit(void)
+{
+	sdl.Quit();
+}
+
+#ifndef main
+int main(int argc, char **argv, char **env)
+#else
+int SDL_main_env(int argc, char **argv, char **env)
+#endif
+{
+	unsigned int i;
+	SDL_Event	ev;
+	char	drivername[64];
+
+#ifndef _WIN32
+	load_sdl_funcs(&sdl);
+#endif
+
+	if(sdl.gotfuncs) {
+#ifdef _WIN32
+		/* Fail to windib (ie: No mouse attached) */
+		if(sdl.Init(SDL_INIT_VIDEO)) {
+			if(getenv("SDL_VIDEODRIVER")==NULL) {
+				putenv("SDL_VIDEODRIVER=windib");
+				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
+				exit(0);
+			}
+			sdl.gotfuncs=FALSE;
+		}
+		else {
+			sdl_video_initialized=TRUE;
+		}
+#else
+
+		/*
+		 * On Linux, SDL doesn't properly detect availability of the
+		 * framebuffer apparently.  This results in remote connections
+		 * displaying on the local framebuffer... a definate no-no.
+		 * This ugly hack attempts to prevent this... of course, remote X11
+		 * connections must still be allowed.
+		 */
+		if(getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL) {
+			/* Sure ,we can't use video, but audio is still valid! */
+			if(sdl.Init(0)==0)
+				sdl_initialized=TRUE;
+			sdl.gotfuncs=FALSE;
+		}
+		else {
+			if(sdl.Init(SDL_INIT_VIDEO))
+				sdl.gotfuncs=FALSE;
+			else {
+				sdl_initialized=TRUE;
+				sdl_video_initialized=TRUE;
+			}
+		}
+#endif
+		if(sdl_video_initialized && sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
+			/* Unacceptable drivers */
+			if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
+				sdl.gotfuncs=FALSE;
+				sdl.QuitSubSystem(SDL_INIT_VIDEO);
+				sdl_video_initialized=FALSE;
+			}
+			else {
+				sdl_video_initialized=TRUE;
+			}
+		}
+	}
+	if(sdl_initialized)
+		atexit(sdl_exit);
+	return(CIOLIB_main(argc, argv, env));
+}

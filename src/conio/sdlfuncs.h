@@ -37,18 +37,20 @@ struct sdlfuncs {
 	int	(*EnableKeyRepeat)	(int delay, int interval);
 	int	(*GetWMInfo)	(struct SDL_SysWMinfo *info);
 	char	*(*GetError)	(void);
+	int (*InitSubSystem)(Uint32 flags);
+	void (*QuitSubSystem)(Uint32 flags);
 	int	gotfuncs;
 };
 
-#ifdef _WIN32
-/* Defined in SDL_win32_main.c */
+/* Defined in SDL_win32_main.c for Win32 */
 extern struct sdlfuncs	sdl;
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 int load_sdl_funcs(struct sdlfuncs *sdlf);
+int init_sdl_audio(void);
+int init_sdl_video(void);
 #ifdef __cplusplus
 }
 #endif

@@ -22,7 +22,7 @@ int sdl_wherey(void);
 int sdl_wherex(void);
 int sdl_putch(int ch);
 void sdl_gotoxy(int x, int y);
-void sdl_initciolib(long inmode);
+int sdl_initciolib(long inmode);
 void sdl_gettextinfo(struct text_info *info);
 void sdl_setcursortype(int type);
 int sdl_getch(void);
@@ -38,6 +38,7 @@ char *sdl_getcliptext(void);
 int sdl_setfont(int font, int force);
 int sdl_getfont(void);
 int sdl_loadfont(char *filename);
+int sdl_video_event_thread(void *data);
 #ifdef __cplusplus
 }
 #endif

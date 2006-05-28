@@ -35,10 +35,6 @@
 
 #include "sdlfuncs.h"
 
-#ifndef _WIN32
-struct sdlfuncs sdl;
-#endif
-
 extern int	CIOLIB_main(int argc, char **argv, char **enviro);
 
 /********************************************************/
@@ -493,12 +489,6 @@ int sdl_draw_char(unsigned short vch, int xpos, int ypos, int update)
 	}
 
 	return(0);
-}
-
-/* atexit() function */
-void sdl_exit(void)
-{
-	sdl.Quit();
 }
 
 /* Called from main thread only (Passes Event) */
@@ -1342,18 +1332,6 @@ struct mainparams {
 	char	**env;
 };
 
-/* Called from events thread only */
-int sdl_runmain(void *data)
-{
-	struct mainparams *mp=data;
-	SDL_Event	ev;
-
-	sdl_exitcode=CIOLIB_main(mp->argc, mp->argv, mp->env);
-	ev.type=SDL_QUIT;
-	while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-	return(0);
-}
-
 /* Mouse event/keyboard thread */
 int sdl_mouse_thread(void *data)
 {
@@ -1364,77 +1342,11 @@ int sdl_mouse_thread(void *data)
 }
 
 /* Event Thread */
-#ifndef main
-int main(int argc, char **argv, char **env)
-#else
-int SDL_main_env(int argc, char **argv, char **env)
-#endif
+int sdl_video_event_thread(void *data)
 {
-	unsigned int i;
 	SDL_Event	ev;
-	struct mainparams mp;
-	char	drivername[64];
-
-#ifndef _WIN32
-	load_sdl_funcs(&sdl);
-#endif
 
 	if(sdl.gotfuncs) {
-#ifdef _WIN32
-		/* Fail to windib (ie: No mouse attached) */
-		if(sdl.Init(SDL_INIT_VIDEO)) {
-			if(getenv("SDL_VIDEODRIVER")==NULL) {
-				putenv("SDL_VIDEODRIVER=windib");
-				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
-				exit(0);
-			}
-			sdl.gotfuncs=FALSE;
-		}
-#else
-
-		/*
-		 * On Linux, SDL doesn't properly detect availability of the
-		 * framebuffer apparently.  This results in remote connections
-		 * displaying on the local framebuffer... a definate no-no.
-		 * This ugly hack attempts to prevent this... of course, remote X11
-		 * connections must still be allowed.
-		 */
-		if(getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL)
-			sdl.gotfuncs=FALSE;
-		else {
-			if(sdl.Init(SDL_INIT_VIDEO))
-				sdl.gotfuncs=FALSE;
-		}
-#endif
-		if(sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
-			/* Unacceptable drivers */
-			if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
-				sdl.gotfuncs=FALSE;
-				sdl.Quit();
-			}
-		}
-	}
-
-	if(sdl.gotfuncs) {
-		atexit(sdl_exit);
-		mp.argc=argc;
-		mp.argv=argv;
-		mp.env=env;
-
-		sdl_key_pending=sdl.SDL_CreateSemaphore(0);
-		sdl_init_complete=sdl.SDL_CreateSemaphore(0);
-		sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
-		sdl_updlock=sdl.SDL_CreateMutex();
-		sdl_keylock=sdl.SDL_CreateMutex();
-		sdl_vstatlock=sdl.SDL_CreateMutex();
-		sdl_ufunc_lock=sdl.SDL_CreateMutex();
-#if !defined(NO_X) && defined(__unix__)
-		sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
-		sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
-		sdl_copybuf_mutex=sdl.SDL_CreateMutex();
-#endif
-		sdl.CreateThread(sdl_runmain, &mp);
-
 		while(1) {
 			if(sdl.WaitEvent(&ev)==1) {
 				switch (ev.type) {
@@ -1849,7 +1761,27 @@ int SDL_main_env(int argc, char **argv, char **env)
 			}
 		}
 	}
-	else {
-		return(CIOLIB_main(argc, argv, env));
-	}
 }
+
+int sdl_initciolib(int mode)
+{
+	if(!sdl.gotfuncs)
+		return(-1);
+	if(init_sdl_video()==-1)
+		return(-1);
+	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
+	sdl_init_complete=sdl.SDL_CreateSemaphore(0);
+	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
+	sdl_updlock=sdl.SDL_CreateMutex();
+	sdl_keylock=sdl.SDL_CreateMutex();
+	sdl_vstatlock=sdl.SDL_CreateMutex();
+	sdl_ufunc_lock=sdl.SDL_CreateMutex();
+#if !defined(NO_X) && defined(__unix__)
+	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
+	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
+	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
+#endif
+	sdl.CreateThread(sdl_video_event_thread, NULL);
+	return(sdl_init(mode));
+}
+
