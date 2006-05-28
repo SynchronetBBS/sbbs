@@ -43,6 +43,7 @@
 #endif
 
 /* xpdev headers */
+#include "sdlfuncs.h"
 #include "genwrap.h"
 #include "xpbeep.h"
 
@@ -50,15 +51,25 @@
 
 static BOOL sound_device_open_failed=FALSE;
 static BOOL alsa_device_open_failed=FALSE;
+static BOOL sdl_device_open_failed=FALSE;
 
 enum {
 	 SOUND_DEVICE_CLOSED
 	,SOUND_DEVICE_WIN32
 	,SOUND_DEVICE_ALSA
 	,SOUND_DEVICE_OSS
+	,SOUND_DEVICE_SDL
 };
 
 static int handle_type=SOUND_DEVICE_CLOSED;
+
+#ifdef WITH_SDL
+static SDL_AudioSpec	spec;
+static int				sdl_audio_buf_len=0;
+static int				sdl_audio_buf_pos=0;
+static unsigned char	swave[S_RATE*15/2+1];
+static SDL_sem			*sdlToneDone;
+#endif
 
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
@@ -175,25 +186,32 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 			wave[i]=128;
 		}
 	}
+}
 
-#if 0
-	if(wave[0]>128)
-		starthigh=TRUE;
-	else
-		starthigh=FALSE;
-	/* Completely remove the first wave fragment */
-	i=0;
-	if(wave[i]!=128) {
-		for(;i<midpoint;i++) {
-			if(starthigh && wave[i]<128)
-				break;
-			if(!starthigh && wave[i]>128)
-				break;
-			wave[i]=128;
+#ifdef WITH_SDL
+void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
+{
+	int	copylen=len;
+	int maxlen=sdl_audio_buf_len-sdl_audio_buf_pos;
+
+	/* Fill with silence */
+	memset(stream, spec.silence, len);
+
+	/* Copy in the current buffer */
+	if(copylen>maxlen)
+		copylen=maxlen;
+	if(copylen) {
+		memcpy(stream, swave+sdl_audio_buf_pos, copylen);
+		sdl_audio_buf_pos+=copylen;
+		/* If we're done, post the semaphore */
+		if(sdl_audio_buf_pos>=sdl_audio_buf_len) {
+			sdl.SemPost(sdlToneDone);
+			sdl_audio_buf_len=0;
+			sdl_audio_buf_pos=0;
 		}
 	}
-#endif
 }
+#endif
 
 BOOL xptone_open(void)
 {
@@ -212,29 +230,55 @@ BOOL xptone_open(void)
 	if(handle_type!=SOUND_DEVICE_CLOSED)
 		return(TRUE);
 
-#ifdef _WIN32
-	w.wFormatTag = WAVE_FORMAT_PCM;
-	w.nChannels = 1;
-	w.nSamplesPerSec = S_RATE;
-	w.wBitsPerSample = 8;
-	w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
-	w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
-
-	if(!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0)!=MMSYSERR_NOERROR)
-		sound_device_open_failed=TRUE;
-	if(sound_device_open_failed)
-		return(FALSE);
-	memset(&wh, 0, sizeof(wh));
-	wh.lpData=wave;
-	wh.dwBufferLength=S_RATE*15/2+1;
-	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
-		sound_device_open_failed=TRUE;
-		waveOutClose(waveOut);
-		return(FALSE);
+#ifdef WITH_SDL
+	if(!sdl_device_open_failed) {
+		if(init_sdl_audio()==-1)
+			sdl_device_open_failed=TRUE;
+		else {
+			spec.freq=22050;
+			spec.format=AUDIO_U8;
+			spec.channels=1;
+			spec.samples=512;		/* Size of audio buffer */
+			spec.size=512;
+			spec.callback=sdl_fillbuf;
+			spec.userdata=NULL;
+			if(sdl.OpenAudio(&spec, NULL)==-1) {
+				sdl_device_open_failed=TRUE;
+			}
+			else {
+				sdlToneDone=sdl.SDL_CreateSemaphore(0);
+				handle_type=SOUND_DEVICE_SDL;
+				return(TRUE);
+			}
+		}
 	}
-	handle_type=SOUND_DEVICE_WIN32;
-	if(!sound_device_open_failed)
-		return(TRUE);
+#endif
+
+#ifdef _WIN32
+	if(!sound_device_open_failed) {
+		w.wFormatTag = WAVE_FORMAT_PCM;
+		w.nChannels = 1;
+		w.nSamplesPerSec = S_RATE;
+		w.wBitsPerSample = 8;
+		w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
+		w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
+
+		if(!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0)!=MMSYSERR_NOERROR)
+			sound_device_open_failed=TRUE;
+		if(sound_device_open_failed)
+			return(FALSE);
+		memset(&wh, 0, sizeof(wh));
+		wh.lpData=wave;
+		wh.dwBufferLength=S_RATE*15/2+1;
+		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
+			sound_device_open_failed=TRUE;
+			waveOutClose(waveOut);
+			return(FALSE);
+		}
+		handle_type=SOUND_DEVICE_WIN32;
+		if(!sound_device_open_failed)
+			return(TRUE);
+	}
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -318,6 +362,13 @@ BOOL xptone_open(void)
 
 BOOL xptone_close(void)
 {
+#ifdef WITH_SDL
+	if(handle_type==SOUND_DEVICE_SDL) {
+		sdl.CloseAudio();
+		sdl.SDL_DestroySemaphore(sdlToneDone);
+	}
+#endif
+
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
 		waveOutClose(waveOut);
@@ -346,38 +397,6 @@ BOOL xptone_close(void)
 /* Play a tone through the wave/DSP output device (sound card) - Deuce			*/
 /********************************************************************************/
 
-#if defined(_WIN32)
-
-BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
-{
-	BOOL			success=FALSE;
-	BOOL			must_close=FALSE;
-
-	if(handle_type==SOUND_DEVICE_CLOSED) {
-		must_close=TRUE;
-		xptone_open();
-	}
-
-	wh.dwBufferLength=S_RATE*duration/1000;
-	if(wh.dwBufferLength<=S_RATE/freq*2)
-		wh.dwBufferLength=S_RATE/freq*2;
-
-	makewave(freq,wave,wh.dwBufferLength,shape);
-
-	if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR)
-		success=TRUE;
-
-	while(!(wh.dwFlags & WHDR_DONE))
-		SLEEP(1);
-
-	if(must_close)
-		xptone_close();
-
-	return(success);
-}
-
-#elif defined(__unix__)
-
 BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 {
 	BOOL			must_close=FALSE;
@@ -402,6 +421,35 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 		if(!xptone_open())
 			return(FALSE);
 	}
+
+#ifdef WITH_SDL
+	if(handle_type==SOUND_DEVICE_SDL) {
+		sdl_audio_buf_pos=0;
+		sdl_audio_buf_len=S_RATE*duration/1000;
+		if(sdl_audio_buf_len<=S_RATE/freq*2)
+			sdl_audio_buf_len=S_RATE/freq*2;
+		makewave(freq,swave,sdl_audio_buf_len,shape);
+		sdl.PauseAudio(FALSE);
+		sdl.SemWait(sdlToneDone);
+		sdl.PauseAudio(TRUE);
+	}
+#endif
+
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32) {
+		wh.dwBufferLength=S_RATE*duration/1000;
+		if(wh.dwBufferLength<=S_RATE/freq*2)
+			wh.dwBufferLength=S_RATE/freq*2;
+
+		makewave(freq,wave,wh.dwBufferLength,shape);
+
+		if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR)
+			success=TRUE;
+
+		while(!(wh.dwFlags & WHDR_DONE))
+			SLEEP(1);
+	}
+#endif
 
 #if defined(USE_ALSA_SOUND) || defined(AFMT_U8)
 	if(freq<17)
@@ -447,6 +495,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	return(FALSE);
 }
 
+#ifdef __unix__
 /****************************************************************************/
 /* Generate a tone at specified frequency for specified milliseconds		*/
 /* Thanks to Casey Martin (and Deuce) for this code							*/
