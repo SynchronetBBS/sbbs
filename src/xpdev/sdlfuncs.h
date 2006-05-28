@@ -25,6 +25,7 @@ struct sdlfuncs {
 								SDL_Surface *dst, SDL_Rect *dstrect);
 	void	(*UpdateRects)	(SDL_Surface *screen, int numrects, SDL_Rect *rects);
 	SDL_sem *(*SDL_CreateSemaphore)	(Uint32 initial_value);
+	void (*SDL_DestroySemaphore)	(SDL_sem *semaphore);
 	SDL_mutex	*(*SDL_CreateMutex)	(void);
 	struct SDL_Thread	*(*CreateThread)	(int (*fn)(void *), void *data);
 	int	(*WaitEvent)	(SDL_Event *event);
@@ -39,6 +40,9 @@ struct sdlfuncs {
 	char	*(*GetError)	(void);
 	int (*InitSubSystem)(Uint32 flags);
 	void (*QuitSubSystem)(Uint32 flags);
+	int (*OpenAudio)(SDL_AudioSpec *desired, SDL_AudioSpec *obtained);
+	void (*CloseAudio)(void);
+	void (*PauseAudio)(int pause_on);
 	int	gotfuncs;
 };
 

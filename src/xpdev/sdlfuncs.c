@@ -1,6 +1,7 @@
 #include <stdio.h>	/* NULL */
 
 #include "gen_defs.h"
+#undef main
 #include "sdlfuncs.h"
 
 #ifndef _WIN32
@@ -34,6 +35,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->BlitSurface=SDL_UpperBlit;
 	sdlf->UpdateRects=SDL_UpdateRects;
 	sdlf->SDL_CreateSemaphore=SDL_CreateSemaphore;
+	sdlf->SDL_DestroySemaphore=SDL_DestroySemaphore;
 	sdlf->SDL_CreateMutex=SDL_CreateMutex;
 	sdlf->CreateThread=SDL_CreateThread;
 	sdlf->WaitEvent=SDL_WaitEvent;
@@ -48,6 +50,9 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->GetError=SDL_GetError;
 	sdlf->InitSubSystem=SDL_InitSubSystem;
 	sdlf->QuitSubSystem=SDL_QuitSubSystem;
+	sdlf->OpenAudio=SDL_OpenAudio;
+	sdlf->CloseAudio=SDL_CloseAudio;
+	sdlf->PauseAudio=SDL_PauseAudio;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -131,6 +136,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->SDL_DestroySemaphore=GetProcAddress(sdl_dll, "SDL_DestroySemaphore"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->SDL_CreateMutex=GetProcAddress(sdl_dll, "SDL_CreateMutex"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
@@ -184,6 +193,18 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->QuitSubSystem=GetProcAddress(sdl_dll, "SDL_QuitSubSystem"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->OpenAudio=GetProcAddress(sdl_dll, "SDL_OpenAudio"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->CloseAudio=GetProcAddress(sdl_dll, "SDL_CloseAudio"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->PauseAudio=GetProcAddress(sdl_dll, "SDL_PauseAudio"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
@@ -261,6 +282,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->SDL_CreateSemaphore=dlsym(sdl_dll, "SDL_CreateSemaphore"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->SDL_DestroySemaphore=dlsym(sdl_dll, "SDL_DestroySemaphore"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}
