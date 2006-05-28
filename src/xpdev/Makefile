@@ -3,6 +3,9 @@
 SRC_ROOT	=	..
 !include $(SRC_ROOT)/build/Common.bmake
 
+CFLAGS	=	$(CFLAGS) $(XPDEV_CFLAGS)
+MT_CFLAGS	=	$(MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+
 #The following is necessary only when DLL-exporting wrapper functions
 !ifdef DLLIBS
 CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS=1
