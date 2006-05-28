@@ -12,6 +12,7 @@ ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
 endif
 MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
+MT_CFLAGS	+=	-I$(X_HEADERS)
 ifdef WITH_SDL
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif

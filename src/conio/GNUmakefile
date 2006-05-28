@@ -8,7 +8,6 @@ OBJS	+=	$(MTOBJODIR)$(DIRSEP)curs_cio$(OFILE)
 ifdef NO_X
  CFLAGS	+=	-DNO_X
 else
- CFLAGS	+=	-I$(X_HEADERS)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)console$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
 endif
