@@ -391,6 +391,7 @@ BOOL xptone_close(void)
 	handle_type=SOUND_DEVICE_CLOSED;
 	sound_device_open_failed=FALSE;
 	alsa_device_open_failed=FALSE;
+	sdl_device_open_failed=FALSE;
 
 	return(TRUE);
 }
