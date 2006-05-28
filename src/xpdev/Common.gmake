@@ -67,3 +67,54 @@ ifeq ($(os),darwin)
  XPDEV-MT_CFLAGS	+=	-DHAS_RANDOM_FUNC
  XPDEV_CFLAGS		+=	-DHAS_RANDOM_FUNC
 endif
+
+# Find SDL headers!
+ifndef WITHOUT_SDL
+ ifndef SDL_CONFIG
+  ifeq ($(os),darwin)
+   ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
+    WITH_SDL	:=	1
+   endif
+  else
+   ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
+    SDL_CONFIG := sdl-config
+    WITH_SDL	:=	1
+   else
+    ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
+     SDL_CONFIG := sdl13-config
+     WITH_SDL	:=	1
+    else
+     ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
+      SDL_CONFIG := sdl12-config
+      WITH_SDL	:=	1
+     else
+      ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
+       SDL_CONFIG := sdl11-config
+       WITH_SDL	:=	1
+      endif
+     endif
+    endif
+   endif
+  endif
+ endif
+endif
+
+ifdef WITH_SDL
+ ifdef SDL_CONFIG
+  ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
+   XPDEV-MT_CFLAGS	+=	-DWITH_SDL
+   XPDEV-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
+   ifdef STATIC_SDL
+    XPDEV-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
+    XPDEV-MT_CFLAGS	+=	-DSTATIC_SDL
+   endif
+  endif
+ else
+  ifeq ($(os),darwin)
+   XPDEV-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   XPDEV-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
+   XPDEV-MT_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
+  endif
+ endif
+endif
+
