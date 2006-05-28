@@ -137,3 +137,4 @@ else
  endif
 endif
 
+XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
