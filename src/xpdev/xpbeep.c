@@ -230,14 +230,14 @@ BOOL xptone_open(void)
 		return(FALSE);
 	memset(&wh_bufs, 0, sizeof(wh_bufs));
 	memset(wave, 128, sizeof(wave));	/* Ensure that if silence DOES timeout, you still get silence */
-	wh_bufs[0].lpData=wave;
+	wh_bufs[0].lpData=wave[0];
 	wh_bufs[0].dwBufferLength=S_RATE*15/2+1;
 	if(waveOutPrepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]))!=MMSYSERR_NOERROR) {
 		sound_device_open_failed=TRUE;
 		waveOutClose(waveOut);
 		return(FALSE);
 	}
-	wh_bufs[1].lpData=wave;
+	wh_bufs[1].lpData=wave[1];
 	wh_bufs[1].dwBufferLength=S_RATE*15/2+1;
 	if(waveOutPrepareHeader(waveOut, &wh_bufs[1], sizeof(wh_bufs[1]))!=MMSYSERR_NOERROR) {
 		waveOutUnprepareHeader(waveOut, &wh_bufs[0], sizeof(wh_bufs[0]));
@@ -412,7 +412,7 @@ BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	if(wh->dwBufferLength<=S_RATE/freq*2)
 		wh->dwBufferLength=S_RATE/freq*2;
 
-	makewave(freq,wave[curr_wh],wh.dwBufferLength,shape);
+	makewave(freq,wave[curr_wh],wh->dwBufferLength,shape);
 
 	waveOutBreakLoop(waveOut);
 	success=TRUE;
