@@ -1,5 +1,8 @@
 #include <stdlib.h>	/* getenv()/exit()/atexit() */
 #include <stdio.h>	/* NULL */
+#ifdef __unix__
+#include <dlfcn.h>
+#endif
 
 #include "gen_defs.h"
 #undef main
