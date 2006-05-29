@@ -111,6 +111,19 @@ ifdef WITH_SDL
     XPDEV-MT_CFLAGS	+=	-DSTATIC_SDL
     XPDEV-LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
     XPDEV-CFLAGS	+=	-DSTATIC_SDL
+   else
+    ifeq ($(os),darwin)
+     XPDEV-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     XPDEV_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
+    ifeq ($(os),linux)
+     XPDEV-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     XPDEV_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
+    ifeq ($(os),sunos)
+     XPDEV-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     XPDEV_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
    endif
   endif
  else
