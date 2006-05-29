@@ -190,7 +190,7 @@ void playnote_thread(void *args)
 	playnote_thread_running=TRUE;
 	while(1) {
 		if(device_open) {
-			if(!listSemTryWait(&notes)) {
+			if(!listSemTryWaitBlock(&notes,5000)) {
 				xptone_close();
 				device_open=FALSE;
 				listSemWait(&notes);
