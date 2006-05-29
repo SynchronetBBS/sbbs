@@ -427,11 +427,13 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 
 #ifdef WITH_SDL
 	if(handle_type==SOUND_DEVICE_SDL) {
+		sdl.LockAudio();
 		sdl_audio_buf_pos=0;
 		sdl_audio_buf_len=S_RATE*duration/1000;
 		if(sdl_audio_buf_len<=S_RATE/freq*2)
 			sdl_audio_buf_len=S_RATE/freq*2;
 		makewave(freq,swave,sdl_audio_buf_len,shape);
+		sdl.UnlockAudio();
 		sdl.PauseAudio(FALSE);
 		sdl.SemWait(sdlToneDone);
 		sdl.PauseAudio(TRUE);

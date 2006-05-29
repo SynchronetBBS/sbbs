@@ -56,6 +56,8 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->OpenAudio=SDL_OpenAudio;
 	sdlf->CloseAudio=SDL_CloseAudio;
 	sdlf->PauseAudio=SDL_PauseAudio;
+	sdlf->LockAudio=SDL_LockAudio;
+	sdlf->UnlockAudio=SDL_UnlockAudio;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -211,6 +213,14 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->LockAudio=GetProcAddress(sdl_dll, "SDL_LockAudio"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UnlockAudio=GetProcAddress(sdl_dll, "SDL_UnlockAudio"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -357,6 +367,14 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->PauseAudio=dlsym(sdl_dll, "SDL_PauseAudio"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->LockAudio=dlsym(sdl_dll, "SDL_LockAudio"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UnlockAudio=dlsym(sdl_dll, "SDL_UnlockAudio"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}
