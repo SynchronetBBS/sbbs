@@ -212,7 +212,7 @@ void ciolib_mouse_thread(void *data)
 				timedout=1;
 			}
 			else {
-				timedout=listSemTryWaitBlock(&state.input,delay);
+				timedout=!listSemTryWaitBlock(&state.input,delay);
 			}
 		}
 		else {
