@@ -218,7 +218,7 @@ BOOL DLLCALL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
 		return(FALSE);
 
-	return(sem_trywait_block(&list->sem,timeout));
+	return(sem_trywait_block(&list->sem,timeout)==0);
 }
 
 #endif
