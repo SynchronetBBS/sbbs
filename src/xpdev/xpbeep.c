@@ -240,8 +240,8 @@ BOOL xptone_open(void)
 			spec.freq=22050;
 			spec.format=AUDIO_U8;
 			spec.channels=1;
-			spec.samples=512;		/* Size of audio buffer */
-			spec.size=512;
+			spec.samples=256;		/* Size of audio buffer */
+			spec.size=256;
 			spec.callback=sdl_fillbuf;
 			spec.userdata=NULL;
 			if(sdl.OpenAudio(&spec, NULL)==-1) {
@@ -249,6 +249,9 @@ BOOL xptone_open(void)
 			}
 			else {
 				sdlToneDone=sdl.SDL_CreateSemaphore(0);
+				sdl_audio_buf_len=0;
+				sdl_audio_buf_pos=0;
+				sdl.PauseAudio(FALSE);
 				handle_type=SOUND_DEVICE_SDL;
 				return(TRUE);
 			}
@@ -434,9 +437,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 			sdl_audio_buf_len=S_RATE/freq*2;
 		makewave(freq,swave,sdl_audio_buf_len,shape);
 		sdl.UnlockAudio();
-		sdl.PauseAudio(FALSE);
 		sdl.SemWait(sdlToneDone);
-		sdl.PauseAudio(TRUE);
 	}
 #endif
 
