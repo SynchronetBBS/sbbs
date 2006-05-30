@@ -456,9 +456,13 @@ int SDL_main_env(int argc, char **argv, char **env)
 				exit(0);
 			}
 			sdl.gotfuncs=FALSE;
+			/* Sure ,we can't use video, but audio is still valid! */
+			if(sdl.Init(0)==0)
+				sdl_initialized=TRUE;
 		}
 		else {
 			sdl_video_initialized=TRUE;
+			sdl_initialized=TRUE;
 		}
 #else
 
