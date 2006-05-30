@@ -455,7 +455,6 @@ int SDL_main_env(int argc, char **argv, char **env)
 				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
 				exit(0);
 			}
-			sdl.gotfuncs=FALSE;
 			/* Sure ,we can't use video, but audio is still valid! */
 			if(sdl.Init(0)==0)
 				sdl_initialized=TRUE;
@@ -477,21 +476,22 @@ int SDL_main_env(int argc, char **argv, char **env)
 			/* Sure ,we can't use video, but audio is still valid! */
 			if(sdl.Init(0)==0)
 				sdl_initialized=TRUE;
-			sdl.gotfuncs=FALSE;
 		}
 		else {
-			if(sdl.Init(SDL_INIT_VIDEO))
-				sdl.gotfuncs=FALSE;
-			else {
+			if(sdl.Init(SDL_INIT_VIDEO)==0)
 				sdl_initialized=TRUE;
 				sdl_video_initialized=TRUE;
+			}
+			else {
+				/* Sure ,we can't use video, but audio is still valid! */
+				if(sdl.Init(0)==0)
+					sdl_initialized=TRUE;
 			}
 		}
 #endif
 		if(sdl_video_initialized && sdl.VideoDriverName(drivername, sizeof(drivername))!=NULL) {
 			/* Unacceptable drivers */
 			if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
-				sdl.gotfuncs=FALSE;
 				sdl.QuitSubSystem(SDL_INIT_VIDEO);
 				sdl_video_initialized=FALSE;
 			}
