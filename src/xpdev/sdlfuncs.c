@@ -478,7 +478,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 				sdl_initialized=TRUE;
 		}
 		else {
-			if(sdl.Init(SDL_INIT_VIDEO)==0)
+			if(sdl.Init(SDL_INIT_VIDEO)==0) {
 				sdl_initialized=TRUE;
 				sdl_video_initialized=TRUE;
 			}
