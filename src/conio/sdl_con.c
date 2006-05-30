@@ -498,7 +498,7 @@ int sdl_init(int mode)
 	void *dl;
 #endif
 
-	if(!sdl.gotfuncs)
+	if(init_sdl_video())
 		return(-1);
 
 	sdl.mutexP(sdl_vstatlock);
@@ -1346,7 +1346,7 @@ int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
 
-	if(sdl.gotfuncs) {
+	if(!init_sdl_video()) {
 		while(1) {
 			if(sdl.WaitEvent(&ev)==1) {
 				switch (ev.type) {
@@ -1765,7 +1765,7 @@ int sdl_video_event_thread(void *data)
 
 int sdl_initciolib(int mode)
 {
-	if(!sdl.gotfuncs)
+	if(init_sdl_video)
 		return(-1);
 	if(init_sdl_video()==-1)
 		return(-1);
