@@ -24,12 +24,9 @@
 #include "uifcinit.h"
 #include "window.h"
 
-char* syncterm_version = "SyncTERM 0.7"
+char* syncterm_version = "SyncTERM 0.8"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
-#endif
-#ifdef PCM
-	" Clippy Edition"
 #endif
 	;
 

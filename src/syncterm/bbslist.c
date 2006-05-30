@@ -307,10 +307,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 			i+=2;
 		switch(i) {
 			case -1:
-#ifdef PCM
-				if(!confirm("Quit editing?", NULL))
-					continue;
-#endif
 				if(!safe_mode) {
 					if((listfile=fopen(listpath,"w"))!=NULL) {
 						iniWriteFile(listfile,inifile);
@@ -320,10 +316,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				strListFreeStrings(inifile);
 				return(changed);
 			case 0:
-#ifdef PCM
-				if(!confirm("Edit BBS Name?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`BBS Name`\n\n"
 								"Enter the BBS name as it is to appear in the list.";
 				strcpy(tmp,itemname);
@@ -331,10 +323,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniRenameSection(&inifile,tmp,itemname);
 				break;
 			case 1:
-#ifdef PCM
-				if(!confirm("Edit BBS Address?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Address`\n\n"
 								"Enter the domain name of the system to connect to ie:\n"
 								"nix.synchro.net";
@@ -342,10 +330,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
 				break;
 			case 2:
-#ifdef PCM
-				if(!confirm("Edit BBS Port?",NULL))
-					continue;
-#endif
 				i=item->port;
 				sprintf(str,"%hu",item->port?item->port:513);
 				uifc.helpbuf=	"`Port`\n\n"
@@ -363,30 +347,18 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 					uifc.changes=0;
 				break;
 			case 3:
-#ifdef PCM
-				if(!confirm("Edit BBS Username?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Username`\n\n"
 								"Enter the username to attempt auto-login to the remote with.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"UserName",item->user,&ini_style);
 				break;
 			case 4:
-#ifdef PCM
-				if(!confirm("Edit BBS Password?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Password`\n\n"
 								"Enter your password for auto-login.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"Password",item->password,&ini_style);
 				break;
 			case 5:
-#ifdef PCM
-				if(!confirm("Edit BBS System Password?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`System Password`\n\n"
 								"Enter your System password for auto-login."
 								"For non-Synchronet systems, or non-SysOp accounts,"
@@ -395,10 +367,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
 				break;
 			case 6:
-#ifdef PCM
-				if(!confirm("Edit BBS Connection Type?",NULL))
-					continue;
-#endif
 				item->conn_type--;
 				uifc.helpbuf=	"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n"
@@ -411,19 +379,11 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				changed=1;
 				break;
 			case 7:
-#ifdef PCM
-				if(!confirm("Edit BBS Reversed RLogin Setting?",NULL))
-					continue;
-#endif
 				item->reversed=!item->reversed;
 				changed=1;
 				iniSetBool(&inifile,itemname,"Reversed",item->reversed,&ini_style);
 				break;
 			case 8:
-#ifdef PCM
-				if(!confirm("Edit BBS Screen Mode?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Screen Mode`\n\n"
 								"Select the screen size for this connection\n";
 				uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),NULL,"Screen Mode",screen_modes);
@@ -431,49 +391,29 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				changed=1;
 				break;
 			case 9:
-#ifdef PCM
-				if(!confirm("Edit Status Line Visibility?",NULL))
-					continue;
-#endif
 				item->nostatus=!item->nostatus;
 				changed=1;
 				iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 				break;
 			case 10:
-#ifdef PCM
-				if(!confirm("Edit BBS Download Path?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Download Path`\n\n"
 								"Enter the path where downloads will be placed.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,itemname,"DownloadPath",item->dldir,&ini_style);
 				break;
 			case 11:
-#ifdef PCM
-				if(!confirm("Edit BBS Upload Path?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Upload Path`\n\n"
 								"Enter the path where uploads will be browsed for.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,itemname,"UploadPath",item->uldir,&ini_style);
 				break;
 			case 12:
-#ifdef PCM
-				if(!confirm("Edit Log Filename?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Log Filename`\n\n"
 								"Enter the path to the optional log file.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT);
 				iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
 				break;
 			case 13:
-#ifdef PCM
-				if(!confirm("Edit File Transfer Log Level?",NULL))
-					continue;
-#endif
 				item->xfer_loglevel--;
 				if(item->xfer_loglevel<0)
 					item->xfer_loglevel=LOG_DEBUG;
@@ -483,10 +423,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				changed=1;
 				break;
 			case 14:
-#ifdef PCM
-				if(!confirm("Edit Telnet Command Log Level?",NULL))
-					continue;
-#endif
 				item->telnet_loglevel--;
 				if(item->telnet_loglevel<0)
 					item->telnet_loglevel=LOG_DEBUG;
@@ -496,10 +432,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				changed=1;
 				break;
 			case 15:
-#ifdef PCM
-				if(!confirm("Edit BBS Simulated BPS Rate?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Simulated BPS Rate`\n\n"
 								"Select the rate which recieved characters will be displayed.\n\n"
 								"This allows ANSImation to work as intended.";
@@ -510,10 +442,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				changed=1;
 				break;
 			case 16:
-#ifdef PCM
-				if(!confirm("Edit BBS ANSI Music Setting?",NULL))
-					continue;
-#endif
 				uifc.helpbuf="`ANSI Music Setup`\n\n"
 						"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
 						"                      Enables Delete Line\n"
@@ -542,10 +470,6 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				}
 				break;
 			case 17:
-#ifdef PCM
-				if(!confirm("Edit BBS Font?",NULL))
-					continue;
-#endif
 				uifc.helpbuf=	"`Font`\n\n"
 								"Select the desired font for this connection.\n\n"
 								"Some fonts do not allow some modes.  When this is the case, 80x25 will be"
@@ -801,10 +725,6 @@ struct bbslist *show_bbslist(int mode)
 							at_settings=!at_settings;
 							break;
 						case -7:		/* CTRL-E */
-		#ifdef PCM
-							if(!confirm("Edit this entry?",NULL))
-								continue;
-		#endif
 							i=list[opt]->id;
 							if(edit_list(list[opt],listpath,FALSE)) {
 								sort_list(list);
@@ -820,10 +740,6 @@ struct bbslist *show_bbslist(int mode)
 							uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
 											"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
-		#ifdef PCM
-							if(!confirm("Connect to This Address?",NULL))
-								continue;
-		#endif
 							memcpy(&retlist, &defaults, sizeof(defaults));
 							if(uifc.changes) {
 								parse_url(addy,&retlist,defaults.conn_type,FALSE);
@@ -855,10 +771,6 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
-		#ifdef PCM
-							if(!confirm("Add new Entry?",NULL))
-								continue;
-		#endif
 							listcount++;
 							list[listcount]=list[listcount-1];
 							list[listcount-1]=(struct bbslist *)malloc(sizeof(struct bbslist));
@@ -936,10 +848,6 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
-		#ifdef PCM
-							if(!confirm("Edit this entry?",NULL))
-								continue;
-		#endif
 							i=list[opt]->id;
 							if(edit_list(list[opt],listpath,FALSE)) {
 								sort_list(list);
@@ -961,10 +869,6 @@ struct bbslist *show_bbslist(int mode)
 							uifc.msg("Cannot edit list in safe mode");
 							break;
 						}
-		#ifdef PCM
-						if(!confirm("Edit this entry?",NULL))
-							continue;
-		#endif
 						i=list[opt]->id;
 						if(edit_list(list[opt],listpath,FALSE)) {
 							sort_list(list);
@@ -976,10 +880,6 @@ struct bbslist *show_bbslist(int mode)
 						}
 					}
 					else {
-		#ifdef PCM
-						if(!confirm("Connect to this system?",NULL))
-							continue;
-		#endif
 						memcpy(&retlist,list[val],sizeof(struct bbslist));
 						free_list(&list[0],listcount);
 						return(&retlist);
