@@ -5,7 +5,6 @@
 #endif
 
 #include "gen_defs.h"
-#undef main
 #include "sdlfuncs.h"
 
 #ifndef _WIN32

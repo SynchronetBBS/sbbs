@@ -58,6 +58,7 @@ extern "C" {
 int load_sdl_funcs(struct sdlfuncs *sdlf);
 int init_sdl_audio(void);
 int init_sdl_video(void);
+int SDL_main_env(int argc, char *argv[], char **env);
 #ifdef __cplusplus
 }
 #endif
