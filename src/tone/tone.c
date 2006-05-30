@@ -233,6 +233,8 @@ int main(int argc, char **argv)
 			}
 			continue; 
 		}
+		if(use_xptone)
+			xptone_open();
 		if(argv[i][0]=='+') {
 			if((stream=fopen(argv[i]+1,"rb"))==NULL) {
 				/* Check directory of executable if file/path not found */
@@ -258,6 +260,8 @@ int main(int argc, char **argv)
 			continue; 
 		}
 		play(argv[i],argv[i+1]);
+		if(use_xptone)
+			xptone_close();
 		i++;
 	}
 
