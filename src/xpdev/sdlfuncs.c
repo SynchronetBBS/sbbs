@@ -4,7 +4,14 @@
 #include <dlfcn.h>
 #endif
 
+#include <SDL.h>
+#ifndef main
+ #define USE_REAL_MAIN
+#endif
 #include "gen_defs.h"
+#ifdef USE_REAL_MAIN
+ #undef main
+#endif
 #include "sdlfuncs.h"
 
 #ifndef _WIN32
