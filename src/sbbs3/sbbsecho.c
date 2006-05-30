@@ -3809,12 +3809,17 @@ void export_echomail(char *sub_code,faddr_t addr)
 char* freadstr(FILE* fp, char* str, size_t maxlen)
 {
 	int		ch;
+	size_t	rd=0;
 	size_t	len=0;
 
-	while((ch=fgetc(fp))!=EOF && len<maxlen) {
-		str[len++]=ch;
+	memset(str,0,maxlen);	/* pre-terminate */
+
+	while(rd<maxlen && (ch=fgetc(fp))!=EOF) {
 		if(ch==0)
 			break;
+		if((uchar)ch>=' ')	/* not a ctrl char (garbage?) */
+			str[len++]=ch;
+		rd++;
 	}
 
 	str[maxlen-1]=0;	/* Force terminator */
