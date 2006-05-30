@@ -49,7 +49,7 @@
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
 
-	#ifdef _THREAD_SAFE
+	#ifdef XPDEV_THREAD_SAFE
 		#include <pthread.h>/* Check for GNU PTH libs */
 		#ifdef _PTH_PTHREAD_H_
 			#include <pth.h>
@@ -235,7 +235,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 
 	#define YIELD()			SLEEP(1)
 
-	#if defined(_THREAD_SAFE)
+	#if defined(XPDEV_THREAD_SAFE)
 		#if defined(__FreeBSD__)
 			#define MAYBE_YIELD()			pthread_yield()
 		#elif defined(_PTH_PTHREAD_H_)

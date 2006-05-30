@@ -1,3 +1,4 @@
+XPDEV-MT_CFLAGS	+=	-DXPDEV_THREAD_SAFE
 XPDEV_LIBS	+=	-lm
 XPDEV-MT_LIBS	+=	-lm
 ifeq ($(os),netbsd)     # NetBSD
