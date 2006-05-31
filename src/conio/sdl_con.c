@@ -1765,7 +1765,7 @@ int sdl_video_event_thread(void *data)
 
 int sdl_initciolib(int mode)
 {
-	if(init_sdl_video)
+	if(init_sdl_video())
 		return(-1);
 	if(init_sdl_video()==-1)
 		return(-1);
