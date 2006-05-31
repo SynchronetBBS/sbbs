@@ -143,13 +143,16 @@ Compiler legend:<br>
 <tr><th>Abbreviation<th>Full Product Name
 <tr><td>bcb6<td><a href="http://www.borland.com/bcppbuilder/">Borland C++ Builder 6</a>
 <tr><td>bcc32<td><a href="http://www.borland.com/bcppbuilder/freecompiler/">
-	Borland C++ Compiler 5.5</a> or Borland C++ Builder
+	Borland C++ Compiler 5.5</a> (<b>Free!</b>) or Borland C++ Builder
 <tr><td>delphi6<td><a href="http://www.borland.com/delphi/">Borland Delphi 6</a>
 <tr><td>msvc6<td><a href="http://msdn.microsoft.com/visualc/">Microsoft Visual C++ 6</a>
+    or <a href="http://msdn.microsoft.com/vstudio/express/visualc/download/">Visual C++ Express</a>
+	with the <a href="http://msdn.microsoft.com/vstudio/express/visualc/usingpsdk/">Platform SDK</a>
+	(<b>Free!</b>)
 <tr><td>msvc15<td>Microsoft Visual C++ 1.5 (16-bit)
 </table>
 <p>
-<h3>Step-by-step Instructions (using Microsoft Visual C++)</h3>
+<h3>Step-by-step Instructions (using Microsoft Visual C++ 6.0)</h3>
 <ol>
 <li>Install Visual C++ (if you haven't already)
 <li>Get the Synchronet source and library files (if you haven't already)
@@ -175,7 +178,7 @@ See <tt>docs\sbbsNTsvcs.txt</tt> for more details on using the NT services versi
 <h3>Step-by-step Instructions (using Borland C++ Builder)</h3>
 <ol>
 <li>Install C++ Builder (if you haven't already)
-<li>Make sure your C++ Builder <tt>bin\bcc32.cfg</tt> file contains the correct <i>include</i> and <i>lib</i> paths.
+<li>Make sure your C++ Builder <tt>bin\bcc32.cfg</tt> file (create the file if necessary) contains the correct <i>include</i> and <i>lib</i> paths.
 <br>Example:<pre>-Ic:\borland\bcc55\include
 -Lc:\borland\bcc55\lib</pre>
 <li>Get the Synchronet source and library files (if you haven't already)
@@ -197,7 +200,7 @@ copy the binaries from the <tt>.debug</tt> instead of <tt>.release</tt> director
 <p>
 If you only have the free Borland command-line C++ compiler, all of the above steps still apply except for those
 referencing the <tt>src\sbbs3\ctrl</tt> directory. Also, if the DLLs you built are from a more recent version of
-Synchronet than your Synchronet Control Panel executable (<tt>sbbsctrl.exe</tt>), you will need to use <tt>sbbs.exe</tt> (or <tt>sbbsmono.exe</tt>)
+Synchronet than your Synchronet Control Panel executable (<tt>sbbsctrl.exe</tt>), you will need to use <tt>sbbs.exe</tt> (or <tt>sbbsNTsvcs.exe</tt>)
 to run Synchronet.
 <p>
 See <tt>docs\sbbscon.txt</tt> for more details on using the console mode version of Synchronet.
