@@ -281,14 +281,17 @@ ifeq ($(os),linux)    # Linux
  endif
 endif
 MT_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
+CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
 ifeq ($(os),freebsd)    # FreeBSD
  MT_CFLAGS    += -DUSE_XP_SEMAPHORES
  MT_LDFLAGS    +=    -pthread
+ LDFLAGS    +=    -pthread
  XP_SEM    :=    1
 else
  ifeq ($(os),openbsd)    # OpenBSD
   MT_CFLAGS    += -DUSE_XP_SEMAPHORES
   MT_LDFLAGS    +=    -pthread
+  LDFLAGS    +=    -pthread
   XP_SEM    :=    1
  else
   ifeq ($(os),netbsd)    # NetBSD
