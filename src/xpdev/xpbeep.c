@@ -196,12 +196,12 @@ void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 	int	copylen=len;
 	int maxlen=sdl_audio_buf_len-sdl_audio_buf_pos;
 
-	/* Fill with silence */
-	memset(stream, spec.silence, len);
-
 	/* Copy in the current buffer */
 	if(copylen>maxlen)
 		copylen=maxlen;
+	/* Fill with silence */
+	if(len>copylen)
+		memset(stream+copylen, spec.silence, len-copylen);
 	if(copylen) {
 		memcpy(stream, swave+sdl_audio_buf_pos, copylen);
 		sdl_audio_buf_pos+=copylen;
