@@ -205,7 +205,7 @@ static char* prop_desc[] = {
 };
 #endif
 
-DLLEXPORT JSBool DLLCALL
+JSBool DLLCALL
 js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 {
 	branch->counter++;

@@ -276,7 +276,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 	sbbs_random(10);	/* Throw away first number */
 }
 
-DLLEXPORT int DLLCALL sbbs_random(int n)
+int DLLCALL sbbs_random(int n)
 {
 	return(xp_random(n));
 }

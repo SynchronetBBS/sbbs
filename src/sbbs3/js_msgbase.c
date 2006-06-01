@@ -518,7 +518,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 }
 
 /* obj must've been previously returned from get_msg_header() */
-DLLEXPORT BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
+BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
 {
 	private_t*	p;
 
