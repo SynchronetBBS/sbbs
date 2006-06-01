@@ -45,7 +45,7 @@ struct sdlfuncs {
 	void (*LockAudio)(void);
 	void (*UnlockAudio)(void);
 	void (*PauseAudio)(int pause_on);
-	void (*GetAudioStatus)(int pause_on);
+	SDL_audiostatus (*GetAudioStatus)(void);
 	int	gotfuncs;
 };
 
