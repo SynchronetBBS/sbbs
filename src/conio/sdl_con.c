@@ -64,6 +64,8 @@ static int sdl_current_font=-99;
 static int lastfg=-1;
 static int lastbg=-1;
 static unsigned int sdl_pending_mousekeys=0;
+static SDL_Thread *blinker_thread;
+static SDL_Thread *mouse_thread;
 
 struct video_stats vstat;
 int fullscreen=0;
@@ -1453,7 +1455,9 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_QUIT:
-						sdl.Quit();
+						sdl.KillThread(blinker_thread);
+						sdl.KillThread(mouse_thread);
+						sdl.SemPost(sdl_exit_sem);
 						return(sdl_exitcode);
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
@@ -1509,8 +1513,10 @@ int sdl_video_event_thread(void *data)
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
-								sdl.Quit();
+								sdl.KillThread(blinker_thread);
+								sdl.KillThread(mouse_thread);
 								sdl.SemPost(sdl_ufunc_ret);
+								return(0);
 								break;
 							case SDL_USEREVENT_LOADFONT:
 								sdl_ufunc_retval=sdl_load_font((char *)ev.user.data1);
@@ -1585,9 +1591,8 @@ int sdl_video_event_thread(void *data)
 										if(win != NULL) {
 											sdl.EnableUNICODE(1);
 											sdl.EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-
-											sdl.CreateThread(sdl_blinker_thread, NULL);
-											sdl.CreateThread(sdl_mouse_thread, NULL);
+											blinker_thread=sdl.CreateThread(sdl_blinker_thread, NULL);
+											mouse_thread=sdl.CreateThread(sdl_mouse_thread, NULL);
 											sdl_init_good=1;
 										}
 									}
