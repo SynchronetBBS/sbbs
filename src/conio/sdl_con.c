@@ -1453,6 +1453,7 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_QUIT:
+						sdl.Quit();
 						return(sdl_exitcode);
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
