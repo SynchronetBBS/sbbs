@@ -15,10 +15,7 @@ MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 ifdef WITH_SDL
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
  OBJS	+=	$(OBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
-endif
-
-ifeq ($(os),darwin)
- ifdef WITH_SDL
+ ifeq ($(os),darwin)
   MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
   OBJS	+=	$(OBJODIR)$(DIRSEP)SDLMain$(OFILE)
  endif
@@ -26,6 +23,10 @@ endif
 
 ifeq ($(os),darwin)
 $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
+
+$(OBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 endif
