@@ -59,6 +59,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf);
 int init_sdl_audio(void);
 int init_sdl_video(void);
 int SDL_main_env(int argc, char *argv[], char **env);
+void run_sdl_drawing_thread(int (*drawing_thread)(void *data), void (*exit_drawing_thread)(void));
 #ifdef __cplusplus
 }
 #endif

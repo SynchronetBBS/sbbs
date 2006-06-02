@@ -22,6 +22,11 @@ static int sdl_funcs_loaded=0;
 static int sdl_initialized=0;
 static int sdl_audio_initialized=0;
 static int sdl_video_initialized=0;
+static int (*sdl_drawing_thread)(void *data)=NULL;
+static void (*sdl_exit_drawing_thread)(void)=NULL;
+static int main_ret;
+SDL_sem *sdl_main_sem;
+SDL_sem *sdl_exit_sem;
 
 int XPDEV_main(int argc, char **argv, char **enviro);
 
@@ -426,10 +431,29 @@ int init_sdl_audio(void)
 	return(-1);
 }
 
-/* atexit() function */
-static void sdl_exit(void)
+struct main_args {
+	int		argc;
+	char	**argv;
+	char	**enviro;
+};
+
+static int sdl_run_main(void *data)
 {
-	sdl.Quit();
+	struct main_args	*args;
+
+	args=data;
+	main_ret=XPDEV_main(args->argc, args->argv, args->enviro);
+	sdl.SemPost(sdl_main_sem);
+	if(sdl_exit_drawing_thread!=NULL)
+		sdl_exit_drawing_thread();
+	sdl.SemPost(sdl_exit_sem);
+}
+
+void run_sdl_drawing_thread(int (*drawing_thread)(void *data), void (*exit_drawing_thread)(void))
+{
+	sdl_drawing_thread=drawing_thread;
+	sdl_exit_drawing_thread=exit_drawing_thread;
+	sdl.SemPost(sdl_main_sem);
 }
 
 #ifndef main
@@ -441,7 +465,11 @@ int SDL_main_env(int argc, char **argv, char **env)
 	unsigned int i;
 	SDL_Event	ev;
 	char	drivername[64];
+	struct main_args ma;
 
+	ma.argc=argc;
+	ma.argv=argv;
+	ma.enviro=env;
 #ifndef _WIN32
 	load_sdl_funcs(&sdl);
 #endif
@@ -500,7 +528,16 @@ int SDL_main_env(int argc, char **argv, char **env)
 			}
 		}
 	}
-	if(sdl_initialized)
-		atexit(sdl_exit);
-	return(XPDEV_main(argc, argv, env));
+	if(sdl_initialized) {
+		sdl_main_sem=sdl.SDL_CreateSemaphore(0);
+		sdl_exit_sem=sdl.SDL_CreateSemaphore(0);
+		sdl.CreateThread(sdl_run_main,&ma);
+		sdl.SemWait(sdl_main_sem);
+		if(sdl_drawing_thread!=NULL)
+			sdl_drawing_thread(NULL);
+		sdl.SemWait(sdl_exit_sem);
+	}
+	else
+		main_ret=XPDEV_main(argc, argv, env);
+	return(main_ret);
 }
