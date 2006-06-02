@@ -561,7 +561,6 @@ int SDL_main_env(int argc, char **argv, char **env)
 			sdl_drawing_thread(NULL);
 			sdl_exit_drawing_thread=NULL;
 			if(!main_returned) {
-				sdl.KillThread(main_thread);
 				main_ret=0;
 			}
 		}
