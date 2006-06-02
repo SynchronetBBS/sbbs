@@ -345,14 +345,14 @@ SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Pull in lib-specific flags
--include		$(CIOLIB_SRC)$(DIRSEP)Common.make
--include		$(UIFC_SRC)$(DIRSEP)Common.make
--include		$(SMBLIB_SRC)$(DIRSEP)Common.make
 -include		$(XPDEV_SRC)$(DIRSEP)Common.make
--include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
--include		$(UIFC_SRC)$(DIRSEP)Common.gmake
--include		$(SMBLIB_SRC)$(DIRSEP)Common.gmake
 -include		$(XPDEV_SRC)$(DIRSEP)Common.gmake
+-include		$(SMBLIB_SRC)$(DIRSEP)Common.make
+-include		$(SMBLIB_SRC)$(DIRSEP)Common.gmake
+-include		$(CIOLIB_SRC)$(DIRSEP)Common.make
+-include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
+-include		$(UIFC_SRC)$(DIRSEP)Common.make
+-include		$(UIFC_SRC)$(DIRSEP)Common.gmake
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb
