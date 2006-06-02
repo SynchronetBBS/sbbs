@@ -6,6 +6,9 @@
 #include <mouse.h>
 #include <keys.h>
 
+#include "threadwrap.h"
+#include "filewrap.h"
+
 #include "conn.h"
 #include "syncterm.h"
 #include "term.h"
