@@ -28,6 +28,8 @@ struct sdlfuncs {
 	void (*SDL_DestroySemaphore)	(SDL_sem *semaphore);
 	SDL_mutex	*(*SDL_CreateMutex)	(void);
 	struct SDL_Thread	*(*CreateThread)	(int (*fn)(void *), void *data);
+	void	*(*KillThread)	(SDL_Thread *thread);
+	void	*(*WaitThread)	(SDL_Thread *thread, int *status);
 	int	(*WaitEvent)	(SDL_Event *event);
 	SDL_Surface	*(*SetVideoMode)	(int width, int height, int bpp, Uint32 flags);
 	void	(*FreeSurface)	(SDL_Surface *surface);
@@ -51,6 +53,7 @@ struct sdlfuncs {
 
 /* Defined in SDL_win32_main.c for Win32 */
 extern struct sdlfuncs	sdl;
+extern SDL_sem *sdl_exit_sem;
 
 #ifdef __cplusplus
 extern "C" {

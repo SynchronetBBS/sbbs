@@ -24,8 +24,8 @@ static int sdl_audio_initialized=0;
 static int sdl_video_initialized=0;
 static int (*sdl_drawing_thread)(void *data)=NULL;
 static void (*sdl_exit_drawing_thread)(void)=NULL;
-static int main_ret;
-SDL_sem *sdl_main_sem;
+static int main_returned=0;
+static SDL_sem *sdl_main_sem;
 SDL_sem *sdl_exit_sem;
 
 int XPDEV_main(int argc, char **argv, char **enviro);
@@ -55,6 +55,8 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->SDL_DestroySemaphore=SDL_DestroySemaphore;
 	sdlf->SDL_CreateMutex=SDL_CreateMutex;
 	sdlf->CreateThread=SDL_CreateThread;
+	sdlf->KillThread=SDL_KillThread;
+	sdlf->WaitThread=SDL_WaitThread;
 	sdlf->WaitEvent=SDL_WaitEvent;
 	sdlf->SetVideoMode=SDL_SetVideoMode;
 	sdlf->FreeSurface=SDL_FreeSurface;
@@ -165,6 +167,14 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->CreateThread=GetProcAddress(sdl_dll, "SDL_CreateThread"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->KillThread=GetProcAddress(sdl_dll, "SDL_KillThread"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->WaitThread=GetProcAddress(sdl_dll, "SDL_WaitThread"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
@@ -329,6 +339,14 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->KillThread=dlsym(sdl_dll, "SDL_KillThread"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->WaitThread=dlsym(sdl_dll, "SDL_WaitThread"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->WaitEvent=dlsym(sdl_dll, "SDL_WaitEvent"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
@@ -440,13 +458,16 @@ struct main_args {
 static int sdl_run_main(void *data)
 {
 	struct main_args	*args;
+	int	ret;
 
 	args=data;
-	main_ret=XPDEV_main(args->argc, args->argv, args->enviro);
+	ret=XPDEV_main(args->argc, args->argv, args->enviro);
+	main_returned=1;
 	sdl.SemPost(sdl_main_sem);
 	if(sdl_exit_drawing_thread!=NULL)
 		sdl_exit_drawing_thread();
 	sdl.SemPost(sdl_exit_sem);
+	return(ret);
 }
 
 void run_sdl_drawing_thread(int (*drawing_thread)(void *data), void (*exit_drawing_thread)(void))
@@ -466,6 +487,8 @@ int SDL_main_env(int argc, char **argv, char **env)
 	SDL_Event	ev;
 	char	drivername[64];
 	struct main_args ma;
+	SDL_Thread	*main_thread;
+	int		main_ret;
 
 	ma.argc=argc;
 	ma.argv=argv;
@@ -481,7 +504,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 			if(getenv("SDL_VIDEODRIVER")==NULL) {
 				putenv("SDL_VIDEODRIVER=windib");
 				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
-				exit(0);
+				return(0);
 			}
 			/* Sure ,we can't use video, but audio is still valid! */
 			if(sdl.Init(0)==0)
@@ -529,14 +552,22 @@ int SDL_main_env(int argc, char **argv, char **env)
 		}
 	}
 	if(sdl_initialized) {
+		atexit(sdl.Quit);
 		sdl_main_sem=sdl.SDL_CreateSemaphore(0);
 		sdl_exit_sem=sdl.SDL_CreateSemaphore(0);
-		sdl.CreateThread(sdl_run_main,&ma);
+		main_thread=sdl.CreateThread(sdl_run_main,&ma);
 		sdl.SemWait(sdl_main_sem);
-		if(sdl_drawing_thread!=NULL)
+		if(sdl_drawing_thread!=NULL) {
 			sdl_drawing_thread(NULL);
-		else
-			sdl.SemWait(sdl_exit_sem);
+			sdl_exit_drawing_thread=NULL;
+			if(!main_returned) {
+				sdl.KillThread(main_thread);
+				main_ret=0;
+			}
+		}
+		sdl.SemWait(sdl_exit_sem);
+		if(main_returned)
+			sdl.WaitThread(main_thread, &main_ret);
 	}
 	else
 		main_ret=XPDEV_main(argc, argv, env);
