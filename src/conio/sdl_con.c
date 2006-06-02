@@ -27,15 +27,10 @@
 #include "vidmodes.h"
 #include "allfonts.h"
 
-#ifdef main
-	#undef main
-#endif
 #include "SDL.h"
 #include "SDL_thread.h"
 
 #include "sdlfuncs.h"
-
-extern int	CIOLIB_main(int argc, char **argv, char **enviro);
 
 /********************************************************/
 /* Low Level Stuff										*/
@@ -1337,13 +1332,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	return(0x01ffff);
 }
 
-/* Called from events thread only */
-struct mainparams {
-	int	argc;
-	char	**argv;
-	char	**env;
-};
-
 /* Mouse event/keyboard thread */
 int sdl_mouse_thread(void *data)
 {
@@ -1455,8 +1443,6 @@ int sdl_video_event_thread(void *data)
 						}
 						break;
 					case SDL_QUIT:
-						sdl.KillThread(blinker_thread);
-						sdl.KillThread(mouse_thread);
 						sdl.SemPost(sdl_exit_sem);
 						return(sdl_exitcode);
 					case SDL_VIDEORESIZE:
@@ -1513,8 +1499,6 @@ int sdl_video_event_thread(void *data)
 						switch(ev.user.code) {
 							case SDL_USEREVENT_QUIT:
 								sdl_ufunc_retval=0;
-								sdl.KillThread(blinker_thread);
-								sdl.KillThread(mouse_thread);
 								sdl.SemPost(sdl_ufunc_ret);
 								return(0);
 								break;
