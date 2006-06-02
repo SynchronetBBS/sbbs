@@ -535,7 +535,8 @@ int SDL_main_env(int argc, char **argv, char **env)
 		sdl.SemWait(sdl_main_sem);
 		if(sdl_drawing_thread!=NULL)
 			sdl_drawing_thread(NULL);
-		sdl.SemWait(sdl_exit_sem);
+		else
+			sdl.SemWait(sdl_exit_sem);
 	}
 	else
 		main_ret=XPDEV_main(argc, argv, env);
