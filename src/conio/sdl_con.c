@@ -101,6 +101,7 @@ enum {
 	,SDL_USEREVENT_COPY
 	,SDL_USEREVENT_PASTE
 	,SDL_USEREVENT_LOADFONT
+	,SDL_USEREVENT_QUIT
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -321,6 +322,10 @@ int sdl_user_func_ret(int func, ...)
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			passed=TRUE;
 			break;
+		case SDL_USEREVENT_QUIT:
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			passed=TRUE;
+			break;
 	}
 	if(passed)
 		sdl.SemWait(sdl_ufunc_ret);
@@ -329,6 +334,11 @@ int sdl_user_func_ret(int func, ...)
 	sdl.mutexV(sdl_ufunc_lock);
 	va_end(argptr);
 	return(sdl_ufunc_retval);
+}
+
+void exit_sdl_con(void)
+{
+	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
 
 #if (defined(__MACH__) && defined(__APPLE__))
@@ -1496,6 +1506,11 @@ int sdl_video_event_thread(void *data)
 					case SDL_USEREVENT: {
 						/* Tell SDL to do various stuff... */
 						switch(ev.user.code) {
+							case SDL_USEREVENT_QUIT:
+								sdl_ufunc_retval=0;
+								sdl.Quit();
+								sdl.SemPost(sdl_ufunc_ret);
+								break;
 							case SDL_USEREVENT_LOADFONT:
 								sdl_ufunc_retval=sdl_load_font((char *)ev.user.data1);
 								FREE_AND_NULL(ev.user.data1);
@@ -1781,7 +1796,6 @@ int sdl_initciolib(int mode)
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
 	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
 #endif
-	sdl.CreateThread(sdl_video_event_thread, NULL);
+	run_sdl_drawing_thread(sdl_video_event_thread, exit_sdl_con);
 	return(sdl_init(mode));
 }
-
