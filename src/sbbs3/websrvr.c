@@ -4100,7 +4100,7 @@ void http_session_thread(void* arg)
 			close_socket(&session.socket);
 			sem_wait(&session.output_thread_terminated);
 			RingBufDispose(&session.outbuf);
-			pthread_mutex_destroy(&session->outbuf_write);
+			pthread_mutex_destroy(&session.outbuf_write);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
 			thread_down();
 			session_threads--;
@@ -4113,7 +4113,7 @@ void http_session_thread(void* arg)
 		close_socket(&session.socket);
 		sem_wait(&session.output_thread_terminated);
 		RingBufDispose(&session.outbuf);
-		pthread_mutex_destroy(&session->outbuf_write);
+		pthread_mutex_destroy(&session.outbuf_write);
 		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
 		thread_down();
 		session_threads--;
@@ -4226,7 +4226,7 @@ void http_session_thread(void* arg)
 	sem_wait(&session.output_thread_terminated);
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
-	pthread_mutex_destroy(&session->outbuf_write);
+	pthread_mutex_destroy(&session.outbuf_write);
 
 	active_clients--;
 	update_clients();
