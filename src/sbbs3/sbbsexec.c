@@ -164,13 +164,18 @@ CRITICAL_SECTION interrupt_mutex;
 void set_interrupt_pending(BYTE intr, BOOL assert)
 {
 	EnterCriticalSection(&interrupt_mutex);
-	lprintf(LOG_DEBUG,"%sasserting interrupt %02X", assert ? "" : "de-", intr);
+	lprintf(LOG_DEBUG,"%sasserting interrupt %02X (pending: %02X, IER: %02X)"
+		,assert ? "" : "de-", intr
+		,pending_interrupts
+		,uart_ier_reg);
 	if(assert) {
-		if(uart_ier_reg&intr)				/* is interrupt enabled? */
-			pending_interrupts |= intr;		/* flag as pending */
-		SetEvent(interrupt_event);
+		if(uart_ier_reg&intr) {					/* is interrupt enabled? */
+			pending_interrupts |= intr;			/* flag as pending */
+			SetEvent(interrupt_event);
+		}
 	} else /* de-assert */
 		pending_interrupts &= ~intr;		/* remove as pending */
+
 	LeaveCriticalSection(&interrupt_mutex);
 }
 
@@ -266,6 +271,19 @@ void reset_yield()
 /* UART Virtualization */
 /***********************/
 
+static char *chr(uchar ch)
+{
+	static char str[25];
+
+	if(ch>=' ' && ch<='~')
+		sprintf(str,"'%c' (%02Xh)",ch,ch);
+	else if(ch<' ')
+		sprintf(str,"^%c  (%02Xh)",'@'+ch,ch);
+	else
+		sprintf(str,"%u (%02Xh)",ch,ch);
+	return(str); 
+}
+
 VOID uart_wrport(WORD port, BYTE data)
 {
 	int reg = port - uart_io_base;
@@ -279,7 +297,7 @@ VOID uart_wrport(WORD port, BYTE data)
 				uart_divisor_latch_lsb = data;
 				lprintf(LOG_DEBUG,"set divisor latch low byte: %02X", data);
 			} else {
-				lprintf(LOG_DEBUG,"WRITE DATA: %02X", data);
+				lprintf(LOG_DEBUG,"WRITE DATA: %s", chr(data));
 				if(!WriteFile(wrslot,&data,sizeof(BYTE),&retval,NULL)) {
 					lprintf(LOG_ERR,"!VDD_WRITE: WriteFile Error %d (size=%d)"
 						,GetLastError(),retval);
@@ -331,7 +349,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 			}
 			if((avail=RingBufFull(&rdbuf))!=0) {
 				vdd_read(data,sizeof(BYTE));
-				lprintf(LOG_DEBUG,"READ DATA: 0x%02X", *data);
+				lprintf(LOG_DEBUG,"READ DATA: %s", chr(*data));
 				avail--;
 				reset_yield();
 			} else
@@ -343,7 +361,8 @@ VOID uart_rdport(WORD port, PBYTE data)
 
 				/* Clear data ready interrupt identification in IIR */
 				deassert_interrupt(UART_IER_RX_DATA);
-			}
+			} else	/* re-assert RX data (increment the semaphore) */
+				assert_interrupt(UART_IER_RX_DATA);
 			break;
 		case UART_IER:
 			if(uart_lcr_reg&UART_LCR_DLAB) {
