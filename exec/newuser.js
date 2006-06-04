@@ -18,6 +18,9 @@ if(system.name=="Vertrauen") {
 	ask_sysop=true;
 }
 
+if(bbs.sys_status&SS_RLOGIN)
+	ask_qnet=false;
+
 console.clear();
 
 if(!user.address.length && user.number>1) {
