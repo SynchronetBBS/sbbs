@@ -213,7 +213,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#define SLEEP(x)		Sleep(x)
 	#define	popen			_popen
 	#define pclose			_pclose
-	#if 0	/* Conflicts with latest (Windows 2003 R2) PlatformSDK include/time.h */
+	#if !defined(_MSC_VER)	/* Conflicts with latest (Windows 2003 R2) PlatformSDK include/time.h */
 		#define tzname			_tzname
 	#endif
 
