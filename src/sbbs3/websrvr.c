@@ -4201,6 +4201,10 @@ void http_session_thread(void* arg)
 					}
 				}
 			}
+			else {
+				session.req.keep_alive=FALSE;
+				break;
+			}
 		}
 		close_request(&session);
 	}
