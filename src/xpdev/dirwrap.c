@@ -680,8 +680,8 @@ static int bit_num(ulong val)
 }
 #endif
 
-/* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) */
-ulong DLLCALL getfreediskspace(const char* path, ulong unit)
+/* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) or 1 (to report bytes) */
+static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 {
 #if defined(_WIN32)
 	char			root[16];
@@ -707,20 +707,23 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 			NULL))		/* receives the free bytes on disk */
 			return(0);
 
+		if(freespace)
+			size=avail;
+
 		if(unit>1)
-			avail.QuadPart=Int64ShrlMod32(avail.QuadPart,bit_num(unit));
+			size.QuadPart=Int64ShrlMod32(size.QuadPart,bit_num(unit));
 
 #if defined(_ANONYMOUS_STRUCT)
-		if(avail.HighPart)
+		if(size.HighPart)
 #else
-		if(avail.u.HighPart)
+		if(size.u.HighPart)
 #endif
 			return(0xffffffff);	/* 4GB max */
 
 #if defined(_ANONYMOUS_STRUCT)
-		return(avail.LowPart);
+		return(size.LowPart);
 #else
-		return(avail.u.LowPart);
+		return(size.u.LowPart);
 #endif
 	}
 
@@ -735,33 +738,47 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 		))
 		return(0);
 
+	if(freespace)
+		TotalNumberOfClusters = NumberOfFreeClusters;
 	if(unit>1)
-		NumberOfFreeClusters/=unit;
-	return(NumberOfFreeClusters*SectorsPerCluster*BytesPerSector);
+		TotalNumberOfClusters/=unit;
+	return(TotalNumberOfClusters*SectorsPerCluster*BytesPerSector);
 
 
 #elif defined(__solaris__) || (defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */))
 
 	struct statvfs fs;
+	unsigned long blocks;
 
     if (statvfs(path, &fs) < 0)
     	return 0;
 
+	if(freespace)
+		blocks=fs.f_bavail;
+	else
+		blocks=fs.f_blocks;
+
 	if(unit>1)
-		fs.f_bavail/=unit;
-    return fs.f_bsize * fs.f_bavail;
+		blocks/=unit;
+    return fs.f_bsize * blocks;
     
 /* statfs is also used under FreeBSD (Though it *supports* statvfs() now too) */
 #elif defined(__GLIBC__) || defined(BSD)
 
 	struct statfs fs;
+	unsigned long blocks;
 
     if (statfs(path, &fs) < 0)
     	return 0;
 
+	if(freespace)
+		blocks=fs.f_bavail;
+	else
+		blocks=fs.f_blocks;
+
 	if(unit>1)
-		fs.f_bavail/=unit;
-    return fs.f_bsize * fs.f_bavail;
+		blocks/=unit;
+    return fs.f_bsize * blocks;
     
 #else
 
@@ -769,6 +786,16 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 	return(0);
 
 #endif
+}
+
+ulong DLLCALL getfreediskspace(const char* path, ulong unit)
+{
+	return getdiskspace(path, unit, /* freespace? */TRUE);
+}
+
+ulong DLLCALL getdisksize(const char* path, ulong unit)
+{
+	return getdiskspace(path, unit, /* freespace? */FALSE);
 }
 
 /****************************************************************************/
