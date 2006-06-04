@@ -96,7 +96,7 @@ function get_message()
 
 	/* Check if user data has changed */
 	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
-		user.cached=FALSE;
+		user.cached=false;
 		system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
 	}
 
