@@ -772,8 +772,11 @@ int sdl_putch(int ch)
 void sdl_gotoxy(int x, int y)
 {
 	sdl.mutexP(sdl_vstatlock);
-	vstat.curs_row=y-1;
-	vstat.curs_col=x-1;
+	if((x-1 != vstat.curs_col) || (y-1 !=vstat.curs_row)) {
+		vstat.curs_row=y-1;
+		vstat.curs_col=x-1;
+		sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
+	}
 	sdl.mutexV(sdl_vstatlock);
 }
 
