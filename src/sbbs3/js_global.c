@@ -2607,6 +2607,26 @@ js_freediskspace(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return(JS_TRUE);
 }
 
+static JSBool
+js_disksize(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		unit=0;
+	char*		p;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&unit);
+
+	JS_NewNumberValue(cx,getdisksize(p,unit),rval);
+
+    return(JS_TRUE);
+}
+
 
 static JSBool
 js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -3053,6 +3073,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
 		"specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.")
 	,311
+	},
+	{"disk_size",		js_disksize,		2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=<tt>1</tt>]")
+	,JSDOCSTR("returns the total disk size of the specified <i>directory</i> "
+		"using the specified <i>unit_size</i> in bytes (default: 1), "
+		"specify a <i>unit_size</i> of <tt>1024</tt> to return the total disk size in <i>kilobytes</i>.")
+	,314
 	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
