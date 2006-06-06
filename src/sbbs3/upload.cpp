@@ -599,25 +599,28 @@ bool sbbs_t::bulkupload(uint dirnum)
 	return(false);
 }
 
-bool sbbs_t::recvfile(char *fname)
+bool sbbs_t::recvfile(char *fname, char prot)
 {
 	char	keys[32];
 	char	ch;
 	size_t	i;
 	bool	result=false;
 
-	xfer_prot_menu(XFER_UPLOAD);
-	mnemonics(text[ProtocolOrQuit]);
-	strcpy(keys,"Q");
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron))
-			sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
+	if(prot)
+		ch=toupper(prot);
+	else {
+		xfer_prot_menu(XFER_UPLOAD);
+		mnemonics(text[ProtocolOrQuit]);
+		strcpy(keys,"Q");
+		for(i=0;i<cfg.total_prots;i++)
+			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron))
+				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
 
-	ch=(char)getkeys(keys,0);
+		ch=(char)getkeys(keys,0);
 
-	if(ch=='Q' || sys_status&SS_ABORT)
-		return(false); 
-
+		if(ch=='Q' || sys_status&SS_ABORT)
+			return(false); 
+	}
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 			break;

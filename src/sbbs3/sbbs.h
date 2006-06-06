@@ -609,8 +609,8 @@ public:
 	void	autohangup(void);
 	bool	checkdszlog(file_t*);
 	bool	checkprotresult(prot_t*, int error, file_t*);
-	bool	sendfile(char* fname);
-	bool	recvfile(char* fname);
+	bool	sendfile(char* fname, char prot=0);
+	bool	recvfile(char* fname, char prot=0);
 
 	/* file.cpp */
 	void	fileinfo(file_t* f);
