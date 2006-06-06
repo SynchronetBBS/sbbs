@@ -1710,7 +1710,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	{"truncate",		js_truncate,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[length=<tt>0</tt>]")
 	,JSDOCSTR("changes the file <i>length</i> (default: 0) and repositions the file pointer "
 	"(<i>position</i>) to the new end-of-file")
-	,31301
+	,314
 	},
 	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>]")
 	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
@@ -1812,11 +1812,11 @@ static jsSyncMethodSpec js_file_functions[] = {
 	},
 	{"iniRemoveKey",	js_iniRemoveKey,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key")
 	,JSDOCSTR("remove specified <i>key</i> from specified <i>section</i> in <tt>.ini</tt> file.")
-	,31301
+	,314
 	},
 	{"iniRemoveSection",js_iniRemoveSection,1,	JSTYPE_BOOLEAN,	JSDOCSTR("section")
 	,JSDOCSTR("remove specified <i>section</i> from <tt>.ini</tt> file.")
-	,31301
+	,314
 	},
 	{0}
 };
