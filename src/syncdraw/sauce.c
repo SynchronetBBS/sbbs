@@ -5,6 +5,8 @@
 #include <gen_defs.h>
 #include <keys.h>
 
+#include "xpendian.h"
+
 #include "key.h"
 #include "syncdraw.h"
 #include "miscfunctions.h"
@@ -236,10 +238,18 @@ AppendSauce(FILE * fp)
 	fwrite(&SauceDescr.FileSize, 4, 1, fp);
 	fwrite(&SauceDescr.DataType, 1, 1, fp);
 	fwrite(&SauceDescr.FileType, 1, 1, fp);
+	SauceDescr.TInfo1=LE_SHORT(SauceDescr.TInfo1);
+	SauceDescr.TInfo2=LE_SHORT(SauceDescr.TInfo2);
+	SauceDescr.TInfo3=LE_SHORT(SauceDescr.TInfo3);
+	SauceDescr.TInfo4=LE_SHORT(SauceDescr.TInfo4);
 	fwrite(&SauceDescr.TInfo1, 2, 1, fp);
 	fwrite(&SauceDescr.TInfo2, 2, 1, fp);
 	fwrite(&SauceDescr.TInfo3, 2, 1, fp);
 	fwrite(&SauceDescr.TInfo4, 2, 1, fp);
+	SauceDescr.TInfo1=LE_SHORT(SauceDescr.TInfo1);
+	SauceDescr.TInfo2=LE_SHORT(SauceDescr.TInfo2);
+	SauceDescr.TInfo3=LE_SHORT(SauceDescr.TInfo3);
+	SauceDescr.TInfo4=LE_SHORT(SauceDescr.TInfo4);
 	fwrite(&SauceDescr.Comments, 1, 1, fp);
 	fwrite(&SauceDescr.Flags, 1, 1, fp);
 	fwrite(&SauceDescr.Filler, 1, 22, fp);
@@ -260,12 +270,17 @@ ReadSauce(FILE * fp)
 	Tmp.Group[20] = 0;
 	Tmp.Author[20] = 0;
 	fread(&Tmp.FileSize, 4, 1, fp);
+	Tmp.FileSize=LE_LONG(Tmp.FileSize);
 	fread(&Tmp.DataType, 1, 1, fp);
 	fread(&Tmp.FileType, 1, 1, fp);
 	fread(&Tmp.TInfo1, 2, 1, fp);
+	Tmp.TInfo1=LE_SHORT(Tmp.TInfo1);
 	fread(&Tmp.TInfo2, 2, 1, fp);
+	Tmp.TInfo2=LE_SHORT(Tmp.TInfo2);
 	fread(&Tmp.TInfo3, 2, 1, fp);
+	Tmp.TInfo3=LE_SHORT(Tmp.TInfo3);
 	fread(&Tmp.TInfo4, 2, 1, fp);
+	Tmp.TInfo4=LE_SHORT(Tmp.TInfo4);
 	fread(&Tmp.Comments, 1, 1, fp);
 	fread(&Tmp.Flags, 1, 1, fp);
 	fread(&Tmp.Filler, 1, 22, fp);

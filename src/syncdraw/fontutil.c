@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include "xpendian.h"
+
 #include "homedir.h"
 #include "fonts.h"
 
@@ -210,6 +212,7 @@ main(int argc, char **argv)
 	}
 	fread(&Header.sign, 1, 10, fp);
 	fread(&Header.NumberofFonts, 2, 1, fp);
+	Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 	fclose(fp);
 	for (y = 0; y < Header.NumberofFonts; y++) {
 		Openfont(y);
@@ -330,18 +333,27 @@ main(int argc, char **argv)
 			fread(&Header.sign, 1, 10, fp);
 			fwrite(&Header.sign, 1, 10, fp2);
 			fread(&Header.NumberofFonts, 2, 1, fp);
+			Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 			Header.NumberofFonts++;
+			Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 			fwrite(&Header.NumberofFonts, 2, 1, fp2);
+			Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 			for (y = 1; y < Header.NumberofFonts; y++) {
 				for (x = 0; x <= 16; x++)
 					FontRec.FontName[x] = fgetc(fp);
 				for (x = 0; x <= 16; x++)
 					fputc(FontRec.FontName[x], fp2);
 				fread(&FontRec.FilePos, 4, 1, fp);
+				FontRec.FilePos=LE_LONG(FontRec.FilePos);
 				fread(&FontRec.Length, 4, 1, fp);
+				FontRec.Length=LE_LONG(FontRec.Length);
 				FontRec.FilePos += FontRecordSize;
+				FontRec.FilePos=LE_LONG(FontRec.FilePos);
 				fwrite(&FontRec.FilePos, 4, 1, fp2);
+				FontRec.FilePos=LE_LONG(FontRec.FilePos);
+				FontRec.Length=LE_LONG(FontRec.Length);
 				fwrite(&FontRec.Length, 4, 1, fp2);
+				FontRec.Length=LE_LONG(FontRec.Length);
 			}
 			for (x = 0; x <= 19; x++)
 				TDFont.Sign[x] = fgetc(fp3);
@@ -352,8 +364,11 @@ main(int argc, char **argv)
 			fread(&TDFont.FontType, 1, 1, fp3);
 			fread(&TDFont.Spaces, 1, 1, fp3);
 			fread(&TDFont.Nul, 2, 1, fp3);
-			for (x = 1; x <= 94; x++)
+			TDFont.Nul=LE_SHORT(TDFont.Nul);
+			for (x = 1; x <= 94; x++) {
 				fread(&TDFont.Chartable[x], 2, 1, fp3);
+				TDFont.Chartable[x]=LE_SHORT(TDFont.Chartable[x]);
+			}
 			for (x = 1; x <= 22; x++)
 				TDFont.b[x] = fgetc(fp3);
 			for (x = 0; x <= 16; x++)
@@ -361,10 +376,14 @@ main(int argc, char **argv)
 			FontRec.FilePos = b + FontRecordSize;
 			for (x = 0; x <= 16; x++)
 				fputc(FontRec.FontName[x], fp2);
+			FontRec.FilePos=LE_LONG(FontRec.FilePos);
 			fwrite(&FontRec.FilePos, 4, 1, fp2);
+			FontRec.FilePos=LE_LONG(FontRec.FilePos);
 			fseek(fp3, 0, SEEK_END);
 			FontRec.Length = ftell(fp3);
+			FontRec.Length=LE_LONG(FontRec.Length);
 			fwrite(&FontRec.Length, 4, 1, fp2);
+			FontRec.Length=LE_LONG(FontRec.Length);
 			while (!feof(fp))
 				fputc(fgetc(fp), fp2);
 			fseek(fp3, 0, SEEK_SET);

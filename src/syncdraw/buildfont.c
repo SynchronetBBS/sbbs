@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "dirwrap.h"
+#include "xpendian.h"
 
 #include "homedir.h"
 #include "fonts.h"
@@ -40,8 +41,11 @@ insertfont(char *Name)
 	fread(&TDFont.FontType, 1, 1, fp);
 	fread(&TDFont.Spaces, 1, 1, fp);
 	fread(&TDFont.Nul, 2, 1, fp);
-	for (x = 1; x <= 94; x++)
+	TDFont.Nul=LE_SHORT(TDFont.Nul);
+	for (x = 1; x <= 94; x++) {
 		fread(&TDFont.Chartable[x], 2, 1, fp);
+		TDFont.Chartable[x]=LE_SHORT(TDFont.Chartable[x]);
+	}
 	/* Increase Font Index */
 	Header.NumberofFonts++;
 
@@ -104,13 +108,19 @@ int main(int argnum, char *args[])
 	}
 	/* Header */
 	fwrite(&Header.sign, 1, 10, font);
+	Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 	fwrite(&Header.NumberofFonts, 2, 1, font);
+	Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 	/* Font Headers */
 	for (x = 1; x <= Header.NumberofFonts; x++) {
 		for (y = 0; y <= 16; y++)
 			fputc(fr[x].FontName[y], font);
+		fr[x].FilePos=LE_LONG(fr[x].FilePos);
 		fwrite(&fr[x].FilePos, 4, 1, font);
+		fr[x].FilePos=LE_LONG(fr[x].FilePos);
+		fr[x].Length=LE_LONG(fr[x].Length);
 		fwrite(&fr[x].Length, 4, 1, font);
+		fr[x].Length=LE_LONG(fr[x].Length);
 	}
 	/* write Font Data */
 	for (x = 1; x <= Header.NumberofFonts; x++) {

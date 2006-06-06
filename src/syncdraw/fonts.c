@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "xpendian.h"
+
 #include "homedir.h"
 #include "fonts.h"
 
@@ -53,7 +55,9 @@ CreateFontFile(void)
 		Head.sign[8] = 'l';
 		Head.sign[9] = 'e';
 		fwrite(&Head.sign, 1, 10, fp);
+		Head.NumberofFonts=LE_SHORT(Head.NumberofFonts);
 		fwrite(&Head.NumberofFonts, 2, 1, fp);
+		Head.NumberofFonts=LE_SHORT(Head.NumberofFonts);
 		fclose(fp);
 	}
 }
@@ -71,7 +75,9 @@ Openfont(int num)
 		for (x = 0; x <= 16; x++)
 			FontRec.FontName[x] = fgetc(fp);
 		fread(&FontRec.FilePos, 4, 1, fp);
+		FontRec.FilePos=LE_LONG(FontRec.FilePos);
 		fread(&FontRec.Length, 4, 1, fp);
+		FontRec.Length=LE_LONG(FontRec.Length);
 		fseek(fp, FontRec.FilePos, SEEK_SET);
 		for (x = 0; x <= 19; x++)
 			TDFont.Sign[x] = fgetc(fp);
@@ -82,8 +88,11 @@ Openfont(int num)
 		fread(&TDFont.FontType, 1, 1, fp);
 		fread(&TDFont.Spaces, 1, 1, fp);
 		fread(&TDFont.Nul, 2, 1, fp);
-		for (x = 1; x <= 95; x++)
+		TDFont.Nul=LE_SHORT(TDFont.Nul);
+		for (x = 1; x <= 95; x++) {
 			fread(&TDFont.Chartable[x], 2, 1, fp);
+			TDFont.Chartable[x]=LE_SHORT(TDFont.Chartable[x]);
+		}
 		for (x = 1; x <= 20; x++)
 			TDFont.b[x] = fgetc(fp);
 		fclose(fp);
