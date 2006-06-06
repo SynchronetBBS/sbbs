@@ -8,7 +8,7 @@
 
 var portnum="";
 
-template.name_logo=system.name;
+template.name_logo='<h1 id="SiteName">' + system.name + '</h1>';
 
 if((host = http_request.vhost)==undefined)
     host = http_request.host;
@@ -50,4 +50,4 @@ if(file.open("r")) {
 } 
 
 if(this.web_root_dir!=undefined && file_exists(web_root_dir + template.image_dir + "/logo.gif"))
-    template.name_logo='<div id="siteName"><img src="' + template.image_dir + '/logo.gif" style="float: left;" alt="Synchronet" title="Synchronet" /></div>';
+    template.name_logo='<div id="siteLogo"><img src="' + template.image_dir + '/logo.gif" alt="Synchronet" title="Synchronet" /></div>';

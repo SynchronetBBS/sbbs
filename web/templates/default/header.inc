@@ -10,29 +10,18 @@
 </head>
 <body>
 
-<!--[if gte IE 7]>
-<style type="text/css">
-#sectionLinks a:link, #sectionLinks a:visited { 
-	margin-left: 0px;
-	margin-right: 13px;
-}
-#sectionLinks a:active { 
-	margin-left: -39px;
-	margin-right: 13px;
-}
-</style>
-<![endif]-->
+
 
 <!--[if gte IE 5.5000]>
 	<script src="/js/pngfix.js" type="text/javascript">
 	</script>
 <![endif]-->
 
-<h1 id="siteName">@@name_logo@@</h1>
+@@name_logo@@
 
-   <div id="Greeting"> 
+   <span id="Greeting"> 
         @@user_greeting@@
-   </div>
+   </span>
    
    <table width="100%"  border="0" cellspacing="0" cellpadding="0">
   <tr>
