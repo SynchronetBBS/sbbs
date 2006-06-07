@@ -106,7 +106,12 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	username(&cfg,usernumber,str2);
 	if(!writemsg(msgpath,top,title,mode,INVALID_SUB,str2)) {
 		bputs(text[Aborted]);
-		return(false); }
+		return(false); 
+	}
+
+	if(mode&WM_FILE && !SYSOP && !(cfg.sys_misc&SM_FILE_EM))
+		mode&=~WM_FILE;
+
 
 	if(mode&WM_FILE) {
 		sprintf(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
