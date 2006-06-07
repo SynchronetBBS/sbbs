@@ -49,7 +49,7 @@ if(do_leftnav)
     template.additional_services+='[' + ("telnet".link("telnet://"+host +telnet_port)) + '] ';
     template.additional_services+='[' + ("rlogin".link("rlogin://"+host +rlogin_port)) + '] ';
     template.additional_services+='[' + ("ftp".link("ftp://"+host +ftp_port)) + '] ';
-	template.additional_services+='[' + ("java irc".link("irc/")) + '] ';
+//	template.additional_services+='[' + ("java irc".link("irc/")) + '] ';
     template.additional_services+='[' + ("irc".link("irc://"+host +irc_port)) + '] ';
     template.additional_services+='[' + ("news".link("news://"+host +nntp_port)) + '] ';
     template.additional_services+='[' + ("gopher".link("gopher://"+host +gopher_port)) + '] ';
