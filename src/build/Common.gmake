@@ -358,7 +358,9 @@ ifdef DEBUG
  CFLAGS	+=	-ggdb
  CFLAGS	+=	-D_DEBUG
 else # RELEASE
- CFLAGS	:= -O2 -fomit-frame-pointer -finline-functions -ffast-math -funroll-loops $(CFLAGS)
+ # -finline functions breaks the baja build badly.
+ # This also means that -O3 won't work either.
+ CFLAGS	:= -O2 -fomit-frame-pointer -ffast-math -funroll-loops $(CFLAGS)
 endif
 
 -include targets.mk
