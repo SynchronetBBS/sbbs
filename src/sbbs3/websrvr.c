@@ -476,12 +476,12 @@ static int sock_sendbuf(SOCKET *sock, const char *buf, size_t len, BOOL *failed)
 				}
 				break;
 			case 0:
-				lprintf(LOG_WARNING,"%04d Timeout select()ing for write",*sock);
+				lprintf(LOG_WARNING,"%04d Timeout selecting socket for write",*sock);
 				if(failed)
 					*failed=TRUE;
 				return(sent);
 			case -1:
-				lprintf(LOG_WARNING,"%04d !ERROR %d select()ing socket for write",*sock,ERROR_VALUE);
+				lprintf(LOG_WARNING,"%04d !ERROR %d selecting socket for write",*sock,ERROR_VALUE);
 				if(failed)
 					*failed=TRUE;
 				return(sent);
@@ -1449,7 +1449,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 				break;
 			case -1:
 				close_socket(&session->socket);
-				lprintf(LOG_DEBUG,"%04d Error select()ing socket for read %s (%d)",session->socket,strerror(errno),errno);
+				lprintf(LOG_DEBUG,"%04d !ERROR %d selecting socket for read",session->socket,ERROR_VALUE);
 				return(-1);
 			default:
 				/* Timeout */
@@ -1459,8 +1459,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 		switch(recv(session->socket, &ch, 1, 0)) {
 			case -1:
-				if(errno!=EAGAIN) {
-					lprintf(LOG_DEBUG,"%04d Error recv()ing on socket %s (%d)",session->socket,strerror(errno),errno);
+				if(ERROR_VALUE!=EAGAIN) {
+					lprintf(LOG_DEBUG,"%04d !ERROR %d receiving on socket",session->socket,ERROR_VALUE);
 					close_socket(&session->socket);
 					return(-1);
 				}
@@ -1576,7 +1576,7 @@ int recvbufsocket(SOCKET *sock, char *buf, long count)
 		i=recv(*sock,buf+rd,count-rd,0);
 		switch(i) {
 			case -1:
-				if(errno!=EAGAIN)
+				if(ERROR_VALUE!=EAGAIN)
 					close_socket(sock);
 			case 0:
 				close_socket(sock);
@@ -1989,7 +1989,7 @@ static BOOL get_request_headers(http_session_t * session)
 		/* Multi-line headers */
 		while((i=recv(session->socket,&next_char,1,MSG_PEEK)>0)
 			&& (next_char=='\t' || next_char==' ')) {
-			if(i==-1 && errno != EAGAIN)
+			if(i==-1 && ERROR_VALUE != EAGAIN)
 				close_socket(&session->socket);
 			i=strlen(head_line);
 			if(i>sizeof(head_line)-1) {
