@@ -94,9 +94,10 @@ if(!msgbase.save_msg(hdrs,client,body)) {
 	error(msgbase.last_error);
 } else {
 	if(sub=='mail') {
-		user.sent_email();
+		if(user.sent_email!=undefined)
+			user.sent_email();
 	}
-	else
+	else if(user.posted_message!=undefined)
 		user.posted_message();
 } 
 
