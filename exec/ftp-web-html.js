@@ -362,7 +362,7 @@ if(ftp.file_list.length) {
                 && ftp.file_list[i].credits > (user.security.credits+user.security.free_credits))
             ) {
             write('<td class="ftp_dirlist" align="left">');
-            writeln('<a class="ftp_dirlist" href="javascript:alert("Sorry, you do not have enough credits to download this file."); ">' 
+            writeln('<a class="ftp_dirlist" href="javascript:alert(\"Sorry, you do not have enough credits to download this file.\"); ">' 
             + ftp.file_list[i].name + '</a><td>');
         } else {
             write('<th class="ftp_dirlist" align=left>');
