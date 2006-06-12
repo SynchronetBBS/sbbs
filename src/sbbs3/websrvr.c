@@ -1460,7 +1460,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 		switch(recv(session->socket, &ch, 1, 0)) {
 			case -1:
 				if(ERROR_VALUE!=EAGAIN) {
-					lprintf(LOG_DEBUG,"%04d !ERROR %d receiving on socket",session->socket,ERROR_VALUE);
+					if(startup->options&WEB_OPT_DEBUG_RX)
+						lprintf(LOG_DEBUG,"%04d !ERROR %d receiving on socket",session->socket,ERROR_VALUE);
 					close_socket(&session->socket);
 					return(-1);
 				}
