@@ -344,6 +344,11 @@ CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
+# SDL disabled by default for the moment.
+ifndef WITH_SDL
+ WITHOUT_SDL	:=	1
+endif
+
 # Pull in lib-specific flags
 -include		$(XPDEV_SRC)$(DIRSEP)Common.make
 -include		$(XPDEV_SRC)$(DIRSEP)Common.gmake
