@@ -1425,19 +1425,30 @@ int unpack(char *infile)
 		lprintf(LOG_ERR,"ERROR line %d opening %s %s",__LINE__,infile
 			,strerror(errno));
 		bail(1); }
-	lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
+	lprintf(LOG_DEBUG,"unpack line %d (%d)", __LINE__, cfg.arcdefs);
 	for(i=0;i<cfg.arcdefs;i++) {
 		str[0]=0;
+		lprintf(LOG_DEBUG,"unpack line %d (%d)", __LINE__, cfg.arcdef[i].byteloc);
 		fseek(stream,cfg.arcdef[i].byteloc,SEEK_SET);
+		lprintf(LOG_DEBUG,"unpack line %d (%d)", __LINE__, strlen(cfg.arcdef[i].hexid));
 		for(j=0;j<strlen(cfg.arcdef[i].hexid)/2;j++) {
+			lprintf(LOG_DEBUG,"unpack line %d (%d)", __LINE__, j);
 			ch=fgetc(stream);
+			lprintf(LOG_DEBUG,"unpack line %d (%d)", __LINE__, ch);
 			if(ch==EOF) {
+				lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
 				i=cfg.arcdefs;
 				break; }
+			lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
 			sprintf(tmp,"%02X",ch);
-			strcat(str,tmp); }
+			strcat(str,tmp); 
+			lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
+		}
+		lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
 		if(!stricmp(str,cfg.arcdef[i].hexid))
-			break; }
+			break; 
+		lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
+	}
 	lprintf(LOG_DEBUG,"unpack line %d", __LINE__);
 	fclose(stream);
 
