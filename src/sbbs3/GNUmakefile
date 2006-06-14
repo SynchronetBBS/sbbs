@@ -13,10 +13,6 @@
 
 # $Id$
 
-ifndef WITH_SDL
- WITHOUT_SDL	:=	1
-endif
-
 SRC_ROOT	=	..
 include $(SRC_ROOT)/build/Common.gmake
 
