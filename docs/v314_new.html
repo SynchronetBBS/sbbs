@@ -1,0 +1,474 @@
+<html>
+<head>
+<title>What's New in Synchronet v3.14 (Change History)</title>
+</head>
+<body>
+<font face=Arial,Helvetica>
+<h1 align=center>What's New in Synchronet v3.14</h1>
+<ul>
+<li><b>All Servers</b><ul>
+	<li>Startup file (<tt>ctrl/sbbs.ini</tt>) now supports <tt>!include <i>filename</i></tt> directive to
+		nest initialization files
+	<li>Support per-server/service/protocol socket option settings in <tt>ctrl/sockopts.ini</tt>
+		(<b>replacing <tt>sockopts.cfg</tt></b>)
+		<br>
+		For example, a section named <tt>[telnet|rlogin]</tt> would set the socket options for either
+		Telnet or RLogin sessions, while <tt>[telnet]</tt> would set the socket options only for 
+		Telnet sessions
+		<br>
+		Automatically reads a <tt>[tcp]</tt> or <tt>[udp]</tt> section (based on the socket type)
+			if it exists
+	<li>Bug-fixes in ARS compilation:<ul>
+		<li>Wasn't accounting for correct lengths of keywords: WIN32, UNIX, LINUX, and PROT
+		<li>Didn't support >8 char internal codes in SUBCODE and DIRCODE values
+		<li>Would skip pass the line (null) terminator causing stack corruption or crash
+			when parsing values for SUBCODE, DIRCODE, or SHELL keywords as the last
+			keyword
+		</ul>
+	<li>Bug-fix: buffer overflow if global QWKnet tagline is > 80 characters in length
+	<li>Added support for ARS Keywords: GROUP, SUB, SUBCODE, LIB, DIR, and DIRCODE<br>
+		These ARS keywords were previously only supported in the Telnet/RLogin server
+	</ul><br>
+<li><b>Web Server</b><ul>
+	<li>Support new webctrl.ini files.<br>
+		This allows overriding server settings on a per-directory or per-filespec basis.<br>
+		Allowed keys are:<ul>
+			<li>ErrorDirectory	- Changes the dir error pages are served from
+			<li>CGIDirectory	- Changes the CGIDorectory value
+			<li>AccessRequirements	- ARS required for this resource (Overrides access.ars)
+			<li>Realm		- Authentication realm name to send to remote
+			</ul>
+		<b><tt>access.ars</tt> usage is now deprecated</b>
+	<li>Support for chunked mode ssjs files.  In chunked mode, data written out from
+		the SSJS script is sent immediately, and the keep-alvie session is maintained.
+		chunked mode is ONLY sent to HTTP/1.1 clients, and is preferred over fast mode.<br>
+		This means fast mode is now only usefull for HTTP/1.0 and HTTP/0.9 requests.<br>
+	<li>Add in an output thread which handles chunking.  This should improve JS
+		output, and prevent gobs 'o errors<br>
+		This output buffering is controlled with the OutbufHighwaterMark and OutbufDrainTimeout
+		values in the [web] section of the <tt>ctrl/sbbs.ini</tt> file
+	<li>Default web root dir is now <tt>../web/root</tt> (changed from <tt>../web/html</tt>)
+	<li>Bug-fix: Win32-CGI race condition<br>
+		where the exec_cgi() loop could
+		(sometimes) detect that the CGI process had terminated, before reading all
+		the data from the stdout pipe
+	<li>Fix for PATH_INFO-based scripts installed as an index filename in the root
+		of the host.  (ie: index.cgi)<br>
+		This would allow index.cgi to be (say) viewcvs.cgi and URLs such as:<br>
+		http://cvs.synchro.net/src/sbbs3/websrvr.c<br>
+		to work
+	<li>External redirects are MOVED_TEMP, not MOVED_STAT
+	<li>Add REQUEST_URI CGI variable (Apache extension)
+	<li>Drain STDOUT as well as STDERR
+	<li>Don't drain stdio until script is terminated
+	<li>Do not send Content-length header for CGI scripts.
+	<li>Properly handle partial writes of CGI output using sock_sendbuf()
+	<li>Support FreeBSDs accf_http(9) kerm option/module designed specifically for
+		HTTP server optimizations.
+	</ul><br>
+<li><b>Mail Server</b><ul>
+	<li>New feature to solve a common sysop misconfiguration issue:<br>
+		Automatically detect the DNS server (randomly chosen from the list of system-configured
+		DNS servers) if no DNS server is configured in Synchronet.<br>
+		For *nix, this assumes you have read access to <tt>/etc/resolv.conf</tt> (where da 'e'?)<br>
+		For Win32, this assumes you have <tt>IPHLPAPI.DLL</tt> on your system (included with
+		Win98+).
+	<li>Bug-fix: do not adjust for daylight savings time when generating RFC822-compliant
+		date/time strings<br>
+		This caused an off-by-one-hour bug in the "Date:" header field
+		of sent Internet mail when DST is in effect
+	<li>Overhaul mail index loading in sendmail thread:<br>
+		Don't directly access the index (.sid) file stream, reading a record at time
+		with no locking. Instead, read all the relevant index records in one safe
+		locked operating (using loadmail()) - this should fix the multi-server heavy
+		traffic mail.sid corruption bug
+	<li>Always lock the entire message base when re-writing existing header and index
+		records (using smb_putmsg) - keeps the index file from being truncated during
+		the operation (nightly purging of deleted message indexes?) causing corruption
+	<li>Set the SMB recipient extension header field when routing to QWKnet node<br>
+		(this is necessary for fixsmb to be able to reconstruct the index file)
+	<li>Bug-fix: clear the "from extension" for bounced messages (they're not from a user)
+	<li>Bug-fix: forwarding mail to a non-standard SMTP port (via the alias.cfg file) no longer worked<br>
+		 because the ":port" portion of the destination address wasn't being removed
+	<li>Enhancement: only perform MX-record lookup if no port number specified in destination domain
+		portion of recipient e-mail address
+	<li>Enhancement: don't attempt to send to MX servers with an IP address of 0.0.0.0
+	<li>Bug-fix: memory leak when parsing <tt>ctrl/mailproc.ini</tt>, caught by valgrind
+	</ul><br>
+<li><b>FTP Server</b><ul>
+	<li>New option: Lookup Passive IP<br>
+		(enabled by adding LOOKUP_PASV_IP to the "Options" value in the [ftp] section
+		of the <tt>ctrl/sbbs.ini</tt>):<br>
+		This option tells the FTP server to perform a hostname lookup (on the BBS's
+		hostname) to determine the correct/current public IP address to use in
+		PASV responses. This is one more kludge to work around stupid NAT devices
+		(consumer firewalls/routers)
+	<li>Failed login verbiage is now configurable by creating the optional text file:
+		<tt>text/ftpbadlogin.txt</tt>
+	<li>Bug-fix: added support for <tt>%@</tt> command-line specifier
+	</ul><br>
+<li><b>Telnet/RLogin Server</b><ul>
+	<li>When reading messages and updating existing message header and index records,
+	always lock the entire message base - preventing corruption
+	<li>When replying to a message, if the posting user was the author of the original message, 
+		use the original message's recipient as the recipient of the new reply message as well
+		(no need to post "to" yourself)
+	<li>Bug-fix: uninitialized pointer dereference in temporary file section
+	<li>Bug-fix: split-screen chat corruption
+	<li>Bug-fix: do not adjust for daylight savings time when generating QWK and Fido date/time stamps<br>
+	<li>Bug-fix: do not adjust for daylight savings time when calculating time until next event
+	<li>Bug-fix: ignore disabled events when calculating time until next event
+	<li>Bug-fix: bad drop file path if using startup-dir (e.g. "c:\sbbs\xtrn\game\/door.sys")
+	<li>Bug-fix: <tt>data/hungup.log</tt> wasn't being updated
+	<li>Bug-fix: exceptions occurring in JS script run via js_execfile (from external()
+		or bbs.exec()) from another JS script would not be reported to the console/log
+	<li>Bug-fix: report JS script compilation errors (exceptions) immediately
+	<li>Telegard and Renegade "pipe codes" actually must have 2 decimal
+		digits. This will reduce the liklihood of false-positive TG/RG pipe code
+		interpretation
+	<li>ANSI output optimization (combine attribute changes into a single ESC[m code):<br>
+			<tt>ESC[0;1;5;32;40m</tt><br>
+			Is shorter than:<br>
+			<tt>ESC[0mESC[1mESC[5mESC[32mESC[40m</tt><br>
+			...by about eight chars.<br>
+	<li>Include QWK text files (e.g. HELLO, GOODBYE, BBSNEWS, BLT-*) when prepacking
+		QWK packets (or packing for FTP download)
+	<li>Introduced K_NOSPIN mode flag for getkey() - to over-ride (temporarily
+		disable) user's spinning cursor setting
+	<li>Don't use the SyncTerm/RLogin "password" parameter for new user accounts unless it meets
+		minimum secure-password requirements (e.g. isn't the same as the user's name or alias)
+	<li>Bug-fix: delete environment variable from the
+		processes environment block when adding new environment strings, otherwise,
+		existing values (for say "SBBSNODE") would not be over-ridden
+	<li>If a file name doesn't include a suffix/extension in the native program list,
+		then any command-line executing a program with the same base filename will
+		be considered "native" (e.g. "unzip.exe" will be considered native if "unzip"
+		is in the native program list)
+	<li>When executing a module via "*modname ..." with no file extension
+		specified, if "modname.js" exists, it will be executed instead of
+		"modname.bin".<br>
+		Previously, the ".bin" extension was always assumed if it wasn't specified on
+		the command-line. This modification allows <tt>exec/bullseye.js</tt> to take
+		precedence over <tt>exec/bullseye.bin</tt> without any change to the command-line
+		configuration. Execute "*modname.bin" if you want to specifically execute
+		"modname.bin" and not "modname.js" (if it exists)
+	<li>External program yielding interval on Windows NT is now handled in <tt>exec/sbbsexec.ini</tt>
+		<br>(<b>not</b> in <tt>ctrl/sbbs.ini</tt> or in SBBSCTRL:Telnet->Configure->External Yield)
+		<br>See Virtual Device Driver section for more details
+	<li>New option to allow socket-based file transfer protocols on *nix
+	<li>Bug-fix: disable file upload/attach mode if SCFG->Message Options->Allow
+		Uploads in E-mail is set to "No".<br>
+		This option has been in SCFG for 10(+?) years and was never used. :-)
+	<li>Better seeding of random number generator
+	<li>Rework the output buffer loop to simplify slightly and fix an issue with the
+		highwater/timeout being innefective when the ringbuffer gets many small
+		writes very quickly (ie: During the "Synch" logo display).  For some reason,
+		this seems to happen most on fast connections (Possibly the socket
+		implementation manages to combine the write()s on a slow connection)
+	<li>If the highwater mark is zero, and TCP_MAXSEG is supported (BSD and Linux),<br>
+		then autotune the highwater mark to be the MSS and never send() a buffer
+		larger than that
+	<li>Stale (> 24 hours old) mutex files (e.g. <tt>data/pack####.lock</tt>) are now ignored
+		so crashed instances with locked mutexes will no longer need manual clean-up (auto-revovery)
+	<li>New global JS function: <i>write_raw()</i> 
+		used for sending strings with NULLs and other control characters to the
+		remote client
+	<li>Use Deuce's xp_printf module for Baja/PCMS printf/sprintf/fprintf functions:<ul>
+		<li>eliminates segfaults/AVs on incorrect usage
+		<li>auto-converts arguments to correct format type
+		<li>eliminates portability problems with non-x86 platforms
+		</ul>
+	</ul><br>
+<li><b>JavaScript</b><ul>
+	<li>Use Deuce's xp_printf module for all JS printf/sprintf/fprintf methods:<ul>
+		<li>eliminates segfaults/AVs on incorrect usage
+		<li>auto-converts arguments to correct format type
+		<li>eliminates portability problems with non-x86 platforms
+		</ul>
+	<li><i>console</i> object improvements:<ul>
+		<li>Optionally set current attribute, as argument, to clear(), clearline() and cleartoeol()
+			methods
+		<li>Bug-fix in telent_command method: option argument didn't work
+		<li>ctrlkey_passthru property assignment enhancement:<br>
+		No longer require freaky numeric constants to set ctrlkey_passthru. Examples:<br>
+		"+AB"  will add CTRL-A and CTRL-B to the set<br>
+		"AB"   will change the set to only CTRL-A and CTRL-B<br>
+		"-AB"  will remove both CTRL-A and CTRL-B from the set<br>
+		"+A-B" will add CTRL-A to the set and remove CTRL-B<br>
+		</ul>
+	<li>Added <i>MsgBase</i> header object property: <i>forward_path</i> (currently not used)
+	<li>Bug-fix: <i>MsgBase.remove_msg()</i> was zeroing the to/from/subject (and other string
+		header fields)
+	<li>Bug-fix: in <i>xtrn_area</i> object, ignore "event only" flag for external programs if event type is set
+			to "None"
+	<li>Bug-fix: file_area.lib array could contain a bogus value.
+	<li>New file_area properties: sysop_dir, user_dir, upload_dir, and lib[x].offline_dir
+	<li>Bug-fix: file_area.*.can_upload and can_download properties now take the user's
+		restrictions into account (the 'D' and 'U' restrictions)
+	<li>Bug-fix: <tt>msg_area.grp</tt> array could contain a bogus value
+	<li><i>bbs</i> object:<ul>
+		<li>Bug-fix: <i>list_files()</i> and <i>list_file_info()</i> methods needed "padded" 8.3 filenames
+		<li>Renamed <i>scan_posts()</i> to <i>scan_msgs()</i>, left old name as alias
+		<li>New method: <i>list_msgs()</i> for various listing (as opposed to scan/reading)
+			modes (text search, message to-you, etc.)
+		<li>New property: <i>command_str</i> exposes the current command shell's command string ('str')
+		<li>New properties: <i>cursub_code</i> and <i>curdir_code</i><br>
+			to more-easily get the current sub-board or file directory internal code (string) 
+		<li>New methods: <i>send_file()</i> and <i>receive_file()</i>
+		<li><i>private_chat()</i> now supports an optional argument: bool local (default:false)<br>
+			used for forcing user into local sysop chat
+		<li>Bug-fix: <i>logkey()</i>, <i>comma</i> was always true if any argument was given
+		</ul>
+	<li><i>User</i> class (and <i>user</i> object):<ul>
+		<li>Big performance/design improvement:<br>
+			 user data is cached in the user object's
+			"private storage", reducing (by a large factor) the number of unnecessary calls
+			to getuserdat() - which opens/seeks/locks/reads/closes the user data base.<br>
+			This should have a profound performance improvement on web/ssjs scripts,
+			especially the userlist.ssjs
+		<li>New property: <i>cached</i> to reflect the current cached state (true/false)
+			and allow external manipulation if necessary
+		<li>New methods to allow the atomic (safe) adjustment of numeric/statistical user fields:<ul>	
+			<li>adjust_credits(count)
+			<li>adjust_minutes(count)
+			<li>posted_message([count=1])
+			<li>sent_email([count=1] [,feedback=false])
+			<li>uploaded_file(bytes [,files=1])
+			<li>downloaded_file(bytes [,files=1])
+			</ul>
+			In the methods where "count" is optional (in square brackets), the default
+			value is '1'. So to increment the user's messages-posted statistcs by one
+			(for today and total), User.posted_message() is all that is needed.<br>
+			Specifying a negative value allows adjust downwards (subtraction).
+			e.g. to remove 1000 credits: User.adjust_credits(-1000);
+			<br>
+			The User.stats properties are *intentionally* read-only (i.e. not a bug) since
+			there is no "safe" way to modify these properties using normal mathematical
+			operators (e.g. +=), hence the need for these new methods
+		</ul>
+	<li>New method: <i>js.get_parent()</i> a useful function for walking backward through an
+		object/scope hierarchy
+	<li>New property: <i>js.global</i> for easy reference to the global (top level) object
+	<li>New property: <i>system.timer</i> high-resolution timer, in seconds (fractional seconds supported)
+	<li>New properties: <i>system.version_num</i> and <i>system.version_hex</i><br>
+		These allow easy comparison for scripts.<br>Example:
+		<pre>
+		if(system.version_num < 31301) /* v3.13b */
+			print("version 3.13b or later required");</pre>
+		<i>system.version_hex</i> allows easy major/minor version number checking, parsing
+		or printing using right-shift operations instead of division/rounding.<br>Example:
+		<pre>
+			31301/100 == 313.01
+			0x31301>>8 == 0x313</pre>
+	<li>New property: <i>system.cmd_shell</i> for getting the current OS command processor/shell filename
+	<li><i>base64_encode()</i>, <i>crc16_calc()</i>, <i>crc32_calc()</i>, <i>chksum_calc()</i> and <i>md5_calc()</i><br>
+		functions now support string arguments with \0 (ASCII 0) embedded in them
+	<li><i>file_mutex()</i> function now supports an option max_age argument (to detect and remove
+		stale mutex files)
+	<li>New function: <i>wildmatch()</i> for simplified pattern matching
+			(wildcards supported: '?' and '*')
+	<li>New function: <i>disk_size()</i> which reports the total number of
+		bytes (or units, e.g. kilobytes)  of the disk (not just the "free space")
+	<li>Bug-fix: <i>ctrl()</i> didn't toggle the correct bit for ASCII to Ctrl-char conversion
+	<li>Bug-fixes: <i>quote_msg()</i> and <i>word_wrap()</i> over-hauls by Deuce
+	<li><i>File</i> class:<ul>
+		<li>Strings containing \0 (ASCII 0) can now be read from or written to files
+		<li>New methods: <i>iniRemoveKey()</i> and <i>iniRemoveSection()</i> for remove elements from a .ini file
+		<li>New method: <i>truncate()</i>
+		</ul>
+	<li><i>Socket</i> class:<ul>
+		<li>constructor now supports an optional <i>protocol</i> string argument to specify the
+			 protocol or service name the socket is to be used for<br>
+			 (Used for automatically setting protocol and service-specific socket options from <tt>ctrl/sockopts.ini</tt>)
+		<li>Strings containing \0 (ASCII 0) can now be read from or written to sockets 
+		<li>New property: <i>option_list</i>:<br>
+			an array of option names supported by the current platform and socket type combination
+		<li>Bug-fix: <i>peek()</i> length wasn't initialized with default value
+		<li>Get/set of SO_LINGER socket option now works like <tt>ctrl/sockopts.ini</tt>:<br>
+			0 = linger disabled (no time-out value)<br>
+			non-zero = time-out value (in seconds), linger enabled
+		<li><i>sendfile()</i> now uses a proven implementation (from the xpdev library)
+		</ul>
+	<li>JSexec:<ul>
+		<li>Bug-fix: prompt() no longer returns the \n with the string
+		<li>Now displays the number of seconds/milliseconds it took to compile
+			and execute a script (if either duration is greater than 0)
+		<li>alert() now returns the string printed
+		<li>The variable <tt>exit_code</tt> is only used for the return value if it's a number
+		<li>Bug-fix: random number generator wasn't being seeded
+		<li>new <b><i>uifc</i> object</b> for local full-screen user interface scripts (ala SCFG)
+		<br>
+		<br>Methods:<ul>
+			<li>init(string title)
+			<li>bail()
+			<li>msg(string text)
+			<li>pop([string text])
+			<li>input(mode, left, top, prompt, org_str, max_length, kmode)
+			<li>list(mode, left, top, width, default, bar, title, Array options)
+			</ul>
+		<br>Properties:<ul>
+			<li>Boolean initialized [read only]
+			<li>Number mode
+			<li>Boolean changes
+			<li>Number save_num		
+			<li>Number screen_length
+			<li>Number screen_width	
+			<li>Number list_height	
+			<li>Number esc_delay	
+			<li>String help_text	
+			<li>Number background_color
+			<li>Number frame_color	
+			<li>Number text_color	
+			<li>Number inverse_color
+			<li>Number lightbar_color
+			</ul>
+			<br>
+		<li>JSexec -v now dumps the version details and exits
+		</ul>
+	</ul><br>
+<li><b>SBBSecho</b><ul>
+	<li>Packed netmail for attach-style mailer now create/append packets with filenames
+		of .pkt (rather than .pk_)<br>
+		these packets aren't being bundled and re-attached anyway
+	<li>Bug-fix: NetMail packets are now correctly terminated (with 2 NULL bytes)
+	<li>Bug-fix: do not adjust for daylight savings time when generating UTC time stamps
+	<li>Now strips ctrl chars (garbage) from var-length message header
+		fields (i.e. to/from/subject)
+	</ul><br>
+<li><b>Synchronet Console</b><ul>
+	<li>[Unix] Bug-fix: call do_seteuid() as soon as possible to avoid creating dirs/files as
+		startup iser (often root)
+	</ul><br>
+<li><b>Synchronet Control Panel (for Win32)</b><ul>
+	<li>Now supports the ctrl/recycle[.ctrl] and ctrl/shutdown[.ctrl] semaphore files so:<ol>
+		<li>SCFG will touch ctrl/recycle causing sbbsctrl to reload its copy of the
+			config files resolving the FAQ about why users appear to be running the  wrong
+			external program in the node window after adding/removing external programs in SCFG
+		<li>the control panel can now be gracefully shutdown by touching ctrl/shutdown
+		</ol>
+	<li>Mail Server Configuration:<br>
+		Created an "Advanced" tab which allows the sysop to toggle options that could
+		previously only be enabled/changed in the sbbs.ini file:<ul>
+			<li>SendMail: Ignore 'in transit' attribute 
+			<li>Retain received mail files (in temp directory) 
+			<li>Allow receipt of mail by user number 
+			<li>Check 'Received' header fields against DNSBL 
+			<li>Throttle DNS blacklisted server sessions
+			</ul>
+		Display "auto" if the DNS server field is left blank or set to an invalid IP
+		address or hostname
+	<li>Created a right-click popup menu on the File Preview window to change the
+		current font
+	<li>New tray-icon popup menu items to configure web server and services
+	<li>New splash screen image (from Mike)
+	<li>New help menu item to see tech support web page
+	<li>Added <tt>ftpbadlogin.txt</tt> to FTP->Edit menu
+	<li>Bug-fix: wasn't displaying the "server in use, terminate yes/no" message box
+		if Synchronet NT services were installed, but disabled
+	<li>Bug-fix: Exceptions/access violations while shutting down if Synchronet NT
+		services were installed, but disabled
+	</ul><br>
+<li><b>Synchronet FOSSIL Driver (dosxtrn.exe)</b><ul>
+	<li>Now provides interrupt 14h service routine "signature" required by some (very few) programs
+		to detect the FOSSIL driver's presence
+	<li>Bug-fix (NT only): funtion 18h is supposed to be a block-read with *no*
+		wait (return immediately if no data)<br>
+		we were blocking if there was no data waiting (cause of hang in Star Fight)
+	<li>Bug-fix (NT only): incorrect baud rate returned in information block (function 1Bh)
+	<li>Bug-fix (NT only): size of information block was off-by-one (+1) due to padding
+	<li>Correct driver revision and ID string is now returned in information block (NT only)
+	<li>Treat interrupt 21h function 2Ch (DOS "GET SYSTEM TIME") as a "poll" with
+		potential forced yield (NT only)
+		<br>this "tames" BRE down to single-digit CPU utilization!
+	</ul><br>
+<li><b>Synchronet Windows NT Virtual Device Driver (sbbsexec.dll)</b><ul>
+	<li>This driver now virtualizes (emulates) a UART (COM port):<br>
+		By default, COM1 (IRQ 4, I/O Address 3F8)<br>
+		This feature allows you to run DOS doors <b>without</b> FOSSIL support<br>
+		This feature is configurable/disableable in <tt>exec/sbbsexec.ini</tt>, even on a per-program basis<br>
+		Most programs will perform better in FOSSIL mode, but some may perform better in UART/COM Port mode
+			(depends on the program)
+	<li>Time-slice yielding (for both UART virtualized and FOSSIL programs) is now handled in
+		<tt>exec/sbbsexec.ini</tt>, even on a per-program basis
+	</ul><br>
+<li><b>Synchronet NT Services</b><ul>
+	<li>Bug-fix: the "SynchronetEvent" NT event log source wasn't being registered
+	</ul><br>
+<li><b>Synchronet Services</b><ul>
+	<li>Allow log level to be configurable in <tt>ctrl/services.ini</tt> either globally (in the root
+		section) or per service, using the <tt>LogLevel</tt> key (default value: "DEBUG")
+	<li><tt>ctrl/services.ini</tt> now supports <tt>!include <i>filename</i></tt> directive for nested
+		initialization files
+	<li>Now ignore services with no configured commad-line, but logs warning
+	<li>Bug-fix: when parsing the <tt>services.ini</tt> file, don't use the default <tt>NotHost</tt>
+		value for host_name comparison - under some strange circumstances, the
+		startup->host_name could be blank
+	<li>Now includes a working <tt>readln()</tt> global function
+	</ul><br>
+<li><b>CHKSMB</b><ul>
+	</ul><br>
+<li><b>ListServer</b><ul>
+	</ul><br>
+<li><b>NewsLink</b><ul>
+	</ul><br>
+<li><b>NNTP Service</b><ul>
+	</ul><br>
+<li><b>IRC Daemon</b><ul>
+	</ul><br>
+<li><b>Documentation</b><ul>
+	</ul><br>
+<li><b>Message Bases</b> (SMBLIB v2.41)<ul>
+	</ul><br>
+<li><b>SCFG</b><ul>
+	<li>Saving changes in SCFG now recycles all services and services (including the Web server)
+		<b>and</b> the Synchronet Control Panel (no manual reload of configuration required)
+	<li>Changed default zip/unzip command-lines to use info-zip instead of pkzip
+	<li>New option to allow socket-based file transfer protocols on *nix
+	<li>Bug-fix: imported internal codes (from subs.txt or dirs.txt) had non-alphanum
+		chars removed if > 7 chars instead of > 8 chars 
+	<li>New File "Import Areas..." option to automatically generate the DIRS.RAW
+		file (if it doesn't exist), or just create a temp directory listing file to
+		import "invisibly"
+	<li>Bug-fix: clear "event only" flag for external programs when setting event type
+		to "None"
+	</ul><br>
+<li><b>ADDFILES</b><ul>
+	<li>Unix-friendly command-line syntax for specifying uploader's name (now <tt>-x<i>name</i></tt>)
+		and enabling auto-add ('-' in place of directory code or '-<i>filename</i>')
+	<li>Bug-fix: added support for the <tt>%@</tt> command-line specifier
+	</ul><br>
+<li><b>SEXYZ</b><ul>
+	</ul><br>
+<li><b>SMBUTIL</b><ul>
+	<li>New command: <tt>x</tt>, used to dump a message base index
+	</ul><br>
+<li><b>CHKSMB</b><ul>
+	<li>Verify that if the index.to field is non-zero or there's a to_ext header field,
+that they match. This will catch a QWK networking bug in previous
+Synchronet versions where the index.to was non-zero (the number of
+the QWKnet node account), but there was no hdr.to_ext field, thus the index
+could not be recreated from the information in the header (e.g. by fixsmb).
+This was actually an intentional design decision at the time, but in hindsight,
+it's a bug (the index file is not supposed to contain any unique information).
+	</ul><br>
+<li><b>MAKEUSER</b><ul>
+	<li>Prevent crash (NULL-dereference) on invalid command-line syntax (e.g. -S50)
+	<li>Sets AUTOTERM (automatic terminal type detection) in user.misc for new users
+	</ul><br>
+<li><b>Miscellaneous</b><ul>
+	<li>SLOG (System/Node Statistics Log Viewer) utility ported to 32-bit (by Deuce)
+	<li>ALLUSERS (Bulk User Editor) utility ported to 32-bit (by Deuce)
+	<li>DELFILES (Remove expired/offline files) utility ported to 32-bit (by Deuce)
+	<li>ANS2ASC and ASC2ANS now support '-' in place of a filename on the command-line
+		to specify standard in/out instead of a file
+	</ul><br>
+</ul>
+For <b>many</b> more changes since v3.10, see <a href="v311_new.html">v311_new.html</a>,
+<a href="v312_new.html">v312_new.html</a>,
+and <a href="v313_new.html">v313_new.html</a>
+<p align="right"><font face="Arial" size="1" , "Helvetica">Copyright © 2005 Rob 
+Swindell <br>
+&nbsp;$Id$</font></p>
+
+</body>
+</html>
