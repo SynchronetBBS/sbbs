@@ -455,6 +455,12 @@ it's a bug (the index file is not supposed to contain any unique information).
 	<li>Prevent crash (NULL-dereference) on invalid command-line syntax (e.g. -S50)
 	<li>Sets AUTOTERM (automatic terminal type detection) in user.misc for new users
 	</ul><br>
+<li><b>New GTK Utilities</b><ul>
+	<li>Three new experimental GTK+ based utilities have been added to the default *nix build.  These utilities require read/write access to the sbbs directories.  They do NOT need to be running on the same machine.<ul>
+		<li><b>gtkmonitor</b> - Based loosely on the Win32 control panel without the log output.  Shows current activity and allows some sysop control.</li>
+		<li><b>gtkuseredit</b> - Based on the Win32 useredit utility allows editing of users</li>
+		<li><b>gtkuserlist</b> - Lists users supporting ARS filters and allows quick validation sets to be applied to multiple users simultaneously.</ul>
+	<li>These utilities are lightly tested and require GTK+ and Glade libraries and headers to be installed at the time of the Synchronet build.</ul>
 <li><b>Miscellaneous</b><ul>
 	<li>SLOG (System/Node Statistics Log Viewer) utility ported to 32-bit (by Deuce)
 	<li>ALLUSERS (Bulk User Editor) utility ported to 32-bit (by Deuce)
