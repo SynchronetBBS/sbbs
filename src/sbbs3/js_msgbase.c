@@ -779,6 +779,11 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "reverse_path"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
+	if(msg.forward_path!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.forward_path)))!=NULL)
+		JS_DefineProperty(cx, hdrobj, "forward_path"
+			,STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE);
 
 	if(expand_fields || msg.to_agent)
 		JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
@@ -1745,6 +1750,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID"
 	"<tr><td align=top><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID"
 	"<tr><td align=top><tt>reverse_path</tt><td>Message's SMTP sender address"
+	"<tr><td align=top><tt>forward_path</tt><td>Argument to SMTP 'RCPT TO' command"
 	"<tr><td align=top><tt>path</tt><td>Messages's NNTP path"
 	"<tr><td align=top><tt>newsgroups</tt><td>Message's NNTP newsgroups header"
 	"<tr><td align=top><tt>ftn_msgid</tt><td>FidoNet FTS-9 Message-ID"
