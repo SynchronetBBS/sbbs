@@ -807,7 +807,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"write_raw",			js_write_raw,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output")
-	,313
+	,314
 	},
 	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
     {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")

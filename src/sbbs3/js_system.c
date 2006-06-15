@@ -406,7 +406,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	/* clock access */
 	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },
 	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
-	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	313	 },
+	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	314	 },
 
 	/* last */
 	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311  },

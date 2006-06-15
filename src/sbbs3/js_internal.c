@@ -180,7 +180,7 @@ static jsSyncPropertySpec js_properties[] = {
 	{	"bytes",			PROP_BYTES,			PROP_FLAGS,			311 },
 	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311 },
 #endif
-	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			313 },
+	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314 },
 	{0}
 };
 
@@ -393,7 +393,7 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object")
 	,JSDOCSTR("return the parent of the specified object")
-	,313
+	,314
 	},
 	{0}
 };

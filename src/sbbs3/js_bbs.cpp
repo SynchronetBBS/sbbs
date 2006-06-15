@@ -885,7 +885,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"batch_upload_total",BBS_PROP_BATCH_UPLOAD_TOTAL,PROP_READONLY	,310},
 	{	"batch_dnload_total",BBS_PROP_BATCH_DNLOAD_TOTAL,PROP_READONLY	,310},
 
-	{	"command_str"		,BBS_PROP_COMMAND_STR		,JSPROP_ENUMERATE, 313},	/* 3.13b */
+	{	"command_str"		,BBS_PROP_COMMAND_STR		,JSPROP_ENUMERATE, 314},
 	{0}
 };
 
