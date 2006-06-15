@@ -2,43 +2,30 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
 <meta name="ProgId" content="FrontPage.Editor.Document">
 <title>System Configuration</title>
 </head>
 
 <body>
 
-<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan --><p>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<a href="http://www.synchro.net">
+<img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+</p>
 
 <hr>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
+<!--webbot bot="Include" endspan i-checksum="56836" -->
 
 <p><b><a name="top"></a></b><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 <h2><a name="SystemConfiguration">[2.0] - System Configuration</a></h2>
 <pre>SCFG is the Synchronet Configuration Utility. It is a stand-alone console mode 
-application currently available in the following forms:</pre>
-<ul>
-  <li>
-<pre>SCFG.EXE - 16-bit DOS application</pre>
-  </li>
-  <li>
-<pre>SCFG32.EXE - 32-bit extended-DOS/Win32 application</pre>
-  </li>
-  <li>
-<pre>SCFG4OS2.EXE - 32-bit OS/2 application</pre>
-  </li>
-</ul>
-<pre>To run SCFG from Synchronet for Win32 Control Panel, select <i>Configure</i> from the <i>
+application (e.g. SCFG.EXE for Windows).</pre>
+<pre>To run SCFG from the Synchronet Control Panel (Windows), select <i>Configure</i> from the <i>
 BBS</i> sub-menu on the menu bar.</pre>
 <pre><img border="0" src="images/sbbsctrl_configure.png" width="301" height="192"></pre>
-<pre>SCFG can be executed from the <b>v2</b> &quot;<i>Waiting for call</i>&quot; screen by 
-hitting '<b>C</b>' or from DOS by typing <b>SCFG</b> from any node directory. 
-Example:</pre>
-<pre><img border="0" src="images/scfg_dos_startup.png" width="500" height="150"></pre>
 <pre>Once SCFG has initialized, you will see a main menu titled &quot;Configure&quot; which looks 
 something like this:</pre>
 <pre><img border="0" src="images/scfg_main.png" width="572" height="331">
@@ -71,7 +58,7 @@ of the commands available in the SCFG under System options.</pre>
 	using the QWK functions of your BBS. Only valid DOS filename characters
 	can be used and the ID must begin with an alphabetic character. This
 	ID will also serve as your system's QWK Network address, should you
-	choose to join a QWK message network.
+	choose to join a QWK message network (e.g. <a href="dove-net.txt">DOVE-Net</a>).
 
 <b>Local Time Zone:</b>
 	This should be set to the time zone where your BBS is located.
@@ -163,14 +150,14 @@ of the commands available in the SCFG under System options.</pre>
 <pre><img border="0" src="images/scfg_system.png" width="572" height="331">
 
 <b>BBS Name:</b>
-        This is the name of the BBS.
+        This is the name of the BBS. Try to be original. :-)
 
 <b>Location:</b>
         This is the city, state and/or other pertinent location information.
 
 <b>Operator:</b>
         This is the name of the system operator. Doesn't have to be the same
-        as user #1.
+        as user #1, but usually is.
 
 <b>Password:</b>
         This is the super-secret system password that only sysops should know.
@@ -212,23 +199,15 @@ of the commands available in the SCFG under System options.</pre>
 	Setting this option to Yes will allow users to be able to convert
 	credits to time.
 
-<b>Allow Local Sysop Access <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-	To be able to perform sysop actions locally, this option should be set
-	to Yes.
-
-<b>Allow Remote Sysop Access:</b>
+<b>Allow Sysop Logins:</b>
 	To be able to perform sysop actions remotely, this option should be set
 	to Yes.
 
-<b>Echo Passwords Locally <i><font color="#FF0000">(v2 Only)</font></i>:</b>
+<b>Echo Passwords Locally:</b>
 	If this option is set to No, all BBS passwords will not be displayed
 	locally (characters will be replaced by an X). This includes passwords
 	entered during logon, passwords in the user editor, as well as
 	passwords normally displayed on the status line.
-
-<b>Require Passwords Locally <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-	If this option is set to No the BBS will not ask for a password to be
-	entered when performing local operations.
 
 <b>Short Sysop Page:
 </b>	If set to Yes, this sysop page will be a short series of beeps,
@@ -267,20 +246,19 @@ of the commands available in the SCFG under System options.</pre>
 <b>User Expires When Out-of-time:
 </b>	Useful for BBSs which charge users based on time, this option, when set
 	to Yes, will set a user to the expired account values once the user's
-	time runs out.
-
-<b>Quick Validation Hot-Keys <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If this option is set to No, the quick validation hot keys will be
-	disabled.</pre>
-<h2><b><a name="NewUserValues">[2.4] - </a> </b><a name="NewUserValues"><b>New User Values</b></a>
-</h2>
+	time runs out.</pre>
+<pre><b>Display Sys Info During Logon:
+</b>	Display &quot;hard-coded&quot; system information during BBS logon process.</pre>
+<pre><b>Display Node List During Logon:
+</b>	Display list of active BBS nodes during BBS logon process.</pre>
+<h2><b><a name="NewUserValues">[2.4] - </a></b><a name="NewUserValues"><b>New 
+User Values</b></a> </h2>
 <pre><img border="0" src="images/scfg_system_newvalues.png" width="572" height="331"></pre>
 <pre>This option allows you to modify the security values assigned to a new user
-after he completes his validation feedback. You can also set the number of
-credits and minutes new users start off with. If you have configured an
-alternate command shell or external editors, you may select one of these as the
-default for new users. See User Edit for more information about user account
-values.</pre>
+account. You can also set the number of credits and minutes new users start
+off with. If you have configured an alternate command shell or external
+editors, you may select one of these as the default for new users. See the
+<a href="user_editor.html">User Editor</a> chapter for more information about user account values.</pre>
 <pre><img border="0" src="images/scfg_system_newvalues_toggles.png" width="572" height="331"></pre>
 <pre>The 'Default Toggles' are used to set the account defaults that users will have
 when they log on to the system as a new user. These account defaults can be
@@ -290,7 +268,7 @@ menu.</pre>
 <pre>The 'Question Toggles' are used to enable/disable the different questions which
 new users will be asked when logging on to the BBS. The 'Force Unique...'
 question toggles are used to force users to pick a string that is not being
-used by any of the other users currently in the system user list.</pre>
+used by any of the other users currently in the system user database.</pre>
 <h2><b><a name="AdvancedOptions">[2.5] - Advanced Options</a>
 </b></h2>
 <pre><img border="0" src="images/scfg_system_advanced.png" width="572" height="331">
@@ -303,18 +281,30 @@ used by any of the other users currently in the system user list.</pre>
         text displayed to him and he is disconnected.
 
 <b>Data Directory:
-</b>        This is the path to the directory where all the data files for SBBS
-        are stored. This value should not be changed unless necessary.
+</b>        This is the path to the directory where all the data files for
+	Synchronet will be stored. This value should not be changed unless
+	necessary.
 
-<b>Index Directory:
-</b>        This is the path to the directory where all the index files for SBBS
-        are stored. This value should not be changed unless necessary.
+<b>Logs Directory:
+</b>        This is the path to the directory where all the logs files for
+        Synchronet will be stored. This value should not be changed unless
+	necessary.
 
-<b>Executables Directory:
+<b>Exec Directory:
 </b>        This is the path to the directory where all the executable files for
-        SBBS are store. This value should not be changed unless necessary.
+        Synchronet are stored. This value should not be changed unless
+	necessary.
 
-<b>Input SIF Questionnaire:
+<b>Mods Directory:
+</b>        This is the path to the directory where sysop-modified modules
+	(.bin and .js files) for Synchronet are stored. Normally, this
+	directory will be empty. If a sysop wishes to modify a stock/standard
+	module and protect the modified file from being over-written during
+	subsequent Synchronet upgrades, the sysop should copy the file from
+	the <b>Exec</b> directory to the <b>Mods</b> directory where it will take precedence
+	over the file by the same name in the <b>Exec</b> directory. 
+<b>
+Input SIF Questionnaire:
 </b>        This is the name of a SIF file that resides the text directory that
         all users will be prompted to answer upon logging on the first time.
         See SIF for more information.
@@ -360,25 +350,49 @@ used by any of the other users currently in the system user list.</pre>
 	Any nodes which exist above this number will be &quot;invisible&quot; nodes and
 	cannot be seen by anyone.
 
-<b>First Local Auto-Node <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-	When using the AUTONODE utility, this is the node number to begin
-	searching at for an available (offline) node.
-
 <b>Phone Number Format:</b>
-	This is the format which users will be required to use when entering
-	their phone numbers.
+	This is the format used for phone numbers in your local calling 
+	area. Use N for number positions, A for alphabetic, or ! for any 
+	character. All other characters will be static in the phone number 
+	format. An example for North American phone numbers is <i>NNN-NNN-NNNN</i>.
 
-<b>Sysop Chat Requirements:
+<b>Sysop Chat Override:
 </b>	Any user meeting the criteria set here will be able to page the sysop
-	regardless of the status of the sysop availability (Scroll Lock in v2.3).</pre>
+	regardless of the status of the sysop availability.</pre>
+<pre><b>User Database Backups:
+</b>	Setting this option to anything but 0 will enable automatic daily 
+	backups of the user database. This number determines how many backups
+	to keep on disk (i.e. data/user/user.#.dat and data/user/name.#.dat). 
+
+<b>Mail Database Backups:
+</b>	Setting this option to anything but 0 will enable automatic daily 
+	backups of the mail database. This number determines how many backups
+	to keep on disk (i.e. data/mail.#.*). 
+
+<b>Control Key Pass-through:
+</b>	This value is a 32-bit hexadecimal number. Each set bit represents a 
+	control key combination that will <b>not</b> be handled internally by 
+	Synchronet or by a Global Hot Key Event. 
+
+	To disable internal handling of the <i>Ctrl-C</i> key combination (for example)
+	set this value to <b>8</b>. The value is determined by taking 2 to the power of
+	the ASCII value of the control character (Ctrl-A is 1, Ctrl-B is 2, 
+	etc.). In the case of Ctrl-C, taking 2 to the power of 3 equals 8. 
+
+	To pass-through multiple control key combinations, multiple bits must be
+	set (or'd together) to create the necessary value, which may require the
+	use of a hexadecimal calculator. 
+
+	If unsure, leave this value set to <b>0</b>, the default. </pre>
 <h2><b><a name="LoadableModules">[2.6] - Loadable Modules</a>
 </b></h2>
 <pre><img border="0" src="images/scfg_system_loadablemods.png" width="572" height="331">
 
-The Loadable Modules options are used for loading Baja .BIN modules during
-various stages of the BBS operation. Selecting one of the functions
-will prompt you for the name of the Baja module to be used when that event
-occurs. See DOCS\BAJA.DOC for details on creating/modifying loadable modules.
+The Loadable Modules options are used for loading JavaScript (.js) or
+Baja (.bin) modules during various stages of the BBS operation. Selecting
+one of the functions will prompt you for the base filename of the module
+(excluding the file extension - .js or .bin) to be used when that event
+occurs. JavaScript (.js) modules take precedence over Baja (.bin) modules.
 
 Following is a brief description of when each of the Loadable Modules occur
 during the BBS operation:
@@ -412,16 +426,18 @@ during the BBS operation:
 <b>Expired User:
 </b>	This is an offline event that occurs during Synchronet's internal daily
 	event (after the first caller at the beginning of a new day).</pre>
-<h2><b><a name="SecurityValues">[2.7] - </a> </b><a name="SecurityValues"><b>Security Values</b></a></h2>
+<h2><b><a name="SecurityValues">[2.7] - </a> </b><a name="SecurityValues"><b>Security 
+Level Values</b></a></h2>
 <pre><img border="0" src="images/scfg_system_securityvalues.png" width="572" height="331"></pre>
-<pre>This option allows you to define the values of the Security Levels (0-99).
+<pre>This option allows you to define the operating parameters of the Security Levels (0-99).
 Selecting the desired security level will bring you to another menu similar to
 the following:</pre>
 <pre><img border="0" src="images/scfg_system_securityvalues_0.png" width="572" height="331"></pre>
 <pre>Here you can modify the corresponding values for that particular security
 level.	These values will be given to ALL users who have the selected security
 level.	Many of these values may be overridden by giving certain users the
-necessary exemptions (if required).</pre>
+necessary exemptions (if required).  For example, the 'T' exemption will exempt
+a user from any <i>time</i> limitations.</pre>
 <h2><b><a name="ExpiredAccountValues">[2.8] - </a> </b><a name="ExpiredAccountValues"><b>Expired Account Values</b></a>
 </h2>
 <pre><img border="0" src="images/scfg_system_expired.png" width="572" height="331">
@@ -439,57 +455,38 @@ following:</pre>
 
 These are used to quickly set a user's Level, Flags, Restrictions and
 Exemptions, as well as extend their expiration date and add credits to their
-account.  A user can be quick-validated by hitting Alt-(0-9) while the user is
-online, or with the 'V' command from User Edit.</pre>
-<h2><b><a name="CreatingUserAccountsLocally">[2.10] - </a> </b><a name="CreatingUserAccountsLocally"><b>Creating User Accounts
-Locally</b></a><b> <i><font color="#FF0000">(v2 Only)</font></i></b></h2>
-<pre>Exit the configuration program and run SBBS from your NODE1 directory. When you
-get a menu that says &quot;Synchronet Version xx&quot; (Wait For Call screen), hit
-SPACE BAR to logon. Answer 'Y' to the Logon (Y/N) prompt. At the NN: prompt,
-enter &quot;NEW&quot; to create a new account. Answer the questions until you get to the
-BBS main menu and then logoff the BBS.
-
-Repeat this process for any other user accounts you wish to create. Be sure
-to give out high access levels and exemptions very carefully.</pre>
+account.  A user can be quick-validated with the 'V' command from the 
+Telnet/RLogin-based User Editor.</pre>
+<h2><b><a name="CreatingUserAccountsLocally">[2.10] - </a> </b><a name="CreatingUserAccountsLocally"><b>
+Creating User Accounts</b></a></h2>
+<pre>Users may be created using one of the available user editors or by logging
+on as &quot;new&quot; via Telnet or RLogin.</pre>
 <h3><b><a name="CreatingSysopAccount">[2.10.1] - </a> </b><a name="CreatingSysopAccount"><b>Creating a Sysop Account</b></a></h3>
-<pre>Follow the above steps to create a user account. Once you are back at the WFC
-(Wait For Call) screen, press 'U' and go to the account that you've created.
-You should give this account (the main sysop account) all of the different
-flags and exemptions (no restrictions), and a level of 99 (use '?' to help
-find the keys to select the different options).
-
-<b>NOTE:</b> Users with levels of 90 and above have SYSOP access.
-
-   <b><i>TIP:</i></b> To logon from the wait for call screen quickly, hit SPACE, then 'F'
-        for fast sysop (user #1) logon.
-
-   <b><i>TIP:</i></b> To keep your logons from being written to the logon list, turn
-        &quot;Default to quiet mode&quot; on from the Default Configuration menu. If
-        you want users to see that you're online, you can toggle quiet mode
-        off/on with the &quot;;QUIET&quot; sysop command from the Synchronet main menu.</pre>
+<pre>The first user account created (via Telnet or RLogin) will automatically be
+given Sysop-level access (e.g. Security level 90, all flags and all exemptions).
+For this reason, the System Password is prompted for (with the <b>SY:</b> prompt)
+during the first new user creation process.</pre>
+<pre>The sysop account is traditionally the first user record in the database
+(i.e. user #1). This user account <b>should not</b> have the alias of <i>Sysop</i> - use your
+real name or a handle instead. Synchronet automatically treats the alias of
+<i>Sysop</i> special and forwards any mail received for &quot;Sysop&quot; to user #1.</pre>
 <h3><b><a name="CreatingGuestAccount">[2.10.2] - </a> </b><a name="CreatingGuestAccount"><b>Creating a Guest Account</b></a></h3>
-<pre>Follow the above steps to create a user account.  Once you are back at the WFC
-(Wait For Call) screen, press 'U' and go to the account that you've created to
-be used as your Guest account. Change the Real Name field of the account to
-'Guest', and give this account the access that you feel is necessary for a
-Guest user to have (along with any Restrictions that may be necessary). Select
-the Password field, and make it blank (this will allow Guests to log on by
-simply entering GUEST at the NN: prompt without the need for a password).
-
-If you have certain areas on your BBS which are restricted by age, you may wish
-to modify the Birth-date field of the Guest account as necessary.
-
-You may also wish to (from the SCFG program under Nodes-&gt;Node#-&gt;Logon Prompt)
-modify the logon prompts of your nodes to read something along the lines of
-'Enter Name, Number, New, or Guest', so that users will be aware that there is
-a Guest account available for them to use. You can also place a note informing
-users of the Guest account in your BBS's ANSWER screen.</pre>
+<pre>During the default Telnet/RLogin logon process, the sysop user account will
+be prompted whether to create a &quot;Guest&quot; account or not (via the exec/makeguest.js
+module). It is recommended that you answer &quot;Yes&quot; to create a Guest account.
+This will allow anonymous FTP logins as well as &quot;read only&quot; access to your
+other servers and services which encourage users to experience your BBS without
+requiring them to create a user account first.</pre>
+<pre>The sysop account's Security Flag 4G is used by the default logon module
+(exec/logon.js) to determine whether or not to prompt the sysop to create the
+Guest account.  If you answered &quot;No&quot; to the create Guest and &quot;Ask again later?&quot;
+prompts, you can either run the makeguest.js module manually, or restore the 4G
+security flag to the sysop account to be prompted during the next logon.</pre>
 <p><a href="#top"><b>Back to Top</b></a></p>
 
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
-
 <hr>
-<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2006 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
 </a>
 
 <a href="http://www.synchro.net"><font size="2"><br>
@@ -508,16 +505,14 @@ Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<
 Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
 in 1997 and remains Public Domain software today.<br>
 Synchronet Version 3 is not Public Domain software.</font></p>
-<p align="left"><font size="2"><a href="http://www.synchro.net/author.html">Rob Swindell<br>
-</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
-http://www.synchro.net</a>
+<p align="left"><font size="2"><a href="http://www.synchro.net">http://www.synchro.net</a>
 
 </font></p>
 <p align="left"><font size="2">For the complete Copyright Information please
-read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+read the <a href="http://www.synchro.net/copyright.html">Copyright Document</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<!--webbot bot="Include" endspan i-checksum="15291" -->
 
 </body>
 

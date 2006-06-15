@@ -2,217 +2,54 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=IBM437">
-<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
 <meta name="ProgId" content="FrontPage.Editor.Document">
 <title>Adding Nodes</title>
 </head>
 
 <body>
 
-<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan --><p>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<a href="http://www.synchro.net">
+<img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+</p>
 
 <hr>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
+<!--webbot bot="Include" endspan i-checksum="56836" -->
 
 <p><b><a name="top"></a></b><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 <h2><a name="AddingNodes">[3.0] - Adding Nodes</a></h2>
 <pre>Run SCFG. Select Nodes from the main menu. Hit INS (insert key) to create 
 additional nodes. Each added node will have the configuration options copied
-from the last node. Make any configuration changes (including modem/com port
-configuration) necessary.
+from the last node. No configuration changes should be necessary.
+</pre>
+<pre><b>SBBSCTRL-Windows:</b>
 
-<font color="#FF0000"><i><b>v2 Only:</b></i></font> Copy *.BAT from your NODE1 directory into each added node directory.</pre>
-<pre><font color="#FF0000"><i><b>v3 Only:</b></i></font> If you'd like all nodes to be available for telnet logins, set the
-	 <b>Last Node</b> in the telnet configuration dialog to your highest 
-	 configured node number.</pre>
+	If you'd like all nodes to be available for telnet logins, set the
+<b>	Last Node</b> in the telnet configuration dialog to your highest 
+	configured node number.</pre>
 <pre>	 <img border="0" src="images/sbbsctrl_telnet_cfg_gen.png" width="358" height="318"></pre>
 <pre>	 All nodes controlled by the same instance of SBBSCTRL will use the
 	 configuration information for the node specified as the <b>First Node
 </b>	 in the telnet configuration dialog.</pre>
+<pre>Alternatively, you can edit the <i>LastNode</i> value in the <i>[BBS]</i> section of your
+Synchronet initialization file (e.g. <i>ctrl/sbbs.ini</i>).</pre>
 <h2><a name="ConfiguringNodes">[3.1] - Configuring Nodes</a></h2>
-<pre>You can configure any node from within SCFG regardless of what computer
-(or virtual computer) you're using. To configure a node, select &quot;<i>Nodes</i>&quot; from
-the SCFG &quot;<i>Configure</i>&quot; menu. You will then see a list of all the nodes installed
-on your system. You will also see the bottom line of the screen now has two
-additional key commands added, <i>INS</i> (Insert) and <i>DEL</i> (Delete). INS and DEL are
-used to add and delete nodes from the system. If you select one of the nodes
-listed, you will receive another menu as follows:</pre>
+<pre>To configure a node, select &quot;<i>Nodes</i>&quot; from the SCFG &quot;<i>Configure</i>&quot; menu. You will
+then see a list of all the nodes installed on your system. You will also see
+the bottom line of the screen now has two additional key commands added, <i>INS
+</i>(Insert) and <i>DEL</i> (Delete). INS and DEL are used to add and delete nodes from
+the system. If you select one of the nodes listed, you will receive another
+menu as follows:</pre>
 <pre><img border="0" src="images/scfg_node1.png" width="652" height="331"></pre>
-<pre>We will now discuss the options of this menu.
-
-<b>Name <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-        This is the name of the node. This parameter is not used for anything
-        but documentary purposes in the BBS.
-
-<b>Phone Number:
-</b>        This is the phone number (or IP address/host name) of this node.
-
-<b>Minimum Connect Rate <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        This is the minimum modem connection rate that will be allowed. Callers
-        can still connect and attempt to logon, but without the 'M' exemption,
-        they will be told what minimum connect rate is and disconnected.
-
+<pre>
 <b>Logon Requirements:
-</b>        Use this option to set specific requirements to logon this node.
-
-<b>Local Text Editor <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        This is the command line to use when editing text files or messages
-        locally. This command line is not used when posting or sending e-mail
-        unless the above option is set to 'Yes'. If this option is not
-        specified, the default editor for the current user will be used. An
-        example (using Qedit as the editor) would be:
-        <b>q.exe %f</b>
-
-        Assuming <b><i>Q.EXE</i></b> is in the DOS search path. If it isn't, you can specify
-        the location of the program. Example:
-        <b>c:\qedit\q.exe %f</b>
-
-        The <b>%f</b> parameter will expand to the path and filename of the file to
-        edit.
-
-<b>Text Viewer <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-        This is the command line to use to view text files locally. Currently,
-        this command line is only used to view the system log files. You should
-        use a program that allows the text scrolling up and down as well as
-        string searches. A popular program for this use is Buerg's LIST.
-        If you are running multiple nodes and the program you wish to use
-        leaves the file open while viewing, you should use a batch file that
-        actual copies the file to view and then views the copy.
-        Example (if program name is LIST):
-        LISTIT.BAT:</pre>
-<blockquote>
-  <table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#CCCCCC">
-    <tr>
-      <td width="100%">
-        <pre>@echo off
-copy %1 list.tmp
-list list.tmp
-del list.tmp</pre>
-      </td>
-    </tr>
-  </table>
-</blockquote>
-<pre>        An example for this field (using the LISTIT batch file) would be:
-        <b>%!listit.bat %f</b>
-
-        The <b>%!</b> parameter specifies that the batch file is located in the
-        EXEC directory. If is not located there, you can remove the <b>%!</b> so that
-        the DOS search path will be searched for the batch file or specify
-        its location.
-
-        The <b>%f</b> parameter will expand to the path and filename of the file to
-        view.</pre>
-<pre><b>Configuration Command <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	This is the command line to use to execute the Synchronet configuration
-	program from the WFC screen. The simplest command line to use is &quot;SCFG&quot;
-	(this will execute SCFG.BAT or SCFG.CMD from the current node
-	directory). Alternate command lines:
-
-	If this node is running Synchronet for DOS:
-
-<b>		%!scfg %k /t%w
-</b>
-		This command lines has the added advantage of passing the
-		timeslice configuration of the current node (enabling Win/OS2
-		idle API calls or disabling DESQview/DOS idle API calls).
-		This flavor of SCFG supports user mouse control.
-		This flavor of SCFG can only use conventional DOS memory for
-		configuration items (EMS is automatically used, if available,
-		for executable overlay caching - improving performance but
-		not increasing the maximum number of configured items).
-
-	To use the extended-DOS/Win32 version of SCFG:
-
-<b>		%!scfg32 %k
-</b>
-		This flavor of SCFG can access all of your installed memory
-		(no memory limitations under Win32).
-		This flavor of SCFG does not support any timeslice API calls
-		(may consume more timeslices than necessary when run under a
-		non-Win32 multitasking environment).
-
-	If this node is running Synchronet for OS/2:
-
-<b>		%!scfg4os2 %k
-</b>
-		This flavor of SCFG has no memory limitations.
-
-<b>DOS Command Interpreter <i><font color="#FF0000">(v2 for OS/2 Only)</font></i>:
-</b>	If this node is running Synchronet for OS/2, this is the path to your
-	command interpreter for OS/2 virtual DOS machines. Example:
-
-<b>		C:\OS2\MDOS\COMMAND.COM
-</b>
-	This option is only used when running Synchronet for OS/2.</pre>
+</b>        Use this option to set specific requirements to logon this node.</pre>
 <h2><a name="NodeToggleOptions">[3.2] - Node Toggle Options</a></h2>
 <pre><img border="0" src="images/scfg_node1_toggles.png" width="652" height="331">
 
-<b>Alarm When Answering <i><font color="#FF0000">(v2 Only)</font></i>:</b>
-        If you would like have the BBS sound an alarm when answering the phone,
-        set this option to Yes.
-
-<b>Status Screen While WFC <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        This node will display a screen with system usage statistics and the
-        current status of all active nodes.
-
-<b>Total Msgs/Files While WFC <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If you have the system statistics displayed while WFC, and you wish to
-	include the total number of messages and files in the display, set this
-	option to Yes. The retrieval of statistics is faster when set to No.
-
-<b>Use Editor for Messages <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        If this option is set to 'Yes' and you have specified a Local Text
-        Editor, when logged on locally this editor will be used for the creation
-	of all messages.
-
-<b>Use EMS for Overlays <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	Set this option to 'Yes' to have this node to use EMS memory for
-	overlay files. Setting this option to 'Yes' can help increase the
-	performance of the BBS significantly if enough EMS memory is available
-	(about 360K).
-
-<b>Allow Swapping <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	Set this option to 'Yes' to allow this node to swap when necessary.
-	If you do not have EMS, XMS, or Extended memory available, and you
-	do not wish to have Synchronet swap to disk, you should set this
-	option to 'No'.
-
-<b>Swap to EMS <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	When set to 'Yes', Synchronet will attempt to swap to EMS memory when
-	executing a program that is in your &quot;Global Swap List&quot;.
-
-<b>Swap to XMS <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	When set to 'Yes', Synchronet will attempt to swap to XMS memory.
-
-<b>Swap to Extended Memory <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	When set to 'Yes', Synchronet will attempt to swap to Extended memory.
-	This option should always bet set to 'No' when running under a DOS
-	multitasker.
-
-<b>Windows/OS2 Time Slice API <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	Set this option to 'Yes' if you are running Synchronet under OS/2.
-	You may experience poor performance if this option is set to 'Yes'
-	and you are running Synchronet under Microsoft Windows v3.x. If this
-	occurs, set this option to 'No'.
-
-<b>DESQview Time Slice API <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	Set this option to 'Yes' if you are running Synchronet using DESQview.
-	Since Synchronet auto-detects DESQview it will not hurt anything to
-	leave this option set to 'Yes' if you are not running DESQview.
-
-<b>DOS Idle Interrupts <i><font color="#FF0000">(v2 for DOS Only)</font></i>:
-</b>	This option defaults to 'Yes'. You should not change this setting.
-
-<b>Low Priority String Input:
-</b>	Normally Synchronet does not give up time-slices under multi-taskers
-	when waiting for string input from the user.  Setting this option to
-	'Yes' will for Synchronet to give up time-slices when waiting for
-	string input, this may cause &quot;jerky&quot; keyboard response but will
-	improve overall system performance under multi-taskers. This option
-	should normally be set to 'Yes'.
 
 <b>Allow Logon by Number:
 </b>	Setting this option to 'Yes' will allow users to logon by typing their
@@ -225,34 +62,19 @@ del list.tmp</pre>
 <b>Always Prompt for Password:
 </b>	When set to 'Yes' this option will cause the user to ALWAYS be prompted
 	for a password at logon, even if they have entered an incorrect (non-
-	existent) name at the login prompt.
-
-<b>Disable Local Inactivity <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If you wish to disable the user inactivity warning and auto-logoff
-	for local logons, set this option to 'Yes'.
-
-<b>Disable Local Keyboard <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If this option is set to 'Yes', the local keyboard will be completely
-	disabled when Synchronet is run. The only way to exit Synchronet would
-	be to down the node from another process or reboot the machine.
-
-<b>Local System Protection <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If you wish to require the system password for WFC commands and local
-	sysop Alt-key combinations, set this option to 'Yes'.
-
-<b>Beep Locally <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	To disable the local speaker of this node for online beeps, set this
-	option to 'No'.
+	existent) user name at the login prompt.
 
 <b>Allow 8-bit Remote Logons:
 </b>	To allow E-7-1 terminals to use this node, set this option to 'No'.
 	This will also eliminate the ability of 8-bit remote users to send
-	IBM extended ASCII characters during the logon sequence.
-
-<b>Reset Video Between Calls <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	If this option is set to 'Yes', Synchronet will reset the current
-	node console's video mode before each WFC cycle. This option should
-	be set to 'No' for most configurations.</pre>
+	IBM extended ASCII characters during the logon sequence.</pre>
+<pre><b>Spinning Pause Prompt:</b>
+	To disable the spinning cursor on screen-pause prompts, set this option
+	to 'No'.</pre>
+<pre><b>Keep Node File Open:</b>
+	It can benefit performance to leave the node file (ctrl/node.dab) open.
+	If you have problems with the node file being read correctly across network
+	drives (on a LAN), try setting this option to 'No'.</pre>
 <h2><a name="NodeAdvancedOptions">[3.3] - Node Advanced Options</a></h2>
 <pre>When selecting this option, you will be brought to a sub-menu of options as
 follows:</pre>
@@ -261,27 +83,16 @@ follows:</pre>
 <b>Validation User:
 </b>        This is the number of the user to whom validation feedback is sent.
         This value will usually be set to 1 (the sysop). If this value is set
-        to 0, then new users will not be required to enter validation feedback.
+        to 0, then <b>new users will not be required to enter validation feedback</b>.
 
-<b>Screen Length <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        This is the length of the system screen or video window. This should
-        be set to &quot;Auto-Detect&quot; always, unless you have a specific reason
-        to force Synchronet to think the screen length is a certain value.
-
-<b>Screen Blanker <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>	When enabled, this will cause the screen for this node to blank out
-	when waiting for a caller after the configured amount of inactive
-	time.
-
-<b>Semaphore Frequency <i><font color="#FF0000">(v2 Only)</font></i>:
+<b>Semaphore Frequency:
 </b>	This option specifies how often (in seconds) this node should perform
 	semaphore checks (e.g. checks to see if an event should be run, the
 	node should be downed, etc.).
 
-<b>Statistics Frequency <i><font color="#FF0000">(v2 Only)</font></i>:
+<b>Statistics Frequency:
 </b>	This options specifies how often (in seconds) this node should check
-	system statistics (calls per day, logons today, etc.).	Used when
-	updating the WFC statistics display.
+	system statistics (calls per day, logons today, etc.).
 
 <b>Inactivity Warning:
 </b>	This is the number of seconds of user inactivity before a warning
@@ -292,99 +103,20 @@ follows:</pre>
 </b>	This is the number of seconds of user inactivity before the user
 	is automatically disconnected.
 
-<b>Cost Per Call:
-</b>        This option should only be set to something nonzero for a billing
-        node. A billing node is a node attached to special phone line that will
-        automatically charge the caller a predetermined amount (usually area
-        code 900 or prefix 976 numbers). Set this value to the amount that the
-        caller will be billed after the initial 30 seconds. The user doesn't
-        actually access the BBS through this phone number as 900/976 services
-        charge the sysop by the minute an unrealistic amount. The user just
-        enters his or her name/alias and password and their account is credited
-        with the amount of credits per dollar specified in the System options
-	multiplied by this field (Cost per call) and the user is hung up on.
-        The user then calls the normal BBS nodes and has instant access to
-        their purchased credits.
-
 <b>Daily Event:
 </b>        This is the command line to execute when the first caller after
         midnight logs off. If the program is located in the EXEC directory,
         this command line should start with the %! specifier.
 
-<b>Control Directory:
-</b>        This is the path to the control directory where all the shared
-	configuration (.CNF) files for SBBS are stored. TEXT.DAT (the editable
-        ASCII file that contains almost all of the color and text that SBBS
-        displays) and a few miscellaneous binary data files are also stored
-        in this directory. All nodes of the system must have the same control
-        directory and this directory should not be located on a RAM disk.
-
 <b>Text Directory:
 </b>        This is the path to the text directory. This is where all menus,
         macros, SIF files, QWK files, system information, and other text
-        files are stored. All data beneath this directory branch is READ ONLY
-        as far as Synchronet is concerned, so changing this directory to a RAM
-        drive would enhance performance and wouldn't risk data loss. If you do
-        change this path, be sure to copy all the files and subdirectories of
-        the original text directory there. If you do change this path to a RAM
-        drive, you will need automate the copying of all of the files and
-        subdirectories there upon system startup (possibly AUTOEXEC.BAT) with a
-        sequence of commands like this:
-<b>        md r:\text
-        xcopy c:\sbbs\text\*.* r:\text /S
-</b>
-<b>Temporary Directory:
-</b>        This is the path to the directory that this node will use for
-        temporary file storage. This directory must point to somewhere unique
-        and nonvolatile. All the files in this directory are deleted upon
-        execution of the BBS, so do not store any files you want to keep in
-        this directory. Each node must have its own temp directory. For
-        increased performance on batch uploads, it is best if this directory
-        is on the same disk drive as the majority of your file transfer
-        directories.</pre>
-<pre><b>	<i><font color="#FF0000">In v3+, this option should always be set to &quot;TEMP\&quot;.</b></font></i>
-
-<b>Swap Directory <i><font color="#FF0000">(v2 Only)</font></i>:
-</b>        This is the path to the directory that this node will use for
-	swapping to disk if &quot;Allow Swapping&quot; is set to 'Yes' and Swapping
-	to EMS, XMS, and Extended memory is either disabled or not enough
-	memory is available.</pre>
-<h3><a name="ModemConfiguration"><u>Modem Configuration</u></a>
-
-<b> <i><font color="#FF0000">(v2 Only)</font></i></b></h3>
-<div align="left">
-<pre align="left">This sub-menu and the options contained within it are discussed in another
-section of this manual. Consult the '<a href="modem_setup.html">Modem Set-Up</a>' section of this manual
-for more information.</pre>
-</div>
-<h2 align="left"><a name="WFC_NumberKeys">[3.4] - Wait for Call Number
-Keys</a>
-
-<b><i><font color="#FF0000">(v2 Only)</font></i></b></h2>
-<div align="left">
-<pre>This option lets you configure what command line will be executed for each
-number key (0-9) while waiting for call. These commands will generally be
-simple things that don't require much memory, such as listing the ERROR.LOG,
-listing the GURU.LOG, editing a file, or any other simple functions. For large
-program functions, see Wait for Call Function Keys.</pre>
-</div>
-<h2 align="left"><a name="WFC_FunctionKeys">[3.5] - Wait for Call Function
-Keys</a>
-
-<b><i><font color="#FF0000">(v2 Only)</font></i></b></h2>
-<div align="left">
-<pre>This option lets you configure what command line will be executed for each
-function key (F1-F12) while waiting for call. These commands can execute just
-about any program because Synchronet will shrink to 16k before executing it.
-Popular uses for these shrinking commands would be running a terminal program
-or other large applications.</pre>
-</div>
+        files are stored.</pre>
 <p><a href="#top"><b>Back to Top</b></a></p>
 
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
-
 <hr>
-<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2006 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
 </a>
 
 <a href="http://www.synchro.net"><font size="2"><br>
@@ -403,16 +135,14 @@ Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<
 Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
 in 1997 and remains Public Domain software today.<br>
 Synchronet Version 3 is not Public Domain software.</font></p>
-<p align="left"><font size="2"><a href="http://www.synchro.net/author.html">Rob Swindell<br>
-</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
-http://www.synchro.net</a>
+<p align="left"><font size="2"><a href="http://www.synchro.net">http://www.synchro.net</a>
 
 </font></p>
 <p align="left"><font size="2">For the complete Copyright Information please
-read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+read the <a href="http://www.synchro.net/copyright.html">Copyright Document</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<!--webbot bot="Include" endspan i-checksum="15291" -->
 
 </body>
 

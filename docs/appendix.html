@@ -2,20 +2,22 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
 <meta name="ProgId" content="FrontPage.Editor.Document">
 <title>Appendix Listing</title>
 </head>
 
 <body>
 
-<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan --><p>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<a href="http://www.synchro.net">
+<img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+</p>
 
 <hr>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
+<!--webbot bot="Include" endspan i-checksum="56836" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 <h2><a name="Appendix_A">[18.1] - Appendix A:  Command Line Specifiers</a>
@@ -61,70 +63,6 @@ string-related Baja functions.
 <b>%2</b>	User number (0 padded to 2 digits)
 <b>%3</b>	User number (0 padded to 3 digits)
 <b>%4</b>	etc...</pre>
-<h2><a name="Appendix_B">[18.2] - Appendix B: Synchronet (SBBS/SCFG)
-Command Line Options</a>
-
- <b><font color="#FF0000"><i>(v2 Only)</i></font></b>
-
-</h2>
-<pre>The Synchronet BBS program (SBBS.EXE or SBBS4OS2.EXE) can be run with optional
-command line switches. The switches should be separated by a space. Slash (/)
-and dash (-) are ignored, so &quot;SBBS B&quot; and &quot;SBBS /B&quot; are equivalent. Case is
-ignored, so &quot;SBBS B&quot; and &quot;SBBS b&quot; are equivalent. To list the available options
-from the DOS command line, you may type &quot;SBBS ?&quot;. Here is a list of available
-switches:
-
-<b>B</b>	Use BIOS for video instead of direct screen writes
-	- Older multitasking software may require this switch
-<b>M</b>	Modem debug output
-	- This switch is helpful in solving problems with modem initialization
-<b>Q</b>	Quit after one call
-	- SBBS will exit back to DOS (phone off-hook) after one user
-<b>X</b>	Quit after one call (on hook)
-	- SBBS will exit back to DOS (phone on-hook) after one user
-<b>C#</b>	Connection already established at # bps
-	- If user already connected, pass current connect rate (DCE)
-<b>E#</b>	External event in # minutes
-	- If there is a non-Synchronet event coming up, pass minutes left
-<b>F</b>	Force daily event
-        - Used to force SBBS to execute its internal daily maintenance
-<b>L</b>	Local logon only
-	- If you want Synchronet to immediately go to the local logon prompt
-<b>I</b>	Don't initialize modem
-	- If you don't want Synchronet to initialize the modem
-<b>D</b>	Force Synchronet to think DCD is high
-	- Normally only used for NULL modem connections
-<b>Zs</b>	Pass Caller-ID string on command line as 's'
-	- Used in combination with 'C#' option, normally from front-end mailer
-<b>O</b>	Execute all pending events and immediately exit
-	- Used with front-end mailers
-<b>R#</b>	Additional rioctl call
-	- This switch is for the internal use of Synchronet only (DO NOT USE)
-<b>V</b>	Version information
-	- Displays the detailed version and revision information of SBBS
-
-The Synchronet Configuration Utility (SCFG.EXE, SCFG32.EXE or SCFG4OS2.EXE)
-requires at least one command line switch (hard-coded into the included
-SBBS.BAT and SBBS.CMD files): the path to your Synchronet CTRL directory
-(e.g. &quot;SCFG ..\CTRL&quot;). While no other command line options are normally needed,
-the following command line options may be specified:
-
-<b>/M</b>	Show free memory in upper right corner
-	- Show available memory instead of current time (n/a in SCFG4OS2.EXE)
-<b>/N</b>	Don't use EMS for overlay caching
-	- Don't use Expanded Memory if detected (only in SCFG.EXE)
-<b>/S</b>	Don't check directories
-	- Don't create directories on the disk(s) if they don't exist
-<b>/F</b>	Force save of config files
-	- Used by the Synchronet INSTALL program
-<b>/U</b>	Update all message base status headers
-	- Forces the update of SMB headers to match current config
-<b>/H</b>	Don't update message base status headers
-	- Don't attempt to update SMB headers to match config (if changed)
-<b>/T#</b>	Set supported time slice APIs to # 
-	- 0=DV if detected(default), 1=Int28, 2=WinOS2, 4=NoDV (SCFG.EXE only)
-<b>/B#</b>	Set automatic back-up level
-	- Set number of back-up files (*.CN# files) to keep (default=3 max=10)</pre>
 <h2><a name="Appendix_C">[18.3] - Appendix C: SBBS Environment Variables</a>
 
 </h2>
@@ -182,62 +120,17 @@ is a list of environment variables and a brief explanation of them:
 		DSZLOG, then this log file will be read in by Synchronet after
 		the transfer is complete, to determine which files were
 		successfully transferred and which files were not.</pre>
-<h2><a name="Appendix_D">[18.4] - Appendix D: Wait for Call Status
-Display</a>
-
- <b><font color="#FF0000"><i>(v2 Only)</i></font></b>
-
-</h2>
-<pre><b>Example:</b></pre>
-<table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#000000">
-  <tr>
-    <td width="100%">
-      <pre><font color="#00FF00">Node #: 5   Mar 11  Space: 162,024k    Laston: Digital Man 14400
-Logons: 23/103	    Total: 62,610      Timeon: 322/2430    Total: 5,321,900
-Emails: 4/265	    Posts: 4/12811     Fbacks: 2/17	   Users: 1/592
-Uloads: 324k	    Files: 1/2195      Dloads: 9,308k	   Files: 52</font></pre>
-    </td>
-  </tr>
-</table>
-<pre>This status screen will be shown when the node is waiting for call if the
-sysop (User #1) has EXPERT mode turned ON and this node has Status Screen While
-WFC set to Yes in SCFG-&gt;Nodes-&gt;Node #-&gt;Toggle Options.
-
-The first line has the current node number, the current month and day,
-the amount of free disk space on the drive where the TEMP directory is located
-(should be on the drive where the majority of uploads are received), the
-user who was last on this node and with what type of connection.
-
-The second line has the number of logons today for this node/system, the
-total logons for history of the system, the time spent on today (in minutes) for
-this node/system and total time spent on for history of the system.
-
-The third line contains the number of E-mails sent today on the system/total
-E-mails currently waiting on the system, total number of Posts made on the
-system today/total posts in all sub-boards, number of feedbacks (E-mail to #1)
-sent today/total E-mail waiting for User #1, number of New Users today/total
-user slots on the system.
-
-The fourth line has the amount of uploads to the system today (in Kilobytes),
-number of files uploaded/total files in all directories, amount of downloads
-today (in Kilobytes) and total files downloaded today.
-
-If there are any active nodes or nodes with a critical error count, the status
-of those nodes will be displayed below the above statistical information.</pre>
 <h2><a name="Appendix_E">[18.5] - Appendix E: Node Status Display</a>
 
 </h2>
-<pre>Anywhere within Synchronet, you can list the users currently online with the
-Ctrl-U command.
+<pre>Anywhere within Synchronet's Telnet/RLogin interface, you can list the users 
+currently online with the Ctrl-U command.
 
 From the Main, Transfer, Multinode Chat, or Private Chat sections you can list
 the current status of all the nodes with the '/L' command.
 
 You can display the status of all nodes from the DOS command line (or batch
 file) with the NODE utility.
-
-If the WFC Status Screen is enabled, the status of all active nodes is
-displayed.
 
 <b>Node Status Line:</b>
 
@@ -460,13 +353,12 @@ A					Restrictions to remove
 
 
 NOTE: Technical specifications and C source code for Synchronet configuration
-      and data files can be downloaded from our BBS.</pre>
+      and data files can be downloaded from Vertrauen.</pre>
 <p><a href="#top"><b>Back to Top</b></a></p>
 
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
-
 <hr>
-<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2006 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
 </a>
 
 <a href="http://www.synchro.net"><font size="2"><br>
@@ -485,16 +377,14 @@ Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<
 Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
 in 1997 and remains Public Domain software today.<br>
 Synchronet Version 3 is not Public Domain software.</font></p>
-<p align="left"><font size="2"><a href="http://www.synchro.net/author.html">Rob Swindell<br>
-</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
-http://www.synchro.net</a>
+<p align="left"><font size="2"><a href="http://www.synchro.net">http://www.synchro.net</a>
 
 </font></p>
 <p align="left"><font size="2">For the complete Copyright Information please
-read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+read the <a href="http://www.synchro.net/copyright.html">Copyright Document</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<!--webbot bot="Include" endspan i-checksum="15291" -->
 
 </body>
 

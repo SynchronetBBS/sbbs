@@ -2,28 +2,30 @@
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
 <meta name="ProgId" content="FrontPage.Editor.Document">
 <title>User Editor</title>
 </head>
 
 <body>
 
-<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan --><p>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<a href="http://www.synchro.net">
+<img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+</p>
 
 <hr>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
+<!--webbot bot="Include" endspan i-checksum="56836" -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 
-<h2><a name="UsingUserEditLocally">[6.1] - Using User Edit Locally&nbsp;</a></h2>
+<h2><a name="UsingUserEditLocally">[6.0] - Editing Users Locally&nbsp;</a></h2>
 
-<pre><b>Graphical Synchronet User Editor <i><font color="#FF0000">(v3+ Only)</font></i></b></pre>
-<pre>The User Editor application can be executed from the menu bar of the Synchronet 
-Control Panel as shown below.
+<pre><b>Graphical Synchronet User Editor <i><font color="#FF0000">(Windows Only)</font></i></b></pre>
+<pre>The Windows graphical user editor application can be executed from the
+menu bar of the Synchronet Control Panel as shown below.
 
 <img border="0" src="images/uedit_v3_exe.png" width="430" height="151"></pre>
 <pre>Below is a screenshot of the GUI User Editor with a sample user and data
@@ -32,34 +34,28 @@ and what data you decide to collect from new users. There are many options
 and settings available in the User Editor and you should spend some time
 getting familiar with this feature.</pre>
 <pre><img border="0" src="images/uedit_v3.png" width="453" height="403"></pre>
-<pre><b>Online Synchronet User Editor</b>
-
-<b>Alt-U   <i><font color="#FF0000">(v2 Only)</font></i></b>
-	The sysop can locally hit Alt-U at any time within Synchronet to bring
-        up the User Edit function with the user that is online as the current
-        user to edit. After exiting User Edit, the sysop will return to the
-        place where he was prior to hitting Alt-U. </pre>
+<h2><a name="UsingUserEditRemotely">[6.1] - Online User Editor <i>
+(Telnet/RLogin)</i></a></h2>
 <pre><b>U</b>
 	At the Reading Mail or Reading All Mail prompts, hitting 'U' will pop
 	the sysop into User Edit with the author of the previous message as the
-	current user. Hitting 'U' at the Waiting for call screen will start
-	User Edit. Hitting 'U' from the Reading Messages (O)perator menu will
+	current user.  Hitting 'U' from the Reading Messages (O)perator menu will
 	start User Edit too.
 
-<b>;UEDIT
-</b>        Typing ';UEDIT' at either the Main or Transfer prompts will also pop
-	the sysop into User Edit and if a user number or name is specified
-	(e.g. ;UEDIT 20 or ;UEDIT BOB), then that user will be the current
-	user.</pre>
-<h2><a name="UsingUserEditRemotely">[6.2] - Using User Edit Remotely</a></h2>
-<pre>When a remote sysop initiates User Edit (with the U or ;UEDIT command), User
-Edit functions a little differently than when a local sysop initiates it.
-A remote sysop cannot raise any user's Level above his own and can't give a
-user any Flags or Exemptions that he/she doesn't have. A remote sysop can not
-edit any information of any users with a Level higher than his own and their
-passwords, real names, and phone numbers aren't displayed to him/her.
+<b>UEDIT Sysop Command
+</b>        Typing ';UEDIT' at either the Main or File prompts (when using the
+	Synchronet Classic command shell) will also pop the sysop into User Edit
+	and if a user number or name is specified (e.g. ;UEDIT 20 or ;UEDIT BOB),
+	then that user will be the current user account in the editor.
 
-<b>User Edit Screen Example:</b>
+	Other command shells may have different methods of accessing sysop commands
+	from the top-most level menus.</pre>
+<pre>Using the online user editor, a sysop cannot raise any user's security level above
+his own and cannot give a user any Flags or Exemptions that he/she doesn't have. 
+A remote sysop can not edit any information of any users with a Level higher than
+his own and their passwords, real names, and phone numbers aren't displayed to him/her.
+
+<b>Online User Editor Screen Example:</b>
 
 <font color="#000080">Alias     : The Albatross                   Password     : MYPASS    10/12/91
 Real Name : Joe Schmoe                      Phone number : 714-555-1212
@@ -152,7 +148,7 @@ of the current user and the total number of user slots on the system.
 
 If the current user is deleted or inactive, then the 1st line will contain a
 string that specifies this status and all other lines will be shifted down one.</pre>
-<h2><a name="UserEditCommands">[6.3] - User Edit Commands</a></h2>
+<h2><a name="UserEditCommands">[6.2] - Online User Editor Commands</a></h2>
 <pre>As with most Synchronet command prompts, hitting '?' will display a menu
 of commands.</pre>
 <pre>  A  Alias and Chat Handle		 S  Sex (Gender)		      
@@ -512,9 +508,8 @@ The available commands are listed below with explanations.
 <p><a href="#top"><b>Back to Top</b></a></p>
 
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
-
 <hr>
-<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2006 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
 </a>
 
 <a href="http://www.synchro.net"><font size="2"><br>
@@ -533,16 +528,14 @@ Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<
 Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
 in 1997 and remains Public Domain software today.<br>
 Synchronet Version 3 is not Public Domain software.</font></p>
-<p align="left"><font size="2"><a href="http://www.synchro.net/author.html">Rob Swindell<br>
-</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
-http://www.synchro.net</a>
+<p align="left"><font size="2"><a href="http://www.synchro.net">http://www.synchro.net</a>
 
 </font></p>
 <p align="left"><font size="2">For the complete Copyright Information please
-read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+read the <a href="http://www.synchro.net/copyright.html">Copyright Document</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<!--webbot bot="Include" endspan i-checksum="15291" -->
 
 </body>
 
