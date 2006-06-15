@@ -345,7 +345,7 @@ SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # SDL disabled by default for the moment.
-ifndef WITH_SDL
+ifndef USE_SDL
  WITHOUT_SDL	:=	1
 endif
 
