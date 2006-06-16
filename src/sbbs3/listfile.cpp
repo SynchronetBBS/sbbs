@@ -990,7 +990,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							else {
 								sprintf(path,"%s%s",dirpath,fname);
 								sprintf(tmp,"%s%s",dirpath,str);
-								if(rename(path,tmp))
+								if(fexistcase(path) && rename(path,tmp))
 									bprintf(text[CouldntRenameFile],path,tmp);
 								else {
 									bprintf(text[FileRenamed],path,tmp);
