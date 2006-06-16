@@ -426,6 +426,8 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,u.ip_address));
 var plan;
 plan=format("%suser/%04d.plan",system.data_dir,u.number);
+if(!file_exists(plan))	/* Use 8.3 filename for DOS-editor compatibility? */
+	plan=format("%suser/%04d.pla",system.data_dir,u.number);
 if(file_exists(plan)) {
 	write("Plan:\r\n");
 	send_file(plan);
