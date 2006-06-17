@@ -1,0 +1,197 @@
+FidoNet NetMail/EchoMail File Naming Primer by Rob Swindell
+-----------------------------------------------------------
+
+One of the most confusing aspects of FidoNet Technology Networks
+is the various files involved and their naming schemes.
+
+Since FTN software was mostly created during the days of CP/M
+and DOS, the file names were limited to the file name formats
+supported by these ancient operating systems. Specifically,
+eight base characters and a three character suffix (extension),
+separated by a period (or "dot").
+
+This is often referred to as the 8.3 file naming format and
+this limited name space resulted in some interesting (and
+often confusing) file naming schemes by FTN programs (e.g.
+BBSes, mailers, and echomail programs).
+
+Here's a break down of the files involved and their naming:
+
+
+Stored Message
+--------------
+Stored messages are often referred to as ".msg files" as the
+file name is a positive non-zero decimal number with a ".msg"
+suffix (e.g. "1.msg", "2.msg", etc.) with a single message
+stored in a each file.
+
+These files are usually used for NetMail (private user-to-user
+messages between FTN nodes), but are sometimes used for
+Bundle or Packet file attachments (e.g. for FrontDoor/Attach-
+style mailers). The attached file is actually sent separately
+and usually stored in different directory, but is referenced by a
+particular Stored Message.
+
+Stored Message files are usually stored in a "netmail"
+sub-directory or folder. Some echomail programs or mailers
+use the "1.msg" file as a special "highwater marker" and the
+"real" Stored Messages are stored in "2.msg", "3.msg", etc.
+
+The contents of a Stored Message are defined in the FidoNet
+Technical Standard document: FTS-0001.
+
+Binkley/FLO-style mailers also support NetMail messages with
+attachments, but do *not* support Stored Messages. Binkley/FLO
+style mailers always send NetMail packed into Packets,
+so there is no "netmail" sub-directory of folder normally
+associated with a Binkley/FLO-style mailer and they don't
+deal with Stored Messages (aka ".msg files").
+
+
+Packet
+------
+An FTN Packet file contains a Packet Header, followed by
+one or more Packed Messages.
+
+Packets may contain NetMail or EchoMail messages.
+
+Packet files have a ".pkt" suffix (SBBSecho names Packet
+files "in proccess" with a ".pk_" suffix). The base file name
+of a Packet can actually be *anything*, but is usually a
+numeric time stamp of some sort. SBBSecho uses "DDHHMMSS"
+(where each pair of letters is a 2-digit zero-padded decimal
+number representing the Day of the month, hour of the day,
+minute, and second at the time the packet was created)
+as the base file name when creating Packet files. The
+important thing is that the Packet files have unique names.
+The actual elements that make up the base file name are not
+important.
+
+The exception to this Packet file naming scheme is *outbound*
+NetMail Packet files pending transmission by Binkley/FLO-style
+mailers are named:
+
+	NNNNnnnn.Out
+
+where "NNNN" is the destination network number as a 4-digit
+zero-padded hexadecimal number, "nnnn" is the destination node
+number as a 4-digit zero-padded hexadecimal number and "O"
+is a single character indicating the "status" of the packet:
+either (C)rash, (D)irect/Immediate, (H)old, or n(O)rmal.
+
+Binkley/FLO-style mailers actually rename these Packet files
+to "*.pkt" before they are sent to a remote mailer.
+
+The Packet Header and Packed Messages stored in a Packet file
+are defined in the FidoNet Technical Standard document: FTS-0001.
+
+Contrary to popular mistake, Packet files themselves are *not*
+compressed.
+
+
+Bundle (aka ArcMail Bundle)
+------
+A Bundle is an archive file (typically created with PKZIP or 
+similar archive program), containing one or more Packet files
+with a common destination address, usually compressed, though
+the file will not have a ".zip" or otherwise common archive
+file name suffix (more about that in a minute).
+
+The Bundle file name suffix must be constructed from the first
+2 letters of the current day of the week at the time the
+bundle was first created, followed by an alphanumeric character.
+The trailing alphanumeric character is incremented if a Bundle
+file with the next logical filename already exists (e.g. ".Su0", 
+followed by ".Su1", ... ".Mo0", ..., all the way to ".SaZ").
+
+The Bundle base file name is created by subtracting the
+destination FTN network and node number from the source
+network and node number and representing the result as 4-digit
+hexadecimal numbers. Example:
+
+	NNNNnnnn.Mo0
+
+where "NNNN" is the 4-digit zero-padded hexadecimal result
+of subtracting the destination network number from the source
+network number and "nnnn" is the hexadecimal result of
+subtracting the destination node number from the source node number.
+
+If the destination network or node number is *greater* than the
+source number, then the result would be a "two's complement"
+representation of the negative result.
+
+For example, if the source address was network 103, node 705
+(represented as 103/705) and the destination address was
+200/1, then the Bundle base filename would be:
+
+	FF9F02C0
+
+Explanation (network part, first four characters):
+	103-200 = -97
+	-97 = FF9F (hexadecimal)
+
+Explanation (node part, last four characters):
+	705-1 = 704
+	704 = 02C0 (hexadecimal)
+
+Another permuation of this scheme is used when the destination 
+address is a "point" address (e.g. 200/1.2). In this scheme,
+the "NNNN" portion of the base filename is always "0000" and
+the "nnnn" portion is "pPPP" where "PPP" is the destination
+point number as 3-digit zero-padded hexadecimal number.
+
+Hexadecimal numbers can be made from either upper or lower
+case letters (A-F), so case is not significant.
+
+
+Flow Files
+----------
+Flow Files are unique to Binkley/FLO-style mailers and are not an
+FTN standard. Flow files are control files containing plain
+text (so they can easily viewed or edited, unlike the other file
+types described in this document).
+
+The file name of a Flow file is usually in the format
+
+	NNNNnnnn.Flo
+
+where "NNNN" is the destination node number as a 4-digit zero-padded
+hexadecimal number, and "nnnn" is the destation network number as
+a 4-digit zero-padded hexadecimal number, and "F" indicates the
+"Status" of the Bundles or Packets listed in this file:
+(C)rash, (D)irect/Immediate, (H)old, or F, for "Normal".
+
+Another permuation of this scheme is used when the destination 
+address is a "point" address. In this scheme, the base file name
+is the destination point number as an 8-digit zero-padded hexadecimal
+number and the file is placed in a sub-directory of the normal
+"outbound" directory, named:
+
+	NNNNnnnn.pnt
+
+where "NNNN" is the destination node number as a 4-digit zero-padded
+hexadecimal number, and "nnnn" is the destation network number. So,
+for example:
+
+	outbound/006702C1.PNT/00000001.FLO
+
+would be the name of a Flow file listing files destined for
+FTN address: 103/705.1 (in the same zone as the sender).
+
+Flow files for destination addresses in a *foreign* zone are placed
+in a different "outbound" directory with a suffix of the destination
+zone number represented as a 3-digit zero-padded hexadecimal number.
+
+Hexadecimal numbers can be made from either upper or lower
+case letters (A-F), so case is not significant.
+
+The contents of the Flow file are described in the documentation
+of the Binkley FidoNet mailer, but I'll give a short description here:
+
+Each line of the Flow file describes an outbound file (typically a
+Bundle or Packet file , but technically, any file) that is pending
+transmission to a remote FTN node. The first character of the line
+indicates whether or not to delete or truncate the file after its
+been sent (i.e. '#' indicates truncate, '^' indicates delete).
+
+/* End of File */
