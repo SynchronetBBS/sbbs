@@ -3039,7 +3039,6 @@ void sbbs_t::hangup(void)
 
 	if(client_socket!=INVALID_SOCKET) {
 		mswait(1000);	/* Give socket output buffer time to flush */
-		riosync(0);
 		client_off(client_socket);
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
@@ -3084,31 +3083,6 @@ void sbbs_t::putcom(char *str, int len)
     	len=strlen(str);
     for(i=0;i<len && online; i++)
         outcom(str[i]);
-}
-
-void sbbs_t::riosync(char abortable)
-{
-	if(useron.misc&(RIP|WIP|HTML))	/* don't allow abort with RIP or WIP */
-		abortable=0;			/* mainly because of ANSI cursor position response */
-	if(sys_status&SS_ABORT)		/* no need to sync if already aborting */
-		return;
-	time_t start=time(NULL);
-	while(online && rioctl(TXBC)) {				/* wait up to three minutes for tx buf empty */
-		if(sys_status&SS_ABORT)
-			break;
-#if 0	/* this isn't necessary (or desired) on a TCP/IP connection */
-		if(abortable && rioctl(RXBC)) { 		/* incoming characer */
-			rioctl(IOFO);						/* flush output */
-			sys_status|=SS_ABORT;				/* set abort flag so no pause */
-			break;								/* abort sync */
-		}
-#endif
-		if(time(NULL)-start>180) {				/* timeout */
-			logline("!!","riosync timeout"); 
-			break;
-		}
-		mswait(100);
-	}
 }
 
 /* Legacy Remote I/O Control Interface */

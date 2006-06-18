@@ -521,7 +521,6 @@ public:
 	int		uselect(int add, uint n, char *title, char *item, uchar *ar);
 	uint	uselect_total, uselect_num[500];
 
-	void	riosync(char abortable);
 	void	redrwstr(char *strin, int i, int l, long mode);
 	void	attr(int atr);				/* Change local and remote text attributes */
 	void	ctrl_a(char x);			/* Peforms the Ctrl-Ax attribute changes */

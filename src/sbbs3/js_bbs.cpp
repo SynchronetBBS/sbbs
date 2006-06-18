@@ -1442,7 +1442,6 @@ js_logoff(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			sbbs->exec_bin(sbbs->cfg.logoff_mod,&sbbs->main_csi);
 		sbbs->user_event(EVENT_LOGOFF);
 		sbbs->menu("logoff");
-		sbbs->riosync(0);
 		sbbs->hangup(); 
 	}
 

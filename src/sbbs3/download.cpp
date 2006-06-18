@@ -213,8 +213,6 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		return(-1); 
 	}
 	bputs(text[StartXferNow]);
-	RIOSYNC(0);
-	//lprintf("%s",cmdline);
 	if(cd) 
 		p=cfg.temp_dir;
 	else

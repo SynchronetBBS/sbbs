@@ -819,12 +819,9 @@ enum {							/* Values of mode for userlist function     */
 							attr(slatr[slcnt]); \
 							rputs(slbuf[slcnt]); \
 							curatr=slcuratr[slcnt]; }
-#define RIOSYNC(x)		{ if(online==ON_REMOTE) riosync(x); }
 #define SYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
-						  RIOSYNC(0); \
 						  nodesync(); }
 #define ASYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
-						  RIOSYNC(1); \
 						  nodesync(); }
 #define ANSI_SAVE() 	rputs("\x1b[s")
 #define ANSI_RESTORE()	rputs("\x1b[u")

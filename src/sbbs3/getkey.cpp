@@ -507,7 +507,6 @@ void sbbs_t::pause()
     int		i,j;
 	long	l=K_UPPER;
 
-	RIOSYNC(0);
 	if(sys_status&SS_ABORT)
 		return;
 	lncntr=0;

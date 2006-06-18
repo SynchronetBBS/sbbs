@@ -892,7 +892,6 @@ void sbbs_t::privchat(bool local)
 		local_y=14; }
 
 	while(online && (local || !(sys_status&SS_ABORT))) {
-//		RIOSYNC(0);
 		lncntr=0;
 		if(sys_status&SS_SPLITP)
 			lbuflen=0;

@@ -1661,11 +1661,6 @@ int sbbs_t::exec(csi_t *csi)
 		case CS_ASYNC:
 			ASYNC;
 			return(0);
-#if 0 /* Removed 02/18/01 - never used, officially deprecated for INCHAR */
-		case CS_RIOSYNC:
-			RIOSYNC(0);
-			return(0);
-#endif
 		case CS_GETTIMELEFT:
 			gettimeleft();
 			return(0);
