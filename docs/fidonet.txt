@@ -195,7 +195,7 @@ transmission to a remote FTN node. The first character of the line
 indicates whether or not to delete or truncate the file after its
 been sent (i.e. '#' indicates truncate, '^' indicates delete).
 
-More on this from the Binkleyterm v2.60 User Guide (BT-USER.TXT):
+More on this from the BinkleyTerm v2.60 User Guide (BT-USER.TXT):
 
 Idea #4: Use File names to control traffic
      The driving forces of outbound traffic are file names!
@@ -334,5 +334,21 @@ A Sample Message, Start to Finish
 
      For more information on how oMMM or your processor/packer works,
      refer to its specific documentation.
+
+... and from the BinkleyTerm 2.60 Reference Manual (BT-REF.TXT):
+
+     Where is the outbound area for points?  Let's say you are storing
+     mail for points off of a system whose address is 1:132/491.  You
+     would do so by creating a directory 008401EB.PNT in your Zone 1
+     FidoNet outbound directory. (the hex representation of "132" is
+     "84", "491" translates to hex "1EB", so "008401EB" represents
+     132/491 in hexadecimal)
+
+     If you were in Zone 1 of FidoNet, a crash packet to this system's
+     point 12 ("12" is "C" in hex) would be something like:
+
+            C:\BINKLEY\OUTBOUND\008401EB.PNT\0000000C.CUT
+
+
 
 /* End of File */
