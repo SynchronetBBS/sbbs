@@ -4,8 +4,8 @@ FidoNet NetMail/EchoMail File Naming Primer by Rob Swindell
 One of the most confusing aspects of FidoNet Technology Networks
 is the various files involved and their naming schemes.
 
-Since FTN software was mostly created during the days of CP/M
-and DOS, the file names were limited to the file name formats
+Since FTN software was mostly created during the days of MS-DOS
+and PC-DOS, the file names were limited to the file name formats
 supported by these ancient operating systems. Specifically,
 eight base characters and a three character suffix (extension),
 separated by a period (or "dot").
@@ -20,10 +20,14 @@ Here's a break down of the files involved and their naming:
 
 Stored Message
 --------------
-Stored messages are often referred to as ".msg files" as the
-file name is a positive non-zero decimal number with a ".msg"
-suffix (e.g. "1.msg", "2.msg", etc.) with a single message
-stored in a each file.
+Stored Message files are often referred to as ".msg files" as the file
+name is a positive non-zero decimal number with a ".msg" suffix (e.g. 
+"1.msg", "2.msg", etc.) with a single message stored in a each file.
+
+Stored Messages contain a binary header with fixed-length header
+fields, followed by the body text, terminated with an ASCII NUL ('\0')
+character. You should not attempt to view or edit Stored Message files
+with a program designed to view or edit plain text files (e.g. Notepad).
 
 These files are usually used for NetMail (private user-to-user
 messages between FTN nodes), but are sometimes used for
@@ -45,7 +49,7 @@ attachments, but do *not* support Stored Messages. Binkley/FLO
 style mailers always send NetMail packed into Packets,
 so there is no "netmail" sub-directory of folder normally
 associated with a Binkley/FLO-style mailer and they don't
-deal with Stored Messages (aka ".msg files").
+deal with Stored Messages (a.k.a. ".msg files").
 
 
 Packet
@@ -89,7 +93,7 @@ Contrary to popular mistake, Packet files themselves are *not*
 compressed.
 
 
-Bundle (aka ArcMail Bundle)
+Bundle (a.k.a. ArcMail Bundle)
 ------
 A Bundle is an archive file (typically created with PKZIP or 
 similar archive program), containing one or more Packet files
@@ -144,7 +148,7 @@ Hexadecimal numbers can be made from either upper or lower
 case letters (A-F), so case is not significant.
 
 
-Flow Files
+Flow Files (a.k.a. File Attach files)
 ----------
 Flow Files are unique to Binkley/FLO-style mailers and are not an
 FTN standard. Flow files are control files containing plain
@@ -185,13 +189,150 @@ zone number represented as a 3-digit zero-padded hexadecimal number.
 Hexadecimal numbers can be made from either upper or lower
 case letters (A-F), so case is not significant.
 
-The contents of the Flow file are described in the documentation
-of the Binkley FidoNet mailer, but I'll give a short description here:
-
 Each line of the Flow file describes an outbound file (typically a
 Bundle or Packet file , but technically, any file) that is pending
 transmission to a remote FTN node. The first character of the line
 indicates whether or not to delete or truncate the file after its
 been sent (i.e. '#' indicates truncate, '^' indicates delete).
+
+More on this from the Binkleyterm v2.60 User Guide (BT-USER.TXT):
+
+Idea #4: Use File names to control traffic
+     The driving forces of outbound traffic are file names!
+     You'll have a special sub-directory set aside just for packets,
+     compressed mail packets (Bundles) and other network files. This
+     sub-directory belongs to BinkleyTerm, which will maintain the
+     directory for you. It's a good idea not to play with this area
+     unless you know exactly what you're doing.
+
+     Note also that when zoned operation is active (BinkleyTerm default)
+     there are separate outbound areas for each zone. The default
+     outbound area (for your zone) and one additional area for each
+     other zone you deal with. The names of these additional areas are
+     simply the outbound area name, with a three-digit extension that is
+     the zone number in hexadecimal with leading zeroes. See "ZONE
+     SUPPORT" on page 33.
+
+     The file names of the packets tell BinkleyTerm how to treat the
+     different packets. Here's a typical packet name:
+     00680024.OUT
+
+     That says that the packet is for 0068/0024 (in hexadecimal) or
+     104/36 in more familiar terms. The ".OUT" means it is a Normal
+     packet.
+
+     Other packet extensions include:
+                  .HUT          Hold this packet for pickup by the
+                                remote system.
+                  .CUT          The other system can receive
+                                Continuous Mail.
+                  .DUT          Direct, meaning the other system
+                                can NOT receive Continuous Mail.
+
+     One nice thing is that you can manually change the file extension
+     if you need to, or you can use fancy utilities such as AMAX or BONK
+     to do this sort of thing for you on your command.
+
+     For the remainder of this section, we'll assume that you'll be
+     using oMMM as your mail packer. As mentioned previously, you
+     probably will be using another program that has oMMM-like
+     functionality; it depends on your environment.
+
+     The oMMM program knows about these extensions and creates them
+     based on information you put into the oMMM control file. You'll
+     have statements like this:
+
+     NormHold 124/102
+
+     Any messages you enter to 124/102 would be turned into a .HUT
+     packet file, placed into the outbound area, and BinkleyTerm would
+     hold that packet for 124/102 to call and pick it up.
+     Files are also sent through FidoNet compatible networks. oMMM
+     builds and maintains a file that tells BinkleyTerm what files to
+     send (or hold) for whom. A typical 'file attach' file might be
+     named:
+
+     00680024.FLO
+
+     This would designate a that there is a file waiting to be sent to
+     0068/0024 (in hexadecimal) or 104/36 in more familiar terms. The
+     ".FLO" says it is a Normal file attach. File attach files are also
+     called 'flow files' - named after the .FLO file extension.
+
+     Other flow file extensions are:
+
+         .HLO             Hold these files for pickup by the
+                          remote system.
+         .CLO             The other system can receive
+                          Continuous Mail.
+         .DLO             Direct, meaning the other system
+                          can NOT receive Continuous Mail.
+
+     A flow file is just a text file. It contains a list of files that
+     are to be sent to another system:
+
+     #c:\binkley\outbound\0000fc9c.mo1
+     ^c:\myfiles\wizzle.doc
+     c:\pascal\notes.doc
+
+     The '#' prior to a flow file entry says to truncate the file to
+     zero-length after successfully sending the file to the remote
+     system. This is normally only employed when sending compressed mail
+     (archived mail, a.k.a. Bundles) to the remote. The '^' prior to a
+     flow file entry says to delete the file after sending.
+
+     The oMMM program  (or the packer of your choice) will put messages
+     into archives for you. Details on how this is done can be found in
+     the EchoMail processor/message packer documentation. The point is
+     that these packers combine the functionality of "generating
+     packets" with that of traditional standalone programs like ARCmail.
+
+A Sample Message, Start to Finish
+     So here's a practical example. Say I enter a message to Rod Lamping
+     at 104/610. I mark the message as KILL/SENT when I enter it. I also
+     enter the message designating a file to attach to Rod, named
+     C:\FILE\REQ\FOOBAR.ARC.
+
+     I then enter a message in an EchoMail conference. My conference
+     host is Phil Kaiser at 104/904, for whom I hold my mail for pickup.
+
+     Among other things, I have two lines in my oMMM control file:
+
+     NormCM 104/610
+     OneHold 104/904
+
+     'NormCM' tells oMMM to mark the message as Continuous Mail (since
+     Rod runs a mailer 24 hours a day). 'OneHold' tells oMMM to archive
+     the mail to 104/904, and mark it Hold-for-Pickup.
+
+     oMMM users should refer to the oMMM documentation for the full set
+     of available oMMM control file statements.
+
+     First, my EchoMail utilities are run to turn EchoMail messages into
+     Normal packets, and place them in the outbound area for processing
+     by oMMM. Next, I execute oMMM. It first scans the NetMail message
+     area (where I entered my message to Rod) and turns new messages
+     there into Normal packets, and if there are files attached, it
+     creates Normal flow files. oMMM's second step is to use its control
+     file, and apply the statements in the file against the mail in the
+     outbound area that is marked as Normal.
+
+     Since I have Rod's board listed as NormCM, oMMM renames the file
+     extension of the Normal packet and flow file for Rod to .CUT and
+     .CLO respectively, for Continuous Mail.
+
+     Since I have Phil's board listed as OneHold, first oMMM archives
+     the packets to Phil, then creates a flow file with a file extension
+     of .HLO for Hold- for-Pickup.
+
+     I would then have the following in my outbound area:
+
+          00680262.CUT             Message to Rod
+          00680262.CLO             Flow File to Rod
+          00680388.HLO             Flow File to Phil
+          0000FC9C.MO1             Archived Message to Phil
+
+     For more information on how oMMM or your processor/packer works,
+     refer to its specific documentation.
 
 /* End of File */
