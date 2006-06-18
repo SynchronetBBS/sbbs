@@ -145,7 +145,7 @@ if(include_age_gender) {
 	write("<th align=center width=7%>" + font_color + "Age");
 	write("<th align=center width=10%>" + font_color + "Gender\r\n");
 }
-write("<th align=center width=10%>" + font_color " +Time\r\n");
+write("<th align=center width=10%>" + font_color + "Time\r\n");
 writeln("</thead>");
 
 writeln("<tbody>");
