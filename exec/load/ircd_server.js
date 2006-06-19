@@ -963,7 +963,7 @@ function Server_Work() {
 			var chan = Channels[cmd[1].toUpperCase()];
 			if (!chan)
 				break;
-			var the_topic = IRC_string(cmdline,2);
+			var the_topic = IRC_string(cmdline,4);
 			if (the_topic == chan.topic)
 				break;
 			chan.topic = the_topic;
