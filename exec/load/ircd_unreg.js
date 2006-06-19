@@ -133,7 +133,7 @@ function Unregistered_Commands() {
 				this.numeric(409,":No origin specified.");
 				break;
 			}
-			this.rawout("PONG " + servername + " :" + IRC_string(cmdline));
+			this.rawout("PONG " + servername + " :" + IRC_string(cmdline,1));
 			break;
 		case "CAPAB":
 			break; // Silently ignore, for now.
@@ -142,14 +142,14 @@ function Unregistered_Commands() {
 				this.numeric(431, ":No nickname given.");
 				break;
 			}
-			var the_nick = IRC_string(cmd[1]).slice(0,max_nicklen);
+			var the_nick = IRC_string(cmd[1],0).slice(0,max_nicklen);
 			if (this.check_nickname(the_nick))
 				this.nick = the_nick;
 			break;
 		case "PASS":
 			if (!cmd[1] || this.password)
 				break;
-			this.password = IRC_string(cmd[1]);
+			this.password = IRC_string(cmd[1],0);
 			break;
 		case "PONG":
 			this.pinged = false;
@@ -172,13 +172,13 @@ function Unregistered_Commands() {
 			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
 			for (nl in NLines) {
 				if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
-				    IRC_match(cmd[1],NLines[nl].servername)) {
+				    wildmatch(cmd[1],NLines[nl].servername)) {
 					if (check_qwk_passwd(qwkid,this.password)) {
 						this_nline = NLines[nl];
 						break;
 					}
 				} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
-					   IRC_match(cmd[1],NLines[nl].servername)) {
+					   wildmatch(cmd[1],NLines[nl].servername)) {
 						for (qwkm_nl in NLines) {
 							if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
 								var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
@@ -192,7 +192,7 @@ function Unregistered_Commands() {
 							}
 						}
 				} else if ((NLines[nl].password == this.password) &&
-					   (IRC_match(cmd[1],NLines[nl].servername))
+					   (wildmatch(cmd[1],NLines[nl].servername))
 					  ) {
 						this_nline = NLines[nl];
 						break;
@@ -213,7 +213,7 @@ function Unregistered_Commands() {
 			rebuild_socksel_array = true;
 			new_server.socket = this.socket;
 			new_server.hops = cmd[2];
-			new_server.info = IRC_string(cmdline);
+			new_server.info = IRC_string(cmdline,3);
 			new_server.parent = cmd[1];
 			new_server.linkparent = servername;
 			new_server.id = this.id;
@@ -249,7 +249,7 @@ function Unregistered_Commands() {
 				this.numeric461("USER");
 				break;
 			}
-			this.realname = IRC_string(cmdline).slice(0,50);
+			this.realname = IRC_string(cmdline,4).slice(0,50);
 			this.uprefix = parse_username(cmd[1]);
 			break;
 		case "QUIT":
@@ -325,10 +325,10 @@ function Unregistered_Welcome() {
 	var my_iline;
 	// FIXME: We don't compare connecting port.
 	for(thisILine in ILines) {
-		if ((IRC_match(this.uprefix + "@" +
+		if ((wildmatch(this.uprefix + "@" +
 		    this.ip,
 		    ILines[thisILine].ipmask)) &&
-		    (IRC_match(this.uprefix + "@" +
+		    (wildmatch(this.uprefix + "@" +
 		    this.hostname,
 		    ILines[thisILine].hostmask))
 		   ) {

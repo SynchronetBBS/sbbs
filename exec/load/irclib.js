@@ -19,7 +19,7 @@
 // If you use this to create something neat, let me know about it! :)
 // Either email, or find me on #synchronet, irc.synchro.net, nick 'Cyan'
 //
-// Copyright 2003-2005 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 const IRCLIB_REVISION = "$Revision$".split(' ')[1];
@@ -82,30 +82,33 @@ function IRC_server_connect(hostname,servername,password,description,port) {
 	}
 }
 
-// Simply takes a string and returns the 'IRC string' (i.e. what's after a :)
-// Moves up to 'arg' argument before parsing, if defined.
-// RETURNS: The 'IRC string' of 'str'
-/* Fixme: Real IRCd behaviour involves ignoring any ":" after the definied
-   offset. */
+/* Takes a string and returns the proper "IRC string".  Starts scanning on
+   the "arg"th word.
+   EXAMPLES:
+      IRC_string("PRIVMSG Cyan Hello World",2); returns "Hello"
+      IRC_string("PRIVMSG Cyan :Hello World",2); returns "Hello World"
+   RETURNS:
+      The entire string from the "arg"th word and beyond, if the "arg"th word
+      begins with a ":".  If it does not, it returns the "arg"th word only.
+      If it cannot scan to the "arg"th word, an empty string is returned. */
 function IRC_string(str,arg) {
 	var cindex;
-	var sw_counter;
 	var sindex;
 
-	if (arg) {
-		for(sw_counter=0;sw_counter<arg;sw_counter++) {
-			var my_index = str.indexOf(" ");
-			if (my_index == -1)
-				return ""; /* If we can't get to it, then the str is empty. */
-			str=str.slice(str.indexOf(" ")+1);
-		}
+	for(sw_counter=0;sw_counter<arg;sw_counter++) {
+		var my_index = str.indexOf(" ");
+		if (my_index == -1)
+			return ""; /* If we can't get to it, then the str is empty. */
+		str = str.slice(my_index+1);
 	}
-	cindex = str.indexOf(":")+1;
-	if (cindex)
-		return(str.slice(cindex));
+
+	if (str[0] == ":")
+		return(str.slice(1));
+
 	sindex = str.indexOf(" ");
 	if (sindex != -1)
 		return(str.slice(0,sindex));
+
 	return(str);
 }
 
@@ -149,6 +152,9 @@ function IRC_quit(server,reason) {
 // EXAMPLE: IRC_match("cyan@weyland-yutani.net","*@weyland-yutani.net");
 // RETURNS: Same as Javascript match() (the matched string on success, or
 // false on failure)
+/* NOTE! This function is now depreciated.  Synchronet 3.14 and beyond support
+   wildmatch() in JavaScript, which is functionally the same as this.
+   This function will eventually be removed from irclib.js */
 function IRC_match(mtchstr,mask) {
 	var uc_mtchstr = mtchstr.toUpperCase();
 	var uc_mask = mask.toUpperCase();

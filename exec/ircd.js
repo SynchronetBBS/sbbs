@@ -138,10 +138,10 @@ function search_server_only(server_name) {
 		return 0;
 	for(thisServer in Servers) {
 		var Server=Servers[thisServer];
-		if (IRC_match(Server.nick,server_name))
+		if (wildmatch(Server.nick,server_name))
 			return Server;
 	}
-	if (IRC_match(servername,server_name))
+	if (wildmatch(servername,server_name))
 		return -1; // the server passed to us is our own.
 	// No success.
 	return 0;
@@ -156,7 +156,7 @@ function searchbyserver(servnick) {
 	} else {
 		for(thisNick in Users) {
 			var Nick=Users[thisNick];
-			if (IRC_match(Nick.nick,servnick))
+			if (wildmatch(Nick.nick,servnick))
 				return search_server_only(Nick.servername);
 		}
 	}
@@ -356,7 +356,7 @@ function create_ban_mask(str,kline) {
 function isklined(kl_str) {
 	for(the_kl in KLines) {
 		if (KLines[the_kl].hostmask &&
-		    IRC_match(kl_str,KLines[the_kl].hostmask))
+		    wildmatch(kl_str,KLines[the_kl].hostmask))
 			return KLines[the_kl];
 	}
 	return 0;
@@ -365,7 +365,7 @@ function isklined(kl_str) {
 function iszlined(zl_ip) {
 	for(the_zl in ZLines) {
 		if (ZLines[the_zl].ipmask &&
-		    IRC_match(zl_ip,ZLines[the_zl].ipmask))
+		    wildmatch(zl_ip,ZLines[the_zl].ipmask))
 			return 1;
 	}
 	return 0;
@@ -385,7 +385,7 @@ function scan_for_klined_clients() {
 function remove_kline(kl_hm) {
 	for(the_kl in KLines) {
 		if (KLines[the_kl].hostmask &&
-		    IRC_match(kl_hm,KLines[the_kl].hostmask)) {
+		    wildmatch(kl_hm,KLines[the_kl].hostmask)) {
 			KLines[the_kl].hostmask = "";
 			KLines[the_kl].reason = "";
 			KLines[the_kl].type = "";
@@ -1410,7 +1410,7 @@ function IRCClient_global(target,type_str,send_str) {
 			var global_match = Client.hostname;
 		else // assume $
 			var global_match = Client.servername;
-		if (IRC_match(global_match,global_mask))
+		if (wildmatch(global_match,global_mask))
 			Client.originatorout(global_str,this);
 	}
 	global_str = ":" + this.nick + " " + global_str;
@@ -1701,19 +1701,18 @@ function IRCClient_do_summon(summon_user) {
 		// Check if logged in
 		isonline = 0;
 		for(node in system.node_list) {
-		if(system.node_list[node].status == NODE_INUSE &&
-		   system.node_list[node].useron == usernum)
-			isonline=1;
+			if( (system.node_list[node].status == NODE_INUSE)
+				&& (system.node_list[node].useron == usernum) ) {
+				isonline = 1;
+				break;
+			}
 		}
-		if(!isonline)
+		if(!isonline) {
 			this.numeric(444,":User not logged in.");
-		else {
-//			var summon_message=IRC_string(cmdline);
-//			if(summon_message != '')
-//				var summon_message=' ('+summon_message+')';
-//			system.put_telegram('^G^G'+usernum,this.nick+' is summoning you to IRC chat'+summon_message+'\r\n');
-			system.put_telegram(usernum,''+this.nick+' is summoning you to IRC chat.\r\n');
-			this.numeric(342,summon_user+' :Summoning user to IRC');
+		} else {
+			system.put_telegram(usernum, "" + this.nick
+				+ " is summoning you to IRC chat.\r\n");
+			this.numeric(342, summon_user + " :Summoning user to IRC");
 		}
 	}
 }
@@ -1726,10 +1725,10 @@ function IRCClient_do_links(mask) {
 		this.servername + "]");
 	for(thisServer in Servers) {
 		var Server=Servers[thisServer];
-		if (IRC_match(Server.nick,mask))
+		if (wildmatch(Server.nick,mask))
 			this.numeric(364, Server.nick + " " + Server.linkparent + " :" + Server.hops + " " + Server.info);
 	}
-	if (IRC_match(servername,mask))
+	if (wildmatch(servername,mask))
 		this.numeric(364, servername + " " + servername + " :0 " + serverdesc);
 	this.numeric(365, mask + " :End of /LINKS list.");
 }
@@ -1776,8 +1775,8 @@ function IRCClient_trace_all_opers() {
 function IRCClient_do_connect(con_server,con_port) {
 	var con_cline = "";
 	for (ccl in CLines) {
-		if (IRC_match(CLines[ccl].servername,con_server) ||
-		    IRC_match(CLines[ccl].host,con_server) ) {
+		if (wildmatch(CLines[ccl].servername,con_server) ||
+		    wildmatch(CLines[ccl].host,con_server) ) {
 			con_cline = CLines[ccl];
 			break;
 		}
@@ -2055,22 +2054,22 @@ function IRCClient_do_complex_who(cmd) {
 				continue;
 		}
 		if ((who.add_flags&WHO_REALNAME) &&
-		    !IRC_match(wc.realname,who.RealName))
+		    !wildmatch(wc.realname,who.RealName))
 			continue;
 		else if ((who.del_flags&WHO_REALNAME) &&
-		    IRC_match(wc.realname,who.RealName))
+		    wildmatch(wc.realname,who.RealName))
 			continue;
 		if ((who.add_flags&WHO_HOST) &&
-		    !IRC_match(wc.hostname,who.Host))
+		    !wildmatch(wc.hostname,who.Host))
 			continue;
 		else if ((who.del_flags&WHO_HOST) &&
-		    IRC_match(wc.hostname,who.Host))
+		    wildmatch(wc.hostname,who.Host))
 			continue;
 		if ((who.add_flags&WHO_IP) &&
-		    !IRC_match(wc.ip,who.IP))
+		    !wildmatch(wc.ip,who.IP))
 			continue;
 		else if ((who.del_flags&WHO_IP) &&
-		    IRC_match(wc.ip,who.IP))
+		    wildmatch(wc.ip,who.IP))
 			continue;
 		if (who.add_flags&WHO_UMODE) { // no -m
 			var sic = false;
@@ -2122,10 +2121,10 @@ function IRCClient_do_complex_who(cmd) {
 				continue;
 		}
 		if ((who.add_flags&WHO_NICK) &&
-		    !IRC_match(wc.nick,who.Nick))
+		    !wildmatch(wc.nick,who.Nick))
 			continue;
 		else if ((who.del_flags&WHO_NICK) &&
-		    IRC_match(wc.nick,who.Nick))
+		    wildmatch(wc.nick,who.Nick))
 			continue;
 		if ((who.add_flags&WHO_OPER) &&
 		    !(wc.mode&USERMODE_OPER))
@@ -2134,16 +2133,16 @@ function IRCClient_do_complex_who(cmd) {
 		    (wc.mode&USERMODE_OPER))
 			continue;
 		if ((who.add_flags&WHO_SERVER) &&
-		    !IRC_match(wc.servername,who.Server))
+		    !wildmatch(wc.servername,who.Server))
 			continue;
 		else if ((who.del_flags&WHO_SERVER) &&
-		    IRC_match(wc.servername,who.Server))
+		    wildmatch(wc.servername,who.Server))
 			continue;
 		if ((who.add_flags&WHO_USER) &&
-		    !IRC_match(wc.uprefix,who.User))
+		    !wildmatch(wc.uprefix,who.User))
 			continue;
 		else if ((who.del_flags&WHO_USER) &&
-		    IRC_match(wc.uprefix,who.User))
+		    wildmatch(wc.uprefix,who.User))
 			continue;
 		if ((who.add_flags&WHO_MEMBER_CHANNEL) && !flag_M)
 			continue;
@@ -2253,19 +2252,19 @@ function IRCClient_match_who_mask(mask) {
 		else
 			return 0; // channel doesn't exist.
 	} else if (mask.match(/[!]/)) { // nick!user@host
-		if ( IRC_match(this.nick,mask.split("!")[0]) &&
-		     IRC_match(this.uprefix,mask.slice(mask.indexOf("!")+1).split("@")[0]) &&
-		     IRC_match(this.hostname,mask.slice(mask.indexOf("@")+1)) )
+		if ( wildmatch(this.nick,mask.split("!")[0]) &&
+		     wildmatch(this.uprefix,mask.slice(mask.indexOf("!")+1).split("@")[0]) &&
+		     wildmatch(this.hostname,mask.slice(mask.indexOf("@")+1)) )
 			return 1;
 	} else if (mask.match(/[@]/)) { // user@host
-		if ( IRC_match(this.uprefix,mask.split("@")[0]) &&
-		     IRC_match(this.hostname,mask.split("@")[1]) )
+		if ( wildmatch(this.uprefix,mask.split("@")[0]) &&
+		     wildmatch(this.hostname,mask.split("@")[1]) )
 			return 1;
 	} else if (mask.match(/[.]/)) { // host only
-		if ( IRC_match(this.hostname,mask) )
+		if ( wildmatch(this.hostname,mask) )
 			return 1;
 	} else { // must be a nick?
-		if ( IRC_match(this.nick,mask) )
+		if ( wildmatch(this.nick,mask) )
 			return 1;
 	}
 	return 0;
@@ -2414,10 +2413,10 @@ function IRCClient_do_complex_list(cmd) {
 		     (this.mode&USERMODE_OPER) || this.channels[aChan]) {
 			
 			if ((list.add_flags&LIST_CHANMASK) &&
-			    !IRC_match(aChan,list.Mask.toUpperCase()))
+			    !wildmatch(aChan,list.Mask.toUpperCase()))
 				continue;
 			else if ((list.del_flags&LIST_CHANMASK) &&
-			    IRC_match(aChan,list.Mask.toUpperCase()))
+			    wildmatch(aChan,list.Mask.toUpperCase()))
 				continue;
 			if ((list.add_flags&LIST_CREATED) &&
 			   (Channels[aChan].created < (time() - list.Created)))
@@ -2426,10 +2425,10 @@ function IRCClient_do_complex_list(cmd) {
 			   (Channels[aChan].created > (time() - list.Created)))
 				continue;
 			if ((list.add_flags&LIST_TOPIC) &&
-			   (!IRC_match(Channels[aChan].topic,list.Topic)))
+			   (!wildmatch(Channels[aChan].topic,list.Topic)))
 				continue;
 			else if ((list.del_flags&LIST_TOPIC) &&
-			   (IRC_match(Channels[aChan].topic,list.Topic)))
+			   (wildmatch(Channels[aChan].topic,list.Topic)))
 				continue;
 			if ((list.add_flags&LIST_PEOPLE) &&
 			    (true_array_len(Channels[aChan].users) < list.People) )
@@ -2637,10 +2636,10 @@ function Channel_match_list_mask(mask) {
 		         (time() - (parseInt(mask.slice(2)) * 60)) ) )
 			return 0;
 	} else if (mask[0] == "!") { // doesn't match mask X
-		if (IRC_match(this.nam,mask.slice(1).toUpperCase()))
+		if (wildmatch(this.nam,mask.slice(1).toUpperCase()))
 			return 0;
 	} else { // if all else fails, we're matching a generic channel mask.
-		if (!IRC_match(this.nam,mask))
+		if (!wildmatch(this.nam,mask))
 			return 0;
 	}
 	return 1; // if we made it here, we matched something.
@@ -2794,7 +2793,7 @@ function IRCClient_finalize_server_connect(states,sendps) {
 		server.client_update(this.socket, this.nick, this.hostname);
 	if (sendps) {
 		for (cl in CLines) {
-			if(IRC_match(this.nick,CLines[cl].servername)) {
+			if(wildmatch(this.nick,CLines[cl].servername)) {
 				this.rawout("PASS " + CLines[cl].password + " :" + states);
 				break;
 			}

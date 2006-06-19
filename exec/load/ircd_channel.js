@@ -201,7 +201,7 @@ function Channel_chanmode(show_args) {
 
 function Channel_isbanned(banned_nuh) {
 	for (this_ban in this.modelist[CHANMODE_BAN]) {
-		if(IRC_match(banned_nuh,this.modelist[CHANMODE_BAN][this_ban]))
+		if(wildmatch(banned_nuh,this.modelist[CHANMODE_BAN][this_ban]))
 			return 1;
 	}
 	return 0;

@@ -179,7 +179,7 @@ function Server_Work() {
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			if (IRC_match(servername,cmd[1])) {
+			if (wildmatch(servername,cmd[1])) {
 				ThisOrigin.do_admin();
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
@@ -201,7 +201,7 @@ function Server_Work() {
 			this_uh = cmd[2] + "@" + cmd[1];
 			if (isklined(this_uh))
 				break;
-			KLines.push(new KLine(this_uh,IRC_string(cmdline),"A"));
+			KLines.push(new KLine(this_uh,IRC_string(cmdline,6),"A"));
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + cmdline);
 			scan_for_klined_clients();
 			break;
@@ -209,10 +209,10 @@ function Server_Work() {
 			if (ThisOrigin.server)
 				break;
 			var send_away = "AWAY";
-			if (!cmd[1]) {
+			var my_ircstr = IRC_string(cmdline,1);
+			if (!my_ircstr) {
 				ThisOrigin.away = "";
 			} else {
-				var my_ircstr = IRC_string(cmdline);
 				ThisOrigin.away = my_ircstr;
 				send_away += " :" + my_ircstr;
 			}
@@ -221,7 +221,7 @@ function Server_Work() {
 		case "CHATOPS":
 			if (!cmd[1])
 				break;
-			var my_ircstr = IRC_string(cmdline);
+			var my_ircstr = IRC_string(cmdline,1);
 			umode_notice(USERMODE_CHATOPS,"ChatOps","from " +
 				ThisOrigin.nick + ": " + my_ircstr);
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " +
@@ -230,7 +230,7 @@ function Server_Work() {
 		case "CONNECT":
 			if (!cmd[3] || !this.hub || ThisOrigin.server)
 				break;
-			if (IRC_match(servername, cmd[3])) {
+			if (wildmatch(servername, cmd[3])) {
 				ThisOrigin.do_connect(cmd[1],cmd[2]);
 			} else {
 				var dest_server = searchbyserver(cmd[3]);
@@ -242,20 +242,20 @@ function Server_Work() {
 		case "GLOBOPS":
 			if (!cmd[1])
 				break;
-			var my_ircstr = IRC_string(cmdline);
+			var my_ircstr = IRC_string(cmdline,1);
 			ThisOrigin.globops(my_ircstr);
 			break;
 		case "GNOTICE":
 			if (!cmd[1])
 				break;
-			var my_ircstr = IRC_string(cmdline);
+			var my_ircstr = IRC_string(cmdline,1);
 			umode_notice(USERMODE_ROUTING,"Routing","from " +
 				ThisOrigin.nick + ": " + my_ircstr);
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " +
 				"GNOTICE :" + my_ircstr);
 			break;
 		case "ERROR":
-			var my_ircstr = IRC_string(cmdline);
+			var my_ircstr = IRC_string(cmdline,1);
 			gnotice("ERROR from " + this.nick + " [(+)0@" +
 				this.hostname + "] -- " + my_ircstr);
 			ThisOrigin.quit(my_ircstr);
@@ -265,7 +265,7 @@ function Server_Work() {
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			if (IRC_match(servername, cmd[1])) {
+			if (wildmatch(servername, cmd[1])) {
 				ThisOrigin.do_info();
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
@@ -324,7 +324,7 @@ function Server_Work() {
 			if (!nickid.channels[chanid.nam.toUpperCase()])
 				break;
 			if (cmd[3])
-				kick_reason = IRC_string(cmdline).slice(0,max_kicklen);
+				kick_reason = IRC_string(cmdline,3).slice(0,max_kicklen);
 			else
 				kick_reason = ThisOrigin.nick;
 			str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
@@ -339,7 +339,7 @@ function Server_Work() {
 				break;
 			if (cmd[2] == ":")
 				break;
-			var reason = IRC_string(cmdline);
+			var reason = IRC_string(cmdline,2);
 			var kills = cmd[1].split(",");
 			for(kill in kills) {
 				var target = Users[kills[kill].toUpperCase()];
@@ -396,9 +396,11 @@ function Server_Work() {
 				var modeline = cmd.join(" ");
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
-				var my_bcastmodes = ThisOrigin.setusermode(IRC_string(cmd[2]));
-				if (my_bcastmodes)
-					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + my_bcastmodes);
+				var my_modes = ThisOrigin.setusermode(IRC_string(cmd[2],0));
+				if (my_modes) {
+					this.bcast_to_servers_raw(":" + ThisOrigin.nick
+						+ " MODE " + ThisOrigin.nick + " " + my_modes);
+				}
 			}
 			break;
 		case "MOTD":
@@ -406,7 +408,7 @@ function Server_Work() {
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			if (IRC_match(servername, cmd[1])) {
+			if (wildmatch(servername, cmd[1])) {
 				umode_notice(USERMODE_SPY,"Spy",
 					"MOTD requested by " + ThisOrigin.nick+
 					" (" + ThisOrigin.uprefix + "@" +
@@ -522,7 +524,7 @@ function Server_Work() {
 					break;
 				}
 				if (this.hub)
-					ThisOrigin.created = parseInt(IRC_string(cmd[2]));
+					ThisOrigin.created = parseInt(IRC_string(cmd[2],0));
 				else
 					ThisOrigin.created = time();
 				ThisOrigin.bcast_to_uchans_unique("NICK " + cmd[1]);
@@ -539,10 +541,8 @@ function Server_Work() {
 			// FIXME: servers should be able to send notices.
 			if (!cmd[1] || ThisOrigin.server)
 				break;
-			var my_ircstr = IRC_string(cmdline);
-			if ( !cmd[2] || ( !cmd[3] && (
-			     (cmd[2] == ":") && (my_ircstr == "")
-			   ) ) )
+			var my_ircstr = IRC_string(cmdline,2);
+			if (!cmd[2] || !my_ircstr)
 				break;
 			var targets = cmd[1].split(",");
 			for (nt in targets) {
@@ -646,10 +646,8 @@ function Server_Work() {
 		case "PRIVMSG":
 			if (!cmd[1] || ThisOrigin.server)
 				break;
-			var my_ircstr = IRC_string(cmdline);
-			if ( !cmd[2] || ( !cmd[3] && (
-			     (cmd[2] == ":") && (my_ircstr == "")
-			   ) ) )
+			var my_ircstr = IRC_string(cmdline,2);
+			if (!cmd[2] || !my_ircstr)
 				break;
 			var targets = cmd[1].split(",");
 			for (pm in targets) {
@@ -658,7 +656,7 @@ function Server_Work() {
 			}
 			break;
 		case "QUIT":
-			ThisOrigin.quit(IRC_string(cmdline));
+			ThisOrigin.quit(IRC_string(cmdline,2));
 			break;
 		case "SERVER":
 			if (!cmd[3])
@@ -666,10 +664,11 @@ function Server_Work() {
 			// FIXME: when on Earth does this happen? :P?
 			var hops = parseInt(cmd[2]);
 			if ((hops == 1) && !this.info) {
-				umode_notice(USERMODE_OPER,"Notice","This wasn't supposed to happen!");
+				umode_notice(USERMODE_OPER,"Notice", "Server "
+					+ cmd[1] + " updating info after handshake???");
 				this.nick = cmd[1];
 				this.hops = 1;
-				this.info = IRC_string(cmdline);
+				this.info = IRC_string(cmdline,3);
 				this.linkparent = servername;
 				this.parent = this.nick;
 				var newsrv = this;
@@ -686,7 +685,7 @@ function Server_Work() {
 					var newsrv = Servers[lcserver];
 					newsrv.hops = cmd[2];
 					newsrv.nick = cmd[1];
-					newsrv.info = IRC_string(cmdline);
+					newsrv.info = IRC_string(cmdline,3);
 					newsrv.parent = this.nick;
 					newsrv.linkparent = ThisOrigin.nick;
 					newsrv.local = false;
@@ -886,7 +885,7 @@ function Server_Work() {
 				sq_server = searchbyserver(cmd[1]);
 			if (!sq_server)
 				break;
-			reason = IRC_string(cmdline);
+			reason = IRC_string(cmdline,2);
 			if (!reason || !cmd[2])
 				reason = ThisOrigin.nick;
 			if (sq_server == -1) {
@@ -916,7 +915,7 @@ function Server_Work() {
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
-			if (IRC_match(servername, cmd[2])) {
+			if (wildmatch(servername, cmd[2])) {
 				ThisOrigin.do_stats(cmd[1][0]);
 			} else {
 				var dest_server = searchbyserver(cmd[2]);
@@ -930,7 +929,7 @@ function Server_Work() {
 				break;
 			if (cmd[2][0] == ":")
 				cmd[2] = cmd[2].slice(1);
-			if (IRC_match(servername, cmd[2])) {
+			if (wildmatch(servername, cmd[2])) {
 				if (enable_users_summon) {
 					ThisOrigin.do_summon(cmd[1]);
 				} else {
@@ -949,7 +948,7 @@ function Server_Work() {
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			if (IRC_match(servername, cmd[1])) {
+			if (wildmatch(servername, cmd[1])) {
 				ThisOrigin.numeric391();
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
@@ -964,7 +963,7 @@ function Server_Work() {
 			var chan = Channels[cmd[1].toUpperCase()];
 			if (!chan)
 				break;
-			var the_topic = IRC_string(cmdline);
+			var the_topic = IRC_string(cmdline,2);
 			if (the_topic == chan.topic)
 				break;
 			chan.topic = the_topic;
@@ -1017,7 +1016,7 @@ function Server_Work() {
 			if (!cmd[1])
 				break;
 			var str = ":" + ThisOrigin.nick + " WALLOPS :" +
-				IRC_string(cmdline);
+				IRC_string(cmdline,1);
 			wallopers(str);
 			this.bcast_to_servers_raw(str);
 			break;
@@ -1025,7 +1024,7 @@ function Server_Work() {
 			if (!cmd[2] || ThisOrigin.server)
 				break;
 			if (searchbyserver(cmd[1]) == -1) {
-				var wi_nicks = IRC_string(cmd[2]).split(",");
+				var wi_nicks = IRC_string(cmd[2],0).split(",");
 				for (wi_nick in wi_nicks) {
 				var wi = Users[wi_nicks[wi_nick].toUpperCase()];
 					if (wi)
@@ -1038,7 +1037,8 @@ function Server_Work() {
 				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
 					break;
-				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS " + dest_server.nick + " :" + IRC_string(cmd[2]));
+				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS "
+					+ dest_server.nick + " :" + IRC_string(cmd[2],0));
 			}
 			break;
 		case "CAPAB":
