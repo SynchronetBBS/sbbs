@@ -1303,7 +1303,7 @@ function User_Work() {
 				cmd[1] = cmd[2];
 			}
 		}
-		var wi_nicks = cmd[1].split(",");
+		var wi_nicks = IRC_string(cmd[1],0).split(",");
 		for (wi_nick in wi_nicks) {
 			var wi = Users[wi_nicks[wi_nick].toUpperCase()];
 			if (wi)
