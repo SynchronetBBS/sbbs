@@ -351,6 +351,7 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 	if(wrslot!=INVALID_HANDLE_VALUE)	CloseHandle(wrslot);		\
 	if(start_event!=NULL)				CloseHandle(start_event);	\
 	if(hungup_event!=NULL)				CloseHandle(hungup_event);	\
+	if(hangup_event!=NULL)				CloseHandle(hangup_event);	\
 	ReleaseMutex(exec_mutex);										\
 	SetLastError(last_error)
 
@@ -388,6 +389,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	HANDLE  start_event=NULL;
 	HANDLE	hungup_event=NULL;
+	HANDLE	hangup_event=NULL;
 	HANDLE	rdoutpipe;
 	HANDLE	wrinpipe;
     PROCESS_INFORMATION process_info;
@@ -532,6 +534,18 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 			sprintf(str,"sbbsexec_hungup%d",cfg.node_num);
 			if((hungup_event=CreateEvent(
+				 NULL	// pointer to security attributes
+				,TRUE	// flag for manual-reset event
+				,FALSE  // flag for initial state
+				,str	// pointer to event-object name
+				))==NULL) {
+				XTRN_CLEANUP;
+				errormsg(WHERE, ERR_CREATE, str, 0);
+				return(GetLastError());
+			}
+
+			sprintf(str,"sbbsexec_hangup%d",cfg.node_num);
+			if((hangup_event=CreateEvent(
 				 NULL	// pointer to security attributes
 				,TRUE	// flag for manual-reset event
 				,FALSE  // flag for initial state
@@ -976,9 +990,18 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 				/* only check process termination after 300 milliseconds of no I/O */
 				/* to allow for last minute reception of output from DOS programs */
-				if(loop_since_io>=3
-					&& WaitForSingleObject(process_info.hProcess,0)==WAIT_OBJECT_0)
-					break;	/* Process Terminated */
+				if(loop_since_io>=3) {
+
+					if(hangup_event!=NULL
+						&& WaitForSingleObject(hangup_event,0)==WAIT_OBJECT_0) {
+						lprintf(LOG_NOTICE,"Node %d External program requested hangup (dropped DTR)"
+							,cfg.node_num);
+						hangup();
+					}
+
+					if(WaitForSingleObject(process_info.hProcess,0)==WAIT_OBJECT_0)
+						break;	/* Process Terminated */
+				}
 
 				/* only check node for interrupt flag every 3 seconds of no I/O */
 				if((loop_since_io%30)==0) {	

@@ -71,6 +71,8 @@ BYTE uart_divisor_latch_msb		= 0x00;
 
 BOOL		virtualize_uart=TRUE;
 double		yield_interval=1.0;
+BOOL		hangup_supported=TRUE;
+HANDLE		hangup_event=NULL;
 HANDLE		hungup_event=NULL;
 HANDLE		interrupt_event=NULL;
 HANDLE		rdslot=INVALID_HANDLE_VALUE;
@@ -106,6 +108,14 @@ static void lprintf(int level, const char *fmt, ...)
     lputs(level,sbuf);
 }
 
+void hangup()
+{
+	if(hangup_supported && hangup_event!=NULL) {
+		lprintf(LOG_DEBUG,"Hanging-up at application request");
+		SetEvent(hangup_event);
+	}
+}
+
 void parse_ini(char* program)
 {
 	char section[MAX_PATH+1];
@@ -118,6 +128,7 @@ void parse_ini(char* program)
 	if(iniGetBool(ini,program,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 	yield_interval=iniGetFloat(ini,program,"YieldInterval",yield_interval);
+	hangup_supported=iniGetBool(ini,program,"CanDisconnect",hangup_supported);
 
 	lprintf(LOG_INFO,"Parsed %s section of %s"
 		,program==ROOT_SECTION ? "root" : program
@@ -322,6 +333,8 @@ VOID uart_wrport(WORD port, BYTE data)
 			break;
 		case UART_MCR:
 			uart_mcr_reg = data;
+			if((uart_mcr_reg&UART_MSR_DCD) == 0)
+				hangup();
 			break;
 		case UART_SCRATCH:
 			uart_scratch_reg = data;
@@ -506,6 +519,18 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				break;
 			}
 
+			sprintf(str,"sbbsexec_hangup%d",node_num);
+			hangup_event=OpenEvent(
+				EVENT_ALL_ACCESS,	/* access flag  */
+				FALSE,				/* inherit flag  */
+				str);				/* pointer to event-object name  */
+			if(hangup_event==NULL) {
+				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+					,GetLastError(),str);
+				retval=4;
+				break;
+			}
+
 			status_poll=0;
 			inbuf_poll=0;
 			online_poll=0;
@@ -554,6 +579,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			CloseHandle(wrslot);
 			if(hungup_event!=NULL)
 				CloseHandle(hungup_event);
+			if(hangup_event!=NULL)
+				CloseHandle(hangup_event);
+
 			RingBufDispose(&rdbuf);
 			status_poll=0;
 			retval=0;
@@ -738,6 +766,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			p = (BYTE*)GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 			lputs(LOG_INFO, p);
+			break;
+
+		case VDD_HANGUP:
+			hangup();
 			break;
 
 		default:
