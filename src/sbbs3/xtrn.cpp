@@ -992,7 +992,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				/* to allow for last minute reception of output from DOS programs */
 				if(loop_since_io>=3) {
 
-					if(hangup_event!=NULL
+					if(online && hangup_event!=NULL
 						&& WaitForSingleObject(hangup_event,0)==WAIT_OBJECT_0) {
 						lprintf(LOG_NOTICE,"Node %d External program requested hangup (dropped DTR)"
 							,cfg.node_num);
