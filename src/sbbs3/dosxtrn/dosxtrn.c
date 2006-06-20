@@ -252,16 +252,16 @@ void interrupt winNTint14(
 #endif
 
 	switch(_ax>>8) {
-		case 0x00:	/* Initialize/Set baud rate */
+		case FOSSIL_FUNC_SET_RATE:	/* Initialize/Set baud rate */
 			_ax = PortStatus();
 			break;
-		case 0x01: /* write char to com port, with wait */
+		case FOSSIL_FUNC_PUT_CHAR: /* write char to com port, with wait */
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
 			vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			_ax = PortStatus();
 			break;
-		case 0x02: /* read char from com port, with wait */
+		case FOSSIL_FUNC_GET_CHAR: /* read char from com port, with wait */
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 			if(!_ax) {
@@ -271,24 +271,28 @@ void interrupt winNTint14(
 				_ax = ch;
 			}
 			break;
-		case 0x03:	/* request status */
+		case FOSSIL_FUNC_GET_STATUS:	/* request status */
 			_ax=PortStatus();
 			if(_ax==0x6088)
 				vdd_op(VDD_MAYBE_YIELD);
 			break;
-		case 0x04:	/* initialize */
+		case FOSSIL_FUNC_INIT:	/* initialize */
 			_ax=FOSSIL_SIGNATURE;	/* magic number = success */
 			_bx=FOSSIL_REVISION<<8 | FOSSIL_FUNC_HIGHEST;	/* FOSSIL rev/maximum FOSSIL func supported */
 			break;
-        case 0x08:	/* flush output buffer	*/
+		case FOSSIL_FUNC_DTR:
+			if((_ax&0xff)==0)	/* Lower DTR */
+				vdd_op(VDD_HANGUP);
 			break;
-        case 0x09:	/* purge output buffer	*/
+        case FOSSIL_FUNC_FLUSH_OUT:	/* flush output buffer	*/
+			break;
+        case FOSSIL_FUNC_PURGE_OUT:	/* purge output buffer	*/
 			vdd_op(VDD_OUTBUF_PURGE);
 			break;
-        case 0x0A:	/* purge input buffer	*/
+        case FOSSIL_FUNC_PURGE_IN:	/* purge input buffer	*/
 			vdd_op(VDD_INBUF_PURGE);
 			break;
-		case 0x0B:	/* write char to com port, no wait */
+		case FOSSIL_FUNC_WRITE_CHAR:	/* write char to com port, no wait */
         	if(0 /*RingBufFree(&vm->out)<2 */) {
             	_ax=0; /* char was not accepted */
                 break;
@@ -297,7 +301,7 @@ void interrupt winNTint14(
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			break;
-        case 0x0C:	/* non-destructive read-ahead */
+        case FOSSIL_FUNC_PEEK:	/* non-destructive read-ahead */
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full) {
 				_ax=0xffff;	/* no char available */
@@ -309,7 +313,7 @@ void interrupt winNTint14(
 			if(_ax == 0)
 				vdd_op(VDD_YIELD);
 			break;
-        case 0x18:	/* read block, no wait */
+        case FOSSIL_FUNC_READ_BLOCK:	/* read block, no wait */
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full)
 				_ax = 0; /* no data available */
@@ -318,10 +322,10 @@ void interrupt winNTint14(
 			if(_ax == 0)
 				vdd_op(VDD_YIELD);
 			break;
-        case 0x19:	/* write block, no wait */
+        case FOSSIL_FUNC_WRITE_BLOCK:	/* write block, no wait */
 			_ax = vdd_buf(VDD_WRITE, _cx, _es, _di);
 			break;
-        case 0x1B:	/* driver info */
+        case FOSSIL_FUNC_GET_INFO:	/* driver info */
 			vdd_getstatus(&vdd_status);
 			info.inbuf_size=vdd_status.inbuf_size;
 			info.inbuf_free=info.inbuf_size-vdd_status.inbuf_full;
