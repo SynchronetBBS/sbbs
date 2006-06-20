@@ -391,6 +391,152 @@ function User_Work() {
 			this.bcast_to_servers("AWAY");
 		}
 		break;
+	case "JOIN":
+		if (!cmd[1]) {
+			this.numeric461("JOIN");
+			break;
+		}
+		if (cmd[1][0] == ":")
+			cmd[1]=cmd[1].slice(1);
+		var the_channels = cmd[1].split(",");
+		var the_keys = "";
+		if (cmd[2])
+			the_keys = cmd[2].split(",");
+		var key_counter = 0;
+		for(jchan in the_channels) {
+			var chanstr = the_channels[jchan];
+			if(chanstr[0] == "0") {
+				this.part_all();
+			} else {
+				var chan = Channels[chanstr.toUpperCase()];
+				if (chan && the_keys[key_counter] && (chan.mode&CHANMODE_KEY)){
+					this.do_join(chanstr.slice(0,max_chanlen)
+						,the_keys[key_counter])
+					key_counter++;
+				} else {
+					this.do_join(chanstr.slice(0,max_chanlen),"");
+				}
+			}
+		}
+		break;
+	case "PART":
+		var the_channels;
+
+		if (!cmd[1]) {
+			this.numeric461("PART");
+			break;
+		}
+		the_channels = cmd[1].split(",");
+		for(pchan in the_channels) {
+			this.do_part(the_channels[pchan]);
+		}
+		break;
+	case "KICK":
+		if (!cmd[2]) {
+			this.numeric461("KICK");
+			break;
+		}
+		var chan = Channels[cmd[1].toUpperCase()];
+		if (!chan) {
+			this.numeric403(cmd[1]);
+			break;
+		}
+		if (!chan.modelist[CHANMODE_OP][this.id]) {
+			this.numeric482(chan.nam);
+			break;
+		}
+		var nick = Users[cmd[2].toUpperCase()];
+		if (!nick) {
+			nick = search_nickbuf(cmd[2]);
+			if (!nick) {
+				this.numeric401(cmd[2]);
+				break;
+			}
+		}
+		if (!nick.channels[chan.nam.toUpperCase()]) {
+			this.numeric(441, nick.nick + " " + chan.nam
+				+ " :They aren't on that channel!");
+			break;
+		}
+		var kick_reason;
+		var my_ircstr = IRC_string(cmdline,3);
+		if (my_ircstr)
+			kick_reason = my_ircstr;
+		else
+			kick_reason = this.nick;
+		var str = "KICK " + chan.nam + " " + nick.nick + " :" + kick_reason;
+		this.bcast_to_channel(chan, str, true);
+		this.bcast_to_servers(str);
+		nick.rmchan(chan);
+		break;
+	case "TOPIC":
+		if (!cmd[1]) {
+			this.numeric461("TOPIC");
+			break;
+		}
+		var chan = Channels[cmd[1].toUpperCase()];
+		if (!chan) {
+			this.numeric403(cmd[1]);
+			break;
+		}
+		if (!this.channels[chan.nam.toUpperCase()]) {
+			this.numeric442(chan.nam);
+			break;
+		}
+		if (cmd[2]) {
+			if (!(chan.mode&CHANMODE_TOPIC)
+				|| chan.modelist[CHANMODE_OP][this.id]) {
+				var tmp_topic = IRC_string(cmdline,2).slice(0,max_topiclen);
+				if (tmp_topic == chan.topic)
+					break;
+				chan.topic = tmp_topic;
+				chan.topictime = time();
+				chan.topicchangedby = this.nick;
+				var str = "TOPIC " + chan.nam + " :" + chan.topic;
+				this.bcast_to_channel(chan, str, true);
+				this.bcast_to_servers("TOPIC " + chan.nam + " " + this.nick
+					+ " " + chan.topictime + " :" + chan.topic);
+			} else {
+				this.numeric482(chan.nam);
+			}
+		} else { // we're just looking at one
+			if (chan.topic) {
+				this.numeric332(chan);
+				this.numeric333(chan);
+			} else {
+				this.numeric331(chan);
+			}
+		}
+		break;
+	case "WHOIS":
+		if (!cmd[1]) {
+			this.numeric(431, ":No nickname given.");
+			break;
+		}
+		if (cmd[2]) {
+			var dest_server = searchbyserver(cmd[1]);
+			if (!dest_server) {
+				this.numeric402(cmd[1]);
+				break;
+			}
+			if (dest_server != -1) {
+				dest_server.rawout(":" + this.nick + " WHOIS "
+					+ dest_server.nick + " :" + IRC_string(cmdline,1));
+				break;
+			} else {
+				cmd[1] = cmd[2];
+			}
+		}
+		var wi_nicks = IRC_string(cmd[1],0).split(",");
+		for (wi_nick in wi_nicks) {
+			var wi = Users[wi_nicks[wi_nick].toUpperCase()];
+			if (wi)
+				this.do_whois(wi);
+			else
+				this.numeric401(wi_nicks[wi_nick]);
+		}
+		this.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
+		break;
 	case "ADMIN":
 		if (cmd[1]) {
 			if (cmd[1][0] == ":")
@@ -594,69 +740,6 @@ function User_Work() {
 			}
 		}
 		this.numeric("303", isonstr);
-		break;
-	case "JOIN":
-		if (!cmd[1]) {
-			this.numeric461("JOIN");
-			break;
-		}
-		if (cmd[1][0] == ":")
-			cmd[1]=cmd[1].slice(1);
-		var the_channels = cmd[1].split(",");
-		var the_keys = "";
-		if (cmd[2])
-			the_keys = cmd[2].split(",");
-		var key_counter = 0;
-		for(jchan in the_channels) {
-			var regexp = "^[0]{1,}$"; //0 is a special case
-			if(the_channels[jchan].match(regexp)) {
-				this.part_all();
-			} else {
-				if (Channels[the_channels[jchan].toUpperCase()] && the_keys[key_counter] && (Channels[the_channels[jchan].toUpperCase()].mode&CHANMODE_KEY)) {
-					this.do_join(the_channels[jchan].slice(0,max_chanlen),the_keys[key_counter])
-					key_counter++;
-				} else {
-					this.do_join(the_channels[jchan].slice(0,max_chanlen),"");
-				}
-			}
-		}
-		break;
-	case "KICK":
-		if (!cmd[2]) {
-			this.numeric461("KICK");
-			break;
-		}
-		var chanid = Channels[cmd[1].toUpperCase()];
-		if (!chanid) {
-			this.numeric403(cmd[1]);
-			break;
-		}
-		if (!chanid.modelist[CHANMODE_OP][this.id]) {
-			this.numeric482(chanid.nam);
-			break;
-		}
-		var nickid = Users[cmd[2].toUpperCase()];
-		if (!nickid) {
-			nickid = search_nickbuf(cmd[2]);
-			if (!nickid) {
-				this.numeric401(cmd[2]);
-				break;
-			}
-		}
-		if (!nickid.channels[chanid.nam.toUpperCase()]) {
-			this.numeric(441, nickid.nick + " " + chanid.nam + " :They aren't on that channel!");
-			break;
-		}
-		var kick_reason;
-		var my_ircstr = IRC_string(cmdline,3);
-		if (my_ircstr)
-			kick_reason = my_ircstr;
-		else
-			kick_reason = this.nick;
-		var str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
-		this.bcast_to_channel(chanid, str, true);
-		this.bcast_to_servers(str);
-		nickid.rmchan(chanid);
 		break;
 	case "KILL":
 		if (!(this.mode&USERMODE_OPER) ||
@@ -953,18 +1036,6 @@ function User_Work() {
 		if (OLines[ol].flags&OLINE_IS_GOPER)
 			this.bcast_to_servers("MODE "+ this.nick +" +o");
 		break;
-	case "PART":
-		var the_channels;
-
-		if (!cmd[1]) {
-			this.numeric461("PART");
-			break;
-		}
-		the_channels = cmd[1].split(",");
-		for(pchan in the_channels) {
-			this.do_part(the_channels[pchan]);
-		}
-		break;
 	case "PASS":
 	case "USER":
 		this.numeric462();
@@ -1139,44 +1210,6 @@ function User_Work() {
 		}
 		this.numeric391();
 		break;
-	case "TOPIC":
-		if (!cmd[1]) {
-			this.numeric461("TOPIC");
-			break;
-		}
-		var chanid = Channels[cmd[1].toUpperCase()];
-		if (!chanid) {
-			this.numeric403(cmd[1]);
-			break;
-		}
-		if (!this.channels[chanid.nam.toUpperCase()]) {
-			this.numeric442(chanid.nam);
-			break;
-		}
-		if (cmd[2]) {
-			if (!(chanid.mode&CHANMODE_TOPIC) ||
-			     chanid.modelist[CHANMODE_OP][this.id]) {
-				var tmp_topic = IRC_string(cmdline,2).slice(0,max_topiclen);
-				if (tmp_topic == chanid.topic)
-					break;
-				chanid.topic = tmp_topic;
-				chanid.topictime = time();
-				chanid.topicchangedby = this.nick;
-				var str = "TOPIC " + chanid.nam + " :" + chanid.topic;
-				this.bcast_to_channel(chanid, str, true);
-				this.bcast_to_servers("TOPIC " + chanid.nam + " " + this.nick + " " + chanid.topictime + " :" + chanid.topic);
-			} else {
-				this.numeric482(chanid.nam);
-			}
-		} else { // we're just looking at one
-			if (chanid.topic) {
-				this.numeric332(chanid);
-				this.numeric333(chanid);
-			} else {
-				this.numeric331(chanid);
-			}
-		}
-		break;
 	case "TRACE":
 		if (cmd[1]) {
 			this.do_trace(cmd[1]);
@@ -1283,35 +1316,6 @@ function User_Work() {
 			this.do_complex_who(cmd);
 		else
 			this.do_basic_who(cmd[1]);
-		break;
-	case "WHOIS":
-		if (!cmd[1]) {
-			this.numeric(431, ":No nickname given.");
-			break;
-		}
-		if (cmd[2]) {
-			var dest_server = searchbyserver(cmd[1]);
-			if (!dest_server) {
-				this.numeric402(cmd[1]);
-				break;
-			}
-			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " WHOIS "
-					+ dest_server.nick + " :" + IRC_string(cmdline,1));
-				break;
-			} else {
-				cmd[1] = cmd[2];
-			}
-		}
-		var wi_nicks = IRC_string(cmd[1],0).split(",");
-		for (wi_nick in wi_nicks) {
-			var wi = Users[wi_nicks[wi_nick].toUpperCase()];
-			if (wi)
-				this.do_whois(wi);
-			else
-				this.numeric401(wi_nicks[wi_nick]);
-		}
-		this.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
 		break;
 	case "WHOWAS":
 		if (!cmd[1]) {
