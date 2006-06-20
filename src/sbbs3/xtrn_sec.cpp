@@ -1723,10 +1723,12 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	sprintf(str,"%shangup.now",cfg.node_dir);
 	if(fexistcase(str)) {
+		lprintf(LOG_NOTICE,"Node %d External program requested hangup (%s signaled)"
+			,cfg.node_num, str);
 		remove(str);
 		hangup(); 
 	}
-	if(!online) {
+	else if(!online) {
 		sprintf(str,"%shungup.log",cfg.logs_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
