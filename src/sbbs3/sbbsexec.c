@@ -333,7 +333,7 @@ VOID uart_wrport(WORD port, BYTE data)
 			break;
 		case UART_MCR:
 			uart_mcr_reg = data;
-			if((uart_mcr_reg&UART_MSR_DCD) == 0)
+			if((uart_mcr_reg&UART_MCR_DTR) == 0)	/* Dropping DTR (i.e. "hangup") */
 				hangup();
 			break;
 		case UART_SCRATCH:
