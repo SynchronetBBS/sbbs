@@ -85,6 +85,12 @@ const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR"
 #define UART_LCR_BREAK			(1<<6)
 #define UART_LCR_8_DATA_BITS	0x03		/* 8 data bits */
 
+#define UART_MCR_DTR			(1<<0)
+#define UART_MCR_RTS			(1<<1)
+#define UART_MCR_AUX1			(1<<2)
+#define UART_MCR_AUX2			(1<<3)
+#define UART_MCR_LOOPBACK		(1<<4)
+
 /* I/O Ports */
 #define UART_COM1_IO_BASE		0x3f8
 #define UART_COM2_IO_BASE		0x2f8
