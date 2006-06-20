@@ -55,6 +55,7 @@ enum {
 	,VDD_LOAD_INI_FILE		=15
 	,VDD_LOAD_INI_SECTION	=16
 	,VDD_DEBUG_OUTPUT		=17
+	,VDD_HANGUP				=18
 };
 
 typedef struct {
