@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
     if(node_dir[strlen(node_dir)-1]!='\\')
         strcat(node_dir,"\\");
-    if(!stricmp(argv[1],"/?")) {
+    if(argc>1 && !stricmp(argv[1],"/?")) {
         printf("\r\nDomain Poker Clean-Up  Copyright 2005 Domain "
                 "Entertainment");
         printf("\r\n\r\nUsage: DPCLEAN [/options]\r\n");
