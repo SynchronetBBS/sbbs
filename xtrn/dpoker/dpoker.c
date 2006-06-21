@@ -275,13 +275,22 @@ int main(int argc, char **argv)
         if (ante[x]<=0 || ante[x]>bet_limit[x]) ante[x]=bet_limit[x];
     }
 
+#if 0
     while(kbhit())   /* clear input buffer */
         getch();
+#else
+    while(inkey());	/* clear input buffer */
+#endif
     putchar(5); /* ctrl-e */
     mswait(500);
+#if 0
     if(kbhit()) {
         while(kbhit())
             getch();
+#else
+    if(keyhit()) {
+        while(inkey());
+#endif
         cls(); bputs("\r\n"); center_wargs("\1r\1h\1i*** ATTENTION ***");
         bputs("\r\n\1n\1hDomain Poker \1nuses Ctrl-E (ENQ) for the 'club' card "
               "symbol.");
