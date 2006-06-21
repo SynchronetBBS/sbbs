@@ -1877,7 +1877,11 @@ void send_message()
                     } else {
                         send_player_message(num,str);
                     }
+#if 0
                 } while (getch() || wordwrap[0]);
+#else
+                } while (inkey() || wordwrap[0]);
+#endif
                 break;
             } else bprintf("\r\n\r\n\1r\1hInvalid Player Number!\r\n");
         } else if (num=='L') show_players(0);
