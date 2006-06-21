@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     while(kbhit())   /* clear input buffer */
         getch();
 #else
-    while(inkey());	/* clear input buffer */
+    while(inkey(0));	/* clear input buffer */
 #endif
     putchar(5); /* ctrl-e */
     mswait(500);
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
             getch();
 #else
     if(keyhit()) {
-        while(inkey());
+        while(inkey(0));
 #endif
         cls(); bputs("\r\n"); center_wargs("\1r\1h\1i*** ATTENTION ***");
         bputs("\r\n\1n\1hDomain Poker \1nuses Ctrl-E (ENQ) for the 'club' card "
@@ -1880,7 +1880,7 @@ void send_message()
 #if 0
                 } while (getch() || wordwrap[0]);
 #else
-                } while (inkey() || wordwrap[0]);
+                } while (inkey(0) || wordwrap[0]);
 #endif
                 break;
             } else bprintf("\r\n\r\n\1r\1hInvalid Player Number!\r\n");
