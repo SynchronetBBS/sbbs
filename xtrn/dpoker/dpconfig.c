@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 					else if(i&MSK_DEL) {
 						if(num_tables>1) {
 							num_tables--;
-							memcpy(&tables[topt],&tables[topt+1],sizeof(tables[topt])*(MAX_TABLES-opt-1));
+							memcpy(&tables[topt],&tables[topt+1],sizeof(tables[topt])*(MAX_TABLES-topt-1));
 							tables[MAX_TABLES-1].options=COMPUTER;
 							tables[MAX_TABLES-1].ante=250;
 							tables[MAX_TABLES-1].bet_limit=250;
