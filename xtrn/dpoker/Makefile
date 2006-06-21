@@ -9,7 +9,9 @@
 # $Id$
 
 XSDK		=	..\sdk
-SRC_ROOT	=	..\..\src
+!ifndef SRC_ROOT
+	SRC_ROOT=	..\..\src
+!endif
 !include $(SRC_ROOT)\build\Common.bmake
 
 .path.c = .;$(XSDK)
