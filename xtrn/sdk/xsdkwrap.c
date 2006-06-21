@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -320,6 +320,8 @@ int getch(void)
 /* File Stuff */
 /**************/
 
+#if !defined(USE_XPDEV)
+
 /****************************************************************************/
 /* Returns the length of the file in 'filename'                             */
 /****************************************************************************/
@@ -402,6 +404,8 @@ BOOL fexist(char *filespec)
 
 #endif
 }
+
+#endif
 
 #if defined(__unix__)
 
