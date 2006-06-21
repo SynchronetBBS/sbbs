@@ -17,12 +17,14 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* $Id$ */
+
 /******************************************************************************
         The Beast's Domain  Copyright (c) 1993-2000 Domain Entertainment
 ******************************************************************************/
 
 #include "tbd.h"
-#define VERSION "2K"
+#define VERSION "2K6"
 
 int main(int argc, char **argv);
 
@@ -55,6 +57,9 @@ int main(int argc, char **argv)
     int file,x,r1,r2,ch,times_played=0,lev,maint_only=0;
     long lastrun,length,l,exp;
     uchar uch;
+	char revision[16];
+
+	sscanf("$Revision$", "%*s %s", revision);
 
     xp_randomize();
     if(getenv("SBBSNODE")!=NULL) {
@@ -66,8 +71,8 @@ int main(int argc, char **argv)
     }
     if(argc>1) {
         if(!stricmp(argv[1],"/?")) {
-            printf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright 2000 Domain "
-                    "Entertainment\r\n",VERSION,xsdk_ver);
+            printf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright %s Domain "
+                    "Entertainment\r\n",VERSION,xsdk_ver,__DATE__+7);
             fputs("\r\nUsage: TBD /(switch)\r\n",stdout);
             fputs("\r\nWhere '/(switch)' is one or more of the following:\r\n",stdout);
             fputs("\r\n      /MAINT will force a daily maintenance run (this may "
@@ -132,8 +137,8 @@ int main(int argc, char **argv)
         close(file); }
 
     cls();
-    center_wargs("\1n\1gWelcome to The Beast's Domain v%s",VERSION);
-    center_wargs("\1n\1gCopyright 2000 Domain Entertainment");
+    center_wargs("\1n\1gWelcome to The Beast's Domain v%s (rev %s)",VERSION,revision);
+    center_wargs("\1n\1gCopyright %s Domain Entertainment",__DATE__+7);
 
     if(fexist("tbd.sys")) printfile("tbd.sys");
 
