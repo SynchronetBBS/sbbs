@@ -36,8 +36,7 @@ int main(int argc, char **argv)
     int x;
 
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
-    if(node_dir[strlen(node_dir)-1]!='\\')
-        strcat(node_dir,"\\");
+    backslash(node_dir);
     if(argc>1 && !stricmp(argv[1],"/?")) {
         printf("\r\nDomain Poker Clean-Up  Copyright 2005 Domain "
                 "Entertainment");
@@ -48,8 +47,7 @@ int main(int argc, char **argv)
     for (x=1; x<argc; x++) {
         if (!strchr(argv[x],'/')) {
             strcpy(node_dir,argv[x]);
-            if (node_dir[strlen(node_dir)-1]!='\\')
-                strcat(node_dir,"\\"); } }
+            backslash(node_dir); } }
 
     initdata();
     sprintf(str,"player.%d",node_num);
