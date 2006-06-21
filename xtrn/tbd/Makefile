@@ -5,7 +5,9 @@
 ##################################################################
 
 XSDK	= ..\sdk
-SRC_ROOT        =       ..\..\src
+!ifndef SRC_ROOT
+	SRC_ROOT        =       ..\..\src
+!endif
 !include $(SRC_ROOT)\build\Common.bmake
 CFLAGS  =	$(CFLAGS) -I$(XSDK) -DUSE_XPDEV $(XPDEV-MT_CFLAGS)
 CFLAGS	= $(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
