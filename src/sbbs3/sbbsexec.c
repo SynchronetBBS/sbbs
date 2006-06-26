@@ -525,10 +525,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				FALSE,				/* inherit flag  */
 				str);				/* pointer to event-object name  */
 			if(hangup_event==NULL) {
-				lprintf(LOG_ERR,"!VDD_OPEN: Error %d opening %s"
+				lprintf(LOG_WARNING,"!VDD_OPEN: Error %d opening %s"
 					,GetLastError(),str);
-				retval=4;
-				break;
 			}
 
 			status_poll=0;
