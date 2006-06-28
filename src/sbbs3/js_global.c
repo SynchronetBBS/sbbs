@@ -247,10 +247,9 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		for(i=argn; i<argc; i++)
 			JS_SetElement(exec_cx, js_argv, i-argn, &argv[i]);
-
-		JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
+	JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	errno = 0;
 	if(isfullpath(filename))
