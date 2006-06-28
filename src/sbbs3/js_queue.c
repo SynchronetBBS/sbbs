@@ -196,7 +196,6 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if((v=msgQueuePeek(q, timeout))!=NULL) {
 		js_decode_value(cx, obj, v, rval, /* peek */TRUE);
-		free(v);
 	}
 
 	return(JS_TRUE);
