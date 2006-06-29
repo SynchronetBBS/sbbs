@@ -150,6 +150,36 @@ static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
 	return js_CommonBranchCallback(cx,&bg->branch);
 }
 
+/* Create a new value in the new context with a value from the original context */
+/* Note: objects (including arrays) not currently supported */
+static jsval* js_CopyValue(JSContext* cx, jsval val, JSContext* new_cx, jsval* rval)
+{
+	*rval = JSVAL_VOID;
+
+	if(cx==new_cx
+		|| JSVAL_IS_BOOLEAN(val) 
+		|| JSVAL_IS_NULL(val) 
+		|| JSVAL_IS_VOID(val) 
+		|| JSVAL_IS_INT(val))
+		*rval = val;
+	else if(JSVAL_IS_NUMBER(val)) {
+		jsdouble	d;
+		if(JS_ValueToNumber(cx,val,&d))
+			JS_NewNumberValue(new_cx,d,rval);
+	}
+	else {
+		JSString*	str;
+		size_t		len;
+		char*		p;
+
+		if((p=js_ValueToStringBytes(cx,val,&len)) != NULL
+			&& (str=JS_NewStringCopyN(new_cx,p,len)) != NULL)
+			*rval=STRING_TO_JSVAL(str);
+	}
+
+	return rval;
+}
+
 static JSBool
 js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -246,7 +276,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		for(i=argn; i<argc; i++)
-			JS_SetElement(exec_cx, js_argv, i-argn, &argv[i]);
+			JS_SetElement(exec_cx, js_argv, i-argn, js_CopyValue(cx,argv[i],exec_cx,&val));
 	}
 	JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
