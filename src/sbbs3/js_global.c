@@ -43,6 +43,9 @@
 #include "htmlansi.h"
 #include "ini_file.h"
 
+/* SpiderMonkey: */
+#include <jsfun.h>
+
 #define MAX_ANSI_SEQ	16
 #define MAX_ANSI_PARAMS	8
 
@@ -98,6 +101,7 @@ typedef struct {
 	msg_queue_t*	msg_queue;
 	js_branch_t		branch;
 	JSErrorReporter error_reporter;
+	JSNative		log;
 } background_data_t;
 
 static void background_thread(void* arg)
@@ -148,6 +152,27 @@ static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
 		return(JS_FALSE);
 
 	return js_CommonBranchCallback(cx,&bg->branch);
+}
+
+static JSBool
+js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSBool retval;
+	background_data_t* bg;
+
+	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	/* Use parent's context private data */
+	JS_SetContextPrivate(cx, JS_GetContextPrivate(bg->parent_cx));
+
+	/* Call parent's log() function */
+	retval = bg->log(cx, obj, argc, argv, rval);
+
+	/* Restore our context private data */
+	JS_SetContextPrivate(cx, bg);
+
+	return retval;
 }
 
 /* Create a new value in the new context with a value from the original context */
@@ -257,6 +282,16 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		/* Set our branch callback (which calls the generic branch callback) */
 		JS_SetContextPrivate(bg->cx, bg);
 		JS_SetBranchCallback(bg->cx, js_BranchCallback);
+
+		/* Save parent's 'log' function (for later use by our log function) */
+		if(JS_GetProperty(cx, obj, "log", &val)) {
+			JSFunction* func;
+			if((func=JS_ValueToFunction(cx, val))!=NULL && !func->interpreted) {
+				bg->log=func->u.native;
+				JS_DefineFunction(bg->cx, bg->obj
+					,"log", js_log, func->nargs, func->flags);
+			}
+		}
 
 		exec_cx = bg->cx;
 		exec_obj = bg->obj;
