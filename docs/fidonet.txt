@@ -1,5 +1,6 @@
 FidoNet NetMail/EchoMail File Naming Primer by Rob Swindell
 -----------------------------------------------------------
+$Id$
 
 One of the most confusing aspects of FidoNet Technology Networks
 is the various files involved and their naming schemes.
@@ -71,7 +72,7 @@ important thing is that the Packet files have unique names.
 The actual elements that make up the base file name are not
 important.
 
-The exception to this Packet file naming scheme is *outbound*
+The exception to this Packet file naming scheme is: *outbound*
 NetMail Packet files pending transmission by Binkley/FLO-style
 mailers are named:
 
@@ -108,6 +109,15 @@ The trailing alphanumeric character is incremented if a Bundle
 file with the next logical filename already exists (e.g. ".Su0", 
 followed by ".Su1", ... ".Mo0", ..., all the way to ".SaZ").
 
+Since the Bundle file name suffix does not indicate what type of archive
+program created the file (i.e. the format of the file), it is necessary for
+the receiving echomail program to either be configured to use a specific
+format for Bundle files received from a specific node, or the echomail
+program must inspect the binary "signature" contained in the first few bytes
+of the file to automatically detect the archive format.
+
+The Bundle file name suffix may contain upper and/or lower case characters.
+
 The Bundle base file name is created by subtracting the
 destination FTN network and node number from the source
 network and node number and representing the result as 4-digit
@@ -142,7 +152,7 @@ Another permuation of this scheme is used when the destination
 address is a "point" address (e.g. 200/1.2). In this scheme,
 the "NNNN" portion of the base filename is always "0000" and
 the "nnnn" portion is "pPPP" where "PPP" is the destination
-point number as 3-digit zero-padded hexadecimal number.
+point number as 3-digit zero-padded hexadecimal number (e.g. "0000p002").
 
 Hexadecimal numbers can be made from either upper or lower
 case letters (A-F), so case is not significant.
@@ -150,10 +160,10 @@ case letters (A-F), so case is not significant.
 
 Flow Files (a.k.a. File Attach files)
 ----------
-Flow Files are unique to Binkley/FLO-style mailers and are not an
-FTN standard. Flow files are control files containing plain
-text (so they can easily viewed or edited, unlike the other file
-types described in this document).
+Flow Files are unique to Binkley/FLO-style (a.k.a. Binkley-Style-Outbound, or
+BSO) mailers  and are not an FTN standard. Flow files are control files
+containing plain text (so they can be easily viewed or edited, unlike the
+other file types described in this document).
 
 The file name of a Flow file is usually in the format
 
