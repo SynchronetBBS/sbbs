@@ -25,6 +25,8 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 /*    on the new expanded message read page for new theme    */
 
 var hdr=msgbase.get_msg_header(false,m);
+if(hdr==null)
+	error(msgbase.last_error);
 if(hdr.from_ext != null) {
 	template.u_num = hdr.from_ext;
 	usr = new User(template.u_num);
@@ -44,11 +46,11 @@ if(hdr.from_ext != null) {
 				template.author_avatar=prefsfile.iniGetValue('Profile', 'Avatar', '');
 				var display_info=true;
 			} else
-			template.author_avatar = template.image_dir + "/nothumbnail.jpg";
-			prefsfile.close();
+				template.author_avatar = template.image_dir + "/nothumbnail.jpg";
+				prefsfile.close();
+			}
 		}
 	}
-}
 }
 
 template.can_delete=can_delete(m);
