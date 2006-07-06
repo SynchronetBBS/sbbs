@@ -302,7 +302,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((filename=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
 		return(JS_FALSE);
 
-	if(argc>argn) {
+	if(argc>argn || background) {
 
 		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL)
 			return(JS_FALSE);
@@ -312,9 +312,10 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		for(i=argn; i<argc; i++)
 			JS_SetElement(exec_cx, js_argv, i-argn, js_CopyValue(cx,argv[i],exec_cx,&val));
+
+		JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
-	JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	errno = 0;
 	if(isfullpath(filename))
