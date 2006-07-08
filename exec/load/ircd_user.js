@@ -23,8 +23,8 @@
 ////////// Constants / Defines //////////
 const USER_REVISION = "$Revision$".split(' ')[1];
 
-const USERMODE_NONE		=(1<<0); // NONE
-const USERMODE_OPER		=(1<<1); // o
+const USERMODE_NONE			=(1<<0); // NONE
+const USERMODE_OPER			=(1<<1); // o
 const USERMODE_INVISIBLE	=(1<<2); // i
 const USERMODE_WALLOPS		=(1<<3); // w
 const USERMODE_CHATOPS		=(1<<4); // b
@@ -32,12 +32,12 @@ const USERMODE_GLOBOPS		=(1<<5); // g
 const USERMODE_SERVER		=(1<<6); // s
 const USERMODE_CLIENT		=(1<<7); // c
 const USERMODE_REJECTED		=(1<<8); // r
-const USERMODE_KILL		=(1<<9); // k
+const USERMODE_KILL			=(1<<9); // k
 const USERMODE_FLOOD		=(1<<10); // f
-const USERMODE_SPY		=(1<<11); // y
+const USERMODE_SPY			=(1<<11); // y
 const USERMODE_DEBUG		=(1<<12); // d
 const USERMODE_ROUTING		=(1<<13); // n
-const USERMODE_HELP		=(1<<14); // h
+const USERMODE_HELP			=(1<<14); // h
 const USERMODE_NOTHROTTLE	=(1<<15); // F
 
 USERMODE_CHAR = new Array();
@@ -69,7 +69,7 @@ USERMODE_SERVICES = new Array;
 // Various permissions that can be set on an O:Line
 const OLINE_CAN_REHASH		=(1<<0);	// r
 const OLINE_CAN_RESTART		=(1<<1);	// R
-const OLINE_CAN_DIE		=(1<<2);	// D
+const OLINE_CAN_DIE			=(1<<2);	// D
 const OLINE_CAN_GLOBOPS		=(1<<3);	// g
 const OLINE_CAN_WALLOPS		=(1<<4);	// w
 const OLINE_CAN_LOCOPS		=(1<<5);	// l
@@ -90,29 +90,29 @@ const OLINE_CAN_DEBUG		=(1<<21);	// x
 const OLINE_IS_GOPER		=(1<<22);	//  "big O"
 
 // Bits used for walking the complex WHO flags.
-const WHO_AWAY			=(1<<0);	// a
-const WHO_CHANNEL		=(1<<1);	// c
-const WHO_REALNAME		=(1<<2);	// g
-const WHO_HOST			=(1<<3);	// h
-const WHO_IP			=(1<<4);	// i
-const WHO_CLASS			=(1<<5);	// l
-const WHO_UMODE			=(1<<6);	// m
-const WHO_NICK			=(1<<7);	// n
-const WHO_OPER			=(1<<8);	// o
-const WHO_SERVER		=(1<<9);	// s
-const WHO_TIME			=(1<<10);	// t
-const WHO_USER			=(1<<11);	// u
+const WHO_AWAY				=(1<<0);	// a
+const WHO_CHANNEL			=(1<<1);	// c
+const WHO_REALNAME			=(1<<2);	// g
+const WHO_HOST				=(1<<3);	// h
+const WHO_IP				=(1<<4);	// i
+const WHO_CLASS				=(1<<5);	// l
+const WHO_UMODE				=(1<<6);	// m
+const WHO_NICK				=(1<<7);	// n
+const WHO_OPER				=(1<<8);	// o
+const WHO_SERVER			=(1<<9);	// s
+const WHO_TIME				=(1<<10);	// t
+const WHO_USER				=(1<<11);	// u
 const WHO_FIRST_CHANNEL		=(1<<12);	// C
 const WHO_MEMBER_CHANNEL	=(1<<13);	// M
 const WHO_SHOW_IPS_ONLY		=(1<<14);	// I
 
 // Bits used for walking complex LIST flags.
-const LIST_CHANMASK		=(1<<0);	// a
-const LIST_CREATED		=(1<<1);	// c
-const LIST_MODES		=(1<<2);	// m
-const LIST_TOPIC		=(1<<3);	// o
-const LIST_PEOPLE		=(1<<4);	// p
-const LIST_TOPICAGE		=(1<<5);	// t
+const LIST_CHANMASK				=(1<<0);	// a
+const LIST_CREATED				=(1<<1);	// c
+const LIST_MODES				=(1<<2);	// m
+const LIST_TOPIC				=(1<<3);	// o
+const LIST_PEOPLE				=(1<<4);	// p
+const LIST_TOPICAGE				=(1<<5);	// t
 const LIST_DISPLAY_CHAN_MODES	=(1<<6);	// M
 
 ////////// Objects //////////
@@ -246,6 +246,7 @@ function IRC_User(id) {
 
 ////////// Command Parser //////////
 function User_Work() {
+	var clockticks = system.clock_ticks;
 	var cmdline;
 	var cmd;
 	var command;
@@ -292,6 +293,8 @@ function User_Work() {
 
 	this.idletime = time();
 
+	var legal_command = true; /* For tracking STATS M */
+
 	switch (command) {
 	// RFC1459 states that we must reply to a PING as fast as
 	// possible, which is why this is on top.
@@ -309,7 +312,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " PING " + this.nick + " :" + cmd[2]);
+				dest_server.rawout(":" + this.nick + " PING " + this.nick
+					+ " :" + cmd[2]);
 				break;
 			}
 		}
@@ -547,7 +551,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " ADMIN :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " ADMIN :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -584,7 +589,8 @@ function User_Work() {
 					this.numeric481();
 					break;
 				}
-				dest_server.rawout(":" + this.nick + " CONNECT " + cmd[1] + " " + cmd[2] + " " + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " CONNECT " + cmd[1]
+					+ " " + cmd[2] + " " + dest_server.nick);
 				break;
 			}
 		}
@@ -598,38 +604,39 @@ function User_Work() {
 		}
 		if (!cmd[1]) {
 			this.server_notice("Usage:");
-			this.server_notice("  DEBUG D       - Toggle DEBUG mode on/off");
-			this.server_notice("  DEBUG E <exp> - Evaluate a Javascript expression.");
-			this.server_notice("  DEBUG Y <val> - Set yield frequency to <val>");
-			this.server_notice("  DEBUG U       - Dump all users stored in mem");
-			this.server_notice("  DEBUG C       - Dump all channels stored in mem");
+			this.server_notice("  DEBUG D       Toggle DEBUG mode on/off");
+			this.server_notice("  DEBUG E <exp> Eval Javascript expression");
+			this.server_notice("  DEBUG Y <val> Set yield frequency to val");
+			this.server_notice("  DEBUG U       Dump users stored in mem");
+			this.server_notice("  DEBUG C       Dump channels stored in mem");
 			break;
 		}
 		switch (cmd[1][0].toUpperCase()) {
 		case "C":
 			for (mychan in Channels) {
-				this.server_notice(Channels[mychan].nam+","+Channels[mychan].mode+","+Channels[mychan].users);
+				this.server_notice(Channels[mychan].nam + ","
+					+ Channels[mychan].mode + "," + Channels[mychan].users);
 			}
 			break;
 		case "D":
 			if (debug) {
 				debug=false;
-				umode_notice(USERMODE_OPER,"Notice","Debug mode disabled by " + this.nuh);
+				umode_notice(USERMODE_OPER,"Notice","Debug mode disabled by "
+					+ this.nuh);
 			} else {
 				debug=true;
-				umode_notice(USERMODE_OPER,"Notice","Debug mode enabled by " + this.nuh);
+				umode_notice(USERMODE_OPER,"Notice","Debug mode enabled by "
+					+ this.nuh);
 			}
 			break;
 		case "E":
 			cmd.shift();
 			cmd.shift();
 			var exp = cmd.join(" ");
-			umode_notice(USERMODE_DEBUG,"Debug",
-				"Oper " + this.nick +
-				" is using EVAL: " + exp);
+			umode_notice(USERMODE_DEBUG,"Debug","Oper " + this.nick
+				+ " is using EVAL: " + exp);
 			try {
-					this.server_notice("Result: " +
-						eval(exp));
+					this.server_notice("Result: " + eval(exp));
 				} catch(e) {
 					this.server_notice("!" + e);
 			}
@@ -637,12 +644,14 @@ function User_Work() {
 		case "U":
 			for (myuser in Users) {
 				var usr = Users[myuser];
-				this.server_notice(usr.nick+","+usr.local+","+usr.parent+","+usr.id);
+				this.server_notice(usr.nick + "," + usr.local + "," 
+					+ usr.parent + "," + usr.id);
 			}
 			break;
 		case "Y":
 			if (cmd[2]) {
-				umode_notice(USERMODE_DEBUG,"Debug","branch.yield_freq set to " + cmd[2] + " by " + this.nuh);
+				umode_notice(USERMODE_DEBUG,"Debug",
+					"branch.yield_freq set to " + cmd[2] + " by " + this.nuh);
 				branch.yield_freq = parseInt(cmd[2]);
 			}
 			break;
@@ -690,7 +699,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " INFO :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " INFO :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -716,7 +726,8 @@ function User_Work() {
 			break;
 		}
 		if (nickid.channels[cmd[2].toUpperCase()]) {
-			this.numeric(443, nickid.nick + " " + chanid.nam + " :is already on channel.");
+			this.numeric(443, nickid.nick + " " + chanid.nam
+				+ " :is already on channel.");
 			break;
 		}
 		this.numeric("341", nickid.nick + " " + chanid.nam);
@@ -779,10 +790,12 @@ function User_Work() {
 				}
 				var trg_srv = searchbyserver(target.servername);
 				if (trg_srv && trg_srv.uline) {
-					this.numeric(483, ":You may not KILL clients on a U:Lined server.");
+					this.numeric(483,
+						":You may not KILL clients on a U:Lined server.");
 					continue;
 				}
-				server_bcast_to_servers(":" + this.nick + " KILL " + target.nick + " :" + reason);
+				server_bcast_to_servers(":" + this.nick + " KILL "
+					+ target.nick + " :" + reason);
 				target.quit("Killed (" + this.nick + " (" + reason + "))",true);
 			}
 		}
@@ -833,8 +846,7 @@ function User_Work() {
 		}
 		remove_kline(kline_mask);
 		umode_notice(USERMODE_OPER,"Notice", this.nick +
-			" has removed the K-Line for: [" +
-			kline_mask + "] (1 matches)");
+			" has removed the K-Line for: [" + kline_mask + "] (1 matches)");
 		break;
 	case "LINKS":
 		if (!cmd[1]) { // *
@@ -847,7 +859,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " LINKS " + dest_server.nick + " " + cmd[2]);
+				dest_server.rawout(":" + this.nick + " LINKS "
+					+ dest_server.nick + " " + cmd[2]);
 				break;
 			}
 		} else if (cmd[1]) { // <mask>
@@ -892,7 +905,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " MOTD :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " MOTD :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -1022,7 +1036,8 @@ function User_Work() {
 		}
 		if (!oper_success) {
 			this.numeric(491, ":No O:Lines for your host.  Attempt logged.");
-			umode_notice(USERMODE_OPER,"Notice","Failed OPER attempt by " + this.nick + " (" + this.uprefix + "@" + this.hostname + ")");
+			umode_notice(USERMODE_OPER,"Notice","Failed OPER attempt by "
+				+ this.nick + " (" + this.uprefix + "@" + this.hostname + ")");
 			break;
 		}
 		// otherwise we succeeded.
@@ -1048,7 +1063,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " PONG " + cmd[1] + " " + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " PONG " + cmd[1] + " "
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -1067,7 +1083,8 @@ function User_Work() {
 			switch(cmd[1].toUpperCase()) {
 			case "TKLINES":
 				this.numeric382("temp klines");
-				umode_notice(USERMODE_SERVER,"Notice",this.nick + " is clearing temp klines while whistling innocently");
+				umode_notice(USERMODE_SERVER,"Notice",this.nick
+					+ " is clearing temp klines while whistling innocently");
 				for (kl in KLines) {
 					if(KLines[kl].type ==
 					   "k")
@@ -1077,16 +1094,17 @@ function User_Work() {
 			case "GC":
 				if (js.gc!=undefined) {
 					this.numeric382("garbage collecting");
-					umode_notice(USERMODE_SERVER,"Notice",this.nick + " is garbage collecting while whistling innocently");
+					umode_notice(USERMODE_SERVER,"Notice",this.nick
+						+ " is garbage collecting while whistling innocently");
 					js.gc();
 				}
 				break;
 			case "AKILLS":
 				this.numeric382("akills");
-				umode_notice(USERMODE_SERVER,"Notice",this.nick + " is rehashing akills");
+				umode_notice(USERMODE_SERVER,"Notice",this.nick
+					+ " is rehashing akills");
 				for (kl in KLines) {
-					if(KLines[kl].type ==
-					   "A")
+					if(KLines[kl].type == "A")
 						delete KLines[kl];                                              
 				}
 				break;
@@ -1095,9 +1113,9 @@ function User_Work() {
 			}
 		} else {
 			this.numeric382("Rehashing.");
-			umode_notice(USERMODE_SERVER,"Notice",this.nick +
-				" is rehashing Server config file while " +
-				"whistling innocently");
+			umode_notice(USERMODE_SERVER,"Notice",this.nick
+				+ " is rehashing Server config file while "
+				+ "whistling innocently");
 			read_config_file();
 		}
 		break;
@@ -1143,7 +1161,8 @@ function User_Work() {
 				this.numeric481();
 				break;
 			}
-			sq_server.rawout(":" + this.nick + " SQUIT " + sq_server.nick + " :" + reason);
+			sq_server.rawout(":" + this.nick + " SQUIT " + sq_server.nick
+				+ " :" + reason);
 			break;
 		}
 		umode_notice(USERMODE_ROUTING,"Routing","from " +
@@ -1164,7 +1183,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " STATS " + cmd[1][0] + " :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " STATS " + cmd[1][0]
+					+ " :" + dest_server.nick);
 				break;
 			}
 		}
@@ -1184,7 +1204,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " SUMMON " + cmd[1] + " :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " SUMMON " + cmd[1]
+					+ " :" + dest_server.nick);
 				break;
 			}
 		}
@@ -1204,7 +1225,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " TIME :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " TIME :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -1227,7 +1249,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " USERS :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " USERS :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -1283,7 +1306,8 @@ function User_Work() {
 				break;
 			}
 			if (dest_server != -1) {
-				dest_server.rawout(":" + this.nick + " VERSION :" + dest_server.nick);
+				dest_server.rawout(":" + this.nick + " VERSION :"
+					+ dest_server.nick);
 				break;
 			}
 		}
@@ -1328,8 +1352,10 @@ function User_Work() {
 			var wwh = WhoWasHistory[aWhoWas];
 			if (wwh && (wwh.nick.toUpperCase() ==
 			    cmd[1].toUpperCase())) {
-				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host + " * :" + wwh.realname);
-				this.numeric(312,wwh.nick + " " + wwh.server + " :" + wwh.serverdesc);
+				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
+					+ " * :" + wwh.realname);
+				this.numeric(312,wwh.nick + " " + wwh.server + " :"
+					+ wwh.serverdesc);
 				if (!firstnick)
 					firstnick = wwh.nick;
 			}
@@ -1338,8 +1364,10 @@ function User_Work() {
 			var wwh = WhoWasHistory[aWhoWas];
 			if (wwh && (wwh.nick.toUpperCase() ==
 			    cmd[1].toUpperCase())) {
-				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host + " * :" + wwh.realname);
-				this.numeric(312,wwh.nick + " " + wwh.server + " :" + wwh.serverdesc);
+				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
+					+ " * :" + wwh.realname);
+				this.numeric(312,wwh.nick + " " + wwh.server + " :"
+					+ wwh.serverdesc);
 				if (!firstnick)
 					firstnick = wwh.nick;
 			}
@@ -1425,8 +1453,17 @@ function User_Work() {
 		break;
 	default:
 		this.numeric("421", command + " :Unknown command.");
+		legal_command = false;
 		break;
 	}
+
+	if (legal_command) {
+		if (!Profile[command])
+			Profile[command] = new StatsM;
+		Profile[command].executions++;
+		Profile[command].ticks += system.clock_ticks - clockticks;
+	}
+
 }
 
 function User_Quit(str,suppress_bcast,is_netsplit,origin) {
@@ -1444,7 +1481,8 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		ww_serverdesc = serverdesc;
 	else
 		ww_serverdesc = Servers[this.parent.toLowerCase()].info;
-	WhoWasHistory[whowas_pointer] = new WhoWas(this.nick,this.uprefix,this.hostname,this.realname,this.servername,ww_serverdesc);
+	WhoWasHistory[whowas_pointer] = new WhoWas(this.nick,this.uprefix,
+		this.hostname,this.realname,this.servername,ww_serverdesc);
 	whowas_pointer++;
 	if (!suppress_bcast)
 		this.bcast_to_servers(tmp);
@@ -1452,10 +1490,11 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (this.local) {
 		if(server.client_remove!=undefined)
 			server.client_remove(this.socket);
-		this.rawout("ERROR :Closing Link: [" + this.uprefix + "@" + this.hostname + "] (" + str + ")");
-		umode_notice(USERMODE_CLIENT,"Client","Client exiting: " +
-			this.nick + " (" + this.uprefix + "@" + this.hostname +
-			") [" + str + "] [" + this.ip + "]");
+		this.rawout("ERROR :Closing Link: [" + this.uprefix + "@"
+			+ this.hostname + "] (" + str + ")");
+		umode_notice(USERMODE_CLIENT,"Client","Client exiting: " + this.nick
+			+ " (" + this.uprefix + "@" + this.hostname + ") [" + str + "] ["
+			+ this.ip + "]");
 		if (this.socket!=undefined)
 			this.socket.close();
 	}

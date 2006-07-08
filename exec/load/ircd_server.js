@@ -88,6 +88,7 @@ function IRC_Server() {
 ////////// Command Parser //////////
 
 function Server_Work() {
+	var clockticks = system.clock_ticks;
 	var command;
 	var cmdline;
 	var origin;
@@ -151,6 +152,8 @@ function Server_Work() {
 		destination.rawout(":" + ThisOrigin.nick + " " + cmdline);
 		return 1;
 	}
+
+	var legal_command = true; /* For tracking STATS M */
 
 	switch(command) {
 		// PING at the top thanks to RFC1459
@@ -1051,7 +1054,15 @@ function Server_Work() {
 			break; // Silently ignore for now.
 		default:
 			umode_notice(USERMODE_OPER,"Notice","Server " + ThisOrigin.nick + " sent unrecognized command: " + cmdline);
+			legal_command = false;
 			break;
+	}
+
+	if (legal_command) {
+		if (!Profile[command])
+			Profile[command] = new StatsM;
+		Profile[command].executions++;
+		Profile.ticks += system.clock_ticks - clockticks;
 	}
 }
 

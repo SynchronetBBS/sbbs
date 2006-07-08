@@ -89,6 +89,7 @@ function Unregistered_Client(id,socket) {
 ////////// Command Parsers //////////
 
 function Unregistered_Commands() {
+	var clockticks = system.clock_ticks;
 	var cmdline;
 	var cmd;
 	var command;
@@ -126,6 +127,8 @@ function Unregistered_Commands() {
 	// we ignore all numerics from unregistered clients.
 	if (command.match(/^[0-9]+/))
 		return 0;
+
+	var legal_command = true; /* For tracking STATS M */
 	
 	switch(command) {
 		case "PING":
@@ -259,6 +262,7 @@ function Unregistered_Commands() {
 			break; // drop silently
 		default:
 			this.numeric451();
+			legal_command = false;
 			break;
 	}
 	if (!this.criteria_met && this.uprefix && (this.nick != "*") ) {
@@ -279,6 +283,14 @@ function Unregistered_Commands() {
 		if (this.hostname && !this.pending_resolve_time)
 			this.welcome();
 	}
+
+	if (legal_command) {
+		if (!Profile[command])
+			Profile[command] = new StatsM;
+		Profile[command].executions++;
+		Profile[command].ticks += system.clock_ticks - clockticks;
+	}
+
 }
 
 ////////// Functions //////////

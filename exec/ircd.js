@@ -38,8 +38,8 @@ const MAIN_REVISION = "$Revision$".split(' ')[1];
 // This is so everyone knows your revision base, AND type of hack used.
 const VERSION = "SynchronetIRCd-1.1b(" + MAIN_REVISION + ")";
 const VERSION_STR = "Synchronet " 
-	+ system.version + system.revision + "-" + system.platform + 
-	system.beta_version + " (IRCd by Randy Sommerfeld)";
+	+ system.version + system.revision + "-" + system.platform 
+	+ system.beta_version + " (IRCd by Randy Sommerfeld)";
 
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
@@ -90,6 +90,220 @@ const BAHAMUT = 1;
 const DREAMFORGE = 2;
 
 var default_port = 6667;
+
+log(VERSION + " started.");
+
+// Our primary arrays.
+Unregistered = new Array;
+Users = new Array;
+Servers = new Array;
+Channels = new Array;
+
+Local_Sockets = new Array;
+Local_Sockets_Map = new Array;
+
+Selectable_Sockets = new Array;
+Selectable_Sockets_Map = new Array;
+
+Global_CommandLine = ""; // We use this to track if a cmdline causes a crash.
+
+hcc_total = 0;
+hcc_users = 0;
+hcc_counter = 0;
+server_uptime = time();
+
+WhoWasHistory = new Array;
+NickHistory = new Array;
+whowas_buffer = 1000;
+whowas_pointer = 0;
+nick_buffer = 1000;
+nick_pointer = 0;
+
+/* Keep track of commands and how long they take to execute. */
+Profile = new Array;
+
+// This is where our unique ID for each client comes from for unreg'd clients.
+next_client_id = 0;
+
+// An array containing all the objects containing local sockets that we need
+// to poll.
+Local_Users = new Array;
+Local_Servers = new Array;
+
+rebuild_socksel_array = false;
+
+network_debug = false;
+
+// Parse command-line arguments.
+config_filename="";
+var cmdline_port;
+for (cmdarg=0;cmdarg<argc;cmdarg++) {
+	switch(argv[cmdarg].toLowerCase()) {
+		case "-f":
+			config_filename = argv[++cmdarg];
+			break;
+		case "-p":
+			cmdline_port = parseInt(argv[++cmdarg]);
+			break;
+		case "-d":
+			debug=true;
+			break;
+	}
+}
+
+read_config_file();
+
+if(this.server==undefined) {		// Running from JSexec?
+	if (!jsexec_revision_detail)
+		jsexec_revision_detail = "JSexec";
+	if (cmdline_port)
+		default_port = cmdline_port;
+	else if (mline_port)
+		default_port = mline_port;
+
+	server = { socket: false, terminated: false,
+		version_detail: jsexec_revision_detail };
+	server.socket = create_new_socket(default_port)
+	if (!server.socket)
+		exit();
+}
+
+server.socket.nonblocking = true;	// REQUIRED!
+server.socket.debug = false;		// Will spam your log if true :)
+
+// Now open additional listening sockets as defined on the P:Line in ircd.conf
+open_plines = new Array();
+// Make our 'server' object the first open P:Line
+open_plines[0] = server.socket;
+for (pl in PLines) {
+	var new_pl_sock = create_new_socket(PLines[pl]);
+	if (new_pl_sock) {
+		new_pl_sock.nonblocking = true;
+		new_pl_sock.debug = false;
+		open_plines.push(new_pl_sock);
+	}
+}
+
+js.branch_limit=0; // we're not an infinite loop.
+js.auto_terminate=false; // we handle our own termination requests
+
+///// Main Loop /////
+while (!server.terminated) {
+
+	if(server.terminated)
+		break;
+	if(js.terminated)
+		break;
+
+	// Setup a new socket if a connection is accepted.
+	for (pl in open_plines) {
+		if (open_plines[pl].poll()) {
+			log(LOG_DEBUG,"Accepting new connection on port "
+				+ open_plines[pl].local_port);
+			var client_sock=open_plines[pl].accept();
+			if(client_sock) {
+				if (iszlined(client_sock.remote_ip_address)) {
+					client_sock.send(":" + servername
+						+ " 465 * :You've been Z:Lined from this server.\r\n");
+					client_sock.close();
+				} else {
+					var new_id = "id" + next_client_id;
+					next_client_id++;
+					if(server.client_add != undefined)
+						server.client_add(client_sock);
+					if(server.clients != undefined)
+						log(LOG_DEBUG,format("%d clients", server.clients));
+					Unregistered[new_id] = new Unregistered_Client(new_id,
+						client_sock);
+				}
+			} else
+				log(LOG_DEBUG,"!ERROR " + open_plines[pl].error
+					+ " accepting connection");
+		}
+	}
+
+	// Check for ping timeouts
+	// FIXME: In the future these just need to be maps.  This is stupid.
+	for(this_sock in Selectable_Sockets) {
+		if (Selectable_Sockets_Map[this_sock]) {
+			Selectable_Sockets_Map[this_sock].check_timeout();
+			Selectable_Sockets_Map[this_sock].check_sendq();
+		}
+	}
+
+	// Check for pending DNS hostname resolutions.
+	for(this_unreg in Unregistered) {
+		if (Unregistered[this_unreg] &&
+		    Unregistered[this_unreg].pending_resolve_time)
+			Unregistered[this_unreg].resolve_check();
+	}
+
+	// Only rebuild our selectable sockets if required.
+	if (rebuild_socksel_array) {
+		Selectable_Sockets = new Array;
+		Selectable_Sockets_Map = new Array;
+		for (i in Local_Sockets) {
+			Selectable_Sockets.push(Local_Sockets[i]);
+			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
+		}
+		rebuild_socksel_array = false;
+	}
+
+	// do some work.
+	if (!Selectable_Sockets.length) {
+		mswait(1000);
+	} else if (this.socket_select!=undefined) {
+		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
+		try {
+			for(thisPolled in readme) {
+				if (Selectable_Sockets_Map[readme[thisPolled]])
+						Selectable_Sockets_Map[readme[thisPolled]].work();
+			}
+		} catch(e) {
+			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
+			log(LOG_ERR,"JavaScript exception: " + e + " CMDLINE: "
+				+ Global_CommandLine);
+			terminate_everything("A fatal error occured!", /* ERROR? */true);
+		}
+	}
+
+	// Scan C:Lines for servers to connect to automatically.
+	var my_cline;
+	for(thisCL in CLines) {
+		my_cline = CLines[thisCL];
+		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
+		    (search_server_only(my_cline.servername) < 1) &&
+		     ((time() - my_cline.lastconnect) >
+		     YLines[my_cline.ircclass].connfreq)
+		   ) {
+			umode_notice(USERMODE_ROUTING,"Routing",
+				"Auto-connecting to " +
+				CLines[thisCL].servername);
+			connect_to_server(CLines[thisCL]);
+		}
+	}
+}
+
+// End of our run, so terminate everything before we go.
+terminate_everything("Terminated.");
+
+//////////////////////////////// END OF MAIN ////////////////////////////////
+
+// Okay, welcome to my world.
+// str = The string used for the quit reason UNLESS 'is_netsplit' is set to
+//       true, in which case it becomes the string used to QUIT individual
+//       clients in a netsplit (i.e. "server.one server.two")
+// suppress_bcast = Set to TRUE if you don't want the message to be broadcast
+//       accross the entire network.  Useful for netsplits, global kills, or
+//       other network messages where the rest of the network is nuking the
+//       client on their own.
+// is_netsplit = Should never be used except in a recursive call from the
+//       'this.netsplit()' function.  Tells the function that we're recursive
+//       and to use 'str' as the reason for quiting all the clients
+// origin = an object typically only passed in the case of a SQUIT, contains
+//       the client who originated the message (i.e. for generating netsplit
+//       messages.)
+// FIXME: this function split into three. comments kept for now, but nuke later
 
 ////////// Functions not linked to an object //////////
 
@@ -190,7 +404,8 @@ function parse_nline_flags(flags) {
 				nline_flags |= NLINE_IS_DREAMFORGE;
 				break;
 			default:
-				log(LOG_WARNING,"!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");
+				log(LOG_WARNING,"!WARNING Unknown N:Line flag '"
+					+ flags[thisflag] + "' in config.");
 				break;
 		}
 	}
@@ -279,7 +494,8 @@ function parse_oline_flags(flags) {
 				oline_flags |= OLINE_CAN_UMODEC;
 				break;
 			default:
-				log(LOG_WARNING,"!WARNING Unknown O:Line flag '" + flags[thisflag] + "' in config.");
+				log(LOG_WARNING,"!WARNING Unknown O:Line flag '"
+					+ flags[thisflag] + "' in config.");
 				break;
 		}
 	}
@@ -291,7 +507,8 @@ function umode_notice(bit,ntype,nmessage) {
 	for (thisuser in Local_Users) {
 		var user = Local_Users[thisuser];
 		if (user.mode && ((user.mode&bit)==bit))
-			user.rawout(":" + servername + " NOTICE " + user.nick + " :*** " + ntype + " -- " + nmessage);
+			user.rawout(":" + servername + " NOTICE " + user.nick
+				+ " :*** " + ntype + " -- " + nmessage);
 	}
 
 }
@@ -346,7 +563,8 @@ function create_ban_mask(str,kline) {
 	if (kline)
 		finalstr = tmp_banstr[0].slice(0,10) + "@" + tmp_banstr[1].slice(0,80);
 	else
-		finalstr = tmp_banstr[0].slice(0,max_nicklen) + "!" + tmp_banstr[1].slice(0,10) + "@" + tmp_banstr[2].slice(0,80);
+		finalstr = tmp_banstr[0].slice(0,max_nicklen) + "!"
+			+ tmp_banstr[1].slice(0,10) + "@" + tmp_banstr[2].slice(0,80);
         while (finalstr.match(/[*][*]/)) {
                 finalstr=finalstr.replace(/[*][*]/g,"*");
         }
@@ -426,7 +644,7 @@ function connect_to_server(this_cline,the_port) {
 			sendstr += " :TS";
 		connect_sock.send(sendstr + "\r\n");
 		connect_sock.send("CAPAB " + server_capab + "\r\n");
-		connect_sock.send("SERVER " + servername + " 1 :" + serverdesc + "\r\n");
+		connect_sock.send("SERVER " + servername + " 1 :" + serverdesc +"\r\n");
 		new_id = "id" + next_client_id;
 		next_client_id++;
 		Unregistered[new_id]=new Unregistered_Client(new_id,connect_sock);
@@ -520,7 +738,8 @@ function read_config_file() {
 					case "C":
 						if (!arg[5])
 							break;
-						CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],parseInt(arg[5])));
+						CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],
+							parseInt(arg[5]) ));
 						break;
 					case "H":
 						if (!arg[3])
@@ -530,14 +749,16 @@ function read_config_file() {
 					case "I":
 						if (!arg[5])
 							break;
-						ILines.push(new ILine(arg[1],arg[2],arg[3],arg[4],arg[5]));
+						ILines.push(new ILine(arg[1],arg[2],arg[3],arg[4],
+							arg[5]));
 						break;
 					case "K":
 						if (!arg[2])
 							break;
 						var kline_mask = create_ban_mask(arg[1],true);
 						if (!kline_mask) {
-							log(LOG_WARNING,"!WARNING Invalid K:Line (" + arg[1] + ")");
+							log(LOG_WARNING,"!WARNING Invalid K:Line ("
+								+ arg[1] + ")");
 							break;
 						}
 						KLines.push(new KLine(kline_mask,arg[2],"K"));
@@ -552,12 +773,14 @@ function read_config_file() {
 					case "N":
 						if (!arg[5])
 							break;
-						NLines.push(new NLine(arg[1],arg[2],arg[3],parse_nline_flags(arg[4]),arg[5]));
+						NLines.push(new NLine(arg[1],arg[2],arg[3],
+							parse_nline_flags(arg[4]),arg[5]) );
 						break;
 					case "O":
 						if (!arg[5])
 							break;
-						OLines.push(new OLine(arg[1],arg[2],arg[3],parse_oline_flags(arg[4]),parseInt(arg[5])));
+						OLines.push(new OLine(arg[1],arg[2],arg[3],
+							parse_oline_flags(arg[4]),parseInt(arg[5]) ));
 						break;
 					case "P":
 						PLines.push(parseInt(arg[4]));
@@ -579,7 +802,8 @@ function read_config_file() {
 					case "Y":
 						if (!arg[5])
 							break;
-						YLines[parseInt(arg[1])] = new YLine(parseInt(arg[2]),parseInt(arg[3]),parseInt(arg[4]),parseInt(arg[5]));
+						YLines[parseInt(arg[1])] = new YLine(parseInt(arg[2]),
+							parseInt(arg[3]),parseInt(arg[4]),parseInt(arg[5]));
 						break;
 					case "Z":
 						if (!arg[2])
@@ -595,7 +819,8 @@ function read_config_file() {
 		}
 		conf.close();
 	} else {
-		log ("WARNING! No config file found or unable to open.  Proceeding with defaults.");
+		log ("WARNING! No config file found or unable to open."
+			+ " Proceeding with defaults.");
 	}
 	scan_for_klined_clients();
 	YLines[0] = new YLine(120,600,1,5050000); // default irc class
@@ -605,13 +830,15 @@ function create_new_socket(port) {
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
 	var newsock = new Socket();
 	if(!newsock.bind(port,server.interface_ip_address)) {
-		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port " + port);
+		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
+			+ port);
 		return 0;
 	}
 	log(format("%04u ",newsock.descriptor)
 		+ "IRC server socket bound to TCP port " + port);
 	if(!newsock.listen(5 /* backlog */)) {
-		log(LOG_ERR,"!Error " + newsock.error + " setting up socket for listening");
+		log(LOG_ERR,"!Error " + newsock.error
+			+ " setting up socket for listening");
 		return 0;
 	}
 	return newsock;
@@ -629,219 +856,6 @@ function check_qwk_passwd(qwkid,password) {
 		return 1;
 	return 0;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//////////////   End of functions.  Start main() program here.   //////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-log(VERSION + " started.");
-
-// Our primary arrays.
-Unregistered = new Array;
-Users = new Array;
-Servers = new Array;
-Channels = new Array;
-
-Local_Sockets = new Array;
-Local_Sockets_Map = new Array;
-
-Selectable_Sockets = new Array;
-Selectable_Sockets_Map = new Array;
-
-Global_CommandLine = ""; // We use this to track if a cmdline causes a crash.
-
-hcc_total = 0;
-hcc_users = 0;
-hcc_counter = 0;
-server_uptime = time();
-
-WhoWasHistory = new Array;
-NickHistory = new Array;
-whowas_buffer = 1000;
-whowas_pointer = 0;
-nick_buffer = 1000;
-nick_pointer = 0;
-
-// This is where our unique ID for each client comes from for unreg'd clients.
-next_client_id = 0;
-
-// An array containing all the objects containing local sockets that we need
-// to poll.
-Local_Users = new Array;
-Local_Servers = new Array;
-
-rebuild_socksel_array = false;
-
-network_debug = false;
-
-// Parse command-line arguments.
-config_filename="";
-var cmdline_port;
-for (cmdarg=0;cmdarg<argc;cmdarg++) {
-	switch(argv[cmdarg].toLowerCase()) {
-		case "-f":
-			config_filename = argv[++cmdarg];
-			break;
-		case "-p":
-			cmdline_port = parseInt(argv[++cmdarg]);
-			break;
-		case "-d":
-			debug=true;
-			break;
-	}
-}
-
-read_config_file();
-
-if(this.server==undefined) {		// Running from JSexec?
-	if (!jsexec_revision_detail)
-		jsexec_revision_detail = "JSexec";
-	if (cmdline_port)
-		default_port = cmdline_port;
-	else if (mline_port)
-		default_port = mline_port;
-
-	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail };
-	server.socket = create_new_socket(default_port)
-	if (!server.socket)
-		exit();
-}
-
-server.socket.nonblocking = true;	// REQUIRED!
-server.socket.debug = false;		// Will spam your log if true :)
-
-// Now open additional listening sockets as defined on the P:Line in ircd.conf
-open_plines = new Array();
-// Make our 'server' object the first open P:Line
-open_plines[0] = server.socket;
-for (pl in PLines) {
-	var new_pl_sock = create_new_socket(PLines[pl]);
-	if (new_pl_sock) {
-		new_pl_sock.nonblocking = true;
-		new_pl_sock.debug = false;
-		open_plines.push(new_pl_sock);
-	}
-}
-
-js.branch_limit=0; // we're not an infinite loop.
-js.auto_terminate=false; // we handle our own termination requests
-
-///// Main Loop /////
-while (!server.terminated) {
-
-	if(server.terminated)
-		break;
-	if(js.terminated)
-		break;
-
-	// Setup a new socket if a connection is accepted.
-	for (pl in open_plines) {
-		if (open_plines[pl].poll()) {
-			log(LOG_DEBUG,"Accepting new connection on port " + open_plines[pl].local_port);
-			var client_sock=open_plines[pl].accept();
-			if(client_sock) {
-				if (iszlined(client_sock.remote_ip_address)) {
-					client_sock.send(":" + servername + " 465 * :You've been Z:Lined from this server.\r\n");
-					client_sock.close();
-				} else {
-					var new_id = "id" + next_client_id;
-					next_client_id++;
-					if(server.client_add != undefined)
-						server.client_add(client_sock);
-					if(server.clients != undefined)
-						log(LOG_DEBUG,format("%d clients", server.clients));
-					Unregistered[new_id] = new Unregistered_Client(new_id,client_sock);
-				}
-			} else
-				log(LOG_DEBUG,"!ERROR " + open_plines[pl].error + " accepting connection");
-		}
-	}
-
-	// Check for ping timeouts
-	// FIXME: In the future these just need to be maps.  This is stupid.
-	for(this_sock in Selectable_Sockets) {
-		if (Selectable_Sockets_Map[this_sock]) {
-			Selectable_Sockets_Map[this_sock].check_timeout();
-			Selectable_Sockets_Map[this_sock].check_sendq();
-		}
-	}
-
-	// Check for pending DNS hostname resolutions.
-	for(this_unreg in Unregistered) {
-		if (Unregistered[this_unreg] &&
-		    Unregistered[this_unreg].pending_resolve_time)
-			Unregistered[this_unreg].resolve_check();
-	}
-
-	// Only rebuild our selectable sockets if required.
-	if (rebuild_socksel_array) {
-		Selectable_Sockets = new Array;
-		Selectable_Sockets_Map = new Array;
-		for (i in Local_Sockets) {
-			Selectable_Sockets.push(Local_Sockets[i]);
-			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
-		}
-		rebuild_socksel_array = false;
-	}
-
-	// do some work.
-	if (!Selectable_Sockets.length) {
-		mswait(1000);
-	} else if (this.socket_select!=undefined) {
-		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
-		try {
-			for(thisPolled in readme) {
-				if (Selectable_Sockets_Map[readme[thisPolled]])
-						Selectable_Sockets_Map[readme[thisPolled]].work();
-			}
-		} catch(e) {
-			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
-			log(LOG_ERR,"JavaScript exception: " + e + " CMDLINE: " + Global_CommandLine);
-			terminate_everything("A fatal error occured!", /* ERROR? */true);
-		}
-	}
-
-	// Scan C:Lines for servers to connect to automatically.
-	var my_cline;
-	for(thisCL in CLines) {
-		my_cline = CLines[thisCL];
-		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
-		    (search_server_only(my_cline.servername) < 1) &&
-		     ((time() - my_cline.lastconnect) >
-		     YLines[my_cline.ircclass].connfreq)
-		   ) {
-			umode_notice(USERMODE_ROUTING,"Routing",
-				"Auto-connecting to " +
-				CLines[thisCL].servername);
-			connect_to_server(CLines[thisCL]);
-		}
-	}
-}
-
-// End of our run, so terminate everything before we go.
-terminate_everything("Terminated.");
-
-//////////////////////////////// END OF MAIN ////////////////////////////////
-
-// Okay, welcome to my world.
-// str = The string used for the quit reason UNLESS 'is_netsplit' is set to
-//       true, in which case it becomes the string used to QUIT individual
-//       clients in a netsplit (i.e. "server.one server.two")
-// suppress_bcast = Set to TRUE if you don't want the message to be broadcast
-//       accross the entire network.  Useful for netsplits, global kills, or
-//       other network messages where the rest of the network is nuking the
-//       client on their own.
-// is_netsplit = Should never be used except in a recursive call from the
-//       'this.netsplit()' function.  Tells the function that we're recursive
-//       and to use 'str' as the reason for quiting all the clients
-// origin = an object typically only passed in the case of a SQUIT, contains
-//       the client who originated the message (i.e. for generating netsplit
-//       messages.)
-// FIXME: this function split into three. comments kept for now, but nuke later
-
 function IRCClient_netsplit(ns_reason) {
 	if (!ns_reason)
 		ns_reason = "net.split.net.split net.split.net.split";
@@ -986,7 +1000,8 @@ function IRCClient_numeric205(nick) {
 }
 
 function IRCClient_numeric206(ircclass,sint,cint,server) {
-	this.numeric(206, "Serv " + ircclass + " " + sint + "S " + cint + "C *!*@" + server);
+	this.numeric(206, "Serv " + ircclass + " " + sint + "S " + cint
+		+ "C *!*@" + server);
 }
 
 function IRCClient_numeric208(type,clientname) {
@@ -1022,7 +1037,8 @@ function IRCClient_numeric322(chan,show_modes) {
 	}
 	if (!(chan.mode&CHANMODE_SECRET) || (this.mode&USERMODE_OPER) ||
 	    is_onchan )
-		this.numeric(322, channel_name + " " + true_array_len(chan.users) + " :" + disp_topic);
+		this.numeric(322, channel_name + " " + true_array_len(chan.users)
+			+ " :" + disp_topic);
 }
 
 function IRCClient_numeric331(chan) {
@@ -1034,7 +1050,8 @@ function IRCClient_numeric332(chan) {
 }
 
 function IRCClient_numeric333(chan) {
-	this.numeric(333, chan.nam + " " + chan.topicchangedby + " " + chan.topictime);
+	this.numeric(333, chan.nam + " " + chan.topicchangedby + " "
+		+ chan.topictime);
 }
 
 function IRCClient_numeric351() {
@@ -1072,7 +1089,9 @@ function IRCClient_numeric352(user,show_ips_only,chan) {
 	else
 		disphost = user.hostname;
 
-	this.numeric(352, disp + " " + user.uprefix + " " + disphost + " " + user.servername + " " + user.nick + " " + who_mode + " :" + user.hops + " " + user.realname);
+	this.numeric(352, disp + " " + user.uprefix + " " + disphost + " "
+		+ user.servername + " " + user.nick + " " + who_mode
+		+ " :" + user.hops + " " + user.realname);
 	return 1;
 }
 
@@ -1090,7 +1109,8 @@ function IRCClient_numeric382(str) {
 }
 
 function IRCClient_numeric391() {
-	this.numeric(391, servername + " :" + strftime("%A %B %d %Y -- %H:%M %z",time()));
+	this.numeric(391, servername + " :"
+		+ strftime("%A %B %d %Y -- %H:%M %z",time()));
 }
 
 function IRCClient_numeric401(str) {
@@ -1102,7 +1122,8 @@ function IRCClient_numeric402(str) {
 }
 
 function IRCClient_numeric403(str) {
-	this.numeric("403", str + " :No such channel or invalid channel designation.");
+	this.numeric("403", str
+		+ " :No such channel or invalid channel designation.");
 }
 
 function IRCClient_numeric411(str) {
@@ -1146,7 +1167,8 @@ function IRCClient_numeric462() {
 }
 
 function IRCClient_numeric481() {
-	this.numeric("481", ":Permission Denied.  You do not have the correct IRC operator privileges.");
+	this.numeric("481", ":Permission Denied.  "
+		+ "You do not have the correct IRC operator privileges.");
 }
 
 function IRCClient_numeric482(tmp_chan_nam) {
@@ -1156,15 +1178,20 @@ function IRCClient_numeric482(tmp_chan_nam) {
 //////////////////// Multi-numeric Display Functions ////////////////////
 
 function IRCClient_lusers() {
-	this.numeric(251, ":There are " + num_noninvis_users() + " users and " + num_invis_users() + " invisible on " + true_array_len(Servers) + " servers.");
+	this.numeric(251, ":There are " + num_noninvis_users() + " users and "
+		+ num_invis_users() + " invisible on " + true_array_len(Servers)
+		+ " servers.");
 	this.numeric(252, num_opers() + " :IRC operators online.");
 	var unknown_connections = true_array_len(Unregistered);
 	if (unknown_connections)
 		this.numeric(253, unknown_connections + " :unknown connection(s).");
 	this.numeric(254, true_array_len(Channels) + " :channels formed.");
-	this.numeric(255, ":I have " + true_array_len(Local_Users) + " clients and " + true_array_len(Local_Servers) + " servers.");
-	this.numeric(250, ":Highest connection count: " + hcc_total + " (" + hcc_users + " clients.)");
-	this.server_notice(hcc_counter + " clients have connected since " + strftime("%a %b %e %H:%M:%S %Y %Z",server_uptime));
+	this.numeric(255, ":I have " + true_array_len(Local_Users)
+		+ " clients and " + true_array_len(Local_Servers) + " servers.");
+	this.numeric(250, ":Highest connection count: " + hcc_total + " ("
+		+ hcc_users + " clients.)");
+	this.server_notice(hcc_counter + " clients have connected since "
+		+ strftime("%a %b %e %H:%M:%S %Y %Z",server_uptime));
 }
 
 function num_noninvis_users() {
@@ -1196,11 +1223,12 @@ function num_opers() {
 
 function IRCClient_motd() {
 	var motd_file = new File(system.text_dir + "ircmotd.txt");
-	if (motd_file.exists==false)
+	if (motd_file.exists==false) {
 		this.numeric(422, ":MOTD file missing: " + motd_file.name);
-	else if (motd_file.open("r")==false)
-		this.numeric(424, ":MOTD error " + errno + " opening: " + motd_file.name);
-	else {
+	} else if (motd_file.open("r")==false) {
+		this.numeric(424, ":MOTD error " + errno + " opening: "
+			+ motd_file.name);
+	} else {
 		this.numeric(375, ":- " + servername + " Message of the Day -");
 		this.numeric(372, ":- " + strftime("%m/%d/%Y %H:%M",motd_file.date));
 		while (!motd_file.eof) {
@@ -1261,8 +1289,7 @@ function IRCClient_bcast_to_uchans_unique(str) {
 		var userchannel=this.channels[thisChannel];
 		for (j in userchannel.users) {
 			var usr = userchannel.users[j];
-			if (!already_bcast[usr.nick] && (usr.id != this.id) &&
-			    usr.local) {
+			if (!already_bcast[usr.nick] && (usr.id != this.id) && usr.local) {
 				usr.originatorout(str,this);
 				already_bcast[usr.nick] = true;
 			}
@@ -1324,11 +1351,7 @@ function IRCClient_check_nickname(newnick,squelch) {
 	}
 	// Third, match against Q:Lines
 	for (ql in QLines) {
-		qline_nick = QLines[ql].nick;
-		qline_nick = qline_nick.replace(/[?]/g,".");
-		qline_nick = qline_nick.replace(/[*]/g,".*?");
-		regexp = new RegExp("^" + qline_nick + "$","i");
-		if(newnick.match(regexp)) {
+		if(wildmatch(newnick, QLines[ql].nick)) {
 			if (!squelch)
 				this.numeric(432, newnick + " :" + QLines[ql].reason);
 			return 0;
@@ -1340,7 +1363,8 @@ function IRCClient_check_nickname(newnick,squelch) {
 function IRCClient_do_whois(wi) {
 	if (!wi)
 		return 0;
-	this.numeric(311, wi.nick + " " + wi.uprefix + " " + wi.hostname + " * :" + wi.realname);
+	this.numeric(311, wi.nick + " " + wi.uprefix + " " + wi.hostname + " * :"
+		+ wi.realname);
 	var userchans="";
 	for (i in wi.channels) {
 		var chan = wi.channels[i];
@@ -1361,14 +1385,16 @@ function IRCClient_do_whois(wi) {
 		this.numeric(312, wi.nick + " " + servername + " :" + serverdesc);
 	else {
 		wi_server = searchbyserver(wi.servername);
-		this.numeric(312, wi.nick + " " + wi_server.nick + " :" + wi_server.info);
+		this.numeric(312, wi.nick + " " + wi_server.nick
+		+ " :" + wi_server.info);
 	}
 	if (wi.mode&USERMODE_OPER)
 		this.numeric(313, wi.nick + " :is an IRC operator.");
 	if (wi.away)
 		this.numeric(301, wi.nick + " :" + wi.away);
 	if (wi.local)
-		this.numeric(317, wi.nick + " " + (time() - wi.talkidle) + " " + wi.connecttime + " :seconds idle, signon time");
+		this.numeric(317, wi.nick + " " + (time() - wi.talkidle) + " "
+		+ wi.connecttime + " :seconds idle, signon time");
 }
 
 function IRCClient_services_msg(svcnick,send_str) {
@@ -1427,8 +1453,8 @@ function IRCClient_globops(str) {
 	globops_bits |= USERMODE_GLOBOPS;
 	umode_notice(globops_bits,"Global","from " + this.nick +": " + str);
 	if (this.parent)
-		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(":" + this.nick +
-			" GLOBOPS :" + str);
+		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(":" + this.nick
+			+ " GLOBOPS :" + str);
 	else
 		server_bcast_to_servers(":" + this.nick + " GLOBOPS :" + str);
 }
@@ -1461,20 +1487,24 @@ function IRCClient_do_msg(target,type_str,send_str) {
 				return 0;
 			}
 		}
-		if ((chan.mode&CHANMODE_NOOUTSIDE) && !this.channels[chan.nam.toUpperCase()]) {
-			this.numeric(404, chan.nam + " :Cannot send to channel (+n: no outside messages)");
+		if ((chan.mode&CHANMODE_NOOUTSIDE)
+			&& !this.channels[chan.nam.toUpperCase()]) {
+			this.numeric(404, chan.nam + " :Cannot send to channel "
+				+ "(+n: no outside messages)");
 			return 0;
 		}
 		if ( (chan.mode&CHANMODE_MODERATED) &&
 		     !chan.modelist[CHANMODE_VOICE][this.id] &&
 		     !chan.modelist[CHANMODE_OP][this.id] ) {
-			this.numeric(404, chan.nam + " :Cannot send to channel (+m: moderated)");
+			this.numeric(404, chan.nam + " :Cannot send to channel "
+				+ "(+m: moderated)");
 			return 0;
 		}
 		if (chan.isbanned(this.nuh) &&
 		   !chan.modelist[CHANMODE_VOICE][this.id] &&
 		   !chan.modelist[CHANMODE_OP][this.id] ) {
-			this.numeric(404, chan.nam + " :Cannot send to channel (+b: you're banned!)");
+			this.numeric(404, chan.nam + " :Cannot send to channel "
+				+ "(+b: you're banned!)");
 			return 0;
 		}
 		if(send_to_list == -1) {
@@ -1501,7 +1531,8 @@ function IRCClient_do_msg(target,type_str,send_str) {
 				return 0;
 			}
 			if (target_server == -1) {
-				this.numeric(407, target + " :Duplicate recipients, no message delivered.");
+				this.numeric(407, target
+					+ " :Duplicate recipients, no message delivered.");
 				return 0;
 			}
 			target = msg_arg[0] + "@" + msg_arg[1];
@@ -1522,7 +1553,8 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			target_socket.originatorout(str,this);
 			if (target_socket.away && (type_str == "PRIVMSG") &&
 			    !this.server && target_socket.local)
-				this.numeric(301, target_socket.nick + " :" + target_socket.away);
+				this.numeric(301, target_socket.nick + " :"
+					+ target_socket.away);
 		} else {
 			this.numeric401(target);
 			return 0;
@@ -1541,7 +1573,8 @@ function IRCClient_do_admin() {
 		this.numeric(258, ":" + Admin2);
 		this.numeric(259, ":" + Admin3);
 	} else {
-		this.numeric(423, servername + " :No administrative information available.");
+		this.numeric(423, servername
+			+ " :No administrative information available.");
 	}
 }
 
@@ -1593,15 +1626,20 @@ function IRCClient_do_stats(statschar) {
 					cline_port = CLines[cline].port;
 				else
 					cline_port = "*";
-				this.numeric(213,"C " + CLines[cline].host + " * " + CLines[cline].servername + " " + cline_port + " " + CLines[cline].ircclass);
+				this.numeric(213,"C " + CLines[cline].host + " * "
+					+ CLines[cline].servername + " " + cline_port + " "
+					+ CLines[cline].ircclass);
 				if (NLines[cline])
-					this.numeric(214,"N " + NLines[cline].host + " * " + NLines[cline].servername + " " + NLines[cline].flags + " " + NLines[cline].ircclass);
+					this.numeric(214,"N " + NLines[cline].host + " * "
+						+ NLines[cline].servername + " " + NLines[cline].flags
+						+ " " + NLines[cline].ircclass);
 			}
 			break;  
 		case "H":
 		case "h":
 			for (hl in HLines) {
-				this.numeric(244,"H " + HLines[hl].allowedmask + " * " + HLines[hl].servername);
+				this.numeric(244,"H " + HLines[hl].allowedmask + " * "
+					+ HLines[hl].servername);
 			}
 			break;
 		case "I":
@@ -1612,30 +1650,39 @@ function IRCClient_do_stats(statschar) {
 					my_port = "*";
 				else
 					my_port = ILines[iline].port;
-				this.numeric(215,"I " + ILines[iline].ipmask + " * " + ILines[iline].hostmask + " " + my_port + " " + ILines[iline].ircclass);
+				this.numeric(215,"I " + ILines[iline].ipmask + " * "
+					+ ILines[iline].hostmask + " " + my_port + " "
+					+ ILines[iline].ircclass);
 			}
 			break;
 		case "K":
 		case "k":
 			for (kline in KLines) {
-				if(KLines[kline].hostmask)
-					this.numeric(216, KLines[kline].type + " " + KLines[kline].hostmask + " * * :" + KLines[kline].reason);
+				if (KLines[kline].hostmask) {
+					this.numeric(216, KLines[kline].type + " "
+						+ KLines[kline].hostmask + " * * :"
+						+ KLines[kline].reason);
+				}
 			}
 			break;
-		case "L":
+		case "L": /* FIXME */
 			this.numeric(241,"L <hostmask> * <servername> <maxdepth>");
 			break;
-		case "l":
+		case "l": /* FIXME */
 			this.numeric(211,"<linkname> <sendq> <sentmessages> <sentbytes> <receivedmessages> <receivedbytes> <timeopen>");
 			break;
 		case "M":
 		case "m":
-			this.numeric(212,"<command> <count>");
+			for (c in Profile) {
+				var sm = Profile[c];
+				this.numeric(212, c + " " + sm.ticks + " " + sm.executions);
+			}
 			break;          
 		case "O":       
 		case "o":
 			for (oline in OLines) {
-				this.numeric(243, "O " + OLines[oline].hostmask + " * " + OLines[oline].nick);
+				this.numeric(243, "O " + OLines[oline].hostmask + " * "
+					+ OLines[oline].nick);
 			}
 			break;
 		case "U":
@@ -1660,7 +1707,8 @@ function IRCClient_do_stats(statschar) {
 			var yl;
 			for (thisYL in YLines) {
 				yl = YLines[thisYL];
-				this.numeric(218,"Y " + thisYL + " " + yl.pingfreq + " " + yl.connfreq + " " + yl.maxlinks + " " + yl.sendq);
+				this.numeric(218,"Y " + thisYL + " " + yl.pingfreq + " "
+					+ yl.connfreq + " " + yl.maxlinks + " " + yl.sendq);
 			}
 			break;
 		default:
@@ -1678,7 +1726,8 @@ function IRCClient_do_users() {
 	for(node in system.node_list) {
 		if(system.node_list[node].status == NODE_INUSE) {
 			u=new User(system.node_list[node].useron);
-			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,u.host_name));
+			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,
+				u.host_name));
 			usersshown++;
 		}
 	}
@@ -1725,8 +1774,10 @@ function IRCClient_do_links(mask) {
 		this.servername + "]");
 	for(thisServer in Servers) {
 		var Server=Servers[thisServer];
-		if (wildmatch(Server.nick,mask))
-			this.numeric(364, Server.nick + " " + Server.linkparent + " :" + Server.hops + " " + Server.info);
+		if (wildmatch(Server.nick,mask)) {
+			this.numeric(364, Server.nick + " " + Server.linkparent + " :"
+				+ Server.hops + " " + Server.info);
+		}
 	}
 	if (wildmatch(servername,mask))
 		this.numeric(364, servername + " " + servername + " :0 " + serverdesc);
@@ -1826,8 +1877,10 @@ function IRCClient_do_basic_who(whomask) {
 				    (this.mode&USERMODE_OPER) ||
 				    this.onchanwith(usr) ) {
 					var chkwho = this.numeric352(usr,false,chan);
-					if (!chkwho)
-						umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + usr.nick + " (A)");
+					if (!chkwho) {
+						umode_notice(USERMODE_OPER,"Notice",
+							"WHO returned 0 for user: " + usr.nick + " (A)");
+					}
 				}
 			}
 			eow = chan.nam;
@@ -1840,8 +1893,10 @@ function IRCClient_do_basic_who(whomask) {
 			     (this.mode&USERMODE_OPER) ||
 			     this.onchanwith(usr) ) ) {
 				var chkwho = this.numeric352(usr);
-				if (!chkwho)
-					umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + usr.nick + " (B)");
+				if (!chkwho) {
+					umode_notice(USERMODE_OPER,"Notice",
+						"WHO returned 0 for user: " + usr.nick + " (B)");
+				}
 			}
 		}
 		eow = whomask;
@@ -2167,23 +2222,17 @@ function IRCClient_do_complex_who(cmd) {
 		chan = "";
 		if ((who.add_flags&WHO_FIRST_CHANNEL) && !who.Channel) {
 			for (x in wc.channels) {
-				if(wc.channels[x] &&
-				   (!(Channels[wc.channels[x]].mode&
-				       CHANMODE_SECRET ||
-				      Channels[wc.channels[x]].mode&
-				       CHANMODE_PRIVATE
-				      ) ||
-				this.channels[wc.channels[x].toUpperCase]||
-				this.mode&USERMODE_OPER)
-				   ) {
-					chan = Channels[wc.channels[x]].nam;
+				if (!(Channels[x].mode&CHANMODE_SECRET
+						|| Channels[x].mode&CHANMODE_PRIVATE)
+					|| this.channels[x] || this.mode&USERMODE_OPER)
+				{
+					chan = Channels[x].nam;
 					break;
 				}
 			}
-		}
-
-		if (who.Channel)
+		} else if (who.Channel) {
 			chan = who.Channel;
+		}
 
 		var show_ips_only;
 		if (who.add_flags&WHO_SHOW_IPS_ONLY)
@@ -2193,13 +2242,18 @@ function IRCClient_do_complex_who(cmd) {
 
 		// If we made it this far, we're good.
 		if (chan && Channels[chan.toUpperCase()]) {
-			var chkwho = this.numeric352(wc,show_ips_only,Channels[chan.toUpperCase()]);
-			if (!chkwho)
-				umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + wc.nick + " (C)");
+			var chkwho = this.numeric352(wc,show_ips_only,
+				Channels[chan.toUpperCase()]);
+			if (!chkwho) {
+				umode_notice(USERMODE_OPER,"Notice",
+					"WHO returned 0 for user: " + wc.nick + " (C)");
+			}
 		} else {
 			var chkwho = this.numeric352(wc,show_ips_only);
-			if (!chkwho)
-				umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + wc.nick + " (D)");
+			if (!chkwho) {
+				umode_notice(USERMODE_OPER,"Notice",
+					"WHO returned 0 for user: " + wc.nick + " (D)");
+			}
 		}
 		who_count++;
 
@@ -2252,9 +2306,10 @@ function IRCClient_match_who_mask(mask) {
 		else
 			return 0; // channel doesn't exist.
 	} else if (mask.match(/[!]/)) { // nick!user@host
-		if ( wildmatch(this.nick,mask.split("!")[0]) &&
-		     wildmatch(this.uprefix,mask.slice(mask.indexOf("!")+1).split("@")[0]) &&
-		     wildmatch(this.hostname,mask.slice(mask.indexOf("@")+1)) )
+		if ( wildmatch(this.nick,mask.split("!")[0])
+		     && wildmatch(this.uprefix,
+				mask.slice(mask.indexOf("!")+1).split("@")[0])
+		     && wildmatch(this.hostname,mask.slice(mask.indexOf("@")+1)) )
 			return 1;
 	} else if (mask.match(/[@]/)) { // user@host
 		if ( wildmatch(this.uprefix,mask.split("@")[0]) &&
@@ -2801,7 +2856,8 @@ function IRCClient_finalize_server_connect(states,sendps) {
 		this.rawout("CAPAB " + server_capab);
 		this.rawout("SERVER " + servername + " 1 :" + serverdesc);
 	}
-	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick + " 2 :" + this.info);
+	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick
+		+ " 2 :" + this.info);
 	this.synchronize();
 }
 
@@ -2893,3 +2949,10 @@ function IRC_Queue() {
 	this.bytes = 0;
 	this.add = Queue_Add;
 }
+
+/* /STATS M, for profiling. */
+function StatsM() {
+	this.ticks = 0;
+	this.executions = 0;
+}
+
