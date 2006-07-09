@@ -88,7 +88,7 @@ function IRC_Server() {
 ////////// Command Parser //////////
 
 function Server_Work() {
-	var clockticks = system.clock_ticks;
+	var clockticks = system.timer;
 	var command;
 	var cmdline;
 	var origin;
@@ -1062,7 +1062,7 @@ function Server_Work() {
 		if (!Profile[command])
 			Profile[command] = new StatsM;
 		Profile[command].executions++;
-		Profile.ticks += system.clock_ticks - clockticks;
+		Profile.ticks += system.timer - clockticks;
 	}
 }
 

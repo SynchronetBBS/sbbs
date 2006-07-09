@@ -89,7 +89,7 @@ function Unregistered_Client(id,socket) {
 ////////// Command Parsers //////////
 
 function Unregistered_Commands() {
-	var clockticks = system.clock_ticks;
+	var clockticks = system.timer;
 	var cmdline;
 	var cmd;
 	var command;
@@ -288,7 +288,7 @@ function Unregistered_Commands() {
 		if (!Profile[command])
 			Profile[command] = new StatsM;
 		Profile[command].executions++;
-		Profile[command].ticks += system.clock_ticks - clockticks;
+		Profile[command].ticks += system.timer - clockticks;
 	}
 
 }

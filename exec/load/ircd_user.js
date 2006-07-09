@@ -246,7 +246,7 @@ function IRC_User(id) {
 
 ////////// Command Parser //////////
 function User_Work() {
-	var clockticks = system.clock_ticks;
+	var clockticks = system.timer;
 	var cmdline;
 	var cmd;
 	var command;
@@ -1461,7 +1461,7 @@ function User_Work() {
 		if (!Profile[command])
 			Profile[command] = new StatsM;
 		Profile[command].executions++;
-		Profile[command].ticks += system.clock_ticks - clockticks;
+		Profile[command].ticks += system.timer - clockticks;
 	}
 
 }
