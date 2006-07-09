@@ -538,6 +538,10 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 }
 
 function IRCClient_do_join(chan_name,join_key) {
+	chan_name = chan_name.slice(0,max_chanlen)
+
+	var uc_chan_name = chan_name.toUpperCase();
+
 	if((chan_name[0] != "#") && (chan_name[0] != "&") && !this.parent) {
 		this.numeric403(chan_name);
 		return 0;
@@ -547,90 +551,93 @@ function IRCClient_do_join(chan_name,join_key) {
 		if ((theChar_code <= 32) || (theChar_code == 44) ||
 		    (chan_name[theChar].charCodeAt(0) == 160)) {
 			if (this.local)
-				this.numeric(479, chan_name + " :Channel name contains illegal characters.");
+				this.numeric(479, chan_name
+					+ " :Channel name contains illegal characters.");
 			return 0;
 		}
 	}
-	if (this.channels[chan_name.toUpperCase()])
+	if (this.channels[uc_chan_name])
 		return 0;
 	if ((true_array_len(this.channels) >= max_user_chans) && this.local) {
 		this.numeric("405", chan_name + " :You have joined too many channels.");
 		return 0;
 	}
-	var chan = chan_name.toUpperCase().slice(0,max_chanlen);
-	if (Channels[chan] != undefined) {
+	if (Channels[uc_chan_name]) {
+		var chan = Channels[uc_chan_name];
 		if (this.local) {
-			if ((Channels[chan].mode&CHANMODE_INVITE) &&
-			    (chan != this.invited)) {
-				this.numeric("473", Channels[chan].nam + " :Cannot join channel (+i: invite only)");
+			if ((chan.mode&CHANMODE_INVITE) && (uc_chan_name != this.invited)) {
+				this.numeric("473", chan.nam
+					+ " :Cannot join channel (+i: invite only)");
 				return 0;
 			}
-			if ((Channels[chan].mode&CHANMODE_LIMIT) &&
-			    (true_array_len(Channels[chan].users) >=
-			     Channels[chan].arg[CHANMODE_LIMIT])) {
-				this.numeric("471", Channels[chan].nam + " :Cannot join channel (+l: channel is full)");
+			if ((chan.mode&CHANMODE_LIMIT) && (true_array_len(chan.users)
+			     	>= chan.arg[CHANMODE_LIMIT]) ) {
+				this.numeric("471", chan.nam
+					+ " :Cannot join channel (+l: channel is full)");
 				return 0;
 			}
-			if ((Channels[chan].mode&CHANMODE_KEY) &&
-			    (Channels[chan].arg[CHANMODE_KEY] != join_key)) {
-				this.numeric("475", Channels[chan].nam + " :Cannot join channel (+k: key required)");
+			if ((chan.mode&CHANMODE_KEY)
+					&& (chan.arg[CHANMODE_KEY] != join_key)) {
+				this.numeric("475", chan.nam
+					+ " :Cannot join channel (+k: key required)");
 				return 0;
 			}
-			if (Channels[chan].isbanned(this.nuh) &&
-			    (chan != this.invited) ) {
-				this.numeric("474", Channels[chan].nam + " :Cannot join channel (+b: you're banned!)");
+			if (chan.isbanned(this.nuh) && (uc_chan_name != this.invited) ) {
+				this.numeric("474", Channels[chan].nam
+					+ " :Cannot join channel (+b: you're banned!)");
 				return 0;
 			}
 		}
 		// add to existing channel
-		Channels[chan].users[this.id] = this;
-		var str="JOIN :" + Channels[chan].nam;
+		chan.users[this.id] = this;
+		var str="JOIN :" + chan.nam;
 		if (!this.local) {
-			this.bcast_to_channel(Channels[chan], str, false);
+			this.bcast_to_channel(chan, str, false);
 		} else {
-			this.bcast_to_channel(Channels[chan], str, true);
-			if (Channels[chan].topic) {
-				this.numeric332(Channels[chan]);
-				this.numeric333(Channels[chan]);
+			this.bcast_to_channel(chan, str, true);
+			if (chan.topic) {
+				this.numeric332(chan);
+				this.numeric333(chan);
 			} else {
-				this.numeric331(Channels[chan]);
+				this.numeric331(chan);
 			}
 		}
 		if (chan_name[0] != "&")
-			server_bcast_to_servers(":" + this.nick + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam,BAHAMUT);
-			server_bcast_to_servers(":" + this.nick + " JOIN " + Channels[chan].nam + " " + Channels[chan].created,DREAMFORGE);
+			server_bcast_to_servers(":" + this.nick + " SJOIN "
+				+ chan.created + " " + chan.nam,BAHAMUT);
+			server_bcast_to_servers(":" + this.nick + " JOIN "
+				+ chan.nam + " " + chan.created,DREAMFORGE);
 	} else {
 		// create a new channel
-		Channels[chan]=new Channel(chan);
-		Channels[chan].nam=chan_name.slice(0,max_chanlen);
-		Channels[chan].mode=CHANMODE_NONE;
-		Channels[chan].topic="";
-		Channels[chan].created=time();
-		Channels[chan].users = new Array();
-		Channels[chan].users[this.id] = this;
-		Channels[chan].modelist[CHANMODE_BAN] = new Array;
-		Channels[chan].modelist[CHANMODE_VOICE] = new Array;
-		Channels[chan].modelist[CHANMODE_OP] = new Array;
-		Channels[chan].modelist[CHANMODE_OP][this.id] = this;
-		var str="JOIN :" + chan_name;
+		Channels[uc_chan_name] = new Channel(chan_name);
+		chan=Channels[uc_chan_name];
+		chan.users[this.id] = this;
+		chan.modelist[CHANMODE_OP][this.id] = this;
+		var str="JOIN :" + chan.nam;
 		var create_op = "";
 		if (this.local) {
 			this.originatorout(str,this);
 			create_op = "@";
 		}
 		if (chan_name[0] != "&") {
-			server_bcast_to_servers(":" + servername + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam + " " + Channels[chan].chanmode() + " :" + create_op + this.nick,BAHAMUT);
-			server_bcast_to_servers(":" + this.nick + " JOIN " + Channels[chan].nam,DREAMFORGE);
-			if (create_op)
-				server_bcast_to_servers(":" + servername + " MODE " + Channels[chan].nam + " +o " + this.nick + " " + Channels[chan].created,DREAMFORGE);
+			server_bcast_to_servers(":" + servername + " SJOIN "
+				+ chan.created + " " + chan.nam + " "
+				+ chan.chanmode() + " :" + create_op + this.nick,BAHAMUT);
+			server_bcast_to_servers(":" + this.nick + " JOIN "
+				+ chan.nam,DREAMFORGE);
+			if (create_op) {
+				server_bcast_to_servers(":" + servername + " MODE "
+					+ chan.nam + " +o " + this.nick + " "
+					+ chan.created,DREAMFORGE);
+			}
 		}
 	}
-	if (this.invited.toUpperCase() == Channels[chan].nam.toUpperCase())
+	if (this.invited.toUpperCase() == chan.nam.toUpperCase())
 		this.invited = "";
-	this.channels[chan] = Channels[chan];
+	this.channels[uc_chan_name] = chan;
 	if (!this.parent) {
-		this.names(Channels[chan]);
-		this.numeric(366, Channels[chan].nam + " :End of /NAMES list.");
+		this.names(chan);
+		this.numeric(366, chan.nam + " :End of /NAMES list.");
 	}
 	return 1; // success
 }
