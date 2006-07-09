@@ -971,7 +971,7 @@ int main(int argc, char **argv, char** environ)
 	signal(SIGPIPE,SIG_IGN);
 #endif
 
-	output_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_init(&output_mutex,NULL);
 
 	do {
 
