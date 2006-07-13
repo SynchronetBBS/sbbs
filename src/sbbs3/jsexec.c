@@ -138,6 +138,26 @@ void usage(FILE* fp)
 		);
 }
 
+int mfprintf(FILE* fp, char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+	int ret=0;
+
+    va_start(argptr,fmt);
+    ret=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+
+	/* Mutex-protect stdout/stderr */
+	pthread_mutex_lock(&output_mutex);
+
+	ret = fprintf(fp, "%s\n", sbuf);
+
+	pthread_mutex_unlock(&output_mutex);
+    return(ret);
+}
+
 /* Log printf */
 int lprintf(int level, char *fmt, ...)
 {
@@ -707,7 +727,7 @@ long js_exec(const char *fname, char** args)
 		return(-1);
 	}
 	if((diff=xp_timer()-start) > 0)
-		lprintf(LOG_INFO,"%s compiled in %.2Lf seconds"
+		mfprintf(statfp,"%s compiled in %.2Lf seconds"
 			,path
 			,diff);
 
@@ -716,14 +736,14 @@ long js_exec(const char *fname, char** args)
 	js_EvalOnExit(js_cx, js_glob, &branch);
 
 	if((diff=xp_timer()-start) > 0)
-		lprintf(LOG_INFO,"%s executed in %.2Lf seconds"
+		mfprintf(statfp,"%s executed in %.2Lf seconds"
 			,path
 			,diff);
 
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
 	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
-		lprintf(LOG_DEBUG,"Using JavaScript exit_code: %s",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
+		mfprintf(statfp,"Using JavaScript exit_code: %s",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
 		JS_ValueToInt32(js_cx,rval,&result);
 	}
 
