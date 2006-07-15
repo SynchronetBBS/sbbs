@@ -580,7 +580,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			if(hangup_event!=NULL)
 				CloseHandle(hangup_event);
 
+#if 0	/* This isn't strictly necessary... 
+		   and possibly the cause of a NULL dereference in the input_thread */
 			RingBufDispose(&rdbuf);
+#endif
 			status_poll=0;
 			retval=0;
 
