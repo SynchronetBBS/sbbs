@@ -1,8 +1,23 @@
 /* $Id$ */
 
-var file = new File(http_request.real_path);
+// This module convert ANSI, Ex-ASCII, and Ctrl-A encoded files to HTML
+
+// This module can be used as a "web handler" (automatically converting
+// *.asc and *.ans files on the fly), by adding the following lines to
+// the [JavaScript] section of your ctrl/web_handler.ini file:
+// asc = asc_handler.js
+// ans = asc_handler.js
+
+var filename;
+
+if(this.http_request!=undefined)	/* Requested through web-server */
+	filename = http_request.real_path;
+else
+	filename = argv[0];
+
+var file = new File(filename);
 if(!file.open("r")) {
-	writeln("!ERROR " + file.error + " opening " + http_request.real_path);
+	writeln("!ERROR " + file.error + " opening " + filename);
 	exit();
 }
 var text = file.readAll();
