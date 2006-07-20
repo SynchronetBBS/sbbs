@@ -1909,6 +1909,13 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							lastcolor=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
 							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[lastcolor],HTML_COLOR_SUFFIX);
 						}
+						outbuf[j++]=tmpbuf[i];
+						if(tmpbuf[i]=='&')
+							extchar=TRUE;
+						if(tmpbuf[i]==';')
+							extchar=FALSE;
+						if(!extchar)
+							hpos++;
 						/* ToDo: Fix hard-coded terminal window width (80) */
 						if(hpos>=80 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != ESC)
 						{
@@ -1920,13 +1927,6 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							outbuf[j++]='\r';
 							outbuf[j++]='\n';
 						}
-						outbuf[j++]=tmpbuf[i];
-						if(tmpbuf[i]=='&')
-							extchar=TRUE;
-						if(tmpbuf[i]==';')
-							extchar=FALSE;
-						if(!extchar)
-							hpos++;
 				}
 			}
 		}
