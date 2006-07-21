@@ -403,7 +403,7 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     array = JS_NewArrayObject(cx, 0, NULL);
 
     while(!feof(p->fp)) {
-		js_readln(cx, obj, 0, NULL, &line); 
+		js_readln(cx, obj, argc, argv, &line);
 		if(line==JSVAL_NULL)
 			break;
         if(!JS_SetElement(cx, array, len++, &line))
@@ -1733,8 +1733,8 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)")
 	,310
 	},
-	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("read all lines into an array of strings")
+	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	JSDOCSTR("[maxlen=<tt>512</tt>]")
+	,JSDOCSTR("read all lines into an array of strings, <i>maxlen</i> defaults to 512 characters")
 	,310
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
