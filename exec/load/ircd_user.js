@@ -949,7 +949,7 @@ function User_Work() {
 				this.numeric(353,"* * :"+tmp);
 			this.numeric(366, "* :End of /NAMES list.");
 		} else {
-			chans = cmd[1].split(',');
+			var chans = cmd[1].split(',');
 			for (nc in chans) {
 				if ((chans[nc][0] == "#") ||
 				    (chans[nc][0] == "&")) {
