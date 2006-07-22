@@ -546,9 +546,7 @@ function IRCClient_do_join(chan_name,join_key) {
 		return 0;
 	}
 	for (theChar in chan_name) {
-		var theChar_code = chan_name[theChar].charCodeAt(0);
-		if ((theChar_code <= 32) || (theChar_code == 44) ||
-		    (chan_name[theChar].charCodeAt(0) == 160)) {
+		if(chan_name.search(/[\x00-\x20\x2c\xa0]/)!=-1) {
 			if (this.local)
 				this.numeric(479, chan_name
 					+ " :Channel name contains illegal characters.");
