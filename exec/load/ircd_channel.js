@@ -545,13 +545,12 @@ function IRCClient_do_join(chan_name,join_key) {
 		this.numeric403(chan_name);
 		return 0;
 	}
-	for (theChar in chan_name) {
-		if(chan_name.search(/[\x00-\x20\x2c\xa0]/)!=-1) {
-			if (this.local)
-				this.numeric(479, chan_name
-					+ " :Channel name contains illegal characters.");
-			return 0;
+	if(chan_name.search(/[\x00-\x20\x2c\xa0]/)!=-1) {
+		if (this.local) {
+			this.numeric(479, chan_name
+				+ " :Channel name contains illegal characters.");
 		}
+		return 0;
 	}
 	if (this.channels[uc_chan_name])
 		return 0;
