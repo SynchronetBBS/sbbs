@@ -1348,10 +1348,10 @@ function User_Work() {
 		}
 		var firstnick="";
 		var aWhoWas;
+		var ww_nick_uc = cmd[1].toUpperCase();
 		for (aWhoWas=whowas_pointer;aWhoWas>=0;aWhoWas--) {
 			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.nick.toUpperCase() ==
-			    cmd[1].toUpperCase())) {
+			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc)) {
 				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
 					+ " * :" + wwh.realname);
 				this.numeric(312,wwh.nick + " " + wwh.server + " :"
@@ -1362,8 +1362,7 @@ function User_Work() {
 		}
 		for (aWhoWas=whowas_buffer;aWhoWas>=whowas_pointer;aWhoWas--) {
 			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.nick.toUpperCase() ==
-			    cmd[1].toUpperCase())) {
+			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc)) {
 				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
 					+ " * :" + wwh.realname);
 				this.numeric(312,wwh.nick + " " + wwh.server + " :"
