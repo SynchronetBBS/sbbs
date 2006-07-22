@@ -25,44 +25,39 @@ const CHANNEL_REVISION = "$Revision$".split(' ')[1];
 
 const CHANMODE_NONE		=(1<<0); // NONE
 const CHANMODE_BAN		=(1<<1); // b
-const CHANMODE_INVITE		=(1<<2); // i
+const CHANMODE_INVITE	=(1<<2); // i
 const CHANMODE_KEY		=(1<<3); // k
-const CHANMODE_LIMIT		=(1<<4); // l
-const CHANMODE_MODERATED	=(1<<5); // m
-const CHANMODE_NOOUTSIDE	=(1<<6); // n
+const CHANMODE_LIMIT	=(1<<4); // l
+const CHANMODE_MODERATED=(1<<5); // m
+const CHANMODE_NOOUTSIDE=(1<<6); // n
 const CHANMODE_OP		=(1<<7); // o
-const CHANMODE_PRIVATE		=(1<<8); // p
-const CHANMODE_SECRET		=(1<<9); // s
-const CHANMODE_TOPIC		=(1<<10); // t
-const CHANMODE_VOICE		=(1<<11); // v
+const CHANMODE_PRIVATE	=(1<<8); // p
+const CHANMODE_SECRET	=(1<<9); // s
+const CHANMODE_TOPIC	=(1<<10); // t
+const CHANMODE_VOICE	=(1<<11); // v
 
-// These are used in the mode crunching section to figure out what character
-// to display in the crunched MODE line.
+/* These are used in the mode crunching section to figure out what character
+   to display in the crunched MODE line. */
 function Mode(modechar,args,state,list,isnick) {
-	// The mode's character
-	this.modechar = modechar;
-	// Does this mode take a single argument only?
-	this.args = args;
-	// Is this mode a stateful mode? (i.e. changes channel behaviour)
-	this.state = state;
-	// Can this mode accept a list?
-	this.list = list;
-	// Is the list a nick (true), or a n!u@h IRC mask (false)?
-	this.isnick = isnick;
+	this.modechar = modechar;	/* The mode's character */
+	this.args = args;			/* Does this mode take only a single arg? */
+	this.state = state;			/* Stateful? (changes channel behaviour) */
+	this.list = list;			/* Does this mode accept a list? */
+	this.isnick = isnick;		/* Is nick (true) or a n!u@h mask (false) */
 }
 
-MODE = new Array();
+MODE = new Object;
 MODE[CHANMODE_BAN]		= new Mode("b",true,false,true,false);
-MODE[CHANMODE_INVITE]		= new Mode("i",false,true,false,false);
+MODE[CHANMODE_INVITE]	= new Mode("i",false,true,false,false);
 MODE[CHANMODE_KEY]		= new Mode("k",true,true,false,false);
-MODE[CHANMODE_LIMIT]		= new Mode("l",true,true,false,false);
-MODE[CHANMODE_MODERATED]	= new Mode("m",false,true,false,false);
-MODE[CHANMODE_NOOUTSIDE]	= new Mode("n",false,true,false,false);
+MODE[CHANMODE_LIMIT]	= new Mode("l",true,true,false,false);
+MODE[CHANMODE_MODERATED]= new Mode("m",false,true,false,false);
+MODE[CHANMODE_NOOUTSIDE]= new Mode("n",false,true,false,false);
 MODE[CHANMODE_OP]		= new Mode("o",true,false,true,true);
-MODE[CHANMODE_PRIVATE]		= new Mode("p",false,true,false,false);
-MODE[CHANMODE_SECRET]		= new Mode("s",false,true,false,false);
-MODE[CHANMODE_TOPIC]		= new Mode("t",false,true,false,false);
-MODE[CHANMODE_VOICE]		= new Mode("v",true,false,true,true);
+MODE[CHANMODE_PRIVATE]	= new Mode("p",false,true,false,false);
+MODE[CHANMODE_SECRET]	= new Mode("s",false,true,false,false);
+MODE[CHANMODE_TOPIC]	= new Mode("t",false,true,false,false);
+MODE[CHANMODE_VOICE]	= new Mode("v",true,false,true,true);
 
 ////////// Objects //////////
 function Channel(nam) {
@@ -71,16 +66,16 @@ function Channel(nam) {
 	this.topic="";
 	this.topictime=0;
 	this.topicchangedby="";
-	this.arg = new Array;
+	this.arg = new Object;
 	this.arg[CHANMODE_LIMIT] = 0;
 	this.arg[CHANMODE_KEY] = "";
-	this.users=new Array;
-	this.modelist=new Array;
-	this.modelist[CHANMODE_OP]=new Array;
-	this.modelist[CHANMODE_VOICE]=new Array;
-	this.modelist[CHANMODE_BAN]=new Array;
-	this.bantime=new Array;
-	this.bancreator=new Array;
+	this.users=new Object;
+	this.modelist=new Object;
+	this.modelist[CHANMODE_OP]=new Object;
+	this.modelist[CHANMODE_VOICE]=new Object;
+	this.modelist[CHANMODE_BAN]=new Array; /* True Array */
+	this.bantime=new Object;
+	this.bancreator=new Object;
 	this.created=time();
 	this.chanmode=Channel_chanmode;
 	this.isbanned=Channel_isbanned;
@@ -225,17 +220,17 @@ function Channel_occupants() {
 
 // Yay, version 3.0 of this.set_chanmode(), eradicates any global variables.
 function ChanMode(chan,user) {
-	this.tmplist = new Array();
-	this.tmplist[CHANMODE_OP] = new Array();
-	this.tmplist[CHANMODE_OP][false] = new Array(); //deop
-	this.tmplist[CHANMODE_OP][true] = new Array(); //op
-	this.tmplist[CHANMODE_VOICE] = new Array();
-	this.tmplist[CHANMODE_VOICE][false] = new Array(); //devoice
-	this.tmplist[CHANMODE_VOICE][true] = new Array(); //voice
-	this.tmplist[CHANMODE_BAN] = new Array();
-	this.tmplist[CHANMODE_BAN][false] = new Array(); //unban
-	this.tmplist[CHANMODE_BAN][true] = new Array(); //ban
-	this.state_arg = new Array();
+	this.tmplist = new Object;
+	this.tmplist[CHANMODE_OP] = new Object;
+	this.tmplist[CHANMODE_OP][false] = new Object; //deop
+	this.tmplist[CHANMODE_OP][true] = new Object; //op
+	this.tmplist[CHANMODE_VOICE] = new Object;
+	this.tmplist[CHANMODE_VOICE][false] = new Object; //devoice
+	this.tmplist[CHANMODE_VOICE][true] = new Object; //voice
+	this.tmplist[CHANMODE_BAN] = new Object;
+	this.tmplist[CHANMODE_BAN][false] = new Object; //unban
+	this.tmplist[CHANMODE_BAN][true] = new Object; //ban
+	this.state_arg = new Object;
 	this.state_arg[CHANMODE_KEY] = "";
 	this.state_arg[CHANMODE_LIMIT] = "";
 	this.addbits = 0;
@@ -545,12 +540,15 @@ function IRCClient_do_join(chan_name,join_key) {
 		this.numeric403(chan_name);
 		return 0;
 	}
-	if(chan_name.search(/[\x00-\x20\x2c\xa0]/)!=-1) {
-		if (this.local) {
-			this.numeric(479, chan_name
-				+ " :Channel name contains illegal characters.");
+	for (theChar in chan_name) {
+		var theChar_code = chan_name[theChar].charCodeAt(0);
+		if ((theChar_code <= 32) || (theChar_code == 44) ||
+		    (chan_name[theChar].charCodeAt(0) == 160)) {
+			if (this.local)
+				this.numeric(479, chan_name
+					+ " :Channel name contains illegal characters.");
+			return 0;
 		}
-		return 0;
 	}
 	if (this.channels[uc_chan_name])
 		return 0;

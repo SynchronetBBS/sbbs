@@ -94,16 +94,16 @@ var default_port = 6667;
 log(VERSION + " started.");
 
 // Our primary arrays.
-Unregistered = new Array;
-Users = new Array;
-Servers = new Array;
-Channels = new Array;
+Unregistered = new Object;
+Users = new Object;
+Servers = new Object;
+Channels = new Object;
 
-Local_Sockets = new Array;
-Local_Sockets_Map = new Array;
+Local_Sockets = new Object;
+Local_Sockets_Map = new Object;
 
-Selectable_Sockets = new Array;
-Selectable_Sockets_Map = new Array;
+Selectable_Sockets = new Object;
+Selectable_Sockets_Map = new Object;
 
 Global_CommandLine = ""; // We use this to track if a cmdline causes a crash.
 
@@ -112,23 +112,23 @@ hcc_users = 0;
 hcc_counter = 0;
 server_uptime = time();
 
-WhoWasHistory = new Array;
-NickHistory = new Array;
+WhoWasHistory = new Object;
+NickHistory = new Array;	/* A true array using push and pop */
 whowas_buffer = 1000;
 whowas_pointer = 0;
 nick_buffer = 1000;
 nick_pointer = 0;
 
 /* Keep track of commands and how long they take to execute. */
-Profile = new Array;
+Profile = new Object;
 
 // This is where our unique ID for each client comes from for unreg'd clients.
 next_client_id = 0;
 
 // An array containing all the objects containing local sockets that we need
 // to poll.
-Local_Users = new Array;
-Local_Servers = new Array;
+Local_Users = new Object;
+Local_Servers = new Object;
 
 rebuild_socksel_array = false;
 
@@ -172,7 +172,7 @@ server.socket.nonblocking = true;	// REQUIRED!
 server.socket.debug = false;		// Will spam your log if true :)
 
 // Now open additional listening sockets as defined on the P:Line in ircd.conf
-open_plines = new Array();
+open_plines = new Array(); /* True Array */
 // Make our 'server' object the first open P:Line
 open_plines[0] = server.socket;
 for (pl in PLines) {
@@ -1284,7 +1284,7 @@ function IRCClient_onchanwith(target) {
 //////////////////// Auxillary Functions ////////////////////
 
 function IRCClient_bcast_to_uchans_unique(str) {
-	var already_bcast = new Array();
+	var already_bcast = new Object;
 	for(thisChannel in this.channels) {
 		var userchannel=this.channels[thisChannel];
 		for (j in userchannel.users) {
@@ -1316,7 +1316,7 @@ function IRCClient_bcast_to_channel(chan, str, bounce) {
 }
 
 function IRCClient_bcast_to_channel_servers(chan, str) {
-	var sent_to_servers = new Array;
+	var sent_to_servers = new Object;
 	for(thisUser in chan.users) {
 		var aUser=chan.users[thisUser];
 		if (!aUser.local && (this.parent != aUser.parent) &&
@@ -2945,7 +2945,7 @@ function SJOIN_Nick(nick,isop,isvoice) {
 
 // Track IRC socket queues
 function IRC_Queue() {
-	this.queue = new Array();
+	this.queue = new Array;
 	this.bytes = 0;
 	this.add = Queue_Add;
 }

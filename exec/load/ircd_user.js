@@ -40,7 +40,7 @@ const USERMODE_ROUTING		=(1<<13); // n
 const USERMODE_HELP			=(1<<14); // h
 const USERMODE_NOTHROTTLE	=(1<<15); // F
 
-USERMODE_CHAR = new Array();
+USERMODE_CHAR = new Object;
 USERMODE_CHAR["o"] = USERMODE_OPER;
 USERMODE_CHAR["i"] = USERMODE_INVISIBLE;
 USERMODE_CHAR["w"] = USERMODE_WALLOPS;
@@ -58,13 +58,13 @@ USERMODE_CHAR["h"] = USERMODE_HELP;
 USERMODE_CHAR["F"] = USERMODE_NOTHROTTLE;
 
 // Most umodes aren't propagated across the network. Define the ones that are.
-USERMODE_BCAST = new Array;
+USERMODE_BCAST = new Object;
 USERMODE_BCAST["o"] = true;
 USERMODE_BCAST["i"] = true;
 USERMODE_BCAST["h"] = true;
 
 // FIXME: Services modes are broadcast but not displayed to the user.
-USERMODE_SERVICES = new Array;
+USERMODE_SERVICES = new Object;
 
 // Various permissions that can be set on an O:Line
 const OLINE_CAN_REHASH		=(1<<0);	// r
@@ -126,7 +126,7 @@ function IRC_User(id) {
 	this.uline = false;	// Are we services?
 	// Variables containing user/server information as we receive it.
 	this.away = "";
-	this.channels = new Array;
+	this.channels = new Object;
 	this.connecttime = time();
 	this.created = 0;
 	this.flags = 0;
@@ -949,7 +949,7 @@ function User_Work() {
 				this.numeric(353,"* * :"+tmp);
 			this.numeric(366, "* :End of /NAMES list.");
 		} else {
-			var chans = cmd[1].split(',');
+			chans = cmd[1].split(',');
 			for (nc in chans) {
 				if ((chans[nc][0] == "#") ||
 				    (chans[nc][0] == "&")) {
@@ -1348,10 +1348,10 @@ function User_Work() {
 		}
 		var firstnick="";
 		var aWhoWas;
-		var ww_nick_uc = cmd[1].toUpperCase();
 		for (aWhoWas=whowas_pointer;aWhoWas>=0;aWhoWas--) {
 			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc)) {
+			if (wwh && (wwh.nick.toUpperCase() ==
+			    cmd[1].toUpperCase())) {
 				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
 					+ " * :" + wwh.realname);
 				this.numeric(312,wwh.nick + " " + wwh.server + " :"
@@ -1362,7 +1362,8 @@ function User_Work() {
 		}
 		for (aWhoWas=whowas_buffer;aWhoWas>=whowas_pointer;aWhoWas--) {
 			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc)) {
+			if (wwh && (wwh.nick.toUpperCase() ==
+			    cmd[1].toUpperCase())) {
 				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
 					+ " * :" + wwh.realname);
 				this.numeric(312,wwh.nick + " " + wwh.server + " :"
