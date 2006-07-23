@@ -1351,7 +1351,7 @@ function User_Work() {
 		var ww_nick_uc = cmd[1].toUpperCase();
 		for (aWhoWas=whowas_pointer;aWhoWas>=0;aWhoWas--) {
 			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc))
+			if (wwh && (wwh.nick.toUpperCase() == ww_nick_uc)) {
 				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
 					+ " * :" + wwh.realname);
 				this.numeric(312,wwh.nick + " " + wwh.server + " :"
