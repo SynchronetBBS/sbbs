@@ -221,13 +221,13 @@ function Channel_occupants() {
 // Yay, version 3.0 of this.set_chanmode(), eradicates any global variables.
 function ChanMode(chan,user) {
 	this.tmplist = new Object;
-	this.tmplist[CHANMODE_OP] = new Array;
+	this.tmplist[CHANMODE_OP] = new Object;
 	this.tmplist[CHANMODE_OP][false] = new Array; //deop
 	this.tmplist[CHANMODE_OP][true] = new Array; //op
-	this.tmplist[CHANMODE_VOICE] = new Array;
+	this.tmplist[CHANMODE_VOICE] = new Object;
 	this.tmplist[CHANMODE_VOICE][false] = new Array; //devoice
 	this.tmplist[CHANMODE_VOICE][true] = new Array; //voice
-	this.tmplist[CHANMODE_BAN] = new Array;
+	this.tmplist[CHANMODE_BAN] = new Object;
 	this.tmplist[CHANMODE_BAN][false] = new Array; //unban
 	this.tmplist[CHANMODE_BAN][true] = new Array; //ban
 	this.state_arg = new Object;
