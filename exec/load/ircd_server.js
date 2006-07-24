@@ -822,12 +822,6 @@ function Server_Work() {
 			chan = Channels[cn_tuc];
 			chan.nam = cmd[2];
 			chan.created = parseInt(cmd[1]);
-			chan.topic = "";
-			chan.users = new Object;
-			chan.modelist[CHANMODE_BAN] = new Object;
-			chan.modelist[CHANMODE_VOICE] = new Object;
-			chan.modelist[CHANMODE_OP] = new Object;
-			chan.mode = CHANMODE_NONE;
 		}
 
 		if (cmd[3]) {

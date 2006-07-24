@@ -356,21 +356,18 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// side of the network sync.
 	if (bounce_modes) {
 		for (cm in MODE) {
-			if (MODE[cm].state && (chan.mode&cm) && 
-			    !(cmode.addbits&cm)) {
+			if (MODE[cm].state && (chan.mode&cm) && !(cmode.addbits&cm)) {
 				cmode.delbits |= cm;
 			} else if (MODE[cm].list && MODE[cm].isnick) {
 				for (member in chan.modelist[cm]) {
 					cmode.delmodes += MODE[cm].modechar;
-					cmode.delmodeargs += " " +
-						chan.modelist[cm][member].nick;
+					cmode.delmodeargs += " " + chan.modelist[cm][member].nick;
 					delete chan.modelist[cm][member];
 				}
 			} else if (MODE[cm].list && !MODE[cm].isnick) {
 				for (ban in chan.modelist[cm]) {
 					cmode.delmodes += MODE[cm].modechar;
-					cmode.delmodeargs += " " +
-						chan.modelist[cm][ban];
+					cmode.delmodeargs += " " + chan.modelist[cm][ban];
 					delete chan.modelist[cm][ban];
 					delete chan.bantime[ban];
 					delete chan.bancreator[ban];
