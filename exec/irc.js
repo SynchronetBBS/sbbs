@@ -344,6 +344,7 @@ function handle_command(prefix,command,message)  {
 		// <word1> <word2> <word3> <word4> :Message
 		case "311":		// WHOIS reply
 		case "314":		// WHOWAS reply
+		case "317":		// WHOISIDLE Reply
 		case "200":		// Trace Link
 		case "243":		// Stats OLINE
 		case "244":		// Stats HLINE
@@ -377,7 +378,6 @@ function handle_command(prefix,command,message)  {
 
 		// <word1> <word2> :Message
 		case "312":		// WHOISSERVER Reply
-		case "317":		// WHOISIDLE Reply
 		case "322":		// LIST data
 		case "341":		// Invite being sent
 		case "351":		// (server) VERSION reply
