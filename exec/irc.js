@@ -881,7 +881,7 @@ function Channels_nick_change(from,to)  {
 	var i=0;
 	var j=0;
 	
-	for(i=0;i<this.length;i++)  {
+	for(i=0;i<this.channel.length;i++)  {
 		for(j=0;j<this.channel[i].nick.length;j++)  {
 			if(this.channel[i].nick[j].toUpperCase()==from.toUpperCase())  {
 				this.channel[i].nick[j]=to;
