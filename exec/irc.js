@@ -935,7 +935,7 @@ function Channels_join(cname)  {
 
 function Channels_joined(cname)  {
 	this.index=this.channel.length;
-	this.channel[this.channels.length]=new Channel(cname);
+	this.channel[this.channel.length]=new Channel(cname);
 	this.length++;
 }
 
