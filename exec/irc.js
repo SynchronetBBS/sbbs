@@ -344,7 +344,6 @@ function handle_command(prefix,command,message)  {
 		// <word1> <word2> <word3> <word4> :Message
 		case "311":		// WHOIS reply
 		case "314":		// WHOWAS reply
-		case "317":		// WHOISIDLE Reply
 		case "200":		// Trace Link
 		case "243":		// Stats OLINE
 		case "244":		// Stats HLINE
@@ -359,6 +358,7 @@ function handle_command(prefix,command,message)  {
 			break;
 
 		// <word1> <word2> <word3> :Message
+		case "317":		// WHOISIDLE Reply
 		case "324":		// Channel Modes
 		case "201":		// Trace Connecting
 		case "202":		// Trace Handshake
