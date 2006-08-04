@@ -640,7 +640,8 @@ struct bbslist *show_bbslist(int mode)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
-	int		opt=0,bar=0,oldopt=-1;
+	static int		opt=0,bar=0;
+	int		oldopt=-1;
 	int		sopt=0,sbar=0;
 	static struct bbslist retlist;
 	int		val;
