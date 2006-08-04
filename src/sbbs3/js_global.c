@@ -1360,6 +1360,8 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	uchar   	attr_stack[64]; /* Saved attributes (stack) */
 	int     	attr_sp=0;                /* Attribute stack pointer */
 	ulong		clear_screen=0;
+	JSObject*	stateobj=NULL;
+	jsval		val;
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -1384,6 +1386,40 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		ctrl_a=JSVAL_TO_BOOLEAN(argv[4]);
 		if(ctrl_a)
 			ansi=ctrl_a;
+	}
+
+	if(argc>5 && JSVAL_IS_OBJECT(argv[5])) {
+		stateobj=JSVAL_TO_OBJECT(argv[5]);
+		JS_GetProperty(cx,stateobj,"fg",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &fg);
+		JS_GetProperty(cx,stateobj,"bg",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &bg);
+		JS_GetProperty(cx,stateobj,"lastcolor",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &lastcolor);
+		JS_GetProperty(cx,stateobj,"blink",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &blink);
+		JS_GetProperty(cx,stateobj,"bold",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &bold);
+		JS_GetProperty(cx,stateobj,"hpos",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &hpos);
+		JS_GetProperty(cx,stateobj,"currrow",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &currrow);
+		JS_GetProperty(cx,stateobj,"wraphpos",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &wraphpos);
+		JS_GetProperty(cx,stateobj,"wrapvpos",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &wrapvpos);
+		JS_GetProperty(cx,stateobj,"wrappos",&val);
+		if(JSVAL_IS_NUMBER(val))
+			fg=JS_ValueToInt32(cx, val, &wrappos);
 	}
 
 	if((tmpbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
@@ -1943,6 +1979,30 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
+
+	if(stateobj!=NULL) {
+		JS_DefineProperty(cx, stateobj, "fg", INT_TO_JSVAL(fg)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "bg", INT_TO_JSVAL(bg)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "lastcolor", INT_TO_JSVAL(lastcolor)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "blink", INT_TO_JSVAL(blink)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "bold", INT_TO_JSVAL(bold)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "hpos", INT_TO_JSVAL(hpos)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "currrow", INT_TO_JSVAL(currrow)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "wraphpos", INT_TO_JSVAL(wraphpos)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "wrapvpos", INT_TO_JSVAL(wrapvpos)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, stateobj, "wrappos", INT_TO_JSVAL(wrappos)
+			,NULL,NULL,JSPROP_ENUMERATE);
+	}
+
 	return(JS_TRUE);
 }
 
@@ -3167,9 +3227,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return a formatted string (ala the standard C <tt>sprintf</tt> function)")
 	,310
 	},
-	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>]")
+	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>] [, state (object)]")
 	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
-		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default")
+		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default."
+		"Optionally storing the current ANSI state in <i>state</i> object")
 	,311
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("html")
