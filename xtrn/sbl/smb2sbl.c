@@ -325,187 +325,188 @@ int main(int argc, char **argv)
 		bbs.updated=time(NULL);
 		bbs.misc|=FROM_SMB;
 		SAFECOPY(bbs.userupdated,msg.from);
-		buf=loadmsgtxt(msg,0);
-		sysop=number=network=terminal=desc=0;
-		l=0;
-		while(buf[l]) {
-			while(buf[l] && buf[l]<=' ') 		/* Find first text on line */
-				l++;
-			if(!strnicmp(buf+l,"NAME:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+		if((buf=loadmsgtxt(msg,FALSE)) != NULL) {
+			sysop=number=network=terminal=desc=0;
+			l=0;
+			while(buf[l]) {
+				while(buf[l] && buf[l]<=' ') 		/* Find first text on line */
 					l++;
-				SAFECOPY(bbs.name,buf+l);
-				trunccrsp(bbs.name); 
-			}
-			if(!strnicmp(buf+l,"BIRTH:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.birth=dstrtounix(buf+l); }
-			if(!strnicmp(buf+l,"SOFTWARE:",9)) {
-				l+=9;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.software,buf+l);
-				trunccrsp(bbs.software); }
-			if(!strnicmp(buf+l,"WEB-SITE:",9)) {
-				l+=9;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.web_url,buf+l);
-				trunccrsp(bbs.web_url); }
-			if(!strnicmp(buf+l,"E-MAIL:",7)) {
-				l+=7;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.sysop_email,buf+l);
-				trunccrsp(bbs.sysop_email); }
-
-			if(!strnicmp(buf+l,"SYSOP:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.sysop[sysop],buf+l);
-				trunccrsp(bbs.sysop[sysop]);
-				if(sysop<MAX_SYSOPS-1)
-					sysop++; }
-			if(!strnicmp(buf+l,"NUMBER:",7) || !strnicmp(buf+l,"TELNET:",7)) {
-				l+=7;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.number[number].telnet.addr,buf+l);
-				trunccrsp(bbs.number[number].telnet.addr);
-				if(!strnicmp(buf+l,"TELNET:",7)) {
-					bbs.number[number].telnet.unused=0xffff;
-					bbs.number[number].telnet.port=23;
+				if(!strnicmp(buf+l,"NAME:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.name,buf+l);
+					trunccrsp(bbs.name); 
 				}
-				if(number<MAX_NUMBERS-1)
-					number++; 
-			}
-			if(!strnicmp(buf+l,"MODEM:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=number;
-				if(i) i--;
-				SAFECOPY(bbs.number[i].modem.desc,buf+l);
-				trunccrsp(bbs.number[i].modem.desc); }
-			if(!strnicmp(buf+l,"LOCATION:",9)) {
-				l+=9;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=number;
-				if(i) i--;
-				SAFECOPY(bbs.number[i].modem.location,buf+l);
-				trunccrsp(bbs.number[i].modem.location); }
-			if(!strnicmp(buf+l,"MINRATE:",8)) {
-				l+=8;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=number;
-				if(i) i--;
-				bbs.number[i].modem.min_rate=atoi(buf+l); }
-			if(!strnicmp(buf+l,"MAXRATE:",8)) {
-				l+=8;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=number;
-				if(i) i--;
-				bbs.number[i].modem.max_rate=atoi(buf+l); }
-			if(!strnicmp(buf+l,"PORT:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=number;
-				if(i) i--;
-				bbs.number[i].telnet.port=atoi(buf+l); }
-			if(!strnicmp(buf+l,"NETWORK:",8)) {
-				l+=8;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.network[network],buf+l);
-				trunccrsp(bbs.network[network]);
-				if(network<MAX_NETS-1)
-					network++; }
-			if(!strnicmp(buf+l,"ADDRESS:",8)) {
-				l+=8;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				i=network;
-				if(i) i--;
-				SAFECOPY(bbs.address[i],buf+l);
-				trunccrsp(bbs.address[i]); }
-			if(!strnicmp(buf+l,"TERMINAL:",9)) {
-				l+=9;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.terminal[terminal],buf+l);
-				trunccrsp(bbs.terminal[terminal]);
-				if(terminal<MAX_TERMS-1)
-					terminal++; }
-			if(!strnicmp(buf+l,"DESC:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				SAFECOPY(bbs.desc[desc],buf+l);
-				trunccrsp(bbs.desc[desc]);
-				if(desc<4)
-					desc++; }
+				if(!strnicmp(buf+l,"BIRTH:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.birth=dstrtounix(buf+l); }
+				if(!strnicmp(buf+l,"SOFTWARE:",9)) {
+					l+=9;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.software,buf+l);
+					trunccrsp(bbs.software); }
+				if(!strnicmp(buf+l,"WEB-SITE:",9)) {
+					l+=9;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.web_url,buf+l);
+					trunccrsp(bbs.web_url); }
+				if(!strnicmp(buf+l,"E-MAIL:",7)) {
+					l+=7;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.sysop_email,buf+l);
+					trunccrsp(bbs.sysop_email); }
 
-			if(!strnicmp(buf+l,"MEGS:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.megs=atol(buf+l); }
-			if(!strnicmp(buf+l,"MSGS:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.msgs=atol(buf+l); }
-			if(!strnicmp(buf+l,"FILES:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.files=atol(buf+l); }
-			if(!strnicmp(buf+l,"NODES:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.nodes=atoi(buf+l); }
-			if(!strnicmp(buf+l,"USERS:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.users=atoi(buf+l); }
-			if(!strnicmp(buf+l,"SUBS:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.subs=atoi(buf+l); }
-			if(!strnicmp(buf+l,"DIRS:",5)) {
-				l+=5;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.dirs=atoi(buf+l); }
-			if(!strnicmp(buf+l,"XTRNS:",6)) {
-				l+=6;
-				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
-					l++;
-				bbs.xtrns=atoi(buf+l); }
-			while(buf[l] && buf[l]>=' ') {	 /* Go to end of line */
-				putchar(buf[l]);
-				l++; 
+				if(!strnicmp(buf+l,"SYSOP:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.sysop[sysop],buf+l);
+					trunccrsp(bbs.sysop[sysop]);
+					if(sysop<MAX_SYSOPS-1)
+						sysop++; }
+				if(!strnicmp(buf+l,"NUMBER:",7) || !strnicmp(buf+l,"TELNET:",7)) {
+					l+=7;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.number[number].telnet.addr,buf+l);
+					trunccrsp(bbs.number[number].telnet.addr);
+					if(!strnicmp(buf+l,"TELNET:",7)) {
+						bbs.number[number].telnet.unused=0xffff;
+						bbs.number[number].telnet.port=23;
+					}
+					if(number<MAX_NUMBERS-1)
+						number++; 
+				}
+				if(!strnicmp(buf+l,"MODEM:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=number;
+					if(i) i--;
+					SAFECOPY(bbs.number[i].modem.desc,buf+l);
+					trunccrsp(bbs.number[i].modem.desc); }
+				if(!strnicmp(buf+l,"LOCATION:",9)) {
+					l+=9;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=number;
+					if(i) i--;
+					SAFECOPY(bbs.number[i].modem.location,buf+l);
+					trunccrsp(bbs.number[i].modem.location); }
+				if(!strnicmp(buf+l,"MINRATE:",8)) {
+					l+=8;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=number;
+					if(i) i--;
+					bbs.number[i].modem.min_rate=atoi(buf+l); }
+				if(!strnicmp(buf+l,"MAXRATE:",8)) {
+					l+=8;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=number;
+					if(i) i--;
+					bbs.number[i].modem.max_rate=atoi(buf+l); }
+				if(!strnicmp(buf+l,"PORT:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=number;
+					if(i) i--;
+					bbs.number[i].telnet.port=atoi(buf+l); }
+				if(!strnicmp(buf+l,"NETWORK:",8)) {
+					l+=8;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.network[network],buf+l);
+					trunccrsp(bbs.network[network]);
+					if(network<MAX_NETS-1)
+						network++; }
+				if(!strnicmp(buf+l,"ADDRESS:",8)) {
+					l+=8;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					i=network;
+					if(i) i--;
+					SAFECOPY(bbs.address[i],buf+l);
+					trunccrsp(bbs.address[i]); }
+				if(!strnicmp(buf+l,"TERMINAL:",9)) {
+					l+=9;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.terminal[terminal],buf+l);
+					trunccrsp(bbs.terminal[terminal]);
+					if(terminal<MAX_TERMS-1)
+						terminal++; }
+				if(!strnicmp(buf+l,"DESC:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					SAFECOPY(bbs.desc[desc],buf+l);
+					trunccrsp(bbs.desc[desc]);
+					if(desc<4)
+						desc++; }
+
+				if(!strnicmp(buf+l,"MEGS:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.megs=atol(buf+l); }
+				if(!strnicmp(buf+l,"MSGS:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.msgs=atol(buf+l); }
+				if(!strnicmp(buf+l,"FILES:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.files=atol(buf+l); }
+				if(!strnicmp(buf+l,"NODES:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.nodes=atoi(buf+l); }
+				if(!strnicmp(buf+l,"USERS:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.users=atoi(buf+l); }
+				if(!strnicmp(buf+l,"SUBS:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.subs=atoi(buf+l); }
+				if(!strnicmp(buf+l,"DIRS:",5)) {
+					l+=5;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.dirs=atoi(buf+l); }
+				if(!strnicmp(buf+l,"XTRNS:",6)) {
+					l+=6;
+					while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
+						l++;
+					bbs.xtrns=atoi(buf+l); }
+				while(buf[l] && buf[l]>=' ') {	 /* Go to end of line */
+					putchar(buf[l]);
+					l++; 
+				}
+				printf("\n"); 
 			}
-			printf("\n"); 
+			bbs.total_sysops=sysop;
+			bbs.total_networks=network;
+			bbs.total_terminals=terminal;
+			bbs.total_numbers=number;
+			if(fwrite(&bbs,1,sizeof(bbs_t),stream)!=sizeof(bbs_t))
+				fprintf(stderr,"!WRITE ERROR %d\n",errno);
+			free(buf);
 		}
-		bbs.total_sysops=sysop;
-		bbs.total_networks=network;
-		bbs.total_terminals=terminal;
-		bbs.total_numbers=number;
-		if(fwrite(&bbs,1,sizeof(bbs_t),stream)!=sizeof(bbs_t))
-			fprintf(stderr,"!WRITE ERROR %d\n",errno);
-		free(buf);
 		smb_freemsgmem(&msg);
 		}
 	lseek(file,0L,SEEK_SET);
