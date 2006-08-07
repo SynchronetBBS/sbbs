@@ -171,7 +171,7 @@ NOTE: It is suggested you remove existing FDSZ or CE-XYZ transfer protocol
 
 Example configuration for Mystic v1.08-Win32
 --------------------------------------------
-(provided by Dream Master)
+(provided by Dream Master and Jack Phlash)
 
 A. Active     : Yes
 B. HotKey     : Z
@@ -185,7 +185,7 @@ B. HotKey     : Z
 C. Description: Zmodem batch
 D. Batch      : Yes
 E. Send Cmd   : c:\mystic\prots\sexyz.exe %0 sz @%3
-F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz @%3
+F. Receive Cmd: c:\mystic\prots\sexyz.exe %0 rz %3
 
 
 Example configuration for EleBBS-Win32
