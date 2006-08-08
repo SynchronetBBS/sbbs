@@ -1068,7 +1068,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			}
 			else  {
 				if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
-					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start);
+					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start+1);
 					safecat(headers,header,MAX_HEADERS_SIZE);
 				}
 				else {
@@ -1137,7 +1137,7 @@ static int sock_sendfile(http_session_t *session,char *path,unsigned long start,
 				lprintf(LOG_WARNING,"%04d !ERROR seeking to position %lu in %s",session->socket,start,path);
 				return(0);
 			}
-			remain=end-start;
+			remain=end-start+1;
 		}
 		else {
 			remain=-1L;
@@ -1821,7 +1821,7 @@ static BOOL parse_headers(http_session_t * session)
 					break;
 				case HEAD_LENGTH:
 					add_env(session,"CONTENT_LENGTH",value);
-					content_len=atoi(value);
+					content_len=strtol(value,NULL,10);
 					break;
 				case HEAD_TYPE:
 					add_env(session,"CONTENT_TYPE",value);
@@ -1889,16 +1889,15 @@ static BOOL parse_headers(http_session_t * session)
 				case HEAD_RANGE:
 					p=strtok(value,"-");
 					if(p!=NULL) {
-						session->req.range_start=atoi(p);
+						session->req.range_start=strtoul(p,NULL,10);
 						p=strtok(NULL,"-");
 						if(p!=NULL) {
-							if(!*p)
+							session->req.range_end=strtoul(p,NULL,10);
+							if(session->req.range_end==0 && strchr(p,'0')==NULL)
 								session->req.range_end=-1L;
-							else
-								session->req.range_end=atoi(p);
 						}
 						else {
-							send_error(session,error_416);
+							session->req.range_end=-1L;
 						}
 					}
 					else {
@@ -2491,8 +2490,12 @@ static BOOL check_request(http_session_t * session)
 	}
 	if(session->req.range_start || session->req.range_end) {
 		if(session->req.range_end==-1L)
-			session->req.range_end=sb.st_size;
-		if(session->req.range_end <= session->req.range_start || session->req.dynamic) {
+			session->req.range_end=sb.st_size-1;
+		if(session->req.range_end < session->req.range_start || session->req.dynamic) {
+			send_error(session,error_416);
+			return(FALSE);
+		}
+		if(session->req.range_end >= sb.st_size) {
 			send_error(session,error_416);
 			return(FALSE);
 		}
