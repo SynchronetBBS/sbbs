@@ -73,6 +73,7 @@ static const size_t	http_scheme_len=7;
 static const char*	error_301="301 Moved Permanently";
 static const char*	error_302="302 Moved Temporarily";
 static const char*	error_404="404 Not Found";
+static const char*	error_416="416 Requested Range Not Satisfiable";
 static const char*	error_500="500 Internal Server Error";
 static const char*	unknown="<unknown>";
 
@@ -156,6 +157,9 @@ typedef struct  {
 	BOOL		finished;				/* Done processing request. */
 	BOOL		read_chunked;
 	BOOL		write_chunked;
+	unsigned long	range_start;
+	unsigned long	range_end;
+	BOOL		accept_ranges;
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -265,6 +269,9 @@ enum {
 	,HEAD_REFERER
 	,HEAD_AGENT
 	,HEAD_TRANSFER_ENCODING
+	,HEAD_ACCEPT_RANGES
+	,HEAD_CONTENT_RANGE
+	,HEAD_RANGE
 };
 
 static struct {
@@ -289,6 +296,9 @@ static struct {
 	{ HEAD_REFERER,			"Referer"				},
 	{ HEAD_AGENT,			"User-Agent"			},
 	{ HEAD_TRANSFER_ENCODING,			"Transfer-Encoding"			},
+	{ HEAD_ACCEPT_RANGES,	"Accept-Ranges"			},
+	{ HEAD_CONTENT_RANGE,	"Content-Range"			},
+	{ HEAD_RANGE,			"Range"					},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -1030,9 +1040,13 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		if(session->req.dynamic) {
 			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST, OPTIONS");
 			safecat(headers,header,MAX_HEADERS_SIZE);
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"none");
+			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 		else {
 			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, OPTIONS");
+			safecat(headers,header,MAX_HEADERS_SIZE);
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ACCEPT_RANGES),"bytes");
 			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 
@@ -1053,8 +1067,14 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 				safecat(headers,header,MAX_HEADERS_SIZE);
 			}
 			else  {
-				safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
-				safecat(headers,header,MAX_HEADERS_SIZE);
+				if((session->req.range_start || session->req.range_end) && atoi(status_line)==206) {
+					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),session->req.range_end-session->req.range_start);
+					safecat(headers,header,MAX_HEADERS_SIZE);
+				}
+				else {
+					safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+					safecat(headers,header,MAX_HEADERS_SIZE);
+				}
 			}
 		}
 
@@ -1067,6 +1087,19 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 				,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 				,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 			safecat(headers,header,MAX_HEADERS_SIZE);
+		}
+
+		if(session->req.range_start || session->req.range_end) {
+			switch(atoi(status_line)) {
+				case 206:	/* Partial reply */
+					safe_snprintf(header,sizeof(header),"%s: %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+					safecat(headers,header,MAX_HEADERS_SIZE);
+					break;
+				default:
+					safe_snprintf(header,sizeof(header),"%s: *",get_header(HEAD_CONTENT_RANGE));
+					safecat(headers,header,MAX_HEADERS_SIZE);
+					break;
+			}
 		}
 	}
 
@@ -1086,24 +1119,36 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	return(send_file);
 }
 
-static int sock_sendfile(http_session_t *session,char *path)
+static int sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
 {
 	int		file;
 	int		ret=0;
 	int		i;
 	char	buf[2048];		/* Input buffer */
+	unsigned long		remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Sending %s",session->socket,path);
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",session->socket,errno,path);
 	else {
-		while((i=read(file, buf, sizeof(buf)))>0) {
+		if(start || end) {
+			if(lseek(file, start, SEEK_SET)) {
+				lprintf(LOG_WARNING,"%04d !ERROR seeking to position %lu in %s",session->socket,start,path);
+				return(0);
+			}
+			remain=end-start;
+		}
+		else {
+			remain=-1L;
+		}
+		while((i=read(file, buf, remain>sizeof(buf)?sizeof(buf):remain))>0) {
 			if(writebuf(session,buf,i)!=i) {
 				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
 				return(0);
 			}
 			ret+=i;
+			remain-=i;
 		}
 		close(file);
 	}
@@ -1160,7 +1205,7 @@ static void send_error(http_session_t * session, const char* message)
 					int	snt=0;
 
 					lprintf(LOG_INFO,"%04d Sending generated error page",session->socket);
-					snt=sock_sendfile(session,session->req.physical_path);
+					snt=sock_sendfile(session,session->req.physical_path,0,0);
 					if(snt<0)
 						snt=0;
 					if(session->req.ld!=NULL)
@@ -1185,7 +1230,7 @@ static void send_error(http_session_t * session, const char* message)
 		send_headers(session,message,FALSE);
 		if(!stat(session->req.physical_path,&sb)) {
 			int	snt=0;
-			snt=sock_sendfile(session,session->req.physical_path);
+			snt=sock_sendfile(session,session->req.physical_path,0,0);
 			if(snt<0)
 				snt=0;
 			if(session->req.ld!=NULL)
@@ -1841,6 +1886,22 @@ static BOOL parse_headers(http_session_t * session)
 					else
 						send_error(session,"501 Not Implemented");
 					break;
+				case HEAD_RANGE:
+					p=strtok(value,"-");
+					if(p!=NULL) {
+						session->req.range_start=atoi(p);
+						p=strtok(NULL,"-");
+						if(p!=NULL) {
+							session->req.range_end=atoi(p);
+						}
+						else {
+							send_error(session,error_416);
+						}
+					}
+					else {
+						send_error(session,error_416);
+					}
+					break;
 				default:
 					break;
 			}
@@ -2424,6 +2485,13 @@ static BOOL check_request(http_session_t * session)
 			send_error(session,error_404);
 			return(FALSE);
 		}
+	}
+	if(session->req.range_start || session->req.range_end) {
+		if(session->req.range_end <= session->req.range_start || session->req.dynamic) {
+			send_error(session,error_416);
+			return(FALSE);
+		}
+		SAFECOPY(session->req.status,"206 Partial Content");
 	}
 	SAFECOPY(session->req.physical_path,path);
 	add_env(session,"SCRIPT_NAME",session->req.virtual_path);
@@ -3844,7 +3912,7 @@ static void respond(http_session_t * session)
 		int snt=0;
 		lprintf(LOG_INFO,"%04d Sending file: %s (%u bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
-		snt=sock_sendfile(session,session->req.physical_path);
+		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {
 			if(snt<0)
 				snt=0;
