@@ -160,6 +160,7 @@ typedef struct  {
 	unsigned long	range_start;
 	unsigned long	range_end;
 	BOOL		accept_ranges;
+	time_t		if_range;
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -272,6 +273,7 @@ enum {
 	,HEAD_ACCEPT_RANGES
 	,HEAD_CONTENT_RANGE
 	,HEAD_RANGE
+	,HEAD_IFRANGE
 };
 
 static struct {
@@ -299,6 +301,7 @@ static struct {
 	{ HEAD_ACCEPT_RANGES,	"Accept-Ranges"			},
 	{ HEAD_CONTENT_RANGE,	"Content-Range"			},
 	{ HEAD_RANGE,			"Range"					},
+	{ HEAD_IFRANGE,			"If-Range"				},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -992,6 +995,11 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			status_line="304 Not Modified";
 			ret=-1;
 			send_file=FALSE;
+		}
+		if(!ret && session->req.if_range && (stats.st_mtime > session->req.if_range || session->req.dynamic)) {
+			status_line="200 OK";
+			session->req.range_start=0;
+			session->req.range_end=0;
 		}
 		if(session->req.send_location==MOVED_PERM)  {
 			status_line=error_301;
@@ -1903,6 +1911,9 @@ static BOOL parse_headers(http_session_t * session)
 					else {
 						send_error(session,error_416);
 					}
+					break;
+				case HEAD_IFRANGE:
+					session->req.if_range=decode_date(value);
 					break;
 				default:
 					break;
