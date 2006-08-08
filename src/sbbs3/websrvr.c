@@ -157,8 +157,8 @@ typedef struct  {
 	BOOL		finished;				/* Done processing request. */
 	BOOL		read_chunked;
 	BOOL		write_chunked;
-	unsigned long	range_start;
-	unsigned long	range_end;
+	long		range_start;
+	long		range_end;
 	BOOL		accept_ranges;
 	time_t		if_range;
 
@@ -1100,7 +1100,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		if(session->req.range_start || session->req.range_end) {
 			switch(atoi(status_line)) {
 				case 206:	/* Partial reply */
-					safe_snprintf(header,sizeof(header),"%s: %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+					safe_snprintf(header,sizeof(header),"%s: bytes %d-%d/%d",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
 					safecat(headers,header,MAX_HEADERS_SIZE);
 					break;
 				default:
@@ -1895,21 +1895,31 @@ static BOOL parse_headers(http_session_t * session)
 						send_error(session,"501 Not Implemented");
 					break;
 				case HEAD_RANGE:
-					p=strtok(value,"-");
-					if(p!=NULL) {
-						session->req.range_start=strtoul(p,NULL,10);
-						p=strtok(NULL,"-");
-						if(p!=NULL) {
-							session->req.range_end=strtoul(p,NULL,10);
-							if(session->req.range_end==0 && strchr(p,'0')==NULL)
-								session->req.range_end=-1L;
-						}
-						else {
-							session->req.range_end=-1L;
-						}
+					if(!stricmp(value,"bytes=")) {
+						send_error(session,error_416);
+						break;
+					}
+					value+=6;
+					if(strchr(value,',')!=NULL) {	/* We don't do multiple ranges yet - TODO */
+						send_error(session,error_416);
+						break;
+					}
+					/* Check for offset from end. */
+					if(*value=='-') {
+						session->req.range_start=strtol(value,NULL,10);
+						session->req.range_end=-1;
+						break;
+					}
+					if((p=strtok(value,"-"))!=NULL) {
+						session->req.range_start=strtol(p,NULL,10);
+						if((p=strtok(NULL,"-"))!=NULL)
+							session->req.range_end=strtol(p,NULL,10);
+						else
+							session->req.range_end=-1;
 					}
 					else {
 						send_error(session,error_416);
+						break;
 					}
 					break;
 				case HEAD_IFRANGE:
@@ -2500,13 +2510,21 @@ static BOOL check_request(http_session_t * session)
 		}
 	}
 	if(session->req.range_start || session->req.range_end) {
-		if(session->req.range_end==-1L)
+		if(session->req.range_start < 0)
+			session->req.range_start=sb.st_size-session->req.range_start;
+		if(session->req.range_end < 0)
+			session->req.range_end=sb.st_size-session->req.range_end;
+		if(session->req.range_end >= sb.st_size)
 			session->req.range_end=sb.st_size-1;
 		if(session->req.range_end < session->req.range_start || session->req.dynamic) {
 			send_error(session,error_416);
 			return(FALSE);
 		}
-		if(session->req.range_end >= sb.st_size) {
+		if(session->req.range_start < 0 || session->req.range_end < 0) {
+			send_error(session,error_416);
+			return(FALSE);
+		}
+		if(session->req.range_start >= sb.st_size) {
 			send_error(session,error_416);
 			return(FALSE);
 		}
