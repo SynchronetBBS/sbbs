@@ -1892,7 +1892,10 @@ static BOOL parse_headers(http_session_t * session)
 						session->req.range_start=atoi(p);
 						p=strtok(NULL,"-");
 						if(p!=NULL) {
-							session->req.range_end=atoi(p);
+							if(!*p)
+								session->req.range_end=-1L;
+							else
+								session->req.range_end=atoi(p);
 						}
 						else {
 							send_error(session,error_416);
@@ -2487,6 +2490,8 @@ static BOOL check_request(http_session_t * session)
 		}
 	}
 	if(session->req.range_start || session->req.range_end) {
+		if(session->req.range_end==-1L)
+			session->req.range_end=sb.st_size;
 		if(session->req.range_end <= session->req.range_start || session->req.dynamic) {
 			send_error(session,error_416);
 			return(FALSE);
