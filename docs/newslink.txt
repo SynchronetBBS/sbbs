@@ -192,6 +192,39 @@ Other supported NewsLink command-line options:
 -ix [n] import a fixed number (n) of articles/messages (default is 500)
 
 
+Controlling SPAM
+----------------
+Most SPAM messages on public NNTP networks (e.g. USENET) are directed at
+multiple newsgroups. For this reason, the newslink.cfg file supports a
+"max_newsgroups_per_article" value which defaults to 5.
+
+If you find NewsLink is filtering valid messages with an error in the log like:
+!Too many newsgroups (7)
+try increasing this value.
+
+If you find NewsLink is allowing SPAM through that is addressed to multiple
+newsgroups, try reducing this value. Set max_newsgroups_per_article to 0 to
+disable this feature.
+
+NewsLink also uses the text/subject.can filter file to filter (ignore)
+articles with specific text in the subject and the ctrl/twitlist.cfg file to
+ignore messages from specific users or domains.
+
+
+Yielding
+--------
+NewsLink will yield time-slices based on the "lines_per_yield" (default: 5)
+and "yield_length" (default: 1) values. If you find NewsLink is consuming
+a large portion of your CPU cycles, try decreasing the "lines_per_yield"
+value or increasing the "yield_length" value.
+
+
+Stopping NewsLink
+-----------------
+NewsLink can be stopped by "touching" (creating or updating) the file:
+data/newslink.stop
+
+
 JSexec
 ------
 With Synchronet v3.11, it is also possible to run NewsLink externally from
