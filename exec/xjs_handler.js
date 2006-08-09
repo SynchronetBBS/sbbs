@@ -45,12 +45,13 @@ if(!file_exists(ssjs_filename)) {
 					}
 					else {
 						str=str.replace(/^(.*?)<\?(xjs)?\s+/,
-						function (str, p1, p2, offset, s) {
-							script += "write("+escape_quotes(p1)+");\r\n";
-							in_xjs=true;
-							return '';
-						}
-					);
+							function (str, p1, p2, offset, s) {
+								script += "write("+escape_quotes(p1)+");\r\n";
+								in_xjs=true;
+								return '';
+							}
+						);
+					}
 				}
 			}
 			else {
