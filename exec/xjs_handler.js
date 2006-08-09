@@ -14,11 +14,12 @@ var last_cwd='';
 xjs_load(xjs_filename);
 
 function xjs_load(filename) {
+	if(last_cwd != '') {
+		if(filename.search(/^((\/)|([A-Za-z]:[\/\\]))/)==-1)
+			filename=last_cwd+'/'+filename;
+	}
 	var cwd=filename;
 	cwd=cwd.replace(/[^\\\/]*$/,'');
-
-	if(last_cwd != '')
-		filename=last_cwd+'/'+filename;
 	var ssjs_filename=filename+".ssjs";
 
 	// Probably a race condition on Win32
