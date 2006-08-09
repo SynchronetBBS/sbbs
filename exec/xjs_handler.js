@@ -40,13 +40,13 @@ if(!file_exists(ssjs_filename)) {
 				}
 				else {
 					if(str.search(/<\?(xjs)?\s+/)==-1) {
-						script += "writeln("+escape_quotes(str)+");\r\n";
+						script += "writeln("+escape_quotes(str)+");";
 						str='';
 					}
 					else {
 						str=str.replace(/^(.*?)<\?(xjs)?\s+/,
 							function (str, p1, p2, offset, s) {
-								script += "write("+escape_quotes(p1)+");\r\n";
+								script += "write("+escape_quotes(p1)+");";
 								in_xjs=true;
 								return '';
 							}
@@ -62,7 +62,7 @@ if(!file_exists(ssjs_filename)) {
 				else {
 					str=str.replace(/^(.*?)\?>/,
 						function (str, p1, offset, s) {
-							script += p1+";\r\n";
+							script += p1+";";
 							in_xjs=false;
 							return '';
 						}
@@ -70,6 +70,7 @@ if(!file_exists(ssjs_filename)) {
 				}
 			}
 		}
+		script += '\n';
 	}
 
 	var f=new File(ssjs_filename);
