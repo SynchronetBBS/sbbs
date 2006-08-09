@@ -678,11 +678,10 @@ while(client.socket.is_connected && !quit) {
 			}
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
-			var hdr={ from: "", subject: "" };
 			var posted=false;
 			var header=true;
+			var hfields=[];
 			var body="";
-			var newsgroups=new Array();
 			var lines=0;
 			while(client.socket.is_connected) {
 
@@ -714,7 +713,13 @@ while(client.socket.is_connected && !quit) {
 				}
 				log(line);
 
-				parse_news_header(hdr,line);	// from newsutil.js
+				if((line.charAt(0)==' ' || line.charAt(0)=='\t') && hfields.length) {
+					while(line.charAt(0)==' '	// trim prepended spaces
+						|| line.charAt(0)=='\t')	
+						line=line.slice(1);
+					hfields[hfields.length-1] += line;	// folded header field
+				} else
+					hfields.push(line);
 			}
 
 			if(impose_limit && user.limits!=undefined
@@ -726,7 +731,12 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 
-			newsgroups=hdr.newsgroups.split(',');
+			// Parse the message header
+			var hdr={ from: "", subject: "" };
+			for(h in hfields)
+				parse_news_header(hdr,hfields[h]);	// from newsutil.js
+
+			var newsgroups=hdr.newsgroups.split(',');
 
 			if(hdr.to==undefined && hdr.reply_id!=undefined)
 				hdr.to=getReferenceTo(hdr);
