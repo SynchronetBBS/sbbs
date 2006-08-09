@@ -401,4 +401,54 @@ definitions that are truly global rather many definitions.  It would be
 inefficient to have thirty of forty message definitions being loaded when a
 user is looking at the statistics page.
 
+
+4.0 XJS files
+-------------
+XJS files, handled by exec/xjs_handler.js are what many people consider to be
+an easier method of generating SSJS files.  XJS files are HTML files with JS
+commands embedded in them using special tags much like PHP.  XJS files are
+translated on-the-fly to .ssjs files using the same name with .ssjs appended.
+For example, a file named test.xjs will, when ran, generate a test.xjs.ssjs
+file.
+
+
+4.1 XJS syntax
+--------------
+In an XJS file, everything not within a special xjs tag is send to the remote
+host unmodified, and everything inside the xjs tag is interpreted as JS
+statements to be executed at that point in the file.  The xjs tag begins with
+either "<?xjs" or "<?" and ends with "?>".  A simple example would be:
+
+<html><head><title><?xjs write(system.name) ?></title></head>
+<body>
+Your SysOp "<?xjs write(system.operator) ?>" welcomes you to
+<?xjs write(system.name) ?>
+</body>
+</html>
+
+This would send the following web page to the remote system:
+<html><head><title>My Brand New BBS</title></head>
+<body>
+Your SysOp "Sysop" welcomes you to
+My Brand New BBS
+</body>
+</html>
+
+Looping constructs are permitted, however, not using brackets can result in
+unexpected effects.  Because of this, it is reccomended to *always* use
+brackets with looping and flow control items.
+
+The following example displays the numbers from one to 10.
+<html><head><title>Counter</title></head>
+<body>
+<?xjs
+var i;
+for(i=1; i<=10; i++) {
+?>
+<?xjs write(i) ?><br>
+<?xjs } ?>
+</body>
+</html>
+
+
 /* End of file */
