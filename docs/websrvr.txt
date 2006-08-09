@@ -457,6 +457,7 @@ The following JS commands are available to XJS files only.
 xjs_load(filename)
 	Includes the specified file as though its contents were part of the
 	current file at the current position.  Acts as though the current xjs
-	tag is closed before the file and re-opened after it.
+	tag is closed before the file and re-opened after it.  The filename
+	is assumed to be relative to the including file (or absolute.)
 
 /* End of file */
