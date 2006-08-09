@@ -138,6 +138,15 @@ function unmangle_addr(addr)
 	return addr.replace(/\.remove-\S+-this/,"");
 }
 
+var yield_calls=0;
+function maybe_yield()
+{
+	yield_calls++;
+	if(lines_per_yield && (yield_calls%lines_per_yield)==0) {
+		sleep(yield_length);
+	}
+}
+
 var host;
 var port=119;
 var username;
@@ -274,6 +283,15 @@ if(slave) {
 var stop_semaphore=system.data_dir+"newslink.stop";
 file_remove(stop_semaphore);
 
+function stop_sem_signaled()
+{
+	if(file_exists(stop_semaphore)) {
+		log(stop_semaphore + " signaled");
+		return(true);
+	}
+	return(false);
+}
+
 /******************************/
 /* Export and Import Messages */
 /******************************/
@@ -299,7 +317,7 @@ for(i in area) {
 	if(!socket.is_connected)
 		break;
 
-	if(js.terminated || file_exists(stop_semaphore))
+	if(js.terminated || stop_sem_signaled())
 		break;
 
 //	printf("%s\r\n",area[i].toString());
@@ -370,7 +388,7 @@ for(i in area) {
 	for(;socket.is_connected 
 		&& ptr<=last_msg 
 		&& !js.terminated
-		&& !file_exists(stop_semaphore)
+		&& !stop_sem_signaled()
 		;ptr++) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
@@ -528,6 +546,7 @@ for(i in area) {
 			while((rsp=readln())!='.' && socket.is_connected && !js.terminated) {
 				if(rsp)
 					article_list.push(parseInt(rsp));
+				maybe_yield();
 			}
 			printf("%u new articles\r\n", article_list.length);
 		}
@@ -536,7 +555,7 @@ for(i in area) {
 	for(;socket.is_connected 
 		&& ptr<=last_msg 
 		&& !js.terminated
-		&& !file_exists(stop_semaphore)
+		&& !stop_sem_signaled()
 		;ptr++) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
@@ -553,16 +572,15 @@ for(i in area) {
 		}
 		body="";
 		header=true;
-		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
 		var line;
 		var line_counter=0;
 		var recv_lines=0;
         var file=undefined;   
+		var hfields=[];
         var md5; 
 		while(socket.is_connected && !js.terminated) {
 
-			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
-				sleep(yield_length);
+			maybe_yield();
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
@@ -585,7 +603,13 @@ for(i in area) {
 			}
 
 			if(header) {
-				parse_news_header(hdr,line);	// from newsutil.js
+				if((line.charAt(0)==' ' || line.charAt(0)=='\t') && hfields.length) {
+					while(line.charAt(0)==' '	// trim prepended spaces
+						|| line.charAt(0)=='\t')	
+						line=line.slice(1);
+					hfields[hfields.length-1] += line;	// folded header field
+				} else
+					hfields.push(line);
 				continue;
 			}
 
@@ -706,6 +730,12 @@ for(i in area) {
 			}
 			//print(line);
 		}
+
+
+		// Parse the message header
+		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
+		for(h in hfields)
+			parse_news_header(hdr,hfields[h]);	// from newsutil.js
 
 		if(hdr["nntp-posting-host"]!=undefined 
 			&& (system.trashcan("ip", hdr["nntp-posting-host"]) 
