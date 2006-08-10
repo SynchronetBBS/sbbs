@@ -1346,29 +1346,16 @@ function User_Work() {
 			this.numeric(431, ":No nickname given.");
 			break;
 		}
-		var firstnick="";
-		var aWhoWas;
-		var ww_nick_uc = cmd[1].toUpperCase();
-		for (aWhoWas=whowas_pointer;aWhoWas>=0;aWhoWas--) {
-			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.ucnick == ww_nick_uc)) {
-				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
-					+ " * :" + wwh.realname);
-				this.numeric(312,wwh.nick + " " + wwh.server + " :"
-					+ wwh.serverdesc);
-				if (!firstnick)
-					firstnick = wwh.nick;
-			}
-		}
-		for (aWhoWas=whowas_buffer;aWhoWas>=whowas_pointer;aWhoWas--) {
-			var wwh = WhoWasHistory[aWhoWas];
-			if (wwh && (wwh.ucnick == ww_nick_uc)) {
-				this.numeric(314,wwh.nick + " " + wwh.uprefix + " " + wwh.host
-					+ " * :" + wwh.realname);
-				this.numeric(312,wwh.nick + " " + wwh.server + " :"
-					+ wwh.serverdesc);
-				if (!firstnick)
-					firstnick = wwh.nick;
+		var ww = WhoWas[cmd[1].toUpperCase()];
+		var firstnick;
+		if (ww) {
+			for (e in ww) {
+				this.numeric(314,ww[e].nick + " " + ww[e].uprefix + " "
+					+ ww[e].host + " * :" + ww[e].realname);
+				this.numeric(312,ww[e].nick + " " + ww[e].server + " :"
+					+ ww[e].serverdesc);
+				if(!firstnick)
+					firstnick = ww[e].nick;
 			}
 		}
 		if (!firstnick) {
@@ -1476,15 +1463,28 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	for(thisChannel in this.channels) {
 		this.rmchan(this.channels[thisChannel]);
 	}
-	if (whowas_pointer >= whowas_buffer)
-		whowas_pointer = 0;
-	if (!this.parent)
-		ww_serverdesc = serverdesc;
-	else
+
+	var ww_serverdesc = serverdesc;
+	if (this.parent)
 		ww_serverdesc = Servers[this.parent.toLowerCase()].info;
-	WhoWasHistory[whowas_pointer] = new WhoWas(this.nick,this.uprefix,
-		this.hostname,this.realname,this.servername,ww_serverdesc);
-	whowas_pointer++;
+
+	var nick_uc = this.nick.toUpperCase();
+	if (!WhoWas[nick_uc])
+		WhoWas[nick_uc] = new Array;
+	var ww = WhoWas[nick_uc];
+
+	var ptr = ww.unshift(new WhoWasObj(this.nick, this.uprefix, this.hostname,
+		this.realname, this.servername, ww_serverdesc)) - 1;
+	WhoWasMap.unshift(ww[ptr]);
+
+	if (WhoWasMap.length > WhoWas_Buffer) {
+		var ww_pop = WhoWasMap.pop();
+		var ww_obj = WhoWas[ww_pop.nick.toUpperCase()];
+		ww_obj.pop();
+		if (!ww_obj.length)
+			delete WhoWas[ww_pop.nick.toUpperCase()];
+	}
+
 	if (!suppress_bcast)
 		this.bcast_to_servers(tmp);
 

@@ -112,10 +112,11 @@ hcc_users = 0;
 hcc_counter = 0;
 server_uptime = time();
 
-WhoWasHistory = new Object;
+WhoWas = new Object;	/* Stores uppercase nicks */
+WhoWasMap = new Array;	/* A true push/pop array pointing to WhoWas entries */
+WhoWas_Buffer = 1000;	/* Maximum number of WhoWas entries to keep track of */
+
 NickHistory = new Array;	/* A true array using push and pop */
-whowas_buffer = 1000;
-whowas_pointer = 0;
 nick_buffer = 1000;
 nick_pointer = 0;
 
@@ -2922,7 +2923,7 @@ function ZLine(ipmask,reason) {
 	this.reason = reason;
 }
 
-function WhoWas(nick,uprefix,host,realname,server,serverdesc) {
+function WhoWasObj(nick,uprefix,host,realname,server,serverdesc) {
 	this.nick = nick;
 	this.uprefix = uprefix;
 	this.host = host;
