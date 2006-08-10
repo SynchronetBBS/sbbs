@@ -2929,6 +2929,7 @@ function WhoWas(nick,uprefix,host,realname,server,serverdesc) {
 	this.realname = realname;
 	this.server = server;
 	this.serverdesc = serverdesc;
+	this.ucnick = nick.toUpperCase();
 }
 
 function NickBuf(oldnick,newnick) {
