@@ -2278,7 +2278,7 @@ static BOOL check_extra_path(http_session_t * session)
 					*end=0;
 					strcat(rpath,startup->index_file_name[i]);
 					if(!stat(rpath,&sb)) {
-						*end=0;
+						/* *end=0; /* Removed Wed, Aug 09, 2006 to allow is_dynamic_req to detect correctly */
 						SAFECOPY(session->req.extra_path_info,epath);
 						SAFECOPY(session->req.virtual_path,vpath);
 						strcat(session->req.virtual_path,"/");
