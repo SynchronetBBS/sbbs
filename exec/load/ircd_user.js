@@ -1469,6 +1469,8 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (!str)
 		str = this.nick;
 
+	var ww_serverdesc;
+
 	var tmp = "QUIT :" + str;
 	this.bcast_to_uchans_unique(tmp);
 	for(thisChannel in this.channels) {
