@@ -459,5 +459,7 @@ xjs_load(filename)
 	current file at the current position.  Acts as though the current xjs
 	tag is closed before the file and re-opened after it.  The filename
 	is assumed to be relative to the including file (or absolute.)
+	The contents of the load()ed file are in a separate function as far as
+	variable scope is concerned.
 
 /* End of file */
