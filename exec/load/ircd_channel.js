@@ -589,11 +589,12 @@ function IRCClient_do_join(chan_name,join_key) {
 				this.numeric331(chan);
 			}
 		}
-		if (chan_name[0] != "&")
-			server_bcast_to_servers(":" + this.nick + " SJOIN "
+		if (chan_name[0] != "&") {
+			this.bcast_to_servers_raw(":" + this.nick + " SJOIN "
 				+ chan.created + " " + chan.nam,BAHAMUT);
-			server_bcast_to_servers(":" + this.nick + " JOIN "
+			this.bcast_to_servers_raw(":" + this.nick + " JOIN "
 				+ chan.nam + " " + chan.created,DREAMFORGE);
+		}
 	} else {
 		// create a new channel
 		Channels[uc_chan_name] = new Channel(chan_name);
@@ -601,16 +602,16 @@ function IRCClient_do_join(chan_name,join_key) {
 		chan.users[this.id] = this;
 		chan.modelist[CHANMODE_OP][this.id] = this;
 		var str="JOIN :" + chan.nam;
-		var create_op = "";
+		var create_op;
 		if (this.local) {
 			this.originatorout(str,this);
 			create_op = "@";
 		}
 		if (chan_name[0] != "&") {
-			server_bcast_to_servers(":" + servername + " SJOIN "
+			this.bcast_to_servers_raw(":" + servername + " SJOIN "
 				+ chan.created + " " + chan.nam + " "
 				+ chan.chanmode() + " :" + create_op + this.nick,BAHAMUT);
-			server_bcast_to_servers(":" + this.nick + " JOIN "
+			this.bcast_to_servers_raw(":" + this.nick + " JOIN "
 				+ chan.nam,DREAMFORGE);
 			if (create_op) {
 				server_bcast_to_servers(":" + servername + " MODE "

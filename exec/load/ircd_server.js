@@ -886,6 +886,7 @@ function Server_Work() {
 			if (chan.created > parseInt(cmd[1]))
 				chan.created = parseInt(cmd[1]);
 
+			/* XXX FIXME for dreamforge XXX */
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam + " "
 				+ chan.chanmode(true) + " :" + new_chan_members)
 		} else {
