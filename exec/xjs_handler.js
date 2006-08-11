@@ -95,8 +95,9 @@ function xjs_load(filename) {
 
 	load(ssjs_filename);
 	cwd=old_cwd;
+
+	function escape_quotes(arg) {
+		return("'"+arg.replace(/'/g,"'+"+'"'+"'"+'"+'+"'")+"'");
+	}
 }
 
-function escape_quotes(arg) {
-	return("'"+arg.replace(/'/g,"'+"+'"'+"'"+'"+'+"'")+"'");
-}
