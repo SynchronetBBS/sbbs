@@ -808,7 +808,8 @@ function Server_Work() {
 			}
 
 			if (cm_array.length < 1) {
-				umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to SJOIN empty channel "
+				umode_notice(USERMODE_OPER,"Notice","Server " + this.nick
+					+ " trying to SJOIN empty channel "
 					+ cmd[2] + " post processing.");
 				break;
 			}
@@ -816,7 +817,7 @@ function Server_Work() {
 		}
 
 		var cn_tuc = cmd[2].toUpperCase();
-		var chan = Channels[cmd[2].toUpperCase()];
+		var chan = Channels[cn_tuc];
 		if (!chan) {
 			Channels[cn_tuc]=new Channel(cn_tuc);
 			chan = Channels[cn_tuc];
@@ -826,8 +827,7 @@ function Server_Work() {
 
 		if (cmd[3]) {
 			var bounce_modes = true;
-			if (!ThisOrigin.local ||
-			    (chan.created == parseInt(cmd[1])))
+			if (!ThisOrigin.local || (chan.created == parseInt(cmd[1])))
 				bounce_modes = false;
 			if (chan.created >= parseInt(cmd[1]))
 				this.set_chanmode(chan, mode_args, bounce_modes);
@@ -843,35 +843,45 @@ function Server_Work() {
 				var member_obj = cm_array[member].nick;
 				var is_voice = cm_array[member].isvoice;
 				var is_op = cm_array[member].isop;
+				log("***XXX*** ISOP?? " + cm_array[member].isop + " ***XXX***");
 
 				if (member_obj.channels[chan.nam.toUpperCase()])
 					continue;
 				member_obj.channels[chan.nam.toUpperCase()] = chan;
 				chan.users[member_obj.id] = member_obj;
-				member_obj.bcast_to_channel(chan, "JOIN " + chan.nam, false);
+				var joinstr = "JOIN " + chan.nam;
+				member_obj.bcast_to_channel(chan, joinstr, false);
+				member_obj.bcast_to_servers_raw(":" + member_obj.nick
+					+ " " + joinstr, DREAMFORGE);
 				if (chan.created >= parseInt(cmd[1])) {
 					if (is_op) {
-						chan.modelist[CHANMODE_OP][member_obj.id] = member_obj.id;
+						chan.modelist[CHANMODE_OP][member_obj.id]=member_obj.id;
 						push_sync_modes += "o";
 						push_sync_args += " " + member_obj.nick;
 						num_sync_modes++;
 						new_chan_members += "@";
 					}
 					if (num_sync_modes >= max_modes) {
-						this.bcast_to_channel(chan,"MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+						var mode1str = "MODE " + chan.nam + " "
+							+ push_sync_modes + push_sync_args;
+						this.bcast_to_channel(chan,mode1str);
+						this.bcast_to_servers(mode1str,DREAMFORGE);
 						push_sync_modes = "+";
 						push_sync_args = "";
 						num_sync_modes = 0;
 					}
 					if (is_voice) {
-						chan.modelist[CHANMODE_VOICE][member_obj.id] = member_obj;
+						chan.modelist[CHANMODE_VOICE][member_obj.id]=member_obj;
 						push_sync_modes += "v";
 						push_sync_args += " " + member_obj.nick;
 						num_sync_modes++;
 						new_chan_members += "+";
 					}
 					if (num_sync_modes >= max_modes) {
-						this.bcast_to_channel(chan,"MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+						var mode2str = "MODE " + chan.nam + " "
+							+ push_sync_modes + push_sync_args;
+						this.bcast_to_channel(chan,mode2str);
+						this.bcast_to_servers(mode2str,DREAMFORGE);
 						push_sync_modes = "+";
 						push_sync_args = "";
 						num_sync_modes = 0;
@@ -879,16 +889,23 @@ function Server_Work() {
 				}
 				new_chan_members += member_obj.nick;
 			}
-			if (num_sync_modes)
-				this.bcast_to_channel(chan, "MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+			if (num_sync_modes) {
+				var mode3str = "MODE " + chan.nam + " "
+					+ push_sync_modes + push_sync_args;
+				this.bcast_to_channel(chan, mode3str);
+				this.bcast_to_servers(mode3str,DREAMFORGE);
+			}
 
 			// Synchronize the TS to what we received.
 			if (chan.created > parseInt(cmd[1]))
 				chan.created = parseInt(cmd[1]);
 
-			/* XXX FIXME for dreamforge XXX */
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam + " "
-				+ chan.chanmode(true) + " :" + new_chan_members)
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " "
+				+ "SJOIN "
+				+ chan.created + " "
+				+ chan.nam + " "
+				+ chan.chanmode(true) + " "
+				+ ":" + new_chan_members,BAHAMUT)
 		} else {
 			if (ThisOrigin.server) {
 				umode_notice(USERMODE_OPER,"Notice", "Server " + ThisOrigin.nick
