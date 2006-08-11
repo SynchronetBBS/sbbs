@@ -9,17 +9,18 @@ if(this.http_request!=undefined)	/* Requested through web-server */
 else
 	xjs_filename = argv[0];
 
-var last_cwd='';
+var cwd='';
 
 xjs_load(xjs_filename);
 
 function xjs_load(filename) {
-	if(last_cwd != '') {
+	var old_cwd=cwd;
+	if(cwd != '') {
 		if(filename.search(/^((\/)|([A-Za-z]:[\/\\]))/)==-1)
-			filename=last_cwd+'/'+filename;
+			filename=cwd+filename;
 	}
-	var cwd=filename;
-	cwd=cwd.replace(/[^\\\/]*$/,'');
+	cwd=filename;
+	cwd=backslash(cwd.replace(/[^\\\/]*$/,''));
 	var ssjs_filename=filename+".ssjs";
 
 	// Probably a race condition on Win32
@@ -92,9 +93,8 @@ function xjs_load(filename) {
 		}
 	}
 
-	last_cwd=cwd;
-
 	load(ssjs_filename);
+	cwd=old_cwd;
 }
 
 function escape_quotes(arg) {
