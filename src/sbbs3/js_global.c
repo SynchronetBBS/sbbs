@@ -297,7 +297,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		exec_obj = bg->obj;
 		
 	} else if(JSVAL_IS_OBJECT(argv[argn]))	/* Scope specified */
-		obj=JSVAL_TO_OBJECT(argv[argn++]);
+		exec_obj=JSVAL_TO_OBJECT(argv[argn++]);
 
 	if((filename=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
 		return(JS_FALSE);
