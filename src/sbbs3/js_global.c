@@ -296,9 +296,16 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		exec_cx = bg->cx;
 		exec_obj = bg->obj;
 		
-	} else if(JSVAL_IS_OBJECT(argv[argn]))	/* Scope specified */
-		exec_obj=JSVAL_TO_OBJECT(argv[argn++]);
+	} else if(JSVAL_IS_OBJECT(argv[argn])) {
+		JSObject* tmp_obj=JSVAL_TO_OBJECT(argv[argn++]);
+		if(!JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
+			exec_obj=tmp_obj;
+	}
 
+	if(argn==argc) {
+		JS_ReportError(cx,"no filename specified");
+		return(JS_FALSE);
+	}
 	if((filename=js_ValueToStringBytes(cx, argv[argn++], NULL))==NULL)
 		return(JS_FALSE);
 
