@@ -843,7 +843,6 @@ function Server_Work() {
 				var member_obj = cm_array[member].nick;
 				var is_voice = cm_array[member].isvoice;
 				var is_op = cm_array[member].isop;
-				log("***XXX*** ISOP?? " + cm_array[member].isop + " ***XXX***");
 
 				if (member_obj.channels[chan.nam.toUpperCase()])
 					continue;
