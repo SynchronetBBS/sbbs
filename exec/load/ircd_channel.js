@@ -602,7 +602,7 @@ function IRCClient_do_join(chan_name,join_key) {
 		chan.users[this.id] = this;
 		chan.modelist[CHANMODE_OP][this.id] = this;
 		var str="JOIN :" + chan.nam;
-		var create_op;
+		var create_op = "";
 		if (this.local) {
 			this.originatorout(str,this);
 			create_op = "@";

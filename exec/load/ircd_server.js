@@ -519,7 +519,7 @@ function Server_Work() {
 				+ NewNick.hostname + " "
 				+ NewNick.servername + " "
 				+ "0 "
-				+ cmd[9]
+				+ NewNick.ip
 				+ " :" + NewNick.realname,BAHAMUT);
 			this.bcast_to_servers_raw("NICK "
 				+ NewNick.nick + " "
