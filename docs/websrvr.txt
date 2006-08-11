@@ -451,15 +451,17 @@ for(i=1; i<=10; i++) {
 </html>
 
 
-4.2 XJS-specific commands
--------------------------
+4.2 XJS-specific global methods and properties
+----------------------------------------------
 The following JS commands are available to XJS files only.
 xjs_load(filename)
-	Includes the specified file as though its contents were part of the
-	current file at the current position.  Acts as though the current xjs
-	tag is closed before the file and re-opened after it.  The filename
-	is assumed to be relative to the including file (or absolute.)
-	The contents of the load()ed file are in a separate function as far as
-	variable scope is concerned.
+	Runs the specified xjs file at the current position.  Local variables
+	are NOT visible to xjs_load()ed pages.  The filename is assumed to be
+	relative to the including file (or absolute.)
+cwd
+	Contains the path that the current xjs script was loaded from and which
+	parameters to xjs_load() are assumed to be relative to.  If you change
+	the value of cwd, it will change the location where xjs_load() will
+	check for files.
 
 /* End of file */
