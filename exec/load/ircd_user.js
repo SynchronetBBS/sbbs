@@ -1487,6 +1487,8 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	if (!suppress_bcast)
 		this.bcast_to_servers(tmp);
+	else if (is_netsplit)
+		this.bcast_to_servers(tmp,DREAMFORGE); /* DF doesn't have NOQUIT */
 
 	if (this.local) {
 		if(server.client_remove!=undefined)
