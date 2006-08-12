@@ -276,7 +276,6 @@ enum {
 	,HEAD_RANGE
 	,HEAD_IFRANGE
 	,HEAD_COOKIE
-	,HEAD_SETCOOKIE
 };
 
 static struct {
@@ -306,7 +305,6 @@ static struct {
 	{ HEAD_RANGE,			"Range"					},
 	{ HEAD_IFRANGE,			"If-Range"				},
 	{ HEAD_COOKIE,			"Cookie"				},
-	{ HEAD_SETCOOKIE,		"Set-Cookie"			},
 	{ -1,					NULL /* terminator */	},
 };
 
