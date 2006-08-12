@@ -200,6 +200,7 @@ typedef struct  {
 	JSObject*		js_glob;
 	JSObject*		js_query;
 	JSObject*		js_header;
+	JSObject*		js_cookie;
 	JSObject*		js_request;
 	js_branch_t		js_branch;
 	subscan_t		*subscan;
@@ -274,6 +275,8 @@ enum {
 	,HEAD_CONTENT_RANGE
 	,HEAD_RANGE
 	,HEAD_IFRANGE
+	,HEAD_COOKIE
+	,HEAD_SETCOOKIE
 };
 
 static struct {
@@ -302,6 +305,8 @@ static struct {
 	{ HEAD_CONTENT_RANGE,	"Content-Range"			},
 	{ HEAD_RANGE,			"Range"					},
 	{ HEAD_IFRANGE,			"If-Range"				},
+	{ HEAD_COOKIE,			"Cookie"				},
+	{ HEAD_SETCOOKIE,		"Set-Cookie"			},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -1705,6 +1710,37 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
 
+static void js_add_cookieval(http_session_t * session, char *key, char *value)
+{
+	JSObject*	keyarray;
+	jsval		val;
+	jsuint		len;
+	int			alen;
+
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(session->js_cx,session->js_cookie,key,&val) && val!=JSVAL_VOID)  {
+		keyarray = JSVAL_TO_OBJECT(val);
+		alen=-1;
+	}
+	else {
+		keyarray = JS_NewArrayObject(session->js_cx, 0, NULL);
+		if(!JS_DefineProperty(session->js_cx, session->js_cookie, key, OBJECT_TO_JSVAL(keyarray)
+			, NULL, NULL, JSPROP_ENUMERATE))
+			return;
+		alen=0;
+	}
+
+	if(alen==-1) {
+		if(JS_GetArrayLength(session->js_cx, keyarray, &len)==JS_FALSE)
+			return;
+		alen=len;
+	}
+
+	lprintf(LOG_DEBUG,"%04d Adding cookie value %s=%s at pos %d",session->socket,key,value,alen);
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
+	JS_SetElement(session->js_cx, keyarray, alen, &val);
+}
+
 static void js_add_request_prop(http_session_t * session, char *key, char *value)  
 {
 	JSString*	js_str;
@@ -1924,6 +1960,20 @@ static BOOL parse_headers(http_session_t * session)
 					break;
 				case HEAD_IFRANGE:
 					session->req.if_range=decode_date(value);
+					break;
+				case HEAD_COOKIE:
+					{
+						char	*key;
+						char	*val;
+
+						p=value;
+						while((key=strtok(p,"="))!=NULL) {
+							p=NULL;
+							if((val=strtok(p,";\t\n\v\f\r "))!=NULL) {	/* Whitespace */
+								js_add_cookieval(session,key,val);
+							}
+						}
+					}
 					break;
 				default:
 					break;
@@ -3262,7 +3312,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 		session->js_query = JS_DefineObject(cx, session->js_request, "query", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,session->js_request,"header",&val) && val!=JSVAL_VOID)  {
 		session->js_header = JSVAL_TO_OBJECT(val);
@@ -3271,6 +3320,16 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	else
 		session->js_header = JS_DefineObject(cx, session->js_request, "header", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,session->js_request,"cookie",&val) && val!=JSVAL_VOID)  {
+		session->js_cookie = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,session->js_cookie);
+	}
+	else
+		session->js_cookie = JS_DefineObject(cx, session->js_request, "cookie", NULL
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+
 
 	return(session->js_request);
 }
