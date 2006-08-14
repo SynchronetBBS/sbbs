@@ -671,6 +671,7 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 static str_list_t splitList(char* list, const char* sep)
 {
 	char*		token;
+	char*		tmp;
 	ulong		items=0;
 	str_list_t	lp;
 
@@ -680,13 +681,13 @@ static str_list_t splitList(char* list, const char* sep)
 	if(sep==NULL)
 		sep=",";
 
-	token=strtok(list,sep);
+	token=strtok_r(list,sep,&tmp);
 	while(token!=NULL) {
 		SKIP_WHITESPACE(token);
 		truncsp(token);
 		if(strListAppend(&lp,token,items++)==NULL)
 			break;
-		token=strtok(NULL,sep);
+		token=strtok_r(NULL,sep,&tmp);
 	}
 
 	return(lp);

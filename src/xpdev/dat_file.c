@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -117,6 +117,7 @@ str_list_t csvLineParser(const char* line)
 {
 	char*		p;
 	char*		buf;
+	char*		tmp;
 	size_t		count=0;
 	str_list_t	list;
 
@@ -130,7 +131,7 @@ str_list_t csvLineParser(const char* line)
 
 	truncsp(buf);
 
-	for(p=strtok(buf,",");p;p=strtok(NULL,","))
+	for(p=strtok_r(buf,",",&tmp);p;p=strtok_r(NULL,",",&tmp))
 		strListAppend(&list,p,count++);
 
 	free(buf);
@@ -170,6 +171,7 @@ str_list_t tabLineParser(const char* line)
 {
 	char*		p;
 	char*		buf;
+	char*		tmp;
 	size_t		count=0;
 	str_list_t	list;
 
@@ -181,7 +183,7 @@ str_list_t tabLineParser(const char* line)
 		return(NULL);
 	}
 
-	for(p=strtok(buf,"\t");p;p=strtok(NULL,"\t"))
+	for(p=strtok_r(buf,"\t",&tmp);p;p=strtok_r(NULL,"\t",&tmp))
 		strListAppend(&list,p,count++);
 
 	free(buf);

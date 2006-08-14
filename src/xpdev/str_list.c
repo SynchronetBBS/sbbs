@@ -244,6 +244,7 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 {
 	size_t	count;
 	char*	token;
+	char*	tmp;
 	str_list_t	list;
 
 	if(str==NULL || delimit==NULL)
@@ -257,7 +258,7 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 	} else
 		count=strListCount(*lp);
 
-	for(token = strtok(str, delimit); token!=NULL; token=strtok(NULL, delimit))
+	for(token = strtok_r(str, delimit, &tmp); token!=NULL; token=strtok_r(NULL, delimit, &tmp))
 		if(strListAppend(lp, token, count++)==NULL)
 			break;
 
