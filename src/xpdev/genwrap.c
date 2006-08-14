@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -229,6 +229,45 @@ char* strrev(char* str)
     }
     return str;
 }
+#endif
+
+#if !defined(__unix__)
+
+/****************************************************************************/
+/* Implementations of the recursive (thread-safe) version of strtok			*/
+/* Thanks to Apache Portable Runtime (APR)									*/
+/****************************************************************************/
+char* DLLCALL strtok_r(char *str, const char *delim, char **last)
+{
+    char* token;
+
+    if (str==NULL)      /* subsequent call */
+        str = *last;    /* start where we left off */
+
+    /* skip characters in delimiter (will terminate at '\0') */
+    while(*str && strchr(delim, *str))
+        ++str;
+
+    if(!*str)          /* no more tokens */
+        return NULL;
+
+    token = str;
+
+    /* skip valid token characters to terminate token and
+     * prepare for the next call (will terminate at '\0)
+     */
+    *last = token + 1;
+    while(**last && !strchr(delim, **last))
+        ++*last;
+
+    if (**last) {
+        **last = '\0';
+        ++*last;
+    }
+
+    return token;
+}
+
 #endif
 
 /****************************************************************************/

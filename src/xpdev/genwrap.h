@@ -290,6 +290,8 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	DLLEXPORT struct tm*    DLLCALL		localtime_r(const time_t* t, struct tm* tm);
 	DLLEXPORT char*	        DLLCALL		ctime_r(const time_t *t, char *buf);
 	DLLEXPORT char*	        DLLCALL		asctime_r(const struct tm *tm, char *buf);
+	DLLEXPORT char*			DLLCALL		strtok_r(char *str, const char *delim, char **last);
+
 #endif
 
 #if defined(__solaris__)
