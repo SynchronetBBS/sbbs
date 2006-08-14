@@ -654,6 +654,7 @@ static time_t decode_date(char *date)
 {
 	struct	tm	ti;
 	char	*token;
+	char	*last;
 	time_t	t;
 
 	ti.tm_sec=0;		/* seconds (0 - 60) */
@@ -664,64 +665,64 @@ static time_t decode_date(char *date)
 	ti.tm_year=0;		/* year - 1900 */
 	ti.tm_isdst=0;		/* is summer time in effect? */
 
-	token=strtok(date,",");
+	token=strtok_r(date,",",&last);
 	if(token==NULL)
 		return(0);
 	/* This probobly only needs to be 9, but the extra one is for luck. */
 	if(strlen(date)>15) {
 		/* asctime() */
 		/* Toss away week day */
-		token=strtok(date," ");
+		token=strtok_r(date," ",&last);
 		if(token==NULL)
 			return(0);
-		token=strtok(NULL," ");
+		token=strtok_r(NULL," ",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_mon=getmonth(token);
-		token=strtok(NULL," ");
+		token=strtok_r(NULL," ",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_mday=atoi(token);
-		token=strtok(NULL,":");
+		token=strtok_r(NULL,":",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_hour=atoi(token);
-		token=strtok(NULL,":");
+		token=strtok_r(NULL,":",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_min=atoi(token);
-		token=strtok(NULL," ");
+		token=strtok_r(NULL," ",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_sec=atoi(token);
-		token=strtok(NULL,"");
+		token=strtok_r(NULL,"",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_year=atoi(token)-1900;
 	}
 	else  {
 		/* RFC 1123 or RFC 850 */
-		token=strtok(NULL," -");
+		token=strtok_r(NULL," -",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_mday=atoi(token);
-		token=strtok(NULL," -");
+		token=strtok_r(NULL," -",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_mon=getmonth(token);
-		token=strtok(NULL," ");
+		token=strtok_r(NULL," ",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_year=atoi(token);
-		token=strtok(NULL,":");
+		token=strtok_r(NULL,":",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_hour=atoi(token);
-		token=strtok(NULL,":");
+		token=strtok_r(NULL,":",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_min=atoi(token);
-		token=strtok(NULL," ");
+		token=strtok_r(NULL," ",&last);
 		if(token==NULL)
 			return(0);
 		ti.tm_sec=atoi(token);
@@ -1345,6 +1346,7 @@ static BOOL check_ars(http_session_t * session)
 {
 	char	*username;
 	char	*password;
+	char	*last;
 	uchar	*ar;
 	BOOL	authorized;
 	char	auth_req[MAX_REQUEST_LINE+1];
@@ -1372,10 +1374,10 @@ static BOOL check_ars(http_session_t * session)
 	}
 	SAFECOPY(auth_req,session->req.auth);
 
-	username=strtok(auth_req,":");
+	username=strtok_r(auth_req,":",&last);
 	if(username==NULL)
 		username="";
-	password=strtok(NULL,":");
+	password=strtok_r(NULL,":",&last);
 	/* Require a password */
 	if(password==NULL)
 		password="";
@@ -1839,6 +1841,7 @@ static BOOL parse_headers(http_session_t * session)
 {
 	char	*head_line;
 	char	*value;
+	char	*last;
 	char	*p;
 	int		i;
 	size_t	idx;
@@ -1847,15 +1850,15 @@ static BOOL parse_headers(http_session_t * session)
 
 	for(idx=0;session->req.headers[idx]!=NULL;idx++) {
 		head_line=session->req.headers[idx];
-		if((strtok(head_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
+		if((strtok_r(head_line,":",&last))!=NULL && (value=strtok_r(NULL,"",&last))!=NULL) {
 			i=get_header_type(head_line);
 			while(*value && *value<=' ') value++;
 			if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)
 				js_add_header(session,head_line,value);
 			switch(i) {
 				case HEAD_AUTH:
-					strtok(value," ");
-					p=strtok(NULL," ");
+					strtok_r(value," ",&last);
+					p=strtok_r(NULL," ",&last);
 					if(p==NULL)
 						break;
 					while(*p && *p<' ') p++;
@@ -1944,9 +1947,9 @@ static BOOL parse_headers(http_session_t * session)
 						session->req.range_end=-1;
 						break;
 					}
-					if((p=strtok(value,"-"))!=NULL) {
+					if((p=strtok_r(value,"-",&last))!=NULL) {
 						session->req.range_start=strtol(p,NULL,10);
-						if((p=strtok(NULL,"-"))!=NULL)
+						if((p=strtok_r(NULL,"-",&last))!=NULL)
 							session->req.range_end=strtol(p,NULL,10);
 						else
 							session->req.range_end=-1;
@@ -1965,9 +1968,9 @@ static BOOL parse_headers(http_session_t * session)
 						char	*val;
 
 						p=value;
-						while((key=strtok(p,"="))!=NULL) {
+						while((key=strtok_r(p,"=",&last))!=NULL) {
 							p=NULL;
-							if((val=strtok(p,";\t\n\v\f\r "))!=NULL) {	/* Whitespace */
+							if((val=strtok_r(p,";\t\n\v\f\r ",&last))!=NULL) {	/* Whitespace */
 								js_add_cookieval(session,key,val);
 							}
 						}
@@ -2054,15 +2057,16 @@ static char *get_request(http_session_t * session, char *req_line)
 	char*	p;
 	char*	query;
 	char*	retval;
+	char*	last;
 	int		offset;
 
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
-	strtok(session->req.virtual_path," \t");
+	strtok_r(session->req.virtual_path," \t",&last);
 	SAFECOPY(session->req.request_line,session->req.virtual_path);
-	retval=strtok(NULL," \t");
-	strtok(session->req.virtual_path,"?");
-	query=strtok(NULL,"");
+	retval=strtok_r(NULL," \t",&last);
+	strtok_r(session->req.virtual_path,"?",&last);
+	query=strtok_r(NULL,"",&last);
 
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -2072,9 +2076,9 @@ static char *get_request(http_session_t * session, char *req_line)
 		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
 		SAFECOPY(session->req.vhost,session->req.host);
 		/* Remove port specification */
-		strtok(session->req.vhost,":");
-		strtok(session->req.physical_path,"/");
-		p=strtok(NULL,"/");
+		strtok_r(session->req.vhost,":",&last);
+		strtok_r(session->req.physical_path,"/",&last);
+		p=strtok_r(NULL,"/",&last);
 		if(p==NULL) {
 			/* Do not allow host values larger than 128 bytes */
 			session->req.host[0]=0;
@@ -2116,6 +2120,7 @@ static BOOL get_request_headers(http_session_t * session)
 	char	head_line[MAX_REQUEST_LINE+1];
 	char	next_char;
 	char	*value;
+	char	*last;
 	int		i;
 
 	while(sockreadline(session,head_line,sizeof(head_line)-1)>0) {
@@ -2134,7 +2139,7 @@ static BOOL get_request_headers(http_session_t * session)
 		}
 		strListPush(&session->req.headers,head_line);
 
-		if((strtok(head_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
+		if((strtok_r(head_line,":",&last))!=NULL && (value=strtok_r(NULL,"",&last))!=NULL) {
 			i=get_header_type(head_line);
 			while(*value && *value<=' ') value++;
 			switch(i) {
@@ -2145,7 +2150,7 @@ static BOOL get_request_headers(http_session_t * session)
 						/* Remove port part of host (Win32 doesn't allow : in dir names) */
 						/* Either an existing : will be replaced with a null, or nothing */
 						/* Will happen... the return value is not relevent here */
-						strtok(session->req.vhost,":");
+						strtok_r(session->req.vhost,":",&last);
 					}
 					break;
 				default:
@@ -2663,6 +2668,7 @@ static BOOL exec_cgi(http_session_t *session)
 	char	header[MAX_REQUEST_LINE+1];
 	char	*directive=NULL;
 	char	*value=NULL;
+	char	*last;
 	BOOL	done_wait=FALSE;
 	BOOL	got_valid_headers=FALSE;
 	time_t	start;
@@ -2795,9 +2801,9 @@ static BOOL exec_cgi(http_session_t *session)
 						if(tmpbuf != NULL)
 							strListPush(&tmpbuf, fbuf);
 						SAFECOPY(header,buf);
-						directive=strtok(header,":");
+						directive=strtok_r(header,":",&last);
 						if(directive != NULL)  {
-							value=strtok(NULL,"");
+							value=strtok_r(NULL,"",&last);
 							i=get_header_type(directive);
 							switch (i)  {
 								case HEAD_LOCATION:
@@ -2989,6 +2995,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 	/* These are (more or less) copied from the Unix version */
 	char*	p;
+	char	*last;
 	char	cmdline[MAX_PATH+256];
 	char	buf[4096];
 	int		i;
@@ -3150,8 +3157,8 @@ static BOOL exec_cgi(http_session_t *session)
 				,session->socket, buf);
 			SAFECOPY(header,buf);
 			if(strchr(header,':')!=NULL) {
-				directive=strtok(header,":");
-				value=strtok(NULL,"");
+				directive=strtok_r(header,":",&last);
+				value=strtok_r(NULL,"",&last);
 				i=get_header_type(directive);
 				switch (i)  {
 					case HEAD_LOCATION:
