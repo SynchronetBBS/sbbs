@@ -379,24 +379,13 @@ robin within about 30 minutes, although it typically takes less.
 
 [5.1] - Limits of the Synchronet IRCd
 
-	Since the Synchronet IRCd Service is written in Javascript, which is
-still an interpreted script language, the IRCd will be severely limited in its
-capability and speed when compared against other 'legacy' IRC daemons.  In
-particular, the IRCd will only be able to (at best) hold a hundred clients or
-less before severe slowdown problems are exposed.  If you find that you are
-commonly holding more than a hundred clients, or are experiencing slowdown
-problems, it's recommended that you switch to a legacy IRCd such as Bahamut,
-which can be found at http://bahamut.dal.net.
+	Although the Synchronet IRCd Service is written in Javascript, an
+interpreted scripting language, it has been written to scale relatively well.
+Thanks to the DALnet Bahamut testing team, the IRCd has successfully held
+over 1,000 clients without any noticable slowdown.  The old limit of 100 users
+has been eliminated since version 1.1 of the IRCd.
 
-	A solution would be to link the Synchronet IRCd to the Bahamut IRCd,
-and then link Bahamut to the network.  Then, limit connections only to local
-BBS users for the Synchronet IRCd, and use Bahamut for accepting connections
-from the Internet at large.
-
-	Other problems may also creep up, especially as the network grows in
-size.  Although the author is continually working to improve the performance
-of the IRCd, it should be assumed that there will be scalability issues due to
-the use of Javascript.
+	If you notice any slowdown or scaling problems, please let us know.
 
 [5.2] - Compliance with RFC's, and established protocols
 
@@ -431,8 +420,8 @@ username portion of the user "user@host" mask) when they have correctly
 identified to a local BBS account.  Identifying to the BBS account is done by
 sending a PASS message in the registration stage.  Checks against a local BBS
 account are done against the username, and then the nickname respectively.
-Thus, care MUST be taken when linking non-Synchronet IRCd's together, as it
-could compromise a BBS-style authorization structure.
+Thus, any IRC servers not running the Synchronet IRCd MUST NOT accept ident,
+as it could seriously compromise a BBS-style authorization structure.
 
 	* The PASS message has been extended to allow for the passing and
 checking of QWK passwords in the case of dynamic connections:
