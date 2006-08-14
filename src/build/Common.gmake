@@ -281,7 +281,7 @@ ifeq ($(os),linux)    # Linux
  endif
 endif
 MT_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
-CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
+CFLAGS    += -D_THREAD_SAFE -D_REENTRANT -D__EXTENSIONS__
 ifeq ($(os),freebsd)    # FreeBSD
  MT_CFLAGS    += -DUSE_XP_SEMAPHORES
  MT_LDFLAGS    +=    -pthread
