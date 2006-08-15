@@ -25,7 +25,7 @@
 
 #include "ini_file.h"
 #include "xsdk.h"
-#define VERSION "2K5"
+#define VERSION "2K6"
 
 #define J 11    /* jack */
 #define Q 12    /* queen */
@@ -140,13 +140,15 @@ enum { OPEN, DEAL, BET, DISCARD, BET2, GET_WINNER };
 
 int main(int argc, char **argv)
 {
-    char ch,str[256],str1[10],*buf;
-    int file,i,x;
-    long won,lost;
-    ulong length,l,lastrun;
+    char	ch,str[256],*buf;
+	char*	p;
+    int		file,i,x;
+    long	won,lost;
+    ulong	length,l,lastrun;
 	FILE	*inifile;
 	int		opts;
 	char	key_name[8];
+	BOOL	cleanup=FALSE;
 
     struct {
         char name[25];
@@ -161,22 +163,36 @@ int main(int argc, char **argv)
     sprintf(node_dir,"%s",getenv("SBBSNODE"));
 	backslash(node_dir);
 
-    if(argc>1 && !stricmp(argv[1],"/?")) {
-        printf("\r\nDomain Poker v%s/XSDK v%s  Copyright 2005 Domain "
-                "Entertainment",VERSION,xsdk_ver);
-        printf("\r\nUsage: DPOKER [/options]\r\n");
-        printf("\r\nOptions: L = Create daily log of computer vs player "
-              "wins/losses\r\n");
-        return(0); }
-
     for (x=1; x<argc; x++) {
-        if (!strchr(argv[x],'/')) {
-            strcpy(node_dir,argv[x]);
-			backslash(node_dir); }
-        if (!stricmp(argv[x],"/L"))
-            create_log=1;
+		p=argv[x];
+		while(*p=='/' || *p=='-')
+			p++;
+        if(stricmp(p,"L")==0)
+            create_log=TRUE;
+		else if(stricmp(p,"clean")==0)
+			cleanup=TRUE;
+		else {
+			printf("\nDomain Poker v%s/XSDK v%s  Copyright %s Domain "
+					"Entertainment\n",VERSION,xsdk_ver,__DATE__+7);
+			printf("\nUsage: dpoker [-L] [-CLEAN]\n");
+			printf("\nOptions:\n");
+			printf("\tL = Create daily log of computer vs player "
+				  "wins/losses\n");
+			printf("\tCLEAN = Clean-up player/node data (replaces 'dpclean')\n");
+			return(0); 
+		}
     }
     initdata();
+
+	if(cleanup) {
+		sprintf(str,"player.%d",node_num);
+		if (fexist(str)) {
+			get_player(node_num);
+			newpts=temppts;
+			quit_out();
+		}
+		return(0);
+	}
     newpts=user_cdt;
 
     if(!(fexist("dpoker.mnt"))) {
@@ -294,7 +310,7 @@ int main(int argc, char **argv)
     }
     cls();
     center_wargs("\1n\1gWelcome to Domain Poker v%s",VERSION);
-    center_wargs("\1n\1gCopyright 2005 Domain Entertainment");
+    center_wargs("\1n\1gCopyright %s Domain Entertainment", __DATE__+7);
 
     do {
         mnehigh=GREEN|HIGH; mnelow=GREEN;
@@ -391,6 +407,7 @@ int main(int argc, char **argv)
     } while (ch!='Q');
 
     bprintf("\r\n\r\n\1n\1gReturning you to \1g\1h%s\r\n\r\n\1n",sys_name);
+	mswait(500);
 	return(0);
 }
 
@@ -626,7 +643,7 @@ void computer_discard()
 **************************************************************************/
 void computer_bet()
 {
-    int num,add=0,call=0,fold=0,raise=0;
+    int add=0,call=0,fold=0,raise=0;
 
     if (!firstbet && stage==BET && current_bet==0) { next_player(); return; }
     if (!firstbet && stage==BET2 && (comp_bet-current_bet==0) && firstbid) {
@@ -881,7 +898,6 @@ void show_all_hands(int winner)
 **********************************************************/
 void single_winner()
 {
-    char str[256];
     int winner=0,comprank,compdup1,compdup2,x;
     long l=0;
 
@@ -981,7 +997,7 @@ void play_menu()
     char ch, fname[81],str[256],
         *waitcmd="\1y\1hCommand \1b\1h(\1c\1hL,S,Y,Q,^P,^U,?\1b\1h):\1n ",
         *dealcmd="\1m\1hDealer \1n\1b\1h(\1c\1hD,L,S,Y,Q,^P,^U,?\1b\1h):\1n ";
-    int warn,num,tt;
+    int warn,tt;
     time_t timeout,timeout2,now;
 
     sprintf(fname,"message.%d",node_num);
@@ -1428,7 +1444,6 @@ void dealer_ctrl()
 void bet_menu()
 {
     char str[256],betcmd[256],ch;
-    long points;
 
     get_game_status(cur_table); node[node_num-1]=BETTING;
     put_game_status(node_num-1);
@@ -1565,7 +1580,7 @@ void increase_bet()
 **********************************************************************/
 void put_player(int player)
 {
-    int file,x;
+    int file;
     char str[256];
 
     if (player==node_num) { temp_num=user_number; temppts=newpts; }
@@ -1835,8 +1850,8 @@ void read_player_message()
 **************************************************/
 void send_message()
 {
-	int file,num;
-    char ch,fname[81],str[256],str1[256];
+	int num;
+    char str[256],str1[256];
 
     if (total_players==1) {
         bprintf("\r\n\r\n\1r\1hYou are the only player!\1n");
@@ -2136,8 +2151,7 @@ void join_game()
 *************************************************************************/
 int select_table()
 {
-    char str[256],statstr[256];
-    int x,ch;
+    int ch;
 
     /* first show all tables & players at each (& if full or not)
        then allow to list players at a particular table by typing in
@@ -2276,7 +2290,7 @@ void declare_winner()
 {
     char str[256];
     int highrank=0, highdup1=0, highdup2=0, winner[128], num,
-        show, x=0, compare;
+        x=0, compare;
     ulong skim_amt;
 
     get_game_status(cur_table);
@@ -2479,7 +2493,7 @@ void put_game_status(int specnode)
 ***********************************************************************/
 void get_player(int player)
 {
-    int file,x;
+    int file;
     char str[256];
 
     sprintf(str,"player.%d",player);
