@@ -161,6 +161,7 @@ typedef struct  {
 	long		range_end;
 	BOOL		accept_ranges;
 	time_t		if_range;
+	BOOL		path_info_index;
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -1195,7 +1196,7 @@ static void send_error(http_session_t * session, const char* message)
 		 */
 
 		if(session->req.error_dir) {
-			/* We have a custom error director from webctrl.ini look there first */
+			/* We have a custom error directory from webctrl.ini look there first */
 			sprintf(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
 			if(stat(sbuf,&sb)) {
 				/* No custom .ssjs error message... check for custom .html */
@@ -2308,8 +2309,10 @@ static BOOL check_extra_path(http_session_t * session)
 	struct	stat sb;
 	int		i;
 	char	*end;
+	int	use_epath=0;
 
 	epath[0]=0;
+	epath[1]=0;
 	if(IS_PATH_DELIM(*lastchar(session->req.physical_path)) || stat(session->req.physical_path,&sb)==-1 /* && errno==ENOTDIR */)
 	{
 		SAFECOPY(vpath,session->req.virtual_path);
@@ -2326,22 +2329,29 @@ static BOOL check_extra_path(http_session_t * session)
 
 			/* Check if this contains an index */
 			end=strchr(rpath,0);
-			if(isdir(rpath) && !isdir(session->req.physical_path)) {
-				for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
-					*end=0;
-					strcat(rpath,startup->index_file_name[i]);
-					if(!stat(rpath,&sb)) {
-						/* *end=0; /* Removed Wed, Aug 09, 2006 to allow is_dynamic_req to detect correctly */
-						SAFECOPY(session->req.extra_path_info,epath);
-						SAFECOPY(session->req.virtual_path,vpath);
-						strcat(session->req.virtual_path,"/");
-						SAFECOPY(session->req.physical_path,rpath);
-						return(TRUE);
+			if(use_epath || session->req.path_info_index || strchr(epath+1,'/')!=NULL) {
+				use_epath=1;
+				if(isdir(rpath) && !isdir(session->req.physical_path)) {
+					for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
+						*end=0;
+						strcat(rpath,startup->index_file_name[i]);
+						if(!stat(rpath,&sb)) {
+							/* *end=0; /* Removed Wed, Aug 09, 2006 to allow is_dynamic_req to detect correctly */
+							SAFECOPY(session->req.extra_path_info,epath);
+							SAFECOPY(session->req.virtual_path,vpath);
+							strcat(session->req.virtual_path,"/");
+							SAFECOPY(session->req.physical_path,rpath);
+							return(TRUE);
+						}
 					}
+					/* rpath was an existing path and DID NOT contain an index. */
+					/* We do not allow scripts to mask existing dirs/files */
+					return(FALSE);
 				}
-				/* rpath was an existing path and DID NOT contain an index. */
-				/* We do not allow scripts to mask existing dirs/files */
-				return(FALSE);
+			}
+			else {
+				if(isdir(rpath))
+					return(FALSE);
 			}
 
 			if(vp_slash==vpath)
@@ -2499,7 +2509,7 @@ static BOOL check_request(http_session_t * session)
 					session->req.cgi_dir=strdup(str);
 					recheck_dynamic=TRUE;
 				}
-
+				session->req.path_info_index=iniReadBool(file, NULL, "PathInfoIndex", FALSE);
 				/* Read in per-filespec */
 				while((spec=strListPop(&specs))!=NULL) {
 					if(wildmatch(filename,spec,TRUE)) {
@@ -2520,11 +2530,14 @@ static BOOL check_request(http_session_t * session)
 							session->req.cgi_dir=strdup(str);
 							recheck_dynamic=TRUE;
 						}
+						session->req.path_info_index=iniReadBool(file, spec, "PathInfoIndex", FALSE);
 					}
 					free(spec);
 				}
 				strListFreeStrings(specs);
 				fclose(file);
+				if(session->req.path_info_index)
+					recheck_dynamic=TRUE;
 			}
 			else  {
 				/* If cannot open webctrl.ars, only allow sysop access */
@@ -2537,8 +2550,11 @@ static BOOL check_request(http_session_t * session)
 		SAFECOPY(curdir,path);
 	}
 
-	if(recheck_dynamic)
+	if(recheck_dynamic) {
 		session->req.dynamic=is_dynamic_req(session);
+		if(session->req.dynamic)	/* Need to re-copy path here in case of re-checked PathInfoIndex change */
+			SAFECOPY(path,session->req.physical_path);
+	}
 
 	if(!session->req.dynamic && session->req.extra_path_info[0])
 		send404=TRUE;
