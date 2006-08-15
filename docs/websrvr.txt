@@ -138,6 +138,35 @@ also uses some other configuration files:
         value, over-ridden value, and prepended or appended text.
 
 
+2.3. webctrl.ini per-directory configuration file
+------------------------------------------------
+Each directory may have a webctrl.ini file which overrides certain settings for
+the directory it's in and all child directorys.  Configuration keys may be set
+either globally, or in a per-filename group.  Using the * and ? wildcards as
+the group name such as [*.html].  The following keys may be used in these files:
+
+AccessRequirements:
+	Specifices an ARS string which all users must match to be able to access
+	files in this directory.  Will force an HTTP login.
+Realm:
+	Sets the realm that is displayed to the user for the HTTP login.
+	Default is the BBS name.
+ErrorDirectory:
+	Specifies a different directory to check for error pages.  If the error
+	page is not found, will still check the global error directory.
+CGIDirectory:
+	Specify an alternate CGI directory to check for CGI files.
+PathInfoIndex:
+	Specifies that the index files can be ran for unlocated pages in the
+	current directory.  This effecively works like a custom 404 page.
+
+For example, to require a login, but allow *any* user to access files in a
+directory, but only a sysop to access *.log files, the following could be used:
+AccessRequirements=level 0
+[*.log]
+AccessRequirements=level90
+
+
 3.0 The SSJS Template System
 ----------------------------
 The default web pages use a SSJS Template engine which also allows for Theme 
