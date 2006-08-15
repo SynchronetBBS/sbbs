@@ -2349,7 +2349,7 @@ static void smtp_thread(void* arg)
 				}
 
 				/* SPAM Filtering/Logging */
-				if(msg.subj!=NULL && trashcan(&scfg,msg.subj,"subject")) {
+				if(relay_user.number==0 && msg.subj!=NULL && trashcan(&scfg,msg.subj,"subject")) {
 					lprintf(LOG_WARNING,"%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
 						,socket, msg.subj, reverse_path);
 					SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
@@ -2545,7 +2545,8 @@ static void smtp_thread(void* arg)
 					}
 					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s to %s <%s>"
 						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
-					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
+					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum
+						&& !dnsbl_recvhdr && !dnsbl_result.s_addr) {
 						safe_snprintf(str,sizeof(str)
 							,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
 							"\1h%s\1n\r\n"
