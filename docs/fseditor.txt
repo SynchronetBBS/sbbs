@@ -77,3 +77,27 @@ A      - Select All
 N      - Unselect all ("Select None")
 B      - Enter block mode
 
+
+A few notes on keybindings:
+---------------------------
+I am not completely opposed to changing some keybindings.  However, the current
+ones fall into three catagories:
+1) "Keepers" ones that I like and would need a very good reason to change.
+2) "Lukewarm" ones I understand but don't particularily like very much.
+3) "Changers" ones I would change in a heartbeat if I had an alternative.
+
+The breakdown is as follows:
+Keepers:  ABCEFGHIJLMRW
+Lukewarm: VXY
+Changers: OQU_
+
+The reason X and Y are in lukewarm instead of changers is that PgUp/PgDn should
+be both close together and enterable with one hand in my opinion.
+
+The following CTRL keys are currently unused: DKNPT\
+
+CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
+Xon/Xoff chars used in flow control and are sometimes impossible to send from
+a terminal.
+
+I am open to suggestions.
