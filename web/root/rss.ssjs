@@ -135,6 +135,7 @@ if(channel.maxmessages==undefined)	channel.maxmessages		=defaults.maxmessages;
 
 http_reply.header["Content-Type"]='application/rss+xml';
 writeln('<?xml version="1.0" ?>');
+writeln('<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">');
 writeln('<rss version="0.91">');
 writeln('\t<channel>');
 writeln('\t\t<title>'		+ channel.title			+ '</title>');
