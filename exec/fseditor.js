@@ -1147,6 +1147,18 @@ function quote_mode()
 			case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
 				redraw_screen();
 				break;
+			case KEY_HOME:
+				quote_ypos=0;
+				quote_topline=0;
+				draw_quote_window();
+				break;
+			case KEY_END:
+				quote_ypos=quote_line.length-1;
+				quote_topline=quote_line.length-quote_height;
+				if(quote_topline<0)
+					quote_topline=0;
+				draw_quote_window();
+				break;
 			case KEY_DOWN:
 				quote_ypos++;
 				if(quote_ypos>=quote_line.length) {
@@ -1232,6 +1244,15 @@ function quote_mode()
 				draw_quote_window();
 				break;
 			case '\x19':    /* CTRL-Y (Delete Line in SyncEdit) */
+				quote_ypos-=quote_height-1;
+				quote_topline-=quote_height-1;
+				if(quote_ypos<0)
+					quote_ypos=0;
+				if(quote_topline<0)
+					quote_topline=0;
+				draw_quote_window();
+				break;
+			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
 				quote_ypos-=quote_height-1;
 				quote_topline-=quote_height-1;
 				if(quote_ypos<0)
