@@ -1,4 +1,5 @@
 /* ToDo: At what point should trailing whitespace be removed? */
+/* $Id$ */
 
 load("sbbsdefs.js");
 
@@ -77,7 +78,6 @@ function draw_line(l,x,clear)
 		if(yp>edit_bottom)
 			return;
 
-		/* ToDo we need to optimize cursor movement somehow... */
 		console.gotoxy(x+1,yp);
 		for(; x<line[l].text.length && x<79; x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
@@ -180,7 +180,6 @@ function try_next_line()
 	return(false);
 }
 
-/* ToDo: Optimize cursor movement */
 function set_cursor()
 {
 	var x;
@@ -829,10 +828,17 @@ function make_lines(str, attr, nl_is_hardcr)
 					}
 					break;
 				case ' ':		/* Whitespace... never wrap here. */
-				case '\t':
 					nl[nl.length-1].text+=str.charAt(spos);
 					nl[nl.length-1].attr+=ascii(thisattr);
 					spos++;
+					break;
+				case '\t':		/* Whitespace... never wrap here. */
+					nl[nl.length-1].text+=' ';
+					nl[nl.length-1].attr+=ascii(thisattr);
+					while((nl[nl.length-1].text.length%8) {
+						nl[nl.length-1].text+=' ';
+						nl[nl.length-1].attr+=ascii(thisattr);
+					}
 					break;
 				default:		/* Printable char... may need to wrap */
 					if(nl[nl.length-1].text.length>79) {	/* Need to have wrapped */
@@ -1042,7 +1048,6 @@ function draw_quote_line(l)
 		if(yp>quote_bottom)
 			return;
 
-		/* ToDo we need to optimize cursor movement somehow... */
 		console.gotoxy(1,yp);
 		x=0;
 		if(l==quote_ypos) {
@@ -1239,7 +1244,37 @@ function quote_mode()
 	}
 }
 
-/* ToDo: Optimize movement... */
+function add_char(key)
+{
+	last_xpos=-1;
+	/*
+	 * A whitespace at the beginning of a line following a kludge wrap
+	 * unkludges it.
+	 */
+	if(xpos==0 && ypos>0 && key.search(/\s/)!=-1)
+		line[ypos-1].kludged=false;
+	if(insert) {
+		line[ypos].text=line[ypos].text.substr(0,xpos)
+				+key
+				+line[ypos].text.substr(xpos);
+		line[ypos].attr=line[ypos].attr.substr(0,xpos)
+				+ascii(curattr)
+				+line[ypos].attr.substr(xpos);
+	}
+	else {
+		line[ypos].text=line[ypos].text.substr(0,xpos)
+				+key
+				+line[ypos].text.substr(xpos+1);
+		line[ypos].attr=line[ypos].attr.substr(0,xpos)
+				+key
+				+line[ypos].attr.substr(xpos+1);
+	}
+	xpos++;
+	if(!rewrap())
+		draw_line(ypos,xpos-1,false);
+	set_cursor();
+}
+
 function edit(quote_first)
 {
 	var key;
@@ -1385,7 +1420,13 @@ function edit(quote_first)
 				}
 				set_cursor();
 				break;
-			/* CTRL-G drops through to default */
+			case '\x07':	/* CTRL-G (Beep) */
+				/* Enter Graphic Character */
+				key=get_graphic();
+				if(key=='')
+					break;
+				add_char(key);
+				break;
 			case '\x08':	/* CTRL-H Backspace */
 				last_xpos=-1;
 				if(xpos>0) {
@@ -1406,6 +1447,9 @@ function edit(quote_first)
 				set_cursor();
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
+				add_char(' ');
+				while(xpos%8)
+					add_char(' ');
 				break;
 			case '\x0a':	/* CTRL-J KEY_DOWN (Insert Line in SyncEdit) */
 				if(last_xpos==-1)
@@ -1614,40 +1658,8 @@ function edit(quote_first)
 					draw_line(ypos,xpos);
 				set_cursor();
 				break;
-			case '\x07':	/* CTRL-G (Beep) */
-				/* Enter Graphic Character */
-				key=get_graphic();
-				if(key=='')
-					break;
-				/* Fall-Through */
 			default:		/* Insert the char */
-				last_xpos=-1;
-				/*
-				 * A whitespace at the beginning of a line following a kludge wrap
-				 * unkludges it.
-				 */
-				if(xpos==0 && ypos>0 && key.search(/\s/)!=-1)
-					line[ypos-1].kludged=false;
-				if(insert) {
-					line[ypos].text=line[ypos].text.substr(0,xpos)
-							+key
-							+line[ypos].text.substr(xpos);
-					line[ypos].attr=line[ypos].attr.substr(0,xpos)
-							+ascii(curattr)
-							+line[ypos].attr.substr(xpos);
-				}
-				else {
-					line[ypos].text=line[ypos].text.substr(0,xpos)
-							+key
-							+line[ypos].text.substr(xpos+1);
-					line[ypos].attr=line[ypos].attr.substr(0,xpos)
-							+key
-							+line[ypos].attr.substr(xpos+1);
-				}
-				xpos++;
-				if(!rewrap())
-					draw_line(ypos,xpos-1,false);
-				set_cursor();
+				add_char(key);
 		}
 	}
 }
