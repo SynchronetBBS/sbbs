@@ -3,6 +3,7 @@
 load("sbbsdefs.js");
 
 var line=new Array();
+var quote_line=new Array();
 var xpos=0;									/* Current xpos of insert point */
 var last_xpos=-1;							/* The xpos you'd like to be at.  -1 when not valid
 												Used to retain horiz. position when moving vertically */
@@ -15,9 +16,15 @@ var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
 var curattr=7;								/* Current attribute */
 var colour_box_displayed=0;					/* Row the colour box is displayed
 												on. used for redraw */
-var graphics_box_displayed=0;				/* Row the graphic box is displayed
-/* Create an initial line... this may not be necessary when replying */
-line[0]=new Line();
+var graphics_box_displayed=0;				/* Row the graphic box is displayed on */
+var quote_window_displayed=0;				/* Row the quote window is displayed on */
+var quote_topline=0;						/* Current index into quote_line[] of quote_top */
+var quote_ypos=0;							/* Current index into line[] of selection point */
+var quote_height=0;							/* Number of quote lines to be displayed */
+var quote_sep_pos=0;						/* Line number the quote seperator is displayed on */
+var quote_ontop=false;						/* true if quote window is at the top */
+var quote_top;								/* Line number of the first quote line */
+var quote_bottom;							/* Line number of the last quote line */
 
 function Line()
 {
@@ -33,6 +40,8 @@ function Line()
 	this.kludged=false;
 	/* Start of actual text (after quote indicator) */
 	this.firstchar=0;
+	/* For selection */
+	this.selected=false;
 }
 
 /*
@@ -685,11 +694,19 @@ function redraw_screen()
 		draw_colour_box();
 	if(graphics_box_displayed)
 		draw_graphic_box();
+	if(quote_window_displayed)
+		draw_quote_window();
 	for(i=edit_top; i<=edit_bottom; i++) {
 		if(colour_box_displayed>0 && i>=colour_box_displayed && i<colour_box_displayed+3)
 			continue;
 		if(graphics_box_displayed>0 && i==graphics_box_displayed)
 			continue;
+		if(quote_window_displayed>0) {
+			if(i>=quote_top && i<=quote_bottom)
+				continue;
+			if(i==quote_sep_pos)
+				continue;
+		}
 		draw_line(i-edit_top+topline);
 	}
 	set_cursor();
@@ -959,12 +976,279 @@ function make_strings(soft,embed_colour)
 	return(new Array(str,attrs));
 }
 
+function draw_quote_selection(l)
+{
+	var yp;
+	var x;
+
+	if(l==undefined || isNaN(l))
+		return;
+	yp=l-quote_topline+quote_top;
+	/* Does this line even exist? */
+	if(quote_line[l]==undefined) {
+		console.attributes=7;
+		console.gotoxy(x+1,yp);
+		console.cleartoeol();
+	}
+	else {
+		/* Is line on the current screen? */
+		if(yp<quote_top)
+			return;
+		if(yp>quote_bottom)
+			return;
+
+		console.gotoxy(1,yp);
+		if(l==quote_ypos) {
+			console.attributes=YELLOW;
+			if(quote_line[l].selected)
+				console.write('*');
+			else
+				console.write('-');
+		}
+		else {
+			if(quote_line[l].selected) {
+				console.attributes=7;
+				console.write('*');
+			}
+			else {
+				console.attributes=ascii(quote_line[l].attr.substr(0,1));
+				console.write(quote_line[l].text.substr(0,1));
+			}
+		}
+	}
+}
+
+/*
+ * Draws a quote line on a screen.  l is the index into quote_line[]
+ */
+function draw_quote_line(l)
+{
+	var yp;
+	var x;
+
+	if(l==undefined || isNaN(l))
+		return;
+	yp=l-quote_topline+quote_top;
+	/* Does this line even exist? */
+	if(quote_line[l]==undefined) {
+		console.attributes=7;
+		console.gotoxy(x+1,yp);
+		console.cleartoeol();
+	}
+	else {
+		/* Is line on the current screen? */
+		if(yp<quote_top)
+			return;
+		if(yp>quote_bottom)
+			return;
+
+		/* ToDo we need to optimize cursor movement somehow... */
+		console.gotoxy(1,yp);
+		x=0;
+		if(l==quote_ypos) {
+			console.attributes=YELLOW;
+			if(quote_line[l].selected)
+				console.write('*');
+			else
+				console.write('-');
+			x++;
+		}
+		else {
+			if(quote_line[l].selected) {
+				console.attributes=7;
+				console.write('*');
+				x++;
+			}
+		}
+		for(; x<quote_line[l].text.length && x<79; x++) {
+			console.attributes=ascii(quote_line[l].attr.substr(x,1));
+			console.write(quote_line[l].text.substr(x,1));
+		}
+		if(x<79) {
+			console.attributes=7;
+			console.cleartoeol();
+		}
+	}
+}
+
+function draw_quote_window()
+{
+	var i;
+
+	/* Draw seperater */
+	console.gotoxy(1,quote_sep_pos);
+	console.attributes=7;
+	console.write("\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")+" \xc3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
+	for(i=0; i<quote_height; i++) {
+		draw_quote_line(quote_topline+i);
+	}
+}
+
+function quote_mode()
+{
+	var i;
+	var select_mode=false;
+	var select_start=0;
+
+	quote_height=parseInt(lines_on_screen/2)-1;	/* Rounds down */
+	var curr_ypos=ypos-topline+edit_top;
+
+	/* Decide if quote window should go at top or at bottom */
+	if(curr_ypos>edit_top+quote_height)
+		quote_ontop=true;
+	else
+		quote_ontop=false;
+
+	if(quote_ontop) {
+		quote_sep_pos=edit_top+quote_height;
+		quote_window_displayed=edit_top;
+		quote_top=edit_top;
+		quote_bottom=quote_sep_pos-1;
+	}
+	else {
+		quote_sep_pos=edit_bottom-quote_height;
+		quote_window_displayed=quote_sep_pos;
+		quote_top=quote_sep_pos+1;
+		quote_bottom=edit_bottom;
+	}
+
+	for(i=0;i<quote_line.length;i++)
+		quote_line[i].selected=false;
+
+	draw_quote_window();
+
+	while(1) {
+		set_cursor();
+		key=console.inkey(0,10000);
+		if(key=='')
+			continue;
+		switch(key) {
+			case 'a':
+			case 'A':
+			case '\x01':	/* A and CTRL-A -- Select all */
+				for(i=0;i<quote_line.length;i++)
+					quote_line[i].selected=true;
+				for(i=0; i< quote_height; i++)
+					draw_quote_selection(quote_topline+i);
+				break;
+			case 'n':
+			case 'N':
+			case '\x0e':	/* Unselect all */
+				for(i=0;i<quote_line.length;i++)
+					quote_line[i].selected=false;
+				for(i=0; i< quote_height; i++)
+					draw_quote_selection(quote_topline+i);
+				break;
+			case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+				redraw_screen();
+				break;
+			case KEY_DOWN:
+				quote_ypos++;
+				if(quote_ypos>=quote_line.length) {
+					quote_ypos=quote_line.length-1;
+					console.beep();
+					break;
+				}
+				if(select_mode) {
+					if(quote_ypos > select_start) {
+						quote_line[quote_ypos].selected=true;
+					}
+					else {
+						quote_line[quote_ypos-1].selected=false;
+					}
+				}
+				if(quote_ypos>=quote_topline+quote_height) {
+					quote_topline++;
+					draw_quote_window();
+					break;
+				}
+				draw_quote_selection(quote_ypos-1);
+				draw_quote_selection(quote_ypos);
+				break;
+			case KEY_UP:
+				quote_ypos--;
+				if(quote_ypos<0) {
+					quote_ypos=0;
+					console.beep();
+					break;
+				}
+				if(select_mode) {
+					if(quote_ypos < select_start) {
+						quote_line[quote_ypos].selected=true;
+					}
+					else {
+						quote_line[quote_ypos+1].selected=false;
+					}
+				}
+				if(quote_ypos<quote_topline) {
+					quote_topline=quote_ypos;
+					draw_quote_window();
+					break;
+				}
+				draw_quote_selection(quote_ypos+1);
+				draw_quote_selection(quote_ypos);
+				break;
+			case ' ':	/* Toggle selection of current line */
+				quote_line[quote_ypos].selected=!quote_line[quote_ypos].selected;
+				draw_quote_selection(quote_ypos);
+				break;
+			case 'B':
+			case 'b':
+			case '\x02':	/* B or CTRL-B toggles "block" mode */
+				select_mode=!select_mode;
+				if(select_mode) {
+					select_start=quote_ypos;
+					quote_line[quote_ypos].selected=true;
+					draw_quote_selection(quote_ypos);
+				}
+				break;
+			case '\x0d':	/* CR */
+				for(i=0; i<quote_line.length-1; i++) {
+					if(quote_line[i].selected) {
+						line.splice(ypos,0,quote_line[i]);
+						ypos++;
+					}
+				}
+				quote_window_displayed=0;
+				redraw_screen();
+				return(false);
+			case '\x1f':
+			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
+				return(true);
+			case '\x18':    /* CTRL-X (PgDn in SyncEdit) */
+				quote_ypos+=quote_height-1;
+				quote_topline+=quote_height-1;
+				if(quote_ypos>=quote_line.length)
+					quote_ypos=quote_line.length-1;
+				if(quote_topline+quote_height>quote_line.length)
+					quote_topline=quote_line.length-quote_height;
+				if(quote_topline<0)
+					quote_topline=0;
+				draw_quote_window();
+				break;
+			case '\x19':    /* CTRL-Y (Delete Line in SyncEdit) */
+				quote_ypos-=quote_height-1;
+				quote_topline-=quote_height-1;
+				if(quote_ypos<0)
+					quote_ypos=0;
+				if(quote_topline<0)
+					quote_topline=0;
+				draw_quote_window();
+				break;
+		}
+	}
+}
+
 /* ToDo: Optimize movement... */
-function edit()
+function edit(quote_first)
 {
 	var key;
 
 	redraw_screen();
+	if(quote_first) {
+		if(quote_mode())
+			return;
+	}
 	while(1) {
 		key=console.inkey(0,10000);
 		if(key=='')
@@ -1050,7 +1334,7 @@ function edit()
 				status_line();
 				erase_colour_box();
 				break;
-			case '\x02':	/* KEY_HOME */
+			case '\x02':	/* CTRL-B KEY_HOME */
 				last_xpos=-1;
 				xpos=0;
 				set_cursor();
@@ -1079,12 +1363,12 @@ function edit()
 				break;
 			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 				break;
-			case '\x05':	/* KEY_END */
+			case '\x05':	/* CTRL-E KEY_END */
 				last_xpos=-1;
 				xpos=line[ypos].text.length;
 				set_cursor();
 				break;
-			case '\x06':	/* KEY_RIGHT */
+			case '\x06':	/* CTRL-F KEY_RIGHT */
 				last_xpos=-1;
 				xpos++;
 				if(xpos>line[ypos].text.length) {
@@ -1101,7 +1385,8 @@ function edit()
 				}
 				set_cursor();
 				break;
-			case '\x08':	/* Backspace */
+			/* CTRL-G drops through to default */
+			case '\x08':	/* CTRL-H Backspace */
 				last_xpos=-1;
 				if(xpos>0) {
 					line[ypos].text=line[ypos].text.substr(0,xpos-1)
@@ -1120,9 +1405,9 @@ function edit()
 					draw_line(ypos,xpos);
 				set_cursor();
 				break;
-			case '\x09':	/* TAB... ToDo expand to spaces */
+			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				break;
-			case '\x0a':	/* KEY_DOWN (Insert Line in SyncEdit) */
+			case '\x0a':	/* CTRL-J KEY_DOWN (Insert Line in SyncEdit) */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_next_line();
@@ -1136,7 +1421,7 @@ function edit()
 				xpos=0;
 				set_cursor();
 				break;
-			case '\x0d':	/* CR */
+			case '\x0d':	/* CTRL-M CR */
 				last_xpos=-1;
 				if(insert) {
 					add_new_line_below(ypos);
@@ -1180,6 +1465,8 @@ function edit()
 			case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
 				break;
 			case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
+				if(quote_mode())
+					return;
 				break;
 			case '\x16':	/* CTRL-V (Toggle insert mode) */
 				insert=!insert;
@@ -1297,7 +1584,7 @@ function edit()
 				break;
 			case '\x1c':	/* CTRL-\ (RegExp) */
 				break;
-			case '\x1d':	/* KEY_LEFT */
+			case '\x1d':	/* CTRL-] KEY_LEFT */
 				last_xpos=-1;
 				xpos--;
 				if(xpos<0) {
@@ -1306,14 +1593,14 @@ function edit()
 				}
 				set_cursor();
 				break;
-			case '\x1e':	/* KEY_UP */
+			case '\x1e':	/* CTRL-^ KEY_UP */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_prev_line();
 				set_cursor();
 				break;
-			case '\x1f':	/* CTRL-_ */
-				break;
+			case '\x1f':	/* CTRL-_ Safe quick-abort*/
+				return;
 			case '\x7f':	/* DELETE */
 				last_xpos=-1;
 				if(xpos>=line[ypos].text.length)
@@ -1369,19 +1656,18 @@ var old_status=bbs.sys_status;
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGLOQRVWXYZ";
-console.clear();
-var f=new File(system.node_dir+"QUOTES.TXT");
-if(f.open("r",false)) {
-	line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
-	ypos=line.length;
-	if(ypos>=topline+lines_on_screen)
-		topline=ypos-lines_on_screen+1;
-	line.push(new Line());
-}
-file='';	/* Free up the memory */
+console.ctrlkey_passthru="+ACGLOQRUVWXYZ";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
-edit();
+console.clear();
+var f=new File(system.node_dir+"QUOTES.TXT");
+line.push(new Line());
+if(f.open("r",false)) {
+	quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
+	ypos=0;
+	edit(true);
+}
+else
+	edit(false);
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
