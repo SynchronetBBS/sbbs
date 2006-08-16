@@ -1209,9 +1209,8 @@ function quote_mode()
 				quote_line[quote_ypos].selected=!quote_line[quote_ypos].selected;
 				draw_quote_selection(quote_ypos);
 				break;
-			case 'B':
+			case 'B':	/* B toggles "block" mode */
 			case 'b':
-			case '\x02':	/* B or CTRL-B toggles "block" mode */
 				select_mode=!select_mode;
 				if(select_mode) {
 					select_start=quote_ypos;
@@ -1239,15 +1238,6 @@ function quote_mode()
 					quote_ypos=quote_line.length-1;
 				if(quote_topline+quote_height>quote_line.length)
 					quote_topline=quote_line.length-quote_height;
-				if(quote_topline<0)
-					quote_topline=0;
-				draw_quote_window();
-				break;
-			case '\x19':    /* CTRL-Y (Delete Line in SyncEdit) */
-				quote_ypos-=quote_height-1;
-				quote_topline-=quote_height-1;
-				if(quote_ypos<0)
-					quote_ypos=0;
 				if(quote_topline<0)
 					quote_topline=0;
 				draw_quote_window();
