@@ -1,0 +1,54 @@
+Documentation for fseditor.js
+-----------------------------
+
+fseditor.js is a Full Screen Editor (FSE) written in JS for Synchronet.
+
+To add fseditor.js to your FSE list, use the following settings:
+[JS FSE]
+ 1: Name                            JS FSE
+ 2: Internal Code                   FSEDITOR
+ 3: Remote Command Line             ?fseditor
+ 4: Access Requirements
+ 5: Intercept Standard I/O          No
+ 6: Native (32-bit) Executable      No
+ 7: Use Shell to Execute            No
+ 8: Quoted Text                     All
+ 9: QuickBBS Style (MSGTMP)         No
+10: Expand Line Feeds to CRLF       No
+11: Strip FidoNet Kludge Lines      No
+12: BBS Drop File Type              None
+
+The key bindings for using fseditor.js are:
+CTRL-Key  Action
+--------------------------------
+A   - Colour
+B   - Home cursor (Beginning of line)
+C   - Center line in message
+D   - NOTHING (Find?)
+E   - End of line
+F   - Right one character
+G   - Enter Graphic Char
+H   - Backspace
+I   - Tab
+J   - Down one line
+K   - NOTHING
+L   - Insert line
+M   - Carriage Return
+N   - NOTHING
+O   - Quick save/exit
+P   - NOTHING
+Q   - Quick abort... FLOW CONTROL CHAR!!!
+R   - Redraw screen
+S   - NOTHING... FLOW CONTROL CHAR!!!
+T   - NOTHING (Justify Line in SyncEdit)
+U   - Quote
+V   - Toggle insert mode
+W   - Delete word backwards
+X   - Page Down
+Y   - Delete Line
+Z   - Page Up
+ESC - NOTHING (ANSI Introducer... use with caution)
+\   - NOTHING (Want regexp)
+]   - Move left
+^   - Move up
+_   - Quick abort (Same as Xoff CTRL-Q)
