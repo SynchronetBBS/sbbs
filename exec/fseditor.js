@@ -299,7 +299,7 @@ function unwrap_line(l)
 	}
 	if(old_lines!=line.length) {
 		/* We need to redraw everything... line(s) deleted */
-		for(;l>line.length;l++)
+		for(;l<line.length;l++)
 			draw_line(l);
 	}
 	return(ret);
