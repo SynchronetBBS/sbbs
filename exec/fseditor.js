@@ -835,7 +835,7 @@ function make_lines(str, attr, nl_is_hardcr)
 				case '\t':		/* Whitespace... never wrap here. */
 					nl[nl.length-1].text+=' ';
 					nl[nl.length-1].attr+=ascii(thisattr);
-					while((nl[nl.length-1].text.length%8) {
+					while(nl[nl.length-1].text.length%8) {
 						nl[nl.length-1].text+=' ';
 						nl[nl.length-1].attr+=ascii(thisattr);
 					}
