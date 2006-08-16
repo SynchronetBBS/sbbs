@@ -1223,7 +1223,7 @@ function quote_mode()
 					if(quote_line[i].selected) {
 						line.splice(ypos,0,quote_line[i]);
 						ypos++;
-						if(ypos-topline > lines_on_screen)
+						if(ypos-topline >= lines_on_screen)
 							topline++;
 					}
 				}
