@@ -1038,7 +1038,7 @@ function draw_quote_line(l)
 	/* Does this line even exist? */
 	if(quote_line[l]==undefined) {
 		console.attributes=7;
-		console.gotoxy(x+1,yp);
+		console.gotoxy(1,yp);
 		console.cleartoeol();
 	}
 	else {
