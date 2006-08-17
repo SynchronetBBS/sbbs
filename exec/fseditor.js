@@ -205,6 +205,11 @@ function status_line()
 	console.attributes=curattr;
 	console.write("Current Colour");
 	console.attributes=7;
+	console.write("  ");
+	console.attributes=WHITE;
+	console.write("CTRL-K");
+	console.attributes=7;
+	console.write(" to list keybindings");
 	console.cleartoeol();
 	set_cursor();
 }
@@ -1253,6 +1258,41 @@ function quote_mode()
 					quote_topline=0;
 				draw_quote_window();
 				break;
+			case '\x0b':	/* CTRL-K */
+				console.attributes=7;
+				if(quote_ontop)
+					console.gotoxy(1,quote_sep_pos+1);
+				else
+					console.gotoxy(1,edit_top);
+				console.cleartoeol();
+				console.write("\r\nQuote mode keys:");
+				console.cleartoeol();
+				console.write("\r\n CTRL-B - Move to begining of message    CTRL-^ - Move up one line");
+				console.cleartoeol();
+				console.write("\r\n CTRL-E - Move to end of message         CTRL-_ - Quick exit (no save)");
+				console.cleartoeol();
+				console.write("\r\n CTRL-J - Move down one line             SPACE  - Select/Unselect current line");
+				console.cleartoeol();
+				console.write("\r\n CTRL-O - Move up one page               ENTER  - Paste lines into message");
+				console.cleartoeol();
+				console.write("\r\n CTRL-P - Move down one page             A      - Select all");
+				console.cleartoeol();
+				console.write("\r\n CTRL-Q - Quick exit (no save)           B      - Toggle block select mode");
+				console.cleartoeol();
+				console.write("\r\n CTRL-R - Redraw screen                  N      - Unselect all");
+				console.cleartoeol();
+				console.write('\r\n');
+				console.cleartoeol();
+				console.write('\r\n');
+				console.write("Press any key to return to editing..");
+				console.cleartoeol();
+				console.write('\r\n');
+				console.cleartoeol();
+				console.up();
+				console.right(37);
+				console.getkey();
+				redraw_screen();
+				break;
 		}
 	}
 }
@@ -1471,6 +1511,44 @@ function edit(quote_first)
 				set_cursor();
 				break;
 			case '\x0b':	/* CTRL-K */
+				console.attributes=7;
+				console.gotoxy(1,edit_top);
+				console.cleartoeol();
+				console.write("\r\nEditing keys:");
+				console.cleartoeol();
+				console.write("\r\n CTRL-A - Change Colour                  CTRL-P - Page Down");
+				console.cleartoeol();
+				console.write("\r\n CTRL-B - Move to beginning of line      CTRL-Q - Quick Abort (no save)");
+				console.cleartoeol();
+				console.write("\r\n CTRL-C - Center line on screen          CTRL-R - Redraw screen");
+				console.cleartoeol();
+				console.write("\r\n CTRL-E - Move to end of line            CTRL-U - Enter quote mode");
+				console.cleartoeol();
+				console.write("\r\n CTRL-F - Move right one character       CTRL-V - Toggle insert mode");
+				console.cleartoeol();
+				console.write("\r\n CTRL-G - Enter graphic character        CTRL-W - Delete word backwards");
+				console.cleartoeol();
+				console.write("\r\n CTRL-H - Backspace (BACKSPACE)          CTRL-Y - Delete Line");
+				console.cleartoeol();
+				console.write("\r\n CTRL-I - Move to next tabstop (TAB)     CTRL-Z - Save message and exit");
+				console.cleartoeol();
+				console.write("\r\n CTRL-J - Move down one line             CTRL-] - Move left one character");
+				console.cleartoeol();
+				console.write("\r\n CTRL-L - Insert Line                    CTRL-^ - Move up one line");
+				console.cleartoeol();
+				console.write("\r\n CTRL-O - Page Up                        CTRL-_ - Quick Abort (no save)");
+				console.cleartoeol();
+				console.write('\r\n');
+				console.cleartoeol();
+				console.write('\r\n');
+				console.write("Press any key to return to editing..");
+				console.cleartoeol();
+				console.write('\r\n');
+				console.cleartoeol();
+				console.up();
+				console.right(37);
+				console.getkey();
+				redraw_screen();
 				break;
 			case '\x0c':	/* CTRL-L (Insert Line) */
 				/* ToDo: Should this kill last_xpos? */
@@ -1681,7 +1759,7 @@ var old_status=bbs.sys_status;
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGLOQRUVWXYZ";
+console.ctrlkey_passthru="+ACGKLOQRUVWXYZ";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
