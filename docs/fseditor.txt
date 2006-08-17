@@ -39,8 +39,8 @@ K   - NOTHING
 L   - Insert line
 M   - Carriage Return
 N   - NOTHING
-O   - Quick save/exit
-P   - NOTHING
+O   - Page Up
+P   - Page Down
 Q   - Quick abort... FLOW CONTROL CHAR!!!
 R   - Redraw screen
 S   - NOTHING... FLOW CONTROL CHAR!!!
@@ -48,9 +48,9 @@ T   - NOTHING (Justify Line in SyncEdit)
 U   - Quote
 V   - Toggle insert mode
 W   - Delete word backwards
-X   - Page Down
+X   - NOTHING
 Y   - Delete Line
-Z   - Page Up
+Z   - Save and exit
 ESC - NOTHING (ANSI Introducer... use with caution)
 \   - NOTHING (Want regexp)
 ]   - Move left
@@ -65,10 +65,10 @@ CTRL-N - Unselect all
 CTRL-B - Home (Top of document)
 CTRL-E - End of document
 CTRL-J - Down one line
+CTRL-O - Page Up
+CTRL-P - Page Down
 CTRL-Q - Quick abort... FLOW CONTROL CHAR!!!
 CTRL-R - Redraw screen
-CTRL-X - Page Down
-CTRL-Z - Page Up
 CTRL-^ - Up one line
 CTRL-_ - Quick abort (Same as CTRL-Q)
 SPACE  - Toggle sepection of current line
@@ -87,14 +87,14 @@ ones fall into three catagories:
 3) "Changers" ones I would change in a heartbeat if I had an alternative.
 
 The breakdown is as follows:
-Keepers:  ABCEFGHIJLMRW
-Lukewarm: VXY
-Changers: OQU_
+Keepers:  ABCEFGHIJLMRWZ
+Lukewarm: OPVY
+Changers: QU_
 
 The reason X and Y are in lukewarm instead of changers is that PgUp/PgDn should
 be both close together and enterable with one hand in my opinion.
 
-The following CTRL keys are currently unused: DKNPT\
+The following CTRL keys are currently unused: DKNPSTX\
 
 CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
 Xon/Xoff chars used in flow control and are sometimes impossible to send from

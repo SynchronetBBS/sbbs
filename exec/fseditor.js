@@ -1233,7 +1233,7 @@ function quote_mode()
 			case '\x1f':
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				return(true);
-			case '\x18':    /* CTRL-X (PgDn in SyncEdit) */
+			case '\x10':    /* CTRL-P */
 				quote_ypos+=quote_height-1;
 				quote_topline+=quote_height-1;
 				if(quote_ypos>=quote_line.length)
@@ -1244,7 +1244,7 @@ function quote_mode()
 					quote_topline=0;
 				draw_quote_window();
 				break;
-			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
+			case '\x0f':	/* CTRL-O */
 				quote_ypos-=quote_height-1;
 				quote_topline-=quote_height-1;
 				if(quote_ypos<0)
@@ -1504,13 +1504,44 @@ function edit(quote_first)
 			case '\x0e':	/* CTRL-N */
 				break;
 			case '\x0f':	/* CTRL-O (Quick Save/exit in SyncEdit) */
-				var f=new File(system.temp_dir+"INPUT.MSG");
-				f.open("w");
-				var s=make_strings(true,true);
-				f.write(s[0]);
-				f.close();
-				return;
+				if(last_xpos==-1)
+					last_xpos=xpos;
+				if(ypos==0) {
+					console.beep();
+					break;
+				}
+				ypos-=lines_on_screen-1;
+				if(ypos<0)
+					ypos=0;
+				if(topline>ypos)
+					topline=ypos;
+				var i;
+				for(i=edit_top; i<=edit_bottom; i++)
+					draw_line(i-edit_top+topline);
+				xpos=last_xpos;
+				if(xpos>line[ypos].text.length)
+					xpos=line[ypos].text.length;
+				set_cursor();
+				break;
 			case '\x10':	/* CTRL-P */
+				if(last_xpos==-1)
+					last_xpos=xpos;
+				if(ypos>=line.length-1) {
+					console.beep();
+					break;
+				}
+				ypos+=lines_on_screen-1;
+				if(ypos>line.length-1)
+					ypos=line.length-1;
+				if(ypos>=topline+lines_on_screen)
+					topline=ypos-lines_on_screen+1;
+				var i;
+				for(i=edit_top; i<=edit_bottom; i++)
+					draw_line(i-edit_top+topline);
+				xpos=last_xpos;
+				if(xpos>line[ypos].text.length)
+					xpos=line[ypos].text.length;
+				set_cursor();
 				break;
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				return;
@@ -1574,24 +1605,6 @@ function edit(quote_first)
 				set_cursor();
 				break;
 			case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
-				if(last_xpos==-1)
-					last_xpos=xpos;
-				if(ypos>=line.length-1) {
-					console.beep();
-					break;
-				}
-				ypos+=lines_on_screen-1;
-				if(ypos>line.length-1)
-					ypos=line.length-1;
-				if(ypos>=topline+lines_on_screen)
-					topline=ypos-lines_on_screen+1;
-				var i;
-				for(i=edit_top; i<=edit_bottom; i++)
-					draw_line(i-edit_top+topline);
-				xpos=last_xpos;
-				if(xpos>line[ypos].text.length)
-					xpos=line[ypos].text.length;
-				set_cursor();
 				break;
 			case '\x19':	/* CTRL-Y (Delete Line in SyncEdit) */
 				/* Delete Line */
@@ -1618,25 +1631,12 @@ function edit(quote_first)
 				break;
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
-				if(last_xpos==-1)
-					last_xpos=xpos;
-				if(ypos==0) {
-					console.beep();
-					break;
-				}
-				ypos-=lines_on_screen-1;
-				if(ypos<0)
-					ypos=0;
-				if(topline>ypos)
-					topline=ypos;
-				var i;
-				for(i=edit_top; i<=edit_bottom; i++)
-					draw_line(i-edit_top+topline);
-				xpos=last_xpos;
-				if(xpos>line[ypos].text.length)
-					xpos=line[ypos].text.length;
-				set_cursor();
-				break;
+				var f=new File(system.temp_dir+"INPUT.MSG");
+				f.open("w");
+				var s=make_strings(true,true);
+				f.write(s[0]);
+				f.close();
+				return;
 			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
 				break;
 			case '\x1c':	/* CTRL-\ (RegExp) */
