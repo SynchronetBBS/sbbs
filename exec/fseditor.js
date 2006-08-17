@@ -1325,7 +1325,6 @@ function add_char(key)
 	xpos++;
 	if(!rewrap())
 		draw_line(ypos,xpos-1,false);
-	set_cursor();
 }
 
 function edit(quote_first)
@@ -1338,6 +1337,7 @@ function edit(quote_first)
 			return;
 	}
 	while(1) {
+		set_cursor();
 		key=console.inkey(0,10000);
 		if(key=='')
 			continue;
@@ -1425,7 +1425,6 @@ function edit(quote_first)
 			case '\x02':	/* CTRL-B KEY_HOME */
 				last_xpos=-1;
 				xpos=0;
-				set_cursor();
 				break;
 			case '\x03':	/* CTRL-C (Center Line) */
 				last_xpos=-1;
@@ -1447,14 +1446,12 @@ function edit(quote_first)
 				if(xpos>line[ypos].length)
 					xpos=line[ypos].length;
 				draw_line(ypos);
-				set_cursor();
 				break;
 			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 				break;
 			case '\x05':	/* CTRL-E KEY_END */
 				last_xpos=-1;
 				xpos=line[ypos].text.length;
-				set_cursor();
 				break;
 			case '\x06':	/* CTRL-F KEY_RIGHT */
 				last_xpos=-1;
@@ -1471,7 +1468,6 @@ function edit(quote_first)
 							x=0;
 					}
 				}
-				set_cursor();
 				break;
 			case '\x07':	/* CTRL-G (Beep) */
 				/* Enter Graphic Character */
@@ -1497,7 +1493,6 @@ function edit(quote_first)
 				}
 				if(!rewrap())
 					draw_line(ypos,xpos);
-				set_cursor();
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				add_char(' ');
@@ -1508,7 +1503,6 @@ function edit(quote_first)
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_next_line();
-				set_cursor();
 				break;
 			case '\x0b':	/* CTRL-K */
 				console.attributes=7;
@@ -1554,7 +1548,6 @@ function edit(quote_first)
 				/* ToDo: Should this kill last_xpos? */
 				add_new_line_below(ypos-1);
 				xpos=0;
-				set_cursor();
 				break;
 			case '\x0d':	/* CTRL-M CR */
 				last_xpos=-1;
@@ -1577,7 +1570,6 @@ function edit(quote_first)
 				try_next_line();
 				xpos=0;
 				rewrap();
-				set_cursor();
 				break;
 			case '\x0e':	/* CTRL-N */
 				break;
@@ -1599,7 +1591,6 @@ function edit(quote_first)
 				xpos=last_xpos;
 				if(xpos>line[ypos].text.length)
 					xpos=line[ypos].text.length;
-				set_cursor();
 				break;
 			case '\x10':	/* CTRL-P */
 				if(last_xpos==-1)
@@ -1619,7 +1610,6 @@ function edit(quote_first)
 				xpos=last_xpos;
 				if(xpos>line[ypos].text.length)
 					xpos=line[ypos].text.length;
-				set_cursor();
 				break;
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				return;
@@ -1680,7 +1670,6 @@ function edit(quote_first)
 					line[ypos].attr=line[ypos].attr.substr(1);
 				}
 				draw_line(ypos,xpos);
-				set_cursor();
 				break;
 			case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
 				break;
@@ -1705,7 +1694,6 @@ function edit(quote_first)
 				for(i=ypos; i<topline+lines_on_screen; i++)
 					draw_line(i);
 				*/
-				set_cursor();
 				break;
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
@@ -1726,13 +1714,11 @@ function edit(quote_first)
 					console.beep();
 					xpos=0;
 				}
-				set_cursor();
 				break;
 			case '\x1e':	/* CTRL-^ KEY_UP */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_prev_line();
-				set_cursor();
 				break;
 			case '\x1f':	/* CTRL-_ Safe quick-abort*/
 				return;
@@ -1747,7 +1733,6 @@ function edit(quote_first)
 						+line[ypos].attr.substr(xpos+1);
 				if(!rewrap())
 					draw_line(ypos,xpos);
-				set_cursor();
 				break;
 			default:		/* Insert the char */
 				add_char(key);
