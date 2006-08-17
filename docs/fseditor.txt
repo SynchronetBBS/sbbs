@@ -80,13 +80,13 @@ ones fall into three catagories:
 
 The breakdown is as follows:
 Keepers:  ABCEFGHIJLMRWZ
-Lukewarm: OPVY
+Lukewarm: KOPVY
 Changers: QU_
 
 The reason X and Y are in lukewarm instead of changers is that PgUp/PgDn should
 be both close together and enterable with one hand in my opinion.
 
-The following CTRL keys are currently unused: DKNPSTX\
+The following CTRL keys are currently unused: DNPSTX\
 
 CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
 Xon/Xoff chars used in flow control and are sometimes impossible to send from
