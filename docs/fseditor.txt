@@ -28,31 +28,24 @@ CTRL-Key  Action
 A   - Colour
 B   - Home cursor (Beginning of line)
 C   - Center line in message
-D   - NOTHING (Find?)
 E   - End of line
 F   - Right one character
 G   - Enter Graphic Char
 H   - Backspace
 I   - Tab
 J   - Down one line
-K   - NOTHING
+K   - List keybindings
 L   - Insert line
 M   - Carriage Return
-N   - NOTHING
 O   - Page Up
 P   - Page Down
-Q   - Quick abort... FLOW CONTROL CHAR!!!
+Q   - Quick abort
 R   - Redraw screen
-S   - NOTHING... FLOW CONTROL CHAR!!!
-T   - NOTHING (Justify Line in SyncEdit)
 U   - Quote
 V   - Toggle insert mode
 W   - Delete word backwards
-X   - NOTHING
 Y   - Delete Line
 Z   - Save and exit
-ESC - NOTHING (ANSI Introducer... use with caution)
-\   - NOTHING (Want regexp)
 ]   - Move left
 ^   - Move up
 _   - Quick abort (Same as Xoff CTRL-Q)
@@ -60,11 +53,10 @@ _   - Quick abort (Same as Xoff CTRL-Q)
 
 Quote Mode:
 -----------
-CTRL-A - Select All
-CTRL-N - Unselect all
 CTRL-B - Home (Top of document)
 CTRL-E - End of document
 CTRL-J - Down one line
+CTRL-K - List keybindings
 CTRL-O - Page Up
 CTRL-P - Page Down
 CTRL-Q - Quick abort... FLOW CONTROL CHAR!!!
@@ -74,8 +66,8 @@ CTRL-_ - Quick abort (Same as CTRL-Q)
 SPACE  - Toggle sepection of current line
 ENTER  - Pastes selected lines into message
 A      - Select All
-N      - Unselect all ("Select None")
 B      - Enter block mode
+N      - Unselect all ("Select None")
 
 
 A few notes on keybindings:
