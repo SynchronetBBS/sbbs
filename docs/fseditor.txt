@@ -12,7 +12,7 @@ To add fseditor.js to your FSE list, use the following settings:
 [JS FSE]
  1: Name                            JS FSE
  2: Internal Code                   FSEDITOR
- 3: Remote Command Line             ?fseditor
+ 3: Remote Command Line             ?fseditor %f
  4: Access Requirements
  5: Intercept Standard I/O          No
  6: Native (32-bit) Executable      No
