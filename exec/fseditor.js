@@ -1224,7 +1224,7 @@ function quote_mode()
 				}
 				break;
 			case '\x0d':	/* CR */
-				for(i=0; i<quote_line.length-1; i++) {
+				for(i=0; i<quote_line.length; i++) {
 					if(quote_line[i].selected) {
 						line.splice(ypos,0,quote_line[i]);
 						ypos++;
@@ -1741,6 +1741,7 @@ function edit(quote_first)
 }
 
 var old_status=bbs.sys_status;
+var input_filename=system.node_dir+"QUOTES.TXT";
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
@@ -1748,14 +1749,23 @@ console.ctrlkey_passthru="+ACGKLOPQRUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
-var f=new File(system.node_dir+"QUOTES.TXT");
+if(argc==1)
+	input_filename=argv[0];
+var f=new File(input_filename);
 line.push(new Line());
 if(f.open("r",false)) {
-	quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
 	ypos=0;
-	edit(true);
+	if(input_filename.search(/(quotes.msg|input.msg)$/i) != -1) {
+		quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
+		edit(true);
+	}
+	else {
+		line=make_lines(word_wrap(f.read()),'');
+		edit(false);
+	}
 }
 else
 	edit(false);
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
+
