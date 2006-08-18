@@ -1697,7 +1697,7 @@ function edit(quote_first)
 				break;
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
-				var f=new File(system.temp_dir+"INPUT.MSG");
+				var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
 				f.open("w");
 				var s=make_strings(true,true);
 				f.write(s[0]);
@@ -1742,6 +1742,13 @@ function edit(quote_first)
 
 var old_status=bbs.sys_status;
 var input_filename=system.node_dir+"QUOTES.TXT";
+var use_quotes=true;
+input_filename=file_getcase(input_filename);
+if(input_filename==undefined) {
+	use_quotes=false;
+	if(argc==1 && input_filename==undefined)
+		input_filename=argv[0];
+}
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
@@ -1749,23 +1756,16 @@ console.ctrlkey_passthru="+ACGKLOPQRUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
-if(argc==1)
-	input_filename=argv[0];
 var f=new File(input_filename);
-line.push(new Line());
 if(f.open("r",false)) {
 	ypos=0;
-	if(input_filename.search(/(quotes.msg|input.msg)$/i) != -1) {
+	if(use_quotes)
 		quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
-		edit(true);
-	}
-	else {
+	else
 		line=make_lines(word_wrap(f.read()),'');
-		edit(false);
-	}
 }
-else
-	edit(false);
+if(line.length==0)
+	line.push(new Line());
+edit(use_quotes);
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
-
