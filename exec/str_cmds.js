@@ -766,6 +766,8 @@ function str_cmds(str)
 			}
 			if(console.yesno("Edit/Create .plan")) {
 				console.editfile(plan);
+				if(!file_exists(plan))
+					plan=format("%suser/%04d.pla",system.data_dir,user.number);
 				console.printfile(plan);
 			}
 		}
