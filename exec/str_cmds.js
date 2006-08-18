@@ -760,6 +760,10 @@ function str_cmds(str)
 				if(!console.noyes("Delete current .plan"))
 					file_remove(plan);
 			}
+			else {
+				// When creating a NEW plan file, use .plan
+				plan=format("%suser/%04d.plan",system.data_dir,user.number);
+			}
 			if(console.yesno("Edit/Create .plan")) {
 				console.editfile(plan);
 				console.printfile(plan);
