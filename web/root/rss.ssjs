@@ -2,7 +2,7 @@
 
 // $Id$
 
-// Tested successfully with SharpRead v0.9.5.1
+// Tested successfully with SharpReader v0.9.5.1
 
 load("sbbsdefs.js");
 
@@ -31,6 +31,9 @@ http://my.netscape.com/publish/formats/rss-spec-0.91.html#item */
 
 if(defaults.maxmessages==undefined)
 	defaults.maxmessages=15;
+
+if(defaults.maxdesclength==undefined)
+	defaults.maxdesclength=500;
 
 var channel;
 for(c in channel_list)
@@ -132,6 +135,7 @@ if(channel.image_url==undefined)	channel.image_url		='/images/default/sync_pbgj1
 if(channel.image_title==undefined)	channel.image_title		=channel.title;
 if(channel.image_link==undefined)	channel.image_link		=channel.link;
 if(channel.maxmessages==undefined)	channel.maxmessages		=defaults.maxmessages;
+if(channel.maxdesclength==undefined)	channel.maxdesclength		=defaults.maxdesclength;
 
 http_reply.header["Content-Type"]='application/rss+xml';
 writeln('<?xml version="1.0" ?>');
@@ -181,7 +185,7 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<title>' + encode(hdr.subject) + '</title>');
 		writeln('\t\t\t\t<author>' + encode(hdr.from) + '</author>');
 		writeln('\t\t\t\t<guid>' + encode(hdr.id) + '</guid>');
-		writeln('\t\t\t\t<description>' + encode(body.slice(0,500)) + '</description>');
+		writeln('\t\t\t\t<description>' + encode(body.slice(0,channel.maxdesclength)) + '</description>');
 
         if(this.login==undefined)  // v3.12a 
             writeln('\t\t\t\t<link>' + link_root + '&amp;item=' + hdr.number + '</link>');
