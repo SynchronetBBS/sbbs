@@ -844,6 +844,7 @@ function make_lines(str, attr, nl_is_hardcr)
 						nl[nl.length-1].text+=' ';
 						nl[nl.length-1].attr+=ascii(thisattr);
 					}
+					spos++;
 					break;
 				default:		/* Printable char... may need to wrap */
 					if(nl[nl.length-1].text.length>79) {	/* Need to have wrapped */
