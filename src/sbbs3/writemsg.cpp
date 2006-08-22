@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -465,14 +465,17 @@ void quotestr(char *str)
 void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 	,uint subnum)
 {
-	char str[512];
+	char str[MAX_PATH+1];
+	char tmp[32];
 	int file;
-	char tmp[13];
 
 	xeditnum--;
 
 	if(cfg.xedit[xeditnum]->misc&QUICKBBS) {
-		sprintf(str,"%sMSGINF",cfg.node_dir);
+		strcpy(tmp,"MSGINF");
+		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -491,7 +494,7 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 	}
 	else {
 		strcpy(tmp,"EDITOR.INF");
-		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
