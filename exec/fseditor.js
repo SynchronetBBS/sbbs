@@ -1547,11 +1547,11 @@ function edit(quote_first)
 				console.cleartoeol();
 				console.write("\r\nEditing keys:");
 				console.cleartoeol();
-				console.write("\r\n CTRL-A - Change Colour                  CTRL-P - Page Down");
+				console.write("\r\n CTRL-A - Change Colour                  CTRL-Q - Quick Abort (no save)");
 				console.cleartoeol();
-				console.write("\r\n CTRL-B - Move to beginning of line      CTRL-Q - Quick Abort (no save)");
+				console.write("\r\n CTRL-B - Move to beginning of line      CTRL-R - Redraw screen");
 				console.cleartoeol();
-				console.write("\r\n CTRL-C - Center line on screen          CTRL-R - Redraw screen");
+				console.write("\r\n CTRL-C - Center line on screen          CTRL-T - Edit title");
 				console.cleartoeol();
 				console.write("\r\n CTRL-E - Move to end of line            CTRL-U - Enter quote mode");
 				console.cleartoeol();
@@ -1568,6 +1568,8 @@ function edit(quote_first)
 				console.write("\r\n CTRL-L - Insert Line                    CTRL-^ - Move up one line");
 				console.cleartoeol();
 				console.write("\r\n CTRL-O - Page Up                        CTRL-_ - Quick Abort (no save)");
+				console.cleartoeol();
+				console.write("\r\n CTRL-P - Page Down                      CTRL-_ - Quick Abort (no save)");
 				console.cleartoeol();
 				console.write('\r\n');
 				console.cleartoeol();
@@ -1656,6 +1658,13 @@ function edit(quote_first)
 			case '\x13':	/* CTRL-S (Xon)  */
 				break;
 			case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
+				if(edit_top==5) {
+					console.gotoxy(7,1);
+					var newsubj=console.getstr(subj, 70, K_LINE|K_EDIT|K_AUTODEL);
+					if(newsubj!='')
+						subj=newsubj;
+					redraw_screen();
+				}
 				break;
 			case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
 				if(quote_mode())
@@ -1789,7 +1798,7 @@ if(input_filename==undefined) {
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGKLOPQRUVWXYZ_";
+console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
