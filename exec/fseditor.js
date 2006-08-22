@@ -3,6 +3,7 @@
 
 load("sbbsdefs.js");
 
+const REVISION = "$Revision$".split(' ')[1];
 var line=new Array();
 var quote_line=new Array();
 var xpos=0;									/* Current xpos of insert point */
@@ -11,8 +12,8 @@ var last_xpos=-1;							/* The xpos you'd like to be at.  -1 when not valid
 var ypos=0;									/* Current index into line[] of insert point */
 var insert=true;							/* Insert mode */
 var topline=0;								/* Index into line[] of line at edit_top */
-var edit_top=2;								/* First line of edit window */
-var edit_bottom=console.screen_rows;		/* Last line of edit window */
+var edit_top=5;								/* First line of edit window */
+var edit_bottom=console.screen_rows-1;		/* Last line of edit window */
 var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
 var curattr=7;								/* Current attribute */
 var colour_box_displayed=0;					/* Row the colour box is displayed
@@ -26,6 +27,13 @@ var quote_sep_pos=0;						/* Line number the quote seperator is displayed on */
 var quote_ontop=false;						/* true if quote window is at the top */
 var quote_top;								/* Line number of the first quote line */
 var quote_bottom;							/* Line number of the last quote line */
+var drop_file;
+var info;
+
+// Message header display format
+var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
+var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRK-K\1w for help %s\1>\1n";
+var subj,to,from;
 
 function Line()
 {
@@ -196,20 +204,11 @@ function set_cursor()
 var lastinsert=false;
 function status_line()
 {
-	console.gotoxy(1,1);
-	console.attributes=7;
-	if(insert)
-		console.write("Insert Mode    ");
-	else
-		console.write("Overwrite Mode ");
+	console.gotoxy(1,console.screen_rows);
+	printf(stat_fmt,(insert?"Insert Mode    ":"Overwrite Mode "));
 	console.attributes=curattr;
 	console.write("Current Colour");
-	console.attributes=7;
-	console.write("  ");
-	console.attributes=WHITE;
-	console.write("CTRL-K");
-	console.attributes=7;
-	console.write(" to list keybindings");
+	console.attributes=16;
 	console.cleartoeol();
 	set_cursor();
 }
@@ -694,6 +693,25 @@ function draw_colour_box()
 function redraw_screen()
 {
 	status_line();
+	console.gotoxy(1,1);
+	printf(hdr_fmt, "Subj", subj);
+	console.gotoxy(1,2);
+	printf(hdr_fmt, "To",	to);
+	console.gotoxy(1,3);
+	printf(hdr_fmt, "From", from);
+	/* Display tab line */
+	for(i=0;i<(console.screen_columns-1);i++) {
+		if(i && (i%8)==0) {
+			if((i%(8*2))==0) {
+				console.attributes=CYAN|HIGH;
+				console.print('|');
+			} else
+				console.print(ascii(254));
+		} else {
+			console.attributes=YELLOW|HIGH;
+			console.print(ascii(250));
+		}
+	}
 	if(colour_box_displayed)
 		draw_colour_box();
 	if(graphics_box_displayed)
@@ -1767,6 +1785,15 @@ if(f.open("r",false)) {
 }
 if(line.length==0)
 	line.push(new Line());
+drop_file = new File(system.node_dir + "editor.inf");
+if(drop_file.exists && drop_file.open("r")) {
+	info = drop_file.readAll();
+	delete drop_file;
+
+	subj=info[0];
+	to=info[1];
+	from=info[3];
+}
 edit(use_quotes);
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
