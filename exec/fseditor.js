@@ -32,7 +32,7 @@ var info;
 
 // Message header display format
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
-var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRK-K\1w for help %s\1>\1n";
+var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRK-K\1w for help           %s\1>\1n";
 var subj,to,from;
 
 function Line()
@@ -207,8 +207,7 @@ function status_line()
 	console.gotoxy(1,console.screen_rows);
 	printf(stat_fmt,(insert?"Insert Mode    ":"Overwrite Mode "));
 	console.attributes=curattr;
-	console.write("Current Colour");
-	console.attributes=16;
+	console.write(" Current Colour");
 	console.cleartoeol();
 	set_cursor();
 }
@@ -1301,8 +1300,7 @@ function quote_mode()
 					console.gotoxy(1,quote_sep_pos+1);
 				else
 					console.gotoxy(1,edit_top);
-				console.cleartoeol();
-				console.write("\r\nQuote mode keys:");
+				console.write("Quote mode keys:");
 				console.cleartoeol();
 				console.write("\r\n CTRL-B - Move to begining of message    CTRL-^ - Move up one line");
 				console.cleartoeol();
@@ -1322,8 +1320,6 @@ function quote_mode()
 				console.cleartoeol();
 				console.write('\r\n');
 				console.write("Press any key to return to editing..");
-				console.cleartoeol();
-				console.write('\r\n');
 				console.cleartoeol();
 				console.up();
 				console.right(37);
@@ -1544,8 +1540,7 @@ function edit(quote_first)
 			case '\x0b':	/* CTRL-K */
 				console.attributes=7;
 				console.gotoxy(1,edit_top);
-				console.cleartoeol();
-				console.write("\r\nEditing keys:");
+				console.write("Editing keys:");
 				console.cleartoeol();
 				console.write("\r\n CTRL-A - Change Colour                  CTRL-Q - Quick Abort (no save)");
 				console.cleartoeol();
@@ -1667,8 +1662,12 @@ function edit(quote_first)
 				}
 				break;
 			case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
-				if(quote_mode())
-					return;
+				if(quote_line.length>0) {
+					if(quote_mode())
+						return;
+				}
+				else
+					console.beep();
 				break;
 			case '\x16':	/* CTRL-V (Toggle insert mode) */
 				insert=!insert;
