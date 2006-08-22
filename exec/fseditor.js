@@ -1800,14 +1800,15 @@ if(f.open("r",false)) {
 		quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
 	else
 		line=make_lines(word_wrap(f.read()),'');
+	f.close();
 }
 if(line.length==0)
 	line.push(new Line());
 drop_file = new File(system.node_dir + "editor.inf");
 if(drop_file.exists && drop_file.open("r")) {
 	info = drop_file.readAll();
-	delete drop_file;
-
+	drop_file.close();
+	file_remove(system.node_dir + "editor.inf");
 	subj=info[0];
 	to=info[1];
 	from=info[3];
@@ -1822,5 +1823,13 @@ if(subj=='') {
 	subj=subj.replace(/^.*[\\\/]/,'');
 }
 edit(use_quotes);
+if(edit_top==5) {
+	drop_file = new File(system.node_dir + "editor.inf");
+	if(drop_file.open("w")) {
+		info[0]=subj;
+		drop_file.writeln(info.join("\n"));
+		drop_file.close();
+	}
+}
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
