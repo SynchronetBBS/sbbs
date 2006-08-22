@@ -1831,11 +1831,18 @@ if(subj=='') {
 	subj=subj.replace(/^.*[\\\/]/,'');
 }
 edit(use_quotes);
-if(edit_top==5) {
-	drop_file = new File(system.node_dir + "editor.inf");
+/* Delete all existing result.ed files */
+var result=file_getcase(system.node_dir + "result.ed");
+while(result!=undefined) {
+	if(!file_remove(result))
+		break;
+	result=file_getcase(result);
+}
+if(edit_top==5 && info[0]!=subj) {
+	drop_file = new File(system.node_dir + "result.ed");
 	if(drop_file.open("w")) {
-		info[0]=subj;
-		drop_file.writeln(info.join("\n"));
+		drop_file.writeln("0");
+		drop_file.writeln(subj);
 		drop_file.close();
 	}
 }
