@@ -242,7 +242,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		return(false); 
 	}
 
-	if(!(mode&WM_EXTDESC)) {
+	if(!(mode&(WM_EXTDESC|WM_SUBJ_RO))) {
 		if(mode&WM_FILE) {
 			max_title_len=12;	/* ToDo: implied 8.3 filename limit! */
 			CRLF;
@@ -344,7 +344,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			return(false); 
 		}
 		SAFEPRINTF(str,"%sRESULT.ED",cfg.node_dir);
-		if(!(mode&(WM_EXTDESC|WM_FILE))
+		if(!(mode&(WM_EXTDESC|WM_FILE|WM_SUBJ_RO))
 			&& !(cfg.xedit[useron.xedit-1]->misc&QUICKBBS) 
 			&& fexistcase(str)) {
 			if((fp=fopen(str,"r")) != NULL) {

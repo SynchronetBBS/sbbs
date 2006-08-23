@@ -705,6 +705,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define WM_QUOTE	(1<<6)		/* Quote file available 					*/
 #define WM_QWKNET	(1<<7)		/* Writing QWK NetMail (25 char title)		*/
 #define WM_PRIVATE	(1<<8)		/* Private (for creating MSGINF file)		*/
+#define WM_SUBJ_RO	(1<<9)		/* Subject/title is read-only				*/
 								
 								/* Bits in the mode of loadposts()			*/
 #define LP_BYSELF	(1<<0)		/* Include messages sent by self			*/
