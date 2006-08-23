@@ -1849,3 +1849,4 @@ if(edit_top==5 && info[0]!=subj) {
 }
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
+console.clear();
