@@ -1964,7 +1964,7 @@ static BOOL parse_headers(http_session_t * session)
 					session->req.if_range=decode_date(value);
 					break;
 				case HEAD_COOKIE:
-					{
+					if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
 						char	*key;
 						char	*val;
 
