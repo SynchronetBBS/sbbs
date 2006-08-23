@@ -760,7 +760,8 @@ function str_cmds(str)
 			}
 			if(console.yesno("Edit/Create .plan")) {
 				console.editfile(plan);
-				console.printfile(plan);
+				if(file_exists(plan))
+					console.printfile(plan);
 			}
 		}
 	}
