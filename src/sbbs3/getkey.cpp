@@ -321,14 +321,14 @@ void sbbs_t::mnemonics(char *str)
 	l=0L;
 	while(str[l]) {
 		if(str[l]=='~' && str[l+1]!=0) {
-			if(!(useron.misc&ANSI))
+			if(!term_supports(ANSI))
 				outchar('(');
 			l++;
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnehigh]);
 			outchar(str[l]);
 			l++;
-			if(!(useron.misc&ANSI))
+			if(!term_supports(ANSI))
 				outchar(')');
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnelow]); 

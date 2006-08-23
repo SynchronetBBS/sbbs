@@ -198,7 +198,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 				m++; 
 			}
 			if((buf[m+1]&0xdf)=='L') {		/* Draw line */
-        		if(useron.misc&COLOR)
+        		if(term_supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK|BG_LIGHTGRAY);
@@ -361,7 +361,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 			else if((buf[m+1]&0xdf)=='N')  	/* Numbers only */
 				m++;
 			if((buf[m+1]&0xdf)=='L') {		/* Draw line */
-        		if(useron.misc&COLOR)
+        		if(term_supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK|BG_LIGHTGRAY);
@@ -386,7 +386,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 			else if((buf[m+1]&0xdf)=='N')   /* Numbers only */
 				m++;
 			if((buf[m+1]&0xdf)=='L') {
-        		if(useron.misc&COLOR)
+        		if(term_supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK|BG_LIGHTGRAY);
@@ -495,9 +495,9 @@ size_t sbbs_t::gettmplt(char *strout,char *templt, long mode)
 	sys_status&=~SS_ABORT;
 	SAFECOPY(tmplt, templt);
 	strupr(tmplt);
-	if(useron.misc&ANSI) {
+	if(term_supports(ANSI)) {
 		if(mode&K_LINE) {
-			if(useron.misc&COLOR)
+			if(term_supports(COLOR))
 				attr(cfg.color[clr_inputline]);
 			else
 				attr(BLACK|BG_LIGHTGRAY); 

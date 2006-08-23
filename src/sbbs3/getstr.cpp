@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -57,7 +57,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	if(!(mode&K_WRAP))
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
-	if(mode&K_LINE && useron.misc&ANSI && !(mode&K_NOECHO)) {
+	if(mode&K_LINE && term_supports(ANSI) && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
 			outchar(' ');
@@ -82,7 +82,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			attr(i); 
 		}
 		rputs(str1);
-		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)) && useron.misc&ANSI)
+		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)) && term_supports(ANSI))
 			cleartoeol();  /* destroy to eol */ 
 	}
 
@@ -115,7 +115,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		}
 	}
 
-	if(console&CON_INSERT && useron.misc&ANSI && !(mode&K_NOECHO))
+	if(console&CON_INSERT && term_supports(ANSI) && !(mode&K_NOECHO))
 		insert_indicator();
 
 	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
@@ -163,7 +163,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				outchar(str1[i++]=1);
 				break;
 			case CTRL_B: /* Ctrl-B Beginning of Line */
-				if(useron.misc&ANSI && i && !(mode&K_NOECHO)) {
+				if(term_supports(ANSI) && i && !(mode&K_NOECHO)) {
 					cursor_left(i);
 					i=0; 
 				}
@@ -194,13 +194,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				}
 				break;
 			case CTRL_E: /* Ctrl-E End of line */
-				if(useron.misc&ANSI && i<l) {
+				if(term_supports(ANSI) && i<l) {
 					cursor_right(l-i);  /* move cursor to eol */
 					i=l; 
 				}
 				break;
 			case CTRL_F: /* Ctrl-F move cursor forewards */
-				if(i<l && (useron.misc&ANSI)) {
+				if(i<l && term_supports(ANSI)) {
 					cursor_right();   /* move cursor right one */
 					i++; 
 				}
@@ -330,7 +330,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				return(l);
 
 			case CTRL_N:    /* Ctrl-N Next word */
-				if(i<l && (useron.misc&ANSI)) {
+				if(i<l && term_supports(ANSI)) {
 					x=i;
 					while(str1[i]!=' ' && i<l)
 						i++;
@@ -344,7 +344,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					redrwstr(str1,i,l,0);
 				break;
 			case CTRL_V:	/* Ctrl-V			Toggles Insert/Overwrite */
-				if(!(useron.misc&ANSI) || mode&K_NOECHO)
+				if(!term_supports(ANSI) || mode&K_NOECHO)
 					break;
 				console^=CON_INSERT;
 				insert_indicator();
@@ -388,7 +388,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				break;
 			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
 				if(i!=l) {	/* if not at EOL */
-					if(useron.misc&ANSI && !(mode&K_NOECHO))
+					if(term_supports(ANSI) && !(mode&K_NOECHO))
 						cleartoeol();
 					l=i; 
 					break;
@@ -398,7 +398,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				if(mode&K_NOECHO)
 					l=0;
 				else {
-					if(useron.misc&ANSI) {
+					if(term_supports(ANSI)) {
 						cursor_left(i);
 						cleartoeol();
 						l=0;
@@ -420,11 +420,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				SAFECOPY(str1,undo);
 				i=l=strlen(str1);
 				rprintf("\r%s",str1);
-				if(useron.misc&ANSI)
+				if(term_supports(ANSI))
 					cleartoeol();  /* destroy to eol */ 
 				break;
 			case 28:    /* Ctrl-\ Previous word */
-				if(i && (useron.misc&ANSI) && !(mode&K_NOECHO)) {
+				if(i && term_supports(ANSI) && !(mode&K_NOECHO)) {
 					x=i;
 					while(str1[i-1]==' ' && i)
 						i--;
@@ -439,7 +439,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						console|=CON_LEFTARROW;
 					break;
 				}
-				if((useron.misc&ANSI) && !(mode&K_NOECHO)) {
+				if(term_supports(ANSI) && !(mode&K_NOECHO)) {
 					cursor_left();   /* move cursor left one */
 					i--; 
 				}

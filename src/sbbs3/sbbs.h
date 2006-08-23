@@ -491,6 +491,7 @@ public:
 	void	cursor_down(int count=1);
 	void	cursor_left(int count=1);
 	void	cursor_right(int count=1);
+	long	term_supports(long cmp_flags=0);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;

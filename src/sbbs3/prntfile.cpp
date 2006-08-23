@@ -198,12 +198,12 @@ void sbbs_t::menu(const char *code)
 		}
 		strcat(str,code);
 		strcat(str,".");
-		sprintf(path,"%s%s",str,useron.misc&WIP ? "wip": useron.misc&RIP ? "rip" : "html");
-		if(!(useron.misc&(RIP|WIP|HTML)) || !fexistcase(path)) {
+		sprintf(path,"%s%s",str,term_supports(WIP) ? "wip": term_supports(RIP) ? "rip" : "html");
+		if(!(term_supports()&(RIP|WIP|HTML)) || !fexistcase(path)) {
 			sprintf(path,"%smon",str);
-			if((useron.misc&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
+			if((term_supports()&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
 				sprintf(path,"%sans",str);
-				if(!(useron.misc&ANSI) || !fexistcase(path))
+				if(!term_supports(ANSI) || !fexistcase(path))
 					sprintf(path,"%sasc",str); 
 			} 
 		} 

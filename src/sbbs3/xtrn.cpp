@@ -1705,7 +1705,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		sigprocmask(SIG_UNBLOCK,&sigs,NULL);
 		if(!(mode&EX_BIN))  {
 			static char	term_env[256];
-			if(useron.misc&ANSI)
+			if(term_supports(ANSI))
 				sprintf(term_env,"TERM=%s",startup->xtrn_term_ansi);
 			else
 				sprintf(term_env,"TERM=%s",startup->xtrn_term_dumb);

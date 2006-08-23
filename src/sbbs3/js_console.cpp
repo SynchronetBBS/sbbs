@@ -1180,6 +1180,24 @@ js_telnet_cmd(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return(JS_TRUE);
 }
 
+static JSBool
+js_term_supports(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int32		flags;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc) {
+		if(!JS_ValueToInt32(cx,argv[0],&flags))
+			return(JS_FALSE);
+		*rval = BOOLEAN_TO_JSVAL(sbbs->term_supports(flags));
+	} else
+		JS_NewNumberValue(cx,sbbs->term_supports(),rval);
+
+    return(JS_TRUE);
+}
 
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
@@ -1366,6 +1384,12 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"handle_ctrlkey",	js_handle_ctrlkey,	1, JSTYPE_BOOLEAN,	JSDOCSTR("key [,mode=<tt>K_NONE</tt>]")
 	,JSDOCSTR("call internal control key handler for specified control key, returns <tt>true</tt> if handled")
 	,311
+	},
+	{"term_supports",	js_term_supports,	1, JSTYPE_BOOLEAN,	JSDOCSTR("[terminal_flags]")
+	,JSDOCSTR("either returns <i>bool</i>, indicating whether or not the current user/client "
+		"supports all the specified <i>terminal_flags</i>, or returns the current user/client's "
+		"<i>terminal_flags</i> (numeric bit-field) if no <i>terminal_flags</i> were specified")
+	,314
 	},
 	{0}
 };

@@ -330,8 +330,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.sys_nodes						/* Total system nodes */
 			,cfg.node_num						/* Current node */
 			,tleft								/* User Timeleft in seconds */
-			,useron.misc&ANSI					/* User ANSI ? (Yes/Mono/No) */
-				? useron.misc&COLOR
+			,term_supports(ANSI)				/* User ANSI ? (Yes/Mono/No) */
+				? term_supports(COLOR)
 				? "Yes":"Mono":"No"
 			,rows								/* User Screen lines */
 			,useron.cdt+useron.freecdt);		/* User Credits */
@@ -451,7 +451,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.level						/* User SL */
 			,0									/* Cosysop? */
 			,SYSOP								/* Sysop? (1/0) */
-			,(useron.misc&ANSI) ? 1:0			/* ANSI ? (1/0) */
+			,term_supports(ANSI)				/* ANSI ? (1/0) */
 			,online==ON_REMOTE);				/* Remote (1/0) */
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
@@ -660,7 +660,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
 			,useron.location					/* User's city */
-			,(useron.misc&ANSI)==ANSI			/* 1=ANSI 0=ASCII */
+			,term_supports(ANSI)				/* 1=ANSI 0=ASCII */
 			,useron.level						/* Security level */
 			,tleft/60); 						/* Time left in minutes */
 		strupr(str);
@@ -710,7 +710,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		if(useron.misc&DELETED) c|=(1<<0);
 		if(useron.misc&CLRSCRN) c|=(1<<1);
 		if(useron.misc&UPAUSE)	 c|=(1<<2);
-		if(useron.misc&ANSI)	c|=(1<<3);
+		if(term_supports(ANSI))	c|=(1<<3);
 		if(useron.sex=='F')     c|=(1<<7);
 		write(file,&c,1);						/* Attrib */
 		write(file,&useron.flags1,4);			/* Flags */
@@ -798,7 +798,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,str,49); 					/* ChatReason */
 		c=0;
 		write(file,&c,1);						/* ExternLogoff */
-		c=useron.misc&ANSI ? 1:0;
+		c=(char)term_supports(ANSI);
 		write(file,&c,1);						/* ANSI_Capable */
 		close(file);
 	}
@@ -844,7 +844,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.location					/* User location */
 			,useron.level						/* Security level */
 			,tleft/60							/* Time left in min */
-			,useron.misc&ANSI ? "COLOR":"MONO"  /* ANSI ??? */
+			,term_supports(ANSI) ? "COLOR":"MONO"  /* ANSI ??? */
 			,useron.pass						/* Password */
 			,useron.number);					/* User number */
 		lfexpand(str,misc);
@@ -1002,7 +1002,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.com_port						/* COM Port number */
 			,' ' 								/* Reserved */
 			,' ' 								/* "" */
-			,(useron.misc&ANSI)==ANSI			/* 1=ANSI 0=NO ANSI */
+			,term_supports(ANSI)				/* 1=ANSI 0=NO ANSI */
 			,"01-01-80"                         /* last event date */
 			,0,0								/* last event minute */
 			,0									/* caller exited to dos */
@@ -1158,7 +1158,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%lu\n%lu\n%s\n%s\n"
 			,dropdir
-			,useron.misc&ANSI ? "TRUE":"FALSE"  /* ANSI ? True or False */
+			,term_supports(ANSI) ? "TRUE":"FALSE"  /* ANSI ? True or False */
 			,useron.level						/* Security level */
 			,useron.uls 						/* Total uploads */
 			,useron.dls 						/* Total downloads */
@@ -1224,8 +1224,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 
 		sprintf(str,"%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n"
 			,name								/* Complete name of user */
-			,useron.misc&ANSI ? 1:0 			/* ANSI ? */
-			,useron.misc&NO_EXASCII ? 0:1		/* IBM characters ? */
+			,term_supports(ANSI)	 			/* ANSI ? */
+			,term_supports(NO_EXASCII) ? 0:1	/* IBM characters ? */
 			,rows								/* Page length */
 			,dte_rate							/* Baud rate */
 			,online==ON_LOCAL ? 0:cfg.com_port	/* COM port */
@@ -1252,7 +1252,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.pass						/* User's password */
 			,useron.level						/* User's level */
 			,useron.misc&EXPERT ? 'Y':'N'       /* Expert? */
-			,useron.misc&ANSI ? 'Y':'N'         /* ANSI? */
+			,term_supports(ANSI) ? 'Y':'N'      /* ANSI? */
 			,tleft/60							/* Minutes left */
 			,useron.phone						/* User's phone number */
 			,useron.location					/* User's city and state */
@@ -1301,7 +1301,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,name
 			,useron.level
 			,tleft/60
-			,useron.misc&ANSI ? 1 : 0
+			,term_supports(ANSI)
 			,cfg.node_num);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
