@@ -240,6 +240,9 @@ DLLEXPORT int		DLLCALL	mkdirs(const char* path);
 DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 
 								  char *fname, char *ext);
 DLLEXPORT char * DLLCALL _fullpath(char *target, const char *path, size_t size);
+DLLEXPORT int DLLCALL removecase(char *path);
+#else
+	#define	removecase(x)	remove(x)
 #endif
 
 #if defined(__cplusplus)
