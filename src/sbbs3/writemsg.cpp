@@ -916,7 +916,7 @@ void sbbs_t::editfile(char *fname)
 		if(fexistcase(path))
 			fcopy(path, msgtmp);
 
-		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
+		editor_inf(useron.xedit,fname,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
