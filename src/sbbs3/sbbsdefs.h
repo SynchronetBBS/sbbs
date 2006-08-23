@@ -613,6 +613,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
 #define HTML		(1L<<23)		/* Using Deuce's HTML terminal			*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
+
+#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML)
 																			
 #define CLREOL      256     /* Character to erase to end of line 			*/
 																			
