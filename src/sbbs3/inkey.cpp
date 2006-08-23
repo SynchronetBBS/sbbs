@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -260,7 +260,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			}
 			i=j=0;
 			autoterm|=ANSI; 			/* <ESC>[x means they have ANSI */
-			if(!(useron.misc&ANSI) && useron.misc&AUTOTERM && sys_status&SS_USERON
+			if(sys_status&SS_USERON && useron.misc&AUTOTERM && !(useron.misc&ANSI)
 				&& useron.number) {
 				useron.misc|=ANSI;
 				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
