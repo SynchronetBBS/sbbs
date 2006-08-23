@@ -586,8 +586,6 @@ int removecase(char *path)
 		return(-1);
 	SAFECOPY(inpath,path);
 	p=getfname(inpath);
-	if(p>inpath)
-		*(p-1)=0;
 	fname[0]=0;
 	for(i=0;p[i];i++)  {
 		if(isalpha(p[i]))
