@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -99,8 +99,8 @@ char *sbbs_t::ansi(int atr)
 
 void sbbs_t::ansi_getlines()
 {
-	if(useron.misc&ANSI && !useron.rows         /* Auto-detect rows */
-		&& online==ON_REMOTE) {                 /* Remote */
+	if(sys_status&SS_USERON && useron.misc&ANSI && !useron.rows /* Auto-detect rows */
+		&& online==ON_REMOTE) {									/* Remote */
 		SYNC;
 		putcom("\x1b[s\x1b[99B\x1b[6n\x1b[u");
 		inkey(K_NONE,TIMEOUT_ANSI_GETXY*1000); 
