@@ -438,6 +438,7 @@ public:
 	void	automsg(void);
 	bool	writemsg(char *str, char *top, char *title, long mode, int subnum
 				,char *dest);
+	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	char	putmsg(char *str, long mode);
 	bool	msgabort(void);
 	bool	email(int usernumber, char *top, char *title, long mode);
@@ -858,6 +859,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL fcopy(char* src, char* dest);
+	DLLEXPORT BOOL		DLLCALL fcompare(char* fn1, char* fn2);
 	DLLEXPORT BOOL		DLLCALL backup(char *org, int backup_level, BOOL ren);
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
 	

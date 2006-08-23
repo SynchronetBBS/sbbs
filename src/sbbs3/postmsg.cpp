@@ -191,7 +191,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if(cfg.sub[subnum]->misc&SUB_NAME)
 		bputs(text[UsingRealName]);
 
-	sprintf(str,"%sinput.msg",cfg.node_dir);
+	msg_tmp_fname(useron.xedit, str, sizeof(str));
 	if(!writemsg(str,top,title,wm_mode,subnum,touser)
 		|| (long)(length=flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
