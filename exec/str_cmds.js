@@ -751,7 +751,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("PLAN\tEdits or deletes your .plan file (displayed when somebody fingers you).");
 		if(str=="PLAN") {
-			var plan=format("%suser/%04d.pla",system.data_dir,user.number);
+			var plan=format("%suser/%04d.plan",system.data_dir,user.number);
 			if(file_exists(plan)) {
 				if(console.yesno("Display current .plan"))
 					console.printfile(plan);
