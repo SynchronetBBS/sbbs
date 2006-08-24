@@ -3,7 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <stdlib.h>
+
 #include "dirwrap.h"
+
+#include "crc32.h"
 
 #include "cmdshell.h"
 #include "ars_defs.h"
@@ -11,319 +15,316 @@
 int indent=0;
 int indenteol=0;
 
+/* table of variables for use by bsearch() */
+
+struct var_table_t {
+	unsigned long crc;
+	char *var;
+} var_table[] = {
+	{ 0x00000000, "STR" }, { 0x01837ca9, "r2" }, { 0x023e4b48, "fattr" },
+	{ 0x02408dc5, "_SYS_TIMEZONE" }, { 0x038a840b, "k1" },
+	{ 0x0400f83f, "e2" }, { 0x04807a11, "_USERON.LOGONS" },
+	{ 0x057e4cd4, "_TIMELEFT" }, { 0x07954570, "_USERON.XEDIT" },
+	{ 0x08f65a2a, "_USERON.MODEM" }, { 0x094cc42c, "_USERON.ROWS" },
+	{ 0x098bdfcb, "_USERON.TLAST" }, { 0x0bf3b87a, "w3" },
+	{ 0x0c1a1011, "_USERON.FLAGS2" }, { 0x0c8dcf3b, "_USERON.FBACKS" },
+	{ 0x0e42002a, "_EXPIRED_EXEMPT" }, { 0x0ea515b1, "_USERON.LASTON" },
+	{ 0x10bfc6e9, "_EXPIRED_FLAGS2" }, { 0x11c83294, "_SYS_PSNUM" },
+	{ 0x12e7d6d2, "_USERON.EXEMPT" }, { 0x12e8893b, "v3" },
+	{ 0x15755030, "_COMSPEC" }, { 0x167ea426, "pos" },
+	{ 0x16e2585f, "_CLIENT_SOCKET" }, { 0x176b0dad, "a3" },
+	{ 0x18984de8, "s2" }, { 0x19982a4f, "log" }, { 0x1a91b54a, "j1" },
+	{ 0x1c4455ee, "_DTE_RATE" }, { 0x1d1bc97e, "d2" },
+	{ 0x1e5052a7, "_MAX_MINUTES" }, { 0x1ef214ef, "_USERON.FIRSTON" },
+	{ 0x2039a29f, "_USERON.POSTS" }, { 0x205ace36, "_AUTOTERM" },
+	{ 0x2060efc3, "s" }, { 0x20cb6325, "_NEW_REST" },
+	{ 0x20deebb9, "t3" }, { 0x2105d2b9, "_SOCKET_ERROR" },
+	{ 0x222d1c26, "ss" }, { 0x22f01d71, "_NEW_FLAGS3" },
+	{ 0x23edbcbc, "nodes_wfc" }, { 0x255d6f2f, "c3" },
+	{ 0x270d2bda, "w" }, { 0x274e4d59, "nm" }, { 0x27a9fc7c, "attempt" },
+	{ 0x28a7d7c8, "h1" }, { 0x2aa89801, "_NODE_SWAP" },
+	{ 0x2aae2f6a, "q2" }, { 0x2aaf9bd3, "_USERON.EXPIRE" },
+	{ 0x2b3c257f, "_CUR_CPS" }, { 0x2c0c389a, "dir" },
+	{ 0x2f2dabfc, "f2" }, { 0x30ffd1ff, "cmdline" },
+	{ 0x31178ba2, "_NEW_CDT" }, { 0x3178f9d6, "_USERON.COMMENT" },
+	{ 0x31bce689, "i1" }, { 0x328ed476, "_USERON.LEVEL" },
+	{ 0x32ebcea0, "attr" }, { 0x330c7795, "k" }, { 0x33b51e2b, "p2" },
+	{ 0x3461b38c, "o" }, { 0x357b23ee, "total" },
+	{ 0x3587ad08, "cursor" }, { 0x36369abd, "g2" },
+	{ 0x381d3c2a, "_SYS_STATUS" }, { 0x396b7167, "_NETMAIL_COST" },
+	{ 0x39c5daf8, "u3" }, { 0x3a37c26b, "_NODE_EXT" },
+	{ 0x3aba3bbe, "g" }, { 0x3c465e6e, "b3" }, { 0x3d39d372, "argc" },
+	{ 0x3dc166bb, "path" }, { 0x3dd7ffa7, "c" },
+	{ 0x41239e21, "_CONNECTION" }, { 0x4131aa2b, "g3" },
+	{ 0x430178ec, "_UQ" }, { 0x4366831a, "n" }, { 0x440b4703, "j" },
+	{ 0x44b22ebd, "p3" }, { 0x455cb929, "_FTP_MODE" },
+	{ 0x4569c62e, "_EXPIRED_REST" }, { 0x46cd817e, "bytes" },
+	{ 0x490873f1, "_USERON.ALIAS" }, { 0x4a16a4ea, "filepos" },
+	{ 0x4a9f3955, "_USERON.EMAILS" }, { 0x4ad0cf31, "b" },
+	{ 0x4b0aeb24, "_NEW_EXEMPT" }, { 0x4b416ef8, "b2" },
+	{ 0x4b8a0705, "connect" }, { 0x4ccb12cc, "l1" },
+	{ 0x4db200d2, "_LEECH_PCT" }, { 0x4dbd0b28, "f" },
+	{ 0x4ec2ea6e, "u2" }, { 0x4ee1ff3a, "_USERON.LOCATION" },
+	{ 0x4f02623a, "_NODE_MINBPS" }, { 0x500a1b4c, "v" },
+	{ 0x5053a71b, "z1" }, { 0x50e43799, "argv" }, { 0x525a5fb9, "c2" },
+	{ 0x52996eab, "_USERON.TTODAY" }, { 0x55d0238d, "m1" },
+	{ 0x55f72de7, "_NEW_FLAGS2" }, { 0x5767df55, "r" },
+	{ 0x57d9db2f, "t2" }, { 0x582a9b6a, "f3" }, { 0x5863165a, "fname" },
+	{ 0x590175f1, "time" }, { 0x59bc5767, "z" },
+	{ 0x5a22d4bd, "_NODEFILE" }, { 0x5aaccfc5, "_ERRNO" },
+	{ 0x5b0d0c54, "_USERON.NS_TIME" }, { 0x5be35885, "guest" },
+	{ 0x5c1c1500, "_TOS" }, { 0x5da91ffc, "q3" },
+	{ 0x5de44e8b, "_USERON.NAME" }, { 0x5e049062, "_QUESTION" },
+	{ 0x5e914a47, "nodes_inuse" }, { 0x5eeaff21, "_NETMAIL_MISC" },
+	{ 0x606c3d3b, "a2" }, { 0x613b690e, "_ROWS" },
+	{ 0x6178e75f, "handle" }, { 0x61be0d36, "_USERON.QWK" },
+	{ 0x6265c599, "x1" }, { 0x6392dc62, "_SYS_AUTODEL" },
+	{ 0x640f7f81, "addr" }, { 0x65efb9ad, "v2" },
+	{ 0x665ac227, "_USERON.CHAT" }, { 0x67b8f67f, "_EXPIRED_FLAGS3" },
+	{ 0x67e6410f, "o1" }, { 0x682d973f, "start" },
+	{ 0x68b693b2, "name" }, { 0x698d59b4, "_SYS_NODES" },
+	{ 0x69d4f019, "ftime" }, { 0x6a1cf9e8, "d3" },
+	{ 0x6a9fd069, "LIMIT_REPSIZE" }, { 0x6c8e350a, "_NEW_LEVEL" },
+	{ 0x6f9f7d7e, "s3" }, { 0x6fb1c46e, "_SYS_EXP_WARN" },
+	{ 0x709c07da, "_NODE_MISC" }, { 0x7166336e, "hubid" },
+	{ 0x717231d6, "MAX_REPSIZE" }, { 0x7307c8a9, "e3" },
+	{ 0x7342a625, "_NEW_EXPIRE" }, { 0x7345219f, "_NEW_MIN" },
+	{ 0x7504b078, "port" }, { 0x75dc4306, "_NEW_PROT" },
+	{ 0x761cc978, "rep" }, { 0x76844c3f, "r3" },
+	{ 0x78afeaf1, "_SYS_PWDAYS" }, { 0x79f47b28, "attempts" },
+	{ 0x7ade6ef8, "local_file" }, { 0x7b1d2087, "_USERON.FLAGS3" },
+	{ 0x7b7ef4d8, "y1" }, { 0x7c602a37, "_USERON.MISC" },
+	{ 0x7c72376d, "_USERON.TIMEON" }, { 0x7cf488ec, "w2" },
+	{ 0x7d0ed0d1, "_CONSOLE" }, { 0x7dd9aac0, "_USERON.LEECH" },
+	{ 0x7e29c819, "_SYS_MISC" }, { 0x7efd704e, "n1" },
+	{ 0x7fbf958e, "_LNCNTR" }, { 0x81911c52, "s1" },
+	{ 0x82d9484e, "_INETMAIL_COST" }, { 0x82f6983b, "int" },
+	{ 0x8398e4f0, "j2" }, { 0x83aa2a6a, "_LOGONTIME" },
+	{ 0x83dea272, "pasv_mode" }, { 0x841298c4, "d1" },
+	{ 0x86cbce1e, "qwk" }, { 0x89b69753, "_EXPIRED_FLAGS1" },
+	{ 0x89c91dc8, "_USERON.PWMOD" }, { 0x89e82023, "o3" },
+	{ 0x8b12ba9d, "_POSTS_READ" }, { 0x8bf8a29a, "status" },
+	{ 0x8c6ba4b5, "x3" }, { 0x8e395209, "_LOGON_FBACKS" },
+	{ 0x908ece53, "_USERON.NUMBER" }, { 0x90f31162, "n3" },
+	{ 0x90fc82b4, "_CID" }, { 0x9154f82b, "logfile" },
+	{ 0x92fb364f, "_USERON.CDT" }, { 0x94d59a7a, "_USERON.BIRTH" },
+	{ 0x951341ab, "_USERON.FLAGS1" }, { 0x957095f4, "y3" },
+	{ 0x965b713b, "end" }, { 0x979ef1de, "_USERON.HANDLE" },
+	{ 0x97f99eef, "_ONLINE" }, { 0x988a2d13, "r1" },
+	{ 0x9a13bf95, "_USERON.ETODAY" }, { 0x9a7d9cca, "_LEECH_SEC" },
+	{ 0x9a83d5b1, "k2" }, { 0x9aab7a61, "len" }, { 0x9c0bdace, "date" },
+	{ 0x9c5051c9, "_LOGON_POSTS" }, { 0x9d09a985, "e1" },
+	{ 0x9e70e855, "_USERON.SEX" }, { 0x9e7638c7, "logonlst" },
+	{ 0xa0023a2e, "_STARTUP_OPTIONS" }, { 0xa15faa1f, "mode" },
+	{ 0xa1f0fcb7, "_NODE_SCRNBLANK" }, { 0xa278584f, "_NEW_MISC" },
+	{ 0xa2c573e0, "l3" }, { 0xa3b36a04, "d" },
+	{ 0xa4a51044, "bbs_name" }, { 0xa842c43b, "_USERON.ADDRESS" },
+	{ 0xa8b5b733, "i2" }, { 0xaa05262f, "h" }, { 0xaabc4f91, "p1" },
+	{ 0xabb91f93, "_USERON.DLB" }, { 0xabc4317e, "_USERON.PROT" },
+	{ 0xac58736f, "_LOGON_ULS" }, { 0xac72c50b, "_USERON.TEXTRA" },
+	{ 0xad1a21f0, "hash_mode" }, { 0xad68e236, "l" },
+	{ 0xadae1681, "_NODE_IVT" }, { 0xae256560, "_CUR_RATE" },
+	{ 0xae92d249, "_LAST_NS_TIME" }, { 0xaeb16536, "repsize" },
+	{ 0xaf3fcb07, "g1" }, { 0xb17e7914, "_NODE_VALUSER" },
+	{ 0xb1ae8672, "h2" }, { 0xb1bcba28, "_LOGON_DLS" },
+	{ 0xb31b556d, "phone" }, { 0xb3a77ed0, "q1" },
+	{ 0xb3f64be4, "_NEW_SHELL" }, { 0xb50cb889, "_NS_TIME" },
+	{ 0xb624fa46, "f1" }, { 0xb65dd6d4, "_USERON.ULB" },
+	{ 0xb7b2364b, "x" }, { 0xb9603173, "sock" }, { 0xb969be79, "p" },
+	{ 0xba0adba4, "file" }, { 0xba483fc2, "tmp" },
+	{ 0xbb063bfd, "user" }, { 0xbbde42a1, "m3" },
+	{ 0xbc9488d2, "_NEW_FLAGS4" }, { 0xbd1cee5d, "_USERON.LTODAY" },
+	{ 0xbda3fa42, "ascii_mode" }, { 0xbe047a60, "t" },
+	{ 0xbe5dc637, "z3" }, { 0xbef3c427, "dest" },
+	{ 0xbf31a280, "_ANSWERTIME" }, { 0xc0b506dd, "y" },
+	{ 0xc1093f61, "_USERON.DLS" }, { 0xc1ea73f2, "bbs_name_length" },
+	{ 0xc6a9b6e4, "h3" }, { 0xc6e8539d, "_LOGON_ULB" },
+	{ 0xc70d2fc0, "waitforstr" }, { 0xc7e0e8ce, "_USERON.NETMAIL" },
+	{ 0xc82ba467, "_LOGON_EMAILS" }, { 0xc8cd5fb7, "_USERON.COMP" },
+	{ 0xc9034af6, "u" }, { 0xc9082cbd, "_USERON.PTODAY" },
+	{ 0xc95af6a1, "z2" }, { 0xcb530e03, "c1" },
+	{ 0xcc7aca99, "_USERON.NOTE" }, { 0xccd97237, "m2" },
+	{ 0xccfe7c5d, "_NEW_FLAGS1" }, { 0xcdb7e4a9, "_USERON.PASS" },
+	{ 0xce6e8eef, "q" }, { 0xced08a95, "t1" },
+	{ 0xcf9ce02c, "_CDT_MIN_VALUE" }, { 0xd0a99c72, "_USERON.MIN" },
+	{ 0xd2483f42, "b1" }, { 0xd28e9da9, "debug_mode" },
+	{ 0xd3606303, "_USERON.TMPEXT" }, { 0xd3d99e8b, "a" },
+	{ 0xd42ccd08, "buf" }, { 0xd4b45a92, "e" }, { 0xd5c24376, "l2" },
+	{ 0xd7ae3022, "_USERON.FREECDT" }, { 0xd7cbbbd4, "u1" },
+	{ 0xd8222145, "sm" }, { 0xd859385f, "_SYS_DELDAYS" },
+	{ 0xd92803bb, "waitforbuf" }, { 0xda6fd2a0, "m" },
+	{ 0xdb0c9ada, "_LOGON_DLB" }, { 0xdcedf626, "_USERON.ULS" },
+	{ 0xdd0216b9, "i" }, { 0xdd982780, "_SYS_AUTONODE" },
+	{ 0xdf391ca7, "_SYS_LASTNODE" }, { 0xdfb287a5, "i3" },
+	{ 0xe277a562, "y2" }, { 0xe3920695, "result" },
+	{ 0xe51c1956, "_LOGFILE" }, { 0xe558c608, "_INETMAIL_MISC" },
+	{ 0xe579b524, "_USERON.FLAGS4" }, { 0xe5fdd956, "w1" },
+	{ 0xe7a7fb07, "_NODE_NUM" }, { 0xe7f421f4, "n2" },
+	{ 0xeb6c9c73, "_ERRORLEVEL" }, { 0xec2b8fb8, "_USERON.PHONE" },
+	{ 0xed84e527, "k3" }, { 0xedc643f1, "_MAX_QWKMSGS" },
+	{ 0xedf6aa98, "_USERON.SHELL" }, { 0xf000aa78, "_USERON.ZIPCODE" },
+	{ 0xf16182e9, "files" }, { 0xf19cd046, "_WORDWRAP" },
+	{ 0xf3f1da99, "password" }, { 0xf49fd466, "j3" },
+	{ 0xf53db6c7, "_NODE_SCRNLEN" }, { 0xf6e36607, "src" },
+	{ 0xf8e53990, "pass" }, { 0xf9656c81, "a1" },
+	{ 0xf9dc63dc, "_EXPIRED_FLAGS4" }, { 0xfa387529, "filename" },
+	{ 0xfad17b8e, "flen" }, { 0xfb394e27, "_EXPIRED_LEVEL" },
+	{ 0xfb6c9423, "x2" }, { 0xfcb5b274, "_CDT_PER_DOLLAR" },
+	{ 0xfce6e817, "v1" }, { 0xfcf3542e, "_MIN_DSPACE" },
+	{ 0xfd4b63d7, "htmlfile" }, { 0xfed3115d, "_USERON.REST" },
+	{ 0xfeef10b5, "o2" },
+};
+
+#define members(x) (sizeof(x)/sizeof(x[0]))
+
+const char *first_chars="_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const char *more_chars="_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+char *brute_buf=NULL;
+size_t brute_len=0;
+char **bruted=NULL;
+size_t bruted_len=0;
+
+/* This can be optimized */
+int increment_name(char *name, size_t len)
+{
+	char	*pos;
+	char	*ch;
+	size_t	l;
+
+	pos=strchr(name,0);
+	if(pos==NULL) {
+		printf("Brute force increment failure\ncannot find end of string\n");
+		return(-1);
+	}
+	if(pos>name)
+		pos--;
+	while(pos>name) {
+		if(*pos=='9')	/* last char from more_chars */
+			pos--;
+		else {
+			ch=strchr(more_chars,*pos);
+			if(ch==NULL) {
+				printf("Brute force increment failure\n%c is not a legal value\n",*pos);
+				return(-1);
+			}
+			ch++;
+			*pos=*ch;
+			pos++;
+			memset(pos,'_',strlen(pos));
+			return(0);
+		}
+	}
+	if(*pos=='Z' || *pos==0) {		/* last char from first_chars */
+		/* This the max? */
+		if((l=strlen(name))==len)
+			return(-1);
+		/* Set string to '_'			first char from both */
+		memset(name,'_',l);
+		/* Add new at end */
+		pos=strchr(name,0);
+		*pos=*first_chars;
+		pos++;
+		*pos=0;
+		return(0);;
+	}
+	ch=strchr(first_chars,*pos);
+	if(ch==NULL) {
+		printf("Brute force increment failure\ncannot find %c is not a legal value at start\n",*pos);
+		return(-1);
+	}
+	ch++;
+	*pos=*ch;
+	pos++;
+	memset(pos,'_',strlen(pos));
+	return(0);
+}
+
+void add_bruted(long name, char *val)
+{
+	char **new_bruted;
+	char *p;
+
+	bruted_len++;
+	p=(char *)malloc(strlen(val)+5);
+	if(p==NULL)
+		return;
+	new_bruted=realloc(bruted, sizeof(char *)*bruted_len);
+	if(new_bruted==NULL) {
+		free(p);
+		return;
+	}
+	*(long *)p=name;
+	strcpy(p+4,val);
+	new_bruted[bruted_len-1]=p;
+	bruted=new_bruted;
+}
+
+char *find_bruted(long name)
+{
+	int i;
+
+	for(i=0; i<bruted_len; i++) {
+		if(*(long *)bruted[i]==name)
+			return(bruted[i]+4);
+	}
+	return(NULL);
+}
+
+char* bruteforce(long name)
+{
+	long	this_crc=0;
+	char	*ret;
+
+	if(!brute_len)
+		return(NULL);
+	if((ret=find_bruted(name))!=NULL) {
+		if(!(*ret))
+			return(NULL);
+		return(ret);
+	}
+	brute_buf[0]=0;
+	increment_name(brute_buf, brute_len);
+	printf("Brute forcing var_%08x\n",name);
+	while(crc32(brute_buf,0)!=name) {
+		if(increment_name(brute_buf, brute_len)) {
+			printf("Not found.              \n");
+			add_bruted(name,"");
+			return(NULL);
+		}
+		printf("\r%s ",brute_buf);
+	}
+	printf("Found!            \n");
+	add_bruted(name,brute_buf);
+	return(brute_buf);
+}
+
+/* comparison function for var_table */
+static int vt_compare(const void *key, const void *table) {
+	if (*(unsigned long *)key == (*(struct var_table_t *)table).crc) return 0;
+	if (*(unsigned long *)key < (*(struct var_table_t *)table).crc) return -1;
+	return 1;
+}
+
 char *getvar(long name)
 {
 	static char varname[20];
+	struct var_table_t *found;
+	char *brute;
 
-	switch(name) {
-		case 0:
-			return("STR");
-		case 0x490873f1:
-			return("_USERON.ALIAS");
-		case 0x5de44e8b:
-			return("_USERON.NAME");
-		case 0x979ef1de:
-			return("_USERON.HANDLE");
-		case 0xc8cd5fb7:
-			return("_USERON.COMP");
-		case 0xcc7aca99:
-			return("_USERON.NOTE");
-		case 0xa842c43b:
-			return("_USERON.ADDRESS");
-		case 0x4ee1ff3a:
-			return("_USERON.LOCATION");
-		case 0xf000aa78:
-			return("_USERON.ZIPCODE");
-		case 0xcdb7e4a9:
-			return("_USERON.PASS");
-		case 0x94d59a7a:
-			return("_USERON.BIRTH");
-		case 0xec2b8fb8:
-			return("_USERON.PHONE");
-		case 0x08f65a2a:
-			return("_USERON.MODEM");
-		case 0xc7e0e8ce:
-			return("_USERON.NETMAIL");
-		case 0xd3606303:
-			return("_USERON.TMPEXT");
-		case 0x3178f9d6:
-			return("_USERON.COMMENT");
-		case 0x41239e21:
-			return("_CONNECTION");
-		case 0x90fc82b4:
-			return("_CID");
-		case 0x15755030:
-			return("_COMSPEC");
-		case 0x5E049062:
-			/* ToDo... undocumented */
-			return("_QUESTION");
-		case 0xf19cd046:
-			/* ToDo... undocumented */
-			return("_WORDWRAP");
-		case 0x908ece53:
-			return("_USERON.NUMBER");
-		case 0xdcedf626:
-			return("_USERON.ULS");
-		case 0xc1093f61:
-			return("_USERON.DLS");
-		case 0x2039a29f:
-			return("_USERON.POSTS");
-		case 0x4a9f3955:
-			return("_USERON.EMAILS");
-		case 0x0c8dcf3b:
-			return("_USERON.FBACKS");
-		case 0x9a13bf95:
-			return("_USERON.ETODAY");
-		case 0xc9082cbd:
-			return("_USERON.PTODAY");
-		case 0x7c72376d:
-			return("_USERON.TIMEON");
-		case 0xac72c50b:
-			return("_USERON.TEXTRA");
-		case 0x04807a11:
-			return("_USERON.LOGONS");
-		case 0x52996eab:
-			return("_USERON.TTODAY");
-		case 0x098bdfcb:
-			return("_USERON.TLAST");
-		case 0xbd1cee5d:
-			return("_USERON.LTODAY");
-		case 0x07954570:
-			return("_USERON.XEDIT");
-		case 0xedf6aa98:
-			return("_USERON.SHELL");
-		case 0x328ed476:
-			return("_USERON.LEVEL");
-		case 0x9e70e855:
-			return("_USERON.SEX");
-		case 0x094cc42c:
-			return("_USERON.ROWS");
-		case 0xabc4317e:
-			return("_USERON.PROT");
-		case 0x7dd9aac0:
-			return("_USERON.LEECH");
-		case 0x7c602a37:
-			return("_USERON.MISC");
-		case 0x61be0d36:
-			return("_USERON.QWK");
-		case 0x665ac227:
-			return("_USERON.CHAT");
-		case 0x951341ab:
-			return("_USERON.FLAGS1");
-		case 0x0c1a1011:
-			return("_USERON.FLAGS2");
-		case 0x7b1d2087:
-			return("_USERON.FLAGS3");
-		case 0xe579b524:
-			return("_USERON.FLAGS4");
-		case 0x12e7d6d2:
-			return("_USERON.EXEMPT");
-		case 0xfed3115d:
-			return("_USERON.REST");
-		case 0xb65dd6d4:
-			return("_USERON.ULB");
-		case 0xabb91f93:
-			return("_USERON.DLB");
-		case 0x92fb364f:
-			return("_USERON.CDT");
-		case 0xd0a99c72:
-			return("_USERON.MIN");
-		case 0xd7ae3022:
-			return("_USERON.FREECDT");
-		case 0x1ef214ef:
-			return("_USERON.FIRSTON");
-		case 0x0ea515b1:
-			return("_USERON.LASTON");
-		case 0x2aaf9bd3:
-			return("_USERON.EXPIRE");
-		case 0x89c91dc8:
-			return("_USERON.PWMOD");
-		case 0x5b0d0c54:
-			return("_USERON.NS_TIME");
+	found = (struct var_table_t *)bsearch( &name, var_table, members( var_table ),
+		sizeof( struct var_table_t ), vt_compare );
 
-		case 0xae256560:
-			return("_CUR_RATE");
-		case 0x2b3c257f:
-			return("_CUR_CPS");
-		case 0x1c4455ee:
-			return("_DTE_RATE");
-		case 0x7fbf958e:
-			return("_LNCNTR");
-		case 0x5c1c1500:
-			return("_TOS");
-		case 0x613b690e:
-			return("_ROWS");
-		case 0x205ace36:
-			return("_AUTOTERM");
-		case 0x7d0ed0d1:
-			return("_CONSOLE");
-		case 0xbf31a280:
-			return("_ANSWERTIME");
-		case 0x83aa2a6a:
-			return("_LOGONTIME");
-		case 0xb50cb889:
-			return("_NS_TIME");
-		case 0xae92d249:
-			return("_LAST_NS_TIME");
-		case 0x97f99eef:
-			return("_ONLINE");
-		case 0x381d3c2a:
-			return("_SYS_STATUS");
-		case 0x7e29c819:
-			return("_SYS_MISC");
-		case 0x11c83294:
-			return("_SYS_PSNUM");
-		case 0x02408dc5:
-			return("_SYS_TIMEZONE");
-		case 0x78afeaf1:
-			return("_SYS_PWDAYS");
-		case 0xd859385f:
-			return("_SYS_DELDAYS");
-		case 0x6392dc62:
-			return("_SYS_AUTODEL");
-		case 0x698d59b4:
-			return("_SYS_NODES");
-		case 0x6fb1c46e:
-			return("_SYS_EXP_WARN");
-		case 0xdf391ca7:
-			return("_SYS_LASTNODE");
-		case 0xdd982780:
-			return("_SYS_AUTONODE");
-		case 0xf53db6c7:
-			return("_NODE_SCRNLEN");
-		case 0xa1f0fcb7:
-			return("_NODE_SCRNBLANK");
-		case 0x709c07da:
-			return("_NODE_MISC");
-		case 0xb17e7914:
-			return("_NODE_VALUSER");
-		case 0xadae168a:
-			return("_NODE_IVT");
-		case 0x2aa89801:
-			return("_NODE_SWAP");
-		case 0x4f02623a:
-			return("_NODE_MINBPS");
-		case 0xe7a7fb07:
-			return("_NODE_NUM");
-		case 0x6c8e350a:
-			return("_NEW_LEVEL");
-		case 0xccfe7c5d:
-			return("_NEW_FLAGS1");
-		case 0x55f72de7:
-			return("_NEW_FLAGS2");
-		case 0x22f01d71:
-			return("_NEW_FLAGS3");
-		case 0xbc9488d2:
-			return("_NEW_FLAGS4");
-		case 0x4b0aeb24:
-			return("_NEW_EXEMPT");
-		case 0x20cb6325:
-			return("_NEW_REST");
-		case 0x31178ba2:
-			return("_NEW_CDT");
-		case 0x7345219f:
-			return("_NEW_MIN");
-		case 0xb3f64be4:
-			return("_NEW_SHELL");
-		case 0xa278584f:
-			return("_NEW_MISC");
-		case 0x7342a625:
-			return("_NEW_EXPIRE");
-		case 0x75dc4306:
-			return("_NEW_PROT");
-		case 0xfb394e27:
-			return("_EXPIRED_LEVEL");
-		case 0x89b69753:
-			return("_EXPIRED_FLAGS1");
-		case 0x10bfc6e9:
-			return("_EXPIRED_FLAGS2");
-		case 0x67b8f67f:
-			return("_EXPIRED_FLAGS3");
-		case 0xf9dc63dc:
-			return("_EXPIRED_FLAGS4");
-		case 0x0e42002a:
-			return("_EXPIRED_EXEMPT");
-		case 0x4569c62e:
-			return("_EXPIRED_REST");
-		case 0xfcf3542e:
-			return("_MIN_DSPACE");
-		case 0xcf9ce02c:
-			return("_CDT_MIN_VALUE");
-		case 0xfcb5b274:
-			return("_CDT_PER_DOLLAR");
-		case 0x4db200d2:
-			return("_LEECH_PCT");
-		case 0x9a7d9cca:
-			return("_LEECH_SEC");
-		case 0x396b7167:
-			return("_NETMAIL_COST");
-		case 0x5eeaff21:
-			return("_NETMAIL_MISC");
-		case 0x82d9484e:
-			return("_INETMAIL_COST");
-		case 0xe558c608:
-			return("_INETMAIL_MISC");
-
-		case 0xc6e8539d:
-			return("_LOGON_ULB");
-		case 0xdb0c9ada:
-			return("_LOGON_DLB");
-		case 0xac58736f:
-			return("_LOGON_ULS");
-		case 0xb1bcba28:
-			return("_LOGON_DLS");
-		case 0x9c5051c9:
-			return("_LOGON_POSTS");
-		case 0xc82ba467:
-			return("_LOGON_EMAILS");
-		case 0x8e395209:
-			return("_LOGON_FBACKS");
-		case 0x8b12ba9d:
-			return("_POSTS_READ");
-		case 0xe51c1956:
-			return("_LOGFILE");
-		case 0x5a22d4bd:
-			return("_NODEFILE");
-		case 0x3a37c26b:
-			return("_NODE_EXT");
-
-		case 0xeb6c9c73:
-			return("_ERRORLEVEL");
-
-		case 0x5aaccfc5:
-			return("_ERRNO");
-
-		case 0x057e4cd4:
-			return("_TIMELEFT");
-
-		case 0x1e5052a7:
-			return("_MAX_MINUTES");
-		case 0xedc643f1:
-			return("_MAX_QWKMSGS");
-
-		case 0x430178ec:
-			return("_UQ");
-
-		case 0x455CB929:
-			/* ToDo - undocumented */
-			return("_FTP_MODE");
-
-		case 0x2105D2B9:
-			/* ToDo - undocumented */
-			return("_SOCKET_ERROR");
-
-		case 0xA0023A2E:
-			/* ToDo - undocumented */
-			return("_STARTUP_OPTIONS");
-
-		case 0x16E2585F:
-			/* ToDo - undocumented */
-			return("_CLIENT_SOCKET");
-
-		default:
+	if (found) {
+		strcpy( varname, (*found).var );
+	} else {
+		brute=bruteforce(name);
+		if(brute)
+			strcpy(varname,brute);
+		else
 			sprintf(varname,"var_%08x",name);
-			return(varname);
 	}
+
+	return(varname);
 }
 
 void write_var(FILE *bin, char *src)
@@ -465,7 +466,7 @@ void eol(char *src)
 #define WRITE_NAME(name)	if(indent<0) indent=0; \
 							sprintf(strchr(src,0),"%.*s"name" ",indent,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
 							/* printf("%s\n",name) */
-							
+
 
 #define KEYS(name)		WRITE_NAME(name); \
 						write_keys(bin,src); \
@@ -528,38 +529,38 @@ void eol(char *src)
 						write_cstr(bin,src); \
 						eol(src);			 \
 						break
-						
+
 #define VARVAR(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_var(bin,src);  \
 						eol(src);			 \
 						break
-						
+
 #define VARUCH(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_uchar(bin,src);  \
 						eol(src);			 \
 						break
-						
+
 #define VARVARVAR(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_var(bin,src);  \
 						write_var(bin,src);  \
 						eol(src);			 \
 						break
-						
+
 #define VARSTR(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_cstr(bin,src); \
 						eol(src);			 \
 						break
-						
+
 #define VARLNG(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_lng(bin,src);  \
 						eol(src);			 \
 						break
-						
+
 #define MUCH(name)		WRITE_NAME(name); \
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
@@ -827,7 +828,7 @@ void eol(char *src)
 						write_short(bin,src);\
 						eol(src);			 \
 						break
-						
+
 #define VARVARUST(name)	WRITE_NAME(name); \
 						write_var(bin,src);  \
 						write_var(bin,src);  \
@@ -2295,6 +2296,16 @@ int main(int argc, char **argv)
 		,revision, PLATFORM_DESC);
 
 	for(f=1; f<argc; f++) {
+		if(!strncmp(argv[f],"-b",2)) {
+			brute_len=atoi(argv[f]+2);
+			if(brute_len) {
+				brute_buf=(char *)malloc(brute_len-1);
+				if(!brute_buf)
+					brute_len=0;
+			}
+			printf("Will brute-force up to %d chars\n",brute_len);
+			continue;
+		}
 		bin=fopen(argv[f],"rb");
 		if(bin==NULL)
 			perror(argv[f]);
@@ -2305,7 +2316,7 @@ int main(int argc, char **argv)
 				p=strchr(newname,0);
 			strcpy(p,".decompiled");
 			src=fopen(newname,"w");
-			if(src == NULL) 
+			if(src == NULL)
 				perror(newname);
 			else {
 				printf("\nDecompiling %s to %s\n",argv[f],newname);
