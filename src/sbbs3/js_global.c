@@ -56,6 +56,7 @@ enum {
 	 GLOB_PROP_ERRNO
 	,GLOB_PROP_ERRNO_STR
 	,GLOB_PROP_SOCKET_ERRNO
+	,GLOB_PROP_SCOPE_CHAIN
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -77,6 +78,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				return(JS_FALSE);
 	        *vp = STRING_TO_JSVAL(js_str);
 			break;
+		case GLOB_PROP_SCOPE_CHAIN:
+			*vp = OBJECT_TO_JSVAL(JS_GetScopeChain(cx));
+			break;
 	}
 	return(JS_TRUE);
 }
@@ -89,6 +93,7 @@ static struct JSPropertySpec js_global_properties[] = {
 	{	"errno"			,GLOB_PROP_ERRNO		,GLOBOBJ_FLAGS },
 	{	"errno_str"		,GLOB_PROP_ERRNO_STR	,GLOBOBJ_FLAGS },
 	{	"socket_errno"	,GLOB_PROP_SOCKET_ERRNO	,GLOBOBJ_FLAGS },
+	{	"scope_chain"	,GLOB_PROP_SCOPE_CHAIN	,GLOBOBJ_FLAGS },
 	{0}
 };
 
@@ -2413,6 +2418,21 @@ js_fexist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_removecase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(removecase(p)==0);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -3142,6 +3162,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},		
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
 	,JSDOCSTR("delete a file")
+	,310
+	},		
+	{"file_removecase",	js_removecase,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
+	,JSDOCSTR("delete files case insensitively")
 	,310
 	},		
 	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/oldname, path/newname")
