@@ -633,10 +633,6 @@ int DLLCALL getfattr(const char* filename)
 #endif
 }
 
-static ulong delfiles_dirs(char *inpath, char *spec, int dirs)
-{
-}
-
 #ifdef __unix__
 int removecase(char *path)
 {
