@@ -179,51 +179,11 @@ struct var_table_t {
 
 const char *char_table="________________________________________________123456789!_______BCDEFGHIJKLMNOPQRSTUVWXYZ0____A________________________________________________________________________________________________________________________________________________________________";
 const char *first_char_table="_________________________________________________________________BCDEFGHIJKLMNOPQRSTUVWXYZ!____A________________________________________________________________________________________________________________________________________________________________";
-char *brute_buf=NULL;
+unsigned char *brute_buf=NULL;
+unsigned long *brute_crc_buf=NULL;
 size_t brute_len=0;
 char **bruted=NULL;
 size_t bruted_len=0;
-
-/* This can be optimized */
-int increment_name(unsigned char *name, size_t len)
-{
-	unsigned char	*pos;
-	size_t	l;
-
-	pos=strchr(name,0);
-	if(pos==NULL) {
-		printf("Brute force increment failure\ncannot find end of string\n");
-		return(-1);
-	}
-	l=pos-name;
-	if(pos>name)
-		pos--;
-	while(pos>name) {
-		if(*pos=='9')	/* last char from more_chars */
-			pos--;
-		else {
-			*pos=char_table[*pos];
-			pos++;
-			memset(pos,'_',strlen(pos));
-			return(0);
-		}
-	}
-	if(*pos=='Z' || *pos==0) {		/* last char from first_chars */
-		/* This the max? */
-		if(l==len)
-			return(-1);
-		/* Set string to '_'			first char from both */
-		memset(name,'_',l+1);
-		/* Add new at end */
-		pos=name+l+1;
-		*pos=0;
-		return(0);;
-	}
-	*pos=first_char_table[*pos];
-	pos++;
-	memset(pos,'_',strlen(pos));
-	return(0);
-}
 
 void add_bruted(long name, char *val)
 {
@@ -256,11 +216,14 @@ char *find_bruted(long name)
 	return(NULL);
 }
 
-char* bruteforce(long name)
+char* bruteforce(unsigned long name)
 {
 	long	this_crc=0;
 	char	*ret;
 	int	counter=0;
+	unsigned char	*pos;
+	size_t	l=0;
+	size_t	i,j;
 
 	if(!brute_len)
 		return(NULL);
@@ -269,20 +232,56 @@ char* bruteforce(long name)
 			return(NULL);
 		return(ret);
 	}
-	brute_buf[0]=0;
-	increment_name(brute_buf, brute_len);
+	memset(brute_buf,0,brute_len+1);
+	memset(brute_crc_buf,0,brute_len*sizeof(long));
 	printf("Brute forcing var_%08x\n",name);
-	while(crc32(brute_buf,0)!=name) {
-		if(increment_name(brute_buf, brute_len)) {
-			printf("\r%s Not found.\n",brute_buf);
-			add_bruted(name,"");
-			return(NULL);
+	this_crc=crc32(brute_buf,0);
+	while(this_crc!=name) {
+		pos=brute_buf+l;
+		if(pos>brute_buf) {
+			pos--;
+			while(pos>brute_buf) {
+				if(*pos!='9') {	/* last char from more_chars */
+					*pos=char_table[*pos];
+					pos++;
+					i=(size_t)(pos-brute_buf);
+					memset(pos,'_',l-i);
+					/* Calculate all the following CRCs */
+					for(i--;brute_buf[i];i++)
+						brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+					goto LOOP_END;
+				}
+				else
+					pos--;
+			}
 		}
-		if(!((++counter)%1000)) {
+		if(*pos=='Z' || *pos==0) {		/* last char from first_chars */
+			/* This the max? */
+			if(l==brute_len) {
+				printf("\r%s Not found.\n",brute_buf);
+				add_bruted(name,"");
+				return(NULL);
+			}
+			/* Set string to '_' with one extra at end */
+			memset(brute_buf,'_',++l);
+			brute_crc_buf[0]=ucrc32(brute_buf[0],~0UL);
+			for(i=1;brute_buf[i];i++)
+				brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+			/* String is pre-filled with zeros so no need to terminate */
+			goto LOOP_END;
+		}
+		*pos=first_char_table[*pos];
+		memset(brute_buf+1,'_',l-1);
+		brute_crc_buf[0]=ucrc32(brute_buf[0],~0UL);
+		for(i=1;brute_buf[i];i++)
+			brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+
+LOOP_END:
+		this_crc=~(brute_crc_buf[l-1]);
+		if(!((++counter)%10000))
 			printf("\r%s ",brute_buf);
-			counter=0;
-		}
 	}
+
 	printf("\r%s Found!\n",brute_buf);
 	add_bruted(name,brute_buf);
 	return(brute_buf);
@@ -2289,9 +2288,14 @@ int main(int argc, char **argv)
 		if(!strncmp(argv[f],"-b",2)) {
 			brute_len=atoi(argv[f]+2);
 			if(brute_len) {
-				brute_buf=(char *)malloc(brute_len-1);
+				brute_buf=(char *)malloc(brute_len+1);
 				if(!brute_buf)
 					brute_len=0;
+				brute_crc_buf=(unsigned long *)malloc(brute_len*sizeof(unsigned long));
+				if(!brute_crc_buf) {
+					free(brute_buf);
+					brute_len=0;
+				}
 			}
 			printf("Will brute-force up to %d chars\n",brute_len);
 			continue;
