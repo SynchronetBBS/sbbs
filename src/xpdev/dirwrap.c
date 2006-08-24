@@ -633,31 +633,8 @@ int DLLCALL getfattr(const char* filename)
 #endif
 }
 
-static ulong delfiles_and_or_dirs(char *inpath, char *spec, int dirs)
+static ulong delfiles_dirs(char *inpath, char *spec, int dirs)
 {
-	char	path[MAX_PATH+1];
-	char	lastch;
-    uint	i,files=0;
-	glob_t	g;
-
-	lastch=*lastchar(inpath);
-	if(!IS_PATH_DELIM(lastch) && lastch)
-		sprintf(path,"%s%c",inpath,PATH_DELIM);
-	else
-		strcpy(path,inpath);
-	strcat(path,spec);
-	glob(path,0,NULL,&g);
-	for(i=0;i<g.gl_pathc;i++) {
-		if(!dirs) {
-			if(isdir(g.gl_pathv[i]))
-				continue;
-		}
-		CHMOD(g.gl_pathv[i],S_IWRITE);	/* Incase it's been marked RDONLY */
-		if(remove(g.gl_pathv[i])==0)
-			files++;
-	}
-	globfree(&g);
-	return(files);
 }
 
 #ifdef __unix__
@@ -683,7 +660,7 @@ int removecase(char *path)
 	}
 	*p=0;
 
-	return(delfiles_and_or_dirs(inpath,fname,TRUE)?-1:0);
+	return(delfiles(inpath,fname,TRUE)?-1:0);
 }
 #endif
 
@@ -692,7 +669,27 @@ int removecase(char *path)
 /****************************************************************************/
 ulong DLLCALL delfiles(char *inpath, char *spec)
 {
-	return(delfiles_and_or_dirs(inpath,spec,FALSE));
+	char	path[MAX_PATH+1];
+	char	lastch;
+    uint	i,files=0;
+	glob_t	g;
+
+	lastch=*lastchar(inpath);
+	if(!IS_PATH_DELIM(lastch) && lastch)
+		sprintf(path,"%s%c",inpath,PATH_DELIM);
+	else
+		strcpy(path,inpath);
+	strcat(path,spec);
+	glob(path,0,NULL,&g);
+	for(i=0;i<g.gl_pathc;i++) {
+		if(isdir(g.gl_pathv[i]))
+			continue;
+		CHMOD(g.gl_pathv[i],S_IWRITE);	/* Incase it's been marked RDONLY */
+		if(remove(g.gl_pathv[i])==0)
+			files++;
+	}
+	globfree(&g);
+	return(files);
 }
 
 /****************************************************************************/
