@@ -2481,6 +2481,25 @@ js_fcopy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_fcompare(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		fn1;
+	char*		fn2;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((fn1=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
+		return(JS_TRUE);
+	if((fn2=js_ValueToStringBytes(cx, argv[1], NULL))==NULL)
+		return(JS_TRUE);
+
+	*rval = BOOLEAN_TO_JSVAL(fcompare(fn1,fn2));
+	return(JS_TRUE);
+}
+
+static JSBool
 js_backup(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		fname;
@@ -3212,6 +3231,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"and the lock file exists, but is older than this value (in seconds), "
 		"it is presumed stale and removed/over-written")
 	,312
+	},
+	{"file_compare",	js_fcompare,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/file1, path/file2")
+	,JSDOCSTR("compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise")
+	,314
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("path/pattern [,flags=<tt>GLOB_MARK</tt>]")
 	,JSDOCSTR("returns an array of directory entries, "
