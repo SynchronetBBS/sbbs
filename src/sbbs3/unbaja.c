@@ -177,18 +177,17 @@ struct var_table_t {
 
 #define members(x) (sizeof(x)/sizeof(x[0]))
 
-const char *first_chars="_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const char *more_chars="_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const char *char_table="________________________________________________123456789!_______BCDEFGHIJKLMNOPQRSTUVWXYZ0____A________________________________________________________________________________________________________________________________________________________________";
+const char *first_char_table="_________________________________________________________________BCDEFGHIJKLMNOPQRSTUVWXYZ!____A________________________________________________________________________________________________________________________________________________________________";
 char *brute_buf=NULL;
 size_t brute_len=0;
 char **bruted=NULL;
 size_t bruted_len=0;
 
 /* This can be optimized */
-int increment_name(char *name, size_t len)
+int increment_name(unsigned char *name, size_t len)
 {
-	char	*pos;
-	char	*ch;
+	unsigned char	*pos;
 	size_t	l;
 
 	pos=strchr(name,0);
@@ -196,19 +195,14 @@ int increment_name(char *name, size_t len)
 		printf("Brute force increment failure\ncannot find end of string\n");
 		return(-1);
 	}
+	l=pos-name;
 	if(pos>name)
 		pos--;
 	while(pos>name) {
 		if(*pos=='9')	/* last char from more_chars */
 			pos--;
 		else {
-			ch=strchr(more_chars,*pos);
-			if(ch==NULL) {
-				printf("Brute force increment failure\n%c is not a legal value\n",*pos);
-				return(-1);
-			}
-			ch++;
-			*pos=*ch;
+			*pos=char_table[*pos];
 			pos++;
 			memset(pos,'_',strlen(pos));
 			return(0);
@@ -216,24 +210,16 @@ int increment_name(char *name, size_t len)
 	}
 	if(*pos=='Z' || *pos==0) {		/* last char from first_chars */
 		/* This the max? */
-		if((l=strlen(name))==len)
+		if(l==len)
 			return(-1);
 		/* Set string to '_'			first char from both */
-		memset(name,'_',l);
+		memset(name,'_',l+1);
 		/* Add new at end */
-		pos=strchr(name,0);
-		*pos=*first_chars;
-		pos++;
+		pos=name+l+1;
 		*pos=0;
 		return(0);;
 	}
-	ch=strchr(first_chars,*pos);
-	if(ch==NULL) {
-		printf("Brute force increment failure\ncannot find %c is not a legal value at start\n",*pos);
-		return(-1);
-	}
-	ch++;
-	*pos=*ch;
+	*pos=first_char_table[*pos];
 	pos++;
 	memset(pos,'_',strlen(pos));
 	return(0);
@@ -274,6 +260,7 @@ char* bruteforce(long name)
 {
 	long	this_crc=0;
 	char	*ret;
+	int	counter=0;
 
 	if(!brute_len)
 		return(NULL);
@@ -287,13 +274,16 @@ char* bruteforce(long name)
 	printf("Brute forcing var_%08x\n",name);
 	while(crc32(brute_buf,0)!=name) {
 		if(increment_name(brute_buf, brute_len)) {
-			printf("Not found.              \n");
+			printf("\r%s Not found.\n",brute_buf);
 			add_bruted(name,"");
 			return(NULL);
 		}
-		printf("\r%s ",brute_buf);
+		if(!((++counter)%1000)) {
+			printf("\r%s ",brute_buf);
+			counter=0;
+		}
 	}
-	printf("Found!            \n");
+	printf("\r%s Found!\n",brute_buf);
 	add_bruted(name,brute_buf);
 	return(brute_buf);
 }
