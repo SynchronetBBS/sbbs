@@ -573,33 +573,6 @@ BOOL DLLCALL fexistcase(char *path)
 #endif
 }
 
-#ifdef __unix__
-int removecase(char *path)
-{
-	char inpath[MAX_PATH+1];
-	char fname[MAX_PATH*4+1];
-	char tmp[5];
-	char *p;
-	int  i;
-
-	if(strchr(path,'?') || strchr(path,'*'))
-		return(-1);
-	SAFECOPY(inpath,path);
-	p=getfname(inpath);
-	fname[0]=0;
-	for(i=0;p[i];i++)  {
-		if(isalpha(p[i]))
-			sprintf(tmp,"[%c%c]",toupper(p[i]),tolower(p[i]));
-		else
-			sprintf(tmp,"%c",p[i]);
-		strncat(fname,tmp,MAX_PATH*4);
-	}
-	*p=0;
-
-	return(delfiles(inpath,fname)?-1:0);
-}
-#endif
-
 #if !defined(S_ISDIR)
 	#define S_ISDIR(x)	((x)&S_IFDIR)
 #endif
@@ -660,10 +633,7 @@ int DLLCALL getfattr(const char* filename)
 #endif
 }
 
-/****************************************************************************/
-/* Deletes all files in dir 'path' that match file spec 'spec'              */
-/****************************************************************************/
-ulong DLLCALL delfiles(char *inpath, char *spec)
+static ulong delfiles_and_or_dirs(char *inpath, char *spec, int dirs)
 {
 	char	path[MAX_PATH+1];
 	char	lastch;
@@ -678,14 +648,51 @@ ulong DLLCALL delfiles(char *inpath, char *spec)
 	strcat(path,spec);
 	glob(path,0,NULL,&g);
 	for(i=0;i<g.gl_pathc;i++) {
-		if(isdir(g.gl_pathv[i]))
-			continue;
+		if(!dirs) {
+			if(isdir(g.gl_pathv[i]))
+				continue;
+		}
 		CHMOD(g.gl_pathv[i],S_IWRITE);	/* Incase it's been marked RDONLY */
 		if(remove(g.gl_pathv[i])==0)
 			files++;
 	}
 	globfree(&g);
 	return(files);
+}
+
+#ifdef __unix__
+int removecase(char *path)
+{
+	char inpath[MAX_PATH+1];
+	char fname[MAX_PATH*4+1];
+	char tmp[5];
+	char *p;
+	int  i;
+
+	if(strchr(path,'?') || strchr(path,'*'))
+		return(-1);
+	SAFECOPY(inpath,path);
+	p=getfname(inpath);
+	fname[0]=0;
+	for(i=0;p[i];i++)  {
+		if(isalpha(p[i]))
+			sprintf(tmp,"[%c%c]",toupper(p[i]),tolower(p[i]));
+		else
+			sprintf(tmp,"%c",p[i]);
+		strncat(fname,tmp,MAX_PATH*4);
+	}
+	*p=0;
+
+	return(delfiles_and_or_dirs(inpath,fname,TRUE)?-1:0);
+}
+#endif
+
+/****************************************************************************/
+/* Deletes all files in dir 'path' that match file spec 'spec'              */
+/****************************************************************************/
+ulong DLLCALL delfiles(char *inpath, char *spec)
+{
+	return(delfiles_and_or_dirs(inpath,spec,FALSE));
 }
 
 /****************************************************************************/
