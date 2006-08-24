@@ -660,7 +660,7 @@ int removecase(char *path)
 	}
 	*p=0;
 
-	return(delfiles(inpath,fname,TRUE)?-1:0);
+	return(delfiles(inpath,fname)?-1:0);
 }
 #endif
 
