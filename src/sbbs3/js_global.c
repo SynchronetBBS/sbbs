@@ -56,7 +56,6 @@ enum {
 	 GLOB_PROP_ERRNO
 	,GLOB_PROP_ERRNO_STR
 	,GLOB_PROP_SOCKET_ERRNO
-	,GLOB_PROP_SCOPE_CHAIN
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -78,9 +77,6 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				return(JS_FALSE);
 	        *vp = STRING_TO_JSVAL(js_str);
 			break;
-		case GLOB_PROP_SCOPE_CHAIN:
-			*vp = OBJECT_TO_JSVAL(JS_GetScopeChain(cx));
-			break;
 	}
 	return(JS_TRUE);
 }
@@ -93,7 +89,6 @@ static struct JSPropertySpec js_global_properties[] = {
 	{	"errno"			,GLOB_PROP_ERRNO		,GLOBOBJ_FLAGS },
 	{	"errno_str"		,GLOB_PROP_ERRNO_STR	,GLOBOBJ_FLAGS },
 	{	"socket_errno"	,GLOB_PROP_SOCKET_ERRNO	,GLOBOBJ_FLAGS },
-	{	"scope_chain"	,GLOB_PROP_SCOPE_CHAIN	,GLOBOBJ_FLAGS },
 	{0}
 };
 
@@ -3166,7 +3161,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},		
 	{"file_removecase",	js_removecase,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
 	,JSDOCSTR("delete files case insensitively")
-	,310
+	,314
 	},		
 	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/oldname, path/newname")
 	,JSDOCSTR("rename a file, possibly moving it to another directory in the process")
