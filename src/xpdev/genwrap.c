@@ -248,8 +248,10 @@ char* DLLCALL strtok_r(char *str, const char *delim, char **last)
     while(*str && strchr(delim, *str))
         ++str;
 
-    if(!*str)          /* no more tokens */
+    if(!*str) {         /* no more tokens */
+		*last = str;
         return NULL;
+	}
 
     token = str;
 
