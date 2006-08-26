@@ -1376,9 +1376,12 @@ static BOOL check_ars(http_session_t * session)
 	SAFECOPY(auth_req,session->req.auth);
 
 	username=strtok_r(auth_req,":",&last);
-	if(username==NULL)
+	if(username)
+		password=strtok_r(NULL,":",&last);
+	else {
 		username="";
-	password=strtok_r(NULL,":",&last);
+		password="";
+	}
 	/* Require a password */
 	if(password==NULL)
 		password="";
@@ -1858,12 +1861,13 @@ static BOOL parse_headers(http_session_t * session)
 				js_add_header(session,head_line,value);
 			switch(i) {
 				case HEAD_AUTH:
-					strtok_r(value," ",&last);
-					p=strtok_r(NULL," ",&last);
-					if(p==NULL)
-						break;
-					while(*p && *p<' ') p++;
-					b64_decode(session->req.auth,sizeof(session->req.auth),p,strlen(p));
+					if(strtok_r(value," ",&last)) {
+						p=strtok_r(NULL," ",&last);
+						if(p==NULL)
+							break;
+						while(*p && *p<' ') p++;
+						b64_decode(session->req.auth,sizeof(session->req.auth),p,strlen(p));
+					}
 					break;
 				case HEAD_LENGTH:
 					add_env(session,"CONTENT_LENGTH",value);
@@ -2063,11 +2067,15 @@ static char *get_request(http_session_t * session, char *req_line)
 
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
-	strtok_r(session->req.virtual_path," \t",&last);
+	if(strtok_r(session->req.virtual_path," \t",&last))
+		retval=strtok_r(NULL," \t",&last);
+	else
+		retval=NULL;
 	SAFECOPY(session->req.request_line,session->req.virtual_path);
-	retval=strtok_r(NULL," \t",&last);
-	strtok_r(session->req.virtual_path,"?",&last);
-	query=strtok_r(NULL,"",&last);
+	if(strtok_r(session->req.virtual_path,"?",&last))
+		query=strtok_r(NULL,"",&last);
+	else
+		query=NULL;
 
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -2078,8 +2086,10 @@ static char *get_request(http_session_t * session, char *req_line)
 		SAFECOPY(session->req.vhost,session->req.host);
 		/* Remove port specification */
 		strtok_r(session->req.vhost,":",&last);
-		strtok_r(session->req.physical_path,"/",&last);
-		p=strtok_r(NULL,"/",&last);
+		if(strtok_r(session->req.physical_path,"/",&last))
+			p=strtok_r(NULL,"/",&last);
+		else
+			p=NULL;
 		if(p==NULL) {
 			/* Do not allow host values larger than 128 bytes */
 			session->req.host[0]=0;
@@ -3173,8 +3183,10 @@ static BOOL exec_cgi(http_session_t *session)
 				,session->socket, buf);
 			SAFECOPY(header,buf);
 			if(strchr(header,':')!=NULL) {
-				directive=strtok_r(header,":",&last);
-				value=strtok_r(NULL,"",&last);
+				if(directive=strtok_r(header,":",&last))
+					value=strtok_r(NULL,"",&last);
+				else
+					value="";
 				i=get_header_type(directive);
 				switch (i)  {
 					case HEAD_LOCATION:
