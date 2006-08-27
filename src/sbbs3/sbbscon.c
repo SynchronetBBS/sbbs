@@ -256,38 +256,42 @@ static int lprintf(int level, char *fmt, ...)
 }
 
 #ifdef __unix__
+static pthread_mutex_t setid_mutex;
+static BOOL setid_mutex_initialized;
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
 static BOOL do_seteuid(BOOL to_new) 
 {
 	BOOL	result=FALSE;
-	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
 
 	if(new_uid_name[0]==0)	/* not set? */
 		return(TRUE);		/* do nothing */
 
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
+	if(!setid_mutex_initialized) {
+		pthread_mutex_init(&setid_mutex,NULL);
+		setid_mutex_initialized=TRUE;
 	}
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&setid_mutex);
 
-	if(to_new)
-		if(!setregid(-1,new_gid) && !setreuid(-1,new_uid))
+	if(to_new) {
+		if(((new_gid==getegid() && new_gid==getgid()) || setregid(-1,new_gid)==0)
+				&& ((new_uid==geteuid() && new_uid==getuid()) || setreuid(-1,new_uid)==0))
 			result=TRUE;
 		else
 			result=FALSE;
-	else
-		if(!setregid(-1,old_gid) && !setreuid(-1,old_uid))
+	}
+	else {
+		if(((old_gid==getegid() && old_gid==getgid()) || setregid(-1,old_gid)==0)
+				&& ((old_uid==geteuid() && old_uid==getuid()) || setreuid(-1,old_uid)==0))
 			result=TRUE;
 		else
 			result=FALSE;
+	}
 
 		
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&setid_mutex);
 
 	if(!result) {
 		lputs(LOG_ERR,"!seteuid FAILED");
@@ -306,6 +310,14 @@ BOOL do_setuid(BOOL force)
 	if(!force)
 		return(do_seteuid(TRUE));
 #endif
+
+	if(!setid_mutex_initialized) {
+		pthread_mutex_init(&setid_mutex,NULL);
+		setid_mutex_initialized=TRUE;
+	}
+
+	pthread_mutex_lock(&setid_mutex);
+
 	setregid(-1,old_gid);
 	setreuid(-1,old_uid);
 	if(setregid(new_gid,new_gid))
@@ -321,6 +333,9 @@ BOOL do_setuid(BOOL force)
 		lputs(LOG_ERR,strerror(errno));
 		result=FALSE;
 	}
+
+	pthread_mutex_unlock(&setid_mutex);
+
 	if(force && (!result))
 		exit(1);
 
