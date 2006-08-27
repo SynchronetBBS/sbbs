@@ -489,16 +489,33 @@ int SDL_main_env(int argc, char **argv, char **env)
 	struct main_args ma;
 	SDL_Thread	*main_thread;
 	int		main_ret;
+	int		use_sdl_video=FALSE;
 
 	ma.argc=argc;
 	ma.argv=argv;
 	ma.enviro=env;
-#ifndef _WIN32
+#ifdef _WIN32
+	HMODULE 	ciolib_dll;
+#else
 	load_sdl_funcs(&sdl);
+	void	*mainexe;
 #endif
 
 	if(sdl.gotfuncs) {
 #ifdef _WIN32
+		/*
+		 * Run-time detection of SDL-capable conio library
+		 * ToDo: This probobly won't work if ciolib is a DLL
+		 */
+		if(GetProcAddress(GetModuleHandle(NULL),"sdl_video_event_thread")
+			use_sdl_video=TRUE;
+		else {
+			if((ciolib_dll=GetModuleHandle("ciolib_mt"))!=NULL) {
+				if(GetProcAddress(ciolib_dll,"sdl_video_event_thread"))
+					use_sdl_video=TRUE;
+			}
+		}
+
 		/* Fail to windib (ie: No mouse attached) */
 		if(sdl.Init(SDL_INIT_VIDEO)) {
 			if(getenv("SDL_VIDEODRIVER")==NULL) {
@@ -515,6 +532,16 @@ int SDL_main_env(int argc, char **argv, char **env)
 			sdl_initialized=TRUE;
 		}
 #else
+		/*
+		 * Run-time detection of SDL-capable conio library
+		 */
+
+		mainexe=dlopen(NULL,RTLD_NOW);
+		if(mainexe) {
+			if(dlsym(mainexe, "sdl_video_event_thread"))
+				use_sdl_video=TRUE;
+			dlclose(mainexe);
+		}
 
 		/*
 		 * On Linux, SDL doesn't properly detect availability of the
@@ -523,7 +550,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 		 * This ugly hack attempts to prevent this... of course, remote X11
 		 * connections must still be allowed.
 		 */
-		if(getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL) {
+		if((!use_sdl_video) || getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL) {
 			/* Sure ,we can't use video, but audio is still valid! */
 			if(sdl.Init(0)==0)
 				sdl_initialized=TRUE;
@@ -551,7 +578,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 			}
 		}
 	}
-	if(sdl_initialized) {
+	if(sdl_video_initialized) {
 		atexit(sdl.Quit);
 		sdl_main_sem=sdl.SDL_CreateSemaphore(0);
 		sdl_exit_sem=sdl.SDL_CreateSemaphore(0);
