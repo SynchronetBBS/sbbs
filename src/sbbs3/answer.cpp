@@ -113,7 +113,7 @@ bool sbbs_t::answer()
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp
-						,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
+						,rlogin_pass);
 					for(i=0;i<3;i++) {
 						if(stricmp(tmp,useron.pass)) {
 							rioctl(IOFI);       /* flush input buffer */
