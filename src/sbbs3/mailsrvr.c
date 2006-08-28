@@ -66,6 +66,7 @@
 #include "base64.h"
 #include "ini_file.h"
 #include "netwrap.h"	/* getNameServerList() */
+#include "sbbscon.h"        /* thread_suid_broken */
 
 /* Constants */
 #define FORWARD			"forward:"
@@ -4092,7 +4093,8 @@ void DLLCALL mail_server(void* arg)
 	startup=(mail_startup_t*)arg;
 
 #ifdef _THREAD_SUID_BROKEN
-	startup->seteuid(TRUE);
+	if(thread_suid_broken)
+		startup->seteuid(TRUE);
 #endif
 
     if(startup==NULL) {

@@ -63,6 +63,7 @@
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
 #include "telnet.h"
+#include "sbbscon.h"		/* thread_suid_broken */
 
 /* Constants */
 
@@ -4565,7 +4566,8 @@ void DLLCALL ftp_server(void* arg)
 	startup=(ftp_startup_t*)arg;
 
 #ifdef _THREAD_SUID_BROKEN
-	startup->seteuid(TRUE);
+	if(thread_suid_broken)
+		startup->seteuid(TRUE);
 #endif
 
     if(startup==NULL) {

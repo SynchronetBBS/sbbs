@@ -69,6 +69,7 @@
 #include "services.h"
 #include "ident.h"	/* identify() */
 #include "sbbs_ini.h"
+#include "sbbscon.h"        /* thread_suid_broken */
 
 /* Constants */
 
@@ -1642,7 +1643,8 @@ void DLLCALL services_thread(void* arg)
 	}
 
 #ifdef _THREAD_SUID_BROKEN
-	startup->seteuid(TRUE);
+	if(thread_suid_broken)
+		startup->seteuid(TRUE);
 #endif
 
 	/* Setup intelligent defaults */

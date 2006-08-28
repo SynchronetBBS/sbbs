@@ -38,6 +38,7 @@
 #include "sbbs.h"
 #include "ident.h"
 #include "telnet.h" 
+#include "sbbscon.h"        /* thread_suid_broken */
 
 #ifdef __unix__
 	#include <sys/un.h>
@@ -3796,7 +3797,8 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 #ifdef _THREAD_SUID_BROKEN
-	startup->seteuid(TRUE);
+	if(thread_suid_broken)
+		startup->seteuid(TRUE);
 #endif
 
 	/* Setup intelligent defaults */
