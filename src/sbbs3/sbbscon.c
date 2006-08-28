@@ -291,7 +291,8 @@ static BOOL do_seteuid(BOOL to_new)
 	}
 
 #if defined(_THREAD_SUID_BROKEN)
-	SLEEP(10);
+	SLEEP(5);
+	SLEEP(5);
 #endif
 
 	pthread_mutex_unlock(&setid_mutex);
