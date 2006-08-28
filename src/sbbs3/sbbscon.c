@@ -290,7 +290,10 @@ static BOOL do_seteuid(BOOL to_new)
 			result=FALSE;
 	}
 
-		
+#if defined(_THREAD_SUID_BROKEN)
+	SLEEP(10);
+#endif
+
 	pthread_mutex_unlock(&setid_mutex);
 
 	if(!result) {
