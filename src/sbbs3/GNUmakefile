@@ -162,7 +162,7 @@ $(BAJA): $(BAJA_OBJS)
 # UnBaja Utility
 $(UNBAJA): $(OBJODIR) $(EXEODIR) $(UNBAJA_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(UNBAJA_OBJS) $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $(UNBAJA_OBJS) $(XPDEV_LIBS) $(UTIL_LIBS)
 
 # Node Utility
 $(NODE): $(NODE_OBJS)
