@@ -257,7 +257,7 @@ static int lprintf(int level, char *fmt, ...)
 
 #ifdef __unix__
 static pthread_mutex_t setid_mutex;
-static BOOL setid_mutex_initialized;
+static BOOL setid_mutex_initialized=0;
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
