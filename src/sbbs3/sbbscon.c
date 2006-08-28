@@ -766,7 +766,7 @@ static void web_started(void* p)
 	web_running=TRUE;
 	web_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
-		if(thread_suid_broken)
+		if(thread_suid_broken) {
 	    	do_seteuid(FALSE);
 	    	do_setuid(FALSE);
 		}
