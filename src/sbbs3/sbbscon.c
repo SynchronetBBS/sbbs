@@ -276,15 +276,15 @@ static BOOL do_seteuid(BOOL to_new)
 	pthread_mutex_lock(&setid_mutex);
 
 	if(to_new) {
-		if(((new_gid==getegid() && new_gid==getgid()) || setregid(-1,new_gid)==0)
-				&& ((new_uid==geteuid() && new_uid==getuid()) || setreuid(-1,new_uid)==0))
+		if((new_gid==getegid() || setregid(-1,new_gid)==0)
+				&& (new_uid==geteuid() || setreuid(-1,new_uid)==0))
 			result=TRUE;
 		else
 			result=FALSE;
 	}
 	else {
-		if(((old_gid==getegid() && old_gid==getgid()) || setregid(-1,old_gid)==0)
-				&& ((old_uid==geteuid() && old_uid==getuid()) || setreuid(-1,old_uid)==0))
+		if((old_gid==getegid() || setregid(-1,old_gid)==0)
+				&& (old_uid==geteuid() || setreuid(-1,old_uid)==0))
 			result=TRUE;
 		else
 			result=FALSE;
