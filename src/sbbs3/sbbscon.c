@@ -383,6 +383,13 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+
+	pthread_mutex_lock(&mutex);
+
 #ifdef _THREAD_SUID_BROKEN
 	if(up && setuid) {
 		do_seteuid(FALSE);
@@ -390,12 +397,6 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	}
 #endif
 
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
-
-	pthread_mutex_lock(&mutex);
 	if(up)
 	    thread_count++;
     else if(thread_count>0)
