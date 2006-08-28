@@ -202,7 +202,7 @@ static const char* web_usage  = "Web server settings:\n"
 							;
 #ifdef _THREAD_SUID_BROKEN
 int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
-#else
+#endif
 
 static int lputs(int level, char *str)
 {
