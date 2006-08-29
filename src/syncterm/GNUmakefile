@@ -15,6 +15,12 @@ ifdef USE_GUTS
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)gutsz$(OFILE)
 endif
 
+ifdef USE_CRYPTLIB
+ CFLAGS	+=	-DUSE_CRYPTLIB
+ # TODO: This path is silliness...
+ LDFLAGS	+= -L/usr/local/lib -lcl
+endif
+
 CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) -I../sbbs3 -I../smblib
 LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 

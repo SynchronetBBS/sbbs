@@ -11,9 +11,20 @@
 #include "conn.h"
 #include "uifcinit.h"
 
+#ifdef USE_CRYPTLIB
+#include "cryptlib.h"
+#endif
+
 static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
-char *conn_types[]={"Unknown","RLogin","Telnet","Raw",NULL};
+char *conn_types[]={"Unknown","RLogin","Telnet","Raw"
+#ifdef USE_CRYPTLIB
+	,"SSH"
+#endif
+,NULL};
+#ifdef USE_CRYPTLIB
+CRYPT_SESSION	ssh_session;
+#endif
 
 int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 {
@@ -23,6 +34,25 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 	BOOL	data_waiting;
 	static BYTE	*telnet_buf=NULL;
 	static size_t tbsize=0;
+
+#ifdef USE_CRYPTLIB
+	if(con_type==CONN_TYPE_SSH) {
+		int	status;
+		status=cryptPopData(ssh_session, buffer, buflen, &rd);
+		if(cryptStatusError(status)) {
+			char	str[1024];
+
+			if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
+				closesocket(conn_socket);
+				return(-1);
+			}
+			sprintf(str,"Error %d recieving data",status);
+			uifcmsg("Error recieving data",str);
+			return(-1);
+		}
+		return(rd);
+	}
+#endif	/* USE_CRYPTLIB */
 
 	if(con_type == CONN_TYPE_TELNET) {
 		if(tbsize < buflen) {
@@ -69,6 +99,31 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 	BYTE *p;
 	static BYTE *outbuf=NULL;
 	static size_t obsize=0;
+
+#ifdef USE_CRYPTLIB
+	if(con_type==CONN_TYPE_SSH) {
+		int status;
+
+		sent=0;
+		while(sent<(int)buflen) {
+			status=cryptPushData(ssh_session, buffer+sent, buflen-sent, &i);
+			if(cryptStatusError(status)) {
+				char	str[1024];
+
+				if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
+					closesocket(conn_socket);
+					return(-1);
+				}
+				sprintf(str,"Error %d sending data",status);
+				uifcmsg("Error sending data",str);
+				return(-1);
+			}
+			sent+=i;
+		}
+		cryptFlushData(ssh_session);
+		return(0);
+	}
+#endif
 
 	if(con_type == CONN_TYPE_TELNET) {
 		if(obsize < buflen*2) {
@@ -121,6 +176,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
+
 	if(!(*p))
 		neta=inet_addr(addr);
 	else {
@@ -140,6 +196,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 		uifc.pop(NULL);
 	}
 	uifc.pop("Connecting...");
+
 	conn_socket=socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
 	if(conn_socket==INVALID_SOCKET) {
 		uifc.pop(NULL);
@@ -183,6 +240,66 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			else
 				conn_send("ansi-bbs/115200",15,1000);
 			break;
+#ifdef USE_CRYPTLIB
+		case CONN_TYPE_SSH: {
+			int off=1;
+			int status;
+
+			status=cryptInit();
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d initializing cryptlib",status);
+				uifcmsg("Error initializing cryptlib",str);
+				return(-1);
+			}
+
+			status=cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d creating session",status);
+				uifcmsg("Error creating session",str);
+				return(-1);
+			}
+
+			/* we need to disable Nagle on the socket. */
+			setsockopt(conn_socket, IPPROTO_TCP, TCP_NODELAY, ( char * )&off, sizeof ( off ) );
+
+			/* Pass socket to cryptlib */
+			status=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, conn_socket);
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d passing socket",status);
+				uifcmsg("Error passing socket",str);
+				return(-1);
+			}
+
+			/* Add username/password */
+			status=cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, ruser, strlen(ruser));
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d setting username",status);
+				uifcmsg("Error setting username",str);
+				return(-1);
+			}
+			status=cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, passwd, strlen(passwd));
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d setting password",status);
+				uifcmsg("Error setting password",str);
+				return(-1);
+			}
+
+			/* Activate the session */
+			status=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+			if(cryptStatusError(status)) {
+				char	str[1024];
+				sprintf(str,"Error %d activating session",status);
+				uifcmsg("Error activating session",str);
+				return(-1);
+			}
+			break;
+		}
+#endif
 	}
 	uifc.pop(NULL);
 
@@ -191,5 +308,11 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 
 int conn_close(void)
 {
+#ifdef USE_CRYPTLIB
+	if(con_type==CONN_TYPE_SSH) {
+		cryptDestroySession(ssh_session);
+		return(0);
+	}
+#endif
 	return(closesocket(conn_socket));
 }
