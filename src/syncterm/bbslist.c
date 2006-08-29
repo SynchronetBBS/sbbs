@@ -184,14 +184,14 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	if(bbsname != NULL)
 		strcpy(entry->name,bbsname);
 	iniReadString(listfile,bbsname,"Address","",entry->addr);
-	entry->port=iniReadShortInt(listfile,bbsname,"Port",513);
+	entry->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
+	entry->port=iniReadShortInt(listfile,bbsname,"Port",conn_ports[entry->conn_type]);
 	entry->added=iniReadDateTime(listfile,bbsname,"Added",0);
 	entry->connected=iniReadDateTime(listfile,bbsname,"LastConnected",0);
 	entry->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
 	iniReadString(listfile,bbsname,"UserName","",entry->user);
 	iniReadString(listfile,bbsname,"Password","",entry->password);
 	iniReadString(listfile,bbsname,"SystemPassword","",entry->syspass);
-	entry->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
 	dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
 	if(dumb)
 		entry->conn_type=CONN_TYPE_RAW;
@@ -331,14 +331,14 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				break;
 			case 2:
 				i=item->port;
-				sprintf(str,"%hu",item->port?item->port:513);
+				sprintf(str,"%hu",item->port);
 				uifc.helpbuf=	"`Port`\n\n"
 								"Enter the port which the BBS is listening to on the remote system\n"
 								"Telnet is generally port 23 and RLogin is generally 513\n";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Port",str,5,K_EDIT|K_NUMBER);
 				j=atoi(str);
 				if(j<1 || j>65535)
-					j=513;
+					j=conn_ports[item->conn_type];
 				item->port=j;
 				iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
 				if(i!=j)
@@ -376,6 +376,14 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]));
 				item->conn_type++;
 				iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
+
+				/* Set the port too */
+				j=conn_ports[item->conn_type];
+				if(j<1 || j>65535)
+					j=item->port;
+				item->port=j;
+				iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
+
 				changed=1;
 				break;
 			case 7:

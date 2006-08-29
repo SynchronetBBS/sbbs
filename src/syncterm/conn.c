@@ -22,6 +22,11 @@ char *conn_types[]={"Unknown","RLogin","Telnet","Raw"
 	,"SSH"
 #endif
 ,NULL};
+int conn_ports[]={0,513,23,0
+#ifdef USE_CRYPTLIB
+	,22
+#endif
+};
 #ifdef USE_CRYPTLIB
 CRYPT_SESSION	ssh_session;
 #endif
