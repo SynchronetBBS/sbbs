@@ -490,15 +490,17 @@ int SDL_main_env(int argc, char **argv, char **env)
 	SDL_Thread	*main_thread;
 	int		main_ret;
 	int		use_sdl_video=FALSE;
+#ifdef _WIN32
+	HMODULE 	ciolib_dll;
+#else
+	void	*mainexe;
+#endif
 
 	ma.argc=argc;
 	ma.argv=argv;
 	ma.enviro=env;
-#ifdef _WIN32
-	HMODULE 	ciolib_dll;
-#else
+#ifndef _WIN32
 	load_sdl_funcs(&sdl);
-	void	*mainexe;
 #endif
 
 	if(sdl.gotfuncs) {
@@ -507,7 +509,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 		 * Run-time detection of SDL-capable conio library
 		 * ToDo: This probobly won't work if ciolib is a DLL
 		 */
-		if(GetProcAddress(GetModuleHandle(NULL),"sdl_video_event_thread")
+		if(GetProcAddress(GetModuleHandle(NULL),"sdl_video_event_thread"))
 			use_sdl_video=TRUE;
 		else {
 			if((ciolib_dll=GetModuleHandle("ciolib_mt"))!=NULL) {
