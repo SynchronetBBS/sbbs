@@ -1,4 +1,6 @@
-#include <dlfcn.h>
+#ifndef _WIN32
+ #include <dlfcn.h>
+#endif
 #include <stdio.h>	/* NULL */
 
 #include "st_crypt.h"
@@ -9,13 +11,13 @@ int crypt_loaded=0;
 int init_crypt(void)
 {
 #ifdef _WIN32
-	HMODULE crypt_dll;
+	HMODULE cryptlib;
 
 	if(crypt_loaded)
 		return(0);
 
-	crypt_dll=LoadLibrary("cl32.dll");
-	if(crypt_dll==NULL)
+	cryptlib=LoadLibrary("cl32.dll");
+	if(cryptlib==NULL)
 		return(-1);
 
 	if((cl.PopData=GetProcAddress(cryptlib,"cryptPopData"))==NULL) {
