@@ -51,7 +51,6 @@
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
-#include "sbbscon.h"
 
 /* XPDEV headers */
 #include "conwrap.h"	/* kbhit/getch */

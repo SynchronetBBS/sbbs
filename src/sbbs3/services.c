@@ -69,7 +69,6 @@
 #include "services.h"
 #include "ident.h"	/* identify() */
 #include "sbbs_ini.h"
-#include "sbbscon.h"        /* thread_suid_broken */
 
 /* Constants */
 

@@ -65,7 +65,6 @@
 #include "semwrap.h"
 #include "websrvr.h"
 #include "base64.h"
-#include "sbbscon.h"        /* thread_suid_broken */
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";

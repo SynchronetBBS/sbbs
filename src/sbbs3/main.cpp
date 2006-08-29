@@ -38,7 +38,6 @@
 #include "sbbs.h"
 #include "ident.h"
 #include "telnet.h" 
-#include "sbbscon.h"        /* thread_suid_broken */
 
 #ifdef __unix__
 	#include <sys/un.h>

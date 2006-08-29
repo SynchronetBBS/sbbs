@@ -63,7 +63,6 @@
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
 #include "telnet.h"
-#include "sbbscon.h"		/* thread_suid_broken */
 
 /* Constants */
 

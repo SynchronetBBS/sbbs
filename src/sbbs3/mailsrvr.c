@@ -66,7 +66,6 @@
 #include "base64.h"
 #include "ini_file.h"
 #include "netwrap.h"	/* getNameServerList() */
-#include "sbbscon.h"        /* thread_suid_broken */
 
 /* Constants */
 #define FORWARD			"forward:"
