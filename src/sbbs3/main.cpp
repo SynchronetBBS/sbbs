@@ -91,6 +91,9 @@ static	WORD	last_node;
 static	bool	terminate_server=false;
 static	str_list_t recycle_semfiles;
 static	str_list_t shutdown_semfiles;
+#ifdef _THREAD_SUID_BROKEN
+int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
+#endif
 
 extern "C" {
 

@@ -69,6 +69,12 @@
 
 #endif
 
+#ifdef _THREAD_SUID_BROKEN
+extern int	thread_suid_broken;			/* NPTL is no longer broken */
+#else
+#define thread_suid_broken FALSE
+#endif
+
 /******************/
 /* ANSI C Library */
 /******************/

@@ -200,10 +200,6 @@ static const char* web_usage  = "Web server settings:\n"
 							"\tw-         disable Web server (no services module)\n"
 							"\n"
 							;
-#ifdef _THREAD_SUID_BROKEN
-int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
-#endif
-
 static int lputs(int level, char *str)
 {
 	static pthread_mutex_t mutex;
