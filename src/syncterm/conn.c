@@ -12,7 +12,7 @@
 #include "uifcinit.h"
 
 #ifdef USE_CRYPTLIB
-#include "cryptlib.h"
+#include "st_crypt.h"
 #endif
 
 static int	con_type=CONN_TYPE_UNKNOWN;
@@ -43,7 +43,7 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 #ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		int	status;
-		status=cryptPopData(ssh_session, buffer, buflen, &rd);
+		status=cl.PopData(ssh_session, buffer, buflen, &rd);
 		if(cryptStatusError(status)) {
 			char	str[1024];
 
@@ -111,7 +111,7 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 
 		sent=0;
 		while(sent<(int)buflen) {
-			status=cryptPushData(ssh_session, buffer+sent, buflen-sent, &i);
+			status=cl.PushData(ssh_session, buffer+sent, buflen-sent, &i);
 			if(cryptStatusError(status)) {
 				char	str[1024];
 
@@ -125,7 +125,7 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 			}
 			sent+=i;
 		}
-		cryptFlushData(ssh_session);
+		cl.FlushData(ssh_session);
 		return(0);
 	}
 #endif
@@ -177,6 +177,28 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 	unsigned int	neta;
 
 	init_uifc(TRUE, TRUE);
+
+#ifdef USE_CRYPTLIB
+	if(conn_type==CONN_TYPE_SSH) {
+		if(!crypt_loaded)
+			init_crypt();
+		if(!crypt_loaded) {
+			uifcmsg("Cannot load cryptlib - SSH inoperative",	"`Cannot load cryptlib`\n\n"
+						"Cannot laod the file "
+#ifdef _WIN32
+						"cl32.dll"
+#else
+						"libcl.so"
+#endif
+						"\nThis file is required for SSH functionality.\n\n"
+						"The newest version is always available from:\n"
+						"http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+						);
+			return(-1);
+		}
+	}
+#endif
+
 	con_type=conn_type;
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -250,15 +272,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			int off=1;
 			int status;
 
-			status=cryptInit();
-			if(cryptStatusError(status)) {
-				char	str[1024];
-				sprintf(str,"Error %d initializing cryptlib",status);
-				uifcmsg("Error initializing cryptlib",str);
-				return(-1);
-			}
-
-			status=cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
+			status=cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
 			if(cryptStatusError(status)) {
 				char	str[1024];
 				sprintf(str,"Error %d creating session",status);
@@ -270,7 +284,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			setsockopt(conn_socket, IPPROTO_TCP, TCP_NODELAY, ( char * )&off, sizeof ( off ) );
 
 			/* Pass socket to cryptlib */
-			status=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, conn_socket);
+			status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, conn_socket);
 			if(cryptStatusError(status)) {
 				char	str[1024];
 				sprintf(str,"Error %d passing socket",status);
@@ -279,14 +293,14 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			}
 
 			/* Add username/password */
-			status=cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, ruser, strlen(ruser));
+			status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, ruser, strlen(ruser));
 			if(cryptStatusError(status)) {
 				char	str[1024];
 				sprintf(str,"Error %d setting username",status);
 				uifcmsg("Error setting username",str);
 				return(-1);
 			}
-			status=cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, passwd, strlen(passwd));
+			status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, passwd, strlen(passwd));
 			if(cryptStatusError(status)) {
 				char	str[1024];
 				sprintf(str,"Error %d setting password",status);
@@ -295,7 +309,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			}
 
 			/* Activate the session */
-			status=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+			status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 			if(cryptStatusError(status)) {
 				char	str[1024];
 				sprintf(str,"Error %d activating session",status);
@@ -315,7 +329,7 @@ int conn_close(void)
 {
 #ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
-		cryptDestroySession(ssh_session);
+		cl.DestroySession(ssh_session);
 		return(0);
 	}
 #endif
