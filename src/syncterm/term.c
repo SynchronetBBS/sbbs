@@ -410,7 +410,7 @@ void purge_recv(void)
 		YIELD();
 		count++;
 	}
-	lprintf(LOG_NOTICE,"%u bytes purged");
+	lprintf(LOG_NOTICE,"%u bytes purged",count);
 }
 
 #if defined(__BORLANDC__)
