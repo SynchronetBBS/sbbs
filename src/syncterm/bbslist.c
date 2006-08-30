@@ -975,7 +975,7 @@ struct bbslist *show_bbslist(int mode)
 								}
 								init_uifc(TRUE, TRUE);
 							}
-							val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 								|WIN_T2B|WIN_IMM|WIN_INACT
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 						}
