@@ -414,16 +414,6 @@ void purge_recv(void)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-static BOOL is_connected(void* unused)
-{
-	if(bufbot < buftop)
-		return(TRUE);
-	return socket_check(conn_socket,NULL,NULL,0);
-}
-
-#if defined(__BORLANDC__)
-	#pragma argsused
-#endif
 BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
@@ -617,6 +607,16 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		}
 	}
 	uifcbail();
+}
+
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
+static BOOL is_connected(void* unused)
+{
+	if(bufbot < buftop)
+		return(TRUE);
+	return conn_is_connected();
 }
 
 #ifdef GUTS_BUILTIN

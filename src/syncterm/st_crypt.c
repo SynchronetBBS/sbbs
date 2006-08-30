@@ -44,6 +44,10 @@ int init_crypt(void)
 		FreeLibrary(cryptlib);
 		return(-1);
 	}
+	if((cl.GetAttribute=GetProcAddress(cryptlib,"cryptGetAttribute"))==NULL) {
+		FreeLibrary(cryptlib);
+		return(-1);
+	}
 	if((cl.SetAttribute=GetProcAddress(cryptlib,"cryptSetAttribute"))==NULL) {
 		FreeLibrary(cryptlib);
 		return(-1);
@@ -86,6 +90,10 @@ int init_crypt(void)
 		return(-1);
 	}
 	if((cl.CreateSession=dlsym(cryptlib,"cryptCreateSession"))==NULL) {
+		dlclose(cryptlib);
+		return(-1);
+	}
+	if((cl.GetAttribute=dlsym(cryptlib,"cryptGetAttribute"))==NULL) {
 		dlclose(cryptlib);
 		return(-1);
 	}

@@ -24,6 +24,7 @@ int conn_recv(char *buffer, size_t buflen, unsigned int timeout);
 int conn_send(char *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass, int conn_type, int speed);
 int conn_close(void);
+BOOL conn_is_connected(void);
 void conn_settype(int type);
 
 #endif

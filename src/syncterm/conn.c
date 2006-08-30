@@ -29,7 +29,22 @@ int conn_ports[]={0,513,23,0
 };
 #ifdef USE_CRYPTLIB
 CRYPT_SESSION	ssh_session;
+int				ssh_active=FALSE;
 #endif
+
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
+BOOL conn_is_connected(void)
+{
+#ifdef USE_CRYPTLIB
+	if(con_type==CONN_TYPE_SSH) {
+		if(!ssh_active)
+			return(FALSE);
+	}
+#endif
+	return socket_check(conn_socket,NULL,NULL,0);
+}
 
 int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 {
@@ -48,7 +63,7 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 			char	str[1024];
 
 			if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
-				closesocket(conn_socket);
+				ssh_active=FALSE;
 				return(-1);
 			}
 			sprintf(str,"Error %d recieving data",status);
@@ -116,7 +131,7 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 				char	str[1024];
 
 				if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
-					closesocket(conn_socket);
+					ssh_active=FALSE;
 					return(-1);
 				}
 				sprintf(str,"Error %d sending data",status);
@@ -272,6 +287,7 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 			int off=1;
 			int status;
 
+			ssh_active=FALSE;
 			status=cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
 			if(cryptStatusError(status)) {
 				char	str[1024];
@@ -316,6 +332,8 @@ int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass,
 				uifcmsg("Error activating session",str);
 				return(-1);
 			}
+
+			ssh_active=TRUE;;
 			break;
 		}
 #endif
@@ -330,6 +348,7 @@ int conn_close(void)
 #ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		cl.DestroySession(ssh_session);
+		ssh_active=FALSE;
 		return(0);
 	}
 #endif
