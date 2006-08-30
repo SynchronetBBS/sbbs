@@ -1778,7 +1778,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_recei
 	time_t		t;
 	unsigned	cps;
 	unsigned	timeout;
-	unsigned	errors=0;
+	unsigned	errors;
 
 	if(bytes_received!=NULL)
 		*bytes_received=0;
