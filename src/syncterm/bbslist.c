@@ -597,7 +597,6 @@ void change_settings(void)
 				break;
 			case 1:
 				j=settings.startup_mode;
-				i=0;
 				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
 					case -1:
 						continue;
