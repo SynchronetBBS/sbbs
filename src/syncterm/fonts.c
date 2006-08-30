@@ -27,7 +27,7 @@ void free_font_files(struct font_files *ff)
 		FREE_AND_NULL(ff[i].path8x14);
 		FREE_AND_NULL(ff[i].path8x16);
 	}
-	FREE_AND_NULL(ff);
+	free(ff);
 }
 
 void save_font_files(struct font_files *fonts)
