@@ -388,12 +388,14 @@ static int recv_byte(void* unused, unsigned timeout)
 		buftop=i;
 		bufbot=0;
 	}
+	ch=recvbuf[bufbot++];
+/*
 	if(buftop < sizeof(recvbuf)) {
 		i=conn_recv(recvbuf + buftop, sizeof(recvbuf) - buftop, 0);
 		if(i > 0)
 			buftop+=i;
 	}
-	ch=recvbuf[bufbot++];
+ */
 /*	lprintf(LOG_DEBUG,"RX: %02X", ch); */
 	return(ch);
 }
