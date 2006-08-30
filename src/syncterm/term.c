@@ -1458,6 +1458,8 @@ BOOL doterm(struct bbslist *bbs)
 			MAYBE_YIELD();
 	}
 
+/*
 	hidemouse();
 	return(FALSE);
+ */
 }
