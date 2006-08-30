@@ -122,6 +122,10 @@ A. Yes, currently Synchronet has successfully been built with both GCC and ICC
    are using a commercial compiler other than ICC, we will probobly be unable
    to help you without a copy of the compiler.
 
+Q. I'm using SELinux and nothing works.
+A. Yes, you'll need to use chcon on each of the shared objects (.so files)
+   chcon -t texrel_shlib_t /path/to/libwhatever.so
+   Do this for each .so file that Synchronet creates.
 
 Step-by-step Instructions
 =========================
