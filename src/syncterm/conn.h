@@ -5,6 +5,8 @@
 
 #include "sockwrap.h"
 
+#include "bbslist.h"
+
 extern SOCKET conn_socket;
 extern char *conn_types[];
 extern int conn_ports[];
@@ -22,7 +24,7 @@ enum {
 
 int conn_recv(char *buffer, size_t buflen, unsigned int timeout);
 int conn_send(char *buffer, size_t buflen, unsigned int timeout);
-int conn_connect(char *addr, int port, char *ruser, char *passwd, char *syspass, int conn_type, int speed);
+int conn_connect(struct bbslist *bbs);
 int conn_close(void);
 BOOL conn_is_connected(void);
 void conn_settype(int type);
