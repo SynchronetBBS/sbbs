@@ -1849,7 +1849,7 @@ js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
+	if(argc) {
 		if(!JS_ValueToInt32(cx,argv[0],&node_num))
 			node_num=0;
 	}
