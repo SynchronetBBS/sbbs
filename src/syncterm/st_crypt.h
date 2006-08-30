@@ -29,6 +29,6 @@ extern struct crypt_funcs cl;
 extern int crypt_loaded;
 
 int init_crypt(void);
-int exit_crypt(void);
+void exit_crypt(void);
 
 #endif

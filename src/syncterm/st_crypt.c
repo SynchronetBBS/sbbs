@@ -117,9 +117,8 @@ int init_crypt(void)
 	return(-1);
 }
 
-int exit_crypt(void)
+void exit_crypt(void)
 {
 	if(crypt_loaded)
 		cl.End();
-	return(0);
 }
