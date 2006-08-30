@@ -210,6 +210,7 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
 	iniReadString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
 	entry->type=type;
+	entry->id=id;
 }
 
 /*
