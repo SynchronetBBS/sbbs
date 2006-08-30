@@ -1,5 +1,8 @@
 /* $Id$ */
 
+#define NOCRYPT		/* Stop windows.h from loading wincrypt.h */
+					/* Is windows.h REALLY necessary?!?! */
+#define WIN32_LEAN_AND_MEAN
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <shlobj.h>
@@ -16,11 +19,11 @@
 #include "cterm.h"
 #include "allfonts.h"
 
+#include "st_crypt.h"
 #include "fonts.h"
 #include "syncterm.h"
 #include "bbslist.h"
 #include "conn.h"
-#include "st_crypt.h"
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
