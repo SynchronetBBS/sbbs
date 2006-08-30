@@ -56,7 +56,7 @@ int init_crypt(void)
 		FreeLibrary(cryptlib);
 		return(-1);
 	}
-	if((cl.DestroySession=(cryptlib,"cryptDestroySession"))==NULL) {
+	if((cl.DestroySession=GetProcAddress(cryptlib,"cryptDestroySession"))==NULL) {
 		FreeLibrary(cryptlib);
 		return(-1);
 	}
