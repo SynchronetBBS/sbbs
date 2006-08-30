@@ -121,4 +121,5 @@ int exit_crypt(void)
 {
 	if(crypt_loaded)
 		cl.End();
+	return(0);
 }
