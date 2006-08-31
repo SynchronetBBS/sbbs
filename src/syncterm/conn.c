@@ -341,7 +341,7 @@ int conn_connect(struct bbslist *bbs)
 				return(-1);
 			}
 
-			ssh_active=TRUE;;
+			ssh_active=TRUE;
 			break;
 		}
 #endif
