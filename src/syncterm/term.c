@@ -1293,6 +1293,12 @@ BOOL doterm(struct bbslist *bbs)
 				case CIO_KEY_DC:		/* "Delete" key, send ASCII 127 (DEL) */
 					conn_send("\x7f",1,0);
 					break;
+				case CIO_KEY_NPAGE:		/* Page down */
+					conn_send("\033[U",3,0);
+					break;
+				case CIO_KEY_PPAGE:	/* Page up */
+					conn_send("\033[V",3,0);
+					break;
 				case CIO_KEY_F(1):
 					conn_send("\033OP",3,0);
 					break;
@@ -1300,10 +1306,37 @@ BOOL doterm(struct bbslist *bbs)
 					conn_send("\033OQ",3,0);
 					break;
 				case CIO_KEY_F(3):
-					conn_send("\033Ow",3,0);
+					conn_send("\033OR",3,0);
 					break;
 				case CIO_KEY_F(4):
-					conn_send("\033Ox",3,0);
+					conn_send("\033OS",3,0);
+					break;
+				case CIO_KEY_F(5):
+					conn_send("\033Ot",3,0);
+					break;
+				case CIO_KEY_F(6):
+					conn_send("\033[17~",4,0);
+					break;
+				case CIO_KEY_F(7):
+					conn_send("\033[18~",4,0);
+					break;
+				case CIO_KEY_F(8):
+					conn_send("\033[19~",4,0);
+					break;
+				case CIO_KEY_F(9):
+					conn_send("\033[20~",4,0);
+					break;
+				case CIO_KEY_F(10):
+					conn_send("\033[21~",4,0);
+					break;
+				case CIO_KEY_F(11):
+					conn_send("\033[23~",4,0);
+					break;
+				case CIO_KEY_F(12):
+					conn_send("\033[24~",4,0);
+					break;
+				case CIO_KEY_IC:
+					conn_send("\033[@",3,0);
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
 					viewscroll();
