@@ -33,6 +33,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <string.h>
+
 #include "semfile.h"
 #include "filewrap.h"
 #include "dirwrap.h"
