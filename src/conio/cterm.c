@@ -1236,8 +1236,12 @@ void ctputs(char *buf)
 				gotoxy(cx,cy);
 				break;
 			case '\b':
+				*p=0;
+				cputs(outp);
+				outp=p+1;
 				if(cx>0)
 					cx--;
+				gotoxy(cx,cy);
 				break;
 			case 7:		/* Bell */
 				break;
