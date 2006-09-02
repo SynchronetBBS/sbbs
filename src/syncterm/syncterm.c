@@ -19,7 +19,9 @@
 #include "cterm.h"
 #include "allfonts.h"
 
+#ifdef USE_CRYPTLIB
 #include "st_crypt.h"
+#endif
 #include "fonts.h"
 #include "syncterm.h"
 #include "bbslist.h"
