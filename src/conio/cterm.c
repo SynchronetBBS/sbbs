@@ -490,7 +490,7 @@ void dellines(int lines)
 	gettext(cterm.x,cterm.y+wherey()-1+lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-lines,buf);
 	j=0;
-	k=cterm.width*lines*2;
+	k=cterm.width*lines;
 	for(i=0;i<k;i++) {
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
@@ -1144,7 +1144,6 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	char *in;
 	char	*out;
 
-fprintf(stderr,"Init at %d,%d\n",xpos,ypos);
 	memset(&cterm, 0, sizeof(cterm));
 	cterm.x=xpos;
 	cterm.y=ypos;
