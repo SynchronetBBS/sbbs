@@ -836,7 +836,21 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(1,1);
 					break;
 #endif
-				case 'Z':	
+				case 'X':
+					i=atoi(cterm.escbuf+1);
+					if(i<1)
+						i=1;
+					if(i>cterm.width-wherex())
+						i=cterm.width-wherex();
+					p2=alloca(i*2);
+					j=0;
+					for(k=0;k<i;k++) {
+						p2[j++]=' ';
+						p2[j++]=cterm.attr;
+					}
+					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1+i,cterm.y+wherey()-1,p2);
+					break;
+				case 'Z':
 					i=atoi(cterm.escbuf+1);
 					if(i==0 && cterm.escbuf[0] != '0')
 						i=1;
