@@ -480,13 +480,18 @@ void scrollup(void)
 void dellines(int lines)
 {
 	char *buf;
-	int i,j;
+	int i,j,k;
+	int linestomove;
 
-	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
-	gettext(cterm.x,cterm.y+wherey()+lines-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+	if(lines<1)
+		return;
+	linestomove=cterm.height-wherey();
+	buf=(char *)alloca(cterm.width*(linestomove>lines?linestomove:lines)*2);
+	gettext(cterm.x,cterm.y+wherey()-1+lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-lines,buf);
 	j=0;
-	for(i=0;i<(cterm.width*lines);i++) {
+	k=cterm.width*lines*2;
+	for(i=0;i<k;i++) {
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
@@ -496,15 +501,16 @@ void dellines(int lines)
 void clear2bol(void)
 {
 	char *buf;
-	int i,j;
+	int i,j,k;
 
-	buf=(char *)alloca((wherex()+1)*2);
+	k=wherex();
+	buf=(char *)alloca(k*2);
 	j=0;
-	for(i=1;i<=wherex();i++) {
+	for(i=0;i<k;i++) {
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
-	puttext(cterm.x+1,cterm.y+wherey(),cterm.x+wherex(),cterm.y+wherey(),buf);
+	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey(),buf);
 }
 
 void clear2eol(void)
@@ -602,10 +608,10 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						k=1;
 					if(k>cterm.width - j)
 						k=cterm.width - j;
-					gettext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width-k,cterm.y+wherey(),tmp);
+					gettext(cterm.x+i-1,cterm.y+j-1,cterm.x+cterm.width-1-k,cterm.y+j-1,tmp);
 					for(l=0; l< k; l++)
 						putch(' ');
-					puttext(cterm.x+wherex()+k,cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),tmp);
+					puttext(cterm.x+i-1+k,cterm.y+j-1,cterm.x+cterm.width-1,cterm.y+j-1,tmp);
 					gotoxy(i,j);
 					break;
 				case 'A':	/* Cursor Up */
@@ -661,13 +667,23 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						gotoxy(i,wherey());
 					}
 					break;
-				case 'E':
+				case 'E':	/* Cursor next line */
 					i=atoi(cterm.escbuf+1);
 					if(i==0)
 						i=1;
 					i=wherey()+i;
-					for(j=0;j<i;j++)
-						putch('\n');
+					if(i>cterm.height)
+						i=cterm.height;
+					gotoxy(1,i);
+					break;
+				case 'F':	/* Cursor preceding line */
+					i=atoi(cterm.escbuf+1);
+					if(i==0)
+						i=1;
+					i=wherey()-i;
+					if(i<1)
+						i=1;
+					gotoxy(1,i);
 					break;
 				case 'f':
 				case 'H':
@@ -704,7 +720,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 								p2[j++]=cterm.attr;
 							}
 							for(i=wherey()+1;i<=cterm.height;i++) {
-								puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
+								puttext(cterm.x,cterm.y+i-1,cterm.x+cterm.width-1,cterm.y+i-1,p2);
 							}
 							break;
 						case 1:
@@ -716,7 +732,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 								p2[j++]=cterm.attr;
 							}
 							for(i=wherey()-1;i>=1;i--) {
-								puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
+								puttext(cterm.x,cterm.y+i-1,cterm.x+cterm.width-1,cterm.y+i-1,p2);
 							}
 							break;
 						case 2:
@@ -741,29 +757,31 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 								p2[j++]=' ';
 								p2[j++]=cterm.attr;
 							}
-							puttext(cterm.x+1,cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
+							puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
 							break;
 					}
 					break;
-				case 'L':
+				case 'L':		/* Insert line */
 					i=atoi(cterm.escbuf+1);
 					if(i==0)
 						i=1;
 					if(i>cterm.height-wherey())
 						i=cterm.height-wherey();
-					if(i<cterm.height-wherey()) {
-						p2=(char *)alloca((cterm.height-wherey()-i)*cterm.width*2);
-						gettext(cterm.x+1,cterm.y+wherey(),cterm.x+cterm.width,wherey()+(cterm.height-wherey()-i),p2);
-						puttext(cterm.x+1,cterm.y+wherey()+i,cterm.x+cterm.width,wherey()+(cterm.height-wherey()),p2);
+					if(i) {
+						p2=(char *)alloca((cterm.height-wherey()-i+1)*cterm.width*2);
+						gettext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,p2);
+						puttext(cterm.x,cterm.y+wherey()-1+i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,p2);
 					}
-					p2=(char *)alloca(cterm.width*2);
+					else {
+						p2=(char *)alloca(cterm.width*2);
+					}
 					j=0;
 					for(k=0;k<cterm.width;k++) {
 						p2[j++]=' ';
 						p2[j++]=cterm.attr;
 					}
 					for(j=0;j<i;j++) {
-						puttext(cterm.x+1,cterm.y+j,cterm.x+cterm.width,cterm.y+j,p2);
+						puttext(cterm.x,cterm.y+wherey()-1+j,cterm.x+cterm.width-1,cterm.y+wherey()-1+j,p2);
 					}
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
@@ -787,14 +805,16 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					i=atoi(cterm.escbuf+1);
 					if(i==0)
 						i=1;
-					if(i>cterm.width-wherex())
-						i=cterm.width-wherex();
-					p2=(char *)alloca((cterm.width-wherex())*2);
-					gettext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
-					memmove(p2,p2+(i*2),(cterm.width-wherex()-i)*2);
-					for(i=(cterm.width-wherex())*2-2;i>=wherex();i-=2)
-						p2[i]=' ';
-					puttext(cterm.x+wherex(),cterm.y+wherey(),cterm.x+cterm.width,cterm.y+wherey(),p2);
+					if(i>cterm.width-wherex()+1)
+						i=cterm.width-wherex()+1;
+					p2=(char *)alloca((cterm.width-wherex()+1)*2);
+					gettext(cterm.x+wherex(),cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
+					j=(cterm.width-wherex())*2;
+					for(k=0;k<0;k++) {
+						p2[j++]=' ';
+						p2[j++]=cterm.attr;
+					}
+					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
 					break;
 				case 'S':
 					i=atoi(cterm.escbuf+1);
@@ -816,7 +836,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(1,1);
 					break;
 #endif
-				case 'Z':
+				case 'Z':	
 					i=atoi(cterm.escbuf+1);
 					if(i==0 && cterm.escbuf[0] != '0')
 						i=1;
@@ -1110,6 +1130,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	char *in;
 	char	*out;
 
+fprintf(stderr,"Init at %d,%d\n",xpos,ypos);
 	memset(&cterm, 0, sizeof(cterm));
 	cterm.x=xpos;
 	cterm.y=ypos;
