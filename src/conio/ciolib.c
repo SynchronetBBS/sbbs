@@ -699,7 +699,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 	
 	ciolib_gettextinfo(&ti);
 
-	width=ti.winright-ti.curx+1;
+	width=ti.winright-ti.winleft+1-ti.curx+1;
 	height=1;
 	buf=(unsigned char *)alloca(width*height*2);
 	for(i=0;i<width*height*2;) {
