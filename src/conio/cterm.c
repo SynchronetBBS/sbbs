@@ -762,8 +762,8 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						p2[j++]=' ';
 						p2[j++]=cterm.attr;
 					}
-					for(i=0;j<i;i++) {
-						puttext(cterm.x+1,cterm.y+i,cterm.x+cterm.width,cterm.y+i,p2);
+					for(j=0;j<i;j++) {
+						puttext(cterm.x+1,cterm.y+j,cterm.x+cterm.width,cterm.y+j,p2);
 					}
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
