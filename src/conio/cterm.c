@@ -510,7 +510,7 @@ void clear2bol(void)
 		buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
-	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey(),buf);
+	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,buf);
 }
 
 void clear2eol(void)
