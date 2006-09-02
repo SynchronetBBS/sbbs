@@ -848,7 +848,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						p2[j++]=' ';
 						p2[j++]=cterm.attr;
 					}
-					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1+i,cterm.y+wherey()-1,p2);
+					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1+i-1,cterm.y+wherey()-1,p2);
 					break;
 				case 'Z':
 					i=atoi(cterm.escbuf+1);
