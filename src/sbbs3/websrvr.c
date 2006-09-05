@@ -2244,16 +2244,8 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			if(session->req.ld!=NULL && session->req.ld->vhost==NULL)
 				session->req.ld->vhost=strdup(session->req.vhost);
 			session->req.dynamic=is_dynamic_req(session);
-			if(session->req.query_str[0])  {
+			if(session->req.query_str[0])
 				add_env(session,"QUERY_STRING",session->req.query_str);
-				switch(session->req.dynamic) {
-					case IS_JS:
-					case IS_SSJS:
-						js_add_request_prop(session,"query_string",session->req.query_str);
-						js_parse_query(session,session->req.query_str);
-						break;
-				}
-			}
 
 			add_env(session,"REQUEST_METHOD",methods[session->req.method]);
 			add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
@@ -4010,6 +4002,14 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
+	if(session->req.query_str && session->req.query_str[0])  {
+		js_add_request_prop(session,"query_string",session->req.query_str);
+		js_parse_query(session,session->req.query_str);
+	}
+	if(session->req.post_data && session->req.post_data[0]) {
+		js_add_request_prop(session,"post_data",session->req.post_data);
+		js_parse_query(session,session->req.post_data);
+	}
 
 	do {
 		/* RUN SCRIPT */
@@ -4169,10 +4169,6 @@ int read_post_data(http_session_t * session)
 		if(session->req.post_len > i)
 			session->req.post_len = i;
 		session->req.post_data[session->req.post_len]=0;
-		if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)  {
-			js_add_request_prop(session,"post_data",session->req.post_data);
-			js_parse_query(session,session->req.post_data);
-		}
 	}
 	return(TRUE);
 }
