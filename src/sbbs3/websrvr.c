@@ -1146,7 +1146,7 @@ static int sock_sendfile(http_session_t *session,char *path,unsigned long start,
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",session->socket,errno,path);
 	else {
 		if(start || end) {
-			if(lseek(file, start, SEEK_SET)) {
+			if(lseek(file, start, SEEK_SET)==-1) {
 				lprintf(LOG_WARNING,"%04d !ERROR %d seeking to position %lu in %s",session->socket,ERROR_VALUE,start,path);
 				return(0);
 			}
