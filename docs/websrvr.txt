@@ -167,7 +167,81 @@ AccessRequirements=level 0
 AccessRequirements=level90
 
 
-3.0 The SSJS Template System
+3.0 JavaScript Web Server Objects
+---------------------------------
+In addition to the standard JavaScript objects, the web server provides the
+following:
+
+
+3.1 http_request object
+-----------------------
+The http_request object contains information from the client that was included
+during this request.  This objects properties are as follows:
+
+path_info    - Contains extra path information that was included with the
+               request AFTER the URI which identified this script.  For 
+               example, if the request was for
+               http://www.synchro.net/script.ssjs/test/this then path_info
+               would contain the string "/test/this"
+method       - Contains the HTTP method used to run the script.  As of this
+               writing, the available methods are "HEAD", "GET", "POST", and
+               "OPTIONS".
+virtual_path - The virtual path that this URI was reached by.  This is the
+               portion of the URI from the end of the host to the end of the
+               filename.
+query        - This object contains the values of any form data which was
+               submitted with the request.  This is an associative "array" of
+               name/value pairs.  THE VALUES ARE ARRAYS OF STRINGS.  The reason
+               for this is that it is legal and often usefull to have multiple
+               form fields with the same name.
+query_string - If a query string was included, this is the raw, unparsed query
+               string.
+post_data    - As with query_string but for data which was POSTed.
+header       - An associative array of header name/value pairs.
+cookie       - Much like the query object, this object contains key/value pairs
+               of set cookies.  Once again, this is an array of strings since
+               multiple values for the same key can be set for cookies.
+real_path    - The real OSs complete path to this script.
+ars          - The ARS string which applies to this request.
+request_string - The raw request string sent by the client.
+host         - The value of the host header for this request.
+vhost        - The virtual host serving this request.
+http_ver     - The HTTP version used for this request as a string.
+remote_ip    - The IP address of the client.
+remote_host  - If the web server does host lookups (disabled by default), this
+               is the remote hostname.
+
+
+3.2 http_reply object
+---------------------
+The http_reply object is used to pass information about the reply back to the
+Synchronet web server.  The properties are as follows:
+
+status       - HTTP status string.  The default is generally "200 Ok"
+header       - An associative array of headers to include with the reply.  The
+               only pre-defined one is "Content-Type" which defaults to
+               "text/html".
+fast         - This optional property can be set to "true" to make write()s go
+               directly to the client for HTTP/1.0 connections.  This prevents
+               keep-alives from working but generally appears faster to the
+               client.  Since HTTP/1.1 requests use chunked mode, this isn't
+               required for HTTP/1.1.
+
+
+3.3 Extra global methods
+------------------------
+The web server also adds new global methods.  These are:
+
+set_cookie(string key, 
+           string value 
+		   [, time_t expires 
+		   [, string domain 
+		   [, string path 
+		   [, bool secure ]]]])
+               Requests that the specified cookie be set.
+
+
+4.0 The SSJS Template System
 ----------------------------
 The default web pages use a SSJS Template engine which also allows for Theme 
 support.
@@ -176,7 +250,7 @@ support.
 nested.]
 
 
-3.1 The SSJS Template Scheme
+4.1 The SSJS Template Scheme
 ----------------------------
 Each page consists of four parts:
 
@@ -231,7 +305,7 @@ Each page consists of four parts:
         be displayed at the bottom of each page.
 
 
-3.2 SSJS Theme Support
+4.2 SSJS Theme Support
 ----------------------
 Theme Layouts can be added to Synchronet by creating them and placing the
 *.inc files in their own directory under ../web/templates/
@@ -264,7 +338,7 @@ to:
     var DefaultTheme="CoolTheme";
 
 
-3.3 Special Codes Used in the SSJS Template System
+4.3 Special Codes Used in the SSJS Template System
 --------------------------------------------------
 By looking at at the message related files located in templates/default/msgs,
 it can be seen that some special codes are used to display dynamically created
@@ -319,7 +393,7 @@ would be changed to (while maintaining the main table layout in this case) to:
 This principle applies to all the .inc files in msgs respectively.
 
 
-3.4 The SSJS Template Library
+4.4 The SSJS Template Library
 -------------------------------
 
 %%name%% is replaced with the HTML encoded value of template.name
@@ -349,7 +423,7 @@ the value of template.name.sname.
 (^^ and %% are also supported)
 
 
-3.5 SSJS Message Configuration
+4.5 SSJS Message Configuration
 ------------------------------
 Configuration settings for the SSJS Messaging system is located in the
 ../web/lib/msgsconfig.ssjs file:
@@ -383,7 +457,7 @@ it too be removed.
 
 See the actual file for the defaults currently in use.
 
-3.6 Embedded Javascript
+4.6 Embedded Javascript
 -----------------------
 
 The *.inc files can (and do in the default layout) have embedded JavaScript
@@ -410,7 +484,7 @@ IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there
 will be errors in parsing.
 
 
-3.7 global_defs.ssjs
+4.7 global_defs.ssjs
 --------------------
 
 This version of the Web Layout now includes a new file called
@@ -431,7 +505,7 @@ inefficient to have thirty of forty message definitions being loaded when a
 user is looking at the statistics page.
 
 
-4.0 XJS files
+5.0 XJS files
 -------------
 XJS files, handled by exec/xjs_handler.js are what many people consider to be
 an easier method of generating SSJS files.  XJS files are HTML files with JS
@@ -441,7 +515,7 @@ For example, a file named test.xjs will, when ran, generate a test.xjs.ssjs
 file.
 
 
-4.1 XJS syntax
+5.1 XJS syntax
 --------------
 In an XJS file, everything not within a special xjs tag is send to the remote
 host unmodified, and everything inside the xjs tag is interpreted as JS
@@ -480,7 +554,7 @@ for(i=1; i<=10; i++) {
 </html>
 
 
-4.2 XJS-specific global methods and properties
+5.2 XJS-specific global methods and properties
 ----------------------------------------------
 The following JS commands are available to XJS files only.
 xjs_load(filename)
