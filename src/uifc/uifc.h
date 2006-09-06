@@ -166,6 +166,7 @@
 #define K_MOUSEEXIT	(1L<<15)	/* Returns when mouse is clicked outside of */
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
+#define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
 
 						/* Bottom line elements */
 #define BL_INS      (1<<0)  /* INS key */

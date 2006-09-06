@@ -900,7 +900,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		}
 	}
 	else {	/* Is a redraw */
-		i=(*cur)-(*bar);
+		i=(*cur)+(top+tbrdrwidth-y);
 		j=2;
 
 		longopt=0;
@@ -973,7 +973,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							&& mevnt.starty<=(s_top+top+optheight)-bbrdrwidth-1
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
 
-						(*cur)=((mevnt.starty)-(s_top+top+tbrdrwidth))+(*cur-y+tbrdrwidth);
+						(*cur)=((mevnt.starty)-(s_top+top+tbrdrwidth))+(*cur+(top+tbrdrwidth-y));
 						if(bar)
 							(*bar)=(*cur);
 						y=top+tbrdrwidth+((mevnt.starty)-(s_top+top+tbrdrwidth));
@@ -1791,7 +1791,7 @@ void umsg(char *str)
 /***************************************/
 /* Private sub - updates a ugetstr box */
 /***************************************/
-void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *scrnoffset)
+void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *scrnoffset, int mode)
 {
 	_setcursortype(_NOCURSOR);
 	if(cursoffset<*scrnoffset)
@@ -1801,7 +1801,10 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 		*scrnoffset=cursoffset-width;
 
 	gotoxy(left,top);
-	cprintf("%-*.*s",width,width,outstr+*scrnoffset);
+	if(mode&K_PASSWORD)
+		cprintf("%-*.*s",width,width,"********************************************************************************"+(80-strlen(outstr+*scrnoffset)));
+	else
+		cprintf("%-*.*s",width,width,outstr+*scrnoffset);
 	gotoxy(left+(cursoffset-*scrnoffset),top);
 	_setcursortype(cursor);
 }
@@ -1838,7 +1841,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		outstr[max]=0;
 		i=j=strlen(outstr);
 		textattr(api->lbclr);
-		getstrupd(left, top, width, outstr, i, &soffset);
+		getstrupd(left, top, width, outstr, i, &soffset, mode);
 		textattr(api->lclr|(api->bclr<<4));
 		if(strlen(outstr)<(size_t)width) {
 			k=wherex();
@@ -1898,11 +1901,11 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				|| f==CTRL_Z
 				|| f==0)
 		{
-			getstrupd(left, top, width, str, i, &soffset);
+			getstrupd(left, top, width, str, i, &soffset, mode);
 		}
 		else
 		{
-			getstrupd(left, top, width, str, i, &soffset);
+			getstrupd(left, top, width, str, i, &soffset, mode);
 			i=j=0;
 		}
 	}
@@ -1914,7 +1917,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	{
 		if(i>j) j=i;
 		str[j]=0;
-		getstrupd(left, top, width, str, i, &soffset);
+		getstrupd(left, top, width, str, i, &soffset, mode);
 		if(f || pb!=NULL || (ch=inkey())!=0)
 		{
 			if(f) {
