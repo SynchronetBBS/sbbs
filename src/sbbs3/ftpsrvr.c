@@ -4823,7 +4823,7 @@ void DLLCALL ftp_server(void* arg)
 				if(i==0)
 					continue;
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"%04d FTP Server listening interrupted", server_socket);
+					lprintf(LOG_DEBUG,"%04d FTP Server listening interrupted", server_socket);
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_NOTICE,"%04d FTP Server socket closed", server_socket);
 				else

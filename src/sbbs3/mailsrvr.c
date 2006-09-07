@@ -4411,7 +4411,7 @@ void DLLCALL mail_server(void* arg)
 				if(i==0)
 					continue;
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"%04d Mail Server listening interrupted",server_socket);
+					lprintf(LOG_DEBUG,"%04d Mail Server listening interrupted",server_socket);
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_NOTICE,"%04d Mail Server sockets closed",server_socket);
 				else

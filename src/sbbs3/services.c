@@ -1905,7 +1905,7 @@ void DLLCALL services_thread(void* arg)
 					continue;
 
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"0000 Services listening interrupted");
+					lprintf(LOG_DEBUG,"0000 Services listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_NOTICE,"0000 Services sockets closed");
 				else

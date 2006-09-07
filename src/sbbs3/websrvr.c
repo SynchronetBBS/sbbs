@@ -5016,7 +5016,7 @@ void DLLCALL web_server(void* arg)
 				if(i==0)
 					continue;
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_INFO,"Web Server listening interrupted");
+					lprintf(LOG_DEBUG,"Web Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_INFO,"Web Server socket closed");
 				else

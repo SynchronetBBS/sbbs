@@ -1271,7 +1271,7 @@ void input_thread(void *arg)
 			else if(ERROR_VALUE==ESHUTDOWN)
 				lprintf(LOG_NOTICE,"Node %d socket shutdown on input->select", sbbs->cfg.node_num);
 			else if(ERROR_VALUE==EINTR)
-				lprintf(LOG_NOTICE,"Node %d input thread interrupted",sbbs->cfg.node_num);
+				lprintf(LOG_DEBUG,"Node %d input thread interrupted",sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNRESET) 
 				lprintf(LOG_NOTICE,"Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
 	        else if(ERROR_VALUE==ECONNABORTED) 
@@ -4272,7 +4272,7 @@ void DLLCALL bbs_thread(void* arg)
 			if(i==0)
 				continue;
 			if(ERROR_VALUE==EINTR)
-				lprintf(LOG_NOTICE,"Telnet Server listening interrupted");
+				lprintf(LOG_DEBUG,"Telnet Server listening interrupted");
 			else if(ERROR_VALUE == ENOTSOCK)
             	lprintf(LOG_NOTICE,"Telnet Server sockets closed");
 			else
