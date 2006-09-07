@@ -127,8 +127,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	if(console&CON_RAW_IN)	 /* ignore ctrl-key commands if in raw mode */
 		return(ch);
 
+#if 0	/* experimental removal to fix Tracker1's pause module problem with down-arrow */
 	if(ch==LF)				/* ignore LF's if not in raw mode */
 		return(0);
+#endif
 
 	/* Global hot key event */
 	for(i=0;i<cfg.total_hotkeys;i++)
