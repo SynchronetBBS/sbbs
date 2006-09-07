@@ -545,6 +545,7 @@ int zmodem_send_zfin(zmodem_t* zm)
 
 int zmodem_abort_receive(zmodem_t* zm)
 {
+	lprintf(zm,LOG_WARNING,"Aborting receive");
 	return zmodem_send_pos_header(zm, ZABORT, 0, /* Hex? */ TRUE);
 }
 
@@ -1980,7 +1981,6 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 	zm->transfer_start_time=time(NULL);
 
 	fseek(fp,offset,SEEK_SET);
-	offset=ftell(fp);
 
 	while(errors<=zm->max_errors && is_connected(zm)
 		&& (ulong)ftell(fp) < zm->current_file_size && !is_cancelled(zm)) {
