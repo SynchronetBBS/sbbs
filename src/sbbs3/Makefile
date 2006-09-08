@@ -136,7 +136,7 @@ $(BAJA): $(BAJA_OBJS)
 # UnBaja Utility
 $(UNBAJA): $(UNBAJA_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS) $(WILDARGS)
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(SMBLIB_LIBS) $(XPDEV_LIBS) $(WILDARGS)
 
 # Node Utility
 $(NODE): $(NODE_OBJS)
