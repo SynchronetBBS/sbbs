@@ -1340,25 +1340,25 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	JSBool		ansi=JS_TRUE;
 	JSBool		ctrl_a=JS_TRUE;
 	JSString*	js_str;
-	int			fg=7;
-	int			bg=0;
-	BOOL		blink=FALSE;
-	BOOL		bold=FALSE;
+	int32		fg=7;
+	int32		bg=0;
+	JSBool		blink=FALSE;
+	JSBool		bold=FALSE;
 	int			esccount=0;
 	char		ansi_seq[MAX_ANSI_SEQ+1];
 	int			ansi_param[MAX_ANSI_PARAMS];
 	int			k,l;
 	ulong		savepos=0;
-	int			hpos=0;
-	int			currrow=0;
+	int32		hpos=0;
+	int32		currrow=0;
 	int			savehpos=0;
 	int			savevpos=0;
-	int			wraphpos=-2;
-	int			wrapvpos=-2;
-	ulong		wrappos=0;
+	int32		wraphpos=-2;
+	int32		wrapvpos=-2;
+	int32		wrappos=0;
 	BOOL		extchar=FALSE;
 	ulong		obsize;
-	int			lastcolor=7;
+	int32		lastcolor=7;
 	char		tmp1[128];
 	struct		tm tm;
 	time_t		now;
@@ -1407,11 +1407,11 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		if(JSVAL_IS_NUMBER(val))
 			fg=JS_ValueToInt32(cx, val, &lastcolor);
 		JS_GetProperty(cx,stateobj,"blink",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &blink);
+		if(JSVAL_IS_BOOLEAN(val))
+			fg=JS_ValueToBoolean(cx, val, &blink);
 		JS_GetProperty(cx,stateobj,"bold",&val);
-		if(JSVAL_IS_NUMBER(val))
-			fg=JS_ValueToInt32(cx, val, &bold);
+		if(JSVAL_IS_BOOLEAN(val))
+			fg=JS_ValueToBoolean(cx, val, &bold);
 		JS_GetProperty(cx,stateobj,"hpos",&val);
 		if(JSVAL_IS_NUMBER(val))
 			fg=JS_ValueToInt32(cx, val, &hpos);
@@ -1693,7 +1693,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						break;
 					case 'A': /* Move up */
 						l=wrappos;
-						if(j > wrappos && hpos==0 && currrow==wrapvpos+1 && ansi_param[0]<=1)  {
+						if(j > (ulong)wrappos && hpos==0 && currrow==wrapvpos+1 && ansi_param[0]<=1)  {
 							hpos=wraphpos;
 							currrow=wrapvpos;
 							j=wrappos;
@@ -1789,7 +1789,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						break;
 					case '+':
 						if(attr_sp<(int)sizeof(attr_stack))
-							attr_stack[attr_sp++]=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
+							attr_stack[attr_sp++]=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | (int)fg;
 						break;
 					case '-':
 						if(attr_sp>0)
@@ -1923,7 +1923,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						break;
 					case LF:
 						wrapvpos=currrow;
-						if(wrappos<j-3)
+						if((ulong)wrappos<j-3)
 							wrappos=j;
 						currrow++;
 						if(hpos!=0 && tmpbuf[i+1]!=CR)
@@ -1941,7 +1941,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					case CR:
 						if(wraphpos==-2 || hpos!=0)
 							wraphpos=hpos;
-						if(wrappos<j-3)
+						if((ulong)wrappos<j-3)
 							wrappos=j;
 						outbuf[j++]=tmpbuf[i];
 						hpos=0;
@@ -1994,9 +1994,9 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			,NULL,NULL,JSPROP_ENUMERATE);
 		JS_DefineProperty(cx, stateobj, "lastcolor", INT_TO_JSVAL(lastcolor)
 			,NULL,NULL,JSPROP_ENUMERATE);
-		JS_DefineProperty(cx, stateobj, "blink", INT_TO_JSVAL(blink)
+		JS_DefineProperty(cx, stateobj, "blink", BOOLEAN_TO_JSVAL(blink)
 			,NULL,NULL,JSPROP_ENUMERATE);
-		JS_DefineProperty(cx, stateobj, "bold", INT_TO_JSVAL(bold)
+		JS_DefineProperty(cx, stateobj, "bold", BOOLEAN_TO_JSVAL(bold)
 			,NULL,NULL,JSPROP_ENUMERATE);
 		JS_DefineProperty(cx, stateobj, "hpos", INT_TO_JSVAL(hpos)
 			,NULL,NULL,JSPROP_ENUMERATE);

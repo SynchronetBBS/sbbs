@@ -2136,7 +2136,7 @@ static BOOL get_request_headers(http_session_t * session)
 
 	while(sockreadline(session,head_line,sizeof(head_line)-1)>0) {
 		/* Multi-line headers */
-		while((i=recv(session->socket,&next_char,1,MSG_PEEK)>0)
+		while((i=recv(session->socket,&next_char,1,MSG_PEEK))>0
 			&& (next_char=='\t' || next_char==' ')) {
 			if(i==-1 && ERROR_VALUE != EAGAIN)
 				close_socket(&session->socket);
@@ -3175,7 +3175,7 @@ static BOOL exec_cgi(http_session_t *session)
 				,session->socket, buf);
 			SAFECOPY(header,buf);
 			if(strchr(header,':')!=NULL) {
-				if(directive=strtok_r(header,":",&last))
+				if((directive=strtok_r(header,":",&last))!=NULL)
 					value=strtok_r(NULL,"",&last);
 				else
 					value="";
@@ -3496,6 +3496,7 @@ js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	char	*header;
 	char	*p;
 	int32	i;
+	JSBool	b;
 	struct tm tm;
 	http_session_t* session;
 
@@ -3528,8 +3529,8 @@ js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 			header += sprintf(header,"; path=%s",p);
 	}
 	if(argc>5) {
-		JS_ValueToBoolean(cx, argv[5], &i);
-		if(i)
+		JS_ValueToBoolean(cx, argv[5], &b);
+		if(b)
 			header += sprintf(header,"; secure");
 	}
 	strListPush(&session->req.dynamic_heads,header_buf);

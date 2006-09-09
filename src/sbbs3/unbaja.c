@@ -2335,7 +2335,7 @@ int main(int argc, char **argv)
 					free(brute_buf);
 					brute_len=0;
 				}
-				if((cache=fopen("unbaja.brute","r"))) {
+				if((cache=fopen("unbaja.brute","r"))!=NULL) {
 					while(fgets(cache_line,sizeof(cache_line),cache)) {
 						truncnl(cache_line);
 						crc=strtok(cache_line,",");
