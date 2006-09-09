@@ -186,7 +186,11 @@ BOOL sbbs_t::newuser()
 		else
 			useron.misc&=~NO_EXASCII;
 
+#ifdef USE_CRYPTLIB
+		if((sys_status&SS_RLOGIN || sys_status&SS_SSH) && rlogin_name[0])
+#else
 		if(sys_status&SS_RLOGIN && rlogin_name[0])
+#endif
 			strcpy(useron.alias,rlogin_name);
 		else {
 			while(online) {

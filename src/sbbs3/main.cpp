@@ -82,6 +82,9 @@ SOCKET	uspy_socket[MAX_NODES];	  /* UNIX domain spy sockets */
 SOCKET	node_socket[MAX_NODES];
 static	SOCKET telnet_socket=INVALID_SOCKET;
 static	SOCKET rlogin_socket=INVALID_SOCKET;
+#ifdef USE_CRYPTLIB
+static	SOCKET ssh_socket=INVALID_SOCKET;
+#endif
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	char *	text[TOTAL_TEXT];
@@ -1341,6 +1344,15 @@ void input_thread(void *arg)
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
 
+#ifdef USE_CRYPTLIB
+		if(sbbs->ssh_mode && sock==sbbs->client_socket) {
+			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
+				rd=-1;
+			else
+				rd=i;
+		}
+		else
+#endif
     	rd = recv(sock, (char*)inbuf, rd, 0);
 
 		if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
@@ -1566,6 +1578,15 @@ void output_thread(void* arg)
 			continue;
 		}
 
+#if USE_CRYPTLIB
+		if(sbbs->ssh_mode) {
+			if(!cryptStatusOK(cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))
+				i=-1;
+			else
+				cryptFlushData(sbbs->ssh_session);
+		}
+		else
+#endif
 		i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
@@ -2339,6 +2360,10 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	rlogin_pass[0]=0;
 
 	/* Init some important variables */
+
+#ifdef USE_CRYPTLIB
+	ssh_mode=false;
+#endif
 
 	rio_abortable=false;
 
@@ -3711,6 +3736,12 @@ static void cleanup(int code)
 		close_socket(rlogin_socket);
 		rlogin_socket=INVALID_SOCKET;
 	}
+#ifdef USE_CRYPTLIB
+	if(ssh_socket!=INVALID_SOCKET) {
+		close_socket(ssh_socket);
+		ssh_socket=INVALID_SOCKET;
+	}
+#endif
 
 
 #ifdef _WINSOCKAPI_
@@ -3783,6 +3814,9 @@ void DLLCALL bbs_thread(void* arg)
 	struct sockaddr_un uspy_addr;
 	socklen_t		uspy_addr_len;
 #endif
+#ifdef USE_CRYPTLIB
+	CRYPT_CONTEXT	ssh_context;
+#endif
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
@@ -3806,6 +3840,9 @@ void DLLCALL bbs_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
 	if(startup->rlogin_port==0)				startup->rlogin_port=513;
+#ifdef USE_CRYPTLIB
+	if(startup->ssh_port==0)				startup->ssh_port=22;
+#endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
@@ -4058,6 +4095,93 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf(LOG_INFO,"RLogin server listening on port %d",startup->rlogin_port);
 	}
 
+#ifdef USE_CRYPTLIB
+	if(startup->options&BBS_OPT_ALLOW_SSH) {
+		bool			loaded_key=false;
+
+		CRYPT_KEYSET	ssh_keyset;
+
+		cryptInit();
+		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
+		/* Get the private key... first try loading it from a file... */
+		sprintf(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
+		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_NONE))) {
+			if(cryptStatusOK(cryptGetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, "ssh_server", scfg.sys_pass)))
+				loaded_key=true;
+			cryptKeysetClose(ssh_keyset);
+			/* Failed to load the key... delete the keyfile and create a new one */
+			if(!loaded_key)
+				remove(str);
+		}
+
+		if(!loaded_key) {
+			/* Couldn't do that... create a new context and use the key from there... */
+
+			if(!cryptStatusOK(i=cryptCreateContext(&ssh_context, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
+				lprintf(LOG_ERR,"Cryptlib error %d creating context",i);
+				goto NO_SSH;
+			}
+			if(!cryptStatusOK(i=cryptSetAttributeString(ssh_context, CRYPT_CTXINFO_LABEL, "ssh_server", 10))) {
+				lprintf(LOG_ERR,"Cryptlib error %d setting key label",i);
+				goto NO_SSH;
+			}
+			if(!cryptStatusOK(i=cryptGenerateKey(ssh_context))) {
+				lprintf(LOG_ERR,"Cryptlib error %d generating key",i);
+				goto NO_SSH;
+			}
+
+			/* Ok, now try saving this one... use the syspass to enctrpy it. */
+			if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_CREATE))) {
+				cryptAddPrivateKey(ssh_keyset, ssh_context, scfg.sys_pass);
+				cryptKeysetClose(ssh_keyset);
+			}
+		}
+
+		/* open a socket and wait for a client */
+
+		ssh_socket = open_socket(SOCK_STREAM, "ssh");
+
+		if(ssh_socket == INVALID_SOCKET) {
+			lprintf(LOG_ERR,"!ERROR %d creating SSH socket", ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+
+		lprintf(LOG_INFO,"SSH socket %d opened",ssh_socket);
+
+		/*****************************/
+		/* Listen for incoming calls */
+		/*****************************/
+		memset(&server_addr, 0, sizeof(server_addr));
+
+		server_addr.sin_addr.s_addr = htonl(startup->ssh_interface);
+		server_addr.sin_family = AF_INET;
+		server_addr.sin_port   = htons(startup->ssh_port);
+
+		if(startup->seteuid!=NULL)
+			startup->seteuid(FALSE);
+		result = retry_bind(ssh_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
+			,startup->bind_retry_count,startup->bind_retry_delay,"SSH Server",lprintf);
+		if(startup->seteuid!=NULL)
+			startup->seteuid(TRUE);
+		if(result != 0) {
+			lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
+			cleanup(1);
+			return;
+		}
+
+		result = listen(ssh_socket, 1);
+
+		if(result != 0) {
+			lprintf(LOG_ERR,"!ERROR %d (%d) listening on SSH socket", result, ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+		lprintf(LOG_INFO,"SSH server listening on port %d",startup->ssh_port);
+	}
+NO_SSH:
+#endif
+
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
 		,"BBS System", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
@@ -4249,6 +4373,14 @@ void DLLCALL bbs_thread(void* arg)
 			if(rlogin_socket+1>high_socket_set)
 				high_socket_set=rlogin_socket+1;
 		}
+#ifdef USE_CRYPTLIB
+		if(startup->options&BBS_OPT_ALLOW_SSH
+			&& ssh_socket!=INVALID_SOCKET) {
+			FD_SET(ssh_socket,&socket_set);
+			if(ssh_socket+1>high_socket_set)
+				high_socket_set=ssh_socket+1;
+		}
+#endif
 #ifdef __unix__
 		for(i=first_node;i<=last_node;i++)  {
 			if(uspy_listen_socket[i-1]!=INVALID_SOCKET)  {
@@ -4286,6 +4418,9 @@ void DLLCALL bbs_thread(void* arg)
 		client_addr_len = sizeof(client_addr);
 
 		bool rlogin = false;
+#ifdef USE_CRYPTLIB
+		bool ssh = false;
+#endif
 
 		is_client=FALSE;
 		if(telnet_socket!=INVALID_SOCKET 
@@ -4299,6 +4434,46 @@ void DLLCALL bbs_thread(void* arg)
 	        	,&client_addr_len);
 			rlogin = true;
 			is_client=TRUE;
+#ifdef USE_CRYPTLIB
+		} else if(ssh_socket!=INVALID_SOCKET 
+			&& FD_ISSET(ssh_socket,&socket_set)) {
+			client_socket = accept_socket(ssh_socket, (struct sockaddr *)&client_addr
+	        	,&client_addr_len);
+			if(!cryptStatusOK(i=cryptCreateSession(&sbbs->ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH_SERVER))) {
+				lprintf(LOG_ERR,"Cryptlib error %d creating session",i);
+				close_socket(client_socket);
+				continue;
+			}
+			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context))) {
+				lprintf(LOG_ERR,"Cryptlib error %d setting private key",i);
+				cryptDestroySession(sbbs->ssh_session);
+				close_socket(client_socket);
+				continue;
+			}
+			/* Accept any credentials */
+			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1))) {
+				lprintf(LOG_ERR,"Cryptlib error %d setting AUTHRESPONSE",i);
+				cryptDestroySession(sbbs->ssh_session);
+				close_socket(client_socket);
+				continue;
+			}
+			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, client_socket))) {
+				lprintf(LOG_ERR,"Cryptlib error %d setting socket",i);
+				cryptDestroySession(sbbs->ssh_session);
+				close_socket(client_socket);
+				continue;
+			}
+			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
+				lprintf(LOG_ERR,"Cryptlib error %d setting session active",i);
+				cryptDestroySession(sbbs->ssh_session);
+				close_socket(client_socket);
+				continue;
+			}
+			cryptPopData(sbbs->ssh_session, str, sizeof(str), &i);
+			ssh = true;
+			is_client=TRUE;
+			sbbs->ssh_mode=true;
+#endif
 		} else {
 #ifdef __unix__
 			for(i=first_node;i<=last_node;i++)  {
@@ -4364,13 +4539,24 @@ void DLLCALL bbs_thread(void* arg)
 		strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
+#ifdef USE_CRYPTLIB
+			if(ssh) {
+				cryptDestroySession(sbbs->ssh_session);
+				sbbs->ssh_mode=false;
+			}
+#endif
 			close_socket(client_socket);
 			continue;
 		}
 
 		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
 			,client_socket
-			,rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
+#ifdef USE_CRYPTLIB
+			,rlogin ? "RLogin" : (ssh ? "SSH" : "Telnet")
+#else
+			,rlogin ? "RLogin" : "Telnet"
+#endif
+			, host_ip, ntohs(client_addr.sin_port));
 
 #ifdef _WIN32
 		if(startup->answer_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
@@ -4381,6 +4567,12 @@ void DLLCALL bbs_thread(void* arg)
         sbbs->online=ON_REMOTE;
 
 		if(sbbs->trashcan(host_ip,"ip")) {
+#ifdef USE_CRYPTLIB
+			if(ssh) {
+				cryptDestroySession(sbbs->ssh_session);
+				sbbs->ssh_mode=false;
+			}
+#endif
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can"
 				,client_socket);
@@ -4419,6 +4611,12 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {
+#ifdef USE_CRYPTLIB
+			if(ssh) {
+				cryptDestroySession(sbbs->ssh_session);
+				sbbs->ssh_mode=false;
+			}
+#endif
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can",client_socket);
 			sprintf(logstr, "Blocked Hostname: %s",host_name);
@@ -4445,7 +4643,11 @@ void DLLCALL bbs_thread(void* arg)
 		SAFECOPY(client.addr,host_ip);
 		SAFECOPY(client.host,host_name);
 		client.port=ntohs(client_addr.sin_port);
+#ifdef USE_CRYPTLIB
+		client.protocol=rlogin ? "RLogin":(ssh ? "SSH" : "Telnet");
+#else
 		client.protocol=rlogin ? "RLogin":"Telnet";
+#endif
 		client.user="<unknown>";
 		client_on(client_socket,&client,FALSE /* update */);
 
@@ -4473,6 +4675,12 @@ void DLLCALL bbs_thread(void* arg)
 			}
 			mswait(3000);
 			client_off(client_socket);
+#ifdef USE_CRYPTLIB
+			if(ssh) {
+				cryptDestroySession(sbbs->ssh_session);
+				sbbs->ssh_mode=false;
+			}
+#endif
 			close_socket(client_socket);
 			continue;
 		}
@@ -4480,9 +4688,16 @@ void DLLCALL bbs_thread(void* arg)
         node_socket[i-1]=client_socket;
 
 		sbbs_t* new_node = new sbbs_t(i, client_addr.sin_addr.s_addr, host_name
-        	,client_socket, &scfg, text, &client);
+        	,client_socket
+			,&scfg, text, &client);
 
 		new_node->client=client;
+#ifdef USE_CRYPTLIB
+		if(ssh) {
+			new_node->ssh_session=sbbs->ssh_session;
+			new_node->ssh_mode=true;
+		}
+#endif
 
 		/* copy the IDENT response, if any */
 		if(identity!=NULL)
@@ -4503,6 +4718,12 @@ void DLLCALL bbs_thread(void* arg)
 			delete new_node;
 			node_socket[i-1]=INVALID_SOCKET;
 			client_off(client_socket);
+#ifdef USE_CRYPTLIB
+			if(ssh) {
+				cryptDestroySession(sbbs->ssh_session);
+				sbbs->ssh_mode=false;
+			}
+#endif
 			close_socket(client_socket);
 			continue;
 		}
@@ -4512,6 +4733,14 @@ void DLLCALL bbs_thread(void* arg)
 			new_node->sys_status|=SS_RLOGIN;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
+#ifdef USE_CRYPTLIB
+		if(ssh) {
+			new_node->connection="SSH";
+			new_node->sys_status|=SS_SSH;
+			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
+			new_node->ssh_session=sbbs->ssh_session;
+		}
+#endif
 
 	    node_threads_running++;
 		new_node->input_thread=(HANDLE)_beginthread(input_thread,0, new_node);

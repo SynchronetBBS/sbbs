@@ -178,6 +178,71 @@ bool sbbs_t::answer()
 		/* Retrieve terminal type from telnet client --RS */
 		request_telnet_opt(TELNET_DO,TELNET_TERM_TYPE);
 	}
+#ifdef USE_CRYPTLIB
+	if(sys_status&SS_SSH) {
+		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, rlogin_name, &i);
+		rlogin_name[i]=0;
+		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, rlogin_pass, &i);
+		rlogin_pass[i]=0;
+		lprintf(LOG_DEBUG,"Node %d SSH: '%.*s' / '%.*s'"
+			,cfg.node_num
+			,LEN_ALIAS*2,rlogin_name
+			,LEN_ALIAS*2,rlogin_pass);
+		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
+		if(useron.number) {
+			getuserdat(&cfg,&useron);
+			useron.misc&=~(ANSI|COLOR|RIP|WIP);
+			SAFECOPY(tmp
+				,rlogin_pass);
+			for(i=0;i<3;i++) {
+				if(stricmp(tmp,useron.pass)) {
+					rioctl(IOFI);       /* flush input buffer */
+					bputs(text[InvalidLogon]);
+					if(cfg.sys_misc&SM_ECHO_PW)
+						sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+							,0,useron.alias,tmp);
+					else
+						sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
+							,0,useron.alias);
+						logline("+!",str);
+					bputs(text[PasswordPrompt]);
+					console|=CON_R_ECHOX;
+					getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
+					console&=~(CON_R_ECHOX|CON_L_ECHOX);
+				}
+				else {
+					if(REALSYSOP) {
+						rioctl(IOFI);       /* flush input buffer */
+						if(!chksyspass())
+							bputs(text[InvalidLogon]);
+						else {
+							i=0;
+							break;
+						}
+					}
+					else
+						break;
+				}
+			}
+			if(i) {
+				if(stricmp(tmp,useron.pass)) {
+					bputs(text[InvalidLogon]);
+					if(cfg.sys_misc&SM_ECHO_PW)
+						sprintf(str,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+							,0,useron.alias,tmp);
+					else
+						sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
+							,0,useron.alias);
+						logline("+!",str);
+				}
+				useron.number=0;
+				hangup();
+			}
+		}
+		else
+			lprintf(LOG_DEBUG,"Node %d RLogin: Unknown user: %s",cfg.node_num,rlogin_name);
+	}
+#endif
 
 	/* Detect terminal type */
     mswait(200);

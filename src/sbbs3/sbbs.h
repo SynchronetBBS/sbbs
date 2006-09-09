@@ -109,6 +109,10 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #endif
 
+#ifdef USE_CRYPTLIB
+#include <cryptlib.h>
+#endif
+
 /***********************/
 /* Synchronet-specific */
 /***********************/
@@ -169,6 +173,10 @@ public:
 	char	client_name[128];
 	char	client_ident[128];
 	DWORD	local_addr;
+#ifdef USE_CRYPTLIB
+	CRYPT_SESSION	ssh_session;
+	bool	ssh_mode;
+#endif
 
 	scfg_t	cfg;
 

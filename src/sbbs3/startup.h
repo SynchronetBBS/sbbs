@@ -75,12 +75,18 @@ typedef struct {
     WORD	last_node;
 	WORD	telnet_port;
 	WORD	rlogin_port;
+#ifdef USE_CRYPTLIB
+	WORD	ssh_port;
+#endif
 	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   telnet_interface;
     DWORD	options;			/* See BBS_OPT definitions */
     DWORD	rlogin_interface;
+#ifdef USE_CRYPTLIB
+	DWORD	ssh_interface;
+#endif
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
     sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/
@@ -154,6 +160,9 @@ static struct init_field {
 #define BBS_OPT_NO_EVENTS			(1<<9)	/* Don't run event thread			*/
 #define BBS_OPT_NO_SPY_SOCKETS		(1<<10)	/* Don't create spy sockets			*/
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
+#ifdef USE_CRYPTLIB
+#define BBS_OPT_ALLOW_SSH		(1<<26)	/* Allow logins via BSD SSH		*/
+#endif
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
@@ -161,8 +170,13 @@ static struct init_field {
 #define BBS_OPT_MUTE				(1<<31)	/* Mute sounds						*/
 
 /* bbs_startup_t.options bits that require re-init/recycle when changed */
+#ifdef USE_CRYPTLIB
+#define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_ALLOW_SSH|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
+						|BBS_OPT_NO_JAVASCRIPT|BBS_OPT_LOCAL_TIMEZONE)
+#else
 #define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
 						|BBS_OPT_NO_JAVASCRIPT|BBS_OPT_LOCAL_TIMEZONE)
+#endif
 
 #if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t bbs_options[] = {
@@ -178,6 +192,9 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_EVENTS				,"NO_EVENTS"			},
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ BBS_OPT_NO_SPY_SOCKETS		,"NO_SPY_SOCKETS"		},
+#ifdef USE_CRYPTLIB
+	{ BBS_OPT_ALLOW_SSH			,"ALLOW_SSH"			},
+#endif
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},

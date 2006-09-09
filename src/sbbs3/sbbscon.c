@@ -1640,7 +1640,12 @@ int main(int argc, char** argv)
 		if(!thread_suid_broken) {
  			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
-					&& bbs_startup.rlogin_port < IPPORT_RESERVED))
+					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
+#ifdef USE_CRYPTLIB
+				|| (bbs_startup.options & BBS_OPT_ALLOW_SSH
+					&& bbs_startup.ssh_port < IPPORT_RESERVED)
+#endif
+				)
 				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
 			if(ftp_startup.port < IPPORT_RESERVED)
 				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
