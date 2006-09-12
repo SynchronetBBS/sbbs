@@ -5096,6 +5096,11 @@ void DLLCALL web_server(void* arg)
 			served++;
 		}
 
+		if(session) {
+			pthread_mutex_unlock(&session->struct_filled);
+			session=NULL;
+		}
+
 		/* Wait for active clients to terminate */
 		if(active_clients) {
 			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
