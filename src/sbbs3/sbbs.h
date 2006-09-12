@@ -176,6 +176,7 @@ public:
 #ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session;
 	bool	ssh_mode;
+	SOCKET	passthru_socket;
 #endif
 
 	scfg_t	cfg;

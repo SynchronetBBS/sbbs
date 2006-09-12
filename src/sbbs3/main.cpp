@@ -1454,6 +1454,203 @@ void input_thread(void *arg)
 		,sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
+#ifdef USE_CRYPTLIB
+/*
+ * This thread copies anything recieved from the client to the passthru_socket
+ * It can only do that when the input thread is locked.
+ * Luckily, the input thread is currently locked exactly when we want it to be.
+ * Since the passthru socket is 8-bit clean and does NOT use a protocol,
+ * we must handle telnet stuff HERE.
+ * However, for JS stuff, direct operations on client_socket should generally
+ * be done to the passthru_socket instead... THIS is the biggest problem here.
+ */
+void passthru_output_thread(void* arg)
+{
+	fd_set	socket_set;
+	fd_set	w_set;
+	sbbs_t	*sbbs = (sbbs_t*) arg;
+	struct	timeval	tv;
+	char	ch;
+	int		i;
+	BYTE	inbuf[4000];
+   	BYTE	telbuf[sizeof(inbuf)];
+	BYTE	*wrbuf;
+	int		rd;
+	int		wr;
+
+	thread_up(FALSE /* setuid */);
+
+	while(sbbs->client_socket!=INVALID_SOCKET && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
+		while(!sbbs->input_thread_mutex_locked)
+			SLEEP(1);
+		
+		FD_ZERO(&socket_set);
+		FD_SET(sbbs->client_socket,&socket_set);
+
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		if((i=select(sbbs->client_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+			if(i==0) {
+				YIELD();	/* This kludge is necessary on some Linux distros */
+				continue;	/* to allow other threads to lock the input_thread_mutex */
+			}
+
+			if(sbbs->client_socket==INVALID_SOCKET)
+				break;
+	       	if(ERROR_VALUE == ENOTSOCK)
+    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf(LOG_NOTICE,"Node %d socket shutdown on input->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==EINTR)
+				lprintf(LOG_DEBUG,"Node %d passthru output thread interrupted",sbbs->cfg.node_num);
+            else if(ERROR_VALUE==ECONNRESET) 
+				lprintf(LOG_NOTICE,"Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
+	        else if(ERROR_VALUE==ECONNABORTED) 
+				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
+			else
+				lprintf(LOG_WARNING,"Node %d !ERROR %d ->select socket %d"
+               		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
+			break;
+		}
+
+		if(sbbs->client_socket==INVALID_SOCKET)
+			break;
+
+    	rd=sizeof(inbuf);
+
+#ifdef USE_CRYPTLIB
+		if(sbbs->ssh_mode) {
+			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
+				rd=-1;
+			else
+				rd=i;
+		}
+		else
+#endif
+    	rd = recv(sbbs->client_socket, (char*)inbuf, rd, 0);
+
+		if(rd == SOCKET_ERROR)
+		{
+	       	if(ERROR_VALUE == ENOTSOCK)
+    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on receive", sbbs->cfg.node_num);
+            else if(ERROR_VALUE==ECONNRESET) 
+				lprintf(LOG_NOTICE,"Node %d connection reset by peer on receive", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf(LOG_NOTICE,"Node %d socket shutdown on receive", sbbs->cfg.node_num);
+            else if(ERROR_VALUE==ECONNABORTED) 
+				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
+			else
+				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving from socket %d"
+                	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
+			break;
+		}
+
+		if(rd == 0)
+		{
+			lprintf(LOG_NOTICE,"Node %d disconnected", sbbs->cfg.node_num);
+			break;
+		}
+
+        // telbuf and wr are modified to reflect telnet escaped data
+		wr=rd;
+		if(sbbs->telnet_mode&TELNET_MODE_OFF)
+			wrbuf=inbuf;
+		else
+			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
+		if(wr > (int)sizeof(telbuf)) 
+			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
+
+		/*
+		 * TODO: This should check for writability etc.
+		 */
+		sendsocket(sbbs->passthru_socket, wrbuf, wr);
+	}
+}
+
+/*
+ * This thread simply copies anything it manages to read from the
+ * passthru_socket into the output ringbuffer.
+ */
+void passthru_input_thread(void* arg)
+{
+	fd_set	r_set;
+	sbbs_t	*sbbs = (sbbs_t*) arg;
+	struct	timeval	tv;
+	BYTE	ch;
+	int		i;
+
+	thread_up(FALSE /* setuid */);
+
+	while(sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		FD_ZERO(&r_set);
+		FD_SET(sbbs->passthru_socket,&r_set);
+		if((i=select(sbbs->passthru_socket+1,&r_set,NULL,NULL,&tv))<1) {
+			if(i==0) {
+				YIELD();	/* This kludge is necessary on some Linux distros */
+				continue;	/* to allow other threads to lock the input_thread_mutex */
+			}
+
+			if(sbbs->passthru_socket==INVALID_SOCKET)
+				break;
+	       	if(ERROR_VALUE == ENOTSOCK)
+    	        lprintf(LOG_NOTICE,"Node %d socket closed by peer on passthru->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==ESHUTDOWN)
+				lprintf(LOG_NOTICE,"Node %d socket shutdown on passthru->select", sbbs->cfg.node_num);
+			else if(ERROR_VALUE==EINTR)
+				lprintf(LOG_DEBUG,"Node %d passthru thread interrupted",sbbs->cfg.node_num);
+            else if(ERROR_VALUE==ECONNRESET) 
+				lprintf(LOG_NOTICE,"Node %d connection reset by peer on passthru->select", sbbs->cfg.node_num);
+	        else if(ERROR_VALUE==ECONNABORTED) 
+				lprintf(LOG_NOTICE,"Node %d connection aborted by peer on passthru->select", sbbs->cfg.node_num);
+			else
+				lprintf(LOG_WARNING,"Node %d !ERROR %d passthru->select socket %d"
+               		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
+			break;
+		}
+		if(!RingBufFree(&sbbs->outbuf))
+			continue;
+
+    	i = recv(sbbs->passthru_socket, &ch, 1, 0);
+
+		if(i == SOCKET_ERROR)
+		{
+	        	if(ERROR_VALUE == ENOTSOCK)
+    	            lprintf(LOG_NOTICE,"Node %d passthru socket closed by peer on receive", sbbs->cfg.node_num);
+        	    else if(ERROR_VALUE==ECONNRESET) 
+					lprintf(LOG_NOTICE,"Node %d passthru connection reset by peer on receive", sbbs->cfg.node_num);
+				else if(ERROR_VALUE==ESHUTDOWN)
+					lprintf(LOG_NOTICE,"Node %d passthru socket shutdown on receive", sbbs->cfg.node_num);
+        	    else if(ERROR_VALUE==ECONNABORTED) 
+					lprintf(LOG_NOTICE,"Node %d passthru connection aborted by peer on receive", sbbs->cfg.node_num);
+				else
+					lprintf(LOG_WARNING,"Node %d !ERROR %d receiving from passthru socket %d"
+        	        	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
+				break;
+		}
+
+		if(i == 0)
+		{
+			lprintf(LOG_NOTICE,"Node %d passthru disconnected", sbbs->cfg.node_num);
+			break;
+		}
+
+    	if(!RingBufWrite(&sbbs->outbuf, &ch, 1)) {
+			lprintf(LOG_ERR,"Cannot pass from passthru socket to outbuf");
+			break;
+		}
+	}
+	if(sbbs->passthru_socket!=INVALID_SOCKET) {
+		close_socket(sbbs->passthru_socket);
+		sbbs->passthru_socket=INVALID_SOCKET;
+	}
+	thread_down();
+}
+#endif
+
 void output_thread(void* arg)
 {
 	char		node[128];
@@ -3816,6 +4013,7 @@ void DLLCALL bbs_thread(void* arg)
 #endif
 #ifdef USE_CRYPTLIB
 	CRYPT_CONTEXT	ssh_context;
+	SOCKET			passthru[2];
 #endif
 
     if(startup==NULL) {
@@ -4739,6 +4937,19 @@ NO_SSH:
 			new_node->sys_status|=SS_SSH;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
 			new_node->ssh_session=sbbs->ssh_session;
+			/*
+			 * Setup passthru socket... Win32 will hate this.
+			 */
+			if(socketpair(AF_UNIX, SOCK_STREAM, 0, passthru)==0) {
+				new_node->client_socket_dup=passthru[0];
+lprintf(LOG_DEBUG,"Setting client_socket_dup to passthru[0] (%d)",passthru[0]);
+				new_node->passthru_socket=passthru[1];
+				_beginthread(passthru_output_thread, 0, new_node);
+				_beginthread(passthru_input_thread, 0, new_node);
+			}
+			else {
+				lprintf(LOG_WARNING,"Cannot create a socketpair for passthru (%d)",ERROR_VALUE);
+			}
 		}
 #endif
 
