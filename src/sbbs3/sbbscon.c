@@ -267,6 +267,9 @@ static BOOL do_seteuid(BOOL to_new)
 	if(new_uid_name[0]==0)	/* not set? */
 		return(TRUE);		/* do nothing */
 
+	if(old_uid==new_uid && old_gid==new_gid)
+		return(TRUE);		/* do nothing */
+
 	if(!setid_mutex_initialized) {
 		pthread_mutex_init(&setid_mutex,NULL);
 		setid_mutex_initialized=TRUE;
@@ -314,6 +317,9 @@ BOOL do_setuid(BOOL force)
 		return(do_seteuid(TRUE));
 #endif
 
+	if(old_uid==new_uid && old_gid==new_gid)
+		return(TRUE);		/* do nothing */
+
 	if(!setid_mutex_initialized) {
 		pthread_mutex_init(&setid_mutex,NULL);
 		setid_mutex_initialized=TRUE;
@@ -321,20 +327,26 @@ BOOL do_setuid(BOOL force)
 
 	pthread_mutex_lock(&setid_mutex);
 
-	setregid(-1,old_gid);
-	setreuid(-1,old_uid);
-	if(setregid(new_gid,new_gid))
-	{
-		lputs(LOG_ERR,"!setgid FAILED");
-		lputs(LOG_ERR,strerror(errno));
-		result=FALSE;
+	if(getegid()!=old_gid)
+		setregid(-1,old_gid);
+	if(geteuid()!=old_gid)
+		setreuid(-1,old_uid);
+	if(getgid() != new_gid || getegid() != new_gid) {
+		if(setregid(new_gid,new_gid))
+		{
+			lputs(LOG_ERR,"!setgid FAILED");
+			lputs(LOG_ERR,strerror(errno));
+			result=FALSE;
+		}
 	}
 
-	if(setreuid(new_uid,new_uid))
-	{
-		lputs(LOG_ERR,"!setuid FAILED");
-		lputs(LOG_ERR,strerror(errno));
-		result=FALSE;
+	if(getuid() != new_uid || geteuid() != new_uid) {
+		if(setreuid(new_uid,new_uid))
+		{
+			lputs(LOG_ERR,"!setuid FAILED");
+			lputs(LOG_ERR,strerror(errno));
+			result=FALSE;
+		}
 	}
 
 	pthread_mutex_unlock(&setid_mutex);
