@@ -499,11 +499,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			}
 			else {
 				sprintf(str,"COM0:SOCKET%d\n",
-#ifdef __unix__
-					client_socket
-#else
 					client_socket_dup
-#endif
 				);
 			}
 		}
@@ -1290,11 +1286,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		sprintf(str,"%d\n%d\n38400\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
 			"%d\n%d\n"
 			,misc&IO_INTS ? 0 /* Local */ : 2 /* Telnet */
-#if defined(__unix__)
-			,misc&IO_INTS ? INVALID_SOCKET : client_socket
-#else
 			,misc&IO_INTS ? INVALID_SOCKET : client_socket_dup
-#endif
 			,VERSION_NOTICE,REVISION
 			,useron.number
 			,useron.name
