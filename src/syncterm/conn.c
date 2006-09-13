@@ -294,8 +294,10 @@ int conn_connect(struct bbslist *bbs)
 		case CONN_TYPE_SSH: {
 			int off=1;
 			int status;
+			char password[MAX_PASSWD_LEN+1];
 
 			ssh_active=FALSE;
+
 			status=cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
 			if(cryptStatusError(status)) {
 				char	str[1024];
@@ -306,6 +308,8 @@ int conn_connect(struct bbslist *bbs)
 
 			/* we need to disable Nagle on the socket. */
 			setsockopt(conn_socket, IPPROTO_TCP, TCP_NODELAY, ( char * )&off, sizeof ( off ) );
+
+			SAFECOPY(password,bbs->password);
 
 			/* Pass socket to cryptlib */
 			status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, conn_socket);
@@ -324,6 +328,10 @@ int conn_connect(struct bbslist *bbs)
 				uifcmsg("Error setting username",str);
 				return(-1);
 			}
+
+			if(!password[0])
+				uifcinput("Password",MAX_PASSWD_LEN,password,K_PASSWORD,"Incorrect password.  Try again.");
+
 			status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, passwd, strlen(passwd));
 			if(cryptStatusError(status)) {
 				char	str[1024];
@@ -336,9 +344,12 @@ int conn_connect(struct bbslist *bbs)
 			status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 			if(cryptStatusError(status)) {
 				char	str[1024];
+
 				sprintf(str,"Error %d activating session",status);
 				uifcmsg("Error activating session",str);
 				return(-1);
+				}
+				break;
 			}
 
 			ssh_active=TRUE;
