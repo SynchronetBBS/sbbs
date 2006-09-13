@@ -4933,23 +4933,94 @@ NO_SSH:
 		}
 #ifdef USE_CRYPTLIB
 		if(ssh) {
+			SOCKET	tmp_sock;
+			SOCKADDR_IN		tmp_addr={0};
+			socklen_t		tmp_addr_len;
+
+    		/* open a socket and connect to yourself */
+
+    		tmp_sock = open_socket(SOCK_STREAM, "passthru");
+
+			if(tmp_sock == INVALID_SOCKET) {
+				lprintf(LOG_ERR,"!ERROR %d creating passthru listen socket", ERROR_VALUE);
+				goto NO_PASSTHRU;
+			}
+
+    		lprintf(LOG_INFO,"passthru listen socket %d opened",tmp_sock);
+
+			/*****************************/
+			/* Listen for incoming calls */
+			/*****************************/
+    		memset(&tmp_addr, 0, sizeof(tmp_addr));
+
+			tmp_addr.sin_addr.s_addr = htonl(0x7f000001U);
+    		tmp_addr.sin_family = AF_INET;
+    		tmp_addr.sin_port   = 0;
+
+    		result = bind(tmp_sock,(struct sockaddr *)&tmp_addr,sizeof(tmp_addr));
+			if(result != 0) {
+				lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+
+		    result = listen(tmp_sock, 1);
+
+			if(result != 0) {
+				lprintf(LOG_ERR,"!ERROR %d (%d) listening on passthru socket", result, ERROR_VALUE);
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+			lprintf(LOG_INFO,"Listening passthru socket listening on port %d",htons(tmp_addr.sin_port));
+
+    		new_node->passthru_socket = open_socket(SOCK_STREAM, "passthru");
+
+			if(new_node->passthru_socket == INVALID_SOCKET) {
+				lprintf(LOG_ERR,"!ERROR %d creating passthru connecting socket", ERROR_VALUE);
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+
+    		lprintf(LOG_INFO,"passthru connect socket %d opened",new_node->passthru_socket);
+
+			tmp_addr_len=sizeof(tmp_addr);
+			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
+				lprintf(LOG_ERR,"!ERROR %d getting passthru listener address", ERROR_VALUE);
+				close_socket(tmp_sock);
+				close_socket(new_node->passthru_socket);
+				new_node->passthru_socket=INVALID_SOCKET;
+				goto NO_PASSTHRU;
+			}
+
+		    result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
+
+			if(result != 0) {
+				lprintf(LOG_ERR,"!ERROR %d (%d) connecting to passthru socket", result, ERROR_VALUE);
+				close_socket(new_node->passthru_socket);
+				new_node->passthru_socket=INVALID_SOCKET;
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+
+			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
+
+			if(new_node->client_socket_dup == INVALID_SOCKET) {
+				lprintf(LOG_ERR,"!ERROR (%d) connecting accept()ing on passthru socket", ERROR_VALUE);
+				lprintf(LOG_WARNING,"!WARNING native doors which use sockets will not function");
+				close_socket(new_node->passthru_socket);
+				new_node->passthru_socket=INVALID_SOCKET;
+				close_socket(tmp_sock);
+				goto NO_PASSTHRU;
+			}
+			close_socket(tmp_sock);
+			_beginthread(passthru_output_thread, 0, new_node);
+			_beginthread(passthru_input_thread, 0, new_node);
+
+NO_PASSTHRU:
 			new_node->connection="SSH";
 			new_node->sys_status|=SS_SSH;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
 			new_node->ssh_session=sbbs->ssh_session;
-			/*
-			 * Setup passthru socket... Win32 will hate this.
-			 */
-			if(socketpair(AF_UNIX, SOCK_STREAM, 0, passthru)==0) {
-				new_node->client_socket_dup=passthru[0];
-lprintf(LOG_DEBUG,"Setting client_socket_dup to passthru[0] (%d)",passthru[0]);
-				new_node->passthru_socket=passthru[1];
-				_beginthread(passthru_output_thread, 0, new_node);
-				_beginthread(passthru_input_thread, 0, new_node);
-			}
-			else {
-				lprintf(LOG_WARNING,"Cannot create a socketpair for passthru (%d)",ERROR_VALUE);
-			}
 		}
 #endif
 
