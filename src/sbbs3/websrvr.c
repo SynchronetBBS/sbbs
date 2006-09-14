@@ -2552,7 +2552,7 @@ static BOOL check_request(http_session_t * session)
 					}
 					free(spec);
 				}
-				strListFree(specs);
+				iniFreeStringList(specs);
 				fclose(file);
 				if(session->req.path_info_index)
 					recheck_dynamic=TRUE;
@@ -2672,7 +2672,7 @@ static str_list_t get_cgi_env(http_session_t *session)
 				,add_list[i], prepend, value, append);
 			strListPush(&env_list,env_str);
 		}
-		strListFree(&add_list);
+		iniFreeStringList(&add_list);
 	}
 
 	fclose(fp);
