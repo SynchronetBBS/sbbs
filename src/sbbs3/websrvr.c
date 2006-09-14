@@ -4346,6 +4346,7 @@ void http_session_thread(void* arg)
 	session.finished=FALSE;
 
 	/* Start up the output buffer */
+	/* FREE()d in this block (RingBufDispose before all returns) */
 	if(RingBufInit(&(session.outbuf), OUTBUF_LEN)) {
 		lprintf(LOG_ERR,"%04d Canot create output ringbuffer!", session.socket);
 		close_socket(&session.socket);
