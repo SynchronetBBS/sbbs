@@ -2505,16 +2505,20 @@ static BOOL check_request(http_session_t * session)
 				/* Read in globals */
 				if(iniReadString(file, NULL, "AccessRequirements", session->req.ars,str)==str)
 					SAFECOPY(session->req.ars,str);
-				if(iniReadString(file, NULL, "Realm", scfg.sys_name,str)==str)
+				if(iniReadString(file, NULL, "Realm", scfg.sys_name,str)==str) {
+					FREE_AND_NULL(session->req.realm);
 					/* FREE()d in close_request() */
 					session->req.realm=strdup(str);
+				}
 				if(iniReadString(file, NULL, "ErrorDirectory", error_dir,str)==str) {
 					prep_dir(root_dir, str, sizeof(str));
+					FREE_AND_NULL(session->req.error_dir);
 					/* FREE()d in close_request() */
 					session->req.error_dir=strdup(str);
 				}
 				if(iniReadString(file, NULL, "CGIDirectory", cgi_dir,str)==str) {
 					prep_dir(root_dir, str, sizeof(str));
+					FREE_AND_NULL(session->req.cgi_dir);
 					/* FREE()d in close_request() */
 					session->req.cgi_dir=strdup(str);
 					recheck_dynamic=TRUE;
@@ -4003,6 +4007,11 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return(FALSE);
 	}
+	if(session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]) {
+		if(!(startup->options&WEB_OPT_DEBUG_SSJS))
+			remove(session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]);
+		free(session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]);
+	}
 	/* FREE()d in close_request() */
 	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]=strdup(path);
 
@@ -4170,6 +4179,7 @@ int read_post_data(http_session_t * session)
 		}
 		else {
 			i = session->req.post_len;
+			FREE_AND_NULL(session->req.post_data);
 			/* FREE()d in close_request()  */
 			if(i < (MAX_POST_LEN+1) && (session->req.post_data=malloc(i+1)) != NULL)
 				session->req.post_len=recvbufsocket(&session->socket,session->req.post_data,i);
@@ -4411,7 +4421,16 @@ void http_session_thread(void* arg)
 	    memset(&(session.req), 0, sizeof(session.req));
 		redirp=NULL;
 		loop_count=0;
-		session.req.ld=NULL;
+		if(session.req.ld) {
+			FREE_AND_NULL(session.req.ld->hostname);
+			FREE_AND_NULL(session.req.ld->ident);
+			FREE_AND_NULL(session.req.ld->user);
+			FREE_AND_NULL(session.req.ld->request);
+			FREE_AND_NULL(session.req.ld->referrer);
+			FREE_AND_NULL(session.req.ld->agent);
+			FREE_AND_NULL(session.req.ld->vhost);
+			FREE_AND_NULL(session.req.ld);
+		}
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
 			/* FREE()d in http_logging_thread... passed there by close_request() */
 			if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
