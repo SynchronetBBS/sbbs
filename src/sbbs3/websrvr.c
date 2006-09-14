@@ -2501,6 +2501,7 @@ static BOOL check_request(http_session_t * session)
 			}
 			/* Read webctrl.ars file */
 			if((file=fopen(str,"r"))!=NULL) {
+				/* FREE()d in this block */
 				specs=iniReadSectionList(file,NULL);
 				/* Read in globals */
 				if(iniReadString(file, NULL, "AccessRequirements", session->req.ars,str)==str)
@@ -2551,7 +2552,7 @@ static BOOL check_request(http_session_t * session)
 					}
 					free(spec);
 				}
-				strListFreeStrings(specs);
+				strListFree(specs);
 				fclose(file);
 				if(session->req.path_info_index)
 					recheck_dynamic=TRUE;
@@ -2646,6 +2647,7 @@ static str_list_t get_cgi_env(http_session_t *session)
 	str_list_t	env_list;
 	str_list_t	add_list;
 
+	/* Return value */
 	if((env_list=strListInit())==NULL)
 		return(NULL);
 
@@ -2656,6 +2658,7 @@ static str_list_t get_cgi_env(http_session_t *session)
 	if((fp=iniOpenFile(cgi_env_ini,/* create? */FALSE))==NULL)
 		return(env_list);
 
+	/* FREE()d in this block */
 	if((add_list=iniReadSectionList(fp,NULL))!=NULL) {
 
 		for(i=0; add_list[i]!=NULL; i++) {
@@ -2793,6 +2796,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
 	cgi_status[0]=0;
+	/* FREE()d following this block */
 	tmpbuf=strListInit();
 	while(!done_reading)  {
 		tv.tv_sec=startup->max_cgi_inactivity;
@@ -4447,18 +4451,21 @@ void http_session_thread(void* arg)
 			SAFECOPY(session.req.status,"200 OK");
 			session.req.send_location=NO_LOCATION;
 			if(session.req.headers==NULL) {
+				/* FREE()d in close_request() */
 				if((session.req.headers=strListInit())==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR allocating memory for header list",session.socket);
 					init_error=TRUE;
 				}
 			}
 			if(session.req.cgi_env==NULL) {
+				/* FREE()d in close_request() */
 				if((session.req.cgi_env=strListInit())==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR allocating memory for CGI environment list",session.socket);
 					init_error=TRUE;
 				}
 			}
 			if(session.req.dynamic_heads==NULL) {
+				/* FREE()d in close_request() */
 				if((session.req.dynamic_heads=strListInit())==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR allocating memory for dynamic header list",session.socket);
 					init_error=TRUE;
