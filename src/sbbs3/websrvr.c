@@ -1438,6 +1438,7 @@ static BOOL check_ars(http_session_t * session)
 
 	if(session->req.ld!=NULL) {
 		FREE_AND_NULL(session->req.ld->user);
+		/* FREE()d in http_logging_thread */
 		session->req.ld->user=strdup(username);
 	}
 
@@ -1921,12 +1922,14 @@ static BOOL parse_headers(http_session_t * session)
 				case HEAD_REFERER:
 					if(session->req.ld!=NULL) {
 						FREE_AND_NULL(session->req.ld->referrer);
+						/* FREE()d in http_logging_thread() */
 						session->req.ld->referrer=strdup(value);
 					}
 					break;
 				case HEAD_AGENT:
 					if(session->req.ld!=NULL) {
 						FREE_AND_NULL(session->req.ld->agent);
+						/* FREE()d in http_logging_thread() */
 						session->req.ld->agent=strdup(value);
 					}
 					break;
@@ -2220,6 +2223,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		if(req_line[0])
 			lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,req_line);
 		if(session->req.ld!=NULL && session->req.ld->request==NULL)
+			/* FREE()d in http_logging_thread() */
 			session->req.ld->request=strdup(req_line);
 	}
 	else {
@@ -2242,6 +2246,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				return(FALSE);
 			}
 			if(session->req.ld!=NULL && session->req.ld->vhost==NULL)
+				/* FREE()d in http_logging_thread() */
 				session->req.ld->vhost=strdup(session->req.vhost);
 			session->req.dynamic=is_dynamic_req(session);
 			if(session->req.query_str[0])
@@ -2501,13 +2506,16 @@ static BOOL check_request(http_session_t * session)
 				if(iniReadString(file, NULL, "AccessRequirements", session->req.ars,str)==str)
 					SAFECOPY(session->req.ars,str);
 				if(iniReadString(file, NULL, "Realm", scfg.sys_name,str)==str)
+					/* FREE()d in close_request() */
 					session->req.realm=strdup(str);
 				if(iniReadString(file, NULL, "ErrorDirectory", error_dir,str)==str) {
 					prep_dir(root_dir, str, sizeof(str));
+					/* FREE()d in close_request() */
 					session->req.error_dir=strdup(str);
 				}
 				if(iniReadString(file, NULL, "CGIDirectory", cgi_dir,str)==str) {
 					prep_dir(root_dir, str, sizeof(str));
+					/* FREE()d in close_request() */
 					session->req.cgi_dir=strdup(str);
 					recheck_dynamic=TRUE;
 				}
@@ -2519,16 +2527,19 @@ static BOOL check_request(http_session_t * session)
 							SAFECOPY(session->req.ars,str);
 						if(iniReadString(file, spec, "Realm", scfg.sys_name,str)==str) {
 							FREE_AND_NULL(session->req.realm);
+							/* FREE()d in close_request() */
 							session->req.realm=strdup(str);
 						}
 						if(iniReadString(file, spec, "ErrorDirectory", error_dir,str)==str) {
 							FREE_AND_NULL(session->req.error_dir);
 							prep_dir(root_dir, str, sizeof(str));
+							/* FREE()d in close_request() */
 							session->req.error_dir=strdup(str);
 						}
 						if(iniReadString(file, spec, "CGIDirectory", cgi_dir,str)==str) {
 							FREE_AND_NULL(session->req.cgi_dir);
 							prep_dir(root_dir, str, sizeof(str));
+							/* FREE()d in close_request() */
 							session->req.cgi_dir=strdup(str);
 							recheck_dynamic=TRUE;
 						}
@@ -3992,6 +4003,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return(FALSE);
 	}
+	/* FREE()d in close_request() */
 	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]=strdup(path);
 
 	js_add_request_prop(session,"real_path",session->req.physical_path);
@@ -4134,6 +4146,7 @@ int read_post_data(http_session_t * session)
 					return(FALSE);
 				}
 				/* realloc() to new size */
+				/* FREE()d in close_request */
 				p=realloc(session->req.post_data, i);
 				if(p==NULL) {
 					lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,session->req.post_len);
@@ -4157,6 +4170,7 @@ int read_post_data(http_session_t * session)
 		}
 		else {
 			i = session->req.post_len;
+			/* FREE()d in close_request()  */
 			if(i < (MAX_POST_LEN+1) && (session->req.post_data=malloc(i+1)) != NULL)
 				session->req.post_len=recvbufsocket(&session->socket,session->req.post_data,i);
 			else  {
@@ -4399,11 +4413,13 @@ void http_session_thread(void* arg)
 		loop_count=0;
 		session.req.ld=NULL;
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
+			/* FREE()d in http_logging_thread... passed there by close_request() */
 			if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
 				lprintf(LOG_ERR,"%04d Cannot allocate memory for log data!",session.socket);
 		}
 		if(session.req.ld!=NULL) {
 			memset(session.req.ld,0,sizeof(struct log_data));
+			/* FREE()d in http_logging_thread */
 			session.req.ld->hostname=strdup(session.host_name);
 		}
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
@@ -4991,6 +5007,7 @@ void DLLCALL web_server(void* arg)
 
 			/* Startup next session thread */
 			if(session==NULL) {
+				/* FREE()d at the start of the session thread */
 				if((session=malloc(sizeof(http_session_t)))==NULL) {
 					lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
 						,client_socket, sizeof(http_session_t));
