@@ -2672,7 +2672,7 @@ static str_list_t get_cgi_env(http_session_t *session)
 				,add_list[i], prepend, value, append);
 			strListPush(&env_list,env_str);
 		}
-		iniFreeStringList(&add_list);
+		iniFreeStringList(add_list);
 	}
 
 	fclose(fp);
@@ -4217,6 +4217,7 @@ void http_output_thread(void *arg)
 	unsigned mss=OUTBUF_LEN;
 
 	obuf=&(session->outbuf);
+	/* Destroyed at end of function */
 	pthread_mutex_init(&session->outbuf_write,NULL);
 	session->outbuf_write_initialized=1;
 
@@ -4309,6 +4310,10 @@ void http_output_thread(void *arg)
     }
 	thread_down();
 	sem_post(&session->output_thread_terminated);
+	/* Ensure outbuf isn't currently being drained */
+	pthread_mutex_lock(&session->outbuf_write);
+	pthread_mutex_unlock(&session->outbuf_write);
+	pthread_mutex_destroy(&session->outbuf_write);
 }
 
 void http_session_thread(void* arg)
@@ -5046,6 +5051,7 @@ void DLLCALL web_server(void* arg)
 				}
 				memset(session, 0, sizeof(http_session_t));
    				session->socket=INVALID_SOCKET;
+				/* Destroyed in http_session_thread */
 				pthread_mutex_init(&session->struct_filled,NULL);
 				pthread_mutex_lock(&session->struct_filled);
 				_beginthread(http_session_thread, 0, session);
