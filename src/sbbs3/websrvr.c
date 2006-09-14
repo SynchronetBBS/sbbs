@@ -4355,6 +4355,7 @@ void http_session_thread(void* arg)
 		return;
 	}
 
+	/* Destroyed in this block (before all returns) */
 	sem_init(&session.output_thread_terminated,0,0);
 	_beginthread(http_output_thread, 0, &session);
 
@@ -4381,6 +4382,7 @@ void http_session_thread(void* arg)
 		if(trashcan(&scfg,host_name,"host")) {
 			close_socket(&session.socket);
 			sem_wait(&session.output_thread_terminated);
+			sem_destroy(&session.output_thread_terminated);
 			RingBufDispose(&session.outbuf);
 			pthread_mutex_destroy(&session.outbuf_write);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
@@ -4394,6 +4396,7 @@ void http_session_thread(void* arg)
 	if(trashcan(&scfg,session.host_ip,"ip")) {
 		close_socket(&session.socket);
 		sem_wait(&session.output_thread_terminated);
+		sem_destroy(&session.output_thread_terminated);
 		RingBufDispose(&session.outbuf);
 		pthread_mutex_destroy(&session.outbuf_write);
 		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
