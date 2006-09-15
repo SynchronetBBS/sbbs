@@ -4645,10 +4645,10 @@ void http_logging_thread(void* arg)
 		char	timestr[128];
 		char	sizestr[100];
 
-		sem_getvalue(&log_list.sem, &pending);
-		if(logfile && (!pending))
+		if(!listSemTryWait(&log_list)) {
 			fflush(logfile);
-		listSemWait(&log_list);
+			listSemWait(&log_list);
+		}
 
 		ld=listShiftNode(&log_list);
 		/*
