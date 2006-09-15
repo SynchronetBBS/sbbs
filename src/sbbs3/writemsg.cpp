@@ -906,12 +906,14 @@ void sbbs_t::editfile(char *fname)
 
 	if(useron.xedit) {
 
-		msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
-		removecase(msgtmp);
-
 		SAFECOPY(path,fname);
-		if(fexistcase(path))
-			fcopy(path, msgtmp);
+
+		msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
+		if(stricmp(msgtmp,path)) {
+			removecase(msgtmp);
+			if(fexistcase(path))
+				fcopy(path, msgtmp);
+		}
 
 		editor_inf(useron.xedit,fname,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
@@ -926,7 +928,7 @@ void sbbs_t::editfile(char *fname)
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
 		external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir);
-		if(!fcompare(msgtmp, path))	/* file changed */
+		if(stricmp(msgtmp,path) && !fcompare(msgtmp, path))	/* file changed */
 			fcopy(msgtmp, path);
 		rioctl(IOSM|PAUSE|ABORT); 
 		return; 
