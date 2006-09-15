@@ -4624,7 +4624,6 @@ void http_logging_thread(void* arg)
 	char	filename[MAX_PATH+1];
 	char	newfilename[MAX_PATH+1];
 	FILE*	logfile=NULL;
-	int		pending;
 
 	http_logging_thread_running=TRUE;
 	terminate_http_logging_thread=FALSE;
