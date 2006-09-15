@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -465,7 +465,7 @@ static int bbs_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(bbs_startup.log_mask&(1<<level)))
+	if(level > bbs_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -523,7 +523,7 @@ static int ftp_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(ftp_startup.log_mask&(1<<level)))
+	if(level > ftp_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -585,7 +585,7 @@ static int mail_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(mail_startup.log_mask&(1<<level)))
+	if(level > mail_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -643,7 +643,7 @@ static int services_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(services_startup.log_mask&(1<<level)))
+	if(level > services_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -701,7 +701,7 @@ static int event_lputs(int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(bbs_startup.log_mask&(1<<level)))
+	if(level > bbs_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -741,7 +741,7 @@ static int web_lputs(void* p, int level, char *str)
 	time_t		t;
 	struct tm	tm;
 
-	if(!(web_startup.log_mask&(1<<level)))
+	if(level > web_startup.log_level)
 		return(0);
 
 #ifdef __unix__
@@ -1079,7 +1079,7 @@ int main(int argc, char** argv)
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
 	bbs_startup.cbdata=&bbs_startup;
-	bbs_startup.log_mask=~0;
+	bbs_startup.log_level = LOG_DEBUG;
 	bbs_startup.lputs=bbs_lputs;
 	bbs_startup.event_lputs=event_lputs;
     bbs_startup.started=bbs_started;
@@ -1102,7 +1102,7 @@ int main(int argc, char** argv)
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
 	ftp_startup.cbdata=&ftp_startup;
-	ftp_startup.log_mask=~0;
+	ftp_startup.log_level = LOG_DEBUG;
 	ftp_startup.lputs=ftp_lputs;
     ftp_startup.started=ftp_started;
 	ftp_startup.recycle=recycle;
@@ -1121,7 +1121,7 @@ int main(int argc, char** argv)
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
 	web_startup.cbdata=&web_startup;
-	web_startup.log_mask=~0;
+	web_startup.log_level = LOG_DEBUG;
 	web_startup.lputs=web_lputs;
     web_startup.started=web_started;
 	web_startup.recycle=recycle;
@@ -1139,7 +1139,7 @@ int main(int argc, char** argv)
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
 	mail_startup.cbdata=&mail_startup;
-	mail_startup.log_mask=~0;
+	mail_startup.log_level = LOG_DEBUG;
 	mail_startup.lputs=mail_lputs;
     mail_startup.started=mail_started;
 	mail_startup.recycle=recycle;
@@ -1157,7 +1157,7 @@ int main(int argc, char** argv)
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
 	services_startup.cbdata=&services_startup;
-	services_startup.log_mask=~0;
+	services_startup.log_level = LOG_DEBUG;
 	services_startup.lputs=services_lputs;
     services_startup.started=services_started;
 	services_startup.recycle=recycle;

@@ -78,7 +78,7 @@ typedef struct {
 	void*					startup;
 	DWORD*					options;
 	BOOL*					recycle_now;
-	DWORD*					log_mask;
+	int*					log_level;
 	void DLLCALL			(*thread)(void* arg);
 	void DLLCALL			(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
@@ -98,7 +98,7 @@ sbbs_ntsvc_t bbs ={
 	&bbs_startup,
 	&bbs_startup.options,
 	&bbs_startup.recycle_now,
-	&bbs_startup.log_mask,
+	&bbs_startup.log_level,
 	bbs_thread,
 	bbs_terminate,
 	bbs_ctrl_handler,
@@ -113,7 +113,7 @@ sbbs_ntsvc_t event ={
 	NULL,
 	NULL,
 	NULL,
-	&bbs_startup.log_mask,
+	&bbs_startup.log_level,
 	NULL,
 	NULL,
 	NULL,
@@ -127,7 +127,7 @@ sbbs_ntsvc_t ftp = {
 	&ftp_startup,
 	&ftp_startup.options,
 	&ftp_startup.recycle_now,
-	&ftp_startup.log_mask,
+	&ftp_startup.log_level,
 	ftp_server,
 	ftp_terminate,
 	ftp_ctrl_handler,
@@ -141,7 +141,7 @@ sbbs_ntsvc_t web = {
 	&web_startup,
 	&web_startup.options,
 	&web_startup.recycle_now,
-	&web_startup.log_mask,
+	&web_startup.log_level,
 	web_server,
 	web_terminate,
 	web_ctrl_handler,
@@ -156,7 +156,7 @@ sbbs_ntsvc_t mail = {
 	&mail_startup,
 	&mail_startup.options,
 	&mail_startup.recycle_now,
-	&mail_startup.log_mask,
+	&mail_startup.log_level,
 	mail_server,
 	mail_terminate,
 	mail_ctrl_handler,
@@ -172,7 +172,7 @@ sbbs_ntsvc_t services = {
 	&services_startup,
 	&services_startup.options,
 	&services_startup.recycle_now,
-	&services_startup.log_mask,
+	&services_startup.log_level,
 	services_thread,
 	services_terminate,
 	services_ctrl_handler,
@@ -325,7 +325,7 @@ static int svc_lputs(void* p, int level, char* str)
 	}
 	
 	/* Event Logging */
-	if((*svc->log_mask)&(1<<level)) {
+	if(level <= (*svc->log_level)) {
 		if(svc->event_handle == NULL)
 			svc->event_handle = RegisterEventSource(
 				NULL,		/* server name for source (NULL = local computer) */
@@ -447,8 +447,8 @@ static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 			arg++;
 		if(!stricmp(arg,"debug"))
 			svc->debug=TRUE;
-		if(!stricmp(arg,"logmask") && i+1<argc)
-			(*svc->log_mask)=strtol(argv[++i],NULL,0);
+		if(!stricmp(arg,"loglevel") && i+1<argc)
+			(*svc->log_level)=strtol(argv[++i],NULL,0);
 	}
 
 	sprintf(str,"Starting NT Service: %s",svc->display_name);

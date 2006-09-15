@@ -61,7 +61,7 @@ typedef struct {
 	char	host_name[INI_MAX_VALUE_LEN];
 	ushort	sem_chk_freq;
 	ulong	interface_addr;
-	ulong	log_mask;
+	int		log_level;
 	js_startup_t js;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
@@ -120,7 +120,7 @@ typedef struct {
 	char	host_name[128];
 	BOOL	recycle_now;
 	BOOL	shutdown_now;
-	DWORD	log_mask;
+	int		log_level;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
@@ -204,18 +204,6 @@ static ini_bitdesc_t bbs_options[] = {
 	{ 0								,NULL					}
 };
 
-static ini_bitdesc_t log_mask_bits[] = {
-	{ (1<<LOG_EMERG)				,"EMERG"				},
-	{ (1<<LOG_ALERT)				,"ALERT"				},
-	{ (1<<LOG_CRIT)					,"CRIT"					},
-	{ (1<<LOG_ERR)					,"ERR"					},
-	{ (1<<LOG_WARNING)				,"WARNING"				},
-	{ (1<<LOG_NOTICE)				,"NOTICE"				},
-	{ (1<<LOG_INFO)					,"INFO"					},
-	{ (1<<LOG_DEBUG)				,"DEBUG"				},
-	/* the Gubinator */				
-	{ 0								,NULL					}
-};
 #endif
 
 #ifdef __cplusplus

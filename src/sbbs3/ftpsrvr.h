@@ -83,7 +83,7 @@ typedef struct {
     char	host_name[128];
 	BOOL	recycle_now;
 	BOOL	shutdown_now;
-	DWORD	log_mask;
+	int		log_level;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
