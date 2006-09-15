@@ -4646,7 +4646,8 @@ void http_logging_thread(void* arg)
 		char	sizestr[100];
 
 		if(!listSemTryWait(&log_list)) {
-			fflush(logfile);
+			if(logfile!=NULL)
+				fflush(logfile);
 			listSemWait(&log_list);
 		}
 
