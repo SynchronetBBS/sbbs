@@ -4311,11 +4311,10 @@ void http_output_thread(void *arg)
 	thread_down();
 	sem_post(&session->output_thread_terminated);
 	/* Ensure outbuf isn't currently being drained */
-	if(session->outbuf_write_initialized) {
-		pthread_mutex_lock(&session->outbuf_write);
-		pthread_mutex_unlock(&session->outbuf_write);
-		pthread_mutex_destroy(&session->outbuf_write);
-	}
+	pthread_mutex_lock(&session->outbuf_write);
+	session->outbuf_write_initialized=0;
+	pthread_mutex_unlock(&session->outbuf_write);
+	pthread_mutex_destroy(&session->outbuf_write);
 }
 
 void http_session_thread(void* arg)
@@ -4391,7 +4390,6 @@ void http_session_thread(void* arg)
 			sem_wait(&session.output_thread_terminated);
 			sem_destroy(&session.output_thread_terminated);
 			RingBufDispose(&session.outbuf);
-			pthread_mutex_destroy(&session.outbuf_write);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
 			thread_down();
 			session_threads--;
@@ -4405,7 +4403,6 @@ void http_session_thread(void* arg)
 		sem_wait(&session.output_thread_terminated);
 		sem_destroy(&session.output_thread_terminated);
 		RingBufDispose(&session.outbuf);
-		pthread_mutex_destroy(&session.outbuf_write);
 		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", session.socket, session.host_ip);
 		thread_down();
 		session_threads--;
@@ -4536,7 +4533,6 @@ void http_session_thread(void* arg)
 	sem_wait(&session.output_thread_terminated);
 	sem_destroy(&session.output_thread_terminated);
 	RingBufDispose(&session.outbuf);
-	pthread_mutex_destroy(&session.outbuf_write);
 
 	active_clients--;
 	update_clients();
