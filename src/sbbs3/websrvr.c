@@ -4624,6 +4624,7 @@ void http_logging_thread(void* arg)
 	char	filename[MAX_PATH+1];
 	char	newfilename[MAX_PATH+1];
 	FILE*	logfile=NULL;
+	int		pending;
 
 	http_logging_thread_running=TRUE;
 	terminate_http_logging_thread=FALSE;
@@ -4644,6 +4645,9 @@ void http_logging_thread(void* arg)
 		char	timestr[128];
 		char	sizestr[100];
 
+		sem_getvalue(&log_list.sem, &pending);
+		if(logfile && (!pending))
+			fflush(logfile);
 		listSemWait(&log_list);
 
 		ld=listShiftNode(&log_list);
@@ -4693,7 +4697,6 @@ void http_logging_thread(void* arg)
 						,ld->size?sizestr:"-"
 						,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
 						,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
-				fflush(logfile);
 				unlock(fileno(logfile),0,1);
 			}
 		}
