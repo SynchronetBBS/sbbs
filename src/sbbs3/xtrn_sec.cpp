@@ -306,6 +306,34 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	struct tm tl;
 	stats_t stats;
 
+	char	node_dir[MAX_PATH+1];
+	char	ctrl_dir[MAX_PATH+1];
+	char	data_dir[MAX_PATH+1];
+	char	exec_dir[MAX_PATH+1];
+	char	text_dir[MAX_PATH+1];
+	char	temp_dir[MAX_PATH+1];
+
+	SAFECOPY(node_dir,cfg.node_dir);
+	SAFECOPY(ctrl_dir,cfg.ctrl_dir);
+	SAFECOPY(data_dir,cfg.data_dir);
+	SAFECOPY(exec_dir,cfg.exec_dir);
+	SAFECOPY(text_dir,cfg.text_dir);
+	SAFECOPY(temp_dir,cfg.temp_dir);
+
+#ifdef _WIN32
+
+	if(!(misc&XTRN_NATIVE)) {
+		/* Put Micros~1 shortened paths in drop files when running 16-bit DOS programs */
+		GetShortPathName(cfg.node_dir,node_dir,sizeof(node_dir));
+		GetShortPathName(cfg.ctrl_dir,node_dir,sizeof(ctrl_dir));
+		GetShortPathName(cfg.data_dir,data_dir,sizeof(data_dir));
+		GetShortPathName(cfg.exec_dir,exec_dir,sizeof(exec_dir));
+		GetShortPathName(cfg.text_dir,text_dir,sizeof(text_dir));
+		GetShortPathName(cfg.temp_dir,temp_dir,sizeof(temp_dir));
+	}
+
+#endif
+
 	if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
 		strcpy(tmp,"XTRN.DAT");
 		if(misc&XTRN_LWRCASE)
@@ -325,8 +353,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,str,strlen(str));
 
 		sprintf(str,"%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%lu\n"
-			,cfg.ctrl_dir						/* Ctrl dir */
-			,cfg.data_dir						/* Data dir */
+			,ctrl_dir							/* Ctrl dir */
+			,data_dir							/* Data dir */
 			,cfg.sys_nodes						/* Total system nodes */
 			,cfg.node_num						/* Current node */
 			,tleft								/* User Timeleft in seconds */
@@ -406,9 +434,9 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0									/* Time-slice type */
 			,useron.name						/* Real name/company */
 			,cur_rate							/* DCE rate */
-			,cfg.exec_dir
-			,cfg.text_dir
-			,cfg.temp_dir
+			,exec_dir
+			,text_dir
+			,temp_dir
 			,cfg.sys_id
 			,cfg.node_misc
 			,misc&IO_INTS ? INVALID_SOCKET : client_socket_dup
@@ -459,8 +487,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		sprintf(str,"%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
 			"%u\n%u\n%lu\n%u\n%lu\n%u\n%s\n"
 			,tleft								/* Time left in seconds */
-			,cfg.node_dir						/* Gfiles dir (log dir) */
-			,cfg.data_dir						/* Data dir */
+			,node_dir							/* Gfiles dir (log dir) */
+			,data_dir							/* Data dir */
 			,"node.log"                         /* Name of log file */
 			,dte_rate							/* DTE rate */
 			,cfg.com_port						/* COM port number */
@@ -571,8 +599,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0									/* 30: Kbytes downloaded today */
 			,(useron.cdt+useron.freecdt)/1024UL /* 31: Max Kbytes to download today */
 			,useron.birth						/* 32: User birthday */
-			,cfg.node_dir						/* 33: Path to MAIN directory */
-			,cfg.data_dir						/* 34: Path to GEN directory */
+			,node_dir							/* 33: Path to MAIN directory */
+			,data_dir							/* 34: Path to GEN directory */
 			,cfg.sys_op 						/* 35: Sysop name */
 			,nulstr 							/* 36: Alias name */
 			,0 // sys_eventtime/60				/* 37: Event time HH:MM */
