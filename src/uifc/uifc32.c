@@ -900,6 +900,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		}
 	}
 	else {	/* Is a redraw */
+		if(bar)
+			y=top+tbrdrwidth+(*bar);
+		else
+			y=top+tbrdrwidth+(*cur);
 		i=(*cur)+(top+tbrdrwidth-y);
 		j=2;
 
@@ -933,10 +937,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			puttext(s_left+left+lbrdrwidth+2,s_top+top+j,s_left+left+width-rbrdrwidth-1
 				,s_top+top+j,tmp_buffer);
 		}
-		if(bar)
-			y=top+tbrdrwidth+(*bar);
-		else
-			y=top+tbrdrwidth+(*cur);
 	}
 	free(title);
 
