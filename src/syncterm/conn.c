@@ -348,8 +348,6 @@ int conn_connect(struct bbslist *bbs)
 				sprintf(str,"Error %d activating session",status);
 				uifcmsg("Error activating session",str);
 				return(-1);
-				}
-				break;
 			}
 
 			ssh_active=TRUE;
