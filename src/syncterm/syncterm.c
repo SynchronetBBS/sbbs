@@ -387,7 +387,8 @@ int main(int argc, char **argv)
 
 	load_settings(&settings);
 
-	initciolib(ciolib_mode);
+	if(initciolib(ciolib_mode))
+		return(1);
 	if(!dont_set_mode) {
 		switch(settings.startup_mode) {
 			case SCREEN_MODE_80X25:
