@@ -297,14 +297,14 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP") {
-			writeln("UEDIT [#]");
-			writeln("\tEdits user # or starts at user 0");
+			writeln("UEDIT [Number or Name]");
+			writeln("\tEdits specified user or starts at user #1");
 		}
 		if(word=="UEDIT") {
 			// Prompts for syspass
 			str=str.substr(5);
-			if(parseInt(str))
-				bbs.edit_user(str);
+			if(str.length)
+				bbs.edit_user(bbs.finduser(get_arg(str)));
 			else
 				bbs.edit_user();
 			return;
