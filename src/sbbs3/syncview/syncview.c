@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 		strcpy(title,"SyncView: [stdin]");
 	}
 	settitle(title);
-	while((len=fread(buf, 1, BUF_SIZE, f))) {
+	while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
 		if(expand)
 			lfexpand(buf, &len);
 		cterm_write(buf, len, NULL, 0, &speed);
