@@ -1,4 +1,4 @@
-SRC_ROOT	= ..
+SRC_ROOT        = ..\..
 !include ${SRC_ROOT}\build\Common.bmake
 
 CFLAGS	=	$(CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
