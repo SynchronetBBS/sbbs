@@ -576,7 +576,6 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	char	*buf;
 
     gettextinfo(&txtinfo);
-	i=uifc_initialized;
 	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 
