@@ -38,10 +38,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "sbbs.h"		// filter_ip
 #include <stdio.h>      // sprintf
 #include <winsock.h>    // closesocket
 #include "ClientFormUnit.h"
-#include "sbbs.h"		// filter_ip
 
 void socket_open(void*, BOOL open);
 //---------------------------------------------------------------------------
