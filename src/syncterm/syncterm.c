@@ -19,9 +19,7 @@
 #include "cterm.h"
 #include "allfonts.h"
 
-#ifdef USE_CRYPTLIB
 #include "st_crypt.h"
-#endif
 #include "fonts.h"
 #include "syncterm.h"
 #include "bbslist.h"
@@ -105,13 +103,11 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+9;
 	}
-#ifdef USE_CRYPTLIB
 	else if(!strnicmp("ssh://",url,9)) {
 		bbs->conn_type=CONN_TYPE_SSH;
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
 	}
-#endif
 	else if(!strnicmp("telnet://",url,9)) {
 		bbs->conn_type=CONN_TYPE_TELNET;
 		bbs->port=conn_ports[bbs->conn_type];
@@ -367,11 +363,9 @@ int main(int argc, char **argv)
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
 					break;
-#ifdef USE_CRYPTLIB
 				case 'H':
 					conn_type=CONN_TYPE_SSH;
 					break;
-#endif
 				case 'T':
 					conn_type=CONN_TYPE_TELNET;
 					break;
@@ -500,9 +494,7 @@ int main(int argc, char **argv)
 			settitle(str);
 			term.nostatus=bbs->nostatus;
 			if(drawwin()) {
-#ifdef USE_CRYPTLIB
 				atexit(exit_crypt);
-#endif
 				return(1);
 			}
 			if(log_fp==NULL && bbs->logfile[0])
@@ -555,9 +547,7 @@ int main(int argc, char **argv)
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
-#ifdef USE_CRYPTLIB
-				atexit(exit_crypt);
-#endif
+		atexit(exit_crypt);
 	return(0);
 
 	USAGE:
@@ -578,16 +568,10 @@ int main(int argc, char **argv)
         "-l# =  set screen lines to # (default=auto-detect)\n"
 		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
-#ifdef USE_CRYPTLIB
 		"-h  =  use SSH mode if URL does not include the scheme\n"
-#endif
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"\n"
-		"URL format is: [(rlogin|telnet"
-#ifdef USE_CRYPTLIB
-		"|ssh"
-#endif
-									  ")://][user[:password]@]domainname[:port]\n"
+		"URL format is: [(rlogin|telnet|ssh)://][user[:password]@]domainname[:port]\n"
 		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
 		"          telnet://deuce@nix.synchro.net\n"
 		"          nix.synchro.net\n"

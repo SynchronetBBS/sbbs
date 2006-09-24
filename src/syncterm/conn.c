@@ -11,38 +11,24 @@
 #include "conn.h"
 #include "uifcinit.h"
 
-#ifdef USE_CRYPTLIB
 #include "st_crypt.h"
-#endif
 
 static int	con_type=CONN_TYPE_UNKNOWN;
 SOCKET conn_socket=INVALID_SOCKET;
-char *conn_types[]={"Unknown","RLogin","Telnet","Raw"
-#ifdef USE_CRYPTLIB
-	,"SSH"
-#endif
-,NULL};
-int conn_ports[]={0,513,23,0
-#ifdef USE_CRYPTLIB
-	,22
-#endif
-};
-#ifdef USE_CRYPTLIB
+char *conn_types[]={"Unknown","RLogin","Telnet","Raw","SSH",NULL};
+int conn_ports[]={0,513,23,0,22};
 CRYPT_SESSION	ssh_session;
 int				ssh_active=FALSE;
-#endif
 
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
 BOOL conn_is_connected(void)
 {
-#ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		if(!ssh_active)
 			return(FALSE);
 	}
-#endif
 	return socket_check(conn_socket,NULL,NULL,0);
 }
 
@@ -55,7 +41,6 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 	static BYTE	*telnet_buf=NULL;
 	static size_t tbsize=0;
 
-#ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		int	status;
 		status=cl.PopData(ssh_session, buffer, buflen, &rd);
@@ -72,7 +57,6 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 		}
 		return(rd);
 	}
-#endif	/* USE_CRYPTLIB */
 
 	if(con_type == CONN_TYPE_TELNET) {
 		if(tbsize < buflen) {
@@ -120,7 +104,6 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 	static BYTE *outbuf=NULL;
 	static size_t obsize=0;
 
-#ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		int status;
 
@@ -143,7 +126,6 @@ int conn_send(char *buffer, size_t buflen, unsigned int timeout)
 		cl.FlushData(ssh_session);
 		return(0);
 	}
-#endif
 
 	if(con_type == CONN_TYPE_TELNET) {
 		if(obsize < buflen*2) {
@@ -196,7 +178,6 @@ int conn_connect(struct bbslist *bbs)
 	init_uifc(TRUE, TRUE);
 
 	con_type=bbs->conn_type;
-#ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		if(!crypt_loaded)
 			init_crypt();
@@ -215,7 +196,6 @@ int conn_connect(struct bbslist *bbs)
 			return(-1);
 		}
 	}
-#endif
 
 	ruser=bbs->user;
 	passwd=bbs->password;
@@ -290,7 +270,6 @@ int conn_connect(struct bbslist *bbs)
 			else
 				conn_send("ansi-bbs/115200",15,1000);
 			break;
-#ifdef USE_CRYPTLIB
 		case CONN_TYPE_SSH: {
 			int off=1;
 			int status;
@@ -353,7 +332,6 @@ int conn_connect(struct bbslist *bbs)
 			ssh_active=TRUE;
 			break;
 		}
-#endif
 	}
 	uifc.pop(NULL);
 
@@ -362,12 +340,10 @@ int conn_connect(struct bbslist *bbs)
 
 int conn_close(void)
 {
-#ifdef USE_CRYPTLIB
 	if(con_type==CONN_TYPE_SSH) {
 		cl.DestroySession(ssh_session);
 		ssh_active=FALSE;
 		return(0);
 	}
-#endif
 	return(closesocket(conn_socket));
 }
