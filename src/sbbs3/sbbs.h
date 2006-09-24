@@ -47,6 +47,9 @@
 /***************/
 #if defined(_WIN32)			/* Windows */
 
+	#define NOCRYPT     /* Stop windows.h from loading wincrypt.h */
+                    /* Is windows.h REALLY necessary?!?! */
+	#define WIN32_LEAN_AND_MEAN
 	#include <io.h>
 	#include <share.h>
 	#include <windows.h>
