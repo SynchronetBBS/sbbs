@@ -572,6 +572,13 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 			,"ASCII"
 			,""
 		};
+	struct	text_info txtinfo;
+	char	*buf;
+
+    gettextinfo(&txtinfo);
+	i=uifc_initialized;
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 
 	if(safe_mode)
 		return;
@@ -582,6 +589,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	if(result==-1 || fpick.files<1) {
 		filepick_free(&fpick);
 		uifcbail();
+		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 		return;
 	}
 	SAFECOPY(path,fpick.selected[0]);
@@ -591,6 +599,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		SAFEPRINTF2(str,"Error %d opening %s for read",errno,path);
 		uifcmsg("ERROR",str);
 		uifcbail();
+		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 		return;
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
@@ -609,6 +618,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		}
 	}
 	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 }
 
 #if defined(__BORLANDC__)
