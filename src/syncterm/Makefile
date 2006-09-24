@@ -6,7 +6,7 @@ LDFLAGS	=	$(LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
 !ifdef USE_CRYPTLIB
  CFLAGS	=	$(CFLAGS) -DUSE_CRYPTLIB
- OBJS	+=	$(OBJS) $(MTOBJODIR)$(DIRSEP)st_crypt$(OFILE)
+ OBJS	=	$(OBJS) $(MTOBJODIR)$(DIRSEP)st_crypt$(OFILE)
 !endif
 
 .path.c = .;../sbbs3;../smblib;../uifc
