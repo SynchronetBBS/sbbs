@@ -1,11 +1,11 @@
 //---------------------------------------------------------------------------
 
 #include <vcl.h>
+#include "sbbs.h"
 #pragma hdrstop
 
 #include "UserListFormUnit.h"
 #include "MainFormUnit.h"
-#include "sbbs.h"
 #include "userdat.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

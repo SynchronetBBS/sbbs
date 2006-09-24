@@ -34,6 +34,7 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
+#include "sbbs.h"           // unixtodstr()
 #include <vcl.h>
 #include <vcl/Registry.hpp>	/* TRegistry */
 #pragma hdrstop
@@ -71,7 +72,6 @@
 #include "ConfigWizardUnit.h"
 #include "PreviewFormUnit.h"
 
-#include "sbbs.h"           // unixtodstr()
 #include "sbbs_ini.h"		// sbbs_read_ini()
 #include "userdat.h"		// lastuser()
 #include "ntsvcs.h"			// NTSVC_NAME_*

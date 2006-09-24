@@ -35,6 +35,7 @@
 
 //---------------------------------------------------------------------------
 #include <vcl.h>
+#include "sbbs.h"
 #pragma hdrstop
 #include <io.h>
 #include <stdio.h>
@@ -45,7 +46,6 @@
 #include "NodeFormUnit.h"
 #include "UserMsgFormUnit.h"
 #include "SpyFormUnit.h"
-#include "sbbs.h"
 #include "nodedefs.h"
 #include "userdat.h"
 #include "ringbuf.h"
