@@ -4294,6 +4294,9 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 #ifdef USE_CRYPTLIB
+#if CRYPTLIB_VERSION < 3300
+	#warning This version of Cryptlib is known to crash Synchronet.  Upgrade to at least version 3.3 or do not build with Cryptlib support.
+#endif
 	if(startup->options&BBS_OPT_ALLOW_SSH) {
 		bool			loaded_key=false;
 
