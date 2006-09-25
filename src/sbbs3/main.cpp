@@ -1564,7 +1564,7 @@ void passthru_output_thread(void* arg)
 		/*
 		 * TODO: This should check for writability etc.
 		 */
-		sendsocket(sbbs->passthru_socket, wrbuf, wr);
+		sendsocket(sbbs->passthru_socket, (char *)wrbuf, wr);
 	}
 }
 
@@ -1614,7 +1614,7 @@ void passthru_input_thread(void* arg)
 		if(!RingBufFree(&sbbs->outbuf))
 			continue;
 
-    	i = recv(sbbs->passthru_socket, &ch, 1, 0);
+    	i = recv(sbbs->passthru_socket, (char *)(&ch), 1, 0);
 
 		if(i == SOCKET_ERROR)
 		{
