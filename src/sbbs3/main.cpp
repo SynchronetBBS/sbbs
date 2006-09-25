@@ -1775,7 +1775,7 @@ void output_thread(void* arg)
 			continue;
 		}
 
-#if USE_CRYPTLIB
+#ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
 			if(!cryptStatusOK(cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))
 				i=-1;
