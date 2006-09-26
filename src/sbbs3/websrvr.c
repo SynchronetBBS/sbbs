@@ -4218,7 +4218,11 @@ void http_output_thread(void *arg)
 
 	obuf=&(session->outbuf);
 	/* Destroyed at end of function */
-	pthread_mutex_init(&session->outbuf_write,NULL);
+	if((i=pthread_mutex_init(&session->outbuf_write,NULL))!=0) {
+		lprintf(LOG_DEBUG,"Error %d initializing outbuf mutex",i);
+		close_socket(&session->socket);
+		return;
+	}
 	session->outbuf_write_initialized=1;
 
 #ifdef TCP_MAXSEG
