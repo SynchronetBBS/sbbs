@@ -4313,12 +4313,12 @@ void http_output_thread(void *arg)
 		pthread_mutex_unlock(&session->outbuf_write);
     }
 	thread_down();
-	sem_post(&session->output_thread_terminated);
 	/* Ensure outbuf isn't currently being drained */
 	pthread_mutex_lock(&session->outbuf_write);
 	session->outbuf_write_initialized=0;
 	pthread_mutex_unlock(&session->outbuf_write);
 	pthread_mutex_destroy(&session->outbuf_write);
+	sem_post(&session->output_thread_terminated);
 }
 
 void http_session_thread(void* arg)
