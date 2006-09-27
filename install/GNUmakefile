@@ -96,7 +96,9 @@ endif
 # Check for GLADE
 ifndef NO_GTK
  ifeq ($(shell pkg-config libglade-2.0 --exists && echo YES),YES)
-  USE_GLADE	:=	YES
+  ifeq ($(shell pkg-config gtk+-2.0 --atleast-version=2.6 && echo YES),YES)
+    USE_GLADE	:=	YES
+  endif
  endif
 endif
 
