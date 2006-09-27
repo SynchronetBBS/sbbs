@@ -734,14 +734,16 @@ struct bbslist *show_bbslist(int mode)
 							at_settings=!at_settings;
 							break;
 						case -7:		/* CTRL-E */
-							i=list[opt]->id;
-							if(edit_list(list[opt],listpath,FALSE)) {
-								sort_list(list);
-								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-									if(list[j]->id==i)
-										opt=j;
+							if(list[opt]) {
+								i=list[opt]->id;
+								if(edit_list(list[opt],listpath,FALSE)) {
+									sort_list(list);
+									for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
+										if(list[j]->id==i)
+											opt=j;
+									}
+									oldopt=-1;
 								}
-								oldopt=-1;
 							}
 							break;
 						case -6:		/* CTRL-D */
