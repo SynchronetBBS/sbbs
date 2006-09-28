@@ -1365,7 +1365,7 @@ static void signal_smtp_sem(void)
 	if(scfg.smtpmail_sem[0]==0) 
 		return; /* do nothing */
 
-	if((file=open(scfg.smtpmail_sem,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+	if((file=open(scfg.smtpmail_sem,O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE))!=-1)
 		close(file);
 }
 
