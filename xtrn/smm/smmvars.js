@@ -21,6 +21,3 @@ var cdt_adjustment = 0;
 var notify_user = 0;
 var smm_misc = 0;
 var system_name = "";
-
-var SMM_METRIC = 1<<0;
-var SMM_VER="2.11";

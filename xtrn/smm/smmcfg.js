@@ -6,6 +6,7 @@
 load("sbbsdefs.js");
 load("uifcdefs.js");
 load("../xtrn/smm/smmvars.js");
+load("../xtrn/smm/smmdefs.js");
 
 function bail(code)
 {
