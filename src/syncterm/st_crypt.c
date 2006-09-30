@@ -10,6 +10,19 @@ int crypt_loaded=0;
 
 int init_crypt(void)
 {
+#ifdef STATIC_LINK
+	cl.PopData=cryptPopData;
+	cl.PushData=cryptPushData;
+	cl.FlushData=cryptFlushData;
+	cl.Init=cryptInit;
+	cl.End=cryptEnd;
+	cl.CreateSession=cryptCreateSession;
+	cl.GetAttribute=cryptGetAttribute;
+	cl.SetAttribute=cryptSetAttribute;
+	cl.SetAttributeString=cryptSetAttributeString;
+	cl.DestroySession=cryptDestroySession;
+	cl.AddRandom=cryptAddRandom;
+#else
 #ifdef _WIN32
 	HMODULE cryptlib;
 
@@ -118,6 +131,7 @@ int init_crypt(void)
 		return(-1);
 	}
 #endif
+#endif	/* !STATIC_LINK */
 	if(cryptStatusOK(cl.Init())) {
 		if(cryptStatusOK(cl.AddRandom(NULL, CRYPT_RANDOM_SLOWPOLL))) {
 			crypt_loaded=1;
