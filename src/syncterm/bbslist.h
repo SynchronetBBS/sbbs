@@ -17,7 +17,7 @@
 #define LIST_ADDR_MAX	64
 #define MAX_USER_LEN	30
 #define MAX_PASSWD_LEN	16
-#define MAX_SYSPASS_LEN	16
+#define MAX_SYSPASS_LEN	40
 
 enum {
 	 USER_BBSLIST
