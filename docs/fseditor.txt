@@ -42,6 +42,7 @@ L   - Insert line
 M   - Carriage Return
 O   - Page Up
 P   - Page Down
+T   - Change the title
 Q   - Quick abort
 R   - Redraw screen
 U   - Quote
