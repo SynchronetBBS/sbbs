@@ -254,6 +254,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 #ifdef PREFIX
 		strcpy(fn,PREFIX);
 		backslash(fn);
+		strcat(fn,"etc/");
 #else
 		strcpy(fn,"/usr/local/etc/");
 #endif
