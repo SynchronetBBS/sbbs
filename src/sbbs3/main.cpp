@@ -1564,7 +1564,7 @@ void passthru_output_thread(void* arg)
 		/*
 		 * TODO: This should check for writability etc.
 		 */
-		sendsocket(sbbs->passthru_socket, (char *)wrbuf, wr);
+		sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
 	}
 }
 
@@ -1614,7 +1614,7 @@ void passthru_input_thread(void* arg)
 		if(!RingBufFree(&sbbs->outbuf))
 			continue;
 
-    	i = recv(sbbs->passthru_socket, (char *)(&ch), 1, 0);
+    	i = recv(sbbs->passthru_socket, (char*)(&ch), 1, 0);
 
 		if(i == SOCKET_ERROR)
 		{
@@ -3550,15 +3550,9 @@ void node_thread(void* arg)
 {
 	ulong			stack_frame;
 	char			str[128];
-	char			uname[LEN_ALIAS+1];
 	int				file;
-	uint			i;
-	uint			usernum;
-	uint			lastusernum;
 	uint			curshell=0;
-	time_t			now;
 	node_t			node;
-	user_t			user;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -3643,158 +3637,7 @@ void node_thread(void* arg)
 	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
-
-		now=time(NULL);
-
-		sbbs->getnodedat(sbbs->cfg.node_num,&node,1);
-		node.status=NODE_EVENT_RUNNING;
-		sbbs->putnodedat(sbbs->cfg.node_num,&node);
-
-		sbbs->logentry("!:","Ran system daily maintenance");
-
-		if(sbbs->cfg.user_backup_level) {
-			lprintf(LOG_INFO,"Node %d Backing-up user data..."
-				,sbbs->cfg.node_num);
-			sprintf(str,"%suser/user.dat",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.user_backup_level,FALSE);
-			sprintf(str,"%suser/name.dat",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.user_backup_level,FALSE);
-		}
-
-		if(sbbs->cfg.mail_backup_level) {
-			lprintf(LOG_INFO,"Node %d Backing-up mail data..."
-				,sbbs->cfg.node_num);
-			sprintf(str,"%smail.shd",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-			sprintf(str,"%smail.sha",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-			sprintf(str,"%smail.sdt",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-			sprintf(str,"%smail.sda",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-			sprintf(str,"%smail.sid",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-			sprintf(str,"%smail.sch",sbbs->cfg.data_dir);
-			backup(str,sbbs->cfg.mail_backup_level,FALSE);
-		}
-
-		lprintf(LOG_INFO,"Node %d Checking for inactive/expired user records..."
-			,sbbs->cfg.node_num);
-		lastusernum=lastuser(&sbbs->cfg);
-		for(usernum=1;usernum<=lastusernum;usernum++) {
-
-			sprintf(str,"%5u of %-5u",usernum,lastusernum);
-			status(str);
-			user.number=usernum;
-			if((i=getuserdat(&sbbs->cfg,&user))!=0) {
-				sprintf(str,"user record %u",usernum);
-				sbbs->errormsg(WHERE,ERR_READ,str,i);
-				continue;
-			}
-
-			/***********************************************/
-			/* Fix name (name.dat and user.dat) mismatches */
-			/***********************************************/
-			username(&sbbs->cfg,user.number,uname);
-			if(user.misc&DELETED) {
-				if(strcmp(uname,"DELETED USER"))
-					putusername(&sbbs->cfg,user.number,nulstr);
-				continue; 
-			}
-
-			if(strcmp(user.alias,uname))
-				putusername(&sbbs->cfg,user.number,user.alias);
-
-			if(user.number==1)
-				continue;	/* skip expiration/inactivity checks for user #1 */
-
-			if(!(user.misc&(DELETED|INACTIVE))
-				&& user.expire && (ulong)user.expire<=(ulong)now) {
-				putsmsg(&sbbs->cfg,user.number,sbbs->text[AccountHasExpired]);
-				sprintf(str,"%s #%u Expired",user.alias,user.number);
-				sbbs->logentry("!%",str);
-				if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOVAL
-					&& sbbs->cfg.level_expireto[user.level]<10) {
-					user.flags1=sbbs->cfg.val_flags1[sbbs->cfg.level_expireto[user.level]];
-					user.flags2=sbbs->cfg.val_flags2[sbbs->cfg.level_expireto[user.level]];
-					user.flags3=sbbs->cfg.val_flags3[sbbs->cfg.level_expireto[user.level]];
-					user.flags4=sbbs->cfg.val_flags4[sbbs->cfg.level_expireto[user.level]];
-					user.exempt=sbbs->cfg.val_exempt[sbbs->cfg.level_expireto[user.level]];
-					user.rest=sbbs->cfg.val_rest[sbbs->cfg.level_expireto[user.level]];
-					if(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]])
-						user.expire=now
-							+(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]]*24*60*60);
-					else
-						user.expire=0;
-					user.level=sbbs->cfg.val_level[sbbs->cfg.level_expireto[user.level]]; 
-				}
-				else {
-					if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOLVL)
-						user.level=sbbs->cfg.level_expireto[user.level];
-					else
-						user.level=sbbs->cfg.expired_level;
-					user.flags1&=~sbbs->cfg.expired_flags1; /* expired status */
-					user.flags2&=~sbbs->cfg.expired_flags2; /* expired status */
-					user.flags3&=~sbbs->cfg.expired_flags3; /* expired status */
-					user.flags4&=~sbbs->cfg.expired_flags4; /* expired status */
-					user.exempt&=~sbbs->cfg.expired_exempt;
-					user.rest|=sbbs->cfg.expired_rest;
-					user.expire=0; 
-				}
-				putuserrec(&sbbs->cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
-				putuserrec(&sbbs->cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa(user.expire,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
-				putuserrec(&sbbs->cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
-				if(sbbs->cfg.expire_mod[0]) {
-					sbbs->useron=user;
-					sbbs->online=ON_LOCAL;
-					sbbs->exec_bin(sbbs->cfg.expire_mod,&sbbs->main_csi);
-					sbbs->online=0; 
-				}
-			}
-
-			/***********************************************************/
-			/* Auto deletion based on expiration date or days inactive */
-			/***********************************************************/
-			if(!(user.exempt&FLAG('P'))     /* Not a permanent account */
-				&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
-				&& (sbbs->cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
-				> sbbs->cfg.sys_autodel)) {			/* Inactive too long */
-				sprintf(str,"Auto-Deleted %s #%u",user.alias,user.number);
-				sbbs->logentry("!*",str);
-				sbbs->delallmail(user.number);
-				putusername(&sbbs->cfg,user.number,nulstr);
-				putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
-			}
-		}
-
-		lprintf(LOG_INFO,"Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
-		sprintf(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
-		sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
-		sbbs->smb.subnum=INVALID_SUB;
-		if((i=smb_open(&sbbs->smb))!=0)
-			sbbs->errormsg(WHERE,ERR_OPEN,sbbs->smb.file,i,sbbs->smb.last_error);
-		else {
-			if(filelength(fileno(sbbs->smb.shd_fp))>0) {
-				if((i=smb_locksmbhdr(&sbbs->smb))!=0)
-					sbbs->errormsg(WHERE,ERR_LOCK,sbbs->smb.file,i,sbbs->smb.last_error);
-				else
-					sbbs->delmail(0,MAIL_ALL);
-			}
-			smb_close(&sbbs->smb); 
-		}
-
-		sbbs->sys_status&=~SS_DAILY;
-		if(sbbs->cfg.sys_daily[0]) {
-//			status("Running system daily event");
-			sbbs->logentry("!:","Ran system daily event");
-			sbbs->external(sbbs->cmdstr(sbbs->cfg.sys_daily,nulstr,nulstr,NULL)
-				,EX_OFFLINE); 
-		}
+		sbbs->daily_maint();
 	}
 
 #if 0	/* this is handled in the event_thread now */
@@ -3864,6 +3707,169 @@ void node_thread(void* arg)
 
 	update_clients();
 	thread_down();
+}
+
+void sbbs_t::daily_maint(void)
+{
+	char			str[128];
+	char			uname[LEN_ALIAS+1];
+	uint			i;
+	uint			usernum;
+	uint			lastusernum;
+	node_t			node;
+	user_t			user;
+
+	now=time(NULL);
+
+	sbbs->getnodedat(sbbs->cfg.node_num,&node,1);
+	node.status=NODE_EVENT_RUNNING;
+	sbbs->putnodedat(sbbs->cfg.node_num,&node);
+
+	sbbs->logentry("!:","Ran system daily maintenance");
+
+	if(sbbs->cfg.user_backup_level) {
+		lprintf(LOG_INFO,"Node %d Backing-up user data..."
+			,sbbs->cfg.node_num);
+		sprintf(str,"%suser/user.dat",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.user_backup_level,FALSE);
+		sprintf(str,"%suser/name.dat",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.user_backup_level,FALSE);
+	}
+
+	if(sbbs->cfg.mail_backup_level) {
+		lprintf(LOG_INFO,"Node %d Backing-up mail data..."
+			,sbbs->cfg.node_num);
+		sprintf(str,"%smail.shd",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		sprintf(str,"%smail.sha",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		sprintf(str,"%smail.sdt",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		sprintf(str,"%smail.sda",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		sprintf(str,"%smail.sid",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		sprintf(str,"%smail.sch",sbbs->cfg.data_dir);
+		backup(str,sbbs->cfg.mail_backup_level,FALSE);
+	}
+
+	lprintf(LOG_INFO,"Node %d Checking for inactive/expired user records..."
+		,sbbs->cfg.node_num);
+	lastusernum=lastuser(&sbbs->cfg);
+	for(usernum=1;usernum<=lastusernum;usernum++) {
+
+		sprintf(str,"%5u of %-5u",usernum,lastusernum);
+		status(str);
+		user.number=usernum;
+		if((i=getuserdat(&sbbs->cfg,&user))!=0) {
+			sprintf(str,"user record %u",usernum);
+			sbbs->errormsg(WHERE,ERR_READ,str,i);
+			continue;
+		}
+
+		/***********************************************/
+		/* Fix name (name.dat and user.dat) mismatches */
+		/***********************************************/
+		username(&sbbs->cfg,user.number,uname);
+		if(user.misc&DELETED) {
+			if(strcmp(uname,"DELETED USER"))
+				putusername(&sbbs->cfg,user.number,nulstr);
+			continue; 
+		}
+
+		if(strcmp(user.alias,uname))
+			putusername(&sbbs->cfg,user.number,user.alias);
+
+		if(user.number==1)
+			continue;	/* skip expiration/inactivity checks for user #1 */
+
+		if(!(user.misc&(DELETED|INACTIVE))
+			&& user.expire && (ulong)user.expire<=(ulong)now) {
+			putsmsg(&sbbs->cfg,user.number,sbbs->text[AccountHasExpired]);
+			sprintf(str,"%s #%u Expired",user.alias,user.number);
+			sbbs->logentry("!%",str);
+			if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOVAL
+				&& sbbs->cfg.level_expireto[user.level]<10) {
+				user.flags1=sbbs->cfg.val_flags1[sbbs->cfg.level_expireto[user.level]];
+				user.flags2=sbbs->cfg.val_flags2[sbbs->cfg.level_expireto[user.level]];
+				user.flags3=sbbs->cfg.val_flags3[sbbs->cfg.level_expireto[user.level]];
+				user.flags4=sbbs->cfg.val_flags4[sbbs->cfg.level_expireto[user.level]];
+				user.exempt=sbbs->cfg.val_exempt[sbbs->cfg.level_expireto[user.level]];
+				user.rest=sbbs->cfg.val_rest[sbbs->cfg.level_expireto[user.level]];
+				if(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]])
+					user.expire=now
+						+(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]]*24*60*60);
+				else
+					user.expire=0;
+				user.level=sbbs->cfg.val_level[sbbs->cfg.level_expireto[user.level]]; 
+			}
+			else {
+				if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOLVL)
+					user.level=sbbs->cfg.level_expireto[user.level];
+				else
+					user.level=sbbs->cfg.expired_level;
+				user.flags1&=~sbbs->cfg.expired_flags1; /* expired status */
+				user.flags2&=~sbbs->cfg.expired_flags2; /* expired status */
+				user.flags3&=~sbbs->cfg.expired_flags3; /* expired status */
+				user.flags4&=~sbbs->cfg.expired_flags4; /* expired status */
+				user.exempt&=~sbbs->cfg.expired_exempt;
+				user.rest|=sbbs->cfg.expired_rest;
+				user.expire=0; 
+			}
+			putuserrec(&sbbs->cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
+			putuserrec(&sbbs->cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa(user.expire,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
+			putuserrec(&sbbs->cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
+			if(sbbs->cfg.expire_mod[0]) {
+				sbbs->useron=user;
+				sbbs->online=ON_LOCAL;
+				sbbs->exec_bin(sbbs->cfg.expire_mod,&sbbs->main_csi);
+				sbbs->online=0; 
+			}
+		}
+
+		/***********************************************************/
+		/* Auto deletion based on expiration date or days inactive */
+		/***********************************************************/
+		if(!(user.exempt&FLAG('P'))     /* Not a permanent account */
+			&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
+			&& (sbbs->cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
+			> sbbs->cfg.sys_autodel)) {			/* Inactive too long */
+			sprintf(str,"Auto-Deleted %s #%u",user.alias,user.number);
+			sbbs->logentry("!*",str);
+			sbbs->delallmail(user.number);
+			putusername(&sbbs->cfg,user.number,nulstr);
+			putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
+		}
+	}
+
+	lprintf(LOG_INFO,"Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
+	sprintf(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
+	sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
+	sbbs->smb.subnum=INVALID_SUB;
+	if((i=smb_open(&sbbs->smb))!=0)
+		sbbs->errormsg(WHERE,ERR_OPEN,sbbs->smb.file,i,sbbs->smb.last_error);
+	else {
+		if(filelength(fileno(sbbs->smb.shd_fp))>0) {
+			if((i=smb_locksmbhdr(&sbbs->smb))!=0)
+				sbbs->errormsg(WHERE,ERR_LOCK,sbbs->smb.file,i,sbbs->smb.last_error);
+			else
+				sbbs->delmail(0,MAIL_ALL);
+		}
+		smb_close(&sbbs->smb); 
+	}
+
+	sbbs->sys_status&=~SS_DAILY;
+	if(sbbs->cfg.sys_daily[0]) {
+//			status("Running system daily event");
+		sbbs->logentry("!:","Ran system daily event");
+		sbbs->external(sbbs->cmdstr(sbbs->cfg.sys_daily,nulstr,nulstr,NULL)
+			,EX_OFFLINE); 
+	}
 }
 
 time_t checktime(void)
@@ -4555,8 +4561,10 @@ NO_SSH:
 				terminate_server=TRUE;
 				break;
 			}
+			sbbs->logonstats();
+			if(sbbs->sys_status&SS_DAILY)
+				sbbs->daily_maint();
 		}
-
 
     	sbbs->online=0;
 

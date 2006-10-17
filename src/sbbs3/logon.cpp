@@ -572,23 +572,25 @@ bool sbbs_t::logon()
 /****************************************************************************/
 ulong sbbs_t::logonstats()
 {
-    char str[256];
+    char str[MAX_PATH+1];
     int dsts,csts;
     uint i;
     time_t update_t=0;
     stats_t stats;
-    node_t node;
+	node_t	node;
 	struct tm tm, update_tm;
 
+	sys_status&=~SS_DAILY;
 	memset(&stats,0,sizeof(stats));
 	sprintf(str,"%sdsts.dab",cfg.ctrl_dir);
 	if((dsts=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		return(0L); 
 	}
-	read(dsts,&update_t,4);         /* Last updated         */
-	read(dsts,&stats.logons,4);     /* Total number of logons on system */
+	read(dsts,&update_t,4);			/* Last updated         */
+	read(dsts,&stats.logons,4);		/* Total number of logons on system */
 	close(dsts);
+	now=time(NULL);
 	if(update_t>now+(24L*60L*60L)) /* More than a day in the future? */
 		errormsg(WHERE,ERR_CHK,"Daily stats time stamp",update_t);
 	if(localtime_r(&update_t,&update_tm)==NULL)
@@ -664,6 +666,9 @@ ulong sbbs_t::logonstats()
 			close(dsts); 
 		} 
 	}
+
+	if(cfg.node_num==0)	/* called from bbs_thread() */
+		return(0);
 
 	if(thisnode.status==NODE_QUIET)       /* Quiet users aren't counted */
 		return(0);

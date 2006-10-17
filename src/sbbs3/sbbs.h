@@ -611,6 +611,7 @@ public:
 	bool	chksyspass(void);
 	bool	chk_ar(uchar * str, user_t * user); /* checks access requirements */
 	bool	ar_exp(uchar ** ptrptr, user_t * user);
+	void	daily_maint(void);
 
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
