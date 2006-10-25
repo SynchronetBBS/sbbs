@@ -82,6 +82,9 @@ static char* dir_prop_desc[] = {
 	,"user has sufficient access to download files"
 	,"user is exempt from download credit costs"
 	,"user has operator access to this directory"
+	,"directory is for offline storage <i>(introduced in v3.14)</i>"
+	,"directory is for uploads only <i>(introduced in v3.14)</i>"
+	,"directory is for uploads to sysop only <i>(introduced in v3.14)</i>"
 	,NULL
 };
 #endif
@@ -428,6 +431,18 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			else
 				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
+				return(NULL);
+
+			val=BOOLEAN_TO_JSVAL(d==cfg->lib[l]->offline_dir);
+			if(!JS_SetProperty(cx, dirobj, "is_offline", &val))
+				return(NULL);
+
+			val=BOOLEAN_TO_JSVAL(d==cfg->upload_dir);
+			if(!JS_SetProperty(cx, dirobj, "is_upload", &val))
+				return(NULL);
+
+			val=BOOLEAN_TO_JSVAL(d==cfg->sysop_dir);
+			if(!JS_SetProperty(cx, dirobj, "is_sysop", &val))
 				return(NULL);
 
 #ifdef BUILD_JSDOCS
