@@ -463,7 +463,8 @@ function str_cmds(str)
 			if(str.toUpperCase()=="ALL") {
 				for(i=0; i<file_area.lib_list.length; i++) {
 					for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-						if(file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+						if(file_area.lib_list[i].offline_dir != undefined
+							&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
 							continue;
 						bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
 					}
@@ -472,7 +473,8 @@ function str_cmds(str)
 			}
 			if(str.toUpperCase()=="LIB") {
 				for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-					if(file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+					if(file_area.lib_list[bbs.curlib].offline_dir != undefined
+						&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
 						continue;
 					bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
 				}
@@ -581,7 +583,8 @@ function str_cmds(str)
 			if(str.toUpperCase()=="ALL") {
 				for(i=0;i<file_area.lib_list.length;i++) {
 					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-						if(file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
+						if(file_area.lib_list[i].offline_dir != undefined
+							&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
 							continue;
 						l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
 						if(l==-1)
@@ -592,7 +595,8 @@ function str_cmds(str)
 			}
 			else if(str.toUpperCase()=="LIB") {
 				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-					if(file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+					if(file_area.lib_list[bbs.curlib].offline_dir != undefined
+						&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
 						continue;
 					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
 					if(l==-1)
