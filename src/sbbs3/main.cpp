@@ -2084,6 +2084,12 @@ void event_thread(void* arg)
 		}
 
 		if(check_semaphores) {
+
+			/* Run daily maintenance? */
+			sbbs->logonstats();
+			if(sbbs->sys_status&SS_DAILY)
+				sbbs->daily_maint();
+
 			/* Node Daily Events */
 			for(i=first_node;i<=last_node;i++) {
 				// Node Daily Event
@@ -4561,9 +4567,6 @@ NO_SSH:
 				terminate_server=TRUE;
 				break;
 			}
-			sbbs->logonstats();
-			if(sbbs->sys_status&SS_DAILY)
-				sbbs->daily_maint();
 		}
 
     	sbbs->online=0;
