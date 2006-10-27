@@ -576,6 +576,11 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(isdir(str))
 			continue;
 #ifdef _WIN32
+		/* Skip hidden/system files on Win32 */
+		if(getfattr(str)&(_A_HIDDEN|_A_SYSTEM))
+			continue;
+#endif
+#ifdef _WIN32
 		GetShortPathName(str,spath,sizeof(spath));
 #else
 		strcpy(spath,str);
