@@ -46,6 +46,8 @@
 #include "isvbop.h"			/* ddk\inc */
 #include "fossdefs.h"
 
+#define VDD_FILENAME	"sbbsexec.dll"
+
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
 /****************************************************************************/
@@ -459,7 +461,7 @@ char* getfname(const char* path)
 	return((char*)fname);
 }
 
-char *	DllName		="SBBSEXEC.DLL";
+char *	DllName		=VDD_FILENAME;
 char *	InitFunc	="VDDInitialize";
 char *	DispFunc	="VDDDispatch";
 
@@ -493,7 +495,7 @@ int main(int argc, char **argv)
 	sprintf(exec_dir,"%.*s",sizeof(exec_dir)-1,argv[0]);
 	p=getfname(exec_dir);
 	*p=0;
-	sprintf(dll,"%ssbbsexec.dll",exec_dir);
+	sprintf(dll,"%s%s",exec_dir,VDD_FILENAME);
 	DllName=dll;
 
 	if(argc>2 && !strcmp(argv[2],"NT")) 
@@ -545,22 +547,33 @@ int main(int argc, char **argv)
 
 	if(NT) {	/* Windows NT/2000 */
 
-		/* Register VDD */
-       	_asm {
-			push	es
-			push	ds
-			pop		es
-			mov     si, DllName		; ds:si = dll name
-		    mov     di, InitFunc    ; es:di = init routine
-			mov     bx, DispFunc    ; ds:bx = dispatch routine
-		};
-		RegisterModule();
-		_asm {
-			mov		vdd, ax
-			jc		err
-			mov		success, TRUE
-			err:
-			pop		es
+		for(i=0;i<2;i++) {
+
+			/* Register VDD */
+       		_asm {
+				push	es
+				push	ds
+				pop		es
+				mov     si, DllName		; ds:si = dll name
+				mov     di, InitFunc    ; es:di = init routine
+				mov     bx, DispFunc    ; ds:bx = dispatch routine
+#if 1	/* Vista work-around, apparently doesn't support an InitFunc (RegisterModule fails with AX=1) */
+				xor		di,di
+				mov		es,di
+#endif
+
+			};
+			RegisterModule();
+			_asm {
+				mov		vdd, ax
+				jc		err
+				mov		success, TRUE
+				err:
+				pop		es
+			}
+			if(success)
+				break;
+			DllName=VDD_FILENAME;	/* try again with no path (for Windows Vista) */
 		}
 		if(!success) {
 			fprintf(stderr,"Error %d loading %s\n",vdd,DllName);
@@ -655,5 +668,6 @@ int main(int argc, char **argv)
 		UnRegisterModule();
 
 	}
+
 	return(i);
 }
