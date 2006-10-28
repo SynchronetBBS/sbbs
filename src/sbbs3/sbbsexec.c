@@ -77,7 +77,6 @@ HANDLE		hungup_event=NULL;
 HANDLE		interrupt_event=NULL;
 HANDLE		rdslot=INVALID_HANDLE_VALUE;
 HANDLE		wrslot=INVALID_HANDLE_VALUE;
-HANDLE		vdd_handle;
 RingBuf		rdbuf;
 str_list_t	ini;
 char		ini_fname[MAX_PATH+1];
@@ -461,12 +460,14 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	retval=0;
 	node_num=getBH();
 
-	lprintf(LOG_DEBUG,"VDD_OP: %d (arg=%X)", getBL(),getCX());
+	lprintf(LOG_DEBUG,"VDD_OP: (handle=%d) %d (arg=%X)", getAX(),getBL(),getCX());
 	vdd_calls++;
 
 	switch(getBL()) {
 
 		case VDD_OPEN:
+
+			sscanf("$Revision$", "%*s %s", revision);
 
 			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
 				,revision, __DATE__, __TIME__);
@@ -545,7 +546,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				PortRange.First=uart_io_base;
 				PortRange.Last=uart_io_base + UART_IO_RANGE;
 
-				VDDInstallIOHook(vdd_handle, 1, &PortRange, &IOHandlers);
+				VDDInstallIOHook((HANDLE)getAX(), 1, &PortRange, &IOHandlers);
 
 				interrupt_event=CreateEvent(NULL,FALSE,FALSE,NULL);
 				InitializeCriticalSection(&interrupt_mutex);
@@ -570,7 +571,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 			if(virtualize_uart) {
 				lprintf(LOG_INFO,"Uninstalling Virtualizaed UART IO Hook");
-				VDDDeInstallIOHook(vdd_handle, 1, &PortRange);
+				VDDDeInstallIOHook((HANDLE)getAX(), 1, &PortRange);
 			}
 
 			CloseHandle(rdslot);
@@ -778,14 +779,4 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 	}
 	setAX((WORD)retval);
-}
-
-__declspec(dllexport) BOOL __cdecl VDDInitialize(IN PVOID hVDD, IN ULONG Reason, 
-IN PCONTEXT Context OPTIONAL)
-{
-	sscanf("$Revision$", "%*s %s", revision);
-
-	vdd_handle=hVDD;
-
-    return TRUE;
 }
