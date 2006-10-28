@@ -2086,6 +2086,7 @@ void event_thread(void* arg)
 		if(check_semaphores) {
 
 			/* Run daily maintenance? */
+			sbbs->node_num=0;
 			sbbs->logonstats();
 			if(sbbs->sys_status&SS_DAILY)
 				sbbs->daily_maint();

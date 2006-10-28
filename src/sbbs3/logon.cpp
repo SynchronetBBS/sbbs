@@ -667,7 +667,7 @@ ulong sbbs_t::logonstats()
 		} 
 	}
 
-	if(cfg.node_num==0)	/* called from bbs_thread() */
+	if(cfg.node_num==0)	/* called from event_thread() */
 		return(0);
 
 	if(thisnode.status==NODE_QUIET)       /* Quiet users aren't counted */
