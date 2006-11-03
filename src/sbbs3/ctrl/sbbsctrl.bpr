@@ -50,17 +50,17 @@
     <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\;..;C:\Borland\CBuilder6\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\;..;C:\Borland\CBuilder6\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -IC:\Borland\CBuilder6\Projects -I..\..\xpdev -I..\..\smblib 
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
       -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS -D_DEBUG 
       -DRINGBUF_SEM -DRINGBUF_MUTEX -boa"/>
-    <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
       -v -vi- -c -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
@@ -146,9 +146,9 @@ Comments=
 
 [HistoryLists\hlIncludePath]
 Count=26
-Item0=..\;..;C:\Borland\CBuilder6\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item1=..\;C:\Borland\CBuilder6\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item2=C:\Borland\CBuilder6\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item0=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item1=..\;$(BCB)\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item2=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
 Item3=..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
 Item4=..\;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
 Item5=..\;..;$(BCB)\include;$(BCB)\include\vcl
@@ -175,9 +175,9 @@ Item25=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
 Count=27
-Item0=..\;..;C:\Borland\CBuilder6\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
-Item1=..\;C:\Borland\CBuilder6\Projects;..;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
-Item2=C:\Borland\CBuilder6\Projects;..\;..;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
+Item0=..\;..;$(BCB)\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
+Item1=..\;$(BCB)\Projects;..;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
+Item2=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk
 Item3=..\;..;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib
 Item4=..\;..\..\xpdev;..;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib
 Item5=..\..\xpdev;..\;..;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib
