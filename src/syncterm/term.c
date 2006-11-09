@@ -1153,99 +1153,102 @@ BOOL doterm(struct bbslist *bbs)
 			speed = bbs->bpsrate;
 		if(speed)
 			thischar=xp_timer();
-		if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
-			/* Get remote input */
-			inch=recv_byte(NULL, 0);
+		while(data_waiting(NULL, 0)) {
+			if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
+				/* Get remote input */
+				inch=recv_byte(NULL, 0);
 
-			if(!term.nostatus)
-				update_status(bbs, speed);
-			switch(inch) {
-				case -1:
-					if(!is_connected(NULL)) {
-						uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-						cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
-						scrollback_lines=cterm.backpos;
-						cterm_end();
-						conn_close();
-						hidemouse();
-						return(FALSE);
-					}
-					break;
-				default:
-					if(speed) {
-						lastchar = xp_timer();
-						nextchar = lastchar + 1/(long double)(speed/10);
-					}
+				if(!term.nostatus)
+					update_status(bbs, speed);
+				switch(inch) {
+					case -1:
+						if(!is_connected(NULL)) {
+							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
+							scrollback_lines=cterm.backpos;
+							cterm_end();
+							conn_close();
+							hidemouse();
+							return(FALSE);
+						}
+						break;
+					default:
+						if(speed) {
+							lastchar = xp_timer();
+							nextchar = lastchar + 1/(long double)(speed/10);
+						}
 
 #ifdef GUTS_BUILTIN
-					if(!gutsbuf[0]) {
-						if(inch == gutsinit[0]) {
-							gutsbuf[0]=inch;
-							gutsbuf[1]=0;
-							continue;
-						}
-					}
-					else {		/* Already have the start of the sequence */
-						j=strlen(gutsbuf);
-						if(inch == gutsinit[j]) {
-							gutsbuf[j]=inch;
-							gutsbuf[++j]=0;
-							if(j==sizeof(gutsinit)) /* Have full sequence */
-								guts_transfer(bbs);
-						}
-						else {
-							gutsbuf[j++]=inch;
-							cterm_write(gutsbuf, j, prn, sizeof(prn), &speed);
-							if(prn[0])
-								conn_send(prn,strlen(prn),0);
-							updated=TRUE;
-							gutsbuf[0]=0;
-						}
-						continue;
-					}
-#endif
-
-					if(!zrqbuf[0]) {
-						if(inch == zrqinit[0] || inch == zrinit[0]) {
-							zrqbuf[0]=inch;
-							zrqbuf[1]=0;
-							continue;
-						}
-					}
-					else {	/* Already have the start of the sequence */
-						j=strlen(zrqbuf);
-						if(inch == zrqinit[j] || inch == zrinit[j]) {
-							zrqbuf[j]=inch;
-							zrqbuf[++j]=0;
-							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
-								if(!strcmp(zrqbuf, zrqinit))
-									zmodem_download(bbs);
-								else
-									begin_upload(bbs, TRUE);
-								zrqbuf[0]=0;
+						if(!gutsbuf[0]) {
+							if(inch == gutsinit[0]) {
+								gutsbuf[0]=inch;
+								gutsbuf[1]=0;
+								continue;
 							}
 						}
-						else {	/* Not a real zrqinit */
-							zrqbuf[j++]=inch;
-							cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
-							if(prn[0])
-								conn_send(prn,strlen(prn),0);
-							updated=TRUE;
-							zrqbuf[0]=0;
+						else {		/* Already have the start of the sequence */
+							j=strlen(gutsbuf);
+							if(inch == gutsinit[j]) {
+								gutsbuf[j]=inch;
+								gutsbuf[++j]=0;
+								if(j==sizeof(gutsinit)) /* Have full sequence */
+									guts_transfer(bbs);
+							}
+							else {
+								gutsbuf[j++]=inch;
+								cterm_write(gutsbuf, j, prn, sizeof(prn), &speed);
+								if(prn[0])
+									conn_send(prn,strlen(prn),0);
+								updated=TRUE;
+								gutsbuf[0]=0;
+							}
+							continue;
 						}
-						continue;
-					}
+#endif
 
-					ch[0]=inch;
-					cterm_write(ch, 1, prn, sizeof(prn), &speed);
-					if(prn[0])
-						conn_send(prn, strlen(prn), 0);
-					updated=TRUE;
-					continue;
+						if(!zrqbuf[0]) {
+							if(inch == zrqinit[0] || inch == zrinit[0]) {
+								zrqbuf[0]=inch;
+								zrqbuf[1]=0;
+								continue;
+							}
+						}
+						else {	/* Already have the start of the sequence */
+							j=strlen(zrqbuf);
+							if(inch == zrqinit[j] || inch == zrinit[j]) {
+								zrqbuf[j]=inch;
+								zrqbuf[++j]=0;
+								if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
+									if(!strcmp(zrqbuf, zrqinit))
+										zmodem_download(bbs);
+									else
+										begin_upload(bbs, TRUE);
+									zrqbuf[0]=0;
+								}
+							}
+							else {	/* Not a real zrqinit */
+								zrqbuf[j++]=inch;
+								cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
+								if(prn[0])
+									conn_send(prn,strlen(prn),0);
+								updated=TRUE;
+								zrqbuf[0]=0;
+							}
+							continue;
+						}
+
+						ch[0]=inch;
+						cterm_write(ch, 1, prn, sizeof(prn), &speed);
+						if(prn[0])
+							conn_send(prn, strlen(prn), 0);
+						updated=TRUE;
+						continue;
+				}
 			}
-		}
-		else if (speed) {
-			sleep=FALSE;
+			else if (speed) {
+				sleep=FALSE;
+				break;
+			}
 		}
 		hold_update=oldmc;
 		if(updated && sleep)
