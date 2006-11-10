@@ -46,6 +46,9 @@
 #define LOG_PRIMASK     0x07    /* mask to extract priority part */
 #define LOG_FACMASK     0x03f8  /* mask to extract facility part */
 
+/* Logopts for xp_openlog() */
+#define LOG_CONS		0x02	/* log on the console if errors in sending */
+
 /* Port number */
 #define SYSLOG_PORT 514
 
