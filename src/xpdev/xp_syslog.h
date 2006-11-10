@@ -48,6 +48,7 @@
 
 /* Logopts for xp_openlog() */
 #define LOG_CONS		0x02	/* log on the console if errors in sending */
+#define LOG_PERROR		0x20	/* log to stderr as well */
 
 /* Port number */
 #define SYSLOG_PORT 514

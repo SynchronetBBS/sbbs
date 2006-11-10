@@ -9,6 +9,7 @@
 
 static SOCKET syslog_sock=INVALID_SOCKET;
 static char log_host[1025]=
+static int log_opts=LOG_CONS;
 #ifdef __unix__
 "";
 #else
@@ -75,6 +76,8 @@ void xp_openlog(const char *ident, int logopt, int facility)
 		return;
 	}
 
+	log_opts=logopt;
+
 	SAFECOPY(syslog_tag, ident);
 }
 
@@ -97,7 +100,7 @@ void xp_vsyslog(int priority, const char *message, va_list va)
 #endif
 
 	/* Ensure we can even send this thing */
-	if(syslog_sock==INVALID_SOCKET)
+	if(syslog_sock==INVALID_SOCKET && !(log_opts & LOG_CONS) && !(log_opts & LOG_PERROR))
 		return;
 
 	/* Check for valid priority */
@@ -140,7 +143,14 @@ void xp_vsyslog(int priority, const char *message, va_list va)
 		else if(*p>126)
 			*p=' ';
 	}
-	sendsocket(syslog_sock, msg_to_send, strlen(msg_to_send));
+	if(syslog_sock!=INVALID_SOCKET)
+		sendsocket(syslog_sock, msg_to_send, strlen(msg_to_send));
+	else if(log_opts & LOG_CONS)
+		puts(msg_to_send);
+	if(log_opts & LOG_PERROR) {
+		fputs(stderr,msg_to_send);
+		fputs(stderr,"\n");
+	}
 }
 
 void xp_syslog(int priority, const char *message, ...)
