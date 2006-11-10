@@ -62,12 +62,13 @@ void xp_openlog(const char *ident, int logopt, int facility)
 	syslog_sock=socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(syslog_sock==INVALID_SOCKET)
 		return;
-	/*
-	 * If the bind() fails, that's OK... we're just trying to set the source port to
-	 * 514 here as reccomended by the RFC.  This isn't REQUIRED though.
-	 */
-	bind(syslog_sock, (struct sockaddr *)&syslog_addr, sizeof(syslog_addr));
+	if(bind(syslog_sock, (struct sockaddr *)&syslog_addr, sizeof(syslog_addr))) {
+		syslog_addr.sin_port=0;
+		if(bind(syslog_sock, (struct sockaddr *)&syslog_addr, sizeof(syslog_addr)))
+			return;
+	}
 	syslog_addr.sin_addr.s_addr=resolve_ip(log_host);
+	syslog_addr.sin_port=htons(SYSLOG_PORT);
 	if(connect(syslog_sock, (struct sockaddr *)&syslog_addr, sizeof(syslog_addr))) {
 		closesocket(syslog_sock);
 		syslog_sock=INVALID_SOCKET;
