@@ -280,16 +280,8 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 }
 
 #define XTRN_LOADABLE_MODULE								\
-	if(cmdline[0]=='*') {   /* Baja module or JavaScript */	\
-		SAFECOPY(str,cmdline+1);							\
-		p=strchr(str,' ');									\
-		if(p) {												\
-			strcpy(main_csi.str,p+1);						\
-			*p=0; 											\
-		} else												\
-			main_csi.str[0]=0;								\
-		return(exec_bin(str,&main_csi));					\
-	}														
+	if(cmdline[0]=='*')		/* Baja module or JavaScript */	\
+		return(exec_bin(cmdline+1,&main_csi))				
 #ifdef JAVASCRIPT
 	#define XTRN_LOADABLE_JS_MODULE							\
 	if(cmdline[0]=='?') 	/* JavaScript */				\
@@ -361,7 +353,6 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 {
 	char	str[MAX_PATH+1];
-	char*	p;
 	char*	env_block=NULL;
 	char*	env_strings;
 	const char* p_startup_dir;

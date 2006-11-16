@@ -653,23 +653,37 @@ long sbbs_t::js_execfile(const char *cmd)
 }
 #endif
 
-
-long sbbs_t::exec_bin(char *mod, csi_t *csi)
+/* Important change as of Nov-16-2006, 'cmdline' may contain args */
+long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 {
     char    str[MAX_PATH+1];
+	char	mod[MAX_PATH+1];
 	char	modname[MAX_PATH+1];
+	char*	p;
 	int 	file;
     csi_t   bin;
 
+	SAFECOPY(mod,cmdline);
+	p=mod;
+	FIND_CHAR(p,' ');
+	if(*p) {
+		*p=0;				/* terminate 'mod' */
+		p++;				/* skip space */
+		SKIP_CHAR(p,' ');	/* skip more spaces */
+	}
+	strcpy(main_csi.str, p);
+
 #ifdef JAVASCRIPT
+	if((p=getfext(mod))!=NULL && stricmp(p,".js")==0)
+		return(js_execfile(cmdline));
 	if(cfg.mods_dir[0]) {
 		sprintf(str,"%s%s.js",cfg.mods_dir,mod);
 		if(fexistcase(str)) 
-			return(js_execfile(str));
+			return(js_execfile(cmdline));
 	}
 	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
 	if(fexistcase(str)) 
-		return(js_execfile(str));
+		return(js_execfile(cmdline));
 #endif
 
 	memcpy(&bin,csi,sizeof(csi_t));
