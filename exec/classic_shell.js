@@ -492,7 +492,7 @@ function email()
 				if(str.search(/\@/)!=-1)
 					bbs.netmail(str);
 				else {
-					i=finduser(str);
+					i=bbs.finduser(str);
 					if(i>0)
 						bbs.email(i,WM_EMAIL);
 				}
@@ -508,7 +508,7 @@ function email()
 				if(str.search(/\@/)!=-1)
 					bbs.netmail(str,WM_FILE);
 				else {
-					i=finduser(str);
+					i=bbs.finduser(str);
 					if(i>0)
 						bbs.email(i,WM_EMAIL|WM_FILE);
 				}
@@ -978,7 +978,7 @@ file_transfers:
 				if(i==0)
 					console.putmsg(bbs.text(EmptyDir),P_SAVEATR);
 				else
-					console.putmsg(bbs.text(NFilesListed,i),P_SAVEATR);
+					console.putmsg(format(bbs.text(NFilesListed),i),P_SAVEATR);
 				continue file_transfers;
 
 			case '/L':
@@ -1166,7 +1166,7 @@ file_transfers:
 xfercfg:
 				while(1) {
 					if(!(user.settings & USER_EXPERT))
-						bbs.menu(xfercfg);
+						bbs.menu("xfercfg");
 					// async
 					console.putmsg("\r\nyhConfig: n",P_SAVEATR);
 					key=get_next_keys("?QBEP\r");
