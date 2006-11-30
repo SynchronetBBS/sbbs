@@ -1256,7 +1256,7 @@ js_atcode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	char* p = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 
-	p=sbbs->atcode(p,str);
+	p=sbbs->atcode(p,str,sizeof(str));
 
 	if(p==NULL)
 		*rval = JSVAL_NULL;

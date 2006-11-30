@@ -547,7 +547,7 @@ public:
 
 	/* atcodes.cpp */
 	int		show_atcode(char *code);
-	char*	atcode(char* sp, char* str);
+	char*	atcode(char* sp, char* str, size_t maxlen);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber);
