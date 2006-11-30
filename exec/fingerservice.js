@@ -4,13 +4,16 @@
 
 // $Id$
 
-// Example configuration (in ctrl/services.cfg):
+// Example configuration (in ctrl/services.ini)
+// [Finger]
+// Port=79
+// MaxClients=10
+// Options=NO_HOST_LOOKUP
+// Command=fingerservice.js
 
-// Finger		79	0-unlimited	0		fingerservice.js [options]
+// Command-line options:
 
-// Options:
-
-// -n	to the configuration line to eliminate user age and gender
+// -n	add to the Command line to eliminate user age and gender
 //		information from the query results.
 // -a	report aliases only (no real names)
 // -ff	enable the findfile feature (requires a "guest" account)
