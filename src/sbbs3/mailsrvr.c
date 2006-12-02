@@ -3168,7 +3168,7 @@ static void smtp_thread(void* arg)
 				}
 			}
 
-			if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
+			if((p==name_alias_buf || startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER)
 				&& isdigit(*p)) {
 				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
@@ -3178,7 +3178,7 @@ static void smtp_thread(void* arg)
 				p=str;
 			} else {
 				/* RX by "user alias", "user.alias" or "user_alias" */
-				usernum=matchuser(&scfg,p,TRUE /* sysop_alias */);	
+				usernum=matchuser(&scfg,p,startup->options&MAIL_OPT_ALLOW_SYSOP_ALIASES);	
 
 				if(!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
 					
@@ -3200,8 +3200,8 @@ static void smtp_thread(void* arg)
 			if(!usernum && startup->default_user[0]) {
 				usernum=matchuser(&scfg,startup->default_user,TRUE /* sysop_alias */);
 				if(usernum)
-					lprintf(LOG_INFO,"%04d SMTP Forwarding mail for UNKNOWN USER to default user: %s"
-						,socket,startup->default_user);
+					lprintf(LOG_INFO,"%04d SMTP Forwarding mail for UNKNOWN USER to default user: %s #%u"
+						,socket,startup->default_user,usernum);
 				else
 					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN DEFAULT USER: %s"
 						,socket,startup->default_user);
