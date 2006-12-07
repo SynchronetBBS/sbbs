@@ -1,6 +1,8 @@
-**************************************************************************
-* OpenDoors v6.24 C/C++ Door Development Kit for DOS and Win32 Platforms *
-**************************************************************************
+***************************************************************************
+* OpenDoors v6.24 C/C++ Door Development Kit for DOS/Win32/*nix Platforms *
+***************************************************************************
+
+$Id$
 
 August 10, 2003
 
@@ -9,7 +11,7 @@ August 10, 2003
 August 22, 2002
 
 Door32.sys and Socket update to Brian Pirie's OpenDoors Library 
-(http://www.attcanada.net/~pirie/opendoors.html) 
+(http://www.pirieworld.ca/opendoors.html) 
 
 by Rob Swindell (http://www.synchro.net/)
 
