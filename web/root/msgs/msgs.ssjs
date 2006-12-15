@@ -8,6 +8,8 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 }
 
 var ShowMsgs=GET_ALL_MESSAGES;
+var MAX_NAME_LEN=25;
+var MAX_SUBJ_LEN=50;
 
 if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
   prefsfile=new File(prefs_dir +format("%04d.html_prefs",user.number));
@@ -244,9 +246,9 @@ if(DateDescending) {
      if(hdr==null)
           continue;
      template.messages[displayed.toString()]=hdr;
-	 template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,15);
-	 template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,15);
-	 template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,20);
+	 template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,MAX_NAME_LEN);
+	 template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,MAX_NAME_LEN);
+	 template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,MAX_SUBJ_LEN);
      template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset));
      template.messages[displayed.toString()].offset=msgarray[last_offset].offset;
      displayed++;
@@ -258,9 +260,9 @@ if(DateDescending) {
       if(hdr==null)
           continue;
 	  template.messages[displayed.toString()]=hdr;
-	  template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,15);
-	  template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,15);
-	  template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,20);
+	  template.messages[displayed.toString()].to=template.messages[displayed.toString()].to.substr(0,MAX_NAME_LEN);
+	  template.messages[displayed.toString()].from=template.messages[displayed.toString()].from.substr(0,MAX_NAME_LEN);
+	  template.messages[displayed.toString()].subject=template.messages[displayed.toString()].subject.substr(0,MAX_SUBJ_LEN);
 	  template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,msgarray[first_offset].offset));
       template.messages[displayed.toString()].offset=msgarray[first_offset].offset;
       displayed++;
