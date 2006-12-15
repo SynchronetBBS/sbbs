@@ -1336,7 +1336,7 @@ static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* l
 
 
 static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip
-						   ,char* to, char* from)
+						   ,char* to, char* from, char* source)
 {
 	char	addr[64];
 	char	tmp[128];
@@ -1349,11 +1349,10 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
 
-	lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED SOURCE: %s"
-		,socket, addr);
-	SAFEPRINTF(tmp,"Blocked source e-mail address: %s", addr);
+	lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED %s e-mail address: %s"
+		,socket, source, addr);
+	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
 	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to, from);
-	sockprintf(socket, "554 Sender not allowed.");
 
 	return(FALSE);
 }
@@ -1882,6 +1881,7 @@ static void smtp_thread(void* arg)
 	char		md5_data[384];
 	char		digest[MD5_DIGEST_SIZE];
 	char		dest_host[128];
+	char*		errmsg;
 	ushort		dest_port;
 	socklen_t	addr_len;
 	ushort		hfield_type;
@@ -2310,6 +2310,7 @@ static void smtp_thread(void* arg)
 				/* Parse message header here */
 				hfield_type=UNKNOWN;
 				smb_error=SMB_SUCCESS; /* no SMB error */
+				errmsg="452 Insufficient system storage";
 				while(!feof(msgtxt)) {
 					if(!fgets(buf,sizeof(buf),msgtxt))
 						break;
@@ -2333,8 +2334,17 @@ static void smtp_thread(void* arg)
 						continue;
 					}
 					if(!strnicmp(buf, "FROM:", 5)
-						&& !chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
+						&& !chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path,"FROM")) {
+						errmsg="554 Sender not allowed.";
+						smb_error=SMB_FAILURE;
 						break;
+					}
+					if(!strnicmp(buf, "TO:", 3)
+						&& !chk_email_addr(socket,buf+3,host_name,host_ip,rcpt_addr,reverse_path,"TO")) {
+						errmsg="550 Unknown user.";
+						smb_error=SMB_FAILURE;
+						break;
+					}
 					if((smb_error=parse_header_field(buf,&msg,&hfield_type))!=SMB_SUCCESS) {
 						if(smb_error==SMB_ERR_HDR_LEN)
 							lprintf(LOG_WARNING,"%04d !SMTP MESSAGE HEADER EXCEEDS %u BYTES"
@@ -2346,7 +2356,7 @@ static void smtp_thread(void* arg)
 					}
 				}
 				if(smb_error!=SMB_SUCCESS) {	/* SMB Error */
-					sockprintf(socket, "452 Insufficient system storage");
+					sockprintf(socket, errmsg);
 					continue;
 				}
 				if((p=smb_get_hfield(&msg, RFC822TO, NULL))!=NULL) {
@@ -2869,8 +2879,10 @@ static void smtp_thread(void* arg)
 			|| !strnicmp(buf,"SAML FROM:",10)	/* Send AND Mail a Message to a local user */
 			) {
 			p=buf+10;
-			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL))
+			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL,"REVERSE PATH")) {
+				sockprintf(socket, "554 Sender not allowed.");
 				break;
+			}
 			SKIP_WHITESPACE(p);
 			SAFECOPY(reverse_path,p);
 
@@ -2989,11 +3001,7 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Check for blocked recipients */
-			if(trashcan(&scfg,rcpt_addr,"email")) {
-				lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED RECIPIENT (%s) from: %s"
-					,socket, rcpt_addr, reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED", "Blocked recipient e-mail address"
-					,host_name, host_ip, rcpt_addr, reverse_path);
+			if(!chk_email_addr(socket,rcpt_addr,host_name,host_ip,rcpt_addr,reverse_path,"RECIPIENT")) {
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
