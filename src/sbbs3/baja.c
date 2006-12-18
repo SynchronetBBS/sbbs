@@ -3408,6 +3408,12 @@ int main(int argc, char **argv)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
+	if(argc<2) {
+		printf(banner,PLATFORM_DESC,revision);
+		printf(usage);
+		bail(1);
+	}
+
 	for(i=1;i<argc;i++)
 		if(argv[i][0]=='-'
 #ifdef _WIN32
