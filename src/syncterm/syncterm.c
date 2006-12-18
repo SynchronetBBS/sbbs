@@ -225,7 +225,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 
 	if(inpath==NULL)
 		home=getenv("HOME");
-	if(home==NULL) {
+	if(home==NULL || strlen(home) > MAX_PATH-32) {	/* $HOME just too damn big */
 		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
 			getcwd(fn, fnlen);
 			backslash(fn);
