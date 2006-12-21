@@ -61,7 +61,7 @@ static char* format_string(sbbs_t* sbbs, csi_t* csi)
 			fmt=xp_asprintf_next(fmt,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_CHARP,*(char **)vp);
 		csi->ip+=4; 
 	}
-	return xp_asprintf_end(fmt);
+	return xp_asprintf_end(fmt, NULL);
 }
 
 int sbbs_t::exec_misc(csi_t* csi, char *path)

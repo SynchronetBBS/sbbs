@@ -62,7 +62,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 		}
 	}
 
-	return xp_asprintf_end(p);
+	return xp_asprintf_end(p, NULL);
 
 }
 
