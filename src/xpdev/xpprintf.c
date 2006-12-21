@@ -687,7 +687,10 @@ char *xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							i=*cp;
+							if(cp)
+								i=*cp;
+							else
+								i=0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							i=(int)d;
