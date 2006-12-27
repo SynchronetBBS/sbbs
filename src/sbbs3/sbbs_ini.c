@@ -952,6 +952,9 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"DNSServer",mail->dns_server,&style))
 			break;
 
+		if(!iniSetString(lp,section,"DefaultCharset",mail->default_charset,&style))
+			break;
+
 		if(!iniSetString(lp,section,"DefaultUser",mail->default_user,&style))
 			break;
 

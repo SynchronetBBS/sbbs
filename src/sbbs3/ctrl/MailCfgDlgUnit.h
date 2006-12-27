@@ -142,6 +142,8 @@ __published:
     TEdit *RelayAuthPassEdit;
     TTabSheet *AdvancedTabSheet;
     TCheckListBox *AdvancedCheckListBox;
+    TLabel *DefCharsetLabel;
+    TEdit *DefCharsetEdit;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);

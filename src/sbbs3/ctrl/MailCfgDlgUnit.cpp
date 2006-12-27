@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -97,6 +97,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     HostnameCheckBox->Checked
         =!(MainForm->mail_startup.options&MAIL_OPT_NO_HOST_LOOKUP);
 
+    DefCharsetEdit->Text=AnsiString(MainForm->mail_startup.default_charset);
     RelayServerEdit->Text=AnsiString(MainForm->mail_startup.relay_server);
     RelayAuthNameEdit->Text=AnsiString(MainForm->mail_startup.relay_user);
     RelayAuthPassEdit->Text=AnsiString(MainForm->mail_startup.relay_pass);
@@ -227,6 +228,8 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(300);
     MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(10);
 
+    SAFECOPY(MainForm->mail_startup.default_charset
+        ,DefCharsetEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());
     if(isalnum(*DNSServerEdit->Text.c_str()))
@@ -369,9 +372,10 @@ void __fastcall TMailCfgDlg::DNSRadioButtonClick(TObject *Sender)
     RelayTabSheet->TabVisible=checked;
     RelayPortEdit->Enabled=checked;
     RelayPortLabel->Enabled=checked;
-    DNSServerEdit->Enabled=!checked;
-    DNSServerLabel->Enabled=!checked;
-    TcpDnsCheckBox->Enabled=!checked;
+    checked = (!RelayRadioButton->Checked) && SendMailCheckBox->Checked;
+    DNSServerEdit->Enabled=checked;
+    DNSServerLabel->Enabled=checked;
+    TcpDnsCheckBox->Enabled=checked;
 }
 //---------------------------------------------------------------------------
 
@@ -402,6 +406,8 @@ void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
     OutboundSoundEdit->Enabled=checked;
     OutboundSoundLabel->Enabled=checked;
     OutboundSoundButton->Enabled=checked;
+    DefCharsetLabel->Enabled=checked;
+    DefCharsetEdit->Enabled=checked;
 
     DNSRadioButtonClick(Sender);
 }

@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = AdvancedTabSheet
-    TabIndex = 7
+    ActivePage = SendMailTabSheet
+    TabIndex = 3
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -392,6 +392,14 @@ object MailCfgDlg: TMailCfgDlg
         Height = 16
         Caption = 'DNS Server'
       end
+      object DefCharsetLabel: TLabel
+        Left = 9
+        Top = 76
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Default Charset'
+      end
       object DNSRadioButton: TRadioButton
         Left = 9
         Top = 116
@@ -430,8 +438,8 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 5
       end
       object RelayRadioButton: TRadioButton
-        Left = 9
-        Top = 84
+        Left = 169
+        Top = 116
         Width = 192
         Height = 26
         Hint = 'Route all mail through an SMTP relay server'
@@ -472,6 +480,16 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 0
         OnClick = SendMailCheckBoxClick
+      end
+      object DefCharsetEdit: TEdit
+        Left = 113
+        Top = 76
+        Width = 80
+        Height = 24
+        Hint = 'Character set specified for locally generated e-mail messages'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 7
       end
     end
     object RelayTabSheet: TTabSheet
