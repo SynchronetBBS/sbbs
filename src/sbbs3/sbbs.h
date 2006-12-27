@@ -942,6 +942,9 @@ extern "C" {
 		 JSTYPE_ARRAY=JSTYPE_LIMIT
 		,JSTYPE_ALIAS
 		,JSTYPE_UNDEF
+#if !defined(JSTYPE_NULL)	/* JSTYPE_NULL was removed after 1.5 rc 6a (?) */
+		,JSTYPE_NULL
+#endif
 	};
 
 	#ifdef BUILD_JSDOCS	/* String compiled into debug build only, for JS documentation generation */
