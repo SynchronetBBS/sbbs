@@ -85,7 +85,7 @@ function document_methods(name,obj)
 
 		write("<tr valign=top>");
 
-		if(obj==_global)
+		if(obj==js.global)
 			func=obj._method_list[method].name;
 		else
 			func=name + '.' + obj._method_list[method].name;
@@ -254,7 +254,7 @@ f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
-		 ,system.full_version,system.compiled_when);
+		 ,system.full_version.replace(/ Debug/,""),system.compiled_when);
 f.writeln("<br><font size=-1>");
 if(min_ver)
 	f.writeln("Includes Properties and Methods added or substantially modified in Synchronet v" + verstr(min_ver) + " only.");
@@ -265,10 +265,10 @@ f.writeln("</font>");
 
 f.writeln("<ol type=square>");
 
-object_header("global"		,_global);
+object_header("global"		,js.global);
 f.writeln("<ul>");
-document_methods("global"	,_global);
-properties_header("global"	,_global);
+document_methods("global"	,js.global);
+properties_header("global"	,js.global);
 writeln("<tr><td>" + "argc".bold() + "<td>number<td>number of arguments passed to the script</td>");
 writeln("<tr><td>" + "argv".bold() + "<td>array<td>array of argument strings (argv.length == argc)</td>");
 writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</td>");
@@ -290,6 +290,7 @@ document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "
 document_object("File"		,new File(system.devnull), "class");
 document_object("Queue"		,new Queue(), "class");
 sock=new Socket();
+sock.close();
 sock.descriptor=client.socket.descriptor;
 document_object("Socket"	,sock, "class");
 
