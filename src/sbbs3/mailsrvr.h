@@ -85,6 +85,7 @@ typedef struct {
 	char	inbound_sound[128];
 	char	outbound_sound[128];
     char	pop3_sound[128];
+	char	default_charset[128];
 
 	/* Misc */
     char	host_name[128];

@@ -478,6 +478,9 @@ void sbbs_read_ini(
 		SAFECOPY(mail->default_user
 			,iniGetString(list,section,"DefaultUser",nulstr,value));
 
+		SAFECOPY(mail->default_charset
+			,iniGetString(list,section,"DefaultCharset",nulstr,value));
+
 		SAFECOPY(mail->dnsbl_hdr
 			,iniGetString(list,section,"DNSBlacklistHeader","X-DNSBL",value));
 		SAFECOPY(mail->dnsbl_tag
