@@ -37,9 +37,7 @@
 
 #include "sbbs.h"
 
-#if FALSE	/* v3.14a-Win32 build crashing on context-private properties (e.g. js.gc_counter) */
 #include <jscntxt.h>	/* Needed for Context-private data structure */
-#endif
 
 enum {
 	 PROP_VERSION
