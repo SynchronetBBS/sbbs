@@ -329,7 +329,7 @@ static char* con_prop_desc[] = {
 		"the first character, the value will be replaced by one constructed "
 		"from the string. A + indicates that characters following will be "
 		"added to the set, and a - indicates they should be removed. "
-		"ex: <tt>console.ctrlkey_passthru="-UP+AB"</tt> will clear CTRL-U and "
+		"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
 		"CTRL-P and set CTRL-A and CTRL-B."
 	,"number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
 	,"number of bytes available in the input buffer	- <small>READ ONLY</small>"
