@@ -516,7 +516,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
         }
     }
 	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && content_type==NULL && startup->default_charset!=NULL) {
+	if(msg->from_net.type!=NET_INTERNET && content_type==NULL && startup->default_charset[0]) {
 		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
 		sockprintf(socket,"Content-Type: text/plain; charset=%s", startup->default_charset);
 		sockprintf(socket,"Content-Transfer-Encoding: 8bit");
