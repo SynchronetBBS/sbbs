@@ -4564,12 +4564,12 @@ void DLLCALL web_terminate(void)
 
 static void cleanup(int code)
 {
-	free_cfg(&scfg);
-
 	while(session_threads) {
 		lprintf(LOG_INFO,"#### Web Server waiting on %d active session threads",session_threads);
 		SLEEP(1000);
 	}
+	free_cfg(&scfg);
+
 	listFree(&log_list);
 
 	mime_types=iniFreeNamedStringList(mime_types);
