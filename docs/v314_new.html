@@ -17,7 +17,13 @@
 		Telnet sessions
 		<br>
 		Automatically reads a <tt>[tcp]</tt> or <tt>[udp]</tt> section, if it exists (based on the socket type)
-			
+	<li>Replaced the "log mask" concept with a much simpler "log level" concept:<br>
+	instead of a bit-mask representing all the log levels to actually "see", we use a
+	single numeric (or nmemonic) level value (e.g. ERROR, WARNING, NOTICE, etc.)
+	and less severe log levels (levels with a higher numeric value) will be filtered
+	(e.g. not "seen" or logged)<br>
+	<tt>LogMask</tt> values in your <tt>ctrl/sbbs.ini</tt> file are no longer used (replaced with
+	<tt>LogLevel</tt>)
 	<li>Bug-fixes in ARS compilation:<ul>
 		<li>Wasn't accounting for correct lengths of keywords: <i>WIN32, UNIX, LINUX,</i> and <i>PROT</i>
 		<li>Didn't support >8 char internal codes in <i>SUBCODE</i> and <i>DIRCODE</i> values
@@ -30,6 +36,9 @@
 		These ARS keywords were previously only supported in the Telnet/RLogin server
 	</ul><br>
 <li><b>Web Server</b><ul>
+	<li>Default web root dir is now <tt>../web/root</tt> (changed from <tt>../web/html</tt>)<br>
+		You'll probably want to update the <tt>RootDirectory</tt> value in the <tt>[web]</tt>
+		section of your <tt>ctrl/sbbs.ini</tt> file to reflect this
 	<li>Support new <tt>webctrl.ini</tt> files (optional access control and configuration files sprinkled through-out the <tt>web/root</tt> hierarchy)<br>
 		This allows overriding server settings on a per-directory or per-filespec basis.<br>
 		Allowed keys are:<ul>
@@ -49,7 +58,7 @@
 		This output buffering is controlled with the <tt>OutbufHighwaterMark</tt> and <tt>OutbufDrainTimeout</tt>
 		values in the <tt>[web]</tt> section of the <tt>ctrl/sbbs.ini</tt> file
 	<li>Added support for <i>range</i> requests (e.g. for streaming podcasts)
-	<li>Default web root dir is now <tt>../web/root</tt> (changed from <tt>../web/html</tt>)
+	<li>Added cookie support (for server-side JS)
 	<li>Bug-fix: Win32-CGI race condition<br>
 		where the <i>exec_cgi()</i> loop could
 		(sometimes) detect that the CGI process had terminated, before reading all
@@ -133,11 +142,30 @@
 		(used in <i>Extractable File Type</i> command-lines)
 	</ul><br>
 <li><b>Telnet/RLogin Server</b><ul>
+	<li>Daily maintenance event
+		(resets statistics, deletes logon.lst, backs-up data, expires/purges old users and e-mail)
+		<br>
+		will now run in the event thread, if it's running
+		<br>
+		Solves the problem of statistics and other data not being correctly maintained
+		if no one logs on (via Telnet or RLogin) for an entire day
+	<li>External message editors now always use a DOS-compatible (8.3 format) file in the node's
+		<tt>temp</tt> directory which solves two problems:
+		<ol>
+		<li>editors restricted to the temp dir (e.g. PICO) can now be used to edit files in other
+			directories (e.g. <tt>data/user/*.sig</tt> files)
+		<li>DOS editors can now be used to edit files with long filenames 
+			(e.g. <tt>data/user/*.plan</tt> files)
+		</ol>
 	<li>When reading messages and updating existing message header and index records,
 	always lock the entire message base - preventing corruption
 	<li>When replying to a message, if the posting user was the author of the original message, 
 		use the original message's recipient as the recipient of the new reply message as well
 		(no need to post "to" yourself)
+	<li>When replying to an Internet e-mail which includes a REPLY-TO header field,
+		send the reply to the reply-to address (by default) instead of the FROM
+		address
+	<li>Bug-fix: potential buffer over-runs in the expansion of some @-codes
 	<li>Bug-fix: uninitialized pointer dereference in temporary file section
 	<li>Bug-fix: split-screen chat corruption
 	<li>Bug-fix: do not adjust for daylight savings time when generating QWK and Fido date/time stamps<br>
@@ -210,6 +238,7 @@
 	<li>Added support for random logon screens (<tt>text/menu/random*.*</tt>) in <tt>exec/logon.js</tt>
 	<li>Added <i>"E-mail Forgotten Password"</i> feature in <tt>exec/login.js</tt><br>
 		Set <tt>email_passwords=false</tt> to disable
+	<li>Skip Win32 hidden and system files when bulk-uploading
 	<li>Use Deuce's xp_printf module for Baja/PCMS printf/sprintf/fprintf functions:<ul>
 		<li>eliminates segfaults/AVs on incorrect usage
 		<li>auto-converts arguments to correct format type
@@ -484,6 +513,7 @@
 	<li>Bug-fix: Specifically call <i>msgbase.close()</i><br>
 		fixes reported problem with
 		<i>fdopen()</i> failure opening massive number of newsgroups (e.g. >170 total)
+	<li>Better support for "folded" header fields (e.g. subject)
 	</ul><br>
 <li><b>Finger Service</b><ul>
 	<li>Add support for <tt>.plan</tt> files<br>
@@ -513,6 +543,7 @@
 	<li>Added support for wildcard matching for RFC 2980 commands that support
 		<i>[wildmat]</i> arguments<br>only * and ?, not complete WILDMAT pattern syntax
 	<li>Bug-fix: support passwords with spaces in them
+	<li>Better support for "folded" header fields (e.g. subject)
 	</ul><br>
 <li><b>IRC Daemon</b><ul>
 	<li>Lots of bug-fixes and enhancements by Cyan
