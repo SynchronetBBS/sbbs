@@ -48,6 +48,7 @@
 		output, and prevent gobs 'o errors<br>
 		This output buffering is controlled with the <tt>OutbufHighwaterMark</tt> and <tt>OutbufDrainTimeout</tt>
 		values in the <tt>[web]</tt> section of the <tt>ctrl/sbbs.ini</tt> file
+	<li>Added support for <i>range</i> requests (e.g. for streaming podcasts)
 	<li>Default web root dir is now <tt>../web/root</tt> (changed from <tt>../web/html</tt>)
 	<li>Bug-fix: Win32-CGI race condition<br>
 		where the <i>exec_cgi()</i> loop could
@@ -63,8 +64,8 @@
 	<li>Don't drain STDIO until script is terminated
 	<li>Do not send <tt>Content-length</tt> header for CGI scripts.
 	<li>Properly handle partial writes of CGI output using <i>sock_sendbuf()</i>
-	<li>Support FreeBSDs <i>accf_http(9)</i> kerm option/module designed specifically for
-		HTTP server optimizations.
+	<li>Support FreeBSDs <i>accf_http(9)</i> kernal option/module designed specifically for
+		HTTP server optimizations
 	</ul><br>
 <li><b>Mail Server</b><ul>
 	<li>New feature to solve a common sysop misconfiguration issue:<br>
@@ -96,7 +97,26 @@
 	<li>Enhancement: only perform MX-record lookup if no port number specified in destination domain
 		portion of recipient e-mail address
 	<li>Enhancement: don't attempt to send to MX servers with an IP address of <i>0.0.0.0</i>
+	<li>Enhancement: The default charset for sent SMTP messages is now configurable, if blank
+		(in <tt>sbbs.ini</tt> [mail] DefaultCharset), then not used
+	<li>Enhancement: apply <tt>twitlist.cfg</tt> to SMTP-received mail, checking both the sender's name and
+		e-mail address
+	<li>Enhancement: don't apply subject filter to messages from authenticated users
+	<li>Enhancement: don't send notification telegram for mail received from DNSBL-listed servers
+	<li>Enhancement: added 'To' header field checking against <tt>email.can</tt> file
+	<li>Bug-fix: 'From' header field checking against <tt>email.can</tt> file wasn't working
+		(would still accept the message)
 	<li>Bug-fix: memory leak when parsing <tt>ctrl/mailproc.ini</tt>, caught by valgrind
+	<li>Do not allow receipt of mail for built-in sysop pseudonyms (i.e. "sysop" and
+		"postmaster") unless the ALLOW_SYSOP_ALIASES option is enabled
+		(disabled by default) or the alias is specifically listed in the <tt>ctrl/alias.cfg</tt>
+		file
+	<li>The 'target' field in the <tt>ctrl/alias.cfg</tt> file no longer supports the built-in sysop pseudonyms 
+		(i.e. "sysop" and "postmaster"), use user number (e.g. 1) instead
+	<li>If the <tt>ctrl/alias.cfg</tt> file correlates a user *number* with an alias, support
+		receipt of mail to that alias even if the RX_BY_NUMBER option is not enabled
+		This allows us to use '1' instead of 'sysop' in the default <tt>alias.cfg</tt> file
+
 	</ul><br>
 <li><b>FTP Server</b><ul>
 	<li>New option: Lookup Passive IP<br>
@@ -597,6 +617,8 @@
 For <b>many</b> more changes since v3.10, see <a href="v311_new.html">v311_new.html</a>,
 <a href="v312_new.html">v312_new.html</a>,
 and <a href="v313_new.html">v313_new.html</a>
+<p>
+For changes to the <b>JavaScript Object Model</b>, see <a href="v314_jsnew.html">v314_jsnew.html</a>
 <p align="right"><font face="Arial" size="1" , "Helvetica">Copyright © 2005 Rob 
 Swindell <br>
 &nbsp;$Id$</font></p>
