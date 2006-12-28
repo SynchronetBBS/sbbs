@@ -1272,7 +1272,7 @@ static const char* usage=
 	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
 	"         -!  to pause after abnormal exit (error)\n"
 	"         -telnet to enable Telnet mode (the default)\n"
-	"         -rlogin to enable RLogin (pass-through) mode\n"
+	"         -rlogin or -ssh to disable Telnet mode\n"
 	"\n"
 	"cmd    = v  to display detailed version information\n"
 	"         sx to send Xmodem     rx to recv Xmodem\n"
@@ -1482,7 +1482,7 @@ int main(int argc, char **argv)
 					telnet=TRUE;
 					continue;
 				}
-				if(stricmp(arg,"rlogin")==0) {
+				if(stricmp(arg,"rlogin")==0 || stricmp(arg,"ssh")==0) {
 					telnet=FALSE;
 					continue;
 				}
