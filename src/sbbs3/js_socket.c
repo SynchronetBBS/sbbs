@@ -1302,7 +1302,7 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[binary=<tt>false</tt>] [,maxlen=<tt>512</tt> or int_size=<tt>4</tt>]")
 	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
-	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>"
+	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i> properties"
 	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
 	,311
 	},

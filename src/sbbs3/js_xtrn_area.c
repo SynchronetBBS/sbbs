@@ -55,7 +55,7 @@ static char* xtrn_prog_prop_desc[] = {
 
 	 "index into prog_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
 	,"program number"
-	,"progarm section index <i>(introduced in v3.12)</i>"
+	,"program section index <i>(introduced in v3.12)</i>"
 	,"program section number"
 	,"program section internal code <i>(introduced in v3.12)</i>"
 	,"internal code"

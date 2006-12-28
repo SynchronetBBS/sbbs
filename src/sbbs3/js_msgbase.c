@@ -1839,8 +1839,15 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		}
 		if(p->smb.subnum<scfg->total_subs) {
 			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
+
+#ifdef BUILD_JSDOCS	
+			/* needed for property description alignment */
 			JS_DefineProperty(cx,cfgobj,"index",JSVAL_VOID
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx,cfgobj,"grp_index",JSVAL_VOID
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+#endif
+
 			js_CreateMsgAreaProperties(cx, scfg, cfgobj, p->smb.subnum);
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx,cfgobj
