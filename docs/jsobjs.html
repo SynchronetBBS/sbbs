@@ -10,7 +10,7 @@
 <body>
 <font face=arial,helvetica>
 <h1>Synchronet JavaScript Object Model Reference</h1>
-Generated for <b>Synchronet v3.13a</b>, compiled Sep  5 2005 17:27
+Generated for <b>Synchronet v3.14a</b>, compiled Dec 27 2006 17:06
 <br><font size=-1>
 Property and Method version numbers (when available) indicate the Synchronet version when the item was added or modified.
 </font>
@@ -130,9 +130,6 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <a href="#bbs.mods"><b>bbs.mods</b></a> object
 <ul>
 </ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href=#bbs_properties>properties</a>
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
@@ -178,13 +175,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
+<a href=#file_area_properties>properties</a>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
 <a href="#file_area.lib"><b>file_area.lib</b></a> object
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href="#file_area.dir"><b>file_area.dir</b></a> object
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href=#file_area_properties>properties</a>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href="#file_area.lib_list"><b>file_area.lib_list</b></a> array
@@ -300,6 +297,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </ol>
 <h2><a name=global>global object</a>
 <br><font size=-1>Top-level functions and properties (common to all servers and services)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>global</tt>
@@ -328,6 +326,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>write</b><td>void<td><tt>write(value [,value])
 <td>3.11
 <td>send one or more values (typically strings) to the server output
+<tr valign=top><td><b>write_raw</b><td>void<td><tt>write_raw(value [,value])
+<td>3.14
+<td>send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output
 <tr valign=top><td><b>writeln</b><td>void<td><tt>writeln(value [,value])
 <td>3.11
 <td>send a line of text to the console or event log with automatic line termination (CRLF), <i>values</i> are typically string constants or variables (AKA print)
@@ -349,22 +350,22 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>load</b><td>undefined<td><tt>load([<i>bool</i> background or <i>object</i> scope,] <i>string</i> filename [,args])
 <td>3.12
 <td>load and execute a JavaScript module (<i>filename</i>), optionally specifying a target <i>scope</i> object (default: <i>this</i>) and a list of arguments to pass to the module (as <i>argv</i>). Returns the result (last executed statement) of the executed script or a newly created <i>Queue</i> object if <i>background</i> is <i>true</i>).<br><br><b>Background</b> (added in v3.12):<br>If <i>background</i> is <i>true</i>, the loaded script runs in the background (in a child thread) but may communicate with the parent script/thread by reading from and/or writing to the <i>parent_queue</i> (an automatically created <i>Queue</i> object). The result (last executed statement) of the executed script (or the optional <i>exit_code</i> passed to the <i>exit()/<i> function) will be automatically written to the <i>parent_queue</i> which may be read later by the parent script (using <i>load_result.read()</i>, for example).
-<tr valign=top><td><b>mswait</b><td>number<td><tt>mswait([number milliseconds])
+<tr valign=top><td><b>mswait</b><td>number<td><tt>mswait([milliseconds=<tt>1</tt>])
 <td>3.13
 <td>millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)
-<tr valign=top><td><b>yield</b><td>void<td><tt>yield([bool forced])
+<tr valign=top><td><b>yield</b><td>void<td><tt>yield([forced=<tt>true</tt>])
 <td>3.11
 <td>release current thread time-slice, a <i>forced</i> yield will yield to all other pending tasks (lowering CPU utilization), a non-<i>forced</i> yield will yield only to pending tasks of equal or higher priority. <i>forced</i> defaults to <i>true</i>
-<tr valign=top><td><b>random</b><td>number<td><tt>random(number max)
+<tr valign=top><td><b>random</b><td>number<td><tt>random(max_number=<tt>100</tt>)
 <td>3.10
-<td>return random integer between 0 and max-1
+<td>return random integer between <tt>0</tt> and <i>max_number</i>-1
 <tr valign=top><td><b>time</b><td>number<td><tt>time()
 <td>3.10
-<td>return current time in Unix (time_t) format (number of seconds since Jan-01-1970)
-<tr valign=top><td><b>beep</b><td>void<td><tt>beep([number freq, duration])
+<td>return current time and date in Unix (time_t) format (number of seconds since Jan-01-1970)
+<tr valign=top><td><b>beep</b><td>void<td><tt>beep([frequency=<tt>500</tt>] [,duration=<tt>500</tt>])
 <td>3.10
 <td>produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)
-<tr valign=top><td><b>sound</b><td>boolean<td><tt>sound([string filename])
+<tr valign=top><td><b>sound</b><td>boolean<td><tt>sound([filename])
 <td>3.10
 <td>play a waveform (.wav) sound file (currently, on Windows platforms only)
 <tr valign=top><td><b>ctrl</b><td>string<td><tt>ctrl(number or string)
@@ -373,142 +374,154 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>ascii</b><td>undefined<td><tt>ascii([string text] or [number value])
 <td>3.10
 <td>convert single character to numeric ASCII value or vice-versa (returns number OR string)
-<tr valign=top><td><b>ascii_str</b><td>string<td><tt>ascii_str(string text)
+<tr valign=top><td><b>ascii_str</b><td>string<td><tt>ascii_str(text)
 <td>3.10
-<td>convert extended-ASCII in string to plain ASCII
-<tr valign=top><td><b>strip_ctrl</b><td>string<td><tt>strip_ctrl(string text)
+<td>convert extended-ASCII in text string to plain ASCII, returns modified string
+<tr valign=top><td><b>strip_ctrl</b><td>string<td><tt>strip_ctrl(text)
 <td>3.10
-<td>strip control characters from string
-<tr valign=top><td><b>strip_exascii</b><td>string<td><tt>strip_exascii(string text)
+<td>strip control characters from string, returns modified string
+<tr valign=top><td><b>strip_exascii</b><td>string<td><tt>strip_exascii(text)
 <td>3.10
-<td>strip extended-ASCII characters from string
-<tr valign=top><td><b>truncsp</b><td>string<td><tt>truncsp(string text)
+<td>strip extended-ASCII characters from string, returns modified string
+<tr valign=top><td><b>truncsp</b><td>string<td><tt>truncsp(text)
 <td>3.10
-<td>truncate (trim) white-space characters off end of string
-<tr valign=top><td><b>truncstr</b><td>string<td><tt>truncstr(string text, charset)
+<td>truncate (trim) white-space characters off end of string, returns modified string
+<tr valign=top><td><b>truncstr</b><td>string<td><tt>truncstr(text, charset)
 <td>3.10
-<td>truncate (trim) string at first char in <i>charset</i>
-<tr valign=top><td><b>lfexpand</b><td>string<td><tt>lfexpand(string text)
+<td>truncate (trim) string at first char in <i>charset</i>, returns modified string
+<tr valign=top><td><b>lfexpand</b><td>string<td><tt>lfexpand(text)
 <td>3.10
-<td>expand line-feeds (LF) to carriage-return/line-feeds (CRLF)
-<tr valign=top><td><b>backslash</b><td>string<td><tt>backslash(string path)
+<td>expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string
+<tr valign=top><td><b>wildmatch</b><td>boolean<td><tt>wildmatch([case_sensitive=<tt>false</tt>,] string [,pattern=<tt>'*'</tt>] [,path=<tt>false</tt>])
+<td>3.14
+<td>returns <tt>true</tt> if the <i>string</i> matches the wildcard <i>pattern</i> (wildcards supported are '*' and '?'), if <i>path</i> is <tt>true</tt>, '*' will not match path delimeter characters (e.g. '/')
+<tr valign=top><td><b>backslash</b><td>string<td><tt>backslash(path)
 <td>3.12
 <td>returns directory path with trailing (platform-specific) path delimeter (i.e. "slash" or "backslash")
-<tr valign=top><td><b>file_getname</b><td>string<td><tt>file_getname(string path)
+<tr valign=top><td><b>file_getname</b><td>string<td><tt>file_getname(path/filename)
 <td>3.11
 <td>returns filename portion of passed path string
-<tr valign=top><td><b>file_getext</b><td>string<td><tt>file_getext(string path)
+<tr valign=top><td><b>file_getext</b><td>string<td><tt>file_getext(path/filename)
 <td>3.11
 <td>returns file extension portion of passed path/filename string (including '.') or <i>undefined</i> if no extension is found
-<tr valign=top><td><b>file_getcase</b><td>string<td><tt>file_getcase(string filename)
+<tr valign=top><td><b>file_getcase</b><td>string<td><tt>file_getcase(path/filename)
 <td>3.11
 <td>returns correct case of filename (long version of filename on Win32) or <i>undefined</i> if the file doesn't exist
-<tr valign=top><td><b>file_cfgname</b><td>string<td><tt>file_cfgname(string path, filename)
+<tr valign=top><td><b>file_cfgname</b><td>string<td><tt>file_cfgname(path, filename)
 <td>3.12
 <td>returns completed configuration filename from supplied <i>path</i> and <i>filename</i>, optionally including the local hostname (e.g. <tt>path/file.<i>host</i>.<i>domain</i>.ext</tt> or <tt>path/file.<i>host</i>.ext</tt>) if such a variation of the filename exists
-<tr valign=top><td><b>file_exists</b><td>boolean<td><tt>file_exists(string filename)
+<tr valign=top><td><b>file_exists</b><td>boolean<td><tt>file_exists(path/filename)
 <td>3.10
 <td>verify a file's existence
-<tr valign=top><td><b>file_remove</b><td>boolean<td><tt>file_remove(string filename)
+<tr valign=top><td><b>file_remove</b><td>boolean<td><tt>file_remove(path/filename)
 <td>3.10
 <td>delete a file
-<tr valign=top><td><b>file_rename</b><td>boolean<td><tt>file_rename(oldname, newname)
+<tr valign=top><td><b>file_removecase</b><td>boolean<td><tt>file_removecase(path/filename)
+<td>3.14
+<td>delete files case insensitively
+<tr valign=top><td><b>file_rename</b><td>boolean<td><tt>file_rename(path/oldname, path/newname)
 <td>3.11
 <td>rename a file, possibly moving it to another directory in the process
-<tr valign=top><td><b>file_copy</b><td>boolean<td><tt>file_copy(source, destination)
+<tr valign=top><td><b>file_copy</b><td>boolean<td><tt>file_copy(path/source, path/destination)
 <td>3.11
 <td>copy a file from one directory or filename to another
-<tr valign=top><td><b>file_backup</b><td>boolean<td><tt>file_backup(string filename [,number level] [,bool rename])
+<tr valign=top><td><b>file_backup</b><td>boolean<td><tt>file_backup(path/filename [,level=<tt>5</tt>] [,rename=<tt>false</tt>])
 <td>3.11
 <td>backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> where <i>number</i> is the backup number 0 through <i>level</i>-1 (default backup <i>level</i> is 5), if <i>rename</i> is <i>true</i>, the original file is renamed instead of copied (default is <i>false</i>)
-<tr valign=top><td><b>file_isdir</b><td>boolean<td><tt>file_isdir(string filename)
+<tr valign=top><td><b>file_isdir</b><td>boolean<td><tt>file_isdir(path/filename)
 <td>3.10
 <td>check if specified <i>filename</i> is a directory
-<tr valign=top><td><b>file_attrib</b><td>number<td><tt>file_attrib(string filename)
+<tr valign=top><td><b>file_attrib</b><td>number<td><tt>file_attrib(path/filename)
 <td>3.10
 <td>get a file's permissions/attributes
-<tr valign=top><td><b>file_date</b><td>number<td><tt>file_date(string filename)
+<tr valign=top><td><b>file_date</b><td>number<td><tt>file_date(path/filename)
 <td>3.10
 <td>get a file's last modified date/time (in time_t format)
-<tr valign=top><td><b>file_size</b><td>number<td><tt>file_size(string filename)
+<tr valign=top><td><b>file_size</b><td>number<td><tt>file_size(path/filename)
 <td>3.10
 <td>get a file's length (in bytes)
-<tr valign=top><td><b>file_utime</b><td>boolean<td><tt>file_utime(string filename [,access_time] [,mod_time])
+<tr valign=top><td><b>file_utime</b><td>boolean<td><tt>file_utime(path/filename [,access_time=<i>current</i>] [,mod_time=<i>current</i>])
 <td>3.11
 <td>change a file's last accessed and modification date/time (in time_t format), or change to current time
-<tr valign=top><td><b>file_touch</b><td>boolean<td><tt>file_touch(string filename)
+<tr valign=top><td><b>file_touch</b><td>boolean<td><tt>file_touch(path/filename)
 <td>3.11
 <td>updates a file's last modification date/time to current time, creating an empty file if it doesn't already exist
-<tr valign=top><td><b>file_mutex</b><td>boolean<td><tt>file_mutex(string filename [,text])
+<tr valign=top><td><b>file_mutex</b><td>boolean<td><tt>file_mutex(path/filename [,text=<i>local_hostname</i>] [,max_age=<tt>0</tt>])
 <td>3.12
-<td>attempts to create an exclusive (e.g. lock) file, optionally with the contents of <i>text</i>
-<tr valign=top><td><b>directory</b><td>array<td><tt>directory(string pattern [,flags])
+<td>attempts to create an mutual-exclusion (e.g. lock) file, optionally with the contents of <i>text</i>. If a non-zero <i>max_age</i> (supported in v3.13b+) is specified and the lock file exists, but is older than this value (in seconds), it is presumed stale and removed/over-written
+<tr valign=top><td><b>file_compare</b><td>boolean<td><tt>file_compare(path/file1, path/file2)
+<td>3.14
+<td>compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise
+<tr valign=top><td><b>directory</b><td>array<td><tt>directory(path/pattern [,flags=<tt>GLOB_MARK</tt>])
 <td>3.10
 <td>returns an array of directory entries, <i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), <i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)
-<tr valign=top><td><b>dir_freespace</b><td>number<td><tt>dir_freespace(string directory [,unit_size])
+<tr valign=top><td><b>dir_freespace</b><td>number<td><tt>dir_freespace(directory [,unit_size=<tt>1</tt>])
 <td>3.11
 <td>returns the amount of available disk space in the specified <i>directory</i> using the specified <i>unit_size</i> in bytes (default: 1), specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.
-<tr valign=top><td><b>socket_select</b><td>array<td><tt>socket_select([array of socket objects or descriptors] [,number timeout] [,bool write])
+<tr valign=top><td><b>disk_size</b><td>number<td><tt>disk_size(directory [,unit_size=<tt>1</tt>])
+<td>3.14
+<td>returns the total disk size of the specified <i>directory</i> using the specified <i>unit_size</i> in bytes (default: 1), specify a <i>unit_size</i> of <tt>1024</tt> to return the total disk size in <i>kilobytes</i>.
+<tr valign=top><td><b>socket_select</b><td>array<td><tt>socket_select([array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>])
 <td>3.11
 <td>checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), default timeout value is 0.0 seconds (immediate timeout), returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing
-<tr valign=top><td><b>mkdir</b><td>boolean<td><tt>mkdir(string directory)
+<tr valign=top><td><b>mkdir</b><td>boolean<td><tt>mkdir(path/directory)
 <td>3.10
 <td>make a directory
-<tr valign=top><td><b>rmdir</b><td>boolean<td><tt>rmdir(string directory)
+<tr valign=top><td><b>rmdir</b><td>boolean<td><tt>rmdir(path/directory)
 <td>3.10
 <td>remove a directory
-<tr valign=top><td><b>strftime</b><td>string<td><tt>strftime(string format [,number time])
+<tr valign=top><td><b>strftime</b><td>string<td><tt>strftime(format [,time=<i>current</i>])
 <td>3.10
 <td>return a formatted time string (ala C strftime)
-<tr valign=top><td><b>format</b><td>string<td><tt>format(string format [,args])
+<tr valign=top><td><b>format</b><td>string<td><tt>format(format [,args])
 <td>3.10
-<td>return a formatted string (ala sprintf) - <small>CAUTION: for experienced C programmers ONLY</small>
-<tr valign=top><td><b>html_encode</b><td>string<td><tt>html_encode(string text [,bool ex_ascii] [,bool white_space] [,bool ansi] [,bool ctrl_a])
+<td>return a formatted string (ala the standard C <tt>sprintf</tt> function)
+<tr valign=top><td><b>html_encode</b><td>string<td><tt>html_encode(text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>] [, state (object)])
 <td>3.11
-<td>return an HTML-encoded text string (using standard HTML character entities), escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default
-<tr valign=top><td><b>html_decode</b><td>string<td><tt>html_decode(string text)
+<td>return an HTML-encoded text string (using standard HTML character entities), escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default.Optionally storing the current ANSI state in <i>state</i> object
+<tr valign=top><td><b>html_decode</b><td>string<td><tt>html_decode(html)
 <td>3.11
 <td>return a decoded HTML-encoded text string
-<tr valign=top><td><b>word_wrap</b><td>string<td><tt>word_wrap(string text [,line_length])
+<tr valign=top><td><b>word_wrap</b><td>string<td><tt>word_wrap(text [,line_length=<tt>79</tt> [, orig_line_length=<tt>79</tt> [, handle_quotes=<tt>true</tt>]]]])
 <td>3.11
-<td>returns a word-wrapped version of the text string argument, <i>line_length</i> defaults to <i>79</i>
-<tr valign=top><td><b>quote_msg</b><td>string<td><tt>quote_msg(string text [,line_length] [,prefix])
+<td>returns a word-wrapped version of the text string argument optionally handing quotes magically, <i>line_length</i> defaults to <i>79</i> <i>orig_line_length</i> defaults to <i>79</i> and <i>handle_quotes</i> defaults to <i>true</i>
+<tr valign=top><td><b>quote_msg</b><td>string<td><tt>quote_msg(text [,line_length=<tt>79</tt>] [,prefix=<tt>" > "</tt>])
 <td>3.11
 <td>returns a quoted version of the message text string argument, <i>line_length</i> defaults to <i>79</i>, <i>prefix</i> defaults to <tt>" > "</tt>
-<tr valign=top><td><b>rot13_translate</b><td>string<td><tt>rot13_translate(string text)
+<tr valign=top><td><b>rot13_translate</b><td>string<td><tt>rot13_translate(text)
 <td>3.11
 <td>returns ROT13-translated version of text string (will encode or decode text)
-<tr valign=top><td><b>base64_encode</b><td>string<td><tt>base64_encode(string text)
+<tr valign=top><td><b>base64_encode</b><td>string<td><tt>base64_encode(text)
 <td>3.11
 <td>returns base64-encoded version of text string or <i>null</i> on error
-<tr valign=top><td><b>base64_decode</b><td>string<td><tt>base64_decode(string text)
+<tr valign=top><td><b>base64_decode</b><td>string<td><tt>base64_decode(text)
 <td>3.11
 <td>returns base64-decoded text string or <i>null</i> on error
-<tr valign=top><td><b>crc16_calc</b><td>number<td><tt>crc16_calc(string text)
+<tr valign=top><td><b>crc16_calc</b><td>number<td><tt>crc16_calc(text)
 <td>3.11
 <td>calculate and return 16-bit CRC of text string
-<tr valign=top><td><b>crc32_calc</b><td>number<td><tt>crc32_calc(string text)
+<tr valign=top><td><b>crc32_calc</b><td>number<td><tt>crc32_calc(text)
 <td>3.11
 <td>calculate and return 32-bit CRC of text string
-<tr valign=top><td><b>chksum_calc</b><td>number<td><tt>chksum_calc(string text)
+<tr valign=top><td><b>chksum_calc</b><td>number<td><tt>chksum_calc(text)
 <td>3.11
 <td>calculate and return 32-bit checksum of text string
-<tr valign=top><td><b>md5_calc</b><td>string<td><tt>md5_calc(string text [,bool hex])
+<tr valign=top><td><b>md5_calc</b><td>string<td><tt>md5_calc(text [,hex=<tt>false</tt>])
 <td>3.11
 <td>calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal
-<tr valign=top><td><b>resolve_ip</b><td>string<td><tt>resolve_ip(string hostname)
+<tr valign=top><td><b>resolve_ip</b><td>string<td><tt>resolve_ip(hostname)
 <td>3.11
 <td>resolve IP address of specified hostname (AKA gethostbyname)
-<tr valign=top><td><b>resolve_host</b><td>string<td><tt>resolve_host(string ip_address)
+<tr valign=top><td><b>resolve_host</b><td>string<td><tt>resolve_host(ip_address)
 <td>3.11
 <td>resolve hostname of specified IP address (AKA gethostbyaddr)
-<tr valign=top><td><b>netaddr_type</b><td>number<td><tt>netaddr_type(string email_address)
+<tr valign=top><td><b>netaddr_type</b><td>number<td><tt>netaddr_type(email_address)
 <td>3.12
 <td>returns the proper message <i>net_type</i> for the specified <i>email_address</i>, (e.g. <tt>NET_INTERNET</tt> for Internet e-mail or <tt>NET_NONE</tt> for local e-mail)
 <tr valign=top><td><b>list_named_queues</b><td>array<td><tt>list_named_queues()
 <td>3.12
 <td>returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)
-<tr valign=top><td><b>flags_str</b><td>undefined<td><tt>flags_str([string text] or [number value])
+<tr valign=top><td><b>flags_str</b><td>undefined<td><tt>flags_str([string] or [number])
 <td>3.13
 <td>convert a string of security flags (letters) into their numeric value or vice-versa (returns number OR string) - (added in v3.13)
 </table>
@@ -549,18 +562,21 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Ver</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>eval</b><td>undefined<td><tt>js.eval(string script)
+<tr valign=top><td><b>eval</b><td>undefined<td><tt>js.eval(script)
 <td>3.11
 <td>evaluate a JavaScript string in its own (secure) context, returning the result
-<tr valign=top><td><b>gc</b><td>void<td><tt>js.gc(bool forced)
+<tr valign=top><td><b>gc</b><td>void<td><tt>js.gc(forced=<tt>true</tt>)
 <td>3.11
 <td>perform a garbage collection operation (freeing memory for unused allocated objects), if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, otherwise it is only performed if deemed appropriate by the JavaScript engine
-<tr valign=top><td><b>on_exit</b><td>void<td><tt>js.on_exit(string to_eval)
+<tr valign=top><td><b>on_exit</b><td>void<td><tt>js.on_exit(to_eval)
 <td>3.13
-<td>add a string to evaluate/execute (LIFO) upon script's termination
-<tr valign=top><td><b>report_error</b><td>void<td><tt>js.report_error(error [, bool fatal])
+<td>add a string to evaluate/execute (LIFO stack) upon script's termination
+<tr valign=top><td><b>report_error</b><td>void<td><tt>js.report_error(error [,fatal=<tt>false</tt>])
 <td>3.13
 <td>report an error using the standard JavaScript error reporting mechanism (including script filename and line number), if <i>fatal</i> is <i>true</i>, immediately terminates script
+<tr valign=top><td><b>get_parent</b><td>object<td><tt>js.get_parent(object)
+<td>3.14
+<td>return the parent of the specified object
 </table>
 <br>
 <table border=1 width=100%>
@@ -612,9 +628,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>max_bytes</b><td>number
 <td>3.11
 <td>maximum number of bytes available for heap
+<tr valign=top><td><b>global</b><td>object
+<td>3.14
+<td>global (top level) object - <small>READ ONLY</small>
 </table>
 <h2><a name=system>system object</a>
 <br><font size=-1>Global system-related properties and methods</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>system</tt>
@@ -634,28 +654,28 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>username</b><td>string<td><tt>system.username(number)
 <td>3.11
 <td>returns name of user in specified user record <i>number</i>, or empty string if not found
-<tr valign=top><td><b>alias</b><td>string<td><tt>system.alias(string alias)
+<tr valign=top><td><b>alias</b><td>string<td><tt>system.alias(alias)
 <td>3.10
 <td>returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)
-<tr valign=top><td><b>matchuser</b><td>number<td><tt>system.matchuser(string username [,bool sysop_alias])
+<tr valign=top><td><b>matchuser</b><td>number<td><tt>system.matchuser(username [,sysop_alias=<tt>true</tt>])
 <td>3.10
 <td>exact user name matching, returns number of user whose name/alias matches <i>username</i>  or 0 if not found, matches well-known sysop aliases by default
 <tr valign=top><td><b>matchuserdata</b><td>number<td><tt>system.matchuserdata(field, data [,usernumber])
 <td>3.10
 <td>search user database for data in a specific field (specified by offset), returns first matching user record number, optional <i>usernumber</i> specifies user record to skip
-<tr valign=top><td><b>trashcan</b><td>boolean<td><tt>system.trashcan(string filename, search)
+<tr valign=top><td><b>trashcan</b><td>boolean<td><tt>system.trashcan(path/filename, find_string)
 <td>3.10
 <td>search text/filename.can for pseudo-regexp
-<tr valign=top><td><b>findstr</b><td>boolean<td><tt>system.findstr(string filename, search)
+<tr valign=top><td><b>findstr</b><td>boolean<td><tt>system.findstr(path/filename, find_string)
 <td>3.10
 <td>search any file for pseudo-regexp
-<tr valign=top><td><b>zonestr</b><td>string<td><tt>system.zonestr([timezone])
+<tr valign=top><td><b>zonestr</b><td>string<td><tt>system.zonestr([timezone=<i>local</i>])
 <td>3.10
 <td>convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified
-<tr valign=top><td><b>timestr</b><td>string<td><tt>system.timestr([time])
+<tr valign=top><td><b>timestr</b><td>string<td><tt>system.timestr([time=<i>current</i>])
 <td>3.10
 <td>convert time_t integer into a time string, defaults to current time if <i>time</i> not specified
-<tr valign=top><td><b>datestr</b><td>string<td><tt>system.datestr([time])
+<tr valign=top><td><b>datestr</b><td>string<td><tt>system.datestr([time=<i>current</i>])
 <td>3.10
 <td>convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), defaults to current date if <i>time</i> not specified
 <tr valign=top><td><b>secondstr</b><td>string<td><tt>system.secondstr(seconds)
@@ -670,16 +690,16 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>filter_ip</b><td>boolean<td><tt>system.filter_ip([protocol, reason, host, ip, username])
 <td>3.11
 <td>add an IP address (with comment) to the system's IP filter file
-<tr valign=top><td><b>get_node_message</b><td>string<td><tt>system.get_node_message(number node)
+<tr valign=top><td><b>get_node_message</b><td>string<td><tt>system.get_node_message(node_number)
 <td>3.11
 <td>read any messages waiting for the specified node and return in a single string
-<tr valign=top><td><b>put_node_message</b><td>boolean<td><tt>system.put_node_message(number node, string message)
+<tr valign=top><td><b>put_node_message</b><td>boolean<td><tt>system.put_node_message(node_number, message_text)
 <td>3.10
 <td>send a node a short text message, delivered immediately
-<tr valign=top><td><b>get_telegram</b><td>string<td><tt>system.get_telegram(number user)
+<tr valign=top><td><b>get_telegram</b><td>string<td><tt>system.get_telegram(user_number)
 <td>3.11
 <td>returns any short text messages waiting for the specified user
-<tr valign=top><td><b>put_telegram</b><td>boolean<td><tt>system.put_telegram(number user, string message)
+<tr valign=top><td><b>put_telegram</b><td>boolean<td><tt>system.put_telegram(user_number, message_text)
 <td>3.10
 <td>sends a user a short text message, delivered immediately or during next logon
 <tr valign=top><td><b>new_user</b><td>object<td><tt>system.new_user(name/alias)
@@ -691,7 +711,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>popen</b><td>array<td><tt>system.popen(command-line)
 <td>3.11
 <td>executes a native system/shell command-line, returns array of captured output lines on success (<b>only functional on UNIX systems</b>)
-<tr valign=top><td><b>check_syspass</b><td>boolean<td><tt>system.check_syspass(string password)
+<tr valign=top><td><b>check_syspass</b><td>boolean<td><tt>system.check_syspass(password)
 <td>3.11
 <td>compares the supplied <i>password</i> against the system password and return's <i>true</i> if it matches
 </table>
@@ -862,12 +882,18 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>temp_path</b><td>string
 <td>3.12
 <td>platform-specific temporary file directory
+<tr valign=top><td><b>cmd_shell</b><td>string
+<td>3.14
+<td>platform-specific command processor/shell
 <tr valign=top><td><b>clock_ticks</b><td>number
 <td>3.11
 <td>amount of elapsed processor time in clock 'ticks'
 <tr valign=top><td><b>clock_ticks_per_second</b><td>number
 <td>3.11
 <td>number of clock ticks per second
+<tr valign=top><td><b>timer</b><td>number
+<td>3.14
+<td>high-resolution timer, in seconds (fractional seconds supported)
 <tr valign=top><td><b>local_host_name</b><td>string
 <td>3.11
 <td>private host name that uniquely identifies this system on the local network
@@ -889,6 +915,12 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>version_notice</b><td>string
 <td>N/A
 <td>Synchronet version notice (includes version and platform)
+<tr valign=top><td><b>version_num</b><td>number
+<td>N/A
+<td>Synchronet version number in decimal (e.g. 31301 for v3.13b)
+<tr valign=top><td><b>version_hex</b><td>number
+<td>N/A
+<td>Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)
 <tr valign=top><td><b>platform</b><td>string
 <td>N/A
 <td>platform description (e.g. 'Win32', 'Linux', 'FreeBSD')
@@ -922,6 +954,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=system.stats>system.stats object</a>
 <br><font size=-1>System statistics</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>system.stats</tt>
@@ -990,6 +1023,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=system.node_list>system.node_list array</a>
 <br><font size=-1>BBS node listing</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>system.node_list</tt>
@@ -1031,6 +1065,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=server>server object</a>
 <br><font size=-1>Server-specifc properties</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>server</tt>
@@ -1063,6 +1098,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=client>client object</a>
 <br><font size=-1>Represents a TCP/IP client session</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>client</tt>
@@ -1101,6 +1137,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=user>user object</a>
 <br><font size=-1>Instance of <i>User</i> class, representing current user online</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <p>To create a new user object: <tt>var u = new User(<i>number</i>)</tt></p>
 <table border=1 width=100%>
@@ -1121,6 +1158,24 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>compare_ars</b><td>boolean<td><tt>user.compare_ars(string ars)
 <td>3.10
 <td>Verify user meets access requirements string
+<tr valign=top><td><b>adjust_credits</b><td>boolean<td><tt>user.adjust_credits(count)
+<td>3.14
+<td>Adjust user's credits by <i>count</i> (negative to subtract)
+<tr valign=top><td><b>adjust_minutes</b><td>boolean<td><tt>user.adjust_minutes(count)
+<td>3.14
+<td>Adjust user's extra minutes <i>count</i> (negative to subtract)
+<tr valign=top><td><b>posted_message</b><td>boolean<td><tt>user.posted_message([count])
+<td>3.14
+<td>Adjust user's posted-messages statistics by <i>count</i> (default: 1) (negative to subtract)
+<tr valign=top><td><b>sent_email</b><td>boolean<td><tt>user.sent_email([count] [,bool feedback])
+<td>3.14
+<td>Adjust user's email/feedback-sent statistics by <i>count</i> (default: 1) (negative to subtract)
+<tr valign=top><td><b>uploaded_file</b><td>boolean<td><tt>user.uploaded_file([bytes] [,files])
+<td>3.14
+<td>Adjust user's files/bytes-uploaded statistics
+<tr valign=top><td><b>downloaded_file</b><td>boolean<td><tt>user.downloaded_file([bytes] [,files])
+<td>3.14
+<td>Adjust user's files/bytes-downloaded statistics
 </table>
 <br>
 <table border=1 width=100%>
@@ -1235,9 +1290,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>logontime</b><td>number
 <td>3.10
 <td>logon time (time_t format)
+<tr valign=top><td><b>cached</b><td>boolean
+<td>3.14
+<td>record is currently cached in memory
 </table>
 <h2><a name=user.stats>user.stats object</a>
 <br><font size=-1>User statistics (all <small>READ ONLY</small>)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>user.stats</tt>
@@ -1351,6 +1410,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=user.security>user.security object</a>
 <br><font size=-1>User security settings</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>user.security</tt>
@@ -1410,6 +1470,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=bbs>bbs object</a>
 <br><font size=-1>Controls the Telnet/RLogin BBS experience</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>bbs</tt>
@@ -1426,27 +1487,27 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Ver</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>atcode</b><td>string<td><tt>bbs.atcode(string code)
+<tr valign=top><td><b>atcode</b><td>string<td><tt>bbs.atcode(code_string)
 <td>3.10
 <td>returns @-code value, specified <i>code</i> string does not include @ character delimiters
-<tr valign=top><td><b>text</b><td>string<td><tt>bbs.text(number line)
+<tr valign=top><td><b>text</b><td>string<td><tt>bbs.text(line_number)
 <td>3.10
 <td>returns specified text string from text.dat
-<tr valign=top><td><b>replace_text</b><td>boolean<td><tt>bbs.replace_text(number line, string text)
+<tr valign=top><td><b>replace_text</b><td>boolean<td><tt>bbs.replace_text(line_number, string text)
 <td>3.10
 <td>replaces specified text string in memory
-<tr valign=top><td><b>revert_text</b><td>boolean<td><tt>bbs.revert_text([number line])
+<tr valign=top><td><b>revert_text</b><td>boolean<td><tt>bbs.revert_text([line_number=<i>all</i>])
 <td>3.10
-<td>reverts specified text string to original text string; if <i>line</i> unspecified, reverts all text lines
-<tr valign=top><td><b>load_text</b><td>boolean<td><tt>bbs.load_text(string basefilename)
+<td>reverts specified text string to original text string; if <i>line_number</i> unspecified, reverts all text lines
+<tr valign=top><td><b>load_text</b><td>boolean<td><tt>bbs.load_text(base_filename)
 <td>3.10
 <td>load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename
 <tr valign=top><td><b>newuser</b><td>void<td><tt>bbs.newuser()
 <td>3.10
 <td>interactive new user procedure
-<tr valign=top><td><b>login</b><td>boolean<td><tt>bbs.login(string username, password_prompt)
+<tr valign=top><td><b>login</b><td>boolean<td><tt>bbs.login(user_name, password_prompt)
 <td>3.10
-<td>login with <i>username</i>, displaying <i>password_prompt</i> for password (if required)
+<td>login with <i>user_name</i>, displaying <i>password_prompt</i> for password (if required)
 <tr valign=top><td><b>logon</b><td>boolean<td><tt>bbs.logon()
 <td>3.10
 <td>interactive logon procedure
@@ -1486,9 +1547,15 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>batch_download</b><td>boolean<td><tt>bbs.batch_download()
 <td>3.10
 <td>start a batch download
-<tr valign=top><td><b>batch_add_list</b><td>void<td><tt>bbs.batch_add_list(filename)
+<tr valign=top><td><b>batch_add_list</b><td>void<td><tt>bbs.batch_add_list(list_filename)
 <td>3.10
 <td>add file list to batch download queue
+<tr valign=top><td><b>send_file</b><td>boolean<td><tt>bbs.send_file(filename [,protocol])
+<td>3.14
+<td>send specified filename (complete path) to user via user-prompted (or optionally specified) protocol
+<tr valign=top><td><b>receive_file</b><td>boolean<td><tt>bbs.receive_file(filename [,protocol])
+<td>3.14
+<td>received specified filename (complete path) frome user via user-prompted (or optionally specified) protocol
 <tr valign=top><td><b>temp_xfer</b><td>void<td><tt>bbs.temp_xfer()
 <td>3.10
 <td>enter the temporary file tranfer menu
@@ -1501,10 +1568,10 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>sys_info</b><td>void<td><tt>bbs.sys_info()
 <td>3.10
 <td>display system information
-<tr valign=top><td><b>sub_info</b><td>void<td><tt>bbs.sub_info([subboard])
+<tr valign=top><td><b>sub_info</b><td>void<td><tt>bbs.sub_info([sub-board=<i>current</i>])
 <td>3.10
-<td>display message sub-board information (current <i>subboard</i>, if unspecified)
-<tr valign=top><td><b>dir_info</b><td>void<td><tt>bbs.dir_info([directory])
+<td>display message sub-board information (current <i>sub-board</i>, if unspecified)
+<tr valign=top><td><b>dir_info</b><td>void<td><tt>bbs.dir_info([directory=<i>current</i>])
 <td>3.10
 <td>display file directory information (current <i>directory</i>, if unspecified)
 <tr valign=top><td><b>user_info</b><td>void<td><tt>bbs.user_info()
@@ -1516,13 +1583,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>sys_stats</b><td>void<td><tt>bbs.sys_stats()
 <td>3.10
 <td>display system statistics
-<tr valign=top><td><b>node_stats</b><td>void<td><tt>bbs.node_stats()
+<tr valign=top><td><b>node_stats</b><td>void<td><tt>bbs.node_stats([node_number=<i>current</i>])
 <td>3.10
-<td>display current node statistics
-<tr valign=top><td><b>list_users</b><td>void<td><tt>bbs.list_users()
+<td>display current (or specified) node statistics
+<tr valign=top><td><b>list_users</b><td>void<td><tt>bbs.list_users([mode=<tt>UL_ALL</tt>])
 <td>3.10
-<td>display user list
-<tr valign=top><td><b>edit_user</b><td>void<td><tt>bbs.edit_user()
+<td>display user list(see <tt>UL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> values)
+<tr valign=top><td><b>edit_user</b><td>void<td><tt>bbs.edit_user([user_number=<i>current</i>])
 <td>3.10
 <td>enter the user editor
 <tr valign=top><td><b>change_user</b><td>void<td><tt>bbs.change_user()
@@ -1531,58 +1598,61 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>list_logons</b><td>void<td><tt>bbs.list_logons()
 <td>3.10
 <td>display the logon list
-<tr valign=top><td><b>read_mail</b><td>void<td><tt>bbs.read_mail()
+<tr valign=top><td><b>read_mail</b><td>void<td><tt>bbs.read_mail([which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>])
 <td>3.10
-<td>read private e-mail
-<tr valign=top><td><b>email</b><td>boolean<td><tt>bbs.email(number user [,number mode] [,string top] [,string subject])
+<td>read private e-mail(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values)
+<tr valign=top><td><b>email</b><td>boolean<td><tt>bbs.email(to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>])
 <td>3.10
-<td>send private e-mail or netmail
-<tr valign=top><td><b>netmail</b><td>boolean<td><tt>bbs.netmail(string address [,number mode] [,string subject])
+<td>send private e-mail to a local user
+<tr valign=top><td><b>netmail</b><td>boolean<td><tt>bbs.netmail(address [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>])
 <td>3.10
 <td>send private netmail
 <tr valign=top><td><b>bulk_mail</b><td>void<td><tt>bbs.bulk_mail([ars])
 <td>3.10
-<td>send bulk private e-mail
-<tr valign=top><td><b>upload_file</b><td>boolean<td><tt>bbs.upload_file(directory)
+<td>send bulk private e-mail, if <i>ars</i> not specified, prompt for destination users
+<tr valign=top><td><b>upload_file</b><td>boolean<td><tt>bbs.upload_file([directory=<i>current</i>])
 <td>3.10
 <td>upload file to file directory specified by number or internal code
-<tr valign=top><td><b>bulk_upload</b><td>boolean<td><tt>bbs.bulk_upload(directory)
+<tr valign=top><td><b>bulk_upload</b><td>boolean<td><tt>bbs.bulk_upload([directory=<i>current</i>])
 <td>3.10
 <td>add files (already in local storage path) to file directory specified by number or internal code
-<tr valign=top><td><b>resort_dir</b><td>boolean<td><tt>bbs.resort_dir(directory)
+<tr valign=top><td><b>resort_dir</b><td>boolean<td><tt>bbs.resort_dir([directory=<i>current</i>])
 <td>3.10
 <td>re-sort the file directory specified by number or internal code)
-<tr valign=top><td><b>list_files</b><td>number<td><tt>bbs.list_files(directory [,string filespec] [,number mode])
+<tr valign=top><td><b>list_files</b><td>number<td><tt>bbs.list_files([directory=<i>current</i>] [,filespec=<tt>"*.*"</tt> or search_string] [,mode=<tt>FL_NONE</tt>])
 <td>3.10
-<td>list files in the specified file directory, optionally specifying a file specification (wildcards) and <i>mode</i> (bitfield)
-<tr valign=top><td><b>list_file_info</b><td>number<td><tt>bbs.list_file_info(directory [,string filespec] [,number mode])
+<td>list files in the specified file directory, optionally specifying a file specification (wildcards) or a description search string, and <i>mode</i> (bitfield)
+<tr valign=top><td><b>list_file_info</b><td>number<td><tt>bbs.list_file_info([directory=<i>current</i>] [,filespec=<tt>"*.*"</tt>] [,mode=<tt>FI_INFO</tt>])
 <td>3.10
 <td>list extended file information for files in the specified file directory
-<tr valign=top><td><b>post_msg</b><td>boolean<td><tt>bbs.post_msg(sub-board [,number mode] [,object reply_header])
+<tr valign=top><td><b>post_msg</b><td>boolean<td><tt>bbs.post_msg([sub-board=<i>current</i>] [,mode=<tt>WM_MODE</tt>] [,object reply_header])
 <td>3.13
 <td>post a message in the specified message sub-board (number or internal code) with optinal <i>mode</i> (bitfield)<br>If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header will be used for the in-reply-to header fields (this argument added in v3.13)
-<tr valign=top><td><b>cfg_msg_scan</b><td>void<td><tt>bbs.cfg_msg_scan([number type])
+<tr valign=top><td><b>cfg_msg_scan</b><td>void<td><tt>bbs.cfg_msg_scan([type=<tt>SCAN_CFG_NEW</tt>])
 <td>3.10
 <td>configure message scan (<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)
-<tr valign=top><td><b>cfg_msg_ptrs</b><td>void<td><tt>bbs.cfg_msg_ptrs([number type])
+<tr valign=top><td><b>cfg_msg_ptrs</b><td>void<td><tt>bbs.cfg_msg_ptrs()
 <td>3.10
-<td>change message scan pointer values (<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)
+<td>change message scan pointer values
 <tr valign=top><td><b>reinit_msg_ptrs</b><td>void<td><tt>bbs.reinit_msg_ptrs()
 <td>3.10
 <td>re-initialize new message scan pointers
-<tr valign=top><td><b>scan_subs</b><td>void<td><tt>bbs.scan_subs([number mode, boolean all])
+<tr valign=top><td><b>scan_subs</b><td>void<td><tt>bbs.scan_subs([mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>])
 <td>3.10
 <td>scan sub-boards for messages
-<tr valign=top><td><b>scan_dirs</b><td>void<td><tt>bbs.scan_dirs([number mode, boolean all])
+<tr valign=top><td><b>scan_dirs</b><td>void<td><tt>bbs.scan_dirs([mode=<tt>FL_NONE</tt>] [,all=<tt>false</tt>])
 <td>3.10
 <td>scan directories for files
-<tr valign=top><td><b>scan_posts</b><td>boolean<td><tt>bbs.scan_posts([sub-board, number mode, string find])
+<tr valign=top><td><b>scan_msgs</b><td>boolean<td><tt>bbs.scan_msgs([sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,string find])
 <td>3.10
-<td>scan posts in the specified message sub-board (number or internal code), optionally search for 'find' string
+<td>scan messages in the specified message sub-board (number or internal code), optionally search for 'find' string (AKA scan_posts)
+<tr valign=top><td><b>list_msgs</b><td>number<td><tt>bbs.list_msgs([sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,message_number=<tt>0</tt>] [,string find])
+<td>3.14
+<td>list messages in the specified message sub-board (number or internal code), optionally search for 'find' string, returns number of messages listed
 <tr valign=top><td><b>menu</b><td>void<td><tt>bbs.menu(base_filename)
 <td>3.10
 <td>display a menu file from the text/menu directory
-<tr valign=top><td><b>log_key</b><td>boolean<td><tt>bbs.log_key(key [,boolean comma])
+<tr valign=top><td><b>log_key</b><td>boolean<td><tt>bbs.log_key(key [,comma=<tt>false</tt>])
 <td>3.10
 <td>log key to node.log (comma optional)
 <tr valign=top><td><b>log_str</b><td>boolean<td><tt>bbs.log_str(text)
@@ -1594,27 +1664,27 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>trashcan</b><td>boolean<td><tt>bbs.trashcan(base_filename, search_string)
 <td>3.10
 <td>search file for psuedo-regexp (search string) in trashcan file (text/base_filename.can)
-<tr valign=top><td><b>exec</b><td>number<td><tt>bbs.exec(cmdline [,number mode] [,string startup_dir])
+<tr valign=top><td><b>exec</b><td>number<td><tt>bbs.exec(cmdline [,mode=<tt>EX_NONE</tt>] [,string startup_dir])
 <td>3.10
 <td>execute a program, optionally changing current directory to <i>startup_dir</i> (see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)
 <tr valign=top><td><b>exec_xtrn</b><td>boolean<td><tt>bbs.exec_xtrn(xtrn_number_or_code)
 <td>3.10
-<td>execute external program by internal code
-<tr valign=top><td><b>user_event</b><td>boolean<td><tt>bbs.user_event(number event_type)
+<td>execute external program by number or internal code
+<tr valign=top><td><b>user_event</b><td>boolean<td><tt>bbs.user_event(event_type)
 <td>3.10
 <td>execute user event by event type (see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)
-<tr valign=top><td><b>telnet_gate</b><td>void<td><tt>bbs.telnet_gate(string address [,number mode])
+<tr valign=top><td><b>telnet_gate</b><td>void<td><tt>bbs.telnet_gate(address [,mode=<tt>TG_NONE</tt>])
 <td>3.10
-<td>external telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)
+<td>external telnet/rlogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)
 <tr valign=top><td><b>check_syspass</b><td>boolean<td><tt>bbs.check_syspass()
 <td>3.10
 <td>prompt for and verify system password
-<tr valign=top><td><b>good_password</b><td>string<td><tt>bbs.good_password(string password)
+<tr valign=top><td><b>good_password</b><td>string<td><tt>bbs.good_password(password)
 <td>3.10
 <td>check if requested user password meets minimum password requirements (length, uniqueness, etc.)
 <tr valign=top><td><b>page_sysop</b><td>boolean<td><tt>bbs.page_sysop()
 <td>3.10
-<td>page the sysop for chat
+<td>page the sysop for chat, returns <i>false</i> if the sysop could not be paged
 <tr valign=top><td><b>page_guru</b><td>boolean<td><tt>bbs.page_guru()
 <td>3.10
 <td>page the guru for chat
@@ -1624,19 +1694,19 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>private_message</b><td>void<td><tt>bbs.private_message()
 <td>3.10
 <td>use the private inter-node message prompt
-<tr valign=top><td><b>private_chat</b><td>void<td><tt>bbs.private_chat()
+<tr valign=top><td><b>private_chat</b><td>void<td><tt>bbs.private_chat([local=<i>false</i>])
 <td>3.10
-<td>enter private inter-node chat
+<td>enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)
 <tr valign=top><td><b>get_node_message</b><td>void<td><tt>bbs.get_node_message()
 <td>3.10
 <td>receive and display an inter-node message
-<tr valign=top><td><b>put_node_message</b><td>boolean<td><tt>bbs.put_node_message(number node, string text)
+<tr valign=top><td><b>put_node_message</b><td>boolean<td><tt>bbs.put_node_message(node_number, text)
 <td>3.10
 <td>send an inter-node message
-<tr valign=top><td><b>get_telegram</b><td>void<td><tt>bbs.get_telegram([number usernum])
+<tr valign=top><td><b>get_telegram</b><td>void<td><tt>bbs.get_telegram([user_number=<i>current</i>])
 <td>3.10
-<td>receive and display a telegram
-<tr valign=top><td><b>put_telegram</b><td>boolean<td><tt>bbs.put_telegram(number user, string text)
+<td>receive and display waiting telegrams for specified (or current) user
+<tr valign=top><td><b>put_telegram</b><td>boolean<td><tt>bbs.put_telegram(user_number, text)
 <td>3.10
 <td>send a telegram to a user
 <tr valign=top><td><b>list_nodes</b><td>void<td><tt>bbs.list_nodes()
@@ -1648,15 +1718,15 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>spy</b><td>void<td><tt>bbs.spy(node_number)
 <td>3.10
 <td>spy on a node
-<tr valign=top><td><b>cmdstr</b><td>string<td><tt>bbs.cmdstr(string str [,string fpath] [,string fspec])
+<tr valign=top><td><b>cmdstr</b><td>string<td><tt>bbs.cmdstr(command_string [,string fpath=<tt>""</tt>] [,string fspec=<tt>""</tt>])
 <td>3.10
 <td>return expanded command string using Synchronet command-line specifiers
 <tr valign=top><td><b>get_filespec</b><td>string<td><tt>bbs.get_filespec()
 <td>3.10
 <td>returns a file specification input by the user (optionally with wildcards)
-<tr valign=top><td><b>get_newscantime</b><td>number<td><tt>bbs.get_newscantime(number time)
+<tr valign=top><td><b>get_newscantime</b><td>number<td><tt>bbs.get_newscantime(time=<i>current</i>)
 <td>3.10
-<td>confirm or change newscan time, returns new newscan time value (time_t format)
+<td>confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format)
 <tr valign=top><td><b>select_shell</b><td>boolean<td><tt>bbs.select_shell()
 <td>3.10
 <td>prompt user to select a new command shell
@@ -1686,16 +1756,19 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)
 <tr valign=top><td><b>answer_time</b><td>number
 <td>3.10
-<td>answer time, in time_t format
+<td>answer time, in <i>time_t</i> format
 <tr valign=top><td><b>logon_time</b><td>number
 <td>3.10
-<td>logon time, in time_t format
+<td>logon time, in <i>time_t</i> format
+<tr valign=top><td><b>start_time</b><td>number
+<td>3.14
+<td>time from which user's time left is calculated, in <i>time_t</i> format
 <tr valign=top><td><b>new_file_time</b><td>number
 <td>3.10
-<td>file newscan time, in time_t format
+<td>current file new-scan time, in <i>time_t</i> format
 <tr valign=top><td><b>last_new_file_time</b><td>number
 <td>3.10
-<td>previous newscan time, in time_t format
+<td>previous file new-scan time, in <i>time_t</i> format
 <tr valign=top><td><b>online</b><td>number
 <td>3.10
 <td>online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)
@@ -1704,7 +1777,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>time left (in seconds)
 <tr valign=top><td><b>event_time</b><td>number
 <td>3.11
-<td>time of next exclusive event (in time_t format), or 0 if none
+<td>time of next exclusive event (in <i>time_t</i> format), or 0 if none
 <tr valign=top><td><b>event_code</b><td>string
 <td>3.11
 <td>internal code of next exclusive event
@@ -1762,12 +1835,18 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>cursub</b><td>number
 <td>3.10
 <td>current message sub-board
+<tr valign=top><td><b>cursub_code</b><td>string
+<td>3.14
+<td>current message sub-board internal code
 <tr valign=top><td><b>curlib</b><td>number
 <td>3.10
 <td>current file library
 <tr valign=top><td><b>curdir</b><td>number
 <td>3.10
 <td>current file directory
+<tr valign=top><td><b>curdir_code</b><td>string
+<td>3.14
+<td>current file directory internal code
 <tr valign=top><td><b>connection</b><td>string
 <td>3.10
 <td>remote connection type
@@ -1912,31 +1991,17 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>batch_dnload_total</b><td>number
 <td>3.10
 <td>number of files in batch download queue
+<tr valign=top><td><b>command_str</b><td>string
+<td>3.14
+<td>current command shell/module <i>command string</i> value
 </table>
 <h2><a name=bbs.mods>bbs.mods object</a>
 <br><font size=-1>Global repository for 3rd party modifications</font>
 <font size=-1> - introduced in v3.12</font>
 </h2>
-<br>
-<table border=1 width=100%>
-<caption align=left><b><tt>bbs</tt>
-<a name=bbs_properties> properties</a>
-</b></caption>
-<tr bgcolor=gray>
-<th align=left width=100>
-<font color="white">Name</font>
-<th align=left width=100>
-<font color="white">Type</font>
-<th align=left width=50>
-<font color="white">Ver</font>
-<th align=left>
-<font color="white">Description</font>
-<tr valign=top><td><b>action</b><td>number
-<td>3.10
-<td>system status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)
-</table>
 <h2><a name=console>console object</a>
 <br><font size=-1>Controls the user's Telnet/RLogin terminal</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>console</tt>
@@ -1953,13 +2018,13 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Ver</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>inkey</b><td>string<td><tt>console.inkey([number mode] [,number timeout])
+<tr valign=top><td><b>inkey</b><td>string<td><tt>console.inkey([mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>])
 <td>3.11
 <td>get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait), see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits
-<tr valign=top><td><b>getkey</b><td>string<td><tt>console.getkey([number mode])
+<tr valign=top><td><b>getkey</b><td>string<td><tt>console.getkey([mode=<tt>K_NONE</tt>])
 <td>3.10
 <td>get a single key, with wait, see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits
-<tr valign=top><td><b>getstr</b><td>string<td><tt>console.getstr([string][,maxlen][,mode])
+<tr valign=top><td><b>getstr</b><td>string<td><tt>console.getstr([string] [,maxlen=<tt>128</tt>] [,mode=<tt>K_NONE</tt>])
 <td>3.10
 <td>get a text string from the user, see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits
 <tr valign=top><td><b>getnum</b><td>number<td><tt>console.getnum([maxnum])
@@ -1968,67 +2033,67 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>getkeys</b><td>number<td><tt>console.getkeys(string keys [,maxnum])
 <td>3.10
 <td>get one key from of a list of valid command <i>keys</i>, or a number between 1 and <i>maxnum</i>
-<tr valign=top><td><b>gettemplate</b><td>string<td><tt>console.gettemplate(format [,string] [,mode])
+<tr valign=top><td><b>gettemplate</b><td>string<td><tt>console.gettemplate(format [,string] [,mode=<tt>0</tt>])
 <td>3.10
 <td>get a string based on template
 <tr valign=top><td><b>ungetstr</b><td>void<td><tt>console.ungetstr()
 <td>3.10
 <td>put a string in the keyboard buffer
-<tr valign=top><td><b>yesno</b><td>boolean<td><tt>console.yesno(string question)
+<tr valign=top><td><b>yesno</b><td>boolean<td><tt>console.yesno(question)
 <td>3.10
 <td>YES/no question
-<tr valign=top><td><b>noyes</b><td>boolean<td><tt>console.noyes(string question)
+<tr valign=top><td><b>noyes</b><td>boolean<td><tt>console.noyes(question)
 <td>3.10
 <td>NO/yes question
-<tr valign=top><td><b>mnemonics</b><td>void<td><tt>console.mnemonics(string text)
+<tr valign=top><td><b>mnemonics</b><td>void<td><tt>console.mnemonics(text)
 <td>3.10
-<td>print a mnemonics string
-<tr valign=top><td><b>clear</b><td>void<td><tt>console.clear()
+<td>print a mnemonics string, command keys highlighted with tilde (~) characters
+<tr valign=top><td><b>clear</b><td>void<td><tt>console.clear([attribute])
 <td>3.10
-<td>clear screen and home cursor
+<td>clear screen and home cursor, optionally (in v3.13b+) setting current attribute first
 <tr valign=top><td><b>home</b><td>void<td><tt>console.home()
 <td>3.11
 <td>send cursor to home position (x,y:1,1)
-<tr valign=top><td><b>clearline</b><td>void<td><tt>console.clearline()
+<tr valign=top><td><b>clearline</b><td>void<td><tt>console.clearline([attribute])
 <td>3.10
-<td>clear current line
-<tr valign=top><td><b>cleartoeol</b><td>void<td><tt>console.cleartoeol()
+<td>clear current line, optionally (in v3.13b+) setting current attribute first
+<tr valign=top><td><b>cleartoeol</b><td>void<td><tt>console.cleartoeol([attribute])
 <td>3.11
-<td>clear to end-of-line (ANSI)
+<td>clear to end-of-line (ANSI), optionally (in v3.13b+) setting current attribute first
 <tr valign=top><td><b>crlf</b><td>void<td><tt>console.crlf()
 <td>3.10
 <td>output a carriage-return/line-feed pair (new-line)
 <tr valign=top><td><b>pause</b><td>void<td><tt>console.pause()
 <td>3.10
 <td>display pause prompt and wait for key hit
-<tr valign=top><td><b>beep</b><td>void<td><tt>console.beep([number count])
+<tr valign=top><td><b>beep</b><td>void<td><tt>console.beep([count=<tt>1</tt>])
 <td>3.11
 <td>beep for count number of times (default count is 1)
-<tr valign=top><td><b>print</b><td>void<td><tt>console.print(string text)
+<tr valign=top><td><b>print</b><td>void<td><tt>console.print(text)
 <td>3.10
 <td>display a string (supports Ctrl-A codes)
-<tr valign=top><td><b>write</b><td>void<td><tt>console.write(string text)
+<tr valign=top><td><b>write</b><td>void<td><tt>console.write(text)
 <td>3.10
 <td>display a raw string
-<tr valign=top><td><b>putmsg</b><td>void<td><tt>console.putmsg(string text [,number mode])
+<tr valign=top><td><b>putmsg</b><td>void<td><tt>console.putmsg(text [,mode=<tt>P_NONE</tt>])
 <td>3.10
 <td>display message text (Ctrl-A codes, @-codes, pipe codes, etc), see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits
-<tr valign=top><td><b>center</b><td>void<td><tt>console.center(string text)
+<tr valign=top><td><b>center</b><td>void<td><tt>console.center(text)
 <td>3.10
 <td>display a string centered on the screen
-<tr valign=top><td><b>strlen</b><td>number<td><tt>console.strlen(string text)
+<tr valign=top><td><b>strlen</b><td>number<td><tt>console.strlen(text)
 <td>3.10
 <td>returns the number of characters in text, excluding Ctrl-A codes
-<tr valign=top><td><b>printfile</b><td>void<td><tt>console.printfile(string text [,number mode])
+<tr valign=top><td><b>printfile</b><td>void<td><tt>console.printfile(filename [,mode=<tt>P_NONE</tt>])
 <td>3.10
 <td>print a message text file with optional mode
-<tr valign=top><td><b>printtail</b><td>void<td><tt>console.printtail(string text, number lines [,number mode])
+<tr valign=top><td><b>printtail</b><td>void<td><tt>console.printtail(filename, lines [,mode=<tt>P_NONE</tt>])
 <td>3.10
 <td>print last x lines of file with optional mode
-<tr valign=top><td><b>editfile</b><td>void<td><tt>console.editfile(string filename)
+<tr valign=top><td><b>editfile</b><td>void<td><tt>console.editfile(filename)
 <td>3.10
 <td>edit/create a text file using the user's preferred message editor
-<tr valign=top><td><b>uselect</b><td>number<td><tt>console.uselect([number, string title, string item, string ars])
+<tr valign=top><td><b>uselect</b><td>number<td><tt>console.uselect([number, title, item] [,ars])
 <td>3.12
 <td>user selection menu, call for each item, then with no args to display select menu
 <tr valign=top><td><b>saveline</b><td>void<td><tt>console.saveline()
@@ -2037,45 +2102,48 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>restoreline</b><td>void<td><tt>console.restoreline()
 <td>3.10
 <td>restore last output line
-<tr valign=top><td><b>ansi</b><td>string<td><tt>console.ansi(number attribute)
+<tr valign=top><td><b>ansi</b><td>string<td><tt>console.ansi(attribute_number)
 <td>3.10
-<td>returns ANSI encoding of specified attribute
+<td>returns ANSI encoding of specified <i>attribute_number</i>
 <tr valign=top><td><b>pushxy</b><td>void<td><tt>console.pushxy()
 <td>3.11
 <td>save current cursor position (AKA ansi_save)
 <tr valign=top><td><b>popxy</b><td>void<td><tt>console.popxy()
 <td>3.11
 <td>restore saved cursor position (AKA ansi_restore)
-<tr valign=top><td><b>gotoxy</b><td>void<td><tt>console.gotoxy(number x,y)
+<tr valign=top><td><b>gotoxy</b><td>void<td><tt>console.gotoxy([x,y] or [object { x,y }])
 <td>3.11
-<td>Move cursor to a specific screen coordinate (ANSI), arguments can be separate x and y cooridinates or an object with x and y properites (like that returned from <tt>console.getxy()</tt>)
-<tr valign=top><td><b>up</b><td>void<td><tt>console.up([number rows])
+<td>move cursor to a specific screen coordinate (ANSI), arguments can be separate x and y cooridinates or an object with x and y properites (like that returned from <tt>console.getxy()</tt>)
+<tr valign=top><td><b>up</b><td>void<td><tt>console.up([rows=<tt>1</tt>])
 <td>3.11
-<td>Move cursor up one or more rows (ANSI)
-<tr valign=top><td><b>down</b><td>void<td><tt>console.down([number rows])
+<td>move cursor up one or more rows (ANSI)
+<tr valign=top><td><b>down</b><td>void<td><tt>console.down([rows=<tt>1</tt>])
 <td>3.11
-<td>Move cursor down one or more rows (ANSI)
-<tr valign=top><td><b>right</b><td>void<td><tt>console.right([number columns])
+<td>move cursor down one or more rows (ANSI)
+<tr valign=top><td><b>right</b><td>void<td><tt>console.right([columns=<tt>1</tt>])
 <td>3.11
-<td>Move cursor right one or more columns (ANSI)
-<tr valign=top><td><b>left</b><td>void<td><tt>console.left([number columns])
+<td>move cursor right one or more columns (ANSI)
+<tr valign=top><td><b>left</b><td>void<td><tt>console.left([columns=<tt>1</tt>])
 <td>3.11
-<td>Move cursor left one or more columns (ANSI)
+<td>move cursor left one or more columns (ANSI)
 <tr valign=top><td><b>getlines</b><td>void<td><tt>console.getlines()
 <td>3.11
-<td>Auto-detect the number of rows/lines on the user's terminal (ANSI)
+<td>auto-detect the number of rows/lines on the user's terminal (ANSI)
 <tr valign=top><td><b>getxy</b><td>object<td><tt>console.getxy()
 <td>3.11
-<td>Returns the current cursor position as an object (with x and y properties)
-<tr valign=top><td><b>lock_input</b><td>void<td><tt>console.lock_input([boolean lock])
+<td>returns the current cursor position as an object (with x and y properties)
+<tr valign=top><td><b>lock_input</b><td>void<td><tt>console.lock_input([lock=<tt>true</tt>])
 <td>3.10
-<td>Lock the user input thread (allowing direct client socket access)
-<tr valign=top><td><b>telnet_cmd</b><td>void<td><tt>console.telnet_cmd(number cmd [,number option])
+<td>lock the user input thread (allowing direct client socket access)
+<tr valign=top><td><b>telnet_cmd</b><td>void<td><tt>console.telnet_cmd(command [,option=<tt>0</tt>])
 <td>3.10
-<td>Send telnet command (with optional command option) to remote client
-<tr valign=top><td><b>handle_ctrlkey</b><td>boolean<td><tt>console.handle_ctrlkey(string key [,number mode])
+<td>send Telnet command (with optional command option) to remote client
+<tr valign=top><td><b>handle_ctrlkey</b><td>boolean<td><tt>console.handle_ctrlkey(key [,mode=<tt>K_NONE</tt>])
 <td>3.11
-<td>Call internal control key handler for specified control key, returns true if handled
+<td>call internal control key handler for specified control key, returns <tt>true</tt> if handled
+<tr valign=top><td><b>term_supports</b><td>boolean<td><tt>console.term_supports([terminal_flags])
+<td>3.14
+<td>either returns <i>bool</i>, indicating whether or not the current user/client supports all the specified <i>terminal_flags</i>, or returns the current user/client's <i>terminal_flags</i> (numeric bit-field) if no <i>terminal_flags</i> were specified
 </table>
 <br>
 <table border=1 width=100%>
@@ -2141,7 +2209,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>
 <tr valign=top><td><b>ctrlkey_passthru</b><td>number
 <td>3.10
-<td>control key pass-through bitmask, set bits represent control key combinations <i>not</i> handled by <tt>inkey()</tt> method
+<td>control key pass-through bitmask, set bits represent control key combinations <i>not</i> handled by <tt>inkey()</tt> method This may optionally be specified as a string of characters. The format of this string is [+-][@-_]. If neither plus nor minus is the first character, the value will be replaced by one constructed from the string. A + indicates that characters following will be added to the set, and a - indicates they should be removed. ex: <tt>console.ctrlkey_passthru="-UP+AB"</tt> will clear CTRL-U and CTRL-P and set CTRL-A and CTRL-B.
 <tr valign=top><td><b>input_buffer_level</b><td>number
 <td>3.12
 <td>number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>
@@ -2157,6 +2225,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=msg_area>msg_area object</a>
 <br><font size=-1>Message Areas</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <h2><a name=msg_area.grp>msg_area.grp object</a>
 <br><font size=-1>Associative array of all groups (use name as index)</font>
@@ -2168,6 +2237,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </h2>
 <h2><a name=msg_area.grp_list>msg_area.grp_list array</a>
 <br><font size=-1>Message Groups (current user has access to)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>msg_area.grp_list</tt>
@@ -2193,6 +2263,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=msg_area.grp_list.sub_list>msg_area.grp_list.sub_list array</a>
 <br><font size=-1>Message Sub-boards (current user has access to)</h2>(all properties are <small>READ ONLY</small> except for <i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>msg_area.grp_list.sub_list</tt>
@@ -2270,14 +2341,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=file_area>file_area object</a>
 <br><font size=-1>File Transfer Areas</font>
-</h2>
-<h2><a name=file_area.lib>file_area.lib object</a>
-<br><font size=-1>Associative array of all libraries (use name as index)</font>
-<font size=-1> - introduced in v3.12</font>
-</h2>
-<h2><a name=file_area.dir>file_area.dir object</a>
-<br><font size=-1>Associative array of all directories (use internal code as index)</font>
-<font size=-1> - introduced in v3.11</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>file_area</tt>
@@ -2291,10 +2355,21 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <th align=left>
 <font color="white">Description</font>
 <tr valign=top><td><b>min_diskspace</b><td>number
+<td>minimum amount of available disk space (in bytes) required for user uploads to be allowed
 <tr valign=top><td><b>settings</b><td>number
+<td>file area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details
 </table>
+<h2><a name=file_area.lib>file_area.lib object</a>
+<br><font size=-1>Associative array of all libraries (use name as index)</font>
+<font size=-1> - introduced in v3.12</font>
+</h2>
+<h2><a name=file_area.dir>file_area.dir object</a>
+<br><font size=-1>Associative array of all directories (use internal code as index)</font>
+<font size=-1> - introduced in v3.11</font>
+</h2>
 <h2><a name=file_area.lib_list>file_area.lib_list array</a>
 <br><font size=-1>File Transfer Libraries (current user has access to)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>file_area.lib_list</tt>
@@ -2322,6 +2397,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=file_area.lib_list.dir_list>file_area.lib_list.dir_list array</a>
 <br><font size=-1>File Transfer Directories  (current user has access to)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>file_area.lib_list.dir_list</tt>
@@ -2392,9 +2468,16 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <td>user is exempt from download credit costs
 <tr valign=top><td><b>is_operator</b><td>boolean
 <td>user has operator access to this directory
+<tr valign=top><td><b>is_offline</b><td>boolean
+<td>directory is for offline storage <i>(introduced in v3.14)</i>
+<tr valign=top><td><b>is_upload</b><td>boolean
+<td>directory is for uploads only <i>(introduced in v3.14)</i>
+<tr valign=top><td><b>is_sysop</b><td>boolean
+<td>directory is for uploads to sysop only <i>(introduced in v3.14)</i>
 </table>
 <h2><a name=xtrn_area>xtrn_area object</a>
 <br><font size=-1>External Program Areas</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <h2><a name=xtrn_area.sec>xtrn_area.sec object</a>
 <br><font size=-1>Associative array of all external program sections (use internal code as index)</font>
@@ -2406,6 +2489,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </h2>
 <h2><a name=xtrn_area.sec_list>xtrn_area.sec_list array</a>
 <br><font size=-1>Online Program (door) Sections (current user has access to)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>xtrn_area.sec_list</tt>
@@ -2431,6 +2515,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=xtrn_area.sec_list.prog_list>xtrn_area.sec_list.prog_list array</a>
 <br><font size=-1>Online External Programs (doors) (current user has access to)</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>xtrn_area.sec_list.prog_list</tt>
@@ -2448,7 +2533,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>number</b><td>number
 <td>program number
 <tr valign=top><td><b>sec_index</b><td>number
-<td>progarm section index <i>(introduced in v3.12)</i>
+<td>program section index <i>(introduced in v3.12)</i>
 <tr valign=top><td><b>sec_number</b><td>number
 <td>program section number
 <tr valign=top><td><b>sec_code</b><td>string
@@ -2544,6 +2629,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=MsgBase>MsgBase class</a>
 <br><font size=-1>Class used for accessing message bases</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <p>To create a new MsgBase object: <tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base</p>
 <table border=1 width=100%>
@@ -2567,27 +2653,27 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>close</b><td>boolean<td><tt>MsgBase.close()
 <td>3.10
 <td>close message base (if open)
-<tr valign=top><td><b>get_msg_header</b><td>object<td><tt>MsgBase.get_msg_header([boolean by_offset,] number_or_id [,boolean expand_fields])
+<tr valign=top><td><b>get_msg_header</b><td>object<td><tt>MsgBase.get_msg_header([by_offset=<tt>false</tt>,] number_or_id [,expand_fields=<tt>true</tt>])
 <td>3.12
 <td>returns a specific message header, <i>null</i> on failure. <br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) if you will be re-writing the header later with <i>put_msg_header()</i>
-<tr valign=top><td><b>put_msg_header</b><td>boolean<td><tt>MsgBase.put_msg_header([boolean by_offset,] number, object header)
+<tr valign=top><td><b>put_msg_header</b><td>boolean<td><tt>MsgBase.put_msg_header([by_offset=<tt>false</tt>,] number, object header)
 <td>3.10
 <td>write a message header
-<tr valign=top><td><b>get_msg_body</b><td>string<td><tt>MsgBase.get_msg_body([boolean by_offset,] number_or_id [,boolean strip_ctrl_a] [,boolean rfc822_encoded] [,boolean include_tails])
+<tr valign=top><td><b>get_msg_body</b><td>string<td><tt>MsgBase.get_msg_body([by_offset=<tt>false</tt>,] number_or_id [,strip_ctrl_a=<tt>false</tt>] [,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>])
 <td>3.10
 <td>returns the body text of a specific message, <i>null</i> on failure. The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the returned body text.
-<tr valign=top><td><b>get_msg_tail</b><td>string<td><tt>MsgBase.get_msg_tail([boolean by_offset,] number_or_id [,boolean strip_ctrl_a])
+<tr valign=top><td><b>get_msg_tail</b><td>string<td><tt>MsgBase.get_msg_tail([by_offset=<tt>false</tt>,] number_or_id [,strip_ctrl_a]=<tt>false</tt>)
 <td>3.10
 <td>returns the tail text of a specific message, <i>null</i> on failure
-<tr valign=top><td><b>get_msg_index</b><td>object<td><tt>MsgBase.get_msg_index([boolean by_offset,] number)
+<tr valign=top><td><b>get_msg_index</b><td>object<td><tt>MsgBase.get_msg_index([by_offset=<tt>false</tt>,] number)
 <td>3.11
 <td>returns a specific message index, <i>null</i> on failure. The index object will contain the following properties:<br><table><tr><td align=top><tt>subject</tt><td>CRC-16 of lowercase message subject<tr><td align=top><tt>to</tt><td>CRC-16 of lowercase recipient's name (or user number if e-mail)<tr><td align=top><tt>from</tt><td>CRC-16 of lowercase sender's name (or user number if e-mail)<tr><td align=top><tt>attr</tt><td>Attribute bitfield<tr><td align=top><tt>time</tt><td>Date/time imported (in time_t format)<tr><td align=top><tt>number</tt><td>Message number<tr><td align=top><tt>offset</tt><td>Record number in index file</table>
-<tr valign=top><td><b>remove_msg</b><td>boolean<td><tt>MsgBase.remove_msg([boolean by_offset,] number_or_id)
+<tr valign=top><td><b>remove_msg</b><td>boolean<td><tt>MsgBase.remove_msg([by_offset=<tt>false</tt>,] number_or_id)
 <td>3.11
 <td>mark message for deletion
-<tr valign=top><td><b>save_msg</b><td>boolean<td><tt>MsgBase.save_msg(object header [,client] [,body_text] [,array rcpt_list])
+<tr valign=top><td><b>save_msg</b><td>boolean<td><tt>MsgBase.save_msg(object header [,client=<i>none</i>] [,body_text=<tt>""</tt>] [,array rcpt_list=<i>none</i>])
 <td>3.12
-<td>create a new message in message base, the <i>header</i> object may contain the following properties:<br><table><tr><td align=top><tt>subject</tt><td>Message subject <i>(required)</i><tr><td align=top><tt>to</tt><td>Recipient's name <i>(required)</i><tr><td align=top><tt>to_ext</tt><td>Recipient's user number (for local e-mail)<tr><td align=top><tt>to_org</tt><td>Recipient's organization<tr><td align=top><tt>to_net_type</tt><td>Recipient's network type (default: 0 for local)<tr><td align=top><tt>to_net_addr</tt><td>Recipient's network address<tr><td align=top><tt>to_agent</tt><td>Recipient's agent type<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i><tr><td align=top><tt>from_ext</tt><td>Sender's user number<tr><td align=top><tt>from_org</tt><td>Sender's organization<tr><td align=top><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)<tr><td align=top><tt>from_net_addr</tt><td>Sender's network address<tr><td align=top><tt>from_agent</tt><td>Sender's agent type<tr><td align=top><tt>from_ip_addr</tt><td>Sender's IP address (if available, for security tracking)<tr><td align=top><tt>from_host_name</tt><td>Sender's host name (if available, for security tracking)<tr><td align=top><tt>from_protocol</tt><td>TCP/IP protocol used by sender (if available, for security tracking)<tr><td align=top><tt>from_port</tt><td>TCP/UDP port number used by sender (if available, for security tracking)<tr><td align=top><tt>replyto</tt><td>Replies should be sent to this name<tr><td align=top><tt>replyto_ext</tt><td>Replies should be sent to this user number<tr><td align=top><tt>replyto_org</tt><td>Replies should be sent to organization<tr><td align=top><tt>replyto_net_type</tt><td>Replies should be sent to this network type<tr><td align=top><tt>replyto_net_addr</tt><td>Replies should be sent to this network address<tr><td align=top><tt>replyto_agent</tt><td>Replies should be sent to this agent type<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID<tr><td align=top><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID<tr><td align=top><tt>reverse_path</tt><td>Message's SMTP sender address<tr><td align=top><tt>path</tt><td>Messages's NNTP path<tr><td align=top><tt>newsgroups</tt><td>Message's NNTP newsgroups header<tr><td align=top><tt>ftn_msgid</tt><td>FidoNet FTS-9 Message-ID<tr><td align=top><tt>ftn_reply</tt><td>FidoNet FTS-9 Reply-ID<tr><td align=top><tt>ftn_area</tt><td>FidoNet FTS-4 echomail AREA tag<tr><td align=top><tt>ftn_flags</tt><td>FidoNet FSC-53 FLAGS<tr><td align=top><tt>ftn_pid</tt><td>FidoNet FSC-46 Program Identifier<tr><td align=top><tt>ftn_tid</tt><td>FidoNet FSC-46 Tosser Identifier<tr><td align=top><tt>date</tt><td>RFC-822 formatted date/time<tr><td align=top><tt>attr</tt><td>Attribute bitfield<tr><td align=top><tt>auxattr</tt><td>Auxillary attribute bitfield<tr><td align=top><tt>netattr</tt><td>Network attribute bitfield<tr><td align=top><tt>when_written_time</tt><td>Date/time (in time_t format)<tr><td align=top><tt>when_written_zone</tt><td>Time zone<tr><td align=top><tt>when_imported_time</tt><td>Date/time message was imported<tr><td align=top><tt>when_imported_zone</tt><td>Time zone<tr><td align=top><tt>thread_back</tt><td>Message number that this message is a reply to<tr><td align=top><tt>thread_next</tt><td>Message number of the next reply to the original message in this thread<tr><td align=top><tt>thread_first</tt><td>Message number of the first reply to this message<tr><td align=top><tt>field_list[].type</tt><td>Other SMB header fields (type)<tr><td align=top><tt>field_list[].data</tt><td>Other SMB header fields (data)</table><br><i>New in v3.12:</i> The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the security log header fields (e.g. sender IP address, hostname, protocol, and port). <br><br><i>New in v3.12:</i> The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties (described above): <br><i>to</i>, <i>to_ext</i>, <i>to_org</i>, <i>to_net_type</i>, <i>to_net_addr</i>, and <i>to_agent</i>
+<td>create a new message in message base, the <i>header</i> object may contain the following properties:<br><table><tr><td align=top><tt>subject</tt><td>Message subject <i>(required)</i><tr><td align=top><tt>to</tt><td>Recipient's name <i>(required)</i><tr><td align=top><tt>to_ext</tt><td>Recipient's user number (for local e-mail)<tr><td align=top><tt>to_org</tt><td>Recipient's organization<tr><td align=top><tt>to_net_type</tt><td>Recipient's network type (default: 0 for local)<tr><td align=top><tt>to_net_addr</tt><td>Recipient's network address<tr><td align=top><tt>to_agent</tt><td>Recipient's agent type<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i><tr><td align=top><tt>from_ext</tt><td>Sender's user number<tr><td align=top><tt>from_org</tt><td>Sender's organization<tr><td align=top><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)<tr><td align=top><tt>from_net_addr</tt><td>Sender's network address<tr><td align=top><tt>from_agent</tt><td>Sender's agent type<tr><td align=top><tt>from_ip_addr</tt><td>Sender's IP address (if available, for security tracking)<tr><td align=top><tt>from_host_name</tt><td>Sender's host name (if available, for security tracking)<tr><td align=top><tt>from_protocol</tt><td>TCP/IP protocol used by sender (if available, for security tracking)<tr><td align=top><tt>from_port</tt><td>TCP/UDP port number used by sender (if available, for security tracking)<tr><td align=top><tt>replyto</tt><td>Replies should be sent to this name<tr><td align=top><tt>replyto_ext</tt><td>Replies should be sent to this user number<tr><td align=top><tt>replyto_org</tt><td>Replies should be sent to organization<tr><td align=top><tt>replyto_net_type</tt><td>Replies should be sent to this network type<tr><td align=top><tt>replyto_net_addr</tt><td>Replies should be sent to this network address<tr><td align=top><tt>replyto_agent</tt><td>Replies should be sent to this agent type<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID<tr><td align=top><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID<tr><td align=top><tt>reverse_path</tt><td>Message's SMTP sender address<tr><td align=top><tt>forward_path</tt><td>Argument to SMTP 'RCPT TO' command<tr><td align=top><tt>path</tt><td>Messages's NNTP path<tr><td align=top><tt>newsgroups</tt><td>Message's NNTP newsgroups header<tr><td align=top><tt>ftn_msgid</tt><td>FidoNet FTS-9 Message-ID<tr><td align=top><tt>ftn_reply</tt><td>FidoNet FTS-9 Reply-ID<tr><td align=top><tt>ftn_area</tt><td>FidoNet FTS-4 echomail AREA tag<tr><td align=top><tt>ftn_flags</tt><td>FidoNet FSC-53 FLAGS<tr><td align=top><tt>ftn_pid</tt><td>FidoNet FSC-46 Program Identifier<tr><td align=top><tt>ftn_tid</tt><td>FidoNet FSC-46 Tosser Identifier<tr><td align=top><tt>date</tt><td>RFC-822 formatted date/time<tr><td align=top><tt>attr</tt><td>Attribute bitfield<tr><td align=top><tt>auxattr</tt><td>Auxillary attribute bitfield<tr><td align=top><tt>netattr</tt><td>Network attribute bitfield<tr><td align=top><tt>when_written_time</tt><td>Date/time (in time_t format)<tr><td align=top><tt>when_written_zone</tt><td>Time zone<tr><td align=top><tt>when_imported_time</tt><td>Date/time message was imported<tr><td align=top><tt>when_imported_zone</tt><td>Time zone<tr><td align=top><tt>thread_back</tt><td>Message number that this message is a reply to<tr><td align=top><tt>thread_next</tt><td>Message number of the next reply to the original message in this thread<tr><td align=top><tt>thread_first</tt><td>Message number of the first reply to this message<tr><td align=top><tt>field_list[].type</tt><td>Other SMB header fields (type)<tr><td align=top><tt>field_list[].data</tt><td>Other SMB header fields (data)</table><br><i>New in v3.12:</i> The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the security log header fields (e.g. sender IP address, hostname, protocol, and port). <br><br><i>New in v3.12:</i> The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties (described above): <br><i>to</i>, <i>to_ext</i>, <i>to_org</i>, <i>to_net_type</i>, <i>to_net_addr</i>, and <i>to_agent</i>
 </table>
 <br>
 <table border=1 width=100%>
@@ -2648,6 +2734,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=MsgBase.cfg>MsgBase.cfg object</a>
 <br><font size=-1>Configuration parameters for this message area (<i>sub-boards only</i>) - <small>READ ONLY</small></font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>MsgBase.cfg</tt>
@@ -2662,53 +2749,56 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Description</font>
 <tr valign=top><td><b>index</b><td>undefined
 <td>index into sub_list array (or -1 if not in array) <i>(introduced in v3.12)</i>
-<tr valign=top><td><b>number</b><td>number
+<tr valign=top><td><b>grp_index</b><td>undefined
 <td>group's index into grp_list array <i>(introduced in v3.12)</i>
-<tr valign=top><td><b>grp_number</b><td>number
+<tr valign=top><td><b>number</b><td>number
 <td>unique number for this sub-board
-<tr valign=top><td><b>grp_name</b><td>string
+<tr valign=top><td><b>grp_number</b><td>number
 <td>group number
-<tr valign=top><td><b>code</b><td>string
+<tr valign=top><td><b>grp_name</b><td>string
 <td>group name <i>(introduced in v3.12)</i>
-<tr valign=top><td><b>name</b><td>string
+<tr valign=top><td><b>code</b><td>string
 <td>sub-board internal code
-<tr valign=top><td><b>description</b><td>string
+<tr valign=top><td><b>name</b><td>string
 <td>sub-board name
-<tr valign=top><td><b>qwk_name</b><td>string
+<tr valign=top><td><b>description</b><td>string
 <td>sub-board description
-<tr valign=top><td><b>newsgroup</b><td>string
+<tr valign=top><td><b>qwk_name</b><td>string
 <td>sub-board QWK name
-<tr valign=top><td><b>ars</b><td>string
+<tr valign=top><td><b>newsgroup</b><td>string
 <td>newsgroup name (as configured or dymamically generated)
-<tr valign=top><td><b>read_ars</b><td>string
+<tr valign=top><td><b>ars</b><td>string
 <td>sub-board access requirements
-<tr valign=top><td><b>post_ars</b><td>string
+<tr valign=top><td><b>read_ars</b><td>string
 <td>sub-board reading requirements
-<tr valign=top><td><b>operator_ars</b><td>string
+<tr valign=top><td><b>post_ars</b><td>string
 <td>sub-board posting requirements
-<tr valign=top><td><b>moderated_ars</b><td>string
+<tr valign=top><td><b>operator_ars</b><td>string
 <td>sub-board operator requirements
-<tr valign=top><td><b>data_dir</b><td>string
+<tr valign=top><td><b>moderated_ars</b><td>string
 <td>sub-board moderated-user requirements (if non-blank)
-<tr valign=top><td><b>fidonet_origin</b><td>string
+<tr valign=top><td><b>data_dir</b><td>string
 <td>sub-board data storage location
-<tr valign=top><td><b>qwknet_tagline</b><td>string
+<tr valign=top><td><b>fidonet_origin</b><td>string
 <td>FidoNet origin line
-<tr valign=top><td><b>settings</b><td>number
+<tr valign=top><td><b>qwknet_tagline</b><td>string
 <td>QWK Network tagline
-<tr valign=top><td><b>ptridx</b><td>number
+<tr valign=top><td><b>settings</b><td>number
 <td>toggle options (bitfield)
-<tr valign=top><td><b>qwk_conf</b><td>number
+<tr valign=top><td><b>ptridx</b><td>number
 <td>index into message scan configuration/pointer file
-<tr valign=top><td><b>max_crcs</b><td>number
+<tr valign=top><td><b>qwk_conf</b><td>number
 <td>QWK conference number
-<tr valign=top><td><b>max_msgs</b><td>number
+<tr valign=top><td><b>max_crcs</b><td>number
 <td>configured maximum number of message CRCs to store (for dupe checking)
-<tr valign=top><td><b>max_age</b><td>number
+<tr valign=top><td><b>max_msgs</b><td>number
 <td>configured maximum number of messages before purging
+<tr valign=top><td><b>max_age</b><td>number
+<td>configured maximum age (in days) of messages before expiration
 </table>
 <h2><a name=File>File class</a>
 <br><font size=-1>Class used for opening, creating, reading, or writing files on the local file system<p>Special features include:</h2><ol type=disc><li>Exclusive-access files (default) or shared files<ol type=circle><li>optional record-locking<li>buffered or non-buffered I/O</ol><li>Support for binary files<ol type=circle><li>native or network byte order (endian)<li>automatic Unix-to-Unix (<i>UUE</i>), yEncode (<i>yEnc</i>) or Base64 encoding/decoding</ol><li>Support for ASCII text files<ol type=circle><li>supports line-based I/O<ol type=square><li>entire file may be read or written as an array of strings<li>individual lines may be read or written one line at a time</ol><li>supports fixed-length records<ol type=square><li>optional end-of-text (<i>etx</i>) character for automatic record padding/termination<li>Synchronet <tt>.dat</tt> files use an <i>etx</i> value of 3 (Ctrl-C)</ol><li>supports <tt>.ini</tt> formated configuration files<ol type=square><li>concept and support of <i>root</i> ini sections added in v3.12</ol><li>optional ROT13 encoding/translation</ol><li>Dynamically-calculated industry standard checksums (e.g. CRC-16, CRC-32, MD5)</ol></font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
 <p>To create a new File object: <tt>var f = new File(<i>filename</i>)</tt></p>
 <table border=1 width=100%>
@@ -2726,9 +2816,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Ver</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>open</b><td>boolean<td><tt>File.open([string mode, boolean shareable, number buflen])
+<tr valign=top><td><b>open</b><td>boolean<td><tt>File.open([mode=<tt>"w+"</tt>] [,shareable=<tt>false</tt>] [,buffer_length])
 <td>3.10
-<td>open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br><tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br><tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br><tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br><tt>r+</tt> open for both reading and writing (the file must exist)<br><tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br><tt>a+</tt> open for reading and appending<br><tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br><tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br><br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, the file must be opened for both reading and writing.<br><br><b>Note:</b> To open an existing or create a new file for both reading and writing, use the <i>file_exists</i> function like so:<br><tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>
+<td>open file, <i>shareable</i> defaults to <i>false</i>, <i>buffer_length</i> defaults to 2048 bytes, mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br><tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br><tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br><tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br><tt>r+</tt> open for both reading and writing (the file must exist)<br><tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br><tt>a+</tt> open for reading and appending<br><tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br><tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access <i>(introduced in v3.12)</i><br><br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, the file must be opened for both reading and writing.<br><br><b>Note:</b> To open an existing or create a new file for both reading and writing, use the <i>file_exists</i> function like so:<br><tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>
 <tr valign=top><td><b>close</b><td>void<td><tt>File.close()
 <td>3.10
 <td>close file
@@ -2744,63 +2834,72 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>rewind</b><td>boolean<td><tt>File.rewind()
 <td>3.11
 <td>repositions the file pointer (<i>position</i>) to the beginning of a file and clears error and end-of-file indicators
-<tr valign=top><td><b>lock</b><td>boolean<td><tt>File.lock([offset, length])
+<tr valign=top><td><b>truncate</b><td>boolean<td><tt>File.truncate([length=<tt>0</tt>])
+<td>3.14
+<td>changes the file <i>length</i> (default: 0) and repositions the file pointer (<i>position</i>) to the new end-of-file
+<tr valign=top><td><b>lock</b><td>boolean<td><tt>File.lock([offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>])
 <td>3.10
 <td>lock file record for exclusive access (file must be opened <i>shareable</i>)
-<tr valign=top><td><b>unlock</b><td>boolean<td><tt>File.unlock([offset, length])
+<tr valign=top><td><b>unlock</b><td>boolean<td><tt>File.unlock([offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>])
 <td>3.10
 <td>unlock file record for exclusive access
-<tr valign=top><td><b>read</b><td>string<td><tt>File.read([maxlen])
+<tr valign=top><td><b>read</b><td>string<td><tt>File.read([maxlen=<i>file_length</i>-<i>file_position</i>])
 <td>3.10
 <td>read a string from file (optionally unix-to-unix or base64 decoding in the process), <i>maxlen</i> defaults to the current length of the file minus the current file position
-<tr valign=top><td><b>readln</b><td>string<td><tt>File.readln([maxlen])
+<tr valign=top><td><b>readln</b><td>string<td><tt>File.readln([maxlen=<tt>512</tt>])
 <td>3.10
 <td>read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters
-<tr valign=top><td><b>readBin</b><td>number<td><tt>File.readBin([bytes])
+<tr valign=top><td><b>readBin</b><td>number<td><tt>File.readBin([bytes=<tt>4</tt>])
 <td>3.10
 <td>read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)
-<tr valign=top><td><b>readAll</b><td>array<td><tt>File.readAll()
+<tr valign=top><td><b>readAll</b><td>array<td><tt>File.readAll([maxlen=<tt>512</tt>])
 <td>3.10
-<td>read all lines into an array of strings
-<tr valign=top><td><b>write</b><td>boolean<td><tt>File.write(string text [,len])
+<td>read all lines into an array of strings, <i>maxlen</i> defaults to 512 characters
+<tr valign=top><td><b>write</b><td>boolean<td><tt>File.write(text [,length=<i>text_length</i>])
 <td>3.10
 <td>write a string to the file (optionally unix-to-unix or base64 decoding in the process)
-<tr valign=top><td><b>writeln</b><td>boolean<td><tt>File.writeln([string text])
+<tr valign=top><td><b>writeln</b><td>boolean<td><tt>File.writeln([text])
 <td>3.10
 <td>write a line-feed terminated string to the file
-<tr valign=top><td><b>writeBin</b><td>boolean<td><tt>File.writeBin(value [,bytes])
+<tr valign=top><td><b>writeBin</b><td>boolean<td><tt>File.writeBin(value [,bytes=<tt>4</tt>])
 <td>3.10
 <td>write a binary integer to the file, default number of <i>bytes</i> is 4 (32-bits)
 <tr valign=top><td><b>writeAll</b><td>boolean<td><tt>File.writeAll(array lines)
 <td>3.10
 <td>write an array of strings to file
-<tr valign=top><td><b>printf</b><td>number<td><tt>File.printf(string format [,args])
+<tr valign=top><td><b>printf</b><td>number<td><tt>File.printf(format [,args])
 <td>3.10
 <td>write a formatted string to the file (ala fprintf) - <small>CAUTION: for experienced C programmers ONLY</small>
-<tr valign=top><td><b>iniGetSections</b><td>array<td><tt>File.iniGetSections([prefix])
+<tr valign=top><td><b>iniGetSections</b><td>array<td><tt>File.iniGetSections([prefix=<i>none</i>])
 <td>3.11
 <td>parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') and return the section names as an <i>array of strings</i>, optionally, only those section names that begin with the specified <i>prefix</i>
-<tr valign=top><td><b>iniGetKeys</b><td>array<td><tt>File.iniGetKeys([section])
+<tr valign=top><td><b>iniGetKeys</b><td>array<td><tt>File.iniGetKeys([section=<i>root</i>])
 <td>3.11
 <td>parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file and return the key names as an <i>array of strings</i>. if <i>section</i> is undefined, returns key names from the <i>root</i> section
-<tr valign=top><td><b>iniGetValue</b><td>undefined<td><tt>File.iniGetValue(section, key [,default])
+<tr valign=top><td><b>iniGetValue</b><td>undefined<td><tt>File.iniGetValue(section, key [,default=<i>none</i>])
 <td>3.11
 <td>parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). returns the specified <i>default</i> value if the key or value is missing or invalid. to parse a key from the <i>root</i> section, pass <i>null</i> for <i>section</i>. will return a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> determined by the type of <i>default</i> value specified
-<tr valign=top><td><b>iniSetValue</b><td>boolean<td><tt>File.iniSetValue(section, key, value)
+<tr valign=top><td><b>iniSetValue</b><td>boolean<td><tt>File.iniSetValue(section, key, [value=<i>none</i>])
 <td>3.12
 <td>set the specified <i>key</i> to the specified <i>value</i> in the specified <i>section</i> of a <tt>.ini</tt> file. to set a key in the <i>root</i> section, pass <i>null</i> for <i>section</i>. 
-<tr valign=top><td><b>iniGetObject</b><td>object<td><tt>File.iniGetObject([section])
+<tr valign=top><td><b>iniGetObject</b><td>object<td><tt>File.iniGetObject([section=<i>root</i>])
 <td>3.11
 <td>parse an entire section from a .ini file and return all of its keys and values as properties of an object. if <i>section</i> is undefined, returns key and values from the <i>root</i> section
 <tr valign=top><td><b>iniSetObject</b><td>boolean<td><tt>File.iniSetObject(section, object)
 <td>3.12
 <td>write all the properties of the specified <i>object</i> as separate <tt>key=value</tt> pairs in the specified <i>section</i> of a <tt>.ini</tt> file. to write an object in the <i>root</i> section, pass <i>null</i> for <i>section</i>. 
-<tr valign=top><td><b>iniGetAllObjects</b><td>array<td><tt>File.iniGetAllObjects([name_property] [,prefix])
+<tr valign=top><td><b>iniGetAllObjects</b><td>array<td><tt>File.iniGetAllObjects([name_property] [,prefix=<i>none</i>])
 <td>3.11
 <td>parse all sections from a .ini file and return all (non-<i>root</i>) sections in an array of objects with each section's keys as properties of each object. <i>name_property</i> is the name of the property to create to contain the section's name (default is <tt>"name"</tt>), the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method, if a <i>prefix</i> is specified, it is removed from each section's name
-<tr valign=top><td><b>iniSetAllObjects</b><td>array<td><tt>File.iniSetAllObjects(object array [,name_property])
+<tr valign=top><td><b>iniSetAllObjects</b><td>array<td><tt>File.iniSetAllObjects(object array [,name_property=<tt>"name"</tt>])
 <td>3.12
 <td>write an array of objects to a .ini file, each object in its own section named after the object's <i>name_property</i> (default: <tt>name</tt>)
+<tr valign=top><td><b>iniRemoveKey</b><td>boolean<td><tt>File.iniRemoveKey(section, key)
+<td>3.14
+<td>remove specified <i>key</i> from specified <i>section</i> in <tt>.ini</tt> file.
+<tr valign=top><td><b>iniRemoveSection</b><td>boolean<td><tt>File.iniRemoveSection(section)
+<td>3.14
+<td>remove specified <i>section</i> from <tt>.ini</tt> file.
 </table>
 <br>
 <table border=1 width=100%>
@@ -2906,16 +3005,16 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <font color="white">Ver</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>poll</b><td>undefined<td><tt>Queue.poll([timeout])
+<tr valign=top><td><b>poll</b><td>undefined<td><tt>Queue.poll([timeout=<tt>0</tt>])
 <td>3.12
 <td>wait for any value to be written to the queue for up to <i>timeout</i> milliseconds (default: <i>0</i>), returns <i>true</i> or the <i>name</i> (string) of the value waiting (if it has one), or <i>false</i> if no values are waiting
-<tr valign=top><td><b>read</b><td>undefined<td><tt>Queue.read([name or timeout])
+<tr valign=top><td><b>read</b><td>undefined<td><tt>Queue.read([string name] or [timeout=<tt>0</tt>])
 <td>3.13
 <td>read a value from the queue, if <i>name</i> not specified, reads next value from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)
-<tr valign=top><td><b>peek</b><td>undefined<td><tt>Queue.peek([timeout])
+<tr valign=top><td><b>peek</b><td>undefined<td><tt>Queue.peek([timeout=<tt>0</tt>])
 <td>3.13
 <td>peek at the value at the bottom of the queue, wait up to <i>timeout</i> milliseconds for any value to be written (default: <i>0</i>)
-<tr valign=top><td><b>write</b><td>boolean<td><tt>Queue.write(value [,name])
+<tr valign=top><td><b>write</b><td>boolean<td><tt>Queue.write(value [,name=<i>none</i>])
 <td>3.12
 <td>write a value (optionally named) to the queue
 </table>
@@ -2948,8 +3047,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 </table>
 <h2><a name=Socket>Socket class</a>
 <br><font size=-1>Class used for TCP/IP socket communications</font>
+<font size=-1> - introduced in v3.10</font>
 </h2>
-<p>To create a new Socket object: <tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP</p>
+<p>To create a new Socket object: <tt>load('sockdefs.js'); var s = new Socket(<i>type</i>, <i>protocol</i>)</tt><br>where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP<br>and <i>protocol</i> (optional) = the name of the protocol or service the socket is to be used for</p>
 <table border=1 width=100%>
 <caption align=left><b><tt>Socket</tt>
 <a name=Socket_methods> methods</a>
@@ -2971,7 +3071,7 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>bind</b><td>boolean<td><tt>Socket.bind([port] [,ip_address])
 <td>3.11
 <td>bind socket to a TCP or UDP <i>port</i> (number or service name), optionally specifying a network interface (via <i>ip_address</i>)
-<tr valign=top><td><b>connect</b><td>boolean<td><tt>Socket.connect(host, port [,timeout])
+<tr valign=top><td><b>connect</b><td>boolean<td><tt>Socket.connect(host, port [,timeout=<tt>10.0</tt>])
 <td>3.11
 <td>connect to a remote port (number or service name) on the specified host (IP address or host name), default <i>timeout</i> value is <i>10.0</i> (seconds)
 <tr valign=top><td><b>listen</b><td>boolean<td><tt>Socket.listen()
@@ -2986,25 +3086,25 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>sendto</b><td>boolean<td><tt>Socket.sendto(data, address, port)
 <td>3.10
 <td>send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets
-<tr valign=top><td><b>sendfile</b><td>boolean<td><tt>Socket.sendfile(filename)
+<tr valign=top><td><b>sendfile</b><td>boolean<td><tt>Socket.sendfile(path/filename)
 <td>3.10
 <td>send an entire file over the socket
-<tr valign=top><td><b>sendBin</b><td>boolean<td><tt>Socket.sendBin(number value [,number bytes])
+<tr valign=top><td><b>sendBin</b><td>boolean<td><tt>Socket.sendBin(value [,bytes=<tt>4</tt>])
 <td>3.11
 <td>send a binary integer over the socket, default number of bytes is 4 (32-bits)
-<tr valign=top><td><b>recv</b><td>string<td><tt>Socket.recv([maxlen])
+<tr valign=top><td><b>recv</b><td>string<td><tt>Socket.recv([maxlen=<tt>512</tt>])
 <td>3.10
 <td>receive a string, default maxlen is 512 characters (AKA read)
-<tr valign=top><td><b>peek</b><td>string<td><tt>Socket.peek([maxlen])
+<tr valign=top><td><b>peek</b><td>string<td><tt>Socket.peek([maxlen=<tt>512</tt>])
 <td>3.10
 <td>receive a string, default maxlen is 512 characters, leaves string in receive buffer
-<tr valign=top><td><b>recvline</b><td>string<td><tt>Socket.recvline([maxlen] [,timeout])
+<tr valign=top><td><b>recvline</b><td>string<td><tt>Socket.recvline([maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>])
 <td>3.10
 <td>receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)
-<tr valign=top><td><b>recvfrom</b><td>object<td><tt>Socket.recvfrom([bool binary] [,maxlen or int_size])
+<tr valign=top><td><b>recvfrom</b><td>object<td><tt>Socket.recvfrom([binary=<tt>false</tt>] [,maxlen=<tt>512</tt> or int_size=<tt>4</tt>])
 <td>3.11
-<td>receive data (string or integer) from a socket (typically UDP)<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i><p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)
-<tr valign=top><td><b>recvBin</b><td>number<td><tt>Socket.recvBin([number bytes])
+<td>receive data (string or integer) from a socket (typically UDP)<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i> properties<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)
+<tr valign=top><td><b>recvBin</b><td>number<td><tt>Socket.recvBin([bytes=<tt>4</tt>])
 <td>3.11
 <td>receive a binary integer from the socket, default number of bytes is 4 (32-bits)
 <tr valign=top><td><b>getoption</b><td>number<td><tt>Socket.getoption(option)
@@ -3013,10 +3113,10 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>setoption</b><td>boolean<td><tt>Socket.setoption(option, value)
 <td>3.10
 <td>set socket option value, option may be socket option name (see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number
-<tr valign=top><td><b>ioctl</b><td>number<td><tt>Socket.ioctl(command [,argument])
+<tr valign=top><td><b>ioctl</b><td>number<td><tt>Socket.ioctl(command [,argument=<tt>0</tt>])
 <td>3.10
 <td>send socket IOCTL (advanced)
-<tr valign=top><td><b>poll</b><td>number<td><tt>Socket.poll([number timeout] [,bool write])
+<tr valign=top><td><b>poll</b><td>number<td><tt>Socket.poll([timeout=<tt>0</tt>] [,write=<tt>false</tt>])
 <td>3.10
 <td>poll socket for read or write ability (default is <i>read</i>), default timeout value is 0.0 seconds (immediate timeout)
 </table>
@@ -3076,6 +3176,9 @@ Property and Method version numbers (when available) indicate the Synchronet ver
 <tr valign=top><td><b>network_byte_order</b><td>boolean
 <td>3.11
 <td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>
+<tr valign=top><td><b>option_list</b><td>object
+<td>N/A
+<td>array of socket option names supported by the current platform
 </table>
 <p><small>
-Totals: 481 properties, 267 methods
+Totals: 495 properties, 286 methods
