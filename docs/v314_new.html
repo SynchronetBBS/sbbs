@@ -157,8 +157,11 @@
 		<li>DOS editors can now be used to edit files with long filenames 
 			(e.g. <tt>data/user/*.plan</tt> files)
 		</ol>
+	<li>Added supoprt for <tt>RESULT.ED</tt> external-editor drop file (e.g. from WWIVedit)<br>
+		- can now modify the message subject/title from within some external editors (e.g. fseditor.js)
+	<li>New users can no longer change the subject/title of the "New user validation" feedback
 	<li>When reading messages and updating existing message header and index records,
-	always lock the entire message base - preventing corruption
+		always lock the entire message base - preventing corruption
 	<li>When replying to a message, if the posting user was the author of the original message, 
 		use the original message's recipient as the recipient of the new reply message as well
 		(no need to post "to" yourself)
@@ -175,6 +178,13 @@
 	<li>Bug-fix: <tt>data/hungup.log</tt> wasn't being updated
 	<li>Bug-fix: exceptions occurring in JS script run from another JS script would not be reported to the console/log
 	<li>Bug-fix: report JS script compilation errors (exceptions) immediately
+	<li>Bug-fix: only allowed 7 digits when editing credit value of file - increased to 10 digits
+	<li>Bug-fix: ctrl key handler no longer ignores Ctrl-J (LF)
+	<li>Put <i>Micros~1</i> shortened filenames in the <tt>DOSXTRN.ENV</tt> file,<br>
+		allowing at least some XSDK doors to possibly work when run from <tt>C:\Synchronet\...</tt>
+	<li>When generating drop files for 16-bit DOS programs, put
+		<i>Micros~1</i> shortened paths in the drop files<br>
+		Another fix for installations to e.g. "<tt>C:\Synchronet</tt>"
 	<li>Telegard and Renegade "pipe codes" actually must have 2 decimal
 		digits<br>
 		This will reduce the liklihood of false-positive TG/RG pipe code
@@ -375,6 +385,9 @@
 		<li><i>sendfile()</i> now uses a proven implementation (from the <i>XPDEV</i> library)
 		</ul>
 	<li>JSexec:<ul>
+		<li>Mutex-protect the log-output (to the console typically) so that foreground and
+			background threads don't step on eachother (as well as error reports and status
+			messages)
 		<li><tt>jsexec -v</tt> now dumps the version details and exits
 		<li>Bug-fix: <i>prompt()</i> no longer returns the '<tt>\n</tt>' with the string
 		<li>Now displays the number of seconds/milliseconds it took to compile
@@ -585,6 +598,10 @@
 	<li>New option to allow <i>socket-based</i> (instead of stdio-based) file transfer protocols on *nix
 	<li>Bug-fix: imported internal codes (from <tt>subs.txt</tt> or <tt>dirs.txt</tt>) had non-alphanum
 		chars removed if > 7 chars instead of > 8 chars 
+	<li>Eliminated unnecessary internal code and pointer index checking while importing
+		subs (no need to check newly-created subs for dupes) - eliminates exponential
+		importation time witnessed with large numbers (thousands) of message areas
+		being imported from a single file
 	<li>New File <i>"Import Areas..."</i> option to automatically generate the <tt>DIRS.RAW</tt>
 		file (if it doesn't exist)<br>
 		or just create a temp directory listing file to import "invisibly"
