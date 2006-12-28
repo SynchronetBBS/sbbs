@@ -1059,6 +1059,8 @@ static char* socket_prop_desc[] = {
 	,"remote TCP or UDP port number"
 	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
+	/* statically-defined properties: */
+	,"array of socket option names supported by the current platform"
 	,NULL
 };
 #endif
