@@ -21,16 +21,22 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !ifdef JSINCLUDE
 	CFLAGS = $(CFLAGS) -I$(JSINCLUDE)
 !else
-	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)js
+	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)\..\include\mozilla\js
 !endif
 !ifdef NSPRINCLUDE
 	CFLAGS = $(CFLAGS) -I$(NSPRINCLUDE)
 !else
-	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)nspr
+	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)\..\include\mozilla\nspr
+!endif
+!ifdef CRYPTLIBINCLUDE
+	CFLAGS = $(CFLAGS) -I$(CRYPTLIBINCLUDE)
+!else
+	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)\..\include\cryptlib
 !endif
 
+
 !ifndef JSLIBDIR
-	JSLIBDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)win32.$(BUILD)
+	JSLIBDIR = $(SRC_ROOT)\..\lib\mozilla\js\win32.$(BUILD)
 !endif
 !ifndef JSLIB
 	JSLIB	=	js32omf
@@ -38,10 +44,15 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !ifndef NSPRDIR
 	# There *IS* no debug build in CVS
 	# That's ok, looks like it doesn't need NSPR4
-	#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.$(BUILD)
-	#NSPRDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)win32.release
+	#NSPRDIR = $(SRC_ROOT)\..\lib\mozilla\nspr\win32.$(BUILD)
+	#NSPRDIR = $(SRC_ROOT)\..\lib\mozilla\nspr\win32.release
 !endif
-JS_LDFLAGS = $(JS_LDFLAGS) $(JSLIBDIR)$(DIRSEP)$(UL_PRE)$(JSLIB)$(UL_SUF)
+!ifndef CRYPTLIBDIR
+	CRYPTLIBDIR = $(SRC_ROOT)\..\lib\cryptlib\win32.release
+!endif
+CRYPTLIB = $(CRYPTLIBDIR)\bcl32.lib
+
+JS_LDFLAGS = $(JS_LDFLAGS) $(JSLIBDIR)\$(UL_PRE)$(JSLIB)$(UL_SUF)
 # Looks like it doesn't need NSPR4
 #JS_LDFLAGS = $(JS_LDFLAGS) -L$(NSPRDIR) $(UL_PRE)nspr4$(UL_SUF)
 
@@ -61,7 +72,7 @@ LDFLAGS	=	$(LDFLAGS) $(JS_LDFLAGS)
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(SMBLIB) $(XPDEV-MT_LIB) iphlpapi.lib @&&|
+	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(SMBLIB) $(XPDEV-MT_LIB) iphlpapi.lib $(CRYPTLIB) @&&|
 	$** 
 |
 
@@ -69,7 +80,7 @@ $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(SMBLIB) $(XPDEV-MT_LIB) @&&|
+		$(SMBLIB) $(XPDEV-MT_LIB) $(CRYPTLIB) @&&|
 	$**
 |
 
@@ -77,7 +88,7 @@ $(SBBS): $(OBJS) $(LIBS)
 $(FTPSRVR): $(FTP_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+		$(XPDEV-MT_LIB) $(LIBODIR)\sbbs.lib @&&|
 	$**
 |
 
@@ -86,7 +97,7 @@ $(FTPSRVR): $(FTP_OBJS)
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib iphlpapi.lib @&&|
+		$(XPDEV-MT_LIB) $(LIBODIR)\sbbs.lib iphlpapi.lib @&&|
 	$**
 |
 
@@ -94,7 +105,7 @@ $(MAILSRVR): $(MAIL_OBJS)
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+		$(XPDEV-MT_LIB) $(LIBODIR)\sbbs.lib @&&|
 	$**
 |
 
@@ -102,7 +113,7 @@ $(WEBSRVR): $(WEB_OBJS)
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(XPDEV-MT_LIB) $(LIBODIR)$(DIRSEP)sbbs.lib @&&|
+		$(XPDEV-MT_LIB) $(LIBODIR)\sbbs.lib @&&|
 	$**
 |
 
@@ -110,22 +121,22 @@ $(SERVICES): $(SERVICE_OBJS)
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
 	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(CON_OBJS) $(CON_LIB) \
-		$(XPDEV-MT_LIB) -L$(LIBODIR) $(LIBODIR)$(DIRSEP)sbbs.lib \
-		$(LIBODIR)$(DIRSEP)ftpsrvr.lib $(LIBODIR)$(DIRSEP)mailsrvr.lib \
-		$(LIBODIR)$(DIRSEP)websrvr.lib $(LIBODIR)$(DIRSEP)services.lib
+		$(XPDEV-MT_LIB) -L$(LIBODIR) $(LIBODIR)\sbbs.lib \
+		$(LIBODIR)\ftpsrvr.lib $(LIBODIR)\mailsrvr.lib \
+		$(LIBODIR)\websrvr.lib $(LIBODIR)\services.lib
 
-SBBSNTSVCS = $(EXEODIR)$(DIRSEP)sbbsNTsvcs.exe
+SBBSNTSVCS = $(EXEODIR)\sbbsNTsvcs.exe
 ntsvcs: $(SBBSNTSVCS)
 
 # Synchronet NT Services
-$(EXEODIR)$(DIRSEP)sbbsNTsvcs.exe: $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES) \
-	$(MTOBJODIR)$(DIRSEP)ntsvcs$(OFILE) $(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE)
+$(EXEODIR)\sbbsNTsvcs.exe: $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES) \
+	$(MTOBJODIR)\ntsvcs$(OFILE) $(MTOBJODIR)\sbbs_ini$(OFILE)
 	@echo Linking $@
 	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) \
-	$(MTOBJODIR)$(DIRSEP)ntsvcs$(OFILE) $(MTOBJODIR)$(DIRSEP)sbbs_ini$(OFILE) \
-	$(XPDEV-MT_LIB) -L$(LIBODIR) $(LIBODIR)$(DIRSEP)sbbs.lib \
-	$(LIBODIR)$(DIRSEP)ftpsrvr.lib $(LIBODIR)$(DIRSEP)mailsrvr.lib \
-	$(LIBODIR)$(DIRSEP)websrvr.lib $(LIBODIR)$(DIRSEP)services.lib
+	$(MTOBJODIR)\ntsvcs$(OFILE) $(MTOBJODIR)\sbbs_ini$(OFILE) \
+	$(XPDEV-MT_LIB) -L$(LIBODIR) $(LIBODIR)\sbbs.lib \
+	$(LIBODIR)\ftpsrvr.lib $(LIBODIR)\mailsrvr.lib \
+	$(LIBODIR)\websrvr.lib $(LIBODIR)\services.lib
 	$(QUIET)brc32 ntsvcs.rc $@
 
 # Baja Utility
@@ -189,31 +200,31 @@ $(JSEXEC): $(JSEXEC_OBJS) $(SBBS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(MT_LDFLAGS) -e$@ $(LDFLAGS) $(JSEXEC_OBJS) \
 		$(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) \
-		$(LIBODIR)$(DIRSEP)$(UL_PRE)sbbs$(UL_SUF)
+		$(LIBODIR)\$(UL_PRE)sbbs$(UL_SUF)
 
 # ANS2ASC
-$(ANS2ASC): $(OBJODIR)$(DIRSEP)ans2asc$(OFILE)
+$(ANS2ASC): $(OBJODIR)\ans2asc$(OFILE)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
 
 # ASC2ANS
-$(ASC2ANS): $(OBJODIR)$(DIRSEP)asc2ans$(OFILE)
+$(ASC2ANS): $(OBJODIR)\asc2ans$(OFILE)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $**
 
-$(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE): ftpsrvr.c
+$(MTOBJODIR)\ftpsrvr$(OFILE): ftpsrvr.c
         $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DFTPSRVR_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
-$(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE): mailsrvr.c
+$(MTOBJODIR)\mailsrvr$(OFILE): mailsrvr.c
         $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DMAILSRVR_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
-$(MTOBJODIR)$(DIRSEP)websrvr$(OFILE): websrvr.c
+$(MTOBJODIR)\websrvr$(OFILE): websrvr.c
         $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DWEBSRVR_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
-$(MTOBJODIR)$(DIRSEP)services$(OFILE): services.c
+$(MTOBJODIR)\services$(OFILE): services.c
         $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DSERVICES_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
