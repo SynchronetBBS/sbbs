@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2007 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Server to server operation is governed here.
 //
@@ -684,7 +684,7 @@ function Server_Work() {
 		}
 		break;
 	case "QUIT":
-		ThisOrigin.quit(IRC_string(cmdline,2));
+		ThisOrigin.quit(IRC_string(cmdline,1));
 		break;
 	case "SERVER":
 		if (!cmd[3])
@@ -1093,6 +1093,7 @@ function Server_Work() {
 	case "NETINFO": /* Dreamforge/Unreal/CR */
 	case "SMO": /* Dreamforge/Unreal/CR */
 	case "EOS": /* Dreamforge/Unreal/CR */
+	case "TUNL": /* Dreamforge/Unreal/CR */
 	case "SETHOST": /* We do not honour SETHOST. */
 		break; // Silently ignore for now.
 	default:
@@ -1264,11 +1265,23 @@ function IRCClient_server_chan_info(sni_chan) {
 		var df_chan_occs = sni_chan.occupants().split(' ');
 		for (dfocc in df_chan_occs) {
 			var cmember = df_chan_occs[dfocc];
-			if (cmember[0] == "@")
+			var mem_is_op = false;
+			var mem_is_voice = false;
+			if (cmember[0] == "@") {
 				cmember = cmember.slice(1);
-			if (cmember[0] == "+")
+				mem_is_op = true;
+			}
+			if (cmember[0] == "+") {
 				cmember = cmember.slice(1);
+				mem_is_voice = true;
+			}
 			this.rawout(":" + cmember + " JOIN " + sni_chan.nam);
+			if (mem_is_op)
+				this.ircout("MODE " + sni_chan.nam + " +o " + cmember + " "
+					+ sni_chan.created);
+			if (mem_is_voice)
+				this.ircout("MODE " + sni_chan.nam + " +v " + cmember + " "
+					+ sni_chan.created);
 		}
 		this.ircout("MODE " + sni_chan.nam + " " + sni_chan.chanmode(true) + " " + sni_chan.created);
 	} else { /* Bahamut */

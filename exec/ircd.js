@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2007 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 load("sbbsdefs.js");
@@ -1583,18 +1583,19 @@ function IRCClient_do_info() {
 	umode_notice(USERMODE_SPY,"Spy","INFO requested by " + this.nick +
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
-	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.1b ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":  IRCd Copyright 2003-2006 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.2 ]*=-=-=-=-=-=-=-=-=--");
+	this.numeric(371, ":  IRCd Copyright 2003-2007 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
 	this.numeric(371, ":   around the IRCd, countless helpful suggestions and tips, and");
 	this.numeric(371, ":   tons of additions to the Synchronet JS API that made this possible.");
-	this.numeric(371, ":Deuce (Stephen Hurd): Resident Perl guru and Saskatchewan zealot.");
+	this.numeric(371, ":Deuce (Stephen Hurd): Resident Perl guru and ex-Saskatchewan zealot.");
 	this.numeric(371, ":   Originally converted the IRCd to be object-oriented, various small");
 	this.numeric(371, ":   hacks, and lots of guidance.");
-	this.numeric(371, ":Greets to: Arrak, Elayne, Elvish Merchant, Foobar, Grimp, Kufat,");
-	this.numeric(371, ":   Nex, Palom, Psyko, Shaun, Torke, and all the #square oldbies.");
+	this.numeric(371, ":Thanks to the DALnet Bahamut team for their help from time to time.");
+	this.numeric(371, ":Greets to: Arrak, Elayne, ElvishMerchant, Foobar, Grimp, KFC, Kufat,");
+	this.numeric(371, ":   Nex, Psyko, Samael, Shaun, Torke, and all the #square oldbies.");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":Synchronet " + system.full_version);
 	this.numeric(371, ":Compiled with " + system.compiled_with + " at " + system.compiled_when);
