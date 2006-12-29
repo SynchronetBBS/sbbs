@@ -1349,9 +1349,12 @@ void input_thread(void *arg)
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode && sock==sbbs->client_socket) {
 			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
-				rd=-1;
-			else
+				rd=0;
+			else {
+				if(!i)
+					continue;
 				rd=i;
+			}
 		}
 		else
 #endif
@@ -1526,9 +1529,12 @@ void passthru_output_thread(void* arg)
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
 			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
-				rd=-1;
-			else
+				rd=0;
+			else {
+				if(!i)
+					continue;
 				rd=i;
+			}
 		}
 		else
 #endif
