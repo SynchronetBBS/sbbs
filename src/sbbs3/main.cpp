@@ -1444,7 +1444,7 @@ void input_thread(void *arg)
 //		if(wr>100)
 //			mswait(500);	// Throttle sender
 	}
-	sbbs->online=0;
+	sbbs->online=FALSE;
 	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
 
     sbbs->input_thread_running = false;
@@ -1811,7 +1811,7 @@ void output_thread(void* arg)
 			else
 				lprintf(LOG_WARNING,"!%s: ERROR %d sending on socket %d"
                 	,node, ERROR_VALUE, sbbs->client_socket);
-			sbbs->online=0;
+			sbbs->online=FALSE;
 			/* was break; on 4/7/00 */
 			i=buftop-bufbot;	// Pretend we sent it all
 		}
@@ -1971,7 +1971,7 @@ void event_thread(void* arg)
 		} else
 			check_semaphores=false;
 
-		sbbs->online=0;	/* reset this from ON_LOCAL */
+		sbbs->online=FALSE;	/* reset this from ON_LOCAL */
 
 		/* QWK events */
 		if(check_semaphores && !(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
@@ -2036,7 +2036,7 @@ void event_thread(void* arg)
 					} else
 						eprintf(LOG_INFO,"No packet created (no new messages)");
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);
-					sbbs->online=0;
+					sbbs->online=FALSE;
 				}
 				remove(g.gl_pathv[i]);
 				remove(semfile);
@@ -2081,7 +2081,7 @@ void event_thread(void* arg)
 							sbbs->putmsgptrs(); 
 						}
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
-						sbbs->online=0;
+						sbbs->online=FALSE;
 					} 
 				}
 				lastprepack=now;
@@ -2198,7 +2198,7 @@ void event_thread(void* arg)
 							}
 						}
 						sbbs->console&=~CON_L_ECHO;
-						sbbs->online=0;
+						sbbs->online=FALSE;
 						remove(str);
 					} 
 				}
@@ -3294,7 +3294,7 @@ void sbbs_t::hangup(void)
 		client_socket=INVALID_SOCKET;
 	}
 	sem_post(&outbuf.sem);
-	online=0;
+	online=FALSE;
 }
 
 int sbbs_t::incom(unsigned long timeout)
@@ -3858,7 +3858,7 @@ void sbbs_t::daily_maint(void)
 				sbbs->useron=user;
 				sbbs->online=ON_LOCAL;
 				sbbs->exec_bin(sbbs->cfg.expire_mod,&sbbs->main_csi);
-				sbbs->online=0; 
+				sbbs->online=FALSE; 
 			}
 		}
 
@@ -4592,7 +4592,10 @@ NO_SSH:
 			}
 		}
 
-    	sbbs->online=0;
+    	sbbs->online=FALSE;
+#ifdef USE_CRYPTLIB
+		sbbs->ssh_mode=false;
+#endif
 
 		/* now wait for connection */
 
@@ -4775,10 +4778,8 @@ NO_SSH:
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
 #ifdef USE_CRYPTLIB
-			if(ssh) {
+			if(ssh)
 				cryptDestroySession(sbbs->ssh_session);
-				sbbs->ssh_mode=false;
-			}
 #endif
 			close_socket(client_socket);
 			continue;
@@ -4803,10 +4804,8 @@ NO_SSH:
 
 		if(sbbs->trashcan(host_ip,"ip")) {
 #ifdef USE_CRYPTLIB
-			if(ssh) {
+			if(ssh)
 				cryptDestroySession(sbbs->ssh_session);
-				sbbs->ssh_mode=false;
-			}
 #endif
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can"
@@ -4847,10 +4846,8 @@ NO_SSH:
 
 		if(sbbs->trashcan(host_name,"host")) {
 #ifdef USE_CRYPTLIB
-			if(ssh) {
+			if(ssh)
 				cryptDestroySession(sbbs->ssh_session);
-				sbbs->ssh_mode=false;
-			}
 #endif
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can",client_socket);
@@ -4911,10 +4908,8 @@ NO_SSH:
 			mswait(3000);
 			client_off(client_socket);
 #ifdef USE_CRYPTLIB
-			if(ssh) {
+			if(ssh)
 				cryptDestroySession(sbbs->ssh_session);
-				sbbs->ssh_mode=false;
-			}
 #endif
 			close_socket(client_socket);
 			continue;
@@ -4954,10 +4949,8 @@ NO_SSH:
 			node_socket[i-1]=INVALID_SOCKET;
 			client_off(client_socket);
 #ifdef USE_CRYPTLIB
-			if(ssh) {
+			if(ssh)
 				cryptDestroySession(sbbs->ssh_session);
-				sbbs->ssh_mode=false;
-			}
 #endif
 			close_socket(client_socket);
 			continue;
