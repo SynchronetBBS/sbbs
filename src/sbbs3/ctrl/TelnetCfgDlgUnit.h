@@ -93,12 +93,19 @@ __published:
     TCheckBox *JavaScriptCheckBox;
     TCheckBox *IdentityCheckBox;
 	TCheckBox *EventsCheckBox;
+    TTabSheet *SshTabSheet;
+    TLabel *SshPortLabel;
+    TEdit *SshPortEdit;
+    TCheckBox *SshEnabledCheckBox;
+    TLabel *SshInterfaceLabel;
+    TEdit *SshInterfaceEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
 	void __fastcall HangupSoundButtonClick(TObject *Sender);
     void __fastcall RLoginEnabledCheckBoxClick(TObject *Sender);
     void __fastcall RLoginIPallowButtonClick(TObject *Sender);
+    void __fastcall SshEnabledCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TTelnetCfgDlg(TComponent* AOwner);

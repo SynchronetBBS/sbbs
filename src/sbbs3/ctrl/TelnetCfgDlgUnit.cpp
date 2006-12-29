@@ -77,8 +77,22 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         );
         RLoginInterfaceEdit->Text=AnsiString(str);
     }
+
+    if(MainForm->bbs_startup.ssh_interface==0)
+        SshInterfaceEdit->Text="<ANY>";
+    else {
+        sprintf(str,"%d.%d.%d.%d"
+            ,(MainForm->bbs_startup.ssh_interface>>24)&0xff
+            ,(MainForm->bbs_startup.ssh_interface>>16)&0xff
+            ,(MainForm->bbs_startup.ssh_interface>>8)&0xff
+            ,MainForm->bbs_startup.ssh_interface&0xff
+        );
+        SshInterfaceEdit->Text=AnsiString(str);
+    }
+
 	TelnetPortEdit->Text=AnsiString((int)MainForm->bbs_startup.telnet_port);
 	RLoginPortEdit->Text=AnsiString((int)MainForm->bbs_startup.rlogin_port);
+	SshPortEdit->Text=AnsiString((int)MainForm->bbs_startup.ssh_port);
 
 	FirstNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.first_node);
 	LastNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.last_node);
@@ -99,6 +113,9 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_RLOGIN;
     RLogin2ndNameCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_USE_2ND_RLOGIN;
+    SshEnabledCheckBox->Checked
+        =MainForm->bbs_startup.options&BBS_OPT_ALLOW_SSH;
+
     QWKEventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
     EventsCheckBox->Checked
@@ -107,6 +124,7 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_JAVASCRIPT);
 
     RLoginEnabledCheckBoxClick(Sender);
+    SshEnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
@@ -152,8 +170,27 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     } else
         MainForm->bbs_startup.rlogin_interface=0;
 
+    SAFECOPY(str,SshInterfaceEdit->Text.c_str());
+    p=str;
+    while(*p && *p<=' ') p++;
+    if(*p && isdigit(*p)) {
+        addr=atoi(p)<<24;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p)<<16;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p)<<8;
+        while(*p && *p!='.') p++;
+        if(*p=='.') p++;
+        addr|=atoi(p);
+        MainForm->bbs_startup.ssh_interface=addr;
+    } else
+        MainForm->bbs_startup.ssh_interface=0;
+
     MainForm->bbs_startup.telnet_port=TelnetPortEdit->Text.ToIntDef(23);
     MainForm->bbs_startup.rlogin_port=RLoginPortEdit->Text.ToIntDef(513);
+    MainForm->bbs_startup.ssh_port=SshPortEdit->Text.ToIntDef(22);
 
     MainForm->bbs_startup.first_node=FirstNodeEdit->Text.ToIntDef(1);
     MainForm->bbs_startup.last_node=LastNodeEdit->Text.ToIntDef(1);
@@ -210,6 +247,11 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_USE_2ND_RLOGIN;
 
+	if(SshEnabledCheckBox->Checked==true)
+    	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_SSH;
+    else
+	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_SSH;
+
     MainForm->SaveIniSettings(Sender);
 }
 //---------------------------------------------------------------------------
@@ -258,4 +300,14 @@ void __fastcall TTelnetCfgDlg::RLoginIPallowButtonClick(TObject *Sender)
     delete TextFileEditForm;
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TTelnetCfgDlg::SshEnabledCheckBoxClick(TObject *Sender)
+{
+    SshPortEdit->Enabled = SshEnabledCheckBox->Checked;
+    SshInterfaceEdit->Enabled = SshEnabledCheckBox->Checked;
+    SshPortLabel->Enabled = SshEnabledCheckBox->Checked;
+    SshInterfaceLabel->Enabled = SshEnabledCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
 
