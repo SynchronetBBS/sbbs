@@ -34,6 +34,10 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
+#ifdef USE_CRYPTLIB
+#include "cryptlib.h"
+#endif
+
 #include <vcl.h>
 #pragma hdrstop
 
@@ -114,6 +118,16 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         + CopyRight);
     Credits->Lines->Add(AnsiString(js_ver())
         + " (c) 1998 Netscape Communications Corp.");
+
+#ifdef USE_CRYPTLIB
+    wsprintf(ver,"Cryptlib v%u.%u.%u.%u"
+        ,CRYPTLIB_VERSION/1000
+        ,(CRYPTLIB_VERSION/100)%10
+        ,(CRYPTLIB_VERSION/10)%10
+        ,CRYPTLIB_VERSION%10);
+    Credits->Lines->Add(AnsiString(ver) +
+        " Copyright 1992-2006 Peter Gutmann. All rights reserved.");
+#endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutBoxForm::WebPageLabelClick(TObject *Sender)
