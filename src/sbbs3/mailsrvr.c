@@ -35,18 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-/* Platform-specific headers */
-#ifdef _WIN32
-
-	#include <io.h>			/* open/close */
-	#include <share.h>		/* share open flags */
-	#include <process.h>	/* _beginthread */
-	#include <windows.h>	/* required for mmsystem.h */
-	#include <mmsystem.h>	/* SND_ASYNC */
-
-#endif
-
-
 /* ANSI C Library headers */
 #include <stdio.h>
 #include <stdlib.h>			/* ltoa in GNU C lib */

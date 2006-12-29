@@ -37,9 +37,6 @@
 
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
-#ifdef _WIN32
-	#include <windows.h>
-#endif
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>

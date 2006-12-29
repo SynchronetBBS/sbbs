@@ -36,16 +36,6 @@
  ****************************************************************************/
 
 /* Platform-specific headers */
-#ifdef _WIN32
-
-	#include <io.h>			/* open/close */
-	#include <share.h>		/* share open flags */
-	#include <process.h>	/* _beginthread */
-	#include <windows.h>	/* required for mmsystem.h */
-	#include <mmsystem.h>	/* SND_ASYNC */
-
-#endif
-
 #ifdef __unix__
 	#include <sys/param.h>	/* BSD? */
 #endif
