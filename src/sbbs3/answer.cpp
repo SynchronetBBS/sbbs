@@ -184,10 +184,8 @@ bool sbbs_t::answer()
 		rlogin_name[i]=0;
 		cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, rlogin_pass, &i);
 		rlogin_pass[i]=0;
-		lprintf(LOG_DEBUG,"Node %d SSH: '%.*s' / '%.*s'"
-			,cfg.node_num
-			,LEN_ALIAS*2,rlogin_name
-			,LEN_ALIAS*2,rlogin_pass);
+		lprintf(LOG_DEBUG,"Node %d SSH login: '%s'"
+			,cfg.node_num, rlogin_name);
 		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
