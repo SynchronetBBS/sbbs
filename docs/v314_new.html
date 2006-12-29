@@ -32,6 +32,8 @@
 			keyword
 		</ul>
 	<li>Bug-fix: buffer overflow if global QWKnet tagline is > 80 characters in length
+	<li>New ARS Keywords: <i>DELETED</i>, <i>INACTIVE</i>, and <i>ACTIVE</i> (user account is not deleted or inactive)<br>
+		Allows user listing/editor searches to exclude deleted or inactive user slots
 	<li>Added support for ARS Keywords: <i>GROUP, SUB, SUBCODE, LIB, DIR,</i> and <i>DIRCODE</i><br>
 		These ARS keywords were previously only supported in the Telnet/RLogin server
 	</ul><br>
@@ -136,12 +138,15 @@
 		<i>PASV</i> responses<br>
 		This is one more kludge to work around stupid NAT devices
 		(consumer firewalls/routers)
+	<li>'Last Downloaded' date/time stamp is now updated in the database when files are downloaded
 	<li><i>Failed Login</i> verbiage is now configurable by creating the optional text file:
 		<tt>text/ftpbadlogin.txt</tt>
 	<li>Bug-fix: added support for <tt>%@</tt> command-line specifier<br>
 		(used in <i>Extractable File Type</i> command-lines)
 	</ul><br>
 <li><b>Telnet/RLogin Server</b><ul>
+	<li>Secure Shell (SSH) support thanks to Deuce and <a href='http://www.cs.auckland.ac.nz/~pgut001/cryptlib/'>Cryptlib</a><br>
+		This feature is in the <i>beta</i> development stage, so testing and verification is needed, feedback and/or bug reports welcome!
 	<li>Daily maintenance event
 		(resets statistics, deletes logon.lst, backs-up data, expires/purges old users and e-mail)
 		<br>
