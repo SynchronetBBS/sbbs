@@ -1425,6 +1425,21 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=!not;
 				#endif
 				break;
+			case AR_ACTIVE:
+				if(user==NULL || user->misc&(DELETED|INACTIVE))
+					result=not;
+				else result=!not;
+				break;
+			case AR_INACTIVE:
+				if(user==NULL || !(user->misc&INACTIVE))
+					result=not;
+				else result=!not;
+				break;
+			case AR_DELETED:
+				if(user==NULL || !(user->misc&DELETED))
+					result=not;
+				else result=!not;
+				break;
 			case AR_EXPERT:
 				if(user==NULL || !(user->misc&EXPERT))
 					result=not;
