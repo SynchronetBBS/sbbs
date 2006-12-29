@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -370,6 +370,60 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 	free((char *)ixbbuf);
 	return(TRUE);
 }
+
+/****************************************************************************/
+/* Updates the datedled and dateuled index record fields for a file			*/
+/****************************************************************************/
+BOOL DLLCALL putfileixb(scfg_t* cfg, file_t* f)
+{
+	char	str[MAX_PATH+1],fname[13];
+	uchar*	ixbbuf;
+	int		file;
+	long	l,length;
+
+	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	if((file=sopen(str,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
+		return(FALSE); 
+	}
+	length=filelength(file);
+	if(length%F_IXBSIZE) {
+		close(file);
+		return(FALSE); 
+	}
+	if((ixbbuf=(uchar *)malloc(length))==NULL) {
+		close(file);
+		return(FALSE); 
+	}
+	if(lread(file,ixbbuf,length)!=length) {
+		close(file);
+		free(ixbbuf);
+		return(FALSE); 
+	}
+	SAFECOPY(fname,f->name);
+	for(l=8;l<12;l++)	/* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[l]=fname[l+1];
+	for(l=0;l<length;l+=F_IXBSIZE) {
+		SAFEPRINTF(str,"%11.11s",ixbbuf+l);
+		if(!stricmp(str,fname))
+			break; 
+	}
+	free(ixbbuf);
+
+	if(l>=length) {
+		close(file);
+		return(FALSE); 
+	}
+	
+	lseek(file,l+11+3,SEEK_SET);
+
+	write(file,&f->dateuled,sizeof(f->dateuled));
+	write(file,&f->datedled,sizeof(f->datedled));
+
+	close(file);
+
+	return(TRUE);
+}
+
 
 /****************************************************************************/
 /* Removes DAT and IXB entries for the file in the struct 'f'               */
