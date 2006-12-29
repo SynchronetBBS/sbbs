@@ -1506,6 +1506,9 @@ static void send_thread(void* arg)
 			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
 				f.timesdled++;
 				putfiledat(&scfg,&f);
+				f.datedled=time(NULL);
+				putfileixb(&scfg,&f);
+
 				lprintf(LOG_INFO,"%04d %s downloaded: %s (%lu times total)"
 					,xfer.ctrl_sock
 					,xfer.user->alias
@@ -1547,8 +1550,6 @@ static void send_thread(void* arg)
 					}
 				}
 			}
-			/* Need to update datedled in index */
-
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				download_stats(total);
 		}	
