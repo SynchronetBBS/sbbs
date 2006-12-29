@@ -180,6 +180,8 @@ public:
 	CRYPT_SESSION	ssh_session;
 	bool	ssh_mode;
 	SOCKET	passthru_socket;
+    bool	passthru_output_thread_running;
+    bool	passthru_input_thread_running;
 #endif
 
 	scfg_t	cfg;
