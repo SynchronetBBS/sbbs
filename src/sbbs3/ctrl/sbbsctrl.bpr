@@ -47,10 +47,10 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX"/>
+    <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib"/>
     <LIBPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
@@ -60,8 +60,8 @@
     <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
       -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS -D_DEBUG 
       -DRINGBUF_SEM -DRINGBUF_MUTEX -boa"/>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
-      -v -vi- -c -tW -tWM"/>
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
+      -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zi"/>
@@ -121,8 +121,8 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=13
-Release=1
+MinorVer=14
+Release=0
 Build=0
 Debug=0
 PreRelease=0
@@ -135,43 +135,44 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.13.1.0
+FileVersion=3.14.0.0
 InternalName=
 LegalCopyright=(C) 2006 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
-ProductVersion=3.13b
+ProductVersion=3.14a
 Comments=
 
 [HistoryLists\hlIncludePath]
-Count=26
-Item0=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item1=..\;$(BCB)\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item2=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item3=..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item4=..\;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item5=..\;..;$(BCB)\include;$(BCB)\include\vcl
-Item6=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Count=27
+Item0=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib
+Item1=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item2=..\;$(BCB)\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item3=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item4=..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item5=..\;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item6=..\;..;$(BCB)\include;$(BCB)\include\vcl
 Item7=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item8=..\;..;$(BCB)\include;$(BCB)\include\vcl
+Item8=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
 Item9=..\;..;$(BCB)\include;$(BCB)\include\vcl
-Item10=..;$(BCB)\include;$(BCB)\include\vcl
-Item11=..\DLL;..;$(BCB)\include;$(BCB)\include\vcl
-Item12=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item10=..\;..;$(BCB)\include;$(BCB)\include\vcl
+Item11=..;$(BCB)\include;$(BCB)\include\vcl
+Item12=..\DLL;..;$(BCB)\include;$(BCB)\include\vcl
 Item13=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item14=..;$(BCB)\include;$(BCB)\include\vcl
-Item15=..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item16=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item17=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item18=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item19=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item20=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item21=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item22=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item23=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item24=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item25=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item14=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item15=..;$(BCB)\include;$(BCB)\include\vcl
+Item16=..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item17=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item18=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item19=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item20=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item21=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item22=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item23=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item24=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item25=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item26=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
 Count=27
@@ -209,13 +210,14 @@ Item0=$(BCB)\source\vcl;C:\src\xpdev\
 Item1=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
-Count=6
-Item0=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX
-Item1=SBBS;_DEBUG;RINGBUF_SEM
-Item2=SBBS;_DEBUG
-Item3=SBBS
-Item4=SBBS;SMB_GETMSGTXT;_DEBUG
-Item5=SBBS;SMB_GETMSGTXT
+Count=7
+Item0=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
+Item1=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX
+Item2=SBBS;_DEBUG;RINGBUF_SEM
+Item3=SBBS;_DEBUG
+Item4=SBBS
+Item5=SBBS;SMB_GETMSGTXT;_DEBUG
+Item6=SBBS;SMB_GETMSGTXT
 
 [Debugging]
 DebugSourceDirs=$(BCB)\source\vcl;C:\src\xpdev\
@@ -236,11 +238,6 @@ RemoteDebug=0
 ShowInfoMsgs=0
 LinkDebugVcl=0
 LinkCGLIB=0
-
-[CORBA]
-AddServerUnit=1
-AddClientUnit=1
-PrecompiledHeaders=1
 
 [Language]
 ActiveLang=
