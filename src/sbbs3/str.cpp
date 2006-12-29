@@ -676,10 +676,14 @@ bool sbbs_t::inputnstime(time_t *dt)
 /*****************************************************************************/
 /* Checks a password for uniqueness and validity                              */
 /*****************************************************************************/
-bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
+bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 {
 	char c,d,first[128],last[128],sysop[41],sysname[41],*p;
 	char alias[LEN_ALIAS+1], name[LEN_NAME+1], handle[LEN_HANDLE+1];
+	char pass[LEN_PASS+1];
+
+	SAFECOPY(pass,passwd);
+	strupr(pass);
 
 	if(strlen(pass)<4) {
 		bputs(text[PasswordTooShort]);
@@ -711,23 +715,23 @@ bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 		bputs(text[PasswordObvious]);
 		return(0); 
 	}
-	strcpy(name,user->name);
+	SAFECOPY(name,user->name);
 	strupr(name);
-	strcpy(alias,user->alias);
+	SAFECOPY(alias,user->alias);
 	strupr(alias);
-	strcpy(first,alias);
+	SAFECOPY(first,alias);
 	p=strchr(first,' ');
 	if(p) {
 		*p=0;
-		strcpy(last,p+1); 
+		SAFECOPY(last,p+1); 
 	}
 	else
 		last[0]=0;
-	strcpy(handle,user->handle);
+	SAFECOPY(handle,user->handle);
 	strupr(handle);
-	strcpy(sysop,cfg.sys_op);
+	SAFECOPY(sysop,cfg.sys_op);
 	strupr(sysop);
-	strcpy(sysname,cfg.sys_name);
+	SAFECOPY(sysname,cfg.sys_name);
 	strupr(sysname);
 	if((unique && user->pass[0]
 			&& (strstr(pass,user->pass) || strstr(user->pass,pass)))
