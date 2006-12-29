@@ -35,10 +35,7 @@ ifeq ($(os),qnx)
  LDFLAGS += -lsocket
 endif
 
-ifdef USE_CRYPTLIB
- CFLAGS	+=	-DUSE_CRYPTLIB
- SBBS_LIBS	+=	-lcl
-endif
+SBBS_LIBS	+=	-lcl
 
 ifdef PREFIX
  CFLAGS += -DPREFIX=$(PREFIX)
