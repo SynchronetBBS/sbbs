@@ -240,7 +240,7 @@ bool sbbs_t::answer()
 			}
 		}
 		else
-			lprintf(LOG_DEBUG,"Node %d RLogin: Unknown user: %s",cfg.node_num,rlogin_name);
+			lprintf(LOG_DEBUG,"Node %d SSH: Unknown user: %s",cfg.node_num,rlogin_name);
 	}
 #endif
 
