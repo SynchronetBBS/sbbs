@@ -79,6 +79,11 @@ else
  # Use local NSPR first...
  CFLAGS += -I/usr/local/include -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)nspr
 endif
+ifdef CRYPTLIBINCLUDE
+ CFLAGS += -I$(CRYPTLIBINCLUDE)
+else
+ CFLAGS += -I$(SRC_ROOT)/../include/cryptlib
+endif
 ifndef JSLIBDIR
  JSLIBDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)$(machine).$(BUILD)
 endif
@@ -94,9 +99,13 @@ ifeq ($(os),linux)
  JS_LDFLAGS	+=	-ldl
 endif
 JS_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
-
 CFLAGS	+=	$(JS_CFLAGS)
 LDFLAGS	+=	$(JS_LDFLAGS)
+
+ifndef CRYPTLIBDIR
+ CRYPTLIBDIR := $(SRC_ROOT)/../lib/cryptlib/$(os).release
+endif
+LD_FLAGS	+=	-L$(CRYPTLIBDIR)
 
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS)
