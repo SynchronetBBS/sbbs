@@ -68,10 +68,7 @@
 #endif // _WIN32
 
 #ifdef USE_CRYPTLIB
-	#define SSH_END()	if(ssh) {\
-							cryptDestroySession(sbbs->ssh_session);\
-							sbbs->ssh_mode=false;\
-						}
+	#define SSH_END()	if(ssh)	cryptDestroySession(sbbs->ssh_session);
 #else
 	#define	SSH_END()
 #endif
@@ -4765,8 +4762,7 @@ NO_SSH:
 		}
 
 		if(!is_client) {
-			/* TODO: Do we need to close_socket(client_socket) here? */
-			SSH_END();
+			/* Do not need to close_socket(client_socket) here */
 			continue;
 		}
 
