@@ -1357,8 +1357,11 @@ void input_thread(void *arg)
 			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
 				rd=0;
 			else {
-				if(!i)
+				if(!i) {
+					if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+						sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 					continue;
+				}
 				rd=i;
 			}
 		}
@@ -5045,6 +5048,9 @@ NO_PASSTHRU:
 			new_node->sys_status|=SS_SSH;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
 			new_node->ssh_session=sbbs->ssh_session;
+			/* Wait for pending data to be sent then turn off ssh_mode for uber-output */
+			while(RingBufFull(&sbbs->outbuf))
+				SLEEP(1);
 			sbbs->ssh_mode=false;
 		}
 #endif
