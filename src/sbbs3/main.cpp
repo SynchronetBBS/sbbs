@@ -67,6 +67,15 @@
 
 #endif // _WIN32
 
+#ifdef USE_CRYPTLIB
+	#define SSH_END()	if(ssh) {\
+							cryptDestroySession(sbbs->ssh_session);\
+							sbbs->ssh_mode=false;\
+						}
+#else
+	#define	SSH_END()
+#endif
+
 time_t	uptime=0;
 DWORD	served=0;
 
@@ -4755,8 +4764,11 @@ NO_SSH:
 #endif
 		}
 
-		if(!is_client)
+		if(!is_client) {
+			/* TODO: Do we need to close_socket(client_socket) here? */
+			SSH_END();
 			continue;
+		}
 
 		if(client_socket == INVALID_SOCKET)	{
 #if 0	/* is this necessary still? */
@@ -4770,6 +4782,7 @@ NO_SSH:
 			if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
 				break;
 #endif
+			SSH_END();
 			continue;
 		}
 		char host_ip[32];
@@ -4777,10 +4790,7 @@ NO_SSH:
 		strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
-#ifdef USE_CRYPTLIB
-			if(ssh)
-				cryptDestroySession(sbbs->ssh_session);
-#endif
+			SSH_END();
 			close_socket(client_socket);
 			continue;
 		}
@@ -4803,10 +4813,7 @@ NO_SSH:
         sbbs->online=ON_REMOTE;
 
 		if(sbbs->trashcan(host_ip,"ip")) {
-#ifdef USE_CRYPTLIB
-			if(ssh)
-				cryptDestroySession(sbbs->ssh_session);
-#endif
+			SSH_END();
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can"
 				,client_socket);
@@ -4845,10 +4852,7 @@ NO_SSH:
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {
-#ifdef USE_CRYPTLIB
-			if(ssh)
-				cryptDestroySession(sbbs->ssh_session);
-#endif
+			SSH_END();
 			close_socket(client_socket);
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can",client_socket);
 			SAFEPRINTF(logstr, "Blocked Hostname: %s",host_name);
@@ -4886,8 +4890,11 @@ NO_SSH:
 		for(i=first_node;i<=last_node;i++) {
 			/* paranoia: make sure node.status!=NODE_WFC by default */
 			node.status=NODE_INVALID_STATUS;	
-			if(sbbs->getnodedat(i,&node,1)!=0)
+			if(sbbs->getnodedat(i,&node,1)!=0) {
+				/* TODO: Do we need to close_socket(client_socket) and client_off() here? */
+				SSH_END();
 				continue;
+			}
 			if(node.status==NODE_WFC) {
 				node.status=NODE_LOGON;
 				sbbs->putnodedat(i,&node);
@@ -4907,10 +4914,7 @@ NO_SSH:
 			}
 			mswait(3000);
 			client_off(client_socket);
-#ifdef USE_CRYPTLIB
-			if(ssh)
-				cryptDestroySession(sbbs->ssh_session);
-#endif
+			SSH_END();
 			close_socket(client_socket);
 			continue;
 		}
@@ -4948,10 +4952,7 @@ NO_SSH:
 			delete new_node;
 			node_socket[i-1]=INVALID_SOCKET;
 			client_off(client_socket);
-#ifdef USE_CRYPTLIB
-			if(ssh)
-				cryptDestroySession(sbbs->ssh_session);
-#endif
+			SSH_END();
 			close_socket(client_socket);
 			continue;
 		}
@@ -5051,6 +5052,7 @@ NO_PASSTHRU:
 			new_node->sys_status|=SS_SSH;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
 			new_node->ssh_session=sbbs->ssh_session;
+			sbbs->ssh_mode=false;
 		}
 #endif
 
