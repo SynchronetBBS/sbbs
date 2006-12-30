@@ -4890,11 +4890,8 @@ NO_SSH:
 		for(i=first_node;i<=last_node;i++) {
 			/* paranoia: make sure node.status!=NODE_WFC by default */
 			node.status=NODE_INVALID_STATUS;	
-			if(sbbs->getnodedat(i,&node,1)!=0) {
-				/* TODO: Do we need to close_socket(client_socket) and client_off() here? */
-				SSH_END();
+			if(sbbs->getnodedat(i,&node,1)!=0)
 				continue;
-			}
 			if(node.status==NODE_WFC) {
 				node.status=NODE_LOGON;
 				sbbs->putnodedat(i,&node);
