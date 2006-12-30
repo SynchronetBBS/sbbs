@@ -8,14 +8,18 @@
 CC		=	bcc32
 LD		=	ilink32
 XSDK	= ..\sdk
+!ifndef SRC_ROOT
+	SRC_ROOT=	..\..\src
+!endif
+
 !ifndef XPDEV
- XPDEV		=	../../src/xpdev
+ XPDEV		=	$(SRC_ROOT)\xpdev
 !endif
 !ifndef SBBS_SRC
- SBBS_SRC	=	../../src/sbbs3
+ SBBS_SRC	=	$(SRC_ROOT)\sbbs3
 !endif
 !ifndef SMBLIB_SRC
- SMBLIB_SRC	=	../../src/smblib
+ SMBLIB_SRC	=	$(SRC_ROOT)\smblib
 !endif
 
 CFLAGS	= -WM -I$(XSDK);$(XPDEV);$(SBBS_SRC);$(SMBLIB_SRC)
