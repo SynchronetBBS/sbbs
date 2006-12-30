@@ -102,7 +102,7 @@ LDFLAGS	+=	$(JS_LDFLAGS)
 ifndef CRYPTLIBDIR
  CRYPTLIBDIR := $(SRC_ROOT)/../lib/cryptlib/$(os).release
 endif
-LD_FLAGS	+=	-L$(CRYPTLIBDIR)
+LDFLAGS	+=	-L$(CRYPTLIBDIR)
 
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS)
@@ -111,9 +111,9 @@ MT_CFLAGS	+=	$(SBBSDEFS)
 PWD	:=	$(shell pwd)
 ifdef SBBSDIR
  ifeq ($(os),sunos)
-  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):/opt/sfw/gcc-3/lib
+  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
  else
-  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR)
+  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):$(CRYPTLIBDIR)
  endif
 else
  ifeq ($(os),sunos)
@@ -124,7 +124,7 @@ else
 endif
 export LD_RUN_PATH
 
-CON_LIBS	= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
+CON_LIBS	:= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
  MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
