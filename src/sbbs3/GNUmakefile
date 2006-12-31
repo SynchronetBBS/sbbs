@@ -119,7 +119,7 @@ else
  ifeq ($(os),sunos)
   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
  else
-  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):$(CRYPTLIB)
+  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(PWD)/$(JSLIBDIR):$(PWD)/$(NSPRDIR):$(CRYPTLIBDIR)
  endif
 endif
 export LD_RUN_PATH
