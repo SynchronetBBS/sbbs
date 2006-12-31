@@ -92,8 +92,8 @@ typedef struct {
 
 sbbs_ntsvc_t bbs ={	
 	NTSVC_NAME_BBS,
-	"Synchronet Telnet/RLogin Server",
-	"Provides support for Telnet and RLogin clients and executes timed events. " \
+	"Synchronet Telnet/RLogin/SSH Server",
+	"Provides support for Telnet, RLogin, and SSH clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
 	&bbs_startup.options,
