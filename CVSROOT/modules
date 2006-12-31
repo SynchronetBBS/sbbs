@@ -27,18 +27,18 @@
 lib-win32           -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
 lib-win32.release   -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
 lib-win32.debug     -a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.release lib/microsoft lib/cryptlib
-lib-linux           -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
-lib-linux.release   -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
-lib-linux.debug     -a lib/mozilla/js/linux.debug     lib/mozilla/nspr/linux.debug
-lib-freebsd         -a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release
-lib-freebsd.release -a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release
-lib-freebsd.debug   -a lib/mozilla/js/freebsd.debug   lib/mozilla/nspr/freebsd.debug
-lib-openbsd         -a lib/mozilla/js/openbsd.release lib/mozilla/nspr/openbsd.release
-lib-openbsd.release -a lib/mozilla/js/openbsd.release lib/mozilla/nspr/openbsd.release
-lib-openbsd.debug   -a lib/mozilla/js/openbsd.debug   lib/mozilla/nspr/openbsd.debug
-lib-netbsd          -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
-lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
-lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug
+lib-linux           -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release lib/cryptlib/linux.release
+lib-linux.release   -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release lib/cryptlib/linux.release
+lib-linux.debug     -a lib/mozilla/js/linux.debug     lib/mozilla/nspr/linux.debug lib/cryptlib/linux.release
+lib-freebsd         -a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release lib/cryptlib/freebsd.release
+lib-freebsd.release -a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release lib/cryptlib/freebsd.release
+lib-freebsd.debug   -a lib/mozilla/js/freebsd.debug   lib/mozilla/nspr/freebsd.debug lib/cryptlib/freebsd.release
+lib-openbsd         -a lib/mozilla/js/openbsd.release lib/mozilla/nspr/openbsd.release lib/cryptlib/openbsd.release
+lib-openbsd.release -a lib/mozilla/js/openbsd.release lib/mozilla/nspr/openbsd.release lib/cryptlib/openbsd.release
+lib-openbsd.debug   -a lib/mozilla/js/openbsd.debug   lib/mozilla/nspr/openbsd.debug lib/cryptlib/openbsd.release
+lib-netbsd          -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release lib/cryptlib/netbsd.release
+lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release lib/cryptlib/netbsd.release
+lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug lib/cryptlib/netbsd.release
 src-sbbs3           -a src/build src/sbbs3 src/xpdev src/smblib src/uifc include src/conio
 run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs web
 install install
