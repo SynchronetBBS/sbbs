@@ -32,6 +32,7 @@ guest.security.restrictions|=UFLAG_P;	// can't post
 guest.security.restrictions|=UFLAG_M;	// can't post on networked subs (redundant)
 guest.security.restrictions|=UFLAG_W;	// can't write to the auto-message
 guest.security.restrictions|=UFLAG_R;	// can't remove files
+guest.security.restrictions|=UFLAG_C;	// can't chat
 guest.security.exemptions|=UFLAG_G;		// multiple simultaneous logins
 guest.security.exemptions|=UFLAG_L;		// unlimited logons per day
 guest.security.exemptions|=UFLAG_T;		// unlimited time online
