@@ -1364,7 +1364,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't edit */
 							break;							/* extra line */
 						if(mode&WIN_EDIT) {
-							if(mode&WIN_EDITACT) {
+							if(mode&WIN_SAV)
+								api->savnum++;
+							if(mode&WIN_ACT) {
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
@@ -1372,8 +1374,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
 									tmp_buffer[i]=hclr|(cclr<<4);
+
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
+							}
+							else if(mode&WIN_SAV) {
+								api->savnum--;
+								puttext(sav[api->savnum].left,sav[api->savnum].top
+									,sav[api->savnum].right,sav[api->savnum].bot
+									,sav[api->savnum].buf);
+								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_EDIT); 
 						}
@@ -1388,18 +1398,26 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						break;
 					case CIO_KEY_IC:	/* insert */
 						if(mode&WIN_INS) {
+							if(mode&WIN_SAV)
+								api->savnum++;
 							if(mode&WIN_INSACT) {
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 								for(i=1;i<(width*height*2);i+=2)
 									tmp_buffer[i]=lclr|(cclr<<4);
-								if(opts) {
-									j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
-									for(i=(((y-top)*width)*2)+7;i<j;i+=2)
-										tmp_buffer[i]=hclr|(cclr<<4); 
-								}
+								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
+								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
+									tmp_buffer[i]=hclr|(cclr<<4);
+
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
+							}
+							else if(mode&WIN_SAV) {
+								api->savnum--;
+								puttext(sav[api->savnum].left,sav[api->savnum].top
+									,sav[api->savnum].right,sav[api->savnum].bot
+									,sav[api->savnum].buf);
+								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(!opts) {
 								return(MSK_INS); 
@@ -1411,6 +1429,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
 							break;							/* extra line */
 						if(mode&WIN_DEL) {
+							if(mode&WIN_SAV)
+								api->savnum++;
 							if(mode&WIN_DELACT) {
 								gettext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
@@ -1419,8 +1439,16 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								j=(((y-top)*width)*2)+7+((width-hbrdrsize-2)*2);
 								for(i=(((y-top)*width)*2)+7;i<j;i+=2)
 									tmp_buffer[i]=hclr|(cclr<<4);
+
 								puttext(s_left+left,s_top+top,s_left
 									+left+width-1,s_top+top+height-1,tmp_buffer);
+							}
+							else if(mode&WIN_SAV) {
+								api->savnum--;
+								puttext(sav[api->savnum].left,sav[api->savnum].top
+									,sav[api->savnum].right,sav[api->savnum].bot
+									,sav[api->savnum].buf);
+								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_DEL); 
 						}
