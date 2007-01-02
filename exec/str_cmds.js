@@ -335,7 +335,7 @@ function str_cmds(str)
 		}
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
-				bbs.exec("command.com",EX_OUTR|EX_INR|EX_NATIVE);
+				bbs.exec("command.com",EX_OUTR|EX_INR);
 			}
 			return;
 		}
