@@ -1354,8 +1354,16 @@ void input_thread(void *arg)
 
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode && sock==sbbs->client_socket) {
-			if(!cryptStatusOK(cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))
-				rd=0;
+			int err;
+			if(!cryptStatusOK((err=cryptPopData(sbbs->ssh_session, (char*)inbuf, rd, &i)))) {
+				if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+					sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+				if(err==CRYPT_ERROR_TIMEOUT)
+					continue;
+				/* Handle the SSH error here... */
+				lprintf(LOG_ERR,"Node %d !ERROR %d recieving on Cryptlib session", sbbs->cfg.node_num, err);
+				break;
+			}
 			else {
 				if(!i) {
 					if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
@@ -1802,8 +1810,14 @@ void output_thread(void* arg)
 
 #ifdef USE_CRYPTLIB
 		if(sbbs->ssh_mode) {
-			if(!cryptStatusOK(cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))
+			int err;
+			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
+				/* Handle the SSH error here... */
+				lprintf(LOG_ERR,"!%s: ERROR %d sending on Cryptlib session", node, err);
 				i=-1;
+				sbbs->online=FALSE;
+				i=buftop-bufbot;	// Pretend we sent it all
+			}
 			else
 				cryptFlushData(sbbs->ssh_session);
 		}
@@ -5057,6 +5071,7 @@ NO_PASSTHRU:
 			/* Wait for pending data to be sent then turn off ssh_mode for uber-output */
 			while(RingBufFull(&sbbs->outbuf))
 				SLEEP(1);
+			cryptPopData(sbbs->ssh_session, str, sizeof(str), &i);
 			sbbs->ssh_mode=false;
 		}
 #endif
