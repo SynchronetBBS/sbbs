@@ -1361,7 +1361,7 @@ void input_thread(void *arg)
 				if(err==CRYPT_ERROR_TIMEOUT)
 					continue;
 				/* Handle the SSH error here... */
-				lprintf(LOG_ERR,"Node %d !ERROR %d recieving on Cryptlib session", sbbs->cfg.node_num, err);
+				lprintf(LOG_ERR,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
 				break;
 			}
 			else {
@@ -1478,7 +1478,7 @@ void input_thread(void *arg)
 
 #ifdef USE_CRYPTLIB
 /*
- * This thread copies anything recieved from the client to the passthru_socket
+ * This thread copies anything received from the client to the passthru_socket
  * It can only do that when the input thread is locked.
  * Luckily, the input thread is currently locked exactly when we want it to be.
  * Since the passthru socket is 8-bit clean and does NOT use a protocol,
