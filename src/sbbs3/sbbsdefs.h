@@ -51,7 +51,7 @@
 /*************/
 
 #define VERSION 	"3.14"  /* Version: Major.minor  */
-#define REVISION	'a'     /* Revision: lowercase letter */
+#define REVISION	'b'     /* Revision: lowercase letter */
 #define VERSION_NUM	(31400	 + (tolower(REVISION)-'a'))
 #define VERSION_HEX	(0x31400 + (tolower(REVISION)-'a'))
 
