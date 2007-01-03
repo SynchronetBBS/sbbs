@@ -28,6 +28,7 @@ endif
 
 ifeq ($(os),sunos)    # Solaris
  LDFLAGS += -lnsl -lrt
+ SBBS_LIBS	+=	-lkstat
 endif
 
 # So far, only QNX has sem_timedwait()
