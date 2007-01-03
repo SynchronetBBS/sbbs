@@ -31,7 +31,7 @@ main (int argc, char *argv[])
   if(ctrl_dir==NULL)
   	return(1);
 
-  if(argc<1)
+  if(argc<2)
     return(1);
 
   node=atoi(argv[1]);
