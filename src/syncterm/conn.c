@@ -43,6 +43,9 @@ int conn_recv(char *buffer, size_t buflen, unsigned timeout)
 
 	if(con_type==CONN_TYPE_SSH) {
 		int	status;
+		if(!socket_check(conn_socket, &data_waiting, NULL, timeout))
+			return(-1);
+
 		status=cl.PopData(ssh_session, buffer, buflen, &rd);
 		if(cryptStatusError(status)) {
 			char	str[1024];
