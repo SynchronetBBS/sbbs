@@ -210,6 +210,14 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
 
+   H. Get the required Cryptlib library for your platform and build type:
+      # cvs co lib/cryptlib/linux.release
+      or:
+      # cvs co lib/cryptlib/freebsd.release
+      etc.
+      Note: This step is not necessary if your system already has the file
+            /usr/lib/libcl.so
+
 
 2. Build Synchronet:
 
