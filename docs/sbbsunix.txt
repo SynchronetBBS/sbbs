@@ -218,6 +218,13 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       Note: This step is not necessary if your system already has the file
             /usr/lib/libcl.so
 
+   I. Create symbolic links to the Cryptlib Library in your /usr/lib
+      directory:
+      # cd /usr/lib; ln -s /sbbs/lib/cryptlib/linux.debug/*.so .
+
+      or: Add these two directories to your LD_LIBRARY_PATH environment 
+          variable.
+
 
 2. Build Synchronet:
 
