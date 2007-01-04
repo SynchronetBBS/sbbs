@@ -108,7 +108,7 @@ binaries:	sbbs3 scfg umonitor uedit gtkuseredit gtkchat gtkmonitor gtkuserlist s
 
 externals:	sbj sbl dpoker tbd
 
-sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD)
+sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(BUILD) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD) $(SBBSDIR)/lib/cryptlib/$(machine).release
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
 scfg:	src
@@ -235,6 +235,11 @@ endif
 $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(BUILD): 
 ifndef NOCVS
 	$(CVS_CO) lib/mozilla/nspr/$(machine).$(BUILD)
+endif
+
+$(SBBSDIR)/lib/cryptlib/$(machine).release: 
+ifndef NOCVS
+	$(CVS_CO) lib/cryptlib/$(machine).release
 endif
 
 cvslogin: $(SBBSDIR)
