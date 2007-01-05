@@ -35,6 +35,7 @@ to Internet clients and which ports you have configured those servers and servic
 <table border=1>
 <tr valign="top" align="left"><th>Protocol<th>Port<th>Comments
 <tr valign="top"><td nowrap>Telnet<td nowrap>TCP 23<td>For Telnet logins (highly recommended)
+<tr valign="top"><td nowrap>SSH<td nowrap>TCP 22<td>For SecureShell logins (recommended)
 <tr valign="top"><td>RLogin<td nowrap>TCP 513<td>Optional for quick-login from RLogin clients (e.g. SyncTerm)
 <tr valign="top"><td>SMTP<td nowrap>TCP 25<td>Necessary for receiving Internet e-mail and inter-bbs instant messages
 <tr valign="top"><td>POP3<td nowrap>TCP 110<td>Allows BBS users to check their e-mail using standard Internet mail clients (e.g. Outlook Express)
@@ -314,7 +315,14 @@ ftp> dir
 <p>Use an FTP client that supports passive mode <b>and</b> can display all the responses received-from
 the FTP server to help identify this particular problem. The FTP client must be running on a system <i>outside</i> your private network,
 so you may need a friend to assist you with this.
-
+<p>If you have a dynamically-assigned IP address (via DHCP), then your IP address may change at some point,
+so setting the <tt>PasvIpAddress</tt> to a specific IP address may not be a long term solution for your FTP Server.
+In Synchronet v3.14a and later, you can
+enable the new <i>Lookup Passive IP</i> feature by checking the <i>Lookup</i> checkbox on the <i>Passive</i>
+tab of the <i>FTP Server Configuration Dialog</i> in SBBSCTRL-Win32, or by adding <tt>LOOKUP_PASV_IP</tt> to the
+<tt>Options</tt> value in the <tt>[FTP]</tt> section of your <tt>ctrl/sbbs.ini</tt> file. This option instructs
+the Synchronet FTP Server to perform a DNS hostname lookup on your BBS's public hostname and use the resulting IP address
+(which <b>should</b> be your BBS's public IP address) in passive responses.
 <p>
 <li>If your firewall cannot dynamically open/forward FTP PASV data ports for incoming passive FTP data connections, you can
 specifiy a limited <i>range</i> of TCP port numbers to use for passive transfers by modifying the
@@ -387,8 +395,8 @@ Depends on what those clients will be doing while connected. Here are some facts
 they are primarily using your <i>upstream</i> channel.
 <p>So if you have a  1.5Mbps/128Kbps DSL connection, your <i>downstream</i> is 1.5Mbps while your
 <i>upstream</i> is only 128Kbps.
-If you have a &quot;56K&quot; dial-up connections, for example, your <i>downstream</i> is probably 
-in the 43-53Kbps range while your <i>upstream</i> bandwidth cannot be any more than 33.6Kbps.
+If you have a &quot;56K&quot; dial-up connection, for example, your <i>downstream</i> is probably 
+in the 43-53Kbps range while your <i>upstream</i> bandwidth cannot be any more than 33.6Kbps (or 48Kbps for V.92 modems).
 <p>If you are lucky enough to have an <b><u>S</u>DSL</b> or other type of <i>symmetrical</i> Internet connection,
 then both your upstream and downstream channels are of the same bandwidth.
 <p>
