@@ -198,6 +198,9 @@ void dump(BYTE* buf, int len)
 /* Zmodem Stuff */
 int log_level = LOG_INFO;
 
+enum { ZMODEM_MODE_SEND, ZMODEM_MODE_RECV } zmodem_mode;
+
+
 static BOOL zmodem_check_abort(void* vp)
 {
 	zmodem_t* zm = (zmodem_t*)vp;
@@ -336,6 +339,8 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 			,l%60L
 			,zm->block_size
 			,zm->receive_32bit_data ? 32 : 16
+			,zmodem_mode==ZMODEM_MODE_RECV ? (zm->receive_32bit_data ? 32:16) : 
+				(zm->can_fcs_32 && !zm->want_fcs_16) ? 32:16
 			,cps
 			);
 		clreol();
@@ -706,6 +711,8 @@ void guts_background_download(void *cbdata)
 	zmodem_t	zm;
 	ulong		bytes_received;
 
+	zmodem_mode=ZMODEM_MODE_RECV;
+
 	zmodem_init(&zm
 		,&gi
 		,guts_lputs, guts_zmodem_progress
@@ -733,6 +740,9 @@ void guts_background_upload(void *cbdata)
 	}
 
 	setvbuf(fp,NULL,_IOFBF,0x10000);
+
+
+	zmodem_mode=ZMODEM_MODE_SEND;
 
 	zmodem_init(&zm
 		,&gi
@@ -862,6 +872,8 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	draw_transfer_window("Zmodem Upload");
 
+	zmodem_mode=ZMODEM_MODE_SEND;
+
 	binary_mode_on(bbs);
 	zmodem_init(&zm
 		,/* cbdata */&zm
@@ -903,6 +915,8 @@ void zmodem_download(struct bbslist *bbs)
 	bufbot=buftop=0;	/* purge our receive buffer */
 #endif
 	draw_transfer_window("Zmodem Download");
+
+	zmodem_mode=ZMODEM_MODE_RECV;
 
 	binary_mode_on(bbs);
 	zmodem_init(&zm
