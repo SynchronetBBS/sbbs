@@ -671,7 +671,8 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 		p++;				/* skip space */
 		SKIP_CHAR(p,' ');	/* skip more spaces */
 	}
-	strcpy(main_csi.str, p);
+	if(*p)
+		strcpy(main_csi.str, p);
 
 #ifdef JAVASCRIPT
 	if((p=getfext(mod))!=NULL && stricmp(p,".js")==0)
