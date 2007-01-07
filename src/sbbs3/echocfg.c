@@ -1188,7 +1188,7 @@ int main(int argc, char **argv)
 						fprintf(stream,"LOG NONE\n");
 					else
 						fprintf(stream,"LOG %08lX\n",cfg.log); }
-				fprintf(stream,"LOG_LEVEL %u",cfg.log_level);
+				fprintf(stream,"LOG_LEVEL %u\n",cfg.log_level);
 				if(cfg.inbound[0])
 					fprintf(stream,"INBOUND %s\n",cfg.inbound);
 				if(cfg.secure[0])
