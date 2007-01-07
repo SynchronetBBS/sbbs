@@ -101,6 +101,9 @@ int pktdump(FILE* fp, const char* fname)
 	printf(" from %s%s",faddrtoa(&orig,NULL),origdomn);
 	printf(" to %s%s\n"	,faddrtoa(&dest,NULL),destdomn);
 
+	if(pkthdr.password[0])
+		fprintf(stdout,"Password: '%.*s'\n",sizeof(pkthdr.password),pkthdr.password);
+
 	fseek(fp,sizeof(pkthdr),SEEK_SET);
 
 	/* Read/Display packed messages */
@@ -145,10 +148,24 @@ int pktdump(FILE* fp, const char* fname)
 	return(0);
 }
 
+char* usage = "usage: pktdump [-body] <file1.pkt> [file2.pkt] [...]\n";
+
 int main(int argc, char** argv)
 {
 	FILE*	fp;
 	int		i;
+	char	revision[16];
+
+	sscanf("$Revision$", "%*s %s", revision);
+
+	fprintf(stderr,"pktdump rev %s - Dump FidoNet Packets\n\n"
+		,revision
+		);
+
+	if(argc<2) {
+		fprintf(stderr,"%s",usage);
+		return -1;
+	}
 
 	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
 		perror(_PATH_DEVNULL);
@@ -176,7 +193,7 @@ int main(int argc, char** argv)
 					bodyfp=stdout;;
 					break;
 				default:
-					printf("usage: pktdump [-text] <files.pkt>\n");
+					printf("%s",usage);
 					return(0);
 			}
 			continue;
