@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -106,6 +106,9 @@ char *wcfaddrtoa(faddr_t* addr)
 	return(str);
 }
 
+/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
+static char* logLevelStringList[] 
+	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Informational", "Debugging", NULL};
 
 int main(int argc, char **argv)
 {
@@ -270,6 +273,7 @@ int main(int argc, char **argv)
 		sprintf(opt[i++],"%-30.30s %s","Areafix Failure Notification",str);
 		sprintf(opt[i++],"Nodes...");
 		sprintf(opt[i++],"Paths...");
+		sprintf(opt[i++],"%-30.30s %s","Log Level",logLevelStringList[cfg.log_level]);
 		sprintf(opt[i++],"Log Options...");
 		sprintf(opt[i++],"Toggle Options...");
 		sprintf(opt[i++],"Archive Programs...");
@@ -650,6 +654,16 @@ int main(int argc, char **argv)
 				break;
 			case 6:
 	uifc.helpbuf=
+	"~ Log Level ~\r\n"
+	"\r\n"
+	"Select the minimum severity of log entries to be logged to the log file.";
+				j=cfg.log_level;
+				i=uifc.list(WIN_MID,0,0,0,&j,0,"Log Level",logLevelStringList);
+				if(i>=0 && i<=LOG_DEBUG)
+					cfg.log_level=i;
+				break;
+			case 7:
+	uifc.helpbuf=
 	" Log Options \r\n"
 	"\r\n"
 	"Each loggable item can be toggled off or on from this menu. You must run\r\n"
@@ -748,7 +762,7 @@ int main(int argc, char **argv)
 				break;
 
 
-			case 7:
+			case 8:
 	uifc.helpbuf=
 	"Secure Operation tells SBBSecho to check the AREAS.BBS file to insure\r\n"
 	"    that the packet origin exists there as well as check the password of\r\n"
@@ -833,7 +847,7 @@ int main(int argc, char **argv)
 					} 
 				}
 				break;
-			case 8:
+			case 9:
 	uifc.helpbuf=
 	" Archive Programs \r\n\r\n"
 	"These are the archiving programs (types) which are available for\r\n"
@@ -940,7 +954,7 @@ int main(int argc, char **argv)
 								break;
 								} } }
 				break;
-			case 9:
+			case 10:
 	uifc.helpbuf=
 	" Additional Echo Lists \r\n\r\n"
 	"This feature allows you to specify echo lists (in addition to your\r\n"
@@ -1174,6 +1188,7 @@ int main(int argc, char **argv)
 						fprintf(stream,"LOG NONE\n");
 					else
 						fprintf(stream,"LOG %08lX\n",cfg.log); }
+				fprintf(stream,"LOG_LEVEL %u",cfg.log_level);
 				if(cfg.inbound[0])
 					fprintf(stream,"INBOUND %s\n",cfg.inbound);
 				if(cfg.secure[0])

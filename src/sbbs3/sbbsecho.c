@@ -72,7 +72,6 @@ smb_t *smb,*email;
 long misc=(IMPORT_PACKETS|IMPORT_NETMAIL|IMPORT_ECHOMAIL|EXPORT_ECHOMAIL
 			|DELETE_NETMAIL|DELETE_PACKETS);
 ulong netmail=0;
-int log_level=LOG_NOTICE;
 char tmp[256],pkt_type=0;
 int secure,cur_smb=0;
 FILE *fidologfile=NULL;
@@ -141,7 +140,7 @@ int lprintf(int level, char *fmat, ...)
 	truncsp(sbuf);
 	printf("%s\n",sbuf);
 
-	if(level<=log_level)
+	if(level<=cfg.log_level)
 		logprintf("%s",sbuf);
 	return(chcount);
 }
