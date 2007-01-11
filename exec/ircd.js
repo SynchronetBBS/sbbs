@@ -36,7 +36,7 @@ const MAIN_REVISION = "$Revision$".split(' ')[1];
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
-const VERSION = "SynchronetIRCd-1.2(" + MAIN_REVISION + ")";
+const VERSION = "SynchronetIRCd-1.3a(" + MAIN_REVISION + ")";
 const VERSION_STR = "Synchronet " 
 	+ system.version + system.revision + "-" + system.platform 
 	+ system.beta_version + " (IRCd by Randy Sommerfeld)";
@@ -1550,6 +1550,8 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			if (target_server && 
 			    (target_server.id == target_socket.parent) )
 				target = real_target;
+			if (target_socket.issilenced(this.nuh))
+				return 0;	/* On SILENCE list.  Silently ignore. */
 			var str = type_str + " " + target + " :" + send_str;
 			target_socket.originatorout(str,this);
 			if (target_socket.away && (type_str == "PRIVMSG") &&
@@ -1583,7 +1585,7 @@ function IRCClient_do_info() {
 	umode_notice(USERMODE_SPY,"Spy","INFO requested by " + this.nick +
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
-	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.2 ]*=-=-=-=-=-=-=-=-=--");
+	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.3a ]*=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":  IRCd Copyright 2003-2007 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");

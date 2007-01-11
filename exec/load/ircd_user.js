@@ -140,6 +140,7 @@ function IRC_User(id) {
 	this.parent = 0;
 	this.realname = "";
 	this.servername = servername;
+	this.silence = new Array; /* A true array. */
 	this.talkidle = time();
 	this.uprefix = "";
 	this.id = id;
@@ -147,6 +148,7 @@ function IRC_User(id) {
 	this.socket = "";
 	////////// FUNCTIONS
 	// Functions we use to control clients (specific)
+	this.issilenced = User_IsSilenced;
 	this.quit = User_Quit;
 	this.work = User_Work;
 	// Socket functions
@@ -883,6 +885,49 @@ function User_Work() {
 		}
 		this.do_complex_list(cmd);
 		break;
+	case "SILENCE":
+		var sil_dest = this.nick;
+		if (!cmd[1]) {	/* Just display our SILENCE list */
+			for (sil in this.silence) {
+				this.numeric(271, this.nick + " " + this.silence[sil]);
+			}
+		} else if (Users[cmd[1].toUpperCase()]) {
+			/* Looking at another user's SILENCE list isn't supported
+			   at this time. */
+			sil_dest = cmd[1];
+		} else {	/* Adding or removing an entry to our SILENCE list */
+			var target = cmd[1];
+			var del_sil = false;
+			if (target[0] == "+")
+				target = target.slice(1);
+			if (cmd[1][0] == "-") {
+				del_sil = true;
+				target = target.slice(1);
+			}
+			var sil_mask = create_ban_mask(target);
+			var sil_mchar;
+			if (!del_sil) { /* Adding an entry */
+				if (this.issilenced(sil_mask))
+					break;	/* Exit silently if already on SILENCE list */
+				if (this.silence.length >= 10) {
+					/* We only allow 10 entries in the user's SILENCE list. */
+					this.numeric(511, this.nick + " " + target + " :"
+						+ "Your SILENCE list is full.");
+					break;
+				}
+				this.silence.push(sil_mask);
+				sil_mchar = "+";
+			} else { /* Deleting an entry */
+				var sil_entry = this.issilenced(sil_mask);
+				delete this.silence[sil_entry];
+				sil_mchar = "-";
+			}
+			var sil_str = "SILENCE " + sil_mchar + sil_mask;
+			this.originatorout(sil_str, this);
+			break;
+		}
+		this.numeric(272, ":End of SILENCE List.");
+		break;
 	case "LOCOPS":
 		if (!((this.mode&USERMODE_OPER) &&
 		      (this.flags&OLINE_CAN_LOCOPS))) {
@@ -1508,5 +1553,13 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	delete Users[this.nick.toUpperCase()];
 	delete this;
 	rebuild_socksel_array = true;
+}
+
+function User_IsSilenced(sil_mask) {
+	for (sil in this.silence) {
+		if (wildmatch(sil_mask,this.silence[sil]))
+			return sil;
+	}
+	return 0; /* Not Silenced. */
 }
 
