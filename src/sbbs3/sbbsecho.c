@@ -4152,7 +4152,7 @@ int main(int argc, char **argv)
 	glob(path,0,NULL,&g);
 	for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
-		strcpy(packet,(char*)g.gl_pathv[f]);
+		SAFECOPY(packet,(char*)g.gl_pathv[f]);
 
 		lprintf(LOG_DEBUG,"%21s: %s ","Outbound Packet",packet);
 		if((fmsg=sopen(packet,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
@@ -4231,7 +4231,7 @@ int main(int argc, char **argv)
 		glob(path,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
-			strcpy(packet,g.gl_pathv[f]);
+			SAFECOPY(packet,g.gl_pathv[f]);
 
 			if((fidomsg=fnopen(&fmsg,packet,O_RDWR))==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d opening %s %s",__LINE__,packet
@@ -4240,7 +4240,7 @@ int main(int argc, char **argv)
 			}
 			if(filelength(fmsg)<sizeof(pkthdr_t)) {
 				lprintf(LOG_WARNING,"Invalid length of %s: %lu bytes"
-					,fmsg,filelength(fmsg));
+					,packet,filelength(fmsg));
 				fclose(fidomsg);
 				continue; 
 			}
@@ -4695,7 +4695,7 @@ int main(int argc, char **argv)
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
-			strcpy(path,g.gl_pathv[f]);
+			SAFECOPY(path,g.gl_pathv[f]);
 
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d opening %s %s",__LINE__,path
@@ -4756,7 +4756,7 @@ int main(int argc, char **argv)
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
-			strcpy(path,g.gl_pathv[f]);
+			SAFECOPY(path,g.gl_pathv[f]);
 
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d opening %s %s",__LINE__,path
@@ -4841,7 +4841,7 @@ int main(int argc, char **argv)
 					if(write_flofile(hdr.subj,addr,FALSE /* !bundle */))
 						bail(1); }
 			else
-				strcpy(packet,pktname(/* Temp? */ FALSE));
+				SAFECOPY(packet,pktname(/* Temp? */ FALSE));
 
 			now=time(NULL);
 			tm=localtime(&now);
