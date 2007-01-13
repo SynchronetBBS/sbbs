@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -78,8 +78,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	}
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexistcase(str)) {
-		sprintf(str,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
-		errorlog(str);
+		SAFEPRINTF2(tmp,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
+		errorlog(tmp);
 		return(false); 
 	}
 	if((qwk=fnopen(&file,str,O_RDONLY))==NULL) {
