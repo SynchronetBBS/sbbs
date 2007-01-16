@@ -1560,8 +1560,11 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 		strcat(fname,".js");
 
 	SAFECOPY(path,fname);
-	if(getfname(path)==path) /* No path specified, assume exec_dir */
-		sprintf(path,"%s%s",scfg.exec_dir,fname);
+	if(getfname(path)==path) { /* No path specified, assume mods or exec dir */
+		sprintf(path,"%s%s",scfg.mods_dir,fname);
+		if(scfg.mods_dir[0]==0 || !fexist(path))
+			sprintf(path,"%s%s",scfg.exec_dir,fname);
+	}
 
 	do {
 
