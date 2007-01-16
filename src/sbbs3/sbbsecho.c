@@ -4746,7 +4746,7 @@ int main(int argc, char **argv)
 		memset(&msg_path,0,sizeof(addrlist_t));
 		memset(&fakearea,0,sizeof(areasbbs_t));
 
-		lprintf(LOG_DEBUG,"\nPacking Outbound NetMail...");
+		lprintf(LOG_DEBUG,"\nPacking Outbound NetMail from %s",scfg.netmail_dir);
 
 #ifdef __unix__
 		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
@@ -4785,7 +4785,7 @@ int main(int argc, char **argv)
 				fclose(fidomsg);
 				continue;
 			}
-			printf("\n%s to %s ",path,smb_faddrtoa(&addr,NULL));
+			printf("\n%s to %s ",getfname(path),smb_faddrtoa(&addr,NULL));
 			if(cfg.log&LOG_PACKING)
 				logprintf("Packing %s (%s)",path,smb_faddrtoa(&addr,NULL));
 			fmsgbuf=getfmsg(fidomsg,NULL);
@@ -4816,11 +4816,10 @@ int main(int argc, char **argv)
 				else if(attr&ATTR_HOLD) ch='h';
 				else if(attr&ATTR_DIRECT) ch='d';
 				else ch='o';
-				if(addr.zone==sys_faddr.zone) /* Default zone, use default outbound */
-					strcpy(outbound,cfg.outbound);
-				else {						 /* Inter-zone outbound is OUTBOUND.XXX */
-					sprintf(outbound,"%.*s.%03x"
-						,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
+				if(addr.zone==sys_faddr.zone) { /* Default zone, use default outbound */
+					SAFECOPY(outbound,cfg.outbound);
+				} else {						 /* Inter-zone outbound is OUTBOUND.XXX */
+					SAFEPRINTF2(outbound,"%s.%03x",cfg.outbound,addr.zone);
 					MKDIR(outbound);
 					backslash(outbound);
 				}
@@ -4834,15 +4833,16 @@ int main(int argc, char **argv)
 				MKDIR(outbound);
 				backslash(outbound);
 				if(addr.point)
-					sprintf(packet,"%s%08x.%cut",outbound,addr.point,ch);
+					SAFEPRINTF3(packet,"%s%08x.%cut",outbound,addr.point,ch);
 				else
-					sprintf(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
+					SAFEPRINTF4(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
 				if(hdr.attr&FIDO_FILE)
 					if(write_flofile(hdr.subj,addr,FALSE /* !bundle */))
 						bail(1); }
 			else
 				SAFECOPY(packet,pktname(/* Temp? */ FALSE));
 
+			lprintf(LOG_DEBUG,"NetMail packet: %s", packet);
 			now=time(NULL);
 			tm=localtime(&now);
 			if((stream=fnopen(&file,packet,O_RDWR|O_CREAT))==NULL) {

@@ -223,7 +223,7 @@ void read_echo_cfg()
 				printf("\nError allocating %u bytes of memory for arcdef #%u.\n"
 					,sizeof(arcdef_t)*(cfg.arcdefs+1),cfg.arcdefs+1);
 				bail(1); }
-			sprintf(cfg.arcdef[cfg.arcdefs].name,"%-.25s",p);
+			SAFECOPY(cfg.arcdef[cfg.arcdefs].name,p);
 			tp=cfg.arcdef[cfg.arcdefs].name;
 			while(*tp && *tp>' ') tp++;
 			*tp=0;
@@ -232,7 +232,7 @@ void read_echo_cfg()
 			cfg.arcdef[cfg.arcdefs].byteloc=atoi(p);
 			while(*p && *p>' ') p++;
 			while(*p && *p<=' ') p++;
-			sprintf(cfg.arcdef[cfg.arcdefs].hexid,"%-.25s",p);
+			SAFECOPY(cfg.arcdef[cfg.arcdefs].hexid,p);
 			tp=cfg.arcdef[cfg.arcdefs].hexid;
 			while(*tp && *tp>' ') tp++;
 			*tp=0;
@@ -242,13 +242,13 @@ void read_echo_cfg()
 				if(!strnicmp(p,"PACK ",5)) {
 					p+=5;
 					while(*p && *p<=' ') p++;
-					sprintf(cfg.arcdef[cfg.arcdefs].pack,"%-.80s",p);
+					SAFECOPY(cfg.arcdef[cfg.arcdefs].pack,p);
 					truncsp(cfg.arcdef[cfg.arcdefs].pack);
 					continue; }
 				if(!strnicmp(p,"UNPACK ",7)) {
 					p+=7;
 					while(*p && *p<=' ') p++;
-					sprintf(cfg.arcdef[cfg.arcdefs].unpack,"%-.80s",p);
+					SAFECOPY(cfg.arcdef[cfg.arcdefs].unpack,p);
 					truncsp(cfg.arcdef[cfg.arcdefs].unpack); } }
 			++cfg.arcdefs;
 			continue; }
@@ -325,25 +325,25 @@ void read_echo_cfg()
 			continue; }
 
 		if(!stricmp(tmp,"AREAFILE")) {
-			sprintf(cfg.areafile,"%-.80s",cleanstr(p));
+			SAFECOPY(cfg.areafile,cleanstr(p));
 			continue; }
 
 		if(!stricmp(tmp,"LOGFILE")) {
-			sprintf(cfg.logfile,"%-.80s",cleanstr(p));
+			SAFECOPY(cfg.logfile,cleanstr(p));
 			continue; }
 
 		if(!stricmp(tmp,"INBOUND")) {            /* Inbound directory */
-			sprintf(cfg.inbound,"%-.80s",cleanstr(p));
+			SAFECOPY(cfg.inbound,cleanstr(p));
 			backslash(cfg.inbound);
 		continue; }
 
 		if(!stricmp(tmp,"SECURE_INBOUND")) {     /* Secure Inbound directory */
-			sprintf(cfg.secure,"%-.80s",cleanstr(p));
+			SAFECOPY(cfg.secure,cleanstr(p));
 			backslash(cfg.secure);
 			continue; }
 
 		if(!stricmp(tmp,"OUTBOUND")) {           /* Outbound directory */
-			sprintf(cfg.outbound,"%-.80s",cleanstr(p));
+			SAFECOPY(cfg.outbound,cleanstr(p));
 			backslash(cfg.outbound);
 			continue; }
 
@@ -358,7 +358,7 @@ void read_echo_cfg()
 		if(!stricmp(tmp,"USEPACKER")) {          /* Which packer to use */
 			if(!*p)
 				continue;
-			strcpy(str,p);
+			SAFECOPY(str,p);
 			p=str;
 			while(*p && *p>' ') p++;
 			if(!*p)
@@ -405,12 +405,12 @@ void read_echo_cfg()
 					bail(1); }
 				memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
 				cfg.nodecfg[j].faddr=addr; }
-			sprintf(cfg.nodecfg[j].pktpwd,"%.8s",p); }
+			SAFECOPY(cfg.nodecfg[j].pktpwd,p); }
 
 		if(!stricmp(tmp,"PKTTYPE")) {            /* Packet Type to Use */
 			if(!*p)
 				continue;
-			strcpy(str,p);
+			SAFECOPY(str,p);
 			p=str;
 			while(*p && *p>' ') p++;
 			*p=0;
@@ -531,7 +531,7 @@ void read_echo_cfg()
 			while(*p && *p>' ') p++; 		/* Find end of password 	*/
 			*p=0;							/* and terminate the string */
 			++p;
-			sprintf(cfg.nodecfg[i].password,"%-.25s",tp);
+			SAFECOPY(cfg.nodecfg[i].password,tp);
 			while(*p && *p<=' ') p++;		/* Search for more chars */
 			if(!*p) 						/* Nothing else there */
 				continue;
@@ -552,7 +552,7 @@ void read_echo_cfg()
 							"flag #%u.\n",cfg.nodecfgs,j+1);
 						bail(1); }
 					cfg.nodecfg[i].numflags++;
-					sprintf(cfg.nodecfg[i].flag[j].flag,"%.4s",tp); }
+					SAFECOPY(cfg.nodecfg[i].flag[j].flag,tp); }
 				while(*p && *p<=' ') p++; } }
 
 		if(!stricmp(tmp,"ECHOLIST")) {           /* Echolists go here */
@@ -589,7 +589,7 @@ void read_echo_cfg()
 			*p=0;
 			p++;
 
-			sprintf(cfg.listcfg[cfg.listcfgs-1].listpath,"%-.128s",tp);
+			SAFECOPY(cfg.listcfg[cfg.listcfgs-1].listpath,tp);
 			cfg.listcfg[cfg.listcfgs-1].numflags=0;
 			cfg.listcfg[cfg.listcfgs-1].flag=NULL;
 			while(*p && *p<=' ') p++;		/* Skip over whitespace chars */
@@ -610,7 +610,7 @@ void read_echo_cfg()
 							"flag #%u.\n",cfg.listcfgs,j+1);
 						bail(1); }
 					cfg.listcfg[cfg.listcfgs-1].numflags++;
-					sprintf(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,"%.4s",tp); }
+					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,tp); }
 				while(*p && *p<=' ') p++; } }
 
 		/* Message disabled why?  ToDo */
