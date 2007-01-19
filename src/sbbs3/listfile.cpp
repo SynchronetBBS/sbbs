@@ -531,6 +531,23 @@ bool sbbs_t::removefcdt(file_t* f)
 	return(true);
 }
 
+bool sbbs_t::removefile(file_t* f)
+{
+	char str[256];
+
+	if(removefiledat(&cfg,f)) {
+		SAFEPRINTF4(str,"%s removed %s from %s %s"
+			,useron.alias
+			,f->name
+			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
+		logline("U-",str);
+		return(true);
+	}
+	SAFEPRINTF2(str,"%s %s",cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
+	errormsg(WHERE, ERR_REMOVE, f->name, 0, str);
+	return(false);
+}
+
 /****************************************************************************/
 /* Move file 'f' from f.dir to newdir                                       */
 /****************************************************************************/
@@ -784,7 +801,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 										,f.opencount,f.opencount>1 ? "s":nulstr);
 									continue; }
 								if(ch=='D') {
-									removefiledat(&cfg,&f);
+									removefile(&f);
 									if(remfile) {
 										sprintf(tmp,"%s%s",cfg.dir[f.dir]->path,fname);
 										remove(tmp); }
@@ -808,7 +825,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 								,f.opencount,f.opencount>1 ? "s":nulstr);
 							continue; }
 						if(ch=='D') {
-							removefiledat(&cfg,&f);
+							removefile(&f);
 							if(remfile) {
 								sprintf(tmp,"%s%s",cfg.dir[f.dir]->path,fname);
 								remove(tmp); }
@@ -1066,12 +1083,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				case 'R':   /* remove file from database */
 					if(noyes(text[AreYouSureQ]))
 						break;
-					removefiledat(&cfg,&f);
-					sprintf(str,"%s removed %s from %s %s"
-						,useron.alias
-						,f.name
-						,cfg.lib[cfg.dir[f.dir]->lib]->sname,cfg.dir[f.dir]->sname);
-					logline("U-",str);
+					removefile(&f);
 					sprintf(str,"%s%s",dirpath,fname);
 					if(fexistcase(str)) {
 						if(dir_op(dirnum)) {

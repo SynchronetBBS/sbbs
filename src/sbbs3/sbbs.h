@@ -639,6 +639,7 @@ public:
 	void	openfile(file_t* f);
 	void	closefile(file_t* f);
 	bool	removefcdt(file_t* f);
+	bool	removefile(file_t* f);
 	bool	movefile(file_t* f, int newdir);
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
