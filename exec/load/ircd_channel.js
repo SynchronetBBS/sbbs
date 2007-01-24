@@ -570,7 +570,7 @@ function IRCClient_do_join(chan_name,join_key) {
 				return 0;
 			}
 			if (chan.isbanned(this.nuh) && (uc_chan_name != this.invited) ) {
-				this.numeric("474", Channels[chan].nam
+				this.numeric("474", chan.nam
 					+ " :Cannot join channel (+b: you're banned!)");
 				return 0;
 			}
