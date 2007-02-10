@@ -10,19 +10,24 @@
 #			Developed 2001 by Rob Swindell 			      #
 ###############################################################################
 
-# Usage: *QNET-FTP HUBID ADDRESSS PASSWORD
-# Example: *QNET-FTP VERT vert.synchro.net YOURPASS
+# Usage: *QNET-FTP HUBID ADDRESSS PASSWORD port
+# Example: *QNET-FTP VERT vert.synchro.net YOURPASS 21
 
 # You may use the qnet-ftp.bin module INSTEAD of your normal ftp/script
 # QWKnet call-out routine (exec/vert.bat). You can do this by changing
 #
 # SCFG->Networks->QWK->Hubs->VERT->Call-out Command Line to:
 #
-# *QNET-FTP VERT vert.synchro.net YOURPASS
+# *QNET-FTP VERT vert.synchro.net YOURPASS port
+#
+# if you leave the port value blank, this script will default to port 21
 #
 # The asterisk is important! YOURPASS is your QWKnet password here on Vertrauen. 
 #
 # No modification or recompilation of this module should be necessary.
+#
+# Updated on Feb 7th, 2007 to support non standard ftp ports
+#  -- Lloyd Hannesson dasme@dasme.org
 
 !include sbbsdefs.inc
 !include file_io.inc
@@ -31,8 +36,8 @@
 set _online ON_LOCAL
 
 # Variables
-int i argc argv sock port
-str tmp rep qwk hubid addr user password 
+int i argc argv sock
+str tmp rep qwk hubid addr user password port
 str cmdline
 
 set _ftp_mode FTP_PASV
@@ -41,6 +46,7 @@ set _ftp_mode FTP_PASV
 set hubid ""
 set addr ""
 set password ""
+set port ""
 
 # Display command line
 copy cmdline str
@@ -68,6 +74,9 @@ switch argc
 	case 2
 		strcat password tmp
 		end_case
+	case 3
+		strcat port tmp
+		end_case
 	default
 		goto usage
 	end_switch
@@ -89,6 +98,11 @@ if_true
 compare password ""
 if_true
 	goto usage
+	end_if
+compare port ""
+if_true
+	# if no Port is passed on the command line, default to 21
+	set port "21"
 	end_if
 
 sprintf rep "%%j%s.rep" hubid
@@ -117,8 +131,7 @@ if_false
 	goto exit
 	end_if
 
-set port 21	# default FTP port
-lprintf "QNET-FTP: Connecting to %s ... " addr
+lprintf "QNET-FTP: Connecting to %s:%s ... " addr port
 socket_connect sock addr port 
 crlf
 if_false
