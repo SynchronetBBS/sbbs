@@ -36,8 +36,8 @@
 set _online ON_LOCAL
 
 # Variables
-int i argc argv sock
-str tmp rep qwk hubid addr user password port
+int i argc argv sock port
+str tmp rep qwk hubid addr user password 
 str cmdline
 
 set _ftp_mode FTP_PASV
@@ -46,7 +46,7 @@ set _ftp_mode FTP_PASV
 set hubid ""
 set addr ""
 set password ""
-set port ""
+set port 0
 
 # Display command line
 copy cmdline str
@@ -75,7 +75,7 @@ switch argc
 		strcat password tmp
 		end_case
 	case 3
-		strcat port tmp
+		copy port tmp
 		end_case
 	default
 		goto usage
@@ -99,10 +99,10 @@ compare password ""
 if_true
 	goto usage
 	end_if
-compare port ""
+compare port 0
 if_true
 	# if no Port is passed on the command line, default to 21
-	set port "21"
+	set port 21
 	end_if
 
 sprintf rep "%%j%s.rep" hubid
@@ -131,7 +131,7 @@ if_false
 	goto exit
 	end_if
 
-lprintf "QNET-FTP: Connecting to %s:%s ... " addr port
+lprintf "QNET-FTP: Connecting to %s:%u ... " addr port
 socket_connect sock addr port 
 crlf
 if_false
