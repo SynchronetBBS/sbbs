@@ -71,7 +71,11 @@ endif
 
 # Find SDL headers!
 ifndef WITHOUT_SDL
- ifndef SDL_CONFIG
+ ifdef SDL_CONFIG
+  ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
+   WITH_SDL	:=	1
+  endif
+ else
   ifeq ($(os),darwin)
    ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
     WITH_SDL	:=	1
