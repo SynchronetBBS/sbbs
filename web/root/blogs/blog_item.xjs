@@ -1,0 +1,74 @@
+<?xjs
+load("/synchronet/src/web/root/blog/blog_config.js");
+?>
+
+<html>
+<head>
+<title>The Blogifier!</title>
+</head>
+<body>
+
+<p>
+  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier for <?xjs write(poster); ?>
+</p>
+
+<?xjs
+var hdr=msgbase.get_msg_header(i);
+if(hdr.from_ext != pnum) {
+	http_reply.status="404 Not Found";
+	write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+	exit(0);
+}
+
+if(hdr.thread_back) {
+	http_reply.status="404 Not Found";
+	write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+	exit(0);
+}
+
+var date=new Date(hdr.date);
+if(year != undefined && year != "") {
+	if(date.getFullYear() != year) {
+		http_reply.status="404 Not Found";
+		write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+		exit(0);
+	}
+	if(month != undefined && month != "") {
+		if(date.getMonth()+1 != month) {
+			http_reply.status="404 Not Found";
+			write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+			exit(0);
+		}
+		if(day != undefined && day != "") {
+			if(date.getDate() != day) {
+				http_reply.status="404 Not Found";
+				write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+				exit(0);
+			}
+		}
+	}
+}
+
+this_year=date.getFullYear();
+this_month=date.getMonth()+1;
+this_day=date.getDate();
+
+var body=msgbase.get_msg_body(i, true);
+body=html_encode(body,true,true,false,false);
+body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+body=body.split("&#13;&#10;").join(" ");
+?>
+
+<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+<p><?xjs write(body); ?></p>
+
+<hr>
+
+<?xjs
+
+?>
+
+<hr>
+
+</body>
+</html>

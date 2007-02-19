@@ -1,0 +1,73 @@
+<?xjs
+load("/synchronet/src/web/root/blog/blog_config.js");
+if(msgid != undefined && msgid != "") {
+	xjs_load("blog_item.xjs");
+	exit(0);
+}
+?>
+
+<html>
+<head>
+<title>The Blogifier!</title>
+</head>
+<body>
+
+<p>
+  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier for <?xjs write(poster); ?>
+</p>
+
+<?xjs
+for(i=msgbase.last_msg; i>=msgbase.first_msg; i--) {
+	var hdr=msgbase.get_msg_header(i);
+	if(hdr.from_ext != pnum)
+		continue;
+	if(hdr.thread_back)
+		continue;
+	var date=new Date(hdr.date);
+	if(year != undefined && year != "") {
+		if(date.getFullYear() != year)
+			continue;
+		if(month != undefined && month != "") {
+			if(date.getMonth()+1 != month)
+				continue;
+			if(day != undefined && day != "") {
+				if(date.getDate() != day)
+					continue;
+			}
+		}
+	}
+	this_year=date.getFullYear();
+	this_month=date.getMonth()+1;
+	this_day=date.getDate();
+
+	var body=msgbase.get_msg_body(i, true);
+	j=min_chars;
+	while(j<body.length && body.substr(j, 1)!=" ")
+		j++;
+	if(j<body.length)
+		var read_more=true;
+	exerpt=body.substr(0,j);
+	exerpt=html_encode(exerpt,true,true,false,false);
+	exerpt=exerpt.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+	exerpt=exerpt.split("&#13;&#10;").join(" ");
+?>
+
+<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+<p><?xjs write(exerpt); if(read_more) write("<b>...</b>"); ?></p>
+
+<p><a href="<?xjs 
+write("http://"+http_request.host+http_request.virtual_path+poster+"/"+format("%04d",this_year)+"/"+format("%02d",this_month)+"/"+format("%02d",this_day)+"/"+i+"/"+clean_subject(hdr.subject));
+?>">Comments...</a></p>
+
+<?xjs
+
+?>
+
+<hr>
+
+<?xjs
+}
+?>
+
+</body>
+</html>
