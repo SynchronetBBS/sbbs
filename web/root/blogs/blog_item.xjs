@@ -1,10 +1,28 @@
 <?xjs
-load("/synchronet/src/web/root/blogs/blog_config.js");
+load(cwd+"/blog_config.js");
 ?>
 
 <html>
 <head>
 <title>The Blogifier!</title>
+<script>
+<!--
+function toggle_display(itemID, buttonID)
+{
+	var item = document.getElementById(itemID);
+	var button = document.getElementById(buttonID);
+
+	if (item.style.display != "none") {
+		item.style.display = "none";
+		button.src="<?xjs write(http_request.virtual_path)?>plus.gif";
+	}
+	else {
+		item.style.display = "block";
+		button.src="<?xjs write(http_request.virtual_path)?>minus.gif";
+	}
+}
+//-->
+</script>
 </head>
 <body>
 
@@ -96,11 +114,12 @@ while(1) {
 	body=body.split("&#13;&#10;").join("<br>");
 ?>
 
-<div style="padding-left: <?xjs write(thread_depth*10) ?>px">
-<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
-By: <?xjs write(hdr.from); ?><br>
-<p><?xjs write(body); ?></p>
+<div style="padding-left: <?xjs write(thread_depth*indent_pixels) ?>px">
+<a onClick="toggle_display('msg-<?xjs write(msgid)?>','button-<?xjs write(msgid) ?>');"><img src="<?xjs write(http_request.virtual_path) ?>plus.gif" id="button-<?xjs write(msgid); ?>"></a> <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+By: <i><?xjs write(hdr.from); ?></i><br>
+<div id="msg-<?xjs write(msgid) ?>" style="display: none"><?xjs write(body); ?>
 <hr>
+</div>
 </div>
 
 <?xjs

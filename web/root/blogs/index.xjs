@@ -1,5 +1,6 @@
 <?xjs
-load("/synchronet/src/web/root/blogs/blog_config.js");
+load("sbbsdefs.js");
+load(cwd+"/blog_config.js");
 if(!isNaN(msgid)) {
 	xjs_load("blog_item.xjs");
 	exit(0);
@@ -13,14 +14,20 @@ if(!isNaN(msgid)) {
 <body>
 
 <p>
-  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier for <?xjs write(poster); ?>
+  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier <?xjs if(poster != '') write("for "+poster); ?>
 </p>
 
 <?xjs
 for(i=msgbase.last_msg; i>=msgbase.first_msg; i--) {
 	var hdr=msgbase.get_msg_header(i);
-	if(hdr.from.toUpperCase() != poster.toUpperCase())
+	if(hdr==null)
 		continue;
+	if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+		continue;
+	if(poster!=undefined && poster!='') {
+		if(hdr.from.toUpperCase() != poster.toUpperCase())
+			continue;
+	}
 //	if(hdr.from_ext != pnum)
 //		continue;
 	if(hdr.thread_back)
@@ -55,11 +62,11 @@ for(i=msgbase.last_msg; i>=msgbase.first_msg; i--) {
 	exerpt=exerpt.split("&#13;&#10;").join("<br>");
 ?>
 
-<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>) - <i><?xjs write(hdr.from) ?></i><br>
 <p><?xjs write(exerpt); if(read_more) write("<b>...</b>"); ?></p>
 
 <p><a href="<?xjs 
-write("http://"+http_request.host+http_request.virtual_path+poster+"/"+format("%04d",this_year)+"/"+format("%02d",this_month)+"/"+format("%02d",this_day)+"/"+i+"/"+clean_subject(hdr.subject));
+write("http://"+http_request.host+http_request.virtual_path+msg_code+"/"+hdr.from+"/"+format("%04d",this_year)+"/"+format("%02d",this_month)+"/"+format("%02d",this_day)+"/"+i+"/"+clean_subject(hdr.subject));
 ?>">Comments...</a></p>
 
 <?xjs
