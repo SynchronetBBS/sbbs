@@ -7,30 +7,48 @@ load(cwd+"/blog_config.js");
 <title>The Blogifier!</title>
 <script>
 <!--
-function toggle_display(itemID, buttonID)
+
+function expand_item(itemID, buttonID)
 {
 	var item = document.getElementById(itemID);
 	var button = document.getElementById(buttonID);
 
-	if (item.style.display != "none") {
-		item.style.display = "none";
-		button.src="<?xjs write(http_request.virtual_path)?>plus.gif";
-	}
-	else {
-		item.style.display = "block";
-		button.src="<?xjs write(http_request.virtual_path)?>minus.gif";
-	}
+	item.style.display = "block";
+	button.src="<?xjs write(http_request.virtual_path)?>minus.gif";
 }
+
+function collapse_item(itemID, buttonID)
+{
+	var item = document.getElementById(itemID);
+	var button = document.getElementById(buttonID);
+
+	item.style.display = "none";
+	button.src="<?xjs write(http_request.virtual_path)?>plus.gif";
+}
+
+function toggle_display(itemID, buttonID)
+{
+	var item = document.getElementById(itemID);
+
+	if (item.style.display != "none")
+		collapse_item(itemID, buttonID);
+	else
+		expand_item(itemID, buttonID);
+}
+
 //-->
 </script>
 </head>
-<body>
+<body onLoad="document.getElementById('ToggleAll').style.visibility = 'visible';">
 
 <p>
   Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier for <?xjs write(poster); ?>
 </p>
 
 <?xjs
+
+var expand_all_source='';
+var collapse_all_source='';
 
 function not_found_error(reason)
 {
@@ -76,6 +94,7 @@ body=body.split("&#13;&#10;").join("<br>");
 <p><?xjs write(body); ?></p>
 
 <hr>
+<p><div id="ToggleAll" style="visibility: hidden"><a name="collapse" href="#collapse" onClick="collapse_all()">Collapse All</a> / <a name="expand" href="#expand" onClick="expand_all()">Expand All</a></div></p>
 
 <?xjs
 // "Comments"
@@ -112,10 +131,13 @@ while(1) {
 	//body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
 	//body=body.split("&#13;&#10;").join(" ");
 	body=body.split("&#13;&#10;").join("<br>");
+
+	expand_all_source += "expand_item('msg-"+msgid+"','button-"+msgid+"');";
+	collapse_all_source += "collapse_item('msg-"+msgid+"','button-"+msgid+"');";
 ?>
 
 <div style="padding-left: <?xjs write(thread_depth*indent_pixels) ?>px">
-<a onClick="toggle_display('msg-<?xjs write(msgid)?>','button-<?xjs write(msgid) ?>');"><img src="<?xjs write(http_request.virtual_path) ?>plus.gif" id="button-<?xjs write(msgid); ?>"></a> <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+<a name="lnk-<?xjs write(msgid) ?>" href="#lnk-<?xjs write(msgid)?>" onClick="toggle_display('msg-<?xjs write(msgid)?>','button-<?xjs write(msgid) ?>');"><img border="0"  src="<?xjs write(http_request.virtual_path) ?>plus.gif" id="button-<?xjs write(msgid); ?>"></a> <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
 By: <i><?xjs write(hdr.from); ?></i><br>
 <div id="msg-<?xjs write(msgid) ?>" style="display: none"><?xjs write(body); ?>
 <hr>
@@ -126,5 +148,16 @@ By: <i><?xjs write(hdr.from); ?></i><br>
 }
 ?>
 
+<script>
+function collapse_all()
+{
+<?xjs write(collapse_all_source)?>
+}
+
+function expand_all()
+{
+<?xjs write(expand_all_source)?>
+}
+</script>
 </body>
 </html>
