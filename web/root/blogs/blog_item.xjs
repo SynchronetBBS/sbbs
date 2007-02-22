@@ -1,5 +1,5 @@
 <?xjs
-load("/synchronet/src/web/root/blog/blog_config.js");
+load("/synchronet/src/web/root/blogs/blog_config.js");
 ?>
 
 <html>
@@ -13,50 +13,45 @@ load("/synchronet/src/web/root/blog/blog_config.js");
 </p>
 
 <?xjs
-var hdr=msgbase.get_msg_header(i);
-if(hdr.from_ext != pnum) {
+
+function not_found_error(reason)
+{
 	http_reply.status="404 Not Found";
-	write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
+	write("<html><head><title>Not found</title></head><body>The requested URL cannot be found. Reason: "+reason+"</body></hmtl>");
 	exit(0);
 }
 
-if(hdr.thread_back) {
-	http_reply.status="404 Not Found";
-	write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
-	exit(0);
-}
+var hdr=msgbase.get_msg_header(msgid);
+if(hdr.from.toUpperCase() != poster.toUpperCase())
+	not_found_error("poster");
+//if(hdr.from_ext != pnum)
+//	not_found_error("pnum");
+
+if(hdr.thread_back)
+	not_found_error("top");
 
 var date=new Date(hdr.date);
-if(year != undefined && year != "") {
-	if(date.getFullYear() != year) {
-		http_reply.status="404 Not Found";
-		write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
-		exit(0);
-	}
-	if(month != undefined && month != "") {
-		if(date.getMonth()+1 != month) {
-			http_reply.status="404 Not Found";
-			write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
-			exit(0);
-		}
-		if(day != undefined && day != "") {
-			if(date.getDate() != day) {
-				http_reply.status="404 Not Found";
-				write("<html><head><title>Not found</title></head><body>The requested URL cannot be found.</body></hmtl>");
-				exit(0);
-			}
-		}
-	}
-}
-
 this_year=date.getFullYear();
 this_month=date.getMonth()+1;
 this_day=date.getDate();
 
-var body=msgbase.get_msg_body(i, true);
+if(year != this_year)
+	not_found_error("year");
+
+if(month != this_month)
+	not_found_error("month "+month+"!="+this_month);
+
+if(day != this_day)
+	not_found_error("day");
+
+if(subject != clean_subject(hdr.subject))
+	not_found_error("subject");
+
+var body=msgbase.get_msg_body(msgid, true);
 body=html_encode(body,true,true,false,false);
-body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
-body=body.split("&#13;&#10;").join(" ");
+//body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+//body=body.split("&#13;&#10;").join(" ");
+body=body.split("&#13;&#10;").join("<br>");
 ?>
 
 <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
@@ -65,10 +60,52 @@ body=body.split("&#13;&#10;").join(" ");
 <hr>
 
 <?xjs
+// "Comments"
+var thread_depth=0;
+var skip=0;
 
+/* Depth-first traversal of the thread */
+while(1) {
+	if(!skip && hdr.thread_first) {
+		msgid=hdr.thread_first;
+		thread_depth++;
+		skip=0;
+	}
+	else {
+		if(hdr.thread_next) {
+			msgid=hdr.thread_next;
+			skip=0;
+		}
+		else {
+			if(hdr.thread_back) {
+				msgid=hdr.thread_back;
+				hdr=msgbase.get_msg_header(msgid);
+				thread_depth--;
+				skip=1;
+				continue;
+			}
+			else
+				break;
+		}
+	}
+	hdr=msgbase.get_msg_header(msgid);
+	var body=msgbase.get_msg_body(msgid, true);
+	body=html_encode(body,true,true,false,false);
+	//body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+	//body=body.split("&#13;&#10;").join(" ");
+	body=body.split("&#13;&#10;").join("<br>");
 ?>
 
+<div style="padding-left: <?xjs write(thread_depth*10) ?>px">
+<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+By: <?xjs write(hdr.from); ?><br>
+<p><?xjs write(body); ?></p>
 <hr>
+</div>
+
+<?xjs
+}
+?>
 
 </body>
 </html>

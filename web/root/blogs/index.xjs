@@ -1,6 +1,6 @@
 <?xjs
-load("/synchronet/src/web/root/blog/blog_config.js");
-if(msgid != undefined && msgid != "") {
+load("/synchronet/src/web/root/blogs/blog_config.js");
+if(!isNaN(msgid)) {
 	xjs_load("blog_item.xjs");
 	exit(0);
 }
@@ -19,26 +19,28 @@ if(msgid != undefined && msgid != "") {
 <?xjs
 for(i=msgbase.last_msg; i>=msgbase.first_msg; i--) {
 	var hdr=msgbase.get_msg_header(i);
-	if(hdr.from_ext != pnum)
+	if(hdr.from.toUpperCase() != poster.toUpperCase())
 		continue;
+//	if(hdr.from_ext != pnum)
+//		continue;
 	if(hdr.thread_back)
 		continue;
 	var date=new Date(hdr.date);
-	if(year != undefined && year != "") {
-		if(date.getFullYear() != year)
+	this_year=date.getFullYear();
+	this_month=date.getMonth()+1;
+	this_day=date.getDate();
+	if(!isNaN(year)) {
+		if(year != this_year)
 			continue;
-		if(month != undefined && month != "") {
-			if(date.getMonth()+1 != month)
+		if(!isNaN(month)) {
+			if(month != this_month)
 				continue;
-			if(day != undefined && day != "") {
-				if(date.getDate() != day)
+			if(!isNaN(day)) {
+				if(day != this_day)
 					continue;
 			}
 		}
 	}
-	this_year=date.getFullYear();
-	this_month=date.getMonth()+1;
-	this_day=date.getDate();
 
 	var body=msgbase.get_msg_body(i, true);
 	j=min_chars;
@@ -48,8 +50,9 @@ for(i=msgbase.last_msg; i>=msgbase.first_msg; i--) {
 		var read_more=true;
 	exerpt=body.substr(0,j);
 	exerpt=html_encode(exerpt,true,true,false,false);
-	exerpt=exerpt.split("&#13;&#10;&#13;&#10;").join("</p><p>");
-	exerpt=exerpt.split("&#13;&#10;").join(" ");
+//	exerpt=exerpt.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+//	exerpt=exerpt.split("&#13;&#10;").join(" ");
+	exerpt=exerpt.split("&#13;&#10;").join("<br>");
 ?>
 
 <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>

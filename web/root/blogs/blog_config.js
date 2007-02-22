@@ -16,20 +16,20 @@ var min_chars=400;
 // User name of the blogger
 var parameters=http_request.path_info.substr(1).split("/");
 var poster=parameters[0];
-var year=parameters[1];
-var month=parameters[2];
-var day=parameters[3];
-var msgid=parameters[4];
+var year=parseInt(parameters[1],10);
+var month=parseInt(parameters[2],10);
+var day=parseInt(parameters[3],10);
+var msgid=parseInt(parameters[4],10);
 var subject=parameters[5];
 if(poster.indexOf("/")>=0) {
 	poster=poster.substr(0,poster.indexOf("/"));
 }
 
-var pnum=system.matchuser(poster);
-if(pnum==0) {
-	write("<html><head><title>Error</title></head><body>Error getting UserID for "+poster+"!</body></html>");
-	exit(1);
-}
+//var pnum=system.matchuser(poster);
+//if(pnum==0) {
+//	write("<html><head><title>Error</title></head><body>Error getting UserID for "+poster+"!</body></html>");
+//	exit(1);
+//}
 
 var msgbase = new MsgBase(msg_code);
 if(!msgbase.open()) {
@@ -37,7 +37,7 @@ if(!msgbase.open()) {
 	exit(1);
 }
 
-if(msgid != undefined && msgid != "") {
+if(!isNaN(msgid)) {
 	if(subject==undefined || subject=="") {
 		var hdr=msgbase.get_msg_header(parseInt(msgid));
 		http_reply.status="301 Moved Permanently";
