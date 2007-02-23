@@ -4,6 +4,8 @@ for(i=msgbase.total_msgs; i>=0; i--) {
 	var hdr=msgbase.get_msg_header(true,i);
 	if(hdr==null)
 		continue;
+	if(msg_area.sub[msg_code].is_moderated && (hdr.attr & MSG_VALIDATED) == 0)
+		continue;
 	if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
 		continue;
 	if(poster!=undefined && poster!='') {
