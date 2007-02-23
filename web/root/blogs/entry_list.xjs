@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>The Blogifier!</title>
+</head>
+<body>
+
+<p>
+  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier <?xjs if(poster != '') write("for "+poster); ?>
+</p>
+
+<?xjs
+for(i=msgbase.total_msgs; i>=0; i--) {
+	var hdr=msgbase.get_msg_header(true,i);
+	if(hdr==null)
+		continue;
+	if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+		continue;
+	if(poster!=undefined && poster!='') {
+		if(hdr.from.toUpperCase() != poster.toUpperCase())
+			continue;
+	}
+//	if(hdr.from_ext != pnum)
+//		continue;
+	if(hdr.thread_back)
+		continue;
+	var date=new Date(hdr.date);
+	this_year=date.getFullYear();
+	this_month=date.getMonth()+1;
+	this_day=date.getDate();
+	if(!isNaN(year)) {
+		if(year != this_year)
+			continue;
+		if(!isNaN(month)) {
+			if(month != this_month)
+				continue;
+			if(!isNaN(day)) {
+				if(day != this_day)
+					continue;
+			}
+		}
+	}
+
+	var body=msgbase.get_msg_body(true, i, true);
+	j=min_chars;
+	while(j<body.length && body.substr(j, 1)!=" ")
+		j++;
+	if(j<body.length)
+		var read_more=true;
+	exerpt=body.substr(0,j);
+	exerpt=html_encode(exerpt,true,true,false,false);
+//	exerpt=exerpt.split("&#13;&#10;&#13;&#10;").join("</p><p>");
+//	exerpt=exerpt.split("&#13;&#10;").join(" ");
+	exerpt=exerpt.split("&#13;&#10;").join("<br>");
+?>
+
+<b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>) - <i><?xjs write(hdr.from) ?></i><br>
+<p><?xjs write(exerpt); if(read_more) write("<b>...</b>"); ?></p>
+
+<p><a href="<?xjs 
+write("http://"+http_request.host+http_request.virtual_path+msg_code+"/"+hdr.from+"/"+format("%04d",this_year)+"/"+format("%02d",this_month)+"/"+format("%02d",this_day)+"/"+hdr.number+"/"+clean_subject(hdr.subject));
+?>">Comments...</a></p>
+
+<?xjs
+
+?>
+
+<hr>
+
+<?xjs
+}
+?>
+
+</body>
+</html>
