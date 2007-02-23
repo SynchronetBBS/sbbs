@@ -10,6 +10,11 @@ var min_chars=400;
 // Number of pixels per level to indent comments
 var indent_pixels=20;
 
+var bloginfo=new Object();
+bloginfo.html_type='text/html';
+bloginfo.charset='utf-8';
+bloginfo.version='$ Revision$';
+
 //
 // Don't change stuff down here.
 //
@@ -23,6 +28,7 @@ if(msg_code==null || msg_code=='') {
 	xjs_load("msg_index.xjs");
 	do_exit(0);
 }
+bloginfo.name=msg_area.sub[msg_code].description;
 var poster=parameters[1];
 var year=parseInt(parameters[2],10);
 var month=parseInt(parameters[3],10);
@@ -106,4 +112,12 @@ function do_exit(exitval)
 	page_end();
 	exit(exitval);
 }
+
+// WordPress compatability things
+function blog_title()
+{
+	// Extra stuff for the title
+	return('');
+}
+
 ?>
