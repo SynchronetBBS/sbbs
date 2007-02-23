@@ -33,6 +33,11 @@ var subject=parameters[6];
 //	exit(1);
 //}
 
+if(!msg_area.sub[msg_code].can_read) {
+	write("<html><head><title>Error</title></head><body>Error opening "+msg_code+"!</body></html>");
+	exit(1);
+}
+
 var msgbase = new MsgBase(msg_code);
 if(!msgbase.open()) {
 	write("<html><head><title>Error</title></head><body>Error opening "+msg_code+"!</body></html>");

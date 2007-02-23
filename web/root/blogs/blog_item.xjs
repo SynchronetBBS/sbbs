@@ -58,6 +58,10 @@ function not_found_error(reason)
 }
 
 var hdr=msgbase.get_msg_header(msgid);
+if(hdr==null)
+	not_found_error("no header");
+if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+	not_found_error("not viewable");
 if(hdr.from.toUpperCase() != poster.toUpperCase())
 	not_found_error("poster");
 //if(hdr.from_ext != pnum)
@@ -126,6 +130,10 @@ while(1) {
 		}
 	}
 	hdr=msgbase.get_msg_header(msgid);
+	if(hdr==null)
+		continue;
+	if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+		continue;
 	var body=msgbase.get_msg_body(msgid, true);
 	body=html_encode(body,true,true,false,false);
 	//body=body.split("&#13;&#10;&#13;&#10;").join("</p><p>");
