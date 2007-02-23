@@ -1,4 +1,5 @@
 <?xjs
+load("sbbsdefs.js");
 load(cwd+"/blog_config.js");
 ?>
 
