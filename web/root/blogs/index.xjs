@@ -13,7 +13,7 @@ var indent_pixels=20;
 var bloginfo=new Object();
 bloginfo.html_type='text/html';
 bloginfo.charset='utf-8';
-bloginfo.version='$ Revision$';
+bloginfo.version='$ Revision $';
 
 //
 // Don't change stuff down here.
