@@ -16,6 +16,10 @@ var indent_pixels=20;
 // User name of the blogger
 var parameters=http_request.path_info.substr(1).split("/");
 var msg_code=parameters[0];
+if(msg_code==null || msg_code=='') {
+	xjs_load("msg_index.xjs");
+	exit(0);
+}
 var poster=parameters[1];
 var year=parseInt(parameters[2],10);
 var month=parseInt(parameters[3],10);

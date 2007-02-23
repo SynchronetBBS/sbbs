@@ -1,0 +1,13 @@
+<html>
+<head>
+<title>Blogifier Subs</title>
+</head>
+<body>
+<?xjs
+for(var grp in msg_area.grp_list) {
+	for(var sub in msg_area.grp_list[grp].sub_list) {
+		write('<a href="'+msg_area.grp_list[grp].sub_list[sub].code+'/">'+msg_area.grp_list[grp].sub_list[sub].description+'</a><br>');
+	}
+}
+?>
+</body>
