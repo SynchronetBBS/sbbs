@@ -13,8 +13,7 @@ var cwd='';
 
 xjs_load(xjs_filename);
 
-function xjs_load(filename) {
-	var old_cwd=cwd;
+function xjs_compile(filename) {
 	if(cwd != '') {
 		if(filename.search(/^((\/)|([A-Za-z]:[\/\\]))/)==-1)
 			filename=cwd+filename;
@@ -92,12 +91,17 @@ function xjs_load(filename) {
 			f.close();
 		}
 	}
-
-	load(ssjs_filename);
-	cwd=old_cwd;
+	return(ssjs_filename);
 
 	function escape_quotes(arg) {
 		return("'"+arg.replace(/'/g,"'+"+'"'+"'"+'"+'+"'")+"'");
 	}
 }
 
+function xjs_load(filename)
+{
+	var old_cwd=cwd;
+
+	load(xjs_compile(filename));
+	cwd=old_cwd;
+}
