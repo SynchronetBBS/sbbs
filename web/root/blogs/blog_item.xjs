@@ -94,7 +94,7 @@ body=body.split("&#13;&#10;").join("<br>");
 <p><?xjs write(body); ?></p>
 
 <hr>
-<p><div id="ToggleAll" style="visibility: hidden"><a name="collapse" href="#collapse" onClick="collapse_all()">Collapse All</a> / <a name="expand" href="#expand" onClick="expand_all()">Expand All</a></div></p>
+<p><div id="ToggleAll" style="visibility: hidden"><input type="button" name="Collapse All" value="Collapse All" alt="Collpase All" onClick="collapse_all()"><input type="button" name="Expand All" value="Expand All" alt="Expand All" onClick="expand_all()"></div></p>
 
 <?xjs
 // "Comments"
@@ -137,7 +137,7 @@ while(1) {
 ?>
 
 <div style="padding-left: <?xjs write(thread_depth*indent_pixels) ?>px">
-<a name="lnk-<?xjs write(msgid) ?>" href="#lnk-<?xjs write(msgid)?>" onClick="toggle_display('msg-<?xjs write(msgid)?>','button-<?xjs write(msgid) ?>');"><img border="0"  src="<?xjs write(http_request.virtual_path) ?>plus.gif" id="button-<?xjs write(msgid); ?>"></a> <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
+<a onClick="toggle_display('msg-<?xjs write(msgid)?>','button-<?xjs write(msgid) ?>');"><img border="0"  src="<?xjs write(http_request.virtual_path) ?>plus.gif" id="button-<?xjs write(msgid); ?>"></a> <b><?xjs write(hdr.subject); ?></b> (<?xjs write(date); ?>)<br>
 By: <i><?xjs write(hdr.from); ?></i><br>
 <div id="msg-<?xjs write(msgid) ?>" style="display: none"><?xjs write(body); ?>
 <hr>
