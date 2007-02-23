@@ -1,14 +1,5 @@
-<html>
-<head>
-<title>The Blogifier!</title>
-</head>
-<body>
-
-<p>
-  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier <?xjs if(poster != '') write("for "+poster); ?>
-</p>
-
 <?xjs
+page_start();
 for(i=msgbase.total_msgs; i>=0; i--) {
 	var hdr=msgbase.get_msg_header(true,i);
 	if(hdr==null)
@@ -69,6 +60,3 @@ write("http://"+http_request.host+http_request.virtual_path+msg_code+"/"+hdr.fro
 <?xjs
 }
 ?>
-
-</body>
-</html>

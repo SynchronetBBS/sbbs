@@ -1,9 +1,5 @@
-<html>
-<head>
-<title>Blogifier Subs</title>
-</head>
-<body>
 <?xjs
+page_start("Blogifier Subs");
 for(var grp in msg_area.grp_list) {
 	for(var sub in msg_area.grp_list[grp].sub_list) {
 		if(!msg_area.grp_list[grp].sub_list[sub].can_read)
@@ -12,4 +8,3 @@ for(var grp in msg_area.grp_list) {
 	}
 }
 ?>
-</body>

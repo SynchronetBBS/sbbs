@@ -21,7 +21,7 @@ var parameters=http_request.path_info.substr(1).split("/");
 var msg_code=parameters[0];
 if(msg_code==null || msg_code=='') {
 	xjs_load("msg_index.xjs");
-	exit(0);
+	do_exit(0);
 }
 var poster=parameters[1];
 var year=parseInt(parameters[2],10);
@@ -32,19 +32,19 @@ var subject=parameters[6];
 
 //var pnum=system.matchuser(poster);
 //if(pnum==0) {
-//	write("<html><head><title>Error</title></head><body>Error getting UserID for "+poster+"!</body></html>");
-//	exit(1);
+//	write("Error getting UserID for "+poster+"!");
+//	do_exit(1);
 //}
 
 if(!msg_area.sub[msg_code].can_read) {
-	write("<html><head><title>Error</title></head><body>Error opening "+msg_code+"!</body></html>");
-	exit(1);
+	write("Error opening "+msg_code+"!");
+	do_exit(1);
 }
 
 var msgbase = new MsgBase(msg_code);
 if(!msgbase.open()) {
-	write("<html><head><title>Error</title></head><body>Error opening "+msg_code+"!</body></html>");
-	exit(1);
+	write("Error opening "+msg_code+"!");
+	do_exit(1);
 }
 
 if(!isNaN(msgid)) {
@@ -52,7 +52,7 @@ if(!isNaN(msgid)) {
 		var hdr=msgbase.get_msg_header(parseInt(msgid));
 		http_reply.status="301 Moved Permanently";
 		http_reply.header["Location"]="http://"+http_request.host+http_request.virtual_path+msg_code+"/"+hdr.from+"/"+format("%04d",year)+"/"+format("%02d",month)+"/"+format("%02d",day)+"/"+msgid+"/"+clean_subject(hdr.subject);
-		exit(0);
+		do_exit(0);
 	}
 }
 
@@ -64,8 +64,46 @@ function clean_subject(sub)
 
 if(!isNaN(msgid)) {
 	xjs_load("blog_item.xjs");
-	exit(0);
+	do_exit(0);
 }
 xjs_load("entry_list.xjs");
+do_exit(0);
 
+function page_start(title,extra_head_content,extra_body_attribs)
+{
+	if(title==undefined || title==null)
+		title='The Blogifier!';
+	if(extra_head_content==undefined)
+		extra_head_content='';
+	if(extra_body_attribs==undefined)
+		extra_body_attribs='';
+?>
+<html>
+<head>
+<title><?xjs write(title) ?></title>
+<?xjs write(extra_head_content) ?>
+</head>
+<body <?xjs write(extra_body_attribs) ?>>
+
+<p>
+Welcome to the <?xjs if(msgbase != undefined) write(msgbase.cfg.name); ?> Blogifier <?xjs if(poster != undefined && poster != null && poster != '') write("for "+poster); ?>
+</p>
+<?xjs
+}
+
+function page_end()
+{
+?>
+
+</body>
+</html>
+
+<?xjs
+}
+
+function do_exit(exitval)
+{
+	page_end();
+	exit(exitval);
+}
 ?>

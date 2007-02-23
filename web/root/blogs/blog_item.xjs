@@ -1,48 +1,5 @@
-<html>
-<head>
-<title>The Blogifier!</title>
-<script>
-<!--
-
-function expand_item(itemID, buttonID)
-{
-	var item = document.getElementById(itemID);
-	var button = document.getElementById(buttonID);
-
-	item.style.display = "block";
-	button.src="<?xjs write(http_request.virtual_path)?>minus.gif";
-}
-
-function collapse_item(itemID, buttonID)
-{
-	var item = document.getElementById(itemID);
-	var button = document.getElementById(buttonID);
-
-	item.style.display = "none";
-	button.src="<?xjs write(http_request.virtual_path)?>plus.gif";
-}
-
-function toggle_display(itemID, buttonID)
-{
-	var item = document.getElementById(itemID);
-
-	if (item.style.display != "none")
-		collapse_item(itemID, buttonID);
-	else
-		expand_item(itemID, buttonID);
-}
-
-//-->
-</script>
-</head>
-<body onLoad="document.getElementById('ToggleAll').style.visibility = 'visible';">
-
-<p>
-  Welcome to the <?xjs write(msgbase.cfg.name); ?> Blogifier for <?xjs write(poster); ?>
-</p>
-
 <?xjs
-
+page_start(undefined,'<script src="'+http_request.virtual_path+'toggle_button.js"></script>',"onLoad="+'"'+"document.getElementById('ToggleAll').style.visibility = 'visible';"+'"');
 var expand_all_source='';
 var collapse_all_source='';
 
@@ -152,6 +109,7 @@ By: <i><?xjs write(hdr.from); ?></i><br>
 ?>
 
 <script>
+var image_path='<?xjs write(http_request.virtual_path) ?>';
 function collapse_all()
 {
 <?xjs write(collapse_all_source)?>
@@ -162,5 +120,3 @@ function expand_all()
 <?xjs write(expand_all_source)?>
 }
 </script>
-</body>
-</html>
