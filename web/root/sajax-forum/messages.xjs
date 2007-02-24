@@ -30,10 +30,10 @@ if(isNaN(msg_number)) {
 	}
 }
 else {
-	var hdr=msgbase.get_msg_header(msg_number);
+	var hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
 	msg_number=hdr.thread_first;
 	while(msg_number) {
-		hdr=msgbase.get_msg_header(msg_number);
+		hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
 		if(hdr==null)
 			break;
 		msg_number=hdr.thread_next;
@@ -55,8 +55,8 @@ for(i in top_level) {
 }
 ?>
 			</div>
-			<div class="subject"><a href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]) ?>);"><?xjs write(headers[top_level[i]].subject) ?></a></div>
-			<div class="author"><?xjs write(headers[top_level[i]].from) ?></div>
+			<div class="subject"><a href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]) ?>);"><?xjs write(html_encode(headers[top_level[i]].subject,true,true,false,false)) ?></a></div>
+			<div class="author"><?xjs write(html_encode(headers[top_level[i]].from,true,true,false,false)) ?></div>
 			<div class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[top_level[i]].when_written_time)) ?></div>
 			<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
 			<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
