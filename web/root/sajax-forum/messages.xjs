@@ -1,0 +1,71 @@
+<?xjs
+load("sbbsdefs.js");
+load(cwd+"functions.js");
+var sub_code=http_request.query.sub_code[0];
+var msg_number=NaN;
+if(http_request.query.msg_number!=undefined)
+	msg_number=parseInt(http_request.query.msg_number[0]);
+// Load the index
+var moderated=msg_area.sub[sub_code].is_moderated;
+
+var headers=new Object();
+var start=system.timer;
+var msgbase=new MsgBase(sub_code);
+var top_level=new Array();
+if(msg_area.sub[sub_code].index!=-1)
+	msgbase.open();
+if(isNaN(msg_number)) {
+	for(i=msgbase.total_msgs; i>=0; i--) {
+		var hdr=msgbase.get_msg_header(true, i, false /* Big speedup */);
+		if(hdr==null)
+			continue;
+		if(hdr.thread_back)
+			continue;
+		if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
+			continue;
+		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+			continue;
+		headers[hdr.number]=hdr;
+		top_level.push(hdr.number);
+	}
+}
+else {
+	var hdr=msgbase.get_msg_header(msg_number);
+	msg_number=hdr.thread_first;
+	while(msg_number) {
+		hdr=msgbase.get_msg_header(msg_number);
+		if(hdr==null)
+			break;
+		msg_number=hdr.thread_next;
+		if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
+			continue;
+		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+			continue;
+		headers[hdr.number]=hdr;
+		top_level.push(hdr.number);
+	}
+}
+
+// Output messages... 
+for(i in top_level) {
+?>
+	<div class="message" id="message-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
+		<div class="message-header" id="message-header-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
+			<div class="expander"><a href="javascript:toggle_replies('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]); ?>)"><img border="0" width="19" height="16" src="<?xjs write(headers[top_level[i]].thread_first?'plus':'blank'); ?>.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+top_level[i]); ?>"></a><?xjs
+}
+?>
+			</div>
+			<div class="subject"><a href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]) ?>);"><?xjs write(headers[top_level[i]].subject) ?></a></div>
+			<div class="author"><?xjs write(headers[top_level[i]].from) ?></div>
+			<div class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[top_level[i]].when_written_time)) ?></div>
+			<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
+			<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
+		</div>
+	</div>
+<?xjs
+}
+?>
+<?xjs
+// Close the message base
+msgbase.close();
+?>

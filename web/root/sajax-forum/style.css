@@ -1,0 +1,65 @@
+.group-list {
+}
+
+.group {
+	background-color: #eee;
+}
+
+.group-description {
+	display: inline;
+}
+
+.group-subs {
+	background-color: #ddd;
+	padding-left: 10px;
+}
+
+.sub {
+}
+
+.sub-name {
+	display: inline;
+}
+
+.sub-description {
+	display: inline;
+}
+
+.message-list {
+}
+
+.message {
+	padding-left: 10px;
+}
+
+.message-header {
+	background-color: #ccc;
+}
+
+.expander {
+	display: inline;
+}
+
+.subject {
+	display: inline;
+}
+
+.author {
+	display: inline;
+}
+
+.post_date {
+	display: inline;
+}
+
+.message-body {
+	color: #a8a8a8;
+	background-color: black;
+	white-space: pre;
+	font-family: monospace;
+}
+
+.replies {
+	padding-left: 20px;
+}
+

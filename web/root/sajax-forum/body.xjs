@@ -1,0 +1,17 @@
+<?xjs 
+load("sbbsdefs.js");
+sub_code=http_request.query.sub_code[0];
+msg_number=parseInt(http_request.query.msg_number[0]);
+var msgbase=new MsgBase(sub_code);
+msgbase.open();
+var body;
+var idx=msgbase.get_msg_index(msg_number);
+if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (idx.attr & MSG_VALIDATED)!=0) {
+	if((idx.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
+		body=msgbase.get_msg_body(true,idx.offset);
+		body=html_encode(body, true, false, true, true);
+	}
+}
+msgbase.close();
+writeln(body);
+?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

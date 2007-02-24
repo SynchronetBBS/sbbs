@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<?xjs
+load("sbbsdefs.js");
+load(cwd+"functions.js");
+var sub_code="dove-gen";
+?><html>
+<head>
+<link href="<?xjs write("http://"+http_request.host+http_request.virtual_path.replace(/index\.xjs$/,'style.css')) ?>" rel="stylesheet" type="text/css">
+<title>The SAJAX Forum</title>
+<script type="text/javascript">
+// Script from http://www.dynamicdrive.com/dynamicindex17/ajaxcontent.htm
+
+/***********************************************
+* Dynamic Ajax Content- © Dynamic Drive DHTML code library (www.dynamicdrive.com)
+* This notice MUST stay intact for legal use
+* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
+***********************************************/
+
+var this_file='<?xjs write(http_request.virtual_path) ?>';
+var body_url="http://"+window.location.hostname+'<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'body.xjs')) ?>';
+var subs_url="http://"+window.location.hostname+'<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'subs.xjs')) ?>';
+var messages_url="http://"+window.location.hostname+'<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'messages.xjs')) ?>';
+var plus_url="http://"+window.location.hostname+'<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'plus.gif')) ?>';
+var minus_url="http://"+window.location.hostname+'<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'minus.gif')) ?>';
+
+function clean_id(id)
+{
+	return(id.replace(/[^A-Za-z0-9]/g,'_'));
+}
+
+function toggle_replies(sub_code, message_number) {
+	var containerid='replies-'+clean_id(sub_code)+'-'+message_number;
+	var expanderid='reply-expander-'+clean_id(sub_code)+'-'+message_number;
+	if(document.getElementById(containerid).innerHTML=='')
+		ajaxpage(messages_url+"?sub_code="+sub_code+"&msg_number="+message_number,containerid,expanderid,minus_url);
+	else {
+		document.getElementById(containerid).innerHTML='';
+		document.getElementById(expanderid).src=plus_url;
+	}
+}
+
+function toggle_body(sub_code, message_number) {
+	var containerid='message-body-'+clean_id(sub_code)+'-'+message_number;
+	if(document.getElementById(containerid).innerHTML=='')
+		ajaxpage(body_url+"?sub_code="+sub_code+"&msg_number="+message_number,containerid);
+	else
+		document.getElementById(containerid).innerHTML='';
+}
+
+function toggle_messages(sub_code) {
+	var containerid='message-list-'+clean_id(sub_code);
+	if(document.getElementById(containerid).innerHTML=='')
+		ajaxpage(messages_url+"?sub_code="+sub_code,containerid);
+	else
+		document.getElementById(containerid).innerHTML='';
+}
+
+function toggle_subs(group_code) {
+	var containerid='group-subs-'+clean_id(group_code);
+	if(document.getElementById(containerid).innerHTML=='')
+		ajaxpage(subs_url+"?group_code="+group_code,containerid);
+	else
+		document.getElementById(containerid).innerHTML='';
+}
+
+function ajaxpage(url, containerid, buttonid, buttonurl){
+	var page_request = false;
+	if (window.XMLHttpRequest) // if Mozilla, Safari etc
+		page_request = new XMLHttpRequest();
+	else if (window.ActiveXObject){ // if IE
+		try {
+			page_request = new ActiveXObject("Msxml2.XMLHTTP");
+		} 
+		catch (e){
+			try{
+				page_request = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			catch (e){}
+		}
+	}
+	else
+		return false;
+	page_request.onreadystatechange=function(){
+		loadpage(page_request, containerid, buttonid, buttonurl);
+	}
+	document.getElementById(containerid).innerHTML=spin('');
+	page_request.open('GET', url, true);
+	page_request.send(null);
+}
+
+function spin(current)
+{
+	switch(current) {
+		case '<span style="font-family: monospace;">Loading -</span>':
+			return('<span style="font-family: monospace;">Loading \\\\</span>');
+		case '<span style="font-family: monospace;">Loading /</span>':
+			return('<span style="font-family: monospace;">Loading -</span>');
+		case '<span style="font-family: monospace;">Loading |</span>':
+			return('<span style="font-family: monospace;">Loading /</span>');
+		default:
+			return('<span style="font-family: monospace;">Loading |</span>');
+	}
+}
+
+function loadpage(page_request, containerid, buttonid, buttonurl){
+	if(page_request.readyState==4) {
+		if ((page_request.status==200 || window.location.href.indexOf("http")==-1)) {
+			document.getElementById(containerid).innerHTML=page_request.responseText;
+			if(buttonid != undefined && buttonurl != undefined)
+				document.getElementById(buttonid).src=buttonurl;
+		}
+		else
+			document.getElementById(containerid).innerHTML='';
+	}
+	else {
+		document.getElementById(containerid).innerHTML=spin(document.getElementById(containerid).innerHTML);
+	}
+}
+</script>
+</head>
+<body>
+<h2>Your header goes here...</h2>
+<div class="group-list">
+<?xjs
+	for(group in msg_area.grp_list) {
+		if(msg_area.grp_list[group].sub_list.length==0)
+			continue;
+		var group_code=msg_area.grp_list[group].name;
+?>
+	<div class="group" id="group-<?xjs write(clean_id(group_code)) ?>">
+		<div class="group-description"><a href="javascript:toggle_subs('<?xjs write(group_code) ?>');"><?xjs write(msg_area.grp[group_code].description) ?></a></div>
+		<div class="group-subs" id="group-subs-<?xjs write(clean_id(group_code)) ?>"></div>
+	</div>
+<?xjs
+}
+?>
+</div>
+<h2>Your footer goes here...</h2>
+</body>
+</html>
