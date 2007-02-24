@@ -1,3 +1,7 @@
+body {
+	font-family: sans-serif;
+}
+
 .group-list {
 }
 
@@ -10,8 +14,8 @@
 }
 
 .group-subs {
-	background-color: #ddd;
-	padding-left: 10px;
+	background-color: #ccc;
+	margin-left: 10px;
 }
 
 .sub {
@@ -26,14 +30,14 @@
 }
 
 .message-list {
+	background-color: #aaa;
+	margin-left: 10px;
 }
 
 .message {
-	padding-left: 10px;
 }
 
 .message-header {
-	background-color: #ccc;
 }
 
 .expander {
@@ -53,6 +57,7 @@
 }
 
 .message-body {
+	margin-left: 20px;
 	color: #a8a8a8;
 	background-color: black;
 	white-space: pre;
@@ -60,6 +65,6 @@
 }
 
 .replies {
-	padding-left: 20px;
+	margin-left: 20px;
 }
 
