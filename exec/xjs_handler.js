@@ -51,14 +51,22 @@ function xjs_compile(filename) {
 					}
 					else {
 						if(str.search(/<\?(xjs)?\s+/)==-1) {
-							script += "writeln("+escape_quotes(str)+");";
+							if(str.substr(-5)=='<?xjs') {
+								str=str.substr(0, str.length-5);
+								in_xjs=true;
+							}
+							if(str.substr(-2)=='<?') {
+								str=str.substr(0, str.length-2);
+								in_xjs=true;
+							}
+							script += "writeln("+str.toSource()+");";
 							str='';
 						}
 						else {
 							str=str.replace(/^(.*?)<\?(xjs)?\s+/,
 								function (str, p1, p2, offset, s) {
 									if(p1 != '')
-										script += "write("+escape_quotes(p1)+");";
+										script += "write("+p1.toSource()+");";
 									in_xjs=true;
 									return '';
 								}
@@ -92,10 +100,6 @@ function xjs_compile(filename) {
 		}
 	}
 	return(ssjs_filename);
-
-	function escape_quotes(arg) {
-		return("'"+arg.replace(/'/g,"'+"+'"'+"'"+'"+'+"'")+"'");
-	}
 }
 
 function xjs_load(filename)
