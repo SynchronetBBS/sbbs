@@ -120,6 +120,7 @@ function loadpage(page_request, containerid, buttonid, buttonurl){
 </head>
 <body>
 <h2>Your header goes here...</h2>
+<h4>This site looks worst with Internet Explorer</h4>
 <div class="group-list">
 <?xjs
 	for(group in msg_area.grp_list) {
