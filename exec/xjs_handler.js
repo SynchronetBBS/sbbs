@@ -45,33 +45,28 @@ function xjs_compile(filename) {
 			var str=text[line];
 			while(str != '') {
 				if(!in_xjs) {
-					if(str=='<?xjs' || str=='<?') {
-						in_xjs=true;
+					if(str.search(/<\?(xjs)?\s+/)==-1) {
+						if(str.substr(-5)=='<?xjs') {
+							str=str.substr(0, str.length-5);
+							in_xjs=true;
+						}
+						if(str.substr(-2)=='<?') {
+							str=str.substr(0, str.length-2);
+							in_xjs=true;
+						}
+						if(str != '')
+							script += "writeln("+str.toSource()+");";
 						str='';
 					}
 					else {
-						if(str.search(/<\?(xjs)?\s+/)==-1) {
-							if(str.substr(-5)=='<?xjs') {
-								str=str.substr(0, str.length-5);
+						str=str.replace(/^(.*?)<\?(xjs)?\s+/,
+							function (str, p1, p2, offset, s) {
+								if(p1 != '')
+									script += "write("+p1.toSource()+");";
 								in_xjs=true;
+								return '';
 							}
-							if(str.substr(-2)=='<?') {
-								str=str.substr(0, str.length-2);
-								in_xjs=true;
-							}
-							script += "writeln("+str.toSource()+");";
-							str='';
-						}
-						else {
-							str=str.replace(/^(.*?)<\?(xjs)?\s+/,
-								function (str, p1, p2, offset, s) {
-									if(p1 != '')
-										script += "write("+p1.toSource()+");";
-									in_xjs=true;
-									return '';
-								}
-							);
-						}
+						);
 					}
 				}
 				else {
