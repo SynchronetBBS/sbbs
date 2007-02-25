@@ -10,7 +10,6 @@ body {
 }
 
 .group-description {
-	display: inline;
 }
 
 .group-subs {
@@ -22,11 +21,9 @@ body {
 }
 
 .sub-name {
-	display: inline;
 }
 
 .sub-description {
-	display: inline;
 }
 
 .message-list {
@@ -37,31 +34,38 @@ body {
 .message {
 }
 
+.message_is_new {
+	font-weight: bold;
+}
+
+.message_inherit_new {
+	font-style: italic;
+}
+
+.message_is_new_inherit_new {
+	font-weight: bold;
+	font-style: italic;
+}
+
 .message-header {
 }
 
 .expander {
-	display: inline;
 }
 
 .subject {
-	display: inline;
 }
 
 .author {
-	display: inline;
 }
 
 .post_date {
-	display: inline;
 }
 
 .reply_count {
-	display: inline;
 }
 
 .newest_reply {
-	display: inline;
 }
 
 .message-body {
@@ -70,19 +74,15 @@ body {
 	background-color: black;
 	white-space: pre;
 	font-family: monospace;
+	width: 80em;
+}
+
+.reply_count {
+}
+
+.newest_reply_date {
 }
 
 .replies {
 	margin-left: 20px;
 }
-
-.newest_reply_date {
-	align: left;
-	display: inline;
-}
-
-.reply_count {
-	align: left;
-	display: inline;
-}
-

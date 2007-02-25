@@ -6,8 +6,8 @@ if(group!=-1) {
 		sub_code=msg_area.grp_list[group].sub_list[sub].code;
 ?>
 		<div class="sub" id="sub-<?xjs write(clean_id(sub_code)) ?>">
-			<div class="sub-name"><a href="javascript:toggle_messages('<?xjs write(sub_code)?>')"><?xjs write(msg_area.sub[sub_code].name) ?></a></div>
-			<div class="sub-description"><?xjs write(msg_area.sub[sub_code].description) ?></div>
+			<a class="sub-name" href="javascript:toggle_messages('<?xjs write(sub_code)?>')"><?xjs write(msg_area.sub[sub_code].name) ?></a>
+			<span class="sub-description"><?xjs write(msg_area.sub[sub_code].description) ?></span>
 			<div class="message-list" id="message-list-<?xjs write(clean_id(sub_code)); ?>"></div>
 		</div>
 <?xjs

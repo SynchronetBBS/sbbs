@@ -1,0 +1,46 @@
+Here is an overall view of the content by class
+
+1  <div class="login_form">
+1   <input class="login">
+1   <input class="login">
+1   <button class="login">
+1  </div>
+1  <div class="group-list">
+2+  <div class="group">
+2+   <a class="group-description"></a>
+2+   <div class="group-subs">
+3+    <div class="sub">
+3+     <a class="sub-name"></a>
+3+     <span class="sub-description"></span>
+3+     <div class="message-list">
+4+      <div class="message|message_is_new|message_inherit_new|message_is_new_inherit_new">
+4+       <div class="message-header">
+4+        <a class="expander">	(The <a> is optional.. img isn't)
+4+         <img class="expander">
+4+        </a>
+4+        <a class="subject"></a>
+4+        <span class="author"></span>
+4+        <span class="post_date"></span>
+4+        <span class="reply_count">
+4+        <span class="newest_reply_date"></span>
+4+        <div class="message-body"></div>
+4+        <div class="replies">
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4+        </div>
+4+       </div>
+4+      </div>
+3+     </div>
+3+    </div>
+2+   </div>
+2+  </div>
+1  </div>
+
+1 == index.xjs
+2 == groups.xjs
+3 == subs.xjs
+4 == messages.xjs
+x == potentially infinately nested messages.xjs
++ == This repeats multiple times for the one source
+
+The message body itself will potentially contain MANY span tags none of
+which will have an ID or class... just a style.

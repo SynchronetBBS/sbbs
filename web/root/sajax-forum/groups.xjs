@@ -1,0 +1,20 @@
+<?xjs
+load(cwd+"functions.js");
+
+for(group in msg_area.grp_list) {
+	if(msg_area.grp_list[group].sub_list.length==0)
+		continue;
+	var group_code=msg_area.grp_list[group].name;
+?>
+
+	<!-- groups.xjs starts here -->
+
+	<div class="group" id="message-group-<?xjs write(clean_id(group_code)) ?>">
+		<a class="group-description" href="javascript:toggle_subs('<?xjs write(group_code) ?>');"><?xjs write(msg_area.grp[group_code].description) ?></a>
+		<div class="group-subs" id="group-subs-<?xjs write(clean_id(group_code)) ?>"></div>
+	</div>
+
+	<!-- End of groups.xjs -->
+<?xjs
+}
+?>
