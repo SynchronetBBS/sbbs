@@ -227,7 +227,7 @@ else
  ifeq ($(os),sunos)
   DELETE :=	rm -f
  else
-  DELETE	=	rm -fv
+  DELETE	=	rm -f
  endif
 endif
 
