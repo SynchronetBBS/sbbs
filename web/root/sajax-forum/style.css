@@ -56,6 +56,14 @@ body {
 	display: inline;
 }
 
+.reply_count {
+	display: inline;
+}
+
+.newest_reply {
+	display: inline;
+}
+
 .message-body {
 	margin-left: 20px;
 	color: #a8a8a8;
@@ -66,5 +74,15 @@ body {
 
 .replies {
 	margin-left: 20px;
+}
+
+.newest_reply_date {
+	align: left;
+	display: inline;
+}
+
+.reply_count {
+	align: left;
+	display: inline;
 }
 

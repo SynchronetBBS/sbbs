@@ -14,37 +14,106 @@ var msgbase=new MsgBase(sub_code);
 var top_level=new Array();
 if(msg_area.sub[sub_code].index!=-1)
 	msgbase.open();
+
+/* First, read ALL headers that may be affect this display */
 if(isNaN(msg_number)) {
-	for(i=msgbase.total_msgs; i>=0; i--) {
+	for(i=0; i<msgbase.total_msgs; i++) {
 		var hdr=msgbase.get_msg_header(true, i, false /* Big speedup */);
 		if(hdr==null)
 			continue;
-		if(hdr.thread_back)
-			continue;
 		if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
 			continue;
 		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
 			continue;
 		headers[hdr.number]=hdr;
-		top_level.push(hdr.number);
+		if(hdr.thread_back==0)
+			top_level.push(hdr.number);
+		else {
+			/* Handle deleted top level message threads */
+			if((hdr.thread_back < hdr.number) && headers[hdr.thread_back]==undefined)
+				top_level.push(hdr.number);
+		}
 	}
+
 }
 else {
+	var top_msg=msg_number;
 	var hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
+
 	msg_number=hdr.thread_first;
-	while(msg_number) {
-		hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
-		if(hdr==null)
-			break;
-		msg_number=hdr.thread_next;
-		if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
-			continue;
-		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
-			continue;
-		headers[hdr.number]=hdr;
-		top_level.push(hdr.number);
+
+	/* Depth-first traversal of replies */
+	while(msg_number && msg_number!=top_msg) {
+		hdr=headers[msg_number];
+		if(hdr==undefined) {
+			hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
+			if(hdr==null)
+				break;
+			if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
+				continue;
+			if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
+				continue;
+			if(hdr.thread_back==top_msg)
+				top_level.push(hdr.number);
+			headers[hdr.number]=hdr;
+			if(hdr.thread_first) {
+				msg_number=hdr.thread_first;
+				continue;
+			}
+		}
+		if(hdr.thread_next)
+			msg_number=hdr.thread_next;
+		else
+			msg_number=hdr.thread_back;
 	}
 }
+
+/* Now, do a reply count and new flag for every header in top_level */
+var reply_count=new Object();
+var new_stats=new Object();
+for(i in top_level) {
+	var moved_back=false;
+	var top_msg=top_level[i];
+	reply_count[top_msg]=0;
+	new_stats[top_msg]=new Object();
+	if(headers[top_msg].number > msg_area.sub[sub_code].scan_ptr)
+		new_stats[top_msg].is_new=true;
+	new_stats[top_msg].newest_reply=0;
+	new_stats[top_msg].date_sort=hdr.when_written_time;
+
+	msg_number=headers[top_msg].thread_first;
+	while(msg_number && msg_number != top_msg) {
+		var hdr=headers[msg_number];
+		if(hdr==undefined)
+			break;
+		if(!moved_back) {
+			/* This is a new thinger... update stuff based on it */
+			reply_count[top_msg]++;
+			if(hdr.when_written_time > new_stats[top_msg].newest_reply)
+				new_stats[top_msg].newest_reply = hdr.when_written_time;
+			if(hdr.when_written_time > new_stats[top_msg].date_sort)
+				new_stats[top_msg].date_sort = hdr.when_written_time;
+			if(hdr.number > msg_area.sub[sub_code].scan_ptr)
+				new_stats[top_msg].inherit_new=true;
+			if(hdr.thread_first) {
+				msg_number=hdr.thread_first;
+				continue;
+			}
+		}
+		if(hdr.thread_next) {
+			msg_number=hdr.thread_next;
+			moved_back=false;
+			continue;
+		}
+
+		msg_number=hdr.thread_back;
+		moved_back=true;
+	}
+}
+
+top_level=top_level.sort(function(a,b) {
+	return(new_stats[b].date_sort - new_stats[a].date_sort);
+});
 
 // Output messages... 
 for(i in top_level) {
@@ -58,6 +127,8 @@ for(i in top_level) {
 			<div class="subject"><a href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]) ?>);"><?xjs write(html_encode(headers[top_level[i]].subject,true,true,false,false)) ?></a></div>
 			<div class="author"><?xjs write(html_encode(headers[top_level[i]].from,true,true,false,false)) ?></div>
 			<div class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[top_level[i]].when_written_time)) ?></div>
+			<div class="reply_count"><?xjs write(reply_count[top_level[i]]) ?></div>
+			<div class="newest_reply_date"><?xjs if(new_stats[top_level[i]].newest_reply) write(strftime("%m/%d/%y @ %I:%M %p",new_stats[top_level[i]].newest_reply)); ?></div>
 			<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
 			<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
 		</div>
