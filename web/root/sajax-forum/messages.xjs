@@ -78,8 +78,11 @@ for(i in top_level) {
 	new_stats[top_msg]=new Object();
 	if(headers[top_msg].number > msg_area.sub[sub_code].scan_ptr)
 		new_stats[top_msg].is_new=true;
+	else
+		new_stats[top_msg].is_new=false;
+	new_stats[top_msg].inherit_new=false;
 	new_stats[top_msg].newest_reply=0;
-	new_stats[top_msg].date_sort=hdr.when_written_time;
+	new_stats[top_msg].date_sort=headers[top_msg].when_written_time;
 
 	msg_number=headers[top_msg].thread_first;
 	while(msg_number && msg_number != top_msg) {
@@ -117,8 +120,13 @@ top_level=top_level.sort(function(a,b) {
 
 // Output messages... 
 for(i in top_level) {
+	var message_class="message";
+	if(new_stats[top_level[i]].is_new)
+		message_class += '.is_new';
+	if(new_stats[top_level[i]].inherit_new)
+		message_class += '.inherit_new';
 ?>
-	<div class="message" id="message-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
+	<div class="<?xjs write(message_class) ?>" id="message-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
 		<div class="message-header" id="message-header-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
 			<div class="expander"><a href="javascript:toggle_replies('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]); ?>)"><img border="0" width="19" height="16" src="<?xjs write(headers[top_level[i]].thread_first?'plus':'blank'); ?>.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+top_level[i]); ?>"></a><?xjs
 }
