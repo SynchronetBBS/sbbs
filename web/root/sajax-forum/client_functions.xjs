@@ -106,7 +106,7 @@ function reload_groups()
 	ajaxpage(groups_url+'?user='+user,containerid);
 }
 
-function ajaxpage(url, containerid, buttonid, buttonurl)
+function ajaxpage(url, containerid, buttonid, buttonurl, is_script)
 {
 	var page_request = false;
 	if (window.XMLHttpRequest) // if Mozilla, Safari etc
@@ -124,8 +124,15 @@ function ajaxpage(url, containerid, buttonid, buttonurl)
 	}
 	else
 		return false;
-	page_request.onreadystatechange=function(){
-		loadpage(page_request, containerid, buttonid, buttonurl);
+	if(is_script) {
+		page_request.onreadystatechange=function() {
+			evalpage(page_request, containerid);
+		}
+	}
+	else {
+		page_request.onreadystatechange=function(){
+			loadpage(page_request, containerid, buttonid, buttonurl);
+		}
 	}
 	document.body.style.cursor="progress";
 	document.getElementById(containerid).innerHTML=spin('');
@@ -145,6 +152,21 @@ function spin(current)
 			return('<span style="font-family: monospace;">Loading /</span>');
 		default:
 			return('<span style="font-family: monospace;">Loading |</span>');
+	}
+}
+
+function evalpage(page_request, containerid)
+{
+	if(page_request.readyState==4) {
+		document.body.style.cursor="auto";
+		if ((page_request.status==200 || window.location.href.indexOf("http")==-1)) {
+			document.getElementById(containerid).innerHTML=eval(page_request.responseText);
+		}
+		else
+			document.getElementById(containerid).innerHTML='ERROR!';
+	}
+	else {
+		document.getElementById(containerid).innerHTML=spin(document.getElementById(containerid).innerHTML);
 	}
 }
 
@@ -169,5 +191,5 @@ function login()
 {
 	var new_user=document.getElementById('login_username').value;
 	var new_password=document.getElementById('login_password').value;
-	ajaxpage(login_url+'?user='+new_user+'&pass='+new_password+'&killcache='+new Date().getTime()+Math.random(), 'current_user');
+	ajaxpage(login_url+'?user='+new_user+'&pass='+new_password+'&killcache='+new Date().getTime()+Math.random(), 'current_user',undefined,undefined,true);
 }

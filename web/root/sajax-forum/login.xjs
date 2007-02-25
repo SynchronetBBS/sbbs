@@ -4,12 +4,12 @@ var old_user=user.number;
 login(http_request.query['user'][0],http_request.query['pass'][0]);
 if(user.number != old_user) {
 ?>
-	<script>
 	user=<?xjs write(http_request.query['user'][0].toSource()) ?>;
 	password=<?xjs write(http_request.query['pass'][0].toSource()) ?>;
+	document.getElementById('login_username').value='';
+	document.getElementById('login_password').value='';
 	reload_groups();
-	</script>
 <?xjs
 }
 ?>
-Currently logged in as: <?xjs if(user.alias=='') write(user.name); else write(user.alias); ?>
+'Currently logged in as: '+user;
