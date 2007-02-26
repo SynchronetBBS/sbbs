@@ -46,16 +46,23 @@ function xjs_compile(filename) {
 			while(str != '') {
 				if(!in_xjs) {
 					if(str.search(/<\?(xjs)?\s+/)==-1) {
+						var ln=true;
 						if(str.substr(-5)=='<?xjs') {
 							str=str.substr(0, str.length-5);
 							in_xjs=true;
+							ln=false;
 						}
-						if(str.substr(-2)=='<?') {
+						else if(str.substr(-2)=='<?') {
 							str=str.substr(0, str.length-2);
 							in_xjs=true;
+							ln=false;
 						}
-						if(str != '')
-							script += "writeln("+str.toSource()+");";
+						if(str != '') {
+							if(ln)
+								script += "writeln("+str.toSource()+");";
+							else
+								script += "write("+str.toSource()+");";
+						}
 						str='';
 					}
 					else {
