@@ -73,6 +73,8 @@ body {
 }
 
 .message-body {
+	font-weight: normal;
+	font-style: normal;
 	margin-left: 20px;
 	color: #a8a8a8;
 	background-color: black;
