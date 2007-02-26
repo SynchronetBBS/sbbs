@@ -28,7 +28,6 @@ http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod
 			<button class="login" onClick="login()">Log In</button><br>
 			(Note: Logging in will update your new scan pointer on logout)<br>
 		</div>
-		<h4>This site looks worst with Internet Explorer</h4>
 		<div class="group-list" id="group-list"></div>
 		<h2>Your footer goes here...</h2>
 	</body>
