@@ -35,7 +35,7 @@ function SmallHeader(hdr) {
 	this.when_written_time=hdr.when_written_time;
 	this.when_imported_time=hdr.when_imported_time;
 	this.subject=hdr.subject;
-	this.from=hdr.ftom;
+	this.from=hdr.from;
 	this.to=hdr.to;
 }
 
