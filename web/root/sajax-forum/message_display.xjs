@@ -1,0 +1,63 @@
+<?xjs
+var message_class="message";
+if(new_stats[msg_number].is_new)
+	message_class += '_is_new';
+if(new_stats[msg_number].inherit_new)
+	message_class += '_inherit_new';
+?>
+<div class="<?xjs write(message_class) ?>" id="message-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>">
+	<div class="message-header" id="message-header-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>">
+<?xjs
+		if(headers[msg_number].thread_first) {
+?>				<a class="expander" href="javascript:toggle_replies('<?xjs write(sub_code); ?>',<?xjs write(msg_number); ?>)">
+<?xjs		if(new_stats[msg_number].inherit_new) { /* Will be expanded */
+?>				<img class="expander" border="0" width="19" height="16" src="minus.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+msg_number); ?>">
+<?xjs		} else {
+?>				<img class="expander" border="0" width="19" height="16" src="plus.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+msg_number); ?>">
+<?xjs		}				
+?>			</a>
+<?xjs
+		} else {
+?>				<img class="expander" border="0" width="19" height="16" src="blank.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+msg_number); ?>">
+<?xjs
+		}
+?>
+		<a class="subject" href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(msg_number) ?>);"><?xjs write(html_encode(headers[msg_number].subject,true,true,false,false)) ?></a>
+		<span class="author"><?xjs write(html_encode(headers[msg_number].from,true,true,false,false)) ?></span>
+		<span class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[msg_number].when_written_time)) ?></span>
+		<span class="reply_count"><?xjs write(reply_count[msg_number]) ?></span>
+		<span class="newest_reply_date"><?xjs if(new_stats[msg_number].newest_reply) write(strftime("%m/%d/%y @ %I:%M %p",new_stats[msg_number].newest_reply)); ?></span>
+		<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"></div>
+		<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"><?xjs
+			/* Some of the replies are new... expand them! */
+			if(new_stats[msg_number].inherit_new) {
+				var moved_back=false;
+				var top_msg=msg_number;
+
+				msg_number=headers[top_msg].thread_first;
+				while(msg_number && msg_number != top_msg) {
+					var hdr=headers[msg_number];
+					if(hdr==undefined)
+						break;
+					if(!moved_back) {
+						/* This is a new thinger... display it */
+						xjs_load('message_display.xjs');
+						if(hdr.thread_first) {
+							msg_number=hdr.thread_first;
+							continue;
+						}
+					}
+					if(hdr.thread_next) {
+						msg_number=hdr.thread_next;
+						moved_back=false;
+						continue;
+					}
+
+					msg_number=hdr.thread_back;
+					moved_back=true;
+				}
+				msg_number=top_msg;
+			}
+		?></div>
+	</div>
+</div>

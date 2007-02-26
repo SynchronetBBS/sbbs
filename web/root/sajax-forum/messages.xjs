@@ -68,7 +68,7 @@ else {
 	}
 }
 
-/* Now, do a reply count and new flag for every header in top_level */
+/* Now, do a reply count and new flag for every header */
 var reply_count=new Object();
 var new_stats=new Object();
 for(i in top_level) {
@@ -83,6 +83,8 @@ for(i in top_level) {
 	new_stats[top_msg].inherit_new=false;
 	new_stats[top_msg].newest_reply=0;
 	new_stats[top_msg].date_sort=headers[top_msg].when_written_time;
+	var parents=new Array();
+	parents.push(top_msg);
 
 	msg_number=headers[top_msg].thread_first;
 	while(msg_number && msg_number != top_msg) {
@@ -91,14 +93,28 @@ for(i in top_level) {
 			break;
 		if(!moved_back) {
 			/* This is a new thinger... update stuff based on it */
-			reply_count[top_msg]++;
-			if(hdr.when_written_time > new_stats[top_msg].newest_reply)
-				new_stats[top_msg].newest_reply = hdr.when_written_time;
-			if(hdr.when_written_time > new_stats[top_msg].date_sort)
-				new_stats[top_msg].date_sort = hdr.when_written_time;
-			if(hdr.number > msg_area.sub[sub_code].scan_ptr)
-				new_stats[top_msg].inherit_new=true;
+			reply_count[msg_number]=0;
+			new_stats[msg_number]=new Object();
+			if(headers[msg_number].number > msg_area.sub[sub_code].scan_ptr)
+				new_stats[msg_number].is_new=true;
+			else
+				new_stats[msg_number].is_new=false;
+			new_stats[msg_number].inherit_new=false;
+			new_stats[msg_number].newest_reply=0;
+			new_stats[msg_number].date_sort=headers[msg_number].when_written_time;
+
+			for(i in parents) {
+				var top_msg=parents[i];
+				reply_count[top_msg]++;
+				if(hdr.when_written_time > new_stats[top_msg].newest_reply)
+					new_stats[top_msg].newest_reply = hdr.when_written_time;
+				if(hdr.when_written_time > new_stats[top_msg].date_sort)
+					new_stats[top_msg].date_sort = hdr.when_written_time;
+				if(hdr.number > msg_area.sub[sub_code].scan_ptr)
+					new_stats[top_msg].inherit_new=true;
+			}
 			if(hdr.thread_first) {
+				parents.push(msg_number);
 				msg_number=hdr.thread_first;
 				continue;
 			}
@@ -110,6 +126,7 @@ for(i in top_level) {
 		}
 
 		msg_number=hdr.thread_back;
+		parents.pop();
 		moved_back=true;
 	}
 }
@@ -118,37 +135,12 @@ top_level=top_level.sort(function(a,b) {
 	return(new_stats[b].date_sort - new_stats[a].date_sort);
 });
 
+write("Scan Ptr: "+msg_area.sub[sub_code].scan_ptr+"<br>");
 // Output messages... 
 for(i in top_level) {
-	var message_class="message";
-	if(new_stats[top_level[i]].is_new)
-		message_class += '_is_new';
-	if(new_stats[top_level[i]].inherit_new)
-		message_class += '_inherit_new';
-?>
-	<div class="<?xjs write(message_class) ?>" id="message-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
-		<div class="message-header" id="message-header-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>">
-<?xjs
-			if(headers[top_level[i]].thread_first) {
-?>				<a class="expander" href="javascript:toggle_replies('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]); ?>)">
-					<img class="expander" border="0" width="19" height="16" src="plus.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+top_level[i]); ?>">
-				</a>
-<?xjs
-			} else {
-?>				<img class="expander" border="0" width="19" height="16" src="blank.gif" id="reply-expander-<?xjs write(clean_id(sub_code)+'-'+top_level[i]); ?>">
-<?xjs
-			}
-?>
-			<a class="subject" href="javascript:toggle_body('<?xjs write(sub_code); ?>',<?xjs write(top_level[i]) ?>);"><?xjs write(html_encode(headers[top_level[i]].subject,true,true,false,false)) ?></a>
-			<span class="author"><?xjs write(html_encode(headers[top_level[i]].from,true,true,false,false)) ?></span>
-			<span class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[top_level[i]].when_written_time)) ?></span>
-			<span class="reply_count"><?xjs write(reply_count[top_level[i]]) ?></span>
-			<span class="newest_reply_date"><?xjs if(new_stats[top_level[i]].newest_reply) write(strftime("%m/%d/%y @ %I:%M %p",new_stats[top_level[i]].newest_reply)); ?></span>
-			<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
-			<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+top_level[i]) ?>"></div>
-		</div>
-	</div>
-<?xjs
+	msg_number=top_level[i];
+	/* This xjs_load() is recursive!  Whee! */
+	xjs_load('message_display.xjs');
 }
 ?>
 <?xjs
