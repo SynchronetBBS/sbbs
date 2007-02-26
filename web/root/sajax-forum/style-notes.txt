@@ -38,7 +38,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 1 == index.xjs
 2 == groups.xjs
 3 == subs.xjs
-4 == messages.xjs
+4 == message_display.xjs
 x == potentially infinately nested messages.xjs
 + == This repeats multiple times for the one source
 
