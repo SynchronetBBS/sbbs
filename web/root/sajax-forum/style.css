@@ -32,13 +32,17 @@ body {
 }
 
 .message {
+	font-weight: normal;
+	font-style: normal;
 }
 
 .message_is_new {
 	font-weight: bold;
+	font-style: normal;
 }
 
 .message_inherit_new {
+	font-weight: normal;
 	font-style: italic;
 }
 
