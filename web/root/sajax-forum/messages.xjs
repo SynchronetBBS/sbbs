@@ -135,7 +135,6 @@ top_level=top_level.sort(function(a,b) {
 	return(new_stats[b].date_sort - new_stats[a].date_sort);
 });
 
-write("Scan Ptr: "+msg_area.sub[sub_code].scan_ptr+"<br>");
 // Output messages... 
 for(i in top_level) {
 	msg_number=top_level[i];
