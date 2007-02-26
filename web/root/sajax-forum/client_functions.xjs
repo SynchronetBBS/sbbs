@@ -76,10 +76,39 @@ function toggle_replies(sub_code, message_number)
 function toggle_body(sub_code, message_number)
 {
 	var containerid='message-body-'+clean_id(sub_code)+'-'+message_number;
-	if(document.getElementById(containerid).innerHTML=='')
+	var container=document.getElementById(containerid);
+	var message=container.parentNode.parentNode;
+
+	if(container.innerHTML=='') {
 		ajaxpage(body_url+"?sub_code="+sub_code+"&msg_number="+message_number+'&user='+user,containerid);
+		/* If this item was new, "un-new" it */
+		if(message.className=='message_is_new') {
+			/* No longer new... update it and it's parents... */
+			message.className='message';
+			/* Now for the parents.. */
+			parentLoop: while(1) {
+				message=message.parentNode.parentNode.parentNode;
+				if(message==undefined || message==null)
+					break;
+				switch(message.className) {
+				case 'message_inherit_new':
+					message.className='message';
+					break;
+				case 'message_is_new_inherit_new':
+					message.className='message_is_new';
+					break parentLoop;
+				default:
+					break;
+				}
+			}
+		}
+		else if(message.className=='message_is_new_inherit_new') {
+			/* No longer new update it... */
+			message.className='message_inherit_new';
+		}
+	}
 	else
-		document.getElementById(containerid).innerHTML='';
+		container.innerHTML='';
 }
 
 function toggle_messages(sub_code)
