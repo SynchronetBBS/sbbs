@@ -1,4 +1,9 @@
 <?xjs
+/*
+ * No way to tell the last change date since user changes
+ * can change the list of groups.
+ */
+
 load(cwd+"functions.js");
 
 for(group in msg_area.grp_list) {

@@ -4,11 +4,21 @@ sub_code=http_request.query.sub_code[0];
 msg_number=parseInt(http_request.query.msg_number[0]);
 var msgbase=new MsgBase(sub_code);
 msgbase.open();
+var hdr=msgbase.get_msg_header(msg_number, false /* Speedup */);
+var last_mod=new Date();
+last_mod.setTime(hdr.when_imported_time*1000);
+if(http_request.header['If-Modified-Since'] != undefined) {
+	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
+		http_reply.status="304 Not Modified";
+		exit(0);
+	}
+}
+http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod.getTime()/1000);
+
 var body;
-var idx=msgbase.get_msg_index(msg_number);
-if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (idx.attr & MSG_VALIDATED)!=0) {
-	if((idx.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
-		body=msgbase.get_msg_body(true,idx.offset);
+if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
+	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
+		body=msgbase.get_msg_body(true,hdr.offset);
 		body=html_encode(body, true, false, true, true);
 	}
 }

@@ -15,6 +15,30 @@ var top_level=new Array();
 if(msg_area.sub[sub_code].index!=-1)
 	msgbase.open();
 
+// If the If-Modified-Since is greater or equal to the newest import time, we're done!
+var hdr=msgbase.get_msg_header(true, msgbase.total_msgs-1,false);
+var last_mod=new Date();
+last_mod_time=hdr.when_imported_time;
+last_mod.setTime(last_mod_time*1000);
+if(http_request.header['If-Modified-Since'] != undefined) {
+	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
+		http_reply.status="304 Not Modified";
+		exit(0);
+	}
+}
+
+function SmallHeader(hdr) {
+	this.thread_first=hdr.thread_first;
+	this.thread_next=hdr.thread_next;
+	this.thread_back=hdr.thread_back;
+	this.number=hdr.number;
+	this.when_written_time=hdr.when_written_time;
+	this.when_imported_time=hdr.when_imported_time;
+	this.subject=hdr.subject;
+	this.from=hdr.ftom;
+	this.to=hdr.to;
+}
+
 /* First, read ALL headers that may be affect this display */
 if(isNaN(msg_number)) {
 	for(i=0; i<msgbase.total_msgs; i++) {
@@ -25,7 +49,7 @@ if(isNaN(msg_number)) {
 			continue;
 		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
 			continue;
-		headers[hdr.number]=hdr;
+		headers[hdr.number]=new SmallHeader(hdr);
 		if(hdr.thread_back==0)
 			top_level.push(hdr.number);
 		else {
@@ -55,7 +79,7 @@ else {
 				continue;
 			if(hdr.thread_back==top_msg)
 				top_level.push(hdr.number);
-			headers[hdr.number]=hdr;
+			headers[hdr.number]=new SmallHeader(hdr);
 			if(hdr.thread_first) {
 				msg_number=hdr.thread_first;
 				continue;
@@ -85,6 +109,8 @@ for(i in top_level) {
 	new_stats[top_msg].date_sort=headers[top_msg].when_written_time;
 	var parents=new Array();
 	parents.push(top_msg);
+	if(headers[top_msg].when_imported_time > last_mod_time)
+		last_mod_time=headers[top_msg].when_imported_time;
 
 	msg_number=headers[top_msg].thread_first;
 	while(msg_number && msg_number != top_msg) {
@@ -113,6 +139,10 @@ for(i in top_level) {
 				if(hdr.number > msg_area.sub[sub_code].scan_ptr)
 					new_stats[top_msg].inherit_new=true;
 			}
+
+			if(hdr.when_imported_time > last_mod_time)
+				last_mod_time=hdr.when_imported_time;
+
 			if(hdr.thread_first) {
 				parents.push(msg_number);
 				msg_number=hdr.thread_first;
@@ -130,6 +160,16 @@ for(i in top_level) {
 		moved_back=true;
 	}
 }
+
+// If the If-Modified-Since is greater or equal to last import time, we're done!
+last_mod.setTime(last_mod_time*1000);
+if(http_request.header['If-Modified-Since'] != undefined) {
+	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
+		http_reply.status="304 Not Modified";
+		exit(0);
+	}
+}
+http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod.getTime()/1000);
 
 top_level=top_level.sort(function(a,b) {
 	return(new_stats[b].date_sort - new_stats[a].date_sort);

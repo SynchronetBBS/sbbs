@@ -1,5 +1,10 @@
 <?xjs 
-	http_reply.header['Content-Type']='text/javascript'
+	/*
+	 * Unfortunately, this page is "modified" whenever the password
+	 * is changed.  No caching
+	 */
+
+	http_reply.header['Content-Type']='text/javascript';
 	load(cwd+'functions.js');
 ?>
 

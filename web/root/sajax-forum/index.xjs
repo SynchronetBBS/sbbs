@@ -1,6 +1,16 @@
 <?xjs
 load(cwd+"functions.js");
-var sub_code="dove-gen";
+
+var last_mod=new Date();
+last_mod.setTime(file_date(xjs_filename)*1000);
+if(http_request.header['If-Modified-Since'] != undefined) {
+	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
+		http_reply.status="304 Not Modified";
+		exit(0);
+	}
+}
+http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod.getTime()/1000);
+
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
