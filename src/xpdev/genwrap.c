@@ -416,7 +416,7 @@ char* DLLCALL os_cmdshell(void)
 {
 	char*	shell=getenv(OS_CMD_SHELL_ENV_VAR);
 
-#if !defined(__unix__)
+#if defined(__unix__)
 	if(shell==NULL)
 #ifdef _PATH_BSHELL
 		shell=_PATH_BSHELL;
