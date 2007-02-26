@@ -173,9 +173,9 @@ function ajaxpage(url, containerid, buttonid, buttonurl, is_script)
 				loadpage(page_request, containerid, buttonid, buttonurl);
 			}
 		}
+		document.body.style.cursor="progress";
+		document.getElementById(containerid).innerHTML=spin('');
 	}
-	document.body.style.cursor="progress";
-	document.getElementById(containerid).innerHTML=spin('');
 	page_request.open('GET', url, true);
 	page_request.setRequestHeader('Authorization',"Basic "+encode64(user+":"+password));
 	page_request.send(null);

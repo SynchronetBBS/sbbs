@@ -1,8 +1,9 @@
-<xjs
+<?xjs
 load(cwd+"functions.js");
 
 for(sub_code in http_request.query) {
 	var newval=parseInt(http_request.query[sub_code][0]);
+
 	if(newval > msg_area[sub_code].scan_ptr)
 		msg_area[sub_code].scan_ptr=newval;
 }
