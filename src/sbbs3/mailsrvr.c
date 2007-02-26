@@ -3167,7 +3167,7 @@ static void smtp_thread(void* arg)
 				}
 			}
 
-			if((p==name_alias_buf || startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER)
+			if((p==alias_buf || p==name_alias_buf || startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER)
 				&& isdigit(*p)) {
 				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
