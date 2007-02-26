@@ -53,8 +53,10 @@ var groups_url="<?xjs write(http_request.virtual_path.replace(/client_functions\
 var plus_url="<?xjs write(http_request.virtual_path.replace(/client_functions\.xjs$/,'plus.gif')) ?>";
 var minus_url="<?xjs write(http_request.virtual_path.replace(/client_functions\.xjs$/,'minus.gif')) ?>";
 var login_url="<?xjs write(http_request.virtual_path.replace(/client_functions\.xjs$/,'login.xjs')) ?>";
+var update_ptr_url="<?xjs write(http_request.virtual_path.replace(/client_functions\.xjs$/,'update_ptr.xjs')) ?>";
 var user=<?xjs if(user.alias != '') write(user.alias.toSource()); else write(user.name.toSource()) ?>;
 var password=<?xjs write(user.security.password.toSource()) ?>;
+var read_ptr=new Object();
 
 function clean_id(id)
 {
@@ -65,6 +67,7 @@ function toggle_replies(sub_code, message_number)
 {
 	var containerid='replies-'+clean_id(sub_code)+'-'+message_number;
 	var expanderid='reply-expander-'+clean_id(sub_code)+'-'+message_number;
+
 	if(document.getElementById(containerid).innerHTML=='')
 		ajaxpage(messages_url+"?sub_code="+sub_code+"&msg_number="+message_number+'&user='+user,containerid,expanderid,minus_url);
 	else {
@@ -81,6 +84,9 @@ function toggle_body(sub_code, message_number)
 
 	if(container.innerHTML=='') {
 		ajaxpage(body_url+"?sub_code="+sub_code+"&msg_number="+message_number+'&user='+user,containerid);
+		/* If this is higher than the current read_ptr, update it */
+		if(read_ptr[sub_code] < message_number)
+			read_ptr[sub_code] = message_number;
 		/* If this item was new, "un-new" it */
 		if(message.className=='message_is_new') {
 			/* No longer new... update it and it's parents... */
@@ -114,8 +120,11 @@ function toggle_body(sub_code, message_number)
 function toggle_messages(sub_code)
 {
 	var containerid='message-list-'+clean_id(sub_code);
-	if(document.getElementById(containerid).innerHTML=='')
+	if(document.getElementById(containerid).innerHTML=='') {
 		ajaxpage(messages_url+"?sub_code="+sub_code+'&user='+user,containerid);
+		if(read_ptr[sub_code]==undefined)
+			read_ptr[sub_code]=0;
+	}
 	else
 		document.getElementById(containerid).innerHTML='';
 }
@@ -153,14 +162,16 @@ function ajaxpage(url, containerid, buttonid, buttonurl, is_script)
 	}
 	else
 		return false;
-	if(is_script) {
-		page_request.onreadystatechange=function() {
-			evalpage(page_request, containerid);
+	if(containerid != undefined) {
+		if(is_script) {
+			page_request.onreadystatechange=function() {
+				evalpage(page_request, containerid);
+			}
 		}
-	}
-	else {
-		page_request.onreadystatechange=function(){
-			loadpage(page_request, containerid, buttonid, buttonurl);
+		else {
+			page_request.onreadystatechange=function(){
+				loadpage(page_request, containerid, buttonid, buttonurl);
+			}
 		}
 	}
 	document.body.style.cursor="progress";
@@ -220,5 +231,17 @@ function login()
 {
 	var new_user=document.getElementById('login_username').value;
 	var new_password=document.getElementById('login_password').value;
+	/* Clear newest read pointers */
+	read_ptr=new Object();
 	ajaxpage(login_url+'?user='+new_user+'&pass='+new_password+'&killcache='+new Date().getTime()+Math.random(), 'current_user',undefined,undefined,true);
+}
+
+function update_pointers()
+{
+	var args=new Array();
+
+	for(sub_code in read_ptr)
+		args.push(encodeURIComponent(sub_code)+'='+read_ptr[sub_code]);
+
+	ajaxpage(update_ptr_url+"?"+args.join('&'));
 }

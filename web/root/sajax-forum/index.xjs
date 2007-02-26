@@ -9,7 +9,7 @@ var sub_code="dove-gen";
 		<title>The SAJAX Forum</title>
 		<script src="<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'client_functions.xjs')); ?>" type="text/javascript"></script>
 	</head>
-	<body onLoad="reload_groups()">
+	<body onLoad="reload_groups()" onUnLoad="update_pointers()">
 		<h2>Your header goes here...</h2>
 		<div class="login_form">
 			<div id="current_user">Currently logged in as: <?xjs if(user.alias=='') write(user.name); else write(user.alias); ?></div>
