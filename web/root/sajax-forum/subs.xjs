@@ -13,7 +13,7 @@ if(group!=-1) {
 		<div class="sub" id="sub-<?xjs write(clean_id(sub_code)) ?>">
 			<a class="sub-name" href="javascript:toggle_messages('<?xjs write(sub_code)?>')"><?xjs write(msg_area.sub[sub_code].name) ?></a>
 			<span class="sub-description"><?xjs write(msg_area.sub[sub_code].description) ?></span>
-			<div class="message-list" id="message-list-<?xjs write(clean_id(sub_code)); ?>"></div>
+			<div class="message-list" style="display: none" id="message-list-<?xjs write(clean_id(sub_code)); ?>"></div>
 		</div>
 <?xjs
 	}

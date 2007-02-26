@@ -16,6 +16,10 @@ if(msg_area.sub[sub_code].index!=-1)
 	msgbase.open();
 
 // If the If-Modified-Since is greater or equal to the newest import time, we're done!
+if(msgbase.total_msgs==0) {
+	write(' ');	// Make != ''
+	exit(0);
+}
 var hdr=msgbase.get_msg_header(true, msgbase.total_msgs-1,false);
 var last_mod=new Date();
 last_mod_time=hdr.when_imported_time;

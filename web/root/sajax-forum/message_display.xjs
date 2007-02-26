@@ -27,8 +27,8 @@ if(new_stats[msg_number].inherit_new)
 		<span class="post_date"><?xjs write(strftime("%m/%d/%y @ %I:%M %p",headers[msg_number].when_written_time)) ?></span>
 		<span class="reply_count"><?xjs write(reply_count[msg_number]) ?></span>
 		<span class="newest_reply_date"><?xjs if(new_stats[msg_number].newest_reply) write(strftime("%m/%d/%y @ %I:%M %p",new_stats[msg_number].newest_reply)); ?></span>
-		<div class="message-body" id="message-body-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"></div>
-		<div class="replies" id="replies-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"><?xjs
+		<div class="message-body" style="display: none" id="message-body-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"></div>
+		<div class="replies" style="disaply: <?xjs if(new_stats[msg_number].inherit_new) write('block'); else write('none'); ?>" id="replies-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"><?xjs
 			/* Some of the replies are new... expand them! */
 			if(new_stats[msg_number].inherit_new) {
 				var moved_back=false;

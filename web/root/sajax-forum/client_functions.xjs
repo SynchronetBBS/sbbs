@@ -71,13 +71,23 @@ function clean_id(id)
 function toggle_replies(sub_code, message_number)
 {
 	var containerid='replies-'+clean_id(sub_code)+'-'+message_number;
+	var container=document.getElementById(containerid);
 	var expanderid='reply-expander-'+clean_id(sub_code)+'-'+message_number;
+	var expander=document.getElementById(expanderid);
 
-	if(document.getElementById(containerid).innerHTML=='')
+	if(container.innerHTML=='') {
 		ajaxpage(messages_url+"?sub_code="+sub_code+"&msg_number="+message_number+'&user='+user,containerid,expanderid,minus_url);
+		container.style.display='block';
+	}
 	else {
-		document.getElementById(containerid).innerHTML='';
-		document.getElementById(expanderid).src=plus_url;
+		if(container.style.display=='none') {
+			container.style.display='block';
+			expander.src=minus_url;
+		}
+		else {
+			container.style.display='none';
+			expander.src=plus_url;
+		}
 	}
 }
 
@@ -89,6 +99,7 @@ function toggle_body(sub_code, message_number)
 
 	if(container.innerHTML=='') {
 		ajaxpage(body_url+"?sub_code="+sub_code+"&msg_number="+message_number+'&user='+user,containerid);
+		container.style.display='block';
 		/* If this is higher than the current read_ptr, update it */
 		if(read_ptr[sub_code] < message_number)
 			read_ptr[sub_code] = message_number;
@@ -118,29 +129,48 @@ function toggle_body(sub_code, message_number)
 			message.className='message_inherit_new';
 		}
 	}
-	else
-		container.innerHTML='';
+	else {
+		if(container.style.display=='none')
+			container.style.display='block';
+		else
+			container.style.display='none';
+	}
 }
 
 function toggle_messages(sub_code)
 {
 	var containerid='message-list-'+clean_id(sub_code);
-	if(document.getElementById(containerid).innerHTML=='') {
+	var container=document.getElementById(containerid);
+
+	if(container.innerHTML=='') {
 		ajaxpage(messages_url+"?sub_code="+sub_code+'&user='+user,containerid);
+		container.style.display='block';
 		if(read_ptr[sub_code]==undefined)
 			read_ptr[sub_code]=0;
 	}
-	else
-		document.getElementById(containerid).innerHTML='';
+	else {
+		if(container.style.display=='none')
+			container.style.display='block';
+		else
+			container.style.display='none';
+	}
 }
 
 function toggle_subs(group_code)
 {
 	var containerid='group-subs-'+clean_id(group_code);
-	if(document.getElementById(containerid).innerHTML=='')
+	var container=document.getElementById(containerid);
+
+	if(container.innerHTML=='') {
 		ajaxpage(subs_url+"?group_code="+group_code+'&user='+user,containerid);
-	else
-		document.getElementById(containerid).innerHTML='';
+		container.style.display='block';
+	}
+	else {
+		if(container.style.display=='none')
+			container.style.display='block';
+		else
+			container.style.display='none';
+	}
 }
 
 function reload_groups()
