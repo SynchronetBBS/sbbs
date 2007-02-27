@@ -24,7 +24,7 @@ $(TBD): $(OBJS)
 	@copy /y $(TBD) .
 
 # Main EXE Link Rule
-$(REROLL): reroll.obj
+$(REROLL): $(REROLL_OBJS)
     	@echo Linking $@
 	@$(CC) $(CFLAGS) $(XPDEV-MT_LDFLAGS) -e$@ $** $(XPDEV-MT_LIBS)
 	@copy /y $(REROLL) .

@@ -30,13 +30,13 @@ $(TBD): $(OBJS)
    endif
 	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
 
-$(MAPMAKER): mapmaker.o
+$(MAPMAKER): $(MAPMAKER_OBJS)
    ifndef bcc
 	@echo Linking $@
    endif
 	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
 
-$(REROLL): reroll.o
+$(REROLL): $(REROLL_OBJS)
    ifndef bcc
 	@echo Linking $@
    endif
