@@ -23,7 +23,9 @@ Here is an overall view of the content by class
 4+        <span class="post_date"></span>
 4+        <span class="reply_count">
 4+        <span class="newest_reply_date"></span>
-4+        <div class="message-body"></div>
+4+        <div class="message-body">
+5+         <pre></pre>
+4+        </div>
 4+        <div class="replies">
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4+        </div>
@@ -39,6 +41,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 2 == groups.xjs
 3 == subs.xjs
 4 == message_display.xjs
+5 == body.xjs
 x == potentially infinately nested messages.xjs
 + == This repeats multiple times for the one source
 
