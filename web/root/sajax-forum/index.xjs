@@ -30,5 +30,6 @@ http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod
 		</div>
 		<div class="group-list" id="group-list"></div>
 		<h2>Your footer goes here...</h2>
+<a href="http://www.firefoxmyths.com"> <img src="http://mywebpages.comcast.net/OptimizeXP/Buttons/FirefoxMyths.gif" alt="Firefox Myths" border="0" /></a>
 	</body>
 </html>
