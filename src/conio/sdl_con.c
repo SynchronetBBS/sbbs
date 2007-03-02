@@ -107,7 +107,7 @@ const struct sdl_keyvals sdl_keyval[] =
 	{SDLK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
 	{SDLK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600},
 	{SDLK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100},
-	{SDLK_SPACE, 0x20, 0x20, 0x0300, 0x20,},
+	{SDLK_SPACE, 0x20, 0x20, 0x0300, 0x20},
 	{SDLK_0, '0', ')', 0, 0x8100},
 	{SDLK_1, '1', '!', 0, 0x7800},
 	{SDLK_2, '2', '@', 0x0300, 0x7900},
@@ -1302,37 +1302,310 @@ int sdl_full_screen_redraw(int force)
 	return(0);
 }
 
+unsigned int cp437_convert(unsigned int unicode)
+{
+	switch(unicode) {
+		case 0x00c7:
+			return(0x80);
+		case 0x00fc:
+			return(0x81);
+		case 0x00e9:
+			return(0x82);
+		case 0x00e2:
+			return(0x83);
+		case 0x00e4:
+			return(0x84);
+		case 0x00e0:
+			return(0x85);
+		case 0x00e5:
+			return(0x86);
+		case 0x00e7:
+			return(0x87);
+		case 0x00ea:
+			return(0x88);
+		case 0x00eb:
+			return(0x89);
+		case 0x00e8:
+			return(0x8a);
+		case 0x00ef:
+			return(0x8b);
+		case 0x00ee:
+			return(0x8c);
+		case 0x00ec:
+			return(0x8d);
+		case 0x00c4:
+			return(0x8e);
+		case 0x00c5:
+			return(0x8f);
+		case 0x00c9:
+			return(0x90);
+		case 0x00e6:
+			return(0x91);
+		case 0x00c6:
+			return(0x92);
+		case 0x00f4:
+			return(0x93);
+		case 0x00f6:
+			return(0x94);
+		case 0x00f2:
+			return(0x95);
+		case 0x00fb:
+			return(0x96);
+		case 0x00f9:
+			return(0x97);
+		case 0x00ff:
+			return(0x98);
+		case 0x00d6:
+			return(0x99);
+		case 0x00dc:
+			return(0x9a);
+		case 0x00a2:
+			return(0x9b);
+		case 0x00a3:
+			return(0x9c);
+		case 0x00a5:
+			return(0x9d);
+		case 0x20a7:
+			return(0x9e);
+		case 0x0192:
+			return(0x9f);
+		case 0x00e1:
+			return(0xa0);
+		case 0x00ed:
+			return(0xa1);
+		case 0x00f3:
+			return(0xa2);
+		case 0x00fa:
+			return(0xa3);
+		case 0x00f1:
+			return(0xa4);
+		case 0x00d1:
+			return(0xa5);
+		case 0x00aa:
+			return(0xa6);
+		case 0x00ba:
+			return(0xa7);
+		case 0x00bf:
+			return(0xa8);
+		case 0x2310:
+			return(0xa9);
+		case 0x00ac:
+			return(0xaa);
+		case 0x00bd:
+			return(0xab);
+		case 0x00bc:
+			return(0xac);
+		case 0x00a1:
+			return(0xad);
+		case 0x00ab:
+			return(0xae);
+		case 0x00bb:
+			return(0xaf);
+		case 0x2591:
+			return(0xb0);
+		case 0x2592:
+			return(0xb1);
+		case 0x2593:
+			return(0xb2);
+		case 0x2502:
+			return(0xb3);
+		case 0x2524:
+			return(0xb4);
+		case 0x2561:
+			return(0xb5);
+		case 0x2562:
+			return(0xb6);
+		case 0x2556:
+			return(0xb7);
+		case 0x2555:
+			return(0xb8);
+		case 0x2563:
+			return(0xb9);
+		case 0x2551:
+			return(0xba);
+		case 0x2557:
+			return(0xbb);
+		case 0x255d:
+			return(0xbc);
+		case 0x255c:
+			return(0xbd);
+		case 0x255b:
+			return(0xbe);
+		case 0x2510:
+			return(0xbf);
+		case 0x2514:
+			return(0xc0);
+		case 0x2534:
+			return(0xc1);
+		case 0x252c:
+			return(0xc2);
+		case 0x251c:
+			return(0xc3);
+		case 0x2500:
+			return(0xc4);
+		case 0x253c:
+			return(0xc5);
+		case 0x255e:
+			return(0xc6);
+		case 0x255f:
+			return(0xc7);
+		case 0x255a:
+			return(0xc8);
+		case 0x2554:
+			return(0xc9);
+		case 0x2569:
+			return(0xca);
+		case 0x2566:
+			return(0xcb);
+		case 0x2560:
+			return(0xcc);
+		case 0x2550:
+			return(0xcd);
+		case 0x256c:
+			return(0xce);
+		case 0x2567:
+			return(0xcf);
+		case 0x2568:
+			return(0xd0);
+		case 0x2564:
+			return(0xd1);
+		case 0x2565:
+			return(0xd2);
+		case 0x2559:
+			return(0xd3);
+		case 0x2558:
+			return(0xd4);
+		case 0x2552:
+			return(0xd5);
+		case 0x2553:
+			return(0xd6);
+		case 0x256b:
+			return(0xd7);
+		case 0x256a:
+			return(0xd8);
+		case 0x2518:
+			return(0xd9);
+		case 0x250c:
+			return(0xda);
+		case 0x2588:
+			return(0xdb);
+		case 0x2584:
+			return(0xdc);
+		case 0x258c:
+			return(0xdd);
+		case 0x2590:
+			return(0xde);
+		case 0x2580:
+			return(0xdf);
+		case 0x03b1:
+			return(0xe0);
+		case 0x00df:
+			return(0xe1);
+		case 0x0393:
+			return(0xe2);
+		case 0x03c0:
+			return(0xe3);
+		case 0x03a3:
+			return(0xe4);
+		case 0x03c3:
+			return(0xe5);
+		case 0x00b5:
+			return(0xe6);
+		case 0x03c4:
+			return(0xe7);
+		case 0x03a6:
+			return(0xe8);
+		case 0x0398:
+			return(0xe9);
+		case 0x03a9:
+			return(0xea);
+		case 0x03b4:
+			return(0xeb);
+		case 0x221e:
+			return(0xec);
+		case 0x03c6:
+			return(0xed);
+		case 0x03b5:
+			return(0xee);
+		case 0x2229:
+			return(0xef);
+		case 0x2261:
+			return(0xf0);
+		case 0x00b1:
+			return(0xf1);
+		case 0x2265:
+			return(0xf2);
+		case 0x2264:
+			return(0xf3);
+		case 0x2320:
+			return(0xf4);
+		case 0x2321:
+			return(0xf5);
+		case 0x00f7:
+			return(0xf6);
+		case 0x2248:
+			return(0xf7);
+		case 0x00b0:
+			return(0xf8);
+		case 0x2219:
+			return(0xf9);
+		case 0x00b7:
+			return(0xfa);
+		case 0x221a:
+			return(0xfb);
+		case 0x207f:
+			return(0xfc);
+		case 0x00b2:
+			return(0xfd);
+		case 0x25a0:
+			return(0xfe);
+		case 0x00a0:
+			return(0xff);
+	}
+	return(0x01ffff);
+}
+
 /* Called from event thread only */
 unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned int unicode)
 {
-	int i;
-
 #ifdef __DARWIN__
 	if(unicode==0x7f) {
 		unicode=0x08;
-		keysym=SDLK_DELETE;
+		keysym=SDLK_BACKSPACE;
 	}
 #endif
-	if((mod & KMOD_META|KMOD_ALT) && (mod & KMOD_CTRL) && unicode && (unicode < 256))
-		return(unicode);
-	for(i=0;sdl_keyval[i].keysym;i++) {
-		if(sdl_keyval[i].keysym==keysym) {
-			if(mod & (KMOD_META|KMOD_ALT))
-				return(sdl_keyval[i].alt);
-			if(mod & KMOD_CTRL)
-				return(sdl_keyval[i].ctrl);
-			if(mod & KMOD_SHIFT)
-				return(sdl_keyval[i].shift);
-			return(sdl_keyval[i].key);
+	if(!unicode || (mod & (KMOD_META|KMOD_ALT))) {
+		int expect;
+		int i;
+
+		for(i=0;sdl_keyval[i].keysym;i++) {
+			if(sdl_keyval[i].keysym==keysym) {
+				if(mod & KMOD_CTRL)
+					expect=sdl_keyval[i].ctrl;
+				else if(mod & KMOD_SHIFT)
+					expect=sdl_keyval[i].shift;
+				else
+					expect=sdl_keyval[i].key;
+
+				/* "Extended" syms are always right */
+				if(!unicode)
+					return(expect);
+				/*
+				 * If we don't know that this key can
+				 * return the unicode translation, then
+				 * we're not right and this is prolly
+				 * an AltGr sequence.
+				 */
+				if(mod & (KMOD_META|KMOD_ALT)) {
+					if(unicode==expect)
+						return(sdl_keyval[i].alt);
+				}
+			}
 		}
 	}
-#ifdef _WIN32
-	if((mod & (KMOD_META|KMOD_ALT)) && (unicode=='\t'))
-		return(0x01ffff);
-#endif
-	if(unicode  && unicode < 256)
+	if(unicode <= 0x7f)
 		return(unicode);
-	return(0x01ffff);
+	return(cp437_convert(unicode));
 }
 
 /* Mouse event/keyboard thread */
@@ -1356,43 +1629,7 @@ int sdl_video_event_thread(void *data)
 					case SDL_ACTIVEEVENT:		/* Focus change */
 						break;
 					case SDL_KEYDOWN:			/* Keypress */
-						if(ev.key.keysym.unicode > 0 && ev.key.keysym.unicode <= 0x7f) {		/* ASCII Key (Whoopee!) */
-							/* ALT-TAB stuff doesn't work correctly inder Win32,
-							 * seems ot pass a whole slew of TABs though here.
-							 * Kludge-fix 'em by ignoring all ALT-TAB keystrokes
-							 * that appear to be a tab */
-							if(ev.key.keysym.unicode=='\t' && ev.key.keysym.mod & KMOD_ALT)
-								break;
-							/* Need magical handling here... 
-							 * if ALT is pressed, run 'er through 
-							 * sdl_get_char_code() ANYWAYS unless
-							 * both right ALT and left controll are
-							 * pressed in which case it may be an
-							 * AltGr combo */
-							if((ev.key.keysym.mod & (KMOD_RALT))==(KMOD_RALT)) {
-								sdl_add_key(ev.key.keysym.unicode);
-							}
-							else if(ev.key.keysym.mod & (KMOD_META|KMOD_ALT)) {
-								sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
-							}
-							else {
-#ifdef __DARWIN__		/* OS X sends Backspace as Delete! */
-								if(ev.key.keysym.unicode==0x7f)
-									ev.key.keysym.unicode=0x08;
-#endif
-								sdl_add_key(ev.key.keysym.unicode&0x7f);
-							}
-						}
-						else 
-							if((ev.key.keysym.mod & KMOD_NUM) && ev.key.keysym.sym >= SDLK_KP0 && ev.key.keysym.sym <= SDLK_KP9) {
-								sdl_add_key(ev.key.keysym.sym - SDLK_KP0 + '0');
-							}
-							else if((ev.key.keysym.mod & KMOD_NUM) && ev.key.keysym.sym == SDLK_KP_PERIOD) {
-								sdl_add_key('.');
-							}
-							else {
-								sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
-							}
+						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod, ev.key.keysym.unicode));
 						break;
 					case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
 						break;
