@@ -1602,6 +1602,8 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				}
 			}
 		}
+
+		return(0x0001ffff);
 	}
 	if(unicode <= 0x7f)
 		return(unicode);
