@@ -52,6 +52,7 @@ int sdl_exitcode=0;
 
 SDL_Surface *sdl_font=NULL;
 SDL_Surface	*sdl_cursor=NULL;
+SDL_Surface	*sdl_icon=NULL;
 
 static int lastcursor_x=0;
 static int lastcursor_y=0;
@@ -91,6 +92,7 @@ enum {
 	 SDL_USEREVENT_UPDATERECT
 	,SDL_USEREVENT_SETTITLE
 	,SDL_USEREVENT_SETNAME
+	,SDL_USEREVENT_SETICON
 	,SDL_USEREVENT_SETVIDMODE
 	,SDL_USEREVENT_SHOWMOUSE
 	,SDL_USEREVENT_HIDEMOUSE
@@ -257,6 +259,15 @@ void sdl_user_func(int func, ...)
 				va_end(argptr);
 				return;
 			}
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			break;
+		case SDL_USEREVENT_SETICON:
+			ev.user.data1=va_arg(argptr, void *);
+			if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
+				va_end(argptr);
+				return;
+			}
+			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETTITLE:
@@ -858,6 +869,13 @@ void sdl_textmode(int mode)
 int sdl_setname(const char *name)
 {
 	sdl_user_func(SDL_USEREVENT_SETNAME,name);
+	return(0);
+}
+
+/* Called from main thread only (Passes Event) */
+int sdl_seticon(const void *icon, unsigned long size)
+{
+	sdl_user_func(SDL_USEREVENT_SETICON,icon,size);
 	return(0);
 }
 
@@ -1756,6 +1774,22 @@ int sdl_video_event_thread(void *data)
 							case SDL_USEREVENT_SETNAME:
 								sdl.WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
 								free(ev.user.data1);
+								break;
+							case SDL_USEREVENT_SETICON:
+								if(sdl_icon != NULL)
+									sdl.FreeSurface(sdl_icon);
+								sdl_icon=sdl.CreateRGBSurfaceFrom(ev.user.data1
+										, *(unsigned long *)ev.user.data2
+										, *(unsigned long *)ev.user.data2
+										, 32
+										, *(unsigned long *)ev.user.data2*4
+										, *(DWORD *)"\377\0\0\0"
+										, *(DWORD *)"\0\377\0\0"
+										, *(DWORD *)"\0\0\377\0"
+										, *(DWORD *)"\0\0\0\377"
+								);
+								sdl.WM_SetIcon(sdl_icon,NULL);
+								free(ev.user.data2);
 								break;
 							case SDL_USEREVENT_SETTITLE:
 								sdl.WM_SetCaption((char *)ev.user.data1,NULL);
