@@ -19,6 +19,8 @@ struct sdlfuncs {
 	Uint8	(*EventState)	(Uint8 type, int state);
 	SDL_Surface	*(*CreateRGBSurface)	(Uint32 flags, int width, int height, int depth,
 							Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);
+	SDL_Surface *(*CreateRGBSurfaceFrom)(void *pixels, int width, int height, int depth, int pitch,
+							Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);
 	int	(*FillRect)	(SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color);
 	int	(*SetColors)	(SDL_Surface *surface, SDL_Color *colors, int firstcolor, int ncolors);
 	int	(*BlitSurface)	(SDL_Surface *src, SDL_Rect *srcrect,
@@ -34,6 +36,7 @@ struct sdlfuncs {
 	SDL_Surface	*(*SetVideoMode)	(int width, int height, int bpp, Uint32 flags);
 	void	(*FreeSurface)	(SDL_Surface *surface);
 	void	(*WM_SetCaption)	(const char *title, const char *icon);
+	void	(*WM_SetIcon)	(SDL_Surface *icon, Uint8 *mask);
 	int	(*ShowCursor)	(int toggle);
 	Uint32	(*WasInit)	(Uint32 flags);
 	int	(*EnableUNICODE)	(int enable);

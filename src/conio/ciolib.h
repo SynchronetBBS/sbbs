@@ -237,6 +237,7 @@ typedef struct {
 	int		(*showmouse)	(void);
 	void	(*settitle)		(const char *);
 	void	(*setname)		(const char *);
+	void	(*seticon)		(const void *, unsigned long);
 	void	(*copytext)		(const char *, size_t);
 	char 	*(*getcliptext)	(void);
 	void	(*suspend)		(void);
@@ -295,6 +296,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_insline(void);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getpass(const char *prompt);
 CIOLIBEXPORT void CIOLIBCALL ciolib_settitle(const char *title);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setname(const char *title);
+CIOLIBEXPORT void CIOLIBCALL ciolib_seticon(const void *icon,unsigned long size);
 CIOLIBEXPORT int CIOLIBCALL ciolib_showmouse(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
@@ -345,6 +347,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
 	#define	hidemouse()				ciolib_hidemouse()
 	#define showmouse()				ciolib_showmouse()
 	#define setname(a)				ciolib_setname(a)
+	#define seticon(a,b)			ciolib_seticon(a,b)
 	#define settitle(a)				ciolib_settitle(a)
 	#define copytext(a,b)			ciolib_copytext(a,b)
 	#define getcliptext()			ciolib_getcliptext()

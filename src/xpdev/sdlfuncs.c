@@ -47,6 +47,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->SemPost=SDL_SemPost;
 	sdlf->EventState=SDL_EventState;
 	sdlf->CreateRGBSurface=SDL_CreateRGBSurface;
+	sdlf->CreateRGBSurfaceFrom=SDL_CreateRGBSurfaceFrom;
 	sdlf->FillRect=SDL_FillRect;
 	sdlf->SetColors=SDL_SetColors;
 	sdlf->BlitSurface=SDL_UpperBlit;
@@ -61,6 +62,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->SetVideoMode=SDL_SetVideoMode;
 	sdlf->FreeSurface=SDL_FreeSurface;
 	sdlf->WM_SetCaption=SDL_WM_SetCaption;
+	sdlf->WM_SetIcon=SDL_WM_SetIcon;
 	sdlf->ShowCursor=SDL_ShowCursor;
 	sdlf->WasInit=SDL_WasInit;
 	sdlf->EnableUNICODE=SDL_EnableUNICODE;
@@ -138,6 +140,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->CreateRGBSurfaceFrom=GetProcAddress(sdl_dll, "SDL_CreateRGBSurfaceFrom"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->FillRect=GetProcAddress(sdl_dll, "SDL_FillRect"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
@@ -191,6 +197,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->WM_SetCaption=GetProcAddress(sdl_dll, "SDL_WM_SetCaption"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->WM_SetIcon=GetProcAddress(sdl_dll, "SDL_WM_SetIcon"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
@@ -307,6 +317,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->CreateRGBSurfaceFrom=dlsym(sdl_dll, "SDL_CreateRGBSurfaceFrom"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->FillRect=dlsym(sdl_dll, "SDL_FillRect"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
@@ -360,6 +374,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->WM_SetCaption=dlsym(sdl_dll, "SDL_WM_SetCaption"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->WM_SetIcon=dlsym(sdl_dll, "SDL_WM_SetIcon"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}

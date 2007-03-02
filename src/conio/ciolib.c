@@ -133,6 +133,7 @@ int try_sdl_init(int mode)
 		cio_api.showmouse=sdl_showmouse;
 		cio_api.hidemouse=sdl_hidemouse;
 		cio_api.setname=sdl_setname;
+		cio_api.seticon=sdl_seticon;
 		cio_api.settitle=sdl_settitle;
 #ifdef _WIN32
 		cio_api.copytext=win32_copytext;
@@ -940,6 +941,13 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setname(const char *name) {
 
 	if(cio_api.setname!=NULL)
 		cio_api.setname(name);
+}
+
+CIOLIBEXPORT void CIOLIBCALL ciolib_seticon(const void *icon, unsigned long size) {
+	CIOLIB_INIT();
+
+	if(cio_api.seticon!=NULL)
+		cio_api.seticon(icon,size);
 }
 
 CIOLIBEXPORT void CIOLIBCALL ciolib_settitle(const char *title) {
