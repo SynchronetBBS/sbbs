@@ -198,8 +198,7 @@ void playnote_thread(void *args)
 		}
 		else
 			listSemWait(&notes);
-		xptone_open();
-		device_open=TRUE;
+		device_open=xptone_open();
 		note=listShiftNode(&notes);
 		if(note==NULL)
 			break;
@@ -221,8 +220,12 @@ void playnote_thread(void *args)
 				break;
 		}
 		duration-=pauselen;
-		if(note->notenum < 72 && note->notenum >= 0)
-			xptone(((double)note_frequency[note->notenum])/1000,duration,WAVE_SHAPE_SINE_SAW_HARM);
+		if(note->notenum < 72 && note->notenum >= 0) {
+			if(device_open)
+				xptone(((double)note_frequency[note->notenum])/1000,duration,WAVE_SHAPE_SINE_SAW_HARM);
+			else
+				xpbeep(((double)note_frequency[note->notenum])/1000,duration);
+		}
 		else
 			SLEEP(duration);
 		SLEEP(pauselen);
