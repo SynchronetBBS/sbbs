@@ -920,6 +920,9 @@ int main(int argc, char **argv)
 						case 'W':
 							ciolib_mode=CIOLIB_MODE_CONIO;
 							break;
+						case 'S':
+							ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
+							break;
 						default:
 							goto USAGE;
 					}
@@ -1126,6 +1129,7 @@ int main(int argc, char **argv)
         "\n\noptions:\n\n"
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
+		"       S = FullScreen SDL mode\n"
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
