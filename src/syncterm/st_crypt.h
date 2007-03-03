@@ -17,6 +17,10 @@ struct crypt_funcs {
 	C_RET (*GetAttribute)( C_IN CRYPT_HANDLE cryptHandle,
 		C_IN CRYPT_ATTRIBUTE_TYPE attributeType,
 		C_OUT int C_PTR value );
+	C_RET (*GetAttributeString)( C_IN CRYPT_HANDLE cryptHandle,
+		C_IN CRYPT_ATTRIBUTE_TYPE attributeType,
+		C_OUT void C_PTR value,
+		C_OUT int C_PTR valueLength );
 	C_RET (*SetAttribute)( C_IN CRYPT_HANDLE cryptHandle,
 		C_IN CRYPT_ATTRIBUTE_TYPE attributeType,
 		C_IN int value );

@@ -23,12 +23,7 @@
 #include "gutsz.h"
 #endif
 
-#ifdef GUTS_BUILTIN
-#define	BUFSIZE	1
-#else
-#define	BUFSIZE	2048
-#endif
-static char recvbuf[BUFSIZE];
+#define	ANSI_REPLY_BUFSIZE	2048
 
 #define DUMP
 
@@ -200,7 +195,6 @@ int log_level = LOG_INFO;
 
 enum { ZMODEM_MODE_SEND, ZMODEM_MODE_RECV } zmodem_mode;
 
-
 static BOOL zmodem_check_abort(void* vp)
 {
 	zmodem_t* zm = (zmodem_t*)vp;
@@ -219,7 +213,6 @@ static BOOL zmodem_check_abort(void* vp)
 
 extern FILE* log_fp;
 extern char *log_levels[];
-extern int	telnet_log_level;
 
 #if defined(__BORLANDC__)
 	#pragma argsused
@@ -365,56 +358,21 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-static int send_byte(void* unused, uchar ch, unsigned timeout)
+static int send_byte(void* unused, uchar ch, unsigned timeout /* seconds */)
 {
-	return conn_send(&ch,sizeof(char),timeout*1000);
+	return conn_send(&ch,sizeof(ch),timeout*1000);
 }
-
-static	ulong	bufbot;
-static	ulong	buftop;
 
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-static int recv_byte(void* unused, unsigned timeout)
+static int recv_byte(void* unused, unsigned timeout /* seconds */)
 {
 	BYTE	ch;
-	int		i;
-	time_t start=time(NULL);
 
-	if(bufbot==buftop) {
-		if((i=conn_recv(recvbuf,sizeof(recvbuf),timeout*1000))<1) {
-			if(timeout)
-				lprintf(LOG_ERR,"RECEIVE ERROR %d (after %u seconds, timeout=%u)"
-					,i, time(NULL)-start, timeout);
-			return(-1);
-		}
-		buftop=i;
-		bufbot=0;
-	}
-	ch=recvbuf[bufbot++];
-/*
-	if(buftop < sizeof(recvbuf)) {
-		i=conn_recv(recvbuf + buftop, sizeof(recvbuf) - buftop, 0);
-		if(i > 0)
-			buftop+=i;
-	}
- */
-/*	lprintf(LOG_DEBUG,"RX: %02X", ch); */
-	return(ch);
-}
-
-void purge_recv(void)
-{
-	unsigned count=0;
-
-	lprintf(LOG_NOTICE,"Purging receive buffer...");
-	YIELD();
-	while(recv_byte(NULL,0) >= 0) {
-		YIELD();
-		count++;
-	}
-	lprintf(LOG_NOTICE,"%u bytes purged",count);
+	if(conn_recv(&ch, sizeof(ch), timeout*1000))
+		return(ch);
+	return(-1);
 }
 
 #if defined(__BORLANDC__)
@@ -422,13 +380,7 @@ void purge_recv(void)
 #endif
 BOOL data_waiting(void* unused, unsigned timeout)
 {
-	BOOL rd;
-
-	if(bufbot < buftop)
-		return(TRUE);
-	if(!socket_check(conn_socket,&rd,NULL,timeout))
-		return(FALSE);
-	return(rd);
+	return(conn_data_waiting());
 }
 
 void draw_transfer_window(char* title)
@@ -544,22 +496,6 @@ void erase_transfer_window(void) {
 	_setcursortype(_NORMALCURSOR);
 }
 
-static void binary_mode_on(struct bbslist *bbs)
-{
-	if(bbs->conn_type == CONN_TYPE_TELNET) {
-		request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
-		request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
-	}
-}
-
-static void binary_mode_off(struct bbslist *bbs)
-{
-	if(bbs->conn_type == CONN_TYPE_TELNET) {
-		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
-		request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
-	}
-}
-
 void ascii_upload(FILE *fp);
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 
@@ -629,9 +565,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 #endif
 static BOOL is_connected(void* unused)
 {
-	if(bufbot < buftop)
-		return(TRUE);
-	return conn_is_connected();
+	return(conn_connected());
 }
 
 #ifdef GUTS_BUILTIN
@@ -873,7 +807,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	zmodem_mode=ZMODEM_MODE_SEND;
 
-	binary_mode_on(bbs);
+	conn_binary_mode_on();
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
@@ -895,7 +829,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	fclose(fp);
 
-	binary_mode_off(bbs);
+	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
 
@@ -910,14 +844,11 @@ void zmodem_download(struct bbslist *bbs)
 
 	if(safe_mode)
 		return;
-#if 0
-	bufbot=buftop=0;	/* purge our receive buffer */
-#endif
 	draw_transfer_window("Zmodem Download");
 
 	zmodem_mode=ZMODEM_MODE_RECV;
 
-	binary_mode_on(bbs);
+	conn_binary_mode_on();
 	zmodem_init(&zm
 		,/* cbdata */&zm
 		,lputs, zmodem_progress
@@ -928,15 +859,10 @@ void zmodem_download(struct bbslist *bbs)
 
 	files_received=zmodem_recv_files(&zm,bbs->dldir,&bytes_received);
 
-#if 0
-	if(zm.local_abort)
-		purge_recv();
-#endif
-
 	if(files_received>1)
 		lprintf(LOG_INFO,"Received %u files (%lu bytes) successfully", files_received, bytes_received);
 
-	binary_mode_off(bbs);
+	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
 
@@ -1113,11 +1039,7 @@ void capture_control(struct bbslist *bbs)
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
-#ifdef GUTS_BUILTIN
-	unsigned char prn[1024];
-#else
-	unsigned char prn[BUFSIZE];
-#endif
+	unsigned char prn[ANSI_REPLY_BUFSIZE];
 	int	key;
 	int i,j;
 	unsigned char *p;
@@ -1140,7 +1062,7 @@ BOOL doterm(struct bbslist *bbs)
 
 	speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
-	telnet_log_level = bbs->telnet_loglevel;
+	conn_api.log_level = bbs->telnet_loglevel;
 	ciomouse_setevents(0);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
@@ -1168,7 +1090,7 @@ BOOL doterm(struct bbslist *bbs)
 		if(speed)
 			thischar=xp_timer();
 
-		while((bufbot < buftop) || (!socket_check(conn_socket,&rd,NULL,0)) || rd) {
+		while(conn_data_waiting() || !conn_connected()) {
 			if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
 				/* Get remote input */
 				inch=recv_byte(NULL, 0);
@@ -1177,7 +1099,7 @@ BOOL doterm(struct bbslist *bbs)
 					update_status(bbs, speed);
 				switch(inch) {
 					case -1:
-						if(!is_connected(NULL)) {
+						if(!conn_connected()) {
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
