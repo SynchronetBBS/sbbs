@@ -1,5 +1,7 @@
 /* $Id$ */
 
+/* TODO: USE PORTAUDIO! */
+
 /* standard headers */
 #include <math.h>
 
