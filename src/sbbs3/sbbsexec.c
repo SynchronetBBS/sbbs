@@ -232,10 +232,13 @@ void _cdecl input_thread(void* arg)
 			continue;
 		}
 		RingBufWrite(&rdbuf,buf,count);
-		/* Set the "Data ready" bit in the LSR */
-		uart_lsr_reg |= UART_LSR_DATA_READY;
 
-		assert_interrupt(UART_IER_RX_DATA); /* assert rx data interrupt */
+		if(virtualize_uart) {
+			/* Set the "Data ready" bit in the LSR */
+			uart_lsr_reg |= UART_LSR_DATA_READY;
+
+			assert_interrupt(UART_IER_RX_DATA); /* assert rx data interrupt */
+		}
 	}
 }
 
