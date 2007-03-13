@@ -7,8 +7,8 @@ Overview
 --------
 SEXYZ was developed as a native (32-bit) TCP/socket-based replacement for the
 16-bit DOS file transfer drivers (e.g. FDSZ, CE-XYZ, etc.) that we've been
-stuck with on Win32 BBSes for *far* too long. While SEXYZ was designed with
-Synchronet BBSes in mind, it should also work with other Win32 BBS packages
+stuck with on Win32 BBSes for FAR too long. While SEXYZ was designed with
+Synchronet BBSes in mind, it should also work with other Win32* BBS packages
 that have the ability to pass socket descriptors to external file transfer
 protocol drivers.
 
@@ -30,6 +30,9 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Actively developed and supported
     o Open source (at cvs.synchro.net)!
 
+* SEXYZ can also be built for use (natively) on Linux and other Unix variants
+  (e.g. FreeBSD).
+
 
 Distribution
 ------------
@@ -49,6 +52,10 @@ http://www.synchro.net
 ftp://ftp.synchro.net
 ftp://vert.synchro.net
 telnet://vert.synchro.net
+
+For a client implementation of SEXYZ, use the SyncTerm Telnet/RLogin/SSH
+terminal program (http://syncterm.bbsdev.net/), available for many platforms,
+including Win32 and *nix.
 
 
 Command-line Syntax
@@ -106,7 +113,7 @@ SCFG:File Options->Transfer Protocols:
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        X
  2: Protocol Name                 Xmodem (SEXYZ)
- 3: Access Requirements           !UNIX
+ 3: Access Requirements           
  4: Upload Command Line           %!sexyz %h -%p rC %f
  5: Download Command Line         %!sexyz %h -%p sX %f
  6: Batch Upload Command Line
@@ -114,11 +121,12 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
 
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        Y
  2: Protocol Name                 Ymodem (SEXYZ)
- 3: Access Requirements           !UNIX
+ 3: Access Requirements           
  4: Upload Command Line           %!sexyz %h -%p ry %f
  5: Download Command Line         %!sexyz %h -%p sY %f
  6: Batch Upload Command Line     %!sexyz %h -%p ry %g
@@ -126,11 +134,12 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
 
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        G
  2: Protocol Name                 Ymodem-G (SEXYZ)
- 3: Access Requirements           !UNIX
+ 3: Access Requirements           
  4: Upload Command Line           %!sexyz %h -%p rg %f
  5: Download Command Line         %!sexyz %h -%p sY %f
  6: Batch Upload Command Line     %!sexyz %h -%p rg %g
@@ -138,11 +147,12 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
 
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        Z
  2: Protocol Name                 Zmodem (SEXYZ)
- 3: Access Requirements           !UNIX
+ 3: Access Requirements           
  4: Upload Command Line           %!sexyz %h -%p rz %f
  5: Download Command Line         %!sexyz %h -%p sz %f
  6: Batch Upload Command Line     %!sexyz %h -%p rz %g
@@ -150,13 +160,14 @@ SCFG:File Options->Transfer Protocols:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
 
 Optional/Advanced:
 
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        8
  2: Protocol Name                 Zmodem-8K (SEXYZ)
- 3: Access Requirements           !UNIX
+ 3: Access Requirements           
  4: Upload Command Line           %!sexyz %h -%p rz %f
  5: Download Command Line         %!sexyz %h -%p -8 sz %f
  6: Batch Upload Command Line     %!sexyz %h -%p rz %g
@@ -164,6 +175,7 @@ Optional/Advanced:
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
 
 NOTE: It is suggested you remove existing FDSZ or CE-XYZ transfer protocol
       entries as they are no longer needed.
@@ -224,15 +236,13 @@ the secret "-quotes" command-line option.
 
 Note Regarding Synchronet for Unix
 ----------------------------------
-Synchronet for Unix does not yet support socket-based file transfer protocols,
-so SEXYZ is only currently supported on Synchronet for Unix in "stdio" mode.
+Synchronet for Unix (prior to v3.14) did not support socket-based file
+transfer protocols, so SEXYZ is only currently supported on Synchronet for
+Unix (v3.13 and older) in "stdio" mode.
+
 You can enable "stdio" mode in SEXYZ by removing '%h' (the socket descriptor)
-from the above command-lines and changing the access requirements from
-"!UNIX" to "UNIX". However, since (l)rzsz comes with most Unix distributions
-and works quite well, SEXYZ is not recommended for use on Unix BBSes for the
-time-being. See docs/sbbsunix.txt for details on configuring (l)rzsz on
-Synchronet if it's not already configured in SCFG:File Options->Transfer
-Protocols.
+from the above command-lines. If you're using Synchronet for Unix v3.14 or
+later, socket I/O mode is preferred (do not enable "stdio" mode).
 
 
 Optional Initialization File (sexyz.ini)
@@ -252,7 +262,7 @@ Example .ini file (with default values given):
 
     Telnet=TRUE                 ; set to FALSE to change the default mode
     TCP_NoDelay=TRUE            ; disable the TCP Nagle algorithm
-	LogLevel=INFO				; set display/log output level
+    LogLevel=INFO               ; set display/log output level
     Debug=FALSE                 ; enable debug logging (overrides LogLevel)
     DebugTx=FALSE               ; debug transmitted characters
     DebugRx=FALSE               ; debug received characters
@@ -300,7 +310,7 @@ The Xmodem, Ymodem, and Zmodem file transfers should be compatible with any
 terminal programs or remote protocol drivers that conform to the public
 specifications for these protocols written by Chuck Forsberg (Xmodem was
 actually written by Ward Christensen, but was extended and documented by our
-friend, Chuck).
+good friend, Chuck).
 
 SEXYZ supports the following protocols and their popular permutations:
 
@@ -318,9 +328,9 @@ Zmodem-8K:  8192 byte blocks, 16-bit or 32-bit CRC error detection, batch file
 
 As of this writing, the current version of SEXYZ and the X/Zmodem modules are:
 
-	sexyz.c  1.74
-	xmodem.c 1.25	<-- Includes Ymodem
-	zmodem.c 1.68
+	sexyz.c  1.77
+	xmodem.c 1.26	<-- Includes Ymodem
+	zmodem.c 1.71
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clients
 /terminal programs:
@@ -412,5 +422,5 @@ SEXYZ includes portions of the Synchronet XPDEV and SMBLIB libraries which
 are licensed under the GNU Lesser General Public License (LGPL).
 http://www.fsf.org/licensing/licenses/lgpl.txt
 
-Synchronet BBS software is written by and copyright 2005 Rob Swindell.
+Synchronet BBS software is written by and copyright 2006 Rob Swindell.
 http://www.synchro.net/docs/copyright.html
