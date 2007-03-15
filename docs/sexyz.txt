@@ -114,8 +114,8 @@ SCFG:File Options->Transfer Protocols:
  1: Mnemonic (Command Key)        X
  2: Protocol Name                 Xmodem (SEXYZ)
  3: Access Requirements           
- 4: Upload Command Line           %!sexyz %h -%p rC %f
- 5: Download Command Line         %!sexyz %h -%p sX %f
+ 4: Upload Command Line           %!sexyz%. %h -%p rC %f
+ 5: Download Command Line         %!sexyz%. %h -%p sX %f
  6: Batch Upload Command Line
  7: Batch Download Command Line
  8: Bi-dir Command Line
@@ -127,10 +127,10 @@ SCFG:File Options->Transfer Protocols:
  1: Mnemonic (Command Key)        Y
  2: Protocol Name                 Ymodem (SEXYZ)
  3: Access Requirements           
- 4: Upload Command Line           %!sexyz %h -%p ry %f
- 5: Download Command Line         %!sexyz %h -%p sY %f
- 6: Batch Upload Command Line     %!sexyz %h -%p ry %g
- 7: Batch Download Command Line   %!sexyz %h -%p sY @%f
+ 4: Upload Command Line           %!sexyz%. %h -%p ry %f
+ 5: Download Command Line         %!sexyz%. %h -%p sY %f
+ 6: Batch Upload Command Line     %!sexyz%. %h -%p ry %g
+ 7: Batch Download Command Line   %!sexyz%. %h -%p sY @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -140,10 +140,10 @@ SCFG:File Options->Transfer Protocols:
  1: Mnemonic (Command Key)        G
  2: Protocol Name                 Ymodem-G (SEXYZ)
  3: Access Requirements           
- 4: Upload Command Line           %!sexyz %h -%p rg %f
- 5: Download Command Line         %!sexyz %h -%p sY %f
- 6: Batch Upload Command Line     %!sexyz %h -%p rg %g
- 7: Batch Download Command Line   %!sexyz %h -%p sY @%f
+ 4: Upload Command Line           %!sexyz%. %h -%p rg %f
+ 5: Download Command Line         %!sexyz%. %h -%p sY %f
+ 6: Batch Upload Command Line     %!sexyz%. %h -%p rg %g
+ 7: Batch Download Command Line   %!sexyz%. %h -%p sY @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -153,10 +153,10 @@ SCFG:File Options->Transfer Protocols:
  1: Mnemonic (Command Key)        Z
  2: Protocol Name                 Zmodem (SEXYZ)
  3: Access Requirements           
- 4: Upload Command Line           %!sexyz %h -%p rz %f
- 5: Download Command Line         %!sexyz %h -%p sz %f
- 6: Batch Upload Command Line     %!sexyz %h -%p rz %g
- 7: Batch Download Command Line   %!sexyz %h -%p sz @%f
+ 4: Upload Command Line           %!sexyz%. %h -%p rz %f
+ 5: Download Command Line         %!sexyz%. %h -%p sz %f
+ 6: Batch Upload Command Line     %!sexyz%. %h -%p rz %g
+ 7: Batch Download Command Line   %!sexyz%. %h -%p sz @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -168,10 +168,10 @@ Optional/Advanced:
  1: Mnemonic (Command Key)        8
  2: Protocol Name                 Zmodem-8K (SEXYZ)
  3: Access Requirements           
- 4: Upload Command Line           %!sexyz %h -%p rz %f
- 5: Download Command Line         %!sexyz %h -%p -8 sz %f
- 6: Batch Upload Command Line     %!sexyz %h -%p rz %g
- 7: Batch Download Command Line   %!sexyz %h -%p -8 sz @%f
+ 4: Upload Command Line           %!sexyz%. %h -%p rz %f
+ 5: Download Command Line         %!sexyz%. %h -%p -8 sz %f
+ 6: Batch Upload Command Line     %!sexyz%. %h -%p rz %g
+ 7: Batch Download Command Line   %!sexyz%. %h -%p -8 sz @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
