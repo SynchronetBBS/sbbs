@@ -423,6 +423,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		bputs(text[NoNetMailAllowed]);
 		return; }
 
+	to[0]=0;
+	name[0]=0;
+	sender[0]=0;
+	senderaddr[0]=0;
+	fulladdr[0]=0;
+
 	sprintf(str,"%.6s",block+116);
 	n=atol(str);	  /* i = number of 128 byte records */
 
@@ -438,12 +444,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if(into==NULL)
 		sprintf(to,"%-128.128s",(char *)qwkbuf+QWK_BLOCK_LEN);  /* To user on first line */
 	else
-		strcpy(to,into);
+		SAFECOPY(to,into);
 
 	p=strchr(to,QWK_NEWLINE);		/* chop off at first CR */
 	if(p) *p=0;
 
-	strcpy(name,to);
+	SAFECOPY(name,to);
 	p=strchr(name,'@');
 	if(p) *p=0;
 	truncsp(name);
@@ -512,9 +518,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); }
 			else {
 				if(fromhub)
-					strcpy(senderaddr, cfg.qhub[fromhub-1]->id);
+					SAFECOPY(senderaddr, cfg.qhub[fromhub-1]->id);
 				else
-					strcpy(senderaddr, useron.alias);
+					SAFECOPY(senderaddr, useron.alias);
 				strupr(senderaddr);
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); }
 			sprintf(sender,"%.25s",block+46); }    /* From name */
@@ -522,7 +528,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			msg.hdr.when_written.zone=sys_timezone(&cfg);
 			sprintf(str,"%u",useron.number);
 			smb_hfield(&msg,SENDEREXT,strlen(str),str);
-			strcpy(sender,(qnet || cfg.inetmail_misc&NMAIL_ALIAS)
+			SAFECOPY(sender,(qnet || cfg.inetmail_misc&NMAIL_ALIAS)
 				? useron.alias : useron.name);
 			}
 		truncsp(sender);
@@ -574,15 +580,15 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			smb_hfield(&msg,SENDER,strlen(cfg.sys_id),cfg.sys_id);
 			msg.idx.from=0;
 			msg.idx.to=useron.number;
-			strcpy(to,sender);
-			strcpy(fulladdr,senderaddr);
-			sprintf(str,"BADADDR: %s",addr);
+			SAFECOPY(to,sender);
+			SAFECOPY(fulladdr,senderaddr);
+			SAFEPRINTF(str,"BADADDR: %s",addr);
 			smb_hfield(&msg,SUBJECT,strlen(str),str);
 			net=NET_NONE;
 			smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
 		}
 		/* This is required for fixsmb to be able to rebuild the index */
-		sprintf(str,"%u",msg.idx.to);
+		SAFEPRINTF(str,"%u",msg.idx.to);
 		smb_hfield_str(&msg,RECIPIENTEXT,str);
 
 		smb_hfield(&msg,RECIPIENT,strlen(name),name);
@@ -590,7 +596,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
 
 		truncsp(fulladdr);
-		smb_hfield(&msg,RECIPIENTNETADDR,strlen(fulladdr),fulladdr);
+		if(fulladdr[0])
+			smb_hfield(&msg,RECIPIENTNETADDR,strlen(fulladdr),fulladdr);
 
 		bprintf(text[NetMailing],to,fulladdr,sender,cfg.sys_id); }
 
@@ -745,7 +752,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		strupr(tmp);
 		strcat(str,tmp); }
 	else
-		strcpy(str,cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+		SAFECOPY(str,cfg.netmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
 	SAFECOPY(hdr.from,str);
 
 	SAFECOPY(hdr.to,to);
