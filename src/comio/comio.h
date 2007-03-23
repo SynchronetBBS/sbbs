@@ -69,6 +69,8 @@ extern "C" {
 
 COM_HANDLE	comOpen(const char* device);
 BOOL		comClose(COM_HANDLE);
+long		comGetBaudRate(COM_HANDLE);
+BOOL		comSetBaudRate(COM_HANDLE, ulong rate);
 int			comGetModemStatus(COM_HANDLE);
 int			comRaiseDTR(COM_HANDLE);
 int			comLowerDTR(COM_HANDLE);

@@ -69,6 +69,28 @@ BOOL comClose(COM_HANDLE handle)
 	return CloseHandle(handle);
 }
 
+long comGetBaudRate(COM_HANDLE handle)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb)!=TRUE)
+		return COM_ERROR;
+
+	return dcb.BaudRate;
+}
+
+BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb)!=TRUE)
+		return FALSE;
+
+	dcb.BaudRate=rate;
+
+	return SetCommState(handle, &dcb);
+}
+
 int comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;
