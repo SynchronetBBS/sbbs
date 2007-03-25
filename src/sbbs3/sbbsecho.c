@@ -3547,7 +3547,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 			msgs=getlastmsg(i,&lastmsg,0);
 			if(!msgs || (!addr.zone && !(misc&IGNORE_MSGPTRS) && ptr>=lastmsg)) {
-				lprintf(LOG_INFO,"No new messages.");
+				lprintf(LOG_DEBUG,"No new messages.");
 				if(ptr>lastmsg && !addr.zone && !(misc&LEAVE_MSGPTRS)) {
 					lprintf(LOG_DEBUG,"Fixing new-scan pointer.");
 					sprintf(str,"%s%s.sfp",scfg.sub[i]->data_dir,scfg.sub[i]->code);
