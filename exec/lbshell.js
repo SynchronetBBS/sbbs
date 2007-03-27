@@ -1734,7 +1734,6 @@ function show_messagemenu()
  								if(msg_area.grp_list[bbs.curgrp].sub_list[i].scan_cfg&SCAN_CFG_NEW
 									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW))
 									break;
- 							}
 							draw_main(true);
 							messagemenu.draw();
 							break;
