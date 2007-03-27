@@ -109,8 +109,7 @@ function get_message()
 
 	/* Sysop Chat? */
 	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
-		// TODO: No way of calling bbs.priave_chat(true)
-		// bbs.private_chat();
+		bbs.private_chat(true);
 		bbs.nodesync();
 		draw_main(true);
 		for(i=0; i<menus_displayed.length; i++)
