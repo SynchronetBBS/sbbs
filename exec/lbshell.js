@@ -17,7 +17,7 @@
 //################################# Begins Here #################################
 
 /* Adjustable settings */
-const LBShell_Attr=0x37;
+const LBShell_Attr=0x07;		/* light-grey on black */
 const MessageWindow_Attr=7;
 const MessageTimeout=50;		/* 100ths of a second */
 
@@ -1033,7 +1033,8 @@ function show_filemenu()
 							clear_screen();
 							console.putmsg("\r\nchNew File Scan (Lib)\r\n");
 							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME);
+								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME)<0)
+                                    break;
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
@@ -1088,7 +1089,8 @@ function show_filemenu()
 							var spec=bbs.get_filespec();
 							for(i=0; i<file_area.lib_list.length; i++) {
 								for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-									bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0);
+									if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0)<0)
+                                        break;
 							}
 							console.pause();
 							draw_main(true);
@@ -1100,7 +1102,8 @@ function show_filemenu()
 								console.putmsg("\r\nchSearch for Filename(s) (Lib)\r\n");
 							var spec=bbs.get_filespec();
 							for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0);
+								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0)<0)
+                                    break;
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
@@ -1150,7 +1153,8 @@ function show_filemenu()
 							var spec=console.getstr(40,K_LINE|K_UPPER);
 							for(i=0; i<file_area.lib_list.length; i++) {
 								for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-									bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC);
+									if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC)<0)
+										break;
 							}
 							console.pause();
 							draw_main(true);
@@ -1163,7 +1167,8 @@ function show_filemenu()
 							console.putmsg(bbs.text(SearchStringPrompt));
 							var spec=console.getstr(40,K_LINE|K_UPPER);
 							for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC);
+								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC)<0)
+									break;
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
@@ -1718,18 +1723,18 @@ function show_messagemenu()
 						case 'A':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-							for(j=0; j<msg_area.grp_list.length; j++) {
-								for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
-									bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_NEW);
-							}
+							bbs.scan_subs(SCAN_NEW,/* All? */ true);
 							draw_main(true);
 							messagemenu.draw();
 							break;
 						case 'G':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
+ 							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+ 								if(msg_area.grp_list[bbs.curgrp].sub_list[i].scan_cfg&SCAN_CFG_NEW
+									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
+									break;
+ 							}
 							draw_main(true);
 							messagemenu.draw();
 							break;
@@ -1804,18 +1809,17 @@ function show_messagemenu()
 						case 'A':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-							for(j=0; j<msg_area.grp_list.length; j++) {
-								for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
-									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
-							}
+							bbs.scan_subs(SCAN_TOYOU, /* All? */ true);
 							draw_main(true);
 							messagemenu.draw();
 							break;
 						case 'G':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
+ 							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+ 								if(msg_area.grp_list[bbs.curgrp].sub_list.scan_cfg&SCAN_CFG_TOYOU
+									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU)
+									break;
 							draw_main(true);
 							messagemenu.draw();
 							break;
@@ -1882,9 +1886,11 @@ function show_messagemenu()
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
+							search_posts:
 							for(i=0; i<msg_area.grp_list.length; i++) {
 								for(j=0; j<msg_area.grp_list[i].sub_list.length; j++) {
-									bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str);
+									if(!bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str))
+                                        break search_posts;
 								}
 							}
 							draw_main(true);
@@ -1893,15 +1899,18 @@ function show_messagemenu()
 						case 'G':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
 							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
+								if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
+                                    break;
 							draw_main(true);
 							messagemenu.draw();
 							break;
 						case 'S':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
 							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
 							draw_main(true);
