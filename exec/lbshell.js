@@ -1732,7 +1732,7 @@ function show_messagemenu()
 							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
  							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
  								if(msg_area.grp_list[bbs.curgrp].sub_list[i].scan_cfg&SCAN_CFG_NEW
-									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
+									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW))
 									break;
  							}
 							draw_main(true);
@@ -1818,7 +1818,7 @@ function show_messagemenu()
 							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
  							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
  								if(msg_area.grp_list[bbs.curgrp].sub_list.scan_cfg&SCAN_CFG_TOYOU
-									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU)
+									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU))
 									break;
 							draw_main(true);
 							messagemenu.draw();
