@@ -1882,15 +1882,7 @@ function show_messagemenu()
 						case 'A':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-							console.putmsg(bbs.text(SearchStringPrompt));
-							str=console.getstr("",40,K_LINE|K_UPPER);
-							search_posts:
-							for(i=0; i<msg_area.grp_list.length; i++) {
-								for(j=0; j<msg_area.grp_list[i].sub_list.length; j++) {
-									if(!bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str))
-                                        break search_posts;
-								}
-							}
+							bbs.scan_subs(SCAN_FIND, /* All? */true);
 							draw_main(true);
 							messagemenu.draw();
 							break;
@@ -1899,9 +1891,10 @@ function show_messagemenu()
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
-							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-								if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
-                                    break;
+							if(str.length)
+								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+									if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
+										break;
 							draw_main(true);
 							messagemenu.draw();
 							break;
@@ -1910,7 +1903,8 @@ function show_messagemenu()
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
-							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+							if(str.length)
+								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
 							draw_main(true);
 							messagemenu.draw();
 							break;
