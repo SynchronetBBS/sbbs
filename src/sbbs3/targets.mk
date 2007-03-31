@@ -41,7 +41,8 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(ADDFILES) $(FILELIST) $(MAKEUSER) \
 			  $(ANS2ASC) $(ASC2ANS)  $(UNBAJA) \
 			  $(QWKNODES) $(SLOG) $(ALLUSERS) \
-			  $(DELFILES) $(DUPEFIND) $(SMBACTIV)
+			  $(DELFILES) $(DUPEFIND) $(SMBACTIV) \
+			  $(SEXYZ)
 
 all:	dlls utils console mono
 
