@@ -257,3 +257,8 @@ $(DUPEFIND): $(DUPEFIND_OBJS)
 $(SMBACTIV): $(SMBACTIV_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
+
+# SEXYZ
+$(SEXYZ): $(SEXYZ_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV-MT_LIBS)
