@@ -144,6 +144,7 @@ function IRC_User(id) {
 	this.talkidle = time();
 	this.uprefix = "";
 	this.id = id;
+	this.throttle_count = 0;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS
@@ -247,7 +248,7 @@ function IRC_User(id) {
 }
 
 ////////// Command Parser //////////
-function User_Work() {
+function User_Work(from_recvq) {
 	var clockticks = system.timer;
 	var cmdline;
 	var cmd;
@@ -258,7 +259,23 @@ function User_Work() {
 		return 0;
 	}
 
-	cmdline=this.socket.recvline(4096,0)
+	var cmdline;
+	if (from_recvq) {
+		cmdline = this.recvq.del();
+	} else {
+		var incoming_cmd = this.socket.recvline(4096,0);
+		if (this.recvq.bytes || (this.throttle_count > 4)) {
+			this.recvq.add(incoming_cmd);
+			this.throttle_count = 0;
+			return 0;
+		} else {
+			cmdline = incoming_cmd;
+		}
+		if ( (time() - this.idletime) < 2)
+			this.throttle_count++;
+		else
+			this.throttle_count = 0;
+	}
 
 	if (!cmdline)
 		return 0;

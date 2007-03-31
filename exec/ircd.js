@@ -135,6 +135,8 @@ rebuild_socksel_array = false;
 
 network_debug = false;
 
+last_recvq_check = 0;
+
 // Parse command-line arguments.
 config_filename="";
 var cmdline_port;
@@ -232,6 +234,16 @@ while (!server.terminated) {
 		}
 	}
 
+	/* Clear out the recvq, but only every 2 seconds */
+	if ( (time() - last_recvq_check) > 2) {
+		for(this_sock in Selectable_Sockets) {
+			if (Selectable_Sockets_Map[this_sock] &&
+				Selectable_Sockets_Map[this_sock].recvq.bytes) {
+				Selectable_Sockets_Map[this_sock].work(true);
+			}
+		}
+	}
+
 	// Check for pending DNS hostname resolutions.
 	for(this_unreg in Unregistered) {
 		if (Unregistered[this_unreg] &&
@@ -251,9 +263,7 @@ while (!server.terminated) {
 	}
 
 	// do some work.
-	if (!Selectable_Sockets.length) {
-		mswait(1000);
-	} else if (this.socket_select!=undefined) {
+	if (this.socket_select!=undefined) {
 		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
 		try {
 			for(thisPolled in readme) {
@@ -965,6 +975,13 @@ function ircout(str) {
 function Queue_Add(str) {
 	this.bytes += str.length;
 	this.queue.push(str);
+}
+
+function Queue_Del() {
+	var str = this.queue[0];
+	this.bytes -= str.length;
+	this.queue.shift();
+	return str;
 }
 
 function IRCClient_server_notice(str) {
@@ -2952,6 +2969,7 @@ function IRC_Queue() {
 	this.queue = new Array;
 	this.bytes = 0;
 	this.add = Queue_Add;
+	this.del = Queue_Del;
 }
 
 /* /STATS M, for profiling. */
