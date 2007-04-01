@@ -2520,6 +2520,9 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	}
 	if(smbfile->status.max_crcs==0)
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
+	/* Bad echo area collects a *lot* of messages, and thus, hashes - so no dupe checking */
+	if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
+		dupechk_hashes=SMB_HASH_SOURCE_NONE;
 
 	i=smb_addmsg(smbfile, &msg, storage, dupechk_hashes, xlat, sbody, stail);
 
