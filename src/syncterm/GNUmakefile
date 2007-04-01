@@ -33,7 +33,7 @@ install: $(SYNCTERM)
 	@echo Installing...
 	${INSTALL_EXE} ${SYNCTERM} ${PREFIX}/bin
 	${INSTALL_DATA} syncterm.png ${PREFIX}/share/icons/hicolor/64x64/apps
-	${INSTALL_DATA} syncterm.desktop ${PREFIX}/share/icons/hicolor/64x64/apps
+	${INSTALL_DATA} syncterm.desktop ${PREFIX}/share/applications
 
 devel: tags cscope.out
 
