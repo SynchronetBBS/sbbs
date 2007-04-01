@@ -2483,6 +2483,8 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		net=NET_FIDO;						/* Record origin address */
 
 	if(net) {
+		if(origaddr.zone==0)
+			origaddr.zone = sys_faddr.zone;
 		smb_hfield(&msg,SENDERNETTYPE,sizeof(ushort),&net);
 		smb_hfield(&msg,SENDERNETADDR,sizeof(fidoaddr_t),&origaddr); }
 
