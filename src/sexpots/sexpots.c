@@ -2,8 +2,6 @@
 
 /* Synchronet External Plain Old Telephone System (POTS) support */
 
-// other name ideas: pots2tcp
-
 /* $Id$ */
 
 /****************************************************************************
@@ -71,8 +69,13 @@ int		mdm_timeout=5;			/* seconds */
 
 char	com_dev[MAX_PATH+1];
 HANDLE	com_handle=INVALID_HANDLE_VALUE;
-BOOL	terminated=FALSE;
+BOOL	com_handle_passed=FALSE;
+BOOL	com_alreadyconnected=FALSE;
+BOOL	com_hangup=TRUE;
 int		dcd_timeout=10;	/* seconds */
+
+BOOL	terminated=FALSE;
+BOOL	terminate_after_one_call=FALSE;
 
 SOCKET	sock=INVALID_SOCKET;
 char	host[MAX_PATH+1];
@@ -100,7 +103,14 @@ int		telnet_cmdlen;
 /****************************************************************************/
 int usage(const char* fname)
 {
-	printf("usage: %s <COM device> <hostname or IP> <TCP port>\n"
+	printf("usage: %s [ini file] [options]\n"
+		"\nOptions:"
+		"\n-null                 No 'AT commands' sent to modem"
+		"\n-com <device>         Specify communications port device"
+		"\n-live [handle]        Communications port is already open/connected"
+		"\n-nohangup             Do not hangup (drop DTR) after call"
+		"\n-host <addr | name>   Specify TCP server hostname or IP address"
+		"\n-port <number>        Specify TCP port number"
 		,getfname(fname));
 
 	return 0;
@@ -266,9 +276,10 @@ void cleanup(void)
 
 
 	if(com_handle!=COM_HANDLE_INVALID) {
-		if(!mdm_null&& mdm_cleanup[0])
+		if(!mdm_null && mdm_cleanup[0])
 			modem_command(com_handle, mdm_cleanup);
-		comClose(com_handle);
+		if(!com_handle_passed)
+			comClose(com_handle);
 	}
 
 	close_socket(&sock);
@@ -292,6 +303,9 @@ BOOL wait_for_call(HANDLE com_handle)
 	int			rd;
 	BOOL		result=TRUE;
 	DWORD		events=0;
+
+	if(com_alreadyconnected)
+		return TRUE;
 
 	if(!mdm_null && mdm_init[0]) {
 		lprintf(LOG_INFO,"Initializing modem:");
@@ -729,8 +743,8 @@ int main(int argc, char** argv)
 	/*******************************/
 	sscanf("$Revision$", "%*s %s", revision);
 
-	sprintf(banner,"\nSynchronet External POTS<->TCP Driver  v%s-%s"
-		"  Copyright %s Rob Swindell\n"
+	sprintf(banner,"\nSynchronet External POTS<->TCP Driver v%s-%s"
+		" Copyright %s Rob Swindell\n"
 		,revision
 		,PLATFORM_DESC
 		,__DATE__+7
@@ -741,7 +755,7 @@ int main(int argc, char** argv)
 	/******************/
 	/* Read .ini file */
 	/******************/
-	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
+	/* Generate path/sexpots[.host].ini from path/sexpots[.exe] */
 	SAFECOPY(path,argv[0]);
 	p=getfname(path);
 	SAFECOPY(fname,p);
@@ -769,22 +783,35 @@ int main(int argc, char** argv)
 			parse_ini_file(arg);
 			continue;
 		}
-		while(*arg=='-')
+		while(*arg=='-') 
 			arg++;
-		if(stricmp(arg,"null")==0)
-			mdm_null=TRUE;
-		else if(stricmp(arg,"com")==0 && argc > argn+1)
-			SAFECOPY(com_dev, argv[++argn]);
-		else if(stricmp(arg,"host")==0 && argc > argn+1)
-			SAFECOPY(host, argv[++argn]);
-		else if(stricmp(arg,"port")==0 && argc > argn+1)
-			port = (ushort)strtol(argv[++argn], NULL, 0);
-		else if(stricmp(arg,"help")==0 || *arg=='?')
-			return usage(argv[0]);
-		else {
-			fprintf(stderr,"Invalid option: %s\n", arg);
-			return usage(argv[0]);
-		}
+			if(stricmp(arg,"null")==0)
+				mdm_null=TRUE;
+			else if(stricmp(arg,"com")==0 && argc > argn+1)
+				SAFECOPY(com_dev, argv[++argn]);
+			else if(stricmp(arg,"host")==0 && argc > argn+1)
+				SAFECOPY(host, argv[++argn]);
+			else if(stricmp(arg,"port")==0 && argc > argn+1)
+				port = (ushort)strtol(argv[++argn], NULL, 0);
+			else if(stricmp(arg,"live")==0) {
+				if(argc > argn+1 &&
+					(com_handle = (HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
+					argn++;
+					com_handle_passed=TRUE;
+				}
+				com_alreadyconnected=TRUE;
+				terminate_after_one_call=TRUE;
+				mdm_null=TRUE;
+			}
+			else if(stricmp(arg,"nohangup")==0) {
+				com_hangup=FALSE;
+			}
+			else if(stricmp(arg,"help")==0 || *arg=='?')
+				return usage(argv[0]);
+			else {
+				fprintf(stderr,"Invalid option: %s\n", arg);
+				return usage(argv[0]);
+			}
 	}
 
 #if defined(_WIN32)
@@ -806,11 +833,13 @@ int main(int argc, char** argv)
 
 	lprintf(LOG_INFO,"TCP Host: %s", host);
 	lprintf(LOG_INFO,"TCP Port: %u", port);
-
-	lprintf(LOG_INFO,"Opening Communications Device: %s", com_dev);
-	if((com_handle=comOpen(com_dev)) == COM_HANDLE_INVALID) {
-		lprintf(LOG_ERR,"ERROR %u opening %s", COM_ERROR_VALUE, com_dev);
-		return -1;
+	
+	if(!com_handle_passed) {
+		lprintf(LOG_INFO,"Opening Communications Device: %s", com_dev);
+		if((com_handle=comOpen(com_dev)) == COM_HANDLE_INVALID) {
+			lprintf(LOG_ERR,"ERROR %u opening %s", COM_ERROR_VALUE, com_dev);
+			return -1;
+		}
 	}
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
 
@@ -829,15 +858,17 @@ int main(int argc, char** argv)
 		comWriteByte(com_handle,'\r');
 		comWriteString(com_handle, banner);
 		if((sock=connect_socket(host, port)) == INVALID_SOCKET) {
-			comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
+				comWriteString(com_handle,"\7\r\n!ERROR connecting to TCP port\r\n");
 		} else {
 			handle_call();
 			close_socket(&sock);
 			total_calls++;
 			lprintf(LOG_INFO,"Call completed (%lu total)", total_calls);
 		}
-		if(!hangup_call(com_handle))
+		if(com_hangup && !hangup_call(com_handle))
 			return -1;
+		if(terminate_after_one_call)
+			break;
 	}
 
 	return 0;
