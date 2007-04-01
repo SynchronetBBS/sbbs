@@ -709,7 +709,8 @@ void parse_ini_file(const char* ini_fname)
 	iniReadString(fp, "COM", "ModemInit", "AT&F", mdm_init);
 	iniReadString(fp, "COM", "ModemAutoAnswer", "ATS0=1", mdm_autoans);
 	iniReadString(fp, "COM", "ModemCleanup", "ATS0=0", mdm_cleanup);
-	mdm_null = iniReadBool(fp, "COM", "NullModem", mdm_null);
+	com_hangup	= iniReadBool(fp, "COM", "Hangup", com_hangup);
+	mdm_null	= iniReadBool(fp, "COM", "NullModem", mdm_null);
 	mdm_timeout = iniReadInteger(fp, "COM", "ModemTimeout", mdm_timeout);
 	dcd_timeout = iniReadInteger(fp, "COM", "DCDTimeout", dcd_timeout);
 
