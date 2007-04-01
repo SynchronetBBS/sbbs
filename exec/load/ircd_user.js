@@ -144,7 +144,7 @@ function IRC_User(id) {
 	this.talkidle = time();
 	this.uprefix = "";
 	this.id = id;
-	this.throttle_count = 0;
+	this.throttle_count = 0;	/* Number of commands executed within 2 secs */
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS
@@ -198,7 +198,7 @@ function IRC_User(id) {
 	// Global functions
 	this.check_nickname=IRCClient_check_nickname;
 	this.check_timeout=IRCClient_check_timeout;
-	this.check_sendq=IRCClient_check_sendq;
+	this.check_queues=IRCClient_check_queues;
 	this.get_usermode=IRCClient_get_usermode;
 	this.netsplit=IRCClient_netsplit;
 	this.onchanwith=IRCClient_onchanwith;
@@ -248,39 +248,27 @@ function IRC_User(id) {
 }
 
 ////////// Command Parser //////////
-function User_Work(from_recvq) {
+function User_Work(cmdline) {
 	var clockticks = system.timer;
-	var cmdline;
 	var cmd;
 	var command;
 
-	if (!this.socket.is_connected) {
-		this.quit("Connection reset by peer");
-		return 0;
-	}
-
-	var cmdline;
-	if (from_recvq) {
-		cmdline = this.recvq.del();
-	} else {
-		var incoming_cmd = this.socket.recvline(4096,0);
-		if (this.recvq.bytes || (this.throttle_count > 4)) {
-			this.recvq.add(incoming_cmd);
+	/* If a user sends 5 commands within 2 seconds, add it to the recvq and
+	   don't bother processing anything else the user sends until at least
+	   2 seconds from now. */
+	if ( (time() - this.idletime) <= 2) {
+		this.throttle_count++;
+		if (this.throttle_count >= 5) {
+			this.recvq.add(cmdline);
 			this.throttle_count = 0;
+			this.idletime = time();
 			return 0;
-		} else {
-			cmdline = incoming_cmd;
 		}
-		if ( (time() - this.idletime) < 2)
-			this.throttle_count++;
-		else
-			this.throttle_count = 0;
+	} else {
+		this.throttle_count = 0;
 	}
 
-	if (!cmdline)
-		return 0;
-
-	Global_CommandLine = cmdline;
+	this.idletime = time();
 
 	// Only accept up to 512 bytes from clients as per RFC1459.
 	cmdline = cmdline.slice(0,512);
@@ -309,8 +297,6 @@ function User_Work(from_recvq) {
 	// Ignore possible numerics from clients.
 	if (command.match(/^[0-9]+/))
 		return 0;
-
-	this.idletime = time();
 
 	var legal_command = true; /* For tracking STATS M */
 
