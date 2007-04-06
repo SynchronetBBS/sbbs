@@ -72,6 +72,7 @@ HANDLE	com_handle=INVALID_HANDLE_VALUE;
 BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
 BOOL	com_hangup=TRUE;
+ulong	com_baudrate=0;
 int		dcd_timeout=10;	/* seconds */
 
 BOOL	terminated=FALSE;
@@ -107,6 +108,7 @@ int usage(const char* fname)
 		"\nOptions:"
 		"\n-null                 No 'AT commands' sent to modem"
 		"\n-com <device>         Specify communications port device"
+		"\n-baud <rate>          Specify baud rate for communications port\n"
 		"\n-live [handle]        Communications port is already open/connected"
 		"\n-nohangup             Do not hangup (drop DTR) after call"
 		"\n-host <addr | name>   Specify TCP server hostname or IP address"
@@ -709,10 +711,11 @@ void parse_ini_file(const char* ini_fname)
 	iniReadString(fp, "COM", "ModemInit", "AT&F", mdm_init);
 	iniReadString(fp, "COM", "ModemAutoAnswer", "ATS0=1", mdm_autoans);
 	iniReadString(fp, "COM", "ModemCleanup", "ATS0=0", mdm_cleanup);
-	com_hangup	= iniReadBool(fp, "COM", "Hangup", com_hangup);
-	mdm_null	= iniReadBool(fp, "COM", "NullModem", mdm_null);
-	mdm_timeout = iniReadInteger(fp, "COM", "ModemTimeout", mdm_timeout);
-	dcd_timeout = iniReadInteger(fp, "COM", "DCDTimeout", dcd_timeout);
+	com_hangup	    = iniReadBool(fp, "COM", "Hangup", com_hangup);
+	mdm_null	    = iniReadBool(fp, "COM", "NullModem", mdm_null);
+	mdm_timeout     = iniReadInteger(fp, "COM", "ModemTimeout", mdm_timeout);
+	dcd_timeout     = iniReadInteger(fp, "COM", "DCDTimeout", dcd_timeout);
+	com_baudrate    = iniReadLongInt(fp, "COM", "BaudRate", com_baudrate);
 
 	/* [TCP] Section */
 	iniReadString(fp, "TCP", "Host", "localhost", host);
@@ -790,6 +793,8 @@ int main(int argc, char** argv)
 				mdm_null=TRUE;
 			else if(stricmp(arg,"com")==0 && argc > argn+1)
 				SAFECOPY(com_dev, argv[++argn]);
+			else if(stricmp(arg,"baud")==0 && argc > argn+1)
+				com_baudrate = (ulong)strtol(argv[++argn],NULL,0);
 			else if(stricmp(arg,"host")==0 && argc > argn+1)
 				SAFECOPY(host, argv[++argn]);
 			else if(stricmp(arg,"port")==0 && argc > argn+1)
@@ -842,6 +847,12 @@ int main(int argc, char** argv)
 			return -1;
 		}
 	}
+	if(com_baudrate!=0) {
+		if(!comSetBaudRate(com_handle,com_baudrate))
+			lprintf(LOG_ERR,"ERROR %u setting %s DTE rate to %lu bps"
+				,COM_ERROR_VALUE, com_dev, com_baudrate);
+	}
+
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
 
 	if(!winsock_startup())
