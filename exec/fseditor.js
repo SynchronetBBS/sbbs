@@ -1026,7 +1026,6 @@ function make_strings(soft,embed_colour)
 function draw_quote_selection(l)
 {
 	var yp;
-	var x;
 
 	if(l==undefined || isNaN(l))
 		return;
@@ -1034,7 +1033,7 @@ function draw_quote_selection(l)
 	/* Does this line even exist? */
 	if(quote_line[l]==undefined) {
 		console.attributes=7;
-		console.gotoxy(x+1,yp);
+		console.gotoxy(1,yp);
 		console.cleartoeol();
 	}
 	else {
