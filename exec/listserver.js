@@ -77,6 +77,15 @@ if(mailbase.open()==false) {
 /* Inbound message from SMTP Server? */
 if(this.recipient_list_filename!=undefined) {	
 
+	log("reverse_path = " + reverse_path);
+	if(reverse_path=='' || reverse_path=='<>') {
+		log(LOG_WARNING,"ListServer: No reverse path");
+		exit();
+	}
+	if(reserve_path=='<' + listserver_addrses + '>') {
+		log(LOG_WARNING,"ListServer: Invalid reverse path (loop?)");
+		exit();
+	}
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
 		log(LOG_ERR,format("ListServer: !ERROR %d opening processing error file: %s"
@@ -107,6 +116,13 @@ if(this.recipient_list_filename!=undefined) {
 
 	var header = parse_msg_header(msgtxt);
 	header = convert_msg_header(header);
+
+	if(header.from_net_addr == listserver_address) {
+		error_file.writeln(log(LOG_ERR,format("ListServer: refusing to process message from %s (loop?)"
+			,header.from_net_addr)));
+		exit();
+	}
+
 	var body = get_msg_body(msgtxt);
 
 	var r;
