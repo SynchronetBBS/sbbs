@@ -4615,7 +4615,8 @@ int main(int argc, char **argv)
 				if(j==0) {		/* Successful import */
 					echomail++;
 					cfg.area[i].imported++;
-					if(misc&NOTIFY_RECEIPT && (m=matchname(hdr.to))!=0) {
+					/* Should this check if the user has access to the echo in question? */
+					if(i!=cfg.badecho && misc&NOTIFY_RECEIPT && (m=matchname(hdr.to))!=0) {
 						sprintf(str
 						,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you EchoMail on "
 							"\1h%s \1n\1m%s\1n\r\n"
