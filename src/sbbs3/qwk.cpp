@@ -63,10 +63,9 @@ bool route_circ(char *via, char *id)
 {
 	char str[256],*p,*sp;
 
-	strcpy(str,via);
+	SAFECOPY(str,via);
 	p=str;
-	while(*p && *p<=' ')
-		p++;
+	SKIP_WHITESPACE(p);
 	while(*p) {
 		sp=strchr(p,'/');
 		if(sp) *sp=0;
@@ -74,7 +73,8 @@ bool route_circ(char *via, char *id)
 			return(true);
 		if(!sp)
 			break;
-		p=sp+1; }
+		p=sp+1; 
+	}
 	return(false);
 }
 
