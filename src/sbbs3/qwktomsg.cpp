@@ -257,14 +257,14 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			p=header+5; 					/* Skip "@VIA:" */
 			while(*p && *p<=' ') p++;		/* Skip any spaces */
 			if(route_circ(p,cfg.sys_id)) {
-				free(header);
-				free(body);
-				free(tail);
 				smb_freemsgmem(&msg);
 				bprintf("\r\nCircular message path: %s\r\n",p);
 				sprintf(str,"Circular message path: %s from %s"
 					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
 				errorlog(str);
+				free(header);
+				free(body);
+				free(tail);
 				return(false); 
 			}
 			sprintf(str,"%s/%s"
