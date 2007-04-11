@@ -3372,7 +3372,7 @@ static void ctrl_thread(void* arg)
 
 			/* ASCII Index File */
 			if(startup->options&FTP_OPT_INDEX_FILE && startup->index_file_name[0]
-				&& (!stricmp(p,startup->index_file_name) || *p==0 || *p=='*')) {
+				&& (*p==0 || wildmatchi(startup->index_file_name, p, FALSE))) {
 				if(detail)
 					fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 						,NAME_LEN
@@ -3387,7 +3387,7 @@ static void ctrl_thread(void* arg)
 			} 
 			/* HTML Index File */
 			if(startup->options&FTP_OPT_HTML_INDEX_FILE && startup->html_index_file[0]
-				&& (!stricmp(p,startup->html_index_file) || *p==0 || *p=='*')) {
+				&& (*p==0 || wildmatchi(startup->html_index_file, p, FALSE))) {
 				if(detail)
 					fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
 						,NAME_LEN
