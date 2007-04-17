@@ -28,8 +28,8 @@ guest.comment="This is the auto-generated Guest/Anonymous user account.";
 // Setup intelligent security parameters
 guest.security.restrictions|=UFLAG_G;	// can't edit defaults (main 'Guest' indicator)
 guest.security.restrictions|=UFLAG_K;	// can't read sent mail
-guest.security.restrictions|=UFLAG_P;	// can't post
-guest.security.restrictions|=UFLAG_M;	// can't post on networked subs (redundant)
+guest.security.restrictions|=UFLAG_P;	// can't post messages
+guest.security.restrictions|=UFLAG_M;	// can't send network mail
 guest.security.restrictions|=UFLAG_W;	// can't write to the auto-message
 guest.security.restrictions|=UFLAG_R;	// can't remove files
 guest.security.restrictions|=UFLAG_C;	// can't chat
