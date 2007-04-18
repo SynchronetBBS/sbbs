@@ -2201,11 +2201,11 @@ void event_thread(void* arg)
 
 			if(check_semaphores) {
 				// See if any packets have come in
-				for(j=0;j<101;j++) {
-					SAFEPRINTF4(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
-						,j>10 ? ((j-1)/10)+'0' : 'w'
-						,j ? ((j-1)%10)+'0' : 'k');
-					if(fexistcase(str) && flength(str)>0) {	/* silently ignore 0-byte QWK packets */
+				SAFEPRINTF2(str,"%s%s.q??",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
+				glob(str,GLOB_NOSORT,NULL,&g);
+				for(i=0;i<(int)g.gl_pathc;i++) {
+					SAFECOPY(str,g.gl_pathv[i]);
+					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
 						eprintf(LOG_DEBUG,"Inbound QWK Packet detected: %s", str);
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->online=ON_LOCAL;
@@ -2225,6 +2225,7 @@ void event_thread(void* arg)
 						remove(str);
 					} 
 				}
+				globfree(&g);
 			}
 
 			/* Qnet call out based on time */
