@@ -10,11 +10,14 @@
 
 static SOCKET sock=INVALID_SOCKET;
 
+#ifdef __BORLANDC__
+#pragma argsused
+#endif
 void rlogin_input_thread(void *args)
 {
 	fd_set	rds;
 	int		rd;
-	size_t	buffered;
+	int	buffered;
 	size_t	buffer;
 
 	conn_api.input_thread_running=1;
@@ -28,7 +31,7 @@ void rlogin_input_thread(void *args)
 			rd=0;
 		}
 		if(rd==1) {
-			rd=recv(sock, conn_api.rd_buf, conn_api.rd_buf_size, MSG_DONTWAIT);
+			rd=recv(sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if(rd <= 0)
 				break;
 		}
@@ -43,13 +46,15 @@ void rlogin_input_thread(void *args)
 	conn_api.input_thread_running=0;
 }
 
+#ifdef __BORLANDC__
+#pragma argsused
+#endif
 void rlogin_output_thread(void *args)
 {
 	fd_set	wds;
 	int		wr;
 	int		ret;
-	size_t	sent;
-	size_t	send;
+	int	sent;
 
 	conn_api.output_thread_running=1;
 	while(sock != INVALID_SOCKET && !conn_api.terminate) {

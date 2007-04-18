@@ -15,11 +15,14 @@
 
 SOCKET telnet_sock=INVALID_SOCKET;
 
+#ifdef __BORLANDC__
+#pragma argsused
+#endif
 void telnet_input_thread(void *args)
 {
 	fd_set	rds;
 	int		rd;
-	size_t	buffered;
+	int	buffered;
 	size_t	buffer;
 	char	rbuf[BUFFER_SIZE];
 	char	*buf;
@@ -35,7 +38,7 @@ void telnet_input_thread(void *args)
 			rd=0;
 		}
 		if(rd==1) {
-			rd=recv(telnet_sock, conn_api.rd_buf, conn_api.rd_buf_size, MSG_DONTWAIT);
+			rd=recv(telnet_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if(rd <= 0)
 				break;
 		}
@@ -52,13 +55,15 @@ void telnet_input_thread(void *args)
 	conn_api.input_thread_running=0;
 }
 
+#ifdef __BORLANDC__
+#pragma argsused
+#endif
 void telnet_output_thread(void *args)
 {
 	fd_set	wds;
-	int		wr;
+	size_t		wr;
 	int		ret;
 	size_t	sent;
-	size_t	send;
 	char	ebuf[BUFFER_SIZE*2];
 	char	*buf;
 
