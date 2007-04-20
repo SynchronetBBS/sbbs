@@ -150,7 +150,7 @@ BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
 }
 
-size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
+size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, char terminator, int timeout)
 {
 	BYTE		ch;
 	size_t		len=0;
@@ -163,6 +163,8 @@ size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
 			YIELD();
 			continue;
 		}
+		if(len && terminator && ch==terminator)
+			break;
 		buf[len++]=ch;
 	}
 
@@ -178,3 +180,4 @@ BOOL comPurgeOutput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }
+

@@ -79,7 +79,8 @@ BOOL		comWriteByte(COM_HANDLE, BYTE);
 int			comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
 int			comWriteString(COM_HANDLE, const char*);
 BOOL		comReadByte(COM_HANDLE, BYTE*);
-size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen, int timeout /* in milliseconds */);
+size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen
+					   ,char terminator, int timeout /* in milliseconds */);
 BOOL		comPurgeInput(COM_HANDLE);
 BOOL		comPurgeOutput(COM_HANDLE);
 
