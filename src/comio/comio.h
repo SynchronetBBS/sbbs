@@ -67,6 +67,7 @@
 extern "C" {
 #endif
 
+char*		comVersion(char* str, size_t len);
 COM_HANDLE	comOpen(const char* device);
 BOOL		comClose(COM_HANDLE);
 long		comGetBaudRate(COM_HANDLE);

@@ -36,6 +36,16 @@
 #include "comio.h"
 #include "genwrap.h"
 
+char* comVersion(char* str, size_t len)
+{
+	char revision[16];
+
+	sscanf("$Revision$", "%*s %s", revision);
+
+	safe_snprintf(str,len,"Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
+	return str;
+}
+
 COM_HANDLE comOpen(const char* device)
 {
 	COM_HANDLE handle;
