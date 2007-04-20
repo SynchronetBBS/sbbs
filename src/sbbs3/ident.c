@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "ident.h"
 
-char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
@@ -51,9 +51,10 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 	SOCKADDR_IN	addr;
 	struct timeval	tv;
 	fd_set			socket_set;
+	BOOL		success=FALSE;
 
-	if(timeout<0)
-		timeout=10;
+	if(timeout<=0)
+		timeout=IDENT_DEFAULT_TIMEOUT;
 
 	do {
 		if((sock = open_socket(SOCK_STREAM, "ident")) == INVALID_SOCKET) {
@@ -65,7 +66,7 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 		ioctlsocket(sock,FIONBIO,&val);	
 
 		addr=*client_addr;
-		addr.sin_port=htons(113);	/* per RFC1413 */
+		addr.sin_port=htons(IPPORT_IDENT);
 
 		result=connect(sock, (struct sockaddr*)&addr, sizeof(addr));
 
@@ -99,7 +100,7 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 			break;
 		}
 
-		sprintf(req,"%u, %u\r\n", ntohs(client_addr->sin_port), local_port);
+		sprintf(req,"%u,%u\r\n", ntohs(client_addr->sin_port), local_port);
 		if(sendsocket(sock,req,strlen(req))!=(int)strlen(req)) {
 			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);
 			break;
@@ -125,9 +126,10 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 		buf[rd]=0;
 		truncsp(buf);
 		identity=buf;
+		success=TRUE;
 	} while(0);
 
 	close_socket(sock);
 
-	return(identity);
+	return success;
 }

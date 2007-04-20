@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,12 +39,14 @@
 #ifndef _IDENT_H_
 #define _IDENT_H_
 
+#define IDENT_DEFAULT_TIMEOUT	5	/* seconds */
+
 #ifdef __cplusplus  
 extern "C" {   
 #endif   
 
-char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
-			   ,size_t maxlen, int timeout);
+BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+			   ,size_t maxlen, int timeout /* in seconds */);
 
 #ifdef __cplusplus
 }
