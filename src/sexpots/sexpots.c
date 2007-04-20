@@ -749,10 +749,12 @@ int main(int argc, char** argv)
 	int		argn;
 	char*	arg;
 	char*	p;
+	char	str[128];
 	char	path[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char	ini_fname[MAX_PATH+1];
 	char	banner[128];
+	char	compiler[128];
 
 	/*******************************/
 	/* Generate and display banner */
@@ -845,9 +847,19 @@ int main(int argc, char** argv)
 
 #endif
 
+	lprintf(LOG_INFO,"%s", comVersion(str,sizeof(str)));
+	DESCRIBE_COMPILER(compiler);
+	lprintf(LOG_INFO,"Build %s %s %s", __DATE__, __TIME__, compiler);
+
 	/************************************/
 	/* Inititalize WinSock and COM Port */
 	/************************************/
+
+	if(!winsock_startup())
+		return -1;
+
+	/* Install clean-up callback */
+	atexit(cleanup);
 
 	lprintf(LOG_INFO,"TCP Host: %s", host);
 	lprintf(LOG_INFO,"TCP Port: %u", port);
@@ -866,12 +878,6 @@ int main(int argc, char** argv)
 	}
 
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
-
-	if(!winsock_startup())
-		return -1;
-
-	/* Install clean-up callback */
-	atexit(cleanup);
 
 	/***************************/
 	/* Initialization Complete */
