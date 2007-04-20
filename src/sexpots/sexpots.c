@@ -73,6 +73,7 @@ BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
 BOOL	com_hangup=TRUE;
 ulong	com_baudrate=0;
+BOOL	dcd_ignore=FALSE;
 int		dcd_timeout=10;	/* seconds */
 ulong	dtr_delay=100;	/* milliseconds */
 
@@ -81,7 +82,7 @@ BOOL	terminate_after_one_call=FALSE;
 
 SOCKET	sock=INVALID_SOCKET;
 char	host[MAX_PATH+1];
-ushort	port;
+ushort	port=IPPORT_TELNET;
 
 /* stats */
 ulong	total_calls=0;
@@ -100,6 +101,17 @@ uchar	telnet_local_option[0x100];
 uchar	telnet_remote_option[0x100];
 BYTE	telnet_cmd[64];
 int		telnet_cmdlen;
+
+/* ident (RFC1416) server stuff */
+BOOL	ident=FALSE;
+ushort	ident_port=IPPORT_IDENT;
+ulong	ident_interface=INADDR_ANY;
+SOCKET	ident_sock=INVALID_SOCKET;
+char	ident_response[INI_MAX_VALUE_LEN];
+
+/* Caller-ID stuff */
+char	cid_name[64];
+char	cid_number[64];
 
 /****************************************************************************/
 /****************************************************************************/
@@ -275,6 +287,8 @@ void close_socket(SOCKET* sock)
 /****************************************************************************/
 void cleanup(void)
 {
+	terminated=TRUE;
+
 	lprintf(LOG_INFO,"Cleaning up ...");
 
 
@@ -286,6 +300,7 @@ void cleanup(void)
 	}
 
 	close_socket(&sock);
+	close_socket(&ident_sock);
 
 #ifdef _WINSOCKAPI_
 	WSACleanup();
@@ -308,6 +323,9 @@ BOOL wait_for_call(HANDLE com_handle)
 	BOOL		result=TRUE;
 	DWORD		events=0;
 
+	ZERO_VAR(cid_name);
+	ZERO_VAR(cid_number);
+
 	if(com_alreadyconnected)
 		return TRUE;
 
@@ -328,22 +346,30 @@ BOOL wait_for_call(HANDLE com_handle)
 	while(1) {
 		if(terminated)
 			return FALSE;
-		if(comGetModemStatus(com_handle)&COM_DCD)
-			break;
-		if((rd=comReadBuf(com_handle, str, sizeof(str)-1, 250)) > 0) {
+		if((rd=comReadBuf(com_handle, str, sizeof(str)-1, /* terminator: */'\n', 250)) > 0) {
 			str[rd]=0;
 			truncsp(str);
 			p=str;
 			SKIP_WHITESPACE(p);
-			lprintf(LOG_INFO, "Modem Message: %s", p);
-			if(strncmp(p,"CONNECT ",8)==0) {
-				long rate=atoi(p+8);
-				if(rate)
-					SAFEPRINTF2(termspeed,"%u,%u", rate, rate);
+			if(*p) {
+				lprintf(LOG_INFO, "Modem Message: %s", p);
+				if(strncmp(p,"CONNECT ",8)==0) {
+					long rate=atoi(p+8);
+					if(rate)
+						SAFEPRINTF2(termspeed,"%u,%u", rate, rate);
+				}
+				else if(strncmp(p,"NMBR = ",7)==0)
+					SAFECOPY(cid_number, p+7);
+				else if(strncmp(p,"NAME = ",7)==0)
+					SAFECOPY(cid_name, p+7);
 			}
+			continue;	/* don't check DCD until we've received all the modem msgs */
 		}
+		if(comGetModemStatus(com_handle)&COM_DCD)
+			break;
 	}
 
+	lprintf(LOG_INFO,"Carrier detected on %s", com_dev);
 	return TRUE;
 }
 
@@ -421,6 +447,99 @@ void input_thread(void* arg)
 	}
 	lprintf(LOG_DEBUG,"Input thread terminated");
 	input_thread_terminated=TRUE;
+}
+
+void ident_server_thread(void* arg)
+{
+	int				result;
+	SOCKET			sock;
+	SOCKADDR_IN		server_addr={0};
+	fd_set			socket_set;
+	struct timeval tv;
+
+	lprintf(LOG_DEBUG,"Ident server thread started");
+
+	if((sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
+		lprintf(LOG_ERR,"ERROR %u creating socket", ERROR_VALUE);
+		return;
+	}
+	
+    memset(&server_addr, 0, sizeof(server_addr));
+
+	server_addr.sin_addr.s_addr = htonl(ident_interface);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port   = htons(ident_port);
+
+    if(bind(sock,(struct sockaddr *)&server_addr,sizeof(server_addr))!=0) {
+		lprintf(LOG_ERR,"ERROR %u binding ident server socket", ERROR_VALUE);
+		close_socket(&sock);
+		return;
+	}
+
+    if(listen(sock, 1)) {
+		lprintf(LOG_ERR,"!ERROR %u listening on ident server socket", ERROR_VALUE);
+		close_socket(&sock);
+		return;
+	}
+
+	while(!terminated) {
+		/* now wait for connection */
+
+		FD_ZERO(&socket_set);
+		FD_SET(sock,&socket_set);
+
+		tv.tv_sec=5;
+		tv.tv_usec=0;
+
+		if((result=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
+			if(result==0)
+				continue;
+			if(ERROR_VALUE==EINTR)
+				lprintf(LOG_DEBUG,"Ident Server listening interrupted");
+			else if(ERROR_VALUE == ENOTSOCK)
+            	lprintf(LOG_NOTICE,"Ident Server sockets closed");
+			else
+				lprintf(LOG_WARNING,"!ERROR %d selecting ident socket",ERROR_VALUE);
+			continue;
+		}
+
+		if(FD_ISSET(sock,&socket_set)) {
+			SOCKADDR_IN		client_addr;
+			socklen_t		client_addr_len;
+			SOCKET			client_socket=INVALID_SOCKET;
+			char			request[128];
+			char			response[256];
+			int				rd;
+
+			client_addr_len = sizeof(client_addr);
+			client_socket = accept(sock, (struct sockaddr *)&client_addr, &client_addr_len);
+			if(client_socket != INVALID_SOCKET) {
+				lprintf(LOG_INFO,"Ident request from %s : %u"
+					,inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port));
+				FD_ZERO(&socket_set);
+				FD_SET(client_socket,&socket_set);
+				tv.tv_sec=5;
+				tv.tv_usec=0;
+				if(select(client_socket+1,&socket_set,NULL,NULL,&tv)==1) {
+					lprintf(LOG_DEBUG,"Ident select");
+					if((rd=recv(client_socket, request, sizeof(request), 0)) > 0) {
+						request[rd]=0;
+						truncsp(request);
+						lprintf(LOG_INFO,"Ident request: %s", request);
+						/* example response: "40931,23:USERID:UNIX:cyan" */
+						SAFEPRINTF4(response,"%s:%s:%s %s\r\n"
+							,request, ident_response, cid_number, cid_name);
+						sendsocket(client_socket,response,strlen(response));
+					} else
+						lprintf(LOG_DEBUG,"ident recv=%d %d", rd, ERROR_VALUE);
+				}
+				close_socket(&client_socket);
+			}
+		}
+	}
+
+	close_socket(&sock);
+	lprintf(LOG_DEBUG,"Ident server thread terminated");
 }
 
 static void send_telnet_cmd(uchar cmd, uchar opt)
@@ -607,7 +726,7 @@ BOOL handle_call(void)
 
 	while(!terminated) {
 
-		if((comGetModemStatus(com_handle)&COM_DCD) == 0) {
+		if(!dcd_ignore && (comGetModemStatus(com_handle)&COM_DCD) == 0) {
 			lprintf(LOG_WARNING,"Loss of Carrier Detect (DCD) detected");
 			break;
 		}
@@ -706,6 +825,7 @@ BOOL WINAPI ControlHandler(DWORD CtrlType)
 void parse_ini_file(const char* ini_fname)
 {
 	FILE* fp;
+	char* section;
 
 	if((fp=fopen(ini_fname,"r"))!=NULL)
 		lprintf(LOG_INFO,"Reading %s",ini_fname);
@@ -718,25 +838,32 @@ void parse_ini_file(const char* ini_fname)
 		log_level=LOG_DEBUG;
 	
 	/* [COM] Section */
-	iniReadString(fp, "COM", "Device", "COM1", com_dev);
-	iniReadString(fp, "COM", "ModemInit", "AT&F", mdm_init);
-	iniReadString(fp, "COM", "ModemAutoAnswer", "ATS0=1", mdm_autoans);
-	iniReadString(fp, "COM", "ModemCleanup", "ATS0=0", mdm_cleanup);
-	com_hangup	    = iniReadBool(fp, "COM", "Hangup", com_hangup);
-	mdm_null	    = iniReadBool(fp, "COM", "NullModem", mdm_null);
-	mdm_timeout     = iniReadInteger(fp, "COM", "ModemTimeout", mdm_timeout);
-	dcd_timeout     = iniReadInteger(fp, "COM", "DCDTimeout", dcd_timeout);
-	dtr_delay		= iniReadLongInt(fp, "COM", "DTRDelay", dtr_delay);
-	com_baudrate    = iniReadLongInt(fp, "COM", "BaudRate", com_baudrate);
+	section="COM";
+	iniReadString(fp, section, "Device", "COM1", com_dev);
+	iniReadString(fp, section, "ModemInit", "AT&F", mdm_init);
+	iniReadString(fp, section, "ModemAutoAnswer", "ATS0=1", mdm_autoans);
+	iniReadString(fp, section, "ModemCleanup", "ATS0=0", mdm_cleanup);
+	com_hangup	    = iniReadBool(fp, section, "Hangup", com_hangup);
+	mdm_null	    = iniReadBool(fp, section, "NullModem", mdm_null);
+	mdm_timeout     = iniReadInteger(fp, section, "ModemTimeout", mdm_timeout);
+	dcd_timeout     = iniReadInteger(fp, section, "DCDTimeout", dcd_timeout);
+	dcd_ignore      = iniReadBool(fp, section, "IgnoreDCD", dcd_ignore);
+	dtr_delay		= iniReadLongInt(fp, section, "DTRDelay", dtr_delay);
+	com_baudrate    = iniReadLongInt(fp, section, "BaudRate", com_baudrate);
 
 	/* [TCP] Section */
-	iniReadString(fp, "TCP", "Host", "localhost", host);
-	iniReadString(fp, "TCP", "TelnetTermType", termtype, termtype);
-	iniReadString(fp, "TCP", "TelnetTermSpeed", "28800,28800", termspeed);
-	port					= iniReadShortInt(fp, "TCP", "Port", IPPORT_TELNET);
-	tcp_nodelay				= iniReadBool(fp,"TCP","NODELAY", tcp_nodelay);
-	telnet					= iniReadBool(fp,"TCP","Telnet", telnet);
-	debug_telnet			= iniReadBool(fp,"TCP","DebugTelnet", debug_telnet);
+	section="TCP";
+	iniReadString(fp, section, "Host", "localhost", host);
+	iniReadString(fp, section, "TelnetTermType", termtype, termtype);
+	iniReadString(fp, section, "TelnetTermSpeed", "28800,28800", termspeed);
+	port					= iniReadShortInt(fp, section, "Port", port);
+	tcp_nodelay				= iniReadBool(fp,section,"NODELAY", tcp_nodelay);
+	telnet					= iniReadBool(fp,section,"Telnet", telnet);
+	debug_telnet			= iniReadBool(fp,section,"DebugTelnet", debug_telnet);
+	ident					= iniReadBool(fp,section,"Ident", ident);
+	ident_port				= iniReadShortInt(fp, section, "IdentPort", ident_port);
+	ident_interface			= iniReadIpAddress(fp, section, "IdentInterface", ident_interface);
+	iniReadString(fp, section, "IdentResponse", "CALLERID:SEXPOTS", ident_response);
 
 	if(fp!=NULL)
 		fclose(fp);
@@ -878,6 +1005,9 @@ int main(int argc, char** argv)
 	}
 
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
+
+	if(ident)
+		_beginthread(ident_server_thread, 0, NULL);
 
 	/***************************/
 	/* Initialization Complete */
