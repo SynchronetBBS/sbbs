@@ -336,6 +336,11 @@ BOOL wait_for_call(HANDLE com_handle)
 			p=str;
 			SKIP_WHITESPACE(p);
 			lprintf(LOG_INFO, "Modem Message: %s", p);
+			if(strncmp(p,"CONNECT ",8)==0) {
+				long rate=atoi(p+8);
+				if(rate)
+					SAFEPRINTF2(termspeed,"%u,%u", rate, rate);
+			}
 		}
 	}
 
@@ -517,7 +522,6 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						if(debug_telnet)
 							lprintf(LOG_INFO,"TX Telnet command: Terminal Speed is %s", termspeed);
 						sendsocket(sock,buf,len);
-						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED);
 					}
 
 					telnet_cmdlen=0;
