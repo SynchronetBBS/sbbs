@@ -1071,6 +1071,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,speed);
+						sbbs->cur_rate=atoi(speed);
+						sbbs->cur_cps=sbbs->cur_rate/10;
 
 					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
 						long cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
@@ -4883,13 +4885,16 @@ NO_SSH:
 		identity=NULL;
 		if(startup->options&BBS_OPT_GET_IDENT) {
 			sbbs->bprintf("Resolving identity...");
-			identify(&client_addr, startup->telnet_port, str, sizeof(str)-1,0);
-			identity=strrchr(str,':');
-			if(identity!=NULL) {
-				identity++;	/* skip colon */
-				while(*identity && *identity<=' ') /* point to user name */
-					identity++;
-				lprintf(LOG_INFO,"%04d Identity: %s",client_socket, identity);
+			/* ToDo: Make ident timeout configurable */
+			if(identify(&client_addr, startup->telnet_port, str, sizeof(str)-1, /* timeout: */1)) {
+				lprintf(LOG_DEBUG,"%04d Ident Response: %s",client_socket, str);
+				identity=strrchr(str,':');
+				if(identity!=NULL) {
+					identity++;	/* skip colon */
+					SKIP_WHITESPACE(identity);
+					if(*identity)
+						lprintf(LOG_INFO,"%04d Identity: %s",client_socket, identity);
+				}
 			}
 			sbbs->putcom(crlf);
 		}
