@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1054,6 +1054,13 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 			if(sbbs->telnet_cmdlen>=2 && command==TELNET_SB) {
 				if(inbuf[i]==TELNET_SE 
 					&& sbbs->telnet_cmd[sbbs->telnet_cmdlen-2]==TELNET_IAC) {
+
+					if(startup->options&BBS_OPT_DEBUG_TELNET)
+						lprintf(LOG_DEBUG,"Node %d %s Telnet sub-negotiation command: %s"
+	                		,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,telnet_opt_desc(option));
+
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE
 						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
@@ -1073,6 +1080,15 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,speed);
 						sbbs->cur_rate=atoi(speed);
 						sbbs->cur_cps=sbbs->cur_rate/10;
+
+					} else if(option==TELNET_SEND_LOCATION) {
+						char location[128];
+						sprintf(location,"%.*s",(int)sbbs->telnet_cmdlen-5,sbbs->telnet_cmd+3);
+						lprintf(LOG_DEBUG,"Node %d %s telnet location: %s"
+	                		,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,location);
+						/* ToDo: store and log the location */
 
 					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
 						long cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
@@ -1128,6 +1144,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 								case TELNET_TERM_SPEED:
 								case TELNET_SUP_GA:
 								case TELNET_NEGOTIATE_WINDOW_SIZE:
+								case TELNET_SEND_LOCATION:
 									sbbs->telnet_remote_option[option]=command;
 									sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
 									break;
