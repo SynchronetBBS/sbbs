@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -67,14 +67,14 @@ enum {
  	 TELNET_BINARY_TX
 	,TELNET_ECHO
 	,TELNET_RECONN
-	,TELNET_SUP_GA		/* suppress go ahead */
+	,TELNET_SUP_GA					/* suppress go ahead */
 	,TELNET_APPROX_MSG_SIZE
 	,TELNET_STATUS
 	,TELNET_TIMING_MARK
 	,TELNET_REMOTE_CTRL
 	,TELNET_OUTPUT_LINE_WIDTH
 	,TELNET_OUTPUT_PAGE_SIZE
-	,TELNET_OUTPUT_CR_DISP		/* 10 */
+	,TELNET_OUTPUT_CR_DISP			/* 10 */
 	,TELNET_OUTPUT_HTAB_STOPS
 	,TELNET_OUTPUT_HTAB_DISP
 	,TELNET_OUTPUT_FF_DISP
@@ -84,17 +84,17 @@ enum {
 	,TELNET_EXASCII
 	,TELNET_LOGOUT
 	,TELNET_BYTE_MACRO
-	,TELNET_DATA_ENTRY_TERM		/* 20 */
+	,TELNET_DATA_ENTRY_TERM			/* 20 */
 	,TELNET_SUPDUP
 	,TELNET_SUPDUP_OUTPUT
-	,TELNET_SEND_LOCATION
+	,TELNET_SEND_LOCATION			/* [RFC779], ASCII string argument */
 	,TELNET_TERM_TYPE
 	,TELNET_END_OF_RECORD
 	,TELNET_TACACS_USERID
 	,TELNET_OUTPUT_MARKING
-	,TELNET_TERM_LOCATION_NUMBER
+	,TELNET_TERM_LOCATION_NUMBER	/* 64-bit argument */
 	,TELNET_3270
-	,TELNET_X3_PAD				/* 30 */
+	,TELNET_X3_PAD					/* 30 */
 	,TELNET_NEGOTIATE_WINDOW_SIZE
 	,TELNET_TERM_SPEED
 	,TELNET_REMOTE_FLOW
@@ -104,7 +104,17 @@ enum {
 	,TELNET_AUTH_OPTION
 	,TELNET_ENCRYPTION_OPTION
 	,TELNET_NEW_ENV_OPTION		
-	,TELNET_3270E				/* 40 */
+	,TELNET_3270E					/* 40 */
+	,TELNET_XAUTH					/* [Earhart] */
+	,TELNET_CHARSET					/* [RFC2066] */
+	,TELNET_RSP	                    /* [Barnes] */
+	,TELNET_COMPORT_CTRL			/* [RFC2217] */
+	,TLENET_SUP_LOCAL_ECHO			/* [Atmar] */
+	,TELNET_START_TLS               /* [Boe] */
+	,TELNET_KERMIT                  /* [RFC2840] */
+	,TELNET_SEND_URL                /* [Croft] */
+	,TELNET_FORWARD_X				/* [Altman] */
+
 
 	,TELNET_EXOPL=255	/* Extended options list */
 };
