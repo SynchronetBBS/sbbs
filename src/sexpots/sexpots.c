@@ -101,12 +101,12 @@ uchar	telnet_local_option[0x100];
 uchar	telnet_remote_option[0x100];
 BYTE	telnet_cmd[64];
 int		telnet_cmdlen;
+BOOL	telnet_advertise_cid=FALSE;
 
 /* ident (RFC1416) server stuff */
 BOOL	ident=FALSE;
 ushort	ident_port=IPPORT_IDENT;
 ulong	ident_interface=INADDR_ANY;
-SOCKET	ident_sock=INVALID_SOCKET;
 char	ident_response[INI_MAX_VALUE_LEN];
 
 /* Caller-ID stuff */
@@ -300,7 +300,6 @@ void cleanup(void)
 	}
 
 	close_socket(&sock);
-	close_socket(&ident_sock);
 
 #ifdef _WINSOCKAPI_
 	WSACleanup();
@@ -319,7 +318,6 @@ BOOL wait_for_call(HANDLE com_handle)
 {
 	char		str[128];
 	char*		p;
-	int			rd;
 	BOOL		result=TRUE;
 	DWORD		events=0;
 
@@ -346,8 +344,7 @@ BOOL wait_for_call(HANDLE com_handle)
 	while(1) {
 		if(terminated)
 			return FALSE;
-		if((rd=comReadBuf(com_handle, str, sizeof(str)-1, /* terminator: */'\n', 250)) > 0) {
-			str[rd]=0;
+		if(comReadLine(com_handle, str, sizeof(str), /* timeout (ms): */250) > 0) {
 			truncsp(str);
 			p=str;
 			SKIP_WHITESPACE(p);
@@ -619,6 +616,9 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 			if(telnet_cmdlen>=2 && command==TELNET_SB) {
 				if(inbuf[i]==TELNET_SE 
 					&& telnet_cmd[telnet_cmdlen-2]==TELNET_IAC) {
+					if(debug_telnet)
+						lprintf(LOG_INFO,"RX Telnet sub-negotiation command: %s"
+							,telnet_opt_desc(option));
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						BYTE buf[32];
@@ -630,7 +630,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						if(debug_telnet)
 							lprintf(LOG_INFO,"TX Telnet command: Terminal Type is %s", termtype);
 						sendsocket(sock,buf,len);
-						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED);
+/*						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED); */
 					} else if(option==TELNET_TERM_SPEED && telnet_cmd[3]==TELNET_TERM_SEND) {
 						BYTE buf[32];
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
@@ -661,10 +661,26 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							case TELNET_BINARY_TX:
 							case TELNET_ECHO:
 							case TELNET_TERM_TYPE:
+							case TELNET_TERM_SPEED:
 							case TELNET_SUP_GA:
 								telnet_local_option[option]=command;
 								send_telnet_cmd(telnet_opt_ack(command),option);
 								break;
+							case TELNET_SEND_LOCATION:
+								if(command==TELNET_DO) {
+									BYTE buf[128];
+									int len=safe_snprintf(buf,sizeof(buf),"%c%c%c%s %s%c%c"
+										,TELNET_IAC,TELNET_SB
+										,TELNET_SEND_LOCATION
+										,cid_number, cid_name
+										,TELNET_IAC,TELNET_SE);
+									if(debug_telnet)
+										lprintf(LOG_INFO,"TX Telnet command: Location is %s %s", cid_number, cid_name);
+									sendsocket(sock,buf,len);
+								} else
+									send_telnet_cmd(telnet_opt_ack(command),option);
+								break;
+		
 							default: /* unsupported local options */
 								if(command==TELNET_DO) /* NAK */
 									send_telnet_cmd(telnet_opt_nak(command),option);
@@ -720,6 +736,9 @@ BOOL handle_call(void)
 	telnet_cmdlen=0;
 	ZERO_VAR(telnet_local_option);
 	ZERO_VAR(telnet_remote_option);
+
+	if(telnet && telnet_advertise_cid && (cid_number[0] || cid_name[0]))	/* advertise the ability to send our location */
+		send_telnet_cmd(TELNET_WILL, TELNET_SEND_LOCATION);
 
 	input_thread_terminated=FALSE;
 	_beginthread(input_thread, 0, NULL);
@@ -860,6 +879,7 @@ void parse_ini_file(const char* ini_fname)
 	tcp_nodelay				= iniReadBool(fp,section,"NODELAY", tcp_nodelay);
 	telnet					= iniReadBool(fp,section,"Telnet", telnet);
 	debug_telnet			= iniReadBool(fp,section,"DebugTelnet", debug_telnet);
+	telnet_advertise_cid	= iniReadBool(fp,section,"TelnetAdvertiseLocation", telnet_advertise_cid);
 	ident					= iniReadBool(fp,section,"Ident", ident);
 	ident_port				= iniReadShortInt(fp, section, "IdentPort", ident_port);
 	ident_interface			= iniReadIpAddress(fp, section, "IdentInterface", ident_interface);
