@@ -1,6 +1,6 @@
-/* comio.h */
+/* comio.c */
 
-/* Synchronet Serial Communications (COM) I/O Library */
+/* Synchronet Serial Communications I/O Library Common Functions */
 
 /* $Id$ */
 
@@ -35,60 +35,38 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _COMIO_H
-#define _COMIO_H
+#include "comio.h"
+#include "genwrap.h"	/* msclock */
 
-#include <gen_defs.h>	/* BOOL */
+size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* terminators, int timeout)
+{
+	BYTE		ch;
+	size_t		len=0;
+	msclock_t	start=msclock();
 
-#define COM_ERROR						-1
+	while(len < buflen) {
+		if(!comReadByte(handle, &ch)) {
+			if(msclock()-start >= timeout)
+				break;
+			YIELD();
+			continue;
+		}
+		if(len && terminators!=NULL && strchr(terminators, ch)!=NULL)
+			break;
+		buf[len++]=ch;
+	}
 
-#ifdef _WIN32
-	#include <windows.h>
-
-    #define COM_HANDLE					HANDLE
-	#define COM_HANDLE_INVALID			INVALID_HANDLE_VALUE
-	#define COM_ERROR_VALUE				GetLastError()
-/* Modem Status bits */
-	#define COM_CTS						MS_CTS_ON
-	#define COM_DSR						MS_DSR_ON
-	#define COM_RING					MS_RING_ON
-	#define	COM_DCD						MS_RLSD_ON
-#else
-    #define COM_HANDLE					int
-	#define COM_HANDLE_INVALID			-1
-	#define COM_ERROR_VALUE				errno
-#endif
-
-/**************/
-/* Prototypes */
-/**************/
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-char*		comVersion(char* str, size_t len);
-COM_HANDLE	comOpen(const char* device);
-BOOL		comClose(COM_HANDLE);
-long		comGetBaudRate(COM_HANDLE);
-BOOL		comSetBaudRate(COM_HANDLE, ulong rate);
-int			comGetModemStatus(COM_HANDLE);
-int			comRaiseDTR(COM_HANDLE);
-int			comLowerDTR(COM_HANDLE);
-BOOL		comWriteByte(COM_HANDLE, BYTE);
-int			comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
-int			comWriteString(COM_HANDLE, const char*);
-BOOL		comReadByte(COM_HANDLE, BYTE*);
-size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen
-					    ,const char* terminators, int timeout /* in milliseconds */);
-size_t		comReadLine(COM_HANDLE, char* buf, size_t buflen
-						,int timeout /* in milliseconds */);
-BOOL		comPurgeInput(COM_HANDLE);
-BOOL		comPurgeOutput(COM_HANDLE);
-
-#if defined(__cplusplus)
+	return len;
 }
-#endif
 
+size_t comReadLine(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
+{
+	size_t	len;
 
-#endif /* Don't add anything after this #endif statement */
+	len=comReadBuf(handle, buf, buflen-1, "\n", timeout);
+
+	buf[len]=0;
+
+	return len;
+}
+

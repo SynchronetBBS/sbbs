@@ -1,4 +1,6 @@
-/* comio_win32.h */
+/* comio_win32.c */
+
+/* Synchronet Serial Communications I/O Library Functions for Win32 */
 
 /* $Id$ */
 
@@ -148,27 +150,6 @@ BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
 	DWORD rd;
 
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
-}
-
-size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, char terminator, int timeout)
-{
-	BYTE		ch;
-	size_t		len=0;
-	msclock_t	start=msclock();
-
-	while(len < buflen) {
-		if(!comReadByte(handle, &ch)) {
-			if(msclock()-start >= timeout)
-				break;
-			YIELD();
-			continue;
-		}
-		if(len && terminator && ch==terminator)
-			break;
-		buf[len++]=ch;
-	}
-
-	return len;
 }
 
 BOOL comPurgeInput(COM_HANDLE handle)
