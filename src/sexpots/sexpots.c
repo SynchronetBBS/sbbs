@@ -54,9 +54,13 @@
 #include "telnet.h"
 
 /* constants */
+#define NAME					"SexPOTS"
+#define TITLE					"Synchronet External POTS<->TCP Service"
+#define DESCRIPTION				"Connects a communications port (e.g. COM1) to a TCP port (e.g. Telnet)"
 #define MDM_TILDE_DELAY			500	/* milliseconds */
 
 /* global vars */
+BOOL	daemonize=FALSE;
 char	termtype[TELNET_TERM_MAXLEN+1];
 char	termspeed[TELNET_TERM_MAXLEN+1];	/* "tx,rx", max length not defined */
 char	revision[16];
@@ -132,6 +136,216 @@ int usage(const char* fname)
 	return 0;
 }
 
+#if defined(_WIN32)
+
+static WORD event_type(int level)
+{
+	switch(level) {
+		case LOG_WARNING:
+			return(EVENTLOG_WARNING_TYPE);
+		case LOG_NOTICE:
+		case LOG_INFO:
+		case LOG_DEBUG:
+			return(EVENTLOG_INFORMATION_TYPE);
+	}
+/*
+	LOG_EMERG
+	LOG_ALERT
+	LOG_CRIT
+	LOG_ERR
+*/
+	return(EVENTLOG_ERROR_TYPE);
+}
+
+static int syslog(int level, char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+	char* p=sbuf;
+	int	retval;
+	static HANDLE event_handle;
+
+    va_start(argptr,fmt);
+    retval=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+
+	if(event_handle == NULL)
+		event_handle = RegisterEventSource(
+			NULL,		// server name for source (NULL = local computer)
+			TITLE);		// source name for registered handle
+
+	if(event_handle != NULL)
+		ReportEvent(event_handle,	// event log handle
+			event_type(level),		// event type
+			0,						// category zero
+			0,						// event identifier
+			NULL,					// no user security identifier
+			1,						// one string
+			0,						// no data
+			&p,						// pointer to string array
+			NULL);					// pointer to data
+
+    return(retval);
+}
+
+
+/* ChangeServiceConfig2 is a Win2K+ API function, must call dynamically */
+typedef WINADVAPI BOOL (WINAPI *ChangeServiceConfig2_t)(SC_HANDLE, DWORD, LPCVOID);
+
+static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* description)
+{
+	ChangeServiceConfig2_t changeServiceConfig2;
+	static SERVICE_DESCRIPTION service_desc;
+  
+	if(hSCMlib==NULL)
+		return;
+
+	service_desc.lpDescription=description;
+
+	if((changeServiceConfig2 = (ChangeServiceConfig2_t)GetProcAddress(hSCMlib, "ChangeServiceConfig2A"))!=NULL)
+		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
+}
+
+
+static BOOL register_event_source(char* name, char* path)
+{
+	char	keyname[256];
+	HKEY	hKey;
+	DWORD	type;
+	DWORD	disp;
+	LONG	retval;
+	char*	value;
+
+	sprintf(keyname,"system\\CurrentControlSet\\services\\eventlog\\application\\%s",name);
+
+	retval=RegCreateKeyEx(
+		HKEY_LOCAL_MACHINE,			/* handle to an open key */
+		keyname,			/* address of subkey name */
+		0,				/* reserved */
+		"",				/* address of class string */
+		0,				/* special options flag */
+		KEY_ALL_ACCESS, /* desired security access */
+		NULL,           /* address of key security structure */
+		&hKey,			/* address of buffer for opened handle */
+		&disp			/* address of disposition value buffer */
+		);
+
+	if(retval!=ERROR_SUCCESS) {
+		fprintf(stderr,"!Error %d creating/opening registry key (HKLM\\%s)\n"
+			,retval,keyname);
+		return(FALSE);
+	}
+
+	value="EventMessageFile";
+	retval=RegSetValueEx(
+		hKey,			/* handle to key to set value for */
+		value,			/* name of the value to set */
+		0,				/* reserved */
+		REG_SZ,			/* flag for value type */
+		path,			/* address of value data */
+		strlen(path)	/* size of value data */
+		);
+
+	if(retval!=ERROR_SUCCESS) {
+		RegCloseKey(hKey);
+		fprintf(stderr,"!Error %d setting registry key value (%s)\n"
+			,retval,value);
+		return(FALSE);
+	}
+
+	value="TypesSupported";
+	type=EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
+	retval=RegSetValueEx(
+		hKey,			/* handle to key to set value for */
+		value,			/* name of the value to set */
+		0,				/* reserved */
+		REG_DWORD,		/* flag for value type */
+		(BYTE*)&type,	/* address of value data */
+		sizeof(type)	/* size of value data */
+		);
+
+	RegCloseKey(hKey);
+
+	if(retval!=ERROR_SUCCESS) {
+		fprintf(stderr,"!Error %d setting registry key value (%s)\n"
+			,retval,value);
+		return(FALSE);
+	}
+
+	return(TRUE);
+}
+
+
+/****************************************************************************/
+/* Install NT service														*/
+/****************************************************************************/
+static int install(void)
+{
+	HANDLE		hSCMlib;
+    SC_HANDLE   hSCManager;
+    SC_HANDLE   hService;
+    char		path[MAX_PATH+1];
+	char		cmdline[MAX_PATH+1];
+
+	printf("Installing service: %-40s ... ", TITLE);
+
+	hSCMlib = LoadLibrary("ADVAPI32.DLL");
+
+    if(GetModuleFileName(NULL,path,sizeof(path))==0)
+    {
+        fprintf(stderr,"\n!ERROR %d getting module file name\n",GetLastError());
+        return(-1);
+    }
+
+    hSCManager = OpenSCManager(
+                        NULL,                   // machine (NULL == local)
+                        NULL,                   // database (NULL == default)
+                        SC_MANAGER_ALL_ACCESS   // access required
+                        );
+    if(hSCManager==NULL) {
+		fprintf(stderr,"\n!ERROR %d opening SC manager\n",GetLastError());
+		return(-1);
+	}
+
+	/* Install new service */
+	wsprintf(cmdline,"%s service", path);
+    hService = CreateService(
+        hSCManager,						// SCManager database
+        NAME,							// name of service
+        TITLE,							// name to display
+        SERVICE_ALL_ACCESS,				// desired access
+        SERVICE_WIN32_OWN_PROCESS,		// service type
+		SERVICE_AUTO_START,				// start type (auto or manual)
+        SERVICE_ERROR_NORMAL,			// error control type
+        cmdline,						// service's binary
+        NULL,							// no load ordering group
+        NULL,							// no tag identifier
+        "",								// dependencies
+        NULL,							// LocalSystem account
+        NULL);							// no password
+
+	if(hService==NULL)
+		fprintf(stderr,"\n!ERROR %d creating service\n",GetLastError());
+	else {
+		describe_service(hSCMlib, hService, DESCRIPTION);
+		CloseServiceHandle(hService);
+		printf("Successful\n");
+
+		register_event_source(TITLE,path);
+	}
+
+
+	if(hSCMlib!=NULL)
+		FreeLibrary(hSCMlib);
+
+	CloseServiceHandle(hSCManager);
+
+	return(0);
+}
+#endif
+
+
 /****************************************************************************/
 /****************************************************************************/
 int lputs(int level, const char* str)
@@ -139,9 +353,18 @@ int lputs(int level, const char* str)
 	time_t		t;
 	struct tm	tm;
 	char		tstr[32];
+#if defined(_WIN32)
+	char dbgmsg[1024];
+	_snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
+	if(log_level==LOG_DEBUG)
+		OutputDebugString(dbgmsg);
+#endif
 
 	if(level>log_level)
 		return 0;
+
+	if(daemonize)
+		return syslog(level,"%s", str);
 
 	t=time(NULL);
 	if(localtime_r(&t,&tm)==NULL)
@@ -151,7 +374,7 @@ int lputs(int level, const char* str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	return printf("%s %s\n", tstr, str);
+	return fprintf(level>=LOG_NOTICE ? stdout:stderr, "%s %s\n", tstr, str);
 }
 
 /****************************************************************************/
@@ -884,14 +1107,14 @@ void parse_ini_file(const char* ini_fname)
 	dcd_timeout     = iniReadInteger(fp, section, "DCDTimeout", dcd_timeout);
 	dcd_ignore      = iniReadBool(fp, section, "IgnoreDCD", dcd_ignore);
 	dtr_delay		= iniReadLongInt(fp, section, "DTRDelay", dtr_delay);
+	mdm_null	    = iniReadBool(fp, section, "NullModem", mdm_null);
 
 	/* [Modem] Section */
 	section="Modem";
 	iniReadString(fp, section, "Init", "AT&F", mdm_init);
 	iniReadString(fp, section, "AutoAnswer", "ATS0=1", mdm_autoans);
 	iniReadString(fp, section, "Cleanup", "ATS0=0", mdm_cleanup);
-	iniReadString(fp, section, "CallerID", "ATS0=0", mdm_cid);
-	mdm_null	    = iniReadBool(fp, section, "Null", mdm_null);
+	iniReadString(fp, section, "EnableCallerID", "AT+VCID=1", mdm_cid);
 	mdm_timeout     = iniReadInteger(fp, section, "Timeout", mdm_timeout);
 
 	/* [TCP] Section */
@@ -919,9 +1142,13 @@ void parse_ini_file(const char* ini_fname)
 		fclose(fp);
 }
 
-/****************************************************************************/
-/****************************************************************************/
-int main(int argc, char** argv)
+char	banner[128];
+
+static void 
+#if defined(_WIN32)
+	WINAPI
+#endif
+service_loop(int argc, char** argv)
 {
 	int		argn;
 	char*	arg;
@@ -930,22 +1157,7 @@ int main(int argc, char** argv)
 	char	path[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char	ini_fname[MAX_PATH+1];
-	char	banner[128];
 	char	compiler[128];
-
-	/*******************************/
-	/* Generate and display banner */
-	/*******************************/
-	sscanf("$Revision$", "%*s %s", revision);
-
-	sprintf(banner,"\nSynchronet External POTS<->TCP Driver v%s-%s"
-		" Copyright %s Rob Swindell"
-		,revision
-		,PLATFORM_DESC
-		,__DATE__+7
-		);
-
-	fprintf(stdout,"%s\n\n", banner);
 
 	/******************/
 	/* Read .ini file */
@@ -963,11 +1175,8 @@ int main(int argc, char** argv)
 	iniFileName(ini_fname,sizeof(ini_fname),path,fname);
 	parse_ini_file(ini_fname);
 
-	/**********************/
-	/* Parse command-line */
-	/**********************/
 
-	for(argn=1; argn<argc; argn++) {
+	for(argn=1; argn<(int)argc; argn++) {
 		arg=argv[argn];
 		if(*arg!='-') {	/* .ini file specified */
 			arg++;
@@ -980,35 +1189,35 @@ int main(int argc, char** argv)
 		}
 		while(*arg=='-') 
 			arg++;
-			if(stricmp(arg,"null")==0)
-				mdm_null=TRUE;
-			else if(stricmp(arg,"com")==0 && argc > argn+1)
-				SAFECOPY(com_dev, argv[++argn]);
-			else if(stricmp(arg,"baud")==0 && argc > argn+1)
-				com_baudrate = (ulong)strtol(argv[++argn],NULL,0);
-			else if(stricmp(arg,"host")==0 && argc > argn+1)
-				SAFECOPY(host, argv[++argn]);
-			else if(stricmp(arg,"port")==0 && argc > argn+1)
-				port = (ushort)strtol(argv[++argn], NULL, 0);
-			else if(stricmp(arg,"live")==0) {
-				if(argc > argn+1 &&
-					(com_handle = (HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
-					argn++;
-					com_handle_passed=TRUE;
-				}
-				com_alreadyconnected=TRUE;
-				terminate_after_one_call=TRUE;
-				mdm_null=TRUE;
+		if(stricmp(arg,"null")==0)
+			mdm_null=TRUE;
+		else if(stricmp(arg,"com")==0 && argc > argn+1)
+			SAFECOPY(com_dev, argv[++argn]);
+		else if(stricmp(arg,"baud")==0 && argc > argn+1)
+			com_baudrate = (ulong)strtol(argv[++argn],NULL,0);
+		else if(stricmp(arg,"host")==0 && argc > argn+1)
+			SAFECOPY(host, argv[++argn]);
+		else if(stricmp(arg,"port")==0 && argc > argn+1)
+			port = (ushort)strtol(argv[++argn], NULL, 0);
+		else if(stricmp(arg,"live")==0) {
+			if(argc > argn+1 &&
+				(com_handle = (HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
+				argn++;
+				com_handle_passed=TRUE;
 			}
-			else if(stricmp(arg,"nohangup")==0) {
-				com_hangup=FALSE;
-			}
-			else if(stricmp(arg,"help")==0 || *arg=='?')
-				return usage(argv[0]);
-			else {
-				fprintf(stderr,"Invalid option: %s\n", arg);
-				return usage(argv[0]);
-			}
+			com_alreadyconnected=TRUE;
+			terminate_after_one_call=TRUE;
+			mdm_null=TRUE;
+		}
+		else if(stricmp(arg,"nohangup")==0) {
+			com_hangup=FALSE;
+		}
+		else if(stricmp(arg,"help")==0 || *arg=='?')
+			return usage(argv[0]);
+		else {
+			fprintf(stderr,"Invalid option: %s\n", arg);
+			return usage(argv[0]);
+		}
 	}
 
 #if defined(_WIN32)
@@ -1021,7 +1230,6 @@ int main(int argc, char** argv)
 		if((i=atoi(com_dev)) != 0)
 			SAFEPRINTF(com_dev, "COM%d", i);
 	}
-
 #endif
 
 	lprintf(LOG_INFO,"%s", comVersion(str,sizeof(str)));
@@ -1056,6 +1264,7 @@ int main(int argc, char** argv)
 
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
 
+
 	if(ident)
 		_beginthread(ident_server_thread, 0, NULL);
 
@@ -1077,10 +1286,82 @@ int main(int argc, char** argv)
 			lprintf(LOG_INFO,"Call completed (%lu total)", total_calls);
 		}
 		if(com_hangup && !hangup_call(com_handle))
-			return -1;
+			return;
 		if(terminate_after_one_call)
 			break;
 	}
+}
+
+
+/****************************************************************************/
+/****************************************************************************/
+int main(int argc, char** argv)
+{
+	int		argn;
+	char*	arg;
+
+	/*******************************/
+	/* Generate and display banner */
+	/*******************************/
+	sscanf("$Revision$", "%*s %s", revision);
+
+	sprintf(banner,"\n%s v%s-%s"
+		" Copyright %s Rob Swindell"
+		,TITLE
+		,revision
+		,PLATFORM_DESC
+		,__DATE__+7
+		);
+
+	fprintf(stdout,"%s\n\n", banner);
+
+
+	/**********************/
+	/* Parse command-line */
+	/**********************/
+
+	for(argn=1; argn<argc; argn++) {
+		arg=argv[argn];
+		while(*arg=='-') 
+			arg++;
+		if(stricmp(arg,"service")==0)
+			daemonize=TRUE;
+		else if(stricmp(arg,"install")==0)
+			return install();
+		else if(stricmp(arg,"help")==0 || *arg=='?')
+			return usage(argv[0]);
+#if 0
+		else {
+			fprintf(stderr,"Invalid option: %s\n", arg);
+			return usage(argv[0]);
+		}
+#endif
+	}
+
+
+#if defined(_WIN32)
+	if(daemonize) {
+
+		SERVICE_TABLE_ENTRY  ServiceDispatchTable[] = 
+		{ 
+			{ NAME,	(void(WINAPI*)(DWORD, char**))service_loop	}, 
+			{ NULL,			NULL										}	/* Terminator */
+		};
+
+		printf("Starting service control dispatcher.\n" );
+		printf("This may take several seconds.  Please wait.\n" );
+
+		if(!StartServiceCtrlDispatcher(ServiceDispatchTable)) {
+			lprintf(LOG_ERR,"StartServiceCtrlDispatcher ERROR %d",GetLastError());
+			return -1;
+		}
+		return 0;
+	}
+
+
+#endif
+
+	service_loop(argc,argv);
 
 	return 0;
 }
