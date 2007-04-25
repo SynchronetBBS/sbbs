@@ -63,6 +63,7 @@ char	revision[16];
 
 char	mdm_init[INI_MAX_VALUE_LEN];
 char	mdm_autoans[INI_MAX_VALUE_LEN];
+char	mdm_cid[INI_MAX_VALUE_LEN];
 char	mdm_cleanup[INI_MAX_VALUE_LEN];
 BOOL	mdm_null=FALSE;
 int		mdm_timeout=5;			/* seconds */
@@ -328,16 +329,22 @@ BOOL wait_for_call(HANDLE com_handle)
 		return TRUE;
 
 	comRaiseDTR(com_handle);
-	if(!mdm_null && mdm_init[0]) {
-		lprintf(LOG_INFO,"Initializing modem:");
-		if(!modem_command(com_handle, mdm_init))
-			return FALSE;
-	}
-
-	if(!mdm_null && mdm_autoans[0]) {
-		lprintf(LOG_INFO,"Setting modem to auto-answer:");
-		if(!modem_command(com_handle, mdm_autoans))
-			return FALSE;
+	if(!mdm_null) {
+		if(mdm_init[0]) {
+			lprintf(LOG_INFO,"Initializing modem:");
+			if(!modem_command(com_handle, mdm_init))
+				return FALSE;
+		}
+		if(mdm_autoans[0]) {
+			lprintf(LOG_INFO,"Setting modem to auto-answer:");
+			if(!modem_command(com_handle, mdm_autoans))
+				return FALSE;
+		}
+		if(mdm_cid[0]) {
+			lprintf(LOG_INFO,"Enabling modem Caller-ID:");
+			if(!modem_command(com_handle, mdm_cid))
+				return FALSE;
+		}
 	}
 
 	lprintf(LOG_INFO,"Waiting for incoming call (Carrier Detect) on %s ...", com_dev);
@@ -355,10 +362,23 @@ BOOL wait_for_call(HANDLE com_handle)
 					if(rate)
 						SAFEPRINTF2(termspeed,"%u,%u", rate, rate);
 				}
-				else if(strncmp(p,"NMBR = ",7)==0)
-					SAFECOPY(cid_number, p+7);
-				else if(strncmp(p,"NAME = ",7)==0)
-					SAFECOPY(cid_name, p+7);
+				else if(strncmp(p,"NMBR",4)==0 || strncmp(p,"MESG",4)==0) {
+					p+=4;
+					FIND_CHAR(p,'=');
+					SKIP_WHITESPACE(p);
+					if(cid_number[0]==0)	/* Don't overwrite, if multiple messages received */
+						SAFECOPY(cid_number, p);
+				}
+				else if(strncmp(p,"NAME",4)==0) {
+					p+=4;
+					FIND_CHAR(p,'=');
+					SKIP_WHITESPACE(p);
+					SAFECOPY(cid_name, p);
+				}
+				else if(strcmp(p,"NO CARRIER")==0) {
+					ZERO_VAR(cid_name);
+					ZERO_VAR(cid_number);
+				}
 			}
 			continue;	/* don't check DCD until we've received all the modem msgs */
 		}
@@ -859,31 +879,41 @@ void parse_ini_file(const char* ini_fname)
 	/* [COM] Section */
 	section="COM";
 	iniReadString(fp, section, "Device", "COM1", com_dev);
-	iniReadString(fp, section, "ModemInit", "AT&F", mdm_init);
-	iniReadString(fp, section, "ModemAutoAnswer", "ATS0=1", mdm_autoans);
-	iniReadString(fp, section, "ModemCleanup", "ATS0=0", mdm_cleanup);
+	com_baudrate    = iniReadLongInt(fp, section, "BaudRate", com_baudrate);
 	com_hangup	    = iniReadBool(fp, section, "Hangup", com_hangup);
-	mdm_null	    = iniReadBool(fp, section, "NullModem", mdm_null);
-	mdm_timeout     = iniReadInteger(fp, section, "ModemTimeout", mdm_timeout);
 	dcd_timeout     = iniReadInteger(fp, section, "DCDTimeout", dcd_timeout);
 	dcd_ignore      = iniReadBool(fp, section, "IgnoreDCD", dcd_ignore);
 	dtr_delay		= iniReadLongInt(fp, section, "DTRDelay", dtr_delay);
-	com_baudrate    = iniReadLongInt(fp, section, "BaudRate", com_baudrate);
+
+	/* [Modem] Section */
+	section="Modem";
+	iniReadString(fp, section, "Init", "AT&F", mdm_init);
+	iniReadString(fp, section, "AutoAnswer", "ATS0=1", mdm_autoans);
+	iniReadString(fp, section, "Cleanup", "ATS0=0", mdm_cleanup);
+	iniReadString(fp, section, "CallerID", "ATS0=0", mdm_cid);
+	mdm_null	    = iniReadBool(fp, section, "Null", mdm_null);
+	mdm_timeout     = iniReadInteger(fp, section, "Timeout", mdm_timeout);
 
 	/* [TCP] Section */
 	section="TCP";
 	iniReadString(fp, section, "Host", "localhost", host);
-	iniReadString(fp, section, "TelnetTermType", termtype, termtype);
-	iniReadString(fp, section, "TelnetTermSpeed", "28800,28800", termspeed);
 	port					= iniReadShortInt(fp, section, "Port", port);
 	tcp_nodelay				= iniReadBool(fp,section,"NODELAY", tcp_nodelay);
-	telnet					= iniReadBool(fp,section,"Telnet", telnet);
-	debug_telnet			= iniReadBool(fp,section,"DebugTelnet", debug_telnet);
-	telnet_advertise_cid	= iniReadBool(fp,section,"TelnetAdvertiseLocation", telnet_advertise_cid);
-	ident					= iniReadBool(fp,section,"Ident", ident);
-	ident_port				= iniReadShortInt(fp, section, "IdentPort", ident_port);
-	ident_interface			= iniReadIpAddress(fp, section, "IdentInterface", ident_interface);
-	iniReadString(fp, section, "IdentResponse", "CALLERID:SEXPOTS", ident_response);
+
+	/* [Telnet] Section */
+	section="Telnet";
+	telnet					= iniReadBool(fp,section,"Enabled", telnet);
+	debug_telnet			= iniReadBool(fp,section,"Debug", debug_telnet);
+	telnet_advertise_cid	= iniReadBool(fp,section,"AdvertiseLocation", telnet_advertise_cid);
+	iniReadString(fp, section, "TermType", termtype, termtype);
+	iniReadString(fp, section, "TermSpeed", "28800,28800", termspeed);
+
+	/* [Ident] Section */
+	section="Ident";
+	ident					= iniReadBool(fp,section,"Enabled", ident);
+	ident_port				= iniReadShortInt(fp, section, "Port", ident_port);
+	ident_interface			= iniReadIpAddress(fp, section, "Interface", ident_interface);
+	iniReadString(fp, section, "Response", "CALLERID:SEXPOTS", ident_response);
 
 	if(fp!=NULL)
 		fclose(fp);
@@ -1034,7 +1064,7 @@ int main(int argc, char** argv)
 	/***************************/
 
 	/* Main service loop: */
-	while(wait_for_call(com_handle)) {
+	while(!terminated && wait_for_call(com_handle)) {
 		comWriteByte(com_handle,'\r');
 		comWriteString(com_handle, banner);
 		comWriteString(com_handle, "\r\n");
