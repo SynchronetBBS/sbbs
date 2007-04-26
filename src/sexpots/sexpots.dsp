@@ -96,6 +96,10 @@ SOURCE=.\sexpots.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\sexpots.rc
+# End Source File
+# Begin Source File
+
 SOURCE=..\sbbs3\telnet.c
 # End Source File
 # End Target
