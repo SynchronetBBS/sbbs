@@ -189,6 +189,82 @@ static int syslog(int level, char *fmt, ...)
     return(retval);
 }
 
+#endif
+
+/****************************************************************************/
+/****************************************************************************/
+int lputs(int level, const char* str)
+{
+	time_t		t;
+	struct tm	tm;
+	char		tstr[32];
+#if defined(_WIN32)
+	char dbgmsg[1024];
+	_snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
+	if(log_level==LOG_DEBUG)
+		OutputDebugString(dbgmsg);
+#endif
+
+	if(level>log_level)
+		return 0;
+
+	if(daemonize)
+		return syslog(level,"%s", str);
+
+	t=time(NULL);
+	if(localtime_r(&t,&tm)==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
+
+	return fprintf(level>=LOG_NOTICE ? stdout:stderr, "%s %s\n", tstr, str);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+int lprintf(int level, char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+    return(lputs(level,sbuf));
+}
+
+
+#if defined(_WIN32)
+
+#define NTSVC_TIMEOUT_STARTUP	30000	/* Milliseconds */
+#define NTSVC_TIMEOUT_SHUTDOWN	30000	/* Milliseconds */
+
+SERVICE_STATUS_HANDLE	svc_status_handle;
+SERVICE_STATUS			svc_status;
+
+void WINAPI ServiceControlHandler(DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			lprintf(LOG_NOTICE,"Received termination control signal: %d", dwCtrlCode);
+			svc_status.dwWaitHint=NTSVC_TIMEOUT_SHUTDOWN;
+			svc_status.dwCurrentState=SERVICE_STOP_PENDING;
+			SetServiceStatus(svc_status_handle, &svc_status);
+			terminated=TRUE;
+//			SetEvent(service_event);
+			break;
+		case SERVICE_CONTROL_INTERROGATE:
+			lprintf(LOG_DEBUG,"Ignoring service control signal: SERVICE_CONTROL_INTERROGATE");
+			break;
+		default:
+			lprintf(LOG_WARNING,"Received unsupported service control signal: %d", dwCtrlCode);
+			break;
+	}
+}
 
 /* ChangeServiceConfig2 is a Win2K+ API function, must call dynamically */
 typedef WINADVAPI BOOL (WINAPI *ChangeServiceConfig2_t)(SC_HANDLE, DWORD, LPCVOID);
@@ -344,52 +420,6 @@ static int install(void)
 	return(0);
 }
 #endif
-
-
-/****************************************************************************/
-/****************************************************************************/
-int lputs(int level, const char* str)
-{
-	time_t		t;
-	struct tm	tm;
-	char		tstr[32];
-#if defined(_WIN32)
-	char dbgmsg[1024];
-	_snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
-	if(log_level==LOG_DEBUG)
-		OutputDebugString(dbgmsg);
-#endif
-
-	if(level>log_level)
-		return 0;
-
-	if(daemonize)
-		return syslog(level,"%s", str);
-
-	t=time(NULL);
-	if(localtime_r(&t,&tm)==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm.tm_mon+1,tm.tm_mday
-			,tm.tm_hour,tm.tm_min,tm.tm_sec);
-
-	return fprintf(level>=LOG_NOTICE ? stdout:stderr, "%s %s\n", tstr, str);
-}
-
-/****************************************************************************/
-/****************************************************************************/
-int lprintf(int level, char *fmt, ...)
-{
-	va_list argptr;
-	char sbuf[1024];
-
-    va_start(argptr,fmt);
-    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-    va_end(argptr);
-    return(lputs(level,sbuf));
-}
 
 #ifdef _WINSOCKAPI_
 
@@ -1152,29 +1182,8 @@ service_loop(int argc, char** argv)
 {
 	int		argn;
 	char*	arg;
-	char*	p;
 	char	str[128];
-	char	path[MAX_PATH+1];
-	char	fname[MAX_PATH+1];
-	char	ini_fname[MAX_PATH+1];
 	char	compiler[128];
-
-	/******************/
-	/* Read .ini file */
-	/******************/
-	/* Generate path/sexpots[.host].ini from path/sexpots[.exe] */
-	SAFECOPY(path,argv[0]);
-	p=getfname(path);
-	SAFECOPY(fname,p);
-	*p=0;
-	if((p=getfext(fname))!=NULL) 
-		*p=0;
-	SAFECOPY(termtype,fname);
-	strcat(fname,".ini");
-
-	iniFileName(ini_fname,sizeof(ini_fname),path,fname);
-	parse_ini_file(ini_fname);
-
 
 	for(argn=1; argn<(int)argc; argn++) {
 		arg=argv[argn];
@@ -1221,8 +1230,6 @@ service_loop(int argc, char** argv)
 	}
 
 #if defined(_WIN32)
-	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
-
 	/* Convert "1" to "COM1" for Windows */
 	{
 		int i;
@@ -1230,6 +1237,22 @@ service_loop(int argc, char** argv)
 		if((i=atoi(com_dev)) != 0)
 			SAFEPRINTF(com_dev, "COM%d", i);
 	}
+
+	if(daemonize) {
+
+		if((svc_status_handle = RegisterServiceCtrlHandler(NAME, ServiceControlHandler))==0) {
+			lprintf(LOG_ERR,"!ERROR %d registering service control handler",GetLastError());
+			return;
+		}
+
+		svc_status.dwServiceType=SERVICE_WIN32_OWN_PROCESS;
+		svc_status.dwControlsAccepted=SERVICE_ACCEPT_SHUTDOWN;
+		svc_status.dwWaitHint=NTSVC_TIMEOUT_STARTUP;
+
+		svc_status.dwCurrentState=SERVICE_START_PENDING;
+		SetServiceStatus(svc_status_handle, &svc_status);
+	}
+
 #endif
 
 	lprintf(LOG_INFO,"%s", comVersion(str,sizeof(str)));
@@ -1268,6 +1291,14 @@ service_loop(int argc, char** argv)
 	if(ident)
 		_beginthread(ident_server_thread, 0, NULL);
 
+#if defined(_WIN32)
+	if(daemonize) {
+		svc_status.dwCurrentState=SERVICE_RUNNING;
+		svc_status.dwControlsAccepted|=SERVICE_ACCEPT_STOP;
+		SetServiceStatus(svc_status_handle, &svc_status);
+	}
+#endif
+
 	/***************************/
 	/* Initialization Complete */
 	/***************************/
@@ -1286,10 +1317,17 @@ service_loop(int argc, char** argv)
 			lprintf(LOG_INFO,"Call completed (%lu total)", total_calls);
 		}
 		if(com_hangup && !hangup_call(com_handle))
-			return;
+			break;
 		if(terminate_after_one_call)
 			break;
 	}
+
+#if defined(_WIN32)
+	if(daemonize) {
+		svc_status.dwCurrentState=SERVICE_STOPPED;
+		SetServiceStatus(svc_status_handle, &svc_status);
+	}
+#endif
 }
 
 
@@ -1299,6 +1337,10 @@ int main(int argc, char** argv)
 {
 	int		argn;
 	char*	arg;
+	char*	p;
+	char	path[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ini_fname[MAX_PATH+1];
 
 	/*******************************/
 	/* Generate and display banner */
@@ -1315,6 +1357,21 @@ int main(int argc, char** argv)
 
 	fprintf(stdout,"%s\n\n", banner);
 
+	/******************/
+	/* Read .ini file */
+	/******************/
+	/* Generate path/sexpots[.host].ini from path/sexpots[.exe] */
+	SAFECOPY(path,argv[0]);
+	p=getfname(path);
+	SAFECOPY(fname,p);
+	*p=0;
+	if((p=getfext(fname))!=NULL) 
+		*p=0;
+	SAFECOPY(termtype,fname);
+	strcat(fname,".ini");
+
+	iniFileName(ini_fname,sizeof(ini_fname),path,fname);
+	parse_ini_file(ini_fname);
 
 	/**********************/
 	/* Parse command-line */
@@ -1357,7 +1414,7 @@ int main(int argc, char** argv)
 		}
 		return 0;
 	}
-
+	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
 
 #endif
 
