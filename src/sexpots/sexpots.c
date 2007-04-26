@@ -55,7 +55,7 @@
 
 /* constants */
 #define NAME					"SexPOTS"
-#define TITLE					"Synchronet External POTS<->TCP Service"
+#define TITLE					"Synchronet External POTS Support"
 #define DESCRIPTION				"Connects a communications port (e.g. COM1) to a TCP port (e.g. Telnet)"
 #define MDM_TILDE_DELAY			500	/* milliseconds */
 
@@ -124,14 +124,24 @@ int usage(const char* fname)
 {
 	printf("usage: %s [ini file] [options]\n"
 		"\nOptions:"
+		"\n"
 		"\n-null                 No 'AT commands' sent to modem"
 		"\n-com <device>         Specify communications port device"
-		"\n-baud <rate>          Specify baud rate for communications port\n"
+		"\n-baud <rate>          Specify baud rate for communications port"
 		"\n-live [handle]        Communications port is already open/connected"
 		"\n-nohangup             Do not hangup (drop DTR) after call"
 		"\n-host <addr | name>   Specify TCP server hostname or IP address"
 		"\n-port <number>        Specify TCP port number"
-		,getfname(fname));
+#if defined(_WIN32)
+		"\n\nNT Service\n"
+		"\n-install              install and enable NT service (%s)"
+		"\n-service              run as an NT service (background execution)"
+		"\n-remove               remove NT service"
+		"\n-enable               enable NT service"
+		"\n-disable              disable NT service"
+#endif
+		,getfname(fname)
+		,NAME);
 
 	return 0;
 }
@@ -283,7 +293,6 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
 }
 
-
 static BOOL register_event_source(char* name, char* path)
 {
 	char	keyname[256];
@@ -419,6 +428,134 @@ static int install(void)
 
 	return(0);
 }
+
+/****************************************************************************/
+/* Utility function to remove a service cleanly (stopping if necessary)		*/
+/****************************************************************************/
+static void remove_service(SC_HANDLE hSCManager, SC_HANDLE hService, char* name, char* disp_name)
+{
+	SERVICE_STATUS	status;
+
+	printf("Removing service: %-40s ... ", disp_name);
+
+	if(hService==NULL) {
+
+		hService = OpenService(hSCManager, name, SERVICE_ALL_ACCESS);
+
+		if(hService==NULL) {
+			printf("\n!ERROR %d opening service: %s\n",GetLastError(),name);
+			return;
+		}
+	}
+
+    // try to stop the service
+    if(ControlService( hService, SERVICE_CONTROL_STOP, &status))
+    {
+        printf("\nStopping: %s ... ",name);
+
+        while(QueryServiceStatus(hService, &status) && status.dwCurrentState == SERVICE_STOP_PENDING)
+			Sleep(1000);
+
+        if(status.dwCurrentState == SERVICE_STOPPED)
+            printf("Stopped.\n");
+        else
+            printf("FAILED!\n");
+    }
+
+    // now remove the service
+    if(DeleteService(hService))
+		printf("Successful\n");
+	else
+		printf("!ERROR %d\n",GetLastError());
+    CloseServiceHandle(hService);
+}
+
+/****************************************************************************/
+/* Uninstall one or all services											*/
+/****************************************************************************/
+static int uninstall(void)
+{
+    SC_HANDLE   hSCManager;
+
+    hSCManager = OpenSCManager(
+                        NULL,                   // machine (NULL == local)
+                        NULL,                   // database (NULL == default)
+                        SC_MANAGER_ALL_ACCESS   // access required
+                        );
+    if(hSCManager==NULL) {
+		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
+		return(-1);
+	}
+
+	remove_service(hSCManager,NULL,NAME,TITLE);
+
+	CloseServiceHandle(hSCManager);
+
+	return(0);
+}
+
+/****************************************************************************/
+/* Utility function to disable a service									*/
+/****************************************************************************/
+static void set_service_start_type(SC_HANDLE hSCManager, DWORD start_type)
+{
+    SC_HANDLE		hService;
+
+	printf("%s service: %-40s ... "
+		,start_type==SERVICE_DISABLED ? "Disabling" : "Enabling", TITLE);
+
+    hService = OpenService(hSCManager, NAME, SERVICE_ALL_ACCESS);
+
+	if(hService==NULL) {
+		printf("\n!ERROR %d opening service: %s\n",GetLastError(),NAME);
+		return;
+	}
+
+	if(!ChangeServiceConfig(
+		hService,				// handle to service
+		SERVICE_NO_CHANGE,		// type of service
+		start_type,				// when to start service
+		SERVICE_NO_CHANGE,		// severity if service fails to start
+		NULL,					// pointer to service binary file name
+		NULL,					// pointer to load ordering group name
+		NULL,					// pointer to variable to get tag identifier
+		NULL,					// pointer to array of dependency names
+		NULL,					// pointer to account name of service
+		NULL,					// pointer to password for service account
+		NULL					// pointer to display name
+		))
+		printf("\n!ERROR %d changing service config for: %s\n",GetLastError(),NAME);
+	else
+		printf("Successful\n");
+
+    CloseServiceHandle(hService);
+}
+
+/****************************************************************************/
+/* Enable (set to auto-start) or disable one or all services				*/
+/****************************************************************************/
+static int enable(BOOL enabled)
+{
+    SC_HANDLE   hSCManager;
+
+    hSCManager = OpenSCManager(
+                        NULL,                   // machine (NULL == local)
+                        NULL,                   // database (NULL == default)
+                        SC_MANAGER_ALL_ACCESS   // access required
+                        );
+    if(hSCManager==NULL) {
+		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
+		return(-1);
+	}
+
+	set_service_start_type(hSCManager
+		,enabled ? SERVICE_AUTO_START : SERVICE_DISABLED);
+
+	CloseServiceHandle(hSCManager);
+
+	return(0);
+}
+
 #endif
 
 #ifdef _WINSOCKAPI_
@@ -560,6 +697,13 @@ void cleanup(void)
 #endif
 
 	lprintf(LOG_INFO,"Done (handled %lu calls).", total_calls);
+
+#if defined(_WIN32)
+	if(daemonize && svc_status_handle!=0) {
+		svc_status.dwCurrentState=SERVICE_STOPPED;
+		SetServiceStatus(svc_status_handle, &svc_status);
+	} else
+#endif
 	if(pause_on_exit) {
 		printf("Hit enter to continue...");
 		getchar();
@@ -1188,10 +1332,9 @@ service_loop(int argc, char** argv)
 	for(argn=1; argn<(int)argc; argn++) {
 		arg=argv[argn];
 		if(*arg!='-') {	/* .ini file specified */
-			arg++;
 			if(!fexist(arg)) {
-				perror(arg);
-				return usage(argv[0]);
+				lprintf(LOG_ERR,"Initialization file does not exist: %s", arg);
+				exit(usage(argv[0]));
 			}
 			parse_ini_file(arg);
 			continue;
@@ -1222,10 +1365,10 @@ service_loop(int argc, char** argv)
 			com_hangup=FALSE;
 		}
 		else if(stricmp(arg,"help")==0 || *arg=='?')
-			return usage(argv[0]);
+			exit(usage(argv[0]));
 		else {
 			fprintf(stderr,"Invalid option: %s\n", arg);
-			return usage(argv[0]);
+			exit(usage(argv[0]));
 		}
 	}
 
@@ -1264,7 +1407,7 @@ service_loop(int argc, char** argv)
 	/************************************/
 
 	if(!winsock_startup())
-		return -1;
+		exit(1);
 
 	/* Install clean-up callback */
 	atexit(cleanup);
@@ -1276,7 +1419,7 @@ service_loop(int argc, char** argv)
 		lprintf(LOG_INFO,"Opening Communications Device: %s", com_dev);
 		if((com_handle=comOpen(com_dev)) == COM_HANDLE_INVALID) {
 			lprintf(LOG_ERR,"ERROR %u opening %s", COM_ERROR_VALUE, com_dev);
-			return -1;
+			exit(1);
 		}
 	}
 	if(com_baudrate!=0) {
@@ -1322,14 +1465,8 @@ service_loop(int argc, char** argv)
 			break;
 	}
 
-#if defined(_WIN32)
-	if(daemonize) {
-		svc_status.dwCurrentState=SERVICE_STOPPED;
-		SetServiceStatus(svc_status_handle, &svc_status);
-	}
-#endif
+	exit(0);
 }
-
 
 /****************************************************************************/
 /****************************************************************************/
@@ -1357,6 +1494,28 @@ int main(int argc, char** argv)
 
 	fprintf(stdout,"%s\n\n", banner);
 
+	/**********************/
+	/* Parse command-line */
+	/**********************/
+
+	for(argn=1; argn<argc; argn++) {
+		arg=argv[argn];
+		while(*arg=='-') 
+			arg++;
+		if(stricmp(arg,"service")==0)
+			daemonize=TRUE;
+		else if(stricmp(arg,"install")==0)
+			return install();
+		else if(stricmp(arg,"remove")==0)
+			return uninstall();
+		else if(stricmp(arg,"disable")==0)
+			return enable(FALSE);
+		else if(stricmp(arg,"enable")==0)
+			return enable(TRUE);
+		else if(stricmp(arg,"help")==0 || *arg=='?')
+			return usage(argv[0]);
+	}
+
 	/******************/
 	/* Read .ini file */
 	/******************/
@@ -1372,29 +1531,6 @@ int main(int argc, char** argv)
 
 	iniFileName(ini_fname,sizeof(ini_fname),path,fname);
 	parse_ini_file(ini_fname);
-
-	/**********************/
-	/* Parse command-line */
-	/**********************/
-
-	for(argn=1; argn<argc; argn++) {
-		arg=argv[argn];
-		while(*arg=='-') 
-			arg++;
-		if(stricmp(arg,"service")==0)
-			daemonize=TRUE;
-		else if(stricmp(arg,"install")==0)
-			return install();
-		else if(stricmp(arg,"help")==0 || *arg=='?')
-			return usage(argv[0]);
-#if 0
-		else {
-			fprintf(stderr,"Invalid option: %s\n", arg);
-			return usage(argv[0]);
-		}
-#endif
-	}
-
 
 #if defined(_WIN32)
 	if(daemonize) {
