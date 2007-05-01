@@ -2648,6 +2648,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	lbuflen = 0;
 	keybufbot=keybuftop=0;	/* initialize [unget]keybuf pointers */
 	connection="Telnet";
+	node_connection=NODE_CONNECTION_TELNET;
 
 	ZERO_VAR(telnet_local_option);
 	ZERO_VAR(telnet_remote_option);
@@ -4998,6 +4999,7 @@ NO_SSH:
 
 		if(rlogin==true) {
 			new_node->connection="RLogin";
+			new_node->node_connection=NODE_CONNECTION_RLOGIN;
 			new_node->sys_status|=SS_RLOGIN;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
@@ -5088,6 +5090,7 @@ NO_SSH:
 
 NO_PASSTHRU:
 			new_node->connection="SSH";
+			new_node->node_connection=NODE_CONNECTION_SSH;
 			new_node->sys_status|=SS_SSH;
 			new_node->telnet_mode|=TELNET_MODE_OFF; // SSH does not use Telnet commands
 			new_node->ssh_session=sbbs->ssh_session;

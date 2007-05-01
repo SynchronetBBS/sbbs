@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -161,7 +161,7 @@ bool sbbs_t::logon()
 	else
 		thisnode.status=NODE_INUSE;
 	action=thisnode.action=NODE_LOGN;
-	thisnode.connection=0xffff;
+	thisnode.connection=node_connection;
 	thisnode.misc&=~(NODE_ANON|NODE_INTR|NODE_MSGW|NODE_POFF|NODE_AOFF);
 	if(useron.chat&CHAT_NOACT)
 		thisnode.misc|=NODE_AOFF;
@@ -425,7 +425,7 @@ bool sbbs_t::logon()
 		logline("+!",str);
 		return(false); 
 	}
-	strcpy(useron.modem,connection);
+	SAFECOPY(useron.modem,connection);
 	useron.logons++;
 	putuserdat(&cfg,&useron);
 	getmsgptrs();
