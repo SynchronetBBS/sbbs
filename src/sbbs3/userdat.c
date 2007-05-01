@@ -968,7 +968,7 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
                     sprintf(str+strlen(str),"%d",node->action);
                     break;  
 			}
-			strcat(str, node_connection_desc(node->connection, tmp));
+			sprintf(str+strlen(str)," %s",node_connection_desc(node->connection, tmp));
             if(node->action==NODE_DLNG) {
                 if((node->aux/60)>=12) {
                     if(node->aux/60==12)
