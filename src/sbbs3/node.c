@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -217,12 +217,36 @@ char *unpackchatpass(char *pass, node_t node)
 	return(pass);
 }
 
+static char* node_connection_desc(ushort conn, char* str)
+{
+	switch(conn) {
+		case NODE_CONNECTION_LOCAL:
+			strcpy(str,"Locally");
+			break;
+		case NODE_CONNECTION_TELNET:
+			strcpy(str,"via telnet");
+			break;
+		case NODE_CONNECTION_RLOGIN:
+			strcpy(str,"via rlogin");
+			break;
+		case NODE_CONNECTION_SSH:
+			strcpy(str,"via ssh");
+			break;
+		default:
+			sprintf(str,"at %ubps",conn);
+			break;
+	}
+
+	return str;
+}
+
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
 void printnodedat(int number, node_t node)
 {
     char hour,mer[3];
+	char tmp[128];
 
 	printf("Node %2d: ",number);
 	switch(node.status) {
@@ -250,12 +274,7 @@ void printnodedat(int number, node_t node)
 		case NODE_NEWUSER:
 			printf("New user");
 			printf(" applying for access ");
-			if(!node.connection)
-				printf("locally");
-			else if(node.connection==0xffff)
-				printf("via telnet");
-			else
-				printf("at %ubps",node.connection);
+			printf("%s",node_connection_desc(node.connection,tmp));
 			break;
 		case NODE_QUIET:
 		case NODE_INUSE:
@@ -349,12 +368,7 @@ void printnodedat(int number, node_t node)
 				default:
 					printf(itoa(node.action,tmp,10));
 					break;  }
-			if(!node.connection)
-				printf(" locally");
-			else if(node.connection==0xffff)
-				printf(" via telnet");
-			else
-				printf(" at %ubps",node.connection);
+			printf(" %s",node_connection_desc(node.connection,tmp));
 			if(node.action==NODE_DLNG) {
 				if((node.aux/60)>=12) {
 					if(node.aux/60==12)
@@ -435,7 +449,7 @@ int main(int argc, char **argv)
 	}
 
 	if(argc<2) {
-		printf("usage: node [/debug] [action [on|off]] [node numbers] [...]"
+		printf("usage: node [-debug] [action [on|off]] [node numbers] [...]"
 			"\n\n");
 		printf("actions (default is list):\n\n");
 		printf("list        = list status\n");

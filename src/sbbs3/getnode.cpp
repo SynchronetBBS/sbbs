@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -388,6 +388,29 @@ void sbbs_t::nodelist(void)
 	}
 }
 
+static char* node_connection_desc(ushort conn, char* str)
+{
+	switch(conn) {
+		case NODE_CONNECTION_LOCAL:
+			strcpy(str,"Locally");
+			break;
+		case NODE_CONNECTION_TELNET:
+			strcpy(str,"via telnet");
+			break;
+		case NODE_CONNECTION_RLOGIN:
+			strcpy(str,"via rlogin");
+			break;
+		case NODE_CONNECTION_SSH:
+			strcpy(str,"via ssh");
+			break;
+		default:
+			sprintf(str,"at %ubps",conn);
+			break;
+	}
+
+	return str;
+}
+
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
@@ -427,12 +450,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			bputs("New user");
 			attr(cfg.color[clr_nodestatus]);
 			bputs(" applying for access ");
-			if(!node->connection)
-				bputs("Locally");
-			else if(node->connection==0xffff)
-				bprintf("via telnet");
-			else
-				bprintf("at %ubps",node->connection);
+			bputs(node_connection_desc(node->connection, tmp));
 			break;
 		case NODE_QUIET:
 			if(!SYSOP) {
@@ -555,12 +573,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				default:
 					bputs(ultoa(node->action,tmp,10));
 					break;  }
-			if(!node->connection)
-				bputs(" locally");
-			else if(node->connection==0xffff)
-				bprintf(" via telnet");
-			else
-				bprintf(" at %ubps",node->connection);
+			bprintf(" %s",node_connection_desc(node->connection, tmp));
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {
 					hour=node->aux/60;

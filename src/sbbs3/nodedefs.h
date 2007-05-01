@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -43,6 +43,7 @@
 #define _NODEDEFS_H
 
 #include "smbdefs.h"	/* uchar, ushort, ulong and _PACK */
+#include "limits.h"
 
 enum {                              /* Node Status */
      NODE_WFC                       /* Waiting for Call */
@@ -117,6 +118,10 @@ typedef struct _PACK {				/* Node information kept in node.dab */
             action;                 /* Action User is doing on Node */
     ushort  useron,                 /* User on Node */
             connection,             /* Connection rate of Node */
+#define NODE_CONNECTION_LOCAL		0
+#define NODE_CONNECTION_TELNET		USHRT_MAX	/* 0xffff */
+#define NODE_CONNECTION_RLOGIN		(USHRT_MAX-1)
+#define NODE_CONNECTION_SSH			(USHRT_MAX-2)
             misc,                   /* Miscellaneous bits for node */
             aux;                    /* Auxillary word for node */
     ulong   extaux;                 /* Extended aux dword for node */
