@@ -281,7 +281,7 @@ public:
 	char    keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */ 
 
 	ushort	node_connection;
-	char *	connection;		/* Connection Description */
+	char	connection[LEN_MODEM+1];	/* Connection Description */
 	ulong	cur_rate;		/* Current Connection (DCE) Rate */
 	ulong	cur_cps;		/* Current Average Transfer CPS */
 	ulong	dte_rate;		/* Current COM Port (DTE) Rate */
