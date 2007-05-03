@@ -1,0 +1,35 @@
+<?xjs
+load(cwd+"functions.js");
+
+var last_mod=new Date();
+last_mod.setTime(file_date(xjs_filename)*1000);
+if(http_request.header['If-Modified-Since'] != undefined) {
+	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
+		http_reply.status="304 Not Modified";
+		exit(0);
+	}
+}
+http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod.getTime()/1000);
+
+?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<link href="<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'style.css')); ?>" rel="stylesheet" type="text/css">
+		<title>The SAJAX Forum</title>
+		<script src="<?xjs write(http_request.virtual_path.replace(/index\.xjs$/,'client_functions.xjs')); ?>" type="text/javascript"></script>
+	</head>
+	<body onLoad="reload_groups()" onUnLoad="update_pointers()">
+		<h2>Your header goes here...</h2>
+		<div class="login_form">
+			<div id="current_user">Currently logged in as: <?xjs if(user.alias=='') write(user.name); else write(user.alias); ?></div>
+			User: <input type="text" id="login_username"><br>
+			PW: <input type="password" id="login_password"><br>
+			<button class="login" onClick="login()">Log In</button><br>
+			(Note: Logging in will update your new scan pointer on logout)<br>
+		</div>
+		<div class="group-list" id="group-list"></div>
+		<h2>Your footer goes here...</h2>
+<a href="http://www.firefoxmyths.com"> <img src="http://mywebpages.comcast.net/OptimizeXP/Buttons/FirefoxMyths.gif" alt="Firefox Myths" border="0" /></a>
+	</body>
+</html>
