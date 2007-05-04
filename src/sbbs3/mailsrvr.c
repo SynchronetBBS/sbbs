@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2487,6 +2487,7 @@ static void smtp_thread(void* arg)
 
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
+				/* creates message data, but no header or index records (since msg.to==NULL) */
 				i=savemsg(&scfg, &smb, &msg, &client, msgbuf);
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
@@ -2537,7 +2538,7 @@ static void smtp_thread(void* arg)
 
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 
-					if(usernum) {	/* Local destination or QWKnet routed */
+					if(usernum && nettype!=NET_INTERNET) {	/* Local destination or QWKnet routed */
 						/* This is required for fixsmb to be able to rebuild the index */
 						sprintf(str,"%u",usernum);
 						smb_hfield_str(&newmsg, RECIPIENTEXT, str);
@@ -2567,7 +2568,7 @@ static void smtp_thread(void* arg)
 							,sender,sender_addr);
 						if(!newmsg.idx.to) {	/* Forwarding */
 							strcat(str,"\1mand it was automatically forwarded to: \1h");
-							strcat(str,user.netmail);
+							strcat(str,rcpt_addr);
 							strcat(str,"\1n\r\n");
 						}
 						putsmsg(&scfg, usernum, str);
