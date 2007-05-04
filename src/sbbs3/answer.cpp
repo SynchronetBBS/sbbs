@@ -349,9 +349,19 @@ bool sbbs_t::answer()
 	if(!online) 
 		return(false); 
 
-	if(stricmp(terminal,"sexpots")==0) {	/* dial-up connection */
+	if(stricmp(terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
 		node_connection = (ushort)cur_rate;
 		SAFEPRINTF(connection,"%lu",cur_rate);
+		if(telnet_location[0]) {			/* Caller-ID info provided */
+			SAFECOPY(cid,telnet_location);
+			truncstr(cid," ");				/* Only include phone number in CID */
+			char* p=telnet_location;
+			FIND_WHITESPACE(p);
+			SKIP_WHITESPACE(p);
+			if(*p) {
+				SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
+			}
+		}
 	}
 
 	useron.misc&=~(ANSI|COLOR|RIP|WIP);

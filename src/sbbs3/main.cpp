@@ -1082,13 +1082,13 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 						sbbs->cur_cps=sbbs->cur_rate/10;
 
 					} else if(option==TELNET_SEND_LOCATION) {
-						char location[128];
-						sprintf(location,"%.*s",(int)sbbs->telnet_cmdlen-5,sbbs->telnet_cmd+3);
+						safe_snprintf(sbbs->telnet_location
+							,sizeof(sbbs->telnet_location)
+							,"%.*s",(int)sbbs->telnet_cmdlen-5,sbbs->telnet_cmd+3);
 						lprintf(LOG_DEBUG,"Node %d %s telnet location: %s"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-							,location);
-						/* ToDo: store and log the location */
+							,sbbs->telnet_location);
 
 					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
 						long cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
@@ -2571,7 +2571,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     if(node_num)
     	SAFEPRINTF(nodestr,"Node %d",node_num);
     else
-    	strcpy(nodestr,name);
+    	SAFECOPY(nodestr,name);
 
 	lprintf(LOG_DEBUG,"%s constructor using socket %d (settings=%lx)"
 		,nodestr, sd, global_cfg->node_misc);
@@ -2618,6 +2618,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	client_socket_dup=INVALID_SOCKET;
 	client_ident[0]=0;
 
+	telnet_location[0]=0;
 	terminal[0]=0;
 	rlogin_name[0]=0;
 	rlogin_pass[0]=0;

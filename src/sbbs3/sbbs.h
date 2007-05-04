@@ -214,6 +214,7 @@ public:
     uint	telnet_cmdlen;
 	ulong	telnet_mode;
 	uchar	telnet_last_rxch;
+	char	telnet_location[128];
 	char	terminal[TELNET_TERM_MAXLEN+1];
 
 	time_t	event_time;				// Time of next exclusive event
