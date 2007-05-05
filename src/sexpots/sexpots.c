@@ -762,6 +762,7 @@ BOOL wait_for_call(HANDLE com_handle)
 				else if(strncmp(p,"NMBR",4)==0 || strncmp(p,"MESG",4)==0) {
 					p+=4;
 					FIND_CHAR(p,'=');
+					SKIP_CHAR(p,'=');
 					SKIP_WHITESPACE(p);
 					if(cid_number[0]==0)	/* Don't overwrite, if multiple messages received */
 						SAFECOPY(cid_number, p);
@@ -769,6 +770,7 @@ BOOL wait_for_call(HANDLE com_handle)
 				else if(strncmp(p,"NAME",4)==0) {
 					p+=4;
 					FIND_CHAR(p,'=');
+					SKIP_CHAR(p,'=');
 					SKIP_WHITESPACE(p);
 					SAFECOPY(cid_name, p);
 				}
@@ -782,6 +784,16 @@ BOOL wait_for_call(HANDLE com_handle)
 		if(comGetModemStatus(com_handle)&COM_DCD)
 			break;
 	}
+
+	if(strcmp(cid_name,"P")==0)
+		SAFECOPY(cid_name,"Private");
+	else if(strcmp(cid_name,"O")==0)
+		SAFECOPY(cid_name,"Out-of-area");
+
+	if(strcmp(cid_number,"P")==0)
+		SAFECOPY(cid_number,"Private");
+	else if(strcmp(cid_number,"O")==0)
+		SAFECOPY(cid_number,"Out-of-area");
 
 	lprintf(LOG_INFO,"Carrier detected on %s", com_dev);
 	return TRUE;
