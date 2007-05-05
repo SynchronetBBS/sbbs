@@ -38,6 +38,8 @@
 #include "sbbs.h"
 #include "telnet.h"
 
+extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
+
 bool sbbs_t::answer()
 {
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
@@ -352,6 +354,8 @@ bool sbbs_t::answer()
 	if(stricmp(terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
 		node_connection = (ushort)cur_rate;
 		SAFEPRINTF(connection,"%lu",cur_rate);
+		SAFECOPY(cid,"Unknown");
+		SAFECOPY(client_name,"Unknown");
 		if(telnet_location[0]) {			/* Caller-ID info provided */
 			SAFECOPY(cid,telnet_location);
 			truncstr(cid," ");				/* Only include phone number in CID */
@@ -362,6 +366,9 @@ bool sbbs_t::answer()
 				SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
 			}
 		}
+		SAFECOPY(client.addr,cid);
+		SAFECOPY(client.host,client_name);
+		client_on(client_socket,&client,TRUE /* update */);
 	}
 
 	useron.misc&=~(ANSI|COLOR|RIP|WIP);
