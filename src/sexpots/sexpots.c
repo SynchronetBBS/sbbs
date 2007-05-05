@@ -54,7 +54,7 @@
 #include "telnet.h"
 
 /* constants */
-#define NAME					"SexPOTS"
+#define NAME					"SEXPOTS"
 #define TITLE					"Synchronet External POTS Support"
 #define DESCRIPTION				"Connects a communications port (e.g. COM1) to a TCP port (e.g. Telnet)"
 #define MDM_TILDE_DELAY			500	/* milliseconds */
@@ -108,7 +108,7 @@ BYTE	telnet_cmd[64];
 int		telnet_cmdlen;
 BOOL	telnet_advertise_cid=FALSE;
 
-/* ident (RFC1416) server stuff */
+/* ident (RFC1413) server stuff */
 BOOL	ident=FALSE;
 ushort	ident_port=IPPORT_IDENT;
 ulong	ident_interface=INADDR_ANY;
@@ -137,7 +137,7 @@ int usage(const char* fname)
 		"\n-install              install and enable NT service (%s)"
 		"\n-service              run as an NT service (background execution)"
 		"\n-remove               remove NT service"
-		"\n-enable               enable NT service"
+		"\n-enable               enable NT service (auto-start during boot)"
 		"\n-disable              disable NT service"
 #endif
 		,getfname(fname)
