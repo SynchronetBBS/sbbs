@@ -1,0 +1,205 @@
+Synchronet External Plain Old Telephone System (POTS) Support
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                        a.k.a. SEXPOTS
+                 Copyright 2007 Rob Swindell
+
+$Id$
+
+Overview
+--------
+Synchronet BBS Software v3 (see www.synchro.net for more details)
+was designed for client connections over TCP/IP protocols only (e.g. Telnet).
+Over the 7 years since Synchronet v3's release, I've received occasional
+(but persistent) inquiries about the possibility or likelihood of adding
+modem support back into Synchronet (to support direct analog dial-up
+users of the old BBS days before the Internet/broadband boom).
+
+I've resisted this idea (for a few significant reasons I won't go into here),
+and have instead, suggested alternative methods of supporting dial-up users
+(e.g. running Synchronet v2.3 for DOS concurrently with v3, using *getty on
+Linux/Unix, using Manning's Dialup-to-Telnet Win32 gateway program with a
+front-end application, etc.). But these solutions all seemed insufficient
+in some ways or excessively complex or inconvenient. I wanted to provide
+something easier, more seemless.... "nicer". Though I'm pretty sure there
+isn't much demand for dial-up (30Kbps!) BBSes today, there has been enough
+interest from sysops to at least justify some effort (in my mind) to attempt
+to relive the modeming days of old, using actual *gasp* modems!
+
+I knew exactly what was required to write a Serial<->TCP tunneling program
+and blogged on the www.synchro.net web-site way back in 2002 that I planned on
+writing just such a program to give dial-up capabilities to Synchronet v3
+Win32 sysops.
+
+Better late than never (?), I finally started writing this a program a few
+months ago (early 2007). I had to buy an analog modem (I'd thrown-out or
+donated all my modems years ago) and get a second phone line installed to test
+it, but finally, here it is: SEXPOTS (the name pays homage to SEXYZ). 
+
+While SEXPOTS was designed with Synchronet-Win32 sysops in mind, it should
+work with any TCP Server (e.g. Telnet BBS software).
+
+I recently discovered a couple of unrelated Win32 programs by the name of
+COM2TCP which do fundamentally the same thing as SEXPOTS, but SEXPOTS is more
+robust/reliable, and has some niceties and cool BBS and Synchronet-specific
+features you'll like:
+
+    o Can run from command prompt or as NT service
+    o Handles modem initialization or "Null" modem connections
+    o Supports Telnet (with full option negotiation) or raw TCP connections
+    o Can accept "live" COM handles on the command-line (from "front-end" app)
+    o Caller-ID (CID) Support
+    o Optional Ident server to communicate CID information to TCP Server
+    o Telnet options used to communicate baud rate and CID info to TCP server
+    o Highly configurable (via sexpots.ini file)
+
+
+Distribution
+------------
+SEXPOTS is freeware, licensed under the GNU General Public License (GPL)
+http://www.fsf.org/licensing/licenses/gpl.txt
+with portions licensed under the GNU Lesser General Public License (LGPL)
+http://www.fsf.org/licensing/licenses/lgpl.txt.
+
+You can find the current source code (in C) in the CVS repository at
+cvs.synchro.net.
+
+The latest and greatest build will be included in Synchronet-Win32 releases.
+You should be able to find/download the latest general release of SEXPOTS
+(sxpotsNNN.zip) at one or all of the following locations:
+
+http://www.synchro.net
+ftp://ftp.synchro.net
+ftp://vert.synchro.net
+telnet://vert.synchro.net
+
+
+Command-line Syntax
+-------------------
+Running "sexpots -help" will display the supported command-line usage
+(options and commands):
+
+usage: sexpots [ini file] [options]
+
+Options:
+
+    -null                 No 'AT commands' sent to modem
+    -com <device>         Specify communications port device (or number)
+    -baud <rate>          Specify baud rate for communications port
+    -live [handle]        Communications port is already open/connected
+    -nohangup             Do not hangup (drop DTR) after call
+    -host <addr | name>   Specify TCP server hostname or IP address
+    -port <number>        Specify TCP port number
+
+NT Service
+
+    -install              install and enable NT service (SEXPOTS)
+    -service              run as an NT service (background execution)
+    -remove               remove NT service
+    -enable               enable NT service (auto-start during boot)
+    -disable              disable NT service
+
+
+Installation
+------------
+No installation is required. You should be able to just run "sexpots",
+optionally specifying command-line options to over-ride the default
+values (shown below), or the values in your sexpots.ini file (if you
+have one).
+
+On Windows NT-based operating systems, you may install SEXPOTS as an
+NT service (runs in the background when your system boots up, before
+user login), by running "sexpots -install". You can then start and
+stop the service using the "Services" Windows Control Panel applet or
+with the "net start sexpots" or "net stop sexpots" Windows command-lines.
+You can toggle the service start mode (between auto-start and disabled)
+with the "-enable" and "-disable" command-line options.
+
+
+Configuration
+-------------
+Configuration is normally done by editing the file sexpots.ini, located in the
+same directory where the SEXPOTS program (e.g. sexposts.exe) is run from. If
+sexpots.ini file doesn't exist or any of the key=value pairs are missing or
+blank in the file, the default values (indicated below) will be used.
+
+Optionally, a different .ini file may be specified on the command-line (e.g.
+for running multiple concurrent instances of SEXPOTS on different COM ports).
+If an .ini file is specified on the command-line, it will be loaded *after*
+sexpots.ini (if the file exists), over-riding any settings in sexpots.ini.
+
+Command-line options that modify values of the same name in the .ini file(s)
+will over-ride (take precedence over) the value in the .ini file(s).
+
+The order of precendence for configuration values is:
+    1. Command-line options
+    2. Command-line specified .ini file
+    3. sexpots.ini (from same directory as executable)
+    4. Default values
+
+The .ini files are just a plain text files that you can edit with any
+plain text/ASCII file editor (e.g. Windows notepad.exe).
+
+Example .ini file (with default values given):
+
+    LogLevel = INFO             ; set display/log output level
+    Debug = FALSE               ; enable debug logging (overrides LogLevel)
+    PauseOnExit = FALSE         ; wait for key-press on exit (non-service)
+
+    [COM]
+    Device = COM1               ; COM port device name (or port number)
+    BaudRate = 0                ; If non-zero, use this DTE rate (e.g. 115200)
+    Hangup = TRUE               ; Hang-up phone after call
+    IgnoreDCD = FALSE           ; Set to TRUE to ignore state of DCD
+    DCDTimeout = 10             ; Seconds to wait for DCD to drop
+    DTRDelay = 100              ; Milliseconds to delay before hangup
+    NullModem = FALSE           ; Set to TRUE to not send AT commands to modem
+
+    [Modem]
+    Init = AT&F                 ; Modem initialization string
+    AutoAnswer = ATS0=1         ; Set modem into auto-answer mode
+    CleanUp = ATS0=0            ; When exiting, turn off auto-answer
+    EnableCallerID = AT+VCID=1  ; Used to enable Caller-ID mode
+    Timeout = 5                 ; Seconds to wait for a response from modem
+
+    [TCP]
+    Host = localhost            ; Hostname or IP address of TCP server
+    Port = 23                   ; TCP port number of TCP server
+    NoDelay = TRUE              ; Set to TRUE to disable Nagle Algorithm
+
+    [Telnet]
+    Enabled = TRUE              ; Set to FALSE to disable Telnet mode
+    Debug = FALSE               ; Set to TRUE to log Telnet commands sent/recv
+    AdvertiseLocation = FALSE   ; Set to TRUE to send "WILL SEND LOCATION"
+    TermType = sexpots          ; You shouldn't normally change this value
+    TermSpeed = 28800,28800     ; Default terminal speed reported
+
+    [Ident]
+    Enabled = FALSE             ; Set to TRUE to enable Ident (RFC1413) server
+    Port = 113                  ; TCP Port Ident server will listen on
+    Interface = 0               ; IP address of network interface (0=Any)
+    Response = CALLERID:SEXPOTS ; Resp-type and Add-info portions of response
+
+
+Notes on Advanced (Synchronet-specific) Features
+------------------------------------------------
+Baud (DCE) Rate
+
+Caller-ID
+
+
+Terminology
+-----------
+AT commands = Hayes standard modem command set ("AT" stands for "Attention")
+COM = Communications port
+CID = Caller ID
+DCD = Data Carrier Detect
+DCE = Data Communication Equipment (your modem)
+DTE = Data Terminal Equipment (your COM port)
+POTS = Plain Old Telephone System/System
+TCP = Transmission Control Protocol
+
+
+Support
+-------
+For technical support (including bug reports), see 
+http://www.synchro.net/docs/support.html for details.
