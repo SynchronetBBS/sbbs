@@ -1,7 +1,7 @@
-Synchronet External Plain Old Telephone System (POTS) Support
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                        a.k.a. SEXPOTS
-                 Copyright 2007 Rob Swindell
+     Synchronet External Plain Old Telephone System (POTS) Support
+     -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                            a.k.a. SEXPOTS
+                     Copyright 2007 Rob Swindell
 
 $Id$
 
@@ -11,8 +11,8 @@ Synchronet BBS Software v3 (see www.synchro.net for more details)
 was designed for client connections over TCP/IP protocols only (e.g. Telnet).
 Over the 7 years since Synchronet v3's release, I've received occasional
 (but persistent) inquiries about the possibility or likelihood of adding
-modem support back into Synchronet (to support direct analog dial-up
-users of the old BBS days before the Internet/broadband boom).
+modem support back into Synchronet to support direct analog dial-up
+users of the old BBS days before the Internet/broadband boom.
 
 I've resisted this idea (for a few significant reasons I won't go into here),
 and have instead, suggested alternative methods of supporting dial-up users
@@ -43,7 +43,7 @@ COM2TCP which do fundamentally the same thing as SEXPOTS, but SEXPOTS is more
 robust/reliable, and has some niceties and cool BBS and Synchronet-specific
 features you'll like:
 
-    o Can run from command prompt or as NT service
+    o Can run from command prompt or as an NT service
     o Handles modem initialization or "Null" modem connections
     o Supports Telnet (with full option negotiation) or raw TCP connections
     o Can accept "live" COM handles on the command-line (from "front-end" app)
@@ -90,7 +90,7 @@ Options:
     -host <addr | name>   Specify TCP server hostname or IP address
     -port <number>        Specify TCP port number
 
-NT Service
+NT Service Options:
 
     -install              install and enable NT service (SEXPOTS)
     -service              run as an NT service (background execution)
@@ -170,7 +170,7 @@ Example .ini file (with default values given):
     Enabled = TRUE              ; Set to FALSE to disable Telnet mode
     Debug = FALSE               ; Set to TRUE to log Telnet commands sent/recv
     AdvertiseLocation = FALSE   ; Set to TRUE to send "WILL SEND LOCATION"
-    TermType = sexpots          ; You shouldn't normally change this value
+    TermType = SEXPOTS          ; You shouldn't normally change this value
     TermSpeed = 28800,28800     ; Default terminal speed reported
 
     [Ident]
