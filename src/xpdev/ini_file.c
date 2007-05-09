@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -647,7 +647,7 @@ char* iniSetStringList(str_list_t* list, const char* section, const char* key
 char* iniReadString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {
 	if(read_value(fp,section,key,value)==NULL || *value==0 /* blank */) {
-		if(deflt!=NULL)
+		if(deflt!=NULL && deflt!=value)
 			sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,deflt);
 		return((char*)deflt);
 	}
@@ -660,7 +660,7 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 	get_value(list, section, key, value);
 
 	if(*value==0 /* blank value or missing key */) {
-		if(deflt!=NULL)
+		if(deflt!=NULL && deflt!=value)
 			sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,deflt);
 		return((char*)deflt);
 	}
