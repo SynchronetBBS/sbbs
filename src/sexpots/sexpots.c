@@ -722,10 +722,11 @@ BOOL wait_for_call(HANDLE com_handle)
 	ZERO_VAR(cid_name);
 	ZERO_VAR(cid_number);
 
+	comRaiseDTR(com_handle);
+
 	if(com_alreadyconnected)
 		return TRUE;
 
-	comRaiseDTR(com_handle);
 	if(!mdm_null) {
 		if(mdm_init[0]) {
 			lprintf(LOG_INFO,"Initializing modem:");
