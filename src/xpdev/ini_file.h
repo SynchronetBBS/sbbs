@@ -1,6 +1,6 @@
 /* ini_file.h */
 
-/* Functions to parse ini files */
+/* Functions to parse ini (initialization / configuration) files */
 
 /* $Id$ */
 
@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -79,6 +79,9 @@ str_list_t	iniLogLevelStringList(void);
 /* These functions read a single key of the specified type */
 char*		iniReadString(FILE*, const char* section, const char* key
 					,const char* deflt, char* value);
+/* If the key doesn't exist, iniReadExistingString just returns NULL */
+char*		iniReadExistingString(FILE*, const char* section, const char* key
+					,const char* deflt, char* value);
 str_list_t	iniReadStringList(FILE*, const char* section, const char* key
 					,const char* sep, const char* deflt);
 long		iniReadInteger(FILE*, const char* section, const char* key
@@ -127,6 +130,9 @@ named_string_t**
 			iniGetNamedStringList(str_list_t list, const char* section);
 
 char*		iniGetString(str_list_t, const char* section, const char* key
+					,const char* deflt, char* value);
+/* If the key doesn't exist, iniGetExistingString just returns NULL */
+char*		iniGetExistingString(str_list_t, const char* section, const char* key
 					,const char* deflt, char* value);
 str_list_t	iniGetStringList(str_list_t, const char* section, const char* key
 					,const char* sep, const char* deflt);
