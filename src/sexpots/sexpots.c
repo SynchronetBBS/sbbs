@@ -61,18 +61,18 @@
 
 /* global vars */
 BOOL	daemonize=FALSE;
-char	termtype[TELNET_TERM_MAXLEN+1];
-char	termspeed[TELNET_TERM_MAXLEN+1];	/* "tx,rx", max length not defined */
+char	termtype[TELNET_TERM_MAXLEN+1]	= NAME;
+char	termspeed[TELNET_TERM_MAXLEN+1]	= "28800,28800";	/* "tx,rx", max length not defined */
 char	revision[16];
 
-char	mdm_init[INI_MAX_VALUE_LEN];
-char	mdm_autoans[INI_MAX_VALUE_LEN];
-char	mdm_cid[INI_MAX_VALUE_LEN];
-char	mdm_cleanup[INI_MAX_VALUE_LEN];
+char	mdm_init[INI_MAX_VALUE_LEN]		= "AT&F";
+char	mdm_autoans[INI_MAX_VALUE_LEN]	= "ATS0=1";
+char	mdm_cid[INI_MAX_VALUE_LEN]		= "AT+VCID=1";
+char	mdm_cleanup[INI_MAX_VALUE_LEN]	= "ATS0=0";
 BOOL	mdm_null=FALSE;
 int		mdm_timeout=5;			/* seconds */
 
-char	com_dev[MAX_PATH+1];
+char	com_dev[MAX_PATH+1]				= "COM1";
 HANDLE	com_handle=INVALID_HANDLE_VALUE;
 BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
@@ -86,7 +86,7 @@ BOOL	terminated=FALSE;
 BOOL	terminate_after_one_call=FALSE;
 
 SOCKET	sock=INVALID_SOCKET;
-char	host[MAX_PATH+1];
+char	host[MAX_PATH+1]				= "localhost";
 ushort	port=IPPORT_TELNET;
 
 /* stats */
@@ -112,7 +112,7 @@ BOOL	telnet_advertise_cid=FALSE;
 BOOL	ident=FALSE;
 ushort	ident_port=IPPORT_IDENT;
 ulong	ident_interface=INADDR_ANY;
-char	ident_response[INI_MAX_VALUE_LEN];
+char	ident_response[INI_MAX_VALUE_LEN]	= "CALLERID:SEXPOTS";
 
 /* Caller-ID stuff */
 char	cid_name[64];
@@ -1274,58 +1274,64 @@ void parse_ini_file(const char* ini_fname)
 {
 	FILE* fp;
 	char* section;
+	str_list_t	list=NULL;
 
-	if((fp=fopen(ini_fname,"r"))!=NULL)
+	if((fp=fopen(ini_fname,"r"))!=NULL) {
 		lprintf(LOG_INFO,"Reading %s",ini_fname);
+		list=iniReadFile(fp);
+		fclose(fp);
+	}
 
 	/* Root section */
-	pause_on_exit			= iniReadBool(fp,ROOT_SECTION,"PauseOnExit",FALSE);
-	log_level				= iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
+	pause_on_exit			= iniGetBool(list,ROOT_SECTION,"PauseOnExit",FALSE);
+	log_level				= iniGetLogLevel(list,ROOT_SECTION,"LogLevel",log_level);
 
-	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
+	if(iniGetBool(list,ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 	
 	/* [COM] Section */
 	section="COM";
-	iniReadString(fp, section, "Device", "COM1", com_dev);
-	com_baudrate    = iniReadLongInt(fp, section, "BaudRate", com_baudrate);
-	com_hangup	    = iniReadBool(fp, section, "Hangup", com_hangup);
-	dcd_timeout     = iniReadInteger(fp, section, "DCDTimeout", dcd_timeout);
-	dcd_ignore      = iniReadBool(fp, section, "IgnoreDCD", dcd_ignore);
-	dtr_delay		= iniReadLongInt(fp, section, "DTRDelay", dtr_delay);
-	mdm_null	    = iniReadBool(fp, section, "NullModem", mdm_null);
+	iniGetString(list, section, "Device", NULL, com_dev);
+	com_baudrate    = iniGetLongInt(list, section, "BaudRate", com_baudrate);
+	com_hangup	    = iniGetBool(list, section, "Hangup", com_hangup);
+	dcd_timeout     = iniGetInteger(list, section, "DCDTimeout", dcd_timeout);
+	dcd_ignore      = iniGetBool(list, section, "IgnoreDCD", dcd_ignore);
+	dtr_delay		= iniGetLongInt(list, section, "DTRDelay", dtr_delay);
+	mdm_null	    = iniGetBool(list, section, "NullModem", mdm_null);
 
 	/* [Modem] Section */
 	section="Modem";
-	iniReadString(fp, section, "Init", "AT&F", mdm_init);
-	iniReadString(fp, section, "AutoAnswer", "ATS0=1", mdm_autoans);
-	iniReadString(fp, section, "Cleanup", "ATS0=0", mdm_cleanup);
-	iniReadString(fp, section, "EnableCallerID", "AT+VCID=1", mdm_cid);
-	mdm_timeout     = iniReadInteger(fp, section, "Timeout", mdm_timeout);
+	if(iniKeyExists(list, section, "Init"))
+		iniGetString(list, section, "Init", "", mdm_init);
+	if(iniKeyExists(list, section, "AutoAnswer"))
+		iniGetString(list, section, "AutoAnswer", "", mdm_autoans);
+	if(iniKeyExists(list, section, "Cleanup"))
+		iniGetString(list, section, "Cleanup", "", mdm_cleanup);
+	if(iniKeyExists(list, section, "EnableCallerID"))
+		iniGetString(list, section, "EnableCallerID", "", mdm_cid);
+	mdm_timeout     = iniGetInteger(list, section, "Timeout", mdm_timeout);
 
 	/* [TCP] Section */
 	section="TCP";
-	iniReadString(fp, section, "Host", "localhost", host);
-	port					= iniReadShortInt(fp, section, "Port", port);
-	tcp_nodelay				= iniReadBool(fp,section,"NODELAY", tcp_nodelay);
+	iniGetString(list, section, "Host", NULL, host);
+	port					= iniGetShortInt(list, section, "Port", port);
+	tcp_nodelay				= iniGetBool(list,section,"NODELAY", tcp_nodelay);
 
 	/* [Telnet] Section */
 	section="Telnet";
-	telnet					= iniReadBool(fp,section,"Enabled", telnet);
-	debug_telnet			= iniReadBool(fp,section,"Debug", debug_telnet);
-	telnet_advertise_cid	= iniReadBool(fp,section,"AdvertiseLocation", telnet_advertise_cid);
-	iniReadString(fp, section, "TermType", termtype, termtype);
-	iniReadString(fp, section, "TermSpeed", "28800,28800", termspeed);
+	telnet					= iniGetBool(list,section,"Enabled", telnet);
+	debug_telnet			= iniGetBool(list,section,"Debug", debug_telnet);
+	telnet_advertise_cid	= iniGetBool(list,section,"AdvertiseLocation", telnet_advertise_cid);
+	iniGetString(list, section, "TermType", NULL, termtype);
+	iniGetString(list, section, "TermSpeed", NULL, termspeed);
 
 	/* [Ident] Section */
 	section="Ident";
-	ident					= iniReadBool(fp,section,"Enabled", ident);
-	ident_port				= iniReadShortInt(fp, section, "Port", ident_port);
-	ident_interface			= iniReadIpAddress(fp, section, "Interface", ident_interface);
-	iniReadString(fp, section, "Response", "CALLERID:SEXPOTS", ident_response);
+	ident					= iniGetBool(list,section,"Enabled", ident);
+	ident_port				= iniGetShortInt(list, section, "Port", ident_port);
+	ident_interface			= iniGetIpAddress(list, section, "Interface", ident_interface);
+	iniGetString(list, section, "Response", NULL, ident_response);
 
-	if(fp!=NULL)
-		fclose(fp);
 }
 
 char	banner[128];
@@ -1538,7 +1544,6 @@ int main(int argc, char** argv)
 	*p=0;
 	if((p=getfext(fname))!=NULL) 
 		*p=0;
-	SAFECOPY(termtype,fname);
 	strcat(fname,".ini");
 
 	iniFileName(ini_fname,sizeof(ini_fname),path,fname);
