@@ -262,6 +262,9 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 	size_t	i;
 
 	value[0]=0;
+	if(list==NULL)
+		return 0;
+
 	for(i=find_section(list, section); list[i]!=NULL; i++) {
 		SAFECOPY(str, list[i]);
 		if(is_eof(str))
@@ -297,7 +300,7 @@ BOOL iniKeyExists(str_list_t list, const char* section, const char* key)
 
 	i=get_value(list, section, key, val);
 
-	if(list[i]==NULL || *(list[i])==INI_OPEN_SECTION_CHAR)
+	if(list==NULL || list[i]==NULL || *(list[i])==INI_OPEN_SECTION_CHAR)
 		return(FALSE);
 
 	return(TRUE);
