@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -111,9 +111,13 @@ BOOL ftouch(const char* fname)
 {
 	int file;
 
-	if((file=nopen(fname,O_WRONLY|O_CREAT))<0)
-		return(FALSE);
-	close(file);
+	if(!fexist(fname)) {	/* create the file */
+		if((file=nopen(fname,O_WRONLY|O_CREAT))<0)
+			return(FALSE);
+		close(file);
+	}
+	/* update the time stamp */
+	utime(fname,NULL);
 
 	return(TRUE);
 }
