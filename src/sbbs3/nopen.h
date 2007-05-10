@@ -1,10 +1,12 @@
 /* $Id$ */
 
+/* "Network-file Open" (nopen) and friends */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -33,6 +35,9 @@
 
 #ifndef _NOPEN_H
 #define _NOPEN_H
+
+#include <stdio.h>			/* FILE */
+#include "gen_defs.h"		/* BOOL */
 
 #ifdef __cplusplus
 extern "C" {
