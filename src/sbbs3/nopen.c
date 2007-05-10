@@ -117,9 +117,7 @@ BOOL ftouch(const char* fname)
 		close(file);
 	}
 	/* update the time stamp */
-	utime(fname,NULL);
-
-	return(TRUE);
+	return utime(fname,NULL)==0;
 }
 
 BOOL fmutex(const char* fname, const char* text, long max_age)
