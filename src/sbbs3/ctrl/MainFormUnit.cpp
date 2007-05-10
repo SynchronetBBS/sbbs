@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2218,12 +2218,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     cfg.node_num=bbs_startup.first_node;
     char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
+
+   	StatusBar->Panels->Items[4]->Text="Loading configuration...";
 	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
         return;
     }
+   	StatusBar->Panels->Items[4]->Text="Configuration loaded";
 
 	recycle_semfiles=semfile_list_init(cfg.ctrl_dir,"recycle","ctrl");
    	semfile_list_check(&initialized,recycle_semfiles);
@@ -3271,11 +3274,13 @@ void __fastcall TMainForm::reload_config(void)
 {
 	char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
+   	StatusBar->Panels->Items[4]->Text="Reloading configuration...";
 	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Re-loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }
+   	StatusBar->Panels->Items[4]->Text="Configuration reloaded";    
    	semfile_list_check(&initialized,recycle_semfiles);
 }
 //---------------------------------------------------------------------------
