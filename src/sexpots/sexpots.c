@@ -36,10 +36,14 @@
  ****************************************************************************/
 
 /* ANSI C */
+#include <stdarg.h>
 #include <stdio.h>
 
 /* Windows */
+#ifdef _WIN32
+/* Doesn't this come in from sockwrap.h? */
 #include <winsock.h>
+#endif
 
 /* xpdev lib */
 #include "dirwrap.h"
@@ -72,8 +76,12 @@ char	mdm_cleanup[INI_MAX_VALUE_LEN]	= "ATS0=0";
 BOOL	mdm_null=FALSE;
 int		mdm_timeout=5;			/* seconds */
 
+#ifdef _WIN32
 char	com_dev[MAX_PATH+1]				= "COM1";
-HANDLE	com_handle=INVALID_HANDLE_VALUE;
+#else
+char	com_dev[MAX_PATH+1]				= "/dev/ttyd0";
+#endif
+COM_HANDLE	com_handle=COM_HANDLE_INVALID;
 BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
 BOOL	com_hangup=TRUE;
@@ -213,13 +221,28 @@ int lputs(int level, const char* str)
 	_snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
 	if(log_level==LOG_DEBUG)
 		OutputDebugString(dbgmsg);
+#else
+	char dbgmsg[1024];
+	snprintf(dbgmsg,sizeof(dbgmsg),"%s %s", NAME, str);
+	if(log_level==LOG_DEBUG)
+		fputs(dbgmsg, stderr);
 #endif
 
 	if(level>log_level)
 		return 0;
 
-	if(daemonize)
+	if(daemonize) {
+#if defined(_WIN32)
 		return syslog(level,"%s", str);
+#else
+		/* syslog() is
+		 * void syslog(int priority, const char *message, ...);
+		 */
+
+		syslog(level,"%s", str);
+		return strlen(str);
+#endif
+	}
 
 	t=time(NULL);
 	if(localtime_r(&t,&tm)==NULL)
@@ -712,7 +735,7 @@ void cleanup(void)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL wait_for_call(HANDLE com_handle)
+BOOL wait_for_call(COM_HANDLE com_handle)
 {
 	char		str[128];
 	char*		p;
@@ -1230,7 +1253,7 @@ BOOL handle_call(void)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL hangup_call(HANDLE com_handle)
+BOOL hangup_call(COM_HANDLE com_handle)
 {
 	time_t start;
 
@@ -1368,7 +1391,7 @@ service_loop(int argc, char** argv)
 			port = (ushort)strtol(argv[++argn], NULL, 0);
 		else if(stricmp(arg,"live")==0) {
 			if(argc > argn+1 &&
-				(com_handle = (HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
+				(com_handle = (COM_HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
 				argn++;
 				com_handle_passed=TRUE;
 			}
@@ -1517,7 +1540,10 @@ int main(int argc, char** argv)
 		arg=argv[argn];
 		while(*arg=='-') 
 			arg++;
-		if(stricmp(arg,"service")==0)
+		if(stricmp(arg,"help")==0 || *arg=='?')
+			return usage(argv[0]);
+#ifdef _WIN32
+		else if(stricmp(arg,"service")==0)
 			daemonize=TRUE;
 		else if(stricmp(arg,"install")==0)
 			return install();
@@ -1527,8 +1553,7 @@ int main(int argc, char** argv)
 			return enable(FALSE);
 		else if(stricmp(arg,"enable")==0)
 			return enable(TRUE);
-		else if(stricmp(arg,"help")==0 || *arg=='?')
-			return usage(argv[0]);
+#endif
 	}
 
 	/******************/
