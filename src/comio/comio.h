@@ -54,9 +54,34 @@
 	#define COM_RING					MS_RING_ON
 	#define	COM_DCD						MS_RLSD_ON
 #else
+	#include <termios.h>
+
     #define COM_HANDLE					int
 	#define COM_HANDLE_INVALID			-1
 	#define COM_ERROR_VALUE				errno
+
+/* Stuff we apparently don't care about... */
+ *
+ *	TIOCM_LE   Line Enable.
+ *	TIOCM_DTR  Data Terminal Ready.
+ *	TIOCM_RTS  Request To Send.
+ *	TIOCM_ST   Secondary Transmit.
+ *	TIOCM_SR   Secondary Receive.
+ */
+
+	#define COM_CTS						TIOCM_CTS  /* Clear To Send. */
+#ifdef TIOCM_CAR
+	#define COM_DCD						TIOCM_CAR  /* Carrier Detect. */
+#else
+	#define COM_DCD						TIOCM_CD   /* Carrier Detect (synonym). */
+#endif
+#ifdef TIOCM_RNG
+	#define COM_RING					TIOCM_RNG  /* Ring Indication. */
+#else
+	#define COM_RING					TIOCM_RI   /* Ring Indication (synonym). */
+#endif
+	#define COM_DSR						TIOCM_DSR  /* Data Set Ready. */
+
 #endif
 
 /**************/
