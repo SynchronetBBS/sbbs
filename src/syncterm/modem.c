@@ -6,6 +6,7 @@
 
 #include "sockwrap.h"
 
+#include "modem.h"
 #include "syncterm.h"
 #include "bbslist.h"
 #include "conn.h"
@@ -94,7 +95,7 @@ int modem_response(char *str, size_t maxlen, int timeout)
 			continue;
 
 		if(ch=='\r') {
-			while(comReadByte(com,&ch));	/* eat trailing ctrl chars (e.g. 'LF') */
+//			while(comReadByte(com,&ch));	/* eat trailing ctrl chars (e.g. 'LF') */
 			break;
 		}
 		str[len++]=ch;
@@ -116,8 +117,15 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(-1);
 	}
+	if(!comSetBaudRate(com, 115200)) {
+		uifcmsg("Cannot Set Baudrate",	"`Cannot Set Baudrate`\n\n"
+						"Cannot open the specified modem device.\n");
+		conn_api.terminate=-1;
+		return(-1);
+	}
 
 	uifc.pop("Initializing...");
+
 	comWriteString(com, settings.mdm.init_string);
 	comWriteString(com, "\r");
 
@@ -131,6 +139,18 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(INVALID_SOCKET);
 	}
+	if(strstr(respbuf, settings.mdm.init_string))
+	if(modem_response(respbuf, sizeof(respbuf), 5)) {
+		modem_close();
+		uifc.pop(NULL);
+		uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
+						"The modem did not respond to the initializtion string\n"
+						"Check your init string and phone number.\n");
+		conn_api.terminate=-1;
+		return(INVALID_SOCKET);
+	}
+	if(strstr(respbuf, settings.mdm.init_string))
+
 	if(!strstr(respbuf, "OK")) {
 		modem_close();
 		uifc.pop(NULL);
@@ -156,6 +176,8 @@ int modem_connect(struct bbslist *bbs)
 		return(INVALID_SOCKET);
 	}
 	if(!strstr(respbuf, "CONNECT")) {
+uifc.pop(NULL);
+uifc.pop(respbuf);
 		modem_close();
 		uifc.pop(NULL);
 		uifcmsg("Connection Failed",	"`Connection Failed`\n\n"

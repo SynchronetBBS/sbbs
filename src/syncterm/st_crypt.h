@@ -1,7 +1,7 @@
 #ifndef _ST_CRYPT_H_
 #define _ST_CRYPT_H_
 
-#include "cryptlib.h"
+#include"cryptlib.h"
 
 struct crypt_funcs {
 	C_RET (*PopData)( C_IN CRYPT_HANDLE envelope, C_OUT void C_PTR buffer,

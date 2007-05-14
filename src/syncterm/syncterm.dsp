@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\xpdev" /I "..\conio" /I "..\uifc" /I "..\sbbs3" /I "..\smblib" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\xpdev" /I "..\conio" /I "..\uifc" /I "..\sbbs3" /I "..\smblib" /I "..\comio" /I "..\..\include\cryptlib" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -88,7 +88,19 @@ SOURCE=.\bbslist.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\comio\comio.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\comio\comio_win32.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\conn.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\conn_telnet.c
 # End Source File
 # Begin Source File
 
@@ -109,6 +121,22 @@ SOURCE=.\fonts.c
 # Begin Source File
 
 SOURCE=.\menu.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\modem.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\rlogin.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ssh.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\st_crypt.c
 # End Source File
 # Begin Source File
 

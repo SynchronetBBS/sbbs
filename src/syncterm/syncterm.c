@@ -861,8 +861,6 @@ void load_settings(struct syncterm_settings *set)
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 
-char*		iniReadString(FILE*, const char* section, const char* key
-					,const char* deflt, char* value);
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F", set->mdm.init_string);
 	iniReadString(inifile, "SyncTERM", "ModemDevice", "/dev/ttyd0", set->mdm.device_name);

@@ -25,6 +25,8 @@ vpath %.c ../sbbs3 ../smblib ../uifc ../guts ../comio
 INSTALL_EXE	?=	install
 INSTALL_DATA	?=	install -m 0444
 
+OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
+
 $(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
