@@ -27,7 +27,7 @@ void modem_input_thread(void *args)
 	while(com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd=comReadBuf(com, conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		if(rd <= 0) {
-			if(comGetModemStatus(com)&COM_DCD)
+			if(comGetModemStatus(com)&COM_DCD == 0)
 				break;
 		}
 		buffered=0;
@@ -60,16 +60,16 @@ void modem_output_thread(void *args)
 			sent=0;
 			while(sent < wr) {
 				ret=comWriteBuf(com, conn_api.wr_buf+sent, wr-sent);
-				if(ret==COM_ERROR) {
-					if(comGetModemStatus(com)&COM_DCD == 0)
-						break;
-				}
 				sent+=ret;
+				if(ret==COM_ERROR)
+					break;
+			}
+			if(ret==COM_ERROR) {
 			}
 		}
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-		if(ret==-1)
+		if(comGetModemStatus(com)&COM_DCD == 0)
 			break;
 	}
 	conn_api.output_thread_running=0;
@@ -137,8 +137,10 @@ int modem_connect(struct bbslist *bbs)
 						"The modem did not respond to the initializtion string\n"
 						"Check your init string and phone number.\n");
 		conn_api.terminate=-1;
-		return(INVALID_SOCKET);
+		return(-1);
 	}
+uifc.pop(NULL);
+uifc.pop(respbuf);
 	if(strstr(respbuf, settings.mdm.init_string))
 	if(modem_response(respbuf, sizeof(respbuf), 5)) {
 		modem_close();
@@ -147,9 +149,10 @@ int modem_connect(struct bbslist *bbs)
 						"The modem did not respond to the initializtion string\n"
 						"Check your init string and phone number.\n");
 		conn_api.terminate=-1;
-		return(INVALID_SOCKET);
+		return(-1);
 	}
-	if(strstr(respbuf, settings.mdm.init_string))
+uifc.pop(NULL);
+uifc.pop(respbuf);
 
 	if(!strstr(respbuf, "OK")) {
 		modem_close();
@@ -157,12 +160,12 @@ int modem_connect(struct bbslist *bbs)
 		uifcmsg("Initialization Error",	"`Initialization Error`\n\n"
 						"Your initialization string caused an error.\n");
 		conn_api.terminate=-1;
-		return(INVALID_SOCKET);
+		return(-1);
 	}
 
 	uifc.pop(NULL);
 	uifc.pop("Dialing...");
-	comWriteString(com, "ATD");
+	comWriteString(com, "ATDT");
 	comWriteString(com, bbs->addr);
 	comWriteString(com, "\r");
 	
@@ -173,17 +176,27 @@ int modem_connect(struct bbslist *bbs)
 		uifcmsg("No Answer",	"`No Answer`\n\n"
 						"The modem did not connect withing 30 seconds.\n");
 		conn_api.terminate=-1;
-		return(INVALID_SOCKET);
+		return(-1);
 	}
-	if(!strstr(respbuf, "CONNECT")) {
 uifc.pop(NULL);
 uifc.pop(respbuf);
+	if(modem_response(respbuf, sizeof(respbuf), 30)) {
+		modem_close();
+		uifc.pop(NULL);
+		uifcmsg("No Answer",	"`No Answer`\n\n"
+						"The modem did not connect withing 30 seconds.\n");
+		conn_api.terminate=-1;
+		return(-1);
+	}
+uifc.pop(NULL);
+uifc.pop(respbuf);
+	if(!strstr(respbuf, "CONNECT")) {
 		modem_close();
 		uifc.pop(NULL);
 		uifcmsg("Connection Failed",	"`Connection Failed`\n\n"
 						"SyncTERM was unable to establish a connection.\n");
 		conn_api.terminate=-1;
-		return(INVALID_SOCKET);
+		return(-1);
 	}
 
 	uifc.pop(NULL);
