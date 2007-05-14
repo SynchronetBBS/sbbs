@@ -680,6 +680,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+9;
 	}
+	/* ToDo: RFC2806 */
 	/* Remove trailing / (Win32 adds one 'cause it hates me) */
 	p2=strchr(p1,'/');
 	if(p2!=NULL)
@@ -859,6 +860,12 @@ void load_settings(struct syncterm_settings *set)
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
+
+char*		iniReadString(FILE*, const char* section, const char* key
+					,const char* deflt, char* value);
+	/* Modem settings */
+	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F", set->mdm.init_string);
+	iniReadString(inifile, "SyncTERM", "ModemDevice", "/dev/ttyd0", set->mdm.device_name);
 	if(inifile)
 		fclose(inifile);
 }

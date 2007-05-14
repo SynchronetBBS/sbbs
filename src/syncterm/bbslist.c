@@ -565,8 +565,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[4][80];
-	char	*opt[4];
+	char	opts[6][80];
+	char	*opt[6];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -580,14 +580,16 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<4; i++)
+	for(i=0; i<6; i++)
 		opt[i]=opts[i];
 
-	opts[3][0]=0;
+	opts[5][0]=0;
 	for(;;) {
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[2],"Scrollback Buffer Lines %d",settings.backlines);
+		sprintf(opts[3],"Modem Device            %s",settings.mdm.device_name);
+		sprintf(opts[4],"Modem Init String       %s",settings.mdm.init_string);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -628,6 +630,22 @@ void change_settings(void)
 						}
 					}
 				}
+				break;
+			case 3:
+				uifc.helpbuf=	"`Modem Device`\n\n"
+#ifdef _WIN32
+								"Enter the modem device name (ie: COM1).";
+#else
+								"Enter the modem device name (ie: /dev/ttyd0).";
+#endif
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT);
+				iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
+				break;
+			case 4:
+				uifc.helpbuf=	"`Modem Init String`\n\n"
+								"Your modem init string goes here.";
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT);
+				iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
 				break;
 		}
 	}

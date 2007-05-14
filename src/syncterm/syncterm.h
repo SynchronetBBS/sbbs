@@ -13,10 +13,16 @@ enum {
 	,SYNCTERM_DEFAULT_TRANSFER_PATH
 };
 
+struct modem_settings {
+	char	init_string[INI_MAX_VALUE_LEN];
+	char	device_name[INI_MAX_VALUE_LEN+1];
+};
+
 struct syncterm_settings {
 	int		confirm_close;
 	int		startup_mode;
 	int		backlines;
+	struct modem_settings mdm;
 };
 
 extern char *inpath;
