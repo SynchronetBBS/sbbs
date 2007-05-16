@@ -3,6 +3,11 @@
 
 #include"cryptlib.h"
 
+#if defined(_MSC_VER)
+	#undef C_RET 
+	#define C_RET int
+#endif
+
 struct crypt_funcs {
 	C_RET (*PopData)( C_IN CRYPT_HANDLE envelope, C_OUT void C_PTR buffer,
 		C_IN int length, C_OUT int C_PTR bytesCopied );
