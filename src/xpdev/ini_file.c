@@ -655,7 +655,7 @@ static char* default_value(const char* deflt, char* value)
 	if(deflt!=NULL && deflt!=value)
 		sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,deflt);
 
-	return(deflt);
+	return((char*)deflt);
 }
 
 char* iniReadString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
