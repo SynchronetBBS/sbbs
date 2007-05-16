@@ -324,6 +324,8 @@ function handle_command(prefix,command,message)  {
 			tmp_str=tmp_str+" "+message.shift();
 			tmp_str=tmp_str+" "+message.shift();
 			tmp_str2=message.shift();
+			if (!tmp_str2) /* Total hack. --RS XXX FIXME */
+				tmp_str2="";
 			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
 			screen.print_line(tmp_str2);
 			break;
