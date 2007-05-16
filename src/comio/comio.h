@@ -60,7 +60,7 @@
 	#define COM_HANDLE_INVALID			-1
 	#define COM_ERROR_VALUE				errno
 
-/* Stuff we apparently don't care about... */
+/* Stuff we apparently don't care about... 
  *
  *	TIOCM_LE   Line Enable.
  *	TIOCM_DTR  Data Terminal Ready.
