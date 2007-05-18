@@ -468,6 +468,8 @@ function Server_Work(cmdline) {
 					break;
 				}
 			}
+			if (cmd[uprefixptr+1][0] == ".")	/* CR "hidden mask" fix. */
+				cmd[uprefixptr+1] = cmd[uprefixptr+1].slice(1);
 			var new_id = "id" + next_client_id;
 			next_client_id++;
 			Users[cmd[1].toUpperCase()] = new IRC_User(new_id);
@@ -555,6 +557,8 @@ function Server_Work(cmdline) {
 		// FIXME: servers should be able to send notices.
 		if (!cmd[1] || ThisOrigin.server)
 			break;
+		if (this.nick != ThisOrigin.parent)
+			break;  /* Fix for CR bouncing back msgs. */
 		var my_ircstr = IRC_string(cmdline,2);
 		if (!cmd[2] || !my_ircstr)
 			break;
@@ -661,6 +665,8 @@ function Server_Work(cmdline) {
 	case "PRIVMSG":
 		if (!cmd[1] || ThisOrigin.server)
 			break;
+		if (this.nick != ThisOrigin.parent)
+			break;	/* Fix for CR bouncing back msgs. */
 		var my_ircstr = IRC_string(cmdline,2);
 		if (!cmd[2] || !my_ircstr)
 			break;
