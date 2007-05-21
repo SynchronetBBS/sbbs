@@ -5,13 +5,14 @@
 
 $Id$
 
+
 Overview
 --------
 Synchronet BBS Software v3 (see www.synchro.net for more details)
-was designed for client connections over TCP/IP protocols only (e.g. Telnet).
-Over the 7 years since Synchronet v3's release, I've received occasional
-(but persistent) inquiries about the possibility or likelihood of adding
-modem support back into Synchronet to support direct analog dial-up
+was designed for client connections over TCP/IP protocols only (predominently,
+Telnet). Over the 7 years since Synchronet v3's release, I've received
+occasional (but persistent) inquiries about the possibility or likelihood of
+adding modem support back into Synchronet to support direct analog dial-up
 users of the old BBS days before the Internet/broadband boom.
 
 I've resisted this idea (for a few significant reasons I won't go into here),
@@ -23,7 +24,7 @@ in some ways or excessively complex or inconvenient. I wanted to provide
 something easier, more seemless.... "nicer". Though I'm pretty sure there
 isn't much demand for dial-up (30Kbps!) BBSes today, there has been enough
 interest from sysops to at least justify some effort (in my mind) to attempt
-to relive the modeming days of old, using actual *gasp* modems!
+to relive the BBS days of old, using actual *gasp* modems!
 
 I knew exactly what was required to write a Serial<->TCP tunneling program
 and blogged on the www.synchro.net web-site way back in 2002 that I planned on
@@ -44,7 +45,7 @@ robust/reliable, and has some niceties and cool BBS and Synchronet-specific
 features you'll like:
 
     o Can run from command prompt or as an NT service
-    o Handles modem initialization or "Null" modem connections
+    o Handles modem initialization or "Null modem" connections
     o Supports Telnet (with full option negotiation) or raw TCP connections
     o Can accept "live" COM handles on the command-line (from "front-end" app)
     o Caller-ID (CID) Support
@@ -117,10 +118,11 @@ with the "-enable" and "-disable" command-line options.
 
 Configuration
 -------------
-Configuration is normally done by editing the file sexpots.ini, located in the
-same directory where the SEXPOTS program (e.g. sexposts.exe) is run from. If
-sexpots.ini file doesn't exist or any of the key=value pairs are missing or
-blank in the file, the default values (indicated below) will be used.
+Configuration is normally performed by editing the file sexpots.ini, located
+in the same directory where the SEXPOTS program (e.g. sexposts.exe) is run
+from. If sexpots.ini file doesn't exist or any of the key=value pairs are
+missing or blank in the file, the default values (indicated below) will be
+used.
 
 Optionally, a different .ini file may be specified on the command-line (e.g.
 for running multiple concurrent instances of SEXPOTS on different COM ports).
@@ -156,22 +158,22 @@ Example .ini file (with default values given):
 
     [Modem]
     Init = AT&F                 ; Modem initialization string
-    AutoAnswer = ATS0=1         ; Set modem into auto-answer mode
+    AutoAnswer = ATS0=1         ; Put modem into "auto-answer" mode
     CleanUp = ATS0=0            ; When exiting, turn off auto-answer
-    EnableCallerID = AT+VCID=1  ; Used to enable Caller-ID mode
+    EnableCallerID = AT+VCID=1  ; Enable Caller-ID support
     Timeout = 5                 ; Seconds to wait for a response from modem
 
     [TCP]
     Host = localhost            ; Hostname or IP address of TCP server
     Port = 23                   ; TCP port number of TCP server
-    NoDelay = TRUE              ; Set to TRUE to disable Nagle Algorithm
+    NoDelay = TRUE              ; Set to TRUE to disable the Nagle Algorithm
 
     [Telnet]
     Enabled = TRUE              ; Set to FALSE to disable Telnet mode
     Debug = FALSE               ; Set to TRUE to log Telnet commands sent/recv
     AdvertiseLocation = FALSE   ; Set to TRUE to send "WILL SEND LOCATION"
     TermType = SEXPOTS          ; You shouldn't normally change this value
-    TermSpeed = 28800,28800     ; Default terminal speed reported
+    TermSpeed = 28800,28800     ; Default terminal speed reported (tx, rx bps)
 
     [Ident]
     Enabled = FALSE             ; Set to TRUE to enable Ident (RFC1413) server
@@ -180,26 +182,64 @@ Example .ini file (with default values given):
     Response = CALLERID:SEXPOTS ; Resp-type and Add-info portions of response
 
 
-Notes on Advanced (Synchronet-specific) Features
-------------------------------------------------
-Baud (DCE) Rate
+Notes on Advanced Features
+--------------------------
+NOTE: Requires Synchronet v3.14b or later
 
-Caller-ID
+SEXPOTS will report the connection (DCE) rate to a Synchronet Telnet Server
+using the Telnet "TERMINAL SPEED" sub-option. Synchronet will use the reported
+speed to calculate estimated file transfer durations, update the node record,
+log to the user logon list, and save in the user record as the user's most
+recent "connection type".
+
+SEXPOTS can report Caller-ID information to the Synchronet Telnet server using
+the Telnet "Location" option. Synchronet will store the Caller-ID reported
+Phone Number in the user's 'note' field (where the IP address is normally
+stored) and the Caller-ID reported Caller Name in the user's 'computer'
+field (where the Hostname is normally stored). Synchronet will also log each
+caller's Caller-ID information fo record-keeping purposes.
+
+Alternatively, SEXPOTS can report the Caller-ID information using the Ident
+protocol, but this feature is disabled by default and is not the preferred
+mechanism (use the Telnet "Location" option instead).
+
+Using Synchronet v3.14a or earlier, the Synchronet Telnet Server will detect
+the caller and just another Telnet connection, but comming in from the local
+network interface.
+
+
+Linux/Unix Version
+------------------
+There is a preliminary *nix port of SEXPOTS in cvs.synchro.net, but it's not
+being distributed or supported at this time.
 
 
 Terminology
 -----------
-AT commands = Hayes standard modem command set ("AT" stands for "Attention")
-COM = Communications port
-CID = Caller ID
-DCD = Data Carrier Detect
-DCE = Data Communication Equipment (your modem)
-DTE = Data Terminal Equipment (your COM port)
-POTS = Plain Old Telephone System/System
-TCP = Transmission Control Protocol
+AT      = Hayes standard modem command set ("AT" stands for "Attention")
+BBS     = Bulletin Board System
+BPS     = Bits Per Second
+CID     = Caller ID
+COM     = Communications port
+CPS     = Characters Per Second
+DCD     = Data Carrier Detect
+DCE     = Data Communication Equipment (your modem)
+DTE     = Data Terminal Equipment (your COM port)
+Ident   = Identification Service
+KBPS    = One thousand Bits Per Second
+IP      = Internet Protocol
+Modem   = Modulator / Demodulator
+NT      = Windows NT (New Technology), any of Windows NT/2000/XP/2003/Vista OS
+POTS    = Plain Old Telephone System/System
+Sysop   = System Operator (of a BBS)
+Telnet  = Teletype Network protocol (over TCP, see RFC 854)
+TCP     = Transmission Control Protocol (over IP)
+Win32   = 32-bit versions of Windows (from Windows 95 through Windows Vista)
 
 
 Support
 -------
-For technical support (including bug reports), see 
+For technical support (including bug reports and feature requests), see 
 http://www.synchro.net/docs/support.html for details.
+
+/* End of file */
