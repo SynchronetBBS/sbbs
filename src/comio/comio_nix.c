@@ -150,12 +150,26 @@ int comGetModemStatus(COM_HANDLE handle)
 
 BOOL comRaiseDTR(COM_HANDLE handle)
 {
-	return(ioctl(handle, TIOCSDTR)==0);
+	int status;
+
+	if(ioctl(handle, TIOCMGET, &status)==-1)
+		return FALSE;
+	status |= TIOCM_DTR;
+	if(ioctl(handle, TIOCMSET, &status)==-1)
+		return FALSE;
+	return TRUE;
 }
 
 BOOL comLowerDTR(COM_HANDLE handle)
 {
-	return(ioctl(handle, TIOCCDTR)==0);
+	int status;
+
+	if(ioctl(handle, TIOCMGET, &status)==-1)
+		return FALSE;
+	status &= ~TIOCM_DTR;
+	if(ioctl(handle, TIOCMSET, &status)==-1)
+		return FALSE;
+	return TRUE;
 }
 
 BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
