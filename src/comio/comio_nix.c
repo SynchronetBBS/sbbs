@@ -205,3 +205,7 @@ BOOL comPurgeOutput(COM_HANDLE handle)
 	return(tcflush(handle, TCOFLUSH)==0);
 }
 
+BOOL comDrainOutput(COM_HANDLE handle)
+{
+	return(tcdrain(handle)==0);
+}
