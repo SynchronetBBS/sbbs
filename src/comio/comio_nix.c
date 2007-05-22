@@ -183,15 +183,11 @@ BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
 
 BOOL comPurgeInput(COM_HANDLE handle)
 {
-	int what = FREAD;
-
-	return(ioctl(handle, TIOCFLUSH, &what)==0);
+	return(tcflush(handle, TCIFLUSH)==0);
 }
 
 BOOL comPurgeOutput(COM_HANDLE handle)
 {
-	int what = FWRITE;
-
-	return(ioctl(handle, TIOCFLUSH, &what)==0);
+	return(tcflush(handle, TCOFLUSH)==0);
 }
 
