@@ -54,11 +54,11 @@ COM_HANDLE comOpen(const char* device)
 	COM_HANDLE handle;
 	struct termios t;
 
-	if((handle=open(device, O_NONBLOCK|O_RDWR)==INVALID_HANDLE_VALUE)
+	if((handle=open(device, O_NONBLOCK|O_RDWR))==COM_HANDLE_INVALID)
 		return COM_HANDLE_INVALID;
 
 	if(tcgetattr(handle, &t)==-1) {
-		close(device);
+		close(handle);
 		return COM_HANDLE_INVALID;
 	}
 
@@ -93,7 +93,7 @@ Fun snippet from the FreeBSD manpage:
 				);
 	t.c_lflag = 0;	/* No local modes */
 	if(tcsetattr(handle, TCSANOW, &t)==-1) {
-		close(device);
+		close(handle);
 		return COM_HANDLE_INVALID;
 	}
 	
@@ -130,8 +130,8 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	if(tcgetattr(handle, &t))
 		return FALSE;
 
-	cfsetispeed(&t);
-	cfsetospeed(&t);
+	cfsetispeed(&t, rate);
+	cfsetospeed(&t, rate);
 	if(tcsetattr(handle, TCSANOW, &t)==-1)
 		return FALSE;
 
