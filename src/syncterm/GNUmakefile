@@ -2,6 +2,7 @@ SRC_ROOT	:=	..
 include ${SRC_ROOT}/build/Common.gmake
 
 CFLAGS	+=	-I/usr/local/include	# cryptlib.h lives here by default
+CFLAGS	+=	-I../../include/cryptlib	# cryptlib.h lives here in CVS
 
 ifeq ($(os),sunos)    # Solaris
  LDFLAGS += -lnsl -lrt -lcurses -ldl
