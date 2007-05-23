@@ -657,11 +657,14 @@ void curs_gotoxy(int x, int y)
 
 void curs_suspend(void)
 {
+	noraw();
 	endwin();
 }
 
 void curs_resume(void)
 {
+	raw();
+	timeout(10);
 	refresh();
 }
 
@@ -692,8 +695,9 @@ int curs_initciolib(long inmode)
 	nonl();
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
-	raw();
 	halfdelay(1);
+	raw();
+	timeout(10);
 	atexit(curs_suspend);
 
 	/* Set up color pairs */
