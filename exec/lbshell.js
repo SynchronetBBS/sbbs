@@ -117,8 +117,8 @@ function get_message()
 	}
 
 	/* Time left warning? */
-	if((bbs.timeleft/60)/(5-console.timeleft_warning) && (!user.compare_ars("SYSOP")))
-		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.timeleft/60,(bbs.timeleft/60)?"s":""),MessageWindow_Attr,true);
+	if((bbs.time_left/60)/(5-console.timeleft_warning) && (!user.compare_ars("SYSOP")))
+		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 
 	/* New day? */
 //	if(!(system.status & SS_NEWDAY))
