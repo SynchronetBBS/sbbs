@@ -123,6 +123,12 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(-1);
 	}
+	if(!comRaiseDTR(com)) {
+		uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
+						"comRaiseDTR() returned an error.\n");
+		conn_api.terminate=-1;
+		return(-1);
+	}
 
 	uifc.pop("Initializing...");
 
