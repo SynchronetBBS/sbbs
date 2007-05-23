@@ -152,13 +152,13 @@ int comGetModemStatus(COM_HANDLE handle)
 BOOL comRaiseDTR(COM_HANDLE handle)
 {
 	int flags = TIOCM_DTR;
-	return(ioctl(handle, TIOCMBIS, &flags)==0)
+	return(ioctl(handle, TIOCMBIS, &flags)==0);
 }
 
 BOOL comLowerDTR(COM_HANDLE handle)
 {
 	int flags = TIOCM_DTR;
-	return(ioctl(handle, TIOCMBIC, &flags)==0)
+	return(ioctl(handle, TIOCMBIC, &flags)==0);
 }
 
 BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
