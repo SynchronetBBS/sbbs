@@ -85,7 +85,7 @@ struct video_params vparams[39] = {
 	{C128_80X25, COLOUR_PALETTE, 80, 25, 0, 7, 8, 8},
 };
 
-unsigned char palettes[3][16] = {
+unsigned char palettes[4][16] = {
 	/* Mono */
 	{ 0x00, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
 	  0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07
@@ -97,18 +97,18 @@ unsigned char palettes[3][16] = {
 	/* Colour */
 	{ 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
 	  0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
-	}
+	},
 	/* C64 */
 	{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 
 	  0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
 	}
 };
 
-struct dac_colors dac_default[16] = {
+struct dac_colors dac_default[32] = {
 	{0, 0, 0},    {0, 0, 168},   {0, 168, 0},   {0, 168, 168},
 	{168, 0, 0},   {168, 0, 168},  {168, 84, 0},  {168, 168, 168},
 	{84, 84, 84}, {84, 84, 255}, {84, 255, 84}, {84, 255, 255},
-	{255, 84, 84}, {255, 84, 255}, {255, 255, 84}, {255, 255, 255}
+	{255, 84, 84}, {255, 84, 255}, {255, 255, 84}, {255, 255, 255},
 	/* C64 colours */
 	/* Black, White, Red, Cyan, Purple, Green, Blue, Yellow */
 	/* Orange, Brown, Lt Red, Dk Grey, Grey, Lt Green, Lt Blue, Lt Grey */
