@@ -1671,7 +1671,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									k+=128;
 								ch[0] = k;
 								ch[1] = cterm.attr;
-								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,ch);
+								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
 								if(wherex()==cterm.width) {
 									if(wherey()==cterm.height) {
 										scrollup();
