@@ -1478,9 +1478,9 @@ update_pixels()
     for (i = 0; i < 16; i++) {
 		XColor color;
 
-	    color.red   = dac_default16[palette[i]].red << 10;
-	    color.green = dac_default16[palette[i]].green << 10;
-	    color.blue  = dac_default16[palette[i]].blue << 10;
+	    color.red   = dac_default[palette[i]].red << 8;
+	    color.green = dac_default[palette[i]].green << 8;
+	    color.blue  = dac_default[palette[i]].blue << 8;
 		if (x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color)) {
 		    pixels[i] = color.pixel;
 		} else if (i < 7)

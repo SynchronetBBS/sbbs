@@ -1140,9 +1140,9 @@ int sdl_setup_colours(SDL_Surface *surf, int xor)
 
 	sdl.mutexP(sdl_vstatlock);
 	for(i=0; i<16; i++) {
-		co[i^xor].r=dac_default256[vstat.palette[i]].red;
-		co[i^xor].g=dac_default256[vstat.palette[i]].green;
-		co[i^xor].b=dac_default256[vstat.palette[i]].blue;
+		co[i^xor].r=dac_default[vstat.palette[i]].red;
+		co[i^xor].g=dac_default[vstat.palette[i]].green;
+		co[i^xor].b=dac_default[vstat.palette[i]].blue;
 	}
 	sdl.mutexV(sdl_vstatlock);
 	sdl.SetColors(surf, co, 0, 16);
@@ -1186,17 +1186,17 @@ int sdl_draw_one_char(unsigned short sch, unsigned int x, unsigned int y, struct
 
 	ch=(sch >> 8) & 0x0f;
 	if(lastfg!=ch) {
-		co.r=dac_default256[vs->palette[ch]].red;
-		co.g=dac_default256[vs->palette[ch]].green;
-		co.b=dac_default256[vs->palette[ch]].blue;
+		co.r=dac_default[vs->palette[ch]].red;
+		co.g=dac_default[vs->palette[ch]].green;
+		co.b=dac_default[vs->palette[ch]].blue;
 		sdl.SetColors(sdl_font, &co, 1, 1);
 		lastfg=ch;
 	}
 	ch=(sch >> 12) & 0x07;
 	if(lastbg!=ch) {
-		co.r=dac_default256[vs->palette[ch]].red;
-		co.g=dac_default256[vs->palette[ch]].green;
-		co.b=dac_default256[vs->palette[ch]].blue;
+		co.r=dac_default[vs->palette[ch]].red;
+		co.g=dac_default[vs->palette[ch]].green;
+		co.b=dac_default[vs->palette[ch]].blue;
 		sdl.SetColors(sdl_font, &co, 0, 1);
 		lastbg=ch;
 	}
