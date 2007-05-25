@@ -1380,6 +1380,11 @@ BOOL doterm(struct bbslist *bbs)
 			if(key && cterm.emulation == CTERM_EMULATION_PETASCII) {
 				/* Translate keys to PETSCII */
 				switch(key) {
+					case '\r':
+					case '\n':
+						ch[0]=13;
+						conn_send(ch,1,0);
+						break;
 					case CIO_KEY_DOWN:
 						ch[0]=17;
 						conn_send(ch,1,0);
