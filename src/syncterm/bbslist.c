@@ -19,7 +19,7 @@
 #include "window.h"
 #include "term.h"
 
-char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", NULL};
+char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "C64", "C128 (40col)", "C128 (80col)", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
@@ -397,6 +397,15 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 								"Select the screen size for this connection\n";
 				uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),NULL,"Screen Mode",screen_modes);
 				iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
+				if(item->screen_mode == SCREEN_MODE_C64) {
+					strcpy(item->font,font_names[33]);
+					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+				}
+				if(item->screen_mode == SCREEN_MODE_C128_40
+						|| item->screen_mode == SCREEN_MODE_C128_80) {
+					strcpy(item->font,font_names[35]);
+					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+				}
 				changed=1;
 				break;
 			case 9:
@@ -992,6 +1001,15 @@ struct bbslist *show_bbslist(int mode)
 										break;
 									case SCREEN_MODE_80X60:
 										textmode(C80X60);
+										break;
+									case SCREEN_MODE_C64:
+										textmode(C64_40X25);
+										break;
+									case SCREEN_MODE_C128_40:
+										textmode(C128_40X25);
+										break;
+									case SCREEN_MODE_C128_80:
+										textmode(C128_80X25);
 										break;
 								}
 								init_uifc(TRUE, TRUE);

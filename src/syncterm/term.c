@@ -1073,6 +1073,12 @@ BOOL doterm(struct bbslist *bbs)
 		memset(scrollback_buf,0,term.width*2*settings.backlines);
 	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf);
 	cterm.music_enable=bbs->music;
+	switch(bbs->screen_mode) {
+		case SCREEN_MODE_C64:
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			cterm.emulation = CTERM_EMULATION_PETASCII;
+	}
 	ch[1]=0;
 	zrqbuf[0]=0;
 #ifdef GUTS_BUILTIN

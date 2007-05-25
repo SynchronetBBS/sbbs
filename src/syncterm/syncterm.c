@@ -977,6 +977,15 @@ int main(int argc, char **argv)
 			case SCREEN_MODE_80X60:
 				textmode(C80X60);
 				break;
+			case SCREEN_MODE_C64:
+				textmode(C64_40X25);
+				break;
+			case SCREEN_MODE_C128_40:
+				textmode(C128_40X25);
+				break;
+			case SCREEN_MODE_C128_80:
+				textmode(C128_80X25);
+				break;
 		}
 	}
 
@@ -1065,6 +1074,15 @@ int main(int argc, char **argv)
 					break;
 				case SCREEN_MODE_80X60:
 					textmode(C80X60);
+					break;
+				case SCREEN_MODE_C64:
+					textmode(C64_40X25);
+					break;
+				case SCREEN_MODE_C128_40:
+					textmode(C128_40X25);
+					break;
+				case SCREEN_MODE_C128_80:
+					textmode(C128_80X25);
 					break;
 			}
 			sprintf(str,"SyncTERM - %s",bbs->name);
