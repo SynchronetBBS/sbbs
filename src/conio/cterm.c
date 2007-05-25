@@ -1627,10 +1627,6 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								break;
 
 							/* Extras */
-							case 3:
-								break;
-							case 10:
-								break;
 							case 7:			/* Beep */
 								#ifdef __unix__
 									putch(7);
@@ -1642,8 +1638,9 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 							/* Translate to screen codes */
 							default:
 								k=buf[j];
-								if(k<32)
+								if(k<32) {
 									break;
+								}
 								else if(k<64) {
 									/* No translation */
 								}
@@ -1653,8 +1650,9 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								else if(k<128) {
 									k -= 32;
 								}
-								else if(k<160)
+								else if(k<160) {
 									break;
+								}
 								else if(k<192) {
 									k -= 64;
 								}
@@ -1663,7 +1661,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								}
 								else {
 									if(k==255)
-										k=94;
+										k = 94;
 									else
 										k -= 128;
 								}
@@ -1672,6 +1670,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								ch[0] = k;
 								ch[1] = cterm.attr;
 								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+								ch[1]=0;
 								if(wherex()==cterm.width) {
 									if(wherey()==cterm.height) {
 										scrollup();
