@@ -811,11 +811,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					if(i>cterm.width-wherex()+1)
 						i=cterm.width-wherex()+1;
 					p2=(char *)alloca((cterm.width-wherex()+1)*2);
-					gettext(cterm.x+wherex(),cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
+					gettext(cterm.x+wherex()-1+i,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
 					j=(cterm.width-wherex())*2;
-					for(k=0;k<0;k++) {
-						p2[j++]=' ';
+					for(k=0;k<i;k++) {
 						p2[j++]=cterm.attr;
+						p2[j++]=' ';
 					}
 					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p2);
 					break;
@@ -1307,6 +1307,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	struct text_info	ti;
 	int	olddmc;
 	int oldptnm;
+	unsigned char *p;
 
 	oldptnm=puttext_can_move;
 	puttext_can_move=1;
@@ -1467,47 +1468,255 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 					}
 				}
 				else {
-					switch(buf[j]) {
-						case 0:
-							break;
-						case 7:			/* Beep */
-							ctputs(prn);
-							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-								fputs("\t", cterm.logfile);
-							#ifdef __unix__
-								putch(7);
-							#else
-								MessageBeep(MB_OK);
-							#endif
-							break;
-						case 12:		/* ^L - Clear screen */
-							ctputs(prn);
-							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-								fputs("\t", cterm.logfile);
-							clearscreen((char)cterm.attr);
-							gotoxy(1,1);
-							break;
-						case 27:		/* ESC */
-							ctputs(prn);
-							prn[0]=0;
-							cterm.sequence=1;
-							break;
-						case '\t':
-							ctputs(prn);
-							prn[0]=0;
-							if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-								fputs("\t", cterm.logfile);
-							for(k=0;k<11;k++) {
-								if(cterm_tabs[k]>wherex()) {
-									gotoxy(cterm_tabs[k],wherey());
-									break;
+					if(cterm.emulation == CTERM_EMULATION_PETASCII) {
+						switch(buf[j]) {
+							case 5:		/* White */
+							case 28:	/* Red */
+							case 30:	/* Green */
+							case 31:	/* Blue */
+							case 129:	/* Orange */
+							case 144:	/* Black */
+							case 149:	/* Brown */
+							case 150:	/* Light Red */
+							case 151:	/* Dark Gray */
+							case 152:	/* Grey */
+							case 153:	/* Light Green */
+							case 154:	/* Light Blue */
+							case 155:	/* Light Gray */
+							case 156:	/* Purple */
+							case 158:	/* Yellow */
+							case 159:	/* Cyan */
+								cterm.attr &= 0xf0;
+								switch(buf[j]) {
+									case 5:		/* White */
+										cterm.attr |= 1;
+										break;
+									case 28:	/* Red */
+										cterm.attr |= 2;
+										break;
+									case 30:	/* Green */
+										cterm.attr |= 5;
+										break;
+									case 31:	/* Blue */
+										cterm.attr |= 6;
+										break;
+									case 129:	/* Orange */
+										cterm.attr |= 8;
+										break;
+									case 144:	/* Black */
+										cterm.attr |= 0;
+										break;
+									case 149:	/* Brown */
+										cterm.attr |= 9;
+										break;
+									case 150:	/* Light Red */
+										cterm.attr |= 10;
+										break;
+									case 151:	/* Dark Gray */
+										cterm.attr |= 11;
+										break;
+									case 152:	/* Grey */
+										cterm.attr |= 12;
+										break;
+									case 153:	/* Light Green */
+										cterm.attr |= 13;
+										break;
+									case 154:	/* Light Blue */
+										cterm.attr |= 14;
+										break;
+									case 155:	/* Light Gray */
+										cterm.attr |= 15;
+										break;
+									case 156:	/* Purple */
+										cterm.attr |= 4;
+										break;
+									case 158:	/* Yellow */
+										cterm.attr |= 7;
+										break;
+									case 159:	/* Cyan */
+										cterm.attr |= 3;
+										break;
 								}
-							}
-							break;
-						default:
-							strcat(prn,ch);
+								textattr(cterm.attr);
+								break;
+
+							/* Movement */
+							case 13:	/* "\r\n" and disabled reverse. */
+							case 141:
+								gotoxy(1, wherey());
+								/* Fall-through */
+							case 17:
+								if(wherey()==cterm.height)
+									scrollup();
+								else
+									gotoxy(wherex(), wherey()+1);
+								break;
+							case 147:
+								clearscreen(cterm.attr);
+								/* Fall through */
+							case 19:
+								gotoxy(1,1);
+								break;
+							case 20:	/* Delete (Wrapping backspace) */
+								if(wherex()==1) {
+									if(wherey()==1)
+										break;
+									gotoxy(cterm.width, wherey()-1);
+								}
+								else
+									gotoxy(wherex()-1, wherey());
+								p=(char *)alloca((cterm.width-wherex()+1)*2);
+								gettext(cterm.x+wherex(),cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+								k=(cterm.width-wherex())*2;
+								p[k++]=' ';
+								p[k++]=cterm.attr;
+								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+								break;
+							case 157:	/* Cursor Left (wraps) */
+								if(wherex()==1) {
+									if(wherey() > 1)
+										gotoxy(cterm.width, wherey()-1);
+								}
+								else
+									gotoxy(wherex()-1, wherey());
+								break;
+							case 29:	/* Cursor Right (wraps) */
+								if(wherex()==cterm.width) {
+									if(wherey()==cterm.height) {
+										scrollup();
+										gotoxy(1,wherey());
+									}
+									else
+										gotoxy(1,wherey()+1);
+								}
+								else
+									gotoxy(wherex()+1,wherey());
+								break;
+							case 145:	/* Cursor Up (No scroll */
+								if(wherey()>1)
+									gotoxy(wherex(),wherey()-1);
+								break;
+							case 148:	/* Insert TODO verify last column */
+										/* CGTerm does nothing there... we */
+										/* Erase under cursor. */
+								p=(char *)alloca((cterm.width-wherex()+1)*2);
+								gettext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-2,cterm.y+wherey()-1,p+2);
+								p[0]=' ';
+								p[1]=cterm.attr;
+								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+								break;
+
+							/* Font change... whee! */
+							case 14:	/* Lower case font */
+								if(ti.currmode == C64_40X25)
+									setfont(33,FALSE);
+								else	/* Assume C128 */
+									setfont(35,FALSE);
+								break;
+							case 142:	/* Upper case font */
+								if(ti.currmode == C64_40X25)
+									setfont(32,FALSE);
+								else	/* Assume C128 */
+									setfont(34,FALSE);
+								break;
+							case 18:	/* Reverse mode on */
+								cterm.c64reversemode = 1;
+								break;
+							case 146:	/* Reverse mode off */
+								cterm.c64reversemode = 0;
+								break;
+
+							/* Extras */
+							case 3:
+								break;
+							case 10:
+								break;
+							case 7:			/* Beep */
+								#ifdef __unix__
+									putch(7);
+								#else
+									MessageBeep(MB_OK);
+								#endif
+								break;
+
+							/* Translate to screen codes */
+							default:
+								k=buf[j];
+								if(k<32)
+									break;
+								else if(k<64) {
+									/* No translation */
+								}
+								else if(k<96) {
+									k -= 64;
+								}
+								else if(k<128) {
+									k -= 32;
+								}
+								else if(k<160)
+									break;
+								else if(k<192) {
+									k -= 64;
+								}
+								else if(k<224) {
+									k -= 128;
+								}
+								else {
+									if(k==255)
+										k=94;
+									else
+										k -= 128;
+								}
+								if(cterm.c64reversemode)
+									k+=128;
+								ch[0] = k;
+								ch[1]=0;
+								ctputs(ch);
+						}
+					}
+					else {	/* ANSI-BBS */
+						switch(buf[j]) {
+							case 0:
+								break;
+							case 7:			/* Beep */
+								ctputs(prn);
+								prn[0]=0;
+								if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
+									fputs("\x07", cterm.logfile);
+								#ifdef __unix__
+									putch(7);
+								#else
+									MessageBeep(MB_OK);
+								#endif
+								break;
+							case 12:		/* ^L - Clear screen */
+								ctputs(prn);
+								prn[0]=0;
+								if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
+									fputs("\x0c", cterm.logfile);
+								clearscreen((char)cterm.attr);
+								gotoxy(1,1);
+								break;
+							case 27:		/* ESC */
+								ctputs(prn);
+								prn[0]=0;
+								cterm.sequence=1;
+								break;
+							case '\t':
+								ctputs(prn);
+								prn[0]=0;
+								if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
+									fputs("\t", cterm.logfile);
+								for(k=0;k<11;k++) {
+									if(cterm_tabs[k]>wherex()) {
+										gotoxy(cterm_tabs[k],wherey());
+										break;
+									}
+								}
+								break;
+							default:
+								strcat(prn,ch);
+						}
 					}
 				}
 			}

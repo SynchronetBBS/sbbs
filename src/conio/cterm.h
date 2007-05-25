@@ -52,6 +52,8 @@ enum {
 #define CTERM_LOG_PAUSED	0x80
 
 struct cterminal {
+	int emulation;
+	int c64reversemode;
 	int	height;
 	int	width;
 	int	x;
@@ -88,6 +90,11 @@ struct cterminal {
 #define CTERM_MUSIC_SYNCTERM	0
 #define	CTERM_MUSIC_BANSI		1
 #define	CTERM_MUSIC_ENABLED		2
+
+enum {
+	 CTERM_EMULATION_ANSI_BBS
+	,CTERM_EMULATION_PETASCII
+};
 
 #ifdef __cplusplus
 extern "C" {
