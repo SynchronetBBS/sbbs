@@ -1388,6 +1388,7 @@ BOOL doterm(struct bbslist *bbs)
 						ch[0]=19;
 						conn_send(ch,1,0);
 						break;
+					case '\b':
 					case CIO_KEY_DC:		/* "Delete" key */
 						ch[0]=20;
 						conn_send(ch,1,0);
