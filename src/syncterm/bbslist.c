@@ -405,6 +405,8 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 						|| item->screen_mode == SCREEN_MODE_C128_80) {
 					strcpy(item->font,font_names[35]);
 					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+					item->nostatus = 1;
+					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 				}
 				changed=1;
 				break;
