@@ -168,7 +168,7 @@ enum text_modes
 
     C4350    = C80X50,	/* this is actually "64" in the "real" conio */
 
-    _ORIGMODE = 65      /* original mode at program startup */
+    _ORIGMODE = 65,      /* original mode at program startup */
 
     C64_40X25 = 147,	/* Commodore 64 40x25 colour mode */
     C128_40X25,		/* Commodore 128 40x25 colour mode */
