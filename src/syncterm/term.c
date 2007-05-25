@@ -1208,12 +1208,16 @@ BOOL doterm(struct bbslist *bbs)
 			key=getch();
 			if(key==0 || key==0xff)
 				key|=getch()<<8;
+
+			/* These keys are SyncTERM control keys */
+			/* key is set to zero if consumed */
 			switch(key) {
 				case CIO_KEY_MOUSE:
 					getmouse(&mevent);
 					switch(mevent.event) {
 						case CIOLIB_BUTTON_1_DRAG_START:
 							mousedrag(scrollback_buf);
+							key = 0;
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
@@ -1222,94 +1226,31 @@ BOOL doterm(struct bbslist *bbs)
 								conn_send(p,strlen(p),0);
 								free(p);
 							}
+							key = 0;
 							break;
 					}
 
-					break;
-				case CIO_KEY_LEFT:
-					conn_send("\033[D",3,0);
-					break;
-				case CIO_KEY_RIGHT:
-					conn_send("\033[C",3,0);
-					break;
-				case CIO_KEY_UP:
-					conn_send("\033[A",3,0);
-					break;
-				case CIO_KEY_DOWN:
-					conn_send("\033[B",3,0);
-					break;
-				case CIO_KEY_HOME:
-					conn_send("\033[H",3,0);
-					break;
-				case CIO_KEY_END:
-#ifdef CIO_KEY_SELECT
-				case CIO_KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
-#endif
-					conn_send("\033[K",3,0);
-					break;
-				case CIO_KEY_DC:		/* "Delete" key, send ASCII 127 (DEL) */
-					conn_send("\x7f",1,0);
-					break;
-				case CIO_KEY_NPAGE:		/* Page down */
-					conn_send("\033[U",3,0);
-					break;
-				case CIO_KEY_PPAGE:	/* Page up */
-					conn_send("\033[V",3,0);
-					break;
-				case CIO_KEY_F(1):
-					conn_send("\033OP",3,0);
-					break;
-				case CIO_KEY_F(2):
-					conn_send("\033OQ",3,0);
-					break;
-				case CIO_KEY_F(3):
-					conn_send("\033OR",3,0);
-					break;
-				case CIO_KEY_F(4):
-					conn_send("\033OS",3,0);
-					break;
-				case CIO_KEY_F(5):
-					conn_send("\033Ot",3,0);
-					break;
-				case CIO_KEY_F(6):
-					conn_send("\033[17~",5,0);
-					break;
-				case CIO_KEY_F(7):
-					conn_send("\033[18~",5,0);
-					break;
-				case CIO_KEY_F(8):
-					conn_send("\033[19~",5,0);
-					break;
-				case CIO_KEY_F(9):
-					conn_send("\033[20~",5,0);
-					break;
-				case CIO_KEY_F(10):
-					conn_send("\033[21~",5,0);
-					break;
-				case CIO_KEY_F(11):
-					conn_send("\033[23~",5,0);
-					break;
-				case CIO_KEY_F(12):
-					conn_send("\033[24~",5,0);
-					break;
-				case CIO_KEY_IC:
-					conn_send("\033[@",3,0);
+					key = 0;
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
 					viewscroll();
 					showmouse();
+					key = 0;
 					break;
 				case 0x2e00:	/* ALT-C - Capture */
 					capture_control(bbs);
 					showmouse();
+					key = 0;
 					break;
 				case 0x2000:	/* ALT-D - Download */
 					zmodem_download(bbs);
 					showmouse();
+					key = 0;
 					break;
 				case 0x2100:	/* ALT-F */
 					font_control(bbs);
 					showmouse();
+					key = 0;
 					break;
 				case 0x2600:	/* ALT-L */
 					conn_send(bbs->user,strlen(bbs->user),0);
@@ -1322,21 +1263,22 @@ BOOL doterm(struct bbslist *bbs)
 						conn_send(bbs->syspass,strlen(bbs->syspass),0);
 						conn_send("\r",1,0);
 					}
+					key = 0;
 					break;
 				case 0x3200:	/* ALT-M */
 					music_control(bbs);
 					showmouse();
+					key = 0;
 					break;
 				case 0x1600:	/* ALT-U - Upload */
 					begin_upload(bbs, FALSE);
 					showmouse();
+					key = 0;
 					break;
 				case 17:		/* CTRL-Q */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
 							&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
 							&& cio_api.mode!=CIOLIB_MODE_ANSI) {
-						ch[0]=key;
-						conn_send(ch,1,0);
 						break;
 					}
 					/* FALLTHROUGH for curses/ansi modes */
@@ -1351,7 +1293,7 @@ BOOL doterm(struct bbslist *bbs)
 						char *buf;
 						struct	text_info txtinfo;
 
-    					gettextinfo(&txtinfo);
+   						gettextinfo(&txtinfo);
 						buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 						i=0;
@@ -1372,13 +1314,12 @@ BOOL doterm(struct bbslist *bbs)
 						gotoxy(txtinfo.curx,txtinfo.cury);
 						showmouse();
 					}
+					key = 0;
 					break;
 				case 19:	/* CTRL-S */
 					if(cio_api.mode!=CIOLIB_MODE_CURSES
 							&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
 							&& cio_api.mode!=CIOLIB_MODE_ANSI) {
-						ch[0]=key;
-						conn_send(ch,1,0);
 						break;
 					}
 					/* FALLTHROUGH for curses/ansi modes */
@@ -1418,12 +1359,14 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					showmouse();
 					gotoxy(i,j);
+					key = 0;
 					break;
 				case 0x9800:	/* ALT-Up */
 					if(speed)
 						speed=rates[get_rate_num(speed)+1];
 					else
 						speed=rates[0];
+					key = 0;
 					break;
 				case 0xa000:	/* ALT-Down */
 					i=get_rate_num(speed);
@@ -1431,15 +1374,189 @@ BOOL doterm(struct bbslist *bbs)
 						speed=0;
 					else
 						speed=rates[i-1];
+					key = 0;
 					break;
-				case '\b':
-					key='\b';
-					/* FALLTHROUGH to default */
-				default:
-					if(key<256) {
+			}
+			if(key && cterm.emulation == CTERM_EMULATION_PETASCII) {
+				/* Translate keys to PETSCII */
+				switch(key) {
+					case CIO_KEY_DOWN:
+						ch[0]=17;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_HOME:
+						ch[0]=19;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_DC:		/* "Delete" key */
+						ch[0]=20;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_RIGHT:
+						ch[0]=29;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(1):
+						ch[0]=133;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(3):
+						ch[0]=134;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(5):
+						ch[0]=135;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(7):
+						ch[0]=136;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(2):
+						ch[0]=137;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(4):
+						ch[0]=138;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(6):
+						ch[0]=139;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_F(8):
+						ch[0]=140;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_UP:
+						ch[0]=145;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_IC:
+						ch[0]=148;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_LEFT:
+						ch[0]=157;
+						conn_send(ch,1,0);
+						break;
+					default:
+						if(key<256) {
+							/* ASCII Translation */
+							if(key<32) {
+								break;
+							}
+							else if(key<65) {
+								ch[0]=key;
+								conn_send(ch,1,0);
+							}
+							else if(key<91) {
+								ch[0]=tolower(key);
+								conn_send(ch,1,0);
+							}
+							else if(key<96) {
+								ch[0]=key;
+								conn_send(ch,1,0);
+							}
+							else if(key==96) {
+								break;
+							}
+							else if(key<123) {
+								ch[0]=toupper(key);
+								conn_send(ch,1,0);
+							}
+						}
+						break;
+				}
+			}
+			else if(key) {
+				switch(key) {
+					case CIO_KEY_LEFT:
+						conn_send("\033[D",3,0);
+						break;
+					case CIO_KEY_RIGHT:
+						conn_send("\033[C",3,0);
+						break;
+					case CIO_KEY_UP:
+						conn_send("\033[A",3,0);
+						break;
+					case CIO_KEY_DOWN:
+						conn_send("\033[B",3,0);
+						break;
+					case CIO_KEY_HOME:
+						conn_send("\033[H",3,0);
+						break;
+					case CIO_KEY_END:
+#ifdef CIO_KEY_SELECT
+					case CIO_KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
+#endif
+						conn_send("\033[K",3,0);
+						break;
+					case CIO_KEY_DC:		/* "Delete" key, send ASCII 127 (DEL) */
+						conn_send("\x7f",1,0);
+						break;
+					case CIO_KEY_NPAGE:		/* Page down */
+						conn_send("\033[U",3,0);
+						break;
+					case CIO_KEY_PPAGE:	/* Page up */
+						conn_send("\033[V",3,0);
+						break;
+					case CIO_KEY_F(1):
+						conn_send("\033OP",3,0);
+						break;
+					case CIO_KEY_F(2):
+						conn_send("\033OQ",3,0);
+						break;
+					case CIO_KEY_F(3):
+						conn_send("\033OR",3,0);
+						break;
+					case CIO_KEY_F(4):
+						conn_send("\033OS",3,0);
+						break;
+					case CIO_KEY_F(5):
+						conn_send("\033Ot",3,0);
+						break;
+					case CIO_KEY_F(6):
+						conn_send("\033[17~",5,0);
+						break;
+					case CIO_KEY_F(7):
+						conn_send("\033[18~",5,0);
+						break;
+					case CIO_KEY_F(8):
+						conn_send("\033[19~",5,0);
+						break;
+					case CIO_KEY_F(9):
+						conn_send("\033[20~",5,0);
+						break;
+					case CIO_KEY_F(10):
+						conn_send("\033[21~",5,0);
+						break;
+					case CIO_KEY_F(11):
+						conn_send("\033[23~",5,0);
+						break;
+					case CIO_KEY_F(12):
+						conn_send("\033[24~",5,0);
+						break;
+					case CIO_KEY_IC:
+						conn_send("\033[@",3,0);
+						break;
+					case 17:		/* CTRL-Q */
 						ch[0]=key;
 						conn_send(ch,1,0);
-					}
+						break;
+					case 19:	/* CTRL-S */
+						ch[0]=key;
+						conn_send(ch,1,0);
+						break;
+					case '\b':
+						key='\b';
+						/* FALLTHROUGH to default */
+					default:
+						if(key<256) {
+							ch[0]=key;
+							conn_send(ch,1,0);
+						}
+				}
 			}
 		}
 		if(sleep)
