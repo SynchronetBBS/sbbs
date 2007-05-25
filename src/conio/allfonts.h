@@ -10,6 +10,6 @@ struct conio_font_data_struct {
 
 extern struct conio_font_data_struct conio_fontdata[257];
 
-#define CONIO_FIRST_FREE_FONT	32
+#define CONIO_FIRST_FREE_FONT	36
 
 #endif
