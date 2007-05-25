@@ -1670,8 +1670,19 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								if(cterm.c64reversemode)
 									k+=128;
 								ch[0] = k;
-								ch[1]=0;
-								ctputs(ch);
+								ch[1] = cterm.attr;
+								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,ch);
+								if(wherex()==cterm.width) {
+									if(wherey()==cterm.height) {
+										scrollup();
+										gotoxy(1,wherey());
+									}
+									else
+										gotoxy(1,wherey()+1);
+								}
+								else
+									gotoxy(wherex()+1,wherey());
+								break;
 						}
 					}
 					else {	/* ANSI-BBS */
