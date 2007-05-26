@@ -471,10 +471,23 @@ int sdl_init_mode(int mode)
     struct video_params vmode;
     int idx;			/* Index into vmode */
     int i;
+    int oldcols=vstat.cols;
 
 	sdl.mutexP(sdl_vstatlock);
+
 	if(load_vmode(&vstat, mode))
 		return(-1);
+
+	/* Deal with 40 col doubling */
+	if(oldcols != vstat.cols) {
+		if(oldcols == 40)
+			vstat.scaling /= 2;
+		if(vstat.cols == 40)
+			vstat.scaling *= 2;
+	}
+
+	if(vstat.scaling < 1)
+		vstat.scaling = 1;
 
 	sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
 

@@ -1496,6 +1496,7 @@ init_mode(int mode)
     struct video_params vmode;
     int idx;			/* Index into vmode */
     int i;
+    WORD oldcols = DpyCols;
 
     idx = find_vmode(mode);
     if (idx == -1) {
@@ -1513,6 +1514,19 @@ init_mode(int mode)
 	InitCE = CursEnd;
 
     vmem = (WORD *)realloc(vmem,vmode.cols*vmode.rows*sizeof(WORD));
+	/* Deal with 40 col doubling */
+	if(oldcols != DpyCols) {
+		if(oldcols == 40)
+			FontScale /= 2;
+		if(DpyCols == 40)
+			FontScale *= 2;
+	}
+
+	if(FontScale > MAX_SCALE)
+		FontScale = MAX_SCALE;
+
+	if(FontScale < 1)
+		FontScale = 1;
 
     /* Point 'palette[]' to the Attribute Controller space. We will only use
        the first 16 slots. */
