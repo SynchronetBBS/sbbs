@@ -662,18 +662,18 @@ void change_settings(void)
 				break;
 			case 4:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
-								"Your modem init string goes here.\n";
+								"Your modem init string goes here.\n"
 								"For reference, here are the expected settings and USR inits\n\n"
-								"State                      USR Init"
-								"------------------------------------"
-								"Echo on                    E1"
-								"Verbal result codes        Q0V1"
-								"Include connection speed   &X4"
-								"Normal CD Handling         C1"
-								"Locked speed               &B1"
-								"Normal DTR                 &D2"
-								"CTS/RTS Flow Control       &H1&R2"
-								"Disable Software Flow      &I0";
+								"State                      USR Init\n"
+								"------------------------------------\n"
+								"Echo on                    E1\n"
+								"Verbal result codes        Q0V1\n"
+								"Include connection speed   &X4\n"
+								"Normal CD Handling         C1\n"
+								"Locked speed               &B1\n"
+								"Normal DTR                 &D2\n"
+								"CTS/RTS Flow Control       &H1&R2\n"
+								"Disable Software Flow      &I0\n";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT);
 				iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
 				break;
