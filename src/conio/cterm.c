@@ -523,6 +523,11 @@ void clear2eol(void)
 
 void clearscreen(char attr)
 {
+	unsigned char *buf;
+	int i;
+	int width,height;
+	struct text_info ti;
+
 	if(cterm.scrollback!=NULL) {
 		cterm.backpos+=cterm.height;
 		if(cterm.backpos>cterm.backlines) {
@@ -531,7 +536,21 @@ void clearscreen(char attr)
 		}
 		gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.scrollback+(cterm.backpos-cterm.height)*cterm.width*2);
 	}
-	clrscr();
+	
+	gettextinfo(&ti);
+
+	width=ti.winright-ti.winleft+1;
+	height=ti.winbottom-ti.wintop+1;
+	buf=(unsigned char *)alloca(width*height*2);
+	for(i=0;i<width*height*2;) {
+		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+			buf[i++]=0;
+		else
+			buf[i++]=' ';
+		buf[i++]=attr;
+	}
+	ciolib_puttext(ti.winleft,ti.wintop,ti.winright,ti.winbottom,buf);
+	ciolib_gotoxy(1,1);
 }
 
 void do_ansi(char *retbuf, size_t retsize, int *speed)
@@ -1141,7 +1160,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 	cterm.sequence=0;
 }
 
-void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback)
+void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation)
 {
 	char	*revision="$Revision$";
 	char *in;
@@ -1170,12 +1189,13 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	cterm.scrollback=scrollback;
 	cterm.log=CTERM_LOG_NONE;
 	cterm.logfile=NULL;
+	cterm.emulation=emulation;
 	if(cterm.scrollback!=NULL)
 		memset(cterm.scrollback,0,cterm.width*2*cterm.backlines);
 	textattr(cterm.attr);
 	_setcursortype(_NORMALCURSOR);
 	window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
-	clrscr();
+	clearscreen(cterm.attr);
 	gotoxy(1,1);
 	strcpy(cterm.DA,"\x1b[=67;84;101;114;109;");
 	out=strchr(cterm.DA, 0);
