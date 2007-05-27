@@ -451,9 +451,9 @@ void scrolldown(void)
 	j=0;
 	for(i=0;i<cterm.width;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
-			buf[i++]=0;
+			buf[j++]=0;
 		else
-			buf[i++]=' ';
+			buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,buf);
@@ -478,9 +478,9 @@ void scrollup(void)
 	j=0;
 	for(i=0;i<cterm.width;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
-			buf[i++]=0;
+			buf[j++]=0;
 		else
-			buf[i++]=' ';
+			buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
@@ -502,9 +502,9 @@ void dellines(int lines)
 	k=cterm.width*lines;
 	for(i=0;i<k;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
-			buf[i++]=0;
+			buf[j++]=0;
 		else
-			buf[i++]=' ';
+			buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
@@ -520,9 +520,9 @@ void clear2bol(void)
 	j=0;
 	for(i=0;i<k;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
-			buf[i++]=0;
+			buf[j++]=0;
 		else
-			buf[i++]=' ';
+			buf[j++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,buf);
