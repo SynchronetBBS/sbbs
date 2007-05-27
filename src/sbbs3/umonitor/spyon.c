@@ -91,7 +91,7 @@ int spyon(char *sockname)  {
 	gotoxy(1,ti.screenheight);
 	cputs("Local spy mode... press CTRL-C to return to monitor");
 	clreol();
-	cterm_init(ti.screenheight-1,ti.screenwidth,1,1,0,NULL);
+	cterm_init(ti.screenheight-1,ti.screenwidth,1,1,0,NULL,CTERM_EMULATION_ANSI_BBS);
 	while(spy_sock!=INVALID_SOCKET)  {
 		struct timeval tv;
 		tv.tv_sec=0;
