@@ -12,7 +12,7 @@
 #include "conn.h"
 #include "uifcinit.h"
 
-static COM_HANDLE com=INVALID_SOCKET;
+static COM_HANDLE com=COM_HANDLE_INVALID;
 
 #ifdef __BORLANDC__
 #pragma argsused
@@ -26,10 +26,6 @@ void modem_input_thread(void *args)
 	conn_api.input_thread_running=1;
 	while(com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd=comReadBuf(com, conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
-		if(rd <= 0) {
-			if(comGetModemStatus(com)&COM_DCD == 0)
-				break;
-		}
 		buffered=0;
 		while(buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -37,6 +33,8 @@ void modem_input_thread(void *args)
 			buffered+=conn_buf_put(&conn_inbuf, conn_api.rd_buf+buffered, buffer);
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
+		if(comGetModemStatus(com)&COM_DCD == 0)
+			break;
 	}
 	conn_api.input_thread_running=0;
 }
@@ -176,7 +174,7 @@ int modem_connect(struct bbslist *bbs)
 			conn_api.terminate=-1;
 			return(-1);
 		}
-		if(strstr(respbuf, "ATA"))	/* Dial command echoed */
+		if(strstr(respbuf, bbs->addr))	/* Dial command echoed */
 			continue;
 		break;
 	}
