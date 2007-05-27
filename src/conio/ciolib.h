@@ -173,6 +173,7 @@ enum text_modes
     C64_40X25 = 147,	/* Commodore 64 40x25 colour mode */
     C128_40X25,		/* Commodore 128 40x25 colour mode */
     C128_80X25,		/* Commodore 128 40x25 colour mode */
+	ATARI_40X24,	/* Atari 800 40x24 colour text mode */
 };
 
 #define COLOR_MODE	C80

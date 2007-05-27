@@ -1146,6 +1146,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	char	*revision="$Revision$";
 	char *in;
 	char	*out;
+	int		i;
 
 	memset(&cterm, 0, sizeof(cterm));
 	cterm.x=xpos;
@@ -1204,6 +1205,12 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 		sem_init(&note_completed_sem,0,0);
 		sem_init(&playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, NULL);
+	}
+
+	/* Set up tabs for ATASCII */
+	if(cterm.emulation == CTERM_EMULATION_ATASCII) {
+		for(i=0; i<(sizeof(cterm_tabs)/sizeof(cterm_tabs[0])); i++)
+			cterm.escbuf[cterm_tabs[i]]=1;
 	}
 }
 
@@ -1468,7 +1475,160 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 					}
 				}
 				else {
-					if(cterm.emulation == CTERM_EMULATION_PETASCII) {
+					if(cterm.emulation == CTERM_EMULATION_ATASCII) {
+						switch(buf[j]) {
+							if(cterm.attr==7) {
+								case 28:	/* Up (No Scroll) */
+									if(wherey()>1)
+										gotoxy(wherex(),wherey()-1);
+									break;
+								case 29:	/* Down (Scrolls) */
+									if(wherey()==cterm.height)
+										scrollup();
+									else
+										gotoxy(wherex(), wherey()+1);
+									break;
+								case 30:	/* Left (Wraps) */
+									if(wherex()==1) {
+										if(wherey() > 1)
+											gotoxy(cterm.width, wherey()-1);
+									}
+									else
+										gotoxy(wherex()-1, wherey());
+									break;
+								case 31:	/* Right (Wraps) */
+									if(wherex()==cterm.width) {
+										if(wherey()==cterm.height) {
+											scrollup();
+											gotoxy(1,wherey());
+										}
+										else
+											gotoxy(1,wherey()+1);
+									}
+									else
+										gotoxy(wherex()+1,wherey());
+									break;
+								case 126:	/* Backspace (Wraps) */
+									if(wherex()==1) {
+										if(wherey()==1)
+											break;
+										gotoxy(cterm.width, wherey()-1);
+									}
+									else
+										gotoxy(wherex()-1, wherey());
+									/* Fall Through */
+								case 254:	/* Delete Char */
+									p=(char *)alloca((cterm.width-wherex()+1)*2);
+									gettext(cterm.x+wherex(),cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+									k=(cterm.width-wherex())*2;
+									p[k++]=' ';
+									p[k++]=cterm.attr;
+									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+									break;
+								case 156:	/* Delete Line */
+									dellines(1);
+									break;
+								case 157:	/* Insert Line */
+									if(cterm.height-wherey()) {
+										p=(char *)alloca((cterm.height-wherey())*cterm.width*2);
+										gettext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-2,p);
+										puttext(cterm.x,cterm.y+wherey(),cterm.x+cterm.width-1,cterm.y+cterm.height-1,p);
+									}
+									else {
+										p=(char *)alloca(cterm.width*2);
+									}
+									for(k=0;k<cterm.width;k++) {
+										p[k*2]=' ';
+										p[k*2+1]=cterm.attr;
+									}
+									puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+									break;
+								case 255:	/* Insert Char */
+									p=(char *)alloca((cterm.width-wherex()+1)*2);
+									gettext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-2,cterm.y+wherey()-1,p+2);
+									p[0]=' ';
+									p[1]=cterm.attr;
+									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
+									break;
+								case 125:	/* Clear Screen */
+									clearscreen(cterm.attr);
+									break;
+								case 253:	/* Beep */
+									#ifdef __unix__
+										putch(7);
+									#else
+										MessageBeep(MB_OK);
+									#endif
+									break;
+								/* We abuse the ESC buffer for tab stops */
+								case 127:	/* Tab */
+									if(wherex()==cterm.width)
+										break;
+									for(k=wherex()+1; k<=cterm.width; k++) {
+										if(cterm.escbuf[k]) {
+											gotoxy(k,wherey());
+											break;
+										}
+									}
+									break;
+								case 158:	/* Clear Tab */
+									cterm.escbuf[wherex()]=0;
+									break;
+								case 159:	/* Set Tab */
+									cterm.escbuf[wherex()]=1;
+									break;
+								case 27:	/* ESC */
+									cterm.attr=1;
+									break;
+							}
+							case 155:	/* Return (Clears ESC) */
+								cterm.attr=7;
+								gotoxy(1, wherey());
+								if(wherey()==cterm.height)
+									scrollup();
+								else
+									gotoxy(wherex(), wherey()+1);
+								break;
+							default:
+								cterm.attr=7;
+								/* Translate to screen codes */
+								k=buf[j];
+								if(k < 32) {
+									k +=64;
+								}
+								else if(k < 96) {
+									k -= 32;
+								}
+								else if(k < 128) {
+									/* No translation */
+								}
+								else if(k < 160) {
+									k +=64;
+								}
+								else if(k < 224) {
+									k -= 32;
+								}
+								else if(k < 256) {
+									/* No translation */
+								}
+								ch[0] = k;
+								ch[1] = cterm.attr;
+								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+								ch[1]=0;
+								if(wherex()==cterm.width) {
+									if(wherey()==cterm.height) {
+										scrollup();
+										gotoxy(1,wherey());
+									}
+									else
+										gotoxy(1,wherey()+1);
+								}
+								else
+									gotoxy(wherex()+1,wherey());
+								break;
+						}
+					}
+					else if(cterm.emulation == CTERM_EMULATION_PETASCII) {
 						switch(buf[j]) {
 							case 5:		/* White */
 							case 28:	/* Red */

@@ -94,6 +94,7 @@ struct cterminal {
 enum {
 	 CTERM_EMULATION_ANSI_BBS
 	,CTERM_EMULATION_PETASCII
+	,CTERM_EMULATION_ATASCII
 };
 
 #ifdef __cplusplus

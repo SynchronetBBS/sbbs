@@ -87,7 +87,7 @@ enum {
 	,C64_PALETTE
 };
 
-extern struct video_params vparams[39];
+extern struct video_params vparams[40];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
 extern unsigned char palettes[4][16];
 extern struct dac_colors dac_default[32];
