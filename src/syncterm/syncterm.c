@@ -986,6 +986,9 @@ int main(int argc, char **argv)
 			case SCREEN_MODE_C128_80:
 				textmode(C128_80X25);
 				break;
+			case SCREEN_MODE_ATARI:
+				textmode(ATARI_40X24);
+				break;
 		}
 	}
 
@@ -1057,8 +1060,6 @@ int main(int argc, char **argv)
 				}
 			}
 			uifcbail();
-			load_font_files();
-			setfont(find_font_id(bbs->font),TRUE);
 			switch(bbs->screen_mode) {
 				case SCREEN_MODE_80X25:
 					textmode(C80);
@@ -1084,7 +1085,12 @@ int main(int argc, char **argv)
 				case SCREEN_MODE_C128_80:
 					textmode(C128_80X25);
 					break;
+				case SCREEN_MODE_ATARI:
+					textmode(ATARI_40X24);
+					break;
 			}
+			load_font_files();
+			setfont(find_font_id(bbs->font),TRUE);
 			sprintf(str,"SyncTERM - %s",bbs->name);
 			settitle(str);
 			term.nostatus=bbs->nostatus;

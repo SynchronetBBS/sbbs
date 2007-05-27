@@ -19,7 +19,7 @@
 #include "window.h"
 #include "term.h"
 
-char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "C64", "C128 (40col)", "C128 (80col)", NULL};
+char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
@@ -400,10 +400,18 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				if(item->screen_mode == SCREEN_MODE_C64) {
 					strcpy(item->font,font_names[33]);
 					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+					item->nostatus = 1;
+					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 				}
 				if(item->screen_mode == SCREEN_MODE_C128_40
 						|| item->screen_mode == SCREEN_MODE_C128_80) {
 					strcpy(item->font,font_names[35]);
+					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+					item->nostatus = 1;
+					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+				}
+				if(item->screen_mode == SCREEN_MODE_ATARI) {
+					strcpy(item->font,font_names[36]);
 					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 					item->nostatus = 1;
 					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
@@ -1012,6 +1020,9 @@ struct bbslist *show_bbslist(int mode)
 										break;
 									case SCREEN_MODE_C128_80:
 										textmode(C128_80X25);
+										break;
+									case SCREEN_MODE_ATARI:
+										textmode(ATARI_40X24);
 										break;
 								}
 								init_uifc(TRUE, TRUE);

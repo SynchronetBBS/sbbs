@@ -27,7 +27,7 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 	if(!uifc_initialized) {
 		/* Get old font... */
 		uifc_old_font=getfont();
-		if(uifc_old_font >= 32 && uifc_old_font <= 34)
+		if(uifc_old_font >= 32 && uifc_old_font <= 36)
 			setfont(0, FALSE);
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;

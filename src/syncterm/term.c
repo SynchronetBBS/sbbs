@@ -1059,6 +1059,7 @@ BOOL doterm(struct bbslist *bbs)
 	int	updated=FALSE;
 	BOOL	sleep;
 	BOOL	rd;
+	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
@@ -1071,14 +1072,18 @@ BOOL doterm(struct bbslist *bbs)
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	if(scrollback_buf != NULL)
 		memset(scrollback_buf,0,term.width*2*settings.backlines);
-	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf);
-	cterm.music_enable=bbs->music;
 	switch(bbs->screen_mode) {
 		case SCREEN_MODE_C64:
 		case SCREEN_MODE_C128_40:
 		case SCREEN_MODE_C128_80:
-			cterm.emulation = CTERM_EMULATION_PETASCII;
+			emulation = CTERM_EMULATION_PETASCII;
+			break;
+		case SCREEN_MODE_ATARI:
+			emulation = CTERM_EMULATION_ATASCII;
+			break;
 	}
+	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
+	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
 #ifdef GUTS_BUILTIN
@@ -1377,7 +1382,69 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 			}
-			if(key && cterm.emulation == CTERM_EMULATION_PETASCII) {
+			if(key && cterm.emulation == CTERM_EMULATION_ATASCII) {
+				/* Translate keys to ATASCII */
+				switch(key) {
+					case '\r':
+					case '\n':
+						ch[0]=155;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_DOWN:
+						ch[0]=29;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_DC:		/* "Delete" key */
+					case '\b':				/* Backspace */
+						ch[0]=126;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_RIGHT:
+						ch[0]=31;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_UP:
+						ch[0]=28;
+						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_LEFT:
+						ch[0]=30;
+						conn_send(ch,1,0);
+						break;
+					case '\t':
+						ch[0]=127;
+						conn_send(ch,1,0);
+						break;
+					default:
+						if(key<256) {
+							/* ASCII Translation */
+							if(key<32) {
+								break;
+							}
+							else if(key<65) {
+								ch[0]=key;
+								conn_send(ch,1,0);
+							}
+							else if(key<91) {
+								ch[0]=tolower(key);
+								conn_send(ch,1,0);
+							}
+							else if(key<96) {
+								ch[0]=key;
+								conn_send(ch,1,0);
+							}
+							else if(key==96) {
+								break;
+							}
+							else if(key<123) {
+								ch[0]=toupper(key);
+								conn_send(ch,1,0);
+							}
+						}
+						break;
+				}
+			}
+			else if(key && cterm.emulation == CTERM_EMULATION_PETASCII) {
 				/* Translate keys to PETSCII */
 				switch(key) {
 					case '\r':
