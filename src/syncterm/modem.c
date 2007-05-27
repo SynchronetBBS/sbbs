@@ -136,29 +136,20 @@ int modem_connect(struct bbslist *bbs)
 	comWriteString(com, "\r");
 
 	/* Wait for "OK" */
-	if(modem_response(respbuf, sizeof(respbuf), 5)) {
-		modem_close();
-		uifc.pop(NULL);
-		uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
-						"The modem did not respond to the initializtion string\n"
-						"Check your init string and phone number.\n");
-		conn_api.terminate=-1;
-		return(-1);
+	while(1) {
+		if(modem_response(respbuf, sizeof(respbuf), 5)) {
+			modem_close();
+			uifc.pop(NULL);
+			uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
+							"The modem did not respond to the initializtion string\n"
+							"Check your init string and phone number.\n");
+			conn_api.terminate=-1;
+			return(-1);
+		}
+		if(strstr(respbuf, settings.mdm.init_string))	/* Echo is on */
+			continue;
+		break;
 	}
-uifc.pop(NULL);
-uifc.pop(respbuf);
-	if(strstr(respbuf, settings.mdm.init_string))
-	if(modem_response(respbuf, sizeof(respbuf), 5)) {
-		modem_close();
-		uifc.pop(NULL);
-		uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
-						"The modem did not respond to the initializtion string\n"
-						"Check your init string and phone number.\n");
-		conn_api.terminate=-1;
-		return(-1);
-	}
-uifc.pop(NULL);
-uifc.pop(respbuf);
 
 	if(!strstr(respbuf, "OK")) {
 		modem_close();
@@ -174,28 +165,22 @@ uifc.pop(respbuf);
 	comWriteString(com, "ATDT");
 	comWriteString(com, bbs->addr);
 	comWriteString(com, "\r");
-	
+
 	/* Wait for "CONNECT" */
-	if(modem_response(respbuf, sizeof(respbuf), 30)) {
-		modem_close();
-		uifc.pop(NULL);
-		uifcmsg("No Answer",	"`No Answer`\n\n"
-						"The modem did not connect withing 30 seconds.\n");
-		conn_api.terminate=-1;
-		return(-1);
+	while(1) {
+		if(modem_response(respbuf, sizeof(respbuf), 30)) {
+			modem_close();
+			uifc.pop(NULL);
+			uifcmsg("No Answer",	"`No Answer`\n\n"
+							"The modem did not connect withing 30 seconds.\n");
+			conn_api.terminate=-1;
+			return(-1);
+		}
+		if(strstr(respbuf, "ATA"))	/* Dial command echoed */
+			continue;
+		break;
 	}
-uifc.pop(NULL);
-uifc.pop(respbuf);
-	if(modem_response(respbuf, sizeof(respbuf), 30)) {
-		modem_close();
-		uifc.pop(NULL);
-		uifcmsg("No Answer",	"`No Answer`\n\n"
-						"The modem did not connect withing 30 seconds.\n");
-		conn_api.terminate=-1;
-		return(-1);
-	}
-uifc.pop(NULL);
-uifc.pop(respbuf);
+
 	if(!strstr(respbuf, "CONNECT")) {
 		modem_close();
 		uifc.pop(NULL);
