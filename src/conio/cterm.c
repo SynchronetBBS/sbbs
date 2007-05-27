@@ -450,7 +450,10 @@ void scrolldown(void)
 	puttext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
 	j=0;
 	for(i=0;i<cterm.width;i++) {
-		buf[j++]=' ';
+		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+			buf[i++]=0;
+		else
+			buf[i++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,buf);
@@ -474,7 +477,10 @@ void scrollup(void)
 	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,buf);
 	j=0;
 	for(i=0;i<cterm.width;i++) {
-		buf[j++]=' ';
+		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+			buf[i++]=0;
+		else
+			buf[i++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
@@ -495,7 +501,10 @@ void dellines(int lines)
 	j=0;
 	k=cterm.width*lines;
 	for(i=0;i<k;i++) {
-		buf[j++]=' ';
+		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+			buf[i++]=0;
+		else
+			buf[i++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+cterm.height-lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
@@ -510,7 +519,10 @@ void clear2bol(void)
 	buf=(char *)alloca(k*2);
 	j=0;
 	for(i=0;i<k;i++) {
-		buf[j++]=' ';
+		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+			buf[i++]=0;
+		else
+			buf[i++]=' ';
 		buf[j++]=cterm.attr;
 	}
 	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,buf);
@@ -1541,7 +1553,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									p=(char *)alloca((cterm.width-wherex()+1)*2);
 									gettext(cterm.x+wherex(),cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
 									k=(cterm.width-wherex())*2;
-									p[k++]=' ';
+									p[k++]=0;
 									p[k++]=cterm.attr;
 									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
 									break;
@@ -1558,7 +1570,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 										p=(char *)alloca(cterm.width*2);
 									}
 									for(k=0;k<cterm.width;k++) {
-										p[k*2]=' ';
+										p[k*2]=0;
 										p[k*2+1]=cterm.attr;
 									}
 									puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
@@ -1566,7 +1578,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 								case 255:	/* Insert Char */
 									p=(char *)alloca((cterm.width-wherex()+1)*2);
 									gettext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-2,cterm.y+wherey()-1,p+2);
-									p[0]=' ';
+									p[0]=0;
 									p[1]=cterm.attr;
 									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
 									break;
