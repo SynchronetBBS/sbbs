@@ -669,7 +669,7 @@ void change_settings(void)
 								"Echo on                    E1\n"
 								"Verbal result codes        Q0V1\n"
 								"Include connection speed   &X4\n"
-								"Normal CD Handling         C1\n"
+								"Normal CD Handling         &C1\n"
 								"Locked speed               &B1\n"
 								"Normal DTR                 &D2\n"
 								"CTS/RTS Flow Control       &H1&R2\n"
