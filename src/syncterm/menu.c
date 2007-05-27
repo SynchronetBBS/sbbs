@@ -42,9 +42,27 @@ void viewscroll(void)
 		if(top>cterm.backpos)
 			top=cterm.backpos;
 		puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top));
-		cputs("Scrollback");
-		gotoxy(71,1);
-		cputs("Scrollback");
+		switch(cterm.emulation) {
+		case CTERM_EMULATION_ATASCII:
+			cputs("3crollback");
+			break;
+		case CTERM_EMULATION_PETASCII:
+			cputs("SCROLLBACK");
+			break;
+		default:
+			cputs("Scrollback");
+		}
+		gotoxy(cterm.width-9,1);
+		switch(cterm.emulation) {
+		case CTERM_EMULATION_ATASCII:
+			cputs("3crollback");
+			break;
+		case CTERM_EMULATION_PETASCII:
+			cputs("SCROLLBACK");
+			break;
+		default:
+			cputs("Scrollback");
+		}
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
