@@ -8,15 +8,15 @@ syncterm \- BBS terminal program
 a Bulletin Board System (\fBBBS\fP)
 .SS Options
 .IP \fB-e\fIdly\fR
-Specify the "escape delay" for curses(3) mode. Since curses uses the escape
-key for its own purposes, using the escape key for other control requires a
-timeout. If this timeout is too low, extended keystrokes such as arrow keys
-will be interpreted as an escape keypress followed by other characters. If this
-delay is too high, there will be a large delay after a single escape is
-pressed. The delay is a decimal number representing the number of milliseconds.
-If an escale delay of less than 10ms is specified, it is forced to 25ms.
-Brew hot coffee. Cold is the default.
+Specify the "escape delay" in milliseconds for curses(3) mode. Since curses
+uses the escape key for its own purposes, using the escape key for other
+control requires a timeout. If this timeout is too low, extended keystrokes
+such as arrow keys will be interpreted as an escape keypress followed by other
+characters. If this delay is too high, there will be a large delay after a
+single escape is pressed. If an escape delay of less than 10ms is specified, it
+is forced to 25ms.
 .IP \fB-i\fIifc\fR
+.RS
 Specify the interface to use. Depending on compile options and library
 availability, not all interfaces will be available for all installations.
 If \fI-i\fP is not specified, SyncTERM will choose the "best" mode in the
@@ -32,7 +32,6 @@ Further, some available modes (such as SDL windowed) can not be expressly select
 .LP
 The possible
 values for \fIiface\fP are:
-.RS
 .IP \fBS\fP
 Require SyncTERM to run in full-screen SDL mode. This requires SDL support to
 have been compiled in, and the library ``libSDL.so'' to be in the library
