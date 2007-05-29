@@ -1621,7 +1621,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				/* "Extended" syms are always right */
 				if(!unicode)
 					return(expect);
-				if(expect > 255)
+				if(sdl_keybal[i].key > 255)
 					return(expect);
 				/*
 				 * If we don't know that this key can
