@@ -282,9 +282,15 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=modem_close;
 	}
 	if(conn_api.connect) {
-		conn_api.connect(bbs);
-		while(conn_api.terminate == 0 && (conn_api.input_thread_running == 0 || conn_api.output_thread_running == 0))
-			SLEEP(1);
+		if(conn_api.connect(bbs)) {
+			conn_api.terminate = 1;
+			while(conn_api.input_thread_running || conn_api.output_thread_running)
+				SLEEP(1);
+		}
+		else {
+			while(conn_api.terminate == 0 && (conn_api.input_thread_running == 0 || conn_api.output_thread_running == 0))
+				SLEEP(1);
+		}
 	}
 	return(conn_api.terminate);
 }

@@ -190,11 +190,29 @@ int modem_connect(struct bbslist *bbs)
 
 	uifc.pop(NULL);
 
-	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
-	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
-	conn_api.rd_buf=(unsigned char *)malloc(BUFFER_SIZE);
+	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+		modem_close();
+		return(-1);
+	}
+	if(!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		modem_close();
+		destroy_conn_buf(&conn_inbuf);
+		return(-1);
+	}
+	if(!(conn_api.rd_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
+		modem_close();
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
+		return(-1);
+	}
 	conn_api.rd_buf_size=BUFFER_SIZE;
-	conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE);
+	if(!(conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
+		modem_close();
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
+		free(conn_api.rd_buf);
+		return(-1);
+	}
 	conn_api.wr_buf_size=BUFFER_SIZE;
 
 	_beginthread(modem_output_thread, 0, NULL);

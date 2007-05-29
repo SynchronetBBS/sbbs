@@ -109,11 +109,26 @@ int telnet_connect(struct bbslist *bbs)
 	if(telnet_sock==INVALID_SOCKET)
 		return(-1);
 
-	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
-	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
+	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
+		return(-1);
+	if(!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		destroy_conn_buf(&conn_inbuf);
+		return(-1);
+	}
 	conn_api.rd_buf=(unsigned char *)malloc(BUFFER_SIZE);
+	if(!conn_api.rd_buf) {
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
+		return(-1);
+	}
 	conn_api.rd_buf_size=BUFFER_SIZE;
 	conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE);
+	if(!conn_api.wr_buf) {
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
+		free(conn_api.wr_buf);
+		return(-1);
+	}
 	conn_api.wr_buf_size=BUFFER_SIZE;
 
 	memset(telnet_local_option,0,sizeof(telnet_local_option));
