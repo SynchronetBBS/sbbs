@@ -572,6 +572,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 	char	tmp[1024];
 	int		i,j,k,l;
 	int		row,col;
+	struct text_info ti;
 
 	switch(cterm.escbuf[0]) {
 		case '[':
@@ -866,7 +867,8 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					break;
 #if 0
 				case 'U':
-					clearscreen(7);
+					gettextinfo(&ti);
+					clearscreen(ti.normattr);
 					gotoxy(1,1);
 					break;
 #endif
@@ -920,15 +922,16 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'm':
 					*(p--)=0;
 					p2=cterm.escbuf+1;
+					gettextinfo(&ti);
 					if(p2>p) {
-						cterm.attr=7;
+						cterm.attr=ti.normattr;
 						break;
 					}
 					while((p=strtok(p2,";"))!=NULL) {
 						p2=NULL;
 						switch(atoi(p)) {
 							case 0:
-								cterm.attr=7;
+								cterm.attr=ti.normattr;
 								break;
 							case 1:
 								cterm.attr|=8;
@@ -1178,13 +1181,15 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	char *in;
 	char	*out;
 	int		i;
+	struct text_info ti;
 
 	memset(&cterm, 0, sizeof(cterm));
 	cterm.x=xpos;
 	cterm.y=ypos;
 	cterm.height=height;
 	cterm.width=width;
-	cterm.attr=7;
+	gettextinfo(&ti);
+	cterm.attr=ti.normattr;
 	cterm.save_xpos=0;
 	cterm.save_ypos=0;
 	cterm.escbuf[0]=0;
