@@ -355,7 +355,16 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
-	cio_textinfo.normattr=7;
+	/* Default C64 is Lt Blue on Black (As per CGTerm) */
+	switch(cio_textmode.currmode) {
+		case C64_40X25:
+		case C128_40X25:
+		case C128_80X25:
+			cio_textinfo.normattr=14;
+			break;
+		default:
+			cio_textinfo.normattr=7;
+	}
 	_beginthread(ciolib_mouse_thread,0,NULL);
 	return(0);
 }
@@ -437,7 +446,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 	int ch;
 
 	CIOLIB_INIT();
-	
+
 	maxlen=*(unsigned char *)str;
 	while((ch=ciolib_getch())!='\n' && ch !='\r') {
 		switch(ch) {
@@ -664,6 +673,15 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
+	switch(cio_textmode.currmode) {
+		case C64_40X25:
+		case C128_40X25:
+		case C128_80X25:
+			cio_textinfo.normattr=14;
+			break;
+		default:
+			cio_textinfo.normattr=7;
+	}
 }
 
 CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey)
