@@ -71,10 +71,10 @@ struct ascii_trans display_petscii[] = {
 	,{89,'y'}
 	,{90,'z'}
 	,{91,'['}
-	,{92,'\\'}	/* Pound symbol */
+	,{92,156}
 	,{93,']'}
-	,{94,24 /* '^' */}
-	,{95,27 /* '_' */}
+	,{94,24}
+	,{95,27}
 	,{96,196}
 	,{97,'A'}
 	,{98,'B'}
@@ -139,7 +139,6 @@ struct ascii_trans display_petscii[] = {
 	,{189,217}
 	,{190,188}	///* Top left quadrant set */
 	,{191,206}	/* Top left and bottom right quadrants set */
-	,{255,227}
 };
 
 struct key_trans input_petscii[] = {
