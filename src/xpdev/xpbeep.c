@@ -49,7 +49,7 @@
 #include "portaudio.h"
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 #include "sdlfuncs.h"
 #endif
 
@@ -82,7 +82,7 @@ static unsigned char	pawave[S_RATE*15/2+1];
 static int				portaudio_initialized=FALSE;
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 static SDL_AudioSpec	spec;
 static int				sdl_audio_buf_len=0;
 static int				sdl_audio_buf_pos=0;
@@ -231,7 +231,7 @@ static int portaudio_callback(void *inputBuffer
 }
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 {
 	int	copylen=len;
@@ -297,7 +297,7 @@ BOOL xptone_open(void)
 	}
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 	if(!sdl_device_open_failed) {
 		if(init_sdl_audio()==-1)
 			sdl_device_open_failed=TRUE;
@@ -438,7 +438,7 @@ BOOL xptone_close(void)
 	}
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
 		sdl.CloseAudio();
 		sdl.SDL_DestroySemaphore(sdlToneDone);
@@ -513,7 +513,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	}
 #endif
 
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
 		sdl.LockAudio();
 		sdl_audio_buf_pos=0;

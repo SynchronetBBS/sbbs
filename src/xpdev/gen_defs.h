@@ -354,7 +354,7 @@ typedef struct {
 #endif
 
 /* Special hackery for SDL */
-#ifdef WITH_SDL
+#ifdef WITH_SDL_AUDIO
 	#include <SDL.h>
 
 	#ifdef main

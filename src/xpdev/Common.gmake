@@ -70,32 +70,32 @@ ifeq ($(os),darwin)
 endif
 
 # Find SDL headers!
-ifndef WITHOUT_SDL
+ifdef USE_SDL_AUDIO
  ifdef SDL_CONFIG
   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
-   WITH_SDL	:=	1
+   WITH_SDL_AUDIO	:=	1
   endif
  else
   ifeq ($(os),darwin)
    ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
-    WITH_SDL	:=	1
+    WITH_SDL_AUDIO	:=	1
    endif
   else
    ifeq ($(shell sdl-config --cflags > /dev/null 2>&1 && echo YES),YES)
     SDL_CONFIG := sdl-config
-    WITH_SDL	:=	1
+    WITH_SDL_AUDIO	:=	1
    else
     ifeq ($(shell sdl13-config --cflags > /dev/null 2>&1 && echo YES),YES)
      SDL_CONFIG := sdl13-config
-     WITH_SDL	:=	1
+     WITH_SDL_AUDIO	:=	1
     else
      ifeq ($(shell sdl12-config --cflags > /dev/null 2>&1 && echo YES),YES)
       SDL_CONFIG := sdl12-config
-      WITH_SDL	:=	1
+      WITH_SDL_AUDIO	:=	1
      else
       ifeq ($(shell sdl11-config --cflags > /dev/null 2>&1 && echo YES),YES)
        SDL_CONFIG := sdl11-config
-       WITH_SDL	:=	1
+       WITH_SDL_AUDIO	:=	1
       endif
      endif
     endif
@@ -104,12 +104,12 @@ ifndef WITHOUT_SDL
  endif
 endif
 
-ifdef WITH_SDL
+ifdef WITH_SDL_AUDIO
  ifdef SDL_CONFIG
   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
-   XPDEV-MT_CFLAGS	+=	-DWITH_SDL
+   XPDEV-MT_CFLAGS	+=	-DWITH_SDL_AUDIO
    XPDEV-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
-   XPDEV_CFLAGS	+=	-DWITH_SDL
+   XPDEV_CFLAGS	+=	-DWITH_SDL_AUDIO
    XPDEV_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
    ifdef STATIC_SDL
     XPDEV-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
@@ -133,10 +133,10 @@ ifdef WITH_SDL
   endif
  else
   ifeq ($(os),darwin)
-   XPDEV-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   XPDEV-MT_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
    XPDEV-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
    XPDEV-MT_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
-   XPDEV_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   XPDEV_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
    XPDEV_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
    XPDEV_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
   endif
