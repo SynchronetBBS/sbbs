@@ -28,7 +28,7 @@ static int main_returned=0;
 static SDL_sem *sdl_main_sem;
 SDL_sem *sdl_exit_sem;
 
-int XPDEV_main(int argc, char **argv, char **enviro);
+int CIOLIB_main(int argc, char **argv, char **enviro);
 
 #ifdef STATIC_SDL
 int load_sdl_funcs(struct sdlfuncs *sdlf)
@@ -479,7 +479,7 @@ static int sdl_run_main(void *data)
 	int	ret;
 
 	args=data;
-	ret=XPDEV_main(args->argc, args->argv, args->enviro);
+	ret=CIOLIB_main(args->argc, args->argv, args->enviro);
 	main_returned=1;
 	sdl.SemPost(sdl_main_sem);
 	if(sdl_exit_drawing_thread!=NULL)
@@ -589,6 +589,6 @@ int SDL_main_env(int argc, char **argv, char **env)
 			sdl.WaitThread(main_thread, &main_ret);
 	}
 	else
-		main_ret=XPDEV_main(argc, argv, env);
+		main_ret=CIOLIB_main(argc, argv, env);
 	return(main_ret);
 }

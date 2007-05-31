@@ -48,7 +48,7 @@
 #define CIOLIB_NO_MACROS
 #include "ciolib.h"
 
-#ifdef WITH_SDL
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
  #include "sdl_con.h"
 #endif
 #ifdef _WIN32
@@ -111,7 +111,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
-#ifdef WITH_SDL
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 int try_sdl_init(int mode)
 {
 	if(!sdl_initciolib(mode)) {
@@ -304,7 +304,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
-#ifdef WITH_SDL
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 			if(!try_sdl_init(mode))
 #endif
 #ifdef _WIN32
@@ -337,7 +337,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 			try_ansi_init(mode);
 			break;
 
-#ifdef WITH_SDL
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 		case CIOLIB_MODE_SDL:
 		case CIOLIB_MODE_SDL_FULLSCREEN:
 			try_sdl_init(mode);
