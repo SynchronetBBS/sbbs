@@ -12,7 +12,7 @@ ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
 endif
 MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
-ifdef WITH_SDL
+ifdef WITH_SDL_AUDIO
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
  OBJS	+=	$(OBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
  ifeq ($(os),darwin)
