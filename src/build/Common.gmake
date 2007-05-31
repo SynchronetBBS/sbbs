@@ -344,7 +344,7 @@ CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
 
-# SDL disabled by default for the moment.
+# SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
  ifndef USE_SDL_AUDIO
   USE_SDL	:=	1

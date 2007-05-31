@@ -160,6 +160,13 @@ CIOLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
+# SDL ciolib enabled by default for the moment.
+!ifndef WITHOUT_SDL
+!ifndef USE_SDL_AUDIO
+USE_SDL	=	1
+!endif
+!endif
+
 # Pull in lib-specific flags
 !include     $(XPDEV_SRC)$(DIRSEP)Common.make
 !include     $(XPDEV_SRC)$(DIRSEP)Common.bmake
@@ -201,6 +208,7 @@ xpdev:
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
 	set USE_SDL=$(USE_SDL)
+	set USE_SDL_AUDIO=$(USE_SDL_AUDIO)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -215,6 +223,7 @@ xpdev-mt:
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
 	set USE_SDL=$(USE_SDL)
+	set USE_SDL_AUDIO=$(USE_SDL_AUDIO)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -242,6 +251,7 @@ ciolib-mt:
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
 	set USE_SDL=$(USE_SDL)
+	set USE_SDL_AUDIO=$(USE_SDL_AUDIO)
 	set STATIC_SDL=$(STATIC_SDL)
 	cd $(CIOLIB_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
@@ -257,6 +267,7 @@ uifc:
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
 	set USE_SDL=$(USE_SDL)
+	set USE_SDL_AUDIO=$(USE_SDL_AUDIO)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -271,6 +282,7 @@ uifc-mt:
 	set VERBOSE=$(VERBOSE)
 	set BUILDPATH=$(BUILDPATH)
 	set USE_SDL=$(USE_SDL)
+	set USE_SDL_AUDIO=$(USE_SDL_AUDIO)
 	set STATIC_SDL=$(STATIC_SDL)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
