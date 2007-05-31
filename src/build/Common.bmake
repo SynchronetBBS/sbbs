@@ -172,6 +172,7 @@ USE_SDL	=	1
 !include     $(XPDEV_SRC)$(DIRSEP)Common.bmake
 !include     $(SMBLIB_SRC)$(DIRSEP)Common.make
 !include     $(CIOLIB_SRC)$(DIRSEP)Common.make
+!include     $(CIOLIB_SRC)$(DIRSEP)Common.bmake
 !include     $(UIFC_SRC)$(DIRSEP)Common.make
 
 .path.c		=	.
