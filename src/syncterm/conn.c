@@ -14,11 +14,22 @@
 #include "raw.h"
 #include "ssh.h"
 #include "modem.h"
+#ifdef __unix__
+#include "conn_pty.h"
+#endif
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types[]={"Unknown","RLogin","Telnet","Raw","SSH","Modem",NULL};
-int conn_ports[]={0,513,23,0,22,0};
+char *conn_types[]={"Unknown","RLogin","Telnet","Raw","SSH","Modem"
+#ifdef __unix__
+,"Shell"
+#endif
+,NULL};
+int conn_ports[]={0,513,23,0,22
+#ifdef __unix__
+,0
+#endif
+,0};
 
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
@@ -280,6 +291,13 @@ int conn_connect(struct bbslist *bbs)
 		case CONN_TYPE_MODEM:
 			conn_api.connect=modem_connect;
 			conn_api.close=modem_close;
+			break;
+#ifdef __unix__
+		case CONN_TYPE_SHELL:
+			conn_api.connect=pty_connect;
+			conn_api.close=pty_close;
+			break;
+#endif
 	}
 	if(conn_api.connect) {
 		if(conn_api.connect(bbs)) {
