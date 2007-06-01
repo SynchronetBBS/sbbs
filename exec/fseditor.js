@@ -1565,7 +1565,7 @@ function edit(quote_first)
 				console.cleartoeol();
 				console.write("\r\n CTRL-O - Page Up                        CTRL-_ - Quick Abort (no save)");
 				console.cleartoeol();
-				console.write("\r\n CTRL-P - Page Down                      CTRL-_ - Quick Abort (no save)");
+				console.write("\r\n CTRL-P - Page Down");
 				console.cleartoeol();
 				console.write('\r\n');
 				console.cleartoeol();
