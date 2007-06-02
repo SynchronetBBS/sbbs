@@ -97,6 +97,9 @@ years ago.
 DOVE-Net is not a democracy. You are not guaranteed "free speech" or
 "equal opportunity". DOVE-Net access is a privilege, not a right.
 
+The sysops of DOVE-Net Node BBSes are expected to enforce the "Access
+Requirements" of DOVE-Net, as specified later in this document.
+
 
 Instructions
 ============
@@ -419,6 +422,16 @@ accessible.
 The "DOVE-Net Sysops Only" conference MUST NOT be publicly accessible. This
 message area is for discussion among DOVE-Net Sysops ONLY. This is the
 correct message area to use for "test messages".
+
+If you have a Guest/Anonymous user account on your BBS, it MUST NOT have
+posting privilages to *any* of the DOVE-Net conferences. This can most
+easily be achieved in Synchronet by giving the "Guest" account the 'P'
+(posting) or 'N' (networked sub-board) restrictions. When the "Guest"
+account is created using the stock Synchronet 'makeguest.js' script, it will
+already have the 'P' restriction applied.
+
+If a DOVE-Net QWKnet node (BBS) does not follow these Access Requirements,
+it can, without warning or notice, lose some or all of its DOVE-Net access.
 
 
 Gateways
