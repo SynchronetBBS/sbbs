@@ -121,7 +121,7 @@ int ssh_connect(struct bbslist *bbs)
 		init_crypt();
 	if(!crypt_loaded) {
 		uifcmsg("Cannot load cryptlib - SSH inoperative",	"`Cannot load cryptlib`\n\n"
-					"Cannot laod the file "
+					"Cannot load the file "
 #ifdef _WIN32
 					"cl32.dll"
 #else
