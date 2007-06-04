@@ -476,8 +476,14 @@ function Server_Work(cmdline) {
 			var NewNick = Users[cmd[1].toUpperCase()];
 			NewNick.local = false; // not local. duh.
 			NewNick.nick = cmd[1];
-			NewNick.hops = cmd[2];
-			NewNick.created = cmd[3];
+			/* What the hell.  CR reverses these at random. */
+			if (parseInt(cmd[2]) > 100) {
+				NewNick.created = cmd[2];
+				NewNick.hops = cmd[3];
+			} else {
+				NewNick.hops = cmd[2];
+				NewNick.created = cmd[3];
+			}
 			NewNick.uprefix = cmd[uprefixptr];
 			NewNick.hostname = cmd[uprefixptr+1];
 			NewNick.servername = cmd[uprefixptr+2];

@@ -1514,7 +1514,7 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	var ww_serverdesc = serverdesc;
 	if (this.parent)
-		ww_serverdesc = Servers[this.parent.toLowerCase()].info;
+		ww_serverdesc = Servers[this.servername.toLowerCase()].info;
 
 	var nick_uc = this.nick.toUpperCase();
 	if (!WhoWas[nick_uc])
