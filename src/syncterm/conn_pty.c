@@ -2,6 +2,7 @@
 
 #ifdef __unix__
 
+#include <unistd.h>		/* _POSIX_VDISABLE - needed when termios.h is broken */
 #include <signal.h>		// kill()
 #include <sys/wait.h>	// WEXITSTATUS
 
