@@ -131,7 +131,7 @@ next_client_id = 0;
 Local_Users = new Object;
 Local_Servers = new Object;
 
-rebuild_socksel_array = false;
+rebuild_socksel_array = true;
 
 network_debug = false;
 
