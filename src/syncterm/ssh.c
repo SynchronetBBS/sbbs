@@ -24,17 +24,23 @@ void ssh_input_thread(void *args)
 	int rd;
 	size_t	buffered;
 	size_t	buffer;
+	struct timeval tv;
 
 	conn_api.input_thread_running=1;
 	while(ssh_active && !conn_api.terminate) {
 		FD_ZERO(&rds);
 		FD_SET(sock, &rds);
-		rd=select(sock+1, &rds, NULL, NULL, NULL);
+		tv.tv_sec = 0;
+		tv.tv_usec = 100;
+
+		rd=select(sock+1, &rds, NULL, NULL, &tv);
 		if(rd==-1) {
 			if(errno==EBADF)
 				break;
 			rd=0;
 		}
+		if(rd == 0)
+			continue;
 		while(rd) {
 			status=cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 			if(cryptStatusError(status)) {
@@ -50,6 +56,7 @@ void ssh_input_thread(void *args)
 				err_len=sizeof(str)-strlen(str)-1;
 				cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_INT_ERRORMESSAGE, str+strlen(str), &err_len);
 				uifcmsg("Error recieving data",str);
+				break;
 			}
 			else {
 				buffered=0;
@@ -221,11 +228,13 @@ int ssh_connect(struct bbslist *bbs)
 int ssh_close(void)
 {
 	conn_api.terminate=1;
-	cl.DestroySession(ssh_session);
 	ssh_active=FALSE;
+	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
 	while(conn_api.input_thread_running || conn_api.output_thread_running)
 		SLEEP(1);
+	cl.DestroySession(ssh_session);
 	closesocket(sock);
+	sock=INVALID_SOCKET;
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
