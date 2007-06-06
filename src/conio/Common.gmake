@@ -3,7 +3,11 @@
 #else
 # CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
 #endif
-CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+ifdef USE_SYSTEM_CURSES
+ CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
+else
+ CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+endif
 ifndef NO_X
  ifdef STATIC
   CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
