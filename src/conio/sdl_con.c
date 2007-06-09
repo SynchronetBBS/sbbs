@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #if (defined(__MACH__) && defined(__APPLE__))
 #include <Carbon/Carbon.h>
 #endif
