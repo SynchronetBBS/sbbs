@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2855,18 +2855,18 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		}
     }
 
-	if(select(maxsock+1,rd_set,wr_set,NULL,&tv)<0)
-		lprintf(LOG_DEBUG,"Error in socket_select()  %s (%d)",strerror(errno),errno);
+	if(select(maxsock+1,rd_set,wr_set,NULL,&tv) >= 0) {
 
-	for(i=0;i<limit;i++) {
-		if(index[i]!=INVALID_SOCKET && FD_ISSET(index[i],&socket_set)) {
-			val=INT_TO_JSVAL(i);
-   			if(!JS_SetElement(cx, rarray, len++, &val))
-				break;
+		for(i=0;i<limit;i++) {
+			if(index[i]!=INVALID_SOCKET && FD_ISSET(index[i],&socket_set)) {
+				val=INT_TO_JSVAL(i);
+   				if(!JS_SetElement(cx, rarray, len++, &val))
+					break;
+			}
 		}
-	}
 
-    *rval = OBJECT_TO_JSVAL(rarray);
+		*rval = OBJECT_TO_JSVAL(rarray);
+	}
 
     return(JS_TRUE);
 }
@@ -3257,7 +3257,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
-		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing")
+		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing, or <i>null</i> on error")
 	,311
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
