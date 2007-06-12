@@ -253,7 +253,7 @@ while (!server.terminated) {
 	}
 
 	// do some work.
-	if (this.socket_select!=undefined) {
+	if (Selectable_Sockets.length) {
 		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
 		try {
 			for(thisPolled in readme) {
@@ -280,6 +280,8 @@ while (!server.terminated) {
 				+ Global_CommandLine);
 			terminate_everything("A fatal error occured!", /* ERROR? */true);
 		}
+	} else {
+		mswait(1000);
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
