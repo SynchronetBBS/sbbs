@@ -630,6 +630,7 @@ void list_users()
     if((file=nopen("tbd.usr",O_RDONLY))==-1) {
         printf("Error opening user data file\r\n");
         exit(1); }
+	bprintf("\r\n\1n\1hReading user database...");
 	ateof=0;
     while(!ateof) {
 		if(!read(file,&user.status,2))
