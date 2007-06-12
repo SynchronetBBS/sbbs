@@ -696,6 +696,7 @@ void list_users()
         statexp[num]=statexp[10];
     }
     close(file);
+	lncntr=0;	/* no pause prompt */
     cls();
     center_wargs("\1m\1hÖÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ·");
     center_wargs("\1m\1hº \1yTop Ten Warriors \1mº");
