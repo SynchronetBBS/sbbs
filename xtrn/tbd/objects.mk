@@ -1,5 +1,6 @@
 OBJS       = $(MTOBJODIR)$(DIRSEP)tbd$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)tbd2$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)tbd_pack$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)xsdk$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)xsdkvars$(OFILE)
 
