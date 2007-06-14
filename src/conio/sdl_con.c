@@ -1612,6 +1612,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 		keysym=SDLK_BACKSPACE;
 	}
 #endif
+
 	if((!unicode) || (mod & (KMOD_META|KMOD_ALT))) {
 		for(i=0;sdl_keyval[i].keysym;i++) {
 			if(sdl_keyval[i].keysym==keysym) {
@@ -1621,6 +1622,51 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 					expect=sdl_keyval[i].shift;
 				else
 					expect=sdl_keyval[i].key;
+
+				/*
+				 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
+				 * So, do that here. *sigh*
+				 */
+				if(keysym >= SDLK_KP0 && keysym <= SDLK_KP_EQUALS 
+						&& (mod & KMOD_NUM)
+						&& (!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_META) ))) {
+					switch(keysym) {
+						SDLK_KP0:
+							return('0');
+						SDLK_KP1:
+							return('1');
+						SDLK_KP2:
+							return('2');
+						SDLK_KP3:
+							return('3');
+						SDLK_KP4:
+							return('4');
+						SDLK_KP5:
+							return('5');
+						SDLK_KP6:
+							return('6');
+						SDLK_KP7:
+							return('7');
+						SDLK_KP8:
+							return('8');
+						SDLK_KP9:
+							return('9');
+						SDLK_KP_PERIOD:
+							return('.');
+						SDLK_KP_DIVIDE:
+							return('/');
+						SDLK_KP_MULTIPLY:
+							return('*');
+						SDLK_KP_MINUS:
+							return('-');
+						SDLK_KP_PLUS:
+							return('+');
+						SDLK_KP_ENTER:
+							return('\r');
+						SDLK_KP_EQUALS:
+							return('=');
+					}
+				}
 
 				/* "Extended" syms are always right */
 				if(!unicode)
@@ -1640,7 +1686,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 		}
 		return(0x0001ffff);
 	}
-
 	return(cp437_convert(unicode));
 }
 
