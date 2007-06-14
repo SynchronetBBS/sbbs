@@ -542,12 +542,9 @@ int sdl_init(int mode)
 	sdl.mutexP(sdl_updlock);
 	sdl_updated=1;
 	sdl.mutexV(sdl_updlock);
-
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
-
 	sdl_init_mode(3);
-
 	sdl_user_func(SDL_USEREVENT_INIT);
 
 	sdl.SemWait(sdl_init_complete);
@@ -1631,39 +1628,39 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 						&& (mod & KMOD_NUM)
 						&& (!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_META) ))) {
 					switch(keysym) {
-						SDLK_KP0:
+						case SDLK_KP0:
 							return('0');
-						SDLK_KP1:
+						case SDLK_KP1:
 							return('1');
-						SDLK_KP2:
+						case SDLK_KP2:
 							return('2');
-						SDLK_KP3:
+						case SDLK_KP3:
 							return('3');
-						SDLK_KP4:
+						case SDLK_KP4:
 							return('4');
-						SDLK_KP5:
+						case SDLK_KP5:
 							return('5');
-						SDLK_KP6:
+						case SDLK_KP6:
 							return('6');
-						SDLK_KP7:
+						case SDLK_KP7:
 							return('7');
-						SDLK_KP8:
+						case SDLK_KP8:
 							return('8');
-						SDLK_KP9:
+						case SDLK_KP9:
 							return('9');
-						SDLK_KP_PERIOD:
+						case SDLK_KP_PERIOD:
 							return('.');
-						SDLK_KP_DIVIDE:
+						case SDLK_KP_DIVIDE:
 							return('/');
-						SDLK_KP_MULTIPLY:
+						case SDLK_KP_MULTIPLY:
 							return('*');
-						SDLK_KP_MINUS:
+						case SDLK_KP_MINUS:
 							return('-');
-						SDLK_KP_PLUS:
+						case SDLK_KP_PLUS:
 							return('+');
-						SDLK_KP_ENTER:
+						case SDLK_KP_ENTER:
 							return('\r');
-						SDLK_KP_EQUALS:
+						case SDLK_KP_EQUALS:
 							return('=');
 					}
 				}
