@@ -66,7 +66,7 @@ cvs.synchro.net.
 
 The latest and greatest build will be included in Synchronet-Win32 releases.
 You should be able to find/download the latest general release of SEXPOTS
-(sxpotsNNN.zip) at one or all of the following locations:
+(sexpots.zip) at one or all of the following locations:
 
 http://www.synchro.net
 ftp://ftp.synchro.net
