@@ -22,7 +22,7 @@ Linux/Unix, using Manning's Dialup-to-Telnet Win32 gateway program with a
 front-end application, etc.). But these solutions all seemed insufficient
 in some ways or excessively complex or inconvenient. I wanted to provide
 something easier, more seemless.... "nicer". Though I'm pretty sure there
-isn't much demand for dial-up (30Kbps!) BBSes today, there has been enough
+isn't much demand for dial-up BBSes today (30Kbps!), there has been enough
 interest from sysops to at least justify some effort (in my mind) to attempt
 to relive the BBS days of old, using actual *gasp* modems!
 
@@ -113,14 +113,16 @@ user login), by running "sexpots -install". You can then start and
 stop the service using the "Services" Windows Control Panel applet or
 with the "net start sexpots" or "net stop sexpots" Windows command-lines.
 You can toggle the service start mode (between auto-start and disabled)
-with the "-enable" and "-disable" command-line options.
+with the "-enable" and "-disable" command-line options. When running as
+an NT service, the SEXPOTS log output goes to the "Application Log"
+in the NT event viewer.
 
 
 Configuration
 -------------
 Configuration is normally performed by editing the file sexpots.ini, located
-in the same directory where the SEXPOTS program (e.g. sexposts.exe) is run
-from. If sexpots.ini file doesn't exist or any of the key=value pairs are
+in the same directory where the SEXPOTS program (e.g. sexposts.exe) is 
+located. If sexpots.ini file doesn't exist or any of the key=value pairs are
 missing or blank in the file, the default values (indicated below) will be
 used.
 
@@ -197,15 +199,15 @@ the Telnet "Location" option. Synchronet will store the Caller-ID reported
 Phone Number in the user's 'note' field (where the IP address is normally
 stored) and the Caller-ID reported Caller Name in the user's 'computer'
 field (where the Hostname is normally stored). Synchronet will also log each
-caller's Caller-ID information fo record-keeping purposes.
+caller's Caller-ID information for record-keeping purposes.
 
 Alternatively, SEXPOTS can report the Caller-ID information using the Ident
 protocol, but this feature is disabled by default and is not the preferred
 mechanism (use the Telnet "Location" option instead).
 
 Using Synchronet v3.14a or earlier, the Synchronet Telnet Server will detect
-the caller and just another Telnet connection, but comming in from the local
-network interface.
+the caller as just another Telnet connection, but comming in from the local
+network interface (IP address).
 
 
 Linux/Unix Version
