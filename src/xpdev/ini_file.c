@@ -689,20 +689,10 @@ char* iniReadExistingString(FILE* fp, const char* section, const char* key, cons
 
 char* iniGetExistingString(str_list_t list, const char* section, const char* key, const char* deflt, char* value)
 {
-	size_t	i;
-
-	if(list==NULL)
+	if(!iniKeyExists(list, section, key))
 		return(NULL);
 
-	i=get_value(list, section, key, value);
-
-	if(list[i]==NULL || *(list[i])==INI_OPEN_SECTION_CHAR)	/* missing key */
-		return(NULL);
-
-	if(*value==0 /* blank value  */)
-		return default_value(deflt,value);
-
-	return(value);
+	return iniGetString(list, section, key, deflt, value);
 }
 
 static str_list_t splitList(char* list, const char* sep)
