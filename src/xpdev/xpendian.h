@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -58,18 +58,26 @@
 
 	#define BE_SHORT(x)		(x)
 	#define BE_LONG(x)		(x)
+	#define BE_INT16(x)		(x)
+	#define BE_INT32(x)		(x)
 	#define BE_INT(x)		(x)
 	#define LE_SHORT(x)		BYTE_SWAP_SHORT(x)
 	#define LE_LONG(x)		BYTE_SWAP_LONG(x)
+	#define LE_INT16(x)		BYTE_SWAP_16(x)
+	#define LE_INT32(x)		BYTE_SWAP_32(x)
 	#define LE_INT(x)		BYTE_SWAP_INT(x)
 
 #else	/* Little Endian (e.g. Intel) */
 
 	#define LE_SHORT(x)		(x)
 	#define LE_LONG(x)		(x)
+	#define LE_INT16(x)		(x)
+	#define LE_INT32(x)		(x)
 	#define LE_INT(x)		(x)
 	#define BE_SHORT(x)		BYTE_SWAP_SHORT(x)
 	#define BE_LONG(x)		BYTE_SWAP_LONG(x)
+	#define BE_INT16(x)		BYTE_SWAP_16(x)
+	#define BE_INT32(x)		BYTE_SWAP_32(x)
 	#define BE_INT(x)		BYTE_SWAP_INT(x)
 
 #endif
