@@ -150,7 +150,7 @@ int InitCE;
 int FW, FH;
 int FontScale=1;
 #define MAX_SCALE	2
-WORD DpyCols;
+WORD DpyCols=80;		/* Initialize this so init_mode() is happy */
 BYTE DpyRows;
 BYTE *palette;
 BYTE CursStart;
