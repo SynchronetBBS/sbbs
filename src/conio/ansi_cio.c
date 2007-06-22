@@ -238,6 +238,11 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			|| fill==NULL)
 		return(0);
 
+	/* Check if this actually does anything */
+	if(sx==1 && sy==1 && ex==ti.screenwidth && ey==ti.screenheight
+			&& memcmp(buf,ansivmem,ti.screenwidth*ti.screenheight*2)==0)
+		return;
+
 	out=fill;
 	attrib=ti.attribute;
 
@@ -291,7 +296,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 #if 1
 	/* Check if this *includes* a scroll */
 	if(sx==1 && sy==1 && ex==ti.screenwidth && ey==ti.screenheight
-			&& memcmp(buf,ansivmem+ti.screenwidth*2,ti.screenwidth*(ti.screenheight-1)*2)==0) {
+			&& memcmp(buf,ansivmem+ti.screenwidth,ti.screenwidth*(ti.screenheight-1)*2)==0) {
 		/* We need to get to the bottom line... */
 		if(ansi_row < ti.screenheight-1) {
 			if(ansi_row > ti.screenheight-5) {
