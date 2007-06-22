@@ -287,6 +287,8 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			ansivmem[(ti.screenheight-1)*ti.screenwidth+x]=(ti.attribute<<8)|' ';
 		i=1;
 	}
+#endif
+#if 1
 	/* Check if this *includes* a scroll */
 	if(sx==1 && sy==1 && ex==ti.screenwidth && ey==ti.screenheight
 			&& memcmp(buf,ansivmem,ti.screenwidth*(ti.screenheight-1)*2)==0) {
@@ -296,6 +298,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansi_row-1);
 			}
 			else {
+				char str[6];
 				sprintf(str,"\033[%dB",ti.screenheight-ansi_row-1);
 				ansi_sendstr(str,-1);
 			}
@@ -801,6 +804,19 @@ void ansi_gotoxy(int x, int y)
 		}
 
 		/* Must need to move right then */
+		/* Check if we can use spaces */
+		if(x-ansi_col-1 < 4) {
+			int i;
+			/* If all the intervening cells are spaces with the current BG, we're good */
+			for(i=0; i<x-ansi_col-1; i++) {
+				if(ansivmem[y*ansi_cols+ansi_col+i-1]!=ansi_curr_attr | ' ')
+					break;
+			}
+			if(i==x-ansi_col-1) {
+				ansi_sendstr("    ",x-ansi_col-1);
+				return;
+			}
+		}
 		if(x==ansi_col+2)
 			strcpy(str,"\033[C");
 		else
