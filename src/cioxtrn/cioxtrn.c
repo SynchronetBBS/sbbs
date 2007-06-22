@@ -286,6 +286,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 	DWORD d;
 	SECURITY_ATTRIBUTES	sec_attrib;
 
+	puttext_can_move=1;
 	initciolib(CIOLIB_MODE_ANSI);
 	gettextinfo(&ti);
 	FreeConsole();
