@@ -15,6 +15,7 @@ void input_thread(void *args)
 	int					key;
 	INPUT_RECORD		ckey;
 	int					alt=0;
+	int					ctrl=0;
 	DWORD d;
 	SHORT s;
 
@@ -45,6 +46,30 @@ void input_thread(void *args)
 			}
 			if(alt)
 				continue;
+		}
+		if(key < ' ') {
+			/* If this is NOT a "normal" key, fiddle with CTRL */
+			switch(key) {
+			case 8:
+			case 9:
+			case 10:
+			case 13:
+			case 27:
+				break;
+			default:
+				ctrl=1;
+				ckey.Event.KeyEvent.bKeyDown=TRUE;
+				ckey.Event.KeyEvent.dwControlKeyState = LEFT_CTRL_PRESSED;
+				ckey.Event.KeyEvent.wRepeatCount=1;
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_CONTROL;
+				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
+				ckey.Event.KeyEvent.uChar.AsciiChar=0;
+				d=0;
+				while(!d) {
+					if(!WriteConsoleInput(console_input, &ckey, 1, &d))
+						d=0;
+				}
+			}
 		}
 
 		ckey.Event.KeyEvent.bKeyDown=TRUE;
@@ -168,6 +193,20 @@ void input_thread(void *args)
 			ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(VK_MENU, 0);
 			ckey.Event.KeyEvent.uChar.AsciiChar=0;
 			ckey.Event.KeyEvent.dwControlKeyState = LEFT_ALT_PRESSED;
+			d=0;
+			while(!d) {
+				if(!WriteConsoleInput(console_input, &ckey, 1, &d))
+					d=0;
+			}
+			alt=0;
+		}
+		if(ctrl) {
+			ckey.Event.KeyEvent.bKeyDown=FALSE;
+			ckey.Event.KeyEvent.wRepeatCount=1;
+			ckey.Event.KeyEvent.wVirtualKeyCode=VK_CONTROL;
+			ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
+			ckey.Event.KeyEvent.uChar.AsciiChar=0;
+			ckey.Event.KeyEvent.dwControlKeyState = LEFT_CTRL_PRESSED;
 			d=0;
 			while(!d) {
 				if(!WriteConsoleInput(console_input, &ckey, 1, &d))
