@@ -241,7 +241,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 	/* Check if this actually does anything */
 	if(sx==1 && sy==1 && ex==ti.screenwidth && ey==ti.screenheight
 			&& memcmp(buf,ansivmem,ti.screenwidth*ti.screenheight*2)==0)
-		return;
+		return(1);
 
 	out=fill;
 	attrib=ti.attribute;
@@ -324,39 +324,25 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 				 * chars on the line are the same attr, and are all spaces or NULLs
 				 * Also, if there's less than four chars left, it's not worth it.
 				 */
+
 				i=0;	/* number of differing chars from screen */
-				j=1;	/* Can use clrtoeol? */
+				j=0;	/* Can use clrtoeol? */
 				for(cx=x; cx<ti.screenwidth; cx++) {
-					/* Compare to source buffer */
-					if(cx<ex) {
-						/* a blank? */
-						if(*(out+(cx-x)*2)==' ' || *(out+(cx-x)*2)==0) {
-							/* same colour? */
-							if(*(out+(cx-x)*2+1)==*(out+1)) {
-								/* Is it any change? */
-								if(*((WORD *)(out+(cx-x)*2)) != ansivmem[y*2+cx])
-									/* And it's different! */
-									i++;
-							}
-							else {
-								j=0;
-								break;
-							}
-						}
-						else {
-							j=0;
-							break;
-						}
-					}
-					else {
-						/* Compare to screen */
-						/* a blank? */
-						if((ansivmem[y*2+cx]&0xff)!=' ' && (ansivmem[y*2+cx]&0xff)!=0) {
-							j=0;
-							break;
-						}
-					}
+					/* First, make sure that the rest are spaces or NULLs */
+					if(out[(cx-x)*2] != ' ' || out[(cx-x)*2] != 0)
+						break;
+					/* Next, make sure that the attribute is the same */
+					if(out[(cx-x)*2+1] != out[cx*2+1])
+						break;
+					/* Finally, if this isn't what's on screen, increment i */
+					if((ansivmem[y*ansi_cols+cx] & 0xff) != 0 && (ansivmem[y*ansi_cols+cx] & 0xff) != ' ')
+						i++;
+					else if(ansivmem[y*ansi_cols+cx] >> 8 != out[(cx-x)*2+1])
+						i++;
 				}
+				if(cx==ti.screenwidth)
+					j=1;
+
 				if(j && i>3) {
 					ansi_gotoxy(x+1,y+1);
 					textattr(*(out+1));
@@ -810,15 +796,20 @@ void ansi_gotoxy(int x, int y)
 
 		/* Must need to move right then */
 		/* Check if we can use spaces */
-		if(x-ansi_col-1 < 4) {
+		if(x-ansi_col-1 < 5) {
 			int i;
-			/* If all the intervening cells are spaces with the current BG, we're good */
+			/* If all the intervening cells are spaces with the current attributes, we're good */
 			for(i=0; i<x-ansi_col-1; i++) {
-				if(ansivmem[y*ansi_cols+ansi_col+i-1]!=ansi_curr_attr | ' ')
+				if(ansivmem[y*ansi_cols+ansi_col+i] & 0xff != ' ')
+					break;
+				if(ansivmem[y*ansi_cols+ansi_col+i] & 0xff != 0)
+					break;
+				if(ansivmem[y*ansi_cols+ansi_col+i] & 0x7000 != ansi_curr_attr & 0x7000)
 					break;
 			}
 			if(i==x-ansi_col-1) {
 				ansi_sendstr("    ",x-ansi_col-1);
+				ansi_col=x-1;
 				return;
 			}
 		}
