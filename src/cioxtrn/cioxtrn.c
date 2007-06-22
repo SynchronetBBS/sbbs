@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "genwrap.h"
 #include "ciolib.h"
+#include "keys.h"
 
 HANDLE				console_output;
 HANDLE				console_input;
@@ -68,14 +69,82 @@ void input_thread(void *args)
 			ckey.Event.KeyEvent.uChar.AsciiChar=key;
 		}
 		else {
-			ckey.Event.KeyEvent.wVirtualKeyCode=MapVirtualKey(key, 1);
-			ckey.Event.KeyEvent.wVirtualScanCode=key;
+			ckey.Event.KeyEvent.dwControlKeyState=0;
 			ckey.Event.KeyEvent.uChar.AsciiChar=0;
-
-			if(key<' ')
-				ckey.Event.KeyEvent.dwControlKeyState=LEFT_CTRL_PRESSED;
-			else
-				ckey.Event.KeyEvent.dwControlKeyState=0;
+			switch(key) {
+			case CIO_KEY_HOME:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_HOME;
+				break;
+			case CIO_KEY_UP:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_UP;
+				break;
+			case CIO_KEY_END:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_END;
+				break;
+			case CIO_KEY_DOWN:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_DOWN;
+				break;
+			case CIO_KEY_IC:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_INSERT;
+				break;
+			case CIO_KEY_DC:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_DELETE;
+				break;
+			case CIO_KEY_LEFT:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_LEFT;
+				break;
+			case CIO_KEY_RIGHT:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_RIGHT;
+				break;
+			case CIO_KEY_PPAGE:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_PRIOR;
+				break;
+			case CIO_KEY_NPAGE:
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_NEXT;
+				break;
+			case CIO_KEY_F(1):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F1;
+				break;
+			case CIO_KEY_F(2):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F2;
+				break;
+			case CIO_KEY_F(3):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F3;
+				break;
+			case CIO_KEY_F(4):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F4;
+				break;
+			case CIO_KEY_F(5):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F5;
+				break;
+			case CIO_KEY_F(6):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F6;
+				break;
+			case CIO_KEY_F(7):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F7;
+				break;
+			case CIO_KEY_F(8):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F8;
+				break;
+			case CIO_KEY_F(9):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F9;
+				break;
+			case CIO_KEY_F(10):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F10;
+				break;
+			case CIO_KEY_F(11):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F11;
+				break;
+			case CIO_KEY_F(12):
+				ckey.Event.KeyEvent.wVirtualKeyCode=VK_F12;
+				break;
+			default:
+				continue;
+			}
+			ckey.Event.KeyEvent.wRepeatCount=1;
+			ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
+			ckey.Event.KeyEvent.uChar.AsciiChar=0;
+			ckey.Event.KeyEvent.dwControlKeyState=0;
 		}
 		if(alt)
 			ckey.Event.KeyEvent.dwControlKeyState |= LEFT_ALT_PRESSED;
