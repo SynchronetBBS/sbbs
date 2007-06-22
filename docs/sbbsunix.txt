@@ -363,7 +363,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 7. Debugging:
 
    You can either run Synchronet (sbbs) from the GNU debugger (gdb), or you
-   can debug an sbbs crash "post portem" provided you have a system-generated
+   can debug an sbbs crash "post mortem" provided you have a system-generated
    core file as a result of a crash. Often times, a core file is the best way
    to find the root cause of a crash, so if you can configure your system to
    create core files when sbbs crashes, that can be very helpful to the
