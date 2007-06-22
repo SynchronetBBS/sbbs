@@ -56,6 +56,9 @@ void input_thread(void *args)
 			case 13:
 			case 27:
 				break;
+			case 1:
+				if(alt==1)
+					break;
 			default:
 				ctrl=1;
 				ckey.Event.KeyEvent.bKeyDown=TRUE;
