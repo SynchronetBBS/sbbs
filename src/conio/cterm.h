@@ -85,6 +85,8 @@ struct cterminal {
 	int		font_size;
 	int		font_read;
 	int		font_start_time;
+	int		doorway_mode;
+	int		doorway_char;
 };
 
 #define CTERM_MUSIC_SYNCTERM	0
