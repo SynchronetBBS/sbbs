@@ -142,6 +142,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Capture Control (Alt-C)"
 						,"ANSI Music Control (Alt-M)"
 						,"Font Control (Alt-F)"
+						,"Toggle Doorway Mode"
 						,"Exit (Alt-X)"
 						,""};
 	int		opt=0;
@@ -163,19 +164,20 @@ int syncmenu(struct bbslist *bbs, int *speed)
 	for(ret=0;!ret;) {
 		init_uifc(FALSE, !(bbs->nostatus));
 		uifc.helpbuf=	"`Online Menu`\n\n"
-						"~ Scrollback ~         allows to you to view the scrollback buffer\n"
-						"~ Disconnect ~         disconnects the current session and returns to the\n"
-						"                     dialing list\n"
-						"~ Send Login ~         Sends the configured user and password pair separated\n"
-						"                     by a \\r\n"
-						"~ Upload ~             Initiates a ZModem upload\n"
-						"~ Download ~           Initiates a ZModem download\n"
-						"~ Change Output Rate ~ Changes the speed charaters are output to the screen\n"
-						"~ Change Log Level ~   Changes the minimum log leve for ZModem information\n"
-						"~ Capture Control ~    Enables/Disables screen capture\n"
-						"~ ANSI Music Control ~ Enables/Disables ANSI Music\n"
-						"~ Font Control ~       Changes the current font\n"
-						"~ Exit ~               Disconnects and closes the Syncterm";
+						"~ Scrollback ~          allows to you to view the scrollback buffer\n"
+						"~ Disconnect ~          disconnects the current session and returns to the\n"
+						"                      dialing list\n"
+						"~ Send Login ~          Sends the configured user and password pair separated\n"
+						"                      by a \\r\n"
+						"~ Upload ~              Initiates a ZModem upload\n"
+						"~ Download ~            Initiates a ZModem download\n"
+						"~ Change Output Rate ~  Changes the speed charaters are output to the screen\n"
+						"~ Change Log Level ~    Changes the minimum log leve for ZModem information\n"
+						"~ Capture Control ~     Enables/Disables screen capture\n"
+						"~ ANSI Music Control ~  Enables/Disables ANSI Music\n"
+						"~ Font Control ~        Changes the current font\n"
+						"~ Toggle Doorway Mode ~ Toggle the current DoorWay setting\n"
+						"~ Exit ~                Disconnects and closes the Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
 			case -1:	/* Cancel */
