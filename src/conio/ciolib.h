@@ -309,6 +309,9 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
+
+/* DoorWay specific stuff that's only applicable to ANSI mode. */
+CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 #ifdef __cplusplus
 }
 #endif

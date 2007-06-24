@@ -69,6 +69,7 @@ int ansi_cols=80;
 int ansi_got_row=0;
 int ansi_got_col=0;
 int ansi_esc_delay=25;
+int doorway_enabled=0;
 
 const int 	ansi_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
@@ -607,7 +608,7 @@ static void ansi_keyparse(void *par)
 					sem_post(&goahead);
 					break;
 				}
-				if(ch==0) {
+				if(doorway_enabled && ch==0) {
 					/* Got a NULL. ASSume this is a doorway mode char */
 					gotnull=1;
 					break;
@@ -982,4 +983,20 @@ int ansi_initciolib(long inmode)
 	sem_reset(&goahead);
 	sem_reset(&need_key);
 	return(1);
+}
+
+void ansi_ciolib_setdoorway(int enable)
+{
+	if(cio_api.mode!=CIOLIB_MODE_ANSI)
+		return;
+	switch(enable) {
+	case 0:
+		ansi_sendstr("\033[=255l",7);
+		doorway_enabled=0;
+		break;
+	default:
+		ansi_sendstr("\033[=255h",7);
+		doorway_enabled=1;
+		break;
+	}
 }
