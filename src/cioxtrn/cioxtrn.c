@@ -11,12 +11,89 @@ int					input_thread_running=0;
 int					output_thread_running=0;
 struct text_info ti;
 
+enum key_modifier {
+	 MOD_SHIFT
+	,MOD_CONTROL
+	,MOD_ALT
+};
+int					shift=0;
+int					alt=0;
+int					ctrl=0;
+
+/* Stolen from win32cio.c */
+struct keyvals {
+	int	VirtualKeyCode
+		,Key
+		,Shift
+		,CTRL
+		,ALT;
+};
+
+/* Get this from win32cio.c */
+extern const struct keyvals keyval[];
+
+void frobkey(int press, int release, int scan, int key, int ascii)
+{
+	INPUT_RECORD		ckey;
+	DWORD d;
+	SHORT s;
+
+	ckey.Event.KeyEvent.bKeyDown=TRUE;
+	ckey.Event.KeyEvent.dwControlKeyState=0;
+	if(alt)
+		ckey.Event.KeyEvent.dwControlKeyState |= LEFT_ALT_PRESSED;
+	if(ctrl)
+		ckey.Event.KeyEvent.dwControlKeyState |= LEFT_CTRL_PRESSED;
+	if(shift)
+		ckey.Event.KeyEvent.dwControlKeyState |= LEFT_SHIFT_PRESSED;
+	ckey.Event.KeyEvent.wRepeatCount=1;
+	ckey.Event.KeyEvent.wVirtualKeyCode=key;	/* ALT key */
+	ckey.Event.KeyEvent.wVirtualScanCode=scan;
+	ckey.Event.KeyEvent.uChar.AsciiChar=ascii;
+	d=0;
+	if(press) {
+		while(!d) {
+			if(!WriteConsoleInput(console_input, &ckey, 1, &d))
+				d=0;
+		}
+	}
+	ckey.Event.KeyEvent.bKeyDown=FALSE;
+	if(release) {
+		while(!d) {
+			if(!WriteConsoleInput(console_input, &ckey, 1, &d))
+				d=0;
+		}
+	}
+}
+
+void toggle_modifier(enum key_modifier mod)
+{
+	int *mod;
+	WORD key;
+
+	switch(mod) {
+		case MOD_SHIFT:
+			mod=&shift;
+			key=VK_SHIFT;
+			break;
+		case MOD_CONTROL:
+			mod=&ctrl;
+			key=VK_CONTROL;
+			break;
+		case MOD_ALT:
+			mod=&alt;
+			key=VK_MENU;
+			break;
+	}
+	frobkey(!(*mod), (*mod), MapVirtualKey(key, 0), key, 0);
+	*mod=!(*mod);
+}
+
 void input_thread(void *args)
 {
 	int					key;
 	INPUT_RECORD		ckey;
-	int					alt=0;
-	int					ctrl=0;
+	int i;
 	DWORD d;
 	SHORT s;
 
@@ -28,25 +105,7 @@ void input_thread(void *args)
 			if(key==0 || key == 0xff)
 				key|=getch()<<8;
 			if(key==1) {
-				if(alt==0) {
-					alt=1;
-					ckey.Event.KeyEvent.bKeyDown=TRUE;
-					ckey.Event.KeyEvent.dwControlKeyState = LEFT_ALT_PRESSED;
-				}
-				else {
-					alt=0;
-					ckey.Event.KeyEvent.bKeyDown=FALSE;
-					ckey.Event.KeyEvent.dwControlKeyState = 0;
-				}
-				ckey.Event.KeyEvent.wRepeatCount=1;
-				ckey.Event.KeyEvent.wVirtualKeyCode=VK_MENU;	/* ALT key */
-				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(VK_MENU, 0);
-				ckey.Event.KeyEvent.uChar.AsciiChar=0;
-				d=0;
-				while(!d) {
-					if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-						d=0;
-				}
+				toggle_modifier(MOD_ALT);
 				if(alt)
 					continue;
 			}
@@ -63,23 +122,10 @@ void input_thread(void *args)
 					if(alt==1)
 						break;
 				default:
-					ctrl=1;
-					ckey.Event.KeyEvent.bKeyDown=TRUE;
-					ckey.Event.KeyEvent.dwControlKeyState = LEFT_CTRL_PRESSED;
-					ckey.Event.KeyEvent.wRepeatCount=1;
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_CONTROL;
-					ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
-					ckey.Event.KeyEvent.uChar.AsciiChar=0;
-					d=0;
-					while(!d) {
-						if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-							d=0;
-					}
+					toggle_modifier(MOD_CONTROL);
 				}
 			}
 
-			ckey.Event.KeyEvent.bKeyDown=TRUE;
-			ckey.Event.KeyEvent.wRepeatCount=1;
 			if(key < 256) {
 				s=VkKeyScan(key);
 
@@ -87,139 +133,65 @@ void input_thread(void *args)
 				if(s==-1)
 					continue;
 
-				ckey.Event.KeyEvent.wVirtualKeyCode = s&0xff;
-				ckey.Event.KeyEvent.dwControlKeyState=0;
-				if(s&0x0100)
-					ckey.Event.KeyEvent.dwControlKeyState |= SHIFT_PRESSED;
-				if(s&0x0200)
-					ckey.Event.KeyEvent.dwControlKeyState |= LEFT_CTRL_PRESSED;
-				if(s&0x0400)
-					ckey.Event.KeyEvent.dwControlKeyState |= LEFT_ALT_PRESSED;
+				/* Make the mod states match up... */
+				/* Wish I had a ^^ operator */
+				if((s & 0x0100 == 0x0100) != (shift != 0))
+					toggle_modifier(MOD_SHIFT);
+				if((s & 0x0200 == 0x0200) != (ctrl != 0))
+					toggle_modifier(MOD_CONTROL);
+				if((s & 0x0400 == 0x0400) != (alt != 0))
+					toggle_modifier(MOD_ALT);
 
-				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(s & 0xff, 0);
-				ckey.Event.KeyEvent.uChar.AsciiChar=key;
+				frobkey(TRUE, TRUE, MapVirtualKey(s & 0xff, 0), s&0xff, key);
 			}
 			else {
-				ckey.Event.KeyEvent.dwControlKeyState=0;
-				ckey.Event.KeyEvent.uChar.AsciiChar=0;
-				switch(key) {
-				case CIO_KEY_HOME:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_HOME;
-					break;
-				case CIO_KEY_UP:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_UP;
-					break;
-				case CIO_KEY_END:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_END;
-					break;
-				case CIO_KEY_DOWN:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_DOWN;
-					break;
-				case CIO_KEY_IC:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_INSERT;
-					break;
-				case CIO_KEY_DC:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_DELETE;
-					break;
-				case CIO_KEY_LEFT:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_LEFT;
-					break;
-				case CIO_KEY_RIGHT:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_RIGHT;
-					break;
-				case CIO_KEY_PPAGE:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_PRIOR;
-					break;
-				case CIO_KEY_NPAGE:
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_NEXT;
-					break;
-				case CIO_KEY_F(1):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F1;
-					break;
-				case CIO_KEY_F(2):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F2;
-					break;
-				case CIO_KEY_F(3):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F3;
-					break;
-				case CIO_KEY_F(4):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F4;
-					break;
-				case CIO_KEY_F(5):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F5;
-					break;
-				case CIO_KEY_F(6):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F6;
-					break;
-				case CIO_KEY_F(7):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F7;
-					break;
-				case CIO_KEY_F(8):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F8;
-					break;
-				case CIO_KEY_F(9):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F9;
-					break;
-				case CIO_KEY_F(10):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F10;
-					break;
-				case CIO_KEY_F(11):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F11;
-					break;
-				case CIO_KEY_F(12):
-					ckey.Event.KeyEvent.wVirtualKeyCode=VK_F12;
-					break;
-				default:
-					continue;
+				/* Check if CTRL or ALT are "pressed" */
+				for(i=0;keyval[i].Key;i++) {
+					if(keyval[i].Key==key)
+						break;
+					if(keyval[i].Shift==key)
+						/* Release the CTRL key */
+						if(ctrl)
+							toggle_modifier(MOD_CONTROL);
+						/* Release the ALT key */
+						if(alt)
+							toggle_modifier(MOD_ALT);
+						/* Press the shift key */
+						if(!shift)
+							toggle_modifier(MOD_SHIFT);
+						break;
+					if(keyval[i].CTRL==key) {
+						/* Release the shift key */
+						if(shift)
+							toggle_modifier(MOD_SHIFT);
+						/* Release the ALT key */
+						if(alt)
+							toggle_modifier(MOD_ALT);
+						/* Press the CTRL key */
+						if(!ctrl)
+							toggle_modifier(MOD_CONTROL);
+						break;
+					}
+					if(keyval[i].ALT==key) {
+						/* Release the shift key */
+						if(shift)
+							toggle_modifier(MOD_SHIFT);
+						/* Release the CTRL key */
+						if(ctrl)
+							toggle_modifier(MOD_CONTROL);
+						/* Press the ALT key */
+						if(!alt)
+							toggle_modifier(MOD_ALT);
+					}
 				}
-				ckey.Event.KeyEvent.wRepeatCount=1;
-				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
-				ckey.Event.KeyEvent.uChar.AsciiChar=0;
-				ckey.Event.KeyEvent.dwControlKeyState=0;
+				frobkey(TRUE, TRUE, MapVirtualKey(key>>8, 1), key>>8, 0);
 			}
 			if(alt)
-				ckey.Event.KeyEvent.dwControlKeyState |= LEFT_ALT_PRESSED;
-
-			ckey.EventType=KEY_EVENT;
-			d=0;
-			while(!d) {
-				if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-					d=0;
-			}
-			ckey.Event.KeyEvent.bKeyDown=FALSE;
-			d=0;
-			while(!d) {
-				if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-					d=0;
-			}
-			if(alt) {
-				ckey.Event.KeyEvent.bKeyDown=FALSE;
-				ckey.Event.KeyEvent.wRepeatCount=1;
-				ckey.Event.KeyEvent.wVirtualKeyCode=VK_MENU;	/* ALT key */
-				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(VK_MENU, 0);
-				ckey.Event.KeyEvent.uChar.AsciiChar=0;
-				ckey.Event.KeyEvent.dwControlKeyState = LEFT_ALT_PRESSED;
-				d=0;
-				while(!d) {
-					if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-						d=0;
-				}
-				alt=0;
-			}
-			if(ctrl) {
-				ckey.Event.KeyEvent.bKeyDown=FALSE;
-				ckey.Event.KeyEvent.wRepeatCount=1;
-				ckey.Event.KeyEvent.wVirtualKeyCode=VK_CONTROL;
-				ckey.Event.KeyEvent.wVirtualScanCode=MapVirtualKey(ckey.Event.KeyEvent.wVirtualKeyCode, 0);
-				ckey.Event.KeyEvent.uChar.AsciiChar=0;
-				ckey.Event.KeyEvent.dwControlKeyState = LEFT_CTRL_PRESSED;
-				d=0;
-				while(!d) {
-					if(!WriteConsoleInput(console_input, &ckey, 1, &d))
-						d=0;
-				}
-				alt=0;
-			}
+				toggle_modifier(MOD_ALT);
+			if(ctrl)
+				toggle_modifier(MOD_CONTROL);
+			if(shift)
+				toggle_modifier(MOD_SHIFT);
 		}
 		else
 			SLEEP(1);
