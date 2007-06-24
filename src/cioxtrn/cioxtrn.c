@@ -21,6 +21,8 @@ void input_thread(void *args)
 	SHORT s;
 
 	input_thread_running=1;
+	/* Request DoorWay mode */
+	printf("\033[=255h");
 	while(!terminate) {
 		if(kbhit()) {
 			key=getch();
@@ -359,6 +361,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 				terminate=1;
 				while(input_thread_running || output_thread_running)
 					SLEEP(1);
+				/* Disable DoorWay mode */
+				printf("\033[=255l");
 				TerminateProcess(ntvdm,0);
 				CloseHandle(ntvdm);
 				CloseHandle(console_output);
