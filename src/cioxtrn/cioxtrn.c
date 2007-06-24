@@ -280,6 +280,31 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 	DWORD d;
 	SECURITY_ATTRIBUTES	sec_attrib;
 
+	/* Command-line arguments */
+	for(;;cmd++) {
+		if(!(*cmd))
+			goto USAGE;
+		if(*cmd=='-' || *cmd=='/') {
+			/* Command line argument... */
+			cmd++;
+			switch(*cmd) {
+				case 't':
+				case 'T':
+					display_top=1;
+					break;
+				case 'b':
+				case 'B':
+					display_top=0;
+					break;
+				default:
+					goto USAGE;
+			}
+		}
+		else
+			if(!isspace(*cmd))
+				break;
+	}
+
 	puttext_can_move=1;
 	initciolib(CIOLIB_MODE_ANSI);
 	ansi_ciolib_setdoorway(1);
@@ -371,4 +396,15 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 		}
 		SLEEP(1);
 	}
+
+USAGE:
+	puts(	"\r\nUsage:"
+			"\r\ncioxtrn [ -t | -b ] <command>"
+			"\r\n"
+			"\r\n-t and -b select default behaviour if the console window is resized."
+			"\r\n-t Displays the top of the window"
+			"\r\n-b displays the bottom of the window"
+			"\r\n"
+			"\r\n<command> is the command to execute with redirected IO");
+	return(0);
 }
