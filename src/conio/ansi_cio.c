@@ -487,6 +487,7 @@ void ansi_textattr(int attr)
 static void ansi_keyparse(void *par)
 {
 	int		gotesc=0;
+	int		gotnull=0;
 	char	seq[64];
 	int		ch;
 	int		i;
@@ -525,6 +526,18 @@ static void ansi_keyparse(void *par)
 			sem_wait(&got_key);
 
 		ch=ansi_raw_inch;
+		if(gotnull) {
+			ansi_inch=ch<<8;
+			sem_post(&got_input);
+			/* Two-byte code, need to post twice and wait for one to
+			   be received */
+			sem_wait(&used_input);
+			sem_wait(&goahead);
+			sem_post(&got_input);
+			sem_wait(&used_input);
+			gotnull=0;
+			continue;
+		}
 
 		switch(gotesc) {
 			case 1:	/* Escape Sequence */
@@ -592,6 +605,11 @@ static void ansi_keyparse(void *par)
 					/* The \n that goes with the prev \r (hopefully) */
 					/* Eat it and keep chuggin' */
 					sem_post(&goahead);
+					break;
+				}
+				if(ch==0) {
+					/* Got a NULL. ASSume this is a doorway mode char */
+					gotnull=1;
 					break;
 				}
 				ansi_inch=ch;
