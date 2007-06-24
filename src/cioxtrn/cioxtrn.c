@@ -20,6 +20,7 @@ int					shift=0;
 int					alt=0;
 int					ctrl=0;
 int					force_redraw=0;
+int					display_top=1;
 
 /* Stolen from win32cio.c */
 struct keyvals {
@@ -118,6 +119,12 @@ void input_thread(void *args)
 					continue;
 				}
 			}
+			if(key==26) {	/* CTRL-Z */
+				force_redraw=1;
+				display_top=!display_top;
+				if(lastkey != 26)
+					continue;
+			}
 			if(key < 256) {
 				s=VkKeyScan(key);
 
@@ -203,6 +210,7 @@ void output_thread(void *args)
 	COORD				pos;
 	int i,j;
 
+	GetConsoleScreenBufferInfo(console_output, &console_output_info);
 	pos.X=0;
 	pos.Y=0;
 	size.X=ti.screenwidth;
@@ -217,10 +225,18 @@ void output_thread(void *args)
 		SLEEP(10);
 
 		/* Read the console screen buffer */
-		screen_area.Left=0;
-		screen_area.Right=ti.screenwidth-1;
-		screen_area.Top=0;
-		screen_area.Bottom=ti.screenheight-1;
+		if(display_top) {
+			screen_area.Left=console_output_info.srWindow.Left;
+			screen_area.Right=console_output_info.srWindow.Left+ti.screenwidth-1;
+			screen_area.Top=console_output_info.srWindow.Top;
+			screen_area.Bottom=console_output_info.srWindow.Top+ti.screenheight-1;
+		}
+		else {
+			screen_area.Left=console_output_info.srWindow.Right-ti.screenwidth+1;
+			screen_area.Right=console_output_info.srWindow.Right;
+			screen_area.Top=console_output_info.srWindow.Bottom-ti.screenheight+1;
+			screen_area.Bottom=console_output_info.srWindow.Bottom;
+		}
 		ReadConsoleOutput(console_output, from_screen, size, pos, &screen_area);
 
 		/* Translate to a ciolib buffer */
