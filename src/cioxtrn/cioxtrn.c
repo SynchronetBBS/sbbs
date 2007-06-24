@@ -209,6 +209,7 @@ void output_thread(void *args)
 	COORD				size;
 	COORD				pos;
 	int i,j;
+	int last_display_top;
 
 	GetConsoleScreenBufferInfo(console_output, &console_output_info);
 	pos.X=0;
@@ -226,12 +227,18 @@ void output_thread(void *args)
 
 		/* Read the console screen buffer */
 		if(display_top) {
+			if(!last_display_top)
+				force_redraw=1;
+			last_display_top=1;
 			screen_area.Left=console_output_info.srWindow.Left;
 			screen_area.Right=console_output_info.srWindow.Left+ti.screenwidth-1;
 			screen_area.Top=console_output_info.srWindow.Top;
 			screen_area.Bottom=console_output_info.srWindow.Top+ti.screenheight-1;
 		}
 		else {
+			if(last_display_top)
+				force_redraw=1;
+			last_display_top=0;
 			screen_area.Left=console_output_info.srWindow.Right-ti.screenwidth+1;
 			screen_area.Right=console_output_info.srWindow.Right;
 			screen_area.Top=console_output_info.srWindow.Bottom-ti.screenheight+1;
