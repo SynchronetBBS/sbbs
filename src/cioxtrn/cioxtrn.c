@@ -22,7 +22,6 @@ void input_thread(void *args)
 
 	input_thread_running=1;
 	/* Request DoorWay mode */
-	printf("\033[=255h");
 	while(!terminate) {
 		if(kbhit()) {
 			key=getch();
@@ -290,11 +289,14 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 
 	puttext_can_move=1;
 	initciolib(CIOLIB_MODE_ANSI);
+	ansi_ciolib_setdoorway(1);
 	gettextinfo(&ti);
 	FreeConsole();
 
-	if(!AllocConsole())
+	if(!AllocConsole()) {
+		ansi_ciolib_setdoorway(0);
 		return(1);
+	}
 
 	memset(&sec_attrib,0,sizeof(sec_attrib));
 	sec_attrib.nLength=sizeof(sec_attrib);
@@ -303,11 +305,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 	console_output=CreateFile("CONOUT$", GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec_attrib, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0L);
 	if(console_output==INVALID_HANDLE_VALUE) {
 		printf("CONOUT Error: %u\r\n",GetLastError());
+		ansi_ciolib_setdoorway(0);
 		return(1);
 	}
 	console_input=CreateFile("CONIN$", GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec_attrib, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0L);
 	if(console_input==INVALID_HANDLE_VALUE) {
 		printf("CONIN Error: %u\r\n",GetLastError());
+		ansi_ciolib_setdoorway(0);
 		return(1);
 	}
 
@@ -345,6 +349,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 			, &process_info
 			)) {
 		printf("Error: %u\r\n",GetLastError());
+		ansi_ciolib_setdoorway(0);
 		return(1);
 	}
 	CloseHandle(process_info.hThread);
@@ -361,14 +366,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 				terminate=1;
 				while(input_thread_running || output_thread_running)
 					SLEEP(1);
-				/* Disable DoorWay mode */
-				printf("\033[=255l");
 				TerminateProcess(ntvdm,0);
 				CloseHandle(ntvdm);
 				CloseHandle(console_output);
 				CloseHandle(console_input);
 				CloseHandle(process_info.hProcess);
 				FreeConsole();
+				ansi_ciolib_setdoorway(0);
 				return(0);
 			}
 		}
