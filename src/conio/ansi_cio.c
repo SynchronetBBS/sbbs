@@ -199,6 +199,8 @@ void ansi_sendch(char ch)
 			ansi_row=ansi_rows-1;
 		}
 	}
+	if(doorway_enabled && ch < ' ')
+		fwrite("",1,1,stdout);
 	fwrite(&ch,1,1,stdout);
 	/* We sent a control char... better make the next movement explicit */
 	if(ch<' ' && ch > 0)
