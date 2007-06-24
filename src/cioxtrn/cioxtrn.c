@@ -19,6 +19,7 @@ enum key_modifier {
 int					shift=0;
 int					alt=0;
 int					ctrl=0;
+int					force_redraw=0;
 
 /* Stolen from win32cio.c */
 struct keyvals {
@@ -91,7 +92,8 @@ void toggle_modifier(enum key_modifier mod)
 
 void input_thread(void *args)
 {
-	int					key;
+	int					key=-1;
+	int					lastkey;
 	INPUT_RECORD		ckey;
 	int i;
 	DWORD d;
@@ -101,6 +103,7 @@ void input_thread(void *args)
 	/* Request DoorWay mode */
 	while(!terminate) {
 		if(kbhit()) {
+			lastkey=key;
 			key=getch();
 			if(key==0 || key == 0xff)
 				key|=getch()<<8;
@@ -109,23 +112,12 @@ void input_thread(void *args)
 				if(alt)
 					continue;
 			}
-			if(key < ' ') {
-				/* If this is NOT a "normal" key, fiddle with CTRL */
-				switch(key) {
-				case 8:
-				case 9:
-				case 10:
-				case 13:
-				case 27:
-					break;
-				case 1:
-					if(alt==1)
-						break;
-				default:
-					toggle_modifier(MOD_CONTROL);
+			if(key==18) {	/* CTRL-R */
+				if(lastkey != 18) {
+					force_redraw=1;
+					continue;
 				}
 			}
-
 			if(key < 256) {
 				s=VkKeyScan(key);
 
@@ -139,8 +131,9 @@ void input_thread(void *args)
 					toggle_modifier(MOD_SHIFT);
 				if((s & 0x0200 == 0x0200) != (ctrl != 0))
 					toggle_modifier(MOD_CONTROL);
-				if((s & 0x0400 == 0x0400) != (alt != 0))
-					toggle_modifier(MOD_ALT);
+				/* ALT is handled via CTRL-A, not here */
+				/* if((s & 0x0400 == 0x0400) != (alt != 0))
+					toggle_modifier(MOD_ALT); */
 
 				frobkey(TRUE, TRUE, MapVirtualKey(s & 0xff, 0), s&0xff, key);
 			}
@@ -153,9 +146,9 @@ void input_thread(void *args)
 						/* Release the CTRL key */
 						if(ctrl)
 							toggle_modifier(MOD_CONTROL);
-						/* Release the ALT key */
-						if(alt)
-							toggle_modifier(MOD_ALT);
+						/* ALT is handled via CTRL-A, not here */
+						/* if((s & 0x0400 == 0x0400) != (alt != 0))
+							toggle_modifier(MOD_ALT); */
 						/* Press the shift key */
 						if(!shift)
 							toggle_modifier(MOD_SHIFT);
@@ -164,9 +157,9 @@ void input_thread(void *args)
 						/* Release the shift key */
 						if(shift)
 							toggle_modifier(MOD_SHIFT);
-						/* Release the ALT key */
-						if(alt)
-							toggle_modifier(MOD_ALT);
+						/* ALT is handled via CTRL-A, not here */
+						/* if((s & 0x0400 == 0x0400) != (alt != 0))
+							toggle_modifier(MOD_ALT); */
 						/* Press the CTRL key */
 						if(!ctrl)
 							toggle_modifier(MOD_CONTROL);
@@ -235,6 +228,11 @@ void output_thread(void *args)
 		for(i=0; i<ti.screenwidth*ti.screenheight; i++) {
 			write_buf[j++]=from_screen[i].Char.AsciiChar;
 			write_buf[j++]=from_screen[i].Attributes & 0xff;
+		}
+
+		if(force_redraw) {
+			clrscr();
+			force_redraw=0;
 		}
 
 		/* Compare against the current screen */
