@@ -613,6 +613,7 @@ static void ansi_keyparse(void *par)
 				if(doorway_enabled && ch==0) {
 					/* Got a NULL. ASSume this is a doorway mode char */
 					gotnull=1;
+					sem_post(&goahead);
 					break;
 				}
 				ansi_inch=ch;
