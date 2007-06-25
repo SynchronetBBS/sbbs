@@ -1,0 +1,967 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 38;
+	objects = {
+		080E96DDFE201D6D7F000001 = {
+			children = (
+			);
+			isa = PBXGroup;
+			name = Classes;
+			refType = 4;
+		};
+		089C165CFE840E0CC02AAC07 = {
+			children = (
+				089C165DFE840E0CC02AAC07,
+			);
+			isa = PBXVariantGroup;
+			name = InfoPlist.strings;
+			refType = 4;
+		};
+		089C165DFE840E0CC02AAC07 = {
+			fileEncoding = 10;
+			isa = PBXFileReference;
+			name = English;
+			path = English.lproj/InfoPlist.strings;
+			refType = 4;
+		};
+		089C165EFE840E0CC02AAC07 = {
+			fileRef = 089C165CFE840E0CC02AAC07;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//080
+//081
+//082
+//083
+//084
+//100
+//101
+//102
+//103
+//104
+		1058C7A0FEA54F0111CA2CBB = {
+			children = (
+				DEA765D209315E5700A8000E,
+				1058C7A1FEA54F0111CA2CBB,
+				DE1762DC08F4E74900A8000E,
+			);
+			isa = PBXGroup;
+			name = "Linked Frameworks";
+			refType = 4;
+		};
+		1058C7A1FEA54F0111CA2CBB = {
+			isa = PBXFrameworkReference;
+			name = Cocoa.framework;
+			path = /System/Library/Frameworks/Cocoa.framework;
+			refType = 0;
+		};
+		1058C7A2FEA54F0111CA2CBB = {
+			children = (
+				29B97325FDCFA39411CA2CEA,
+				29B97324FDCFA39411CA2CEA,
+			);
+			isa = PBXGroup;
+			name = "Other Frameworks";
+			refType = 4;
+		};
+		1058C7A3FEA54F0111CA2CBB = {
+			fileRef = 1058C7A1FEA54F0111CA2CBB;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+//100
+//101
+//102
+//103
+//104
+//170
+//171
+//172
+//173
+//174
+		17587328FF379C6511CA2CBB = {
+			isa = PBXApplicationReference;
+			path = SyncTERM.app;
+			refType = 3;
+		};
+//170
+//171
+//172
+//173
+//174
+//190
+//191
+//192
+//193
+//194
+		19C28FACFE9D520D11CA2CBB = {
+			children = (
+				17587328FF379C6511CA2CBB,
+			);
+			isa = PBXGroup;
+			name = Products;
+			refType = 4;
+		};
+//190
+//191
+//192
+//193
+//194
+//290
+//291
+//292
+//293
+//294
+		29B97313FDCFA39411CA2CEA = {
+			buildStyles = (
+				4A9504CCFFE6A4B311CA0CBA,
+				4A9504CDFFE6A4B311CA0CBA,
+			);
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = 29B97314FDCFA39411CA2CEA;
+			projectDirPath = "";
+			targets = (
+				29B97326FDCFA39411CA2CEA,
+			);
+		};
+		29B97314FDCFA39411CA2CEA = {
+			children = (
+				080E96DDFE201D6D7F000001,
+				29B97315FDCFA39411CA2CEA,
+				29B97317FDCFA39411CA2CEA,
+				29B97323FDCFA39411CA2CEA,
+				19C28FACFE9D520D11CA2CBB,
+			);
+			isa = PBXGroup;
+			name = SyncTERM;
+			path = "";
+			refType = 4;
+		};
+		29B97315FDCFA39411CA2CEA = {
+			children = (
+				DEFDC20908F104B500A8000E,
+				DEFDC20A08F104B500A8000E,
+				DEFDC20B08F104B500A8000E,
+				DEFDC20C08F104B500A8000E,
+				DEFDC20D08F104B500A8000E,
+				DEFDC20E08F104B500A8000E,
+				DEFDC20F08F104B500A8000E,
+				DEFDC21008F104B500A8000E,
+				DEFDC21108F104B500A8000E,
+				DEFDC21208F104B500A8000E,
+				DEFDC21308F104B500A8000E,
+				DEFDC21408F104B500A8000E,
+				DEFDC21508F104B500A8000E,
+				DEFDC21608F104B500A8000E,
+				DEFDC21708F104B500A8000E,
+				DEFDC21908F104B500A8000E,
+				DEFDC22D08F10C2500A8000E,
+				DEFDC22F08F10C5700A8000E,
+				DEFDC23108F10C9100A8000E,
+				DEFDC23208F10C9100A8000E,
+				DEFDC23508F10CB500A8000E,
+				DEFDC23608F10CB500A8000E,
+				DEFDC23908F10D1400A8000E,
+				DEFDC23A08F10D1400A8000E,
+				DEFDC23B08F10D1400A8000E,
+				DEFDC23C08F10D1400A8000E,
+				DE7A525A0A2EBEF800A8000E,
+				DE7A525C0A2EBF1400A8000E,
+				DE88432B0ACF152600A8000E,
+				DE88432D0ACF154500A8000E,
+				DE0B9B2D0C0BE9DC00A8000E,
+				DE0B9B2F0C0BEA3300A8000E,
+				DE0B9B310C0BEA5F00A8000E,
+				DE0B9B330C0BEA9800A8000E,
+				DE0B9B350C0BEC3500A8000E,
+				DE0B9B370C0BEC3500A8000E,
+				DE0B9B3B0C0BEE1A00A8000E,
+				DE0B9B3D0C0BEE1A00A8000E,
+				DE0B9B3E0C0BEE1A00A8000E,
+				DE0B9B400C0BEE1A00A8000E,
+			);
+			isa = PBXGroup;
+			name = "Other Sources";
+			path = "";
+			refType = 4;
+		};
+		29B97317FDCFA39411CA2CEA = {
+			children = (
+				089C165CFE840E0CC02AAC07,
+			);
+			isa = PBXGroup;
+			name = Resources;
+			path = "";
+			refType = 4;
+		};
+		29B97323FDCFA39411CA2CEA = {
+			children = (
+				1058C7A0FEA54F0111CA2CBB,
+				1058C7A2FEA54F0111CA2CBB,
+			);
+			isa = PBXGroup;
+			name = Frameworks;
+			path = "";
+			refType = 4;
+		};
+		29B97324FDCFA39411CA2CEA = {
+			isa = PBXFrameworkReference;
+			name = AppKit.framework;
+			path = /System/Library/Frameworks/AppKit.framework;
+			refType = 0;
+		};
+		29B97325FDCFA39411CA2CEA = {
+			isa = PBXFrameworkReference;
+			name = Foundation.framework;
+			path = /System/Library/Frameworks/Foundation.framework;
+			refType = 0;
+		};
+		29B97326FDCFA39411CA2CEA = {
+			buildPhases = (
+				DEA765D409315E8800A8000E,
+				29B97327FDCFA39411CA2CEA,
+				29B97328FDCFA39411CA2CEA,
+				29B9732BFDCFA39411CA2CEA,
+				29B9732DFDCFA39411CA2CEA,
+			);
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = "\"/Library/Frameworks\"";
+				HEADER_SEARCH_PATHS = "/automount/synchronet/src/include/cryptlib /automount/synchronet/src/src/smblib /automount/synchronet/src/src/sbbs3 /automount/synchronet/src/src/conio /automount/synchronet/src/src/uifc /automount/synchronet/src/src/xpdev /Library/Frameworks/SDL.framework/Headers";
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "/automount/synchronet/src/lib/cryptlib/darwin.power_macintosh.release /automount/synchronet/src/src/conio/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/uifc/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/xpdev/gcc.darwin.power_macintosh.lib.release";
+				OTHER_CFLAGS = "-D__unix__ -D__DARWIN__ -DWITH_SDL -DUSE_XP_SEMAPHORES -DXPDEV_THREAD_SAFE -DLINK_LIST_THREADSAFE -DSTATIC_SDL";
+				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -luifc_mt -lcurses -lcl /usr/local/lib/libdl.a";
+				PRODUCT_NAME = SyncTERM;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
+				WRAPPER_EXTENSION = app;
+			};
+			dependencies = (
+			);
+			isa = PBXApplicationTarget;
+			name = SyncTERM;
+			productInstallPath = "$(HOME)/Applications";
+			productName = SyncTERM;
+			productReference = 17587328FF379C6511CA2CBB;
+			productSettingsXML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>SyncTERM</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>SyncTERM</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>SSH</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ssh</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Telnet</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>telnet</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>RLogin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rlogin</string>
+			</array>
+		</dict>
+		<dict/>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>0.9</string>
+	<key>NSMainNibFile</key>
+	<string>MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+</dict>
+</plist>
+";
+		};
+		29B97327FDCFA39411CA2CEA = {
+			buildActionMask = 2147483647;
+			files = (
+				DEFDC21B08F104B500A8000E,
+				DEFDC21D08F104B500A8000E,
+				DEFDC21E08F104B500A8000E,
+				DEFDC21F08F104B500A8000E,
+				DEFDC22408F104B500A8000E,
+				DEFDC22608F104B500A8000E,
+				DEFDC22808F104B500A8000E,
+				DEFDC22B08F104B500A8000E,
+				DEFDC23008F10C5700A8000E,
+				DEFDC23408F10C9100A8000E,
+				DEFDC23808F10CB500A8000E,
+				DEFDC23E08F10D1400A8000E,
+				DEFDC24008F10D1400A8000E,
+				DE7A525D0A2EBF1400A8000E,
+				DE88432E0ACF154500A8000E,
+				DE0B9B320C0BEA5F00A8000E,
+				DE0B9B340C0BEA9800A8000E,
+				DE0B9B430C0BEE1A00A8000E,
+				DE0B9B460C0BEE1A00A8000E,
+			);
+			isa = PBXHeadersBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29B97328FDCFA39411CA2CEA = {
+			buildActionMask = 2147483647;
+			files = (
+				089C165EFE840E0CC02AAC07,
+			);
+			isa = PBXResourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29B9732BFDCFA39411CA2CEA = {
+			buildActionMask = 2147483647;
+			files = (
+				DEFDC21C08F104B500A8000E,
+				DEFDC22008F104B500A8000E,
+				DEFDC22108F104B500A8000E,
+				DEFDC22208F104B500A8000E,
+				DEFDC22308F104B500A8000E,
+				DEFDC22508F104B500A8000E,
+				DEFDC22708F104B500A8000E,
+				DEFDC22908F104B500A8000E,
+				DEFDC22E08F10C2500A8000E,
+				DEFDC23308F10C9100A8000E,
+				DEFDC23708F10CB500A8000E,
+				DEFDC23D08F10D1400A8000E,
+				DEFDC23F08F10D1400A8000E,
+				DE7A525B0A2EBEF800A8000E,
+				DE88432C0ACF152600A8000E,
+				DE0B9B2E0C0BE9DC00A8000E,
+				DE0B9B300C0BEA3300A8000E,
+				DE0B9B380C0BEC3500A8000E,
+				DE0B9B3A0C0BEC3500A8000E,
+				DE0B9B410C0BEE1A00A8000E,
+				DE0B9B440C0BEE1A00A8000E,
+			);
+			isa = PBXSourcesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29B9732DFDCFA39411CA2CEA = {
+			buildActionMask = 2147483647;
+			files = (
+				1058C7A3FEA54F0111CA2CBB,
+				DE1762DD08F4E74900A8000E,
+				DEA765D309315E5700A8000E,
+			);
+			isa = PBXFrameworksBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+//290
+//291
+//292
+//293
+//294
+//4A0
+//4A1
+//4A2
+//4A3
+//4A4
+		4A9504CCFFE6A4B311CA0CBA = {
+			buildRules = (
+			);
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				OPTIMIZATION_CFLAGS = "-O0";
+			};
+			isa = PBXBuildStyle;
+			name = Development;
+		};
+		4A9504CDFFE6A4B311CA0CBA = {
+			buildRules = (
+			);
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+			};
+			isa = PBXBuildStyle;
+			name = Deployment;
+		};
+//4A0
+//4A1
+//4A2
+//4A3
+//4A4
+//DE0
+//DE1
+//DE2
+//DE3
+//DE4
+		DE0B9B2D0C0BE9DC00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = modem.c;
+			refType = 4;
+		};
+		DE0B9B2E0C0BE9DC00A8000E = {
+			fileRef = DE0B9B2D0C0BE9DC00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B2F0C0BEA3300A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = conn_telnet.c;
+			refType = 4;
+		};
+		DE0B9B300C0BEA3300A8000E = {
+			fileRef = DE0B9B2F0C0BEA3300A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B310C0BEA5F00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = conn_telnet.h;
+			refType = 4;
+		};
+		DE0B9B320C0BEA5F00A8000E = {
+			fileRef = DE0B9B310C0BEA5F00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B330C0BEA9800A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = modem.h;
+			refType = 4;
+		};
+		DE0B9B340C0BEA9800A8000E = {
+			fileRef = DE0B9B330C0BEA9800A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B350C0BEC3500A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			name = comio_nix.c;
+			path = /automount/synchronet/src/src/comio/comio_nix.c;
+			refType = 0;
+		};
+		DE0B9B370C0BEC3500A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			name = comio.c;
+			path = /automount/synchronet/src/src/comio/comio.c;
+			refType = 0;
+		};
+		DE0B9B380C0BEC3500A8000E = {
+			fileRef = DE0B9B350C0BEC3500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B3A0C0BEC3500A8000E = {
+			fileRef = DE0B9B370C0BEC3500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B3B0C0BEE1A00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = rlogin.c;
+			refType = 4;
+		};
+		DE0B9B3D0C0BEE1A00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = rlogin.h;
+			refType = 4;
+		};
+		DE0B9B3E0C0BEE1A00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = ssh.c;
+			refType = 4;
+		};
+		DE0B9B400C0BEE1A00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = ssh.h;
+			refType = 4;
+		};
+		DE0B9B410C0BEE1A00A8000E = {
+			fileRef = DE0B9B3B0C0BEE1A00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B430C0BEE1A00A8000E = {
+			fileRef = DE0B9B3D0C0BEE1A00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B440C0BEE1A00A8000E = {
+			fileRef = DE0B9B3E0C0BEE1A00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE0B9B460C0BEE1A00A8000E = {
+			fileRef = DE0B9B400C0BEE1A00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE1762DC08F4E74900A8000E = {
+			isa = PBXFrameworkReference;
+			name = Carbon.framework;
+			path = /System/Library/Frameworks/Carbon.framework;
+			refType = 0;
+		};
+		DE1762DD08F4E74900A8000E = {
+			fileRef = DE1762DC08F4E74900A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE7A525A0A2EBEF800A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = fonts.c;
+			refType = 4;
+		};
+		DE7A525B0A2EBEF800A8000E = {
+			fileRef = DE7A525A0A2EBEF800A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE7A525C0A2EBF1400A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = fonts.h;
+			refType = 4;
+		};
+		DE7A525D0A2EBF1400A8000E = {
+			fileRef = DE7A525C0A2EBF1400A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE88432B0ACF152600A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = st_crypt.c;
+			refType = 4;
+		};
+		DE88432C0ACF152600A8000E = {
+			fileRef = DE88432B0ACF152600A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DE88432D0ACF154500A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = st_crypt.h;
+			refType = 4;
+		};
+		DE88432E0ACF154500A8000E = {
+			fileRef = DE88432D0ACF154500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEA765D209315E5700A8000E = {
+			isa = PBXFrameworkReference;
+			name = SDL.framework;
+			path = /Library/Frameworks/SDL.framework;
+			refType = 0;
+		};
+		DEA765D309315E5700A8000E = {
+			fileRef = DEA765D209315E5700A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEA765D409315E8800A8000E = {
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				DEA765D709315EA500A8000E,
+			);
+			isa = PBXCopyFilesBuildPhase;
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DEA765D709315EA500A8000E = {
+			fileRef = DEA765D209315E5700A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC20908F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = window.h;
+			path = /private/automount/synchronet/src/src/syncterm/window.h;
+			refType = 0;
+		};
+		DEFDC20A08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = window.c;
+			path = /private/automount/synchronet/src/src/syncterm/window.c;
+			refType = 0;
+		};
+		DEFDC20B08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = uifcinit.h;
+			path = /private/automount/synchronet/src/src/syncterm/uifcinit.h;
+			refType = 0;
+		};
+		DEFDC20C08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = syncterm.h;
+			path = /private/automount/synchronet/src/src/syncterm/syncterm.h;
+			refType = 0;
+		};
+		DEFDC20D08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = term.h;
+			path = /private/automount/synchronet/src/src/syncterm/term.h;
+			refType = 0;
+		};
+		DEFDC20E08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = term.c;
+			path = /private/automount/synchronet/src/src/syncterm/term.c;
+			refType = 0;
+		};
+		DEFDC20F08F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = telnet_io.c;
+			path = /private/automount/synchronet/src/src/syncterm/telnet_io.c;
+			refType = 0;
+		};
+		DEFDC21008F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = uifcinit.c;
+			path = /private/automount/synchronet/src/src/syncterm/uifcinit.c;
+			refType = 0;
+		};
+		DEFDC21108F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = syncterm.c;
+			path = /private/automount/synchronet/src/src/syncterm/syncterm.c;
+			refType = 0;
+		};
+		DEFDC21208F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = menu.h;
+			path = /private/automount/synchronet/src/src/syncterm/menu.h;
+			refType = 0;
+		};
+		DEFDC21308F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = menu.c;
+			path = /private/automount/synchronet/src/src/syncterm/menu.c;
+			refType = 0;
+		};
+		DEFDC21408F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = conn.h;
+			path = /private/automount/synchronet/src/src/syncterm/conn.h;
+			refType = 0;
+		};
+		DEFDC21508F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = conn.c;
+			path = /private/automount/synchronet/src/src/syncterm/conn.c;
+			refType = 0;
+		};
+		DEFDC21608F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = bbslist.h;
+			path = /private/automount/synchronet/src/src/syncterm/bbslist.h;
+			refType = 0;
+		};
+		DEFDC21708F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = bbslist.c;
+			path = /private/automount/synchronet/src/src/syncterm/bbslist.c;
+			refType = 0;
+		};
+		DEFDC21908F104B500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = telnet_io.h;
+			path = /private/automount/synchronet/src/src/syncterm/telnet_io.h;
+			refType = 0;
+		};
+		DEFDC21B08F104B500A8000E = {
+			fileRef = DEFDC20908F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC21C08F104B500A8000E = {
+			fileRef = DEFDC20A08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC21D08F104B500A8000E = {
+			fileRef = DEFDC20B08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC21E08F104B500A8000E = {
+			fileRef = DEFDC20C08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC21F08F104B500A8000E = {
+			fileRef = DEFDC20D08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22008F104B500A8000E = {
+			fileRef = DEFDC20E08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22108F104B500A8000E = {
+			fileRef = DEFDC20F08F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22208F104B500A8000E = {
+			fileRef = DEFDC21008F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22308F104B500A8000E = {
+			fileRef = DEFDC21108F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22408F104B500A8000E = {
+			fileRef = DEFDC21208F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22508F104B500A8000E = {
+			fileRef = DEFDC21308F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22608F104B500A8000E = {
+			fileRef = DEFDC21408F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22708F104B500A8000E = {
+			fileRef = DEFDC21508F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22808F104B500A8000E = {
+			fileRef = DEFDC21608F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22908F104B500A8000E = {
+			fileRef = DEFDC21708F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22B08F104B500A8000E = {
+			fileRef = DEFDC21908F104B500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22D08F10C2500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = filepick.c;
+			path = /automount/synchronet/src/src/uifc/filepick.c;
+			refType = 0;
+		};
+		DEFDC22E08F10C2500A8000E = {
+			fileRef = DEFDC22D08F10C2500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC22F08F10C5700A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = filepick.h;
+			path = /automount/synchronet/src/src/uifc/filepick.h;
+			refType = 0;
+		};
+		DEFDC23008F10C5700A8000E = {
+			fileRef = DEFDC22F08F10C5700A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23108F10C9100A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = telnet.c;
+			path = /automount/synchronet/src/src/sbbs3/telnet.c;
+			refType = 0;
+		};
+		DEFDC23208F10C9100A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = telnet.h;
+			path = /automount/synchronet/src/src/sbbs3/telnet.h;
+			refType = 0;
+		};
+		DEFDC23308F10C9100A8000E = {
+			fileRef = DEFDC23108F10C9100A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23408F10C9100A8000E = {
+			fileRef = DEFDC23208F10C9100A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23508F10CB500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = zmodem.c;
+			path = /automount/synchronet/src/src/sbbs3/zmodem.c;
+			refType = 0;
+		};
+		DEFDC23608F10CB500A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = zmodem.h;
+			path = /automount/synchronet/src/src/sbbs3/zmodem.h;
+			refType = 0;
+		};
+		DEFDC23708F10CB500A8000E = {
+			fileRef = DEFDC23508F10CB500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23808F10CB500A8000E = {
+			fileRef = DEFDC23608F10CB500A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23908F10D1400A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = crc16.c;
+			path = /automount/synchronet/src/src/smblib/crc16.c;
+			refType = 0;
+		};
+		DEFDC23A08F10D1400A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = crc16.h;
+			path = /automount/synchronet/src/src/smblib/crc16.h;
+			refType = 0;
+		};
+		DEFDC23B08F10D1400A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = crc32.c;
+			path = /automount/synchronet/src/src/smblib/crc32.c;
+			refType = 0;
+		};
+		DEFDC23C08F10D1400A8000E = {
+			fileEncoding = 7;
+			isa = PBXFileReference;
+			name = crc32.h;
+			path = /automount/synchronet/src/src/smblib/crc32.h;
+			refType = 0;
+		};
+		DEFDC23D08F10D1400A8000E = {
+			fileRef = DEFDC23908F10D1400A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23E08F10D1400A8000E = {
+			fileRef = DEFDC23A08F10D1400A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC23F08F10D1400A8000E = {
+			fileRef = DEFDC23B08F10D1400A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEFDC24008F10D1400A8000E = {
+			fileRef = DEFDC23C08F10D1400A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA;
+}
