@@ -12,10 +12,11 @@ int					output_thread_running=0;
 struct text_info ti;
 
 enum key_modifier {
-	 MOD_SHIFT
-	,MOD_CONTROL
-	,MOD_ALT
+	 CIO_MOD_SHIFT
+	,CIO_MOD_CONTROL
+	,CIO_MOD_ALT
 };
+
 int					shift=0;
 int					alt=0;
 int					ctrl=0;
@@ -47,7 +48,7 @@ void frobkey(int press, int release, int scan, int key, int ascii)
 	if(ctrl)
 		ckey.Event.KeyEvent.dwControlKeyState |= LEFT_CTRL_PRESSED;
 	if(shift)
-		ckey.Event.KeyEvent.dwControlKeyState |= LEFT_SHIFT_PRESSED;
+		ckey.Event.KeyEvent.dwControlKeyState |= SHIFT_PRESSED;
 	ckey.Event.KeyEvent.wRepeatCount=1;
 	ckey.Event.KeyEvent.wVirtualKeyCode=key;	/* ALT key */
 	ckey.Event.KeyEvent.wVirtualScanCode=scan;
@@ -68,21 +69,21 @@ void frobkey(int press, int release, int scan, int key, int ascii)
 	}
 }
 
-void toggle_modifier(enum key_modifier mod)
+void toggle_modifier(enum key_modifier modify)
 {
 	int *mod;
 	WORD key;
 
-	switch(mod) {
-		case MOD_SHIFT:
+	switch(modify) {
+		case CIO_MOD_SHIFT:
 			mod=&shift;
 			key=VK_SHIFT;
 			break;
-		case MOD_CONTROL:
+		case CIO_MOD_CONTROL:
 			mod=&ctrl;
 			key=VK_CONTROL;
 			break;
-		case MOD_ALT:
+		case CIO_MOD_ALT:
 			mod=&alt;
 			key=VK_MENU;
 			break;
@@ -109,7 +110,7 @@ void input_thread(void *args)
 			if(key==0 || key == 0xff)
 				key|=getch()<<8;
 			if(key==1) {
-				toggle_modifier(MOD_ALT);
+				toggle_modifier(CIO_MOD_ALT);
 				if(alt)
 					continue;
 			}
@@ -135,12 +136,12 @@ void input_thread(void *args)
 				/* Make the mod states match up... */
 				/* Wish I had a ^^ operator */
 				if((s & 0x0100 == 0x0100) != (shift != 0))
-					toggle_modifier(MOD_SHIFT);
+					toggle_modifier(CIO_MOD_SHIFT);
 				if((s & 0x0200 == 0x0200) != (ctrl != 0))
-					toggle_modifier(MOD_CONTROL);
+					toggle_modifier(CIO_MOD_CONTROL);
 				/* ALT is handled via CTRL-A, not here */
 				/* if((s & 0x0400 == 0x0400) != (alt != 0))
-					toggle_modifier(MOD_ALT); */
+					toggle_modifier(CIO_MOD_ALT); */
 
 				frobkey(TRUE, TRUE, MapVirtualKey(s & 0xff, 0), s&0xff, key);
 			}
@@ -149,49 +150,51 @@ void input_thread(void *args)
 				for(i=0;keyval[i].Key;i++) {
 					if(keyval[i].Key==key)
 						break;
-					if(keyval[i].Shift==key)
+					if(keyval[i].Shift==key) {
 						/* Release the CTRL key */
 						if(ctrl)
-							toggle_modifier(MOD_CONTROL);
+							toggle_modifier(CIO_MOD_CONTROL);
 						/* ALT is handled via CTRL-A, not here */
 						/* if((s & 0x0400 == 0x0400) != (alt != 0))
-							toggle_modifier(MOD_ALT); */
+							toggle_modifier(CIO_MOD_ALT); */
 						/* Press the shift key */
 						if(!shift)
-							toggle_modifier(MOD_SHIFT);
+							toggle_modifier(CIO_MOD_SHIFT);
 						break;
+					}
 					if(keyval[i].CTRL==key) {
 						/* Release the shift key */
 						if(shift)
-							toggle_modifier(MOD_SHIFT);
+							toggle_modifier(CIO_MOD_SHIFT);
 						/* ALT is handled via CTRL-A, not here */
 						/* if((s & 0x0400 == 0x0400) != (alt != 0))
-							toggle_modifier(MOD_ALT); */
+							toggle_modifier(CIO_MOD_ALT); */
 						/* Press the CTRL key */
 						if(!ctrl)
-							toggle_modifier(MOD_CONTROL);
+							toggle_modifier(CIO_MOD_CONTROL);
 						break;
 					}
 					if(keyval[i].ALT==key) {
 						/* Release the shift key */
 						if(shift)
-							toggle_modifier(MOD_SHIFT);
+							toggle_modifier(CIO_MOD_SHIFT);
 						/* Release the CTRL key */
 						if(ctrl)
-							toggle_modifier(MOD_CONTROL);
+							toggle_modifier(CIO_MOD_CONTROL);
 						/* Press the ALT key */
 						if(!alt)
-							toggle_modifier(MOD_ALT);
+							toggle_modifier(CIO_MOD_ALT);
+						break;
 					}
 				}
 				frobkey(TRUE, TRUE, MapVirtualKey(key>>8, 1), key>>8, 0);
 			}
 			if(alt)
-				toggle_modifier(MOD_ALT);
+				toggle_modifier(CIO_MOD_ALT);
 			if(ctrl)
-				toggle_modifier(MOD_CONTROL);
+				toggle_modifier(CIO_MOD_CONTROL);
 			if(shift)
-				toggle_modifier(MOD_SHIFT);
+				toggle_modifier(CIO_MOD_SHIFT);
 		}
 		else
 			SLEEP(1);
