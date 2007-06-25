@@ -817,24 +817,24 @@ void ansi_gotoxy(int x, int y)
 		}
 
 		/* Must need to move right then */
+#if 0
 		/* Check if we can use spaces */
 		if(x-ansi_col-1 < 5) {
 			int i;
-			/* If all the intervening cells are spaces with the current attributes, we're good */
+			/* If all the intervening cells are spaces with the current background, we're good */
 			for(i=0; i<x-ansi_col-1; i++) {
-				if(ansivmem[y*ansi_cols+ansi_col+i] & 0xff != ' ')
-					break;
-				if(ansivmem[y*ansi_cols+ansi_col+i] & 0xff != 0)
+				if((ansivmem[y*ansi_cols+ansi_col+i] & 0xff != ' ') && (ansivmem[y*ansi_cols+ansi_col+i] & 0xff != 0))
 					break;
 				if(ansivmem[y*ansi_cols+ansi_col+i] & 0x7000 != ansi_curr_attr & 0x7000)
 					break;
 			}
-			if(i==x-ansi_col-1) {
+			if(i==(x-ansi_col-1)) {
 				ansi_sendstr("    ",x-ansi_col-1);
 				ansi_col=x-1;
 				return;
 			}
 		}
+#endif
 		if(x==ansi_col+2)
 			strcpy(str,"\033[C");
 		else
