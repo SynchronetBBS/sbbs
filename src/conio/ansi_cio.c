@@ -987,7 +987,7 @@ int ansi_initciolib(long inmode)
 	return(1);
 }
 
-void ansi_ciolib_setdoorway(int enable)
+CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable)
 {
 	if(cio_api.mode!=CIOLIB_MODE_ANSI)
 		return;
