@@ -19,7 +19,7 @@
 
                                   Domain Poker
 
-                    Copyright (c) 2005 Domain Entertainment
+                    Copyright (c) 2007 Domain Entertainment
 
                            Installation/Configuration
 
@@ -38,10 +38,6 @@ Configuring Domain Poker ................................................... 4
 Important Notes ............................................................ 5
 
 Optimizing Domain Poker for your BBS ....................................... 6
-
-Demo Version Limitations ................................................... 7
-
-Upgrading From Previous Versions ........................................... 8
 
 
 
@@ -122,27 +118,26 @@ program, you will need to create a directory off of your Synchronet XTRN
 directory, call the directory DPOKER (\SBBS\XTRN\DPOKER), and unzip the archive
 into this sub-directory.
     Now, set up the game (using the Synchronet configuration program) so that
-it looks like this (NOTE: This is the setup screen for Synchronet v1b r1!  If
-you are running a version prior to this, read the OLDER VERSIONS note at the
-bottom of this file!).
+it looks like this (NOTE: This is the setup screen for Synchronet v3.13 and is
+different from older 16-bit DOS versions of Domain Poker!).
 
-    Name                        Domain Poker
-    Start-up Directory          C:\SBBS\XTRN\DPOKER    (or whatever yours is!)
-    Command Line                dpoker
-    Clean-up Command Line       dpclean
-    Cost in Credits             0
-    Access Requirements
-    Execution Requirements
-    ANSI Required               No
-    Multi-User                  Yes
-    Intercept I/O Interrupts    Yes
-    Shrink BBS                  No
-    Modify User Data            Yes             (<- doesn't matter for DEMO)
-    Uses WWIV Color Codes       No
-    Execute on Event            No
-    BBS Drop File Type          Synchronet      XTRN.DAT
-    Place Drop File In          Node Directory
-
+	Name                       Domain Poker             
+	Internal Code              DPOKER                   
+	Start-up Directory         ..\XTRN\DPOKER           
+	Command Line               dpoker /l                
+	Clean-up Command Line      dpoker /clean            
+	Execution Cost             None                     
+	Access Requirements                                 
+	Execution Requirements     WIN32                    
+	Multiple Concurrent Users  Yes                      
+	Intercept Standard I/O     No                       
+	Native (32-bit) Executable Yes                      
+	Use Shell to Execute       No                       
+	Modify User Data           Yes                      
+	Execute on Event           No                       
+	Pause After Execution      No                       
+	BBS Drop File Type         Synchronet      XTRN.DAT 
+	Place Drop File In         Node Directory           
 
 
 Domain Poker                Configuring Domain Poker                     Page 4
@@ -242,37 +237,8 @@ may discourage users from playing at all!
 you shouldn't run across any problems.  You may find that certain things work
 out better for you and your system, so use what you find to suit you best!
 
-    Once again, thank you for purchasing Domain Poker, and be sure to watch for
+    Once again, thank you for using Domain Poker, and be sure to watch for
 other items from Domain Entertainment.
 
 
 
-Domain Poker                Demo Version Limitations                     Page 7
-컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
-
-NOTE: The following limitations have been placed on the DEMO version to
-      encourage registration:
-
-        * 2 table limit maximum.
-
-        * Computer player name is not configurable.
-
-        * Each player gets only 3 minutes of game play.
-
-        * Player credits will not be changed upon exiting the game.
-          (as a result, 'skim'ming will not work)
-
-        * Player logs will not be written.
-
-        * Total computer wins/losses cannot be logged.
-
-
-
-Domain Poker            Upgrading from Previous Versions                 Page 8
-컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
-
-    Because of the new flexibility and configuration files of versions higher
-than 1.30 of Domain Poker, it is required that you delete any Domain Poker
-versions 1.30 or lower and begin this installation from the ground up.
-
-

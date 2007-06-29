@@ -1,7 +1,9 @@
+/* $Id$ */
+
 /******************************************************************************
   DPOKER.EXE: Domain Poker online multi-player poker BBS door game for
   Synchronet (and other) BBS software.
-  Copyright (C) 1992-2005 Allen Christiansen DBA Domain Entertainment.
+  Copyright (C) 1992-2007 Allen Christiansen DBA Domain Entertainment.
 
   This program is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free Software
@@ -25,7 +27,9 @@
 
 #include "ini_file.h"
 #include "xsdk.h"
-#define VERSION "2K6"
+#define VERSION "2K7"
+char	revision[16];
+char	compiler[32];
 
 #define J 11    /* jack */
 #define Q 12    /* queen */
@@ -149,12 +153,14 @@ int main(int argc, char **argv)
 	int		opts;
 	char	key_name[8];
 	BOOL	cleanup=FALSE;
-
     struct {
         char name[25];
         ulong time;
         long points;
     } player_stuff;
+
+	sscanf("$Revision$", "%*s %s", revision);
+	DESCRIBE_COMPILER(compiler);
 
     memset(node,'\0',MAX_NODES);
 
@@ -172,8 +178,9 @@ int main(int argc, char **argv)
 		else if(stricmp(p,"clean")==0)
 			cleanup=TRUE;
 		else {
-			printf("\nDomain Poker v%s/XSDK v%s  Copyright %s Domain "
-					"Entertainment\n",VERSION,xsdk_ver,__DATE__+7);
+			printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
+					"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
+			printf("Compiler: %s\n", compiler);
 			printf("\nUsage: dpoker [-L] [-CLEAN]\n");
 			printf("\nOptions:\n");
 			printf("\tL = Create daily log of computer vs player "
@@ -309,7 +316,7 @@ int main(int argc, char **argv)
         pause();
     }
     cls();
-    center_wargs("\1n\1gWelcome to Domain Poker v%s",VERSION);
+    center_wargs("\1n\1gWelcome to Domain Poker v%s-%s",VERSION,revision);
     center_wargs("\1n\1gCopyright %s Domain Entertainment", __DATE__+7);
 
     do {
