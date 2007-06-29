@@ -232,6 +232,7 @@ void output_thread(void *args)
 	from_screen=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*ti.screenheight*ti.screenwidth);
 	write_buf=(unsigned char *)malloc(2*ti.screenheight*ti.screenwidth);
 	current_screen=(unsigned char *)malloc(2*ti.screenheight*ti.screenwidth);
+	puttext_can_move=1;
 
 	output_thread_running=1;
 	while(!terminate) {
@@ -265,14 +266,17 @@ void output_thread(void *args)
 			write_buf[j++]=from_screen[i].Attributes & 0xff;
 		}
 
-		if(force_redraw)
+		if(force_redraw) {
 			clrscr();
-
-		/* Compare against the current screen */
-		gettext(1,1,ti.screenwidth,ti.screenheight,current_screen);
-		if(force_redraw || memcmp(current_screen,write_buf,2*ti.screenwidth*ti.screenheight))
 			puttext(1,1,ti.screenwidth,ti.screenheight,write_buf);
-		force_redraw=0;
+			force_redraw=0;
+		}
+		else {
+			/* Compare against the current screen */
+			gettext(1,1,ti.screenwidth,ti.screenheight,current_screen);
+			if(memcmp(current_screen,write_buf,2*ti.screenwidth*ti.screenheight))
+				puttext(1,1,ti.screenwidth,ti.screenheight,write_buf);
+		}
 
 		/* Update cursor position and read console size */
 		if(GetConsoleScreenBufferInfo(console_output, &console_output_info))
@@ -316,7 +320,6 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE pinst, char *cmd, int cshow)
 				break;
 	}
 
-	puttext_can_move=1;
 	initciolib(CIOLIB_MODE_ANSI);
 	ansi_ciolib_setdoorway(1);
 	gettextinfo(&ti);
@@ -418,4 +421,11 @@ USAGE:
 			"\r\n"
 			"\r\n<command> is the command to execute with redirected IO");
 	return(0);
+}
+
+int CIOLIB_main(int argc, char **argv, char **env)
+{
+	printf("I'm sorry, this program is currently broken.\r\n");
+	exit(1);
+	return(1);
 }
