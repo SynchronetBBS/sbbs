@@ -295,8 +295,8 @@ void checkline(void);
 void center(char *str);
 
 #ifdef _MSC_VER
-int lock(int file, long offset, int size);
-int unlock(int file, long offset, int size);
+int lock(int file, long offset, long size);
+int unlock(int file, long offset, long size);
 #endif
 
 #ifdef __cplusplus

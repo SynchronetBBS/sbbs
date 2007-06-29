@@ -553,7 +553,7 @@ int sopen(const char *fn, int access, int share, ...)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int lock(int file, long offset, int size) 
+int lock(int file, long offset, long size) 
 {
 	int	i;
 	long	pos;
@@ -567,7 +567,7 @@ int lock(int file, long offset, int size)
 	return(i);
 }
 
-int unlock(int file, long offset, int size)
+int unlock(int file, long offset, long size)
 {
 	int	i;
 	long	pos;
