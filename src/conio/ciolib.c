@@ -734,6 +734,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 	int i;
 	int width,height;
 	struct text_info ti;
+	int old_ptcm=puttext_can_move;
 
 	CIOLIB_INIT();
 	
@@ -746,8 +747,10 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clrscr(void)
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
 	}
+	puttext_can_move=1;
 	ciolib_puttext(ti.winleft,ti.wintop,ti.winright,ti.winbottom,buf);
 	ciolib_gotoxy(1,1);
+	puttext_can_move=old_ptcm;;
 }
 
 CIOLIBEXPORT void CIOLIBCALL ciolib_delline(void)
