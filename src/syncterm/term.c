@@ -1215,10 +1215,11 @@ BOOL doterm(struct bbslist *bbs)
 			key=getch();
 			if(key==0 || key==0xff) {
 				key|=getch()<<8;
-				if(cterm.doorway_mode && key & 0xff == 0 && key != 0x2c00 /* ALT-Z */) {
+				if(cterm.doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
 					ch[0]=0;
 					ch[1]=key>>8;
 					conn_send(ch,2,0);
+					key=0;
 					continue;
 				}
 			}
