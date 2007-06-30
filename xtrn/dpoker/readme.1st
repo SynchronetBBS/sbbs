@@ -12,3 +12,15 @@ them.
 
 You may freely distribute this software so long as it is distributed in it's
 original form with all accompanying files.
+
+*** UPDATE *** June 29, 2007 from Rob Swindell
+
+Thanks to Allen's generosity, some of the Domain Entertainment doors (at this
+time, Domain Poker and The Beast's Domain) are now open source (maintained
+at cvs.synchro.net) and have recently been ported to Win32/Sockets for today's
+Synchronet sysops!
+
+If you're upgrading from any previous version of Domain Poker, you *must*
+update your configuration in SCFG to match the example in DPOKER.DOC.
+
+Enjoy!
