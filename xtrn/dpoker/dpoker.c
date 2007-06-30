@@ -374,9 +374,11 @@ int main(int argc, char **argv)
                 }
                 break;
             case 'H':
+				cls();
                 printfile("dpoker.how");
                 break;
 			case 'I':
+				cls();
                 printfile("dpoker.ins");
 				break;
 			case 'L':
