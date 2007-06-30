@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include "ini_file.h"
 #include "ciolib.h"		/* Redefinition of main() */
 #include "uifc.h"
@@ -163,15 +165,15 @@ void edit_table(int table)
 	static int bar=0;
 
 	while(1) {
-		sprintf(str,"Computer Player:     %s",tables[table].options&COMPUTER?enabled:disabled);
+		sprintf(str,"Computer Player      %s",tables[table].options&COMPUTER?enabled:disabled);
 		opts[0]=strdup(str);
-		sprintf(str,"Password Protection: %s",tables[table].options&PASSWORD?enabled:disabled);
+		sprintf(str,"Password Protection  %s",tables[table].options&PASSWORD?enabled:disabled);
 		opts[1]=strdup(str);
-		sprintf(str,"Ante:                %d",tables[table].ante);
+		sprintf(str,"Ante                 %d",tables[table].ante);
 		opts[2]=strdup(str);
-		sprintf(str,"Bet Limit:           %d",tables[table].bet_limit);
+		sprintf(str,"Bet Limit            %d",tables[table].bet_limit);
 		opts[3]=strdup(str);
-		sprintf(str,"Table Limit:         %d",tables[table].max_total);
+		sprintf(str,"Table Limit          %d",tables[table].max_total);
 		opts[4]=strdup(str);
 		opts[5]=strdup("");
 		sprintf(str,"Table %d Options",table+1);
@@ -233,7 +235,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"uifc library init returned error %d\n",i);
 		return(-1);
 	}
-	if(uifc.scrn("Domain Poker Config")) {
+	if(uifc.scrn("Domain Poker Configuration")) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		uifc.bail();
 	}
@@ -244,23 +246,24 @@ int main(int argc, char **argv)
 		return(1);
 	}
 	while(1) {
-		sprintf(str,"Computer Player's Name:          %s",comp_name);
+		sprintf(str,"Computer Player's Name           %s",comp_name);
 		opts[0]=strdup(str);
-		sprintf(str,"Number of Tables:                %d",num_tables);
+		sprintf(str,"Number of Tables                 %d",num_tables);
 		opts[1]=strdup(str);
-		sprintf(str,"Time allow playing computer:     %d",time_allowed);
+		sprintf(str,"Time allow playing computer      %d",time_allowed);
 		opts[2]=strdup(str);
-		sprintf(str,"Percentage house takes from pot: %d%%",skim);
+		sprintf(str,"Percentage house takes from pot  %d%%",skim);
 		opts[3]=strdup(str);
 		opts[4]=strdup("Table configuration...");
 		opts[5]=strdup("");
-		switch(uifc.list(WIN_ORG|WIN_MID,0,0,0,&opt,NULL,"Main Options",opts)) {
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,0,&opt,NULL,"Main Options",opts)) {
 			case -1:	/* ESC */
 				i=0;
 				switch(uifc.list(WIN_MID,0,0,0,&i,NULL,"Save Changes?",YesNo)) {
 					case 0:
 						write_ini();
 					case 1:
+						uifc.bail();
 						return(0);
 				}
 				break;
