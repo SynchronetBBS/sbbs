@@ -1,3 +1,0 @@
-; Enter disallowed (source or destination) e-mail addresses in this file
-; Wildcard characters (*, ^, ~) are allowed and ! negates the match
-; Rejection message file: text/bademail.msg

@@ -1,18 +1,0 @@
-$00000D
-!|[Startup]
-!|V=1.10
-!|D=`
-!|O=15
-!|M=@BBS@
-!|L=2505
-!|T=105
-!|W=3750
-!|H=5100
-!|B=16777215
-!|
-!|[Form]
-!|001=0B`c`70`265`100`30`1`Login to BBS`0`12632256`MS Sans Serif`8.25`Continue`
-!|002=0T`text`1`20`240`40`1``0`16777215`MS Sans Serif`8.25`Synchronet BBS Software Version @VER@|mDeveloped 1990-1997 Rob Swindell`1`0
-!|003=0P`wiplogo`45`65`150`180`3``-2147483643`WIPLOGO.BMP
-!|
-$0E

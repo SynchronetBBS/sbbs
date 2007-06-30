@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=SyncTERM
-Comment=ANSI-BBS Terminal
-Icon=syncterm.png
-Exec=syncterm %u
-Categories=Application;Network;
