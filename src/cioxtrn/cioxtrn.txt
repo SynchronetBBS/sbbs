@@ -1,0 +1,53 @@
+Introduction
+============
+cioxtrn is a program in the spirit of the old DoorWay program.  It takes the
+screen output of a console program and sends it as ANSI to stdout and reads
+keystrokes from stdin which are sent to the program.
+
+The main difference between cioxtrn and DoorWay is that cioxtrn is a Windows
+program and supports Win32 consoles in addition to 16-bit programs running in a
+windows console.
+
+Usage
+=====
+To run a program under cioxtrn, simply pass the command line.  For example:
+	cioxtrn c:\windows\system32\cmd.exe
+
+When cioxtrn starts up, it changes the console screen size in an attempt to
+match the remote users.  The screen height is automatically detected if
+possible or assumed to be 24 rows and the screen width is always assumed to be
+80 columns.
+
+If something resizes the console window, it may still be usable.  cioxtrn
+allows control of this via two mechanisms.
+
+	1) -t and -b specified before the command.
+		This forces cioxtrn to display the top (-t) or bottom (-b)
+		of the screen.  For cmd.exe, -b would be best and for edit.com,
+		-t (the default) would be best.
+	2) CTRL-Z will toggle between the top and bottom display modes while
+		using cioxtrn.
+
+	Examples:
+		cioxtrn -b C:\windows\system32\cmd.exe
+		cioxtrn -t C:\windows\system32\edit.com
+
+Extra key bindings:
+===================
+cioxtrn enables and uses doorway if the remote system supports it.  It will
+also accept three extra keystrokes which do cioxtrn specific things.  The FIRST
+time they are pressed, they only do the cioxtrn defined function and are not
+passed to the remote.  Subsequent presses behave differently for each key as
+described below:
+
+	CTRL-A: Depresses and holds down the ALT key until the next keystroke.
+		if the next keystroke is a CTRL-A, only CTRL-A is sent to the
+		program, not CTRL-ALT-A.  As a result of this behaviour, there
+		is no way to send CTRL-ALT-A.
+	CTRL-R: On the first entry, forces a screen redraw.  Subsequent CTRL-R
+		keystrokes without other intervening chars will be sent to the
+		program.
+	CTRL-Z: Toggles between displaying the top of the console buffer or the
+		bottom.  This key ALWAYS toggles the display, but is also sent
+		to the remote after the first press.
+
