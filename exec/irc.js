@@ -295,6 +295,9 @@ function handle_command(prefix,command,message)  {
 		// Numeric reply codes.
 		// <word1> <word2> <word3> <word4> <word5> <word6> <word7> :Message
 		case "211":		// Trace Server
+			while(message.length < 9) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -316,6 +319,9 @@ function handle_command(prefix,command,message)  {
 		case "215":		// Stats ILINE
 		case "216":		// Stats KLINE
 		case "218":		// Stats YLINE
+			while(message.length < 8) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -324,14 +330,15 @@ function handle_command(prefix,command,message)  {
 			tmp_str=tmp_str+" "+message.shift();
 			tmp_str=tmp_str+" "+message.shift();
 			tmp_str2=message.shift();
-			if (!tmp_str2) /* Total hack. --RS XXX FIXME */
-				tmp_str2="";
 			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
 			screen.print_line(tmp_str2);
 			break;
 
 		// <word1> <word2> <word3> <word4> <word5> :Message
 		case "241":		// Stats LLINE
+			while(message.length < 7) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -349,6 +356,9 @@ function handle_command(prefix,command,message)  {
 		case "200":		// Trace Link
 		case "243":		// Stats OLINE
 		case "244":		// Stats HLINE
+			while(message.length < 6) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -369,6 +379,9 @@ function handle_command(prefix,command,message)  {
 		case "205":		// Trace User
 		case "208":		// New type of trace
 		case "261":		// Trace LOG
+			while(message.length < 5) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -386,6 +399,9 @@ function handle_command(prefix,command,message)  {
 		case "364":		// Links
 		case "367":		// Ban List
 		case "212":		// Stats Command
+			while(message.length < 4) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -413,6 +429,9 @@ function handle_command(prefix,command,message)  {
 		case "253":		// # unknown connections
 		case "254":		// # channels
 		case "256":		// Admin info
+			while(message.length < 3) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str2=message.shift();
@@ -454,6 +473,9 @@ function handle_command(prefix,command,message)  {
 		case "375":		// MOTD Start
 		case "372":		// MOTD
 		case "333":		// Extended TOPIC info (apparently)
+			while(message.length < 2) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str="\x01H\x01C!! \x01N\x01C"+tmp_str.substr(1)+" "+message.join(" ")+"\x01N\x01W";
@@ -462,6 +484,9 @@ function handle_command(prefix,command,message)  {
 		
 		case "331":		// No Topic
 		case "332":		// Topic
+			while(message.length < 2) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str2=message.join(" ");
@@ -475,6 +500,9 @@ function handle_command(prefix,command,message)  {
 			break;
 
 		case "353":		// Name reply
+			while(message.length < 3) {
+				message.push("");
+			}
 			message.shift();
 			message.shift();
 			tmp_str=message.shift();
@@ -499,6 +527,9 @@ function handle_command(prefix,command,message)  {
 		// <word1> <word2> :Message errors
 		case "441":		// Nick not on channel
 		case "443":		// User already on channel (invite)
+			while(message.length < 4) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str=tmp_str+" "+message.shift();
@@ -509,6 +540,9 @@ function handle_command(prefix,command,message)  {
 
 		// <word> :Message errors.
 		case "433":		// Nickname already in use
+			while(message.length < 2) {
+				message.push("");
+			}
 			message.shift();
 			nick=message.shift()+"_";
 			sock.send("NICK " + nick + "\r\n");
@@ -536,6 +570,9 @@ function handle_command(prefix,command,message)  {
 		case "474":		// Banned from channel
 		case "475":		// Bad channel key (+k)
 		case "482":		// Not ChanOP so can't do that.
+			while(message.length < 3) {
+				message.push("");
+			}
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str2=message.shift();
@@ -562,6 +599,10 @@ function handle_command(prefix,command,message)  {
 		case "491":		// No O-lines for your host
 		case "501":		// Unknown MODE flag
 		case "502":		// Can't change other users mode
+			while(message.length < 3) {
+				message.push("");
+			}
+			message.shift();
 			message.shift();
 			tmp_str=message.shift();
 			tmp_str="\x01H\x01R!! \x01N\x01R"+tmp_str.substr(1)+" "+message.join(" ")+"\x01N\x01W";
