@@ -170,7 +170,7 @@ int modem_connect(struct bbslist *bbs)
 			modem_close();
 			uifc.pop(NULL);
 			uifcmsg("No Answer",	"`No Answer`\n\n"
-							"The modem did not connect withing 30 seconds.\n");
+							"The modem did not connect within 30 seconds.\n");
 			conn_api.terminate=-1;
 			return(-1);
 		}
