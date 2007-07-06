@@ -34,6 +34,15 @@ char* syncterm_version = "SyncTERM 0.9.0"
 #endif
 	;
 
+/* Default modem device */
+#if defined(__APPLE__) && defined(__MACH__)
+/* Mac OS X */
+#define DEFAULT_MODEM_DEV	"/dev/tty.modem"
+#else
+/* FreeBSD */
+#define DEFAULT_MODEM_DEV	"/dev/ttyd0"
+#endif
+
 char *inpath=NULL;
 int default_font=0;
 struct syncterm_settings settings;
@@ -863,7 +872,7 @@ void load_settings(struct syncterm_settings *set)
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F", set->mdm.init_string);
-	iniReadString(inifile, "SyncTERM", "ModemDevice", "/dev/ttyd0", set->mdm.device_name);
+	iniReadString(inifile, "SyncTERM", "ModemDevice", DEFAULT_MODEM_DEV, set->mdm.device_name);
 	if(inifile)
 		fclose(inifile);
 }
