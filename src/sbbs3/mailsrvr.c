@@ -3748,11 +3748,13 @@ static void sendmail_thread(void* arg)
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
+			/* Not needed.  Port is zero
 			if(startup->seteuid!=NULL)
-				startup->seteuid(FALSE);
+				startup->seteuid(FALSE); */
 			i=bind(sock,(struct sockaddr *)&addr, sizeof(addr));
+			/* Not needed.  Port is zero
 			if(startup->seteuid!=NULL)
-				startup->seteuid(TRUE);
+				startup->seteuid(TRUE); */
 			if(i!=0) {
 				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
@@ -4279,12 +4281,16 @@ void DLLCALL mail_server(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->smtp_port);
 
-		if(startup->seteuid!=NULL)
-			startup->seteuid(FALSE);
+		if(startup->smtp_port < IPPORT_RESERVED) {
+			if(startup->seteuid!=NULL)
+				startup->seteuid(FALSE);
+		}
 		result = retry_bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
 			,startup->bind_retry_count,startup->bind_retry_delay,"SMTP Server",lprintf);
-		if(startup->seteuid!=NULL)
-			startup->seteuid(TRUE);
+		if(startup->smtp_port < IPPORT_RESERVED) {
+			if(startup->seteuid!=NULL)
+				startup->seteuid(TRUE);
+		}
 		if(result != 0) {
 			lprintf(LOG_ERR,"%04d %s",server_socket, BIND_FAILURE_HELP);
 			cleanup(1);
@@ -4326,12 +4332,16 @@ void DLLCALL mail_server(void* arg)
 			server_addr.sin_family = AF_INET;
 			server_addr.sin_port   = htons(startup->pop3_port);
 
-			if(startup->seteuid!=NULL)
-				startup->seteuid(FALSE);
+			if(startup->pop3_port < IPPORT_RESERVED) {
+				if(startup->seteuid!=NULL)
+					startup->seteuid(FALSE);
+			}
 			result = retry_bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr)
 				,startup->bind_retry_count,startup->bind_retry_delay,"POP3 Server",lprintf);
-			if(startup->seteuid!=NULL)
-				startup->seteuid(TRUE);
+			if(startup->pop3_port < IPPORT_RESERVED) {
+				if(startup->seteuid!=NULL)
+					startup->seteuid(FALSE);
+			}
 			if(result != 0) {
 				lprintf(LOG_ERR,"%04d %s",pop3_socket,BIND_FAILURE_HELP);
 				cleanup(1);

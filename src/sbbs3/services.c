@@ -1772,12 +1772,16 @@ void DLLCALL services_thread(void* arg)
 			addr.sin_family = AF_INET;
 			addr.sin_port   = htons(service[i].port);
 
-			if(startup->seteuid!=NULL)
-				startup->seteuid(FALSE);
+			if(service[i].port < IPPORT_RESERVED) {
+				if(startup->seteuid!=NULL)
+					startup->seteuid(FALSE);
+			}
 			result=retry_bind(socket, (struct sockaddr *) &addr, sizeof(addr)
 				,startup->bind_retry_count, startup->bind_retry_delay, service[i].protocol, lprintf);
-			if(startup->seteuid!=NULL)
-				startup->seteuid(TRUE);
+			if(service[i].port < IPPORT_RESERVED) {
+				if(startup->seteuid!=NULL)
+					startup->seteuid(TRUE);
+			}
 			if(result!=0) {
 				lprintf(LOG_ERR,"%04d %s",socket,BIND_FAILURE_HELP);
 				close_socket(socket);
