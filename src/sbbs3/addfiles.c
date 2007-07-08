@@ -184,7 +184,7 @@ void updatestats(ulong size)
 {
     char	str[MAX_PATH+1];
     int		file;
-	ulong	l;
+	uint32_t	l;
 
 	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR|O_BINARY))==-1) {
