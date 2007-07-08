@@ -970,18 +970,18 @@ typedef idxrec_t mail_t;				/* defined in smbdefs.h */
 typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
-	ulong 	logons,						/* Total Logons on System */
-			ltoday,						/* Total Logons Today */
-			timeon,						/* Total Time on System */
-			ttoday,						/* Total Time Today */
-			uls,						/* Total Uploads Today */
-			ulb,						/* Total Upload Bytes Today */
-			dls,						/* Total Downloads Today */
-			dlb,						/* Total Download Bytes Today */
-			ptoday,						/* Total Posts Today */
-			etoday,						/* Total Emails Today */
-			ftoday; 					/* Total Feedbacks Today */
-	ushort	nusers; 					/* Total New Users Today */
+	uint32_t	logons,						/* Total Logons on System */
+				ltoday,						/* Total Logons Today */
+				timeon,						/* Total Time on System */
+				ttoday,						/* Total Time Today */
+				uls,						/* Total Uploads Today */
+				ulb,						/* Total Upload Bytes Today */
+				dls,						/* Total Downloads Today */
+				dlb,						/* Total Download Bytes Today */
+				ptoday,						/* Total Posts Today */
+				etoday,						/* Total Emails Today */
+				ftoday; 					/* Total Feedbacks Today */
+	uint16_t	nusers; 					/* Total New Users Today */
 
 } stats_t;
 
