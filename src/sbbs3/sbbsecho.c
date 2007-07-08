@@ -1599,6 +1599,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 
 	memcpy(&attach.dest,&dest,sizeof(faddr_t));
 	strcpy(attach.fname,bundlename);
+	/* TODO: Write of unpacked struct */
 	fwrite(&attach,sizeof(attach_t),1,stream);
 	fclose(stream);
 	return(0);
@@ -3547,7 +3548,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 			if(!addr.zone && !(misc&IGNORE_MSGPTRS)) {
 				sprintf(str,"%s%s.sfp",scfg.sub[i]->data_dir,scfg.sub[i]->code);
 				if((file=nopen(str,O_RDONLY))!=-1) {
-					read(file,&ptr,sizeof(time_t));
+					read(file,&ptr,4);
 					close(file); } }
 
 			msgs=getlastmsg(i,&lastmsg,0);
@@ -4934,7 +4935,7 @@ int main(int argc, char **argv)
 						lprintf(LOG_ERR,"ERROR %d line %d opening/creating %s"
 							,errno,__LINE__,str); }
 					else {
-						write(file,&l,sizeof(time_t));
+						write(file,&l,4);
 						close(file); 
 					} 
 				}
