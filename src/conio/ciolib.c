@@ -789,6 +789,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 	char	str[16384];
 #else
 	char	*str;
+	va_list argptr2;
 #endif
 
 	CIOLIB_INIT();
@@ -797,13 +798,14 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 #ifdef _MSC_VER
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
+	va_copy(argptr2, argptr);
     ret=vsnprintf(NULL,0,fmat,argptr);
 	if(ret<0)
 		return(EOF);
 	str=(char *)alloca(ret+1);
 	if(str==NULL)
 		return(EOF);
-	ret=vsprintf(str,fmat,argptr);
+	ret=vsprintf(str,fmat,argptr2);
 #endif
     va_end(argptr);
 	if(ret>=0)
