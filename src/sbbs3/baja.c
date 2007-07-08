@@ -346,7 +346,8 @@ void writecrc(uchar *src, uchar *in)
 {
 	uchar	name[128];
 	uchar*	p;
-	long	i,l;
+	int32_t	l;
+	int		i;
 
 	/* Automatically terminate variable name Oct-09-2000 rswindell */
 	sprintf(name,"%.80s",in);
@@ -454,8 +455,10 @@ void compile(char *src)
 {
 	uchar *str,*save,*p,*sp,*tp,*arg,*arg2,*arg3,*arg4,*ar,ch;
 	char path[MAX_PATH+1];
-    ushort i,j;
-	long l,savline;
+	uint16_t i;
+    ushort j;
+	int32_t l;
+	int savline;
 	FILE *in;
 
 	if((in=fopen(src,"rb"))==NULL) {
