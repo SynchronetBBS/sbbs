@@ -51,6 +51,7 @@ BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
         return(FALSE); 
 	}
     lseek(file,4L,SEEK_SET);    /* Skip update time/date */
+	/* TODO: Direct read of unpacked struct */
     read(file,stats,sizeof(stats_t));
     close(file);
 	return(TRUE);
