@@ -224,6 +224,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	SAFEPRINTF2(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1) {
 		now=time(NULL);
+		/* TODO: 32-bit *or* LE required */
 		write(file,&now,4);
 		close(file); 
 	}
@@ -293,7 +294,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 			free((char *)ixbbuf);
 			return(FALSE); 
 		}
-		write(file,&f->dateuled,sizeof(time_t));
+		write(file,&f->dateuled,4);
 		write(file,&f->datedled,4);              /* Write 0 for datedled */
 		if(lwrite(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
 			close(file);
@@ -310,7 +311,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 			close(file);
 			return(FALSE); 
 		}
-		write(file,&f->dateuled,sizeof(time_t));
+		write(file,&f->dateuled,4);
 		write(file,&f->datedled,4); 
 	}
 	length=filelength(file);
@@ -416,8 +417,8 @@ BOOL DLLCALL putfileixb(scfg_t* cfg, file_t* f)
 	
 	lseek(file,l+11+3,SEEK_SET);
 
-	write(file,&f->dateuled,sizeof(f->dateuled));
-	write(file,&f->datedled,sizeof(f->datedled));
+	write(file,&f->dateuled,4);
+	write(file,&f->datedled,4);
 
 	close(file);
 

@@ -1040,7 +1040,7 @@ BOOL upload_stats(ulong bytes)
 {
 	char	str[MAX_PATH+1];
 	int		file;
-	ulong	val;
+	uint32_t	val;
 
 	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
@@ -1063,7 +1063,7 @@ BOOL download_stats(ulong bytes)
 {
 	char	str[MAX_PATH+1];
 	int		file;
-	ulong	val;
+	uint32_t	val;
 
 	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
