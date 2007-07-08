@@ -1,0 +1,21 @@
+Files which contain read( or write( and have
+not been looked over:
+
+sbbsecho.c
+sbbsexec.c
+scfglib1.c
+scfglib2.c
+scfgsave.c
+services.c
+sexyz.c
+slog.c
+smbactiv.c
+smbutil.c
+unbaja.c
+userdat.c
+uucode.c
+v4upgrade.c
+websrvr.c
+xmodem.c
+yenc.c
+zmodem.c
