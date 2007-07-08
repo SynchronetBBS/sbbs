@@ -25,6 +25,9 @@ Q. What distributions of Linux are supported?
 A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
    Debian, Slackware, etc.).
 
+Q. 64-bit?
+A. No.
+
 Q. The installer (e.g. Linux-install from sbbsunix.tgz) segfaults, crashes,
    or fails to get the file size of sbbs_src.tgz.
 A. This installer has known issues and is currently *unsupported*. Do not use
