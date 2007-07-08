@@ -97,7 +97,7 @@ void bail(int code)
 char *loadmsgtail(smbmsg_t msg)
 {
 	char	*buf=NULL;
-	ushort	xlat;
+	uint16_t	xlat;
 	int 	i;
 	long	l=0,length;
 
