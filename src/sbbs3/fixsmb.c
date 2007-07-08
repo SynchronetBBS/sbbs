@@ -164,6 +164,7 @@ int fixsmb(char* sub)
 
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 		length=filelength(fileno(smb.sdt_fp));
+		/* TODO: LE Only */
 		w=0;
 		for(l=0;l<length;l+=SDT_BLOCK_LEN)	/* Init .SDA file to NULL */
 			fwrite(&w,2,1,smb.sda_fp);
