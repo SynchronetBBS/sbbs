@@ -123,8 +123,9 @@ int main(int argc, char **argv)
 	int 		h,i,j,x,y,lzh,errors,errlast;
 	BOOL		stop_on_error=FALSE,pause_on_error=FALSE,chkxlat=TRUE,chkalloc=TRUE,chkhash=TRUE
 				,lzhmsg,extinfo=FALSE,msgerr;
-	ushort		xlat;
-	ulong		l,m,n,length,size,total=0,orphan,deleted,headers
+	uint16_t	xlat;
+	uint32_t	m;
+	ulong		l,n,length,size,total=0,orphan,deleted,headers
 				,*offset,*number,xlaterr
 				,delidx
 				,delhdrblocks,deldatblocks,hdrerr,lockerr,hdrnumerr,hdrlenerr
@@ -593,6 +594,8 @@ int main(int argc, char **argv)
 						,((msg.hdr.offset+msg.dfield[n].offset)/SDT_BLOCK_LEN)*2
 						,SEEK_SET);
 					for(m=0;m<msg.dfield[n].length;m+=SDT_BLOCK_LEN) {
+						/* TODO: LE Only */
+						i=0;
 						if(!fread(&i,2,1,smb.sda_fp) || !i) {
 							fprintf(stderr
 								,"%sActive Data Block %lu.%lu marked free\n"
@@ -644,6 +647,7 @@ int main(int argc, char **argv)
 		for(l=0;l<length;l+=2) {
 			if((l%10)==0)
 				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			/* TODO: LE Only */
 			i=0;
 			if(!fread(&i,2,1,smb.sda_fp))
 				break;
