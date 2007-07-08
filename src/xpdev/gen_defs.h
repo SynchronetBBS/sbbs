@@ -61,6 +61,9 @@
 
 
 #include <sys/types.h>
+#ifdef HAS_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 									/* Control characters */
 #ifndef STX
@@ -136,6 +139,21 @@ enum {
 	#endif
 #endif
 
+#ifdef HAS_INTTYPES_H
+#ifndef BYTE
+#define BYTE	uint8_t
+#endif
+#ifndef WORD
+#define WORD	uint16_t
+#endif
+#ifndef DWORD
+#define DWORD	uint32_t
+#endif
+#ifndef BOOL
+#define BOOL	int_fast8_t
+#endif
+#else
+
 /* Windows Types */
 #ifndef BYTE
 #define BYTE	uchar
@@ -149,6 +167,15 @@ enum {
 #ifndef BOOL
 #define BOOL	int
 #endif
+#define int8_t		char
+#define int16_t		short
+#define int32_t		int
+#define uint8_t		uchar
+#define uint16_t	ushort
+#define uint32_t	uint
+
+#endif
+
 #ifndef TRUE
 #define TRUE	1
 #define FALSE	0
