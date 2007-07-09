@@ -150,7 +150,7 @@ enum {
 #define DWORD	uint32_t
 #endif
 #ifndef BOOL
-#define BOOL	int_fast8_t
+#define BOOL	int32_t
 #endif
 #else
 
