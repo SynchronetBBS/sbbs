@@ -230,12 +230,12 @@ Example Configuration (in SCFG->Networks->QWK->Hubs->VERT):
 -----------------------------------------------------------
 Hub System ID              VERT
 
-v3.12a-Win32:
+v3.12a-Win32 (using PKZIP and PKUNZIP v2.04g):
 Pack Command Line          %!pkzip %f %s
 Unpack Command Line        %!pkunzip -o %f %g %s
 
-v3.13a and later:
-Pack Command Lineb         %@zip -jD %f %s
+v3.13a and later (using Info-ZIP):
+Pack Command Line          %@zip -jD %f %s
 Unpack Command Line        %@unzip -Coj %f %s -d %g
 
 Call-out Command Line      *qnet-ftp %s dove.synchro.net YOURPASS
