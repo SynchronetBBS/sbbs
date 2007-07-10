@@ -951,17 +951,17 @@ typedef struct {						/* File (transfers) Data */
 			desc[LEN_FDESC+1],			/* Uploader's Description */
 			uler[LEN_ALIAS+1];			/* User who uploaded */
 	uchar	opencount;					/* Times record is currently open */
-	time_t  date,						/* File date/time */
+	time32_t  date,						/* File date/time */
 			dateuled,					/* Date/Time (Unix) Uploaded */
 			datedled;					/* Date/Time (Unix) Last downloaded */
-	ushort	dir,						/* Directory file is in */
+	uint16_t	dir,						/* Directory file is in */
 			altpath,
 			timesdled,					/* Total times downloaded */
 			timetodl;					/* How long transfer time */
-	long	datoffset,					/* Offset into .DAT file */
+	int32_t	datoffset,					/* Offset into .DAT file */
 			size,						/* Size of file */
 			misc;						/* Miscellaneous bits */
-	ulong	cdt;						/* Credit value for this file */
+	uint32_t	cdt;						/* Credit value for this file */
 
 } file_t;
 
