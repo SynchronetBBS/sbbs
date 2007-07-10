@@ -78,7 +78,7 @@ int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
-uint32_t crc32i(uint32_t crc, char *buf, uint32_t len)
+uint32_t crc32i(uint32_t crc, char *buf, unsigned long len)
 {
 	uint32_t l;
 
@@ -89,7 +89,7 @@ uint32_t crc32i(uint32_t crc, char *buf, uint32_t len)
 	return(~crc);
 }
 
-uint32_t fcrc32(FILE* fp, uint32_t len)
+uint32_t fcrc32(FILE* fp, unsigned long len)
 {
 	int	ch;
 	uint32_t l,crc=0xffffffff;
