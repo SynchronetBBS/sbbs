@@ -437,7 +437,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	char	dir[LEN_DIR+1]="";
 	int 	i,j,k,file;
 	uint16_t	n;
-	uint32_t	l;
+	int32_t	l;
 	FILE	*stream;
 	smb_t	smb;
 
@@ -721,7 +721,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	char	path[MAX_PATH+1];
 	int 	i,j,k,file;
 	uint16_t	n;
-	uint32_t	l=0;
+	int32_t	l=0;
 	FILE	*stream;
 
 	if(cfg->prepped)
