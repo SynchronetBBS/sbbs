@@ -184,6 +184,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13],c;
 	short	i,j,n;
+	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
 
@@ -411,7 +412,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13],c;
-	short	i,j,k,n;
+	short	i,j;
+	int16_t	n,k;
 	long	offset=0;
 	FILE	*instream;
 
