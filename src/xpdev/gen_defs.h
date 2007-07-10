@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -139,7 +139,22 @@ enum {
 	#endif
 #endif
 
-#ifdef HAS_INTTYPES_H
+#if !defined(HAS_INTTYPES_H)
+
+typedef char	int8_t;
+typedef short	int16_t;
+typedef long	int32_t;
+typedef uchar	uint8_t;
+typedef ushort	uint16_t;
+typedef ulong	uint32_t;
+
+#endif
+
+/* Legacy 32-bit time_t */
+typedef int32_t		time32_t;
+
+/* Windows Types */
+
 #ifndef BYTE
 #define BYTE	uint8_t
 #endif
@@ -150,33 +165,9 @@ enum {
 #define DWORD	uint32_t
 #endif
 #ifndef BOOL
-#define BOOL	int32_t
-#endif
-#else
-
-/* Windows Types */
-#ifndef BYTE
-#define BYTE	uchar
-#endif
-#ifndef WORD
-#define WORD	ushort
-#endif
-#ifndef DWORD
-#define DWORD	ulong
-#endif
-#ifndef BOOL
 #define BOOL	int
 #endif
-#define int8_t		char
-#define int16_t		short
-#define int32_t		long
-#define uint8_t		uchar
-#define uint16_t	ushort
-#define uint32_t	ulong
 
-#endif
-
-#define time32_t	int32_t
 #ifndef TRUE
 #define TRUE	1
 #define FALSE	0
