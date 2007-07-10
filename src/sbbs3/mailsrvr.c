@@ -671,7 +671,8 @@ static void pop3_thread(void* arg)
 	long		l;
 	ulong		lines;
 	ulong		lines_sent;
-	long		msgs,msgnum;
+	int32_t		msgs;
+	long		msgnum;
 	ulong		bytes;
 	SOCKET		socket;
 	HOSTENT*	host;
@@ -3539,7 +3540,7 @@ static void sendmail_thread(void* arg)
 	smb_t		smb;
 	smbmsg_t	msg;
 	mail_t*		mail;
-	long		msgs;
+	int32_t		msgs;
 	long		l;
 	BOOL		sending_locally=FALSE;
 
