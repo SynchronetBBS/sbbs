@@ -176,6 +176,7 @@ enum {
 
 #endif
 
+#define time32_t	uint32_t
 #ifndef TRUE
 #define TRUE	1
 #define FALSE	0
