@@ -46,7 +46,7 @@ extern "C" {
 
 extern uint16_t crc16tbl[];
 
-uint16_t crc16(char *data, uint32_t len);
+uint16_t crc16(char* data, unsigned long len);
 
 #ifdef __cplusplus
 }
