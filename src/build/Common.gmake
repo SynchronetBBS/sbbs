@@ -215,6 +215,10 @@ else
  machine	:=	$(os).$(machine)
 endif
 
+ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
+ CFLAGS	+=	-DHAS_INTTYPES_H
+endif
+
 LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
 OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)
 MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
