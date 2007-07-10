@@ -65,7 +65,8 @@ int main(int argc, char **argv)
 {
 	char str[256],*p;
 	int i,j,file;
-	ulong l,length,max_users=0xffffffff;
+	ulong length,max_users=0xffffffff;
+	uint32_t l;
 	sub_status_t *sub_status;
 	FILE *stream;
 	scfg_t	cfg;

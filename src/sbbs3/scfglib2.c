@@ -44,8 +44,10 @@
 BOOL read_file_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13],c,cmd[LEN_CMD+1];
-	short	i,j,n;
-	long	offset=0,t;
+	short	i,j;
+	int16_t	n;
+	long	offset=0;
+	int32_t	t;
 	FILE	*instream;
 
 	strcpy(fname,"file.cnf");
@@ -426,7 +428,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13],c;
-	short	i,j,n;
+	short	i,j;
+	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
 
@@ -662,7 +665,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 BOOL read_chat_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13];
-	short	i,j,n;
+	short	i,j;
+	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
 
