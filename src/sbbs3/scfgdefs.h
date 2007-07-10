@@ -298,7 +298,7 @@ typedef struct {						/* Generic Timed Event */
 			freq;						/* Frequency to run event */
 	uint32_t	misc,						/* Misc bits */
 			mdays;						/* days of month (if non-zero) to run event */
-	time_t	last;						/* Last time event ran */
+	time32_t	last;						/* Last time event ran */
 
 } event_t;
 
@@ -315,7 +315,7 @@ typedef struct {						/* QWK Network Hub */
 			subs,						/* Number Sub-boards carried */
 			*sub,						/* Number of local sub-board for ea. */
 			*conf;						/* Conference number of ea. */
-	time_t	last;						/* Last network attempt */
+	time32_t	last;						/* Last network attempt */
 
 } qhub_t;
 
@@ -326,7 +326,7 @@ typedef struct {						/* PCRelay/PostLink Hub */
 	uint16_t	time,						/* Time to call-out */
 			node,						/* Node to do the call-out */
 			freq;						/* Frequency of call-outs */
-	time_t	last;						/* Last network attempt */
+	time32_t	last;						/* Last network attempt */
 
 } phub_t;
 
