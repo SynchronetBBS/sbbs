@@ -183,7 +183,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 BOOL read_main_cfg(scfg_t* cfg, char* error)
 {
 	char	str[MAX_PATH+1],fname[13],c;
-	short	i,j,n;
+	short	i,j;
 	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
