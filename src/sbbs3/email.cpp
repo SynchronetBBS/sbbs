@@ -48,7 +48,8 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	char	str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
 			,buf[SDT_BLOCK_LEN];
 	char 	tmp[512];
-	ushort	xlat=XLAT_NONE,msgattr=0;
+	ushort	msgattr=0;
+	uint16_t xlat=XLAT_NONE;
 	ushort	nettype;
 	int 	i,j,x,file;
 	long	l;
