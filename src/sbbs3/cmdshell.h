@@ -653,7 +653,7 @@ typedef struct {					/* Command shell image */
 	
 	FILE	*file[MAX_FOPENS];		/* Each file ptr */
 	int		socket[MAX_SOCKETS];	/* Open socket descriptors */
-	long	socket_error;			/* Last socket error */
+	int32_t	socket_error;			/* Last socket error */
 
 	uint	str_vars,				/* Total number of string variables */
 			int_vars,				/* Total number of integer variables */
@@ -663,11 +663,11 @@ typedef struct {					/* Command shell image */
 			loops,					/* Nested loop depth (loops on stack) */
 			cmdrets;				/* Command returns on stack */
 
+	int32_t	ftp_mode,				/* FTP operation mode */
+			*int_var;				/* Integer variables */
 	long	retval, 				/* Return value */
 			misc,					/* Misc bits */
-			ftp_mode,				/* FTP operation mode */
 			switch_val, 			/* Current switch value */
-			*int_var,				/* Integer variables */
 			*str_var_name,			/* String variable names (CRC-32) */
 			*int_var_name;			/* Integer variable names (CRC-32) */
 

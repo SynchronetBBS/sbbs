@@ -371,11 +371,11 @@ public:
 	char **	global_str_var;
 	long *	global_str_var_name;
 	uint	global_int_vars;
-	long *	global_int_var;
+	int32_t *	global_int_var;
 	long *	global_int_var_name;
 	char *	sysvar_p[MAX_SYSVARS];
 	uint	sysvar_pi;
-	long	sysvar_l[MAX_SYSVARS];
+	int32_t	sysvar_l[MAX_SYSVARS];
 	uint	sysvar_li;
 
     /* ansi_term.cpp */
