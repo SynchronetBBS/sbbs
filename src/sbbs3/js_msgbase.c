@@ -535,7 +535,7 @@ BOOL DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg
 	return(TRUE);
 }
 
-static BOOL msg_offset_by_id(private_t* p, char* id, long* offset)
+static BOOL msg_offset_by_id(private_t* p, char* id, int32_t* offset)
 {
 	smbmsg_t msg;
 
