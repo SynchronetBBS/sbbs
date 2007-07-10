@@ -575,7 +575,7 @@ ulong sbbs_t::logonstats()
     char str[MAX_PATH+1];
     int dsts,csts;
     uint i;
-    time_t update_t=0;
+    time32_t update_t=0;
     stats_t stats;
 	node_t	node;
 	struct tm tm, update_tm;
