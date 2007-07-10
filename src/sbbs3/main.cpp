@@ -76,7 +76,7 @@
 time_t	uptime=0;
 DWORD	served=0;
 
-static	ulong node_threads_running=0;
+static	DWORD node_threads_running=0;
 static	ulong thread_count=0;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
@@ -1912,7 +1912,9 @@ void event_thread(void* arg)
 	int			offset;
 	bool		check_semaphores;
 	bool		packed_rep;
-	uint32_t	l;
+	ulong	l;
+	/* TODO: This is a silly hack... */
+	uint32_t	l32;
 	time_t		now;
 	time_t		start;
 	time_t		lastsemchk=0;
@@ -2283,7 +2285,8 @@ void event_thread(void* arg)
 						for(j=l=0;j<sbbs->cfg.qhub[i]->subs;j++) {
 							while(filelength(file)<
 								sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L)
-								write(file,&l,4);		/* initialize ptrs to null */
+								l32=l;
+								write(file,&l32,4);		/* initialize ptrs to null */
 							lseek(file
 								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long)
 								,SEEK_SET);
