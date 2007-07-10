@@ -372,7 +372,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 /* Returns the total number of msgs in the sub-board and sets 'ptr' to the  */
 /* number of the last message in the sub (0) if no messages.				*/
 /****************************************************************************/
-ulong sbbs_t::getlastmsg(uint subnum, ulong *ptr, time_t *t)
+ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 {
 	int 		i;
 	ulong		total;

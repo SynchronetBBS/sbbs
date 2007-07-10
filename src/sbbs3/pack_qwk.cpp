@@ -49,10 +49,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	char*	fmode;
 	int 	mode;
 	uint	i,j,k,conf;
-	long	l,size,msgndx,posts,ex;
-	long	mailmsgs=0;
-	ulong	totalcdt,totaltime,lastmsg
+	long	l,size,msgndx,ex;
+	int32_t	posts;
+	int32_t	mailmsgs=0;
+	ulong	totalcdt,totaltime
 			,files,submsgs,msgs,netfiles=0,preqwk=0;
+	uint32_t	lastmsg;
 	ulong	subs_scanned=0;
 	float	f;	/* Sparky is responsible */
 	time_t	start;

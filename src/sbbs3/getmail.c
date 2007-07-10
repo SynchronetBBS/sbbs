@@ -120,7 +120,7 @@ void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 /* of pointers to mail_t (message numbers and attributes)                   */
 /* smb_open(&smb) must be called prior										*/
 /****************************************************************************/
-mail_t* DLLCALL loadmail(smb_t* smb, long* msgs, uint usernumber
+mail_t* DLLCALL loadmail(smb_t* smb, int32_t* msgs, uint usernumber
 			   ,int which, long mode)
 {
 	ulong		l=0;

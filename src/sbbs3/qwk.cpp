@@ -300,7 +300,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 {
 	char	str[MAX_PATH+1];
 	int 	i;
-	long	l,msgs,deleted=0;
+	long	l,deleted=0;
+	int32_t	msgs;
 	mail_t	*mail;
 	smbmsg_t msg;
 
@@ -773,7 +774,7 @@ void sbbs_t::qwk_sec()
 void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 {
 	long	l;
-	ulong	last;
+	uint32_t	last;
 
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
 		l=dstrtounix(&cfg,buf);

@@ -165,7 +165,7 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 /****************************************************************************/
 /****************************************************************************/
-post_t * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode)
+post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode)
 {
 	char name[128];
 	ushort aliascrc,namecrc,sysop;
@@ -344,7 +344,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	uint 	usub,ugrp,reads=0;
 	uint	lp=0;
 	long	org_mode=mode;
-	ulong	msgs,last,l;
+	ulong	msgs,l;
+	uint32_t last;
 	post_t	*post;
 	smbmsg_t	msg;
 
@@ -1116,7 +1117,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 long sbbs_t::listsub(uint subnum, long mode, long start, char* search)
 {
 	int 	i;
-	long	posts;
+	int32_t	posts;
 	long	displayed;
 	post_t	*post;
 

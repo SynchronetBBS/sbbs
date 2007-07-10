@@ -48,9 +48,11 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	int 	file,mode;
 	uint	i,j,k;
-	long	l,msgcnt,submsgs,posts,packedmail,netfiles=0,deleted;
-	long	mailmsgs;
-	ulong	last,msgs;
+	long	l,msgcnt,submsgs,packedmail,netfiles=0,deleted;
+	int32_t	posts;
+	int32_t	mailmsgs;
+	ulong	msgs;
+	uint32_t	last;
 	post_t	*post;
 	mail_t	*mail;
 	FILE*	rep;

@@ -191,7 +191,7 @@ void sbbs_t::new_scan_ptr_cfg()
 {
 	uint	i,j;
 	long	s;
-	ulong	l;
+	uint32_t	l;
 	time_t	t;
 
 	while(online) {
