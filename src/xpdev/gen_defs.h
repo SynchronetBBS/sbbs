@@ -169,14 +169,14 @@ enum {
 #endif
 #define int8_t		char
 #define int16_t		short
-#define int32_t		int
+#define int32_t		long
 #define uint8_t		uchar
 #define uint16_t	ushort
-#define uint32_t	uint
+#define uint32_t	ulong
 
 #endif
 
-#define time32_t	uint32_t
+#define time32_t	int32_t
 #ifndef TRUE
 #define TRUE	1
 #define FALSE	0
