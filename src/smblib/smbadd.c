@@ -44,7 +44,7 @@
 /****************************************************************************/
 /****************************************************************************/
 int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
-					   ,ushort xlat, const uchar* body, const uchar* tail)
+					   ,uint16_t xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
 	long		lzhlen;
