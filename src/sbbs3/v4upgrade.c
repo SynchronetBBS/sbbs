@@ -284,7 +284,7 @@ BOOL upgrade_stats(void)
 	char	outpath[MAX_PATH+1];
 	BOOL	success;
 	ulong	count;
-	time_t	t;
+	time32_t	t;
 	stats_t	stats;
 	FILE*	in;
 	FILE*	out;
@@ -395,7 +395,7 @@ BOOL upgrade_event_data(void)
 	FILE*	in;
 	FILE*	out;
 	size_t	i;
-	time_t	t;
+	time32_t	t;
 	str_list_t	list;
 
 	printf("Upgrading event data...\n");
