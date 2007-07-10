@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-char ** sbbs_t::getstrvar(csi_t *bin, long name)
+char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
 {
 	uint i;
 
