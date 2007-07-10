@@ -986,12 +986,12 @@ typedef struct {						/* System/Node Statistics */
 } stats_t;
 
 typedef struct {						/* Sub-board scan information */
-	ushort	cfg;						/* User's configuration */
-	ulong	ptr;						/* New-message pointer */
-	ulong	last;						/* Last read message number */
-	ushort	sav_cfg;					/* Saved configuration */
-	ulong	sav_ptr;					/* Saved New-message pointer */
-	ulong	sav_last;					/* Saved Last read message number */
+	uint16_t	cfg;						/* User's configuration */
+	uint32_t	ptr;						/* New-message pointer */
+	uint32_t	last;						/* Last read message number */
+	uint16_t	sav_cfg;					/* Saved configuration */
+	uint32_t	sav_ptr;					/* Saved New-message pointer */
+	uint32_t	sav_last;					/* Saved Last read message number */
 } subscan_t;
 
 #endif /* Don't add anything after this #endif statement */
