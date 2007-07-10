@@ -354,7 +354,7 @@ char *getvar(long name)
 
 void write_var(FILE *bin, char *src)
 {
-	long lng;
+	int32_t lng;
 
 	fread(&lng, 1, 4, bin);
 	sprintf(strchr(src,0),"%s ",getvar(lng));
@@ -381,7 +381,7 @@ void write_cstr(FILE *bin, char *src)
 
 void write_lng(FILE *bin, char *src)
 {
-	long lng;
+	int32_t lng;
 
 	fread(&lng,4,1,bin);
 	sprintf(strchr(src,0),"%ld ",lng);
@@ -389,7 +389,7 @@ void write_lng(FILE *bin, char *src)
 
 void write_short(FILE *bin, char *src)
 {
-	short sht;
+	int16_t sht;
 
 	fread(&sht,2,1,bin);
 	sprintf(strchr(src,0),"%d ",sht);
@@ -397,7 +397,7 @@ void write_short(FILE *bin, char *src)
 
 void write_ushort(FILE *bin, char *src)
 {
-	ushort sht;
+	uint16_t sht;
 
 	fread(&sht,2,1,bin);
 	sprintf(strchr(src,0),"%d ",sht);
@@ -1310,10 +1310,10 @@ void decompile(FILE *bin, FILE *srcfile)
 	char	ch;
 	uchar	uch;
 	ushort	ush;
-	long	lng;
-	long	lng2;
+	int32_t	lng;
+	int32_t	lng2;
 	int		usevar=FALSE;
-	long	var=0;
+	uint32_t	var=0;
 	char	buf[80];
 	char	*p;
 	char	src[2048];
