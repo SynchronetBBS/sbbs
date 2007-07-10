@@ -53,7 +53,7 @@ int sbbs_t::exec_net(csi_t* csi)
 
 	switch(*(csi->ip++)) {	/* sub-op-code stored as next byte */
 		case CS_SOCKET_OPEN:
-			lp=getintvar(csi,*(long *)csi->ip);
+			lp=getintvar(csi,*(int32_t *)csi->ip);
 			csi->ip+=4;
 			csi->logic=LOGIC_FALSE;
 			csi->socket_error=0;
@@ -89,7 +89,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			}
 			return(0);
 		case CS_SOCKET_CLOSE:
-			lp=getintvar(csi,*(long *)csi->ip);
+			lp=getintvar(csi,*(int32_t *)csi->ip);
 			csi->ip+=4;
 			csi->logic=LOGIC_FALSE;
 			csi->socket_error=0;
@@ -103,7 +103,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			}
 			return(0);
 		case CS_SOCKET_CHECK:
-			lp=getintvar(csi,*(long *)csi->ip);
+			lp=getintvar(csi,*(int32_t *)csi->ip);
 			csi->ip+=4;
 			csi->logic=LOGIC_FALSE;
 			csi->socket_error=0;
@@ -118,7 +118,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				
 			return(0);
 		case CS_SOCKET_CONNECT:
-			lp=getintvar(csi,*(long *)csi->ip);		/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);		/* socket */
 			csi->ip+=4;
 
 			pp=getstrvar(csi,*(long *)csi->ip);		/* address */
@@ -152,15 +152,15 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic=LOGIC_TRUE;
 			return(0);
 		case CS_SOCKET_ACCEPT:
-			lp1=getintvar(csi,*(long *)csi->ip);		/* socket */
+			lp1=getintvar(csi,*(int32_t *)csi->ip);		/* socket */
 			csi->ip+=4;
 			csi->socket_error=0;
 			/* TODO */
 			return(0);
 		case CS_SOCKET_NREAD:
-			lp1=getintvar(csi,*(long *)csi->ip);		/* socket */
+			lp1=getintvar(csi,*(int32_t *)csi->ip);		/* socket */
 			csi->ip+=4;
-			lp2=getintvar(csi,*(long *)csi->ip);		/* var */
+			lp2=getintvar(csi,*(int32_t *)csi->ip);		/* var */
 			csi->ip+=4;
 
 			csi->logic=LOGIC_FALSE;
@@ -176,7 +176,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 		case CS_SOCKET_PEEK:
 		case CS_SOCKET_READ:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* buffer */
 			csi->ip+=4;
@@ -205,7 +205,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				csi->socket_error=ERROR_VALUE;
 			return(0);
 		case CS_SOCKET_READLINE:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* buffer */
 			csi->ip+=4;
@@ -262,7 +262,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic=LOGIC_TRUE;
 			return(0);
 		case CS_SOCKET_WRITE:	
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* buffer */
 			csi->ip+=4;
@@ -281,7 +281,7 @@ int sbbs_t::exec_net(csi_t* csi)
 
 		/* FTP Functions */
 		case CS_FTP_LOGIN:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp1=getstrvar(csi,*(long *)csi->ip);		/* username */
 			csi->ip+=4;
@@ -316,7 +316,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_LOGOUT:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			csi->logic=LOGIC_FALSE;
 			csi->socket_error=0;
@@ -332,7 +332,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_PWD:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			csi->logic=LOGIC_FALSE;
 			csi->socket_error=0;
@@ -347,7 +347,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_CWD:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* path */
 			csi->ip+=4;
@@ -367,7 +367,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_DIR:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* path */
 			csi->ip+=4;
@@ -384,7 +384,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_DELETE:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp=getstrvar(csi,*(long *)csi->ip);			/* path */
 			csi->ip+=4;
@@ -405,7 +405,7 @@ int sbbs_t::exec_net(csi_t* csi)
 
 
 		case CS_FTP_GET:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp1=getstrvar(csi,*(long *)csi->ip);		/* src path */
 			csi->ip+=4;
@@ -424,7 +424,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			return(0);
 
 		case CS_FTP_PUT:
-			lp=getintvar(csi,*(long *)csi->ip);			/* socket */
+			lp=getintvar(csi,*(int32_t *)csi->ip);			/* socket */
 			csi->ip+=4;
 			pp1=getstrvar(csi,*(long *)csi->ip);		/* src path */
 			csi->ip+=4;

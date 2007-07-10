@@ -122,7 +122,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, long name)
 	return((char **)&sysvar_p[sysvar_pi++]);
 }
 
-long * sbbs_t::getintvar(csi_t *bin, long name)
+long * sbbs_t::getintvar(csi_t *bin, int32_t name)
 {
 	uint i;
 
