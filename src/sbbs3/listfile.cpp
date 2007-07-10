@@ -56,7 +56,8 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 	uchar	flagprompt=0;
 	uint	i,j;
 	int		file,found=0,lastbat=0,disp;
-	long	l,m=0,n,anchor=0,next,datbuflen;
+	long	m=0,n,anchor=0,next,datbuflen;
+	int32_t	l;
 	file_t	f,bf[26];	/* bf is batch flagged files */
 
 	if(mode&FL_ULTIME) {

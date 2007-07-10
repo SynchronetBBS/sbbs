@@ -412,7 +412,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			   ,str[256],*p,*cp,*addr,fulladdr[129],ch;
 	char 	tmp[512];
 	int 	i,fido,inet=0,qnet=0;
-	ushort	net,xlat;
+	ushort	net;
+	uint16_t xlat;
 	long	l,offset,length,m,n;
 	faddr_t fidoaddr;
     fmsghdr_t hdr;
