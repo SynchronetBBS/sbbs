@@ -1268,7 +1268,7 @@ int SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length)
 /* Checks CRC history file for duplicate crc. If found, returns 1.			*/
 /* If no dupe, adds to CRC history and returns 0, or negative if error. 	*/
 /****************************************************************************/
-int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
+int SMBCALL smb_addcrc(smb_t* smb, uint32_t crc)
 {
 	char	str[MAX_PATH+1];
 	int 	file;

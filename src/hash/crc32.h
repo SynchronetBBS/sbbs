@@ -39,15 +39,16 @@
 #define _CRC32_H_
 
 #include <stdio.h>	/* FILE */
+#include "gen_defs.h"	/* uint32_t */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern long crc32tbl[];
+extern int32_t crc32tbl[];
 
-unsigned long crc32i(unsigned long crc, char* buf, unsigned long len);
-unsigned long fcrc32(FILE* fp, unsigned long len);
+uint32_t crc32i(uint32_t crc, char* buf, uint32_t len);
+uint32_t fcrc32(FILE* fp, uint32_t len);
 
 #ifdef __cplusplus
 }

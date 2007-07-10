@@ -38,7 +38,7 @@
 #include <string.h>	/* strlen */
 #include "crc32.h"
 
-long crc32tbl[]={	/* CRC polynomial 0xedb88320 */
+int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
@@ -78,9 +78,9 @@ long crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
-unsigned long crc32i(unsigned long crc, char *buf, unsigned long len)
+uint32_t crc32i(uint32_t crc, char *buf, uint32_t len)
 {
-	unsigned long l;
+	uint32_t l;
 
 	if(len==0 && buf!=NULL) 
 		len=strlen(buf);
@@ -89,10 +89,10 @@ unsigned long crc32i(unsigned long crc, char *buf, unsigned long len)
 	return(~crc);
 }
 
-unsigned long fcrc32(FILE* fp, unsigned long len)
+uint32_t fcrc32(FILE* fp, uint32_t len)
 {
 	int	ch;
-	unsigned long l,crc=0xffffffff;
+	uint32_t l,crc=0xffffffff;
 
 	rewind(fp);
 	for(l=0;(len==0 || l<len) && !feof(fp);l++) {

@@ -38,13 +38,15 @@
 #ifndef _CRC16_H_
 #define _CRC16_H_
 
+#include "gen_defs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern unsigned short crc16tbl[];
+extern uint16_t crc16tbl[];
 
-unsigned short crc16(char *data, unsigned long len);
+uint16_t crc16(char *data, uint32_t len);
 
 #ifdef __cplusplus
 }

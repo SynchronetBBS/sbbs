@@ -48,7 +48,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	char*	lzhbuf;
 	char*	p;
 	char*	str;
-	ushort	xlat;
+	uint16_t	xlat;
 	uint 	i;
 	int		lzh;	/* BOOL */
 	long	l=0,lzhlen,length;

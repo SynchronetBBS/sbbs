@@ -331,10 +331,10 @@ int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return(retval);
 }
 
-ushort SMBCALL smb_subject_crc(const char* subj)
+uint16_t SMBCALL smb_subject_crc(const char* subj)
 {
 	char*	str;
-	ushort	crc;
+	uint16_t	crc;
 
 	if(subj==NULL)
 		return(0xffff);
@@ -355,10 +355,10 @@ ushort SMBCALL smb_subject_crc(const char* subj)
 	return(crc);
 }
 
-ushort SMBCALL smb_name_crc(const char* name)
+uint16_t SMBCALL smb_name_crc(const char* name)
 {
 	char*	str;
-	ushort	crc;
+	uint16_t	crc;
 
 	if(name==NULL)
 		return(0xffff);

@@ -47,9 +47,9 @@
 /* smb_close_da() should be called after									*/
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs)
+long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
 {
-    ushort  i;
+    uint16_t  i;
 	ulong	j,l,blocks,offset=0L;
 
 	if(smb->sda_fp==NULL) {
@@ -95,7 +95,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs)
 /* Allocates space for data, but doesn't search for unused blocks           */
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
+long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
 {
 	ulong	l,blocks,offset;
 
@@ -132,11 +132,11 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
 /* De-allocates space for data												*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
+int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 {
 	BOOL	da_opened=FALSE;
 	int		retval=SMB_SUCCESS;
-	ushort	i;
+	uint16_t	i;
 	ulong	l,blocks;
 	ulong	sda_offset;
 
@@ -200,9 +200,9 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 /* Adds to data allocation records for blocks starting at 'offset'          */
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
+int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 {
-	ushort	i;
+	uint16_t	i;
 	ulong	l,blocks;
 
 	if(smb->sda_fp==NULL) {
@@ -242,7 +242,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 /* header references specified (usually 1)									*/
 /* The opposite function of smb_freemsg()									*/
 /****************************************************************************/
-int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
+int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i=SMB_SUCCESS;
 	BOOL	da_opened=FALSE;
@@ -297,7 +297,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
+int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i;
 	ushort	x;
