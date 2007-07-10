@@ -594,7 +594,7 @@ typedef struct {				/* Message */
 	dfield_t	*dfield;		/* Data fields (fixed length portion) */
 	int32_t		offset; 		/* Offset (number of records) into index */
 	/* TODO: Should this be a BOOL? */
-	int			forwarded;		/* Forwarded from agent to another */
+	int32_t			forwarded;		/* Forwarded from agent to another */
 	uint32_t		expiration; 	/* Message will expire on this day (if >0) */
 	uint32_t		priority;		/* Message priority (0 is lowest) */
 	uint32_t		cost;			/* Cost to download/read */
