@@ -664,12 +664,12 @@ typedef struct {					/* Command shell image */
 			cmdrets;				/* Command returns on stack */
 
 	int32_t	ftp_mode,				/* FTP operation mode */
-			*int_var;				/* Integer variables */
-	long	retval, 				/* Return value */
-			misc,					/* Misc bits */
-			switch_val, 			/* Current switch value */
+			*int_var,				/* Integer variables */
 			*str_var_name,			/* String variable names (CRC-32) */
 			*int_var_name;			/* Integer variable names (CRC-32) */
+	long	retval, 				/* Return value */
+			misc,					/* Misc bits */
+			switch_val; 			/* Current switch value */
 
 	long	length; 				/* Length of image */
 

@@ -48,7 +48,7 @@ int sbbs_t::exec_net(csi_t* csi)
 	ushort	w;
 	uint 	i;
 	BOOL	rd;
-	long	*lp,*lp1,*lp2;
+	int32_t	*lp,*lp1,*lp2;
 	time_t	start;
 
 	switch(*(csi->ip++)) {	/* sub-op-code stored as next byte */

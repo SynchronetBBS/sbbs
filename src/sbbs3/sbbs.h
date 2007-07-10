@@ -369,10 +369,10 @@ public:
 			/* Global command shell variables */
 	uint	global_str_vars;
 	char **	global_str_var;
-	long *	global_str_var_name;
+	int32_t *	global_str_var_name;
 	uint	global_int_vars;
 	int32_t *	global_int_var;
-	long *	global_int_var_name;
+	int32_t *	global_int_var_name;
 	char *	sysvar_p[MAX_SYSVARS];
 	uint	sysvar_pi;
 	int32_t	sysvar_l[MAX_SYSVARS];

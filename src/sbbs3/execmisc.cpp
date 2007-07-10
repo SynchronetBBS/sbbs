@@ -43,7 +43,7 @@ static char* format_string(sbbs_t* sbbs, csi_t* csi)
 {
 	char*		fmt;
 	void*		vp;
-	long*		lp;
+	int32_t*	lp;
 	unsigned	i;
 	unsigned	args;
 
@@ -69,7 +69,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 	char	str[512],tmp[512],buf[1025],ch,op,*p,**pp,**pp1,**pp2;
 	ushort	w;
 	uint 	i=0,j;
-	long	l,*lp=NULL,*lp1=NULL,*lp2=NULL;
+	long	l;
+	int32_t	*lp=NULL,*lp1=NULL,*lp2=NULL;
 	void	*vp;
 	struct	dirent *de;
     struct  tm tm;
@@ -133,7 +134,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->str_vars++;
 					csi->str_var=(char **)realloc(csi->str_var
 						,sizeof(char *)*csi->str_vars);
-					csi->str_var_name=(long *)realloc(csi->str_var_name
+					csi->str_var_name=(int32_t *)realloc(csi->str_var_name
 						,sizeof(long)*csi->str_vars);
 					if(csi->str_var==NULL
 						|| csi->str_var_name==NULL) { /* REALLOC failed */
@@ -156,9 +157,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					csi->int_vars++;
-					csi->int_var=(long *)realloc(csi->int_var
+					csi->int_var=(int32_t *)realloc(csi->int_var
 						,sizeof(char *)*csi->int_vars);
-					csi->int_var_name=(long *)realloc(csi->int_var_name
+					csi->int_var_name=(int32_t *)realloc(csi->int_var_name
 						,sizeof(long)*csi->int_vars);
 					if(csi->int_var==NULL
 						|| csi->int_var_name==NULL) { /* REALLOC failed */
@@ -183,7 +184,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					global_str_vars++;
 					global_str_var=(char **)realloc(global_str_var
 						,sizeof(char *)*global_str_vars);
-					global_str_var_name=(long *)realloc(global_str_var_name
+					global_str_var_name=(int32_t *)realloc(global_str_var_name
 						,sizeof(long)*global_str_vars);
 					if(global_str_var==NULL
 						|| global_str_var_name==NULL) { /* REALLOC failed */
@@ -207,9 +208,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						csi->ip+=4;
 						return(0); }
 					global_int_vars++;
-					global_int_var=(long *)realloc(global_int_var
+					global_int_var=(int32_t *)realloc(global_int_var
 						,sizeof(char *)*global_int_vars);
-					global_int_var_name=(long *)realloc(global_int_var_name
+					global_int_var_name=(int32_t *)realloc(global_int_var_name
 						,sizeof(long)*global_int_vars);
 					if(global_int_var==NULL
 						|| global_int_var_name==NULL) { /* REALLOC failed */
