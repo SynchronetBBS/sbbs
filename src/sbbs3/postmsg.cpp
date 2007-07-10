@@ -65,7 +65,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	char	touser[64];
 	char	from[64];
 	char	pid[128];
-	ushort	xlat,msgattr;
+	uint16_t xlat;
+	ushort	msgattr;
 	int 	i,j,x,file,storage;
 	ulong	length,offset,crc=0xffffffff;
 	FILE*	instream;

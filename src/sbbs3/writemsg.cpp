@@ -1189,7 +1189,7 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 {
 	char	buf[SDT_BLOCK_LEN];
 	char	msgtmp[MAX_PATH+1];
-	ushort	xlat;
+	uint16_t	xlat;
 	int 	file,i,j,x;
 	long	length,offset;
 	FILE	*instream;
