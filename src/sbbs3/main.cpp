@@ -1912,12 +1912,12 @@ void event_thread(void* arg)
 	int			offset;
 	bool		check_semaphores;
 	bool		packed_rep;
-	ulong		l;
+	uint32_t	l;
 	time_t		now;
 	time_t		start;
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
-	time_t		lastprepack=0;
+	time32_t	lastprepack=0;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -1949,9 +1949,9 @@ void event_thread(void* arg)
 			if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
 				eprintf(LOG_WARNING,"Initializing last run time for event: %s"
 					,sbbs->cfg.event[i]->code);
-				write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
+				write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 			} else {
-				if(read(file,&sbbs->cfg.event[i]->last,sizeof(time_t))!=sizeof(time_t))
+				if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last))!=sizeof(sbbs->cfg.event[i]->last))
 					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
 			}
 			/* Event always runs after initialization? */
@@ -1959,7 +1959,7 @@ void event_thread(void* arg)
 				sbbs->cfg.event[i]->last=-1;
 		}
 		lastprepack=0;
-		read(file,&lastprepack,sizeof(time_t));	/* expected to fail first time */
+		read(file,&lastprepack,sizeof(lastprepack));	/* expected to fail first time */
 		close(file);
 	}
 
@@ -1973,10 +1973,10 @@ void event_thread(void* arg)
 			if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
 				eprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
 					,sbbs->cfg.qhub[i]->id);
-				write(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t));
+				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
 			} else {
-				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t))!=sizeof(time_t))
-					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
+				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last))!=sizeof(sbbs->cfg.qhub[i]->last))
+					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(sbbs->cfg.qhub[i]->last));
 			}
 		}
 		close(file);
@@ -1990,9 +1990,9 @@ void event_thread(void* arg)
 		for(i=0;i<sbbs->cfg.total_phubs;i++) {
 			sbbs->cfg.phub[i]->last=0;
 			if(filelength(file)<(long)(sizeof(time_t)*(i+1)))
-				write(file,&sbbs->cfg.phub[i]->last,sizeof(time_t));
+				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
 			else
-				read(file,&sbbs->cfg.phub[i]->last,sizeof(time_t)); 
+				read(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last)); 
 		}
 		close(file);
 	}
@@ -2133,7 +2133,7 @@ void event_thread(void* arg)
 					break; 
 				}
 				lseek(file,(long)sbbs->cfg.total_events*4L,SEEK_SET);
-				write(file,&lastprepack,sizeof(time_t));
+				write(file,&lastprepack,sizeof(lastprepack));
 				close(file);
 
 				remove(semfile);
@@ -2268,7 +2268,7 @@ void event_thread(void* arg)
 					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr=0;
 					if(file!=-1) {
 						lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long),SEEK_SET);
-						read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
+						read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr)); 
 					}
 				}
 				if(file!=-1)
@@ -2287,7 +2287,7 @@ void event_thread(void* arg)
 							lseek(file
 								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long)
 								,SEEK_SET);
-							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
+							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr)); 
 						}
 						close(file); 
 					} 
@@ -2301,7 +2301,7 @@ void event_thread(void* arg)
 					break; 
 				}
 				lseek(file,sizeof(time_t)*i,SEEK_SET);
-				write(file,&sbbs->cfg.qhub[i]->last,sizeof(time_t));
+				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
 				close(file);
 
 				if(sbbs->cfg.qhub[i]->call[0]) {
@@ -2342,7 +2342,7 @@ void event_thread(void* arg)
 					break; 
 				}
 				lseek(file,sizeof(time_t)*i,SEEK_SET);
-				write(file,&sbbs->cfg.phub[i]->last,sizeof(time_t));
+				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
 				close(file);
 
 				if(sbbs->cfg.phub[i]->call[0]) {
@@ -2419,7 +2419,7 @@ void event_thread(void* arg)
 								continue; 
 							}
 							lseek(file,(long)i*4L,SEEK_SET);
-							read(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
+							read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 							close(file);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break; 
@@ -2534,7 +2534,7 @@ void event_thread(void* arg)
 						break; 
 					}
 					lseek(file,(long)i*4L,SEEK_SET);
-					write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
+					write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 					close(file);
 
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
