@@ -4504,7 +4504,7 @@ NO_SSH:
 	for(i=first_node;i<=last_node;i++) {
 		sbbs->getnodedat(i,&node,1);
 		node.status=NODE_WFC;
-		node.misc&=NODE_EVENT;
+		node.misc&=NODE_EVENT;	/* Note: Turns-off NODE_RRUN flag (and others) */
 		node.action=0;
 		sbbs->putnodedat(i,&node);
 	}
@@ -4549,10 +4549,9 @@ NO_SSH:
 	recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","telnet");
 	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
 	semfile_list_add(&recycle_semfiles,str);
-	if(!initialized) {
-		semfile_list_check(&initialized,recycle_semfiles);
+	if(!initialized)
 		semfile_list_check(&initialized,shutdown_semfiles);
-	}
+	semfile_list_check(&initialized,recycle_semfiles);
 
 #ifdef __unix__	//	unix-domain spy sockets
 	for(i=first_node;i<=last_node && !(startup->options&BBS_OPT_NO_SPY_SOCKETS);i++)  {
@@ -4629,10 +4628,6 @@ NO_SSH:
 						,telnet_socket,p);
 					break;
 				}
-#if 0	/* unused */
-				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
-					startup->recycle_now=TRUE;
-#endif
 				if(startup->recycle_now==TRUE) {
 					lprintf(LOG_INFO,"%04d Recycle semaphore signaled",telnet_socket);
 					startup->recycle_now=FALSE;
