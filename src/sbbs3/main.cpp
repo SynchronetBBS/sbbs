@@ -4605,23 +4605,25 @@ NO_SSH:
 
 	while(!terminate_server) {
 
-		if(node_threads_running==0) {	/* check for re-run flags */
-			bool rerun=false;
-			for(i=first_node;i<=last_node;i++) {
-				if(sbbs->getnodedat(i,&node,0)!=0)
-					continue;
-				if(node.misc&NODE_RRUN) {
-					sbbs->getnodedat(i,&node,1);
-					if(!rerun)
-						lprintf(LOG_INFO,"Node %d flagged for re-run",i);
-					rerun=true;
-					node.misc&=~NODE_RRUN;
-					sbbs->putnodedat(i,&node);
-				}
-			}
-			if(rerun)
-				break;
+		if(node_threads_running==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+
+				bool rerun=false;
+				for(i=first_node;i<=last_node;i++) {
+					if(sbbs->getnodedat(i,&node,0)!=0)
+						continue;
+					if(node.misc&NODE_RRUN) {
+						sbbs->getnodedat(i,&node,1);
+						if(!rerun)
+							lprintf(LOG_INFO,"Node %d flagged for re-run",i);
+						rerun=true;
+						node.misc&=~NODE_RRUN;
+						sbbs->putnodedat(i,&node);
+					}
+				}
+				if(rerun)
+					break;
+
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
 						,telnet_socket,p);
