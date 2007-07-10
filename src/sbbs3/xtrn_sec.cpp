@@ -299,9 +299,11 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 {
 	char	str[1024],tmp2[128],c,*p;
 	char 	tmp[512];
-	int		i,file;
-	ushort	w;
-	long	l;
+	/* TODO: 16-bit i */
+	int16_t	i;
+	int		file;
+	uint16_t	w;
+	int32_t	l;
 	struct tm tm;
 	struct tm tl;
 	stats_t stats;
@@ -702,17 +704,17 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			return; 
 		}
 		w=(WORD)dte_rate;
-		write(file,&w,sizeof(short));			/* BaudRate */
+		write(file,&w,sizeof(w));			/* BaudRate */
 		/* SysInfo */
 		getstats(&cfg,0,&stats);
-		write(file,&stats.logons,sizeof(long)); /* CallCount */
+		write(file,&stats.logons,sizeof(stats.logons)); /* CallCount */
 		write(file,nulstr,36);					/* LastCallerName */
 		write(file,nulstr,36);					/* LastCallerAlias */
 		write(file,nulstr,92);					/* ExtraSpace */
 		/* TimeLogInfo */
 		write(file,nulstr,9);					/* StartDate */
-		write(file,nulstr,24*sizeof(short));	/* BusyPerHour */
-		write(file,nulstr,7*sizeof(short));		/* BusyPerDay */
+		write(file,nulstr,24*sizeof(int16_t));	/* BusyPerHour */
+		write(file,nulstr,7*sizeof(int16_t));		/* BusyPerDay */
 		/* UserInfo */
 		str2pas(name,str);				/* Name */
 		write(file,str,36);
@@ -739,33 +741,33 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,&c,1);						/* Attrib */
 		write(file,&useron.flags1,4);			/* Flags */
 		w=0;
-		write(file,&w,sizeof(short)); 			/* Credit */
-		write(file,&w,sizeof(short)); 			/* Pending */
-		write(file,&useron.posts,sizeof(short));/* TimesPosted */
-		write(file,&w,sizeof(short)); 			/* HighMsgRead */
+		write(file,&w,sizeof(w)); 			/* Credit */
+		write(file,&w,sizeof(w)); 			/* Pending */
+		write(file,&useron.posts,sizeof(useron.posts));/* TimesPosted */
+		write(file,&w,sizeof(w)); 			/* HighMsgRead */
 		w=useron.level;
-		write(file,&w,sizeof(short)); 			/* SecLvl */
+		write(file,&w,sizeof(w)); 			/* SecLvl */
 		w=0;
-		write(file,&w,sizeof(short)); 			/* Times */
-		write(file,&useron.uls,sizeof(short));	/* Ups */
-		write(file,&useron.dls,sizeof(short));	/* Downs */
+		write(file,&w,sizeof(w)); 			/* Times */
+		write(file,&useron.uls,sizeof(useron.uls));	/* Ups */
+		write(file,&useron.dls,sizeof(useron.dls));	/* Downs */
 		w=(ushort)(useron.ulb/1024UL);
-		write(file,&w,sizeof(short)); 			/* UpK */
+		write(file,&w,sizeof(w)); 			/* UpK */
 		w=(ushort)(useron.dlb/1024UL);
-		write(file,&w,sizeof(short)); 			/* DownK */
+		write(file,&w,sizeof(w)); 			/* DownK */
 		w=(ushort)(logon_dlb/1024UL);
-		write(file,&w,sizeof(short)); 			/* TodayK */
+		write(file,&w,sizeof(w)); 			/* TodayK */
 		w=0;
-		write(file,&w,sizeof(short)); 			/* Elapsed */
-		write(file,&w,sizeof(short)); 			/* Len */
-		write(file,&w,sizeof(short)); 			/* CombinedPtr */
-		write(file,&w,sizeof(short)); 			/* AliasPtr */
+		write(file,&w,sizeof(w)); 			/* Elapsed */
+		write(file,&w,sizeof(w)); 			/* Len */
+		write(file,&w,sizeof(w)); 			/* CombinedPtr */
+		write(file,&w,sizeof(w)); 			/* AliasPtr */
 		l=0;
-		write(file,&l,sizeof(long));			/* Birthday (as a long?) */
+		write(file,&l,sizeof(l));			/* Birthday (as a long?) */
 		/* EventInfo */
 		c=0;
 		write(file,&c,sizeof(char));			/* Status */
-		write(file,&l /* sys_eventtime */,sizeof(long));	/* RunTime */
+		write(file,&l /* sys_eventtime */,sizeof(l));	/* RunTime */
 		write(file,&c,sizeof(char));			/* ErrorLevel */
 		c='\xff';
 		write(file,&c,sizeof(char));			/* Days */
@@ -776,7 +778,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			l=0;
 		else
 			l=cfg.event[0]->last;
-		write(file,&l,sizeof(long));			/* LastTimeRun */
+		write(file,&l,sizeof(l));			/* LastTimeRun */
 		memset(str,0,40);
 		write(file,str,7);						/* Spare */
 
@@ -791,10 +793,10 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		unixtodstr(&cfg,logontime,tmp);
 		str2pas(tmp,str);
 		write(file,str,9);						/* LoginDate */
-		write(file,&cfg.level_timepercall[useron.level],sizeof(short));  /* TmLimit */
-		write(file,&logontime,sizeof(long));	/* LoginSec */
-		write(file,&useron.cdt,sizeof(long));	/* Credit */
-		write(file,&useron.number,sizeof(short)); /* UserRecNum */
+		write(file,&cfg.level_timepercall[useron.level],sizeof(int16_t));  /* TmLimit */
+		write(file,&logontime,sizeof(logontime));	/* LoginSec */
+		write(file,&useron.cdt,sizeof(useron.cdt));	/* Credit */
+		write(file,&useron.number,sizeof(useron.number)); /* UserRecNum */
 		write(file,&i,2);						/* ReadThru */
 		write(file,&i,2);						/* PageTimes */
 		write(file,&i,2);						/* DownLimit */
@@ -1341,7 +1343,8 @@ void sbbs_t::moduserdat(uint xtrnnum)
 {
 	char	str[256],path[256],c,startup[128];
 	char 	tmp[512];
-	uint	i;
+	/* TODO: I don't really like a 16-bit i */
+	uint16_t	i;
 	long	mod;
     int		file;
     FILE *	stream;
