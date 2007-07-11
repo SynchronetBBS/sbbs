@@ -2573,8 +2573,7 @@ js_utime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*			fname;
 	int32			actime;
 	int32			modtime;
-	struct utimbuf	tbuf;
-	struct utimbuf*	t=NULL;
+	struct utimbuf	ut;
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2584,17 +2583,18 @@ js_utime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((fname=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
+	/* use current time as default */
+	ut.actime = ut.modtime = time(NULL);
+
 	if(argc>1) {
-		memset(&tbuf,0,sizeof(tbuf));
-		actime=modtime=time(NULL);
+		actime=modtime=ut.actime;
 		JS_ValueToInt32(cx,argv[1],&actime);
 		JS_ValueToInt32(cx,argv[2],&modtime);
-		tbuf.actime=actime;
-		tbuf.modtime=modtime;
-		t=&tbuf;
+		ut.actime=actime;
+		ut.modtime=modtime;
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(utime(fname,t)==0);
+	*rval = BOOLEAN_TO_JSVAL(utime(fname,&ut)==0);
 
 	return(JS_TRUE);
 }

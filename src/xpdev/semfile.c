@@ -126,6 +126,7 @@ void DLLCALL semfile_list_free(str_list_t* filelist)
 BOOL DLLCALL semfile_signal(const char* fname, const char* text)
 {
 	int file;
+	struct utimbuf ut;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 
@@ -138,5 +139,7 @@ BOOL DLLCALL semfile_signal(const char* fname, const char* text)
 		write(file,text,strlen(text));
 	close(file);
 
-	return utime(fname, /* use current date/time: */NULL)==0;
+	/* update the time stamp */
+	ut.actime = ut.modtime = time(NULL);
+	return utime(fname, &ut)==0;
 }

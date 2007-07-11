@@ -111,9 +111,11 @@ FILE* fnopen(int* fd, const char* str, int access)
 BOOL ftouch(const char* fname)
 {
 	int file;
+	struct utimbuf ut;
 
 	/* update the time stamp */
-	if(utime(fname, /* use current date/time: */NULL)==0)
+	ut.actime = ut.modtime = time(NULL);
+	if(utime(fname, &ut)==0)
 		return(TRUE);
 
 	/* create the file */
