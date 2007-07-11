@@ -1,0 +1,65 @@
+Notes on building Synchronet on 64-bit systems
+==============================================
+The 64-bit port is a relatively new effort on the part of the Synchronet
+developers.  Since none of the active developers are currently running 64-bit
+OSs, progress on this port is relatively slow.  However, the BBS itself and
+the scfg utility have been ported to 64-bit and appear to be working correctly.
+
+A few extra steps must be used to get a working build of Synchronet for 64-bit
+platforms:
+1) /usr/include/inttypes.h MUST exist.
+	This is a C99 file which includes stdint.h which defines size-based
+	integer types.  Without this file, Synchronet will not know the sizes
+	of the integer types and will therefore assume 32-bit hardware.
+
+	If this include file does not exist, you will need to obtain it from
+	somewhere or not attempt a 64-bit Synchronet build.
+
+2) The included libraries are not for 64-bit platforms and so must be installed
+   using other methods.  The libraries in question are:
+	cryptlib - Used for the SSH support
+		Available from http://www.cs.auckland.ac.nz/~pgut001/cryptlib/
+	spidermonkey (THREADED) - Used for JavaScript support
+		The easiest way to get a threaded spidermonkey is to install
+		a native Mozilla browser such as Firefox
+	nspr4 - Used by spidermonkey
+		Installing a Mozilla browser will also install an nspr4 library
+		however, you will also need 64-bit capable nspr4 headers.
+		Your platform should have an nspr4 development package
+		available which should be installed 
+	SDL - *OPTIONAL* - Used by scfg and other console based utilities.
+		Available from http://www.libsdl.org/
+		This package is not required for building or running anything
+		but does allow extra capabilities that other methods do not.
+
+3) Specifying library and include file locations
+   Library and header locations can be passed on the make command-line if they
+   are not in standard locations (/usr/local/include, /usr/local/lib,
+   /usr/local/lib64, /usr/include, /usr/lib, and /usr/lib64)
+	cryptlib:
+		Specify the path the the header files using the CRYPTLIBINCLUDE
+		macro.
+		ex: ``make CRYPTLIBINCLUDE=/usr/local/include/cl''
+		Specify the path to the library file using the CRYPTLIBDIR
+		macro.
+	spidermonkey:
+		Specify the NAME of the library (without the lib prefix or any
+		file suffixes) using the JSLIB macro.  For Mozilla browsers,
+		the library name would be ``moxjs''
+		ex: ``make JSLIB=mozjs''
+		Specify the path the the library file using the JSLIBDIR macro.
+		The include files that come with Synchronet SHOULD work.
+		However, if they don't, you can specify the path using the
+		JSINCLUDE macro.
+	nspr4:
+		Specify the path to the library using the NSPRDIR macro and
+		the path to the include files using the NSPRINCLUDE macro.
+	SDL:
+		Specify the complete path to the sdl-config program using the
+		SDL_CONFIG macro.
+		ex: ``make SDL_CONFIG=/usr/local/bin/sdl-config''
+
+4) When reporting bugs, be SURE to mention that you are running a 64-bit build
+   and be prepared to follow instructions which may involve debugging and the
+   use of core files.  Be absolutely sure to configure your system to save core
+   files in the event of a crash of Synchronet.
