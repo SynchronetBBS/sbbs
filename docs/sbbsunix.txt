@@ -26,7 +26,11 @@ A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake,
    Debian, Slackware, etc.).
 
 Q. 64-bit?
-A. No.
+A. Untested experimental support for 64-bit platforms is in CVS.  Use the
+   directions available at
+   http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/docs/64bit.txt
+   in conjunction with this document for building and be prepared to deal with
+   bugs.
 
 Q. The installer (e.g. Linux-install from sbbsunix.tgz) segfaults, crashes,
    or fails to get the file size of sbbs_src.tgz.
