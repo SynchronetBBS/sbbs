@@ -1061,7 +1061,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(sys_status&SS_ABORT)
 						break;
 					putfiledat(&cfg,&f);
-					inputnstime(&f.dateuled);
+					inputnstime32(&f.dateuled);
 					update_uldate(&cfg, &f);
 					break;
 				case 'F':   /* delete file only */
