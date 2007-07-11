@@ -39,6 +39,7 @@
 #define _GENWRAP_H
 
 #include <stdio.h>		/* sprintf */
+#include <string.h>		/* strerror() */
 #include "gen_defs.h"	/* ulong */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
