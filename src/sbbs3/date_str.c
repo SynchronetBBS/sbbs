@@ -150,6 +150,13 @@ char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
 /* Generates a 24 character ASCII string that represents the time_t pointer */
 /* Used as a replacement for ctime()                                        */
 /****************************************************************************/
+char* DLLCALL time32str(scfg_t *cfg, time32_t *intime, char *str)
+{
+	time_t	tmptime=*intime;
+
+	return(timestr(cfg,&tmptime,str);
+}
+
 char* DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str)
 {
     char*		mer;
