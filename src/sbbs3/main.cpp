@@ -1948,13 +1948,13 @@ void event_thread(void* arg)
 	else {
 		for(i=0;i<sbbs->cfg.total_events;i++) {
 			sbbs->cfg.event[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
+			if(filelength(file)<(long)(sizeof(time32_t)*(i+1))) {
 				eprintf(LOG_WARNING,"Initializing last run time for event: %s"
 					,sbbs->cfg.event[i]->code);
 				write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 			} else {
 				if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last))!=sizeof(sbbs->cfg.event[i]->last))
-					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
+					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time32_t));
 			}
 			/* Event always runs after initialization? */
 			if(sbbs->cfg.event[i]->misc&EVENT_INIT)
@@ -1972,7 +1972,7 @@ void event_thread(void* arg)
 	else {
 		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
 			sbbs->cfg.qhub[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
+			if(filelength(file)<(long)(sizeof(time32_t)*(i+1))) {
 				eprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
 					,sbbs->cfg.qhub[i]->id);
 				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
@@ -1991,7 +1991,7 @@ void event_thread(void* arg)
 	else {
 		for(i=0;i<sbbs->cfg.total_phubs;i++) {
 			sbbs->cfg.phub[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time_t)*(i+1)))
+			if(filelength(file)<(long)(sizeof(time32_t)*(i+1)))
 				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
 			else
 				read(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last)); 
@@ -2303,7 +2303,7 @@ void event_thread(void* arg)
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 					break; 
 				}
-				lseek(file,sizeof(time_t)*i,SEEK_SET);
+				lseek(file,sizeof(time32_t)*i,SEEK_SET);
 				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
 				close(file);
 
@@ -2344,7 +2344,7 @@ void event_thread(void* arg)
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 					break; 
 				}
-				lseek(file,sizeof(time_t)*i,SEEK_SET);
+				lseek(file,sizeof(time32_t)*i,SEEK_SET);
 				write(file,&sbbs->cfg.phub[i]->last,sizeof(sbbs->cfg.phub[i]->last));
 				close(file);
 
