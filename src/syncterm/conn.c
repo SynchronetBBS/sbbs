@@ -347,7 +347,7 @@ int conn_socket_connect(struct bbslist *bbs)
 	if(!(*p))
 		neta=inet_addr(bbs->addr);
 	else {
-		uifc.pop("Lookup up host");
+		uifc.pop("Looking up host");
 		if((ent=gethostbyname(bbs->addr))==NULL) {
 			char str[LIST_ADDR_MAX+17];
 
