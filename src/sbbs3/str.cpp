@@ -560,6 +560,16 @@ size_t sbbs_t::gettmplt(char *strout,char *templt, long mode)
 /* Accepts a user's input to change a new-scan time pointer                  */
 /* Returns 0 if input was aborted or invalid, 1 if complete					 */
 /*****************************************************************************/
+bool sbbs_t::inputnstime32(time32_t *dt)
+{
+	bool retval;
+	time_t	tmptime=*dt;
+
+	retval=inputnstime(&tmptime);
+	*dt=tmptime;
+	return(retval);
+}
+
 bool sbbs_t::inputnstime(time_t *dt)
 {
 	int hour;

@@ -448,6 +448,7 @@ public:
 	void	create_sif_dat(char *siffile, char *datfile);
 	void	read_sif_dat(char *siffile, char *datfile);
 	void	printnodedat(uint number, node_t* node);
+	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
 	char *	cmdstr(char *instr, char *fpath, char *fspec, char *outstr);
