@@ -182,6 +182,9 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    *> If you have /usr/lib/libmozjs.so (instead of libjs.so), you can either:
    *> Create a symlink or copy of this file with the name /usr/lib/libjs.so
    *> or specify "JSLIB=mozjs" on the "gmake" command-line mentioned later.
+   *> If libmozjs.so is not located in a standard library path such as
+   *> /usr/lib or /usr/local/lib, you will also need to specify JSLIBDIR
+   *> also on the gmake command-line such as "JSLIBDIR=/usr/lib/mozilla".
    *> If your system already has the JavaScript library, skip ahead to step 2.
 
    E. Get the required JavaScript library for your platform and build type:
