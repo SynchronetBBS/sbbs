@@ -228,13 +228,11 @@ void sbbs_t::logofflist()
 {
     char str[256];
     int file;
-    time_t tmptime;
     struct tm tm, tm_now;
 
 	if(localtime_r(&now,&tm_now)==NULL)
 		return;
-	tmptime=logontime;
-	if(localtime_r(&tmptime,&tm)==NULL)
+	if(localtime_r(&logontime,&tm)==NULL)
 		return;
 	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
 		,TM_YEAR(tm.tm_year));

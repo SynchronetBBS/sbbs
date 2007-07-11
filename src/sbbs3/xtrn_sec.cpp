@@ -307,7 +307,6 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	struct tm tm;
 	struct tm tl;
 	stats_t stats;
-	time_t tmptime;
 
 	char	node_dir[MAX_PATH+1];
 	char	ctrl_dir[MAX_PATH+1];
@@ -625,8 +624,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tmptime=logontime;
-		localtime_r(&tmptime,&tm);
+		localtime_r(&logontime,&tm);
 		localtime_r(&useron.laston,&tl);
 		sprintf(str,"%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
 			"%lu\n%s\n%u\n%u\n"
@@ -788,8 +786,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,&c,1);						/* NetMailEntered */
 		write(file,&c,1);						/* EchoMailEntered */
 
-		tmptime=logontime;
-		localtime_r(&tmptime,&tm);
+		localtime_r(&logontime,&tm);
 		sprintf(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		str2pas(tmp,str);
 		write(file,str,6);						/* LoginTime */
@@ -978,8 +975,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.pass);						/* User's password */
 		write(file,str,27);
 
-		tmptime=logontime;
-		if(localtime_r(&tmptime,&tm)==NULL)
+		if(localtime_r(&logontime,&tm)==NULL)
 			i=0;
 		else
 			i=(tm.tm_hour*60)+tm.tm_min;
@@ -1178,8 +1174,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		tmptime=logontime;
-		if(localtime_r(&tmptime,&tm)==NULL)
+		if(localtime_r(&logontime,&tm)==NULL)
 			l=0;
 		else
 			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
