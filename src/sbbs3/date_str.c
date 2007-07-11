@@ -154,7 +154,7 @@ char* DLLCALL time32str(scfg_t *cfg, time32_t *intime, char *str)
 {
 	time_t	tmptime=*intime;
 
-	return(timestr(cfg,&tmptime,str);
+	return(timestr(cfg,&tmptime,str));
 }
 
 char* DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str)
