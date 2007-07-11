@@ -92,7 +92,7 @@ int DLLCALL lock(int fd, long pos, long len)
 		int	flags;
 		if((flags=fcntl(fd,F_GETFL))==-1)
 			return -1;
-		if(flags==O_RDONLY)
+		if((flags & (O_RDONLY|O_RDWR|O_WRONLY))==O_RDONLY)
 			alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 		else
 			alock.l_type = F_WRLCK; /* set write lock to prevent all access */
@@ -306,7 +306,7 @@ FILE *_fsopen(char *pszFilename, char *pszMode, int shmode)
 	}
 	switch(Mode)  {
 		case 1:
-			Mode=O_RDONLY;
+			Mode =O_RDONLY;
 			break;
 		case 2:
 			Mode=O_WRONLY|O_CREAT|O_TRUNC;
