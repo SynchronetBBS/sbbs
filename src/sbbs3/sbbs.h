@@ -306,10 +306,10 @@ public:
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now,			/* Used to store current time in Unix format */
-			ns_time;		/* File new-scan time */
-	time32_t	answertime, 	/* Time call was answered */
+			answertime, 	/* Time call was answered */
 			logontime,		/* Time user logged on */
 			starttime,		/* Time stamp to use for time left calcs */
+			ns_time,		/* File new-scan time */
 			last_ns_time;	/* Most recent new-file-scan this call */
 	uchar 	action;			/* Current action of user */
 	long 	online; 		/* Remote/Local or not online */
