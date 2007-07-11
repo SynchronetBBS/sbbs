@@ -305,11 +305,11 @@ public:
 	char 	latr;			/* Starting attribute of line buffer */
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
-	time_t	now;			/* Used to store current time in Unix format */
+	time_t	now,			/* Used to store current time in Unix format */
+			ns_time;		/* File new-scan time */
 	time32_t	answertime, 	/* Time call was answered */
 			logontime,		/* Time user logged on */
 			starttime,		/* Time stamp to use for time left calcs */
-			ns_time,		/* File new-scan time */
 			last_ns_time;	/* Most recent new-file-scan this call */
 	uchar 	action;			/* Current action of user */
 	long 	online; 		/* Remote/Local or not online */
@@ -438,6 +438,7 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
+	char*	timestr(time32_t *intime);
 	char*	timestr(time_t *intime);
     char	timestr_output[60];
 	void	userlist(long mode);

@@ -826,6 +826,12 @@ bool sbbs_t::trashcan(char *insearchof, char *name)
 	return(result);
 }
 
+char* sbbs_t::timestr(time32_t *intime)
+{
+	time_t intime32=*intime;
+	return(::timestr(&cfg,&intime32,timestr_output));
+}
+
 char* sbbs_t::timestr(time_t *intime)
 {
 	return(::timestr(&cfg,intime,timestr_output));
