@@ -68,7 +68,7 @@ char **label_name=NULL
 	,**call_file=NULL
 	,**call_label=NULL;
 
-ulong *var_name=NULL,vars=0;
+uint32_t *var_name=NULL,vars=0;
 
 char **define_str=NULL
 	,**define_val=NULL;
@@ -111,9 +111,9 @@ void bail(int retval)
 /****************************************************************************/
 /* Converts an ASCII Hex string into an ulong								*/
 /****************************************************************************/
-ulong ahtoul(char *str)
+uint32_t ahtoul(char *str)
 {
-	ulong l,val=0;
+	uint32_t l,val=0;
 
 	while((l=(*str++)|0x20)!=0x20)
 		val=(l&0xf)+(l>>6&1)*9+val*16;
@@ -146,10 +146,10 @@ uchar cesc(char ch)
 	}
 }
 
-long val(char *src, char *p)
+int32_t val(char *src, char *p)
 {
 	static int inside;
-	long l;
+	int32_t l;
 
 	if(isdigit(*p) || *p=='-')      /* Dec, Hex, or Oct */
 		l=strtol(p,&p,0);
@@ -312,7 +312,7 @@ void cvttab(char *str)
 void newvar(uchar* src, uchar *in)
 {
 	uchar name[128];
-	long i,l;
+	int32_t i,l;
 
 	if(isdigit(*in)) {
 		printf("!SYNTAX ERROR (illegal variable name):\n");
@@ -333,7 +333,7 @@ void newvar(uchar* src, uchar *in)
 		if(i<vars)
 			return;
 	}
-	if((var_name=(ulong *)realloc(var_name,sizeof(long)*(vars+1)))==NULL) {
+	if((var_name=(uint32_t *)realloc(var_name,sizeof(int32_t)*(vars+1)))==NULL) {
 		printf("Too many (%lu) variables!\n",vars);
 		bail(1); }
 	var_name[vars]=l;
@@ -375,10 +375,10 @@ void writecrc(uchar *src, uchar *in)
 	fwrite(&l,4,1,out);
 }
 
-long isvar(uchar *arg)
+int32_t isvar(uchar *arg)
 {
 	uchar name[128],*p;
-	long i,l;
+	int32_t i,l;
 
 	if(!arg || !(*arg) || isdigit(*arg))
 		return(0);
@@ -456,7 +456,7 @@ void compile(char *src)
 	uchar *str,*save,*p,*sp,*tp,*arg,*arg2,*arg3,*arg4,*ar,ch;
 	char path[MAX_PATH+1];
 	uint16_t i;
-    ushort j;
+    uint16_t j;
 	int32_t l;
 	int savline;
 	FILE *in;
@@ -3496,7 +3496,7 @@ int main(int argc, char **argv)
 			printf("%s line %d: label (%s) not found.\n"
 				,goto_file[i],goto_line[i],goto_label[i]);
 			bail(1); }
-		fseek(out,(long)(goto_indx[i]+1),SEEK_SET);
+		fseek(out,(int32_t)(goto_indx[i]+1),SEEK_SET);
 		fwrite(&label_indx[j],2,1,out); }
 
 	for(i=0;i<calls;i++) {
@@ -3510,7 +3510,7 @@ int main(int argc, char **argv)
 			printf("%s line %d: label (%s) not found.\n"
 				,call_file[i],call_line[i],call_label[i]);
 			bail(1); }
-		fseek(out,(long)(call_indx[i]+1),SEEK_SET);
+		fseek(out,(int32_t)(call_indx[i]+1),SEEK_SET);
 		fwrite(&label_indx[j],2,1,out); }
 
 	printf("\nDone.\n");
