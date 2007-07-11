@@ -1920,6 +1920,7 @@ void event_thread(void* arg)
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
 	time32_t	lastprepack=0;
+	time_t		tmptime;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -2250,7 +2251,8 @@ void event_thread(void* arg)
 			}
 
 			/* Qnet call out based on time */
-			if(localtime_r(&sbbs->cfg.qhub[i]->last,&tm)==NULL)
+			tmptime=sbbs->cfg.qhub[i]->last;
+			if(localtime_r(&tmptime,&tm)==NULL)
 				memset(&tm,0,sizeof(tm));
 			if((sbbs->cfg.qhub[i]->last==-1L					/* or frequency */
 				|| ((sbbs->cfg.qhub[i]->freq
@@ -2284,9 +2286,10 @@ void event_thread(void* arg)
 					else {
 						for(j=l=0;j<sbbs->cfg.qhub[i]->subs;j++) {
 							while(filelength(file)<
-								sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L)
+								sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*4L) {
 								l32=l;
 								write(file,&l32,4);		/* initialize ptrs to null */
+							}
 							lseek(file
 								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long)
 								,SEEK_SET);
@@ -2328,7 +2331,8 @@ void event_thread(void* arg)
 				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
 			/* PostLink call out based on time */
-			if(localtime_r(&sbbs->cfg.phub[i]->last,&tm)==NULL)
+			tmptime=sbbs->cfg.phub[i]->last;
+			if(localtime_r(&tmptime,&tm)==NULL)
 				memset(&tm,0,sizeof(tm));
 			if(sbbs->cfg.phub[i]->last==-1
 				|| (((sbbs->cfg.phub[i]->freq								/* or frequency */
@@ -2376,7 +2380,8 @@ void event_thread(void* arg)
 				&& !(sbbs->cfg.event[i]->misc&EVENT_EXCL))
 				continue;	// ignore non-exclusive events for other instances
 
-			if(localtime_r(&sbbs->cfg.event[i]->last,&tm)==NULL)
+			tmptime=sbbs->cfg.event[i]->last;
+			if(localtime_r(&tmptime,&tm)==NULL)
 				memset(&tm,0,sizeof(tm));
 			if(sbbs->cfg.event[i]->last==-1 ||
 				(((sbbs->cfg.event[i]->freq 
@@ -2396,7 +2401,7 @@ void event_thread(void* arg)
 							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
 						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
 							,sbbs->cfg.event[i]->code
-							,timestr(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
+							,time32str(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
 							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
 						start=time(NULL);
