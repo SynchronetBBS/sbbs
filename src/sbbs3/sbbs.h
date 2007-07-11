@@ -438,7 +438,7 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
-	char*	timestr(time32_t *intime);
+	char*	time32str(time32_t *intime);
 	char*	timestr(time_t *intime);
     char	timestr_output[60];
 	void	userlist(long mode);
