@@ -798,7 +798,12 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 #ifdef _MSC_VER
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
+
+#ifdef __BORLANDC__
+	argptr2=argptr;
+#else
 	va_copy(argptr2, argptr);
+#endif
     ret=vsnprintf(NULL,0,fmat,argptr);
 	if(ret<0)
 		return(EOF);
