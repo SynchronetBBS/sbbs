@@ -808,7 +808,9 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 	ret=vsprintf(str,fmat,argptr2);
 #endif
     va_end(argptr);
+#ifndef _MSC_VER
     va_end(argptr2);
+#endif
 	if(ret>=0)
 		ciolib_cputs(str);
 	else
