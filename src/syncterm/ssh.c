@@ -47,7 +47,7 @@ void ssh_input_thread(void *args)
 				char	str[2048];
 				int		err_len;
 
-				if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
+				if(status==CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) {	/* connection closed */
 					ssh_active=FALSE;
 					break;
 				}
