@@ -113,7 +113,8 @@ BOOL sbbs_t::newuser()
 		useron.expire=0;
 	useron.sex=' ';
 	useron.prot=cfg.new_prot;
-	SAFECOPY(useron.note,cid);		/* Caller ID if supported, NULL otherwise */
+	SAFECOPY(useron.comp,client_name);	/* hostname or CID name */
+	SAFECOPY(useron.note,cid);			/* IP address or CID number */
 	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true))!=0) {	/* Duplicate IP address */
 		sprintf(useron.comment,"Warning: same IP address as user #%d %s"
 			,i,username(&cfg,i,str));
