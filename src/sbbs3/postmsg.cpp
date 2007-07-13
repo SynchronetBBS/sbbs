@@ -337,7 +337,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			smb_hfield_str(&msg,FIDOREPLYID,remsg->ftn_msgid);
 
 		if((i=smb_updatethread(&smb, remsg, smb.status.last_msg+1))!=SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
+			errormsg(WHERE,"updating thread",smb.file,i,smb.last_error); 
 	}
 
 
