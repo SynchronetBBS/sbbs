@@ -417,8 +417,6 @@ bool sbbs_t::answer()
 
 	if(!useron.number)
 		hangup();
-	if(!online) 
-		return(false); 
 
 	/* Save the IP to the user's note */
 	if(cid[0]) {
@@ -432,10 +430,14 @@ bool sbbs_t::answer()
 		putuserrec(&cfg,useron.number,U_COMP,LEN_COMP,useron.comp);
 	}
 
+	if(!online) 
+		return(false); 
+
 	if(!(sys_status&SS_USERON)) {
 		errormsg(WHERE,ERR_CHK,"User not logged on",0);
 		hangup();
-		return(false); }
+		return(false); 
+	}
 
 	return(true);
 }
