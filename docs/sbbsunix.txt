@@ -87,6 +87,13 @@ A. Currently, only the FreeBSD build has doscmd support "built-in" (and this
    "support" requires Deuce's version of doscmd with FOSSIL emulation):
    http://nix.synchro.net/doscmd.gz
 
+   For FreeBSD, the path that is entered in the Start-up Directory is mapped
+   as C:\ the current node directory is mapped as D:\ and the Synchronet 
+   root directory is mapped as E:\.  When a DOS door is executed, a .doscmdrc
+   is created in the node directory.  Copying this file and using it to run
+   doscmd in X11 mode while running the setup programs is the simplest way
+   to configure the doors.
+
    Other platforms can use DOSEMU or whatever is available for running DOS
    programs.
 
