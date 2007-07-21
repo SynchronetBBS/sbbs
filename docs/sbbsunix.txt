@@ -1,7 +1,7 @@
 Synchronet for Unix
 -=-=-=-=-=-=-=-=-=-
 
-By: Rob Swindell (digital man)
+By: Rob Swindell (digital man) and Stephen Hurd (deuce)
 http://www.synchro.net
 
 $Id$
@@ -222,7 +222,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    G. Create symbolic links to the Mozilla Libraries (JavaScript and NSPR) in 
       your /usr/lib directory:
-      # cd /usr/lib; ln -s /sbbs/lib/mozilla/*/linux.debug/*.so .
+      # ln -s /sbbs/lib/mozilla/*/linux.debug/*.so /usr/lib
 
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
@@ -237,7 +237,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    I. Create symbolic links to the Cryptlib Library in your /usr/lib
       directory:
-      # cd /usr/lib; ln -s /sbbs/lib/cryptlib/linux.debug/*.so .
+      # ln -s /sbbs/lib/cryptlib/linux.debug/*.so /usr/lib
 
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
@@ -300,20 +300,20 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg*
       (the paths will be different for other platforms or release builds)
 
-      Example (note the trailing dots):
-      # ln -s ../src/sbbs3/gcc.linux.exe.debug/* .
-      # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* .
+      Example:
+      # ln -s ../src/sbbs3/gcc.linux.exe.debug/* /sbbs/exec
+      # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* /sbbs/exec
 
    C. Copy (or create symbolic links to) the following shared libraries:
       ../src/sbbs3/gcc.linux.lib.debug/*
       (the path will be different for other platforms or release builds)
 
-      Example (note the trailing dot):
-      # ln -s ../src/sbbs3/gcc.linux.lib.debug/* .
+      Example:
+      # ln -s ../src/sbbs3/gcc.linux.lib.debug/* /sbbs/exec
 
       Note: Another option is to create the symbolic links in your /usr/lib
             directory (note the trailing dot):
-            # cd /usr/lib; ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so .
+            # ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so /usr/lib
 
         OR: set the LD_LIBRARY_PATH environment variable to point to your 
             gcc.<os>.lib.<build> directory:
