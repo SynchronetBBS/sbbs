@@ -3727,7 +3727,7 @@ static void sendmail_thread(void* arg)
 							,TIMEOUT_THREAD_WAIT/2))!=0) {
 							remove_msg_intransit(&smb,&msg);
 							lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
-								,i,p,startup->dns_server);
+								,i,p,dns_server);
 							SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
 							bounce(&smb,&msg,err,FALSE);
 							continue;
