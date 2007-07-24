@@ -15,6 +15,7 @@ ifdef USE_GUTS
 endif
 
 PREFIX	?= /usr/local
+DESKTOPDIR ?= $(PREFIX)/share/applications
 
 CFLAGS	+=	-DPREFIX=\"${PREFIX}\"
 ifeq ($(PREFIX),/usr)
@@ -49,15 +50,15 @@ syncterm.1.gz: syncterm.man
 
 installdirs:
 	-mkdir -p ${PREFIX}/bin
-	-mkdir -p ${PREFIX}/share/applications
-	-mkdir -p ${PREFIX}/share/man/man1
+	-mkdir -p ${DESKTOPDIR}
+	-mkdir -p ${MANPREFIX}/man1
 	-mkdir -p ${PREFIX}/share/icons/hicolor/64x64/apps
 
 install: $(SYNCTERM) syncterm.1.gz installdirs
 	@echo Installing...
 	${INSTALL_EXE} ${SYNCTERM} ${PREFIX}/bin
 	${INSTALL_DATA} syncterm.png ${PREFIX}/share/icons/hicolor/64x64/apps
-	${INSTALL_DATA} syncterm.desktop ${PREFIX}/share/applications
+	${INSTALL_DATA} syncterm.desktop ${DESKTOPDIR}
 	${INSTALL_DATA} syncterm.1.gz ${MANPREFIX}/man1
 
 devel: tags cscope.out
