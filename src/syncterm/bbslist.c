@@ -236,6 +236,10 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 		fclose(listfile);
 		strListFreeStrings(bbses);
 	}
+	else {
+		if(defaults != NULL && type==USER_BBSLIST)
+			read_item(listfile,defaults,NULL,-1,type);
+	}
 
 #if 0	/* This isn't necessary (NULL is a sufficient) */
 	/* Add terminator */
