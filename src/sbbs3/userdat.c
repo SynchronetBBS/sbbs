@@ -2456,3 +2456,34 @@ BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host
     fclose(fp);
 	return(TRUE);
 }
+
+/****************************************************************************/
+/* Note: This function does not account for timed events!					*/
+/****************************************************************************/
+time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
+{
+	time_t	now;
+    long    tleft;
+	time_t	timeleft;
+
+	now=time(NULL);
+
+	if(user->exempt&FLAG('T')) {   /* Time online exemption */
+		timeleft=cfg->level_timepercall[user->level]*60;
+		if(timeleft<10)             /* never get below 10 for exempt users */
+			timeleft=10; }
+	else {
+		tleft=(((long)cfg->level_timeperday[user->level]-user->ttoday)
+			+user->textra)*60L;
+		if(tleft<0) tleft=0;
+		if(tleft>cfg->level_timepercall[user->level]*60)
+			tleft=cfg->level_timepercall[user->level]*60;
+		tleft+=user->min*60L;
+		tleft-=now-starttime;
+		if(tleft>0x7fffL)
+			timeleft=0x7fff;
+		else
+			timeleft=tleft; }
+
+	return(timeleft);
+}
