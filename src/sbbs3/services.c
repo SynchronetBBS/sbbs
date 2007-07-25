@@ -1810,6 +1810,7 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
+		lprintf(LOG_INFO,"0000 %u service sockets bound", total_sockets);
 
 		/* Setup static service threads */
 		for(i=0;i<(int)services;i++) {
