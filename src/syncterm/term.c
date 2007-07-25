@@ -362,7 +362,7 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 #endif
 static int send_byte(void* unused, uchar ch, unsigned timeout /* seconds */)
 {
-	return conn_send(&ch,sizeof(ch),timeout*1000);
+	return(conn_send(&ch,sizeof(ch),timeout*1000)==1);
 }
 
 #if defined(__BORLANDC__)
