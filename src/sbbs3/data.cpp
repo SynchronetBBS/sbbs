@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -61,13 +61,13 @@ uint sbbs_t::finduser(char *instr)
 			return(i); }
 	strcpy(str,instr);
 	strupr(str);
-	sprintf(str3,"%suser/name.dat",cfg.data_dir);
+	SAFEPRINTF(str3,"%suser/name.dat",cfg.data_dir);
 	if(flength(str3)<1L)
 		return(0);
 	if((stream=fnopen(&file,str3,O_RDONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str3,O_RDONLY);
 		return(0); }
-	sprintf(ynq,"%.2s",text[YN]);
+	SAFEPRINTF(ynq,"%.2s",text[YN]);
 	ynq[2]='Q';
 	ynq[3]=0;
 	length=filelength(file);
@@ -115,7 +115,7 @@ int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
 	int file,found=0;
 	FILE *stream;
 
-	sprintf(str,"%sxfer.ixt",cfg.data_dir);
+	SAFEPRINTF(str,"%sxfer.ixt",cfg.data_dir);
 	if(!fexist(str))
 		return(0);
 	if(!flength(str)) {
@@ -139,72 +139,73 @@ int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
 }
 
 /****************************************************************************/
-/* Fills the timeleft variable with the correct value. Hangs up on the      */
-/* user if their time is up.                                                */
-/* Called from functions main_sec and xfer_sec                              */
+/* Return time of next forced timed event									*/
+/* 'event' may be NULL														*/
 /****************************************************************************/
-void sbbs_t::gettimeleft(void)
+extern "C" time_t DLLCALL getnextevent(scfg_t* cfg, event_t* event)
 {
-    char    str[128];
-	char 	tmp[512];
     int     i;
+	time_t	now=time(NULL);
+	time_t	event_time=0;
 	time_t	thisevent;
 	time_t	tmptime;
-    long    tleft;
     struct  tm tm, last_tm;
-
-	now=time(NULL);
 
 	if(localtime_r(&now,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-	if(useron.exempt&FLAG('T')) {   /* Time online exemption */
-		timeleft=cfg.level_timepercall[useron.level]*60;
-		if(timeleft<10)             /* never get below 10 for exempt users */
-			timeleft=10; 
-	} else {
-		tleft=(((long)cfg.level_timeperday[useron.level]-useron.ttoday)
-			+useron.textra)*60L;
-		if(tleft<0) tleft=0;
-		if(tleft>cfg.level_timepercall[useron.level]*60)
-			tleft=cfg.level_timepercall[useron.level]*60;
-		tleft+=useron.min*60L;
-		tleft-=now-starttime;
-		if(tleft>0x7fffL)
-			timeleft=0x7fff;
-		else
-			timeleft=tleft; 
-	}
 
-	/* Timed event time reduction handler */
-
-	event_time=0;
-	for(i=0;i<cfg.total_events;i++) {
-		if(!cfg.event[i]->node || cfg.event[i]->node>cfg.sys_nodes
-			|| cfg.event[i]->misc&EVENT_DISABLED)
+	for(i=0;i<cfg->total_events;i++) {
+		if(!cfg->event[i]->node || cfg->event[i]->node>cfg->sys_nodes
+			|| cfg->event[i]->misc&EVENT_DISABLED)
 			continue;
-		if(!(cfg.event[i]->misc&EVENT_FORCE)
-			|| (!(cfg.event[i]->misc&EVENT_EXCL) && cfg.event[i]->node!=cfg.node_num)
-			|| !(cfg.event[i]->days&(1<<tm.tm_wday))
-			|| (cfg.event[i]->mdays!=0 && !(cfg.event[i]->mdays&(1<<tm.tm_mday)))) 
+		if(!(cfg->event[i]->misc&EVENT_FORCE)
+			|| (!(cfg->event[i]->misc&EVENT_EXCL) && cfg->event[i]->node!=cfg->node_num)
+			|| !(cfg->event[i]->days&(1<<tm.tm_wday))
+			|| (cfg->event[i]->mdays!=0 && !(cfg->event[i]->mdays&(1<<tm.tm_mday)))) 
 			continue;
 
-		tm.tm_hour=cfg.event[i]->time/60;
-		tm.tm_min=cfg.event[i]->time%60;
+		tm.tm_hour=cfg->event[i]->time/60;
+		tm.tm_min=cfg->event[i]->time%60;
 		tm.tm_sec=0;
 		tm.tm_isdst=-1;	/* Do not adjust for DST */
 		thisevent=mktime(&tm);
 
-		tmptime=cfg.event[i]->last;
+		tmptime=cfg->event[i]->last;
 		if(localtime_r(&tmptime,&last_tm)==NULL)
 			memset(&last_tm,0,sizeof(last_tm));
 
 		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)
 			thisevent+=24L*60L*60L;     /* already ran today, so add 24hrs */
 		if(!event_time || thisevent<event_time) {
-			event_time=thisevent; 
-			event_code=cfg.event[i]->code;
+			event_time=thisevent;
+			if(event!=NULL)
+				*event=*cfg->event[i];
 		}
 	}
+
+	return event_time;
+}
+
+/****************************************************************************/
+/* Fills the timeleft variable with the correct value. Hangs up on the      */
+/* user if their time is up.                                                */
+/* Called from functions main_sec and xfer_sec                              */
+/****************************************************************************/
+ulong sbbs_t::gettimeleft(bool handle_out_of_time)
+{
+    char    str[128];
+	char 	tmp[512];
+	event_t	nextevent;
+
+	now=time(NULL);
+
+	timeleft = ::gettimeleft(&cfg, &useron, starttime);
+
+	/* Timed event time reduction handler */
+	event_time=getnextevent(&cfg, &nextevent);
+	if(event_time)
+		event_code=nextevent.code;
+
 	if(event_time && now+(time_t)timeleft>event_time) {    /* less time, set flag */
 		if(event_time<now)
 			timeleft=0;
@@ -225,83 +226,85 @@ void sbbs_t::gettimeleft(void)
 			timeleft=10*60L; 
 	}
 
-	if(gettimeleft_inside)			/* The following code is not recursive */
-		return;
-	gettimeleft_inside=1;
+	if(handle_out_of_time && !gettimeleft_inside)			/* The following code is not recursive */
+	{
+		gettimeleft_inside=1;
 
-	if(!timeleft && !SYSOP && !(sys_status&SS_LCHAT)) {
-		logline(nulstr,"Ran out of time");
-		SAVELINE;
-		if(sys_status&SS_EVENT)
-			bprintf(text[ReducedTime],timestr(&event_time));
-		bputs(text[TimesUp]);
-		if(!(sys_status&(SS_EVENT|SS_USERON)) && useron.cdt>=100L*1024L
-			&& !(cfg.sys_misc&SM_NOCDTCVT)) {
-			sprintf(tmp,text[Convert100ktoNminQ],cfg.cdt_min_value);
-			if(yesno(tmp)) {
-				logline("  ","Credit to Minute Conversion");
-				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,cfg.cdt_min_value);
-				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(102400L));
-				sprintf(str,"Credit Adjustment: %ld",-(102400L));
-				logline("$-",str);
-				sprintf(str,"Minute Adjustment: %u",cfg.cdt_min_value);
-				logline("*+",str);
+		if(!timeleft && !SYSOP && !(sys_status&SS_LCHAT)) {
+			logline(nulstr,"Ran out of time");
+			SAVELINE;
+			if(sys_status&SS_EVENT)
+				bprintf(text[ReducedTime],timestr(&event_time));
+			bputs(text[TimesUp]);
+			if(!(sys_status&(SS_EVENT|SS_USERON)) && useron.cdt>=100L*1024L
+				&& !(cfg.sys_misc&SM_NOCDTCVT)) {
+				SAFEPRINTF(tmp,text[Convert100ktoNminQ],cfg.cdt_min_value);
+				if(yesno(tmp)) {
+					logline("  ","Credit to Minute Conversion");
+					useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,cfg.cdt_min_value);
+					useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(102400L));
+					SAFEPRINTF(str,"Credit Adjustment: %ld",-(102400L));
+					logline("$-",str);
+					SAFEPRINTF(str,"Minute Adjustment: %u",cfg.cdt_min_value);
+					logline("*+",str);
+					RESTORELINE;
+					gettimeleft();
+					gettimeleft_inside=0;
+					return timeleft; 
+				} 
+			}
+			if(cfg.sys_misc&SM_TIME_EXP && !(sys_status&SS_EVENT)
+				&& !(useron.exempt&FLAG('E'))) {
+												/* set to expired values */
+				bputs(text[AccountHasExpired]);
+				SAFEPRINTF(str,"%s Expired",useron.alias);
+				logentry("!%",str);
+				if(cfg.level_misc[useron.level]&LEVEL_EXPTOVAL
+					&& cfg.level_expireto[useron.level]<10) {
+					useron.flags1=cfg.val_flags1[cfg.level_expireto[useron.level]];
+					useron.flags2=cfg.val_flags2[cfg.level_expireto[useron.level]];
+					useron.flags3=cfg.val_flags3[cfg.level_expireto[useron.level]];
+					useron.flags4=cfg.val_flags4[cfg.level_expireto[useron.level]];
+					useron.exempt=cfg.val_exempt[cfg.level_expireto[useron.level]];
+					useron.rest=cfg.val_rest[cfg.level_expireto[useron.level]];
+					if(cfg.val_expire[cfg.level_expireto[useron.level]])
+						useron.expire=now
+							+(cfg.val_expire[cfg.level_expireto[useron.level]]*24*60*60);
+					else
+						useron.expire=0;
+					useron.level=cfg.val_level[cfg.level_expireto[useron.level]]; }
+				else {
+					if(cfg.level_misc[useron.level]&LEVEL_EXPTOLVL)
+						useron.level=cfg.level_expireto[useron.level];
+					else
+						useron.level=cfg.expired_level;
+					useron.flags1&=~cfg.expired_flags1; /* expired status */
+					useron.flags2&=~cfg.expired_flags2; /* expired status */
+					useron.flags3&=~cfg.expired_flags3; /* expired status */
+					useron.flags4&=~cfg.expired_flags4; /* expired status */
+					useron.exempt&=~cfg.expired_exempt;
+					useron.rest|=cfg.expired_rest;
+					useron.expire=0; 
+				}
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,str,10));
+				putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,str,16));
+				putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,str,16));
+				putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,str,16));
+				putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,str,16));
+				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,str,16));
+				putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,str,16));
+				putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,str,16));
+				if(cfg.expire_mod[0])
+					exec_bin(cfg.expire_mod,&main_csi);
 				RESTORELINE;
 				gettimeleft();
 				gettimeleft_inside=0;
-				return; 
-			} 
-		}
-		if(cfg.sys_misc&SM_TIME_EXP && !(sys_status&SS_EVENT)
-			&& !(useron.exempt&FLAG('E'))) {
-											/* set to expired values */
-			bputs(text[AccountHasExpired]);
-			sprintf(str,"%s Expired",useron.alias);
-			logentry("!%",str);
-			if(cfg.level_misc[useron.level]&LEVEL_EXPTOVAL
-				&& cfg.level_expireto[useron.level]<10) {
-				useron.flags1=cfg.val_flags1[cfg.level_expireto[useron.level]];
-				useron.flags2=cfg.val_flags2[cfg.level_expireto[useron.level]];
-				useron.flags3=cfg.val_flags3[cfg.level_expireto[useron.level]];
-				useron.flags4=cfg.val_flags4[cfg.level_expireto[useron.level]];
-				useron.exempt=cfg.val_exempt[cfg.level_expireto[useron.level]];
-				useron.rest=cfg.val_rest[cfg.level_expireto[useron.level]];
-				if(cfg.val_expire[cfg.level_expireto[useron.level]])
-					useron.expire=now
-						+(cfg.val_expire[cfg.level_expireto[useron.level]]*24*60*60);
-				else
-					useron.expire=0;
-				useron.level=cfg.val_level[cfg.level_expireto[useron.level]]; }
-			else {
-				if(cfg.level_misc[useron.level]&LEVEL_EXPTOLVL)
-					useron.level=cfg.level_expireto[useron.level];
-				else
-					useron.level=cfg.expired_level;
-				useron.flags1&=~cfg.expired_flags1; /* expired status */
-				useron.flags2&=~cfg.expired_flags2; /* expired status */
-				useron.flags3&=~cfg.expired_flags3; /* expired status */
-				useron.flags4&=~cfg.expired_flags4; /* expired status */
-				useron.exempt&=~cfg.expired_exempt;
-				useron.rest|=cfg.expired_rest;
-				useron.expire=0; 
+				return timeleft; 
 			}
-			putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,str,10));
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,str,16));
-			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,str,16));
-			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,str,16));
-			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,str,16));
-			putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,str,16));
-			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,str,16));
-			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,str,16));
-			if(cfg.expire_mod[0])
-				exec_bin(cfg.expire_mod,&main_csi);
-			RESTORELINE;
-			gettimeleft();
-			gettimeleft_inside=0;
-			return; 
+			SYNC;
+			hangup(); 
 		}
-		SYNC;
-		hangup(); 
+		gettimeleft_inside=0;
 	}
-	gettimeleft_inside=0;
+	return timeleft;
 }
