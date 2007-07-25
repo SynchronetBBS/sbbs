@@ -117,7 +117,7 @@ function get_message()
 	}
 
 	/* Time left warning? */
-	if((bbs.time_left/60)/(5-console.timeleft_warning) && (!user.compare_ars("SYSOP"))) {
+	if((bbs.time_left/60)<(5-console.timeleft_warning) && (!user.compare_ars("SYSOP"))) {
 		console.timeleft_warning=5-(bbs.time_left/60);
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60+1,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 	}
