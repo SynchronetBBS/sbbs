@@ -122,6 +122,13 @@ function get_message()
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60+1,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 	}
 
+	if(bbs.time_left==0) {
+		/* Call get_time_left() to handle the hangup and such 8/
+		clear_screen();
+		bbs.get_time_left();
+		bbs.hangup();
+	}
+
 	/* New day? */
 //	if(!(system.status & SS_NEWDAY))
 //		bbs.nodesync();
