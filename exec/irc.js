@@ -132,6 +132,13 @@ while(!quit)  {
 		clean_exit();
 	}
 
+	if(bbs.get_time_left && !bbs.get_time_left()) {
+		sock.send("QUIT :Out of time.\r\n");
+		quit=1;
+		sock.close();
+		clean_exit();
+	}
+
 	if(sock.poll(.01)) {
 		recieve_command();
 		screen.update(0);
