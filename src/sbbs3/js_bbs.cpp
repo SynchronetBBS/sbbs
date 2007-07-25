@@ -281,7 +281,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			val=sbbs->online;
 			break;
 		case BBS_PROP_TIMELEFT:
-			val=sbbs->timeleft;
+			val=sbbs->gettimeleft(false);
 			break;
 		case BBS_PROP_EVENT_TIME:
 			val=sbbs->event_time;
@@ -2602,8 +2602,7 @@ js_get_time_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->gettimeleft();
-	*rval = INT_TO_JSVAL(sbbs->timeleft);
+	*rval = INT_TO_JSVAL(sbbs->gettimeleft());
 	return(JS_TRUE);
 }
 
@@ -2965,7 +2964,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"get_time_left",	js_get_time_left,	0,	JSTYPE_NUMBER,	JSDOCSTR("")
-	,JSDOCSTR("check the user's time left and return the value, in seconds")
+	,JSDOCSTR("check the user's available remaining time online and return the value, in seconds<br>"
+	"This method will inform (and disconnect) the user when they are out of time")
 	,31401
 	},
 	{0}
