@@ -2468,10 +2468,12 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 
 	now=time(NULL);
 
-	if(user->exempt&FLAG('T')) {   /* Time online exemption */
-		timeleft=cfg->level_timepercall[user->level]*60;
-		if(timeleft<10)             /* never get below 10 for exempt users */
-			timeleft=10; }
+	if(user->exempt&FLAG('T')) {	/* Time online exemption */
+		timeleft=cfg->level_timepercall[user->level];
+		if(timeleft<10)             /* never get below 10 minutes for exempt users */
+			timeleft=10; 
+		timeleft*=60;				/* convert to seconds */
+	}
 	else {
 		tleft=(((long)cfg->level_timeperday[user->level]-user->ttoday)
 			+user->textra)*60L;
@@ -2483,7 +2485,8 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 		if(tleft>0x7fffL)
 			timeleft=0x7fff;
 		else
-			timeleft=tleft; }
+			timeleft=tleft; 
+	}
 
 	return(timeleft);
 }
