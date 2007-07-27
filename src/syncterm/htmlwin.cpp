@@ -64,7 +64,7 @@ void MyUpdateTimer::Notify(void)
 				|| ypos != window_ypos
 				|| width != window_width
 				|| height != window_height)
-			frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_FORCE);
+			frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
 		htmlWindow->SetPage(currPage);
 		newpage=false;
 		sem_post(&shown);
@@ -201,10 +201,10 @@ extern "C" {
 
 	void show_html(const char *address, int width, int height, int xpos, int ypos, void(*callback)(const char *), const char *page)
 	{
-		window_xpos=xpos;
-		window_ypos=ypos;
-		window_width=width;
-		window_height=height;
+		window_xpos=xpos==-1?wxDefaultCoord:xpos;
+		window_ypos=ypos==-1?wxDefaultCoord:ypos;
+		window_width=width==-1?640:width;
+		window_height=height==-1?200:height;
 		output_callback=callback;
 
 		if(!run_html()) {

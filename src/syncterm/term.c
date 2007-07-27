@@ -1184,7 +1184,9 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 						if(htmlbuf) {
 							if(inch==2) {
-								show_html(bbs->addr, 640, 400, 50, 50, html_send, htmlbuf);
+								int width,height,xpos,ypos;
+								get_window_info(&width, &height, &xpos, &ypos);
+								show_html(bbs->addr, width, height, xpos, ypos, html_send, htmlbuf);
 								html_mode=1;
 								free(htmlbuf);
 								htmlbuf=NULL;
