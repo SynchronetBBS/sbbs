@@ -1,5 +1,5 @@
 !include userdefs.inc
-compare_user_misc UM_ANSI
+compare_user_misc UM_HTML
 if_true
 	exec "?html_shell"
 else
