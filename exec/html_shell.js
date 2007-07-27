@@ -33,7 +33,7 @@ var key;
 
 if(!user.settings&USER_HTML) {
 	load("classic_shell.js");
-	return;
+	exit;
 }
 
 // Set return point for main menu commands (via end_cmd)
