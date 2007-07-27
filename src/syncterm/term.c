@@ -1078,6 +1078,8 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE htmlstart[]="\2\2<HTML>";
 	BYTE htmldet[sizeof(htmldetect)];
 	BYTE *htmlbuf=NULL;
+	int html_startx;
+	int html_starty;
 	int htmlbufsize=0;
 	int htmlbuflen=0;
 #endif
@@ -1201,6 +1203,8 @@ BOOL doterm(struct bbslist *bbs)
 								get_window_info(&width, &height, &xpos, &ypos);
 								show_html(bbs->addr, width, height, xpos, ypos, html_send, htmlbuf);
 								html_mode=1;
+								html_startx=wherex();
+								html_starty=wherey();
 								free(htmlbuf);
 								htmlbuf=NULL;
 							}
@@ -1215,6 +1219,8 @@ BOOL doterm(struct bbslist *bbs)
 									}
 									else {
 										free(htmlbuf);
+										htmlbuf=NULL;
+										continue;
 									}
 								}
 								htmlbuf[htmlbuflen++]=inch;
@@ -1267,10 +1273,6 @@ BOOL doterm(struct bbslist *bbs)
 							}
 							continue;
 						}
-						if(html_mode) {
-							hide_html();
-							html_mode=0;
-						}
 #endif
 
 						if(!zrqbuf[0]) {
@@ -1306,6 +1308,14 @@ BOOL doterm(struct bbslist *bbs)
 
 						ch[0]=inch;
 						cterm_write(ch, 1, prn, sizeof(prn), &speed);
+#ifdef WITH_WXWIDGETS
+						if(html_mode) {
+							if(html_startx!=wherex() || html_starty!=wherey()) {
+								hide_html();
+								html_mode=0;
+							}
+						}
+#endif
 						if(prn[0])
 							conn_send(prn, strlen(prn), 0);
 						updated=TRUE;
