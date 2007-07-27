@@ -120,6 +120,9 @@
 !define UM_EXTDESC	.19	# Extended file descriptions
 !define UM_AUTOHANG	.20	# Auto-hang-up after transfer
 !define UM_WIP		.21	# Supports WIP terminal emulation
+!define UM_AUTOLOGON	.22	# AutoLogon via IP
+!define UM_HTML		.23	# Using Deuce's HTML terminal (*cough*)
+!define UM_NOPAUSESPIN	.24	# No spinning cursor at pause prompt
                                 # Bits in user.qwk
 !define QWK_FILES	.0	# Include new files list
 !define QWK_EMAIL	.1	# Include unread e-mail
