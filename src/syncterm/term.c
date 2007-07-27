@@ -1136,6 +1136,10 @@ BOOL doterm(struct bbslist *bbs)
 					case -1:
 						if(!conn_connected()) {
 							hold_update=oldmc;
+							if(html_mode) {
+								hide_html();
+								html_mode=0;
+							}
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
@@ -1409,6 +1413,10 @@ BOOL doterm(struct bbslist *bbs)
 						i=0;
 						init_uifc(FALSE, FALSE);
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
+							if(html_mode) {
+								hide_html();
+								html_mode=0;
+							}
 							uifcbail();
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
@@ -1438,6 +1446,10 @@ BOOL doterm(struct bbslist *bbs)
 					j=wherey();
 					switch(syncmenu(bbs, &speed)) {
 						case -1:
+							if(html_mode) {
+								hide_html();
+								html_mode=0;
+							}
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
@@ -1463,6 +1475,10 @@ BOOL doterm(struct bbslist *bbs)
 							cterm.doorway_mode=!cterm.doorway_mode;
 							break;
 						case 11:
+							if(html_mode) {
+								hide_html();
+								html_mode=0;
+							}
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
@@ -1745,7 +1761,6 @@ BOOL doterm(struct bbslist *bbs)
 		else
 			MAYBE_YIELD();
 	}
-
 /*
 	hidemouse();
 	return(FALSE);
