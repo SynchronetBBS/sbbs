@@ -40,6 +40,7 @@ int sdl_setfont(int font, int force);
 int sdl_getfont(void);
 int sdl_loadfont(char *filename);
 int sdl_video_event_thread(void *data);
+int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos);
 #ifdef __cplusplus
 }
 #endif

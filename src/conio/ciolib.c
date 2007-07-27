@@ -108,6 +108,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_insline(void);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getpass(const char *prompt);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
 
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
@@ -145,6 +146,7 @@ int try_sdl_init(int mode)
 		cio_api.setfont=sdl_setfont;
 		cio_api.getfont=sdl_getfont;
 		cio_api.loadfont=sdl_loadfont;
+		cio_api.get_window_info=sdl_get_window_info;
 		return(1);
 	}
 	return(0);
@@ -179,6 +181,7 @@ int try_x_init(int mode)
 		cio_api.setfont=x_setfont;
 		cio_api.getfont=x_getfont;
 		cio_api.loadfont=x_loadfont;
+		cio_api.get_window_info=x_get_window_info;
 		return(1);
 	}
 	return(0);
@@ -1034,4 +1037,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename)
 		return(cio_api.loadfont(filename));
 	else
 		return(-1);
+}
+
+CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos)
+{
+	CIOLIB_INIT();
+	
+	if(cio_api.get_window_info!=NULL)
+		return(cio_api.get_window_info(width,height,xpos,ypos));
+	return(-1);
 }

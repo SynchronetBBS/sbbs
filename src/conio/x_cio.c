@@ -337,3 +337,17 @@ int x_loadfont(char *filename)
 {
 	return(x_load_font(filename));
 }
+
+int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
+{
+	if(width)
+		*width=x11_window_width;
+	if(height)
+		*height=x11_window_height;
+	if(xpos)
+		*xpos=x11_window_xpos;
+	if(ypos)
+		*ypos=x11_window_ypos;
+	
+	return(0);
+}

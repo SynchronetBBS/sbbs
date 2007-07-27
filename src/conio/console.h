@@ -78,6 +78,11 @@ extern int x_nextchar;
 
 extern int console_new_mode;
 
+extern int x11_window_xpos;
+extern int x11_window_ypos;
+extern int x11_window_width;
+extern int x11_window_height;
+
 int init_window();
 int video_init();
 int init_mode(int mode);

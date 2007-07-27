@@ -973,6 +973,20 @@ int sdl_getfont(void)
 	return(sdl_current_font);
 }
 
+int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
+{
+	if(width)
+		*width=vstat.charwidth*vstat.cols*vstat.scaling;
+	if(height)
+		*height=vstat.charwidth*vstat.cols*vstat.scaling;
+	if(xpos)
+		*xpos=-1;
+	if(ypos)
+		*ypos=-1;
+	
+	return(0);
+}
+
 /* Called from event thread only */
 void sdl_add_key(unsigned int keyval)
 {

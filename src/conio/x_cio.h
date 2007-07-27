@@ -68,6 +68,7 @@ char *x_getcliptext(void);
 int x_setfont(int font, int force);
 int x_getfont(void);
 int x_loadfont(char *filename);
+int x_get_window_info(int *width, int *height, int *xpos, int *ypos);
 #ifdef __cplusplus
 }
 #endif
