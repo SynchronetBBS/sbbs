@@ -1,3 +1,4 @@
+!include userdefs.inc
 compare_user_misc UM_ANSI
 if_true
 	exec "?html_shell"
