@@ -3,6 +3,8 @@ include ${SRC_ROOT}/build/Common.gmake
 
 CFLAGS	+=	-I/usr/local/include	# cryptlib.h lives here by default
 CFLAGS	+=	-I../../include/cryptlib	# cryptlib.h lives here in CVS
+CXXFLAGS += `wxgtk2u-2.8-config --cxxflags`
+WXLIBS += `wxgtk2u-2.8-config --libs`
 
 ifeq ($(os),sunos)    # Solaris
  LDFLAGS += -lnsl -lrt -lcurses -ldl
@@ -43,7 +45,7 @@ endif
 
 $(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS)
 
 syncterm.1.gz: syncterm.man
 	gzip < syncterm.man > syncterm.1.gz

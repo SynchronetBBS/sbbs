@@ -18,5 +18,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)crc32$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)st_crypt$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)htmlwin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE)
 
