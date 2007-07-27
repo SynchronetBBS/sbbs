@@ -978,7 +978,7 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	if(width)
 		*width=vstat.charwidth*vstat.cols*vstat.scaling;
 	if(height)
-		*height=vstat.charwidth*vstat.cols*vstat.scaling;
+		*height=vstat.charheight*vstat.rows*vstat.scaling;
 	if(xpos)
 		*xpos=-1;
 	if(ypos)

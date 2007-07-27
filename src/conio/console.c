@@ -636,8 +636,8 @@ video_event(XEvent *ev)
 				int r;
 
 				oldFS=FontScale;
-				x11_window_xpos=ev->xconfigure.x;
-				x11_window_ypos=ev->xconfigure.y;
+				x11_window_xpos=ev->xconfigure.x-ev->xconfigure.border_width;
+				x11_window_ypos=ev->xconfigure.y-ev->xconfigure.border_width;
 				x11_window_width=ev->xconfigure.width+ev->xconfigure.border_width*2;
 				x11_window_height=ev->xconfigure.height+ev->xconfigure.border_width*2;
 				if((ev->xconfigure.width == FW * DpyCols + 4)
