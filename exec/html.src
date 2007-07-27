@@ -1,1 +1,6 @@
-exec "?html_shell"
+compare_user_misc UM_ANSI
+if_true
+	exec "?html_shell"
+else
+	exec "?classic_shell"
+end_if
