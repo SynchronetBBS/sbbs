@@ -1227,6 +1227,7 @@ BOOL doterm(struct bbslist *bbs)
 							if(inch == htmldetect[0]) {
 								htmldet[0]=inch;
 								htmldet[1]=0;
+								continue;
 							}
 						}
 						else {
