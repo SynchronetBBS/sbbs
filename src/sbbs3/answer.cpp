@@ -111,7 +111,7 @@ bool sbbs_t::answer()
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
-				useron.misc&=~(ANSI|COLOR|RIP|WIP);
+				useron.misc&=~(ANSI|COLOR|RIP|WIP|HTML);
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp
@@ -193,7 +193,7 @@ bool sbbs_t::answer()
 		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
-			useron.misc&=~(ANSI|COLOR|RIP|WIP);
+			useron.misc&=~(ANSI|COLOR|RIP|WIP|HTML);
 			SAFECOPY(tmp
 				,rlogin_pass);
 			for(i=0;i<3;i++) {
@@ -381,7 +381,7 @@ bool sbbs_t::answer()
 	}
 
 
-	useron.misc&=~(ANSI|COLOR|RIP|WIP);
+	useron.misc&=~(ANSI|COLOR|RIP|WIP|HTML);
 	useron.misc|=autoterm;
 	SAFECOPY(useron.comp,client_name);
 
