@@ -54,6 +54,7 @@ char sbbs_t::putmsg(char *str, long mode)
 	int 	orgcon=console,i;
 	ulong	l=0,sys_status_sav=sys_status;
 	long	col=0;
+	int		defered_pause=FALSE;
 
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
@@ -233,6 +234,19 @@ char sbbs_t::putmsg(char *str, long mode)
 			if(str[l]==ESC && str[l+1]=='$')    /* WIP command */
 				lncntr=0;
 			if(str[l]=='@' && !(mode&P_NOATCODES)) {
+				/* In HTML mode, defer PAUSE and MORE to end and supress message */
+				if(mode&P_HTML) {
+					if(!memcmp(str+l,"@MORE@",6)) {
+						defered_pause=TRUE;
+						l+=6;
+						continue;
+					}
+					if(!memcmp(str+l,"@PAUSE@",7)) {
+						defered_pause=TRUE;
+						l+=7;
+						continue;
+					}
+				}
 				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
@@ -240,7 +254,7 @@ char sbbs_t::putmsg(char *str, long mode)
 			}
 			if(str[l]!=CTRL_Z) {
 				outchar(str[l]);
-				if(!exatr && !outchar_esc && lncntr && lbuflen && cols && ++col==cols)
+				if(!(mode&P_HTML) && !exatr && !outchar_esc && lncntr && lbuflen && cols && ++col==cols)
 					lncntr++;
 				else
 					col=0;
@@ -248,14 +262,23 @@ char sbbs_t::putmsg(char *str, long mode)
 			l++; 
 		} 
 	}
+	if(mode&P_HTML)
+		putcom("\x02");
 	if(!(mode&P_SAVEATR)) {
 		console=orgcon;
 		attr(tmpatr); 
 	}
-	if(mode&P_HTML)
-		putcom("\x02");
 
 	attr_sp=0;	/* clear any saved attributes */
+
+	/* Handle defered pauses */
+	if(defered_pause) {
+		if(mode&P_HTML)
+			getkey(0);
+		else
+			pause();
+	}
+
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
 	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
