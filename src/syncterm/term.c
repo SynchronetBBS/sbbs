@@ -18,7 +18,9 @@
 #include "dirwrap.h"
 #include "zmodem.h"
 #include "telnet_io.h"
+#ifdef WITH_WXWIDGETS
 #include "htmlwin.h"
+#endif
 
 #ifdef GUTS_BUILTIN
 #include "gutsz.h"
@@ -35,6 +37,7 @@ struct terminal term;
 static char winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/* Save buffer for transfer window */
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
+#ifdef WITH_WXWIDGETS
 static int html_mode=0;
 enum {
 	 HTML_SUPPORT_UNKNOWN
@@ -43,6 +46,7 @@ enum {
 };
 
 static int html_supported=HTML_SUPPORT_UNKNOWN;
+#endif
 
 #if defined(__BORLANDC__)
 	#pragma argsused
@@ -1047,10 +1051,12 @@ void capture_control(struct bbslist *bbs)
 	gotoxy(txtinfo.curx,txtinfo.cury);
 }
 
+#ifdef WITH_WXWIDGETS
 void html_send(const char *buf)
 {
 	conn_send(buf,strlen(buf),0);
 }
+#endif
 
 BOOL doterm(struct bbslist *bbs)
 {
@@ -1066,6 +1072,7 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE gutsinit[] = { ESC, '[', '{' };	/* For GUTS auto-transfers */
 	BYTE gutsbuf[sizeof(gutsinit)];
 #endif
+#ifdef WITH_WXWIDGETS
 	BYTE htmldetect[]="\2\2?HTML?";
 	BYTE htmlresponse[]="\2\2!HTML!";
 	BYTE htmlstart[]="\2\2<HTML>";
@@ -1073,6 +1080,7 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE *htmlbuf=NULL;
 	int htmlbufsize=0;
 	int htmlbuflen=0;
+#endif
 	int	inch;
 	long double nextchar=0;
 	long double lastchar=0;
@@ -1112,7 +1120,9 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef GUTS_BUILTIN
 	gutsbuf[0]=0;
 #endif
+#ifdef WITH_WXWIDGETS
 	htmldet[0]=0;
+#endif
 
 	/* Main input loop */
 	oldmc=hold_update;
@@ -1136,10 +1146,12 @@ BOOL doterm(struct bbslist *bbs)
 					case -1:
 						if(!conn_connected()) {
 							hold_update=oldmc;
+#ifdef WITH_WXWIDGETS
 							if(html_mode) {
 								hide_html();
 								html_mode=0;
 							}
+#endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
@@ -1182,6 +1194,7 @@ BOOL doterm(struct bbslist *bbs)
 							continue;
 						}
 #endif
+#ifdef WITH_WXWIDGETS
 						if(htmlbuf) {
 							if(inch==2) {
 								int width,height,xpos,ypos;
@@ -1257,6 +1270,7 @@ BOOL doterm(struct bbslist *bbs)
 							hide_html();
 							html_mode=0;
 						}
+#endif
 
 						if(!zrqbuf[0]) {
 							if(inch == zrqinit[0] || inch == zrinit[0]) {
@@ -1415,10 +1429,12 @@ BOOL doterm(struct bbslist *bbs)
 						i=0;
 						init_uifc(FALSE, FALSE);
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
+#ifdef WITH_WXWIDGETS
 							if(html_mode) {
 								hide_html();
 								html_mode=0;
 							}
+#endif
 							uifcbail();
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
@@ -1448,10 +1464,12 @@ BOOL doterm(struct bbslist *bbs)
 					j=wherey();
 					switch(syncmenu(bbs, &speed)) {
 						case -1:
+#ifdef WITH_WXWIDGETS
 							if(html_mode) {
 								hide_html();
 								html_mode=0;
 							}
+#endif
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
@@ -1477,10 +1495,12 @@ BOOL doterm(struct bbslist *bbs)
 							cterm.doorway_mode=!cterm.doorway_mode;
 							break;
 						case 11:
+#ifdef WITH_WXWIDGETS
 							if(html_mode) {
 								hide_html();
 								html_mode=0;
 							}
+#endif
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
