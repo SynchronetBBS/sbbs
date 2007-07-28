@@ -333,10 +333,10 @@ extern "C" {
 	{
 		pthread_mutex_lock(&update_mutex);
 		if(update_type!=HTML_WIN_UPDATE_NONE) {
-			update_timer->Start(10, true);
-			sem_wait(&shown);
+			update_timer->Start(1, true);
 		}
 		pthread_mutex_unlock(&update_mutex);
+		sem_wait(&shown);
 	}
 
 	void add_html(const char *buf)
@@ -372,8 +372,7 @@ extern "C" {
 			update_str=wx_page;
 			update_type=HTML_WIN_UPDATE_REPLACE;
 			pthread_mutex_unlock(&update_mutex);
-			update_timer->Start(1, true);
-			sem_wait(&shown);
+			html_commit();
 		}
 	}
 }
