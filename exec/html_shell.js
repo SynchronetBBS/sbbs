@@ -28,6 +28,7 @@ load("sbbsdefs.js");
 load("coldfuncs.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
 load("str_cmds.js");
+load("text.js");
 var str;
 var key;
 
@@ -35,6 +36,9 @@ if(!user.settings&USER_HTML) {
 	load("classic_shell.js");
 	exit;
 }
+
+bbs.replace_text(bbs.text(YesNoQuestion),"@EXEC:html_yesno@");
+bbs.replace_text(bbs.text(NoYesQuestion),"@EXEC:html_yesno@");
 
 // Set return point for main menu commands (via end_cmd)
 main:
@@ -50,7 +54,7 @@ while(1) {
 	bbs.main_cmds++;
 
 	// Get key (with / extended commands allowed)
-	key=console.getkey();
+	key=console.getkey().toUpperCase();
 
 	// Write command to log file
 	bbs.log_key(key,true);
@@ -307,7 +311,7 @@ while(1) {
 			continue main;
 
 		case '/':
-			key=console.getkey();
+			key=console.getkey().toUpperCase();
 			switch(key) {
 				case 'F':
 					bbs.scan_subs(SCAN_FIND,true);
@@ -392,7 +396,7 @@ function email()
 
 		// async
 
-		key=console.getkey();
+		key=console.getkey().toUpperCase();
 		bbs.log_key(key);
 		switch(key) {
 			case 'S':
@@ -471,7 +475,7 @@ function main_info()
 
 		// async
 
-		key=console.getkey();
+		key=console.getkey().toUpperCase();
 		bbs.log_key(key);
 		switch(key) {
 			case 'I':
@@ -510,7 +514,7 @@ function main_cfg()
 		bbs.menu("maincfg");
 
 		// async
-		key=console.getkey();
+		key=console.getkey().toUpperCase();
 		bbs.log_key(key);
 
 		switch(key) {
@@ -565,7 +569,7 @@ file_transfers:
 		bbs.file_cmds++;
 
 		// Get key (with / extended commands allowed)
-		str=console.getkey();
+		str=console.getkey().toUpperCase();
 
 		// Write command to log file
 		bbs.log_key(str,true);
@@ -925,7 +929,7 @@ file_transfers:
 				continue file_transfers;
 
 			case '/':
-				switch(console.getkey()) {
+				switch(console.getkey().toUpperCase()) {
 					case 'D':
 						if(file_area.user_dir==undefined)
 							console.putmsg(bbs.text(NoUserDir));
@@ -1002,7 +1006,7 @@ xfercfg:
 					console.clear();
 					bbs.menu("xfercfg");
 					// async
-					key=console.getkey();
+					key=console.getkey().toUpperCase();
 					bbs.log_key(key);
 					switch(key) {
 						case 'P':
@@ -1047,7 +1051,7 @@ function file_info()
 		bbs.menu("xferinfo");
 
 		// async
-		key=console.getkey();
+		key=console.getkey().toUpperCase();
 		bbs.log_key(key);
 
 		switch(key) {
