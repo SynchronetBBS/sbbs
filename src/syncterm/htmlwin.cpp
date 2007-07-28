@@ -25,10 +25,18 @@
 static sem_t		appstarted;
 static sem_t		shown;
 static sem_t		state_changed;
+static pthread_mutex_t	update_mutex;
 
 static wxString	addr;
-static wxString	currPage;
-static bool		newpage=false;
+static wxString	update_str;
+
+enum update_type {
+	 HTML_WIN_UPDATE_NONE
+	,HTML_WIN_UPDATE_ADD
+	,HTML_WIN_UPDATE_REPLACE
+};
+
+static enum update_type		update_type=HTML_WIN_UPDATE_NONE;
 
 static wxFrame		*frame;
 static wxHtmlWindow *htmlWindow;
@@ -59,24 +67,30 @@ protected:
 
 void MyUpdateTimer::Notify(void)
 {
-	if(newpage) {
-		int width,height,xpos,ypos;
+	int width,height,xpos,ypos;
 
-		frame->Show();
-		frame->Raise();
-		frame->GetPosition(&xpos, &ypos);
-		frame->GetSize(&width, &height);
-		if(xpos != window_xpos 
-				|| ypos != window_ypos
-				|| width != window_width
-				|| height != window_height)
-			frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
-		htmlWindow->SetPage(currPage);
-		newpage=false;
-		sem_post(&shown);
+	pthread_mutex_lock(&update_mutex);
+	switch(update_type) {
+		case HTML_WIN_UPDATE_REPLACE:
+			frame->Show();
+			frame->Raise();
+			frame->GetPosition(&xpos, &ypos);
+			frame->GetSize(&width, &height);
+			if(xpos != window_xpos 
+					|| ypos != window_ypos
+					|| width != window_width
+					|| height != window_height)
+				frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
+			htmlWindow->SetPage(update_str);
+			sem_post(&shown);
+			break;
+		case HTML_WIN_UPDATE_ADD:
+			htmlWindow->AppendToPage(update_str);
+			break;
 	}
-	else
-		sem_post(&shown);
+	update_str=wxT("");
+	update_type=HTML_WIN_UPDATE_NONE;
+	pthread_mutex_unlock(&update_mutex);
 }
 
 class MyStateTimer: public wxTimer
@@ -236,6 +250,7 @@ extern "C" {
 			sem_init(&appstarted, 0, 0);
 			sem_init(&state_changed, 0, 0);
 			sem_init(&shown, 0, 0);
+			pthread_mutex_init(&update_mutex, NULL);
 			_beginthread(html_thread, 0, NULL);
 			sem_wait(&appstarted);
 			sem_destroy(&appstarted);
@@ -263,7 +278,27 @@ extern "C" {
 		state_timer->Start(1, true);
 		sem_wait(&state_changed);
 	}
+	
+	void add_html(const char *buf)
+	{
+		wxString wx_page(buf,wxConvUTF8);
+		pthread_mutex_lock(&update_mutex);
+		update_str+=wx_page;
+		if(update_type==HTML_WIN_UPDATE_NONE)
+			update_timer->Start(10, true);
+		update_type=HTML_WIN_UPDATE_ADD;
+		pthread_mutex_unlock(&update_mutex);
+	}
 
+	void add_html_char(char ch)
+	{
+		char str[2];
+
+		str[0]=ch;
+		str[1]=0;
+		add_html(str);
+	}
+	
 	void show_html(const char *address, int width, int height, int xpos, int ypos, void(*callback)(const char *), const char *page)
 	{
 		window_xpos=xpos==-1?wxDefaultCoord:xpos;
@@ -274,10 +309,12 @@ extern "C" {
 
 		if(!run_html()) {
 			wxString wx_page(page,wxConvUTF8);
-			currPage=wx_page;
 			wxString newaddr(address,wxConvUTF8);
 			addr=newaddr;
-			newpage=true;
+			pthread_mutex_lock(&update_mutex);
+			update_str=wx_page;
+			update_type=HTML_WIN_UPDATE_REPLACE;
+			pthread_mutex_unlock(&update_mutex);
 			update_timer->Start(1, true);
 			sem_wait(&shown);
 		}
