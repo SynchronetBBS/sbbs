@@ -256,18 +256,16 @@ bool MyApp::OnInit()
 			, wxSize(window_width,window_height)
 			, wxCLOSE_BOX | wxMINIMIZE_BOX | wxCAPTION | wxCLIP_CHILDREN
 	);
-	wxFileSystem::AddHandler(new wxInternetFSHandler);
-	wxInitAllImageHandlers();
 	htmlWindow = new MyHTML(frame, HTML_ID);
 	htmlWindow->SetRelatedFrame(frame,wxT("SyncTERM HTML : %s"));
-    //frame->Show();
-	//htmlWindow->Raise();
-	//htmlWindow->SetFocus();
-	//frame->Iconize();
-    //SetTopWindow( frame );
+	wxFileSystem::AddHandler(new wxInternetFSHandler);
+	wxInitAllImageHandlers();
 	update_timer = new MyUpdateTimer();
 	state_timer = new MyStateTimer();
-	state_timer->Start(1, true);
+    frame->Show();
+    SetTopWindow( frame );
+	while(wxTheApp->Pending())
+		wxTheApp->Dispatch();
 	sem_post(&appstarted);
     return true;
 }
