@@ -4,7 +4,7 @@
 
 load("graphic.js");
 
-function asc2htmlterm(buf, dospin, partial)
+function asc2htmlterm(buf, dospin, partial, mode)
 {
 	var need_table=false;
 	var outbuf_table='';
@@ -15,20 +15,21 @@ function asc2htmlterm(buf, dospin, partial)
 	var spin=0;
 	var colour_vals=new Array(
 		"black",		/* black */
-		"#a80000",		/* dark red */
-		"#00a800",		/* dark green */
-		"#a85400",		/* brown (dark yellow) */
 		"#0000a8",		/* dark blue */
-		"#a800a8",		/* magenta */
+		"#00a800",		/* dark green */
 		"#00a8a8",		/* cyan */
+		"#a80000",		/* dark red */
+		"#a800a8",		/* magenta */
+		"#a85400",		/* brown (dark yellow) */
 		"#a8a8a8",		/* white */
+
 		"#545454",		/* bright black (grey) */
-		"#fc5454",		/* bright red */
-		"#54fc54",		/* bright green */
-		"#fcfc54",		/* bright yellow */
 		"#5454fc",		/* bright blue */
-		"#fc54fc",		/* bright magenta */
+		"#54fc54",		/* bright green */
 		"#54fcfc",		/* bright cyan */
+		"#fc5454",		/* bright red */
+		"#fc54fc",		/* bright magenta */
+		"#fcfc54",		/* bright yellow */
 		"white"		/* bright white */
 	);
 
@@ -56,7 +57,7 @@ function asc2htmlterm(buf, dospin, partial)
 		var screen=new Graphic(cols,rows,7,' ');
 		if(dospin)
 			console.write("\x08"+spinner[(spin++)%spinner.length]);
-		buf=screen.putmsg(1,1, buf, 7, true, true);
+		buf=screen.putmsg(1,1, buf, 7, true, true, mode);
 		if(dospin)
 			console.write("\x08"+spinner[(spin++)%spinner.length]);
 		var total_rows = rows;
