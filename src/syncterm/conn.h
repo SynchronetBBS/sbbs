@@ -45,6 +45,7 @@ struct conn_buffer {
 	size_t			bufsize;
 	size_t			buftop;
 	size_t			bufbot;
+	int				isempty;
 	pthread_mutex_t	mutex;
 	sem_t			in_sem;
 	sem_t			out_sem;
