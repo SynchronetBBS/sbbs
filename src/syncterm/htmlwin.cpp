@@ -24,7 +24,7 @@
 
 static sem_t		appstarted;
 static sem_t		shown;
-static sem_t		hidden;
+static sem_t		state_changed;
 
 static wxString	addr;
 static wxString	currPage;
@@ -33,7 +33,7 @@ static bool		newpage=false;
 static wxFrame		*frame;
 static wxHtmlWindow *htmlWindow;
 static wxTimer		*update_timer;
-static wxTimer		*destroy_timer;
+static wxTimer		*state_timer;
 
 static int			window_width=640;
 static int			window_height=400;
@@ -41,8 +41,15 @@ static int			window_xpos=50;
 static int			window_ypos=50;
 static void(*output_callback)(const char *);
 
-static bool		html_thread_running=false;
-static bool 		html_running=false;
+static bool			html_thread_running=false;
+
+enum html_window_state {
+	 HTML_WIN_STATE_RAISED
+	,HTML_WIN_STATE_ICONIZED
+	,HTML_WIN_STATE_HIDDEN
+};
+
+static enum html_window_state	html_window_requested_state=HTML_WIN_STATE_RAISED;
 
 class MyUpdateTimer: public wxTimer
 {
@@ -54,9 +61,8 @@ void MyUpdateTimer::Notify(void)
 {
 	if(newpage) {
 		int width,height,xpos,ypos;
-	
-		frame->Show(true);
-		html_running = true;
+
+		frame->Show();
 		frame->Raise();
 		frame->GetPosition(&xpos, &ypos);
 		frame->GetSize(&width, &height);
@@ -69,19 +75,42 @@ void MyUpdateTimer::Notify(void)
 		newpage=false;
 		sem_post(&shown);
 	}
+	else
+		sem_post(&shown);
 }
 
-class MyDestroyTimer: public wxTimer
+class MyStateTimer: public wxTimer
 {
 protected:
 	void Notify(void);
 };
 
-void MyDestroyTimer::Notify(void)
+void MyStateTimer::Notify(void)
 {
-	frame->Show(false);
-	html_running = false;
-	sem_post(&hidden);
+	if(wxTheApp) {
+		switch(html_window_requested_state) {
+			case HTML_WIN_STATE_RAISED:
+				if(!frame->IsShown())
+					frame->Show();
+				if(frame->IsIconized())
+					frame->Iconize(false);
+				frame->Raise();
+				break;
+			case HTML_WIN_STATE_ICONIZED:
+				if(!frame->IsShown())
+					frame->Show();
+				frame->Lower();
+				if(!frame->IsIconized())
+					frame->Iconize(true);
+				break;
+			case HTML_WIN_STATE_HIDDEN:
+				frame->Lower();
+				if(frame->IsShown())
+					frame->Show(false);
+				break;
+		}
+	}
+	sem_post(&state_changed);
 }
 
 class MyHTML: public wxHtmlWindow
@@ -102,15 +131,14 @@ MyHTML::MyHTML(wxFrame *parent, int id) : wxHtmlWindow(parent, id)
 
 wxHtmlOpeningStatus MyHTML::OnOpeningURL(wxHtmlURLType type,const wxString& url, wxString *redirect) const
 {
-	wxString redir=*redirect;
-
 	/* If the URL does not contain :// we need to fix it up and redirect */
 	if(!url.Matches(wxT("*://*"))) {
-		redir=wxT("");
-		redir+=wxT("http://")+addr;
+		redirect->Empty();
+		redirect->Append(wxT("http://"));
+		redirect->Append(addr);
 		if(!url.StartsWith(wxT("/")))
-			redir+=wxT("/");
-		redir+=url;
+			redirect->Append(wxT("/"));
+		redirect->Append(url);
 		return wxHTML_REDIRECT;
 	}
 	return wxHTML_OPEN;
@@ -127,6 +155,30 @@ BEGIN_EVENT_TABLE(MyHTML, wxHtmlWindow)
   EVT_HTML_LINK_CLICKED(HTML_ID, MyHTML::Clicked)
 END_EVENT_TABLE()
 
+class MyFrame: public wxFrame
+{
+public:
+	MyFrame(wxWindow * parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style);
+private:
+	void MyFrame::OnCloseWindow(wxCloseEvent& event);
+
+	DECLARE_EVENT_TABLE();
+};
+
+MyFrame::MyFrame(wxWindow * parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style)
+: wxFrame(parent, id, title, pos, size, style)
+{
+}
+
+void MyFrame::OnCloseWindow(wxCloseEvent& event)
+{
+	if(frame->IsShown())
+		Show(false);
+}
+
+BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+  EVT_CLOSE(MyFrame::OnCloseWindow)
+END_EVENT_TABLE()
 
 class MyApp: public wxApp
 {
@@ -135,23 +187,23 @@ class MyApp: public wxApp
 
 bool MyApp::OnInit()
 {
-    frame = new wxFrame((wxFrame *)NULL
+    frame = new MyFrame((wxFrame *)NULL
 			, -1
 			, wxT("SyncTERM HTML")
 			, wxPoint(window_xpos,window_ypos)
 			, wxSize(window_width,window_height)
-			, wxMINIMIZE_BOX | wxCAPTION | wxCLIP_CHILDREN
+			, wxCLOSE_BOX | wxMINIMIZE_BOX | wxCAPTION | wxCLIP_CHILDREN
 	);
 	wxFileSystem::AddHandler(new wxInternetFSHandler);
 	wxInitAllImageHandlers();
 	htmlWindow = new MyHTML(frame, HTML_ID);
 	htmlWindow->SetRelatedFrame(frame,wxT("SyncTERM HTML : %s"));
-    frame->Show( true );
-	frame->Lower();
+    frame->Show();
+	frame->Iconize();
     SetTopWindow( frame );
 	update_timer = new MyUpdateTimer();
-	destroy_timer = new MyDestroyTimer();
-	destroy_timer->Start(1, true);
+	state_timer = new MyStateTimer();
+	state_timer->Start(1, true);
 	sem_post(&appstarted);
     return true;
 }
@@ -182,7 +234,7 @@ extern "C" {
 	{
 		if(!html_thread_running) {
 			sem_init(&appstarted, 0, 0);
-			sem_init(&hidden, 0, 0);
+			sem_init(&state_changed, 0, 0);
 			sem_init(&shown, 0, 0);
 			_beginthread(html_thread, 0, NULL);
 			sem_wait(&appstarted);
@@ -193,10 +245,23 @@ extern "C" {
 
 	void hide_html(void)
 	{
-		if(html_running) {
-			destroy_timer->Start(1, true);
-			sem_wait(&hidden);
-		}
+		html_window_requested_state=HTML_WIN_STATE_HIDDEN;
+		state_timer->Start(1, true);
+		sem_wait(&state_changed);
+	}
+
+	void iconize_html(void)
+	{
+		html_window_requested_state=HTML_WIN_STATE_ICONIZED;
+		state_timer->Start(1, true);
+		sem_wait(&state_changed);
+	}
+
+	void raise_html(void)
+	{
+		html_window_requested_state=HTML_WIN_STATE_RAISED;
+		state_timer->Start(1, true);
+		sem_wait(&state_changed);
 	}
 
 	void show_html(const char *address, int width, int height, int xpos, int ypos, void(*callback)(const char *), const char *page)

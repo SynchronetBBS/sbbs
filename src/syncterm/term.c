@@ -38,7 +38,12 @@ static char winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2];	/*
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
 #ifdef WITH_WXWIDGETS
-static int html_mode=0;
+enum html_mode {
+	 HTML_MODE_HIDDEN
+	,HTML_MODE_ICONIZED
+	,HTML_MODE_RAISED
+};
+static enum html_mode html_mode=HTML_MODE_HIDDEN;
 enum {
 	 HTML_SUPPORT_UNKNOWN
 	,HTML_NOTSUPPORTED
@@ -1149,9 +1154,9 @@ BOOL doterm(struct bbslist *bbs)
 						if(!conn_connected()) {
 							hold_update=oldmc;
 #ifdef WITH_WXWIDGETS
-							if(html_mode) {
+							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
-								html_mode=0;
+								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
@@ -1202,7 +1207,7 @@ BOOL doterm(struct bbslist *bbs)
 								int width,height,xpos,ypos;
 								get_window_info(&width, &height, &xpos, &ypos);
 								show_html(bbs->addr, width, height, xpos, ypos, html_send, htmlbuf);
-								html_mode=1;
+								html_mode=HTML_MODE_RAISED;
 								html_startx=wherex();
 								html_starty=wherey();
 								free(htmlbuf);
@@ -1309,10 +1314,10 @@ BOOL doterm(struct bbslist *bbs)
 						ch[0]=inch;
 						cterm_write(ch, 1, prn, sizeof(prn), &speed);
 #ifdef WITH_WXWIDGETS
-						if(html_mode) {
+						if(html_mode==HTML_MODE_RAISED) {
 							if(html_startx!=wherex() || html_starty!=wherey()) {
-								hide_html();
-								html_mode=0;
+								iconize_html();
+								html_mode=HTML_MODE_ICONIZED;
 							}
 						}
 #endif
@@ -1441,9 +1446,9 @@ BOOL doterm(struct bbslist *bbs)
 						init_uifc(FALSE, FALSE);
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
 #ifdef WITH_WXWIDGETS
-							if(html_mode) {
+							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
-								html_mode=0;
+								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
 							uifcbail();
@@ -1476,9 +1481,9 @@ BOOL doterm(struct bbslist *bbs)
 					switch(syncmenu(bbs, &speed)) {
 						case -1:
 #ifdef WITH_WXWIDGETS
-							if(html_mode) {
+							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
-								html_mode=0;
+								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
@@ -1507,9 +1512,9 @@ BOOL doterm(struct bbslist *bbs)
 							break;
 						case 11:
 #ifdef WITH_WXWIDGETS
-							if(html_mode) {
+							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
-								html_mode=0;
+								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
 							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
