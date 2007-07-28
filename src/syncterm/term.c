@@ -1317,7 +1317,7 @@ BOOL doterm(struct bbslist *bbs)
 								if(j==sizeof(htmldetect)-1) {
 									if(!strcmp(htmldet, htmldetect)) {
 										if(html_supported==HTML_SUPPORT_UNKNOWN) {
-											if(!run_html())
+											if(!run_html(html_send, html_urlredirect))
 												html_supported=HTML_SUPPORTED;
 											else
 												html_supported=HTML_NOTSUPPORTED;
@@ -1329,7 +1329,7 @@ BOOL doterm(struct bbslist *bbs)
 										int width,height,xpos,ypos;
 										get_window_info(&width, &height, &xpos, &ypos);
 										html_addr=bbs->addr;
-										show_html(width, height, xpos, ypos, html_send, html_urlredirect, "");
+										show_html(width, height, xpos, ypos, "");
 										html_mode=HTML_MODE_READING;
 									}
 									htmldet[0]=0;

@@ -294,8 +294,10 @@ void html_thread(void *args)
 
 extern "C" {
 
-	int run_html()
+	int run_html(void(*callback)(const char *), int(*ucallback)(const char *, char *, size_t, char *, size_t))
 	{
+		output_callback=callback;
+		url_callback=ucallback;
 		if(!html_thread_running) {
 			sem_init(&appstarted, 0, 0);
 			sem_init(&state_changed, 0, 0);
@@ -357,16 +359,14 @@ extern "C" {
 		add_html(str);
 	}
 	
-	void show_html(int width, int height, int xpos, int ypos, void(*callback)(const char *), int(*ucallback)(const char *, char *, size_t, char *, size_t), const char *page)
+	void show_html(int width, int height, int xpos, int ypos, const char *page)
 	{
 		window_xpos=xpos==-1?wxDefaultCoord:xpos;
 		window_ypos=ypos==-1?wxDefaultCoord:ypos;
 		window_width=width==-1?640:width;
 		window_height=height==-1?200:height;
-		output_callback=callback;
-		url_callback=ucallback;
 
-		if(!run_html()) {
+		if(wxTheApp) {
 			pthread_mutex_lock(&update_mutex);
 			wxString wx_page(page, wxConvUTF8);
 			update_str=wx_page;
