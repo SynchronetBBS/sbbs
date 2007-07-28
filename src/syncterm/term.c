@@ -52,6 +52,8 @@ enum {
 };
 
 static int html_supported=HTML_SUPPORT_UNKNOWN;
+
+char *html_addr=NULL;
 #endif
 
 #if defined(__BORLANDC__)
@@ -1060,8 +1062,94 @@ void capture_control(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 void html_send(const char *buf)
 {
-	conn_send(buf,strlen(buf),0);
+	conn_send((char *)buf,strlen(buf),0);
 }
+
+static char cachedir[MAX_PATH+6];
+static int cachedirlen=0;
+
+void html_cleanup(void)
+{
+	if(cachedirlen)
+		delfiles(cachedir+5,ALLFILES);
+}
+
+int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, size_t uribufsize)
+{
+	char *in;
+	size_t out;
+
+	if(!cachedirlen) {
+		strcpy(cachedir,"file:");
+		get_syncterm_filename(cachedir+5, sizeof(cachedir)-5, SYNCTERM_PATH_CACHE, FALSE);
+		cachedirlen=strlen(cachedir);
+		html_cleanup();
+	}
+
+	if(!memcmp(uri, cachedir, cachedirlen)) {
+		/* Reading from the cache... no redirect */
+		return(URL_ACTION_ISGOOD);
+	}
+
+	strncpy(buf, cachedir, bufsize);
+	buf[bufsize-1]=0;
+	backslash(buf);
+	/* Append mangledname */
+	in=(char *)uri;
+	out=strlen(buf);
+	while(*in && out < bufsize-1) {
+		char ch;
+		ch=*(in++);
+		if(ch < ' ')
+			ch='^';
+		if(ch > 126)
+			ch='~';
+		switch(ch) {
+			case '*':
+			case '?':
+			case ':':
+			case '[':
+			case ']':
+			case '"':
+			case '<':
+			case '>':
+			case '|':
+			case '(':
+			case ')':
+			case '{':
+			case '}':
+			case '/':
+			case '\\':
+				buf[out++]='_';
+				break;
+			default:
+				buf[out++]=ch;
+		}
+	}
+	buf[out]=0;
+
+	/* We now have the cache filename... does it already exist? */
+	if(fexist(buf+5))
+		return(URL_ACTION_REDIRECT);
+
+	/* If not, we need to fetch it... convert relative URIs */
+	if(strstr(uri,"://")) {
+		/* Good URI */
+		strncpy(uribuf, uri, uribufsize);
+		uribuf[uribufsize-1]=0;
+		return(URL_ACTION_DOWNLOAD);
+	}
+
+	strcpy(uribuf, "http://");
+	if(html_addr)
+		strcat(uribuf, html_addr);
+	if(uri[0]!='/')
+		strcat(uribuf, "/");
+	strcat(uribuf,uri);
+
+	return(URL_ACTION_DOWNLOAD);
+}
+
 #endif
 
 BOOL doterm(struct bbslist *bbs)
@@ -1154,6 +1242,7 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
+								html_cleanup();
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
@@ -1238,7 +1327,8 @@ BOOL doterm(struct bbslist *bbs)
 									else {
 										int width,height,xpos,ypos;
 										get_window_info(&width, &height, &xpos, &ypos);
-										show_html(bbs->addr, width, height, xpos, ypos, html_send, "");
+										html_addr=bbs->addr;
+										show_html(width, height, xpos, ypos, html_send, html_urlredirect, "");
 										html_mode=HTML_MODE_READING;
 									}
 									htmldet[0]=0;
@@ -1424,6 +1514,7 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
+								html_cleanup();
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
@@ -1459,6 +1550,7 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
+								html_cleanup();
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
@@ -1490,6 +1582,7 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
 								hide_html();
+								html_cleanup();
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif

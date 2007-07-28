@@ -27,7 +27,6 @@ static sem_t		shown;
 static sem_t		state_changed;
 static pthread_mutex_t	update_mutex;
 
-static wxString	addr;
 static wxString	update_str;
 
 enum update_type {
@@ -48,6 +47,7 @@ static int			window_height=400;
 static int			window_xpos=50;
 static int			window_ypos=50;
 static void(*output_callback)(const char *);
+static int(*url_callback)(const char *, char *, size_t, char *, size_t);
 
 static bool			html_thread_running=false;
 
@@ -145,17 +145,34 @@ MyHTML::MyHTML(wxFrame *parent, int id) : wxHtmlWindow(parent, id)
 
 wxHtmlOpeningStatus MyHTML::OnOpeningURL(wxHtmlURLType type,const wxString& url, wxString *redirect) const
 {
-	/* If the URL does not contain :// we need to fix it up and redirect */
-	if(!url.Matches(wxT("*://*"))) {
-		redirect->Empty();
-		redirect->Append(wxT("http://"));
-		redirect->Append(addr);
-		if(!url.StartsWith(wxT("/")))
-			redirect->Append(wxT("/"));
-		redirect->Append(url);
-		return wxHTML_REDIRECT;
+	char	cache[4096];
+	char	orig[4096];
+	char	buf[1024];
+	FILE	*outfile;
+	int		ret;
+
+	ret=url_callback(url.mb_str(), cache, sizeof(cache), orig, sizeof(orig));
+	wxString cstr(cache,wxConvUTF8);
+	wxString remotefile(orig,wxConvUTF8);
+	redirect->Empty();
+	redirect->Append(cstr);
+	switch(ret) {
+		case URL_ACTION_DOWNLOAD:
+			outfile=fopen(cache+5 /* file:// */,"wb");
+			if(outfile) {
+				wxFileSystem *fs=new wxFileSystem();
+				wxFSFile *infile=fs->OpenFile(remotefile);
+				wxInputStream *in=infile->GetStream();
+				while(!in->Eof())
+					fwrite(buf, in->Read(buf,sizeof(buf)).LastRead(), 1, outfile);
+				fclose(outfile);
+				delete infile;
+				delete fs;
+			}
+		case URL_ACTION_REDIRECT:
+			return(wxHTML_REDIRECT);
 	}
-	return wxHTML_OPEN;
+	return(wxHTML_OPEN);
 }
 
 void MyHTML::Clicked(wxHtmlLinkEvent &ev)
@@ -298,20 +315,19 @@ extern "C" {
 		str[1]=0;
 		add_html(str);
 	}
-	
-	void show_html(const char *address, int width, int height, int xpos, int ypos, void(*callback)(const char *), const char *page)
+
+	void show_html(int width, int height, int xpos, int ypos, void(*callback)(const char *), int(*ucallback)(const char *, char *, size_t, char *, size_t), const char *page)
 	{
 		window_xpos=xpos==-1?wxDefaultCoord:xpos;
 		window_ypos=ypos==-1?wxDefaultCoord:ypos;
 		window_width=width==-1?640:width;
 		window_height=height==-1?200:height;
 		output_callback=callback;
+		url_callback=ucallback;
 
 		if(!run_html()) {
-			wxString wx_page(page,wxConvUTF8);
-			wxString newaddr(address,wxConvUTF8);
-			addr=newaddr;
 			pthread_mutex_lock(&update_mutex);
+			wxString wx_page(page, wxConvUTF8);
 			update_str=wx_page;
 			update_type=HTML_WIN_UPDATE_REPLACE;
 			pthread_mutex_unlock(&update_mutex);
