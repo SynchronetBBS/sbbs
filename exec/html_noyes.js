@@ -4,14 +4,10 @@ load("sbbsdefs.js");
 load("text.js");
 load("asc2htmlterm.js");
 
-log("Woof!");
-
 if(user.settings & USER_HTML) {
 	var os = bbs.sys_status;
 	bbs.sys_status |= SS_PAUSEOFF;
 	bbs.sys_status &= ~SS_PAUSEON;
-	var question=console.question;
-	strip_ctrl(question);
 
 	console.write("\2\2<html><head><title>"+strip_ctrl(console.question)+"</title></head>");
 	console.write('<body bgcolor="black" text="#a8a8a8">');
