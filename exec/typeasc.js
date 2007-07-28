@@ -27,18 +27,29 @@ var colour_vals=new Array(
 	"white"		/* bright white */
 );
 
+var title='';
+var filename='';
+
 for(i in argv) {
-	switch(argv[i].toLowerCase()) {
-	default:
+	if(this.f==undefined) {
 		f = new File(file_getcase(argv[i]));
-		break;
+		filename=file_getcase(argv[i]);
+		filename=filename.replace(/^.*[\\\/]/,'');
+	}
+	else {
+		if(title.length)
+			title+=' ';
+		title+=argv[i];
 	}
 }
 
 if(this.f==undefined) {
-	print("usage: typeasc <filename>");
+	print("usage: typeasc <filename> [HTML title]");
 	exit(1);
 }
+
+if(title=='')
+	title=filename;
 
 if(1 || (user.settings & USER_HTML)) {
 
@@ -68,8 +79,8 @@ if(1 || (user.settings & USER_HTML)) {
 	console.write("\x08"+spinner[(spin++)%spinner.length]);
 
 	console.line_counter=0;
-	outbuf_table = "\2\2<html><head><title>No title</title></head><body bgcolor=\"black\" text=\""+colour_vals[7]+"\"><font face=\"monospace\"><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"black\">\n";
-	outbuf_text = "\2\2<html><head><title>No title</title></head><body bgcolor=\"black\" text=\""+colour_vals[7]+"\"><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"black\"><tr><td nowrap><font face=\"monospace\">\n";
+	outbuf_table = "\2\2<html><head><title>"+title+"</title></head><body bgcolor=\"black\" text=\""+colour_vals[7]+"\"><font face=\"monospace\"><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"black\">\n";
+	outbuf_text = "\2\2<html><head><title>"+title+"</title></head><body bgcolor=\"black\" text=\""+colour_vals[7]+"\"><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"black\"><tr><td nowrap><font face=\"monospace\">\n";
 	while(buf.length) {
 		console.line_counter=0;
 		var screen=new Graphic(cols,rows,7,' ');
