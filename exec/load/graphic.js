@@ -145,8 +145,9 @@ function Graphic_scroll(lines)
 	}
 }
 
-/* Returns the number of times scrolled */
-function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
+/* Returns the number of times scrolled unless returnonscroll is true */
+/* If returnonscroll is true, returns the text AFTER the scroll */
+function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll)
 {
 	var curattr=attr;
 	var ch;
@@ -158,13 +159,24 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	if(curattr==undefined)
 		curattr=this.attribute;
 	/* Expand @-codes */
-	if(txt==undefined || txt==null || txt.length==0)
+	if(txt==undefined || txt==null || txt.length==0) {
+		if(returnonscroll)
+			return('');
 		return(0);
-	txt=txt.toString().replace(/@(.*)@/g,
+	}
+	txt=txt.toString().replace(/@(.*?)@/g,
 		function (str, code, offset, s) {
-			return bbs.atcode(code);
+			console.line_counter=0;
+			var ret=bbs.atcode(code);
+			if(ret==null)
+				return("@"+code+"@");
+			return(ret);
 		}
 	);
+	if(returnonscroll == undefined)
+		returnonscroll=false;
+	if(returnonscroll)
+		scroll=true;
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
@@ -183,6 +195,8 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 							x=0;
 							y++;
 							if(scroll && y>=this.height) {
+								if(returnonscroll)
+									return(txt.substr(p));
 								scrolls++;
 								this.scroll(1);
 								y--;
@@ -260,6 +274,8 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					case ']':	/* LF */
 						y++;
 						if(scroll && y>=this.height) {
+							if(returnonscroll)
+								return(txt.substr(p));
 							scrolls++;
 							this.scroll(1);
 							y--;
@@ -281,10 +297,13 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			case '\n':
 				y++;
 				if(scroll && y>=this.height) {
+					if(returnonscroll)
+						return(txt.substr(p));
 					scrolls++;
 					this.scroll(1);
 					y--;
 				}
+				x=0;
 				break;
 			default:
 				this.data[x][y].ch=ch;
@@ -294,6 +313,8 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					x=0;
 					y++;
 					if(scroll && y>=this.height) {
+						if(returnonscroll)
+							return(txt.substr(p));
 						scrolls++;
 						this.scroll(1);
 						y--;
@@ -301,5 +322,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				}
 		}
 	}
+	if(returnonscroll)
+		return(txt.substr(p));
 	return(scrolls);
 }
