@@ -260,11 +260,11 @@ bool MyApp::OnInit()
 	wxInitAllImageHandlers();
 	htmlWindow = new MyHTML(frame, HTML_ID);
 	htmlWindow->SetRelatedFrame(frame,wxT("SyncTERM HTML : %s"));
-    frame->Show();
-	htmlWindow->Raise();
-	htmlWindow->SetFocus();
-	frame->Iconize();
-    SetTopWindow( frame );
+    //frame->Show();
+	//htmlWindow->Raise();
+	//htmlWindow->SetFocus();
+	//frame->Iconize();
+    //SetTopWindow( frame );
 	update_timer = new MyUpdateTimer();
 	state_timer = new MyStateTimer();
 	state_timer->Start(1, true);
