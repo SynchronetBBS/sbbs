@@ -42,6 +42,7 @@ enum html_mode {
 	 HTML_MODE_HIDDEN
 	,HTML_MODE_ICONIZED
 	,HTML_MODE_RAISED
+	,HTML_MODE_READING
 };
 static enum html_mode html_mode=HTML_MODE_HIDDEN;
 enum {
@@ -1082,11 +1083,8 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE htmlresponse[]="\2\2!HTML!";
 	BYTE htmlstart[]="\2\2<HTML>";
 	BYTE htmldet[sizeof(htmldetect)];
-	BYTE *htmlbuf=NULL;
 	int html_startx;
 	int html_starty;
-	int htmlbufsize=0;
-	int htmlbuflen=0;
 #endif
 	int	inch;
 	long double nextchar=0;
@@ -1202,34 +1200,14 @@ BOOL doterm(struct bbslist *bbs)
 						}
 #endif
 #ifdef WITH_WXWIDGETS
-						if(htmlbuf) {
+						if(html_mode==HTML_MODE_READING) {
 							if(inch==2) {
-								int width,height,xpos,ypos;
-								get_window_info(&width, &height, &xpos, &ypos);
-								show_html(bbs->addr, width, height, xpos, ypos, html_send, htmlbuf);
 								html_mode=HTML_MODE_RAISED;
 								html_startx=wherex();
 								html_starty=wherey();
-								free(htmlbuf);
-								htmlbuf=NULL;
 							}
 							else {
-								if(htmlbuflen+2 >= htmlbufsize) {
-									BYTE *newbuf;
-
-									newbuf=(BYTE *)realloc(htmlbuf, htmlbufsize+1024);
-									if(newbuf) {
-										htmlbuf=newbuf;
-										htmlbufsize+=1024;
-									}
-									else {
-										free(htmlbuf);
-										htmlbuf=NULL;
-										continue;
-									}
-								}
-								htmlbuf[htmlbuflen++]=inch;
-								htmlbuf[htmlbuflen]=0;
+								add_html_char(inch);
 							}
 							continue;
 						}
@@ -1258,12 +1236,10 @@ BOOL doterm(struct bbslist *bbs)
 											conn_send(htmlresponse, sizeof(htmlresponse)-1, 0);
 									}
 									else {
-										htmlbuf=(BYTE *)malloc(1024);
-										htmlbufsize=1024;
-										if(htmlbuf) {
-											strcpy(htmlbuf,htmldet+2);
-											htmlbuflen=strlen(htmlbuf);
-										}
+										int width,height,xpos,ypos;
+										get_window_info(&width, &height, &xpos, &ypos);
+										show_html(bbs->addr, width, height, xpos, ypos, html_send, "");
+										html_mode=HTML_MODE_READING;
 									}
 									htmldet[0]=0;
 								}
