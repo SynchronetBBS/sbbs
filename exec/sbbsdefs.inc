@@ -2,7 +2,7 @@
 
 # Baja include file defining various Synchronet related constants
 
-# $Id$
+# $id: $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -14,6 +14,7 @@
 !define SM_CLOSED	.0	# System is clsoed to New Users
 !define SM_SYSSTAT	.1	# Sysops activity included in statistics
 !define SM_NOBEEP	.2	# No beep sound locally
+!define SM_NOSYSINFO	.2	# Suppress system info display at logon
 !define SM_PWEDIT	.3	# Allow users to change their passwords
 !define SM_RA_EMU	.4	# Reverse R/A read message/mail command keys
 !define SM_ANON_EM	.5	# Allow anonymous e-mail
@@ -165,9 +166,6 @@
 !define K_COLD		.16	# Possible cold key mode
 !define K_NOECHO	.17	# Don't echo input
 !define K_TAB		.18	# Treat TAB as CR
-!define K_LEFTEXIT	.19
-!define K_USEOFFSET	.20
-!define K_NOSPIN	.21	# Ignore user's spinning cursor setting
 
 				# Bits in 'mode' for PRINTFILE function
 !define P_NOABORT	.0	# Disallows abortion of a message

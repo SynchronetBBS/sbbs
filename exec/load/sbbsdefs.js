@@ -45,6 +45,7 @@ load("nodedefs.js");
 var   SYS_CLOSED	=(1<<0) 	/* System is closed to New Users		    */
 var   SYS_SYSSTAT	=(1<<1) 	/* Sysops activity included in statistics	*/
 var   SYS_NOBEEP	=(1<<2) 	/* No beep sound locally					*/
+var   SYS_NOSYSINFO	=(1<<2) 	/* Suppress system info display at logon	*/
 var   SYS_PWEDIT	=(1<<3) 	/* Allow users to change their passwords	*/
 var   SYS_RA_EMU	=(1<<4) 	/* Reverse R/A commands at msg read prompt	*/
 var   SYS_ANON_EM	=(1<<5) 	/* Allow anonymous e-mail					*/
@@ -107,7 +108,6 @@ var   SS_SPLITP		=(1<<24)	/* Split-screen private chat				*/
 var   SS_NEWDAY		=(1<<25)	/* Date changed while online				*/
 var   SS_RLOGIN		=(1<<26)	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27)	/* File transfer in progress, halt spy		*/
-var   SS_SSH		=(1<<28)	/* Current login via Secure Shell (SSH)			*/
 					    		/********************************************/
 
 						    	/********************************************/
