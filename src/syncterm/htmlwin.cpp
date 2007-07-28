@@ -143,7 +143,7 @@ protected:
 	wxHtmlOpeningStatus OnOpeningURL(wxHtmlURLType type,const wxString& url, wxString *redirect) const;
 	void MyHTML::OnKeyDown(wxKeyEvent& event);
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 MyHTML::MyHTML(wxFrame *parent, int id) : wxHtmlWindow(parent, id)
@@ -224,7 +224,7 @@ public:
 private:
 	void MyFrame::OnCloseWindow(wxCloseEvent& event);
 
-	DECLARE_EVENT_TABLE();
+	DECLARE_EVENT_TABLE()
 };
 
 MyFrame::MyFrame(wxWindow * parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style)
