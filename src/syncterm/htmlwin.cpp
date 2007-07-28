@@ -88,6 +88,7 @@ void MyUpdateTimer::Notify(void)
 			break;
 		case HTML_WIN_UPDATE_ADD:
 			htmlWindow->AppendToPage(update_str);
+			sem_post(&shown);
 			break;
 	}
 	update_str=wxT("");
@@ -328,13 +329,21 @@ extern "C" {
 		sem_wait(&state_changed);
 	}
 	
+	void html_commit(void)
+	{
+		pthread_mutex_lock(&update_mutex);
+		if(update_type!=HTML_WIN_UPDATE_NONE) {
+			update_timer->Start(10, true);
+			sem_wait(&shown);
+		}
+		pthread_mutex_unlock(&update_mutex);
+	}
+
 	void add_html(const char *buf)
 	{
 		wxString wx_page(buf,wxConvUTF8);
 		pthread_mutex_lock(&update_mutex);
 		update_str+=wx_page;
-		if(update_type==HTML_WIN_UPDATE_NONE)
-			update_timer->Start(10, true);
 		update_type=HTML_WIN_UPDATE_ADD;
 		pthread_mutex_unlock(&update_mutex);
 	}
@@ -347,7 +356,7 @@ extern "C" {
 		str[1]=0;
 		add_html(str);
 	}
-
+	
 	void show_html(int width, int height, int xpos, int ypos, void(*callback)(const char *), int(*ucallback)(const char *, char *, size_t, char *, size_t), const char *page)
 	{
 		window_xpos=xpos==-1?wxDefaultCoord:xpos;

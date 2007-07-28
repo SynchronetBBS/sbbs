@@ -1294,6 +1294,7 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_RAISED;
 								html_startx=wherex();
 								html_starty=wherey();
+								html_commit();
 							}
 							else {
 								add_html_char(inch);
