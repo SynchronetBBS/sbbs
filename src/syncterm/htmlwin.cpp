@@ -82,6 +82,8 @@ void MyUpdateTimer::Notify(void)
 					|| height != window_height)
 				frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
 			htmlWindow->SetPage(update_str);
+			htmlWindow->Raise();
+			htmlWindow->SetFocus();
 			sem_post(&shown);
 			break;
 		case HTML_WIN_UPDATE_ADD:
@@ -109,6 +111,8 @@ void MyStateTimer::Notify(void)
 				if(frame->IsIconized())
 					frame->Iconize(false);
 				frame->Raise();
+				htmlWindow->Raise();
+				htmlWindow->SetFocus();
 				break;
 			case HTML_WIN_STATE_ICONIZED:
 				if(!frame->IsShown())
@@ -136,6 +140,8 @@ public:
 
 protected:
 	wxHtmlOpeningStatus OnOpeningURL(wxHtmlURLType type,const wxString& url, wxString *redirect) const;
+	void MyHTML::OnKeyDown(wxKeyEvent& event);
+
 	DECLARE_EVENT_TABLE();
 };
 
@@ -180,9 +186,33 @@ void MyHTML::Clicked(wxHtmlLinkEvent &ev)
 	output_callback(ev.GetLinkInfo().GetHref().mb_str());
 }
 
+void MyHTML::OnKeyDown(wxKeyEvent& event)
+{
+	int key=event.GetKeyCode();
+	char send[2]={0,0};
+
+	if(key >= ' ' && key <= '~')
+		send[0]=key;
+	else {
+		switch(key) {
+			case WXK_BACK:
+			case WXK_TAB:
+			case WXK_RETURN:
+			case WXK_ESCAPE:
+			case WXK_SPACE:
+			case WXK_DELETE:
+				send[0]=key;
+		}
+	}
+	if(send[0])
+		output_callback(send);
+	event.Skip();
+}
+
 #define HTML_ID		wxID_HIGHEST
 
 BEGIN_EVENT_TABLE(MyHTML, wxHtmlWindow)
+  EVT_KEY_DOWN(MyHTML::OnKeyDown)
   EVT_HTML_LINK_CLICKED(HTML_ID, MyHTML::Clicked)
 END_EVENT_TABLE()
 
@@ -230,6 +260,8 @@ bool MyApp::OnInit()
 	htmlWindow = new MyHTML(frame, HTML_ID);
 	htmlWindow->SetRelatedFrame(frame,wxT("SyncTERM HTML : %s"));
     frame->Show();
+	htmlWindow->Raise();
+	htmlWindow->SetFocus();
 	frame->Iconize();
     SetTopWindow( frame );
 	update_timer = new MyUpdateTimer();
