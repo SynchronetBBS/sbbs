@@ -17,7 +17,7 @@ OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)comio_win32$(OFILE)
  !endif
  CFLAGS = $(CFLAGS) -DWITH_WXWIDGETS -I$(WXWIDGETS_DIR)\include -I$(WXWIDGETS_DIR)\lib\bcc_lib$(WXWIDGETS_CFG)\mswu
  LDFLAGS = $(LDFLAGS)  -L$(WXWIDGETS_DIR)\lib\bcc_lib$(WXWIDGETS_CFG) 
- WXLIBS = $(WXLIBS) comctl32.lib rpcrt4.lib wxbase28.lib wxbase28_net.lib wxjpeg.lib wxmsw28_adv.lib wxmsw28_core.lib wxmsw28_html.lib wxpng.lib wxtiff.lib wxzlib.lib
+ WXLIBS = $(WXLIBS) wxbase28.lib wxbase28_net.lib wxjpeg.lib wxmsw28_core.lib wxmsw28_html.lib wxpng.lib wxtiff.lib wxzlib.lib
  OBJS = $(OBJS) $(MTOBJODIR)$(DIRSEP)htmlwin$(OFILE)
 !endif
 
