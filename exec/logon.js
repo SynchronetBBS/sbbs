@@ -87,6 +87,18 @@ if(random_list.length)
 console.clear();
 bbs.user_event(EVENT_LOGON);
 
+/*
+ * Disable HTML mode if not using an HTML shell
+ * If you don't do this, you'll get HTML menus that flash on
+ * screen then disappear when the ANSI prompt is displayed
+ *
+ * It's still in the autoterm variable, so you CAN switch
+ */
+if(user.settings&USER_HTML) {
+	if(user.command_shell.search(/html/i)==-1)
+		user.settings&=~USER_HTML;
+}
+
 if(user.settings&USER_HTML) {
 	var buf="\2\2<html><head><title>Welcome status screen</title></head><body bgcolor=\"black\" text=\"#a8a8a8\">";
 
