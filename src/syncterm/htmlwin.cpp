@@ -67,6 +67,7 @@ protected:
 	void MyHTML::OnKeyDown(wxKeyEvent& event);
 	void MyHTML::OnUpdate(wxCommandEvent &event);
 	void MyHTML::OnState(wxCommandEvent &event);
+	void MyHTML::UnHide(void);
 
 	DECLARE_EVENT_TABLE()
 };
@@ -137,20 +138,11 @@ void MyHTML::OnKeyDown(wxKeyEvent& event)
 
 void MyHTML::OnUpdate(wxCommandEvent &event)
 {
-	int width,height,xpos,ypos;
-
 	pthread_mutex_lock(&update_mutex);
 	switch(update_type) {
 		case HTML_WIN_UPDATE_REPLACE:
 			frame->Show();
 			frame->Raise();
-			frame->GetPosition(&xpos, &ypos);
-			frame->GetSize(&width, &height);
-			if(xpos != window_xpos 
-					|| ypos != window_ypos
-					|| width != window_width
-					|| height != window_height)
-				frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
 			htmlWindow->SetPage(update_str);
 			htmlWindow->Raise();
 			htmlWindow->SetFocus();
@@ -166,13 +158,28 @@ void MyHTML::OnUpdate(wxCommandEvent &event)
 	pthread_mutex_unlock(&update_mutex);
 }
 
+void MyHTML::UnHide(void)
+{
+	int width,height,xpos,ypos;
+
+	if(!frame->IsShown()) {
+		frame->GetPosition(&xpos, &ypos);
+		frame->GetSize(&width, &height);
+		if(xpos != window_xpos 
+				|| ypos != window_ypos
+				|| width != window_width
+				|| height != window_height)
+			frame->SetSize(window_xpos, window_ypos, window_width, window_height, wxSIZE_AUTO);
+		frame->Show(true);
+	}
+}
+
 void MyHTML::OnState(wxCommandEvent &event)
 {
 	if(wxTheApp) {
 		switch(html_window_requested_state) {
 			case HTML_WIN_STATE_RAISED:
-				if(!frame->IsShown())
-					frame->Show();
+				UnHide();
 				if(frame->IsIconized())
 					frame->Iconize(false);
 				frame->Raise();
@@ -180,15 +187,13 @@ void MyHTML::OnState(wxCommandEvent &event)
 				htmlWindow->SetFocus();
 				break;
 			case HTML_WIN_STATE_LOWERED:
-				if(!frame->IsShown())
-					frame->Show();
+				UnHide();
 				if(frame->IsIconized())
 					frame->Iconize(false);
 				frame->Lower();
 				break;
 			case HTML_WIN_STATE_ICONIZED:
-				if(!frame->IsShown())
-					frame->Show();
+				UnHide();
 				frame->Lower();
 				if(!frame->IsIconized())
 					frame->Iconize(true);

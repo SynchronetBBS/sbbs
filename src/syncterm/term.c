@@ -1294,7 +1294,7 @@ BOOL doterm(struct bbslist *bbs)
 								html_startx=wherex();
 								html_starty=wherey();
 								html_commit();
-								raise_html()
+								raise_html();
 								html_mode=HTML_MODE_RAISED;
 							}
 							else {
