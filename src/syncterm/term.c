@@ -1291,10 +1291,11 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 						if(html_mode==HTML_MODE_READING) {
 							if(inch==2) {
-								html_mode=HTML_MODE_RAISED;
 								html_startx=wherex();
 								html_starty=wherey();
 								html_commit();
+								raise_html()
+								html_mode=HTML_MODE_RAISED;
 							}
 							else {
 								add_html_char(inch);
