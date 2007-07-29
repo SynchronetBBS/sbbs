@@ -40,7 +40,7 @@ static struct text_info	log_ti;
 #ifdef WITH_WXWIDGETS
 enum html_mode {
 	 HTML_MODE_HIDDEN
-	,HTML_MODE_LOWERED
+	,HTML_MODE_ICONIZED
 	,HTML_MODE_RAISED
 	,HTML_MODE_READING
 };
@@ -1387,8 +1387,8 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 						if(html_mode==HTML_MODE_RAISED) {
 							if(html_startx!=wherex() || html_starty!=wherey()) {
-								lower_html();
-								html_mode=HTML_MODE_LOWERED;
+								iconize_html();
+								html_mode=HTML_MODE_ICONIZED;
 							}
 						}
 #endif

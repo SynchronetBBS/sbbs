@@ -182,7 +182,12 @@ void MyHTML::OnState(wxCommandEvent &event)
 				UnHide();
 				if(frame->IsIconized())
 					frame->Iconize(false);
+#ifdef _WIN32
+				frame->Hide();
+#endif
+				frame->Show();
 				frame->Raise();
+				htmlWindow->Show();
 				htmlWindow->Raise();
 				htmlWindow->SetFocus();
 				break;
@@ -377,7 +382,7 @@ extern "C" {
 		str[1]=0;
 		add_html(str);
 	}
-	
+
 	void show_html(const char *page)
 	{
 		if(wxTheApp) {
