@@ -84,13 +84,6 @@ var random_list = directory(system.text_dir + "menu/random*.*");
 if(random_list.length)
 	bbs.menu(file_getname(random_list[random(random_list.length)]).slice(0,-4));
 
-// If using the HTML shell and has HTML terminal,
-// replace YesNo text.
-if(user.command_shell.search(/HTML/i)!=-1 && user.settings&USER_HTML) {
-	bbs.replace_text(bbs.text(YesNoQuestion),"@EXEC:html_yesno@");
-	bbs.replace_text(bbs.text(NoYesQuestion),"@EXEC:html_yesno@");
-}
-
 console.clear();
 bbs.user_event(EVENT_LOGON);
 
