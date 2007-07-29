@@ -23,4 +23,4 @@ if(user.settings & USER_HTML) {
 	bbs.sys_status=os;
 }
 else
-	console.print("@EXEC:noyesbar@");
+	console.putmsg("@EXEC:noyesbar@");
