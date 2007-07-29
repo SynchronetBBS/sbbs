@@ -49,6 +49,7 @@ static bool			html_thread_running=false;
 
 enum html_window_state {
 	 HTML_WIN_STATE_RAISED
+	,HTML_WIN_STATE_LOWERED
 	,HTML_WIN_STATE_ICONIZED
 	,HTML_WIN_STATE_HIDDEN
 };
@@ -178,6 +179,13 @@ void MyHTML::OnState(wxCommandEvent &event)
 				htmlWindow->Raise();
 				htmlWindow->SetFocus();
 				break;
+			case HTML_WIN_STATE_LOWERED:
+				if(!frame->IsShown())
+					frame->Show();
+				if(frame->IsIconized())
+					frame->Iconize(false);
+				frame->Lower();
+				break;
 			case HTML_WIN_STATE_ICONIZED:
 				if(!frame->IsShown())
 					frame->Show();
@@ -252,7 +260,7 @@ bool MyApp::OnInit()
 			, wxT("SyncTERM HTML")
 			, wxPoint(window_xpos,window_ypos)
 			, wxSize(window_width,window_height)
-			, wxCLOSE_BOX | wxMINIMIZE_BOX | wxCAPTION | wxCLIP_CHILDREN
+			, wxMINIMIZE_BOX | /* wxMAXIMIZE_BOX */ | wxRESIZE_BORDER | /* wxSYSTEM_MENU */ | wxCAPTION | wxCLOSE_BOX | /* wxCLIP_CHILDREN */
 	);
 	htmlWindow = new MyHTML(frame, HTML_ID);
 	htmlWindow->SetRelatedFrame(frame,wxT("SyncTERM HTML : %s"));
@@ -260,8 +268,6 @@ bool MyApp::OnInit()
 	wxInitAllImageHandlers();
     frame->Show();
     SetTopWindow( frame );
-	while(wxTheApp->Pending())
-		wxTheApp->Dispatch();
 	sem_post(&appstarted);
     return true;
 }
@@ -330,6 +336,13 @@ extern "C" {
 		sem_wait(&state_changed);
 	}
 	
+	void lower_html(void)
+	{
+		html_window_requested_state=HTML_WIN_STATE_LOWERED;
+		send_html_event(state_event);
+		sem_wait(&state_changed);
+	}
+
 	void html_commit(void)
 	{
 		pthread_mutex_lock(&update_mutex);

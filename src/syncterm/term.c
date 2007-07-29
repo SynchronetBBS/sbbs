@@ -40,7 +40,7 @@ static struct text_info	log_ti;
 #ifdef WITH_WXWIDGETS
 enum html_mode {
 	 HTML_MODE_HIDDEN
-	,HTML_MODE_ICONIZED
+	,HTML_MODE_LOWERED
 	,HTML_MODE_RAISED
 	,HTML_MODE_READING
 };
@@ -1326,8 +1326,10 @@ BOOL doterm(struct bbslist *bbs)
 											else
 												html_supported=HTML_NOTSUPPORTED;
 										}
-										if(html_supported==HTML_SUPPORTED)
+										if(html_supported==HTML_SUPPORTED) {
 											conn_send(htmlresponse, sizeof(htmlresponse)-1, 0);
+											hide_html();
+										}
 									}
 									else {
 										show_html("");
@@ -1384,8 +1386,8 @@ BOOL doterm(struct bbslist *bbs)
 #ifdef WITH_WXWIDGETS
 						if(html_mode==HTML_MODE_RAISED) {
 							if(html_startx!=wherex() || html_starty!=wherey()) {
-								iconize_html();
-								html_mode=HTML_MODE_ICONIZED;
+								lower_html();
+								html_mode=HTML_MODE_LOWERED;
 							}
 						}
 #endif
