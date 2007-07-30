@@ -235,7 +235,7 @@
 				HEADER_SEARCH_PATHS = "/automount/synchronet/src/include/cryptlib /automount/synchronet/src/src/smblib /automount/synchronet/src/src/sbbs3 /automount/synchronet/src/src/conio /automount/synchronet/src/src/uifc /automount/synchronet/src/src/xpdev /Library/Frameworks/SDL.framework/Headers";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = "/automount/synchronet/src/lib/cryptlib/darwin.power_macintosh.release /automount/synchronet/src/src/conio/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/uifc/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/xpdev/gcc.darwin.power_macintosh.lib.release";
-				OTHER_CFLAGS = "-D__unix__ -D__DARWIN__ -DWITH_SDL -DUSE_XP_SEMAPHORES -DXPDEV_THREAD_SAFE -DLINK_LIST_THREADSAFE -DSTATIC_SDL";
+				OTHER_CFLAGS = "-DHAS_INTTYPES_H -D__unix__ -D__DARWIN__ -DWITH_SDL -DUSE_XP_SEMAPHORES -DXPDEV_THREAD_SAFE -DLINK_LIST_THREADSAFE -DSTATIC_SDL";
 				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -luifc_mt -lcurses -lcl /usr/local/lib/libdl.a";
 				PRODUCT_NAME = SyncTERM;
 				SECTORDER_FLAGS = "";
