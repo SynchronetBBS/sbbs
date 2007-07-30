@@ -173,7 +173,7 @@ else {
 		printf("\1n\1g\1hYou are the first caller of the day!\r\n");
 	else {
 		printf("\1n\1g\1hLast few callers:\1n\r\n");
-		console.printtail(logonlst,P_NOATCODES,4);
+		console.printtail(logonlst,4,P_NOATCODES);      // args: filename, lines, mode
 	}
 	console.crlf();
 
