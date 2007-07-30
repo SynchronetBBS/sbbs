@@ -108,6 +108,7 @@ var   SS_SPLITP		=(1<<24)	/* Split-screen private chat				*/
 var   SS_NEWDAY		=(1<<25)	/* Date changed while online				*/
 var   SS_RLOGIN		=(1<<26)	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27)	/* File transfer in progress, halt spy		*/
+var   SS_SSH		=(1<<28)	/* Current login via Secure Shell (SSH)                 */
 					    		/********************************************/
 
 						    	/********************************************/
