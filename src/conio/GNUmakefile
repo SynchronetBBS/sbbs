@@ -59,6 +59,6 @@ endif
 ifeq ($(os),darwin)
 $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 endif
 
