@@ -56,3 +56,14 @@ $(CIOLIB-MT_SHLIB_BUILD): $(MTOBJODIR)$(DIRSEP)console$(OFILE).dynamic $(MTOBJOD
 endif
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(OBJS) $(SHLIBOPTS) -o $@
+
+ifeq ($(os),darwin)
+$(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
+
+$(OBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
+endif
+
