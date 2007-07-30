@@ -1045,5 +1045,15 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 	
 	if(cio_api.get_window_info!=NULL)
 		return(cio_api.get_window_info(width,height,xpos,ypos));
+	else {
+		if(width)
+			*width=-1;
+		if(height)
+			*height=-1;
+		if(xpos)
+			*xpos=-1;
+		if(ypos)
+			*ypos=-1;
+	}
 	return(-1);
 }
