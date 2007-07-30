@@ -19,8 +19,7 @@ else
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
   OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
   ifeq ($(os),darwin)
-   MTOBJS	+=      $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
-   OBJS 	+=      $(OBJODIR)$(DIRSEP)SDLMain$(OFILE)
+   OBJS 	+=      $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE)
   endif
  endif
 endif
@@ -61,9 +60,5 @@ ifeq ($(os),darwin)
 $(MTOBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(MT_CFLAGS) $(CCFLAGS) -o $@ -c $<
-
-$(OBJODIR)$(DIRSEP)SDLMain$(OFILE): SDLMain.m
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 endif
 
