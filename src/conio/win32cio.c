@@ -532,8 +532,8 @@ void win32_textmode(int mode)
 
 	cio_textinfo.attribute=7;
 	cio_textinfo.normattr=7;
-	cio_textinfo.currmode=vparams[modeisx].mode;
-	cio_textinfo.screenheightsz.Y;
+	cio_textinfo.currmode=vparams[modeidx].mode;
+	cio_textinfo.screenheight=sz.Y;
 	cio_textinfo.screenwidth=sz.X;
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
@@ -580,8 +580,8 @@ void win32_gotoxy(int x, int y)
 	COORD	cp;
 	HANDLE	h;
 
-	cio_terminfo.curx=x;
-	cio_terminfo.cury=y;
+	cio_textinfo.curx=x;
+	cio_textinfo.cury=y;
 	cp.X=x-1;
 	cp.Y=y-1;
 	if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)

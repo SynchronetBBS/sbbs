@@ -1023,8 +1023,9 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 	unsigned char a1=a;
 	unsigned char buf[2];
 	int i;
-	CIOLIB_INIT();
 	int old_puttext_can_move=puttext_can_move;
+
+	CIOLIB_INIT();
 
 	if(cio_api.putch)
 		return(cio_api.putch(a1));
@@ -1243,7 +1244,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 }
 
 /* Optional */
-CIOLIBEXPORT int ciolib_beep(void)
+CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void)
 {
 	if(cio_api.beep)
 		return(cio_api.beep());
