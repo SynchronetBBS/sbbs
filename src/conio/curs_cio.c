@@ -53,12 +53,11 @@
 #include "vidmodes.h"
 
 static unsigned char curs_nextgetch=0;
-const int curs_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
 static int lastattr=0;
 static long mode;
 
-short curses_color(short color)
+static short curses_color(short color)
 {
 	switch(color)
 	{
@@ -98,6 +97,180 @@ short curses_color(short color)
 	return(0);
 }
 
+static int _putch(unsigned char ch, BOOL refresh_now)
+{
+	int		ret;
+	chtype	cha;
+
+	if(!(mode==CIOLIB_MODE_CURSES_IBM))
+	{
+		switch(ch)
+		{
+			case 30:
+				cha=ACS_UARROW;
+				break;
+			case 31:
+				cha=ACS_DARROW;
+				break;
+			case 176:
+				cha=ACS_CKBOARD;
+				break;
+			case 177:
+				cha=ACS_BOARD;
+				break;
+			case 178:
+				cha=ACS_BOARD;
+				break;
+			case 179:
+				cha=ACS_SBSB;
+				break;
+			case 180:
+				cha=ACS_SBSS;
+				break;
+			case 181:
+				cha=ACS_SBSD;
+				break;
+			case 182:
+				cha=ACS_DBDS;
+				break;
+			case 183:
+				cha=ACS_BBDS;
+				break;
+			case 184:
+				cha=ACS_BBSD;
+				break;
+			case 185:
+				cha=ACS_DBDD;
+				break;
+			case 186:
+				cha=ACS_DBDB;
+				break;
+			case 187:
+				cha=ACS_BBDD;
+				break;
+			case 188:
+				cha=ACS_DBBD;
+				break;
+			case 189:
+				cha=ACS_DBBS;
+				break;
+			case 190:
+				cha=ACS_SBBD;
+				break;
+			case 191:
+				cha=ACS_BBSS;
+				break;
+			case 192:
+				cha=ACS_SSBB;
+				break;
+			case 193:
+				cha=ACS_SSBS;
+				break;
+			case 194:
+				cha=ACS_BSSS;
+				break;
+			case 195:
+				cha=ACS_SSSB;
+				break;
+			case 196:
+				cha=ACS_BSBS;
+				break;
+			case 197:
+				cha=ACS_SSSS;
+				break;
+			case 198:
+				cha=ACS_SDSB;
+				break;
+			case 199:
+				cha=ACS_DSDB;
+				break;
+			case 200:
+				cha=ACS_DDBB;
+				break;
+			case 201:
+				cha=ACS_BDDB;
+				break;
+			case 202:
+				cha=ACS_DDBD;
+				break;
+			case 203:
+				cha=ACS_BDDD;
+				break;
+			case 204:
+				cha=ACS_DDDB;
+				break;
+			case 205:
+				cha=ACS_BDBD;
+				break;
+			case 206:
+				cha=ACS_DDDD;
+				break;
+			case 207:
+				cha=ACS_SDBD;
+				break;
+			case 208:
+				cha=ACS_DSBS;
+				break;
+			case 209:
+				cha=ACS_BDSD;
+				break;
+			case 210:
+				cha=ACS_BSDS;
+				break;
+			case 211:
+				cha=ACS_DSBB;
+				break;
+			case 212:
+				cha=ACS_SDBB;
+				break;
+			case 213:
+				cha=ACS_BDSB;
+				break;
+			case 214:
+				cha=ACS_BSDB;
+				break;
+			case 215:
+				cha=ACS_DSDS;
+				break;
+			case 216:
+				cha=ACS_SDSD;
+				break;
+			case 217:
+				cha=ACS_SBBS;
+				break;
+			case 218:
+				cha=ACS_BSSB;
+				break;
+			case 219:
+				cha=ACS_BLOCK;
+				break;
+			default:
+				cha=ch;
+		}
+	}
+	else
+		cha=ch;
+
+	if(!cha)
+		cha=' ';
+	if(cha == ' ')
+		ret=addch(A_BOLD|' ');
+	else if (cha<' ') {
+ 		attron(A_REVERSE);
+		ret=addch(cha+'A'-1);
+		attroff(A_REVERSE);
+	}
+	else
+		ret=addch(cha);
+
+	if(!hold_update) {
+		if(refresh_now)
+			refresh();
+	}
+
+	return(ret);
+}
+
 int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 {
 	int x,y;
@@ -106,30 +279,28 @@ int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 	unsigned char fill_char;
 	unsigned char orig_attr;
 	int oldx, oldy;
-	struct text_info	ti;
 	unsigned char *fill;
 
 	fill=fillbuf;
-	gettextinfo(&ti);
 
 	if(		   sx < 1
 			|| sy < 1
 			|| ex < 1
 			|| ey < 1
-			|| sx > ti.screenwidth
-			|| sy > ti.screenheight
+			|| sx > cio_textinfo.screenwidth
+			|| sy > cio_textinfo.screenheight
 			|| sx > ex
 			|| sy > ey
-			|| ex > ti.screenwidth
-			|| ey > ti.screenheight
+			|| ex > cio_textinfo.screenwidth
+			|| ey > cio_textinfo.screenheight
 			|| fill==NULL)
 		return(0);
 
 	getyx(stdscr,oldy,oldx);
 	orig_attr=lastattr;
-	for(y=sy-1;y<=ey-1;y++)
+	for(y=sy-1;y<ey;y++)
 	{
-		for(x=sx-1;x<=ex-1;x++)
+		for(x=sx-1;x<ex;x++)
 		{
 			fill_char=fill[fillpos++];
 			attr=fill[fillpos++];
@@ -436,6 +607,8 @@ void curs_textattr(int attr)
 #endif
 	/* bkgdset(colour); */
 	bkgdset(colour);
+
+	cio_textinfo.attribute=attr;
 }
 
 int curs_kbhit(void)
@@ -455,204 +628,18 @@ int curs_kbhit(void)
 	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout));
 }
 
-void curs_delay(long msec)
-{
-	usleep(msec*1000);
-}
-
-int curs_wherey(void)
-{
-	int x,y;
-	getyx(stdscr,y,x);
-	return(y+1);
-}
-
-int curs_wherex(void)
-{
-	int x,y;
-	getyx(stdscr,y,x);
-	return(x+1);
-}
-
-int _putch(unsigned char ch, BOOL refresh_now)
-{
-	int		ret;
-	chtype	cha;
-
-	if(!(mode==CIOLIB_MODE_CURSES_IBM))
-	{
-		switch(ch)
-		{
-			case 30:
-				cha=ACS_UARROW;
-				break;
-			case 31:
-				cha=ACS_DARROW;
-				break;
-			case 176:
-				cha=ACS_CKBOARD;
-				break;
-			case 177:
-				cha=ACS_BOARD;
-				break;
-			case 178:
-				cha=ACS_BOARD;
-				break;
-			case 179:
-				cha=ACS_SBSB;
-				break;
-			case 180:
-				cha=ACS_SBSS;
-				break;
-			case 181:
-				cha=ACS_SBSD;
-				break;
-			case 182:
-				cha=ACS_DBDS;
-				break;
-			case 183:
-				cha=ACS_BBDS;
-				break;
-			case 184:
-				cha=ACS_BBSD;
-				break;
-			case 185:
-				cha=ACS_DBDD;
-				break;
-			case 186:
-				cha=ACS_DBDB;
-				break;
-			case 187:
-				cha=ACS_BBDD;
-				break;
-			case 188:
-				cha=ACS_DBBD;
-				break;
-			case 189:
-				cha=ACS_DBBS;
-				break;
-			case 190:
-				cha=ACS_SBBD;
-				break;
-			case 191:
-				cha=ACS_BBSS;
-				break;
-			case 192:
-				cha=ACS_SSBB;
-				break;
-			case 193:
-				cha=ACS_SSBS;
-				break;
-			case 194:
-				cha=ACS_BSSS;
-				break;
-			case 195:
-				cha=ACS_SSSB;
-				break;
-			case 196:
-				cha=ACS_BSBS;
-				break;
-			case 197:
-				cha=ACS_SSSS;
-				break;
-			case 198:
-				cha=ACS_SDSB;
-				break;
-			case 199:
-				cha=ACS_DSDB;
-				break;
-			case 200:
-				cha=ACS_DDBB;
-				break;
-			case 201:
-				cha=ACS_BDDB;
-				break;
-			case 202:
-				cha=ACS_DDBD;
-				break;
-			case 203:
-				cha=ACS_BDDD;
-				break;
-			case 204:
-				cha=ACS_DDDB;
-				break;
-			case 205:
-				cha=ACS_BDBD;
-				break;
-			case 206:
-				cha=ACS_DDDD;
-				break;
-			case 207:
-				cha=ACS_SDBD;
-				break;
-			case 208:
-				cha=ACS_DSBS;
-				break;
-			case 209:
-				cha=ACS_BDSD;
-				break;
-			case 210:
-				cha=ACS_BSDS;
-				break;
-			case 211:
-				cha=ACS_DSBB;
-				break;
-			case 212:
-				cha=ACS_SDBB;
-				break;
-			case 213:
-				cha=ACS_BDSB;
-				break;
-			case 214:
-				cha=ACS_BSDB;
-				break;
-			case 215:
-				cha=ACS_DSDS;
-				break;
-			case 216:
-				cha=ACS_SDSD;
-				break;
-			case 217:
-				cha=ACS_SBBS;
-				break;
-			case 218:
-				cha=ACS_BSSB;
-				break;
-			case 219:
-				cha=ACS_BLOCK;
-				break;
-			default:
-				cha=ch;
-		}
-	}
-	else
-		cha=ch;
-
-	if(!cha)
-		cha=' ';
-	if(cha == ' ')
-		ret=addch(A_BOLD|' ');
-	else if (cha<' ') {
- 		attron(A_REVERSE);
-		ret=addch(cha+'A'-1);
-		attroff(A_REVERSE);
-	}
-	else
-		ret=addch(cha);
-
-	if(!hold_update) {
-		if(refresh_now)
-			refresh();
-	}
-
-	return(ret);
-}
-
 void curs_gotoxy(int x, int y)
 {
-	move(y-1,x-1);
+	int absx,absy;
+	absx=x+cio_textinfo.winleft-1;
+	absy=y+cio_textinfo.wintop-1;
+
+	move(absy-1,absx-1);
 	if(!hold_update)
 		refresh();
+
+	cio_textinfo.curx=x;
+	cio_textinfo.cury=y;
 }
 
 void curs_suspend(void)
@@ -715,19 +702,9 @@ int curs_initciolib(long inmode)
 		else
 			mousemask(0,NULL);
 #endif
-	return(1);
-}
 
-void curs_gettextinfo(struct text_info *info)
-{
-	getmaxyx(stdscr, info->screenheight, info->screenwidth);
-	if(has_colors())
-		info->currmode=COLOR_MODE;
-	else
-		info->currmode=MONO;
-	info->curx=curs_wherex();
-	info->cury=curs_wherey();
-	info->attribute=lastattr;
+	curs_textmode(0);
+	return(1);
 }
 
 void curs_setcursortype(int type) {
@@ -735,11 +712,11 @@ void curs_setcursortype(int type) {
 		case _NOCURSOR:
 			curs_set(0);
 			break;
-		
+
 		case _SOLIDCURSOR:
 			curs_set(2);
 			break;
-		
+
 		default:	/* Normal cursor */
 			curs_set(1);
 			break;
@@ -747,144 +724,6 @@ void curs_setcursortype(int type) {
 	}
 	if(!hold_update)
 		refresh();
-}
-
-int curs_putch(int ch)
-{
-#if 0
-	struct text_info ti;
-	int		ret;
-	int		i;
-
-	ret=c;
-	switch(c) {
-		case '\r':
-			gotoxy(1,wherey());
-			break;
-		case '\n':
-			gettextinfo(&ti);
-			if(wherey()==ti.winbottom-ti.wintop+1) {
-				wscroll();
-			}
-			else {
-				gotoxy(wherex(),wherey()+1);
-			}
-			break;
-		case 0x07:
-			beep();
-			break;
-		case 0x08:
-			gotoxy(wherex()-1,wherey());
-			_putch(' ',FALSE);
-			gotoxy(wherex()-1,wherey());
-			break;
-		case '\t':
-			for(i=0;i<10;i++) {
-				if(curs_tabs[i]>wherex()) {
-					while(wherex()<curs_tabs[i]) {
-						putch(' ');
-					}
-					break;
-				}
-			}
-			if(i==10) {
-				putch('\r');
-				putch('\n');
-			}
-			break;
-		default:
-			gettextinfo(&ti);
-			if(wherey()==ti.winbottom-ti.wintop+1
-					&& wherex()==ti.winright-ti.winleft+1) {
-				if(_putch(c,TRUE)==ERR)
-					ret=EOF;
-				else {
-					wscroll();
-					gotoxy(ti.winleft,ti.cury);
-				}
-			}
-			else {
-				if(wherex()==ti.winright-ti.winleft+1) {
-					if(_putch(c,TRUE)==ERR)
-						ret=EOF;
-					else
-						gotoxy(ti.winleft,ti.cury+1);
-				}
-				else {
-					if(_putch(c,TRUE)==ERR)
-						ret=EOF;
-					else
-						gotoxy(ti.curx+1,ti.cury);
-				}
-			}
-			break;
-	}
-#else
-	struct text_info ti;
-	unsigned char buf[2];
-	int i;
-
-	buf[0]=ch;
-	buf[1]=lastattr;
-
-	switch(ch) {
-		case '\r':
-			gotoxy(1,wherey());
-			break;
-		case '\n':
-			gettextinfo(&ti);
-			if(ti.cury==ti.winbottom-ti.wintop+1)
-				wscroll();
-			else
-				gotoxy(ti.curx,ti.cury+1);
-			break;
-		case '\b':
-			gettextinfo(&ti);
-			if(ti.curx>1) {
-				buf[0]=' ';
-				gotoxy(ti.curx-1,ti.cury);
-				puttext(ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,buf);
-			}
-			break;
-		case 7:		/* Bell */
-			beep();
-			break;
-		case '\t':
-			for(i=0;i<10;i++) {
-				if(curs_tabs[i]>wherex()) {
-					while(wherex()<curs_tabs[i]) {
-						putch(' ');
-					}
-					break;
-				}
-			}
-			if(i==10) {
-				putch('\r');
-				putch('\n');
-			}
-			break;
-		default:
-			gettextinfo(&ti);
-			if(ti.cury==ti.winbottom-ti.wintop+1
-					&& ti.curx==ti.winright-ti.winleft+1) {
-				puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-				wscroll();
-				gotoxy(1,ti.cury);
-			}
-			else {
-				if(ti.curx==ti.winright-ti.winleft+1) {
-					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-					gotoxy(1,ti.cury+1);
-				}
-				else {
-					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-					gotoxy(ti.curx+1,ti.cury);
-				}
-			}
-			break;
-	}
-	return(ch);
-#endif
 }
 
 int curs_getch(void)
@@ -1113,20 +952,23 @@ int curs_getch(void)
 	return(ch);
 }
 
-int curs_getche(void)
-{
-	int ch;
-
-	if(curs_nextgetch)
-		return(curs_getch());
-	ch=curs_getch();
-	if(ch)
-		putch(ch);
-	return(ch);
-}
-
 void curs_textmode(int mode)
 {
+	getmaxyx(stdscr, cio_textinfo.screenheight, cio_textinfo.screenwidth);
+	if(has_colors())
+		cio_textinfo.currmode=COLOR_MODE;
+	else
+		cio_textinfo.currmode=MONO;
+
+	cio_textinfo.winleft=1;
+	cio_textinfo.wintop=1;
+	cio_textinfo.winright=cio_textinfo.screenwidth;
+	cio_textinfo.winbottom=cio_textinfo.screenheight;
+	cio_textinfo.attribute=7;
+	cio_textinfo.normattr=7;
+	cio_textinfo.curx=1;
+	cio_textinfo.cury=1;
+
 	return;
 }
 
@@ -1153,4 +995,9 @@ int curs_showmouse(void)
 	return(-1);
 */
 	return(-1);
+}
+
+int curs_beep(void)
+{
+	return(beep());
 }

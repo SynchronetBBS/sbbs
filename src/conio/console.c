@@ -1561,6 +1561,19 @@ init_mode(int mode)
 
 	CurrMode=mode;
 	console_new_mode=NO_NEW_MODE;
+
+	cio_textinfo.attribute=7;
+	cio_textinfo.normattr=7;
+	cio_textinfo.currmode=mode;
+	cio_textinfo.screenheight=DpyRows+1;
+	cio_textinfo.screenwidth=DpyCols;
+	cio_textinfo.curx=1;
+	cio_textinfo.cury=1;
+	cio_textinfo.winleft=1;
+	cio_textinfo.wintop=1;
+	cio_textinfo.winright=cio_textinfo.screenwidth;
+	cio_textinfo.winbottom=cio_textinfo.screenheight;
+
 	sem_post(&console_mode_changed);
     return(0);
 }
@@ -1794,6 +1807,7 @@ console_init()
 
 	_beginthread(video_async_event,1<<16,NULL);
 	_beginthread(mouse_event,1<<16,NULL);
+
 	return(0);
 }
 

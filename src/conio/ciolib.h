@@ -200,6 +200,8 @@ struct text_info {
 	unsigned char cury;           /* y-coordinate in current window */
 };
 
+extern struct text_info cio_textinfo;
+
 typedef struct {
 	int		mode;
 	int		mouse;

@@ -50,8 +50,6 @@
 #include "vidmodes.h"
 #include "win32cio.h"
 
-const int 	cio_tabs[10]={9,17,25,33,41,49,57,65,73,80};
-
 struct keyvals {
 	int	VirtualKeyCode
 		,Key
@@ -154,13 +152,11 @@ const struct keyvals keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
+/* Mouse related stuff */
 static int domouse=1;
 static DWORD last_state=0;
 static int LastX=-1, LastY=-1;
-static int xpos=1;
-static int ypos=1;
 
-static int currattr=7;
 static int modeidx=3;
 
 #if defined(_DEBUG)
@@ -187,7 +183,7 @@ static void dprintf(const char* fmt, ...)
 #endif /* _DEBUG */
 }
 
-WORD DOStoWinAttr(int newattr)
+static WORD DOStoWinAttr(int newattr)
 {
 	WORD ret=0;
 
@@ -210,7 +206,7 @@ WORD DOStoWinAttr(int newattr)
 	return(ret);
 }
 
-unsigned char WintoDOSAttr(WORD newattr)
+static unsigned char WintoDOSAttr(WORD newattr)
 {
 	unsigned char ret=0;
 
@@ -233,7 +229,7 @@ unsigned char WintoDOSAttr(WORD newattr)
 	return(ret);
 }
 
-int win32_getchcode(WORD code, DWORD state)
+static int win32_getchcode(WORD code, DWORD state)
 {
 	int i;
 
@@ -257,7 +253,7 @@ int win32_getchcode(WORD code, DWORD state)
 	return(0);
 }
 
-int win32_keyboardio(int isgetch)
+static int win32_keyboardio(int isgetch)
 {
 	INPUT_RECORD input;
 	DWORD num=0;
@@ -382,16 +378,6 @@ int win32_getch(void)
 	int ret=win32_keyboardio(TRUE);
 	dprintf("win32_getch = 0x%02X (%u)", (BYTE)ret, (BYTE)ret);
 	return(ret);
-}
-
-int win32_getche(void)
-{
-	int ch;
-
-	ch=win32_getch();
-	if(ch)
-		putch(ch);
-	return(ch);
 }
 
 #ifndef ENABLE_EXTENDED_FLAGS
@@ -543,6 +529,18 @@ void win32_textmode(int mode)
 		SetConsoleWindowInfo(h,TRUE,&rc);
 		SetConsoleScreenBufferSize(h,sz);
 	}
+
+	cio_textinfo.attribute=7;
+	cio_textinfo.normattr=7;
+	cio_textinfo.currmode=vparams[modeisx].mode;
+	cio_textinfo.screenheightsz.Y;
+	cio_textinfo.screenwidth=sz.X;
+	cio_textinfo.curx=1;
+	cio_textinfo.cury=1;
+	cio_textinfo.winleft=1;
+	cio_textinfo.wintop=1;
+	cio_textinfo.winright=cio_textinfo.screenwidth;
+	cio_textinfo.winbottom=cio_textinfo.screenheight;
 }
 
 int win32_gettext(int left, int top, int right, int bottom, void* buf)
@@ -577,44 +575,17 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	return 1;
 }
 
-void win32_gettextinfo(struct text_info* info)
-{
-	info->currmode=vparams[modeidx].mode;
-	info->curx=xpos;
-	info->cury=ypos;
-	info->attribute=currattr;
-	info->screenheight=vparams[modeidx].rows;
-	info->screenwidth=vparams[modeidx].cols;
-}
-
 void win32_gotoxy(int x, int y)
 {
 	COORD	cp;
 	HANDLE	h;
 
-	xpos=x;
-	ypos=y;
+	cio_terminfo.curx=x;
+	cio_terminfo.cury=y;
 	cp.X=x-1;
 	cp.Y=y-1;
 	if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleCursorPosition(h,cp);
-}
-
-void win32_highvideo(void)
-{
-	win32_textattr(currattr|0x08);
-}
-
-
-void win32_lowvideo(void)
-{
-	win32_textattr(currattr&0xf8);
-}
-
-
-void win32_normvideo(void)
-{
-	win32_textattr(7);
 }
 
 int win32_puttext(int left, int top, int right, int bottom, void* buf)
@@ -649,24 +620,6 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	return 1;
 }
 
-void win32_textattr(int newattr)
-{
-	/* SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),DOStoWinAttr(newattr)); */
-	currattr=newattr;
-}
-
-
-void win32_textbackground(int newcolor)
-{
-	win32_textattr((currattr&0x0f)|((newcolor&0xf0)<<4));
-}
-
-
-void win32_textcolor(int newcolor)
-{
-	win32_textattr((currattr&0xf0)|((newcolor&0x0f)<<4));
-}
-
 void win32_setcursortype(int type)
 {
 	HANDLE h;
@@ -690,84 +643,6 @@ void win32_setcursortype(int type)
 	}
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleCursorInfo(h,&ci);
-}
-
-int win32_wherex(void)
-{
-	return(xpos);
-}
-
-int win32_wherey(void)
-{
-	return(ypos);
-}
-
-int win32_putch(int ch)
-{
-	struct text_info ti;
-	unsigned char buf[2];
-	int i;
-
-	buf[0]=ch;
-	buf[1]=currattr;
-
-	switch(ch) {
-		case '\r':
-			gotoxy(1,wherey());
-			break;
-		case '\n':
-			gettextinfo(&ti);
-			if(ti.cury==ti.winbottom-ti.wintop+1)
-				wscroll();
-			else
-				gotoxy(ti.curx,ti.cury+1);
-			break;
-		case '\b':
-			gettextinfo(&ti);
-			if(ti.curx>1) {
-				buf[0]=' ';
-				gotoxy(ti.curx-1,ti.cury);
-				puttext(ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,ti.winleft+ti.curx-2, ti.wintop+ti.cury-1,buf);
-			}
-			break;
-		case 7:		/* Bell */
-			MessageBeep(MB_OK);
-			break;
-		case '\t':
-			for(i=0;i<10;i++) {
-				if(cio_tabs[i]>wherex()) {
-					while(wherex()<cio_tabs[i]) {
-						putch(' ');
-					}
-					break;
-				}
-			}
-			if(i==10) {
-				putch('\r');
-				putch('\n');
-			}
-			break;
-		default:
-			gettextinfo(&ti);
-			if(ti.cury==ti.winbottom-ti.wintop+1
-					&& ti.curx==ti.winright-ti.winleft+1) {
-				puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-				wscroll();
-				gotoxy(1,ti.cury);
-			}
-			else {
-				if(ti.curx==ti.winright-ti.winleft+1) {
-					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-					gotoxy(1,ti.cury+1);
-				}
-				else {
-					puttext(ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,ti.winleft+ti.curx-1, ti.wintop+ti.cury-1,buf);
-					gotoxy(ti.curx+1,ti.cury);
-				}
-			}
-			break;
-	}
-	return(ch);
 }
 
 void win32_settitle(const char *title)
@@ -817,9 +692,4 @@ char *win32_getcliptext(void)
 	CloseClipboard();
 	
 	return(ret);
-}
-
-void win32_delay(long msec)
-{
-	SLEEP(msec);
 }

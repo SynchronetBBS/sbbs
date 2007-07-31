@@ -199,8 +199,6 @@ const struct sdl_keyvals sdl_keyval[] =
 	{SDLK_BACKQUOTE, '`', '~', 0, 0x2900},
 	{0, 0, 0, 0, 0}	/** END **/
 };
-const int sdl_tabs[10]={9,17,25,33,41,49,57,65,73,80};
-
 /* *nix copy/paste stuff */
 SDL_sem	*sdl_pastebuf_set;
 SDL_sem	*sdl_pastebuf_copied;
@@ -498,6 +496,18 @@ int sdl_init_mode(int mode)
 	    vstat.vmem[i] = 0x0700;
 	vstat.currattr=7;
 
+	cio_textinfo.attribute=7;
+	cio_textinfo.normattr=7;
+	cio_textinfo.currmode=mode;
+	cio_textinfo.screenheight=vstat.rows;
+	cio_textinfo.screenwidth=vstat.cols;
+	cio_textinfo.curx=1;
+	cio_textinfo.cury=1;
+	cio_textinfo.winleft=1;
+	cio_textinfo.wintop=1;
+	cio_textinfo.winright=cio_textinfo.screenwidth;
+	cio_textinfo.winbottom=cio_textinfo.screenheight;
+
 	vstat.mode=mode;
 	sdl.mutexV(sdl_vstatlock);
 
@@ -677,12 +687,6 @@ int sdl_gettext(int sx, int sy, int ex, int ey, void *fill)
 }
 
 /* Called from main thread only */
-void sdl_textattr(int attr)
-{
-	vstat.currattr=attr;
-}
-
-/* Called from main thread only */
 int sdl_kbhit(void)
 {
 	int ret;
@@ -694,105 +698,6 @@ int sdl_kbhit(void)
 }
 
 /* Called from main thread only */
-void sdl_delay(long msec)
-{
-	SLEEP(msec);
-}
-
-/* Called from main thread only */
-int sdl_wherey(void)
-{
-	return(vstat.curs_row+1);
-}
-
-/* Called from main thread only */
-int sdl_wherex(void)
-{
-	return(vstat.curs_col+1);
-}
-
-/* Called from BOTH THREADS */
-int sdl_beep(void)
-{
-	/* ToDo BEEP! */
-	BEEP(440,100);
-	return(0);
-}
-
-/* Put the character _c on the screen at the current cursor position. 
- * The special characters return, linefeed, bell, and backspace are handled
- * properly, as is line wrap and scrolling. The cursor position is updated. 
- */
-/* Called from main thread only */
-int sdl_putch(int ch)
-{
-	struct text_info ti;
-	WORD sch;
-	int i;
-
-	sdl.mutexP(sdl_vstatlock);
-	sch=(vstat.currattr<<8)|ch;
-
-	switch(ch) {
-		case '\r':
-			gettextinfo(&ti);
-			vstat.curs_col=ti.winleft-1;
-			break;
-		case '\n':
-			gettextinfo(&ti);
-			if(wherey()==ti.winbottom-ti.wintop+1)
-				wscroll();
-			else
-				vstat.curs_row++;
-			break;
-		case '\b':
-			if(vstat.curs_col>0)
-				vstat.curs_col--;
-			sdl_draw_char((vstat.currattr<<8)|' ',vstat.curs_col,vstat.curs_row,TRUE);
-			break;
-		case 7:		/* Bell */
-			sdl_beep();
-			break;
-		case '\t':
-			for(i=0;i<10;i++) {
-				if(sdl_tabs[i]>wherex()) {
-					while(wherex()<sdl_tabs[i]) {
-						putch(' ');
-					}
-					break;
-				}
-			}
-			if(i==10) {
-				putch('\r');
-				putch('\n');
-			}
-			break;
-		default:
-			gettextinfo(&ti);
-			if(wherey()==ti.winbottom-ti.wintop+1
-					&& wherex()==ti.winright-ti.winleft+1) {
-				sdl_draw_char(sch,vstat.curs_col,vstat.curs_row,TRUE);
-				wscroll();
-				gotoxy(ti.winleft,wherey());
-			}
-			else {
-				if(wherex()==ti.winright-ti.winleft+1) {
-					sdl_draw_char(sch,vstat.curs_col,vstat.curs_row,TRUE);
-					gotoxy(ti.winleft,ti.cury+1);
-				}
-				else {
-					sdl_draw_char(sch,vstat.curs_col,vstat.curs_row,TRUE);
-					gotoxy(ti.curx+1,ti.cury);
-				}
-			}
-			break;
-	}
-	sdl.mutexV(sdl_vstatlock);
-
-	return(ch);
-}
-
-/* Called from main thread only */
 void sdl_gotoxy(int x, int y)
 {
 	sdl.mutexP(sdl_vstatlock);
@@ -801,19 +706,8 @@ void sdl_gotoxy(int x, int y)
 		vstat.curs_col=x-1;
 		sdl_user_func(SDL_USEREVENT_UPDATERECT,0,0,0,0);
 	}
-	sdl.mutexV(sdl_vstatlock);
-}
-
-/* Called from main thread only */
-void sdl_gettextinfo(struct text_info *info)
-{
-	sdl.mutexP(sdl_vstatlock);
-	info->currmode=vstat.mode;
-	info->screenheight=vstat.rows;
-	info->screenwidth=vstat.cols;
-	info->curx=sdl_wherex();
-	info->cury=sdl_wherey();
-	info->attribute=vstat.currattr;
+	cio_textinfo.curx=x;
+	cio_textinfo.cury=y;
 	sdl.mutexV(sdl_vstatlock);
 }
 
@@ -855,21 +749,6 @@ int sdl_getch(void)
 	}
 	sdl.mutexV(sdl_keylock);
 	return(ch);
-}
-
-/* Called from main thread only */
-int sdl_getche(void)
-{
-	int ch;
-
-	while(1) {
-		ch=sdl_getch();
-		if(ch) {
-			putch(ch);
-			return(ch);
-		}
-		sdl_getch();
-	}
 }
 
 /* Called from main thread only */
@@ -1001,7 +880,7 @@ void sdl_add_key(unsigned int keyval)
 	if(keyval <= 0xffff) {
 		sdl.mutexP(sdl_keylock);
 		if(sdl_keynext+1==sdl_key) {
-			sdl_beep();
+			beep();
 			sdl.mutexV(sdl_keylock);
 			return;
 		}
@@ -1009,7 +888,7 @@ void sdl_add_key(unsigned int keyval)
 			if(keyval==CIO_KEY_MOUSE)
 				sdl_pending_mousekeys++;
 			else
-				sdl_beep();
+				beep();
 			sdl.mutexV(sdl_keylock);
 			return;
 		}
