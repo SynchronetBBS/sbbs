@@ -106,6 +106,8 @@ function send(msg)
 	log("Sending: " + msg);
 	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
 		alert("send failure");
+	else
+		mswait(2000);	// Cyan: IRCd throttles clients that send text to the server too quickly
 }
 
 function expand_tabs(msg)
