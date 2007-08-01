@@ -141,7 +141,7 @@ You <b>can</b> allow specific hosts or users to relay e-mail through your mail s
 <i>Why can't I <b>send Internet e-mail</b> from my BBS?</i>
 <p>
 <b>Answer:</b>
-<br>You must have the Synchronet SendMail thread enabled in your Synchronet Mail Server configuration.
+<br>You must have the Synchronet <i>SendMail thread</i> enabled in your Synchronet Mail Server configuration.
 <br>If you <b>do not</b> see the following message in your Synchronet Mail Server window/log output when the server
 is started or recycled:</p>
 <tt>0000 SendMail thread started</tt>
@@ -197,7 +197,7 @@ SMTP authentication in order to allow relaying of mail.
 <br><tt>0000 !Delivery attempt #1 FAILED (somehost.org replied with: "553 Authentication required." instead of the expected reply: "250 ...")</tt>
 <p>Synchronet v3.12+ supports the <i>Plain</i>, <i>Login</i>, and <i>CRAM-MD5</i> methods of SMTP authentication when relaying
 mail through an external relay server. To enable SMTP authentication when relaying, add one of the <tt>RELAY_AUTH</tt> flags to the <tt>Options</tt> value in the
-<tt>[Mail]</tt> section of your <tt>ctrl/sbbs.ini</tt> file. Or, if running sbbsctrl-Win32, enable one of the authentication
+<tt>[Mail]</tt> section of your <tt>ctrl/sbbs.ini</tt> file. Or, if running SBBSCTRL-Win32, enable one of the authentication
 radio buttons on the "Relay" tab of the Mail Server Configuration dialog.
 <p>
 <li>You have a message in your outbound e-mail queue that is flagged as '<i>in transit</i>'. If you're 
@@ -230,7 +230,7 @@ public IP address from
 a remote location on the Internet. The remote Telnet client should see a successful connection and a text message similar to the following:</p>
 <tt>220 bbs.synchro.net Synchronet SMTP Server 1.362-Win32 Ready</tt>
 <p>You should also see evidence of the successful SMTP connection to the server in your Synchronet Mail Server window/log output.
-If you do not, then its likely that your firewall or Internet Service Provider is blocking incoming connections to TCP port 25.
+If you do not, then it's likely that your firewall or Internet Service Provider is blocking incoming connections to TCP port 25.
 Before concluding this is the case, verify that the remote Telnet client can connect to other SMTP servers first (e.g. <i>vert.synchro.net</i>, TCP port 25).
 If it cannot, then this remote client probably has restrictions on which (if any) connections he can make to TCP port 25.
 Try using a different, less restricted, remote Internet connection for your test.
@@ -339,9 +339,9 @@ these ports to your FTP server.
 <p>
 <b>Answer:</b><br>
 Some &quot;security&quot; software (e.g. firewall and anti-virus programs) will interfere with the inheritance of socket descriptors between processes. 
-One such program is the <b><i>ZoneAlarm Security Suite</i></b>. 
+One such program is the <b><i>ZoneAlarm Security Suite</i></b>. Another is <b><i>NOD32</b></i>.
 I don't know if this is an intentional security "feature" or a <b>design flaw</b>.
-If you have this (or similar) software installed, it must be completely un-installed for socket inheritance to work.
+If you have this (or similar) software installed, it may need to be disabled or <b>completely un-installed</b> for socket inheritance to work again.
 </p>
 
 <a name="bind"><hr></a>
