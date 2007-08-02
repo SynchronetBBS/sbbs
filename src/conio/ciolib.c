@@ -163,6 +163,7 @@ int try_x_init(int mode)
 		cio_api.setfont=x_setfont;
 		cio_api.getfont=x_getfont;
 		cio_api.loadfont=x_loadfont;
+		cio_api.beep=x_beep;
 
 		cio_api.kbhit=x_kbhit;
 		cio_api.getch=x_getch;
@@ -218,6 +219,7 @@ int try_ansi_init(int mode)
 		cio_api.getch=ansi_getch;
 		cio_api.textmode=ansi_textmode;
 		cio_api.ESCDELAY=&CIOLIB_ANSI_TIMEOUT;
+		cio_api.beep=ansi_beep;
 		return(1);
 	}
 	return(0);

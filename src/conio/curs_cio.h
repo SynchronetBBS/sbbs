@@ -40,6 +40,7 @@
 #endif
 
 #include "ciolib.h"
+#undef beep
 #undef getch
 #undef ungetch
 #undef getmouse
