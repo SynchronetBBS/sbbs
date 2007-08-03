@@ -679,7 +679,7 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+9;
 	}
-	else if(!strnicmp("ssh://",url,9)) {
+	else if(!strnicmp("ssh://",url,6)) {
 		bbs->conn_type=CONN_TYPE_SSH;
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
