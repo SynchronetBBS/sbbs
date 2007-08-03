@@ -116,6 +116,7 @@ for(i in builds) {
 	var build_dir = temp_dir + "/" + sub_dir;
 	var subject = system.platform + " build failure in " + sub_dir;
 
+	log(LOG_DEBUG,"Build " + i + " of " + builds.length);
 	if(sub_dir.length)
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
 	if(!chdir(build_dir)) {
@@ -130,6 +131,7 @@ for(i in builds) {
 		cmd_line += " " + builds[i][2];
 	log(LOG_INFO, "Executing: " + cmd_line);
 	var retval=system.exec(cmd_line.replace(/msdev/, msdev));
+	log(LOG_INFO, "Done: " + cmd_line);
 	if(retval) {
 		send_email(subject, 
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
@@ -201,13 +203,16 @@ function send_email(subject, body)
 	}
 
 	var hdr = { 
-		to: "sysop", 
-		to_ext: 1, 
 		from: "Synchronet testbuild.js", 
 		subject: subject
 	};
 
-	if(!msgbase.save_msg(hdr, body))
+	var rcpt_list = [
+		{to: "Rob Swindell", to_ext: 1},
+		{to: "Stephen Hurd", to_net_addr: "sysop@nix.synchro.net", to_net_type: NET_INTERNET }
+		];
+
+	if(!msgbase.save_msg(hdr, body, rcpt_list))
 		log(LOG_ERR, "!ERROR " + msgbase.last_error + " saving mail message");
 	else
 		log(LOG_INFO, "E-mail sent.");
