@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -345,9 +345,9 @@ int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 	else if(attr&ATTR_DIRECT) ch='d';
 	else ch='f';
 	if(dest.zone==sys_faddr.zone)		/* Default zone, use default outbound */
-		strcpy(outbound,cfg.outbound);
+		SAFECOPY(outbound,cfg.outbound);
 	else {								/* Inter-zone outbound is OUTBOUND.XXX */
-		sprintf(outbound,"%.*s.%03x"
+		SAFEPRINTF3(outbound,"%.*s.%03x"
 			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 		MKDIR(outbound);
 		backslash(outbound);
@@ -1640,9 +1640,9 @@ void pack_bundle(char *infile,faddr_t dest)
 		}
 
 		if(dest.zone==sys_faddr.zone)	/* Default zone, use default outbound */
-			strcpy(outbound,cfg.outbound);
+			SAFECOPY(outbound,cfg.outbound);
 		else {							/* Inter-zone outbound is OUTBOUND.XXX */
-			sprintf(outbound,"%.*s.%03x"
+			SAFEPRINTF3(outbound,"%.*s.%03x"
 				,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 			MKDIR(outbound);
 			backslash(outbound);
@@ -4826,7 +4826,8 @@ int main(int argc, char **argv)
 				if(addr.zone==sys_faddr.zone) { /* Default zone, use default outbound */
 					SAFECOPY(outbound,cfg.outbound);
 				} else {						 /* Inter-zone outbound is OUTBOUND.XXX */
-					SAFEPRINTF2(outbound,"%s.%03x",cfg.outbound,addr.zone);
+					SAFEPRINTF3(outbound,"%.*s.%03x"
+						,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
 					MKDIR(outbound);
 					backslash(outbound);
 				}
