@@ -1,6 +1,7 @@
             Synchronet Dynamic Domain Name System (DynDNS) Service
             ======================================================
 
+$Id$
 
 Introduction
 ------------
@@ -63,6 +64,8 @@ Directions:
 
    If you have a static IP address, one run (update) per month should be
    sufficient.
+
+   Make sure the "Enabled" is set to "Yes".
 
 4. After saving your changes in SCFG, and verifying that the BBS/Telnet Server
    has recycled, check the event log window or console output to verify that
