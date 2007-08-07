@@ -6,7 +6,7 @@ Documentation for fseditor.js
 fseditor.js is a Full Screen Editor (FSE) written in JS for Synchronet.
 
 The newest version of fseditor can always be download from:
-http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/src/exec/fseditor.js?rev=HEAD&content-type=text/plain
+http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/fseditor.js?rev=HEAD&content-type=text/plain
 
 To add fseditor.js to your FSE list, use the following settings:
 [JS FSE]
