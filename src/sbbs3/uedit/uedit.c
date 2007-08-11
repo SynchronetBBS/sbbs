@@ -1666,7 +1666,7 @@ int edit_user(scfg_t *cfg, int usernum)
 void free_opts(char **opt)
 {
 	int i;
-	for(i=0; i<(MAX_OPTS+1); i++)
+	for(i=0; i<(MAX_OPTS+1) && opt[i]!=NULL; i++)
 		FREE_AND_NULL(opt[i]);
 	free(opt);
 }
