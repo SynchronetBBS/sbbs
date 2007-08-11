@@ -202,7 +202,7 @@ void add_bruted(unsigned long name, char good, char *val, int save)
 		free(p);
 		return;
 	}
-	*(long *)p=name;
+	*(int32_t *)p=name;
 	p[4]=good;
 	strcpy(p+5,val);
 	new_bruted[bruted_len-1]=p;
@@ -221,7 +221,7 @@ int check_bruted(long name,char *val)
 	int i;
 
 	for(i=0; i<bruted_len; i++) {
-		if(*(long *)bruted[i]==name) {
+		if(*(int32_t *)bruted[i]==name) {
 			if(!strcmp(val,bruted[i]+5))
 				return(*(bruted[i]+4));
 		}
@@ -234,7 +234,7 @@ char *find_bruted(long name)
 	int i;
 
 	for(i=0; i<bruted_len; i++) {
-		if(*(long *)bruted[i]==name && *(bruted[i]+4))
+		if(*(int32_t *)bruted[i]==name && *(bruted[i]+4))
 			return(bruted[i]+5);
 	}
 	return(NULL);
@@ -257,7 +257,7 @@ char* bruteforce(unsigned long name)
 		return(ret);
 	}
 	memset(brute_buf,0,brute_len+1);
-	memset(brute_crc_buf,0,brute_len*sizeof(long));
+	memset(brute_crc_buf,0,brute_len*sizeof(int32_t));
 	printf("Brute forcing var_%08x\n",name);
 	this_crc=crc32(brute_buf,0);
 	for(;;) {
@@ -325,8 +325,8 @@ BRUTE_DONE:
 
 /* comparison function for var_table */
 static int vt_compare(const void *key, const void *table) {
-	if (*(unsigned long *)key == (*(struct var_table_t *)table).crc) return 0;
-	if (*(unsigned long *)key < (*(struct var_table_t *)table).crc) return -1;
+	if (*(uint32_t *)key == (*(struct var_table_t *)table).crc) return 0;
+	if (*(uint32_t *)key < (*(struct var_table_t *)table).crc) return -1;
 	return 1;
 }
 
@@ -2330,7 +2330,7 @@ int main(int argc, char **argv)
 				brute_buf=(char *)malloc(brute_len+1);
 				if(!brute_buf)
 					brute_len=0;
-				brute_crc_buf=(unsigned long *)malloc(brute_len*sizeof(unsigned long));
+				brute_crc_buf=(uint32_t *)malloc(brute_len*sizeof(uint32_t));
 				if(!brute_crc_buf) {
 					free(brute_buf);
 					brute_len=0;

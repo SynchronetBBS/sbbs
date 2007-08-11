@@ -135,7 +135,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->str_var=(char **)realloc(csi->str_var
 						,sizeof(char *)*csi->str_vars);
 					csi->str_var_name=(int32_t *)realloc(csi->str_var_name
-						,sizeof(long)*csi->str_vars);
+						,sizeof(int32_t)*csi->str_vars);
 					if(csi->str_var==NULL
 						|| csi->str_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local str var"
@@ -148,7 +148,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							csi->str_var=0; }
 						csi->str_vars=0; }
 					else {
-						csi->str_var_name[csi->str_vars-1]=*(long *)csi->ip;
+						csi->str_var_name[csi->str_vars-1]=*(int32_t *)csi->ip;
 						csi->str_var[csi->str_vars-1]=0; }
 					csi->ip+=4; /* Skip variable name */
 					return(0);
@@ -160,7 +160,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->int_var=(int32_t *)realloc(csi->int_var
 						,sizeof(char *)*csi->int_vars);
 					csi->int_var_name=(int32_t *)realloc(csi->int_var_name
-						,sizeof(long)*csi->int_vars);
+						,sizeof(int32_t)*csi->int_vars);
 					if(csi->int_var==NULL
 						|| csi->int_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local int var"
@@ -173,7 +173,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							csi->int_var=0; }
 						csi->int_vars=0; }
 					else {
-						csi->int_var_name[csi->int_vars-1]=*(long *)csi->ip;
+						csi->int_var_name[csi->int_vars-1]=*(int32_t *)csi->ip;
 						csi->int_var[csi->int_vars-1]=0; }
 					csi->ip+=4; /* Skip variable name */
 					return(0);
@@ -185,7 +185,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					global_str_var=(char **)realloc(global_str_var
 						,sizeof(char *)*global_str_vars);
 					global_str_var_name=(int32_t *)realloc(global_str_var_name
-						,sizeof(long)*global_str_vars);
+						,sizeof(int32_t)*global_str_vars);
 					if(global_str_var==NULL
 						|| global_str_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"global str var"
@@ -199,7 +199,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						global_str_vars=0; }
 					else {
 						global_str_var_name[global_str_vars-1]=
-							*(long *)csi->ip;
+							*(int32_t *)csi->ip;
 						global_str_var[global_str_vars-1]=0; }
 					csi->ip+=4; /* Skip variable name */
 					return(0);
@@ -211,7 +211,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					global_int_var=(int32_t *)realloc(global_int_var
 						,sizeof(char *)*global_int_vars);
 					global_int_var_name=(int32_t *)realloc(global_int_var_name
-						,sizeof(long)*global_int_vars);
+						,sizeof(int32_t)*global_int_vars);
 					if(global_int_var==NULL
 						|| global_int_var_name==NULL) { /* REALLOC failed */
 						errormsg(WHERE,ERR_ALLOC,"local int var"
@@ -225,7 +225,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						global_int_vars=0; }
 					else {
 						global_int_var_name[global_int_vars-1]
-							=*(long *)csi->ip;
+							=*(int32_t *)csi->ip;
 						global_int_var[global_int_vars-1]=0; }
 					csi->ip+=4; /* Skip variable name */
 					return(0);
@@ -242,7 +242,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4; /* Skip variable name */
 					if(lp)
-						*lp=*(long *)csi->ip;
+						*lp=*(int32_t *)csi->ip;
 					csi->ip+=4; /* Skip value */
 					return(0);
 				case COMPARE_STR_VAR:
@@ -303,7 +303,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case COMPARE_INT_VAR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4; /* Skip variable name */
-					l=*(long *)csi->ip;
+					l=*(int32_t *)csi->ip;
 					csi->ip+=4; /* Skip static value */
 					if(!lp) {	/* Unknown variable */
 						csi->logic=LOGIC_FALSE;
@@ -586,7 +586,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					i=*(csi->ip-1);
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					l=*(long *)csi->ip;
+					l=*(int32_t *)csi->ip;
 					csi->ip+=4;
 					if(!lp)
 						return(0);
@@ -624,7 +624,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					i=*(csi->ip-1);
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					l=*(long *)csi->ip;
+					l=*(int32_t *)csi->ip;
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(!lp)
@@ -693,7 +693,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case RANDOM_INT_VAR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					l=*(long *)csi->ip;
+					l=*(int32_t *)csi->ip;
 					csi->ip+=4;
 					if(lp)
 						*lp=sbbs_random(l);
@@ -811,7 +811,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							getstr(buf,i,K_LINE);
 							break;
 						case GETSTR_MODE:
-							l=*(long *)csi->ip;
+							l=*(int32_t *)csi->ip;
 							csi->ip+=4;
 							if(l&K_EDIT) {
 								if(pp && *pp)
@@ -910,7 +910,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						printtail(*pp,j,i);
 					return(0);
 				case TELNET_GATE_VAR:
-					l=*(ulong *)(csi->ip);	// Mode
+					l=*(uint32_t *)(csi->ip);	// Mode
 					csi->ip+=4;
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
@@ -918,7 +918,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						telnet_gate(*pp,l);
 					return(0);
 				case TELNET_GATE_STR:
-					l=*(ulong *)(csi->ip);	// Mode
+					l=*(uint32_t *)(csi->ip);	// Mode
 					csi->ip+=4;
 					strcpy(str,(char *)csi->ip);
 					while(*(csi->ip++));	/* Find NULL */
@@ -1222,7 +1222,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(*(csi->ip-5)==FIO_SEEK) {
-						l=*(long *)csi->ip;
+						l=*(int32_t *)csi->ip;
 						csi->ip+=4; }
 					else {
 						lp2=getintvar(csi,*(int32_t *)csi->ip);
@@ -1243,7 +1243,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(*(csi->ip-5)==FIO_LOCK) {
-						l=*(long *)csi->ip;
+						l=*(int32_t *)csi->ip;
 						csi->ip+=4; 
 					} else {
 						lp2=getintvar(csi,*(int32_t *)csi->ip);
@@ -1263,7 +1263,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(*(csi->ip-5)==FIO_UNLOCK) {
-						l=*(long *)csi->ip;
+						l=*(int32_t *)csi->ip;
 						csi->ip+=4; 
 					} else {
 						lp2=getintvar(csi,*(int32_t *)csi->ip);
@@ -1283,7 +1283,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(*(csi->ip-5)==FIO_SET_LENGTH) {
-						l=*(long *)csi->ip;
+						l=*(int32_t *)csi->ip;
 						csi->ip+=4; 
 					} else {
 						lp2=getintvar(csi,*(int32_t *)csi->ip);
@@ -1428,7 +1428,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				csi->switch_val=*lp; }
 			return(0);
 		case CS_CASE:
-			l=*(long *)csi->ip;
+			l=*(int32_t *)csi->ip;
 			csi->ip+=4;
 			if(csi->misc&CS_IN_SWITCH && csi->switch_val!=l)
 				skipto(csi,CS_NEXTCASE);
@@ -1441,36 +1441,36 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 			csi->ip+=i;
 			return(0);
 		case CS_TOGGLE_USER_MISC:
-			useron.misc^=*(ulong *)csi->ip;
+			useron.misc^=*(uint32_t *)csi->ip;
 			putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,tmp,16));
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_MISC:
-			if((useron.misc&*(ulong *)csi->ip)==*(ulong *)csi->ip)
+			if((useron.misc&*(uint32_t *)csi->ip)==*(uint32_t *)csi->ip)
 				csi->logic=LOGIC_TRUE;
 			else
 				csi->logic=LOGIC_FALSE;
 			csi->ip+=4;
 			return(0);
 		case CS_TOGGLE_USER_CHAT:
-			useron.chat^=*(ulong *)csi->ip;
+			useron.chat^=*(uint32_t *)csi->ip;
 			putuserrec(&cfg,useron.number,U_CHAT,8,ultoa(useron.chat,tmp,16));
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_CHAT:
-			if((useron.chat&*(ulong *)csi->ip)==*(ulong *)csi->ip)
+			if((useron.chat&*(uint32_t *)csi->ip)==*(uint32_t *)csi->ip)
 				csi->logic=LOGIC_TRUE;
 			else
 				csi->logic=LOGIC_FALSE;
 			csi->ip+=4;
 			return(0);
 		case CS_TOGGLE_USER_QWK:
-			useron.qwk^=*(ulong *)csi->ip;
+			useron.qwk^=*(uint32_t *)csi->ip;
 			putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,tmp,16));
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_QWK:
-			if((useron.qwk&*(ulong *)csi->ip)==*(ulong *)csi->ip)
+			if((useron.qwk&*(uint32_t *)csi->ip)==*(uint32_t *)csi->ip)
 				csi->logic=LOGIC_TRUE;
 			else
 				csi->logic=LOGIC_FALSE;
@@ -1523,8 +1523,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case sizeof(short):
 					*((short *)(csi->ip+i))=(short)l;
 					break;
-				case sizeof(long):
-					*((long *)(csi->ip+i))=l;
+				case sizeof(int32_t):
+					*((int32_t *)(csi->ip+i))=l;
 					break;
 				default:
 					errormsg(WHERE,ERR_CHK,"length",*(csi->ip-1));
