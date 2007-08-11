@@ -1004,6 +1004,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					errormsg(WHERE,ERR_CHK,"var sub-instruction",*(csi->ip-1));
 					return(0); }
 
+		/* TODO: Not even vaugely 64-bit happy */
 		case CS_FIO_FUNCTION:
 			switch(*(csi->ip++)) {	/* sub-op-code stored as next byte */
 				case FIO_OPEN:
