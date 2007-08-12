@@ -242,7 +242,7 @@ char *find_bruted(long name)
 
 char* bruteforce(unsigned long name)
 {
-	long	this_crc=0;
+	uint32_t	this_crc=0;
 	char	*ret;
 	int	counter=0;
 	unsigned char	*pos;
