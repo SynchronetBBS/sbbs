@@ -79,22 +79,22 @@ void MD5CALL MD5_open(MD5 *md5)
 */
 
 #define FF(a, b, c, d, x, s, ac) { \
- (a) += F((b), (c), (d)) + (x) + (UINT4)(ac); \
+ (a) += F((b), (c), (d)) + (x) + (uint32_t)(ac); \
  (a) = ROTATE_LEFT((a), (s)); \
  (a) += (b); \
   }
 #define GG(a, b, c, d, x, s, ac) { \
- (a) += G((b), (c), (d)) + (x) + (UINT4)(ac); \
+ (a) += G((b), (c), (d)) + (x) + (uint32_t)(ac); \
  (a) = ROTATE_LEFT((a), (s)); \
  (a) += (b); \
   }
 #define HH(a, b, c, d, x, s, ac) { \
- (a) += H((b), (c), (d)) + (x) + (UINT4)(ac); \
+ (a) += H((b), (c), (d)) + (x) + (uint32_t)(ac); \
  (a) = ROTATE_LEFT((a), (s)); \
  (a) += (b); \
   }
 #define II(a, b, c, d, x, s, ac) { \
- (a) += I((b), (c), (d)) + (x) + (UINT4)(ac); \
+ (a) += I((b), (c), (d)) + (x) + (uint32_t)(ac); \
  (a) = ROTATE_LEFT((a), (s)); \
  (a) += (b); \
   }
@@ -102,9 +102,9 @@ void MD5CALL MD5_open(MD5 *md5)
 
 /* MD5 basic transformation. Transforms state based on block. */
 
-static void MD5Transform(UINT4 state[4], const BYTE block[64])
+static void MD5Transform(uint32_t state[4], const BYTE block[64])
 {
-  UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[MD5_DIGEST_SIZE];
+  uint32_t a = state[0], b = state[1], c = state[2], d = state[3], x[MD5_DIGEST_SIZE];
   /* Move contents of block to x, putting bytes in little-endian order. */
   #ifdef LITTLE_ENDIAN
     memcpy(x, block, 64);
@@ -113,8 +113,8 @@ static void MD5Transform(UINT4 state[4], const BYTE block[64])
     unsigned int i, j;
     for (i = j = 0; i < MD5_DIGEST_SIZE; i++, j+= 4)
     {
-      x[i] = (UINT4) block[j] | (UINT4) block[j+1] << 8 |
-        (UINT4) block[j+2] << 16 | (UINT4) block[j+3] << 24;
+      x[i] = (uint32_t) block[j] | (uint32_t) block[j+1] << 8 |
+        (uint32_t) block[j+2] << 16 | (uint32_t) block[j+3] << 24;
     }
   }
   #endif
@@ -200,9 +200,9 @@ void MD5CALL MD5_digest(MD5 *md5, const void *input, size_t inputLen)
   /* Compute number of bytes mod 64 */
   index = (unsigned int)((md5->count[0] >> 3) & 0x3F);
   /* Update number of bits */
-  if ((md5->count[0] += ((UINT4)inputLen << 3)) < ((UINT4)inputLen << 3))
+  if ((md5->count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3))
     md5->count[1]++;
-  md5->count[1] += ((UINT4)inputLen >> 29);
+  md5->count[1] += ((uint32_t)inputLen >> 29);
   partLen = 64 - index;
   /* Transform as many times as possible.*/
   if (inputLen >= partLen)
@@ -224,7 +224,7 @@ void MD5CALL MD5_digest(MD5 *md5, const void *input, size_t inputLen)
 */
 
 #ifdef LITTLE_ENDIAN
-#define ENCODE(p,n) *(UINT4 *)(p) = n
+#define ENCODE(p,n) *(uint32_t *)(p) = n
 #else
 #define ENCODE(p,n) (p)[0]=n,(p)[1]=n>>8,(p)[2]=n>>16,(p)[3]=n>>24
 #endif

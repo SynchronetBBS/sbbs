@@ -116,7 +116,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 				return(buf);
 			}
 			smb_fread(smb,lzhbuf,length,smb->sdt_fp);
-			lzhlen=*(long*)lzhbuf;
+			lzhlen=*(int32_t*)lzhbuf;
 			if((p=(char*)realloc(buf,l+lzhlen+3L))==NULL) {
 				sprintf(smb->last_error
 					,"realloc failure of %ld bytes for text buffer"

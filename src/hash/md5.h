@@ -33,20 +33,18 @@ documentation and/or software.
 #define H__MD5
 
 #include <stddef.h>		/* size_t */
+#include <gen_defs.h>	/* uint32_t */
 
 #define MD5_DIGEST_SIZE		16
 
-#ifndef UINT4
-	typedef unsigned long UINT4;
-#endif
 #ifndef BYTE
 	typedef unsigned char BYTE;
 #endif
 
 typedef struct
 {
-  UINT4	state[4];
-  UINT4	count[2];
+  uint32_t	state[4];
+  uint32_t	count[2];
   BYTE	buffer[64];
 } MD5;
 
