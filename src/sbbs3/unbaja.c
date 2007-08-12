@@ -259,7 +259,7 @@ char* bruteforce(unsigned long name)
 	memset(brute_buf,0,brute_len+1);
 	memset(brute_crc_buf,0,brute_len*sizeof(int32_t));
 	printf("Brute forcing var_%08x\n",name);
-	this_crc=crc32(brute_buf,0);
+	this_crc=crc32((char *)brute_buf,0);
 	for(;;) {
 		pos=brute_buf+l;
 		if(pos>brute_buf) {
