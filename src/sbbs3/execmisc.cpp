@@ -1383,6 +1383,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(pp && *pp && lp) {
+						/* 64-bit dirty */
 						*lp=(long)opendir((char *)*pp);
 						if(*lp)
 							csi->logic=LOGIC_TRUE; }
@@ -1394,6 +1395,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
 					if(pp && lp) {
+						/* 64-bit dirty */
 						de=readdir((DIR *)(*lp));
 						if(de!=NULL) {
 							csi->logic=LOGIC_TRUE;
@@ -1403,6 +1405,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(lp) {
+						/* 64-bit dirty */
 						rewinddir((DIR *)(*lp));
 						csi->logic=LOGIC_TRUE; }
 					else
@@ -1411,6 +1414,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case CLOSE_DIR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
+					/* 64-bit dirty */
 					if(lp && closedir((DIR *)(*lp))==0)
 						csi->logic=LOGIC_TRUE;
 					else
