@@ -31,6 +31,7 @@ var IPPORT_DISCARD          =9
 var IPPORT_SYSTAT           =11
 var IPPORT_DAYTIME          =13
 var IPPORT_NETSTAT          =15
+var IPPORT_MSP				=18				/* Message Send Protocol */
 var IPPORT_FTP              =21
 var IPPORT_TELNET           =23
 var IPPORT_SMTP             =25
