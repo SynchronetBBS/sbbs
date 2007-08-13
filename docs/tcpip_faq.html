@@ -33,22 +33,21 @@ to Internet clients and which ports you have configured those servers and servic
 <p>The default Synchronet installation enables servers and services on the following ports:
 <p>
 <table border=1>
-<tr valign="top" align="left"><th>Protocol<th>Port<th>Comments
-<tr valign="top"><td nowrap>Telnet<td nowrap>TCP 23<td>For Telnet logins (highly recommended)
-<tr valign="top"><td nowrap>SSH<td nowrap>TCP 22<td>For SecureShell logins (recommended)
-<tr valign="top"><td>RLogin<td nowrap>TCP 513<td>Optional for quick-login from RLogin clients (e.g. SyncTerm)
-<tr valign="top"><td>SMTP<td nowrap>TCP 25<td>Necessary for receiving Internet e-mail and inter-bbs instant messages
-<tr valign="top"><td>POP3<td nowrap>TCP 110<td>Allows BBS users to check their e-mail using standard Internet mail clients (e.g. Outlook Express)
-<tr valign="top"><td>FTP<td nowrap>TCP 21<td>Allows access to the BBS file/download areas using a standard FTP client or web browser
-<tr valign="top"><td>HTTP<td nowrap>TCP 80<td>Required for access to the BBS's web server
-<tr valign="top"><td>NNTP<td nowrap>TCP 119<td>Allows BBS users to read and post messages using standard news readers/clients
-<tr valign="top"><td>Gopher<td nowrap>TCP 70<td>Archaic protocol allows reading of messages and other BBS info
-<tr valign="top"><td>Finger<td nowrap>TCP 79<td>Allows remote querying of BBS user info, who's online, and other BBS info
-<tr valign="top"><td>Finger<td nowrap>UDP 79<td>For use with the Synchronet inter-bbs instant message service
-<tr valign="top"><td>IRC<td nowrap>TCP 6667<td>Allows Internet Relay Chat (IRC) clients to connect to your BBS
-<tr valign="top"><td>Active Users<td nowrap>TCP 11<td>Allows remote querying of who's online
-<tr valign="top"><td>Message Send Protocol<td nowrap>TCP 18<td>Allows incoming IMs without SMTP connectivity
-<tr valign="top"><td>Quote of the Dat Protocol<td nowrap>TCP 17<td>Allows remote querying of the current automessage
+<tr valign="top" align="left"><th>Protocol<th align="center">TCP<th align="center">UDP<th>Comments
+<tr valign="top"><td>Telnet<td align="center">23<td align="center">-<td>For Telnet logins (highly recommended)
+<tr valign="top"><td>SSH<td align="center">22<td align="center">-<td>For SecureShell logins (recommended)
+<tr valign="top"><td>RLogin<td align="center">513<td align="center">-<td>Optional for quick-login from RLogin clients (e.g. SyncTerm)
+<tr valign="top"><td>SMTP<td align="center">25<td align="center">-<td>Necessary for receiving Internet e-mail and inter-BBS instant messages
+<tr valign="top"><td>POP3<td align="center">110<td align="center">-<td>Allows BBS users to check their e-mail using standard Internet mail clients (e.g. Outlook Express)
+<tr valign="top"><td>FTP<td align="center">21<td align="center">-<td>Allows access to the BBS file/download areas using a standard FTP client or web browser
+<tr valign="top"><td>HTTP<td align="center">80<td align="center">-<td>Required for access to the BBS's web server
+<tr valign="top"><td>NNTP<td align="center">119<td align="center">-<td>Allows BBS users to read and post messages using standard news readers/clients
+<tr valign="top"><td>Gopher<td align="center">70<td align="center">-<td>Archaic protocol allows reading of messages and other BBS info
+<tr valign="top"><td>IRC<td align="center">6667<td align="center">-<td>Allows Internet Relay Chat (IRC) clients to connect to your BBS
+<tr valign="top"><td>Finger<td align="center">79<td align="center">79<td>Allows remote querying of BBS user info, who's online, and other BBS info
+<tr valign="top"><td>SYSTAT<td align="center">11<td align="center">11<td>Allows remote querying of who's online (aka Active Users)
+<tr valign="top"><td>QOTD<td align="center">17<td align="center">17<td>Allows remote querying of the current auto-message (aka Quote Of The Day)
+<tr valign="top"><td>MSP<td align="center">18<td align="center">18<td>Allows incoming inter-BBS instant messages without SMTP connectivity
 </table>
 <p>Enabling connectivity to Synchronet through your firewall is <b>no different</b> than enabling connectivity to any other TCP/IP server. Follow your
 firewall documentation for forwarding or opening ports for TCP/IP servers located "behind" the firewall. Your firewall may have the option of placing
