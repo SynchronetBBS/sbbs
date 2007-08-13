@@ -143,7 +143,7 @@ telegram_buf += message;
 /* TODO cache cookies and prevent dupes */
 if(recipient != "") {
 	if(to_node) {
-		if(system.node_list[to_node].useron==usernum) {
+		if(system.node_list[to_node-1].useron==usernum) {
 			send_response=system.put_node_message(to_node, telegram_buf);
 			log("Attempt to send node message: "+(send_response?"Success":"Failure"));
 		}
