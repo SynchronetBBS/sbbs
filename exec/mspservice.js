@@ -22,7 +22,7 @@ load("nodedefs.js");
 
 var output_buf = "";
 var version=0;
-var success=false;
+var send_response=false;
 
 // Write a string to the client socket
 function write(str)
@@ -33,7 +33,7 @@ function write(str)
 // Write all the output at once
 function flush()
 {
-	if(version==1 || success)
+	if(version==1 || send_response)
 		client.socket.send(output_buf);
 }
 
@@ -87,6 +87,7 @@ if(client.socket.type==SOCK_DGRAM)
 switch(b) {
 	case 65:
 		version=1;
+		send_response=1;
 		break;
 	case 66:
 		version=2;
@@ -141,18 +142,17 @@ telegram_buf += message;
 
 /* TODO cache cookies and prevent dupes */
 if(recipient != "") {
-	log("Recipient specified: "+recipient);
 	if(to_node) {
 		if(system.node_list[to_node].useron==usernum) {
-			success=system.put_node_message(to_node, telegram_buf);
-			log("Attempt to send node message: "+(success?"Success":"Failure"));
+			send_response=system.put_node_message(to_node, telegram_buf);
+			log("Attempt to send node message: "+(send_response?"Success":"Failure"));
 		}
 		else
 			log("Cannot send to user "+recipient+" on node "+to_node);
 	}
 	else {
-		success=system.put_telegram(usernum, telegram_buf);
-		log("Attempt to send telegram: "+(success?"Success":"Failure"));
+		send_response=system.put_telegram(usernum, telegram_buf);
+		log("Attempt to send telegram: "+(send_response?"Success":"Failure"));
 	}
 }
 else if(to_node) {
