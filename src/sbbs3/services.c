@@ -1463,6 +1463,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 	char		cmd[INI_MAX_VALUE_LEN];
 	char		host[INI_MAX_VALUE_LEN];
 	char		prot[INI_MAX_VALUE_LEN];
+	char		portstr[INI_MAX_VALUE_LEN];
 	char		services_ini[MAX_PATH+1];
 	char**		sec_list;
 	str_list_t	list;
@@ -1488,13 +1489,26 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 		SAFECOPY(serv.protocol,iniGetString(list,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.socket=INVALID_SOCKET;
 		serv.interface_addr=iniGetIpAddress(list,sec_list[i],"Interface",startup->interface_addr);
-		serv.port=iniGetShortInt(list,sec_list[i],"Port",0);
 		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",0);
 		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
 		serv.stack_size=iniGetInteger(list,sec_list[i],"StackSize",0);
 		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,0);
 		serv.log_level = iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
+
+		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
+		if(isdigit(*p))
+			serv.port=(ushort)strtol(p,NULL,0);
+		else {
+			struct servent* servent = getservbyname(p,serv.options&SERVICE_OPT_UDP ? "udp":"tcp");
+			if(servent!=NULL)
+				serv.port = ntohs(servent->s_port);
+		}
+
+		if(serv.port==0) {
+			lprintf(LOG_WARNING,"Ignoring service with invalid port (%s): %s",p, sec_list[i]);
+			continue;
+		}
 
 		if(serv.cmd[0]==0) {
 			lprintf(LOG_WARNING,"Ignoring service with no command: %s",sec_list[i]);
