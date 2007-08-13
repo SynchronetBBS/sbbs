@@ -77,15 +77,9 @@ function putsmsg(usernumber, message)
 	file.close();
 
 	for(i in system.node_list) {     /* flag node if user on that msg waiting */
-log("Checking node "+i);
-log(usernumber + " == "+system.node_list[i].useron);
-log(system.node_list[i].status+" == "+NODE_INUSE);
-log(system.node_list[i].status+" == "+NODE_QUIET);
-log("Bit: "+(system.node_list[i].misc & NODE_MSGW));
 		if(system.node_list[i].useron==usernumber 
 				&& (system.node_list[i].status == NODE_INUSE || system.node_list[i].status == NODE_QUIET)
 				&& !(system.node_list[i].misc & NODE_MSGW)) {
-log("Setting but for node "+i);
 			system.node_list[i].misc |= NODE_MSGW;
 		}
 	}
