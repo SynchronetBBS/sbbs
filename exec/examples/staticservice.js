@@ -2,11 +2,6 @@
 
 // Example Synchronet "Static" Service module
 
-// You configure it by adding a line to your ctrl/services.cfg file:
-
-// ;protocol    port    max_clients     options(hex)    command-line
-// static	8001	10		802		staticservice.js
-
 while(!server.terminated) {
 
 	if(server.socket.poll(10)<1)

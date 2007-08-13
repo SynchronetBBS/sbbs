@@ -4,11 +4,21 @@
 
 // $Id$
 
-// Example configuration (in ctrl/services.cfg):
+// Example configurations (in ctrl/services.ini):
 
-// ActiveUser		11	0-unlimited	0		activeuserservice.js [options]
+// [ActiveUser]
+// Port=11
+// MaxClients=10
+// Options=NO_HOST_LOOKUP
+// Command=activeuserservice.js
 
-// Options:
+// [ActiveUser-UDP]
+// Port=11
+// MaxClients=10
+// Options=UDP | NO_HOST_LOOKUP
+// Command=activeuserservice.js
+
+// Command-line options:
 
 // -n	to the configuration line to eliminate user age and gender
 //		information from the query results.

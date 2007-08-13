@@ -4,9 +4,18 @@
 
 // $Id$
 
-// Example configuration (in ctrl/services.cfg):
+// Example configuration (in ctrl/services.ini):
 
-// MSP		18	0-unlimited	0		mspservice.js [options]
+// [MSP]
+// Port=18
+// MaxClients=10
+// Command=mspservice.js
+
+// [MSP-UDP]
+// Port=18
+// MaxClients=10
+// Options=UDP
+// Command=mspservice.js
 
 load("sockdefs.js");
 load("nodedefs.js");
