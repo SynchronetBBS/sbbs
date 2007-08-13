@@ -334,26 +334,6 @@ function true_array_len(my_array) {
 	return counter;
 }
 
-function ip_to_int(ip) {
-	if (!ip)
-		return 0;
-	var quads = ip.split(".");
-	var addr = (quads[0]&0xff)<<24;
-	addr|=(quads[1]&0xff)<<16;
-	addr|=(quads[2]&0xff)<<8;
-	addr|=(quads[3]&0xff);
-	return addr;
-}
-
-function int_to_ip(ip) {
-	return(format("%u.%u.%u.%u"
-		,(ip>>24)&0xff
-		,(ip>>16)&0xff
-		,(ip>>8)&0xff
-		,ip&0xff
-		));
-}
-
 function terminate_everything(terminate_reason, error) {
 	log(error ? LOG_ERR : LOG_NOTICE, "Terminating: " + terminate_reason);
 	for(thisClient in Local_Sockets_Map) {

@@ -146,43 +146,6 @@ function IRC_quit(server,reason) {
 		mswait(500);
 }
 
-// This function is intended to match against so-called "IRC wildcards", which
-// is a simple wildcarding syntax (* = match 0 or more characters, ? = always
-// match one character only.)  The match is case insensitive.
-// EXAMPLE: IRC_match("cyan@weyland-yutani.net","*@weyland-yutani.net");
-// RETURNS: Same as Javascript match() (the matched string on success, or
-// false on failure)
-/* NOTE! This function is now depreciated.  Synchronet 3.14 and beyond support
-   wildmatch() in JavaScript, which is functionally the same as this.
-   This function will eventually be removed from irclib.js */
-function IRC_match(mtchstr,mask) {
-	var uc_mtchstr = mtchstr.toUpperCase();
-	var uc_mask = mask.toUpperCase();
-	var mask_len = mask.length;
-	var mptr = 0;
-
-	for (c in uc_mtchstr) {
-		/* Jump to the last '*' in a series of them. */
-		while ( (uc_mask[mptr] == "*") && (uc_mask[mptr+1] == "*") )
-			mptr++;
-		if (uc_mask[mptr] == "*") {
-			if (uc_mtchstr[c] == uc_mask[mptr+1])
-				mptr += 2;
-			continue;
-		} else if ( (uc_mtchstr[c] == uc_mask[mptr]) ||
-			    (uc_mask[mptr] == "?") ) {
-			mptr++;
-			continue;
-		} else {
-			return false; /* Instant failure */
-		}
-	}
-	if ( (mptr >= mask.length) ||
-	     ( ((mptr+1) == mask.length) && (uc_mask[mptr] == "*") ) )
-		return mtchstr;
-	return false;
-}
-
 // This will create a 'default mask' when given a complete user@host string.
 // If the 'host' contains less than two dots, then it's returned verbatim,
 // but the 'user' portion is always prefixed with a *, and the ~ is lopped off.
@@ -268,6 +231,28 @@ function IRC_split_nuh(str) {
 	tmp[1] = str.split("!")[1].split("@")[0];
 	tmp[2] = str.split("@")[1];
 	return tmp;
+}
+
+/* Convert a dotted-quad IP address to an integer, i.e. for use in CTCP */
+function ip_to_int(ip) {
+	if (!ip)
+		return 0;
+	var quads = ip.split(".");
+	var addr = (quads[0]&0xff)<<24;
+	addr|=(quads[1]&0xff)<<16;
+	addr|=(quads[2]&0xff)<<8;
+	addr|=(quads[3]&0xff);
+	return addr;
+}
+
+/* Convert an integer to an IP address, i.e. for receiving CTCP's */
+function int_to_ip(ip) {
+	return(format("%u.%u.%u.%u"
+		,(ip>>24)&0xff
+		,(ip>>16)&0xff
+		,(ip>>8)&0xff
+		,ip&0xff
+		));
 }
 
 /* A handy object for keeping track of nicks and their properties */
