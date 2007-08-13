@@ -2565,7 +2565,7 @@ static void smtp_thread(void* arg)
 						safe_snprintf(str,sizeof(str)
 							,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
 							"\1h%s\1n\r\n"
-							,timestr(&scfg,(time_t*)&newmsg.hdr.when_imported.time,tmp)
+							,time32str(&scfg,&newmsg.hdr.when_imported.time,tmp)
 							,sender,sender_addr);
 						if(!newmsg.idx.to) {	/* Forwarding */
 							strcat(str,"\1mand it was automatically forwarded to: \1h");

@@ -45,14 +45,16 @@ char* DLLCALL msgdate(when_t when, char* buf)
 	struct tm	tm;
 	char		plus='+';
 	short		tz;
+	time_t		tt;
 	
 	tz=smb_tzutc(when.zone);
 	if(tz<0) {
 		plus='-';
 		tz=-tz;
 	}
-	
-	if(localtime_r((const time_t*)&when.time,&tm)==NULL)
+
+	tt=when.time;
+	if(localtime_r(&tt,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
 	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %c%02u%02u"
 		,wday[tm.tm_wday]

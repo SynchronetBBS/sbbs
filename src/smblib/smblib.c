@@ -768,7 +768,7 @@ static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_
 			msg->summary=(char*)hfield_dat;
 			break;
 		case SMB_EXPIRATION:
-			msg->expiration=*(time_t*)hfield_dat;
+			msg->expiration=*(uint32_t*)hfield_dat;
 			break;
 		case SMB_PRIORITY:
 			msg->priority=*(uint32_t*)hfield_dat;
