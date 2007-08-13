@@ -151,6 +151,8 @@ function list_users(show)
 	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
 		if(sys[i].ip==undefined)
 			continue;
+		/* Try SYSTAT and finger */
+		sock.sendto("\r\n",sys[i].ip,11);	// Get list of active users
 		if(!sock.sendto("\r\n",sys[i].ip,79))	// Get list of active users
 			//printf("FAILED! (%d) Sending to %s\r\n",sock.last_error,sys[i].addr);
 			continue;
@@ -171,19 +173,21 @@ function list_users(show)
 		i=get_sysnum(message.ip_address);
 		if(i==-1)
 			continue;
-		replies++;
-		udp_replies++;
-		sys[i].udp=true;
-		sys[i].reply=new Date().valueOf()-start.valueOf();
+		if(sys[i].reply == undefined) {
+			replies++;
+			udp_replies++;
+			sys[i].udp=true;
+			sys[i].reply=new Date().valueOf()-start.valueOf();
 
-		response=message.data.split("\r\n");
+			response=message.data.split("\r\n");
 
-		if(show) {
-			console.line_counter=0;	// defeat pause
-			printf("\1n\1h%-25.25s\1n ",sys[i].addr);
+			if(show) {
+				console.line_counter=0;	// defeat pause
+				printf("\1n\1h%-25.25s\1n ",sys[i].addr);
+			}
+
+			parse_response(response, show);
 		}
-
-		parse_response(response, show);
 	}
 	
 	sock.close();
@@ -208,13 +212,29 @@ function list_users(show)
 		sock = new Socket();
 		sock.bind(0,server.interface_ip_address);
 		is_connected = false;
+		/* Try SYSTAT first */
+		/* By IP */
 		if(sys[i].ip != undefined) {
-			is_connected = sock.connect(sys[i].ip,79,5);
-			if(!is_connected)
-				sys[i].ip = undefined;	// IP no good, remove from cache
+			is_connected = sock.connect(sys[i].ip,11,5);
+			if(!is_connected) {
+				is_connected = sock.connect(sys[i].ip,79,5);
+				if(!is_connected)
+					sys[i].ip = undefined;	// IP no good, remove from cache
+			}
 		}
-		if(!is_connected && !sock.connect(sys[i].addr,79,5)) {
-			log(format("!Finger connection to %s FAILED with error %d"
+		/* By addr */
+		if(!is_connected) {
+			/* Try by addr */
+			is_connected = sock.connect(sys[i].addr,11,5);
+			if(!is_connected) {
+				is_connected = sock.connect(sys[i].addr,79,5);
+				if(!is_connected)
+					sys[i].addr = undefined;	// IP no good, remove from cache
+			}
+		}
+
+		if(!is_connected) {
+			log(format("!SYSTAT and Finger connections to %s FAILED with error %d"
 				,sys[i].addr,sock.last_error));
 			alert("system not available");
 			sys[i].failed = true;
@@ -226,7 +246,8 @@ function list_users(show)
 		if(sys[i].ip != sock.remote_ip_address)
 			sys[i].ip = sock.remote_ip_address;	
 
-		sock.send("\r\n");	// Get list of active users
+		if(sock.remote_port == 79)
+			sock.send("\r\n");	// Get list of active users
 		var response=new Array();
 		while(bbs.online && sock.is_connected) {
 			str=sock.readline();
@@ -267,52 +288,59 @@ function send_msg(dest, msg)
 		exit();
 	}
 	host = dest.slice(hp+1);
+	destuser = dest.substr(0,hp);
 
 	printf("\1h\1ySending...\r\1w");
 	sock = new Socket();
 	//sock.debug = true;
 	sock.bind(0,server.interface_ip_address);
 	do {
-		if(!sock.connect(host,25)) {
-			alert("Connection to " + host + " failed with error " + sock.last_error);
-			break;
-		}
+		if(!sock.connect(host,18)) {
+			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
 
-		if(Number((rsp=sock.recvline()).slice(0,3))!=220) {
-			alert("Invalid connection response:\r\n" + rsp);
-			break;
-		}
-		sock.send("HELO "+system.inetaddr+"\r\n");
-		if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-			alert("Invalid HELO response: " + rsp);
-			break;
-		}
-		sock.send("SOML FROM: "+user.email+"\r\n");
-		if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-			alert("Invalid SOML response: " + rsp);
-			break;
-		}
-		if(dest.indexOf('<')<0)
-			dest = '<' + dest + '>';
-		sock.send("RCPT TO: "+dest+"\r\n");
-		if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-			alert("Invalid RCPT TO response: " + rsp);
-			break;
-		}
-		sock.send("DATA\r\n");
-		if(Number((rsp=sock.recvline()).slice(0,3))!=354) {
-			alert("Invalid DATA response: " + rsp);
-			break;
-		}
-		sock.send(msg);
-		sock.send("\r\n.\r\n");
-		if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-			alert("Invalid end of message response: " + rsp);
-			break;
-		}
-		sock.send("QUIT\r\n");
-		print("Message delivered successfully.");
+			if(!sock.connect(host,25)) {
+				alert("Connection to " + host + " failed with error " + sock.last_error);
+				break;
+			}
 
+			if(Number((rsp=sock.recvline()).slice(0,3))!=220) {
+				alert("Invalid connection response:\r\n" + rsp);
+				break;
+			}
+			sock.send("HELO "+system.inetaddr+"\r\n");
+			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
+				alert("Invalid HELO response: " + rsp);
+				break;
+			}
+			sock.send("SOML FROM: "+user.email+"\r\n");
+			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
+				alert("Invalid SOML response: " + rsp);
+				break;
+			}
+			if(dest.indexOf('<')<0)
+				dest = '<' + dest + '>';
+			sock.send("RCPT TO: "+dest+"\r\n");
+			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
+				alert("Invalid RCPT TO response: " + rsp);
+				break;
+			}
+			sock.send("DATA\r\n");
+			if(Number((rsp=sock.recvline()).slice(0,3))!=354) {
+				alert("Invalid DATA response: " + rsp);
+				break;
+			}
+			sock.send(msg);
+			sock.send("\r\n.\r\n");
+			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
+				alert("Invalid end of message response: " + rsp);
+				break;
+			}
+			sock.send("QUIT\r\n");
+			print("Message delivered successfully.");
+		}
+		else {
+			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user.name+"\0"+"Node: "+bbs.node_num+"\0\0"+system.name+"\0");
+		}
 	} while(0);
 
 	sock.close();

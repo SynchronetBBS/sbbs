@@ -166,12 +166,18 @@ telegram_buf += sender;
 if(sender_term != "")
 	telegram_buf += " \1n"+sender_term+"\1h";
 telegram_buf += "\r\n\1w[\1n";
-telegram_buf += client.socket.remote_ip_address;
-telegram_buf += "\1h]"
-if(client.host_name != undefined && client.host_name != "") {
-	telegram_buf += " (\1n";
-	telegram_buf += client.host_name;
-	telegram_buf += "\1h)";
+if(signature != "") {
+	telegram_buf += signature;
+	telegram_buf += "\1h]"
+}
+else {
+	telegram_buf += client.socket.remote_ip_address;
+	telegram_buf += "\1h]"
+	if(client.host_name != undefined && client.host_name != "") {
+		telegram_buf += " (\1n";
+		telegram_buf += client.host_name;
+		telegram_buf += "\1h)";
+	}
 }
 telegram_buf += "\1n:\r\n\1h";
 telegram_buf += message;
