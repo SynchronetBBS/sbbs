@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -626,8 +626,9 @@ enum {
 #define MAX_STRVARS		26
 #define MAX_INTVARS		26
 #define MAX_STRLEN		81
-#define MAX_FOPENS		10	/* maximum open files */
-#define MAX_SOCKETS		10	/* maximum open sockets */
+#define MAX_OPENDIRS	10	/* maximum concurrent open directories */
+#define MAX_FOPENS		10	/* maximum concurrent open files */
+#define MAX_SOCKETS		10	/* maximum concurrent open sockets */
 #define MAX_SYSVARS		16	/* maximum system variable saves */
 
 #define LOGIC_LESS		-1
@@ -651,13 +652,15 @@ typedef struct {					/* Command shell image */
 
 	int 	logic;					/* Current logic */
 	
-	FILE	*file[MAX_FOPENS];		/* Each file ptr */
-	int		socket[MAX_SOCKETS];	/* Open socket descriptors */
+	DIR*	dir[MAX_OPENDIRS];		/* Each directory ptr */
+	FILE*	file[MAX_FOPENS];		/* Each file ptr */
+	SOCKET	socket[MAX_SOCKETS];	/* Open socket descriptors */
 	int32_t	socket_error;			/* Last socket error */
 
 	uint	str_vars,				/* Total number of string variables */
 			int_vars,				/* Total number of integer variables */
 			files,					/* Open files */
+			dirs,					/* Open directories */
 			sockets,				/* Open sockets */
 			rets,					/* Returns on stack */
 			loops,					/* Nested loop depth (loops on stack) */

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -462,6 +462,7 @@ void sbbs_t::clearvars(csi_t *bin)
 	bin->int_vars=0;
 	bin->int_var=NULL;
 	bin->int_var_name=NULL;
+	bin->dirs=0;
 	bin->files=0;
 	bin->loops=0;
 	bin->sockets=0;
@@ -484,15 +485,21 @@ void sbbs_t::freevars(csi_t *bin)
 		free(bin->str_var_name);
 	if(bin->int_var_name)
 		free(bin->int_var_name);
+	for(i=0;i<bin->dirs;i++) {
+		if(bin->dir[i]!=NULL) {
+			closedir(bin->dir[i]);
+			bin->dir[i]=NULL; 
+		}
+	}
 	for(i=0;i<bin->files;i++) {
-		if(bin->file[i]) {
-			fclose((FILE *)bin->file[i]);
-			bin->file[i]=0; 
+		if(bin->file[i]!=NULL) {
+			fclose(bin->file[i]);
+			bin->file[i]=NULL; 
 		}
 	}
 	for(i=0;i<bin->sockets;i++) {
-		if(bin->socket[i]) {
-			close_socket((SOCKET)bin->socket[i]);
+		if(bin->socket[i]!=0) {
+			close_socket(bin->socket[i]);
 			bin->socket[i]=0; 
 		}
 	}
