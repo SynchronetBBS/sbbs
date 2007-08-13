@@ -37,6 +37,7 @@
 
 #include "gen_defs.h"
 #include "dirwrap.h"
+#include "sockwrap.h"
 
 #ifndef _CMDSHELL_H_
 #define _CMDSHELL_H_ 
