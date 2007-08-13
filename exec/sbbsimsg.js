@@ -152,8 +152,8 @@ function list_users(show)
 		if(sys[i].ip==undefined)
 			continue;
 		/* Try SYSTAT and finger */
-		sock.sendto("\r\n",sys[i].ip,11);	// Get list of active users
-		if(!sock.sendto("\r\n",sys[i].ip,79))	// Get list of active users
+		sock.sendto("\r\n",sys[i].ip,IPPORT_SYSTAT);	// Get list of active users
+		if(!sock.sendto("\r\n",sys[i].ip,IPPORT_FINGER))	// Get list of active users
 			//printf("FAILED! (%d) Sending to %s\r\n",sock.last_error,sys[i].addr);
 			continue;
 		udp_req++;
@@ -215,9 +215,9 @@ function list_users(show)
 		/* Try SYSTAT first */
 		/* By IP */
 		if(sys[i].ip != undefined) {
-			is_connected = sock.connect(sys[i].ip,11,5);
+			is_connected = sock.connect(sys[i].ip,IPPORT_SYSTAT,5);
 			if(!is_connected) {
-				is_connected = sock.connect(sys[i].ip,79,5);
+				is_connected = sock.connect(sys[i].ip,IPPORT_FINGER,5);
 				if(!is_connected)
 					sys[i].ip = undefined;	// IP no good, remove from cache
 			}
@@ -225,9 +225,9 @@ function list_users(show)
 		/* By addr */
 		if(!is_connected) {
 			/* Try by addr */
-			is_connected = sock.connect(sys[i].addr,11,5);
+			is_connected = sock.connect(sys[i].addr,IPPORT_SYSTAT,5);
 			if(!is_connected) {
-				is_connected = sock.connect(sys[i].addr,79,5);
+				is_connected = sock.connect(sys[i].addr,IPPORT_FINGER,5);
 				if(!is_connected)
 					sys[i].addr = undefined;	// IP no good, remove from cache
 			}
@@ -246,7 +246,7 @@ function list_users(show)
 		if(sys[i].ip != sock.remote_ip_address)
 			sys[i].ip = sock.remote_ip_address;	
 
-		if(sock.remote_port == 79)
+		if(sock.remote_port == IPPORT_FINGER)
 			sock.send("\r\n");	// Get list of active users
 		var response=new Array();
 		while(bbs.online && sock.is_connected) {
@@ -295,10 +295,10 @@ function send_msg(dest, msg)
 	//sock.debug = true;
 	sock.bind(0,server.interface_ip_address);
 	do {
-		if(!sock.connect(host,18)) {
+		if(!sock.connect(host,IPPORT_MSP)) {
 			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
 
-			if(!sock.connect(host,25)) {
+			if(!sock.connect(host,IPPORT_SMTP)) {
 				alert("Connection to " + host + " failed with error " + sock.last_error);
 				break;
 			}
