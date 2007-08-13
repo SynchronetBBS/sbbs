@@ -102,7 +102,7 @@ CFLAGS	+=	$(JS_CFLAGS)
 LDFLAGS	+=	$(JS_LDFLAGS)
 
 ifndef CRYPTLIBDIR
- CRYPTLIBDIR := $(SRC_ROOT)/../lib/cryptlib/$(os).release
+ CRYPTLIBDIR := $(SRC_ROOT)/../lib/cryptlib/$(machine).release
 endif
 LDFLAGS	+=	-L$(CRYPTLIBDIR)
 
