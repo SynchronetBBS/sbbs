@@ -1501,6 +1501,8 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 			serv.port=(ushort)strtol(p,NULL,0);
 		else {
 			struct servent* servent = getservbyname(p,serv.options&SERVICE_OPT_UDP ? "udp":"tcp");
+			if(servent==NULL)
+				servent = getservbyname(p,serv.options&SERVICE_OPT_UDP ? "tcp":"udp");
 			if(servent!=NULL)
 				serv.port = ntohs(servent->s_port);
 		}
