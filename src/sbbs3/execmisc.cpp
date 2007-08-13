@@ -1005,7 +1005,6 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					errormsg(WHERE,ERR_CHK,"var sub-instruction",*(csi->ip-1));
 					return(0); }
 
-		/* TODO: Not even vaugely 64-bit happy */
 		case CS_FIO_FUNCTION:
 			switch(*(csi->ip++)) {	/* sub-op-code stored as next byte */
 				case FIO_OPEN:
@@ -1185,7 +1184,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp<csi->files && lp2)
+					if(lp1 && (uint)*lp1<csi->files && lp2)
 						*lp2=filelength(fileno(csi->file[*lp1]));
 					return(0);
 				case FIO_GET_TIME:
@@ -1193,7 +1192,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp<csi->files && lp2) 
+					if(lp1 && (uint)*lp1<csi->files && lp2) 
 						*lp2=filetime(fileno(csi->file[*lp1]));
 					return(0);
 				case FIO_SET_TIME:
@@ -1202,7 +1201,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 	#if 0 /* ftime */
-					if(lp1 && (uint)*lp<csi->files && lp2) {
+					if(lp1 && (uint)*lp1<csi->files && lp2) {
 						ft=unixtoftime(*lp2);
 						setftime(fileno(csi->file[*lp1),&ft); }
 	#endif
@@ -1220,7 +1219,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp<csi->files && lp2)
+					if(lp1 && (uint)*lp1<csi->files && lp2)
 						*lp2=ftell(csi->file[*lp1]);
 					return(0);
 				case FIO_SEEK:
@@ -1240,7 +1239,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						l=*lp2; }
 					i=*(short *)csi->ip;
 					csi->ip+=2;
-					if(lp1 && (uint)*lp<csi->files)
+					if(lp1 && (uint)*lp1<csi->files)
 						if(fseek(csi->file[*lp1],l,i)!=-1)
 							csi->logic=LOGIC_TRUE;
 					return(0);
@@ -1279,7 +1278,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							return(0);
 						l=*lp2; 
 					}
-					if(lp1 && (uint)*lp<csi->files) {
+					if(lp1 && (uint)*lp1<csi->files) {
 						fflush(csi->file[*lp1]);
 						csi->logic=!unlock(fileno(csi->file[*lp1]),ftell(csi->file[*lp1]),l); 
 					}
@@ -1298,14 +1297,14 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						if(!lp2)
 							return(0);
 						l=*lp2; }
-					if(lp1 && (uint)*lp<csi->files)
+					if(lp1 && (uint)*lp1<csi->files)
 						csi->logic=chsize(fileno(csi->file[*lp1]),l);
 					return(0);
 				case FIO_PRINTF:
 					lp1=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					p=format_string(this, csi);
-					if(lp1 && (uint)*lp<csi->files) {
+					if(lp1 && (uint)*lp1<csi->files) {
 						cmdstr(p,path,csi->str,str);
 						fwrite(str,1,strlen(str),csi->file[*lp1]); 
 					}
