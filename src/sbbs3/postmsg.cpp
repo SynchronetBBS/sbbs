@@ -86,7 +86,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			SAFECOPY(touser,from);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn],title,from,remsg->to
-			,timestr((time_t *)&remsg->hdr.when_written.time)
+			,time32str((time32_t *)&remsg->hdr.when_written.time)
 			,smb_zonestr(remsg->hdr.when_written.zone,NULL)); 
 	} else {
 		title[0]=0;

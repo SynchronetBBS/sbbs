@@ -53,6 +53,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	int 	i;
 	struct	tm	tm;
 	smbmsg_t	remsg;
+	time_t	tt;
 
 	offset=ftell(qwk_fp);
 	memset(str,' ',QWK_BLOCK_LEN);
@@ -162,7 +163,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			p=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && p) {
 			sprintf(str,"Forwarded from %s on %s%c",p
-				,timestr((time_t *)msg->hfield_dat[i])
+				,time32str((time32_t *)msg->hfield_dat[i])
 				,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
 			size+=strlen(str); 
@@ -330,7 +331,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		size++;
 		fputc(' ',qwk_fp); }
 
-	if(localtime_r((time_t *)&msg->hdr.when_written.time,&tm)==NULL)
+	tt=msg->hdr.when_written.time;
+	if(localtime_r(&tt,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
 
 	sprintf(tmp,"%02u-%02u-%02u%02u:%02u"

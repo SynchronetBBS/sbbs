@@ -3518,6 +3518,7 @@ js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	JSBool	b;
 	struct tm tm;
 	http_session_t* session;
+	time_t	tt;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -3536,7 +3537,8 @@ js_set_cookie(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	header+=sprintf(header,"%s",p);
 	if(argc>2) {
 		JS_ValueToInt32(cx,argv[2],&i);
-		if(i && gmtime_r((time_t *)&i,&tm)!=NULL)
+		tt=i;
+		if(i && gmtime_r(&tt,&tm)!=NULL)
 			header += strftime(header,50,"; expires=%a, %d-%b-%Y %H:%M:%S GMT",&tm);
 	}
 	if(argc>3) {

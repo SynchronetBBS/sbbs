@@ -3515,6 +3515,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	areasbbs_t fakearea;
 	addrlist_t msg_seen,msg_path;
     clock_t start_tick=0,export_ticks=0;
+	time_t	tt;
 
 	memset(&msg_seen,0,sizeof(addrlist_t));
 	memset(&msg_path,0,sizeof(addrlist_t));
@@ -3643,7 +3644,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				SAFECOPY(hdr.from,msg.from);
 
-				tm=localtime((time_t *)&msg.hdr.when_written.time);
+				tt=msg.hdr.when_written.time;
+				tm=localtime(&tt);
 				sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
 					,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 					,tm->tm_hour,tm->tm_min,tm->tm_sec);

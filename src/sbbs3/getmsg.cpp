@@ -153,7 +153,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			bprintf(text[MsgFromNet],smb_netaddr(&msg->from_net)); 
 	}
 	bprintf(text[MsgDate]
-		,timestr((time_t *)&msg->hdr.when_written.time)
+		,time32str((time32_t *)&msg->hdr.when_written.time)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL));
 
 	CRLF;
@@ -163,7 +163,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			sender=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && sender)
 			bprintf(text[ForwardedFrom],sender
-				,timestr((time_t *)msg->hfield_dat[i])); }
+				,time32str((time32_t *)msg->hfield_dat[i])); }
 
 	/* Debug stuff
 	if(SYSOP) {
@@ -231,7 +231,7 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		if(msg->from_net.addr)
 			fprintf(out," (%s)",smb_netaddr(&msg->from_net));
 		fprintf(out,"\r\nDate : %.24s %s"
-			,timestr((time_t *)&msg->hdr.when_written.time)
+			,time32str((time32_t *)&msg->hdr.when_written.time)
 			,smb_zonestr(msg->hdr.when_written.zone,NULL));
 		fprintf(out,"\r\n\r\n"); }
 

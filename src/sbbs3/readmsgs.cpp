@@ -119,9 +119,9 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 	/* fixed fields */
 	bprintf("%-16.16s %s %s\r\n","when_written"	
-		,timestr((time_t *)&msg->hdr.when_written.time), smb_zonestr(msg->hdr.when_written.zone,NULL));
+		,time32str((time32_t *)&msg->hdr.when_written.time), smb_zonestr(msg->hdr.when_written.zone,NULL));
 	bprintf("%-16.16s %s %s\r\n","when_imported"	
-		,timestr((time_t *)&msg->hdr.when_imported.time), smb_zonestr(msg->hdr.when_imported.zone,NULL));
+		,time32str((time32_t *)&msg->hdr.when_imported.time), smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
 	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);
 	bprintf("%-16.16s %04Xh\r\n","attr"				,msg->hdr.attr);
@@ -143,12 +143,12 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 	if(msg->hdr.times_downloaded)
 		bprintf("%-16.16s %lu\r\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
 	if(msg->hdr.last_downloaded)
-		bprintf("%-16.16s %s\r\n"	,"last_downloaded"	,timestr((time_t*)&msg->hdr.last_downloaded));
+		bprintf("%-16.16s %s\r\n"	,"last_downloaded"	,time32str((time32_t *)&msg->hdr.last_downloaded));
 
 	/* convenience integers */
 	if(msg->expiration)
 		bprintf("%-16.16s %s\r\n"	,"expiration"	
-			,timestr((time_t *)&msg->expiration));
+			,time32str((time32_t *)&msg->expiration));
 	if(msg->priority)
 		bprintf("%-16.16s %lu\r\n"	,"priority"			,msg->priority);
 	if(msg->cost)
@@ -813,7 +813,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					break;
 				sprintf(str2,text[Regarding]
 					,msg.subj
-					,timestr((time_t *)&msg.hdr.when_written.time));
+					,time32str((time32_t *)&msg.hdr.when_written.time));
 				if(msg.from_net.addr==NULL)
 					strcpy(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)

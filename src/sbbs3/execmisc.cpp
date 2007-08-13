@@ -518,7 +518,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(pp && lp) {
-						if(localtime_r((time_t *)lp,&tm)!=NULL) {
+						time_t	tt;
+						tt=*lp;
+						if(localtime_r(&tt,&tm)!=NULL) {
 							strftime(buf,128,str,&tm);
 							*pp=copystrvar(csi,*pp,buf); 
 						} 
@@ -530,7 +532,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4; /* Skip int variable name */
 					if(pp && lp) {
-						strcpy(str,timestr((time_t *)lp));
+						strcpy(str,time32str(lp));
 						*pp=copystrvar(csi,*pp,str); }
 					return(0);
 				case DATE_STR:
