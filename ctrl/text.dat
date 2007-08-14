@@ -24,7 +24,7 @@
 "_\r\nyhSubject: "                                   021 SubjectPrompt
 "ng\r\nEnter message now (h%dng lines max). "\     022 EnterMsgNow
 	"Type h/?ng on a new line for menu.\r\nn"
-"ng\r\nRaw message input (h%lung bytes max). "\    023 EnterMsgNowRaw
+"ng\r\nRaw message input (h%ung bytes max). "\    023 EnterMsgNowRaw
 	"hCtrl-Zng to save, hCtrl-Cng to abort.n\r\n\r\n"
 "No more lines. Type /? for menu.\r\n"                  024 NoMoreLines
 "Only %d lines left.\r\n"                               025 OnlyNLinesLeft
@@ -36,7 +36,7 @@
 "\r\nAnonymous"                                         031 AnonymousQ
 "ANONYMOUS"                                             032 Anonymous
 "nh\r\nSaving..."                                     033 Saving
-"\rbSaved w%lub characters (w%ub lines).n\r\n"    034 SavedNBytes
+"\rbSaved w%ub characters (w%ub lines).n\r\n"    034 SavedNBytes
 "n\r\nWriting Index..."                                035 WritingIndx
 "\rnmE-mail sent to h%s nm#%d.n\r\n"              036 Emailed
 "\rnmPosted on h%snm %s.\r\n"                      037 Posted
@@ -51,7 +51,7 @@
 "n\r\nYou have no mail.\r\n"                           045 NoMailWaiting
 "_\r\nghMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
 "gh%3d: ng%-25.25s h%cng %.46s\r\n"              047 MailWaitingLstFmt
-"_\r\nyhStart with number [w%luy]: w"             048 StartWithN
+"_\r\nyhStart with number [w%uy]: w"             048 StartWithN
 "\r\nncþ bhReading E-mail ncþ bh(w?b=Menu)"\  049 ReadingMail
 	" (w%ub of w%ub): n"
 "n\r\nYou can't reply to an anonymous message.\r\n"    050 CantReplyToAnonMsg
@@ -80,14 +80,14 @@
 	"To                     Subject\r\nn"
 "gh%4d:ng %-22.22s %-22.22s h%cng %.25s\r\n"     066 MailOnSystemLstFmt
 "-\r\nc%-15.15s yh%-40.40s       "\                 067 NScanStatusFmt
-	"ncNew:h%4lu ncofh %-lu"
+	"ncNew:h%4u ncofh %-u"
 "-\r\nc%-15.15s yh%-40.40s        w%u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
-"\r\nncPost : [h%unc][h%unc] h%lunc/h%lu"   070 ZScanPostHdr
+"\r\nncPost : [h%unc][h%unc] h%unc/h%u"   070 ZScanPostHdr
 "n\r\ncþ hbReading ncþ [h%unc] %s "\           071 ReadingSub
-	"[h%unc] %s (h?nc=Menu) (h%lunc of h%lunc): n"
+	"[h%unc] %s (h?nc=Menu) (h%unc of h%unc): n"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
-"\r\nDelete message #%lu '%s'"                          073 DeletePostQ
+"\r\nDelete message #%u '%s'"                          073 DeletePostQ
 "nb[hwInb] hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
 	"nb: c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
@@ -96,17 +96,17 @@
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
 	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
-"gh%4lu:ng %-22.22s %-22.22s h%cng %.25s\r\n"    078 SubMsgLstFmt
+"gh%4u:ng %-22.22s %-22.22s h%cng %.25s\r\n"    078 SubMsgLstFmt
 "\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
 	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "l_chGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
-"nc<h%ldnc> %s\r\n"                                082 TextSectionLstFmt
+"nc<h%dnc> %s\r\n"                                082 TextSectionLstFmt
 "_\r\ncWhich or h~Qncuit: h"                      083 WhichTextSection
 "l_ch%s Files:\r\n\r\n"                             084 TextFilesLstHdr
-"ch%3ld: nc%s"                                      085 TextFilesLstFmt
+"ch%3d: nc%s"                                      085 TextFilesLstFmt
 "\r\nWhich, ~Add, ~Remove, ~Edit, or ~Quit: "           086 WhichTextFileSysop
 "_\r\nncWhich or h~Qncuit: h"                    087 WhichTextFile
 "_\r\nyhBefore which file: n"                       088 AddTextFileBeforeWhich
@@ -125,7 +125,7 @@
 "bhSystem          : c%s\r\n"                        100 SiSysName
 "bQWK ID          : c%s\r\n"                          101 SiSysID
 "bFidoNet Address : c%s\r\n"                          102 SiSysFaddr
-"bPostLink Site   : c%s %lu\r\n"                      103 SiSysPsite
+"bPostLink Site   : c%s %u\r\n"                      103 SiSysPsite
 "bLocation        : c%s\r\n"                          104 SiSysLocation
 "bOperator        : c%s\r\n"                          105 SiSysop
 "bNodes           : c%u\r\n"                          106 SiSysNodes
@@ -139,7 +139,7 @@
 "View logon message"                                    114 ViewLogonMsgQ
 "\r\n\r\nYou can't read mail you've sent.\r\n"          115 R_ReadSentMail
 "\r\nwhMessage Scan "                                 116 MessageScan
-"nc(h%lu ncsub-boards)hw complete.\r\n"          117 MessageScanComplete
+"nc(h%u ncsub-boards)hw complete.\r\n"          117 MessageScanComplete
 "riaborted.n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
@@ -149,21 +149,21 @@
 "\r\n-gUsage Statistics for h%s #%dn\r\n\r\n"       124 UserStats
 "-gSub-boards of h%-40s      ngPosts"\             125 SubLstHdr
 	"\r\n\r\nh"
-"ng[h%lung] %-40s %12s h%4u\r\n"                  126 SubLstFmt
+"ng[h%ung] %-40s %12s h%4u\r\n"                  126 SubLstFmt
 "\r\n_ghMessage Groupsng                    "\     127 GrpLstHdr
 	"                        Sub-boards\r\n\r\nh"
-"ng[h%lung] %-40s %12s h%4u\r\n"                  128 GrpLstFmt
+"ng[h%ung] %-40s %12s h%4u\r\n"                  128 GrpLstFmt
 "\r\nGroup to configure new message scan or ~Quit: "    129 NScanCfgWhichGrp
 "\r\nGroup to configure your message scan or ~Quit: "   130 SScanCfgWhichGrp
 "l-gSub-boards of h%s:\r\n\r\nh"                   131 CfgSubLstHdr
-"ng[h%ldng] %-40.40s  h%s\r\n"                    132 CfgSubLstFmt
+"ng[h%dng] %-40.40s  h%s\r\n"                    132 CfgSubLstFmt
 "l_ghMessage Groups:\r\n\r\n"                       133 CfgGrpLstHdr
-"ng[h%ldng] %sh\r\n"                              134 CfgGrpLstFmt
+"ng[h%dng] %sh\r\n"                              134 CfgGrpLstFmt
 "\r\nSub-board to toggle new message scan"\             135 NScanCfgWhichSub
 	", ~All, or ~Quit: "
 "\r\nSub-board to toggle your message scan"\            136 SScanCfgWhichSub
 	", ~All, or ~Quit: "
-"ng[h%ldng] %-40.40s  hc%s\r\n"                  137 SubPtrLstFmt
+"ng[h%dng] %-40.40s  hc%s\r\n"                  137 SubPtrLstFmt
 "\r\nSet new-scan pointer for which, ~All, or ~Quit: "  138 WhichOrAll
 "\r\nRaw message input mode is now "                    139 RawMsgInputModeIsNow
 "OFF"                                                   140 OFF
@@ -175,8 +175,8 @@
 "Logons Today    : %s\r\n"                              146 StatsLogonsToday
 "Total Time      : %s minutes\r\n"                      147 StatsTotalTime
 "Time Today      : %s minutes\r\n"                      148 StatsTimeToday
-"Uploads Today   : %s bytes in %lu files\r\n"           149 StatsUploadsToday
-"Downloads Today : %s bytes in %lu files\r\n"           150 StatsDownloadsToday
+"Uploads Today   : %s bytes in %u files\r\n"           149 StatsUploadsToday
+"Downloads Today : %s bytes in %u files\r\n"           150 StatsDownloadsToday
 "Posts Today     : %s\r\n"                              151 StatsPostsToday
 "E-mails Today   : %s\r\n"                              152 StatsEmailsToday
 "Feedback Today  : %s\r\n"                              153 StatsFeedbacksToday
@@ -226,7 +226,7 @@
 "\r\n\r\nYou can't send files to users.\r\n"            191 CantUploadToUser
 "ncLibrary   : (%u) %syh"                           192 BoxHdrLib
 "ncDirectory : (%u) %syh"                           193 BoxHdrDir
-"ncFiles     : %luyh"                               194 BoxHdrFiles
+"ncFiles     : %uyh"                               194 BoxHdrFiles
 "nc(h%unc) %s "                                    195 ShortHdrLib
 "nc(h%unc) %s"                                     196 ShortHdrDir
 "rhFilenames, specs, or flags [None]: mh"           197 BatchDlFlags
@@ -310,7 +310,7 @@
 "\r\nwhNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
 "\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory:\r\n"                  265 BulkUpload
-"_yh%sw%7lukb:"                                    266 BulkUploadDescPrompt
+"_yh%sw%7ukb:"                                    266 BulkUploadDescPrompt
 "\r\nrhiNo files in batch queue.n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
 "_\r\nyhBatch: n"                                   268 BatchMenuPrompt
@@ -412,7 +412,7 @@
 "Is the above information correct"                      350 UserInfoCorrectQ
 "bUser #c%-4d      b: c%s\r\n"                      351 LiUserNumName
 "bLogons Today    : c%-5u b(Max c%ub)\r\n"         352 LiLogonsToday
-"bTime on Today   : c%-5u b(Max c%lub)\r\n"        353 LiTimeonToday
+"bTime on Today   : c%-5u b(Max c%ub)\r\n"        353 LiTimeonToday
 "bMail Waiting    : c%u\r\n"                          354 LiMailWaiting
 "bSysop is        : c"                                355 LiSysopIs
 "Available"                                             356 LiSysopAvailable
@@ -465,8 +465,8 @@
 	"for maintenance.\1n\r\n"
 "\r\nUnknown user\r\n"                                  390 UnknownUser
 "\7Invalid Logon\r\n"                                   391 InvalidLogon
-"%2.2d/%2.2d/%2.2d T:%5lu   L:%3lu   P:%3lu   "\        392 SlogFmt
-	"E:%3lu   F:%3lu   U:%6luk %3lu  D:%6luk %3lu\r\n"
+"%2.2d/%2.2d/%2.2d T:%5u   L:%3u   P:%3u   "\        392 SlogFmt
+	"E:%3u   F:%3u   U:%6uk %3u  D:%6uk %3u\r\n"
 "Locally"                                               393 Locally
 "\r\nSort alphabetically"                               394 SortAlphaQ
 "\r\nmhChecking Slots..."                             395 CheckingSlots
@@ -658,7 +658,7 @@
 "\r\n_whNode %2d: g%sng left private chat.n\r\n" 542 NodeLeftPrivateChat
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
 "ghLast few callers:\r\nng"                         544 LastFewCallers (*)
-"\r\nnhm%-2d nm%-6lu wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
+"\r\nnhm%-2d nm%-6u wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
 	"nm%02u:%02u h%-8.8s nm%-3d"
 "\r\nghCallers Today:ng"                            546 CallersToday
 "_bhDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
@@ -700,7 +700,7 @@
 "\r\nCtrl-A codes: ~Expand to ANSI, ~Leave in, or "\    571 QWKCtrlACodes
 	"[Strip]: "
 "\r\n_hwPacking Sub-board...      "                  572 QWKPackingSubboard
-"\rbPacked:w%4lu bofw %lu>"                        573 QWKPackedSubboard
+"\rbPacked:w%4u bofw %u>"                        573 QWKPackedSubboard
 "\r\n_hwPacking E-mail...            "               574 QWKPackingEmail
 "\rbPacked w%ub E-mail messages.>"                  575 QWKPackedEmail
 "\r\n_hwUnpacking..."                                576 QWKUnpacking
@@ -724,7 +724,7 @@
 	"you do not hang up within 30 seconds.\r\n"\
 	"\r\nPlease wait, or hit any key to hang up now..."
 "Convert 100k credits to %u minutes"                    591 Convert100ktoNminQ
-"\r\n%lu credits have been added to your account.\r\n"  592 CreditedAccount
+"\r\n%u credits have been added to your account.\r\n"  592 CreditedAccount
 "\r\nANSI Capture is now %s\r\n"                        593 ANSICaptureIsNow
 "nm\r\nRetrieving h%snm..."                        594 RetrievingFile
 "n\r\nAlternate upload path now: %s\r\n"               595 AltULPathNow
@@ -751,7 +751,7 @@
 "Maximum Files           : %u\r\n"                      615 DirInfoMaxFiles
 "View directory information file"                       616 DirInfoViewFileQ
 "n\r\nNo NetMail allowed.\r\n"                         617 NoNetMailAllowed
-"\r\nIt will cost you %lu credits to send NetMail. "\   618 NetMailCostContinueQ
+"\r\nIt will cost you %u credits to send NetMail. "\   618 NetMailCostContinueQ
 	"Continue"
 "nm\r\nSending NetMail To: h%snm (h%snm)\r\n"\  619 NetMailing
 	"              From: h%snm (h%snm)\r\n"
@@ -775,7 +775,7 @@
 "\r\n_chMultinode Chat Channels:\r\n\r\n"            636 ChatChanLstHdr
 "ncNum Name                         Cost"             637 ChatChanLstTitle
 "hÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ    ÄÄÄÄ"               638 ChatChanLstUnderline
-"hc%3lu nc%-25.25sh%8lu"                           639 ChatChanLstFmt
+"hc%3u nc%-25.25sh%8u"                           639 ChatChanLstFmt
 "\r\nYou can't access that channel.\r\n"                640 CantAccessThatChannel
 "\r\nYou can't download from this directory.\r\n"       641 CantDownloadFromDir
 "_whSearching for duplicates..."                     642 SearchingForDupes
@@ -797,7 +797,7 @@
 "l_ghFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
 "ng(h%dng) %sh\r\n"                               659 CfgLibLstFmt
 "_chListing nc(h%unc) %s "\                     660 BatchFlagPrompt
-	"(h%unc) %s (h?nc=Menu) (h%lunc Filesnc): n"
+	"(h%unc) %s (h?nc=Menu) (h%unc Filesnc): n"
 "nl4  hy[wBy]atch Download  "\                   661
 	"[wVy]iew Content  [wEy]xtended "\
 	"Info  [wPy]revious Files  [wQy]uit  n\r\n"
@@ -814,7 +814,7 @@
 "Level %u"                                              669 NoAccessLevel
 "Age %u"                                                670 NoAccessAge
 "BPS %u"                                                671 NoAccessBPS
-"Credits %lu"                                           672 NoAccessCredit
+"Credits %u"                                           672 NoAccessCredit
 "Node %u"                                               673 NoAccessNode
 "User %u"                                               674 NoAccessUser
 "Days till expire %u"                                   675 NoAccessExpire
