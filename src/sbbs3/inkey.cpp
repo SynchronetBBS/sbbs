@@ -221,8 +221,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			SAVELINE;
 			attr(LIGHTGRAY);
 			now=time(NULL);
-			bprintf(text[TiLogon],timestr(&logontime));
-			bprintf(text[TiNow],timestr(&now));
+			bprintf(text[TiLogon],timestr(logontime));
+			bprintf(text[TiNow],timestr(now));
 			bprintf(text[TiTimeon]
 				,sectostr(now-logontime,tmp));
 			bprintf(text[TiTimeLeft]

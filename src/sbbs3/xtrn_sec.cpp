@@ -1760,7 +1760,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		getnodedat(cfg.node_num,&thisnode,0);
 		now=time(NULL);
 		sprintf(str,hungupstr,useron.alias,cfg.xtrn[thisnode.aux-1]->name
-			,timestr(&now));
+			,timestr(now));
 		write(file,str,strlen(str));
 		close(file); 
 	} 

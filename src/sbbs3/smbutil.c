@@ -510,14 +510,13 @@ char *binstr(uchar *buf, ushort length)
 /* Generates a 24 character ASCII string that represents the time_t pointer */
 /* Used as a replacement for ctime()                                        */
 /****************************************************************************/
-char *my_timestr(time32_t *intime)
+char *my_timestr(time_t intime)
 {
     static char str[256];
     char mer[3],hour;
     struct tm *gm;
-	time_t	tt=*intime;
 
-	gm=localtime(&tt);
+	gm=localtime(&intime);
 	if(gm==NULL) {
 		strcpy(str,"Invalid Time");
 		return(str); 
@@ -560,7 +559,7 @@ void dumpindex(ulong start, ulong count)
 
 		printf("%4lu %04hX %04hX %04Xh %04Xh %06X %s\n"
 			,idx.number,idx.from,idx.to,idx.subj,idx.attr
-			,idx.offset,my_timestr(&idx.time));
+			,idx.offset,my_timestr(idx.time));
 		l++; 
 	}
 }
@@ -626,7 +625,7 @@ void dump_hashes(void)
 		printf("%-10s: %lu\n",		"Number",	hash.number);
 		printf("%-10s: %s\n",		"Source",	smb_hashsourcetype(hash.source));
 		printf("%-10s: %lu\n",		"Length",	hash.length);
-		printf("%-10s: %s\n",		"Time",		my_timestr(&hash.time));
+		printf("%-10s: %s\n",		"Time",		my_timestr(hash.time));
 		printf("%-10s: %x\n",		"Flags",	hash.flags);
 		if(hash.flags&SMB_HASH_CRC16)
 			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
@@ -1338,7 +1337,7 @@ void readmsgs(ulong start)
 			if(msg.from_net.type)
 				printf(" (%s)",smb_netaddr(&msg.from_net));
 			printf("\nDate : %.24s %s"
-				,my_timestr(&msg.hdr.when_written.time)
+				,my_timestr(msg.hdr.when_written.time)
 				,smb_zonestr(msg.hdr.when_written.zone,NULL));
 
 			printf("\n\n");

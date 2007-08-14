@@ -912,7 +912,7 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		JS_ValueToInt32(cx,argv[0],&i);
 	t=i;
-	timestr(cfg,&t,str);
+	timestr(cfg,t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
 

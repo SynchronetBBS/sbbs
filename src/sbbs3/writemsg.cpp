@@ -1170,7 +1170,7 @@ void sbbs_t::automsg()
 						sprintf(tmp,"%.80s",text[Anonymous]);
 					else
 						sprintf(tmp,"%s #%d",useron.alias,useron.number);
-					sprintf(str,text[AutoMsgBy],tmp,timestr(&now));
+					sprintf(str,text[AutoMsgBy],tmp,timestr(now));
 					strcat(str,"          ");
 					write(file,str,strlen(str));
 					write(file,buf,strlen(buf));

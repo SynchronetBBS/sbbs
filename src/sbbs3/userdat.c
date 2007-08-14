@@ -2446,7 +2446,7 @@ BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host
     	return(FALSE);
 
     fprintf(fp,"\n; %s %s by %s on %s\n"
-    	,prot,reason,username,timestr(cfg,&now,tstr));
+    	,prot,reason,username,timestr(cfg,now,tstr));
 
 	if(host!=NULL)
 		fprintf(fp,"; Hostname: %s\n",host);

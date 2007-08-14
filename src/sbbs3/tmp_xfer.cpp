@@ -219,7 +219,7 @@ void sbbs_t::temp_xfer()
 					t=fdate(g.gl_pathv[i]);
 					bprintf("%-25s %15s   %s\r\n",getfname(g.gl_pathv[i])
 						,ultoac(flength(g.gl_pathv[i]),tmp)
-						,timestr(&t));
+						,timestr(t));
 					files++;
 					bytes+=flength(g.gl_pathv[i]);
 				}
@@ -412,7 +412,7 @@ ulong sbbs_t::create_filelist(char *name, long mode)
 		return(0); }
 	k=0;
 	if(mode&FL_ULTIME) {
-		sprintf(str,"New files since: %s\r\n",timestr(&ns_time));
+		sprintf(str,"New files since: %s\r\n",timestr(ns_time));
 		write(file,str,strlen(str)); }
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {

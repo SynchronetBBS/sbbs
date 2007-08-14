@@ -2401,7 +2401,7 @@ void event_thread(void* arg)
 							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
 						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
 							,sbbs->cfg.event[i]->code
-							,time32str(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
+							,timestr(&sbbs->cfg, sbbs->cfg.event[i]->last, str)
 							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
 						start=time(NULL);

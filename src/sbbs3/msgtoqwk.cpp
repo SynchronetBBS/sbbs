@@ -163,7 +163,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			p=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && p) {
 			sprintf(str,"Forwarded from %s on %s%c",p
-				,time32str((time32_t *)msg->hfield_dat[i])
+				,timestr(*(time32_t *)msg->hfield_dat[i])
 				,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
 			size+=strlen(str); 

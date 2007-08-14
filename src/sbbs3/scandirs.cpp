@@ -55,7 +55,7 @@ void sbbs_t::scandirs(long mode)
 		return; }
 	if(ch!='A') {
 		if(mode&FL_ULTIME) {			/* New file scan */
-			bprintf(text[NScanHdr],timestr(&ns_time));
+			bprintf(text[NScanHdr],timestr(ns_time));
 			str[0]=0; }
 		else if(mode==FL_NO_HDR) {		/* Search for a string */
 			if(!getfilespec(tmp))
@@ -117,7 +117,7 @@ void sbbs_t::scanalldirs(long mode)
 	if(!usrlibs) return;
 	k=0;
 	if(mode&FL_ULTIME) {			/* New file scan */
-		bprintf(text[NScanHdr],timestr(&ns_time));
+		bprintf(text[NScanHdr],timestr(ns_time));
 		str[0]=0; }
 	else if(mode==FL_NO_HDR) {		/* Search for a string */
 		if(!getfilespec(tmp))

@@ -578,7 +578,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	char str[256];
 
 	bputs(text[NScanDate]);
-	bputs(timestr(dt));
+	bputs(timestr(*dt));
 	CRLF;
 	if(localtime_r(dt,&tm)==NULL) {
 		errormsg(WHERE,ERR_CHK,"time ptr",0);
@@ -836,13 +836,7 @@ bool sbbs_t::trashcan(char *insearchof, char *name)
 	return(result);
 }
 
-char* sbbs_t::time32str(time32_t *intime)
-{
-	time_t intime32=*intime;
-	return(::timestr(&cfg,&intime32,timestr_output));
-}
-
-char* sbbs_t::timestr(time_t *intime)
+char* sbbs_t::timestr(time_t intime)
 {
 	return(::timestr(&cfg,intime,timestr_output));
 }

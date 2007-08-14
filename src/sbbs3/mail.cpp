@@ -141,7 +141,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 	if(n>cfg.sys_nodes) {
 		now=time(NULL);
 		sprintf(str,text[UserReadYourMail]
-			,useron.alias,timestr(&now));
+			,useron.alias,timestr(now));
 		putsmsg(&cfg,usernumber,str); }
 }
 

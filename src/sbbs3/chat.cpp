@@ -1315,7 +1315,7 @@ void sbbs_t::nodemsg()
 					,username(&cfg,usernumber,tmp),usernumber);
 				sprintf(buf,text[TelegramFmt]
 					,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
-					,timestr(&now));
+					,timestr(now));
 				i=0;
 				logbuf[0]=0;
 				while(online && i<5) {

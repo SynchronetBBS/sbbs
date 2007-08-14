@@ -71,9 +71,9 @@ void sbbs_t::fileinfo(file_t* f)
 	bprintf(text[FiDescription],f->desc);
 	bprintf(text[FiUploadedBy],f->misc&FM_ANON ? text[UNKNOWN_USER] : f->uler);
 	if(f->date)
-		bprintf(text[FiFileDate],time32str(&f->date));
-	bprintf(text[FiDateUled],time32str(&f->dateuled));
-	bprintf(text[FiDateDled],f->datedled ? time32str(&f->datedled) : "Never");
+		bprintf(text[FiFileDate],timestr(f->date));
+	bprintf(text[FiDateUled],timestr(f->dateuled));
+	bprintf(text[FiDateDled],f->datedled ? timestr(f->datedled) : "Never");
 	bprintf(text[FiTimesDled],f->timesdled);
 	if(f->size!=-1L)
 		bprintf(text[FiTransferTime],sectostr(f->timetodl,tmp));

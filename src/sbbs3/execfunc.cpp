@@ -409,10 +409,10 @@ int sbbs_t::exec_function(csi_t *csi)
 			bputs(" for files ");
 			if(*(csi->ip-1)==CS_FILE_FIND_OLD_UPLOADS) {
 				l=FI_OLDUL;
-				bprintf("uploaded before %s\r\n",timestr(&ns_time)); }
+				bprintf("uploaded before %s\r\n",timestr(ns_time)); }
 			else if(*(csi->ip-1)==CS_FILE_FIND_OLD) { /* go by download date */
 				l=FI_OLD;
-				bprintf("not downloaded since %s\r\n",timestr(&ns_time)); }
+				bprintf("not downloaded since %s\r\n",timestr(ns_time)); }
 			else if(*(csi->ip-1)==CS_FILE_FIND_OFFLINE) {
 				l=FI_OFFLINE;
 				bputs("not online...\r\n"); }

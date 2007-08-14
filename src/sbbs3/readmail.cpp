@@ -384,7 +384,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					sprintf(str2,text[Regarding],msg.subj);
 				else						/* Reply to other */
 					sprintf(str2,text[RegardingByOn],msg.subj,msg.from
-						,time32str((time32_t *)&msg.hdr.when_written.time));
+						,timestr(msg.hdr.when_written.time));
 
 				p=strrchr(str,'@');
 				if(p) { 							/* name @addr */

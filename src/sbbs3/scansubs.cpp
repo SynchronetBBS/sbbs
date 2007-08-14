@@ -247,7 +247,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(t>(long)l)
 					l=t;
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
-					,timestr(&t),nulstr); }
+					,timestr(t),nulstr); }
 			SYNC;
 			mnemonics(text[WhichOrAll]);
 			s=getkeys("AQ",usrsubs[i]);

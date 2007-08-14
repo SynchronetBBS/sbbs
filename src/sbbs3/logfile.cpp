@@ -53,7 +53,7 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	sprintf(hdr,"SUSPECTED %s HACK ATTEMPT from %s on %.24s\r\nUsing port %u at %s [%s]\r\nDetails: "
 		,prot
 		,user
-		,timestr(cfg,&now,tstr)
+		,timestr(cfg,now,tstr)
 		,addr->sin_port
 		,host
 		,inet_ntoa(addr->sin_addr)
@@ -94,7 +94,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	sprintf(hdr,"SUSPECTED %s SPAM %s on %.24s\r\nHost: %s [%s]\r\nFrom: %.128s %s\r\nReason: "
 		,prot
 		,action
-		,timestr(cfg,&now,tstr)
+		,timestr(cfg,now,tstr)
 		,host
 		,ip_addr
 		,from
@@ -115,7 +115,7 @@ void sbbs_t::logentry(char *code, char *entry)
 	char str[512];
 
 	now=time(NULL);
-	sprintf(str,"Node %2d  %s\r\n   %s",cfg.node_num,timestr(&now),entry);
+	sprintf(str,"Node %2d  %s\r\n   %s",cfg.node_num,timestr(now),entry);
 	logline(code,str);
 }
 
@@ -366,7 +366,7 @@ void sbbs_t::errorlog(char *text)
 		errorlog_inside=0;
 		return; }
 	sprintf(hdr,"%s Node %2d: %s #%d"
-		,timestr(&now),cfg.node_num,useron.alias,useron.number);
+		,timestr(now),cfg.node_num,useron.alias,useron.number);
 	write(file,hdr,strlen(hdr));
 	write(file,crlf,2);
 	write(file,text,strlen(text));

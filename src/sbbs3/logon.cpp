@@ -494,7 +494,7 @@ bool sbbs_t::logon()
 	}
 
 	if(sys_status&SS_EVENT)
-		bprintf(text[ReducedTime],timestr(&event_time));
+		bprintf(text[ReducedTime],timestr(event_time));
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.misc&=~(NODE_AOFF|NODE_POFF);
 	if(useron.chat&CHAT_NOACT)
@@ -604,7 +604,7 @@ ulong sbbs_t::logonstats()
 	if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
 		|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
 
-		sprintf(str,"New Day - Prev: %s ",timestr(&update_t));
+		sprintf(str,"New Day - Prev: %s ",timestr(update_t));
 		logentry("!=",str);
 
 		sys_status|=SS_DAILY;       /* New Day !!! */
