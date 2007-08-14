@@ -2400,6 +2400,44 @@ int DLLCALL user_rec_len(int offset)
 	return(-1);
 }
 
+/****************************************************************************/
+/* Determine if the specified user can or cannot post on the specified sub	*/
+/* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
+/* the reason the user cannot post, when returning FALSE.					*/
+/****************************************************************************/
+BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, uint* reason)
+{
+	if(reason!=NULL)
+		*reason=CantPostOnSub;
+	if(!VALID_CFG(cfg))
+		return FALSE;
+	if(subnum>=cfg->total_subs)
+		return FALSE;
+	if(!chk_ar(cfg,cfg->grp[cfg->sub[subnum]->grp]->ar,user))
+		return FALSE;
+	if(!chk_ar(cfg,cfg->sub[subnum]->ar,user))
+		return FALSE;
+	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user))
+		return FALSE;
+	if(cfg->sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
+		&& user->rest&FLAG('N'))		/* network restriction? */
+		return FALSE;
+	if(reason!=NULL)
+		*reason=R_Post;
+	if(user->rest&FLAG('P'))			/* post restriction? */
+		return FALSE;	
+	if(reason!=NULL)
+		*reason=TooManyPostsToday;
+	if(user->ptoday>=cfg->level_postsperday[user->level])
+		return FALSE;
+
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Determine if downloads from the specified directory are free for the		*/
+/* specified user															*/
+/****************************************************************************/
 BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user)
 {
 	if(!VALID_CFG(cfg))

@@ -71,6 +71,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	ulong	length,offset,crc=0xffffffff;
 	FILE*	instream;
 	smbmsg_t msg;
+	uint	reason;
 
 	if(remsg) {
 		sprintf(title,"%.*s",LEN_TITLE,remsg->subj);
@@ -96,22 +97,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	}
 
 	/* Security checks */
-	if(!chk_ar(cfg.sub[subnum]->post_ar,&useron)) {
-		bputs(text[CantPostOnSub]);
-		return(false); 
-	}
-	if(useron.rest&FLAG('P')) {
-		bputs(text[R_Post]);
-		return(false); 
-	}
-	if((cfg.sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET))
-		&& (useron.rest&FLAG('N'))) {
-		bputs(text[CantPostOnSub]);
-		return(false); 
-	}
-	if(useron.ptoday>=cfg.level_postsperday[useron.level]) {
-		bputs(text[TooManyPostsToday]);
-		return(false); 
+	if(!can_user_post(&cfg,subnum,&useron,&reason)) {
+		bputs(text[reason]);
+		return false;
 	}
 
 	bprintf(text[Posting],cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
