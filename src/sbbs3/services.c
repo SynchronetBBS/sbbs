@@ -62,40 +62,38 @@
 
 /* Constants */
 
-#define MAX_SERVICES			128
-#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_UDP_BUF_LEN			8192	/* 8K */
 #define DEFAULT_LISTEN_BACKLOG	5
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
-static DWORD	sockets=0;
+static uint32_t	sockets=0;
 static BOOL		terminated=FALSE;
 static time_t	uptime=0;
-static DWORD	served=0;
+static uint32_t	served=0;
 static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 
 typedef struct {
 	/* These are sysop-configurable */
-	DWORD   interface_addr;
-	WORD	port;
-	char	protocol[34];
-	char	cmd[128];
-	DWORD	max_clients;
-	DWORD	options;
-	int		listen_backlog;
-	int		log_level;
-	DWORD	stack_size;
+	uint32_t	interface_addr;
+	uint16_t	port;
+	char		protocol[34];
+	char		cmd[128];
+	uint32_t	max_clients;
+	uint32_t	options;
+	int			listen_backlog;
+	int			log_level;
+	uint32_t	stack_size;
 	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	DWORD	clients;
-	DWORD	served;
-	SOCKET	socket;
-	BOOL	running;
-	BOOL	terminated;
+	uint32_t	clients;
+	uint32_t	served;
+	SOCKET		socket;
+	BOOL		running;
+	BOOL		terminated;
 } service_t;
 
 typedef struct {
@@ -112,7 +110,7 @@ typedef struct {
 } service_client_t;
 
 static service_t	*service=NULL;
-static DWORD		services=0;
+static uint32_t		services=0;
 
 static int lprintf(int level, char *fmt, ...)
 {
@@ -1445,7 +1443,7 @@ static void native_service_thread(void* arg)
 
 void DLLCALL services_terminate(void)
 {
-	DWORD i;
+	uint32_t i;
 
    	lprintf(LOG_INFO,"0000 Services terminate");
 	terminated=TRUE;
@@ -1455,7 +1453,7 @@ void DLLCALL services_terminate(void)
 
 #define NEXT_FIELD(p)	FIND_WHITESPACE(p); SKIP_WHITESPACE(p)
 
-static service_t* read_services_ini(service_t* service, DWORD* services)
+static service_t* read_services_ini(service_t* service, uint32_t* services)
 {
 	uint		i,j;
 	FILE*		fp;
@@ -1469,7 +1467,6 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 	str_list_t	list;
 	service_t*	np;
 	service_t	serv;
-	int			log_level;
 
 	iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir,"services.ini");
 
@@ -1482,9 +1479,12 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 	list=iniReadFile(fp);
 	fclose(fp);
 
-	log_level = iniGetLogLevel(list,ROOT_SECTION,"LogLevel",LOG_DEBUG);
 	sec_list = iniGetSectionList(list,"");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
+		if(!iniGetBool(list,sec_list[i],"Enabled",TRUE)) {
+			lprintf(LOG_WARNING,"Ignoring disabled service: %s",sec_list[i]);
+			continue;
+		}
 		memset(&serv,0,sizeof(service_t));
 		SAFECOPY(serv.protocol,iniGetString(list,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.socket=INVALID_SOCKET;
@@ -1493,7 +1493,7 @@ static service_t* read_services_ini(service_t* service, DWORD* services)
 		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
 		serv.stack_size=iniGetInteger(list,sec_list[i],"StackSize",0);
 		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,0);
-		serv.log_level = iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
+		serv.log_level = iniGetLogLevel(list,sec_list[i],"LogLevel",startup->log_level);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
