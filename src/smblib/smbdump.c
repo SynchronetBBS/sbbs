@@ -113,7 +113,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 		,ctime(&tt)	
 		,smb_tzutc(msg->hdr.when_written.zone)/60
 		,abs(smb_tzutc(msg->hdr.when_written.zone)%60));
-	tt-msg->hdr.when_imported.time;
+	tt=msg->hdr.when_imported.time;
 	fprintf(fp,"%-20.20s %.24s  UTC%+d:%02d\n"	,"when_imported"	
 		,ctime(&tt)	
 		,smb_tzutc(msg->hdr.when_imported.zone)/60
