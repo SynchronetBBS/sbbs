@@ -81,7 +81,7 @@ typedef struct {
 	uint16_t	port;
 	char		protocol[34];
 	char		cmd[128];
-	uint32_t	max_clients;
+	uint		max_clients;
 	uint32_t	options;
 	int			listen_backlog;
 	int			log_level;
@@ -1467,6 +1467,11 @@ static service_t* read_services_ini(service_t* service, uint32_t* services)
 	str_list_t	list;
 	service_t*	np;
 	service_t	serv;
+	int			log_level;
+	int			listen_backlog;
+	uint		max_clients;
+	uint32_t	options;
+	uint32_t	stack_size;
 
 	iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir,"services.ini");
 
@@ -1479,6 +1484,14 @@ static service_t* read_services_ini(service_t* service, uint32_t* services)
 	list=iniReadFile(fp);
 	fclose(fp);
 
+	/* Get default key values from "root" section */
+	log_level		= iniGetLogLevel(list,ROOT_SECTION,"LogLevel",startup->log_level);
+	stack_size		= iniGetInteger(list,ROOT_SECTION,"StackSize",0);
+	max_clients		= iniGetInteger(list,ROOT_SECTION,"MaxClients",0);
+	listen_backlog	= iniGetInteger(list,ROOT_SECTION,"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
+	options			= iniGetBitField(list,ROOT_SECTION,"Options",service_options,0);
+
+	/* Enumerate and parse each service configuration */
 	sec_list = iniGetSectionList(list,"");
     for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
 		if(!iniGetBool(list,sec_list[i],"Enabled",TRUE)) {
@@ -1489,11 +1502,11 @@ static service_t* read_services_ini(service_t* service, uint32_t* services)
 		SAFECOPY(serv.protocol,iniGetString(list,sec_list[i],"Protocol",sec_list[i],prot));
 		serv.socket=INVALID_SOCKET;
 		serv.interface_addr=iniGetIpAddress(list,sec_list[i],"Interface",startup->interface_addr);
-		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",0);
-		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
-		serv.stack_size=iniGetInteger(list,sec_list[i],"StackSize",0);
-		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,0);
-		serv.log_level = iniGetLogLevel(list,sec_list[i],"LogLevel",startup->log_level);
+		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",max_clients);
+		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",listen_backlog);
+		serv.stack_size=iniGetInteger(list,sec_list[i],"StackSize",stack_size);
+		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,options);
+		serv.log_level=iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
