@@ -123,9 +123,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#include "startup.h"
 	#include "threadwrap.h"	/* pthread_mutex_t */
 #endif
-#ifdef SBBS	
-	#include "text.h"
-#endif
 
 /* xpdev */
 #ifndef LINK_LIST_THREADSAFE
@@ -152,6 +149,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "crc32.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "text.h"
 
 /* Synchronet Node Instance class definition */
 #ifdef __cplusplus
