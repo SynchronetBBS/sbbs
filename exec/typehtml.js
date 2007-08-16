@@ -6,6 +6,8 @@
 
 // $Id$
 
+load("sbbsdefs.js");	// USER_HTML
+
 var NORMAL			="\1N\1H"
 var HEADING1		="\1H\1Y"
 var HEADING2		="\1H\1C"
