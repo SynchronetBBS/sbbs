@@ -72,9 +72,9 @@ while(1) {
 			fname=str;
 			bbs.replace_text(563,"\001n\001h\001b{\001wContinue? Yes/No\001b} ");
 			if(str.search(/\.htm/)!=-1)
-				load("typehtml.js", "-color", str);
+				load(new Object, "typehtml.js", "-color", str);
 			else
-				load("typeasc.js", str, "BullsEye Bulletin #"+b);
+				load(new Object, "typeasc.js", str, "BullsEye Bulletin #"+b);
 			log("Node "+bbs.node_num+" "+user.alias+" viewed bulletin #"+i+": "+fname);
 			bbs.revert_text(563);
 			console.aborted=false;
