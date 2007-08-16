@@ -56,7 +56,7 @@ if(this.f==undefined) {
 if(title=='')
 	title=filename;
 
-if(1 || (user.settings & USER_HTML)) {
+if(user.settings & USER_HTML) {
 
 	if(!f.open("rb",true,f.length)) {
 		alert("Error " + errno + " opening " + f.name);
