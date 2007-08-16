@@ -23,6 +23,7 @@ var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G"
 
 var f;
 var mono=true;
+var i;
 
 for(i in argv) {
 	switch(argv[i].toLowerCase()) {

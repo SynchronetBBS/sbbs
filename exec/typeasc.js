@@ -11,6 +11,7 @@ var f;
 var title='';
 var filename='';
 var mode=P_NONE;
+var i;
 
 for(i in argv) {
 	if(filename=='') {
