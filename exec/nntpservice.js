@@ -145,7 +145,7 @@ while(client.socket.is_connected && !quit) {
 	if(cmdline=="") 	/* ignore blank commands */
 		continue;
 
-	log(format("cmd: %s",cmdline));
+	log((selected==null ? "":("["+selected.newsgroup+"] ")) +format("cmd: %s",cmdline));
 
 	cmd=cmdline.split(' ');
 
