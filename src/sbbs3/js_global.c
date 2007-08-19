@@ -2377,6 +2377,38 @@ js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_dosfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char		path[MAX_PATH+1];
+	JSString*	js_str;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+#if defined(_WIN32)
+
+	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	if(GetShortPathName(str,path,sizeof(path))) {
+		js_str = JS_NewStringCopyZ(cx, path);
+		if(js_str==NULL)
+			return(JS_FALSE);
+
+		*rval = STRING_TO_JSVAL(js_str);
+	}
+
+#else	/* No non-Windows equivalent */
+
+	*rval = argv[0];
+
+#endif
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_cfgfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		path;
@@ -3160,7 +3192,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"file_getcase",	js_getfcase,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
-	,JSDOCSTR("returns correct case of filename (long version of filename on Win32) "
+	,JSDOCSTR("returns correct case of filename (long version of filename on Windows) "
 		"or <i>undefined</i> if the file doesn't exist")
 	,311
 	},
@@ -3169,6 +3201,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 	"optionally including the local hostname (e.g. <tt>path/file.<i>host</i>.<i>domain</i>.ext</tt> "
 	"or <tt>path/file.<i>host</i>.ext</tt>) if such a variation of the filename exists")
 	,312
+	},
+	{"file_getdosname",	js_dosfname,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
+	,JSDOCSTR("returns DOS-compatible (Micros~1 shortened) version of specified <i>path/filename</i>"
+		"(on Windows only)<br>"
+		"returns unmodified <i>path/filename</i> on other platforms")
+	,315
 	},
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
 	,JSDOCSTR("verify a file's existence")
