@@ -434,6 +434,7 @@ int create_netmail(char *to, char *subject, char *body, faddr_t dest, BOOL file_
 			if(i<cfg.nodecfgs)
 				attr=cfg.nodecfg[i].attr; } }
 
+	MKDIR(scfg.netmail_dir);
 	do {
 		for(i=startmsg;i;i++) {
 			sprintf(fname,"%s%u.msg",scfg.netmail_dir,i);

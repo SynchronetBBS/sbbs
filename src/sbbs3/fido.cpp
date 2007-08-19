@@ -308,6 +308,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	read(file,buf,length);
 	close(file);
 
+	md(cfg.netmail_dir);
 	cc_sent=0;
 	while(1) {
 		for(i=1;i;i++) {
@@ -836,6 +837,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 	SAFECOPY(hdr.subj,p);
 
+	md(cfg.netmail_dir);
 	for(i=1;i;i++) {
 		sprintf(str,"%s%u.msg", cfg.netmail_dir,i);
 		if(!fexistcase(str))
