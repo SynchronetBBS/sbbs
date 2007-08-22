@@ -173,7 +173,7 @@ function list_users(show)
 		i=get_sysnum(message.ip_address);
 		if(i==-1)
 			continue;
-		if(sys[i].reply == undefined) {
+		if(sys[i].udp == false) {
 			replies++;
 			udp_replies++;
 			sys[i].udp=true;
@@ -228,8 +228,6 @@ function list_users(show)
 			is_connected = sock.connect(sys[i].addr,IPPORT_SYSTAT,5);
 			if(!is_connected) {
 				is_connected = sock.connect(sys[i].addr,IPPORT_FINGER,5);
-				if(!is_connected)
-					sys[i].addr = undefined;	// IP no good, remove from cache
 			}
 		}
 
