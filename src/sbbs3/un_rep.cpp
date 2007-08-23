@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -209,20 +209,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 				smb.status.attr=SMB_EMAIL;
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
-					errormsg(WHERE,ERR_CREATE,smb.file,k);
+					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					continue; 
 				} 
 			}
 
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_LOCK,smb.file,k);
+				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				continue; 
 			}
 
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_READ,smb.file,k);
+				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				continue; 
 			}
 
@@ -423,7 +423,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 					if((j=smb_create(&smb))!=0) {
 						smb_close(&smb);
 						lastsub=INVALID_SUB;
-						errormsg(WHERE,ERR_CREATE,smb.file,j);
+						errormsg(WHERE,ERR_CREATE,smb.file,j,smb.last_error);
 						continue; 
 					} 
 				}
@@ -431,13 +431,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if((j=smb_locksmbhdr(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
-					errormsg(WHERE,ERR_LOCK,smb.file,j);
+					errormsg(WHERE,ERR_LOCK,smb.file,j,smb.last_error);
 					continue; 
 				}
 				if((j=smb_getstatus(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
-					errormsg(WHERE,ERR_READ,smb.file,j);
+					errormsg(WHERE,ERR_READ,smb.file,j,smb.last_error);
 					continue; 
 				}
 				smb_unlocksmbhdr(&smb);

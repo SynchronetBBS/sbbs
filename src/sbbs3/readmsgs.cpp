@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -181,7 +181,7 @@ post_t * sbbs_t::loadposts(int32_t *posts, uint subnum, ulong ptr, long mode)
 	(*posts)=0;
 
 	if((i=smb_locksmbhdr(&smb))!=0) {				/* Be sure noone deletes or */
-		errormsg(WHERE,ERR_LOCK,smb.file,i);		/* adds while we're reading */
+		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);		/* adds while we're reading */
 		return(NULL); 
 	}
 
@@ -452,13 +452,13 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
-		errormsg(WHERE,ERR_LOCK,smb.file,i);
+		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_close(&smb);
-		errormsg(WHERE,ERR_READ,smb.file,i);
+		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
 		return(0); 
 	}
@@ -504,12 +504,12 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		msg.idx.subj=post[smb.curmsg].subj;
 
 		if((i=smb_locksmbhdr(&smb))!=0) {
-			errormsg(WHERE,ERR_LOCK,smb.file,i);
+			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 			break; 
 		}
 		if((i=smb_getstatus(&smb))!=0) {
 			smb_unlocksmbhdr(&smb);
-			errormsg(WHERE,ERR_READ,smb.file,i);
+			errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 			break; 
 		}
 		smb_unlocksmbhdr(&smb);
@@ -606,7 +606,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						msg.hdr.attr|=MSG_READ;
 						msg.idx.attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
-							errormsg(WHERE,ERR_WRITE,smb.file,i);
+							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						smb_unlockmsghdr(&smb,&msg); 
 					}
 					smb_unlocksmbhdr(&smb); 
@@ -726,7 +726,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						msg.idx.attr^=MSG_DELETE;
 						msg.hdr.attr=msg.idx.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
-							errormsg(WHERE,ERR_WRITE,smb.file,i);
+							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						smb_unlockmsghdr(&smb,&msg);
 						if(i==0 && msg.idx.attr&MSG_DELETE) {
 							sprintf(str,"%s removed post from %s %s"
@@ -918,7 +918,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								if(loadmsg(&msg,msg.idx.number)) {
 									msg.hdr.attr=msg.idx.attr=i;
 									if((i=smb_putmsg(&smb,&msg))!=0)
-										errormsg(WHERE,ERR_WRITE,smb.file,i);
+										errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 									smb_unlockmsghdr(&smb,&msg); 
 								}
 								smb_unlocksmbhdr(&smb);
@@ -949,7 +949,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 									msg.idx.attr|=MSG_DELETE;
 									msg.hdr.attr=msg.idx.attr;
 									if((i=smb_putmsg(&smb,&msg))!=0)
-										errormsg(WHERE,ERR_WRITE,smb.file,i); 
+										errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
 								}
 								smb_unlockmsghdr(&smb,&msg);
 							}
@@ -982,7 +982,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 									msg.idx.attr|=MSG_VALIDATED;
 									msg.hdr.attr=msg.idx.attr;
 									if((i=smb_putmsg(&smb,&msg))!=0)
-										errormsg(WHERE,ERR_WRITE,smb.file,i);
+										errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 									smb_unlockmsghdr(&smb,&msg); 
 								}
 								smb_unlocksmbhdr(&smb);

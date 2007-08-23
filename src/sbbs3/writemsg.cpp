@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1074,7 +1074,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 
 	if((i=smb_addmsghdr(&smb,msg,SMB_SELFPACK))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_WRITE,smb.file,i);
+		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 		smb_freemsg_dfields(&smb,msg,1);
 		return; 
 	}
@@ -1209,12 +1209,12 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	length+=2;	 /* +2 for translation string */
 
 	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_LOCK,smb.file,i);
+		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 		return; 
 	}
 
 	if((i=smb_getstatus(&smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_READ,smb.file,i);
+		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 		return; 
 	}
 
@@ -1278,7 +1278,7 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	smb_unlocksmbhdr(&smb);
 	msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
 	if((i=smb_putmsghdr(&smb,msg))!=SMB_SUCCESS)
-		errormsg(WHERE,ERR_WRITE,smb.file,i);
+		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 }
 
 /****************************************************************************/

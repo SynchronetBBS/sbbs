@@ -164,20 +164,20 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				smb.status.attr=SMB_EMAIL;
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
-					errormsg(WHERE,ERR_CREATE,smb.file,k);
+					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					smb_stack(&smb,SMB_STACK_POP);
 					continue; 
 				} 
 			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_LOCK,smb.file,k);
+				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
 				continue; 
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_READ,smb.file,k);
+				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
 				continue; 
 			}
@@ -254,18 +254,18 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				smb.status.attr=cfg.sub[j]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
-					errormsg(WHERE,ERR_CREATE,smb.file,k);
+					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					continue; 
 				} 
 			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_LOCK,smb.file,k);
+				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				continue; 
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
-				errormsg(WHERE,ERR_READ,smb.file,k);
+				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);

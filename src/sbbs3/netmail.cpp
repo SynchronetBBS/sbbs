@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -165,13 +165,13 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 		if((i=smb_create(&smb))!=SMB_SUCCESS) {
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
-			errormsg(WHERE,ERR_CREATE,smb.file,i);
+			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
 			return(false); } }
 
 	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_LOCK,smb.file,i);
+		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 		return(false); }
 
 	length=flength(msgpath)+2;	 /* +2 for translation string */
