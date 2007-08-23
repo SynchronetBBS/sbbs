@@ -123,7 +123,7 @@ function get_message()
 	}
 
 	if(bbs.time_left==0) {
-		/* Call get_time_left() to handle the hangup and such 8/
+		/* Call get_time_left() to handle the hangup and such */
 		clear_screen();
 		bbs.get_time_left();
 		bbs.hangup();
