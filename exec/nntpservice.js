@@ -374,10 +374,10 @@ while(client.socket.is_connected && !quit) {
 			}
 
 			if(cmd[0].toUpperCase()=="GROUP")
-				writeln(format("211 %u %u %u %s group selected"
+				writeln(format("211 %u %u %d %s group selected"
 					,msgbase.total_msgs	// articles in group
 					,msgbase.first_msg
-					,msgbase.last_msg
+					,(msgbase.total_msgs==0) ? (msgbase.first_msg-1):msgbase.last_msg
 					,selected.newsgroup
 					));
 			else {	// LISTGROUP
