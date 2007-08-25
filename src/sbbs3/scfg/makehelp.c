@@ -8,12 +8,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#if defined(__unix__)
-	#include <unistd.h>		/* write */
-	#define O_BINARY 0
-#else
-	#include <io.h>	/* open */
-#endif
+
+/* XPDEV */
+#include <filewrap.h>
 
 int main(int argc, char **argv)
 {
