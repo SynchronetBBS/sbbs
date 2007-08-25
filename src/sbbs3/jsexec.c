@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -112,6 +112,7 @@ void usage(FILE* fp)
 		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
 		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
 		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
+		"\t-u<mask>       set file creation permissions mask (in octal)\n"
 		"\t-L<level>      set log level (default=%u)\n"
 		"\t-E<level>      set error log level threshold (default=%d)\n"
 		"\t-f             use non-buffered stream for console messages\n"
@@ -858,6 +859,10 @@ int main(int argc, char **argv, char** environ)
 						gethostname(host_name=host_name_buf,sizeof(host_name_buf));
 					else
 						host_name=p;
+					break;
+				case 'u':
+					if(*p==0) p=argv[++argn];
+					umask(strtol(p,NULL,8));
 					break;
 				case 'L':
 					if(*p==0) p=argv[++argn];

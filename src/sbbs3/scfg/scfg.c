@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -126,13 +126,16 @@ int main(int argc, char **argv)
                 case 'B':
         			backup_level=atoi(argv[i]+2);
                     break;
+				case 'U':
+					umask(strtoul(argv[i]+2,NULL,8));
+					break;
                 case 'S':
         			no_dirchk=!no_dirchk;
                     break;
                 case 'H':
         			no_msghdr=!no_msghdr;
                     break;
-                case 'U':
+                case 'A':
         			all_msghdr=!all_msghdr;
                     break;
                 case 'F':
@@ -186,8 +189,9 @@ int main(int argc, char **argv)
                         "\n\noptions:\n\n"
                         "-s  =  don't check directories\r\n"
                         "-f  =  force save of config files\r\n"
-                        "-u  =  update all message base status headers\r\n"
+                        "-a  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
+						"-u# =  set file creation permissions mask (in octal)\n"
                         "-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
                         "-e# =  set escape delay to #msec\r\n"
