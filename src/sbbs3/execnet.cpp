@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -97,7 +97,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				csi->logic=close_socket((SOCKET)*lp);
 				csi->socket_error=ERROR_VALUE;
 				for(i=0;i<csi->sockets;i++)
-					if(csi->socket[i]==*lp)
+					if(csi->socket[i]==(SOCKET)*lp)
 						csi->socket[i]=0; 
 				*lp=0;
 			}
