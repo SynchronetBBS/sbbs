@@ -35,6 +35,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifndef STATIC_LINK
+#include <dlfcn.h>
+#endif
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include <threadwrap.h>
 
@@ -47,145 +52,75 @@
 
 #include "ciolib.h"
 #include "x_cio.h"
-#include "console.h"
-WORD	x_curr_attr=0x0700;
-
-int x_puttext(int sx, int sy, int ex, int ey, void *fill)
-{
-	int x,y;
-	unsigned char *out;
-	WORD	sch;
-	struct text_info	ti;
-
-	gettextinfo(&ti);
-
-	if(		   sx < 1
-			|| sy < 1
-			|| ex < 1
-			|| ey < 1
-			|| sx > ti.screenwidth
-			|| sy > ti.screenheight
-			|| sx > ex
-			|| sy > ey
-			|| ex > ti.screenwidth
-			|| ey > ti.screenheight
-			|| fill==NULL)
-		return(0);
-
-	out=fill;
-	for(y=sy-1;y<ey;y++) {
-		for(x=sx-1;x<ex;x++) {
-			sch=*(out++);
-			sch |= (*(out++))<<8;
-			vmem[y*DpyCols+x]=sch;
-		}
-	}
-	return(1);
-}
-
-int x_gettext(int sx, int sy, int ex, int ey, void *fill)
-{
-	int x,y;
-	unsigned char *out;
-	WORD	sch;
-	struct text_info	ti;
-
-	gettextinfo(&ti);
-
-	if(		   sx < 1
-			|| sy < 1
-			|| ex < 1
-			|| ey < 1
-			|| sx > ti.screenwidth
-			|| sy > ti.screenheight
-			|| sx > ex
-			|| sy > ey
-			|| ex > ti.screenwidth
-			|| ey > ti.screenheight
-			|| fill==NULL)
-		return(0);
-
-	out=fill;
-	for(y=sy-1;y<ey;y++) {
-		for(x=sx-1;x<ex;x++) {
-			sch=vmem[y*DpyCols+x];
-			*(out++)=sch & 0xff;
-			*(out++)=sch >> 8;
-		}
-	}
-	return(1);
-}
+#include "x_events.h"
 
 int x_kbhit(void)
 {
-	return(tty_kbhit());
-}
+	fd_set	rfd;
+	struct timeval tv;
 
-void x_gotoxy(int x, int y)
-{
-	CursRow=cio_textinfo.wintop+y-2;
-	CursCol=cio_textinfo.winleft+x-2;
-	cio_textinfo.curx=x;
-	cio_textinfo.cury=y;
-}
-
-void x_setcursortype(int type)
-{
-	switch(type) {
-		case _NOCURSOR:
-			CursStart=0xff;
-			CursEnd=0;
-			break;
-		case _SOLIDCURSOR:
-			CursStart=0;
-			CursEnd=FH-1;
-			break;
-		default:
-		    CursStart = InitCS;
-		    CursEnd = InitCE;
-			break;
-	}
+	memset(&tv, 0, sizeof(tv));
+	FD_ZERO(&rfd);
+	FD_SET(key_pipe[0], &rfd);
+	return(select(key_pipe[0]+1, &rfd, NULL, NULL, &tv)==1);
 }
 
 int x_getch(void)
 {
-	return(tty_read(TTYF_BLOCK));
+	unsigned char ch;
+
+	while(read(key_pipe[0], &ch, 1)!=1);
+	return(ch);
 }
 
 int x_beep(void)
 {
-	tty_beep();
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_BEEP;
+	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 	return(0);
 }
 
 void x_textmode(int mode)
 {
-	console_new_mode=mode;
-	sem_wait(&console_mode_changed);
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_SETMODE;
+	ev.data.mode = mode;
+	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	sem_wait(&mode_set);
 }
 
 void x_setname(const char *name)
 {
-	x_win_name(name);
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_SETNAME;
+	SAFECOPY(ev.data.name, name);
+	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 }
 
 void x_settitle(const char *title)
 {
-	x_win_title(title);
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_SETTITLE;
+	SAFECOPY(ev.data.title, title);
+	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 }
 
 void x_copytext(const char *text, size_t buflen)
 {
-	pthread_mutex_lock(&copybuf_mutex);
-	if(copybuf!=NULL) {
-		free(copybuf);
-		copybuf=NULL;
-	}
+	struct x11_local_event ev;
 
-	copybuf=(char *)malloc(buflen+1);
-	if(copybuf!=NULL) {
-		strcpy(copybuf, text);
-		sem_post(&copybuf_set);
+	pthread_mutex_lock(&copybuf_mutex);
+	FREE_AND_NULL(copybuf);
+
+	copybuf=strdup(text);
+	if(copybuf) {
+		ev.type=X11_LOCAL_COPY;
+		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 	}
 	pthread_mutex_unlock(&copybuf_mutex);
 	return;
@@ -194,36 +129,15 @@ void x_copytext(const char *text, size_t buflen)
 char *x_getcliptext(void)
 {
 	char *ret=NULL;
+	struct x11_local_event ev;
 
-	sem_post(&pastebuf_request);
+	ev.type=X11_LOCAL_PASTE;
+	while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 	sem_wait(&pastebuf_set);
-	if(pastebuf!=NULL) {
-		ret=(char *)malloc(strlen(pastebuf)+1);
-		if(ret!=NULL)
-			strcpy(ret,pastebuf);
-	}
-	sem_post(&pastebuf_request);
+	if(pastebuf!=NULL)
+		ret=strdup(pastebuf);
+	sem_post(&pastebuf_used);
 	return(ret);
-}
-
-int x_setfont(int font, int force)
-{
-	if(font==getfont())
-		return(0);
-	font_force=force;
-	new_font=font;
-	sem_wait(&font_set);
-	return(setfont_return);
-}
-
-int x_getfont(void)
-{
-	return(new_font);
-}
-
-int x_loadfont(char *filename)
-{
-	return(x_load_font(filename));
 }
 
 int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
@@ -238,4 +152,280 @@ int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 		*ypos=x11_window_ypos;
 	
 	return(0);
+}
+
+int x_init(void)
+{
+    int fd;
+    int i;
+	void *dl;
+
+	/* Ensure we haven't already initialized */
+	if(initialized)
+		return(0);
+
+	/* Set up the pipe for local events */
+	if(pipe(local_pipe))
+		return(-1);
+
+	/* And the keyboard pipe */
+	if(pipe(key_pipe))
+		return(-1);
+
+	/* Load X11 functions */
+#ifdef STATIC_LINK
+	x11.XChangeGC=XChangeGC;
+	x11.XCopyPlane=XCopyPlane;
+	x11.XFillRectangle=XFillRectangle;
+	x11.XDrawPoint=XDrawPoint;
+	x11.XFlush=XFlush;
+	x11.XSync=XSync;
+	x11.XBell=XBell;
+	x11.XLookupString=XLookupString;
+	x11.XNextEvent=XNextEvent;
+	x11.XAllocSizeHints=XAllocSizeHints;
+	x11.XSetWMNormalHints=XSetWMNormalHints;
+	x11.XResizeWindow=XResizeWindow;
+	x11.XMapWindow=XMapWindow;
+	x11.XFree=XFree;
+	x11.XFreePixmap=XFreePixmap;
+	x11.XCreatePixmap=XCreatePixmap;
+	x11.XCopyArea=XCopyArea;
+	x11.XCreateBitmapFromData=XCreateBitmapFromData;
+	x11.XAllocColor=XAllocColor;
+	x11.XOpenDisplay=XOpenDisplay;
+	x11.XCreateSimpleWindow=XCreateSimpleWindow;
+	x11.XCreateGC=XCreateGC;
+	x11.XSelectInput=XSelectInput;
+	x11.XStoreName=XStoreName;
+	x11.XGetSelectionOwner=XGetSelectionOwner;
+	x11.XConvertSelection=XConvertSelection;
+	x11.XGetWindowProperty=XGetWindowProperty;
+	x11.XChangeProperty=XChangeProperty;
+	x11.XSendEvent=XSendEvent;
+	x11.XPutImage=XPutImage;
+#ifndef XPutPixel
+	x11.XPutPixel=XPutPixel;
+#endif
+#ifndef XDestroyImage
+	x11.XDestroyImage=XDestroyImage;
+#endif
+	x11.XCreateImage=XCreateImage;
+	x11.XSetSelectionOwner=XSetSelectionOwner;
+	x11.XSetIconName=XSetIconName;
+	x11.XSynchronize=XSynchronize;
+	x11.XGetWindowAttributes=XGetWindowAttributes;
+#else
+#if defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
+	if((dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL))==NULL)
+#else
+	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
+#endif
+		return(-1);
+	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCopyPlane=dlsym(dl,"XCopyPlane"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFillRectangle=dlsym(dl,"XFillRectangle"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XDrawPoint=dlsym(dl,"XDrawPoint"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFlush=dlsym(dl,"XFlush"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSync=dlsym(dl,"XSync"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XBell=dlsym(dl,"XBell"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XLookupString=dlsym(dl,"XLookupString"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XNextEvent=dlsym(dl,"XNextEvent"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XAllocSizeHints=dlsym(dl,"XAllocSizeHints"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetWMNormalHints=dlsym(dl,"XSetWMNormalHints"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XResizeWindow=dlsym(dl,"XResizeWindow"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XMapWindow=dlsym(dl,"XMapWindow"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFree=dlsym(dl,"XFree"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFreePixmap=dlsym(dl,"XFreePixmap"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreatePixmap=dlsym(dl,"XCreatePixmap"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCopyArea=dlsym(dl,"XCopyArea"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateBitmapFromData=dlsym(dl,"XCreateBitmapFromData"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XAllocColor=dlsym(dl,"XAllocColor"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XOpenDisplay=dlsym(dl,"XOpenDisplay"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateSimpleWindow=dlsym(dl,"XCreateSimpleWindow"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateGC=dlsym(dl,"XCreateGC"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSelectInput=dlsym(dl,"XSelectInput"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XStoreName=dlsym(dl,"XStoreName"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XGetSelectionOwner=dlsym(dl,"XGetSelectionOwner"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XConvertSelection=dlsym(dl,"XConvertSelection"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XGetWindowProperty=dlsym(dl,"XGetWindowProperty"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XChangeProperty=dlsym(dl,"XChangeProperty"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSendEvent=dlsym(dl,"XSendEvent"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XPutImage=dlsym(dl,"XPutImage"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+#ifndef XDestroyImage
+	if((x11.XDestroyImage=dlsym(dl,"XDestroyImage"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+#endif
+#ifndef XPutPixel
+	if((x11.XPutPixel=dlsym(dl,"XPutPixel"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+#endif
+	if((x11.XCreateImage=dlsym(dl,"XCreateImage"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetSelectionOwner=dlsym(dl,"XSetSelectionOwner"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetIconName=dlsym(dl,"XSetIconName"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSynchronize=dlsym(dl,"XSynchronize"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XGetWindowAttributes=dlsym(dl,"XGetWindowAttributes"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+#endif
+
+	if(sem_init(&pastebuf_set, 0, 0))
+		return(-1);
+	if(sem_init(&pastebuf_used, 0, 0)) {
+		sem_destroy(&pastebuf_set);
+		return(-1);
+	}
+	if(sem_init(&init_complete, 0, 0)) {
+		sem_destroy(&pastebuf_set);
+		sem_destroy(&pastebuf_used);
+		return(-1);
+	}
+	if(sem_init(&mode_set, 0, 0)) {
+		sem_destroy(&pastebuf_set);
+		sem_destroy(&pastebuf_used);
+		sem_destroy(&init_complete);
+		return(-1);
+	}
+
+	if(pthread_mutex_init(&copybuf_mutex, 0)) {
+		sem_destroy(&pastebuf_set);
+		sem_destroy(&pastebuf_used);
+		sem_destroy(&init_complete);
+		sem_destroy(&mode_set);
+		return(-1);
+	}
+
+	_beginthread(x11_event_thread,1<<16,NULL);
+	sem_wait(&init_complete);
+	if(!initialized) {
+		sem_destroy(&pastebuf_set);
+		sem_destroy(&pastebuf_used);
+		sem_destroy(&init_complete);
+		sem_destroy(&mode_set);
+		pthread_mutex_destroy(&copybuf_mutex);
+		return(-1);
+	}
+	return(0);
+}
+
+void x11_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *data)
+{
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_DRAWRECT;
+	if(initialized) {
+		ev.data.rect.x=xoffset;
+		ev.data.rect.y=yoffset;
+		ev.data.rect.width=width;
+		ev.data.rect.height=height;
+		ev.data.rect.data=data;
+		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+	}
 }
