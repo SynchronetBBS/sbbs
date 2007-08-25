@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -170,7 +170,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Add data to DAT File */
 	/************************/
 	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW,S_IREAD|S_IWRITE))==-1) {
+	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW,DEFFILEMODE))==-1) {
 		return(FALSE); 
 	}
 	length=filelength(file);
@@ -222,7 +222,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Update last upload date/time stamp file */
 	/*******************************************/
 	SAFEPRINTF2(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1) {
+	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW,DEFFILEMODE))!=-1) {
 		now=time(NULL);
 		/* TODO: 32-bit *or* LE required */
 		write(file,&now,4);
@@ -236,7 +236,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
 	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))==-1) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,DEFFILEMODE))==-1) {
 		return(FALSE); 
 	}
 	length=filelength(file);

@@ -60,7 +60,7 @@ int nopen(const char* str, int access)
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
 #endif
-    while(((file=sopen(str,access,share,S_IREAD|S_IWRITE))==-1)
+    while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
         if(count)
             mswait(100);
@@ -139,7 +139,7 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 		if(remove(fname)!=0)
 			return(FALSE);
 	}
-	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))<0)
+	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
 		return(FALSE);
 	if(text!=NULL)
 		write(file,text,strlen(text));

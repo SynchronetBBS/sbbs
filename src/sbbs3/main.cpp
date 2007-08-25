@@ -3182,7 +3182,7 @@ int sbbs_t::nopen(char *str, int access)
     else share=SH_DENYRW;
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
-    while(((file=sopen(str,access,share,S_IREAD|S_IWRITE))==-1)
+    while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
 	    mswait(100);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
@@ -4269,7 +4269,7 @@ void DLLCALL bbs_thread(void* arg)
 			md(scfg.node_path[i-1]);
 		SAFEPRINTF(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
-			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, S_IREAD|S_IWRITE))==-1) {
+			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, DEFFILEMODE))==-1) {
 				lprintf(LOG_ERR,"!ERROR %d creating %s",errno, str);
 				cleanup(1);
 				return; 
