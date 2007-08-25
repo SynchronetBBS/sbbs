@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 		return(-1); }
 
 	sprintf(str,"%s/scfghelp.ixb",dir);
-	if((ixb=open(str,O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
+	if((ixb=open(str,O_WRONLY|O_CREAT|O_BINARY,DEFFILEMODE))==-1) {
 		fprintf(stderr,"!error opening %s\n",str);
 		return(-1); }
 
