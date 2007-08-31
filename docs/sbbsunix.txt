@@ -186,7 +186,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    D. Get the required source code modules from the CVS repository:
       # cvs co src-sbbs3
 
-   *> Optional Shortcut (existing JavaScript library):
+   *> Reccomended Shortcut (existing JavaScript library):
    *> If your Unix distribution includes the file /usr/lib/libjs.so or
    *> /usr/lib/libmozjs.so, you can save a lot of time by using this
    *> library instead of the one supplied in the Synchronet CVS repository.
