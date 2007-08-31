@@ -52,6 +52,10 @@ ifdef DONT_BLAME_SYNCHRONET
 endif
 
 # JS and NSPR setup stuff...
+ifeq ($(shell nspr-config --version > /dev/null 2>&1 && echo YES),YES)
+ NSPRDIR ?= $(shell nspr-config --libdir)
+ NSPRINCLUDE ?= $(shell nspr-config --includedir)
+endif
 
 ifeq ($(os),sunos)
  ifeq ($(shell test -f /usr/sfw/lib/mozilla/libmozjs.so && echo "yes"),yes)
