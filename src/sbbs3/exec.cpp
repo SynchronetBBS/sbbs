@@ -583,9 +583,9 @@ long sbbs_t::js_execfile(const char *cmd)
 	fname=cmdline;
 
 	if(strcspn(fname,"/\\")==strlen(fname)) {
-		sprintf(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
+		SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
 		if(cfg.mods_dir[0]==0 || !fexistcase(path))
-			sprintf(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
 	} else
 		SAFECOPY(path,fname);
 
@@ -685,25 +685,26 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 	if((p=getfext(mod))!=NULL && stricmp(p,".js")==0)
 		return(js_execfile(cmdline));
 	if(cfg.mods_dir[0]) {
-		sprintf(str,"%s%s.js",cfg.mods_dir,mod);
+		SAFEPRINTF2(str,"%s%s.js",cfg.mods_dir,mod);
 		if(fexistcase(str)) 
 			return(js_execfile(cmdline));
 	}
-	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
-	if(fexistcase(str)) 
-		return(js_execfile(cmdline));
 #endif
-
-	memcpy(&bin,csi,sizeof(csi_t));
-	clearvars(&bin);
 
 	SAFECOPY(modname,mod);
 	if(!strchr(modname,'.'))
 		strcat(modname,".bin");
 
-	sprintf(str,"%s%s",cfg.mods_dir,modname);
+	SAFEPRINTF2(str,"%s%s",cfg.mods_dir,modname);
 	if(cfg.mods_dir[0]==0 || !fexistcase(str)) {
-		sprintf(str,"%s%s",cfg.exec_dir,modname);
+
+#ifdef JAVASCRIPT
+		SAFEPRINTF2(str,"%s%s.js",cfg.exec_dir,mod);
+		if(fexistcase(str)) 
+			return(js_execfile(cmdline));
+#endif
+
+		SAFEPRINTF2(str,"%s%s",cfg.exec_dir,modname);
 		fexistcase(str);
 	}
 	if((file=nopen(str,O_RDONLY))==-1) {
@@ -711,6 +712,8 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 		return(-1); 
 	}
 
+	memcpy(&bin,csi,sizeof(csi_t));
+	clearvars(&bin);
 	bin.length=filelength(file);
 	if((bin.cs=(uchar *)malloc(bin.length))==NULL) {
 		close(file);
@@ -1091,7 +1094,7 @@ int sbbs_t::exec(csi_t *csi)
 								if(text[i]!=nulstr)
 									free(text[i]);
 								text[i]=text_sav[i]; }
-						sprintf(str,"%s%s.dat"
+						SAFEPRINTF2(str,"%s%s.dat"
 							,cfg.ctrl_dir,cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
 						if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 							errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
