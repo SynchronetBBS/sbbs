@@ -32,6 +32,11 @@ while(bbs.online) {
 
 	var xsec=0;
 	if(xtrn_area.sec_list.length > 1) {
+
+		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
+		bbs.node_action=NODE_XTRN;
+		bbs.node_sync();
+
 		if(file_exists(system.text_dir + "menu/xtrn_sec.asc")) {
 			bbs.menu("xtrn_sec");
 			xsec=console.getnum(xtrn_area.sec_list.length);
