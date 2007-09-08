@@ -103,7 +103,7 @@ while(bbs.online) {
 			console.mnemonics(bbs.text(WhichXtrnProg)); 
 		}
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
-		bbs.action=NODE_XTRN;
+		bbs.node_action=NODE_XTRN;
 		bbs.node_sync();
 		if((i=console.getnum(xtrn_area.sec_list[xsec].prog_list.length))<1)
 			break;
