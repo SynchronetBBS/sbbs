@@ -418,6 +418,8 @@ function rewrap(cant_unwrap_prev, cant_unwrap, cant_wrap)
 					redrawn=true;
 				}
 			}
+			if(line[ypos]==undefined)
+				return;
 		}
 	}
 	oldlen=line[ypos].text.length;
