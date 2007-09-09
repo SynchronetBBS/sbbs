@@ -403,7 +403,7 @@ BOOL sbbs_t::newuser()
 			bprintf(text[NewUserPasswordVerify]);
 			console|=CON_R_ECHOX;
 			str[0]=0;
-			getstr(str,LEN_PASS,K_UPPER);
+			getstr(str,LEN_PASS*2,K_UPPER);
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			if(!strcmp(str,useron.pass)) break;
 			if(cfg.sys_misc&SM_ECHO_PW) 
