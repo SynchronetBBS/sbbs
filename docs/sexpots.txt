@@ -162,7 +162,7 @@ Example .ini file (with default values given):
     Init = AT&F                 ; Modem initialization string
     AutoAnswer = ATS0=1         ; Put modem into "auto-answer" mode
     CleanUp = ATS0=0            ; When exiting, turn off auto-answer
-    EnableCallerID = AT+VCID=1  ; Enable Caller-ID support
+    EnableCallerID = AT+VCID=1  ; Enable Caller-ID support (or try AT#CID=1)
     Timeout = 5                 ; Seconds to wait for a response from modem
 
     [TCP]
