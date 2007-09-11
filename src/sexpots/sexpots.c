@@ -611,14 +611,22 @@ static BOOL winsock_startup(void)
 BOOL modem_send(COM_HANDLE com_handle, const char* str)
 {
 	const char* p;
+	char		ch;
 
 	lprintf(LOG_INFO,"Modem Command: %s", str);
 	for(p=str; *p; p++) {
-		if(*p=='~') {
+		ch=*p;
+		if(ch=='~') {
 			SLEEP(MDM_TILDE_DELAY);
 			continue;
 		}
-		if(!comWriteByte(com_handle,*p))
+		if(ch=='^' && *(p+1)) {	/* Support ^X for control characters embedded in modem command strings */
+			p++;
+			ch=*p;
+			if(ch!='^' && ch>='@')	/* ^^ to send an '^' char to the modem */
+				ch-='@';
+		}
+		if(!comWriteByte(com_handle,ch))
 			return FALSE;
 	}
 	SLEEP(100);
