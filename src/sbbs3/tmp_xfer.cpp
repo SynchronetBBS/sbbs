@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -109,7 +109,7 @@ void sbbs_t::temp_xfer()
 				space=getfreediskspace(cfg.temp_dir,1024);
 				if(space<(ulong)cfg.min_dspace) {
 					bputs(text[LowDiskSpace]);
-					sprintf(str,"Diskspace is low: %s (%lu kilobytes)"
+					SAFEPRINTF2(str,"Diskspace is low: %s (%lu kilobytes)"
 						,cfg.temp_dir,space);
 					errorlog(str);
 					if(!dir_op(dirnum))
@@ -119,15 +119,15 @@ void sbbs_t::temp_xfer()
 					break;
 				if(!checkfname(str))
 					break;
-				sprintf(tmp2,"%s added %s to %s"
+				SAFEPRINTF3(tmp2,"%s added %s to %s"
 					,useron.alias,str,f.name);
 				logline(nulstr,tmp2);
-				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
-				sprintf(str,"%s%s",cfg.temp_dir,f.name);
+				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,str);
+				SAFEPRINTF2(str,"%s%s",cfg.temp_dir,f.name);
 				external(cmdstr(temp_cmd(),str,tmp2,NULL),EX_WILDCARD|EX_OUTL|EX_OUTR);
 				break;
 			case 'D':   /* download from temp dir */
-				sprintf(str,"%s%s",cfg.temp_dir,f.name);
+				SAFEPRINTF2(str,"%s%s",cfg.temp_dir,f.name);
 				if(!fexist(str)) {
 					bprintf(text[TempFileNotCreatedYet],f.name);
 					break; }
@@ -211,7 +211,7 @@ void sbbs_t::temp_xfer()
 					break;
 				bytes=files=0L;
 				CRLF;
-				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
+				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,str);
 				glob(tmp2,0,NULL,&g);
 				for(i=0;i<(uint)g.gl_pathc && !msgabort();i++) {
 					if(isdir(g.gl_pathv[i]))
@@ -287,7 +287,7 @@ void sbbs_t::extract(uint dirnum)
 	space=getfreediskspace(cfg.temp_dir,1024);
 	if(space<(ulong)cfg.min_dspace) {
 		bputs(text[LowDiskSpace]);
-		sprintf(str,"Diskspace is low: %s (%lu kilobytes)",cfg.temp_dir,space);
+		SAFEPRINTF2(str,"Diskspace is low: %s (%lu kilobytes)",cfg.temp_dir,space);
 		errorlog(str);
 		if(!dir_op(dirnum))
 			return; }
@@ -296,12 +296,12 @@ void sbbs_t::extract(uint dirnum)
 	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
 
 	if(!intmp) {    /* not extracting FROM temp directory */
-		sprintf(str,"%s%s",cfg.temp_dir,ALLFILES);
+		SAFEPRINTF2(str,"%s%s",cfg.temp_dir,ALLFILES);
 		if(fexist(str)) {
 			bputs(text[RemovingTempFiles]);
 			dir=opendir(cfg.temp_dir);
 			while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-				sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
+				SAFEPRINTF2(str,"%s%s",cfg.temp_dir,dirent->d_name);
         		if(!isdir(str))
 					remove(str);
 			}
@@ -311,7 +311,7 @@ void sbbs_t::extract(uint dirnum)
 		} 
 	}
 	bputs(text[ExtractFrom]);
-	if(!getstr(fname,64,K_NONE) || !checkfname(fname) || strchr(fname,'*')
+	if(!getstr(fname,sizeof(fname)-1,K_NONE) || !checkfname(fname) || strchr(fname,'*')
 		|| strchr(fname,'?'))
 		return;
 	padfname(fname,f.name);
@@ -347,7 +347,7 @@ void sbbs_t::extract(uint dirnum)
 			dirnum=usrdir[curlib][i]; }
 	if(sys_status&SS_ABORT)
 		return;
-	sprintf(path,"%s%s",cfg.dir[dirnum]->path,fname);
+	SAFEPRINTF2(path,"%s%s",cfg.dir[dirnum]->path,fname);
 	if(!intmp) {    /* not temp dir, so get temp_file info */
 		f.datoffset=f.dateuled=f.datedled=0L;
 		f.dir=dirnum;
@@ -358,7 +358,7 @@ void sbbs_t::extract(uint dirnum)
 		getfiledat(&cfg,&f);
 		fileinfo(&f);
 		if(f.altpath>0 && f.altpath<=cfg.altpaths)
-			sprintf(path,"%s%s",cfg.altpath[f.altpath-1],fname);
+			SAFEPRINTF2(path,"%s%s",cfg.altpath[f.altpath-1],fname);
 		temp_dirnum=dirnum;
 		if(cfg.dir[f.dir]->misc&DIR_FREE)
 			temp_cdt=0L;
@@ -382,7 +382,7 @@ void sbbs_t::extract(uint dirnum)
 					,EX_INR|EX_OUTL|EX_OUTR))!=0) {
 					errormsg(WHERE,ERR_EXEC,cmdstr(excmd,path,str,NULL),i);
 					return; }
-				sprintf(tmp,"%s extracted %s from %s",useron.alias,str,path);
+				SAFEPRINTF3(tmp,"%s extracted %s from %s",useron.alias,str,path);
 				logline(nulstr,tmp);
 				CRLF;
 				break;
@@ -406,13 +406,13 @@ ulong sbbs_t::create_filelist(char *name, long mode)
 	ulong	l,k;
 
 	bprintf(text[CreatingFileList],name);
-	sprintf(str,"%s%s",cfg.temp_dir,name);
+	SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
 	if((file=nopen(str,O_CREAT|O_WRONLY|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_APPEND);
 		return(0); }
 	k=0;
 	if(mode&FL_ULTIME) {
-		sprintf(str,"New files since: %s\r\n",timestr(ns_time));
+		SAFEPRINTF(str,"New files since: %s\r\n",timestr(ns_time));
 		write(file,str,strlen(str)); }
 	for(i=j=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,d++) {
@@ -430,14 +430,14 @@ ulong sbbs_t::create_filelist(char *name, long mode)
 		if(j<usrdirs[i])
 			break; }
 	if(k>1) {
-		sprintf(str,"\r\n%ld Files Listed.\r\n",k);
+		SAFEPRINTF(str,"\r\n%ld Files Listed.\r\n",k);
 		write(file,str,strlen(str)); }
 	close(file);
 	if(k)
 		bprintf(text[CreatedFileList],name);
 	else {
 		bputs(text[NoFiles]);
-		sprintf(str,"%s%s",cfg.temp_dir,name);
+		SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
 		remove(str); }
 	SAFECOPY(temp_file,name);
 	SAFECOPY(temp_uler,"File List");
