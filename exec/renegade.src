@@ -829,7 +829,7 @@ cmdstr "Q"
         return
         end_cmd
 
-exec "?str_cmds %s"
+exec_bin "str_cmds %s"
 
 end_cmd
 

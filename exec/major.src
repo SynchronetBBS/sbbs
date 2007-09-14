@@ -344,6 +344,6 @@ if_true
         return
 	end_if
 
-exec "?str_cmds %s"
+exec_bin "str_cmds %s"
 goto sysop
 

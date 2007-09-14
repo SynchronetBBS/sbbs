@@ -148,7 +148,7 @@ cmdkey ;
 	else
 		getstrupr 40
 		end_if
-	exec "?str_cmds %s"
+	exec_bin "str_cmds %s"
 	end_cmd
 
 cmdkey T
@@ -651,7 +651,7 @@ cmdkey ;
 	else
                 getstrupr 40
 		end_if
-	exec "?str_cmds %s"
+	exec_bin "str_cmds %s"
 	end_cmd
 
 cmdkey Q

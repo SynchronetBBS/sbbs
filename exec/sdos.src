@@ -85,7 +85,7 @@ if_true
 compare_word ";"
 if_true
 	shift_str 1
-	exec "?str_cmds %s"
+	exec_bin "str_cmds %s"
 	return
 	end_if
 
