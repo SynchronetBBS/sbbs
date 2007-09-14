@@ -550,7 +550,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 static const char* js_ext(const char* fname)
 {
-	if(strchr(fname,'.')==NULL)
+	if(getfext(fname)==NULL)
 		return(".js");
 	return("");
 }
