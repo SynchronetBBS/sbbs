@@ -47,6 +47,14 @@ ifdef USE_DOSEMU
  CFLAGS += -DUSE_DOSEMU
 endif
 
+ifdef USE_LINUX_CAPS
+ CFLAGS += -DUSE_LINUX_CAPS
+ ifdef DEBUG_LINUX_CAPS
+  CFLAGS += -DDEBUG_LINUX_CAPS
+ endif
+endif
+
+
 ifdef DONT_BLAME_SYNCHRONET
  CFLAGS += -DDONT_BLAME_SYNCHRONET
 endif
@@ -100,6 +108,10 @@ JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 #The following is needed for nspr support on Linux
 ifeq ($(os),linux)
  JS_LDFLAGS	+=	-ldl
+  #Needed for linux kernel capabilities
+  ifdef USE_LINUX_CAPS
+   JS_LDFLAGS += -lcap
+  endif
 endif
 JS_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
 CFLAGS	+=	$(JS_CFLAGS)
