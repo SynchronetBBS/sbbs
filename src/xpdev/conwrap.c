@@ -107,6 +107,19 @@ void _termios_setup(void)
     signal(SIGCONT, _sighandler_cont);
 }
 
+void _echo_on(void)
+{
+	tcgetattr(STDIN_FILENO, &current);
+    current.c_lflag |= ECHO;         /* turn on echoing */
+	tcsetattr(STDIN_FILENO, TCSANOW, &current);
+}
+
+void _echo_off(void)
+{
+	tcgetattr(STDIN_FILENO, &current);
+    current.c_lflag &= ~ECHO;         /* turn off echoing */
+	tcsetattr(STDIN_FILENO, TCSANOW, &current);
+}
 
 int kbhit(void)
 {

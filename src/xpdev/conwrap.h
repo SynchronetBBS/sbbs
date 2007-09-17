@@ -40,8 +40,11 @@
 
 #if defined(__unix__)
 
-	int kbhit(void);
-	int getch(void);
+    void _termios_reset(void);
+    void _echo_on(void);
+    void _echo_off(void);
+    int kbhit(void);
+    int getch(void);
 
 #else	/* DOS-Based */
 
