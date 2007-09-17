@@ -284,8 +284,10 @@ endif
 
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
- ifndef THREADS_ACTUALLY_WORK
-  CFLAGS    += -D_THREAD_SUID_BROKEN
+ ifndef USE_LINUX_CAPS 
+  ifndef THREADS_ACTUALLY_WORK 
+   CFLAGS    += -D_THREAD_SUID_BROKEN
+  endif
  endif
 endif
 MT_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
