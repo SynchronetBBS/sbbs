@@ -161,7 +161,7 @@ int x_init(void)
 	void *dl;
 
 	/* Ensure we haven't already initialized */
-	if(initialized)
+	if(x11_initialized)
 		return(0);
 
 	/* Set up the pipe for local events */
@@ -404,7 +404,7 @@ int x_init(void)
 
 	_beginthread(x11_event_thread,1<<16,NULL);
 	sem_wait(&init_complete);
-	if(!initialized) {
+	if(!x11_initialized) {
 		sem_destroy(&pastebuf_set);
 		sem_destroy(&pastebuf_used);
 		sem_destroy(&init_complete);
@@ -420,7 +420,7 @@ void x11_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 	struct x11_local_event ev;
 
 	ev.type=X11_LOCAL_DRAWRECT;
-	if(initialized) {
+	if(x11_initialized) {
 		ev.data.rect.x=xoffset;
 		ev.data.rect.y=yoffset;
 		ev.data.rect.width=width;

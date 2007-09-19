@@ -48,7 +48,7 @@ int x11_window_xpos;
 int x11_window_ypos;
 int x11_window_width;
 int x11_window_height;
-int initialized=0;
+int x11_initialized=0;
 /*
  * Local variables
  */
@@ -759,7 +759,7 @@ void x11_event_thread(void *args)
 		sem_post(&init_complete);
 		return;
 	}
-	initialized=1;
+	x11_initialized=1;
 	sem_post(&init_complete);
 
 	if(local_pipe[0] > xfd)
