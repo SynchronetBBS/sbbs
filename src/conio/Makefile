@@ -27,7 +27,12 @@ OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
+NEED_BITMAP	= 1
 !endif
+!endif
+
+!ifdef NEED_BITMAP
+OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
 !endif
 
 #The following is necessary only when DLL-exporting wrapper functions
