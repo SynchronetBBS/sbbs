@@ -23,6 +23,7 @@
 #include "keys.h"
 #include "vidmodes.h"
 #include "allfonts.h"
+#include "bitmap_con.h"
 
 static char *screen;
 int screenwidth;
@@ -547,10 +548,10 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	WORD	sch;
 
 	if(!screen)
-		return;
+		return(-1);
 
 	if(!vstat.vmem)
-		return;
+		return(-1);
 
 	sch=vstat.vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 	bg=(sch&0x7000)>>12;
