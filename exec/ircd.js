@@ -457,7 +457,10 @@ function parse_oline_flags(flags) {
 				break;
 			case "u":
 				oline_flags |= OLINE_CAN_UMODEC;
+				break;
 			case "A":
+				oline_flags |= OLINE_IS_ADMIN;
+				break;
 			case "a":
 			case "f":
 			case "F":
@@ -2796,6 +2799,11 @@ function IRCClient_setusermode(modestr) {
 				if ((this.mode&USERMODE_OPER) &&
 				    (this.flags&OLINE_CAN_UMODEC))
 					umode.tweak_mode(USERMODE_CLIENT,add);
+				break;
+			case "A":
+				if ( ((this.mode&USERMODE_OPER) && (this.flags&OLINE_IS_ADMIN))
+					|| (this.parent && Servers[this.parent.toLowerCase()].hub) )
+					umode.tweak_mode(USERMODE_ADMIN,add);
 				break;
 			default:
 				if (!unknown_mode && !this.parent) {

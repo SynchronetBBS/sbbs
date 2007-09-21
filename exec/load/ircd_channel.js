@@ -88,7 +88,7 @@ function Channel(nam) {
 
 function ChanMode_tweaktmpmode(tmp_bit,add) {
 	if (!this.chan.modelist[CHANMODE_OP][this.user.id] && 
-	    !this.user.server && !this.user.uline) {
+	    !this.user.server && !this.user.uline && !this.mode&USERMODE_ADMIN) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
 	}

@@ -39,6 +39,7 @@ const USERMODE_DEBUG		=(1<<12); // d
 const USERMODE_ROUTING		=(1<<13); // n
 const USERMODE_HELP			=(1<<14); // h
 const USERMODE_NOTHROTTLE	=(1<<15); // F
+const USERMODE_ADMIN		=(1<<16); // A
 
 USERMODE_CHAR = new Object;
 USERMODE_CHAR["o"] = USERMODE_OPER;
@@ -56,12 +57,14 @@ USERMODE_CHAR["d"] = USERMODE_DEBUG;
 USERMODE_CHAR["n"] = USERMODE_ROUTING;
 USERMODE_CHAR["h"] = USERMODE_HELP;
 USERMODE_CHAR["F"] = USERMODE_NOTHROTTLE;
+USERMODE_CHAR["A"] = USERMODE_ADMIN;
 
 // Most umodes aren't propagated across the network. Define the ones that are.
 USERMODE_BCAST = new Object;
 USERMODE_BCAST["o"] = true;
 USERMODE_BCAST["i"] = true;
 USERMODE_BCAST["h"] = true;
+USERMODE_BCAST["A"] = true;
 
 // FIXME: Services modes are broadcast but not displayed to the user.
 USERMODE_SERVICES = new Object;
@@ -81,7 +84,7 @@ const OLINE_CAN_KLINE		=(1<<10);	// b
 const OLINE_CAN_UNKLINE		=(1<<11);	// B
 const OLINE_CAN_LGNOTICE	=(1<<12);	// n
 const OLINE_CAN_GGNOTICE	=(1<<13);	// N
-// Synchronet IRCd doesn't have umode +A	RESERVED
+const OLINE_IS_ADMIN		=(1<<14);	// A
 // Synchronet IRCd doesn't have umode +a	RESERVED
 const OLINE_CAN_UMODEC		=(1<<16);	// c
 const OLINE_CAN_CHATOPS		=(1<<19);	// s
