@@ -296,8 +296,8 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 				if (add && (cm_args.length > mode_args_counter)) {
 					var regexp = "^[0-9]{1,5}$";
 					mode_args_counter++;
-					if(cm_args[mode_args_counter].match(regexp))
-						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
+					if(cm_args[mode_args_counter-1].match(regexp))
+						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter-1];
 					else
 						break;
 					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
