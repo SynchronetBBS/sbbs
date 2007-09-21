@@ -374,16 +374,17 @@ function Server_Work(cmdline) {
 			if (cmd2_int == cmd[2]) {
 				if (cmd2_int > chan.created) {
 					break;
-				} else if (cmd2_int < chan.created) {
+				} else if ((cmd2_int < chan.created) && ThisOrigin.server) {
 					bounce_modes = true;
 					chan.created = cmd2_int;
 				}
 				cmd.shift();
-			} else if (cmdend_int == cmd[cmdend]) {
+			} else if ( (cmdend_int == cmd[cmdend])
+					&& (this.type == DREAMFORGE) ) {
 				/* DreamForge style TS */
 				if (cmdend_int > chan.created) {
 					break;
-				} else if (cmdend_int < chan.created) {
+				} else if ((cmdend_int < chan.created) && ThisOrigin.server) {
 					bounce_modes = true;
 					chan.created = cmdend_int;
 				}
