@@ -294,13 +294,13 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 				break;
 			case "l":
 				if (add && (cm_args.length > mode_args_counter)) {
-					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
 					var regexp = "^[0-9]{1,5}$";
+					mode_args_counter++;
 					if(cm_args[mode_args_counter].match(regexp))
 						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
 					else
-						cmode.state_arg[CHANMODE_LIMIT]=99999;
-					mode_args_counter++;
+						break;
+					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
 				} else if (!add) {
 					cmode.tweaktmpmode(CHANMODE_LIMIT,false);
 					if (cm_args.length > mode_args_counter)
