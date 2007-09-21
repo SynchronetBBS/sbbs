@@ -2839,7 +2839,7 @@ function IRCClient_setusermode(modestr) {
 	if (this.local && !this.server) {
 		this.originatorout("MODE "+this.nick+" "+final_modestr,this);
 		if (bcast_addmodes || bcast_delmodes)
-			this.bcast_to_servers("MODE "+this.nick+" "+bcast_modestr,this);
+			this.bcast_to_servers("MODE "+this.nick+" "+bcast_modestr);
 	}
 	return bcast_modestr;
 }
