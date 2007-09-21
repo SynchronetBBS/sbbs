@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -137,6 +137,9 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
 	truncsp(str);
+	if(::trashcan(&cfg,str,"subject"))
+		return false;
+
 	smb_hfield_str(&msg,SUBJECT,str);
 
 	/********************************/
