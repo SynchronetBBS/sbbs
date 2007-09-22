@@ -373,7 +373,17 @@ function Unregistered_Welcome() {
 	this.numeric("002", ":Your host is " + servername + ", running version " + VERSION);
 	this.numeric("003", ":This server was created " + strftime("%a %b %e %Y at %H:%M:%S %Z",server_uptime));
 	this.numeric("004", servername + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
-	this.numeric("005", "MODES=" + max_modes + " MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " MAXBANS=" + max_bans + " NICKLEN=" + max_nicklen + " TOPICLEN=" + max_topiclen + " KICKLEN=" + max_kicklen + " CHANTYPES=#& PREFIX=(ov)@+ NETWORK=Synchronet CASEMAPPING=ascii CHANMODES=b,k,l,imnpst STATUSMSG=@+ :are available on this server.");
+	this.numeric("005", "NETWORK=Synchronet MAXBANS=" + max_bans + " "
+		+ "MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " "
+		+ "KICKLEN=" + max_kicklen + " NICKLEN=" + max_nicklen + " "
+		+ "TOPICLEN=" + max_topiclen + " MODES=" + max_modes + " "
+		+ "CHANTYPES=#& CHANLIMIT=#:" + max_user_chans + " PREFIX=(ov)@+ "
+		+ "STATUSMSG=@+ :are available on this server.");
+	this.numeric("005", "CASEMAPPING=ascii SILENCE=" + max_silence + " "
+		+ "ELIST=cmntu CHANMODES=b,k,l,imnpst "
+		+ "MAXLIST=b:" + max_bans + " "
+		+ "TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: "
+		+ ":are available on this server.");
 	new_user.lusers();
 	new_user.motd();
 	umode_notice(USERMODE_CLIENT,"Client","Client connecting: " +

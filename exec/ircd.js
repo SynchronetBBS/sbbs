@@ -84,6 +84,7 @@ const max_bans = 25;		// Maximum bans (+b) per channel
 const max_topiclen = 307;	// Maximum length of topic per channel
 const max_kicklen = 307;	// Maximum length of kick reasons
 const max_who = 100;		// Maximum replies to WHO for non-oper users
+const max_silence = 10;		// Maximum entries on a user's SILENCE list
 
 /* Server types */
 const BAHAMUT = 1;

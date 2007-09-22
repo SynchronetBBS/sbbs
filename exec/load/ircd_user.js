@@ -915,7 +915,7 @@ function User_Work(cmdline) {
 			if (!del_sil) { /* Adding an entry */
 				if (this.issilenced(sil_mask))
 					break;	/* Exit silently if already on SILENCE list */
-				if (this.silence.length >= 10) {
+				if (this.silence.length >= max_silence) {
 					/* We only allow 10 entries in the user's SILENCE list. */
 					this.numeric(511, this.nick + " " + target + " :"
 						+ "Your SILENCE list is full.");
