@@ -124,6 +124,7 @@ enum {
 	,USER_PROP_POSTSPERDAY
 	,USER_PROP_FREECDTPERDAY
 	,USER_PROP_CACHED
+	,USER_PROP_IS_SYSOP
 };
 
 static void js_getuserdat(private_t* p)
@@ -376,6 +377,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->cached);
 			return(JS_TRUE);	/* intentional early return */
 
+		case USER_PROP_IS_SYSOP:
+			*vp = BOOLEAN_TO_JSVAL(p->user.level >= SYSOP_LEVEL);
+			return(JS_TRUE);	/* intentional early return */
+
 		default:	
 			/* This must not set vp in order for child objects to work (stats and security) */
 			return(JS_TRUE);
@@ -617,6 +622,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		310},
 	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		310},
 	{	"cached"			,USER_PROP_CACHED		,USER_PROP_FLAGS,		314},
+	{	"is_sysop"			,USER_PROP_IS_SYSOP		,JSPROP_ENUMERATE|JSPROP_READONLY,	315},
 	{0}
 };
 
@@ -657,6 +663,7 @@ static char* user_prop_desc[] = {
 	,"file transfer protocol (command key)"
 	,"logon time (time_t format)"
 	,"record is currently cached in memory"
+	,"user has a System Operator's security level"
 	,NULL
 };
 #endif
