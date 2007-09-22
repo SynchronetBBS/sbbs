@@ -41,6 +41,7 @@ lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.re
 lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug lib/cryptlib/netbsd.release
 src-sbbs3           -a src/build src/sbbs3 src/xpdev src/smblib src/uifc include src/conio
 run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs web
+ircd		    -a exec/dnshelper.js exec/irclib.js exec/ircd.js exec/ircd_server.js exec/ircd_channel.js exec/ircd_user.js exec/ircd_unreg.js
 install install
 include include
 lib	lib
