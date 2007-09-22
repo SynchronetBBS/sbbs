@@ -2227,6 +2227,26 @@ js_md5_calc(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 }
 
 static JSBool
+js_skipsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	JSString*	js_str;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	js_str = JS_NewStringCopyZ(cx, skipsp(str));
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -3160,8 +3180,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("strip extended-ASCII characters from string, returns modified string")
 	,310
 	},		
+	{"skipsp",			js_skipsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
+	,JSDOCSTR("skip (trim) white-space characters off <b>beginning</b> of string, returns modified string")
+	,315
+	},
 	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("truncate (trim) white-space characters off end of string, returns modified string")
+	,JSDOCSTR("truncate (trim) white-space characters off <b>end</b> of string, returns modified string")
 	,310
 	},
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("text, charset")
