@@ -83,6 +83,7 @@ enum {
 
 	,BBS_PROP_CONNECTION		/* READ ONLY */
 	,BBS_PROP_RLOGIN_NAME
+	,BBS_PROP_RLOGIN_PASS
 	,BBS_PROP_CLIENT_NAME
 
 	,BBS_PROP_ALTUL
@@ -182,7 +183,8 @@ enum {
 	,"current file directory internal code"
 
 	,"remote connection type"
-	,"rlogin name"
+	,"login name given during RLogin negotiation"
+	,"password specified during RLogin negotiation"
 	,"client name"
 
 	,"current alternate upload path number"
@@ -370,6 +372,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_RLOGIN_NAME:
 			p=sbbs->rlogin_name;
+			break;
+		case BBS_PROP_RLOGIN_PASS:
+			p=sbbs->rlogin_pass;
 			break;
 		case BBS_PROP_CLIENT_NAME:
 			p=sbbs->client_name;
@@ -772,6 +777,9 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_RLOGIN_NAME:
 			SAFECOPY(sbbs->rlogin_name,p);
 			break;
+		case BBS_PROP_RLOGIN_PASS:
+			SAFECOPY(sbbs->rlogin_pass,p);
+			break;
 		case BBS_PROP_CLIENT_NAME:
 			SAFECOPY(sbbs->client_name,p);
 			break;
@@ -842,6 +850,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"curdir_code"		,BBS_PROP_CURDIR_CODE	,JSPROP_ENUMERATE	,314},
 	{	"connection"		,BBS_PROP_CONNECTION	,PROP_READONLY		,310},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,310},
+	{	"rlogin_password"	,BBS_PROP_RLOGIN_PASS	,JSPROP_ENUMERATE	,315},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,310},
 	{	"alt_ul_dir"		,BBS_PROP_ALTUL			,JSPROP_ENUMERATE	,310},
 	{	"errorlevel"		,BBS_PROP_ERRORLEVEL	,PROP_READONLY		,312},
