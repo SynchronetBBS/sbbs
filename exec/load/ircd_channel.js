@@ -103,7 +103,7 @@ function ChanMode_tweaktmpmode(tmp_bit,add) {
 
 function ChanMode_tweaktmpmodelist(tmp_bit,add,arg) {
 	if (!this.chan.modelist[CHANMODE_OP][this.user.id] &&
-	    !this.user.server && !this.user.uline) {
+	    !this.user.server && !this.user.uline && !this.mode&USERMODE_ADMIN) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
 	}
