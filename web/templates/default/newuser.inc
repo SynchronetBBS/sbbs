@@ -5,7 +5,7 @@
 <td class="main" valign="top" >    
 <center>
     (<b>%%required%%</b> indicates required fields)<br /><br />
-    %%err_message%%
+    <font size="+1" color="red"><b>%%err_message%%</b></font>
 </center>
     <form action="newuser.ssjs" method="post">
         <table class="newuser" cellpadding="0" cellspacing="2">
