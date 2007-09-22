@@ -7,7 +7,7 @@
     
 <center>
     (<b>%%required%%</b> indicates required fields)<br /><br />
-    %%err_message%%
+    <font size="+1" color="red"><b>%%err_message%%</b></font>
 </center>
     <form action="newuser.ssjs" method="post">
         <table class="newuser" cellpadding="2" cellspacing="1">
