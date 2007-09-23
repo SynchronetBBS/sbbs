@@ -1672,6 +1672,34 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 						result=!not;
 				}
 				break;
+			case AR_ULS:
+				if((equal && user->uls!=i) || (!equal && user->uls<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
+			case AR_ULB:
+				if((equal && user->ulb!=i) || (!equal && user->ulb<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
+			case AR_DLS:
+				if((equal && user->dls!=i) || (!equal && user->dls<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
+			case AR_DLB:
+				if((equal && user->dlb!=i) || (!equal && user->dlb<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
 			case AR_FLAG1:
 				if(user==NULL
 					|| (!equal && !(user->flags1&FLAG(n)))

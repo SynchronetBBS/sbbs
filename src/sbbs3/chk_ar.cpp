@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -448,6 +448,34 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				if(!result) {
 					noaccess_str=text[NoAccessUDFR];
 					noaccess_val=n; }
+				break;
+			case AR_ULS:
+				if((equal && user->uls!=i) || (!equal && user->uls<i))
+					result=_not;
+				else
+					result=!_not;
+				(*ptrptr)++;
+				break;
+			case AR_ULB:
+				if((equal && user->ulb!=i) || (!equal && user->ulb<i))
+					result=_not;
+				else
+					result=!_not;
+				(*ptrptr)++;
+				break;
+			case AR_DLS:
+				if((equal && user->dls!=i) || (!equal && user->dls<i))
+					result=_not;
+				else
+					result=!_not;
+				(*ptrptr)++;
+				break;
+			case AR_DLB:
+				if((equal && user->dlb!=i) || (!equal && user->dlb<i))
+					result=_not;
+				else
+					result=!_not;
+				(*ptrptr)++;
 				break;
 			case AR_FLAG1:
 				if((!equal && !(user->flags1&FLAG(n)))

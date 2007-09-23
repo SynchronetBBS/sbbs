@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -232,6 +232,18 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=2; }
 			else if(!strnicmp(str+i,"UDR",3)) {
 				artype=AR_UDR;
+				i+=2; }
+			else if(!strnicmp(str+i,"ULS",3)) {
+				artype=AR_ULS;
+				i+=2; }
+			else if(!strnicmp(str+i,"ULB",3)) {
+				artype=AR_ULB;
+				i+=2; }
+			else if(!strnicmp(str+i,"DLS",3)) {
+				artype=AR_DLS;
+				i+=2; }
+			else if(!strnicmp(str+i,"DLB",3)) {
+				artype=AR_DLB;
 				i+=2; }
 			else if(!strnicmp(str+i,"DAY",3)) {
 				artype=AR_DAY;
@@ -502,6 +514,10 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				case AR_RANDOM:
 				case AR_LASTON:
 				case AR_LOGONS:
+				case AR_ULS:
+				case AR_ULB:
+				case AR_DLS:
+				case AR_DLB:
 					*((short *)(ar+j))=n;
 					j+=2;
 					break;
