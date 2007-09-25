@@ -1862,7 +1862,7 @@ int main(int argc, char** argv)
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
 	}
 #endif /* !defined(USE_LINUX_CAPS) */    
-#endif
+#endif /* defined(__unix__) */
 
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
