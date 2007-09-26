@@ -59,6 +59,7 @@ typedef struct
 	BOOL	uuencoded;
 	BOOL	b64encoded;
 	BOOL	network_byte_order;
+	BOOL	pipe;		/* Opened with popen() use pclose() to close */
 
 } private_t;
 
@@ -181,6 +182,55 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+#ifdef __unix__
+static JSBool
+js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		mode="r+";	/* default mode */
+	uintN		i;
+	jsint		bufsize=2*1024;
+	JSString*	str;
+	private_t*	p;
+
+	*rval = JSVAL_FALSE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp!=NULL)  
+		return(JS_TRUE);
+
+	for(i=0;i<argc;i++) {
+		if(JSVAL_IS_STRING(argv[i])) {	/* mode */
+			if((str = JS_ValueToString(cx, argv[i]))==NULL) {
+				JS_ReportError(cx,"Invalid mode specified: %s",str);
+				return(JS_TRUE);
+			}
+			mode=JS_GetStringBytes(str);
+		}
+		else if(JSVAL_IS_NUMBER(argv[i])) {	/* bufsize */
+			if(!JS_ValueToInt32(cx,argv[i],&bufsize))
+				return(JS_FALSE);
+		}
+	}
+	SAFECOPY(p->mode,mode);
+
+	p->fp=popen(p->name,p->mode);
+	if(p->fp!=NULL) {
+		p->pipe=TRUE;
+		*rval = JSVAL_TRUE;
+		dbprintf(FALSE, p, "popened: %s",p->name);
+		if(!bufsize)
+			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
+		else
+			setvbuf(p->fp,NULL,_IOFBF,bufsize);
+	}
+
+	return(JS_TRUE);
+}
+#endif
 
 static JSBool
 js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -195,7 +245,12 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	fclose(p->fp);
+#ifdef __unix__
+	if(p->pipe)
+		pclose(p->fp);
+	else
+#endif
+		fclose(p->fp);
 
 	dbprintf(FALSE, p, "closed");
 
@@ -1682,6 +1737,16 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing, "
 		"use the <i>file_exists</i> function like so:<br>"
 		"<tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>"
+		)
+	,310
+	},		
+	{"popen",			js_popen,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"r+\"</tt>] [,buffer_length]")
+	,JSDOCSTR("open pipe to command, <i>buffer_length</i> defaults to 2048 bytes, "
+		"mode (default: <tt>'r+'</tt>) specifies the type of access requested for the file, as follows:<br>"
+		"<tt>r&nbsp</tt> read the programs stdout;<br>"
+		"<tt>w&nbsp</tt> write to the programs stdin<br>"
+		"<tt>r+</tt> open for both reading stdout and writing stdin<br>"
+		"(<b>only functional on UNIX systems</b>)"
 		)
 	,310
 	},		
