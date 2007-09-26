@@ -421,25 +421,23 @@ int change_user(void)
 * Set system capabilities on Linux.  Allows non root user
 * to make calls to bind
 * **********************************************************/
-#ifdef DEBUG_LINUX_CAPS
 void whoami(void)
 {
     uid_t a, b, c;
     getresuid(&a, &b, &c);
-    printf("Current uids: ruid - %d, euid - %d, suid - %d\n", a, b, c);
+    lprintf(LOG_DEBUG,"Current uids: ruid - %d, euid - %d, suid - %d\n", a, b, c);
     getresgid(&a, &b, &c);
-    printf("Current gids: rgid - %d, egid - %d, sgid - %d\n", a, b, c);
+    lprintf(LOG_DEBUG,"Current gids: rgid - %d, egid - %d, sgid - %d\n", a, b, c);
 }
 
 void list_caps(void)
 {
     cap_t caps = cap_get_proc();
     ssize_t y = 0;
-    printf("The process %d was given capabilities %s\n", (int) getpid(), cap_to_text(caps, &y));
+    lprintf(LOG_DEBUG, "The process %d was given capabilities %s\n", (int) getpid(), cap_to_text(caps, &y));
     fflush(0);
     cap_free(caps);
 }
-#endif /* DEBUG_LINUX_CAPS */
 
 static int linux_keepcaps(void)
 {
@@ -1783,18 +1781,14 @@ int main(int argc, char** argv)
 #elif defined(__unix__)
 
 #ifdef USE_LINUX_CAPS /* set capabilities and change user before we start threads */
-#ifdef DEBUG_LINUX_CAPS
     whoami();
     list_caps();
-#endif  /* DEBUG_LINUX_CAPS */      
     if(linux_initialprivs() < 0) {
         lputs(LOG_ERR,"linux_initialprivs FAILED");
 		lputs(LOG_ERR,strerror(errno));
     }
 	else {
-#ifdef DEBUG_LINUX_CAPS
     	list_caps();
-#endif /* DEBUG_LINUX_CAPS */        
     	if(linux_keepcaps() < 0) {
 			lputs(LOG_ERR,"linux_keepcaps FAILED");
 			lputs(LOG_ERR,strerror(errno));
@@ -1814,10 +1808,8 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-#ifdef DEBUG_LINUX_CAPS
     whoami();
     list_caps();
-#endif /* DEBUG_LINUX_CAPS */      
 #endif /* USE_LINUX_CAPS */
     
     /* Set up blocked signals */
