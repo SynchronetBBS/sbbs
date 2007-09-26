@@ -413,9 +413,6 @@ int change_user(void)
         }
         lprintf(LOG_INFO,"Successfully changed user_id to %s", new_uid_name);
     }
-#ifdef USE_LINUX_CAPS
-    capabilities_set=TRUE;
-#endif
 	return(0);
 }
 
@@ -1793,27 +1790,30 @@ int main(int argc, char** argv)
     if(linux_initialprivs() < 0) {
         lputs(LOG_ERR,"linux_initialprivs FAILED");
 		lputs(LOG_ERR,strerror(errno));
-        exit(1);
     }
+	else {
 #ifdef DEBUG_LINUX_CAPS
-    list_caps();
+    	list_caps();
 #endif /* DEBUG_LINUX_CAPS */        
-    if(linux_keepcaps() < 0) {
-		lputs(LOG_ERR,"linux_keepcaps FAILED");
-		lputs(LOG_ERR,strerror(errno));
-        exit(1);
-    }
-    
-    if(change_user() < 0) {
-		lputs(LOG_ERR,"change_user FAILED");
-        exit(1);
-	  }
-
-    if(linux_minprivs() < 0) {
-		lputs(LOG_ERR,"linux_minprivs FAILED");
-		lputs(LOG_ERR,strerror(errno));
-        exit(1);
-    }
+    	if(linux_keepcaps() < 0) {
+			lputs(LOG_ERR,"linux_keepcaps FAILED");
+			lputs(LOG_ERR,strerror(errno));
+    	}
+		else {
+    		if(change_user() < 0) {
+				lputs(LOG_ERR,"change_user FAILED");
+			}
+			else {
+    			if(linux_minprivs() < 0) {
+					lputs(LOG_ERR,"linux_minprivs FAILED");
+					lputs(LOG_ERR,strerror(errno));
+    			}
+				else {
+					capabilities_set=TRUE;
+				}
+			}
+		}
+	}
 #ifdef DEBUG_LINUX_CAPS
     whoami();
     list_caps();
@@ -1916,10 +1916,8 @@ int main(int argc, char** argv)
 		}
 
 #if !defined(USE_LINUX_CAPS) /* if using capabilities user should already have changed */
-    	if(change_user() < 0) {
+    	if(change_user() < 0)
 			lputs(LOG_ERR,"change_user FAILED");
-        	exit(1);
-		}
 	}
 #endif /* !defined(USE_LINUX_CAPS) */       
 
