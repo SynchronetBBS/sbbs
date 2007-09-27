@@ -1123,6 +1123,8 @@ int sdl_video_event_thread(void *data)
 								sdl_exitcode=1;
 								sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 							}
+							else
+								pthread_mutex_unlock(&vstatlock);
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
@@ -1233,6 +1235,8 @@ int sdl_video_event_thread(void *data)
 									sdl_exitcode=1;
 									sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
 								}
+								else
+									pthread_mutex_unlock(&vstatlock);
 								free(ev.user.data1);
 								free(ev.user.data2);
 								break;
