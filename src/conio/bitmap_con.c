@@ -146,8 +146,10 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	/* TODO: Re-enable this
 	send_rectangle(0,0,screenwidth,screenheight,TRUE);
 	*/
+	pthread_mutex_unlock(&vstatlock);
 	bitmap_loadfont(NULL);
 	/* TODO: Remove this next line */
+	pthread_mutex_lock(&vstatlock);
 	update_rect(1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight,TRUE);
 	pthread_mutex_unlock(&vstatlock);
 
