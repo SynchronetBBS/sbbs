@@ -490,7 +490,6 @@ static void bitmap_draw_cursor(void)
 	int width;
 
 	if(vstat.blink && !hold_update) {
-		pthread_mutex_lock(&vstatlock);
 		if(vstat.curs_start<=vstat.curs_end) {
 			xoffset=(cio_textinfo.curx+cio_textinfo.winleft-2)*vstat.charwidth;
 			yoffset=(cio_textinfo.cury+cio_textinfo.wintop-2)*vstat.charheight;
@@ -498,7 +497,6 @@ static void bitmap_draw_cursor(void)
 			start=vstat.curs_start;
 			end=vstat.curs_end;
 			width=vstat.charwidth;
-			pthread_mutex_unlock(&vstatlock);
 
 			pthread_mutex_lock(&screenlock);
 			for(y=start; y<=end; y++) {
@@ -509,8 +507,6 @@ static void bitmap_draw_cursor(void)
 			pthread_mutex_unlock(&screenlock);
 			send_rectangle(xoffset, yoffset+vstat.curs_start, vstat.charwidth, vstat.curs_end-vstat.curs_start+1,FALSE);
 		}
-		else
-			pthread_mutex_unlock(&vstatlock);
 	}
 }
 
