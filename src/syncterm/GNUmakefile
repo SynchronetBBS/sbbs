@@ -50,6 +50,12 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
+ifeq ($(os),linux)
+ ifeq ($(shell uname -m),x86_64)
+  LDFLAGS += -ldl
+ endif
+endif
+
 ifdef USE_GUTS
  CFLAGS +=	-I../guts -DGUTS_BUILTIN
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)gutsz$(OFILE)
