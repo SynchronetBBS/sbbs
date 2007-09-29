@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -182,7 +182,6 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-#ifdef __unix__
 static JSBool
 js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -230,7 +229,6 @@ js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	return(JS_TRUE);
 }
-#endif
 
 static JSBool
 js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1748,7 +1746,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>r+</tt> open for both reading stdout and writing stdin<br>"
 		"(<b>only functional on UNIX systems</b>)"
 		)
-	,310
+	,315
 	},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("close file")
