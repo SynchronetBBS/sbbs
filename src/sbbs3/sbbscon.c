@@ -425,16 +425,16 @@ void whoami(void)
 {
     uid_t a, b, c;
     getresuid(&a, &b, &c);
-    lprintf(LOG_DEBUG,"Current uids: ruid - %d, euid - %d, suid - %d\n", a, b, c);
+    lprintf(LOG_DEBUG,"Current uids: ruid - %d, euid - %d, suid - %d", a, b, c);
     getresgid(&a, &b, &c);
-    lprintf(LOG_DEBUG,"Current gids: rgid - %d, egid - %d, sgid - %d\n", a, b, c);
+    lprintf(LOG_DEBUG,"Current gids: rgid - %d, egid - %d, sgid - %d", a, b, c);
 }
 
 void list_caps(void)
 {
     cap_t caps = cap_get_proc();
     ssize_t y = 0;
-    lprintf(LOG_DEBUG, "The process %d was given capabilities %s\n", (int) getpid(), cap_to_text(caps, &y));
+    lprintf(LOG_DEBUG, "The process %d was given capabilities %s", (int) getpid(), cap_to_text(caps, &y));
     fflush(0);
     cap_free(caps);
 }
