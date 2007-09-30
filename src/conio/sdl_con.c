@@ -1150,21 +1150,12 @@ int sdl_video_event_thread(void *data)
 											r.w=vstat.scaling;
 											r.h=vstat.scaling;
 											dac_entry=rect->data[y*rect->width+x];
-#ifdef OFFSCREEN_FILL
 											r.x=x*vstat.scaling;
 											r.y=y*vstat.scaling;
 											sdl.FillRect(new_rect, &r, sdl.MapRGB(new_rect->format
 												, dac_default[dac_entry].red
 												, dac_default[dac_entry].green
 												, dac_default[dac_entry].blue));
-#else
-											r.x=(x+rect->x)*vstat.scaling;
-											r.y=(y+rect->y)*vstat.scaling;
-											sdl.FillRect(win, &r, sdl.MapRGB(win->format
-												, dac_default[dac_entry].red
-												, dac_default[dac_entry].green
-												, dac_default[dac_entry].blue));
-#endif
 										}
 									}
 									r.x=0;
@@ -1175,9 +1166,7 @@ int sdl_video_event_thread(void *data)
 									dst.y=rect->y*vstat.scaling;
 									dst.w=rect->width*vstat.scaling;
 									dst.h=rect->height*vstat.scaling;
-#ifdef OFFSCREEN_FILL
 									sdl.BlitSurface(new_rect, &r, win, &dst);
-#endif
 									sdl.UpdateRects(win,1,&dst);
 									free(rect->data);
 									free(rect);
