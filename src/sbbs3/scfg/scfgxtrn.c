@@ -1419,7 +1419,7 @@ online program (e.g. Free Time), set this option to Yes.
 /*
 Monitor Time Left:
 
-If you want Synchronet to monitor the user's time left onlnie while this
+If you want Synchronet to monitor the user's time left online while this
 program runs (and disconnect the user if their time runs out), set this
 option to Yes.
 */
