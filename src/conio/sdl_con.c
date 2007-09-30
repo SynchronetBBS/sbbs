@@ -1158,8 +1158,8 @@ int sdl_video_event_thread(void *data)
 												, dac_default[vstat.palette[palette_entry]].green
 												, dac_default[vstat.palette[palette_entry]].blue));
 #else
-											r.x=(x+rect.x)*vstat.scaling;
-											r.y=(y+rect.y)*vstat.scaling;
+											r.x=(x+rect->x)*vstat.scaling;
+											r.y=(y+rect->y)*vstat.scaling;
 											sdl.FillRect(win, &r, sdl.MapRGB(win->format
 												, dac_default[vstat.palette[palette_entry]].red
 												, dac_default[vstat.palette[palette_entry]].green
