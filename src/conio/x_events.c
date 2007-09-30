@@ -271,8 +271,20 @@ static void resize_window()
 static int init_mode(int mode)
 {
     int i;
+    int oldcols=vstat.cols;
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
+
+	/* Deal with 40 col doubling */
+	if(oldcols != vstat.cols) {
+		if(oldcols == 40)
+			vstat.scaling /= 2;
+		if(vstat.cols == 40)
+			vstat.scaling *= 2;
+	}
+
+	if(vstat.scaling < 1)
+		vstat.scaling = 1;
 
     /* Resize window if necessary. */
     resize_window();
