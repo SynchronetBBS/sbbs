@@ -409,11 +409,16 @@ static int x11_event(XEvent *ev)
         case NoExpose:
                 break;
         case GraphicsExpose:
-			send_rectangle(ev->xgraphicsexpose.x/vstat.scaling,ev->xgraphicsexpose.y/vstat.scaling
-					,ev->xgraphicsexpose.width/vstat.scaling,ev->xgraphicsexpose.height/vstat.scaling,TRUE);
+			send_rectangle(ev->xgraphicsexpose.x/vstat.scaling
+					,ev->xgraphicsexpose.y/vstat.scaling
+					,ev->xgraphicsexpose.width/vstat.scaling+(ev->xgraphicsexpose.width%vstat.scaling?1:0)
+					,ev->xgraphicsexpose.height/vstat.scaling,TRUE+(ev->xgraphicsexpose.height%vstat.scaling?1:0));
 			break;
         case Expose:
-			send_rectangle(ev->xexpose.x/vstat.scaling,ev->xexpose.y/vstat.scaling,ev->xexpose.width/vstat.scaling,ev->xexpose.height/vstat.scaling,TRUE);
+			send_rectangle(ev->xexpose.x/vstat.scaling
+					,ev->xexpose.y/vstat.scaling
+					,ev->xgraphicsexpose.width/vstat.scaling+(ev->xgraphicsexpose.width%vstat.scaling?1:0)
+					,ev->xgraphicsexpose.height/vstat.scaling,TRUE+(ev->xgraphicsexpose.height%vstat.scaling?1:0));
 			break;
 
 		/* Copy/Paste events */
