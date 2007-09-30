@@ -484,10 +484,14 @@ int sdl_init(int mode)
 #endif
 #if !defined(NO_X) && defined(__unix__)
 	#if defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
-		if((dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL))!=NULL) {
+		dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL);
 	#else
-		if((dl=dlopen("libX11.so",RTLD_LAZY))!=NULL) {
+		if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
+			if((dl=dlopen("libX11.so.7",RTLD_LAZY))==NULL)
+				if((dl=dlopen("libX11.so.6",RTLD_LAZY))==NULL)
+					dl=dlopen("libX11.so.5",RTLD_LAZY);
 	#endif
+		if(dl!=NULL) {
 			sdl_x11available=TRUE;
 			if(sdl_x11available && (sdl_x11.XFree=dlsym(dl,"XFree"))==NULL) {
 				dlclose(dl);
