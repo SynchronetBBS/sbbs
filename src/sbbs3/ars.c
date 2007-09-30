@@ -236,14 +236,20 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			else if(!strnicmp(str+i,"ULS",3)) {
 				artype=AR_ULS;
 				i+=2; }
-			else if(!strnicmp(str+i,"ULB",3)) {
-				artype=AR_ULB;
+			else if(!strnicmp(str+i,"ULK",3)) {
+				artype=AR_ULK;
+				i+=2; }
+			else if(!strnicmp(str+i,"ULM",3)) {
+				artype=AR_ULM;
 				i+=2; }
 			else if(!strnicmp(str+i,"DLS",3)) {
 				artype=AR_DLS;
 				i+=2; }
-			else if(!strnicmp(str+i,"DLB",3)) {
-				artype=AR_DLB;
+			else if(!strnicmp(str+i,"DLK",3)) {
+				artype=AR_DLK;
+				i+=2; }
+			else if(!strnicmp(str+i,"DLM",3)) {
+				artype=AR_DLM;
 				i+=2; }
 			else if(!strnicmp(str+i,"DAY",3)) {
 				artype=AR_DAY;
@@ -515,9 +521,11 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				case AR_LASTON:
 				case AR_LOGONS:
 				case AR_ULS:
-				case AR_ULB:
+				case AR_ULK:
+				case AR_ULM:
 				case AR_DLS:
-				case AR_DLB:
+				case AR_DLK:
+				case AR_DLM:
 					*((short *)(ar+j))=n;
 					j+=2;
 					break;

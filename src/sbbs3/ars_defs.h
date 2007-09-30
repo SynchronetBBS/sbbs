@@ -115,9 +115,11 @@ enum {                              /* Access requirement binaries */
 	,AR_INACTIVE
 	,AR_DELETED
 	,AR_ULS
-	,AR_ULB
+	,AR_ULK
+	,AR_ULM
 	,AR_DLS
-	,AR_DLB
+	,AR_DLK
+	,AR_DLM
     };
 
 #endif		/* Don't add anything after this line */

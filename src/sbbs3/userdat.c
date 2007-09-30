@@ -1679,8 +1679,15 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=!not;
 				(*ptrptr)++;
 				break;
-			case AR_ULB:
-				if((equal && user->ulb!=i) || (!equal && user->ulb<i))
+			case AR_ULK:
+				if((equal && user->ulb/1024!=i) || (!equal && user->ulb/1024<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
+			case AR_ULM:
+				if((equal && user->ulb/(1024*1024)!=i) || (!equal && user->ulb/(1024*1024)<i))
 					result=not;
 				else
 					result=!not;
@@ -1693,8 +1700,15 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=!not;
 				(*ptrptr)++;
 				break;
-			case AR_DLB:
-				if((equal && user->dlb!=i) || (!equal && user->dlb<i))
+			case AR_DLK:
+				if((equal && user->dlb/1024!=i) || (!equal && user->dlb/1024<i))
+					result=not;
+				else
+					result=!not;
+				(*ptrptr)++;
+				break;
+			case AR_DLM:
+				if((equal && user->dlb/(1024*1024)!=i) || (!equal && user->dlb/(1024*1024)<i))
 					result=not;
 				else
 					result=!not;
