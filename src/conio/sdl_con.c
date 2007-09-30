@@ -1146,11 +1146,23 @@ int sdl_video_event_thread(void *data)
 
 									for(y=0; y<rect->height; y++) {
 										for(x=0; x<rect->width; x++) {
+											int palette_entry;
 											r.x=x*vstat.scaling;
 											r.y=y*vstat.scaling;
 											r.w=vstat.scaling;
 											r.h=vstat.scaling;
-											sdl.FillRect(new_rect, &r, rect->data[y*rect->width+x]);
+											palette_entry=rect->data[y*rect->width+x];
+#ifdef OFFSCREEN_FILL
+											sdl.FillRect(new_rect, &r, sdl.MapRGB(new_rect->format
+												, dac_default[vstat.palette[palette_entry]].red
+												, dac_default[vstat.palette[palette_entry]].green
+												, dac_default[vstat.palette[palette_entry]].blue));
+#else
+											sdl.FillRect(win, &r, sdl.MapRGB(win->format
+												, dac_default[vstat.palette[palette_entry]].red
+												, dac_default[vstat.palette[palette_entry]].green
+												, dac_default[vstat.palette[palette_entry]].blue));
+#endif
 										}
 									}
 									r.x=0;
@@ -1161,7 +1173,9 @@ int sdl_video_event_thread(void *data)
 									dst.y=rect->y*vstat.scaling;
 									dst.w=rect->width*vstat.scaling;
 									dst.h=rect->height*vstat.scaling;
+#ifdef OFFSCREEN_FILL
 									sdl.BlitSurface(new_rect, &r, win, &dst);
+#endif
 									sdl.UpdateRects(win,1,&dst);
 									free(rect->data);
 									free(rect);

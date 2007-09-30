@@ -77,6 +77,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->LockAudio=SDL_LockAudio;
 	sdlf->UnlockAudio=SDL_UnlockAudio;
 	sdlf->GetAudioStatus=SDL_GetAudioStatus;
+	sdlf->MapRGB=SDL_MapRGB;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -260,6 +261,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->MapRGB=(void *)GetProcAddress(sdl_dll, "SDL_MapRGB"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -434,6 +439,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->GetAudioStatus=dlsym(sdl_dll, "SDL_GetAudioStatus"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->MapRGB=dlsym(sdl_dll, "SDL_MapRGB"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}
