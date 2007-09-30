@@ -361,6 +361,7 @@ int bitmap_setfont(int font, int force)
 			free(pold);
 		}
 	}
+	bitmap_loadfont(NULL);
 	return(0);
 }
 
