@@ -689,6 +689,16 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+9;
 	}
+	else if(!strnicmp("raw://",url,6)) {
+		bbs->conn_type=CONN_TYPE_TELNET;
+		bbs->port=conn_ports[bbs->conn_type];
+		p1=url+6;
+	}
+	else if(!strnicmp("shell:",url,6)) {
+		bbs->conn_type=CONN_TYPE_SHELL;
+		bbs->port=conn_ports[bbs->conn_type];
+		p1=url+6;
+	}
 	/* ToDo: RFC2806 */
 	/* Remove trailing / (Win32 adds one 'cause it hates me) */
 	p2=strchr(p1,'/');
@@ -841,10 +851,9 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 	}
 
 	if(shared) {
-#ifdef PREFIX
-		strcpy(fn,PREFIX);
+#ifdef SYSTEM_LIST_DIR
+		strcpy(fn,SYSTEM_LIST_DIR);
 		backslash(fn);
-		strcat(fn,"etc/");
 #else
 		strcpy(fn,"/usr/local/etc/");
 #endif
@@ -1203,11 +1212,20 @@ int main(int argc, char **argv)
 		"-h  =  use SSH mode if URL does not include the scheme\n"
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"\n"
-		"URL format is: [(rlogin|telnet|ssh)://][user[:password]@]domainname[:port]\n"
+		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
+		"raw:// URLs MUST include a port.\n"
+#ifdef __unix__
+		"shell:command URLs are also supported.\n"
+#endif
 		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
 		"          telnet://deuce@nix.synchro.net\n"
 		"          nix.synchro.net\n"
-		"          telnet://nix.synchro.net\n\nPress any key to exit..."
+		"          telnet://nix.synchro.net\n"
+		"          raw://nix.synchro.net:23\n"
+#ifdef __unix__
+		"          shell:/usr/bin/sh\n"
+#endif
+		"\nPress any key to exit..."
         );
 	getch();
 	return(0);

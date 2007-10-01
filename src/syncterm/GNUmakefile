@@ -62,9 +62,11 @@ ifdef USE_GUTS
 endif
 
 PREFIX	?= /usr/local
+SYSTEM_LIST_DIR ?= ${PREFIX}/etc
 DESKTOPDIR ?= $(PREFIX)/share/applications
 
 CFLAGS	+=	-DPREFIX=\"${PREFIX}\"
+CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 ifeq ($(PREFIX),/usr)
  MANPREFIX ?= /usr/share
 else
