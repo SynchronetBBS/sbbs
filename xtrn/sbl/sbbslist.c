@@ -7,6 +7,8 @@
 #include "xsdk.h"
 #include "telnet.h"
 #include "sbldefs.h"
+#include "filewrap.h"
+#include "sockwrap.h"
 
 char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
@@ -14,11 +16,10 @@ char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 char *nulstr="";
 char tmp[256];
 
+#ifdef _WIN32
 extern int daylight=0;
 extern long timezone=0L;
-
-#undef  ERROR_VALUE
-#define ERROR_VALUE			(GetLastError()-WSABASEERR)
+#endif
 
 #define SORT	TRUE
 #define VERIFY	TRUE
@@ -51,18 +52,6 @@ int sort_cmp(sort_t **str1, sort_t **str2)
 
 	/* sort ascending by verification attempts */
 	return(((*str1)->attempts)-((*str2)->attempts));
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-void truncsp(uchar *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
 }
 
 /****************************************************************************/
@@ -103,14 +92,14 @@ char *timestr(time_t *intime)
 /****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
-char *unixtodstr(time_t unix, char *str)
+char *unixtodstr(time_t t, char *str)
 {
 	struct tm* tm;
 
-	if(!unix)
+	if(!t)
 		strcpy(str,"00/00/00");
 	else {
-		tm=gmtime(&unix);
+		tm=gmtime(&t);
 		if(tm==NULL)
 			strcpy(str,"00/00/00");
 		else {
@@ -287,7 +276,7 @@ int telnet_negotiate(SOCKET sock, uchar* buf, int rd, int max_rd)
 			printf("%02X  ",rsp[i]);	
 		printf("\n");
 		send(sock,rsp,rsplen,0);
-		Sleep(3000);
+		SLEEP(3000);
 		rd=recv(sock,buf,max_rd,0);
 
 	} while(rd>0);
@@ -362,7 +351,7 @@ BOOL check_imsg_support(ulong ip_addr)
 	}
 
 	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.S_un.S_addr = ip_addr;
+	addr.sin_addr.s_addr = ip_addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(79);	/* finger */
 
@@ -409,7 +398,7 @@ BOOL check_imsg_support(ulong ip_addr)
 	}
 
 	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.S_un.S_addr = ip_addr;
+	addr.sin_addr.s_addr = ip_addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(25);	/* SMTP */
 
@@ -459,7 +448,7 @@ int main(int argc, char **argv)
 	ulong	total_systems;
 	ulong	total_attempts=0;
 	ulong	total_verified=0;
-	FILE	*in,*shrt,*lng,*html,*mail;
+	FILE	*in,*shrt,*lng,*html,*mail,*syncterm;
 	FILE*	ibbs;
 	ulong	ip_list[1000];
 	ulong	ip_total=0;
@@ -472,12 +461,14 @@ int main(int argc, char **argv)
 	SOCKET	sock;
 	SOCKADDR_IN	addr;
 	int		status;             /* Status Code */
+#ifdef _WIN32
 	WSADATA WSAData;
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))!=0) {
 	    printf("!WinSock startup ERROR %d\n", status);
 		return(1);
 	}
+#endif
 
 #if 0
 	if(_putenv("TZ=UCT0"))
@@ -486,7 +477,7 @@ int main(int argc, char **argv)
 #endif
 	now=time(NULL);
 
-	if((i=_sopen("SBL.DAB",O_RDWR|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
+	if((i=sopen("sbl.dab",O_RDWR|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		printf("error opening SBL.DAB\n");
 		return(1); }
 
@@ -494,11 +485,11 @@ int main(int argc, char **argv)
 		printf("error opening SBL.DAB\n");
 		return(1); }
 
-	if((shrt=fopen("SBBS.LST","wb"))==NULL) {
+	if((shrt=fopen("sbbs.lst","wb"))==NULL) {
 		printf("error opening/creating SBBS.LST\n");
 		return(1); }
 
-	if((lng=fopen("SBBS_DET.LST","wb"))==NULL) {
+	if((lng=fopen("sbbs_det.lst","wb"))==NULL) {
 		printf("error opening/creating SBBS_DET.LST\n");
 		return(1); }
 
@@ -512,6 +503,10 @@ int main(int argc, char **argv)
 
 	if((mail=fopen("sysop.lst","w"))==NULL) {
 		printf("error opening/creating sysop.lst\n");
+		return(1); }
+
+	if((syncterm=fopen("syncterm.lst","w"))==NULL) {
+		printf("error opening/creating syncterm.lst\n");
 		return(1); }
 
 	fprintf(shrt,"Synchronet BBS List exported from Vertrauen on %s\r\n"
@@ -720,7 +715,7 @@ int main(int argc, char **argv)
 					}
 
 					memset(&addr,0,sizeof(addr));
-					addr.sin_addr.S_un.S_addr = ip_addr;
+					addr.sin_addr.s_addr = ip_addr;
 					addr.sin_family = AF_INET;
 					addr.sin_port   = htons(telnet_port);
 
@@ -730,7 +725,7 @@ int main(int argc, char **argv)
 					else {
 						l=1;
 						ioctlsocket(sock, FIONBIO, &l);
-						Sleep(3000);
+						SLEEP(3000);
 
 						buf[0]=0;
 						rd=recv(sock,buf,sizeof(buf)-1,0);
@@ -798,6 +793,13 @@ int main(int argc, char **argv)
 				else
 					sprintf(telnet_portstr,":%d",telnet_port);
 
+				if(verified && i==0) {
+					fprintf(syncterm,"[%s]\nConnectionType=Telnet\nPort=%d\nAddress=%s\n\n"
+						,bbs.name
+						,telnet_port
+						,telnet_addr);
+				}
+
 				fprintf(html,"<TD><B>%s%s</B><TD>%s%s<TD>%s%s<TD>%s%s<TD%s>"
 					"<A HREF=telnet://%s%s>%s%s%s%s%s</A><TD%s>%s%s\n"
 					,fontstr,i ? "":name
@@ -812,6 +814,10 @@ int main(int argc, char **argv)
 					,i ? " BGCOLOR=\"#EEEEEE\"":""
 					,fontstr,verify_result);
 			} else
+				fprintf(syncterm,"[%s (%s)]\nConnectionType=Modem\nAddress=1-%s\n\n"
+					,bbs.name
+					,bbs.number[i].modem.number
+					,bbs.number[i].modem.number);
 				fprintf(html,"<TD><B>%s%s</B><TD>%s%s<TD>%s%s<TD>%s%s<TD%s>%s%s"
 					"<TD%s>%s%s\n"
 					,fontstr,i ? "":name

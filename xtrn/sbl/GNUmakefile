@@ -42,3 +42,7 @@ $(SMB2SBL): $(OBJODIR)$(DIRSEP)smb2sbl$(OFILE)
 $(SBLPACK): $(OBJODIR)$(DIRSEP)sblpack$(OFILE)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(SMBLIB_LDFLAGS) $^ -o $@ $(XPDEV_LIBS)
+
+$(SBBSLIST): $(OBJODIR)$(DIRSEP)sbbslist$(OFILE)
+	@echo Linking $@
+	$(QUIET)$(CC) $(LDFLAGS) $(SMBLIB_LDFLAGS) $^ -o $@ $(XPDEV_LIBS)
