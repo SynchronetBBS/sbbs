@@ -148,19 +148,32 @@ int get_next_rate(int curr_rate) {
 	return(rates[i]);
 }
 
-void sort_list(struct bbslist **list)  {
+void sort_list(struct bbslist **list, int *listcount)  {
 	struct bbslist *tmp;
-	unsigned int	i,swapped=1;
+	unsigned int	i,j,swapped=1;
 
 	while(swapped) {
 		swapped=0;
 		for(i=1;list[i]!=NULL && list[i-1]->name[0] && list[i]->name[0];i++) {
 			int	cmp=stricmp(list[i-1]->name,list[i]->name);
-			if(cmp>0) {
+			if(cmp>0 || (cmp==0 && list[i-1]->type==SYSTEM_BBSLIST && list[i]->type==USER_BBSLIST)) {
 				tmp=list[i];
 				list[i]=list[i-1];
 				list[i-1]=tmp;
 				swapped=1;
+			}
+			if(cmp==0) {
+				/* Duplicate.  Remove the one from system BBS list */
+				free(list[i]);
+				for(j=i;list[j]!=NULL && list[j]->name[0];j++) {
+					list[j]=list[j+1];
+				}
+				for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
+					list[j]->id=j;
+				}
+				(*listcount)--;
+				swapped=1;
+				break;
 			}
 		}
 	}
@@ -262,11 +275,14 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 	for(i=0;i<18;i++)		/* <- Beware of magic number! */
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
-		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
-						"SyncTERM supports system-wide and per-user lists.  You may only edit entries"
-						"in your own personal list.\n";
-		uifc.msg("Cannot edit system BBS list");
-		return(0);
+		char	*YesNo[3]={"Yes","No",""};
+		uifc.helpbuf=	"`Copy from system BBS list`\n\n"
+						"This BBS was loaded from the system BBS list.  In order to edit it, it\n"
+						"must be copied into your personal BBS list.\n";
+		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Copy from system BBS list?",YesNo)!=0)
+			return(0);
+		item->type=USER_BBSLIST;
+		add_bbs(listpath, item);
 	}
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
@@ -692,6 +708,22 @@ write_ini:
 	}
 }
 
+void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount)
+{
+	free_list(&list[0],*listcount);
+	*listcount=0;
+
+	memset(list,0,listsize);
+	memset(defaults,0,sizeof(struct bbslist));
+
+	read_list(listpath, list, defaults, listcount, USER_BBSLIST);
+
+	/* System BBS List */
+	if(stricmp(shared_list, listpath)) /* don't read the same list twice */
+		read_list(shared_list, list, defaults, listcount, SYSTEM_BBSLIST);
+	sort_list(list, listcount);
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
@@ -728,18 +760,10 @@ struct bbslist *show_bbslist(int mode)
 	if(init_uifc(TRUE, TRUE))
 		return(NULL);
 
-	memset(list,0,sizeof(list));
-	memset(&defaults,0,sizeof(defaults));
-
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
-	read_list(listpath, list, &defaults, &listcount, USER_BBSLIST);
-
-	/* System BBS List */
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
-	if(stricmp(shared_list, listpath)) /* don't read the same list twice */
-		read_list(shared_list, list, &defaults, &listcount, SYSTEM_BBSLIST);
+	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 
-	sort_list(list);
 	uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
@@ -789,7 +813,7 @@ struct bbslist *show_bbslist(int mode)
 							if(list[opt]) {
 								i=list[opt]->id;
 								if(edit_list(list[opt],listpath,FALSE)) {
-									sort_list(list);
+									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 									for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 										if(list[j]->id==i)
 											opt=j;
@@ -857,7 +881,7 @@ struct bbslist *show_bbslist(int mode)
 							}
 							else {
 								add_bbs(listpath,list[listcount-1]);
-								sort_list(list);
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==listcount-1)
 										opt=j;
@@ -894,15 +918,7 @@ struct bbslist *show_bbslist(int mode)
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
 								break;
 							del_bbs(listpath,list[opt]);
-							free(list[opt]);
-							for(i=opt;list[i]!=NULL && list[i]->name[0];i++) {
-								list[i]=list[i+1];
-							}
-							for(i=0;list[i]!=NULL && list[i]->name[0];i++) {
-								list[i]->id=i;
-							}
-							listcount--;
-							oldopt=-1;
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 							break;
 						case MSK_EDIT:
 							if(safe_mode) {
@@ -914,7 +930,7 @@ struct bbslist *show_bbslist(int mode)
 							}
 							i=list[opt]->id;
 							if(edit_list(list[opt],listpath,FALSE)) {
-								sort_list(list);
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==i)
 										opt=j;
@@ -935,7 +951,7 @@ struct bbslist *show_bbslist(int mode)
 						}
 						i=list[opt]->id;
 						if(edit_list(list[opt],listpath,FALSE)) {
-							sort_list(list);
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 							for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 								if(list[j]->id==i)
 									opt=j;

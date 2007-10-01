@@ -1086,6 +1086,10 @@ int main(int argc, char **argv)
 			bbs->connected=time(NULL);
 			bbs->calls++;
 			if(bbs->id != -1) {
+				if(bbs->type==SYSTEM_BBSLIST) {
+					bbs->type=USER_BBSLIST;
+					add_bbs(listpath, bbs);
+				}
 				if((listfile=fopen(listpath,"r"))!=NULL) {
 					inifile=iniReadFile(listfile);
 					fclose(listfile);
