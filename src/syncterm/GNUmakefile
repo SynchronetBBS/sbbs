@@ -79,7 +79,11 @@ LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
 vpath %.c ../sbbs3 ../smblib ../uifc ../guts ../comio
 
-INSTALL_EXE	?=	install
+ifdef DEBUG
+ INSTALL_EXE	?=	install
+else
+ INSTALL_EXE	?=	install -s
+endif
 INSTALL_DATA	?=	install -m 0444
 
 OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
