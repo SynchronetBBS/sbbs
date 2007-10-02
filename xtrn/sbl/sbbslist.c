@@ -4,7 +4,9 @@
 
 /* Converts Synchronet BBS List (SBL.DAB) to HTML file */
 
-#include "xsdk.h"
+#include <stdlib.h>		/* realloc */
+#include <time.h>		/* localtime */
+#include "genwrap.h"
 #include "telnet.h"
 #include "sbldefs.h"
 #include "filewrap.h"
@@ -308,7 +310,7 @@ int sockreadline(SOCKET socket, char* buf, int len, int timeout)
 			if(i==0) {
 				if((time(NULL)-start)>=timeout) 
 					return(0);
-				mswait(1);
+				SLEEP(1);
 				continue;
 			}
 			return(0);
