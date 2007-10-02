@@ -554,7 +554,10 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 
 	sch=vstat.vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 	bg=(sch&0x7000)>>12;
-	fg=(sch&0x0f00)>>8;
+	if(sch&0x8000 && vstat.blink)
+		fg=bg;
+	else
+		fg=(sch&0x0f00)>>8;
 	fontoffset=(sch&0xff)*vstat.charheight;
 
 	pthread_mutex_lock(&screenlock);
