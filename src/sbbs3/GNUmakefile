@@ -54,6 +54,7 @@ endif
 ifeq ($(os),linux)
  ifeq ($(shell test -f /usr/include/linux/capability.h && echo "yes"),yes)
   CFLAGS += -DUSE_LINUX_CAPS
+  CON_LIBS += -lcap
  endif
 endif
 
@@ -106,10 +107,6 @@ JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 #The following is needed for nspr support on Linux
 ifeq ($(os),linux)
  JS_LDFLAGS	+=	-ldl
-  #Needed for linux kernel capabilities
-  ifeq ($(shell test -f /usr/include/linux/capability.h && echo "yes"),yes)
-   JS_LDFLAGS += -lcap
-  endif
 endif
 JS_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
 CFLAGS	+=	$(JS_CFLAGS)
