@@ -195,7 +195,7 @@ void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
 	if(bbsname != NULL)
-		strcpy(entry->name,bbsname);
+		SAFECOPY(entry->name,bbsname);
 	iniReadString(listfile,bbsname,"Address","",entry->addr);
 	entry->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
 	entry->port=iniReadShortInt(listfile,bbsname,"Port",conn_ports[entry->conn_type]);
