@@ -62,15 +62,16 @@ ifdef USE_GUTS
 endif
 
 PREFIX	?= /usr/local
-SYSTEM_LIST_DIR ?= ${PREFIX}/etc
 DESKTOPDIR ?= $(PREFIX)/share/applications
 
 CFLAGS	+=	-DPREFIX=\"${PREFIX}\"
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 ifeq ($(PREFIX),/usr)
  MANPREFIX ?= /usr/share
+ SYSTEM_LIST_DIR ?= /etc
 else
  MANPREFIX ?= $(PREFIX)
+ SYSTEM_LIST_DIR ?= ${PREFIX}/etc
 endif
 
 CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) -I../sbbs3 -I../smblib -I../comio
