@@ -47,16 +47,14 @@ ifdef USE_DOSEMU
  CFLAGS += -DUSE_DOSEMU
 endif
 
-ifdef USE_LINUX_CAPS
- CFLAGS += -DUSE_LINUX_CAPS
- ifdef DEBUG_LINUX_CAPS
-  CFLAGS += -DDEBUG_LINUX_CAPS
- endif
-endif
-
-
 ifdef DONT_BLAME_SYNCHRONET
  CFLAGS += -DDONT_BLAME_SYNCHRONET
+endif
+
+ifeq ($(os),linux)
+ ifeq ($(shell test -f /usr/include/linux/capability.h && echo "yes"),yes)
+  CFLAGS += -DUSE_LINUX_CAPS
+ endif
 endif
 
 # JS and NSPR setup stuff...
@@ -109,7 +107,7 @@ JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 ifeq ($(os),linux)
  JS_LDFLAGS	+=	-ldl
   #Needed for linux kernel capabilities
-  ifdef USE_LINUX_CAPS
+  ifeq ($(shell test -f /usr/include/linux/capability.h && echo "yes"),yes)
    JS_LDFLAGS += -lcap
   endif
 endif

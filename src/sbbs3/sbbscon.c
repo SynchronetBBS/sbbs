@@ -126,6 +126,7 @@ char				log_ident[128];
 BOOL				std_facilities=FALSE;
 FILE *				pidf;
 char				pid_fname[MAX_PATH+1];
+BOOL                capabilities_set=FALSE;
 
 #ifdef USE_LINUX_CAPS
 /*
@@ -144,7 +145,6 @@ char				pid_fname[MAX_PATH+1];
 #endif
 #define SYS_capset __NR_capset
 #endif
-BOOL      capabilities_set=FALSE;
 #endif /* USE_LINUX_CAPS */
 
 #endif
@@ -289,13 +289,11 @@ static BOOL do_seteuid(BOOL to_new)
 {
 	BOOL	result=FALSE;
 
-#if defined(USE_LINUX_CAPS)
-	if(capabilities_set)
-		return(TRUE);		/* do nothing */
-#endif
+    if(capabilities_set)
+	    return(TRUE);		/* do nothing */
   
-  if(new_uid_name[0]==0)	/* not set? */
-		return(TRUE);		/* do nothing */
+    if(new_uid_name[0]==0)	/* not set? */
+	    return(TRUE);		/* do nothing */
 
 	if(old_uid==new_uid && old_gid==new_gid)
 		return(TRUE);		/* do nothing */
@@ -1784,22 +1782,24 @@ int main(int argc, char** argv)
     whoami();
     list_caps();
     if(linux_initialprivs() < 0) {
-        lputs(LOG_ERR,"linux_initialprivs FAILED");
+        lputs(LOG_ERR,"linux_initialprivs() FAILED");
+        /* assuming if we pass here the module is loaded so no further module messages are needed */
+        lputs(LOG_ERR,"Verify the following kernel module is loaded [See insmod(8)]: capability");
 		lputs(LOG_ERR,strerror(errno));
     }
 	else {
     	list_caps();
     	if(linux_keepcaps() < 0) {
-			lputs(LOG_ERR,"linux_keepcaps FAILED");
+			lputs(LOG_ERR,"linux_keepcaps() FAILED");
 			lputs(LOG_ERR,strerror(errno));
     	}
 		else {
     		if(change_user() < 0) {
-				lputs(LOG_ERR,"change_user FAILED");
+				lputs(LOG_ERR,"change_user() FAILED");
 			}
 			else {
     			if(linux_minprivs() < 0) {
-					lputs(LOG_ERR,"linux_minprivs FAILED");
+					lputs(LOG_ERR,"linux_minprivs() FAILED");
 					lputs(LOG_ERR,strerror(errno));
     			}
 				else {
@@ -1825,35 +1825,35 @@ int main(int argc, char** argv)
     signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
-#if !defined(USE_LINUX_CAPS)
-	if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
-		/* Can't recycle servers (re-bind ports) as non-root user */
-		/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
+    if(!capabilities_set) { /* capabilities were NOT set, fallback to original handling of thread options */
+    	if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
+    		/* Can't recycle servers (re-bind ports) as non-root user */
+    		/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
 #if !defined(DONT_BLAME_SYNCHRONET)
-		if(!thread_suid_broken) {
- 			if(bbs_startup.telnet_port < IPPORT_RESERVED
-				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
-					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
+    		if(!thread_suid_broken) {
+     			if(bbs_startup.telnet_port < IPPORT_RESERVED
+    				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
+    					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
 #ifdef USE_CRYPTLIB
-				|| (bbs_startup.options & BBS_OPT_ALLOW_SSH
-					&& bbs_startup.ssh_port < IPPORT_RESERVED)
+    				|| (bbs_startup.options & BBS_OPT_ALLOW_SSH
+    					&& bbs_startup.ssh_port < IPPORT_RESERVED)
 #endif
-				)
-				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
-			if(ftp_startup.port < IPPORT_RESERVED)
-				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
-			if(web_startup.port < IPPORT_RESERVED)
-				web_startup.options|=BBS_OPT_NO_RECYCLE;
-			if((mail_startup.options & MAIL_OPT_ALLOW_POP3
-				&& mail_startup.pop3_port < IPPORT_RESERVED)
-				|| mail_startup.smtp_port < IPPORT_RESERVED)
-				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
-			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
-			services_startup.options|=BBS_OPT_NO_RECYCLE;
-		}
+    				)
+    				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
+    			if(ftp_startup.port < IPPORT_RESERVED)
+    				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
+    			if(web_startup.port < IPPORT_RESERVED)
+    				web_startup.options|=BBS_OPT_NO_RECYCLE;
+    			if((mail_startup.options & MAIL_OPT_ALLOW_POP3
+    				&& mail_startup.pop3_port < IPPORT_RESERVED)
+    				|| mail_startup.smtp_port < IPPORT_RESERVED)
+    				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
+    			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
+    			services_startup.options|=BBS_OPT_NO_RECYCLE;
+    		}
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
-	}
-#endif /* !defined(USE_LINUX_CAPS) */    
+    	}
+    } /* end if(!capabilities_set) */    
 #endif /* defined(__unix__) */
 
 	if(run_bbs)
@@ -1876,51 +1876,48 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef __unix__
-#if !defined(USE_LINUX_CAPS) /* skip the following if using capabilities */
-    if(getuid())  { /*  are we running as a normal user?  */
-		lprintf(LOG_WARNING
-			,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
-	}
+    if(getuid() && !capabilities_set)  { /*  are we running as a normal user?  */
+    	lprintf(LOG_WARNING
+    		,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
+    }
+    else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
+    	lputs(LOG_WARNING,"WARNING: No user account specified, running as root.");
 	
-	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		lputs(LOG_WARNING,"WARNING: No user account specified, running as root.");
-	
-	else 
-	{
-#endif /* !defined(USE_LINUX_CAPS) */       
-		lputs(LOG_INFO,"Waiting for child threads to bind ports...");
-		while((run_bbs && !(bbs_running || bbs_stopped)) 
-				|| (run_ftp && !(ftp_running || ftp_stopped)) 
-				|| (run_web && !(web_running || web_stopped)) 
-				|| (run_mail && !(mail_running || mail_stopped)) 
-				|| (run_services && !(services_running || services_stopped)))  {
-			mswait(1000);
-			if(run_bbs && !(bbs_running || bbs_stopped))
-				lputs(LOG_INFO,"Waiting for BBS thread");
-			if(run_web && !(web_running || web_stopped))
-				lputs(LOG_INFO,"Waiting for Web thread");
-			if(run_ftp && !(ftp_running || ftp_stopped))
-				lputs(LOG_INFO,"Waiting for FTP thread");
-			if(run_mail && !(mail_running || mail_stopped))
-				lputs(LOG_INFO,"Waiting for Mail thread");
-			if(run_services && !(services_running || services_stopped))
-				lputs(LOG_INFO,"Waiting for Services thread");
-		}
+    else 
+    {
+    	lputs(LOG_INFO,"Waiting for child threads to bind ports...");
+	   	while((run_bbs && !(bbs_running || bbs_stopped)) 
+			|| (run_ftp && !(ftp_running || ftp_stopped)) 
+			|| (run_web && !(web_running || web_stopped)) 
+			|| (run_mail && !(mail_running || mail_stopped)) 
+			|| (run_services && !(services_running || services_stopped)))  {
+	    	mswait(1000);
+		    if(run_bbs && !(bbs_running || bbs_stopped))
+			    lputs(LOG_INFO,"Waiting for BBS thread");
+		    if(run_web && !(web_running || web_stopped))
+			    lputs(LOG_INFO,"Waiting for Web thread");
+		    if(run_ftp && !(ftp_running || ftp_stopped))
+			    lputs(LOG_INFO,"Waiting for FTP thread");
+		    if(run_mail && !(mail_running || mail_stopped))
+			    lputs(LOG_INFO,"Waiting for Mail thread");
+		    if(run_services && !(services_running || services_stopped))
+			    lputs(LOG_INFO,"Waiting for Services thread");
+	    }
 
-#if !defined(USE_LINUX_CAPS) /* if using capabilities user should already have changed */
-    	if(change_user() < 0)
-			lputs(LOG_ERR,"change_user FAILED");
+        if(!capabilities_set) { /* if using capabilities user should already have changed */
+            if(change_user() < 0)
+		        lputs(LOG_ERR,"change_user FAILED");
+        }
 	}
-#endif /* !defined(USE_LINUX_CAPS) */       
 
-	if(!isatty(fileno(stdin)))  			/* redirected */
-		while(1)
-			select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
+    if(!isatty(fileno(stdin)))  			/* redirected */
+	   	while(1)
+	    	select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
 	else 								/* interactive */
 #endif
 	{
-		prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
-		lputs(LOG_INFO,NULL);	/* display prompt */
+	    prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
+	    lputs(LOG_INFO,NULL);	/* display prompt */
 
 		while(!terminated) {
 #ifdef __unix__
