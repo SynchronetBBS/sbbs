@@ -552,6 +552,9 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	if(!vstat.vmem)
 		return(-1);
 
+	if(!font)
+		return(-1);
+
 	sch=vstat.vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)];
 	bg=(sch&0x7000)>>12;
 	if(sch&0x8000 && vstat.blink)
