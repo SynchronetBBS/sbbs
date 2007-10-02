@@ -740,20 +740,17 @@ int main(int argc, char **argv)
 							if(*sp==0)
 								sp++;
 							p=strstr(sp,"Synchronet");
-							if(p!=NULL) {
+							if(p!=NULL && (for_os=strstr(sp," for "))!=NULL) {
 								verified=TRUE;
-								for_os=strstr(sp," for ");
-								if(for_os==NULL) 
-									for_os="";
 								p=strstr(sp,"Version ");
 								if(p==NULL)
 									version[0]=0;
 								else {
+									for_os[12]=0;
 									p+=8;	/* skip "version" */
 									tp=strchr(p,'\r');
 									if(tp!=NULL) *tp=0;
 									truncsp(p);
-									for_os[12]=0;
 									tp=strchr(for_os+5,' ');
 									if(tp!=NULL) *tp=0;
 									truncsp(for_os);
