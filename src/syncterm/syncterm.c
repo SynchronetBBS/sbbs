@@ -694,11 +694,13 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
 	}
+#ifdef __unix__
 	else if(!strnicmp("shell:",url,6)) {
 		bbs->conn_type=CONN_TYPE_SHELL;
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
 	}
+#endif
 	/* ToDo: RFC2806 */
 	/* Remove trailing / (Win32 adds one 'cause it hates me) */
 	p2=strchr(p1,'/');
