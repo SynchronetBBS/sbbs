@@ -942,7 +942,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	}
 #endif
 
-	if((!unicode) || (mod & (KMOD_META|KMOD_ALT))) {
+	if((!unicode) || (keysym > SDLK_FIRST && keysym < SDLK_LAST) || (mod & (KMOD_META|KMOD_ALT))) {
 		for(i=0;sdl_keyval[i].keysym;i++) {
 			if(sdl_keyval[i].keysym==keysym) {
 				if(mod & KMOD_CTRL)
@@ -1002,13 +1002,15 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 					return(expect);
 				if(sdl_keyval[i].key > 255)
 					return(expect);
+				if(keysym <= 127)	/* The keyboard syms have been cleverly chosen to map to ASCII */
+					return(keysym);
 				/*
 				 * If we don't know that this key should
 				 * return the unicode translation, then
 				 * we're not right and this is prolly
 				 * an AltGr sequence.
 				 */
-				if(unicode==expect)
+				if(unicode!=expect)
 					return(sdl_keyval[i].alt);
 				return(0x0001ffff);
 			}
