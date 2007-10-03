@@ -3,6 +3,11 @@
 #else
 # CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
 #endif
+
+ifeq ($(os),darwin)
+ CFLAGS += -DHAVE_VASPRINTF
+endif
+
 ifdef USE_SYSTEM_CURSES
  CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
 else

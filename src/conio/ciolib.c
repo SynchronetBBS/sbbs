@@ -840,6 +840,16 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 	CIOLIB_INIT();
 
     va_start(argptr,fmat);
+
+#ifdef HAVE_VASPRINTF
+	ret=vasprintf(&str, fmat, argptr);
+	if(ret>=0)
+		ciolib_cputs(str);
+	else
+		ret=EOF;
+	free(str);
+#else
+
 #ifdef _MSC_VER
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
@@ -865,6 +875,9 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 		ciolib_cputs(str);
 	else
 		ret=EOF;
+
+#endif
+
     return(ret);
 }
 
