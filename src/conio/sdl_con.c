@@ -666,7 +666,7 @@ int sdl_setup_colours(SDL_Surface *surf)
 
 unsigned int cp437_convert(unsigned int unicode)
 {
-	if(unicode <= 0x80)
+	if(unicode < 0x80)
 		return(unicode);
 	switch(unicode) {
 		case 0x00c7:
@@ -998,11 +998,11 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				}
 
 				/* "Extended" syms are always right */
-				if(!unicode)
+				if(!(mod & (KMOD_META|KMOD_ALT)))	/* Was !unicode */
 					return(expect);
-				if(sdl_keyval[i].key > 255)
+				if(sdl_keyval[i].key > 255)			/* Extended regular key */
 					return(expect);
-				if(keysym <= 127)	/* The keyboard syms have been cleverly chosen to map to ASCII */
+				if(keysym <= 127 && !(mod & (KMOD_META|KMOD_ALT)))					/* The keyboard syms have been cleverly chosen to map to ASCII */
 					return(keysym);
 				/*
 				 * If we don't know that this key should
@@ -1010,9 +1010,9 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				 * we're not right and this is prolly
 				 * an AltGr sequence.
 				 */
-				if(unicode!=expect)
-					return(sdl_keyval[i].alt);
-				return(0x0001ffff);
+				/* if(unicode==expect) */
+				return(sdl_keyval[i].alt);
+				/* return(0x0001ffff); */
 			}
 		}
 		return(0x0001ffff);
