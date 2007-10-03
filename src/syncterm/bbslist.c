@@ -164,10 +164,10 @@ void sort_list(struct bbslist **list, int *listcount)  {
 			}
 			if(cmp==0) {
 				/* Duplicate.  Remove the one from system BBS list */
-				free(list[i]);
 				for(j=i;list[j]!=NULL && list[j]->name[0];j++) {
 					list[j]=list[j+1];
 				}
+				FREE_AND_NULL(list[j]);
 				for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 					list[j]->id=j;
 				}
