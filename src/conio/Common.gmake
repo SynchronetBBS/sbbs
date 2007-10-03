@@ -13,7 +13,9 @@ ifndef NO_X
   CIOLIB-MT_LIBS		+=	-L$(X_PATH)$(DIRSEP)lib -lX11
  else
   ifeq ($(os),darwin)
-   CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+   ifeq ($(shell uname -r),6.8)
+    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+   endif
   endif
   ifeq ($(os),linux)
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
@@ -26,13 +28,6 @@ else
   ifeq ($(os),darwin)
    CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
   endif
-endif
-
-ifdef NO_X
- ifndef WITH_SDL
-  CIOLIB-MT_CFLAGS		+=	-DNO_FONTS
-  CIOLIB_CFLAGS			+=	-DNO_FONTS
- endif
 endif
 
 # Find SDL headers!
@@ -87,8 +82,10 @@ ifdef WITH_SDL
      CIOLIB-CFLAGS	+=	-DSTATIC_SDL
 	else
      ifeq ($(os),darwin)
-      CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-      CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+      ifeq ($(shell uname -r),6.8)
+       CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+       CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+      endif
      endif
      ifeq ($(os),linux)
       CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
@@ -103,12 +100,23 @@ ifdef WITH_SDL
   else
    ifeq ($(os),darwin)
 	CIOLIB-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+	WITH_SDL	:=	1
+	STATIC_SDL	:=	1
 	CIOLIB-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
 	CIOLIB-MT_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
 	CIOLIB_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
 	CIOLIB_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
 	CIOLIB_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
    endif
+  endif
+ endif
+endif
+
+ifdef NO_X
+ ifndef WITH_SDL
+  ifndef WITH_SDL_AUDIO
+   CIOLIB-MT_CFLAGS		+=	-DNO_FONTS
+   CIOLIB_CFLAGS			+=	-DNO_FONTS
   endif
  endif
 endif
