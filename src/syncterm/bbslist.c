@@ -914,6 +914,12 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
+							if(list[opt]->type==SYSTEM_BBSLIST) {
+								uifc.helpbuf=	"`Cannot delete from system list`\n\n"
+												"This BBS was loaded from the system-wide list and cannot be deleted.";
+								uifc.msg("Cannot delete system list entries");
+								break;
+							}
 							sprintf(str,"Delete %s?",list[opt]->name);
 							i=1;
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
