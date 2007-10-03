@@ -50,6 +50,12 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
+ifeq ($(os),darwin)
+ ifeq ($(shell uname -r),6.8)
+  LDFLAGS += -ldl
+ endif
+endif
+
 ifeq ($(os),linux)
  ifeq ($(shell uname -m),x86_64)
   LDFLAGS += -ldl
@@ -90,7 +96,9 @@ OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
 OBJS	+= $(MTOBJODIR)$(DIRSEP)conn_pty$(OFILE)
 ifndef bcc
  ifneq ($(os),sunos)
-  LDFLAGS   +=  -lutil
+  ifneq ($(os),darwin)
+   LDFLAGS   +=  -lutil
+  endif
  endif
 endif
 
