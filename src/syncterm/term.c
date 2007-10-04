@@ -142,7 +142,7 @@ void update_status(struct bbslist *bbs, int speed)
 	char nbuf[LIST_NAME_MAX+10+11+1];	/* Room for "Name (Logging) (115300)" and terminator */
 						/* SAFE and Logging should me be possible. */
 	int oldscroll;
-	int olddmc;
+	int olddmc=hold_update;
 	struct	text_info txtinfo;
 	int now;
 	static int lastupd=0;
@@ -157,7 +157,6 @@ void update_status(struct bbslist *bbs, int speed)
 	timeon=now - bbs->connected;
     gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
-	olddmc=hold_update;
 	hold_update=TRUE;
 	textattr(YELLOW|(BLUE<<4));
 	/* Move to status line thinger */
@@ -192,8 +191,8 @@ void update_status(struct bbslist *bbs, int speed)
 	_wscroll=oldscroll;
 	textattr(txtinfo.attribute);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
-	hold_update=olddmc;
 	gotoxy(txtinfo.curx,txtinfo.cury);
+	hold_update=olddmc;
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
@@ -311,14 +310,13 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 	long		t;
 	time_t		now;
 	static time_t last_progress;
-	int			old_hold;
+	int			old_hold=hold_update;
 	zmodem_t*	zm=(zmodem_t*)cbdata;
 
 	zmodem_check_abort(cbdata);
 
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= zm->current_file_size) {
-		old_hold = hold_update;
 		hold_update = TRUE;
 		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
@@ -1404,10 +1402,11 @@ BOOL doterm(struct bbslist *bbs)
 				break;
 			}
 		}
-		hold_update=FALSE;
-		if(updated && sleep)
+		if(updated && sleep) {
+			hold_update=FALSE;
 			gotoxy(wherex(), wherey());
-		hold_update=TRUE;
+			hold_update=TRUE;
+		}
 
 		/* Get local input */
 		while(kbhit()) {
