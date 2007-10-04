@@ -1408,6 +1408,7 @@ BOOL doterm(struct bbslist *bbs)
 		hold_update=FALSE;
 		if(updated && sleep)
 			gotoxy(wherex(), wherey());
+		hold_update=TRUE;
 
 		/* Get local input */
 		while(kbhit()) {
