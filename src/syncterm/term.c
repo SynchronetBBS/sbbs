@@ -1252,7 +1252,6 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							conn_close();
 							hidemouse();
-							hold_update=oldmc;
 							return(FALSE);
 						}
 						break;
