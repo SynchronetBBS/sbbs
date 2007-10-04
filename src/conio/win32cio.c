@@ -579,13 +579,20 @@ void win32_gotoxy(int x, int y)
 {
 	COORD	cp;
 	HANDLE	h;
+	static int curx=-1;
+	static int cury=-1;
 
 	cio_textinfo.curx=x;
 	cio_textinfo.cury=y;
 	cp.X=cio_textinfo.winleft+x-2;
 	cp.Y=cio_textinfo.wintop+y-2;
-	if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
-		SetConsoleCursorPosition(h,cp);
+	if(cp.X != curx || cp.Y != cury) {
+		if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE) {
+			SetConsoleCursorPosition(h,cp);
+			curx=cp.X;
+			cury=cp.Y;
+		}
+	}
 }
 
 int win32_puttext(int left, int top, int right, int bottom, void* buf)
