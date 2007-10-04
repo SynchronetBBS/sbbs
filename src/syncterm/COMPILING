@@ -25,3 +25,6 @@ is optional and installed as "gmake" rather than "make".
 
 Refer to src/build/Common.gmake or src/build/Common.bmake for details of some
 of the make options the build system supports.
+
+Release builds for Mac OS X use the following command line:
+make WITH_SDL_AUDIO=1 STATIC_SDL=1 STATIC_CRYPTLIB=1 RELEASE=1 PREFIX=/usr
