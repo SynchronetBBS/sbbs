@@ -185,7 +185,7 @@ const struct sdl_keyvals sdl_keyval[] =
 	{SDLK_LEFTBRACKET, '[', '{', 0x1b, 0x1a00},
 	{SDLK_RIGHTBRACKET, ']', '}', 0x1d, 0x1b00},
 	{SDLK_SEMICOLON, ';', ':', 0, 0x2700},
-	{SDLK_BACKSLASH, '\'', '"', 0, 0x2800},
+	{SDLK_QUOTE, '\'', '"', 0, 0x2800},
 	{SDLK_COMMA, ',', '<', 0, 0x3300},
 	{SDLK_PERIOD, '.', '>', 0, 0x3400},
 	{SDLK_BACKQUOTE, '`', '~', 0, 0x2900},
@@ -1015,6 +1015,10 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				/* return(0x0001ffff); */
 			}
 		}
+		if(unicode)
+			return(cp437_convert(unicode));
+		if(keysym < 0x80 && !(mod & KMOD_META|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT))
+			return(keysym);
 		return(0x0001ffff);
 	}
 	return(cp437_convert(unicode));
