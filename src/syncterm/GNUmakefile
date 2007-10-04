@@ -60,7 +60,7 @@ endif
 ifdef STATIC_CRYPTLIB
  CFLAGS += -DSTATIC_CRYPTLIB
  LDFLAGS += -lcl -lz
- LDFLAGS += -L$(SRC_ROOT)/../lib/cryptlib/darwin.power_macintosh.release
+ LDFLAGS += -L$(SRC_ROOT)/../lib/cryptlib/$(machine).release
 endif
 
 ifeq ($(os),linux)
