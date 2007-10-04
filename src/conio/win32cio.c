@@ -582,8 +582,8 @@ void win32_gotoxy(int x, int y)
 
 	cio_textinfo.curx=x;
 	cio_textinfo.cury=y;
-	cp.X=cio_textinfo.winleft-x;
-	cp.Y=cio_textinfo.wintop-y;
+	cp.X=cio_textinfo.winleft+x-2;
+	cp.Y=cio_textinfo.wintop+y-2;
 	if(!hold_update && (h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleCursorPosition(h,cp);
 }
