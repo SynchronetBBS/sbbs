@@ -185,6 +185,8 @@
 				DE0B9B3D0C0BEE1A00A8000E,
 				DE0B9B3E0C0BEE1A00A8000E,
 				DE0B9B400C0BEE1A00A8000E,
+				DEDAEA300CB23DAB00A8000E,
+				DEDAEA320CB23DCA00A8000E,
 			);
 			isa = PBXGroup;
 			name = "Other Sources";
@@ -325,6 +327,7 @@
 				DE0B9B340C0BEA9800A8000E,
 				DE0B9B430C0BEE1A00A8000E,
 				DE0B9B460C0BEE1A00A8000E,
+				DEDAEA330CB23DCA00A8000E,
 			);
 			isa = PBXHeadersBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -361,6 +364,7 @@
 				DE0B9B3A0C0BEC3500A8000E,
 				DE0B9B410C0BEE1A00A8000E,
 				DE0B9B440C0BEE1A00A8000E,
+				DEDAEA310CB23DAB00A8000E,
 			);
 			isa = PBXSourcesBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -620,6 +624,30 @@
 		};
 		DEA765D709315EA500A8000E = {
 			fileRef = DEA765D209315E5700A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEDAEA300CB23DAB00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = conn_pty.c;
+			refType = 4;
+		};
+		DEDAEA310CB23DAB00A8000E = {
+			fileRef = DEDAEA300CB23DAB00A8000E;
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DEDAEA320CB23DCA00A8000E = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			path = conn_pty.h;
+			refType = 4;
+		};
+		DEDAEA330CB23DCA00A8000E = {
+			fileRef = DEDAEA320CB23DCA00A8000E;
 			isa = PBXBuildFile;
 			settings = {
 			};

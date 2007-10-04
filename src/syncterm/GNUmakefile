@@ -54,6 +54,13 @@ ifeq ($(os),darwin)
  ifeq ($(shell uname -r),6.8)
   LDFLAGS += -ldl
  endif
+ STATIC_CRYPTLIB ?= 1
+endif
+
+ifdef STATIC_CRYPTLIB
+ CFLAGS += -DSTATIC_CRYPTLIB
+ LDFLAGS += -lcl -lz
+ LDFLAGS += -L$(SRC_ROOT)/../lib/cryptlib/darwin.power_macintosh.release
 endif
 
 ifeq ($(os),linux)
