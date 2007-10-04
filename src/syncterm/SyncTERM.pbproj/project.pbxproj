@@ -237,8 +237,9 @@
 				HEADER_SEARCH_PATHS = "/automount/synchronet/src/include/cryptlib /automount/synchronet/src/src/smblib /automount/synchronet/src/src/sbbs3 /automount/synchronet/src/src/conio /automount/synchronet/src/src/uifc /automount/synchronet/src/src/xpdev /Library/Frameworks/SDL.framework/Headers";
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = "/automount/synchronet/src/lib/cryptlib/darwin.power_macintosh.release /automount/synchronet/src/src/conio/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/uifc/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/xpdev/gcc.darwin.power_macintosh.lib.release";
-				OTHER_CFLAGS = "-DHAS_INTTYPES_H -D__unix__ -D__DARWIN__ -DWITH_SDL -DUSE_XP_SEMAPHORES -DXPDEV_THREAD_SAFE -DLINK_LIST_THREADSAFE -DSTATIC_SDL";
-				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -luifc_mt -lcurses -lcl /usr/local/lib/libdl.a";
+				OPTIMIZATION_CFLAGS = "-O3";
+				OTHER_CFLAGS = "-D__BIG_ENDIAN__ -DHAS_INTTYPES_H -D__unix__ -D__DARWIN__ -D_THREAD_SAFE -D_REENTRANT -D__EXTENSIONS__ -DHAVE_VASPRINTF -DSTATIC_CRYPTLIB -DPREFIX=\\\\\"/usr\\\\\" -DSYSTEM_LIST_DIR=\\\\\"/etc\\\\\" -DDISABLE_X11 -DHAS_DEV_URANDOM -DURANDOM_DEV=\\\\\"/dev/urandom\\\\\" -DHAS_DEV_RANDOM -DRANDOM_DEV=\\\\\"/dev/random\\\\\" -DHAS_RANDOM_FUNC -DWITH_SDL_AUDIO -DSTATIC_SDL -DLINK_LIST_THREADSAFE -DXPDEV_THREAD_SAFE -DUSE_XP_SEMAPHORES";
+				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -luifc_mt -lcurses -lcl -lz /usr/local/lib/libdl.a";
 				PRODUCT_NAME = SyncTERM;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
@@ -259,6 +260,8 @@
 	<string>English</string>
 	<key>CFBundleExecutable</key>
 	<string>SyncTERM</string>
+	<key>CFBundleIconFile</key>
+	<string>/synchronet/src/src/syncterm/SyncTERM.icns</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
