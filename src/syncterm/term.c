@@ -1252,6 +1252,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							conn_close();
 							hidemouse();
+							hold_update=oldmc;
 							return(FALSE);
 						}
 						break;
@@ -1404,7 +1405,7 @@ BOOL doterm(struct bbslist *bbs)
 				break;
 			}
 		}
-		hold_update=oldmc;
+		hold_update=FALSE;
 		if(updated && sleep)
 			gotoxy(wherex(), wherey());
 
@@ -1529,6 +1530,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							conn_close();
 							hidemouse();
+							hold_update=oldmc;
 							return(key==0x2d00 /* Alt-X? */);
 						}
 						uifcbail();
@@ -1564,6 +1566,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							conn_close();
 							hidemouse();
+							hold_update=oldmc;
 							return(FALSE);
 						case 3:
 							begin_upload(bbs, FALSE);
@@ -1596,6 +1599,7 @@ BOOL doterm(struct bbslist *bbs)
 							cterm_end();
 							conn_close();
 							hidemouse();
+							hold_update=oldmc;
 							return(TRUE);
 					}
 					showmouse();
@@ -1875,6 +1879,7 @@ BOOL doterm(struct bbslist *bbs)
 	}
 /*
 	hidemouse();
+	hold_update=oldmc;
 	return(FALSE);
  */
 }
