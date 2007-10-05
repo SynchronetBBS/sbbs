@@ -136,7 +136,7 @@ else
 endif
 export LD_RUN_PATH
 
-CON_LIBS	:= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
+CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
  MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
