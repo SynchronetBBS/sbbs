@@ -52,7 +52,7 @@ endif
 
 ifeq ($(os),darwin)
  ifeq ($(shell uname -r),6.8)
-  LDFLAGS += -ldl
+  LDFLAGS += /usr/local/lib/libdl.a
  endif
  STATIC_CRYPTLIB ?= 1
 endif
