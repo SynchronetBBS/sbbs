@@ -85,12 +85,13 @@ enum {
 	,GREYSCALE_PALETTE
 	,COLOUR_PALETTE
 	,C64_PALETTE
+	,ATARI_PALETTE
 };
 
 extern struct video_params vparams[40];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
-extern unsigned char palettes[4][16];
-extern struct dac_colors dac_default[32];
+extern unsigned char palettes[5][16];
+extern struct dac_colors dac_default[34];
 extern char vga_font_bitmap[4096];
 extern char vga_font_bitmap14[3584];
 extern char vga_font_bitmap8[2048];
