@@ -1101,7 +1101,7 @@ int sdl_video_event_thread(void *data)
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
 									,8
-									,SDL_SWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
+									,SDL_HWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
 								);
 							}
 							else
@@ -1109,7 +1109,7 @@ int sdl_video_event_thread(void *data)
 									 vstat.charwidth*vstat.cols*vstat.scaling
 									,vstat.charheight*vstat.rows*vstat.scaling
 									,8
-									,SDL_SWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
+									,SDL_HWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
 								);
 							if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
@@ -1122,7 +1122,7 @@ int sdl_video_event_thread(void *data)
 								if(new_rect)
 									sdl.FreeSurface(new_rect);
 								new_rect=NULL;
-								tmp_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
+								tmp_rect=sdl.CreateRGBSurface(SDL_HWSURFACE
 										, vstat.charwidth*vstat.cols*vstat.scaling
 										, vstat.charheight*vstat.rows*vstat.scaling
 										, 8, 0, 0, 0, 0);
@@ -1217,14 +1217,14 @@ int sdl_video_event_thread(void *data)
 										 vstat.charwidth*vstat.cols*vstat.scaling
 										,vstat.charheight*vstat.rows*vstat.scaling
 										,8
-										,SDL_SWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
+										,SDL_HWSURFACE|SDL_FULLSCREEN|SDL_ANYFORMAT
 									);
 								else
 									win=sdl.SetVideoMode(
 										 vstat.charwidth*vstat.cols*vstat.scaling
 										,vstat.charheight*vstat.rows*vstat.scaling
 										,8
-										,SDL_SWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
+										,SDL_HWSURFACE|SDL_RESIZABLE|SDL_ANYFORMAT
 									);
 								if(win!=NULL) {
 	#if (defined(__MACH__) && defined(__APPLE__))
@@ -1240,7 +1240,7 @@ int sdl_video_event_thread(void *data)
 									if(new_rect)
 										sdl.FreeSurface(new_rect);
 									new_rect=NULL;
-									tmp_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
+									tmp_rect=sdl.CreateRGBSurface(SDL_HWSURFACE
 											, vstat.charwidth*vstat.cols*vstat.scaling
 											, vstat.charheight*vstat.rows*vstat.scaling
 											, 8, 0, 0, 0, 0);
