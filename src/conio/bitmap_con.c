@@ -49,7 +49,7 @@ struct rectangle {
 	int height;
 };
 
-static int update_rect(int sx, int sy, int width, int height, int force);
+static int update_rect(int sx, int sy, int width, int height, int force, int calls_send);
 
 /* Blinker Thread */
 static void blinker_thread(void *data)
@@ -61,7 +61,7 @@ static void blinker_thread(void *data)
 			vstat.blink=FALSE;
 		else
 			vstat.blink=TRUE;
-		update_rect(0,0,0,0,FALSE);
+		update_rect(0,0,0,0,FALSE,TRUE);
 		pthread_mutex_unlock(&vstatlock);
 	}
 }
@@ -150,7 +150,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	bitmap_loadfont(NULL);
 	/* TODO: Remove this next line */
 	pthread_mutex_lock(&vstatlock);
-	update_rect(1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight,TRUE);
+	update_rect(1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight,TRUE,TRUE);
 	pthread_mutex_unlock(&vstatlock);
 
 	cio_textinfo.attribute=7;
@@ -203,8 +203,14 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 			vstat.vmem[y*cio_textinfo.screenwidth+x]=sch;
 		}
 	}
-	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE);
+#ifdef SEPARATE_SEND_RECTANGLE
+	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE,FALSE);
 	pthread_mutex_unlock(&vstatlock);
+	send_rectangle((sx-1)*vstat.charwidth, (sy-1)*vstat.charheight, (ex-sx+1)*vstat.charwidth, (ey-sy+1)*vstat.charheight, FALSE);
+#else
+	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE,TRUE);
+	pthread_mutex_unlock(&vstatlock);
+#endif
 	return(1);
 }
 
@@ -262,7 +268,7 @@ void bitmap_setcursortype(int type)
 		    vstat.curs_end = vstat.default_curs_end;
 			break;
 	}
-	update_rect(cio_textinfo.curx+cio_textinfo.winleft-1,cio_textinfo.cury+cio_textinfo.wintop-1,1,1,TRUE);
+	update_rect(cio_textinfo.curx+cio_textinfo.winleft-1,cio_textinfo.cury+cio_textinfo.wintop-1,1,1,TRUE,TRUE);
 	pthread_mutex_unlock(&vstatlock);
 }
 
@@ -526,7 +532,7 @@ void bitmap_gotoxy(int x, int y)
 	if(!hold_update) {
 		/* Erase old cursor */
 		if(lx != vstat.curs_col || ly != vstat.curs_row)
-			update_rect(lx,ly,1,1,TRUE);
+			update_rect(lx,ly,1,1,TRUE,TRUE);
 		/* Draw new cursor */
 		bitmap_draw_cursor();
 		lx=vstat.curs_col;
@@ -578,7 +584,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	return(0);
 }
 
-static int update_rect(int sx, int sy, int width, int height, int force)
+static int update_rect(int sx, int sy, int width, int height, int force, int calls_send)
 {
 	int x,y;
 	unsigned int pos;
@@ -638,71 +644,79 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 				last_vmem[pos] = vstat.vmem[pos];
 				bitmap_draw_one_char(sx+x,sy+y);
 
-				if(lastcharupdated) {
-					this_rect.width+=vstat.charwidth;
-					lastcharupdated++;
-				}
-				else {
-					if(this_rect_used) {
-						send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+				if(calls_send) {
+					if(lastcharupdated) {
+						this_rect.width+=vstat.charwidth;
+						lastcharupdated++;
 					}
-
-					this_rect.x=(sx+x-1)*vstat.charwidth;
-					this_rect.y=(sy+y-1)*vstat.charheight;
-					this_rect.width=vstat.charwidth;
-					this_rect.height=vstat.charheight;
-					this_rect_used=1;
-					lastcharupdated++;
+					else {
+						if(this_rect_used) {
+							send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+						}
+	
+						this_rect.x=(sx+x-1)*vstat.charwidth;
+						this_rect.y=(sy+y-1)*vstat.charheight;
+						this_rect.width=vstat.charwidth;
+						this_rect.height=vstat.charheight;
+						this_rect_used=1;
+						lastcharupdated++;
+					}
 				}
 				if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
 					redraw_cursor=1;
 			}
 			else {
-				if(this_rect_used) {
-					send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+				if(calls_send) {
+					if(this_rect_used) {
+						send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+						this_rect_used=0;
+					}
+					if(last_rect_used) {
+						send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+						last_rect_used=0;
+					}
+
+					lastcharupdated=0;
+				}
+			}
+			pos++;
+		}
+		if(calls_send) {
+			/* If ALL chars in the line were used, add to last_rect */
+			if(lastcharupdated==width) {
+				if(last_rect_used) {
+					last_rect.height += vstat.charheight;
 					this_rect_used=0;
 				}
+				else {
+					last_rect=this_rect;
+					last_rect_used=1;
+					this_rect_used=0;
+				}
+			}
+			/* Otherwise send any stale line buffers */
+			else
+			{
 				if(last_rect_used) {
 					send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 					last_rect_used=0;
 				}
-
-				lastcharupdated=0;
+				if(this_rect_used) {
+					send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
+					this_rect_used=0;
+				}
 			}
-			pos++;
+			lastcharupdated=0;
 		}
-		/* If ALL chars in the line were used, add to last_rect */
-		if(lastcharupdated==width) {
-			if(last_rect_used) {
-				last_rect.height += vstat.charheight;
-				this_rect_used=0;
-			}
-			else {
-				last_rect=this_rect;
-				last_rect_used=1;
-				this_rect_used=0;
-			}
-		}
-		/* Otherwise send any stale line buffers */
-		else
-		{
-			if(last_rect_used) {
-				send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
-				last_rect_used=0;
-			}
-			if(this_rect_used) {
-				send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
-				this_rect_used=0;
-			}
-		}
-		lastcharupdated=0;
 	}
 
-	if(this_rect_used) {
-		send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
-	}
-	if(last_rect_used) {
-		send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+	if(calls_send) {
+		if(this_rect_used) {
+			send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height, FALSE);
+		}
+		if(last_rect_used) {
+			send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+		}
 	}
 
 	/* Did we redraw the cursor?  If so, update position */
