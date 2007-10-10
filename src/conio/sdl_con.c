@@ -1134,8 +1134,8 @@ int sdl_video_event_thread(void *data)
 									sdl.FreeSurface(tmp_rect);
 								}
 								pthread_mutex_unlock(&vstatlock);
-						    	sdl_setup_colours(win);
 						    	sdl_setup_colours(new_rect);
+						    	sdl_setup_colours(win);
 								send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
 							}
 							else if(sdl_init_good) {
@@ -1163,7 +1163,20 @@ int sdl_video_event_thread(void *data)
 									struct update_rect *rect=(struct update_rect *)ev.user.data1;
 									SDL_Rect r;
 									SDL_Rect dst;
-									int x,y;
+									int x,y,offset;
+#ifndef DOUBLE_BUFFER
+									for(y=0; y<rect->height; y++) {
+										offset=y*rect->width;
+										for(x=0; x<rect->width; x++) {
+											r.w=vstat.scaling;
+											r.h=vstat.scaling;
+											r.x=(rect->x+x)*vstat.scaling;
+											r.y=(rect->y+y)*vstat.scaling;
+											sdl.FillRect(win, &r, sdl_dac_default[rect->data[offset++]]);
+										}
+									}
+									sdl.UpdateRect(win,rect->x*vstat.scaling,rect->y*vstat.scaling,rect->width*vstat.scaling,rect->height*vstat.scaling);
+#else
 									for(y=0; y<rect->height; y++) {
 										for(x=0; x<rect->width; x++) {
 											int dac_entry;
@@ -1185,6 +1198,7 @@ int sdl_video_event_thread(void *data)
 									dst.h=rect->height*vstat.scaling;
 									sdl.BlitSurface(new_rect, &r, win, &dst);
 									sdl.UpdateRects(win,1,&dst);
+#endif
 									free(rect->data);
 									free(rect);
 									break;
@@ -1252,8 +1266,8 @@ int sdl_video_event_thread(void *data)
 										sdl.FreeSurface(tmp_rect);
 									}
 									pthread_mutex_unlock(&vstatlock);
-						    		sdl_setup_colours(win);
 						    		sdl_setup_colours(new_rect);
+						    		sdl_setup_colours(win);
 									send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
 								}
 								else if(sdl_init_good) {
