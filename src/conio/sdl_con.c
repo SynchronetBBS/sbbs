@@ -657,9 +657,9 @@ int sdl_setup_colours(SDL_Surface *surf)
 	SDL_Color	co[sizeof(dac_default)/sizeof(struct dac_colors)];
 
 	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-		co[i].r=dac_default[vstat.palette[i]].red;
-		co[i].g=dac_default[vstat.palette[i]].green;
-		co[i].b=dac_default[vstat.palette[i]].blue;
+		co[i].r=dac_default[i].red;
+		co[i].g=dac_default[i].green;
+		co[i].b=dac_default[i].blue;
 		sdl_dac_default[i]=sdl.MapRGB(win->format, co[i].r, co[i].g, co[i].b);
 	}
 	sdl.SetColors(surf, co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
