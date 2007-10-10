@@ -66,6 +66,7 @@ int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
+Uint32	sdl_dac_default[sizeof(dac_default)/sizeof(struct dac_colors)];
 
 struct sdl_keyvals {
 	int	keysym
@@ -659,6 +660,7 @@ int sdl_setup_colours(SDL_Surface *surf)
 		co[i].r=dac_default[vstat.palette[i]].red;
 		co[i].g=dac_default[vstat.palette[i]].green;
 		co[i].b=dac_default[vstat.palette[i]].blue;
+		sdl_dac_default[i]=sdl.MapRGB(win->format, co[i].r, co[i].g, co[i].b);
 	}
 	sdl.SetColors(surf, co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
 	return(ret);
@@ -1037,6 +1039,7 @@ int sdl_mouse_thread(void *data)
 int sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
+	SDL_Surface	*tmp_rect=NULL;
 
 	if(!init_sdl_video()) {
 		while(1) {
@@ -1118,10 +1121,15 @@ int sdl_video_event_thread(void *data)
 	#endif
 								if(new_rect)
 									sdl.FreeSurface(new_rect);
-								new_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
+								new_rect=NULL;
+								tmp_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
 										, vstat.charwidth*vstat.cols*vstat.scaling
 										, vstat.charheight*vstat.rows*vstat.scaling
 										, 8, 0, 0, 0, 0);
+								if(tmp_rect) {
+									new_rect=sdl.DisplayFormat(tmp_rect);
+									sdl.FreeSurface(tmp_rect);
+								}
 								pthread_mutex_unlock(&vstatlock);
 						    	sdl_setup_colours(win);
 						    	sdl_setup_colours(new_rect);
@@ -1153,7 +1161,6 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect r;
 									SDL_Rect dst;
 									int x,y;
-
 									for(y=0; y<rect->height; y++) {
 										for(x=0; x<rect->width; x++) {
 											int dac_entry;
@@ -1162,10 +1169,7 @@ int sdl_video_event_thread(void *data)
 											dac_entry=rect->data[y*rect->width+x];
 											r.x=x*vstat.scaling;
 											r.y=y*vstat.scaling;
-											sdl.FillRect(new_rect, &r, sdl.MapRGB(new_rect->format
-												, dac_default[dac_entry].red
-												, dac_default[dac_entry].green
-												, dac_default[dac_entry].blue));
+											sdl.FillRect(new_rect, &r, sdl_dac_default[dac_entry]);
 										}
 									}
 									r.x=0;
@@ -1235,10 +1239,15 @@ int sdl_video_event_thread(void *data)
 										vstat.scaling=1;
 									if(new_rect)
 										sdl.FreeSurface(new_rect);
-									new_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
+									new_rect=NULL;
+									tmp_rect=sdl.CreateRGBSurface(SDL_SWSURFACE
 											, vstat.charwidth*vstat.cols*vstat.scaling
 											, vstat.charheight*vstat.rows*vstat.scaling
 											, 8, 0, 0, 0, 0);
+									if(tmp_rect) {
+										new_rect=sdl.DisplayFormat(tmp_rect);
+										sdl.FreeSurface(tmp_rect);
+									}
 									pthread_mutex_unlock(&vstatlock);
 						    		sdl_setup_colours(win);
 						    		sdl_setup_colours(new_rect);
