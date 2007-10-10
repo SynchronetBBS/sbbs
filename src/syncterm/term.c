@@ -1654,29 +1654,16 @@ BOOL doterm(struct bbslist *bbs)
 						ch[0]=127;
 						conn_send(ch,1,0);
 						break;
+					case 96:	/* No backtick */
+						break;
 					default:
 						if(key<256) {
 							/* ASCII Translation */
 							if(key<32) {
 								break;
 							}
-							else if(key<65) {
-								ch[0]=key;
-								conn_send(ch,1,0);
-							}
-							else if(key<91) {
-								ch[0]=tolower(key);
-								conn_send(ch,1,0);
-							}
-							else if(key<96) {
-								ch[0]=key;
-								conn_send(ch,1,0);
-							}
-							else if(key==96) {
-								break;
-							}
 							else if(key<123) {
-								ch[0]=toupper(key);
+								ch[0]=key;
 								conn_send(ch,1,0);
 							}
 						}
