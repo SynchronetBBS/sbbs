@@ -52,6 +52,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->SetColors=SDL_SetColors;
 	sdlf->BlitSurface=SDL_UpperBlit;
 	sdlf->UpdateRects=SDL_UpdateRects;
+	sdlf->UpdateRect=SDL_UpdateRect;
 	sdlf->SDL_CreateSemaphore=SDL_CreateSemaphore;
 	sdlf->SDL_DestroySemaphore=SDL_DestroySemaphore;
 	sdlf->SDL_CreateMutex=SDL_CreateMutex;
@@ -161,6 +162,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->UpdateRects=(void *)GetProcAddress(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UpdateRect=(void *)GetProcAddress(sdl_dll, "SDL_UpdateRect"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
@@ -354,6 +359,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->UpdateRects=dlsym(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UpdateRect=dlsym(sdl_dll, "SDL_UpdateRect"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}

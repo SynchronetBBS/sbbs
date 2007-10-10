@@ -26,6 +26,7 @@ struct sdlfuncs {
 	int	(*BlitSurface)	(SDL_Surface *src, SDL_Rect *srcrect,
 								SDL_Surface *dst, SDL_Rect *dstrect);
 	void	(*UpdateRects)	(SDL_Surface *screen, int numrects, SDL_Rect *rects);
+	void	(*UpdateRect)	(SDL_Surface *screen, Sint32 x, Sint32 y, Sint32 w, Sint32 h);
 	SDL_sem *(*SDL_CreateSemaphore)	(Uint32 initial_value);
 	void (*SDL_DestroySemaphore)	(SDL_sem *semaphore);
 	SDL_mutex	*(*SDL_CreateMutex)	(void);
