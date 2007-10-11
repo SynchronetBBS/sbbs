@@ -61,12 +61,14 @@ int sdl_ufunc_retval;
 
 int fullscreen=0;
 
-SDL_sem *sdl_init_complete;
 int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
 Uint32	sdl_dac_default[sizeof(dac_default)/sizeof(struct dac_colors)];
+SDL_Rect	*upd_rects=NULL;
+int			rectspace=0;
+int			rectsused=0;
 
 struct sdl_keyvals {
 	int	keysym
@@ -86,6 +88,7 @@ struct update_rect {
 
 enum {
 	 SDL_USEREVENT_UPDATERECT
+	,SDL_USEREVENT_FLUSH
 	,SDL_USEREVENT_SETTITLE
 	,SDL_USEREVENT_SETNAME
 	,SDL_USEREVENT_SETICON
@@ -258,25 +261,11 @@ void sdl_user_func(int func, ...)
 			}
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
-		case SDL_USEREVENT_SETVIDMODE:
-			if((ev.user.data1=(void *)malloc(sizeof(int)))==NULL) {
-				va_end(argptr);
-				return;
-			}
-			*((int *)ev.user.data1)=va_arg(argptr, int);
-			if((ev.user.data2=(void *)malloc(sizeof(int)))==NULL) {
-				free(ev.user.data1);
-				va_end(argptr);
-				return;
-			}
-			*((int *)ev.user.data2)=va_arg(argptr, int);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			break;
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-		case SDL_USEREVENT_INIT:
+		case SDL_USEREVENT_FLUSH:
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 	}
@@ -300,6 +289,8 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
+		case SDL_USEREVENT_SETVIDMODE:
+		case SDL_USEREVENT_INIT:
 		case SDL_USEREVENT_QUIT:
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			passed=TRUE;
@@ -435,6 +426,11 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 	}
 }
 
+void sdl_flush(void)
+{
+	sdl_user_func(SDL_USEREVENT_FLUSH);
+}
+
 int sdl_init_mode(int mode)
 {
     struct video_params vmode;
@@ -455,7 +451,7 @@ int sdl_init_mode(int mode)
 	if(vstat.scaling < 1)
 		vstat.scaling = 1;
 
-	sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols*vstat.scaling, vstat.charheight*vstat.rows*vstat.scaling);
+	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 
     return(0);
 }
@@ -470,14 +466,13 @@ int sdl_init(int mode)
 	if(init_sdl_video())
 		return(-1);
 
-	bitmap_init(sdl_drawrect);
+	bitmap_init(sdl_drawrect, sdl_flush);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
 	sdl_init_mode(3);
-	sdl_user_func(SDL_USEREVENT_INIT);
+	sdl_user_func_ret(SDL_USEREVENT_INIT);
 
-	sdl.SemWait(sdl_init_complete);
 	if(sdl_init_good) {
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 #ifdef _WIN32
@@ -621,7 +616,7 @@ void sdl_add_key(unsigned int keyval)
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-		sdl_user_func(SDL_USEREVENT_SETVIDMODE,vstat.charwidth*vstat.cols, vstat.charheight*vstat.rows);
+		sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -1164,6 +1159,9 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect r;
 									SDL_Rect dst;
 									int x,y,offset;
+
+									if(!win)
+										break;
 #ifndef DOUBLE_BUFFER
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
@@ -1175,7 +1173,15 @@ int sdl_video_event_thread(void *data)
 											sdl.FillRect(win, &r, sdl_dac_default[rect->data[offset++]]);
 										}
 									}
-									sdl.UpdateRect(win,rect->x*vstat.scaling,rect->y*vstat.scaling,rect->width*vstat.scaling,rect->height*vstat.scaling);
+									upd_rects[rectsused].x=rect->x*vstat.scaling;
+									upd_rects[rectsused].y=rect->y*vstat.scaling;
+									upd_rects[rectsused].w=rect->width*vstat.scaling;
+									upd_rects[rectsused].h=rect->height*vstat.scaling;
+									rectsused++;
+									if(rectsused==rectspace) {
+										sdl.UpdateRects(win,rectsused,upd_rects);
+										rectsused=0;
+									}
 #else
 									for(y=0; y<rect->height; y++) {
 										for(x=0; x<rect->width; x++) {
@@ -1197,12 +1203,22 @@ int sdl_video_event_thread(void *data)
 									dst.w=rect->width*vstat.scaling;
 									dst.h=rect->height*vstat.scaling;
 									sdl.BlitSurface(new_rect, &r, win, &dst);
-									sdl.UpdateRects(win,1,&dst);
+									upd_rects[rectsused++]=dst;
+									if(rectsused==rectspace) {
+										sdl.UpdateRects(win,rectsused,upd_rects);
+										rectsused=0;
+									}
 #endif
 									free(rect->data);
 									free(rect);
 									break;
 								}
+							case SDL_USEREVENT_FLUSH:
+								if(win && upd_rects) {
+									sdl.UpdateRects(win,rectsused,upd_rects);
+									rectsused=0;
+								}
+								break;
 							case SDL_USEREVENT_SETNAME:
 								sdl.WM_SetCaption((char *)ev.user.data1,(char *)ev.user.data1);
 								free(ev.user.data1);
@@ -1229,6 +1245,15 @@ int sdl_video_event_thread(void *data)
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
 								pthread_mutex_lock(&vstatlock);
+								rectspace=vstat.cols*vstat.rows+vstat.cols;
+								rectsused=0;
+								upd_rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*rectspace);
+								if(upd_rects==NULL) {
+									pthread_mutex_unlock(&vstatlock);
+									ev.type=SDL_QUIT;
+									sdl_exitcode=1;
+									sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff);
+								}
 								if(fullscreen)
 									win=sdl.SetVideoMode(
 										 vstat.charwidth*vstat.cols*vstat.scaling
@@ -1278,8 +1303,8 @@ int sdl_video_event_thread(void *data)
 								}
 								else
 									pthread_mutex_unlock(&vstatlock);
-								free(ev.user.data1);
-								free(ev.user.data2);
+								sdl_ufunc_retval=0;
+								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_HIDEMOUSE:
 								sdl.ShowCursor(SDL_DISABLE);
@@ -1298,7 +1323,8 @@ int sdl_video_event_thread(void *data)
 										}
 									}
 								}
-								sdl.SemPost(sdl_init_complete);
+								sdl_ufunc_retval=0;
+								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_COPY:
 	#if (defined(__MACH__) && defined(__APPLE__))
@@ -1493,7 +1519,6 @@ int sdl_initciolib(int mode)
 	if(init_sdl_video()==-1)
 		return(-1);
 	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
-	sdl_init_complete=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_keylock=sdl.SDL_CreateMutex();
 	sdl_ufunc_lock=sdl.SDL_CreateMutex();

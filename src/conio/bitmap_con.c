@@ -35,6 +35,7 @@ struct video_stats vstat;
 
 struct bitmap_callbacks {
 	void	(*drawrect)		(int xpos, int ypos, int width, int height, unsigned char *data);
+	void	(*flush)		(void);
 };
 
 pthread_mutex_t		vstatlock;
@@ -66,7 +67,8 @@ static void blinker_thread(void *data)
 	}
 }
 
-int bitmap_init(void	(*drawrect_cb)		(int xpos, int ypos, int width, int height, unsigned char *data))
+int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, unsigned char *data)
+				,void (*flush_cb) (void))
 {
 	pthread_mutex_init(&vstatlock, NULL);
 	pthread_mutex_init(&screenlock, NULL);
@@ -75,6 +77,7 @@ int bitmap_init(void	(*drawrect_cb)		(int xpos, int ypos, int width, int height,
 	pthread_mutex_unlock(&vstatlock);
 
 	callbacks.drawrect=drawrect_cb;
+	callbacks.flush=flush_cb;
 	_beginthread(blinker_thread,0,NULL);
 
 	return(0);
@@ -89,10 +92,12 @@ void send_rectangle(int xoffset, int yoffset, int width, int height, int force)
 
 	pthread_mutex_lock(&screenlock);
 	if(callbacks.drawrect) {
+#ifdef PARANOIA
 		if(xoffset < 0 || xoffset >= screenwidth || yoffset < 0 || yoffset >= screenheight || width <= 0 || width > screenwidth || height <=0 || height >screenheight) {
 			pthread_mutex_unlock(&screenlock);
 			return;
 		}
+#endif
 
 		rect=(unsigned char *)malloc(width*height*sizeof(unsigned char));
 		if(!rect) {
@@ -203,14 +208,8 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 			vstat.vmem[y*cio_textinfo.screenwidth+x]=sch;
 		}
 	}
-#ifdef SEPARATE_SEND_RECTANGLE
-	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE,FALSE);
-	pthread_mutex_unlock(&vstatlock);
-	send_rectangle((sx-1)*vstat.charwidth, (sy-1)*vstat.charheight, (ex-sx+1)*vstat.charwidth, (ey-sy+1)*vstat.charheight, FALSE);
-#else
 	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE,TRUE);
 	pthread_mutex_unlock(&vstatlock);
-#endif
 	return(1);
 }
 
@@ -227,8 +226,6 @@ int bitmap_gettext(int sx, int sy, int ex, int ey, void *fill)
 			|| sy < 1
 			|| ex < 1
 			|| ey < 1
-			|| sx > cio_textinfo.screenwidth
-			|| sy > cio_textinfo.screenheight
 			|| sx > ex
 			|| sy > ey
 			|| ex > cio_textinfo.screenwidth
@@ -486,7 +483,7 @@ int bitmap_loadfont(char *filename)
 }
 
 /* Called from events thread only */
-static void bitmap_draw_cursor(void)
+static void bitmap_draw_cursor(int flush)
 {
 	int x;
 	int y;
@@ -513,6 +510,8 @@ static void bitmap_draw_cursor(void)
 			}
 			pthread_mutex_unlock(&screenlock);
 			send_rectangle(xoffset, yoffset+vstat.curs_start, vstat.charwidth, vstat.curs_end-vstat.curs_start+1,FALSE);
+			if(flush && callbacks.flush)
+				callbacks.flush();
 		}
 	}
 }
@@ -534,7 +533,7 @@ void bitmap_gotoxy(int x, int y)
 		if(lx != vstat.curs_col || ly != vstat.curs_row)
 			update_rect(lx,ly,1,1,TRUE,TRUE);
 		/* Draw new cursor */
-		bitmap_draw_cursor();
+		bitmap_draw_cursor(TRUE);
 		lx=vstat.curs_col;
 		ly=vstat.curs_row;
 	}
@@ -597,6 +596,7 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 	int this_rect_used=0;
 	struct rectangle last_rect;
 	int last_rect_used=0;
+	int	sent=FALSE;
 
 	if(sx==0 && sy==0 && width==0 && height==0)
 		fullredraw=1;
@@ -634,8 +634,8 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 		redraw_cursor=1;
 
 	for(y=0;y<height;y++) {
+		pos=(sy+y-1)*vstat.cols+(sx-1);
 		for(x=0;x<width;x++) {
-			pos=(sy+y-1)*vstat.cols+(sx+x-1);
 			if(force
 					|| (last_vmem[pos] != vstat.vmem[pos]) 					/* Different char */
 					|| (vstat.blink != vs.blink && vstat.vmem[pos]>>15) 	/* Blinking char */
@@ -643,6 +643,7 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 					) {
 				last_vmem[pos] = vstat.vmem[pos];
 				bitmap_draw_one_char(sx+x,sy+y);
+				sent=TRUE;
 
 				if(calls_send) {
 					if(lastcharupdated) {
@@ -653,7 +654,7 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 						if(this_rect_used) {
 							send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
 						}
-	
+
 						this_rect.x=(sx+x-1)*vstat.charwidth;
 						this_rect.y=(sy+y-1)*vstat.charheight;
 						this_rect.width=vstat.charwidth;
@@ -731,7 +732,10 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 	}
 
 	if(redraw_cursor)
-		bitmap_draw_cursor();
+		bitmap_draw_cursor(FALSE);
+
+	if(sent && callbacks.flush)
+		callbacks.flush();
 
 	return(0);
 }
