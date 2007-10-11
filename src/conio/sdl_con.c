@@ -61,6 +61,7 @@ int sdl_ufunc_retval;
 
 int fullscreen=0;
 
+SDL_sem	*sdl_init_complete;
 int	sdl_init_good=0;
 SDL_mutex *sdl_keylock;
 SDL_sem *sdl_key_pending;
@@ -261,6 +262,7 @@ void sdl_user_func(int func, ...)
 			}
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
+		case SDL_USEREVENT_SETVIDMODE:
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
@@ -289,7 +291,6 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
-		case SDL_USEREVENT_SETVIDMODE:
 		case SDL_USEREVENT_INIT:
 		case SDL_USEREVENT_QUIT:
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
@@ -452,7 +453,7 @@ int sdl_init_mode(int mode)
 	if(vstat.scaling < 1)
 		vstat.scaling = 1;
 
-	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
+	sdl_user_func(SDL_USEREVENT_SETVIDMODE);
 
     return(0);
 }
@@ -617,7 +618,7 @@ void sdl_add_key(unsigned int keyval)
 	if(keyval==0xa600) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-		sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
+		sdl_user_func(SDL_USEREVENT_SETVIDMODE);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -1306,8 +1307,6 @@ int sdl_video_event_thread(void *data)
 								}
 								else
 									pthread_mutex_unlock(&vstatlock);
-								sdl_ufunc_retval=0;
-								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_HIDEMOUSE:
 								sdl.ShowCursor(SDL_DISABLE);
