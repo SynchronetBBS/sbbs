@@ -70,6 +70,7 @@ int x_getfont(void);
 int x_loadfont(char *filename);
 int x_get_window_info(int *width, int *height, int *xpos, int *ypos);
 void x11_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *data);
+void x11_flush(void);
 #ifdef __cplusplus
 }
 #endif

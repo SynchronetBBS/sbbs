@@ -432,3 +432,12 @@ void x11_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
 	}
 }
+
+void x11_flush(void)
+{
+	struct x11_local_event ev;
+
+	ev.type=X11_LOCAL_FLUSH;
+	if(x11_initialized)
+		while(write(local_pipe[1], &ev, sizeof(ev))==-1);
+}
