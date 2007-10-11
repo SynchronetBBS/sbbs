@@ -533,8 +533,8 @@ void win32_textmode(int mode)
 	cio_textinfo.attribute=7;
 	cio_textinfo.normattr=7;
 	cio_textinfo.currmode=vparams[modeidx].mode;
-	cio_textinfo.screenheight=sz.Y;
-	cio_textinfo.screenwidth=sz.X;
+	cio_textinfo.screenheight=(unsigned char)sz.Y;
+	cio_textinfo.screenwidth=(unsigned char)sz.X;
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
 	cio_textinfo.winleft=1;

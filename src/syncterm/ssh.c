@@ -74,11 +74,9 @@ void ssh_input_thread(void *args)
 
 void ssh_output_thread(void *args)
 {
-	fd_set	wds;
 	int		wr;
 	int		ret;
 	size_t	sent;
-	size_t	send;
 	int		status;
 
 	conn_api.output_thread_running=1;

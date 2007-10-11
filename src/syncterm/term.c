@@ -1180,7 +1180,6 @@ BOOL doterm(struct bbslist *bbs)
 	int	oldmc;
 	int	updated=FALSE;
 	BOOL	sleep;
-	BOOL	rd;
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 
 	speed = bbs->bpsrate;

@@ -666,9 +666,6 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_wherey(void)
 /* **MUST** be implemented */
 CIOLIBEXPORT void CIOLIBCALL ciolib_gotoxy(int x, int y)
 {
-	int nx;
-	int ny;
-
 	CIOLIB_INIT();
 
 	if(		x < 1
@@ -739,7 +736,6 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_clreol(void)
 	unsigned char *buf;
 	int i;
 	int width,height;
-	struct text_info ti;
 
 	CIOLIB_INIT();
 	

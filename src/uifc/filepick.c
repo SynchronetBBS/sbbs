@@ -201,7 +201,7 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 void display_current_path(uifcapi_t *api, char *path)
 {
 	char	dpath[MAX_PATH+2];
-	int width;
+	size_t	width;
 	int height;
 	char	*p;
 
@@ -229,7 +229,6 @@ void display_current_path(uifcapi_t *api, char *path)
 int mousetofield(int currfield, int opts, int height, int width, int listheight, int listwidth, int *dcur, int *dbar, int *fcur, int *fbar)
 {
 	int newfield;
-	int nbar;
 	int bardif;
 	struct mouse_event mevnt;
 
