@@ -1248,6 +1248,8 @@ int sdl_video_event_thread(void *data)
 								pthread_mutex_lock(&vstatlock);
 								rectspace=vstat.cols*vstat.rows+vstat.cols;
 								rectsused=0;
+								if(upd_rects)
+									free(upd_rects);
 								upd_rects=(SDL_Rect *)malloc(sizeof(SDL_Rect)*rectspace);
 								if(upd_rects==NULL) {
 									pthread_mutex_unlock(&vstatlock);
