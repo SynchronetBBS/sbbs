@@ -55,15 +55,22 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
+	int count=0;
+
 	while(1) {
-		SLEEP(500);
-		pthread_mutex_lock(&vstatlock);
-		if(vstat.blink)
-			vstat.blink=FALSE;
-		else
-			vstat.blink=TRUE;
-		update_rect(0,0,0,0,FALSE,TRUE);
-		pthread_mutex_unlock(&vstatlock);
+		SLEEP(10);
+		count++;
+		if(count==50) {
+			pthread_mutex_lock(&vstatlock);
+			if(vstat.blink)
+				vstat.blink=FALSE;
+			else
+				vstat.blink=TRUE;
+			update_rect(0,0,0,0,FALSE,TRUE);
+			pthread_mutex_unlock(&vstatlock);
+			count=0;
+		}
+		callbacks.flush();
 	}
 }
 
@@ -510,8 +517,8 @@ static void bitmap_draw_cursor(int flush)
 			}
 			pthread_mutex_unlock(&screenlock);
 			send_rectangle(xoffset, yoffset+vstat.curs_start, vstat.charwidth, vstat.curs_end-vstat.curs_start+1,FALSE);
-			if(flush && callbacks.flush)
-				callbacks.flush();
+//			if(flush && callbacks.flush)
+//				callbacks.flush();
 		}
 	}
 }
@@ -734,8 +741,8 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 	if(redraw_cursor)
 		bitmap_draw_cursor(FALSE);
 
-	if(sent && callbacks.flush)
-		callbacks.flush();
+//	if(sent && callbacks.flush)
+//		callbacks.flush();
 
 	return(0);
 }

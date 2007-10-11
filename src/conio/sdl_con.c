@@ -428,7 +428,8 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 
 void sdl_flush(void)
 {
-	sdl_user_func(SDL_USEREVENT_FLUSH);
+	if(rectsused)
+		sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
 int sdl_init_mode(int mode)
