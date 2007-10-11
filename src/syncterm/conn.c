@@ -323,16 +323,14 @@ int conn_connect(struct bbslist *bbs)
 	return(conn_api.terminate);
 }
 
-BOOL conn_data_waiting(void)
+size_t conn_data_waiting(void)
 {
 	size_t found;
 
 	pthread_mutex_lock(&(conn_inbuf.mutex));
 	found=conn_buf_bytes(&conn_inbuf);
 	pthread_mutex_unlock(&(conn_inbuf.mutex));
-	if(found)
-		return(TRUE);
-	return(FALSE);
+	return(found);
 }
 
 int conn_close(void)

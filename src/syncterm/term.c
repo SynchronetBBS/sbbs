@@ -401,7 +401,7 @@ static int recv_byte(void* unused, unsigned timeout /* seconds */)
 #endif
 BOOL data_waiting(void* unused, unsigned timeout)
 {
-	return(conn_data_waiting());
+	return(conn_data_waiting()!=0);
 }
 
 void draw_transfer_window(char* title)
@@ -1181,6 +1181,7 @@ BOOL doterm(struct bbslist *bbs)
 	int	updated=FALSE;
 	BOOL	sleep;
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
+	size_t	remain;
 
 	speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
@@ -1227,7 +1228,7 @@ BOOL doterm(struct bbslist *bbs)
 
 		if(!term.nostatus)
 			update_status(bbs, speed);
-		while(conn_data_waiting() || !conn_connected()) {
+		for(remain=conn_data_waiting() /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
 			if(!speed || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
 				/* Get remote input */
 				inch=recv_byte(NULL, 0);
@@ -1271,8 +1272,10 @@ BOOL doterm(struct bbslist *bbs)
 							if(inch == gutsinit[j]) {
 								gutsbuf[j]=inch;
 								gutsbuf[++j]=0;
-								if(j==sizeof(gutsinit)) /* Have full sequence */
+								if(j==sizeof(gutsinit)) { /* Have full sequence */
 									guts_transfer(bbs);
+									remain=0;
+								}
 							}
 							else {
 								gutsbuf[j++]=inch;
@@ -1366,6 +1369,7 @@ BOOL doterm(struct bbslist *bbs)
 									else
 										begin_upload(bbs, TRUE);
 									zrqbuf[0]=0;
+									remain=0;
 								}
 							}
 							else {	/* Not a real zrqinit */
