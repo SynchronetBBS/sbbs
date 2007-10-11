@@ -82,6 +82,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->LockSurface=SDL_LockSurface;
 	sdlf->UnlockSurface=SDL_UnlockSurface;
 	sdlf->DisplayFormat=SDL_DisplayFormat;
+	sdlf->Flip=SDL_Flip;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -285,6 +286,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->Flip=(void *)GetProcAddress(sdl_dll, "SDL_Flip"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -482,6 +487,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->Flip=dlsym(sdl_dll, "SDL_Flip"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -546,8 +555,6 @@ int main(int argc, char **argv, char **env)
 int SDL_main_env(int argc, char **argv, char **env)
 #endif
 {
-	unsigned int i;
-	SDL_Event	ev;
 	char	drivername[64];
 	struct main_args ma;
 	SDL_Thread	*main_thread;

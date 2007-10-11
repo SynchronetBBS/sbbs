@@ -56,6 +56,7 @@ struct sdlfuncs {
 	int	(*LockSurface)	(SDL_Surface *surface);
 	void (*UnlockSurface)	(SDL_Surface *surface);
 	SDL_Surface	*(*DisplayFormat)(SDL_Surface *surf);
+	int	(*Flip)	(SDL_Surface *surface);
 	int	gotfuncs;
 };
 
