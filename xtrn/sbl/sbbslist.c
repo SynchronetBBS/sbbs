@@ -812,7 +812,7 @@ int main(int argc, char **argv)
 						, verified ? "</B>":""
 					,i ? " BGCOLOR=\"#EEEEEE\"":""
 					,fontstr,verify_result);
-			} else
+			} else {
 				fprintf(syncterm,"[%s (%s)]\nConnectionType=Modem\nAddress=1-%s\n\n"
 					,bbs.name
 					,bbs.number[i].modem.number
@@ -827,6 +827,7 @@ int main(int argc, char **argv)
 					,fontstr,bbs.number[i].modem.number
 					,i ? " BGCOLOR=\"#EEEEEE\"":""
 					,fontstr,"N/A");
+			}
 		} /* for(numbers) */
 #if VERIFY
 		if(verified) {
