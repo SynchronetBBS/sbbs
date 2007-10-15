@@ -84,8 +84,7 @@ A. Yes. As long as all the nodes can access the same live data files (via LAN)
 
 Q. Does Synchronet for Unix support external DOS programs/doors?
 A. Currently, only the FreeBSD build has doscmd support "built-in" (and this
-   "support" requires Deuce's version of doscmd with FOSSIL emulation):
-   http://nix.synchro.net/doscmd.gz
+   "support" requires emulators/doscmd to be installed):
 
    For FreeBSD, the path that is entered in the Start-up Directory is mapped
    as C:\ the current node directory is mapped as D:\ and the Synchronet 
