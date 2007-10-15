@@ -1345,7 +1345,7 @@ int sdl_video_event_thread(void *data)
 									if(sdl_copybuf!=NULL) {
 										if(!ClearCurrentScrap()) {		/* purge the current contents of the scrap. */
 											if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-												PutScrapFlavor(scrap, kScrapFlavorTypeText, /* kScrapFlavorMaskTranslated */ kScrapFlavorMaskNone, strlen(sdl_copybuf), sdl_copybuf)); 		/* write the data to the scrap */
+												PutScrapFlavor(scrap, kScrapFlavorTypeText, /* kScrapFlavorMaskTranslated */ kScrapFlavorMaskNone, strlen(sdl_copybuf), sdl_copybuf); 		/* write the data to the scrap */
 											}
 										}
 									}
