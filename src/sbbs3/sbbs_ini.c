@@ -338,7 +338,7 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"ExternalTermDumb","dumb",value));
 
 	#if defined(__FreeBSD__)
-		default_dosemu_path="/usr/bin/doscmd";
+		default_dosemu_path="/usr/local/bin/doscmd";
 	#else
 		default_dosemu_path="/usr/bin/dosemu.bin";
 	#endif
