@@ -1216,7 +1216,7 @@ int sdl_video_event_thread(void *data)
 									break;
 								}
 							case SDL_USEREVENT_FLUSH:
-								if(win && upd_rects) {
+								if(win && upd_rects && rectsused) {
 									sdl.UpdateRects(win,rectsused,upd_rects);
 									rectsused=0;
 								}
