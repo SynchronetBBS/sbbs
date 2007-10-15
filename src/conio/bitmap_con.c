@@ -60,16 +60,16 @@ static void blinker_thread(void *data)
 	while(1) {
 		SLEEP(10);
 		count++;
+		pthread_mutex_lock(&vstatlock);
 		if(count==50) {
-			pthread_mutex_lock(&vstatlock);
 			if(vstat.blink)
 				vstat.blink=FALSE;
 			else
 				vstat.blink=TRUE;
-			update_rect(0,0,0,0,FALSE,TRUE);
-			pthread_mutex_unlock(&vstatlock);
 			count=0;
 		}
+		update_rect(0,0,0,0,FALSE,TRUE);
+		pthread_mutex_unlock(&vstatlock);
 		callbacks.flush();
 	}
 }
@@ -215,7 +215,6 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 			vstat.vmem[y*cio_textinfo.screenwidth+x]=sch;
 		}
 	}
-	update_rect(sx,sy,ex-sx+1,ey-sy+1,FALSE,TRUE);
 	pthread_mutex_unlock(&vstatlock);
 	return(1);
 }
@@ -740,9 +739,6 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 
 	if(redraw_cursor)
 		bitmap_draw_cursor(FALSE);
-
-//	if(sent && callbacks.flush)
-//		callbacks.flush();
 
 	return(0);
 }
