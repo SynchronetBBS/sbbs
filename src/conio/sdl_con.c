@@ -1380,6 +1380,7 @@ int sdl_video_event_thread(void *data)
 												sdl_pastebuf=(char *)malloc(scraplen+1);
 												if(sdl_pastebuf!=NULL) {
 													if(GetScrapFlavorData(scrap, kScrapFlavorTypeText, &scraplen, sdl_pastebuf)) {
+														sdl_pastebuf[scraplen]=0;
 														FREE_AND_NULL(sdl_pastebuf);
 													}
 												}
