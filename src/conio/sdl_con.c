@@ -1375,7 +1375,7 @@ int sdl_video_event_thread(void *data)
 
 									FREE_AND_NULL(sdl_pastebuf);
 									if(!GetCurrentScrap(&scrap)) {		/* obtain a reference to the current scrap. */
-										if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) && (fl & kScrapFlavorMaskTranslated)) {
+										if(!GetScrapFlavorFlags(scrap, kScrapFlavorTypeText, &fl) /* && (fl & kScrapFlavorMaskTranslated) */) {
 											if(!GetScrapFlavorSize(scrap, kScrapFlavorTypeText, &scraplen)) {
 												sdl_pastebuf=(char *)malloc(scraplen+1);
 												if(sdl_pastebuf!=NULL) {
