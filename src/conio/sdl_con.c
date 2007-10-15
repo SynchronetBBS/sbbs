@@ -235,10 +235,6 @@ void sdl_user_func(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
-		case SDL_USEREVENT_UPDATERECT:
-			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			break;
 		case SDL_USEREVENT_SETNAME:
 			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
 				va_end(argptr);
@@ -267,7 +263,6 @@ void sdl_user_func(int func, ...)
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-		case SDL_USEREVENT_FLUSH:
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 	}
@@ -291,6 +286,11 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
+		case SDL_USEREVENT_UPDATERECT:
+			ev.user.data1=va_arg(argptr, struct update_rect *);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			break;
+		case SDL_USEREVENT_FLUSH:
 		case SDL_USEREVENT_INIT:
 		case SDL_USEREVENT_QUIT:
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
@@ -423,14 +423,14 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 		rect->width=width;
 		rect->height=height;
 		rect->data=data;
-		sdl_user_func(SDL_USEREVENT_UPDATERECT, rect);
+		sdl_user_func_ret(SDL_USEREVENT_UPDATERECT, rect);
 	}
 }
 
 void sdl_flush(void)
 {
 	if(rectsused)
-		sdl_user_func(SDL_USEREVENT_FLUSH);
+		sdl_user_func_ret(SDL_USEREVENT_FLUSH);
 }
 
 int sdl_init_mode(int mode)
@@ -1162,9 +1162,14 @@ int sdl_video_event_thread(void *data)
 									SDL_Rect dst;
 									int x,y,offset;
 
-									if(!win)
+									if(!win) {
+										free(rect->data);
+										free(rect);
+										sdl_ufunc_retval=0;
+										sdl.SemPost(sdl_ufunc_ret);
 										break;
-#ifndef DOUBLE_BUFFER
+									}
+#ifdef NO_DOUBLE_BUFFER
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1213,12 +1218,16 @@ int sdl_video_event_thread(void *data)
 #endif
 									free(rect->data);
 									free(rect);
+									sdl_ufunc_retval=0;
+									sdl.SemPost(sdl_ufunc_ret);
 									break;
 								}
 							case SDL_USEREVENT_FLUSH:
 								if(win && upd_rects && rectsused) {
 									sdl.UpdateRects(win,rectsused,upd_rects);
 									rectsused=0;
+									sdl_ufunc_retval=0;
+									sdl.SemPost(sdl_ufunc_ret);
 								}
 								break;
 							case SDL_USEREVENT_SETNAME:
