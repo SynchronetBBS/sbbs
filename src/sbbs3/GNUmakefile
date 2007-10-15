@@ -54,7 +54,7 @@ endif
 ifeq ($(os),linux)
  ifeq ($(shell test -f /usr/include/sys/capability.h && echo "yes"),yes)
   CFLAGS += -DUSE_LINUX_CAPS
-  CON_LIBS += -lcap
+  SBBS_LIBS += -lcap
  endif
 endif
 
