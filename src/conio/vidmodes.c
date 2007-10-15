@@ -126,7 +126,7 @@ struct dac_colors dac_default[34] = {
 	{0x95, 0x95, 0x95},
 	/* Atari Colours */
 	/* BG, FG */
-	{0, 81, 129}, {96, 183, 231}
+	{0, 81, 129}, {96, 183, 231},
 };
 
 int find_vmode(int mode)
