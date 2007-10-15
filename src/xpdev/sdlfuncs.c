@@ -52,6 +52,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->SetColors=SDL_SetColors;
 	sdlf->BlitSurface=SDL_UpperBlit;
 	sdlf->UpdateRects=SDL_UpdateRects;
+	sdlf->UpdateRect=SDL_UpdateRect;
 	sdlf->SDL_CreateSemaphore=SDL_CreateSemaphore;
 	sdlf->SDL_DestroySemaphore=SDL_DestroySemaphore;
 	sdlf->SDL_CreateMutex=SDL_CreateMutex;
@@ -81,6 +82,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->LockSurface=SDL_LockSurface;
 	sdlf->UnlockSurface=SDL_UnlockSurface;
 	sdlf->DisplayFormat=SDL_DisplayFormat;
+	sdlf->Flip=SDL_Flip;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -161,6 +163,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->UpdateRects=(void *)GetProcAddress(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UpdateRect=(void *)GetProcAddress(sdl_dll, "SDL_UpdateRect"))==NULL) {
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
@@ -280,6 +286,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->Flip=(void *)GetProcAddress(sdl_dll, "SDL_Flip"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -354,6 +364,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->UpdateRects=dlsym(sdl_dll, "SDL_UpdateRects"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UpdateRect=dlsym(sdl_dll, "SDL_UpdateRect"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}
@@ -473,6 +487,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->Flip=dlsym(sdl_dll, "SDL_Flip"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -537,8 +555,6 @@ int main(int argc, char **argv, char **env)
 int SDL_main_env(int argc, char **argv, char **env)
 #endif
 {
-	unsigned int i;
-	SDL_Event	ev;
 	char	drivername[64];
 	struct main_args ma;
 	SDL_Thread	*main_thread;
@@ -579,7 +595,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 		 * This ugly hack attempts to prevent this... of course, remote X11
 		 * connections must still be allowed.
 		 */
-		if((!use_sdl_video) || getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL) {
+		if((!use_sdl_video) || (getenv("REMOTEHOST")!=NULL && getenv("DISPLAY")==NULL)) {
 			/* Sure ,we can't use video, but audio is still valid! */
 			if(sdl.Init(0)==0)
 				sdl_initialized=TRUE;
