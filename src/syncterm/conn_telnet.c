@@ -31,7 +31,16 @@ void telnet_input_thread(void *args)
 	while(telnet_sock != INVALID_SOCKET && !conn_api.terminate) {
 		FD_ZERO(&rds);
 		FD_SET(telnet_sock, &rds);
+#ifdef __linux__
+		{
+			struct timeval tv;
+			tv.tv_sec=0;
+			tv.tv_usec=500000;
+			rd=select(telnet_sock+1, &rds, NULL, NULL, &tv);
+		}
+#else
 		rd=select(telnet_sock+1, &rds, NULL, NULL, NULL);
+#endif
 		if(rd==-1) {
 			if(errno==EBADF)
 				break;
@@ -79,7 +88,16 @@ void telnet_output_thread(void *args)
 			while(sent < wr) {
 				FD_ZERO(&wds);
 				FD_SET(telnet_sock, &wds);
+#ifdef __linux__
+				{
+					struct timeval tv;
+					tv.tv_sec=0;
+					tv.tv_usec=500000;
+					ret=select(telnet_sock+1, NULL, &wds, NULL, &tv);
+				}
+#else
 				ret=select(telnet_sock+1, NULL, &wds, NULL, NULL);
+#endif
 				if(ret==-1) {
 					if(errno==EBADF)
 						break;
