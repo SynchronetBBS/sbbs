@@ -76,11 +76,13 @@ struct yuv_settings {
 	int			enabled;
 	int			win_width;
 	int			win_height;
+	int			changed;
 	SDL_Overlay	*overlay;
+	SDL_mutex	*mutex;
 	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
 };
 
-static struct yuv_settings yuv={0,640,400,NULL};
+static struct yuv_settings yuv={0,640,400,0,NULL,NULL};
 
 struct sdl_keyvals {
 	int	keysym
@@ -266,29 +268,33 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[0]=yuv_array[0]*luminance/100;
 }
 
-yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
+void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 {
 	int x,y;
-	Uint8 *op;
+	Uint8 *Y,*U,*V;
+	int odd_line;
+	int odd_col;
 
 	for(y=0; y<r->h; y++)
 	{
-		op=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x*2);
+		odd_line=(y+r->y)&1;
+		Y=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x);
+		if(!odd_line) {
+			U=overlay->pixels[2]+overlay->pitches[2]*((y+r->y)/2)+(r->x/2);
+			V=overlay->pixels[1]+overlay->pitches[1]*((y+r->y)/2)+(r->x/2);
+		}
+		odd_col=(x+r->x)&1;
 		for(x=0; x<r->w; x++)
 		{
-			if((x+r->x)%2==0)
-			{
-				*(op++)=yuv.colours[dac_entry][0];
-				*(op++)=yuv.colours[dac_entry][1];
-				op[1]=yuv.colours[dac_entry][2];
+			*(Y++)=yuv.colours[dac_entry][0];
+			if(odd_line==0 && odd_col==0) {
+				*(U++)=yuv.colours[dac_entry][1];
+				*(V++)=yuv.colours[dac_entry][2];
 			}
-			else
-			{
-				*op=yuv.colours[dac_entry][0];
-				op+=2;
-			}
+			odd_col=!odd_col;
 		}
 	}
+	yuv.changed=1;
 }
 
 void sdl_user_func(int func, ...)
@@ -1177,9 +1183,14 @@ void setup_surfaces(void)
 			}
 		}
 		if(yuv.enabled) {
-			if(yuv.overlay)
+			if(yuv.overlay) {
+				sdl.UnlockYUVOverlay(yuv.overlay);
+				sdl.mutexV(yuv.mutex);
 				sdl.FreeYUVOverlay(yuv.overlay);
-			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
+			}
+			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
+			sdl.mutexP(yuv.mutex);
+			sdl.LockYUVOverlay(yuv.overlay);
 			sdl_setup_yuv_colours();
 		}
 		sdl_setup_colours(new_rect);
@@ -1318,8 +1329,6 @@ int sdl_video_event_thread(void *data)
 										sdl.SemPost(sdl_ufunc_ret);
 										break;
 									}
-									if(yuv.enabled)
-										sdl.LockYUVOverlay(yuv.overlay);
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1333,8 +1342,6 @@ int sdl_video_event_thread(void *data)
 												sdl.FillRect(new_rect, &r, sdl_dac_default[rect->data[offset++]]);
 										}
 									}
-									if(yuv.enabled)
-										sdl.UnlockYUVOverlay(yuv.overlay);
 									if(!yuv.enabled) {
 										upd_rects[rectsused].x=rect->x*vstat.scaling;
 										upd_rects[rectsused].y=rect->y*vstat.scaling;
@@ -1347,23 +1354,28 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
-									free(rect->data);
-									free(rect);
 									sdl_ufunc_retval=0;
 									sdl.SemPost(sdl_ufunc_ret);
+									free(rect->data);
+									free(rect);
 									break;
 								}
 							case SDL_USEREVENT_FLUSH:
 								if(win && new_rect) {
 									if(yuv.enabled) {
-										if(new_rect && yuv.overlay) {
+										if(new_rect && yuv.overlay && yuv.changed) {
 											SDL_Rect	dstrect;
 	
+											yuv.changed=0;
 											dstrect.w=win->w;
 											dstrect.h=win->h;
 											dstrect.x=0;
 											dstrect.y=0;
+											sdl.UnlockYUVOverlay(yuv.overlay);
+											sdl.mutexV(yuv.mutex);
 											sdl.DisplayYUVOverlay(yuv.overlay, &dstrect);
+											sdl.mutexP(yuv.mutex);
+											sdl.LockYUVOverlay(yuv.overlay);
 										}
 									}
 									else {
@@ -1640,6 +1652,7 @@ int sdl_initciolib(int mode)
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
 	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
 #endif
+	yuv.mutex=sdl.SDL_CreateMutex();
 	sdl_surface_mutex=sdl.SDL_CreateMutex();
 	run_sdl_drawing_thread(sdl_video_event_thread, exit_sdl_con);
 	return(sdl_init(mode));
