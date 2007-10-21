@@ -1195,7 +1195,7 @@ void setup_surfaces(void)
 int win_to_text_xpos(int winpos)
 {
 	if(yuv.enabled)
-		return(winpos*80/win->w+1);
+		return(winpos*vstat.cols/win->w+1);
 	else
 		return(winpos/(vstat.charwidth*vstat.scaling)+1);
 }
@@ -1203,7 +1203,7 @@ int win_to_text_xpos(int winpos)
 int win_to_text_ypos(int winpos)
 {
 	if(yuv.enabled)
-		return(winpos*80/win->h+1);
+		return(winpos*vstat.rows/win->h+1);
 	else
 		return(winpos/(vstat.charheight*vstat.scaling)+1);
 }
