@@ -659,7 +659,7 @@ char *output_types[]={
 	,"Curses on cp437 Device"
 #endif
 	,"ANSI"
-#ifdef __unix__
+#if defined(__unix__) && !defined(NO_X)
 	,"X11"
 #endif
 #ifdef _WIN32
@@ -677,7 +677,7 @@ int output_map[]={
 	,CIOLIB_MODE_CURSES_IBM
 #endif
 	,CIOLIB_MODE_ANSI
-#ifdef __unix__
+#if defined(__unix__) && !defined(NO_X)
 	,CIOLIB_MODE_X
 #endif
 #ifdef _WIN32
