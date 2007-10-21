@@ -271,37 +271,26 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
 void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 {
 	int x,y;
-	Uint8 *baseY,*baseU,*baseV;
 	Uint8 *Y,*U,*V;
 	int odd_line;
-	int odd_col;
+	int uvlen=(r->w)>>1;
+	int uvoffset=overlay->pitches[1]*((y+r->y+1)>>1)+((r->x+1)>>1);
 
 	odd_line=(r->y)&1;
-	baseY=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
-	baseU=overlay->pixels[2]+overlay->pitches[2]*((y+r->y)/2)+(r->x/2);
-	baseV=overlay->pixels[1]+overlay->pitches[1]*((y+r->y)/2)+(r->x/2);
+	Y=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
+	U=overlay->pixels[2]+uvoffset;
+	V=overlay->pixels[1]+uvoffset;
 	for(y=0; y<r->h; y++)
 	{
-		Y=baseY;
-		if(!odd_line) {
-			U=baseU;
-			V=baseV;
-		}
-		odd_col=(r->x)&1;
-		for(x=0; x<r->w; x++)
-		{
-			*(Y++)=yuv.colours[dac_entry][0];
-			if(odd_line==0 && odd_col==0) {
-				*(U++)=yuv.colours[dac_entry][1];
-				*(V++)=yuv.colours[dac_entry][2];
-			}
-			odd_col=!odd_col;
-		}
-		odd_line=!odd_line;
-		baseY+=overlay->pitches[0];
+		memset(Y, yuv.colours[dac_entry][0], r->w);
+		Y+=overlay->pitches[0];
 		if(odd_line) {
-			baseU+=overlay->pitches[2];
-			baseV+=overlay->pitches[1];
+			U+=overlay->pitches[2];
+			V+=overlay->pitches[1];
+		}
+		else {
+			memset(U, yuv.colours[dac_entry][1], uvlen);
+			memset(V, yuv.colours[dac_entry][2], uvlen);
 		}
 	}
 	yuv.changed=1;
