@@ -347,6 +347,9 @@ int conn_socket_connect(struct bbslist *bbs)
 	SOCKADDR_IN	saddr;
 	char	*p;
 	unsigned int	neta;
+	int		nonblock;
+	struct timeval tv;
+	fd_set	wfd;
 
 	for(p=bbs->addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -387,19 +390,70 @@ int conn_socket_connect(struct bbslist *bbs)
 	saddr.sin_family = AF_INET;
 	saddr.sin_port   = htons((WORD)bbs->port);
 
+	/* Set to non-blocking for the connect */
+	nonblock=-1;
+	ioctlsocket(sock, FIONBIO, &nonblock);
 	if(connect(sock, (struct sockaddr *)&saddr, sizeof(saddr))) {
+		switch(ERROR_VALUE) {
+			case EINPROGRESS:
+			case EINTR:
+			case EAGAIN:
+				break;
+			default:
+				goto connect_failed;
+		}
+	}
+	/* Drain the input buffer to avoid accidental cancel */
+	while(kbhit())
+		getch();
+	for(;;) {
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		FD_ZERO(&wfd);
+		FD_SET(sock, &wfd);
+		switch(select(sock+1, NULL, &wfd, NULL, &tv)) {
+			case 0:
+				if(kbhit()) {
+					conn_close();
+					uifc.pop(NULL);
+					uifcmsg("Connection Aborted.",	"`Connection Aborted`\n\n"
+								"Connection to the remote system aborted by keystroke.");
+					closesocket(sock);
+					conn_api.terminate=-1;
+					return(INVALID_SOCKET);
+				}
+				break;
+			case -1:
+				goto connect_failed;
+			case 1:
+				goto connected;
+			default:
+				break;
+		}
+	}
+connected:
+	nonblock=0;
+	ioctlsocket(sock, FIONBIO, &nonblock);
+	if(!socket_check(sock, NULL, NULL, 0))
+		goto connect_failed;
+
+	uifc.pop(NULL);
+	return(sock);
+
+connect_failed:
+	{
 		char str[LIST_ADDR_MAX+20];
 
 		conn_close();
 		uifc.pop(NULL);
 		sprintf(str,"Cannot connect to %s!",bbs->addr);
 		uifcmsg(str,	"`Unable to connect`\n\n"
-						"Cannot connect to the remote system... it is down or unreachable.");
+					"Cannot connect to the remote system... it is down or unreachable.");
+		closesocket(sock);
 		conn_api.terminate=-1;
 		return(INVALID_SOCKET);
 	}
-
-	return(sock);
 }
 
 void conn_binary_mode_on(void)

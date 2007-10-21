@@ -1002,6 +1002,11 @@ int main(int argc, char **argv)
 	int		conn_type=CONN_TYPE_TELNET;
 	BOOL	dont_set_mode=FALSE;
 
+	/* Cryptlib initialization MUST be done before ciolib init */
+	if(!crypt_loaded)
+		init_crypt();
+	atexit(exit_crypt);
+
 	/* UIFC initialization */
     memset(&uifc,0,sizeof(uifc));
 	uifc.mode=UIFC_NOCTRL;
@@ -1217,7 +1222,6 @@ int main(int argc, char **argv)
 			settitle(str);
 			term.nostatus=bbs->nostatus;
 			if(drawwin()) {
-				atexit(exit_crypt);
 				return(1);
 			}
 			if(log_fp==NULL && bbs->logfile[0])
