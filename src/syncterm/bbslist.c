@@ -620,10 +620,10 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<6; i++)
+	for(i=0; i<7; i++)
 		opt[i]=opts[i];
 
-	opts[5][0]=0;
+	opts[6][0]=0;
 	for(;;) {
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
