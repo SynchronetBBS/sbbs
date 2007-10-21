@@ -139,7 +139,7 @@ enum {
 	#endif
 #endif
 
-#if !defined(HAS_INTTYPES_H)
+#if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES)
 
 typedef char	int8_t;
 typedef short	int16_t;
