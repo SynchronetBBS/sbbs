@@ -969,6 +969,9 @@ int main(int argc, char **argv)
 						case 'S':
 							ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
 							break;
+						case 'O':
+							ciolib_mode=CIOLIB_MODE_SDL_YUV;
+							break;
 						default:
 							goto USAGE;
 					}
