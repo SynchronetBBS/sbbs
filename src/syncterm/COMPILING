@@ -28,3 +28,7 @@ of the make options the build system supports.
 
 Release builds for Mac OS X use the following command line:
 make WITH_SDL_AUDIO=1 STATIC_SDL=1 STATIC_CRYPTLIB=1 RELEASE=1 PREFIX=/usr
+
+The package is generated and copied do a disk image which is then converted
+with the following command:
+hdiutil convert /Users/stephenhurd/Desktop/SyncTERM.dmg -format UDRO -o /synchronet/sbbs/web/root/syncterm.bbsdev.net/SyncTERM.dmg
