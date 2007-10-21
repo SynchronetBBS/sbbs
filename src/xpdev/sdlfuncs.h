@@ -57,6 +57,13 @@ struct sdlfuncs {
 	void (*UnlockSurface)	(SDL_Surface *surface);
 	SDL_Surface	*(*DisplayFormat)(SDL_Surface *surf);
 	int	(*Flip)	(SDL_Surface *surface);
+	SDL_Overlay *(*CreateYUVOverlay)(int width, int height, Uint32 format, SDL_Surface *display);
+	int (*DisplayYUVOverlay)(SDL_Overlay *overlay, SDL_Rect *dstrect);
+	int	(*FreeYUVOverlay)	(SDL_Overlay *overlay);
+	int	(*LockYUVOverlay)	(SDL_Overlay *overlay);
+	void (*UnlockYUVOverlay)	(SDL_Overlay *overlay);
+	const SDL_VideoInfo *(*GetVideoInfo)(void);
+	SDL_VideoInfo initial_videoinfo;
 	int	gotfuncs;
 };
 
