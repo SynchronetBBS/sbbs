@@ -51,6 +51,7 @@ SDL_Surface	*new_rect=NULL;
 SDL_sem	*sdl_pastebuf_set;
 SDL_sem	*sdl_pastebuf_copied;
 SDL_mutex	*sdl_copybuf_mutex;
+SDL_mutex	*sdl_surface_mutex;
 static SDL_Thread *mouse_thread;
 char *sdl_copybuf=NULL;
 char *sdl_pastebuf=NULL;
@@ -1191,6 +1192,22 @@ void setup_surfaces(void)
 	}
 }
 
+int win_to_text_xpos(int winpos)
+{
+	if(yuv.enabled)
+		return(winpos*80/win->w+1);
+	else
+		return(winpos/(vstat.charwidth*vstat.scaling)+1);
+}
+
+int win_to_text_ypos(int winpos)
+{
+	if(yuv.enabled)
+		return(winpos*80/win->h+1);
+	else
+		return(winpos/(vstat.charheight*vstat.scaling)+1);
+}
+
 /* Event Thread */
 int sdl_video_event_thread(void *data)
 {
@@ -1210,20 +1227,20 @@ int sdl_video_event_thread(void *data)
 					case SDL_MOUSEMOTION:
 						if(!ciolib_mouse_initialized)
 							break;
-						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,ev.motion.x/(vstat.charwidth*vstat.scaling)+1,ev.motion.y/(vstat.charheight*vstat.scaling)+1);
+						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y));
 						break;
 					case SDL_MOUSEBUTTONDOWN:
 						if(!ciolib_mouse_initialized)
 							break;
 						switch(ev.button.button) {
 							case SDL_BUTTON_LEFT:
-								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 							case SDL_BUTTON_MIDDLE:
-								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 							case SDL_BUTTON_RIGHT:
-								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 						}
 						break;
@@ -1232,13 +1249,13 @@ int sdl_video_event_thread(void *data)
 							break;
 						switch(ev.button.button) {
 							case SDL_BUTTON_LEFT:
-								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 							case SDL_BUTTON_MIDDLE:
-								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 							case SDL_BUTTON_RIGHT:
-								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),ev.button.x/(vstat.charwidth*vstat.scaling)+1,ev.button.y/(vstat.charheight*vstat.scaling)+1);
+								ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
 								break;
 						}
 						break;
@@ -1247,6 +1264,7 @@ int sdl_video_event_thread(void *data)
 						return(sdl_exitcode);
 					case SDL_VIDEORESIZE:
 						if(ev.resize.w > 0 && ev.resize.h > 0) {
+							sdl.mutexP(sdl_surface_mutex);
 							if(yuv.enabled) {
 								yuv.win_width=ev.resize.w;
 								yuv.win_height=ev.resize.h;
@@ -1260,6 +1278,7 @@ int sdl_video_event_thread(void *data)
 							}
 							setup_surfaces();
 							force_redraws++;
+							sdl.mutexV(sdl_surface_mutex);
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
@@ -1382,7 +1401,7 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
-								pthread_mutex_lock(&vstatlock);
+								sdl.mutexP(sdl_surface_mutex);
 								if(!yuv.enabled) {
 									rectspace=vstat.cols*vstat.rows+vstat.cols;
 									rectsused=0;
@@ -1396,8 +1415,8 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								setup_surfaces();
-								pthread_mutex_unlock(&vstatlock);
 								force_redraws++;
+								sdl.mutexV(sdl_surface_mutex);
 								break;
 							case SDL_USEREVENT_HIDEMOUSE:
 								sdl.ShowCursor(SDL_DISABLE);
@@ -1621,6 +1640,7 @@ int sdl_initciolib(int mode)
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
 	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
 #endif
+	sdl_surface_mutex=sdl.SDL_CreateMutex();
 	run_sdl_drawing_thread(sdl_video_event_thread, exit_sdl_con);
 	return(sdl_init(mode));
 }
