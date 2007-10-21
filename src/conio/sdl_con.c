@@ -265,37 +265,29 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[0]=yuv_array[0]*luminance/100;
 }
 
-void ConvertRGBtoYUY2(SDL_Surface *s, SDL_Overlay *o, int monochrome, int luminance)
+yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 {
 	int x,y;
-	Uint8 *p,*op;
+	Uint8 *op;
 
-	sdl.LockSurface(s);
-	sdl.LockYUVOverlay(o);
-
-	for(y=0; y<s->h && y<o->h; y++)
+	for(y=0; y<r->h; y++)
 	{
-		p=((Uint8 *) s->pixels)+s->pitch*y;
-		op=o->pixels[0]+o->pitches[0]*y;
-		for(x=0; x<s->w && x<o->w; x++)
+		op=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x*4);
+		for(x=0; x<r->w; x++)
 		{
-			if(x%2==0)
+			if((x+r->x)%2==0)
 			{
-				*(op++)=yuv.colours[*p][0];
-				*(op++)=yuv.colours[*p][1];
-				op[1]=yuv.colours[*p][2];
+				*(op++)=yuv.colours[dac_entry][0];
+				*(op++)=yuv.colours[dac_entry][1];
+				op[1]=yuv.colours[dac_entry][2];
 			}
 			else
 			{
-				*op=yuv.colours[*p][0];
+				*op=yuv.colours[dac_entry][0];
 				op+=2;
 			}
-			p++;
 		}
 	}
-
-	sdl.UnlockYUVOverlay(o);
-	sdl.UnlockSurface(s);
 }
 
 void sdl_user_func(int func, ...)
@@ -1151,7 +1143,7 @@ void setup_surfaces(void)
 		flags |= SDL_RESIZABLE;
 
 	if(yuv.enabled) {
-		if(fullscreen && sdl.initial_videoinfo.current_x && sdl.initial_videoinfo.current_y)
+		if(fullscreen && sdl.initial_videoinfo.current_w && sdl.initial_videoinfo.current_h)
 			win=sdl.SetVideoMode(sdl.initial_videoinfo.current_w,sdl.initial_videoinfo.current_h,0,flags);
 		else
 			win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
@@ -1307,6 +1299,8 @@ int sdl_video_event_thread(void *data)
 										sdl.SemPost(sdl_ufunc_ret);
 										break;
 									}
+									if(yuv.enabled)
+										sdl.LockYUVOverlay(yuv.overlay);
 									for(y=0; y<rect->height; y++) {
 										offset=y*rect->width;
 										for(x=0; x<rect->width; x++) {
@@ -1315,11 +1309,13 @@ int sdl_video_event_thread(void *data)
 											r.x=(rect->x+x)*vstat.scaling;
 											r.y=(rect->y+y)*vstat.scaling;
 											if(yuv.enabled)
-												sdl.FillRect(new_rect, &r, rect->data[offset++]);
+												yuv_fillrect(yuv.overlay, &r, rect->data[offset++]);
 											else
 												sdl.FillRect(new_rect, &r, sdl_dac_default[rect->data[offset++]]);
 										}
 									}
+									if(yuv.enabled)
+										sdl.UnlockYUVOverlay(yuv.overlay);
 									if(!yuv.enabled) {
 										upd_rects[rectsused].x=rect->x*vstat.scaling;
 										upd_rects[rectsused].y=rect->y*vstat.scaling;
@@ -1348,7 +1344,6 @@ int sdl_video_event_thread(void *data)
 											dstrect.h=win->h;
 											dstrect.x=0;
 											dstrect.y=0;
-											ConvertRGBtoYUY2(new_rect, yuv.overlay, 0, 100);
 											sdl.DisplayYUVOverlay(yuv.overlay, &dstrect);
 										}
 									}
