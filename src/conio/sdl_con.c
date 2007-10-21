@@ -1187,7 +1187,6 @@ void setup_surfaces(void)
 		}
 		sdl_setup_colours(new_rect);
 		sdl_setup_colours(win);
-		//send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
 	}
 	else if(sdl_init_good) {
 		ev.type=SDL_QUIT;
@@ -1257,17 +1256,20 @@ int sdl_video_event_thread(void *data)
 								yuv.win_height=ev.resize.h;
 							}
 							else {
+								pthread_mutex_lock(&vstatlock);
 								vstat.scaling=(int)(ev.resize.w/(vstat.charwidth*vstat.cols));
 								if(vstat.scaling < 1)
 									vstat.scaling=1;
+								pthread_mutex_unlock(&vstatlock);
 							}
 							setup_surfaces();
+							force_redraws++;
 						}
 						break;
 					case SDL_VIDEOEXPOSE:
 						{
 							if(yuv.enabled) {
-								//send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+								force_redraws=1;
 							}
 							else {
 								upd_rects[0].x=0;
@@ -1381,6 +1383,7 @@ int sdl_video_event_thread(void *data)
 								free(ev.user.data1);
 								break;
 							case SDL_USEREVENT_SETVIDMODE:
+								pthread_mutex_lock(&vstatlock);
 								if(!yuv.enabled) {
 									rectspace=vstat.cols*vstat.rows+vstat.cols;
 									rectsused=0;
@@ -1394,6 +1397,8 @@ int sdl_video_event_thread(void *data)
 									}
 								}
 								setup_surfaces();
+								pthread_mutex_unlock(&vstatlock);
+								force_redraws++;
 								break;
 							case SDL_USEREVENT_HIDEMOUSE:
 								sdl.ShowCursor(SDL_DISABLE);
