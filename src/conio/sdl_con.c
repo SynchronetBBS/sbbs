@@ -272,7 +272,7 @@ yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 
 	for(y=0; y<r->h; y++)
 	{
-		op=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x*4);
+		op=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x*2);
 		for(x=0; x<r->w; x++)
 		{
 			if((x+r->x)%2==0)
