@@ -605,8 +605,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[6][80];
-	char	*opt[6];
+	char	opts[7][80];
+	char	*opt[7];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -627,9 +627,10 @@ void change_settings(void)
 	for(;;) {
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
-		sprintf(opts[2],"Scrollback Buffer Lines %d",settings.backlines);
-		sprintf(opts[3],"Modem Device            %s",settings.mdm.device_name);
-		sprintf(opts[4],"Modem Init String       %s",settings.mdm.init_string);
+		sprintf(opts[2],"Output Mode             %s",output_descrs[settings.output_mode]);
+		sprintf(opts[3],"Scrollback Buffer Lines %d",settings.backlines);
+		sprintf(opts[4],"Modem Device            %s",settings.mdm.device_name);
+		sprintf(opts[5],"Modem Init String       %s",settings.mdm.init_string);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -649,6 +650,21 @@ void change_settings(void)
 				}
 				break;
 			case 2:
+				for(j=0;output_types[j]!=NULL;j++)
+					if(output_map[j]==settings.output_mode)
+						break;
+				if(output_types[j]==NULL)
+					j=0;
+				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Output Mode",output_types)) {
+					case -1:
+						continue;
+					default:
+						settings.output_mode=output_map[j];
+						iniSetEnum(&inicontents,"SyncTERM","OutputMode",output_enum,settings.output_mode,&ini_style);
+						break;
+				}
+				break;
+			case 3:
 				sprintf(str,"%d",settings.backlines);
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER|K_EDIT)!=-1) {
 					unsigned char *tmpscroll;
@@ -671,7 +687,7 @@ void change_settings(void)
 					}
 				}
 				break;
-			case 3:
+			case 4:
 				uifc.helpbuf=	"`Modem Device`\n\n"
 #ifdef _WIN32
 								"Enter the modem device name (ie: COM1).";
@@ -681,7 +697,7 @@ void change_settings(void)
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT);
 				iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
-			case 4:
+			case 5:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
 								"Your modem init string goes here.\n"
 								"For reference, here are the expected settings and USR inits\n\n"

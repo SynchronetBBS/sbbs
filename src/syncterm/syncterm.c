@@ -647,6 +647,73 @@ static const struct {
   "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
 };
 
+char *output_types[]={
+	 "Autodetect"
+#ifdef __unix__
+		" (SDL, X11, Curses)"
+#elif defined(_WIN32)
+		" (SDL, Console, ANSI)"
+#endif
+#ifdef __unix__
+	,"Curses"
+	,"Curses on cp437 Device"
+#endif
+	,"ANSI"
+#ifdef __unix__
+	,"X11"
+#endif
+#ifdef _WIN32
+	,"Win32 Console"
+#endif
+	,"SDL"
+	,"SDL Fullscreen"
+	,"SDL Overlay"
+	,"SDL Overlay Fullscreen"
+,NULL};
+int output_map[]={
+	 CIOLIB_MODE_AUTO
+#ifdef __unix__
+	,CIOLIB_MODE_CURSES
+	,CIOLIB_MODE_CURSES_IBM
+#endif
+	,CIOLIB_MODE_ANSI
+#ifdef __unix__
+	,CIOLIB_MODE_X
+#endif
+#ifdef _WIN32
+	,CIOLIB_MODE_CONIO
+#endif
+	,CIOLIB_MODE_SDL
+	,CIOLIB_MODE_SDL_FULLSCREEN
+	,CIOLIB_MODE_SDL_YUV
+	,CIOLIB_MODE_SDL_YUV_FULLSCREEN
+,0};
+char *output_descrs[]={
+	 "Autodetect"
+	,"Curses"
+	,"Curses on cp437 Device"
+	,"ANSI"
+	,"X11"
+	,"Win32 Console"
+	,"SDL"
+	,"SDL Fullscreen"
+	,"SDL Overlay"
+	,"SDL Overlay Fullscreen"
+,NULL};
+
+char *output_enum[]={
+	 "Autodetect"
+	,"Curses"
+	,"Curses437"
+	,"ANSI"
+	,"X11"
+	,"WinConsole"
+	,"SDL"
+	,"SDLFullscreen"
+	,"SDLOverlay"
+	,"SDLOverlayFullscreen"
+,NULL};
+
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
 	char *p1, *p2, *p3;
@@ -900,6 +967,7 @@ void load_settings(struct syncterm_settings *set)
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
+	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 
 	/* Modem settings */
@@ -921,7 +989,7 @@ int main(int argc, char **argv)
 	/* Command-line parsing vars */
 	char	url[MAX_PATH+1];
 	int		i;
-	int	ciolib_mode=CIOLIB_MODE_AUTO;
+	int	ciolib_mode;
 	str_list_t	inifile;
 	FILE *listfile;
 	char	listpath[MAX_PATH+1];
@@ -936,6 +1004,10 @@ int main(int argc, char **argv)
 	uifc.size=sizeof(uifc);
 	uifc.esc_delay=25;
 	url[0]=0;
+
+	load_settings(&settings);
+	ciolib_mode=settings.output_mode;
+
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
 #ifndef __unix__
@@ -998,8 +1070,6 @@ int main(int argc, char **argv)
         else
 			SAFECOPY(url,argv[i]);
     }
-
-	load_settings(&settings);
 
 	if(initciolib(ciolib_mode))
 		return(1);

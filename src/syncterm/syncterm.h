@@ -22,6 +22,7 @@ struct modem_settings {
 struct syncterm_settings {
 	int		confirm_close;
 	int		startup_mode;
+	int		output_mode;
 	int		backlines;
 	struct modem_settings mdm;
 };
@@ -37,5 +38,9 @@ extern char *font_names[];
 extern int safe_mode;
 char *get_syncterm_filename(char *fn, int fnlen, int type, int shared);
 void load_settings(struct syncterm_settings *set);
+extern char *output_types[];
+extern int output_map[];
+extern char *output_descrs[];
+extern char *output_enum[];
 
 #endif
