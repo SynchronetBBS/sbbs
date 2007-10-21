@@ -267,6 +267,7 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 	char	*opts[19];		/* <- Beware of magic number! */
 	int		changed=0;
 	int		copt=0,i,j;
+	int		bar=0;
 	char	str[6];
 	FILE *listfile;
 	str_list_t	inifile;
@@ -323,8 +324,19 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
-						"Select item to edit.";
-		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,NULL,"Edit Entry",opts);
+						"Select item to edit.\n\n"
+						"~ Reversed ~\n"
+						"        For RLogin connections, send the username and password in\n"
+						"        reverse order. Some Synchronet systems are set up this way.\n\n"
+						"~ Hide Status Line ~\n"
+						"        Selects if the status line should be hidden, giving an extra\n"
+						"        display row\n\n"
+						"~ Log Transfers ~\n"
+						"        Cycles through the various transfer log settings.\n\n"
+						"~ Log Telnet Cmds ~\n"
+						"        Cycles through the various telnet command log settings.\n\n"
+						;
+		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar,"Edit Entry",opts);
 		if(i>=0 && isdefault)
 			i+=2;
 		switch(i) {
@@ -356,7 +368,8 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				sprintf(str,"%hu",item->port);
 				uifc.helpbuf=	"`Port`\n\n"
 								"Enter the port which the BBS is listening to on the remote system\n"
-								"Telnet is generally port 23 and RLogin is generally 513\n";
+								"Telnet is generally port 23, RLogin is generally 513 and SSH is\n"
+								"generally 22\n";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Port",str,5,K_EDIT|K_NUMBER);
 				j=atoi(str);
 				if(j<1 || j>65535)
@@ -370,43 +383,60 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				break;
 			case 3:
 				uifc.helpbuf=	"`Username`\n\n"
-								"Enter the username to attempt auto-login to the remote with.";
+								"Enter the username to attempt auto-login to the remote with.\n"
+								"For SSH, this must be the SSH user name.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"UserName",item->user,&ini_style);
 				break;
 			case 4:
 				uifc.helpbuf=	"`Password`\n\n"
-								"Enter your password for auto-login.";
+								"Enter your password for auto-login.\n"
+								"For SSH, this must be the SSH password if it exists.\n";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"Password",item->password,&ini_style);
 				break;
 			case 5:
 				uifc.helpbuf=	"`System Password`\n\n"
-								"Enter your System password for auto-login."
-								"For non-Synchronet systems, or non-SysOp accounts,"
-								"this can be used for simple scripting.";
+								"Enter your System password for auto-login.\n"
+								"This password is sent after the username and password, so for non-\n"
+								"Synchronet, or non-sysop accounts, this can be used for simple\n"
+								"scripting.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
 				break;
 			case 6:
+				i=item->conn_type;
 				item->conn_type--;
 				uifc.helpbuf=	"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n"
 								"~ RLogin:~ Auto-login with RLogin protocol\n"
 								"~ Telnet:~ Use more common Telnet protocol\n"
-								"~ Raw:   ~ Make a raw socket connection\n";
-				uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]));
-				item->conn_type++;
-				iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
+								"~ Raw:   ~ Make a raw socket connection\n"
+								"~ SSH:   ~ Connect using the SSH protocol\n"
+								"~ Modem: ~ Connect using a modem\n"
+#ifdef __unix__
+								"~ Shell: ~ Connect to a local PTY\n";
+#else
+								;
+#endif
+				switch(uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]))) {
+					case -1:
+						item->conn_type=i;
+						break;
+					default:
+						item->conn_type++;
+						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
 
-				/* Set the port too */
-				j=conn_ports[item->conn_type];
-				if(j<1 || j>65535)
-					j=item->port;
-				item->port=j;
-				iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
+						/* Set the port too */
+						j=conn_ports[item->conn_type];
+						if(j<1 || j>65535)
+							j=item->port;
+						item->port=j;
+						iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
 
-				changed=1;
+						changed=1;
+						break;
+				}
 				break;
 			case 7:
 				item->reversed=!item->reversed;
@@ -414,30 +444,37 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 				iniSetBool(&inifile,itemname,"Reversed",item->reversed,&ini_style);
 				break;
 			case 8:
+				i=item->screen_mode;
 				uifc.helpbuf=	"`Screen Mode`\n\n"
 								"Select the screen size for this connection\n";
-				uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),NULL,"Screen Mode",screen_modes);
-				iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
-				if(item->screen_mode == SCREEN_MODE_C64) {
-					strcpy(item->font,font_names[33]);
-					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
-					item->nostatus = 1;
-					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+				switch(uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),NULL,"Screen Mode",screen_modes)) {
+					case -1:
+						item->screen_mode=i;
+						break;
+					default:
+						iniSetEnum(&inifile,itemname,"ScreenMode",screen_modes,item->screen_mode,&ini_style);
+						if(item->screen_mode == SCREEN_MODE_C64) {
+							strcpy(item->font,font_names[33]);
+							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+							item->nostatus = 1;
+							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+						}
+						if(item->screen_mode == SCREEN_MODE_C128_40
+								|| item->screen_mode == SCREEN_MODE_C128_80) {
+							strcpy(item->font,font_names[35]);
+							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+							item->nostatus = 1;
+							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+						}
+						if(item->screen_mode == SCREEN_MODE_ATARI) {
+							strcpy(item->font,font_names[36]);
+							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+							item->nostatus = 1;
+							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+						}
+						changed=1;
+						break;
 				}
-				if(item->screen_mode == SCREEN_MODE_C128_40
-						|| item->screen_mode == SCREEN_MODE_C128_80) {
-					strcpy(item->font,font_names[35]);
-					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
-					item->nostatus = 1;
-					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
-				}
-				if(item->screen_mode == SCREEN_MODE_ATARI) {
-					strcpy(item->font,font_names[36]);
-					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
-					item->nostatus = 1;
-					iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
-				}
-				changed=1;
 				break;
 			case 9:
 				item->nostatus=!item->nostatus;
@@ -447,20 +484,20 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 			case 10:
 				uifc.helpbuf=	"`Download Path`\n\n"
 								"Enter the path where downloads will be placed.";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT);
-				iniSetString(&inifile,itemname,"DownloadPath",item->dldir,&ini_style);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT)>=0)
+					iniSetString(&inifile,itemname,"DownloadPath",item->dldir,&ini_style);
 				break;
 			case 11:
 				uifc.helpbuf=	"`Upload Path`\n\n"
-								"Enter the path where uploads will be browsed for.";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT);
-				iniSetString(&inifile,itemname,"UploadPath",item->uldir,&ini_style);
+								"Enter the path where uploads will be browsed from.";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT)>=0)
+					iniSetString(&inifile,itemname,"UploadPath",item->uldir,&ini_style);
 				break;
 			case 12:
 				uifc.helpbuf=	"`Log Filename`\n\n"
 								"Enter the path to the optional log file.";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT);
-				iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT)>=0)
+					iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
 				break;
 			case 13:
 				item->xfer_loglevel--;
@@ -485,10 +522,14 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 								"Select the rate which recieved characters will be displayed.\n\n"
 								"This allows ANSImation to work as intended.";
 				i=get_rate_num(item->bpsrate);
-				uifc.list(WIN_SAV,0,0,0,&i,NULL,"Simulated BPS Rate",rate_names);
-				item->bpsrate=rates[i];
-				iniSetInteger(&inifile,itemname,"BPSRate",item->bpsrate,&ini_style);
-				changed=1;
+				switch(uifc.list(WIN_SAV,0,0,0,&i,NULL,"Simulated BPS Rate",rate_names)) {
+					case -1:
+						break;
+					default:
+						item->bpsrate=rates[i];
+						iniSetInteger(&inifile,itemname,"BPSRate",item->bpsrate,&ini_style);
+						changed=1;
+				}
 				break;
 			case 16:
 				uifc.helpbuf="`ANSI Music Setup`\n\n"
@@ -521,14 +562,18 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 			case 17:
 				uifc.helpbuf=	"`Font`\n\n"
 								"Select the desired font for this connection.\n\n"
-								"Some fonts do not allow some modes.  When this is the case, 80x25 will be"
-								"forced.\n";
+								"Some fonts do not allow some modes.  When this is the case, an\n"
+								"appropriate mode will be forced.\n";
 				i=j=find_font_id(item->font);
-				uifc.list(WIN_SAV,0,0,0,&i,&j,"Font",font_names);
-				if(i!=find_font_id(item->font)) {
-					strcpy(item->font,font_names[i]);
-					iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
-					changed=1;
+				switch(uifc.list(WIN_SAV,0,0,0,&i,&j,"Font",font_names)) {
+					case -1:
+						break;
+					default:
+					if(i!=find_font_id(item->font)) {
+						strcpy(item->font,font_names[i]);
+						iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+						changed=1;
+					}
 				}
 				break;
 		}
@@ -625,6 +670,19 @@ void change_settings(void)
 
 	opts[6][0]=0;
 	for(;;) {
+		uifc.helpbuf=	"`Program Settings Menu`\n\n"
+						"~ Confirm Program Exit ~\n"
+						"        Prompt the user before exiting.\n\n"
+						"~ Startup Video Mode ~\n"
+						"        Set the initial video screen size.\n\n"
+						"~ Output Mode ~\n"
+						"        Set video output mode.\n\n"
+						"~ Scrollback Buffer Lines ~\n"
+						"        The number of lines in the scrollback buffer.\n\n"
+						"~ Modem Device ~\n"
+						"        The device name of the modem.\n\n";
+						"~ Modem Init String ~\n"
+						"        An init string to use for the modem.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[2],"Output Mode             %s",output_descrs[settings.output_mode]);
@@ -640,6 +698,8 @@ void change_settings(void)
 				break;
 			case 1:
 				j=settings.startup_mode;
+				uifc.helpbuf=	"`Startup Video Mode`\n\n"
+								"Select the screen size for at startup\n";
 				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
 					case -1:
 						continue;
@@ -655,6 +715,63 @@ void change_settings(void)
 						break;
 				if(output_types[j]==NULL)
 					j=0;
+				uifc.helpbuf=	"`Output Mode`\n\n"
+								"~ Autodetect ~\n"
+								"        Attempt to use the \"best\" display mode possible.  The order\n"
+								"        these are attempted is:"
+#ifdef __unix__
+#ifdef NO_X
+								" SDL, then Curses\n\n"
+#else
+								" SDL, X11 then Curses\n\n"
+#endif
+#else
+								" SDL, then Windows Console\n\n"
+#endif
+#ifdef __unix__
+								"~ Curses ~\n"
+								"        Use text output using the Curses library.  This mode should work\n"
+								"        from any terminal, however, high and low ASCII will not work\n"
+								"        correctly.\n\n"
+								"~ Curses on cp437 Device ~\n"
+								"        As above, but assumes that the current terminal is configured to\n"
+								"        display CodePage 437 correctly\n\n"
+#endif
+								"~ ANSI ~\n"
+								"        Writes ANSI on CodePage 437 on stdout and reads input from\n"
+								"        stdin. ANSI must be supported on the current terminal for this\n"
+								"        mode to work.  This mode is intended to be used to run SyncTERM\n"
+								"        as a door\n\n"
+#if defined(__unix__) && !defined(NO_X)
+								"~ X11 ~\n"
+								"        Uses the Xlib library directly for graphical output.  This is\n"
+								"        the graphical mode most likely to work when using X11.  This\n"
+								"        mode supports font changes.\n\n"
+#endif
+#ifdef _WIN32
+								"~ Win32 Console ~\n"
+								"        Uses the windows console for display.  The font setting will\n"
+								"        affect the look of the output and some low ASCII characters are\n"
+								"        not displayable.  When in a window, blinking text is displayed\n"
+								"        with a high-intensity background rather than blinking.  In\n"
+								"        full-screen mode, blinking works correctly.\n\n"
+#endif
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+								"~ SDL ~\n"
+								"        Makes use of the SDL graphics library for graphical output.\n"
+								"        This output mode allows switching to full-screen mode but is\n"
+								"        otherwise identical to X11 mode.\n\n"
+								"~ SDL Fullscreen ~\n"
+								"        As above, but starts in full-screen mode rather than a window\n\n"
+								"~ SDL Overlay ~\n"
+								"        The most resource intensive mode.  However, unlike the other\n"
+								"        graphical modes, this window can be scaled to any size and,\n"
+								"        when switched to full screen, will always use the entire\n"
+								"        display.\n\n"
+								"~ SDL Overlay Fullscreen ~\n"
+								"        As above, but starts in full-screen mode rather than a window\n\n"
+#endif
+								;
 				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Output Mode",output_types)) {
 					case -1:
 						continue;
@@ -665,16 +782,23 @@ void change_settings(void)
 				}
 				break;
 			case 3:
+				uifc.helpbuf="`Scrollback Buffer Lines`\n\n"
+							 "        The number of lines in the scrollback buffer.\n";
+							 "        This value MUST be greater than zero\n";
 				sprintf(str,"%d",settings.backlines);
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER|K_EDIT)!=-1) {
 					unsigned char *tmpscroll;
 
 					j=atoi(str);
-					if(j<1)
+					if(j<1) {
+						uifc.helpbuf=	"There must be at least one line in the scrollback buffer.";
 						uifc.msg("Cannot set lines to less than one.");
+					}
 					else {
 						tmpscroll=(unsigned char *)realloc(scrollback_buf,80*2*j);
 						if(tmpscroll == NULL) {
+							uifc.helpbuf="The selected scrollback size is too large.\n"
+										 "Please reduce the number of lines.";
 							uifc.msg("Cannot allocate space for scrollback.");
 						}
 						else {
@@ -694,8 +818,8 @@ void change_settings(void)
 #else
 								"Enter the modem device name (ie: /dev/ttyd0).";
 #endif
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT);
-				iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
+					iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
 			case 5:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
@@ -711,8 +835,8 @@ void change_settings(void)
 								"Normal DTR                 &D2\n"
 								"CTS/RTS Flow Control       &H1&R2\n"
 								"Disable Software Flow      &I0\n";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT);
-				iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT)>=0)
+					iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
 				break;
 		}
 	}
@@ -781,7 +905,6 @@ struct bbslist *show_bbslist(int mode)
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
 	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 
-	uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 	for(;;) {
@@ -992,7 +1115,17 @@ struct bbslist *show_bbslist(int mode)
 		}
 		else {
 			for(;at_settings;) {
-				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n";
+				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n"
+								"~ Default BBS Configuration ~\n"
+								"        Modify the settings that are used by default for new entries\n\n"
+								"~ Mouse Actions ~\n"
+								"        This feature is not yet functional\n\n"
+								"~ Screen Setup ~\n"
+								"        Set the initial screen size and emulation\n\n"
+								"~ Font Management ~\n"
+								"        Configure additional font files\n\n"
+								"~ Program Settings ~\n"
+								"        Modify hardware and video settings\n\n";
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
@@ -1021,6 +1154,8 @@ struct bbslist *show_bbslist(int mode)
 						edit_list(&defaults,listpath,TRUE);
 						break;
 					case 1:			/* Mouse Actions setup */
+						uifc.helpbuf=	"Mouse actions are not yet user conifurable."
+										"This item is here to remind me to implement it.";
 						uifc.msg("This section not yet functional");
 						break;
 					case 2: {		/* Screen Setup */

@@ -665,10 +665,12 @@ char *output_types[]={
 #ifdef _WIN32
 	,"Win32 Console"
 #endif
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,"SDL"
 	,"SDL Fullscreen"
 	,"SDL Overlay"
 	,"SDL Overlay Fullscreen"
+#endif
 ,NULL};
 int output_map[]={
 	 CIOLIB_MODE_AUTO
@@ -683,10 +685,12 @@ int output_map[]={
 #ifdef _WIN32
 	,CIOLIB_MODE_CONIO
 #endif
+#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,CIOLIB_MODE_SDL
 	,CIOLIB_MODE_SDL_FULLSCREEN
 	,CIOLIB_MODE_SDL_YUV
 	,CIOLIB_MODE_SDL_YUV_FULLSCREEN
+#endif
 ,0};
 char *output_descrs[]={
 	 "Autodetect"

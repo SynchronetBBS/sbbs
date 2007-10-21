@@ -568,6 +568,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		zmodem_upload(bbs, fp, path);
 	else {
 		i=0;
+		uifc.helpbuf="Select Transfer Type";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
 			case 0:
 				zmodem_upload(bbs, fp, path);
@@ -1518,6 +1519,7 @@ BOOL doterm(struct bbslist *bbs)
 						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 						i=0;
 						init_uifc(FALSE, FALSE);
+						uifc.helpbuf="Selecting Yes closes the connection\n";
 						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
 #ifdef WITH_WXWIDGETS
 							if(html_mode != HTML_MODE_HIDDEN) {
