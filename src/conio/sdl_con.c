@@ -274,7 +274,7 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 	Uint8 *Y,*U,*V;
 	int odd_line;
 	int uvlen=(r->w)>>1;
-	int uvoffset=overlay->pitches[1]*((y+r->y+1)>>1)+((r->x+1)>>1);
+	int uvoffset=overlay->pitches[1]*((r->y+1)>>1)+((r->x+1)>>1);
 
 	odd_line=(r->y)&1;
 	Y=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
