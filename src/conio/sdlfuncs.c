@@ -645,7 +645,7 @@ int SDL_main_env(int argc, char **argv, char **env)
 			if(initial)
 				sdl.initial_videoinfo=*initial;
 			else
-				memset(sdl.initial_videoinfo, 0, sizeof(sdl.initial_videoinfo));
+				memset(&sdl.initial_videoinfo, 0, sizeof(sdl.initial_videoinfo));
 			sdl_video_initialized=TRUE;
 			sdl_initialized=TRUE;
 		}
