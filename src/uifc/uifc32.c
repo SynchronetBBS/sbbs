@@ -2186,7 +2186,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 /****************************************************************************/
 void bottomline(int line)
 {
-	int i=0;
+	int i=1;
 
 	uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"    ");
 	i+=4;
