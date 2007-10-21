@@ -639,13 +639,6 @@ int SDL_main_env(int argc, char **argv, char **env)
 				sdl_initialized=TRUE;
 		}
 		else {
-			const SDL_VideoInfo *initial=sdl.GetVideoInfo();
-
-			/* Save initial video mode */
-			if(initial)
-				sdl.initial_videoinfo=*initial;
-			else
-				memset(&sdl.initial_videoinfo, 0, sizeof(sdl.initial_videoinfo));
 			sdl_video_initialized=TRUE;
 			sdl_initialized=TRUE;
 		}
@@ -681,6 +674,13 @@ int SDL_main_env(int argc, char **argv, char **env)
 				sdl_video_initialized=FALSE;
 			}
 			else {
+				const SDL_VideoInfo *initial=sdl.GetVideoInfo();
+
+				/* Save initial video mode */
+				if(initial)
+					sdl.initial_videoinfo=*initial;
+				else
+					memset(&sdl.initial_videoinfo, 0, sizeof(sdl.initial_videoinfo));
 				sdl_video_initialized=TRUE;
 			}
 		}
