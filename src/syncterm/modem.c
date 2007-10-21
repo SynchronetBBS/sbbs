@@ -210,7 +210,7 @@ int modem_connect(struct bbslist *bbs)
 		modem_close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
-		free(conn_api.rd_buf);
+		FREE_AND_NULL(conn_api.rd_buf);
 		return(-1);
 	}
 	conn_api.wr_buf_size=BUFFER_SIZE;

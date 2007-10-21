@@ -138,7 +138,7 @@ int rlogin_connect(struct bbslist *bbs)
 	}
 	conn_api.rd_buf_size=BUFFER_SIZE;
 	if(!(conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
-		free(conn_api.rd_buf);
+		FREE_AND_NULL(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return(-1);

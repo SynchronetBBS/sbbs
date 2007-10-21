@@ -80,7 +80,7 @@ size_t conn_buf_bytes(struct conn_buffer *buf);
 size_t conn_buf_peek(struct conn_buffer *buf, unsigned char *outbuf, size_t outlen);
 size_t conn_buf_get(struct conn_buffer *buf, unsigned char *outbuf, size_t outlen);
 size_t conn_buf_put(struct conn_buffer *buf, const unsigned char *outbuf, size_t outlen);
-size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int free);
+size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int do_free);
 #define conn_buf_wait_bytes(buf, count, timeout)	conn_buf_wait_cond(buf, count, timeout, 0)
 #define conn_buf_wait_free(buf, count, timeout)	conn_buf_wait_cond(buf, count, timeout, 1)
 int conn_socket_connect(struct bbslist *bbs);

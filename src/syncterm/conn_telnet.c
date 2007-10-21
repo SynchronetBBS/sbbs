@@ -142,9 +142,9 @@ int telnet_connect(struct bbslist *bbs)
 	conn_api.rd_buf_size=BUFFER_SIZE;
 	conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE);
 	if(!conn_api.wr_buf) {
+		FREE_AND_NULL(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
-		free(conn_api.wr_buf);
 		return(-1);
 	}
 	conn_api.wr_buf_size=BUFFER_SIZE;

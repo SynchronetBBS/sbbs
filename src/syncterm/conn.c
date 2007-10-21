@@ -172,7 +172,7 @@ size_t conn_buf_put(struct conn_buffer *buf, const unsigned char *outbuf, size_t
  * Waits up to timeout milliseconds for bcount bytes to be available/free
  * in the buffer.
  */
-size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int free)
+size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int do_free)
 {
 	long double now;
 	long double end;
@@ -182,7 +182,7 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
 	sem_t	*sem;
 	size_t (*cond)(struct conn_buffer *buf);
 
-	if(free) {
+	if(do_free) {
 		sem=&(buf->out_sem);
 		cond=conn_buf_free;
 	}

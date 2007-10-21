@@ -168,7 +168,8 @@ void sort_list(struct bbslist **list, int *listcount)  {
 				for(j=i;list[j]!=NULL && list[j]->name[0];j++) {
 					list[j]=list[j+1];
 				}
-				free(tmp);
+				if(tmp)
+					free(tmp);
 				for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 					list[j]->id=j;
 				}
@@ -185,7 +186,7 @@ void free_list(struct bbslist **list, int listcount)
 	int i;
 
 	for(i=0;i<listcount;i++) {
-		free(list[i]);
+		FREE_AND_NULL(list[i]);
 	}
 }
 
@@ -1015,7 +1016,7 @@ struct bbslist *show_bbslist(int mode)
 								uifc.input(WIN_MID|WIN_SAV,0,0,"Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 							}
 							if(!uifc.changes) {
-								free(list[listcount-1]);
+								FREE_AND_NULL(list[listcount-1]);
 								list[listcount-1]=list[listcount];
 								listcount--;
 							}
