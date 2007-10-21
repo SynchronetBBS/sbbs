@@ -271,19 +271,23 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
 void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 {
 	int x,y;
+	Uint8 *baseY,*baseU,*baseV;
 	Uint8 *Y,*U,*V;
 	int odd_line;
 	int odd_col;
 
+	odd_line=(r->y)&1;
+	baseY=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
+	baseU=overlay->pixels[2]+overlay->pitches[2]*((y+r->y)/2)+(r->x/2);
+	baseV=overlay->pixels[1]+overlay->pitches[1]*((y+r->y)/2)+(r->x/2);
 	for(y=0; y<r->h; y++)
 	{
-		odd_line=(y+r->y)&1;
-		Y=overlay->pixels[0]+overlay->pitches[0]*(y+r->y)+(r->x);
+		Y=baseY;
 		if(!odd_line) {
-			U=overlay->pixels[2]+overlay->pitches[2]*((y+r->y)/2)+(r->x/2);
-			V=overlay->pixels[1]+overlay->pitches[1]*((y+r->y)/2)+(r->x/2);
+			U=baseU;
+			V=baseV;
 		}
-		odd_col=(x+r->x)&1;
+		odd_col=(r->x)&1;
 		for(x=0; x<r->w; x++)
 		{
 			*(Y++)=yuv.colours[dac_entry][0];
@@ -292,6 +296,12 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 				*(V++)=yuv.colours[dac_entry][2];
 			}
 			odd_col=!odd_col;
+		}
+		odd_line=!odd_line;
+		baseY+=overlay->pitches[0];
+		if(odd_line) {
+			baseU+=overlay->pitches[2];
+			baseV+=overlay->pitches[1];
 		}
 	}
 	yuv.changed=1;
