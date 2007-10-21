@@ -88,6 +88,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->FreeYUVOverlay=SDL_FreeYUVOverlay;
 	sdlf->LockYUVOverlay=SDL_LockYUVOverlay;
 	sdlf->UnlockYUVOverlay=SDL_UnlockYUVOverlay;
+	sdlf->GetVideoInfo=SDL_GetVideoInfo;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -315,6 +316,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->GetVideoInfo=(void *)GetProcAddress(sdl_dll, "SDL_GetVideoInfo"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
@@ -537,6 +542,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->GetVideoInfo=dlsym(sdl_dll, "SDL_GetVideoInfo"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -630,6 +639,13 @@ int SDL_main_env(int argc, char **argv, char **env)
 				sdl_initialized=TRUE;
 		}
 		else {
+			const SDL_VideoInfo *initial=sdl.GetVideoInfo();
+
+			/* Save initial video mode */
+			if(initial)
+				sdl.initial_videoinfo=*initial;
+			else
+				memset(sdl.initial_videoinfo, 0, sizeof(sdl.initial_videoinfo));
 			sdl_video_initialized=TRUE;
 			sdl_initialized=TRUE;
 		}

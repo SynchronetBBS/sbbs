@@ -1150,8 +1150,12 @@ void setup_surfaces(void)
 	else
 		flags |= SDL_RESIZABLE;
 
-	if(yuv.enabled)
-		win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
+	if(yuv.enabled) {
+		if(fullscreen && sdl.initial_videoinfo.current_x && sdl.initial_videoinfo.current_y)
+			win=sdl.SetVideoMode(sdl.initial_videoinfo.current_w,sdl.initial_videoinfo.current_h,0,flags);
+		else
+			win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
+	}
 	else
 		win=sdl.SetVideoMode(char_width,char_height,8,flags);
 
