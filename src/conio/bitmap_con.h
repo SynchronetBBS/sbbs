@@ -7,6 +7,7 @@
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
 extern sem_t	drawn_sem;
+extern int force_redraws;
 
 int bitmap_gettext(int sx, int sy, int ex, int ey, void *fill);
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill);

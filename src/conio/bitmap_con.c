@@ -42,6 +42,7 @@ pthread_mutex_t		vstatlock;
 pthread_mutex_t		screenlock;
 static struct bitmap_callbacks callbacks;
 static unsigned char *font;
+int force_redraws=0;
 
 struct rectangle {
 	int x;
@@ -68,7 +69,7 @@ static void blinker_thread(void *data)
 				vstat.blink=TRUE;
 			count=0;
 		}
-		update_rect(0,0,0,0,FALSE,TRUE);
+		update_rect(0,0,0,0,force_redraws--,TRUE);
 		pthread_mutex_unlock(&vstatlock);
 		callbacks.flush();
 	}
