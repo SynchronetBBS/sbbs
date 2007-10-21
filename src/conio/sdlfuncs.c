@@ -83,6 +83,11 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->UnlockSurface=SDL_UnlockSurface;
 	sdlf->DisplayFormat=SDL_DisplayFormat;
 	sdlf->Flip=SDL_Flip;
+	sdlf->CreateYUVOverlay=SDL_CreateYUVOverlay;
+	sdlf->DisplayYUVOverlay=SDL_DisplayYUVOverlay;
+	sdlf->FreeYUVOverlay=SDL_FreeYUVOverlay;
+	sdlf->LockYUVOverlay=SDL_LockYUVOverlay;
+	sdlf->UnlockYUVOverlay=SDL_UnlockYUVOverlay;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -290,6 +295,27 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->CreateYUVOverlay=(void *)GetProcAddress(sdl_dll, "SDL_CreateYUVOverlay"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->DisplayYUVOverlay=(void *)GetProcAddress(sdl_dll, "SDL_DisplayYUVOverlay"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->FreeYUVOverlay=(void *)GetProcAddress(sdl_dll, "SDL_FreeYUVOverlay"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->LockYUVOverlay=(void *)GetProcAddress(sdl_dll, "SDL_LockYUVOverlay"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UnlockYUVOverlay=(void *)GetProcAddress(sdl_dll, "SDL_UnlockYUVOverlay"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
+
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -488,6 +514,26 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->Flip=dlsym(sdl_dll, "SDL_Flip"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->CreateYUVOverlay=dlsym(sdl_dll, "SDL_CreateYUVOverlay"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->DisplayYUVOverlay=dlsym(sdl_dll, "SDL_DisplayYUVOverlay"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->FreeYUVOverlay=dlsym(sdl_dll, "SDL_FreeYUVOverlay"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->LockYUVOverlay=dlsym(sdl_dll, "SDL_LockYUVOverlay"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->UnlockYUVOverlay=dlsym(sdl_dll, "SDL_UnlockYUVOverlay"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}

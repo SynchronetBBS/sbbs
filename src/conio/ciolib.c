@@ -320,6 +320,8 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 		case CIOLIB_MODE_SDL:
 		case CIOLIB_MODE_SDL_FULLSCREEN:
+		case CIOLIB_MODE_SDL_YUV:
+		case CIOLIB_MODE_SDL_YUV_FULLSCREEN:
 			try_sdl_init(mode);
 			break;
 #endif
