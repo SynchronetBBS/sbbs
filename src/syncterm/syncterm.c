@@ -1277,6 +1277,7 @@ int main(int argc, char **argv)
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 		"       S = FullScreen SDL mode\n"
+		"       O = SDL overlay mode (hardware scaling)\n"
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
