@@ -400,6 +400,7 @@ int conn_socket_connect(struct bbslist *bbs)
 			case EINPROGRESS:
 			case EINTR:
 			case EAGAIN:
+			case EWOULDBLOCK:
 				break;
 			default:
 				failcode=FAILURE_CONNECT_ERROR;
