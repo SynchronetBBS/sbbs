@@ -441,11 +441,9 @@ connected:
 
 connect_failed:
 	{
-		char str[LIST_ADDR_MAX+20];
+		char str[LIST_ADDR_MAX+40];
 
-		conn_close();
 		uifc.pop(NULL);
-		closesocket(sock);
 		conn_api.terminate=-1;
 		switch(failcode) {
 			case FAILURE_RESOLVE:
@@ -456,13 +454,15 @@ connect_failed:
 								"with the DNS settings of the system you are trying to contact.");
 				break;
 			case FAILURE_CANT_CREATE:
-				uifcmsg("Cannot create socket!",
+				sprintf(str,"Cannot create socket (%d)!",ERROR_VALUE);
+				uifcmsg(str,
 								"`Unable to create socket`\n\n"
 								"Your system is either dangerously low on resources, or there\n"
 								"is a problem with your TCP/IP stack.");
 				break;
 			case FAILURE_CONNECT_ERROR:
-				uifcmsg("Connect Error!"
+				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
+				uifcmsg(str
 								,"`The connect call returned an error`\n\n"
 								 "The call to connect() returned an unexpected error code.");
 				break;
@@ -471,11 +471,14 @@ connect_failed:
 								"Connection to the remote system aborted by keystroke.");
 				break;
 			case FAILURE_GENERAL:
-				uifcmsg("Connect Error!"
+				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
+				uifcmsg(str
 								,"`SyncTERM failed to connect`\n\n"
 								 "The call to select() returned an unexpected error code.");
 				break;
 		}
+		conn_close();
+		closesocket(sock);
 		return(INVALID_SOCKET);
 	}
 }
