@@ -19,6 +19,144 @@
 #include "window.h"
 #include "term.h"
 
+struct sort_order_info {
+	char		*name;
+	int			reverse;
+	size_t		offset;
+	int			length;
+};
+
+struct sort_order_info sort_order[] = {
+	{
+		 "BBS Name"
+		,0
+		,offsetof(struct bbslist, name)
+		,LIST_NAME_MAX+1
+	}
+	,{
+		 "Address"
+		,0
+		,offsetof(struct bbslist, addr)
+		,LIST_NAME_MAX+1
+	}
+	,{
+		 "Port"
+		,0
+		,offsetof(struct bbslist, port)
+		,sizeof(short unsigned int)
+	}
+	,{
+		 "Date Added"
+		,1
+		,offsetof(struct bbslist, added)
+		,sizeof(time_t)
+	}
+	,{
+		 "Date Last Connected"
+		,1
+		,offsetof(struct bbslist, connected)
+		,sizeof(time_t)
+	}
+	,{
+		 "Total Calls"
+		,1
+		,offsetof(struct bbslist, calls)
+		,sizeof(unsigned int)
+	}
+	,{
+		 "Username"
+		,0
+		,offsetof(struct bbslist, user)
+		,MAX_USER_LEN+1
+	}
+	,{
+		 "Password"
+		,0
+		,offsetof(struct bbslist, password)
+		,MAX_PASSWD_LEN+1
+	}
+	,{
+		 "System Password"
+		,0
+		,offsetof(struct bbslist, syspass)
+		,MAX_SYSPASS_LEN+1
+	}
+	,{
+		 "Dialing List"
+		,0
+		,offsetof(struct bbslist, type)
+		,sizeof(int)
+	}
+	,{
+		 "Connection Type"
+		,0
+		,offsetof(struct bbslist, conn_type)
+		,sizeof(int)
+	}
+	,{
+		 "Reversed"
+		,0
+		,offsetof(struct bbslist, reversed)
+		,sizeof(int)
+	}
+	,{
+		 "Screen Mode"
+		,0
+		,offsetof(struct bbslist, screen_mode)
+		,sizeof(int)
+	}
+	,{
+		 "Status Line Visibility"
+		,0
+		,offsetof(struct bbslist, nostatus)
+		,sizeof(int)
+	}
+	,{
+		 "Dowload Directory"
+		,0
+		,offsetof(struct bbslist, dldir)
+		,MAX_PATH+1
+	}
+	,{
+		 "Upload Directory"
+		,0
+		,offsetof(struct bbslist, updir)
+		,MAX_PATH+1
+	}
+	,{
+		 "Log File"
+		,0
+		,offsetof(struct bbslist, logfile)
+		,MAX_PATH+1
+	}
+	,{
+		 "Transfer Log Level"
+		,0
+		,offsetof(struct bbslist, xfer_loglevel)
+		,sizeof(int)
+	}
+	,{
+		 "BPS Rate"
+		,0
+		,offsetof(struct bbslist, bpsrate)
+		,sizeof(int)
+	}
+	,{
+		 "ANSI Music"
+		,0
+		,offsetof(struct bbslist, music)
+		,sizeof(int)
+	}
+	,{
+		 "Font"
+		,0
+		,offsetof(struct bbslist, font)
+		,80
+	}
+};
+
+char *sort_orders[]={"BBS Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
+
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};

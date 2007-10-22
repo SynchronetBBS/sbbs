@@ -43,6 +43,7 @@ enum {
 	,SCREEN_MODE_TERMINATOR
 };
 
+/* NOTE: changing this may require updating sort_order in bbslist.c */
 struct bbslist {
 	char			name[LIST_NAME_MAX+1];
 	char			addr[LIST_ADDR_MAX+1];
