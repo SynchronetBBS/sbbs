@@ -371,7 +371,7 @@ int conn_socket_connect(struct bbslist *bbs)
 	else {
 		uifc.pop("Looking up host");
 		if((ent=gethostbyname(bbs->addr))==NULL) {
-			failcode=FAILURE_RESOVE;
+			failcode=FAILURE_RESOLVE;
 			goto connect_failed;
 		}
 		neta=*((unsigned int*)ent->h_addr_list[0]);
