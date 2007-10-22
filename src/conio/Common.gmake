@@ -87,6 +87,8 @@ endif
 
 ifdef WITH_SDL
  ifndef WITH_SDL_AUDIO
+  # Prefer local include over system includes.
+  CFLAGS += $(SRC_ROOT)/../include/sdl
   ifdef SDL_CONFIG
    ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
 	CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
