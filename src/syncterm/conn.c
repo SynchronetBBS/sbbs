@@ -401,7 +401,7 @@ int conn_socket_connect(struct bbslist *bbs)
 			case EINTR:
 			case EAGAIN:
 
-#if (!defined(EAGAIN) && defined(EWOULDBLOCK)) && (EAGAIN!=EWOULDBLOCK)
+#if (!defined(EAGAIN) && defined(EWOULDBLOCK)) || (EAGAIN!=EWOULDBLOCK)
 			case EWOULDBLOCK:
 #endif
 				break;
