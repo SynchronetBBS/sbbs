@@ -65,7 +65,7 @@ struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size)
 void destroy_conn_buf(struct conn_buffer *buf)
 {
 	if(buf->buf != NULL) {
-		free(buf->buf);
+		FREE_AND_NULL(buf->buf);
 		while(pthread_mutex_destroy(&(buf->mutex)));
 		while(sem_destroy(&(buf->in_sem)));
 		while(sem_destroy(&(buf->out_sem)));
