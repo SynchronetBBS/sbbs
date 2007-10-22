@@ -60,6 +60,9 @@ SDL_mutex *sdl_ufunc_lock;
 SDL_sem *sdl_ufunc_ret;
 int sdl_ufunc_retval;
 
+SDL_sem	*sdl_flush_sem;
+int pending_updates=0;
+
 int fullscreen=0;
 
 SDL_sem	*sdl_init_complete;
@@ -332,6 +335,10 @@ void sdl_user_func(int func, ...)
 			}
 			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
+		case SDL_USEREVENT_UPDATERECT:
+			ev.user.data1=va_arg(argptr, struct update_rect *);
+			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			break;
 		case SDL_USEREVENT_SETVIDMODE:
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
@@ -360,11 +367,6 @@ int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	switch(func) {
-		case SDL_USEREVENT_UPDATERECT:
-			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
-			passed=TRUE;
-			break;
 		case SDL_USEREVENT_FLUSH:
 		case SDL_USEREVENT_INIT:
 		case SDL_USEREVENT_QUIT:
@@ -498,7 +500,7 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 		rect->width=width;
 		rect->height=height;
 		rect->data=data;
-		sdl_user_func_ret(SDL_USEREVENT_UPDATERECT, rect);
+		sdl_user_func(SDL_USEREVENT_UPDATERECT, rect);
 	}
 	else
 		FREE_AND_NULL(data);
@@ -1355,8 +1357,6 @@ int sdl_video_event_thread(void *data)
 											rectsused=0;
 										}
 									}
-									sdl_ufunc_retval=0;
-									sdl.SemPost(sdl_ufunc_ret);
 									free(rect->data);
 									free(rect);
 									break;
