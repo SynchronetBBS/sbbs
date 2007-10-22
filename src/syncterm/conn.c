@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#include "ciolib.h"
+
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sockwrap.h"
