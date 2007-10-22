@@ -491,8 +491,8 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 {
 	struct update_rect *rect;
 
-	rect=(struct update_rect *)malloc(sizeof(struct update_rect));
 	if(sdl_init_good) {
+		rect=(struct update_rect *)malloc(sizeof(struct update_rect));
 		rect->x=xoffset;
 		rect->y=yoffset;
 		rect->width=width;
@@ -500,6 +500,8 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 		rect->data=data;
 		sdl_user_func_ret(SDL_USEREVENT_UPDATERECT, rect);
 	}
+	else
+		FREE_AND_NULL(data);
 }
 
 void sdl_flush(void)
