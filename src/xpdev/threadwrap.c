@@ -59,24 +59,29 @@ ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
 	pthread_t	thread;
-	pthread_attr_t attr;
-	size_t		default_stack;
+	static pthread_attr_t attr;
+	static size_t		default_stack;
+	static int			attr_initialized=0;
 
-	pthread_attr_init(&attr);     /* initialize attribute structure */
-
-	/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
-	   that thread resources are freed on exit() */
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if(!attr_initialized) {
+		pthread_attr_init(&attr);     /* initialize attribute structure */
+		/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
+		   that thread resources are freed on exit() */
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		pthread_attr_getstacksize(&attr, &default_stack);
+		attr_initialized=1;
+	}
 
 	/* Default stack size in BSD is too small for JS stuff */
 	/* Force to at least 256k */
 #define XPDEV_MIN_THREAD_STACK_SIZE	(256*1024)
-	if(stack_size==0 && pthread_attr_getstacksize(&attr, &default_stack)==0
-		&& default_stack < XPDEV_MIN_THREAD_STACK_SIZE)
+	if(stack_size==0 && default_stack < XPDEV_MIN_THREAD_STACK_SIZE)
 		stack_size=XPDEV_MIN_THREAD_STACK_SIZE;
 
 	if(stack_size!=0)
 		pthread_attr_setstacksize(&attr, stack_size);
+	else
+		pthread_attr_setstacksize(&attr, default_stack);
 
 	if(pthread_create(&thread
 #if defined(__BORLANDC__) /* a (hopefully temporary) work-around */
