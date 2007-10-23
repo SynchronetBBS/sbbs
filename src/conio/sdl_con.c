@@ -448,24 +448,9 @@ void exit_sdl_con(void)
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
 
-#if (defined(__MACH__) && defined(__APPLE__))
+int sdl_using_directx=0;
 int sdl_using_quartz=0;
-#endif
-
-#if !defined(NO_X) && defined(__unix__)
-int sdl_using_x11()
-{
-	char	driver[16];
-
-	if(sdl.VideoDriverName(driver, sizeof(driver))==NULL)
-		return(FALSE);
-	if(!strcmp(driver,"x11"))
-		return(TRUE);
-	if(!strcmp(driver,"dga"))
-		return(TRUE);
-	return(FALSE);
-}
-#endif
+int sdl_using_x11=0;
 
 void sdl_copytext(const char *text, size_t buflen)
 {
@@ -485,7 +470,7 @@ void sdl_copytext(const char *text, size_t buflen)
 #endif
 
 #if !defined(NO_X) && defined(__unix__)
-	if(sdl_x11available && sdl_using_x11()) {
+	if(sdl_x11available && sdl_using_x11) {
 		sdl.mutexP(sdl_copybuf_mutex);
 		FREE_AND_NULL(sdl_copybuf);
 
@@ -529,7 +514,7 @@ char *sdl_getcliptext(void)
 #endif
 
 #if !defined(NO_X) && defined(__unix__)
-	if(sdl_x11available && sdl_using_x11()) {
+	if(sdl_x11available && sdl_using_x11) {
 		sdl_user_func(SDL_USEREVENT_PASTE,0,0,0,0);
 		sdl.SemWait(sdl_pastebuf_set);
 		if(sdl_pastebuf!=NULL) {
@@ -1207,8 +1192,14 @@ void setup_surfaces(void)
 	SDL_Surface	*tmp_rect=NULL;
 	SDL_Event	ev;
 
-	if(fullscreen)
+	if(fullscreen) {
+#if defined(_WIN32)
+		if(sdl_using_directx) {
+			flags=SDL_SWSURFACE|SDL_ANYFORMAT;
+		}
+#endif
 		flags |= SDL_FULLSCREEN;
+	}
 	else
 		flags |= SDL_RESIZABLE;
 
@@ -1319,6 +1310,24 @@ int sdl_video_event_thread(void *data)
 	SDL_Event	ev;
 
 	if(!init_sdl_video()) {
+		char	driver[16];
+		if(sdl.VideoDriverName(driver, sizeof(driver))!=NULL) {
+#if defined(_WIN32)
+			if(!strcmp(driver,"directx"))
+				sdl_using_directx=TRUE;
+#endif
+#if (defined(__MACH__) && defined(__APPLE__))
+			if(!strcmp(driver,"Quartz"))
+				sdl_using_quartz=TRUE;
+#endif
+#if !defined(NO_X) && defined(__unix__)
+			if(!strcmp(driver,"x11"))
+				sdl_using_x11=TRUE;
+			if(!strcmp(driver,"dga"))
+				sdl_using_x11=TRUE;
+#endif
+		}
+
 		while(1) {
 			if(sdl.WaitEvent(&ev)==1) {
 				switch (ev.type) {
@@ -1561,7 +1570,7 @@ int sdl_video_event_thread(void *data)
 	#endif
 
 	#if !defined(NO_X) && defined(__unix__)
-								if(sdl_x11available && sdl_using_x11()) {
+								if(sdl_x11available && sdl_using_x11) {
 									SDL_SysWMinfo	wmi;
 
 									SDL_VERSION(&(wmi.version));
@@ -1599,7 +1608,7 @@ int sdl_video_event_thread(void *data)
 	#endif
 
 	#if !defined(NO_X) && defined(__unix__)
-								if(sdl_x11available && sdl_using_x11()) {
+								if(sdl_x11available && sdl_using_x11) {
 									Window sowner=None;
 									SDL_SysWMinfo	wmi;
 
@@ -1640,7 +1649,7 @@ int sdl_video_event_thread(void *data)
 					}
 					case SDL_SYSWMEVENT:			/* ToDo... This is where Copy/Paste needs doing */
 	#if !defined(NO_X) && defined(__unix__)
-						if(sdl_x11available && sdl_using_x11()) {
+						if(sdl_x11available && sdl_using_x11) {
 							XEvent *e;
 							e=&ev.syswm.msg->event.xevent;
 							switch(e->type) {
