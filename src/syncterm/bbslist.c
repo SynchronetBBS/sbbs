@@ -340,6 +340,7 @@ int listcmp(const void *aptr, const void *bptr)
 			return(ret);
 		}
 	}
+	return(0);
 }
 
 void sort_list(struct bbslist **list, int *listcount)  {
@@ -423,8 +424,6 @@ void edit_sorting(struct bbslist **list, int *listcount)
 	int		scurr=0,sbar=0;
 	int		ret,sret;
 	int		i,j;
-	str_list_t	sorting;
-	FILE		*inifile;
 
 	for(i=0;i<sizeof(sort_order)/sizeof(struct sort_order_info)+1;i++)
 		opts[i]=opt[i];

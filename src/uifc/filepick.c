@@ -45,7 +45,7 @@ void drawfpwindow(uifcapi_t *api)
 	if(api->mode&UIFC_MOUSE && width>6) {
 		lbuf[2]='[';
 		lbuf[3]=api->hclr|(api->bclr<<4);
-		lbuf[4]=0xfe;
+		lbuf[4]='\xfe';
 		lbuf[5]=api->lclr|(api->bclr<<4);
 		lbuf[6]=']';
 		lbuf[7]=api->hclr|(api->bclr<<4);

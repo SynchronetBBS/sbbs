@@ -80,6 +80,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs);
+int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault);
 int  get_rate_num(int rate);
 
 #endif

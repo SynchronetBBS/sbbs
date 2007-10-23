@@ -27,7 +27,7 @@ char *conn_types[]={"Unknown","RLogin","Telnet","Raw","SSH","Modem"
 ,"Shell"
 #endif
 ,NULL};
-int conn_ports[]={0,513,23,0,22,0
+short unsigned int conn_ports[]={0,513,23,0,22,0
 #ifdef __unix__
 ,65535
 #endif

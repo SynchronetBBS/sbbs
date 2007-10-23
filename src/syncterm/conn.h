@@ -9,7 +9,7 @@
 #include "bbslist.h"
 
 extern char *conn_types[];
-extern int conn_ports[];
+extern short unsigned int conn_ports[];
 
 enum {
 	 CONN_TYPE_UNKNOWN
