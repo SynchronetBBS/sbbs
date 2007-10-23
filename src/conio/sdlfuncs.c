@@ -629,7 +629,8 @@ int SDL_main_env(int argc, char **argv, char **env)
 #ifdef _WIN32
 		/* Fail to windib (ie: No mouse attached) */
 		if(sdl.Init(SDL_INIT_VIDEO)) {
-			if(getenv("SDL_VIDEODRIVER")==NULL) {
+			/* if(getenv("SDL_VIDEODRIVER")==NULL) */	/* Eliminated this check 10/23/07 - default is windib now, so override directx if it doesn't work */
+			{
 				putenv("SDL_VIDEODRIVER=windib");
 				WinExec(GetCommandLine(), SW_SHOWDEFAULT);
 				return(0);
