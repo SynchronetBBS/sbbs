@@ -56,7 +56,6 @@ static SDL_Thread *mouse_thread;
 char *sdl_copybuf=NULL;
 char *sdl_pastebuf=NULL;
 
-SDL_mutex *sdl_ufunc_lock;
 SDL_sem *sdl_ufunc_ret;
 int sdl_ufunc_retval;
 
@@ -275,6 +274,12 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 	int uplane,vplane;					/* Planar formats */
 	int y0pack, y1pack, u0pack, v0pack;	/* Packed formats */
 
+	if(r->x > overlay->w || r->y > overlay->h)
+		return;
+	if(r->x + r->w > overlay->w)
+		r->w=overlay->w-r->x;
+	if(r->y + r->h > overlay->h)
+		r->h=overlay->h-r->y;
 	yuv.changed=1;
 	switch(overlay->format) {
 		case SDL_IYUV_OVERLAY:
@@ -367,47 +372,65 @@ packed:
 void sdl_user_func(int func, ...)
 {
 	va_list argptr;
-	SDL_Event	ev;
+	SDL_Event	ev[2];
 
-	ev.type=SDL_USEREVENT;
-	ev.user.data1=NULL;
-	ev.user.data2=NULL;
-	ev.user.code=func;
+	ev[0].type=SDL_USEREVENT;
+	ev[0].user.data1=NULL;
+	ev[0].user.data2=NULL;
+	ev[0].user.code=func;
 	va_start(argptr, func);
 	switch(func) {
 		case SDL_USEREVENT_SETNAME:
-			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
+			if((ev[0].user.data1=strdup(va_arg(argptr, char *)))==NULL) {
 				va_end(argptr);
 				return;
 			}
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETICON:
-			ev.user.data1=va_arg(argptr, void *);
-			if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
+			ev[0].user.data1=va_arg(argptr, void *);
+			if((ev[0].user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
 				va_end(argptr);
 				return;
 			}
-			*(unsigned long *)ev.user.data2=va_arg(argptr, unsigned long);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			*(unsigned long *)ev[0].user.data2=va_arg(argptr, unsigned long);
+			while(sdl.PeepEvents(ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETTITLE:
-			if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
+			if((ev[0].user.data1=strdup(va_arg(argptr, char *)))==NULL) {
 				va_end(argptr);
 				return;
 			}
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_UPDATERECT:
-			ev.user.data1=va_arg(argptr, struct update_rect *);
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			ev[0].user.data1=va_arg(argptr, struct update_rect *);
+			while(sdl.PeepEvents(ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 		case SDL_USEREVENT_SETVIDMODE:
+			{
+				int remain=2;
+				int ret=0;
+
+				ev[0].user.code=SDL_USEREVENT_FLUSH;
+				ev[1].type=SDL_USEREVENT;
+				ev[1].user.data1=NULL;
+				ev[1].user.data2=NULL;
+				ev[1].user.code=func;
+				while(remain) {
+					ret=sdl.PeepEvents(&(ev[2-remain]), remain, SDL_ADDEVENT, 0xffffffff);
+					if(ret!=-1)
+						remain-=ret;
+				}
+				/* Wait for flush */
+				sdl.SemWait(sdl_ufunc_ret);
+				break;
+			}
 		case SDL_USEREVENT_COPY:
 		case SDL_USEREVENT_PASTE:
 		case SDL_USEREVENT_SHOWMOUSE:
 		case SDL_USEREVENT_HIDEMOUSE:
-			while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
+			while(sdl.PeepEvents(ev, 1, SDL_ADDEVENT, 0xffffffff)!=1);
 			break;
 	}
 	va_end(argptr);
@@ -420,7 +443,6 @@ int sdl_user_func_ret(int func, ...)
 	SDL_Event	ev;
 	int		passed=FALSE;
 
-	sdl.mutexP(sdl_ufunc_lock);
 	ev.type=SDL_USEREVENT;
 	ev.user.data1=NULL;
 	ev.user.data2=NULL;
@@ -438,7 +460,6 @@ int sdl_user_func_ret(int func, ...)
 		sdl.SemWait(sdl_ufunc_ret);
 	else
 		sdl_ufunc_retval=-1;
-	sdl.mutexV(sdl_ufunc_lock);
 	va_end(argptr);
 	return(sdl_ufunc_retval);
 }
@@ -1734,7 +1755,6 @@ int sdl_initciolib(int mode)
 	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_keylock=sdl.SDL_CreateMutex();
-	sdl_ufunc_lock=sdl.SDL_CreateMutex();
 #if !defined(NO_X) && defined(__unix__)
 	sdl_pastebuf_set=sdl.SDL_CreateSemaphore(0);
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
