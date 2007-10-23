@@ -390,21 +390,17 @@ int bitmap_loadfont(char *filename)
 	unsigned int fontsize;
 	int fw;
 	int fh;
-	int	ch;
-	int x;
-	int y;
-	int charrow;
-	int charcol;
+	int i;
 	FILE	*fontfile;
 
 	if(current_font==-99 || current_font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2)) {
-		for(x=0; conio_fontdata[x].desc != NULL; x++) {
-			if(!strcmp(conio_fontdata[x].desc, "Codepage 437 English")) {
-				current_font=x;
+		for(i=0; conio_fontdata[i].desc != NULL; i++) {
+			if(!strcmp(conio_fontdata[i].desc, "Codepage 437 English")) {
+				current_font=i;
 				break;
 			}
 		}
-		if(conio_fontdata[x].desc==NULL)
+		if(conio_fontdata[i].desc==NULL)
 			current_font=0;
 	}
 	if(current_font==-1)

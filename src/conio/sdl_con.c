@@ -241,8 +241,6 @@ struct x11 sdl_x11;
 
 void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int luminance)
 {
-    int i;
-
     if (monochrome)
     {
 #if 0 /* these are the two formulas that I found on the FourCC site... */
@@ -311,7 +309,7 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 
 planar:
 	{
-		int x,y;
+		int y;
 		Uint8 *Y,*U,*V;
 		int odd_line;
 		int uvlen=(r->w)>>1;
@@ -361,9 +359,7 @@ packed:
 
 void sdl_user_func(int func, ...)
 {
-	unsigned int	*i;
 	va_list argptr;
-	void	**args;
 	SDL_Event	ev;
 
 	ev.type=SDL_USEREVENT;
@@ -413,12 +409,9 @@ void sdl_user_func(int func, ...)
 /* Called from main thread only */
 int sdl_user_func_ret(int func, ...)
 {
-	unsigned int	*i;
 	va_list argptr;
-	void	**args;
 	SDL_Event	ev;
 	int		passed=FALSE;
-	char	*p;
 
 	sdl.mutexP(sdl_ufunc_lock);
 	ev.type=SDL_USEREVENT;
@@ -559,9 +552,6 @@ void sdl_flush(void)
 
 int sdl_init_mode(int mode)
 {
-    struct video_params vmode;
-    int idx;			/* Index into vmode */
-    int i;
     int oldcols=vstat.cols;
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
@@ -1409,7 +1399,6 @@ int sdl_video_event_thread(void *data)
 								{
 									struct update_rect *rect=(struct update_rect *)ev.user.data1;
 									SDL_Rect r;
-									SDL_Rect dst;
 									int x,y,offset;
 
 									if(!win) {
