@@ -1207,13 +1207,6 @@ void setup_surfaces(void)
 		win=sdl.SetVideoMode(char_width,char_height,8,flags);
 
 	if(win!=NULL) {
-#if (defined(__MACH__) && defined(__APPLE__))
-		char	driver[16];
-		if(sdl.VideoDriverName(driver, sizeof(driver))!=NULL) {
-			if(!strcmp(driver,"Quartz"))
-				sdl_using_quartz=TRUE;
-		}
-#endif
 		if(new_rect)
 			sdl.FreeSurface(new_rect);
 		new_rect=NULL;
