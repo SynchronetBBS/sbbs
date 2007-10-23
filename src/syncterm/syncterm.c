@@ -973,6 +973,7 @@ void load_settings(struct syncterm_settings *set)
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
+	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",TRUE);
 	set->startup_mode=iniReadInteger(inifile,"SyncTERM","VideoMode",FALSE);
 	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
@@ -1266,15 +1267,20 @@ int main(int argc, char **argv)
 		}
 		if(exit_now || url[0]) {
 			if(bbs != NULL && bbs->id==-1) {
-				char	*YesNo[3]={"Yes","No",""};
-				/* Started from the command-line with a URL */
-				init_uifc(TRUE, TRUE);
-				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this BBS in directory?",YesNo)) {
-					case 0:	/* Yes */
-						add_bbs(listpath,bbs);
-						break;
-					default: /* ESC/No */
-						break;
+				if(!safe_mode) {
+					if(settings.prompt_save) {
+						char	*YesNo[3]={"Yes","No",""};
+						/* Started from the command-line with a URL */
+						init_uifc(TRUE, TRUE);
+						switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this BBS in directory?",YesNo)) {
+							case 0:	/* Yes */
+								edit_list(NULL, bbs,listpath,FALSE);
+								add_bbs(listpath,bbs);
+								break;
+							default: /* ESC/No */
+								break;
+						}
+					}
 				}
 				free(bbs);
 			}

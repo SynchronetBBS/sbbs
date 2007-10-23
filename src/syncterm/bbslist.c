@@ -563,8 +563,21 @@ int list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly
 {
 	int i;
 
-	if(list==NULL)
+	if(list==NULL) {
+		char	listpath[MAX_PATH+1];
+		FILE	*listfile;
+		str_list_t	inifile;
+
+		get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
+		if((listfile=fopen(listpath,"r"))!=NULL) {
+			inifile=iniReadFile(listfile);
+			i=iniSectionExists(inifile, bbsname);
+			strListFree(&inifile);
+			fclose(listfile);
+			return(i);
+		}
 		return(0);
+	}
 	for(i=0; list[i]!=NULL; i++) {
 		if(useronly && list[i]->type != USER_BBSLIST)
 			continue;
@@ -1015,7 +1028,7 @@ void change_settings(void)
 	FILE	*inifile;
 	str_list_t	inicontents;
 	char	opts[7][80];
-	char	*opt[7];
+	char	*opt[8];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -1031,12 +1044,15 @@ void change_settings(void)
 
 	for(i=0; i<7; i++)
 		opt[i]=opts[i];
+	opt[7]=NULL;
 
-	opts[6][0]=0;
 	for(;;) {
+
 		uifc.helpbuf=	"`Program Settings Menu`\n\n"
 						"~ Confirm Program Exit ~\n"
 						"        Prompt the user before exiting.\n\n"
+						"~ Prompt to Save ~\n"
+						"        Prompt to save new URIs on before exiting\n\n"
 						"~ Startup Video Mode ~\n"
 						"        Set the initial video screen size.\n\n"
 						"~ Output Mode ~\n"
@@ -1048,11 +1064,12 @@ void change_settings(void)
 						"~ Modem Init String ~\n"
 						"        An init string to use for the modem.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
-		sprintf(opts[1],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
-		sprintf(opts[2],"Output Mode             %s",output_descrs[settings.output_mode]);
-		sprintf(opts[3],"Scrollback Buffer Lines %d",settings.backlines);
-		sprintf(opts[4],"Modem Device            %s",settings.mdm.device_name);
-		sprintf(opts[5],"Modem Init String       %s",settings.mdm.init_string);
+		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
+		sprintf(opts[2],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
+		sprintf(opts[3],"Output Mode             %s",output_descrs[settings.output_mode]);
+		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
+		sprintf(opts[5],"Modem Device            %s",settings.mdm.device_name);
+		sprintf(opts[6],"Modem Init String       %s",settings.mdm.init_string);
 		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -1061,6 +1078,10 @@ void change_settings(void)
 				iniSetBool(&inicontents,"SyncTERM","ConfirmClose",settings.confirm_close,&ini_style);
 				break;
 			case 1:
+				settings.prompt_save=!settings.prompt_save;
+				iniSetBool(&inicontents,"SyncTERM","PromptSave",settings.prompt_save,&ini_style);
+				break;
+			case 2:
 				j=settings.startup_mode;
 				uifc.helpbuf=	"`Startup Video Mode`\n\n"
 								"Select the screen size for at startup\n";
@@ -1073,7 +1094,7 @@ void change_settings(void)
 						break;
 				}
 				break;
-			case 2:
+			case 3:
 				for(j=0;output_types[j]!=NULL;j++)
 					if(output_map[j]==settings.output_mode)
 						break;
@@ -1145,7 +1166,7 @@ void change_settings(void)
 						break;
 				}
 				break;
-			case 3:
+			case 4:
 				uifc.helpbuf="`Scrollback Buffer Lines`\n\n"
 							 "        The number of lines in the scrollback buffer.\n";
 							 "        This value MUST be greater than zero\n";
@@ -1175,7 +1196,7 @@ void change_settings(void)
 					}
 				}
 				break;
-			case 4:
+			case 5:
 				uifc.helpbuf=	"`Modem Device`\n\n"
 #ifdef _WIN32
 								"Enter the modem device name (ie: COM1).";
@@ -1185,7 +1206,7 @@ void change_settings(void)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
-			case 5:
+			case 6:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
 								"Your modem init string goes here.\n"
 								"For reference, here are the expected settings and USR inits\n\n"

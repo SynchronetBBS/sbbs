@@ -24,6 +24,7 @@ struct syncterm_settings {
 	int		startup_mode;
 	int		output_mode;
 	int		backlines;
+	int		prompt_save;
 	struct modem_settings mdm;
 };
 
