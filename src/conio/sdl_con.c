@@ -273,30 +273,91 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
 
 void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 {
-	int x,y;
-	Uint8 *Y,*U,*V;
-	int odd_line;
-	int uvlen=(r->w)>>1;
-	int uvoffset=overlay->pitches[1]*((r->y+1)>>1)+((r->x+1)>>1);
+	int uplane,vplane;					/* Planar formats */
+	int y0pack, y1pack, u0pack, v0pack;	/* Packed formats */
 
-	odd_line=(r->y)&1;
-	Y=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
-	U=overlay->pixels[2]+uvoffset;
-	V=overlay->pixels[1]+uvoffset;
-	for(y=0; y<r->h; y++)
+	yuv.changed=1;
+	switch(overlay->format) {
+		case SDL_IYUV_OVERLAY:
+			/* Swap planes */
+			uplane=1;
+			vplane=2;
+			goto planar;
+		case SDL_YV12_OVERLAY:
+			uplane=2;
+			vplane=1;
+			goto planar;
+		case SDL_YUY2_OVERLAY:
+			y0pack=0;
+			y1pack=2;
+			u0pack=1;
+			v0pack=3;
+			goto packed;
+		case SDL_UYVY_OVERLAY:
+			y0pack=1;
+			y1pack=3;
+			u0pack=0;
+			v0pack=2;
+			goto packed;
+		case SDL_YVYU_OVERLAY:
+			y0pack=0;
+			y1pack=2;
+			u0pack=3;
+			v0pack=1;
+			goto packed;
+			break;
+	}
+	return;
+
+planar:
 	{
-		memset(Y, yuv.colours[dac_entry][0], r->w);
-		Y+=overlay->pitches[0];
-		if(odd_line) {
-			U+=overlay->pitches[2];
-			V+=overlay->pitches[1];
-		}
-		else {
-			memset(U, yuv.colours[dac_entry][1], uvlen);
-			memset(V, yuv.colours[dac_entry][2], uvlen);
+		int x,y;
+		Uint8 *Y,*U,*V;
+		int odd_line;
+		int uvlen=(r->w)>>1;
+		int uvoffset=overlay->pitches[1]*((r->y+1)>>1)+((r->x+1)>>1);
+
+		odd_line=(r->y)&1;
+		Y=overlay->pixels[0]+overlay->pitches[0]*(r->y)+(r->x);
+		U=overlay->pixels[uplane]+uvoffset;
+		V=overlay->pixels[vplane]+uvoffset;
+		for(y=0; y<r->h; y++)
+		{
+			memset(Y, yuv.colours[dac_entry][0], r->w);
+			Y+=overlay->pitches[0];
+			if(odd_line) {
+				U+=overlay->pitches[uplane];
+				V+=overlay->pitches[vplane];
+			}
+			else {
+				memset(U, yuv.colours[dac_entry][1], uvlen);
+				memset(V, yuv.colours[dac_entry][2], uvlen);
+			}
 		}
 	}
-	yuv.changed=1;
+	return;
+packed:
+	{
+		int x,y;
+		Uint32 colour;
+		Uint8 *colour_array=&colour;
+		Uint32 *offset;
+		int uvlen=(r->w)>>1;
+		int uvoffset=overlay->pitches[1]*((r->y+1)>>1)+((r->x+1)>>1);
+
+		colour_array[y0pack]=yuv.colours[dac_entry][0];
+		colour_array[y1pack]=yuv.colours[dac_entry][0];
+		colour_array[u0pack]=yuv.colours[dac_entry][1];
+		colour_array[v0pack]=yuv.colours[dac_entry][2];
+		offset=(Uint32 *)(overlay->pixels[0]+overlay->pitches[0]*(r->y));
+		offset+=r->x;
+		for(y=0; y<r->h; y++)
+		{
+			for(x=0; x<r->w; x+=2)
+				*offset[x>>1]=colour;
+		}
+	}
+	return;
 }
 
 void sdl_user_func(int func, ...)
@@ -1191,7 +1252,24 @@ void setup_surfaces(void)
 				sdl.mutexV(yuv.mutex);
 				sdl.FreeYUVOverlay(yuv.overlay);
 			}
-			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
+			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
+			if(!yuv.overlay->hw_overlay) {
+				sdl.FreeYUVOverlay(yuv.overlay);
+				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_UYVY_OVERLAY, win);
+				if(!yuv.overlay->hw_overlay) {
+					sdl.FreeYUVOverlay(yuv.overlay);
+					yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
+					if(!yuv.overlay->hw_overlay) {
+						sdl.FreeYUVOverlay(yuv.overlay);
+						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
+						if(!yuv.overlay->hw_overlay) {
+							sdl.FreeYUVOverlay(yuv.overlay);
+							yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
+						}
+					}
+				}
+			}
+//fprintf(stderr,"Mode: %d (%d)\n",yuv.overlay->format,yuv.overlay->hw_overlay);
 			sdl.mutexP(yuv.mutex);
 			sdl.LockYUVOverlay(yuv.overlay);
 			sdl_setup_yuv_colours();
