@@ -21,10 +21,13 @@
 
 struct sort_order_info {
 	char		*name;
-	int			reverse;
+	int			flags;
 	size_t		offset;
 	int			length;
 };
+
+#define SORT_ORDER_REVERSED		(1<<0)
+#define SORT_ORDER_STRING		(1<<1)
 
 struct sort_order_info sort_order[] = {
 	 {
@@ -35,25 +38,25 @@ struct sort_order_info sort_order[] = {
 	}
 	,{
 		 "BBS Name"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, name)
 		,LIST_NAME_MAX+1
 	}
 	,{
 		 "Date Added"
-		,1
+		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, added)
 		,sizeof(time_t)
 	}
 	,{
 		 "Date Last Connected"
-		,1
+		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, connected)
 		,sizeof(time_t)
 	}
 	,{
 		 "Total Calls"
-		,1
+		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, calls)
 		,sizeof(unsigned int)
 	}
@@ -65,7 +68,7 @@ struct sort_order_info sort_order[] = {
 	}
 	,{
 		 "Address"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, addr)
 		,LIST_NAME_MAX+1
 	}
@@ -77,19 +80,19 @@ struct sort_order_info sort_order[] = {
 	}
 	,{
 		 "Username"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, user)
 		,MAX_USER_LEN+1
 	}
 	,{
 		 "Password"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, password)
 		,MAX_PASSWD_LEN+1
 	}
 	,{
 		 "System Password"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, syspass)
 		,MAX_SYSPASS_LEN+1
 	}
@@ -119,19 +122,19 @@ struct sort_order_info sort_order[] = {
 	}
 	,{
 		 "Dowload Directory"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, dldir)
 		,MAX_PATH+1
 	}
 	,{
 		 "Upload Directory"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, uldir)
 		,MAX_PATH+1
 	}
 	,{
 		 "Log File"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, logfile)
 		,MAX_PATH+1
 	}
@@ -155,7 +158,7 @@ struct sort_order_info sort_order[] = {
 	}
 	,{
 		 "Font"
-		,0
+		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, font)
 		,80
 	}
@@ -321,9 +324,12 @@ int listcmp(const void *aptr, const void *bptr)
 
 	for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
 		item=abs(sortorder[i]);
-		reverse=(sortorder[i]<0?1:0)^(sort_order[item].reverse?1:0);
+		reverse=(sortorder[i]<0?1:0)^((sort_order[item].flags&SORT_ORDER_REVERSED)?1:0);
 		if(sort_order[item].name) {
-			ret=memcmp(a+sort_order[item].offset,b+sort_order[item].offset,sort_order[item].length);
+			if(sort_order[item].flags & SORT_ORDER_STRING)
+				ret=stricmp(a+sort_order[item].offset,b+sort_order[item].offset);
+			else
+				ret=memcmp(a+sort_order[item].offset,b+sort_order[item].offset,sort_order[item].length);
 			if(ret) {
 				if(reverse)
 					ret=0-ret;
@@ -432,7 +438,7 @@ void edit_sorting(struct bbslist **list, int *listcount)
 		for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
 			if(sort_order[abs(sortorder[i])].name) {
 				SAFECOPY(opt[i], sort_order[abs(sortorder[i])].name);
-				if((sortorder[i]<0?1:0) ^ (sort_order[abs(sortorder[i])].reverse?1:0))
+				if((sortorder[i]<0?1:0) ^ ((sort_order[abs(sortorder[i])].flags&SORT_ORDER_REVERSED)?1:0))
 					strcat(opt[i]," (reversed)");
 			}
 			else
