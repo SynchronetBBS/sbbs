@@ -278,31 +278,35 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 	yuv.changed=1;
 	switch(overlay->format) {
 		case SDL_IYUV_OVERLAY:
-			/* Swap planes */
+			/* YUV 4:2:0 NxM Y followed by (N/2)x(M/2) U and V (12bpp) */
 			uplane=1;
 			vplane=2;
 			goto planar;
 		case SDL_YV12_OVERLAY:
-			uplane=2;
+			/* YUV 4:2:0 NxM Y followed by (N/2)x(M/2) V and U (12bpp) */
 			vplane=1;
+			uplane=2;
 			goto planar;
 		case SDL_YUY2_OVERLAY:
+			/* YUV 4:2:2 Y0,U0,Y1,V0 (16bpp) */
 			y0pack=0;
-			y1pack=2;
 			u0pack=1;
+			y1pack=2;
 			v0pack=3;
 			goto packed;
 		case SDL_UYVY_OVERLAY:
-			y0pack=1;
-			y1pack=3;
+			/* YUV 4:2:2 U0,Y0,V0,Y1 (16bpp)  */
 			u0pack=0;
+			y0pack=1;
 			v0pack=2;
+			y1pack=3;
 			goto packed;
 		case SDL_YVYU_OVERLAY:
+			/* YUV 4:2:2 Y0,V0,Y1,U0 (16bpp)  */
 			y0pack=0;
+			v0pack=1;
 			y1pack=2;
 			u0pack=3;
-			v0pack=1;
 			goto packed;
 	}
 	return;
@@ -322,8 +326,10 @@ planar:
 		for(y=0; y<r->h; y++)
 		{
 			memset(Y, yuv.colours[dac_entry][0], r->w);
+			/* Increment every line */
 			Y+=overlay->pitches[0];
 			if(odd_line) {
+				/* Increment on odd lines */
 				U+=overlay->pitches[uplane];
 				V+=overlay->pitches[vplane];
 			}
@@ -331,6 +337,7 @@ planar:
 				memset(U, yuv.colours[dac_entry][1], uvlen);
 				memset(V, yuv.colours[dac_entry][2], uvlen);
 			}
+			odd_line = !odd_line;
 		}
 	}
 	return;
