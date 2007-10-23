@@ -1060,10 +1060,26 @@ int main(int argc, char **argv)
 							ciolib_mode=CIOLIB_MODE_CONIO;
 							break;
 						case 'S':
-							ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
+							switch(toupper(argv[i][3])) {
+								case 0:
+								case 'F':
+									ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
+									break;
+								case 'W':
+									ciolib_mode=CIOLIB_MODE_SDL;
+									break;
+							}
 							break;
 						case 'O':
-							ciolib_mode=CIOLIB_MODE_SDL_YUV;
+							switch(toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode=CIOLIB_MODE_SDL_YUV;
+									break;
+								case 'F':
+									ciolib_mode=CIOLIB_MODE_SDL_YUV_FULLSCREEN;
+									break;
+							}
 							break;
 						default:
 							goto USAGE;
@@ -1304,8 +1320,8 @@ int main(int argc, char **argv)
         "\n\noptions:\n\n"
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
-		"       S = FullScreen SDL mode\n"
-		"       O = SDL overlay mode (hardware scaling)\n"
+		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
+		"       O[W|F] = SDL overlay mode (hardware scaled)\n"
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
