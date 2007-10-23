@@ -348,7 +348,7 @@ packed:
 		colour_array[u0pack]=yuv.colours[dac_entry][1];
 		colour_array[v0pack]=yuv.colours[dac_entry][2];
 		offset=(Uint32 *)(overlay->pixels[0]+overlay->pitches[0]*(r->y));
-		offset+=r->x;
+		offset+=(r->x>>1);
 		for(y=0; y<r->h; y++)
 		{
 			for(x=0; x<r->w; x+=2)
@@ -1262,7 +1262,7 @@ void setup_surfaces(void)
 						yuv.best_format=yuv.overlay->format;
 					if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 						sdl.FreeYUVOverlay(yuv.overlay);
-						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
+						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
 						if(yuv.overlay)
 							yuv.best_format=yuv.overlay->format;
 						if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
@@ -1272,7 +1272,7 @@ void setup_surfaces(void)
 								yuv.best_format=yuv.overlay->format;
 							if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 								sdl.FreeYUVOverlay(yuv.overlay);
-								yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
+								yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
 								if(yuv.overlay)
 									yuv.best_format=yuv.overlay->format;
 							}
