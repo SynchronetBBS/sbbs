@@ -80,12 +80,13 @@ struct yuv_settings {
 	int			win_width;
 	int			win_height;
 	int			changed;
+	int			best_format;
 	SDL_Overlay	*overlay;
 	SDL_mutex	*mutex;
 	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
 };
 
-static struct yuv_settings yuv={0,640,400,0,NULL,NULL};
+static struct yuv_settings yuv={0,640,400,0,0,NULL,NULL};
 
 struct sdl_keyvals {
 	int	keysym
@@ -352,7 +353,7 @@ packed:
 		{
 			for(x=0; x<r->w; x+=2)
 				offset[x>>1]=colour;
-			offset+=overlay->pitches[0];
+			offset+=overlay->pitches[0]>>2;
 		}
 	}
 	return;
@@ -1250,23 +1251,38 @@ void setup_surfaces(void)
 				sdl.mutexV(yuv.mutex);
 				sdl.FreeYUVOverlay(yuv.overlay);
 			}
-			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
-			if(!yuv.overlay->hw_overlay) {
-				sdl.FreeYUVOverlay(yuv.overlay);
-				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_UYVY_OVERLAY, win);
-				if(!yuv.overlay->hw_overlay) {
+			if(yuv.best_format==0) {
+				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
+				if(yuv.overlay)
+					yuv.best_format=yuv.overlay->format;
+				if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 					sdl.FreeYUVOverlay(yuv.overlay);
-					yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
-					if(!yuv.overlay->hw_overlay) {
+					yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_UYVY_OVERLAY, win);
+					if(yuv.overlay)
+						yuv.best_format=yuv.overlay->format;
+					if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 						sdl.FreeYUVOverlay(yuv.overlay);
-						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
-						if(!yuv.overlay->hw_overlay) {
+						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
+						if(yuv.overlay)
+							yuv.best_format=yuv.overlay->format;
+						if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 							sdl.FreeYUVOverlay(yuv.overlay);
-							yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
+							yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
+							if(yuv.overlay)
+								yuv.best_format=yuv.overlay->format;
+							if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
+								sdl.FreeYUVOverlay(yuv.overlay);
+								yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
+								if(yuv.overlay)
+									yuv.best_format=yuv.overlay->format;
+							}
 						}
 					}
 				}
+				if(yuv.overlay)
+					sdl.FreeYUVOverlay(yuv.overlay);
 			}
+			yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, yuv.best_format, win);
 			sdl.mutexP(yuv.mutex);
 			sdl.LockYUVOverlay(yuv.overlay);
 			sdl_setup_yuv_colours();
