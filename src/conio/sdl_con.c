@@ -86,7 +86,7 @@ struct yuv_settings {
 	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
 };
 
-static struct yuv_settings yuv={0,640,400,0,0,NULL,NULL};
+static struct yuv_settings yuv={0,0,0,0,0,NULL,NULL};
 
 struct sdl_keyvals {
 	int	keysym
@@ -1195,6 +1195,10 @@ void setup_surfaces(void)
 		flags |= SDL_RESIZABLE;
 
 	if(yuv.enabled) {
+		if(!yuv.win_width)
+			yuv.win_width=vstat.charwidth*vstat.cols;
+		if(!yuv.win_height)
+			yuv.win_height=vstat.charheight*vstat.rows;
 		if(fullscreen && sdl.initial_videoinfo.current_w && sdl.initial_videoinfo.current_h)
 			win=sdl.SetVideoMode(sdl.initial_videoinfo.current_w,sdl.initial_videoinfo.current_h,0,flags);
 		else
