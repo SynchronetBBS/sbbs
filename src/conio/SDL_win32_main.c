@@ -200,6 +200,10 @@ int console_main(int argc, char *argv[], char **env)
 	int n;
 	char *bufp, *appname;
 
+	if(getenv("SDL_VIDEODRIVER")==NULL) {
+		putenv("SDL_VIDEODRIVER=directx");
+	}
+
 	/* Get the class name from argv[0] */
 	appname = argv[0];
 	if ( (bufp=strrchr(argv[0], '\\')) != NULL ) {
