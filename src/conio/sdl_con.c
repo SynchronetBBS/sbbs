@@ -1192,14 +1192,8 @@ void setup_surfaces(void)
 	SDL_Surface	*tmp_rect=NULL;
 	SDL_Event	ev;
 
-	if(fullscreen) {
-#if defined(_WIN32)
-		if(sdl_using_directx) {
-			flags=SDL_SWSURFACE|SDL_ANYFORMAT;
-		}
-#endif
+	if(fullscreen)
 		flags |= SDL_FULLSCREEN;
-	}
 	else
 		flags |= SDL_RESIZABLE;
 
