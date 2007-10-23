@@ -305,7 +305,6 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 			u0pack=3;
 			v0pack=1;
 			goto packed;
-			break;
 	}
 	return;
 
@@ -340,10 +339,8 @@ packed:
 	{
 		int x,y;
 		Uint32 colour;
-		Uint8 *colour_array=&colour;
+		Uint8 *colour_array=(Uint8 *)&colour;
 		Uint32 *offset;
-		int uvlen=(r->w)>>1;
-		int uvoffset=overlay->pitches[1]*((r->y+1)>>1)+((r->x+1)>>1);
 
 		colour_array[y0pack]=yuv.colours[dac_entry][0];
 		colour_array[y1pack]=yuv.colours[dac_entry][0];
@@ -354,7 +351,8 @@ packed:
 		for(y=0; y<r->h; y++)
 		{
 			for(x=0; x<r->w; x+=2)
-				*offset[x>>1]=colour;
+				offset[x>>1]=colour;
+			offset+=overlay->pitches[0];
 		}
 	}
 	return;
@@ -1269,7 +1267,6 @@ void setup_surfaces(void)
 					}
 				}
 			}
-//fprintf(stderr,"Mode: %d (%d)\n",yuv.overlay->format,yuv.overlay->hw_overlay);
 			sdl.mutexP(yuv.mutex);
 			sdl.LockYUVOverlay(yuv.overlay);
 			sdl_setup_yuv_colours();
