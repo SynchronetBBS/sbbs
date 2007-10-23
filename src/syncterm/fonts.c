@@ -78,8 +78,8 @@ void save_font_files(struct font_files *fonts)
 		uifc.msg("Cannot write to the .ini file!");
 	}
 
-	strListFreeStrings(fontnames);
-	strListFreeStrings(ini_file);
+	strListFree(&fontnames);
+	strListFree(&ini_file);
 }
 
 struct font_files *read_font_files(int *count)
@@ -118,7 +118,7 @@ struct font_files *read_font_files(int *count)
 			ret[*count-1].path8x16=strdup(fontpath);
 	}
 	fclose(inifile);
-	strListFreeStrings(fonts);
+	strListFree(&fonts);
 	return(ret);
 }
 

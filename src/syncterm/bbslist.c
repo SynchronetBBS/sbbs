@@ -27,23 +27,17 @@ struct sort_order_info {
 };
 
 struct sort_order_info sort_order[] = {
-	{
+	 {
+		 NULL
+		,0
+		,0
+		,0
+	}
+	,{
 		 "BBS Name"
 		,0
 		,offsetof(struct bbslist, name)
 		,LIST_NAME_MAX+1
-	}
-	,{
-		 "Address"
-		,0
-		,offsetof(struct bbslist, addr)
-		,LIST_NAME_MAX+1
-	}
-	,{
-		 "Port"
-		,0
-		,offsetof(struct bbslist, port)
-		,sizeof(short unsigned int)
 	}
 	,{
 		 "Date Added"
@@ -64,6 +58,24 @@ struct sort_order_info sort_order[] = {
 		,sizeof(unsigned int)
 	}
 	,{
+		 "Dialing List"
+		,0
+		,offsetof(struct bbslist, type)
+		,sizeof(int)
+	}
+	,{
+		 "Address"
+		,0
+		,offsetof(struct bbslist, addr)
+		,LIST_NAME_MAX+1
+	}
+	,{
+		 "Port"
+		,0
+		,offsetof(struct bbslist, port)
+		,sizeof(short unsigned int)
+	}
+	,{
 		 "Username"
 		,0
 		,offsetof(struct bbslist, user)
@@ -80,12 +92,6 @@ struct sort_order_info sort_order[] = {
 		,0
 		,offsetof(struct bbslist, syspass)
 		,MAX_SYSPASS_LEN+1
-	}
-	,{
-		 "Dialing List"
-		,0
-		,offsetof(struct bbslist, type)
-		,sizeof(int)
 	}
 	,{
 		 "Connection Type"
@@ -120,7 +126,7 @@ struct sort_order_info sort_order[] = {
 	,{
 		 "Upload Directory"
 		,0
-		,offsetof(struct bbslist, updir)
+		,offsetof(struct bbslist, uldir)
 		,MAX_PATH+1
 	}
 	,{
@@ -153,7 +159,15 @@ struct sort_order_info sort_order[] = {
 		,offsetof(struct bbslist, font)
 		,80
 	}
+	,{
+		 NULL
+		,0
+		,0
+		,0
+	}
 };
+
+int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 
 char *sort_orders[]={"BBS Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
 
@@ -286,7 +300,44 @@ int get_next_rate(int curr_rate) {
 	return(rates[i]);
 }
 
+int is_sorting(int chk)
+{
+	int i;
+
+	for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++)
+		if((abs(sortorder[i]))==chk)
+			return(1);
+	return(0);
+}
+
+int listcmp(const void *aptr, const void *bptr)
+{
+	const char *a=*(void **)(aptr);
+	const char *b=*(void **)(bptr);
+	int i;
+	int item;
+	int reverse;
+	int ret=0;
+
+	for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
+		item=abs(sortorder[i]);
+		reverse=(sortorder[i]<0?1:0)^(sort_order[item].reverse?1:0);
+		if(sort_order[item].name) {
+			ret=memcmp(a+sort_order[item].offset,b+sort_order[item].offset,sort_order[item].length);
+			if(ret) {
+				if(reverse)
+					ret=0-ret;
+				return(ret);
+			}
+		}
+		else {
+			return(ret);
+		}
+	}
+}
+
 void sort_list(struct bbslist **list, int *listcount)  {
+#if 0
 	struct bbslist *tmp;
 	unsigned int	i,j,swapped=1;
 
@@ -317,6 +368,124 @@ void sort_list(struct bbslist **list, int *listcount)  {
 			}
 		}
 	}
+#else
+	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
+#endif
+}
+
+void write_sortorder(void)
+{
+	char	inipath[MAX_PATH+1];
+	FILE	*inifile;
+	str_list_t	inicontents;
+	str_list_t	sortorders;
+	char	str[64];
+	int		i;
+
+	sortorders=strListInit();
+	for(i=0;sort_order[abs(sortorder[i])].name!=NULL;i++) {
+		sprintf(str,"%d",sortorder[i]);
+		strListPush(&sortorders, str);
+	}
+
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	if((inifile=fopen(inipath,"r"))!=NULL) {
+		inicontents=iniReadFile(inifile);
+		fclose(inifile);
+	}
+	else {
+		inicontents=strListInit();
+	}
+
+	iniSetStringList(&inicontents, "SyncTERM", "SortOrder", ",", sortorders, &ini_style);
+	if((inifile=fopen(inipath,"w"))!=NULL) {
+		iniWriteFile(inifile,inicontents);
+		fclose(inifile);
+	}
+	strListFree(&sortorders);
+	strListFree(&inicontents);
+}
+
+void edit_sorting(struct bbslist **list, int *listcount)
+{
+	char	opt[sizeof(sort_order)/sizeof(struct sort_order_info)][80];
+	char	*opts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
+	char	sopt[sizeof(sort_order)/sizeof(struct sort_order_info)][80];
+	char	*sopts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
+	int		changed=0;
+	int		curr=0,bar=0;
+	int		scurr=0,sbar=0;
+	int		ret,sret;
+	int		i,j;
+	str_list_t	sorting;
+	FILE		*inifile;
+
+	for(i=0;i<sizeof(sort_order)/sizeof(struct sort_order_info)+1;i++)
+		opts[i]=opt[i];
+	opts[i]=NULL;
+	for(i=0;i<sizeof(sort_order)/sizeof(struct sort_order_info)+1;i++)
+		sopts[i]=sopt[i];
+	sopts[i]=NULL;
+
+	for(;;) {
+		/* Build ordered list of sort order */
+		for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
+			if(sort_order[abs(sortorder[i])].name) {
+				SAFECOPY(opt[i], sort_order[abs(sortorder[i])].name);
+				if((sortorder[i]<0?1:0) ^ (sort_order[abs(sortorder[i])].reverse?1:0))
+					strcat(opt[i]," (reversed)");
+			}
+			else
+				opt[i][0]=0;
+		}
+		ret=uifc.list(WIN_XTR|WIN_DEL|WIN_INS|WIN_INSACT|WIN_ACT|WIN_SAV
+					,0,0,0,&curr,&bar,"Sort Order",opts);
+		if(ret==-1)
+			break;
+		if(ret & MSK_INS) {		/* Insert sorting */
+			j=0;
+			for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
+				if(!is_sorting(i) && sort_order[i].name) {
+					SAFECOPY(sopt[j], sort_order[i].name);
+					j++;
+				}
+			}
+			if(j==0) {
+				uifc.helpbuf=	"All sort orders are present in the list.";
+				uifc.msg("No more sort orders.");
+			}
+			else {
+				sopt[j][0]=0;
+				sret=uifc.list(WIN_SAV|WIN_BOT|WIN_RHT
+							,0,0,0,&scurr,&sbar,"Sort Field",sopts);
+				if(sret>=0) {
+					/* Insert into array */
+					memmove(&(sortorder[ret&MSK_OFF])+1,&(sortorder[(ret&MSK_OFF)]),sizeof(sortorder)-sizeof(sortorder[0])*((ret&MSK_OFF)+1));
+					j=0;
+					for(i=0; i<sizeof(sort_order)/sizeof(struct sort_order_info); i++) {
+						if(!is_sorting(i) && sort_order[i].name) {
+							if(j==sret) {
+								sortorder[ret&MSK_OFF]=i;
+								break;
+							}
+							j++;
+						}
+					}
+					changed=1;
+				}
+			}
+		}
+		else if(ret & MSK_DEL) {		/* Delete criteria */
+			memmove(&(sortorder[ret&MSK_OFF]),&(sortorder[(ret&MSK_OFF)])+1,sizeof(sortorder)-sizeof(sortorder[0])*((ret&MSK_OFF)+1));
+		}
+		else {
+			sortorder[ret&MSK_OFF]=0-sortorder[ret&MSK_OFF];
+		}
+	}
+
+	/* Write back to the .ini file */
+	write_sortorder();
+	sort_list(list, listcount);
 }
 
 void free_list(struct bbslist **list, int listcount)
@@ -328,42 +497,78 @@ void free_list(struct bbslist **list, int listcount)
 	}
 }
 
-void read_item(FILE *listfile, struct bbslist *entry, char *bbsname, int id, int type)
+void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
 	BOOL	dumb;
 	char	home[MAX_PATH+1];
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
-	if(bbsname != NULL)
+	if(bbsname != NULL) {
+#if 0
+		switch(type) {
+			case USER_BBSLIST:
+				SAFECOPY(entry->name,bbsname);
+				break;
+			case SYSTEM_BBSLIST:
+				sprintf(entry->name,"[%.*s]",sizeof(entry->name)-3,bbsname);
+				break;
+		}
+#else
 		SAFECOPY(entry->name,bbsname);
-	iniReadString(listfile,bbsname,"Address","",entry->addr);
-	entry->conn_type=iniReadEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
-	entry->port=iniReadShortInt(listfile,bbsname,"Port",conn_ports[entry->conn_type]);
-	entry->added=iniReadDateTime(listfile,bbsname,"Added",0);
-	entry->connected=iniReadDateTime(listfile,bbsname,"LastConnected",0);
-	entry->calls=iniReadInteger(listfile,bbsname,"TotalCalls",0);
-	iniReadString(listfile,bbsname,"UserName","",entry->user);
-	iniReadString(listfile,bbsname,"Password","",entry->password);
-	iniReadString(listfile,bbsname,"SystemPassword","",entry->syspass);
-	dumb=iniReadBool(listfile,bbsname,"BeDumb",0);
+#endif
+	}
+	iniGetString(listfile,bbsname,"Address","",entry->addr);
+	entry->conn_type=iniGetEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
+	entry->port=iniGetShortInt(listfile,bbsname,"Port",conn_ports[entry->conn_type]);
+	entry->added=iniGetDateTime(listfile,bbsname,"Added",0);
+	entry->connected=iniGetDateTime(listfile,bbsname,"LastConnected",0);
+	entry->calls=iniGetInteger(listfile,bbsname,"TotalCalls",0);
+	iniGetString(listfile,bbsname,"UserName","",entry->user);
+	iniGetString(listfile,bbsname,"Password","",entry->password);
+	iniGetString(listfile,bbsname,"SystemPassword","",entry->syspass);
+	dumb=iniGetBool(listfile,bbsname,"BeDumb",0);
 	if(dumb)
 		entry->conn_type=CONN_TYPE_RAW;
-	entry->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
-	entry->screen_mode=iniReadEnum(listfile,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
-	entry->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
-	iniReadString(listfile,bbsname,"DownloadPath",home,entry->dldir);
-	iniReadString(listfile,bbsname,"UploadPath",home,entry->uldir);
+	entry->reversed=iniGetBool(listfile,bbsname,"Reversed",0);
+	entry->screen_mode=iniGetEnum(listfile,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
+	entry->nostatus=iniGetBool(listfile,bbsname,"NoStatus",0);
+	iniGetString(listfile,bbsname,"DownloadPath",home,entry->dldir);
+	iniGetString(listfile,bbsname,"UploadPath",home,entry->uldir);
 
 	/* Log Stuff */
-	iniReadString(listfile,bbsname,"LogFile","",entry->logfile);
-	entry->xfer_loglevel=iniReadEnum(listfile,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
-	entry->telnet_loglevel=iniReadEnum(listfile,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
+	iniGetString(listfile,bbsname,"LogFile","",entry->logfile);
+	entry->xfer_loglevel=iniGetEnum(listfile,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
+	entry->telnet_loglevel=iniGetEnum(listfile,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
 
-	entry->bpsrate=iniReadInteger(listfile,bbsname,"BPSRate",0);
-	entry->music=iniReadInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
-	iniReadString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
+	entry->bpsrate=iniGetInteger(listfile,bbsname,"BPSRate",0);
+	entry->music=iniGetInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
+	iniGetString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
 	entry->type=type;
 	entry->id=id;
+}
+
+/*
+ * Checks if bbsname already is listed in list
+ * setting *pos to the position if not NULL.
+ * optionally only if the entry is a user list
+ * entry
+ */
+int list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
+{
+	int i;
+
+	if(list==NULL)
+		return(0);
+	for(i=0; list[i]!=NULL; i++) {
+		if(useronly && list[i]->type != USER_BBSLIST)
+			continue;
+		if(strcmp(list[i]->name,bbsname)==0) {
+			if(pos)
+				*pos=i;
+			return(1);
+		}
+	}
+	return(0);
 }
 
 /*
@@ -375,23 +580,28 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 	FILE	*listfile;
 	char	*bbsname;
 	str_list_t	bbses;
+	str_list_t	inilines;
 
 	if((listfile=fopen(listpath,"r"))!=NULL) {
-		if(defaults != NULL)
-			read_item(listfile,defaults,NULL,-1,type);
-		bbses=iniReadSectionList(listfile,NULL);
-		while((bbsname=strListPop(&bbses))!=NULL) {
-			if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL)
-				break;
-			read_item(listfile,list[*i],bbsname,*i,type);
-			(*i)++;
-		}
+		inilines=iniReadFile(listfile);
 		fclose(listfile);
-		strListFreeStrings(bbses);
+		if(defaults != NULL)
+			read_item(inilines,defaults,NULL,-1,type);
+		bbses=iniGetSectionList(inilines,NULL);
+		while((bbsname=strListRemove(&bbses,0))!=NULL) {
+			if(!list_name_check(list, bbsname, NULL, FALSE)) {
+				if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL)
+					break;
+				read_item(inilines,list[*i],bbsname,*i,type);
+				(*i)++;
+			}
+		}
+		strListFree(&bbses);
+		strListFree(&inilines);
 	}
 	else {
 		if(defaults != NULL && type==USER_BBSLIST)
-			read_item(listfile,defaults,NULL,-1,type);
+			read_item(NULL,defaults,NULL,-1,type);
 	}
 
 #if 0	/* This isn't necessary (NULL is a sufficient) */
@@ -400,7 +610,7 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 #endif
 }
 
-int edit_list(struct bbslist *item,char *listpath,int isdefault)
+int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault)
 {
 	char	opt[18][80];	/* <- Beware of magic number! */
 	char	*opts[19];		/* <- Beware of magic number! */
@@ -486,14 +696,23 @@ int edit_list(struct bbslist *item,char *listpath,int isdefault)
 						fclose(listfile);
 					}
 				}
-				strListFreeStrings(inifile);
+				strListFree(&inifile);
 				return(changed);
 			case 0:
 				uifc.helpbuf=	"`BBS Name`\n\n"
 								"Enter the BBS name as it is to appear in the list.";
 				strcpy(tmp,itemname);
 				uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",itemname,LIST_NAME_MAX,K_EDIT);
-				iniRenameSection(&inifile,tmp,itemname);
+				if(strcmp(tmp,itemname) && list_name_check(list, itemname, NULL, FALSE)) {
+					uifc.helpbuf=	"`BBS Already Exists`\n\n"
+									"A BBS with that name already exists in the list.\n"
+									"Please choose a unique BBS name.\n";
+					uifc.msg("BBS Already Exists!");
+					strcpy(itemname,tmp);
+				}
+				else {
+					iniRenameSection(&inifile,tmp,itemname);
+				}
 				break;
 			case 1:
 				uifc.helpbuf=	"`Address`\n\n"
@@ -762,7 +981,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
 	}
-	strListFreeStrings(inifile);
+	strListFree(&inifile);
 }
 
 void del_bbs(char *listpath, struct bbslist *bbs)
@@ -780,7 +999,7 @@ void del_bbs(char *listpath, struct bbslist *bbs)
 			iniWriteFile(listfile,inifile);
 			fclose(listfile);
 		}
-		strListFreeStrings(inifile);
+		strListFree(&inifile);
 	}
 }
 
@@ -1053,6 +1272,7 @@ struct bbslist *show_bbslist(int mode)
 								"Commands:\n\n"
 								"~ CTRL-D ~ Quick-dial a URL\n"
 								"~ CTRL-E ~ to edit the selected entry\n"
+								"~ CTRL-S ~ to modify the sort order\n"
 								" ~ ENTER ~ to dial the selected entry";
 				if(opt != oldopt) {
 					if(list[opt]!=NULL && list[opt]->name[0]) {
@@ -1068,12 +1288,15 @@ struct bbslist *show_bbslist(int mode)
 				oldopt=opt;
 				val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE
-					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN
+					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 					,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 				if(val==listcount)
 					val=listcount|MSK_INS;
 				if(val<0) {
 					switch(val) {
+						case -2-0x13:	/* CTRL-S - Sort */
+							edit_sorting(list,&listcount);
+							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
 							viewofflinescroll();
 							break;
@@ -1084,14 +1307,14 @@ struct bbslist *show_bbslist(int mode)
 						case -2-0x4d00:	/* Right Arrow */
 						case -11:		/* TAB */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT
+								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							at_settings=!at_settings;
 							break;
 						case -7:		/* CTRL-E */
 							if(list[opt]) {
 								i=list[opt]->id;
-								if(edit_list(list[opt],listpath,FALSE)) {
+								if(edit_list(list, list[opt],listpath,FALSE)) {
 									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 									for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 										if(list[j]->id==i)
@@ -1121,6 +1344,8 @@ struct bbslist *show_bbslist(int mode)
 					}
 				}
 				else if(val&MSK_ON) {
+					char tmp[LIST_NAME_MAX+1];
+				
 					switch(val&MSK_ON) {
 						case MSK_INS:
 							if(listcount>=MAX_OPTS) {
@@ -1137,22 +1362,32 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
+							tmp[0]=0;
+							uifc.changes=0;
+							uifc.helpbuf=	"`BBS Name`\n\n"
+											"Enter the BBS name as it is to appear in the list.";
+							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",tmp,LIST_NAME_MAX,K_EDIT);
+							if(!uifc.changes)
+								break;
+							if(list_name_check(list, tmp, NULL, FALSE)) {
+								uifc.helpbuf=	"`BBS Already Exists`\n\n"
+												"A BBS with that name already exists in the list.\n"
+												"Please choose a unique BBS name.\n";
+								uifc.msg("BBS Already Exists!");
+								break;
+							}
 							listcount++;
 							list[listcount]=list[listcount-1];
 							list[listcount-1]=(struct bbslist *)malloc(sizeof(struct bbslist));
 							memcpy(list[listcount-1],&defaults,sizeof(struct bbslist));
 							list[listcount-1]->id=listcount-1;
-							uifc.changes=0;
-							uifc.helpbuf=	"`BBS Name`\n\n"
-											"Enter the BBS name as it is to appear in the list.";
+							strcpy(list[listcount-1]->name,tmp);
 							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",list[listcount-1]->name,LIST_NAME_MAX,K_EDIT);
-							if(uifc.changes) {
-								uifc.changes=0;
-								uifc.helpbuf=	"`Address`\n\n"
-												"Enter the domain name of the system to connect to ie:\n"
-												"nix.synchro.net";
-								uifc.input(WIN_MID|WIN_SAV,0,0,"Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
-							}
+							uifc.changes=0;
+							uifc.helpbuf=	"`Address`\n\n"
+											"Enter the domain name of the system to connect to ie:\n"
+											"nix.synchro.net";
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 							if(!uifc.changes) {
 								FREE_AND_NULL(list[listcount-1]);
 								list[listcount-1]=list[listcount];
@@ -1214,7 +1449,7 @@ struct bbslist *show_bbslist(int mode)
 								break;
 							}
 							i=list[opt]->id;
-							if(edit_list(list[opt],listpath,FALSE)) {
+							if(edit_list(list, list[opt],listpath,FALSE)) {
 								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 									if(list[j]->id==i)
@@ -1235,7 +1470,7 @@ struct bbslist *show_bbslist(int mode)
 							break;
 						}
 						i=list[opt]->id;
-						if(edit_list(list[opt],listpath,FALSE)) {
+						if(edit_list(list, list[opt],listpath,FALSE)) {
 							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 							for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
 								if(list[j]->id==i)
@@ -1290,7 +1525,7 @@ struct bbslist *show_bbslist(int mode)
 						free_list(&list[0],listcount);
 						return(NULL);
 					case 0:			/* Edit default connection settings */
-						edit_list(&defaults,listpath,TRUE);
+						edit_list(NULL, &defaults,listpath,TRUE);
 						break;
 					case 1:			/* Mouse Actions setup */
 						uifc.helpbuf=	"Mouse actions are not yet user conifurable."
@@ -1356,7 +1591,7 @@ struct bbslist *show_bbslist(int mode)
 								init_uifc(TRUE, TRUE);
 							}
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT
+								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 						}
 						break;

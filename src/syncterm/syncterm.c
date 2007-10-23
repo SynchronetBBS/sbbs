@@ -966,6 +966,9 @@ void load_settings(struct syncterm_settings *set)
 {
 	FILE	*inifile;
 	char	inipath[MAX_PATH+1];
+	int		i=0;
+	str_list_t	sortby;
+	char	*order;
 
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
 	inifile=fopen(inipath,"r");
@@ -977,6 +980,14 @@ void load_settings(struct syncterm_settings *set)
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F", set->mdm.init_string);
 	iniReadString(inifile, "SyncTERM", "ModemDevice", DEFAULT_MODEM_DEV, set->mdm.device_name);
+
+	/* Sort order */
+	sortby=iniReadStringList(inifile, "SyncTERM", "SortOrder", ",", "5,1");
+	while((order=strListRemove(&sortby,0))!=NULL) {
+		sortorder[i++]=atoi(order);
+	}
+	strListFree(&sortby);
+
 	if(inifile)
 		fclose(inifile);
 }
@@ -1150,9 +1161,12 @@ int main(int argc, char **argv)
 		if((listfile=fopen(listpath,"r"))==NULL)
 			parse_url(url, bbs, conn_type, TRUE);
 		else {
-			read_item(listfile, bbs, NULL, 0, USER_BBSLIST);
-			parse_url(url, bbs, conn_type, FALSE);
+			str_list_t	inilines;
+			inilines=iniReadFile(listfile);
 			fclose(listfile);
+			read_item(inilines, bbs, NULL, 0, USER_BBSLIST);
+			parse_url(url, bbs, conn_type, FALSE);
+			strListFree(&inilines);
 		}
 		if(bbs->port==0)
 			goto USAGE;
@@ -1183,7 +1197,7 @@ int main(int argc, char **argv)
 						iniWriteFile(listfile,inifile);
 						fclose(listfile);
 					}
-					strListFreeStrings(inifile);
+					strListFree(&inifile);
 				}
 			}
 			uifcbail();
