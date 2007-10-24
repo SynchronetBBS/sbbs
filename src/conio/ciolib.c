@@ -285,9 +285,6 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-#if (defined(__MACH__) && defined(__APPLE__))
-			if(!try_sdl_init(CIOLIB_MODE_SDL_YUV))
-#endif
 			if(!try_sdl_init(CIOLIB_MODE_SDL))
 #endif
 #ifdef _WIN32
