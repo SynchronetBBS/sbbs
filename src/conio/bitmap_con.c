@@ -159,15 +159,8 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	screen=newscreen;
 	memset(screen,vstat.palette[0],screenwidth*screenheight);
 	pthread_mutex_unlock(&screenlock);
-	/* TODO: Re-enable this
-	send_rectangle(0,0,screenwidth,screenheight,TRUE);
-	*/
 	pthread_mutex_unlock(&vstatlock);
 	bitmap_loadfont(NULL);
-	/* TODO: Remove this next line */
-	pthread_mutex_lock(&vstatlock);
-	update_rect(1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight,TRUE,TRUE);
-	pthread_mutex_unlock(&vstatlock);
 
 	cio_textinfo.attribute=7;
 	cio_textinfo.normattr=7;
@@ -484,6 +477,7 @@ int bitmap_loadfont(char *filename)
 		}
 	}
 
+	force_redraws++;
 	pthread_mutex_unlock(&vstatlock);
     return(0);
 }
@@ -602,7 +596,6 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 	int this_rect_used=0;
 	struct rectangle last_rect;
 	int last_rect_used=0;
-	int	sent=FALSE;
 
 	if(sx==0 && sy==0 && width==0 && height==0)
 		fullredraw=1;
@@ -649,7 +642,6 @@ static int update_rect(int sx, int sy, int width, int height, int force, int cal
 					) {
 				last_vmem[pos] = vstat.vmem[pos];
 				bitmap_draw_one_char(sx+x,sy+y);
-				sent=TRUE;
 
 				if(calls_send) {
 					if(lastcharupdated) {
