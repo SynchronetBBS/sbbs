@@ -2570,3 +2570,23 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 
 	return(timeleft);
 }
+
+/*************************************************************************/
+/* Check a supplied name/alias and see if it's valid by our standards.   */
+/*************************************************************************/
+BOOL DLLCALL check_name(scfg_t* cfg, char* name)
+{
+	char	tmp[512];
+
+	if (   name[0] <= ' '
+		|| !isalpha(name[0])
+		|| !stricmp(name,cfg->sys_id)
+		|| strchr(name,0xff)
+		|| matchuser(cfg,name,TRUE /* sysop_alias */)
+		|| trashcan(cfg,name,"name")
+		|| alias(cfg,name,tmp)!=name
+ 	   )
+ 		return FALSE;
+ 	return TRUE;
+} 
+

@@ -120,6 +120,8 @@ DLLEXPORT BOOL	DLLCALL user_adjust_minutes(scfg_t* cfg, user_t* user, long amoun
 
 DLLEXPORT time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime);
 
+DLLEXPORT BOOL DLLCALL check_name(scfg_t* cfg, char* name);
+
 #ifdef __cplusplus
 }
 #endif

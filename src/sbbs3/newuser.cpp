@@ -201,17 +201,12 @@ BOOL sbbs_t::newuser()
 				bputs(text[EnterYourRealName]);
 			getstr(useron.alias,LEN_ALIAS,kmode);
 			truncsp(useron.alias);
-			if(useron.alias[0]<=' ' || !isalpha(useron.alias[0])
-				|| alias(&cfg,useron.alias,tmp)!=useron.alias
-				|| !stricmp(useron.alias,cfg.sys_id)
-				|| strchr(useron.alias,0xff)
-				|| matchuser(&cfg,useron.alias,TRUE /* sysop_alias */) 
-				|| trashcan(useron.alias,"name")
+			if (!check_name(&cfg,useron.alias)
 				|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,' '))) {
 				bputs(text[YouCantUseThatName]);
 				if(!yesno(text[ContinueQ]))
 					return(FALSE);
-				continue; 
+				continue;
 			}
 			break; 
 		}
@@ -219,9 +214,8 @@ BOOL sbbs_t::newuser()
 		if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
 			while(online) {
 				bputs(text[EnterYourRealName]);
-				if(!getstr(useron.name,LEN_NAME,kmode)
-					|| trashcan(useron.name,"name")
-					|| strchr(useron.name,0xff)
+				getstr(useron.name,LEN_NAME,kmode);
+				if (!check_name(&cfg,useron.name)
 					|| !strchr(useron.name,' ')
 					|| (cfg.uq&UQ_DUPREAL
 						&& userdatdupe(useron.number,U_NAME,LEN_NAME
