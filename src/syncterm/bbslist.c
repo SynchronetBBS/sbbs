@@ -316,7 +316,7 @@ int is_sorting(int chk)
 int intbufcmp(const void *a, const void *b, size_t size)
 {
 #ifdef __BIG_ENDIAN__
-	return(memcmp(a,b,size);
+	return(memcmp(a,b,size));
 #else
 	int i;
 	int ret;
