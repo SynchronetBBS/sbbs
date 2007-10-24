@@ -40,127 +40,127 @@ struct sort_order_info sort_order[] = {
 		 "BBS Name"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, name)
-		,sizeof((struct bbslist *)NULL->name)
+		,sizeof(((struct bbslist *)NULL)->name)
 	}
 	,{
 		 "Date Added"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, added)
-		,sizeof((struct bbslist *)NULL->added)
+		,sizeof(((struct bbslist *)NULL)->added)
 	}
 	,{
 		 "Date Last Connected"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, connected)
-		,sizeof((struct bbslist *)NULL->connected)
+		,sizeof(((struct bbslist *)NULL)->connected)
 	}
 	,{
 		 "Total Calls"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, calls)
-		,sizeof((struct bbslist *)NULL->calls)
+		,sizeof(((struct bbslist *)NULL)->calls)
 	}
 	,{
 		 "Dialing List"
 		,0
 		,offsetof(struct bbslist, type)
-		,sizeof((struct bbslist *)NULL->type)
+		,sizeof(((struct bbslist *)NULL)->type)
 	}
 	,{
 		 "Address"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, addr)
-		,sizeof((struct bbslist *)NULL->addr)
+		,sizeof(((struct bbslist *)NULL)->addr)
 	}
 	,{
 		 "Port"
 		,0
 		,offsetof(struct bbslist, port)
-		,sizeof((struct bbslist *)NULL->port)
+		,sizeof(((struct bbslist *)NULL)->port)
 	}
 	,{
 		 "Username"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, user)
-		,sizeof((struct bbslist *)NULL->user)
+		,sizeof(((struct bbslist *)NULL)->user)
 	}
 	,{
 		 "Password"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, password)
-		,sizeof((struct bbslist *)NULL->password)
+		,sizeof(((struct bbslist *)NULL)->password)
 	}
 	,{
 		 "System Password"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, syspass)
-		,sizeof((struct bbslist *)NULL->syspass)
+		,sizeof(((struct bbslist *)NULL)->syspass)
 	}
 	,{
 		 "Connection Type"
 		,0
 		,offsetof(struct bbslist, conn_type)
-		,sizeof((struct bbslist *)NULL->conn_type)
+		,sizeof(((struct bbslist *)NULL)->conn_type)
 	}
 	,{
 		 "Reversed"
 		,0
 		,offsetof(struct bbslist, reversed)
-		,sizeof((struct bbslist *)NULL->reversed)
+		,sizeof(((struct bbslist *)NULL)->reversed)
 	}
 	,{
 		 "Screen Mode"
 		,0
 		,offsetof(struct bbslist, screen_mode)
-		,sizeof((struct bbslist *)NULL->screen_mode)
+		,sizeof(((struct bbslist *)NULL)->screen_mode)
 	}
 	,{
 		 "Status Line Visibility"
 		,0
 		,offsetof(struct bbslist, nostatus)
-		,sizeof((struct bbslist *)NULL->nostatus)
+		,sizeof(((struct bbslist *)NULL)->nostatus)
 	}
 	,{
 		 "Download Directory"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, dldir)
-		,sizeof((struct bbslist *)NULL->dldir)
+		,sizeof(((struct bbslist *)NULL)->dldir)
 	}
 	,{
 		 "Upload Directory"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, uldir)
-		,sizeof((struct bbslist *)NULL->uldir)
+		,sizeof(((struct bbslist *)NULL)->uldir)
 	}
 	,{
 		 "Log File"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, logfile)
-		,sizeof((struct bbslist *)NULL->logfile)
+		,sizeof(((struct bbslist *)NULL)->logfile)
 	}
 	,{
 		 "Transfer Log Level"
 		,0
 		,offsetof(struct bbslist, xfer_loglevel)
-		,sizeof((struct bbslist *)NULL->xfer_loglevel)
+		,sizeof(((struct bbslist *)NULL)->xfer_loglevel)
 	}
 	,{
 		 "BPS Rate"
 		,0
 		,offsetof(struct bbslist, bpsrate)
-		,sizeof((struct bbslist *)NULL->bpsrate)
+		,sizeof(((struct bbslist *)NULL)->bpsrate)
 	}
 	,{
 		 "ANSI Music"
 		,0
 		,offsetof(struct bbslist, music)
-		,sizeof((struct bbslist *)NULL->music)
+		,sizeof(((struct bbslist *)NULL)->music)
 	}
 	,{
 		 "Font"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, font)
-		,sizeof((struct bbslist *)NULL->font)
+		,sizeof(((struct bbslist *)NULL)->font)
 	}
 	,{
 		 NULL
@@ -320,8 +320,8 @@ int intbufcmp(const void *a, const void *b, size_t size)
 #else
 	int i;
 	int ret;
-	unsigned char *ac;
-	unsigned char *bc;
+	const unsigned char *ac=(const unsigned char *)a;
+	const unsigned char *bc=(const unsigned char *)b;
 
 	for(i=size-1; i>=0; i--) {
 		if(ac[i]!=bc[i])
@@ -1077,7 +1077,7 @@ void change_settings(void)
 						"~ Scrollback Buffer Lines ~\n"
 						"        The number of lines in the scrollback buffer.\n\n"
 						"~ Modem Device ~\n"
-						"        The device name of the modem.\n\n";
+						"        The device name of the modem.\n\n"
 						"~ Modem Init String ~\n"
 						"        An init string to use for the modem.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
@@ -1185,7 +1185,7 @@ void change_settings(void)
 				break;
 			case 4:
 				uifc.helpbuf="`Scrollback Buffer Lines`\n\n"
-							 "        The number of lines in the scrollback buffer.\n";
+							 "        The number of lines in the scrollback buffer.\n"
 							 "        This value MUST be greater than zero\n";
 				sprintf(str,"%d",settings.backlines);
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Scrollback Lines",str,9,K_NUMBER|K_EDIT)!=-1) {
