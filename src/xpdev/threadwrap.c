@@ -76,8 +76,6 @@ ulong _beginthread(void( *start_address )( void * )
 
 	if(stack_size!=0)
 		pthread_attr_setstacksize(&attr, stack_size);
-	else
-		pthread_attr_setstacksize(&attr, default_stack);
 
 	if(pthread_create(&thread
 #if defined(__BORLANDC__) /* a (hopefully temporary) work-around */
