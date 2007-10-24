@@ -40,127 +40,127 @@ struct sort_order_info sort_order[] = {
 		 "BBS Name"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, name)
-		,LIST_NAME_MAX+1
+		,sizeof((struct bbslist *)NULL->name)
 	}
 	,{
 		 "Date Added"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, added)
-		,sizeof(time_t)
+		,sizeof((struct bbslist *)NULL->added)
 	}
 	,{
 		 "Date Last Connected"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, connected)
-		,sizeof(time_t)
+		,sizeof((struct bbslist *)NULL->connected)
 	}
 	,{
 		 "Total Calls"
 		,SORT_ORDER_REVERSED
 		,offsetof(struct bbslist, calls)
-		,sizeof(unsigned int)
+		,sizeof((struct bbslist *)NULL->calls)
 	}
 	,{
 		 "Dialing List"
 		,0
 		,offsetof(struct bbslist, type)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->type)
 	}
 	,{
 		 "Address"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, addr)
-		,LIST_NAME_MAX+1
+		,sizeof((struct bbslist *)NULL->addr)
 	}
 	,{
 		 "Port"
 		,0
 		,offsetof(struct bbslist, port)
-		,sizeof(short unsigned int)
+		,sizeof((struct bbslist *)NULL->port)
 	}
 	,{
 		 "Username"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, user)
-		,MAX_USER_LEN+1
+		,sizeof((struct bbslist *)NULL->user)
 	}
 	,{
 		 "Password"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, password)
-		,MAX_PASSWD_LEN+1
+		,sizeof((struct bbslist *)NULL->password)
 	}
 	,{
 		 "System Password"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, syspass)
-		,MAX_SYSPASS_LEN+1
+		,sizeof((struct bbslist *)NULL->syspass)
 	}
 	,{
 		 "Connection Type"
 		,0
 		,offsetof(struct bbslist, conn_type)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->conn_type)
 	}
 	,{
 		 "Reversed"
 		,0
 		,offsetof(struct bbslist, reversed)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->reversed)
 	}
 	,{
 		 "Screen Mode"
 		,0
 		,offsetof(struct bbslist, screen_mode)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->screen_mode)
 	}
 	,{
 		 "Status Line Visibility"
 		,0
 		,offsetof(struct bbslist, nostatus)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->nostatus)
 	}
 	,{
-		 "Dowload Directory"
+		 "Download Directory"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, dldir)
-		,MAX_PATH+1
+		,sizeof((struct bbslist *)NULL->dldir)
 	}
 	,{
 		 "Upload Directory"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, uldir)
-		,MAX_PATH+1
+		,sizeof((struct bbslist *)NULL->uldir)
 	}
 	,{
 		 "Log File"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, logfile)
-		,MAX_PATH+1
+		,sizeof((struct bbslist *)NULL->logfile)
 	}
 	,{
 		 "Transfer Log Level"
 		,0
 		,offsetof(struct bbslist, xfer_loglevel)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->xfer_loglevel)
 	}
 	,{
 		 "BPS Rate"
 		,0
 		,offsetof(struct bbslist, bpsrate)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->bpsrate)
 	}
 	,{
 		 "ANSI Music"
 		,0
 		,offsetof(struct bbslist, music)
-		,sizeof(int)
+		,sizeof((struct bbslist *)NULL->music)
 	}
 	,{
 		 "Font"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, font)
-		,80
+		,sizeof((struct bbslist *)NULL->font)
 	}
 	,{
 		 NULL
@@ -311,6 +311,24 @@ int is_sorting(int chk)
 		if((abs(sortorder[i]))==chk)
 			return(1);
 	return(0);
+}
+
+int intbufcmp(const void *a, const void *b, size_t size)
+{
+#ifdef __BIG_ENDIAN__
+	return(memcmp(a,b,size);
+#else
+	int i;
+	int ret;
+	unsigned char *ac;
+	unsigned char *bc;
+
+	for(i=size-1; i>=0; i--) {
+		if(ac[i]!=bc[i])
+			return(ac[i]-bc[i]);
+	}
+	return(0);
+#endif
 }
 
 int listcmp(const void *aptr, const void *bptr)
