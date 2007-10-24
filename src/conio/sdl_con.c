@@ -1259,27 +1259,27 @@ void setup_surfaces(void)
 				sdl.FreeYUVOverlay(yuv.overlay);
 			}
 			if(yuv.best_format==0) {
-				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
+				yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
 				if(yuv.overlay)
 					yuv.best_format=yuv.overlay->format;
 				if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 					sdl.FreeYUVOverlay(yuv.overlay);
-					yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_UYVY_OVERLAY, win);
+					yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YUY2_OVERLAY, win);
 					if(yuv.overlay)
 						yuv.best_format=yuv.overlay->format;
 					if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 						sdl.FreeYUVOverlay(yuv.overlay);
-						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
+						yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
 						if(yuv.overlay)
 							yuv.best_format=yuv.overlay->format;
 						if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 							sdl.FreeYUVOverlay(yuv.overlay);
-							yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YV12_OVERLAY, win);
+							yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_UYVY_OVERLAY, win);
 							if(yuv.overlay)
 								yuv.best_format=yuv.overlay->format;
 							if(yuv.overlay==NULL || !yuv.overlay->hw_overlay) {
 								sdl.FreeYUVOverlay(yuv.overlay);
-								yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_YVYU_OVERLAY, win);
+								yuv.overlay=sdl.CreateYUVOverlay(char_width,char_height, SDL_IYUV_OVERLAY, win);
 								if(yuv.overlay)
 									yuv.best_format=yuv.overlay->format;
 							}
