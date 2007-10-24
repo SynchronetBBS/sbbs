@@ -78,6 +78,8 @@ struct yuv_settings {
 	int			enabled;
 	int			win_width;
 	int			win_height;
+	int			screen_width;
+	int			screen_height;
 	int			changed;
 	int			best_format;
 	SDL_Overlay	*overlay;
@@ -85,7 +87,7 @@ struct yuv_settings {
 	Uint8		colours[sizeof(dac_default)/sizeof(struct dac_colors)][3];
 };
 
-static struct yuv_settings yuv={0,0,0,0,0,NULL,NULL};
+static struct yuv_settings yuv={0,0,0,0,0,0,0,NULL,NULL};
 
 struct sdl_keyvals {
 	int	keysym
@@ -619,13 +621,18 @@ int sdl_init(int mode)
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
-	if(mode==CIOLIB_MODE_SDL_YUV) {
+	if(mode==CIOLIB_MODE_SDL_YUV)
 		yuv.enabled=1;
-	}
 	if(mode==CIOLIB_MODE_SDL_YUV_FULLSCREEN) {
 		yuv.enabled=1;
 		fullscreen=1;
 	}
+#if (SDL_MAJOR_VERSION > 1) || (SDL_MINOR_VERSION > 2) || (SDL_PATCHLEVEL > 9)
+	if(yuv.enabled) {
+		yuv.screen_width=sdl.initial_videoinfo.current_w;
+		yuv.screen_height=sdl.initial_videoinfo.current_h;
+	}
+#endif
 	sdl_init_mode(3);
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
 
@@ -1220,8 +1227,8 @@ void setup_surfaces(void)
 			yuv.win_width=vstat.charwidth*vstat.cols;
 		if(!yuv.win_height)
 			yuv.win_height=vstat.charheight*vstat.rows;
-		if(fullscreen && sdl.initial_videoinfo.current_w && sdl.initial_videoinfo.current_h)
-			win=sdl.SetVideoMode(sdl.initial_videoinfo.current_w,sdl.initial_videoinfo.current_h,0,flags);
+		if(fullscreen && yuv.screen_width && yuv.screen_height)
+			win=sdl.SetVideoMode(yuv.screen_width,yuv.screen_height,0,flags);
 		else
 			win=sdl.SetVideoMode(yuv.win_width,yuv.win_height,0,flags);
 	}
