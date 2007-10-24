@@ -410,7 +410,7 @@ void sdl_user_func(int func, ...)
 		case SDL_USEREVENT_SETVIDMODE:
 			{
 				int remain=2;
-				int ret=0;
+				int ret;
 
 				ev[0].user.code=SDL_USEREVENT_FLUSH;
 				ev[1].type=SDL_USEREVENT;
@@ -569,7 +569,7 @@ void sdl_drawrect(int xoffset,int yoffset,int width,int height,unsigned char *da
 		sdl_user_func(SDL_USEREVENT_UPDATERECT, rect);
 	}
 	else
-		FREE_AND_NULL(data);
+		free(data);
 }
 
 void sdl_flush(void)
@@ -1207,7 +1207,7 @@ void setup_surfaces(void)
 	int		char_width=vstat.charwidth*vstat.cols*vstat.scaling;
 	int		char_height=vstat.charheight*vstat.rows*vstat.scaling;
 	int		flags=SDL_HWSURFACE|SDL_ANYFORMAT;
-	SDL_Surface	*tmp_rect=NULL;
+	SDL_Surface	*tmp_rect;
 	SDL_Event	ev;
 
 	if(fullscreen)
