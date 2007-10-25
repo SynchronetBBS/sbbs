@@ -63,6 +63,7 @@ struct sdlfuncs {
 	int	(*LockYUVOverlay)	(SDL_Overlay *overlay);
 	void (*UnlockYUVOverlay)	(SDL_Overlay *overlay);
 	const SDL_VideoInfo *(*GetVideoInfo)(void);
+	const SDL_version *(*Linked_Version)(void);
 	SDL_VideoInfo initial_videoinfo;
 	int	gotfuncs;
 };
