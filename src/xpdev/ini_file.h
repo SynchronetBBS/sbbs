@@ -158,6 +158,7 @@ double		iniGetNamedFloat(str_list_t, const char* section, const char* key
 					,named_double_t*, double deflt);
 ulong		iniGetBitField(str_list_t, const char* section, const char* key
 					,ini_bitdesc_t* bitdesc, ulong deflt);
+str_list_t	iniGetSection(str_list_t, const char *section);
 #define		iniGetLogLevel(l,s,k,d) iniGetEnum(l,s,k,iniLogLevelStringList(),d)
 
 #if !defined(NO_SOCKET_SUPPORT)

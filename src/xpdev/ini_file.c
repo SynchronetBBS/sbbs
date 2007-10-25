@@ -293,6 +293,29 @@ BOOL iniSectionExists(str_list_t list, const char* section)
 	return(list[i]!=NULL);
 }
 
+str_list_t	iniGetSection(str_list_t list, const char *section)
+{
+	size_t		i;
+	str_list_t	retval=strListInit();
+	char		*p;
+
+	if(section==ROOT_SECTION)
+		i=0;
+	else
+		i=find_section_index(list,section);
+	if(list[i]!=NULL) {
+		strListPush(&retval, list[i]);
+		for(i++;list[i]!=NULL;i++) {
+			p=list[i];
+			SKIP_WHITESPACE(p);
+			if(*p=='[')
+				break;
+			strListPush(&retval, list[i]);
+		}
+	}
+	return(retval);
+}
+
 BOOL iniKeyExists(str_list_t list, const char* section, const char* key)
 {
 	char	val[INI_MAX_VALUE_LEN];
