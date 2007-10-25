@@ -522,8 +522,9 @@ void free_list(struct bbslist **list, int listcount)
 
 void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
-	BOOL	dumb;
-	char	home[MAX_PATH+1];
+	BOOL		dumb;
+	char		home[MAX_PATH+1];
+	str_list_t	section;
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
 	if(bbsname != NULL) {
@@ -540,34 +541,37 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 		SAFECOPY(entry->name,bbsname);
 #endif
 	}
-	iniGetString(listfile,bbsname,"Address","",entry->addr);
-	entry->conn_type=iniGetEnum(listfile,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
-	entry->port=iniGetShortInt(listfile,bbsname,"Port",conn_ports[entry->conn_type]);
-	entry->added=iniGetDateTime(listfile,bbsname,"Added",0);
-	entry->connected=iniGetDateTime(listfile,bbsname,"LastConnected",0);
-	entry->calls=iniGetInteger(listfile,bbsname,"TotalCalls",0);
-	iniGetString(listfile,bbsname,"UserName","",entry->user);
-	iniGetString(listfile,bbsname,"Password","",entry->password);
-	iniGetString(listfile,bbsname,"SystemPassword","",entry->syspass);
-	dumb=iniGetBool(listfile,bbsname,"BeDumb",0);
+	section=iniGetSection(listfile,bbsname);
+	iniGetString(section,bbsname,"Address","",entry->addr);
+	entry->conn_type=iniGetEnum(section,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
+	entry->port=iniGetShortInt(section,bbsname,"Port",conn_ports[entry->conn_type]);
+	entry->added=iniGetDateTime(section,bbsname,"Added",0);
+	entry->connected=iniGetDateTime(section,bbsname,"LastConnected",0);
+	entry->calls=iniGetInteger(section,bbsname,"TotalCalls",0);
+	iniGetString(section,bbsname,"UserName","",entry->user);
+	iniGetString(section,bbsname,"Password","",entry->password);
+	iniGetString(section,bbsname,"SystemPassword","",entry->syspass);
+	dumb=iniGetBool(section,bbsname,"BeDumb",0);
 	if(dumb)
 		entry->conn_type=CONN_TYPE_RAW;
-	entry->reversed=iniGetBool(listfile,bbsname,"Reversed",0);
-	entry->screen_mode=iniGetEnum(listfile,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
-	entry->nostatus=iniGetBool(listfile,bbsname,"NoStatus",0);
-	iniGetString(listfile,bbsname,"DownloadPath",home,entry->dldir);
-	iniGetString(listfile,bbsname,"UploadPath",home,entry->uldir);
+	entry->reversed=iniGetBool(section,bbsname,"Reversed",0);
+	entry->screen_mode=iniGetEnum(section,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
+	entry->nostatus=iniGetBool(section,bbsname,"NoStatus",0);
+	iniGetString(section,bbsname,"DownloadPath",home,entry->dldir);
+	iniGetString(section,bbsname,"UploadPath",home,entry->uldir);
 
 	/* Log Stuff */
-	iniGetString(listfile,bbsname,"LogFile","",entry->logfile);
-	entry->xfer_loglevel=iniGetEnum(listfile,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
-	entry->telnet_loglevel=iniGetEnum(listfile,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
+	iniGetString(section,bbsname,"LogFile","",entry->logfile);
+	entry->xfer_loglevel=iniGetEnum(section,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
+	entry->telnet_loglevel=iniGetEnum(section,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
 
-	entry->bpsrate=iniGetInteger(listfile,bbsname,"BPSRate",0);
-	entry->music=iniGetInteger(listfile,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
-	iniGetString(listfile,bbsname,"Font","Codepage 437 English",entry->font);
+	entry->bpsrate=iniGetInteger(section,bbsname,"BPSRate",0);
+	entry->music=iniGetInteger(section,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
+	iniGetString(section,bbsname,"Font","Codepage 437 English",entry->font);
 	entry->type=type;
 	entry->id=id;
+
+	strListFree(&section);
 }
 
 /*
