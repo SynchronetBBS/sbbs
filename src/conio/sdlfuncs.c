@@ -89,6 +89,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	sdlf->LockYUVOverlay=SDL_LockYUVOverlay;
 	sdlf->UnlockYUVOverlay=SDL_UnlockYUVOverlay;
 	sdlf->GetVideoInfo=SDL_GetVideoInfo;
+	sdlf->Linked_Version=SDL_Linked_Version;
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
 	return(0);
@@ -320,6 +321,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		FreeLibrary(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->Linked_Version=(void *)GetProcAddress(sdl_dll, "SDL_Linked_Version"))==NULL) {
+		FreeLibrary(sdl_dll);
+		return(-1);
+	}
 
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;
@@ -543,6 +548,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->GetVideoInfo=dlsym(sdl_dll, "SDL_GetVideoInfo"))==NULL) {
+		dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->Linked_Version=dlsym(sdl_dll, "SDL_Linked_Version"))==NULL) {
 		dlclose(sdl_dll);
 		return(-1);
 	}
