@@ -606,8 +606,11 @@ int sdl_init(int mode)
 	}
 #if (SDL_MAJOR_VERSION > 1) || (SDL_MINOR_VERSION > 2) || (SDL_PATCHLEVEL > 9)
 	if(yuv.enabled) {
-		yuv.screen_width=sdl.initial_videoinfo.current_w;
-		yuv.screen_height=sdl.initial_videoinfo.current_h;
+		SDL_version	linked=sdl.LinkedVersion();
+		if(linked->major > 1 || linked->minor > 2 || linked->patch > 9) {
+			yuv.screen_width=sdl.initial_videoinfo.current_w;
+			yuv.screen_height=sdl.initial_videoinfo.current_h;
+		}
 	}
 #endif
 	sdl_init_mode(3);
