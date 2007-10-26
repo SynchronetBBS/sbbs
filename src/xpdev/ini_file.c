@@ -308,7 +308,7 @@ str_list_t	iniGetSection(str_list_t list, const char *section)
 		for(i++;list[i]!=NULL;i++) {
 			p=list[i];
 			SKIP_WHITESPACE(p);
-			if(*p=='[')
+			if(*p==INI_OPEN_SECTION_CHAR)
 				break;
 			strListPush(&retval, list[i]);
 		}
