@@ -1197,9 +1197,19 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	}
 #endif
 
+	/*
+	 * No Unicode translation available.
+	 * Or there *IS* an SDL keysym.
+	 * Or ALT (Meta) pressed
+	 */
 	if((!unicode) || (keysym > SDLK_FIRST && keysym < SDLK_LAST) || (mod & (KMOD_META|KMOD_ALT))) {
+
+		/* Find the SDL keysym */
 		for(i=0;sdl_keyval[i].keysym;i++) {
 			if(sdl_keyval[i].keysym==keysym) {
+				/* KeySym found in table */
+
+				/* Using the modifiers, look up the expected scan code */
 				if(mod & KMOD_CTRL)
 					expect=sdl_keyval[i].ctrl;
 				else if(mod & KMOD_SHIFT)
@@ -1210,6 +1220,12 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				/*
 				 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
 				 * So, do that here. *sigh*
+				 */
+
+				/*
+				 * If the keysym is a keypad one
+				 * AND numlock is locked
+				 * AND none of Control, Shift, ALT, or Meta are pressed
 				 */
 				if(keysym >= SDLK_KP0 && keysym <= SDLK_KP_EQUALS 
 						&& (mod & KMOD_NUM)
@@ -1252,31 +1268,63 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 					}
 				}
 
-				/* "Extended" syms are always right */
-				if(!(mod & (KMOD_META|KMOD_ALT)))	/* Was !unicode */
+				/*
+				 * If there is no unicode translation available,
+				 * we *MUST* use our table since we have
+				 * no other data to use.  This is apparently
+				 * never true on OS X.
+				 */
+				if(!unicode)
 					return(expect);
+
+				/*
+				 * "Extended" keys are always right since we can't compare to unicode
+				 * This does *NOT* mean ALT-x, it means things like F1 and Print Screen
+				 */
 				if(sdl_keyval[i].key > 255)			/* Extended regular key */
 					return(expect);
-				if(keysym <= 127 && !(mod & (KMOD_META|KMOD_ALT)))					/* The keyboard syms have been cleverly chosen to map to ASCII */
-					return(keysym);
+
 				/*
-				 * If we don't know that this key should
-				 * return the unicode translation, then
-				 * we're not right and this is prolly
-				 * an AltGr sequence.
+				 * If this is a regular ASCII key, and ALT is not pressed,
+				 * the SDL keysym is cleverly the ASCII code.  We're trusting
+				 * this one more than our table.
 				 */
-				/* if(unicode==expect) */
-				return(sdl_keyval[i].alt);
-				/* return(0x0001ffff); */
+				/*
+				 * WAIT!  We can't do this, CTRL-C would be returned as 'c'
+				 */
+				//if(keysym <= 127 && !(mod & (KMOD_META|KMOD_ALT)))					/* The keyboard syms have been cleverly chosen to map to ASCII */
+				//	return(keysym);
+
+				/*
+				 * At this point, we no longer have a reason to distrust the
+				 * unicode mapping.  If we can coerce it into CP437, we will.
+				 * If we can't, just give up.
+				 */
+				return(cp437_convert(unicode));
 			}
 		}
-		if(unicode)
-			return(cp437_convert(unicode));
-		if(keysym < 0x80 && !(mod & KMOD_META|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT))
-			return(keysym);
-		return(0x0001ffff);
 	}
-	return(cp437_convert(unicode));
+	/*
+	 * Well, we can't find it in our table...
+	 * If there's a unicode character, use that if possible.
+	 */
+	if(unicode)
+		return(cp437_convert(unicode));
+
+	/*
+	 * No unicode... perhaps it's ASCII?
+	 * Most likely, this would be a strangely
+	 * entered control character.
+	 *
+	 * If *any* modifier key is down though
+	 * we're not going to trust the keysym
+	 * value since we can't.
+	 */
+	if(keysym <= 127 && !(mod & KMOD_META|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT))
+		return(keysym);
+
+	/* Give up.  It's not working out for us. */
+	return(0x0001ffff);
 }
 
 /* Mouse event/keyboard thread */
