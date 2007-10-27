@@ -1197,6 +1197,12 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	}
 #endif
 
+{
+FILE *log=fopen("debug.log","a");
+fprintf(log,"%u  %08x  %u\nMeta %08x  Alt %08x  CTRL %08x  Shift %08x\n",keysym,mod,unicode,KMOD_META,KMOD_ALT,KMOD_CTRL,KMOD_SHIFT);
+fclose(log);
+}
+
 	/*
 	 * No Unicode translation available.
 	 * Or there *IS* an SDL keysym.
@@ -1209,13 +1215,26 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 			if(sdl_keyval[i].keysym==keysym) {
 				/* KeySym found in table */
 
-				/* Using the modifiers, look up the expected scan code */
-				if(mod & KMOD_CTRL)
-					expect=sdl_keyval[i].ctrl;
-				else if(mod & KMOD_SHIFT)
-					expect=sdl_keyval[i].shift;
-				else
-					expect=sdl_keyval[i].key;
+				if(mod & (KMOD_META|KMOD_ALT)) {
+					/*
+					 * Using the modifiers, look up the expected scan code.
+					 * Under windows, this is what unicode will be set to
+					 * if the ALT key is not AltGr
+					 */
+					if(mod & KMOD_CTRL)
+						expect=sdl_keyval[i].ctrl;
+					else if(mod & KMOD_SHIFT)
+						expect=sdl_keyval[i].shift;
+					else
+						expect=sdl_keyval[i].key;
+
+					/* Yes, this is a "normal" ALT combo */
+					if(unicode==expect)
+						return(sdl_keyval[i].alt);
+
+					/* AltGr apparently... translate unicode or give up */
+					return(cp437_convert(unicode));
+				}
 
 				/*
 				 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
@@ -1269,15 +1288,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 				}
 
 				/*
-				 * If there is no unicode translation available,
-				 * we *MUST* use our table since we have
-				 * no other data to use.  This is apparently
-				 * never true on OS X.
-				 */
-				if(!unicode)
-					return(expect);
-
-				/*
 				 * "Extended" keys are always right since we can't compare to unicode
 				 * This does *NOT* mean ALT-x, it means things like F1 and Print Screen
 				 */
@@ -1285,15 +1295,13 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 					return(expect);
 
 				/*
-				 * If this is a regular ASCII key, and ALT is not pressed,
-				 * the SDL keysym is cleverly the ASCII code.  We're trusting
-				 * this one more than our table.
+				 * If there is no unicode translation available,
+				 * we *MUST* use our table since we have
+				 * no other data to use.  This is apparently
+				 * never true on OS X.
 				 */
-				/*
-				 * WAIT!  We can't do this, CTRL-C would be returned as 'c'
-				 */
-				//if(keysym <= 127 && !(mod & (KMOD_META|KMOD_ALT)))					/* The keyboard syms have been cleverly chosen to map to ASCII */
-				//	return(keysym);
+				if(!unicode)
+					return(expect);
 
 				/*
 				 * At this point, we no longer have a reason to distrust the
