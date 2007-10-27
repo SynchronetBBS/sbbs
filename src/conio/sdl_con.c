@@ -753,6 +753,39 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(0);
 }
 
+/* Called from events thread only */
+int sdl_setup_colours(SDL_Surface *surf)
+{
+	int i;
+	int ret=0;
+	SDL_Color	co[sizeof(dac_default)/sizeof(struct dac_colors)];
+
+	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
+		co[i].r=dac_default[i].red;
+		co[i].g=dac_default[i].green;
+		co[i].b=dac_default[i].blue;
+	}
+	sdl.SetColors(surf, co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
+
+	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
+		sdl_dac_default[i]=sdl.MapRGB(win->format, co[i].r, co[i].g, co[i].b);
+	}
+	return(ret);
+}
+
+int sdl_setup_yuv_colours(void)
+{
+	int i;
+	int ret=0;
+
+	if(yuv.enabled) {
+		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
+			RGBtoYUV(dac_default[i].red, dac_default[i].green, dac_default[i].blue, &(yuv.colours[i][0]), 0, 100);
+		}
+	}
+	return(ret);
+}
+
 void setup_surfaces(void)
 {
 	int		char_width=vstat.charwidth*vstat.cols*vstat.scaling;
@@ -884,39 +917,6 @@ void sdl_add_key(unsigned int keyval)
 		}
 		sdl.mutexV(sdl_keylock);
 	}
-}
-
-/* Called from events thread only */
-int sdl_setup_colours(SDL_Surface *surf)
-{
-	int i;
-	int ret=0;
-	SDL_Color	co[sizeof(dac_default)/sizeof(struct dac_colors)];
-
-	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-		co[i].r=dac_default[i].red;
-		co[i].g=dac_default[i].green;
-		co[i].b=dac_default[i].blue;
-	}
-	sdl.SetColors(surf, co, 0, sizeof(dac_default)/sizeof(struct dac_colors));
-
-	for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-		sdl_dac_default[i]=sdl.MapRGB(win->format, co[i].r, co[i].g, co[i].b);
-	}
-	return(ret);
-}
-
-int sdl_setup_yuv_colours(void)
-{
-	int i;
-	int ret=0;
-
-	if(yuv.enabled) {
-		for(i=0; i<(sizeof(dac_default)/sizeof(struct dac_colors)); i++) {
-			RGBtoYUV(dac_default[i].red, dac_default[i].green, dac_default[i].blue, &(yuv.colours[i][0]), 0, 100);
-		}
-	}
-	return(ret);
 }
 
 unsigned int cp437_convert(unsigned int unicode)
