@@ -1197,12 +1197,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	}
 #endif
 
-{
-FILE *log=fopen("debug.log","a");
-fprintf(log,"%u  %08x  %u\nMeta %08x  Alt %08x  CTRL %08x  Shift %08x\n",keysym,mod,unicode,KMOD_META,KMOD_ALT,KMOD_CTRL,KMOD_SHIFT);
-fclose(log);
-}
-
 	/*
 	 * No Unicode translation available.
 	 * Or there *IS* an SDL keysym.
@@ -1215,18 +1209,24 @@ fclose(log);
 			if(sdl_keyval[i].keysym==keysym) {
 				/* KeySym found in table */
 
+				/*
+				 * Using the modifiers, look up the expected scan code.
+				 * Under windows, this is what unicode will be set to
+				 * if the ALT key is not AltGr
+				 */
+
+				if(mod & KMOD_CTRL)
+					expect=sdl_keyval[i].ctrl;
+				else if(mod & KMOD_SHIFT)
+					expect=sdl_keyval[i].shift;
+				else
+					expect=sdl_keyval[i].key;
+
+				/*
+				 * Now handle the ALT case so that expect will
+				 * be what we expect to return
+				 */
 				if(mod & (KMOD_META|KMOD_ALT)) {
-					/*
-					 * Using the modifiers, look up the expected scan code.
-					 * Under windows, this is what unicode will be set to
-					 * if the ALT key is not AltGr
-					 */
-					if(mod & KMOD_CTRL)
-						expect=sdl_keyval[i].ctrl;
-					else if(mod & KMOD_SHIFT)
-						expect=sdl_keyval[i].shift;
-					else
-						expect=sdl_keyval[i].key;
 
 					/* Yes, this is a "normal" ALT combo */
 					if(unicode==expect)
