@@ -133,28 +133,30 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 #endif
 
 	/* Global hot key event */
-	for(i=0;i<cfg.total_hotkeys;i++)
-		if(cfg.hotkey[i]->key==ch)
-			break;
-	if(i<cfg.total_hotkeys) {
-		if(hotkey_inside>1)	/* only allow so much recursion */
+	if(sys_status&SS_USERON) {
+		for(i=0;i<cfg.total_hotkeys;i++)
+			if(cfg.hotkey[i]->key==ch)
+				break;
+		if(i<cfg.total_hotkeys) {
+			if(hotkey_inside>1)	/* only allow so much recursion */
+				return(0);
+			hotkey_inside++;
+			if(mode&K_SPIN)
+				bputs("\b ");
+			if(!(sys_status&SS_SPLITP)) {
+				SAVELINE;
+				attr(LIGHTGRAY);
+				CRLF; 
+			}
+			external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
+			if(!(sys_status&SS_SPLITP)) {
+				CRLF;
+				RESTORELINE; 
+			}
+			lncntr=0;
+			hotkey_inside--;
 			return(0);
-		hotkey_inside++;
-		if(mode&K_SPIN)
-			bputs("\b ");
-		if(!(sys_status&SS_SPLITP)) {
-			SAVELINE;
-			attr(LIGHTGRAY);
-			CRLF; 
 		}
-		external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
-		if(!(sys_status&SS_SPLITP)) {
-			CRLF;
-			RESTORELINE; 
-		}
-		lncntr=0;
-		hotkey_inside--;
-		return(0);
 	}
 
 	switch(ch) {
