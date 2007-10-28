@@ -113,6 +113,19 @@ endif
 $(SYNCTERM): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(WXLIBS) $(XPDEV-MT_LIBS) $(EXTRA_LIBS)
+ifeq ($(os),darwin)
+	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
+	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
+	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/MacOS
+	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/Resources
+	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/Frameworks
+	${QUIET}echo "APPL????" > $(EXEODIR)/SyncTERM.app/Contents/PkgInfo
+	${QUIET}${INSTALL_EXE} ${SYNCTERM} ${EXEODIR}/SyncTERM.app/Contents/MacOS
+	${QUIET}${INSTALL_DATA} Info.plist ${EXEODIR}/SyncTERM.app/Contents
+	${QUIET}${INSTALL_DATA} SyncTERM.icns ${EXEODIR}/SyncTERM.app/Contents/Resources
+	${QUIET}cp -R /Library/Frameworks/SDL.framework ${EXEODIR}/SyncTERM.app/Contents/Frameworks
+	${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL.framework/Headers/*
+endif
 
 syncterm.1.gz: syncterm.man
 	gzip < syncterm.man > syncterm.1.gz
