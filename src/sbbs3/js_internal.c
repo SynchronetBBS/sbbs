@@ -409,6 +409,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 			JS_ExecuteScript(cx, obj, script, &rval);
 			JS_DestroyScript(cx, script);
 		}
+		free(p);
 	}
 
 	strListFree(&branch->exit_func);
