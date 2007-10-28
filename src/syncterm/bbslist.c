@@ -461,6 +461,12 @@ void edit_sorting(struct bbslist **list, int *listcount)
 			else
 				opt[i][0]=0;
 		}
+		uifc.helpbuf=	"`Sort Order`\n\n"
+						"Move the highlight bar to the position you would like\n"
+						"to add a new ordering before and press ~INSERT~.  Choose\n"
+						"a field from the list and it will be inserted.\n\n"
+						"To remove a sort order, use ~DELETE~.\n\n"
+						"To reverse a sort order, highlight it and press enter";
 		ret=uifc.list(WIN_XTR|WIN_DEL|WIN_INS|WIN_INSACT|WIN_ACT|WIN_SAV
 					,0,0,0,&curr,&bar,"Sort Order",opts);
 		if(ret==-1)
@@ -479,6 +485,7 @@ void edit_sorting(struct bbslist **list, int *listcount)
 			}
 			else {
 				sopt[j][0]=0;
+				uifc.helpbuf=	"Select a sort order to add and press enter";
 				sret=uifc.list(WIN_SAV|WIN_BOT|WIN_RHT
 							,0,0,0,&scurr,&sbar,"Sort Field",sopts);
 				if(sret>=0) {
