@@ -504,6 +504,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	char	*title=NULL;
 	int	a,b,c,longopt;
 	int	optheight=0;
+	int gotkey;
 	uchar	hclr,lclr,bclr,cclr,lbclr;
 
 	hclr=api->hclr;
@@ -962,10 +963,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	#endif
 		if(api->timedisplay != NULL)
 			api->timedisplay(/* force? */FALSE);
-		i=0;
+		gotkey=0;
 		if(kbwait()) {
-			i=inkey();
-			if(i==CIO_KEY_MOUSE) {
+			gotkey=inkey();
+			if(gotkey==CIO_KEY_MOUSE) {
 				if((i=uifc_getmouse(&mevnt))==0) {
 					/* Clicked in menu */
 					if(mevnt.startx>=s_left+left+lbrdrwidth+2
@@ -1020,13 +1021,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					else if(mevnt.startx==s_left+left+lbrdrwidth
 							&& mevnt.starty==s_top+top+tbrdrwidth
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
-						i=CIO_KEY_PPAGE;
+						gotkey=CIO_KEY_PPAGE;
 					}
 					/* Clicked Scroll Down */
 					else if(mevnt.startx==s_left+left+lbrdrwidth
 							&& mevnt.starty==(s_top+top+height)-bbrdrwidth-1
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
-						i=CIO_KEY_NPAGE;
+						gotkey=CIO_KEY_NPAGE;
 					}
 					/* Clicked Outside of Window */
 					else if((mevnt.startx<s_left+left
@@ -1037,58 +1038,58 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
 						if(mode&WIN_UNGETMOUSE) {
 							ungetmouse(&mevnt);
-							i=CIO_KEY_MOUSE;
+							gotkey=CIO_KEY_MOUSE;
 						}
 						else {
-							i=ESC;
+							gotkey=ESC;
 						}
 					}
 				}
 			}
 			/* For compatibility with terminals lacking special keys */
-			switch(i) {
+			switch(gotkey) {
 				case '\b':
-					i=ESC;
+					gotkey=ESC;
 					break;
 				case '+':
-					i=CIO_KEY_IC;	/* insert */
+					gotkey=CIO_KEY_IC;	/* insert */
 					break;
 				case '-':
 				case DEL:
-					i=CIO_KEY_DC;	/* delete */
+					gotkey=CIO_KEY_DC;	/* delete */
 					break;
 				case CTRL_B:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_HOME;
+						gotkey=CIO_KEY_HOME;
 					break;
 				case CTRL_E:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_END;
+						gotkey=CIO_KEY_END;
 					break;
 				case CTRL_U:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_PPAGE;
+						gotkey=CIO_KEY_PPAGE;
 					break;
 				case CTRL_D:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_NPAGE;
+						gotkey=CIO_KEY_NPAGE;
 					break;
 				case CTRL_Z:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_F(1);	/* help */
+						gotkey=CIO_KEY_F(1);	/* help */
 					break;
 				case CTRL_C:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_F(5);	/* copy */
+						gotkey=CIO_KEY_F(5);	/* copy */
 					break;
 				case CTRL_V:
 					if(!(api->mode&UIFC_NOCTRL))
-						i=CIO_KEY_F(6);	/* paste */
+						gotkey=CIO_KEY_F(6);	/* paste */
 					break;
 			}
-			if(i>255) {
+			if(gotkey>255) {
 				s=0;
-				switch(i) {
+				switch(gotkey) {
 					/* ToDo extended keys */
 					case CIO_KEY_HOME:	/* home */
 						if(!opts)
@@ -1456,14 +1457,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						break;
 					default:
 						if(mode&WIN_EXTKEYS)
-							return(-2-i);
+							return(-2-gotkey);
 						break;
 				} 
 			}
 			else {
-				i&=0xff;
-				if(isalnum(i) && opts>1 && option[0][0]) {
-					search[s]=i;
+				gotkey&=0xff;
+				if(isalnum(gotkey) && opts>1 && option[0][0]) {
+					search[s]=gotkey;
 					search[s+1]=0;
 					for(j=(*cur)+1,a=b=0;a<2;j++) {   /* a = search count */
 						if(j==opts) {					/* j = option count */
@@ -1556,7 +1557,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						s=0;
 				}
 				else
-					switch(i) {
+					switch(gotkey) {
 						case CR:
 							if(!opts)
 								break;
@@ -1606,7 +1607,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return(-1);
 						default:
 							if(mode&WIN_EXTKEYS)
-								return(-2-i);
+								return(-2-gotkey);
 				}
 			}
 		}
@@ -1616,7 +1617,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
 			save_menu_opts=opts;
-			return(-2-i);
+			return(-2-gotkey);
 		}
 	}
 }
