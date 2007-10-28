@@ -986,6 +986,7 @@ void load_settings(struct syncterm_settings *set)
 	sortby=iniReadStringList(inifile, "SyncTERM", "SortOrder", ",", "5,1");
 	while((order=strListRemove(&sortby,0))!=NULL) {
 		sortorder[i++]=atoi(order);
+		free(order);
 	}
 	strListFree(&sortby);
 

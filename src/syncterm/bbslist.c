@@ -637,11 +637,14 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 		bbses=iniGetSectionList(inilines,NULL);
 		while((bbsname=strListRemove(&bbses,0))!=NULL) {
 			if(!list_name_check(list, bbsname, NULL, FALSE)) {
-				if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL)
+				if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL) {
+					free(bbsname);
 					break;
+				}
 				read_item(inilines,list[*i],bbsname,*i,type);
 				(*i)++;
 			}
+			free(bbsname);
 		}
 		strListFree(&bbses);
 		strListFree(&inilines);
