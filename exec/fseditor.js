@@ -1749,7 +1749,7 @@ function edit(quote_first)
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
 				var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
-				f.open("w");
+				f.open("wb");
 				var s=make_strings(true,true);
 				f.write(s[0]);
 				f.close();
