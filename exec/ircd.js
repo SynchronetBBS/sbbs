@@ -2874,6 +2874,7 @@ function IRCClient_check_queues() {
 	if (this.recvq.bytes && ((time() - this.idletime) >= 2) ) {
 		var cmd = this.recvq.del();
 		Global_CommandLine = cmd;
+		this.throttle_count = 0;
 		this.work(cmd);
 	}
 }
