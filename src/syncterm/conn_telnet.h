@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _TELNET_H_
 #define _TELNET_H_
 

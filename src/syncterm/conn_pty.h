@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _CONN_PTY_H_
 #define _CONN_PTY_H_
 

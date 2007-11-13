@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 /* $Id$ */
 
 #ifndef _CONN_H_

@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _ST_CRYPT_H_
 #define _ST_CRYPT_H_
 

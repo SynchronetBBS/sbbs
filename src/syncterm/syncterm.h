@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _SYNCTERM_H_
 #define _SYNCTERM_H_
 

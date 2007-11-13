@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #include <gen_defs.h>
 #include <ciolib.h>
 #include "uifcinit.h"

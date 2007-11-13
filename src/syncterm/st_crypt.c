@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _WIN32
  #include <dlfcn.h>
 #endif

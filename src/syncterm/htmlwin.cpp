@@ -1,10 +1,4 @@
-//
-// file name: hworld.cpp
-//
-//   purpose: wxWidgets "Hello world"
-//
-
-// For compilers that support precompilation, includes "wx/wx.h".
+/* Copyright (C), 2007 by Stephen Hurd */
 
 #undef _DEBUG
 

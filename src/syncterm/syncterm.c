@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 /* $Id$ */
 
 #define NOCRYPT		/* Stop windows.h from loading wincrypt.h */

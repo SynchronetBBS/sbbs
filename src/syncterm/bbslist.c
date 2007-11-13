@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #include <stdio.h>
 #include <stdlib.h>
 

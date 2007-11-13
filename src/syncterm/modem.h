@@ -1,3 +1,5 @@
+/* Copyright (C), 2007 by Stephen Hurd */
+
 #ifndef _MODEM_H_
 #define _MODEM_H_
 
