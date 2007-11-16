@@ -78,6 +78,9 @@ ifdef USE_SDL_AUDIO
  else
   ifeq ($(os),darwin)
    ifeq ($(shell if [ -d /Library/Frameworks/SDL.framework ] ; then echo YES ; fi),YES)
+    SDL_FRAMEWORK_PATH	?=	/Library/Frameworks
+   endif
+   ifdef SDL_FRAMEWORK_PATH
     WITH_SDL_AUDIO	:=	1
    endif
   else
@@ -134,11 +137,11 @@ ifdef WITH_SDL_AUDIO
  else
   ifeq ($(os),darwin)
    XPDEV-MT_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
-   XPDEV-MT_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
-   XPDEV-MT_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
+   XPDEV-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
+   XPDEV-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
    XPDEV_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
-   XPDEV_CFLAGS	+=	-I/Library/Frameworks/SDL.framework/Headers
-   XPDEV_LIBS	+=	-framework SDL -framework Cocoa -framework Carbon -I/Library/Frameworks/SDL.framework/Headers
+   XPDEV_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
+   XPDEV_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL.framework/Headers
   endif
  endif
 endif
