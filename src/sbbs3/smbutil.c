@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -626,7 +626,7 @@ void dump_hashes(void)
 		printf("%-10s: %s\n",		"Source",	smb_hashsourcetype(hash.source));
 		printf("%-10s: %lu\n",		"Length",	hash.length);
 		printf("%-10s: %s\n",		"Time",		my_timestr(hash.time));
-		printf("%-10s: %x\n",		"Flags",	hash.flags);
+		printf("%-10s: %02x\n",		"Flags",	hash.flags);
 		if(hash.flags&SMB_HASH_CRC16)
 			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
 		if(hash.flags&SMB_HASH_CRC32)
