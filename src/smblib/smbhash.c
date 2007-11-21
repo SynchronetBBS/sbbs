@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -81,7 +81,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 					continue;	/* wrong source length */
 				if(compare[c]->flags&SMB_HASH_MARKED)
 					continue;	/* already marked */
-				if((compare[c]->flags&SMB_HASH_PROC_MASK)!=(hash.flags&SMB_HASH_PROC_MASK))
+				if((compare[c]->flags&SMB_HASH_PROC_COMP_MASK)!=(hash.flags&SMB_HASH_PROC_COMP_MASK))
 					continue;	/* wrong pre-process flags */
 				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
 					continue;	/* no matching hashes */
@@ -93,7 +93,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 					continue;	/* wrong crc-32 */
 				if(compare[c]->flags&hash.flags&SMB_HASH_MD5 
 					&& memcmp(compare[c]->md5,hash.md5,sizeof(hash.md5)))
-					continue;	/* wrong crc-16 */
+					continue;	/* wrong MD5 */
 				
 				/* successful match! */
 				break;	/* can't match more than one, so stop comparing */
@@ -166,6 +166,22 @@ static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
 	return((char *)dst);
 }
 
+static char* strip_ctrla(uchar* dst, const uchar* src)
+{
+	while(*src) {
+		if(*src==CTRL_A) {
+			src++;
+			if(*src)
+				src++;
+		}
+		else
+			*(dst++)=*(src++);
+	}
+	*dst=0;
+
+	return((char *)dst);
+}
+
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
 hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
@@ -204,8 +220,10 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
 		if((p=strdup(str))==NULL)
 			return(NULL);
+		if(flags&SMB_HASH_STRIP_CTRL_A)
+			strip_ctrla(p,p);
 		if(flags&SMB_HASH_STRIP_WSP)
-			strip_chars(p,str," \t\r\n");
+			strip_chars(p,p," \t\r\n");
 		if(flags&SMB_HASH_LOWERCASE)
 			strlwr(p);
 	}
@@ -218,7 +236,7 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 	return(hash);
 }
 
-/* Allocatese and calculates all hashes for a single message				*/
+/* Allocates and calculates all hashes for a single message					*/
 /* Returns NULL on failure													*/
 hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body)
 {
@@ -241,7 +259,7 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body)
 		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
-	flags|=SMB_HASH_STRIP_WSP;
+	flags|=SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A;
 	if(body!=NULL && 
 		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags, body))!=NULL)
 		hashes[h++]=hash;

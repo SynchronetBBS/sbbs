@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -433,17 +433,19 @@ typedef struct _PACK {		/* Index record */
 
 } idxrec_t;
 
-									/* valid bits in hash_t.flags		*/
-#define SMB_HASH_CRC16		(1<<0)	/* CRC-16 hash is valid				*/
-#define SMB_HASH_CRC32		(1<<1)	/* CRC-32 hash is valid				*/
-#define SMB_HASH_MD5		(1<<2)	/* MD5 digest is valid				*/
-#define SMB_HASH_MASK		(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5)
+										/* valid bits in hash_t.flags		*/
+#define SMB_HASH_CRC16			(1<<0)	/* CRC-16 hash is valid				*/
+#define SMB_HASH_CRC32			(1<<1)	/* CRC-32 hash is valid				*/
+#define SMB_HASH_MD5			(1<<2)	/* MD5 digest is valid				*/
+#define SMB_HASH_MASK			(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5)
+								
+#define SMB_HASH_MARKED			(1<<4)	/* Used by smb_findhash()			*/
 
-#define SMB_HASH_MARKED		(1<<4)	/* Used by smb_findhash()			*/
-
-#define SMB_HASH_STRIP_WSP	(1<<6)	/* Strip white-space chars first	*/
-#define SMB_HASH_LOWERCASE	(1<<7)	/* Convert A-Z to a-z first			*/
-#define SMB_HASH_PROC_MASK	(SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
+#define SMB_HASH_STRIP_CTRL_A	(1<<5)	/* Strip Ctrl-A codes first			*/
+#define SMB_HASH_STRIP_WSP		(1<<6)	/* Strip white-space chars first	*/
+#define SMB_HASH_LOWERCASE		(1<<7)	/* Convert A-Z to a-z first			*/
+#define SMB_HASH_PROC_MASK		(SMB_HASH_STRIP_CTRL_A|SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
+#define SMB_HASH_PROC_COMP_MASK	(SMB_HASH_STRIP_WSP|SMB_HASH_LOWERCASE)
 
 enum {
 	 SMB_HASH_SOURCE_BODY
