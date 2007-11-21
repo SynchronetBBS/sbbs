@@ -21,7 +21,7 @@ ctrl/sbbs.ini). The [Web] section contains the following unique settings:
 
 2.1. Initialization file [Web] section keys
 -------------------------------------------
-RootDirectory=../web/html
+RootDirectory=../web/root
     This is the root directory of your web server... a request to
     http://yourbbs.synchro.net/index.html will be served out of this dir.
 ErrorDirectory=error
@@ -80,7 +80,7 @@ Options=NO_HOST_LOOKUP
         general *nix stuff on the other.
         A virtual host is added by simply putting the desired content
         into a sub-directory of RootDirectory with the desired hostname
-        ie: web/html/freebsd.synchro.net/ if the browser doesn't send
+        ie: web/root/freebsd.synchro.net/ if the browser doesn't send
         the request host name (very old browsers, or some automated
         tools) they will be served out of document root.
         It is therefore a good idea to put links to your various
