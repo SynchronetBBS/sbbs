@@ -299,6 +299,8 @@ str_list_t	iniGetSection(str_list_t list, const char *section)
 	str_list_t	retval=strListInit();
 	char		*p;
 
+	if(list==NULL)
+		return(retval);
 	if(section==ROOT_SECTION)
 		i=0;
 	else
