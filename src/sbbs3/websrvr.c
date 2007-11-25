@@ -1391,6 +1391,35 @@ BOOL http_checkuser(http_session_t * session)
 	return(TRUE);
 }
 
+static void calculate_digest(http_session_t * session, char *ha1, char *ha2, unsigned char digest[MD5_DIGEST_SIZE])
+{
+	MD5		ctx;
+
+	MD5_open(&ctx);
+	MD5_digest(&ctx, ha1, strlen(ha1));
+	MD5_digest(&ctx, ":", 1);
+	MD5_digest(&ctx, session->req.auth.nonce, strlen(session->req.auth.nonce));
+	MD5_digest(&ctx, ":", 1);
+
+	if(session->req.auth.qop_value != QOP_NONE) {
+		MD5_digest(&ctx, session->req.auth.nonce_count, strlen(session->req.auth.nonce_count));
+		MD5_digest(&ctx, ":", 1);
+		MD5_digest(&ctx, session->req.auth.cnonce, strlen(session->req.auth.cnonce));
+		MD5_digest(&ctx, ":", 1);
+		switch(session->req.auth.qop_value) {
+			case QOP_AUTH:
+				MD5_digest(&ctx, "auth", 4);
+				break;
+			case QOP_AUTH_INT:
+				MD5_digest(&ctx, "auth-int", 7);
+				break;
+		}
+		MD5_digest(&ctx, ":", 1);
+	}
+	MD5_digest(&ctx, ha2, strlen(ha2));
+	MD5_close(&ctx, digest);
+}
+
 static BOOL check_ars(http_session_t * session)
 {
 	char	*last;
@@ -1469,7 +1498,10 @@ static BOOL check_ars(http_session_t * session)
 			{
 				unsigned char	digest[MD5_DIGEST_SIZE];
 				char			ha1[MD5_DIGEST_SIZE*2+1];
+				char			ha1l[MD5_DIGEST_SIZE*2+1];
+				char			ha1u[MD5_DIGEST_SIZE*2+1];
 				char			ha2[MD5_DIGEST_SIZE*2+1];
+				char			*pass;
 				MD5		ctx;
 
 				if(session->req.auth.qop_value==QOP_UNKNOWN)
@@ -1487,44 +1519,53 @@ static BOOL check_ars(http_session_t * session)
 				MD5_close(&ctx, digest);
 				MD5_hex(ha1, digest);
 
+				/* H(A1)l */
+				pass=strdup(thisuser.pass);
+				strlwr(pass);
+				MD5_open(&ctx);
+				MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
+				MD5_digest(&ctx, ":", 1);
+				MD5_digest(&ctx, session->req.realm?session->req.realm:scfg.sys_name, strlen(session->req.realm?session->req.realm:scfg.sys_name));
+				MD5_digest(&ctx, ":", 1);
+				MD5_digest(&ctx, pass, strlen(pass));
+				MD5_close(&ctx, digest);
+				MD5_hex(ha1l, digest);
+
+				/* H(A1)u */
+				strupr(pass);
+				MD5_open(&ctx);
+				MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
+				MD5_digest(&ctx, ":", 1);
+				MD5_digest(&ctx, session->req.realm?session->req.realm:scfg.sys_name, strlen(session->req.realm?session->req.realm:scfg.sys_name));
+				MD5_digest(&ctx, ":", 1);
+				MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
+				MD5_close(&ctx, digest);
+				MD5_hex(ha1u, digest);
+				free(pass);
+
 				/* H(A2) */
 				MD5_open(&ctx);
 				MD5_digest(&ctx, methods[session->req.method], strlen(methods[session->req.method]));
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, session->req.auth.digest_uri, strlen(session->req.auth.digest_uri));
-
 				/* TODO QOP==AUTH_INT */
 				if(session->req.auth.qop_value == QOP_AUTH_INT)
 					return(FALSE);
 				MD5_close(&ctx, digest);
 				MD5_hex(ha2, digest);
 
-				MD5_open(&ctx);
-				MD5_digest(&ctx, ha1, strlen(ha1));
-				MD5_digest(&ctx, ":", 1);
-				MD5_digest(&ctx, session->req.auth.nonce, strlen(session->req.auth.nonce));
-				MD5_digest(&ctx, ":", 1);
-
-				if(session->req.auth.qop_value != QOP_NONE) {
-					MD5_digest(&ctx, session->req.auth.nonce_count, strlen(session->req.auth.nonce_count));
-					MD5_digest(&ctx, ":", 1);
-					MD5_digest(&ctx, session->req.auth.cnonce, strlen(session->req.auth.cnonce));
-					MD5_digest(&ctx, ":", 1);
-					switch(session->req.auth.qop_value) {
-						case QOP_AUTH:
-							MD5_digest(&ctx, "auth", 4);
-							break;
-						case QOP_AUTH_INT:
-							MD5_digest(&ctx, "auth-int", 7);
-							break;
+				/* Check password as in user.dat */
+				calculate_digest(session, ha1, ha2, digest);
+				if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
+					/* Check against lower-case password */
+					calculate_digest(session, ha1l, ha2, digest);
+					if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
+						/* Check against upper-case password */
+						calculate_digest(session, ha1u, ha2, digest);
+						if(memcmp(digest, session->req.auth.digest, sizeof(digest)))
+							return(FALSE);
 					}
-					MD5_digest(&ctx, ":", 1);
 				}
-				MD5_digest(&ctx, ha2, strlen(ha2));
-				MD5_close(&ctx, digest);
-
-				if(memcmp(digest, session->req.auth.digest, sizeof(digest)))
-					return(FALSE);
 			}
 	}
 
