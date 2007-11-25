@@ -155,12 +155,6 @@ enum qop_option {
 };
 
 typedef struct {
-	/* Realm and domain are specified in webctl.ini */
-	char			nonce[128];
-	BOOL			stale;
-} authentication_response_t;
-
-typedef struct {
 	enum auth_type	type;
 	char			username[(LEN_ALIAS > LEN_NAME ? LEN_ALIAS : LEN_NAME)+1];
 	char			password[LEN_PASS+1];
@@ -172,6 +166,7 @@ typedef struct {
 	char			*cnonce;
 	char			*nonce_count;
 	unsigned char			digest[16];		/* MD5 digest */
+	BOOL			stale;
 } authentication_request_t;
 
 typedef struct  {
@@ -1502,7 +1497,11 @@ static BOOL check_ars(http_session_t * session)
 				char			ha1u[MD5_DIGEST_SIZE*2+1];
 				char			ha2[MD5_DIGEST_SIZE*2+1];
 				char			*pass;
-				MD5		ctx;
+				char			*p;
+				char			*last;
+				time32_t		nonce_time;
+				time32_t		now;
+				MD5				ctx;
 
 				if(session->req.auth.qop_value==QOP_UNKNOWN)
 					return(FALSE);
@@ -1565,6 +1564,36 @@ static BOOL check_ars(http_session_t * session)
 						if(memcmp(digest, session->req.auth.digest, sizeof(digest)))
 							return(FALSE);
 					}
+				}
+
+				/* Validate nonce */
+				p=strtok_r(session->req.auth.nonce, "@", &last);
+				if(p==NULL) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
+				}
+				if(strcmp(p, session->client.addr)) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
+				}
+				p=strtok_r(NULL, "", &last);
+				if(p==NULL) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
+				}
+				nonce_time=strtoul(p, &p, 10);
+				if(*p) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
+				}
+				now=(time32_t)time(NULL);
+				if(nonce_time > now) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
+				}
+				if(nonce_time < now-1800) {
+					session->req.auth.stale=TRUE;
+					return(FALSE);
 				}
 			}
 	}
@@ -2902,9 +2931,9 @@ static BOOL check_request(http_session_t * session)
 
 	if(!check_ars(session)) {
 		/* No authentication provided */
-		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\"%s%s: Digest realm=\"%s\" nonce=\"%s\" qop=\"auth\""
+		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\"%s%s: Digest realm=\"%s\", nonce=\"%s@%u\", qop=\"auth\"%s"
 			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name
-			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name,"Secret-Nonce");
+			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name,session->client.addr,time(NULL),session->req.auth.stale?", stale=true":"");
 		send_error(session,str);
 		return(FALSE);
 	}
