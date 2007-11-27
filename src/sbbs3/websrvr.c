@@ -2081,6 +2081,22 @@ end_of_text:
 	return(start);
 }
 
+static int hexval(unsigned char ch)
+{
+	ch-='0';
+	if(ch<10)
+		return(ch);
+	ch-=7;
+	if(ch<16 && ch>9)
+		return(ch);
+	if(ch>41) {
+		ch-=32;
+		if(ch<16 && ch>9)
+			return(ch);
+	}
+	return(0);
+}
+
 static BOOL parse_headers(http_session_t * session)
 {
 	char	*head_line;
@@ -2155,7 +2171,7 @@ static BOOL parse_headers(http_session_t * session)
 									tvalue=get_token_value(&p);
 									if(strlen(tvalue)==32) {
 										for(i=0; i<16; i++) {
-											session->req.auth.digest[i]=digittoint(tvalue[i*2])<<4 | digittoint(tvalue[i*2+1]);
+											session->req.auth.digest[i]=hexval(tvalue[i*2])<<4 | hexval(tvalue[i*2+1]);
 										}
 									}
 								}
