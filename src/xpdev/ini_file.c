@@ -1523,6 +1523,36 @@ static unsigned parseEnum(const char* value, str_list_t names)
 	return(strtoul(value,NULL,0));
 }
 
+static unsigned* parseEnumList(const char* values, const char* sep, str_list_t names)
+{
+	char*		vals;
+	str_list_t	list;
+	unsigned*	enum_list;
+	size_t		i,count;
+
+	if(values==NULL)
+		return NULL;
+
+	if((vals=strdup(values)) == NULL)
+		return NULL;
+
+	list=splitList(vals, sep);
+
+	free(vals);
+
+	if((count=strListCount(list)) < 1)
+		return NULL;
+
+	if((enum_list=(unsigned *)malloc(count*sizeof(unsigned)))!=NULL) {
+		for(i=0;i<count;i++)
+			enum_list[i]=parseEnum(list[i], names);
+	}
+
+	strListFree(&list);
+
+	return enum_list;
+}
+
 unsigned iniReadEnum(FILE* fp, const char* section, const char* key, str_list_t names, unsigned deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
@@ -1537,6 +1567,19 @@ unsigned iniReadEnum(FILE* fp, const char* section, const char* key, str_list_t 
 	return(parseEnum(value,names));
 }
 
+unsigned* iniReadEnumList(FILE* fp, const char* section, const char* key
+						 ,str_list_t names
+						 ,const char* sep, const char* deflt)
+{
+	char*		value;
+	char		buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf))==NULL || *value==0 /* blank */)
+		value=(char*)deflt;
+
+	return(parseEnumList(value, sep, names));
+}
+
 unsigned iniGetEnum(str_list_t list, const char* section, const char* key, str_list_t names, unsigned deflt)
 {
 	char	value[INI_MAX_VALUE_LEN];
@@ -1547,6 +1590,21 @@ unsigned iniGetEnum(str_list_t list, const char* section, const char* key, str_l
 		return(deflt);
 
 	return(parseEnum(value,names));
+}
+
+unsigned* iniGetEnumList(str_list_t list, const char* section, const char* key
+						 ,str_list_t names, const char* sep, const char* deflt)
+{
+	char		value[INI_MAX_VALUE_LEN];
+
+	get_value(list, section, key, value);
+
+	if(*value==0 /* blank value or missing key */) {
+		if(deflt==NULL)
+			return(NULL);
+		SAFECOPY(value,deflt);
+	}
+	return(parseEnumList(value, sep, names));
 }
 
 static long parseNamedInt(const char* value, named_long_t* names)
