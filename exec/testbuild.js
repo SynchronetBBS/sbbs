@@ -71,6 +71,17 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/uedit"		,"gmake"				,"2> " + build_output]);
 }
 
+var win32_dist
+	= [ "README.TXT",
+		"FILE_ID.DIZ",
+		"src/sbbs3/msvc.win32.exe.release/*.exe",
+		"src/sbbs3/msvc.win32.dll.release/*.dll",
+		"src/sbbs3/scfg/msvc.win32.exe.release/*.exe",
+		"src/sbbs3/scfg/msvc.win32.exe.release/scfghelp.*",
+		"src/sbbs3/chat/chat.exe",
+		"src/sbbs3/ctrl/sbbsctrl.exe"
+	];
+
 chdir(temp_dir);
 
 var system_description=system.local_host_name + " - " + system.os_version;
@@ -160,6 +171,48 @@ var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+
+if(platform=="win32") {
+
+	var file = new File("README.TXT");
+	if(file.open("wt")) {
+		file.writeln(format("Synchronet-Win32 Version 3 Development Executable Archive (%s)\n"
+			,system.datestr()));
+		file.writeln("This archive contains a snap-shot of Synchronet-Win32 executable files");
+		file.writeln("created on " + system.timestr());
+		file.writeln();
+		file.writeln("The files in this archive are not necessarily well-tested, DO NOT");
+		file.writeln("constitute an official Synchronet release, and are NOT SUPPORTED!");
+		file.writeln();
+		file.writeln("USE THESE FILES AT YOUR OWN RISK");
+		file.writeln();
+		file.writeln("BACKUP YOUR WORKING EXECUTABLE FILES (i.e. *.exe and *.dll)");
+		file.writeln("BEFORE over-writing them with the files in this archive!");
+		file.close();
+	}
+
+	var file = new File("FILE_ID.DIZ");
+	if(file.open("wt")) {
+		file.writeln(format("Synchronet-%s BBS Software",system.platform));
+		file.writeln(format("Development Executable Archive (%s)",system.datestr()));
+		file.writeln("Snapshot for experimental purposes only!");
+		file.writeln("http://www.synchro.net");
+		file.close();
+	}
+
+	archive = "sbbs_dev.zip";
+
+	var cmd_line = "pkzip25 -add " + archive 
+		+ " -exclude=makehelp.exe -exclude=v4upgrade.exe " + win32_dist.join(" ");
+	log(LOG_INFO, "Executing: " + cmd_line);
+	system.exec(cmd_line);
+
+	dest = file_area.dir["sbbs"].path+archive;	
+
+	log(LOG_INFO,format("Copying %s to %s",archive,dest));
+	if(!file_copy(archive,dest))
+		log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+}
 
 bail(0);
 /* end */
