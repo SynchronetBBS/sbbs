@@ -349,7 +349,7 @@ int listcmp(const void *aptr, const void *bptr)
 			if(sort_order[item].flags & SORT_ORDER_STRING)
 				ret=stricmp(a+sort_order[item].offset,b+sort_order[item].offset);
 			else
-				ret=memcmp(a+sort_order[item].offset,b+sort_order[item].offset,sort_order[item].length);
+				ret=intbufcmp(a+sort_order[item].offset,b+sort_order[item].offset,sort_order[item].length);
 			if(ret) {
 				if(reverse)
 					ret=0-ret;
