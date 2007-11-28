@@ -2072,7 +2072,7 @@ static void smtp_thread(void* arg)
 	srand(time(NULL) ^ (DWORD)GetCurrentThreadId());	/* seed random number generator */
 	rand();	/* throw-away first result */
 	SAFEPRINTF3(session_id,"%x%x%lx",socket,rand(),clock());
-
+	SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
 	SAFEPRINTF2(rcptlst_fname,"%sSBBS_SMTP.%s.lst", scfg.temp_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
@@ -3290,10 +3290,8 @@ static void smtp_thread(void* arg)
 			}
 			if(msgtxt!=NULL) {
 				fclose(msgtxt), msgtxt=NULL;
-				if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
-					unlink(msgtxt_fname);
 			}
-			SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
+			remove(msgtxt_fname);
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d opening %s"
 					,socket, errno, msgtxt_fname);
@@ -3333,15 +3331,13 @@ static void smtp_thread(void* arg)
 	/* Free up resources here */
 	smb_freemsgmem(&msg);
 
-	if(msgtxt!=NULL) {
+	if(msgtxt!=NULL)
 		fclose(msgtxt);
-		if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
-			unlink(msgtxt_fname);
-	}
-	if(rcptlst!=NULL) {
+	if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
+		remove(msgtxt_fname);
+	if(rcptlst!=NULL)
 		fclose(rcptlst);
-		unlink(rcptlst_fname);
-	}
+	remove(rcptlst_fname);
 	if(spy!=NULL)
 		fclose(spy);
 
