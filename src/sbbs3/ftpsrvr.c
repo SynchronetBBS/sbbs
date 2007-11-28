@@ -1851,6 +1851,8 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	if((*inprogress)==TRUE) {
 		lprintf(LOG_WARNING,"%04d !TRANSFER already in progress",ctrl_sock);
 		sockprintf(ctrl_sock,"425 Transfer already in progress.");
+		if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
+			remove(filename);
 		return;
 	}
 	*inprogress=TRUE;
@@ -1863,7 +1865,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if((*data_sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
 			lprintf(LOG_ERR,"%04d !DATA ERROR %d opening socket", ctrl_sock, ERROR_VALUE);
 			sockprintf(ctrl_sock,"425 Error %d opening socket",ERROR_VALUE);
-			if(tmpfile)
+			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				remove(filename);
 			*inprogress=FALSE;
 			return;
@@ -1893,7 +1895,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			lprintf(LOG_ERR,"%04d !DATA ERROR %d (%d) binding socket %d"
 				,ctrl_sock, result, ERROR_VALUE, *data_sock);
 			sockprintf(ctrl_sock,"425 Error %d binding socket",ERROR_VALUE);
-			if(tmpfile)
+			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				remove(filename);
 			*inprogress=FALSE;
 			ftp_close_socket(data_sock,__LINE__);
@@ -1906,7 +1908,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 					,ctrl_sock,result,ERROR_VALUE
 					,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port),*data_sock);
 			sockprintf(ctrl_sock,"425 Error %d connecting to socket",ERROR_VALUE);
-			if(tmpfile)
+			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				remove(filename);
 			*inprogress=FALSE;
 			ftp_close_socket(data_sock,__LINE__);
@@ -1945,7 +1947,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		if(result<1) {
 			lprintf(LOG_WARNING,"%04d !PASV select returned %d (error: %d)",ctrl_sock,result,ERROR_VALUE);
 			sockprintf(ctrl_sock,"425 Error %d selecting socket for connection",ERROR_VALUE);
-			if(tmpfile)
+			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				remove(filename);
 			*inprogress=FALSE;
 			return;
@@ -1963,7 +1965,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			lprintf(LOG_WARNING,"%04d !PASV DATA ERROR %d accepting connection on socket %d"
 				,ctrl_sock,ERROR_VALUE,pasv_sock);
 			sockprintf(ctrl_sock,"425 Error %d accepting connection",ERROR_VALUE);
-			if(tmpfile)
+			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				remove(filename);
 			*inprogress=FALSE;
 			return;
@@ -2019,7 +2021,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	} while(0);
 
 	/* failure */
-	if(tmpfile)
+	if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 		remove(filename);
 	*inprogress=FALSE;
 }
@@ -3730,6 +3732,10 @@ static void ctrl_thread(void* arg)
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
 				&& !stricmp(p,startup->index_file_name)
 				&& !delecmd) {
+				if(getsize) {
+					sockprintf(sock, "500 Size not available for dynamically generated files");
+					continue;
+				}
 				if((fp=fopen(ftp_tmpfname(fname,sock),"w+b"))==NULL) {
 					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
 					sockprintf(sock, "451 Insufficient system storage");
@@ -3737,11 +3743,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				success=TRUE;
-				if(getsize) {
-					sockprintf(sock, "500 Size not available for dynamically generated files");
-					continue;
-				}
-				else if(getdate)
+				if(getdate)
 					file_date=time(NULL);
 				else {
 					lprintf(LOG_INFO,"%04d %s downloading index for %s in %s mode"
