@@ -43,9 +43,8 @@
 #include <signal.h>
 #endif
 
-#include "ciolib.h"
-
 #include "sbbs.h"
+#include "ciolib.h"
 
 #define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
