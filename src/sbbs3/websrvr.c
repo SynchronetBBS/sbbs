@@ -108,6 +108,7 @@ static char		error_dir[MAX_PATH+1];
 static char		temp_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
 static char		cgi_env_ini[MAX_PATH+1];
+static char		default_auth_list[MAX_PATH+1];
 static time_t	uptime=0;
 static DWORD	served=0;
 static web_startup_t* startup=NULL;
@@ -141,6 +142,13 @@ enum auth_type {
 	,AUTHENTICATION_DIGEST
 };
 
+char *auth_type_names[4] = {
+	 "Unknown"
+	,"Basic"
+	,"Digest"
+	,NULL
+};
+
 enum algorithm {
 	 ALGORITHM_UNKNOWN
 	,ALGORITHM_MD5
@@ -165,7 +173,7 @@ typedef struct {
 	enum qop_option	qop_value;
 	char			*cnonce;
 	char			*nonce_count;
-	unsigned char			digest[16];		/* MD5 digest */
+	unsigned char	digest[16];		/* MD5 digest */
 	BOOL			stale;
 } authentication_request_t;
 
@@ -214,7 +222,9 @@ typedef struct  {
 	/* webconfig.ini overrides */
 	char	*error_dir;
 	char	*cgi_dir;
+	char	*auth_list;
 	char	*realm;
+	char	*digest_realm;
 } http_request_t;
 
 typedef struct  {
@@ -870,8 +880,11 @@ static void close_request(http_session_t * session)
 	FREE_AND_NULL(session->req.post_data);
 	FREE_AND_NULL(session->req.error_dir);
 	FREE_AND_NULL(session->req.cgi_dir);
+	FREE_AND_NULL(session->req.auth_list);
 	FREE_AND_NULL(session->req.realm);
+	FREE_AND_NULL(session->req.digest_realm);
 
+	FREE_AND_NULL(session->req.auth_list);
 	FREE_AND_NULL(session->req.auth.digest_uri);
 	FREE_AND_NULL(session->req.auth.cnonce);
 	FREE_AND_NULL(session->req.auth.realm);
@@ -1422,7 +1435,17 @@ static BOOL check_ars(http_session_t * session)
 	BOOL	authorized;
 	int		i;
 	user_t	thisuser;
+	int		auth_allowed=0;
+	unsigned *auth_list;
+	unsigned auth_list_len;
 
+	auth_list=parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
+	for(i=0; i<auth_list_len; i++)
+		auth_allowed |= 1<<auth_list[i];
+	if(auth_list)
+		free(auth_list);
+
+	/* No authentication provided */
 	if(session->req.auth.type==AUTHENTICATION_UNKNOWN) {
 		/* No authentication information... */
 		if(session->last_user_num!=0) {
@@ -1466,6 +1489,8 @@ static BOOL check_ars(http_session_t * session)
 	getuserdat(&scfg, &thisuser);
 	switch(session->req.auth.type) {
 		case AUTHENTICATION_BASIC:
+			if((auth_allowed & (1<<AUTHENTICATION_BASIC))==0)
+				return(FALSE);
 			if(thisuser.pass[0] && stricmp(thisuser.pass,session->req.auth.password)) {
 				if(session->last_user_num!=0) {
 					if(session->last_user_num>0)
@@ -1503,6 +1528,8 @@ static BOOL check_ars(http_session_t * session)
 				time32_t		now;
 				MD5				ctx;
 
+				if((auth_allowed & (1<<AUTHENTICATION_DIGEST))==0)
+					return(FALSE);
 				if(session->req.auth.qop_value==QOP_UNKNOWN)
 					return(FALSE);
 				if(session->req.auth.algorithm==ALGORITHM_UNKNOWN)
@@ -1512,7 +1539,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_open(&ctx);
 				MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
 				MD5_digest(&ctx, ":", 1);
-				MD5_digest(&ctx, session->req.realm?session->req.realm:scfg.sys_name, strlen(session->req.realm?session->req.realm:scfg.sys_name));
+				MD5_digest(&ctx, session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name), strlen(session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name)));
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 				MD5_close(&ctx, digest);
@@ -1524,7 +1551,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_open(&ctx);
 				MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
 				MD5_digest(&ctx, ":", 1);
-				MD5_digest(&ctx, session->req.realm?session->req.realm:scfg.sys_name, strlen(session->req.realm?session->req.realm:scfg.sys_name));
+				MD5_digest(&ctx, session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name), strlen(session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name)));
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, pass, strlen(pass));
 				MD5_close(&ctx, digest);
@@ -1535,7 +1562,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_open(&ctx);
 				MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
 				MD5_digest(&ctx, ":", 1);
-				MD5_digest(&ctx, session->req.realm?session->req.realm:scfg.sys_name, strlen(session->req.realm?session->req.realm:scfg.sys_name));
+				MD5_digest(&ctx, session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name), strlen(session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name)));
 				MD5_digest(&ctx, ":", 1);
 				MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 				MD5_close(&ctx, digest);
@@ -2879,6 +2906,11 @@ static BOOL check_request(http_session_t * session)
 					/* FREE()d in close_request() */
 					session->req.realm=strdup(str);
 				}
+				if(iniReadString(file, NULL, "DigestRealm", scfg.sys_name,str)==str) {
+					FREE_AND_NULL(session->req.digest_realm);
+					/* FREE()d in close_request() */
+					session->req.digest_realm=strdup(str);
+				}
 				if(iniReadString(file, NULL, "ErrorDirectory", error_dir,str)==str) {
 					prep_dir(root_dir, str, sizeof(str));
 					FREE_AND_NULL(session->req.error_dir);
@@ -2892,6 +2924,11 @@ static BOOL check_request(http_session_t * session)
 					session->req.cgi_dir=strdup(str);
 					recheck_dynamic=TRUE;
 				}
+				if(iniReadString(file, NULL, "Authentication", default_auth_list,str)==str) {
+					FREE_AND_NULL(session->req.auth_list);
+					/* FREE()d in close_request() */
+					session->req.auth_list=strdup(str);
+				}
 				session->req.path_info_index=iniReadBool(file, NULL, "PathInfoIndex", FALSE);
 				/* Read in per-filespec */
 				while((spec=strListPop(&specs))!=NULL) {
@@ -2902,6 +2939,11 @@ static BOOL check_request(http_session_t * session)
 							FREE_AND_NULL(session->req.realm);
 							/* FREE()d in close_request() */
 							session->req.realm=strdup(str);
+						}
+						if(iniReadString(file, spec, "DigestRealm", scfg.sys_name,str)==str) {
+							FREE_AND_NULL(session->req.digest_realm);
+							/* FREE()d in close_request() */
+							session->req.digest_realm=strdup(str);
 						}
 						if(iniReadString(file, spec, "ErrorDirectory", error_dir,str)==str) {
 							FREE_AND_NULL(session->req.error_dir);
@@ -2915,6 +2957,11 @@ static BOOL check_request(http_session_t * session)
 							/* FREE()d in close_request() */
 							session->req.cgi_dir=strdup(str);
 							recheck_dynamic=TRUE;
+						}
+						if(iniReadString(file, spec, "Authentication", default_auth_list,str)==str) {
+							FREE_AND_NULL(session->req.auth_list);
+							/* FREE()d in close_request() */
+							session->req.auth_list=strdup(str);
 						}
 						session->req.path_info_index=iniReadBool(file, spec, "PathInfoIndex", FALSE);
 					}
@@ -2946,10 +2993,29 @@ static BOOL check_request(http_session_t * session)
 		send404=TRUE;
 
 	if(!check_ars(session)) {
+		unsigned *auth_list;
+		unsigned auth_list_len;
+	
 		/* No authentication provided */
-		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\"%s%s: Digest realm=\"%s\", nonce=\"%s@%u\", qop=\"auth\"%s"
-			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name
-			,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name,session->client.addr,time(NULL),session->req.auth.stale?", stale=true":"");
+		strcpy(str,"401 Unauthorized");
+		auth_list=parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
+		for(i=0; i<auth_list_len; i++) {
+			p=strchr(str,0);
+			switch(auth_list[i]) {
+				case AUTHENTICATION_BASIC:
+					snprintf(p,sizeof(str)-(p-str),"%s%s: Basic realm=\"%s\""
+							,newline,get_header(HEAD_WWWAUTH),session->req.realm?session->req.realm:scfg.sys_name);
+					str[sizeof(str)-1]=0;
+					break;
+				case AUTHENTICATION_DIGEST:
+					snprintf(p,sizeof(str)-(p-str),"%s%s: Digest realm=\"%s\", nonce=\"%s@%u\", qop=\"auth\"%s"
+							,newline,get_header(HEAD_WWWAUTH),session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name),session->client.addr,time(NULL),session->req.auth.stale?", stale=true":"");
+					str[sizeof(str)-1]=0;
+					break;
+			}
+		}
+		if(auth_list)
+			free(auth_list);
 		send_error(session,str);
 		return(FALSE);
 	}
@@ -5155,6 +5221,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
+	if(startup->default_auth_list[0]==0)	SAFECOPY(startup->default_auth_list,WEB_DEFAULT_AUTH_LIST);
 	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
 	if(startup->default_cgi_content[0]==0)	SAFECOPY(startup->default_cgi_content,WEB_DEFAULT_CGI_CONTENT);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
@@ -5187,6 +5254,7 @@ void DLLCALL web_server(void* arg)
 		/* Copy html directories */
 		SAFECOPY(root_dir,startup->root_dir);
 		SAFECOPY(error_dir,startup->error_dir);
+		SAFECOPY(default_auth_list,startup->default_auth_list);
 		SAFECOPY(cgi_dir,startup->cgi_dir);
 		if(startup->temp_dir[0])
 			SAFECOPY(temp_dir,startup->temp_dir);

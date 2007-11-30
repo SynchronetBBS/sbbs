@@ -90,6 +90,7 @@ typedef struct {
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	char	default_cgi_content[128];
+	char	default_auth_list[128];
 	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
 
@@ -148,6 +149,7 @@ static ini_bitdesc_t web_options[] = {
 #define WEB_DEFAULT_ROOT_DIR		"../web/root"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
+#define WEB_DEFAULT_AUTH_LIST		"Basic,Digest"
 #define WEB_DEFAULT_CGI_CONTENT		"text/plain"
 
 #ifdef DLLEXPORT
