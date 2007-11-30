@@ -36,6 +36,12 @@ IndexFileNames=index.html,index.ssjs
     IndexFileNames=index.html,index.htm,index.ssjs
     Do not remove the index.ssjs unless you are not using the stock
     web pages at all.
+Authorization=Basic,Default
+    A comma-separated list of authentication mechanisms in order of preference.
+    The standards say that Basic must come first, but no browser currently
+    appears to use Digest if Basic is listed first.  Supported values are Basic
+    and Digest.  Digest is more secure as the users password is not sent in the
+    clear over the wire.
 CGIDirectory=cgi-bin
     A directory relative to RootDirectory where any files found will be
     considered CGI-executable. Be careful what files you put in this
@@ -151,6 +157,15 @@ AccessRequirements:
 Realm:
 	Sets the realm that is displayed to the user for the HTTP login.
 	Default is the BBS name.
+DigestRealm:
+	Sets the realm that is displayed to the user for the HTTP login when
+	Digest authentication is being used.  Default is the Realm value.
+Authorization:
+	A comma-separated list of authentication mechanisms in order of
+	preference.  The standards say that Basic must come first, but no
+	browser currently appears to use Digest if Basic is listed first.
+	Supported values are Basic and Digest.  Digest is more secure as the
+	users password is never sent over the wire.
 ErrorDirectory:
 	Specifies a different directory to check for error pages.  If the error
 	page is not found, will still check the global error directory.
