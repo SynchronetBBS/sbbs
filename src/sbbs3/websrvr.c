@@ -38,8 +38,6 @@
 /*
  * General notes: (ToDo stuff)
  *
- * Should support RFC2617 Digest auth.
- *
  * Support the ident protocol... the standard log format supports it.
  *
  * Add in support to pass connections through to a different webserver...
