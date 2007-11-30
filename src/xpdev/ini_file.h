@@ -224,6 +224,11 @@ BOOL		iniRemoveValue(str_list_t*, const char* section, const char* key);
 BOOL		iniRemoveSection(str_list_t*, const char* section);
 BOOL		iniRenameSection(str_list_t*, const char* section, const char* newname);
 
+/*
+ * Too handy to leave internal
+ */
+unsigned* parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count);
+
 #if defined(__cplusplus)
 }
 #endif

@@ -1550,7 +1550,7 @@ static unsigned parseEnum(const char* value, str_list_t names)
 	return(strtoul(value,NULL,0));
 }
 
-static unsigned* parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count)
+unsigned* parseEnumList(const char* values, const char* sep, str_list_t names, unsigned* count)
 {
 	char*		vals;
 	str_list_t	list;
