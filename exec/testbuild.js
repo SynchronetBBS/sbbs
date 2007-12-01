@@ -57,7 +57,8 @@ var builds
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
 	/* Requires C++Builder */
-	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat"			,"> " + build_output]);
+	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat ../msvc.win32.dll.release"
+																,"> " + build_output]);
 	builds.push(["src/sbbs3/ctrl"		,"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
