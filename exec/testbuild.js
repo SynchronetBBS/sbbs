@@ -56,16 +56,16 @@ var builds
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
+	/* Requires Visual C++ */
+	builds.push(["src/sbbs3"			,"msdev sbbs3.dsw /MAKE ALL"
+																,"/OUT "+ build_output]);
 	/* Requires C++Builder */
-	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat ../msvc.win32.dll.release"
+	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat ..\\msvc.win32.dll.release"
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/ctrl"		,"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
 																,"> " + build_output]);
-	/* Requires Visual C++ */
-	builds.push(["src/sbbs3"			,"msdev sbbs3.dsw /MAKE ALL"
-																,"/OUT "+ build_output]);
 } else {	/* Unix */
 	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
 	builds.push(["src/sbbs3/umonitor"	,"gmake"				,"2> " + build_output]);
