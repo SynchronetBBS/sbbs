@@ -1707,8 +1707,6 @@ static void receive_thread(void* arg)
 		YIELD();
 	}
 
-	if(server_socket!=INVALID_SOCKET && !terminate_server)
-		*xfer.inprogress=FALSE;
 	fclose(fp);
 
 	ftp_close_socket(xfer.data_sock,__LINE__);
@@ -1822,6 +1820,9 @@ static void receive_thread(void* arg)
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,"226 Upload complete (%lu cps).",cps);
 	}
+
+	if(server_socket!=INVALID_SOCKET && !terminate_server)
+		*xfer.inprogress=FALSE;
 
 	thread_down();
 }
