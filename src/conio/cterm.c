@@ -1327,11 +1327,11 @@ void ctputs(char *buf)
 				if(cy==cterm.height
 						&& cx==cterm.width) {
 					char ch;
-					ch=*p;
-					*p=0;
+					ch=*(p+1);
+					*(p+1)=0;
 					cputs(outp);
-					*p=ch;
-					outp=p;
+					*(p+1)=ch;
+					outp=p+1;
 					scrollup();
 					cx=1;
 					gotoxy(cx,cy);
