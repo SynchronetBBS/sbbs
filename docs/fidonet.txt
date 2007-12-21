@@ -23,19 +23,19 @@ Stored Message
 --------------
 Stored Message files are often referred to as ".msg files" as the file
 name is a positive non-zero decimal number with a ".msg" suffix (e.g. 
-"1.msg", "2.msg", etc.) with a single message stored in a each file.
+"1.msg", "2.msg", etc.) with a single message stored in each file.
 
 Stored Messages contain a binary header with fixed-length header
 fields, followed by the body text, terminated with an ASCII NUL ('\0')
-character. You should not attempt to view or edit Stored Message files
+character. You SHOULD NOT attempt to view or edit Stored Message files
 with a program designed to view or edit plain text files (e.g. Notepad).
 
 These files are usually used for NetMail (private user-to-user
 messages between FTN nodes), but are sometimes used for
 Bundle or Packet file attachments (e.g. for FrontDoor/Attach-
 style mailers). The attached file is actually sent separately
-and usually stored in different directory, but is referenced by a
-particular Stored Message.
+and usually stored in a different directory, but is referenced
+(pointed to) by a particular Stored Message.
 
 Stored Message files are usually stored in a "netmail"
 sub-directory or folder. Some echomail programs or mailers
@@ -47,7 +47,7 @@ Technical Standard document: FTS-0001.
 
 Binkley/FLO-style mailers also support NetMail messages with
 attachments, but do *not* support Stored Messages. Binkley/FLO
-style mailers always send NetMail packed into Packets,
+style mailers always send NetMail messages packed into Packets,
 so there is no "netmail" sub-directory of folder normally
 associated with a Binkley/FLO-style mailer and they don't
 deal with Stored Messages (a.k.a. ".msg files").
@@ -106,13 +106,13 @@ The Bundle file name suffix must be constructed from the first
 2 letters of the current day of the week at the time the
 bundle was first created, followed by an alphanumeric character.
 The trailing alphanumeric character is incremented if a Bundle
-file with the next logical filename already exists (e.g. ".Su0", 
+file with the next logical file name already exists (e.g. ".Su0", 
 followed by ".Su1", ... ".Mo0", ..., all the way to ".SaZ").
 
 Since the Bundle file name suffix does not indicate what type of archive
 program created the file (i.e. the format of the file), it is necessary for
 the receiving echomail program to either be configured to use a specific
-format for Bundle files received from a specific node, or the echomail
+format for Bundle files received from a specific FTN node, or the echomail
 program must inspect the binary "signature" contained in the first few bytes
 of the file to automatically detect the archive format.
 
@@ -161,11 +161,11 @@ case letters (A-F), so case is not significant.
 Flow Files (a.k.a. File Attach files)
 ----------
 Flow Files are unique to Binkley/FLO-style (a.k.a. Binkley-Style-Outbound, or
-BSO) mailers  and are not an FTN standard. Flow files are control files
+BSO) mailers  and are not an FTN standard. Flow Files are control files
 containing plain text (so they can be easily viewed or edited, unlike the
 other file types described in this document).
 
-The file name of a Flow file is usually in the format
+The file name of a Flow File is usually in the format
 
 	NNNNnnnn.Flo
 
@@ -189,17 +189,17 @@ for example:
 
 	outbound/006702C1.PNT/00000001.FLO
 
-would be the name of a Flow file listing files destined for
+would be the name of a Flow File listing files destined for
 FTN address: 103/705.1 (in the same zone as the sender).
 
-Flow files for destination addresses in a *foreign* zone are placed
+Flow Files for destination addresses in a *foreign* zone are placed
 in a different "outbound" directory with a suffix of the destination
 zone number represented as a 3-digit zero-padded hexadecimal number.
 
 Hexadecimal numbers can be made from either upper or lower
 case letters (A-F), so case is not significant.
 
-Each line of the Flow file describes an outbound file (typically a
+Each line of the Flow File describes an outbound file (typically a
 Bundle or Packet file , but technically, any file) that is pending
 transmission to a remote FTN node. The first character of the line
 indicates whether or not to delete or truncate the file after its
