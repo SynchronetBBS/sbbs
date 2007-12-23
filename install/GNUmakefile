@@ -64,6 +64,7 @@ endif
 os      :=      $(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
 machine         :=      $(shell if uname -m | egrep -v "(i[3456789]|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+machine		:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine) ; fi)
 ifeq ($(machine),)
  machine        :=      $(os)
 else
