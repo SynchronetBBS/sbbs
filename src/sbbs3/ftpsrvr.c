@@ -106,7 +106,6 @@ char* genvpath(int lib, int dir, char* str);
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		client_addr;
-	socklen_t		client_addr_len;
 } ftp_t;
 
 
@@ -2426,7 +2425,7 @@ static void ctrl_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr ((char *)&ftp.client_addr.sin_addr
-			,ftp.client_addr_len,AF_INET);
+			,sizeof(ftp.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		host_name=host->h_name;
@@ -4900,7 +4899,6 @@ void DLLCALL ftp_server(void* arg)
 
 			ftp->socket=client_socket;
 			ftp->client_addr=client_addr;
-			ftp->client_addr_len=client_addr_len;
 
 			_beginthread (ctrl_thread, 0, ftp);
 			served++;
