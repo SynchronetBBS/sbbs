@@ -108,6 +108,7 @@ struct mailproc {
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		client_addr;
+	socklen_t		client_addr_len;
 } smtp_t,pop3_t;
 
 static int lprintf(int level, char *fmt, ...)
@@ -709,7 +710,7 @@ static void pop3_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr((char *)&pop3.client_addr.sin_addr
-			,sizeof(pop3.client_addr.sin_addr),AF_INET);
+			,pop3.client_addr_len,AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		SAFECOPY(host_name,host->h_name);
@@ -1984,7 +1985,7 @@ static void smtp_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr ((char *)&smtp.client_addr.sin_addr
-			,sizeof(smtp.client_addr.sin_addr),AF_INET);
+			,smtp.client_addr_len,AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		SAFECOPY(host_name,host->h_name);
@@ -4494,6 +4495,7 @@ void DLLCALL mail_server(void* arg)
 
 				smtp->socket=client_socket;
 				smtp->client_addr=client_addr;
+				smtp->client_addr_len=client_addr_len;
 				_beginthread (smtp_thread, 0, smtp);
 				served++;
 			}
@@ -4562,6 +4564,7 @@ void DLLCALL mail_server(void* arg)
 
 				pop3->socket=client_socket;
 				pop3->client_addr=client_addr;
+				pop3->client_addr_len=client_addr_len;
 
 				_beginthread (pop3_thread, 0, pop3);
 				served++;
