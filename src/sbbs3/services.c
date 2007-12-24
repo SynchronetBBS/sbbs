@@ -99,6 +99,7 @@ typedef struct {
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
+	socklen_t		addr_len;
 	time_t			logintime;
 	user_t			user;
 	client_t*		client;
@@ -1018,7 +1019,7 @@ static void js_service_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr((char *)&service_client.addr.sin_addr
-			,sizeof(service_client.addr.sin_addr),AF_INET);
+			,service_client.addr_len,AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		host_name=host->h_name;
@@ -1338,7 +1339,7 @@ static void native_service_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr((char *)&service_client.addr.sin_addr
-			,sizeof(service_client.addr.sin_addr),AF_INET);
+			,service_client.addr_len,AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		host_name=host->h_name;
@@ -2097,6 +2098,7 @@ void DLLCALL services_thread(void* arg)
 				memset(client,0,sizeof(service_client_t));
 				client->socket=client_socket;
 				client->addr=client_addr;
+				client->addr_len=client_addr_len;
 				client->service=&service[i];
 				client->service->clients++;		/* this should be mutually exclusive */
 				client->udp_buf=udp_buf;

@@ -228,6 +228,7 @@ typedef struct  {
 typedef struct  {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
+	socklen_t		addr_len;
 	http_request_t	req;
 	char			host_ip[64];
 	char			host_name[128];	/* Resolved remote host */
@@ -4814,7 +4815,7 @@ void http_session_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr ((char *)&session.addr.sin_addr
-			,sizeof(session.addr.sin_addr),AF_INET);
+			,session.addr_len,AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		host_name=host->h_name;
@@ -5585,6 +5586,7 @@ void DLLCALL web_server(void* arg)
 
 			SAFECOPY(session->host_ip,host_ip);
 			session->addr=client_addr;
+			session->addr_len=client_addr_len;
    			session->socket=client_socket;
 			session->js_branch.auto_terminate=TRUE;
 			session->js_branch.terminated=&terminate_server;
