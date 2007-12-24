@@ -1984,7 +1984,7 @@ static void smtp_thread(void* arg)
 		host=NULL;
 	else
 		host=gethostbyaddr ((char *)&smtp.client_addr.sin_addr
-			,smtp.client_addr_len,AF_INET);
+			,sizeof(smtp.client_addr.sin_addr),AF_INET);
 
 	if(host!=NULL && host->h_name!=NULL)
 		SAFECOPY(host_name,host->h_name);
