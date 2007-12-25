@@ -73,6 +73,10 @@ ifeq ($(OS),Darwin)
 else
  LDFLAGS	+=	$(CFLAGS) -shared
 endif
+ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
+ CFLAGS	+=	-DHAS_INTTYPES_H
+endif
+
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
