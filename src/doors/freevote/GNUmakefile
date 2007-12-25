@@ -11,6 +11,10 @@ ifeq ($(OS),netbsd)
   CCFLAGS	+=	-D__unix__
 endif
 
+ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
+ CCFLAGS	+=	-DHAS_INTTYPES_H
+endif
+
 OBJDIR	:= obj.$(OS)/
 
 all : freevote.$(OS)
