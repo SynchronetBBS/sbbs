@@ -32,6 +32,8 @@
 !define NODE_RPCHT	.10	# Reset private chat
 !define NODE_NMSG	.11	# Node message waiting (new way
 !define NODE_EXT	.12	# Extended info on node action
+!define NODE_LCHAT	.13	# Being pulled into local chat
+!define NODE_MOFF	.14	# Disable node messages
 
 				# Possible values for node ACTION
 !define NODE_MAIN	0	# Main Prompt
