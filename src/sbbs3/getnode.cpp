@@ -152,10 +152,12 @@ void sbbs_t::nodesync()
 				putnodedat(cfg.node_num,&thisnode); 
 			}
 		}
-		if(thisnode.misc&NODE_MSGW)
-			getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
-		if(thisnode.misc&NODE_NMSG)
-			getnmsg();					/* getnmsg clears NMSG flag */
+		if(!(thisnode.misc&NODE_MOFF)) {
+			if(thisnode.misc&NODE_MSGW)
+				getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
+			if(thisnode.misc&NODE_NMSG)
+				getnmsg();					/* getnmsg clears NMSG flag */
+		}
 	}
 
 	if(cfg.sync_mod[0])
@@ -185,8 +187,10 @@ void sbbs_t::nodesync()
 		&& !SYSOP) {
 		timeleft_warn=5-(timeleft/60);
 		attr(LIGHTGRAY);
-		bprintf(text[OnlyXminutesLeft]
-			,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); 
+		if(!(thisnode.misc&NODE_MOFF)) {
+			bprintf(text[OnlyXminutesLeft]
+				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); 
+		}
 	}
 
 	attr(atr);	/* replace original attributes */
