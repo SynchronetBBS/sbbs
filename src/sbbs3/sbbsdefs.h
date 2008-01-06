@@ -652,6 +652,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin				*/
 #define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy			*/
 #define SS_SSH		(1L<<28) /* Current login via SSH						*/
+#define SS_MOFF		(1L<<29) /* Disable automatic messages					*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/

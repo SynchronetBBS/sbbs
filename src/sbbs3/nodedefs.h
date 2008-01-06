@@ -75,7 +75,6 @@ enum {                              /* Node Status */
 #define NODE_NMSG   (1<<11)         /* Node message waiting (new way) */
 #define NODE_EXT    (1<<12)         /* Extended info on node action */
 #define NODE_LCHAT	(1<<13)			/* Being pulled into local chat */
-#define NODE_MOFF	(1<<14)			/* Do not display messages */
 
 enum {                              /* Node Action */
      NODE_MAIN                      /* Main Prompt */

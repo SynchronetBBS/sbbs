@@ -152,7 +152,7 @@ void sbbs_t::nodesync()
 				putnodedat(cfg.node_num,&thisnode); 
 			}
 		}
-		if(!(thisnode.misc&NODE_MOFF)) {
+		if(!(sys_status&SS_MOFF)) {
 			if(thisnode.misc&NODE_MSGW)
 				getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
 			if(thisnode.misc&NODE_NMSG)
@@ -186,8 +186,8 @@ void sbbs_t::nodesync()
 	if(sys_status&SS_USERON && online && (timeleft/60)<(5-timeleft_warn)
 		&& !SYSOP) {
 		timeleft_warn=5-(timeleft/60);
-		attr(LIGHTGRAY);
-		if(!(thisnode.misc&NODE_MOFF)) {
+		if(!(sys_status&SS_MOFF)) {
+			attr(LIGHTGRAY);
 			bprintf(text[OnlyXminutesLeft]
 				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); 
 		}
