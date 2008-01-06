@@ -145,6 +145,9 @@
 !define SS_DCDHIGH	.23	# Assume DCD is high always
 !define SS_SPLITP	.24	# Split-screen private chat
 !define SS_RLOGIN	.26	# RLogin session (not telnet)
+!define SS_FILEXFER	.27	# File transfer in progress, halt spy
+!define SS_SSH		.28	# SSH session (not telnet)
+!define SS_MOFF		.29	# Do not auto-display messages
 
 				# Bits in 'mode' for GETSTR function
 !define K_UPPER 	.0	# Converts all letters to upper case
