@@ -205,7 +205,7 @@ void edit_table(int table)
 				break;
 			case 4: /* Table Limit */
 				sprintf(str,"%d",tables[table].max_total);
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Table Limit",str,10,K_EDIT|K_NUMBER)!=-1)
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Table Limit",str,5,K_EDIT|K_NUMBER)!=-1)
 					tables[table].max_total=atoi(str);
 				if(tables[table].max_total<1)
 					tables[table].max_total=1;
@@ -298,7 +298,8 @@ int main(int argc, char **argv)
 			case 4:	/* Table configuration */
 				while(1) {
 					for(i=0;i<num_tables;i++) {
-						sprintf(str,"Table %d",i+1);
+						sprintf(str,"Table %-2d (%u/%u/%u)",i+1
+							,tables[i].ante,tables[i].bet_limit,tables[i].max_total);
 						topts[i]=strdup(str);
 					}
 					topts[i]=strdup("");
