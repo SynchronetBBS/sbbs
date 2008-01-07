@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -68,7 +68,7 @@ __published:
     TLabel *MaxInactivityLabel;
     TEdit *MaxInactivityEdit;
     TTabSheet *SMTPTabSheet;
-    TLabel *TelnetPortLabel;
+    TLabel *SMTPPortLabel;
     TEdit *SMTPPortEdit;
     TCheckBox *HostnameCheckBox;
     TCheckBox *DebugTXCheckBox;
@@ -87,7 +87,6 @@ __published:
     TEdit *DeliveryAttemptsEdit;
     TLabel *RescanFreqLabel;
     TEdit *RescanFreqEdit;
-    TCheckBox *DebugHeadersCheckBox;
     TTabSheet *SoundTabSheet;
     TLabel *SMTPSoundLabel;
     TEdit *InboundSoundEdit;
@@ -144,6 +143,10 @@ __published:
     TCheckListBox *AdvancedCheckListBox;
     TLabel *DefCharsetLabel;
     TEdit *DefCharsetEdit;
+    TLabel *SubPortLabel;
+    TEdit *SubPortEdit;
+    TCheckBox *DebugHeadersCheckBox;
+    TCheckBox *UseSubPortCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
@@ -157,6 +160,7 @@ __published:
 	void __fastcall DNSBLExemptionsButtonClick(TObject *Sender);
 	void __fastcall AllowRelayCheckBoxClick(TObject *Sender);
     void __fastcall RelayAuthRadioButtonClick(TObject *Sender);
+    void __fastcall UseSubPortCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TMailCfgDlg(TComponent* AOwner);
