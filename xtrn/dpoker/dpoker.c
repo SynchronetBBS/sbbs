@@ -244,8 +244,8 @@ int main(int argc, char **argv)
         close(file); }
 
 	inifile=fopen("dpoker.ini","r");
-	iniReadString(inifile,NULL,"ComputerName","Domain Entertainment",comp_name);
-	num_tables=iniReadShortInt(inifile,NULL,"Tables",10);
+	iniReadString(inifile,NULL,"ComputerName","King Drafus",comp_name);
+	num_tables=iniReadShortInt(inifile,NULL,"Tables",5);
 	if(num_tables>MAX_TABLES)
 		num_tables=MAX_TABLES;
 	if(num_tables<1)
@@ -264,13 +264,13 @@ int main(int argc, char **argv)
 		opts|=(iniReadBool(inifile,key_name,"ComputerPlayer",TRUE)?COMPUTER:0);
 		opts|=(iniReadBool(inifile,key_name,"Password",FALSE)?PASSWORD:0);
 		options[i]=opts;
-		ante[i]=iniReadShortInt(inifile,key_name,"Ante",250);
+		ante[i]=iniReadShortInt(inifile,key_name,"Ante",i*50);
 		if(ante[i] < 0)
 			ante[i]=0;
-		bet_limit[i]=iniReadShortInt(inifile,key_name,"BetLimit",250);
+		bet_limit[i]=iniReadShortInt(inifile,key_name,"BetLimit",i*100);
 		if(bet_limit[i] < 1)
 			bet_limit[i]=1;
-		max_total[i]=iniReadInteger(inifile,key_name,"TableLimit",1000);
+		max_total[i]=iniReadInteger(inifile,key_name,"TableLimit",i*1000);
 		if(max_total[i] < 1)
 			max_total[i]=1;
 	}
