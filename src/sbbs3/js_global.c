@@ -2327,6 +2327,29 @@ js_backslash(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_fullpath(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		path[MAX_PATH+1];
+	char*		str;
+	JSString*	js_str;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	SAFECOPY(path,str);
+	_fullpath(path, str, sizeof(path));
+
+	if((js_str = JS_NewStringCopyZ(cx, path))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_getfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -3205,6 +3228,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns directory path with trailing (platform-specific) path delimeter "
 		"(i.e. \"slash\" or \"backslash\")")
 	,312
+	},
+	{"fullpath",		js_fullpath,		1,	JSTYPE_STRING,	JSDOCSTR("path")
+	,JSDOCSTR("Creates an absolute or full path name for the specified relative path name.")
+	,315
 	},
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
 	,JSDOCSTR("returns filename portion of passed path string")
