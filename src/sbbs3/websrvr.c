@@ -1428,7 +1428,6 @@ static void calculate_digest(http_session_t * session, char *ha1, char *ha2, uns
 
 static BOOL check_ars(http_session_t * session)
 {
-	char	*last;
 	uchar	*ar;
 	BOOL	authorized;
 	int		i;
@@ -1438,7 +1437,7 @@ static BOOL check_ars(http_session_t * session)
 	unsigned auth_list_len;
 
 	auth_list=parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
-	for(i=0; i<auth_list_len; i++)
+	for(i=0; ((unsigned)i)<auth_list_len; i++)
 		auth_allowed |= 1<<auth_list[i];
 	if(auth_list)
 		free(auth_list);
@@ -2997,7 +2996,7 @@ static BOOL check_request(http_session_t * session)
 		/* No authentication provided */
 		strcpy(str,"401 Unauthorized");
 		auth_list=parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
-		for(i=0; i<auth_list_len; i++) {
+		for(i=0; ((unsigned)i)<auth_list_len; i++) {
 			p=strchr(str,0);
 			switch(auth_list[i]) {
 				case AUTHENTICATION_BASIC:
