@@ -46,6 +46,7 @@ typedef struct {
 	DWORD	size;				/* sizeof(mail_startup_t) */
 	WORD	smtp_port;
 	WORD	pop3_port;
+	WORD	submission_port;
 	WORD	max_clients;
 	WORD	max_inactivity;
 	WORD	max_delivery_attempts;
@@ -127,6 +128,7 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_ALLOW_RX_BY_NUMBER		(1<<7)	/* Receive mail sent to user # */
 #define MAIL_OPT_NO_NOTIFY				(1<<8)	/* Don't notify local recipients */
 #define MAIL_OPT_ALLOW_SYSOP_ALIASES	(1<<9)	/* Receive mail sent to built-in sysop aliases (i.e. "sysop" and "postmaster") */ 
+#define MAIL_OPT_USE_SUBMISSION_PORT	(1<<10)	/* Listen on the "MSA" service port for mail submissions */
 #define MAIL_OPT_NO_HOST_LOOKUP			(1<<11)	/* Don't look-up hostnames */
 #define MAIL_OPT_USE_TCP_DNS			(1<<12)	/* Use TCP vs UDP for DNS req */
 #define MAIL_OPT_NO_SENDMAIL			(1<<13)	/* Don't run SendMail thread */
@@ -163,6 +165,7 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_DEBUG_POP3			,"DEBUG_POP3"			},
 	{ MAIL_OPT_ALLOW_RX_BY_NUMBER	,"ALLOW_RX_BY_NUMBER"	},
 	{ MAIL_OPT_ALLOW_SYSOP_ALIASES	,"ALLOW_SYSOP_ALIASES"	},
+	{ MAIL_OPT_USE_SUBMISSION_PORT	,"USE_SUBMISSION_PORT"	},
 	{ MAIL_OPT_NO_NOTIFY			,"NO_NOTIFY"			},
 	{ MAIL_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ MAIL_OPT_USE_TCP_DNS			,"USE_TCP_DNS"			},
