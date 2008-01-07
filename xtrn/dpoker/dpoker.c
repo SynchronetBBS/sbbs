@@ -142,6 +142,17 @@ enum { INACTIVE, WAITING, BETTING, DISCARDING, FOLDED, DEALING };
 /* These or for determining what stage the game is in */
 enum { OPEN, DEAL, BET, DISCARD, BET2, GET_WINNER };
 
+#ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
+#pragma pack(push)
+#pragma pack(1)
+#endif
+
+#ifdef __GNUC__ 
+	#define _PACK __attribute__ ((packed))
+#else
+	#define _PACK
+#endif
+
 int main(int argc, char **argv)
 {
     char	ch,str[256],*buf;
@@ -153,7 +164,7 @@ int main(int argc, char **argv)
 	int		opts;
 	char	key_name[8];
 	BOOL	cleanup=FALSE;
-    struct {
+    struct _PACK {
         char name[25];
         ulong time;
         long points;
