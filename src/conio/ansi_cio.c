@@ -137,11 +137,19 @@ static tODKeySequence ODaKeySequences[] =
    {"\033OS", ANSI_KEY_F4},
 
    /* VT-220/VT-320 specific control sequences. */
+   {"\033[1~",  ANSI_KEY_HOME}, /* Windows XP terminal.exe.  Is actually FIND */
+   {"\033[2~",  ANSI_KEY_INSERT},
+   {"\033[3~",  ANSI_KEY_DELETE},
+   {"\033[4~",  ANSI_KEY_END},  /* Windows XP terminal.exe.  Is actually SELECT */
+   {"\033[5~",  ANSI_KEY_PGUP},
+   {"\033[6~",  ANSI_KEY_PGDN},
    {"\033[17~", ANSI_KEY_F6},
    {"\033[18~", ANSI_KEY_F7},
    {"\033[19~", ANSI_KEY_F8},
    {"\033[20~", ANSI_KEY_F9},
    {"\033[21~", ANSI_KEY_F10},
+   {"\033[23~", ANSI_KEY_F11},
+   {"\033[24~", ANSI_KEY_F12},
 
    /* ANSI-specific control sequences. */
    {"\033[L", ANSI_KEY_HOME},
@@ -290,7 +298,7 @@ static void ansi_gotoxy_abs(int x, int y)
 			j=1;
 			/* If all the intervening cells are spaces with the current background, we're good */
 			for(i=0; i<x-ansix; i++) {
-				if((ansivmem[(ansiy-1)*cio_textinfo.screenwidth+ansix-1+i] & 0xff) != ' '/* && (ansivmem[(ansiy-1)*cio_textinfo.screenwidth+ansix-1+i]) & 0xff != 0*/) {
+				if((ansivmem[(y-1)*cio_textinfo.screenwidth+ansix-1+i] & 0xff) != ' '/* && (ansivmem[(ansiy-1)*cio_textinfo.screenwidth+ansix-1+i]) & 0xff != 0*/) {
 					j=0;
 					break;
 				}
