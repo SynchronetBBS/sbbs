@@ -18,7 +18,7 @@ object AboutBoxForm: TAboutBoxForm
   DesignSize = (
     675
     435)
-  PixelsPerInch = 96
+  PixelsPerInch = 120
   TextHeight = 16
   object Bevel: TBevel
     Left = 9
@@ -13373,7 +13373,7 @@ object AboutBoxForm: TAboutBoxForm
     Alignment = taRightJustify
     Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'Copyright 2007  ::'
+    Caption = 'Copyright 2008  ::'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -15
