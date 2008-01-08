@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 /* ANSI C Library headers */
+#include <limits.h>			/* UINT_MAX */
 #include <stdio.h>
 #include <stdlib.h>			/* ltoa in GNU C lib */
 #include <stdarg.h>			/* va_list */
@@ -1836,6 +1837,60 @@ static void parse_mail_address(char* p
 	truncsp(name);
 }
 
+static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
+{
+	char	fname[MAX_PATH+1];
+
+	if(tag==NULL)
+		return(FALSE);
+	sprintf(fname,"%suser/%04d.smtptags",scfg->data_dir,usernum);
+	return(findstr(tag, fname));
+}
+
+static BOOL smtp_splittag(char *in, char **name, char **tag)
+{
+	char	*last;
+
+	if(in==NULL)
+		return(FALSE);
+
+	*name=strtok_r(in, "#", &last);
+	if(*name) {
+		*tag=strtok_r(NULL, "", &last);
+		return(TRUE);
+	}
+	return(FALSE);
+}
+
+static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
+{
+	char	*user=strdup(str);
+	char	*name;
+	char	*tag=NULL;
+	uint	usernum=0;
+
+	if(!user)
+		return(0);
+
+	if(!smtp_splittag(user, &name, &tag))
+		goto end;
+
+	if(datdupe)
+		usernum=userdatdupe(scfg, 0, U_NAME, LEN_NAME, name, FALSE);
+	else
+		usernum=matchuser(scfg, name, aliases);
+
+	if(!usernum)
+		goto end;
+
+	if(checktag(scfg, tag, usernum))
+		usernum=UINT_MAX;
+
+end:
+	free(user);
+	return(usernum);
+}
+
 static void smtp_thread(void* arg)
 {
 	int			i,j;
@@ -3182,7 +3237,7 @@ static void smtp_thread(void* arg)
 				p=str;
 			} else {
 				/* RX by "user alias", "user.alias" or "user_alias" */
-				usernum=matchuser(&scfg,p,startup->options&MAIL_OPT_ALLOW_SYSOP_ALIASES);	
+				usernum=smtp_matchuser(&scfg,p,startup->options&MAIL_OPT_ALLOW_SYSOP_ALIASES,FALSE);	
 
 				if(!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
 					
@@ -3195,10 +3250,10 @@ static void smtp_thread(void* arg)
 						usernum=1;			/* RX by "sysop.alias" */
 
 					if(!usernum && scfg.msg_misc&MM_REALNAME)	/* RX by "real name" */
-						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, p, FALSE);
+						usernum=smtp_matchuser(&scfg, p, FALSE, TRUE);	
 
 					if(!usernum && scfg.msg_misc&MM_REALNAME)	/* RX by "real.name" */
-						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, rcpt_name, FALSE);
+						usernum=smtp_matchuser(&scfg, rcpt_name, FALSE, TRUE);	
 				}
 			}
 			if(!usernum && startup->default_user[0]) {
@@ -3211,6 +3266,11 @@ static void smtp_thread(void* arg)
 						,socket,startup->default_user);
 			}
 
+			if(usernum==UINT_MAX) {
+				lprintf(LOG_INFO,"%04d SMTP Blocked tag: %s", socket, buf+8);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				continue;
+			}
 			if(!usernum) {
 				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER:%s", socket, buf+8);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
