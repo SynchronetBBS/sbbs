@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SMTPTabSheet
-    TabIndex = 1
+    ActivePage = AdvancedTabSheet
+    TabIndex = 7
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -877,6 +877,7 @@ object MailCfgDlg: TMailCfgDlg
           'SendMail: Ignore '#39'in transit'#39' attribute'
           'Retain received mail files (in temp directory)'
           'Allow receipt of mail by user number'
+          'Allow receipt of mail to '#39'sysop'#39' and '#39'postmaster'#39
           'Check '#39'Received'#39' header fields against DNSBL'
           'Throttle DNS blacklisted server sessions')
         TabOrder = 0

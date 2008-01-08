@@ -173,6 +173,9 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_RX_BY_NUMBER);
     AdvancedCheckListBox->Checked[i++]
+        =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_SYSOP_ALIASES);
+
+    AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_CHKRECVHDRS);
     AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_THROTTLE);
@@ -293,12 +296,6 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_POP3;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_DEBUG_POP3;
-#if 0 /* this is a stupid option */
-	if(UserNumberCheckBox->Checked==true)
-    	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RX_BY_NUMBER;
-    else
-	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RX_BY_NUMBER;
-#endif
 	if(AllowRelayCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
     else
@@ -348,6 +345,9 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_ALLOW_RX_BY_NUMBER
+        ,AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_ALLOW_SYSOP_ALIASES
         ,AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_DNSBL_CHKRECVHDRS
