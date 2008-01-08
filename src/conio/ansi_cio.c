@@ -102,6 +102,8 @@ typedef struct
 #define ANSI_KEY_PGDN	0x51<<8
 #define ANSI_KEY_INSERT	0x52<<8
 #define ANSI_KEY_DELETE	0x53<<8
+#define ANSI_KEY_F11	0x85<<8
+#define ANSI_KEY_F12	0x86<<8
 
 static tODKeySequence ODaKeySequences[] =
 {
