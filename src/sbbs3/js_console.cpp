@@ -805,6 +805,14 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	if(!js_write(cx, obj, argc, argv, rval))
+		return(JS_FALSE);
+	return(js_crlf(cx, obj, argc, argv, rval))
+}
+
+static JSBool
 js_putmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=0;
@@ -1303,6 +1311,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("text")
 	,JSDOCSTR("display a raw string")
 	,310
+	},		
+	{"writeln",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("text")
+	,JSDOCSTR("display a raw string followed by a carriage-return/line-feed pair (new-line)")
+	,315
 	},		
 	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("text [,mode=<tt>P_NONE</tt>]")
 	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), "
