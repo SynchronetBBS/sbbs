@@ -152,9 +152,6 @@ function Lightbar_getval(current)
 	if(!(user.settings & USER_ANSI)) {
 		return(this.failsafe_getval());
 	}
-	if(!(user.settings & USER_COLOR)) {
-		return(this.failsafe_getval());
-	}
 
 	if(this.direction < 0 || this.direction > 1) {
 		alert("Unknown lightbar direction!");
@@ -470,9 +467,6 @@ function Lightbar_draw(current)
 	if(current!=undefined)
 		this.current=current;
 	if(!(user.settings & USER_ANSI)) {
-		return;
-	}
-	if(!(user.settings & USER_COLOR)) {
 		return;
 	}
 
