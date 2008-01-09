@@ -2289,6 +2289,7 @@ function show_settingsmenu()
 				clear_screen();
 				var oldshell=user.command_shell;
 				bbs.user_config();
+				user.cached=false;
 				/* Still using this shell? */
 				if(user.command_shell != oldshell)
 					exit(0);
