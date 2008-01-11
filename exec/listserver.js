@@ -82,7 +82,7 @@ if(this.recipient_list_filename!=undefined) {
 		log(LOG_WARNING,"ListServer: No reverse path");
 		exit();
 	}
-	if(reverse_path=='<' + listserver_addrses + '>') {
+	if(reverse_path=='<' + listserver_address + '>') {
 		log(LOG_WARNING,"ListServer: Invalid reverse path (loop?)");
 		exit();
 	}
