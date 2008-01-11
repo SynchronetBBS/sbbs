@@ -505,7 +505,8 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
  * 1) We'll always be enumerating anyways
  * 2) The speed penalty won't be seen in production code anyways
  */
-JSBool js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs)
+JSBool
+DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	JSBool	ret=JS_TRUE;
 
@@ -516,6 +517,9 @@ JSBool js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySp
 	if(funcs)
 		if(!js_DefineSyncMethods(cx, obj, funcs))
 			ret=JS_FALSE;
+
+	if(consts)
+		if(!js_DefineConstIntegers(JSContext* cx, JSObject* obj, consts, flags)
 
 	return(ret);
 }
@@ -547,9 +551,11 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 	return(JS_TRUE);
 }
 
-JSBool js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs)
+JSBool
+DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	uint i;
+	jsval	val;
 
 	if(props) {
 		for(i=0;props[i].name;i++) {
@@ -567,6 +573,20 @@ JSBool js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySp
 			if(name==NULL || strcmp(name, funcs[i].name)==0) {
 				if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 					return(JS_FALSE);
+				if(name)
+					return(JS_TRUE);
+			}
+		}
+	}
+	if(consts) {
+		for(i=0;ints[i].name;i++) {
+			if(name==NULL || strcmp(name, consts[i].name)==0) {
+	        	if(!JS_NewNumberValue(cx, ints[i].val, &val))
+					return(JS_FALSE);
+
+				if(!JS_DefineProperty(cx, obj, ints[i].name, val ,NULL, NULL, flags))
+					return(JS_FALSE);
+
 				if(name)
 					return(JS_TRUE);
 			}
@@ -592,7 +612,7 @@ DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* int
 		if(!JS_DefineProperty(cx, obj, ints[i].name, val ,NULL, NULL, flags))
 			return(JS_FALSE);
 	}
-		
+
 	return(JS_TRUE);
 }
 
