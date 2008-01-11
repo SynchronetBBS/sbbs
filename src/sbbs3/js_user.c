@@ -1071,8 +1071,8 @@ static JSClass js_user_stats_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
 	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_user_stats_enumerate		/* enumerate	*/
+	,js_user_stats_resolve	/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub        /* finalize		*/
 };
@@ -1084,8 +1084,8 @@ static JSClass js_user_security_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
 	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_user_security_enumerate		/* enumerate	*/
+	,js_user_security_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub        /* finalize		*/
 };
@@ -1097,8 +1097,8 @@ static JSClass js_user_limits_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
 	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_user_limits_enumerate		/* enumerate	*/
+	,js_user_limits_resolve			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub        /* finalize		*/
 };
