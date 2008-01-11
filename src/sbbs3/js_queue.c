@@ -373,19 +373,6 @@ static jsSyncPropertySpec js_queue_properties[] = {
 	{0}
 };
 
-static JSClass js_queue_class = {
-     "Queue"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_queue_get			/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,js_finalize_queue		/* finalize		*/
-};
-
 static jsSyncMethodSpec js_queue_functions[] = {
 	{"poll",		js_poll,		1,	JSTYPE_UNDEF,	"[timeout=<tt>0</tt>]"
 	,JSDOCSTR("wait for any value to be written to the queue for up to <i>timeout</i> milliseconds "
@@ -409,6 +396,34 @@ static jsSyncMethodSpec js_queue_functions[] = {
 	,312
 	},
 	{0}
+};
+
+static JSBool js_queue_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_queue_properties, js_queue_functions, NULL, 0));
+}
+
+static JSBool js_queue_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_queue_resolve(cx, obj, JSVAL_NULL));
+}
+
+static JSClass js_queue_class = {
+     "Queue"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_queue_get			/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,js_queue_enumerate		/* enumerate	*/
+	,js_queue_resolve		/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_finalize_queue		/* finalize		*/
 };
 
 /* Queue Constructor (creates queue) */
@@ -459,16 +474,6 @@ js_queue_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineSyncProperties(cx, obj, js_queue_properties)) {
-		JS_ReportError(cx,"js_DefineSyncProperties failed");
-		return(JS_FALSE);
-	}
-
-	if(!js_DefineSyncMethods(cx, obj, js_queue_functions, FALSE)) {
-		JS_ReportError(cx,"js_DefineSyncMethods failed");
-		return(JS_FALSE);
-	}
-
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class for bi-directional message queues. "
 		"Used for inter-thread/module communications.", 312);
@@ -509,13 +514,7 @@ JSObject* DLLCALL js_CreateQueueObject(JSContext* cx, JSObject* parent, char *na
 	if(obj==NULL)
 		return(NULL);
 
-	if(!js_DefineSyncProperties(cx, obj, js_queue_properties))
-		return(NULL);
-
 	if(!JS_SetPrivate(cx, obj, q))
-		return(NULL);
-
-	if (!js_DefineSyncMethods(cx, obj, js_queue_functions, FALSE)) 
 		return(NULL);
 
 	return(obj);

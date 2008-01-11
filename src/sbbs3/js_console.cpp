@@ -1428,6 +1428,21 @@ static jsSyncMethodSpec js_console_functions[] = {
 };
 
 
+static JSBool js_console_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_console_properties, js_console_functions, NULL, 0));
+}
+
+static JSBool js_console_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_console_resolve(cx, obj, JSVAL_NULL));
+}
+
 static JSClass js_console_class = {
      "Console"				/* name			*/
     ,0						/* flags		*/
@@ -1435,8 +1450,8 @@ static JSClass js_console_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_console_get			/* getProperty	*/
 	,js_console_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_console_enumerate	/* enumerate	*/
+	,js_console_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
@@ -1451,12 +1466,6 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 
 	if((obj=JS_DefineObject(cx, parent, "console", &js_console_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
-		return(NULL);
-
-	if(!js_DefineSyncProperties(cx, obj, js_console_properties))
-		return(NULL);
-
-	if (!js_DefineSyncMethods(cx, obj, js_console_functions, FALSE)) 
 		return(NULL);
 
 	/* Create an array of pre-defined colors */
@@ -1475,7 +1484,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		jsval val=INT_TO_JSVAL(sbbs->cfg.color[i]);
 		if(!JS_SetElement(cx, color_list, i, &val))
 			return(NULL);
-	}	
+	}
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Controls the user's Telnet/RLogin terminal",310);

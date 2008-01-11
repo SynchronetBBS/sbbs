@@ -127,6 +127,21 @@ static jsSyncPropertySpec js_client_properties[] = {
 	{0}
 };
 
+static JSBool js_client_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_client_properties, NULL, NULL, 0));
+}
+
+static JSBool js_client_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_client_resolve(cx, obj, JSVAL_NULL));
+}
+
 static JSClass js_client_class = {
      "Client"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -134,8 +149,8 @@ static JSClass js_client_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_client_get			/* getProperty	*/
 	,js_client_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_client_enumerate	/* enumerate	*/
+	,js_client_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
@@ -152,8 +167,6 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 		return(NULL);
 
 	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
-
-	js_DefineSyncProperties(cx, obj, js_client_properties);
 
 	js_CreateSocketObject(cx, obj, "socket", sock);
 

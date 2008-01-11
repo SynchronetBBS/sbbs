@@ -473,6 +473,20 @@ static jsSyncMethodSpec js_functions[] = {
 	{0}
 };
 
+static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0));
+}
+
+static JSBool js_uifc_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_uifc_resolve(cx, obj, JSVAL_NULL));
+}
 
 static JSClass js_uifc_class = {
      "UIFC"					/* name			*/
@@ -504,12 +518,6 @@ JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 	api->esc_delay=25;
 
 	if(!JS_SetPrivate(cx, obj, api))	/* Store a pointer to uifcapi_t */
-		return(NULL);
-
-	if(!js_DefineSyncProperties(cx, obj, js_properties))	/* expose them */
-		return(NULL);
-
-	if(!js_DefineSyncMethods(cx, obj, js_functions, /* append? */ FALSE)) 
 		return(NULL);
 
 	return(obj);

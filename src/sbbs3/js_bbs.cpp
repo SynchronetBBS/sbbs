@@ -3007,6 +3007,20 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{0}
 };
 
+static JSBool js_bbs_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_bbs_properties, js_bbs_functions, NULL, 0));
+}
+
+static JSBool js_bbs_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_bbs_resolve(cx, obj, JSVAL_NULL));
+}
 
 static JSClass js_bbs_class = {
      "BBS"					/* name			*/
@@ -3015,8 +3029,8 @@ static JSClass js_bbs_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_bbs_get				/* getProperty	*/
 	,js_bbs_set				/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_bbs_enumerate		/* enumerate	*/
+	,js_bbs_resolve			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
@@ -3030,12 +3044,6 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(obj==NULL)
-		return(NULL);
-
-	if(!js_DefineSyncProperties(cx, obj, js_bbs_properties))
-		return(NULL);
-
-	if (!js_DefineSyncMethods(cx, obj, js_bbs_functions, FALSE)) 
 		return(NULL);
 
 	if((mods=JS_DefineObject(cx, obj, "mods", NULL, NULL ,JSPROP_ENUMERATE))==NULL)
