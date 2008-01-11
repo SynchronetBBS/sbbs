@@ -630,14 +630,16 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 #define LAZY_INTEGER(PropName, PropValue) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
-		JS_DefineProperty(cx, obj, (PropName), INT_TO_JSVAL(PropValue), NULL,NULL,JSPROP_ENUMERATE); \
+		JS_NewNumberValue(cx,(PropValue),&v); \
+		JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,JSPROP_ENUMERATE); \
 		if(name) return(JS_TRUE); \
 	}
 
 #define LAZY_INTEGER_EXPAND(PropName, PropValue) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
 		if(p->expand_fields || (PropValue)) { \
-			JS_DefineProperty(cx, obj, (PropName), INT_TO_JSVAL(PropValue), NULL,NULL,JSPROP_ENUMERATE); \
+			JS_NewNumberValue(cx,(PropValue),&v); \
+			JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,JSPROP_ENUMERATE); \
 			if(name) return(JS_TRUE); \
 		} \
 		else if(name) return(JS_TRUE); \
@@ -646,7 +648,8 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 #define LAZY_INTEGER_COND(PropName, Condition, PropValue) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
 		if(Condition) { \
-			JS_DefineProperty(cx, obj, (PropName), INT_TO_JSVAL(PropValue), NULL,NULL,JSPROP_ENUMERATE); \
+			JS_NewNumberValue(cx,(PropValue),&v); \
+			JS_DefineProperty(cx, obj, (PropName), v, NULL,NULL,JSPROP_ENUMERATE); \
 			if(name) return(JS_TRUE); \
 		} \
 		else if(name) return(JS_TRUE); \
