@@ -1182,8 +1182,8 @@ static JSClass js_user_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
 	,js_user_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_user_enumerate		/* enumerate	*/
+	,js_user_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,js_user_finalize		/* finalize		*/
 };
