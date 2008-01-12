@@ -509,19 +509,6 @@ static char* sys_prop_desc[] = {
 #endif
 
 
-static JSClass js_system_class = {
-     "System"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_system_get			/* getProperty	*/
-	,js_system_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
 /* System Stats Propertiess */
 enum {
 	 SYSSTAT_PROP_LOGONS
@@ -672,6 +659,20 @@ static char* sysstat_prop_desc[] = {
 };
 #endif
 
+static JSBool js_sysstats_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_sysstats_properties, NULL, NULL, 0));
+}
+
+static JSBool js_sysstats_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_sysstats_resolve(cx, obj, JSVAL_NULL));
+}
 
 static JSClass js_sysstats_class = {
      "Stats"				/* name			*/
@@ -680,8 +681,8 @@ static JSClass js_sysstats_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_sysstats_get		/* getProperty	*/
 	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_sysstats_enumerate	/* enumerate	*/
+	,js_sysstats_resolve	/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
@@ -1611,6 +1612,21 @@ static jsSyncPropertySpec js_node_properties[] = {
 	{0}
 };
 
+static JSBool js_node_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_node_properties, NULL, NULL, 0));
+}
+
+static JSBool js_node_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_node_resolve(cx, obj, JSVAL_NULL));
+}
+
 static JSClass js_node_class = {
      "Node"					/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -1618,8 +1634,184 @@ static JSClass js_node_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_node_get			/* getProperty	*/
 	,js_node_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_node_enumerate		/* enumerate	*/
+	,js_node_resolve		/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
+
+#define LAZY_INTEGER(PropName, PropValue) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
+		JS_NewNumberValue(cx,(PropValue),&val); \
+		JS_DefineProperty(cx, obj, (PropName), val, NULL,NULL,JSPROP_ENUMERATE); \
+		if(name) return(JS_TRUE); \
+	}
+
+#define LAZY_STRING(PropName, PropValue) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
+		if((js_str=JS_NewStringCopyZ(cx, (PropValue)))!=NULL) { \
+			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE); \
+			if(name) return(JS_TRUE); \
+		} \
+		else if(name) return(JS_TRUE); \
+	}
+
+#define LAZY_STRFUNC(PropName, Function, PropValue) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
+		Function; \
+		if((js_str=JS_NewStringCopyZ(cx, (PropValue)))!=NULL) { \
+			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE); \
+			if(name) return(JS_TRUE); \
+		} \
+		else if(name) return(JS_TRUE); \
+	}
+
+#define LAZY_STRFUNC_TRUNCSP(PropName, Function, PropValue) \
+	if(name==NULL || strcmp(name, (PropName))==0) { \
+		Function; \
+		if((js_str=JS_NewStringCopyZ(cx, truncsp(PropValue)))!=NULL) { \
+			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE); \
+			if(name) return(JS_TRUE); \
+		} \
+		else if(name) return(JS_TRUE); \
+	}
+
+static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*		name=NULL;
+	jsval		val;
+	char		str[256];
+	JSString*	js_str;
+	JSObject*	newobj;
+	JSObject*	nodeobj;
+	scfg_t* 	cfg;
+	uint		i;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	/****************************/
+	/* static string properties */
+	LAZY_STRING("version", VERSION);
+	LAZY_STRFUNC("revision", sprintf(str,"%c",REVISION), str);
+	LAZY_STRFUNC_TRUNCSP("beta_version", SAFECOPY(str, beta_version), str);
+
+	if(name==NULL || strcmp(name, "full_version")==0) {
+		sprintf(str,"%s%c%s",VERSION,REVISION,beta_version);
+		truncsp(str);
+#if defined(_DEBUG)
+		strcat(str," Debug");
+#endif
+		if((js_str=JS_NewStringCopyZ(cx, str))!=NULL) {
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, obj, "full_version", &val);
+			if(name) return(JS_TRUE);
+		}
+		else if(name) return(JS_TRUE);
+	}
+
+	LAZY_STRING("version_notice", VERSION_NOTICE);
+
+	/* Numeric version properties */
+	LAZY_INTEGER("version_num", VERSION_NUM);
+	LAZY_INTEGER("version_hex", VERSION_HEX);
+
+	LAZY_STRING("platform", PLATFORM_DESC);
+	LAZY_STRFUNC("msgbase_lib", sprintf(str,"SMBLIB %s",smb_lib_ver()), str);
+	LAZY_STRFUNC("compiled_with", DESCRIBE_COMPILER(str), str);
+	LAZY_STRFUNC("compiled_when", sprintf(str,"%s %.5s",__DATE__,__TIME__), str);
+	LAZY_STRING("copyright", COPYRIGHT_NOTICE);
+	LAZY_STRING("js_version", (char *)JS_GetImplementationVersion());
+	LAZY_STRING("os_version", os_version(str));
+
+	/* fido_addr_list property */
+	if(name==NULL || strcmp(name, "fido_addr_list")==0) {
+		if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+			return(JS_FALSE);
+
+		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL)
+			return(JS_FALSE);
+
+		if(!JS_DefineProperty(cx, obj, "fido_addr_list", OBJECT_TO_JSVAL(newobj)
+			, NULL, NULL, JSPROP_ENUMERATE))
+			return(JS_FALSE);
+
+		for(i=0;i<cfg->total_faddrs;i++) {
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,smb_faddrtoa(&cfg->faddr[i],str)));
+			JS_SetElement(cx, newobj, i, &val);
+		}
+		if(name) return(JS_TRUE);
+	}
+
+	if(name==NULL || strcmp(name, "stats")==0) {
+		if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+			return(JS_FALSE);
+
+		newobj = JS_DefineObject(cx, obj, "stats", &js_sysstats_class, NULL
+			,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		if(newobj==NULL)
+			return(JS_FALSE);
+
+		JS_SetPrivate(cx, newobj, cfg);	/* Store a pointer to scfg_t */
+	}
+
+	/* node_list property */
+	if(name==NULL || strcmp(name, "node_list")==0) {
+		if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+			return(JS_FALSE);
+
+		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+			return(JS_FALSE);
+
+		if(!JS_DefineProperty(cx, obj, "node_list", OBJECT_TO_JSVAL(newobj)
+			, NULL, NULL, JSPROP_ENUMERATE))
+			return(JS_FALSE);
+
+		for(i=0;i<cfg->sys_nodes && i<cfg->sys_lastnode;i++) {
+
+			nodeobj = JS_NewObject(cx, &js_node_class, NULL, newobj);
+
+			if(nodeobj==NULL)
+				return(JS_FALSE);
+
+			/* Store node number */
+			/* We have to shift it to make it look like a pointer to JS. :-( */
+			if(!JS_SetPrivate(cx, nodeobj, (char*)((i+1)<<1)))
+				return(JS_FALSE);
+
+	#ifdef BUILD_JSDOCS
+			if(i==0) {
+				js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
+				js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
+			}
+	#endif
+
+			val=OBJECT_TO_JSVAL(nodeobj);
+			if(!JS_SetElement(cx, newobj, i, &val))
+				return(JS_FALSE);
+		}
+		if(name) return(JS_TRUE);
+	}
+
+
+	return(js_SyncResolve(cx, obj, name, js_system_properties, js_system_functions, NULL, 0));
+}
+
+static JSBool js_system_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_node_resolve(cx, obj, JSVAL_NULL));
+}
+
+static JSClass js_system_class = {
+     "System"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_system_get			/* getProperty	*/
+	,js_system_set			/* setProperty	*/
+	,js_system_enumerate	/* enumerate	*/
+	,js_system_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,JS_FinalizeStub		/* finalize		*/
 };
@@ -1627,15 +1819,14 @@ static JSClass js_node_class = {
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc)
 {
-	char		str[256];
 	uint		i;
 	jsval		val;
 	JSObject*	sysobj;
 	JSObject*	statsobj;
-	JSObject*	nodeobj;
 	JSObject*	node_list;
 	JSObject*	fido_addr_list;
 	JSString*	js_str;
+	char		str[256];
 
 	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1646,17 +1837,6 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetPrivate(cx, sysobj, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
 
-	if(!js_DefineSyncProperties(cx, sysobj, js_system_properties))
-		return(NULL);
-
-	if (!js_DefineSyncMethods(cx, sysobj, js_system_functions, FALSE)) 
-		return(NULL);
-
-#ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
-	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
-#endif
-
 	/****************************/
 	/* static string properties */
 	if((js_str=JS_NewStringCopyZ(cx, host_name))==NULL)
@@ -1665,106 +1845,10 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "host_name", &val))
 		return(NULL);
 
-	if((js_str=JS_NewStringCopyZ(cx, VERSION))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "version", &val))
-		return(NULL);
-
-	sprintf(str,"%c",REVISION);
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "revision", &val))
-		return(NULL);
-
-	SAFECOPY(str,beta_version);
-	truncsp(str);
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "beta_version", &val))
-		return(NULL);
-
-
-	sprintf(str,"%s%c%s",VERSION,REVISION,beta_version);
-	truncsp(str);
-#if defined(_DEBUG)
-	strcat(str," Debug");
-#endif
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "full_version", &val))
-		return(NULL);
-
-	if((js_str=JS_NewStringCopyZ(cx, VERSION_NOTICE))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "version_notice", &val))
-		return(NULL);
-
-	/* Numeric version properties */
-	if(!JS_NewNumberValue(cx, VERSION_NUM, &val))
-		return(NULL);
-	if(!JS_SetProperty(cx, sysobj, "version_num", &val))
-		return(NULL);
-
-	if(!JS_NewNumberValue(cx, VERSION_HEX, &val))
-		return(NULL);
-	if(!JS_SetProperty(cx, sysobj, "version_hex", &val))
-		return(NULL);
-
-	if((js_str=JS_NewStringCopyZ(cx, PLATFORM_DESC))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "platform", &val))
-		return(NULL);
-
 	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str, socklib_desc)))==NULL)
 		return(NULL);
 	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "socket_lib", &val))
-		return(NULL);
-
-	sprintf(str,"SMBLIB %s",smb_lib_ver());
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "msgbase_lib", &val))
-		return(NULL);
-
-	DESCRIBE_COMPILER(str);
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "compiled_with", &val))
-		return(NULL);
-
-	sprintf(str,"%s %.5s",__DATE__,__TIME__);
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "compiled_when", &val))
-		return(NULL);
-
-	if((js_str=JS_NewStringCopyZ(cx, COPYRIGHT_NOTICE))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "copyright", &val))
-		return(NULL);
-
-	if((js_str=JS_NewStringCopyZ(cx
-		,(char *)JS_GetImplementationVersion()))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "js_version", &val))
-		return(NULL);
-
-	if((js_str=JS_NewStringCopyZ(cx,os_version(str)))==NULL)
-		return(NULL);
-	val = STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(cx, sysobj, "os_version", &val))
 		return(NULL);
 
 	/***********************/
@@ -1773,71 +1857,15 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
 
-	/* fido_addr_list property */
-
-	if((fido_addr_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-		return(NULL);
-
-	if(!JS_DefineProperty(cx, sysobj, "fido_addr_list", OBJECT_TO_JSVAL(fido_addr_list)
-		, NULL, NULL, JSPROP_ENUMERATE))
-		return(NULL);
-
-	for(i=0;i<cfg->total_faddrs;i++) {
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,smb_faddrtoa(&cfg->faddr[i],str)));
-		JS_SetElement(cx, fido_addr_list, i, &val);
-	}
-
-	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL
-		,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if(statsobj==NULL)
-		return(NULL);
-
-	JS_SetPrivate(cx, statsobj, cfg);	/* Store a pointer to scfg_t */
-
-	if(!js_DefineSyncProperties(cx, statsobj, js_sysstats_properties))
-		return(NULL);
+#ifdef BUILD_JSDOCS
+	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
+	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
+#endif
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,statsobj,"System statistics",310);
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
 #endif
-
-	/* node_list property */
-
-	if((node_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-		return(NULL);
-
-	if(!JS_DefineProperty(cx, sysobj, "node_list", OBJECT_TO_JSVAL(node_list)
-		, NULL, NULL, JSPROP_ENUMERATE))
-		return(NULL);
-
-	for(i=0;i<cfg->sys_nodes && i<cfg->sys_lastnode;i++) {
-
-		nodeobj = JS_NewObject(cx, &js_node_class, NULL, node_list);
-
-		if(nodeobj==NULL)
-			return(NULL);
-
-		/* Store node number */
-		/* We have to shift it to make it look like a pointer to JS. :-( */
-		if(!JS_SetPrivate(cx, nodeobj, (char*)((i+1)<<1)))	
-			return(NULL);
-
-		if(!js_DefineSyncProperties(cx, nodeobj, js_node_properties))
-			return(NULL);
-
-#ifdef BUILD_JSDOCS
-		if(i==0) {
-			js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
-			js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
-		}
-#endif
-
-		val=OBJECT_TO_JSVAL(nodeobj);
-		if(!JS_SetElement(cx, node_list, i, &val))
-			return(NULL);
-	}	
 
 	return(sysobj);
 }
