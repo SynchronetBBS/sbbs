@@ -1650,20 +1650,6 @@ static char* msgbase_prop_desc[] = {
 };
 #endif
 
-
-static JSClass js_msgbase_class = {
-     "MsgBase"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_msgbase_get			/* getProperty	*/
-	,js_msgbase_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,js_finalize_msgbase	/* finalize		*/
-};
-
 static jsSyncMethodSpec js_msgbase_functions[] = {
 	{"open",			js_open,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("open message base")
@@ -1779,6 +1765,34 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	{0}
 };
 
+static JSBool js_msgbase_resolve(JSContext *cx, JSObject *obj, jsval id)
+{
+	char*			name=NULL;
+
+	if(id != JSVAL_NULL)
+		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
+
+	return(js_SyncResolve(cx, obj, name, js_msgbase_properties, js_msgbase_functions, NULL, 0));
+}
+
+static JSBool js_msgbase_enumerate(JSContext *cx, JSObject *obj)
+{
+	return(js_msgbase_resolve(cx, obj, JSVAL_NULL));
+}
+
+static JSClass js_msgbase_class = {
+     "MsgBase"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_msgbase_get			/* getProperty	*/
+	,js_msgbase_set			/* setProperty	*/
+	,js_msgbase_enumerate	/* enumerate	*/
+	,js_msgbase_resolve		/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_finalize_msgbase	/* finalize		*/
+};
+
 /* MsgBase Constructor (open message base) */
 
 static JSBool
@@ -1804,11 +1818,6 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
-		free(p);
-		return(JS_FALSE);
-	}
-
-	if(!js_DefineSyncProperties(cx,obj,js_msgbase_properties)) {
 		free(p);
 		return(JS_FALSE);
 	}
@@ -1855,11 +1864,6 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 			SAFECOPY(p->smb.file,base);
 			p->smb.subnum=INVALID_SUB;
 		}
-	}
-
-	if(!js_DefineSyncMethods(cx, obj, js_msgbase_functions, FALSE)) {
-		JS_ReportError(cx,"js_DefineSyncMethods failed");
-		return(JS_FALSE);
 	}
 
 	return(JS_TRUE);
