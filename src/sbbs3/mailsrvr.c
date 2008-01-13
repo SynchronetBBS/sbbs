@@ -1854,7 +1854,7 @@ static BOOL smtp_splittag(char *in, char **name, char **tag)
 	if(in==NULL)
 		return(FALSE);
 
-	*name=strtok_r(in, "#%", &last);
+	*name=strtok_r(in, "#", &last);
 	if(*name) {
 		*tag=strtok_r(NULL, "", &last);
 		return(TRUE);
