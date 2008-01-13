@@ -1843,7 +1843,7 @@ static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
 
 	if(tag==NULL)
 		return(FALSE);
-	sprintf(fname,"%suser/%04d.smtptags",scfg->data_dir,usernum);
+	sprintf(fname,"%suser/%04d.smtpblock",scfg->data_dir,usernum);
 	return(findstr(tag, fname));
 }
 
@@ -1854,7 +1854,7 @@ static BOOL smtp_splittag(char *in, char **name, char **tag)
 	if(in==NULL)
 		return(FALSE);
 
-	*name=strtok_r(in, "#", &last);
+	*name=strtok_r(in, "#%", &last);
 	if(*name) {
 		*tag=strtok_r(NULL, "", &last);
 		return(TRUE);
