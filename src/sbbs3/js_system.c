@@ -1764,6 +1764,9 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsval id)
 		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 			return(JS_FALSE);
 
+		if(!JS_SetParent(cx, newobj, obj))
+			return(JS_FALSE);
+
 		if(!JS_DefineProperty(cx, obj, "node_list", OBJECT_TO_JSVAL(newobj)
 			, NULL, NULL, JSPROP_ENUMERATE))
 			return(JS_FALSE);
