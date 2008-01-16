@@ -91,6 +91,12 @@ tODKeySequence aKeySequences[] =
    {"\033OS", OD_KEY_F4, FALSE},
 
    /* VT-220/VT-320 specific control sequences. */
+   {"\033[1~",  OD_KEY_HOME}, /* Windows XP telnet.exe.  Is actually FIND */
+   {"\033[2~",  OD_KEY_INSERT},
+   {"\033[3~",  OD_KEY_DELETE},
+   {"\033[4~",  OD_KEY_END},  /* Windows XP telnet.exe.  Is actually SELECT */
+   {"\033[5~",  OD_KEY_PGUP},
+   {"\033[6~",  OD_KEY_PGDN},
    {"\033[17~", OD_KEY_F6, FALSE},
    {"\033[18~", OD_KEY_F7, FALSE},
    {"\033[19~", OD_KEY_F8, FALSE},

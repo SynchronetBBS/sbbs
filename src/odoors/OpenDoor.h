@@ -307,6 +307,8 @@ typedef enum
 #define OD_KEY_END         0x4f
 #define OD_KEY_PGUP        0x49
 #define OD_KEY_PGDN        0x51
+#define OD_KEY_F11         0x85
+#define OD_KEY_F12         0x86
 #define OD_KEY_SHIFTTAB    0x0f
 
 /* Input event structure. */
