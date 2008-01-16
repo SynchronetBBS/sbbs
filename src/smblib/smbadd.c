@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -83,7 +83,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			break;
 
 		msg->hdr.number=smb->status.last_msg+1;
-		if(!(smb->status.attr&SMB_EMAIL)) {
+		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))) {
 
 			hashes=smb_msghashes(msg,body);
 
@@ -292,7 +292,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			}
 		}
 
-		if(!(smb->status.attr&SMB_EMAIL)
+		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
 			&& smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */

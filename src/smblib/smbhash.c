@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -43,7 +43,7 @@
 #include "crc32.h"
 #include "genwrap.h"
 
-/* If return value is SMB_ERROR_NOT_FOUND, hash file is left open */
+/* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
 int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
 						 long source_mask, BOOL mark)
 {
@@ -60,7 +60,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 
 	COUNT_LIST_ITEMS(compare, count);
 
-	if(count) {
+	if(count && source_mask!=SMB_HASH_SOURCE_NONE) {
 
 		rewind(smb->hash_fp);
 		while(!feof(smb->hash_fp)) {
@@ -275,7 +275,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
-	if(smb->status.attr&SMB_EMAIL)
+	if(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
 		return(SMB_SUCCESS);
 
 	hashes=smb_msghashes(msg,text);
