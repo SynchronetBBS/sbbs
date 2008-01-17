@@ -1312,7 +1312,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("display a raw string")
 	,310
 	},		
-	{"writeln",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("text")
+	{"writeln",			js_writeln,			1, JSTYPE_VOID,		JSDOCSTR("text")
 	,JSDOCSTR("display a raw string followed by a carriage-return/line-feed pair (new-line)")
 	,315
 	},		
