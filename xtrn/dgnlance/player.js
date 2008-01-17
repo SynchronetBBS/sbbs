@@ -158,24 +158,24 @@ function Player_statshow()
 {
 	console.clear();
 	console.attributes="M0";
-	/*console.*/writeln("Name: "+this.pseudo+"   Level: "+this.level);
+	console.writeln("Name: "+this.pseudo+"   Level: "+this.level);
 	console.attributes="HC0";
 	console.write("W/L: "+this.wins+"/"+this.losses);
-	/*console.*/writeln("   Exp: "+this.experience);
-	/*console.*/writeln();
+	console.writeln("   Exp: "+this.experience);
+	console.writeln();
 	console.attributes="HY0";
-	/*console.*/writeln("Steel  (in hand): "+this.gold);
-	/*console.*/writeln("Steel  (in bank): "+this.bank);
-	/*console.*/writeln();
+	console.writeln("Steel  (in hand): "+this.gold);
+	console.writeln("Steel  (in bank): "+this.bank);
+	console.writeln();
 	console.attributes="HB0";
 	console.write("Battles: "+this.battles);
 	console.write("   Flights: "+this.flights);
 	console.write("   Fights: "+this.fights);
-	/*console.*/writeln("   HPs: "+(this.hps-this.damage)+"("+this.hps+")");
-	/*console.*/writeln();
+	console.writeln("   HPs: "+(this.hps-this.damage)+"("+this.hps+")");
+	console.writeln();
 	console.attributes="HC0";
 	console.write("Weapon: "+this.weapon.name);
-	/*console.*/writeln("     Armor: "+this.armour.name);
+	console.writeln("     Armor: "+this.armour.name);
 }
 
 function Player_load(filename)
@@ -189,9 +189,9 @@ function Player_load(filename)
 	var item_attack;
 
 	if(!Lock(players.name, bbs.node_num, false, 1)) {
-		/*console.*/writeln();
-		/*console.*/writeln("Cannot lock "+players.name+" for read!");
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln("Cannot lock "+players.name+" for read!");
+		console.writeln();
 		console.pause();
 		return(false);
 	}
@@ -253,9 +253,9 @@ function Player_save(name)
 	var players=new File(getpath()+"players.ini");
 
 	if(!Lock(players.name, bbs.node_num, true, 1)) {
-		/*console.*/writeln();
-		/*console.*/writeln("Cannot lock "+players.name+" for write!");
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln("Cannot lock "+players.name+" for write!");
+		console.writeln();
 		console.pause();
 		return(false);
 	}
@@ -309,7 +309,7 @@ function Player_levelupdate()
 	if(this.experience > required[this.level+1]) {
 		this.level++;
 		console.attributes="HY0";
-		/*console.*/writeln("Welcome to level "+this.level+"!");
+		console.writeln("Welcome to level "+this.level+"!");
 		x=random(6)+1;
 		switch(random(6)) {
 			case 0:
@@ -342,31 +342,31 @@ function Player_chstats()
 		console.write("Increase which stat? ");
 		switch(dgn_getkeys("123456Q")) {
 			case '1':
-				/*console.*/writeln("Strength");
+				console.writeln("Strength");
 				this_obj.strength++;
 				break;
 			case '2':
-				/*console.*/writeln("Intelligence");
+				console.writeln("Intelligence");
 				this_obj.intelligence++;
 				break;
 			case '3':
-				/*console.*/writeln("Dexterity");
+				console.writeln("Dexterity");
 				this_obj.dexterity++;
 				break;
 			case '4':
-				/*console.*/writeln("Luck");
+				console.writeln("Luck");
 				this_obj.luck++;
 				break;
 			case '5':
-				/*console.*/writeln("Constitution");
+				console.writeln("Constitution");
 				this_obj.constitution++;
 				break;
 			case '6':
-				/*console.*/writeln("Charisma");
+				console.writeln("Charisma");
 				this_obj.charisma++;
 				break;
 			case 'Q':
-				/*console.*/writeln("Quit");
+				console.writeln("Quit");
 				return(false);
 		}
 		return(true);
@@ -377,31 +377,31 @@ function Player_chstats()
 		console.write("Decrease which stat? ");
 		switch(dgn_getkeys("123456Q")) {
 			case '1':
-				/*console.*/writeln("Strength");
+				console.writeln("Strength");
 				this_obj.strength--;
 				break;
 			case '2':
-				/*console.*/writeln("Intelligence");
+				console.writeln("Intelligence");
 				this_obj.intelligence--;
 				break;
 			case '3':
-				/*console.*/writeln("Dexterity");
+				console.writeln("Dexterity");
 				this_obj.dexterity--;
 				break;
 			case '4':
-				/*console.*/writeln("Luck");
+				console.writeln("Luck");
 				this_obj.luck--;
 				break;
 			case '5':
-				/*console.*/writeln("Constitution");
+				console.writeln("Constitution");
 				this_obj.constitution--;
 				break;
 			case '6':
-				/*console.*/writeln("Charisma");
+				console.writeln("Charisma");
 				this_obj.charisma--;
 				break;
 			case 'Q':
-				/*console.*/writeln("Quit");
+				console.writeln("Quit");
 				return(false);
 		}
 		return(true);
@@ -415,8 +415,8 @@ function Player_chstats()
 		function check(value, name) {
 			if(value < 6) {
 				valid=false;
-				/*console.*/writeln();
-				/*console.*/writeln(name+" cannot go below 6");
+				console.writeln();
+				console.writeln(name+" cannot go below 6");
 			}
 		}
 
@@ -436,16 +436,16 @@ function Player_chstats()
 		orig.constitution=this_obj.constitution;
 		orig.charisma=this_obj.charisma;
 
-		/*console.*/writeln();
-		/*console.*/writeln("Status Change:");
-		/*console.*/writeln("^^^^^^^^^^^^^^");
-		/*console.*/writeln("1> Str: "+(this_obj.strength));
-		/*console.*/writeln("2> Int: "+(this_obj.intelligence));
-		/*console.*/writeln("3> Dex: "+(this_obj.dexterity));
-		/*console.*/writeln("4> Luk: "+(this_obj.luck));
-		/*console.*/writeln("5> Con: "+(this_obj.constitution));
-		/*console.*/writeln("6> Chr: "+(this_obj.charisma));
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln("Status Change:");
+		console.writeln("^^^^^^^^^^^^^^");
+		console.writeln("1> Str: "+(this_obj.strength));
+		console.writeln("2> Int: "+(this_obj.intelligence));
+		console.writeln("3> Dex: "+(this_obj.dexterity));
+		console.writeln("4> Luk: "+(this_obj.luck));
+		console.writeln("5> Con: "+(this_obj.constitution));
+		console.writeln("6> Chr: "+(this_obj.charisma));
+		console.writeln();
 		check(this_obj.strength,"Strength");
 		check(this_obj.intelligence,"Intelligence");
 		check(this_obj.dexterity,"Dexterity");
@@ -455,11 +455,11 @@ function Player_chstats()
 		if(valid) {
 			console.write("Is this correct? ");
 			if(dgn_getkeys("YN")=='Y') {
-				/*console.*/writeln("Yes");
+				console.writeln("Yes");
 				return(true);
 			}
 			else {
-				/*console.*/writeln("No");
+				console.writeln("No");
 				restore(this_obj);
 				return(false);
 			}
@@ -470,18 +470,18 @@ function Player_chstats()
 
 	console.clear();
 	while(1) {
-		/*console.*/writeln("Status Change:");
-		/*console.*/writeln("@@@@@@@@@@@@@@");
-		/*console.*/writeln("You may increase any stat by one,");
-		/*console.*/writeln("yet you must decrease another by two.");
-		/*console.*/writeln();
-		/*console.*/writeln("1> Str: "+this.strength);
-		/*console.*/writeln("2> Int: "+this.intelligence);
-		/*console.*/writeln("3> Dex: "+this.dexterity);
-		/*console.*/writeln("4> Luk: "+this.luck);
-		/*console.*/writeln("5> Con: "+this.constitution);
-		/*console.*/writeln("6> Chr: "+this.charisma);
-		/*console.*/writeln();
+		console.writeln("Status Change:");
+		console.writeln("@@@@@@@@@@@@@@");
+		console.writeln("You may increase any stat by one,");
+		console.writeln("yet you must decrease another by two.");
+		console.writeln();
+		console.writeln("1> Str: "+this.strength);
+		console.writeln("2> Int: "+this.intelligence);
+		console.writeln("3> Dex: "+this.dexterity);
+		console.writeln("4> Luk: "+this.luck);
+		console.writeln("5> Con: "+this.constitution);
+		console.writeln("6> Chr: "+this.charisma);
+		console.writeln();
 		if(incre(this)) {
 			if(decre(this)) {
 				if(ministat(this))
@@ -498,9 +498,9 @@ function Player_depobank()
 	var tmp=this.gold;
 	this.gold -= tmp;
 	this.bank += tmp;
-	/*console.*/writeln();
+	console.writeln();
 	console.attributes="HC0";
-	/*console.*/writeln(this.bank+" Steel pieces are in the bank.");
+	console.writeln(this.bank+" Steel pieces are in the bank.");
 }
 
 function Player_withdrawbank()
@@ -508,9 +508,9 @@ function Player_withdrawbank()
 	var tmp=this.bank;
 	this.gold += tmp;
 	this.bank -= tmp;
-	/*console.*/writeln();
+	console.writeln();
 	console.attributes="HC0";
-	/*console.*/writeln("You are now carrying "+this.gold+" Steel pieces.");
+	console.writeln("You are now carrying "+this.gold+" Steel pieces.");
 }
 
 function Player_heal()
@@ -519,23 +519,23 @@ function Player_heal()
 
 	console.clear();
 	console.attributes="M0";
-	/*console.*/writeln("Clerics want "+(8*this.level)+" Steel pieces per wound.");
+	console.writeln("Clerics want "+(8*this.level)+" Steel pieces per wound.");
 	console.attributes="HY0";
-	/*console.*/writeln("You have "+this.damage+" points of damage to heal.");
+	console.writeln("You have "+this.damage+" points of damage to heal.");
 	console.attributes="HC0";
 	console.write("How many points do you want healed? ");
 	// TODO: We need max as default an some way to cancel...
 	opt=console.getnum(this.damage);
 	if((opt*this.level*8) > this.gold) {
 		console.attributes="HR0";
-		/*console.*/writeln("Sorry, you do not have enough Steel.");
+		console.writeln("Sorry, you do not have enough Steel.");
 		opt=0;
 	}
 	else if (opt > this.damage)
 		opt = this.damage;
 	this.damage -= opt;
 	this.gold -= 8*opt*this.level;
-	/*console.*/writeln(opt+" hit points healed.");
+	console.writeln(opt+" hit points healed.");
 }
 
 function Player_changemessage()
@@ -543,17 +543,17 @@ function Player_changemessage()
 	function getmessage(prompt, msg)
 	{
 		while(1) {
-			/*console.*/writeln();
+			console.writeln();
 			console.attributes="HC0";
-			/*console.*/writeln(prompt);
+			console.writeln(prompt);
 			console.write("> ");
 			msg=console.getstr(msg, 77, K_EDIT|K_AUTODEL|K_LINE);
 			console.write("Is this correct? ");
 			if(dgn_getkeys("YN")=='Y') {
-				/*console.*/writeln("Yes");
+				console.writeln("Yes");
 				return(msg);
 			}
-			/*console.*/writeln("No");
+			console.writeln("No");
 		}
 	}
 
@@ -587,7 +587,7 @@ function Player_create(isnew)
 		this.bcry="";
 		this.gaspd="";
 		this.winmsg="";
-		/*console.*/writeln();
+		console.writeln();
 		this.pseudo=user.alias;
 		this.vic();
 		this.battles = Config.BATTLES_PER_DAY;
@@ -596,7 +596,7 @@ function Player_create(isnew)
 	}
 	console.write("What sex would you like your character to be? (M/F) ");
 	this.sex=dgn_getkeys("MF");
-	/*console.*/writeln();
+	console.writeln();
 }
 
 function Player_gamble()
@@ -605,40 +605,40 @@ function Player_gamble()
 	var okea=0;
 
 	if(this.fighs==0)
-		/*console.*/writeln("The Shooting Gallery is closed until tomorrow!");
+		console.writeln("The Shooting Gallery is closed until tomorrow!");
 	else {
 		console.clear();
-		/*console.*/writeln("  Welcome to the Shooting Gallery");
-		/*console.*/writeln(" Maximum wager is 25,000 Steel pieces");
-		/*console.*/writeln();
+		console.writeln("  Welcome to the Shooting Gallery");
+		console.writeln(" Maximum wager is 25,000 Steel pieces");
+		console.writeln();
 		console.attributes="HY0";
-		/*console.*/writeln("How many Steel pieces do you wish to wager? ");
+		console.writeln("How many Steel pieces do you wish to wager? ");
 		console.attributes="W0";
 		realgold=console.getnum(25000);
 		if(realgold > this.gold) {
-			/*console.*/writeln();
-			/*console.*/writeln("You do not have enough Steel!");
+			console.writeln();
+			console.writeln("You do not have enough Steel!");
 		}
 		if(realgold != 0 && this.gold >= realgold && realgold <= 25000 && realgold >= 1) {
 			okea=random(99)+1;
 			if(okea <= 3) {
 				realgold *= 100;
 				this.gold += realgold;
-				/*console.*/writeln("You shot all the targets and win "+realgold+" Steel pieces!");
+				console.writeln("You shot all the targets and win "+realgold+" Steel pieces!");
 			}
 			else if (okea <= 15) {
 				realgold *= 10;
 				this.gold += realgold;
-				/*console.*/writeln("You shot 50% of the targets and win "+realgold+" Steel pieces!");
+				console.writeln("You shot 50% of the targets and win "+realgold+" Steel pieces!");
 			}
 			else if (okea <= 30) {
 				realgold *= 3;
 				this.gold += realgold;
-				/*console.*/writeln("You shot 25% of the targets and win "+realgold+" Steel pieces!");
+				console.writeln("You shot 25% of the targets and win "+realgold+" Steel pieces!");
 			}
 			else {
 				this.gold -= realgold;
-				/*console.*/writeln("Sorry, You Hath Lost!");
+				console.writeln("Sorry, You Hath Lost!");
 			}
 		}
 	}
@@ -650,37 +650,37 @@ function Player_training()
 
 	function dotrain(this_obj, attr)
 	{
-		/*console.*/writeln(attr);
+		console.writeln(attr);
 		console.write("Are you sure? ");
 		if(dgn_getkeys("YN")=='Y') {
-			/*console.*/writeln("Yes");
+			console.writeln("Yes");
 			this_obj.gold -= upcost;
 			return(1);
 		}
-		/*console.*/writeln("No");
+		console.writeln("No");
 		return(0);
 	}
 
 	if(this.fights < 1)
-		/*console.*/writeln("The Training Grounds are closed until tomorrow!");
+		console.writeln("The Training Grounds are closed until tomorrow!");
 	else {
 		console.clear();
-		/*console.*/writeln("Training Grounds");
-		/*console.*/writeln("%%%%%%%%%%%%%%%%");
-		/*console.*/writeln("Each characteristic you wish to upgrade");
-		/*console.*/writeln("will cost 1,000,000 Steel pieces per point.");
-		/*console.*/writeln();
+		console.writeln("Training Grounds");
+		console.writeln("%%%%%%%%%%%%%%%%");
+		console.writeln("Each characteristic you wish to upgrade");
+		console.writeln("will cost 1,000,000 Steel pieces per point.");
+		console.writeln();
 		console.write("Do you wish to upgrade a stat? ");
 		if(dgn_getkeys("YN")=='Y') {
-			/*console.*/writeln("Yes");
+			console.writeln("Yes");
 			if(this.gold < upcost)
-				/*console.*/writeln("Sorry, but you do not have enough Steel!");
+				console.writeln("Sorry, but you do not have enough Steel!");
 			else {
-				/*console.*/writeln();
-				/*console.*/writeln("1> Strength       2> Intelligence");
-				/*console.*/writeln("3> Dexterity      4> Luck");
-				/*console.*/writeln("5> Constitution   5> Charisma");
-				/*console.*/writeln();
+				console.writeln();
+				console.writeln("1> Strength       2> Intelligence");
+				console.writeln("3> Dexterity      4> Luck");
+				console.writeln("5> Constitution   5> Charisma");
+				console.writeln();
 				console.attributes="HY0";
 				console.write("Which stat do you wish to increase? ");
 				console.attributes="W0";
@@ -707,7 +707,7 @@ function Player_training()
 			}
 		}
 		else
-			/*console.*/writeln("No");
+			console.writeln("No");
 	}
 }
 
@@ -750,29 +750,29 @@ function Player_battle(opp)
 		}
 		if(opp.status==Status.MONSTER)
 			opp.gold=opp.gold * supplant();
-		/*console.*/writeln();
+		console.writeln();
 		if(won && opp.gold > 0)
-			/*console.*/writeln("You take "+opp.his+" "+opp.gold+" Steel pieces.");
+			console.writeln("You take "+opp.his+" "+opp.gold+" Steel pieces.");
 		else {
 			if(opp.status != Status.MONSTER && this_obj.gold > 0)
-				/*console.*/writeln(opp.He+" takes your "+this_obj.gold+" Steel pieces");
+				console.writeln(opp.He+" takes your "+this_obj.gold+" Steel pieces");
 		}
 		winner.gold += loser.gold;
 		loser.gold = 0;
 		if(opp.status != Status.MONSTER) {
-			/*console.*/writeln();
+			console.writeln();
 			console.attributes="G0";
 			if(won) {
-				/*console.*/writeln("The Last Words "+loser.he+" utters are...");
-				/*console.*/writeln();
-				/*console.*/writeln(opp.gaspd);
-				/*console.*/writeln();
+				console.writeln("The Last Words "+loser.he+" utters are...");
+				console.writeln();
+				console.writeln(opp.gaspd);
+				console.writeln();
 			}
 			else {
-				/*console.*/writeln("The Last Words You Hear Are...");
-				/*console.*/writeln();
-				/*console.*/writeln(opp.winmsg);
-				/*console.*/writeln();
+				console.writeln("The Last Words You Hear Are...");
+				console.writeln();
+				console.writeln(opp.winmsg);
+				console.writeln();
 			}
 			winner.wins++;
 			loser.losses++;
@@ -785,7 +785,7 @@ function Player_battle(opp)
 				loser.weapon=winner.weapon;
 				winner.weapon=tmpweap;
 				console.attributes="G0";
-				/*console.*/writeln(wstr+" Hath Taken "+lstr+" Weapon.");
+				console.writeln(wstr+" Hath Taken "+lstr+" Weapon.");
 			}
 			if(loser.armour.power > winner.armour.power) {
 				var tmparm=loser.armour;
@@ -793,7 +793,7 @@ function Player_battle(opp)
 				loser.armour=winner=armour;
 				winner.armour=tmparm;
 				console.attributes="HY0";
-				/*console.*/writeln(wstr+" Hath Taken "+lstr+" Armour.");
+				console.writeln(wstr+" Hath Taken "+lstr+" Armour.");
 			}
 			if(Lock(logfile.name, bbs.node_num, true, 1)) {
 				if(logfile.open("a",true)) {
@@ -803,16 +803,16 @@ function Player_battle(opp)
 				Unlock(logfile.name);
 			}
 			else {
-				/*console.*/writeln();
-				/*console.*/writeln("Cannot lock "+logfile.name+" for write!");
-				/*console.*/writeln();
+				console.writeln();
+				console.writeln("Cannot lock "+logfile.name+" for write!");
+				console.writeln();
 				console.pause();
 			}
 		}
 		opp.experience *= supplant();
 		winner.experience += opp.experience;
 		if(won || opp.status != Status.MONSTER)
-			/*console.*/writeln(wstr+" obtain "+opp.experience+" exp points.");
+			console.writeln(wstr+" obtain "+opp.experience+" exp points.");
 		if(!(opp.status & Status.MONSTER))
 			opp.save();
 	}
@@ -821,38 +821,38 @@ function Player_battle(opp)
 	{
 		var rnd;
 	
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="HY0";
-		/*console.*/writeln("The Vile Enemy Dropped Something!");
+		console.writeln("The Vile Enemy Dropped Something!");
 		console.write("Do you want to get it? ");
 		if(dgn_getkeys("YN")=='Y') {
-			/*console.*/writeln("Yes");
+			console.writeln("Yes");
 			rnd=random(100)+1;
 			if(rnd<10) {
 				var i;
 				for(i=1; i<weapon.length; i++) {
 					if(weapon[i].attack+weapon[i].power > this_obj.weapon.attack+this_obj.weapon.power) {
-						/*console.*/writeln("You have found a "+weapon[i].name+".");
+						console.writeln("You have found a "+weapon[i].name+".");
 						this_obj.weapon=new Weapon(weapon[i].name, weapon[i].attack, weapon[i].power, weapon[i].cost);
 						break;
 					}
 				}
 				if(i>=weapon.length) {
-					/*console.*/writeln("It's gone!!!");
+					console.writeln("It's gone!!!");
 				}
 				// TODO: Next weapon!
 			}
 			else if(rnd < 40) {
 				this_obj.gold += 40;
-				/*console.*/writeln("You have come across 40 Steel pieces");
+				console.writeln("You have come across 40 Steel pieces");
 			}
 			else {
-				/*console.*/writeln("It's gone!!!!");
+				console.writeln("It's gone!!!!");
 			}
 		}
 		else {
-			/*console.*/writeln("No");
-			/*console.*/writeln("I wonder what it was?!?");
+			console.writeln("No");
+			console.writeln("I wonder what it was?!?");
 		}
 	}
 
@@ -864,16 +864,16 @@ function Player_battle(opp)
 		if(roll<1.5) {
 			switch(random(4)) {
 				case 0:
-					/*console.*/writeln("Swish you missed!");
+					console.writeln("Swish you missed!");
 					break;
 				case 1:
-					/*console.*/writeln("HA HA! "+opp.he+" dodges your swing!");
+					console.writeln("HA HA! "+opp.he+" dodges your swing!");
 					break;
 				case 2:
-					/*console.*/writeln("CLANG, The attack is blocked");
+					console.writeln("CLANG, The attack is blocked");
 					break;
 				case 3:
-					/*console.*/writeln("You Fight vigorously and miss!");
+					console.writeln("You Fight vigorously and miss!");
 					break;
 			}
 		}
@@ -886,29 +886,29 @@ function Player_battle(opp)
 			opp.damage += roll;
 			switch(random(3)) {
 				case 0:
-					/*console.*/writeln(format("You sliced %s for %1.0f.",opp.him,roll));
+					console.writeln(format("You sliced %s for %1.0f.",opp.him,roll));
 					break;
 				case 1:
-					/*console.*/writeln(format("You made contact to %s body for %1.0f.",opp.his,roll));
+					console.writeln(format("You made contact to %s body for %1.0f.",opp.his,roll));
 					break;
 				case 2:
-					/*console.*/writeln(format("You hacked %s for %1.0f.",opp.him,roll));
+					console.writeln(format("You hacked %s for %1.0f.",opp.him,roll));
 					break;
 			}
 			if(opp.hps <= opp.damage) {
-				/*console.*/writeln();
+				console.writeln();
 				switch(random(4)) {
 					case 0:
-						/*console.*/writeln("A Painless Death!");
+						console.writeln("A Painless Death!");
 						break;
 					case 1:
-						/*console.*/writeln(opp.He+" Had died!");
+						console.writeln(opp.He+" Had died!");
 						break;
 					case 2:
-						/*console.*/writeln("A Smooth killing!");
+						console.writeln("A Smooth killing!");
 						break;
 					case 3:
-						/*console.*/writeln(opp.He+" has gone to the Abyss!");
+						console.writeln(opp.He+" has gone to the Abyss!");
 						break;
 				}
 				if(random(100)<30)
@@ -926,7 +926,7 @@ function Player_battle(opp)
 			roll=opp.tohit(this_obj);
 			if(roll < 1.5) {
 				console.attributes="G0";
-				/*console.*/writeln(opp.His+" attack tears your armour.");
+				console.writeln(opp.His+" attack tears your armour.");
 			}
 			else {
 				roll=opp.damageroll(this_obj);
@@ -936,30 +936,30 @@ function Player_battle(opp)
 					roll=1;
 				switch(random(3)) {
 					case 0:
-						/*console.*/writeln(format("%s hammered you for %1.0f",opp.He,roll));
+						console.writeln(format("%s hammered you for %1.0f",opp.He,roll));
 						break;
 					case 1:
-						/*console.*/writeln(format("%s swung and hit for %1.0f",opp.He,roll));
+						console.writeln(format("%s swung and hit for %1.0f",opp.He,roll));
 						break;
 					case 2:
-						/*console.*/writeln(format("You are surprised when %s hits you for %1.0f",opp.he,roll));
+						console.writeln(format("You are surprised when %s hits you for %1.0f",opp.he,roll));
 						break;
 				}
 				this_obj.damage += roll;
 				if(this_obj.damage >= this_obj.hps) {
-					/*console.*/writeln();
+					console.writeln();
 					switch(random(4)) {
 						case 0:
-							/*console.*/writeln("Return This Knight To Huma's Breast....");
+							console.writeln("Return This Knight To Huma's Breast....");
 							break;
 						case 1:
-							/*console.*/writeln("You Hath Been Slain!!");
+							console.writeln("You Hath Been Slain!!");
 							break;
 						case 2:
-							/*console.*/writeln("Return Soon Brave Warrior!");
+							console.writeln("Return Soon Brave Warrior!");
 							break;
 						case 3:
-							/*console.*/writeln("May Palidine Be With You!");
+							console.writeln("May Palidine Be With You!");
 							break;
 					}
 					endofbattle(this_obj,opp,this_obj);
@@ -985,42 +985,42 @@ function Player_battle(opp)
 	}
 
 	while(this.damage < this.hps && opp.damage < opp.hps) {
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="HY0";
-		/*console.*/writeln("You are attacked by a "+opp.pseudo);
+		console.writeln("You are attacked by a "+opp.pseudo);
 		for(option='?'; option=='?'; ) {
 			console.attributes="HB0";
 			console.write("Combat ("+(this.hps-this.damage)+"): (B,F,S): ");
 			option=dgn_getkeys("BFS?");
 			if(option=="?") {
-				/*console.*/writeln("Help");
-				/*console.*/writeln();
-				/*console.*/writeln();
-				/*console.*/writeln("(B)attle your opponent.");
-				/*console.*/writeln("(F)lee from your opponent.");
-				/*console.*/writeln("(S)tatus check");
+				console.writeln("Help");
+				console.writeln();
+				console.writeln();
+				console.writeln("(B)attle your opponent.");
+				console.writeln("(F)lee from your opponent.");
+				console.writeln("(S)tatus check");
 			}
 		}
 		switch(option) {
 			case 'B':
-				/*console.*/writeln("Battle");
+				console.writeln("Battle");
 				attackmodes(this);
 				break;
 			case 'S':
-				/*console.*/writeln("Stats");
+				console.writeln("Stats");
 				this.statshow();
 				break;
 			case 'F':
-				/*console.*/writeln("Flee");
+				console.writeln("Flee");
 				if(random(4)+1 + this.dexterity > opp.dexterity) {
-					/*console.*/writeln();
+					console.writeln();
 					console.attributes="G0";
-					/*console.*/writeln("You Ride away on a Silver Dragon.");
+					console.writeln("You Ride away on a Silver Dragon.");
 					return;
 				}
 				else {
 					console.attributes="G0";
-					/*console.*/writeln("You cannot escape!.");
+					console.writeln("You cannot escape!.");
 					bmode(this);
 				}
 				break;
@@ -1032,22 +1032,22 @@ function Player_changename()
 {
 	var oldpseudo=this.pseudo;
 
-	/*console.*/writeln();
+	console.writeln();
 	console.attributes="HC0";
-	/*console.*/writeln("Your family crest has been stolen, they");
-	/*console.*/writeln("inscribe a new one with the name...");
+	console.writeln("Your family crest has been stolen, they");
+	console.writeln("inscribe a new one with the name...");
 	console.write("> ");
 	this.pseudo=console.getstr(this.pseudo, 30, K_EDIT|K_AUTODEL|K_LINE);
-	/*console.*/writeln();
-	/*console.*/write("Are you sure? ");
+	console.writeln();
+	console.write("Are you sure? ");
 	if(dgn_getkeys("YN")=='Y') {
 		// TODO: No duplicate names!
 		if(this.pseudo=='')
 			this.pseudo=oldpseudo;
-		/*console.*/writeln("Yes");
+		console.writeln("Yes");
 	}
 	else {
-		/*console.*/writeln("No");
+		console.writeln("No");
 		this.pseudo=oldpseudo;
 	}
 }
@@ -1077,17 +1077,17 @@ function getplayerlist(filename)
 	var list=new Array();
 
 	if(!Lock(players.name, bbs.node_num, false, 1)) {
-		/*console.*/writeln();
-		/*console.*/writeln("Cannot lock "+players.name+" for read!");
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln("Cannot lock "+players.name+" for read!");
+		console.writeln();
 		console.pause();
 		return(list);
 	}
 	if(!players.open("r", true)) {
 		Unlock(players.name);
-		/*console.*/writeln();
-		/*console.*/writeln("Cannot open "+players.name+" for read!");
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln("Cannot open "+players.name+" for read!");
+		console.writeln();
 		console.pause();
 		return(list);
 	}

@@ -37,7 +37,7 @@ if(weaponfile.open("r", true)) {
 }
 else {
 	console.attributes="HIR0";
-	/*console.*/writeln();
-	/*console.*/writeln("Cannot open weapons file!");
-	/*console.*/writeln();
+	console.writeln();
+	console.writeln("Cannot open weapons file!");
+	console.writeln();
 }

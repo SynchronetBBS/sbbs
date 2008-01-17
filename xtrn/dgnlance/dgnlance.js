@@ -111,8 +111,8 @@ function playerlist()
 	var i;
 
 	console.attributes="M0";
-	/*console.*/writeln("Hero Rankings:");
-	/*console.*/writeln("!!!!!!!!!!!!!!");
+	console.writeln("Hero Rankings:");
+	console.writeln("!!!!!!!!!!!!!!");
 	for(i=0; i<list.length; i++) {
 		console.attributes="M0";
 		console.print(format("%2u. \x01H\x01C%.30s%.*s\x01N\x01GLev=%-2u  W=%-6u L=%-6u S=%s \x01I\x01R%s\r\n"
@@ -139,11 +139,11 @@ function weaponlist()
 	if(max<armour.length)
 		max=armour.length;
 
-    /*console.*/writeln("Num. Weapon                    Price       Armour                    Price");
-	/*console.*/writeln("------------------------------------------------------------------------------");
+    console.writeln("Num. Weapon                    Price       Armour                    Price");
+	console.writeln("------------------------------------------------------------------------------");
 	for(i=1; i<max; i++) {
 		if((i < weapon.length && weapon[i].cost != 0) || (i < armour.length && armour[i].cost != 0)) {
-			/*console.*/writeln(format("%2d>  %-25.25s %9s   %-25.25s %9s"
+			console.writeln(format("%2d>  %-25.25s %9s   %-25.25s %9s"
 					, i
 					, ((i>=weapon.length || weapon[i].cost==0)?"":weapon[i].name)
 					, ((i>=weapon.length || weapon[i].cost==0)?"":weapon[i].cost)
@@ -158,17 +158,17 @@ function credits()
 {
 	console.clear();
 	console.attributes="G0";
-	/*console.*/writeln("Dragonlance 3.0 Credits");
-	/*console.*/writeln("@@@@@@@@@@@@@@@@@@@@@@@");
-	/*console.*/writeln("Original Dragonlance   : Raistlin Majere & TML");
-	/*console.*/writeln("Special Thanks To      : The Authours of Dragonlance");
-	/*console.*/writeln("Drangonlance's Home    : The Tower Of High Sorcery");
-	/*console.*/writeln("Originally modified from the Brazil Source Code");
-	/*console.*/writeln("C Port                 : Deuce");
-	/*console.*/writeln("JavaScript Port        : Deuce");
-	/*console.*/writeln("Home Page              : http://doors.bbsdev.net/");
-	/*console.*/writeln("Support                : deuce@nix.synchro.net");
-	/*console.*/writeln();
+	console.writeln("Dragonlance 3.0 Credits");
+	console.writeln("@@@@@@@@@@@@@@@@@@@@@@@");
+	console.writeln("Original Dragonlance   : Raistlin Majere & TML");
+	console.writeln("Special Thanks To      : The Authours of Dragonlance");
+	console.writeln("Drangonlance's Home    : The Tower Of High Sorcery");
+	console.writeln("Originally modified from the Brazil Source Code");
+	console.writeln("C Port                 : Deuce");
+	console.writeln("JavaScript Port        : Deuce");
+	console.writeln("Home Page              : http://doors.bbsdev.net/");
+	console.writeln("Support                : deuce@nix.synchro.net");
+	console.writeln();
 	console.pause();
 }
 
@@ -183,8 +183,8 @@ function listplayers()
 {
 	console.clear();
 	console.attributes="HY0";
-	/*console.*/writeln("Heroes That Have Been Defeated");
-	/*console.*/writeln("++++++++++++++++++++++++++++++");
+	console.writeln("Heroes That Have Been Defeated");
+	console.writeln("++++++++++++++++++++++++++++++");
 	console.attributes="HC0";
 	if(file_exists(getpath()+"yester.log"))
 		console.printfile(getpath()+"yester.log");
@@ -217,29 +217,29 @@ function weaponshop()
 
 	console.clear();
 	console.attributes="HY0";
-	/*console.*/writeln("Weapon & Armour Shop");
+	console.writeln("Weapon & Armour Shop");
 	console.attributes="G0";
-	/*console.*/writeln("$$$$$$$$$$$$$$$$$$$$");
+	console.writeln("$$$$$$$$$$$$$$$$$$$$");
 	while(1) {
-		/*console.*/writeln();
+		console.writeln();
 		console.write("(B)rowse, (S)ell, (P)urchase, or (Q)uit? ");
 		switch(dgn_getkeys("BSQP")) {
 			case 'Q':
-				/*console.*/writeln("Quit");
+				console.writeln("Quit");
 				return;
 			case 'B':
-				/*console.*/writeln("Browse");
+				console.writeln("Browse");
 				weaponlist();
 				break;
 			case 'P':
-				/*console.*/writeln("Purchase");
-				/*console.*/writeln();
-				/*console.*/writeln();
+				console.writeln("Purchase");
+				console.writeln();
+				console.writeln();
 				console.write("Enter weapon/armour # you wish to buy: ");
 				buy=console.getnum(max);
 				if(buy==0)
 					continue;
-				/*console.*/writeln();
+				console.writeln();
 				if(buy >= weapon.length)
 					type="A";
 				else if(buy >= armour.length)
@@ -248,105 +248,105 @@ function weaponshop()
 					console.write("(W)eapon or (A)rmour: ");
 					type=dgn_getkeys("WA");
 					if(type=='A')
-						/*console.*/writeln("Armour");
+						console.writeln("Armour");
 					else if(type=='W')
-						/*console.*/writeln("Weapon");
+						console.writeln("Weapon");
 					else
 						continue;
 				}
 				switch(type) {
 					case 'W':
 						if(weapon[buy].cost==0) {
-							/*console.*/writeln("You want to buy a what?");
+							console.writeln("You want to buy a what?");
 							continue;
 						}
 						console.write("Are you sure you want to buy it? ");
 						if(dgn_getkeys("YN")=='Y') {
-							/*console.*/writeln("Yes");
+							console.writeln("Yes");
 							if(weapon[buy].cost > player.gold) {
-								/*console.*/writeln("You do not have enough Steel.");
+								console.writeln("You do not have enough Steel.");
 								continue;
 							}
 							if(weapon[buy].cost==0) {
-								/*console.*/writeln("You can not buy one of those...");
+								console.writeln("You can not buy one of those...");
 								continue;
 							}
 							player.gold -= weapon[buy].cost;
 							player.weapon=new Weapon(weapon[buy].name, weapon[buy].attack, weapon[buy].power, weapon[buy].cost);
-							/*console.*/writeln();
+							console.writeln();
 							console.attributes="M0";
-							/*console.*/writeln("You've bought a "+player.weapon.name);
+							console.writeln("You've bought a "+player.weapon.name);
 						}
 						else
-							/*console.*/writeln("No");
+							console.writeln("No");
 						break;
 					case 'A':
 						if(weapon[buy].cost==0) {
-							/*console.*/writeln("You want to buy a what?");
+							console.writeln("You want to buy a what?");
 							continue;
 						}
 						console.write("Are you sure you want to buy it? ");
 						if(dgn_getkeys("YN")=='Y') {
-							/*console.*/writeln("Yes");
+							console.writeln("Yes");
 							if(armour[buy].cost > player.gold) {
-								/*console.*/writeln("You do not have enough Steel.");
+								console.writeln("You do not have enough Steel.");
 								continue;
 							}
 							if(armour[buy].cost==0) {
-								/*console.*/writeln("You can not buy one of those...");
+								console.writeln("You can not buy one of those...");
 								continue;
 							}
 							player.gold -= armour[buy].cost;
 							player.armour=new Armour(armour[buy].name, armour[buy].power, armour[buy].cost);
-							/*console.*/writeln();
+							console.writeln();
 							console.attributes="M0";
-							/*console.*/writeln("You've bought a "+player.armour.name);
+							console.writeln("You've bought a "+player.armour.name);
 						}
 						else
-							/*console.*/writeln("No");
+							console.writeln("No");
 						break;
 				}
 				break;
 			case 'S':
-				/*console.*/writeln("Sell");
-				/*console.*/writeln();
+				console.writeln("Sell");
+				console.writeln();
 				console.write("(W)eapon, (A)rmour, (Q)uit: ");
 				switch(dgn_getkeys("AWQ")) {
 					case 'Q':
-						/*console.*/writeln("Quit");
+						console.writeln("Quit");
 						break;
 					case 'W':
-						/*console.*/writeln("Weapon");
+						console.writeln("Weapon");
 						buyprice=player.charisma;
 						buyprice*=player.weapon.cost;
 						buyprice/=20;
-						/*console.*/writeln();
+						console.writeln();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
-							/*console.*/writeln("Yes");
+							console.writeln("Yes");
 							console.attributes="G0";
-							/*console.*/writeln("Is it Dwarven Made?");
+							console.writeln("Is it Dwarven Made?");
 							player.weapon=new Weapon(weapon[0].name, weapon[0].attack, weapon[0].power, weapon[0].cost);
 							player.gold += buyprice;
 						}
 						else
-							/*console.*/writeln("No");
+							console.writeln("No");
 						break;
 					case 'A':
-						/*console.*/writeln("Armour");
+						console.writeln("Armour");
 						buyprice=player.charisma;
 						buyprice*=player.armour.cost;
 						buyprice/=20;
-						/*console.*/writeln();
+						console.writeln();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
-							/*console.*/writeln("Yes");
-							/*console.*/writeln("Fine Craftsmanship!");
+							console.writeln("Yes");
+							console.writeln("Fine Craftsmanship!");
 							player.armour=new Armour(armour[0].name, armour[0].power, armour[0].cost);
 							player.gold += buyprice;
 						}
 						else
-							/*console.*/writeln("No");
+							console.writeln("No");
 						break;
 
 				}
@@ -361,18 +361,18 @@ function spy()
 	var spyon;
 
 	console.clear();
-	/*console.*/writeln("Spying on another user eh.. well you may spy, but to keep");
-	/*console.*/writeln("you from copying this person's stats, they will not be");
-	/*console.*/writeln("available to you.  Note that this is gonna cost you some");
-	/*console.*/writeln("cash too.  Cost: 20 Steel pieces");
-	/*console.*/writeln();
+	console.writeln("Spying on another user eh.. well you may spy, but to keep");
+	console.writeln("you from copying this person's stats, they will not be");
+	console.writeln("available to you.  Note that this is gonna cost you some");
+	console.writeln("cash too.  Cost: 20 Steel pieces");
+	console.writeln();
 	console.write("Who do you wish to spy on? ");
 	spyon=console.getstr("", 30, K_LINE);
 	if(spyon=='')
 		return;
 	if(player.gold < 20) {
 		console.attributes="HR0";
-		/*console.*/writeln("You do not have enough Steel!");
+		console.writeln("You do not have enough Steel!");
 	}
 	else {
 		/* Find this user */
@@ -380,33 +380,33 @@ function spy()
 			if(i.pseudo.match(new RegExp("spyon","i")!=-1)) {
 				console.write("Do you mean \""+users[i].pseudo+"\"?");
 				if(dgn_getkeys("YN")=="Y") {
-					/*console.*/writeln("Yes");
+					console.writeln("Yes");
 					break;
 				}
-				/*console.*/writeln("No");
+				console.writeln("No");
 			}
 		}
 		if(i>=users.length)
 			return;
 	
 		player.gold -= 20;
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="HR0";
-		/*console.*/writeln(users[i].pseudo);
-		/*console.*/writeln();
-		/*console.*/writeln("Level  : "+users[i].level);
-		/*console.*/writeln("Exp    : "+users[i].experience);
-		/*console.*/writeln("Flights: "+users[i].flights);
-		/*console.*/writeln("HPs    : "+users[i].hps);
-		/*console.*/writeln();
+		console.writeln(users[i].pseudo);
+		console.writeln();
+		console.writeln("Level  : "+users[i].level);
+		console.writeln("Exp    : "+users[i].experience);
+		console.writeln("Flights: "+users[i].flights);
+		console.writeln("HPs    : "+users[i].hps);
+		console.writeln();
 		console.attributes="M0";
-		/*console.*/writeln("Weapon : "+users[i].weapon.name);
-		/*console.*/writeln("Armour : "+users[i].armour.name);
-		/*console.*/writeln();
+		console.writeln("Weapon : "+users[i].weapon.name);
+		console.writeln("Armour : "+users[i].armour.name);
+		console.writeln();
 		console.attributes="HY0";
-		/*console.*/writeln("Steel  (in hand): "+users[i].gold);
-		/*console.*/writeln("Steel  (in bank): "+users[i].bank);
-		/*console.*/writeln();
+		console.writeln("Steel  (in hand): "+users[i].gold);
+		console.writeln("Steel  (in bank): "+users[i].bank);
+		console.writeln();
 		console.pause();
 	}
 }
@@ -421,11 +421,11 @@ function bulletin()
 		console.printfile(getpath()+"byester.asc");
 	if(file_exists(getpath()+"btoday.asc"))
 		console.printfile(getpath()+"btoday.asc");
-	/*console.*/writeln();
+	console.writeln();
 	console.write("Do you wish to enter a News Bulletin? ");
 	if(dgn_getkeys("YN")=='Y') {
-		/*console.*/writeln("Yes");
-		/*console.*/writeln();
+		console.writeln("Yes");
+		console.writeln();
 		var bullet=new Array();;
 		while(bullet.length<4) {
 			console.attributes="HY0";
@@ -436,11 +436,11 @@ function bulletin()
 				break;
 			bullet.push(bline);
 		}
-		/*console.*/writeln();
+		console.writeln();
 		console.write("Is the bulletin correct? ");
 		if(dgn_getkeys("YN")=='Y') {
-			/*console.*/writeln("Yes");
-			/*console.*/writeln("Saving Bulletin...");
+			console.writeln("Yes");
+			console.writeln("Saving Bulletin...");
 			if(bfile.open("a",true)) {
 				bfile.writeln("At "+system.timestr()+", "+player.pseudo+" wrote:");
 				while(bullet.length) {
@@ -452,10 +452,10 @@ function bulletin()
 			}
 		}
 		else
-			/*console.*/writeln("No");
+			console.writeln("No");
 	}
 	else
-		/*console.*/writeln("No");
+		console.writeln("No");
 }
 
 function afight(lvl)
@@ -464,10 +464,10 @@ function afight(lvl)
 	var monster;
 
 	if(player.fights<1) {
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="M0";
-		/*console.*/writeln("It's Getting Dark Out!");
-		/*console.*/writeln("Return to the Nearest Inn!");
+		console.writeln("It's Getting Dark Out!");
+		console.writeln("Return to the Nearest Inn!");
 	}
 	else {
 		console.clear();
@@ -513,8 +513,8 @@ function doggie()
 	if(player.battles > 0) {
 		console.clear();
 		console.attributes="HY0";
-		/*console.*/writeln("Battle Another Hero");
-		/*console.*/writeln("*******************");
+		console.writeln("Battle Another Hero");
+		console.writeln("*******************");
 		players=getplayerlist();
 		for(i=0; i<players.length; i++) {
 			if((players[i].level > player.level-4)
@@ -537,7 +537,7 @@ function doggie()
 					console.pause();
 			}
 		}
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="HC0";
 		console.write("Enter the # of your opponent: ");
 		opp=console.getnum(avail_players.length);
@@ -548,10 +548,10 @@ function doggie()
 			player.battles--;
 			avail_players[opp].experience /= 10;
 			avail_players[opp].damage = 0;
-			/*console.*/writeln();
-			/*console.*/writeln("Your opponent screams out:");
-			/*console.*/writeln('"'+avail_players[opp].bcry+'" as battle is joined.');
-			/*console.*/writeln();
+			console.writeln();
+			console.writeln("Your opponent screams out:");
+			console.writeln('"'+avail_players[opp].bcry+'" as battle is joined.');
+			console.writeln();
 			player.battle(avail_players[opp]);
 		}
 	}
@@ -573,9 +573,9 @@ function main()
 	console.print(" /      \\ \x01C  Help the People Of Krynn. \x01Y   \\==/    \r\n");
 	console.print("/        \\                                ##     \r\n");
 	console.print("----------\x01N\x01I\x01R        ON WARD!!!          \x01N\x01H\x01Y    ##     \r\n");
-	/*console.*/writeln();
-	/*console.*/writeln("News Bulletin:");
-	/*console.*/writeln();
+	console.writeln();
+	console.writeln("News Bulletin:");
+	console.writeln();
 	if(file_exists(getpath()+"byester.asc"))
 		console.printfile(getpath()+"byester.asc");
 	if(file_exists(getpath()+"btoday.asc"))
@@ -585,13 +585,13 @@ function main()
 	js.on_exit("player.leave()");
 	if(player.status & Status.DEAD) {
 		if(player.laston==system.datestr()) {
-			/*console.*/writeln("You have already died today...");
-			/*console.*/writeln("Return tomorrow for your revenge!");
+			console.writeln("You have already died today...");
+			console.writeln("Return tomorrow for your revenge!");
 			return(0);
 		}
-		/*console.*/writeln();
+		console.writeln();
 		console.attributes="HC0";
-		/*console.*/writeln("A defeat was lead over you by "+player.killer);
+		console.writeln("A defeat was lead over you by "+player.killer);
 	}
 	player.lastone=system.datestr();
 	if(player.flights < 1) {
@@ -600,7 +600,7 @@ function main()
 	}
 	else
 		player.flights--;
-	/*console.*/writeln();
+	console.writeln();
 	console.pause();
 	console.clear();
 	console.attributes="HY0";
@@ -610,149 +610,149 @@ function main()
 	while(player.damage < player.hps) {
 		player.levelupdate();
 		if((player.wins+1)*4 < player.losses) {
-			/*console.*/writeln();
-			/*console.*/writeln("As you were Travelling along a Wilderness Page an");
-			/*console.*/writeln("Evil Wizard Confronted You. When you tried to fight");
-			/*console.*/writeln("Him off, he cast a Spell of Instant Death Upon you.");
-			/*console.*/writeln("Instantly you were slain by the Archmage, Leaving you");
-			/*console.*/writeln("as nothing more than a pile of ashes. Re-Rolled!");
-			/*console.*/writeln();
+			console.writeln();
+			console.writeln("As you were Travelling along a Wilderness Page an");
+			console.writeln("Evil Wizard Confronted You. When you tried to fight");
+			console.writeln("Him off, he cast a Spell of Instant Death Upon you.");
+			console.writeln("Instantly you were slain by the Archmage, Leaving you");
+			console.writeln("as nothing more than a pile of ashes. Re-Rolled!");
+			console.writeln();
 			console.pause();
 			player.create(false);
 			if(player.flights)
 				player.flights--;
 		}
-		/*console.*/writeln();
-		/*console.*/writeln();
+		console.writeln();
+		console.writeln();
 		console.attributes="HY0";
 		console.write("Command (?): ");
 		switch(dgn_getkeys("QVP12345CHWLADGFRSTX+-?EZ*#")) {
 			case 'Q':
-				/*console.*/writeln("Quit");
+				console.writeln("Quit");
 				console.write("LEAVE KRYNN? Are you sure? ");
 				if(dgn_getkeys("YN")=='Y') {
-					/*console.*/writeln("Yes");
+					console.writeln("Yes");
 					return(0);
 				}
-				/*console.*/writeln("No");
+				console.writeln("No");
 				break;
 			case '1':
-				/*console.*/writeln("1");
+				console.writeln("1");
 				afight(1);
 				break;
 			case '2':
-				/*console.*/writeln("2");
+				console.writeln("2");
 				afight(2);
 				break;
 			case '3':
-				/*console.*/writeln("3");
+				console.writeln("3");
 				afight(3);
 				break;
 			case '4':
-				/*console.*/writeln("4");
+				console.writeln("4");
 				afight(4);
 				break;
 			case '5':
-				/*console.*/writeln("5");
+				console.writeln("5");
 				afight(5);
 				break;
 			case 'C':
-				/*console.*/writeln("Change Stats");
+				console.writeln("Change Stats");
 				player.chstats();
 				break;
 			case 'H':
-				/*console.*/writeln("Heal");
+				console.writeln("Heal");
 				player.heal();
 				break;
 			case 'W':
-				/*console.*/writeln("Weapon Shop");
+				console.writeln("Weapon Shop");
 				weaponshop();
 				break;
 			case 'L':
-				/*console.*/writeln("Level Update");
+				console.writeln("Level Update");
 				player.levelupdate();
 				break;
 			case 'A':
-				/*console.*/writeln("Battle Another User");
+				console.writeln("Battle Another User");
 				doggie();
 				break;
 			case 'D':
-				/*console.*/writeln("Docs");
+				console.writeln("Docs");
 				docs();
 				break;
 			case 'G':
-				/*console.*/writeln("Gamble");
+				console.writeln("Gamble");
 				player.gamble();
 				break;
 			case 'F':
-				/*console.*/writeln("Battles Today");
+				console.writeln("Battles Today");
 				listplayers();
 				break;
 			case 'R':
-				/*console.*/writeln("Rank Players");
+				console.writeln("Rank Players");
 				playerlist();
 				break;
 			case 'S':
-				/*console.*/writeln("Status");
+				console.writeln("Status");
 				player.statshow();
 				break;
 			case 'T':
-				/*console.*/writeln("Training Grounds");
+				console.writeln("Training Grounds");
 				player.training();
 				break;
 			case 'X':
-				/*console.*/writeln("Re-Roll");
-				/*console.*/writeln("Please not that this will completely purge");
-				/*console.*/writeln("your current hero of all attributes!");
-				/*console.*/writeln();
+				console.writeln("Re-Roll");
+				console.writeln("Please not that this will completely purge");
+				console.writeln("your current hero of all attributes!");
+				console.writeln();
 				console.write("Are you sure you want to REROLL your character? ");
 				if(dgn_getkeys("YN")=='Y') {
-					/*console.*/writeln("Yes");
+					console.writeln("Yes");
 					player.create(false);
 					if(player.flights)
 						player.flights--;
 				}
 				else
-					/*console.*/writeln("No");
+					console.writeln("No");
 				break;
 			case '+':
-				/*console.*/writeln("Deposit");
+				console.writeln("Deposit");
 				player.depobank();
 				break;
 			case '-':
-				/*console.*/writeln("Withdraw");
+				console.writeln("Withdraw");
 				player.withdrawbank();
 				break;
 			case 'P':
-				/*console.*/writeln("Plug");
+				console.writeln("Plug");
 				console.clear();
 				console.printfile(getpath()+"plug.asc");
 				break;
 			case '?':
-				/*console.*/writeln("Help");
+				console.writeln("Help");
 				console.clear();
 				console.printfile(getpath()+"menu.asc");
 				break;
 			case 'E':
-				/*console.*/writeln("Edit Announcement");
+				console.writeln("Edit Announcement");
 				bulletin();
 				break;
 			case 'Z':
-				/*console.*/writeln("Spy");
+				console.writeln("Spy");
 				spy();
 				break;
 			case 'V':
-				/*console.*/writeln("Version");
+				console.writeln("Version");
 				console.attributes="HB0";
-				/*console.*/writeln("This Is Dragonlance version 3.0 (JS)");
+				console.writeln("This Is Dragonlance version 3.0 (JS)");
 				console.pause();
 				break;
 			case '*':
-				/*console.*/writeln("Change Name");
+				console.writeln("Change Name");
 				player.changename();
 				break;
 			case '#':
-				/*console.*/writeln("Change Battle Cry");
+				console.writeln("Change Battle Cry");
 				player.vic();
 				break;
 		}
