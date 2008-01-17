@@ -807,8 +807,10 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	if(!js_write(cx, obj, argc, argv, rval))
-		return(JS_FALSE);
+	if(argc) {
+		if(!js_write(cx, obj, argc, argv, rval))
+			return(JS_FALSE);
+	}
 	return(js_crlf(cx, obj, argc, argv, rval));
 }
 
