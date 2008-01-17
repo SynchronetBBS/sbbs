@@ -162,17 +162,17 @@ function Player_statshow()
 	console.attributes="HC0";
 	console.write("W/L: "+this.wins+"/"+this.losses);
 	console.writeln("   Exp: "+this.experience);
-	console.writeln();
+	console.crlf();
 	console.attributes="HY0";
 	console.writeln("Steel  (in hand): "+this.gold);
 	console.writeln("Steel  (in bank): "+this.bank);
-	console.writeln();
+	console.crlf();
 	console.attributes="HB0";
 	console.write("Battles: "+this.battles);
 	console.write("   Flights: "+this.flights);
 	console.write("   Fights: "+this.fights);
 	console.writeln("   HPs: "+(this.hps-this.damage)+"("+this.hps+")");
-	console.writeln();
+	console.crlf();
 	console.attributes="HC0";
 	console.write("Weapon: "+this.weapon.name);
 	console.writeln("     Armor: "+this.armour.name);
@@ -189,9 +189,9 @@ function Player_load(filename)
 	var item_attack;
 
 	if(!Lock(players.name, bbs.node_num, false, 1)) {
-		console.writeln();
+		console.crlf();
 		console.writeln("Cannot lock "+players.name+" for read!");
-		console.writeln();
+		console.crlf();
 		console.pause();
 		return(false);
 	}
@@ -253,9 +253,9 @@ function Player_save(name)
 	var players=new File(getpath()+"players.ini");
 
 	if(!Lock(players.name, bbs.node_num, true, 1)) {
-		console.writeln();
+		console.crlf();
 		console.writeln("Cannot lock "+players.name+" for write!");
-		console.writeln();
+		console.crlf();
 		console.pause();
 		return(false);
 	}
@@ -415,7 +415,7 @@ function Player_chstats()
 		function check(value, name) {
 			if(value < 6) {
 				valid=false;
-				console.writeln();
+				console.crlf();
 				console.writeln(name+" cannot go below 6");
 			}
 		}
@@ -436,7 +436,7 @@ function Player_chstats()
 		orig.constitution=this_obj.constitution;
 		orig.charisma=this_obj.charisma;
 
-		console.writeln();
+		console.crlf();
 		console.writeln("Status Change:");
 		console.writeln("^^^^^^^^^^^^^^");
 		console.writeln("1> Str: "+(this_obj.strength));
@@ -445,7 +445,7 @@ function Player_chstats()
 		console.writeln("4> Luk: "+(this_obj.luck));
 		console.writeln("5> Con: "+(this_obj.constitution));
 		console.writeln("6> Chr: "+(this_obj.charisma));
-		console.writeln();
+		console.crlf();
 		check(this_obj.strength,"Strength");
 		check(this_obj.intelligence,"Intelligence");
 		check(this_obj.dexterity,"Dexterity");
@@ -474,14 +474,14 @@ function Player_chstats()
 		console.writeln("@@@@@@@@@@@@@@");
 		console.writeln("You may increase any stat by one,");
 		console.writeln("yet you must decrease another by two.");
-		console.writeln();
+		console.crlf();
 		console.writeln("1> Str: "+this.strength);
 		console.writeln("2> Int: "+this.intelligence);
 		console.writeln("3> Dex: "+this.dexterity);
 		console.writeln("4> Luk: "+this.luck);
 		console.writeln("5> Con: "+this.constitution);
 		console.writeln("6> Chr: "+this.charisma);
-		console.writeln();
+		console.crlf();
 		if(incre(this)) {
 			if(decre(this)) {
 				if(ministat(this))
@@ -498,7 +498,7 @@ function Player_depobank()
 	var tmp=this.gold;
 	this.gold -= tmp;
 	this.bank += tmp;
-	console.writeln();
+	console.crlf();
 	console.attributes="HC0";
 	console.writeln(this.bank+" Steel pieces are in the bank.");
 }
@@ -508,7 +508,7 @@ function Player_withdrawbank()
 	var tmp=this.bank;
 	this.gold += tmp;
 	this.bank -= tmp;
-	console.writeln();
+	console.crlf();
 	console.attributes="HC0";
 	console.writeln("You are now carrying "+this.gold+" Steel pieces.");
 }
@@ -543,7 +543,7 @@ function Player_changemessage()
 	function getmessage(prompt, msg)
 	{
 		while(1) {
-			console.writeln();
+			console.crlf();
 			console.attributes="HC0";
 			console.writeln(prompt);
 			console.write("> ");
@@ -587,7 +587,7 @@ function Player_create(isnew)
 		this.bcry="";
 		this.gaspd="";
 		this.winmsg="";
-		console.writeln();
+		console.crlf();
 		this.pseudo=user.alias;
 		this.vic();
 		this.battles = Config.BATTLES_PER_DAY;
@@ -596,7 +596,7 @@ function Player_create(isnew)
 	}
 	console.write("What sex would you like your character to be? (M/F) ");
 	this.sex=dgn_getkeys("MF");
-	console.writeln();
+	console.crlf();
 }
 
 function Player_gamble()
@@ -610,13 +610,13 @@ function Player_gamble()
 		console.clear();
 		console.writeln("  Welcome to the Shooting Gallery");
 		console.writeln(" Maximum wager is 25,000 Steel pieces");
-		console.writeln();
+		console.crlf();
 		console.attributes="HY0";
 		console.writeln("How many Steel pieces do you wish to wager? ");
 		console.attributes="W0";
 		realgold=console.getnum(25000);
 		if(realgold > this.gold) {
-			console.writeln();
+			console.crlf();
 			console.writeln("You do not have enough Steel!");
 		}
 		if(realgold != 0 && this.gold >= realgold && realgold <= 25000 && realgold >= 1) {
@@ -669,18 +669,18 @@ function Player_training()
 		console.writeln("%%%%%%%%%%%%%%%%");
 		console.writeln("Each characteristic you wish to upgrade");
 		console.writeln("will cost 1,000,000 Steel pieces per point.");
-		console.writeln();
+		console.crlf();
 		console.write("Do you wish to upgrade a stat? ");
 		if(dgn_getkeys("YN")=='Y') {
 			console.writeln("Yes");
 			if(this.gold < upcost)
 				console.writeln("Sorry, but you do not have enough Steel!");
 			else {
-				console.writeln();
+				console.crlf();
 				console.writeln("1> Strength       2> Intelligence");
 				console.writeln("3> Dexterity      4> Luck");
 				console.writeln("5> Constitution   5> Charisma");
-				console.writeln();
+				console.crlf();
 				console.attributes="HY0";
 				console.write("Which stat do you wish to increase? ");
 				console.attributes="W0";
@@ -750,7 +750,7 @@ function Player_battle(opp)
 		}
 		if(opp.status==Status.MONSTER)
 			opp.gold=opp.gold * supplant();
-		console.writeln();
+		console.crlf();
 		if(won && opp.gold > 0)
 			console.writeln("You take "+opp.his+" "+opp.gold+" Steel pieces.");
 		else {
@@ -760,19 +760,19 @@ function Player_battle(opp)
 		winner.gold += loser.gold;
 		loser.gold = 0;
 		if(opp.status != Status.MONSTER) {
-			console.writeln();
+			console.crlf();
 			console.attributes="G0";
 			if(won) {
 				console.writeln("The Last Words "+loser.he+" utters are...");
-				console.writeln();
+				console.crlf();
 				console.writeln(opp.gaspd);
-				console.writeln();
+				console.crlf();
 			}
 			else {
 				console.writeln("The Last Words You Hear Are...");
-				console.writeln();
+				console.crlf();
 				console.writeln(opp.winmsg);
-				console.writeln();
+				console.crlf();
 			}
 			winner.wins++;
 			loser.losses++;
@@ -803,9 +803,9 @@ function Player_battle(opp)
 				Unlock(logfile.name);
 			}
 			else {
-				console.writeln();
+				console.crlf();
 				console.writeln("Cannot lock "+logfile.name+" for write!");
-				console.writeln();
+				console.crlf();
 				console.pause();
 			}
 		}
@@ -821,7 +821,7 @@ function Player_battle(opp)
 	{
 		var rnd;
 	
-		console.writeln();
+		console.crlf();
 		console.attributes="HY0";
 		console.writeln("The Vile Enemy Dropped Something!");
 		console.write("Do you want to get it? ");
@@ -896,7 +896,7 @@ function Player_battle(opp)
 					break;
 			}
 			if(opp.hps <= opp.damage) {
-				console.writeln();
+				console.crlf();
 				switch(random(4)) {
 					case 0:
 						console.writeln("A Painless Death!");
@@ -947,7 +947,7 @@ function Player_battle(opp)
 				}
 				this_obj.damage += roll;
 				if(this_obj.damage >= this_obj.hps) {
-					console.writeln();
+					console.crlf();
 					switch(random(4)) {
 						case 0:
 							console.writeln("Return This Knight To Huma's Breast....");
@@ -985,7 +985,7 @@ function Player_battle(opp)
 	}
 
 	while(this.damage < this.hps && opp.damage < opp.hps) {
-		console.writeln();
+		console.crlf();
 		console.attributes="HY0";
 		console.writeln("You are attacked by a "+opp.pseudo);
 		for(option='?'; option=='?'; ) {
@@ -994,8 +994,8 @@ function Player_battle(opp)
 			option=dgn_getkeys("BFS?");
 			if(option=="?") {
 				console.writeln("Help");
-				console.writeln();
-				console.writeln();
+				console.crlf();
+				console.crlf();
 				console.writeln("(B)attle your opponent.");
 				console.writeln("(F)lee from your opponent.");
 				console.writeln("(S)tatus check");
@@ -1013,7 +1013,7 @@ function Player_battle(opp)
 			case 'F':
 				console.writeln("Flee");
 				if(random(4)+1 + this.dexterity > opp.dexterity) {
-					console.writeln();
+					console.crlf();
 					console.attributes="G0";
 					console.writeln("You Ride away on a Silver Dragon.");
 					return;
@@ -1032,13 +1032,13 @@ function Player_changename()
 {
 	var oldpseudo=this.pseudo;
 
-	console.writeln();
+	console.crlf();
 	console.attributes="HC0";
 	console.writeln("Your family crest has been stolen, they");
 	console.writeln("inscribe a new one with the name...");
 	console.write("> ");
 	this.pseudo=console.getstr(this.pseudo, 30, K_EDIT|K_AUTODEL|K_LINE);
-	console.writeln();
+	console.crlf();
 	console.write("Are you sure? ");
 	if(dgn_getkeys("YN")=='Y') {
 		// TODO: No duplicate names!
@@ -1077,17 +1077,17 @@ function getplayerlist(filename)
 	var list=new Array();
 
 	if(!Lock(players.name, bbs.node_num, false, 1)) {
-		console.writeln();
+		console.crlf();
 		console.writeln("Cannot lock "+players.name+" for read!");
-		console.writeln();
+		console.crlf();
 		console.pause();
 		return(list);
 	}
 	if(!players.open("r", true)) {
 		Unlock(players.name);
-		console.writeln();
+		console.crlf();
 		console.writeln("Cannot open "+players.name+" for read!");
-		console.writeln();
+		console.crlf();
 		console.pause();
 		return(list);
 	}

@@ -168,7 +168,7 @@ function credits()
 	console.writeln("JavaScript Port        : Deuce");
 	console.writeln("Home Page              : http://doors.bbsdev.net/");
 	console.writeln("Support                : deuce@nix.synchro.net");
-	console.writeln();
+	console.crlf();
 	console.pause();
 }
 
@@ -221,7 +221,7 @@ function weaponshop()
 	console.attributes="G0";
 	console.writeln("$$$$$$$$$$$$$$$$$$$$");
 	while(1) {
-		console.writeln();
+		console.crlf();
 		console.write("(B)rowse, (S)ell, (P)urchase, or (Q)uit? ");
 		switch(dgn_getkeys("BSQP")) {
 			case 'Q':
@@ -233,13 +233,13 @@ function weaponshop()
 				break;
 			case 'P':
 				console.writeln("Purchase");
-				console.writeln();
-				console.writeln();
+				console.crlf();
+				console.crlf();
 				console.write("Enter weapon/armour # you wish to buy: ");
 				buy=console.getnum(max);
 				if(buy==0)
 					continue;
-				console.writeln();
+				console.crlf();
 				if(buy >= weapon.length)
 					type="A";
 				else if(buy >= armour.length)
@@ -273,7 +273,7 @@ function weaponshop()
 							}
 							player.gold -= weapon[buy].cost;
 							player.weapon=new Weapon(weapon[buy].name, weapon[buy].attack, weapon[buy].power, weapon[buy].cost);
-							console.writeln();
+							console.crlf();
 							console.attributes="M0";
 							console.writeln("You've bought a "+player.weapon.name);
 						}
@@ -298,7 +298,7 @@ function weaponshop()
 							}
 							player.gold -= armour[buy].cost;
 							player.armour=new Armour(armour[buy].name, armour[buy].power, armour[buy].cost);
-							console.writeln();
+							console.crlf();
 							console.attributes="M0";
 							console.writeln("You've bought a "+player.armour.name);
 						}
@@ -309,7 +309,7 @@ function weaponshop()
 				break;
 			case 'S':
 				console.writeln("Sell");
-				console.writeln();
+				console.crlf();
 				console.write("(W)eapon, (A)rmour, (Q)uit: ");
 				switch(dgn_getkeys("AWQ")) {
 					case 'Q':
@@ -320,7 +320,7 @@ function weaponshop()
 						buyprice=player.charisma;
 						buyprice*=player.weapon.cost;
 						buyprice/=20;
-						console.writeln();
+						console.crlf();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
 							console.writeln("Yes");
@@ -337,7 +337,7 @@ function weaponshop()
 						buyprice=player.charisma;
 						buyprice*=player.armour.cost;
 						buyprice/=20;
-						console.writeln();
+						console.crlf();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
 							console.writeln("Yes");
@@ -365,7 +365,7 @@ function spy()
 	console.writeln("you from copying this person's stats, they will not be");
 	console.writeln("available to you.  Note that this is gonna cost you some");
 	console.writeln("cash too.  Cost: 20 Steel pieces");
-	console.writeln();
+	console.crlf();
 	console.write("Who do you wish to spy on? ");
 	spyon=console.getstr("", 30, K_LINE);
 	if(spyon=='')
@@ -390,23 +390,23 @@ function spy()
 			return;
 	
 		player.gold -= 20;
-		console.writeln();
+		console.crlf();
 		console.attributes="HR0";
 		console.writeln(users[i].pseudo);
-		console.writeln();
+		console.crlf();
 		console.writeln("Level  : "+users[i].level);
 		console.writeln("Exp    : "+users[i].experience);
 		console.writeln("Flights: "+users[i].flights);
 		console.writeln("HPs    : "+users[i].hps);
-		console.writeln();
+		console.crlf();
 		console.attributes="M0";
 		console.writeln("Weapon : "+users[i].weapon.name);
 		console.writeln("Armour : "+users[i].armour.name);
-		console.writeln();
+		console.crlf();
 		console.attributes="HY0";
 		console.writeln("Steel  (in hand): "+users[i].gold);
 		console.writeln("Steel  (in bank): "+users[i].bank);
-		console.writeln();
+		console.crlf();
 		console.pause();
 	}
 }
@@ -421,11 +421,11 @@ function bulletin()
 		console.printfile(getpath()+"byester.asc");
 	if(file_exists(getpath()+"btoday.asc"))
 		console.printfile(getpath()+"btoday.asc");
-	console.writeln();
+	console.crlf();
 	console.write("Do you wish to enter a News Bulletin? ");
 	if(dgn_getkeys("YN")=='Y') {
 		console.writeln("Yes");
-		console.writeln();
+		console.crlf();
 		var bullet=new Array();;
 		while(bullet.length<4) {
 			console.attributes="HY0";
@@ -436,7 +436,7 @@ function bulletin()
 				break;
 			bullet.push(bline);
 		}
-		console.writeln();
+		console.crlf();
 		console.write("Is the bulletin correct? ");
 		if(dgn_getkeys("YN")=='Y') {
 			console.writeln("Yes");
@@ -464,7 +464,7 @@ function afight(lvl)
 	var monster;
 
 	if(player.fights<1) {
-		console.writeln();
+		console.crlf();
 		console.attributes="M0";
 		console.writeln("It's Getting Dark Out!");
 		console.writeln("Return to the Nearest Inn!");
@@ -537,7 +537,7 @@ function doggie()
 					console.pause();
 			}
 		}
-		console.writeln();
+		console.crlf();
 		console.attributes="HC0";
 		console.write("Enter the # of your opponent: ");
 		opp=console.getnum(avail_players.length);
@@ -548,10 +548,10 @@ function doggie()
 			player.battles--;
 			avail_players[opp].experience /= 10;
 			avail_players[opp].damage = 0;
-			console.writeln();
+			console.crlf();
 			console.writeln("Your opponent screams out:");
 			console.writeln('"'+avail_players[opp].bcry+'" as battle is joined.');
-			console.writeln();
+			console.crlf();
 			player.battle(avail_players[opp]);
 		}
 	}
@@ -573,9 +573,9 @@ function main()
 	console.print(" /      \\ \x01C  Help the People Of Krynn. \x01Y   \\==/    \r\n");
 	console.print("/        \\                                ##     \r\n");
 	console.print("----------\x01N\x01I\x01R        ON WARD!!!          \x01N\x01H\x01Y    ##     \r\n");
-	console.writeln();
+	console.crlf();
 	console.writeln("News Bulletin:");
-	console.writeln();
+	console.crlf();
 	if(file_exists(getpath()+"byester.asc"))
 		console.printfile(getpath()+"byester.asc");
 	if(file_exists(getpath()+"btoday.asc"))
@@ -589,7 +589,7 @@ function main()
 			console.writeln("Return tomorrow for your revenge!");
 			return(0);
 		}
-		console.writeln();
+		console.crlf();
 		console.attributes="HC0";
 		console.writeln("A defeat was lead over you by "+player.killer);
 	}
@@ -600,7 +600,7 @@ function main()
 	}
 	else
 		player.flights--;
-	console.writeln();
+	console.crlf();
 	console.pause();
 	console.clear();
 	console.attributes="HY0";
@@ -610,20 +610,20 @@ function main()
 	while(player.damage < player.hps) {
 		player.levelupdate();
 		if((player.wins+1)*4 < player.losses) {
-			console.writeln();
+			console.crlf();
 			console.writeln("As you were Travelling along a Wilderness Page an");
 			console.writeln("Evil Wizard Confronted You. When you tried to fight");
 			console.writeln("Him off, he cast a Spell of Instant Death Upon you.");
 			console.writeln("Instantly you were slain by the Archmage, Leaving you");
 			console.writeln("as nothing more than a pile of ashes. Re-Rolled!");
-			console.writeln();
+			console.crlf();
 			console.pause();
 			player.create(false);
 			if(player.flights)
 				player.flights--;
 		}
-		console.writeln();
-		console.writeln();
+		console.crlf();
+		console.crlf();
 		console.attributes="HY0";
 		console.write("Command (?): ");
 		switch(dgn_getkeys("QVP12345CHWLADGFRSTX+-?EZ*#")) {
@@ -704,7 +704,7 @@ function main()
 				console.writeln("Re-Roll");
 				console.writeln("Please not that this will completely purge");
 				console.writeln("your current hero of all attributes!");
-				console.writeln();
+				console.crlf();
 				console.write("Are you sure you want to REROLL your character? ");
 				if(dgn_getkeys("YN")=='Y') {
 					console.writeln("Yes");

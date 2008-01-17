@@ -31,8 +31,8 @@ if(armourfile.open("r", true)) {
 }
 else {
 	console.attributes="HIR0";
-	console.writeln();
+	console.crlf();
 	console.writeln("Cannot open armours file!"+armourfile.name);
-	console.writeln();
+	console.crlf();
 	console.pause();
 }
