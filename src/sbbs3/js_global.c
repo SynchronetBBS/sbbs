@@ -3537,12 +3537,12 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsval id)
 	if(id != JSVAL_NULL)
 		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
 
-	if(js_SyncResolve(cx, obj, name, js_global_properties, js_global_functions, js_global_const_ints, 0)==JS_FALSE)
-		ret=JS_FALSE;
 	if(p->methods) {
 		if(js_SyncResolve(cx, obj, name, NULL, p->methods, NULL, 0)==JS_FALSE)
 			ret=JS_FALSE;
 	}
+	if(js_SyncResolve(cx, obj, name, js_global_properties, js_global_functions, js_global_const_ints, 0)==JS_FALSE)
+		ret=JS_FALSE;
 	return(ret);
 }
 
