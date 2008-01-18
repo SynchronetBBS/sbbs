@@ -390,11 +390,17 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	BYTE		b;
-	WORD		w;
-	DWORD		l;
+	BYTE		*b;
+	WORD		*w;
+	DWORD		*l;
 	size_t		size=sizeof(DWORD);
 	private_t*	p;
+	size_t		count=1;
+	size_t		retlen;
+	void		*buffer=NULL;
+	int			i;
+    JSObject*	array;
+    jsval       v;
 
 	*rval = INT_TO_JSVAL(-1);
 
@@ -409,29 +415,65 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc) {
 		if(!JS_ValueToInt32(cx,argv[0],(int32*)&size))
 			return(JS_FALSE);
+		if(argc>1) {
+			if(!JS_ValueToInt32(cx,argv[1],(int32*)&count))
+				return(JS_FALSE);
+		}
 	}
 
-	switch(size) {
-		case sizeof(BYTE):
-			if(fread(&b,1,size,p->fp)==size)
-				*rval = INT_TO_JSVAL(b);
-			break;
-		case sizeof(WORD):
-			if(fread(&w,1,size,p->fp)==size) {
-				if(p->network_byte_order)
-					w=ntohs(w);
-				*rval = INT_TO_JSVAL(w);
-			}
-			break;
-		case sizeof(DWORD):
-			if(fread(&l,1,size,p->fp)==size) {
-				if(p->network_byte_order)
-					l=ntohl(l);
-				JS_NewNumberValue(cx,l,rval);
-			}
-			break;
+	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD)) {
+		/* unknown size */
+		dbprintf(TRUE, p, "unsupported binary read size: %d",size);
+		return(JS_TRUE);
 	}
-		
+
+	buffer=malloc(size*count);
+	if(buffer==NULL) {
+		dbprintf(TRUE, p, "malloc failure of %u bytes", size*count);
+		return(JS_FALSE);
+	}
+	b=buffer;
+	w=buffer;
+	l=buffer;
+	retlen=fread(buffer, size, count, p->fp);
+	if(count==1) {
+		if(retlen==1) {
+			switch(size) {
+				case sizeof(BYTE):
+					*rval = INT_TO_JSVAL(*b);
+					break;
+				case sizeof(WORD):
+					*rval = INT_TO_JSVAL(*w);
+					break;
+				case sizeof(DWORD):
+					JS_NewNumberValue(cx,*l,rval);
+					break;
+			}
+		}
+	}
+	else {
+    	array = JS_NewArrayObject(cx, 0, NULL);
+
+		for(i=0; i<retlen; i++) {
+			switch(size) {
+				case sizeof(BYTE):
+					v = INT_TO_JSVAL(*(b++));
+					break;
+				case sizeof(WORD):
+					v = INT_TO_JSVAL(*(w++));
+					break;
+				case sizeof(DWORD):
+					JS_NewNumberValue(cx,*(l++),&v);
+					break;
+			}
+        	if(!JS_SetElement(cx, array, i, &v))
+				goto end;
+		}
+    	*rval = OBJECT_TO_JSVAL(array);
+	}
+
+end:
+	free(buffer);
 	return(JS_TRUE);
 }
 
@@ -1073,13 +1115,17 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	BYTE		b;
-	WORD		w;
-	DWORD		l;
+	BYTE		*b;
+	WORD		*w;
+	DWORD		*l;
 	int32		val=0;
 	size_t		wr=0;
 	size_t		size=sizeof(DWORD);
+	size_t		count=1;
+	void		*buffer;
 	private_t*	p;
+    JSObject*	array=NULL;
+    jsval       elemval;
 
 	*rval = JSVAL_FALSE;
 
@@ -1091,38 +1137,73 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(!JS_ValueToInt32(cx,argv[0],&val))
-		return(JS_FALSE);
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		array = JSVAL_TO_OBJECT(argv[0]);
+		if(JS_IsArrayObject(cx, array)) {
+		    if(!JS_GetArrayLength(cx, array, &count))
+				return(JS_TRUE);
+		}
+		else
+			array=NULL;
+	}
+	if(array==NULL) {
+		if(!JS_ValueToInt32(cx,argv[0],&val))
+			return(JS_FALSE);
+	}
 	if(argc>1) {
 		if(!JS_ValueToInt32(cx,argv[1],(int32*)&size))
 			return(JS_FALSE);
 	}
-
-	switch(size) {
-		case sizeof(BYTE):
-			b = (BYTE)val;
-			wr=fwrite(&b,1,size,p->fp);
-			break;
-		case sizeof(WORD):
-			w = (WORD)val;
-			if(p->network_byte_order)
-				w=htons(w);
-			wr=fwrite(&w,1,size,p->fp);
-			break;
-		case sizeof(DWORD):
-			l = val;
-			if(p->network_byte_order)
-				l=htonl(l);
-			wr=fwrite(&l,1,size,p->fp);
-			break;
-		default:	
-			/* unknown size */
-			dbprintf(TRUE, p, "unsupported binary write size: %d",size);
-			break;
+	if(size != sizeof(BYTE) && size != sizeof(WORD) && size != sizeof(DWORD)) {
+		dbprintf(TRUE, p, "unsupported binary write size: %d",size);
+		return(JS_TRUE);
 	}
-	if(wr==size)
-		*rval = JSVAL_TRUE;
-		
+	buffer=malloc(size*count);
+	if(buffer==NULL) {
+		dbprintf(TRUE, p, "malloc failure of %u bytes", size*count);
+		return(JS_FALSE);
+	}
+	b=buffer;
+	w=buffer;
+	l=buffer;
+	if(array==NULL) {
+		switch(size) {
+			case sizeof(BYTE):
+				*b=(BYTE)val;
+				break;
+			case sizeof(WORD):
+				*w=(WORD)val;
+				break;
+			case sizeof(DWORD):
+				*l=(DWORD)val;
+				break;
+		}
+	}
+	else {
+		for(wr=0; wr<count; wr++) {
+	        if(!JS_GetElement(cx, array, wr, &elemval))
+				goto end;
+			if(!JS_ValueToInt32(cx,elemval,&val))
+				goto end;
+			switch(size) {
+				case sizeof(BYTE):
+					*(b++)=(BYTE)val;
+					break;
+				case sizeof(WORD):
+					*(w++)=(WORD)val;
+					break;
+				case sizeof(DWORD):
+					*(l++)=val;
+					break;
+			}
+		}
+	}
+	wr=fwrite(buffer,size,count,p->fp);
+	if(wr==count)
+		*rval=JSVAL_TRUE;
+
+end:
+	free(buffer);
 	return(JS_TRUE);
 }
 
@@ -1792,8 +1873,9 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters")
 	,310
 	},		
-	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt>]")
-	,JSDOCSTR("read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)")
+	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt> [,count=<tt>1</tt>]")
+	,JSDOCSTR("read one or more binary integers from the file, default number of <i>bytes</i> is 4 (32-bits). "
+			  "if count is not equal to 1, an array is returned (even if no integers were read)")
 	,310
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	JSDOCSTR("[maxlen=<tt>512</tt>]")
@@ -1808,8 +1890,9 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write a line-feed terminated string to the file")
 	,310
 	},
-	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
-	,JSDOCSTR("write a binary integer to the file, default number of <i>bytes</i> is 4 (32-bits)")
+	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value(s) [,bytes=<tt>4</tt>]")
+	,JSDOCSTR("write one or more binary integers to the file, default number of <i>bytes</i> is 4 (32-bits)."
+			  "If value is an array, writes the entire array to the file.")
 	,310
 	},
 	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
