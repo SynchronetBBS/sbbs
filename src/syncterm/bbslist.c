@@ -737,7 +737,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						"~ Log Telnet Cmds ~\n"
 						"        Cycles through the various telnet command log settings.\n\n"
 						;
-		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar,"Edit Entry",opts);
+		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,&bar,"Edit Entry",opts);
 		if(i>=0 && isdefault)
 			i+=2;
 		switch(i) {
@@ -1103,7 +1103,7 @@ void change_settings(void)
 		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
 		sprintf(opts[5],"Modem Device            %s",settings.mdm.device_name);
 		sprintf(opts[6],"Modem Init String       %s",settings.mdm.init_string);
-		switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&cur,NULL,"Program Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
 			case 0:
@@ -1563,8 +1563,12 @@ struct bbslist *show_bbslist(int mode)
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
-				val=uifc.list(WIN_ACT|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE
+				val=uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP
 					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
+				if(val>=0) {
+					uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
+						,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
+				}
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
 						viewofflinescroll();
