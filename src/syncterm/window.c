@@ -17,8 +17,12 @@ int drawwin(void)
     gettextinfo(&txtinfo);
 	if(txtinfo.screenwidth < 80)
 		term.width=40;
-	else
-		term.width=80;
+	else {
+		if(txtinfo.screenwidth <132)
+			term.width=80;
+		else
+			term.width=132;
+	}
 	term.height=txtinfo.screenheight;
 	if(!term.nostatus)
 		term.height--;
