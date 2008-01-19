@@ -434,6 +434,7 @@ int win32_initciolib(long inmode)
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
+	SetConsoleCtrlHandler(NULL,FALSE);
 	conmode=orig_in_conmode;
 	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
 	conmode|=ENABLE_MOUSE_INPUT;
@@ -457,14 +458,16 @@ int win32_initciolib(long inmode)
 		i=sbuff.srWindow.Right-sbuff.srWindow.Left+1;
 		j=sbuff.srWindow.Bottom-sbuff.srWindow.Top+1;
 		if(i>=132) {
-			if(j<21)
-				win32_textmode(VESA_132X14);
 			else if(j<25)
 				win32_textmode(VESA_132X21);
 			else if(j<28)
 				win32_textmode(VESA_132X25);
-			else if(j<43)
+			else if(j<30)
 				win32_textmode(VESA_132X28);
+			else if(j<34)
+				win32_textmode(VESA_132X30);
+			else if(j<43)
+				win32_textmode(VESA_132X34);
 			else if(j<50)
 				win32_textmode(VESA_132X43);
 			else if(j<60)
