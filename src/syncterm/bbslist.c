@@ -1448,7 +1448,6 @@ struct bbslist *show_bbslist(int mode)
 							memcpy(list[listcount-1],&defaults,sizeof(struct bbslist));
 							list[listcount-1]->id=listcount-1;
 							strcpy(list[listcount-1]->name,tmp);
-							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",list[listcount-1]->name,LIST_NAME_MAX,K_EDIT);
 							uifc.changes=0;
 							uifc.helpbuf=	"`Address`\n\n"
 											"Enter the domain name of the system to connect to ie:\n"
