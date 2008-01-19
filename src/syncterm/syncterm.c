@@ -1135,7 +1135,7 @@ int main(int argc, char **argv)
 		FULLPATH(path,inpath,sizeof(path));
 	atexit(uifcbail);
 
-	scrollback_buf=malloc(80*2*settings.backlines);	/* Terminal width is *always* 80 cols */
+	scrollback_buf=malloc(132*2*settings.backlines);	/* Terminal width is *always* <= 132 cols */
 	if(scrollback_buf==NULL) {
 		uifc.msg("Cannot allocate space for scrollback buffer.\n");
 	}
