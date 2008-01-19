@@ -724,7 +724,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	LAZY_STRING_TRUNCSP("to",p->msg.to);
 	LAZY_STRING_TRUNCSP("from",p->msg.from);
 	LAZY_STRING_TRUNCSP("subject",p->msg.subj);
-	LAZY_STRING_TRUNCSP("summary", p->msg.summary);
+	LAZY_STRING_TRUNCSP_NULL("summary", p->msg.summary);
 	LAZY_STRING_TRUNCSP_NULL("to_ext", p->msg.to_ext);
 	LAZY_STRING_TRUNCSP_NULL("from_ext", p->msg.from_ext);
 	LAZY_STRING_TRUNCSP_NULL("from_org", p->msg.from_org);
