@@ -4,7 +4,7 @@
 
 #include "vidmodes.h"
 
-struct video_params vparams[40] = {
+struct video_params vparams[48] = {
 	/* BW 40x25 */
 	{BW40, GREYSCALE_PALETTE, 40, 25, 14, 15, 16, 8},
 	/* CO 40x25 */
@@ -85,6 +85,22 @@ struct video_params vparams[40] = {
 	{C128_80X25, COLOUR_PALETTE, 80, 25, 0, 7, 8, 8},
 	/* Atari 800 40x24 mode */
 	{ATARI_40X24, ATARI_PALETTE, 40, 24, 0, 7, 8, 8},
+	/* VESA 21x132 mode */
+	{VESA_21X132, COLOUR_PALETTE, 132, 21, 14, 15, 16, 8},
+	/* VESA 25x132 mode */
+	{VESA_25X132, COLOUR_PALETTE, 132, 25, 14, 15, 16, 8},
+	/* VESA 28x132 mode */
+	{VESA_28X132, COLOUR_PALETTE, 132, 28, 12, 13, 14, 8},
+	/* VESA 30x132 mode */
+	{VESA_30X132, COLOUR_PALETTE, 132, 30, 14, 15, 16, 8},
+	/* VESA 34x132 mode */
+	{VESA_34X132, COLOUR_PALETTE, 132, 34, 12, 13, 14, 8},
+	/* VESA 43x132 mode */
+	{VESA_43X132, COLOUR_PALETTE, 132, 34, 7, 7, 8, 8},
+	/* VESA 50x132 mode */
+	{VESA_50X132, COLOUR_PALETTE, 132, 50, 7, 7, 8, 8},
+	/* VESA 60x132 mode */
+	{VESA_60X132, COLOUR_PALETTE, 132, 60, 7, 7, 8, 8},
 };
 
 unsigned char palettes[5][16] = {

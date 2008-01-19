@@ -176,6 +176,16 @@ enum text_modes
     C128_40X25,		/* Commodore 128 40x25 colour mode */
     C128_80X25,		/* Commodore 128 40x25 colour mode */
 	ATARI_40X24,	/* Atari 800 40x24 colour text mode */
+
+	/* VESA Modes */
+	VESA_21X132	= 235,
+	VESA_25X132	= 231,
+	VESA_28X132	= 228,
+	VESA_30X132	= 226,
+	VESA_34X132	= 222,
+	VESA_43X132	= 213,
+	VESA_50X132	= 206,
+	VESA_60X132	= 196,
 };
 
 #define COLOR_MODE	C80
