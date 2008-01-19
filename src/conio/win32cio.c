@@ -431,10 +431,10 @@ int win32_initciolib(long inmode)
 			return(0);
 	}
 
+	SetConsoleCtrlHandler(NULL,TRUE);
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
-	SetConsoleCtrlHandler(NULL,FALSE);
 	conmode=orig_in_conmode;
 	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
 	conmode|=ENABLE_MOUSE_INPUT;
