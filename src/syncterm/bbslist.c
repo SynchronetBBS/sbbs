@@ -1358,7 +1358,7 @@ struct bbslist *show_bbslist(int mode)
 							edit_sorting(list,&listcount);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
-							viewofflinescroll();
+							//viewofflinescroll();
 							break;
 						case -2-CIO_KEY_MOUSE:	/* Clicked outside of window... */
 							getmouse(&mevent);
@@ -1374,6 +1374,9 @@ struct bbslist *show_bbslist(int mode)
 						case -7:		/* CTRL-E */
 							if(list[opt]) {
 								i=list[opt]->id;
+								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+									|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+									,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 								if(edit_list(list, list[opt],listpath,FALSE)) {
 									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
 									for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
@@ -1388,6 +1391,9 @@ struct bbslist *show_bbslist(int mode)
 							uifc.changes=0;
 							uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
 											"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
+							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
 							memcpy(&retlist, &defaults, sizeof(defaults));
 							if(uifc.changes) {

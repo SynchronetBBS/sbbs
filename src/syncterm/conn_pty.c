@@ -395,8 +395,12 @@ int pty_connect(struct bbslist *bbs)
 	gettextinfo(&ti);
 	if(ti.screenwidth < 80)
 		ws.ws_col=40;
-	else
-		ws.ws_col=80;
+	else {
+		if(ti.screenwidth < 132)
+			ws.ws_col=80;
+		else
+			ws.ws_col=132;
+	}
 	ws.ws_row=ti.screenheight;
 	if(!bbs->nostatus)
 		ws.ws_row--;
