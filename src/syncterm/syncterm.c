@@ -1016,6 +1016,7 @@ int main(int argc, char **argv)
 	BOOL	exit_now=FALSE;
 	int		conn_type=CONN_TYPE_TELNET;
 	BOOL	dont_set_mode=FALSE;
+	BOOL	override_conn=FALSE;
 
 	/* Cryptlib initialization MUST be done before ciolib init */
 	if(!crypt_loaded)
@@ -1094,12 +1095,15 @@ int main(int argc, char **argv)
                     break;
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
+					override_conn=TRUE;
 					break;
 				case 'H':
 					conn_type=CONN_TYPE_SSH;
+					override_conn=TRUE;
 					break;
 				case 'T':
 					conn_type=CONN_TYPE_TELNET;
+					override_conn=TRUE;
 					break;
 				case 'S':
 					safe_mode=1;
@@ -1185,6 +1189,11 @@ int main(int argc, char **argv)
 			inilines=iniReadFile(listfile);
 			fclose(listfile);
 			read_item(inilines, bbs, NULL, 0, USER_BBSLIST);
+			if(override_conn) {
+				if(conn_type != bbs->conn_type)
+					bbs->port=conn_ports[conn_type];
+				bbs->conn_type=conn_type;
+			}
 			parse_url(url, bbs, conn_type, FALSE);
 			strListFree(&inilines);
 		}
