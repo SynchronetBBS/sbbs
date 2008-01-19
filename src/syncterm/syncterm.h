@@ -45,5 +45,7 @@ extern char *output_types[];
 extern int output_map[];
 extern char *output_descrs[];
 extern char *output_enum[];
+int ciolib_to_screen(int screen);
+int screen_to_ciolib(int ciolib);
 
 #endif

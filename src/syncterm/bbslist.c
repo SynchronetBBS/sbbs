@@ -176,7 +176,7 @@ int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 
 char *sort_orders[]={"BBS Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
 
-char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", NULL};
+char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x21", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
@@ -1599,55 +1599,11 @@ struct bbslist *show_bbslist(int mode)
 							uifc.helpbuf=	"`Screen Setup`\n\n"
 									"Select the new screen size.\n";
 							i=ti.currmode;
-							switch(i) {
-								case C80:
-									i=SCREEN_MODE_80X25;
-									break;
-								case C80X28:
-									i=SCREEN_MODE_80X28;
-									break;
-								case C80X43:
-									i=SCREEN_MODE_80X43;
-									break;
-								case C80X50:
-									i=SCREEN_MODE_80X50;
-									break;
-								case C80X60:
-									i=SCREEN_MODE_80X60;
-									break;
-							}
+							i=ciolib_to_screen(ti.currmode);
 							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Setup",screen_modes);
 							if(i>=0) {
 								uifcbail();
-								switch(i) {
-									case SCREEN_MODE_80X25:
-										textmode(C80);
-										break;
-									case SCREEN_MODE_80X28:
-										textmode(C80X28);
-										break;
-									case SCREEN_MODE_80X43:
-										textmode(C80X43);
-										break;
-									case SCREEN_MODE_80X50:
-										textmode(C80X50);
-										break;
-									case SCREEN_MODE_80X60:
-										textmode(C80X60);
-										break;
-									case SCREEN_MODE_C64:
-										textmode(C64_40X25);
-										break;
-									case SCREEN_MODE_C128_40:
-										textmode(C128_40X25);
-										break;
-									case SCREEN_MODE_C128_80:
-										textmode(C128_80X25);
-										break;
-									case SCREEN_MODE_ATARI:
-										textmode(ATARI_40X24);
-										break;
-								}
+								textmode(screen_to_ciolib(i));
 								init_uifc(TRUE, TRUE);
 							}
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)

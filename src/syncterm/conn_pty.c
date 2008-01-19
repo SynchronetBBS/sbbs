@@ -390,35 +390,7 @@ int pty_connect(struct bbslist *bbs)
 	memcpy(ts.c_cc,ttydefchars,sizeof(ts.c_cc));
 
 	/* Horrible way to determine the screen size */
-	switch(bbs->screen_mode) {
-		case SCREEN_MODE_80X25:
-			textmode(C80);
-			break;
-		case SCREEN_MODE_80X28:
-			textmode(C80X28);
-			break;
-		case SCREEN_MODE_80X43:
-			textmode(C80X43);
-			break;
-		case SCREEN_MODE_80X50:
-			textmode(C80X50);
-			break;
-		case SCREEN_MODE_80X60:
-			textmode(C80X60);
-			break;
-		case SCREEN_MODE_C64:
-			textmode(C64_40X25);
-			break;
-		case SCREEN_MODE_C128_40:
-			textmode(C128_40X25);
-			break;
-		case SCREEN_MODE_C128_80:
-			textmode(C128_80X25);
-			break;
-		case SCREEN_MODE_ATARI:
-			textmode(ATARI_40X24);
-			break;
-	}
+	textmode(screen_to_ciolib(bbs->screen_mode));
 
 	gettextinfo(&ti);
 	if(ti.screenwidth < 80)
