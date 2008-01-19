@@ -458,7 +458,7 @@ int win32_initciolib(long inmode)
 		i=sbuff.srWindow.Right-sbuff.srWindow.Left+1;
 		j=sbuff.srWindow.Bottom-sbuff.srWindow.Top+1;
 		if(i>=132) {
-			else if(j<25)
+			if(j<25)
 				win32_textmode(VESA_132X21);
 			else if(j<28)
 				win32_textmode(VESA_132X25);
