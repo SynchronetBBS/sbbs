@@ -495,10 +495,10 @@ void win32_suspend(void)
 {
 	HANDLE h;
 
-	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
-		SetConsoleMode(h, orig_in_conmode);
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, orig_out_conmode);
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
+		SetConsoleMode(h, orig_in_conmode);
 }
 
 void win32_resume(void)
@@ -506,9 +506,7 @@ void win32_resume(void)
 	DWORD	conmode;
 	HANDLE	h;
 
-    conmode=orig_in_conmode;
-    conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
-    conmode|=ENABLE_MOUSE_INPUT;
+    conmode=ENABLE_MOUSE_INPUT;
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
 
@@ -536,8 +534,7 @@ int win32_initciolib(long inmode)
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
-	conmode=0;
-	conmode|=ENABLE_MOUSE_INPUT;
+	conmode=ENABLE_MOUSE_INPUT;
 	if(!SetConsoleMode(h, conmode))
 		return(0);
 
