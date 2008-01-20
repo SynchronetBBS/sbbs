@@ -737,7 +737,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						"~ Log Telnet Cmds ~\n"
 						"        Cycles through the various telnet command log settings.\n\n"
 						;
-		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,&bar,"Edit Entry",opts);
+		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar,"Edit Entry",opts);
 		if(i>=0 && isdefault)
 			i+=2;
 		switch(i) {
