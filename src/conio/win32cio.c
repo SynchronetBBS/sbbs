@@ -435,8 +435,7 @@ int win32_initciolib(long inmode)
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
-	conmode=orig_in_conmode;
-	conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
+	conmode=0;
 	conmode|=ENABLE_MOUSE_INPUT;
 	if(!SetConsoleMode(h, conmode))
 		return(0);
