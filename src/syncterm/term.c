@@ -1228,13 +1228,13 @@ BOOL doterm(struct bbslist *bbs)
 		sleep=TRUE;
 		if(!speed && bbs->bpsrate)
 			speed = bbs->bpsrate;
-		if(speed)
-			thischar=xp_timer();
-
 		if(!term.nostatus)
 			update_status(bbs, speed);
 		for(remain=conn_data_waiting() /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
-			if((!speed) /* || thischar < lastchar Wrapped */ || thischar >= nextchar) {
+			if(speed)
+				thischar=xp_timer();
+
+			if((!speed) || thischar < lastchar /* Wrapped */ || thischar >= nextchar) {
 				/* Get remote input */
 				inch=recv_byte(NULL, 0);
 
