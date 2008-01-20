@@ -127,7 +127,7 @@ int modem_connect(struct bbslist *bbs)
 	}
 	if(settings.mdm.com_rate) {
 		if(!comSetBaudRate(com, settings.mdm.com_rate)) {
-			uifcmsg("Cannot Set Baudrate",	"`Cannot Set Baudrate`\n\n"
+			uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
 							"Cannot open the specified modem device.\n");
 			conn_api.terminate=-1;
 			return(-1);
@@ -169,8 +169,8 @@ int modem_connect(struct bbslist *bbs)
 	if(!strstr(respbuf, "OK")) {
 		modem_close();
 		uifc.pop(NULL);
-		uifcmsg("Initialization Error",	"`Initialization Error`\n\n"
-						"Your initialization string caused an error.\n");
+		uifcmsg(respbuf,	"`Initialization Error`\n\n"
+						"The modem did not respond favorably to your initialization string.\n");
 		conn_api.terminate=-1;
 		return(-1);
 	}
@@ -187,7 +187,7 @@ int modem_connect(struct bbslist *bbs)
 			modem_close();
 			uifc.pop(NULL);
 			if(ret<0)
-				uifcmsg("No Answer",	"`No Answer`\n\n"
+				uifcmsg(respbuf,	"`No Answer`\n\n"
 							"The modem did not connect within 30 seconds.\n");
 			conn_api.terminate=-1;
 			return(-1);
@@ -200,12 +200,15 @@ int modem_connect(struct bbslist *bbs)
 	if(!strstr(respbuf, "CONNECT")) {
 		modem_close();
 		uifc.pop(NULL);
-		uifcmsg("Connection Failed",	"`Connection Failed`\n\n"
+		uifcmsg(respbuf,	"`Connection Failed`\n\n"
 						"SyncTERM was unable to establish a connection.\n");
 		conn_api.terminate=-1;
 		return(-1);
 	}
 
+	uifc.pop(NULL);
+	uifc.pop(respbuf);
+	SLEEP(1000);
 	uifc.pop(NULL);
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
