@@ -439,7 +439,6 @@ BOOL NT_SetConsoleDisplayMode(HANDLE hOutputHandle, DWORD dwNewMode)
         (SCDMProc_t)GetProcAddress(hKernel32, "SetConsoleDisplayMode");
     if (SetConsoleDisplayMode == NULL)
     {
-		OutputDebugString("!SetConsoleDisplayMode missing\n");
         SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
         ret = FALSE;
     }
@@ -447,13 +446,44 @@ BOOL NT_SetConsoleDisplayMode(HANDLE hOutputHandle, DWORD dwNewMode)
     {
         DWORD dummy=0;
         ret = SetConsoleDisplayMode(hOutputHandle, dwNewMode, &dummy);
-		dprintf("SetConsoleDisplayMode(%d) returned %d (%d)", dwNewMode, ret, dummy);
+		dprintf("SetConsoleDisplayMode(%d) returned %d", dwNewMode, ret);
     }
         
     FreeLibrary(hKernel32);
 
 	return ret;
 }
+
+BOOL NT_GetConsoleDisplayMode(DWORD* mode)
+{
+    typedef BOOL (WINAPI *GCDMProc_t) (LPDWORD);
+    GCDMProc_t GetConsoleDisplayMode;
+    HMODULE hKernel32;
+    BOOL	ret;
+    const char KERNEL32_NAME[] = "kernel32.dll";
+
+    hKernel32 = LoadLibrary(KERNEL32_NAME);
+    if (hKernel32 == NULL)
+        return FALSE;
+
+    GetConsoleDisplayMode = 
+        (GCDMProc_t)GetProcAddress(hKernel32, "GetConsoleDisplayMode");
+    if (GetConsoleDisplayMode == NULL)
+    {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        ret = FALSE;
+    }
+    else
+    {
+        ret = GetConsoleDisplayMode(mode);
+		dprintf("GetConsoleDisplayMode() returned %d (%d)", ret, *mode);
+    }
+        
+    FreeLibrary(hKernel32);
+
+	return ret;
+}
+
 
 void RestoreDisplayMode(void)
 {
@@ -464,7 +494,6 @@ void RestoreDisplayMode(void)
 void win32_suspend(void)
 {
 	HANDLE h;
-	OutputDebugString("win32_suspend\n");
 
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, orig_in_conmode);
@@ -477,7 +506,6 @@ void win32_resume(void)
 	DWORD	conmode;
 	HANDLE	h;
 
-	OutputDebugString("win32_resume\n");
     conmode=orig_in_conmode;
     conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
     conmode|=ENABLE_MOUSE_INPUT;
@@ -581,10 +609,7 @@ int win32_initciolib(long inmode)
 		}
 	}
 
-#if(_WIN32_WINNT >= 0x0500)
-	i=GetConsoleDisplayMode(&orig_display_mode);
-	dprintf("GetConsoleDisplayMode returned %d (%d)", i, orig_display_mode);
-#endif
+	NT_GetConsoleDisplayMode(&orig_display_mode);
 	if(inmode==CIOLIB_MODE_CONIO_FULLSCREEN) {
 		NT_SetConsoleDisplayMode(h,CONSOLE_FULLSCREEN_MODE);
 		atexit(RestoreDisplayMode);
