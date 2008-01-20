@@ -977,7 +977,8 @@ void load_settings(struct syncterm_settings *set)
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",TRUE);
-	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
+	set->startup_mode=iniReadEnum(inifile,"SyncTERM","VideoMode",screen_modes,SCREEN_MODE_CURRENT);
+	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes,set->startup_mode);
 	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 
