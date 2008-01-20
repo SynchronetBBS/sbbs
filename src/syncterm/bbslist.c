@@ -1246,9 +1246,11 @@ void change_settings(void)
 				break;
 			case 6:
 				uifc.helpbuf=	"`Modem/Comm Rate`\n\n"
-								"Enter the rate (in bits-per-second) used to communicate with the modem.\n"
+								"Enter the rate (in `bits-per-second`) used to communicate with the modem.\n"
 								"Use the highest `DTE Rate` supported by your communication port and modem.\n\n"
-								"Examples: `38400`, `57600`, `115200`";
+								"Examples: `38400`, `57600`, `115200`\n\n"
+								"This rate is sometimes (incorrectly) referred to as the `baud rate`.\n\n"
+								"Enter `0` to use the current or default rate of the communication port";
 				sprintf(str,"%u",settings.mdm.com_rate ? settings.mdm.com_rate : 115200);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Rate",str,LIST_NAME_MAX,K_EDIT)>=0) {
 					settings.mdm.com_rate=strtol(str,NULL,10);
