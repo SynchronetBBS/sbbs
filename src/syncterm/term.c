@@ -1189,7 +1189,9 @@ BOOL doterm(struct bbslist *bbs)
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 	size_t	remain;
 
-	if(bps->conn_type != CONN_TYPE_SERIAL)
+	if(bps->conn_type == CONN_TYPE_SERIAL)
+		speed = 0;
+	else
 		speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
 	conn_api.log_level = bbs->telnet_loglevel;
