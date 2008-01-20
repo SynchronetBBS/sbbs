@@ -168,7 +168,7 @@ BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
 
 int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
-	return write(handle, &buf, buflen);
+	return write(handle, buf, buflen);
 }
 
 /*
