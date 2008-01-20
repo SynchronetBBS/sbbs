@@ -84,6 +84,12 @@ int modem_response(char *str, size_t maxlen, int timeout)
 
 	start=time(NULL);
 	while(1){
+		/* Abort with keystroke */
+		if(kbhit()) {
+			getch();
+			return(1);
+		}
+
 		if(time(NULL)-start >= timeout)
 			return(-1);
 		if(len >= maxlen)
@@ -108,6 +114,7 @@ int modem_response(char *str, size_t maxlen, int timeout)
 
 int modem_connect(struct bbslist *bbs)
 {
+	int		ret;
 	char	respbuf[1024];
 
 	init_uifc(TRUE, TRUE);
@@ -140,10 +147,11 @@ int modem_connect(struct bbslist *bbs)
 
 	/* Wait for "OK" */
 	while(1) {
-		if(modem_response(respbuf, sizeof(respbuf), 5)) {
+		if((ret=modem_response(respbuf, sizeof(respbuf), 5))!=0) {
 			modem_close();
 			uifc.pop(NULL);
-			uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
+			if(ret<0)
+				uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
 							"The modem did not respond to the initializtion string\n"
 							"Check your init string and phone number.\n");
 			conn_api.terminate=-1;
@@ -162,6 +170,9 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(-1);
 	}
+	/* drain keyboard input to avoid accidental cancel */
+	while(kbhit())
+		getch();
 
 	uifc.pop(NULL);
 	uifc.pop("Dialing...");
@@ -171,24 +182,17 @@ int modem_connect(struct bbslist *bbs)
 
 	/* Wait for "CONNECT" */
 	while(1) {
-		if(modem_response(respbuf, sizeof(respbuf), 30)) {
+		if((ret=modem_response(respbuf, sizeof(respbuf), 30))!=0) {
 			modem_close();
 			uifc.pop(NULL);
-			uifcmsg("No Answer",	"`No Answer`\n\n"
+			if(ret<0)
+				uifcmsg("No Answer",	"`No Answer`\n\n"
 							"The modem did not connect within 30 seconds.\n");
 			conn_api.terminate=-1;
 			return(-1);
 		}
 		if(strstr(respbuf, bbs->addr))	/* Dial command echoed */
 			continue;
-		/* Abort with keystroke */
-		if(kbhit()) {
-			modem_close();
-			uifc.pop(NULL);
-			uifcmsg("Aborted", "Dialing aborted");
-			conn_api.terminate=-1;
-			return(-1);
-		}
 		break;
 	}
 
