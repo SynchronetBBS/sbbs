@@ -254,7 +254,7 @@ static int lputs(void* cbdata, int level, const char* str)
 #endif
 
 	if(log_fp!=NULL && level <= log_level)
-		fprintf(log_fp,"%s: %s\n",log_levels[level], str);
+		fprintf(log_fp,"Xfer %s: %s\n",log_levels[level], str);
 
 	if(level > LOG_INFO)
 		return 0;

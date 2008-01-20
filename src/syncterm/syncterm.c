@@ -1223,6 +1223,7 @@ int main(int argc, char **argv)
 			if(log_fp!=NULL) {
 				time_t now=time(NULL);
 				fprintf(log_fp,"%.15s Log closed\n", ctime(&now)+4);
+				fprintf(log_fp,"---------------\n");
 				fclose(log_fp);
 				log_fp=NULL;
 			}

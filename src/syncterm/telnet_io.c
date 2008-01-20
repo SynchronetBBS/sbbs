@@ -24,6 +24,7 @@ char	terminal[TELNET_TERM_MAXLEN+1];
 uchar	telnet_local_option[0x100];
 uchar	telnet_remote_option[0x100];
 
+extern char *log_levels[];
 extern FILE*	log_fp;
 int	telnet_log_level;
 
@@ -39,7 +40,7 @@ static int lprintf(int level, const char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(fprintf(log_fp, "%s\n", sbuf));
+    return(fprintf(log_fp, "Telnet %s %s\n", log_levels[level], sbuf));
 }
 
 void putcom(BYTE* buf, size_t len)
@@ -60,12 +61,12 @@ static void send_telnet_cmd(uchar cmd, uchar opt)
 	char buf[16];
 	
 	if(cmd<TELNET_WILL) {
-		lprintf(LOG_INFO,"TX Telnet command: %s"
+		lprintf(LOG_INFO,"TX: %s"
 			,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
 		putcom(buf,2);
 	} else {
-		lprintf(LOG_INFO,"TX Telnet command: %s %s"
+		lprintf(LOG_INFO,"TX: %s %s"
 			,telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
 		putcom(buf,3);
@@ -135,7 +136,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
 							,TELNET_IAC,TELNET_SE);
-						lprintf(LOG_INFO,"TX Telnet command: Terminal Type is ANSI");
+						lprintf(LOG_INFO,"TX: Terminal Type is ANSI");
 						putcom(buf,len);
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
@@ -147,7 +148,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
             }
             else if(telnet_cmdlen>=3) {	/* telnet option negotiation */
 
-				lprintf(LOG_INFO,"RX Telnet command: %s %s"
+				lprintf(LOG_INFO,"RX: %s %s"
 					,telnet_cmd_desc(command),telnet_opt_desc(option));
 
 				if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
@@ -179,7 +180,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						buf[6]=term.height&0xff;
 						buf[7]=TELNET_IAC;
 						buf[8]=TELNET_SE;
-						lprintf(LOG_INFO,"TX Telnet command: Window Size is %u x %u"
+						lprintf(LOG_INFO,"TX: Window Size is %u x %u"
 							,term.width, term.height);
 						putcom(buf,9);
 					}
