@@ -558,6 +558,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	}
 	SAFECOPY(path,fpick.selected[0]);
 	filepick_free(&fpick);
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 
 	if((fp=fopen(path,"rb"))==NULL) {
 		SAFEPRINTF2(str,"Error %d opening %s for read",errno,path);
