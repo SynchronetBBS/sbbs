@@ -1189,7 +1189,8 @@ BOOL doterm(struct bbslist *bbs)
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 	size_t	remain;
 
-	speed = bbs->bpsrate;
+	if(bps->conn_type != CONN_TYPE_SERIAL)
+		speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
 	conn_api.log_level = bbs->telnet_loglevel;
 	ciomouse_setevents(0);
@@ -1618,19 +1619,23 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x9800:	/* ALT-Up */
-					if(speed)
-						speed=rates[get_rate_num(speed)+1];
-					else
-						speed=rates[0];
-					key = 0;
+					if(bps->conn_type != CONN_TYPE_SERIAL) {
+						if(speed)
+							speed=rates[get_rate_num(speed)+1];
+						else
+							speed=rates[0];
+						key = 0;
+					}
 					break;
 				case 0xa000:	/* ALT-Down */
-					i=get_rate_num(speed);
-					if(i==0)
-						speed=0;
-					else
-						speed=rates[i-1];
-					key = 0;
+					if(bps->conn_type != CONN_TYPE_SERIAL) {
+						i=get_rate_num(speed);
+						if(i==0)
+							speed=0;
+						else
+							speed=rates[i-1];
+						key = 0;
+					}
 					break;
 			}
 			if(key && cterm.emulation == CTERM_EMULATION_ATASCII) {
