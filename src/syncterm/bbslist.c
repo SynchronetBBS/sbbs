@@ -1056,8 +1056,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[8][80];
-	char	*opt[9];
+	char	opts[9][80];
+	char	*opt[10];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -1071,7 +1071,7 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<8; i++)
+	for(i=0; i<9; i++)
 		opt[i]=opts[i];
 	opt[i]=NULL;
 
@@ -1084,12 +1084,14 @@ void change_settings(void)
 						"        Prompt to save new URIs on before exiting\n\n"
 						"~ Startup Screen Mode ~\n"
 						"        Set the initial screen screen mode/size.\n\n"
-						"~ Output Mode ~\n"
-						"        Set video output mode.\n\n"
+						"~ Video Output Mode ~\n"
+						"        Set video output mode (used during startup).\n\n"
 						"~ Scrollback Buffer Lines ~\n"
 						"        The number of lines in the scrollback buffer.\n\n"
-						"~ Modem Device ~\n"
+						"~ Modem/Comm Device ~\n"
 						"        The device name of the modem's communications port.\n\n"
+						"~ Modem/Comm Rate ~\n"
+						"        The DTE rate of the modem's communications port.\n\n"
 						"~ Modem Init String ~\n"
 						"        The command string to use to initialize the modem.\n\n"
 						"~ Modem Dial String ~\n"
@@ -1097,11 +1099,16 @@ void change_settings(void)
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
 		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
-		sprintf(opts[3],"Output Mode             %s",output_descrs[settings.output_mode]);
+		sprintf(opts[3],"Video Output Mode       %s",output_descrs[settings.output_mode]);
 		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
-		sprintf(opts[5],"Modem Device            %s",settings.mdm.device_name);
-		sprintf(opts[6],"Modem Init String       %s",settings.mdm.init_string);
-		sprintf(opts[7],"Modem Dial String       %s",settings.mdm.dial_string);
+		sprintf(opts[5],"Modem/Comm Device       %s",settings.mdm.device_name);
+		if(settings.mdm.com_rate)
+			sprintf(str,"%ubps",settings.mdm.com_rate);
+		else
+			strcpy(str,"Current");
+		sprintf(opts[6],"Modem/Comm Rate         %s",str);
+		sprintf(opts[7],"Modem Init String       %s",settings.mdm.init_string);
+		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -1132,7 +1139,7 @@ void change_settings(void)
 						break;
 				if(output_types[j]==NULL)
 					j=0;
-				uifc.helpbuf=	"`Output Mode`\n\n"
+				uifc.helpbuf=	"`Video Output Mode`\n\n"
 								"~ Autodetect ~\n"
 								"        Attempt to use the \"best\" display mode possible.  The order\n"
 								"        these are attempted is:"
@@ -1189,7 +1196,7 @@ void change_settings(void)
 								"        As above, but starts in full-screen mode rather than a window\n\n"
 #endif
 								;
-				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Output Mode",output_types)) {
+				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",output_types)) {
 					case -1:
 						continue;
 					default:
@@ -1229,20 +1236,32 @@ void change_settings(void)
 				}
 				break;
 			case 5:
-				uifc.helpbuf=	"`Modem Device`\n\n"
+				uifc.helpbuf=	"`Modem/Comm Device`\n\n"
 								"Enter the name of the device used to communicate with the modem.\n\n"
 								"Example: \"`"
 								DEFAULT_MODEM_DEV
 								"`\"";
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
 			case 6:
+				uifc.helpbuf=	"`Modem/Comm Rate`\n\n"
+								"Enter the rate (in bits-per-second) used to communicate with the modem.\n"
+								"Use the highest `DTE Rate` supported by your communication port and modem.\n\n"
+								"Examples: `38400`, `57600`, `115200`";
+				sprintf(str,"%u",settings.mdm.com_rate ? settings.mdm.com_rate : 115200);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Rate",str,LIST_NAME_MAX,K_EDIT)>=0) {
+					settings.mdm.com_rate=strtol(str,NULL,10);
+					iniSetLongInt(&inicontents,"SyncTERM","ModemComRate",settings.mdm.com_rate,&ini_style);
+				}
+				break;
+
+			case 7:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
 								"Your modem initialization string goes here.\n\n"
 								"Example:\n"
 								"\"`AT&F`\" will load a Hayes compatible modem's factory default settings.\n\n"
-								"For reference, here are the expected Hayes-compatible settings:\n\n"
+								"~For reference, here are the expected Hayes-compatible settings:~\n\n"
 								"State                      Command\n"
 								"----------------------------------\n"
 								"Echo on                    E1\n"
@@ -1250,7 +1269,7 @@ void change_settings(void)
 								"Normal CD Handling         &C1\n"
 								"Normal DTR                 &D2\n"
 								"\n\n"
-								"For reference, here are the expected USRobotics-compatible settings:\n\n"
+								"~For reference, here are the expected USRobotics-compatible settings:~\n\n"
 								"State                      Command\n"
 								"----------------------------------\n"
 								"Include connection speed   &X4\n"
@@ -1260,7 +1279,7 @@ void change_settings(void)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
 				break;
-			case 7:
+			case 8:
 				uifc.helpbuf=   "`Modem Dial String`\n\n"
 								"The command string to dial the modem goes here.\n\n"
 								"Example: \"`ATDT`\" will dial a Hayes-compatible modem in touch-tone mode.";

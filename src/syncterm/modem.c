@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "comio.h"
+#include "ciolib.h"
 
 #include "sockwrap.h"
 
@@ -117,11 +118,13 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(-1);
 	}
-	if(!comSetBaudRate(com, 115200)) {
-		uifcmsg("Cannot Set Baudrate",	"`Cannot Set Baudrate`\n\n"
-						"Cannot open the specified modem device.\n");
-		conn_api.terminate=-1;
-		return(-1);
+	if(settings.mdm.com_rate) {
+		if(!comSetBaudRate(com, settings.mdm.com_rate)) {
+			uifcmsg("Cannot Set Baudrate",	"`Cannot Set Baudrate`\n\n"
+							"Cannot open the specified modem device.\n");
+			conn_api.terminate=-1;
+			return(-1);
+		}
 	}
 	if(!comRaiseDTR(com)) {
 		uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
@@ -178,6 +181,14 @@ int modem_connect(struct bbslist *bbs)
 		}
 		if(strstr(respbuf, bbs->addr))	/* Dial command echoed */
 			continue;
+		/* Abort with keystroke */
+		if(kbhit()) {
+			modem_close();
+			uifc.pop(NULL);
+			uifcmsg("Aborted", "Dialing aborted");
+			conn_api.terminate=-1;
+			return(-1);
+		}
 		break;
 	}
 
