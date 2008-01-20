@@ -190,6 +190,7 @@ char *conn_type_help=			"`Connection Type`\n\n"
 								"`Raw`..............: Make a raw socket connection\n"
 								"`SSH`..............: Connect using the SSH protocol\n"
 								"`Modem`............: Connect using a dial-up modem\n"
+								"`Direct COM`.......: Connect using directly to a serial port\n"
 #ifdef __unix__
 								"`Shell`............: Connect to a local PTY\n";
 #else
