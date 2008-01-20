@@ -35,7 +35,7 @@ void modem_input_thread(void *args)
 			buffered+=conn_buf_put(&conn_inbuf, conn_api.rd_buf+buffered, buffer);
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
-		if(comGetModemStatus(com)&COM_DCD == 0)
+		if((comGetModemStatus(com)&COM_DCD) == 0)
 			break;
 	}
 	conn_api.input_thread_running=0;
@@ -69,7 +69,7 @@ void modem_output_thread(void *args)
 		}
 		else
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-		if(comGetModemStatus(com)&COM_DCD == 0)
+		if((comGetModemStatus(com)&COM_DCD) == 0)
 			break;
 	}
 	conn_api.output_thread_running=0;
