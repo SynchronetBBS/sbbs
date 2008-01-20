@@ -1299,7 +1299,7 @@ struct bbslist *show_bbslist(int mode)
 	char	*p;
 	char	addy[LIST_ADDR_MAX+1];
 	char	*settings_menu[]= {
-					 "Default Connection Configuration"
+					 "Default Connection Settings"
 #ifdef CONFIGURABLE_MOUSE_ACTIONS
 					,"Mouse Actions"
 #endif
@@ -1574,7 +1574,7 @@ struct bbslist *show_bbslist(int mode)
 		else {
 			for(;at_settings;) {
 				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n"
-								"~ Default Connection Configuration ~\n"
+								"~ Default Connection Settings ~\n"
 								"        Modify the settings that are used by default for new entries\n\n"
 #ifdef CONFIGURABLE_MOUSE_ACTIONS
 								"~ Mouse Actions ~\n"
