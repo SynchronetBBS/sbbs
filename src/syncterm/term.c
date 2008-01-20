@@ -1226,8 +1226,6 @@ BOOL doterm(struct bbslist *bbs)
 	for(;;) {
 		hold_update=TRUE;
 		sleep=TRUE;
-		if(!speed && bbs->bpsrate)
-			speed = bbs->bpsrate;
 		if(!term.nostatus)
 			update_status(bbs, speed);
 		for(remain=conn_data_waiting() /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
