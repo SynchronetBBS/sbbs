@@ -105,12 +105,6 @@ struct sort_order_info sort_order[] = {
 		,sizeof(((struct bbslist *)NULL)->conn_type)
 	}
 	,{
-		 "Reversed"
-		,0
-		,offsetof(struct bbslist, reversed)
-		,sizeof(((struct bbslist *)NULL)->reversed)
-	}
-	,{
 		 "Screen Mode"
 		,0
 		,offsetof(struct bbslist, screen_mode)
@@ -184,6 +178,23 @@ char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bp
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
 
 char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NULL};
+
+char *address_help=	"`Address` or `Phone Number`\n\n"
+					"Enter the hostname, IP address, or phone number of the system\n"
+					"to connect to. i.e. `nix.synchro.net`";
+char *conn_type_help=			"`Connection Type`\n\n"
+								"Select the type of connection you wish to make:\n\n"
+								"`RLogin`...........: Auto-login with RLogin protocol\n"
+								"`RLogin Reversed`..: RLogin using reversed username/password parameters\n"
+								"`Telnet`...........: Use more common Telnet protocol\n"
+								"`Raw`..............: Make a raw socket connection\n"
+								"`SSH`..............: Connect using the SSH protocol\n"
+								"`Modem`............: Connect using a dial-up modem\n"
+#ifdef __unix__
+								"`Shell`............: Connect to a local PTY\n";
+#else
+								;
+#endif
 
 ini_style_t ini_style = {
 	/* key_len */ 15, 
@@ -321,7 +332,6 @@ int intbufcmp(const void *a, const void *b, size_t size)
 	return(memcmp(a,b,size));
 #else
 	int i;
-	int ret;
 	const unsigned char *ac=(const unsigned char *)a;
 	const unsigned char *bc=(const unsigned char *)b;
 
@@ -439,7 +449,6 @@ void edit_sorting(struct bbslist **list, int *listcount)
 	char	*opts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
 	char	sopt[sizeof(sort_order)/sizeof(struct sort_order_info)][80];
 	char	*sopts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
-	int		changed=0;
 	int		curr=0,bar=0;
 	int		scurr=0,sbar=0;
 	int		ret,sret;
@@ -503,7 +512,6 @@ void edit_sorting(struct bbslist **list, int *listcount)
 							j++;
 						}
 					}
-					changed=1;
 				}
 			}
 		}
@@ -563,7 +571,6 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 	dumb=iniGetBool(section,bbsname,"BeDumb",0);
 	if(dumb)
 		entry->conn_type=CONN_TYPE_RAW;
-	entry->reversed=iniGetBool(section,bbsname,"Reversed",0);
 	entry->screen_mode=iniGetEnum(section,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
 	entry->nostatus=iniGetBool(section,bbsname,"NoStatus",0);
 	iniGetString(section,bbsname,"DownloadPath",home,entry->dldir);
@@ -702,15 +709,18 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 	for(;;) {
 		i=0;
 		if(!isdefault) {
-			sprintf(opt[i++], "BBS Name          %s",itemname);
-			sprintf(opt[i++], "Address           %s",item->addr);
+			sprintf(opt[i++], "Name              %s",itemname);
+			if(item->conn_type==CONN_TYPE_MODEM)
+				sprintf(opt[i++], "Phone Number      %s",item->addr);
+			else
+				sprintf(opt[i++], "Address           %s",item->addr);
 		}
-		sprintf(opt[i++], "Port              %hu",item->port);
+		if(item->conn_type!=CONN_TYPE_MODEM)
+			sprintf(opt[i++], "TCP Port          %hu",item->port);
+		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
 		sprintf(opt[i++], "Username          %s",item->user);
-		sprintf(opt[i++], "Password          ********");
+		sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
 		sprintf(opt[i++], "System Password   %s",item->syspass[0]?"********":"<none>");
-		sprintf(opt[i++], "Connection        %s",conn_types[item->conn_type]);
-		sprintf(opt[i++], "Reversed          %s",item->reversed?"Yes":"No");
 		sprintf(opt[i++], "Screen Mode       %s",screen_modes[item->screen_mode]);
 		sprintf(opt[i++], "Hide Status Line  %s",item->nostatus?"Yes":"No");
 		sprintf(opt[i++], "Download Path     %s",item->dldir);
@@ -721,14 +731,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++], "Font              %s",item->font);
-		opts[i]=NULL;
+		opt[i][0]=0;
 		uifc.changes=0;
 
-		uifc.helpbuf=	"`Edit BBS`\n\n"
+		uifc.helpbuf=	"`Edit Directory Entry`\n\n"
 						"Select item to edit.\n\n"
-						"~ Reversed ~\n"
-						"        For RLogin connections, send the username and password in\n"
-						"        reverse order. Some Synchronet systems are set up this way.\n\n"
 						"~ Hide Status Line ~\n"
 						"        Selects if the status line should be hidden, giving an extra\n"
 						"        display row\n\n"
@@ -737,9 +744,13 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						"~ Log Telnet Cmds ~\n"
 						"        Cycles through the various telnet command log settings.\n\n"
 						;
-		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar,"Edit Entry",opts);
+		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar
+			,isdefault ? "Edit Default Connection":"Edit Directory Entry"
+			,opts);
 		if(i>=0 && isdefault)
 			i+=2;
+		if(i>=0 && item->conn_type==CONN_TYPE_MODEM)
+			i++;	/* no port number */
 		switch(i) {
 			case -1:
 				if(!safe_mode) {
@@ -751,15 +762,15 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				strListFree(&inifile);
 				return(changed);
 			case 0:
-				uifc.helpbuf=	"`BBS Name`\n\n"
-								"Enter the BBS name as it is to appear in the list.";
+				uifc.helpbuf=	"`Directory Entry Name`\n\n"
+								"Enter the name of the entry as it is to appear in the directory.";
 				strcpy(tmp,itemname);
-				uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",itemname,LIST_NAME_MAX,K_EDIT);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Name",itemname,LIST_NAME_MAX,K_EDIT);
 				if(strcmp(tmp,itemname) && list_name_check(list, itemname, NULL, FALSE)) {
-					uifc.helpbuf=	"`BBS Already Exists`\n\n"
-									"A BBS with that name already exists in the list.\n"
-									"Please choose a unique BBS name.\n";
-					uifc.msg("BBS Already Exists!");
+					uifc.helpbuf=	"`Entry Name Already Exists`\n\n"
+									"An entry with that name already exists in the directory.\n"
+									"Please choose a unique name.\n";
+					uifc.msg("Entry Name Already Exists!");
 					strcpy(itemname,tmp);
 				}
 				else {
@@ -767,20 +778,20 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				}
 				break;
 			case 1:
-				uifc.helpbuf=	"`Address`\n\n"
-								"Enter the domain name of the system to connect to ie:\n"
-								"nix.synchro.net";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Address",item->addr,LIST_ADDR_MAX,K_EDIT);
+				uifc.helpbuf=
+				uifc.input(WIN_MID|WIN_SAV,0,0
+					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number":"Address"
+					,item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
 				break;
 			case 2:
 				i=item->port;
 				sprintf(str,"%hu",item->port);
-				uifc.helpbuf=	"`Port`\n\n"
-								"Enter the port which the BBS is listening to on the remote system\n"
+				uifc.helpbuf=	"`TCP Port`\n\n"
+								"Enter the TCP port number that the server is listening to on the remote system.\n"
 								"Telnet is generally port 23, RLogin is generally 513 and SSH is\n"
 								"generally 22\n";
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Port",str,5,K_EDIT|K_NUMBER);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"TCP Port",str,5,K_EDIT|K_NUMBER);
 				j=atoi(str);
 				if(j<1 || j>65535)
 					j=conn_ports[item->conn_type];
@@ -791,21 +802,21 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				else
 					uifc.changes=0;
 				break;
-			case 3:
+			case 4:
 				uifc.helpbuf=	"`Username`\n\n"
 								"Enter the username to attempt auto-login to the remote with.\n"
 								"For SSH, this must be the SSH user name.";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"UserName",item->user,&ini_style);
 				break;
-			case 4:
+			case 5:
 				uifc.helpbuf=	"`Password`\n\n"
 								"Enter your password for auto-login.\n"
 								"For SSH, this must be the SSH password if it exists.\n";
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"Password",item->password,&ini_style);
 				break;
-			case 5:
+			case 6:
 				uifc.helpbuf=	"`System Password`\n\n"
 								"Enter your System password for auto-login.\n"
 								"This password is sent after the username and password, so for non-\n"
@@ -814,21 +825,10 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
 				break;
-			case 6:
+			case 3:
 				i=item->conn_type;
 				item->conn_type--;
-				uifc.helpbuf=	"`Connection Type`\n\n"
-								"Select the type of connection you wish to make:\n"
-								"~ RLogin:~ Auto-login with RLogin protocol\n"
-								"~ Telnet:~ Use more common Telnet protocol\n"
-								"~ Raw:   ~ Make a raw socket connection\n"
-								"~ SSH:   ~ Connect using the SSH protocol\n"
-								"~ Modem: ~ Connect using a modem\n"
-#ifdef __unix__
-								"~ Shell: ~ Connect to a local PTY\n";
-#else
-								;
-#endif
+				uifc.helpbuf=conn_type_help;
 				switch(uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]))) {
 					case -1:
 						item->conn_type=i;
@@ -837,23 +837,20 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						item->conn_type++;
 						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
 
-						/* Set the port too */
-						j=conn_ports[item->conn_type];
-						if(j<1 || j>65535)
-							j=item->port;
-						item->port=j;
-						iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
+						if(item->conn_type!=CONN_TYPE_MODEM) {
+							/* Set the port too */
+							j=conn_ports[item->conn_type];
+							if(j<1 || j>65535)
+								j=item->port;
+							item->port=j;
+							iniSetShortInt(&inifile,itemname,"Port",item->port,&ini_style);
+						}
 
 						changed=1;
 						break;
 				}
 				break;
 			case 7:
-				item->reversed=!item->reversed;
-				changed=1;
-				iniSetBool(&inifile,itemname,"Reversed",item->reversed,&ini_style);
-				break;
-			case 8:
 				i=item->screen_mode;
 				uifc.helpbuf=	"`Screen Mode`\n\n"
 								"Select the screen size for this connection\n";
@@ -886,30 +883,30 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						break;
 				}
 				break;
-			case 9:
+			case 8:
 				item->nostatus=!item->nostatus;
 				changed=1;
 				iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 				break;
-			case 10:
+			case 9:
 				uifc.helpbuf=	"`Download Path`\n\n"
 								"Enter the path where downloads will be placed.";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT)>=0)
 					iniSetString(&inifile,itemname,"DownloadPath",item->dldir,&ini_style);
 				break;
-			case 11:
+			case 10:
 				uifc.helpbuf=	"`Upload Path`\n\n"
 								"Enter the path where uploads will be browsed from.";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT)>=0)
 					iniSetString(&inifile,itemname,"UploadPath",item->uldir,&ini_style);
 				break;
-			case 12:
+			case 11:
 				uifc.helpbuf=	"`Log Filename`\n\n"
 								"Enter the path to the optional log file.";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Log File",item->logfile,MAX_PATH,K_EDIT)>=0)
 					iniSetString(&inifile,itemname,"LogFile",item->logfile,&ini_style);
 				break;
-			case 13:
+			case 12:
 				item->xfer_loglevel--;
 				if(item->xfer_loglevel<0)
 					item->xfer_loglevel=LOG_DEBUG;
@@ -918,7 +915,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				iniSetEnum(&inifile,itemname,"TransferLogLevel",log_levels,item->xfer_loglevel,&ini_style);
 				changed=1;
 				break;
-			case 14:
+			case 13:
 				item->telnet_loglevel--;
 				if(item->telnet_loglevel<0)
 					item->telnet_loglevel=LOG_DEBUG;
@@ -927,7 +924,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				iniSetEnum(&inifile,itemname,"TelnetLogLevel",log_levels,item->telnet_loglevel,&ini_style);
 				changed=1;
 				break;
-			case 15:
+			case 14:
 				uifc.helpbuf=	"`Simulated BPS Rate`\n\n"
 								"Select the rate which recieved characters will be displayed.\n\n"
 								"This allows ANSImation to work as intended.";
@@ -941,7 +938,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						changed=1;
 				}
 				break;
-			case 16:
+			case 15:
 				uifc.helpbuf="`ANSI Music Setup`\n\n"
 						"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
 						"                      Enables Delete Line\n"
@@ -969,7 +966,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					changed=1;
 				}
 				break;
-			case 17:
+			case 16:
 				uifc.helpbuf=	"`Font`\n\n"
 								"Select the desired font for this connection.\n\n"
 								"Some fonts do not allow some modes.  When this is the case, an\n"
@@ -1019,7 +1016,6 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,&ini_style);
 	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,&ini_style);
-	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,&ini_style);
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
@@ -1086,8 +1082,8 @@ void change_settings(void)
 						"        Prompt the user before exiting.\n\n"
 						"~ Prompt to Save ~\n"
 						"        Prompt to save new URIs on before exiting\n\n"
-						"~ Startup Video Mode ~\n"
-						"        Set the initial video screen size.\n\n"
+						"~ Startup Screen Mode ~\n"
+						"        Set the initial screen screen mode/size.\n\n"
 						"~ Output Mode ~\n"
 						"        Set video output mode.\n\n"
 						"~ Scrollback Buffer Lines ~\n"
@@ -1098,7 +1094,7 @@ void change_settings(void)
 						"        An init string to use for the modem.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
-		sprintf(opts[2],"Startup Video Mode      %s",screen_modes[settings.startup_mode]);
+		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
 		sprintf(opts[3],"Output Mode             %s",output_descrs[settings.output_mode]);
 		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
 		sprintf(opts[5],"Modem Device            %s",settings.mdm.device_name);
@@ -1116,14 +1112,14 @@ void change_settings(void)
 				break;
 			case 2:
 				j=settings.startup_mode;
-				uifc.helpbuf=	"`Startup Video Mode`\n\n"
-								"Select the screen size for at startup\n";
-				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Video Mode",screen_modes)) {
+				uifc.helpbuf=	"`Startup Screen Mode`\n\n"
+								"Select the screen mode/size for at startup\n";
+				switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Startup Screen Mode",screen_modes)) {
 					case -1:
 						continue;
 					default:
 						settings.startup_mode=j;
-						iniSetEnum(&inicontents,"SyncTERM","VideoMode",screen_modes,settings.startup_mode,&ini_style);
+						iniSetEnum(&inicontents,"SyncTERM","ScreenMode",screen_modes,settings.startup_mode,&ini_style);
 						break;
 				}
 				break;
@@ -1303,9 +1299,11 @@ struct bbslist *show_bbslist(int mode)
 	char	*p;
 	char	addy[LIST_ADDR_MAX+1];
 	char	*settings_menu[]= {
-					 "Default BBS Configuration"
+					 "Default Connection Configuration"
+#ifdef CONFIGURABLE_MOUSE_ACTIONS
 					,"Mouse Actions"
-					,"Screen Setup"
+#endif
+					,"Current Screen Mode"
 					,"Font Management"
 					,"Program Settings"
 					,NULL
@@ -1433,16 +1431,16 @@ struct bbslist *show_bbslist(int mode)
 							}
 							tmp[0]=0;
 							uifc.changes=0;
-							uifc.helpbuf=	"`BBS Name`\n\n"
-											"Enter the BBS name as it is to appear in the list.";
-							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",tmp,LIST_NAME_MAX,K_EDIT);
+							uifc.helpbuf=	"`Name`\n\n"
+											"Enter the name of the entry as it is to appear in the directory.";
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT);
 							if(!uifc.changes)
 								break;
 							if(list_name_check(list, tmp, NULL, FALSE)) {
-								uifc.helpbuf=	"`BBS Already Exists`\n\n"
-												"A BBS with that name already exists in the list.\n"
-												"Please choose a unique BBS name.\n";
-								uifc.msg("BBS Already Exists!");
+								uifc.helpbuf=	"`Entry Name Already Exists`\n\n"
+												"An entry with that name already exists in the directory.\n"
+												"Please choose a unique name.\n";
+								uifc.msg("Entry Name Already Exists!");
 								break;
 							}
 							listcount++;
@@ -1451,11 +1449,29 @@ struct bbslist *show_bbslist(int mode)
 							memcpy(list[listcount-1],&defaults,sizeof(struct bbslist));
 							list[listcount-1]->id=listcount-1;
 							strcpy(list[listcount-1]->name,tmp);
+
 							uifc.changes=0;
-							uifc.helpbuf=	"`Address`\n\n"
-											"Enter the domain name of the system to connect to ie:\n"
-											"nix.synchro.net";
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Address",list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
+							list[listcount-1]->conn_type--;
+							uifc.helpbuf=conn_type_help;
+							if(uifc.list(WIN_SAV,0,0,0,&(list[listcount-1]->conn_type),NULL,"Connection Type",&(conn_types[1]))>0) {
+								list[listcount-1]->conn_type++;
+								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM) {
+									/* Set the port too */
+									j=conn_ports[list[listcount-1]->conn_type];
+									if(j<1 || j>65535)
+										j=list[listcount-1]->port;
+									list[listcount-1]->port=j;
+								}
+								uifc.changes=1;
+							}
+
+							if(uifc.changes) {
+								uifc.changes=0;
+								uifc.helpbuf=address_help;
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number":"Address"
+									,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
+							}
 							if(!uifc.changes) {
 								FREE_AND_NULL(list[listcount-1]);
 								list[listcount-1]=list[listcount];
@@ -1558,16 +1574,18 @@ struct bbslist *show_bbslist(int mode)
 		else {
 			for(;at_settings;) {
 				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n"
-								"~ Default BBS Configuration ~\n"
+								"~ Default Connection Configuration ~\n"
 								"        Modify the settings that are used by default for new entries\n\n"
+#ifdef CONFIGURABLE_MOUSE_ACTIONS
 								"~ Mouse Actions ~\n"
 								"        This feature is not yet functional\n\n"
-								"~ Screen Setup ~\n"
-								"        Set the initial screen size and emulation\n\n"
+#endif
+								"~ Current Screen Mode ~\n"
+								"        Set the current screen size/mode\n\n"
 								"~ Font Management ~\n"
 								"        Configure additional font files\n\n"
 								"~ Program Settings ~\n"
-								"        Modify hardware and video settings\n\n";
+								"        Modify hardware and screen/video settings\n\n";
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
@@ -1599,20 +1617,22 @@ struct bbslist *show_bbslist(int mode)
 					case 0:			/* Edit default connection settings */
 						edit_list(NULL, &defaults,listpath,TRUE);
 						break;
+#ifdef CONFIGURABLE_MOUSE_ACTIONS
 					case 1:			/* Mouse Actions setup */
 						uifc.helpbuf=	"Mouse actions are not yet user conifurable."
 										"This item is here to remind me to implement it.";
 						uifc.msg("This section not yet functional");
 						break;
-					case 2: {		/* Screen Setup */
+#endif
+					case 1: {		/* Screen Mode */
 							struct text_info ti;
 							gettextinfo(&ti);
 
-							uifc.helpbuf=	"`Screen Setup`\n\n"
-									"Select the new screen size.\n";
+							uifc.helpbuf=	"`Current Screen Mode`\n\n"
+									"Change the current screen size/mode.\n";
 							i=ti.currmode;
 							i=ciolib_to_screen(ti.currmode);
-							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Setup",screen_modes);
+							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Mode",screen_modes);
 							if(i>=0) {
 								uifcbail();
 								textmode(screen_to_ciolib(i));
@@ -1623,10 +1643,10 @@ struct bbslist *show_bbslist(int mode)
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 						}
 						break;
-					case 3:			/* Font management */
+					case 2:			/* Font management */
 						if(!safe_mode) font_management();
 						break;
-					case 4:			/* Program settings */
+					case 3:			/* Program settings */
 						change_settings();
 						break;
 				}

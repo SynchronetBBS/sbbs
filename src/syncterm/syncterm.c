@@ -739,7 +739,6 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 	if(force_defaults) {
 		bbs->user[0]=0;
 		bbs->password[0]=0;
-		bbs->reversed=FALSE;
 		bbs->screen_mode=SCREEN_MODE_CURRENT;
 		bbs->conn_type=dflt_conn_type;
 		bbs->port=conn_ports[dflt_conn_type];
@@ -978,7 +977,7 @@ void load_settings(struct syncterm_settings *set)
 	inifile=fopen(inipath,"r");
 	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
 	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",TRUE);
-	set->startup_mode=iniReadEnum(inifile,"SyncTERM","VideoMode",screen_modes,SCREEN_MODE_CURRENT);
+	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
 	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 

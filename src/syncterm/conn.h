@@ -16,6 +16,7 @@ extern short unsigned int conn_ports[];
 enum {
 	 CONN_TYPE_UNKNOWN
 	,CONN_TYPE_RLOGIN
+	,CONN_TYPE_RLOGIN_REVERSED
 	,CONN_TYPE_TELNET
 	,CONN_TYPE_RAW
 	,CONN_TYPE_SSH

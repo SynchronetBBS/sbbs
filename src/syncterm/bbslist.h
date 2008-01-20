@@ -66,7 +66,6 @@ struct bbslist {
 	int				type;
 	int				conn_type;
 	int				id;
-	int				reversed;
 	int				screen_mode;
 	int				nostatus;
 	char			dldir[MAX_PATH+1];
