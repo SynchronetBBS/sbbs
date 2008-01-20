@@ -16,6 +16,7 @@
 #include "telnet_io.h"
 
 SOCKET telnet_sock=INVALID_SOCKET;
+extern int	telnet_log_level;
 
 #ifdef __BORLANDC__
 #pragma argsused
@@ -125,6 +126,8 @@ void telnet_output_thread(void *args)
 int telnet_connect(struct bbslist *bbs)
 {
 	init_uifc(TRUE, TRUE);
+
+	telnet_log_level = bbs->telnet_loglevel;
 
 	telnet_sock=conn_socket_connect(bbs);
 	if(telnet_sock==INVALID_SOCKET)
