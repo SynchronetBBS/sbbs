@@ -1477,13 +1477,17 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x2600:	/* ALT-L */
-					conn_send(bbs->user,strlen(bbs->user),0);
-					conn_send("\r",1,0);
-					SLEEP(10);
-					conn_send(bbs->password,strlen(bbs->password),0);
-					conn_send("\r",1,0);
-					if(bbs->syspass[0]) {
+					if(bbs->user[0]) {
+						conn_send(bbs->user,strlen(bbs->user),0);
+						conn_send("\r",1,0);
 						SLEEP(10);
+					}
+					if(bbs->password[0]) {
+						conn_send(bbs->password,strlen(bbs->password),0);
+						conn_send("\r",1,0);
+						SLEEP(10);
+					}
+					if(bbs->syspass[0]) {
 						conn_send(bbs->syspass,strlen(bbs->syspass),0);
 						conn_send("\r",1,0);
 					}
