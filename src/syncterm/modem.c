@@ -140,6 +140,10 @@ int modem_connect(struct bbslist *bbs)
 		return(-1);
 	}
 
+	/* drain keyboard input to avoid accidental cancel */
+	while(kbhit())
+		getch();
+
 	uifc.pop("Initializing...");
 
 	comWriteString(com, settings.mdm.init_string);
@@ -170,9 +174,6 @@ int modem_connect(struct bbslist *bbs)
 		conn_api.terminate=-1;
 		return(-1);
 	}
-	/* drain keyboard input to avoid accidental cancel */
-	while(kbhit())
-		getch();
 
 	uifc.pop(NULL);
 	uifc.pop("Dialing...");
