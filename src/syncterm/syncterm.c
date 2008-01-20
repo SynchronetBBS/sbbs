@@ -657,6 +657,7 @@ char *output_types[]={
 #endif
 #ifdef _WIN32
 	,"Win32 Console"
+	,"Win32 Console Fullscreen"
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,"SDL"
@@ -677,6 +678,7 @@ int output_map[]={
 #endif
 #ifdef _WIN32
 	,CIOLIB_MODE_CONIO
+	,CIOLIB_MODE_CONIO_FULLSCREEN
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,CIOLIB_MODE_SDL
@@ -692,6 +694,7 @@ char *output_descrs[]={
 	,"ANSI"
 	,"X11"
 	,"Win32 Console"
+	,"Win32 Console Fullscreen"
 	,"SDL"
 	,"SDL Fullscreen"
 	,"SDL Overlay"
@@ -705,6 +708,7 @@ char *output_enum[]={
 	,"ANSI"
 	,"X11"
 	,"WinConsole"
+	,"WinConsoleFullscreen"
 	,"SDL"
 	,"SDLFullscreen"
 	,"SDLOverlay"
@@ -1054,6 +1058,11 @@ int main(int argc, char **argv)
 							break;
 						case 'W':
 							ciolib_mode=CIOLIB_MODE_CONIO;
+							switch(toupper(argv[i][3])) {
+								case 'F':
+									ciolib_mode=CIOLIB_MODE_CONIO_FULLSCREEN;
+									break;
+							}
 							break;
 						case 'S':
 							switch(toupper(argv[i][3])) {
@@ -1274,7 +1283,7 @@ int main(int argc, char **argv)
 		"       C = Curses mode\n"
 		"       F = Curses mode with forced IBM charset\n"
 #else
-		"       W = Win32 native mode\n"
+		"       W[F] = Win32 native mode, F for fullscreen\n"
 #endif
 		"       A = ANSI mode\n"
         "-l# =  set screen lines to # (default=auto-detect)\n"

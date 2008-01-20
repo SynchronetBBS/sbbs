@@ -1158,7 +1158,7 @@ void change_settings(void)
 								"        Writes ANSI on CodePage 437 on stdout and reads input from\n"
 								"        stdin. ANSI must be supported on the current terminal for this\n"
 								"        mode to work.  This mode is intended to be used to run SyncTERM\n"
-								"        as a door\n\n"
+								"        as a BBS door\n\n"
 #if defined(__unix__) && !defined(NO_X)
 								"~ X11 ~\n"
 								"        Uses the Xlib library directly for graphical output.  This is\n"
