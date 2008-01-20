@@ -1631,7 +1631,7 @@ struct bbslist *show_bbslist(int mode)
 				}
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
-						viewofflinescroll();
+						//viewofflinescroll();
 						break;
 					case -2-CIO_KEY_MOUSE:
 						getmouse(&mevent);
