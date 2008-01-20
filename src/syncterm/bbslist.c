@@ -181,7 +181,7 @@ char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NU
 
 char *address_help=	"`Address` or `Phone Number`\n\n"
 					"Enter the hostname, IP address, or phone number of the system\n"
-					"to connect to. i.e. `nix.synchro.net`";
+					"to connect to. Example: `nix.synchro.net`";
 char *conn_type_help=			"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n\n"
 								"`RLogin`...........: Auto-login with RLogin protocol\n"
@@ -778,7 +778,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				}
 				break;
 			case 1:
-				uifc.helpbuf=
+				uifc.helpbuf=address_help;
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number":"Address"
 					,item->addr,LIST_ADDR_MAX,K_EDIT);
@@ -1056,8 +1056,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[7][80];
-	char	*opt[8];
+	char	opts[8][80];
+	char	*opt[9];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -1071,9 +1071,9 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<7; i++)
+	for(i=0; i<8; i++)
 		opt[i]=opts[i];
-	opt[7]=NULL;
+	opt[i]=NULL;
 
 	for(;;) {
 
@@ -1089,9 +1089,11 @@ void change_settings(void)
 						"~ Scrollback Buffer Lines ~\n"
 						"        The number of lines in the scrollback buffer.\n\n"
 						"~ Modem Device ~\n"
-						"        The device name of the modem.\n\n"
+						"        The device name of the modem's communications port.\n\n"
 						"~ Modem Init String ~\n"
-						"        An init string to use for the modem.\n\n";
+						"        The command string to use to initialize the modem.\n\n"
+						"~ Modem Dial String ~\n"
+						"        The command string to use to dial the modem.\n\n"						;
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
 		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
@@ -1099,6 +1101,7 @@ void change_settings(void)
 		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
 		sprintf(opts[5],"Modem Device            %s",settings.mdm.device_name);
 		sprintf(opts[6],"Modem Init String       %s",settings.mdm.init_string);
+		sprintf(opts[7],"Modem Dial String       %s",settings.mdm.dial_string);
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -1227,30 +1230,42 @@ void change_settings(void)
 				break;
 			case 5:
 				uifc.helpbuf=	"`Modem Device`\n\n"
-#ifdef _WIN32
-								"Enter the modem device name (ie: COM1).";
-#else
-								"Enter the modem device name (ie: /dev/ttyd0).";
-#endif
+								"Enter the name of the device used to communicate with the modem.\n\n"
+								"Example: \"`"
+								DEFAULT_MODEM_DEV
+								"`\"";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
 			case 6:
 				uifc.helpbuf=	"`Modem Init String`\n\n"
-								"Your modem init string goes here.\n"
-								"For reference, here are the expected settings and USR inits\n\n"
-								"State                      USR Init\n"
-								"------------------------------------\n"
+								"Your modem initialization string goes here.\n\n"
+								"Example:\n"
+								"\"`AT&F`\" will load a Hayes compatible modem's factory default settings.\n\n"
+								"For reference, here are the expected Hayes-compatible settings:\n\n"
+								"State                      Command\n"
+								"----------------------------------\n"
 								"Echo on                    E1\n"
 								"Verbal result codes        Q0V1\n"
-								"Include connection speed   &X4\n"
 								"Normal CD Handling         &C1\n"
-								"Locked speed               &B1\n"
 								"Normal DTR                 &D2\n"
+								"\n\n"
+								"For reference, here are the expected USRobotics-compatible settings:\n\n"
+								"State                      Command\n"
+								"----------------------------------\n"
+								"Include connection speed   &X4\n"
+								"Locked speed               &B1\n"
 								"CTS/RTS Flow Control       &H1&R2\n"
 								"Disable Software Flow      &I0\n";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
+				break;
+			case 7:
+				uifc.helpbuf=   "`Modem Dial String`\n\n"
+								"The command string to dial the modem goes here.\n\n"
+								"Example: \"`ATDT`\" will dial a Hayes-compatible modem in touch-tone mode.";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Dial String",settings.mdm.dial_string,LIST_NAME_MAX,K_EDIT)>=0)
+					iniSetString(&inicontents,"SyncTERM","ModemDial",settings.mdm.dial_string,&ini_style);
 				break;
 		}
 	}

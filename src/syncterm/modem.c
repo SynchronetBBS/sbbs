@@ -162,7 +162,7 @@ int modem_connect(struct bbslist *bbs)
 
 	uifc.pop(NULL);
 	uifc.pop("Dialing...");
-	comWriteString(com, "ATDT");
+	comWriteString(com, settings.mdm.dial_string);
 	comWriteString(com, bbs->addr);
 	comWriteString(com, "\r");
 

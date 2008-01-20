@@ -16,8 +16,20 @@ enum {
 	,SYNCTERM_PATH_CACHE
 };
 
+/* Default modem device */
+#if defined(__APPLE__) && defined(__MACH__)
+/* Mac OS X */
+#define DEFAULT_MODEM_DEV	"/dev/tty.modem"
+#elif defined(_WIN32)
+#define DEFAULT_MODEM_DEV	"COM1"
+#else
+/* FreeBSD */
+#define DEFAULT_MODEM_DEV	"/dev/ttyd0"
+#endif
+
 struct modem_settings {
 	char	init_string[INI_MAX_VALUE_LEN];
+	char	dial_string[INI_MAX_VALUE_LEN];
 	char	device_name[INI_MAX_VALUE_LEN+1];
 };
 
