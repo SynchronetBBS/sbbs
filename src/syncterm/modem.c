@@ -183,12 +183,12 @@ int modem_connect(struct bbslist *bbs)
 
 	/* Wait for "CONNECT" */
 	while(1) {
-		if((ret=modem_response(respbuf, sizeof(respbuf), 30))!=0) {
+		if((ret=modem_response(respbuf, sizeof(respbuf), 60))!=0) {
 			modem_close();
 			uifc.pop(NULL);
 			if(ret<0)
 				uifcmsg(respbuf,	"`No Answer`\n\n"
-							"The modem did not connect within 30 seconds.\n");
+							"The modem did not connect within 60 seconds.\n");
 			conn_api.terminate=-1;
 			return(-1);
 		}
