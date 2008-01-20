@@ -1355,6 +1355,9 @@ struct bbslist *show_bbslist(int mode)
 				if(val<0) {
 					switch(val) {
 						case -2-0x13:	/* CTRL-S - Sort */
+							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							edit_sorting(list,&listcount);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
