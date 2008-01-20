@@ -179,9 +179,9 @@ int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 11520
 
 char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NULL};
 
-char *address_help=	"`Address` or `Phone Number`\n\n"
-					"Enter the hostname, IP address, or phone number of the system\n"
-					"to connect to. Example: `nix.synchro.net`";
+char *address_help=	"`Address`, `Phone Number`, or `Serial Port`\n\n"
+					"Enter the hostname, IP address, phone number, or serial port device of\n"
+					"the system to connect to. Example: `nix.synchro.net`";
 char *conn_type_help=			"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n\n"
 								"`RLogin`...........: Auto-login with RLogin protocol\n"
