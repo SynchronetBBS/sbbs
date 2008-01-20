@@ -1189,7 +1189,7 @@ BOOL doterm(struct bbslist *bbs)
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 	size_t	remain;
 
-	if(bps->conn_type == CONN_TYPE_SERIAL)
+	if(bbs->conn_type == CONN_TYPE_SERIAL)
 		speed = 0;
 	else
 		speed = bbs->bpsrate;
@@ -1231,7 +1231,7 @@ BOOL doterm(struct bbslist *bbs)
 		hold_update=TRUE;
 		sleep=TRUE;
 		if(!term.nostatus)
-			update_status(bbs, speed);
+			update_status(bbs, (bbs->conn_type == CONN_TYPE_SERIAL)?bbs->bpsrate:speed);
 		for(remain=conn_data_waiting() /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
 			if(speed)
 				thischar=xp_timer();
@@ -1621,7 +1621,7 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x9800:	/* ALT-Up */
-					if(bps->conn_type != CONN_TYPE_SERIAL) {
+					if(bbs->conn_type != CONN_TYPE_SERIAL) {
 						if(speed)
 							speed=rates[get_rate_num(speed)+1];
 						else
@@ -1630,7 +1630,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				case 0xa000:	/* ALT-Down */
-					if(bps->conn_type != CONN_TYPE_SERIAL) {
+					if(bbs->conn_type != CONN_TYPE_SERIAL) {
 						i=get_rate_num(speed);
 						if(i==0)
 							speed=0;
