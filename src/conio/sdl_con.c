@@ -1202,7 +1202,6 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	 * Or there *IS* an SDL keysym.
 	 * Or ALT (Meta) pressed
 	 */
-fprintf(stderr,"Unicode: %08x  KeySym: %04x  Mod: %08x\n",unicode,keysym,mod);
 	if((!unicode) || (keysym > SDLK_FIRST && keysym < SDLK_LAST) || (mod & (KMOD_META|KMOD_ALT))) {
 
 		/* Find the SDL keysym */
