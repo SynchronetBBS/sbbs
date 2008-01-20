@@ -1123,7 +1123,7 @@ void change_settings(void)
 						continue;
 					default:
 						settings.startup_mode=j;
-						iniSetInteger(&inicontents,"SyncTERM","VideoMode",settings.startup_mode,&ini_style);
+						iniSetEnum(&inicontents,"SyncTERM","VideoMode",screen_modes,settings.startup_mode,&ini_style);
 						break;
 				}
 				break;
