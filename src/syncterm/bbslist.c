@@ -1508,7 +1508,7 @@ struct bbslist *show_bbslist(int mode, int id)
 							uifc.changes=0;
 							list[listcount-1]->conn_type--;
 							uifc.helpbuf=conn_type_help;
-							if(uifc.list(WIN_SAV,0,0,0,&(list[listcount-1]->conn_type),NULL,"Connection Type",&(conn_types[1]))>0) {
+							if(uifc.list(WIN_SAV,0,0,0,&(list[listcount-1]->conn_type),NULL,"Connection Type",&(conn_types[1]))>=0) {
 								list[listcount-1]->conn_type++;
 								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM
 									&& list[listcount-1]->conn_type!=CONN_TYPE_SERIAL) {
