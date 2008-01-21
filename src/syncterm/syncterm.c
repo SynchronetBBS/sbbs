@@ -885,8 +885,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			break;
 	}
 #else
-	char	*home;
-	int		created;
+	char	*home=NULL;
 
 	if(inpath==NULL)
 		home=getenv("HOME");
@@ -1359,8 +1358,6 @@ int screen_to_ciolib(int screen)
 
 int ciolib_to_screen(int ciolib)
 {
-	struct text_info	ti;
-
 	switch(ciolib) {
 		case C80 :
 			return(SCREEN_MODE_80X25);
