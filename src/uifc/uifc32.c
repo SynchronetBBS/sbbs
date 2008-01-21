@@ -359,7 +359,9 @@ void docopy(void)
 							for(x=startx-1;x<endx;x++) {
 								copybuf[outpos++]=screen[(y*api->scrn_width+x)*2];
 							}
-							copybuf[outpos++]='\r';
+							#ifdef _WIN32
+								copybuf[outpos++]='\r';
+							#endif
 							copybuf[outpos++]='\n';
 						}
 						copybuf[outpos]=0;

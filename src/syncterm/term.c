@@ -120,7 +120,9 @@ void mousedrag(unsigned char *scrollback)
 								lastchar=outpos;
 							if((pos+1)%term.width==0) {
 								outpos=lastchar;
-								copybuf[outpos++]='\r';
+								#ifdef _WIN32
+									copybuf[outpos++]='\r';
+								#endif
 								copybuf[outpos++]='\n';
 								lastchar=outpos;
 							}
