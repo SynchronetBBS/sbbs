@@ -24,7 +24,7 @@
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Direct COM"
+char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial"
 #ifdef __unix__
 ,"Shell"
 #endif

@@ -187,10 +187,10 @@ char *conn_type_help=			"`Connection Type`\n\n"
 								"`RLogin`...........: Auto-login with RLogin protocol\n"
 								"`RLogin Reversed`..: RLogin using reversed username/password parameters\n"
 								"`Telnet`...........: Use more common Telnet protocol\n"
-								"`Raw`..............: Make a raw socket connection\n"
-								"`SSH`..............: Connect using the SSH protocol\n"
+								"`Raw`..............: Make a raw TCP socket connection\n"
+								"`SSH`..............: Connect using the Secure Shell (SSH-2) protocol\n"
 								"`Modem`............: Connect using a dial-up modem\n"
-								"`Direct COM`.......: Connect using directly to a serial port\n"
+								"`Serial`...........: Connect directly to a serial communications port\n"
 #ifdef __unix__
 								"`Shell`............: Connect to a local PTY\n";
 #else
@@ -724,10 +724,12 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			sprintf(opt[i++], "Name              %s",itemname);
 			if(item->conn_type==CONN_TYPE_MODEM)
 				sprintf(opt[i++], "Phone Number      %s",item->addr);
+			else if(item->conn_type==CONN_TYPE_SERIAL)
+				sprintf(opt[i++], "Device Name       %s",item->addr);
 			else
 				sprintf(opt[i++], "Address           %s",item->addr);
 		}
-		if(item->conn_type!=CONN_TYPE_MODEM)
+		if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL)
 			sprintf(opt[i++], "TCP Port          %hu",item->port);
 		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
 		sprintf(opt[i++], "Username          %s",item->user);
@@ -765,7 +767,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			,opts);
 		if(i>=0 && isdefault)
 			i+=2;
-		if(i>=0 && item->conn_type==CONN_TYPE_MODEM)
+		if(i>=0 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL))
 			i++;	/* no port number */
 		switch(i) {
 			case -1:
@@ -796,7 +798,8 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			case 1:
 				uifc.helpbuf=address_help;
 				uifc.input(WIN_MID|WIN_SAV,0,0
-					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number":"Address"
+					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number"
+					:item->conn_type==CONN_TYPE_SERIAL ? "Device Name" : "Address"
 					,item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
 				break;
@@ -853,7 +856,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						item->conn_type++;
 						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
 
-						if(item->conn_type!=CONN_TYPE_MODEM) {
+						if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL) {
 							/* Set the port too */
 							j=conn_ports[item->conn_type];
 							if(j<1 || j>65535)
@@ -1506,7 +1509,8 @@ struct bbslist *show_bbslist(int mode, int id)
 							uifc.helpbuf=conn_type_help;
 							if(uifc.list(WIN_SAV,0,0,0,&(list[listcount-1]->conn_type),NULL,"Connection Type",&(conn_types[1]))>0) {
 								list[listcount-1]->conn_type++;
-								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM) {
+								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM
+									&& list[listcount-1]->conn_type!=CONN_TYPE_SERIAL) {
 									/* Set the port too */
 									j=conn_ports[list[listcount-1]->conn_type];
 									if(j<1 || j>65535)
@@ -1520,7 +1524,8 @@ struct bbslist *show_bbslist(int mode, int id)
 								uifc.changes=0;
 								uifc.helpbuf=address_help;
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number":"Address"
+									,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number"
+									:list[listcount-1]->conn_type==CONN_TYPE_SERIAL ? "Device Name" : "Address"
 									,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 							}
 							if(!uifc.changes) {
