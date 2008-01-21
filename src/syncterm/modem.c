@@ -329,10 +329,10 @@ int modem_close(void)
 	}
 
 CLOSEIT:
-	comClose(com);
-
 	while(conn_api.input_thread_running || conn_api.output_thread_running)
 		SLEEP(1);
+	comClose(com);
+
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
