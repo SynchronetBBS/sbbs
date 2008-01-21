@@ -138,7 +138,7 @@ int modem_connect(struct bbslist *bbs)
 	init_uifc(TRUE, TRUE);
 
 	if(bbs->conn_type == CONN_TYPE_SERIAL) {
-		if((com=comOpen(settings.mdm.device_name)) == COM_HANDLE_INVALID) {
+		if((com=comOpen(bbs->addr)) == COM_HANDLE_INVALID) {
 			uifcmsg("Cannot Open Port",	"`Cannot Open Port`\n\n"
 							"Cannot open the specified serial device.\n");
 			conn_api.terminate=-1;
