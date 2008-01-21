@@ -1406,14 +1406,14 @@ struct bbslist *show_bbslist(int id)
 				}
 				oldopt=opt;
 				val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 					,0,0,0,&opt,&bar,"Directory",(char **)list);
 				if(val==listcount)
 					val=listcount|MSK_INS;
 				if(val==-7)	{ /* CTRL-E */
 					uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 						|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 						|WIN_SEL
 						,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1423,7 +1423,7 @@ struct bbslist *show_bbslist(int id)
 					switch(val) {
 						case -2-0x13:	/* CTRL-S - Sort */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1439,7 +1439,7 @@ struct bbslist *show_bbslist(int id)
 						case -2-0x4d00:	/* Right Arrow */
 						case -11:		/* TAB */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1450,7 +1450,7 @@ struct bbslist *show_bbslist(int id)
 							uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
 											"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1605,6 +1605,10 @@ struct bbslist *show_bbslist(int id)
 			}
 		}
 		else {
+			uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+				|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE
+				|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_INACT
+				,0,0,0,&opt,&bar,"Directory",(char **)list);
 			for(;at_settings;) {
 				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n"
 								"~ Default Connection Settings ~\n"
@@ -1622,7 +1626,7 @@ struct bbslist *show_bbslist(int id)
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
-				val=uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT
+				val=uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_ESC
 					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
@@ -1634,7 +1638,7 @@ struct bbslist *show_bbslist(int id)
 					case -2-0x4b00:	/* Left Arrow */
 					case -2-0x4d00:	/* Right Arrow */
 					case -11:		/* TAB */
-						uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_SEL
+						uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_SEL
 							,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 						at_settings=!at_settings;
 						break;
