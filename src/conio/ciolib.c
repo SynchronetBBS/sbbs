@@ -836,7 +836,9 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_cprintf(char *fmat, ...)
 	char	str[16384];
 #else
 	char	*str;
+#ifndef HAVE_VASPRINTF
 	va_list argptr2;
+#endif
 #endif
 
 	CIOLIB_INIT();

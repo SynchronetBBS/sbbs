@@ -54,6 +54,7 @@ int x_wherey(void);
 int x_wherex(void);
 int x_putch(int ch);
 void x_gotoxy(int x, int y);
+int x_init(void);
 void x_initciolib(long inmode);
 void x_gettextinfo(struct text_info *info);
 void x_setcursortype(int type);
