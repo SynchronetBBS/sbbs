@@ -961,21 +961,33 @@ void font_control(struct bbslist *bbs)
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
-	i=j=getfont();
-	uifc.helpbuf="`Font Setup`\n\n"
-				"Change the current font.  Must support the current video mode.";
-	k=uifc.list(WIN_MID|WIN_SAV|WIN_INS,0,0,0,&i,&j,"Font Setup",font_names);
-	if(k!=-1) {
-		if(k & MSK_INS) {
-			struct file_pick fpick;
-			j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
+	switch(cio_api.mode) {
+		case CIOLIB_MODE_CONIO:
+		case CIOLIB_MODE_CONIO_FULLSCREEN:
+		case CIOLIB_MODE_CURSES:
+		case CIOLIB_MODE_CURSES_IBM:
+		case CIOLIB_MODE_ANSI:
+			uifcmsg("Not supported in this video output mode."
+				,"Font cannot be changed in the current video output mode");
+			break;
+		default:
+			i=j=getfont();
+			uifc.helpbuf="`Font Setup`\n\n"
+						"Change the current font.  Must support the current video mode.";
+			k=uifc.list(WIN_MID|WIN_SAV|WIN_INS,0,0,0,&i,&j,"Font Setup",font_names);
+			if(k!=-1) {
+				if(k & MSK_INS) {
+					struct file_pick fpick;
+					j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
 
-			if(j!=-1 && fpick.files>=1)
-				loadfont(fpick.selected[0]);
-			filepick_free(&fpick);
-		}
-		else
-			setfont(i,FALSE);
+					if(j!=-1 && fpick.files>=1)
+						loadfont(fpick.selected[0]);
+					filepick_free(&fpick);
+				}
+				else
+					setfont(i,FALSE);
+			}
+		break;
 	}
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
