@@ -357,6 +357,7 @@ enum failure_reason {
 	,FAILURE_CONNECT_ERROR
 	,FAILURE_ABORTED
 	,FAILURE_GENERAL
+	,FAILURE_DISCONNECTED
 };
 
 int conn_socket_connect(struct bbslist *bbs)
@@ -446,8 +447,10 @@ int conn_socket_connect(struct bbslist *bbs)
 connected:
 	nonblock=0;
 	ioctlsocket(sock, FIONBIO, &nonblock);
-	if(!socket_check(sock, NULL, NULL, 0))
+	if(!socket_check(sock, NULL, NULL, 0)) {
+		failure=FAILURE_DISCONNECTED;
 		goto connect_failed;
+	}
 
 	uifc.pop(NULL);
 	return(sock);
@@ -488,6 +491,12 @@ connect_failed:
 				uifcmsg(str
 								,"`SyncTERM failed to connect`\n\n"
 								 "The call to select() returned an unexpected error code.");
+				break;
+			case FAILURE_DISCONNECTED:
+				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
+				uifcmsg(str
+								,"`SyncTERM failed to connect`\n\n"
+								 "After connect() succeeded, the socket was in a disconnected state.");
 				break;
 		}
 		conn_close();
