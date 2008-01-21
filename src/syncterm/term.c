@@ -556,6 +556,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		filepick_free(&fpick);
 		uifcbail();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
 	SAFECOPY(path,fpick.selected[0]);
@@ -567,6 +568,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		uifcmsg("ERROR",str);
 		uifcbail();
 		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
 	setvbuf(fp,NULL,_IOFBF,0x10000);
@@ -587,6 +589,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	}
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	gotoxy(txtinfo.curx, txtinfo.cury);
 }
 
 #if defined(__BORLANDC__)
