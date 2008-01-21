@@ -156,8 +156,6 @@ int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 
 int x_init(void)
 {
-    int fd;
-    int i;
 	void *dl;
 
 	/* Ensure we haven't already initialized */

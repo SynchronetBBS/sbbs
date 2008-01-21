@@ -269,7 +269,6 @@ static void resize_window()
 
 static int init_mode(int mode)
 {
-    int i;
     int oldcols=vstat.cols;
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
@@ -316,10 +315,10 @@ static int video_init()
 static void local_draw_rect(struct update_rect *rect)
 {
 	int x,y,xscale,yscale;
-	int rectw, recth, rectc,x2,y2;
 	XImage *xim;
 
 #if 0 /* Draw solid colour rectangles... */
+	int rectw, recth, rectc, y2;
 	for(y=0; y<rect->height; y++) {
 		for(x=0; x<rect->width; x++) {
 			rectc=rect->data[y*rect->width+x];
@@ -391,7 +390,6 @@ static int x11_event(XEvent *ev)
 			{
 				int newFSH=1;
 				int newFSW=1;
-				int r;
 
 				x11_window_xpos=ev->xconfigure.x;
 				x11_window_ypos=ev->xconfigure.y;
