@@ -1328,7 +1328,7 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 	 * we're not going to trust the keysym
 	 * value since we can't.
 	 */
-	if(keysym <= 127 && !(mod & KMOD_META|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT))
+	if(keysym <= 127 && !(mod & (KMOD_META|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT)))
 		return(keysym);
 
 	/* Give up.  It's not working out for us. */
@@ -1673,7 +1673,7 @@ int sdl_video_event_thread(void *data)
 											FREE_AND_NULL(sdl_pastebuf);
 										}
 										else
-											sdl_pastebuf=(unsigned char *)malloc(strlen(sdl_copybuf)+1);
+											sdl_pastebuf=(char *)malloc(strlen(sdl_copybuf)+1);
 										if(sdl_pastebuf!=NULL)
 											strcpy(sdl_pastebuf,sdl_copybuf);
 										/* Set paste buffer */
