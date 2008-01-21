@@ -577,8 +577,15 @@ int zmodem_send_zeof(zmodem_t* zm)
 int zmodem_recv_raw(zmodem_t* zm)
 {
 	int c;
+	int attempt;
 
-	if((c=zm->recv_byte(zm->cbdata,zm->recv_timeout)) < 0)
+	for(attempt=0;attempt<=zm->recv_timeout;attempt++) {
+		if((c=zm->recv_byte(zm->cbdata,1 /* second timeout */)) >= 0)
+			break;
+		if(is_cancelled(zm))
+			return(ZCAN);
+	}
+	if(attempt>zm->recv_timeout)
 		return(TIMEOUT);
 
 	if(c == CAN) {
@@ -1543,8 +1550,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	if(request_init) {
 		for(zm->errors=0; zm->errors<=zm->max_errors && !is_cancelled(zm) && is_connected(zm); zm->errors++) {
-			lprintf(zm,LOG_INFO,"Sending ZRQINIT (%u of %u)"
-				,zm->errors+1,zm->max_errors+1);
+			if(zm->errors)
+				lprintf(zm,LOG_NOTICE,"Sending ZRQINIT (%u of %u)"
+					,zm->errors+1,zm->max_errors+1);
+			else
+				lprintf(zm,LOG_INFO,"Sending ZRQINIT");
 			i = zmodem_get_zrinit(zm);
 			if(i == ZRINIT) {
 				zmodem_parse_zrinit(zm);
@@ -1901,11 +1911,17 @@ int zmodem_recv_init(zmodem_t* zm)
 #endif
 
 	for(errors=0; errors<=zm->max_errors && !is_cancelled(zm) && is_connected(zm); errors++) {
-		lprintf(zm,LOG_DEBUG,"Sending ZRINIT (%u of %u)"
-			,errors+1, zm->max_errors+1);
+		if(errors)
+			lprintf(zm,LOG_NOTICE,"Sending ZRINIT (%u of %u)"
+				,errors+1, zm->max_errors+1);
+		else
+			lprintf(zm,LOG_INFO,"Sending ZRINIT");
 		zmodem_send_zrinit(zm);
 
 		type = zmodem_recv_header(zm);
+
+		if(zm->local_abort)
+			break;
 
 		if(type==TIMEOUT)
 			continue;
@@ -1991,7 +2007,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, ulong offset)
 		if((i = zmodem_recv_file_frame(zm,fp)) == ZEOF)
 			break;
 		if(i!=ENDOFFRAME) {
-			if(i>0)
+			if(i>0 && !zm->local_abort)
 				lprintf(zm,LOG_ERR,"%s at offset: %lu", chr(i), ftell(fp));
 			errors++;
 		}
@@ -2075,13 +2091,9 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 
 	/* Use sane default values */
 	zm->init_timeout=10;		/* seconds */
-	zm->send_timeout=15;		/* seconds */
-	zm->recv_timeout=20;		/* seconds */
+	zm->send_timeout=10;		/* seconds (reduced from 15) */
+	zm->recv_timeout=10;		/* seconds (reduced from 20) */
 	zm->crc_timeout=60;			/* seconds */
-#if 0
-	zm->byte_timeout=3;			/* seconds */
-	zm->ack_timeout=10;			/* seconds */
-#endif
 	zm->block_size=ZBLOCKLEN;
 	zm->max_block_size=ZBLOCKLEN;
 	zm->max_errors=9;
