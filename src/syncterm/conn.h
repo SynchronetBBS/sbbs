@@ -35,9 +35,9 @@ struct conn_api {
 	void (*binary_mode_off)(void);
 	int log_level;
 	int type;
-	int input_thread_running;
-	int output_thread_running;
-	int terminate;
+	volatile int input_thread_running;
+	volatile int output_thread_running;
+	volatile int terminate;
 	unsigned char *rd_buf;
 	size_t rd_buf_size;
 	unsigned char *wr_buf;
