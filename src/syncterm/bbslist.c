@@ -1126,7 +1126,7 @@ void change_settings(void)
 		sprintf(opts[4],"Scrollback Buffer Lines %d",settings.backlines);
 		sprintf(opts[5],"Modem/Comm Device       %s",settings.mdm.device_name);
 		if(settings.mdm.com_rate)
-			sprintf(str,"%ubps",settings.mdm.com_rate);
+			sprintf(str,"%lubps",settings.mdm.com_rate);
 		else
 			strcpy(str,"Current");
 		sprintf(opts[6],"Modem/Comm Rate         %s",str);
@@ -1274,7 +1274,7 @@ void change_settings(void)
 								"Examples: `38400`, `57600`, `115200`\n\n"
 								"This rate is sometimes (incorrectly) referred to as the `baud rate`.\n\n"
 								"Enter `0` to use the current or default rate of the communication port";
-				sprintf(str,"%u",settings.mdm.com_rate ? settings.mdm.com_rate : 115200);
+				sprintf(str,"%lu",settings.mdm.com_rate ? settings.mdm.com_rate : 115200UL);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Rate",str,LIST_NAME_MAX,K_EDIT)>=0) {
 					settings.mdm.com_rate=strtol(str,NULL,10);
 					iniSetLongInt(&inicontents,"SyncTERM","ModemComRate",settings.mdm.com_rate,&ini_style);
@@ -1404,7 +1404,7 @@ struct bbslist *show_bbslist(int mode, int id)
 				}
 				oldopt=opt;
 				val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE
+					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 					,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 				if(val==listcount)
