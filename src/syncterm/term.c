@@ -535,7 +535,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	FILE*	fp;
 	struct file_pick fpick;
 	char	*opts[3]={
-			 "Zmodem"
+			 "ZMODEM"
 			,"ASCII"
 			,""
 		};
