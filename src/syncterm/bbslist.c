@@ -1632,7 +1632,7 @@ struct bbslist *show_bbslist(int mode, int id)
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
-				val=uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP
+				val=uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP
 					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 				if(val>=0) {
 					uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
