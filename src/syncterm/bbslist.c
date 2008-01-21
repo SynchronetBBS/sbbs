@@ -374,7 +374,8 @@ int listcmp(const void *aptr, const void *bptr)
 	return(0);
 }
 
-void sort_list(struct bbslist **list, int *listcount)  {
+void sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, int id)  {
+	int i;
 #if 0
 	struct bbslist *tmp;
 	unsigned int	i,j,swapped=1;
@@ -409,6 +410,16 @@ void sort_list(struct bbslist **list, int *listcount)  {
 #else
 	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
 #endif
+	if(cur && id>=0) {
+		for(i=0; i<*listcount; i++) {
+			if(list[i]->id==id) {
+				*cur=i;
+				if(bar)
+					*bar=i;
+				break;
+			}
+		}
+	}
 }
 
 void write_sortorder(void)
@@ -444,7 +455,7 @@ void write_sortorder(void)
 	strListFree(&inicontents);
 }
 
-void edit_sorting(struct bbslist **list, int *listcount)
+void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, int id)
 {
 	char	opt[sizeof(sort_order)/sizeof(struct sort_order_info)][80];
 	char	*opts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
@@ -526,7 +537,7 @@ void edit_sorting(struct bbslist **list, int *listcount)
 
 	/* Write back to the .ini file */
 	write_sortorder();
-	sort_list(list, listcount);
+	sort_list(list, listcount, ocur, obar, id);
 }
 
 void free_list(struct bbslist **list, int listcount)
@@ -1300,7 +1311,7 @@ write_ini:
 	}
 }
 
-void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount)
+void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount, int *cur, int *bar, int id)
 {
 	free_list(&list[0],*listcount);
 	*listcount=0;
@@ -1313,14 +1324,14 @@ void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaul
 	/* System BBS List */
 	if(stricmp(shared_list, listpath)) /* don't read the same list twice */
 		read_list(shared_list, list, defaults, listcount, SYSTEM_BBSLIST);
-	sort_list(list, listcount);
+	sort_list(list, listcount, cur, bar, id);
 }
 
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(int mode)
+struct bbslist *show_bbslist(int mode, int id)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -1356,7 +1367,7 @@ struct bbslist *show_bbslist(int mode)
 
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
-	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
+	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, id);
 
 	uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
@@ -1393,7 +1404,7 @@ struct bbslist *show_bbslist(int mode)
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
-							edit_sorting(list,&listcount);
+							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
 							//viewofflinescroll();
@@ -1411,16 +1422,11 @@ struct bbslist *show_bbslist(int mode)
 							break;
 						case -7:		/* CTRL-E */
 							if(list[opt]) {
-								i=list[opt]->id;
 								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 									|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
 									,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 								if(edit_list(list, list[opt],listpath,FALSE)) {
-									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
-									for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-										if(list[j]->id==i)
-											opt=j;
-									}
+									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]->id);
 									oldopt=-1;
 								}
 							}
@@ -1516,11 +1522,7 @@ struct bbslist *show_bbslist(int mode)
 							}
 							else {
 								add_bbs(listpath,list[listcount-1]);
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
-								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-									if(list[j]->id==listcount-1)
-										opt=j;
-								}
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 								oldopt=-1;
 							}
 							break;
@@ -1559,7 +1561,8 @@ struct bbslist *show_bbslist(int mode)
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
 								break;
 							del_bbs(listpath,list[opt]);
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, NULL, NULL, -1);
+							oldopt=-1;
 							break;
 						case MSK_EDIT:
 							if(safe_mode) {
@@ -1569,13 +1572,8 @@ struct bbslist *show_bbslist(int mode)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
-							i=list[opt]->id;
 							if(edit_list(list, list[opt],listpath,FALSE)) {
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
-								for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-									if(list[j]->id==i)
-										opt=j;
-								}
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 								oldopt=-1;
 							}
 							break;
@@ -1590,13 +1588,8 @@ struct bbslist *show_bbslist(int mode)
 							uifc.msg("Cannot edit list in safe mode");
 							break;
 						}
-						i=list[opt]->id;
 						if(edit_list(list, list[opt],listpath,FALSE)) {
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount);
-							for(j=0;list[j]!=NULL && list[j]->name[0];j++) {
-								if(list[j]->id==i)
-									opt=j;
-							}
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 							oldopt=-1;
 						}
 					}
