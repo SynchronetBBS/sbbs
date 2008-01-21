@@ -1343,7 +1343,7 @@ void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaul
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(int mode, int id)
+struct bbslist *show_bbslist(int id)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -1408,7 +1408,7 @@ struct bbslist *show_bbslist(int mode, int id)
 				val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 					|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 					|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
-					,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+					,0,0,0,&opt,&bar,"Directory",(char **)list);
 				if(val==listcount)
 					val=listcount|MSK_INS;
 				if(val==-7)	{ /* CTRL-E */
@@ -1416,7 +1416,7 @@ struct bbslist *show_bbslist(int mode, int id)
 						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 						|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 						|WIN_SEL
-						,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+						,0,0,0,&opt,&bar,"Directory",(char **)list);
 					val=opt|MSK_EDIT;
 				}
 				if(val<0) {
@@ -1426,7 +1426,7 @@ struct bbslist *show_bbslist(int mode, int id)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
-								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+								,0,0,0,&opt,&bar,"Directory",(char **)list);
 							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
@@ -1442,7 +1442,7 @@ struct bbslist *show_bbslist(int mode, int id)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
-								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+								,0,0,0,&opt,&bar,"Directory",(char **)list);
 							at_settings=!at_settings;
 							break;
 						case -6:		/* CTRL-D */
@@ -1453,7 +1453,7 @@ struct bbslist *show_bbslist(int mode, int id)
 								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
-								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+								,0,0,0,&opt,&bar,"Directory",(char **)list);
 							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
 							memcpy(&retlist, &defaults, sizeof(defaults));
 							if(uifc.changes) {
@@ -1598,24 +1598,9 @@ struct bbslist *show_bbslist(int mode, int id)
 					}
 				}
 				else {
-					if(mode==BBSLIST_EDIT) {
-						if(safe_mode) {
-							uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
-											"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
-											"BBS list.";
-							uifc.msg("Cannot edit list in safe mode");
-							break;
-						}
-						if(edit_list(list, list[opt],listpath,FALSE)) {
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
-							oldopt=-1;
-						}
-					}
-					else {
-						memcpy(&retlist,list[val],sizeof(struct bbslist));
-						free_list(&list[0],listcount);
-						return(&retlist);
-					}
+					memcpy(&retlist,list[val],sizeof(struct bbslist));
+					free_list(&list[0],listcount);
+					return(&retlist);
 				}
 			}
 		}
