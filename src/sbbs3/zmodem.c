@@ -1248,7 +1248,7 @@ int zmodem_recv_header(zmodem_t* zm)
 
 int zmodem_recv_header_and_check(zmodem_t* zm)
 {
-	int type;
+	int type=TIMEOUT;
 
 	while(is_connected(zm)) {
 		type = zmodem_recv_header_raw(zm,TRUE);		
@@ -1629,10 +1629,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen(p) + 1;
 
-	sprintf(p,"%lu %lo %lo %d %u %lu %d"
+	sprintf(p,"%lu %lo %lo %d %u %u %d"
 		,zm->current_file_size
 		,s.st_mtime
-		,0						/* file mode */
+		,0UL						/* file mode */
 		,0						/* serial number */
 		,zm->files_remaining
 		,zm->bytes_remaining
@@ -1960,7 +1960,7 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->files_remaining = 0;
 	zm->bytes_remaining = 0;
 
-	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %lo %lo %lu %lu"
+	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %lo %lo %u %u"
 		,&zm->current_file_size	/* file size (decimal) */
 		,&zm->current_file_time /* file time (octal unix format) */
 		,&mode					/* file mode */
