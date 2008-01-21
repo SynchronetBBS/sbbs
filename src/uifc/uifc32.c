@@ -966,8 +966,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(api->timedisplay != NULL)
 			api->timedisplay(/* force? */FALSE);
 		gotkey=0;
-		if(kbwait()) {
-			gotkey=inkey();
+		if(kbwait() || (mode&WIN_POP)) {
+			if(mode&WIN_POP)
+				gotkey=CR;
+			else
+				gotkey=inkey();
 			if(gotkey==CIO_KEY_MOUSE) {
 				if((i=uifc_getmouse(&mevnt))==0) {
 					/* Clicked in menu */
