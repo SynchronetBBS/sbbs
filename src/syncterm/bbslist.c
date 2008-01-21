@@ -630,7 +630,7 @@ int list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly
 	for(i=0; list[i]!=NULL; i++) {
 		if(useronly && list[i]->type != USER_BBSLIST)
 			continue;
-		if(strcmp(list[i]->name,bbsname)==0) {
+		if(stricmp(list[i]->name,bbsname)==0) {
 			if(pos)
 				*pos=i;
 			return(1);
@@ -701,6 +701,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		uifc.helpbuf=	"`Copy from system BBS list`\n\n"
 						"This BBS was loaded from the system BBS list.  In order to edit it, it\n"
 						"must be copied into your personal BBS list.\n";
+		i=0;
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Copy from system BBS list?",YesNo)!=0)
 			return(0);
 		item->type=USER_BBSLIST;
@@ -783,16 +784,16 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				uifc.helpbuf=	"`Directory Entry Name`\n\n"
 								"Enter the name of the entry as it is to appear in the directory.";
 				strcpy(tmp,itemname);
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Name",itemname,LIST_NAME_MAX,K_EDIT);
-				if(strcmp(tmp,itemname) && list_name_check(list, itemname, NULL, FALSE)) {
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT);
+				if(stricmp(tmp,itemname) && list_name_check(list, tmp, NULL, FALSE)) {
 					uifc.helpbuf=	"`Entry Name Already Exists`\n\n"
 									"An entry with that name already exists in the directory.\n"
 									"Please choose a unique name.\n";
 					uifc.msg("Entry Name Already Exists!");
-					strcpy(itemname,tmp);
 				}
 				else {
-					iniRenameSection(&inifile,tmp,itemname);
+					iniRenameSection(&inifile,itemname,tmp);
+					strcpy(itemname, tmp);
 				}
 				break;
 			case 1:
@@ -1570,7 +1571,7 @@ struct bbslist *show_bbslist(int mode, int id)
 								break;
 							}
 							sprintf(str,"Delete %s?",list[opt]->name);
-							i=1;
+							i=0;
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
 								break;
 							del_bbs(listpath,list[opt]);
