@@ -341,9 +341,9 @@ void docopy(void)
 							for(x=startx-1;x<endx;x++) {
 								int pos=y*api->scrn_width+x;
 								if((sbuffer[pos*2+1]&0x70)!=0x10)
-									sbuffer[pos*2+1]=sbuffer[pos*2+1]&0x8F|0x10;
+									sbuffer[pos*2+1]=(sbuffer[pos*2+1]&0x8F)|0x10;
 								else
-									sbuffer[pos*2+1]=sbuffer[pos*2+1]&0x8F|0x60;
+									sbuffer[pos*2+1]=(sbuffer[pos*2+1]&0x8F)|0x60;
 								if(((sbuffer[pos*2+1]&0x70)>>4) == (sbuffer[pos*2+1]&0x0F)) {
 									sbuffer[pos*2+1]|=0x08;
 								}
@@ -2565,7 +2565,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			textbuf[i]=hbuf[j];
 			textbuf[i+1]=inverse ? (api->bclr|(api->cclr<<4))
 				: high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4));
-			if((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
+			if(((i+2)%((width-2-pad-pad)*2)==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
 				i-=2;
 		}
 		else
