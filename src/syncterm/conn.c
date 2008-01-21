@@ -448,7 +448,7 @@ connected:
 	nonblock=0;
 	ioctlsocket(sock, FIONBIO, &nonblock);
 	if(!socket_check(sock, NULL, NULL, 0)) {
-		failure=FAILURE_DISCONNECTED;
+		failcode=FAILURE_DISCONNECTED;
 		goto connect_failed;
 	}
 
