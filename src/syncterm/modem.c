@@ -144,11 +144,12 @@ int modem_connect(struct bbslist *bbs)
 			conn_api.terminate=-1;
 			return(-1);
 		}
-		if(rates[bbs->bpsrate]) {
-			if(!comSetBaudRate(com, rates[bbs->bpsrate])) {
+		if(bbs->bpsrate) {
+			if(!comSetBaudRate(com, bbs->bpsrate)) {
 				uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
 								"Cannot open the specified serial device.\n");
 				conn_api.terminate=-1;
+				comClose(com);
 				return(-1);
 			}
 		}
@@ -156,6 +157,7 @@ int modem_connect(struct bbslist *bbs)
 			uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
 							"comRaiseDTR() returned an error.\n");
 			conn_api.terminate=-1;
+			comClose(com);
 			return(-1);
 		}
 	}
@@ -171,6 +173,7 @@ int modem_connect(struct bbslist *bbs)
 				uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
 								"Cannot open the specified modem device.\n");
 				conn_api.terminate=-1;
+				comClose(com);
 				return(-1);
 			}
 		}
@@ -178,6 +181,7 @@ int modem_connect(struct bbslist *bbs)
 			uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
 							"comRaiseDTR() returned an error.\n");
 			conn_api.terminate=-1;
+			comClose(com);
 			return(-1);
 		}
 
