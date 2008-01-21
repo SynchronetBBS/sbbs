@@ -517,6 +517,11 @@ void win32_resume(void)
 		SetConsoleMode(h, conmode);
 }
 
+static BOOL WINAPI ControlHandler(DWORD CtrlType)
+{
+	return TRUE;
+}
+
 int win32_initciolib(long inmode)
 {
 	DWORD	conmode;
@@ -530,7 +535,7 @@ int win32_initciolib(long inmode)
 			return(0);
 	}
 
-	SetConsoleCtrlHandler(NULL,TRUE);
+	SetConsoleCtrlHandler(ControlHandler,TRUE);
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
