@@ -304,6 +304,9 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=ssh_close;
 			break;
 		case CONN_TYPE_SERIAL:
+			conn_api.connect=modem_connect;
+			conn_api.close=serial_close;
+			break;
 		case CONN_TYPE_MODEM:
 			conn_api.connect=modem_connect;
 			conn_api.close=modem_close;

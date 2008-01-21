@@ -292,6 +292,20 @@ int modem_connect(struct bbslist *bbs)
 	return(0);
 }
 
+int serial_close(void)
+{
+	conn_api.terminate=1;
+	comClose(com);
+
+	while(conn_api.input_thread_running || conn_api.output_thread_running)
+		SLEEP(1);
+	destroy_conn_buf(&conn_inbuf);
+	destroy_conn_buf(&conn_outbuf);
+	FREE_AND_NULL(conn_api.rd_buf);
+	FREE_AND_NULL(conn_api.wr_buf);
+	return(0);
+}
+
 int modem_close(void)
 {
 	time_t start;
