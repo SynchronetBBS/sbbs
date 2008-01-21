@@ -50,7 +50,7 @@ void putcom(BYTE* buf, size_t len)
 	size_t i;
 
 	for(i=0;i<len;i++)
-		p+=sprintf(p,"%02X ", buf[i]);
+		p+=sprintf(p,"%u ", buf[i]);
 
 	lprintf(LOG_DEBUG,"TX: %s", str);
 	send(telnet_sock, buf, len, 0);
