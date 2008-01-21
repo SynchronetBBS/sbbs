@@ -166,17 +166,17 @@ int syncmenu(struct bbslist *bbs, int *speed)
 	for(ret=0;!ret;) {
 		init_uifc(FALSE, !(bbs->nostatus));
 		uifc.helpbuf=	"`Online Menu`\n\n"
-						"`Scrollback`     allows to you to view the scrollback buffer\n"
-						"`Disconnect`     disconnect the current connection\n"
+						"`Scrollback`     Allows to you to view the scrollback buffer\n"
+						"`Disconnect`     Disconnects the current connection\n"
 						"`Send Login`     Sends the username and password pair separated by CR\n"
-						"`Upload`         Initiates a ZModem upload\n"
-						"`Download`       Initiates a ZModem download\n"
-						"`Output Rate`    Changes the speed charaters are output to the screen\n"
-						"`Log Level`      Changes the minimum log leve for ZModem information\n"
+						"`Upload`         Initiates a file upload (ZMODEM or ASCII)\n"
+						"`Download`       Initiates a file download (ZMODEM)\n"
+						"`Log Level`      Changes the minimum log level for ZMODEM information\n"
+						"`Output Rate`    Changes the speed characters are output to the screen\n"
 						"`Capture`        Enables/Disables screen capture\n"
 						"`ANSI Music`     Enables/Disables ANSI Music\n"
 						"`Font`           Changes the current font (when supported)\n"
-						"`Doorway Mode`   Toggle the current DoorWay (keyboard input) setting\n"
+						"`Doorway Mode`   Toggles the current DoorWay (keyboard input) setting\n"
 						"`Exit`           Disconnects and closes Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
