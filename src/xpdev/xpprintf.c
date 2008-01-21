@@ -986,7 +986,7 @@ char *xp_asprintf_next(char *format, int type, ...)
 							cp=num_str;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							sprintf(num_str, "%Lf", d);
+							sprintf(num_str, "%Lf", ld);
 							cp=num_str;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
