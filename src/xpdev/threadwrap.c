@@ -88,7 +88,7 @@ ulong _beginthread(void( *start_address )( void * )
 			,(void * (*)(void *)) start_address
 			,arglist)==0) {
 		pthread_attr_destroy(&attr);
-		return((int) thread /* thread handle */);
+		return((ulong) thread /* thread handle */);
 	}
 
 	pthread_attr_destroy(&attr);
