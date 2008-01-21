@@ -79,8 +79,8 @@ xpTimeZone_t	xpTimeZone_local(void);
 /* Decimal-coded ISO-8601 date/time functions */
 /**********************************************/
 
-typedef ulong	isoDate_t;	/* CCYYMMDD (decimal) */
-typedef ulong	isoTime_t;	/* HHMMSS   (decimal) */
+typedef uint32_t	isoDate_t;	/* CCYYMMDD (decimal) */
+typedef uint32_t	isoTime_t;	/* HHMMSS   (decimal) */
 
 #define			isoDate_create(year,mon,day)	(((year)*10000)+((mon)*100)+(day))
 #define			isoTime_create(hour,min,sec)	(((hour)*10000)+((min)*100)+((unsigned)sec))
