@@ -1381,7 +1381,8 @@ struct bbslist *show_bbslist(int mode, int id)
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
 	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, id);
 
-	uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
+	uifc.helpbuf="Help Button Hack";
+	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 	for(;;) {
 		if (!at_settings) {
@@ -1410,11 +1411,21 @@ struct bbslist *show_bbslist(int mode, int id)
 					,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 				if(val==listcount)
 					val=listcount|MSK_INS;
+				if(val==-7)	{ /* CTRL-E */
+					uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+						|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+						|WIN_SEL
+						,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
+					val=opt|MSK_EDIT;
+				}
 				if(val<0) {
 					switch(val) {
 						case -2-0x13:	/* CTRL-S - Sort */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+								|WIN_SEL
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 							break;
@@ -1428,27 +1439,20 @@ struct bbslist *show_bbslist(int mode, int id)
 						case -2-0x4d00:	/* Right Arrow */
 						case -11:		/* TAB */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+								|WIN_SEL
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							at_settings=!at_settings;
-							break;
-						case -7:		/* CTRL-E */
-							if(list[opt]) {
-								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-									|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
-									,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
-								if(edit_list(list, list[opt],listpath,FALSE)) {
-									load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]->id);
-									oldopt=-1;
-								}
-							}
 							break;
 						case -6:		/* CTRL-D */
 							uifc.changes=0;
 							uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
 											"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV
+								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+								|WIN_SEL
 								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
 							memcpy(&retlist, &defaults, sizeof(defaults));
@@ -1633,12 +1637,8 @@ struct bbslist *show_bbslist(int mode, int id)
 				if(oldopt != -2)
 					settitle(syncterm_version);
 				oldopt=-2;
-				val=uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP
+				val=uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT
 					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
-				if(val>=0) {
-					uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
-						,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
-				}
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
 						//viewofflinescroll();
@@ -1649,7 +1649,7 @@ struct bbslist *show_bbslist(int mode, int id)
 					case -2-0x4b00:	/* Left Arrow */
 					case -2-0x4d00:	/* Right Arrow */
 					case -11:		/* TAB */
-						uifc.list(WIN_T2B|WIN_RHT|WIN_IMM|WIN_INACT
+						uifc.list(WIN_SAV|WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_SEL
 							,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
 						at_settings=!at_settings;
 						break;
@@ -1682,9 +1682,6 @@ struct bbslist *show_bbslist(int mode, int id)
 								textmode(screen_to_ciolib(i));
 								init_uifc(TRUE, TRUE);
 							}
-							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_T2B|WIN_IMM|WIN_INACT|WIN_HLP
-								,0,0,0,&opt,&bar,mode==BBSLIST_SELECT?"Directory":"Edit",(char **)list);
 						}
 						break;
 					case 2:			/* Font management */
