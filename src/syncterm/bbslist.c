@@ -767,7 +767,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			,opts);
 		if(i>=0 && isdefault)
 			i+=2;
-		if(i>=0 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL))
+		if(i>=2 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL))
 			i++;	/* no port number */
 		switch(i) {
 			case -1:
