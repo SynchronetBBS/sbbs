@@ -166,20 +166,18 @@ int syncmenu(struct bbslist *bbs, int *speed)
 	for(ret=0;!ret;) {
 		init_uifc(FALSE, !(bbs->nostatus));
 		uifc.helpbuf=	"`Online Menu`\n\n"
-						"~ Scrollback ~          allows to you to view the scrollback buffer\n"
-						"~ Disconnect ~          disconnects the current session and returns to the\n"
-						"                      dialing list\n"
-						"~ Send Login ~          Sends the configured user and password pair separated\n"
-						"                      by a \\r\n"
-						"~ Upload ~              Initiates a ZModem upload\n"
-						"~ Download ~            Initiates a ZModem download\n"
-						"~ Change Output Rate ~  Changes the speed charaters are output to the screen\n"
-						"~ Change Log Level ~    Changes the minimum log leve for ZModem information\n"
-						"~ Capture Control ~     Enables/Disables screen capture\n"
-						"~ ANSI Music Control ~  Enables/Disables ANSI Music\n"
-						"~ Font Control ~        Changes the current font\n"
-						"~ Toggle Doorway Mode ~ Toggle the current DoorWay setting\n"
-						"~ Exit ~                Disconnects and closes the Syncterm";
+						"`Scrollback`     allows to you to view the scrollback buffer\n"
+						"`Disconnect`     disconnect the current connection\n"
+						"`Send Login`     Sends the username and password pair separated by CR\n"
+						"`Upload`         Initiates a ZModem upload\n"
+						"`Download`       Initiates a ZModem download\n"
+						"`Output Rate`    Changes the speed charaters are output to the screen\n"
+						"`Log Level`      Changes the minimum log leve for ZModem information\n"
+						"`Capture`        Enables/Disables screen capture\n"
+						"`ANSI Music`     Enables/Disables ANSI Music\n"
+						"`Font`           Changes the current font (when supported)\n"
+						"`Doorway Mode`   Toggle the current DoorWay (keyboard input) setting\n"
+						"`Exit`           Disconnects and closes Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
 			case -1:	/* Cancel */
@@ -207,7 +205,10 @@ int syncmenu(struct bbslist *bbs, int *speed)
 				}
 				break;
 			case 5:		/* Output rate */
-				if(speed != NULL) {
+				if(bbs->conn_type==CONN_TYPE_MODEM || bbs->conn_type==CONN_TYPE_SERIAL)
+					uifcmsg("Not supported for this connection type"
+						,"Cannot change the display rate for Modem/Serial connections.");
+				else if(speed != NULL) {
 					j=get_rate_num(*speed);
 					uifc.helpbuf="`Output Rate`\n\n"
 							"The output rate is the rate in emulated \"bits per second\" to draw incoming\n"
