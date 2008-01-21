@@ -1164,7 +1164,7 @@ BOOL doterm(struct bbslist *bbs)
 	unsigned char prn[ANSI_REPLY_BUFSIZE];
 	int	key;
 	int i,j;
-	unsigned char *p;
+	unsigned char *p,*p2;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
 	BYTE zrqbuf[sizeof(zrqinit)];
@@ -1452,7 +1452,15 @@ BOOL doterm(struct bbslist *bbs)
 						case CIOLIB_BUTTON_3_CLICK:
 							p=getcliptext();
 							if(p!=NULL) {
-								conn_send(p,strlen(p),0);
+								for(p2=p; *p2; p2++) {
+									if(*p2=='\n') {
+										/* If previous char was not \r, send a \r */
+										if(p2==p || *(p2-1)!='\r')
+											conn_send("\r",1,0);
+									}
+									else
+										conn_send(p2,1,0);
+								}
 								free(p);
 							}
 							key = 0;
