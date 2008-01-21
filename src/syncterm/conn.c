@@ -317,6 +317,8 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=pty_close;
 			break;
 #endif
+		default:
+			conn_api.terminate=1;
 	}
 	if(conn_api.connect) {
 		if(conn_api.connect(bbs)) {
