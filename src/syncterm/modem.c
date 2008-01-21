@@ -258,23 +258,23 @@ int modem_connect(struct bbslist *bbs)
 	}
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
-		modem_close();
+		conn_api.close();
 		return(-1);
 	}
 	if(!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
-		modem_close();
+		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		return(-1);
 	}
 	if(!(conn_api.rd_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
-		modem_close();
+		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return(-1);
 	}
 	conn_api.rd_buf_size=BUFFER_SIZE;
 	if(!(conn_api.wr_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
-		modem_close();
+		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		FREE_AND_NULL(conn_api.rd_buf);
