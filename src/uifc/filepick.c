@@ -317,6 +317,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 	int		retval=0;
 	int		fieldmove;
 	int		oldhu=hold_update;
+	int		oldx=wherex();
+	int		oldy=wherey();
 
 	height=api->scrn_len-3;
 	width=SCRN_RIGHT-SCRN_LEFT-3;
@@ -641,6 +643,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 
 cleanup:		/* Cleans up allocated variables returns from function */
 	hold_update=oldhu;
+	gotoxy(oldx,oldy);
 	FREE_AND_NULL(lastpath);
 	FREE_AND_NULL(tmppath);
 	FREE_AND_NULL(tmplastpath);
