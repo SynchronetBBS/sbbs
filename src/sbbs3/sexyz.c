@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -107,7 +107,6 @@ BOOL	telnet=TRUE;
 BOOL	stdio=FALSE;
 struct termios origterm;
 #endif
-BOOL	aborted=FALSE;
 BOOL	terminate=FALSE;
 BOOL	debug_tx=FALSE;
 BOOL	debug_rx=FALSE;
@@ -203,7 +202,7 @@ void break_handler(int type)
 	lprintf(LOG_NOTICE,"-> Aborted Locally (signal: %d)",type);
 
 	/* Flag to indicate local (as opposed to remote) abort */
-	aborted=TRUE;
+	zm.local_abort=TRUE;
 
 	/* Stop any transfers in progress immediately */
 	xm.cancelled=TRUE;	
@@ -873,7 +872,7 @@ static int send_files(char** fname, uint fnames)
 						,(xm.total_bytes-xm.sent_bytes)/1024
 						);
 			} else
-				lprintf(LOG_WARNING,"File Transfer %s", aborted ? "Aborted" : "Failure");
+				lprintf(LOG_WARNING,"File Transfer %s", zm.local_abort ? "Aborted" : "Failure");
 
 			/* DSZLOG entry */
 			if(logfp) {
@@ -894,7 +893,7 @@ static int send_files(char** fname, uint fnames)
 			}
 			total_bytes += sent_bytes;
 
-			if(aborted) {
+			if(zm.local_abort) {
 				xm.cancelled=FALSE;
 				xmodem_cancel(&xm);
 				break;
@@ -1197,7 +1196,7 @@ static int receive_files(char** fname_list, int fnames)
 			lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 				,t/60,t%60,file_bytes/t);	
 		else
-			lprintf(LOG_ERR,"File Transfer %s", aborted ? "Aborted":"Failure");
+			lprintf(LOG_ERR,"File Transfer %s", zm.local_abort ? "Aborted":"Failure");
 
 		if(!(mode&XMODEM) && ftime)
 			setfdate(str,ftime); 
@@ -1218,7 +1217,7 @@ static int receive_files(char** fname_list, int fnames)
 			fflush(logfp);
 		}
 
-		if(aborted) {
+		if(zm.local_abort) {
 			lprintf(LOG_DEBUG,"Locally aborted, sending cancel to remote");
 			if(mode&ZMODEM)
 				zmodem_abort_receive(&zm);
