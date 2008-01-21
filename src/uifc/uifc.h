@@ -139,7 +139,10 @@
 #define WIN_EDIT	(1<<27)	/* Allow F2 to edit a menu item */
 #define WIN_EDITACT	(1<<28)	/* Remain active after edit key */
 #define WIN_INACT	(1<<29)	/* Draw window inactive... intended for use with WIN_IMM */
-#define WIN_POP		(1<<30)	/* Exit the list.  Intended for use after a WIN_EXTKEYS or WIN_DYN */
+#define WIN_POP		(1<<30)	/* Exit the list. Act as though ESC was pressed. */
+							/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+#define WIN_SEL		(1<<31)	/* Exit the list. Act as though ENTER was pressed. */
+							/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 

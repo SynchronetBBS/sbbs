@@ -966,8 +966,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(api->timedisplay != NULL)
 			api->timedisplay(/* force? */FALSE);
 		gotkey=0;
-		if(kbwait() || (mode&WIN_POP)) {
+		if(kbwait() || (mode&(WIN_POP|WIN_SEL))) {
 			if(mode&WIN_POP)
+				gotkey=ESC;
+			else if(mode&WIN_SEL)
 				gotkey=CR;
 			else
 				gotkey=inkey();
