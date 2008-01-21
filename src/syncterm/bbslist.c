@@ -174,7 +174,7 @@ char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "1
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
-char *rate_names[]={"300bps", "600bps", "1200bps", "2400bps", "4800bps", "9600bps", "19.2Kbps", "38.4Kbps", "57.6Kbps", "76.8Kbps", "115.2Kbps", "Unlimited", NULL};
+char *rate_names[]={"300", "600", "1200", "2400", "4800", "9600", "19200", "38400", "57600", "76800", "115200", "Current", NULL};
 int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
 
 char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NULL};
@@ -688,7 +688,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 	int		changed=0;
 	int		copt=0,i,j;
 	int		bar=0;
-	char	str[6];
+	char	str[64];
 	FILE *listfile;
 	str_list_t	inifile;
 	char	tmp[LIST_NAME_MAX+1];
@@ -740,7 +740,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		sprintf(opt[i++], "Log File          %s",item->logfile);
 		sprintf(opt[i++], "Log Transfers     %s",log_level_desc[item->xfer_loglevel]);
 		sprintf(opt[i++], "Log Telnet Cmds   %s",log_level_desc[item->telnet_loglevel]);
-		sprintf(opt[i++], "Simulated BPS     %s",rate_names[get_rate_num(item->bpsrate)]);
+		if(item->bpsrate)
+			sprintf(str,"%ubps", item->bpsrate);
+		else
+			strcpy(str,"Current");
+		sprintf(opt[i++], "Comm Rate         %s",str);
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++], "Font              %s",item->font);
 		opt[i][0]=0;
@@ -937,11 +941,15 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				changed=1;
 				break;
 			case 14:
-				uifc.helpbuf=	"`Simulated BPS Rate`\n\n"
+				uifc.helpbuf=	"`Comm Rate (in bits-per-second)`\n\n"
+								"`For TCP connections:`\n"
 								"Select the rate which recieved characters will be displayed.\n\n"
-								"This allows ANSImation to work as intended.";
+								"This allows animated ANSI and some games to work as intended.\n\n"
+								"`For Modem/Direct COM port connections:`\n"
+								"Select the `DTE Rate` to use."
+								;
 				i=get_rate_num(item->bpsrate);
-				switch(uifc.list(WIN_SAV,0,0,0,&i,NULL,"Simulated BPS Rate",rate_names)) {
+				switch(uifc.list(WIN_SAV,0,0,0,&i,NULL,"Comm Rate (BPS)",rate_names)) {
 					case -1:
 						break;
 					default:
