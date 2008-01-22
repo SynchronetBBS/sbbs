@@ -2616,6 +2616,9 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 							p=p+(width-2-pad-pad)*2*(height-5);
 							continue;
 						}
+						/* Non-click events (drag, move, multiclick, etc) */
+						else if(mevnt.event!=CIOLIB_BUTTON_CLICK(CIOLIB_BUTTON_NUMBER(mevnt.event)))
+							continue;
 						i=1;
 					}
 					continue;
