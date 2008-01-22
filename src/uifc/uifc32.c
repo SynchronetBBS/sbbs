@@ -974,7 +974,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			else
 				gotkey=inkey();
 			if(gotkey==CIO_KEY_MOUSE) {
-				if((i=uifc_getmouse(&mevnt))==0) {
+				if((gotkey=uifc_getmouse(&mevnt))==0) {
 					/* Clicked in menu */
 					if(mevnt.startx>=s_left+left+lbrdrwidth+2
 							&& mevnt.startx<=s_left+left+width-rbrdrwidth-1
