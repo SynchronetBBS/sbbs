@@ -1605,10 +1605,6 @@ struct bbslist *show_bbslist(int id)
 			}
 		}
 		else {
-			uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-				|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE
-				|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_INACT
-				,0,0,0,&opt,&bar,"Directory",(char **)list);
 			for(;at_settings;) {
 				uifc.helpbuf=	"`SyncTERM Settings Menu`\n\n"
 								"~ Default Connection Settings ~\n"
