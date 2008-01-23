@@ -1661,11 +1661,18 @@ struct bbslist *show_bbslist(int id)
 									"Change the current screen size/mode.\n";
 							i=ti.currmode;
 							i=ciolib_to_screen(ti.currmode);
-							i=uifc.list(WIN_SAV,0,0,0,&i,NULL,"Screen Mode",screen_modes);
+							i--;
+							j=i;
+							i=uifc.list(WIN_SAV,0,0,0,&i,&j,"Screen Mode",screen_modes+1);
 							if(i>=0) {
+								i++;
 								uifcbail();
 								textmode(screen_to_ciolib(i));
 								init_uifc(TRUE, TRUE);
+								val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_IMM|WIN_INACT
+									,0,0,0,&opt,&bar,"Directory",(char **)list);
 							}
 						}
 						break;
