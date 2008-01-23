@@ -730,9 +730,9 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			else
 				sprintf(opt[i++], "Address           %s",item->addr);
 		}
+		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
 		if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL)
 			sprintf(opt[i++], "TCP Port          %hu",item->port);
-		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
 		sprintf(opt[i++], "Username          %s",item->user);
 		sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
 		sprintf(opt[i++], "System Password   %s",item->syspass[0]?"********":"<none>");
@@ -804,7 +804,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					,item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
 				break;
-			case 2:
+			case 3:
 				i=item->port;
 				sprintf(str,"%hu",item->port);
 				uifc.helpbuf=	"`TCP Port`\n\n"
@@ -845,7 +845,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
 				iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
 				break;
-			case 3:
+			case 2:
 				i=item->conn_type;
 				item->conn_type--;
 				uifc.helpbuf=conn_type_help;
