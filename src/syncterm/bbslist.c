@@ -653,7 +653,7 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inilines=iniReadFile(listfile);
 		fclose(listfile);
-		if(defaults != NULL)
+		if(defaults != NULL && type==USER_BBSLIST)
 			read_item(inilines,defaults,NULL,-1,type);
 		bbses=iniGetSectionList(inilines,NULL);
 		while((bbsname=strListRemove(&bbses,0))!=NULL) {
@@ -1669,9 +1669,10 @@ struct bbslist *show_bbslist(int id)
 								uifcbail();
 								textmode(screen_to_ciolib(i));
 								init_uifc(TRUE, TRUE);
-								val=uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
-									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_IMM|WIN_INACT
+									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+									|WIN_SEL|WIN_INACT
 									,0,0,0,&opt,&bar,"Directory",(char **)list);
 							}
 						}
