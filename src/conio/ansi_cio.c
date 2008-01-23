@@ -706,7 +706,12 @@ static void ansi_keyparse(void *par)
 							i=strtol(p,&p,10);
 							if(i>cio_textinfo.screenheight) {
 								cio_textinfo.screenheight=i;
-								ansi_got_row=i;
+								if(*p==';') {
+									i=strtol(p+1, NULL, 10);
+									if(i>cio_textinfo.screenwidth)
+										cio_textinfo.screenwidth=i;
+								}
+								ansi_got_row=cio_textinfo.screenheight;;
 							}
 						}
 						unknown=0;
@@ -820,7 +825,6 @@ int ansi_beep(void)
 #endif
 void ansi_textmode(int mode)
 {
-	cio_textinfo.screenwidth=80;
 	cio_textinfo.winleft=1;
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
@@ -854,7 +858,7 @@ void ansi_fixterm(void)
 int ansi_initciolib(long inmode)
 {
 	int i;
-	char *init="\033[s\033[99B_\033[6n\033[u\033[0m_\033[2J\033[H";
+	char *init="\033[s\033[99B\033[99B\033[99B_\033[99C\033[99C\033[99C_\033[6n\033[u\033[0m_\033[2J\033[H";
 	time_t start;
 
 	ansi_textmode(1);
@@ -902,6 +906,7 @@ int ansi_initciolib(long inmode)
 		SLEEP(1);
 	if(!ansi_got_row) {
 		cio_textinfo.screenheight=24;
+		cio_textinfo.screenwidth=80;
 		ansi_got_row=24;
 	}
 	ansivmem=(WORD *)malloc(cio_textinfo.screenheight*cio_textinfo.screenwidth*sizeof(WORD));
