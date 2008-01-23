@@ -288,10 +288,11 @@ int uifcini32(uifcapi_t* uifcapi)
 	if(cio_api.ESCDELAY)
 		*(cio_api.ESCDELAY)=api->esc_delay;
 
-	api->initialized=TRUE;
-
 	for(i=0; i<MAX_BUFS; i++)
 		sav[i].buf=NULL;
+	api->savnum=0;
+
+	api->initialized=TRUE;
 
     return(0);
 }
@@ -410,6 +411,8 @@ static int uifc_getmouse(struct mouse_event *mevent)
 
 void uifcbail(void)
 {
+	int i;
+
 	_setcursortype(_NORMALCURSOR);
 	textattr(LIGHTGRAY);
 	uifc_mouse_disable();
@@ -418,6 +421,8 @@ void uifcbail(void)
 	FREE_AND_NULL(tmp_buffer);
 	FREE_AND_NULL(tmp_buffer2);
 	api->initialized=FALSE;
+	for(i=0; i< MAX_BUFS; i++)
+		FREE_AND_NULL(sav[i].buf);
 }
 
 /****************************************************************************/
