@@ -184,7 +184,9 @@ int try_x_init(int mode)
 int try_curses_init(int mode)
 {
 	if(curs_initciolib(mode)) {
-		cio_api.mode=CIOLIB_MODE_CURSES_IBM;
+		if(mode==CIOLIB_MODE_AUTO)
+			mode=CIOLIB_MODE_CURSES;
+		cio_api.mode=mode;
 		cio_api.puttext=curs_puttext;
 		cio_api.gettext=curs_gettext;
 		cio_api.textattr=curs_textattr;
