@@ -577,7 +577,7 @@ int win32_initciolib(long inmode)
 			else
 				win32_textmode(VESA_132X60);
 		}
-		if(i>=80) {
+		else if(i>=80) {
 			if(j<21)
 				win32_textmode(C80X14);
 			else if(j<25)
