@@ -506,7 +506,7 @@ void win32_resume(void)
 	DWORD	conmode;
 	HANDLE	h;
 
-    conmode=ENABLE_MOUSE_INPUT;
+	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS;
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
 
@@ -539,7 +539,7 @@ int win32_initciolib(long inmode)
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
-	conmode=ENABLE_MOUSE_INPUT;
+	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS;
 	if(!SetConsoleMode(h, conmode))
 		return(0);
 
