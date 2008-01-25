@@ -4609,6 +4609,9 @@ int read_post_data(http_session_t * session)
 					return(FALSE);
 				}
 				session->req.post_len+=bytes_read;
+				/* Read chunk terminator */
+				if(sockreadline(session,ch_lstr,sizeof(ch_lstr)-1)>0)
+					send_error(session,error_500);
 			}
 			/* Read more headers! */
 			if(!get_request_headers(session))
