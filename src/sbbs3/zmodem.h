@@ -195,9 +195,9 @@
 
 typedef struct {
 
-	BYTE	rxd_header[ZMAXHLEN];							/* last received header */
-	int		rxd_header_len;									/* last received header size */
-	ulong	rxd_header_pos;									/* last received header position value */
+	BYTE		rxd_header[ZMAXHLEN];							/* last received header */
+	int			rxd_header_len;									/* last received header size */
+	uint32_t	rxd_header_pos;									/* last received header position value */
 
 	/*
 	 * receiver capability flags
@@ -227,19 +227,19 @@ typedef struct {
 	BYTE rx_data_subpacket[8192];							/* zzap = 8192 */
 
 	char		current_file_name[MAX_PATH+1];
-	ulong		current_file_size;
+	uint32_t	current_file_size;
 	time_t		current_file_time;
 	unsigned	current_file_num;
 	unsigned	total_files;
-	ulong		total_bytes;
+	uint32_t	total_bytes;
 	unsigned	files_remaining;
 	unsigned	bytes_remaining;
-	ulong		transfer_start_pos;
+	uint32_t	transfer_start_pos;
 	time_t		transfer_start_time;
 
 	int receive_32bit_data;
 	int use_crc16;
-	long ack_file_pos;				/* file position used in acknowledgement of correctly */
+	int32_t ack_file_pos;				/* file position used in acknowledgement of correctly */
 									/* received data subpackets */
 
 	int last_sent;
@@ -254,7 +254,7 @@ typedef struct {
 	BOOL		file_skipped;
 	BOOL		no_streaming;
 	unsigned	recv_bufsize;	/* Receiver specified buffer size */
-	long		crc_request;
+	int32_t	crc_request;
 	unsigned	errors;
 	unsigned	consecutive_errors;
 
@@ -273,7 +273,7 @@ typedef struct {
 	int			(*lputs)(void*, int level, const char* str);
 	int			(*send_byte)(void*, BYTE ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
-	void		(*progress)(void*, ulong current_pos);
+	void		(*progress)(void*, uint32_t current_pos);
 	BOOL		(*is_connected)(void*);
 	BOOL		(*is_cancelled)(void*);
 	BOOL		(*data_waiting)(void*, unsigned timeout);
@@ -282,7 +282,7 @@ typedef struct {
 
 void		zmodem_init(zmodem_t*, void* cbdata
 						,int	(*lputs)(void*, int level, const char* str)
-						,void	(*progress)(void*, ulong current_pos)
+						,void	(*progress)(void*, uint32_t current_pos)
 						,int	(*send_byte)(void*, BYTE ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout)
 						,BOOL	(*is_connected)(void*)
@@ -294,21 +294,21 @@ const char* zmodem_source(void);
 int			zmodem_rx(zmodem_t* zm);
 int			zmodem_tx(zmodem_t* zm, BYTE ch);
 int			zmodem_abort_receive(zmodem_t*);
-int			zmodem_send_ack(zmodem_t*, long pos);
+int			zmodem_send_ack(zmodem_t*, int32_t pos);
 int			zmodem_send_nak(zmodem_t*);
 int			zmodem_send_zskip(zmodem_t* zm);
 int			zmodem_send_zrinit(zmodem_t*);
-int			zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex);
+int			zmodem_send_pos_header(zmodem_t* zm, int type, int32_t pos, BOOL hex);
 int			zmodem_get_zrinit(zmodem_t*);
 int			zmodem_get_zfin(zmodem_t* zm);
-BOOL		zmodem_get_crc(zmodem_t*, long length, ulong* crc);
+BOOL		zmodem_get_crc(zmodem_t*, int32_t length, uint32_t* crc);
 void		zmodem_parse_zrinit(zmodem_t*);
 void		zmodem_parse_zfile_subpacket(zmodem_t* zm);
 int			zmodem_send_zfin(zmodem_t*);
-BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);
-int			zmodem_recv_files(zmodem_t* zm, const char* download_dir, ulong* bytes_received);
+BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, uint32_t* bytes_sent);
+int			zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_received);
 int			zmodem_recv_init(zmodem_t* zm);
-unsigned	zmodem_recv_file_data(zmodem_t*, FILE*, ulong offset);
+unsigned	zmodem_recv_file_data(zmodem_t*, FILE*, uint32_t offset);
 int			zmodem_recv_file_frame(zmodem_t* zm, FILE* fp);
 int			zmodem_recv_header_and_check(zmodem_t* zm);
 #endif
