@@ -1512,15 +1512,15 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 
 BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, uint32_t* sent)
 {
-	BOOL	success=FALSE;
+	BOOL		success=FALSE;
 	uint32_t	pos=0;
 	uint32_t	sent_bytes;
-	struct	stat s;
+	struct stat	s;
 	unsigned char * p;
-	uchar	zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
-	int		type;
-	int		i;
-	unsigned attempts;
+	uchar		zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
+	int			type;
+	int			i;
+	unsigned	attempts;
 
 	if(zm->block_size == 0)
 		zm->block_size = ZBLOCKLEN;	
@@ -1779,12 +1779,12 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 	FILE*		fp;
 	int32_t		l;
 	BOOL		skip;
-	uint32_t		b;
-	uint32_t		crc;
-	uint32_t		rcrc;
-	uint32_t		bytes;
-	uint32_t		kbytes;
-	uint32_t		start_bytes;
+	uint32_t	b;
+	uint32_t	crc;
+	uint32_t	rcrc;
+	uint32_t	bytes;
+	uint32_t	kbytes;
+	uint32_t	start_bytes;
 	unsigned	files_received=0;
 	time_t		t;
 	unsigned	cps;

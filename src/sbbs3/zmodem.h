@@ -237,9 +237,9 @@ typedef struct {
 	uint32_t	transfer_start_pos;
 	time_t		transfer_start_time;
 
-	int receive_32bit_data;
-	int use_crc16;
-	int32_t ack_file_pos;				/* file position used in acknowledgement of correctly */
+	int		receive_32bit_data;
+	int		use_crc16;
+	int32_t	ack_file_pos;				/* file position used in acknowledgement of correctly */
 									/* received data subpackets */
 
 	int last_sent;
@@ -254,7 +254,7 @@ typedef struct {
 	BOOL		file_skipped;
 	BOOL		no_streaming;
 	unsigned	recv_bufsize;	/* Receiver specified buffer size */
-	int32_t	crc_request;
+	int32_t		crc_request;
 	unsigned	errors;
 	unsigned	consecutive_errors;
 
