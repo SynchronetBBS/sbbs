@@ -262,10 +262,11 @@ function Unregistered_Commands(cmdline) {
 				usernum = system.matchuser(this.nick);
 			if (usernum) {
 				var bbsuser = new User(usernum);
-				if (this.password.toUpperCase() == bbsuser.security.password)
+				if (this.password.toUpperCase() == bbsuser.security.password) {
 					this.uprefix = parse_username(bbsuser.handle).toLowerCase().slice(0,10);
 					bbsuser.connection = "IRC";
 					bbsuser.logontime = time();
+				}
 			}
 		}
 		if (!usernum)
