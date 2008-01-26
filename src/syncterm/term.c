@@ -312,8 +312,8 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 {
 	char		orig[128];
 	unsigned	cps;
-	long		l;
-	long		t;
+	time_t		l;
+	time_t		t;
 	time_t		now;
 	static time_t last_progress;
 	int			old_hold=hold_update;
