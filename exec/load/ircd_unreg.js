@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2007 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2008 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Handle unregistered clients.
 //
@@ -264,6 +264,8 @@ function Unregistered_Commands(cmdline) {
 				var bbsuser = new User(usernum);
 				if (this.password.toUpperCase() == bbsuser.security.password)
 					this.uprefix = parse_username(bbsuser.handle).toLowerCase().slice(0,10);
+					bbsuser.connection = "IRC";
+					bbsuser.logontime = time();
 			}
 		}
 		if (!usernum)

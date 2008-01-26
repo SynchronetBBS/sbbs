@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2007 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2008 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Everything related to channels and their operation.
 //
