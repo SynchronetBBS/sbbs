@@ -452,7 +452,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 			memset(block,0,sizeof(block));
 			SAFECOPY(block,getfname(fname));
-			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %lu"
+			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %u"
 				,(ulong)st.st_size
 				,st.st_mtime
 				,xm->total_files-xm->sent_files
