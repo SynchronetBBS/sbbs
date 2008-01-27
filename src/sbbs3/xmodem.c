@@ -153,12 +153,12 @@ int xmodem_cancel(xmodem_t* xm)
 /****************************************************************************/
 int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 {
-	uchar	block_num;					/* Block number received in header	*/
-	uchar	block_inv;
-	uchar	chksum,calc_chksum;
-	int		i,eot=0,can=0;
-	uint	b,errors;
-	ushort	crc,calc_crc;
+	uchar		block_num;				/* Block number received in header	*/
+	uchar		block_inv;
+	uchar		chksum,calc_chksum;
+	int			i,eot=0,can=0;
+	uint		b,errors;
+	uint16_t	crc,calc_crc;
 
 	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 
@@ -263,10 +263,10 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 /*****************/
 int xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned block_num)
 {
-	int		result;
-	uchar	ch,chksum;
-    uint	i;
-	ushort	crc;
+	int			result;
+	uchar		ch,chksum;
+    uint		i;
+	uint16_t	crc;
 
 	if(block_size==128)
 		result=putcom(SOH);
@@ -452,7 +452,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 			memset(block,0,sizeof(block));
 			SAFECOPY(block,getfname(fname));
-			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
+			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %lu"
 				,(ulong)st.st_size
 				,st.st_mtime
 				,xm->total_files-xm->sent_files
