@@ -1231,7 +1231,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
-			SAFECOPY(str,path);	/* we'll have at least one fname */
+			if(isfullpath(path))
+				SAFECOPY(str,path);
+			else
+				sprintf(str,"%s/%s",bbs->dldir,path);
 			file_bytes=file_bytes_left=0x7fffffff;
 		}
 
@@ -1244,7 +1247,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == 0) {
 					send_byte(NULL,ACK,10);
 					break; 
-				} 
+				}
 			}
 			if(errors>=xm.max_errors || xm.cancelled) {
 				lprintf(LOG_ERR,"Error fetching Ymodem header block");
