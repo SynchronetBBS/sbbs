@@ -526,6 +526,7 @@ void erase_transfer_window(void) {
 }
 
 void ascii_upload(FILE *fp);
+#define XMODEM_128B		(1<<10)	/* Use 128 byte block size (ick!) */
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
@@ -969,8 +970,6 @@ void zmodem_download(struct bbslist *bbs)
 
 /* X/Y-MODEM stuff */
 
-#define XMODEM_128B		(1<<10)	/* Overwrite receiving files				*/
-
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 
@@ -1131,7 +1130,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode)
 		,xmodem_check_abort);
 
 	if(mode & XMODEM_128B)
-		xm->block_size=128;
+		xm.block_size=128;
 
 	xm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 
@@ -1199,6 +1198,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	BOOL	success=FALSE;
 	long	fmode;
 	long	serial_num=-1;
+	long	tmpftime;
 	ulong	file_bytes=0,file_bytes_left=0;
 	ulong	total_bytes=0;
 	FILE*	fp=NULL;
@@ -1261,12 +1261,13 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			file_bytes=ftime=total_files=total_bytes=0;
 			i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
 				,&file_bytes			/* file size (decimal) */
-				,&ftime 				/* file time (octal unix format) */
+				,&tmpftime 				/* file time (octal unix format) */
 				,&fmode 				/* file mode (not used) */
 				,&serial_num			/* program serial number */
 				,&total_files			/* remaining files to be sent */
 				,&total_bytes			/* remaining bytes to be sent */
 				);
+			ftime=tmpftime;
 			lprintf(LOG_DEBUG,"Ymodem header (%u fields): %s", i, block+strlen(block)+1);
 			SAFECOPY(fname,block);
 
