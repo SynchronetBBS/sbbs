@@ -1950,8 +1950,9 @@ int zmodem_recv_init(zmodem_t* zm)
 void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 {
 	int			i;
-	int32_t		mode=0;
-	int32_t		serial=-1;
+	int			mode=0;
+	ulong		serial=-1UL;
+	ulong		tmptime;
 
 	SAFECOPY(zm->current_file_name,getfname(zm->rx_data_subpacket));
 
@@ -1961,9 +1962,9 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->bytes_remaining = 0;
 
 	if(sizeof(int32_t)==sizeof(long)) {
-		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %lo %lo %u %u"
+		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %o %lo %u %u"
 			,&zm->current_file_size	/* file size (decimal) */
-			,&zm->current_file_time /* file time (octal unix format) */
+			,&tmptime				/* file time (octal unix format) */
 			,&mode					/* file mode */
 			,&serial				/* program serial number */
 			,&zm->files_remaining	/* remaining files to be sent */
@@ -1971,15 +1972,16 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 			);
 	}
 	else {
-		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%u %o %o %o %u %u"
+		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%u %lo %o %lo %u %u"
 			,&zm->current_file_size	/* file size (decimal) */
-			,&zm->current_file_time /* file time (octal unix format) */
+			,&tmptime				/* file time (octal unix format) */
 			,&mode					/* file mode */
 			,&serial				/* program serial number */
 			,&zm->files_remaining	/* remaining files to be sent */
 			,&zm->bytes_remaining	/* remaining bytes to be sent */
 			);
 	}
+	zm->current_file_time=tmptime;
 
 	lprintf(zm,LOG_DEBUG,"Zmodem header (%u fields): %s"
 		,i, zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1);
