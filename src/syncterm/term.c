@@ -640,10 +640,10 @@ void begin_download(struct bbslist *bbs)
 			break;
 		case 1:
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
-				xmodem_download(bbs, XMODEM|RECV,path);
+				xmodem_download(bbs, XMODEM|CRC|RECV,path);
 			break;
 		case 2:
-			xmodem_download(bbs, YMODEM|RECV, NULL);
+			xmodem_download(bbs, YMODEM|CRC|RECV, NULL);
 			break;
 		case 3:
 			xmodem_download(bbs, YMODEM|GMODE|RECV, NULL);
@@ -1191,7 +1191,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	long	serial_num=-1;
 	ulong	file_bytes=0,file_bytes_left=0;
 	ulong	total_bytes=0;
-	FILE*	fp;
+	FILE*	fp=NULL;
 	time_t	t,startfile,ftime;
 
 	if(safe_mode)
@@ -1205,9 +1205,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		else
 			draw_transfer_window("Ymodem Download");
 	}
-	else {
+	else
 		return;
-	}
 
 	conn_binary_mode_on();
 	xmodem_init(&xm
@@ -1219,9 +1218,6 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,recv_byte
 		,is_connected
 		,xmodem_check_abort);
-
-	errors=0;
-	block_num=1;
 
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
@@ -1310,7 +1306,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		block_num=1;
 		xmodem_put_nak(&xm, block_num);
 		while(is_connected(NULL)) {
-			xmodem_progress(NULL,block_num,ftell(fp),file_bytes,startfile);
+			xmodem_progress(&xm,block_num,ftell(fp),file_bytes,startfile);
 			i=xmodem_get_block(&xm, block, block_num); 	
 
 			if(i!=0) {
@@ -1394,7 +1390,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	}
 
 end:
-	fclose(fp);
+	if(fp)
+		fclose(fp);
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
 	getch();
