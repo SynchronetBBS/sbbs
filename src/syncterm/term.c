@@ -541,9 +541,9 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 	struct file_pick fpick;
 	char	*opts[6]={
 			 "ZMODEM"
-			,"XMODEM"
 			,"YMODEM"
-			,"YMODEM-G"
+			,"XMODEM-1K"
+			,"XMODEM"
 			,"ASCII"
 			,""
 		};
@@ -591,13 +591,13 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 				zmodem_upload(bbs, fp, path);
 				break;
 			case 1:
-				xmodem_upload(bbs, fp, path, XMODEM|SEND);
-				break;
-			case 2:
 				xmodem_upload(bbs, fp, path, YMODEM|SEND);
 				break;
+			case 2:
+				xmodem_upload(bbs, fp, path, XMODEM|SEND);
+				break;
 			case 3:
-				xmodem_upload(bbs, fp, path, YMODEM|GMODE|SEND);
+				xmodem_upload(bbs, fp, path, XMODEM|SEND|XMODEM_128B);
 				break;
 			case 4:
 				ascii_upload(fp);
@@ -613,11 +613,12 @@ void begin_download(struct bbslist *bbs)
 {
 	char	path[MAX_PATH+1];
 	int i;
-	char	*opts[5]={
+	char	*opts[6]={
 			 "ZMODEM"
-			,"XMODEM"
-			,"YMODEM"
 			,"YMODEM-G"
+			,"YMODEM"
+			,"XMODEM-CRC"
+			,"XMODEM"
 			,""
 		};
 	struct	text_info txtinfo;
@@ -639,14 +640,18 @@ void begin_download(struct bbslist *bbs)
 			zmodem_download(bbs);
 			break;
 		case 1:
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
-				xmodem_download(bbs, XMODEM|CRC|RECV,path);
+			xmodem_download(bbs, YMODEM|GMODE|RECV, NULL);
 			break;
 		case 2:
 			xmodem_download(bbs, YMODEM|CRC|RECV, NULL);
 			break;
 		case 3:
-			xmodem_download(bbs, YMODEM|GMODE|RECV, NULL);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
+				xmodem_download(bbs, XMODEM|CRC|RECV,path);
+			break;
+		case 4:
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
+				xmodem_download(bbs, XMODEM|RECV,path);
 			break;
 	}
 	uifcbail();
@@ -964,6 +969,8 @@ void zmodem_download(struct bbslist *bbs)
 
 /* X/Y-MODEM stuff */
 
+#define XMODEM_128B		(1<<10)	/* Overwrite receiving files				*/
+
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 
@@ -1122,6 +1129,9 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode)
 		,recv_byte
 		,is_connected
 		,xmodem_check_abort);
+
+	if(mode & XMODEM_128B)
+		xm->block_size=128;
 
 	xm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 
