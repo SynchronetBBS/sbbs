@@ -987,6 +987,9 @@ void load_settings(struct syncterm_settings *set)
 	}
 	strListFree(&sortby);
 
+	/* Shell TERM settings */
+	iniReadString(inifile, "SyncTERM", "TERM", "ansi", set->TERM);
+
 	if(inifile)
 		fclose(inifile);
 }

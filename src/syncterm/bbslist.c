@@ -1108,8 +1108,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[9][80];
-	char	*opt[10];
+	char	opts[10][80];
+	char	*opt[11];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -1123,7 +1123,7 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<9; i++)
+	for(i=0; i<10; i++)
 		opt[i]=opts[i];
 	opt[i]=NULL;
 
@@ -1161,6 +1161,11 @@ void change_settings(void)
 		sprintf(opts[6],"Modem/Comm Rate         %s",str);
 		sprintf(opts[7],"Modem Init String       %s",settings.mdm.init_string);
 		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
+#ifdef __unix__
+		sprintf(opts[9],"TERM For Shell          %s",settings.TERM);
+#else
+		opts[9][0]=0;
+#endif
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
 				goto write_ini;
@@ -1340,6 +1345,15 @@ void change_settings(void)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Dial String",settings.mdm.dial_string,LIST_NAME_MAX,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDial",settings.mdm.dial_string,&ini_style);
 				break;
+#ifdef __unix__
+			case 9:
+				uifc.helpbuf=   "`TERM For Shell`\n\n"
+								"The value to set the TERM envirnonment variable to goes here.\n\n"
+								"Example: \"`ansi`\" will select a dumb ANSI mode.";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"TERM",settings.TERM,LIST_NAME_MAX,K_EDIT)>=0)
+					iniSetString(&inicontents,"SyncTERM","TERM",settings.TERM,&ini_style);
+				break;
+#endif
 		}
 	}
 write_ini:

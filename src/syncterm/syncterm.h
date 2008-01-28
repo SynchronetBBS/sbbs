@@ -41,6 +41,7 @@ struct syncterm_settings {
 	int		backlines;
 	int		prompt_save;
 	struct modem_settings mdm;
+	char	TERM[INI_MAX_VALUE_LEN+1];
 };
 
 extern char *inpath;

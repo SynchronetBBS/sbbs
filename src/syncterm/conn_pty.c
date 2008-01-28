@@ -418,6 +418,7 @@ int pty_connect(struct bbslist *bbs)
 		settitle("SyncTERM");
 		return(-1);
 	case 0:		/* Child */
+		setenv("TERM",settings.TERM,1);
 		if(bbs->addr[0])
 			execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char *)0);
 		else
