@@ -585,8 +585,8 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 		zmodem_upload(bbs, fp, path);
 	else {
 		i=0;
-		uifc.helpbuf="Select Transfer Type";
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
+		uifc.helpbuf="Select Protocol";
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
 			case 0:
 				zmodem_upload(bbs, fp, path);
 				break;
@@ -630,8 +630,8 @@ void begin_download(struct bbslist *bbs)
 	init_uifc(FALSE, FALSE);
 
 	i=0;
-	uifc.helpbuf="Select Transfer Type";
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Transfer Type",opts)) {
+	uifc.helpbuf="Select Protocol";
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
 		case 0:
 			zmodem_download(bbs);
 			break;
