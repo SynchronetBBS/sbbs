@@ -1179,7 +1179,7 @@ int main(int argc, char **argv)
 		return(1);
 
 	load_font_files();
-	while(bbs!=NULL || (bbs=show_bbslist(bbs?bbs->id:-1))!=NULL) {
+	while(bbs!=NULL || (bbs=show_bbslist(bbs?bbs->id:-1, FALSE))!=NULL) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		if(!conn_connect(bbs)) {
 			/* ToDo: Update the entry with new lastconnected */

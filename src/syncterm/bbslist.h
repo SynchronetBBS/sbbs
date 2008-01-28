@@ -78,7 +78,7 @@ struct bbslist {
 	char			font[80];
 };
 
-struct bbslist *show_bbslist(int id);
+struct bbslist *show_bbslist(int id, int connected);
 extern char *log_levels[];
 extern char *rate_names[];
 extern int rates[];

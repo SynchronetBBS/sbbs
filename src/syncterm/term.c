@@ -2008,6 +2008,19 @@ BOOL doterm(struct bbslist *bbs)
 					showmouse();
 					key = 0;
 					break;
+				case 0x1200:	/* ALT-E */
+					{
+						struct text_info txtinfo;
+						gettextinfo(&txtinfo);
+						p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+						if(p) {
+							gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
+							show_bbslist(bbs->id, TRUE);
+							puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
+							free(p);
+						}
+					}
+					break;
 				case 0x2100:	/* ALT-F */
 					font_control(bbs);
 					showmouse();
@@ -2149,6 +2162,19 @@ BOOL doterm(struct bbslist *bbs)
 							hidemouse();
 							hold_update=oldmc;
 							return(TRUE);
+						case 12:
+							{
+								struct text_info txtinfo;
+								gettextinfo(&txtinfo);
+								p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+								if(p) {
+									gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
+									show_bbslist(bbs->id, TRUE);
+									puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
+									free(p);
+								}
+							}
+							break;
 					}
 					showmouse();
 					gotoxy(i,j);

@@ -146,6 +146,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Font Control (Alt-F)"
 						,"Toggle Doorway Mode"
 						,"Exit (Alt-X)"
+						,"Edit Dialing Directory (ALT-E)"
 						,""};
 	int		opt=0;
 	int		i,j;

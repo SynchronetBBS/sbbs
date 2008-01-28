@@ -1385,7 +1385,7 @@ void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaul
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(int id)
+struct bbslist *show_bbslist(int id, int connected)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -1410,13 +1410,22 @@ struct bbslist *show_bbslist(int id)
 					,"Program Settings"
 					,NULL
 				};
+	char	*connected_settings_menu[]= {
+					 "Default Connection Settings"
+#ifdef CONFIGURABLE_MOUSE_ACTIONS
+					,"Mouse Actions"
+#endif
+					,"Font Management"
+					,"Program Settings"
+					,NULL
+				};
 	int		at_settings=0;
 	struct mouse_event mevent;
 	struct bbslist defaults;
 	char	shared_list[MAX_PATH+1];
 	char	listpath[MAX_PATH+1];
 
-	if(init_uifc(TRUE, TRUE))
+	if(init_uifc(connected?FALSE:TRUE, TRUE))
 		return(NULL);
 
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
@@ -1425,16 +1434,23 @@ struct bbslist *show_bbslist(int id)
 
 	uifc.helpbuf="Help Button Hack";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
-		,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
+		,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 	for(;;) {
 		if (!at_settings) {
 			for(;!at_settings;) {
-				uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
-								"Commands:\n\n"
-								"~ CTRL-D ~ Quick-dial a URL\n"
-								"~ CTRL-E ~ to edit the selected entry\n"
-								"~ CTRL-S ~ to modify the sort order\n"
-								" ~ ENTER ~ to dial the selected entry";
+				if(connected)
+					uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
+									"Commands:\n\n"
+									"~ CTRL-E ~ to edit the selected entry\n"
+									"~ CTRL-S ~ to modify the sort order\n"
+									" ~ ENTER ~ to dial the selected entry";
+				else
+					uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
+									"Commands:\n\n"
+									"~ CTRL-D ~ Quick-dial a URL\n"
+									"~ CTRL-E ~ to edit the selected entry\n"
+									"~ CTRL-S ~ to modify the sort order\n"
+									" ~ ENTER ~ to dial the selected entry";
 				if(opt != oldopt) {
 					if(list[opt]!=NULL && list[opt]->name[0]) {
 						sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
@@ -1488,25 +1504,29 @@ struct bbslist *show_bbslist(int id)
 							at_settings=!at_settings;
 							break;
 						case -6:		/* CTRL-D */
-							uifc.changes=0;
-							uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
-											"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
-							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
-								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
-								|WIN_SEL
-								,0,0,0,&opt,&bar,"Directory",(char **)list);
-							uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
-							memcpy(&retlist, &defaults, sizeof(defaults));
-							if(uifc.changes) {
-								parse_url(addy,&retlist,defaults.conn_type,FALSE);
-								free_list(&list[0],listcount);
-								return(&retlist);
+							if(!connected) {
+								uifc.changes=0;
+								uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
+												"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
+								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+									|WIN_SEL
+									,0,0,0,&opt,&bar,"Directory",(char **)list);
+								uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
+								memcpy(&retlist, &defaults, sizeof(defaults));
+								if(uifc.changes) {
+									parse_url(addy,&retlist,defaults.conn_type,FALSE);
+									free_list(&list[0],listcount);
+									return(&retlist);
+								}
 							}
 							break;
 						case -1:		/* ESC */
-							if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
-								continue;
+							if(!connected) {
+								if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
+									continue;
+							}
 							free_list(&list[0],listcount);
 							return(NULL);
 					}
@@ -1648,9 +1668,23 @@ struct bbslist *show_bbslist(int id)
 					}
 				}
 				else {
-					memcpy(&retlist,list[val],sizeof(struct bbslist));
-					free_list(&list[0],listcount);
-					return(&retlist);
+					if(connected) {
+						if(safe_mode) {
+							uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
+											"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
+											"BBS list.";
+							uifc.msg("Cannot edit list in safe mode");
+						}
+						else if(edit_list(list, list[opt],listpath,FALSE)) {
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
+							oldopt=-1;
+						}
+					}
+					else {
+						memcpy(&retlist,list[val],sizeof(struct bbslist));
+						free_list(&list[0],listcount);
+						return(&retlist);
+					}
 				}
 			}
 		}
@@ -1673,9 +1707,14 @@ struct bbslist *show_bbslist(int id)
 					settitle(syncterm_version);
 				oldopt=-2;
 				val=uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_ESC
-					,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
+					,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
+				if(connected && val >= 1)
+					val++;
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
+						if(connected)
+							viewscroll();
+						//else
 						//viewofflinescroll();
 						break;
 					case -2-CIO_KEY_MOUSE:
@@ -1685,12 +1724,14 @@ struct bbslist *show_bbslist(int id)
 					case -2-0x4d00:	/* Right Arrow */
 					case -11:		/* TAB */
 						uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_SEL
-							,0,0,0,&sopt,&sbar,"SyncTERM Settings",settings_menu);
+							,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 						at_settings=!at_settings;
 						break;
 					case -1:		/* ESC */
-						if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
-							continue;
+						if(!connected) {
+							if(settings.confirm_close && !confirm("Are you sure you want to exit?",NULL))
+								continue;
+						}
 						free_list(&list[0],listcount);
 						return(NULL);
 					case 0:			/* Edit default connection settings */
