@@ -597,10 +597,18 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						}
 						break;
 					case 'h':
+						if(!strcmp(cterm.escbuf,"[?25h")) {
+							cterm.cursor=_NORMALCURSOR;
+							_setcursortype(cterm.cursor);
+						}
 						if(!strcmp(cterm.escbuf,"[=255h"))
 							cterm.doorway_mode=1;
 						break;
 					case 'l':
+						if(!strcmp(cterm.escbuf,"[?25l")) {
+							cterm.cursor=_NOCURSOR;
+							_setcursortype(cterm.cursor);
+						}
 						if(!strcmp(cterm.escbuf,"[=255l"))
 							cterm.doorway_mode=0;
 						break;
@@ -1215,10 +1223,11 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	cterm.log=CTERM_LOG_NONE;
 	cterm.logfile=NULL;
 	cterm.emulation=emulation;
+	cterm.cursor=_NORMALCURSOR;
 	if(cterm.scrollback!=NULL)
 		memset(cterm.scrollback,0,cterm.width*2*cterm.backlines);
 	textattr(cterm.attr);
-	_setcursortype(_NORMALCURSOR);
+	_setcursortype(cterm.cursor);
 	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winleft != cterm.y+cterm.height-1)
 		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
 	clearscreen(cterm.attr);
@@ -1373,6 +1382,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
 	gotoxy(cterm.xpos,cterm.ypos);
 	textattr(cterm.attr);
+	_setcursortype(cterm.cursor);
 	ch[1]=0;
 	switch(buflen) {
 		case 0:
@@ -1974,6 +1984,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	hold_update=olddmc;
 	puttext_can_move=oldptnm;
 	gotoxy(wherex(),wherey());
+	_setcursortype(cterm.cursor);
 	return(retbuf);
 }
 
