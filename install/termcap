@@ -23,4 +23,4 @@ ansi-bbs:\
 	:ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
 	:kb=^H:kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
 	:kh=\E[H:@7=\E[K:\
-	:k1=\EOP:k2=\EOQ:k3=\EOw:k4=\EOx:
+	:k1=\EOP:k2=\EOQ:k3=\EOR:k4=\EOS:k5=\EOt:k6=\E[17~:k7=\E[18~:k8=\E[19~:k9=\E[20~:k;=\E[21~:F1=\E[23~:F2=\E[24~:
