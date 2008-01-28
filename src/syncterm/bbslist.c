@@ -179,9 +179,17 @@ int rates[]={300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 11520
 
 char *music_names[]={"ESC [ | only", "BANSI Style", "All ANSI Music enabled", NULL};
 
-char *address_help=	"`Address`, `Phone Number`, or `Serial Port`\n\n"
+char *address_help=	
+#ifdef __unix__
+					"`Address`, `Phone Number`, `Serial Port`, or `Command`\n\n"
+					"Enter the hostname, IP address, phone number, or serial port device of\n"
+					"the system to connect to. Example: `nix.synchro.net`\n\n"
+					"In the case of the Shell type, enter the command to run.";
+#else
+					"`Address`, `Phone Number`, or `Serial Port`\n\n"
 					"Enter the hostname, IP address, phone number, or serial port device of\n"
 					"the system to connect to. Example: `nix.synchro.net`";
+#endif
 char *conn_type_help=			"`Connection Type`\n\n"
 								"Select the type of connection you wish to make:\n\n"
 								"`RLogin`...........: Auto-login with RLogin protocol\n"
@@ -727,11 +735,19 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				sprintf(opt[i++], "Phone Number      %s",item->addr);
 			else if(item->conn_type==CONN_TYPE_SERIAL)
 				sprintf(opt[i++], "Device Name       %s",item->addr);
+#ifdef __unix__
+			else if(item->conn_type==CONN_TYPE_SHELL)
+				sprintf(opt[i++], "Command           %s",item->addr);
+#endif
 			else
 				sprintf(opt[i++], "Address           %s",item->addr);
 		}
 		sprintf(opt[i++], "Connection Type   %s",conn_types[item->conn_type]);
-		if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL)
+		if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
+#ifdef __unix__
+			&& item->conn_type!=CONN_TYPE_SHELL
+#endif
+			)
 			sprintf(opt[i++], "TCP Port          %hu",item->port);
 		sprintf(opt[i++], "Username          %s",item->user);
 		sprintf(opt[i++], "Password          %s",item->password[0]?"********":"<none>");
@@ -768,7 +784,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			,opts);
 		if(i>=0 && isdefault)
 			i+=2;
-		if(i>=3 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL))
+		if(i>=3 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL
+#ifdef __unix__
+				|| item->conn_type!=CONN_TYPE_SHELL
+#endif
+				))
 			i++;	/* no port number */
 		switch(i) {
 			case -1:
@@ -800,7 +820,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				uifc.helpbuf=address_help;
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,item->conn_type==CONN_TYPE_MODEM ? "Phone Number"
-					:item->conn_type==CONN_TYPE_SERIAL ? "Device Name" : "Address"
+					:item->conn_type==CONN_TYPE_SERIAL ? "Device Name"
+#ifdef __unix__
+					:item->conn_type==CONN_TYPE_SHELL ? "Command"
+#endif
+					: "Address"
 					,item->addr,LIST_ADDR_MAX,K_EDIT);
 				iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
 				break;
@@ -857,7 +881,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						item->conn_type++;
 						iniSetEnum(&inifile,itemname,"ConnectionType",conn_types,item->conn_type,&ini_style);
 
-						if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL) {
+						if(item->conn_type!=CONN_TYPE_MODEM && item->conn_type!=CONN_TYPE_SERIAL
+#ifdef __unix__
+								&& item->conn_type!=CONN_TYPE_SHELL
+#endif
+								) {
 							/* Set the port too */
 							j=conn_ports[item->conn_type];
 							if(j<1 || j>65535)
@@ -1515,7 +1543,11 @@ struct bbslist *show_bbslist(int id)
 							if(uifc.list(WIN_SAV,0,0,0,&(list[listcount-1]->conn_type),NULL,"Connection Type",&(conn_types[1]))>=0) {
 								list[listcount-1]->conn_type++;
 								if(list[listcount-1]->conn_type!=CONN_TYPE_MODEM
-									&& list[listcount-1]->conn_type!=CONN_TYPE_SERIAL) {
+									&& list[listcount-1]->conn_type!=CONN_TYPE_SERIAL
+#ifdef __unix__
+									&& list[listcount-1]->conn_type!=CONN_TYPE_SHELL
+#endif
+									) {
 									/* Set the port too */
 									j=conn_ports[list[listcount-1]->conn_type];
 									if(j<1 || j>65535)
@@ -1530,7 +1562,11 @@ struct bbslist *show_bbslist(int id)
 								uifc.helpbuf=address_help;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,list[listcount-1]->conn_type==CONN_TYPE_MODEM ? "Phone Number"
-									:list[listcount-1]->conn_type==CONN_TYPE_SERIAL ? "Device Name" : "Address"
+									:list[listcount-1]->conn_type==CONN_TYPE_SERIAL ? "Device Name"
+#ifdef __unix__
+									:list[listcount-1]->conn_type==CONN_TYPE_SHELL ? "Command"
+#endif
+									:"Address"
 									,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
 							}
 							if(!uifc.changes) {
