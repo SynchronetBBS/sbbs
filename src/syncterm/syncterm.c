@@ -769,10 +769,6 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 	}
 #endif
 	/* ToDo: RFC2806 */
-	/* Remove trailing / (Win32 adds one 'cause it hates me) */
-	p2=strchr(p1,'/');
-	if(p2!=NULL)
-		*p2=0;
 	p3=strchr(p1,'@');
 	if(p3!=NULL) {
 		*p3=0;
@@ -792,6 +788,10 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		p2++;
 		bbs->port=atoi(p2);
 	}
+	/* Remove trailing / (Win32 adds one 'cause it hates me) */
+	p2=strrchr(p1,'/');
+	if(p2!=NULL && *(p2+1)==0)
+		*p2=0;
 	SAFECOPY(bbs->addr,p1);
 
 	/* Find BBS listing in users phone book */
