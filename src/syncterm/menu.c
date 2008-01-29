@@ -127,7 +127,7 @@ void viewscroll(void)
 	}
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
 	gotoxy(x,y);
-	FREE_AND_NULL(scrollback);
+	free(scrollback);
 	return;
 }
 

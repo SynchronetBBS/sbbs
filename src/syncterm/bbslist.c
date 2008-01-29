@@ -20,6 +20,7 @@
 #include "cterm.h"
 #include "window.h"
 #include "term.h"
+#include "menu.h"
 
 struct sort_order_info {
 	char		*name;
@@ -217,30 +218,68 @@ void viewofflinescroll(void)
 	int	top;
 	int key;
 	int i;
-	char	*scrnbuf;
 	struct	text_info txtinfo;
-	int	x,y;
+	struct	text_info sbtxtinfo;
 	struct mouse_event mevent;
 
-	x=wherex();
-	y=wherey();
-    gettextinfo(&txtinfo);
-	scrnbuf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
+	if(scrollback_buf==NULL)
+		return;
 	uifcbail();
+    gettextinfo(&txtinfo);
+
+	textmode(scrollback_mode);
+	switch(ciolib_to_screen(scrollback_mode)) {
+		case SCREEN_MODE_C64:
+			setfont(33,TRUE);
+			break;
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			setfont(35,TRUE);
+			break;
+		case SCREEN_MODE_ATARI:
+			setfont(36,TRUE);
+			break;
+	}
 	drawwin();
 	top=scrollback_lines;
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
+    gettextinfo(&sbtxtinfo);
+
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
 		if(top>(int)scrollback_lines)
 			top=scrollback_lines;
-		puttext(((txtinfo.screenwidth-80)/2)+1,1,(txtinfo.screenwidth-80)/2+80,txtinfo.screenheight,scrollback_buf+(80*2*top));
-		cputs("Scrollback");
-		gotoxy(71,1);
-		cputs("Scrollback");
+		puttext(((sbtxtinfo.screenwidth-scrollback_cols)/2)+1,1
+				,(sbtxtinfo.screenwidth-scrollback_cols)/2+scrollback_cols
+				,sbtxtinfo.screenheight
+				,scrollback_buf+(scrollback_cols*2*top));
+		switch(ciolib_to_screen(scrollback_mode)) {
+		case SCREEN_MODE_ATARI:
+			cputs("3crollback");
+			break;
+		case SCREEN_MODE_C64:
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			cputs("SCROLLBACK");
+			break;
+		default:
+			cputs("Scrollback");
+		}
+		gotoxy(scrollback_cols-9,1);
+		switch(ciolib_to_screen(scrollback_mode)) {
+		case SCREEN_MODE_ATARI:
+			cputs("3crollback");
+			break;
+		case SCREEN_MODE_C64:
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			cputs("SCROLLBACK");
+			break;
+		default:
+			cputs("Scrollback");
+		}
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
@@ -262,10 +301,10 @@ void viewofflinescroll(void)
 						top++;
 						break;
 					case CIO_KEY_PPAGE:
-						top-=txtinfo.screenheight;
+						top-=sbtxtinfo.screenheight;
 						break;
 					case CIO_KEY_NPAGE:
-						top+=txtinfo.screenheight;
+						top+=sbtxtinfo.screenheight;
 						break;
 					case CIO_KEY_F(1):
 						init_uifc(FALSE, FALSE);
@@ -290,20 +329,21 @@ void viewofflinescroll(void)
 				break;
 			case 'h':
 			case 'H':
-				top-=txtinfo.screenheight;
+				top-=term.height;
 				break;
 			case 'l':
 			case 'L':
-				top+=txtinfo.screenheight;
+				top+=term.height;
 				break;
 			case ESC:
 				i=1;
 				break;
 		}
 	}
-	init_uifc(TRUE, TRUE);
-	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrnbuf);
-	gotoxy(x,y);
+
+	textmode(txtinfo.currmode);
+	setfont(default_font,TRUE);
+	init_uifc(TRUE,TRUE);
 	return;
 }
 
@@ -1488,7 +1528,11 @@ struct bbslist *show_bbslist(int id, int connected)
 							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
-							//viewofflinescroll();
+							if(!connected) {
+								viewofflinescroll();
+								uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
+									,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
+							}
 							break;
 						case -2-CIO_KEY_MOUSE:	/* Clicked outside of window... */
 							getmouse(&mevent);
@@ -1712,10 +1756,14 @@ struct bbslist *show_bbslist(int id, int connected)
 					val++;
 				switch(val) {
 					case -2-0x3000:	/* ALT-B - Scrollback */
-						if(connected)
-							viewscroll();
-						//else
-						//viewofflinescroll();
+						if(!connected) {
+							viewofflinescroll();
+							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
+								|WIN_SEL|WIN_INACT
+								,0,0,0,&opt,&bar,"Directory",(char **)list);
+						}
 						break;
 					case -2-CIO_KEY_MOUSE:
 						getmouse(&mevent);

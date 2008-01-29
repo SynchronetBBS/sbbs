@@ -4,6 +4,7 @@
 #include <ciolib.h>
 #include "uifcinit.h"
 #include "term.h"
+#include "syncterm.h"
 
 int drawwin(void)
 {
@@ -13,8 +14,21 @@ int drawwin(void)
 	char	str[32];
 	int		x,y,c;
 
-	strcpy(str,"SyncTERM ");
     gettextinfo(&txtinfo);
+
+	switch(ciolib_to_screen(txtinfo.currmode)) {
+		case SCREEN_MODE_ATARI:
+			strcpy(str,"3ync4%2- ");
+			break;
+		case SCREEN_MODE_C64:
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			strcpy(str,"SYNCTERM ");
+			break;
+		default:
+			strcpy(str,"SyncTERM ");
+	}
+
 	if(txtinfo.screenwidth < 80)
 		term.width=40;
 	else {

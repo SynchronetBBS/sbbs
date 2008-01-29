@@ -42,6 +42,8 @@ struct syncterm_settings settings;
 char *font_names[sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)];
 unsigned char *scrollback_buf=NULL;
 unsigned int  scrollback_lines=0;
+unsigned int  scrollback_mode=C80;
+unsigned int  scrollback_cols=80;
 int	safe_mode=0;
 FILE* log_fp;
 extern ini_style_t ini_style;
@@ -1137,11 +1139,6 @@ int main(int argc, char **argv)
 	else
 		FULLPATH(path,inpath,sizeof(path));
 	atexit(uifcbail);
-
-	scrollback_buf=malloc(132*2*settings.backlines);	/* Terminal width is *always* <= 132 cols */
-	if(scrollback_buf==NULL) {
-		uifc.msg("Cannot allocate space for scrollback buffer.\n");
-	}
 
 #ifdef __unix__
 	umask(077);

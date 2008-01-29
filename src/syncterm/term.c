@@ -1714,7 +1714,9 @@ BOOL doterm(struct bbslist *bbs)
 	BOOL	sleep;
 	int 	emulation=CTERM_EMULATION_ANSI_BBS;
 	size_t	remain;
+	struct text_info txtinfo;
 
+	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
 		speed = 0;
 	else
@@ -1727,8 +1729,15 @@ BOOL doterm(struct bbslist *bbs)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
-	if(scrollback_buf != NULL)
+	p=(unsigned char *)realloc(scrollback_buf, term.width*2*settings.backlines);
+	if(p != NULL) {
+		scrollback_buf=p;
 		memset(scrollback_buf,0,term.width*2*settings.backlines);
+	}
+	else
+		FREE_AND_NULL(scrollback_buf);
+	scrollback_lines=0;
+	scrollback_mode=txtinfo.currmode;
 	switch(bbs->screen_mode) {
 		case SCREEN_MODE_C64:
 		case SCREEN_MODE_C128_40:
@@ -1740,6 +1749,7 @@ BOOL doterm(struct bbslist *bbs)
 			break;
 	}
 	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
+	scrollback_cols=term.width;
 	cterm.music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
@@ -2010,8 +2020,6 @@ BOOL doterm(struct bbslist *bbs)
 					break;
 				case 0x1200:	/* ALT-E */
 					{
-						struct text_info txtinfo;
-						gettextinfo(&txtinfo);
 						p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 						if(p) {
 							gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
@@ -2069,7 +2077,6 @@ BOOL doterm(struct bbslist *bbs)
 										,""
 									  };
 						char *buf;
-						struct	text_info txtinfo;
 
    						gettextinfo(&txtinfo);
 						buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
@@ -2164,8 +2171,6 @@ BOOL doterm(struct bbslist *bbs)
 							return(TRUE);
 						case 12:
 							{
-								struct text_info txtinfo;
-								gettextinfo(&txtinfo);
 								p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 								if(p) {
 									gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
