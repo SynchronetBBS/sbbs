@@ -1788,7 +1788,7 @@ BOOL doterm(struct bbslist *bbs)
 							}
 #endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
+							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
 							conn_close();
@@ -2093,7 +2093,7 @@ BOOL doterm(struct bbslist *bbs)
 							}
 #endif
 							uifcbail();
-							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
+							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
 							conn_close();
@@ -2129,7 +2129,7 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
-							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
+							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
 							conn_close();
@@ -2162,7 +2162,7 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
-							cterm_write("\x0c",1,NULL,0,NULL);	/* Clear screen into scrollback */
+							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm.backpos;
 							cterm_end();
 							conn_close();
