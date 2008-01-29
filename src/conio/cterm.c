@@ -533,7 +533,7 @@ void clear2eol(void)
 	clreol();
 }
 
-void clearscreen(char attr)
+void cterm_clearscreen(char attr)
 {
 	unsigned char *buf;
 	int i;
@@ -787,7 +787,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							}
 							break;
 						case 2:
-							clearscreen((char)cterm.attr);
+							cterm_clearscreen((char)cterm.attr);
 							gotoxy(1,1);
 							break;
 					}
@@ -884,7 +884,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 #if 0
 				case 'U':
 					gettextinfo(&ti);
-					clearscreen(ti.normattr);
+					cterm_clearscreen(ti.normattr);
 					gotoxy(1,1);
 					break;
 #endif
@@ -1230,7 +1230,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	_setcursortype(cterm.cursor);
 	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winleft != cterm.y+cterm.height-1)
 		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
-	clearscreen(cterm.attr);
+	cterm_clearscreen(cterm.attr);
 	gotoxy(1,1);
 	strcpy(cterm.DA,"\x1b[=67;84;101;114;109;");
 	out=strchr(cterm.DA, 0);
@@ -1608,7 +1608,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+wherey()-1,p);
 									break;
 								case 125:	/* Clear Screen */
-									clearscreen(cterm.attr);
+									cterm_clearscreen(cterm.attr);
 									break;
 								case 253:	/* Beep */
 									#ifdef __unix__
@@ -1769,7 +1769,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									gotoxy(wherex(), wherey()+1);
 								break;
 							case 147:
-								clearscreen(cterm.attr);
+								cterm_clearscreen(cterm.attr);
 								/* Fall through */
 							case 19:
 								gotoxy(1,1);
@@ -1941,7 +1941,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									prn[0]=0;
 									if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
 										fputs("\x0c", cterm.logfile);
-									clearscreen((char)cterm.attr);
+									cterm_clearscreen((char)cterm.attr);
 									gotoxy(1,1);
 									break;
 								case 27:		/* ESC */

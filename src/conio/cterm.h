@@ -111,6 +111,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 int cterm_openlog(char *logfile, int logtype);
 void cterm_closelog(void);
 void cterm_end(void);
+void cterm_clearscreen(char attr);
 #ifdef __cplusplus
 }
 #endif
