@@ -353,6 +353,7 @@ function Lightbar_getval(current)
 			return(undefined);
 		}
 		console.gotoxy(cursx,cursy);
+		console.attributes=cattr;
 		if(ret!=undefined) {
 			this.nodraw=false;
 			return(ret);
@@ -700,4 +701,6 @@ function Lightbar_draw(current)
 	
 	// Move cursor to the current selection
 	console.gotoxy(cursx,cursy);
+	// Set colour so the cursor is visible
+	console.attributes=cattr;
 }
