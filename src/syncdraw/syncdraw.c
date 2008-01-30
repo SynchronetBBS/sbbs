@@ -1153,8 +1153,8 @@ main(int argnum, char *args[])
 			EliteMode = !EliteMode;
 			break;
 		case 0x2d00:	/* ALT+X - Exit */
-			exitprg();
-			return(0);
+			if(exitprg()==-1)
+				return(0);
 			break;
 		case 0x1e00:	/* ALT+A - Color */
 			Attribute = SelectColor();
@@ -1209,7 +1209,8 @@ main(int argnum, char *args[])
 			FullScreen = !FullScreen;
 			break;
 		case 27:	/* ESC - Menue Mode  */
-			menuemode();
+			if(menuemode()==-1)
+				return(0);
 			break;
 		case 1:	/* Next FG Colour */
 			fg = ((Attribute & 128) >> 3) | (Attribute & 15);

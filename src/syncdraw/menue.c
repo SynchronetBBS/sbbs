@@ -245,7 +245,7 @@ menue(void)
 	return a + (ActiveMenue << 8);
 }
 
-void 
+int
 menuemode(void)
 {
 	unsigned int    a;
@@ -260,7 +260,8 @@ menuemode(void)
 			save();
 			break;
 		case 3:
-			exitprg();
+			if(exitprg()==-1)
+				return(-1);
 			break;
 		}
 		break;
@@ -366,4 +367,5 @@ menuemode(void)
 		}
 		break;
 	}
+	return(0);
 }
