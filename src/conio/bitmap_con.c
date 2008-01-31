@@ -33,6 +33,7 @@ int screenheight;
 static int current_font=-99;
 static int bitmap_initialized=0;
 struct video_stats vstat;
+static int *damaged=NULL;
 
 struct bitmap_callbacks {
 	void	(*drawrect)		(int xpos, int ypos, int width, int height, unsigned char *data);
@@ -111,6 +112,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
 {
     int i;
 	char *newscreen;
+	int *newdamaged;
 
 	if(!bitmap_initialized)
 		return(-1);
@@ -121,6 +123,15 @@ int bitmap_init_mode(int mode, int *width, int *height)
 		pthread_mutex_unlock(&vstatlock);
 		return(-1);
 	}
+
+	/* Initialize the damaged array */
+	
+	newdamaged=(int *)malloc(sizeof(int)*vstat.rows);
+	if(newdamaged==NULL) {
+		pthread_mutex_unlock(&vstatlock);
+		return(-1);
+	}
+	damaged=newdamaged;
 
 	/* Initialize video memory with black background, white foreground */
 	for (i = 0; i < vstat.cols*vstat.rows; ++i)
@@ -223,6 +234,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	pthread_mutex_lock(&vstatlock);
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
+		damaged[y]=1;
 		for(x=sx-1;x<ex;x++) {
 			sch=*(out++);
 			sch |= (*(out++))<<8;
@@ -581,11 +593,10 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 
 	pthread_mutex_lock(&screenlock);
 	for(y=0; y<vstat.charheight; y++) {
+		memset(&screen[PIXEL_OFFSET(xoffset, yoffset+y)],bg,vstat.charwidth);
 		for(x=0; x<vstat.charwidth; x++) {
 			if(font[fontoffset] & (0x80 >> x))
 				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=fg;
-			else
-				screen[PIXEL_OFFSET(xoffset+x, yoffset+y)]=bg;
 		}
 		fontoffset++;
 	}
@@ -650,47 +661,53 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 		redraw_cursor=1;
 
 	for(y=0;y<height;y++) {
-		pos=(sy+y-1)*vstat.cols+(sx-1);
-		for(x=0;x<width;x++) {
-			if(force
-					|| (last_vmem[pos] != vstat.vmem[pos]) 					/* Different char */
-					|| (vstat.blink != vs.blink && vstat.vmem[pos]>>15) 	/* Blinking char */
-					|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
-					) {
-				last_vmem[pos] = vstat.vmem[pos];
-				bitmap_draw_one_char(sx+x,sy+y);
-				if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
-					redraw_cursor=1;
+		if(force 
+				|| (vstat.blink != vs.blink )
+				|| (redraw_cursor && (vs.curs_row==sy+y || vstat.curs_row==sy+y))
+				|| damaged[sy+y-1]) {
+			damaged[sy+y-1]=0;
+			pos=(sy+y-1)*vstat.cols+(sx-1);
+			for(x=0;x<width;x++) {
+				if(force
+						|| (last_vmem[pos] != vstat.vmem[pos]) 					/* Different char */
+						|| (vstat.blink != vs.blink && vstat.vmem[pos]>>15) 	/* Blinking char */
+						|| (redraw_cursor && ((vs.curs_col==sx+x && vs.curs_row==sy+y) || (vstat.curs_col==sx+x && vstat.curs_row==sy+y)))	/* Cursor */
+						) {
+					last_vmem[pos] = vstat.vmem[pos];
+					bitmap_draw_one_char(sx+x,sy+y);
+					if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
+						redraw_cursor=1;
 
-				if(lastcharupdated) {
-					this_rect.width+=vstat.charwidth;
-					lastcharupdated++;
+					if(lastcharupdated) {
+						this_rect.width+=vstat.charwidth;
+						lastcharupdated++;
+					}
+					else {
+						if(this_rect_used) {
+							send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+						}
+						this_rect.x=(sx+x-1)*vstat.charwidth;
+						this_rect.y=(sy+y-1)*vstat.charheight;
+						this_rect.width=vstat.charwidth;
+						this_rect.height=vstat.charheight;
+						this_rect_used=1;
+						lastcharupdated++;
+					}
 				}
 				else {
 					if(this_rect_used) {
 						send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
+						this_rect_used=0;
 					}
-					this_rect.x=(sx+x-1)*vstat.charwidth;
-					this_rect.y=(sy+y-1)*vstat.charheight;
-					this_rect.width=vstat.charwidth;
-					this_rect.height=vstat.charheight;
-					this_rect_used=1;
-					lastcharupdated++;
-				}
-			}
-			else {
-				if(this_rect_used) {
-					send_rectangle(this_rect.x, this_rect.y, this_rect.width, this_rect.height,FALSE);
-					this_rect_used=0;
-				}
-				if(last_rect_used) {
-					send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
-					last_rect_used=0;
-				}
+					if(last_rect_used) {
+						send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
+						last_rect_used=0;
+					}
 
-				lastcharupdated=0;
+					lastcharupdated=0;
+				}
+				pos++;
 			}
-			pos++;
 		}
 		/* If ALL chars in the line were used, add to last_rect */
 		if(lastcharupdated==width) {
