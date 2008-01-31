@@ -1570,6 +1570,7 @@ static BOOL check_ars(http_session_t * session)
 				MD5_open(&ctx);
 				MD5_digest(&ctx, methods[session->req.method], strlen(methods[session->req.method]));
 				MD5_digest(&ctx, ":", 1);
+				/* exception here, session->req.auth.digest_uri==NULL */
 				MD5_digest(&ctx, session->req.auth.digest_uri, strlen(session->req.auth.digest_uri));
 				/* TODO QOP==AUTH_INT */
 				if(session->req.auth.qop_value == QOP_AUTH_INT)
