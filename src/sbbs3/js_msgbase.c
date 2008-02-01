@@ -675,7 +675,7 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 #define LAZY_STRING_COND(PropName, Condition, PropValue) \
 	if(name==NULL || strcmp(name, (PropName))==0) { \
-		if((Condition) && (js_str=JS_NewStringCopyZ(cx, truncsp(PropValue)))!=NULL) { \
+		if((Condition) && (js_str=JS_NewStringCopyZ(cx, (PropValue)))!=NULL) { \
 			JS_DefineProperty(cx, obj, PropName, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE); \
 			if(name) return(JS_TRUE); \
 		} \
@@ -743,7 +743,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type && p->msg.replyto_net.addr, smb_netaddr(&(p->msg).replyto_net));
 	LAZY_STRING_COND("from_ip_addr", (val=smb_get_hfield(&(p->msg),SENDERIPADDR,NULL))!=NULL, val);
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val);
-	LAZY_STRING_COND("from_prorocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val);
+	LAZY_STRING_COND("from_protocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val);
 	LAZY_INTEGER_COND("from_port", (port=smb_get_hfield(&(p->msg),SENDERPORT,NULL))!=NULL, *port);
 	LAZY_INTEGER_EXPAND("forwarded", p->msg.forwarded);
 	LAZY_INTEGER_EXPAND("expiration", p->msg.expiration);
