@@ -15,6 +15,7 @@ var topline=0;								/* Index into line[] of line at edit_top */
 var edit_top=5;								/* First line of edit window */
 var edit_bottom=console.screen_rows-1;		/* Last line of edit window */
 var lines_on_screen=edit_bottom-edit_top+1;	/* Height of edit window */
+var scroll_lines=parseInt(lines_on_screen/3);	/* Number of lines to scroll by in one jump */
 var curattr=7;								/* Current attribute */
 var colour_box_displayed=0;					/* Row the colour box is displayed
 												on. used for redraw */
@@ -23,6 +24,7 @@ var quote_window_displayed=0;				/* Row the quote window is displayed on */
 var quote_topline=0;						/* Current index into quote_line[] of quote_top */
 var quote_ypos=0;							/* Current index into line[] of selection point */
 var quote_height=0;							/* Number of quote lines to be displayed */
+var quote_scroll=0;							/* Number of lines to scroll by in one jump */
 var quote_sep_pos=0;						/* Line number the quote seperator is displayed on */
 var quote_ontop=false;						/* true if quote window is at the top */
 var quote_top;								/* Line number of the first quote line */
@@ -139,7 +141,7 @@ function next_line()
 	if(line[ypos]==undefined)
 		line.push(new Line());
 	if(ypos-topline>=lines_on_screen)
-		scroll(1);		/* Scroll up one line */
+		scroll(scroll_lines);		/* Scroll up */
 	if(last_xpos>=0)
 		xpos=last_xpos;
 	if(xpos>line[ypos].text.length)
@@ -156,7 +158,7 @@ function try_prev_line()
 	if(ypos>0) {
 		ypos--;
 		if(ypos<topline)
-			scroll(-1);		/* Scroll down one line */
+			scroll(0-scroll_lines);		/* Scroll down */
 		if(last_xpos>=0)
 			xpos=last_xpos;
 		if(xpos>line[ypos].text.length)
@@ -177,7 +179,7 @@ function try_next_line()
 	if(ypos<line.length-1) {
 		ypos++;
 		if(ypos>=topline+lines_on_screen)
-			scroll(1);		/* Scroll up one line */
+			scroll(scroll_lines);		/* Scroll up */
 		if(last_xpos>=0)
 			xpos=last_xpos;
 		if(xpos>line[ypos].text.length)
@@ -1122,6 +1124,18 @@ function draw_quote_window()
 {
 	var i;
 
+	if(quote_ypos>=quote_line.length)
+		quote_ypos=quote_line.length-1;
+	if(quote_ypos<0)
+		quote_ypos=0;
+	if(quote_ypos<quote_topline)
+		quote_topline=quote_ypos;
+	if(quote_topline+quote_height>quote_line.length)
+		quote_topline=quote_line.length-quote_height;
+	if(quote_ypos>=quote_topline+quote_height)
+		quote_topline=quote_ypos-quote_height-1;
+	if(quote_topline<0)
+		quote_topline=0;
 	/* Draw seperater */
 	console.gotoxy(1,quote_sep_pos);
 	console.attributes=7;
@@ -1138,6 +1152,9 @@ function quote_mode()
 	var select_start=0;
 
 	quote_height=parseInt(lines_on_screen/2)-1;	/* Rounds down */
+	quote_scroll=parseInt(quote_height/2);
+	if(quote_scroll<1)
+		quote_scroll=1;
 	var curr_ypos=ypos-topline+edit_top;
 
 	/* Decide if quote window should go at top or at bottom */
@@ -1197,10 +1214,12 @@ function quote_mode()
 			case KEY_END:
 				quote_ypos=quote_line.length-1;
 				quote_topline=quote_line.length-quote_height;
-				if(quote_topline<0)
-					quote_topline=0;
 				draw_quote_window();
 				break;
+			case ' ':	/* Toggle selection of current line */
+				quote_line[quote_ypos].selected=!quote_line[quote_ypos].selected;
+				draw_quote_selection(quote_ypos);
+				/* Fallthrough */
 			case KEY_DOWN:
 				quote_ypos++;
 				if(quote_ypos>=quote_line.length) {
@@ -1217,7 +1236,7 @@ function quote_mode()
 					}
 				}
 				if(quote_ypos>=quote_topline+quote_height) {
-					quote_topline++;
+					quote_topline+=quote_scroll;
 					draw_quote_window();
 					break;
 				}
@@ -1240,15 +1259,11 @@ function quote_mode()
 					}
 				}
 				if(quote_ypos<quote_topline) {
-					quote_topline=quote_ypos;
+					quote_topline-=quote_scroll;
 					draw_quote_window();
 					break;
 				}
 				draw_quote_selection(quote_ypos+1);
-				draw_quote_selection(quote_ypos);
-				break;
-			case ' ':	/* Toggle selection of current line */
-				quote_line[quote_ypos].selected=!quote_line[quote_ypos].selected;
 				draw_quote_selection(quote_ypos);
 				break;
 			case 'B':	/* B toggles "block" mode */
@@ -1278,21 +1293,11 @@ function quote_mode()
 			case '\x10':    /* CTRL-P */
 				quote_ypos+=quote_height-1;
 				quote_topline+=quote_height-1;
-				if(quote_ypos>=quote_line.length)
-					quote_ypos=quote_line.length-1;
-				if(quote_topline+quote_height>quote_line.length)
-					quote_topline=quote_line.length-quote_height;
-				if(quote_topline<0)
-					quote_topline=0;
 				draw_quote_window();
 				break;
 			case '\x0f':	/* CTRL-O */
 				quote_ypos-=quote_height-1;
 				quote_topline-=quote_height-1;
-				if(quote_ypos<0)
-					quote_ypos=0;
-				if(quote_topline<0)
-					quote_topline=0;
 				draw_quote_window();
 				break;
 			case '\x0b':	/* CTRL-K */
@@ -1731,8 +1736,10 @@ function edit(quote_first)
 					line[0]=new Line;
 				else
 					line.splice(ypos,1);
-				if(ypos>=line.length)
+				if(ypos>=line.length) {
 					ypos=line.length-1;
+					scroll(0);		/* Scroll 'em */
+				}
 				if(last_xpos>=0)
 					xpos=last_xpos;
 				if(xpos>line[ypos].text.length)
