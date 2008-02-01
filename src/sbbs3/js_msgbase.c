@@ -699,7 +699,6 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	char*			val;
 	ushort*			port;
 	int				i;
-	uintN			n;
 	smbmsg_t		remsg;
 	JSObject*		array;
 	JSObject*		field;
@@ -736,12 +735,12 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	LAZY_INTEGER_EXPAND("from_agent", p->msg.from_agent);
 	LAZY_INTEGER_EXPAND("replyto_agent", p->msg.replyto_agent);
 	LAZY_INTEGER_EXPAND("to_net_type", p->msg.to_net.type);
-	LAZY_STRING_COND("to_net_addr", p->msg.to_net.type, smb_netaddr(&(p->msg).to_net));
+	LAZY_STRING_COND("to_net_addr", p->msg.to_net.type && p->msg.to_net.addr, smb_netaddr(&(p->msg).to_net));
 	LAZY_INTEGER_EXPAND("from_net_type", p->msg.from_net.type);
 	/* exception here because p->msg.from_net is NULL */
-	LAZY_STRING_COND("from_net_addr", p->msg.from_net.type, smb_netaddr(&(p->msg).from_net));
+	LAZY_STRING_COND("from_net_addr", p->msg.from_net.type && p->msg.from_net.addr, smb_netaddr(&(p->msg).from_net));
 	LAZY_INTEGER_EXPAND("replyto_net_type", p->msg.replyto_net.type);
-	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type, smb_netaddr(&(p->msg).replyto_net));
+	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type && p->msg.replyto_net.addr, smb_netaddr(&(p->msg).replyto_net));
 	LAZY_STRING_COND("from_ip_addr", (val=smb_get_hfield(&(p->msg),SENDERIPADDR,NULL))!=NULL, val);
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val);
 	LAZY_STRING_COND("from_prorocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val);
@@ -893,7 +892,7 @@ static JSBool js_get_msg_header_enumerate(JSContext *cx, JSObject *obj)
 	js_get_msg_header_resolve(cx, obj, JSVAL_NULL);
 
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return;
+		return(JS_TRUE);
 
 	smb_freemsgmem(&(p->msg));
 	free(p);
@@ -932,20 +931,8 @@ static JSClass js_msghdr_class = {
 static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char		date[128];
-	char		msg_id[256];
-	char		reply_id[256];
-	char*		val;
-	ushort*		port;
-	int			i;
 	uintN		n;
-	smbmsg_t	remsg;
 	JSObject*	hdrobj;
-	JSObject*	array;
-	JSObject*	field;
-	JSString*	js_str;
-	jsint		items;
-	jsval		v;
 	JSBool		by_offset=JS_FALSE;
 	JSBool		expand_fields=JS_TRUE;
 	privatemsg_t*	p;
