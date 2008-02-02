@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -513,12 +513,13 @@ char* DLLCALL truncsp(char* str)
 {
 	size_t i,len;
 
-	i=len=strlen(str);
-	while(i && isspace(str[i-1])) 
-		i--;
-	if(i!=len)
-		str[i]=0;	/* truncate */
-
+	if(str!=NULL) {
+		i=len=strlen(str);
+		while(i && isspace(str[i-1])) 
+			i--;
+		if(i!=len)
+			str[i]=0;	/* truncate */
+	}
 	return(str);
 }
 
@@ -554,12 +555,13 @@ char* DLLCALL truncnl(char* str)
 {
 	size_t i,len;
 
-	i=len=strlen(str);
-	while(i && (str[i-1]=='\r' || str[i-1]=='\n')) 
-		i--;
-	if(i!=len)
-		str[i]=0;	/* truncate */
-
+	if(str!=NULL) {
+		i=len=strlen(str);
+		while(i && (str[i-1]=='\r' || str[i-1]=='\n')) 
+			i--;
+		if(i!=len)
+			str[i]=0;	/* truncate */
+	}
 	return(str);
 }
 
