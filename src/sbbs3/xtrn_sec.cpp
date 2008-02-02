@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1684,7 +1684,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	else
 		SAFECOPY(name,useron.alias);
 
-	gettimeleft();
+	gettimeleft(false);
 	tleft=timeleft+(cfg.xtrn[xtrnnum]->textra*60);
 	if(cfg.xtrn[xtrnnum]->maxtime && tleft>(cfg.xtrn[xtrnnum]->maxtime*60))
 		tleft=(cfg.xtrn[xtrnnum]->maxtime*60);
