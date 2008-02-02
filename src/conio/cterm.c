@@ -445,10 +445,9 @@ void scrolldown(void)
 	char *buf;
 	int i,j;
 
-	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
-	gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,buf);
-	puttext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
+	movetext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,cterm.x,cterm.y+1);
 	j=0;
+	buf=(char *)alloca(cterm.width*2);
 	for(i=0;i<cterm.width;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
 			buf[j++]=0;
@@ -472,10 +471,9 @@ void scrollup(void)
 		}
 		gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,cterm.scrollback+(cterm.backpos-1)*cterm.width*2);
 	}
-	buf=(char *)alloca(cterm.width*(cterm.height-1)*2);
-	gettext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
-	puttext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,buf);
+	movetext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.x,cterm.y);
 	j=0;
+	buf=(char *)alloca(cterm.width*2);
 	for(i=0;i<cterm.width;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
 			buf[j++]=0;
@@ -495,11 +493,10 @@ void dellines(int lines)
 	if(lines<1)
 		return;
 	linestomove=cterm.height-wherey();
-	buf=(char *)alloca(cterm.width*(linestomove>lines?linestomove:lines)*2);
-	gettext(cterm.x,cterm.y+wherey()-1+lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,buf);
-	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-lines,buf);
+	movetext(cterm.x,cterm.y+wherey()-1+lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.x,cterm.y+wherey()-1);
 	j=0;
 	k=cterm.width*lines;
+	buf=(char *)alloca(k*2);
 	for(i=0;i<k;i++) {
 		if(cterm.emulation == CTERM_EMULATION_ATASCII)
 			buf[j++]=0;
@@ -818,14 +815,9 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						i=1;
 					if(i>cterm.height-wherey())
 						i=cterm.height-wherey();
-					if(i) {
-						p2=(char *)alloca((cterm.height-wherey()-i+1)*cterm.width*2);
-						gettext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,p2);
-						puttext(cterm.x,cterm.y+wherey()-1+i,cterm.x+cterm.width-1,cterm.y+cterm.height-1,p2);
-					}
-					else {
-						p2=(char *)alloca(cterm.width*2);
-					}
+					if(i)
+						movetext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,cterm.x,cterm.y+wherey()-1+i);
+					p2=(char *)alloca(cterm.width*2);
 					j=0;
 					for(k=0;k<cterm.width;k++) {
 						p2[j++]=' ';
@@ -1586,14 +1578,9 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 									dellines(1);
 									break;
 								case 157:	/* Insert Line */
-									if(cterm.height-wherey()) {
-										p=(char *)alloca((cterm.height-wherey())*cterm.width*2);
-										gettext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-2,p);
-										puttext(cterm.x,cterm.y+wherey(),cterm.x+cterm.width-1,cterm.y+cterm.height-1,p);
-									}
-									else {
-										p=(char *)alloca(cterm.width*2);
-									}
+									if(cterm.height-wherey())
+										movetext(cterm.x,cterm.y+wherey()-1,cterm.x+cterm.width-1,cterm.y+cterm.height-2,cterm.x,cterm.y+wherey());
+									p=(char *)alloca(cterm.width*2);
 									for(k=0;k<cterm.width;k++) {
 										p[k*2]=0;
 										p[k*2+1]=cterm.attr;

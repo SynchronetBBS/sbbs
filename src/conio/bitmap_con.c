@@ -125,7 +125,7 @@ int bitmap_init_mode(int mode, int *width, int *height)
 	}
 
 	/* Initialize the damaged array */
-	
+
 	newdamaged=(int *)malloc(sizeof(int)*vstat.rows);
 	if(newdamaged==NULL) {
 		pthread_mutex_unlock(&vstatlock);
@@ -210,6 +210,47 @@ end:
 /********************************************************/
 
 /* Called from main thread only (Passes Event) */
+
+int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
+{
+	int	direction=1;
+	int	cy;
+	int	sy;
+	int	destoffset;
+	int	sourcepos;
+	int width=ex-x+1;
+	int height=ey-y+1;
+
+	if(		   x<1
+			|| y<1
+			|| ex<1
+			|| ey<1
+			|| tox<1
+			|| toy<1
+			|| x>cio_textinfo.screenwidth
+			|| ex>cio_textinfo.screenwidth
+			|| tox>cio_textinfo.screenwidth
+			|| y>cio_textinfo.screenheight
+			|| ey>cio_textinfo.screenheight
+			|| toy>cio_textinfo.screenheight)
+		return(0);
+
+	if(toy > y)
+		direction=-1;
+
+	sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
+	destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
+
+	pthread_mutex_lock(&vstatlock);
+	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
+		damaged[toy+cy]=1;
+		sourcepos=((y-1)+cy)*cio_textinfo.screenwidth+(x-1);
+		memmove(&(vstat.vmem[sourcepos+destoffset]), &(vstat.vmem[sourcepos]), sizeof(vstat.vmem[0])*width);
+	}
+	pthread_mutex_unlock(&vstatlock);
+	return(1);
+}
+
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 {
 	int x,y;
@@ -675,6 +716,7 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 						) {
 					last_vmem[pos] = vstat.vmem[pos];
 					bitmap_draw_one_char(sx+x,sy+y);
+
 					if(!redraw_cursor && sx+x==vstat.curs_col && sy+y==vstat.curs_row)
 						redraw_cursor=1;
 
@@ -703,7 +745,6 @@ static int update_rect(int sx, int sy, int width, int height, int force)
 						send_rectangle(last_rect.x, last_rect.y, last_rect.width, last_rect.height, FALSE);
 						last_rect_used=0;
 					}
-
 					lastcharupdated=0;
 				}
 				pos++;

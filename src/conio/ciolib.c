@@ -128,6 +128,7 @@ int try_sdl_init(int mode)
 		cio_api.setfont=bitmap_setfont;
 		cio_api.getfont=bitmap_getfont;
 		cio_api.loadfont=bitmap_loadfont;
+		cio_api.movetext=bitmap_movetext;
 
 		cio_api.kbhit=sdl_kbhit;
 		cio_api.getch=sdl_getch;
@@ -166,6 +167,7 @@ int try_x_init(int mode)
 		cio_api.getfont=bitmap_getfont;
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.beep=x_beep;
+		cio_api.movetext=bitmap_movetext;
 
 		cio_api.kbhit=x_kbhit;
 		cio_api.getch=x_getch;
