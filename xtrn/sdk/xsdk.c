@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -222,7 +222,7 @@
 WSADATA WSAData;		// WinSock data
 #endif
 
-char *xsdk_ver="3.20";
+char *xsdk_ver="3.21";
 ulong xsdk_mode=XSDK_MODE_NOCONSOLE;
 
 /****************************************************************************/
@@ -434,6 +434,15 @@ void outchar(char ch)
 		bpause(); 
 	}
 	lastch=ch;
+}
+
+void flushoutput(void)
+{
+#ifndef __16BIT__
+	int i;
+	for(i=0;i<10000 && outbuftop!=outbufbot;i++)
+		mswait(1);
+#endif
 }
 
 /****************************************************************************/
@@ -659,6 +668,8 @@ char inkey(long mode)
 		sec=i-((min+(hour*60))*60);
 		bprintf("\r\nTime Used : %02u:%02u:%02u",hour,min,sec);
 		tleft=timeleft-(now-starttime);
+		if(tleft<0)
+			tleft=0;
 		hour=(tleft/60)/60;
 		min=(tleft/60)-(hour*60);
 		sec=tleft-((min+(hour*60))*60);
@@ -722,14 +733,18 @@ char getkey(long mode)
 		}
 		checktimeleft();
 
-		tleft=timeleft-(now-starttime);
-		if((tleft/60)<(5-timeleft_warn)) {	/* Running out of time warning */
-			timeleft_warn=5-(tleft/60);
-			SAVELINE;
-			bprintf("\1n\1h\r\n\7\r\nYou only have \1r\1i%u\1n\1h minute%s "
-				"left.\r\n\r\n"
-				,((ushort)tleft/60)+1,(tleft/60) ? "s" : "");
-			RESTORELINE; 
+		if(!strchr(user_exempt,'T')) {
+			tleft=timeleft-(now-starttime);
+			if(tleft<0)
+				tleft=0;
+			if((tleft/60)<(5-timeleft_warn)) {	/* Running out of time warning */
+				timeleft_warn=5-(tleft/60);
+				SAVELINE;
+				bprintf("\1n\1h\r\n\7\r\nYou only have \1r\1i%u\1n\1h minute%s "
+					"left.\r\n\r\n"
+					,((ushort)tleft/60)+1,(tleft/60) ? "s" : "");
+				RESTORELINE; 
+			}
 		}
 
 		if(now-timeout>=(time_t)sec_warn && !warn)		/* Inactivity warning */
@@ -1961,6 +1976,8 @@ void initdata(void)
 #endif
 
 	fclose(stream);
+
+	atexit(flushoutput);
 
 	sprintf(str,"%sINTRSBBS.DAT",node_dir);     /* Shrank to run! */
 	if(fexist(str)) {
