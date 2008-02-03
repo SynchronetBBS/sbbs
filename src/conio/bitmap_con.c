@@ -243,12 +243,39 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 
 	pthread_mutex_lock(&vstatlock);
 	for(cy=(direction==-1?(height-1):0); cy<height && cy>=0; cy+=direction) {
-		damaged[toy+cy]=1;
+		damaged[toy+cy-1]=1;
 		sourcepos=((y-1)+cy)*cio_textinfo.screenwidth+(x-1);
 		memmove(&(vstat.vmem[sourcepos+destoffset]), &(vstat.vmem[sourcepos]), sizeof(vstat.vmem[0])*width);
 	}
 	pthread_mutex_unlock(&vstatlock);
 	return(1);
+}
+
+void bitmap_clreol(void)
+{
+	int pos,x;
+	WORD fill=(cio_textinfo.attribute<<8)|' ';
+
+	pos=(cio_textinfo.cury+cio_textinfo.wintop-2)*cio_textinfo.screenwidth;
+	pthread_mutex_lock(&vstatlock);
+	damaged[cio_textinfo.cury-1]=1;
+	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++)
+		vstat.vmem[pos+x]=fill;
+	pthread_mutex_unlock(&vstatlock);
+}
+
+void bitmap_clrscr(void)
+{
+	int x,y;
+	WORD fill=(cio_textinfo.attribute<<8)|' ';
+
+	pthread_mutex_lock(&vstatlock);
+	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
+		damaged[y]=1;
+		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright; x++)
+			vstat.vmem[y*cio_textinfo.screenwidth+x]=fill;
+	}
+	pthread_mutex_unlock(&vstatlock);
 }
 
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)

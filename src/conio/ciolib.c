@@ -129,6 +129,8 @@ int try_sdl_init(int mode)
 		cio_api.getfont=bitmap_getfont;
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.clreol=bitmap_clreol;
+		cio_api.clrscr=bitmap_clrscr;
 
 		cio_api.kbhit=sdl_kbhit;
 		cio_api.getch=sdl_getch;
@@ -168,6 +170,8 @@ int try_x_init(int mode)
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.beep=x_beep;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.clreol=bitmap_clreol;
+		cio_api.clrscr=bitmap_clrscr;
 
 		cio_api.kbhit=x_kbhit;
 		cio_api.getch=x_getch;
