@@ -44,6 +44,7 @@ pthread_mutex_t		vstatlock;
 pthread_mutex_t		screenlock;
 static struct bitmap_callbacks callbacks;
 static unsigned char *font;
+static unsigned char space=' ';
 int force_redraws=0;
 
 struct rectangle {
@@ -254,7 +255,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 void bitmap_clreol(void)
 {
 	int pos,x;
-	WORD fill=(cio_textinfo.attribute<<8)|' ';
+	WORD fill=(cio_textinfo.attribute<<8)|space;
 
 	pos=(cio_textinfo.cury+cio_textinfo.wintop-2)*cio_textinfo.screenwidth;
 	pthread_mutex_lock(&vstatlock);
@@ -267,7 +268,7 @@ void bitmap_clreol(void)
 void bitmap_clrscr(void)
 {
 	int x,y;
-	WORD fill=(cio_textinfo.attribute<<8)|' ';
+	WORD fill=(cio_textinfo.attribute<<8)|space;
 
 	pthread_mutex_lock(&vstatlock);
 	for(y=cio_textinfo.wintop-1; y<cio_textinfo.winbottom; y++) {
@@ -425,6 +426,10 @@ int bitmap_setfont(int font, int force)
 	if(changemode && newmode==-1)
 		goto error_return;
 	current_font=font;
+	if(font==36 /* ATARI */)
+		space=0;
+	else
+		space=' ';
 	pthread_mutex_unlock(&vstatlock);
 
 	if(changemode) {
@@ -449,12 +454,12 @@ int bitmap_setfont(int font, int force)
 							*(new++)=*(old++);
 						}
 						else {
-							*(new++)=' ';
+							*(new++)=space;
 							*(new++)=attr;
 						}
 					}
 					else {
-						*(new++)=' ';
+						*(new++)=space;
 						*(new++)=attr;
 					}
 				}
