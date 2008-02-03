@@ -826,7 +826,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			i+=2;
 		if(i>=3 && (item->conn_type==CONN_TYPE_MODEM || item->conn_type==CONN_TYPE_SERIAL
 #ifdef __unix__
-				|| item->conn_type!=CONN_TYPE_SHELL
+				|| item->conn_type==CONN_TYPE_SHELL
 #endif
 				))
 			i++;	/* no port number */
