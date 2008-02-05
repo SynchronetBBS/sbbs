@@ -622,17 +622,17 @@ function Player_gamble()
 		if(realgold != 0 && this.gold >= realgold && realgold <= 25000 && realgold >= 1) {
 			okea=random(99)+1;
 			if(okea <= 3) {
-				realgold *= 100;
+				realgold *= 10;
 				this.gold += realgold;
 				console.writeln("You shot all the targets and win "+realgold+" Steel pieces!");
 			}
 			else if (okea <= 15) {
-				realgold *= 10;
+				realgold *= 4;
 				this.gold += realgold;
 				console.writeln("You shot 50% of the targets and win "+realgold+" Steel pieces!");
 			}
 			else if (okea <= 30) {
-				realgold *= 3;
+				realgold *= 2;
 				this.gold += realgold;
 				console.writeln("You shot 25% of the targets and win "+realgold+" Steel pieces!");
 			}
