@@ -245,7 +245,10 @@ BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
 		return(inbuf);
 	}
 
-	outlen=first_iac-inbuf;
+	if(first_iac!=NULL && first_iac < first_cr)
+		outlen=first_iac-inbuf;
+	else
+		outlen=first_cr-inbuf;
 	memcpy(outbuf, inbuf, outlen);
 
     for(i=outlen;i<inlen;i++) {
