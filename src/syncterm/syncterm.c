@@ -1352,6 +1352,8 @@ int screen_to_ciolib(int screen)
 			return(C128_80X25);
 		case SCREEN_MODE_ATARI:
 			return(ATARI_40X24);
+		case SCREEN_MODE_ATARI_XEP80:
+			return(ATARI_80X25);
 	}
 	gettextinfo(&ti);
 	return(ti.currmode);
@@ -1392,6 +1394,8 @@ int ciolib_to_screen(int ciolib)
 			return(SCREEN_MODE_C128_80);
 		case ATARI_40X24 :
 			return(SCREEN_MODE_ATARI);
+		case ATARI_80X25:
+			return(SCREEN_MODE_ATARI_XEP80);
 	}
 	return(SCREEN_MODE_CURRENT);
 }

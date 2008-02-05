@@ -171,7 +171,7 @@ int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 
 char *sort_orders[]={"BBS Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
 
-char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", NULL};
+char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", "Atari XEP80", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 char *log_level_desc[]={"None", "Alerts", "Critical Errors", "Errors", "Warnings", "Notices", "Normal", "All (Debug)", NULL};
 
@@ -237,6 +237,7 @@ void viewofflinescroll(void)
 			setfont(35,TRUE);
 			break;
 		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
 			setfont(36,TRUE);
 			break;
 	}
@@ -257,6 +258,7 @@ void viewofflinescroll(void)
 				,scrollback_buf+(scrollback_cols*2*top));
 		switch(ciolib_to_screen(scrollback_mode)) {
 		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
 			cputs("3crollback");
 			break;
 		case SCREEN_MODE_C64:
@@ -270,6 +272,7 @@ void viewofflinescroll(void)
 		gotoxy(scrollback_cols-9,1);
 		switch(ciolib_to_screen(scrollback_mode)) {
 		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
 			cputs("3crollback");
 			break;
 		case SCREEN_MODE_C64:
@@ -962,6 +965,12 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
 						}
 						if(item->screen_mode == SCREEN_MODE_ATARI) {
+							strcpy(item->font,font_names[36]);
+							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
+							item->nostatus = 1;
+							iniSetBool(&inifile,itemname,"NoStatus",item->nostatus,&ini_style);
+						}
+						if(item->screen_mode == SCREEN_MODE_ATARI_XEP80) {
 							strcpy(item->font,font_names[36]);
 							iniSetString(&inifile,itemname,"Font",item->font,&ini_style);
 							item->nostatus = 1;

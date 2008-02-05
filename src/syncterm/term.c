@@ -1745,6 +1745,7 @@ BOOL doterm(struct bbslist *bbs)
 			emulation = CTERM_EMULATION_PETASCII;
 			break;
 		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
 			emulation = CTERM_EMULATION_ATASCII;
 			break;
 	}

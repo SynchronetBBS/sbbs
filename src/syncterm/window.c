@@ -18,6 +18,7 @@ int drawwin(void)
 
 	switch(ciolib_to_screen(txtinfo.currmode)) {
 		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
 			strcpy(str,"3ync4%2- ");
 			break;
 		case SCREEN_MODE_C64:

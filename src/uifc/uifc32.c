@@ -237,7 +237,7 @@ int uifcini32(uifcapi_t* uifcapi)
             || txtinfo.currmode==MONO43 || txtinfo.currmode==BW40X43 || txtinfo.currmode==BW80X43
             || txtinfo.currmode==MONO50 || txtinfo.currmode==BW40X50 || txtinfo.currmode==BW80X50
             || txtinfo.currmode==MONO60 || txtinfo.currmode==BW40X60 || txtinfo.currmode==BW80X60
-			|| txtinfo.currmode==ATARI_40X24))
+			|| txtinfo.currmode==ATARI_40X24 || txtinfo.currmode==ATARI_80X25))
 	{
         api->bclr=BLACK;
         api->hclr=WHITE;
