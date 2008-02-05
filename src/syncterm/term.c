@@ -2025,6 +2025,7 @@ BOOL doterm(struct bbslist *bbs)
 						if(p) {
 							gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							show_bbslist(bbs->id, TRUE);
+							uifcbail();
 							puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							free(p);
 						}
