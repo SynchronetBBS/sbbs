@@ -162,6 +162,12 @@ static tODKeySequence ODaKeySequences[] =
    {"\033Or", ANSI_KEY_F8},
    {"\033Op", ANSI_KEY_F9},
 
+   /* ECMA 048-specific control sequences. */
+   {"\033[V", ANSI_KEY_PGUP},
+   {"\033[U", ANSI_KEY_PGDN},
+   {"\033[@", ANSI_KEY_INSERT},
+   
+   
    /* PROCOMM-specific control sequences (non-keypad alternatives). */
    {"\033OA", ANSI_KEY_UP},
    {"\033OB", ANSI_KEY_DOWN},
