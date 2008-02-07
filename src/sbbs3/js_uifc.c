@@ -495,8 +495,8 @@ static JSClass js_uifc_class = {
 	,JS_PropertyStub		/* delProperty	*/
 	,js_get					/* getProperty	*/
 	,js_set					/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
+	,js_uifc_enumerate		/* enumerate	*/
+	,js_uifc_resolve		/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,js_finalize			/* finalize		*/
 };
