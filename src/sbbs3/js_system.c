@@ -1390,7 +1390,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},		
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
 	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
-		"defaults to current date if <i>time</i> not specified")
+		"defaults to current date if <i>time</i> not specified. "
+		"If <i>time</i> is a string in the appropriate format, returns the time_t.")
 	,310
 	},		
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
