@@ -499,6 +499,10 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				xm->errors++;
 				lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
 					,xm->errors,ftell(fp)-xm->block_size);
+				if(xm->errors==3 && block_num==1 && xm->block_size>128) {
+					lprintf(xm,LOG_NOTICE,"Falling back to 128 byte blocks");
+					xm->block_size=128;
+				}
 			} else {
 				block_num++; 
 				sent_bytes+=rd;
