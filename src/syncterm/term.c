@@ -981,14 +981,15 @@ static BOOL xmodem_check_abort(void* vp)
 /****************************************************************************/
 /* Returns the number of blocks required to send len bytes					*/
 /****************************************************************************/
-unsigned num_blocks(ulong len, unsigned block_size)
+unsigned num_blocks(unsigned curr_block, ulong offset, ulong len, unsigned block_size)
 {
 	ulong blocks;
 
+	len-=offset;
 	blocks=len/block_size;
 	if(len%block_size)
 		blocks++;
-	return(blocks);
+	return(curr_block+blocks);
 }
 
 #if defined(__BORLANDC__)
@@ -1025,7 +1026,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, ulong offset, ulong fsize
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
 		if((*(xm->mode))&SEND) {
-			total_blocks=num_blocks(fsize,xm->block_size);
+			total_blocks=num_blocks(block_num,offset,fsize,xm->block_size);
 			cprintf("Block (%lu%s): %lu/%lu  Byte: %lu"
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
 				,xm->block_size%1024L ? "" : "K"
