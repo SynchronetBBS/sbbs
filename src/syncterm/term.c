@@ -1124,7 +1124,7 @@ static int recv_nak(void *cbdata, unsigned timeout)
 	xmodem_t	*xm=(xmodem_t *)cbdata;
 	
 	xm->recv_byte=recv_byte;
-	return(6);
+	return(NAK);
 }
 
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
