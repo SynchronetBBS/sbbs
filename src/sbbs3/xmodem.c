@@ -491,8 +491,10 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			if(!sent_header) {
 				if(xm->block_size>128) {
 					if((long)(sent_bytes+xm->block_size) > st.st_size) {
-						lprintf(xm,LOG_INFO,"Falling back to 128 byte blocks for end of file");
-						xm->block_size=128;
+						if((long)(sent_bytes+xm->block_size-128) >= st.st_size) {
+							lprintf(xm,LOG_INFO,"Falling back to 128 byte blocks for end of file");
+							xm->block_size=128;
+						}
 					}
 				}
 			}
