@@ -1235,47 +1235,74 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
 					mode&=~CRC;
 				xmodem_put_nak(&xm, /* expected_block: */ 0);
-				if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == 0) {
+				i=xmodem_get_block(&xm, block, /* expected_block: */ 0);
+				if(i==0) {
 					send_byte(NULL,ACK,10);
-					break; 
+					break;
+				}
+				if(i==NOINP) {
+					if(mode&GMODE)
+						mode &= ~GMODE;
+					else if(mode&CRC)
+						mode &= ~CRC;
+					lprintf(LOG_WARNING,"Falling back to %s", 
+						(mode&CRC)?"CRC-16":"Checksum");
+				}
+				if(i==NOT_YMODEM && errors) {
+					lprintf(LOG_WARNING,"Falling back to XModem");
+					mode &= ~YMODEM;
+					mode |= XMODEM|CRC;
+					erase_transfer_window();
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"XMODEM Filename",fname,sizeof(fname),0)==-1) {
+						xmodem_cancel(&xm);
+						goto end;
+					}
+					draw_transfer_window("XMODEM Download");
+					if(isfullpath(fname))
+						SAFECOPY(str,fname);
+					else
+						sprintf(str,"%s/%s",bbs->dldir,fname);
+					file_bytes=file_bytes_left=0x7fffffff;
+					break;
 				}
 			}
 			if(errors>=xm.max_errors || xm.cancelled) {
-				lprintf(LOG_ERR,"Error fetching YMODEM header block");
 				xmodem_cancel(&xm);
-				goto end; 
+				goto end;
 			}
-			if(!block[0]) {
-				lprintf(LOG_INFO,"Received YMODEM termination block");
-				goto end; 
+			if(i!=NOT_YMODEM) {
+				if(!block[0]) {
+					lprintf(LOG_INFO,"Received YMODEM termination block");
+					goto end; 
+				}
+				file_bytes=ftime=total_files=total_bytes=0;
+				i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
+					,&file_bytes			/* file size (decimal) */
+					,&tmpftime 				/* file time (octal unix format) */
+					,&fmode 				/* file mode (not used) */
+					,&serial_num			/* program serial number */
+					,&total_files			/* remaining files to be sent */
+					,&total_bytes			/* remaining bytes to be sent */
+					);
+				ftime=tmpftime;
+				lprintf(LOG_DEBUG,"YMODEM header (%u fields): %s", i, block+strlen(block)+1);
+				SAFECOPY(fname,block);
+
+				if(!file_bytes)
+					file_bytes=0x7fffffff;
+				file_bytes_left=file_bytes;
+				if(!total_files)
+					total_files=1;
+				if(total_bytes<file_bytes)
+					total_bytes=file_bytes;
+
+				lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
+
+				sprintf(str,"%s/%s",bbs->dldir,getfname(fname));
+				lprintf(LOG_INFO,"File size: %lu bytes\n", file_bytes);
+				if(total_files>1)
+					lprintf(LOG_INFO,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
 			}
-			file_bytes=ftime=total_files=total_bytes=0;
-			i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
-				,&file_bytes			/* file size (decimal) */
-				,&tmpftime 				/* file time (octal unix format) */
-				,&fmode 				/* file mode (not used) */
-				,&serial_num			/* program serial number */
-				,&total_files			/* remaining files to be sent */
-				,&total_bytes			/* remaining bytes to be sent */
-				);
-			ftime=tmpftime;
-			lprintf(LOG_DEBUG,"YMODEM header (%u fields): %s", i, block+strlen(block)+1);
-			SAFECOPY(fname,block);
-
-			if(!file_bytes)
-				file_bytes=0x7fffffff;
-			file_bytes_left=file_bytes;
-			if(!total_files)
-				total_files=1;
-			if(total_bytes<file_bytes)
-				total_bytes=file_bytes;
-
-			lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
-
-			sprintf(str,"%s/%s",bbs->dldir,getfname(fname));
-			lprintf(LOG_INFO,"File size: %lu bytes\n", file_bytes);
-			if(total_files>1)
-				lprintf(LOG_INFO,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
 		}
 
 		lprintf(LOG_DEBUG,"Receiving: %.64s ",str);
@@ -1328,6 +1355,14 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				if(i==CAN) {		/* Cancel */
 					xm.cancelled=TRUE;
 					break;
+				}
+				if(i==NOINP) {		/* Timeout */
+					if(mode&GMODE)
+						mode &= ~GMODE;
+					else if(mode&CRC)
+						mode &= ~CRC;
+					lprintf(LOG_WARNING,"Falling back to %s", 
+						(mode&CRC)?"CRC-16":"Checksum");
 				}
 
 				if(mode&GMODE) {
