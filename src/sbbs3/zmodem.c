@@ -577,7 +577,7 @@ int zmodem_send_zeof(zmodem_t* zm)
 int zmodem_recv_raw(zmodem_t* zm)
 {
 	int c;
-	int attempt;
+	unsigned attempt;
 
 	for(attempt=0;attempt<=zm->recv_timeout;attempt++) {
 		if((c=zm->recv_byte(zm->cbdata,1 /* second timeout */)) >= 0)
@@ -1951,7 +1951,7 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 {
 	int			i;
 	int			mode=0;
-	ulong		serial=-1UL;
+	long		serial=-1L;
 	ulong		tmptime;
 
 	SAFECOPY(zm->current_file_name,getfname(zm->rx_data_subpacket));
