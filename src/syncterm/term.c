@@ -2101,7 +2101,7 @@ BOOL doterm(struct bbslist *bbs)
 						p=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 						if(p) {
 							gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
-							show_bbslist(bbs->id, TRUE);
+							show_bbslist(bbs->name, TRUE);
 							uifcbail();
 							puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							free(p);

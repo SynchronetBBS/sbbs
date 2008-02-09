@@ -425,7 +425,7 @@ int listcmp(const void *aptr, const void *bptr)
 	return(0);
 }
 
-void sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, int id)  {
+void sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *current)  {
 	int i;
 #if 0
 	struct bbslist *tmp;
@@ -461,9 +461,9 @@ void sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, int id
 #else
 	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
 #endif
-	if(cur && id>=0) {
+	if(cur && current) {
 		for(i=0; i<*listcount; i++) {
-			if(list[i]->id==id) {
+			if(strcmp(list[i]->name,current)==0) {
 				*cur=i;
 				if(bar)
 					*bar=i;
@@ -506,7 +506,7 @@ void write_sortorder(void)
 	strListFree(&inicontents);
 }
 
-void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, int id)
+void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *current)
 {
 	char	opt[sizeof(sort_order)/sizeof(struct sort_order_info)][80];
 	char	*opts[sizeof(sort_order)/sizeof(struct sort_order_info)+1];
@@ -588,7 +588,7 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, i
 
 	/* Write back to the .ini file */
 	write_sortorder();
-	sort_list(list, listcount, ocur, obar, id);
+	sort_list(list, listcount, ocur, obar, current);
 }
 
 void free_list(struct bbslist **list, int listcount)
@@ -744,11 +744,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 	str_list_t	inifile;
 	char	tmp[LIST_NAME_MAX+1];
 	char	*itemname;
+	char	*YesNo[3]={"Yes","No",""};
 
 	for(i=0;i<18;i++)		/* <- Beware of magic number! */
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
-		char	*YesNo[3]={"Yes","No",""};
 		uifc.helpbuf=	"`Copy from system BBS list`\n\n"
 						"This BBS was loaded from the system BBS list.  In order to edit it, it\n"
 						"must be copied into your personal BBS list.\n";
@@ -835,6 +835,16 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			i++;	/* no port number */
 		switch(i) {
 			case -1:
+				if((!isdefault) && (itemname!=NULL) && (itemname[0]==0)) {
+					uifc.helpbuf=	"`Cancel Save`\n\n"
+									"This BBS has no name and can therefore not be saved.\n"
+									"Selecting `No` will return to editing mode.\n";
+					i=0;
+					if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Cancel Save?",YesNo)!=0)
+						break;
+					strListFree(&inifile);
+					return(0);
+				}
 				if(!safe_mode) {
 					if((listfile=fopen(listpath,"w"))!=NULL) {
 						iniWriteFile(listfile,inifile);
@@ -844,20 +854,27 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				strListFree(&inifile);
 				return(changed);
 			case 0:
-				uifc.helpbuf=	"`Directory Entry Name`\n\n"
-								"Enter the name of the entry as it is to appear in the directory.";
-				strcpy(tmp,itemname);
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT);
-				if(stricmp(tmp,itemname) && list_name_check(list, tmp, NULL, FALSE)) {
-					uifc.helpbuf=	"`Entry Name Already Exists`\n\n"
-									"An entry with that name already exists in the directory.\n"
-									"Please choose a unique name.\n";
-					uifc.msg("Entry Name Already Exists!");
-				}
-				else {
-					iniRenameSection(&inifile,itemname,tmp);
-					strcpy(itemname, tmp);
-				}
+				do {
+					uifc.helpbuf=	"`Directory Entry Name`\n\n"
+									"Enter the name of the entry as it is to appear in the directory.";
+					strcpy(tmp,itemname);
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT);
+					if(stricmp(tmp,itemname) && list_name_check(list, tmp, NULL, FALSE)) {
+						uifc.helpbuf=	"`Entry Name Already Exists`\n\n"
+										"An entry with that name already exists in the directory.\n"
+										"Please choose a unique name.\n";
+						uifc.msg("Entry Name Already Exists!");
+					}
+					else {
+						iniRenameSection(&inifile,itemname,tmp);
+						strcpy(itemname, tmp);
+					}
+					if(itemname[0]==0) {
+						uifc.helpbuf=	"`Can Not Use and Empty Name`\n\n"
+										"Entry names can not be empty.  Please enter an entry name.\n";
+						uifc.msg("Can not use an empty name");
+					}
+				} while(itemname[0]==0);
 				break;
 			case 1:
 				uifc.helpbuf=address_help;
@@ -1414,7 +1431,7 @@ write_ini:
 	}
 }
 
-void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount, int *cur, int *bar, int id)
+void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaults, char *listpath, size_t listpathsize, char *shared_list, size_t shared_listsize, int *listcount, int *cur, int *bar, char *current)
 {
 	free_list(&list[0],*listcount);
 	*listcount=0;
@@ -1427,14 +1444,14 @@ void load_bbslist(struct bbslist **list, size_t listsize, struct bbslist *defaul
 	/* System BBS List */
 	if(stricmp(shared_list, listpath)) /* don't read the same list twice */
 		read_list(shared_list, list, defaults, listcount, SYSTEM_BBSLIST);
-	sort_list(list, listcount, cur, bar, id);
+	sort_list(list, listcount, cur, bar, current);
 }
 
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist *show_bbslist(int id, int connected)
+struct bbslist *show_bbslist(char *current, int connected)
 {
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -1479,7 +1496,7 @@ struct bbslist *show_bbslist(int id, int connected)
 
 	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
-	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, id);
+	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, current);
 
 	uifc.helpbuf="Help Button Hack";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
@@ -1534,7 +1551,7 @@ struct bbslist *show_bbslist(int id, int connected)
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
-							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
+							edit_sorting(list,&listcount, &opt, &bar, list[opt]?list[opt]->name:NULL);
 							break;
 						case -2-0x3000:	/* ALT-B - Scrollback */
 							if(!connected) {
@@ -1663,7 +1680,7 @@ struct bbslist *show_bbslist(int id, int connected)
 							}
 							else {
 								add_bbs(listpath,list[listcount-1]);
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[listcount-1]->id);
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[listcount-1]->name);
 								oldopt=-1;
 							}
 							break;
@@ -1702,7 +1719,7 @@ struct bbslist *show_bbslist(int id, int connected)
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
 								break;
 							del_bbs(listpath,list[opt]);
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, NULL, NULL, -1);
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, NULL, NULL, NULL);
 							oldopt=-1;
 							break;
 						case MSK_EDIT:
@@ -1714,7 +1731,7 @@ struct bbslist *show_bbslist(int id, int connected)
 								break;
 							}
 							if(edit_list(list, list[opt],listpath,FALSE)) {
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
+								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->name:NULL);
 								oldopt=-1;
 							}
 							break;
@@ -1729,7 +1746,7 @@ struct bbslist *show_bbslist(int id, int connected)
 							uifc.msg("Cannot edit list in safe mode");
 						}
 						else if(edit_list(list, list[opt],listpath,FALSE)) {
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->id:-1);
+							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?list[opt]->name:NULL);
 							oldopt=-1;
 						}
 					}

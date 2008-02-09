@@ -1017,6 +1017,7 @@ int main(int argc, char **argv)
 	int		conn_type=CONN_TYPE_TELNET;
 	BOOL	dont_set_mode=FALSE;
 	BOOL	override_conn=FALSE;
+	char	*last_bbs=NULL;
 
 	/* Cryptlib initialization MUST be done before ciolib init */
 	if(!crypt_loaded)
@@ -1153,6 +1154,7 @@ int main(int argc, char **argv)
 			uifcmsg("Unable to allocate memory","The system was unable to allocate memory.");
 			return(1);
 		}
+		memset(bbs, 0, sizeof(struct bbslist));
 		if((listfile=fopen(listpath,"r"))==NULL)
 			parse_url(url, bbs, conn_type, TRUE);
 		else {
@@ -1176,8 +1178,9 @@ int main(int argc, char **argv)
 		return(1);
 
 	load_font_files();
-	while(bbs!=NULL || (bbs=show_bbslist(bbs?bbs->id:-1, FALSE))!=NULL) {
+	while(bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
+		FREE_AND_NULL(last_bbs);
 		if(!conn_connect(bbs)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
@@ -1249,6 +1252,7 @@ int main(int argc, char **argv)
 							case 0:	/* Yes */
 								edit_list(NULL, bbs,listpath,FALSE);
 								add_bbs(listpath,bbs);
+								last_bbs=strdup(bbs->name);
 								break;
 							default: /* ESC/No */
 								break;
@@ -1260,6 +1264,8 @@ int main(int argc, char **argv)
 			bbs=NULL;
 			break;
 		}
+		else
+			last_bbs=strdup(bbs->name);
 		bbs=NULL;
 	}
 	uifcbail();
