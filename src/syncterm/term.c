@@ -1180,7 +1180,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	/* The better to -Wunused you with my dear! */
 	char	str[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
-	int		i;
+	int		i=0;
 	int		fnum=0;
 	uint	errors;
 	uint	total_files=0;
@@ -1194,6 +1194,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	ulong	total_bytes=0;
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime;
+	BOOL	xmodem_fallback;
 
 	if(safe_mode)
 		return;
@@ -1248,9 +1249,9 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_WARNING,"Falling back to %s", 
 						(mode&CRC)?"CRC-16":"Checksum");
 				}
-				if(i==NOT_YMODEM && errors) {
-					lprintf(LOG_WARNING,"Falling back to XModem");
-					mode &= ~(YMODEM|GMODE);
+				if(i==NOT_YMODEM) {
+					lprintf(LOG_WARNING,"Falling back to XMODEM");
+					mode &= ~(YMODEM);
 					mode |= XMODEM|CRC;
 					erase_transfer_window();
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"XMODEM Filename",fname,sizeof(fname),0)==-1) {
@@ -1258,6 +1259,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 						goto end;
 					}
 					draw_transfer_window("XMODEM Download");
+					lprintf(LOG_WARNING,"Falling back to XMODEM");
 					if(isfullpath(fname))
 						SAFECOPY(str,fname);
 					else
@@ -1336,7 +1338,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		errors=0;
 		block_num=1;
-		xmodem_put_nak(&xm, block_num);
+		if(i!=NOT_YMODEM)
+			xmodem_put_nak(&xm, block_num);
 		while(is_connected(NULL)) {
 			xmodem_progress(&xm,block_num,ftell(fp),file_bytes,startfile);
 			if(xm.is_cancelled(&xm)) {
@@ -1344,7 +1347,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				xmodem_cancel(&xm);
 				goto end; 
 			}
-			i=xmodem_get_block(&xm, block, block_num);
+			if(i==NOT_YMODEM)
+				i=0;
+			else
+				i=xmodem_get_block(&xm, block, block_num);
 
 			if(i!=0) {
 				if(i==EOT)	{		/* end of transfer */
