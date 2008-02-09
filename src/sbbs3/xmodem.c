@@ -231,6 +231,20 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			break; 
 		}
 
+		if((*xm->mode)&CRC) {
+			if(crc!=calc_crc) {
+				lprintf(xm,LOG_WARNING,"Block %u: CRC ERROR", block_num); 
+				break;
+			}
+		}
+		else	/* CHKSUM */
+		{
+			if(chksum!=calc_chksum) {
+				lprintf(xm,LOG_WARNING,"Block %u: CHECKSUM ERROR", block_num); 
+				break;
+			}
+		}
+
 		if(block_num!=(uchar)(expected_block_num&0xff)) {
 			lprintf(xm,LOG_WARNING,"Block number error (%u received, expected %u)"
 				,block_num,expected_block_num&0xff);
@@ -241,19 +255,6 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			break; 
 		}
 
-		if((*xm->mode)&CRC) {
-			if(crc!=calc_crc) {
-				lprintf(xm,LOG_WARNING,"Block %u: CRC ERROR", expected_block_num); 
-				break;
-			}
-		}
-		else	/* CHKSUM */
-		{	
-			if(chksum!=calc_chksum) {
-				lprintf(xm,LOG_WARNING,"Block %u: CHECKSUM ERROR", expected_block_num); 
-				break;
-			}
-		}
 		return(0);	/* Success */
 	}
 
