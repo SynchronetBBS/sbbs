@@ -528,11 +528,11 @@ void erase_transfer_window(void) {
 void ascii_upload(FILE *fp);
 #define XMODEM_128B		(1<<10)	/* Use 128 byte block size (ick!) */
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
-void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode);
+void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
 void zmodem_download(struct bbslist *bbs);
 
-void begin_upload(struct bbslist *bbs, BOOL autozm)
+void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 {
 	char	str[MAX_PATH*2+1];
 	char	path[MAX_PATH+1];
@@ -591,10 +591,10 @@ void begin_upload(struct bbslist *bbs, BOOL autozm)
 				zmodem_upload(bbs, fp, path);
 				break;
 			case 1:
-				xmodem_upload(bbs, fp, path, YMODEM|SEND);
+				xmodem_upload(bbs, fp, path, YMODEM|SEND, lastch);
 				break;
 			case 2:
-				xmodem_upload(bbs, fp, path, XMODEM|SEND);
+				xmodem_upload(bbs, fp, path, XMODEM|SEND, lastch);
 				break;
 			case 3:
 				ascii_upload(fp);
@@ -1103,7 +1103,31 @@ void xmodem_progress(void* cbdata, unsigned block_num, ulong offset, ulong fsize
 	}
 }
 
-void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode)
+static int recv_g(void *cbdata, unsigned timeout)
+{
+	xmodem_t	*xm=(xmodem_t *)cbdata;
+	
+	xm->recv_byte=recv_byte;
+	return('G');
+}
+
+static int recv_c(void *cbdata, unsigned timeout)
+{
+	xmodem_t	*xm=(xmodem_t *)cbdata;
+	
+	xm->recv_byte=recv_byte;
+	return('C');
+}
+
+static int recv_nak(void *cbdata, unsigned timeout)
+{
+	xmodem_t	*xm=(xmodem_t *)cbdata;
+	
+	xm->recv_byte=recv_byte;
+	return(6);
+}
+
+void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 {
 	xmodem_t	xm;
 	ulong		fsize;
@@ -1119,6 +1143,19 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode)
 		,recv_byte
 		,is_connected
 		,xmodem_check_abort);
+	if(!data_waiting(&xm, 0)) {
+		switch(lastch) {
+			case 'G':
+				xm.recv_byte=recv_g;
+				break;
+			case 'C':
+				xm.recv_byte=recv_c;
+				break;
+			case NAK:
+				xm.recv_byte=recv_nak;
+				break;
+		}
+	}
 
 	if(mode & XMODEM_128B)
 		xm.block_size=128;
@@ -1220,7 +1257,6 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,recv_byte
 		,is_connected
 		,xmodem_check_abort);
-
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
 			if(isfullpath(path))
@@ -1952,7 +1988,7 @@ BOOL doterm(struct bbslist *bbs)
 									if(!strcmp(zrqbuf, zrqinit))
 										zmodem_download(bbs);
 									else
-										begin_upload(bbs, TRUE);
+										begin_upload(bbs, TRUE, inch);
 									zrqbuf[0]=0;
 									remain=1;
 								}
@@ -2100,7 +2136,7 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x1600:	/* ALT-U - Upload */
-					begin_upload(bbs, FALSE);
+					begin_upload(bbs, FALSE, inch);
 					showmouse();
 					key = 0;
 					break;
@@ -2180,7 +2216,7 @@ BOOL doterm(struct bbslist *bbs)
 							hold_update=oldmc;
 							return(FALSE);
 						case 3:
-							begin_upload(bbs, FALSE);
+							begin_upload(bbs, FALSE, inch);
 							break;
 						case 4:
 							zmodem_download(bbs);
