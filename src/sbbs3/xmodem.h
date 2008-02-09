@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -41,6 +41,8 @@
 #include "gen_defs.h"
 
 #define CPMEOF		CTRL_Z	/* CP/M End of file (^Z)					*/
+#define XMODEM_MIN_BLOCK_SIZE	128
+#define XMODEM_MAX_BLOCK_SIZE	1024
 
 typedef struct {
 

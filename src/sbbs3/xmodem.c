@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -169,10 +169,10 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			can=0;
 		switch(i) {
 			case SOH: /* 128 byte blocks */
-				xm->block_size=128;
+				xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 				break;
 			case STX: /* 1024 byte blocks */
-				xm->block_size=1024;
+				xm->block_size=XMODEM_MAX_BLOCK_SIZE;
 				break;
 			case EOT:
 				lprintf(xm,LOG_DEBUG,"EOT");
@@ -271,7 +271,7 @@ int xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned b
     uint		i;
 	uint16_t	crc;
 
-	if(block_size==128)
+	if(block_size==XMODEM_MIN_BLOCK_SIZE)
 		result=putcom(SOH);
 	else			/* 1024 */
 		result=putcom(STX);
@@ -424,7 +424,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 {
 	BOOL		success=FALSE;
 	ulong		sent_bytes=0;
-	char		block[1024];
+	char		block[XMODEM_MAX_BLOCK_SIZE];
 	size_t		block_len;
 	unsigned	block_num;
 	size_t		i;
@@ -466,7 +466,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			
 			block_len=strlen(block)+1+i;
 			for(xm->errors=0;xm->errors<=xm->max_errors && !is_cancelled(xm) && is_connected(xm);xm->errors++) {
-				xmodem_put_block(xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
+				xmodem_put_block(xm, block, block_len <=XMODEM_MIN_BLOCK_SIZE ? XMODEM_MIN_BLOCK_SIZE:XMODEM_MAX_BLOCK_SIZE, 0  /* block_num */);
 				if(xmodem_get_ack(xm,1,0)) {
 					sent_header=TRUE;
 					break; 
@@ -492,11 +492,11 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			fseek(fp,sent_bytes,SEEK_SET);
 			memset(block,CPMEOF,xm->block_size);
 			if(!sent_header) {
-				if(xm->block_size>128) {
+				if(xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
 					if((long)(sent_bytes+xm->block_size) > st.st_size) {
-						if((long)(sent_bytes+xm->block_size-128) >= st.st_size) {
+						if((long)(sent_bytes+xm->block_size-XMODEM_MIN_BLOCK_SIZE) >= st.st_size) {
 							lprintf(xm,LOG_INFO,"Falling back to 128 byte blocks for end of file");
-							xm->block_size=128;
+							xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 						}
 					}
 				}
@@ -515,9 +515,9 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				xm->errors++;
 				lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
 					,xm->errors,ftell(fp)-xm->block_size);
-				if(xm->errors==3 && block_num==1 && xm->block_size>128) {
+				if(xm->errors==3 && block_num==1 && xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
 					lprintf(xm,LOG_NOTICE,"Falling back to 128 byte blocks");
-					xm->block_size=128;
+					xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 				}
 			} else {
 				block_num++; 
@@ -575,7 +575,7 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->byte_timeout=3;			/* seconds */
 	xm->ack_timeout=10;			/* seconds */
 
-	xm->block_size=1024;
+	xm->block_size=XMODEM_MAX_BLOCK_SIZE;
 	xm->max_errors=9;
 	xm->g_delay=1;
 

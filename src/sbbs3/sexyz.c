@@ -83,7 +83,7 @@
 /***************/
 long	mode=0;							/* Program mode 					*/
 long	zmode=0L;						/* Zmodem mode						*/
-uchar	block[1024];					/* Block buffer 					*/
+uchar	block[XMODEM_MAX_BLOCK_SIZE];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 char*	dszlog;
 BOOL	dszlog_path=TRUE;				/* Log complete path to filename	*/
@@ -926,8 +926,8 @@ static int send_files(char** fname, uint fnames)
 
 			lprintf(LOG_INFO,"Sending Ymodem termination block");
 
-			memset(block,0,128);	/* send short block for terminator */
-			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
+			memset(block,0,XMODEM_MIN_BLOCK_SIZE);	/* send short block for terminator */
+			xmodem_put_block(&xm, block, XMODEM_MIN_BLOCK_SIZE /* block_size */, 0 /* block_num */);
 			if(!xmodem_get_ack(&xm,6,0)) {
 				lprintf(LOG_WARNING,"Failed to receive ACK after terminating block"); 
 			} 
@@ -1434,14 +1434,14 @@ int main(int argc, char **argv)
 						mode|=XMODEM|CRC;
 						break;
 					case 'x':
-						xm.block_size=128;
+						xm.block_size=XMODEM_MIN_BLOCK_SIZE;
 					case 'X':
 						mode|=XMODEM;
 						break;
 					case 'b':	/* sz/rz compatible */
 					case 'B':
 					case 'y':
-						xm.block_size=128;
+						xm.block_size=XMODEM_MIN_BLOCK_SIZE;
 					case 'Y':
 						mode|=(YMODEM|CRC);
 						break;
@@ -1496,7 +1496,7 @@ int main(int argc, char **argv)
 				}
 				switch(toupper(*arg)) {
 					case 'K':	/* sz/rz compatible */
-						xm.block_size=1024;
+						xm.block_size=XMODEM_MAX_BLOCK_SIZE;
 						break;
 					case 'C':	/* sz/rz compatible */
 						mode|=CRC;
