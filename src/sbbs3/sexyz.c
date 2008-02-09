@@ -637,14 +637,15 @@ BOOL data_waiting(void* unused, unsigned timeout)
 }
 
 /****************************************************************************/
-/* Returns the number of blocks required to send len bytes					*/
+/* Returns the total number of blocks required to send the file				*/
 /****************************************************************************/
-unsigned num_blocks(ulong len, unsigned block_size)
+unsigned num_blocks(unsigned block_num, ulong offset, ulong len, unsigned block_size)
 {
 	ulong blocks;
+	ulong remain = len - offset;
 
-	blocks=len/block_size;
-	if(len%block_size)
+	blocks=block_num + (remain/block_size);
+	if(remain%block_size)
 		blocks++;
 	return(blocks);
 }
@@ -681,7 +682,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 		l-=t;				/* now, it's est time left */
 		if(l<0) l=0;
 		if(mode&SEND) {
-			total_blocks=num_blocks(fsize,xm.block_size);
+			total_blocks=num_blocks(block_num,offset,fsize,xm.block_size);
 			fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  "
 				"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
