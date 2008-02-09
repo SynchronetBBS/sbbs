@@ -40,7 +40,7 @@ struct sort_order_info sort_order[] = {
 		,0
 	}
 	,{
-		 "BBS Name"
+		 "Entry Name"
 		,SORT_ORDER_STRING
 		,offsetof(struct bbslist, name)
 		,sizeof(((struct bbslist *)NULL)->name)
@@ -169,7 +169,7 @@ struct sort_order_info sort_order[] = {
 
 int sortorder[sizeof(sort_order)/sizeof(struct sort_order_info)];
 
-char *sort_orders[]={"BBS Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
+char *sort_orders[]={"Entry Name","Address","Connection Type","Port","Date Added","Date Last Connected"};
 
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", "132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)", "Atari", "Atari XEP80", NULL};
 char *log_levels[]={"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
@@ -749,11 +749,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 	for(i=0;i<18;i++)		/* <- Beware of magic number! */
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
-		uifc.helpbuf=	"`Copy from system BBS list`\n\n"
-						"This BBS was loaded from the system BBS list.  In order to edit it, it\n"
-						"must be copied into your personal BBS list.\n";
+		uifc.helpbuf=	"`Copy from system directory`\n\n"
+						"This entry was loaded from the system directory.  In order to edit it, it\n"
+						"must be copied into your personal directory.\n";
 		i=0;
-		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Copy from system BBS list?",YesNo)!=0)
+		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Copy from system directory?",YesNo)!=0)
 			return(0);
 		item->type=USER_BBSLIST;
 		add_bbs(listpath, item);
@@ -837,7 +837,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 			case -1:
 				if((!isdefault) && (itemname!=NULL) && (itemname[0]==0)) {
 					uifc.helpbuf=	"`Cancel Save`\n\n"
-									"This BBS has no name and can therefore not be saved.\n"
+									"This entry has no name and can therefore not be saved.\n"
 									"Selecting `No` will return to editing mode.\n";
 					i=0;
 					if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Cancel Save?",YesNo)!=0)
@@ -1583,7 +1583,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 									|WIN_SEL
 									,0,0,0,&opt,&bar,"Directory",(char **)list);
-								uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Address",addy,LIST_ADDR_MAX,0);
+								uifc.input(WIN_MID|WIN_SAV,0,0,"Address",addy,LIST_ADDR_MAX,0);
 								memcpy(&retlist, &defaults, sizeof(defaults));
 								if(uifc.changes) {
 									parse_url(addy,&retlist,defaults.conn_type,FALSE);
@@ -1608,15 +1608,15 @@ struct bbslist *show_bbslist(char *current, int connected)
 						case MSK_INS:
 							if(listcount>=MAX_OPTS) {
 								uifc.helpbuf=	"`Max List size reached`\n\n"
-												"The total combined size of loaded BBS lists is currently the highest\n"
-												"Supported size.  You must delete entries before adding more.";
+												"The total combined size of loaded entries is currently the highest\n"
+												"supported size.  You must delete entries before adding more.";
 								uifc.msg("Max List size reached!");
 								break;
 							}
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot add to the\n"
-												"BBS list.";
+												"dialing directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
@@ -1704,13 +1704,13 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot remove from the\n"
-												"BBS list.";
+												"dialing directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
 							if(list[opt]->type==SYSTEM_BBSLIST) {
 								uifc.helpbuf=	"`Cannot delete from system list`\n\n"
-												"This BBS was loaded from the system-wide list and cannot be deleted.";
+												"This entry was loaded from the system-wide list and cannot be deleted.";
 								uifc.msg("Cannot delete system list entries");
 								break;
 							}
@@ -1726,7 +1726,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
-												"BBS list.";
+												"dialing directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
@@ -1742,7 +1742,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						if(safe_mode) {
 							uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 											"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
-											"BBS list.";
+											"dialing directory.";
 							uifc.msg("Cannot edit list in safe mode");
 						}
 						else if(edit_list(list, list[opt],listpath,FALSE)) {
