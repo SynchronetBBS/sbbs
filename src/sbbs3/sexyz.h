@@ -55,4 +55,4 @@
 #define VAR_HDRS	(1<<1)	/* Use variable headers 					*/
 
 #define NOINP -1     			/* input buffer empty (incom only) */
-
+#define NOT_YMODEM -3			/* Expected block zero, got block one */

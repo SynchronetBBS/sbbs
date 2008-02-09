@@ -234,6 +234,8 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 		if(block_num!=(uchar)(expected_block_num&0xff)) {
 			lprintf(xm,LOG_WARNING,"Block number error (%u received, expected %u)"
 				,block_num,expected_block_num&0xff);
+			if(expected_block_num==0 && block_num==1)
+				return(NOT_YMODEM);
 			if(expected_block_num && block_num==(uchar)((expected_block_num-1)&0xff))
 				continue;	/* silently discard repeated packets (ymodem.doc 7.3.2) */
 			break; 
