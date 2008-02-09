@@ -490,14 +490,14 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			memset(block,CPMEOF,xm->block_size);
 			if(!sent_header) {
 				if(xm->block_size>128) {
-					if((sent_bytes+xm->block_size) > st.st_size) {
+					if((long)(sent_bytes+xm->block_size) > st.st_size) {
 						lprintf(xm,LOG_INFO,"Falling back to 128 byte blocks for end of file");
 						xm->block_size=128;
 					}
 				}
 			}
 			if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
-				&& (long)(sent_bytes + xm->block_size) <= st.st_size) {
+				&& (long)(sent_bytes + rd) != st.st_size) {
 				lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %lu"
 					,rd,xm->block_size,sent_bytes);
 				xm->errors++;
