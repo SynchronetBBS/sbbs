@@ -510,16 +510,20 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 {
 	JSBool	ret=JS_TRUE;
 
-	if(props)
+	if(props) {
 		if(!js_DefineSyncProperties(cx, obj, props))
 			ret=JS_FALSE;
+	}
 		
-	if(funcs)
-		if(!js_DefineSyncMethods(cx, obj, funcs))
+	if(funcs) {
+		if(!js_DefineSyncMethods(cx, obj, funcs, 0))
 			ret=JS_FALSE;
+	}
 
-	if(consts)
-		if(!js_DefineConstIntegers(JSContext* cx, JSObject* obj, consts, flags)
+	if(consts) {
+		if(!js_DefineConstIntegers(cx, obj, consts, flags))
+			ret=JS_FALSE;
+	}
 
 	return(ret);
 }
