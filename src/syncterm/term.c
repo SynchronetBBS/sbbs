@@ -1250,7 +1250,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				}
 				if(i==NOT_YMODEM && errors) {
 					lprintf(LOG_WARNING,"Falling back to XModem");
-					mode &= ~YMODEM;
+					mode &= ~(YMODEM|GMODE);
 					mode |= XMODEM|CRC;
 					erase_transfer_window();
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"XMODEM Filename",fname,sizeof(fname),0)==-1) {
