@@ -72,6 +72,7 @@ struct bbslist {
 	char			dldir[MAX_PATH+1];
 	char			uldir[MAX_PATH+1];
 	char			logfile[MAX_PATH+1];
+	BOOL			append_logfile;
 	int				xfer_loglevel;
 	int				telnet_loglevel;
 	int				bpsrate;

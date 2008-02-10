@@ -602,7 +602,6 @@ void free_list(struct bbslist **list, int listcount)
 
 void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
-	BOOL		dumb;
 	char		home[MAX_PATH+1];
 	str_list_t	section;
 
@@ -631,16 +630,16 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 	iniGetString(section,bbsname,"UserName","",entry->user);
 	iniGetString(section,bbsname,"Password","",entry->password);
 	iniGetString(section,bbsname,"SystemPassword","",entry->syspass);
-	dumb=iniGetBool(section,bbsname,"BeDumb",0);
-	if(dumb)
+	if(iniGetBool(section,bbsname,"BeDumb",FALSE))	/* Legacy */
 		entry->conn_type=CONN_TYPE_RAW;
 	entry->screen_mode=iniGetEnum(section,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
-	entry->nostatus=iniGetBool(section,bbsname,"NoStatus",0);
+	entry->nostatus=iniGetBool(section,bbsname,"NoStatus",FALSE);
 	iniGetString(section,bbsname,"DownloadPath",home,entry->dldir);
 	iniGetString(section,bbsname,"UploadPath",home,entry->uldir);
 
 	/* Log Stuff */
 	iniGetString(section,bbsname,"LogFile","",entry->logfile);
+	entry->append_logfile=iniGetBool(section,bbsname,"AppendLogFile",TRUE);
 	entry->xfer_loglevel=iniGetEnum(section,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
 	entry->telnet_loglevel=iniGetEnum(section,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
 
@@ -734,8 +733,8 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 
 int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault)
 {
-	char	opt[18][80];	/* <- Beware of magic number! */
-	char	*opts[19];		/* <- Beware of magic number! */
+	char	opt[19][80];	/* <- Beware of magic number! */
+	char	*opts[20];		/* <- Beware of magic number! */
 	int		changed=0;
 	int		copt=0,i,j;
 	int		bar=0;
@@ -746,7 +745,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 	char	*itemname;
 	char	*YesNo[3]={"Yes","No",""};
 
-	for(i=0;i<18;i++)		/* <- Beware of magic number! */
+	for(i=0;i<19;i++)		/* <- Beware of magic number! */
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Copy from system directory`\n\n"
@@ -802,6 +801,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		sprintf(opt[i++], "Log File          %s",item->logfile);
 		sprintf(opt[i++], "Log Transfers     %s",log_level_desc[item->xfer_loglevel]);
 		sprintf(opt[i++], "Log Telnet Cmds   %s",log_level_desc[item->telnet_loglevel]);
+		sprintf(opt[i++], "Append Log File   %s",item->append_logfile ? "Yes":"No");
 		if(item->bpsrate)
 			sprintf(str,"%ubps", item->bpsrate);
 		else
@@ -1039,6 +1039,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 				changed=1;
 				break;
 			case 14:
+				item->append_logfile=!item->append_logfile;
+				changed=1;
+				iniSetBool(&inifile,itemname,"AppendLogFile",item->append_logfile,&ini_style);
+				break;
+			case 15:
 				uifc.helpbuf=	"`Comm Rate (in bits-per-second)`\n\n"
 								"`For TCP connections:`\n"
 								"Select the rate which recieved characters will be displayed.\n\n"
@@ -1056,7 +1061,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						changed=1;
 				}
 				break;
-			case 15:
+			case 16:
 				uifc.helpbuf="`ANSI Music Setup`\n\n"
 						"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
 						"                      Enables Delete Line\n"
@@ -1084,7 +1089,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					changed=1;
 				}
 				break;
-			case 16:
+			case 17:
 				uifc.helpbuf=	"`Font`\n\n"
 								"Select the desired font for this connection.\n\n"
 								"Some fonts do not allow some modes.  When this is the case, an\n"
@@ -1135,11 +1140,13 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"SystemPassword",bbs->syspass,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"ConnectionType",conn_types,bbs->conn_type,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"ScreenMode",screen_modes,bbs->screen_mode,&ini_style);
+	iniSetBool(&inifile,bbs->name,"NoStatus",bbs->nostatus,&ini_style);
 	iniSetString(&inifile,bbs->name,"DownloadPath",bbs->dldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"UploadPath",bbs->uldir,&ini_style);
 	iniSetString(&inifile,bbs->name,"LogFile",bbs->logfile,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"TransferLogLevel",log_levels,bbs->xfer_loglevel,&ini_style);
 	iniSetEnum(&inifile,bbs->name,"TelnetLogLevel",log_levels,bbs->telnet_loglevel,&ini_style);
+	iniSetBool(&inifile,bbs->name,"AppendLogFile",bbs->append_logfile,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"BPSRate",bbs->bpsrate,&ini_style);
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
 	iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);

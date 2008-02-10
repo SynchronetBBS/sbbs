@@ -1214,7 +1214,7 @@ int main(int argc, char **argv)
 				return(1);
 			}
 			if(log_fp==NULL && bbs->logfile[0])
-				log_fp=fopen(bbs->logfile,"a");
+				log_fp=fopen(bbs->logfile,bbs->append_logfile ? "a" : "w");
 			if(log_fp!=NULL) {
 				time_t now=time(NULL);
 				fprintf(log_fp,"%.15s Log opened\n", ctime(&now)+4);
