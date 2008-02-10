@@ -1233,6 +1233,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime;
 	BOOL	xmodem_fallback;
+	var		old_hold=hold_update;
 
 	if(safe_mode)
 		return;
@@ -1291,10 +1292,12 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					mode &= ~(YMODEM);
 					mode |= XMODEM|CRC;
 					erase_transfer_window();
+					hold_update=0;
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"XMODEM Filename",fname,sizeof(fname),0)==-1) {
 						xmodem_cancel(&xm);
 						goto end;
 					}
+					hold_update=old_hold;
 					draw_transfer_window("XMODEM Download");
 					lprintf(LOG_WARNING,"Falling back to XMODEM");
 					if(isfullpath(fname))
