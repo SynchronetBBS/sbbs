@@ -1118,7 +1118,6 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	BYTE		*b;
 	WORD		*w;
 	DWORD		*l;
-	int32		val=0;
 	size_t		wr=0;
 	size_t		size=sizeof(DWORD);
 	size_t		count=1;
@@ -1126,6 +1125,8 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
     JSObject*	array=NULL;
     jsval       elemval;
+	jsdouble	val=0;
+	uint32_t	intval;
 
 	*rval = JSVAL_FALSE;
 
@@ -1147,7 +1148,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			array=NULL;
 	}
 	if(array==NULL) {
-		if(!JS_ValueToInt32(cx,argv[0],&val))
+		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
 	}
 	if(argc>1) {
@@ -1183,7 +1184,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		for(wr=0; wr<count; wr++) {
 	        if(!JS_GetElement(cx, array, wr, &elemval))
 				goto end;
-			if(!JS_ValueToInt32(cx,elemval,&val))
+			if(!JS_ValueToNumber(cx,elemval,&val))
 				goto end;
 			switch(size) {
 				case sizeof(BYTE):
