@@ -29,10 +29,10 @@ function GetRecordLength(RecordDef)
 function RecordFile(filename, definition)
 {
 	this.file=new File(filename);
-	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+"))
+	this.RecordLength=GetRecordLength(this.fields);
+	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
 		return(null);
 	this.fields=definition;
-	this.RecordLength=GetRecordLength(this.fields);
 	this.length=this.file.length/this.RecordLength;
 
 	/* Read a record by index */
