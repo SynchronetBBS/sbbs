@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1826,12 +1826,9 @@ static JSClass js_system_class = {
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc)
 {
-	uint		i;
 	jsval		val;
 	JSObject*	sysobj;
 	JSObject*	statsobj;
-	JSObject*	node_list;
-	JSObject*	fido_addr_list;
 	JSString*	js_str;
 	char		str[256];
 
