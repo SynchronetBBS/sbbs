@@ -116,7 +116,7 @@ int xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 		;				/* wait for any trailing data */
 
 	if(block_num<=1) {
-		if(*(xm->mode)&GMODE) {		/* G for Ymodem-G */
+		if(*(xm->mode)&GMODE) {		/* G for X/Ymodem-G */
 			lprintf(xm,LOG_INFO,"Requesting mode: Streaming, 16-bit CRC");
 			return putcom('G');
 		} else if(*(xm->mode)&CRC) {	/* C for CRC */
@@ -145,7 +145,7 @@ int xmodem_cancel(xmodem_t* xm)
 		xm->cancelled=TRUE;
 	}
 
-	return 0;
+	return SUCCESS;
 }
 
 /****************************************************************************/
@@ -162,7 +162,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 
 	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 
-		i=getcom(expected_block_num<=1 ? 5 : 10);
+		i=getcom(expected_block_num<=1 ? 3 : 10);
 		if(eot && i!=EOT && i!=NOINP)
 			eot=0;
 		if(can && i!=CAN)
@@ -172,10 +172,12 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 				xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 				break;
 			case STX: /* 1024 byte blocks */
+				if(xm->max_block_size < XMODEM_MAX_BLOCK_SIZE)
+					return FAILURE;
 				xm->block_size=XMODEM_MAX_BLOCK_SIZE;
 				break;
 			case EOT:
-				lprintf(xm,LOG_DEBUG,"EOT");
+				lprintf(xm,LOG_DEBUG,"Block %u: EOT received", expected_block_num);
 				if(/*((*xm->mode)&(YMODEM|GMODE))==YMODEM &&*/ !eot) {
 					lprintf(xm,LOG_INFO,"NAKing first EOT");
 					eot=1;	
@@ -186,13 +188,15 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			case CAN:
 				if(!can) {			/* must get two CANs in a row */
 					can=1;
-					lprintf(xm,LOG_WARNING,"Received CAN  Expected SOH, STX, or EOT");
+					lprintf(xm,LOG_WARNING,"Block %u: Received CAN  Expected SOH, STX, or EOT"
+						,expected_block_num);
 					continue; 
 				}
-				lprintf(xm,LOG_WARNING,"Cancelled remotely");
+				lprintf(xm,LOG_WARNING,"Block %u: Cancelled remotely", expected_block_num);
 				return(CAN);
 			default:
-				lprintf(xm,LOG_WARNING,"Received %s  Expected SOH, STX, or EOT",chr((uchar)i));
+				lprintf(xm,LOG_WARNING,"Block %u: Received %s  Expected SOH, STX, or EOT"
+					,expected_block_num, chr((uchar)i));
 			case NOINP: 	/* Nothing came in */
 				if(eot)
 					return(EOT);
@@ -226,8 +230,8 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			chksum=getcom(xm->byte_timeout);
 
 		if(block_num!=(uchar)~block_inv) {
-			lprintf(xm,LOG_WARNING,"Block number bit error (0x%02X vs 0x%02x)"
-				,block_num,(uchar)~block_inv);
+			lprintf(xm,LOG_WARNING,"Block %u: Block number bit error (0x%02X vs 0x%02x)"
+				,expected_block_num, block_num,(uchar)~block_inv);
 			break; 
 		}
 
@@ -248,6 +252,8 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 		if(block_num!=(uchar)(expected_block_num&0xff)) {
 			lprintf(xm,LOG_WARNING,"Block number error (%u received, expected %u)"
 				,block_num,expected_block_num&0xff);
+			if((*xm->mode)&XMODEM && expected_block_num==1 && block_num==0)
+				return(NOT_XMODEM);
 			if(expected_block_num==0 && block_num==1)
 				return(NOT_YMODEM);
 			if(expected_block_num && block_num==(uchar)((expected_block_num-1)&0xff))
@@ -255,10 +261,10 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			break; 
 		}
 
-		return(0);	/* Success */
+		return SUCCESS;	/* Success */
 	}
 
-	return(-2);		/* Failure */
+	return FAILURE;		/* Failure */
 }
 
 /*****************/
@@ -303,35 +309,35 @@ int xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned b
 
 /************************************************************/
 /* Gets an acknowledgement - usually after sending a block	*/
-/* Returns 1 if ack received, 0 otherwise.					*/
+/* Returns ACK if ack received								*/
 /************************************************************/
-BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
+int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 {
-	int i,can=0;
+	int i=NOINP,can=0;
 	unsigned errors;
 
-	for(errors=0;errors<tries && is_connected(xm);errors++) {
+	for(errors=0;errors<tries && is_connected(xm);) {
 
-		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on Ymodem-G */
+		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on X/Ymodem-G */
 			SLEEP(xm->g_delay);
 			if(getcom(0)==CAN) {
 				lprintf(xm,LOG_WARNING,"Block %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
-				return(FALSE); 
+				return(CAN); 
 			}
-			return(TRUE); 
+			return(ACK); 
 		}
 
 		i=getcom(xm->ack_timeout);
 		if(can && i!=CAN)
 			can=0;
 		if(i==ACK)
-			return(TRUE);
+			break;
 		if(i==CAN) {
-			if(can) {
+			if(can) {	/* 2 CANs in a row */
 				lprintf(xm,LOG_WARNING,"Block %u: !Cancelled remotely", block_num);
 				xmodem_cancel(xm);
-				return(FALSE); 
+				return(CAN); 
 			}
 			can=1; 
 		}
@@ -339,11 +345,13 @@ BOOL xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			lprintf(xm,LOG_WARNING,"Block %u: !Received %s  Expected ACK"
 				,block_num, chr((uchar)i));
 			if(i!=CAN)
-				return(FALSE); 
-		} 
+				return(i); 
+		}
+		if(i!=CAN)
+			errors++;
 	}
 
-	return(FALSE);
+	return(i);
 }
 
 BOOL xmodem_get_mode(xmodem_t* xm)
@@ -365,10 +373,14 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 				return(TRUE); 
 			case 'C':
 				lprintf(xm,LOG_INFO,"Receiver requested mode: 16-bit CRC");
+				if(!xm->crc_mode_supported)
+					continue;
 				*(xm->mode)|=CRC;
 				return(TRUE); 
 			case 'G':
 				lprintf(xm,LOG_INFO,"Receiver requested mode: Streaming, 16-bit CRC");
+				if(!xm->crc_mode_supported || !xm->g_mode_supported)
+					continue;
 				*(xm->mode)|=(GMODE|CRC);
 				return(TRUE); 
 			case CAN:
@@ -462,17 +474,24 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				,xm->total_files-xm->sent_files
 				,xm->total_bytes-xm->sent_bytes);
 			
-			lprintf(xm,LOG_INFO,"Sending Ymodem header block: '%s'",block+strlen(block)+1);
+			lprintf(xm,LOG_INFO,"Sending YMODEM header block: '%s'",block+strlen(block)+1);
 			
 			block_len=strlen(block)+1+i;
 			for(xm->errors=0;xm->errors<=xm->max_errors && !is_cancelled(xm) && is_connected(xm);xm->errors++) {
 				xmodem_put_block(xm, block, block_len <=XMODEM_MIN_BLOCK_SIZE ? XMODEM_MIN_BLOCK_SIZE:XMODEM_MAX_BLOCK_SIZE, 0  /* block_num */);
-				if(xmodem_get_ack(xm,1,0)) {
+				if((i=xmodem_get_ack(xm,/* tries: */1, /* block_num: */0)) == ACK) {
 					sent_header=TRUE;
 					break; 
 				}
+				if((i==NAK || i=='C' || i=='G')
+					&& xm->fallback_to_xmodem && xm->errors+1 == xm->fallback_to_xmodem) {
+					lprintf(xm,LOG_NOTICE,"Falling back to XMODEM mode after %u attempts"
+						,xm->fallback_to_xmodem);
+					*(xm->mode)&=~YMODEM;
+					break;
+				}
 			}
-			if(xm->errors>=xm->max_errors || is_cancelled(xm)) {
+			if(xm->errors>xm->max_errors || is_cancelled(xm)) {
 				lprintf(xm,LOG_ERR,"Failed to send header block");
 				break;
 			}
@@ -511,7 +530,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			if(xm->progress!=NULL)
 				xm->progress(xm->cbdata,block_num,ftell(fp),st.st_size,startfile);
 			xmodem_put_block(xm, block, xm->block_size, block_num);
-			if(!xmodem_get_ack(xm,5,block_num)) {
+			if(xmodem_get_ack(xm, /* tries: */5,block_num) != ACK) {
 				xm->errors++;
 				lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
 					,xm->errors,ftell(fp)-xm->block_size);
@@ -576,11 +595,14 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->ack_timeout=10;			/* seconds */
 
 	xm->block_size=XMODEM_MAX_BLOCK_SIZE;
+	xm->max_block_size=XMODEM_MAX_BLOCK_SIZE;
 	xm->max_errors=9;
 	xm->g_delay=1;
 
 	xm->cbdata=cbdata;
 	xm->mode=mode;
+	xm->g_mode_supported=TRUE;
+	xm->crc_mode_supported=TRUE;
 	xm->lputs=lputs;
 	xm->progress=progress;
 	xm->send_byte=send_byte;

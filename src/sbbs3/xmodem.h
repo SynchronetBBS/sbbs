@@ -49,13 +49,17 @@ typedef struct {
 	void*		cbdata;
 	long*		mode;
 	BOOL		cancelled;
+	BOOL		crc_mode_supported;	/* for send */
+	BOOL		g_mode_supported;	/* for send */
 	unsigned	block_size;
+	unsigned	max_block_size;		/* for recv */
 	unsigned	ack_timeout;
 	unsigned	byte_timeout;
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
 	unsigned	errors;
 	unsigned	max_errors;
+	unsigned	fallback_to_xmodem; /* fallback to Xmodem after this many Ymodem send attempts */
 	unsigned	g_delay;
 	unsigned	total_files;
 	unsigned	total_bytes;
@@ -82,7 +86,7 @@ void		xmodem_init(xmodem_t*, void* cbdata, long* mode
 char*		xmodem_ver(char *buf);
 const char* xmodem_source(void);
 int			xmodem_cancel(xmodem_t*);
-BOOL		xmodem_get_ack(xmodem_t*, unsigned tries, unsigned block_num);
+int			xmodem_get_ack(xmodem_t*, unsigned tries, unsigned block_num);
 BOOL		xmodem_get_mode(xmodem_t*);
 BOOL		xmodem_put_eot(xmodem_t*);
 int			xmodem_put_ack(xmodem_t*);
