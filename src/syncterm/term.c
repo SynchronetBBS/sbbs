@@ -189,9 +189,9 @@ void update_status(struct bbslist *bbs, int speed)
 			break;
 		default:
 			if(timeon>359999)
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type]);
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type]);
 			else
-				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
 			break;
 	}
 	if(wherex()>=80)
@@ -920,6 +920,8 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	if(log_fp!=NULL)
+		fflush(log_fp);
 	getch();
 
 	erase_transfer_window();
@@ -953,6 +955,8 @@ void zmodem_download(struct bbslist *bbs)
 
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	if(log_fp!=NULL)
+		fflush(log_fp);
 	getch();
 
 	erase_transfer_window();
@@ -1196,7 +1200,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 
 				memset(block,0,128);	/* send short block for terminator */
 				xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
-				if(!xmodem_get_ack(&xm,6,0)) {
+				if(xmodem_get_ack(&xm,/* tries: */6, /* block_num: */0) != ACK) {
 					lprintf(LOG_WARNING,"Failed to receive ACK after terminating block"); 
 				}
 			}
@@ -1207,6 +1211,8 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	if(log_fp!=NULL)
+		fflush(log_fp);
 	getch();
 
 	erase_transfer_window();
@@ -1232,7 +1238,6 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	ulong	total_bytes=0;
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime;
-	BOOL	xmodem_fallback;
 	int		old_hold=hold_update;
 
 	if(safe_mode)
@@ -1271,15 +1276,14 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		else {
 			lprintf(LOG_INFO,"Fetching YMODEM header block");
 			for(errors=0;errors<=xm.max_errors && !xm.cancelled;errors++) {
-				if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
-					mode&=~CRC;
 				xmodem_put_nak(&xm, /* expected_block: */ 0);
 				i=xmodem_get_block(&xm, block, /* expected_block: */ 0);
-				if(i==0) {
+				if(i==SUCCESS) {
 					send_byte(NULL,ACK,10);
 					break;
 				}
-				if(i==NOINP) {
+#if 0
+				if(i==NOINP) {			/* Timeout */
 					if(mode&GMODE)
 						mode &= ~GMODE;
 					else if(mode&CRC)
@@ -1287,6 +1291,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_WARNING,"Falling back to %s", 
 						(mode&CRC)?"CRC-16":"Checksum");
 				}
+#endif
 				if(i==NOT_YMODEM) {
 					lprintf(LOG_WARNING,"Falling back to XMODEM");
 					mode &= ~(YMODEM);
@@ -1307,8 +1312,12 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					file_bytes=file_bytes_left=0x7fffffff;
 					break;
 				}
+				if(errors+1>xm.max_errors/3 && mode&CRC && !(mode&GMODE)) {
+					lprintf(LOG_NOTICE,"Falling back to 8-bit Checksum mode");
+					mode&=~CRC;
+				}
 			}
-			if(errors>=xm.max_errors || xm.cancelled) {
+			if(errors>xm.max_errors || xm.cancelled) {
 				xmodem_cancel(&xm);
 				goto end;
 			}
@@ -1341,9 +1350,9 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
 
 				sprintf(str,"%s/%s",bbs->dldir,getfname(fname));
-				lprintf(LOG_INFO,"File size: %lu bytes\n", file_bytes);
+				lprintf(LOG_INFO,"File size: %lu bytes", file_bytes);
 				if(total_files>1)
-					lprintf(LOG_INFO,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
+					lprintf(LOG_INFO,"Remaining: %lu bytes in %u files", total_bytes, total_files);
 			}
 		}
 
@@ -1388,11 +1397,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				goto end; 
 			}
 			if(i==NOT_YMODEM)
-				i=0;
+				i=SUCCESS;
 			else
 				i=xmodem_get_block(&xm, block, block_num);
 
-			if(i!=0) {
+			if(i!=SUCCESS) {
 				if(i==EOT)	{		/* end of transfer */
 					success=TRUE;
 					xmodem_put_ack(&xm);
@@ -1402,7 +1411,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					xm.cancelled=TRUE;
 					break;
 				}
-				if(i==NOINP) {		/* Timeout */
+#if 0
+				if(i==NOINP) {			/* Timeout */
 					if(mode&GMODE)
 						mode &= ~GMODE;
 					else if(mode&CRC)
@@ -1410,26 +1420,29 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_WARNING,"Falling back to %s", 
 						(mode&CRC)?"CRC-16":"Checksum");
 				}
-
+#endif
 				if(mode&GMODE) {
 					lprintf(LOG_ERR,"Too many errors (%u)",++errors);
 					goto end; 
 				}
 
-				if(++errors>=xm.max_errors) {
+				if(++errors>xm.max_errors) {
 					lprintf(LOG_ERR,"Too many errors (%u)",errors);
 					xmodem_cancel(&xm);
 					break;
 				}
-				if(block_num==1 && errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
+				if(i!=NOT_XMODEM
+					&& block_num==1 && errors>(xm.max_errors/3) && mode&CRC && !(mode&GMODE)) {
+					lprintf(LOG_NOTICE,"Falling back to 8-bit Checksum mode (error=%d)", i);
 					mode&=~CRC;
+				}
 				xmodem_put_nak(&xm, block_num);
 				continue;
 			}
 			if(!(mode&GMODE))
 				send_byte(NULL,ACK,10);
-			if(file_bytes_left<=0L)  { /* No more bytes to send */
-				lprintf(LOG_WARNING,"Attempt to send more byte specified in header");
+			if(file_bytes_left<=0L)  { /* No more bytes to receive */
+				lprintf(LOG_WARNING,"Sender attempted to send more bytes than were specified in header");
 				break; 
 			}
 			wr=xm.block_size;
@@ -1447,6 +1460,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		/* Use correct file size */
 		fflush(fp);
+
+		lprintf(LOG_DEBUG,"file_bytes=%u", file_bytes);
+		lprintf(LOG_DEBUG,"file_bytes_left=%u", file_bytes_left);
+		lprintf(LOG_DEBUG,"filelength=%u", filelength(fileno(fp)));
+
 		if(file_bytes < (ulong)filelength(fileno(fp))) {
 			lprintf(LOG_INFO,"Truncating file to %lu bytes", file_bytes);
 			chsize(fileno(fp),file_bytes);
@@ -1460,10 +1478,13 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 				,t/60,t%60,file_bytes/t);
 		else
-			lprintf(LOG_ERR,"File Transfer ", xm.cancelled ? "Cancelled":"Failure");
+			lprintf(LOG_ERR,"File Transfer %s", xm.cancelled ? "Cancelled":"Failure");
 
 		if(!(mode&XMODEM) && ftime)
 			setfdate(str,ftime); 
+
+		if(!success && file_bytes==0)	/* remove 0-byte files */
+			remove(str);
 
 		if(mode&XMODEM)	/* maximum of one file */
 			break;
@@ -1485,6 +1506,8 @@ end:
 		fclose(fp);
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
+	if(log_fp!=NULL)
+		fflush(log_fp);
 	getch();
 
 	erase_transfer_window();
