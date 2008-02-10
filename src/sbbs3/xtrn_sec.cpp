@@ -372,7 +372,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.level						/* User main level */
 			,useron.level						/* User transfer level */
 			,useron.birth						/* User birthday */
-			,useron.sex 						/* User sex (M/F) */
+			,useron.sex ? useron.sex : '?'		/* User sex (M/F) */
 			,useron.number						/* User number */
 			,useron.phone); 					/* User phone number */
 		lfexpand(str,misc);
@@ -468,7 +468,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.name						/* User real name */
 			,nulstr 							/* User call sign */
 			,getage(&cfg,useron.birth)			/* User age */
-			,useron.sex);						/* User sex (M/F) */
+			,useron.sex ? useron.sex : '?');	/* User sex (M/F) */
 		strupr(str);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
