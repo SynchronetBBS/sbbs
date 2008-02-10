@@ -1233,7 +1233,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime;
 	BOOL	xmodem_fallback;
-	var		old_hold=hold_update;
+	int		old_hold=hold_update;
 
 	if(safe_mode)
 		return;
