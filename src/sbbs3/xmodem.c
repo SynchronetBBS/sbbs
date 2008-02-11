@@ -112,18 +112,28 @@ int xmodem_put_ack(xmodem_t* xm)
 
 int xmodem_put_nak(xmodem_t* xm, unsigned block_num)
 {
-	while(getcom(0)!=NOINP && is_connected(xm))
-		;				/* wait for any trailing data */
+	int i,dump_count=0;
+
+	/* wait for any trailing data */
+	while((i=getcom(0))!=NOINP && is_connected(xm)) {
+		dump_count++;
+		lprintf(xm,LOG_DEBUG,"Block %u: Dumping byte: %02Xh"
+			,block_num, (BYTE)i);
+		SLEEP(1);
+	}
+	if(dump_count)
+		lprintf(xm,LOG_INFO,"Block %u: Dumped %u bytes"
+			,block_num, dump_count);
 
 	if(block_num<=1) {
 		if(*(xm->mode)&GMODE) {		/* G for X/Ymodem-G */
-			lprintf(xm,LOG_INFO,"Requesting mode: Streaming, 16-bit CRC");
+			lprintf(xm,LOG_INFO,"Block %u: Requesting mode: Streaming, 16-bit CRC", block_num);
 			return putcom('G');
 		} else if(*(xm->mode)&CRC) {	/* C for CRC */
-			lprintf(xm,LOG_INFO,"Requesting mode: 16-bit CRC");
+			lprintf(xm,LOG_INFO,"Block %u: Requesting mode: 16-bit CRC", block_num);
 			return putcom('C');
 		} else {				/* NAK for checksum */
-			lprintf(xm,LOG_INFO,"Requesting mode: 8-bit Checksum");
+			lprintf(xm,LOG_INFO,"Block %u: Requesting mode: 8-bit Checksum", block_num);
 			return putcom(NAK);
 		}
 	}
@@ -168,12 +178,15 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 		if(can && i!=CAN)
 			can=0;
 		switch(i) {
-			case SOH: /* 128 byte blocks */
+			case SOH: /* 128-byte blocks */
 				xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 				break;
-			case STX: /* 1024 byte blocks */
-				if(xm->max_block_size < XMODEM_MAX_BLOCK_SIZE)
+			case STX: /* 1024-byte blocks */
+				if(xm->max_block_size < XMODEM_MAX_BLOCK_SIZE) {
+					lprintf(xm,LOG_WARNING,"Block %u: 1024-byte blocks not supported"
+						,expected_block_num);
 					return FAILURE;
+				}
 				xm->block_size=XMODEM_MAX_BLOCK_SIZE;
 				break;
 			case EOT:
@@ -514,7 +527,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				if(xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
 					if((long)(sent_bytes+xm->block_size) > st.st_size) {
 						if((long)(sent_bytes+xm->block_size-XMODEM_MIN_BLOCK_SIZE) >= st.st_size) {
-							lprintf(xm,LOG_INFO,"Falling back to 128 byte blocks for end of file");
+							lprintf(xm,LOG_INFO,"Falling back to 128-byte blocks for end of file");
 							xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 						}
 					}
@@ -532,10 +545,10 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			xmodem_put_block(xm, block, xm->block_size, block_num);
 			if(xmodem_get_ack(xm, /* tries: */5,block_num) != ACK) {
 				xm->errors++;
-				lprintf(xm,LOG_WARNING,"Error #%d at offset %ld"
-					,xm->errors,ftell(fp)-xm->block_size);
+				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %ld"
+					,block_num, xm->errors,ftell(fp)-xm->block_size);
 				if(xm->errors==3 && block_num==1 && xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
-					lprintf(xm,LOG_NOTICE,"Falling back to 128 byte blocks");
+					lprintf(xm,LOG_NOTICE,"Block %u: Falling back to 128-byte blocks", block_num);
 					xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 				}
 			} else {
