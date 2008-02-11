@@ -1512,18 +1512,18 @@ struct bbslist *show_bbslist(char *current, int connected)
 		if (!at_settings) {
 			for(;!at_settings;) {
 				if(connected)
-					uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
+					uifc.helpbuf=	"`SyncTERM Directory`\n\n"
 									"Commands:\n\n"
 									"~ CTRL-E ~ to edit the selected entry\n"
 									"~ CTRL-S ~ to modify the sort order\n"
-									" ~ ENTER ~ to dial the selected entry";
+									" ~ ENTER ~ to connect to the selected entry";
 				else
-					uifc.helpbuf=	"`SyncTERM Dialing Directory`\n\n"
+					uifc.helpbuf=	"`SyncTERM Directory`\n\n"
 									"Commands:\n\n"
-									"~ CTRL-D ~ Quick-dial a URL\n"
+									"~ CTRL-D ~ Quick-connect to a URL\n"
 									"~ CTRL-E ~ to edit the selected entry\n"
 									"~ CTRL-S ~ to modify the sort order\n"
-									" ~ ENTER ~ to dial the selected entry";
+									" ~ ENTER ~ to connect to the selected entry";
 				if(opt != oldopt) {
 					if(list[opt]!=NULL && list[opt]->name[0]) {
 						sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
@@ -1583,8 +1583,9 @@ struct bbslist *show_bbslist(char *current, int connected)
 						case -6:		/* CTRL-D */
 							if(!connected) {
 								uifc.changes=0;
-								uifc.helpbuf=	"`SyncTERM QuickDial`\n\n"
-												"Enter a URL in the format [(rlogin|telnet)://][user[:password]@]domainname[:port]\n";
+								uifc.helpbuf=	"`SyncTERM Quick-Connect`\n\n"
+												"Enter a URL in the format:\n"
+												"[(rlogin|telnet|ssh)://][user[:password]@]domainname[:port]\n";
 								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
 									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
@@ -1623,7 +1624,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot add to the\n"
-												"dialing directory.";
+												"directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
@@ -1711,7 +1712,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot remove from the\n"
-												"dialing directory.";
+												"directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
@@ -1733,7 +1734,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 							if(safe_mode) {
 								uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 												"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
-												"dialing directory.";
+												"directory.";
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
@@ -1749,7 +1750,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						if(safe_mode) {
 							uifc.helpbuf=	"`Cannot edit list in safe mode`\n\n"
 											"SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
-											"dialing directory.";
+											"directory.";
 							uifc.msg("Cannot edit list in safe mode");
 						}
 						else if(edit_list(list, list[opt],listpath,FALSE)) {
