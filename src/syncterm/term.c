@@ -1287,16 +1287,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					send_byte(NULL,ACK,10);
 					break;
 				}
-#if 0
-				if(i==NOINP) {			/* Timeout */
-					if(mode&GMODE)
-						mode &= ~GMODE;
-					else if(mode&CRC)
-						mode &= ~CRC;
+				if(i==NOINP && (mode&GMODE)) {			/* Timeout */
+					mode &= ~GMODE;
 					lprintf(LOG_WARNING,"Falling back to %s", 
 						(mode&CRC)?"CRC-16":"Checksum");
 				}
-#endif
 				if(i==NOT_YMODEM) {
 					lprintf(LOG_WARNING,"Falling back to XMODEM%s",(mode&GMODE)?"-g":"");
 					mode &= ~(YMODEM);
