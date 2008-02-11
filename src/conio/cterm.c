@@ -473,8 +473,7 @@ void scrollup(void)
 
 void dellines(int lines)
 {
-	char *buf;
-	int i,j,k;
+	int i;
 	int linestomove;
 	int x,y;
 
@@ -511,11 +510,6 @@ void clear2bol(void)
 
 void cterm_clearscreen(char attr)
 {
-	unsigned char *buf;
-	int i;
-	int width,height;
-	struct text_info ti;
-
 	if(cterm.scrollback!=NULL) {
 		cterm.backpos+=cterm.height;
 		if(cterm.backpos>cterm.backlines) {
@@ -1317,7 +1311,6 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	struct text_info	ti;
 	int	olddmc;
 	int oldptnm;
-	unsigned char *p;
 
 	oldptnm=puttext_can_move;
 	puttext_can_move=1;
