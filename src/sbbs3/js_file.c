@@ -1126,7 +1126,6 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSObject*	array=NULL;
     jsval       elemval;
 	jsdouble	val=0;
-	uint32_t	intval;
 
 	*rval = JSVAL_FALSE;
 
