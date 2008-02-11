@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -329,6 +329,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
 			"(%lu msgs) in %lu seconds (%lu msgs/sec)"
 			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t);
+		/* trigger timed event with internal code of 'qnet-qwk' to run */
+		sprintf(str,"%sqnet-qwk.now",cfg.data_dir);
+		ftouch(str);
 	}
 	delfiles(cfg.temp_dir,ALLFILES);
 	return(true);
