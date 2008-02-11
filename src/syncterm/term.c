@@ -192,7 +192,7 @@ void update_status(struct bbslist *bbs, int speed)
 				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type]);
 			else
 				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-Z for menu ",nbuf,conn_types[bbs->conn_type],timeon/3600,(timeon/60)%60,timeon%60);
-			break;
+			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
 	}
 	if(wherex()>=80)
 		clreol();
@@ -1372,9 +1372,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		}
 
 		if(mode&XMODEM)
-			lprintf(LOG_INFO,"Receiving %s via XMODEM %s"
+			lprintf(LOG_INFO,"Receiving %s via %s %s"
 				,str
-				,mode&CRC ? "CRC-16":"Checksum");
+				,mode&GMODE ? "XMODEM-g" : "XMODEM"
+				,mode&CRC ? "CRC-16" : "Checksum");
 		else
 			lprintf(LOG_INFO,"Receiving %s (%lu KB) via %s %s"
 				,str
