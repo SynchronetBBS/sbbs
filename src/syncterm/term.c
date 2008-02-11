@@ -1170,21 +1170,20 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	fsize=filelength(fileno(fp));
 
 	if(mode&XMODEM) {
-		draw_transfer_window("XMODEM Upload");
-		lprintf(LOG_INFO,"Sending %s (%lu KB) via XMODEM"
-			,path,fsize/1024);
+		if(mode&GMODE)
+			draw_transfer_window("XMODEM-g Upload");
+		else
+			draw_transfer_window("XMODEM Upload");
+		lprintf(LOG_INFO,"Sending %s (%lu KB) via XMODEM%s"
+			,path,fsize/1024,(mode&GMODE)?"-g":"");
 	}
 	else if(mode&YMODEM) {
-		if(mode&GMODE) {
+		if(mode&GMODE)
 			draw_transfer_window("YMODEM-g Upload");
-			lprintf(LOG_INFO,"Sending %s (%lu KB) via YMODEM-g"
-				,path,fsize/1024);
-		}
-		else {
+		else
 			draw_transfer_window("YMODEM Upload");
-			lprintf(LOG_INFO,"Sending %s (%lu KB) via YMODEM"
-				,path,fsize/1024);
-		}
+		lprintf(LOG_INFO,"Sending %s (%lu KB) via YMODEM%s"
+			,path,fsize/1024,(mode&GMODE)?"-g":"");
 	}
 	else {
 		return;
@@ -1244,7 +1243,10 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		return;
 
 	if(mode&XMODEM)
-		draw_transfer_window("XMODEM Download");
+		if(mode&GMODE)
+			draw_transfer_window("XMODEM-g Download");
+		else
+			draw_transfer_window("XMODEM Download");
 	else if(mode&YMODEM) {
 		if(mode&GMODE)
 			draw_transfer_window("YMODEM-g Download");
@@ -1293,7 +1295,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				}
 #endif
 				if(i==NOT_YMODEM) {
-					lprintf(LOG_WARNING,"Falling back to XMODEM");
+					lprintf(LOG_WARNING,"Falling back to XMODEM%s",(mode&GMODE)?"-g":"");
 					mode &= ~(YMODEM);
 					mode |= XMODEM|CRC;
 					erase_transfer_window();
@@ -1303,8 +1305,11 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 						goto end;
 					}
 					hold_update=old_hold;
-					draw_transfer_window("XMODEM Download");
-					lprintf(LOG_WARNING,"Falling back to XMODEM");
+					if(mode&GMODE)
+						draw_transfer_window("XMODEM Download");
+					else
+						draw_transfer_window("XMODEM-g Download");
+					lprintf(LOG_WARNING,"Falling back to XMODEM%s",(mode&GMODE)?"-g":"");
 					if(isfullpath(fname))
 						SAFECOPY(str,fname);
 					else
