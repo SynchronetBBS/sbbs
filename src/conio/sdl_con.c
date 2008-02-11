@@ -248,7 +248,7 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[1] = 128;
         yuv_array[2] = 128;
 #else
-        yuv_array[0] = (0.257 * r) + (0.504 * g) + (0.098 * b) + 16;
+        yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
         yuv_array[1] = 128;
         yuv_array[2] = 128;
 #endif
@@ -260,9 +260,9 @@ void RGBtoYUV(Uint8 r, Uint8 g, Uint8 b, Uint8 *yuv_array, int monochrome, int l
         yuv_array[1] = (b-yuv[0])*0.565 + 128;
         yuv_array[2] = (r-yuv[0])*0.713 + 128;
 #else
-        yuv_array[0] = (0.257 * r) + (0.504 * g) + (0.098 * b) + 16;
-        yuv_array[1] = 128 - (0.148 * r) - (0.291 * g) + (0.439 * b);
-        yuv_array[2] = 128 + (0.439 * r) - (0.368 * g) - (0.071 * b);
+        yuv_array[0] = (Uint8)((0.257 * r) + (0.504 * g) + (0.098 * b) + 16);
+        yuv_array[1] = (Uint8)(128 - (0.148 * r) - (0.291 * g) + (0.439 * b));
+        yuv_array[2] = (Uint8)(128 + (0.439 * r) - (0.368 * g) - (0.071 * b));
 #endif
     }
 
