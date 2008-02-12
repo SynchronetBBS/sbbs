@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = AdvancedTabSheet
-    TabIndex = 7
+    ActivePage = DNSBLTabSheet
+    TabIndex = 6
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -849,8 +849,8 @@ object MailCfgDlg: TMailCfgDlg
         Top = 9
         Width = 113
         Height = 25
-        Hint = 'Blacklist Exempted IP addresses'
-        Caption = 'Exempt IPs'
+        Hint = 'Blacklist Exempted IPs, hostnames, and e-mail addresses'
+        Caption = 'Exemptions'
         TabOrder = 2
         OnClick = DNSBLExemptionsButtonClick
       end
