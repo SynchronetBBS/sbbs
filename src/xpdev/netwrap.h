@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -40,6 +40,8 @@
 
 #include <stddef.h>		/* size_t */
 #include "str_list.h"	/* string list functions and types */
+
+#define IPv4_LOCALHOST	0x7f000001U	/* 127.0.0.1 */
 
 #if defined(__cplusplus)
 extern "C" {
