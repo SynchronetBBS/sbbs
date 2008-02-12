@@ -732,7 +732,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
  * show the progress of the transfer like this:
  * zmtx: sending file "garbage" 4096 bytes ( 20%)
  */
-void zmodem_progress(void* cbdata, ulong current_pos)
+void zmodem_progress(void* cbdata, uint32_t current_pos)
 {
 	unsigned	cps;
 	long		l;
@@ -773,20 +773,20 @@ void zmodem_progress(void* cbdata, ulong current_pos)
 
 static int send_files(char** fname, uint fnames)
 {
-	char	path[MAX_PATH+1];
-	int		i;
-	uint	errors;
-	uint	fnum;
-	uint	cps;
-	glob_t	g;
-	int		gi;
-	BOOL	success=TRUE;
-	long	fsize;
-	ulong	sent_bytes;
-	ulong	total_bytes=0;
-	time_t	t,startfile;
-	time_t	startall;
-	FILE*	fp;
+	char		path[MAX_PATH+1];
+	int			i;
+	uint		errors;
+	uint		fnum;
+	uint		cps;
+	glob_t		g;
+	int			gi;
+	BOOL		success=TRUE;
+	long		fsize;
+	uint32_t	sent_bytes;
+	uint32_t	total_bytes=0;
+	time_t		t,startfile;
+	time_t		startall;
+	FILE*		fp;
 
 	startall=time(NULL);
 
