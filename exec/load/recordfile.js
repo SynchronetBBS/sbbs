@@ -5,6 +5,7 @@ function GetRecordLength(RecordDef)
 
 	function GetTypeLength(fieldtype) {
 		switch(RecordDef[i].fieldtype) {
+			case "SignedInteger":
 			case "Integer":
 				return(4);
 			case "Date":
@@ -61,6 +62,11 @@ function RecordFile_ReadField(fieldtype)
 	}
 	else {
 		switch(fieldtype) {
+			case "SignedInteger":
+				var ret=this.file.readBin(4);
+				if(ret>=2147483648)
+					ret-=4294967296;
+				return(ret);
 			case "Integer":
 				return(this.file.readBin(4));
 			case "Date":
@@ -94,6 +100,7 @@ function RecordFile_WriteField(val, fieldtype)
 	}
 	else {
 		switch(fieldtype) {
+			case "SignedInteger":
 			case "Integer":
 				this.file.writeBin(val,4);
 				break;
