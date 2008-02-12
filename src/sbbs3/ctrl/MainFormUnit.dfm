@@ -10,7 +10,7 @@ object MainForm: TMainForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -14
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -46,11 +46,11 @@ object MainForm: TMainForm
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object HorizontalSplitter: TSplitter
     Left = 0
-    Top = 164
+    Top = 195
     Width = 632
     Height = 1
     Cursor = crVSplit
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 165
+    Top = 196
     Width = 632
-    Height = 162
+    Height = 121
     Align = alClient
     AutoSize = True
     Center = True
@@ -13499,7 +13499,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 30
     Width = 632
-    Height = 134
+    Height = 165
     Align = alTop
     BevelOuter = bvNone
     Constraints.MinHeight = 100
@@ -13507,18 +13507,18 @@ object MainForm: TMainForm
     TabOrder = 1
     Visible = False
     object TopVerticalSplitter: TSplitter
-      Left = 235
+      Left = 289
       Top = 0
-      Width = 2
-      Height = 134
+      Width = 3
+      Height = 165
       Cursor = crHSplit
       MinSize = 1
     end
     object UpperLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 235
-      Height = 134
+      Width = 289
+      Height = 165
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13526,10 +13526,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
-      Left = 237
+      Left = 292
       Top = 0
-      Width = 395
-      Height = 134
+      Width = 340
+      Height = 165
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13539,26 +13539,26 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 165
+    Top = 196
     Width = 632
-    Height = 162
+    Height = 121
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     object BottomVerticalSplitter: TSplitter
-      Left = 235
+      Left = 289
       Top = 0
-      Width = 2
-      Height = 162
+      Width = 3
+      Height = 121
       Cursor = crHSplit
       MinSize = 1
     end
     object LowerLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 235
-      Height = 162
+      Width = 289
+      Height = 121
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13566,10 +13566,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
-      Left = 237
+      Left = 292
       Top = 0
-      Width = 395
-      Height = 162
+      Width = 340
+      Height = 121
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13579,7 +13579,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 327
+    Top = 317
     Width = 632
     Height = 25
     Panels = <
@@ -14031,7 +14031,7 @@ object MainForm: TMainForm
           OnClick = CtrlMenuItemEditClick
         end
         object DNSBLExemptions: TMenuItem
-          Caption = 'DNS-blacklist Exempt IPs'
+          Caption = 'DNS-blacklist Exemptions'
           Hint = 'DNSBL_EXEMPT.CFG'
           OnClick = CtrlMenuItemEditClick
         end
