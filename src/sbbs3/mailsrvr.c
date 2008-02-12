@@ -1352,9 +1352,10 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 
 static void exempt_email_addr(const char* comment, const char* fromaddr, const char* toaddr)
 {
-	char fname[MAX_PATH+1];
-	char to[128];
-	FILE* fp;
+	char	fname[MAX_PATH+1];
+	char	to[128];
+	char	tmp[128];
+	FILE*	fp;
 
 	SAFEPRINTF(to,"<%s>",toaddr);
 	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
@@ -1363,7 +1364,8 @@ static void exempt_email_addr(const char* comment, const char* fromaddr, const c
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
-			fprintf(fp,";%s from %s:\n%s\n", comment, fromaddr, to);
+			fprintf(fp,"\n;%s from %s on %s\n%s\n"
+				,comment, fromaddr, timestr(&scfg,time(NULL),tmp), to);
 			fclose(fp);
 		}
 	}
