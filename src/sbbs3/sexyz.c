@@ -782,7 +782,7 @@ static int send_files(char** fname, uint fnames)
 	int			gi;
 	BOOL		success=TRUE;
 	long		fsize;
-	uint32_t	sent_bytes;
+	ulong		sent_bytes;
 	uint32_t	total_bytes=0;
 	time_t		t,startfile;
 	time_t		startall;
@@ -849,7 +849,7 @@ static int send_files(char** fname, uint fnames)
 				,mode&XMODEM ? 'X' : mode&YMODEM ? 'Y' : 'Z');
 
 			if(mode&ZMODEM)
-					success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, &sent_bytes);
+					success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, (uint32_t*)&sent_bytes);
 			else	/* X/Ymodem */
 					success=xmodem_send_file(&xm, path, fp, &startfile, &sent_bytes);
 
