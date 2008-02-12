@@ -4081,7 +4081,8 @@ static void sendmail_thread(void* arg)
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
 				delfattach(&scfg,&msg);
 
-			exempt_email_addr("SEND Auto-exempting",fromaddr,toaddr);
+			if(msg.from_agent==AGENT_PERSON)
+				exempt_email_addr("SEND Auto-exempting",fromaddr,toaddr);
 
 			/* QUIT */
 			sockprintf(sock,"QUIT");
