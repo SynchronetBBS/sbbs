@@ -1350,7 +1350,9 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	return(FALSE);
 }
 
-static void exempt_email_addr(const char* comment, const char* fromaddr, const char* toaddr)
+static void exempt_email_addr(const char* comment
+							  ,const char* fromname, const char* fromaddr
+							  ,const char* toaddr)
 {
 	char	fname[MAX_PATH+1];
 	char	to[128];
@@ -1364,8 +1366,8 @@ static void exempt_email_addr(const char* comment, const char* fromaddr, const c
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
-			fprintf(fp,"\n;%s from %s on %s\n%s\n"
-				,comment, fromaddr, timestr(&scfg,time(NULL),tmp), to);
+			fprintf(fp,"\n;%s from \"%s\" %s on %s\n%s\n"
+				,comment, fromname, fromaddr, timestr(&scfg,time(NULL),tmp), to);
 			fclose(fp);
 		}
 	}
@@ -4081,8 +4083,8 @@ static void sendmail_thread(void* arg)
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
 				delfattach(&scfg,&msg);
 
-			if(msg.from_agent==AGENT_PERSON)
-				exempt_email_addr("SEND Auto-exempting",fromaddr,toaddr);
+			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
+				exempt_email_addr("SEND Auto-exempting",msg.from,fromaddr,toaddr);
 
 			/* QUIT */
 			sockprintf(sock,"QUIT");
