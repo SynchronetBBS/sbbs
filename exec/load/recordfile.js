@@ -4,7 +4,7 @@ function GetRecordLength(RecordDef)
 	var len=0;
 
 	function GetTypeLength(fieldtype) {
-		switch(RecordDef[i].fieldtype) {
+		switch(fieldtype) {
 			case "SignedInteger":
 			case "Integer":
 				return(4);
@@ -87,21 +87,33 @@ function RecordFile_ReadField(fieldtype)
 	}
 }
 
-function RecordFile_WriteField(val, fieldtype)
+function RecordFile_WriteField(val, fieldtype, def)
 {
 	var i;
 	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
 
 	if(m!=null) {
 		var ret=new Array();
-		for(i=0; i<parseInt(m[1]); i++)
-			this.WriteField(val[i], m[2]);
+		for(i=0; i<parseInt(m[1]); i++) {
+			this.WriteField(val[i], m[2], def[i]);
+		}
 		return(ret);
 	}
 	else {
+		if(val==undefined)
+			val=def;
 		switch(fieldtype) {
 			case "SignedInteger":
+				if(val < -2147483648)
+					val = -2147483648;
+				if(val > 2147483647)
+					val = 2147483647;
+				this.file.writeBin(val,4);
 			case "Integer":
+				if(val<0)
+					val=0;
+				if(val>4294967295)
+					val=4294967295;
 				this.file.writeBin(val,4);
 				break;
 			case "Date":
@@ -177,19 +189,25 @@ function RecordFile_New()
 
 function RecordFileRecord_ReInit()
 {
+	var i;
+
 	for(i=0; i<this.parent.fields.length; i++)
 		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource);
 }
 
 function RecordFileRecord_Put()
 {
-	this.parent.file.position=(this.Record)*this.parent.RecordLength;
+	var i;
+
+	this.parent.file.position=this.Record * this.parent.RecordLength;
 	for(i=0; i<this.parent.fields.length; i++)
-		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type);
+		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
 }
 
 function RecordFileRecord_ReLoad(num)
 {
+	var i;
+
 	this.parent.file.position=(this.Record)*this.parent.RecordLength;
 	for(i=0; i<this.parent.fields.length; i++)
 		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
