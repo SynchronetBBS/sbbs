@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = DNSBLTabSheet
-    TabIndex = 6
+    ActivePage = AdvancedTabSheet
+    TabIndex = 7
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -879,7 +879,8 @@ object MailCfgDlg: TMailCfgDlg
           'Allow receipt of mail by user number'
           'Allow receipt of mail to '#39'sysop'#39' and '#39'postmaster'#39
           'Check '#39'Received'#39' header fields against DNSBL'
-          'Throttle DNS blacklisted server sessions')
+          'Throttle DNS blacklisted server sessions'
+          'Auto-exempt sent-mail recipients from DNSBL')
         TabOrder = 0
       end
     end
