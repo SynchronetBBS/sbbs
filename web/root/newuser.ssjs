@@ -156,8 +156,8 @@ if(http_request.method=='GET') {
         template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
     else
         template.gender_list='<select name="gender">\n<option value="">Unspecified</option>\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
-    template.shell_list=gen_shell_list(system.newuser_command_shell);
-    template.editor_list=gen_editor_list(system.newuser_editor);
+    template.shell_list=gen_shell_list(system.newuser_command_shell.toLowerCase());
+    template.editor_list=gen_editor_list(system.newuser_editor.toLowerCase());
     showform();
 }
 else {
@@ -171,13 +171,13 @@ else {
     template.gender_list+='<option value="F"'+(gender=='F'?' selected':'')+'>Female</option>\n</select>';
 
     if(http_request.query["shell"] != undefined)
-        template.shell_list=gen_shell_list(http_request.query.shell[0]);
+        template.shell_list=gen_shell_list(http_request.query.shell[0].toLowerCase());
     else
-        template.shell_list=gen_shell_list(system.newuser_command_shell);
+        template.shell_list=gen_shell_list(system.newuser_command_shell.toLowerCase());
     if(http_request.query["editor"] != undefined)
-        template.editor_list=gen_editor_list(http_request.query.editor[0]);
+        template.editor_list=gen_editor_list(http_request.query.editor[0].toLowerCase());
     else
-        template.editor_list=gen_editor_list(system.newuser_editor);
+        template.editor_list=gen_editor_list(system.newuser_editor.toLowerCase());
 
     /* POST request... should be a valid application */
     for(field in fields) {
@@ -250,9 +250,9 @@ else {
 		if(template.bd_required==required_str || http_request.query["birthdate"].toString().length > 0) {
         	err=1;
         	if(system.settings & SYS_EURODATE)
-        	    template.err_message+="Bad date format (ie: 19/12/75)\r\n";
+        	    template.err_message+="Bad date format (example: 19/12/75)\r\n";
         	else
-        	    template.err_message+="Bad date format (ie: 12/19/75)\r\n";
+        	    template.err_message+="Bad date format (example: 12/19/75)\r\n";
 		}
     }
     else {
@@ -280,25 +280,30 @@ else {
             }
         }
     }
-    if((system.newuser_questions & UQ_DUPHAND) && system.matchuserdata(50,http_request.query["handle"])) {
+	if(!system.check_name(http_request.query.alias)) {
+		err=1;
+        template.err_message+="Please choose a different alias\r\n";
+        template.errs["alias"]="Bad format";
+    }
+    else if((system.newuser_questions & UQ_DUPHAND) && system.matchuserdata(50,http_request.query["handle"])) {
         err=1;
         template.err_message+="Please choose a different chat handle\r\n";
         template.errs["handle"]="Duplicate handle";
     }
-    if(system.matchuser(http_request.query["alias"])) {
+    else if(system.matchuser(http_request.query["alias"])) {
         err=1;
         template.err_message+="Please choose a different alias.\r\n";
         template.errs["alias"]="Duplicate alias";
     }
-    if((system.newuser_questions & UQ_DUPREAL) && system.matchuser(http_request.query["name"])) {
+    else if((system.newuser_questions & UQ_DUPREAL) && system.matchuser(http_request.query["name"])) {
         err=1;
         template.err_message+="A user "+(system.newuser_questions & UQ_COMPANY?"for that company":"with that name")+" already exists.\r\n";
         template.errs["name"]="Duplicate "+(system.newuser_questions & UQ_COMPANY?"company":"name");
     }
-    newpw=genpass();
-    if(err) {
+    if(err)
         showform();
-    }
+
+    newpw=genpass();
 
     /* Generate and send email */
     if(http_request.query.netmail != undefined && http_request.query.netmail != '') {
@@ -415,7 +420,7 @@ function gen_shell_list(current) {
     return("");
 }
 
-/* List of editors is on the ToDo list */
+/* This needs to filter based on access requirements (ARS)! */
 function gen_editor_list(current) {
     var retval="";
     retval='<select name="editor">\n';
