@@ -193,7 +193,7 @@ function RecordFileRecord_ReInit()
 	var i;
 
 	for(i=0; i<this.parent.fields.length; i++)
-		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource);
+		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
 }
 
 function RecordFileRecord_Put()
