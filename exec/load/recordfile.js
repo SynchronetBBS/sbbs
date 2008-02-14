@@ -109,6 +109,7 @@ function RecordFile_WriteField(val, fieldtype, def)
 				if(val > 2147483647)
 					val = 2147483647;
 				this.file.writeBin(val,4);
+				break;
 			case "Integer":
 				if(val<0)
 					val=0;
