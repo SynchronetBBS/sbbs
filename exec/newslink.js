@@ -108,6 +108,8 @@ function writeln(str)
 
 function readln(len)
 {
+	if(!len)
+		len=512;	// RFC977 and RFC3977 specify a maximum of 512-octets per response line
 	rsp = socket.recvline(len);
 	if(debug)
 		printf("rsp: %s\r\n",rsp);
