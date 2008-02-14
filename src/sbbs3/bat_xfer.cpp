@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -783,7 +783,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 	}
 	if(f->size<=0 /* !fexist(str) */) {
 		bprintf(text[CantAddToQueue],f->name);
-		bputs(text[FileIsNotOnline]);
+		bprintf(text[FileIsNotOnline],f->name);
 		return(false); 
 	}
 	if(batdn_total>=cfg.max_batdn) {
