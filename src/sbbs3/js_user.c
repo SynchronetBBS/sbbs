@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -478,19 +478,19 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			putuserrec(p->cfg,p->user.number,U_SEX,0,strupr(str));	/* single char */
 			break;
 		case USER_PROP_CURSUB:	 
-			putuserrec(p->cfg,p->user.number,U_CURSUB,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURSUB,0,str);
 			break;
 		case USER_PROP_CURDIR:	 
-			putuserrec(p->cfg,p->user.number,U_CURDIR,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURDIR,0,str);
 			break;
 		case USER_PROP_CURXTRN:	 
-			putuserrec(p->cfg,p->user.number,U_CURXTRN,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_CURXTRN,0,str);
 			break;
 		case USER_PROP_XEDIT: 	 
-			putuserrec(p->cfg,p->user.number,U_XEDIT,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_XEDIT,0,str);
 			break;
 		case USER_PROP_SHELL: 	 
-			putuserrec(p->cfg,p->user.number,U_COMP,0,strupr(str));
+			putuserrec(p->cfg,p->user.number,U_COMP,0,str);
 			break;
 		case USER_PROP_MISC:
 			if(JS_ValueToInt32(cx,*vp,&val))
@@ -650,11 +650,11 @@ static char* user_prop_desc[] = {
 	,"AKA connection"
 	,"terminal rows (lines)"
 	,"gender type"
-	,"current message sub-board"
-	,"current file directory"
-	,"current external program being run"
-	,"external message editor"
-	,"command shell"
+	,"current/last message sub-board (internal code)"
+	,"current/last file directory (internal code)"
+	,"current/last external program (internal code) run"
+	,"external message editor (internal code) or <i>blank</i> if none"
+	,"command shell (internal code)"
 	,"settings bitfield - see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
 	,"QWK packet settings bitfield - see <tt>QWK_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
 	,"chat settings bitfield - see <tt>CHAT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
