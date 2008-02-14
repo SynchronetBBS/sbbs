@@ -65,14 +65,15 @@ function str_cmds(str)
 			writeln("\toptionally clearing all nodes error counters.");
 		}
 		if(str=="ERR") {
-			if(file_exists(system.logs_dir+"error.log")) {
+			var errlog=system.logs_dir+"error.log";
+			if(file_exists()) {
 				write(bbs.text(ErrorLogHdr));
-				console.printfile(system.logs_dir+"error.log");
+				console.printfile(errlog);
 				if(!console.noyes(bbs.text(DeleteErrorLogQ)))
-					file_remove(system.logs_dir+"error.log");
+					file_remove(errlog);
 			}
 			else {
-				write(bbs.text(NoErrorLogExists));
+				write(format(bbs.text(FileDoesNotExist),errlog));
 			}
 			for(i=0;i<system.nodes;i++) {
 				if(system.node_list[i].errors)
