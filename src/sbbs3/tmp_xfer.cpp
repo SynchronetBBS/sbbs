@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -105,6 +105,12 @@ void sbbs_t::temp_xfer()
 			logch(ch,0);
 		switch(ch) {
 			case 'A':   /* add to temp file */
+				if(!isdir(cfg.temp_dir)) {
+					bprintf(text[DirectoryDoesNotExist], cfg.temp_dir);
+					SAFEPRINTF(str,"Temp directory does not exist: %s", cfg.temp_dir);
+					errorlog(str);
+					break;
+				}
 				/* free disk space */
 				space=getfreediskspace(cfg.temp_dir,1024);
 				if(space<(ulong)cfg.min_dspace) {
@@ -283,6 +289,13 @@ void sbbs_t::extract(uint dirnum)
 	if(!strcmp(cfg.dir[dirnum]->code,"TEMP"))
 		intmp=1;
 
+	if(!isdir(cfg.temp_dir)) {
+		bprintf(text[DirectoryDoesNotExist], cfg.temp_dir);
+		SAFEPRINTF(str,"Temp directory does not exist: %s", cfg.temp_dir);
+		errorlog(str);
+		return;
+	}
+
 	/* get free disk space */
 	space=getfreediskspace(cfg.temp_dir,1024);
 	if(space<(ulong)cfg.min_dspace) {
@@ -367,8 +380,9 @@ void sbbs_t::extract(uint dirnum)
 		SAFECOPY(temp_uler,f.uler);
 		SAFECOPY(temp_file,f.name); }     /* padded filename */
 	if(!fexistcase(path)) {
-		bputs(text[FileNotThere]);  /* not on disk */
-		return; }
+		bprintf(text[FileDoesNotExist],path);  /* not on disk */
+		return; 
+	}
 	done=0;
 	while(online && !done) {
 		mnemonics(text[ExtractFilesPrompt]);

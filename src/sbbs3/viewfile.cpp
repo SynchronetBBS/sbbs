@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -110,28 +110,31 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 /****************************************************************************/
 void sbbs_t::viewfilecontents(file_t* f)
 {
-	char	str[128],cmd[128];
-	char 	tmp[512];
+	char	cmd[128];
+	char	path[MAX_PATH+1];
+	char* 	ext;
 	int		i;
 
-	if(f->size<=0L) {
-		bputs(text[FileNotThere]);
-		return; }
+	getfilepath(&cfg, f, path);
 
-	sprintf(str,"%s%s",f->altpath > 0 && f->altpath<=cfg.altpaths
-		? cfg.altpath[f->altpath-1] : cfg.dir[f->dir]->path
-		,unpadfname(f->name,tmp));
-	strcpy(tmp,f->name);
-	truncsp(tmp);
-	for(i=0;i<cfg.total_fviews;i++) {
-		if(!stricmp(tmp+9,cfg.fview[i]->ext)
-			&& chk_ar(cfg.fview[i]->ar,&useron)) {
-			strcpy(cmd,cfg.fview[i]->cmd);
-			break; } }
-	if(i==cfg.total_fviews)
-		bprintf(text[NonviewableFile],tmp+9);
+	if(f->size<=0L) {
+		bprintf(text[FileDoesNotExist],path);
+		return; 
+	}
+	if((ext=getfext(path))!=NULL) {
+		ext++;
+		for(i=0;i<cfg.total_fviews;i++) {
+			if(!stricmp(ext,cfg.fview[i]->ext)
+				&& chk_ar(cfg.fview[i]->ar,&useron)) {
+				strcpy(cmd,cfg.fview[i]->cmd);
+				break; 
+			} 
+		}
+	}
+	if(ext==NULL || i==cfg.total_fviews)
+		bprintf(text[NonviewableFile],ext);
 	else
-		if((i=external(cmdstr(cmd,str,str,NULL)
+		if((i=external(cmdstr(cmd,path,path,NULL)
 			,EX_OUTL|EX_OUTR|EX_INR))!=0)
-			errormsg(WHERE,ERR_EXEC,cmdstr(cmd,str,str,NULL),i);
+			errormsg(WHERE,ERR_EXEC,cmdstr(cmd,path,path,NULL),i);
 }
