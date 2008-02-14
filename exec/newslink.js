@@ -106,9 +106,9 @@ function writeln(str)
 	write(str + "\r\n");
 }
 
-function readln(str)
+function readln(len)
 {
-	rsp = socket.readln();
+	rsp = socket.recvline(len);
 	if(debug)
 		printf("rsp: %s\r\n",rsp);
 	return(rsp);
@@ -543,7 +543,10 @@ for(i in area) {
 		if(parseInt(readln())==224) {
 			printf("Getting headers for articles %u through %u\r\n", ptr, last_msg);
 			article_list = new Array();
-			while((rsp=readln())!='.' && socket.is_connected && !js.terminated) {
+			// RFC977 and RFC3977 clearly state 512-bytes per response line,
+			// but "Timelord" reported a problem with some news server sending
+			// > 512-byte response lines for the XOVER command
+			while((rsp=readln(1024))!='.' && socket.is_connected && !js.terminated) {
 				if(rsp)
 					article_list.push(parseInt(rsp));
 				maybe_yield();
@@ -582,7 +585,7 @@ for(i in area) {
 
 			maybe_yield();
 
-			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+			line = readln();
 
 			if(line==null) {
 				print("!TIMEOUT waiting for text line\r\n");
@@ -647,7 +650,7 @@ for(i in area) {
 
 					if(part>0) {
 
-						line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+						line = readln();
 
 						body += line+"\r\n";
 
