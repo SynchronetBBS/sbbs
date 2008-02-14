@@ -1193,7 +1193,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					*(w++)=(WORD)val;
 					break;
 				case sizeof(DWORD):
-					*(l++)=val;
+					*(l++)=(DWORD)val;
 					break;
 			}
 		}
