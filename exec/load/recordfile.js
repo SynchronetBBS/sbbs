@@ -5,6 +5,8 @@ function GetRecordLength(RecordDef)
 
 	function GetTypeLength(fieldtype) {
 		switch(fieldtype) {
+			case "Float":
+				return(22);
 			case "SignedInteger":
 			case "Integer":
 				return(4);
@@ -62,6 +64,9 @@ function RecordFile_ReadField(fieldtype)
 	}
 	else {
 		switch(fieldtype) {
+			case "Float":
+				var tmp=this.file.read(22);
+				return(parseFloat(tmp));
 			case "SignedInteger":
 				var ret=this.file.readBin(4);
 				if(ret>=2147483648)
@@ -73,7 +78,7 @@ function RecordFile_ReadField(fieldtype)
 				var tmp=this.file.read(8);
 				return(tmp.replace(/\x00/g,""));
 			case "Boolean":
-				if(file.readBin(1))
+				if(this.file.readBin(1))
 					return(true);
 				return(false);
 			default:
@@ -103,6 +108,12 @@ function RecordFile_WriteField(val, fieldtype, def)
 		if(val==undefined)
 			val=def;
 		switch(fieldtype) {
+			case "Float":
+				var wr=val.toExponential(15);
+				while(wr.length < 22)
+					wr=wr+"\x00";
+				this.file.write(wr,22);
+				break;
 			case "SignedInteger":
 				if(val < -2147483648)
 					val = -2147483648;
