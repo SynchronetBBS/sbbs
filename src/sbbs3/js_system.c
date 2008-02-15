@@ -215,7 +215,8 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_NewNumberValue(cx,cfg->new_min,vp);
 			break;
 		case SYS_PROP_NEW_SHELL:
-			*vp = INT_TO_JSVAL(cfg->new_shell);
+			if(cfg->new_shell<cfg->total_shells)
+				p=cfg->shell[cfg->new_shell]->code;
 			break;
 		case SYS_PROP_NEW_XEDIT:
 			p=cfg->new_xedit;
