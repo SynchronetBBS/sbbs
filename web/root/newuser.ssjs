@@ -25,7 +25,7 @@ if(system.settings & SYS_EURODATE)
 else
     template.date_format="MM/DD/YY";
 
-var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender", "shell", "editor");
+var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender", "editor");
 var required=new Array;
 var maxlengths={alias:25,name:25,handle:8,netmail:60,address:30,location:30,zipcode:10,phone:12,birthdate:8,gender:1};
 var err=0;
@@ -133,16 +133,6 @@ if(!(system.newuser_questions & UQ_ALIASES && system.newuser_questions & UQ_REAL
     }
 }
 
-/* List of shells is on the ToDo list */
-http_request.query.shell=new Array();
-http_request.query.shell[0]=system.newuser_command_shell.toString();
-if(system.newuser_questions & UQ_CMDSHELL) {
-    required.push("shell");
-    template.shell_required=required_str;
-}
-else
-    template.shell_required=optional_str;
-
 if(system.newuser_questions & UQ_NONETMAIL)
     template.email_required=optional_str;
 else {
@@ -156,7 +146,6 @@ if(http_request.method=='GET') {
         template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
     else
         template.gender_list='<select name="gender">\n<option value="">Unspecified</option>\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
-    template.shell_list=gen_shell_list(system.newuser_command_shell.toLowerCase());
     template.editor_list=gen_editor_list(system.newuser_editor.toLowerCase());
     showform();
 }
@@ -170,10 +159,6 @@ else {
     template.gender_list+='<option value="M"'+(gender=='M'?' selected':'')+'>Male</option>\n';
     template.gender_list+='<option value="F"'+(gender=='F'?' selected':'')+'>Female</option>\n</select>';
 
-    if(http_request.query["shell"] != undefined)
-        template.shell_list=gen_shell_list(http_request.query.shell[0].toLowerCase());
-    else
-        template.shell_list=gen_shell_list(system.newuser_command_shell.toLowerCase());
     if(http_request.query["editor"] != undefined)
         template.editor_list=gen_editor_list(http_request.query.editor[0].toLowerCase());
     else
@@ -340,9 +325,14 @@ else {
         msgbase.close();
     }
 
-    nuser=system.new_user(http_request.query.name);
+	try { 
+		nuser=system.new_user(http_request.query.alias);
+	} catch(e) {
+		template.err_message = e;
+		log(LOG_ERR,"JavaScript exception: " + e);
+		showform();
+	}
     nuser.name=http_request.query.name;
-    nuser.alias=http_request.query.alias;
     nuser.handle=http_request.query.handle;
     nuser.netmail=http_request.query.netmail;
     nuser.address=http_request.query.address;
@@ -352,7 +342,6 @@ else {
     nuser.gender=http_request.query.gender;
     nuser.security.password=newpw;
     nuser.phone=http_request.query.phone;
-    nuser.shell=http_request.query.shell;
     nuser.editor=http_request.query.editor;
 
     if(send_user_info_to_sysop)
@@ -413,11 +402,6 @@ function genpass() {
 
     }
     return(pw);
-}
-
-/* List of shells is on the ToDo list */
-function gen_shell_list(current) {
-    return("");
 }
 
 /* This needs to filter based on access requirements (ARS)! */
