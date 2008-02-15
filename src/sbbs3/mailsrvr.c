@@ -1350,6 +1350,24 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	return(FALSE);
 }
 
+static BOOL email_addr_is_exempt(const char* addr)
+{
+	char fname[MAX_PATH+1];
+	char netmail[128];
+	char* p;
+
+	if(*addr==0 || strcmp(addr,"<>")==0)
+		return FALSE;
+	sprintf(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
+	if(findstr((char*)addr,fname))
+		return TRUE;
+	SAFECOPY(netmail, addr);
+	if(*(p=netmail)=='<')
+		p++;
+	truncstr(p,">");
+	return userdatdupe(&scfg, 0, U_NETMAIL, LEN_NETMAIL, p, FALSE);
+}
+
 static void exempt_email_addr(const char* comment
 							  ,const char* fromname, const char* fromaddr
 							  ,const char* toaddr)
@@ -1360,8 +1378,8 @@ static void exempt_email_addr(const char* comment
 	FILE*	fp;
 
 	SAFEPRINTF(to,"<%s>",toaddr);
-	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
-	if(!findstr(to,fname)) {
+	if(!email_addr_is_exempt(to)) {
+		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 		if((fp=fopen(fname,"a"))==NULL)
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
@@ -2971,15 +2989,10 @@ static void smtp_thread(void* arg)
 			SAFECOPY(reverse_path,p);
 
 			/* If MAIL FROM address is in dnsbl_exempt.cfg, clear DNSBL results */
-			if(dnsbl_result.s_addr) {
-				char fname[MAX_PATH+1];
-				
-				sprintf(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
-				if(findstr(reverse_path,fname)) {
-					lprintf(LOG_INFO,"%04d SMTP Ignoring DNSBL results for exempt sender: %s"
-						,socket,reverse_path);
-					dnsbl_result.s_addr=0;
-				}
+			if(dnsbl_result.s_addr && email_addr_is_exempt(reverse_path)) {
+				lprintf(LOG_INFO,"%04d SMTP Ignoring DNSBL results for exempt sender: %s"
+					,socket,reverse_path);
+				dnsbl_result.s_addr=0;
 			}
 
 			/* Update client display */
