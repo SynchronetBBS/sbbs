@@ -1224,6 +1224,11 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	alias=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
 
+	if(!check_name(cfg,alias)) {
+		JS_ReportError(cx,"Invalid or duplicate user alias: %s", alias);
+		return JS_FALSE;
+	}
+
 	memset(&user,0,sizeof(user));
 
 	user.sex=' ';
