@@ -135,7 +135,7 @@ if(!no_anonymous)
 while(client.socket.is_connected && !quit) {
 
 	// Get Request
-	cmdline = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+	cmdline = client.socket.recvline(1024 /*maxlen*/, 300 /*timeout*/);
 
 	if(cmdline==null) {
 		log(LOG_WARNING,"!TIMEOUT waiting for request");
@@ -685,7 +685,7 @@ while(client.socket.is_connected && !quit) {
 			var lines=0;
 			while(client.socket.is_connected) {
 
-				line = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+				line = client.socket.recvline(4096 /*maxlen*/, 300 /*timeout*/);
 
 				if(line==null) {
 					log(LOG_NOTICE,"!TIMEOUT waiting for text line");
