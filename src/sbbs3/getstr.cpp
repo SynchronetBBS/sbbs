@@ -581,7 +581,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 /* Returns a valid number between 1 and max, 0 if no number entered, or -1  */
 /* if the user hit 'Q' or ctrl-c                                            */
 /****************************************************************************/
-long sbbs_t::getnum(ulong max)
+long sbbs_t::getnum(ulong max, ulong dflt)
 {
     uchar ch,n=0;
 	long i=0;
@@ -610,6 +610,8 @@ long sbbs_t::getnum(ulong max)
 		else if(ch==CR) {
 			CRLF;
 			lncntr=0;
+			if(!n)
+				return(dflt);
 			return(i); 
 		}
 		else if((ch==BS || ch==DEL) && n) {
@@ -617,7 +619,7 @@ long sbbs_t::getnum(ulong max)
 			i/=10;
 			n--; 
 		}
-		else if(isdigit(ch) && (i*10UL)+(ch&0xf)<=max && (ch!='0' || n)) {
+		else if(isdigit(ch) && (i*10UL)+(ch&0xf)<=max && (dflt || ch!='0' || n)) {
 			i*=10L;
 			n++;
 			i+=ch&0xf;

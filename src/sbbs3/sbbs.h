@@ -520,7 +520,7 @@ public:
 	/* getstr.cpp */
 	size_t	getstr_offset;
 	size_t	getstr(char *str, size_t length, long mode);
-	long	getnum(ulong max);
+	long	getnum(ulong max, ulong dflt=0);
 	void	insert_indicator(void);
 
 	/* getkey.cpp */
