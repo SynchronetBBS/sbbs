@@ -78,7 +78,7 @@ function RecordFile_ReadField(fieldtype)
 				var tmp=this.file.read(8);
 				return(tmp.replace(/\x00/g,""));
 			case "Boolean":
-				if(this.file.readBin(1))
+				if(this.file.readBin(1) > 0)
 					return(true);
 				return(false);
 			default:
@@ -135,7 +135,7 @@ function RecordFile_WriteField(val, fieldtype, def)
 				this.file.write(wr,8);
 				break;
 			case "Boolean":
-				if(val)
+				if(val.valueOf())
 					this.file.writeBin(255,1);
 				else
 					this.file.writeBin(0,1);
