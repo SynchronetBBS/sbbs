@@ -391,7 +391,9 @@ void main(int argc, char **argv)
 {
 	char		mx[128],mx2[128];
 	int			result;
+#ifdef _WIN32
 	WSADATA		WSAData;
+#endif
 
 	printf("sizeof(dns_msghdr_t)=%d\n",sizeof(dns_msghdr_t));
 	printf("sizeof(dns_query_t)=%d\n",sizeof(dns_query_t));
@@ -403,10 +405,12 @@ void main(int argc, char **argv)
 	}
 
 
+#ifdef _WIN32
     if((result = WSAStartup(MAKEWORD(1,1), &WSAData))!=0) {
 		printf("Error %d in WSAStartup",result);
 		return;
 	}
+#endif
 
 	if((result=dns_getmx(argv[1],mx,mx2,0,inet_addr(argv[2]),FALSE,60))!=0) 
 		printf("Error %d getting mx record\n",result);
@@ -415,7 +419,9 @@ void main(int argc, char **argv)
 		printf("MX2: %s\n",mx2);
 	}
 
+#ifdef _WIN32
 	WSACleanup();
+#endif
 	gets(mx);
 }
 #endif
