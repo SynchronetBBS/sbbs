@@ -13,7 +13,7 @@
 
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 static int uifc_initialized=0;
-static int uifc_old_font=0;
+int uifc_old_font=0;
 
 #define UIFC_INIT	(1<<0)
 #define WITH_SCRN	(1<<1)

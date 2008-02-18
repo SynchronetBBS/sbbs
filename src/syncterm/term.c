@@ -1587,12 +1587,16 @@ void font_control(struct bbslist *bbs)
 					struct file_pick fpick;
 					j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
 
-					if(j!=-1 && fpick.files>=1)
+					if(j!=-1 && fpick.files>=1) {
 						loadfont(fpick.selected[0]);
+						uifc_old_font=getfont();
+					}
 					filepick_free(&fpick);
 				}
-				else
+				else {
 					setfont(i,FALSE);
+					uifc_old_font=getfont();
+				}
 			}
 		break;
 	}
