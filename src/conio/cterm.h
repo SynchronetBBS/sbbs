@@ -59,7 +59,7 @@ struct cterminal {
 	int	x;
 	int	y;
 	char *buffer;
-	int	attr;
+	unsigned char	attr;
 	int save_xpos;
 	int save_ypos;
 	char	escbuf[1024];
