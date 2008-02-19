@@ -1,0 +1,218 @@
+                        TRADE WARS (v.ii)
+                    by CHRIS SHERRICK (PTL)
+                Copyright 1986   Chris Sherrick
+
+                 RBBS version brought to you by
+                      The Reno RBBS and     
+                Sysop John Morris / 702-673-3387
+
+	This is a multi-player game that is a cross between a war game and
+a space trading game.  Players compete against one another and are even
+able to attack and kill each other.  You have a ship that can roam the
+universe, from space port to space port trading metals, organics and equipment
+to earn credits (money.)  Once you've earned some credits, you can buy
+fighters or cargo holds.  With more cargo holds, you can carry more merchandise
+and earn more credits.  With fighters, you can attack and destroy other
+players' ships and steal cargo holds from them.  You can also defend a
+space port (or a series of sectors and space ports) which will give you
+exclusive trading and make even more credits.  The goal of this game is
+simple:  to control the universe.
+
+GETTING STARTED
+     All you have to do to play this game is to log on.  The computer
+will automatically recognize you and enter you in the game if there is
+room for you.  If there isn't room for you, don't worry.  Old players
+are often deleted and room should open up in several days. You should
+also leave a message for the sysop telling him you want to play because
+he might be able to delete an old player before his time to make room
+for you.  When you start, the computer will give you a ship along with
+some cargo holds and some fighters and you will be on your way to becoming
+the most powerful person in the universe.
+
+ONCE YOU'RE IN...
+     Once you're in, the computer will remember everything you do.  If
+you exit the game in the middle, or even hang up on the game, it will
+remember what you did and and allow you to continue the next time you
+decide to play.  You are allowed so many turns a day, and each time you
+move from sector to sector or land at a space port, you lose one turn.
+Unfortunately, how many turns you've used up is remembered.  If someone
+has left some fighters to protect the sector, you have to fight off his
+fighters before you you are allowed to do anything in that sector.  You
+can also retreat at the cost of one fighter though.
+     However, once you're in a sector, you can trade at space ports, take
+or leave fighters within the sector to defend it, and even attack other
+peoples' ships.  Every time you attack someone's ship, they will know
+who did it.  This also goes for you; if someone kills your fighters, you
+will know who did it.  So experiment!  Feel free to wipe someone out...
+they might even return the favor.  Start a war!
+
+THE CABAL
+     You're not alone in the universe.  The evil Cabal, a race of warring
+creatures, wander around seeking whom they can devour.  These evil warriors
+dwell in a portion of the known universe and if you are mighty enough,
+you can conquer them.  The Cabal exist for the sole purpose to annoy players,
+but an outstanding Trade Wars player can actually defeat the Cabal and
+receive 100,000 points!  Also, there is a bounty on the Cabal:
+For every Cabal fighter you destroy, you will receive 100 points. 
+But beware, these guys are tough.
+
+ONCE YOU'RE IN A SECTOR      Once you're in a sector, there are several
+things you can do.  The following is a list of available commands:
+
+A - ATTACK
+     This command allows your fighters to attack another player's ship
+in the same sector.  When you attack another's ship, the computer will
+ask you the number of fighters you want to use.  Then the computer will
+do the fighting for you.  On every attack, someone will lose a fighter,
+and there is a 50% chance it will be yours.  If you don't lose one, the
+other guy will.  The computer will keep fighting until either you lose
+that many fighters, or you wipe out all the other persons fighters.  Then
+it will give you a total telling you how good (or bad) you did.  It is
+possible to lose 500 fighters in one stroke, so be careful with this one.
+If you kill off all the fighters protecting another player's ship, you
+can attack the ship and salvage 1/4 of its cargo.
+
+C - COMPUTER
+     Each ship has an on-board computer.  It can be called from within
+a sector.  The computer has four functions, a port report, a sector finder,
+a ranking routine, and a radio message routine.  The port report will give 
+the quantity of any unprotected port so you can immediately know where there 
+is some good trading.  The computer will ask you for what sector the port 
+is in.  Just enter the sector number.  For example, for Sol, enter a '1'.
+If there isn't a port in that sector, or someone is protecting that port 
+with fighters, the computer will respond with "No information available."
+     The sector finder will tell you how to get to any sector you specify.
+If you want to know how to get to another sector, run this program.  It
+will tell you which sectors to take to get to the sector you want.  This
+will be very useful until you get a map made.
+     The ranking routine ranks all the players playing the game.  Along
+side the player is his or her value in credits.  This includes everything,
+including fighters dropped in sectors.  Note that a person who has been
+killed has a value of zero.
+     The last function is the Send message function.  You will be asked
+for a 'search string'.. For instance if you wanted to send a message to
+Chris Sherrick, you could input  Sherr  for the search string. Or you can
+simply enter the persons full name.  Once you have located the proper 
+player to send the message to, you will be given a space of 74 characters
+to write your message in.
+
+D - DISPLAY SECTOR
+     This will give you info about the sector you are in.  It will tell
+you the sector you are in, the name and class of any ports in the sector,
+other players' ships and the the number of fighters protecting them, the
+number of fighters protecting the sector and who they belong to, and what
+sectors the warps lead to.  Note the difference between fighters protecting
+the sector and the fighters accompanying ships.  The fighters protecting
+the sector are the ones you have to fight in order to get into the sector.
+The fighters accompanying the ships are the ones you have to destroy to
+get to the other players' ships (using the 'A' command.)
+
+F - TAKE OR LEAVE FIGHTERS
+     This lets you leave fighters to defend a sector or take the ones
+already there.  If there are fighters protecting a sector, no one can
+enter that sector without defeating them.  The computer will ask you how
+many fighters you want defending the sector.  Note: this is DEFENDING
+THE SECTOR.  If you have some there already, and you enter a number less
+than the number there, you will take the remaining fighters.  If you want
+to leave three fighters in an empty sector, enter '3'.  If you have seven
+fighters in a sector and want to take them all, enter '0'. (None will
+be left defending the sector.)  If you have four fighters in a sector
+and want to take three and leave one, enter '1' and the remaining three
+will go with you.  You are not allowed to leave fighters in sectors 1-7.
+Sectors 1-7 is the Union (the local government) and they don't like having
+fighters in their presence.
+
+G - GAMBLE
+     Due to popular demand, a new command has been added: Gambling.  You
+gamble with credits and have 50-50 odds.  Just type G when you're in a
+sector.  Warning: DON'T BET ALL YOU CREDITS!  If you lose all your credits,
+and you have empty cargo holds there is nothing you can do.  You just
+have to wait until someone destroys you.
+
+I - INFO ABOUT YOUR SHIP
+     This command will give you information about your ship.  It will
+tell you the sector you are in, the number of turns left, the number of
+fighters in your fleet, the number of cargo holds on your ship and what
+they contain, and how many credits you have.
+
+L - LAND/CREATE A PLANET
+     Planets are similar to ports, only they produce everything, and give
+their merchandise away instead of bartering with them. If you <L>and in
+a sector containing no planets you will be able to Create a planet. But
+you will need 10,000 credits to do so. Sounds nice doesn't it?  
+One thing you should know about planets is what productivity is.
+Productivity is how many units that planet produces per 24 hours.  You can
+ increase the productivity (by putting money into a planet)  
+Planets start with an initial productivity of 1 in ore, organics,
+and equipment.  They have a maximum productivity of 20 each.  I highly
+recommend leaving fighters in a sector with a planet in it because it
+doesn't cost a thing to destroy a planet.  All you have to do is land
+at it.  There is one planet allowed per sector.
+
+M - MOVE
+     This allows you to move from sector to sector.  The Union has established
+a web of warps from sector to sector that you can travel through.  Each
+move takes up one turn and you have a limited number of turns a day. 
+If you move into a sector with fighters protecting it, you will have to
+fight them before you can enter.  You can attack or retreat.  If you retreat,
+you will return to the sector from which you came from, but you won't
+use up another turn.  It will cost you one fighter to retreat and if you
+don't have one left, there is a 50% chance you will make it.
+
+P - PORT
+     This command allows you to land and trade with space ports, providing
+there is one in your sector.  Docking at a space port uses up one turn
+When you trade, you trade in units.  One unit is enough to fill one cargo
+hold aboard your ship.  There are three types of merchandise: ore, organics
+(org.), and equipment (eqp.) Each port has a class that determines what
+it will sell and buy.  A class 1 port sells eqp. and buys everything else. 
+A class 2 port sells organics and buys everything else, and a class 3
+port sells ore and buys everything else.  When you dock, you will haggle
+over the prices.  They will give you an offer, and you will counter offer. 
+This will continue until either they take your offer, or decide to go
+elsewhere to do business.  The prices depend on how much they have or
+need.  The more they have or need, the better the bargain.  Ports produce
+a limited amount of merchandise a day. If you can capture one with fighters,
+don't trade with it for several days and let the prices get better and
+better.  How much of a bargain varies from port to port.  Sol (in sector
+1) is a special port.  It sells fighters, cargo holds, and turns.  When
+you buy turns, they are a temporary one shot deal; you buy turns, not
+the number of turns allotted per day. These prices of fighters and cargo
+holds vary depending on what day of the week it is; you don't haggle over
+these prices.
+
+Q - QUIT GAME
+     This command allows you to quit the game and return to the BBS. 
+You can also hang up, but I would rather have you simply Quit.  
+It makes sure that nothing is going to go wrong.  If you quit and
+you haven't used up all your turns, you can come back later on and continue
+with your remaining turns.
+
+T - TEAM MENU
+     Entering T will get you the Team menu.  This menu consists of Six
+separate functions. If you don't belong to a team, only three options are
+visible. At the team menu prompt you can enter '2' to create a Team, you
+will be asked for a Team password (which will be needed by other players
+to join your team).. That is basically it to creating a Team. Note: when
+you create a team, you do not need to join it afterwards. The next function,
+'3', is Join a Team.  You will be asked for the Team number you wish to 
+join, and if a spot is open on that team, you will be asked for the team
+password. If you enter the correct password, you are then recorded as a 
+member of that Team. Command '4' is the Quit a team command. You will need
+to quit a team if you want to create a new team or join another one.
+     If you are a member of a team, you will have 3 more functions. '5' is
+the Transfer credit command. You can transfer your credits to a Team member.
+(as long as they are in the same sector as yourself) Note: you cannot 
+transfer credits FROM a team mate to yourself. Entering '6' will give you
+the Fighter Transfer option. This works in the exact same manner as the
+credit transfer function, only with fighters. The last Team function is
+the Locate team mates command, '7'. This will give you a list of Team mates
+and the sector they are located in, if any.
+
+? - HELP!
+     This command will give you a list of the commands you can use.
+
+Z - INSTRUCTIONS
+     This will reprint these instructions.
+
+     This is all there is to the game.  Play it and have fun!                                                                       
