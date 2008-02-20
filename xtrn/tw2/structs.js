@@ -97,6 +97,15 @@ var PlayerProperties=[
 			}
 		];
 
+var PlayerLocation = [
+			{
+				 prop:"Sector"
+				,name:"Sector"
+				,type:"Integer"
+				,def:1
+			}
+		];
+
 var SectorProperties = [
 			{
 				 prop:"Warps"

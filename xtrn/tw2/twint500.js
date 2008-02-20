@@ -73,6 +73,7 @@ load(fname("structs.js"));
 file_remove(fname("sectors.dat"));
 file_remove(fname("ports.dat"));
 file_remove(fname("players.dat"));
+file_remove(fname("player-loc.dat"));
 file_remove(fname("planets.dat"));
 file_remove(fname("twmesg.dat"));
 file_remove(fname("twpmesg.dat"));
@@ -83,6 +84,7 @@ file_remove(fname("cabals.dat"));
 var sectors=new RecordFile(fname("sectors.dat"), SectorProperties);
 var ports=new RecordFile(fname("ports.dat"), PortProperties);
 var players=new RecordFile(fname("players.dat"), PlayerProperties);
+var playerLocation=new RecordFile(fname("player-loc.dat"), PlayerLocation);
 var teams=new RecordFile(fname("teams.dat"), TeamProperties);
 var planets=new RecordFile(fname("planets.dat"), PlanetProperties);
 var twmsg=new File(fname("twmesg.dat"));
@@ -93,12 +95,18 @@ var i;
 
 uifc.pop("Creating Players");
 player=players.New();
+loc=playerLocation.New();
 player.UserNumber=0;
 player.Put();
+loc.Put();
 for(i=0; i<Settings.MaxPlayers; i++) {
 	player=players.New();
 	player.UserNumber=0;
+	player.Sector=0;
 	player.Put();
+	loc=playerLocation.New();
+	loc.Sector=0;
+	loc.Put();
 }
 
 uifc.pop("Creating Planets");

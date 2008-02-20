@@ -33,6 +33,7 @@ var Commodities=[
 var sectors=new RecordFile(fname("sectors.dat"), SectorProperties);
 var ports=new RecordFile(fname("ports.dat"), PortProperties);
 var players=new RecordFile(fname("players.dat"), PlayerProperties);
+var playerLocation=new RecordFile(fname("player-loc.dat"), PlayerLocation);
 var teams=new RecordFile(fname("teams.dat"), TeamProperties);
 var planets=new RecordFile(fname("planets.dat"), PlanetProperties);
 var twmsg=new File(fname("twmesg.dat"));
@@ -217,12 +218,15 @@ else {
 		player.ReInit();
 	}
 }
-
 ReadRadio();
 if(player.Sector < 1 || player.Sector >= sectors.length) {
 	console.writeln("You are being moved to sector 1");
 	player.Sector=1;
 }
+location=playerLocation.Get(player.Record);
+location.Sector=player.Sector;
+location.Put();
+
 if(player.Credits > 25000) {
 	console.crlf();
 	console.writeln("Tax time! You are being taxed 5000 credits to help support the resistance");
@@ -261,17 +265,20 @@ function Menu()
 					break;
 				}
 				for(i=1;i<players.length; i++) {
-					var otherplayer=players.Get(i);
-					if(otherplayer.Sector==player.Sector
-							&& otherplayer.Record!=player.Record
-							&& otherplayer.KilledBy!=0
-							&& otherplayer.UserNumber!=0
-							&& !otherplayer.Online) {
-						count++;
-						console.write("Attack "+otherplayer.Alias+" (Y/N)[Y]? ");
-						if(GetKeyEcho()!='N') {
-							console.writeln("<Yes>");
-							break;
+					var otherloc=playerLocation.Get(i);
+					if(otherloc.Sector==Player.Sector) {
+						var otherplayer=players.Get(i);
+						if(otherplayer.Sector==player.Sector
+								&& otherplayer.Record!=player.Record
+								&& otherplayer.KilledBy!=0
+								&& otherplayer.UserNumber!=0
+								&& !otherplayer.Online) {
+							count++;
+							console.write("Attack "+otherplayer.Alias+" (Y/N)[Y]? ");
+							if(GetKeyEcho()!='N') {
+								console.writeln("<Yes>");
+								break;
+							}
 						}
 					}
 					otherplayer=null;
@@ -598,6 +605,7 @@ function Menu()
 							player.LastIn=player.Sector;
 							player.Sector=to;
 							player.Put();
+							location.Sector=player.Sector; location.Put();
 							if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
 								console.writeln("You have " + player.TurnsLeft + " turns left.");
 							}
@@ -841,6 +849,8 @@ function EnterSector()	/* 20000 */
 					if(random(2)==1) {
 						console.writeln("You escaped!");
 						player.Sector=player.LastIn;
+						player.Put();
+						location.Sector=player.Sector; location.Put();
 						return(false);
 					}
 					console.attributes="R";
@@ -856,6 +866,8 @@ function EnterSector()	/* 20000 */
 					player.Fighters--;
 					console.writeln("You have "+player.Fighters+" fighter(s) left.");
 					player.Sector=player.LastIn;
+					player.Put();
+					location.Sector=player.Sector; location.Put();
 					return(false);
 				}
 				break;
@@ -920,26 +932,30 @@ function DisplaySector(secnum)
 	console.attributes="C";
 	console.write("Other Ships: ");
 	for(i=1;i<players.length;i++) {
-		var otherplayer=players.Get(i);
+		var otherloc=playerLocation.Get(i);
 
-		if(otherplayer.UserNumber > 0 && otherplayer.Sector==secnum) {
-			if(otherplayer.Record==player.Record)
-				continue;
-			if(otherplayer.KilledBy!=0)
-				continue;
+		if(otherloc.Sector==secnum) {
+			var otherplayer=players.Get(i);
 
-			count++;
-			console.crlf();
-			console.write("   "+otherplayer.Alias);
-			if(otherplayer.TeamNumber>0)
-				console.write("  Team ["+otherplayer.TeamNumber+"]");
-			console.write(" with "+otherplayer.Fighters+" fighters");
-			if(otherplayer.Landed)
-				console.write(" (on planet)");
-			else if(otherplayer.Ported)
-				console.write(" (docked)");
-			else if(otherplayer.Online)
-				console.write(" (online)");
+			if(otherplayer.UserNumber > 0 && otherplayer.Sector==secnum) {
+				if(otherplayer.Record==player.Record)
+					continue;
+				if(otherplayer.KilledBy!=0)
+					continue;
+
+				count++;
+				console.crlf();
+				console.write("   "+otherplayer.Alias);
+				if(otherplayer.TeamNumber>0)
+					console.write("  Team ["+otherplayer.TeamNumber+"]");
+				console.write(" with "+otherplayer.Fighters+" fighters");
+				if(otherplayer.Landed)
+					console.write(" (on planet)");
+				else if(otherplayer.Ported)
+					console.write(" (docked)");
+				else if(otherplayer.Online)
+					console.write(" (online)");
+			}
 		}
 	}
 	if(count==0)
@@ -984,6 +1000,8 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 
 	killed.KilledBy=killer.Record;
 	killed.Put();
+	var killedLocation=playerLocation.Get(killed.Record);
+	killedLocation.Sector=killed.Sector; killedLocation.Put();
 
 	/* Destroy all deployed fighters */
 	for(i=1; i<sectors.length; i++) {
@@ -1821,17 +1839,20 @@ function TeamMenu()
 
 					var otherplayer=null;
 					for(i=1;i<players.length; i++) {
-						otherplayer=players.Get(i);
-						if(otherplayer.Sector==player.Sector
-								&& otherplayer.Record!=player.Record
-								&& otherplayer.KilledBy!=0
-								&& otherplayer.UserNumber!=0
-								&& otherplayer.TeamNumber==player.TeamNumber) {
-							console.write("Transfer Credits to " + otherplayer.Alias + " (Y/[N])? ");
-							if(GetKeyEcho()=='Y')
-								break;
+						var otherloc=playerLocation.Get(i);
+						if(otherloc.Sector==Player.Sector) {
+							otherplayer=players.Get(i);
+							if(otherplayer.Sector==player.Sector
+									&& otherplayer.Record!=player.Record
+									&& otherplayer.KilledBy!=0
+									&& otherplayer.UserNumber!=0
+									&& otherplayer.TeamNumber==player.TeamNumber) {
+								console.write("Transfer Credits to " + otherplayer.Alias + " (Y/[N])? ");
+								if(GetKeyEcho()=='Y')
+									break;
+							}
+							otherplayer=null;
 						}
-						otherplayer=null;
 					}
 					if(otherplayer==null) {
 						console.writeln("There is no one else in this sector");
@@ -1870,15 +1891,18 @@ function TeamMenu()
 
 					var otherplayer=null;
 					for(i=1;i<players.length; i++) {
-						otherplayer=players.Get(i);
-						if(otherplayer.Sector==player.Sector
-								&& otherplayer.Record!=player.Record
-								&& otherplayer.KilledBy!=0
-								&& otherplayer.UserNumber!=0
-								&& otherplayer.TeamNumber==player.TeamNumber) {
-							console.write("Transfer Fighters to " + otherplayer.Alias + " (Y/[N])? ");
-							if(GetKeyEcho()=='Y')
-								break;
+						var otherloc=playerLocation.Get(i);
+						if(otherloc.Sector==Player.Sector) {
+							otherplayer=players.Get(i);
+							if(otherplayer.Sector==player.Sector
+									&& otherplayer.Record!=player.Record
+									&& otherplayer.KilledBy!=0
+									&& otherplayer.UserNumber!=0
+									&& otherplayer.TeamNumber==player.TeamNumber) {
+								console.write("Transfer Fighters to " + otherplayer.Alias + " (Y/[N])? ");
+								if(GetKeyEcho()=='Y')
+									break;
+							}
 						}
 						otherplayer=null;
 					}
@@ -1993,8 +2017,12 @@ function CabalAttack(cabal)
 		twmsg.writeln("      Group "+cabal.Record+" --> "+otherplayer.Alias+": lost "+killed+ ", dstrd "+killed+" ("+(cabal.Size==0?"Cabal":"Player")+" dstrd)");
 		if(cabal.Size==0)
 			cabal.ReInit();
-		else				/* Player destroyed by the cabal! */
+		else {				/* Player destroyed by the cabal! */
 			otherplayer.KilledBy=-1;
+			var loc=playerLocation.Get(otherplayer.Record);
+			loc.Sector=0;
+			loc.Put();
+		}
 		otherplayer.Put();
 		cabal.Put();
 	}
