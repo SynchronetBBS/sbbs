@@ -340,18 +340,7 @@ function Menu()
 				while(!exitcomputer) {
 					if(showhelp) {
 						console.crlf();
-						console.attributes="W";
-						console.writeln("Computer commands:");
-						console.attributes="HK";
-						console.writeln("1)  Exit computer");
-						console.attributes="W";
-						console.writeln("2)  Port report");
-						console.attributes="G";
-						console.writeln("3)  Sector finder");
-						console.attributes="Y";
-						console.writeln("4)  Rank players");
-						console.attributes="HK";
-						console.writeln("5)  Send Message");
+						console.printfile(fname("computer.asc"));
 					}
 					console.attributes="HC";
 					console.write("Computer command (?=help)? ");
@@ -752,20 +741,7 @@ function Menu()
 				console.attributes="C";
 				console.writeln("<Help>");
 				console.crlf();
-				console.writeln("A - <A>ttack a player's ship");
-				console.writeln("C - <C>omputer");
-				console.writeln("D - re<D>isplay sector");
-				if(user.level >= 90)
-					console.writeln("E - Tradewars <E>ditor");
-				console.writeln("F - take or leave <F>ighters");
-				console.writeln("G - <G>amble");
-				console.writeln("I - <I>nfo on your ship");
-				console.writeln("L - <L>and on or create a planet.");
-				console.writeln("M - <M>ove to another sector");
-				console.writeln("P - land at a space <P>ort (and trade)");
-				console.writeln("Q - <Q>uit game");
-				console.writeln("T - <T>eam menu");
-				console.writeln("Z - instructions");
+				console.printfile(fname("main.asc"));
 				break;
 
 			case 'Z':
@@ -889,11 +865,7 @@ function EnterSector()	/* 20000 */
 			case '?':
 				console.writeln("<Help>");
 				console.crlf();
-				console.writeln("A - <A>ttack");
-				console.writeln("D - re<D>isplay sector");
-				console.writeln("I - <I>nformation about your ship");
-				console.writeln("Q - <Q>uit the game");
-				console.writeln("R - <R>etreat");
+				console.printfile(fname("entersector.asc"));
 				break;
 			default:
 				console.crlf();
@@ -1561,13 +1533,7 @@ function PlanetMenu(planet)
 				break;
 			case '?':
 				console.crlf();
-				for(i=0; i<Commodities.length; i++)
-					console.writeln((i+1)+" - take "+Commodities[i].name.toLowerCase());
-				console.writeln("A - take <A>ll");
-				console.writeln("D - <D>estroy the planet");
-				console.writeln("I - <I>ncrease productivity");
-				console.writeln("L - <L>eave planet");
-				console.writeln("R - planet <R>eport");
+				console.printfile(fname("planet.asc"));
 				break;
 			default:
 				var keynum=parseInt(key);
@@ -1725,22 +1691,10 @@ function TeamMenu()
 {
 	function TeamHelp() {
 		console.crlf();
-		console.attributes="HY";
-		console.writeln("1)  Exit Team menu");
-		console.attributes="HC";
-		console.writeln("2)  Create a Team");
-		console.attributes="HG";
-		console.writeln("3)  Join a Team");
-		console.attributes="HW";
-		console.writeln("4)  Quit a Team");
-		if(player.TeamNumber > 0) {
-			console.attributes="HM";
-			console.writeln("5)  Cash Transfer");
-			console.attributes="HK";
-			console.writeln("6)  Fighter Transfer");
-			console.attributes="HB";
-			console.writeln("7)  Search for Team member(s)");
-		}
+		if(player.TeamNumber > 0)
+			console.printfile(fname("team-member.asc"));
+		else
+			console.printfile(fname("team-none.asc"));
 	}
 
 	TeamHelp();
