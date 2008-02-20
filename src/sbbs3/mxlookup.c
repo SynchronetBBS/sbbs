@@ -391,6 +391,7 @@ void main(int argc, char **argv)
 {
 	char		mx[128],mx2[128];
 	int			result;
+	DWORD		bindaddr=0;
 #ifdef _WIN32
 	WSADATA		WSAData;
 #endif
@@ -400,7 +401,7 @@ void main(int argc, char **argv)
 	printf("sizeof(dns_rr_t)=%d\n",sizeof(dns_rr_t));
 
 	if(argc<3) {
-		printf("usage: mxlookup hostname dns\n");
+		printf("usage: mxlookup hostname dns [bindaddr]\n");
 		return;
 	}
 
@@ -412,7 +413,10 @@ void main(int argc, char **argv)
 	}
 #endif
 
-	if((result=dns_getmx(argv[1],mx,mx2,0,inet_addr(argv[2]),FALSE,60))!=0) 
+	if(argc > 3)
+		bindaddr=ntohl(inet_addr(argv[3]));
+
+	if((result=dns_getmx(argv[1],mx,mx2,bindaddr,inet_addr(argv[2]),FALSE,60))!=0) 
 		printf("Error %d getting mx record\n",result);
 	else {
 		printf("MX1: %s\n",mx);
