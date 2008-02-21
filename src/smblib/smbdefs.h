@@ -586,23 +586,22 @@ typedef struct {				/* Message */
 				*ftn_reply;		/* FTN REPLY */
 	char*		summary;		/* Summary  */
 	char*		subj;			/* Subject  */
-	uint16_t		to_agent,		/* Type of agent message is to */
+	uint16_t	to_agent,		/* Type of agent message is to */
 				from_agent, 	/* Type of agent message is from */
 				replyto_agent;	/* Type of agent replies should be sent to */
 	net_t		to_net, 		/* Destination network type and address */
                 from_net,       /* Origin network address */
                 replyto_net;    /* Network type and address for replies */
-	uint16_t		total_hfields;	/* Total number of header fields */
+	uint16_t	total_hfields;	/* Total number of header fields */
 	hfield_t	*hfield;		/* Header fields (fixed length portion) */
 	void		**hfield_dat;	/* Header fields (variable length portion) */
 	dfield_t	*dfield;		/* Data fields (fixed length portion) */
 	int32_t		offset; 		/* Offset (number of records) into index */
-	/* TODO: Should this be a BOOL? */
-	int32_t			forwarded;		/* Forwarded from agent to another */
-	uint32_t		expiration; 	/* Message will expire on this day (if >0) */
-	uint32_t		priority;		/* Message priority (0 is lowest) */
-	uint32_t		cost;			/* Cost to download/read */
-	uint32_t		flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
+	BOOL		forwarded;		/* Forwarded from agent to another */
+	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
+	uint32_t	priority;		/* Message priority (0 is lowest) */
+	uint32_t	cost;			/* Cost to download/read */
+	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
 
 } smbmsg_t;
 
