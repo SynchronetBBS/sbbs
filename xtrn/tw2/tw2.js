@@ -66,9 +66,8 @@ if(Settings.MaintLastRan != system.datestr()) {
 	for(i=1; i<players.length; i++) {
 		var p=players.Get(i);
 		if(p.UserNumber > 0) {
-			if(system.datestr(p.LastOnDay) < oldest_allowed) {
-				p.UserNumber=0;
-				twmsg.writeln("  - "+playerlist[player]+" deleted from game");
+			if((!file_exists(system.data_dir+format("user/%04d.tw2",p.UserNumber))) || (system.datestr(p.LastOnDay) < oldest_allowed && p.KilledBy != 0)) {
+				DeletePlayer(p)
 			}
 		}
 	}
@@ -100,6 +99,8 @@ var player;
 var firstnew;
 for(i=1; i<players.length; i++) {
 	player=players.Get(i);
+	if(player.UserNumber == user.number && (!file_exists(system.data_dir+format("user/%04d.tw2",player.UserNumber))))
+		DeletePlayer(player);
 	if(player.UserNumber==0 && firstnew==undefined)
 		firstnew=player;
 	if(player.UserNumber == user.number)
@@ -162,7 +163,7 @@ else {
 				console.writeln("You don't have any turns left today. You will be allowed to play tomorrow.");
 				exit(0);
 			}
-			if(player.KilledBy==user.number) {
+			if(player.KilledBy==player.Record) {
 				console.writeln("You killed yourself today. You will be allowed to play tomorrow.");
 				exit(0);
 			}
@@ -171,7 +172,7 @@ else {
 			for(i=0; i<twpmsg.length; i++) {
 				var msg=twpmsg.Get(i);
 
-				if(msg.To==user.number && !msg.Read) {
+				if(msg.To==player.Record && !msg.Read) {
 					count++;
 					if(msg.From==-98)
 						console.writeln("A deleted player destroyed "+msg.Destroyed+" fighters.");
@@ -198,7 +199,7 @@ else {
 	player.LastOnDay=system.datestr();
 	if(player.KilledBy != 0) {
 		switch(player.KilledBy) {
-			case user.number:
+			case player.Record:
 				console.attributes="R";
 				console.writeln("You managed to kill yourself on your last time on.");
 				break;
@@ -218,6 +219,7 @@ else {
 		player.ReInit();
 	}
 }
+file_touch(system.data_dir+format("user/%04d.tw2",player.UserNumber))
 ReadRadio();
 if(player.Sector < 1 || player.Sector >= sectors.length) {
 	console.writeln("You are being moved to sector 1");
@@ -2280,4 +2282,63 @@ function MoveCabal()
 			}
 		}
 	}
+}
+
+function DeletePlayer(player)
+{
+	/* Delete player */
+	player.ReInit();
+	player.UserNumber=0;
+	player.Alias="<Deleted>";
+	player.Sector=0;
+	player.Put();
+	/* Move to sector zero */
+	var loc=playerLocation.Get(player.Record);
+	loc.Sector=0;
+	loc.Put();
+	/* Set fighter owner to "Deleted Player" */
+	var i;
+	for(i=1; i<sectors.length; i++) {
+		var sector=sectors.Get(i);
+		if(sector.FighterOwner==player.Record) {
+			sector.FighterOwner=-98;
+			sector.Put();
+		}
+	}
+	/* Set messages TO the deleted player as read and FROM as from deleted */
+	for(i=0; i<twpmsg.length; i++) {
+		var msg=twpmsg.Get(i);
+
+		if(msg.To==player.Record && !msg.Read) {
+			msg.Read=true;
+			msg.Put();
+		}
+		else if(msg.From==player.Record) {
+			msg.From=-98;
+			msg.Put();
+		}
+	}
+	/* Set radio messages TO the deleted player as read and FROM as from deleted */
+	for(i=0; i<twrmsg.length; i++) {
+		var msg=twrmsg.Get(i);
+
+		if(msg.To==player.Record && !msg.Read) {
+			msg.Read=true;
+			msg.Put();
+		}
+		else if(msg.From==player.Record) {
+			msg.From=-98;
+			msg.Put();
+		}
+	}
+	/* Set killed bys to Deleted Player */
+	for(i=1; i<players.length; i++) {
+		var otherplayer=players.Get(i);
+
+		if(otherplayer.KilledBy==player.Record) {
+			otherplayer.KilledBy=-98;
+			otherplayer.Put();
+		}
+	}
+	twmsg.writeln("  - "+player.Alias+" deleted from game");
 }
