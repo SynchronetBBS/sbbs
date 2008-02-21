@@ -1126,7 +1126,7 @@ file_transfers:
 					continue file_transfers;
 				}
 				console.crlf();
-				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].descirption),P_SAVEATR);
+				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].description),P_SAVEATR);
 				for(i=0;i<file_area.lib_list[bbs.curlib].dir_list.length;i++) {
 					if(i==bbs.curdir)
 						console.putmsg('*');
