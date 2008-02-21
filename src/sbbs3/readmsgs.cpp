@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -84,9 +84,8 @@ long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long i, long posts)
 	return(listed);
 }
 
-char *binstr(uchar *buf, ushort length)
+char *binstr(uchar *buf, ushort length, char* str)
 {
-	static char str[512];
 	char tmp[128];
 	int i;
 
@@ -108,6 +107,7 @@ char *binstr(uchar *buf, ushort length)
 void sbbs_t::msghdr(smbmsg_t* msg)
 {
 	int i;
+	char str[512];
 
 	CRLF;
 
@@ -115,7 +115,7 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 	for(i=0;i<msg->total_hfields;i++)
 		bprintf("%-16.16s %s\r\n"
 			,smb_hfieldtype(msg->hfield[i].type)
-			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
+			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str));
 
 	/* fixed fields */
 	bprintf("%-16.16s %s %s\r\n","when_written"	
