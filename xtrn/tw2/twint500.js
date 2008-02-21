@@ -1,4 +1,9 @@
-load("../xtrn/tw2/filename.js");
+var startup_path='.';
+try { throw new Error() } catch(e) { startup_path=e.fileName }
+startup_path=startup_path.replace(/\/[^\/]*$/,'');
+startup_path=backslash(startup_path);
+
+load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
 load(fname("sector_map.js"));
 load(fname("ports_map.js"));

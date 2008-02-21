@@ -1,6 +1,11 @@
+var startup_path='.';
+try { throw new Error() } catch(e) { startup_path=e.fileName }
+startup_path=startup_path.replace(/\/[^\/]*$/,'');
+startup_path=backslash(startup_path);
+
 load("recordfile.js");
 load("lockfile.js");
-load("../xtrn/tw2/filename.js");
+load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
 var Settings=new GameSettings();
 
