@@ -1,6 +1,6 @@
 var startup_path='.';
 try { throw new Error() } catch(e) { startup_path=e.fileName }
-startup_path=startup_path.replace(/\/[^\/]*$/,'');
+startup_path=startup_path.replace(/[\/\\][^\/\\]*$/,'');
 startup_path=backslash(startup_path);
 
 load("recordfile.js");
