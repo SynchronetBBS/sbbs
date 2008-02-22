@@ -257,7 +257,15 @@ function Menu()
 		console.crlf();
 		console.attributes="HC";
 		console.write("Command (?=Help)? ");
-		switch(GetKeyEcho()) {
+		var valid=new Array('A','C','D',/*'E' TODO: Editor ,*/'F','G','I','L','M','P','Q','T','Z','?');
+		var sector=sectors.Get(player.Sector);
+		var i;
+		for(i=0; i<sector.Warps.length; i++) {
+			if(sector.Warps[i]>0)
+				valid.push(sector.Warps[i].toString());
+		}
+		var inp=InputFunc(valid)
+		switch(inp) {
 			case '':
 				console.writeln("? = Help");
 				break;
@@ -358,7 +366,7 @@ function Menu()
 					}
 					console.attributes="HW";
 					console.write("Computer command (?=help)? ");
-					switch(GetKeyEcho()) {
+					switch(InputFunc(['?','1','2','3','4','5'])) {
 						case '?':
 							showhelp=true;
 							break;
@@ -471,18 +479,18 @@ function Menu()
 				console.writeln("<Display>");
 				DisplaySector(player.Sector);
 				break;
-			case 'E':
-				/* TODO: 22800 */
-				if(user.level < 90)
-					break;
-				console.writeln("<TW Editor>");
-				console.write("Do you wish to use the editor? Y/N [N] ");
-				switch(GetKeyEcho()) {
-					case 'Y':
-						console.writeln("Running Tradewars ][ Editor...");
-						/* TODO: TWEdit */
-				}
-				break;
+//			case 'E':
+//				/* TODO: 22800 */
+//				if(user.level < 90)
+//					break;
+//				console.writeln("<TW Editor>");
+//				console.write("Do you wish to use the editor? Y/N [N] ");
+//				switch(GetKeyEcho()) {
+//					case 'Y':
+//						console.writeln("Running Tradewars ][ Editor...");
+//						/* TODO: TWEdit */
+//				}
+//				break;
 			case 'F':
 				/* 24000 */
 				console.writeln("<Drop/Take Fighters>");
@@ -612,22 +620,8 @@ function Menu()
 				console.crlf();
 				console.write("To which sector? ");
 				var to=console.getnum(sectors.length-1);
-				if(to > 0) {
-					for(i=0; i<sector.Warps.length; i++) {
-						if(sector.Warps[i]==to) {
-							player.TurnsLeft--;
-							player.LastIn=player.Sector;
-							player.Sector=to;
-							player.Put();
-							location.Sector=player.Sector; location.Put();
-							if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
-								console.writeln("You have " + player.TurnsLeft + " turns left.");
-							}
-							return;
-						}
-					}
-					console.writeln("You can't get there from here.");
-				}
+				if(MoveTo(to))
+					return;
 				break;
 			case 'P':
 				console.writeln("<Port>");
@@ -783,6 +777,12 @@ function Menu()
 					return;
 				}
 				break;
+			default:
+				if(inp.search(/^[0-9]*$/)!=-1) {
+					if(MoveTo(parseInt(inp)))
+						return;
+				}
+				break;
 		}
 	}
 }
@@ -825,7 +825,7 @@ function EnterSector()	/* 20000 */
 		console.writeln("You have to destroy the fighters before you can enter this sector.");
 		console.writeln("Fighters: "+player.Fighters+" / "+sector.Fighters);
 		console.write("Option? (A,D,I,Q,R,?):? ");
-		switch(GetKeyEcho()) {
+		switch(InputFunc(['A','D','I','Q','R','?'])) {
 			case 'A':
 				console.writeln("<Attack>");
 				var otherteam=false;
@@ -1482,14 +1482,17 @@ function PlanetMenu(planet)
 	var key;
 	var freeholds=player.Holds;
 	var i;
-	
-	for(i=0; i<Commodities.length; i++)
+	var values=new Array('A','I','D','L','R');
+
+	for(i=0; i<Commodities.length; i++) {
 		freeholds-=player.Commodities[i];
+		values.push((i+1).toString());
+	}
 
 	while(true) {
 		console.crlf();
 		console.write("Planet command (?=help)[A]? ");
-		key=GetKeyEcho();
+		key=InputFunc(values);
 		switch(key) {
 			case '':
 			case 'A':
@@ -1521,14 +1524,16 @@ function PlanetMenu(planet)
 				console.crlf();
 				console.writeln("You have "+player.Credits+" credits.");
 				var opts="";
+				var values=new Array();
 				for(i=0; i<Commodities.length; i++) {
 					console.writeln((i+1)+" - "+Commodities[i].name+" costs "+(Commodities[i].price*20));
 					if(i)
 						opts += ',';
 					opts += (i+1).toString();
+					values.push((i+1).toString());
 				}
 				console.write("Which one do you want to increase ("+opts+")? ");
-				var keynum=parseInt(GetKeyEcho());
+				var keynum=parseInt(InputFunc(values));
 				if(keynum > 0 && keynum <= Commodities.length) {
 					keynum--;
 					if(planet.Production[keynum]>19) {
@@ -1734,6 +1739,7 @@ function Transact(type, price, vary, avail)
 
 function TeamMenu()
 {
+
 	function TeamHelp() {
 		console.crlf();
 		if(player.TeamNumber > 0)
@@ -1745,10 +1751,15 @@ function TeamMenu()
 	TeamHelp();
 
 	while(1) {
+		var values=new Array();
+		if(player.TeamNumber > 0)
+			values=['1','2','3','4','5','6','7','?'];
+		else
+			values=['1','2','3','?'];
 		console.crlf();
 		console.attributes="W";
 		console.write("Team Command (?=help)? ");
-		switch(GetKeyEcho()) {
+		switch(InputFunc(values)) {
 			case '?':
 				TeamHelp();
 				break;
@@ -2366,4 +2377,113 @@ function DeletePlayer(player)
 		}
 	}
 	twmsg.writeln("  - "+player.Alias+" deleted from game");
+}
+
+function InputFunc(values)
+{
+	var str='';
+	var pos=0;
+	var insertmode=true;
+	var key;
+	var origattr=console.attributes;
+	var matchstr=''
+
+	console.line_counter=0;
+	console.attributes="N";
+InputFuncMainLoop:
+	for(;;) {
+		key=console.inkey(100);
+		if(key == '') {
+			/* Busy loop checking */
+		}
+		else {
+			switch(key) {
+				case '\x08':	/* Backspace */
+					console.write('\x08 \x08');
+					str=str.substr(-1);
+					pos--;
+					break;
+				case '\x1b':	/* Escape */
+					str='';
+					pos=0;
+					break InputFuncMainLoop;
+				case '\r':
+					break InputFuncMainLoop;
+				default:
+					/* No CTRL chars (evar!) */
+					if(ascii(key)<32)
+						break;
+					str=str.substr(0,pos)+key+str.substr(pos);
+					pos++;
+					console.write(key);
+					/* Is this an exact match AND the longest possible match? */
+					var value;
+					var exact_match=false;
+					var longer_match=false;
+					for(value in values) {
+						if(typeof(values[value])=='string') {
+							var ucv=values[value].toUpperCase();
+							var ucs=str.toUpperCase();
+							if(ucv==ucs) {
+								exact_match=true;
+								matchstr=values[value];
+							}
+							else if(ucv.indexOf(ucs)==0)
+								longer_match=true;
+						}
+						else if(typeof(values[value])=='object') {
+							if(str.search(/^[0-9]*$/)!=-1) {
+								var min=0;
+								var max=4294967296;
+								var cur=parseInt(str);
+								if(values[value].min != undefined)
+									min=values[value].min;
+								if(values[value].max != undefined)
+									max=values[value].max;
+								if(cur >= min && cur <= max) {
+									exact_match=true;
+									matchstr=cur.toString();
+								}
+								if(cur*10 <= max)
+									longer_match=true;
+							}
+						}
+					}
+					if(exact_match && !longer_match)
+						break InputFuncMainLoop;
+			}
+		}
+	}
+
+	while(pos > 0) {
+		console.write('\x08');
+		pos--;
+	}
+	console.write(matchstr);
+	console.attributes=origattr;
+	console.crlf();
+	return(matchstr);
+}
+
+function MoveTo(to)
+{
+	var sector=sectors.Get(player.Sector);
+
+	if(to > 0) {
+		for(i=0; i<sector.Warps.length; i++) {
+			if(sector.Warps[i]==to) {
+				player.TurnsLeft--;
+				player.LastIn=player.Sector;
+				player.Sector=to;
+				player.Put();
+				location.Sector=player.Sector; location.Put();
+				if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
+					console.writeln("You have " + player.TurnsLeft + " turns left.");
+				}
+				return(true);
+			}
+		}
+		console.writeln("You can't get there from here.");
+	}
+	return(false);
 }
