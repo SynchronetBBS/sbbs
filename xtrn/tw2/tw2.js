@@ -2405,6 +2405,8 @@ InputFuncMainLoop:
 				case '\r':
 					break InputFuncMainLoop;
 				case '\x08':	/* Backspace */
+					if(pos==0)
+						break;
 					console.write('\x08 \x08');
 					str=str.substr(-1);
 					pos--;
