@@ -913,7 +913,7 @@ function PlayerInfo(num)
 	if(p.PlayerNumber>0)
 		console.write("  Team ["+p.TeamNumber+"]");
 	console.crlf();
-	console.writeln("Fighters: "+p.Fighters);
+	console.writeln("       Fighters: "+p.Fighters);
 	console.attributes="HG";
 	console.writeln("Sector Location: "+p.Sector);
 	console.writeln("     Turns left: "+p.TurnsLeft);
@@ -923,8 +923,8 @@ function PlayerInfo(num)
 	for(i=0; i<Commodities.length; i++)
 		console.writeln("     # with "+Commodities[i].abbr+": "+p.Commodities[i]+" ");
 	console.attributes="HM";
-	console.writeln("Credits: "+p.Credits);
-	console.writeln("Door Monitor points: "+p.Points);
+	console.writeln("        Credits: "+p.Credits);
+	console.writeln("    Door points: "+p.Points);
 }
 
 function DisplaySector(secnum)
