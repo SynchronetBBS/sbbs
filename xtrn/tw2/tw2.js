@@ -2408,7 +2408,7 @@ InputFuncMainLoop:
 					if(pos==0)
 						break;
 					console.write('\x08 \x08');
-					str=str.substr(-1);
+					str=str.substr(0,-1);
 					pos--;
 					/* Fall-through */
 				default:
@@ -2456,6 +2456,12 @@ InputFuncMainLoop:
 					}
 					if(exact_match && !longer_match)
 						break InputFuncMainLoop;
+					/* That's not valid! */
+					if((!longer_match) && pos > 0) {
+						console.write('\x08 \x08');
+						str=str.substr(0,-1);
+						pos--;
+					}
 			}
 		}
 	}
