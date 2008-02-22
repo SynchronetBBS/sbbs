@@ -255,7 +255,7 @@ function Menu()
 	/* 22000 */
 	while(1) {
 		console.crlf();
-		console.attributes="C";
+		console.attributes="HC";
 		console.write("Command (?=Help)? ");
 		switch(GetKeyEcho()) {
 			case '':
@@ -347,7 +347,7 @@ function Menu()
 				/* 33640 */
 				console.writeln("<Computer>");
 				console.crlf();
-				console.attributes="W";
+				console.attributes="HW";
 				console.writeln("<Computer activated>");
 				var showhelp=true;
 				var exitcomputer=false;
@@ -356,7 +356,7 @@ function Menu()
 						console.crlf();
 						console.printfile(fname("computer.asc"));
 					}
-					console.attributes="HC";
+					console.attributes="HW";
 					console.write("Computer command (?=help)? ");
 					switch(GetKeyEcho()) {
 						case '?':
@@ -420,6 +420,8 @@ function Menu()
 							console.write("Ranking Players.");
 							var ranked=RankPlayers();
 							console.crlf();
+
+							console.attributes="W";
 							console.writeln("Player Rankings: "+system.timestr());
 							console.writeln("Rank     Value      Team  Player");
 							console.writeln("==== ============= ====== ======")
@@ -448,7 +450,9 @@ function Menu()
 							console.writeln("Due to the distances involved, messages are limited to 74 chars.");
 							console.writeln("Pressing [ENTER] with no input quits");
 							console.writeln("  [------------------------------------------------------------------------]");
+							console.attributes="HY";
 							console.write("? ");
+							console.attributes="W";
 							var msg=console.getstr(74);
 							if(msg==null)
 								break;
@@ -514,6 +518,7 @@ function Menu()
 			case 'G':
 				/* 27500 */
 				console.writeln("<Gamble>");
+				console.attributes="HW";
 				console.writeln("You have "+player.Credits+" credits.");
 				console.writeln("How much do you want to gamble at double or nothing (50-50 odds)");
 				console.write("[0]? ");
@@ -543,7 +548,7 @@ function Menu()
 				/* 31000 */
 				console.writeln("<Land/Create planet>");
 				console.crlf();
-				console.attributes="Y";
+				console.attributes="HY";
 				console.writeln("Landing...");
 				var sector=sectors.Get(player.Sector);
 				var planet=null;
@@ -572,6 +577,7 @@ function Menu()
 
 					Production(planet);
 					PlanetReport(planet);
+					console.attributes="HW";
 					PlanetMenu(planet);
 
 					if(!Lock(planets.file.name, bbs.node_num, true, 10))
@@ -590,6 +596,7 @@ function Menu()
 					console.writeln("I'm sorry but you don't have any turns left.");
 					break;
 				}
+				console.attributes="HW";
 				console.write("Warps lead to: ");
 				var sector=sectors.Get(player.Sector);
 				var i;
@@ -624,7 +631,7 @@ function Menu()
 				break;
 			case 'P':
 				console.writeln("<Port>");
-				console.attributes="Y";
+				console.attributes="HR";
 				console.crlf();
 				console.writeln("Docking...");
 				if(player.TurnsLeft<1) {
@@ -643,6 +650,7 @@ function Menu()
 				if(player.Sector==1) {
 					/* 33200 */
 					var prices=SolReport();
+					console.attributes="HR";
 					console.writeln("You have " + player.Credits + " credits.");
 					console.crlf();
 					/* Holds */
@@ -705,10 +713,12 @@ function Menu()
 					Unlock(ports.file.name);
 					Production(port);
 					var sale=PortReport(sector);
+					console.attributes="HR";
 					var count=0;
 
 					console.writeln();
 
+					console.attributes="HY";
 					/* Sell... */
 					for(i=0; i<Commodities.length; i++) {
 						if(sale[i].Vary < 0) {
@@ -748,7 +758,7 @@ function Menu()
 				break;
 			case 'T':
 				/* 32799 */
-				console.attributes="HK";
+				console.attributes="HW";
 				console.writeln("<Team menu>");
 				TeamMenu();
 				break;
@@ -898,18 +908,21 @@ function PlayerInfo(num)
 {
 	var p=players.Get(num);
 
-	console.attributes="G";
-	console.write("Name: "+p.Alias);
+	console.attributes="HW";
+	console.write("   Pilot's Name: "+p.Alias);
 	if(p.PlayerNumber>0)
 		console.write("  Team ["+p.TeamNumber+"]");
 	console.crlf();
-	console.writeln("Sector: "+p.Sector+"   Turns left: "+p.TurnsLeft);
 	console.writeln("Fighters: "+p.Fighters);
-	console.writeln("Cargo Holds: "+p.Holds);
+	console.attributes="HG";
+	console.writeln("Sector Location: "+p.Sector);
+	console.writeln("     Turns left: "+p.TurnsLeft);
+	console.writeln("    Cargo Holds: "+p.Holds);
+	console.attributes="HR";
 	var i;
 	for(i=0; i<Commodities.length; i++)
-		console.write("  "+Commodities[i].abbr+": "+p.Commodities[i]+" ");
-	console.crlf();
+		console.writeln("     # with "+Commodities[i].abbr+": "+p.Commodities[i]+" ");
+	console.attributes="HM";
 	console.writeln("Credits: "+p.Credits);
 	console.writeln("Door Monitor points: "+p.Points);
 }
@@ -920,11 +933,11 @@ function DisplaySector(secnum)
 	var i;
 	var count=0;
 
-	console.attributes="Y";
 	console.crlf();
-	console.writeln("Sector: "+secnum);
-	console.attributes="R";
-	console.write("Ports: ");
+	console.attributes="HY";
+	console.writeln("Sector "+secnum);
+	console.attributes="HR";
+	console.write("Port   ");
 	if(sector.Port > 0) {
 		var port=ports.Get(sector.Port);
 		console.write(port.Name+", class "+port.Class)
@@ -932,12 +945,14 @@ function DisplaySector(secnum)
 	else
 		console.write("None");
 	console.crlf();
+	console.attributes="HB";
 	if(sector.Planet) {
 		var planet=planets.Get(sector.Planet);
-		console.writeln("Planet: "+planet.Name);
+		console.writeln("Planet "+planet.Name);
 	}
+	console.attributes="HC";
+	console.writeln("Other Ships");
 	console.attributes="C";
-	console.write("Other Ships: ");
 	for(i=1;i<players.length;i++) {
 		var otherloc=playerLocation.Get(i);
 
@@ -966,14 +981,15 @@ function DisplaySector(secnum)
 		}
 	}
 	if(count==0)
-		console.write("None");
+		console.write("   None");
 	console.crlf();
+	console.attributes="HG";
+	console.writeln("Fighters defending sector");
 	console.attributes="G";
-	console.write("Fighters in sector: ");
 	if(sector.Fighters==0)
-		console.writeln("None");
+		console.writeln("   None");
 	else {
-		console.write(sector.Fighters);
+		console.write("   "+sector.Fighters);
 		if(sector.FighterOwner<0)
 			console.writeln(" (Cabal)");
 		else if(sector.FighterOwner==player.Record)
@@ -986,8 +1002,8 @@ function DisplaySector(secnum)
 			console.writeln(")");
 		}
 	}
-	console.attributes="M";
-	console.write("Warps lead to: ");
+	console.attributes="HW";
+	console.write("Warps lead to   ");
 	count=0;
 	for(i=0; i<sector.Warps.length; i++) {
 		if(sector.Warps[i] != 0) {
@@ -1260,10 +1276,10 @@ function PortReport(sec) {
 	console.writeln("Commerce report for "+port.Name+": "+system.timestr());
 	console.crlf();
 	console.writeln(" Items     Status   # units  in holds");
-	console.writeln(" =====     ======   =======  ========");
 	console.attributes="HK";
+	console.writeln(" =====     ======   =======  ========");
 	for(i=0; i<Commodities.length; i++) {
-		console.attributes=['R','G','Y','B','M','C','W'][i];
+		console.attributes=['HR','HG','HY','HB','HM','HC','HW'][i];
 		console.writeln(format("%s %-7s  %-7d  %-7d",
 				 Commodities[i].disp
 				,ret[i].Vary<0?"Buying":"Selling"
@@ -1441,12 +1457,15 @@ function CreatePlanet(sector)
 function PlanetReport(planet)
 {
 	console.crlf();
+	console.attributes="HC";
 	console.writeln("Planet: "+planet.Name);
 	console.writeln(" Item      Prod.  Amount  in holds");
+	console.attributes="HK";
 	console.writeln(" ====      =====  ======  ========");
 	var i;
 	var freeholds=player.Holds;
 	for(i=0; i<Commodities.length; i++) {
+		console.attributes=['HR','HG','HY','HB','HM','HC','HW'][i];
 		console.writeln(format("%s   %2d  %6d %8d"
 				,Commodities[i].disp
 				,planet.Production[i]
@@ -1454,6 +1473,7 @@ function PlanetReport(planet)
 				,player.Commodities[i]));
 		freeholds-=player.Commodities[i];
 	}
+	console.attributes="HG";
 	console.writeln("You have "+freeholds+" free cargo holds.");
 }
 
