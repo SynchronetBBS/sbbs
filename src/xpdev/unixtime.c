@@ -11,8 +11,13 @@
 #define USE_SNPRINTF	/* we don't need safe_snprintf for this project */
 #include "genwrap.h"
 
-#define TIMEZONE	_timezone
-#define DAYLIGHT	_daylight
+#if !defined(__unix__)
+	#define TIMEZONE	_timezone
+	#define DAYLIGHT	_daylight
+#else
+	#define TIMEZONE	timezone
+	#define DAYLIGHT	daylight
+#endif
 
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
