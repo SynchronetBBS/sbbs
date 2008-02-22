@@ -2398,28 +2398,31 @@ InputFuncMainLoop:
 		}
 		else {
 			switch(key) {
-				case '\x08':	/* Backspace */
-					console.write('\x08 \x08');
-					str=str.substr(-1);
-					pos--;
-					break;
 				case '\x1b':	/* Escape */
-					str='';
+					matchstr='';
 					pos=0;
 					break InputFuncMainLoop;
 				case '\r':
 					break InputFuncMainLoop;
+				case '\x08':	/* Backspace */
+					console.write('\x08 \x08');
+					str=str.substr(-1);
+					pos--;
+					/* Fall-through */
 				default:
-					/* No CTRL chars (evar!) */
-					if(ascii(key)<32)
-						break;
-					str=str.substr(0,pos)+key+str.substr(pos);
-					pos++;
-					console.write(key);
+					if(key != '\x08') {
+						/* No CTRL chars (evar!) */
+						if(ascii(key)<32)
+							break;
+						str=str.substr(0,pos)+key+str.substr(pos);
+						pos++;
+						console.write(key);
+					}
 					/* Is this an exact match AND the longest possible match? */
 					var value;
 					var exact_match=false;
 					var longer_match=false;
+					matchstr='';
 					for(value in values) {
 						if(typeof(values[value])=='string') {
 							var ucv=values[value].toUpperCase();
