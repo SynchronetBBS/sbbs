@@ -281,7 +281,7 @@ function Menu()
 				}
 				for(i=1;i<players.length; i++) {
 					var otherloc=playerLocation.Get(i);
-					if(otherloc.Sector==Player.Sector) {
+					if(otherloc.Sector==player.Sector) {
 						var otherplayer=players.Get(i);
 						if(otherplayer.Sector==player.Sector
 								&& otherplayer.Record!=player.Record
@@ -1878,7 +1878,7 @@ function TeamMenu()
 					var otherplayer=null;
 					for(i=1;i<players.length; i++) {
 						var otherloc=playerLocation.Get(i);
-						if(otherloc.Sector==Player.Sector) {
+						if(otherloc.Sector==player.Sector) {
 							otherplayer=players.Get(i);
 							if(otherplayer.Sector==player.Sector
 									&& otherplayer.Record!=player.Record
@@ -1930,7 +1930,7 @@ function TeamMenu()
 					var otherplayer=null;
 					for(i=1;i<players.length; i++) {
 						var otherloc=playerLocation.Get(i);
-						if(otherloc.Sector==Player.Sector) {
+						if(otherloc.Sector==player.Sector) {
 							otherplayer=players.Get(i);
 							if(otherplayer.Sector==player.Sector
 									&& otherplayer.Record!=player.Record
