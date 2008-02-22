@@ -10,14 +10,7 @@
 #include <ctype.h>
 #define USE_SNPRINTF	/* we don't need safe_snprintf for this project */
 #include "genwrap.h"
-
-#if !defined(__unix__)
-	#define TIMEZONE	_timezone
-	#define DAYLIGHT	_daylight
-#else
-	#define TIMEZONE	timezone
-	#define DAYLIGHT	daylight
-#endif
+#include "datewrap.h"
 
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
@@ -87,8 +80,7 @@ int main(int argc, char **argv)
 	}
 	tzset();
 
-	printf("timezone=%d\n", TIMEZONE);
-	printf("daylight=%d\n", DAYLIGHT);
+	printf("Current timezone: %d\n", xpTimeZone_local());
 	printf("\n");
 
 	if(argc>argn && argv[argn][2]=='/') {
