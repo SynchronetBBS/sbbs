@@ -83,9 +83,9 @@ int main(int argc, char **argv)
 	if(argc>1 && stricmp(argv[1],"-z")==0)	{ /* zulu/GMT/UTC timezone */
 		printf("Setting timezone to Zulu/GMT/UTC\n\n");
 		putenv("TZ=UTC0");
-		tzset();
 		argn++;
 	}
+	tzset();
 
 	printf("timezone=%d\n", TIMEZONE);
 	printf("daylight=%d\n", DAYLIGHT);
