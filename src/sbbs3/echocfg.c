@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -80,9 +80,10 @@ char *wcfaddrtoa(faddr_t* addr)
     static char str[25];
 	char tmp[25];
 
+	str[0]=0;
 	if(addr->zone==0xffff)
 		strcpy(str,"ALL");
-	else {
+	else if(addr->zone) {
 		sprintf(str,"%u:",addr->zone);
 		if(addr->net==0xffff)
 			strcat(str,"ALL");
@@ -574,6 +575,8 @@ int main(int argc, char **argv)
 									,25,K_EDIT);
 									if(str[0])
 										cfg.nodecfg[i].route=atofaddr(str);
+									else
+										cfg.nodecfg[i].route.zone=0;
 								break;
 								} } }
 				break;
