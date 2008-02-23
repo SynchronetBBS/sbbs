@@ -267,19 +267,35 @@ char* xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t max
 	return str;
 }
 
+/* precision	example output
+ * -2			"14"
+ * -1			"14:02"
+ * 0            "14:02:39"
+ * 1            "14.02:39.8"
+ * 2            "14.02:39.82"
+ * 3            "14.02:39.829"
+ */
 char* xpTime_to_isoTimeStr(xpTime_t time, const char* sep, int precision
 								   ,char* str, size_t maxlen)
 {
 	if(sep==NULL)
 		sep=":";
 
-	snprintf(str, maxlen, "%02lu%s%02lu%s%0*.*f"
-		,time.hour		,sep
-		,time.minute	,sep
-		,precision ? (precision+3) : 2
-		,precision
-		,time.second
-		);
+	if(precision < -1)			/* HH */
+		snprintf(str, maxlen, "%02lu", time.hour);
+	else if(precision < 0)		/* HH:MM */
+		snprintf(str, maxlen, "%02lu%s%02lu"
+			,time.hour		,sep
+			,time.minute
+			);
+	else						/* HH:MM:SS[.fract] */
+		snprintf(str, maxlen, "%02lu%s%02lu%s%0*.*f"
+			,time.hour		,sep
+			,time.minute	,sep
+			,precision ? (precision+3) : 2
+			,precision
+			,time.second
+			);
 
 	return str;
 }
