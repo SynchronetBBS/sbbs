@@ -202,18 +202,21 @@ function do_exit()
 	if(player.Ported || player.Landed) {
 		var sector=sectors.Get(player.Sector);
 		if(player.Ported) {
+			console.writeln("Leaving the port...");
 			player.Ported=false;
 			var port=ports.Get(sector.Port);
 			port.OccupiedBy=0;
 			port.Put();
 		}
 		if(player.Landed) {
+			console.writeln("Launching from planet...");
 			player.Landed=false;
 			var planet=planets.Get(sector.Planet);
 			planet.OccupiedBy=0;
 			planet.Put();
 		}
 	}
+	player.TimeUsed += time()-on_at;
 	player.Put();
 	console.writeln("Returning to Door monitor...");
 	TWRank();

@@ -28,24 +28,31 @@ function InputFunc(values)
 	console.attributes="N";
 InputFuncMainLoop:
 	for(;;) {
+		/* Node status check */
+		var newmisc=system.node_list[bbs.node_num-1].misc;
+		var newstatus=system.node_list[bbs.node_num-1].status;
+		if(newmisc != lastmisc || newstatus != laststatus) {
+			console.saveline();
+			bbs.nodesync();
+			console.write("\r");
+			if(console.line_counter!=0) {
+				console.crlf();
+				console.line_counter=0;
+			}
+			console.restoreline();
+			lastmisc=system.node_list[bbs.node_num-1].misc;
+			laststatus=system.node_list[bbs.node_num-1].status;
+		}
+		/* Time Check */
+		if((player.TimedUsed + (time()-on_at)) > (Settings.MaxTime*60)) {
+			console.crlf()
+			console.crlf()
+			console.writeln("You are out of time for today");
+			exit(0);
+		}
+
 		key=console.inkey(100);
 		if(key == '') {
-			/* Node status check */
-			var newmisc=system.node_list[bbs.node_num-1].misc;
-			var newstatus=system.node_list[bbs.node_num-1].status;
-			if(newmisc != lastmisc || newstatus != laststatus) {
-				console.saveline();
-				bbs.nodesync();
-				console.write("\r");
-				if(console.line_counter!=0) {
-					console.crlf();
-					console.line_counter=0;
-				}
-				console.restoreline();
-				lastmisc=system.node_list[bbs.node_num-1].misc;
-				laststatus=system.node_list[bbs.node_num-1].status;
-			}
-			
 			/* Busy loop checking */
 		}
 		else {
