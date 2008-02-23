@@ -100,7 +100,7 @@ function CreatePlanet(sector)
 	}
 	console.writeln("You have " + player.Credits + " credits.");
 	console.write("Do you wish to buy a planet(Y/N) [N]? ");
-	if(GetKeyEcho()=='Y') {
+	if(InputFunc(['Y','N'])=='Y') {
 		var i;
 		var planet;
 		for(i=1; i<planets.length; i++) {
@@ -219,7 +219,7 @@ function DestroyPlanet(planet)
 	console.crlf();
 	console.attributes="Y";
 	console.write("Are you sure (Y/N)[N]? ");
-	if(GetKeyEcho()=='Y') {
+	if(InputFunc(['Y','N'])=='Y') {
 		planet.Created=false;
 		var sector=sectors.Get(planet.Sector);
 		sector.Planet=0;

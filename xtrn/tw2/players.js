@@ -135,7 +135,7 @@ function AttackPlayer()
 					&& !otherplayer.Online) {
 				count++;
 				console.write("Attack "+otherplayer.Alias+" (Y/N)[Y]? ");
-				if(GetKeyEcho()!='N') {
+				if(InputFunc(['Y','N'])!='N') {
 					console.writeln("<Yes>");
 					break;
 				}
@@ -471,12 +471,8 @@ function MatchPlayer(name)
 			continue;
 		if(p.Alias.toUpperCase().indexOf(name)!=-1) {
 			console.write(p.Alias+" (Y/N)[Y]? ");
-			switch(GetKeyEcho()) {
-				case 'N':
-					break;
-				default:
-					return(p);
-			}
+			if(InputFunc(['Y','N'])!='N')
+				return(p);
 		}
 	}
 	console.writeln("Not found.");

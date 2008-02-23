@@ -1,12 +1,3 @@
-function GetKeyEcho()
-{
-	var ret=console.getkey().toUpperCase();
-	if(ret=="\x0a" || ret=="\x0d")
-		ret='';
-	console.writeln(ret);
-	return(ret);
-}
-
 var lastmisc;
 var laststatus;
 try {

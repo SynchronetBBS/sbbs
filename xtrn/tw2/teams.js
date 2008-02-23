@@ -190,7 +190,7 @@ function QuitTeam()
 		return(false);
 	}
 	console.write("Are you sure you wish to quit your Team [N]? ");
-	if(GetKeyEcho()=='Y') {
+	if(InputFunc(['Y','N'])=='Y') {
 		var team=teams.Get(player.TeamNumber);
 		player.TeamNumber=0;
 		var i;
@@ -217,7 +217,7 @@ function QuitTeam()
 function TeamTransfer(type)
 {
 	console.write("Transfer "+type+" to another Team member [N]? ");
-	if(GetKeyEcho()!='Y')
+	if(InputFunc(['Y','N'])!='Y')
 		return(false);
 	if(player[type] < 1) {
 		console.writeln("You don't have any "+type+".");
@@ -236,7 +236,7 @@ function TeamTransfer(type)
 					&& otherplayer.UserNumber!=0
 					&& otherplayer.TeamNumber==player.TeamNumber) {
 				console.write("Transfer "+type+" to " + otherplayer.Alias + " (Y/[N])? ");
-				if(GetKeyEcho()=='Y')
+				if(InputFunc(['Y','N'])=='Y')
 					break;
 			}
 			otherplayer=null;
@@ -257,7 +257,7 @@ function TeamTransfer(type)
 			if(otherplayer.Credits + transfer > 25000) {
 				console.writeln("You Team mate will have more than 25,000 credits");
 				console.write("Do you wish to complete the Transfer [N]? ");
-				if(GetKeyEcho()!='Y')
+				if(InputFunc(['Y','N'])!='Y')
 					return(false);
 			}
 		}

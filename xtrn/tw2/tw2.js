@@ -124,10 +124,9 @@ function Menu()
 //					break;
 //				console.writeln("<TW Editor>");
 //				console.write("Do you wish to use the editor? Y/N [N] ");
-//				switch(GetKeyEcho()) {
-//					case 'Y':
-//						console.writeln("Running Tradewars ][ Editor...");
-//						/* TODO: TWEdit */
+//				if(InputFunc(['Y','N'])=='Y') {
+//					console.writeln("Running Tradewars ][ Editor...");
+//					/* TODO: TWEdit */
 //				}
 //				break;
 			case 'F':
