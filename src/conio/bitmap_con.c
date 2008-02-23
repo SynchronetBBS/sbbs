@@ -614,8 +614,6 @@ static void bitmap_draw_cursor()
 /* Called from main thread only */
 void bitmap_gotoxy(int x, int y)
 {
-	static int lx=-1,ly=-1;
-
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
@@ -627,8 +625,6 @@ void bitmap_gotoxy(int x, int y)
 		vstat.curs_col=x+cio_textinfo.winleft-1;
 		vstat.curs_row=y+cio_textinfo.wintop-1;
 		pthread_mutex_unlock(&vstatlock);
-		lx=vstat.curs_col;
-		ly=vstat.curs_row;
 	}
 }
 
