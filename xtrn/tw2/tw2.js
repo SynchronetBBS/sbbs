@@ -199,8 +199,21 @@ function Menu()
 function do_exit()
 {
 	player.Online=false;
-	player.Ported=false;
-	player.Landed=false;
+	if(player.Ported || player.Landed) {
+		var sector=sectors.Get(player.Sector);
+		if(player.Ported) {
+			player.Ported=false;
+			var port=ports.Get(sector.Port);
+			port.OccupiedBy=0;
+			port.Put();
+		}
+		if(player.Landed) {
+			player.Landed=false;
+			var planet=planets.Get(sector.Planet);
+			planet.OccupiedBy=0;
+			planet.Put();
+		}
+	}
 	player.Put();
 	console.writeln("Returning to Door monitor...");
 	TWRank();
@@ -234,4 +247,3 @@ function Production(place)
 	place.LastUpdate=newupd;
 	place.Put();
 }
-

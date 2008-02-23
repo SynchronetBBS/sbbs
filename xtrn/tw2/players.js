@@ -95,6 +95,12 @@ var PlayerProperties=[
 				,type:"Boolean"
 				,def:false
 			}
+			,{
+				 prop:"TimeToday"
+				,name:"Time used today (secs)"
+				,type:"Integer"
+				,def:0
+			}
 		];
 
 var PlayerLocation = [
@@ -637,6 +643,7 @@ function LoadPlayer()
 		}
 		else {
 			player.TurnsLeft=Settings.TurnsPerDay;
+			player.TimeToday=0;
 		}
 		player.LastOnDay=system.datestr();
 		if(player.KilledBy != 0) {
