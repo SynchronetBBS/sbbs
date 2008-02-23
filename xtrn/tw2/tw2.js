@@ -43,10 +43,8 @@ load(fname("messages.js"));
 load(fname("computer.js"));
 load(fname("input.js"));
 
-var twmsg=new File(fname("twmesg.dat"));
 var twopeng=new File(fname("twopeng.dat"));
 twopeng.open("a", true);
-twmsg.open("a", true);
 
 var today=system.datestr(system.datestr());
 

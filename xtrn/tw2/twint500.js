@@ -73,8 +73,6 @@ ConfigureSettings();
 if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1)
 	exit(1);
 
-load(fname("structs.js"));
-
 file_remove(fname("sectors.dat"));
 file_remove(fname("ports.dat"));
 file_remove(fname("players.dat"));
@@ -86,106 +84,27 @@ file_remove(fname("twrmesg.dat"));
 file_remove(fname("teams.dat"));
 file_remove(fname("twopeng.dat"));
 file_remove(fname("cabals.dat"));
-var sectors=new RecordFile(fname("sectors.dat"), SectorProperties);
-var ports=new RecordFile(fname("ports.dat"), PortProperties);
-var players=new RecordFile(fname("players.dat"), PlayerProperties);
-var playerLocation=new RecordFile(fname("player-loc.dat"), PlayerLocation);
-var teams=new RecordFile(fname("teams.dat"), TeamProperties);
-var planets=new RecordFile(fname("planets.dat"), PlanetProperties);
+
+load(fname("ports.js"));
+load(fname("planets.js"));
+load(fname("teams.js"));
+load(fname("sectors.js"));
+load(fname("maint.js"));
+load(fname("players.js"));
+load(fname("messages.js"));
+load(fname("computer.js"));
+load(fname("input.js"));
+
 var twmsg=new File(fname("twmesg.dat"));
-var twpmsg=new RecordFile(fname("twpmesg.dat"), PlayerMessageProperties);
-var twrmsg=new RecordFile(fname("twrmesg.dat"), RadioMessageProperties);
-var cabals=new RecordFile(fname("cabal.dat"), CabalProperties);
 var i;
 
-uifc.pop("Creating Players");
-player=players.New();
-loc=playerLocation.New();
-player.UserNumber=0;
-player.Put();
-loc.Put();
-for(i=0; i<Settings.MaxPlayers; i++) {
-	player=players.New();
-	player.UserNumber=0;
-	player.Sector=0;
-	player.Put();
-	loc=playerLocation.New();
-	loc.Sector=0;
-	loc.Put();
-}
+ResetAllPlayers();
+ResetAllPlanets();
+ResetAllMessages();
+InitializeTeams();
+InitializeSectors();
+InitializePorts();
+InitializeCabal();
 
-uifc.pop("Creating Planets");
-planet=planets.New();
-planet.Put();
-for(i=0; i<Settings.MaxPlanets; i++) {
-	planet=planets.New();
-	planet.Put();
-}
-
-uifc.pop("SysOp Messages");
-twmsg.open("w");
-twmsg.writeln(system.timestr()+" TW 500 initialized");
-twmsg.close();
-
-uifc.pop("Player Messages");
-for(i=0; i<100; i++) {
-	msg=twpmsg.New();
-	msg.Put();
-}
-
-uifc.pop("Radio Messages");
-for(i=0; i<2; i++) {
-	msg=twrmsg.New();
-	twrmsg.Read=true;
-	msg.Put();
-}
-
-uifc.pop("Teams");
-var team=teams.New();
-team.Put();
-
-uifc.pop("Placing Ports");
-/* Place ports */
-for(i=0; i<ports_init.length; i++) {
-	sector_map[ports_init[i].Position-1].Port=i+1;
-	ports_init[i].LastUpdate=system.datestr(time()-15*86400);
-}
-
-uifc.pop("Initializing the Cabal");
-sector_map[85-1].Fighters=3000;
-sector_map[85-1].FightersOwner="The Cabal";
-for(i=1; i<=10; i++) {
-	var grp=cabals.New();
-	if(i==1) {
-		grp.Size=3000;
-		grp.Sector=85;
-		grp.Goal=85;
-	}
-	grp.Put();
-}
-
-uifc.pop("Writing Sectors");
-/* Write sectors.dat */
-sector=sectors.New();
-sector.Put();
-for(i=0; i<sector_map.length; i++) {
-	sector=sectors.New();
-	for(prop in sector_map[i])
-		sector[prop]=sector_map[i][prop];
-	sector.Put();
-}
-
-uifc.pop("Writing Ports");
-/* Write ports.ini */
-port=ports.New();
-port.Put();
-for(i=0; i<ports_init.length; i++) {
-	port=ports.New();
-	for(prop in ports_init[i])
-		port[prop]=ports_init[i][prop];
-	port.Production=[ports_init[i].OreProduction, ports_init[i].OrgProduction, ports_init[i].EquProduction];
-	port.PriceVariance=[ports_init[i].OreDeduction,ports_init[i].OrgDeduction,ports_init[i].EquDeduction];
-	port.Put();
-}
 uifc.pop();
 uifc.bail();

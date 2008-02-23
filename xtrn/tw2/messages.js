@@ -54,6 +54,8 @@ var RadioMessageProperties = [
 
 var twpmsg=new RecordFile(fname("twpmesg.dat"), PlayerMessageProperties);
 var twrmsg=new RecordFile(fname("twrmesg.dat"), RadioMessageProperties);
+var twmsg=new File(fname("twmesg.dat"));
+twmsg.open("a", true);
 
 function ReadPMsg()
 {
@@ -165,4 +167,28 @@ function SendRadioMessage()
 		return(false);
 	RadioMessage(player.Record, p.Record, msg);
 	return(true);
+}
+
+function ResetAllMessages()
+{
+	var i;
+
+	uifc.pop("SysOp Messages");
+	twmsg.close();
+	twmsg.open("w");
+	twmsg.writeln(system.timestr()+" TW 500 initialized");
+	twmsg.close();
+
+	uifc.pop("Player Messages");
+	for(i=0; i<100; i++) {
+		msg=twpmsg.New();
+		msg.Put();
+	}
+
+	uifc.pop("Radio Messages");
+	for(i=0; i<2; i++) {
+		msg=twrmsg.New();
+		twrmsg.Read=true;
+		msg.Put();
+	}
 }

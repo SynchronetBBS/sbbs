@@ -7,8 +7,14 @@ function GetKeyEcho()
 	return(ret);
 }
 
-var lastmisc=system.node_list[bbs.node_num-1].misc;
-var laststatus=system.node_list[bbs.node_num-1].status;
+var lastmisc;
+var laststatus;
+try {
+	lastmisc=system.node_list[bbs.node_num-1].misc;
+	laststatus=system.node_list[bbs.node_num-1].status;
+}
+catch (e) {}
+
 function InputFunc(values)
 {
 	var str='';

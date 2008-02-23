@@ -296,3 +296,16 @@ function ShortestPath(start, end)
 	return(ret);
 }
 
+function InitializeSectors()
+{
+	uifc.pop("Writing Sectors");
+	/* Write sectors.dat */
+	sector=sectors.New();
+	sector.Put();
+	for(i=0; i<sector_map.length; i++) {
+		sector=sectors.New();
+		for(prop in sector_map[i])
+			sector[prop]=sector_map[i][prop];
+		sector.Put();
+	}
+}

@@ -320,3 +320,25 @@ function Transact(type, price, vary, avail)
 	return(0);
 }
 
+function InitializePorts()
+{
+	uifc.pop("Placing Ports");
+	port=ports.New();
+	port.Put();
+
+	/* Place ports */
+	for(i=0; i<ports_init.length; i++) {
+		port=ports.New();
+		for(prop in ports_init[i])
+			port[prop]=ports_init[i][prop];
+		port.Production=[ports_init[i].OreProduction, ports_init[i].OrgProduction, ports_init[i].EquProduction];
+		port.PriceVariance=[ports_init[i].OreDeduction,ports_init[i].OrgDeduction,ports_init[i].EquDeduction];
+
+		var sector=sectors.Get(ports_init[i].Position);
+		sector.Port=port.Record;
+		sector.Put();
+		ports_init[i].LastUpdate=system.datestr(time()-15*86400);
+
+		port.Put();
+	}
+}

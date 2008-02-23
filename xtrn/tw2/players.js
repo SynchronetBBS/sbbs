@@ -717,3 +717,23 @@ function Dropfighters()
 	}
 	return(false);
 }
+
+function ResetAllPlayers()
+{
+	uifc.pop("Creating Players");
+	var player=players.New();
+	var loc=playerLocation.New();
+	var i;
+	player.UserNumber=0;
+	player.Put();
+	loc.Put();
+	for(i=0; i<Settings.MaxPlayers; i++) {
+		player=players.New();
+		player.UserNumber=0;
+		player.Sector=0;
+		player.Put();
+		loc=playerLocation.New();
+		loc.Sector=0;
+		loc.Put();
+	}
+}

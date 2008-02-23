@@ -381,3 +381,20 @@ function CabalAttack(cabal)
 	sector.Put();
 }
 
+function InitializeCabal()
+{
+	var sector=sectors.Get(85);
+
+	uifc.pop("Initializing the Cabal");
+	sector_map[85].Fighters=3000;
+	sector_map[85].FightersOwner=-1;
+	for(i=1; i<=10; i++) {
+		var grp=cabals.New();
+		if(i==1) {
+			grp.Size=3000;
+			grp.Sector=85;
+			grp.Goal=85;
+		}
+		grp.Put();
+	}
+}

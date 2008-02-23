@@ -273,3 +273,10 @@ function TeamTransfer(type)
 	console.writeln(type+" Transfered!");
 	return(true);
 }
+
+function InitializeTeams()
+{
+	uifc.pop("Teams");
+	var team=teams.New();
+	team.Put();
+}

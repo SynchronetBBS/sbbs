@@ -322,3 +322,15 @@ function PlanetTakeCommodity(planet, commodity, freeholds)
 	player.Put();
 	return(freeholds);
 }
+
+function ResetAllPlanets()
+{
+	uifc.pop("Creating Planets");
+	var i;
+	var planet=planets.New();
+	planet.Put();
+	for(i=0; i<Settings.MaxPlanets; i++) {
+		planet=planets.New();
+		planet.Put();
+	}
+}
