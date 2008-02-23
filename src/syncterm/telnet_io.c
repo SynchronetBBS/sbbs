@@ -109,12 +109,12 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 		}
 	}
 
-    if(!telnet_cmdlen && first_int==NULL) {
+    if(telnet_cmdlen==0 && first_int==NULL) {
         *outlen=inlen;
         return(inbuf);	/* no interpretation needed */
     }
 
-    if(first_int!=NULL) {
+    if(telnet_cmdlen==0 /* If we haven't returned and telnet_cmdlen==0 then first_int is not NULL */  ) {
    		*outlen=first_int-inbuf;
 	    memcpy(outbuf, inbuf, *outlen);
     } else
