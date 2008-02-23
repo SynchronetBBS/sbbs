@@ -2379,6 +2379,8 @@ function DeletePlayer(player)
 	twmsg.writeln("  - "+player.Alias+" deleted from game");
 }
 
+var lastmisc=system.node_list[bbs.node_num-1].misc;
+var laststatus=system.node_list[bbs.node_num-1].status;
 function InputFunc(values)
 {
 	var str='';
@@ -2386,7 +2388,7 @@ function InputFunc(values)
 	var insertmode=true;
 	var key;
 	var origattr=console.attributes;
-	var matchstr=''
+	var matchval='';
 
 	console.line_counter=0;
 	console.attributes="N";
@@ -2394,12 +2396,28 @@ InputFuncMainLoop:
 	for(;;) {
 		key=console.inkey(100);
 		if(key == '') {
+			/* Node status check */
+			var newmisc=system.node_list[bbs.node_num-1].misc;
+			var newstatus=system.node_list[bbs.node_num-1].status;
+			if(newmisc != lastmisc || newstatus != laststatus) {
+				console.saveline();
+				bbs.nodesync();
+				console.write("\r");
+				if(console.line_counter!=0) {
+					console.crlf();
+					console.line_counter=0;
+				}
+				console.restoreline();
+				lastmisc=system.node_list[bbs.node_num-1].misc;
+				laststatus=system.node_list[bbs.node_num-1].status;
+			}
+			
 			/* Busy loop checking */
 		}
 		else {
 			switch(key) {
 				case '\x1b':	/* Escape */
-					matchstr='';
+					matchval='';
 					pos=0;
 					break InputFuncMainLoop;
 				case '\r':
@@ -2424,30 +2442,35 @@ InputFuncMainLoop:
 					var value;
 					var exact_match=false;
 					var longer_match=false;
-					matchstr='';
+					matchval='';
 					for(value in values) {
 						if(typeof(values[value])=='string') {
 							var ucv=values[value].toUpperCase();
 							var ucs=str.toUpperCase();
 							if(ucv==ucs) {
 								exact_match=true;
-								matchstr=values[value];
+								matchval=values[value];
 							}
 							else if(ucv.indexOf(ucs)==0)
 								longer_match=true;
 						}
 						else if(typeof(values[value])=='object') {
+							var min=0;
+							var max=4294967295;
+							var def=0;
+							if(values[value].min != undefined)
+								min=values[value].min;
+							if(values[value].max != undefined)
+								max=values[value].max;
+							if(values[value].def != undefined)
+								def=values[value].def;
 							if(str.search(/^[0-9]*$/)!=-1) {
-								var min=0;
-								var max=4294967296;
-								var cur=parseInt(str);
-								if(values[value].min != undefined)
-									min=values[value].min;
-								if(values[value].max != undefined)
-									max=values[value].max;
+								var cur=def;
+								if(pos > 0)
+									cur=parseInt(str);
 								if(cur >= min && cur <= max) {
 									exact_match=true;
-									matchstr=cur.toString();
+									matchval=cur;
 								}
 								if(cur*10 <= max)
 									longer_match=true;
@@ -2470,8 +2493,8 @@ InputFuncMainLoop:
 		console.write('\x08');
 		pos--;
 	}
-	console.write(matchstr);
-	console.attributes=origattr;
+	console.cleartoeol(origattr);
+	console.write(matchstr.toString());
 	console.crlf();
 	return(matchstr);
 }
