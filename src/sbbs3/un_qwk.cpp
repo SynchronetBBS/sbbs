@@ -76,7 +76,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),i);
 		return(false); 
 	}
-	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexistcase(str)) {
 		SAFEPRINTF2(tmp,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
 		errorlog(tmp);
@@ -293,13 +293,13 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		smb_close(&smb);
 
 	delfiles(cfg.temp_dir,"*.NDX");
-	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	remove(str);
-	sprintf(str,"%sDOOR.ID",cfg.temp_dir);
+	SAFEPRINTF(str,"%sDOOR.ID",cfg.temp_dir);
 	remove(str);
-	sprintf(str,"%sCONTROL.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sCONTROL.DAT",cfg.temp_dir);
 	remove(str);
-	sprintf(str,"%sNETFLAGS.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sNETFLAGS.DAT",cfg.temp_dir);
 	remove(str);
 
 	dir=opendir(cfg.temp_dir);
