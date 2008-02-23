@@ -13,16 +13,6 @@
 #include "datewrap.h"
 #include "xpdatetime.h"
 
-time_t checktime()
-{
-	struct tm tm;
-
-	memset(&tm,0,sizeof(tm));
-	tm.tm_year=94;
-	tm.tm_mday=1;
-	return(mktime(&tm)^0x2D24BD00L);
-}
-
 int main(int argc, char **argv)
 {
 	char			str[256];
@@ -39,13 +29,6 @@ int main(int argc, char **argv)
 
 	printf("Rev %s Built " __DATE__ " " __TIME__ " with %s\n\n", revision, str);
 
-#if 0
-
-	if((t=checktime())!=0L) {
-		printf("Time problem (%08lX)\n",t);
-		exit(1); }
-#endif
-
 	if(argc<2)
 		printf("usage: xptime [-z] <date_str || time_t>\n\n");
 
@@ -55,6 +38,9 @@ int main(int argc, char **argv)
 		argn++;
 	}
 	tzset();
+
+	if((t=checktime())!=0L)
+		printf("!time() result diverges from standard by: %ld seconds\n\n",t);
 
 	printf("Current timezone: %d\n", xpTimeZone_local());
 	printf("\n");

@@ -39,6 +39,19 @@
 #include "genwrap.h"
 #include "datewrap.h"
 
+/* Return difference (in seconds) in time() result from standard */
+time_t checktime(void)
+{
+	time_t		t=0x2D24BD00L;	/* Correct time_t value on Jan-1-1994 */
+	struct tm	gmt;
+	struct tm	tm;
+
+	memset(&tm,0,sizeof(tm));
+	tm.tm_year=94;
+	tm.tm_mday=1;
+	return mktime(&tm) - mktime(gmtime_r(&t,&gmt));
+}
+
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm* tm)
 {

@@ -44,6 +44,9 @@
 extern "C" {
 #endif
 
+/* Return difference (in seconds) in time() result from standard (0 on success) */
+time_t checktime(void);
+
 /* Implementation of mktime() that handles common tm element conversions for you */
 time_t sane_mktime(struct tm* tm);
 
