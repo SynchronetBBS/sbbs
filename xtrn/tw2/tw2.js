@@ -33,7 +33,6 @@ load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
 var Settings=new GameSettings();
 
-load(fname("structs.js"));
 load(fname("ports.js"));
 load(fname("planets.js"));
 load(fname("teams.js"));
