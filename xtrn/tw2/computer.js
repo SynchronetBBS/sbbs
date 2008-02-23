@@ -9,6 +9,7 @@ function ComputerMenu()
 		if(showhelp) {
 			console.crlf();
 			console.printfile(fname("computer.asc"));
+			showhelp=false;
 		}
 		console.attributes="HW";
 		console.write("Computer command (?=help)? ");
@@ -72,7 +73,8 @@ function ComputerMenu()
 				console.crlf();
 				console.write("Ranking Players.");
 				TWRank();
-				console.printfile(Settings.TopTenFile);
+				console.printfile(fname(Settings.TopTenFile));
+				console.crlf();
 				break;
 			case '5':
 				/* 33960 */

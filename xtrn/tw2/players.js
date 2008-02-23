@@ -218,7 +218,7 @@ function PlayerMove()
 	}
 	console.writeln(avail.join(", "));
 	console.write("To which sector? ");
-	var to=InputFunc(sectors.length-1);
+	var to=InputFunc(avail);
 	if(to=='')
 		return(false);
 	return(MoveTo(parseInt(to)));
@@ -255,7 +255,7 @@ function PlayerInfo(num)
 
 	console.attributes="HW";
 	console.write("   Pilot's Name: "+p.Alias);
-	if(p.PlayerNumber>0)
+	if(p.TeamNumber>0)
 		console.write("  Team ["+p.TeamNumber+"]");
 	console.crlf();
 	console.writeln("       Fighters: "+p.Fighters);
@@ -689,7 +689,7 @@ function LoadPlayer()
 	return(true);
 }
 
-function Dropfighters()
+function DropFighters()
 {
 	if(player.Sector < 8) {
 		console.writeln("You can't leave fighters in the Union (sectors 1-7)");

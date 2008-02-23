@@ -185,7 +185,7 @@ function JoinTeam()
 
 function QuitTeam()
 {
-	if(player.TeamNumber != 0) {
+	if(player.TeamNumber == 0) {
 		console.writeln("You don't belong to a Team!");
 		return(false);
 	}
