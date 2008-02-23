@@ -1150,6 +1150,17 @@ char* DLLCALL getsmsg(scfg_t* cfg, int usernumber)
 	if(!VALID_CFG(cfg) || usernumber<1)
 		return(NULL);
 
+	for(i=1;i<=cfg->sys_nodes;i++) {	/* clear msg waiting flag */
+		getnodedat(cfg,i,&node,NULL);
+		if(node.useron==usernumber
+			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
+			&& node.misc&NODE_MSGW) {
+			getnodedat(cfg,i,&node,&file);
+			node.misc&=~NODE_MSGW;
+			putnodedat(cfg,i,&node,file); 
+		} 
+	}
+
 	sprintf(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
 	if(flength(str)<1L)
 		return(NULL);
@@ -1168,17 +1179,6 @@ char* DLLCALL getsmsg(scfg_t* cfg, int usernumber)
 	chsize(file,0L);
 	close(file);
 	buf[length]=0;
-
-	for(i=1;i<=cfg->sys_nodes;i++) {	/* clear msg waiting flag */
-		getnodedat(cfg,i,&node,NULL);
-		if(node.useron==usernumber
-			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
-			&& node.misc&NODE_MSGW) {
-			getnodedat(cfg,i,&node,&file);
-			node.misc&=~NODE_MSGW;
-			putnodedat(cfg,i,&node,file); 
-		} 
-	}
 
 	return(buf);	/* caller must free */
 }
