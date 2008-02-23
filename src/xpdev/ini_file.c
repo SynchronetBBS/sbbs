@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -39,7 +39,8 @@
 #include <string.h>		/* strlen */
 #include <ctype.h>		/* isdigit */
 #include <math.h>		/* fmod */
-#include "datewrap.h"	/* isoDateTime_t */
+#include "xpdatetime.h"	/* isoDateTime_t */
+#include "datewrap.h"	/* ctime_r */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* chsize */
 #include "ini_file.h"
@@ -584,7 +585,7 @@ char* iniSetDateTime(str_list_t* list, const char* section, const char* key
 
 	if(value==0)
 		SAFECOPY(str,"Never");
-	else if((p=CTIME_R(&value,tstr))==NULL)
+	else if((p=ctime_r(&value,tstr))==NULL)
 		SAFEPRINTF(str,"0x%lx",value);
 	else if(!include_time)	/* reformat into "Mon DD YYYY" */
 		safe_snprintf(str,sizeof(str),"%.3s %.2s %.4s"		,p+4,p+8,p+20);
