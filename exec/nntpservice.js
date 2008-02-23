@@ -400,6 +400,10 @@ while(client.socket.is_connected && !quit) {
 				writeln("412 no newsgroup selected");
 				break;
 			}
+			if(!selected.can_read) {
+				writeln("412 read permission to newsgroup denied");
+				break;
+			}
 			var first, last;
 			if(cmd[1]==undefined || cmd[1].length==0)
 				first=last=current_article;
@@ -439,6 +443,10 @@ while(client.socket.is_connected && !quit) {
 			}
 			if(!selected) {
 				writeln("412 no newsgroup selected");
+				break;
+			}
+			if(!selected.can_read) {
+				writeln("412 read permission to newsgroup denied");
 				break;
 			}
 			writeln("221 Header follows");
@@ -516,6 +524,10 @@ while(client.socket.is_connected && !quit) {
 			if(!selected) {
 				writeln("412 no newsgroup selected");
 				bogus_cmd_counter++;
+				break;
+			}
+			if(!selected.can_read) {
+				writeln("412 read permission to newsgroup denied");
 				break;
 			}
 			if(cmd[1]==undefined || cmd[1].length==0) {
