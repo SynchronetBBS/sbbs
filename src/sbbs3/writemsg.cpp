@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,7 +39,7 @@
 
 #define MAX_LINE_LEN 82L
 
-const char *qstr=" > %.76s\r\n";
+const char *quote_fmt=" > %.76s\r\n";
 void quotestr(char *str);
 
 /****************************************************************************/
@@ -105,7 +105,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			strcpy(tmp,"QUOTES.TXT");
 			if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 				strlwr(tmp);
-			sprintf(str,"%s%s",cfg.node_dir,tmp);
+			SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				free(buf);
@@ -123,7 +123,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				if(!fgets(str,255,stream))
 					break;
 				quotestr(str);
-				sprintf(tmp,qstr,str);
+				SAFEPRINTF(tmp,quote_fmt,str);
 				write(file,tmp,strlen(tmp));
 				linesquoted++; 
 			}
@@ -140,7 +140,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			strcpy(tmp,"QUOTES.TXT");
 			if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 				strlwr(tmp);
-			sprintf(str,"%s%s",cfg.node_dir,tmp);
+			SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				free(buf);
@@ -157,7 +157,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			l=ftell(stream);			/* l now points to start of message */
 
 			while(online) {
-				sprintf(str,text[QuoteLinesPrompt],linesquoted ? "Done":"All");
+				SAFEPRINTF(str,text[QuoteLinesPrompt],linesquoted ? "Done":"All");
 				mnemonics(str);
 				i=getstr(quote,10,K_UPPER);
 				if(sys_status&SS_ABORT) {
@@ -174,7 +174,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 						if(!fgets(str,255,stream))
 							break;
 						quotestr(str);
-						sprintf(tmp,qstr,str);
+						SAFEPRINTF(tmp,quote_fmt,str);
 						write(file,tmp,strlen(tmp));
 						linesquoted++; 
 					}
@@ -218,7 +218,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 							if(!fgets(str,255,stream))
 								break;
 							quotestr(str);
-							sprintf(tmp,qstr,str);
+							SAFEPRINTF(tmp,quote_fmt,str);
 							write(file,tmp,strlen(tmp));
 							linesquoted++;
 							j++; 
@@ -227,7 +227,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 					else {			/* one line */
 						if(fgets(str,255,stream)) {
 							quotestr(str);
-							sprintf(tmp,qstr,str);
+							SAFEPRINTF(tmp,quote_fmt,str);
 							write(file,tmp,strlen(tmp));
 							linesquoted++; 
 						} 
@@ -245,7 +245,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		strcpy(tmp,"QUOTES.TXT");
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",cfg.node_dir,tmp);
+		SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
 		removecase(str); 
 	}
 
@@ -363,7 +363,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				fgets(str,sizeof(str),fp);
 				fgets(str,sizeof(str),fp);
 				truncsp(str);
-				sprintf(title,"%.*s",max_title_len,str);
+				SAFEPRINTF2(title,"%.*s",max_title_len,str);
 				fclose(fp);
 			}
 		}
@@ -452,7 +452,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 
 	/* Signature file */
 	if(subnum==INVALID_SUB || !(cfg.sub[subnum]->misc&SUB_NOUSERSIG)) {
-		sprintf(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
+		SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,useron.number);
 		FILE* sig;
 		if(fexist(str) && (sig=fopen(str,"rb"))!=NULL) {
 			while(!feof(sig)) {
@@ -498,12 +498,12 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		strcpy(tmp,"MSGINF");
 		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",cfg.node_dir,tmp);
+		SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
-		sprintf(str,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
+		safe_snprintf(str,sizeof(str),"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 				: useron.alias
 				,dest,title,1
@@ -521,12 +521,12 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		strcpy(tmp,"EDITOR.INF");
 		if(cfg.xedit[xeditnum]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",cfg.node_dir,tmp);
+		SAFEPRINTF2(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
-		sprintf(str,"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
+		safe_snprintf(str,sizeof(str),"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
 			,title,dest,useron.number
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 			: useron.alias
@@ -659,7 +659,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		bprintf("\r\nMessage editor: Read in %d lines\r\n",lines);
 	bprintf(text[EnterMsgNow],maxlines);
 
-	sprintf(path,"%smenu/msgtabs.*", cfg.text_dir);
+	SAFEPRINTF(path,"%smenu/msgtabs.*", cfg.text_dir);
 	if(fexist(path))
 		menu("msgtabs");
 	else {
@@ -816,7 +816,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				if(j) j--;  /* start from line j */
 				while(j<lines && !msgabort()) {
 					if(i) { /* line numbers */
-						sprintf(tmp,"%3d: %-.74s",j+1,str[j]);
+						SAFEPRINTF2(tmp,"%3d: %-.74s",j+1,str[j]);
 						putmsg(tmp,P_SAVEATR|P_NOATCODES); 
 					}
 					else
@@ -901,7 +901,7 @@ void sbbs_t::editfile(char *fname)
 	long length,maxlines,lines,l,mode=0;
 
 	maxlines=cfg.level_linespermsg[useron.level];
-	sprintf(path,"%sQUOTES.TXT",cfg.node_dir);
+	SAFEPRINTF(path,"%sQUOTES.TXT",cfg.node_dir);
 	removecase(path);
 
 	if(useron.xedit) {
@@ -1000,9 +1000,9 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
+		SAFEPRINTF3(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,to,tp);
-		sprintf(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
+		SAFEPRINTF3(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,from,tp);
 		if(strcmp(str2,str3))
 			mv(str3,str2,1);
@@ -1049,13 +1049,13 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 
 	smb_hfield_str(msg,SENDER,useron.alias);
-	sprintf(str,"%u",useron.number);
+	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(msg,SENDEREXT,str);
 
 	username(&cfg,usernumber,touser);
 	smb_hfield_str(msg,RECIPIENT,touser);
-	sprintf(str,"%u",usernumber);
-	smb_hfield(msg,RECIPIENTEXT,sizeof(str),str);
+	SAFEPRINTF(str,"%u",usernumber);
+	smb_hfield_str(msg,RECIPIENTEXT,str);
 	msg->idx.to=usernumber;
 
 	now32=time(NULL);
@@ -1083,7 +1083,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		copyfattach(usernumber,useron.number,msg->subj);
 
 	bprintf(text[Forwarded],username(&cfg,usernumber,str),usernumber);
-	sprintf(str,"%s forwarded mail to %s #%d"
+	SAFEPRINTF3(str,"%s forwarded mail to %s #%d"
 		,useron.alias
 		,username(&cfg,usernumber,tmp)
 		,usernumber);
@@ -1109,13 +1109,13 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		getnodedat(i,&node,0);
 		if(node.useron==usernumber && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-			sprintf(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
+			SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
 			putnmsg(&cfg,i,str);
 			break; 
 		} 
 	}
 	if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
-		sprintf(str,text[UserSentYouMail],useron.alias);
+		SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
 		putsmsg(&cfg,usernumber,str); 
 	}
 }
@@ -1131,7 +1131,7 @@ void sbbs_t::automsg()
     int		file;
 	time_t	now=time(NULL);
 
-	sprintf(automsg,"%smsgs/auto.msg",cfg.data_dir);
+	SAFEPRINTF(automsg,"%smsgs/auto.msg",cfg.data_dir);
 	while(online) {
 		SYNC;
 		mnemonics(text[AutoMsg]);
@@ -1167,10 +1167,10 @@ void sbbs_t::automsg()
 						return; 
 					}
 					if(anon)
-						sprintf(tmp,"%.80s",text[Anonymous]);
+						SAFEPRINTF(tmp,"%.80s",text[Anonymous]);
 					else
-						sprintf(tmp,"%s #%d",useron.alias,useron.number);
-					sprintf(str,text[AutoMsgBy],tmp,timestr(now));
+						SAFEPRINTF2(tmp,"%s #%d",useron.alias,useron.number);
+					SAFEPRINTF2(str,text[AutoMsgBy],tmp,timestr(now));
 					strcat(str,"          ");
 					write(file,str,strlen(str));
 					write(file,buf,strlen(buf));
@@ -1313,7 +1313,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	fseek(smb.sdt_fp,msg->hdr.offset,SEEK_SET);
 	fread(buf,length,1,smb.sdt_fp);
 
-	sprintf(newsmb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
+	SAFEPRINTF2(newsmb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
 	newsmb.retry_time=cfg.smb_retry_time;
 	newsmb.subnum=newsub;
 	if((i=smb_open(&newsmb))!=SMB_SUCCESS) {
@@ -1390,7 +1390,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
 		,cfg.grp[usrgrp[newgrp]]->sname,cfg.sub[newsub]->lname);
-	sprintf(str,"%s moved message from %s %s to %s %s"
+	safe_snprintf(str,sizeof(str),"%s moved message from %s %s to %s %s"
 		,useron.alias
 		,cfg.grp[newgrp]->sname,cfg.sub[newsub]->sname
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
