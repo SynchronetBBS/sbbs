@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -63,6 +63,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	post_t	*post;
 	glob_t	g;
 	FILE	*stream,*qwk,*personal,*ndx;
+	FILE*	hdrs=NULL;
 	DIR*	dir;
 	DIRENT*	dirent;
 	struct	tm tm;
@@ -73,7 +74,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		ex|=EX_OFFLINE;
 
 	delfiles(cfg.temp_dir,ALLFILES);
-	sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
+	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
 		for(k=0;k<cfg.total_fextrs;k++)
 			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
@@ -108,7 +109,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***************************/
 		/* Create CONTROL.DAT file */
 		/***************************/
-		sprintf(str,"%sCONTROL.DAT",cfg.temp_dir);
+		SAFEPRINTF(str,"%sCONTROL.DAT",cfg.temp_dir);
 		if((stream=fopen(str,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str,0);
 			return(false); 
@@ -137,11 +138,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		for(i=0;i<usrgrps;i++) 
 			for(j=0;j<usrsubs[i];j++) {
 				if(useron.qwk&QWK_EXT)	/* 255 char max */
-					sprintf(confname,"%s %s"
+					SAFEPRINTF2(confname,"%s %s"
 						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 						,cfg.sub[usrsub[i][j]]->lname);
 				else					/* 10 char max */
-					strcpy(confname,cfg.sub[usrsub[i][j]]->qwkname);
+					SAFECOPY(confname,cfg.sub[usrsub[i][j]]->qwkname);
 				fprintf(stream,"%u\r\n%s\r\n"
 					,cfg.sub[usrsub[i][j]]->qwkconf ? cfg.sub[usrsub[i][j]]->qwkconf
 					: ((i+1)*1000)+j+1,confname);
@@ -151,7 +152,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/
 		/* Create DOOR.ID File */
 		/***********************/
-		sprintf(str,"%sDOOR.ID",cfg.temp_dir);
+		SAFEPRINTF(str,"%sDOOR.ID",cfg.temp_dir);
 		if((stream=fopen(str,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str,0);
 			return(false); 
@@ -190,7 +191,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			/***********************/
 			/* Create NETFLAGS.DAT */
 			/***********************/
-			sprintf(str,"%sNETFLAGS.DAT",cfg.temp_dir);
+			SAFEPRINTF(str,"%sNETFLAGS.DAT",cfg.temp_dir);
 			if((stream=fopen(str,"wb"))==NULL) {
 				errormsg(WHERE,ERR_CREATE,str,0);
 				return(false); 
@@ -206,7 +207,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/****************************************************/
 	/* Create MESSAGES.DAT, write header and leave open */
 	/****************************************************/
-	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(fexistcase(str))
 		fmode="r+b";
 	else
@@ -214,6 +215,14 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	if((qwk=fopen(str,fmode))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,0);
 		return(false); 
+	}
+	if(useron.qwk&QWK_HEADERS) {
+		SAFEPRINTF(str,"%sHEADERS.DAT",cfg.temp_dir);
+		if((hdrs=fopen(str,"a"))==NULL) {
+			fclose(qwk);
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
 	}
 	l=filelength(fileno(qwk));
 	if(l<1) {
@@ -223,7 +232,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		msgndx=l/QWK_BLOCK_LEN;
 		fseek(qwk,0,SEEK_END);
 	}
-	sprintf(str,"%sNEWFILES.DAT",cfg.temp_dir);
+	SAFEPRINTF(str,"%sNEWFILES.DAT",cfg.temp_dir);
 	remove(str);
 	if(!(useron.rest&FLAG('T')) && useron.qwk&QWK_FILES)
 		files=create_filelist("NEWFILES.DAT",FL_ULTIME);
@@ -236,9 +245,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
 
 	if(!(useron.qwk&QWK_NOINDEX)) {
-		sprintf(str,"%sPERSONAL.NDX",cfg.temp_dir);
+		SAFEPRINTF(str,"%sPERSONAL.NDX",cfg.temp_dir);
 		if((personal=fopen(str,"ab"))==NULL) {
 			fclose(qwk);
+			if(hdrs!=NULL)
+				fclose(hdrs);
 			errormsg(WHERE,ERR_OPEN,str,0);
 			return(false); 
 		}
@@ -247,11 +258,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		personal=NULL;
 
 	if(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL) /* && !prepack */) {
-		sprintf(smb.file,"%smail",cfg.data_dir);
+		SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) {
 			fclose(qwk);
+			if(hdrs!=NULL)
+				fclose(hdrs);
 			if(personal)
 				fclose(personal);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -267,9 +280,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(mailmsgs && !(sys_status&SS_ABORT)) {
 			bputs(text[QWKPackingEmail]);
 			if(!(useron.qwk&QWK_NOINDEX)) {
-				sprintf(str,"%s000.NDX",cfg.temp_dir);
+				SAFEPRINTF(str,"%s000.NDX",cfg.temp_dir);
 				if((ndx=fopen(str,"ab"))==NULL) {
 					fclose(qwk);
+					if(hdrs!=NULL)
+						fclose(hdrs);
 					if(personal)
 						fclose(personal);
 					smb_close(&smb);
@@ -298,14 +313,14 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					continue;
 
 				if(msg.hdr.auxattr&MSG_FILEATTACH && useron.qwk&QWK_ATTACH) {
-					sprintf(str,"%sfile/%04u.in/%s"
+					SAFEPRINTF3(str,"%sfile/%04u.in/%s"
 						,cfg.data_dir,useron.number,msg.subj);
-					sprintf(tmp,"%s%s",cfg.temp_dir,msg.subj);
+					SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,msg.subj);
 					if(fexistcase(str) && !fexistcase(tmp))
 						mv(str,tmp,1); 
 				}
 
-				size=msgtoqwk(&msg,qwk,mode,INVALID_SUB,0);
+				size=msgtoqwk(&msg,qwk,mode,INVALID_SUB,0,hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
 				if(ndx) {
@@ -359,7 +374,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					continue; 
 				}
 
-				sprintf(smb.file,"%s%s"
+				SAFEPRINTF2(smb.file,"%s%s"
 					,cfg.sub[usrsub[i][j]]->data_dir,cfg.sub[usrsub[i][j]]->code);
 				smb.retry_time=cfg.smb_retry_time;
 				smb.subnum=usrsub[i][j];
@@ -389,9 +404,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					conf=((i+1)*1000)+j+1;
 
 				if(!(useron.qwk&QWK_NOINDEX)) {
-					sprintf(str,"%s%u.NDX",cfg.temp_dir,conf);
+					SAFEPRINTF2(str,"%s%u.NDX",cfg.temp_dir,conf);
 					if((ndx=fopen(str,"ab"))==NULL) {
 						fclose(qwk);
+						if(hdrs!=NULL)
+							fclose(hdrs);
 						if(personal)
 							fclose(personal);
 						smb_close(&smb);
@@ -435,7 +452,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					else
 						mode&=~(QM_TAGLINE|QM_TO_QNET);
 
-					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf);
+					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf,hdrs);
 					smb_unlockmsghdr(&smb,&msg);
 
 					if(ndx) {
@@ -468,7 +485,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					bprintf(text[QWKPackedSubboard],submsgs,(*msgcnt));
 				if(ndx) {
 					fclose(ndx);
-					sprintf(str,"%s%u.NDX",cfg.temp_dir,conf);
+					SAFEPRINTF2(str,"%s%u.NDX",cfg.temp_dir,conf);
 					if(!flength(str))
 						remove(str); 
 				}
@@ -497,7 +514,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			,ftell(qwk)
 			,time(NULL)-start
 			,((*msgcnt)+mailmsgs)/(time(NULL)-start));
-		sprintf(str,"Packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
+		SAFEPRINTF4(str,"Packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
 			,ftell(qwk)
 			,(ulong)(time(NULL)-start)
@@ -509,9 +526,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 
 	fclose(qwk);			/* close MESSAGE.DAT */
+	if(hdrs!=NULL)
+		fclose(hdrs);		/* close HEADERS.DAT */
 	if(personal) {
 		fclose(personal);		 /* close PERSONAL.NDX */
-		sprintf(str,"%sPERSONAL.NDX",cfg.temp_dir);
+		SAFEPRINTF(str,"%sPERSONAL.NDX",cfg.temp_dir);
 		if(!flength(str))
 			remove(str); 
 	}
@@ -521,13 +540,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(false);
 
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
-		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,useron.alias);
+		SAFEPRINTF2(str,"%sqnet/%s.out/",cfg.data_dir,useron.alias);
 		dir=opendir(str);
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
-			sprintf(str,"%sqnet/%s.out/%s",cfg.data_dir,useron.alias,dirent->d_name);
+			SAFEPRINTF3(str,"%sqnet/%s.out/%s",cfg.data_dir,useron.alias,dirent->d_name);
 			if(isdir(str))
 				continue;
-			sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
+			SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
 			lncntr=0;	/* Default pause */
 			if(online==ON_LOCAL)
 				eprintf(LOG_INFO,"Including %s in packet",str);
@@ -562,11 +581,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				for(i=0;i<batdn_total;i++) {
 					lncntr=0;
 					unpadfname(batdn_name[i],tmp);
-					sprintf(tmp2,"%s%s",cfg.temp_dir,tmp);
+					SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,tmp);
 					if(!fexistcase(tmp2)) {
 						seqwait(cfg.dir[batdn_dir[i]]->seqdev);
 						bprintf(text[RetrievingFile],tmp);
-						sprintf(str,"%s%s"
+						SAFEPRINTF2(str,"%s%s"
 							,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
 							? cfg.altpath[batdn_alt[i]-1]
 							: cfg.dir[batdn_dir[i]]->path
@@ -592,29 +611,29 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/					/* packets */
 		/* Copy QWK Text files */
 		/***********************/
-		sprintf(str,"%sQWK/HELLO",cfg.text_dir);
+		SAFEPRINTF(str,"%sQWK/HELLO",cfg.text_dir);
 		if(fexistcase(str)) {
-			sprintf(tmp2,"%sHELLO",cfg.temp_dir);
+			SAFEPRINTF(tmp2,"%sHELLO",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
-		sprintf(str,"%sQWK/BBSNEWS",cfg.text_dir);
+		SAFEPRINTF(str,"%sQWK/BBSNEWS",cfg.text_dir);
 		if(fexistcase(str)) {
-			sprintf(tmp2,"%sBBSNEWS",cfg.temp_dir);
+			SAFEPRINTF(tmp2,"%sBBSNEWS",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
-		sprintf(str,"%sQWK/GOODBYE",cfg.text_dir);
+		SAFEPRINTF(str,"%sQWK/GOODBYE",cfg.text_dir);
 		if(fexistcase(str)) {
-			sprintf(tmp2,"%sGOODBYE",cfg.temp_dir);
+			SAFEPRINTF(tmp2,"%sGOODBYE",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
-		sprintf(str,"%sQWK/BLT-*",cfg.text_dir);
+		SAFEPRINTF(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
 			padfname(fname,str);
 			if(isdigit(str[4]) && isdigit(str[9])) {
-				sprintf(str,"%sQWK/%s",cfg.text_dir,fname);
-				sprintf(tmp2,"%s%s",cfg.temp_dir,fname);
+				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
+				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
 				mv(str,tmp2,1); 
 			}
 		}
@@ -635,7 +654,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
+	SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
 		,ex|EX_WILDCARD);
 	if(!fexist(packet)) {
@@ -651,8 +670,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(true);
 
 	l=flength(packet);
-	sprintf(str,"%s.qwk",cfg.sys_id);
-	bprintf(text[FiFilename],str);
+	bprintf(text[FiFilename],getfname(packet));
 	bprintf(text[FiFileSize],ultoac(l,tmp));
 	if(l>0L && cur_cps)
 		i=l/(ulong)cur_cps;
@@ -666,12 +684,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 
 	if(useron.rest&FLAG('Q')) {
-		sprintf(str,"%s.qwk",cfg.sys_id);
 		dir=opendir(cfg.temp_dir);
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-			if(!stricmp(str,dirent->d_name))	/* QWK packet */
+			if(!stricmp(getfname(packet),dirent->d_name))	/* QWK packet */
 				continue;
-			sprintf(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
+			SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
 			if(!isdir(tmp))
 				remove(tmp); 
 		}

@@ -407,6 +407,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_NOCTRL	(1L<<12)		/* No extraneous control files			*/
 #define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format			*/
 #define QWK_MSGID	(1L<<14)		/* Include "@MSGID" in msgs				*/
+#define QWK_HEADERS	(1L<<16)		/* Include HEADERS.DAT file				*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 																			

@@ -99,6 +99,10 @@ char *binstr(uchar *buf, ushort length, char* str)
 	for(i=0;i<length;i++) {
 		sprintf(tmp,"%02X ",buf[i]);
 		strcat(str,tmp); 
+		if(i >= 100) {
+			strcat(str,"...");
+			break;
+		}
 	}
 	return(str);
 }
@@ -118,9 +122,11 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str));
 
 	/* fixed fields */
-	bprintf("%-16.16s %s %s\r\n","when_written"	
+	bprintf("%-16.16s %08lX %04hX %s %s\r\n","when_written"	
+		,msg->hdr.when_written.time, msg->hdr.when_written.zone
 		,timestr(msg->hdr.when_written.time), smb_zonestr(msg->hdr.when_written.zone,NULL));
-	bprintf("%-16.16s %s %s\r\n","when_imported"	
+	bprintf("%-16.16s %08lX %04hX %s %s\r\n","when_imported"	
+		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
 		,timestr(msg->hdr.when_imported.time), smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
 	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);

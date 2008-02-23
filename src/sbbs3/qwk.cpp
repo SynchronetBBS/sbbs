@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -475,6 +475,9 @@ void sbbs_t::qwk_sec()
 				bprintf("\1hC\1n) %-30s: \1h%s\r\n"
 					,"Include Control Files"
 					,useron.qwk&QWK_NOCTRL ? text[No]:text[Yes]);
+				bprintf("\1hH\1n) %-30s: \1h%s\r\n"
+					,"Include HEADERS.DAT"
+					,useron.qwk&QWK_HEADERS ? text[Yes]:text[No]);
 				bprintf("\1hY\1n) %-30s: \1h%s\r\n"
 					,"Include Messages from You"
 					,useron.qwk&QWK_BYSELF ? text[Yes]:text[No]);
@@ -491,7 +494,7 @@ void sbbs_t::qwk_sec()
 					,"Extended (QWKE) Packet Format"
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[UserDefaultsWhich]);
-				ch=(char)getkeys("AEDFIOQTYMNCXZV",0);
+				ch=(char)getkeys("AEDFHIOQTYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
@@ -520,6 +523,9 @@ void sbbs_t::qwk_sec()
 							useron.qwk|=QWK_ALLMAIL; }
 						else
 							useron.qwk&=~(QWK_EMAIL|QWK_ALLMAIL);
+						break;
+					case 'H':
+						useron.qwk^=QWK_HEADERS;
 						break;
 					case 'I':
 						useron.qwk^=QWK_ATTACH;
