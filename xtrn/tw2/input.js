@@ -36,6 +36,12 @@ function CheckTime()
 	}
 }
 
+function CheckTerminate()
+{
+	if(js.terminated)
+		exit(0);
+}
+
 function InputFunc(values)
 {
 	var str='';
@@ -51,6 +57,7 @@ InputFuncMainLoop:
 	for(;;) {
 		CheckNode();
 		CheckTime();
+		CheckTerminate();
 
 		key=console.inkey(100);
 		if(key == '') {

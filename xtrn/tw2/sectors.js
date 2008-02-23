@@ -99,7 +99,7 @@ function EnterSector()	/* 20000 */
 				break;
 			case 'Q':
 				console.write("Are you sure (Y/N)? ");
-				if(console.getkeys("YN")=='Y') {
+				if(InputFunc(['Y','N'])=='Y') {
 					exit_tw2=true;
 					return(false);
 				}

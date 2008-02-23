@@ -49,6 +49,7 @@ twopeng.open("a", true);
 var today=system.datestr(system.datestr());
 
 js.on_exit("do_exit()");
+js.auto_terminate=false;
 /* Run maintenance */
 if(Settings.MaintLastRan != system.datestr()) {
 	RunMaint();
@@ -180,7 +181,7 @@ function Menu()
 				console.writeln("<Quit>");
 				console.attributes="W";
 				console.write("Are you sure (Y/N)? ");
-				if(console.getkeys("YN")=='Y') {
+				if(InputFunc(['Y','N'])=='Y') {
 					exit_tw2=true;
 					return;
 				}
@@ -224,11 +225,9 @@ function do_exit()
 function Instructions()
 {
 	console.write("Do you want instructions (Y/N) [N]? ");
-	switch(console.getkey().toUpperCase()) {
-		case 'Y':
-			console.crlf();
-			console.printfile(fname("twinstr.doc"));
-			break;
+	if(InputFunc(['Y','N'])=='Y') {
+		console.crlf();
+		console.printfile(fname("twinstr.doc"));
 	}
 }
 
