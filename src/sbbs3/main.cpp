@@ -4029,16 +4029,6 @@ void sbbs_t::daily_maint(void)
 	}
 }
 
-time_t checktime(void)
-{
-	struct tm tm;
-
-    memset(&tm,0,sizeof(tm));
-    tm.tm_year=94;
-    tm.tm_mday=1;
-    return(mktime(&tm)-0x2D24BD00L);
-}
-
 const char* DLLCALL js_ver(void)
 {
 #ifdef JAVASCRIPT
@@ -4311,16 +4301,8 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->host_name[0]==0)
 		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
-	if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-		if(putenv("TZ=UTC0"))
-			lprintf(LOG_ERR,"!putenv() FAILED");
-		tzset();
-
-		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
-			cleanup(1);
-			return;
-		}
+	if((t=checktime())!=0) {   /* Check binary time */
+		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 	}
 
 	if(uptime==0)

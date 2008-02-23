@@ -5352,12 +5352,6 @@ void DLLCALL web_server(void* arg)
 		if(startup->host_name[0]==0)
 			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
-		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-			if(putenv("TZ=UTC0"))
-				lprintf(LOG_WARNING,"!putenv() FAILED");
-			tzset();
-		}
-
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 

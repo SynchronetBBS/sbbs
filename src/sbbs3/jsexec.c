@@ -959,9 +959,6 @@ int main(int argc, char **argv, char** environ)
 	if(host_name==NULL)
 		host_name=scfg.sys_inetaddr;
 
-	if(!(scfg.sys_misc&SM_LOCAL_TZ))
-		putenv("TZ=UTC0");
-
 #if defined(__unix__)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");

@@ -121,7 +121,7 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
 
 /* web_startup_t.options bits that require re-init/recycle when changed */
-#define WEB_INIT_OPTS	(BBS_OPT_LOCAL_TIMEZONE|WEB_OPT_HTTP_LOGGING)
+#define WEB_INIT_OPTS	(WEB_OPT_HTTP_LOGGING)
 
 #if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t web_options[] = {
@@ -138,7 +138,6 @@ static ini_bitdesc_t web_options[] = {
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
-	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ BBS_OPT_MUTE					,"MUTE"					},
 
 	/* terminator */										

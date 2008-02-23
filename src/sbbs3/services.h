@@ -98,7 +98,7 @@ static struct init_field services_init_fields[] = {
 #define SERVICE_OPT_FULL_ACCEPT	(1<<4)	/* Accept/close connections when server is full */
 
 /* services_startup_t.options bits that require re-init/recycle when changed */
-#define SERVICE_INIT_OPTS	(BBS_OPT_LOCAL_TIMEZONE)
+#define SERVICE_INIT_OPTS	(0)
 
 #if defined(STARTUP_INI_BITDESC_TABLES) || defined(SERVICES_INI_BITDESC_TABLE)
 static ini_bitdesc_t service_options[] = {
