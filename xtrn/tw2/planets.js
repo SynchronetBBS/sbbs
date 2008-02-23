@@ -90,6 +90,19 @@ function LandOnPlanet()
 	}
 }
 
+function NextAvailablePlanet()
+{
+	var i;
+	var planet;
+	for(i=1; i<planets.length; i++) {
+		planet=planets.Get(i);
+		if(!planet.Created)
+			break;
+		planet=null;
+	}
+	return(planet);
+}
+
 function CreatePlanet(sector)
 {
 	console.writeln("There isn't a planet in this sector.");
@@ -102,13 +115,7 @@ function CreatePlanet(sector)
 	console.write("Do you wish to buy a planet(Y/N) [N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
 		var i;
-		var planet;
-		for(i=1; i<planets.length; i++) {
-			planet=planets.Get(i);
-			if(!planet.Created)
-				break;
-			planet=null;
-		}
+		var planet=NextAvailablePlanet();
 		if(planet==null) {
 			console.crlf();
 			console.writeln("I'm sorry, but all planets are taken.");

@@ -42,6 +42,7 @@ load(fname("players.js"));
 load(fname("messages.js"));
 load(fname("computer.js"));
 load(fname("input.js"));
+load(fname("editor.js"));
 
 var twopeng=new File(fname("twopeng.dat"));
 twopeng.open("a", true);
@@ -93,7 +94,7 @@ function Menu()
 		console.crlf();
 		console.attributes="HC";
 		console.write("Command (?=Help)? ");
-		var valid=new Array('A','C','D',/*'E' TODO: Editor ,*/'F','G','I','L','M','P','Q','T','Z','?');
+		var valid=new Array('A','C','D','E','F','G','I','L','M','P','Q','T','Z','?');
 		var sector=sectors.Get(player.Sector);
 		var i;
 		for(i=0; i<sector.Warps.length; i++) {
@@ -119,17 +120,17 @@ function Menu()
 				console.writeln("<Display>");
 				DisplaySector(player.Sector);
 				break;
-//			case 'E':
-//				/* TODO: 22800 */
-//				if(user.level < 90)
-//					break;
-//				console.writeln("<TW Editor>");
-//				console.write("Do you wish to use the editor? Y/N [N] ");
-//				if(InputFunc(['Y','N'])=='Y') {
-//					console.writeln("Running Tradewars ][ Editor...");
-//					/* TODO: TWEdit */
-//				}
-//				break;
+			case 'E':
+				/* TODO: 22800 */
+				if(user.level < 90)
+					break;
+				console.writeln("<TW Editor>");
+				console.write("Do you wish to use the editor? Y/N [N] ");
+				if(InputFunc(['Y','N'])=='Y') {
+					console.writeln("Running Tradewars ][ Editor...");
+					Editor();
+				}
+				break;
 			case 'F':
 				/* 24000 */
 				console.writeln("<Drop/Take Fighters>");
