@@ -234,17 +234,75 @@ function CabalEdit()
 
 function PortEdit()
 {
-	console.writeln("Not implemented...");
+	var i;
+	console.write("Port name or sector number: ");
+	var plid=console.getstr(42);
+	var port=null;
+	var sector=null;
+
+	/* First, search by name */
+	for(i=1; i<ports.length; i++) {
+		port=ports.Get(i);
+		if(port.Name.toUpperCase().search(plid.toUpperCase())!=-1) {
+			console.write(port.Name+" Y/[N]? ");
+			if(InputFunc(['Y','N'])=='Y')
+				break;
+		}
+		port=null;
+	}
+	/* Next, by sector */
+	if(port==null) {
+		var secnum=0;
+		try {
+			secnum=parseInt(plid);
+		}
+		catch (e) {}
+		if(secnum > 0 && secnum < sectors.length) {
+			sector=sectors.Get(secnum);
+			if(sector.Port > 0 && sector.Port < ports.length) {
+				port=ports.Get(sector.Port);
+				console.write(port.Name+" ["+sector.Record+"] Y/[N]? ");
+				if(InputFunc(['Y','N'])!='Y') {
+					port=null;
+					sector=null;
+				}
+			}
+		}
+	}
+	if(port==null)
+		console.writeln("Cannot find the port.");
+	if(port==null)
+		return;
+
+	if(sector==null)
+		sector=sectors.Get(port.Sector);
+
+	EditProperties(port, PortProperties);
+
+	port.Put();
+	sector.Put();
 }
 
 function SectorEdit()
 {
-	console.writeln("Not implemented...");
+	console.write("Sector: ");
+	var sec=InputFunc([{max:(sectors.length-1)}]);
+
+	if(sec>0 && sec <sectors.length) {
+		var sector=sectors.Get(sec);
+		EditProperties(sector, SectorProperties);
+	}
 }
 
 function TeamEdit()
 {
-	console.writeln("Not implemented...");
+	console.write("Team: ");
+	var t=InputFunc([{max:(teams.length-1)}]);
+
+	if(t>0 && t <teams.length) {
+		var team=teams.Get(team);
+		EditProperties(team, TeamProperties);
+	}
 }
 
 function MSGEdit()
@@ -268,6 +326,9 @@ function Editor()
 		console.crlf();
 		console.writeln("P - Player Editor");
 		console.writeln("L - Planet Editor");
+		console.writeln("O - Port Editor");
+		console.writeln("S - Sector Editor");
+		console.writeln("T - Team Editor");
 		console.writeln("Q - Quit Editor");
 		console.crlf();
 		console.write("Editor Command: ");
