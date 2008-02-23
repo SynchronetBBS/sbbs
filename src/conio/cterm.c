@@ -1246,7 +1246,7 @@ void ctputs(char *buf)
 				*p=0;
 				cputs(outp);
 				outp=p+1;
-				if(cx>0)
+				if(cx>1)
 					cx--;
 				gotoxy(cx,cy);
 				break;
