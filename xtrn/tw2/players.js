@@ -230,7 +230,7 @@ function PlayerGamble()
 	console.writeln("You have "+player.Credits+" credits.");
 	console.writeln("How much do you want to gamble at double or nothing (50-50 odds)");
 	console.write("[0]? ");
-	var gamble=console.getnum(player.Credits > 99999?99999:player.Credits);
+	var gamble=InputFunc([{min:0,max:(player.Credits > 99999?99999:player.Credits)}]);
 	if(gamble > 0 && gamble <=player.Credits) {
 		console.write("Flipping the coin...");
 		mswait(250);
@@ -329,8 +329,10 @@ function RankPlayers()
 		var robj=new Object();
 		robj.Record=p.Record;
 		robj.Score=p.Fighters*100 + p.Holds*500 + p.Credits;
-		for(i=0; i<Commodities.length; i++)
-			robj.Score += Commodities[i].price*p.Commodities[i];
+
+		var j;
+		for(j=0; j<Commodities.length; j++)
+			robj.Score += Commodities[j].price*p.Commodities[j];
 		if(fighters[i]!=undefined)
 			robj.Score += fighters[i]*100;
 		rank.push(robj);
@@ -347,7 +349,7 @@ function RankPlayers()
 function TWRank()
 {
 	var rf=new File(fname(Settings.TopTenFile));
-	rf.open("w");
+	rf.open("w", true);
 	rf.writeln();
 	rf.writeln("  T R A D E W A R S   I I - 500T   S C O R E B O A R D  ");
 	rf.writeln();
@@ -404,7 +406,7 @@ function DoBattle(opp, otherteam)
 	}
 	else {
 		console.write("How many fighters do you wish to use? ");
-		var use=console.getnum(player.Fighters);
+		var use=InputFunc([{min:0,max:player.Fighters}]);
 
 		if(use > 0 && use <= player.Fighters) {
 			var lost=0;
@@ -703,7 +705,7 @@ function Dropfighters()
 	var newf=player.Fighters+sector.Fighters;
 	if(newf > 9999)
 		newf=9999;
-	var newf=console.getnum(newf);
+	var newf=InputFunc([{min:0,max:newf}]);
 	if(newf >= 0 && newf <=player.Fighters+sector.Fighters) {
 		if((player.Fighters+sector.Fighters)-newf > 9999) {
 			console.writeln("Too many ships in your fleet!  You are limited to 9999");

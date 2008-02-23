@@ -147,7 +147,7 @@ function JoinTeam()
 	}
 
 	console.write("What Team number do you wish to join (0=quit)? ");
-	var tnum=console.getnum(teams.length-1);
+	var tnum=InputFunc([{min:0,max:(teams.length-1)}]);
 	if(!(tnum > 0 && tnum < teams.length))
 		return(false);
 
@@ -250,7 +250,7 @@ function TeamTransfer(type)
 		console.writeln("You have" + player[type] + " "+type.toLowercase()+".");
 		console.writeln(otherplayer.Alias + " has" + otherplayer[type] + " "+type.toLowercase()+".");
 		console.write("How many "+type+" do you wish to Transfer? ");
-		var transfer=console.getnum(player[type]);
+		var transfer=InputFunc([{min:0,max:player[type]}]);
 		if(transfer<1 || transfer > player[type])
 			return(false);
 		if(type=="Credits") {

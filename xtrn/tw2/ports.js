@@ -86,7 +86,7 @@ function DockAtSol()
 		maxbuy=50-player.Holds;
 	if(maxbuy > 0) {
 		console.write("How many holds do you want to buy [0]? ");
-		var buy=console.getnum(maxbuy);
+		var buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Holds+=buy;
 			player.Credits -= buy*prices[0];
@@ -100,7 +100,7 @@ function DockAtSol()
 		maxbuy=9999-player.Fighters;
 	if(maxbuy > 0) {
 		console.write("How many fighters do you want to buy [0]? ");
-		var buy=console.getnum(maxbuy);
+		var buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Fighters+=buy;
 			player.Credits -= buy*prices[1];
@@ -112,7 +112,7 @@ function DockAtSol()
 	var maxbuy=parseInt(player.Credits/prices[2]);
 	if(maxbuy > 0) {
 		console.write("How many turns do you want to buy [0]? ");
-		var buy=console.getnum(maxbuy);
+		var buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.TurnsLeft+=buy;
 			player.Credits -= buy*prices[2];
@@ -260,7 +260,7 @@ function Transact(type, price, vary, avail)
 	console.writeln("We are "+weare+"ing up to "+avail+".  You have "+player.Commodities[type]+" in your holds.");
 
 	console.write("How many holds of "+Commodities[type].name.toLowerCase()+" do you want to "+youare+" ["+max+"]? ");
-	var amount=console.getnum(max,max);
+	var amount=InputFunc([{min:0,max:max,def:max}]);
 
 	if(amount>0 && amount<=max) {
 		var done=false;
@@ -276,7 +276,7 @@ function Transact(type, price, vary, avail)
 			offer=0;
 			while(offer==0) {
 				console.write("Your offer? ");
-				offer=console.getnum(buy?player.Credits:(price*amount*10));
+				offer=InputFunc([{min:0,max:(buy?player.Credits:(price*amount*10))}]);
 				if(offer==0)
 					break;
 				if(offer < price*amount/10 || offer > price*amount*10) {

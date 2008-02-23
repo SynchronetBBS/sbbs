@@ -288,7 +288,7 @@ function PlanetIncreaseProd(planet)
 		if(planet.Production[keynum]+max > 19)
 			max=20-planet.Production[keynum];
 		console.write(Commodities[keynum].name+": Increase by how many units? ");
-		var incr=console.getnum(max);
+		var incr=InputFunc([{min:0,max:max}]);
 		if(incr > 0 && incr <= max) {
 			player.Credits -= incr*Commodities[keynum].price*20;
 			planet.Production[keynum]+=incr;
@@ -306,7 +306,7 @@ function PlanetTakeCommodity(planet, commodity, freeholds)
 		max=parseInt(planet.Commodities[commodity]);
 	console.writeln("<Take "+Commodities[commodity].name.toLowerCase()+">");
 	console.write("How much [" + max + "]? ");
-	var take=console.getnum(max);
+	var take=InputFunc([{min:0,max:max}]);
 	if(take > max) {
 		console.writeln("They don't have that many.");
 		return(freeholds);
