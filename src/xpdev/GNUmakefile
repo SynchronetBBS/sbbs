@@ -36,7 +36,7 @@ $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIBS)
 
-$(XPTIME): $(OBJODIR)/xptime.o $(DEPS)
+$(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV-LIBS)
 
