@@ -1052,6 +1052,9 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(msg,SENDEREXT,str);
 
+	/* Security logging */
+	msg_client_hfields(msg,&client);
+
 	username(&cfg,usernumber,touser);
 	smb_hfield_str(msg,RECIPIENT,touser);
 	SAFEPRINTF(str,"%u",usernumber);
