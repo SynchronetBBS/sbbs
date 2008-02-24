@@ -2104,8 +2104,10 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
 					SAFEPRINTF(semfile,"%s.lock",g.gl_pathv[i]);
-					if(!fmutex(semfile,startup->host_name,24*60*60))
+					if(!fmutex(semfile,startup->host_name,24*60*60)) {
+						eprintf(LOG_DEBUG,"%s exists (unpack in process?)", semfile);
 						continue;
+					}
 					sbbs->online=ON_LOCAL;
 					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
@@ -2129,7 +2131,7 @@ void event_thread(void* arg)
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
 				if(!fmutex(semfile,startup->host_name,24*60*60)) {
-					eprintf(LOG_WARNING,"%s exists (already being packed?)", semfile);
+					eprintf(LOG_DEBUG,"%s exists (pack in process?)", semfile);
 					continue;
 				}
 				getuserdat(&sbbs->cfg,&sbbs->useron);
