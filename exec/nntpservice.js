@@ -610,7 +610,7 @@ while(client.socket.is_connected && !quit) {
 
 			if(cmd[0].toUpperCase()!="BODY") {
 
-				if(!hdr.from_net_type)	/* local message */
+				if(!hdr.from_net_type || !hdr.from_net_addr)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
 						,hdr.from.replace(/ /g,".").toLowerCase()
