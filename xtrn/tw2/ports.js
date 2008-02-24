@@ -41,6 +41,12 @@ var PortProperties = [
 				,type:"Integer"
 				,def:0
 			}
+			,{
+				 prop:"Sector"
+				,name:"Sector"
+				,type:"Integer"
+				,def:0
+			}
 		];
 
 var ports=new RecordFile(fname("ports.dat"), PortProperties);
@@ -334,7 +340,7 @@ function InitializePorts()
 		port.Production=[ports_init[i].OreProduction, ports_init[i].OrgProduction, ports_init[i].EquProduction];
 		port.PriceVariance=[ports_init[i].OreDeduction,ports_init[i].OrgDeduction,ports_init[i].EquDeduction];
 
-		var sector=sectors.Get(ports_init[i].Position);
+		var sector=sectors.Get(ports_init[i].Sector);
 		sector.Port=port.Record;
 		sector.Put();
 		ports_init[i].LastUpdate=system.datestr(time()-15*86400);

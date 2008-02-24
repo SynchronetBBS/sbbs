@@ -1,7 +1,7 @@
 var ports_init=[
 	{
 		 Name:"Sol"
-		,Position:1
+		,Sector:1
 		,Class:1
 		,OreProduction:0
 		,OrgProduction:0
@@ -12,7 +12,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Alpha Centauri"
-		,Position:3
+		,Sector:3
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:150
@@ -23,7 +23,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Wolf 359"
-		,Position:5
+		,Sector:5
 		,Class:3
 		,OreProduction:200
 		,OrgProduction:75
@@ -34,7 +34,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sirius"
-		,Position:7
+		,Sector:7
 		,Class:1
 		,OreProduction:150
 		,OrgProduction:75
@@ -45,7 +45,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Centaurus"
-		,Position:10
+		,Sector:10
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:40
@@ -56,7 +56,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Arcturus"
-		,Position:18
+		,Sector:18
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:15
@@ -67,7 +67,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Rigel"
-		,Position:19
+		,Sector:19
 		,Class:1
 		,OreProduction:60
 		,OrgProduction:10
@@ -78,7 +78,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"T'xe"
-		,Position:21
+		,Sector:21
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:40
@@ -89,7 +89,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"New Paris"
-		,Position:22
+		,Sector:22
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:40
@@ -100,7 +100,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Palmer's World"
-		,Position:23
+		,Sector:23
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:20
@@ -111,7 +111,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"NGC-33"
-		,Position:35
+		,Sector:35
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:20
@@ -122,7 +122,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Bourne's Star"
-		,Position:37
+		,Sector:37
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:30
@@ -133,7 +133,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Aldebaran"
-		,Position:38
+		,Sector:38
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:35
@@ -144,7 +144,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"LNC Nebulae"
-		,Position:39
+		,Sector:39
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:50
@@ -155,7 +155,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Second Home"
-		,Position:41
+		,Sector:41
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:30
@@ -166,7 +166,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Daleth"
-		,Position:43
+		,Sector:43
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:20
@@ -177,7 +177,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Bettelgeuse"
-		,Position:45
+		,Sector:45
 		,Class:3
 		,OreProduction:60
 		,OrgProduction:20
@@ -188,7 +188,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Koph System"
-		,Position:46
+		,Sector:46
 		,Class:1
 		,OreProduction:70
 		,OrgProduction:10
@@ -199,7 +199,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Lonely Hole"
-		,Position:48
+		,Sector:48
 		,Class:3
 		,OreProduction:20
 		,OrgProduction:15
@@ -210,7 +210,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"NGC-78"
-		,Position:51
+		,Sector:51
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:15
@@ -221,7 +221,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"NGC-4151"
-		,Position:53
+		,Sector:53
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:20
@@ -232,7 +232,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Outpost 7"
-		,Position:57
+		,Sector:57
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:25
@@ -243,7 +243,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Youlose"
-		,Position:58
+		,Sector:58
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:35
@@ -254,7 +254,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Last Hope"
-		,Position:60
+		,Sector:60
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:40
@@ -265,7 +265,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Epsilon Erandi"
-		,Position:62
+		,Sector:62
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:50
@@ -276,7 +276,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Fort Dallas"
-		,Position:66
+		,Sector:66
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:60
@@ -287,7 +287,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Antares"
-		,Position:69
+		,Sector:69
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:40
@@ -298,7 +298,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Gateway"
-		,Position:71
+		,Sector:71
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:20
@@ -309,7 +309,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sirus II"
-		,Position:73
+		,Sector:73
 		,Class:1
 		,OreProduction:70
 		,OrgProduction:40
@@ -320,7 +320,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Czar'ak"
-		,Position:77
+		,Sector:77
 		,Class:1
 		,OreProduction:80
 		,OrgProduction:60
@@ -331,7 +331,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Vega"
-		,Position:88
+		,Sector:88
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:30
@@ -342,7 +342,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Canopus"
-		,Position:89
+		,Sector:89
 		,Class:3
 		,OreProduction:20
 		,OrgProduction:30
@@ -353,7 +353,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ross 154"
-		,Position:93
+		,Sector:93
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:40
@@ -364,7 +364,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Luyten 789-6"
-		,Position:94
+		,Sector:94
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:45
@@ -375,7 +375,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Bozone"
-		,Position:97
+		,Sector:97
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:30
@@ -386,7 +386,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Insearch"
-		,Position:101
+		,Sector:101
 		,Class:1
 		,OreProduction:50
 		,OrgProduction:20
@@ -397,7 +397,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ptolemy"
-		,Position:105
+		,Sector:105
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:30
@@ -408,7 +408,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Frontier 3"
-		,Position:107
+		,Sector:107
 		,Class:3
 		,OreProduction:35
 		,OrgProduction:35
@@ -419,7 +419,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Pleione"
-		,Position:111
+		,Sector:111
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:10
@@ -430,7 +430,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Orion"
-		,Position:113
+		,Sector:113
 		,Class:1
 		,OreProduction:30
 		,OrgProduction:40
@@ -441,7 +441,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Triffid 4"
-		,Position:116
+		,Sector:116
 		,Class:1
 		,OreProduction:130
 		,OrgProduction:70
@@ -452,7 +452,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Diamond"
-		,Position:118
+		,Sector:118
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:30
@@ -463,7 +463,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Last Chance"
-		,Position:120
+		,Sector:120
 		,Class:1
 		,OreProduction:110
 		,OrgProduction:15
@@ -474,7 +474,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Polaris"
-		,Position:122
+		,Sector:122
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:16
@@ -485,7 +485,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Yaxa"
-		,Position:124
+		,Sector:124
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:30
@@ -496,7 +496,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Jorgasnovara"
-		,Position:125
+		,Sector:125
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:40
@@ -507,7 +507,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Quilst"
-		,Position:130
+		,Sector:130
 		,Class:1
 		,OreProduction:15
 		,OrgProduction:75
@@ -518,7 +518,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Qeegiz"
-		,Position:133
+		,Sector:133
 		,Class:3
 		,OreProduction:86
 		,OrgProduction:45
@@ -529,7 +529,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Zumerbalt"
-		,Position:138
+		,Sector:138
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:30
@@ -540,7 +540,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Felgercarb"
-		,Position:139
+		,Sector:139
 		,Class:1
 		,OreProduction:20
 		,OrgProduction:20
@@ -551,7 +551,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Nodi"
-		,Position:141
+		,Sector:141
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:25
@@ -562,7 +562,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Dazzel"
-		,Position:144
+		,Sector:144
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:25
@@ -573,7 +573,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Yimx"
-		,Position:145
+		,Sector:145
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:30
@@ -584,7 +584,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Gedemondas"
-		,Position:149
+		,Sector:149
 		,Class:2
 		,OreProduction:17
 		,OrgProduction:27
@@ -595,7 +595,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Crill"
-		,Position:153
+		,Sector:153
 		,Class:2
 		,OreProduction:10
 		,OrgProduction:15
@@ -606,7 +606,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Samaara"
-		,Position:155
+		,Sector:155
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:50
@@ -617,7 +617,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Lofz"
-		,Position:157
+		,Sector:157
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:30
@@ -628,7 +628,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tsunamis"
-		,Position:161
+		,Sector:161
 		,Class:3
 		,OreProduction:18
 		,OrgProduction:29
@@ -639,7 +639,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Furiaz"
-		,Position:165
+		,Sector:165
 		,Class:1
 		,OreProduction:19
 		,OrgProduction:39
@@ -650,7 +650,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"ZTX 4"
-		,Position:166
+		,Sector:166
 		,Class:1
 		,OreProduction:70
 		,OrgProduction:40
@@ -661,7 +661,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ilik-69"
-		,Position:169
+		,Sector:169
 		,Class:3
 		,OreProduction:80
 		,OrgProduction:20
@@ -672,7 +672,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Marsh System"
-		,Position:171
+		,Sector:171
 		,Class:1
 		,OreProduction:40
 		,OrgProduction:110
@@ -683,7 +683,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Stargate"
-		,Position:173
+		,Sector:173
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:30
@@ -694,7 +694,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ridiculous 1"
-		,Position:176
+		,Sector:176
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:40
@@ -705,7 +705,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ceti-Alpha VI"
-		,Position:182
+		,Sector:182
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:15
@@ -716,7 +716,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Frontier 8"
-		,Position:183
+		,Sector:183
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:30
@@ -727,7 +727,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"New America"
-		,Position:186
+		,Sector:186
 		,Class:3
 		,OreProduction:60
 		,OrgProduction:20
@@ -738,7 +738,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Criton"
-		,Position:190
+		,Sector:190
 		,Class:1
 		,OreProduction:30
 		,OrgProduction:25
@@ -749,7 +749,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Moskva"
-		,Position:191
+		,Sector:191
 		,Class:2
 		,OreProduction:200
 		,OrgProduction:10
@@ -760,7 +760,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ahzdar"
-		,Position:192
+		,Sector:192
 		,Class:1
 		,OreProduction:90
 		,OrgProduction:90
@@ -771,7 +771,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sukered-ya"
-		,Position:194
+		,Sector:194
 		,Class:3
 		,OreProduction:10
 		,OrgProduction:200
@@ -782,7 +782,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Gamma 12"
-		,Position:196
+		,Sector:196
 		,Class:1
 		,OreProduction:42
 		,OrgProduction:16
@@ -793,7 +793,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sqeel"
-		,Position:199
+		,Sector:199
 		,Class:2
 		,OreProduction:70
 		,OrgProduction:69
@@ -804,7 +804,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Darion"
-		,Position:214
+		,Sector:214
 		,Class:3
 		,OreProduction:75
 		,OrgProduction:45
@@ -815,7 +815,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Caspan"
-		,Position:218
+		,Sector:218
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:150
@@ -826,7 +826,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Paegan"
-		,Position:225
+		,Sector:225
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:100
@@ -837,7 +837,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Mongo"
-		,Position:236
+		,Sector:236
 		,Class:3
 		,OreProduction:80
 		,OrgProduction:40
@@ -848,7 +848,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tori"
-		,Position:242
+		,Sector:242
 		,Class:1
 		,OreProduction:190
 		,OrgProduction:120
@@ -859,7 +859,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Fomalhaut"
-		,Position:247
+		,Sector:247
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:30
@@ -870,7 +870,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Xanthii"
-		,Position:248
+		,Sector:248
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:55
@@ -881,7 +881,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sinuiji"
-		,Position:250
+		,Sector:250
 		,Class:3
 		,OreProduction:70
 		,OrgProduction:30
@@ -892,7 +892,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Sardar"
-		,Position:254
+		,Sector:254
 		,Class:3
 		,OreProduction:90
 		,OrgProduction:50
@@ -903,7 +903,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Behr'ak"
-		,Position:256
+		,Sector:256
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:60
@@ -914,7 +914,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Bellatrix"
-		,Position:259
+		,Sector:259
 		,Class:3
 		,OreProduction:30
 		,OrgProduction:40
@@ -925,7 +925,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Acrux"
-		,Position:262
+		,Sector:262
 		,Class:3
 		,OreProduction:100
 		,OrgProduction:60
@@ -936,7 +936,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Horok"
-		,Position:263
+		,Sector:263
 		,Class:3
 		,OreProduction:80
 		,OrgProduction:30
@@ -947,7 +947,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"K'ushui"
-		,Position:273
+		,Sector:273
 		,Class:1
 		,OreProduction:80
 		,OrgProduction:120
@@ -958,7 +958,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Mialplacidas"
-		,Position:276
+		,Sector:276
 		,Class:3
 		,OreProduction:110
 		,OrgProduction:80
@@ -969,7 +969,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Rigil Kentaurus"
-		,Position:280
+		,Sector:280
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:70
@@ -980,7 +980,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Jassan"
-		,Position:285
+		,Sector:285
 		,Class:2
 		,OreProduction:155
 		,OrgProduction:200
@@ -991,7 +991,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Oomaru"
-		,Position:290
+		,Sector:290
 		,Class:2
 		,OreProduction:45
 		,OrgProduction:70
@@ -1002,7 +1002,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Eskiis"
-		,Position:293
+		,Sector:293
 		,Class:3
 		,OreProduction:90
 		,OrgProduction:50
@@ -1013,7 +1013,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Taan"
-		,Position:295
+		,Sector:295
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:90
@@ -1024,7 +1024,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Saaula"
-		,Position:298
+		,Sector:298
 		,Class:3
 		,OreProduction:75
 		,OrgProduction:40
@@ -1035,7 +1035,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Kep Salu"
-		,Position:301
+		,Sector:301
 		,Class:1
 		,OreProduction:80
 		,OrgProduction:100
@@ -1046,7 +1046,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Alam'ak"
-		,Position:304
+		,Sector:304
 		,Class:2
 		,OreProduction:95
 		,OrgProduction:150
@@ -1057,7 +1057,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Wezen"
-		,Position:305
+		,Sector:305
 		,Class:3
 		,OreProduction:70
 		,OrgProduction:25
@@ -1068,7 +1068,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ghondr"
-		,Position:307
+		,Sector:307
 		,Class:3
 		,OreProduction:110
 		,OrgProduction:50
@@ -1079,7 +1079,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"K'hotan"
-		,Position:311
+		,Sector:311
 		,Class:3
 		,OreProduction:70
 		,OrgProduction:40
@@ -1090,7 +1090,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Androcus"
-		,Position:316
+		,Sector:316
 		,Class:1
 		,OreProduction:110
 		,OrgProduction:120
@@ -1101,7 +1101,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Regulus"
-		,Position:319
+		,Sector:319
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:35
@@ -1112,7 +1112,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Proxima"
-		,Position:329
+		,Sector:329
 		,Class:2
 		,OreProduction:125
 		,OrgProduction:115
@@ -1123,7 +1123,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Achernar B"
-		,Position:334
+		,Sector:334
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:90
@@ -1134,7 +1134,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ndele"
-		,Position:337
+		,Sector:337
 		,Class:3
 		,OreProduction:190
 		,OrgProduction:90
@@ -1145,7 +1145,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tali"
-		,Position:341
+		,Sector:341
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:80
@@ -1156,7 +1156,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tutakai"
-		,Position:342
+		,Sector:342
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:35
@@ -1167,7 +1167,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Dubhe"
-		,Position:344
+		,Sector:344
 		,Class:1
 		,OreProduction:200
 		,OrgProduction:110
@@ -1178,7 +1178,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Annobon"
-		,Position:348
+		,Sector:348
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:70
@@ -1189,7 +1189,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Lux"
-		,Position:350
+		,Sector:350
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:30
@@ -1200,7 +1200,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Mirfak"
-		,Position:356
+		,Sector:356
 		,Class:2
 		,OreProduction:95
 		,OrgProduction:115
@@ -1211,7 +1211,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Zindar"
-		,Position:360
+		,Sector:360
 		,Class:2
 		,OreProduction:100
 		,OrgProduction:160
@@ -1222,7 +1222,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Adao"
-		,Position:362
+		,Sector:362
 		,Class:3
 		,OreProduction:60
 		,OrgProduction:40
@@ -1233,7 +1233,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Theseus 2"
-		,Position:366
+		,Sector:366
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:60
@@ -1244,7 +1244,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Azrael"
-		,Position:369
+		,Sector:369
 		,Class:3
 		,OreProduction:80
 		,OrgProduction:40
@@ -1255,7 +1255,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Etzel"
-		,Position:373
+		,Sector:373
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:155
@@ -1266,7 +1266,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Xerxes"
-		,Position:379
+		,Sector:379
 		,Class:2
 		,OreProduction:90
 		,OrgProduction:75
@@ -1277,7 +1277,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Loki"
-		,Position:383
+		,Sector:383
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:160
@@ -1288,7 +1288,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Hashishyun"
-		,Position:384
+		,Sector:384
 		,Class:3
 		,OreProduction:60
 		,OrgProduction:20
@@ -1299,7 +1299,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Akbar"
-		,Position:386
+		,Sector:386
 		,Class:3
 		,OreProduction:120
 		,OrgProduction:100
@@ -1310,7 +1310,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Abu Bekr"
-		,Position:387
+		,Sector:387
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:30
@@ -1321,7 +1321,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Appollyon"
-		,Position:389
+		,Sector:389
 		,Class:1
 		,OreProduction:110
 		,OrgProduction:60
@@ -1332,7 +1332,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Iblis"
-		,Position:390
+		,Sector:390
 		,Class:2
 		,OreProduction:105
 		,OrgProduction:115
@@ -1343,7 +1343,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Siva"
-		,Position:393
+		,Sector:393
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:60
@@ -1354,7 +1354,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tyr"
-		,Position:394
+		,Sector:394
 		,Class:1
 		,OreProduction:110
 		,OrgProduction:120
@@ -1365,7 +1365,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Alaric"
-		,Position:395
+		,Sector:395
 		,Class:2
 		,OreProduction:90
 		,OrgProduction:50
@@ -1376,7 +1376,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Aeolus"
-		,Position:397
+		,Sector:397
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:20
@@ -1387,7 +1387,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tonti"
-		,Position:408
+		,Sector:408
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:30
@@ -1398,7 +1398,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Canus Minor"
-		,Position:418
+		,Sector:418
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:40
@@ -1409,7 +1409,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Equulus"
-		,Position:421
+		,Sector:421
 		,Class:3
 		,OreProduction:60
 		,OrgProduction:40
@@ -1420,7 +1420,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Monoceros"
-		,Position:423
+		,Sector:423
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:50
@@ -1431,7 +1431,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Corvus"
-		,Position:426
+		,Sector:426
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:110
@@ -1442,7 +1442,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Phoenix"
-		,Position:429
+		,Sector:429
 		,Class:3
 		,OreProduction:86
 		,OrgProduction:60
@@ -1453,7 +1453,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tucana"
-		,Position:435
+		,Sector:435
 		,Class:1
 		,OreProduction:70
 		,OrgProduction:40
@@ -1464,7 +1464,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Apian"
-		,Position:438
+		,Sector:438
 		,Class:3
 		,OreProduction:80
 		,OrgProduction:70
@@ -1475,7 +1475,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Doppler"
-		,Position:440
+		,Sector:440
 		,Class:3
 		,OreProduction:86
 		,OrgProduction:45
@@ -1486,7 +1486,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Palitzsch"
-		,Position:443
+		,Sector:443
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:60
@@ -1497,7 +1497,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Seagate"
-		,Position:445
+		,Sector:445
 		,Class:3
 		,OreProduction:45
 		,OrgProduction:15
@@ -1508,7 +1508,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Chandrasekher"
-		,Position:446
+		,Sector:446
 		,Class:2
 		,OreProduction:80
 		,OrgProduction:140
@@ -1519,7 +1519,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Cratuer"
-		,Position:452
+		,Sector:452
 		,Class:1
 		,OreProduction:130
 		,OrgProduction:40
@@ -1530,7 +1530,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ibn Duad"
-		,Position:459
+		,Sector:459
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:60
@@ -1541,7 +1541,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Pilar"
-		,Position:463
+		,Sector:463
 		,Class:2
 		,OreProduction:40
 		,OrgProduction:80
@@ -1552,7 +1552,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ketoi"
-		,Position:466
+		,Sector:466
 		,Class:2
 		,OreProduction:30
 		,OrgProduction:60
@@ -1563,7 +1563,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tulan"
-		,Position:468
+		,Sector:468
 		,Class:3
 		,OreProduction:40
 		,OrgProduction:16
@@ -1574,7 +1574,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Alvarado"
-		,Position:469
+		,Sector:469
 		,Class:2
 		,OreProduction:90
 		,OrgProduction:120
@@ -1585,7 +1585,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Hrok 1"
-		,Position:471
+		,Sector:471
 		,Class:1
 		,OreProduction:90
 		,OrgProduction:50
@@ -1596,7 +1596,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Ramusik"
-		,Position:472
+		,Sector:472
 		,Class:3
 		,OreProduction:50
 		,OrgProduction:30
@@ -1607,7 +1607,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Canus Major"
-		,Position:482
+		,Sector:482
 		,Class:3
 		,OreProduction:70
 		,OrgProduction:35
@@ -1618,7 +1618,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"H12"
-		,Position:483
+		,Sector:483
 		,Class:2
 		,OreProduction:90
 		,OrgProduction:180
@@ -1629,7 +1629,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Spica"
-		,Position:489
+		,Sector:489
 		,Class:2
 		,OreProduction:50
 		,OrgProduction:60
@@ -1640,7 +1640,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Yugonislom"
-		,Position:490
+		,Sector:490
 		,Class:3
 		,OreProduction:46
 		,OrgProduction:29
@@ -1652,7 +1652,7 @@ var ports_init=[
 /* Not in the real game...
 	,{
 		 Name:"Alfr"
-		,Position:492
+		,Sector:492
 		,Class:2
 		,OreProduction:20
 		,OrgProduction:85
@@ -1663,7 +1663,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"Tall Grass"
-		,Position:494
+		,Sector:494
 		,Class:3
 		,OreProduction:65
 		,OrgProduction:40
@@ -1674,7 +1674,7 @@ var ports_init=[
 	}
 	,{
 		 Name:"H9"
-		,Position:496
+		,Sector:496
 		,Class:3
 		,OreProduction:110
 		,OrgProduction:60
