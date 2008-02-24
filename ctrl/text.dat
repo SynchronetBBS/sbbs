@@ -185,7 +185,7 @@
 "<UNUSED156>"                                           156 Unused156
 "\r\nError log:\r\n"                                    157 ErrorLogHdr
 "Delete error log"                                      158 DeleteErrorLogQ
-"\r\nNo error log exists.\r\n"                          159 NoErrorLogExists
+"\r\n\1n\1r\1hDirectory does not exist: \1c%s\1n\r\n"   159 DirectoryDoesNotExist
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
 "\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m "\       162 SendingTelegramToUser
@@ -286,7 +286,7 @@
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
 	"~View, ~Quit, or [Next]: "
 "~Remove, ~Edit, ~View, ~Quit, or [Next]: "             242 UserRemoveFilePrompt
-"\r\nFile not there.\r\n"                               243 FileNotThere
+"\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\nrhiCouldn't remove '%s'.n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
 "Add %s to %s %s"                                       246 AddToOfflineDirQ
@@ -659,7 +659,7 @@
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
 "ghLast few callers:\r\nng"                         544 LastFewCallers (*)
 "\r\nnhm%-2d nm%-6u wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
-	"nm%02u:%02u h%-8.8s nm%-3d"
+	"nm%02u:%02u h%-8.8s nm%-3.3d"
 "\r\nghCallers Today:ng"                            546 CallersToday
 "_bhDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
 	"(cYbes, cNbo, or cQbuit) ? n"
