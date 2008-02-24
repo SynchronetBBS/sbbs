@@ -2234,15 +2234,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	shutdown_semfiles=semfile_list_init(cfg.ctrl_dir,"shutdown","ctrl");
 	semfile_list_check(&initialized,shutdown_semfiles);
 
-    if(!(cfg.sys_misc&SM_LOCAL_TZ)) {
-    	if(putenv("TZ=UTC0")) {
-        	Application->MessageBox("Error setting timezone"
-            	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
-            Application->Terminate();
-        }
-    	tzset();
-    }
-
     if(cfg.new_install) {
     	Application->BringToFront();
         for(int i=0;i<10;i++) {
