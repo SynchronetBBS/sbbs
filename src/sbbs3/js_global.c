@@ -2967,6 +2967,21 @@ js_mkdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_mkpath(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+
+	if(JSVAL_IS_VOID(argv[0]))
+		return(JS_TRUE);
+
+	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(mkpath(p)==0);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_rmdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -3344,6 +3359,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
 	,JSDOCSTR("make a directory")
 	,310
+	},		
+	{"mkpath",			js_mkpath,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
+	,JSDOCSTR("make a path to a directory (creating all necessary sub-directories)")
+	,315
 	},		
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
 	,JSDOCSTR("remove a directory")
