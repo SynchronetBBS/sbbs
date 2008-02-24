@@ -302,10 +302,7 @@ str_list_t	iniGetSection(str_list_t list, const char *section)
 
 	if(list==NULL)
 		return(retval);
-	if(section==ROOT_SECTION)
-		i=0;
-	else
-		i=find_section_index(list,section);
+	i=find_section(list,section);
 	if(list[i]!=NULL) {
 		strListPush(&retval, list[i]);
 		for(i++;list[i]!=NULL;i++) {
@@ -725,6 +722,18 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 
 	if(*value==0 /* blank value or missing key */)
 		return default_value(deflt,value);
+
+	return(value);
+}
+
+char* iniPopKey(str_list_t* list, const char* section, const char* key, char* value)
+{
+	size_t i=get_value(*list, section, key, value);
+
+	if(*value==0)
+		return NULL;
+
+	strListDelete(list,i);
 
 	return(value);
 }
