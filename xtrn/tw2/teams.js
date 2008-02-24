@@ -84,13 +84,13 @@ function LocateTeam()
 				&& otherplayer.UserNumber!=0
 				&& otherplayer.TeamNumber==player.TeamNumber) {
 			count++;
+			console.write(format("%-41s ",otherplayer.Alias));
+			if(otherplayer.KilledBy != 0)
+				console.write(" Dead!");
+			else
+				console.write(otherplayer.Sector);
+			console.crlf();
 		}
-		console.write(format("%-41s ",otherplayer.Alias));
-		if(otherplayer.KilledBy != 0)
-			console.write(" Dead!");
-		else
-			console.write(otherplayer.Sector);
-		console.crlf();
 	}
 	console.crlf();
 	if(count==0)
