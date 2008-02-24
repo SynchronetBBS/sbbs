@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -233,7 +233,7 @@ DLLEXPORT ulong		DLLCALL delfiles(char *inpath, char *spec);
 DLLEXPORT char*		DLLCALL backslash(char* path);
 DLLEXPORT BOOL 		DLLCALL wildmatch(const char *fname, const char *spec, BOOL path);
 DLLEXPORT BOOL 		DLLCALL wildmatchi(const char *fname, const char *spec, BOOL path);
-DLLEXPORT int		DLLCALL	mkdirs(const char* path);
+DLLEXPORT int		DLLCALL	mkpath(const char* path);
 
 
 #if defined(__unix__)
