@@ -106,7 +106,8 @@ function parse_news_header(hdr, line)
 			break;
 		case "from":
 			hdr.from = mail_get_name(data);
-			hdr.from_net_addr = mail_get_address(data);
+			if((hdr.from_net_addr = mail_get_address(data)) != null)
+				hdr.from_net_type = NET_INTERNET;
 			break;
 		case "organization":
 			hdr.from_org=data;
