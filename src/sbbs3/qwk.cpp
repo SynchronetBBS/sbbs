@@ -63,6 +63,9 @@ bool route_circ(char *via, char *id)
 {
 	char str[256],*p,*sp;
 
+	if(via==NULL || id==NULL)
+		return(false);
+
 	SAFECOPY(str,via);
 	p=str;
 	SKIP_WHITESPACE(p);
@@ -985,13 +988,12 @@ int sbbs_t::set_qwk_flag(ulong flag)
 	int i;
 	char str[32];
 
+	if(useron.qwk&flag)
+		return 0;
 	if((i=getuserrec(&cfg,useron.number,U_QWK,8,str))!=0)
 		return(i);
 	useron.qwk=ahtoul(str);
 	useron.qwk|=flag;
-	if((i=putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16)))!=0)
-		return(i);
-
-	return(0);
+	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 }
 
