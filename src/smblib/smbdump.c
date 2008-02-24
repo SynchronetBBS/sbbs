@@ -72,7 +72,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 
 	/* convenience strings */
 	if(msg->subj)
-		fprintf(fp,"%-20.20s %s\n"	,"subject"			,msg->subj);
+		fprintf(fp,"%-20.20s \"%s\"\n"	,"subject"			,msg->subj);
 	if(msg->to) {
 		fprintf(fp,"%-20.20s %s"	,"to"				,msg->to);
 		if(msg->to_ext)
@@ -82,7 +82,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 		fprintf(fp,"\n");
 	}
 	if(msg->from) {
-		fprintf(fp,"%-20.20s %s"	,"from"				,msg->from);
+		fprintf(fp,"%-20.20s \"%s\""	,"from"				,msg->from);
 		if(msg->from_ext)
 			fprintf(fp," #%s",msg->from_ext);
 		if(msg->from_net.type)
@@ -90,7 +90,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 		fprintf(fp,"\n");
 	}
 	if(msg->replyto) {
-		fprintf(fp,"%-20.20s %s"	,"reply-to"			,msg->replyto);
+		fprintf(fp,"%-20.20s \"%s\""	,"reply-to"			,msg->replyto);
 		if(msg->replyto_ext)
 			fprintf(fp," #%s",msg->replyto_ext);
 		if(msg->replyto_net.type)
@@ -98,7 +98,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 		fprintf(fp,"\n");
 	}
 	if(msg->summary)
-		fprintf(fp,"%-20.20s %s\n"	,"summary"			,msg->summary);
+		fprintf(fp,"%-20.20s \"%s\"\n"	,"summary"			,msg->summary);
 
 	/* convenience integers */
 	if(msg->expiration) {
@@ -146,7 +146,7 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 
 	/* variable fields */
 	for(i=0;i<msg->total_hfields;i++)
-		fprintf(fp,"%-20.20s %s\n"
+		fprintf(fp,"%-20.20s \"%s\"\n"
 			,smb_hfieldtype(msg->hfield[i].type)
 			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
 
