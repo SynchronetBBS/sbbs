@@ -66,7 +66,7 @@ function str_cmds(str)
 		}
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
-			if(file_exists()) {
+			if(file_exists(errlog)) {
 				write(bbs.text(ErrorLogHdr));
 				console.printfile(errlog);
 				if(!console.noyes(bbs.text(DeleteErrorLogQ)))
