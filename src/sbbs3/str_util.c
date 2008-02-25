@@ -124,7 +124,7 @@ BOOL DLLCALL findstr_in_list(const char* insearchof, str_list_t list)
 	size_t	index;
 	BOOL	found;
 
-	if(insearchof==NULL)
+	if(list==NULL || insearchof==NULL)
 		return(FALSE);
 
 	SAFECOPY(search,insearchof);
