@@ -88,7 +88,7 @@ static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
 
 	#define	SOCKET_DEBUG_CTRL		(1<<0)	/* 0x01 */
@@ -223,7 +223,7 @@ static SOCKET ftp_open_socket(int type)
 		if(set_socket_options(&scfg, sock, "FTP", error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock, error);
 		sockets++;
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG
 		lprintf(LOG_DEBUG,"%04d Socket opened (%u sockets in use)",sock,sockets);
 #endif
 	}
@@ -255,7 +255,7 @@ static int ftp_close_socket(SOCKET* sock, int line)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket from line %u",*sock,ERROR_VALUE,line);
 	} else if(sock==&server_socket || *sock==server_socket)
 		lprintf(LOG_DEBUG,"%04d Server socket closed (%u sockets in use) from line %u",*sock,sockets,line);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG
 	else 
 		lprintf(LOG_DEBUG,"%04d Socket closed (%u sockets in use) from line %u",*sock,sockets,line);
 #endif
