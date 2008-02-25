@@ -297,11 +297,15 @@ BOOL iniSectionExists(str_list_t list, const char* section)
 str_list_t	iniGetSection(str_list_t list, const char *section)
 {
 	size_t		i;
-	str_list_t	retval=strListInit();
+	str_list_t	retval;
 	char		*p;
 
 	if(list==NULL)
-		return(retval);
+		return(NULL);
+
+	if((retval=strListInit())==NULL)
+		return(NULL);
+
 	i=find_section(list,section);
 	if(list[i]!=NULL) {
 		strListPush(&retval, list[i]);
@@ -730,12 +734,12 @@ char* iniPopKey(str_list_t* list, const char* section, const char* key, char* va
 {
 	size_t i;
 	
-	if(list==NULL)
+	if(list==NULL || *list==NULL)
 		return NULL;
 
 	i=get_value(*list, section, key, value);
 
-	if(list[i]==NULL)
+	if((*list)[i]==NULL)
 		return NULL;
 
 	strListDelete(list,i);
