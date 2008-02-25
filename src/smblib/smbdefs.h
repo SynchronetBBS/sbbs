@@ -571,6 +571,9 @@ typedef struct {				/* Message */
 				*from,			/* From name */
 				*from_ext,		/* From extension */
 				*from_org,		/* From organization */
+				*from_ip,		/* From IP address (e.g. "192.168.1.2") */
+				*from_host,		/* From host name */
+				*from_prot,		/* From protocol (e.g. "Telnet", "NNTP", "HTTP", etc.) */
 				*replyto,		/* Reply-to name */
 				*replyto_ext,	/* Reply-to extension */
 				*id,			/* RFC822 Message-ID */

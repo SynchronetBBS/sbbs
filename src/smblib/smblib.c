@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -53,7 +53,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.43"      /* SMB library version */
+#define SMBLIB_VERSION		"2.50"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -703,6 +703,9 @@ ulong SMBCALL smb_getmsgtxtlen(smbmsg_t* msg)
 static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_dat)
 {
 	switch(hfield_type) {	/* convenience variables */
+		case AUTHOR:
+			msg->from=(char*)hfield_dat;
+			break; 
 		case SENDER:
 			if(!msg->from) {
 				msg->from=(char*)hfield_dat;
@@ -730,6 +733,15 @@ static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_
 		case SENDERNETADDR:
 			if(!msg->forwarded)
 				msg->from_net.addr=(char*)hfield_dat;
+			break;
+		case SENDERIPADDR:
+			msg->from_ip=(char*)hfield_dat;
+			break;
+		case SENDERHOSTNAME:
+			msg->from_host=(char*)hfield_dat;
+			break;
+		case SENDERPROTOCOL:
+			msg->from_prot=(char*)hfield_dat;
 			break;
 		case REPLYTO:
 			msg->replyto=(char*)hfield_dat;
@@ -817,6 +829,9 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->from=NULL;
 	msg->from_ext=NULL;
 	msg->from_org=NULL;
+	msg->from_ip=NULL;
+	msg->from_host=NULL;
+	msg->from_prot=NULL;
 	memset(&msg->from_net,0,sizeof(net_t));
 
 	msg->replyto=NULL;
