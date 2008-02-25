@@ -57,7 +57,7 @@ function Lock(filename, lockid, forwrite, timeout)
 					if(LockedFiles[filename]!=undefined)
 						file_remove(readlock.name);
 					/* We have got the lock... wait for all read locks to close */
-					while(directory(filename+".lock.*").length) {
+					while(file_exists(filename+".lock_*")) {
 						mswait(1);
 						if(system.timer > endtime) {
 							/* If we were upgrading, restor our old lock... */
