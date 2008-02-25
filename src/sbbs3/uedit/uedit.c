@@ -1799,9 +1799,6 @@ int createdefaults()
 		exit(1);
 	}
 
-	if(!(cfg.sys_misc&SM_LOCAL_TZ))
-		putenv("TZ=UTC0");
-
 	now=time(NULL);
 
 	memset(&user,0,sizeof(user));
