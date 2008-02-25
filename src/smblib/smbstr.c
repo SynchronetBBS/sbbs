@@ -54,7 +54,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SENDERIPADDR:		return("SenderIpAddr");
 		case SENDERHOSTNAME:	return("SenderHostName");
 		case SENDERPROTOCOL:	return("SenderProtocol");
-		case SENDERPORT_BIN		return("SenderPortBin");
+		case SENDERPORT_BIN:	return("SenderPortBin");
 		case SENDERPORT:		return("SenderPort");
 
 		case REPLYTO:			return("Reply-To");				/* RFC-compliant */
