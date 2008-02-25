@@ -54,6 +54,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SENDERIPADDR:		return("SenderIpAddr");
 		case SENDERHOSTNAME:	return("SenderHostName");
 		case SENDERPROTOCOL:	return("SenderProtocol");
+		case SENDERPORT_BIN		return("SenderPortBin");
 		case SENDERPORT:		return("SenderPort");
 
 		case REPLYTO:			return("Reply-To");				/* RFC-compliant */
@@ -76,6 +77,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SMB_EXPIRATION:	return("Expiration");
 		case SMB_PRIORITY:		return("Priority");
 		case SMB_COST:			return("Cost");
+		case FORWARDED:			return("Forwarded");
 
 		/* All X-FTN-* are RFC-compliant */
 		case FIDOCTRL:			return("X-FTN-Kludge");
@@ -166,11 +168,13 @@ char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
 /****************************************************************************/
 /* Converts when_t.zone into ASCII format                                   */
 /****************************************************************************/
-char* SMBCALL smb_zonestr(short zone, char* outstr)
+char* SMBCALL smb_zonestr(short zone, char* str)
 {
 	char*		plus;
-    static char str[32];
+    static char buf[32];
 
+	if(str==NULL)
+		str=buf;
 	switch((ushort)zone) {
 		case 0:     return("UTC");
 		case AST:   return("AST");
@@ -229,31 +233,27 @@ char* SMBCALL smb_zonestr(short zone, char* outstr)
 		plus="";
 	sprintf(str,"UTC%s%d:%02u", plus, zone/60, zone<0 ? (-zone)%60 : zone%60);
 
-	if(outstr==NULL)
-		return(str);
-	strcpy(outstr,str);
-	return(outstr);
+	return(str);
 }
 
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
 /****************************************************************************/
-char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr)
+char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* str)
 {
-	static char str[64];
+	static char buf[64];
     char point[25];
 
 	if(addr==NULL)
 		return("0:0/0");
+	if(str==NULL)
+		str=buf;
 	sprintf(str,"%hu:%hu/%hu",addr->zone,addr->net,addr->node);
 	if(addr->point) {
 		sprintf(point,".%hu",addr->point);
 		strcat(str,point); 
 	}
-	if(outstr==NULL)
-		return(str);
-	strcpy(outstr,str);
-	return(outstr);
+	return(str);
 }
 
 /****************************************************************************/

@@ -189,7 +189,8 @@
 #define SENDERIPADDR		0x07		/* for tracing */
 #define SENDERHOSTNAME		0x08		/* for tracing */
 #define SENDERPROTOCOL		0x09		/* for tracing */
-#define SENDERPORT			0x0a		/* for tracing */
+#define SENDERPORT_BIN		0x0a		/* deprecated */
+#define SENDERPORT			0x0b		/* for tracing */
 
 #define AUTHOR				0x10
 #define AUTHORAGENT 		0x11
