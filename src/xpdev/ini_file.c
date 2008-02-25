@@ -728,9 +728,14 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 
 char* iniPopKey(str_list_t* list, const char* section, const char* key, char* value)
 {
-	size_t i=get_value(*list, section, key, value);
+	size_t i;
+	
+	if(list==NULL)
+		return NULL;
 
-	if(*value==0)
+	i=get_value(*list, section, key, value);
+
+	if(list[i]==NULL)
 		return NULL;
 
 	strListDelete(list,i);
