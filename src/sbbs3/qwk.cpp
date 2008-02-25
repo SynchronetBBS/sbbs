@@ -398,6 +398,7 @@ void sbbs_t::qwk_sec()
 	int		error;
 	int 	s;
 	uint	i,k;
+	ulong	l;
 	ulong	msgcnt;
 	ulong	*sav_ptr;
 	file_t	fd;
@@ -641,39 +642,20 @@ void sbbs_t::qwk_sec()
 				last_ns_time=ns_time;
 				remove(str);
 				continue; }
-#if 0	/* no such thing as local logon */
-			if(online==ON_LOCAL) {			/* Local QWK packet creation */
-				bputs(text[EnterPath]);
-				if(!getstr(str,60,K_LINE|K_UPPER)) {
-					for(i=0;i<cfg.total_subs;i++)
-						subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
-					last_ns_time=ns_time;
-					continue; }
-				backslashcolon(str);
-				sprintf(tmp2,"%s%s.qwk",str,cfg.sys_id);
-				if(fexistcase(tmp2)) {
-					for(i=0;i<10;i++) {
-						sprintf(tmp2,"%s%s.qw%d",str,cfg.sys_id,i);
-						if(!fexistcase(tmp2))
-							break; }
-					if(i==10) {
-						bputs(text[FileAlreadyThere]);
-						last_ns_time=ns_time;
-						for(i=0;i<cfg.total_subs;i++)
-							subscan[i].ptr=sav_ptr[i];
-						continue; } }
-				sprintf(tmp,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-				if(mv(tmp,tmp2,0)) { /* unsuccessful */
-					for(i=0;i<cfg.total_subs;i++)
-						subscan[i].ptr=sav_ptr[i];
-					last_ns_time=ns_time; }
-				else {
-					bprintf(text[FileNBytesSent],tmp2,ultoac(flength(tmp2),tmp));
-					qwk_success(msgcnt,0,0);
-					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=subscan[i].ptr; }
-				continue; }
-#endif
+
+			l=flength(str);
+			bprintf(text[FiFilename],getfname(str));
+			bprintf(text[FiFileSize],ultoac(l,tmp));
+			if(l>0L && cur_cps)
+				i=l/(ulong)cur_cps;
+			else
+				i=0;
+			bprintf(text[FiTransferTime],sectostr(i,tmp));
+			CRLF;
+			if(!(useron.exempt&FLAG('T')) && i>timeleft) {
+				bputs(text[NotEnoughTimeToDl]);
+				break; 
+			}
 			/***************/
 			/* Send Packet */
 			/***************/
@@ -735,21 +717,6 @@ void sbbs_t::qwk_sec()
 				bputs(text[QWKExtractionFailed]);
 				errorlog("Couldn't extract REP packet - configuration error");
 				continue; }
-
-#if 0	/* no such thing as local logon */
-			if(online==ON_LOCAL) {		/* Local upload of rep packet */
-				bputs(text[EnterPath]);
-				if(!getstr(str,60,K_LINE|K_UPPER))
-					continue;
-				backslashcolon(str);
-				sprintf(tmp,"%s.rep",cfg.sys_id);
-				strcat(str,tmp);
-				sprintf(tmp,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
-				if(!mv(str,tmp,0))
-					unpack_rep();
-				delfiles(cfg.temp_dir,ALLFILES);
-				continue; }
-#endif
 
 			/******************/
 			/* Receive Packet */

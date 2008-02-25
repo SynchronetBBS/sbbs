@@ -666,24 +666,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(false); 
 	}
 
-	if(prepack) 		/* Early return if pre-packing */
-		return(true);
-
-	l=flength(packet);
-	bprintf(text[FiFilename],getfname(packet));
-	bprintf(text[FiFileSize],ultoac(l,tmp));
-	if(l>0L && cur_cps)
-		i=l/(ulong)cur_cps;
-	else
-		i=0;
-	bprintf(text[FiTransferTime],sectostr(i,tmp));
-	CRLF;
-	if(!(useron.exempt&FLAG('T')) && i>timeleft) {
-		bputs(text[NotEnoughTimeToDl]);
-		return(false); 
-	}
-
-	if(useron.rest&FLAG('Q')) {
+	if(!prepack && useron.rest&FLAG('Q')) {
 		dir=opendir(cfg.temp_dir);
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 			if(!stricmp(getfname(packet),dirent->d_name))	/* QWK packet */
