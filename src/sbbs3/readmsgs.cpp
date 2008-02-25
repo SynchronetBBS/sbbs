@@ -122,12 +122,14 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,str));
 
 	/* fixed fields */
-	bprintf("%-16.16s %08lX %04hX %s %s\r\n","when_written"	
+	bprintf("%-16.16s %08lX %04hX %.24s %s\r\n","when_written"	
 		,msg->hdr.when_written.time, msg->hdr.when_written.zone
-		,timestr(msg->hdr.when_written.time), smb_zonestr(msg->hdr.when_written.zone,NULL));
-	bprintf("%-16.16s %08lX %04hX %s %s\r\n","when_imported"	
+		,ctime((time_t*)&msg->hdr.when_written.time)
+		,smb_zonestr(msg->hdr.when_written.zone,NULL));
+	bprintf("%-16.16s %08lX %04hX %.24s %s\r\n","when_imported"	
 		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
-		,timestr(msg->hdr.when_imported.time), smb_zonestr(msg->hdr.when_imported.zone,NULL));
+		,ctime((time_t*)&msg->hdr.when_imported.time)
+		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
 	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);
 	bprintf("%-16.16s %04Xh\r\n","attr"				,msg->hdr.attr);
@@ -821,21 +823,25 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					,msg.subj
 					,timestr(msg.hdr.when_written.time));
 				if(msg.from_net.addr==NULL)
-					strcpy(str,msg.from);
+					SAFECOPY(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)
-					sprintf(str,"%s@%s",msg.from
+					SAFEPRINTF2(str,"%s@%s",msg.from
 						,smb_faddrtoa((faddr_t *)msg.from_net.addr,tmp));
-				else if(msg.from_net.type==NET_INTERNET)
-					strcpy(str,(char *)msg.from_net.addr);
+				else if(msg.from_net.type==NET_INTERNET || strchr((char*)msg.from_net.addr,'@')!=NULL) {
+					if(msg.replyto_net.type==NET_INTERNET)
+						SAFECOPY(str,(char *)msg.replyto_net.addr);
+					else
+						SAFECOPY(str,(char *)msg.from_net.addr);
+				}
 				else
-					sprintf(str,"%s@%s",msg.from,(char *)msg.from_net.addr);
+					SAFEPRINTF2(str,"%s@%s",msg.from,(char *)msg.from_net.addr);
 				bputs(text[Email]);
 				if(!getstr(str,60,K_EDIT|K_AUTODEL))
 					break;
 
 				FREE_AND_NULL(post);
 				quotemsg(&msg,1);
-				if(msg.from_net.type==NET_INTERNET && strchr(str,'@'))
+				if(smb_netaddr_type(str)==NET_INTERNET)
 					inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
 				else {
 					p=strrchr(str,'@');
