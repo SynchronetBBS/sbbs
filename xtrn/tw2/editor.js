@@ -19,9 +19,9 @@ function EditOneProperty(obj, prop, extrastr)
 		case "SignedInteger":
 			console.write('? ');
 			var tmpstr=console.getstr(obj[prop.prop].toString(), 11, K_EDIT);
-			var int=parseInt(tmpstr);
-			if((!isNaN(int)) && isFinite(int))
-				obj[prop.prop]=int;
+			var i=parseInt(tmpstr);
+			if((!isNaN(i)) && isFinite(i))
+				obj[prop.prop]=i;
 			break;
 		case "Integer":
 			console.write('? ');
