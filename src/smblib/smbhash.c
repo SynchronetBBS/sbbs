@@ -355,7 +355,7 @@ uint16_t SMBCALL smb_subject_crc(const char* subj)
 	uint16_t	crc;
 
 	if(subj==NULL)
-		return(0xffff);
+		return(0);
 
 	while(!strnicmp(subj,"RE:",3)) {
 		subj+=3;
@@ -379,7 +379,7 @@ uint16_t SMBCALL smb_name_crc(const char* name)
 	uint16_t	crc;
 
 	if(name==NULL)
-		return(0xffff);
+		return(0);
 
 	if((str=strdup(name))==NULL)
 		return(0xffff);
