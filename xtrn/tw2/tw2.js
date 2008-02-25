@@ -44,9 +44,6 @@ load(fname("computer.js"));
 load(fname("input.js"));
 load(fname("editor.js"));
 
-var twopeng=new File(fname("twopeng.dat"));
-twopeng.open("a", true);
-
 var today=system.datestr(system.datestr());
 
 js.on_exit("do_exit()");

@@ -47,9 +47,13 @@ function CheckSector()
 		sector.Fighters=3000;
 		sector.FighterOwner=-1;
 		sector.Put();
+		var twopeng=new File(fname("twopeng.dat"));
+		twopeng.open("a", true);
+
 		twopeng.writeln("Congratulations go to "+player.Alias+
            " who invaded the Cabal empire on " + system.datestr() + 
 		   " and received 100,000 points!");
+		twopeng.close();
 		return(false);
 	}
 	return(true);
