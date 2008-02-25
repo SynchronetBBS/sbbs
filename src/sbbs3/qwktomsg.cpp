@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -38,75 +38,202 @@
 #include "sbbs.h"
 #include "qwk.h"
 
+static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers)
+{
+	char*		p;
+	char		zone[32];
+	char		value[INI_MAX_VALUE_LEN+1];
+	int			i;
+	uint16_t	net_type;
+	uint16_t	hfield_type;
+
+	if((p=iniPopKey(headers,ROOT_SECTION,"WhenWritten",value))!=NULL) {
+		xpDateTime_t dt=isoDateTimeStr_parse(p);
+
+		msg->hdr.when_written.time=xpDateTime_to_time(dt);
+		msg->hdr.when_written.zone=dt.zone;
+		sscanf(p,"%*s %s",zone);
+		if(zone[0])
+			msg->hdr.when_written.zone=(ushort)strtoul(zone,NULL,16);
+	}
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RECIPIENT),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);		
+
+	/* Recipient net address and type */
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RECIPIENTNETADDR),value))!=NULL) {
+		net_type=NET_UNKNOWN;
+		smb_hfield_netaddr(msg,hfield_type,p,&net_type);
+		smb_hfield_bin(msg,RECIPIENTNETTYPE,net_type);
+	}
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SUBJECT),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDER),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERNETADDR),value))!=NULL) {
+		smb_hfield_str(msg,hfield_type,p);
+		net_type=NET_UNKNOWN;
+		smb_hfield_netaddr(msg,hfield_type,p,&net_type);
+		smb_hfield_bin(msg,SENDERNETTYPE,net_type);
+	}
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RFC822MSGID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RFC822REPLYID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RFC822REPLYTO),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	/* Trace header fields */
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERIPADDR),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERHOSTNAME),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SENDERPROTOCOL),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	while((p=iniPopKey(headers,ROOT_SECTION,"Organization",value))!=NULL)
+		smb_hfield_str(msg,SENDERORG,p);
+
+	/* FidoNet header fields */
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOAREA),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOSEENBY),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOPATH),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOMSGID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOREPLYID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOPID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOFLAGS),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOTID),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOCTRL),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	/* USENET */
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=USENETPATH),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=USENETNEWSGROUPS),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
+	/* Others (RFC-822) */
+	for(i=0;(*headers)[i]!=NULL;i++)
+		if((*headers)[i][0])
+			smb_hfield_str(msg,RFC822HEADER,(*headers)[i]);
+}
+
+void sbbs_t::qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers)
+{
+	char str[128];
+	str_list_t	msg_headers;
+
+	smb_freemsgmem(msg);
+
+	sprintf(str,"%lx",offset);
+	msg_headers=iniGetSection(all_headers,str);
+
+	memset(msg,0,sizeof(smbmsg_t));		/* Initialize message header */
+	msg->hdr.version=smb_ver();
+
+	if(msg_headers!=NULL)
+		qwk_parse_header_list(msg, &msg_headers);
+
+	/* Parse the QWK message header: */
+	if(msg->hdr.when_written.time==0) {
+		struct		tm tm;
+		memset(&tm,0,sizeof(tm));
+		tm.tm_mon = ((hdrblk[8]&0xf)*10)+(hdrblk[9]&0xf);
+		tm.tm_mday=((hdrblk[11]&0xf)*10)+(hdrblk[12]&0xf);
+		tm.tm_year=((hdrblk[14]&0xf)*10)+(hdrblk[15]&0xf);
+		if(tm.tm_year<Y2K_2DIGIT_WINDOW)
+			tm.tm_year+=100;
+		tm.tm_hour=((hdrblk[16]&0xf)*10)+(hdrblk[17]&0xf);
+		tm.tm_min=((hdrblk[19]&0xf)*10)+(hdrblk[20]&0xf);
+
+		msg->hdr.when_written.time=sane_mktime(&tm);
+	}
+
+	if(msg->to==NULL) {
+		sprintf(str,"%25.25s",(char *)hdrblk+21);     /* To user */
+		truncsp(str);
+		smb_hfield_str(msg,RECIPIENT,str);
+	}
+
+	if(msg->from==NULL) {
+		sprintf(str,"%25.25s",hdrblk+46);  
+		truncsp(str);
+		smb_hfield_str(msg,SENDER,str);
+	}
+
+	if(msg->subj==NULL) {
+		sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
+		truncsp(str);
+		smb_hfield_str(msg,SUBJECT,str);
+	}
+
+	iniFreeStringList(msg_headers);
+}
+
 /****************************************************************************/
 /* Converts a QWK message packet into a message.							*/
+/* Does *not* free the msgmem												*/
 /****************************************************************************/
-bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
-	, uint touser)
+bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
+							,char fromhub, uint subnum
+							,uint touser, smbmsg_t* msg)
 {
 	char*		body;
 	char*		tail;
 	char*		header;
 	char		str[256],col=0,lastch=0,*p,qwkbuf[QWK_BLOCK_LEN+1];
-	uint 		i,j,k,lzh=0,skip=0;
+	char		from[128];
+	uint 		i,k,lzh=0,skip=0;
 	long		bodylen,taillen;
 	bool		header_cont=false;
 	bool		success=false;
-	ulong		block,blocks;
-	smbmsg_t	msg;
-	struct		tm tm;
+	ulong		block;
+	uint16_t	net_type;
 	ushort		xlat=XLAT_NONE;
 	int			storage=SMB_SELFPACK;
 	long		dupechk_hashes=SMB_HASH_SOURCE_ALL;
 
-	memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
-	msg.hdr.version=smb_ver();
-
-	blocks=atol(hdrblk+116);
-	if(blocks<2) {
-		errormsg(WHERE,ERR_CHK,"QWK packet header blocks",blocks);
-		return(false);
-	}
-
 	if(subnum!=INVALID_SUB
 		&& (hdrblk[0]=='*' || hdrblk[0]=='+' || cfg.sub[subnum]->misc&SUB_PONLY))
-		msg.hdr.attr|=MSG_PRIVATE;
+		msg->hdr.attr|=MSG_PRIVATE;
 	if(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_AONLY)
-		msg.hdr.attr|=MSG_ANONYMOUS;
+		msg->hdr.attr|=MSG_ANONYMOUS;
 	if(subnum==INVALID_SUB && cfg.sys_misc&SM_DELREADM)
-		msg.hdr.attr|=MSG_KILLREAD;
+		msg->hdr.attr|=MSG_KILLREAD;
 	if((fromhub || useron.rest&FLAG('Q')) &&
 		(hdrblk[0]=='*' || hdrblk[0]=='-' || hdrblk[0]=='`'))
-		msg.hdr.attr|=MSG_READ;
+		msg->hdr.attr|=MSG_READ;
 
 	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->mod_ar[0]
 		&& chk_ar(cfg.sub[subnum]->mod_ar,&useron))
-		msg.hdr.attr|=MSG_MODERATED;
+		msg->hdr.attr|=MSG_MODERATED;
 	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->misc&SUB_SYSPERM
 		&& sub_op(subnum))
-		msg.hdr.attr|=MSG_PERMANENT;
+		msg->hdr.attr|=MSG_PERMANENT;
 
-	memset(&tm,0,sizeof(tm));
-	tm.tm_mon = ((hdrblk[8]&0xf)*10)+(hdrblk[9]&0xf);
-	if(tm.tm_mon>0) tm.tm_mon--;	/* zero based */
-	tm.tm_mday=((hdrblk[11]&0xf)*10)+(hdrblk[12]&0xf);
-	tm.tm_year=((hdrblk[14]&0xf)*10)+(hdrblk[15]&0xf);
-	if(tm.tm_year<Y2K_2DIGIT_WINDOW)
-		tm.tm_year+=100;
-	tm.tm_hour=((hdrblk[16]&0xf)*10)+(hdrblk[17]&0xf);
-	tm.tm_min=((hdrblk[19]&0xf)*10)+(hdrblk[20]&0xf);
-	tm.tm_sec=0;
-	tm.tm_isdst=-1;	/* Do not adjust for DST */
+	if(!(useron.rest&FLAG('Q')) && !fromhub && msg->hdr.when_written.zone==0)
+		msg->hdr.when_written.zone=sys_timezone(&cfg);
 
-	msg.hdr.when_written.time=mktime(&tm);
-	if(!(useron.rest&FLAG('Q')) && !fromhub)
-		msg.hdr.when_written.zone=sys_timezone(&cfg);
-	msg.hdr.when_imported.time=time(NULL);
-	msg.hdr.when_imported.zone=sys_timezone(&cfg);
+	msg->hdr.when_imported.time=time(NULL);
+	msg->hdr.when_imported.zone=sys_timezone(&cfg);
 
 	hdrblk[116]=0;	// don't include number of blocks in "re: msg number"
 	if(!(useron.rest&FLAG('Q')) && !fromhub)
-		msg.hdr.thread_back=atol((char *)hdrblk+108);
+		msg->hdr.thread_back=atol((char *)hdrblk+108);
 
 	if(subnum==INVALID_SUB) { 		/* E-mail */
 		if(cfg.sys_misc&SM_FASTMAIL)
@@ -115,10 +242,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		/* duplicate message-IDs must be allowed in mail database */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
 
-		username(&cfg,touser,str);
-		smb_hfield_str(&msg,RECIPIENT,str);
 		sprintf(str,"%u",touser);
-		smb_hfield_str(&msg,RECIPIENTEXT,str); 
+		smb_hfield_str(msg,RECIPIENTEXT,str); 
 	} else {
 		if(cfg.sub[subnum]->misc&SUB_HYPER)
 			storage = SMB_HYPERALLOC;
@@ -127,27 +252,13 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 		if(cfg.sub[subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
-
-		sprintf(str,"%25.25s",(char *)hdrblk+21);     /* To user */
-		truncsp(str);
-		smb_hfield_str(&msg,RECIPIENT,str);
-		if(cfg.sub[subnum]->misc&SUB_LZH)
-			xlat=XLAT_LZH;
 	}
-
-	sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
-	truncsp(str);
-	if(::trashcan(&cfg,str,"subject"))
-		return false;
-
-	smb_hfield_str(&msg,SUBJECT,str);
 
 	/********************************/
 	/* Convert the QWK message text */
 	/********************************/
 
 	if((header=(char *)calloc((blocks-1L)*QWK_BLOCK_LEN*2L,sizeof(char)))==NULL) {
-		smb_freemsgmem(&msg);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg header",(blocks-1L)*QWK_BLOCK_LEN*2L);
 		return(false); 
 	}
@@ -155,7 +266,6 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	bodylen=0;
 	if((body=(char *)malloc((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
 		free(header);
-		smb_freemsgmem(&msg);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg body",(blocks-1L)*QWK_BLOCK_LEN*2L);
 		return(false); 
 	}
@@ -164,7 +274,6 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	if((tail=(char *)malloc((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
 		free(header);
 		free(body);
-		smb_freemsgmem(&msg);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg tail",(blocks-1L)*QWK_BLOCK_LEN*2L);
 		return(false); 
 	}
@@ -194,7 +303,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				&& body[bodylen-3]=='-' && body[bodylen-2]=='-'
 				&& body[bodylen-1]=='-') {
 				bodylen-=3;
-				strcpy(tail,"--- ");
+				SAFECOPY(tail,"--- ");
 				taillen=4;
 				col++;
 				continue; 
@@ -203,7 +312,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
 					&& body[bodylen-2]=='-' && body[bodylen-1]=='-') {
 					bodylen-=3;
-					strcpy(tail,"---");
+					SAFECOPY(tail,"---");
 					taillen=3; 
 				}
 				col=0;
@@ -260,9 +369,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			p=header+5; 					/* Skip "@VIA:" */
 			while(*p && *p<=' ') p++;		/* Skip any spaces */
 			if(route_circ(p,cfg.sys_id)) {
-				smb_freemsgmem(&msg);
 				bprintf("\r\nCircular message path: %s\r\n",p);
-				sprintf(str,"Circular message path: %s from %s"
+				SAFEPRINTF2(str,"Circular message path: %s from %s"
 					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
 				errorlog(str);
 				free(header);
@@ -270,32 +378,32 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				free(tail);
 				return(false); 
 			}
-			sprintf(str,"%s/%s"
+			SAFEPRINTF2(str,"%s/%s"
 				,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,p);
 			strupr(str);
 			update_qwkroute(str); 
 		}
 		else {
 			if(fromhub)
-				strcpy(str,cfg.qhub[fromhub-1]->id);
+				SAFECOPY(str,cfg.qhub[fromhub-1]->id);
 			else
-				strcpy(str,useron.alias); 
+				SAFECOPY(str,useron.alias); 
 		}
+		/* From network type & address: */
 		strupr(str);
-		j=NET_QWK;
-		smb_hfield(&msg,SENDERNETTYPE,2,&j);
-		smb_hfield_str(&msg,SENDERNETADDR,str);
-		sprintf(str,"%25.25s",hdrblk+46);  /* From user */
-		truncsp(str);
+		net_type=NET_QWK;
+		smb_hfield_netaddr(msg, SENDERNETADDR, str, &net_type);
+		smb_hfield_bin(msg,SENDERNETTYPE,net_type);
+
 	} else {
 		sprintf(str,"%u",useron.number);
-		smb_hfield_str(&msg,SENDEREXT,str);
+		smb_hfield_str(msg,SENDEREXT,str);
 		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
-			strcpy(str,useron.name);
+			SAFECOPY(from,useron.name);
 		else
-			strcpy(str,useron.alias);
+			SAFECOPY(from,useron.alias);
+		smb_hfield_str(msg,SENDER,from);
 	}
-	smb_hfield_str(&msg,SENDER,str);
 
 	if(!strnicmp(header+skip,"@MSGID:",7)) {
 		if(!fromhub)
@@ -309,7 +417,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		p=header+i+7;					/* Skip "@MSGID:" */
 		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
-		smb_hfield_str(&msg,RFC822MSGID,p);
+		if(msg->id==NULL)
+			smb_hfield_str(msg,RFC822MSGID,p);
 	}
 	if(!strnicmp(header+skip,"@REPLY:",7)) {
 		if(!fromhub)
@@ -323,7 +432,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		p=header+i+7;					/* Skip "@REPLY:" */
 		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
-		smb_hfield_str(&msg,RFC822REPLYID,p);
+		if(msg->reply_id==NULL)
+			smb_hfield_str(msg,RFC822REPLYID,p);
 	}
 	if(!strnicmp(header+skip,"@TZ:",4)) {
 		if(!fromhub)
@@ -336,7 +446,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		}
 		p=header+i+4;					/* Skip "@TZ:" */
 		while(*p && *p<=' ') p++;		/* Skip any spaces */
-		msg.hdr.when_written.zone=(short)ahtoul(p); 
+		msg->hdr.when_written.zone=(short)ahtoul(p); 
 	}
 	if(!strnicmp(header+skip,"@REPLYTO:",9)) {
 		p=strchr(header+skip, '\n');
@@ -347,11 +457,12 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		}
 		p=header+i+9;					/* Skip "@REPLYTO:" */
 		while(*p && *p<=' ') p++;		/* Skip any spaces */
-		smb_hfield_str(&msg,REPLYTO,p);
+		if(msg->replyto==NULL)
+			smb_hfield_str(msg,REPLYTO,p);
 	}
 	free(header);
 
-	/* smb_addmsg required ASCIIZ strings */
+	/* smb_addmsg requires ASCIIZ strings */
 	body[bodylen]=0;
 	tail[taillen]=0;
 
@@ -361,16 +472,16 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	if(smb.status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
-	if((i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)body,(uchar*)tail))==SMB_SUCCESS)
+	if((i=smb_addmsg(&smb,msg,storage,dupechk_hashes,xlat,(uchar*)body,(uchar*)tail))==SMB_SUCCESS)
 		success=true;
 	else if(i==SMB_DUPE_MSG) {
 		bprintf("\r\n!%s\r\n",smb.last_error);
 		if(!fromhub) {
 			if(subnum==INVALID_SUB) {
-				sprintf(str,"%s duplicate e-mail attempt (%s)",useron.alias,smb.last_error);
+				SAFEPRINTF2(str,"%s duplicate e-mail attempt (%s)",useron.alias,smb.last_error);
 				logline("E!",str); 
 			} else {
-				sprintf(str,"%s duplicate message attempt in %s %s (%s)"
+				SAFEPRINTF4(str,"%s duplicate message attempt in %s %s (%s)"
 					,useron.alias
 					,cfg.grp[cfg.sub[subnum]->grp]->sname
 					,cfg.sub[subnum]->lname
@@ -381,8 +492,6 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	}
 	else 
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
-
-	smb_freemsgmem(&msg);
 
 	free(body);
 	free(tail);

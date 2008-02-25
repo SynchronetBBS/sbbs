@@ -48,6 +48,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	, int conf, FILE* hdrs)
 {
 	char	str[512],from[512],to[512],ch=0,tear=0,tearwatch=0,*buf,*p;
+	char	msgid[256];
 	char 	tmp[512];
 	long	l,size=0,offset;
 	int 	i;
@@ -61,7 +62,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		fprintf(hdrs,"[%x]\n",offset);
 
 		/* Message-IDs */
-		fprintf(hdrs,"Message-ID:  %s\n",get_msgid(&cfg,subnum,msg));
+		fprintf(hdrs,"Message-ID:  %s\n",get_msgid(&cfg,subnum,msg,msgid,sizeof(msgid)));
 		if(msg->reply_id!=NULL)
 			fprintf(hdrs,"In-Reply-To: %s\n",msg->reply_id);
 
@@ -80,6 +81,18 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				,str,sizeof(str))
 			,msg->hdr.when_imported.zone
 			);
+		fprintf(hdrs,"WhenExported: %-20s %04hx\n"
+			,xpDateTime_to_isoDateTimeStr(
+				xpDateTime_now()
+				,/* separators: */"","","", /* precision: */0
+				,str,sizeof(str))
+			,sys_timezone(&cfg)
+			);
+		fprintf(hdrs,"ExportedFrom: %s %s %lu\n"
+			,cfg.sys_id
+			,subnum==INVALID_SUB ? "mail":cfg.sub[subnum]->code
+			,msg->hdr.number
+			);
 
 		/* SENDER */
 		fprintf(hdrs,"%s: %s\n",smb_hfieldtype(SENDER),msg->from);
@@ -93,6 +106,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			fprintf(hdrs,"%s: %s\n",smb_hfieldtype(hfield_type),p);
 		if(msg->from_org!=NULL)
 			fprintf(hdrs,"Organization: %s\n",msg->from_org);
+		else if(msg->from_net.type==NET_NONE)
+			fprintf(hdrs,"Organization: %s\n",cfg.sys_name);
 
 		/* Reply-To */
 		if((p=(char*)smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
@@ -139,7 +154,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		/* RFC822 header fields: */
 		for(i=0;i<msg->total_hfields;i++)
 			if(msg->hfield[i].type==RFC822HEADER)
-				fprintf(hdrs,"%s\n",msg->hfield_dat[i]);
+				fprintf(hdrs,"%s\n",truncsp_lines((char*)msg->hfield_dat[i]));
 
 		/* Blank line: */
 		fprintf(hdrs,"\n");
@@ -153,7 +168,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		else if(msg->from_net.type==NET_FIDO)
 			sprintf(from,"%.128s@%.128s"
 				,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
-		else if(msg->from_net.type==NET_INTERNET)
+		else if(msg->from_net.type==NET_INTERNET || strchr((char*)msg->from_net.addr,'@')!=NULL)
 			sprintf(from,"%.128s",(char*)msg->from_net.addr);
 		else
 			sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
@@ -204,7 +219,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	
 	if(mode&QM_MSGID && (uint)subnum!=INVALID_SUB) {
 		size+=fprintf(qwk_fp,"@MSGID: %s%c"
-			,get_msgid(&cfg,subnum,msg),QWK_NEWLINE);
+			,get_msgid(&cfg,subnum,msg,msgid,sizeof(msgid)),QWK_NEWLINE);
 
 		if(msg->reply_id) {
 			SAFECOPY(tmp,msg->reply_id);
@@ -218,7 +233,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				size+=fprintf(qwk_fp,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
 			else
 				size+=fprintf(qwk_fp,"@REPLY: %s%c"
-					,get_msgid(&cfg,subnum,&remsg)
+					,get_msgid(&cfg,subnum,&remsg,msgid,sizeof(msgid))
 					,QWK_NEWLINE);
 		}
 	}

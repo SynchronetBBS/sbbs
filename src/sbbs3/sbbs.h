@@ -735,8 +735,9 @@ public:
 	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum, int conf, FILE* hdrs_dat);
 
 	/* qwktomsg.cpp */
-	bool	qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
-				,uint touser);
+	void	qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers);
+	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, uint subnum
+				,uint touser, smbmsg_t* msg);
 
 	/* fido.cpp */
 	bool	netmail(char *into, char *subj, long mode);
@@ -846,8 +847,11 @@ extern "C" {
 	/* str_util.c */
 	DLLEXPORT char *	DLLCALL truncstr(char* str, const char* set);
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
-	DLLEXPORT BOOL		DLLCALL findstr(char *insearch, char *fname);
-	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
+	DLLEXPORT BOOL		DLLCALL findstr(const char *insearch, const char *fname);
+	DLLEXPORT BOOL		DLLCALL findstr_in_list(const char* insearchof, str_list_t list);
+	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, const char *insearch, const char *name);
+	DLLEXPORT char *	DLLCALL trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
+	DLLEXPORT str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
@@ -858,8 +862,8 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL rot13(char* str);
 
 	/* msg_id.c */
-	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
-	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
+	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg, char* msgid, size_t);
+	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t);
 
 
 	/* date_str.c */

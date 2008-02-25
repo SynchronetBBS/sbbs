@@ -304,12 +304,12 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb_hfield_str(&msg,FIDOPID,program_id(pid));
 
 	/* Generate default (RFC822) message-id (always) */
-	SAFECOPY(msg_id,get_msgid(&cfg,subnum,&msg));
+	get_msgid(&cfg,subnum,&msg,msg_id,sizeof(msg_id));
 	smb_hfield_str(&msg,RFC822MSGID,msg_id);
 
 	/* Generate FTN (FTS-9) MSGID */
 	if(cfg.sub[subnum]->misc&SUB_FIDO) {
-		SAFECOPY(msg_id,ftn_msgid(cfg.sub[subnum],&msg));
+		ftn_msgid(cfg.sub[subnum],&msg,msg_id,sizeof(msg_id));
 		smb_hfield_str(&msg,FIDOMSGID,msg_id);
 	}
 	if(remsg) {
@@ -506,14 +506,14 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  
  	/* Generate RFC-822 Message-id  */
  	if(msg->id==NULL) {
- 		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
+ 		get_msgid(cfg,smb->subnum,msg,msg_id,sizeof(msg_id));
  		smb_hfield_str(msg,RFC822MSGID,msg_id);
  	}
  
  	/* Generate FidoNet MSGID (for FidoNet sub-boards) */
  	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO 
 		&& msg->ftn_msgid==NULL) {
- 		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
+ 		ftn_msgid(cfg->sub[smb->subnum],msg,msg_id,sizeof(msg_id));
  		smb_hfield_str(msg,FIDOMSGID,msg_id);
  	}
 

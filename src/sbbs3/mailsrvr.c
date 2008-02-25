@@ -415,6 +415,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	char		toaddr[256]="";
 	char		fromaddr[256]="";
 	char		fromhost[256];
+	char		msgid[256];
 	char		date[64];
 	char*		p;
 	char*		tp;
@@ -483,7 +484,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 		s=sockprintf(socket,"Reply-To: %s",p);	/* use original RFC822 header field */
 	if(!s)
 		return(0);
-	if(!sockprintf(socket,"Message-ID: %s",get_msgid(&scfg,INVALID_SUB,msg)))
+	if(!sockprintf(socket,"Message-ID: %s",get_msgid(&scfg,INVALID_SUB,msg,msgid,sizeof(msgid))))
 		return(0);
 	if(msg->reply_id!=NULL)
 		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))

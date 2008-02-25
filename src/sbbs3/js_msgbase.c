@@ -781,7 +781,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 				if(smb_getmsgidx(&(p->p->smb), &remsg))
 					sprintf(reply_id,"<%s>",p->p->smb.last_error);
 				else
-					SAFECOPY(reply_id,get_msgid(scfg,p->p->smb.subnum,&remsg));
+					get_msgid(scfg,p->p->smb.subnum,&remsg,reply_id,sizeof(reply_id));
 			}
 			val=reply_id;
 		}
@@ -799,7 +799,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	/* Message-ID */
 	if(name==NULL || strcmp(name,"id")==0) {
 		if(p->expand_fields || (p->msg).id!=NULL) {
-			SAFECOPY(msg_id,get_msgid(scfg,p->p->smb.subnum,&(p->msg)));
+			get_msgid(scfg,p->p->smb.subnum,&(p->msg),msg_id,sizeof(msg_id));
 			val=msg_id;
 			if((js_str=JS_NewStringCopyZ(cx,truncsp(val)))!=NULL) {
 				JS_DefineProperty(cx, obj, "id"
