@@ -71,9 +71,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	memset(&msg,0,sizeof(msg));
 
-	if(repfile!=NULL)
+	if(repfile!=NULL) {
+		delfiles(cfg.temp_dir,ALLFILES);
 		SAFECOPY(rep_fname,repfile);
-	else
+	} else
 		SAFEPRINTF2(rep_fname,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(rep_fname)) {
 		bputs(text[QWKReplyNotReceived]);
@@ -536,6 +537,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 			mv(str,fname,1);
+			putsmsg(&cfg,1,str);	/* debug */
 			SAFEPRINTF2(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
 			putsmsg(&cfg,1,str);
 		} 

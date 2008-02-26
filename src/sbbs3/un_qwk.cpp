@@ -75,6 +75,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		errormsg(WHERE,ERR_LEN,packet,l);
 		return(false);
 	}
+	delfiles(cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),EX_OFFLINE);
 	if(i) {
 		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),i);

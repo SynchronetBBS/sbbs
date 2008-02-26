@@ -2112,6 +2112,7 @@ void event_thread(void* arg)
 					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
 					sbbs->unpack_rep(g.gl_pathv[i]);
+					delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
 					sbbs->batch_create_list();	/* FREQs? */
 					sbbs->batdn_total=0;
 					
@@ -2138,7 +2139,6 @@ void event_thread(void* arg)
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					eprintf(LOG_INFO,"Packing QWK Message Packet for %s",sbbs->useron.alias);
 					sbbs->online=ON_LOCAL;
-					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
 					sbbs->batdn_total=0;
@@ -2191,7 +2191,6 @@ void event_thread(void* arg)
 							continue;
 						eprintf(LOG_INFO,"Pre-packing QWK for %s",sbbs->useron.alias);
 						sbbs->online=ON_LOCAL;
-						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->getmsgptrs();
 						sbbs->getusrsubs();
 						sbbs->batdn_total=0;
@@ -2305,7 +2304,6 @@ void event_thread(void* arg)
 					SAFECOPY(str,g.gl_pathv[j]);
 					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
 						eprintf(LOG_DEBUG,"Inbound QWK Packet detected: %s", str);
-						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->online=ON_LOCAL;
 						sbbs->console|=CON_L_ECHO;
 						if(sbbs->unpack_qwk(str,i)==false) {
@@ -2318,6 +2316,7 @@ void event_thread(void* arg)
 								sbbs->logline("Q!",logmsg);
 							}
 						}
+						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=FALSE;
 						remove(str);
