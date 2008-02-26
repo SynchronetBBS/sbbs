@@ -367,7 +367,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				fgets(str,sizeof(str),fp);
 				fgets(str,sizeof(str),fp);
 				truncsp(str);
-				SAFEPRINTF2(title,"%.*s",max_title_len,str);
+				safe_snprintf(title,max_title_len,"%s",str);
 				fclose(fp);
 			}
 		}
