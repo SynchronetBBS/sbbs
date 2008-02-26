@@ -848,6 +848,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL truncstr(char* str, const char* set);
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT BOOL		DLLCALL findstr(const char *insearch, const char *fname);
+	DLLEXPORT BOOL		DLLCALL findstr_in_string(const char* insearchof, char* string);
 	DLLEXPORT BOOL		DLLCALL findstr_in_list(const char* insearchof, str_list_t list);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, const char *insearch, const char *name);
 	DLLEXPORT char *	DLLCALL trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
