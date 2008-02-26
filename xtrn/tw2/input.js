@@ -138,6 +138,14 @@ InputFuncMainLoop:
 		}
 	}
 
+	/* Look for a default value */
+	if(pos==0) {
+		for(value in values) {
+			if(typeof(values[value])=='object' && values[value].def != undefined) {
+				matchval=values[value].def;
+			}
+		}
+	}
 	while(pos > 0) {
 		console.write('\x08');
 		pos--;
