@@ -544,6 +544,10 @@ function MoveTo(to)
 {
 	var sector=sectors.Get(player.Sector);
 
+	if(player.TurnsLeft < 1) {
+		console.writeln("I'm sorry but you don't have any turns left.");
+		return(false);
+	}
 	if(to > 0) {
 		for(i=0; i<sector.Warps.length; i++) {
 			if(sector.Warps[i]==to) {
