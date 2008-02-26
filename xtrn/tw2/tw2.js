@@ -89,6 +89,10 @@ function Menu()
 	/* 22000 */
 	while(1) {
 		console.crlf();
+		if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
+			console.attributes="HM";
+			console.writeln("You have " + player.TurnsLeft + " turns left.");
+		}
 		console.attributes="HC";
 		console.write("Command (?=Help)? ");
 		var valid=new Array('A','C','D','E','F','G','I','L','M','P','Q','T','Z','?');

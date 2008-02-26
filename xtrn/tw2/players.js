@@ -556,9 +556,6 @@ function MoveTo(to)
 				player.Sector=to;
 				player.Put();
 				location.Sector=player.Sector; location.Put();
-				if(player.TurnsLeft==10 || player.TurnsLeft < 6) {
-					console.writeln("You have " + player.TurnsLeft + " turns left.");
-				}
 				return(true);
 			}
 		}
