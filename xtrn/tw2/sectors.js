@@ -159,7 +159,39 @@ function DisplaySector(secnum)
 	var sector=sectors.Get(secnum);
 	var i;
 	var count=0;
+	var otherships=new Array();
+	
+	for(i=1;i<players.length;i++) {
+		var otherloc=playerLocation.Get(i);
 
+		if(otherloc.Sector==secnum) {
+			var otherplayer=players.Get(i);
+
+			if(otherplayer.UserNumber > 0 && otherplayer.Sector==secnum) {
+				if(otherplayer.Record==player.Record)
+					continue;
+				if(otherplayer.KilledBy!=0)
+					continue;
+
+				otherships.push(otherplayer);
+			}
+		}
+	}
+
+	if(user.settings&USER_ANSI) {
+		console.printfile(fname("main.ans"));
+		if(sector.Port > 0)
+			console.printfile(fname("port.ans"));
+		if(sector.Planet > 0)
+			console.printfile(fname("planet.ans"));
+		if(sector.Fighters > 0 && sector.FighterOwner != 0)
+			console.printfile(fname("fighters.ans"));
+		if(otherships.length > 0)
+			console.printfile(fname("ship.ans"));
+		console.printfile(fname("sector.ans"));
+		console.attributes="HM";
+		console.writeln(secnum);
+	}
 	console.crlf();
 	console.attributes="HY";
 	console.writeln("Sector "+secnum);
@@ -180,34 +212,21 @@ function DisplaySector(secnum)
 	console.attributes="HC";
 	console.writeln("Other Ships");
 	console.attributes="C";
-	for(i=1;i<players.length;i++) {
-		var otherloc=playerLocation.Get(i);
-
-		if(otherloc.Sector==secnum) {
-			var otherplayer=players.Get(i);
-
-			if(otherplayer.UserNumber > 0 && otherplayer.Sector==secnum) {
-				if(otherplayer.Record==player.Record)
-					continue;
-				if(otherplayer.KilledBy!=0)
-					continue;
-
-				count++;
-				console.crlf();
-				console.write("   "+otherplayer.Alias);
-				if(otherplayer.TeamNumber>0)
-					console.write("  Team ["+otherplayer.TeamNumber+"]");
-				console.write(" with "+otherplayer.Fighters+" fighters");
-				if(otherplayer.Landed)
-					console.write(" (on planet)");
-				else if(otherplayer.Ported)
-					console.write(" (docked)");
-				else if(otherplayer.Online)
-					console.write(" (online)");
-			}
-		}
+	for(i in otherships) {
+		var otherplayer=otherships[i];
+		console.crlf();
+		console.write("   "+otherplayer.Alias);
+		if(otherplayer.TeamNumber>0)
+			console.write("  Team ["+otherplayer.TeamNumber+"]");
+		console.write(" with "+otherplayer.Fighters+" fighters");
+		if(otherplayer.Landed)
+			console.write(" (on planet)");
+		else if(otherplayer.Ported)
+			console.write(" (docked)");
+		else if(otherplayer.Online)
+			console.write(" (online)");
 	}
-	if(count==0)
+	if(otherships.length==0)
 		console.write("   None");
 	console.crlf();
 	console.attributes="HG";
