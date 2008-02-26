@@ -159,8 +159,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		/* Blank line: */
 		fprintf(hdrs,"\n");
 	}
-	memset(str,' ',QWK_BLOCK_LEN);
-	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);		/* Init header to space */
+
+	fprintf(qwk_fp,"%*s",QWK_BLOCK_LEN,"");		/* Init header to space */
 
 	if(msg->from_net.addr && (uint)subnum==INVALID_SUB) {
 		if(mode&QM_TO_QNET)
