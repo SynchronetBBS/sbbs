@@ -78,7 +78,7 @@ void sbbs_t::printfile(char *str, long mode)
 	if(!(mode&P_NOCRLF) && !tos && !wip && !rip && !html)
 		CRLF;
 
-	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+	if((stream=fnopen(&file,str,O_RDONLY|O_DENYNONE))==NULL) {
 		lprintf(LOG_NOTICE,"Node %d !Error %d (%s) opening: %s"
 			,cfg.node_num,errno,strerror(errno),str);
 		bputs(text[FileNotFound]);
@@ -134,7 +134,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 	if(!tos) {
 		CRLF; 
 	}
-	if((file=nopen(str,O_RDONLY))==-1) {
+	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
 		lprintf(LOG_NOTICE,"Node %d !Error %d (%s) opening: %s"
 			,cfg.node_num,errno,strerror(errno),str);
 		bputs(text[FileNotFound]);
