@@ -3650,6 +3650,7 @@ static void sendmail_thread(void* arg)
 	mail_t*		mail;
 	int32_t		msgs;
 	long		l;
+	size_t		len;
 	BOOL		sending_locally=FALSE;
 
 	SetThreadName("SendMail Thread");
@@ -3943,77 +3944,75 @@ static void sendmail_thread(void* arg)
 			/* AUTH */
 			if(startup->options&MAIL_OPT_RELAY_TX 
 				&& (startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=0 && !sending_locally) {
-				switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
-					case MAIL_OPT_RELAY_AUTH_PLAIN:
-						p="PLAIN";
-						break;
-					case MAIL_OPT_RELAY_AUTH_LOGIN:
-						p="LOGIN";
-						break;
-					case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
-						p="CRAM-MD5";
-						break;
-					default:
-						p="<unknown>";
-						break;
-				}
-				sockprintf(sock,"AUTH %s",p);
-				if(!sockgetrsp(sock,"334",buf,sizeof(buf))) {
-					SAFEPRINTF3(err,badrsp_err,server,buf,"334 Username/Challenge");
-					bounce(&smb,&msg,err,buf[0]=='5');
-					continue;
-				}
-				switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
-					case MAIL_OPT_RELAY_AUTH_PLAIN:
-						p=startup->relay_user;
-						break;
-					case MAIL_OPT_RELAY_AUTH_LOGIN:
-						b64_encode(p=resp,sizeof(resp),startup->relay_user,0);
-						break;
-					case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
-						p=buf;
-						FIND_WHITESPACE(p);
-						SKIP_WHITESPACE(p);
-						b64_decode(challenge,sizeof(challenge),p,0);
 
-						/* Calculate response */
-						memset(secret,0,sizeof(secret));
-						SAFECOPY(secret,startup->relay_pass);
-						for(i=0;i<sizeof(secret);i++)
-							md5_data[i]=secret[i]^0x36;	/* ipad */
-						strcpy(md5_data+i,challenge);
-						MD5_calc(digest,md5_data,sizeof(secret)+strlen(challenge));
-						for(i=0;i<sizeof(secret);i++)
-							md5_data[i]=secret[i]^0x5c;	/* opad */
-						memcpy(md5_data+i,digest,sizeof(digest));
-						MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-						
-						safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex(str,digest));
-						b64_encode(p=resp,sizeof(resp),buf,0);
-						break;
-					default:
-						p="<unknown>";
-						break;
-				}
-				sockprintf(sock,"%s",p);
-				if((startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=MAIL_OPT_RELAY_AUTH_CRAM_MD5) {
+				if((startup->options&MAIL_OPT_RELAY_AUTH_MASK)==MAIL_OPT_RELAY_AUTH_PLAIN) {
+					len=safe_snprintf(buf,sizeof(buf),"%s\0%s\0%s",startup->relay_user,startup->relay_user,startup->relay_pass);
+					b64_encode(resp,sizeof(resp),buf,len);
+					sockprintf(sock,"AUTH PLAIN %s",resp);
+				} else {
+					switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
+						case MAIL_OPT_RELAY_AUTH_LOGIN:
+							p="LOGIN";
+							break;
+						case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
+							p="CRAM-MD5";
+							break;
+						default:
+							p="<unknown>";
+							break;
+					}
+					sockprintf(sock,"AUTH %s",p);
 					if(!sockgetrsp(sock,"334",buf,sizeof(buf))) {
-						SAFEPRINTF3(err,badrsp_err,server,buf,"334 Password");
+						SAFEPRINTF3(err,badrsp_err,server,buf,"334 Username/Challenge");
 						bounce(&smb,&msg,err,buf[0]=='5');
 						continue;
 					}
 					switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
-						case MAIL_OPT_RELAY_AUTH_PLAIN:
-							p=startup->relay_pass;
-							break;
 						case MAIL_OPT_RELAY_AUTH_LOGIN:
-							b64_encode(p=buf,sizeof(buf),startup->relay_pass,0);
+							b64_encode(p=resp,sizeof(resp),startup->relay_user,0);
+							break;
+						case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
+							p=buf;
+							FIND_WHITESPACE(p);
+							SKIP_WHITESPACE(p);
+							b64_decode(challenge,sizeof(challenge),p,0);
+
+							/* Calculate response */
+							memset(secret,0,sizeof(secret));
+							SAFECOPY(secret,startup->relay_pass);
+							for(i=0;i<sizeof(secret);i++)
+								md5_data[i]=secret[i]^0x36;	/* ipad */
+							strcpy(md5_data+i,challenge);
+							MD5_calc(digest,md5_data,sizeof(secret)+strlen(challenge));
+							for(i=0;i<sizeof(secret);i++)
+								md5_data[i]=secret[i]^0x5c;	/* opad */
+							memcpy(md5_data+i,digest,sizeof(digest));
+							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
+							
+							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex(str,digest));
+							b64_encode(p=resp,sizeof(resp),buf,0);
 							break;
 						default:
 							p="<unknown>";
 							break;
 					}
 					sockprintf(sock,"%s",p);
+					if((startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=MAIL_OPT_RELAY_AUTH_CRAM_MD5) {
+						if(!sockgetrsp(sock,"334",buf,sizeof(buf))) {
+							SAFEPRINTF3(err,badrsp_err,server,buf,"334 Password");
+							bounce(&smb,&msg,err,buf[0]=='5');
+							continue;
+						}
+						switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
+							case MAIL_OPT_RELAY_AUTH_LOGIN:
+								b64_encode(p=buf,sizeof(buf),startup->relay_pass,0);
+								break;
+							default:
+								p="<unknown>";
+								break;
+						}
+						sockprintf(sock,"%s",p);
+					}
 				}
 				if(!sockgetrsp(sock,"235",buf,sizeof(buf))) {
 					SAFEPRINTF3(err,badrsp_err,server,buf,"235");
