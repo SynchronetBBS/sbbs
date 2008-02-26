@@ -118,7 +118,6 @@ function Menu()
 				DisplaySector(player.Sector);
 				break;
 			case 'E':
-				/* TODO: 22800 */
 				if(user.level < 90)
 					break;
 				console.writeln("<TW Editor>");
