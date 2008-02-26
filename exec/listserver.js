@@ -137,14 +137,14 @@ if(this.recipient_list_filename!=undefined) {
 			for(var p in list)
 				log("list_array["+l+"]."+p+" = "+list[p]);
 **/
-			if(rcpt_list[r].Recipient.toLowerCase()==list.address.toLowerCase()
+			if(rcpt_list[r].To.toLowerCase()==list.address.toLowerCase()
 				&& !list.disabled
 				&& !list.readonly)
 				break;
 		}
 		if(l<list_array.length) {	/* match found */
 			log(LOG_INFO,format("ListServer: Contribution message from %s to %s: %s"
-				,header.from, rcpt_list[r].Recipient, header.subject));
+				,header.from, rcpt_list[r].To, header.subject));
 			handled=true;
 			if(!process_contribution(header, body, list))
 				break;
