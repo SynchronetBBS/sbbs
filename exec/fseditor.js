@@ -1827,20 +1827,24 @@ if(f.open("r",false)) {
 }
 if(line.length==0)
 	line.push(new Line());
-var drop_file_name = file_getcase(system.node_dir + "editor.inf");
-drop_file = new File(drop_file_name);
-if(drop_file.exists && drop_file.open("r")) {
-	info = drop_file.readAll();
-	drop_file.close();
-	while(drop_file_name = file_getcase(system.node_dir + "editor.inf") != undefined)
-		file_remove(drop_file_name);
-	subj=info[0];
-	to=info[1];
-	from=info[3];
-}
-else {
-	subj='';
-	to=input_filename;
+
+subj='';
+to=input_filename;
+var drop_file_name;
+var drop_file_time=-Infinity;
+while((drop_file_name = file_getcase(system.node_dir + "editor.inf"))!=undefined) {
+	if(file_date(drop_file_name)>=drop_file_time) {
+		drop_file = new File(drop_file_name);
+		if(drop_file.exists && drop_file.open("r")) {
+			drop_file_time=drop_file.date;
+			info = drop_file.readAll();
+			drop_file.close();
+			subj=info[0];
+			to=info[1];
+			from=info[3];
+		}
+	}
+	file_remove(drop_file_name);
 }
 if(subj=='') {
 	edit_top=3;
