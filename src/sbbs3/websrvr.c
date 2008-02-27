@@ -2251,6 +2251,27 @@ static BOOL parse_headers(http_session_t * session)
 							}
 							if(session->req.auth.digest_uri==NULL)
 								session->req.auth.digest_uri=strdup(session->req.request_line);
+							/* Validate that we have the required values... */
+							switch(session->req.auth.qop_value) {
+								case QOP_NONE:
+									if(session->req.auth.realm==NULL
+											|| session->req.auth.nonce==NULL
+											|| session->req.auth.digest_uri==NULL)
+										send_error(session,"400 Bad Request");
+									break;
+								case QOP_AUTH:
+								case QOP_AUTH_INT:
+									if(session->req.auth.realm==NULL
+											|| session->req.auth.nonce==NULL
+											|| session->req.auth.nonce_count==NULL
+											|| session->req.auth.cnonce==NULL
+											|| session->req.auth.digest_uri==NULL)
+										send_error(session,"400 Bad Request");
+									break;
+								default:
+									send_error(session,"400 Bad Request");
+									break;
+							}
 						}
 					}
 					break;
