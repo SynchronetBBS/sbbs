@@ -345,8 +345,8 @@ display_ansi(char ch)
 			for (x = 0; x < l; x++)
 				if (ansicode[x] == ';')
 					y = x;
-			CursY = strtol(copy(ansicode, 0, y?(y - 1):0), NULL, 0);
-			CursX = strtol(copy(ansicode, y?(y + 1):(strlen(ansicode)-1), strlen(ansicode) - 1), NULL, 0);
+			CursY = strtol(copy(ansicode, 0, y?(y - 1):0), NULL, 0)-1;
+			CursX = strtol(copy(ansicode, y?(y + 1):(strlen(ansicode)-1), strlen(ansicode) - 1), NULL, 0)-1;
 			break;
 		case 'C':
 			ans_rep = strtol(ansicode, NULL, 0) + 1;
@@ -581,6 +581,12 @@ LoadFile(char *Name)
 {
 	FILE           *fp;
 	int             ch;
+	int				PCB=TRUE;
+	int				ANSI=TRUE;
+	int				SYNC=TRUE;
+	int				AVATAR=TRUE;
+	char			*ext;
+
 	erasescreen();
 	fp = fopen(Name, "rb");
 	if(fp==NULL)
@@ -598,11 +604,44 @@ LoadFile(char *Name)
 			CursY++;
 		} while (!feof(fp));
 	} else
+		/* Check for "known" extensions */
+		ext=getfext(Name);
+		if(ext) {
+			if(stricmp(ext,".asc")) {
+				PCB=FALSE;
+				ANSI=FALSE;
+				AVATAR=FALSE;
+			}
+			else if(stricmp(ext,".ans")) {
+				PCB=FALSE;
+				AVATAR=FALSE;
+				SYNC=FALSE;
+			}
+			else if(stricmp(ext,".avt")) {
+				PCB=FALSE;
+				ANSI=FALSE;
+				SYNC=FALSE;
+			}
+			else if(stricmp(ext,".pcb")) {
+				ANSI=FALSE;
+				AVATAR=FALSE;
+				SYNC=FALSE;
+			}
+		}
+	
 		do {
 			ch=fgetc(fp);
 			if (ch == 26 && !avt_command && !avt_rep)
 				break;
 			do {
+				if(AVATAR)
+					ch=display_avatar(ch);
+				if(SYNC)
+					ch=display_sync(ch);
+				if(ANSI)
+					ch=display_ansi(ch);
+				if(PCB)
+					ch=display_PCBoard(ch);
 				ch = display_PCBoard(display_ansi(display_sync(display_avatar(ch))));
 				if (ch > 0) {
 					if (CursX > 79) {
