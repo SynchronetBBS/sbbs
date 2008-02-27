@@ -2755,42 +2755,59 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if((auth_login=(stricmp(buf,"AUTH LOGIN")==0))==TRUE 
-			|| stricmp(buf,"AUTH PLAIN")==0) {
-			if(auth_login)
-				sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
-			else
-				sockprintf(socket,"334 Username:");
-			if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
-				sockprintf(socket,badarg_rsp);
-				continue;
-			}
-			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-				lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
+			|| strnicmp(buf,"AUTH PLAIN",10)==0) {
 			if(auth_login) {
+				sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
+				if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
+					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
 				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
 					sockprintf(socket,badarg_rsp);
 					continue;
 				}
-			} else
-				SAFECOPY(user_name,buf);
-
-			if(auth_login)
 				sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
-			else
-				sockprintf(socket,"334 Password:");
-			if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
-				sockprintf(socket,badarg_rsp);
-				continue;
-			}
-			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-				lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
-			if(auth_login) {
+				if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
+					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
 				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
 					sockprintf(socket,badarg_rsp);
 					continue;
 				}
-			} else
-				SAFECOPY(user_pass,buf);
+			} else {	/* AUTH PLAIN b64(<username>\0<user-id>\0<password>) */
+				p=buf+10;
+				SKIP_WHITESPACE(p);
+				if(*p==0) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				ZERO_VAR(tmp);
+				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				p=tmp;
+				while(*p) p++;	/* skip username */
+				p++;			/* skip NULL */
+				if(*p==0) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				SAFECOPY(user_name,p);
+				while(*p) p++;	/* skip user-id */
+				p++;			/* skip NULL */
+				if(*p==0) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+				SAFECOPY(user_pass,p);
+			}
+
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s (password: %s)"
