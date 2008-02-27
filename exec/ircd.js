@@ -206,11 +206,10 @@ while (!server.terminated) {
 				+ open_plines[pl].local_port);
 			var client_sock=open_plines[pl].accept();
 			if(client_sock) {
-				if (!client_sock.remote_ip_address)
+				if (!client_sock.remote_ip_address) {
 					log(LOG_DEBUG,"Socket has no IP address.  Closing.");
 					client_sock.close();
-				}
-				if (iszlined(client_sock.remote_ip_address)) {
+				} else if (iszlined(client_sock.remote_ip_address)) {
 					client_sock.send(":" + servername
 						+ " 465 * :You've been Z:Lined from this server.\r\n");
 					client_sock.close();
