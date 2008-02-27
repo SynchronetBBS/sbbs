@@ -1404,6 +1404,7 @@ static void calculate_digest(http_session_t * session, char *ha1, char *ha2, uns
 	MD5_open(&ctx);
 	MD5_digest(&ctx, ha1, strlen(ha1));
 	MD5_digest(&ctx, ":", 1);
+	/* exception on next line (session->req.auth.nonce==NULL) */
 	MD5_digest(&ctx, session->req.auth.nonce, strlen(session->req.auth.nonce));
 	MD5_digest(&ctx, ":", 1);
 
