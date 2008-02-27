@@ -3947,9 +3947,12 @@ static void sendmail_thread(void* arg)
 
 				if((startup->options&MAIL_OPT_RELAY_AUTH_MASK)==MAIL_OPT_RELAY_AUTH_PLAIN) {
 					/* Build the buffer: <username>\0<user-id>\0<password */
-					len=safe_snprintf(buf,sizeof(buf),"%s",startup->relay_user)+1;
-					len+=safe_snprintf(buf+len,sizeof(buf)-1,startup->relay_user)+1;
-					len+=safe_snprintf(buf+len,sizeof(buf)-1,startup->relay_pass);
+					len=safe_snprintf(buf,sizeof(buf),"%s%c%s%c%s"
+						,startup->relay_user
+						,0
+						,startup->relay_user
+						,0
+						,startup->relay_pass);
 					b64_encode(resp,sizeof(resp),buf,len);
 					sockprintf(sock,"AUTH PLAIN %s",resp);
 				} else {
