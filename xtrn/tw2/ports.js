@@ -79,6 +79,9 @@ function DockAtPort()
 	player.Put();
 }
 
+/*
+ * Sol has not persistant data so locking isn't needed
+ */
 function DockAtSol()
 {
 	/* 33200 */
@@ -160,7 +163,7 @@ function DockAtRegularPort()
 			var amount=Transact(i, sale[i].Price, sale[i].Vary, sale[i].Number);
 			if(amount >= 0) {
 				count++;
-				port.Commodities[i] += amount;
+				port.Commodities[i] -= amount;
 				port.Put();
 			}
 		}
