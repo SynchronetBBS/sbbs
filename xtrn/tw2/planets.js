@@ -36,8 +36,8 @@ var PlanetProperties = [
 				,def:0
 			}
 			,{
-				 prop:"OccupiedBy"
-				,name:"Occupied By"
+				 prop:"OccupiedCount"
+				,name:"Players on planet"
 				,type:"Integer"
 				,def:0
 			}
@@ -60,16 +60,11 @@ function LandOnPlanet()
 		/* 32310 */
 		/* Lock the planet file and ensure we can land... */
 		if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
-			console.writeln("The spaceport is busy.  Try again later.");
+			console.writeln("!! Unable to lock planets file");
 			return;
 		}
 		planet=planets.Get(sector.Planet);
-		if(planet.OccupiedBy != 0) {
-			console.writeln("The spaceport is busy.  Try again later.");
-			Unlock(planets.file.name);
-			return;
-		}
-		planet.OccupiedBy=player.Record;
+		planet.OccupiedCount++;
 		planet.Put();
 		Unlock(planets.file.name);
 		player.Landed=true;
@@ -82,7 +77,7 @@ function LandOnPlanet()
 
 		if(!Lock(planets.file.name, bbs.node_num, true, 10))
 			twmsg.writeln("!!! Error locking planets file!");
-		planet.OccupiedBy=0;
+		planet.OccupiedCount--;
 		planet.Put();
 		Unlock(planets.file.name);
 		player.Landed=false;
@@ -94,12 +89,22 @@ function NextAvailablePlanet()
 {
 	var i;
 	var planet;
+	if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
+		console.writeln("!! Unable to lock planets file");
+		return(null);
+	}
 	for(i=1; i<planets.length; i++) {
 		planet=planets.Get(i);
 		if(!planet.Created)
 			break;
 		planet=null;
 	}
+	if(planet != null) {
+		planet.Created=true;
+		planet.Sector=0;
+		planet.Put();
+	}
+	Unlock(planets.file.name);
 	return(planet);
 }
 
@@ -126,8 +131,11 @@ function CreatePlanet(sector)
 		planet.Name='';
 		console.write("What do you want to name this planet? (41 chars. max)? ");
 		planet.Name=console.getstr(41);
-		if(planet.Name=='')
+		if(planet.Name=='') {
+			planet.Created=false;
+			planet.Put();
 			return(false);
+		}
 		for(i=0; i<Commodities.length; i++) {
 			planet.Commodities[i]=1;
 			planet.Production[i]=1;
@@ -137,6 +145,7 @@ function CreatePlanet(sector)
 		planet.Sector=sector.Record;
 		sector.Planet=planet.Record;
 		planet.LastUpdated=time();
+		planet.Created=true;
 		planet.Put();
 		sector.Put();
 		twmsg.writeln("  -  "+player.Alias+" made a planet: "+planet.Name);
@@ -227,17 +236,28 @@ function DestroyPlanet(planet)
 	console.attributes="Y";
 	console.write("Are you sure (Y/N)[N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
+		if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
+			console.writeln("!UNABLE TO LOCK planet.dat!");
+			return(false);
+		}
+		planet.ReLoad();
+		if(planet.OccupiedCount > 1) {
+			console.writeln("Another player prevents destroying the planet.");
+			Unlock(planets.file.name);
+			return(false);
+		}
 		planet.Created=false;
 		var sector=sectors.Get(planet.Sector);
 		sector.Planet=0;
 		planet.Sector=0;
 		planet.Put();
 		sector.Put();
+		Unlock(planets.file.name);
 		twmsg.writeln("  -  " + player.Alias + " destroyed the planet in sector " + sector.Record);
 		console.writeln("Planet destroyed.");
 		return(true);
 	}
-	return(flase);
+	return(false);
 }
 
 function PlanetTakeAll(planet, freeholds)
@@ -246,6 +266,14 @@ function PlanetTakeAll(planet, freeholds)
 		console.writeln("You don't have any free holds.");
 		return(freeholds);
 	}
+	/*
+	 * Re-read the planet struct 
+	 */
+	if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
+		console.writeln("!UNABLE TO LOCK planet.dat!");
+		return(freeholds);
+	}
+	planet.ReLoad();
 	for(i=Commodities.length-1; i>=0; i--) {
 		var take=parseInt(planet.Commodities[i]);
 		if(take > freeholds)
@@ -261,8 +289,9 @@ function PlanetTakeAll(planet, freeholds)
 			break;
 		}
 	}
-	player.Put();
+	Unlock(planets.file.name);
 	planet.Put();
+	player.Put();
 	return(freeholds);
 }
 
@@ -297,10 +326,18 @@ function PlanetIncreaseProd(planet)
 		console.write(Commodities[keynum].name+": Increase by how many units? ");
 		var incr=InputFunc([{min:0,max:max}]);
 		if(incr > 0 && incr <= max) {
+			if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
+				console.writeln("!UNABLE TO LOCK planet.dat!");
+				return(freeholds);
+			}
+			if(planet.Production[keynum]+incr > 20)
+				incr=20-planet.Production[keynum])
 			player.Credits -= incr*Commodities[keynum].price*20;
 			planet.Production[keynum]+=incr;
 			planet.Put();
+			Unlock(planets.file.name);
 			player.Put();
+			console.writeln("Production of "+Commodities[keynum].name+" increased by "+incr+" for "+incr*Commodities[keynum].price*20+" credits.");
 		}
 	}
 }
@@ -314,18 +351,32 @@ function PlanetTakeCommodity(planet, commodity, freeholds)
 	console.writeln("<Take "+Commodities[commodity].name.toLowerCase()+">");
 	console.write("How much [" + max + "]? ");
 	var take=InputFunc([{min:0,max:max}]);
+	/*
+	 * Re-read the planet struct 
+	 */
+	if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
+		console.writeln("!UNABLE TO LOCK planet.dat!");
+		return(freeholds);
+	}
+	planet.ReLoad();
+	max=freeholds;
+	if(max > parseInt(planet.Commodities[commodity]))
+		max=parseInt(planet.Commodities[commodity]);
 	if(take > max) {
 		console.writeln("They don't have that many.");
+		Unlock(planets.file.name);
 		return(freeholds);
 	}
 	if(take > freeholds) {
 		console.writeln("You don't have enough free cargo holds.");
+		Unlock(planets.file.name);
 		return(freeholds);
 	}
 	planet.Commodities[commodity]-=take;
+	planet.Put();
+	Unlock(planets.file.name);
 	player.Commodities[commodity]+=take;
 	freeholds -= take;
-	planet.Put();
 	player.Put();
 	return(freeholds);
 }

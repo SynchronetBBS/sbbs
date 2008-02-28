@@ -212,9 +212,12 @@ function do_exit()
 		if(player.Landed) {
 			console.writeln("Launching from planet...");
 			player.Landed=false;
+			if(!Lock(planets.file.name, bbs.node_num, true, 5))
+				console.writeln("!UNABLE TO LOCK planet.dat!");
 			var planet=planets.Get(sector.Planet);
-			planet.OccupiedBy=0;
+			planet.OccupiedCount--;
 			planet.Put();
+			Unlock(planets.file.name);
 		}
 	}
 	player.TimeUsed += time()-on_at;
