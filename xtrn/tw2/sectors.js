@@ -281,6 +281,7 @@ function ShortestPath(start, end)
 			if(univ[univ[pos].Warps[i]]==undefined) {
 				univ[univ[pos].Warps[i]]=sectors.Get(univ[pos].Warps[i]);
 				univ[univ[pos].Warps[i]].hops=hops;
+				univ[univ[pos].Warps[i]].from=pos;
 				if(univ[pos].Warps[i]==end)
 					return(true);
 			}
@@ -304,17 +305,9 @@ function ShortestPath(start, end)
 	}
 	ret.push(end);
 	for(i=end;i!=start;) {
-		var lasthop=i;
-		for(j=0; j<univ[i].Warps.length; j++) {
-			if(univ[univ[i].Warps[j]]!=undefined && univ[univ[i].Warps[j]].hops<univ[i].hops) {
-				i=univ[i].Warps[j];
-				if(i!=start)
-					ret.unshift(i);
-				break;
-			}
-		}
-		if(i==lasthop)
-			return(null);
+		i=univ[i].from;
+		if(i!=start)
+			ret.unshift(i);
 	}
 	return(ret);
 }

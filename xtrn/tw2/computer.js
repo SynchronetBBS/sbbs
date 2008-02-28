@@ -65,6 +65,8 @@ function ComputerMenu()
 								console.write(" - ");
 							console.write(path[i]);
 						}
+						console.crlf();
+						console.crlf();
 					}
 				}
 				break;
