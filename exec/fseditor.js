@@ -1809,6 +1809,22 @@ if(input_filename==undefined) {
 	if(argc==1 && input_filename==undefined)
 		input_filename=argv[0];
 }
+else {
+	var all_files=directory(system.node_dir+"*");
+	var newest_filedate=-Infinity;
+	var newest_filename;
+	for(var file in all_files) {
+		if(all_files[file].search(/quotes.txt$/i)!=-1) {
+			var this_date=file_date(all_files[file]);
+			if(this_date > newest_filedate) {
+				newest_filename=all_files[file];
+				newest_filedate=this_date;
+			}
+		}
+	}
+	if(newest_filename != undefined)
+		input_filename=newest_filename;
+}
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 var oldpass=console.ctrlkey_passthru;
