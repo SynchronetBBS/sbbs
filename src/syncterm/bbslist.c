@@ -621,31 +621,31 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 #endif
 	}
 	section=iniGetSection(listfile,bbsname);
-	iniGetString(section,bbsname,"Address","",entry->addr);
-	entry->conn_type=iniGetEnum(section,bbsname,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
-	entry->port=iniGetShortInt(section,bbsname,"Port",conn_ports[entry->conn_type]);
-	entry->added=iniGetDateTime(section,bbsname,"Added",0);
-	entry->connected=iniGetDateTime(section,bbsname,"LastConnected",0);
-	entry->calls=iniGetInteger(section,bbsname,"TotalCalls",0);
-	iniGetString(section,bbsname,"UserName","",entry->user);
-	iniGetString(section,bbsname,"Password","",entry->password);
-	iniGetString(section,bbsname,"SystemPassword","",entry->syspass);
-	if(iniGetBool(section,bbsname,"BeDumb",FALSE))	/* Legacy */
+	iniGetString(section,NULL,"Address","",entry->addr);
+	entry->conn_type=iniGetEnum(section,NULL,"ConnectionType",conn_types,CONN_TYPE_RLOGIN);
+	entry->port=iniGetShortInt(section,NULL,"Port",conn_ports[entry->conn_type]);
+	entry->added=iniGetDateTime(section,NULL,"Added",0);
+	entry->connected=iniGetDateTime(section,NULL,"LastConnected",0);
+	entry->calls=iniGetInteger(section,NULL,"TotalCalls",0);
+	iniGetString(section,NULL,"UserName","",entry->user);
+	iniGetString(section,NULL,"Password","",entry->password);
+	iniGetString(section,NULL,"SystemPassword","",entry->syspass);
+	if(iniGetBool(section,NULL,"BeDumb",FALSE))	/* Legacy */
 		entry->conn_type=CONN_TYPE_RAW;
-	entry->screen_mode=iniGetEnum(section,bbsname,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
-	entry->nostatus=iniGetBool(section,bbsname,"NoStatus",FALSE);
-	iniGetString(section,bbsname,"DownloadPath",home,entry->dldir);
-	iniGetString(section,bbsname,"UploadPath",home,entry->uldir);
+	entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes,SCREEN_MODE_CURRENT);
+	entry->nostatus=iniGetBool(section,NULL,"NoStatus",FALSE);
+	iniGetString(section,NULL,"DownloadPath",home,entry->dldir);
+	iniGetString(section,NULL,"UploadPath",home,entry->uldir);
 
 	/* Log Stuff */
-	iniGetString(section,bbsname,"LogFile","",entry->logfile);
-	entry->append_logfile=iniGetBool(section,bbsname,"AppendLogFile",TRUE);
-	entry->xfer_loglevel=iniGetEnum(section,bbsname,"TransferLogLevel",log_levels,LOG_INFO);
-	entry->telnet_loglevel=iniGetEnum(section,bbsname,"TelnetLogLevel",log_levels,LOG_INFO);
+	iniGetString(section,NULL,"LogFile","",entry->logfile);
+	entry->append_logfile=iniGetBool(section,NULL,"AppendLogFile",TRUE);
+	entry->xfer_loglevel=iniGetEnum(section,NULL,"TransferLogLevel",log_levels,LOG_INFO);
+	entry->telnet_loglevel=iniGetEnum(section,NULL,"TelnetLogLevel",log_levels,LOG_INFO);
 
-	entry->bpsrate=iniGetInteger(section,bbsname,"BPSRate",0);
-	entry->music=iniGetInteger(section,bbsname,"ANSIMusic",CTERM_MUSIC_BANSI);
-	iniGetString(section,bbsname,"Font","Codepage 437 English",entry->font);
+	entry->bpsrate=iniGetInteger(section,NULL,"BPSRate",0);
+	entry->music=iniGetInteger(section,NULL,"ANSIMusic",CTERM_MUSIC_BANSI);
+	iniGetString(section,NULL,"Font","Codepage 437 English",entry->font);
 	entry->type=type;
 	entry->id=id;
 
