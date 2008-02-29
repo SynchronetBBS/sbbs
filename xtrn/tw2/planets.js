@@ -331,7 +331,7 @@ function PlanetIncreaseProd(planet)
 				return(freeholds);
 			}
 			if(planet.Production[keynum]+incr > 20)
-				incr=20-planet.Production[keynum])
+				incr=20-planet.Production[keynum];
 			player.Credits -= incr*Commodities[keynum].price*20;
 			planet.Production[keynum]+=incr;
 			planet.Put();
