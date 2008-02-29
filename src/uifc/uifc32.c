@@ -1218,12 +1218,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						y=top+tbrdrwidth;
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+tbrdrwidth);
 						textattr(lclr|(bclr<<4));
-						if(*cur && opts>height-tbrdrwidth)  /* Scroll mode */
+						if(*cur)  /* Scroll mode */
 							putch(30);	   /* put the up arrow */
 						else
 							putch(' ');    /* delete the up arrow */
 						gotoxy(s_left+left+lbrdrwidth,s_top+top+height-bbrdrwidth-1);
-						if(opts > height-tbrdrwidth && *cur + height - vbrdrsize < opts)
+						if(opts >= height-tbrdrwidth && *cur + height - vbrdrsize < opts)
 							putch(31);	   /* put the down arrow */
 						else
 							putch(' ');    /* delete the down arrow */
