@@ -386,14 +386,11 @@ function InitializeCabal()
 	var sector=sectors.Get(85);
 
 	uifc.pop("Initializing the Cabal");
-uifc.msg("Cabal file len: "+cabals.length);
-uifc.msg("Cabal len: "+cabals.RecordLength);
 	sector_map[85].Fighters=3000;
 	sector_map[85].FightersOwner=-1;
 	cabals.New().Put();
 	for(i=1; i<10; i++) {
 		var grp=cabals.New();
-uifc.msg("New group: "+grp.Record);
 		if(i==1) {
 			grp.Size=3000;
 			grp.Sector=85;
