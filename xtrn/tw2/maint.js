@@ -300,7 +300,7 @@ function MoveCabal()
 			var next;
 			while(path.length > 0 && hgroup.Size > 0) {
 				var next=path.shift();
-				MoveCabalGroup(agroup,next);
+				MoveCabalGroup(hgroup,next);
 			}
 		}
 	}
