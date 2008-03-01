@@ -1,5 +1,5 @@
 var startup_path='.';
-try { throw new Error() } catch(e) { startup_path=e.fileName }
+try { throw barfitty.bar.barf() } catch(e) { startup_path=e.fileName }
 startup_path=startup_path.replace(/\/[^\/]*$/,'');
 startup_path=backslash(startup_path);
 
