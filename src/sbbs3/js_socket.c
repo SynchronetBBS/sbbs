@@ -49,6 +49,8 @@ typedef struct
 	BOOL	network_byte_order;
 	int		last_error;
 	int		type;
+	SOCKADDR_IN	local_addr;
+	SOCKADDR_IN	remote_addr;
 
 } private_t;
 
@@ -173,7 +175,6 @@ static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	ulong		ip=0;
-	SOCKADDR_IN	addr;
 	private_t*	p;
 	ushort		port=0;
 
@@ -182,17 +183,17 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 	
-	memset(&addr,0,sizeof(addr));
-	addr.sin_family = AF_INET;
+	memset(&(p->local_addr),0,sizeof(p->local_addr));
+	p->local_addr.sin_family = AF_INET;
 
 	if(argc)
 		port = js_port(cx,argv[0],p->type);
-	addr.sin_port = htons(port);
+	p->local_addr.sin_port = htons(port);
 	if(argc>1 
 		&& (ip=inet_addr(JS_GetStringBytes(JS_ValueToString(cx,argv[1]))))!=INADDR_NONE)
-		addr.sin_addr.s_addr = ip;
+		p->local_addr.sin_addr.s_addr = ip;
 
-	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
+	if(bind(p->sock, (struct sockaddr *) &(p->local_addr), sizeof(p->local_addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
 		*rval = JSVAL_FALSE;
@@ -237,13 +238,16 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	new_p;
 	JSObject*	sockobj;
 	SOCKET		new_socket;
+	socklen_t	addrlen;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
-	if((new_socket=accept_socket(p->sock,NULL,NULL))==INVALID_SOCKET) {
+	addrlen=sizeof(p->remote_addr);
+
+	if((new_socket=accept_socket(p->sock,(struct sockaddr *)&(p->remote_addr),&addrlen))==INVALID_SOCKET) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 		return(JS_TRUE);
@@ -279,7 +283,6 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	ushort		port;
 	JSString*	str;
 	private_t*	p;
-	SOCKADDR_IN	addr;
 	fd_set		socket_set;
 	struct		timeval tv = {0, 0};
 	
@@ -306,16 +309,16 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
-	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.s_addr = ip_addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(port);
+	memset(&(p->remote_addr),0,sizeof(p->remote_addr));
+	p->remote_addr.sin_addr.s_addr = ip_addr;
+	p->remote_addr.sin_family = AF_INET;
+	p->remote_addr.sin_port   = htons(port);
 
 	/* always set to nonblocking here */
 	val=1;
 	ioctlsocket(p->sock,FIONBIO,&val);	
 
-	result=connect(p->sock, (struct sockaddr *)&addr, sizeof(addr));
+	result=connect(p->sock, (struct sockaddr *)&(p->remote_addr), sizeof(p->remote_addr));
 	
 	if(result==SOCKET_ERROR
 		&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
@@ -1161,42 +1164,34 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->nonblocking);
 			break;
 		case SOCK_PROP_LOCAL_IP:
-			addr_len = sizeof(addr);
-			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
-				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_VOID;
-			} else {
-				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)))==NULL)
+			if(p->sock != INVALID_SOCKET) {
+				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(p->local_addr.sin_addr)))==NULL)
 					return(JS_FALSE);
 				*vp = STRING_TO_JSVAL(js_str);
 			}
+			else
+				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_LOCAL_PORT:
-			addr_len = sizeof(addr);
-			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
-				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_ZERO;
-			} else
-				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
+			if(p->sock != INVALID_SOCKET)
+				*vp = INT_TO_JSVAL(ntohs(p->local_addr.sin_port));
+			else
+				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_REMOTE_IP:
-			addr_len = sizeof(addr);
-			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
-				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_VOID;
-			} else {
-				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)))==NULL)
+			if(p->is_connected) {
+				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(p->remote_addr.sin_addr)))==NULL)
 					return(JS_FALSE);
 				*vp = STRING_TO_JSVAL(js_str);
 			}
+			else
+				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_REMOTE_PORT:
-			addr_len = sizeof(addr);
-			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
-				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_ZERO;
-			} else
-				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
+			if(p->is_connected)
+				*vp = INT_TO_JSVAL(ntohs(p->remote_addr.sin_port));
+			else
+				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_TYPE:
 			*vp = INT_TO_JSVAL(p->type);
