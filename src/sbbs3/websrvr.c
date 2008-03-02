@@ -1684,16 +1684,13 @@ static BOOL check_ars(http_session_t * session)
 	return(FALSE);
 }
 
-static named_string_t** read_ini_list(char* fname, char* section, char* desc
+static named_string_t** read_ini_list(char* path, char* section, char* desc
 									  ,named_string_t** list)
 {
-	char	path[MAX_PATH+1];
 	size_t	i;
 	FILE*	fp;
 
 	list=iniFreeNamedStringList(list);
-
-	iniFileName(path,sizeof(path),scfg.ctrl_dir,fname);
 
 	if((fp=iniOpenFile(path, /* create? */FALSE))!=NULL) {
 		list=iniReadNamedStringList(fp,section);
@@ -5214,6 +5211,8 @@ void DLLCALL web_server(void* arg)
 	char			host_ip[32];
 	char			path[MAX_PATH+1];
 	char			logstr[256];
+	char			mime_types_ini[MAX_PATH+1];
+	char			web_handler_ini[MAX_PATH+1];
 	SOCKADDR_IN		server_addr={0};
 	SOCKADDR_IN		client_addr;
 	socklen_t		client_addr_len;
@@ -5361,11 +5360,13 @@ void DLLCALL web_server(void* arg)
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
 
-		mime_types=read_ini_list("mime_types.ini",NULL /* root section */,"MIME types"
+		iniFileName(mime_types_ini,sizeof(mime_types_ini),scfg.ctrl_dir,"mime_types.ini");
+		mime_types=read_ini_list(mime_types_ini,NULL /* root section */,"MIME types"
 			,mime_types);
-		cgi_handlers=read_ini_list("web_handler.ini","CGI","CGI content handlers"
+		iniFileName(web_handler_ini,sizeof(web_handler_ini),scfg.ctrl_dir,"web_handler.ini");
+		cgi_handlers=read_ini_list(web_handler_ini,"CGI","CGI content handlers"
 			,cgi_handlers);
-		xjs_handlers=read_ini_list("web_handler.ini","JavaScript","JavaScript content handlers"
+		xjs_handlers=read_ini_list(web_handler_ini,"JavaScript","JavaScript content handlers"
 			,xjs_handlers);
 
 		/* Don't do this for *each* CGI request, just once here during [re]init */
@@ -5471,6 +5472,8 @@ void DLLCALL web_server(void* arg)
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","web");
 		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
+		semfile_list_add(&recycle_semfiles,mime_types_ini);
+		semfile_list_add(&recycle_semfiles,web_handler_ini);
 		if(!initialized) {
 			initialized=time(NULL);
 			semfile_list_check(&initialized,recycle_semfiles);
