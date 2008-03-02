@@ -707,7 +707,7 @@ static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_
 			msg->from=(char*)hfield_dat;
 			break; 
 		case SENDER:
-			if(!msg->from) {
+			if(msg->from==NULL || *(msg->from)==0) {
 				msg->from=(char*)hfield_dat;
 				break; 
 			}
