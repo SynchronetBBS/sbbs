@@ -77,6 +77,8 @@ if(!LoadPlayer())
 
 var exit_tw2=false;
 
+console.pause();
+
 while(player.KilledBy==0 && exit_tw2==false) {
 	if(EnterSector()) {
 		if(CheckSector())
