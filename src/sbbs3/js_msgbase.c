@@ -696,7 +696,6 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	char			msg_id[256];
 	char			reply_id[256];
 	char*			val;
-	ushort*			port;
 	int				i;
 	smbmsg_t		remsg;
 	JSObject*		array;
@@ -743,7 +742,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	LAZY_STRING_COND("from_ip_addr", (val=smb_get_hfield(&(p->msg),SENDERIPADDR,NULL))!=NULL, val);
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val);
 	LAZY_STRING_COND("from_protocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val);
-	LAZY_STRING_COND("from_port", (port=smb_get_hfield(&(p->msg),SENDERPORT,NULL))!=NULL, val);
+	LAZY_STRING_COND("from_port", (val=smb_get_hfield(&(p->msg),SENDERPORT,NULL))!=NULL, val);
 	LAZY_INTEGER_EXPAND("forwarded", p->msg.forwarded);
 	LAZY_INTEGER_EXPAND("expiration", p->msg.expiration);
 	LAZY_INTEGER_EXPAND("priority", p->msg.priority);
