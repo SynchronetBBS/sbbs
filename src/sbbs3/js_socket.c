@@ -1114,8 +1114,6 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	BOOL		rd;
 	BOOL		wr;
 	private_t*	p;
-	socklen_t	addr_len;
-	SOCKADDR_IN	addr;
 	JSString*	js_str;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -1179,7 +1177,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_REMOTE_IP:
-			if(p->is_connected) {
+			if(p->is_connected || p->external) {
 				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(p->remote_addr.sin_addr)))==NULL)
 					return(JS_FALSE);
 				*vp = STRING_TO_JSVAL(js_str);
@@ -1188,7 +1186,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				*vp=JSVAL_VOID;
 			break;
 		case SOCK_PROP_REMOTE_PORT:
-			if(p->is_connected)
+			if(p->is_connected || p->external)
 				*vp = INT_TO_JSVAL(ntohs(p->remote_addr.sin_port));
 			else
 				*vp=JSVAL_VOID;
@@ -1466,6 +1464,12 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	p->sock = sock;
 	p->external = TRUE;
 	p->network_byte_order = TRUE;
+
+	len=sizeof(p->local_addr);
+	getsockname(p->sock, (struct sockaddr *)&p->local_addr,&len);
+
+	len=sizeof(p->remote_addr);
+	getpeername(p->sock, (struct sockaddr *)&p->remote_addr,&len);
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
