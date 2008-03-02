@@ -106,6 +106,7 @@ struct mailproc {
 	str_list_t	to;
 	BOOL		passthru;
 	BOOL		native;
+	BOOL		disabled;
 } *mailproc_list;
 
 typedef struct {
@@ -2315,6 +2316,9 @@ static void smtp_thread(void* arg)
 
 					for(i=0;i<mailproc_count;i++) {
 
+						if(mailproc_list[i].disabled)
+							continue;
+
 						/* This processor is for specific recipients only and did not match */
 						if(strListCount(mailproc_list[i].to) && !mailproc_match[i])
 							continue;
@@ -2978,6 +2982,8 @@ static void smtp_thread(void* arg)
 			}
 			rcpt_count=0;
 
+			memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
+
 			sockprintf(socket,ok_rsp);
 			badcmds=0;
 			lprintf(LOG_INFO,"%04d SMTP Session reset",socket);
@@ -3241,6 +3247,8 @@ static void smtp_thread(void* arg)
 
 			memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
 			for(i=0;i<mailproc_count;i++) {
+				if(mailproc_list[i].disabled)
+					continue;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
 						if(stricmp(p,mailproc_list[i].to[j])==0) {
@@ -4219,6 +4227,7 @@ void DLLCALL mail_server(void* arg)
 {
 	char*			p;
 	char			path[MAX_PATH+1];
+	char			mailproc_ini[MAX_PATH+1];
 	char			str[256];
 	char			error[256];
 	char			compiler[32];
@@ -4349,9 +4358,9 @@ void DLLCALL mail_server(void* arg)
 		/* Parse the mailproc[.host].ini */
 		mailproc_list=NULL;
 		mailproc_count=0;
-		iniFileName(path,sizeof(path),scfg.ctrl_dir,"mailproc.ini");
-		if((fp=iniOpenFile(path, /* create? */FALSE))!=NULL) {
-			lprintf(LOG_DEBUG,"Reading %s",path);
+		iniFileName(mailproc_ini,sizeof(mailproc_ini),scfg.ctrl_dir,"mailproc.ini");
+		if((fp=iniOpenFile(mailproc_ini, /* create? */FALSE))!=NULL) {
+			lprintf(LOG_DEBUG,"Reading %s",mailproc_ini);
 			sec_list = iniReadSectionList(fp,/* prefix */NULL);
 			if((mailproc_count=strListCount(sec_list))!=0
 				&& (mailproc_list=malloc(mailproc_count*sizeof(struct mailproc)))!=NULL) {
@@ -4364,6 +4373,8 @@ void DLLCALL mail_server(void* arg)
 						iniReadBool(fp,sec_list[i],"passthru",TRUE);
 					mailproc_list[i].native =
 						iniReadBool(fp,sec_list[i],"native",FALSE);
+					mailproc_list[i].disabled = 
+						iniReadBool(fp,sec_list[i],"disabled",FALSE);
 				}
 			}
 			iniFreeStringList(sec_list);
@@ -4556,6 +4567,7 @@ void DLLCALL mail_server(void* arg)
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","mail");
 		SAFEPRINTF(path,"%smailsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
+		semfile_list_add(&recycle_semfiles,mailproc_ini);
 		if(!initialized) {
 			semfile_list_check(&initialized,recycle_semfiles);
 			semfile_list_check(&initialized,shutdown_semfiles);
