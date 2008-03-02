@@ -4614,6 +4614,8 @@ NO_SSH:
 	recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","telnet");
 	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
 	semfile_list_add(&recycle_semfiles,str);
+	SAFEPRINTF(str,"%stext.dat",scfg.ctrl_dir);
+	semfile_list_add(&recycle_semfiles,str);
 	if(!initialized)
 		semfile_list_check(&initialized,shutdown_semfiles);
 	semfile_list_check(&initialized,recycle_semfiles);
