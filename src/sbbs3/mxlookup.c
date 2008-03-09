@@ -342,7 +342,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 		answers=ntohs(msghdr.ancount);
 		p=msg+len;	/* Skip the header and question portion */
 
-		for(i=0;i<answers;i++) {
+		for(i=0;i<answers && p<msg+sizeof(msg);i++) {
 			namelen=0;
 			p+=dns_name(hostname, &namelen, sizeof(hostname)-1, msg+offset, p);
 
