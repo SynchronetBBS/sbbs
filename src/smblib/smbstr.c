@@ -90,7 +90,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case FIDOFLAGS:			return("X-FTN-Flags");
 		case FIDOTID:			return("X-FTN-TID");
 
-		case RFC822HEADER:		return("RFC822Header");
+		case RFC822HEADER:		return("OtherHeader");
 		case RFC822MSGID:		return("Message-ID");			/* RFC-compliant */
 		case RFC822REPLYID:		return("In-Reply-To");			/* RFC-compliant */
 		case RFC822TO:			return("RFC822To");
