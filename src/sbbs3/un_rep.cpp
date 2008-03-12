@@ -537,7 +537,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 			mv(str,fname,1);
-			putsmsg(&cfg,1,str);	/* debug */
 			SAFEPRINTF2(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
 			putsmsg(&cfg,1,str);
 		} 
