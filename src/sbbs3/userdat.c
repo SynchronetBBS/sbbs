@@ -2577,8 +2577,13 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 BOOL DLLCALL check_name(scfg_t* cfg, char* name)
 {
 	char	tmp[512];
+	size_t	len;
 
-	if (   name[0] <= ' '
+	len=strlen(name);
+	if(len<1)
+		return FALSE;
+	if (   name[0] <= ' '			/* begins with white-space? */
+		|| name[len-1] <= ' '		/* ends with white-space */
 		|| !isalpha(name[0])
 		|| !stricmp(name,cfg->sys_id)
 		|| strchr(name,0xff)
