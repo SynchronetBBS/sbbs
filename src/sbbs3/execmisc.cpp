@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1321,7 +1321,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case REMOVE_FILE:
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(pp && *pp && remove(*pp)==0)
+					if(pp && *pp && removecase(*pp)==0)
 						csi->logic=LOGIC_TRUE;
 					else
 						csi->logic=LOGIC_FALSE;
