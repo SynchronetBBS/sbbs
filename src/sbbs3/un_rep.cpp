@@ -204,17 +204,19 @@ bool sbbs_t::unpack_rep(char* repfile)
 				continue; 
 			}
 
-			if(!stricmp(msg.to,"NETMAIL")) {  /* QWK to FidoNet NetMail */
-				qwktonetmail(rep,block,NULL,0);
-				continue; 
-			}
-			if(strchr(msg.to,'@')) {
-				qwktonetmail(rep,block,msg.to,0);
-				continue; 
-			}
-			if(!stricmp(msg.to,"SBBS")) {    /* to SBBS, config stuff */
-				qwkcfgline(msg.subj,INVALID_SUB);
-				continue; 
+			if(msg.to!=NULL) {
+				if(stricmp(msg.to,"NETMAIL")==0) {  /* QWK to FidoNet NetMail */
+					qwktonetmail(rep,block,NULL,0);
+					continue; 
+				}
+				if(strchr(msg.to,'@')) {
+					qwktonetmail(rep,block,msg.to,0);
+					continue; 
+				}
+				if(!stricmp(msg.to,"SBBS")) {    /* to SBBS, config stuff */
+					qwkcfgline(msg.subj,INVALID_SUB);
+					continue; 
+				}
 			}
 
 			if(useron.etoday>=cfg.level_emailperday[useron.level]
@@ -222,11 +224,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bputs(text[TooManyEmailsToday]);
 				continue; 
 			}
-			usernum=atoi(msg.to);
-			if(usernum>lastuser(&cfg))
-				usernum=0;
-			if(!usernum)
-				usernum=matchuser(&cfg,msg.to,TRUE /* sysop_alias */);
+			usernum=0;
+			if(msg.to!=NULL) {
+				usernum=atoi(msg.to);
+				if(usernum>lastuser(&cfg))
+					usernum=0;
+				if(!usernum)
+					usernum=matchuser(&cfg,msg.to,TRUE /* sysop_alias */);
+			}
 			if(!usernum) {
 				bputs(text[UnknownUser]);
 				continue; 
@@ -362,9 +367,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(useron.rest&FLAG('Q'))
 				subscan[n].cfg|=SUB_CFG_NSCAN;
 
-			if(!stricmp(msg.to,"SBBS")) {	/* to SBBS, config stuff */
-				qwkcfgline(msg.subj,n);
-				continue; 
+			if(msg.to!=NULL) {
+				if(stricmp(msg.to,"SBBS")==0) {	/* to SBBS, config stuff */
+					qwkcfgline(msg.subj,n);
+					continue; 
+				}
 			}
 
 #if 0	/* This stuff isn't really necessary anymore */
@@ -418,9 +425,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			if(block[0]=='*' || block[0]=='+'           /* Private post */
 				|| cfg.sub[n]->misc&SUB_PONLY) {
-				if(msg.subj==NULL || !msg.subj[0]
-					|| stricmp(msg.subj,"All")==0) {			/* to blank */
-					bputs(text[NoToUser]);						/* or all */
+				if(msg.to==NULL || !msg.to[0]
+					|| stricmp(msg.to,"All")==0) {		/* to blank */
+					bputs(text[NoToUser]);				/* or all */
 					continue; 
 				} 
 			}
