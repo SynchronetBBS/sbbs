@@ -145,7 +145,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		/*********************************/
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 
-		qwk_new_msg(&msg,(char*)block,/*offset: */l,headers);
+		qwk_new_msg(&msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
 
 		if(findstr_in_list(msg.from_ip,ip_can)) {
 			eprintf(LOG_NOTICE,"!Filtering message from %s due to blocked IP: %s"

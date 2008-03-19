@@ -172,7 +172,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			blocks=1;
 			continue; 
 		}
-		qwk_new_msg(&msg, block, /* offset: */l, headers);
+		qwk_new_msg(&msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false);
 
 		if(findstr_in_list(msg.from_ip,ip_can)) {
 			SAFEPRINTF2(str,"!Filtering message from %s due to blocked IP: %s"

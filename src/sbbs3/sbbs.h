@@ -735,7 +735,7 @@ public:
 	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum, int conf, FILE* hdrs_dat);
 
 	/* qwktomsg.cpp */
-	void	qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers);
+	void	qwk_new_msg(smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
 	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, uint subnum
 				,uint touser, smbmsg_t* msg);
 
