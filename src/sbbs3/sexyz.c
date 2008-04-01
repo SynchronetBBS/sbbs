@@ -175,7 +175,7 @@ static int lputs(void* unused, int level, const char* str)
 
 #if defined(__unix__)
 	if(use_syslog)
-		return syslog(level,"%s",str);
+		syslog(level,"%s",str);
 #endif
 
     if(level<LOG_NOTICE)
