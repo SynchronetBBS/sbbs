@@ -90,6 +90,7 @@ BOOL	dszlog_path=TRUE;				/* Log complete path to filename	*/
 BOOL	dszlog_short=FALSE;				/* Log Micros~1 short filename		*/
 BOOL	dszlog_quotes=FALSE;			/* Quote filenames in DSZLOG		*/
 int		log_level=LOG_INFO;
+BOOL	use_syslog=FALSE;
 
 xmodem_t xm;
 zmodem_t zm;
@@ -171,6 +172,11 @@ static int lputs(void* unused, int level, const char* str)
 
 	if(level>log_level)
 		return 0;
+
+#if defined(__unix__)
+	if(use_syslog)
+		return syslog(level,"%s",str);
+#endif
 
     if(level<LOG_NOTICE)
 		fp=errfp;
@@ -1359,6 +1365,7 @@ int main(int argc, char **argv)
 	pause_on_abend			=iniReadBool(fp,ROOT_SECTION,"PauseOnAbend",FALSE);
 
 	log_level				=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
+	use_syslog				=iniReadBool(fp,ROOT_SECTION,"SysLog",use_syslog);
 
 	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
@@ -1505,6 +1512,10 @@ int main(int argc, char **argv)
 				}
 				if(stricmp(arg,"debug")==0) {
 					log_level=LOG_DEBUG;
+					continue;
+				}
+				if(stricmp(arg,"syslog")==0) {
+					use_syslog=TRUE;
 					continue;
 				}
 				if(stricmp(arg,"quotes")==0) {
