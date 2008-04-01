@@ -164,6 +164,7 @@ static BOOL winsock_startup(void)
 static int lputs(void* unused, int level, const char* str)
 {
 	FILE*	fp=statfp;
+	int		ret;
 
 #if defined(_WIN32) && defined(_DEBUG)
 	if(log_level==LOG_DEBUG)
@@ -173,11 +174,6 @@ static int lputs(void* unused, int level, const char* str)
 	if(level>log_level)
 		return 0;
 
-#if defined(__unix__)
-	if(use_syslog)
-		syslog(level,"%s",str);
-#endif
-
     if(level<LOG_NOTICE)
 		fp=errfp;
 
@@ -186,9 +182,24 @@ static int lputs(void* unused, int level, const char* str)
 		newline=TRUE;
 	}
 	if(level<LOG_NOTICE)
-		return fprintf(fp,"!%s\n",str);
+		ret=fprintf(fp,"!%s\n",str);
 	else
-		return fprintf(fp,"%s\n",str);
+		ret=fprintf(fp,"%s\n",str);
+
+#if defined(__unix__)
+	if(use_syslog) {
+		char*	msg;
+		char*	p;
+		if((msg=strdup(str))!=NULL) {
+			REPLACE_CHARS(msg,'\r',' ',p);
+			REPLACE_CHARS(msg,'\n',' ',p);
+			syslog(level,"%s",msg);
+			free(msg);
+		}
+	}
+#endif
+
+	return ret;
 }
 
 static int lprintf(int level, const char *fmt, ...)
