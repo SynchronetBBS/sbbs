@@ -168,11 +168,13 @@ endif
 XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
 XPDEV_CFLAGS	+=	-I$(X_HEADERS)
 
-PORTAUDIO_PATH ?=      $(shell if [ -f /usr/local/include/portaudio.h ]; then echo /usr/local ; elif [ -f /usr/include/portaudio.h ] ; then echo /usr ; else echo NOTFOUND ; fi)
+ifndef WITHOUT_PORTAUDIO
+ PORTAUDIO_PATH ?=      $(shell if [ -f /usr/local/include/portaudio.h ]; then echo /usr/local ; elif [ -f /usr/include/portaudio.h ] ; then echo /usr ; else echo NOTFOUND ; fi)
 
-ifneq ($(PORTAUDIO_PATH),NOTFOUND)
- XPDEV_CFLAGS += -DWITH_PORTAUDIO
- XPDEV_LDFLAGS += -L$(PORTAUDIO_PATH)/lib
- XPDEV_LIBS	+=	-lportaudio
- XPDEV-MT_LIBS	+=	-lportaudio
+ ifneq ($(PORTAUDIO_PATH),NOTFOUND)
+  XPDEV_CFLAGS += -DWITH_PORTAUDIO
+  XPDEV_LDFLAGS += -L$(PORTAUDIO_PATH)/lib
+  XPDEV_LIBS	+=	-lportaudio
+  XPDEV-MT_LIBS	+=	-lportaudio
+ endif
 endif
