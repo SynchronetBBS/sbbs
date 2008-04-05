@@ -3,6 +3,7 @@
 #ifndef _ST_CRYPT_H_
 #define _ST_CRYPT_H_
 
+#ifndef WITHOUT_CRYPTLIB
 #include"cryptlib.h"
 
 #if defined(_MSC_VER)
@@ -45,6 +46,7 @@ struct crypt_funcs {
 };
 
 #undef HACK_HACK_HACK
+#endif
 
 extern struct crypt_funcs cl;
 extern int crypt_loaded;

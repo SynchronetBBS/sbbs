@@ -4,7 +4,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)ssh$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \

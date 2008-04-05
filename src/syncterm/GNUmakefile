@@ -50,6 +50,12 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
+ifdef WITHOUT_CRYPTLIB
+ CFLAGS += -DWITHOUT_CRYPTLIB
+else
+ OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+endif
+
 ifdef STATIC_CRYPTLIB
  CFLAGS += -DSTATIC_CRYPTLIB
  LDFLAGS += -lz

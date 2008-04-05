@@ -300,9 +300,18 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.close=raw_close;
 			break;
 		case CONN_TYPE_SSH:
+#ifdef WITHOUT_CRYPTLIB
+			init_uifc(TRUE, TRUE);
+			uifcmsg("SSH inoperative",	"`Compiled without cryptlib`\n\n"
+					"This binary was compiled without Cryptlib,\n"
+					"which is required for SSH support."
+					);
+			return(-1);
+#else
 			conn_api.connect=ssh_connect;
 			conn_api.close=ssh_close;
 			break;
+#endif
 		case CONN_TYPE_SERIAL:
 			conn_api.connect=modem_connect;
 			conn_api.close=serial_close;
