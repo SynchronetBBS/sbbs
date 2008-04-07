@@ -30,7 +30,7 @@
 #include "uifcinit.h"
 #include "window.h"
 
-char* syncterm_version = "SyncTERM 0.9.1"
+char* syncterm_version = "SyncTERM 0.9.2"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif

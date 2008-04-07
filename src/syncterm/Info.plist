@@ -21,7 +21,7 @@
 	<string>SyncTERM</string>
 
 	<key>CFBundleShortVersionString</key>
-	<string>0.9.1</string>
+	<string>0.9.2</string>
 
 	<key>CFBundleGetInfoString</key>
 	<string>An ANSI-BBS terminal which supports telnet, rlogin, and SSH</string>
@@ -74,7 +74,7 @@
 	</array>
 
 	<key>CFBundleVersion</key>
-	<string>0.9.1</string>
+	<string>0.9.2</string>
 
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
