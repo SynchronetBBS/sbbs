@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -219,7 +219,10 @@ void sbbs_t::outchar(char ch)
 			pause();
 			while(lncntr && online && !(sys_status&SS_ABORT))
 				pause(); 
+#if 0	/* This line was added in rev 1.41, but it prevents Ctrl-C or 'N' 
+			from the forced-pause prompt from aborting the currently displayed file: */
 			sys_status&=~SS_ABORT;
+#endif
 		}
 	}
 #if 0
