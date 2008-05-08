@@ -315,6 +315,8 @@ ushort SMBCALL smb_netaddr_type(const char* str)
 {
 	char*	p;
 	char*	tp;
+	char*	firstdot;
+	char*	lastdot;
 
 	if((p=strchr(str,'@'))==NULL)
 		return(NET_NONE);
@@ -324,14 +326,17 @@ ushort SMBCALL smb_netaddr_type(const char* str)
 	if(*p==0)
 		return(NET_UNKNOWN);
 
-	if(isalpha(*p) && strchr(p,'.')==NULL)
+	firstdot=strchr(p,'.');
+	lastdot=strrchr(p,'.');
+
+	if(isalpha(*p) && firstdot==NULL)
 		return(NET_QWK);
 
 	for(tp=p;*tp;tp++) {
 		if(!isdigit(*tp) && *tp!=':' && *tp!='/' && *tp!='.')
 			break;
 	}
-	if(isdigit(*p) && *tp)
+	if(isdigit(*p) && *tp==0 && firstdot==lastdot)
 		return(NET_FIDO);
 	if(isalnum(*p))
 		return(NET_INTERNET);
