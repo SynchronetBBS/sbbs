@@ -17,6 +17,14 @@ const XtrnProgLstFmt		=383
 const WhichXtrnProg			=384
 
 var multicolumn = true;
+var sort = false;
+
+function sort_by_name(a, b)
+{ 
+	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1; 
+	if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
+	return 0;
+} 
 
 while(bbs.online) {
 
@@ -31,7 +39,8 @@ while(bbs.online) {
 	}
 
 	var xsec=0;
-	if(xtrn_area.sec_list.length > 1) {
+	var sec_list=xtrn_area.sec_list.slice();
+	if(sec_list.length > 1) {
 
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -39,24 +48,29 @@ while(bbs.online) {
 
 		if(file_exists(system.text_dir + "menu/xtrn_sec.asc")) {
 			bbs.menu("xtrn_sec");
-			xsec=console.getnum(xtrn_area.sec_list.length);
+			xsec=console.getnum(sec_list.length);
 			if(xsec<=0)
 				break;
 			xsec--;
 		}
 		else {
-			for(i in xtrn_area.sec_list)
+	
+			if(sort)
+				sec_list.sort(sort_by_name);
+			for(i in sec_list)
 				console.uselect(Number(i),"External Program Section"
-					,xtrn_area.sec_list[i].name);
+					,sec_list[i].name);
 			xsec=console.uselect(); 
 		}
 	}
 	if(xsec<0)
 		break;
 
+	xsec=sec_list[xsec].index;
 	while(bbs.online) {
+		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();
 
-		if(!xtrn_area.sec_list[xsec].prog_list.length) {
+		if(!prog_list.length) {
 			write(bbs.text(NoXtrnPrograms));
 			console.pause();
 			break; 
@@ -66,39 +80,41 @@ while(bbs.online) {
 			bbs.menu("xtrn" + (xtrn_area.sec_list[xsec].number+1)); 
 		}
 		else {
+			if(sort)
+				prog_list.sort(sort_by_name);
 			printf(bbs.text(XtrnProgLstHdr),xtrn_area.sec_list[xsec].name);
 			write(bbs.text(XtrnProgLstTitles));
-			if(multicolumn && xtrn_area.sec_list[xsec].prog_list.length >= 10) {
+			if(multicolumn && prog_list.length >= 10) {
 				write("     ");
 				write(bbs.text(XtrnProgLstTitles)); 
 			}
 			console.crlf();
 			write(bbs.text(XtrnProgLstUnderline));
-			if(multicolumn && xtrn_area.sec_list[xsec].prog_list.length >= 10) {
+			if(multicolumn && prog_list.length >= 10) {
 				write("     ");
 				write(bbs.text(XtrnProgLstUnderline)); 
 			}
 			console.crlf();
 			var n;
-			if(multicolumn && xtrn_area.sec_list[xsec].prog_list.length >= 10)
-				n=Math.floor(xtrn_area.sec_list[xsec].prog_list.length/2)+(xtrn_area.sec_list[xsec].prog_list.length&1);
+			if(multicolumn && prog_list.length >= 10)
+				n=Math.floor(prog_list.length/2)+(prog_list.length&1);
 			else
-				n=xtrn_area.sec_list[xsec].prog_list.length;
+				n=prog_list.length;
 
 			var i,j;
 			for(i=0;i<n;i++) {
 				printf(bbs.text(XtrnProgLstFmt),i+1
-					,xtrn_area.sec_list[xsec].prog_list[i].name
-					,xtrn_area.sec_list[xsec].prog_list[i].cost);
+					,prog_list[i].name
+					,prog_list[i].cost);
 
 				if(multicolumn
-					&& xtrn_area.sec_list[xsec].prog_list.length>=10) {
-					j=Math.floor(xtrn_area.sec_list[xsec].prog_list.length/2)+i+(xtrn_area.sec_list[xsec].prog_list.length&1);
-					if(j<xtrn_area.sec_list[xsec].prog_list.length) {
+					&& prog_list.length>=10) {
+					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
+					if(j<prog_list.length) {
 						write("     ");
 						printf(bbs.text(XtrnProgLstFmt),j+1
-							,xtrn_area.sec_list[xsec].prog_list[j].name
-							,xtrn_area.sec_list[xsec].prog_list[j].cost); 
+							,prog_list[j].name
+							,prog_list[j].cost); 
 					}
 				}
 
@@ -110,16 +126,16 @@ while(bbs.online) {
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
 		bbs.node_sync();
-		if((i=console.getnum(xtrn_area.sec_list[xsec].prog_list.length))<1)
+		if((i=console.getnum(prog_list.length))<1)
 			break;
 		i--;
-		if(file_exists(system.text_dir + "menu/xtrn/" + xtrn_area.sec_list[xsec].prog_list[i].code)) {
-			menu("xtrn/" + xtrn_area.sec_list[xsec].prog_list[i].code);
+		if(file_exists(system.text_dir + "menu/xtrn/" + prog_list[i].code)) {
+			menu("xtrn/" + prog_list[i].code);
 			console.line_counter=0;
 		}
-		bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code); 
+		bbs.exec_xtrn(prog_list[i].code); 
 
-		if(xtrn_area.sec_list[xsec].prog_list[i].settings&XTRN_PAUSE)
+		if(prog_list[i].settings&XTRN_PAUSE)
 			bbs.line_counter=2;	/* force a pause before CLS */
 	}
 	if(xtrn_area.sec_list.length<2)
