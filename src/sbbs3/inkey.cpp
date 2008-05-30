@@ -290,6 +290,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						case 'F':	/* Xterm: cursor preceding line */
 						case 'K':	/* ANSI:  clear-to-end-of-line */
 							return(CTRL_E);	/* ctrl-e (end line) */
+						case '@':	/* ANSI/ECMA-048 INSERT */
+							return(CTRL_V);
 						case '~':	/* VT-220 (XP telnet.exe) */
 							switch(atoi(str)) {
 								case 1:
