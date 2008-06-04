@@ -44,7 +44,7 @@
 /* high intensity colors, or background/forground cobinations don't work.   */
 /* A call to attr is more appropriate, being it is intelligent				*/
 /****************************************************************************/
-char *sbbs_t::ansi(int atr)
+const char *sbbs_t::ansi(int atr)
 {
 
 	switch(atr) {

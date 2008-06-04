@@ -43,8 +43,7 @@
 /****************************************************************************/
 bool sbbs_t::unpack_rep(char* repfile)
 {
-	char	str[MAX_PATH+1],fname[MAX_PATH+1]
-			,*AttemptedToUploadREPpacket="Attempted to upload REP packet";
+	char	str[MAX_PATH+1],fname[MAX_PATH+1];
 	char	rep_fname[MAX_PATH+1];
 	char	msg_fname[MAX_PATH+1];
 	char 	tmp[512];
@@ -68,6 +67,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	str_list_t	host_can=NULL;
 	str_list_t	subject_can=NULL;
 	str_list_t	twit_list=NULL;
+	const char* AttemptedToUploadREPpacket="Attempted to upload REP packet";
 
 	memset(&msg,0,sizeof(msg));
 

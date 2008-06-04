@@ -47,7 +47,7 @@
 /* the attributes prior to diplaying the message are always restored.       */
 /* Ignores Ctrl-Z's                                                         */
 /****************************************************************************/
-char sbbs_t::putmsg(char *str, long mode)
+char sbbs_t::putmsg(const char *str, long mode)
 {
 	char	tmpatr,tmp2[256],tmp3[128];
 	uchar	exatr=0;

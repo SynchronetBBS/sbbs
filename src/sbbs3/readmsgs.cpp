@@ -342,7 +342,7 @@ static int get_start_msg(sbbs_t* sbbs, smb_t* smb)
 /* Returns 0 if normal completion, 1 if aborted.                            */
 /* Called from function main_sec                                            */
 /****************************************************************************/
-int sbbs_t::scanposts(uint subnum, long mode, char *find)
+int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
 			,done=0,domsg=1,*buf,*p;
@@ -1126,7 +1126,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 /* This function lists all messages in sub-board							*/
 /* Returns number of messages found/displayed.                              */
 /****************************************************************************/
-long sbbs_t::listsub(uint subnum, long mode, long start, char* search)
+long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 {
 	int 	i;
 	int32_t	posts;
@@ -1169,7 +1169,7 @@ long sbbs_t::listsub(uint subnum, long mode, long start, char* search)
 /* Returns number of messages found.                                        */
 /****************************************************************************/
 long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
-	, char *search)
+	, const char *search)
 {
 	char	*buf,ch;
 	long	l,found=0;

@@ -78,7 +78,7 @@ int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
-uint32_t crc32i(uint32_t crc, char *buf, unsigned long len)
+uint32_t crc32i(uint32_t crc, const char *buf, unsigned long len)
 {
 	unsigned long l;
 

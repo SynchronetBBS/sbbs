@@ -71,7 +71,7 @@ char* DLLCALL ascii_str(uchar* str)
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
 /* Handles ctrl-a characters                                                */
 /****************************************************************************/
-int sbbs_t::bputs(char *str)
+int sbbs_t::bputs(const char *str)
 {
 	int i;
     ulong l=0;
@@ -115,7 +115,7 @@ int sbbs_t::bputs(char *str)
 /* Does not expand ctrl-a characters (raw)                                  */
 /* Max length of str is 64 kbytes                                           */
 /****************************************************************************/
-int sbbs_t::rputs(char *str)
+int sbbs_t::rputs(const char *str)
 {
     ulong l=0;
 
@@ -130,7 +130,7 @@ int sbbs_t::rputs(char *str)
 /****************************************************************************/
 /* Performs printf() using bbs bputs function								*/
 /****************************************************************************/
-int sbbs_t::bprintf(char *fmt, ...)
+int sbbs_t::bprintf(const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[4096];
@@ -147,7 +147,7 @@ int sbbs_t::bprintf(char *fmt, ...)
 /****************************************************************************/
 /* Performs printf() using bbs rputs function								*/
 /****************************************************************************/
-int sbbs_t::rprintf(char *fmt, ...)
+int sbbs_t::rprintf(const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[4096];

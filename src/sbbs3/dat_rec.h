@@ -65,7 +65,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT void	DLLCALL getrec(char *instr,int start,int length,char *outstr); /* Retrieve a record from a string */
+DLLEXPORT void	DLLCALL getrec(const char *instr,int start,int length,char *outstr); /* Retrieve a record from a string */
 DLLEXPORT void	DLLCALL putrec(char *outstr,int start,int length,char *instr); /* Place a record into a string */
 
 #ifdef __cplusplus

@@ -96,7 +96,7 @@ bool sbbs_t::lookup_netuser(char *into)
 /****************************************************************************/
 /* Send FidoNet/QWK/Internet NetMail from BBS								*/
 /****************************************************************************/
-bool sbbs_t::netmail(char *into, char *title, long mode)
+bool sbbs_t::netmail(const char *into, const char *title, long mode)
 {
 	char	str[256],subj[128],to[256],fname[128],*buf,*p,ch;
 	char 	tmp[512];

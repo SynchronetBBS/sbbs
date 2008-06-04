@@ -266,7 +266,7 @@ static int lputs(int level, char *str)
     return(prompt_len);
 }
 
-static int lprintf(int level, char *fmt, ...)
+static int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -599,7 +599,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/
-static int bbs_lputs(void* p, int level, char *str)
+static int bbs_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -657,7 +657,7 @@ static void bbs_terminated(void* p, int code)
 /****************************************************************************/
 /* FTP local/log print routine												*/
 /****************************************************************************/
-static int ftp_lputs(void* p, int level, char *str)
+static int ftp_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -719,7 +719,7 @@ static void ftp_terminated(void* p, int code)
 /****************************************************************************/
 /* Mail Server local/log print routine										*/
 /****************************************************************************/
-static int mail_lputs(void* p, int level, char *str)
+static int mail_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -777,7 +777,7 @@ static void mail_terminated(void* p, int code)
 /****************************************************************************/
 /* Services local/log print routine											*/
 /****************************************************************************/
-static int services_lputs(void* p, int level, char *str)
+static int services_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -835,7 +835,7 @@ static void services_terminated(void* p, int code)
 /****************************************************************************/
 /* Event thread local/log print routine										*/
 /****************************************************************************/
-static int event_lputs(int level, char *str)
+static int event_lputs(int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -875,7 +875,7 @@ static int event_lputs(int level, char *str)
 /****************************************************************************/
 /* web local/log print routine											*/
 /****************************************************************************/
-static int web_lputs(void* p, int level, char *str)
+static int web_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];

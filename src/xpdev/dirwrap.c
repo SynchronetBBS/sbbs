@@ -663,7 +663,7 @@ int removecase(char *path)
 /****************************************************************************/
 /* Deletes all files in dir 'path' that match file spec 'spec'              */
 /****************************************************************************/
-ulong DLLCALL delfiles(char *inpath, char *spec)
+ulong DLLCALL delfiles(const char *inpath, const char *spec)
 {
 	char	path[MAX_PATH+1];
 	char	lastch;

@@ -193,7 +193,7 @@ int sbbs_t::xtrn_sec()
 }
 
 
-char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
+const char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 
 /****************************************************************************/
 /* Convert C string to pascal string										*/

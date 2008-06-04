@@ -31,7 +31,7 @@ return(fputs(tmp,stderr));
 /* Performs printf() through local assembly routines                        */
 /* Called from everywhere                                                   */
 /****************************************************************************/
-int lprintf(char *fmat, ...)
+int lprintf(const char *fmat, ...)
 {
 	va_list argptr;
 	char sbuf[256];

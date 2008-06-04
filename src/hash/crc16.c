@@ -73,7 +73,7 @@ uint16_t crc16tbl[] = {
 0x6E17, 0x7E36, 0x4E55, 0x5E74, 0x2E93, 0x3EB2, 0x0ED1, 0x1EF0
 };
 
-uint16_t crc16(char* data, unsigned long len)
+uint16_t crc16(const char* data, unsigned long len)
 {
 	uint16_t crc = 0;
 	unsigned long l;

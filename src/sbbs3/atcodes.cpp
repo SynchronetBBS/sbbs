@@ -48,13 +48,14 @@
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
-int sbbs_t::show_atcode(char *instr)
+int sbbs_t::show_atcode(const char *instr)
 {
-	char	str[128],str2[128],*p,*tp,*sp;
+	char	str[128],str2[128],*tp,*sp,*p;
     int     len;
 	int		disp_len;
 	bool	padded_left=false;
 	bool	padded_right=false;
+	const char *cp;
 
 	sprintf(str,"%.80s",instr);
 	tp=strchr(str+1,'@');
@@ -78,21 +79,21 @@ int sbbs_t::show_atcode(char *instr)
 		*p=0;
 	}
 
-	p=atcode(sp,str2,sizeof(str2));
-	if(p==NULL)
+	cp=atcode(sp,str2,sizeof(str2));
+	if(cp==NULL)
 		return(0);
 
 	if(padded_left)
-		rprintf("%-*.*s",disp_len,disp_len,p);
+		rprintf("%-*.*s",disp_len,disp_len,cp);
 	else if(padded_right)
-		rprintf("%*.*s",disp_len,disp_len,p);
+		rprintf("%*.*s",disp_len,disp_len,cp);
 	else
-		rputs(p);
+		rputs(cp);
 
 	return(len);
 }
 
-char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
+const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 {
 	char*	tp;
 	uint	i;

@@ -254,7 +254,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
     ReleaseMutex(ClientForm->ListMutex);
 }
 
-static int bbs_lputs(void* p, int level, char *str)
+static int bbs_lputs(void* p, int level, const char *str)
 {
 	static HANDLE mutex;
 
@@ -272,7 +272,7 @@ static int bbs_lputs(void* p, int level, char *str)
     return(Line.Length());
 }
 
-static void bbs_status(void* p, char *str)
+static void bbs_status(void* p, const char *str)
 {
 	static HANDLE mutex;
 
@@ -341,7 +341,7 @@ static void bbs_start(void)
     Application->ProcessMessages();
 }
 
-static int event_lputs(int level, char *str)
+static int event_lputs(int level, const char *str)
 {
 	static HANDLE mutex;
 
@@ -359,7 +359,7 @@ static int event_lputs(int level, char *str)
     return(Line.Length());
 }
 
-static int service_lputs(void* p, int level, char *str)
+static int service_lputs(void* p, int level, const char *str)
 {
 	static HANDLE mutex;
 
@@ -377,7 +377,7 @@ static int service_lputs(void* p, int level, char *str)
     return(Line.Length());
 }
 
-static void services_status(void* p, char *str)
+static void services_status(void* p, const char *str)
 {
 	static HANDLE mutex;
 
@@ -411,7 +411,7 @@ static void services_clients(void* p, int clients)
 {
 }
 
-static int mail_lputs(void* p, int level, char *str)
+static int mail_lputs(void* p, int level, const char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -463,7 +463,7 @@ static int mail_lputs(void* p, int level, char *str)
     return(Line.Length());
 }
 
-static void mail_status(void* p, char *str)
+static void mail_status(void* p, const char *str)
 {
 	static HANDLE mutex;
 
@@ -527,7 +527,7 @@ static void mail_start(void)
     Application->ProcessMessages();
 }
 
-static int ftp_lputs(void* p, int level, char *str)
+static int ftp_lputs(void* p, int level, const char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -580,7 +580,7 @@ static int ftp_lputs(void* p, int level, char *str)
     return(Line.Length());
 }
 
-static void ftp_status(void* p, char *str)
+static void ftp_status(void* p, const char *str)
 {
 	static HANDLE mutex;
 
@@ -644,7 +644,7 @@ static void ftp_start(void)
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
-static int web_lputs(void* p, int level, char *str)
+static int web_lputs(void* p, int level, const char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -697,7 +697,7 @@ static int web_lputs(void* p, int level, char *str)
     return(Line.Length());
 }
 
-static void web_status(void* p, char *str)
+static void web_status(void* p, const char *str)
 {
 	static HANDLE mutex;
 

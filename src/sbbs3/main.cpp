@@ -108,7 +108,7 @@ extern "C" {
 
 static bbs_startup_t* startup=NULL;
 
-static void status(char* str)
+static void status(const char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
 	    startup->status(startup->cbdata,str);
@@ -147,7 +147,7 @@ static void thread_down()
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
-int lputs(int level, char* str)
+int lputs(int level, const char* str)
 {
 	if(startup==NULL || startup->lputs==NULL || str==NULL)
     	return(0);
@@ -155,7 +155,7 @@ int lputs(int level, char* str)
     return(startup->lputs(startup->cbdata,level,str));
 }
 
-int lprintf(int level, char *fmt, ...)
+int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -167,7 +167,7 @@ int lprintf(int level, char *fmt, ...)
     return(lputs(level,sbuf));
 }
 
-int eprintf(int level, char *fmt, ...)
+int eprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -2644,7 +2644,7 @@ void event_thread(void* arg)
 
 
 //****************************************************************************
-sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
+sbbs_t::sbbs_t(ushort node_num, DWORD addr, const char* name, SOCKET sd,
 			   scfg_t* global_cfg, char* global_text[], client_t* client_info)
 {
 	char	nodestr[32];
@@ -3274,7 +3274,7 @@ int sbbs_t::nopen(char *str, int access)
     return(file);
 }
 
-void sbbs_t::spymsg(char* msg)
+void sbbs_t::spymsg(const char* msg)
 {
 	char str[512];
 	struct in_addr addr;
@@ -3453,7 +3453,7 @@ int sbbs_t::outcom(uchar ch)
 	return(0);
 }
 
-void sbbs_t::putcom(char *str, int len)
+void sbbs_t::putcom(const char *str, int len)
 {
 	int i;
 
@@ -4138,7 +4138,7 @@ static void cleanup(int code)
 
 void DLLCALL bbs_thread(void* arg)
 {
-	char*			host_name;
+	const char*		host_name;
 	char*			identity;
 	char*			p;
     char			str[MAX_PATH+1];

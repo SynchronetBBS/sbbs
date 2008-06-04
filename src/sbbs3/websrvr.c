@@ -100,6 +100,7 @@ static BOOL		terminate_server=FALSE;
 static BOOL		terminate_http_logging_thread=FALSE;
 static uint		thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
+static SOCKET	server_socket6=INVALID_SOCKET;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
@@ -228,6 +229,8 @@ typedef struct  {
 typedef struct  {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
+	SOCKET			socket6;
+	SOCKADDR_IN		addr6;
 	http_request_t	req;
 	char			host_ip[64];
 	char			host_name[128];	/* Resolved remote host */
@@ -473,7 +476,7 @@ time_gm(struct tm *tm)
         return (t < 0 ? (time_t) -1 : t);
 }
 
-static int lprintf(int level, char *fmt, ...)
+static int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];

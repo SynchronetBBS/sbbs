@@ -49,7 +49,7 @@ typedef struct {
 	WORD		port;		/* TCP port number */
 	time_t		time;		/* connect time */
 	const char*	protocol;	/* protocol description */
-	char*		user;		/* user name */
+	const char*	user;		/* user name */
 	char		pad[32];	/* padding for future expansion */
 } client_t;
 

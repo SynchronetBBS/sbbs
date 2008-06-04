@@ -171,7 +171,7 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 	}
 }
 
-char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
+const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 {
 	switch(type) {
 		case XFER_UPLOAD:

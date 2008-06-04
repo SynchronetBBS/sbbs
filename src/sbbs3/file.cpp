@@ -239,7 +239,7 @@ char * sbbs_t::getfilespec(char *str)
 /****************************************************************************/
 /* Checks to see if filename matches filespec. Returns 1 if yes, 0 if no    */
 /****************************************************************************/
-extern "C" BOOL filematch(char *filename, char *filespec)
+extern "C" BOOL filematch(const char *filename, const char *filespec)
 {
     char c;
 

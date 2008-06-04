@@ -159,7 +159,7 @@ int mfprintf(FILE* fp, char *fmt, ...)
 }
 
 /* Log printf */
-int lprintf(int level, char *fmt, ...)
+int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];

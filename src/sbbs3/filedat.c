@@ -531,7 +531,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 /****************************************************************************/
 /* Turns FILE.EXT into FILE    .EXT                                         */
 /****************************************************************************/
-char* DLLCALL padfname(char *filename, char *str)
+char* DLLCALL padfname(const char *filename, char *str)
 {
     int c,d;
 
@@ -558,7 +558,7 @@ char* DLLCALL padfname(char *filename, char *str)
 /****************************************************************************/
 /* Turns FILE    .EXT into FILE.EXT                                         */
 /****************************************************************************/
-char* DLLCALL unpadfname(char *filename, char *str)
+char* DLLCALL unpadfname(const char *filename, char *str)
 {
     int c,d;
 

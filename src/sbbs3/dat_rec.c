@@ -41,7 +41,7 @@
 /* Places into 'strout' CR or ETX terminated string starting at             */
 /* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
 /****************************************************************************/
-void DLLCALL getrec(char *strin,int start,int length,char *strout)
+void DLLCALL getrec(const char *strin,int start,int length,char *strout)
 {
     int i=0,stop;
 

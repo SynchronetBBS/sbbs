@@ -100,7 +100,7 @@ DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, ui
 DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t* cfg, uchar* str, user_t* user); /* checks access requirements */
 
 DLLEXPORT int	DLLCALL getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
-DLLEXPORT int	DLLCALL putuserrec(scfg_t*, int usernumber, int start, uint length, char *str);
+DLLEXPORT int	DLLCALL putuserrec(scfg_t*, int usernumber, int start, uint length, const char *str);
 DLLEXPORT ulong	DLLCALL adjustuserrec(scfg_t*, int usernumber, int start, int length, long adj);
 DLLEXPORT BOOL	DLLCALL logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	DLLCALL resetdailyuserdat(scfg_t*, user_t*);

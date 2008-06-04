@@ -1860,7 +1860,7 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 /* Places into user.dat at the offset for usernumber+start for length bytes */
 /* Called from various locations											*/
 /****************************************************************************/
-int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char *str)
+int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const char *str)
 {
 	char	str2[256];
 	int		file;

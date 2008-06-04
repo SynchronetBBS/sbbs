@@ -66,7 +66,7 @@ char lib[LEN_GSNAME+1];
 /****************************************************************************/
 /* This is needed by load_cfg.c												*/
 /****************************************************************************/
-int lprintf(int level, char *fmat, ...)
+int lprintf(int level, const char *fmat, ...)
 {
 	va_list argptr;
 	char sbuf[512];

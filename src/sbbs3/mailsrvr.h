@@ -62,8 +62,8 @@ typedef struct {
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
 	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int, char*);
-	void	(*status)(void*, char*);
+	int 	(*lputs)(void*, int, const char*);
+	void	(*status)(void*, const char*);
     void	(*started)(void*);
 	void	(*recycle)(void*);
     void	(*terminated)(void*, int code);

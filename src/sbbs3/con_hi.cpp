@@ -69,7 +69,7 @@ void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 }
 
 
-int sbbs_t::uselect(int add, uint n, char *title, char *item, uchar *ar)
+int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const uchar *ar)
 {
 	char	str[128];
 	int		i;

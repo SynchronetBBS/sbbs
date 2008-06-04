@@ -412,7 +412,7 @@ void sbbs_t::extract(uint dirnum)
 /* Creates a text file named NEWFILES.DAT in the temp directory that        */
 /* all new files since p-date. Returns number of files in list.             */
 /****************************************************************************/
-ulong sbbs_t::create_filelist(char *name, long mode)
+ulong sbbs_t::create_filelist(const char *name, long mode)
 {
     char	str[256];
 	int		file;

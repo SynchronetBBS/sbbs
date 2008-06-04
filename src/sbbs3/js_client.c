@@ -70,7 +70,7 @@ static JSBool js_client_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_client_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	char*		p=NULL;
+	const char*	p=NULL;
 	ulong		val=0;
     jsint       tiny;
 	JSString*	js_str;

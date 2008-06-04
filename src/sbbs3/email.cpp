@@ -43,7 +43,7 @@
 /* of message.                                                              */
 /* Called from functions main_sec, newuser, readmail and scanposts			*/
 /****************************************************************************/
-bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
+bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 {
 	char	str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
 			,buf[SDT_BLOCK_LEN];

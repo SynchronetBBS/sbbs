@@ -2008,7 +2008,7 @@ const char* quoted_string(const char* str, char* buf, size_t maxlen)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
+char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr)
 {
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;

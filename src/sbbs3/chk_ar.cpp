@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
+bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 {
 	bool	result,_not,_or,equal;
 	uint	i,n,artype,age;
@@ -582,9 +582,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 	return(result);
 }
 
-bool sbbs_t::chk_ar(uchar *ar, user_t* user)
+bool sbbs_t::chk_ar(const uchar *ar, user_t* user)
 {
-	uchar *p;
+	const uchar *p;
 
 	if(ar==NULL)
 		return(true);

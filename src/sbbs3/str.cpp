@@ -486,7 +486,7 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 /* First character MUST be an A,N or !.                                     */
 /* Modes - K_LINE and K_UPPER are supported.                                */
 /****************************************************************************/
-size_t sbbs_t::gettmplt(char *strout,char *templt, long mode)
+size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
 {
 	char	ch,str[256];
 	char	tmplt[128];
@@ -819,7 +819,7 @@ void sbbs_t::dirinfo(uint dirnum)
 /* Returns TRUE if found in list, FALSE if not.								*/
 /* Displays bad<name>.can in text directory if found.						*/
 /****************************************************************************/
-bool sbbs_t::trashcan(char *insearchof, char *name)
+bool sbbs_t::trashcan(const char *insearchof, const char *name)
 {
 	char str[MAX_PATH+1];
 	bool result;

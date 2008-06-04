@@ -126,7 +126,7 @@ BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
 		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user)));
 }
 
-static int lprintf(int level, char *fmt, ...)
+static int lprintf(int level, const char *fmt, ...)
 {
 	int		result;
 	va_list argptr;

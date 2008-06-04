@@ -246,8 +246,8 @@ enum {
 
 static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	char*		p=NULL;
-	char*		nulstr="";
+	const char*	p=NULL;
+	const char*	nulstr="";
 	ulong		val=0;
     jsint       tiny;
 	sbbs_t*		sbbs;
@@ -1263,6 +1263,7 @@ js_atcode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int		disp_len;
 	bool	padded_left=false;
 	bool	padded_right=false;
+	const char *cp;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -1285,17 +1286,17 @@ js_atcode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(disp_len >= sizeof(str))
 		disp_len=sizeof(str)-1;
 
-	p=sbbs->atcode(instr,str2,sizeof(str2));
+	cp=sbbs->atcode(instr,str2,sizeof(str2));
 	free(instr);
-	if(p==NULL)
+	if(cp==NULL)
 		*rval = JSVAL_NULL;
 	else {
 		if(padded_left)
-			sprintf(str,"%-*.*s",disp_len,disp_len,p);
+			sprintf(str,"%-*.*s",disp_len,disp_len,cp);
 		else if(padded_right)
-			sprintf(str,"%*.*s",disp_len,disp_len,p);
+			sprintf(str,"%*.*s",disp_len,disp_len,cp);
 		else
-			SAFECOPY(str,p);
+			SAFECOPY(str,cp);
 
 		JSString* js_str = JS_NewStringCopyZ(cx, str);
 		if(js_str==NULL)
@@ -1931,8 +1932,8 @@ js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		usernumber=1;
 	long		mode=WM_EMAIL;
-	char*		top="";
-	char*		subj="";
+	const char*	top="";
+	const char*	subj="";
 	JSString*	js_top=NULL;
 	JSString*	js_subj=NULL;
 	sbbs_t*		sbbs;
@@ -1963,7 +1964,7 @@ static JSBool
 js_netmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=0;
-	char*		subj="";
+	const char*	subj="";
 	JSString*	js_to;
 	JSString*	js_subj=NULL;
 	sbbs_t*		sbbs;
@@ -2259,8 +2260,8 @@ static JSBool
 js_cmdstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
-	char*		fpath="";
-	char*		fspec="";
+	const char*	fpath="";
+	const char*	fspec="";
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 
@@ -2318,7 +2319,7 @@ static JSBool
 js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=0;
-	char*		fspec=ALLFILES;
+	const char*	fspec=ALLFILES;
 	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
@@ -2355,7 +2356,7 @@ static JSBool
 js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=FI_INFO;
-	char*		fspec=ALLFILES;
+	const char*	fspec=ALLFILES;
 	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
@@ -2526,7 +2527,7 @@ js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		find="";
+	const char*	find="";
 	long		mode=0;
 	uint		subnum;
 	sbbs_t*		sbbs;
@@ -2558,7 +2559,7 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_listmsgs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		find="";
+	const char*	find="";
 	long		mode=0;
 	long		start=0;
 	uint		subnum;

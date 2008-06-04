@@ -112,7 +112,7 @@ typedef struct {
 static service_t	*service=NULL;
 static uint32_t		services=0;
 
-static int lprintf(int level, char *fmt, ...)
+static int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];

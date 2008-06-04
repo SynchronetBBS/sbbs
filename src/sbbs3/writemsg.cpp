@@ -65,8 +65,8 @@ char* sbbs_t::msg_tmp_fname(int xedit, char* fname, size_t len)
 /* message and 'title' is the title (70chars max) for the message.          */
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
-bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
-	,char *dest)
+bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode, int subnum
+	,const char *dest)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
@@ -489,7 +489,7 @@ void quotestr(char *str)
 	remove_ctrl_a(str,NULL);
 }
 
-void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
+void sbbs_t::editor_inf(int xeditnum, const char *dest, const char *title, long mode
 	,uint subnum)
 {
 	char str[MAX_PATH+1];
@@ -605,7 +605,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 /* The Synchronet editor.                                                    */
 /* Returns the number of lines edited.                                       */
 /*****************************************************************************/
-ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
+ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 {
 	int		i,j,line,lines=0,maxlines;
 	char	strin[256],**str,done=0;

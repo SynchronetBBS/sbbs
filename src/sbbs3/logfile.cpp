@@ -110,7 +110,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return(TRUE);
 }
 
-void sbbs_t::logentry(char *code, char *entry)
+void sbbs_t::logentry(const char *code, const char *entry)
 {
 	char str[512];
 
@@ -138,7 +138,7 @@ void sbbs_t::log(char *str)
 		logcol+=strlen(str);
 }
 
-bool sbbs_t::syslog(char* code, char *entry)
+bool sbbs_t::syslog(const char* code, const char *entry)
 {		
 	char	fname[MAX_PATH+1];
 	char	str[128];
@@ -166,7 +166,7 @@ bool sbbs_t::syslog(char* code, char *entry)
 /****************************************************************************/
 /* Writes 'str' on it's own line in node.log								*/
 /****************************************************************************/
-void sbbs_t::logline(char *code, char *str)
+void sbbs_t::logline(const char *code, const char *str)
 {
 	if(strchr(str,'\n')==NULL) {	// Keep the console log pretty
 		if(online==ON_LOCAL)
@@ -342,7 +342,7 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 /*****************************************************************************/
 /* Error logging to NODE.LOG and DATA\ERROR.LOG function                     */
 /*****************************************************************************/
-void sbbs_t::errorlog(char *text)
+void sbbs_t::errorlog(const char *text)
 {
     char hdr[256],str[256],tmp2[256];
     int file;

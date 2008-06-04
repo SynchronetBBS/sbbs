@@ -450,7 +450,7 @@ int sbbs_t::exec_net(csi_t* csi)
 }
 
 /* FTP Command/Response function */
-bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
+bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 {
 	char	cmd[512];
 	int		len;
