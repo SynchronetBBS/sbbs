@@ -99,26 +99,21 @@ int main(int argc, char **argv)
 	FILE	*f;
 	char	buf[BUF_SIZE*2];	/* Room for lfexpand */
 	int		len;
-	int		speed;
+	int		speed=0;
 	char	*scrollbuf;
 	char	*infile=NULL;
 	char	title[MAX_PATH+1];
 	int		expand=0;
+	int		ansi=0;
 	int		i;
 
-	textmode(C80);
-	gettextinfo(&ti);
-	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*2))==NULL) {
-		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
-		getch();
-		return(-1);
-	}
-	
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
 		if(argv[i][0]=='-') {
 			if(argv[i][1]=='l' && argv[i][2]==0)
 				expand=1;
+			else if(argv[i][1]=='a' && argv[i][2]==0)
+				ansi=1;
 			else
 				goto usage;
 		}
@@ -128,6 +123,19 @@ int main(int argc, char **argv)
 			else
 				goto usage;
 		}
+	}
+
+	if(ansi) {
+		initciolib(CIOLIB_MODE_ANSI);
+		puts("START OF ANSI...");
+	}
+
+	textmode(C80);
+	gettextinfo(&ti);
+	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*2))==NULL) {
+		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
+		getch();
+		return(-1);
 	}
 
 	cterm_init(ti.screenheight, ti.screenwidth, 0, 0, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
@@ -149,13 +157,24 @@ int main(int argc, char **argv)
 			lfexpand(buf, &len);
 		cterm_write(buf, len, NULL, 0, &speed);
 	}
-	viewscroll();
+	if(ansi) {
+		puts("");
+		puts("END OF ANSI");
+		gettext(1,1,ti.screenwidth,ti.screenheight,scrollbuf);
+		puttext_can_move=1;
+		puts("START OF SCREEN DUMP...");
+		clrscr();
+		puttext(1,1,ti.screenwidth,ti.screenheight,scrollbuf);
+	}
+	else
+		viewscroll();
 	return(0);
 
 usage:
-	cprintf("Usage: %s [-l] [filename]\r\n\r\n"
+	cprintf("Usage: %s [-l] [-a] [filename]\r\n\r\n"
 			"Displays the ANSI file filename expanding \\n to \\r\\n if -l is specified.\r\n"
 			"If no filename is specified, reads input from stdin\r\n"
+			"If -a is specified, outputs ANSI to stdout\r\n"
 			"\r\n"
 			"Press any key to exit.");
 	getch();
