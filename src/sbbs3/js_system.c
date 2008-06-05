@@ -1834,7 +1834,6 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 {
 	jsval		val;
 	JSObject*	sysobj;
-	JSObject*	statsobj;
 	JSString*	js_str;
 	char		str[256];
 
@@ -1873,8 +1872,12 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 #endif
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,statsobj,"System statistics",310);
-	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
+	{
+		JSObject*	statsobj;
+
+		js_DescribeSyncObject(cx,statsobj,"System statistics",310);
+		js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
+	}
 #endif
 
 	return(sysobj);
