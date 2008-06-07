@@ -688,11 +688,15 @@ int sdl_getch(void)
 
 	sdl.SemWait(sdl_key_pending);
 	sdl.mutexP(sdl_keylock);
+
+	/* This always frees up space in keybuf for one more char */
 	ch=sdl_keybuf[sdl_key++];
+	/* If we have missed mouse keys, tack them on to the end of the buffer now */
 	if(sdl_pending_mousekeys) {
-        sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE & 0xff;
-        sdl.SemPost(sdl_key_pending);
-        sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE >> 8;
+		if(sdl_pending_mousekeys & 1)	/* Odd number... second char */
+	       	sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE >> 8;
+		else							/* Even number... first char */
+	        sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE & 0xff;
         sdl.SemPost(sdl_key_pending);
 		sdl_pending_mousekeys--;
 	}
@@ -903,7 +907,7 @@ void sdl_add_key(unsigned int keyval)
 		}
 		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
 			if(keyval==CIO_KEY_MOUSE)
-				sdl_pending_mousekeys++;
+				sdl_pending_mousekeys+=2;
 			else
 				beep();
 			sdl.mutexV(sdl_keylock);
