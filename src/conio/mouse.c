@@ -97,6 +97,7 @@ struct mouse_state {
 struct mouse_state state;
 int mouse_events=0;
 int ciolib_mouse_initialized=0;
+static int ungot=0;
 
 void init_mouse(void)
 {
@@ -429,16 +430,30 @@ void ciolib_mouse_thread(void *data)
 
 int mouse_trywait(void)
 {
+	int	result;
+
 	while(!ciolib_mouse_initialized)
 		SLEEP(1);
-	return(listSemTryWait(&state.output));
+	while(1) {
+		result=listSemTryWait(&state.output);
+		if(ungot==0)
+			return(result);
+		ungot--;
+	}
 }
 
 int mouse_wait(void)
 {
+	int result;
+
 	while(!ciolib_mouse_initialized)
 		SLEEP(1);
-	return(listSemWait(&state.output));
+	while(1) {
+		result=listSemWait(&state.output);
+		if(ungot==0)
+			return(result);
+		ungot--;
+	}
 }
 
 int mouse_pending(void)
@@ -457,8 +472,10 @@ int ciolib_getmouse(struct mouse_event *mevent)
 	if(listCountNodes(&state.output)) {
 		struct out_mouse_event *out;
 		out=listShiftNode(&state.output);
-		if(out==NULL)
+		if(out==NULL) {
+fprintf(stderr,"Mouse list problem!\n");
 			return(-1);
+		}
 		mevent->event=out->event;
 		mevent->bstate=out->bstate;
 		mevent->kbsm=out->kbsm;
@@ -469,6 +486,7 @@ int ciolib_getmouse(struct mouse_event *mevent)
 		free(out);
 	}
 	else {
+fprintf(stderr,"Mouse key problem!\n");
 		memset(mevent,0,sizeof(struct mouse_event));
 		retval=-1;
 	}
@@ -482,5 +500,8 @@ int ciolib_ungetmouse(struct mouse_event *mevent)
 	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
-	return(listInsertNode(&state.output,me)==NULL);
+	if(listInsertNode(&state.output,me)==NULL)
+		return(FALSE);
+	ungot++;
+	return(TRUE);
 }

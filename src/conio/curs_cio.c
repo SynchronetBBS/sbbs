@@ -618,7 +618,7 @@ int curs_kbhit(void)
 
 	if(curs_nextgetch)
 		return(1);
-	if(mouse_pending())
+	if(mouse_trywait())
 		return(1);
 	timeout.tv_sec=0;
 	timeout.tv_usec=0;
