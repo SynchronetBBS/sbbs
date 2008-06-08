@@ -1506,7 +1506,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, current);
 
 	uifc.helpbuf="Help Button Hack";
-	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
+	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_ACT|WIN_INACT
 		,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 	for(;;) {
 		if (!at_settings) {
@@ -1544,7 +1544,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 					val=listcount|MSK_INS;
 				if(val==-7)	{ /* CTRL-E */
 					uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+						|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 						|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 						|WIN_SEL
 						,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1554,7 +1554,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 					switch(val) {
 						case -2-0x13:	/* CTRL-S - Sort */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1563,7 +1563,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						case -2-0x3000:	/* ALT-B - Scrollback */
 							if(!connected) {
 								viewofflinescroll();
-								uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_INACT
+								uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_ACT|WIN_INACT
 									,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 							}
 							break;
@@ -1574,7 +1574,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						case -2-0x4d00:	/* Right Arrow */
 						case -11:		/* TAB */
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1587,7 +1587,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 												"Enter a URL in the format:\n"
 												"[(rlogin|telnet|ssh)://][user[:password]@]domainname[:port]\n";
 								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 									|WIN_SEL
 									,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1793,7 +1793,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						if(!connected) {
 							viewofflinescroll();
 							uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+								|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 								|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 								|WIN_SEL|WIN_INACT
 								,0,0,0,&opt,&bar,"Directory",(char **)list);
@@ -1805,7 +1805,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 					case -2-0x4b00:	/* Left Arrow */
 					case -2-0x4d00:	/* Right Arrow */
 					case -11:		/* TAB */
-						uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_UNGETMOUSE|WIN_HLP|WIN_ACT|WIN_SEL
+						uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_ACT|WIN_SEL
 							,0,0,0,&sopt,&sbar,"SyncTERM Settings",connected?connected_settings_menu:settings_menu);
 						at_settings=!at_settings;
 						break;
@@ -1843,7 +1843,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 								textmode(screen_to_ciolib(i));
 								init_uifc(TRUE, TRUE);
 								uifc.list((listcount<MAX_OPTS?WIN_XTR:0)
-									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_UNGETMOUSE|WIN_SAV|WIN_ESC
+									|WIN_ACT|WIN_INSACT|WIN_DELACT|WIN_SAV|WIN_ESC
 									|WIN_T2B|WIN_INS|WIN_DEL|WIN_EDIT|WIN_EXTKEYS|WIN_DYN|WIN_HLP
 									|WIN_SEL|WIN_INACT
 									,0,0,0,&opt,&bar,"Directory",(char **)list);
