@@ -1,0 +1,31 @@
+You will need to run the setup utility using jsexec.
+/sbbs/exec/jsexec ../xtrn/twint500.js
+
+(Modify the paths as appropriate... the path to twint500.js is relative to the
+ctrl directory.)
+
+It's best to use the default settings since no other settings have been tested
+yet.
+
+Here's my scfg configuration for this door:
+
+[TradeWars v.ii]
+ 1: Name                       TradeWars v.ii
+ 2: Internal Code              TRADEWAR
+ 3: Start-up Directory         
+ 4: Command Line               *../xtrn/tw2/tw2.js
+ 5: Clean-up Command Line      
+ 6: Execution Cost             None
+ 7: Access Requirements        
+ 8: Execution Requirements     
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable No
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: Pause After Execution      No
+16: BBS Drop File Type         None
+17: Place Drop File In         Node Directory
+18: Time Options...
+
