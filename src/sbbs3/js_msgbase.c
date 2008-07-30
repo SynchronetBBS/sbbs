@@ -932,7 +932,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	uintN		n;
 	JSObject*	hdrobj;
 	JSBool		by_offset=JS_FALSE;
-	JSBool		expand_fields=JS_TRUE;
 	privatemsg_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -955,6 +954,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	}
 
 	/* Parse boolean arguments first */
+	p->expand_fields=JS_TRUE;	/* This parameter defaults to true */
 	for(n=0;n<argc;n++) {
 		if(!JSVAL_IS_BOOLEAN(argv[n]))
 			continue;
