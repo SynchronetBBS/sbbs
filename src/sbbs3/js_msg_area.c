@@ -329,7 +329,9 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	JSObject*	areaobj;
 	JSObject*	allgrps;
 	JSObject*	allsubs;
+	JSObject*	grpobj_proto;
 	JSObject*	grpobj;
+	JSObject*	subobj_proto;
 	JSObject*	subobj;
 	JSObject*	grp_list;
 	JSObject*	sub_list;
@@ -377,9 +379,13 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	if(!JS_SetProperty(cx, areaobj, "grp_list", &val)) 
 		return(NULL);
 
+	if((grpobj_proto=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		return(NULL);
+	if((subobj_proto=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		return(NULL);
 	for(l=0;l<cfg->total_grps;l++) {
 
-		if((grpobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+		if((grpobj=JS_NewObject(cx, NULL, grpobj_proto, NULL))==NULL)
 			return(NULL);
 
 		val=OBJECT_TO_JSVAL(grpobj);
@@ -440,7 +446,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(cfg->sub[d]->grp!=l)
 				continue;
 
-			if((subobj=JS_NewObject(cx, &js_sub_class, NULL, NULL))==NULL)
+			if((subobj=JS_NewObject(cx, &js_sub_class, subobj_proto, NULL))==NULL)
 				return(NULL);
 
 			if(subscan!=NULL)
