@@ -19,30 +19,24 @@ function	ClearArea(fromRow,fromColumn,qty)
 }
 function	Wrap(msg,lst)
 {
-	var coords=console.getxy();
+	console.pushxy();
 	console.putmsg(msg);
-	console.gotoxy(30,coords.y); coords.y++;
+	console.popxy();
+	console.right(29);
 	console.putmsg("\1w\1h: ");
-	if(!lst.length) 
-	{
-		console.crlf();
-		return;
-	}
-	var bb=0;
+	var col=32;
 	var delimiter="\1n\1g,";
 	for(aa=0;aa<lst.length;aa++)
 	{
-		if(bb>=16)
-		{
-			var check=console.getxy();
-			if(check.x>77) {
-				console.gotoxy(32,coords.y); coords.y++;
-				bb=0;
-			}
-		}
 		if(aa==lst.length-1) delimiter="";
-		console.putmsg("\1h\1g" + lst[aa] + delimiter);
-		bb++;
+		var item=lst[aa]+delimiter;
+		if((col + console.strlen(item))>79) {
+			console.crlf();
+			console.right(31);
+			col=32;
+		}
+		console.putmsg("\1h\1g" + item);
+		col += console.strlen(item);
 	}
 	console.crlf();
 }
