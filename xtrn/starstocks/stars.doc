@@ -1,0 +1,240 @@
+
+
+
+                             S T A R   S T O C K S
+
+                             Player  Documentation
+
+                                 Version 1.00
+
+                            Matt Johnson, 2007/2008
+
+                      The BRoKEN BuBBLE BBS (MDJ.ATH.CX)
+
+
+    Star Stocks, Version 1.00                                        Page i
+    ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+                       T A B L E   O F   C O N T E N T S
+
+    1.0 Overview . . . . . . . . . . . . . . . . . . . . . . . . . . . .  1
+
+    2.0 Play . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  1
+        2.1 Stars. . . . . . . . . . . . . . . . . . . . . . . . . . . .  1
+        2.2 Outposts . . . . . . . . . . . . . . . . . . . . . . . . . .  1
+        2.3 Companies. . . . . . . . . . . . . . . . . . . . . . . . . .  1
+            2.3.1 Merging. . . . . . . . . . . . . . . . . . . . . . . .  2
+            2.3.2 Splitting. . . . . . . . . . . . . . . . . . . . . . .  2
+        2.4 Dividends. . . . . . . . . . . . . . . . . . . . . . . . . .  2
+        2.5 Purchasing . . . . . . . . . . . . . . . . . . . . . . . . .  2
+            2.5.1 Expert . . . . . . . . . . . . . . . . . . . . . . . .  2
+            2.5.2 Standard . . . . . . . . . . . . . . . . . . . . . . .  3
+
+
+    3.0 Instructions . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.1 New Screen . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.3 Instructions . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.4 Quit . . . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.5 Redraw . . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.6 Abandon. . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.7 Stocks . . . . . . . . . . . . . . . . . . . . . . . . . . .  3
+        3.8 Xpert. . . . . . . . . . . . . . . . . . . . . . . . . . . .  4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    Star Stocks, Version 1.00                                        Page 1
+    ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+
+    1.0 Overview
+    ÍÍÍÍÍÍÍÍÍÍÍÍ
+
+    STAR STOCKS is a game of galactic investment.  The game's object is
+    to amass as much money as you can by establishing extensive companies
+    and managing your stock portfolio.
+
+    In each turn you will be shown 6 positions
+    on the map which may be developed.  After choosing one of these, you
+    may buy and/or sell stock.
+
+    On the map, you will see:
+       *        - Stars
+       .        - empty space
+       +        - Outpost (Company Placeholder)
+       1 thru 6 - positions that may be developed
+       A thru ? - Companies (number of companies varies with difficulty)
+
+    2.0 Play Game
+    ÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+    Select this option when you are ready to begin a game.
+
+
+        2.1 Stars
+        ÄÄÄÄÄÄÄÄÄ
+
+        When a company or an outpost company touches a star its value
+        increases by $500/share.
+           . . .
+           . * .
+           . . .
+
+        2.2 Outposts
+        ÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        Outposts are created by choosing a number that does not touch
+        anything.  When a company touches an outpost its value increases
+        by $100/share.
+           . . . .        . . . .
+           . . 5 .    =>  . . + .    The '+' signifies an outpost.
+           . . . .        . . . .
+
+        2.3 Companies
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        Companies are created by developing next to an outpost or a star.
+
+           . . . .        . . . .   In this example company 'A' has been
+           . 5 + .    =>  . A A .   formed.  The value is $200/share.  $100
+           . . . .        . . . .   for each 'A' (not touching any stars).
+
+           . . . .        . . . .   In this example company 'B' has been
+           . 3 * .    =>  . B * .   formed.  Its value is $600/share.  $100
+           . . . .        . . . .   for the 'B' plus $500 for the star.
+
+            2.3.1 Merging Companies
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+            When you develop between two or more companies, where they
+            touch, they merge.  It's considered that the company of
+            lesser value is being bought out by the larger company.
+            At the time of the merge, a cash bonus is awarded that is
+            equivalent to 10*$/share of the company being taken over.
+
+           . . . . .   Choosing #5 would merge companies 'A' & 'B'.  If you
+           . A A 5 .   had 10 shares of each company, 'B' would be the strong
+           . . . B .   company and win out over company 'A'.
+           . . . * .
+
+           . . . . .   In this case company 'B' won out over 'A'.  Now company
+           . B B B .   'B' stock is increased in value by that of 'A' plus
+           . . . B .   company 'B' gets 50% of 'A's stock added to its stock.
+           . . . * .   Also, you would get a bonus of $2000 for the merge.
+
+
+            2.3.2 Splitting Companies
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+            A company splits when its $/share exceeds $3000.  At
+            this time the stock price halves and its shares double.
+
+        2.4 Dividends
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        After you choose what position to develop, and the effects hit
+        all companies involved, you will receive dividends equivalent to
+        5% of your holdings, and be prompted to purchase stock.
+
+        2.5 Purchasing
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        If you have enough money after making your move, you will be prompted
+        to purchase some stock.  There are two modes of purchasing.
+
+            2.5.1 Expert
+            ÄÄÄÄÄÄÄÄÄÄÄÄ
+
+            In this mode, each company will be listed in alphabetical
+            order and you will be asked how many shares you want to purchase. 
+            You can either:
+
+              - press enter (if you don't want any shares in that company)
+              - type a number within the range listed next to the company
+              - or, type 'M' for the maximum number of shares that you can
+                buy in that company.
+
+
+
+            2.5.2 Standard
+            ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+            If you choose expert mode, by selecting 'X' when you are
+            choosing which position to develop, you will be prompted to
+            enter the company letter that you want to spend all of your
+            money on.  If you have any money left over, stock selection will
+            revert to standard mode.  If you type an 'X' at the prompt, 
+            stock selection will revert to standard mode.  If you find that 
+            you are buying stock in a particular company, this mode tends 
+            to be faster than the standard mode.
+
+    3.0 Instructions
+    ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+
+        3.1 New Screen
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        [N] - New Game.  A quick way of quitting the game and restarting
+        a new one.  This is used when you don't like the original map and
+        would like the computer to generate a new one for you.  Doing a
+        New Screen anytime before your 10th move will not register as
+        a game being played.  Therefore you can be choosy as to the screen
+        you want without the game thinking you have played tons of games.
+
+        3.2 Instructions
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        [I] - What you're reading right now!  You can either view them or
+        download them directly from within Star Market.
+
+        3.3 Quit
+        ÄÄÄÄÄÄÄÄ
+
+        [Q] - Quit.  If you have a really bad game going, you might just 
+        want to "Take a walk in space without a suit."
+
+        3.4 Redraw Screen
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        [R] - Redraw.  If your screen gets scrambled due to line noise, use
+        this to redraw the screen.
+
+        3.6 Abandon Company
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        [A] - Abandon.  Only works when you're at the company (grid) selection
+        prompt.  This option lets you sell off your holdings of particular
+        companies.  Beware, the stock broker gets his 20% cut from every
+        transaction.
+
+        3.7 View Summary
+        ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+
+        [V] - Shows your stock portfolio, which includes the number
+        of shares of each company you own, the value per share, total
+        value of each company, your total networth, and the number of 
+        times each company has split.
+
+        3.8 Xpert
+        ÄÄÄÄÄÄÄÄÄÄ
+
+        [X] - Expert mode.  This toggles from the Standard mode to the
+        Expert mode.  See EXPERT (2.5.2) under PURCHASING for more 
+        details on this toggle and its benefits.
+
