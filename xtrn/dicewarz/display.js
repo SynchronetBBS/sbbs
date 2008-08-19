@@ -2,10 +2,7 @@
 function 	ClearLine(row,toColumn)
 {
 	console.gotoxy(1,row);
-	for(col=0;col<toColumn;col++)
-	{
-		console.putmsg(" ");
-	}
+	console.putmsg(format("%*s", toColumn-1, ""));
 }
 function	ClearArea(fromRow,fromColumn,qty)
 {
