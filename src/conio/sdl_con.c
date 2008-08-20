@@ -1221,10 +1221,18 @@ unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod, unsigned i
 
 				if(mod & KMOD_CTRL)
 					expect=sdl_keyval[i].ctrl;
-				else if(mod & KMOD_SHIFT)
-					expect=sdl_keyval[i].shift;
-				else
-					expect=sdl_keyval[i].key;
+				else if(mod & KMOD_SHIFT) {
+					if(mod & KMOD_CAPS)
+						expect=sdl_keyval[i].key;
+					else
+						expect=sdl_keyval[i].shift;
+				}
+				else {
+					if(mod & KMOD_CAPS)
+						expect=sdl_keyval[i].shift;
+					else
+						expect=sdl_keyval[i].key;
+				}
 
 				/*
 				 * Now handle the ALT case so that expect will
