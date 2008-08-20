@@ -597,6 +597,9 @@ static BOOL js_init(char** environ)
 	if(js_CreateUifcObject(js_cx, js_glob)==NULL)
 		return(FALSE);
 
+	if(js_CreateConioObject(js_cx, js_glob)==NULL)
+		return(FALSE);
+
 	return(TRUE);
 }
 

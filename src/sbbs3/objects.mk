@@ -223,7 +223,8 @@ MAKEUSER_OBJS = \
 
 JSEXEC_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)jsexec$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)js_uifc$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_conio$(OFILE)
 
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
