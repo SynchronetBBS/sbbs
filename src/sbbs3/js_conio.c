@@ -638,7 +638,7 @@ js_conio_movetext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	for(i=0; i<6; i++) {
 		if(!JSVAL_IS_NUMBER(argv[i]))
 			return(JS_FALSE);
-		if(!JS_ValueToInt32(cx, argv[0], &args[i]))
+		if(!JS_ValueToInt32(cx, argv[i], &args[i]))
 			return(JS_FALSE);
 	}
 	*rval=BOOLEAN_TO_JSVAL(movetext(args[0], args[1], args[2], args[3], args[4], args[5]));
@@ -660,7 +660,7 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	for(i=0; i<4; i++) {
 		if(!JSVAL_IS_NUMBER(argv[i]))
 			return(JS_FALSE);
-		if(!JS_ValueToInt32(cx, argv[0], &args[i]))
+		if(!JS_ValueToInt32(cx, argv[i], &args[i]))
 			return(JS_FALSE);
 	}
 	if(args[0] < 1 || args[1] < 1 || args[2] < 1 || args[3] < 1
@@ -715,7 +715,7 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	for(i=0; i<argc; i++) {
 		if(!JSVAL_IS_NUMBER(argv[i]))
 			return(JS_FALSE);
-		if(!JS_ValueToInt32(cx, argv[0], &args[i]))
+		if(!JS_ValueToInt32(cx, argv[i], &args[i]))
 			return(JS_FALSE);
 	}
 	if(args[0] < 1 || args[1] < 1 || args[2] < 1 || args[3] < 1
