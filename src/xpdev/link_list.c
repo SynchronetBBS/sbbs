@@ -130,7 +130,7 @@ BOOL DLLCALL listFree(link_list_t* list)
 	if(list->flags&LINK_LIST_SEMAPHORE) {
 		while(sem_destroy(&list->sem)==-1 && errno==EBUSY)
 			SLEEP(1);
-		list->sem=(sem_t)NULL;
+		//list->sem=(sem_t)NULL; /* Removed 08-20-08 - list->sem is never checked and this causes an error with gcc 4.1.2 (ThetaSigma) */
 	}
 #endif
 
