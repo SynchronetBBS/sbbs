@@ -1,13 +1,14 @@
-/*						**********************************
-						  ******  DICE WARZ (2008)   ******
-					   	  **  for use with Synchronet v3.14+  **
-						  ***  by Matt Johnson  *************                   
-						**********************************
+/*
+    **********************************
+    DICE WARZ (2008)
+	for use with Synchronet v3.14+
+	by Matt Johnson                 
+	**********************************
 
-						SET TAB STOPS TO 4 FOR EDITING
-						
-						SEARCH "TODO:" ENTRIES FOR 
-						CODE THAT NEEDS WORK
+    SET TAB STOPS TO 4 FOR EDITING
+
+    SEARCH "TODO:" ENTRIES FOR
+    CODE THAT NEEDS WORK
 */
 
 	load("sbbsdefs.js");
@@ -543,7 +544,7 @@ function	JoinGame(gameNumber)
 				StartGame(gameNumber);
 			}
 		}
-		else games.StoreGame(gameNumber);
+		games.StoreGame(gameNumber);
 	}
 }
 function 	CreateNewGame()
