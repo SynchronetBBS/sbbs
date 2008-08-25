@@ -1,13 +1,14 @@
-/*						**********************************
-						  ******  DICE WARZ (2008)   ******
-					   	  **  for use with Synchronet v3.14+  **
-						  ***  by Matt Johnson  *************                   
-						**********************************
+/*
+    **********************************
+    DICE WARZ (2008)
+	for use with Synchronet v3.14+
+	by Matt Johnson                 
+	**********************************
 
-						SET TAB STOPS TO 4 FOR EDITING
-						
-						SEARCH "TODO:" ENTRIES FOR 
-						CODE THAT NEEDS WORK
+    SET TAB STOPS TO 4 FOR EDITING
+
+    SEARCH "TODO:" ENTRIES FOR
+    CODE THAT NEEDS WORK
 */
 
 	load("sbbsdefs.js");
@@ -32,9 +33,9 @@
 	const 	minPlayers=		3;
 	const 	maxPlayers=		7;
 	const 	maxDice=		8;
-	const 	root=			"GAME";
-	const	scorefile=		"DICERANK";
-	const	instructions=	"DICE.DOC";
+	const 	root=			"game";
+	const	scorefile=		"dicerank";
+	const	instructions=	"dice.doc";
 	const 	bColors=		[BG_BLUE,	BG_CYAN,	BG_RED,		BG_GREEN,	BG_BROWN,	BG_MAGENTA,	BG_LIGHTGRAY]; 		//MAP BACKGROUND COLORS
 	const 	bfColors=		[BLUE,		CYAN,		RED,		GREEN,		BROWN,		MAGENTA,	LIGHTGRAY]; 		//MAP BACKGROUND COLORS (FOREGROUND CHARS)
 	const	fColors=		["\1h\1w",	"\1h\1c",	"\1h\1r",	"\1h\1g",	"\1h\1y", 	"\1h\1m",	"\1k"];				//MAP FOREGROUND COLORS
@@ -53,7 +54,7 @@
 
 	//TODO: 	MAKE BETTER USER OF THE USER FILES. CAN BE USED FOR REALTIME MULTIPLAYER, AND FOR USER PRESENCE DETECTION
 	//		IN THE EVENT A USER IS BEING NOTIFIED OF HIS OR HER TURN IN A GAME, THE TELEGRAMS WILL BE SUPPRESSED IF THE USER IS ALREADY RUNNING THE PROGRAM
-	var userFileName=game_dir + user.alias + ".USR";
+	var userFileName=game_dir + user.alias + ".usr";
 	var userFile=new File(userFileName);
 	userFile.open('a');
 	userFile.close();
@@ -271,7 +272,7 @@ function 	DeliverMessage(nextTurnPlayer,gameNumber)
 {
 	var nextUserName=system.username(nextTurnPlayer);
 	var message="\1r\1hIt is your turn in \1yDice-Warz\1r game #" + gameNumber + "\r\n\r\n";
-	var nextUserFileName=game_dir + nextUserName + ".USR";
+	var nextUserFileName=game_dir + nextUserName + ".usr";
 	if(file_exists(nextUserFileName)) {
 		var nextUserFile=new File(nextUserFileName);
 		nextUserFile.open('a',true);
@@ -286,7 +287,7 @@ function 	DeliverMessage(nextTurnPlayer,gameNumber)
 function	SplashScreen()
 {
 	console.clear();
-	var splash_filename=game_dir + "DICEWARZ.BIN";
+	var splash_filename=game_dir + "dicewarz.bin";
 	var splash_size=file_size(splash_filename);
 	splash_size/=2;		// Divide by two for attr/char pairs
 	splash_size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
@@ -543,7 +544,7 @@ function	JoinGame(gameNumber)
 				StartGame(gameNumber);
 			}
 		}
-		else games.StoreGame(gameNumber);
+		games.StoreGame(gameNumber);
 	}
 }
 function 	CreateNewGame()
@@ -665,7 +666,7 @@ function	GetFileName(gameNumber)
 	var num=gameNumber;
 	if(gameNumber<10) num="0" + gameNumber;
 	var gamefile=root + num;
-	return (game_dir + gamefile + ".DAT");
+	return (game_dir + gamefile + ".dat");
 }
 function 	GetVote()
 {
@@ -1100,7 +1101,7 @@ function	GameStatusInfo()
 	//TODO: REWORK SCOREFILE CODE....BECAUSE IT SUCKS
 	this.StoreRankings=function()
 	{
-		sfilename=game_dir+scorefile+".DAT";
+		sfilename=game_dir+scorefile+".dat";
 		var sfile=new File(sfilename);
 		if(!Locked(scorefile,true))
 		{
@@ -1126,7 +1127,7 @@ function	GameStatusInfo()
 		{
 			reset=false;
 			data=[];
-			sfilename=game_dir+scorefile+".DAT";
+			sfilename=game_dir+scorefile+".dat";
 			var lfile=new File(sfilename);
 			if(file_exists(sfilename))
 			{
@@ -1424,7 +1425,7 @@ function	GameStatusInfo()
 	}
 	this.LoadGames=function()
 	{	
-		var open_list=directory(game_dir + root + "*.DAT"); 		// scan for voting topic files
+		var open_list=directory(game_dir + root + "*.dat"); 		// scan for voting topic files
 		GameLog("today's date: " + time());
 		if(open_list.length)
 		{
