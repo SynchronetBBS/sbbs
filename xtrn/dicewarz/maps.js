@@ -153,7 +153,7 @@ function 	Map(c,r,p,gn)
 			{	
 				if(this.singlePlayer)
 				{
-					scores[user.number].losses++;
+					scores[user.number].losses+=1;
 				}
 				GameLog("game over - computer winner");
 				return true;
@@ -206,8 +206,8 @@ function 	Map(c,r,p,gn)
 			pts=points[pointBuffer+(this.eliminated.length-1)];
 
 			scores=games.LoadRankings();
-			scores[dead.user]+=pts;
-			GameLog("giving " + pts + " points to user " + dead.user + " : actual points stored " + scores[dead.user]);
+			scores[dead.user].score+=pts;
+			GameLog("giving " + pts + " points to user " + system.username(dead.user));
 			games.StoreRankings();
 		}
 		GameLog("player " + playerNumber + " eliminated");
@@ -299,7 +299,6 @@ function 	Map(c,r,p,gn)
 	{										//RETURNS TRUE IF PLAYER : playerNumber CAN ATTACK FROM GRID INDEX : mapLocation
 		if(mapLocation>=0)		//IF A LOCATION IS PROVIDED, RETURN AN ARRAY OF NEIGHBORING TERRITORIES THAT CAN BE ATTACKED
 		{
-			GameLog("reference location provided: " + mapLocation);
 			options=[];
 			if(this.grid[mapLocation].dice>1)
 			{
@@ -317,7 +316,6 @@ function 	Map(c,r,p,gn)
 		}
 		else				//OTHERWISE, SIMPLY DETERMINE WHETHER THE PLAYER CAN ATTACK AT ALL, AND RETURN TRUE OR FALSE
 		{
-			GameLog("no reference location provided");
 			if(this.players[playerNumber].territories.length==this.players[playerNumber].totalDice) return false;
 			for(terr in this.players[playerNumber].territories)
 			{
@@ -517,7 +515,6 @@ function 	Map(c,r,p,gn)
 			}
 			else if(this.grid[terr].dice<this.maxDice) 
 			{
-				GameLog("dice placed on: " + terr);
 				this.grid[terr].dice++;
 				placed.push(terr);
 				this.players[playerNumber].totalDice++;
@@ -525,7 +522,6 @@ function 	Map(c,r,p,gn)
 			}
 			else
 			{
-				GameLog("territory: " + terr + " full: " + this.grid[terr].dice);
 				if(this.players[playerNumber].territories.length==1) return placed;
 				sd--;
 			}

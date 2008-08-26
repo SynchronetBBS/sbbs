@@ -1,14 +1,14 @@
 /*
-    **********************************
-    DICE WARZ (2008)
+	**********************************
+	DICE WARZ (2008)
 	for use with Synchronet v3.14+
 	by Matt Johnson                 
 	**********************************
 
-    SET TAB STOPS TO 4 FOR EDITING
+	SET TAB STOPS TO 4 FOR EDITING
 
-    SEARCH "TODO:" ENTRIES FOR
-    CODE THAT NEEDS WORK
+	SEARCH "TODO:" ENTRIES FOR
+	CODE THAT NEEDS WORK
 */
 
 	load("sbbsdefs.js");
@@ -693,17 +693,14 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 	if(attackPosition>=0) 
 	{
 		terr=g.grid[attackPosition]; 			//IF A BOARD POSITION HAS BEEN SUPPLIED TO ATTACK FROM, START THERE
-		GameLog("attacking position supplied: " + attackPosition);
 	}
 	else if(startPosition>=0) 
 	{
 		terr=g.grid[startPosition];		//IF A BOARD POSITION HAS BEEN SUPPLIED TO START FROM, START THERE
 		ShowSelected(terr,"\1n\1w\1h");
-		GameLog("starting position supplied: " + startPosition);
 	}
 	else														//OTHERWISE, START WITH THE FIRST PLAYER TERRITORY THAT IS CAPABLE OF ATTACKING
 	{
-		GameLog("no starting position supplied");
 		var p=g.players[playerNumber];
 		for(tile in p.territories)
 		{
@@ -824,7 +821,6 @@ function	Battle(attackFrom,attackTo,gameNumber)
 	var attacking=attackFrom.location;
 	if(totals[0]>totals[1])
 	{
-		GameLog("transferring ownership of tiles");
 		g.players[defender].removeTerritory(defending); 	//REMOVE TILE FROM DEFENDER'S LIST
 		g.players[attacker].territories.push(defending);	//ADD TILE TO ATTACKER'S LIST
 		
@@ -1015,7 +1011,6 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 
 	for(territory in computerPlayer.territories)
 	{
-		GameLog("player " +(playerNumber+1) + " scanning territory for attack options: " + computerPlayer.territories[territory]);
 		base=computerPlayer.territories[territory];
 		if(g.grid[base].dice>1)
 		{
@@ -1026,7 +1021,6 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				rand=random(100);
 				if(rand>10 && g.grid[base].dice>g.grid[target].dice)
 				{
-					GameLog(" base:" + base + " > " + target); 
 					targets.push(target);
 					bases.push(base);
 				}
@@ -1035,13 +1029,11 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 					if(rand>50 || g.grid[target].dice==g.maxDice)
 					{
 						if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20) {
-							GameLog(" base:" + base + " > " + target); 
 							targets.push(target);
 							bases.push(base);
 						}
 						else {
 							if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8) {
-								GameLog(" base:" + base + " > " + target); 
 								targets.push(target);
 								bases.push(base);
 							}
@@ -1051,7 +1043,6 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
 				{
 					if(computerPlayer.territories.length>g.grid.length/6) {
-						GameLog(" base:" + base + " >-1 " + target); 
 						targets.push(target);
 						bases.push(base);
 					}
@@ -1062,7 +1053,6 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	if(targets.length==0) return false;
 	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
 	else attackQuantity=random(targets.length-2)+2;
-	GameLog("targets: " + attackQuantity);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum] + " from: " + bases[attackNum]);
@@ -1149,6 +1139,7 @@ function	GameStatusInfo()
 						var wins=parseInt(lfile.readln());
 						var losses=parseInt(lfile.readln());
 						data[player]={'score':score,'wins':wins,'losses':losses};
+						GameLog(system.username(player) + ":" + data[player].score + ":" + data[player].wins +":"+data[player].losses);
 					}
 				}
 				lfile.close();
