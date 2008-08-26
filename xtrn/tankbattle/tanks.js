@@ -46,7 +46,7 @@ function TankBattle(root_dir)
 	this.LoadPlayer=function(map_num)
 	{
 		var playerNumber=this.CountPlayers();
-		var start={'x':this.game.tankStartX[playerNumber],'y':this.game.tankStartY[playerNumber]};
+		var start={'x':this.game.tankStart[playerNumber].x,'y':this.game.tankStart[playerNumber].y};
 		var color=this.game.tankColors[playerNumber];
 		var pFilename=this.root + user.number + ".usr";
 		var qName=this.queueRoot+user.number;
@@ -59,6 +59,7 @@ function TankBattle(root_dir)
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
+		bbs.sys_status |= SS_PAUSEOFF;		
 		console.clear();
 		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 	}
@@ -67,6 +68,7 @@ function TankBattle(root_dir)
 		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
 		console.ctrlkey_passthru=this.oldpass;
 		bbs.sys_status&=~SS_MOFF;
+		bbs.sys_status&=~SS_PAUSEOFF;
 	}
 	this.CountPlayers=function()
 	{
@@ -191,7 +193,6 @@ function TankBattle(root_dir)
 
 			if(this.ReceiveData()) this.SendData();
 			
-			if(console.line_counter>10) console.line_counter=0;
 			var direction=console.inkey(K_NOECHO|K_NOSPIN);
 			switch(direction.toUpperCase())
 			{
@@ -246,7 +247,7 @@ function TankBattle(root_dir)
 					'move_tank':move_direction,
 					'move_turret':turret_direction,
 					'turn':turn_direction,
-					'shot_fired':shot_fired,
+					'shot_fired':shot_fired
 				};
                 this.game.player.Init();
                 this.SendData();
@@ -309,11 +310,8 @@ function TankMap()
 	this.players=[];
 	this.player;
 	this.map;
-	
+	this.tankStart=[];
 	this.tankColors=["\1w","\1c","\1y","\1r","\1m","\1g"];
-	//TODO: MAKE STARTING POSITIONS DYNAMIC TO ALLOW FOR 2 OR MORE PLAYERS DEPENDING ON MAP LAYOUT (LOAD STARTX/Y FROM BINARY MAP)
-	this.tankStartX=[4,76,4,76,4,76];
-	this.tankStartY=[12,12,5,5,19,19];
 	
 	this.DrawMap=function()
 	{
@@ -330,6 +328,19 @@ function TankMap()
 			map_size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
 			this.map=new Graphic(80,map_size);
 			this.map.load(map_filename);
+			
+			for(x in this.map.data)
+			{
+				for(y in this.map.data[x])
+				{
+					if(this.map.data[x][y].ch=="X") 
+					{
+						game_log.Log("found map start pos x: " + x + " y: " + y);
+						this.map.data[x][y].ch=" ";
+						this.tankStart.push({'x':parseInt(x)+1,'y':parseInt(y)+1});
+					}
+				}
+			}
 			return true;
 		}
 		else return false;
@@ -443,7 +454,6 @@ function TankMap()
 		
 		for(distance=0;distance<30;distance++)
 		{
-			if(console.line_counter>10) console.line_counter=0;
 			var xCheck=x+xOffset+xWalk;
 			var yCheck=y+yOffset+yWalk;
 			var wallPiece=this.FindWall(xCheck,yCheck);
