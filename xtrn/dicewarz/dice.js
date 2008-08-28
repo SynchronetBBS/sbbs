@@ -1004,14 +1004,13 @@ function	PlayGame(gameNumber)
 }
 function	RandomSort()
 {
-	return(random(3)-1);
+	return(random(2)*2-1);
 }
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 	targets=[];
-	bases=[];
 
 	for(territory in computerPlayer.territories)
 	{
@@ -1025,21 +1024,18 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				rand=random(100);
 				if(rand>10 && g.grid[base].dice>g.grid[target].dice)
 				{
-					targets.push(target);
-					bases.push(base);
+					targets.push({target:target, base:base});
 				}
 				if(g.grid[base].dice==g.grid[target].dice)
 				{
 					if(rand>50 || g.grid[target].dice==g.maxDice)
 					{
 						if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20) {
-							targets.push(target);
-							bases.push(base);
+							targets.push({target:target, base:base});
 						}
 						else {
 							if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8) {
-								targets.push(target);
-								bases.push(base);
+								targets.push({target:target, base:base});
 							}
 						}
 					}
@@ -1047,8 +1043,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
 				{
 					if(computerPlayer.territories.length>g.grid.length/6) {
-						targets.push(target);
-						bases.push(base);
+						targets.push({target:target, base:base});
 					}
 				}
 			}
@@ -1057,12 +1052,12 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	if(targets.length==0) return false;
 	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
 	else attackQuantity=random(targets.length-2)+2;
-	//targets.sort(RandomSort);
+	targets.sort(RandomSort);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
-		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum] + " from: " + bases[attackNum]);
-		attackFrom=g.grid[bases[attackNum]];
-		attackTo=g.grid[targets[attackNum]];
+		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum].target + " from: " + targets[attackNum].base);
+		attackFrom=g.grid[targets[attackNum].base];
+		attackTo=g.grid[targets[attackNum].target];
 		if(attackFrom.dice>1 && attackTo.player!=playerNumber)	Battle(attackFrom,attackTo,gameNumber);
 	}
 	return true;

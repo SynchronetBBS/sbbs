@@ -4,16 +4,19 @@ function 	ClearLine(row,toColumn)
 	console.gotoxy(1,row);
 	console.putmsg(format("%*s", toColumn-1, ""));
 }
+
 function	ClearArea(fromRow,fromColumn,qty)
 {
-	xx=fromColumn;
-	yy=fromRow;
-	for(ccc=0;ccc<qty;ccc++)
+	var count;
+
+	console.gotoxy(fromColumn, fromRow);
+	for(count=0;count < qty; count++)
 	{
-		console.gotoxy(xx,yy); yy++;
 		console.cleartoeol();
+		console.down();
 	}
 }
+
 function	Wrap(msg,lst)
 {
 	console.pushxy();
@@ -37,22 +40,32 @@ function	Wrap(msg,lst)
 	}
 	console.crlf();
 }
+
 function 	PrintPadded(string,length,padding,justification)
 {
 	var padlength=length-console.strlen(string);
 	var newstring=string;
 	var padded="\1k";
-	for(p=0;p<padlength;p++) padded+=padding;
-	if(justification=="left") newstring+=(padded);
-	if(justification=="right") newstring=(padded + newstring);
+
+	for(p=0;p<padlength;p++)
+		padded+=padding;
+	if(justification=="left")
+		newstring+=(padded);
+	if(justification=="right")
+		newstring=(padded + newstring);
 	return(newstring);
 }
+
 function 	DrawLine(color,length,character)
 {
 	var printchar= "\xC4";
-	if(character) printchar=character;
-	for(i=0;i<length;i++) console.putmsg(color + printchar);
+
+	if(character)
+		printchar=character;
+	for(i=0;i<length;i++)
+		console.putmsg(color + printchar);
 }
+
 function 	DrawVerticalLine(color/*, side*/)
 {
 	var ly=1;
@@ -83,46 +96,60 @@ function 	DrawVerticalLine(color/*, side*/)
 //	console.gotoxy(lx,ly);
 //	console.putmsg(color + bottomside);
 }
+
 function 	WipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 {	
-	if(lr=="left") { side=1; row=24; }
-	else { side=79; row=1; }
+	if(lr=="left") { side=1; row=console.screen_rows; }
+	else { side=console.screen_columns; row=1; }
 	console.gotoxy(side,row);
 }
+
 function 	GetColor(color, intensity)
 {									//TAKE A STRING AND RETURN THE CORRESPONDING ANSI COLOR CODE
-	if(intensity=="high") inten="\1h";
-	else inten="\1n";
-	
-	if(color=="black") return (inten+"\1k");
-	if(color=="grey") return ("\1k\1h");
-	if(color=="cyan") return (inten+"\1c");
-	if(color=="yellow") return (inten+"\1y");
-	if(color=="green") return (inten+"\1g");
-	if(color=="white") return (inten+"\1w");
-	if(color=="red") return (inten+"\1r");
-	if(color=="blue") return (inten+"\1b");
-	if(color=="magenta") return (inten+"\1m");
-    else return false;
+	if(intensity=="high")
+		inten="\1h";
+	else
+		inten="\1n";
+
+	switch(color) {
+		case "black":
+			return(inten+"\1k");
+		case "grey":
+			return ("\1k\1h");
+		case "cyan":
+			return (inten+"\1c");
+		case "yellow":
+			return (inten+"\1y");
+		case "green":
+			return (inten+"\1g");
+		case "white":
+			return (inten+"\1w");
+		case "red":
+			return (inten+"\1r");
+		case "blue":
+			return (inten+"\1b");
+		case "magenta":
+			return (inten+"\1m");
+	}
+    return false;
 }
+
 function 	QueueMessage(message,x,y)
 {
 	messages.push({'msg':message,'x':x,'y':y});
 }
+
 function 	DisplayMessages()
 {
 	for(mess in messages) {
-		var x=messages[mess].x;
-		var y=messages[mess].y;
-		var msg=messages[mess].msg;
-		
-		console.gotoxy(x,y+1);
-		console.putmsg(msg);
+		console.gotoxy(messages[mess].x,messages[mess].y+1);
+		console.putmsg(messages[mess].msg);
 		console.cleartoeol();
 		mswait(500);
 	}
 	messages=[];
 }
+
 function 	PutMessage(message,x,y)
 {
 	console.gotoxy(x,y+1);
@@ -131,6 +158,7 @@ function 	PutMessage(message,x,y)
 	console.gotoxy(x,y+1);
 	console.cleartoeol();
 }
+
 function	ShowWinner(g)
 {
 	ClearArea(16,menuColumn,9);
