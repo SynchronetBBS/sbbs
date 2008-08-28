@@ -110,7 +110,12 @@ function 	Map(c,r,p,gn)
 		nextTurn=this.nextTurn;
 		nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
 		
-		if(nextTurnPlayer>0 && !this.singlePlayer && nextTurnPlayer!=user.number) 
+		if(this.CountActiveHumans<2) 
+		{
+			GameLog("only one human player active, no notification sent");
+			return;
+		}
+		if(nextTurnPlayer>0 && nextTurnPlayer!=user.number) 
 		{
 			DeliverMessage(nextTurnPlayer,this.gameNumber);
 			GameLog("next player notified of turn: " + system.username(nextTurnPlayer));
@@ -127,7 +132,7 @@ function 	Map(c,r,p,gn)
 					GameLog("all other human players eliminated, no other players notified");
 					break;
 				}
-				else if(nextTurnPlayer>0 && nextTurnPlayer!=user.number && this.status!=0) 
+				else if(nextTurnPlayer>0 && this.status!=0) 
 				{
 					DeliverMessage(nextTurnPlayer,this.gameNumber);
 					GameLog("skipped computer notices, next human user notified of turn: " + system.username(nextTurnPlayer));
@@ -292,7 +297,11 @@ function 	Map(c,r,p,gn)
 		placed=this.PlaceDice(playerNumber,numDice);
 		if(this.winner<0) this.CheckElimination();
 		this.GetNextTurn();
-		if(!this.singlePlayer) this.Notify(this.gameNumber);
+		if(!this.singlePlayer) 
+		{
+			if(this.players[playerNumber].user>0)
+				this.Notify();
+		}
 		return placed;
 	}
 	this.CanAttack=				function(playerNumber,mapLocation)
