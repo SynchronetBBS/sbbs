@@ -1002,6 +1002,10 @@ function	PlayGame(gameNumber)
 		}
 	}
 }
+function	RandomSort()
+{
+	return(random(3)-1);
+}
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
@@ -1053,6 +1057,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	if(targets.length==0) return false;
 	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
 	else attackQuantity=random(targets.length-2)+2;
+	targets.sort(RandomSort);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum] + " from: " + bases[attackNum]);
@@ -1217,9 +1222,6 @@ function	GameStatusInfo()
 		{
 			u=parseInt(gfile.readln());
 			res=parseInt(gfile.readln());
-			bc=bColors[pl];
-			bfc=bfColors[pl];
-			fc=fColors[pl];
 			
 			if(u>0) 
 			{
