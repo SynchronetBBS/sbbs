@@ -1057,7 +1057,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	if(targets.length==0) return false;
 	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
 	else attackQuantity=random(targets.length-2)+2;
-	targets.sort(RandomSort);
+	//targets.sort(RandomSort);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum] + " from: " + bases[attackNum]);
