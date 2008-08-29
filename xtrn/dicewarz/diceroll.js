@@ -3,7 +3,6 @@ function	RollDice(a,b)
 {								//MAIN DICE ROLLING FUNCTION
 	var totals=[0,0];
 	var x=menuColumn;		var y=16;
-	ClearArea(y);
 
 	bc=console.ansi(BG_RED);
 	fc=console.ansi(LIGHTGRAY);
