@@ -1006,6 +1006,24 @@ function	RandomSort()
 {
 	return(random(2)*2-1);
 }
+function	SlowAndSteady(a, b)
+{
+	var adiff=0;
+	var bdiff=0;
+
+	adiff=grid[a.base].dice - grid[a.target.dice];
+	bdiff=grid[b.base].dice - grid[b.target.dice];
+	return(adiff-bdiff);
+}
+function	WildAndCrazy(a, b)
+{
+	var adiff=0;
+	var bdiff=0;
+
+	adiff=grid[a.base].dice - grid[a.target.dice];
+	bdiff=grid[b.base].dice - grid[b.target.dice];
+	return(bdiff-adiff);
+}
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
