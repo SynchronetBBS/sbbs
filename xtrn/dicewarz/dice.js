@@ -1024,11 +1024,33 @@ function	WildAndCrazy(a, b)
 	bdiff=grid[b.base].dice - grid[b.target.dice];
 	return(bdiff-adiff);
 }
+function	KillMostDice(a, b)
+{
+	return(grid[b.target.dice] - grid[a.target.dice]);
+}
+function	Paranoia(a,b)
+{
+	var ascore=0;
+	var bscore=0;
+
+	ascore = grid[a.base].dice - grid[a.target.dice];
+	ascore *= grid[a.target.dice];
+	bscore = grid[b.base].dice - grid[b.target.dice];
+	bscore *= grid[b.target.dice];
+	return(bscore-ascore);
+}
+function	RandomAI(a,b)
+{
+	var sortfuncs=new Array(RandomSort, SlowAndSteady, WildAndCrazy, KillMostDice, Paranoia);
+
+	return(sortfuncs[random(sortfuncs.length)](a,b));
+}
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 	targets=[];
+	var sortfuncs=new Array(RandomSort, SlowAndSteady, WildAndCrazy, KillMostDice, Paranoia, RandomAI);
 
 	for(territory in computerPlayer.territories)
 	{
@@ -1070,7 +1092,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	if(targets.length==0) return false;
 	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
 	else attackQuantity=random(targets.length-2)+2;
-	targets.sort(RandomSort);
+	targets.sort(sortfuncs[playerNumber % sortfuncs.length]);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum].target + " from: " + targets[attackNum].base);
