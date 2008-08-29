@@ -1002,11 +1002,13 @@ function	PlayGame(gameNumber)
 		}
 	}
 }
+
+/* Callbacks for sorting the targets array */
 function	RandomSort()
 {
 	return(random(2)*2-1);
 }
-function	SlowAndSteady(a, b)
+function	SlowAndSteadyAISort(a, b)
 {
 	var adiff=0;
 	var bdiff=0;
@@ -1015,7 +1017,7 @@ function	SlowAndSteady(a, b)
 	bdiff=b.base_grid.dice - b.target_grid.dice;
 	return(adiff-bdiff);
 }
-function	WildAndCrazy(a, b)
+function	WildAndCrazyAISort(a, b)
 {
 	var adiff=0;
 	var bdiff=0;
@@ -1024,11 +1026,11 @@ function	WildAndCrazy(a, b)
 	bdiff=b.base_grid.dice - b.target_grid.dice;
 	return(bdiff-adiff);
 }
-function	KillMostDice(a, b)
+function	KillMostDiceAISort(a, b)
 {
 	return(b.target_grid.dice - a.target_grid.dice);
 }
-function	Paranoia(a,b)
+function	ParanoiaAISort(a,b)
 {
 	var ascore=0;
 	var bscore=0;
@@ -1039,60 +1041,109 @@ function	Paranoia(a,b)
 	bscore *= b.target_grid.dice;
 	return(bscore-ascore);
 }
-function	RandomAI(a,b)
+function	RandomAISort(a,b)
 {
-	var sortfuncs=new Array(RandomSort, SlowAndSteady, WildAndCrazy, KillMostDice, Paranoia);
+	var sortfuncs=new Array(RandomSort, SlowAndSteadyAISort, WildAndCrazyAISort, KillMostDiceAISort, ParanoiaAISort);
 
 	return(sortfuncs[random(sortfuncs.length)](a,b));
 }
+
+/* Callbacks for deciding if a given attack should go into the targets array */
+function	RandomAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	rand=random(100);
+	if(rand>10 && g.grid[base].dice>g.grid[target].dice)
+		return(true);
+	if(g.grid[base].dice==g.grid[target].dice)
+	{
+		if(rand>50 || g.grid[target].dice==g.maxDice)
+		{
+			if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
+				return(true);
+			else {
+				if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8)
+					return(true);
+			}
+		}
+	}
+	if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
+	{
+		if(computerPlayer.territories.length>g.grid.length/6)
+			return(true);
+	}
+	return(false);
+}
+function	ParanoidAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	rand=random(100);
+	/* If we have an advantage, add to targets array */
+	if(g.grid[base].dice>g.grid[target].dice)
+		return(true);
+	/* If we are equal, only add to targets if we are maxDice */
+	if(g.grid[base].dice==g.grid[target].dice) {
+		if(g.grid[target].dice==g.maxDice)
+			return(true);
+	}
+	return(false);
+}
+
+/* Callbacks for selecting the number of targets to use */
+function	RandomAttackQuantity(tlen)
+{
+	if(tlen <= 2)
+		return(tlen); 
+	return(random(tlen-2)+2);
+}
+
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 	targets=[];
-	var sortfuncs=new Array(RandomSort, SlowAndSteady, WildAndCrazy, KillMostDice, Paranoia, RandomAI);
+	var sortfuncs=new Array(RandomSort, SlowAndSteadyAISort, WildAndCrazyAISort, KillMostDiceAISort, ParanoiaAISort, RandomAISort);
+	var checkfuncs=new Array(RandomAICheck);
+	var qtyfuncs=new Array(RandomAttackQuantity);
 
+	/* For each owned territory */
 	for(territory in computerPlayer.territories)
 	{
 		base=computerPlayer.territories[territory];
+		/* If we have enough to attack */
 		if(g.grid[base].dice>1)
 		{
-			attackOptions=g.CanAttack(playerNumber,base);
-			for(option in attackOptions)
-			{
-				target=attackOptions[option];
-				rand=random(100);
-				if(rand>10 && g.grid[base].dice>g.grid[target].dice)
+			/* Find places we can attack */
+			attackOptions=g.CanAttack(playerNumber,base,computerPlayer,g);
+			if(attackOptions!=false) {
+				var basetargets=new Array();
+
+				/* Randomize the order to check in */
+				attackOptions.sort(RandomSort);
+				for(option in attackOptions)
 				{
-					targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
+					target=attackOptions[option];
+					/* Check if this is an acceptable attack */
+					if(checkfuncs[playerNumber % checkfuncs.length](gameNumber, playerNumber, base, target))
+						basetargets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 				}
-				if(g.grid[base].dice==g.grid[target].dice)
-				{
-					if(rand>50 || g.grid[target].dice==g.maxDice)
-					{
-						if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20) {
-							targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
-						}
-						else {
-							if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8) {
-								targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
-							}
-						}
-					}
-				}
-				if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
-				{
-					if(computerPlayer.territories.length>g.grid.length/6) {
-						targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
-					}
+				/* If we found acceptable attacks, sort them and choose the best one */
+				if(basetargets.length > 0) {
+					basetargets.sort(sortfuncs[playerNumber % sortfuncs.length]);
+					targets.push(basetargets.shift());
 				}
 			}
 		}
 	}
-	if(targets.length==0) return false;
-	if(targets.length==1 || targets.length==2) attackQuantity=targets.length; 
-	else attackQuantity=random(targets.length-2)+2;
+	/* Randomize the targets array */
 	targets.sort(RandomSort);
+	attackQuantity=qtyfuncs[playerNumber % qtyfuncs.length](targets.length);
+	if(attackQuantity < 1)
+		return false;
 	targets.sort(sortfuncs[playerNumber % sortfuncs.length]);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
