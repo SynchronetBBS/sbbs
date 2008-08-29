@@ -1011,8 +1011,8 @@ function	SlowAndSteady(a, b)
 	var adiff=0;
 	var bdiff=0;
 
-	adiff=grid[a.base].dice - grid[a.target.dice];
-	bdiff=grid[b.base].dice - grid[b.target.dice];
+	adiff=a.base_grid.dice - a.target_grid.dice;
+	bdiff=b.base_grid.dice - b.target_grid.dice;
 	return(adiff-bdiff);
 }
 function	WildAndCrazy(a, b)
@@ -1020,23 +1020,23 @@ function	WildAndCrazy(a, b)
 	var adiff=0;
 	var bdiff=0;
 
-	adiff=grid[a.base].dice - grid[a.target.dice];
-	bdiff=grid[b.base].dice - grid[b.target.dice];
+	adiff=a.base_grid.dice - a.target_grid.dice;
+	bdiff=b.base_grid.dice - b.target_grid.dice;
 	return(bdiff-adiff);
 }
 function	KillMostDice(a, b)
 {
-	return(grid[b.target.dice] - grid[a.target.dice]);
+	return(b.target_grid.dice - a.target_grid.dice);
 }
 function	Paranoia(a,b)
 {
 	var ascore=0;
 	var bscore=0;
 
-	ascore = grid[a.base].dice - grid[a.target.dice];
-	ascore *= grid[a.target.dice];
-	bscore = grid[b.base].dice - grid[b.target.dice];
-	bscore *= grid[b.target.dice];
+	ascore = a.base_grid.dice - a.target_grid.dice;
+	ascore *= a.target_grid.dice;
+	bscore = b.base_grid.dice - b.target_grid.dice;
+	bscore *= b.target_grid.dice;
 	return(bscore-ascore);
 }
 function	RandomAI(a,b)
@@ -1064,18 +1064,18 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				rand=random(100);
 				if(rand>10 && g.grid[base].dice>g.grid[target].dice)
 				{
-					targets.push({target:target, base:base});
+					targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 				}
 				if(g.grid[base].dice==g.grid[target].dice)
 				{
 					if(rand>50 || g.grid[target].dice==g.maxDice)
 					{
 						if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20) {
-							targets.push({target:target, base:base});
+							targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 						}
 						else {
 							if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8) {
-								targets.push({target:target, base:base});
+								targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 							}
 						}
 					}
@@ -1083,7 +1083,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
 				{
 					if(computerPlayer.territories.length>g.grid.length/6) {
-						targets.push({target:target, base:base});
+						targets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 					}
 				}
 			}
