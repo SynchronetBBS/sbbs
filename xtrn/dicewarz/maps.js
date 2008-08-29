@@ -156,20 +156,15 @@ function 	Map(c,r,p,gn)
 			this.status=0;
 			if(this.lastEliminator==(-1))
 			{	
-				if(this.singlePlayer)
-				{
-					scores[user.number].losses+=1;
-				}
 				GameLog("game over - computer winner");
-				return true;
 			}
 			else
-			{	//THE GAME IS OVER BECAUSE  A HUMAN PLAYER WON
+			{	
 				GameLog("game over - player winner");
 				this.winner=this.lastEliminator;
 				this.AssignPoints();
-				return true;
 			}
+			return true;
 		}
 		else return false;
 	}
@@ -206,13 +201,19 @@ function 	Map(c,r,p,gn)
 		this.lastEliminator=eliminator;
 		if(dead.user>0) 
 		{
-			//TODO: SEE SCORING SYSTEM
-			pointBuffer=7-this.maxPlayers;
-			pts=points[pointBuffer+(this.eliminated.length-1)];
-
 			scores=games.LoadRankings();
-			scores[dead.user].score+=pts;
-			GameLog("giving " + pts + " points to user " + system.username(dead.user));
+			if(this.singlePlayer)
+			{
+				scores[dead.user].losses+=1;
+				GameLog(system.username(dead.user) + " lost single player game " + this.gameNumber);
+			}
+			else
+			{
+				pointBuffer=7-this.maxPlayers;
+				pts=points[pointBuffer+(this.eliminated.length-1)];
+				scores[dead.user].score+=pts;
+				GameLog("giving " + pts + " points to user " + system.username(dead.user));
+			}
 			games.StoreRankings();
 		}
 		GameLog("player " + playerNumber + " eliminated");
