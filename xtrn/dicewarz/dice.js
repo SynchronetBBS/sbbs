@@ -83,9 +83,6 @@
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
 
-	SplashScreen();
-	GameMenu();
-	
 //########################## MAIN FUNCTIONS ###################################
 function 	ScanProximity(location) 	
 {										
@@ -525,6 +522,29 @@ function	StartGame(gameNumber)
 	games.gameData[gameNumber].lastModified=time();
 	QueueMessage("\1r\1hGame " + gameNumber + " Initialized!",30,20);
 	games.gameData[gameNumber].Notify();
+	/* Set up computer players */
+	var aifile=new File(game_dir + "ai.ini");
+	aifile.open("r");
+	var possibleplayers=aifile.iniGetSections();
+	for(i=0; i<g.players.length; i++) {
+		if(g.players[i].user==-1) {
+			if(possibleplayers.length > 0) {
+				var p=random(possibleplayers.length);
+				g.players[i].AI.name=possibleplayers[p];
+				possibleplayers.splice(p,1);
+				g.players[i].AI.sort=aifile.iniGetValue(g.players[i].AI.name, "Sort", "Random");
+				g.players[i].AI.check=aifile.iniGetValue(g.players[i].AI.name, "Check", "Random");
+				g.players[i].AI.qty=aifile.iniGetValue(g.players[i].AI.name, "Quantity", "Random");
+				if(AISortFunctions[g.players[i].AI.sort]==undefined)
+					g.players[i].AI.sort="Random";
+				if(AICheckFunctions[g.players[i].AI.check]==undefined)
+					g.players[i].AI.check="Random";
+				if(AIQtyFunctions[g.players[i].AI.qty]==undefined)
+					g.players[i].AI.qty="Random";
+			}
+		}
+	}
+	aifile.close();
 	games.StoreGame(gameNumber);
 }
 function	JoinGame(gameNumber)
@@ -682,9 +702,11 @@ function 	GetVote()
 }
 function 	GetUserName(playerData,playerNumber)
 {
-	if(playerData.user>=0) UserName=system.username(playerData.user);
-	else UserName="Computer " + (playerNumber+1);
-	return UserName;
+	if(playerData.user>=0)
+		return(system.username(playerData.user));
+	if(playerData.AI.name.length > 0)
+		return(playerData.AI.name);
+	return("Computer " + (playerNumber+1));
 }
 //###########################GAMEPLAY FUNCTIONS#############################
 function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
@@ -1129,14 +1151,14 @@ function	FullAttackQuantity(tlen)
 	return(tlen);
 }
 
+var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort};
+var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck};
+var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity};
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 	targets=[];
-	var sortfuncs=new Array(RandomSort, SlowAndSteadyAISort, WildAndCrazyAISort, KillMostDiceAISort, ParanoiaAISort, RandomAISort);
-	var checkfuncs=new Array(RandomAICheck);
-	var qtyfuncs=new Array(RandomAttackQuantity);
 
 	/* For each owned territory */
 	for(territory in computerPlayer.territories)
@@ -1156,12 +1178,12 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 				{
 					target=attackOptions[option];
 					/* Check if this is an acceptable attack */
-					if(checkfuncs[playerNumber % checkfuncs.length](gameNumber, playerNumber, base, target))
+					if(AICheckFunctions[computerPlayer.AI.check](gameNumber, playerNumber, base, target))
 						basetargets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 				}
 				/* If we found acceptable attacks, sort them and choose the best one */
 				if(basetargets.length > 0) {
-					basetargets.sort(sortfuncs[playerNumber % sortfuncs.length]);
+					basetargets.sort(AISortFunctions[computerPlayer.AI.sort]);
 					targets.push(basetargets.shift());
 				}
 			}
@@ -1169,10 +1191,10 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	}
 	/* Randomize the targets array */
 	targets.sort(RandomSort);
-	attackQuantity=qtyfuncs[playerNumber % qtyfuncs.length](targets.length);
+	attackQuantity=AIQtyFunctions[computerPlayer.AI.qty](targets.length);
 	if(attackQuantity < 1)
 		return false;
-	targets.sort(sortfuncs[playerNumber % sortfuncs.length]);
+	targets.sort(AISortFunctions[computerPlayer.AI.sort]);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum].target + " from: " + targets[attackNum].base);
@@ -1333,11 +1355,23 @@ function	GameStatusInfo()
 			ttoo=parseInt(gfile.readln());
 			lgame.turnOrder[to]=ttoo;
 		}
+		var aifile=new File(game_dir + "ai.ini");
+		aifile.open("r");
 		for(pl=0;pl<np;pl++)
 		{
-			u=parseInt(gfile.readln());
+			var uname=gfile.readln();
+			var u=-1;
+			if(uname.search(/^[0-9]+$/) != -1)
+				u=parseInt(uname);
+			if(uname=='-1')
+				uname='';
 			res=parseInt(gfile.readln());
-			
+
+			lgame.players[pl]=new Player(u,pt);
+			lgame.players[pl].setColors(pl);
+			lgame.users[u]=pl;
+			lgame.players[pl].reserve=res;
+
 			if(u>0) 
 			{
 				humans++;
@@ -1347,12 +1381,21 @@ function	GameStatusInfo()
 					scores[u]={'score':0,'wins':0,'losses':0};
 				}
 			}
-			
-			lgame.players[pl]=new Player(u,pt);
-			lgame.players[pl].setColors(pl);
-			lgame.users[u]=pl;
-			lgame.players[pl].reserve=res;
+			else {
+				/* Set up computer players */
+				lgame.players[pl].AI.name=uname;
+				lgame.players[pl].AI.sort=aifile.iniGetValue(lgame.players[pl].AI.name, "Sort", "Random");
+				lgame.players[pl].AI.check=aifile.iniGetValue(lgame.players[pl].AI.name, "Check", "Random");
+				lgame.players[pl].AI.qty=aifile.iniGetValue(lgame.players[pl].AI.name, "Quantity", "Random");
+				if(AISortFunctions[lgame.players[pl].AI.sort]==undefined)
+					lgame.players[pl].AI.sort="Random";
+				if(AICheckFunctions[lgame.players[pl].AI.check]==undefined)
+					lgame.players[pl].AI.check="Random";
+				if(AIQtyFunctions[lgame.players[pl].AI.qty]==undefined)
+					lgame.players[pl].AI.qty="Random";
+			}
 		}
+		aifile.close();
 		if(humans<2) 
 		{
 			lgame.singlePlayer=true;
@@ -1410,7 +1453,10 @@ function	GameStatusInfo()
 		for(ply in g.players)
 		{
 			p=g.players[ply];
-			gfile.writeln(p.user);
+			if(p.user==-1)
+				gfile.writeln(p.AI.name);
+			else
+				gfile.writeln(p.user);
 			gfile.writeln(p.reserve);
 		}	
 		for(sector in g.used)
@@ -1617,3 +1663,6 @@ function	GameLog(data)
 	logfile.writeln(data);
 }
 
+	SplashScreen();
+	GameMenu();
+	
