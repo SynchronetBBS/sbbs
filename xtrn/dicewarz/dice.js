@@ -1069,6 +1069,33 @@ function	RandomAISort(a,b)
 
 	return(sortfuncs[random(sortfuncs.length)](a,b));
 }
+function	GroupAndParanoidAISort(a,b)
+{
+	var aopts=0;
+	var bopts=0;
+
+
+	function countem(map, location, player) {
+		var ret=0;
+
+		dirs=map.LoadDirectional(location);
+		for(dir in dirs) {
+			current=dirs[dir];
+			if(map.grid[current]) {
+				if(map.grid[current].player!=player)
+					ret++;
+			}
+		}
+		return(ret);
+	}
+
+	var aopts=countem(games.gameData[a.gameNumber], a.target, a.base_grid.player);
+	var bopts=countem(games.gameData[b.gameNumber], b.target, b.base_grid.player);
+
+	if(aopts==bopts)
+		return(ParanoiaAISort(a,b));
+	return(aopts-bopts);
+}
 
 /* Callbacks for deciding if a given attack should go into the targets array */
 function	RandomAICheck(gameNumber, playerNumber, base, target)
@@ -1157,7 +1184,7 @@ function	SingleAttackQuantity(tlen)
 	return(0);
 }
 
-var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort};
+var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort, GroupParanoid:GroupAndParanoidAISort};
 var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck};
 var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity, Single:SingleAttackQuantity};
 function 	TakeTurnAI(gameNumber,playerNumber)
@@ -1185,7 +1212,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 					target=attackOptions[option];
 					/* Check if this is an acceptable attack */
 					if(AICheckFunctions[computerPlayer.AI.check](gameNumber, playerNumber, base, target))
-						basetargets.push({target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
+						basetargets.push({gameNumber:gameNumber, target:target, base:base, target_grid:g.grid[target], base_grid:g.grid[base]});
 				}
 				/* If we found acceptable attacks, sort them and choose the best one */
 				if(basetargets.length > 0) {
