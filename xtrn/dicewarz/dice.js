@@ -877,7 +877,45 @@ function	EndTurn(gameNumber,pl)
 	g.takingTurn=false;
 	games.StoreGame(gameNumber);
 }
-
+function	Forfeit(gameNumber,playerNumber)
+{
+	GameLog("Player " + playerNumber + " forfeitting game");
+	var g=games.gameData[gameNumber];
+	if(g.singlePlayer) 
+	{
+		scores[user.number].losses+=1;
+		GameLog("assigning loss to user " + user.alias);
+		file_remove(g.fileName);
+	}
+	else 
+	{
+		var activePlayers=g.CountActivePlayers();
+		scores[user.number].score+=points[7-activePlayers.length];
+		GameLog("giving " + pts + " points to user " + user.alias);
+		if(activePlayers.length==2) 
+		{
+			g.status=0;
+			for(player in activePlayers)
+			{
+				if(g.players[player].user!=user.number)
+				{
+					g.winner=g.players[player].user;
+					scores[g.players[player].user].points+=2;
+					GameLog("giving " + pts + " points to user " + system.username(g.players[player].user));
+					break;
+				}
+			}
+		}
+		else 
+		{
+			delete g.users[user.number];
+			g.players[playerNumber].AI.name=user.alias+" AI";
+			g.players[playerNumber].user=-1;
+			games.StoreGame(gameNumber);
+		}
+	}
+	games.StoreRankings();
+}
 //MAIN GAMEPLAY FUNCTION
 function	PlayGame(gameNumber)
 {
@@ -897,20 +935,20 @@ function	PlayGame(gameNumber)
 	pMenu.add(pmenu_items);	
 	pMenu.disable(["A","E","T","F"]);
 
-	if(g.users[user.number]>=0) 
-	{
-		userInGame=true;
-		currentPlayer=g.users[user.number];
-	}
-	else 
-	{
-		currentPlayer=-1;
-		userInGame=false;
-	}
 	ClearArea(16,menuColumn,9);
 
 	while(1)
 	{
+		if(g.users[user.number]>=0) 
+		{
+			userInGame=true;
+			currentPlayer=g.users[user.number];
+		}
+		else 
+		{
+			currentPlayer=-1;
+			userInGame=false;
+		}
 		if(g.status==0)
 		{
 			pMenu.disable(["A","E","T","F"]);
@@ -973,7 +1011,7 @@ function	PlayGame(gameNumber)
 		pMenu.displayHorizontal();
 		var cmd=console.getkey((K_NOECHO,K_NOCRLF,K_UPPER));
 		WipeCursor("right");
-		if(pMenu.items[cmd].enabled)
+		if(pMenu.items[cmd] && pMenu.items[cmd].enabled)
 		{
 			switch(cmd)
 			{
@@ -988,6 +1026,13 @@ function	PlayGame(gameNumber)
 				}
 				pMenu.enable("E");
 				continue;
+			case "F":
+				console.home();
+				if(console.noyes("\1n\1gForfeit this game?")) continue;
+				Forfeit(gameNumber,currentPlayer);
+				pMenu.disable(["A","F","E"]);
+				pMenu.enable(["Q"]);
+				break; 
 			case "A":
 				if(Attack(gameNumber,currentPlayer));
 				else 
