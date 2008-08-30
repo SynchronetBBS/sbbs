@@ -712,7 +712,7 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	if(argc > 4)
 		return(JS_FALSE);
-	for(i=0; i<argc; i++) {
+	for(i=0; i<(int)argc; i++) {
 		if(!JSVAL_IS_NUMBER(argv[i]))
 			return(JS_FALSE);
 		if(!JS_ValueToInt32(cx, argv[i], &args[i]))

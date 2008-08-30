@@ -1070,6 +1070,9 @@ extern "C" {
 	/* js_uifc.c */
 	JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent);
 
+	/* js_conio.c */
+	JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent);
+
 #endif
 
 /* str_util.c */
