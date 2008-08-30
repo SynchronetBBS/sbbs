@@ -1,0 +1,162 @@
+/* Callbacks for sorting the targets array */
+function	RandomSort()
+{
+	return(random(2)*2-1);
+}
+function	SlowAndSteadyAISort(a, b)
+{
+	var adiff=0;
+	var bdiff=0;
+
+	adiff=a.base_grid.dice - a.target_grid.dice;
+	bdiff=b.base_grid.dice - b.target_grid.dice;
+	return(adiff-bdiff);
+}
+function	WildAndCrazyAISort(a, b)
+{
+	var adiff=0;
+	var bdiff=0;
+
+	adiff=a.base_grid.dice - a.target_grid.dice;
+	bdiff=b.base_grid.dice - b.target_grid.dice;
+	return(bdiff-adiff);
+}
+function	KillMostDiceAISort(a, b)
+{
+	return(b.target_grid.dice - a.target_grid.dice);
+}
+function	ParanoiaAISort(a,b)
+{
+	var ascore=0;
+	var bscore=0;
+
+	ascore = a.base_grid.dice - a.target_grid.dice;
+	ascore *= a.target_grid.dice;
+	bscore = b.base_grid.dice - b.target_grid.dice;
+	bscore *= b.target_grid.dice;
+	return(bscore-ascore);
+}
+function	RandomAISort(a,b)
+{
+	var sortfuncs=new Array(RandomSort, SlowAndSteadyAISort, WildAndCrazyAISort, KillMostDiceAISort, ParanoiaAISort);
+
+	return(sortfuncs[random(sortfuncs.length)](a,b));
+}
+function	GroupAndParanoidAISort(a,b)
+{
+	var aopts=0;
+	var bopts=0;
+
+
+	function countem(map, location, player) {
+		var ret=0;
+
+		dirs=map.LoadDirectional(location);
+		for(dir in dirs) {
+			current=dirs[dir];
+			if(map.grid[current]) {
+				if(map.grid[current].player!=player)
+					ret++;
+			}
+		}
+		return(ret);
+	}
+
+	var aopts=countem(games.gameData[a.gameNumber], a.target, a.base_grid.player);
+	var bopts=countem(games.gameData[b.gameNumber], b.target, b.base_grid.player);
+
+	if(aopts==bopts)
+		return(ParanoiaAISort(a,b));
+	return(aopts-bopts);
+}
+
+/* Callbacks for deciding if a given attack should go into the targets array */
+function	RandomAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	rand=random(100);
+	if(rand>10 && g.grid[base].dice>g.grid[target].dice)
+		return(true);
+	if(g.grid[base].dice==g.grid[target].dice)
+	{
+		if(rand>50 || g.grid[target].dice==g.maxDice)
+		{
+			if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
+				return(true);
+			else {
+				if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8)
+					return(true);
+			}
+		}
+	}
+	if(rand>90 && g.grid[base].dice==(g.grid[target].dice-1))
+	{
+		if(computerPlayer.territories.length>g.grid.length/6)
+			return(true);
+	}
+	return(false);
+}
+function	ParanoidAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	rand=random(100);
+	/* If we have an advantage, add to targets array */
+	if(g.grid[base].dice>g.grid[target].dice)
+		return(true);
+	/* If we are equal, only add to targets if we are maxDice */
+	if(g.grid[base].dice==g.grid[target].dice) {
+		if(g.grid[target].dice==g.maxDice)
+			return(true);
+	}
+	return(false);
+}
+function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	rand=random(100);
+	if(g.grid[base].dice>g.grid[target].dice)
+		return(true);
+	if(g.grid[base].dice==g.grid[target].dice)
+	{
+		if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
+			return(true);
+		else {
+			if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8)
+				return(true);
+		}
+	}
+	if(rand>50 && g.grid[base].dice==(g.grid[target].dice-1))
+	{
+		if(computerPlayer.territories.length>g.grid.length/6)
+			return(true);
+	}
+	return(false);
+}
+
+/* Callbacks for selecting the number of targets to use */
+function	RandomAttackQuantity(tlen)
+{
+	if(tlen <= 2)
+		return(tlen); 
+	return(random(tlen-2)+2);
+}
+function	FullAttackQuantity(tlen)
+{
+	return(tlen);
+}
+function	SingleAttackQuantity(tlen)
+{
+	if(tlen > 0)
+		return(1);
+	return(0);
+}
+
+var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort, GroupParanoid:GroupAndParanoidAISort};
+var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck};
+var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity, Single:SingleAttackQuantity};
