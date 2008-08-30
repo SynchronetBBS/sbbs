@@ -1,8 +1,8 @@
 function 	Menu(title,x,y,color,hkey_color)		
 {								//MENU CLASSES
 	this.title=title;
-	this.disabled=[];
-	this.disabled_color="\1k\1h";
+	//this.disabled=[];
+	//this.disabled_color="\1k\1h";
 	this.items=[];
 	var orig_x=x;
 	var orig_y=y;
@@ -22,7 +22,7 @@ function 	Menu(title,x,y,color,hkey_color)
 		var cleared=0;
 		for(i in this.items)
 		{
-			if(!this.disabled[i])
+			if(this.items[i].enabled)
 			{
 				console.gotoxy(orig_x,yyyy); yyyy++;
 				console.putmsg(this.items[i].text);
@@ -38,15 +38,19 @@ function 	Menu(title,x,y,color,hkey_color)
 		}
 		WipeCursor("right");
 	}
-	this.disable=function(item)
+	this.disable=function(items)
 	{
-		this.disabled[item]=true;
-		this.items[item].Init(this.disabled_color,this.disabled_color)
+		for(item in items)
+		{
+			this.items[items[item]].enabled=false;
+		}
 	}
-	this.enable=function(item)
+	this.enable=function(items)
 	{
-		this.disabled[item]=false;
-		this.items[item].Init(color,hkey_color);
+		for(item in items)
+		{
+			this.items[items[item]].enabled=true;
+		}
 	}
 	this.add=function(items)
 	{
@@ -72,7 +76,7 @@ function 	Menu(title,x,y,color,hkey_color)
 		console.gotoxy(orig_x,orig_y);
 		for(i in this.items)
 		{
-			console.putmsg(this.items[i].text + " ");
+			if(this.items[i].enabled) console.putmsg(this.items[i].text + " ");
 		}
 		WipeCursor("left");
 	}
@@ -82,6 +86,7 @@ function 	MenuItem(item,hotkey,color,hkey_color)
 	this.displayColor=color;
 	this.keyColor=hkey_color;
 	this.item=item;
+	this.enabled=true;
 	
 	this.hotkey=hotkey;
 	this.Init=function(color,hkey_color)
