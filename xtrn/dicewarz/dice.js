@@ -890,13 +890,12 @@ function	PlayGame(gameNumber)
 	var pMenu=new Menu(		""								,1,1,GetColor("green"),GetColor("green","high"));
 	var pmenu_items=[		"~Take Turn"					, 
 							"~Attack"						,
-							"~End Turn"						,
+							"~Forfeit"						,
+							"~End"							,
 							"~Redraw"						,
 							"~Quit"							];
 	pMenu.add(pmenu_items);	
-	pMenu.disable("A");
-	pMenu.disable("E");
-	pMenu.disable("T");
+	pMenu.disable(["A","E","T","F"]);
 
 	if(g.users[user.number]>=0) 
 	{
@@ -914,9 +913,7 @@ function	PlayGame(gameNumber)
 	{
 		if(g.status==0)
 		{
-			pMenu.disable("A");
-			pMenu.disable("E");
-			pMenu.disable("T");
+			pMenu.disable(["A","E","T","F"]);
 			pMenu.enable("Q");
 			ShowWinner(g);
 		}
@@ -954,10 +951,8 @@ function	PlayGame(gameNumber)
 				}
 				else if(g.status==0) 
 				{
-					pMenu.disable("A");
-					pMenu.disable("E");
-					pMenu.disable("T");
-					pMenu.enable("Q");
+					pMenu.disable(["A","E","T"]);
+					pMenu.enable(["F","Q"]);
 					ShowWinner(g);
 				}
 				else  
@@ -978,14 +973,13 @@ function	PlayGame(gameNumber)
 		pMenu.displayHorizontal();
 		var cmd=console.getkey((K_NOECHO,K_NOCRLF,K_UPPER));
 		WipeCursor("right");
-		if(pMenu.disabled[cmd]);
-		else 
+		if(pMenu.items[cmd].enabled)
 		{
 			switch(cmd)
 			{
 			case "T":
-				pMenu.disable("T");
-				pMenu.disable("Q");
+				pMenu.enable(["F"]);
+				pMenu.disable(["Q","T"]);
 				g.takingTurn=true;
 				GameLog("######TAKING TURN");
 				if(g.CanAttack(currentPlayer,-1))
@@ -1004,9 +998,8 @@ function	PlayGame(gameNumber)
 				g.DisplayPlayers();
 				break;
 			case "E":
-				pMenu.disable("A");
-				pMenu.disable("E");
-				pMenu.enable("Q");
+				pMenu.disable(["A","E","F"]);
+				pMenu.enable(["Q"]);
 				g.takingTurn=false;
 				EndTurn(gameNumber,currentPlayer);
 				g.DisplayPlayers();
