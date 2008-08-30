@@ -1150,10 +1150,16 @@ function	FullAttackQuantity(tlen)
 {
 	return(tlen);
 }
+function	SingleAttackQuantity(tlen)
+{
+	if(tlen > 0)
+		return(1);
+	return(0);
+}
 
 var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort};
 var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck};
-var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity};
+var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity, Single:SingleAttackQuantity};
 function 	TakeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
