@@ -30,7 +30,7 @@ function	Player(userNumber, vote)
 	}
 	this.countTerritory=function()
 	{
-		count=0;
+		var count=0;
 		for(tt in this.territories)
 		{
 			count++;

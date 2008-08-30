@@ -51,7 +51,7 @@ function	GroupAndParanoidAISort(a,b)
 	function countem(map, location, player) {
 		var ret=0;
 
-		dirs=map.LoadDirectional(location);
+		var dirs=map.LoadDirectional(location);
 		for(dir in dirs) {
 			current=dirs[dir];
 			if(map.grid[current]) {
@@ -76,7 +76,7 @@ function	RandomAICheck(gameNumber, playerNumber, base, target)
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 
-	rand=random(100);
+	var rand=random(100);
 	if(rand>10 && g.grid[base].dice>g.grid[target].dice)
 		return(true);
 	if(g.grid[base].dice==g.grid[target].dice)
@@ -103,7 +103,7 @@ function	ParanoidAICheck(gameNumber, playerNumber, base, target)
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 
-	rand=random(100);
+	var rand=random(100);
 	/* If we have an advantage, add to targets array */
 	if(g.grid[base].dice>g.grid[target].dice)
 		return(true);
@@ -116,10 +116,10 @@ function	ParanoidAICheck(gameNumber, playerNumber, base, target)
 }
 function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 {
-	g=games.gameData[gameNumber];
-	computerPlayer=g.players[playerNumber];
+	var g=games.gameData[gameNumber];
+	var computerPlayer=g.players[playerNumber];
 
-	rand=random(100);
+	var rand=random(100);
 	if(g.grid[base].dice>g.grid[target].dice)
 		return(true);
 	if(g.grid[base].dice==g.grid[target].dice)
