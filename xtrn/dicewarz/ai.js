@@ -154,7 +154,7 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 		if(current==target)
 			continue;
 		if(g.grid[current]) {
-			if(g.grid[current].player!=playerNumber && g.grid[current].dice > 1)
+			if(g.grid[current].player!=playerNumber && g.grid[current].dice > 2)
 				return(false);
 		}
 	}
