@@ -138,6 +138,44 @@ function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 	}
 	return(false);
 }
+function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
+{
+	g=games.gameData[gameNumber];
+	computerPlayer=g.players[playerNumber];
+
+	if(computerPlayer.reserve > 7)
+		return(ParanoidAICheck(gameNumber, playerNumber, base, target));
+
+	/* First, check if we would leave ourselves open.  If so,
+	 * do not take the risk */
+	var dirs=g.LoadDirectional(base);
+	for(dir in dirs) {
+		current=dirs[dir];
+		if(current==target)
+			continue;
+		if(g.grid[current]) {
+			if(g.grid[current].player!=player && g.grid[current].dice > 1)
+				return(false);
+		}
+	}
+
+	/* Next, check that we have a dice advantage */
+	if(g.grid[base].dice <= g.grid[target].dice)
+		return(false);
+
+	/* Finally, check that we will still be at least equal after the capture */
+	dirs=g.LoadDirectional(target);
+	for(dir in dirs) {
+		current=dirs[dir];
+		if(current==target)
+			continue;
+		if(g.grid[current]) {
+			if(g.grid[current].player!=player && g.grid[current].dice >= g.grid[base].dice)
+				return(false);
+		}
+	}
+	return(true);
+}
 
 /* Callbacks for selecting the number of targets to use */
 function	RandomAttackQuantity(tlen)
@@ -158,5 +196,5 @@ function	SingleAttackQuantity(tlen)
 }
 
 var AISortFunctions={Random:RandomSort, Wild:WildAndCrazyAISort, KillMost:KillMostDiceAISort, Paranoia:ParanoiaAISort, RandomAI:RandomAISort, GroupParanoid:GroupAndParanoidAISort};
-var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck};
+var AICheckFunctions={Random:RandomAICheck, Paranoid:ParanoidAICheck, Wild:WildAndCrazyAICheck, UltraParanoid:UltraParanoidAICheck};
 var AIQtyFunctions={Random:RandomAttackQuantity, Full:FullAttackQuantity, Single:SingleAttackQuantity};
