@@ -165,13 +165,17 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 
 	/* Finally, check that we will still be at least equal after the capture */
 	dirs=g.LoadDirectional(target);
+	var troublecount=0;
 	for(dir in dirs) {
 		current=dirs[dir];
-		if(current==target)
+		if(current==base)
 			continue;
 		if(g.grid[current]) {
-			if(g.grid[current].player!=playerNumber && g.grid[current].dice >= g.grid[base].dice)
-				return(false);
+			if(g.grid[current].player!=playerNumber && g.grid[current].dice >= g.grid[base].dice) {
+				troublecount += g.grid[current].dice - g.grid[base].dice
+				if(troublecount >= 3)
+					return(false);
+			}
 		}
 	}
 	return(true);
