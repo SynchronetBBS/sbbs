@@ -10,7 +10,7 @@ function	Player(userNumber, vote)
 	this.reserve=0;
 	this.eliminated=false;
 	this.vote=vote;
-	this.AI={ name:"", sort:"Random", check:"Random", qty:"Random" };
+	this.AI={ name:"", sort:"Random", check:"Random", qty:"Random", turns:0, moves:0, used_reserves:0 };
 
 	this.setColors=function(num)
 	{

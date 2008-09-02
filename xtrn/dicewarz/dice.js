@@ -969,6 +969,9 @@ function	PlayGame(gameNumber)
 					console.putmsg("\1r\1hPlease wait. Computer player " + (turn+1) + " taking turn.");
 					mswait(750);
 				/////////////////////////////////////
+				g.players[turn].AI.turns=0;
+				g.players[turn].AI.moves=0;
+				g.players[turn].AI.used_reserves=0;
 				while(g.CanAttack(turn))
 				{
 					if(TakeTurnAI(gameNumber,turn));
@@ -1110,8 +1113,12 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum].target + " from: " + targets[attackNum].base);
 		attackFrom=g.grid[targets[attackNum].base];
 		attackTo=g.grid[targets[attackNum].target];
-		if(attackFrom.dice>1 && attackTo.player!=playerNumber)	Battle(attackFrom,attackTo,gameNumber);
+		if(attackFrom.dice>1 && attackTo.player!=playerNumber) {
+			Battle(attackFrom,attackTo,gameNumber);
+			computerPlayer.moves++;
+		}
 	}
+	computerPlayer.AI.turns++;
 	return true;
 }
 function 	Quit(err) 
