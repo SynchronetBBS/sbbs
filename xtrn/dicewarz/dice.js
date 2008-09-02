@@ -891,7 +891,7 @@ function	Forfeit(gameNumber,playerNumber)
 	{
 		var activePlayers=g.CountActivePlayers();
 		scores[user.number].score+=points[7-activePlayers.length];
-		GameLog("giving " + pts + " points to user " + user.alias);
+		GameLog("giving " + points[7-activePlayers.length] + " points to user " + user.alias);
 		if(activePlayers.length==2) 
 		{
 			g.status=0;
@@ -1444,6 +1444,7 @@ function	GameStatusInfo()
 	}
 	this.FilterData=function()
 	{
+		GameLog("organizing game data");
 		this.singleGames=[]; //TODO: FIX SINGLEPLAYER GAME DISPLAY TO SHOW ONLY FOR INVOLVED PLAYER
 		this.inProgress=[];
 		this.notFull=[];
@@ -1489,6 +1490,7 @@ function	GameStatusInfo()
 							if(gm.winner==user.number) this.youWin.push(ggg);
 						}
 					}
+					else this.inProgress.push(ggg);
 				}
 			}
 		}
