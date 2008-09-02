@@ -144,17 +144,14 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 	computerPlayer=g.players[playerNumber];
 
 	/* If reserves + expected new dice - used reserves is still greater than seven, use the merely paranoid attack */
-	if(computerPlayer.reserve + computerPlayer.territories - computerPlayer.AI.used_reserves > 7) {
-		computer.AI.used_reserves += 7;
+	if(computerPlayer.reserve + computerPlayer.territories - (computerPlayer.AI.moves*7) > 7) {
 		return(ParanoidAICheck(gameNumber, playerNumber, base, target));
 	}
 
 	/* Always try to attack on the first turn */
 	if(computerPlayer.AI.turns==0) {
-		computer.AI.used_reserves += 7;
 		return(ParanoidAICheck(gameNumber, playerNumber, base, target));
 	}
-	computer.AI.used_reserves += 7;
 
 	/* First, check if we would leave ourselves open.  If so,
 	 * do not take the risk */

@@ -971,7 +971,6 @@ function	PlayGame(gameNumber)
 				/////////////////////////////////////
 				g.players[turn].AI.turns=0;
 				g.players[turn].AI.moves=0;
-				g.players[turn].AI.used_reserves=0;
 				while(g.CanAttack(turn))
 				{
 					if(TakeTurnAI(gameNumber,turn));
