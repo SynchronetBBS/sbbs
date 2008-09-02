@@ -966,7 +966,7 @@ function	PlayGame(gameNumber)
 					GameLog("####COMPUTER PLAYER TAKING TURN");
 					ClearLine(1,48);
 					console.gotoxy(2,1);
-					console.putmsg("\1r\1hPlease wait. Computer player " + (turn+1) + " taking turn.");
+					console.putmsg("\1r\1hPlease wait. " + g.players[turn].AI.name + " taking turn.");
 					mswait(750);
 				/////////////////////////////////////
 				g.players[turn].AI.turns=0;
