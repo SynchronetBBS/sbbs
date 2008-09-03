@@ -1000,7 +1000,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					}
 					t=l+1;									/* Store start position of next line */
 					/* Move to start of whitespace */
-					while(l>0 && isspace(l))
+					while(l>0 && isspace(linebuf[l]))
 						l--;
 					outbuf_append(&outbuf, &outp, linebuf, l+1, &outbuf_size);
 					outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
@@ -1013,9 +1013,9 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					for(ocol=prefix_len+1,t=prefix_bytes; t<l; t++) {
 						switch(linebuf[t]) {
 							case '\x01':	/* CTRL-A */
-								if(linebuf[t+1]!='\x01')
-									break;
 								t++;
+								if(linebuf[t]!='\x01')
+									break;
 								/* Fall-through */
 							default:
 								ocol++;
