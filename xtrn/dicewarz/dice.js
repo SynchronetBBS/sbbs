@@ -1114,7 +1114,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 		attackTo=g.grid[targets[attackNum].target];
 		if(attackFrom.dice>1 && attackTo.player!=playerNumber) {
 			Battle(attackFrom,attackTo,gameNumber);
-			computerPlayer.moves++;
+			computerPlayer.AI.moves++;
 		}
 	}
 	computerPlayer.AI.turns++;
