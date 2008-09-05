@@ -21,7 +21,6 @@ function Chat(Engine)
 {
 	while(1)
 	{
-		Engine.Cycle();
 		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
 		if(!Engine.ProcessKey(key)) return;
 	}
@@ -92,6 +91,7 @@ function ChatEngine(root,name,log_)
 	}
 	this.ProcessKey=function(key)
 	{
+		this.Cycle();
 		switch(key.toUpperCase())
 		{
 		case 'Q':
