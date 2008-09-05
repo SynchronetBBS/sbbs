@@ -27,7 +27,6 @@ function Chat(Engine)
 	}
 }
 
-
 //*************MAIN ENGINE*************
 load("qengine.js");
 var ChatLog;
@@ -76,7 +75,7 @@ function ChatEngine(root,name,log_)
 					this.columns=	parameters.columns;
 					this.x=			parameters.x;
 					this.y=			parameters.y;
-					this.input_line={x:this.x,y:this.y};
+					this.input_line={x:this.x,y:this.y,columns:this.columns};
 					this.fullscreen=false;
 					break;
 			}
@@ -123,7 +122,7 @@ function ChatEngine(root,name,log_)
 			this.Send(message);
 			break;
 		default:
-			this.Buffer(key);
+			if(key) this.Buffer(key);
 			break;
 		}
 		return true;
@@ -147,11 +146,21 @@ function ChatEngine(root,name,log_)
 	{
 		if(this.input_line)
 		{
-			var offset=this.buffer.length;
-			console.gotoxy(this.input_line.x+offset,this.input_line.y);
+			if(this.buffer.length>=this.input_line.columns)
+			{
+				var overrun=(this.buffer.length-this.input_line.columns)+1;
+				var truncated=this.buffer.substr(overrun);
+				console.gotoxy(this.input_line.x,this.input_line.y);
+				console.write(truncated);
+			}
+			else 
+			{
+				var offset=this.buffer.length;
+				console.gotoxy(this.input_line.x+offset,this.input_line.y);
+			}
 		}
 		this.buffer+=key;
-		console.putmsg(key);
+		console.write(key);
 	}
 	this.GetNotices=function()
 	{
