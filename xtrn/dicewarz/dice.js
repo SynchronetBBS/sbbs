@@ -198,6 +198,8 @@ function	ViewRankings()
 	printf(PrintPadded("\xC1",14,"\xC4","right"));
 	printf(PrintPadded("\xD9",13,"\xC4","right"));
 	
+	console.putmsg("\r\n\1y\1h Scores will be reset when a player reaches \1c" + pointsToWin + " \1ypoints.");
+	
 	console.gotoxy(1,24);
 	console.pause();
 	console.aborted=false;
@@ -1283,13 +1285,13 @@ function	GameStatusInfo()
 				uname='';
 			res=parseInt(gfile.readln());
 
-			lgame.players[pl]=new Player(u,pt);
+			lgame.players[pl]=new Player(u,-1);
 			lgame.players[pl].setColors(pl);
-			lgame.users[u]=pl;
 			lgame.players[pl].reserve=res;
 
 			if(u>0) 
 			{
+				lgame.users[u]=pl;
 				humans++;
 				if(scores[u]);
 				else
@@ -1408,9 +1410,26 @@ function	GameStatusInfo()
 						this.notFull.splice(gnf,1);
 					}
 				}
+				for(inp in this.inProgress) {
+					if(this.inProgress[inp]==gd) {
+						this.inProgress.splice(inp,1);
+					}
+				}
 				for(yg in this.yourGames) {
 					if(this.yourGames[yg]==gd) {
 						this.yourGames.splice(yg,1);
+					}
+				}
+				for(yt in this.yourTurn)
+				{
+					if(this.yourTurn[yt]==gd) {
+						this.yourTurn.splice(yt,1);
+					}
+				}
+				for(sp in this.singleGames)
+				{
+					if(this.singleGames[sp]==gd) {
+						this.singleGames.splice(sp,1);
 					}
 				}
 				delete this.gameData[gd];
@@ -1445,7 +1464,7 @@ function	GameStatusInfo()
 	this.FilterData=function()
 	{
 		GameLog("organizing game data");
-		this.singleGames=[]; //TODO: FIX SINGLEPLAYER GAME DISPLAY TO SHOW ONLY FOR INVOLVED PLAYER
+		this.singleGames=[]; 
 		this.inProgress=[];
 		this.notFull=[];
 		this.completed=[];

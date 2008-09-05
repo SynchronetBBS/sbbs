@@ -214,6 +214,7 @@ function 	Map(c,r,p,gn)
 			{
 				scores[dead.user].losses+=1;
 				GameLog(system.username(dead.user) + " lost single player game " + this.gameNumber);
+				this.status=0;
 			}
 			else
 			{
