@@ -19,16 +19,23 @@
 */
 function Chat(Engine)
 {
+	if(this.fullscreen) console.clear();
+	else
+	{
+		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+		bbs.sys_status|=SS_MOFF;
+	}
 	while(1)
 	{
 		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
-		if(!Engine.ProcessKey(key)) return;
+		if(!Engine.ProcessKey(key)) break;
 	}
 }
-
 //*************MAIN ENGINE*************
 load("qengine.js");
 var ChatLog;
+var oldpass=console.ctrlkey_passthru;
+
 function ChatEngine(root,name,log_)
 {
 	ChatLog=		(log_?log_:new Logger(this.root,this.name));
@@ -39,6 +46,7 @@ function ChatEngine(root,name,log_)
 	this.realtime=	false;
 	this.input_line=false;
 	this.fullscreen=true;
+	this.boxed=		false;
 	this.columns=	79;
 	this.rows=		24;
 	this.x=			1;
@@ -82,7 +90,7 @@ function ChatEngine(root,name,log_)
 			Log("Chat Initialized:");
 			Log("mode: " + (this.fullscreen==true?"fullscreen":(mode=='W'?"window":"single line")));
 		}
-		if(this.fullscreen) console.clear();
+		bbs.sys_status |= SS_PAUSEOFF;		
 	}
 	this.Cycle=function()
 	{
@@ -94,14 +102,41 @@ function ChatEngine(root,name,log_)
 		this.Cycle();
 		switch(key.toUpperCase())
 		{
-		case 'Q':
-			if(this.buffer=="/") 
-			{
-				file_remove(this.queue.user_file.name);
-				return false;
-			}
-			else this.Buffer(key);
+		//borrowed Deuce's feseditor.js
+		case '\x00':	/* CTRL-@ (NULL) */
+		case '\x01':	/* CTRL-A (Colour) */
+		case '\x02':	/* CTRL-B KEY_HOME */
+		case '\x03':	/* CTRL-C (Center Line) */
+		case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
+		case '\x05':	/* CTRL-E KEY_END */
+		case '\x06':	/* CTRL-F KEY_RIGHT */
+		case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
+		case '\x0b':	/* CTRL-K */
+		case '\x0c':	/* CTRL-L (Insert Line) */
+		case '\x0e':	/* CTRL-N */
+		case '\x0f':	/* CTRL-O (Quick Save/exit in SyncEdit) */
+		case '\x10':	/* CTRL-P */
+		case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
+		case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+		case '\x13':	/* CTRL-S (Xon)  */
+		case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
+		case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
+		case '\x16':	/* CTRL-V (Toggle insert mode) */
+		case '\x17':	/* CTRL-W (Delete Word) */
+		case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
+		case '\x19':	/* CTRL-Y (Delete Line in SyncEdit) */
+		case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
+		case '\x1c':	/* CTRL-\ (RegExp) */
+		case '\x1f':	/* CTRL-_ Safe quick-abort*/
+		case '\x7f':	/* DELETE */
+		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_LEFT:
+		case KEY_RIGHT:
 			break;
+		case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
+			file_remove(this.queue.user_file.name);
+			return false;
 		case '\b':
 			this.BackSpace();
 			break;
@@ -190,7 +225,7 @@ function ChatEngine(root,name,log_)
 			{
 				console.gotoxy(this.x,this.y+parseInt(msg));
 				console.putmsg(this.messages[msg],P_SAVEATR);
-				ClearLine(console.strlen(strip_ctrl(this.messages[msg])));
+				ClearLine(this.columns-console.strlen(strip_ctrl(this.messages[msg])));
 			}
 		}
 	}
@@ -232,6 +267,7 @@ function ChatEngine(root,name,log_)
 	function Quit(ERR)
 	{
 		if(ERR)
+		{
 			switch(ERR)
 			{
 				case 100:
@@ -244,7 +280,11 @@ function ChatEngine(root,name,log_)
 					Log("Error: Unknown");
 					break;
 			}
-		exit(0);
+			exit(0);
+		}
+		console.ctrlkey_passthru=oldpass;
+		bbs.sys_status&=~SS_MOFF;
+		bbs.sys_status&=~SS_PAUSEOFF;
 	}
 }
 
