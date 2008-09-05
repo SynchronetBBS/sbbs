@@ -104,12 +104,10 @@ function ChatEngine(root,name,log_)
 		{
 		//borrowed Deuce's feseditor.js
 		case '\x00':	/* CTRL-@ (NULL) */
-		case '\x01':	/* CTRL-A (Colour) */
 		case '\x02':	/* CTRL-B KEY_HOME */
 		case '\x03':	/* CTRL-C (Center Line) */
 		case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 		case '\x05':	/* CTRL-E KEY_END */
-		case '\x06':	/* CTRL-F KEY_RIGHT */
 		case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 		case '\x0b':	/* CTRL-K */
 		case '\x0c':	/* CTRL-L (Insert Line) */
@@ -141,7 +139,7 @@ function ChatEngine(root,name,log_)
 			this.BackSpace();
 			break;
 		case '\r':
-			if(!this.fullscreen) ClearLine(this.columns,this.input_line.x,this.input_line.y);
+			if(!this.fullscreen) ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
 			else 
 			{
 				console.left(this.buffer.length)
@@ -179,7 +177,7 @@ function ChatEngine(root,name,log_)
 	}
 	this.Buffer=function(key)
 	{
-		if(this.input_line)
+		if(!this.fullscreen)
 		{
 			if(this.buffer.length>=this.input_line.columns)
 			{
