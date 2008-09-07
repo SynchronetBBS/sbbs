@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -158,6 +158,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint		tiny;
 	int32		i=0;
+	JSBool		b;
 
     tiny = JSVAL_TO_INT(id);
 
@@ -176,7 +177,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case PROP_ESCDELAY:
 			if(cio_api.ESCDELAY)
-				JS_ValueToInt32(cx, *vp, cio_api.ESCDELAY);
+				JS_ValueToInt32(cx, *vp, (int32*)cio_api.ESCDELAY);
 			break;
 		case PROP_TEXTATTR:
 			JS_ValueToInt32(cx, *vp, &i);
@@ -212,15 +213,15 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			}
 			break;
 		case PROP_HIGHVIDEO:
-			JS_ValueToBoolean(cx, *vp, &i);
-			if(i)
+			JS_ValueToBoolean(cx, *vp, &b);
+			if(b)
 				highvideo();
 			else
 				lowvideo();
 			break;
 		case PROP_LOWVIDEO:
-			JS_ValueToBoolean(cx, *vp, &i);
-			if(i)
+			JS_ValueToBoolean(cx, *vp, &b);
+			if(b)
 				lowvideo();
 			else
 				highvideo();
@@ -391,7 +392,7 @@ js_conio_showmouse(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 static JSBool
 js_conio_setcursortype(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	type;
+	int32	type;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&type)) {
 		_setcursortype(type);
@@ -405,7 +406,7 @@ js_conio_setcursortype(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 static JSBool
 js_conio_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	x,y;
+	int32	x,y;
 
 	if(argc==2 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&x)
 				&& JSVAL_IS_NUMBER(argv[1]) && JS_ValueToInt32(cx,argv[1],&y)) {
@@ -420,7 +421,7 @@ js_conio_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_conio_putch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	ch;
+	int32	ch;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&ch)) {
 		*rval=INT_TO_JSVAL(putch(ch));
@@ -433,7 +434,7 @@ js_conio_putch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_conio_ungetch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	ch;
+	int32	ch;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&ch)) {
 		*rval=INT_TO_JSVAL(ungetch(ch));
@@ -448,7 +449,7 @@ js_conio_loadfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 {
 	char *	str;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))) {
+	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
 		*rval=INT_TO_JSVAL(loadfont(str));
 		return(JS_TRUE);
 	}
@@ -461,7 +462,7 @@ js_conio_settitle(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 {
 	char *	str;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))) {
+	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
 		settitle(str);
 		*rval=JSVAL_TRUE;
 		return(JS_TRUE);
@@ -475,7 +476,7 @@ js_conio_setname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 {
 	char *	str;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))) {
+	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
 		setname(str);
 		*rval=JSVAL_TRUE;
 		return(JS_TRUE);
@@ -489,7 +490,7 @@ js_conio_cputs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 {
 	char *	str;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))) {
+	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
 		*rval=INT_TO_JSVAL(cputs(str));
 		return(JS_TRUE);
 	}
@@ -500,7 +501,7 @@ js_conio_cputs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_conio_setfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	font;
+	int32	font;
 	int force=JS_FALSE;
 
 	if(argc > 2)
@@ -525,7 +526,7 @@ js_conio_getpass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 {
 	char *	str;
 
-	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))) {
+	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
 		*rval=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,getpass(str)));
 		return(JS_TRUE);
 	}
@@ -536,10 +537,10 @@ js_conio_getpass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 static JSBool
 js_conio_window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int	left=1;
-	int top=1;
-	int	right=cio_textinfo.screenwidth;
-	int	bottom=cio_textinfo.screenheight;
+	int32 left=1;
+	int32 top=1;
+	int32 right=cio_textinfo.screenwidth;
+	int32 bottom=cio_textinfo.screenheight;
 
 	if(argc > 4)
 		return(JS_FALSE);
@@ -586,7 +587,7 @@ static JSBool
 js_conio_cgets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char	buf[258];
-	int		maxlen=255;
+	int32	maxlen=255;
 	char	*ret;
 
 	if(argc > 1)
@@ -630,8 +631,8 @@ js_conio_cscanf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_conio_movetext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int i;
-	int	args[6];
+	int		i;
+	int32	args[6];
 
 	if(argc != 6)
 		return(JS_FALSE);
@@ -648,12 +649,18 @@ js_conio_movetext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSBool
 js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int		args[4]={1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight};
+	int32	args[4];
 	unsigned char	*buffer;
-	int		i,j;
-	int		size;
+	int32	i,j;
+	jsuint	size;
 	jsval	val;
 	JSObject *array;
+
+	/* default values: */
+	args[0]=1;
+	args[1]=1;
+	args[2]=cio_textinfo.screenwidth;
+	args[3]=cio_textinfo.screenheight;
 
 	if(argc != 5)
 		return(JS_FALSE);
@@ -703,12 +710,18 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 static JSBool
 js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int		args[4]={1,1,cio_textinfo.screenwidth,cio_textinfo.screenheight};
+	int32	args[4];
 	unsigned char	*result;
 	int		i;
 	int		size;
 	JSObject *array;
 	jsval	val;
+
+	/* default values: */
+	args[0]=1;
+	args[1]=1;
+	args[2]=cio_textinfo.screenwidth;
+	args[3]=cio_textinfo.screenheight;
 
 	if(argc > 4)
 		return(JS_FALSE);
