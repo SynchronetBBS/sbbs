@@ -1,0 +1,393 @@
+/*
+ * Allows sports picks over DOVE-Net
+ */
+
+/*
+ * INI file is the first argument.
+ * This allows multiple leagues per invocation
+ * or one league per invocation.
+ */
+
+load("lightbar.js");
+
+var path;
+try { barfitty.barf(barf); } catch(e) { path = e.fileName; }
+path = path.replace(/[^\/\\]*$/,'');
+
+var inifile=new File(path + "dovebowl.ini");
+var leaguefile;
+if(!inifile.open("r", true))
+	return_error("Cannot open "+inifile.name,1);
+
+read_messages();
+
+var leagues=inifile.iniGetSections();
+if(leagues.length == 0)
+	return_error("No leagues configured",1);
+
+var leagueslb=new Lightbar();
+
+for(i=0; i<leagues.length; i++) {
+	leagueslb.add(leagues[i],leagues[i]);
+}
+leagueslb.xpos=inifile.iniGetValue(null,"LeaguesXPos",1);
+leagueslb.ypos=inifile.iniGetValue(null,"LeaguesYPos",2);
+
+var ownerlb=new Lightbar();
+ownerlb.add("|Create new set of games","create");
+ownerlb.add("Enter |Results","results");
+ownerlb.add("|Play","play");
+ownerlb.add("|Quit","quit");
+ownerlb.xpos=inifile.iniGetValue(null,"OwnerXPos",1);
+ownerlb.ypos=inifile.iniGetValue(null,"OwnerYPos",2);
+
+while(1) {
+	var league;
+	var done_league=false;
+
+	/* Select the league */
+	if(leagues.length == 1)
+		league=leagues[0];
+	else {
+		console.clear();
+		console.printfile(path+inifile.iniGetValue(null,"LeaguesImage","leagues.asc"));
+		league=leagueslb.getval();
+	}
+	leaguefile=new File(path+league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,''));
+	if(!leaguefile.open(file_exists(leaguefile.name)?"r+":"w+",true,4096))
+		return_error("Cannot open "+leaguefile.name,1);
+
+	while(!done_league) {
+		/* Read the league owner ID */
+		owner=inifile.iniGetValue(league, "Owner");
+		if(owner.toUpperCase() == (user.alias+"@"+system.qwk_id).toUpperCase()) {
+			console.clear();
+			console.printfile(path+inifile.iniGetValue(null,"OwnerImage","owner.asc"));
+
+			/* Owners get a special menu */
+			switch(ownerlb.getval()) {
+				case 'create':
+					create_games(league);
+					continue;
+				case 'results':
+					enter_results(league);
+					continue;
+				case 'play':
+					play(league);
+					break;
+				case 'quit':
+					done_league=true;
+					break;
+			}
+		}
+		else {
+			/* Players menu */
+			play(league);
+			done_league=true;
+		}
+	}
+
+	leaguefile.close();
+	return_error("Program incomplete!", 1);
+}
+
+function play(league)
+{
+	var sets=leaguefile.iniGetSections();
+	var i;
+	var games;
+	var gameslb=new Lightbar();
+	gameslb.current=-1;
+
+	console.clear();
+	console.printfile(path+leaguefile.iniGetValue(null,"GamesImage","gamelist.asc"));
+	console.gotoxy(inifile.iniGetValue(null,"CreateXPos",1),inifile.iniGetValue(null,"CreateYPos",2));
+
+	for(set in sets) {
+		var first=leaguefile.iniGetValue(sets[set], "FirstDate", 0);
+		if(first < (new Date())) {
+			if(user_voted(sets[set]))
+				gameslb.add(sets[set], sets[set], undefined, '[', ']');
+			else {
+				gameslb.add(sets[set], sets[set]);
+				if(gameslb.current==-1)
+					gameslb.current=gameslb.items.length-1;
+			}
+		}
+	}
+	if(gameslb.current==-1)
+		gameslb.current=0;
+	var set=gameslb.getval();
+	make_picks(set, false);
+}
+
+function onevote(away, home, vote, results)
+{
+	var votelb=new Lightbar;
+
+	
+	votelb.direction=1;
+	votelb.hblanks=1;
+	votelb.add(away, 0, 25, vote==0?'[':' ', vote==0?']':' ');
+	votelb.add(home, 1, 25, vote==1?'[':' ', vote==1?']':' ');
+	votelb.add(results?'Tie':'Abstain', 2, results?3:7, vote==2?'[':' ', vote==2?']':' ');
+	return(votelb.getval());
+}
+
+function make_picks(set, results)
+{
+	var games;
+	var game=0;
+	var gamedata=new Array();
+
+	games=leaguefile.iniGetValue(set, "Games", 0);
+	for(i=0; i<games; i++) {
+		gamedata[i]=new Object;
+		gamedata[i].vote=2;
+		gamedata[i].away=leaguefile.iniGetValue(set, "Game"+(i+1)+"Away", '');
+		gamedata[i].home=leaguefile.iniGetValue(set, "Game"+(i+1)+"Home", '');
+		var votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"AwayVotes", '');
+		if(vote_check(votes))
+			gamedata[i].vote=0;
+		votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"HomeVotes", '');
+		if(vote_check(votes))
+			gamedata[i].vote=1;
+	}
+
+	do {
+		var gameslb=new Lightbar;
+		console.clear();
+		console.printfile(path+leaguefile.iniGetValue(null,"PicksImage","picklist.asc"));
+		console.gotoxy(inifile.iniGetValue(null,"PickXPos",1),inifile.iniGetValue(null,"PickYPos",2));
+
+		for(i=0; i<games; i++) {
+			var c=gamedata[i].vote;
+			var home=gamedata[i].home;
+			var away=gamedata[i].away;
+			var gamestr=format("%s%-25.25s%s %s%-25.25s%s %s%s%s", c==0?'[':' ', away, c==0?']':' ', c==1?'[':' ', home, c==1?']':' ', c==2?'[':' ', results?"Tie":"Abstain", c==2?']':' ');
+			gameslb.add(gamestr, i.toString());
+		}
+		gameslb.add("--------------------------- --------------------------- -----"+(results?'':'----'),-1);
+		if((game=gameslb.getval()) != -1)
+			gamedata[game].vote=onevote(gamedata[game].away, gamedata[game].home, gamedata[game].vote, results);
+	} while(game != -1);
+}
+
+function vote_check(votestr)
+{
+	var votes=votestr.split('|');
+	for(vote in votes) {
+		if(votes[vote]==user.alias+'@'+system.qwk_id) {
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+function user_voted(set)
+{
+	var games;
+	var i;
+
+	games=leaguefile.iniGetValue(set, "Games", 0);
+	for(i=0; i<games; i++) {
+		var votestr=leaguefile.iniGetValue(set, "Game"+(i+1)+"HomeVotes","");
+		if(vote_check(votestr))
+			return(true);
+		votestr=leaguefile.iniGetValue(set, "Game"+(i+1)+"AwayVotes","");
+		if(vote_check(votestr))
+			return(true);
+	}
+
+	return false;
+}
+
+function enter_results(league)
+{
+	writeln("Press any key to continue");
+	console.getkey();
+}
+
+function create_games(league)
+{
+	var identifier="";
+	var subject;
+	var games=new Array();
+	var maxawaylen=0;
+	var game=0;
+	var lastdate=new Date(1971,0,1);
+
+	console.clear();
+	console.printfile(path+inifile.iniGetValue(null,"CreateImage","create.asc"));
+	console.gotoxy(inifile.iniGetValue(null,"CreateXPos",1),inifile.iniGetValue(null,"CreateYPos",2));
+	console.write('Identifier (ie: "Week 1"): ');
+	identifier = console.getstr(20);
+	subject=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'') + " " + identifier + " games";
+	var tmpfile=new File(path+format("%04d.tmp",user.number));
+	if(!tmpfile.open("w",false))
+		return_error("Cannot open "+tmpfile.name);
+	tmpfile.writeln("Comments for "+identifier+":");
+	tmpfile.close();
+	console.editfile(tmpfile.name);
+	tmpfile.open("a");
+	tmpfile.writeln("");
+	tmpfile.writeln("=== "+identifier+" Schedule ===");
+
+	console.crlf();
+	while(1) {
+		var date;
+		var curpos;
+		var home;
+		var away;
+		var m;
+		var d;
+		var y;
+
+		game++;
+		console.write(format("Game: %2d\r\n",game));
+		console.write("Date: ");
+		curpos=console.getxy();
+		while(1) {
+			console.gotoxy(curpos.x, curpos.y);
+			date=console.gettemplate("NN/NN/NN");
+			if(date=='')
+				break;
+			var mdy=date.split('/');
+			m=parseInt(mdy[0],10)-1;
+			d=parseInt(mdy[1],10);
+			y=parseInt(mdy[2],10)+2000;
+			date=new Date(y,m,d);
+			/* Validate date */
+			if(date.getFullYear() != y || date.getMonth() != m || date.getDate() != d) {
+				console.gotoxy(curpos.x+10, curpos.y);
+				console.write("Invalid Date!");
+				console.beep();
+				continue;
+			}
+			break;
+		}
+		if(date=='') {
+			game--;
+			break;
+		}
+		console.gotoxy(16, curpos.y);
+		console.write("Away: ");
+		away=console.getstr(25);
+		console.gotoxy(49, curpos.y);
+		console.write("Home: ");
+		home=console.getstr(25);
+		games[game-1]=new Object;
+		games[game-1].date=date;
+		games[game-1].away=away;
+		if(away.length > maxawaylen)
+			maxawaylen = away.length+1;
+		games[game-1].home=home;
+		console.write("\r\n");
+	}
+
+	for(i=0; i<game; i++) {
+		if(games[i].date.valueOf() != lastdate.valueOf()) {
+			tmpfile.writeln('');
+			tmpfile.writeln(format_date(games[i].date));
+			lastdate=new Date(games[i].date.getTime());
+		}
+		tmpfile.writeln(format("%*s at %s", maxawaylen, games[i].away, games[i].home));
+	}
+	tmpfile.close();
+	send_message(user.alias, "DoveBowl", subject, tmpfile.name);
+	file_remove(tmpfile.name);
+}
+
+function return_error(str, num)
+{
+	writeln(str);
+	writeln("Press any key to continue");
+	console.getkey();
+	exit(num);
+}
+
+function format_date(dateval)
+{
+	var dow=new Array("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday");
+	var months=new Array("January","February","March","April","May","June","July","August","September","October","November","December");
+	var ret='';
+
+	d=dateval.getDate();
+	y=dateval.getFullYear();
+
+	ret=dow[dateval.getDay()];
+	ret += ", "+months[dateval.getMonth()];
+	ret += " "+d
+	if(d>10 && d < 20)
+		ret += "th";
+	else switch(d%10) {
+		case 1:
+			ret += 'st';
+			break;
+		case 2:
+			ret += 'nd';
+			break;
+		case 3:
+			ret += 'rd';
+			break;
+		default:
+			ret += 'th';
+	}
+	if(y!=(new Date).getFullYear())
+		ret += ', '+y;
+	return(ret);
+}
+
+function send_message(from_alias, to_alias, subject, filename)
+{
+//	var sports=new MsgBase('DOVE-SPO');
+	var sports=new MsgBase('ENTERTAI');
+	if(!sports.open())
+		return_error("Cannot open message base!",1);
+	var hdr=new Object();
+	hdr.subject=subject;
+	hdr.to=to_alias;
+	hdr.from=from_alias;
+	
+	var tmpfile=new File(filename);
+	if(!tmpfile.open("r",false))
+		return_error("Cannot open "+tmpfile.name);
+	var body=tmpfile.readAll().join("\r\n");
+	if(!sports.save_msg(hdr, body))
+		return_error("Cannot send message");
+	tmpfile.close();
+}
+
+function read_messages(league, ptr)
+{
+	var last_msg;
+	var curr_msg;
+	var hdr;
+	var subject_prefix=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'')+' ';
+	var leaguefile=new File(path+league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,''));
+	var sports=new MsgBase('ENTERTAI');
+
+	if(!leaguefile.open(file_exists(leaguefile.name)?"r+":"w+",true,4096))
+		return_error("Cannot open "+leaguefile.name,1);
+	if(!sports.open())
+		return_error("Cannot open message base!",1);
+
+	last_msg=sports.last_msg;
+	for(curr_msg=ptr+1; curr_msg <= last_msg; curr_msg++) {
+		hdr = sports.get_msg_header(curr_msg);
+		if(hdr.to == 'DoveBowl') {
+			if(hdr.subject.substr(0, subject_prefix.length) == subject_prefix) {
+				if(hdr.subject.substr(-6)==' games') {
+					/* Import new set of games */
+					owner=inifile.iniGetValue(league, "Owner");
+					/* Verify this came from the league owner */
+					/* Create new set of games in the league file */
+				}
+				else {
+					/* Set of Votes? */
+				}
+			}
+		}
+	}
+}
