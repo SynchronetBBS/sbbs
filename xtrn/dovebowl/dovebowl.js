@@ -10,11 +10,18 @@ vote_check/*
 
 load("lightbar.js");
 
+//var sports=new MsgBase('DOVE-SPO');
+var sports=new MsgBase('ENTERTAI');
+if(!sports.open())
+	return_error("Cannot open message base!",1);
+
 var path;
 try { barfitty.barf(barf); } catch(e) { path = e.fileName; }
 path = path.replace(/[^\/\\]*$/,'');
 
 var inifile=new File(path + "dovebowl.ini");
+var tmpfile=new File(path+format("%04d.tmp",user.number));
+
 var leaguefile;
 if(!inifile.open("r+", true))
 	return_error("Cannot open "+inifile.name,1);
@@ -52,11 +59,10 @@ while(1) {
 		league=leagueslb.getval();
 	}
 
-	inifile.iniSetValue(league,"MessagePointer",read_messages(league, inifile.iniGetValue(league, "MessagePointer", 0)));
-
 	leaguefile=new File(path+league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,''));
 	if(!leaguefile.open(file_exists(leaguefile.name)?"r+":"w+",true,4096))
 		return_error("Cannot open "+leaguefile.name,1);
+	inifile.iniSetValue(league,"MessagePointer",read_messages(league, inifile.iniGetValue(league, "MessagePointer", 0)));
 
 	while(!done_league) {
 		/* Read the league owner ID */
@@ -119,7 +125,7 @@ function play(league)
 	if(gameslb.current==-1)
 		gameslb.current=0;
 	var set=gameslb.getval();
-	make_picks(set, false);
+	make_picks(league, set, false);
 }
 
 function onevote(away, home, vote, results, xpos, ypos)
@@ -137,26 +143,33 @@ function onevote(away, home, vote, results, xpos, ypos)
 	return(votelb.getval());
 }
 
-function make_picks(set, results)
+function make_picks(league, set, results)
 {
 	var games;
 	var game=0;
 	var gamedata=new Array();
 	var PickXPos=parseInt(inifile.iniGetValue(null,"PickXPos",1));
 	var PickYPos=parseInt(inifile.iniGetValue(null,"PickYPos",2));
+	var maxawaylen=0;
+	var maxhomelen=0;
 
 	games=leaguefile.iniGetValue(set, "Games", 0);
 	for(i=0; i<games; i++) {
 		gamedata[i]=new Object;
 		gamedata[i].vote=2;
 		gamedata[i].away=leaguefile.iniGetValue(set, "Game"+(i+1)+"Away", '');
+		if(gamedata[i].away.length > maxawaylen)
+			maxawaylen = gamedata[i].away.length;
 		gamedata[i].home=leaguefile.iniGetValue(set, "Game"+(i+1)+"Home", '');
+		if(gamedata[i].home.length > maxhomelen)
+			maxhomelen = gamedata[i].home.length;
 		var votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"AwayVotes", '');
 		if(vote_check(votes))
 			gamedata[i].vote=0;
 		votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"HomeVotes", '');
 		if(vote_check(votes))
 			gamedata[i].vote=1;
+		gamedata[i].orig_vote=gamedata[i].vote;
 	}
 
 	var current=-1;
@@ -179,10 +192,38 @@ function make_picks(set, results)
 		gameslb.add("--------------------------- --------------------------- -----"+(results?'':'----'),-1);
 		if((game=gameslb.getval()) != -1) {
 			gamedata[game].vote=onevote(gamedata[game].away, gamedata[game].home, gamedata[game].vote, results, PickXPos, PickYPos+parseInt(game));
-			set_vote(set, game, vote);
+			set_vote(user.alias+'@'+system.qwk_id, set, game, vote);
 		}
 		current=gameslb.current;
 	} while(game != -1);
+
+	/* Post picks */
+	var subject=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'') + " " + set + " picks";
+	if(!tmpfile.open("w",false))
+		return_error("Cannot open "+tmpfile.name);
+	tmpfile.writeln("=== "+set+" Picks ===");
+	tmpfile.writeln("");
+	var newvotes=0;
+
+	for(i=0; i<games; i++) {
+		var vote="Abstain";
+		if(gamedata[i].vote != gamedata[i].orig_vote)
+			newvotes++;
+		switch(gamedata[i].vote) {
+		case 0:	/* Away */
+			vote=gamedata[i].away;
+			break;
+		case 1:	/* Home */
+			vote=gamedata[i].home;
+			break;
+		}
+
+		tmpfile.writeln(format("%*s at %-*s [%s]", maxawaylen, gamedata[i].away, maxhomelen, gamedata[i].home, vote));
+	}
+	tmpfile.close();
+	if(newvotes > 0)
+		send_message(user.alias, "DoveBowl", subject);
+	inifile.iniSetValue(league,"MessagePointer",read_messages(league, inifile.iniGetValue(league, "MessagePointer", 0)));
 }
 
 function vote_check(votestr)
@@ -239,17 +280,17 @@ function add_vote(votestr, alias)
 	return(votes.join("|"));
 }
 
-function set_vote(set, game, vote)
+function set_vote(alias, set, game, vote)
 {
 	var votestr=leaguefile.iniGetValue(set, "Game"+(parseInt(game)+1)+"AwayVotes","");
 
 	switch(vote) {
 	case '0':		/* Away */
-		votestr=add_vote(votestr, user.alias+'@'+system.qwk_id);
+		votestr=add_vote(votestr, alias);
 		break;
 	case '1':		/* Home */
 	default:
-		votestr=remove_vote(votestr, user.alias+'@'+system.qwk_id);
+		votestr=remove_vote(votestr, alias);
 		break;
 	}
 	leaguefile.iniSetValue(set, "Game"+(parseInt(game)+1)+"HomeVotes",votestr);
@@ -258,10 +299,10 @@ function set_vote(set, game, vote)
 	switch(vote) {
 	default:
 	case '0':		/* Away */
-		votestr=remove_vote(votestr, user.alias+'@'+system.qwk_id);
+		votestr=remove_vote(votestr, alias);
 		break;
 	case '1':		/* Home */
-		votestr=add_vote(votestr, user.alias+'@'+system.qwk_id);
+		votestr=add_vote(votestr, alias);
 		break;
 	}
 	leaguefile.iniSetValue(set, "Game"+(parseInt(game)+1)+"AwayVotes",votestr);
@@ -269,8 +310,85 @@ function set_vote(set, game, vote)
 
 function enter_results(league)
 {
-	writeln("Press any key to continue");
-	console.getkey();
+	var games;
+	var game=0;
+	var gamedata=new Array();
+	var ResultXPos=parseInt(inifile.iniGetValue(null,"ResultXPos",1));
+	var ResultYPos=parseInt(inifile.iniGetValue(null,"ResultYPos",2));
+	var maxawaylen=0;
+	var maxhomelen=0;
+
+	games=leaguefile.iniGetValue(set, "Games", 0);
+	for(i=0; i<games; i++) {
+		gamedata[i]=new Object;
+		gamedata[i].vote=2;
+		gamedata[i].away=leaguefile.iniGetValue(set, "Game"+(i+1)+"Away", '');
+		if(gamedata[i].away.length > maxawaylen)
+			maxawaylen = gamedata[i].away.length;
+		gamedata[i].home=leaguefile.iniGetValue(set, "Game"+(i+1)+"Home", '');
+		if(gamedata[i].home.length > maxhomelen)
+			maxhomelen = gamedata[i].home.length;
+		var votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"AwayVotes", '');
+		if(vote_check(votes))
+			gamedata[i].vote=0;
+		votes=leaguefile.iniGetValue(set, "Game"+(i+1)+"HomeVotes", '');
+		if(vote_check(votes))
+			gamedata[i].vote=1;
+		gamedata[i].orig_vote=gamedata[i].vote;
+	}
+
+	var current=-1;
+	do {
+		var gameslb=new Lightbar;
+		gameslb.current=current;
+		gameslb.xpos=ResultXPos;
+		gameslb.ypos=ResultYPos;
+		console.clear();
+		console.printfile(path+leaguefile.iniGetValue(null,"ResultsImage","resultlist.asc"));
+		console.gotoxy(ResultXPos,ResultYPos);
+
+		for(i=0; i<games; i++) {
+			var c=gamedata[i].vote;
+			var home=gamedata[i].home;
+			var away=gamedata[i].away;
+			var gamestr=format("%s%-25.25s%s %s%-25.25s%s %s%s%s", c==0?'[':' ', away, c==0?']':' ', c==1?'[':' ', home, c==1?']':' ', c==2?'[':' ', results?"Tie":"Abstain", c==2?']':' ');
+			gameslb.add(gamestr, i.toString());
+		}
+		gameslb.add("--------------------------- --------------------------- -----"+(results?'':'----'),-1);
+		if((game=gameslb.getval()) != -1) {
+			gamedata[game].vote=onevote(gamedata[game].away, gamedata[game].home, gamedata[game].vote, results, PickXPos, PickYPos+parseInt(game));
+			set_vote(user.alias+'@'+system.qwk_id, set, game, vote);
+		}
+		current=gameslb.current;
+	} while(game != -1);
+
+	/* Post picks */
+	var subject=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'') + " " + set + " results";
+	if(!tmpfile.open("w",false))
+		return_error("Cannot open "+tmpfile.name);
+	tmpfile.writeln("=== "+set+" Results ===");
+	tmpfile.writeln("");
+	var newvotes=0;
+
+	for(i=0; i<games; i++) {
+		var vote="Not Played";
+		if(gamedata[i].vote != gamedata[i].orig_vote)
+			newvotes++;
+		switch(gamedata[i].vote) {
+		case 0:	/* Away */
+			vote=gamedata[i].away;
+			break;
+		case 1:	/* Home */
+			vote=gamedata[i].home;
+			break;
+		}
+
+		tmpfile.writeln(format("%*s at %-*s [%s]", maxawaylen, gamedata[i].away, maxhomelen, gamedata[i].home, vote));
+	}
+	tmpfile.close();
+	if(newvotes > 0)
+		send_message(user.alias, "DoveBowl", subject);
+	inifile.iniSetValue(league,"MessagePointer",read_messages(league, inifile.iniGetValue(league, "MessagePointer", 0)));
 }
 
 function create_games(league)
@@ -288,7 +406,6 @@ function create_games(league)
 	console.write('Identifier (ie: "Week 1"): ');
 	identifier = console.getstr(20);
 	subject=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'') + " " + identifier + " games";
-	var tmpfile=new File(path+format("%04d.tmp",user.number));
 	if(!tmpfile.open("w",false))
 		return_error("Cannot open "+tmpfile.name);
 	tmpfile.writeln("Comments for "+identifier+":");
@@ -359,7 +476,8 @@ function create_games(league)
 		tmpfile.writeln(format("%*s at %s", maxawaylen, games[i].away, games[i].home));
 	}
 	tmpfile.close();
-	send_message(user.alias, "DoveBowl", subject, tmpfile.name);
+	send_message(user.alias, "DoveBowl", subject);
+	inifile.iniSetValue(league,"MessagePointer",read_messages(league, inifile.iniGetValue(league, "MessagePointer", 0)));
 	file_remove(tmpfile.name);
 }
 
@@ -403,18 +521,13 @@ function format_date(dateval)
 	return(ret);
 }
 
-function send_message(from_alias, to_alias, subject, filename)
+function send_message(from_alias, to_alias, subject)
 {
-//	var sports=new MsgBase('DOVE-SPO');
-	var sports=new MsgBase('ENTERTAI');
-	if(!sports.open())
-		return_error("Cannot open message base!",1);
 	var hdr=new Object();
 	hdr.subject=subject;
 	hdr.to=to_alias;
 	hdr.from=from_alias;
 	
-	var tmpfile=new File(filename);
 	if(!tmpfile.open("r",false))
 		return_error("Cannot open "+tmpfile.name);
 	var body=tmpfile.readAll().join("\r\n");
@@ -429,10 +542,6 @@ function read_messages(league, ptr)
 	var curr_msg;
 	var hdr;
 	var subject_prefix=league.replace(/[\[\]\/\\\=\+\<\>\:\;\"\,\*\|\^]/g,'')+' ';
-	var sports=new MsgBase('ENTERTAI');
-
-	if(!sports.open())
-		return_error("Cannot open message base!",1);
 
 	last_msg=sports.last_msg;
 	for(curr_msg=ptr+1; curr_msg <= last_msg; curr_msg++) {
@@ -488,12 +597,108 @@ function read_messages(league, ptr)
 						}
 					}
 				}
-				else {
-					/* Set of Votes? */
+				else if(hdr.subject.substr(-6)==' picks') {
+					/* Set of Votes */
+					var set=hdr.subject.substr(subject_prefix.length, hdr.subject.length - subject_prefix.length - 6);
+					var body=sports.get_msg_body(curr_msg);
+					var body_lines=body.split(/\r?\n/);
+					var started=false;
+					var alias=hdr.from+"@"+((hdr.from_net_type==undefined || hdr.from_net_type==0)?system.qwk_id:((hdr.from_net_addr+'').replace(/^.*\//,'')));
+
+					/* Read game data for this set */
+					var games;
+					var game=0;
+					var gamedata=new Array();
+
+					games=leaguefile.iniGetValue(set, "Games", 0);
+					for(game=0; game<games; game++) {
+						gamedata[game]=new Object;
+						gamedata[game].away=leaguefile.iniGetValue(set, "Game"+(game+1)+"Away", '');
+						gamedata[game].home=leaguefile.iniGetValue(set, "Game"+(game+1)+"Home", '');
+					}
+
+					/* Verify this was imported BEFORE the first game date */
+					if(new Date(leaguefile.iniGetValue(set, "FirstDate", 0)) < new Date(hdr.when_imported_time*1000))
+						continue;
+
+					for(var line in body_lines) {
+						if(body_lines[line]=="=== "+set+" Picks ===")
+							started=true;
+						else if(started) {
+							if(body_lines[line].length > 0) {
+								var m=body_lines[line].match(/^\s*(.*?) at (.*?)\s+\[(.*)\]$/);
+								if(m != null) {
+									/* Find the correct game */
+									for(game=0; game<games; game++) {
+										if(m[1]==gamedata[game].away && m[2]==gamedata[game].home)
+											break;
+									}
+									if(game==games)
+										continue;
+
+									if(m[1]==m[3]) {
+										set_vote(alias, set, game, '0');
+									}
+									else if(m[2]==m[3]) {
+										set_vote(alias, set, game, '1');
+									}
+									else {
+										set_vote(alias, set, game, '2');
+									}
+								}
+							}
+						}
+					}
+				}
+				else if(hdr.subject.substr(-8==' results') {
+					/* Set of Votes */
+					var set=hdr.subject.substr(subject_prefix.length, hdr.subject.length - subject_prefix.length - 8);
+					var body=sports.get_msg_body(curr_msg);
+					var body_lines=body.split(/\r?\n/);
+					var started=false;
+					var alias=hdr.from+"@"+((hdr.from_net_type==undefined || hdr.from_net_type==0)?system.qwk_id:((hdr.from_net_addr+'').replace(/^.*\//,'')));
+
+					/* Read game data for this set */
+					var games;
+					var game=0;
+					var gamedata=new Array();
+
+					games=leaguefile.iniGetValue(set, "Games", 0);
+					for(game=0; game<games; game++) {
+						gamedata[game]=new Object;
+						gamedata[game].away=leaguefile.iniGetValue(set, "Game"+(game+1)+"Away", '');
+						gamedata[game].home=leaguefile.iniGetValue(set, "Game"+(game+1)+"Home", '');
+					}
+
+					/* Verify this was imported AFTER the first game date */
+					if(new Date(leaguefile.iniGetValue(set, "FirstDate", 0)) > new Date(hdr.when_imported_time*1000))
+						continue;
+
+					for(var line in body_lines) {
+						if(body_lines[line]=="=== "+set+" Results ===")
+							started=true;
+						else if(started) {
+							if(body_lines[line].length > 0) {
+								var m=body_lines[line].match(/^\s*(.*?) at (.*?)\s+\[(.*)\]$/);
+								if(m != null) {
+									/* Find the correct game */
+									for(game=0; game<games; game++) {
+										if(m[1]==gamedata[game].away && m[2]==gamedata[game].home)
+											break;
+									}
+									if(game==games)
+										continue;
+
+									if(m[1]==m[3] || m[2]==m[3]) {
+										leaguefile.iniSetValue(set, "Game"+(game+1)+"Winner", m[3]);
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
 	}
-	sports.close();
 	return(curr_msg-1);
 }
