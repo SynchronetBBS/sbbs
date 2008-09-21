@@ -654,7 +654,7 @@ function read_messages(league, ptr)
 						}
 					}
 				}
-				else if(hdr.subject.substr(-8==' results') {
+				else if(hdr.subject.substr(-8==' results')) {
 					/* Set of Votes */
 					var set=hdr.subject.substr(subject_prefix.length, hdr.subject.length - subject_prefix.length - 8);
 					var body=sports.get_msg_body(curr_msg);
