@@ -10,6 +10,7 @@
 #include "ooii_cmenus.h"
 #include "ooii_bmenus.h"
 #include "ooii_logons.h"
+#include "ooii_sounds.h"
 
 static unsigned char stormColors[7]={7,12,8,15,14,13,1};
 

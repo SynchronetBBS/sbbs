@@ -10,6 +10,7 @@ else
  OBJS += $(MTOBJODIR)$(DIRSEP)ooii_logons$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)ooii_cmenus$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)ooii_bmenus$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)ooii_sounds$(OFILE)
 endif
 
 ifdef USE_WXWIDGETS
