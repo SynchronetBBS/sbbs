@@ -1494,7 +1494,147 @@ static int incomingMapScanner(char *codeStr)
 
 /* TODO: Sound support */
 static int incomingSoundVoc(char *codeStr) {
-	return(1);
+	char *origCodeStr=codeStr;
+
+	codeStr++;
+	switch(*codeStr) {
+		case '1':
+			xp_play_sample(ooii_snd_welcome, sizeof(ooii_snd_welcome), TRUE);
+			break;
+		case '3':
+			xp_play_sample(ooii_snd_countdn, sizeof(ooii_snd_countdn), FALSE);
+			/* Fallthrough */
+		case '2':
+			xp_play_sample(ooii_snd_explode, sizeof(ooii_snd_explode), TRUE);
+			break;
+		case '4':
+			xp_play_sample(ooii_snd_clone, sizeof(ooii_snd_clone), TRUE);
+			break;
+		case '5':
+			if(xp_random(2))
+				xp_play_sample(ooii_snd_danger1, sizeof(ooii_snd_danger1), TRUE);
+			else
+				xp_play_sample(ooii_snd_danger2, sizeof(ooii_snd_danger2), TRUE);
+			break;
+		case '6':
+			xp_play_sample(ooii_snd_steam, sizeof(ooii_snd_steam), TRUE);
+			break;
+		case '7':
+			xp_play_sample(ooii_snd_scream1, sizeof(ooii_snd_scream1), TRUE);
+			break;
+		case '8':
+			xp_play_sample(ooii_snd_watch, sizeof(ooii_snd_watch), TRUE);
+			break;
+		case '9':
+			xp_play_sample(ooii_snd_levelup, sizeof(ooii_snd_levelup), TRUE);
+			break;
+		case 'A':
+			xp_play_sample(ooii_snd_inflame, sizeof(ooii_snd_inflame), TRUE);
+			break;
+		case 'B':
+			switch(xp_random(3)) {
+				case 0:
+					xp_play_sample(ooii_snd_hit1, sizeof(ooii_snd_hit1), TRUE);
+					break;
+				case 1:
+					xp_play_sample(ooii_snd_hit2, sizeof(ooii_snd_hit2), TRUE);
+					break;
+				case 2:
+					xp_play_sample(ooii_snd_hit3, sizeof(ooii_snd_hit3), TRUE);
+					break;
+			}
+			break;
+		case 'C':
+			xp_play_sample(ooii_snd_timeisup, sizeof(ooii_snd_timeisup), TRUE);
+			break;
+		case 'D':
+			xp_play_sample(ooii_snd_healing, sizeof(ooii_snd_healing), TRUE);
+			break;
+		case 'E':
+			xp_play_sample(ooii_snd_lrange2, sizeof(ooii_snd_lrange2), TRUE);
+			break;
+		case 'F':
+			xp_play_sample(ooii_snd_cackle, sizeof(ooii_snd_cackle), TRUE);
+			break;
+		case 'G':
+			xp_play_sample(ooii_snd_teleport, sizeof(ooii_snd_teleport), TRUE);
+			break;
+		case 'H':
+			xp_play_sample(ooii_snd_genetics, sizeof(ooii_snd_genetics), TRUE);
+			break;
+		case 'I':
+			xp_play_sample(ooii_snd_remote, sizeof(ooii_snd_remote), TRUE);
+			break;
+		case 'J':
+			xp_play_sample(ooii_snd_afbdoor, sizeof(ooii_snd_afbdoor), TRUE);
+			break;
+		case 'K':
+			xp_play_sample(ooii_snd_alarm, sizeof(ooii_snd_alarm), TRUE);
+			break;
+		case 'L':
+			xp_play_sample(ooii_snd_reverse, sizeof(ooii_snd_reverse), TRUE);
+			break;
+		case 'M':
+			xp_play_sample(ooii_snd_aerial, sizeof(ooii_snd_aerial), TRUE);
+			break;
+		case 'N':
+			xp_play_sample(ooii_snd_phaser, sizeof(ooii_snd_phaser), TRUE);
+			break;
+		case 'O':
+			switch(xp_random(3)) {
+				case 0:
+					xp_play_sample(ooii_snd_miss1, sizeof(ooii_snd_miss1), TRUE);
+					break;
+				case 1:
+					xp_play_sample(ooii_snd_miss2, sizeof(ooii_snd_miss2), TRUE);
+					break;
+				case 2:
+					xp_play_sample(ooii_snd_miss3, sizeof(ooii_snd_miss3), TRUE);
+					break;
+			}
+			break;
+		case 'P':
+			if(xp_random(2))
+				xp_play_sample(ooii_snd_music1, sizeof(ooii_snd_music1), TRUE);
+			else
+				xp_play_sample(ooii_snd_music2, sizeof(ooii_snd_music2), TRUE);
+			break;
+		case 'Q':
+			xp_play_sample(ooii_snd_device, sizeof(ooii_snd_device), TRUE);
+			break;
+		case 'R':
+			xp_play_sample(ooii_snd_death, sizeof(ooii_snd_death), TRUE);
+			break;
+		case 'S':
+			xp_play_sample(ooii_snd_good, sizeof(ooii_snd_good), TRUE);
+			break;
+		case 'T':
+			xp_play_sample(ooii_snd_yahoo, sizeof(ooii_snd_yahoo), TRUE);
+			break;
+		case 'U':
+			xp_play_sample(ooii_snd_scream2, sizeof(ooii_snd_scream2), TRUE);
+			break;
+		case 'V':
+			xp_play_sample(ooii_snd_wap, sizeof(ooii_snd_wap), TRUE);
+			break;
+		case 'W':
+			xp_play_sample(ooii_snd_zip, sizeof(ooii_snd_zip), TRUE);
+			break;
+		case 'X':
+			xp_play_sample(ooii_snd_lrange3, sizeof(ooii_snd_lrange3), TRUE);
+			break;
+		case 'Y':
+			xp_play_sample(ooii_snd_snip, sizeof(ooii_snd_snip), TRUE);
+			break;
+		case 'Z':
+			xp_play_sample(ooii_snd_pow, sizeof(ooii_snd_pow), TRUE);
+			break;
+		default:
+			/* LRANGE1 is unused */
+			/* xp_play_sample(ooii_snd_lrange1, sizeof(ooii_snd_lrange1), TRUE); */
+			break;
+	}
+	return(codeStr-origCodeStr);
 }
 
 void handle_ooii_code(char *codeStr)
