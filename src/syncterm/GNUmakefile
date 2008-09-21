@@ -3,6 +3,14 @@ include ${SRC_ROOT}/build/Common.gmake
 
 CFLAGS	+=	-I/usr/local/include	# cryptlib.h lives here by default
 CFLAGS	+=	-I../../include/cryptlib	# cryptlib.h lives here in CVS
+ifndef WITH_OOII
+ CFLAGS	+= -DWITHOUT_OOII=1
+else
+ OBJS += $(MTOBJODIR)$(DIRSEP)ooii$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)ooii_logons$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)ooii_cmenus$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)ooii_bmenus$(OFILE)
+endif
 
 ifdef USE_WXWIDGETS
 

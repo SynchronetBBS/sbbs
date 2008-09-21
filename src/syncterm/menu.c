@@ -145,6 +145,9 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"ANSI Music Control (Alt-M)"
 						,"Font Control (Alt-F)"
 						,"Toggle Doorway Mode"
+#ifndef WITHOUT_OOII
+						,"Toggle Operation Overkill ][ Mode"
+#endif
 						,"Exit (Alt-X)"
 						,"Edit Dialing Directory (ALT-E)"
 						,""};
@@ -178,6 +181,9 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						"`ANSI Music`     Enables/Disables ANSI Music\n"
 						"`Font`           Changes the current font (when supported)\n"
 						"`Doorway Mode`   Toggles the current DoorWay (keyboard input) setting\n"
+#ifndef WITHOUT_OOII
+						"`Operation Overkill ][ Mode`   Toggles the current Operation Overkill ][ setting\n"
+#endif
 						"`Exit`           Disconnects and closes Syncterm";
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
