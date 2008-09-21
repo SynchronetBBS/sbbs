@@ -112,7 +112,7 @@ function play(league)
 
 	for(set in sets) {
 		var first=new Date(leaguefile.iniGetValue(sets[set], "FirstDate", 0));
-//		if(first < (new Date())) {
+		if(first > (new Date())) {
 			if(user_voted(sets[set]))
 				gameslb.add(sets[set], sets[set], undefined, '[', ']');
 			else {
@@ -120,7 +120,7 @@ function play(league)
 				if(gameslb.current==-1)
 					gameslb.current=gameslb.items.length-1;
 			}
-//		}
+		}
 	}
 	if(gameslb.current==-1)
 		gameslb.current=0;
