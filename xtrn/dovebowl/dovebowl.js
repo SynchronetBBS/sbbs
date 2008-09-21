@@ -1,4 +1,4 @@
-vote_check/*
+/*
  * Allows sports picks over DOVE-Net
  */
 
