@@ -560,8 +560,9 @@ function read_messages(league, ptr)
 						var body_lines=body.split(/\r?\n/);
 						var started=false;
 						var got_date=false;
-						var first_date=new Date();
-						
+						var first_date;
+						var this_date;
+
 						for(var line in body_lines) {
 							if(body_lines[line]=="=== "+set+" Schedule ===")
 								started=true;
@@ -569,24 +570,27 @@ function read_messages(league, ptr)
 								if(body_lines[line].length > 0) {
 									if(body_lines[line].substr(0, 1) != ' ') {
 										/* This is a new date */
-										var d=new Date(body_lines[line]);
-										if(d.toString() != "Invalid Date") {
+										this_date=new Date(body_lines[line]);
+										if(this_date.toString() != "Invalid Date") {
 											if(got_date) {
-												if(d < first_date)
-													first_date = d;
+												if(this_date < first_date)
+													first_date = this_date;
 											}
 											else {
-												first_date = d;
+												first_date = this_date;
 												got_date=true;
 											}
 										}
 									}
 									else {
 										/* This is a game */
-										var teams=body_lines[line].replace(/^\s+/, '').split(/ at /, 2);
-										leaguefile.iniSetValue(set, "Game"+(games+1)+"Away", teams[0]);
-										leaguefile.iniSetValue(set, "Game"+(games+1)+"Home", teams[1]);
-										games++;
+										if(got_date) {
+											var teams=body_lines[line].replace(/^\s+/, '').split(/ at /, 2);
+											leaguefile.iniSetValue(set, "Game"+(games+1)+"Away", teams[0]);
+											leaguefile.iniSetValue(set, "Game"+(games+1)+"Home", teams[1]);
+											leaguefile.iniSetValue(set, "Game"+(games+1)+"Date", this_date.toString());
+											games++;
+										}
 									}
 								}
 							}
