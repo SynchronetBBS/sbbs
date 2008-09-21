@@ -1821,6 +1821,7 @@ BOOL doterm(struct bbslist *bbs)
 	struct text_info txtinfo;
 #ifndef WITHOUT_OOII
 	BYTE ooii_buf[256];
+	BYTE ooii_init[] = "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";	/* for OOII auto-enable */
 #endif
 	BOOL ooii_mode=FALSE;
 
@@ -2053,10 +2054,25 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(inch == '|') {
-									handle_ooii_code(ooii_buf);
+									if(handle_ooii_code(ooii_buf))
+										ooii_mode=FALSE;
 									ooii_buf[0]=0;
 								}
 								continue;
+							}
+						}
+						else {
+							j=strlen(ooii_buf);
+							if(inch==ooii_init[j]) {
+								ooii_buf[j++]=inch;
+								ooii_buf[j]=0;
+								if(ooii_init[j]==0) {
+									ooii_mode=TRUE;
+									ooii_buf[0]=0;
+								}
+							}
+							else {
+								ooii_buf[0]=0;
 							}
 						}
 #endif

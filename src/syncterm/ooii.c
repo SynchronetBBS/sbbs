@@ -1637,8 +1637,10 @@ static int incomingSoundVoc(char *codeStr) {
 	return(codeStr-origCodeStr);
 }
 
-void handle_ooii_code(char *codeStr)
+BOOL handle_ooii_code(char *codeStr)
 {
+	BOOL	quit=FALSE;
+
 	codeStr++;	/* Skip intro char */
 
 	for(;*codeStr && *codeStr != '|'; codeStr++) {
@@ -1668,10 +1670,12 @@ void handle_ooii_code(char *codeStr)
 					codeStr += incomingSoundVoc(codeStr);
 					break;
     			case '\\' :
+					quit=TRUE;
 					//quitTerm=1;
 					break;
 			}
 		}
 	}
+	return(quit);
 }
 
