@@ -30,6 +30,10 @@
 #include "gutsz.h"
 #endif
 
+#ifndef WITHOUT_OOII
+#include "ooii.h"
+#endif
+
 #define	ANSI_REPLY_BUFSIZE	2048
 
 #define DUMP
