@@ -1325,6 +1325,8 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	textattr(cterm.attr);
 	_setcursortype(cterm.cursor);
 	ch[1]=0;
+	if(buflen==-1)
+		buflen=strlen(buf);
 	switch(buflen) {
 		case 0:
 			break;
