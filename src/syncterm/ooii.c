@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <genwrap.h>
+#include <xpbeep.h>
 #include <ciolib.h>
 #include <cterm.h>
 #include <time.h>
@@ -208,14 +209,14 @@ static void readInPix(char codeCh) {
 			break;
 	}
 
-	if ((char)codeCh>='A' && (char)codeCh<='E') {
-		puttext(1, 1, 80, 24, ooii_cmenus+(fptr*4000));
+	if (codeCh>='A' && codeCh<='E') {
+		puttext(1, 1, 80, 24, (unsigned char *)ooii_cmenus+(fptr*4000));
 	}
-	else if ((char)codeCh>='F' && (char)codeCh<='K') {
-		puttext(1, 1, 80, 24, ooii_bmenus+(fptr*4000));
+	else if (codeCh>='F' && codeCh<='K') {
+		puttext(1, 1, 80, 24, (unsigned char *)ooii_bmenus+(fptr*4000));
 	}
-	else if ((char)codeCh=='0') {
-		puttext(1, 1, 80, 24, ooii_logons+(fptr*4000));
+	else if (codeCh=='0') {
+		puttext(1, 1, 80, 24, (unsigned char *)ooii_logons+(fptr*4000));
 	}
 	cterm.xpos=1;
 	cterm.ypos=promptY+1;
