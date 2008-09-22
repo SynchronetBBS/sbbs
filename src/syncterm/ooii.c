@@ -951,6 +951,8 @@ static int incomingCheckStatus(char *codeStr) {
 	char *origCodeStr=codeStr;
 
 	cterm_clearscreen(0);
+	cterm.xpos=1;
+	cterm.ypos=1;
 
 	codeStr++;
 	getBlock(&codeStr,menuBlock);
@@ -1192,7 +1194,10 @@ static int incomingMapScanner(char *codeStr)
 	codeStr++;
 
 	switch ((char)codeStr[0]) {
-		case 'F' : cterm_clearscreen(0);
+		case 'F' :
+			cterm_clearscreen(0);
+			cterm.xpos=1;
+			cterm.ypos=1;
 			cterm.attr=1;
 			cterm_write("\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
 			cterm_write("³ ", -1, NULL, 0, NULL); cterm.attr=5; cterm_write("ÖÄ", -1, NULL, 0, NULL); cterm.attr=13; cterm_write("Infrared", -1, NULL, 0, NULL); cterm.attr=5;
@@ -1223,7 +1228,8 @@ static int incomingMapScanner(char *codeStr)
 			cterm_write("ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n", -1, NULL, 0, NULL);
 			break;
 
-		case 'M' : codeStr++;
+		case 'M' :
+			codeStr++;
 
 			if (codeStr[0]=='A')
 				where=4; // AFB
@@ -1279,7 +1285,8 @@ static int incomingMapScanner(char *codeStr)
 			cterm.xpos=1; cterm.ypos=14;
 			break;
 
-		case 'O' : codeStr++;
+		case 'O' :
+			codeStr++;
 
 			for (zz=1;zz<9;zz++) {
 
@@ -1292,12 +1299,14 @@ static int incomingMapScanner(char *codeStr)
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						break;
 
-					case 2 : getBlock(&codeStr,menuBlock);
+					case 2 :
+						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock,",");
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						break;
 
-					case 3 : getBlock(&codeStr,menuBlock);
+					case 3 :
+						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock," ");
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						break;
@@ -1317,13 +1326,15 @@ static int incomingMapScanner(char *codeStr)
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						break;
 
-					case 6 : getBlock(&codeStr,menuBlock);
+					case 6 :
+						getBlock(&codeStr,menuBlock);
 						cterm_write("(", 1, NULL, 0, NULL);
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						cterm_write(")", 1, NULL, 0, NULL);
 						break;
 
-					case 7 : cterm.xpos=66; cterm.ypos=6;
+					case 7 :
+						cterm.xpos=66; cterm.ypos=6;
 						getBlock(&codeStr,menuBlock);
 						yy=atoi(menuBlock);
 						if (yy>=40)
@@ -1334,7 +1345,8 @@ static int incomingMapScanner(char *codeStr)
 						cterm_write(menuBlock, -1, NULL, 0, NULL);
 						break;
 
-					case 8 : cterm.xpos=66; cterm.ypos=7;
+					case 8 :
+						cterm.xpos=66; cterm.ypos=7;
 						cterm.attr=14;
 						getBlock(&codeStr,menuBlock);
 						yy=atoi(menuBlock);
@@ -1352,6 +1364,7 @@ static int incomingMapScanner(char *codeStr)
 				}
 			}
 
+			codeStr++;
 			if (codeStr[0]=='I') {
 				codeStr++;
 				cterm.xpos=34; cterm.ypos=5;
@@ -1411,7 +1424,8 @@ static int incomingMapScanner(char *codeStr)
 			break;
 
 
-		case 'D' : codeStr++;
+		case 'D' :
+			codeStr++;
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			cterm.xpos=3; cterm.ypos=10;
