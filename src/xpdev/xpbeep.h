@@ -36,7 +36,7 @@ extern "C" {
 BOOL xptone_open(void);
 BOOL xptone_close(void);
 void xpbeep(double freq, DWORD duration);
-BOOL xp_play_sample(unsigned char *sample, size_t sample_size, BOOL background);
+BOOL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background);
 BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__
 void unix_beep(int freq, int dur);

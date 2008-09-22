@@ -66,7 +66,7 @@ static sem_t sample_pending_sem;
 static sem_t sample_complete_sem;
 static BOOL sample_initialized=FALSE;
 static pthread_mutex_t sample_mutex;
-static unsigned char *sample_buffer;
+static const unsigned char *sample_buffer;
 static size_t sample_size;
 #endif
 
@@ -105,7 +105,7 @@ static SDL_sem			*sdlToneDone;
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
 static	WAVEHDR			wh;
-static	unsigned char	*wave;
+static	const unsigned char	*wave;
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -350,7 +350,7 @@ BOOL xptone_open(void)
 		if(sound_device_open_failed)
 			return(FALSE);
 		memset(&wh, 0, sizeof(wh));
-		wh.lpData=wave;
+		wh.lpData=(unsigned char	*)wave;
 		wh.dwBufferLength=S_RATE*15/2+1;
 		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
 			sound_device_open_failed=TRUE;
@@ -586,7 +586,7 @@ error_return:
 	pthread_mutex_unlock(&sample_mutex);
 }
 
-BOOL DLLCALL xp_play_sample(unsigned char *sample, size_t size, BOOL background)
+BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
 {
 	if(!sample_initialized) {
 		if(pthread_mutex_init(&sample_mutex, NULL)!=0)
@@ -619,9 +619,10 @@ BOOL DLLCALL xp_play_sample(unsigned char *sample, size_t size, BOOL background)
 		sem_wait(&sample_complete_sem);
 		sem_post(&sample_complete_sem);
 	}
+	return(TRUE);
 }
 #else
-BOOL DLLCALL xp_play_sample(unsigned char *sample, size_t sample_size, BOOL background)
+BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background)
 {
 	BOOL			must_close=FALSE;
 
