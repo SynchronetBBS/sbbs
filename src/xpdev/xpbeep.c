@@ -105,7 +105,6 @@ static SDL_sem			*sdlToneDone;
 #ifdef _WIN32
 static	HWAVEOUT		waveOut;
 static	WAVEHDR			wh;
-static	const unsigned char	*wave;
 #endif
 
 #ifdef USE_ALSA_SOUND
@@ -350,13 +349,8 @@ BOOL xptone_open(void)
 		if(sound_device_open_failed)
 			return(FALSE);
 		memset(&wh, 0, sizeof(wh));
-		wh.lpData=(unsigned char	*)wave;
+		wh.lpData=NULL;
 		wh.dwBufferLength=S_RATE*15/2+1;
-		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR) {
-			sound_device_open_failed=TRUE;
-			waveOutClose(waveOut);
-			return(FALSE);
-		}
 		handle_type=SOUND_DEVICE_WIN32;
 		if(!sound_device_open_failed)
 			return(TRUE);
@@ -460,8 +454,6 @@ BOOL xptone_close(void)
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
 		waveOutClose(waveOut);
-		while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
-			SLEEP(1);
 	}
 #endif
 
@@ -540,11 +532,15 @@ void xp_play_sample_thread(void *data)
 
 	#ifdef _WIN32
 		if(handle_type==SOUND_DEVICE_WIN32) {
-			wave=sample_buffer;
+			wh.lpData=sample_buffer;
 			wh.dwBufferLength=sample_size;
-			if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-				while(!(wh.dwFlags & WHDR_DONE))
-					SLEEP(1);
+			if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+				if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+					while(!(wh.dwFlags & WHDR_DONE))
+						SLEEP(1);
+					while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+						SLEEP(1);
+				}
 			}
 		}
 	#endif
@@ -667,11 +663,17 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 
 #ifdef _WIN32
 	if(handle_type==SOUND_DEVICE_WIN32) {
-		wave=sample;
+		wh.lpData=sample;
 		wh.dwBufferLength=sample_size;
-		if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
-			while(!(wh.dwFlags & WHDR_DONE))
-				SLEEP(1);
+		wh.lpData=sample_buffer;
+		wh.dwBufferLength=sample_size;
+		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+			if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+				while(!(wh.dwFlags & WHDR_DONE))
+					SLEEP(1);
+				while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+					SLEEP(1);
+			}
 		}
 	}
 #endif
