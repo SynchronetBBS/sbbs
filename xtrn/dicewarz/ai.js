@@ -143,8 +143,13 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
 
+	/* If we don't have our "fair share" of territories, use paranoid attack */
+	if(computerPlayer.territories <= g.playerTerr) {
+		return(ParanoidAICheck(gameNumber, playerNumber, base, target));
+	}
+
 	/* If reserves + expected new dice - used reserves is still greater than seven, use the merely paranoid attack */
-	if(computerPlayer.reserve + computerPlayer.territories - (computerPlayer.AI.moves*7) > 7) {
+	if(computerPlayer.reserve + computerPlayer.territories - (computerPlayer.AI.moves*8) > 7) {
 		return(ParanoidAICheck(gameNumber, playerNumber, base, target));
 	}
 
