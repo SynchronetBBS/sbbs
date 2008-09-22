@@ -56,9 +56,10 @@
 #include "genwrap.h"
 #include "xpbeep.h"
 
-#include "threadwrap.h"
-
 #define S_RATE	22050
+
+#ifdef XPDEV_THREAD_SAFE
+#include "threadwrap.h"
 
 static BOOL sample_thread_running=FALSE;
 static sem_t sample_pending_sem;
@@ -67,6 +68,7 @@ static BOOL sample_initialized=FALSE;
 static pthread_mutex_t sample_mutex;
 static unsigned char *sample_buffer;
 static size_t sample_size;
+#endif
 
 static BOOL sound_device_open_failed=FALSE;
 static BOOL alsa_device_open_failed=FALSE;
@@ -480,6 +482,7 @@ BOOL xptone_close(void)
 	return(TRUE);
 }
 
+#ifdef XPDEV_THREAD_SAFE
 void xp_play_sample_thread(void *data)
 {
 	BOOL			must_close=FALSE;
@@ -617,6 +620,96 @@ BOOL DLLCALL xp_play_sample(unsigned char *sample, size_t size, BOOL background)
 		sem_post(&sample_complete_sem);
 	}
 }
+#else
+BOOL DLLCALL xp_play_sample(unsigned char *sample, size_t sample_size, BOOL background)
+{
+	BOOL			must_close=FALSE;
+
+#ifdef USE_ALSA_SOUND
+	snd_pcm_hw_params_t *hw_params=NULL;
+	void *dl;
+#endif
+
+#ifdef AFMT_U8
+	int wr;
+	int	i;
+#endif
+
+	if(handle_type==SOUND_DEVICE_CLOSED) {
+		must_close=TRUE;
+		if(!xptone_open())
+			return(FALSE);
+	}
+
+#ifdef WITH_PORTAUDIO
+	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
+		pawave=sample;
+		portaudio_buf_pos=0;
+		portaudio_buf_len=sample_size;
+		Pa_StartStream(portaudio_stream);
+		while(Pa_StreamActive(portaudio_stream))
+			SLEEP(1);
+		Pa_StopStream(portaudio_stream);
+	}
+#endif
+
+#ifdef WITH_SDL_AUDIO
+	if(handle_type==SOUND_DEVICE_SDL) {
+		sdl.LockAudio();
+		swave=sample;
+		sdl_audio_buf_pos=0;
+		sdl_audio_buf_len=sample_size;
+		sdl.UnlockAudio();
+		sdl.SemWait(sdlToneDone);
+	}
+#endif
+
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32) {
+		wave=sample;
+		wh.dwBufferLength=sample_size;
+		if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
+			while(!(wh.dwFlags & WHDR_DONE))
+				SLEEP(1);
+		}
+	}
+#endif
+
+#ifdef USE_ALSA_SOUND
+	if(handle_type==SOUND_DEVICE_ALSA) {
+		alsa_api->snd_pcm_hw_params_free(hw_params);
+		if(alsa_api->snd_pcm_writei(handle, sample, sample_size)!=sample_size) {
+			/* Go back and try OSS */
+			alsa_device_open_failed=TRUE;
+			alsa_api->snd_pcm_close (handle);
+			xptone_open();
+		}
+		else {
+			if(must_close)
+				xptone_close();
+			return(TRUE);
+		}
+	}
+#endif
+
+#ifdef AFMT_U8
+	if(handle_type==SOUND_DEVICE_OSS) {
+		wr=0;
+		while(wr<sample_size) {
+			i=write(dsp, sample+wr, sample_size-wr);
+			if(i>=0)
+				wr+=i;
+		}
+		if(must_close)
+			xptone_close();
+		return(TRUE);
+	}
+#endif
+	if(must_close)
+		xptone_close();
+	return(FALSE);
+}
+#endif
 
 /********************************************************************************/
 /* Play a tone through the wave/DSP output device (sound card) - Deuce			*/
