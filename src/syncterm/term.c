@@ -229,11 +229,18 @@ void dump(BYTE* buf, int len)
 /* Zmodem Stuff */
 int log_level = LOG_INFO;
 
+struct zmodem_cbdata {
+	zmodem_t		*zm;
+	struct bbslist	*bbs;
+};
+
 enum { ZMODEM_MODE_SEND, ZMODEM_MODE_RECV } zmodem_mode;
 
 static BOOL zmodem_check_abort(void* vp)
 {
-	zmodem_t* zm = (zmodem_t*)vp;
+	struct zmodem_cbdata	*zcb=(struct zmodem_cbdata *)vp;
+	zmodem_t*				zm=zcb->zm;
+
 	if(zm!=NULL && kbhit()) {
 		switch(getch()) {
 			case ESC:
@@ -325,7 +332,8 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 	time_t		now;
 	static time_t last_progress;
 	int			old_hold=hold_update;
-	zmodem_t*	zm=(zmodem_t*)cbdata;
+	struct zmodem_cbdata *zcb=(struct zmodem_cbdata *)cbdata;
+	zmodem_t*	zm=zcb->zm;
 
 	zmodem_check_abort(cbdata);
 
@@ -936,11 +944,59 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	erase_transfer_window();
 }
 
+BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
+{
+	struct	text_info txtinfo;
+	char	*buf;
+	BOOL	ret=FALSE;
+	int		i;
+	char 	*opts[4]={
+					 "Overwrite"
+					,"Choose New Name"
+					,"Cancel Download"
+					,NULL
+				  };
+	struct zmodem_cbdata *cb=(struct zmodem_cbdata *)cbdata;
+	zmodem_t	*zm=(zmodem_t *)zm_void;
+	char		fpath[MAX_PATH+1];
+
+    gettextinfo(&txtinfo);
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	init_uifc(FALSE, FALSE);
+
+	i=0;
+	uifc.helpbuf="Duplicate file... choose action\n";
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
+		case 0:	/* Overwrite */
+			sprintf(fpath,"%s/%s",cb->bbs->dldir,zm->current_file_name);
+			unlink(fpath);
+			ret=TRUE;
+			break;
+		case 1:	/* Choose new name */
+			uifc.changes=0;
+			uifc.helpbuf="Duplicate Filename... enter new name";
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",zm->current_file_name,sizeof(zm->current_file_name)-1,K_EDIT)==-1) {
+				ret=FALSE;
+			}
+			else {
+				if(uifc.changes)
+					ret=TRUE;
+			}
+			break;
+	}
+
+	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	return(ret);
+}
+
 void zmodem_download(struct bbslist *bbs)
 {
 	zmodem_t	zm;
 	int			files_received;
 	uint32_t	bytes_received;
+	struct zmodem_cbdata cbdata;
 
 	if(safe_mode)
 		return;
@@ -949,13 +1005,17 @@ void zmodem_download(struct bbslist *bbs)
 	zmodem_mode=ZMODEM_MODE_RECV;
 
 	conn_binary_mode_on();
+	cbdata.zm=&zm;
+	cbdata.bbs=bbs;
 	zmodem_init(&zm
-		,/* cbdata */&zm
+		,/* cbdata */&cbdata
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
 		,zmodem_check_abort
 		,data_waiting);
+
+	zm.duplicate_filename=zmodem_duplicate_callback;
 
 	files_received=zmodem_recv_files(&zm,bbs->dldir,&bytes_received);
 
