@@ -28,18 +28,84 @@ function parse_msg_header(msgtxt)
 	return(hdr);
 }
 
-// Convert a parsed message header into Synchronet-compatible
+// Convert a parsed RFC822 message header field array into a Synchronet-compatible header object
 function convert_msg_header(hdr)
 {
-	hdr.id				= hdr["message-id"]; 
+	for(f in hdr) {
+		var data = hdr[f];
+		switch(f) {
+			case "to":
+			case "apparently-to":
+			case "x-comment-to":
+				hdr.to = mail_get_name(data);
+				hdr.to_net_addr = mail_get_address(data);
+				hdr.to_net_type		= NET_INTERNET;
+				break;
+			case "from":
+				hdr.from = mail_get_name(data);
+				hdr.from_net_addr = mail_get_address(data);
+				hdr.from_net_type	= NET_INTERNET;
+				break;
+			case "organization":
+				hdr.from_org=data;
+				break;
+			case "reply-to":
+				hdr.replyto_net_type=NET_INTERNET;
+				hdr.replyto=data;
+				break;
+			case "in-reply-to":
+				hdr.reply_id=data;
+				break;
+			case "date":
+				hdr.date=data;
+				break;
+			case "subject":
+				hdr.subject=data;
+				break;
+			case "message-id":
+				hdr.id=data;
+				break;
+			case "references":
+				hdr.references=data;
+				if(!hdr.reply_id && data.length)
+					hdr.reply_id=data.match(/(?:\S+\s)*(\S+)$/)[1];
+				break;
+			case "x-gateway":
+				hdr.gateway=data;
+				break;
 
-	hdr.from_net_type	= NET_INTERNET;
-	hdr.from_net_addr	= mail_get_address(hdr.from);
-	hdr.from			= mail_get_name(hdr.from);
+			/* FidoNet header fields */
+			case "x-ftn-pid":
+				hdr.ftn_pid=data;
+				break;
+			case "x-ftn-tid":
+				hdr.ftn_tid=data;
+				break;
+			case "x-ftn-area":
+				hdr.ftn_area=data;
+				break;
+			case "x-ftn-flags":
+				hdr.ftn_flags=data;
+				break;
+			case "x-ftn-msgid":
+				hdr.ftn_msgid=data;
+				break;
+			case "x-ftn-reply":
+				hdr.ftn_reply=data;
+				break;
 
-	hdr.to_net_type		= NET_INTERNET;
-	hdr.to_net_addr		= mail_get_address(hdr.to);
-	hdr.to				= mail_get_name(hdr.to);
+			default:
+				if(hdr.field_list==undefined)
+					hdr.field_list=new Array();
+				hdr.field_list.push(
+					{	type: RFC822HEADER, 
+						data: line + ": " + data 
+					}
+				);
+				hdr[line.toLowerCase()]=data;
+				break;
+		}
+	}
 
 	return(hdr);
 }
