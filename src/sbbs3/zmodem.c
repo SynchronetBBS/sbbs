@@ -1779,6 +1779,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 	FILE*		fp;
 	int32_t		l;
 	BOOL		skip;
+	BOOL		loop;
 	uint32_t	b;
 	uint32_t	crc;
 	uint32_t	rcrc;
@@ -1802,6 +1803,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 
 		do {	/* try */
 			skip=TRUE;
+			loop=FALSE;
 
 			sprintf(fpath,"%s/%s",download_dir,zm->current_file_name);
 			lprintf(zm,LOG_DEBUG,"fpath=%s",fpath);
@@ -1831,6 +1833,10 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 				}
 				if(crc!=rcrc) {
 					lprintf(zm,LOG_WARNING,"Remote file has different CRC value: %08lX", rcrc);
+					if(zm->duplicate_file) {
+						if(zm->duplicate_filename(zm->cbdata))
+							loop=TRUE;
+					}
 					break;
 				}
 				lprintf(zm,LOG_INFO,"Resuming download of %s",fpath);
@@ -1876,7 +1882,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 					setfdate(fpath,zm->current_file_time);
 			}
 
-		} while(0);
+		} while(loop);
 		/* finally */
 
 		if(skip) {
