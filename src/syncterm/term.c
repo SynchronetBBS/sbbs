@@ -959,31 +959,37 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	struct zmodem_cbdata *cb=(struct zmodem_cbdata *)cbdata;
 	zmodem_t	*zm=(zmodem_t *)zm_void;
 	char		fpath[MAX_PATH+1];
+	BOOL		loop=TRUE;
 
     gettextinfo(&txtinfo);
 	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
-	i=0;
-	uifc.helpbuf="Duplicate file... choose action\n";
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
-		case 0:	/* Overwrite */
-			sprintf(fpath,"%s/%s",cb->bbs->dldir,zm->current_file_name);
-			unlink(fpath);
-			ret=TRUE;
-			break;
-		case 1:	/* Choose new name */
-			uifc.changes=0;
-			uifc.helpbuf="Duplicate Filename... enter new name";
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",zm->current_file_name,sizeof(zm->current_file_name)-1,K_EDIT)==-1) {
-				ret=FALSE;
-			}
-			else {
-				if(uifc.changes)
-					ret=TRUE;
-			}
-			break;
+	while(loop) {
+		loop=FALSE;
+		i=0;
+		uifc.helpbuf="Duplicate file... choose action\n";
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
+			case 0:	/* Overwrite */
+				sprintf(fpath,"%s/%s",cb->bbs->dldir,zm->current_file_name);
+				unlink(fpath);
+				ret=TRUE;
+				break;
+			case 1:	/* Choose new name */
+				uifc.changes=0;
+				uifc.helpbuf="Duplicate Filename... enter new name";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",zm->current_file_name,sizeof(zm->current_file_name)-1,K_EDIT)==-1) {
+					loop=TRUE;
+				}
+				else {
+					if(uifc.changes)
+						ret=TRUE;
+					else
+						loop=TRUE;
+				}
+				break;
+		}
 	}
 
 	uifcbail();
@@ -1286,6 +1292,59 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	erase_transfer_window();
 }
 
+BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
+{
+	struct	text_info txtinfo;
+	char	*buf;
+	BOOL	ret=FALSE;
+	int		i;
+	char 	*opts[4]={
+					 "Overwrite"
+					,"Choose New Name"
+					,"Cancel Download"
+					,NULL
+				  };
+	char	newfname[MAX_PATH+1];
+	BOOL	loop=TRUE;
+
+    gettextinfo(&txtinfo);
+	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	init_uifc(FALSE, FALSE);
+
+	while(loop) {
+		loop=FALSE;
+		i=0;
+		uifc.helpbuf="Duplicate file... choose action\n";
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
+			case 0:	/* Overwrite */
+				unlink(path);
+				ret=TRUE;
+				break;
+			case 1:	/* Choose new name */
+				uifc.changes=0;
+				uifc.helpbuf="Duplicate Filename... enter new name";
+				SAFECOPY(newfname, getfname(fname));
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",newfname,sizeof(newfname)-1,K_EDIT)==-1) {
+					loop=TRUE;
+				}
+				else {
+					if(uifc.changes) {
+						sprintf(path,"%s/%s",bbs->dldir,newfname);
+						ret=TRUE;
+					}
+					else
+						loop=TRUE;
+				}
+				break;
+		}
+	}
+
+	uifcbail();
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	return(ret);
+}
+
 void xmodem_download(struct bbslist *bbs, long mode, char *path)
 {
 	xmodem_t	xm;
@@ -1416,7 +1475,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				if(total_bytes<file_bytes)
 					total_bytes=file_bytes;
 
-				lprintf(LOG_DEBUG,"Incoming filename: %.64s ",fname);
+				lprintf(LOG_DEBUG,"Incoming filename: %.64s ",getfname(fname));
 
 				sprintf(str,"%s/%s",bbs->dldir,getfname(fname));
 				lprintf(LOG_INFO,"File size: %lu bytes", file_bytes);
@@ -1429,8 +1488,9 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		fnum++;
 
-		if(fexistcase(str) && !(mode&OVERWRITE)) {
+		while(fexistcase(str) && !(mode&OVERWRITE)) {
 			lprintf(LOG_WARNING,"%s already exists",str);
+			xmodem_duplicate(&xm, bbs, str, sizeof(str), getfname(fname));
 			xmodem_cancel(&xm);
 			goto end; 
 		}
