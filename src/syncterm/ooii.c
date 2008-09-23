@@ -209,6 +209,7 @@ static void readInPix(char codeCh) {
 			break;
 	}
 
+	cterm_clearscreen(0);
 	if (codeCh>='A' && codeCh<='E') {
 		puttext(1, 1, 80, 24, (unsigned char *)ooii_cmenus+(fptr*4000));
 	}
@@ -232,7 +233,7 @@ static int readInText(char *codeStr) {
 	switch ((char)codeStr[0]) {
 		case '1':
 			cterm.attr=BROWN;
-	    	cterm_write("You mosey on over to the bar and take a seat on a scuffed 67.  The\r\n", -1, NULL, 0, NULL);
+	    	cterm_write("You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n", -1, NULL, 0, NULL);
 	    	cterm_write("slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n", -1, NULL, 0, NULL);
 	    	cterm_write("shelf behind him translates his jumble into \"What would you like?\"  You\r\n", -1, NULL, 0, NULL);
 	    	cterm_write("start to wonder what ever happened to the old standard human language.\r\n\r\n", -1, NULL, 0, NULL);
