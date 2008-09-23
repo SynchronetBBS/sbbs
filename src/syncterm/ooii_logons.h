@@ -1,6 +1,6 @@
-#ifndef _LOGONS_H_
-#define _LOGONS_H_
+#ifndef _LOGON_H_
+#define _LOGON_H_
 
-extern const unsigned char ooii_logons[40000];
+extern const unsigned char *ooii_logon[10];
 
 #endif

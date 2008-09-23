@@ -149,78 +149,63 @@ static char armors[13][20]=
 
 
 static void readInPix(char codeCh) {
-	int promptY;
 	int fptr;
 
+	cterm_clearscreen(0);
+	cterm.xpos=1;
+	cterm.ypos=1;
 	switch ((char)codeCh) {
 		// complex pictures
 		case 'A':
-			fptr=0;
-			promptY=19;
+			fptr=0;	/* Main = 0 */
 			break;
 		case 'B':
-			fptr=1;
-			promptY=22;
+			fptr=1;	/* Barracks = 1 */
 			break;
 		case 'C':
-			fptr=2;
-			promptY=20;
+			fptr=3;	/* Head-quarters = 3 */	
 			break;
 		case 'D':
-			fptr=3;
-			promptY=19;
+			fptr=2;	/* Communications = 2 */
 			break;
 		case 'E':
-			fptr=4;
-			promptY=19;
+			fptr=4;	/* Wastelands = 4 */
 			break;
 
 
 		// base pictures
 		case 'F':
-			fptr=0;
-			promptY=21;
+			fptr=0;	/* Main menu = 0 */
 			break;
 		case 'G':
-			fptr=1;
-			promptY=21;
+			fptr=1;	/* Barracks = 1 */
 			break;
 		case 'H':
-			fptr=2;
-			promptY=18;
+			fptr=3;	/* Storage = 3 */
 			break;
 		case 'I':
-			fptr=3;
-			promptY=21;
+			fptr=5;	/* Tech Centre = 5 */
 			break;
 		case 'J':
-			fptr=4;
-			promptY=18;
+			fptr=2;	/* Control Room = 2 */
 			break;
 		case 'K':
-			fptr=5;
-			promptY=20;
+			fptr=4;	/* Radio Room = 4 */
 			break;
 
 		// logon pictures
 		case '0':
 			fptr=xp_random(10);
-			promptY=22;
 			break;
 	}
 
-	cterm_clearscreen(0);
-	if (codeCh>='A' && codeCh<='E') {
-		puttext(1, 1, 80, 24, (unsigned char *)ooii_cmenus+(fptr*4000));
-	}
-	else if (codeCh>='F' && codeCh<='K') {
-		puttext(1, 1, 80, 24, (unsigned char *)ooii_bmenus+(fptr*4000));
-	}
-	else if (codeCh=='0') {
-		puttext(1, 1, 80, 24, (unsigned char *)ooii_logons+(fptr*4000));
-	}
-	cterm.xpos=1;
-	cterm.ypos=promptY+1;
+	if (codeCh>='A' && codeCh<='E')
+		cterm_write(ooii_cmenus[fptr], strlen(ooii_cmenus[fptr])-1, NULL, 0, NULL);
+	else if (codeCh>='F' && codeCh<='K')
+		cterm_write(ooii_bmenus[fptr], strlen(ooii_bmenus[fptr])-1, NULL, 0, NULL);
+	else if (codeCh=='0')
+		cterm_write(ooii_logon[fptr], strlen(ooii_logon[fptr])-1, NULL, 0, NULL);
+
 	/* We don't overwrite the status line, so we don't need to redraw it */
 	/* statusLine(); */
 
