@@ -1848,6 +1848,10 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 					}
 					break;
 				}
+				if(l == bytes) {
+					lprintf(zm,LOG_ERR,"CRC, length, and filename match.");
+					break;
+				}
 				lprintf(zm,LOG_INFO,"Resuming download of %s",fpath);
 			}
 
