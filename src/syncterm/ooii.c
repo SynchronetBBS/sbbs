@@ -152,13 +152,13 @@ static void term_gotoxy(int x, int y)
 {
 	char	ansistr[32];
 
-	sprintf(ansistr, "\e[%d;%dH", y, x);
+	sprintf(ansistr, "\x1b[%d;%dH", y, x);
 	cterm_write(ansistr, strlen(ansistr), NULL, 0, NULL);
 }
 
 static void term_clearscreen(void)
 {
-	cterm_write("\e[0m\e[2J\e[H", 7, NULL, 0, NULL);
+	cterm_write("\x1b[0m\x1b[2J\x1b[H", 7, NULL, 0, NULL);
 }
 
 const int 	term_colours[8]={0,4,2,6,1,5,3,7};
