@@ -665,7 +665,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 	if(handle_type==SOUND_DEVICE_WIN32) {
 		wh.lpData=sample;
 		wh.dwBufferLength=sample_size;
-		wh.lpData=sample_buffer;
+		wh.lpData=sample;
 		wh.dwBufferLength=sample_size;
 		if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
 			if(waveOutWrite(waveOut, &wh, sizeof(wh))==MMSYSERR_NOERROR) {
