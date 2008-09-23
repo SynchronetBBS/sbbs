@@ -1833,7 +1833,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 				}
 				if(crc!=rcrc) {
 					lprintf(zm,LOG_WARNING,"Remote file has different CRC value: %08lX", rcrc);
-					if(zm->duplicate_file) {
+					if(zm->duplicate_filename) {
 						if(zm->duplicate_filename(zm->cbdata, zm))
 							loop=TRUE;
 					}
