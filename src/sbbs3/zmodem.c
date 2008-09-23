@@ -1813,7 +1813,16 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint32_t* bytes_re
 				if(l>=(int32_t)bytes) {
 					lprintf(zm,LOG_WARNING,"Local file size >= remote file size (%ld)"
 						,bytes);
-					break;
+					if(zm->duplicate_filename==NULL)
+						break;
+					else {
+						if(l > (int32_t)bytes) {
+							if(zm->duplicate_filename(zm->cbdata, zm)) {
+								loop=TRUE;
+									break;
+							}
+						}
+					}
 				}
 				if((fp=fopen(fpath,"rb"))==NULL) {
 					lprintf(zm,LOG_ERR,"Error %d opening %s", errno, fpath);
