@@ -966,7 +966,7 @@ static int incomingCheckStatus(char *codeStr) {
 	cterm.attr=CYAN;
 	cterm_write("é", -1, NULL, 0, NULL);
 	cterm.attr=who;
-	cterm.xpos=33;
+	cterm.xpos=34;
 	cterm.ypos=3;
 	cterm_write(" ³", -1, NULL, 0, NULL);
 	cterm.xpos=1;
