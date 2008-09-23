@@ -277,7 +277,7 @@ typedef struct {
 	BOOL		(*is_connected)(void*);
 	BOOL		(*is_cancelled)(void*);
 	BOOL		(*data_waiting)(void*, unsigned timeout);
-	BOOL		(*duplicate_filename)(void*);
+	BOOL		(*duplicate_filename)(void*, zmodem_t *zm);
 
 } zmodem_t;
 
