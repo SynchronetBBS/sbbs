@@ -3,6 +3,6 @@
 
 #include <genwrap.h>
 
-BOOL handle_ooii_code(char *codeStr);
+BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize);
 
 #endif

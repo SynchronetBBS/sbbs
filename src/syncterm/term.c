@@ -147,7 +147,7 @@ void mousedrag(unsigned char *scrollback)
 	}
 }
 
-void update_status(struct bbslist *bbs, int speed, BOOL ooii_mode)
+void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 {
 	char nbuf[LIST_NAME_MAX+10+11+1];	/* Room for "Name (Logging) (115300)" and terminator */
 						/* SAFE and Logging should me be possible. */
@@ -182,8 +182,14 @@ void update_status(struct bbslist *bbs, int speed, BOOL ooii_mode)
 		sprintf(strchr(nbuf,0)," (%d)", speed);
 	if(cterm.doorway_mode)
 		strcat(nbuf, " (DrWy)");
-	if(ooii_mode)
-		strcat(nbuf, " (OO][)");
+	switch(ooii_mode) {
+	case 1:
+		strcat(nbuf, " (OO][ 1.20)");
+		break;
+	case 2:
+		strcat(nbuf, " (OO][ 1.22)");
+		break;
+	}
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
@@ -1945,9 +1951,10 @@ BOOL doterm(struct bbslist *bbs)
 	struct text_info txtinfo;
 #ifndef WITHOUT_OOII
 	BYTE ooii_buf[256];
-	BYTE ooii_init[] = "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";	/* for OOII auto-enable */
+	BYTE ooii_init1[] = "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";	/* for OOII auto-enable */
+	BYTE ooii_init2[] = "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m";	/* for OOII auto-enable */
 #endif
-	BOOL ooii_mode=FALSE;
+	int ooii_mode=0;
 
 	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
@@ -2178,8 +2185,10 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(inch == '|') {
-									if(handle_ooii_code(ooii_buf))
-										ooii_mode=FALSE;
+									if(handle_ooii_code(ooii_buf, ooii_mode, prn, sizeof(prn)))
+										ooii_mode=0;
+									if(prn[0])
+										conn_send(prn,strlen(prn),0);
 									ooii_buf[0]=0;
 								}
 								continue;
@@ -2187,16 +2196,43 @@ BOOL doterm(struct bbslist *bbs)
 						}
 						else {
 							j=strlen(ooii_buf);
-							if(inch==ooii_init[j]) {
+							if(inch==ooii_init1[j]) {
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
-								if(ooii_init[j]==0) {
-									ooii_mode=TRUE;
+								if(ooii_init1[j]==0) {
+									if(strcmp(ooii_buf, ooii_init1)==0) {
+										ooii_mode=1;
+										ooii_buf[0]=0;
+									}
+									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
+									if(prn[0])
+										conn_send(prn,strlen(prn),0);
 									ooii_buf[0]=0;
 								}
+								continue;
+							}
+							else if(inch==ooii_init2[j]) {
+								ooii_buf[j++]=inch;
+								ooii_buf[j]=0;
+								if(ooii_init2[j]==0) {
+									if(strcmp(ooii_buf, ooii_init2)==0) {
+										ooii_mode=2;
+										ooii_buf[0]=0;
+									}
+									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
+									if(prn[0])
+										conn_send(prn,strlen(prn),0);
+									ooii_buf[0]=0;
+								}
+								continue;
 							}
 							else {
-								ooii_buf[0]=0;
+								if(j) {
+									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
+									if(prn[0])
+										conn_send(prn,strlen(prn),0);
+									ooii_buf[0]=0;
+								}
 							}
 						}
 #endif
@@ -2435,7 +2471,9 @@ BOOL doterm(struct bbslist *bbs)
 						case 11:
 #else
 						case 11:
-							ooii_mode = !ooii_mode;
+							ooii_mode++;
+							if(ooii_mode > 2)
+								ooii_mode=0;
 							break;
 						case 12:
 #endif

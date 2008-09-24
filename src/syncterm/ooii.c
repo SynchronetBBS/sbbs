@@ -207,7 +207,7 @@ static void term_setattr(int attr)
 	cterm_write(str, strlen(str), NULL, 0, NULL);
 }
 
-static void readInPix(char codeCh) {
+static void readInPix(char codeCh, int ooii_mode) {
 	int fptr;
 
 	term_clearscreen();
@@ -258,11 +258,11 @@ static void readInPix(char codeCh) {
 	}
 
 	if (codeCh>='A' && codeCh<='E')
-		cterm_write(ooii_cmenus[fptr], strlen(ooii_cmenus[fptr])-1, NULL, 0, NULL);
+		cterm_write(ooii_cmenus[ooii_mode-1][fptr], strlen(ooii_cmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh>='F' && codeCh<='K')
-		cterm_write(ooii_bmenus[fptr], strlen(ooii_bmenus[fptr])-1, NULL, 0, NULL);
+		cterm_write(ooii_bmenus[ooii_mode-1][fptr], strlen(ooii_bmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh=='0')
-		cterm_write(ooii_logon[fptr], strlen(ooii_logon[fptr])-1, NULL, 0, NULL);
+		cterm_write(ooii_logon[ooii_mode-1][fptr], strlen(ooii_logon[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 
 	/* We don't overwrite the status line, so we don't need to redraw it */
 	/* statusLine(); */
@@ -391,7 +391,7 @@ static int readSmallMenu(char *codeStr) {
 			cterm_write("-[A]  Ansi Color On/Off\r\n", -1, NULL, 0, NULL);
 			cterm_write("-[C]  Combat Action/Stat-Random\r\n", -1, NULL, 0, NULL);
 			cterm_write("-[D]  Disable/Enable Ansiterm\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[E]  Expert Menus On/Offs\r\n", -1, NULL, 0, NULL);
+			cterm_write("-[E]  Expert Menus On/Off\r\n", -1, NULL, 0, NULL);
 			cterm_write("-[F]  Fight-Text Delay Change\r\n", -1, NULL, 0, NULL);
 			cterm_write("-[P]  Password Change\r\n", -1, NULL, 0, NULL);
 			cterm_write("-[Q]  Quote for Combat\r\n", -1, NULL, 0, NULL);
@@ -1078,7 +1078,7 @@ char * scanChar(unsigned char s, int where, int miniTrik) {
 
 		case 1 :
 			if (where==4) // AFB
-	    		return("²²²=");
+	    		return("²²²");
     		return("OO ");
 		case 2 :
 			return("ww ");
@@ -1109,12 +1109,8 @@ char * scanChar(unsigned char s, int where, int miniTrik) {
 		case 15:
 			return("÷÷ ");
 		case 16:
-			if(where==4)
-				return("°Ä°=");
 			return("°Ä°");
 		case 17: 
-			if(where==4)
-				return("²±²=");
 			return("²±²");
 		case 19:
 			return("GG ");
@@ -1146,6 +1142,7 @@ char * scanChar(unsigned char s, int where, int miniTrik) {
 				struct tm *tblock=localtime(&timer);
 
 				switch (tblock->tm_wday) {
+
 	    			//   0 : no storms on Sunday!
 	    			case 1 : return(")) ");
 	    			case 2 : return("## ");
@@ -1685,16 +1682,19 @@ static int incomingSoundVoc(char *codeStr) {
 	return(codeStr-origCodeStr);
 }
 
-BOOL handle_ooii_code(char *codeStr)
+BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize)
 {
 	BOOL	quit=FALSE;
+
+	if(retbuf!=NULL)
+		retbuf[0]=0;
 
 	codeStr++;	/* Skip intro char */
 
 	for(;*codeStr && *codeStr != '|'; codeStr++) {
 		if ( codeStr[0]>='A' && codeStr[0]<='Z') {
 			/* This one never takes an extra char */
-			readInPix(codeStr[0]);
+			readInPix(codeStr[0], ooii_mode);
 		}
 		else if ( codeStr[0]>='1' && codeStr[0]<='9') {
 			codeStr += readInText(codeStr);
@@ -1706,7 +1706,7 @@ BOOL handle_ooii_code(char *codeStr)
 			switch ( codeStr[0]) {
     			case '0':
 					/* This one never takes an extra char */
-					readInPix(codeStr[0]);
+					readInPix(codeStr[0], ooii_mode);
 					break;
     			case '!'  :
 					codeStr += incomingCheckStatus(codeStr);
@@ -1720,6 +1720,12 @@ BOOL handle_ooii_code(char *codeStr)
     			case '\\' :
 					quit=TRUE;
 					//quitTerm=1;
+					break;
+				case '?':
+					if(retbuf!=NULL) {
+						if(strlen(retbuf)+3 < retsize)
+								strcat(retbuf,"?1|");
+					}
 					break;
 			}
 		}
