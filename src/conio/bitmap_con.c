@@ -25,7 +25,7 @@
 #include "allfonts.h"
 #include "bitmap_con.h"
 
-static char *screen;
+static char *screen=NULL;
 int screenwidth;
 int screenheight;
 #define PIXEL_OFFSET(x,y)	( (y)*screenwidth+(x) )
@@ -62,7 +62,9 @@ static void blinker_thread(void *data)
 	int count=0;
 
 	while(1) {
-		SLEEP(10);
+		do {
+			SLEEP(10);
+		} while(screen==NULL);
 		count++;
 		pthread_mutex_lock(&vstatlock);
 		if(count==50) {
