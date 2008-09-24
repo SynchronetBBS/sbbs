@@ -7,6 +7,8 @@
 load("sbbsdefs.js");
 load("mailutil.js");	// mail_get_name() and mail_get_address()
 
+const RFC822HEADER = 0xb0;	// from smbdefs.h
+
 // Parses raw RFC822-formatted messages for use with SMTP Mail Processors
 // Returns an array of header fields parsed from the msgtxt
 // msgtxt is an array of lines from the source (RFC822) message text
