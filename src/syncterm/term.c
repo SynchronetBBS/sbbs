@@ -2051,7 +2051,6 @@ BOOL doterm(struct bbslist *bbs)
 							if(inch == gutsinit[0]) {
 								gutsbuf[0]=inch;
 								gutsbuf[1]=0;
-								continue;
 							}
 						}
 						else {		/* Already have the start of the sequence */
@@ -2064,15 +2063,6 @@ BOOL doterm(struct bbslist *bbs)
 									remain=1;
 								}
 							}
-							else {
-								gutsbuf[j++]=inch;
-								cterm_write(gutsbuf, j, prn, sizeof(prn), &speed);
-								if(prn[0])
-									conn_send(prn,strlen(prn),0);
-								updated=TRUE;
-								gutsbuf[0]=0;
-							}
-							continue;
 						}
 #endif
 #ifdef WITH_WXWIDGETS
@@ -2094,7 +2084,6 @@ BOOL doterm(struct bbslist *bbs)
 							if(inch == htmldetect[0]) {
 								htmldet[0]=inch;
 								htmldet[1]=0;
-								continue;
 							}
 						}
 						else {
@@ -2126,15 +2115,6 @@ BOOL doterm(struct bbslist *bbs)
 									htmldet[0]=0;
 								}
 							}
-							else {
-								htmldet[j++]=inch;
-								cterm_write(htmldet, j, prn, sizeof(prn), &speed);
-								if(prn[0])
-									conn_send(prn,strlen(prn),0);
-								updated=TRUE;
-								htmldet[0]=0;
-							}
-							continue;
 						}
 #endif
 
@@ -2159,15 +2139,6 @@ BOOL doterm(struct bbslist *bbs)
 									remain=1;
 								}
 							}
-							else {	/* Not a real zrqinit */
-								zrqbuf[j++]=inch;
-								cterm_write(zrqbuf, j, prn, sizeof(prn), &speed);
-								if(prn[0])
-									conn_send(prn,strlen(prn),0);
-								updated=TRUE;
-								zrqbuf[0]=0;
-							}
-							continue;
 						}
 #ifndef WITHOUT_OOII
 						if(ooii_mode) {
@@ -2200,37 +2171,17 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init1[j]==0) {
-									if(strcmp(ooii_buf, ooii_init1)==0) {
+									if(strcmp(ooii_buf, ooii_init1)==0)
 										ooii_mode=1;
-										ooii_buf[0]=0;
-									}
-									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
-									if(prn[0])
-										conn_send(prn,strlen(prn),0);
 									ooii_buf[0]=0;
 								}
-								continue;
 							}
 							else if(inch==ooii_init2[j]) {
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init2[j]==0) {
-									if(strcmp(ooii_buf, ooii_init2)==0) {
+									if(strcmp(ooii_buf, ooii_init2)==0)
 										ooii_mode=2;
-										ooii_buf[0]=0;
-									}
-									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
-									if(prn[0])
-										conn_send(prn,strlen(prn),0);
-									ooii_buf[0]=0;
-								}
-								continue;
-							}
-							else {
-								if(j) {
-									cterm_write(ooii_buf, j, prn, sizeof(prn), &speed);
-									if(prn[0])
-										conn_send(prn,strlen(prn),0);
 									ooii_buf[0]=0;
 								}
 							}
