@@ -2047,23 +2047,17 @@ BOOL doterm(struct bbslist *bbs)
 						}
 
 #ifdef GUTS_BUILTIN
-						if(!gutsbuf[0]) {
-							if(inch == gutsinit[0]) {
-								gutsbuf[0]=inch;
-								gutsbuf[1]=0;
+						j=strlen(gutsbuf);
+						if(inch == gutsinit[j]) {
+							gutsbuf[j]=inch;
+							gutsbuf[++j]=0;
+							if(j==sizeof(gutsinit)) { /* Have full sequence */
+								guts_transfer(bbs);
+								remain=1;
 							}
 						}
-						else {		/* Already have the start of the sequence */
-							j=strlen(gutsbuf);
-							if(inch == gutsinit[j]) {
-								gutsbuf[j]=inch;
-								gutsbuf[++j]=0;
-								if(j==sizeof(gutsinit)) { /* Have full sequence */
-									guts_transfer(bbs);
-									remain=1;
-								}
-							}
-						}
+						else
+							gutsbuf[0]=0;
 #endif
 #ifdef WITH_WXWIDGETS
 						if(html_mode==HTML_MODE_READING) {
@@ -2080,66 +2074,53 @@ BOOL doterm(struct bbslist *bbs)
 							continue;
 						}
 
-						if(!htmldet[0]) {
-							if(inch == htmldetect[0]) {
-								htmldet[0]=inch;
-								htmldet[1]=0;
-							}
-						}
-						else {
-							j=strlen(htmldet);
-							if(inch == htmldetect[j] || toupper(inch)==htmlstart[j]) {
-								htmldet[j]=inch;
-								htmldet[++j]=0;
-								if(j==sizeof(htmldetect)-1) {
-									if(!strcmp(htmldet, htmldetect)) {
-										if(html_supported==HTML_SUPPORT_UNKNOWN) {
-											int width,height,xpos,ypos;
-											html_addr=bbs->addr;
+						j=strlen(htmldet);
+						if(inch == htmldetect[j] || toupper(inch)==htmlstart[j]) {
+							htmldet[j]=inch;
+							htmldet[++j]=0;
+							if(j==sizeof(htmldetect)-1) {
+								if(!strcmp(htmldet, htmldetect)) {
+									if(html_supported==HTML_SUPPORT_UNKNOWN) {
+										int width,height,xpos,ypos;
+										html_addr=bbs->addr;
 
-											get_window_info(&width, &height, &xpos, &ypos);
-											if(!run_html(width, height, xpos, ypos, html_send, html_urlredirect))
-												html_supported=HTML_SUPPORTED;
-											else
-												html_supported=HTML_NOTSUPPORTED;
-										}
-										if(html_supported==HTML_SUPPORTED) {
-											conn_send(htmlresponse, sizeof(htmlresponse)-1, 0);
-											hide_html();
-										}
+										get_window_info(&width, &height, &xpos, &ypos);
+										if(!run_html(width, height, xpos, ypos, html_send, html_urlredirect))
+											html_supported=HTML_SUPPORTED;
+										else
+											html_supported=HTML_NOTSUPPORTED;
 									}
-									else {
-										show_html("");
-										html_mode=HTML_MODE_READING;
+									if(html_supported==HTML_SUPPORTED) {
+										conn_send(htmlresponse, sizeof(htmlresponse)-1, 0);
+										hide_html();
 									}
-									htmldet[0]=0;
 								}
+								else {
+									show_html("");
+									html_mode=HTML_MODE_READING;
+								}
+								htmldet[0]=0;
 							}
 						}
+						else
+							htmldet[0]=0;
 #endif
 
-						if(!zrqbuf[0]) {
-							if(inch == zrqinit[0] || inch == zrinit[0]) {
-								zrqbuf[0]=inch;
-								zrqbuf[1]=0;
-								continue;
+						j=strlen(zrqbuf);
+						if(inch == zrqinit[j] || inch == zrinit[j]) {
+							zrqbuf[j]=inch;
+							zrqbuf[++j]=0;
+							if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
+								if(!strcmp(zrqbuf, zrqinit))
+									zmodem_download(bbs);
+								else
+									begin_upload(bbs, TRUE, inch);
+								zrqbuf[0]=0;
+								remain=1;
 							}
 						}
-						else {	/* Already have the start of the sequence */
-							j=strlen(zrqbuf);
-							if(inch == zrqinit[j] || inch == zrinit[j]) {
-								zrqbuf[j]=inch;
-								zrqbuf[++j]=0;
-								if(j==sizeof(zrqinit)-1) {	/* Have full sequence (Assumes zrinit and zrqinit are same length */
-									if(!strcmp(zrqbuf, zrqinit))
-										zmodem_download(bbs);
-									else
-										begin_upload(bbs, TRUE, inch);
-									zrqbuf[0]=0;
-									remain=1;
-								}
-							}
-						}
+						else
+							zrqbuf[0]=0;
 #ifndef WITHOUT_OOII
 						if(ooii_mode) {
 							if(ooii_buf[0]==0) {
@@ -2185,6 +2166,8 @@ BOOL doterm(struct bbslist *bbs)
 									ooii_buf[0]=0;
 								}
 							}
+							else
+								ooii_buf[0]=0;
 						}
 #endif
 
