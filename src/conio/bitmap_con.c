@@ -597,6 +597,8 @@ static void bitmap_draw_cursor()
 		if(vstat.curs_start<=vstat.curs_end) {
 			xoffset=(vstat.curs_col-1)*vstat.charwidth;
 			yoffset=(vstat.curs_row-1)*vstat.charheight;
+			if(xoffset < 0 || yoffset < 0)
+				return;
 			attr=cio_textinfo.attribute&0x0f;
 			width=vstat.charwidth;
 
