@@ -1724,7 +1724,7 @@ BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize
 				case '?':
 					if(retbuf!=NULL) {
 						if(strlen(retbuf)+3 < retsize)
-								strcat(retbuf,"?1|");
+								strcat(retbuf,/* "\xaf""1|" */ "\xaf""2|");
 					}
 					break;
 			}

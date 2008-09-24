@@ -187,7 +187,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		strcat(nbuf, " (OO][ 1.20)");
 		break;
 	case 2:
-		strcat(nbuf, " (OO][ 1.22)");
+		strcat(nbuf, " (OO][ 1.23)");
 		break;
 	}
 	switch(cio_api.mode) {
