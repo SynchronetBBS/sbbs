@@ -2137,7 +2137,7 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(inch == '|') {
-									if(handle_ooii_code(ooii_buf, ooii_mode, prn, sizeof(prn)))
+									if(handle_ooii_code(ooii_buf, &ooii_mode, prn, sizeof(prn)))
 										ooii_mode=0;
 									if(prn[0])
 										conn_send(prn,strlen(prn),0);
@@ -2406,7 +2406,7 @@ BOOL doterm(struct bbslist *bbs)
 #else
 						case 11:
 							ooii_mode++;
-							if(ooii_mode > 2)
+							if(ooii_mode > MAX_OOII_MODE)
 								ooii_mode=0;
 							break;
 						case 12:

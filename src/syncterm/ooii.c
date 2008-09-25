@@ -8,6 +8,7 @@
 #include <ciolib.h>
 #include <cterm.h>
 #include <time.h>
+#include "ooii.h"
 #include "ooii_cmenus.h"
 #include "ooii_bmenus.h"
 #include "ooii_logons.h"
@@ -1682,9 +1683,11 @@ static int incomingSoundVoc(char *codeStr) {
 	return(codeStr-origCodeStr);
 }
 
-BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize)
+BOOL handle_ooii_code(char *codeStr, int *ooii_mode, char *retbuf, size_t retsize)
 {
 	BOOL	quit=FALSE;
+	char	menuBlock[255];
+	int		zz;
 
 	if(retbuf!=NULL)
 		retbuf[0]=0;
@@ -1694,7 +1697,7 @@ BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize
 	for(;*codeStr && *codeStr != '|'; codeStr++) {
 		if ( codeStr[0]>='A' && codeStr[0]<='Z') {
 			/* This one never takes an extra char */
-			readInPix(codeStr[0], ooii_mode);
+			readInPix(codeStr[0], *ooii_mode);
 		}
 		else if ( codeStr[0]>='1' && codeStr[0]<='9') {
 			codeStr += readInText(codeStr);
@@ -1706,7 +1709,7 @@ BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize
 			switch ( codeStr[0]) {
     			case '0':
 					/* This one never takes an extra char */
-					readInPix(codeStr[0], ooii_mode);
+					readInPix(codeStr[0], *ooii_mode);
 					break;
     			case '!'  :
 					codeStr += incomingCheckStatus(codeStr);
@@ -1723,8 +1726,17 @@ BOOL handle_ooii_code(char *codeStr, int ooii_mode, char *retbuf, size_t retsize
 					break;
 				case '?':
 					if(retbuf!=NULL) {
+						getBlock(&codeStr,menuBlock);
+						zz=atoi(menuBlock);
+						/* Highest we support is two */
+						if(zz > MAX_OOII_MODE)
+							zz=MAX_OOII_MODE;
+						/* Old versions don't include a number */
+						if(zz < 1)
+							zz=1;
+						*ooii_mode=zz;
 						if(strlen(retbuf)+3 < retsize)
-								strcat(retbuf,/* "\xaf""1|" */ "\xaf""2|");
+							sprintf(retbuf, "\xaf%d|", zz);
 					}
 					break;
 			}
