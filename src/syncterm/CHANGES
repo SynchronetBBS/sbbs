@@ -1,0 +1,40 @@
+Version 0.9.3
+-------------
+Fix startup crashes on most PPC based Macs
+Use better string for "Alt" key on OS X
+Add support for Operation Overkill (including sounds)
+Fix auto-init string detection
+Interaction of CAPS and ALT fixed for Win32
+Fix mouse problems (especially copy/paste)
+
+Version 0.9.2
+-------------
+Added Atari XEP80 mode (80x25)
+Handle CR and LF as per telnet specifications
+Can now access the main menu while connected via ALT-E
+Allow 132-column modes
+Add support for overlay SDL modes
+Support customizable sort order for the listing
+Connections can now be aborted
+Do not swap input case in ATASCII mode
+Use the correct Atari palette
+
+Version 0.9.1
+-------------
+DoorWay mode support
+Support for pty (shell) "connections"
+Wrote a man page
+Support .so.* libraries for Linux distros which do not install a symlink to
+    *.so
+
+Version 0.9.0
+-------------
+Atari 8-bit emulation
+C64/C128 emulation
+
+Version 0.8.2
+-------------
+-S command-line parameter starts in SDL fullscreen mode
+Program icon added
+Function key sequences fixed
+SSH Support added
