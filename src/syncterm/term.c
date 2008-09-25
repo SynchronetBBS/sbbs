@@ -966,12 +966,14 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	zmodem_t	*zm=(zmodem_t *)zm_void;
 	char		fpath[MAX_PATH+1];
 	BOOL		loop=TRUE;
+	int			old_hold=hold_update;
 
     gettextinfo(&txtinfo);
 	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 	init_uifc(FALSE, FALSE);
+	hold_update=FALSE;
 
 	while(loop) {
 		loop=FALSE;
@@ -1002,6 +1004,8 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	uifcbail();
 	window(txtinfo.winleft, txtinfo.wintop, txtinfo.winright, txtinfo.winbottom);
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+	gotoxy(txtinfo.curx, txtinfo.cury);
+	hold_update=old_hold;
 	return(ret);
 }
 
@@ -1314,6 +1318,7 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 				  };
 	char	newfname[MAX_PATH+1];
 	BOOL	loop=TRUE;
+	int		old_hold=hold_update;
 
     gettextinfo(&txtinfo);
 	buf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2);
@@ -1322,6 +1327,7 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 
 	init_uifc(FALSE, FALSE);
 
+	hold_update=FALSE;
 	while(loop) {
 		loop=FALSE;
 		i=0;
@@ -1353,6 +1359,8 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 	uifcbail();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	window(txtinfo.winleft, txtinfo.wintop, txtinfo.winright, txtinfo.winbottom);
+	gotoxy(txtinfo.curx, txtinfo.cury);
+	hold_update=old_hold;
 	return(ret);
 }
 
