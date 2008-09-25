@@ -18,6 +18,7 @@ Support customizable sort order for the listing
 Connections can now be aborted
 Do not swap input case in ATASCII mode
 Use the correct Atari palette
+X/YModem support
 
 Version 0.9.1
 -------------
