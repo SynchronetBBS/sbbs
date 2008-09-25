@@ -27,6 +27,17 @@ enum {
 #define DEFAULT_MODEM_DEV	"/dev/ttyd0"
 #endif
 
+/* "ALT/META" key name string */
+#if defined(__APPLE__) && defined(__MACH__)
+#define ALT_KEY_NAME	"COMMAND"
+#define ALT_KEY_NAMEP	"Command"
+#define ALT_KEY_NAME3CH	"CMD"
+#else
+#define ALT_KEY_NAME	"ALT"
+#define ALT_KEY_NAMEP	"Alt"
+#define ALT_KEY_NAME3CH	"ALT"
+#endif
+
 struct modem_settings {
 	char	init_string[INI_MAX_VALUE_LEN];
 	char	dial_string[INI_MAX_VALUE_LEN];
