@@ -140,6 +140,25 @@ A. Yes, you'll need to use chcon on each of the shared objects (.so files)
    chcon -t texrel_shlib_t /path/to/libwhatever.so
    Do this for each .so file that Synchronet creates.
 
+
+Quick Install/Configure/Run Instructions
+========================================
+
+Note: Type each of the following commands at a Unix shell prompt. 
+      Do not actually type the '#' character.
+
+# mkdir /sbbs
+# cd /sbbs
+# wget http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/GNUmakefile
+# gmake install SYMLINK=1
+# export SBBSCTRL=/sbbs/ctrl
+# /sbbs/exec/scfg
+# /sbbs/exec/sbbs
+
+If you have any problem with these commands, see the detailed step-by-step
+instructions below:
+
+
 Step-by-step Instructions
 =========================
 
