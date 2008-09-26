@@ -479,8 +479,20 @@ static const unsigned char ooii_logon_10[] = {
 	0x1B, 0x5B, 0x36, 0x39, 0x43, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0xB0, 0x1B, 0x5B, 0x30, 0x6D, 0x0D, 0x0A, 
 
 };
-const unsigned char *ooii_logon[2][10] = {
+const unsigned char *ooii_logon[3][10] = {
 	{
+		ooii_logon_1,
+		ooii_logon_2,
+		ooii_logon_3,
+		ooii_logon_4,
+		ooii_logon_5,
+		ooii_logon_6,
+		ooii_logon_7,
+		ooii_logon_8,
+		ooii_logon_9,
+		ooii_logon_10,
+	}
+	,{
 		ooii_logon_1,
 		ooii_logon_2,
 		ooii_logon_3,

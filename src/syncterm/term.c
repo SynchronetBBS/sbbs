@@ -184,10 +184,13 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		strcat(nbuf, " (DrWy)");
 	switch(ooii_mode) {
 	case 1:
-		strcat(nbuf, " (OO][ 1.20)");
+		strcat(nbuf, " (OOTerm)");
 		break;
 	case 2:
-		strcat(nbuf, " (OO][ 1.23)");
+		strcat(nbuf, " (OOTerm1)");
+		break;
+	case 3:
+		strcat(nbuf, " (OOTerm2)");
 		break;
 	}
 	switch(cio_api.mode) {

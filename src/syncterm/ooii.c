@@ -1729,12 +1729,12 @@ BOOL handle_ooii_code(char *codeStr, int *ooii_mode, char *retbuf, size_t retsiz
 						getBlock(&codeStr,menuBlock);
 						zz=atoi(menuBlock);
 						/* Highest we support is two */
-						if(zz > MAX_OOII_MODE)
-							zz=MAX_OOII_MODE;
-						/* Old versions don't include a number */
+						if(zz >= MAX_OOII_MODE)
+							zz=MAX_OOII_MODE-1;
+						/* Old (1.22) versions don't include a number */
 						if(zz < 1)
 							zz=1;
-						*ooii_mode=zz;
+						*ooii_mode=zz+1;
 						if(strlen(retbuf)+3 < retsize)
 							sprintf(retbuf, "\xaf%d|", zz);
 					}

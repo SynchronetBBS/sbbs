@@ -3,7 +3,7 @@
 
 #include <genwrap.h>
 
-#define MAX_OOII_MODE 2
+#define MAX_OOII_MODE 3
 
 BOOL handle_ooii_code(char *codeStr, int *ooii_mode, char *retbuf, size_t retsize);
 
