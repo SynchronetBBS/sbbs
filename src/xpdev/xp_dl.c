@@ -1,6 +1,7 @@
 #include "dirwrap.h"
 #include "xp_dl.h"
 
+#ifndef STATIC_LINK
 #if defined(__unix__)
 xp_dlopen(const char *name, int mode, int major, int minor)
 {
@@ -32,6 +33,6 @@ xp_dlopen(const char *name, int mode, int major, int minor)
 	return(NULL);
 }
 #endif
-
+#endif
 
 #endif
