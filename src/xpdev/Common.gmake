@@ -107,6 +107,10 @@ ifdef USE_SDL_AUDIO
  endif
 endif
 
+ifdef STATIC
+ STATIC_SDL := true
+endif
+
 ifdef WITH_SDL_AUDIO
  ifdef SDL_CONFIG
   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
@@ -173,8 +177,5 @@ ifndef WITHOUT_PORTAUDIO
 
  ifneq ($(PORTAUDIO_PATH),NOTFOUND)
   XPDEV_CFLAGS += -DWITH_PORTAUDIO
-  XPDEV_LDFLAGS += -L$(PORTAUDIO_PATH)/lib
-  XPDEV_LIBS	+=	-lportaudio
-  XPDEV-MT_LIBS	+=	-lportaudio
  endif
 endif

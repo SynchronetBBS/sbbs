@@ -35,13 +35,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#ifndef STATIC_LINK
-#include <dlfcn.h>
-#endif
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include <threadwrap.h>
+#include <xp_dl.h>
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS
@@ -156,7 +154,8 @@ int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 
 int x_init(void)
 {
-	void *dl;
+	dll_handle	dl;
+	const char *libnames[]={"X11",NULL};
 
 	/* Ensure we haven't already initialized */
 	if(x11_initialized)
@@ -171,211 +170,160 @@ int x_init(void)
 		return(-1);
 
 	/* Load X11 functions */
-#ifdef STATIC_LINK
-	x11.XChangeGC=XChangeGC;
-	x11.XCopyPlane=XCopyPlane;
-	x11.XFillRectangle=XFillRectangle;
-	x11.XDrawPoint=XDrawPoint;
-	x11.XFlush=XFlush;
-	x11.XSync=XSync;
-	x11.XBell=XBell;
-	x11.XLookupString=XLookupString;
-	x11.XNextEvent=XNextEvent;
-	x11.XAllocSizeHints=XAllocSizeHints;
-	x11.XSetWMNormalHints=XSetWMNormalHints;
-	x11.XResizeWindow=XResizeWindow;
-	x11.XMapWindow=XMapWindow;
-	x11.XFree=XFree;
-	x11.XFreePixmap=XFreePixmap;
-	x11.XCreatePixmap=XCreatePixmap;
-	x11.XCopyArea=XCopyArea;
-	x11.XCreateBitmapFromData=XCreateBitmapFromData;
-	x11.XAllocColor=XAllocColor;
-	x11.XOpenDisplay=XOpenDisplay;
-	x11.XCreateSimpleWindow=XCreateSimpleWindow;
-	x11.XCreateGC=XCreateGC;
-	x11.XSelectInput=XSelectInput;
-	x11.XStoreName=XStoreName;
-	x11.XGetSelectionOwner=XGetSelectionOwner;
-	x11.XConvertSelection=XConvertSelection;
-	x11.XGetWindowProperty=XGetWindowProperty;
-	x11.XChangeProperty=XChangeProperty;
-	x11.XSendEvent=XSendEvent;
-	x11.XPutImage=XPutImage;
-#ifndef XPutPixel
-	x11.XPutPixel=XPutPixel;
-#endif
-#ifndef XDestroyImage
-	x11.XDestroyImage=XDestroyImage;
-#endif
-	x11.XCreateImage=XCreateImage;
-	x11.XSetSelectionOwner=XSetSelectionOwner;
-	x11.XSetIconName=XSetIconName;
-	x11.XSynchronize=XSynchronize;
-	x11.XGetWindowAttributes=XGetWindowAttributes;
-#else
-#if defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)
-	if((dl=dlopen("/usr/X11R6/lib/libX11.dylib",RTLD_LAZY|RTLD_GLOBAL))==NULL)
-#else
-	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
-	if((dl=dlopen("libX11.so.7",RTLD_LAZY))==NULL)
-	if((dl=dlopen("libX11.so.6",RTLD_LAZY))==NULL)
-	if((dl=dlopen("libX11.so.5",RTLD_LAZY))==NULL)
-#endif
+	if((dl=xp_dlopen(libnames,RTLD_LAZY,7))==NULL)
 		return(-1);
-	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
-		dlclose(dl);
+	if((x11.XChangeGC=xp_dlsym(dl,XChangeGC))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCopyPlane=dlsym(dl,"XCopyPlane"))==NULL) {
-		dlclose(dl);
+	if((x11.XCopyPlane=xp_dlsym(dl,XCopyPlane))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFillRectangle=dlsym(dl,"XFillRectangle"))==NULL) {
-		dlclose(dl);
+	if((x11.XFillRectangle=xp_dlsym(dl,XFillRectangle))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XDrawPoint=dlsym(dl,"XDrawPoint"))==NULL) {
-		dlclose(dl);
+	if((x11.XDrawPoint=xp_dlsym(dl,XDrawPoint))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFlush=dlsym(dl,"XFlush"))==NULL) {
-		dlclose(dl);
+	if((x11.XFlush=xp_dlsym(dl,XFlush))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSync=dlsym(dl,"XSync"))==NULL) {
-		dlclose(dl);
+	if((x11.XSync=xp_dlsym(dl,XSync))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XBell=dlsym(dl,"XBell"))==NULL) {
-		dlclose(dl);
+	if((x11.XBell=xp_dlsym(dl,XBell))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XLookupString=dlsym(dl,"XLookupString"))==NULL) {
-		dlclose(dl);
+	if((x11.XLookupString=xp_dlsym(dl,XLookupString))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XNextEvent=dlsym(dl,"XNextEvent"))==NULL) {
-		dlclose(dl);
+	if((x11.XNextEvent=xp_dlsym(dl,XNextEvent))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XAllocSizeHints=dlsym(dl,"XAllocSizeHints"))==NULL) {
-		dlclose(dl);
+	if((x11.XAllocSizeHints=xp_dlsym(dl,XAllocSizeHints))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSetWMNormalHints=dlsym(dl,"XSetWMNormalHints"))==NULL) {
-		dlclose(dl);
+	if((x11.XSetWMNormalHints=xp_dlsym(dl,XSetWMNormalHints))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XResizeWindow=dlsym(dl,"XResizeWindow"))==NULL) {
-		dlclose(dl);
+	if((x11.XResizeWindow=xp_dlsym(dl,XResizeWindow))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XMapWindow=dlsym(dl,"XMapWindow"))==NULL) {
-		dlclose(dl);
+	if((x11.XMapWindow=xp_dlsym(dl,XMapWindow))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFree=dlsym(dl,"XFree"))==NULL) {
-		dlclose(dl);
+	if((x11.XFree=xp_dlsym(dl,XFree))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFreePixmap=dlsym(dl,"XFreePixmap"))==NULL) {
-		dlclose(dl);
+	if((x11.XFreePixmap=xp_dlsym(dl,XFreePixmap))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreatePixmap=dlsym(dl,"XCreatePixmap"))==NULL) {
-		dlclose(dl);
+	if((x11.XCreatePixmap=xp_dlsym(dl,XCreatePixmap))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCopyArea=dlsym(dl,"XCopyArea"))==NULL) {
-		dlclose(dl);
+	if((x11.XCopyArea=xp_dlsym(dl,XCopyArea))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateBitmapFromData=dlsym(dl,"XCreateBitmapFromData"))==NULL) {
-		dlclose(dl);
+	if((x11.XCreateBitmapFromData=xp_dlsym(dl,XCreateBitmapFromData))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XAllocColor=dlsym(dl,"XAllocColor"))==NULL) {
-		dlclose(dl);
+	if((x11.XAllocColor=xp_dlsym(dl,XAllocColor))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XOpenDisplay=dlsym(dl,"XOpenDisplay"))==NULL) {
-		dlclose(dl);
+	if((x11.XOpenDisplay=xp_dlsym(dl,XOpenDisplay))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateSimpleWindow=dlsym(dl,"XCreateSimpleWindow"))==NULL) {
-		dlclose(dl);
+	if((x11.XCreateSimpleWindow=xp_dlsym(dl,XCreateSimpleWindow))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateGC=dlsym(dl,"XCreateGC"))==NULL) {
-		dlclose(dl);
+	if((x11.XCreateGC=xp_dlsym(dl,XCreateGC))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSelectInput=dlsym(dl,"XSelectInput"))==NULL) {
-		dlclose(dl);
+	if((x11.XSelectInput=xp_dlsym(dl,XSelectInput))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XStoreName=dlsym(dl,"XStoreName"))==NULL) {
-		dlclose(dl);
+	if((x11.XStoreName=xp_dlsym(dl,XStoreName))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XGetSelectionOwner=dlsym(dl,"XGetSelectionOwner"))==NULL) {
-		dlclose(dl);
+	if((x11.XGetSelectionOwner=xp_dlsym(dl,XGetSelectionOwner))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XConvertSelection=dlsym(dl,"XConvertSelection"))==NULL) {
-		dlclose(dl);
+	if((x11.XConvertSelection=xp_dlsym(dl,XConvertSelection))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XGetWindowProperty=dlsym(dl,"XGetWindowProperty"))==NULL) {
-		dlclose(dl);
+	if((x11.XGetWindowProperty=xp_dlsym(dl,XGetWindowProperty))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XChangeProperty=dlsym(dl,"XChangeProperty"))==NULL) {
-		dlclose(dl);
+	if((x11.XChangeProperty=xp_dlsym(dl,XChangeProperty))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSendEvent=dlsym(dl,"XSendEvent"))==NULL) {
-		dlclose(dl);
+	if((x11.XSendEvent=xp_dlsym(dl,XSendEvent))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XPutImage=dlsym(dl,"XPutImage"))==NULL) {
-		dlclose(dl);
+	if((x11.XPutImage=xp_dlsym(dl,XPutImage))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
 #ifndef XDestroyImage
-	if((x11.XDestroyImage=dlsym(dl,"XDestroyImage"))==NULL) {
-		dlclose(dl);
+	if((x11.XDestroyImage=xp_dlsym(dl,XDestroyImage))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
 #endif
 #ifndef XPutPixel
-	if((x11.XPutPixel=dlsym(dl,"XPutPixel"))==NULL) {
-		dlclose(dl);
+	if((x11.XPutPixel=xp_dlsym(dl,XPutPixel))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
 #endif
-	if((x11.XCreateImage=dlsym(dl,"XCreateImage"))==NULL) {
-		dlclose(dl);
+	if((x11.XCreateImage=xp_dlsym(dl,XCreateImage))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSetSelectionOwner=dlsym(dl,"XSetSelectionOwner"))==NULL) {
-		dlclose(dl);
+	if((x11.XSetSelectionOwner=xp_dlsym(dl,XSetSelectionOwner))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSetIconName=dlsym(dl,"XSetIconName"))==NULL) {
-		dlclose(dl);
+	if((x11.XSetIconName=xp_dlsym(dl,XSetIconName))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSynchronize=dlsym(dl,"XSynchronize"))==NULL) {
-		dlclose(dl);
+	if((x11.XSynchronize=xp_dlsym(dl,XSynchronize))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-	if((x11.XGetWindowAttributes=dlsym(dl,"XGetWindowAttributes"))==NULL) {
-		dlclose(dl);
+	if((x11.XGetWindowAttributes=xp_dlsym(dl,XGetWindowAttributes))==NULL) {
+		xp_dlclose(dl);
 		return(-1);
 	}
-#endif
 
 	if(sem_init(&pastebuf_set, 0, 0))
 		return(-1);

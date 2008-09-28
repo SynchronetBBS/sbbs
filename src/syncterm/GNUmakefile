@@ -65,6 +65,10 @@ else
  OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
 endif
 
+ifdef STATIC
+ STATIC_CRYPTLIB	:= true
+endif
+
 ifdef STATIC_CRYPTLIB
  CFLAGS += -DSTATIC_CRYPTLIB
  LDFLAGS += -lz

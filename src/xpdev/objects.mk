@@ -20,6 +20,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)semfile$(OFILE) \
 	$(OBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)strwrap$(OFILE) \
+	$(OBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpdatetime$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpprintf$(OFILE)
@@ -42,6 +43,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)strwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)threadwrap$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpdatetime$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpprintf$(OFILE)

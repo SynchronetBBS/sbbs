@@ -1,38 +1,75 @@
+#include <stdio.h>
 #include "dirwrap.h"
 #include "xp_dl.h"
 
 #ifndef STATIC_LINK
 #if defined(__unix__)
-xp_dlopen(const char *name, int mode, int major, int minor)
+
+DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 {
+	const char	*name;
 	char		fname[MAX_PATH+1];
 	dll_handle	ret=NULL;
 	int			i;
 
-	/* Try for exact version match */
-	sprintf(fname, "%s.%d.%d", name, major, minor);
-	if((dll_handle=dlopen(fname, mode))!=NULL)
-		return(ret);
-
-	/* Try for major version match */
-	sprintf(fname, "%s.%d", name, major);
-	if((dll_handle=dlopen(fname, mode))!=NULL)
-		return(ret);
-
-	/* Try for preferred match (symlink) */
-	if((dll_handle=dlopen(name, mode))!=NULL)
-		return(ret);
-
-	/* Try all previous major versions */
-	for(i=major-1; i>=0; i--) {
-		sprintf(fname, "%s.%d", name, i);
-		if((dll_handle=dlopen(fname, mode))!=NULL)
+	for(; *names && (*names)[0]; names++) {
+		name=*names;
+		/* Try for version match */
+		sprintf(fname, "lib%s.so.%d", name, major);
+		if((ret=dlopen(fname, mode))!=NULL)
 			return(ret);
+
+		/* Try for name match */
+		sprintf(fname, "lib%s.so", name, major);
+		if((ret=dlopen(fname, mode))!=NULL)
+			return(ret);
+
+		/* Try for name match without the prefix */
+		sprintf(fname, "%s.so", name, major);
+		if((ret=dlopen(fname, mode))!=NULL)
+			return(ret);
+
+		/* Try all previous major versions */
+		for(i=major-1; i>=0; i--) {
+			sprintf(fname, "lib%s.so.%d", name, i);
+			if((ret=dlopen(fname, mode))!=NULL)
+				return(ret);
+		}
+
+#if defined(__APPLE__) && defined(__MACH__)
+		/* Try for version match */
+		sprintf(fname, "lib%s.%d.dylib", name, major);
+		if((ret=dlopen(fname, mode))!=NULL)
+			return(ret);
+
+		/* Try for name match */
+		sprintf(fname, "lib%s.dylib", name, major);
+		if((ret=dlopen(fname, mode))!=NULL)
+			return(ret);
+
+		/* Try all previous major versions */
+		for(i=major-1; i>=0; i--) {
+			sprintf(fname, "lib%s.%d.dylib", name, i);
+			if((ret=dlopen(fname, mode))!=NULL)
+				return(ret);
+		}
+#endif	/* OS X */
 	}
 
 	return(NULL);
 }
-#endif
-#endif
+#elif defined(_WIN32)
+xp_dlopen(const char **name, int mode, int major)
+{
+	char		fname[MAX_PATH+1];
+	dll_handle	ret=NULL;
 
-#endif
+	for(; *names && (*names)[0]; names++) {
+		sprintf(fname, "%s.dll", *names);
+		if((ret=LoadLibrary(fname))!=NULL)
+			return(ret);
+	}
+}
+#endif	/* __unix__,_WIN32 */
+
+#endif	/* STATIC_LINK */
