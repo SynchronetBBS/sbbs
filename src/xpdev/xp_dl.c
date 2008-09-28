@@ -69,6 +69,7 @@ DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 		if((ret=LoadLibrary(fname))!=NULL)
 			return(ret);
 	}
+	return(NULL);
 }
 #endif	/* __unix__,_WIN32 */
 
