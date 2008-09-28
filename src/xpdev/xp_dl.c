@@ -59,7 +59,7 @@ DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 	return(NULL);
 }
 #elif defined(_WIN32)
-xp_dlopen(const char **name, int mode, int major)
+DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **names, int mode, int major)
 {
 	char		fname[MAX_PATH+1];
 	dll_handle	ret=NULL;
