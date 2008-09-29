@@ -1,9 +1,8 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
 #include <stdio.h>	/* NULL */
-#include <xp_dl.h>
-
 #include "st_crypt.h"
+#include <xp_dl.h>
 
 int crypt_loaded=0;
 
