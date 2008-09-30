@@ -634,7 +634,7 @@ void xp_play_sample_thread(void *data)
 			int written=0;
 
 			while(written < sample_size) {
-				ret=alsa_api->snd_pcm_writei(playback_handle, sample_buffer, sample_size);
+				ret=alsa_api->snd_pcm_writei(playback_handle, sample_buffer+written, sample_size-written);
 				if(ret < 0) {
 					if(written==0) {
 						/* Go back and try OSS */
@@ -782,7 +782,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 		int written=0;
 
 		while(written < sample_size) {
-			ret=alsa_api->snd_pcm_writei(playback_handle, sample, sample_size);
+			ret=alsa_api->snd_pcm_writei(playback_handle, sample_written, sample_size-written);
 			if(ret < 0) {
 				if(written==0) {
 					/* Go back and try OSS */
