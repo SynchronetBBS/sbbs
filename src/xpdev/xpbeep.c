@@ -165,6 +165,8 @@ struct alsa_api_struct {
 				(snd_pcm_t *pcm);
 	snd_pcm_sframes_t (*snd_pcm_writei)
 				(snd_pcm_t *pcm, const void *buffer, snd_pcm_uframes_t size);
+	int		(*snd_pcm_drain)
+				(snd_pcm_t *pcm);
 };
 
 struct alsa_api_struct *alsa_api=NULL;
@@ -418,6 +420,7 @@ BOOL xptone_open(void)
 					|| ((alsa_api->snd_pcm_hw_params_free=xp_dlsym(dl,snd_pcm_hw_params_free))==NULL)
 					|| ((alsa_api->snd_pcm_close=xp_dlsym(dl,snd_pcm_close))==NULL)
 					|| ((alsa_api->snd_pcm_writei=xp_dlsym(dl,snd_pcm_writei))==NULL)
+					|| ((alsa_api->snd_pcm_drain=xp_dlsym(dl,snd_pcm_drain))==NULL)
 					) {
 				if(dl)
 					xp_dlclose(dl);
@@ -601,6 +604,9 @@ void xp_play_sample_thread(void *data)
 					xptone_close();
 					xptone_open();
 				}
+				else {
+					alsa_api->snd_pcm_drain(playback_handle);
+				}
 			}
 		}
 	#endif
@@ -730,6 +736,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 				xptone_open();
 			}
 			else {
+				alsa_api->snd_pcm_drain(playback_handle);
 				if(must_close)
 					xptone_close();
 				return(TRUE);
