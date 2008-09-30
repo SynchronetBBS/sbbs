@@ -632,7 +632,8 @@ void xp_play_sample_thread(void *data)
 				xptone_open();
 			}
 			else {
-				alsa_api->snd_pcm_drain(playback_handle);
+				while(alsa_api->snd_pcm_drain(playback_handle))
+					SLEEP(1);
 			}
 		}
 	#endif
@@ -765,7 +766,8 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 			xptone_open();
 		}
 		else {
-			alsa_api->snd_pcm_drain(playback_handle);
+			while(alsa_api->snd_pcm_drain(playback_handle))
+				SLEEP(1);
 			if(must_close)
 				xptone_close();
 			return(TRUE);
