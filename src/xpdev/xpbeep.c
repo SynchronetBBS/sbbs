@@ -362,8 +362,8 @@ BOOL xptone_open(void)
 					, 1	/* Mono output */
 					, paUInt8
 					, S_RATE
-					, S_RATE/100	/* Buffer size is 1/100 of a second */
-					, (S_RATE*15/2+1)/(S_RATE/100)+1	/* Enough buffers for all audio data */
+					, 256
+					, 0
 					, pa_api->ver >= 1900 ? NULL : portaudio_callback
 					, &pawave) != paNoError)
 				portaudio_device_open_failed=TRUE;
