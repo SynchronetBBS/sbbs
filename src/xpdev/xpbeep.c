@@ -649,9 +649,6 @@ void xp_play_sample_thread(void *data)
 			if(!alsa_device_open_failed) {
 				while(alsa_api->snd_pcm_drain(playback_handle))
 					SLEEP(1);
-				if(must_close)
-					xptone_close();
-				return(TRUE);
 			}
 		}
 	#endif
