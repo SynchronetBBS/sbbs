@@ -736,7 +736,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		if(pa_api->ver >= 1900) {
-			pa_api->write(portaudio_stream, sample_buffer, sample_size);
+			pa_api->write(portaudio_stream, sample, sample_size);
 		}
 		else {
 			pawave=sample;
