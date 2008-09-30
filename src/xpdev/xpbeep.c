@@ -335,10 +335,10 @@ BOOL xptone_open(void)
 			else {
 				/* Get version and other optional pointers */
 				pa_api->ver=1800;
-				if(pa_api->version=xp_dlsym(dl, Pa_GetVersion)!=NULL) {
+				if((pa_api->version=xp_dlsym(dl, Pa_GetVersion))!=NULL) {
 					pa_api->ver=pa_api->version();
 					if(pa_api->ver >= 1900) {
-						if(pa_api->write=xp_dlsym(dl, Pa_WriteStream)==NULL) {
+						if((pa_api->write=xp_dlsym(dl, Pa_WriteStream))==NULL) {
 							xp_dlclose(dl);
 							free(pa_api);
 							pa_api=NULL;
