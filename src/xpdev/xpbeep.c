@@ -330,10 +330,13 @@ BOOL xptone_open(void)
                 portaudio_device_open_failed=TRUE;
 			}
 		}
-		if(portaudio_initialized || (pa_api->init() != paNoError))
-			portaudio_device_open_failed=TRUE;
-		else {
-			portaudio_initialized=TRUE;
+		if(!portaudio_initialized) {
+			if(pa_api->init() != paNoError)
+				portaudio_device_open_failed=TRUE;
+			else
+				portaudio_initialized=TRUE;
+		}
+		if(portaudio_initialized) {
 			if(pa_api->open(&portaudio_stream
 					, 0	/* No input */
 					, 1	/* Mono output */
