@@ -625,16 +625,14 @@ void xp_play_sample_thread(void *data)
 
 	#ifdef USE_ALSA_SOUND
 		if(handle_type==SOUND_DEVICE_ALSA) {
-			if(playback_handle != NULL) {
-				if(alsa_api->snd_pcm_writei(playback_handle, sample_buffer, sample_size)!=sample_size) {
-					/* Go back and try OSS */
-					alsa_device_open_failed=TRUE;
-					xptone_close();
-					xptone_open();
-				}
-				else {
-					alsa_api->snd_pcm_drain(playback_handle);
-				}
+			if(alsa_api->snd_pcm_writei(playback_handle, sample_buffer, sample_size)!=sample_size) {
+				/* Go back and try OSS */
+				alsa_device_open_failed=TRUE;
+				xptone_close();
+				xptone_open();
+			}
+			else {
+				alsa_api->snd_pcm_drain(playback_handle);
 			}
 		}
 	#endif
@@ -760,19 +758,17 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 
 #ifdef USE_ALSA_SOUND
 	if(handle_type==SOUND_DEVICE_ALSA) {
-		if(playback_handle != NULL) {
-			if(alsa_api->snd_pcm_writei(playback_handle, sample, sample_size)!=sample_size) {
-				/* Go back and try OSS */
-				alsa_device_open_failed=TRUE;
+		if(alsa_api->snd_pcm_writei(playback_handle, sample, sample_size)!=sample_size) {
+			/* Go back and try OSS */
+			alsa_device_open_failed=TRUE;
+			xptone_close();
+			xptone_open();
+		}
+		else {
+			alsa_api->snd_pcm_drain(playback_handle);
+			if(must_close)
 				xptone_close();
-				xptone_open();
-			}
-			else {
-				alsa_api->snd_pcm_drain(playback_handle);
-				if(must_close)
-					xptone_close();
-				return(TRUE);
-			}
+			return(TRUE);
 		}
 	}
 #endif
