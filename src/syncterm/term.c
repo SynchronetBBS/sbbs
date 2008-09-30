@@ -2153,8 +2153,10 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(inch == '|') {
-									if(handle_ooii_code(ooii_buf, &ooii_mode, prn, sizeof(prn)))
+									if(handle_ooii_code(ooii_buf, &ooii_mode, prn, sizeof(prn))) {
 										ooii_mode=0;
+										xptone_close();
+									}
 									if(prn[0])
 										conn_send(prn,strlen(prn),0);
 									ooii_buf[0]=0;
@@ -2168,8 +2170,10 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init1[j]==0) {
-									if(strcmp(ooii_buf, ooii_init1)==0)
+									if(strcmp(ooii_buf, ooii_init1)==0) {
 										ooii_mode=1;
+										xptone_open();
+									}
 									ooii_buf[0]=0;
 								}
 							}
@@ -2177,8 +2181,10 @@ BOOL doterm(struct bbslist *bbs)
 								ooii_buf[j++]=inch;
 								ooii_buf[j]=0;
 								if(ooii_init2[j]==0) {
-									if(strcmp(ooii_buf, ooii_init2)==0)
+									if(strcmp(ooii_buf, ooii_init2)==0) {
 										ooii_mode=2;
+										xptone_open();
+									}
 									ooii_buf[0]=0;
 								}
 							}
@@ -2422,8 +2428,12 @@ BOOL doterm(struct bbslist *bbs)
 #else
 						case 11:
 							ooii_mode++;
-							if(ooii_mode > MAX_OOII_MODE)
+							if(ooii_mode > MAX_OOII_MODE) {
+								xptone_close();
 								ooii_mode=0;
+							}
+							else
+								xptone_open();
 							break;
 						case 12:
 #endif
