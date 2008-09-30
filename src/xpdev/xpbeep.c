@@ -557,6 +557,7 @@ void xp_play_sample_thread(void *data)
 {
 	BOOL			must_close=FALSE;
 	BOOL			posted_last=TRUE;
+	BOOL			waited=FALSE;
 
 #ifdef AFMT_U8
 	int wr;
@@ -565,8 +566,12 @@ void xp_play_sample_thread(void *data)
 
 	sample_thread_running=TRUE;
 	while(1) {
-		if(sem_wait(&sample_pending_sem)!=0)
-			goto error_return;
+		if(!waited) {
+			if(sem_wait(&sample_pending_sem)!=0)
+				goto error_return;
+		}
+		else
+			waited=FALSE;
 		posted_last=FALSE;
 		if(pthread_mutex_lock(&sample_mutex)!=0)
 			goto error_return;
@@ -651,8 +656,12 @@ void xp_play_sample_thread(void *data)
 		sem_post(&sample_complete_sem);
 		posted_last=TRUE;
 		pthread_mutex_unlock(&sample_mutex);
-		if(must_close)
-			xptone_close();
+		if(must_close) {
+			if(sem_trywait(&sample_pending_sem)==0)
+				waited=TRUE;
+			else
+				xptone_close();
+		}
 	}
 
 error_return:
