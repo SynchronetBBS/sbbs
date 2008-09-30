@@ -634,7 +634,7 @@ void xp_play_sample_thread(void *data)
 			int written=0;
 
 			while(written < sample_size) {
-				ret=alsa_api->snd_pcm_writei(playback_handle, sample, sample_size);
+				ret=alsa_api->snd_pcm_writei(playback_handle, sample_buffer, sample_size);
 				if(ret < 0) {
 					if(written==0) {
 						/* Go back and try OSS */
