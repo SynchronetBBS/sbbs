@@ -990,6 +990,9 @@ void sbbs_t::editfile(char *fname)
 	bprintf(text[SavedNBytes],l,lines);
 	close(file);
 	free(buf);
+	SAFEPRINTF2(str,"%s created or edited file: %s",useron.alias, fname);
+	logline(nulstr,str);
+
 	return;
 }
 
