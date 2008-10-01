@@ -901,6 +901,7 @@ void sbbs_t::editfile(char *fname)
 {
 	char *buf,path[MAX_PATH+1];
 	char msgtmp[MAX_PATH+1];
+	char str[MAX_PATH+1];
     int file;
 	long length,maxlines,lines,l,mode=0;
 
@@ -932,8 +933,11 @@ void sbbs_t::editfile(char *fname)
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
 		external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir);
-		if(stricmp(msgtmp,path) && !fcompare(msgtmp, path))	/* file changed */
+		if(stricmp(msgtmp,path) && !fcompare(msgtmp, path))	{ /* file changed */
 			fcopy(msgtmp, path);
+			SAFEPRINTF2(str,"%s created or edited file: %s",useron.alias, path);
+			logline(nulstr,str);
+		}
 		rioctl(IOSM|PAUSE|ABORT); 
 		return; 
 	}
