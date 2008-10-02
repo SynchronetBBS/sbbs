@@ -2,6 +2,10 @@
 
 /* $Id$ */
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <CoreServices/CoreServices.h>	// FSFindFolder() and friends
+#endif
+
 #define NOCRYPT		/* Stop windows.h from loading wincrypt.h */
 					/* Is windows.h REALLY necessary?!?! */
 #define WIN32_LEAN_AND_MEAN
@@ -813,6 +817,64 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 	free_list(&list[0],listcount);
 }
 
+#if defined(__APPLE__) && defined(__MACH__)
+static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
+{
+	FSRef		ref;
+	long		size;
+
+	/* First, get the path */
+	switch(type) {
+	case SYNCTERM_PATH_INI:
+	case SYNCTERM_PATH_LIST:
+		if(FSFindFolder(shared?kLocalDomain:kUserDomain, kPreferencesFolderType, kCreateFolder, &ref)!=noErr)
+			return(NULL);
+		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
+			return(NULL);
+		backslash(fn);
+		strncat(fn, "SyncTERM", fnlen);
+		backslash(fn);
+		if(!isdir(fn)) {
+			if(MKDIR(fn))
+				return(NULL);
+		}
+		break;
+
+	case SYNCTERM_DEFAULT_TRANSFER_PATH:
+		/* I'd love to use the "right" setting here, but don't know how */
+		if(FSFindFolder(shared?kLocalDomain:kUserDomain, kDesktopFolderType, kCreateFolder, &ref)!=noErr)
+			return(NULL);
+		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
+			return(NULL);
+		backslash(fn);
+		strncat(fn, "SyncTERM", fnlen);
+		backslash(fn);
+		if(!isdir(fn)) {
+			if(MKDIR(fn))
+				return(NULL);
+		}
+		return(fn);
+	case SYNCTERM_PATH_CACHE:
+		if(FSFindFolder(shared?kLocalDomain:kUserDomain, kCachedDataFolderType, kCreateFolder, &ref)!=noErr)
+			return(NULL);
+		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
+			return(NULL);
+		backslash(fn);
+		return(fn);
+	}
+
+	switch(type) {
+	case SYNCTERM_PATH_INI:
+		strncat(fn, "SyncTERM.ini", fnlen);
+		return(fn);
+	case SYNCTERM_PATH_LIST:
+		strncat(fn, "SyncTERM.lst", fnlen);
+		return(fn);
+	}
+	return(NULL);
+}
+#endif
+
 char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 {
 	char	oldlst[MAX_PATH+1];
@@ -887,11 +949,12 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 			break;
 	}
 #else
+	/* UNIX */
 	char	*home=NULL;
 
 	if(inpath==NULL)
 		home=getenv("HOME");
-	if(home==NULL || strlen(home) > MAX_PATH-32) {	/* $HOME just too damn big */
+	if(!shared && (home==NULL || strlen(home) > MAX_PATH-32)) {	/* $HOME just too damn big */
 		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH || type==SYNCTERM_PATH_CACHE) {
 			getcwd(fn, fnlen);
 			backslash(fn);
@@ -908,6 +971,10 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		if(type==SYNCTERM_DEFAULT_TRANSFER_PATH) {
 			strcpy(fn, home);
 			backslash(fn);
+#if defined(__APPLE__) && defined(__MACH__)
+			if(get_new_OSX_filename(oldlst, sizeof(oldlst), type, shared)!=NULL)
+				strcpy(fn, oldlst);
+#endif
 			if(!isdir(fn))
 				MKDIR(fn);
 			return(fn);
@@ -929,11 +996,13 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 #endif
 	}
 
+#if !(defined(__APPLE__) && defined(__MACH__))
 	/* Create if it doesn't exist */
 	if(!isdir(fn) && !shared) {
 		if(MKDIR(fn))
 			fn[0]=0;
 	}
+#endif
 
 	switch(type) {
 		case SYNCTERM_PATH_INI:
@@ -945,17 +1014,38 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 		case SYNCTERM_PATH_CACHE:
 			strncat(fn,"cache",fnlen);
 			backslash(fn);
+#if !(defined(__APPLE__) && defined(__MACH__))
 			if(!isdir(fn)) {
 				if(MKDIR(fn))
 					fn[0]=0;
 			}
+#endif
 			break;
 	}
-#endif
 
-	/* Copy pre-0.7 version of the syncterm.lst file to new location */
-	if(!shared && type == SYNCTERM_PATH_LIST && (!fexist(fn)) && fexist(oldlst))
-		rename(oldlst, fn);
+#if defined(__APPLE__) && defined(__MACH__)
+
+	strcpy(oldlst, fn);
+	if(get_new_OSX_filename(fn, fnlen, type, shared)!=NULL) {
+		if(fexist(oldlst)) {
+			if(!isdir(oldlst)) {
+				char *lastslash=strrchr(oldlst, '/');
+
+				rename(oldlst, fn);
+				if(lastslash) {
+					*(lastslash+1)='*';
+					*(lastslash+2)=0;
+					if(!fexist(oldlst)) {
+						*lastslash=0;
+						rmdir(oldlst);
+					}
+				}
+				
+			}
+		}
+	}
+#endif	/* OS X */
+#endif	/* !Win32 */
 	return(fn);
 }
 
