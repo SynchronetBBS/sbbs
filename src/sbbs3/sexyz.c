@@ -364,8 +364,8 @@ int recv_byte(void* unused, unsigned timeout)
 #endif
 			FD_SET(sock,&socket_set);
 		if((t=end-msclock())<0) t=0;
-		tv.tv_sec=t/MSCLOCKS_PER_SEC;
-		tv.tv_usec=0;
+		tv.tv_sec=t/((unsigned)MSCLOCKS_PER_SEC);
+		tv.tv_usec=(t%((unsigned)MSCLOCKS_PER_SEC))*1000;
 
 		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 			if(i==SOCKET_ERROR) {
