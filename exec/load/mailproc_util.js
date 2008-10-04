@@ -20,7 +20,7 @@ function parse_msg_header(msgtxt)
 	for(i in msgtxt) {
 		if(msgtxt[i].length==0)	// Header terminator
 			break;
-		var match = msgtxt[i].match(/(\S+)\s*:\s*(.*)/);
+		var match = msgtxt[i].match(/^(\S+)\s*:\s*(.*)/);
 		if(match)
 			hdr[last_field=match[1].toLowerCase()]=match[2];
 		else if(last_field)		// Folded header field
