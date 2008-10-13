@@ -847,8 +847,6 @@ static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 		if(FSRefMakePath(&ref, (unsigned char*)fn, fnlen)!=noErr)
 			return(NULL);
 		backslash(fn);
-		strncat(fn, "SyncTERM", fnlen);
-		backslash(fn);
 		if(!isdir(fn)) {
 			if(MKDIR(fn))
 				return(NULL);
