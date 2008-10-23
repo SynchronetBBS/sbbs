@@ -369,8 +369,7 @@ function Server_Work(cmdline) {
 			var cmd2_int = parseInt(cmd[2]);
 			var cmdend_int = parseInt(cmd[cmdend]);
 			var bounce_modes = false;
-			// Detect if this is a TSMODE.  If so, handle.
-			/* TODO: Sync IRCd should support TSMODE! */
+			/* Detect if this is a TSMODE.  If so, handle. */
 			if (cmd2_int == cmd[2]) {
 				if (cmd2_int > chan.created) {
 					break;
@@ -1095,6 +1094,8 @@ function Server_Work(cmdline) {
 			dest_server.rawout(":" + ThisOrigin.nick + " WHOIS "
 				+ dest_server.nick + " :" + IRC_string(cmd[2],0));
 		}
+		break;
+	case "SAMODE":
 		break;
 	case "CAPAB":
 	case "BURST":
