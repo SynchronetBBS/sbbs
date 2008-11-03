@@ -133,7 +133,7 @@ BOOL DLLCALL semfile_signal(const char* fname, const char* text)
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
 		text=hostname;
 #endif
-	if((file=open(fname,O_CREAT|O_WRONLY))<0)	/* use sopen instead? */
+	if((file=open(fname,O_CREAT|O_WRONLY,S_IREAD|S_IWRITE))<0)	/* use sopen instead? */
 		return(FALSE);
 	if(text!=NULL)
 		write(file,text,strlen(text));
