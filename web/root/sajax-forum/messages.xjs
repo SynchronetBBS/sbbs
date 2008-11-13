@@ -1,10 +1,24 @@
 <?xjs
 load("sbbsdefs.js");
 load(cwd+"functions.js");
+var messages_start = system.timer;
+var total_time=0;
 var sub_code=http_request.query.sub_code[0];
 var msg_number=NaN;
 if(http_request.query.msg_number!=undefined)
 	msg_number=parseInt(http_request.query.msg_number[0]);
+var msgs_per_request = 50;	// TODO - make this configurable (cookie?)
+var msg_count=msgs_per_request;
+if(http_request.query.msg_count!=undefined) {
+	if(http_request.query.msg_count[0]=='all')
+		msg_count=Infinity;
+	else
+		msg_count=parseInt(http_request.query.msg_count[0]);
+}
+var msg_offset=0;
+if(http_request.query.msg_offset!=undefined)
+	msg_offset=parseInt(http_request.query.msg_offset[0]);
+
 // Load the index
 var moderated=msg_area.sub[sub_code].is_moderated;
 
@@ -31,18 +45,6 @@ if(http_request.header['If-Modified-Since'] != undefined) {
 	}
 }
 
-function SmallHeader(hdr) {
-	this.thread_first=hdr.thread_first;
-	this.thread_next=hdr.thread_next;
-	this.thread_back=hdr.thread_back;
-	this.number=hdr.number;
-	this.when_written_time=hdr.when_written_time;
-	this.when_imported_time=hdr.when_imported_time;
-	this.subject=hdr.subject;
-	this.from=hdr.from;
-	this.to=hdr.to;
-}
-
 /* First, read ALL headers that may be affect this display */
 if(isNaN(msg_number)) {
 	for(i=0; i<msgbase.total_msgs; i++) {
@@ -53,7 +55,7 @@ if(isNaN(msg_number)) {
 			continue;
 		if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
 			continue;
-		headers[hdr.number]=new SmallHeader(hdr);
+		headers[hdr.number]=hdr;
 		if(hdr.thread_back==0)
 			top_level.push(hdr.number);
 		else {
@@ -62,7 +64,6 @@ if(isNaN(msg_number)) {
 				top_level.push(hdr.number);
 		}
 	}
-
 }
 else {
 	var top_msg=msg_number;
@@ -83,7 +84,7 @@ else {
 				continue;
 			if(hdr.thread_back==top_msg)
 				top_level.push(hdr.number);
-			headers[hdr.number]=new SmallHeader(hdr);
+			headers[hdr.number]=hdr;
 			if(hdr.thread_first) {
 				msg_number=hdr.thread_first;
 				continue;
@@ -95,6 +96,7 @@ else {
 			msg_number=hdr.thread_back;
 	}
 }
+log("PERFORMANCE: All headers: "+(system.timer-messages_start));
 
 /* Now, do a reply count and new flag for every header */
 var reply_count=new Object();
@@ -164,6 +166,7 @@ for(i in top_level) {
 		moved_back=true;
 	}
 }
+log("PERFORMANCE: Reply and new: "+(system.timer-messages_start));
 
 // If the If-Modified-Since is greater or equal to last import time, we're done!
 last_mod.setTime(last_mod_time*1000);
@@ -178,13 +181,20 @@ http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod
 top_level=top_level.sort(function(a,b) {
 	return(new_stats[b].date_sort - new_stats[a].date_sort);
 });
+log("PERFORMANCE: Sorted: "+(system.timer-messages_start));
 
 // Output messages... 
-for(i in top_level) {
+for(i=msg_offset; i<top_level.length; i++) {
+	if(msg_count<=0) {
+		write('<a href="javascript:load_more_messages(\''+sub_code+'\','+i+','+msgs_per_request+')">Load more messages</a> - <a href="javascript:load_more_messages(\''+sub_code+'\','+i+',\'all\')">Load all messages</a>');
+		break;
+	}
 	msg_number=top_level[i];
 	/* This xjs_load() is recursive!  Whee! */
 	xjs_load('message_display.xjs');
+	msg_count--;
 }
+log("PERFORMANCE: Messages: "+(system.timer-messages_start));
 ?>
 <?xjs
 // Close the message base
