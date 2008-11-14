@@ -16,6 +16,7 @@ if(http_request.header['If-Modified-Since'] != undefined) {
 http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod.getTime()/1000);
 
 var body;
+
 if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
 	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
 		body=msgbase.get_msg_body(true,hdr.offset);
@@ -24,5 +25,23 @@ if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDA
 }
 ?><pre><?xjs
 msgbase.close();
-writeln(body);
-?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</pre>
+
+body=body.replace(/\r?\n+(<\/span>)?$/,'$1');
+
+// Get the last line
+var body_m=body.match(/\n([^\n]*)$/);
+if(body_m != null) {
+	write(body);
+	body_m[1]=body_m[1].replace(/&[^;]*;/g,".");
+	body_m[1]=body_m[1].replace(/<[^>]*>/g,"");
+	var lenremain=80-body_m[1].length;
+	while(lenremain > 0) {
+		write("&nbsp;");
+		lenremain--;
+	}
+}
+else {
+	/* If we couldn't get the last line, add a line of 80 columns */
+	writeln(body+":-(");
+	?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</pre><?xjs
+}?>
