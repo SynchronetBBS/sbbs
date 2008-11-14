@@ -76,10 +76,13 @@ body {
 	font-weight: normal;
 	font-style: normal;
 	margin-left: 20px;
+}
+
+.message-body pre {
 	color: #a8a8a8;
 	background-color: black;
-	white-space: pre;
-	font-family: monospace;
+	display: table;
+	margin: 0px;
 }
 
 .replies {
