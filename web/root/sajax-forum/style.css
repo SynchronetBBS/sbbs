@@ -85,3 +85,7 @@ body {
 .replies {
 	margin-left: 20px;
 }
+
+.load_more_messages {
+	background-color: #999;
+}

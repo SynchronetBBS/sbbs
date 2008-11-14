@@ -141,7 +141,7 @@ function load_more_messages(sub_code, offset, count)
 {
 	var containerid='message-list-'+clean_id(sub_code);
 	var container=document.getElementById(containerid);
-	var m=container.innerHTML.match(/^([\u0000-\uffff]*?)<[Aa] href="javascript:load_more_messages[\u0000-\uffff]*$/);
+	var m=container.innerHTML.match(/^([\u0000-\uffff]*?)<[Dd][Ii][Vv] class="load_more_messages"><[Aa] href="javascript:load_more_messages[\u0000-\uffff]*$/);
 
 	if(m!=null) {
 		ajaxpage(messages_url+"?sub_code="+encodeURIComponent(sub_code)+'&msg_count='+count+'&msg_offset='+offset+'&user='+encodeURIComponent(user),containerid, undefined, undefined, false, m[1]);
