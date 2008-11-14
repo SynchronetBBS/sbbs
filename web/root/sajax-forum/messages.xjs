@@ -186,7 +186,7 @@ log("PERFORMANCE: Sorted: "+(system.timer-messages_start));
 // Output messages... 
 for(i=msg_offset; i<top_level.length; i++) {
 	if(msg_count<=0) {
-		write('<a href="javascript:load_more_messages(\''+sub_code+'\','+i+','+msgs_per_request+')">Load more messages</a> - <a href="javascript:load_more_messages(\''+sub_code+'\','+i+',\'all\')">Load all messages</a>');
+		write('<div class="load_more_messages"><a href="javascript:load_more_messages(\''+sub_code+'\','+i+','+msgs_per_request+')">Load more messages</a> - <a href="javascript:load_more_messages(\''+sub_code+'\','+i+',\'all\')">Load all messages</a></a>');
 		break;
 	}
 	msg_number=top_level[i];
