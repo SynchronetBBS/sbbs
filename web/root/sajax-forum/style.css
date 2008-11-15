@@ -92,3 +92,9 @@ body {
 .load_more_messages {
 	background-color: #999;
 }
+
+blockquote {
+	border-width: 1px;
+	border-color: black;
+	border-style: dashed;
+}
