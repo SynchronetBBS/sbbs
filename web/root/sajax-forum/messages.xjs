@@ -68,6 +68,8 @@ if(isNaN(msg_number)) {
 else {
 	var top_msg=msg_number;
 	var hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
+	var these_headers=new Object();
+	var last_good_message=msg_number;
 
 	msg_number=hdr.thread_first;
 
@@ -76,15 +78,22 @@ else {
 		hdr=headers[msg_number];
 		if(hdr==undefined) {
 			hdr=msgbase.get_msg_header(msg_number, false /* Big speedup */);
-			if(hdr==null)
-				break;
+			if(hdr==null) {
+				msg_number=last_good_message;
+				these_headers[msg_number]=1;
+				continue;
+			}
+			last_good_message=msg_number;
 			if(moderated && (hdr.attr & MSG_VALIDATED) == 0)
 				continue;
 			if(hdr.attr & (MSG_PRIVATE|MSG_DELETE))
 				continue;
+			headers[hdr.number]=hdr;
+		}
+		if(these_headers[msg_number]==undefined) {
+			these_headers[msg_number]=1;
 			if(hdr.thread_back==top_msg)
 				top_level.push(hdr.number);
-			headers[hdr.number]=hdr;
 			if(hdr.thread_first) {
 				msg_number=hdr.thread_first;
 				continue;
@@ -96,7 +105,6 @@ else {
 			msg_number=hdr.thread_back;
 	}
 }
-log("PERFORMANCE: All headers: "+(system.timer-messages_start));
 
 /* Now, do a reply count and new flag for every header */
 var reply_count=new Object();
@@ -117,12 +125,17 @@ for(i in top_level) {
 	parents.push(top_msg);
 	if(headers[top_msg].when_imported_time > last_mod_time)
 		last_mod_time=headers[top_msg].when_imported_time;
+	var last_good_message=top_msg;
 
 	msg_number=headers[top_msg].thread_first;
 	while(msg_number && msg_number != top_msg) {
 		var hdr=headers[msg_number];
-		if(hdr==undefined)
-			break;
+		if(hdr==undefined) {
+			msg_number=last_good_message;
+			moved_back=true;
+			continue;
+		}
+		last_good_message=msg_number;
 		if(!moved_back) {
 			/* This is a new thinger... update stuff based on it */
 			reply_count[msg_number]=0;
@@ -136,14 +149,14 @@ for(i in top_level) {
 			new_stats[msg_number].date_sort=headers[msg_number].when_written_time;
 
 			for(i in parents) {
-				var top_msg=parents[i];
-				reply_count[top_msg]++;
-				if(hdr.when_written_time > new_stats[top_msg].newest_reply)
-					new_stats[top_msg].newest_reply = hdr.when_written_time;
-				if(hdr.when_written_time > new_stats[top_msg].date_sort)
-					new_stats[top_msg].date_sort = hdr.when_written_time;
+				var inner_top_msg=parents[i];
+				reply_count[inner_top_msg]++;
+				if(hdr.when_written_time > new_stats[inner_top_msg].newest_reply)
+					new_stats[inner_top_msg].newest_reply = hdr.when_written_time;
+				if(hdr.when_written_time > new_stats[inner_top_msg].date_sort)
+					new_stats[inner_top_msg].date_sort = hdr.when_written_time;
 				if(hdr.number > msg_area.sub[sub_code].scan_ptr)
-					new_stats[top_msg].inherit_new=true;
+					new_stats[inner_top_msg].inherit_new=true;
 			}
 
 			if(hdr.when_imported_time > last_mod_time)
@@ -166,7 +179,6 @@ for(i in top_level) {
 		moved_back=true;
 	}
 }
-log("PERFORMANCE: Reply and new: "+(system.timer-messages_start));
 
 // If the If-Modified-Since is greater or equal to last import time, we're done!
 last_mod.setTime(last_mod_time*1000);
@@ -181,7 +193,6 @@ http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod
 top_level=top_level.sort(function(a,b) {
 	return(new_stats[b].date_sort - new_stats[a].date_sort);
 });
-log("PERFORMANCE: Sorted: "+(system.timer-messages_start));
 
 // Output messages... 
 for(i=msg_offset; i<top_level.length; i++) {
@@ -194,7 +205,6 @@ for(i=msg_offset; i<top_level.length; i++) {
 	xjs_load('message_display.xjs');
 	msg_count--;
 }
-log("PERFORMANCE: Messages: "+(system.timer-messages_start));
 ?>
 <?xjs
 // Close the message base

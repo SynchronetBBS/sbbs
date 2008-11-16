@@ -31,32 +31,47 @@ if(new_stats[msg_number].inherit_new)
 		<div class="replies" style="display: <?xjs if(new_stats[msg_number].inherit_new) write('block'); else write('none'); ?>" id="replies-<?xjs write(clean_id(sub_code)+'-'+msg_number) ?>"><?xjs
 			/* Some of the replies are new... expand them! */
 			if(new_stats[msg_number].inherit_new) {
-				var moved_back=false;
-				var top_msg=msg_number;
+				function recurse()
+				{
+					var moved_back=false;
+					var top_msg=msg_number;
+					var saved_msg_number;
+					var hdr;
+					var last_good_message=msg_number;
 
-				msg_number=headers[top_msg].thread_first;
-				while(msg_number && msg_number != top_msg) {
-					var hdr=headers[msg_number];
-					if(hdr==undefined)
-						break;
-					if(!moved_back) {
-						/* This is a new thinger... display it */
-						xjs_load('message_display.xjs');
-						if(hdr.thread_first) {
-							msg_number=hdr.thread_first;
+					msg_number=headers[top_msg].thread_first;
+					while(msg_number && msg_number != top_msg) {
+						hdr=headers[msg_number];
+						if(hdr==undefined) {
+							msg_number=last_good_message;
+							moved_back=true;
 							continue;
 						}
-					}
-					if(hdr.thread_next) {
-						msg_number=hdr.thread_next;
-						moved_back=false;
-						continue;
-					}
+						last_good_message=msg_number;
 
-					msg_number=hdr.thread_back;
-					moved_back=true;
+						if(!moved_back) {
+							/* This is a new thinger... display it */
+							saved_msg_number=msg_number;
+							xjs_load('message_display.xjs');
+							msg_number=saved_msg_number;
+							//if(hdr.thread_first) {
+							//	msg_number=hdr.thread_first;
+							//	continue;
+							//}
+						}
+
+						if(hdr.thread_next) {
+							msg_number=hdr.thread_next;
+							moved_back=false;
+							continue;
+						}
+
+						msg_number=hdr.thread_back;
+						moved_back=true;
+					}
+					msg_number=top_msg;
 				}
-				msg_number=top_msg;
+				recurse();
 			}
 		?></div>
 	</div>
