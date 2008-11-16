@@ -93,8 +93,23 @@ body {
 	background-color: #999;
 }
 
-blockquote {
+.ansi_toggle {
+}
+
+.quote {
+}
+
+.quote a {
+	font-size: 25%;
+	margin: 0px;
+	margin-left: 20px;
+}
+
+.quote blockquote {
 	border-width: 1px;
 	border-color: black;
 	border-style: dashed;
+	margin: 5px;
+	margin-left: 20px;
+	margin-top: 0px;
 }

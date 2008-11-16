@@ -52,6 +52,9 @@ if(ANSI_formatted) {
 	}
 }
 else {
+	var blockquote_start='<div class="quote"><a href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+	var blockquote_end='</blockquote></div>';
+
 	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode, "+html_sub_code_string+");return false\">ANSI Mode</a></div>");
 	// Strip CTRL-A
 	body=body.replace(/\1./g,'');
@@ -87,7 +90,7 @@ else {
 			// If the new length is smaller than the old one, close the extras
 			for(p=new_prefixes.length; p<prefixes.length; p++) {
 				if(quote_depth > 0) {
-					line_prefix = line_prefix + '</blockquote>';
+					line_prefix = line_prefix + blockquote_end;
 					quote_depth--;
 				}
 				else {
@@ -100,11 +103,11 @@ else {
 
 				if(prefixes[p]==undefined) {
 					/* New depth */
-					line_prefix = line_prefix + '<blockquote>';
+					line_prefix = line_prefix + blockquote_start;
 					quote_depth++;
 				}
 				else if(broken) {
-					line_prefix = line_prefix + '<blockquote>';
+					line_prefix = line_prefix + blockquote_start;
 					quote_depth++;
 				}
 				else if(prefixes[p].replace(/^\s*(.*?)\s*$/,"$1") != new_prefixes[p].replace(/^\s*(.*?)\s*$/,"$1")) {
@@ -112,14 +115,14 @@ else {
 					var o;
 					for(o=p; o<prefixes.length && o<new_prefixes.length; o++) {
 						if(quote_depth > 0) {
-							line_prefix = '</blockquote>'+line_prefix;
+							line_prefix = blockquote_end+line_prefix;
 							quote_depth--;
 						}
 						else {
 							log("BODY: Depth problem 2");
 						}
 					}
-					line_prefix = '<blockquote>'+line_prefix;
+					line_prefix = blockquote_start+line_prefix;
 					quote_depth++;
 					broken=true;
 				}
@@ -130,7 +133,7 @@ else {
 		else {
 			for(p=0; p<prefixes.length; p++) {
 				if(quote_depth > 0) {
-					line_prefix = line_prefix + '</blockquote>';
+					line_prefix = line_prefix + blockquote_end;
 					quote_depth--;
 				}
 				else {
@@ -145,7 +148,7 @@ else {
 	if(quote_depth != 0) {
 		log("BODY: Depth problem 4");
 		for(;quote_depth > 0; quote_depth--) {
-			body += "</blockquote>";
+			body += blockquote_end;
 		}
 	}
 
