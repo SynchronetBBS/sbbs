@@ -944,8 +944,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
 					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
-					l=0;
-					ocol=1;
+					l=prefix_bytes;
+					ocol=prefix_len+1;
 				}
 				else {
 					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
