@@ -26,9 +26,10 @@ if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDA
 	}
 }
 msgbase.close();
+var html_sub_code_string="'"+html_encode(sub_code, true, false, false, false).replace(/'/,'&#39;')+"'";
 
 if(ANSI_formatted) {
-	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_html(this.parentNode.parentNode);return false\">HTML Mode</a></div>");
+	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_html(this.parentNode.parentNode, "+html_sub_code_string+");return false\">HTML Mode</a></div>");
 	body=html_encode(body, true, false, true, true);
 	body=body.replace(/\r?\n+(<\/span>)?$/,'$1');
 
@@ -51,7 +52,7 @@ if(ANSI_formatted) {
 	}
 }
 else {
-	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode);return false\">ANSI Mode</a></div>");
+	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode, "+html_sub_code_string+");return false\">ANSI Mode</a></div>");
 	// Strip CTRL-A
 	body=body.replace(/\1./g,'');
 	// Strip ANSI
