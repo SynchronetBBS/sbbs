@@ -1,6 +1,9 @@
 <?xjs 
 load("sbbsdefs.js");
 sub_code=http_request.query.sub_code[0];
+var ANSI_formatted=false;
+if(http_request.query.ansi != undefined && http_request.query.ansi[0]=='true')
+	ANSI_formatted=true;
 msg_number=parseInt(http_request.query.msg_number[0]);
 var msgbase=new MsgBase(sub_code);
 msgbase.open();
@@ -24,15 +27,15 @@ if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDA
 }
 msgbase.close();
 
-var BBS_formatted=false;
-if(BBS_formatted) {
+if(ANSI_formatted) {
+	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_html(this.parentNode.parentNode);return false\">HTML Mode</a></div>");
 	body=html_encode(body, true, false, true, true);
 	body=body.replace(/\r?\n+(<\/span>)?$/,'$1');
 
 	// Get the last line
 	var body_m=body.match(/\n([^\n]*)$/);
 	if(body_m != null) {
-		write(body);
+		write("<pre>"+body);
 		body_m[1]=body_m[1].replace(/&[^;]*;/g,".");
 		body_m[1]=body_m[1].replace(/<[^>]*>/g,"");
 		var lenremain=80-body_m[1].length;
@@ -43,11 +46,12 @@ if(BBS_formatted) {
 	}
 	else {
 		/* If we couldn't get the last line, add a line of 80 columns */
-		writeln("<pre>"+body+":-(");
+		writeln("<pre>"+body);
 		?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</pre><?xjs
 	}
 }
 else {
+	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode);return false\">ANSI Mode</a></div>");
 	// Strip CTRL-A
 	body=body.replace(/\1./g,'');
 	// Strip ANSI
