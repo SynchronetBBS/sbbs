@@ -788,6 +788,35 @@ static void outbuf_append(char **outbuf, char **outp, char *append, int len, int
 	return;
 }
 
+static int compare_prefix(char *old_prefix, int old_prefix_bytes, char *new_prefix, int new_prefix_bytes)
+{
+	int i;
+
+	if(new_prefix_bytes != old_prefix_bytes) {
+		if(new_prefix_bytes < old_prefix_bytes) {
+			if(memcmp(old_prefix, new_prefix, new_prefix_bytes)!=0)
+				return(-1);
+			for(i=new_prefix_bytes; i<old_prefix_bytes; i++) {
+				if(!isspace(old_prefix[i]))
+					return(-1);
+			}
+		}
+		else {
+			if(memcmp(old_prefix, new_prefix, old_prefix_bytes)!=0)
+				return(-1);
+			for(i=old_prefix_bytes; i<new_prefix_bytes; i++) {
+				if(!isspace(new_prefix[i]))
+					return(-1);
+			}
+		}
+		return(0);
+	}
+	if(memcmp(old_prefix,new_prefix,new_prefix_bytes)!=0)
+		return(-1);
+
+	return(0);
+}
+
 static JSBool
 js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -889,7 +918,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					ocol=1;
 				}
 				/* If there's a new prefix, it is a hardcr */
-				else if(prefix_bytes != old_prefix_bytes || (memcmp(prefix,inbuf+i+1-prefix_bytes,prefix_bytes))) {
+				else if(compare_prefix(prefix, old_prefix_bytes, inbuf+i+1-prefix_bytes, prefix_bytes)!=0) {
 					if(prefix_len>len/3*2) {
 						/* This prefix is insane (more than 2/3rds of the new width) hack it down to size */
 						/* Since we're hacking it, we will always end up with a hardcr on this line. */
@@ -911,7 +940,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					ocol=prefix_len+1;
 					old_prefix_bytes=prefix_bytes;
 				}
-				else if(isspace(inbuf[i+1])) {	/* Next line starts with whitespace.  This is a "hard" CR. */
+				else if(isspace(inbuf[i+1]) && inbuf[i+1] != '\n' && inbuf[i+1] != '\r') {	/* Next line starts with whitespace.  This is a "hard" CR. */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
 					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
@@ -1044,7 +1073,8 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	js_str = JS_NewStringCopyZ(cx, outbuf);
 	free(outbuf);
 	free(linebuf);
-	free(prefix);
+	if(prefix)
+		free(prefix);
 	if(js_str==NULL)
 		return(JS_FALSE);
 
