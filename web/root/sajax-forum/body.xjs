@@ -20,6 +20,23 @@ http_reply.header['Last-Modified']=strftime("%a, %d %b %Y %H:%M:%S GMT",last_mod
 
 var body;
 
+function linkify(body) {
+	// Magical URL-ify
+	urlRE=/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
+	body=body.replace(urlRE, 
+		function (str) {
+			var ret=''
+			var p=0;
+			var link=str.replace(/\.*$/, '');
+			var linktext=link;
+			if(link.indexOf('://')==-1)
+				link='mailto:'+link;
+			return('<a href="'+link+'" class="linkified">'+linktext+'</a>'+str.substr(linktext.length));
+		}
+	);
+	return(body);
+}
+
 if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
 	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
 		body=msgbase.get_msg_body(true,hdr.offset);
@@ -152,6 +169,7 @@ else {
 		}
 	}
 
+	body=linkify(body);
 	body=body.replace(/\r\n$/,'');
 	body=body.replace(/(\r?\n)/g, "<br>$1");
 	write(body);
