@@ -85,6 +85,12 @@ body {
 	margin: 0px;
 }
 
+.message-body pre a {
+	color: inherit;
+	font-weight: bold;
+	text-decoration: inherit;
+}
+
 .replies {
 	margin-left: 20px;
 }
@@ -115,4 +121,5 @@ body {
 }
 
 .linkified {
+	font-size: normal;
 }

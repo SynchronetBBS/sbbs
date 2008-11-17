@@ -49,6 +49,7 @@ if(ANSI_formatted) {
 	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_html(this.parentNode.parentNode, "+html_sub_code_string+");return false\">HTML Mode</a></div>");
 	body=html_encode(body, true, false, true, true);
 	body=body.replace(/\r?\n+(<\/span>)?$/,'$1');
+	body=linkify(body);
 
 	// Get the last line
 	var body_m=body.match(/\n([^\n]*)$/);
