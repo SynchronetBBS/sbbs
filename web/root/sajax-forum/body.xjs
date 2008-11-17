@@ -70,7 +70,7 @@ if(ANSI_formatted) {
 	}
 }
 else {
-	var blockquote_start='<div class="quote"><a href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+	var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
 	var blockquote_end='</blockquote></div>';
 
 	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode, "+html_sub_code_string+");return false\">ANSI Mode</a></div>");
