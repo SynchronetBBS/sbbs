@@ -99,7 +99,7 @@ else {
 				continue;
 			}
 		}
-		if(hdr.thread_next)
+		if(hdr.thread_next && these_headers[msg_number]==undefined)
 			msg_number=hdr.thread_next;
 		else
 			msg_number=hdr.thread_back;
@@ -126,6 +126,7 @@ for(i in top_level) {
 	if(headers[top_msg].when_imported_time > last_mod_time)
 		last_mod_time=headers[top_msg].when_imported_time;
 	var last_good_message=top_msg;
+	var last_next=0;
 
 	msg_number=headers[top_msg].thread_first;
 	while(msg_number && msg_number != top_msg) {
@@ -168,7 +169,8 @@ for(i in top_level) {
 				continue;
 			}
 		}
-		if(hdr.thread_next) {
+		if(hdr.thread_next && hdr.thread_next != last_next) {
+			last_next=hdr.thread_next;
 			msg_number=hdr.thread_next;
 			moved_back=false;
 			continue;

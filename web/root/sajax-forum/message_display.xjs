@@ -38,6 +38,7 @@ if(new_stats[msg_number].inherit_new)
 					var saved_msg_number;
 					var hdr;
 					var last_good_message=msg_number;
+					var last_next=0;
 
 					msg_number=headers[top_msg].thread_first;
 					while(msg_number && msg_number != top_msg) {
@@ -60,8 +61,9 @@ if(new_stats[msg_number].inherit_new)
 							//}
 						}
 
-						if(hdr.thread_next) {
+						if(hdr.thread_next && hdr.thread_next != last_next) {
 							msg_number=hdr.thread_next;
+							last_next=msg_number;
 							moved_back=false;
 							continue;
 						}
