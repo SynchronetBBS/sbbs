@@ -36,7 +36,11 @@ if(msgbase.total_msgs==0) {
 }
 var hdr=msgbase.get_msg_header(true, msgbase.total_msgs-1,false);
 var last_mod=new Date();
-last_mod_time=hdr.when_imported_time;
+var last_mod_time=file_date(xjs_filename);
+if(hdr.when_imported_time > last_mod_time)
+	last_mod_time=hdr.when_imported_time;
+if(file_date(cwd+'message_display.xjs') > last_mod_time)
+	last_mod_time = file_date(cwd+'message_display.xjs');
 last_mod.setTime(last_mod_time*1000);
 if(http_request.header['If-Modified-Since'] != undefined) {
 	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {

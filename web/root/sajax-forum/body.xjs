@@ -9,7 +9,10 @@ var msgbase=new MsgBase(sub_code);
 msgbase.open();
 var hdr=msgbase.get_msg_header(msg_number, false /* Speedup */);
 var last_mod=new Date();
-last_mod.setTime(hdr.when_imported_time*1000);
+if(hdr.when_imported_time > file_date(xjs_filename))
+	last_mod.setTime(hdr.when_imported_time*1000);
+else
+	last_mod.setTime(file_date(xjs_filename)*1000);
 if(http_request.header['If-Modified-Since'] != undefined) {
 	if(last_mod <= new Date(http_request.header['If-Modified-Since'])) {
 		http_reply.status="304 Not Modified";
@@ -43,7 +46,7 @@ if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDA
 	}
 }
 msgbase.close();
-var html_sub_code_string="'"+html_encode(sub_code, true, false, false, false).replace(/'/,'&#39;')+"'";
+var html_sub_code_string="'"+html_encode(sub_code, true, false, false, false).replace(/'/g,'&#39;')+"'";
 
 if(ANSI_formatted) {
 	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_html(this.parentNode.parentNode, "+html_sub_code_string+");return false\">HTML Mode</a></div>");
@@ -77,8 +80,8 @@ else {
 	// Strip CTRL-A
 	body=body.replace(/\1./g,'');
 	// Strip ANSI
-	body=body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/,'');
-	body=body.replace(/\x1b[\x40-\x7e]/,'');
+	body=body.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'');
+	body=body.replace(/\x1b[\x40-\x7e]/g,'');
 	// Strip unprintable control chars (NULL, BEL, DEL, ESC)
 	body=body.replace(/[\x00\x07\x1b\x7f]/g,'');
 

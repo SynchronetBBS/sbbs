@@ -76,6 +76,7 @@ body {
 	font-weight: normal;
 	font-style: normal;
 	margin-left: 20px;
+	background-color: #ccc;
 }
 
 .message-body pre {
@@ -100,6 +101,7 @@ body {
 }
 
 .ansi_toggle {
+	background-color: #999;
 }
 
 .quote {
