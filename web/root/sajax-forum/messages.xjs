@@ -29,9 +29,8 @@ var top_level=new Array();
 if(msg_area.sub[sub_code].index!=-1)
 	msgbase.open();
 
-// If the If-Modified-Since is greater or equal to the newest import time, we're done!
 if(msgbase.total_msgs==0) {
-	write(' ');	// Make != ''
+	?><div class="no_messages">No messages in this sub</div><?xjs
 	exit(0);
 }
 var hdr=msgbase.get_msg_header(true, msgbase.total_msgs-1,false);
@@ -211,8 +210,6 @@ for(i=msg_offset; i<top_level.length; i++) {
 	xjs_load('message_display.xjs');
 	msg_count--;
 }
-?>
-<?xjs
 // Close the message base
 msgbase.close();
 ?>
