@@ -73,7 +73,10 @@ if(ANSI_formatted) {
 	}
 }
 else {
-	var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+	if(http_request.cookie.hide_quotes==undefined || http_request.cookie.hide_quotes[0]=='yes')
+		var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Show quote</a><blockquote style="display: none">';
+	else
+		var blockquote_start='<div class="quote"><a class="quote-expander" href="#" onclick="toggle_quote(this);return false">Hide quote</a><blockquote style="display: block">';
 	var blockquote_end='</blockquote></div>';
 
 	writeln("<div class=\"ansi_toggle\"><a href=\"#\" onclick=\"load_ansi(this.parentNode.parentNode, "+html_sub_code_string+");return false\">ANSI Mode</a></div>");

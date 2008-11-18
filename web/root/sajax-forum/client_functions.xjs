@@ -102,6 +102,14 @@ function clean_id(id)
 	return(id.replace(/[^A-Za-z0-9]/g,'_'));
 }
 
+function toggle_quotes(container)
+{
+	if(container.checked)
+		Set_Cookie("hide_quotes", "yes", 90);
+	else
+		Set_Cookie("hide_quotes", "no", 90);
+}
+
 function toggle_ansi(container)
 {
 	if(container.checked)
