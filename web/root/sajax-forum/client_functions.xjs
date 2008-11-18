@@ -63,9 +63,51 @@ var user=<?xjs if(user.alias != '') write(user.alias.toSource()); else write(use
 var password=<?xjs write(user.security.password.toSource()) ?>;
 var read_ptr=new Object();
 
+function Set_Cookie( name, value, expires, path, domain, secure ) 
+{
+	var today = new Date();
+	today.setTime( today.getTime() );
+
+	if ( expires ) {
+		expires = expires * 1000 * 60 * 60 * 24;
+		var expires_date = new Date( today.getTime() + (expires) );
+		var expires_string = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][expires_date.getUTCDay()]+", ";
+		if(expires_date.getUTCDate() < 10)
+			expires_string += '0';
+		expires_string += expires_date.getUTCDate() + '-';
+		expires_string += ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][expires_date.getUTCMonth()]+'-';
+		if(expires_date.getUTCFullYear()%100 < 10)
+			expires_string += '0';
+		expires_string += (expires_date.getUTCFullYear()%100) + ' ';
+		if(expires_date.getUTCHours() < 10)
+			expires_string += '0';
+		expires_string += expires_date.getUTCHours() + ':';
+		if(expires_date.getUTCMinutes() < 10)
+			expires_string += '0';
+		expires_string += expires_date.getUTCMinutes() + ':';
+		if(expires_date.getUTCSeconds() < 10)
+			expires_string += '0';
+		expires_string += expires_date.getUTCSeconds() + ' UTC';
+	}
+
+	document.cookie = name + "=" +escape( value ) +
+		( ( expires ) ? ";expires=" + expires_string : "" ) + 
+		( ( path ) ? ";path=" + path : "" ) + 
+		( ( domain ) ? ";domain=" + domain : "" ) +
+		( ( secure ) ? ";secure" : "" );
+}
+
 function clean_id(id)
 {
 	return(id.replace(/[^A-Za-z0-9]/g,'_'));
+}
+
+function toggle_ansi(container)
+{
+	if(container.checked)
+		Set_Cookie("ansi_messages", "yes", 90);
+	else
+		Set_Cookie("ansi_messages", "no", 90);
 }
 
 function toggle_replies(sub_code, message_number)
@@ -143,7 +185,7 @@ function toggle_body(sub_code, message_number)
 	var message=container.parentNode.parentNode;
 
 	if(container.innerHTML=='') {
-		ajaxpage(body_url+"?sub_code="+encodeURIComponent(sub_code)+"&msg_number="+message_number+'&user='+encodeURIComponent(user),containerid);
+		ajaxpage(body_url+"?sub_code="+encodeURIComponent(sub_code)+"&msg_number="+message_number+'&user='+encodeURIComponent(user)+"&ansi="+document.getElementById('ansi_default_checkbox').checked, container.id);
 		container.style.display='block';
 		/* If this is higher than the current read_ptr, update it */
 		if(read_ptr[sub_code] < message_number)
