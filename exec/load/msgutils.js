@@ -252,7 +252,7 @@ function expand_body(body, sys_misc, mode)
 
 	// TODO: /* clear at newline for extra attr codes */
 	/* expand sole LF to CR/LF */
-	body=body.replace(/^\n/mg, '\r\n');
+	body=body.replace(/^\n/, '\r\n');
 	body=body.replace(/([^\r])\n/g, '$1\r\n');
 
 	body=body.replace(/@([^@]*)@/g, function(matched, code) {
