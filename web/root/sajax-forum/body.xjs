@@ -1,5 +1,6 @@
 <?xjs 
 load("sbbsdefs.js");
+load("msgutils.js");
 sub_code=http_request.query.sub_code[0];
 var ANSI_formatted=false;
 if(http_request.query.ansi != undefined && http_request.query.ansi[0]=='true')
@@ -43,9 +44,7 @@ function linkify(body) {
 if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
 	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
 		body=msgbase.get_msg_body(true,hdr.offset);
-		// Expand lone LFs
-		body=body.replace(/([^\r])\n/g, '$1\r\n');
-		body=body.replace(/^\n/mg, '\r\n');
+		body=expand_body(body, system.settings);
 	}
 }
 msgbase.close();
