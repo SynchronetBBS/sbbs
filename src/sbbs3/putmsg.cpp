@@ -168,7 +168,7 @@ char sbbs_t::putmsg(const char *str, long mode)
 				case 'W':
 					attr((curatr&0xf0)|LIGHTGRAY|HIGH);
 					break;
-				case 'S':   /* swap foreground and background */
+				case 'S':   /* swap foreground and background - TODO: This sets foreground to BLACK! */
 					attr((curatr&0x07)<<4);
 					break; 
 			}
