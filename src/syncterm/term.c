@@ -917,14 +917,17 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
 	zmodem_t	zm;
 	ulong	fsize;
+	struct zmodem_cbdata cbdata;
 
 	draw_transfer_window("ZMODEM Upload");
 
 	zmodem_mode=ZMODEM_MODE_SEND;
 
+	cbdata.zm=&zm;
+	cbdata.bbs=bbs;
 	conn_binary_mode_on();
 	zmodem_init(&zm
-		,/* cbdata */&zm
+		,/* cbdata */&cbdata
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
