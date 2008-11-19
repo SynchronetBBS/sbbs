@@ -10,6 +10,7 @@
 
 #include "threadwrap.h"
 #include "filewrap.h"
+#include "xpbeep.h"
 
 #include "conn.h"
 #include "syncterm.h"
