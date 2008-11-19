@@ -549,6 +549,7 @@ void erase_transfer_window(void) {
 }
 
 void ascii_upload(FILE *fp);
+void raw_upload(FILE *fp);
 #define XMODEM_128B		(1<<10)	/* Use 128 byte block size (ick!) */
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
@@ -563,11 +564,12 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	int i;
 	FILE*	fp;
 	struct file_pick fpick;
-	char	*opts[5]={
+	char	*opts[6]={
 			 "ZMODEM"
 			,"YMODEM"
 			,"XMODEM"
 			,"ASCII"
+			,"Raw"
 			,""
 		};
 	struct	text_info txtinfo;
@@ -621,6 +623,9 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 				break;
 			case 3:
 				ascii_upload(fp);
+				break;
+			case 4:
+				raw_upload(fp);
 				break;
 		}
 	}
@@ -874,6 +879,30 @@ void guts_transfer(struct bbslist *bbs)
 	return;
 }
 #endif
+
+void raw_upload(FILE *fp)
+{
+	char	buf[1024];
+	int		r;
+	int		inch;
+	char	ch[2];
+
+	ch[1]=0;
+	for(;;) {
+		r=fread(buf, 1, sizeof(buf), fp);
+		if(r)
+			conn_send(buf, r,0);
+		/* Note, during RAW uploads, do NOT send ANSI responses and don't
+		 * allow speed changes. */
+		while((inch=recv_byte(NULL, 0))>=0) {
+			ch[0]=inch;
+			cterm_write(ch, 1, NULL, 0, NULL);
+		}
+		if(r==0)
+			break;
+	}
+	fclose(fp);
+}
 
 void ascii_upload(FILE *fp)
 {
