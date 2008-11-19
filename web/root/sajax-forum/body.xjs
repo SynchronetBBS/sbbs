@@ -43,6 +43,9 @@ function linkify(body) {
 if((!msg_area.sub[sub_code.toLowerCase()].ismoderated) || (hdr.attr & MSG_VALIDATED)!=0) {
 	if((hdr.attr & (MSG_PRIVATE|MSG_DELETE))==0) {
 		body=msgbase.get_msg_body(true,hdr.offset);
+		// Expand lone LFs
+		body=body.replace(/([^\r])\n/g, '\r\n');
+		body=body.replace(/^\n/, '\r\n');
 	}
 }
 msgbase.close();
