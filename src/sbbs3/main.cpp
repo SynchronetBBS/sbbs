@@ -1130,7 +1130,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					&& sbbs->telnet_cmd[sbbs->telnet_cmdlen-2]==TELNET_IAC) {
 
 					if(startup->options&BBS_OPT_DEBUG_TELNET)
-						lprintf(LOG_DEBUG,"Node %d %s Telnet sub-negotiation command: %s"
+						lprintf(LOG_DEBUG,"Node %d %s telnet sub-negotiation command: %s"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,telnet_opt_desc(option));
@@ -1154,7 +1154,24 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,speed);
 						sbbs->cur_rate=atoi(speed);
 						sbbs->cur_cps=sbbs->cur_rate/10;
-
+#if 0
+					} else if(option==TELNET_NEW_ENVIRON
+						&& sbbs->telnet_cmd[3]==TELNET_ENVIRON_IS) {
+						BYTE*	p;
+						BYTE*   end=sbbs->telnet_cmd+(sbbs->telnet_cmdlen-2);
+						for(p=sbbs->telnet_cmd+4; p < end; ) {
+							if(*p==TELNET_ENVIRON_VAR || *p==TELNET_ENVIRON_USERVAR) {
+								p++;
+								lprintf(LOG_DEBUG,"Node %d %s telnet environment var/val: %.*s"
+	                				,sbbs->cfg.node_num
+									,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+									,end-p
+									,p);
+								p+=strlen((char*)p);
+							} else
+								p++;
+						}
+#endif
 					} else if(option==TELNET_SEND_LOCATION) {
 						safe_snprintf(sbbs->telnet_location
 							,sizeof(sbbs->telnet_location)
@@ -1253,6 +1270,20 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 								,TELNET_IAC,TELNET_SE);
 							sbbs->putcom(buf,6);
 						}
+#if 0
+						else if(command==TELNET_WILL && option==TELNET_NEW_ENVIRON) {
+							if(startup->options&BBS_OPT_DEBUG_TELNET)
+								lprintf(LOG_DEBUG,"Node %d requesting USER environment variable value"
+									,sbbs->cfg.node_num);
+
+							char	buf[64];
+							int len=sprintf(buf,"%c%c%c%c%cUSER%c%c"
+								,TELNET_IAC,TELNET_SB
+								,TELNET_NEW_ENVIRON,TELNET_ENVIRON_SEND,TELNET_ENVIRON_VAR
+								,TELNET_IAC,TELNET_SE);
+							sbbs->putcom(buf,len);
+						}
+#endif
 					}
 				}
 
