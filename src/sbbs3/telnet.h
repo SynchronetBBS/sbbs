@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -100,10 +100,10 @@ enum {
 	,TELNET_REMOTE_FLOW
 	,TELNET_LINE_MODE
 	,TELNET_X_DISPLAY_LOCATION
-	,TELNET_ENV_OPTION
+	,TELNET_ENVIRON					/* Not used */
 	,TELNET_AUTH_OPTION
 	,TELNET_ENCRYPTION_OPTION
-	,TELNET_NEW_ENV_OPTION		
+	,TELNET_NEW_ENVIRON				/* RFC 1572 */
 	,TELNET_3270E					/* 40 */
 	,TELNET_XAUTH					/* [Earhart] */
 	,TELNET_CHARSET					/* [RFC2066] */
@@ -123,6 +123,16 @@ enum {
 #define TELNET_TERM_IS		0
 #define TELNET_TERM_SEND	1
 #define TELNET_TERM_MAXLEN	40
+
+/* New environment sub option codes, see RFC 1572 */
+#define TELNET_ENVIRON_IS		0
+#define TELNET_ENVIRON_SEND		1
+#define TELNET_ENVIRON_INFO		2
+
+#define TELNET_ENVIRON_VAR		0
+#define TELNET_ENVIRON_VALUE	1
+#define TELNET_ENVIRON_ESC		2
+#define TELNET_ENVIRON_USERVAR	3
 
 /* bits for telnet_mode */   
    
