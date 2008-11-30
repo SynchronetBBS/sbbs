@@ -959,7 +959,7 @@ extern "C" {
 		 JSTYPE_ARRAY=JSTYPE_LIMIT
 		,JSTYPE_ALIAS
 		,JSTYPE_UNDEF
-#if !defined(JSTYPE_NULL)	/* JSTYPE_NULL was removed after 1.5 rc 6a (?) */
+#if JS_VERSION < JSVERSION_1_6	/* JSTYPE_NULL was removed after 1.5 rc 6a (?) */
 		,JSTYPE_NULL
 #endif
 	};
