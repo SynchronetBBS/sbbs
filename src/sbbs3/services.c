@@ -1064,7 +1064,7 @@ static void js_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
 
-	if((js_runtime=jsrt_GetNew(service->js.max_bytes))==NULL
+	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
@@ -1178,7 +1178,7 @@ static void js_static_service_thread(void* arg)
 	service_client.branch.terminated = &service->terminated;
 	service_client.branch.auto_terminate = TRUE;
 
-	if((js_runtime=jsrt_GetNew(service->js.max_bytes))==NULL) {
+	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript runtime"
 			,service->socket,service->protocol);
 		close_socket(service->socket);

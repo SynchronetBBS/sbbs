@@ -4395,7 +4395,7 @@ static BOOL js_setup(http_session_t* session)
 		lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
 			,session->socket,startup->js.max_bytes);
 
-		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes))==NULL) {
+		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes, 5000))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",session->socket);
 			return(FALSE);
 		}
@@ -5463,7 +5463,7 @@ void DLLCALL web_server(void* arg)
     	    lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
         	    ,server_socket,startup->js.max_bytes);
 
-    	    if((js_runtime=jsrt_GetNew(startup->js.max_bytes))==NULL) {
+    	    if((js_runtime=jsrt_GetNew(startup->js.max_bytes, 0))==NULL) {
         	    lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",server_socket);
 				/* Sleep 15 seconds then try again */
 				/* ToDo: Something better should be used here. */

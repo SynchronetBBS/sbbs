@@ -1610,7 +1610,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
 			,sock, startup->js.max_bytes);
 
-		if((js_runtime = jsrt_GetNew(startup->js.max_bytes))==NULL)
+		if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000))==NULL)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)\n"
