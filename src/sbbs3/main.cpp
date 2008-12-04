@@ -2670,6 +2670,8 @@ void event_thread(void* arg)
 	sbbs->cfg.node_num=0;
     sbbs->event_thread_running = false;
 
+	delete sbbs;
+
 	thread_down();
 	eprintf(LOG_DEBUG,"BBS Event thread terminated (%u threads remain)", thread_count);
 }
@@ -5296,9 +5298,6 @@ NO_PASSTHRU:
         node.status=NODE_OFFLINE;
         sbbs->putnodedat(i,&node);
     }
-
-	if(events!=NULL && !events->event_thread_running)
-		delete events;
 
     if(!sbbs->output_thread_running)
 	    delete sbbs;
