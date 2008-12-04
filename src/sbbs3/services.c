@@ -59,6 +59,7 @@
 #include "services.h"
 #include "ident.h"	/* identify() */
 #include "sbbs_ini.h"
+#include "js_rtpool.h"
 
 /* Constants */
 
@@ -1063,7 +1064,7 @@ static void js_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
 
-	if((js_runtime=JS_NewRuntime(service->js.max_bytes))==NULL
+	if((js_runtime=jsrt_GetNew(service->js.max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
@@ -1116,7 +1117,7 @@ static void js_service_thread(void* arg)
 	}
 	JS_DestroyContext(js_cx);	/* Free Context */
 
-	JS_DestroyRuntime(js_runtime);
+	jsrt_Release(js_runtime);
 
 	if(service_client.user.number) {
 		lprintf(LOG_INFO,"%04d %s Logging out %s"
@@ -1177,7 +1178,7 @@ static void js_static_service_thread(void* arg)
 	service_client.branch.terminated = &service->terminated;
 	service_client.branch.auto_terminate = TRUE;
 
-	if((js_runtime=JS_NewRuntime(service->js.max_bytes))==NULL) {
+	if((js_runtime=jsrt_GetNew(service->js.max_bytes))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript runtime"
 			,service->socket,service->protocol);
 		close_socket(service->socket);
@@ -1222,7 +1223,7 @@ static void js_static_service_thread(void* arg)
 	if(js_cx!=NULL)
 		JS_DestroyContext(js_cx);	/* Free Context */
 
-	JS_DestroyRuntime(js_runtime);
+	jsrt_Release(js_runtime);
 
 	if(service->clients) {
 		lprintf(LOG_WARNING,"%04d %s !service terminating with %u active clients"

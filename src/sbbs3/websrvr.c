@@ -65,6 +65,7 @@
 #include "websrvr.h"
 #include "base64.h"
 #include "md5.h"
+#include "js_rtpool.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -4394,7 +4395,7 @@ static BOOL js_setup(http_session_t* session)
 		lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
 			,session->socket,startup->js.max_bytes);
 
-		if((session->js_runtime=JS_NewRuntime(startup->js.max_bytes))==NULL) {
+		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",session->socket);
 			return(FALSE);
 		}
@@ -5005,7 +5006,7 @@ void http_session_thread(void* arg)
 #ifndef ONE_JS_RUNTIME
 	if(session.js_runtime!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",socket);
-		JS_DestroyRuntime(session.js_runtime);
+		jsrt_Release(session.js_runtime);
 		session.js_runtime=NULL;
 	}
 #endif
@@ -5462,7 +5463,7 @@ void DLLCALL web_server(void* arg)
     	    lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
         	    ,server_socket,startup->js.max_bytes);
 
-    	    if((js_runtime=JS_NewRuntime(startup->js.max_bytes))==NULL) {
+    	    if((js_runtime=jsrt_GetNew(startup->js.max_bytes))==NULL) {
         	    lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",server_socket);
 				/* Sleep 15 seconds then try again */
 				/* ToDo: Something better should be used here. */
@@ -5685,7 +5686,7 @@ void DLLCALL web_server(void* arg)
 #ifdef ONE_JS_RUNTIME
     	if(js_runtime!=NULL) {
         	lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",server_socket);
-        	JS_DestroyRuntime(js_runtime);
+        	jsrt_Release(js_runtime);
     	    js_runtime=NULL;
 	    }
 #endif

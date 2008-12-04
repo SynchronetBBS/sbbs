@@ -51,6 +51,7 @@
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
 #include "telnet.h"
+#include "js_rtpool.h"
 
 /* Constants */
 
@@ -3858,7 +3859,7 @@ static void ctrl_thread(void* arg)
 						lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
 							,sock,startup->js.max_bytes);
 
-						if((js_runtime = JS_NewRuntime(startup->js.max_bytes))==NULL) {
+						if((js_runtime = jsrt_GetNew(startup->js.max_bytes))==NULL) {
 							lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",sock);
 							sockprintf(sock,"451 Error creating JavaScript runtime");
 							filepos=0;
@@ -4462,7 +4463,7 @@ static void ctrl_thread(void* arg)
 
 	if(js_runtime!=NULL) {
 		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying runtime",sock);
-		JS_DestroyRuntime(js_runtime);
+		jsrt_Release(js_runtime);
 	}
 
 #endif

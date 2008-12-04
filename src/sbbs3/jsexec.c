@@ -45,6 +45,7 @@
 
 #include "sbbs.h"
 #include "ciolib.h"
+#include "js_rtpool.h"
 
 #define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
@@ -570,7 +571,7 @@ static BOOL js_init(char** environ)
 	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
 
-	if((js_runtime = JS_NewRuntime(js_max_bytes))==NULL)
+	if((js_runtime = jsrt_GetNew(js_max_bytes))==NULL)
 		return(FALSE);
 
 	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
@@ -1023,7 +1024,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"JavaScript: Destroying context\n");
 		JS_DestroyContext(js_cx);
 		fprintf(statfp,"JavaScript: Destroying runtime\n");
-		JS_DestroyRuntime(js_runtime);	
+		jsrt_Release(js_runtime);	
 
 	} while((recycled || loop) && !terminated);
 

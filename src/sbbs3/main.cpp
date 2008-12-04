@@ -39,6 +39,7 @@
 #include "ident.h"
 #include "telnet.h" 
 #include "netwrap.h"
+#include "js_rtpool.h"
 
 #ifdef __unix__
 	#include <sys/un.h>
@@ -980,7 +981,7 @@ bool sbbs_t::js_init(ulong* stack_frame)
 	lprintf(LOG_DEBUG,"%s JavaScript: Creating runtime: %lu bytes"
 		,node,startup->js.max_bytes);
 
-	if((js_runtime = JS_NewRuntime(startup->js.max_bytes))==NULL)
+	if((js_runtime = jsrt_GetNew(startup->js.max_bytes))==NULL)
 		return(false);
 
 	lprintf(LOG_DEBUG,"%s JavaScript: Initializing context (stack: %lu bytes)"
@@ -3186,7 +3187,7 @@ sbbs_t::~sbbs_t()
 
 	if(js_runtime!=NULL) {
 		lprintf(LOG_DEBUG,"%s JavaScript: Destroying runtime",node);
-		JS_DestroyRuntime(js_runtime);
+		jsrt_Release(js_runtime);
 		js_runtime=NULL;
 	}
 #endif

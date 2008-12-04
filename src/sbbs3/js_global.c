@@ -42,6 +42,7 @@
 #include "base64.h"
 #include "htmlansi.h"
 #include "ini_file.h"
+#include "js_rtpool.h"
 
 /* SpiderMonkey: */
 #include <jsfun.h>
@@ -124,7 +125,7 @@ static void background_thread(void* arg)
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_DestroyScript(bg->cx, bg->script);
 	JS_DestroyContext(bg->cx);
-	JS_DestroyRuntime(bg->runtime);
+	jsrt_Release(bg->runtime);
 	free(bg);
 }
 
@@ -255,7 +256,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		bg->branch.counter=0;
 		bg->branch.gc_attempts=0;
 
-		if((bg->runtime = JS_NewRuntime(JAVASCRIPT_MAX_BYTES))==NULL)
+		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES))==NULL)
 			return(JS_FALSE);
 
 	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
