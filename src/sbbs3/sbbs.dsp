@@ -267,6 +267,10 @@ SOURCE=.\js_queue.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_rtpool.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\js_server.c
 # End Source File
 # Begin Source File
