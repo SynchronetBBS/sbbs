@@ -2327,6 +2327,8 @@ BOOL doterm(struct bbslist *bbs)
 							uifcbail();
 							puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,p);
 							free(p);
+							showmouse();
+							_setcursortype(_NORMALCURSOR);
 						}
 					}
 					break;
