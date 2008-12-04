@@ -28,7 +28,6 @@ function	Lock(fileName)
 	{
 		lockfile.close();
 		activeGame=fileName;
-		js.on_exit("Unlock(activeGame)");
 		return fileName;
 	}
 }
@@ -49,3 +48,5 @@ function	UnlockAll()
 		}
 	}
 }
+
+js.on_exit("if(activeGame != undefined && activeGame != '') Unlock(activeGame);");
