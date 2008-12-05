@@ -226,8 +226,13 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 	}
 
 	/* Give up timeslices every once in a while */
-	if(branch->yield_interval && (branch->counter%branch->yield_interval)==0)
+	if(branch->yield_interval && (branch->counter%branch->yield_interval)==0) {
+		jsrefcount	rc;
+
+		rc=JS_SuspendRequest(cx);
 		YIELD();
+		JS_ResumeRequest(cx, rc);
+	}
 
 	/* Periodic Garbage Collection */
 	if(branch->gc_interval && (branch->counter%branch->gc_interval)==0)
