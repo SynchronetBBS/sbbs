@@ -382,10 +382,10 @@ js_uifc_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 	rc=JS_SuspendRequest(cx);
 	if(uifc->input(mode, left, top, prompt, str, maxlen, kmode)<0) {
-		rc=JS_ResumeRequest(cx, rc);
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
-	rc=JS_ResumeRequest(cx, rc);
+	JS_ResumeRequest(cx, rc);
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
 
@@ -453,7 +453,7 @@ js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)&dflt,(int*)&bar,title,opts));
 	strListFree(&opts);
-	JS_SuspendRequest(cx, rc);
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
