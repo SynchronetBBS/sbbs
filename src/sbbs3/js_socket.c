@@ -438,7 +438,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	cstr = JS_GetStringBytes(ip_str);
 	rc=JS_SuspendRequest(cx);
 	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(ip_str));
-	if((ip_addr=resolve_ip(cstr)==INADDR_NONE) {
+	if((ip_addr=resolve_ip(cstr))==INADDR_NONE) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = JSVAL_FALSE;

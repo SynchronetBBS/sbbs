@@ -585,6 +585,9 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(JS_ValueToInt32(cx,*vp,&val)) {
 				rc=JS_SuspendRequest(cx);
 				putuserrec(p->cfg,p->user.number,U_FLAGS2,0,ultoa(val,tmp,16));
+			}
+			else
+				rc=JS_SuspendRequest(cx);
 			break;
 		case USER_PROP_FLAGS3:
 			JS_ResumeRequest(cx, rc);
