@@ -73,9 +73,11 @@ enum {
 static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint		tiny;
+	jsrefcount	rc;
 
     tiny = JSVAL_TO_INT(id);
 
+	rc=JS_SuspendRequest(cx);
 	switch(tiny) {
 		case PROP_WSCROLL:
 			*vp=BOOLEAN_TO_JSVAL(_wscroll);
@@ -150,6 +152,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp=BOOLEAN_TO_JSVAL(!(cio_textinfo.attribute & 0x8));
 			break;
 	}
+	JS_ResumeRequest(cx, rc);
 
 	return(JS_TRUE);
 }
@@ -159,6 +162,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint		tiny;
 	int32		i=0;
 	JSBool		b;
+	jsrefcount	rc;
 
     tiny = JSVAL_TO_INT(id);
 
@@ -181,27 +185,39 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case PROP_TEXTATTR:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			textattr(i);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_WHEREX:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			gotoxy(i, cio_textinfo.cury);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_WHEREY:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			gotoxy(cio_textinfo.curx, i);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_TEXTMODE:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			textmode(i);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_TEXTBACKGROUND:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			textbackground(i);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_TEXTCOLOR:
 			JS_ValueToInt32(cx, *vp, &i);
+			rc=JS_SuspendRequest(cx);
 			textcolor(i);
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_CLIPBOARD:
 			{
@@ -209,22 +225,28 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				char	*bytes;
 
 				bytes=js_ValueToStringBytes(cx, *vp, &len);
+				rc=JS_SuspendRequest(cx);
 				copytext(bytes, len+1);
+				JS_ResumeRequest(cx, rc);
 			}
 			break;
 		case PROP_HIGHVIDEO:
 			JS_ValueToBoolean(cx, *vp, &b);
+			rc=JS_SuspendRequest(cx);
 			if(b)
 				highvideo();
 			else
 				lowvideo();
+			JS_ResumeRequest(cx, rc);
 			break;
 		case PROP_LOWVIDEO:
 			JS_ValueToBoolean(cx, *vp, &b);
+			rc=JS_SuspendRequest(cx);
 			if(b)
 				lowvideo();
 			else
 				highvideo();
+			JS_ResumeRequest(cx, rc);
 			break;
 	}
 
@@ -266,8 +288,9 @@ static jsSyncPropertySpec js_properties[] = {
 static JSBool
 js_conio_init(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	char*	mode;
+	int			ciolib_mode=CIOLIB_MODE_AUTO;
+	char*		mode;
+	jsrefcount	rc;
 
 	*rval = JSVAL_FALSE;
 
@@ -284,108 +307,164 @@ js_conio_init(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 			ciolib_mode=CIOLIB_MODE_CONIO;
 	}
 
-	if(initciolib(ciolib_mode))
+	rc=JS_SuspendRequest(cx);
+	if(initciolib(ciolib_mode)) {
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
+	}
 
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_suspend(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	suspendciolib();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_clreol(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	clreol();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_clrscr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	clrscr();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_wscroll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	wscroll();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_delline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	delline();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_insline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	insline();
 	*rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_normvideo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
 	normvideo();
     *rval = JSVAL_TRUE;
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_getch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(getch());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_getche(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(getche());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(beep());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_getfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(getfont());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_hidemouse(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(hidemouse());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_conio_showmouse(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	jsrefcount	rc;
+
+	rc=JS_SuspendRequest(cx);
     *rval = INT_TO_JSVAL(showmouse());
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -393,10 +472,13 @@ static JSBool
 js_conio_setcursortype(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32	type;
+	jsrefcount	rc;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&type)) {
+		rc=JS_SuspendRequest(cx);
 		_setcursortype(type);
 		*rval = JSVAL_TRUE;
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -407,11 +489,14 @@ static JSBool
 js_conio_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32	x,y;
+	jsrefcount	rc;
 
 	if(argc==2 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&x)
 				&& JSVAL_IS_NUMBER(argv[1]) && JS_ValueToInt32(cx,argv[1],&y)) {
+		rc=JS_SuspendRequest(cx);
 		gotoxy(x,y);
 		*rval = JSVAL_TRUE;
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -422,9 +507,12 @@ static JSBool
 js_conio_putch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32	ch;
+	jsrefcount	rc;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&ch)) {
+		rc=JS_SuspendRequest(cx);
 		*rval=INT_TO_JSVAL(putch(ch));
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -435,9 +523,12 @@ static JSBool
 js_conio_ungetch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32	ch;
+	jsrefcount	rc;
 
 	if(argc==1 && JSVAL_IS_NUMBER(argv[0]) && JS_ValueToInt32(cx,argv[0],&ch)) {
+		rc=JS_SuspendRequest(cx);
 		*rval=INT_TO_JSVAL(ungetch(ch));
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -448,9 +539,12 @@ static JSBool
 js_conio_loadfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char *	str;
+	jsrefcount	rc;
 
 	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+		rc=JS_SuspendRequest(cx);
 		*rval=INT_TO_JSVAL(loadfont(str));
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -461,9 +555,12 @@ static JSBool
 js_conio_settitle(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char *	str;
+	jsrefcount	rc;
 
 	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+		rc=JS_SuspendRequest(cx);
 		settitle(str);
+		JS_ResumeRequest(cx, rc);
 		*rval=JSVAL_TRUE;
 		return(JS_TRUE);
 	}
@@ -475,9 +572,12 @@ static JSBool
 js_conio_setname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char *	str;
+	jsrefcount	rc;
 
 	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+		rc=JS_SuspendRequest(cx);
 		setname(str);
+		JS_ResumeRequest(cx, rc);
 		*rval=JSVAL_TRUE;
 		return(JS_TRUE);
 	}
@@ -489,9 +589,12 @@ static JSBool
 js_conio_cputs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char *	str;
+	jsrefcount	rc;
 
 	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
+		rc=JS_SuspendRequest(cx);
 		*rval=INT_TO_JSVAL(cputs(str));
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -503,6 +606,7 @@ js_conio_setfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 {
 	int32	font;
 	int force=JS_FALSE;
+	jsrefcount	rc;
 
 	if(argc > 2)
 		return(JS_FALSE);
@@ -514,7 +618,9 @@ js_conio_setfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 			if(!JS_ValueToBoolean(cx, argv[1], &force))
 				return(JS_FALSE);
 		}
+		rc=JS_SuspendRequest(cx);
 		*rval=INT_TO_JSVAL(setfont(font, force));
+		JS_ResumeRequest(cx, rc);
 		return(JS_TRUE);
 	}
 
@@ -525,9 +631,14 @@ static JSBool
 js_conio_getpass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char *	str;
+	char *	pwd;
+	jsrefcount	rc;
 
 	if(argc==1 && (str=js_ValueToStringBytes(cx,argv[0],NULL))!=NULL) {
-		*rval=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,getpass(str)));
+		rc=JS_SuspendRequest(cx);
+		pwd=getpass(str);
+		JS_ResumeRequest(cx, rc);
+		*rval=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,pwd));
 		return(JS_TRUE);
 	}
 
@@ -541,6 +652,7 @@ js_conio_window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	int32 top=1;
 	int32 right=cio_textinfo.screenwidth;
 	int32 bottom=cio_textinfo.screenheight;
+	jsrefcount	rc;
 
 	if(argc > 4)
 		return(JS_FALSE);
@@ -570,7 +682,9 @@ js_conio_window(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 			return(JS_FALSE);
 	}
 
+	rc=JS_SuspendRequest(cx);
 	window(left, top, right, bottom);
+	JS_ResumeRequest(cx, rc);
 	if(cio_textinfo.winleft == left
 			&& cio_textinfo.winright==right
 			&& cio_textinfo.wintop==top
@@ -589,6 +703,7 @@ js_conio_cgets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	char	buf[258];
 	int32	maxlen=255;
 	char	*ret;
+	jsrefcount	rc;
 
 	if(argc > 1)
 		return(JS_FALSE);
@@ -601,7 +716,9 @@ js_conio_cgets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			return(JS_FALSE);
 	}
 	buf[0]=maxlen;
+	rc=JS_SuspendRequest(cx);
 	ret=cgets(buf);
+	JS_ResumeRequest(cx, rc);
 	if(ret==NULL)
 		*rval=JSVAL_NULL;
 	else {
@@ -633,6 +750,7 @@ js_conio_movetext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 {
 	int		i;
 	int32	args[6];
+	jsrefcount	rc;
 
 	if(argc != 6)
 		return(JS_FALSE);
@@ -642,7 +760,9 @@ js_conio_movetext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		if(!JS_ValueToInt32(cx, argv[i], &args[i]))
 			return(JS_FALSE);
 	}
+	rc=JS_SuspendRequest(cx);
 	*rval=BOOLEAN_TO_JSVAL(movetext(args[0], args[1], args[2], args[3], args[4], args[5]));
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -655,6 +775,7 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	jsuint	size;
 	jsval	val;
 	JSObject *array;
+	jsrefcount	rc;
 
 	/* default values: */
 	args[0]=1;
@@ -702,8 +823,10 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		buffer[i]=j;
 	}
 
+	rc=JS_SuspendRequest(cx);
 	*rval=BOOLEAN_TO_JSVAL(puttext(args[0], args[1], args[2], args[3], buffer));
 	free(buffer);
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -716,6 +839,7 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	int		size;
 	JSObject *array;
 	jsval	val;
+	jsrefcount	rc;
 
 	/* default values: */
 	args[0]=1;
@@ -741,7 +865,11 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	result=(unsigned char *)malloc(size);
 	if(result==NULL)
 		return(JS_FALSE);
+
+	rc=JS_SuspendRequest(cx);
+
 	if(gettext(args[0], args[1], args[2], args[3], result)) {
+		JS_ResumeRequest(cx, rc);
 		array=JS_NewArrayObject(cx, 0, NULL);
 		for(i=0; i<size; i++) {
 			JS_NewNumberValue(cx, result[i], &val);
@@ -752,8 +880,10 @@ js_conio_gettext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		}
 		*rval=OBJECT_TO_JSVAL(array);
 	}
-	else
+	else {
+		JS_ResumeRequest(cx, rc);
 		*rval=JSVAL_NULL;
+	}
 	free(result);
 	return(JS_TRUE);
 }
