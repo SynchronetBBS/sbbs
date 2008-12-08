@@ -634,7 +634,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			break;
 		case JSVAL_OBJECT:
 			if((dflt_obj = JSVAL_TO_OBJECT(dflt))!=NULL && js_DateIsValid(cx, dflt_obj)) {
-				tt=(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
+				tt=(time_t)(js_DateGetMsecSinceEpoch(cx,dflt_obj)/1000.0);
 				rc=JS_SuspendRequest(cx);
 				dbl=iniReadDateTime(p->fp,section,key,tt);
 				JS_ResumeRequest(cx, rc);
