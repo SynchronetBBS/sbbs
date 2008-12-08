@@ -1,8 +1,10 @@
 /* $Id$ */
 
-#include <threadwrap.h>
+#if !defined(_WIN32)
 #include <xpsem.h>
+#endif
 #include "js_rtpool.h"
+#include <threadwrap.h>
 
 struct jsrt_queue {
         JSRuntime       *rt;
