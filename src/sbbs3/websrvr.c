@@ -4386,6 +4386,7 @@ js_initcx(http_session_t *session)
 
     if((js_cx = JS_NewContext(session->js_runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
+	JS_BeginRequest(js_cx);
 
 	lprintf(LOG_INFO,"%04d JavaScript: Context created",session->socket);
 
@@ -4405,6 +4406,7 @@ js_initcx(http_session_t *session)
 									,&js_server_props			/* server */
 		))==NULL
 		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -5025,6 +5027,7 @@ void http_session_thread(void* arg)
 
 	if(session.js_cx!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying context",socket);
+		JS_EndRequest(session.js_cx);
 		JS_DestroyContext(session.js_cx);	/* Free Context */
 		session.js_cx=NULL;
 	}

@@ -267,6 +267,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 
 	if((cx=JS_NewContext(JS_GetRuntime(parent_cx),JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(JS_FALSE);
+	JS_BeginRequest(cx);
 
 	/* Use the error reporter from the parent context */
 	reporter=JS_SetErrorReporter(parent_cx,NULL);
@@ -285,6 +286,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 
 	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL
 		|| !JS_InitStandardClasses(cx,obj)) {
+		JS_EndRequest(cx);
 		JS_DestroyContext(cx);
 		return(JS_FALSE);
 	}
@@ -294,6 +296,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 		JS_DestroyScript(cx, script);
 	}
 
+	JS_EndRequest(cx);
 	JS_DestroyContext(cx);
 
     return(JS_TRUE);

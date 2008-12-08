@@ -831,6 +831,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
     if((js_cx = JS_NewContext(js_runtime, service_client->service->js.cx_stack))==NULL)
 		return(NULL);
+	JS_BeginRequest(js_cx);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
@@ -948,6 +949,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 
 	if(!success) {
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -1158,6 +1160,7 @@ static void js_service_thread(void* arg)
 		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
 		JS_DestroyScript(js_cx, js_script);
 	}
+	JS_EndRequest(js_cx);
 	JS_DestroyContext(js_cx);	/* Free Context */
 
 	jsrt_Release(js_runtime);
@@ -1259,12 +1262,15 @@ static void js_static_service_thread(void* arg)
 		js_EvalOnExit(js_cx, js_glob, &service_client.branch);
 		JS_DestroyScript(js_cx, js_script);
 
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
 		js_cx=NULL;
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
-	if(js_cx!=NULL)
+	if(js_cx!=NULL) {
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
+	}
 
 	jsrt_Release(js_runtime);
 
