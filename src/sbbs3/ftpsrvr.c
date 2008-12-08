@@ -483,7 +483,6 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 
     if((js_cx = JS_NewContext(runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
-	JS_BeginRequest(js_cx);
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",sock);
 
@@ -517,7 +516,6 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	} while(0);
 
 	if(!success) {
-		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -4477,7 +4475,6 @@ static void ctrl_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(js_cx!=NULL) {
 		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying context",sock);
-		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);	/* Free Context */
 	}
 

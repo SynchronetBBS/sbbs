@@ -124,7 +124,6 @@ static void background_thread(void* arg)
 	js_EvalOnExit(bg->cx, bg->obj, &bg->branch);
 	js_enqueue_value(bg->cx, bg->msg_queue, result, NULL);
 	JS_DestroyScript(bg->cx, bg->script);
-	JS_EndRequest(bg->cx);
 	JS_DestroyContext(bg->cx);
 	jsrt_Release(bg->runtime);
 	free(bg);
@@ -263,7 +262,6 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 			return(JS_FALSE);
-		JS_BeginRequest(bg->cx);
 
 		if((bg->obj=js_CreateCommonObjects(bg->cx
 				,p->cfg			/* common config */

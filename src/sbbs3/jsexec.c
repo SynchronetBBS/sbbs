@@ -618,7 +618,6 @@ static BOOL js_init(char** environ)
 
     if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
-	JS_BeginRequest(js_cx);
 
 	if(stack_limit)
 		fprintf(statfp,"JavaScript: Thread stack limit: %lu bytes\n"
@@ -1062,7 +1061,6 @@ int main(int argc, char **argv, char** environ)
 
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");
-		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 		fprintf(statfp,"JavaScript: Destroying runtime\n");
 		jsrt_Release(js_runtime);	
