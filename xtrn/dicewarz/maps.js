@@ -60,7 +60,7 @@ function	NewGame(minp,maxp,n)
 		}
 		return count;
 	}
-	this.GetVote=function(playerNumber)
+	this.getVote=function(playerNumber)
 	{
 		if(this.players[playerNumber].vote==0) return("wait");
 		else return("start");
@@ -104,7 +104,6 @@ function 	Map(c,r,p,gn)
 	this.maxTerr=11;					//MAXIMUM FOR RANDOM TERRITORY GENERATION PER PLAYER
 	
 	//NOTIFY NEXT PLAYER OF TURN 
-	//TODO:  FIGURE OUT WHY THE GAME (OR THE BBS) IS SENDING DUPLICATE TELEGRAM NOTICES FOR THE SAME TURN
 	this.Notify=				function()	//NOTIFY NEXT PLAYER OF TURN
 	{
 		nextTurn=this.nextTurn;

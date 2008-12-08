@@ -502,10 +502,8 @@ function	ViewGameInfo(gameNumber)
 
 		console.putmsg("\1g\1h  " + GetUserName(player,playerNumber));
 		if(player.vote>=0) {
-			if(player.vote==0) vote="wait";
-			else vote="start";
 			if(g.maxPlayers>g.minPlayers)
-				console.putmsg(" \1n\1gvotes to \1h" + vote);
+				console.putmsg(" \1n\1gvotes to \1h" + g.getVote(playerNumber));
 		}
 		console.crlf();
 	}
