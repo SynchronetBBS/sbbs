@@ -36,7 +36,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-DLLEXPORT JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout);
+DLLEXPORT JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line);
 DLLEXPORT void DLLCALL jsrt_Release(JSRuntime *);
 #if defined(__cplusplus)
 }

@@ -610,7 +610,7 @@ static BOOL js_init(char** environ)
 	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
 
-	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000))==NULL)
+	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000, __FILE__, __LINE__))==NULL)
 		return(FALSE);
 
 	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"

@@ -1503,6 +1503,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	file[MAX_PATH+1];
 	char*	warning;
 	SOCKET*		sock;
+	jsrefcount	rc;
 
 	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
 		return;
@@ -1530,8 +1531,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
+	rc=JS_SuspendRequest(cx);
 	lprintf(LOG_ERR,"%04d !JavaScript %s%s%s: %s"
 		,*sock, warning ,file, line, message);
+	JS_ResumeRequest(cx, rc);
 }
 
 static JSBool
@@ -1541,6 +1544,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int32		level=LOG_INFO;
     JSString*	str=NULL;
 	SOCKET*		sock;
+	jsrefcount	rc;
 
 	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -1551,7 +1555,9 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
+		rc=JS_SuspendRequest(cx);
 		lprintf(level,"%04d JavaScript: %s",*sock,JS_GetStringBytes(str));
+		JS_ResumeRequest(cx, rc);
 	}
 
 	if(str==NULL)
@@ -1610,7 +1616,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
 			,sock, startup->js.max_bytes);
 
-		if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000))==NULL)
+		if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)\n"

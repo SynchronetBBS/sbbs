@@ -3,21 +3,57 @@
 #include "js_rtpool.h"
 #include <threadwrap.h>
 
+//#define SHARED_RUNTIMES
+
 struct jsrt_queue {
-        JSRuntime       *rt;
-        int             maxbytes;
-	int		used;
-	int		created;
+	JSRuntime       *rt;
+	int			created;
+#ifdef SHARED_RUNTIMES
+	const char*	file;
+	long		line;
+#else
+	int			maxbytes;
+	int			used;
+#endif
 };
 
 #define JSRT_QUEUE_SIZE		128
 struct jsrt_queue jsrt_queue[JSRT_QUEUE_SIZE];
 static pthread_mutex_t		jsrt_mutex;
 static int			initialized=0;
+#ifndef SHARED_RUNTIMES
 static sem_t			jsrt_sem;
+#endif
 
-JSRuntime *jsrt_GetNew(int maxbytes, unsigned long timeout)
+JSRuntime *jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
 {
+#ifdef SHARED_RUNTIMES
+	int	i;
+
+	if(!initialized) {
+		pthread_mutex_init(&jsrt_mutex, NULL);
+		initialized=TRUE;
+	}
+
+	pthread_mutex_lock(&jsrt_mutex);
+	for(i=0; i<JSRT_QUEUE_SIZE; i++) {
+		if(!jsrt_queue[i].created) {
+			jsrt_queue[i].rt=JS_NewRuntime(maxbytes);
+			if(jsrt_queue[i].rt != NULL) {
+				jsrt_queue[i].file=filename;
+				jsrt_queue[i].line=line;
+				jsrt_queue[i].created=1;
+			}
+		}
+		if(jsrt_queue[i].created && jsrt_queue[i].file == filename && jsrt_queue[i].line == line) {
+			pthread_mutex_unlock(&jsrt_mutex);
+			return(jsrt_queue[i].rt);
+		}
+	}
+	pthread_mutex_unlock(&jsrt_mutex);
+
+	return(NULL);
+#else
 	int	i;
 	int	last_unused=-1;
 
@@ -57,10 +93,13 @@ JSRuntime *jsrt_GetNew(int maxbytes, unsigned long timeout)
 	}
 
 	return(NULL);
+#endif
 }
 
 void jsrt_Release(JSRuntime *rt)
 {
+#ifdef SHARED_RUNTIMES
+#else
 	int	i;
 
 	for(i=0; i<JSRT_QUEUE_SIZE; i++) {
@@ -72,4 +111,5 @@ void jsrt_Release(JSRuntime *rt)
 			sem_post(&jsrt_sem);
 		}
 	}
+#endif
 }

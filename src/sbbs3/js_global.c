@@ -257,7 +257,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		bg->branch.counter=0;
 		bg->branch.gc_attempts=0;
 
-		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000))==NULL)
+		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL)
 			return(JS_FALSE);
 
 	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)

@@ -387,6 +387,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     uintN		i;
     JSString*	str=NULL;
 	FILE*	fp;
+	jsrefcount	rc;
 
 	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
@@ -395,7 +396,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
 		    return JS_FALSE;
+		rc=JS_SuspendRequest(cx);
 		fprintf(fp,"%s",JS_GetStringBytes(str));
+		JS_ResumeRequest(cx, rc);
 	}
 
 	if(str==NULL)
@@ -409,12 +412,15 @@ static JSBool
 js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	FILE*	fp;
+	jsrefcount	rc;
 
 	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	js_write(cx,obj,argc,argv,rval);
+	rc=JS_SuspendRequest(cx);
 	fprintf(fp,"\r\n");
+	JS_ResumeRequest(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -626,6 +632,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 	JSScript*	js_script=NULL;
 	JSString*	js_str;
 	long double		start=xp_timer();
+	jsrefcount	rc;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Generating HTML Index for %s"
 		,sock, genvpath(lib,dir,str));
@@ -658,6 +665,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			break;
 		}
 
+		rc=JS_SuspendRequest(js_cx);
 		if(strcspn(startup->html_index_script,"/\\")==strlen(startup->html_index_script)) {
 			sprintf(spath,"%s%s",scfg.mods_dir,startup->html_index_script);
 			if(scfg.mods_dir[0]==0 || !fexist(spath))
@@ -672,6 +680,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			lprintf(LOG_ERR,"%04d !HTML JavaScript (%s) doesn't exist",sock,spath);
 			break;
 		}
+		JS_ResumeRequest(js_cx, rc);
 
 		if((js_str=JS_NewStringCopyZ(js_cx, startup->html_index_file))==NULL)
 			break;
@@ -774,6 +783,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 
 		if(lib<0) {	/* root dir */
 
+			rc=JS_SuspendRequest(js_cx);
 			/* File Aliases */
 			sprintf(path,"%sftpalias.cfg",scfg.ctrl_dir);
 			if((alias_fp=fopen(path,"r"))!=NULL) {
@@ -833,6 +843,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						SAFEPRINTF2(vpath,"/%s/%s",p,startup->html_index_file);
 					} else
 						SAFECOPY(vpath,p);
+					JS_ResumeRequest(js_cx, rc);
 					js_add_file(js_cx
 						,alias_dir ? dir_array : file_array
 						,p				/* filename */
@@ -848,10 +859,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						,scfg.sys_id	/* uploader */
 						,vpath			/* link */
 						);
+					rc=JS_SuspendRequest(js_cx);
 				}
 
 				fclose(alias_fp);
 			}
+			JS_ResumeRequest(js_cx, rc);
 
 			/* QWK Packet */
 			if(startup->options&FTP_OPT_ALLOW_QWK /* && fexist(qwkfile) */) {
@@ -916,6 +929,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			}
 		} else if(chk_ar(&scfg,scfg.dir[dir]->ar,user)){
 			SAFEPRINTF(path,"%s*",scfg.dir[dir]->path);
+			rc=JS_SuspendRequest(js_cx);
 			glob(path,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc;i++) {
 				if(isdir(g.gl_pathv[i]))
@@ -940,6 +954,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						,scfg.lib[scfg.dir[dir]->lib]->sname
 						,scfg.dir[dir]->code_suffix
 						,getfname(g.gl_pathv[i]));
+					JS_ResumeRequest(js_cx, rc);
 					js_add_file(js_cx
 						,file_array 
 						,getfname(g.gl_pathv[i])	/* filename */
@@ -955,10 +970,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						,f.uler						/* uploader */
 						,getfname(g.gl_pathv[i])	/* link */
 						);
+					rc=JS_SuspendRequest(js_cx);
 				}
 			}
 			globfree(&g);
 		}
+		JS_ResumeRequest(js_cx, rc);
 
 
 		/* RUN SCRIPT */
@@ -3859,7 +3876,7 @@ static void ctrl_thread(void* arg)
 						lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
 							,sock,startup->js.max_bytes);
 
-						if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000))==NULL) {
+						if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL) {
 							lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",sock);
 							sockprintf(sock,"451 Error creating JavaScript runtime");
 							filepos=0;
