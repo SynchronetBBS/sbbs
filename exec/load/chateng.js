@@ -17,7 +17,7 @@
 	For more advanced chatting, see 
 	ChatEngine this.Init() method
 */
-function Chat(Engine)
+function Chat(Engine,key)
 {
 	if(this.fullscreen) console.clear();
 	else
@@ -27,8 +27,9 @@ function Chat(Engine)
 	}
 	while(1)
 	{
-		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
+		if(!key) key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 		if(!Engine.ProcessKey(key)) break;
+		key="";
 	}
 }
 //*************MAIN ENGINE*************
@@ -278,11 +279,11 @@ function ChatEngine(root,name,log_)
 					Log("Error: Unknown");
 					break;
 			}
-			exit(0);
 		}
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
+		exit(0);
 	}
 }
 
