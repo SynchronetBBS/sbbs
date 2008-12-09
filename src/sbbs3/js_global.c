@@ -2500,7 +2500,6 @@ js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		path[MAX_PATH+1];
 	JSString*	js_str;
 	jsrefcount	rc;
-	rc=JS_SUSPENDREQUEST(cx);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
