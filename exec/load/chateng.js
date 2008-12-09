@@ -140,7 +140,7 @@ function ChatEngine(root,name,log_)
 			this.BackSpace();
 			break;
 		case '\r':
-			if(!this.fullscreen) ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
+			if(!this.fullscreen) this.ClearInputLine();
 			else 
 			{
 				console.left(this.buffer.length)
@@ -160,6 +160,10 @@ function ChatEngine(root,name,log_)
 			break;
 		}
 		return true;
+	}
+	this.ClearInputLine=function()
+	{
+		ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
 	}
 	this.BackSpace=function()
 	{
