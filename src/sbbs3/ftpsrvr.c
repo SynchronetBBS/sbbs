@@ -483,6 +483,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 
     if((js_cx = JS_NewContext(runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
+	JS_BeginRequest(js_cx);
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",sock);
 
@@ -516,6 +517,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	} while(0);
 
 	if(!success) {
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -974,8 +976,8 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 				}
 			}
 			globfree(&g);
+			JS_ResumeRequest(js_cx, rc);
 		}
-		JS_ResumeRequest(js_cx, rc);
 
 
 		/* RUN SCRIPT */
@@ -3885,6 +3887,7 @@ static void ctrl_thread(void* arg)
 					}
 
 					if(js_cx==NULL) {	/* Context not yet created, create it now */
+						/* js_initcx() starts a request */
 						if(((js_cx=js_initcx(js_runtime, sock,&js_glob,&js_ftp))==NULL)) {
 							lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript context",sock);
 							sockprintf(sock,"451 Error initializing JavaScript context");
@@ -3907,6 +3910,8 @@ static void ctrl_thread(void* arg)
 							,startup->html_index_file)==NULL) 
 							lprintf(LOG_ERR,"%04d !JavaScript ERROR creating file area object",sock);
 					}
+					else
+						JS_BeginRequest(js_cx);
 
 					if((js_str=JS_NewStringCopyZ(js_cx, "name"))!=NULL) {
 						js_val=STRING_TO_JSVAL(js_str);
@@ -3950,6 +3955,7 @@ static void ctrl_thread(void* arg)
 					js_val=BOOLEAN_TO_JSVAL(INT_TO_BOOL(user.misc&EXTDESC));
 					JS_SetProperty(js_cx, js_ftp, "extended_descriptions", &js_val);
 
+					JS_EndRequest(js_cx);
 #endif
 					if((fp=fopen(ftp_tmpfname(fname,"html",sock),"w+b"))==NULL) {
 						lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock,errno,fname);
@@ -3964,10 +3970,12 @@ static void ctrl_thread(void* arg)
 					tmpfile=TRUE;
 					delfile=TRUE;
 #ifdef JAVASCRIPT
+					JS_BeginRequest(js_cx);
 					js_val=INT_TO_JSVAL(timeleft);
 					if(!JS_SetProperty(js_cx, js_ftp, "time_left", &js_val))
 						lprintf(LOG_ERR,"%04d !JavaScript ERROR setting user.time_left",sock);
 					js_generate_index(js_cx, js_ftp, sock, fp, lib, dir, &user);
+					JS_EndRequest(js_cx);
 #endif
 					fclose(fp);
 				}
