@@ -895,7 +895,7 @@ function	Forfeit(gameNumber,playerNumber)
 	}
 	else 
 	{
-		var activePlayers=g.CountActivePlayers();
+		var activePlayers=g.countActivePlayers();
 		scores[user.number].score+=points[7-activePlayers.length];
 		GameLog("giving " + points[7-activePlayers.length] + " points to user " + user.alias);
 		if(activePlayers.length==2) 
@@ -903,11 +903,12 @@ function	Forfeit(gameNumber,playerNumber)
 			g.status=0;
 			for(player in activePlayers)
 			{
-				if(g.players[player].user!=user.number)
+				var ply=activePlayers[player];
+				if(g.players[ply].user!=user.number)
 				{
-					g.winner=g.players[player].user;
-					scores[g.players[player].user].points+=2;
-					GameLog("giving " + pts + " points to user " + system.username(g.players[player].user));
+					g.winner=g.players[ply].user;
+					scores[g.players[ply].user].points+=2;
+					GameLog("giving " + pts + " points to user " + system.username(g.players[ply].user));
 					break;
 				}
 			}

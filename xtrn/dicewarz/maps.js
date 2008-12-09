@@ -166,7 +166,7 @@ function 	Map(c,r,p,gn)
 		}
 		else return false;
 	}
-	this.CountActivePlayers=	function()
+	this.countActivePlayers=	function()
 	{
 		var activePlayers=[];
 		for(player in this.players)
