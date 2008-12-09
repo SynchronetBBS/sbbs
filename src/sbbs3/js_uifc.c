@@ -42,6 +42,7 @@
 #include "sbbs.h"
 #include "uifc.h"
 #include "ciolib.h"
+#include "js_request.h"
 
 /* Properties */
 enum {
@@ -252,27 +253,27 @@ js_uifc_init(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			ciolib_mode=CIOLIB_MODE_CONIO;
 	}
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	if(ciolib_mode==-1) {
 		if(uifcinix(uifc)) {
-			JS_ResumeRequest(cx, rc);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
 	} else {
 		if(initciolib(ciolib_mode)) {
-			JS_ResumeRequest(cx, rc);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
 
 		if(uifcini32(uifc)) {
-			JS_ResumeRequest(cx, rc);
+			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
 	}
 
 	*rval = JSVAL_TRUE;
 	uifc->scrn(title);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -285,9 +286,9 @@ js_uifc_bail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((uifc=get_uifc(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	uifc->bail();
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -304,9 +305,9 @@ js_uifc_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=js_ValueToStringBytes(cx, argv[0], NULL))==NULL)
 		return(JS_FALSE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	uifc->msg(str);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -323,9 +324,9 @@ js_uifc_pop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		str=js_ValueToStringBytes(cx, argv[0], NULL);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	uifc->pop(str);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -380,12 +381,12 @@ js_uifc_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if(org)
 		strncpy(str,org,maxlen);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	if(uifc->input(mode, left, top, prompt, str, maxlen, kmode)<0) {
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
 
@@ -450,10 +451,10 @@ js_uifc_list(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	}
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
     *rval = INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)&dflt,(int*)&bar,title,opts));
 	strListFree(&opts);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 

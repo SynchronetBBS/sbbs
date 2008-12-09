@@ -46,6 +46,7 @@
 #include "sbbs.h"
 #include "ciolib.h"
 #include "js_rtpool.h"
+#include "js_request.h"
 
 #define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
@@ -293,9 +294,9 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
-		rc=JS_SuspendRequest(cx);
+		rc=JS_SUSPENDREQUEST(cx);
 		lprintf(level,"%s",JS_GetStringBytes(str));
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if(str==NULL)
@@ -319,9 +320,9 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((buf=alloca(len))==NULL)
 		return(JS_TRUE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	rd=fread(buf,sizeof(char),len,stdin);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	if(rd>=0)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,rd));
@@ -342,9 +343,9 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((buf=alloca(len+1))==NULL)
 		return(JS_TRUE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	p=fgets(buf,len+1,stdin);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	if(p!=NULL)
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncnl(p)));
@@ -363,9 +364,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
-		rc=JS_SuspendRequest(cx);
+		rc=JS_SUSPENDREQUEST(cx);
 		fprintf(confp,"%s",JS_GetStringBytes(str));
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if(str==NULL)
@@ -383,9 +384,9 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(!js_write(cx,obj,argc,argv,rval))
 		return(JS_FALSE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	fprintf(confp,"\n");
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
 
@@ -400,9 +401,9 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	fprintf(confp,"%s",p);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
 
@@ -420,9 +421,9 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	fprintf(confp,"!%s\n",JS_GetStringBytes(str));
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	*rval = argv[0];
 
@@ -440,9 +441,9 @@ js_confirm(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	    return(JS_FALSE);
 
 	cstr = JS_GetStringBytes(str);
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	printf("%s (Y/N)?", cstr);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	*rval = BOOLEAN_TO_JSVAL(FALSE);
 	return(JS_TRUE);
@@ -459,9 +460,9 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(!JSVAL_IS_VOID(argv[0])) {
 		if((prompt=JS_ValueToString(cx, argv[0]))==NULL)
 			return(JS_FALSE);
-		rc=JS_SuspendRequest(cx);
+		rc=JS_SUSPENDREQUEST(cx);
 		fprintf(confp,"%s: ",JS_GetStringBytes(prompt));
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if(argc>1) {
@@ -471,10 +472,10 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else
 		instr[0]=0;
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	if(!fgets(instr,sizeof(instr),stdin))
 		return(JS_TRUE);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 
 	if((str=JS_NewStringCopyZ(cx, truncnl(instr)))==NULL)
 	    return(JS_FALSE);
@@ -494,9 +495,9 @@ js_chdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	*rval = BOOLEAN_TO_JSVAL(chdir(p)==0);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
 
@@ -538,10 +539,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 	jsrefcount	rc;
 
-	rc=JS_SuspendRequest(cx);
+	rc=JS_SUSPENDREQUEST(cx);
 	if(report==NULL) {
 		lprintf(LOG_ERR,"!JavaScript: %s", message);
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 		return;
     }
 
@@ -564,7 +565,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		warning="";
 
 	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
-	JS_ResumeRequest(cx, rc);
+	JS_RESUMEREQUEST(cx, rc);
 }
 
 static JSBool
@@ -618,7 +619,7 @@ static BOOL js_init(char** environ)
 
     if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
-	JS_BeginRequest(js_cx);
+	JS_BEGINREQUEST(js_cx);
 
 	if(stack_limit)
 		fprintf(statfp,"JavaScript: Thread stack limit: %lu bytes\n"
@@ -633,23 +634,23 @@ static BOOL js_init(char** environ)
 		,NULL,INVALID_SOCKET					/* client */
 		,NULL									/* server */
 		))==NULL) {
-		JS_EndRequest(js_cx);
+		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
 	/* Environment Object (associative array) */
 	if(!js_CreateEnvObject(js_cx, js_glob, environ)) {
-		JS_EndRequest(js_cx);
+		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
 	if(js_CreateUifcObject(js_cx, js_glob)==NULL) {
-		JS_EndRequest(js_cx);
+		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
 	if(js_CreateConioObject(js_cx, js_glob)==NULL) {
-		JS_EndRequest(js_cx);
+		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
@@ -1064,7 +1065,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"\n");
 
 		result=js_exec(module,&argv[argn]);
-		JS_EndRequest(js_cx);
+		JS_ENDREQUEST(js_cx);
 
 		if(result)
 			lprintf(LOG_ERR,"!Module set exit_code: %ld", result);

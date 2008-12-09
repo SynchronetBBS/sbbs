@@ -37,6 +37,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "js_request.h"
 
 char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
 {
@@ -594,6 +595,7 @@ long sbbs_t::js_execfile(const char *cmd)
 		return(-1); 
 	}
 
+	JS_BEGINREQUEST(js_cx);
 	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
 
 	if(js_scope!=NULL) {
@@ -655,6 +657,7 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	if(rval!=JSVAL_VOID)
 		JS_ValueToInt32(js_cx,rval,&result);
+	JS_ENDREQUEST(js_cx);
 		
 	return(result);
 }

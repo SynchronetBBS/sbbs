@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "js_request.h"
 
 #include <jscntxt.h>	/* Needed for Context-private data structure */
 
@@ -229,9 +230,9 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 	if(branch->yield_interval && (branch->counter%branch->yield_interval)==0) {
 		jsrefcount	rc;
 
-		rc=JS_SuspendRequest(cx);
+		rc=JS_SUSPENDREQUEST(cx);
 		YIELD();
-		JS_ResumeRequest(cx, rc);
+		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	/* Periodic Garbage Collection */
