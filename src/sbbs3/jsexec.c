@@ -618,6 +618,7 @@ static BOOL js_init(char** environ)
 
     if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
+	JS_BeginRequest(js_cx);
 
 	if(stack_limit)
 		fprintf(statfp,"JavaScript: Thread stack limit: %lu bytes\n"
@@ -631,18 +632,26 @@ static BOOL js_init(char** environ)
 		,&branch								/* js */
 		,NULL,INVALID_SOCKET					/* client */
 		,NULL									/* server */
-		))==NULL)
+		))==NULL) {
+		JS_EndRequest(js_cx);
 		return(FALSE);
+	}
 
 	/* Environment Object (associative array) */
-	if(!js_CreateEnvObject(js_cx, js_glob, environ))
+	if(!js_CreateEnvObject(js_cx, js_glob, environ)) {
+		JS_EndRequest(js_cx);
 		return(FALSE);
+	}
 
-	if(js_CreateUifcObject(js_cx, js_glob)==NULL)
+	if(js_CreateUifcObject(js_cx, js_glob)==NULL) {
+		JS_EndRequest(js_cx);
 		return(FALSE);
+	}
 
-	if(js_CreateConioObject(js_cx, js_glob)==NULL)
+	if(js_CreateConioObject(js_cx, js_glob)==NULL) {
+		JS_EndRequest(js_cx);
 		return(FALSE);
+	}
 
 	return(TRUE);
 }
@@ -1055,6 +1064,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"\n");
 
 		result=js_exec(module,&argv[argn]);
+		JS_EndRequest(js_cx);
 
 		if(result)
 			lprintf(LOG_ERR,"!Module set exit_code: %ld", result);

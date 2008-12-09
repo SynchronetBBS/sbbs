@@ -1624,6 +1624,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
 			break;
+		JS_BeginRequest(js_cx);
 
 		JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
@@ -1723,6 +1724,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 	} while(0);
 
 	if(js_cx!=NULL) {
+		JS_EndRequest(js_cx);
 		JS_DestroyContext(js_cx);
 	}
 	if(js_runtime!=NULL)
