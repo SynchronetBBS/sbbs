@@ -514,6 +514,7 @@ function	StartGame(gameNumber)
 	var maxPlayers=games.gameData[gameNumber].maxPlayers;
 	var players=games.gameData[gameNumber].players;
 	games.gameData[gameNumber]=new Map(columns,rows,maxPlayers,gameNumber);
+	g=games.gameData[gameNumber];
 	games.gameData[gameNumber].players=players;
 	games.inProgress.push(gameNumber);
 	games.gameData[gameNumber].Init();
@@ -522,7 +523,6 @@ function	StartGame(gameNumber)
 	games.gameData[gameNumber].lastModified=time();
 	
 	//TODO:  simplify game menu status updating
-	g=games.gameData[gameNumber];
 	if(g.players[g.turnOrder[g.nextTurn]].user==user.number) games.yourTurn.push(gameNumber);
 	
 	
@@ -980,8 +980,8 @@ function	PlayGame(gameNumber)
 				g.players[turn].AI.moves=0;
 				while(g.CanAttack(turn))
 				{
-					if(TakeTurnAI(gameNumber,turn));
-					else break;
+					if(!TakeTurnAI(gameNumber,turn))
+						break;
 				}
 				g.takingTurn=true;
 				EndTurn(gameNumber,turn);
