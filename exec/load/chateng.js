@@ -87,7 +87,6 @@ function ChatEngine(root,name,log_)
 					this.fullscreen=false;
 					break;
 			}
-			console.gotoxy(this.x,this.y);
 			Log("Chat Initialized:");
 			Log("mode: " + (this.fullscreen==true?"fullscreen":(mode=='W'?"window":"single line")));
 		}
@@ -198,7 +197,7 @@ function ChatEngine(root,name,log_)
 			}
 		}
 		this.buffer+=key;
-		console.write(key);
+		console.putmsg("\1n" + key);
 	}
 	this.GetNotices=function()
 	{
