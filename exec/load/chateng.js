@@ -28,14 +28,23 @@ function Chat(Engine,key)
 	while(1)
 	{
 		if(!key) key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-		if(!Engine.ProcessKey(key)) break;
-		key="";
+		Engine.ProcessKey(key);
+		switch(key)
+		{
+			case '\r':
+				return true;
+			default:
+				key="";
+				break;
+		}
 	}
 }
 //*************MAIN ENGINE*************
 load("qengine.js");
 var ChatLog;
 var oldpass=console.ctrlkey_passthru;
+js.on_exit("file_remove(this.queue.user_file.name)");
+
 
 function ChatEngine(root,name,log_)
 {
@@ -127,14 +136,12 @@ function ChatEngine(root,name,log_)
 		case '\x1c':	/* CTRL-\ (RegExp) */
 		case '\x1f':	/* CTRL-_ Safe quick-abort*/
 		case '\x7f':	/* DELETE */
+		case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
 		case KEY_UP:
 		case KEY_DOWN:
 		case KEY_LEFT:
 		case KEY_RIGHT:
 			break;
-		case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
-			file_remove(this.queue.user_file.name);
-			return false;
 		case '\b':
 			this.BackSpace();
 			break;
@@ -196,8 +203,17 @@ function ChatEngine(root,name,log_)
 				console.gotoxy(this.input_line.x+offset,this.input_line.y);
 			}
 		}
-		this.buffer+=key;
-		console.putmsg("\1n" + key);
+		if(key)
+		{
+			this.buffer+=key;
+			console.putmsg("\1n" + key);
+		}
+	}
+	this.Redraw=function()
+	{
+		this.Display();
+		this.ClearInputLine();
+		this.Buffer();
 	}
 	this.GetNotices=function()
 	{
@@ -221,7 +237,7 @@ function ChatEngine(root,name,log_)
 		{
 			//FOR ALL OTHER MODES, STORE MESSAGES IN AN ARRAY AND HANDLE WRAPPING 
 			if(user_) this.Concat(color + system.username(user_)+ ": " + text);
-			else this.Concat(color + text);
+			else if(text) this.Concat(color + text);
 			console.gotoxy(this.x,this.y);
 			for(msg in this.messages)
 			{
