@@ -3764,7 +3764,7 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsval id)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if(id != JSVAL_NULL)
+	if(id != JSVAL_NULL && id != JS_DEFAULT_XML_NAMESPACE_ID)
 		name=JS_GetStringBytes(JSVAL_TO_STRING(id));
 
 	if(p->methods) {
