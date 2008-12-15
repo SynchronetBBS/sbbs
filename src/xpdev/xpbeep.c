@@ -49,7 +49,7 @@
 
 /* xpdev headers */
 #ifdef WITH_PORTAUDIO
-#include "portaudio.h"
+#include <portaudio.h>
 #endif
 
 #ifdef WITH_SDL_AUDIO
@@ -95,9 +95,13 @@ static int				portaudio_buf_len=0;
 static int				portaudio_buf_pos=0;
 static const unsigned char	*pawave;
 static int				portaudio_initialized=FALSE;
+#ifndef PaStream	// Detect version... defined for 1.8 and not for 1.9
+#define PortAudioCallback	void
+#define PaTimestamp		PaTime
+#endif
 struct portaudio_api_struct {
 	PaError (*init)( void );
-	PaError (*open)( PortAudioStream** stream,
+	PaError (*open)( PaStream** stream,
                               int numInputChannels,
                               int numOutputChannels,
                               PaSampleFormat sampleFormat,
@@ -106,11 +110,11 @@ struct portaudio_api_struct {
                               unsigned long numberOfBuffers,
                               PortAudioCallback *callback,
                               void *userData );
-	PaError (*close)( PortAudioStream* );
-	PaError (*start)( PortAudioStream *stream );
-	PaError (*stop)( PortAudioStream *stream );
-	PaError (*active)( PortAudioStream *stream );
-	PaError (*write)( PortAudioStream *stream, const void *buf, unsigned long frames );
+	PaError (*close)( PaStream* );
+	PaError (*start)( PaStream *stream );
+	PaError (*stop)( PaStream *stream );
+	PaError (*active)( PaStream *stream );
+	PaError (*write)( PaStream *stream, const void *buf, unsigned long frames );
 	int	(*version)( void );
 	int	ver;
 };
