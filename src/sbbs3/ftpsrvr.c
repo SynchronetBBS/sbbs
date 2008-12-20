@@ -4469,7 +4469,8 @@ static void ctrl_thread(void* arg)
 
 	if(user.number) {
 		/* Update User Statistics */
-		logoutuserdat(&scfg, &user, time(NULL), logintime);
+		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
+			lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat",sock);
 		/* Remove QWK-pack semaphore file (if left behind) */
 		sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
 		remove(str);

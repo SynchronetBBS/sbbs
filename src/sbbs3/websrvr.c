@@ -1374,7 +1374,8 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 		,socket,session->user.number, line);
 
 	SAFECOPY(session->username,unknown);
-	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
+	if(!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
+		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
 	memset(&session->user,0,sizeof(session->user));
 	session->last_user_num=session->user.number;
 }

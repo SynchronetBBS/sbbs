@@ -559,7 +559,8 @@ js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	logoutuserdat(&scfg,&client->user,time(NULL),client->logintime);
+	if(!logoutuserdat(&scfg,&client->user,time(NULL),client->logintime))
+		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat",client->socket);
 
 	lprintf(LOG_INFO,"%04d %s Logging out %s"
 		,client->socket,client->service->protocol,client->user.alias);

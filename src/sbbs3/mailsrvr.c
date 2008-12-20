@@ -1216,8 +1216,10 @@ static void pop3_thread(void* arg)
 				,socket, user.alias, buf);
 			sockprintf(socket,"-ERR UNSUPPORTED COMMAND: %s",buf);
 		}
-		if(user.number)
-			logoutuserdat(&scfg,&user,time(NULL),client.time);
+		if(user.number) {
+			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
+				lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
+		}
 
 	} while(0);
 
