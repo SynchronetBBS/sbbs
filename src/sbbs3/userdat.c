@@ -343,6 +343,8 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
 
+	user->number=user_number;	/* Signal of success */
+
 	/* Reset daily stats if not logged on today */
 	unixtodstr(cfg, time(NULL),str);
 	unixtodstr(cfg, user->laston,tmp);
@@ -367,7 +369,6 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		} 
 	}
 #endif
-	user->number=user_number;	/* Signal of success */
 
 	return(0);
 }
