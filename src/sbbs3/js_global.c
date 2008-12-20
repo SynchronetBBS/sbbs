@@ -499,9 +499,6 @@ js_crc32(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	size_t		len;
 	uint32_t	cs;
 	jsrefcount	rc;
-	/* Deuce: please explain the next 2 lines: */
-	rc=JS_SUSPENDREQUEST(cx);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
@@ -2568,9 +2565,6 @@ js_cfgfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		result[MAX_PATH+1];
 	char*		cstr;
 	jsrefcount	rc;
-	/* Deuce: please explain next 2 lines: */
-	rc=JS_SUSPENDREQUEST(cx);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if(JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);

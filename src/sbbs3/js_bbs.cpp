@@ -1755,9 +1755,6 @@ js_recvfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		p;
 	char*		cstr;
 	jsrefcount	rc;
-	/* Deuce: please explain the next 2 lines: */
-	rc=JS_SUSPENDREQUEST(cx);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
