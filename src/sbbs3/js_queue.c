@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -60,7 +60,6 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 {
 	msg_queue_t* q;
 	list_node_t* n;
-	jsrefcount	rc;
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
