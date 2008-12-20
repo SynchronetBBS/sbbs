@@ -499,6 +499,7 @@ js_crc32(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	size_t		len;
 	uint32_t	cs;
 	jsrefcount	rc;
+	/* Deuce: please explain the next 2 lines: */
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -529,7 +530,7 @@ js_chksum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=js_ValueToStringBytes(cx, argv[0], &len))==NULL)
 		return(JS_FALSE);
 
-	rc=JS_SUSPENDREQUEST(cx);
+	rc=JS_SUSPENDREQUEST(cx);	/* Deuce: Is this really necessary? */
 	while(len--) sum+=*(p++);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2567,6 +2568,7 @@ js_cfgfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		result[MAX_PATH+1];
 	char*		cstr;
 	jsrefcount	rc;
+	/* Deuce: please explain next 2 lines: */
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_RESUMEREQUEST(cx, rc);
 

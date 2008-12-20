@@ -818,11 +818,10 @@ js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	JS_ValueToInt32(cx,argv[0],&offset);
 	rc=JS_SUSPENDREQUEST(cx);
-	if((len=user_rec_len(offset))<0) {
-		JS_RESUMEREQUEST(cx, rc);
-		return(JS_FALSE);
-	}
+	len=user_rec_len(offset);
 	JS_RESUMEREQUEST(cx, rc);
+	if(len<0)
+		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
 		*rval = INT_TO_JSVAL(0);
@@ -1183,11 +1182,10 @@ js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		node_num=1;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((buf=getnmsg(cfg,node_num))==NULL) {
-		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
-	}
+	buf=getnmsg(cfg,node_num);
 	JS_RESUMEREQUEST(cx, rc);
+	if(buf==NULL)
+		return(JS_TRUE);
 
 	js_str=JS_NewStringCopyZ(cx, buf);
 	free(buf);
@@ -1247,11 +1245,10 @@ js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		usernumber=1;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((buf=getsmsg(cfg,usernumber))==NULL) {
-		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
-	}
+	buf=getsmsg(cfg,usernumber);
 	JS_RESUMEREQUEST(cx, rc);
+	if(buf==NULL)
+		return(JS_TRUE);
 
 	js_str=JS_NewStringCopyZ(cx, buf);
 	free(buf);

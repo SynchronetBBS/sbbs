@@ -403,9 +403,9 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_RESUMEREQUEST(cx, rc);
 		if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)	/* exception here Feb-12-2005 */
 			*rval = STRING_TO_JSVAL(js_str);			/* _CrtDbgBreak from _heap_alloc_dbg */
-		rc=JS_SUSPENDREQUEST(cx);
+	} else {
+		JS_RESUMEREQUEST(cx, rc);
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
 }
@@ -1174,6 +1174,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(tlen>len) {
 			len=tlen-len;
 			if((cp=malloc(len))==NULL) {
+				JS_RESUMEREQUEST(cx, rc);
 				FREE_AND_NULL(uubuf);
 				dbprintf(TRUE, p, "malloc failure of %u bytes", len);
 				return(JS_TRUE);

@@ -710,6 +710,8 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				break;
 		}
 
+		JS_RESUMEREQUEST(cx, rc);
+
 		if(rd!=len) {
 			p->last_error=ERROR_VALUE;
 			return(JS_TRUE);
@@ -724,12 +726,11 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		rc=JS_SUSPENDREQUEST(cx);
 		len = recvfrom(p->sock,buf,len,0,(SOCKADDR*)&addr,&addrlen);
+		JS_RESUMEREQUEST(cx, rc);
 		if(len<0) {
 			p->last_error=ERROR_VALUE;
-			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
-		JS_RESUMEREQUEST(cx, rc);
 		buf[len]=0;
 
 		str = JS_NewStringCopyN(cx, buf, len);

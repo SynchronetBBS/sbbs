@@ -680,6 +680,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			strcat(spath,".js");
 
 		if(!fexist(spath)) {
+			JS_RESUMEREQUEST(js_cx, rc);
 			lprintf(LOG_ERR,"%04d !HTML JavaScript (%s) doesn't exist",sock,spath);
 			break;
 		}
