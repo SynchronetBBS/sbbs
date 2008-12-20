@@ -1088,6 +1088,22 @@ bool sbbs_t::js_init(ulong* stack_frame)
 	return(true);
 }
 
+void sbbs_t::js_cleanup(const char* node)
+{
+	/* Free Context */
+	if(js_cx!=NULL) {	
+		lprintf(LOG_DEBUG,"%s JavaScript: Destroying context",node);
+		JS_DestroyContext(js_cx);
+		js_cx=NULL;
+	}
+
+	if(js_runtime!=NULL) {
+		lprintf(LOG_DEBUG,"%s JavaScript: Destroying runtime",node);
+		jsrt_Release(js_runtime);
+		js_runtime=NULL;
+	}
+}
+
 void sbbs_t::js_create_user_objects(void)
 {
 	if(js_cx==NULL)
@@ -2711,7 +2727,7 @@ void event_thread(void* arg)
 	sbbs->cfg.node_num=0;
     sbbs->event_thread_running = false;
 
-	delete sbbs;
+	sbbs->js_cleanup(sbbs->client_name);
 
 	thread_down();
 	eprintf(LOG_DEBUG,"BBS Event thread terminated (%u threads remain)", thread_count);
@@ -3220,20 +3236,7 @@ sbbs_t::~sbbs_t()
 	/* Free allocated class members */
 	/********************************/
 
-#ifdef JAVASCRIPT
-	/* Free Context */
-	if(js_cx!=NULL) {	
-		lprintf(LOG_DEBUG,"%s JavaScript: Destroying context",node);
-		JS_DestroyContext(js_cx);
-		js_cx=NULL;
-	}
-
-	if(js_runtime!=NULL) {
-		lprintf(LOG_DEBUG,"%s JavaScript: Destroying runtime",node);
-		jsrt_Release(js_runtime);
-		js_runtime=NULL;
-	}
-#endif
+	js_cleanup(node);
 
 	/* Reset text.dat */
 
@@ -5340,7 +5343,16 @@ NO_PASSTHRU:
         sbbs->putnodedat(i,&node);
     }
 
-    if(!sbbs->output_thread_running)
+    if(events!=NULL) {
+		if(events->event_thread_running)
+			lprintf(LOG_ERR,"!Event thread still running, can't delete");
+		else
+		    delete events; 
+	}
+
+    if(sbbs->output_thread_running)
+		lprintf(LOG_ERR,"!Output thread still running, can't delete");
+	else
 	    delete sbbs;
 
 	cleanup(0);
