@@ -3244,9 +3244,10 @@ js_resolve_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if((addr.s_addr=resolve_ip(p))==INADDR_NONE)
-		return(JS_TRUE);
+	addr.s_addr=resolve_ip(p);
 	JS_RESUMEREQUEST(cx, rc);
+	if(addr.s_addr==INADDR_NONE)
+		return(JS_TRUE);
 	
 	if((str=JS_NewStringCopyZ(cx, inet_ntoa(addr)))==NULL)
 		return(JS_FALSE);
