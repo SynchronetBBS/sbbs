@@ -527,7 +527,7 @@ js_chksum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=js_ValueToStringBytes(cx, argv[0], &len))==NULL)
 		return(JS_FALSE);
 
-	rc=JS_SUSPENDREQUEST(cx);	/* Deuce: Is this really necessary? */
+	rc=JS_SUSPENDREQUEST(cx);	/* 3.8 seconds on Deuce's computer when len==UINT_MAX/8 */
 	while(len--) sum+=*(p++);
 	JS_RESUMEREQUEST(cx, rc);
 
