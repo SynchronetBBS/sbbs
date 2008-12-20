@@ -9,6 +9,7 @@
 	#define XP_WIN
 #endif
 
+#define JS_THREADSAFE
 #include <jsapi.h>
 #include "threadwrap.h"
 #include "js_request.h"
@@ -16,7 +17,6 @@
 #ifdef DEBUG_JS_REQUESTS
 
 #define DEBUG
-#define JS_THREADSAFE
 #include <jscntxt.h>
 
 enum last_request_type {
@@ -199,7 +199,7 @@ jsrefcount js_debug_suspendrequest(JSContext *cx, const char *file, unsigned lon
 	if(req==NULL) {
 		strcpy(str,"Missing req in Suspend\n");
 		logstr();
-		return;
+		return -1;
 	}
 	switch(req->type) {
 	case LAST_REQUEST_TYPE_BEGIN:
