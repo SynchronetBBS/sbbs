@@ -513,19 +513,17 @@ function	StartGame(gameNumber)
 {
 	var maxPlayers=games.gameData[gameNumber].maxPlayers;
 	var players=games.gameData[gameNumber].players;
+	var oldFn=games.gameData[gameNumber].fileName
+	var oldSp=games.gameData[gameNumber].singlePlayer;
 	games.gameData[gameNumber]=new Map(columns,rows,maxPlayers,gameNumber);
+	games.gameData[gameNumber].fileName = oldFn;
+	games.gameData[gameNumber].singlePlayer = oldSp;
 	g=games.gameData[gameNumber];
 	games.gameData[gameNumber].players=players;
 	games.inProgress.push(gameNumber);
 	games.gameData[gameNumber].Init();
-	games.gameData[gameNumber].singlePlayer=g.singlePlayer;
-	games.gameData[gameNumber].fileName=g.fileName;
 	games.gameData[gameNumber].lastModified=time();
-	
-	//TODO:  simplify game menu status updating
-	if(g.players[g.turnOrder[g.nextTurn]].user==user.number) games.yourTurn.push(gameNumber);
-	
-	
+
 	QueueMessage("\1r\1hGame " + gameNumber + " Initialized!",30,20);
 	games.gameData[gameNumber].Notify();
 	/* Set up computer players */
@@ -682,7 +680,7 @@ function 	CreateNewGame()
 		games.yourTurn.push(gameNumber);
 	}
 	else games.notFull.push(gameNumber);
-	
+
 	games.StoreGame(gameNumber);
 	QueueMessage("\1r\1hGame " + gameNumber + " Created!",30,20);
 	Unlock(gamefile);
@@ -1226,7 +1224,7 @@ function	GameStatusInfo()
 		var gfile=new File(gamefile);
 		gfile.open('r',true);
 		var lgame;
-		
+
 		var status=parseInt(gfile.readln());
 		if(status<0) 
 		{
@@ -1399,6 +1397,7 @@ function	GameStatusInfo()
 		{
 			var fileName=this.gameData[gd].fileName;
 			var lastModified=file_date(fileName);
+
 			if(file_exists(fileName))
 			{
 				if(lastModified>this.gameData[gd].lastModified) 
@@ -1497,8 +1496,9 @@ function	GameStatusInfo()
 				else if(gm.status>0)
 				{
 					this.inProgress.push(ggg);
-					if(gm.turnOrder[gm.nextTurn]==playerNumber || gm.singlePlayer) 
+					if(gm.turnOrder[gm.nextTurn]==playerNumber || gm.singlePlayer) {
 						this.yourTurn.push(ggg);
+					}
 				}
 				if(gm.players[playerNumber].eliminated==true) this.eliminated.push(ggg);
 			}
