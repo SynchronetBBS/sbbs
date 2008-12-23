@@ -1086,7 +1086,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 		{
 			/* Find places we can attack */
 			attackOptions=g.CanAttack(playerNumber,base,computerPlayer,g);
-			if(attackOptions!=false) {
+			if(attackOptions!==false) {
 				var basetargets=new Array();
 
 				/* Randomize the order to check in */
