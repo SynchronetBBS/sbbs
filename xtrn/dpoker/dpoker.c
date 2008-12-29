@@ -231,7 +231,10 @@ int main(int argc, char **argv)
             delfiles(".","gamestat.*");
             delfiles(".","deck.*");
             delfiles(".","message.*");
-            unlink("dpoker.plr"); } }
+            unlink("dpoker.plr");
+			close(file);
+		}
+	}
 /* ToDo...
     if((file=nopen("dpoker.mnt",O_RDWR|O_DENYALL))==-1) { */
     if((file=nopen("dpoker.mnt",O_RDWR))==-1) {
@@ -248,8 +251,10 @@ int main(int argc, char **argv)
             delfiles(".","gamestat.*");
             delfiles(".","deck.*");
             delfiles(".","message.*");
-            unlink("dpoker.plr"); }
-        close(file); }
+            unlink("dpoker.plr");
+		}
+        close(file);
+	}
 
 	inifile=fopen("dpoker.ini","r");
 	iniReadString(inifile,NULL,"ComputerName","King Drafus",comp_name);
