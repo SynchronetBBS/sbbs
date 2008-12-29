@@ -164,6 +164,7 @@ int main(int argc, char **argv)
 	int		opts;
 	char	key_name[8];
 	BOOL	cleanup=FALSE;
+	char	*env_node;
     struct _PACK {
         char name[25];
         ulong time;
@@ -177,7 +178,14 @@ int main(int argc, char **argv)
 
 	/* ToDo... this should seed better */
     srand(time(NULL));
-    sprintf(node_dir,"%s",getenv("SBBSNODE"));
+	env_node=getenv("SBBSNODE");
+	if(env_node==NULL) {
+		printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
+				"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
+		printf("\nERROR: SBBSNODE Environment variable not set!\n");
+		return(1);
+	}
+    sprintf(node_dir,"%s",env_node);
 	backslash(node_dir);
 
     for (x=1; x<argc; x++) {
