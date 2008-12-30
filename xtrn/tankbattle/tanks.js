@@ -275,7 +275,7 @@ function TankBattle(root_dir)
 	}
 	this.LoadMaps=function()
 	{
-		this.game.maps=directory(this.root + "*.MAP");
+		this.game.maps=directory(this.root + "*.map");
 		for(map in this.game.maps)
 		{
 			game_log.Log("map loaded: " + this.game.maps[map]);
