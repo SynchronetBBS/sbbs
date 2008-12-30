@@ -13,12 +13,12 @@
 load("graphic.js");
 load("sbbsdefs.js");
 load("sockdefs.js");
-load("logging.js");
 
 var root;
 try { barfitty.barf(barf); } catch(e) { root = e.fileName; } //Deuce is a freak
 root = root.replace(/[^\/\\]*$/,'');
 
+load(root+"logging.js");
 var game=new TankBattle(root);
 var game_log;
 
