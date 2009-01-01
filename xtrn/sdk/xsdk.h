@@ -126,7 +126,7 @@ int  rprintf(char *fmt, ...);
 
 /* BBS String Length
 	- Returns length of string, excluding Ctrl-A codes */
-int  bstrlen(uchar *str);
+int  bstrlen(char *str);
 
 /* Output character
 	- Displays a single character */
@@ -201,7 +201,7 @@ void ctrl_a(char x);
 
 /* Network Open
 	- Opens a file in DENYNONE or DENYWRITE mode, automatically retrying */
-int  nopen(char *str, int access);
+int  nopen(const char *str, int access);
 
 /* Truncate Space
 	- Removes white space characters from the end of a string */
@@ -243,7 +243,8 @@ void redrwstr(char *strin, int i, int l, long mode);
 char stripattr(char *strin);
 
 /* Returns the name of the user number passed */
-char *username(uint usernumber);
+char *xsdk_username(uint usernumber);
+#define username(x)	xsdk_username(x)
 
 /* Returns the number of the user name passed */
 uint usernumber(char *username);
@@ -255,28 +256,35 @@ char *ultoac(ulong l, char *string);
 ulong ahtoul(char *str);
 
 /* Display status of node */
-void printnodedat(int number, node_t node);
+void xsdk_printnodedat(int number, node_t node);
+#define printnodedat(a,b)	xsdk_printnodedat(a,b)
 
 /* Checks to see if this node has been interrupted or any messages waiting */
 void nodesync(void);
 
 /* Writes the node information to disk */
-void putnodedat(int number, node_t node);
+void xsdk_putnodedat(int number, node_t node);
+#define putnodedat(a,b)	xsdk_putnodedat(a,b)
 
 /* Reads the node information from disk */
-void getnodedat(int number, node_t *node, char lockit);
+void xsdk_getnodedat(int number, node_t *node, char lockit);
+#define getnodedat(a,b,c)	xsdk_getnodedat(a,b,c)
 
 /* Writes a short message (telegram) for specified user number */
-void putsmsg(int usernumber, char *strin);
+void xsdk_putsmsg(int usernumber, char *strin);
+#define putsmsg(a,b)	xsdk_putsmsg(a,b)
 
 /* Reads and displays short message for specified user number */
-void getsmsg(int usernumber);
+void xsdk_getsmsg(int usernumber);
+#define getsmsg(a)	xsdk_getsmsg(a)
 
 /* Writes a node message for specified node */
-void putnmsg(int num, char *strin);
+void xsdk_putnmsg(int num, char *strin);
+#define putnmsg(a,b)	xsdk_putnmsg(a,b)
 
 /* Reads and displays node message for current node */
-void getnmsg(void);
+void xsdk_getnmsg(void);
+#define getnmsg()	xsdk_getnmsg()
 
 /* Displays users online */
 int whos_online(char listself);

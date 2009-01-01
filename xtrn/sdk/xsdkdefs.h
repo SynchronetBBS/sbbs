@@ -59,7 +59,6 @@
 
 #endif
 
-
 #define DCD    0x8000		/* Data carrier detect bit in msr			*/
 
 #define TABSIZE 	4		/* Tabs will expand to 4 chars upon input	*/
@@ -67,6 +66,7 @@
 #define SAVE_LINES	 4		/* Maximum number of lines to save			*/
 #define LINE_BUFSIZE 512    /* Size of line output buffer               */
 
+#ifndef _SBBSDEFS_H
 #define HIGH 8				/* High intensity attribute bit */
 
 							/* user_misc bits */
@@ -74,6 +74,7 @@
 #define COLOR	(1<<1)		/* user has monochrome ANSI display */
 #define RIP 	(1<<2)		/* RIP compatible terminal detected */
 #define WIP 	(1<<3)		/* WIP compatible terminal detected */
+#endif
 
 #ifndef MAX_PATH
 	#ifdef MAXPATHLEN
@@ -104,6 +105,7 @@
 #define XSDK_MODE_NOCONSOLE	(1<<0)	/* No Local Console					*/
 
 							/* Bits in 'mode' for getkey and getstr     */
+#ifndef _SBBSDEFS_H
 #define K_UPPER		(1<<0)	/* Converts all letters to upper case 		*/
 #define K_UPRLWR    (1<<1)  /* Upper/Lower case automatically           */
 #define K_NUMBER    (1<<2)  /* Allow numbers only                       */
@@ -118,16 +120,21 @@
 #define K_AUTODEL	(1<<11) /* Auto-delete text (used with K_EDIT)		*/
 #define K_LOWPRIO	(1<<12) /* Low priority getstr() operation			*/
 #define K_GETSTR	(1<<13) /* getkey() called from getstr()			*/
-
+#endif
 							/* Miscellaneous Modem Settings (mdm_misc)	*/
 #define MDM_FLOWCTRL (1<<0)	/* Use flow control with modem				*/
+#ifndef _SBBSDEFS_H
 #define MDM_STAYHIGH (1<<1) /* Stay at highest DTE rate                 */
+#endif
 
 #define LOOP_NOPEN   50    	/* Retries before file access denied        */
+#ifndef _SBBSDEFS_H
 #define LOOP_NODEDAB 100	/* Retries on NODE.DAB locking/unlocking	*/
+#endif
 
 #define MAX_NODES	250 	/* Maximum number of nodes					*/
 
+#ifndef _NODEDEFS_H
 enum {								/* Node Status */
 	 NODE_WFC			        	/* Waiting for Call */
 	,NODE_LOGON                  	/* at logon prompt */
@@ -183,6 +190,7 @@ enum {								/* Node Action */
 	,NODE_PAGE						/* Paging node for Private Chat */
 	,NODE_RFSD						/* Retrieving file from sequential dev */
 	};
+#endif
 
 							/* Different bits in node_misc				*/
 #define NM_ANSALARM (1<<0)	/* Alarm locally on answer					*/
@@ -278,7 +286,9 @@ enum {								/* Node Action */
 #define LFREE free
 #define FREE free
 
+#ifndef _SBBSDEFS_H
 #define KEY_BUFSIZE 256
+#endif
 
 #define CRLF  { outchar(CR); outchar(LF); }
 
@@ -311,6 +321,7 @@ enum {								/* Node Action */
 	#define _PACK
 #endif
 
+#ifndef _NODEDEFS_H
 typedef struct _PACK {					/* Node information kept in NODE.DAB */
 	uchar	status,						/* Current Status of Node */
 			errors,						/* Number of Critical Errors */
@@ -321,6 +332,7 @@ typedef struct _PACK {					/* Node information kept in NODE.DAB */
 			aux;						/* Auxillary word for node */
 	ulong	extaux;						/* Extended aux dword for node */
             } node_t;
+#endif
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */

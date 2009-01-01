@@ -300,12 +300,12 @@ void rputs(char *str)
 /* Returns the number of characters in 'str' not counting ctrl-ax codes		*/
 /* or the null terminator													*/
 /****************************************************************************/
-int bstrlen(uchar *str)
+int bstrlen(char *str)
 {
 	int i=0;
 
 	while(*str) {
-		if(*str<' ') {	/* ctrl char */
+		if(*str >= 0 && *str<' ') {	/* ctrl char */
 			if(*str==1) /* ctrl-A */
 				str++;
 			else if(*str!=CR && *str!=LF && *str!=FF)
@@ -1671,7 +1671,7 @@ void ctrl_a(char x)
 /* number of times if the attempted file is already open or denying access  */
 /* for some other reason.	All files are opened in BINARY mode.			*/
 /****************************************************************************/
-int nopen(char *str, int access)
+int nopen(const char *str, int access)
 {
 	char count=0;
 	int file,share;
@@ -2135,12 +2135,11 @@ void printfile(char *str)
 	free(buf);
 }
 
-#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Returns a char pointer to the name of the user that corresponds to		*/
 /* usernumber. Takes value directly from database.							*/
 /****************************************************************************/
-char *username(uint usernumber)
+char *xsdk_username(uint usernumber)
 {
 	static	char name[26];
 	char	str[128];
@@ -2170,13 +2169,12 @@ char *username(uint usernumber)
 		strcpy(name,"DELETED USER");
 	return(name);
 }
-#endif
 
 /****************************************************************************/
 /* Returns the number of the user 'username' from the NAME.DAT file.        */
 /* If the username is not found, the function returns 0.					*/
 /****************************************************************************/
-uint usernumber(char *username)
+uint xsdk_usernumber(char *username)
 {
 	char str[128];
 	int i,file;
@@ -2235,13 +2233,12 @@ ulong ahtoul(char *str)
 	return(val);
 }
 
-#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from NODE.DAB															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-void getnodedat(int number, node_t *node, char lockit)
+void xsdk_getnodedat(int number, node_t *node, char lockit)
 {
 	int count=0;
 
@@ -2266,7 +2263,7 @@ void getnodedat(int number, node_t *node, char lockit)
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-void putnodedat(int number, node_t node)
+void xsdk_putnodedat(int number, node_t node)
 {
 	if(nodefile<0)
 		return;
@@ -2278,7 +2275,6 @@ void putnodedat(int number, node_t node)
 		return; }
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 }
-#endif
 
 /****************************************************************************/
 /* Checks for messages waiting for this node or interruption.				*/
@@ -2289,24 +2285,23 @@ void nodesync(void)
 
 	if(!ctrl_dir[0])
 		return;
-	getnodedat(node_num,&node,0);
+	xsdk_getnodedat(node_num,&node,0);
 
 	if(node.misc&NODE_MSGW)
-		getsmsg(user_number);		/* getsmsg clears MSGW flag */
+		xsdk_getsmsg(user_number);		/* getsmsg clears MSGW flag */
 
 	if(node.misc&NODE_NMSG) 		/* getnmsg clears NMSG flag */
-		getnmsg();
+		xsdk_getnmsg();
 
 	if(node.misc&NODE_INTR)
 		exit(0);
 
 }
 
-#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
-void printnodedat(int number, node_t node)
+void xsdk_printnodedat(int number, node_t node)
 {
 	char hour,mer[3],tmp[256];
 	int i;
@@ -2357,7 +2352,7 @@ void printnodedat(int number, node_t node)
 			if(node.misc&NODE_ANON && !SYSOP)
 				bputs("UNKNOWN USER");
 			else
-				bputs(username(node.useron));
+				bputs(xsdk_username(node.useron));
 			attr(GREEN);
 			bputs(" ");
 			switch(node.action) {
@@ -2513,7 +2508,7 @@ void printnodedat(int number, node_t node)
 /* Prints short messages waiting for 'usernumber', if any...				*/
 /* then deletes them.														*/
 /****************************************************************************/
-void getsmsg(int usernumber)
+void xsdk_getsmsg(int usernumber)
 {
 	char str[256], *buf;
 	int file;
@@ -2541,13 +2536,13 @@ void getsmsg(int usernumber)
 	chsize(file,0L);
 	close(file);
 	buf[length]=0;
-	getnodedat(node_num,&node,0);
+	xsdk_getnodedat(node_num,&node,0);
 	if(node.action==NODE_MAIN || node.action==NODE_XFER) {
 		CRLF; }
 	if(node.misc&NODE_MSGW) {
-		getnodedat(node_num,&node,1);
+		xsdk_getnodedat(node_num,&node,1);
 		node.misc&=~NODE_MSGW;
-		putnodedat(node_num,node); }
+		xsdk_putnodedat(node_num,node); }
 	bputs(buf);
 	free(buf);
 }
@@ -2555,7 +2550,7 @@ void getsmsg(int usernumber)
 /****************************************************************************/
 /* Creates a short message for 'usernumber' than contains 'strin'			*/
 /****************************************************************************/
-void putsmsg(int usernumber, char *strin)
+void xsdk_putsmsg(int usernumber, char *strin)
 {
 	char str[256];
 	int file,i;
@@ -2574,19 +2569,19 @@ void putsmsg(int usernumber, char *strin)
 		return; }
 	close(file);
 	for(i=1;i<=sys_nodes;i++) {		/* flag node if user on that msg waiting */
-		getnodedat(i,&node,0);
+		xsdk_getnodedat(i,&node,0);
 		if(node.useron==(ushort)usernumber
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 			&& !(node.misc&NODE_MSGW)) {
-			getnodedat(i,&node,1);
+			xsdk_getnodedat(i,&node,1);
 			node.misc|=NODE_MSGW;
-			putnodedat(i,node); } }
+			xsdk_putnodedat(i,node); } }
 }
 
 /****************************************************************************/
 /* Prints short messages waiting for this node, if any...					*/
 /****************************************************************************/
-void getnmsg(void)
+void xsdk_getnmsg(void)
 {
 	char str[256], *buf;
 	int file;
@@ -2595,9 +2590,9 @@ void getnmsg(void)
 
 	if(!data_dir[0])
 		return;
-	getnodedat(node_num,&thisnode,1);
+	xsdk_getnodedat(node_num,&thisnode,1);
 	thisnode.misc&=~NODE_NMSG;			/* clear the NMSG flag */
-	putnodedat(node_num,thisnode);
+	xsdk_putnodedat(node_num,thisnode);
 
 	sprintf(str,"%smsgs/n%3.3u.msg",data_dir,node_num);
 	if(flength(str)<1L) {
@@ -2626,7 +2621,7 @@ void getnmsg(void)
 /****************************************************************************/
 /* Creates a short message for node 'num' than contains 'strin'             */
 /****************************************************************************/
-void putnmsg(int num, char *strin)
+void xsdk_putnmsg(int num, char *strin)
 {
 	char str[256];
 	int file,i;
@@ -2644,14 +2639,13 @@ void putnmsg(int num, char *strin)
 		printf("Error writing %u bytes to %s\r\n",i,str);
 		return; }
 	close(file);
-	getnodedat(num,&node,0);
+	xsdk_getnodedat(num,&node,0);
 	if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 		&& !(node.misc&NODE_NMSG)) {
-		getnodedat(num,&node,1);
+		xsdk_getnodedat(num,&node,1);
 		node.misc|=NODE_NMSG;
-		putnodedat(num,node); }
+		xsdk_putnodedat(num,node); }
 }
-#endif
 
 /****************************************************************************/
 /* This function lists users that are online.								*/
@@ -2667,13 +2661,13 @@ int whos_online(char listself)
 		return(0);
 	CRLF;
 	for(j=0,i=1;i<=sys_nodes;i++) {
-		getnodedat(i,&node,0);
+		xsdk_getnodedat(i,&node,0);
 		if(i==node_num) {
 			if(listself)
-				printnodedat(i,node);
+				xsdk_printnodedat(i,node);
 			continue; }
 		if(node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET)) {
-			printnodedat(i,node);
+			xsdk_printnodedat(i,node);
 			if(!lastnodemsg)
 				lastnodemsg=i;
 			j++; } }
@@ -2697,10 +2691,10 @@ void nodemsg(void)
 	if(strchr(user_rest,'C')) {
 		bputs("You cannot send messages.\r\n");
 		return; }
-	getnodedat(node_num,&thisnode,0);
+	xsdk_getnodedat(node_num,&thisnode,0);
 	wordwrap[0]=0;
 	if(lastnodemsg) {
-		getnodedat(lastnodemsg,&node,0);
+		xsdk_getnodedat(lastnodemsg,&node,0);
 		if(node.status!=NODE_INUSE)
 			lastnodemsg=0; }
 	if(!whos_online(0))
@@ -2718,7 +2712,7 @@ void nodemsg(void)
 			lastnodemsg=i; }
 		if(!i || i>sys_nodes)
 			return;
-		getnodedat(i,&node,0);
+		xsdk_getnodedat(i,&node,0);
 		if(node.status!=NODE_INUSE && !SYSOP)
 			bprintf("\r\n\1_\1w\1hNode %d is not in use.\r\n",i);
 		else if(i==node_num)
@@ -2726,7 +2720,7 @@ void nodemsg(void)
 		else if(node.misc&NODE_POFF && !SYSOP)
 			bprintf("\r\n\1r\1h\1iDon't bug %s.\1n\r\n"
 				,node.misc&NODE_ANON ? "UNKNOWN USER"
-				: username(node.useron));
+				: xsdk_username(node.useron));
 		else {
 			bputs("\1_\1y\1hMessage: ");
 			if(!getstr(line,70,K_LINE))
@@ -2736,7 +2730,7 @@ void nodemsg(void)
 				"\1w\1h\0014%s\1n\r\n"
 				,node_num
 				,thisnode.misc&NODE_ANON ? "UNKNOWN USER" : user_name,line);
-			putnmsg(i,buf); } }
+			xsdk_putnmsg(i,buf); } }
 	else if(i=='A') {
 		bputs("\1_\1y\1hMessage: ");
 		if(!getstr(line,70,K_LINE))
@@ -2749,10 +2743,10 @@ void nodemsg(void)
 		for(i=1;i<=sys_nodes;i++) {
 			if(i==node_num)
 				continue;
-			getnodedat(i,&node,0);
+			xsdk_getnodedat(i,&node,0);
 			if((node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET))
 				&& (SYSOP || !(node.misc&NODE_POFF)))
-				putnmsg(i,buf); } }
+				xsdk_putnmsg(i,buf); } }
 
 }
 
