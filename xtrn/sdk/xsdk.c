@@ -2135,6 +2135,7 @@ void printfile(char *str)
 	free(buf);
 }
 
+#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Returns a char pointer to the name of the user that corresponds to		*/
 /* usernumber. Takes value directly from database.							*/
@@ -2169,6 +2170,7 @@ char *username(uint usernumber)
 		strcpy(name,"DELETED USER");
 	return(name);
 }
+#endif
 
 /****************************************************************************/
 /* Returns the number of the user 'username' from the NAME.DAT file.        */
@@ -2233,6 +2235,7 @@ ulong ahtoul(char *str)
 	return(val);
 }
 
+#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from NODE.DAB															*/
@@ -2275,6 +2278,7 @@ void putnodedat(int number, node_t node)
 		return; }
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 }
+#endif
 
 /****************************************************************************/
 /* Checks for messages waiting for this node or interruption.				*/
@@ -2298,6 +2302,7 @@ void nodesync(void)
 
 }
 
+#ifndef LINKING_WITH_USERDAT
 /****************************************************************************/
 /* Displays the information for node number 'number' contained in 'node'    */
 /****************************************************************************/
@@ -2646,6 +2651,7 @@ void putnmsg(int num, char *strin)
 		node.misc|=NODE_NMSG;
 		putnodedat(num,node); }
 }
+#endif
 
 /****************************************************************************/
 /* This function lists users that are online.								*/
