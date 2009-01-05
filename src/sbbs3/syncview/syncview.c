@@ -7,7 +7,7 @@
 #include "keys.h"
 #include "cterm.h"
 
-#define SCROLL_LINES	1000
+#define SCROLL_LINES	100000
 #define BUF_SIZE		1024
 
 
@@ -16,21 +16,22 @@ void viewscroll(void)
 	int	top;
 	int key;
 	int i;
-	char	*scrollback;
 	struct	text_info txtinfo;
 
     gettextinfo(&txtinfo);
-	/* ToDo: Watch this... may be too large for alloca() */
-	scrollback=(char *)malloc((txtinfo.screenwidth*2*SCROLL_LINES)+(txtinfo.screenheight*txtinfo.screenwidth*2));
-	memcpy(scrollback,cterm.scrollback,txtinfo.screenwidth*2*SCROLL_LINES);
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
+	cterm.backpos+=cterm.height;
+	if(cterm.backpos>cterm.backlines) {
+		memmove(cterm.scrollback,cterm.scrollback+cterm.width*2*(cterm.backpos-cterm.backlines),cterm.width*2*(cterm.backlines-(cterm.backpos-cterm.backlines)));
+		cterm.backpos=cterm.backlines;
+	}
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm.scrollback+(cterm.backpos)*cterm.width*2);
 	top=cterm.backpos;
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
 		if(top>cterm.backpos)
 			top=cterm.backpos;
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(txtinfo.screenwidth*2*top));
+		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm.scrollback+(txtinfo.screenwidth*2*top));
 		key=getch();
 		switch(key) {
 			case 0xff:
@@ -71,7 +72,6 @@ void viewscroll(void)
 				break;
 		}
 	}
-	free(scrollback);
 	return;
 }
 
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 		return(-1);
 	}
 
-	cterm_init(ti.screenheight, ti.screenwidth, 0, 0, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
+	cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
 	if(infile) {
 		if((f=fopen(infile,"r"))==NULL) {
 			cprintf("Cannot read %s\n\n\rPress any key to exit.",argv[1]);
