@@ -612,7 +612,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
-	if(!strncmp(sp,"INCLUDE:",5)) {
+	if(!strncmp(sp,"INCLUDE:",8)) {
 		printfile(cmdstr(sp+8,nulstr,nulstr,str),P_NOCRLF|P_SAVEATR);
 		return(nulstr);
 	}
