@@ -2174,7 +2174,7 @@ char *xsdk_username(uint usernumber)
 /* Returns the number of the user 'username' from the NAME.DAT file.        */
 /* If the username is not found, the function returns 0.					*/
 /****************************************************************************/
-uint xsdk_usernumber(char *username)
+uint usernumber(char *username)
 {
 	char str[128];
 	int i,file;
