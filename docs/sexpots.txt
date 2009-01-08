@@ -90,6 +90,7 @@ Options:
     -nohangup             Do not hangup (drop DTR) after call
     -host <addr | name>   Specify TCP server hostname or IP address
     -port <number>        Specify TCP port number
+    -debug                Enable debug log output
 
 NT Service Options:
 

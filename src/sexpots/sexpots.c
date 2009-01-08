@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -141,6 +141,7 @@ int usage(const char* fname)
 		"\n-nohangup             Do not hangup (drop DTR) after call"
 		"\n-host <addr | name>   Specify TCP server hostname or IP address"
 		"\n-port <number>        Specify TCP port number"
+		"\n-debug                Enable debug log output"
 #if defined(_WIN32)
 		"\n\nNT Service\n"
 		"\n-install              install and enable NT service (%s)"
@@ -149,6 +150,7 @@ int usage(const char* fname)
 		"\n-enable               enable NT service (auto-start during boot)"
 		"\n-disable              disable NT service"
 #endif
+		"\n"
 		,getfname(fname)
 		,NAME);
 
@@ -1440,6 +1442,9 @@ service_loop(int argc, char** argv)
 		}
 		else if(stricmp(arg,"nohangup")==0) {
 			com_hangup=FALSE;
+		}
+		else if(stricmp(arg,"debug")==0) {
+			log_level=LOG_DEBUG;
 		}
 		else if(stricmp(arg,"help")==0 || *arg=='?')
 			exit(usage(argv[0]));
