@@ -16,7 +16,7 @@ function SPAMC_Message(message)
 	this.symbols getter=function() { return(this.DoCommand('SYMBOLS')); };
 	this.report getter=function() { return(this.DoCommand('REPORT')); };
 	this.report_ifspam getter=function() { return(this.DoCommand('REPORT_IFSPAM')); };
-	this.process getter=function() { return(this.DoCommand('PROCESS')); }; }
+	this.process getter=function() { return(this.DoCommand('PROCESS')); };
 }
 
 function Message_DoCommand(command)
