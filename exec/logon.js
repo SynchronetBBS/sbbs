@@ -23,6 +23,17 @@ if(user.security.restrictions&UFLAG_G) {
 		user.name = name;
 		break;
 	}
+
+	while(bbs.online) {
+		printf("\1y\1hPlease enter your e-mail address: \1w");
+		email=console.getstr(50);
+		if(!email || !email.length)
+			continue;
+		bbs.log_str("  " + email);
+		user.netmail=email;
+		user.settings|=USER_NETMAIL;
+		break;
+	}
 	
 	while(bbs.online) {
 		printf("\1y\1hPlease enter your location (City, State): \1w");
@@ -44,6 +55,10 @@ if(user.security.restrictions&UFLAG_G) {
 		bbs.log_str(ref + "\r\n");
 		break;
 	}
+
+//	print("name: " + user.name);
+//	print("email: " + user.netmail);
+//	print("location: " + user.location);
 }
 
 
