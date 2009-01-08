@@ -1114,6 +1114,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'z':	/* ToDo?  Reset */
 					break;
 				case '|':	/* SyncTERM ANSI Music */
+					cterm.music=1;
 					break;
 			}
 			break;
