@@ -30,6 +30,7 @@ function Message_DoCommand(command)
 	var tmp;
 	var sock=new Socket(SOCK_STREAM, "spamc");
 	var ret=new Object();
+	ret.message='';
 
 	command=command.toUpperCase();
 	if(!sock.connect(this.addr, this.port)) {
@@ -42,8 +43,20 @@ function Message_DoCommand(command)
 	sock.write("\r\n");
 	sock.sendfile(this.messagefile);
 	sock.is_writeable=false;
-	while((tmp=sock.recvline())!=undefined) {
+	while(1) {
+		tmp=sock.recvline();
+		if(tmp==undefined || tmp=='')
+			break;
 		rcvd.push(tmp);
+	}
+	if(sock.is_connected) {
+		// Read the body
+		while(1) {
+			tmp=sock.recv();
+			if(tmp==undefined || tmp=='')
+				break;
+			ret.message += tmp;
+		}
 	}
 	if(rcvd.length < 1) {
 		log("ERROR: No lines read from spamd");
@@ -59,7 +72,6 @@ function Message_DoCommand(command)
 		return(false)
 	}
 
-	ret.message='';
 	/* Parse headers */
 	for(line=1; line<rcvd.length; line++) {
 		if(rcvd[line]=='')
@@ -78,12 +90,9 @@ function Message_DoCommand(command)
 		}
 	}
 
-	/* Parse message */
-	for(line++; line<rcvd.length; line++)
-		ret.message += rcvd[line]+"\r\n";
-
 	if(command == 'SYMBOLS') {
 		if(ret!==false) {
+			ret.message=ret.message.replace(/[\r\n]/g,'');
 			ret.symbols=ret.message.split(/,/);
 			ret.message='';
 		}
