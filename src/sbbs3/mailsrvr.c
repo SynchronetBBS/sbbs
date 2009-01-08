@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -108,6 +108,7 @@ struct mailproc {
 	str_list_t	to;
 	BOOL		passthru;
 	BOOL		native;
+	BOOL		ignore_on_error;	/* Ignore mail message if cmdline fails */
 	BOOL		disabled;
 } *mailproc_list;
 
@@ -2347,13 +2348,28 @@ static void smtp_thread(void* arg)
 							,socket, str);
 
 						if(mailproc_list[i].native) {
-							if((j=system(str))!=0)
-								lprintf(LOG_WARNING,"%04d !SMTP system(%s) returned %d (errno: %d)"
+							if((j=system(str))!=0) {
+								lprintf(LOG_NOTICE,"%04d !SMTP system(%s) returned %d (errno: %d)"
 									,socket, str, j, errno);
-						} else  /* JavaScript */
-							js_mailproc(socket, &client, &relay_user, str /* cmdline */
+								if(mailproc_list[i].ignore_on_error) {
+									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) error: %d"
+										,socket, str, j);
+									msg_handled=TRUE;
+								}
+							}
+						} else {  /* JavaScript */
+							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
 								,msgtxt_fname, rcptlst_fname, proc_err_fname
-								,sender, sender_addr, reverse_path);
+								,sender, sender_addr, reverse_path)) {
+								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript (%s) failed"
+									,socket, str);
+								if(mailproc_list[i].ignore_on_error) {
+									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) failure"
+										,socket, str);
+									msg_handled=TRUE;
+								}
+							}
+						}
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
@@ -4388,6 +4404,8 @@ void DLLCALL mail_server(void* arg)
 						iniReadBool(fp,sec_list[i],"native",FALSE);
 					mailproc_list[i].disabled = 
 						iniReadBool(fp,sec_list[i],"disabled",FALSE);
+					mailproc_list[i].ignore_on_error = 
+						iniReadBool(fp,sec_list[i],"ignore_on_error",FALSE);
 				}
 			}
 			iniFreeStringList(sec_list);
