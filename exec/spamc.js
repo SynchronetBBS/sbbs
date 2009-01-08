@@ -6,16 +6,10 @@
 // $Id$
 
 load('sockdefs.js');
+load('salib.js');
 
 var spamd_address = '127.0.0.1';
 var spamd_tcp_port = 783;
-
-var sock = new Socket(SOCK_STREAM, 'spamd');
-
-function writeln(str)
-{
-	sock.send(str + '\r\n');
-}
 
 function main()
 {
@@ -27,25 +21,13 @@ function main()
 			spamd_tcp_port = Number(argv[++i]);
 	}
 
-	if(!sock.connect(spamd_address, spamd_tcp_port)) {
-		log('Socket error ' + sock.error + ' connecting to ' + spamd_address);
+	var msg=new SPAMC_Message(message_text_filename, spamd_address, spamd_tcp_port);
+	if(msg === false)
 		return;
-	}
-
-	writeln('CHECK SPAMC/1.2');
-	writeln('Content-length: ' + file_size(message_text_filename));
-	writeln('');
-	sock.sendfile(message_text_filename);
-	var response=sock.recvline();
-	log('SPAMD response: ' + response);
-	var token=response.split(/\s+/);
-	if(token[1]!='0') {
-		log(LOG_ERR,'SPAMD ERROR: ' + response);
+	var ret=msg.check;
+	if(ret === false)
 		return;
-	}
-	var results=sock.recvline();
-	log('SPAMD results: ' + results);
-	if(results.split(';')[0] != 'Spam: True ')
+	if(!ret.isSpam)
 		return;
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
@@ -53,7 +35,7 @@ function main()
 			,error_file.error, processing_error_filename));
 		return;
 	}
-	error_file.writeln("SpamAssassin rejected your mail: " + results);
+	error_file.writeln("SpamAssassin rejected your mail: " + ret.score + ' / ' + ret.threshold);
 	error_file.close();
 }
 
