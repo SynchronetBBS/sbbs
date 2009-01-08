@@ -2444,10 +2444,11 @@ static void smtp_thread(void* arg)
 				}
 
 				/* If mailproc has written new message text to .new file, use that instead of .msg */
-				if(fexist(newtxt_fname)) {
+				if(flength(newtxt_fname) > 0) {
 					remove(msgtxt_fname);
 					SAFECOPY(msgtxt_fname, newtxt_fname);
-				}
+				} else
+					remove(newtxt_fname);
 
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
 					lprintf(LOG_ERR,"%04d !SMTP ERROR %d re-opening message file: %s"
