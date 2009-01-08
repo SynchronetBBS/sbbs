@@ -4434,7 +4434,7 @@ void DLLCALL mail_server(void* arg)
 					mailproc_list[i].disabled = 
 						iniReadBool(fp,sec_list[i],"disabled",FALSE);
 					mailproc_list[i].ignore_on_error = 
-						iniReadBool(fp,sec_list[i],"ignore_on_error",FALSE);
+						iniReadBool(fp,sec_list[i],"IgnoreOnError",FALSE);
 				}
 			}
 			iniFreeStringList(sec_list);
