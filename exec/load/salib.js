@@ -5,11 +5,14 @@
 
 load("sockdefs.js")
 
-var spamd_addr='127.0.0.1';	// TODO: .ini file
-var spamd_port=783;		// TODO: .ini file
-
-function SPAMC_Message(message)
+function SPAMC_Message(message, addr, port)
 {
+	this.addr=addr;
+	if(this.addr==undefined)
+		this.addr='127.0.0.1';
+	this.port=port;
+	if(this.port==undefined)
+		this.port='783';
 	this.message=message;
 	this.DoCommand=Message_DoCommand;
 	this.check getter=function() { return(this.DoCommand('CHECK')); };
@@ -27,7 +30,7 @@ function Message_DoCommand(command)
 	var ret=new Object();
 
 	command=command.toUpperCase();
-	if(!sock.connect(spamd_addr, spamd_port)) {
+	if(!sock.connect(this.addr, this.port)) {
 		log("ERROR: spamc.js failed to connect!");
 		return(false);
 	}
