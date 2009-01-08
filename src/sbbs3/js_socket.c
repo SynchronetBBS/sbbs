@@ -856,6 +856,11 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(!socket_check(p->sock,&rd,NULL,1000)) {
 			p->last_error=ERROR_VALUE;
+			if(i==0) {
+				*rval = JSVAL_NULL;
+				JS_RESUMEREQUEST(cx, rc);
+				return(JS_TRUE);	/* socket closed */
+			}
 			break;		/* disconnected */
 		}
 
@@ -1154,7 +1159,7 @@ enum {
 static char* socket_prop_desc[] = {
 	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
-	,"<i>true</i> if socket can accept written data - <small>READ ONLY</small>"
+	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
 	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
 	,"number of bytes waiting to be read - <small>READ ONLY</small>"
 	,"enable debug logging"
@@ -1177,6 +1182,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	private_t*	p;
 	jsrefcount	rc;
+	BOOL		b;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -1207,6 +1213,11 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SOCK_PROP_NETWORK_ORDER:
 			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));
+			break;
+		case SOCK_PROP_IS_WRITEABLE:
+			JS_ValueToBoolean(cx,*vp,&b);
+			if(!b)
+				shutdown(p->sock,SHUT_WR);
 			break;
 	}
 
@@ -1339,8 +1350,8 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	311 },
 	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	310 },	/* alias */
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	310 },
-	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,SOCK_PROP_FLAGS,	311 },
-	{	"is_writable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_READONLY,	312 },	/* alias */
+	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_ENUMERATE,	311 },
+	{	"is_writable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_ENUMERATE,	312 },	/* alias */
 	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	310 },
 	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	310 },
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	310 },
