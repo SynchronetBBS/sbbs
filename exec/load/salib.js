@@ -17,11 +17,11 @@ function SPAMC_Message(messagefile, addr, port)
 		this.port='783';
 	this.messagefile=messagefile;
 	this.DoCommand=Message_DoCommand;
-	this.check getter=function() { return(this.DoCommand('CHECK')); };
-	this.symbols getter=function() { return(this.DoCommand('SYMBOLS')); };
-	this.report getter=function() { return(this.DoCommand('REPORT')); };
-	this.report_ifspam getter=function() { return(this.DoCommand('REPORT_IFSPAM')); };
-	this.process getter=function() { return(this.DoCommand('PROCESS')); };
+	this.check =function() { return(this.DoCommand('CHECK')); };
+	this.symbols =function() { return(this.DoCommand('SYMBOLS')); };
+	this.report =function() { return(this.DoCommand('REPORT')); };
+	this.report_ifspam =function() { return(this.DoCommand('REPORT_IFSPAM')); };
+	this.process =function() { return(this.DoCommand('PROCESS')); };
 }
 
 function Message_DoCommand(command)

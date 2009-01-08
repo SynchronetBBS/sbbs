@@ -24,7 +24,7 @@ function main()
 	var msg=new SPAMC_Message(message_text_filename, spamd_address, spamd_tcp_port);
 	if(msg === false)
 		return;
-	var ret=msg.check;
+	var ret=msg.check();
 	if(ret === false)
 		return;
 	if(!ret.isSpam)
