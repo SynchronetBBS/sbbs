@@ -17,6 +17,7 @@ function SPAMC_Message(message)
 	this.report getter=function() { return(this.DoCommand('REPORT')); };
 	this.report_ifspam getter=function() { return(this.DoCommand('REPORT_IFSPAM')); };
 	this.process getter=function() { return(this.DoCommand('PROCESS')); }; }
+}
 
 function Message_DoCommand(command)
 {
