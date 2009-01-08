@@ -1402,7 +1402,8 @@ static void signal_smtp_sem(void)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
+static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
+						,char* lstpath, char* errpath
 						,char* host, char* ip, uint usernum
 						,char* sender, char* sender_addr, char* reverse_path, char* cmd)
 {
@@ -1415,6 +1416,9 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
             i++;
             cmd[j]=0;
             switch(toupper(instr[i])) {
+				case 'D':
+					strcat(cmd,logpath);
+					break;
 				case 'E':
 					strcat(cmd,errpath);
 					break;
@@ -1439,6 +1443,9 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
 				case 'F':
 				case 'M':
 					strcat(cmd,msgpath);
+					break;
+				case 'N':
+					strcat(cmd,newpath);
 					break;
                 case 'O':   /* SysOp */
                     strcat(cmd,scfg.sys_op);
@@ -1583,7 +1590,8 @@ static JSFunctionSpec js_global_functions[] = {
 static BOOL
 js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* cmdline
-			,char* msgtxt_fname, char* rcptlst_fname, char* proc_err_fname
+			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
+			,char* rcptlst_fname, char* proc_err_fname
 			,char* sender, char* sender_addr, char* reverse_path)
 {
 	char*		p;
@@ -1696,6 +1704,14 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 		/* Mailproc "API" filenames */
 		JS_DefineProperty(js_cx, js_glob, "message_text_filename"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,msgtxt_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "new_message_text_filename"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,newtxt_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "log_text_filename"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,logtxt_fname))
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		JS_DefineProperty(js_cx, js_glob, "recipient_list_filename"
@@ -2001,6 +2017,8 @@ static void smtp_thread(void* arg)
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
+	char		newtxt_fname[MAX_PATH+1];
+	char		logtxt_fname[MAX_PATH+1];
 	FILE*		rcptlst;
 	char		rcptlst_fname[MAX_PATH+1];
 	ushort		rcpt_count=0;
@@ -2187,6 +2205,8 @@ static void smtp_thread(void* arg)
 	rand();	/* throw-away first result */
 	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),clock());
 	SAFEPRINTF2(msgtxt_fname,"%sSBBS_SMTP.%s.msg", scfg.temp_dir, session_id);
+	SAFEPRINTF2(newtxt_fname,"%sSBBS_SMTP.%s.new", scfg.temp_dir, session_id);
+	SAFEPRINTF2(logtxt_fname,"%sSBBS_SMTP.%s.log", scfg.temp_dir, session_id);
 	SAFEPRINTF2(rcptlst_fname,"%sSBBS_SMTP.%s.lst", scfg.temp_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
@@ -2341,7 +2361,8 @@ static void smtp_thread(void* arg)
 							msg_handled=TRUE;
 
 						mailcmdstr(mailproc_list[i].cmdline
-							,msgtxt_fname, rcptlst_fname, proc_err_fname
+							,msgtxt_fname, newtxt_fname, logtxt_fname
+							,rcptlst_fname, proc_err_fname
 							,host_name, host_ip, relay_user.number
 							,sender, sender_addr, reverse_path, str);
 						lprintf(LOG_DEBUG,"%04d SMTP Executing external process: %s"
@@ -2359,7 +2380,8 @@ static void smtp_thread(void* arg)
 							}
 						} else {  /* JavaScript */
 							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
-								,msgtxt_fname, rcptlst_fname, proc_err_fname
+								,msgtxt_fname, newtxt_fname, logtxt_fname
+								,rcptlst_fname, proc_err_fname
 								,sender, sender_addr, reverse_path)) {
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript (%s) failed"
 									,socket, str);
@@ -2419,6 +2441,12 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor"
 						,socket);
 					continue;
+				}
+
+				/* If mailproc has written new message text to .new file, use that instead of .msg */
+				if(fexist(newtxt_fname)) {
+					remove(msgtxt_fname);
+					SAFECOPY(msgtxt_fname, newtxt_fname);
 				}
 
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
