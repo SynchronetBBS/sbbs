@@ -5,15 +5,17 @@
 
 load("sockdefs.js")
 
-function SPAMC_Message(message, addr, port)
+function SPAMC_Message(messagefile, addr, port)
 {
+	if(!file_exists(messagefile))
+		return(false);
 	this.addr=addr;
 	if(this.addr==undefined)
 		this.addr='127.0.0.1';
 	this.port=port;
 	if(this.port==undefined)
 		this.port='783';
-	this.message=message;
+	this.messagefile=messagefile;
 	this.DoCommand=Message_DoCommand;
 	this.check getter=function() { return(this.DoCommand('CHECK')); };
 	this.symbols getter=function() { return(this.DoCommand('SYMBOLS')); };
@@ -35,10 +37,10 @@ function Message_DoCommand(command)
 		return(false);
 	}
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
-	sock.write("Content-length: "+this.message.length+"\r\n");
+	sock.write("Content-length: "+file_size(this.messagefile)+"\r\n");
 	sock.write("User: Synchronet\r\n");
 	sock.write("\r\n");
-	sock.write(this.message);
+	sock.sendfile(this.messagefile);
 	sock.is_writeable=false;
 	while((tmp=sock.recvline())!=undefined) {
 		rcvd.push(tmp);
