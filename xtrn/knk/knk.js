@@ -206,17 +206,17 @@ function Player(t, n, p)
 		this.refer_singular=this.full_name;
 	}
 	this.score=0;
-	this.kastle=10000+random(10000);
-	this.soldiers=2000+random(4000);
-	this.civilians=10000+random(10000);
-	this.kannons=150+random(150);
-	this.katapults=random(1);
+	this.kastle=12500+random(10000);
+	this.soldiers=1750+random(3500);
+	this.civilians=12500+random(5000);
+	this.kannons=200+random(100);
+	this.katapults=random(2);
 	this.assassins=1+random(4);
-	this.guards=10+random(10);
-	this.gold=15000+random(15000);
-	this.food=100000+random(100000);
+	this.guards=8+random(15);
+	this.gold=17500+random(2500);
+	this.food=200000+random(100000);
 	this.power getter=function() { var p=parseInt(this.kastle/500)+parseInt(this.soldiers/750); if(p>46) return(46); return(p); };
-	this.mfood getter=function() { var f=this.food/(this.soldiers*2+this.civilians); if(isNaN(f)) return(0); if(f<0.1) return(0); return(f); };
+	this.mfood getter=function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); };
 	this.produce=Player_produce;
 	this.powerbar=Player_powerbar;
 	this.drawscreen=Player_drawscreen;
@@ -530,6 +530,7 @@ function Player_soldierattack(other)
 				if(random(10)) {
 					oth_lost++;
 					other.soldiers--;
+					this.score++;
 				}
 				break;
 			case 1:
@@ -583,7 +584,7 @@ function Player_dodamage(other, damage, men)
 			else
 				rnd += other.kastle;
 
-			if(other.kastle==0 || other.soldiers==0) {
+			if(other.kastle==0 || other.soldiers==0 || rnd==0) {
 				if(nodamage=false)
 					continue;
 			}
@@ -649,16 +650,20 @@ function Player_dodamage(other, damage, men)
 			}
 			rnd -= other.civilians;
 
-			this.score++;
 			if(men) {
-				loss.soldiers++;
-				other.soldiers--;
-				total_cost+=1000;
-				continue;
+				if(rnd < other.soldiers) {
+					this.score++;
+					loss.soldiers++;
+					other.soldiers--;
+					total_cost+=1000;
+				}
 			}
-			loss.kastle++;
-			other.kastle--;
-			total_cost+=1000;
+			if(rnd < other.kastle) {
+				this.score++;
+				loss.kastle++;
+				other.kastle--;
+				total_cost+=1000;
+			}
 		}
 		while(total_cost > 100000) {
 			switch(random(2)) {
@@ -822,7 +827,7 @@ function Player_playermove(month, other)
 	var tl=bbs.time_left;
 
 	do {
-		console.print("\1h\1cTime:\1g "+parseInt(tl/60)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
+		console.print("\1n\1h\1cTime:\1g "+parseInt(tl/60)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
 		loop=false;
 		switch(getkeys("ACDFKPQRSTZ$?\r\n")) {
 			case '?':
@@ -1337,7 +1342,7 @@ function UserData(alias, wins, losses, score)
 	this.wins=parseInt(wins);
 	this.losses=parseInt(losses);
 	this.score=parseInt(score);
-	this.lines getter=function() { return(new Array(this.alias, this.wins, this.losses, this.score)); };
+	this.lines getter=function() { return([this.alias, this.wins, this.losses, this.score].join('\r\n')); };
 }
 
 function pretty_number(num)
@@ -1453,7 +1458,7 @@ function update_userfile(player, computer, won)
 		f.writeln("Rank  Name                   Games  Wins  Losses  Win %       Score");
 		f.writeln("--------------------------------------------------------------------");
 		for(line=0; line<2; line++) {
-			if(computer_total < player_total || line==1) {
+			if((computer_total <= player_total && line==0) || (computer_total > player_total && line==1)) {
 				f.writeln(format("%3u   %-22s %5u  %4u  %6u  %3u %% %11s"
 								,line+1
 								,'All Users'
@@ -1493,14 +1498,14 @@ function read_dat()
 	if(Lock(f.name, system.node, true, 1)) {
 		if(f.open("r")) {
 			dat_file.shortestgame.months=parseInt(f.readln());
-			dat_file.shortestgame.winner==f.readln();
-			dat_file.shortestgame.loser==f.readln();
-			dat_file.longestgame.months==parseInt(f.readln());
-			dat_file.longestgame.winner==f.readln();
-			dat_file.longestgame.loser==f.readln();
-			dat_file.lastgame.months==parseInt(f.readln());
-			dat_file.lastgame.winner==f.readln();
-			dat_file.lastgame.loser==f.readln();
+			dat_file.shortestgame.winner=f.readln();
+			dat_file.shortestgame.loser=f.readln();
+			dat_file.longestgame.months=parseInt(f.readln());
+			dat_file.longestgame.winner=f.readln();
+			dat_file.longestgame.loser=f.readln();
+			dat_file.lastgame.months=parseInt(f.readln());
+			dat_file.lastgame.winner=f.readln();
+			dat_file.lastgame.loser=f.readln();
 			f.close();
 		}
 	}
