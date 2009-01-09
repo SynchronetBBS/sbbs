@@ -64,7 +64,7 @@ function Message_DoCommand(command)
 	}
 
 	if(rcvd.length < 1) {
-		ret.error='No lines read from spamd');
+		ret.error='No lines read from spamd';
 		return(ret)
 	}
 
