@@ -22,6 +22,8 @@ function main()
 	var tcp_port = 783;
 	var user;
 	var reject_threshold;
+	var spamonly = false;
+	var	max_size = 500000;	/* bytes */
 
 	// Process arguments:
 	for(i in argv) {
@@ -37,18 +39,25 @@ function main()
 			tcp_port = Number(argv[++i]);
 		else if(argv[i]=='u' || argv[i]=='username')
 			user = argv[++i];
+		else if(argv[i]=='s' || argv[i]=='max-size')
+			max_size = Number(argv[++i]);
 
 		// spamc.js command:
 		else if(argv[i]=='reject')
 			reject_threshold = parseFloat(argv[++i]);
+		else if(argv[i]=='spamonly')
+			spamonly = true;
 	}
-
+	if(max_size && file_size(message_text_filename) > max_size) {
+		log(LOG_INFO,"SPAMC: message size > max_size (" + max_size + ")");
+		return;
+	}
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
 	if(msg.error != undefined) {
 		log(LOG_ERR,"SPAMC: !ERROR "+msg.error);
 		return;
 	}
-	msg.debug=true;
+	//	msg.debug=true;
 	var ret=msg.process();
 	if(ret.warning != undefined)
 		log(LOG_WARNING, "SPAMC: WARNING "+ret.warning);
@@ -64,6 +73,8 @@ function main()
 	log(LOG_INFO, "SPAMC: " + details);
 
 	if(!reject_threshold || isNaN(ret.score) || ret.score < reject_threshold) {
+		if(spamonly && !ret.isSpam)
+			return;
 		var msg_file = new File(message_text_filename);
 		if(!msg_file.open("w")) {
 			log(LOG_ERR,format("SPAMC: !ERROR %d opening message text file: %s"
