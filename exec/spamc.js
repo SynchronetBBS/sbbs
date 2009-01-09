@@ -45,24 +45,28 @@ function main()
 
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
 	if(msg.error != undefined) {
-		log(LOG_ERR,"spamc: !ERROR "+msg.error);
+		log(LOG_ERR,"SPAMC: !ERROR "+msg.error);
 		return;
 	}
 	msg.debug=true;
 	var ret=msg.process();
 	if(ret.warning != undefined)
-		log(LOG_WARNING, "spamc: WARNING "+ret.warning);
+		log(LOG_WARNING, "SPAMC: WARNING "+ret.warning);
 	if(ret.error != undefined) {
-		log(LOG_ERR,"spamc: !ERROR "+ret.error);
+		log(LOG_ERR,"SPAMC: !ERROR "+ret.error);
 		return;
 	}
 
-	log(LOG_INFO, "spamc: score: " + ret.score + ' / ' + ret.threshold);
+	var details = 'score: ' + ret.score + ' / ' + ret.threshold;
+	if(ret.symbols && ret.symbols.length)
+		details += ', tests: ' + ret.symbols;
 
-	if(!reject_threshold || ret.score < reject_threshold) {
+	log(LOG_INFO, "SPAMC: " + details);
+
+	if(!reject_threshold || isNaN(ret.score) || ret.score < reject_threshold) {
 		var msg_file = new File(message_text_filename);
 		if(!msg_file.open("w")) {
-			log(LOG_ERR,format("spamc: !ERROR %d opening message text file: %s"
+			log(LOG_ERR,format("SPAMC: !ERROR %d opening message text file: %s"
 				,msg_file.error, message_text_filename));
 			return;
 		}
@@ -71,17 +75,14 @@ function main()
 		return;
 	}
 
-	log(LOG_INFO, "spamc: rejecting SPAM with SMTP error");
+	log(LOG_INFO, "SPAMC: rejecting SPAM with SMTP error");
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
-		log(LOG_ERR,format("spamc: !ERROR %d opening processing error file: %s"
+		log(LOG_ERR,format("SPAMC: !ERROR %d opening processing error file: %s"
 			,error_file.error, processing_error_filename));
 		return;
 	}
-	var rejection = ret.score + ' / ' + ret.threshold;
-	if(ret.symbols && ret.symbols.length)
-		rejection += ' ' + ret.symbols;
-	error_file.writeln("SpamAssassin rejected your mail: " + rejection);
+	error_file.writeln("SpamAssassin rejected your mail: " + details);
 	error_file.close();
 }
 
