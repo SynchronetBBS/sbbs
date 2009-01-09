@@ -8,10 +8,7 @@
 // ;Process and pass-through all messages:
 // [spamc.js]
 
-// ;Check for and reject SPAM messages:
-// [spamc.js check]
-
-// ;Check for and reject SPAM messages over specified threshold
+// ;Check for and reject SPAM messages over specified score threshold
 // [spamc.js reject 8.0]
 
 // $Id$
@@ -24,7 +21,6 @@ function main()
 	var address = '127.0.0.1';
 	var tcp_port = 783;
 	var user;
-	var cmd = 'PROCESS';	// Default: process
 	var reject_threshold;
 
 	// Process arguments:
@@ -43,12 +39,8 @@ function main()
 			user = argv[++i];
 
 		// spamc.js command:
-		else if(argv[i]=='reject')	// Only valid with PROCESS command
+		else if(argv[i]=='reject')
 			reject_threshold = parseFloat(argv[++i]);
-		else if(argv[i]=='check')
-			cmd = 'CHECK';
-		else if(argv[i]=='check-verbose' || argv[i]=='tests')
-			cmd = 'SYMBOLS';
 	}
 
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
@@ -57,8 +49,7 @@ function main()
 		return;
 	}
 	msg.debug=true;
-	log(LOG_INFO, "spamc: Executing command: " + cmd);
-	var ret=msg.DoCommand(cmd);
+	var ret=msg.process();
 	if(ret.warning != undefined)
 		log(LOG_WARNING, "spamc: WARNING "+ret.warning);
 	if(ret.error != undefined) {
@@ -66,9 +57,9 @@ function main()
 		return;
 	}
 
-	log(LOG_INFO, "spamc: Score: " + ret.score + ' / ' + ret.threshold);
+	log(LOG_INFO, "spamc: score: " + ret.score + ' / ' + ret.threshold);
 
-	if(cmd == 'PROCESS' && (!reject_threshold || ret.score < reject_threshold)) {
+	if(!reject_threshold || ret.score < reject_threshold)) {
 		var msg_file = new File(message_text_filename);
 		if(!msg_file.open("w")) {
 			log(LOG_ERR,format("spamc: !ERROR %d opening message text file: %s"
@@ -79,8 +70,7 @@ function main()
 		msg_file.close();
 		return;
 	}
-	if(!ret.isSpam)
-		return;
+
 	log(LOG_INFO, "spamc: rejecting SPAM with SMTP error");
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
