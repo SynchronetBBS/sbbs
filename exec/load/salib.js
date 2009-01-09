@@ -85,7 +85,7 @@ function Message_DoCommand(command)
 		tmp=rcvd[line].split(/\s+/);
 		switch(tmp[0].toUpperCase()) {
 			case 'SPAM:':
-				if(tmp[1].toLowerCase() == 'true')
+				if(tmp[1].toLowerCase() == 'true' || tmp[1].toLowerCase() == 'yes')
 					ret.isSpam=true;
 				else
 					ret.isSpam=false;
