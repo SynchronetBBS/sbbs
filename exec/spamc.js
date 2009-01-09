@@ -59,7 +59,7 @@ function main()
 
 	log(LOG_INFO, "spamc: score: " + ret.score + ' / ' + ret.threshold);
 
-	if(!reject_threshold || ret.score < reject_threshold)) {
+	if(!reject_threshold || ret.score < reject_threshold) {
 		var msg_file = new File(message_text_filename);
 		if(!msg_file.open("w")) {
 			log(LOG_ERR,format("spamc: !ERROR %d opening message text file: %s"
