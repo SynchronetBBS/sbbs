@@ -140,6 +140,7 @@ function Message_DoCommand(command)
 							ret.threshold=parseFloat(nv[1]);
 						break;
 					case 'tests':
+						ret.symbols.push(nv[1].split(/,/));
 						break;
 				}
 			}
