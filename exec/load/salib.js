@@ -83,16 +83,26 @@ function Message_DoCommand(command)
 		if(rcvd[line]=='')
 			break;
 		tmp=rcvd[line].split(/\s+/);
-		if(tmp[0].toUpperCase() == 'SPAM:') {
-			if(tmp[1].toLowerCase() == 'true')
-				ret.isSpam=true;
-			else
-				ret.isSpam=false;
-			if(tmp[2] == ';') {
-				ret.score=parseFloat(tmp[3]);
-				if(tmp[4] == '/')
-					ret.threshold=parseFloat(tmp[5]);
-			}
+		switch(tmp[0].toUpperCase()) {
+			case 'SPAM:':
+				if(tmp[1].toLowerCase() == 'true')
+					ret.isSpam=true;
+				else
+					ret.isSpam=false;
+				if(tmp[2] == ';') {
+					ret.score=parseFloat(tmp[3]);
+					if(tmp[4] == '/')
+						ret.threshold=parseFloat(tmp[5]);
+				}
+				break;
+			case 'CONTENT-LENGTH:':
+				if(!isNaN(tmp[1])) {
+					var clen=parseInt(tmp[1]);
+					if(clen < ret.message.length)
+						ret.message = ret.message.substr(0, clen);
+					if(clen > ret.message.length)
+						ret.warning="Content-Length greater than total bytes read!";
+				}
 		}
 	}
 
