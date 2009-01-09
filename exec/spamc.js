@@ -55,19 +55,9 @@ function main()
 		return;
 	}
 
-	if(!isNaN(ret.score)) {
-		log(LOG_INFO, "spamc: Score: " + ret.score + ' / ' + ret.threshold);
-		if(threshold && ret.score < threshold) {
-			var ret=msg.DoCommand(cmd='PROCESS');
-			if(ret.warning != undefined)
-				log(LOG_WARNING, "spamc: WARNING "+ret.warning);
-			if(ret.error != undefined) {
-				log(LOG_ERR,"spamc: !ERROR "+ret.error);
-				return;
-			}
-		}
-	}
-	if(cmd == 'PROCESS') {
+	log(LOG_INFO, "spamc: Score: " + ret.score + ' / ' + ret.threshold);
+
+	if(cmd == 'PROCESS' || (threshold && ret.score < threshold)) {
 		var msg_file = new File(message_text_filename);
 		if(!msg_file.open("w")) {
 			log(LOG_ERR,format("spamc: !ERROR %d opening message text file: %s"
@@ -80,6 +70,7 @@ function main()
 	}
 	if(!ret.isSpam)
 		return;
+	log(LOG_INFO, "spamc: rejecting SPAM with SMTP error");
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
 		log(LOG_ERR,format("spamc: !ERROR %d opening processing error file: %s"
