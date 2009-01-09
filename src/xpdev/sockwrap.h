@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -129,6 +129,11 @@ typedef struct {
 #undef	EINPROGRESS
 #define EINPROGRESS		(WSAEINPROGRESS-WSABASEERR)
 
+/* for shutdown() */
+#define SHUT_RD			SD_RECEIVE
+#define SHUT_WR			SD_SEND
+#define SHUT_RDWR		SD_BOTH
+
 #define s_addr			S_un.S_addr
 
 #define socklen_t		int
@@ -176,10 +181,6 @@ int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 
 #ifdef __cplusplus
 }
-#endif
-
-#ifndef SHUT_RDWR
-#define SHUT_RDWR			2	/* for shutdown() */
 #endif
 
 #ifndef IPPORT_HTTP
