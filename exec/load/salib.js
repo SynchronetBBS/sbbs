@@ -116,6 +116,7 @@ function Message_DoCommand(command)
 		var m=headers.match(/X-Spam-Status:\s*([\x00-\xff]*?)\r\n[^\s]/);
 		if(m!=null) {
 			var hdr=m[1].replace(/\s+/g,' ');
+			hdr=hdr.replace(/,\r\n\s+/g,'');
 			var tokens=hdr.split(/\s+/);
 			switch(tokens[0]) {
 				case 'No,':
