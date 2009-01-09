@@ -77,7 +77,7 @@ function playmusic(str)
 {
 	if(music) {
 		if(cterm_major == 1 && cterm_minor < 111 && cterm_minor >= 37) {
-			str=str.replace(/^M[FBNLS]/,'N');
+			str=str.replace(/^M[FBNLS]?/,'N');
 		}
 		else if((cterm_major == 1 && cterm_minor >= 111) || cterm_major > 1) {
 			if(str.charAt(0)=='M')
