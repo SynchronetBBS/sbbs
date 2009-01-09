@@ -52,10 +52,20 @@ function main()
 		log(LOG_ERR,"spamc: !ERROR "+ret.error);
 		return;
 	}
+	if(ret.warning != undefined)
+		log(LOG_WARNING, "spamc: WARNING "+ret.warning);
+
 	if(!isNaN(ret.score)) {
 		log(LOG_INFO, "spamc: Score: " + ret.score + ' / ' + ret.threshold);
-		if(threshold && ret.score < threshold)
+		if(threshold && ret.score < threshold) {
 			var ret=msg.DoCommand(cmd='PROCESS');
+			if(ret.error != undefined) {
+				log(LOG_ERR,"spamc: !ERROR "+ret.error);
+				return;
+			}
+			if(ret.warning != undefined)
+				log(LOG_WARNING, "spamc: WARNING "+ret.warning);
+		}
 	}
 	if(cmd == 'PROCESS') {
 		var msg_file = new File(message_text_filename);
