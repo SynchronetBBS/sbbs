@@ -1,11 +1,11 @@
 /*
  * http://spamassassin.apache.org/full/3.0.x/dist/spamd/PROTOCOL
- * $ Id: $
+ * $Id$
  */
 
 load("sockdefs.js")
 
-function SPAMC_Message(messagefile, addr, port)
+function SPAMC_Message(messagefile, addr, port, user)
 {
 	if(!file_exists(messagefile))
 		return(false);
@@ -15,6 +15,7 @@ function SPAMC_Message(messagefile, addr, port)
 	this.port=port;
 	if(this.port==undefined)
 		this.port='783';
+	this.user=user;
 	this.messagefile=messagefile;
 	this.DoCommand=Message_DoCommand;
 	this.check =function() { return(this.DoCommand('CHECK')); };
@@ -32,14 +33,14 @@ function Message_DoCommand(command)
 	var ret=new Object();
 	ret.message='';
 
-	command=command.toUpperCase();
 	if(!sock.connect(this.addr, this.port)) {
 		log("ERROR: spamc.js failed to connect!");
 		return(false);
 	}
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
 	sock.write("Content-length: "+file_size(this.messagefile)+"\r\n");
-	sock.write("User: Synchronet\r\n");
+	if(this.user)	// Optional
+		sock.write("User: " + this.user + "\r\n");
 	sock.write("\r\n");
 	sock.sendfile(this.messagefile);
 	sock.is_writeable=false;
