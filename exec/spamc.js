@@ -41,14 +41,18 @@ function main()
 	}
 
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
-	if(msg === false)
+	if(msg.error != undefined) {
+		log(LOG_ERR,"spamc: !ERROR "+msg.error);
 		return;
+	}
 	msg.debug=true;
 	log(LOG_INFO, "spamc: Executing command: " + cmd);
 	var ret=msg.DoCommand(cmd);
-	if(ret === false)
+	if(ret.error != undefined) {
+		log(LOG_ERR,"spamc: !ERROR "+ret.error);
 		return;
-	if(ret.score!=undefined) {
+	}
+	if(!isNaN(ret.score)) {
 		log(LOG_INFO, "spamc: Score: " + ret.score + ' / ' + ret.threshold);
 		if(threshold && ret.score < threshold)
 			var ret=msg.DoCommand(cmd='PROCESS');

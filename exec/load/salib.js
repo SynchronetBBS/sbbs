@@ -8,7 +8,7 @@ load("sockdefs.js")
 function SPAMC_Message(messagefile, addr, port, user)
 {
 	if(!file_exists(messagefile))
-		return(false);
+		this.error="Message file '"+messagefile+"' does not exist";
 	this.addr=addr;
 	if(this.addr==undefined)
 		this.addr='127.0.0.1';
@@ -30,13 +30,13 @@ function Message_DoCommand(command)
 	var rcvd=new Array();
 	var tmp;
 	var sock=new Socket(SOCK_STREAM, "spamc");
-	var ret=new Object();
-	ret.message='';
+	var ret={message:'', isSpam:false, score:'unknown', threshold:'unknown', symbols:[]};
 
 	if(!sock.connect(this.addr, this.port)) {
-		log("ERROR: spamc.js failed to connect!");
-		return(false);
+		ret.error='Failed to connect to spamd';
+		return(ret);
 	}
+
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
 	sock.write("Content-length: "+file_size(this.messagefile)+"\r\n");
 	if(this.user)	// Optional
@@ -44,6 +44,7 @@ function Message_DoCommand(command)
 	sock.write("\r\n");
 	sock.sendfile(this.messagefile);
 	sock.is_writeable=false;
+
 	while(1) {
 		tmp=sock.recvline();
 		if(tmp==undefined || tmp=='')
@@ -61,18 +62,20 @@ function Message_DoCommand(command)
 			ret.message += tmp;
 		}
 	}
+
 	if(rcvd.length < 1) {
-		log("ERROR: No lines read from spamd");
-		return(false)
+		ret.error='No lines read from spamd');
+		return(ret)
 	}
-	var tmp=rcvd[0].split(/\s+/,3);
+
+	tmp=rcvd[0].split(/\s+/,3);
 	if(tmp.length < 3) {
-		log("ERROR: Unable to parse line '"+rcvd[0]);
-		return(false)
+		ret.error="Unable to parse line '"+rcvd[0];
+		return(ret)
 	}
-	if(tmp[1] != 0) {
-		log("ERROR: spamd returned error "+tmp[2]+" ("+tmp[1]+")");
-		return(false)
+	if(tmp[1] != '0') {
+		ret.error="spamd returned error "+tmp[2]+" ("+tmp[1]+")";
+		return(ret)
 	}
 
 	/* Parse headers */
@@ -94,11 +97,9 @@ function Message_DoCommand(command)
 	}
 
 	if(command == 'SYMBOLS') {
-		if(ret!==false) {
-			ret.message=ret.message.replace(/[\r\n]/g,'');
-			ret.symbols=ret.message.split(/,/);
-			ret.message='';
-		}
+		ret.message=ret.message.replace(/[\r\n]/g,'');
+		ret.symbols=ret.message.split(/,/);
+		ret.message='';
 	}
 
 	return(ret);
