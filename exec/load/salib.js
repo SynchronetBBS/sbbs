@@ -46,6 +46,8 @@ function Message_DoCommand(command)
 	sock.is_writeable=false;
 	while(1) {
 		tmp=sock.recvline();
+		if(this.debug)
+			log(LOG_DEBUG,"RX SPAMD header: " + tmp);
 		if(tmp==undefined || tmp=='')
 			break;
 		rcvd.push(tmp);
@@ -84,9 +86,9 @@ function Message_DoCommand(command)
 			else
 				ret.isSpam=false;
 			if(tmp[2] == ';') {
-				ret.score=parseInt(tmp[3]);
+				ret.score=parseFloat(tmp[3]);
 				if(tmp[4] == '/')
-					ret.threshold=parseInt(tmp[5]);
+					ret.threshold=parseFloat(tmp[5]);
 			}
 		}
 	}
