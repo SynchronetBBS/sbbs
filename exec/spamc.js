@@ -76,8 +76,10 @@ function main()
 			,error_file.error, processing_error_filename));
 		return;
 	}
-	error_file.writeln("SpamAssassin rejected your mail: " + ret.score + ' / ' + ret.threshold
-		+ ' ' + ret.symbols);
+	var rejection = ret.score + ' / ' + ret.threshold;
+	if(ret.symbols && ret.symbols.length)
+		rejection += ' ' + ret.symbols;
+	error_file.writeln("SpamAssassin rejected your mail: " + rejection);
 	error_file.close();
 }
 
