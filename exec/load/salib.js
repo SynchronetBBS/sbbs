@@ -46,10 +46,10 @@ function Message_DoCommand(command)
 	sock.is_writeable=false;
 	while(1) {
 		tmp=sock.recvline();
-		if(this.debug)
-			log(LOG_DEBUG,"RX SPAMD header: " + tmp);
 		if(tmp==undefined || tmp=='')
 			break;
+		if(this.debug)
+			log(LOG_DEBUG,"RX SPAMD header: " + tmp);
 		rcvd.push(tmp);
 	}
 	if(sock.is_connected) {
