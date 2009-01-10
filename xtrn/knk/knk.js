@@ -219,6 +219,7 @@ function Player(t, n, p)
 	this.food=200000+random(100000);
 	this.power getter=function() { var p=parseInt(this.kastle/500)+parseInt(this.soldiers/750); if(p>46) return(46); return(p); };
 	this.mfood getter=function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); };
+	this.mfoodstr getter=function() { return(format("%-6.3f", this.mfood).substr(0,6).replace(/\.$/,'')); };
 	this.produce=Player_produce;
 	this.powerbar=Player_powerbar;
 	this.drawscreen=Player_drawscreen;
@@ -388,7 +389,7 @@ function Player_drawscreen(month)
 	console.writeln(format("\xba  Assassins......: %-6d \xba  Assassins......: %-6d \xba",player.assassins,computer.assassins));
 	console.writeln(format("\xba  Guards.........: %-6d \xba  Guards.........: %-6d \xba",player.guards,computer.guards));
 	console.writeln(format("\xba  Gold...........: %-6d \xba  Gold...........: %-6d \xba",player.gold,computer.gold));
-	console.writeln(format("\xba  Months of Food.: %-6.3f \xba  Months of Food.: %-6.3f \xba",player.mfood,computer.mfood));
+	console.writeln(format("\xba  Months of Food.: %-6s \xba  Months of Food.: %-6s \xba",player.mfoodstr,computer.mfoodstr));
 	console.writeln("\xc8\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xca\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xbc");
 }
 
