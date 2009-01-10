@@ -1615,7 +1615,6 @@ function play_game()
 	else {
 		losses++;
 		loser=player;
-		playmusic("MFO2T96L2P32CL3CL8CP32L3CP6E-L8DL3DL8CL3CO1L8BO2L1C");
 	}
 	console.crlf();
 	if(console.line_counter > console.screen_rows/2)
