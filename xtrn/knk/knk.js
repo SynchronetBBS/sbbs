@@ -743,6 +743,7 @@ function Player_dodamage(other, damage, men)
 		console.writeln(proper(this.refer_singular+" killed "+loss.civilians+" civilians!"));
 	}
 
+	console.crlf();
 	return(this.checkresults(other));
 }
 
@@ -882,6 +883,7 @@ function Player_playermove(month, other)
 						playmusic("MFT64L64O5CDP32CDP32CDP16");
 					return(false);
 				}
+				console.crlf();
 				break;
 			case 'F':
 				if(this.kannons==0) {
@@ -949,6 +951,7 @@ function Player_playermove(month, other)
 				console.write("QUIT!? (You Lose) Are you SURE? -=> ");
 				if(getkeys("YN\r\n")=='Y')
 					return(other);
+				console.crlf();
 				loop=true;
 				break;
 			case 'R':
@@ -971,6 +974,7 @@ function Player_playermove(month, other)
 					playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 					return(false);
 				}
+				console.crlf();
 				break;
 			case 'S':
 				return(this.soldierattack(other));
