@@ -117,7 +117,9 @@ function show_intro()
 	console.center("Running on "+system.name+" courtesy of "+system.operator+".");
 	console.crlf();
 	syncterm_music=check_syncterm_music();
-	console.pause();
+	console.gotoxy(1,console.screen_rows);
+	if(console.line_counter > console.screen_rows/2)
+		console.pause();
 
 	console.clear();
 	console.crlf();
@@ -576,6 +578,7 @@ function Player_dodamage(other, damage, men)
 		console.attributes=LIGHTCYAN;
 		
 	for(i=0; i<damage; i++) {
+		console.line_counter=0;
 		bad=random(7);	// Each damage does 0-7 points of "bad"
 		for(j=0; j<bad; j++) {
 			rnd=other.soldiers+other.kastle+other.guards+other.assassins+other.kannons+other.katapults+other.civilians;
@@ -698,6 +701,7 @@ function Player_dodamage(other, damage, men)
 	}
 	if(booms%7)
 		console.crlf();
+	console.line_counter=0;
 
 	if(nodamage) {
 		if(this.isplayer)
@@ -1057,7 +1061,7 @@ function Player_computermove(month, other)
 {
 	var weight={loss_soldiers:0, loss_kastle:0, loss_guards:0, loss_food:0
 				,win_soldiers:0, win_kastle:0, win_assassins:0
-				,need_assassins:0, need_katapults:0, need_kannons:0, need_food:0, need_soldiers:0, need_guards:0, need_kastle:0};
+				,need_assassins:0, need_weapons:0, need_food:0, need_soldiers:0, need_guards:0, need_kastle:0};
 	var names=new Array();
 	var name;
 
@@ -1066,6 +1070,7 @@ function Player_computermove(month, other)
 	console.line_counter=0;
 	console.crlf();
 	console.crlf();
+	console.line_counter=0;
 
 	for(name in weight)
 		names.push(name);
@@ -1092,10 +1097,7 @@ function Player_computermove(month, other)
 			return(this.kannonattack(other, true));
 		if(this.katapults > 1)
 			return(this.katapultattack(other, true));
-		if(this.kannons > this.katapults * 500)
-			weight.need_kannons=1;
-		else
-			weight.need_katapults=1;
+		weight.need_weapons=1;
 	}
 	else {
 		if(other.soldiers < this.soldiers * .66)
@@ -1144,27 +1146,14 @@ function Player_computermove(month, other)
 			return(this.kannonattack(other, true));
 		if(this.katapults > 1)
 			return(this.katapultattack(other, true));
-		if(this.kannons > this.katapults * 500)
-			weight.need_kannons=1;
-		else
-			weight.need_katapults=1;
+		weight.need_weapons=1;
 	}
 	else {
 		if(other.kastle < 10000)
 			weight.win_kastle += 1-other.kastle/10000;
 	}
-	if(this.kannons > this.katapults?this.katapults:1 * 500) {
-		if(weight.need_kannons==0)
-			weight.need_kannons=0.1;
-		if(weight.need_katapults==0)
-			weight.need_katapults=0.05;
-	}
-	else {
-		if(weight.need_kannons==0)
-			weight.need_kannons=0.05;
-		if(weight.need_katapults==0)
-			weight.need_katapults=0.1;
-	}
+	if(weight.need_weapons==0)
+		weight.need_weapons=0.05;
 
 	if(weight.win_kastle==0)
 		weight.win_kastle=0.01;
@@ -1258,32 +1247,36 @@ function Player_computermove(month, other)
 				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
 				this.loadwagons('assassins',amount);
 				return(false);
-			case 'need_katapults':
-				amount=parseInt(this.gold/25000);
-				if(this.mfood < 2)
-					amount=parseInt(amount/2);
-				if(this.katapults > 2 && amount < this.katapults/2)
-					break;
-				if(amount < 1)
-					break;
-				console.writeln("Buying "+amount+" katapults for "+amount*25000+" gold!");
-				console.crlf();
-				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-				this.loadwagons('katapults',amount);
-				return(false);
-			case 'need_kannons':
-				amount=parseInt(this.gold/100);
-				if(this.mfood < 2)
-					amount=parseInt(amount/2);
-				if(this.kannons > 2 && amount < this.kannons/2)
-					break;
-				if(amount < 20)
-					break;
-				console.writeln("Buying "+amount+" kannons for "+amount*100+" gold!");
-				console.crlf();
-				console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-				this.loadwagons('kannons',amount);
-				return(false);
+			case 'need_weapons':
+				if(this.kannons > this.katapults * 500 && (this.kannons > 500 || this.gold < 25000)) {
+					amount=parseInt(this.gold/100);
+					if(this.mfood < 2)
+						amount=parseInt(amount/2);
+					if(this.kannons > 2 && amount < this.kannons/2)
+						break;
+					if(amount < 20)
+						break;
+					console.writeln("Buying "+amount+" kannons for "+amount*100+" gold!");
+					console.crlf();
+					console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+					this.loadwagons('kannons',amount);
+					return(false);
+				}
+				else {
+					amount=parseInt(this.gold/25000);
+					if(this.mfood < 2)
+						amount=parseInt(amount/2);
+					if(this.katapults > 2 && amount < this.katapults/2)
+						break;
+					if(amount < 1)
+						break;
+					console.writeln("Buying "+amount+" katapults for "+amount*25000+" gold!");
+					console.crlf();
+					console.writeln("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+					this.loadwagons('katapults',amount);
+					return(false);
+				}
+				break;
 		}
 	}
 	console.attributes=CYAN;
@@ -1581,14 +1574,16 @@ function play_game()
 		playmusic("MFO2T96L2P32CL3CL8CP32L3CP6E-L8DL3DL8CL3CO1L8BO2L1C");
 	}
 	console.crlf();
-	console.pause();
+	if(console.line_counter > console.screen_rows/2)
+		console.pause();
 	winner.drawscreen(month);
 	console.crlf();
 	console.attributes=WHITE;
 	loser.score=0;
 	console.writeln(computer.full_name+" got "+computer.score+" points and you got "+player.score+" points for this game.");
 	console.writeln();
-	console.pause();
+	if(console.line_counter > console.screen_rows/2)
+		console.pause();
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
 	var dat_file=read_dat();
