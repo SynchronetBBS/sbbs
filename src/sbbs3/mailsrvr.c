@@ -110,6 +110,7 @@ struct mailproc {
 	BOOL		native;
 	BOOL		ignore_on_error;	/* Ignore mail message if cmdline fails */
 	BOOL		disabled;
+	uint8_t*	ar;
 } *mailproc_list;
 
 typedef struct {
@@ -1592,7 +1593,8 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* cmdline
 			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
 			,char* rcptlst_fname, char* proc_err_fname
-			,char* sender, char* sender_addr, char* reverse_path)
+			,char* sender, char* sender_addr, char* reverse_path
+			,int* result)
 {
 	char*		p;
 	char		fname[MAX_PATH+1];
@@ -1623,6 +1625,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 			sprintf(path,"%s%s",scfg.exec_dir,fname);
 	}
 
+	*result = 0;
 	do {
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
@@ -1739,11 +1742,19 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 
+		JS_ReportPendingException(js_cx);
+
 		js_EvalOnExit(js_cx, js_glob, &js_branch);
+
+		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
 	} while(0);
 
 	if(js_cx!=NULL) {
+
+		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
+			JS_ValueToInt32(js_cx,rval,result);
+
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
 	}
@@ -2350,11 +2361,7 @@ static void smtp_thread(void* arg)
 
 					for(i=0;i<mailproc_count;i++) {
 
-						if(mailproc_list[i].disabled)
-							continue;
-
-						/* This processor is for specific recipients only and did not match */
-						if(strListCount(mailproc_list[i].to) && !mailproc_match[i])
+						if(!mailproc_match[i])
 							continue;
 
 						if(!mailproc_list[i].passthru)
@@ -2382,9 +2389,9 @@ static void smtp_thread(void* arg)
 							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
-								,sender, sender_addr, reverse_path)) {
-								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript (%s) failed"
-									,socket, str);
+								,sender, sender_addr, reverse_path, &j) || j!=0) {
+								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
+									,socket, str, j);
 								if(mailproc_list[i].ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) failure"
 										,socket, str);
@@ -3307,6 +3314,8 @@ static void smtp_thread(void* arg)
 			for(i=0;i<mailproc_count;i++) {
 				if(mailproc_list[i].disabled)
 					continue;
+				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
+					continue;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
 						if(stricmp(p,mailproc_list[i].to[j])==0) {
@@ -3317,7 +3326,8 @@ static void smtp_thread(void* arg)
 					}
 					if(mailproc_list[i].to[j]!=NULL)
 						break;
-				}
+				} else
+					mailproc_match[i]=TRUE;
 			}
 			/* destined for an external mail processor */
 			if(i<mailproc_count) {
@@ -4221,8 +4231,11 @@ static void cleanup(int code)
 	semfile_list_free(&shutdown_semfiles);
 
 	if(mailproc_list!=NULL) {
-		for(i=0;i<mailproc_count;i++)
+		for(i=0;i<mailproc_count;i++) {
+			if(mailproc_list[i].ar!=NULL && mailproc_list[i].ar!=nular)
+				free(mailproc_list[i].ar);
 			strListFree(&mailproc_list[i].to);
+		}
 		FREE_AND_NULL(mailproc_list);
 	}
 
@@ -4422,6 +4435,7 @@ void DLLCALL mail_server(void* arg)
 			sec_list = iniReadSectionList(fp,/* prefix */NULL);
 			if((mailproc_count=strListCount(sec_list))!=0
 				&& (mailproc_list=malloc(mailproc_count*sizeof(struct mailproc)))!=NULL) {
+				char buf[INI_MAX_VALUE_LEN+1];
 				for(i=0;i<mailproc_count;i++) {
 					memset(&mailproc_list[i],0,sizeof(struct mailproc));
 					SAFECOPY(mailproc_list[i].cmdline,sec_list[i]);
@@ -4435,6 +4449,8 @@ void DLLCALL mail_server(void* arg)
 						iniReadBool(fp,sec_list[i],"disabled",FALSE);
 					mailproc_list[i].ignore_on_error = 
 						iniReadBool(fp,sec_list[i],"IgnoreOnError",FALSE);
+					mailproc_list[i].ar = 
+						arstr(NULL,iniReadString(fp,sec_list[i],"AccessRequirements","",buf),&scfg);
 				}
 			}
 			iniFreeStringList(sec_list);

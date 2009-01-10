@@ -90,6 +90,10 @@ LINK32=link.exe
 # Name "mailsrvr - Win32 Debug"
 # Begin Source File
 
+SOURCE=.\ars.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\base64.c
 # End Source File
 # Begin Source File
