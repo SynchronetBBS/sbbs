@@ -1061,7 +1061,9 @@ function Player_computermove(month, other)
 {
 	var weight={loss_soldiers:0, loss_kastle:0, loss_guards:0, loss_food:0
 				,win_soldiers:0, win_kastle:0, win_assassins:0
-				,need_assassins:0, need_weapons:0, need_food:0, need_soldiers:0, need_guards:0, need_kastle:0};
+				,need_assassins:0, need_weapons:0, need_food:0
+				,need_soldiers:0, need_guards:0, need_kastle:0
+				,need_release:0};
 	var names=new Array();
 	var name;
 
@@ -1158,6 +1160,27 @@ function Player_computermove(month, other)
 	if(weight.win_kastle==0)
 		weight.win_kastle=0.01;
 
+	if(other.mfood < .9 && this.mfood > 2) {
+		if(this.soldiers + this.civilians > other.soldiers * 3)
+			weight.need_soldiers =  1-(other.mfood/3);
+	}
+
+	if(this.gold + this.civilians - this.soldiers <= 0) {
+		need_release=1;
+	}
+	else if(this.soldiers > other.soldiers * 1.66) {
+		/* If we don't have enough tax revenue to pay for our soldiers
+			this is vital */
+		if(this.civilans - this.soldiers <= 0) {
+			/* If we will lose gold, this is merely very important */
+			need_release=0.75;
+		}
+		else {
+			/* Just a thought... */
+			need_release=0.1;
+		}
+	}
+
 	/* Now, we choose the highest of the three objects */
 	names = names.sort(function(a,b) {
 							return(weight[b]-weight[a]);
@@ -1170,15 +1193,19 @@ function Player_computermove(month, other)
 			case 'need_soldiers':
 				if(this.civilians > 1000) {
 					amount=parseInt(other.soldiers * 1.25);
-					if(amount > this.civilians/2)
-						amount=parseInt(this.civilians/2);
-					if(amount < other.soldiers * .5)
-						amount=parseInt(other.soldiers * .5);
-					amount -= this.soldiers;
-					if(amount > this.civilians*.8)
-						amount=parseInt(this.civilians*.75);
-					if(amount < 1000)
-						break;
+					if(other.mfood < .9 && (this.soldiers + this.civilians > other.soldiers * 3))
+						amount=this.civilians;
+					else {
+						if(amount > this.civilians/2)
+							amount=parseInt(this.civilians/2);
+						if(amount < other.soldiers * .5)
+							amount=parseInt(other.soldiers * .5);
+						amount -= this.soldiers;
+						if(amount > this.civilians*.8)
+							amount=parseInt(this.civilians*.75);
+						if(amount < 1000)
+							break;
+					}
 					console.writeln("Drafting "+amount+" civilians into the army.");
 					console.crlf();
 					this.civilians -= amount;
@@ -1277,6 +1304,23 @@ function Player_computermove(month, other)
 					return(false);
 				}
 				break;
+			case 'need_release':
+				if(this.gold + this.civilians - this.soldiers <= 0)
+					amount=this.soldiers-(this.gold+this.civilians);
+				else if(this.soldiers > other.soldiers * 1.66)
+					amount=this.soldiers-(other.soldiers * 1.66);
+				if(amount < this.civilians / 10)
+					break;
+				if(amount > this.soldiers)
+					amount=this.soldiers / 2;
+				if(amount < 1)
+					break;
+				console.writeln("Retiring "+amount+" soldiers from service.");
+				this.soldiers -= amount;
+				this.civilians += amount;
+				playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
+				return(false);
+				
 		}
 	}
 	console.attributes=CYAN;
