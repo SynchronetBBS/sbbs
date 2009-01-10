@@ -2390,6 +2390,7 @@ static void smtp_thread(void* arg)
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
 								,sender, sender_addr, reverse_path, &j) || j!=0) {
+#if 0 /* calling exit() in a script causes js_mailproc to return FALSE */
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
 									,socket, str, j);
 								if(mailproc_list[i].ignore_on_error) {
@@ -2397,6 +2398,7 @@ static void smtp_thread(void* arg)
 										,socket, str);
 									msg_handled=TRUE;
 								}
+#endif
 							}
 						}
 						if(flength(proc_err_fname)>0)
