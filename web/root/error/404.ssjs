@@ -31,7 +31,7 @@ else {
 	writeln("<table border=0>");
 	for(fn in files) {
 		var thisfile=files[fn].replace(/^.*?\/([^\/]+\/?)$/,"$1");
-		if(thisfile=='access.ars' || 'webctrl.ini')
+		if(thisfile=='access.ars' || thisfile=='webctrl.ini')
 			continue;
 		if(allicons==undefined) {
 			writeln('<tr><td><a href="'+http_request.virtual_path+thisfile+'">'+thisfile+"</a></td>");
