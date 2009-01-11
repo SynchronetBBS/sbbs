@@ -196,6 +196,8 @@ function UserConfig(unum, leaveopen)
 	this.door=new Object();
 	this.user_number=unum;
 	this.save=UserConfig_save;
+	this.addxtrn=UserConfig_addxtrn;
+	this.configure=UserConfig_configure;
 
 	if(unum==undefined) {
 		this.file=LockedOpen(doorscan_dir+"defaults.ini", "r+");
@@ -291,6 +293,8 @@ function doScan()
 				console.writeln("New external: "+xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section.");
 				console.crlf();
 			}
+			if(ucfg.door[door]==undefined && ucfg.global.addNew)
+				ucfg.door[door].addxtrn(door);
 		}
 	}
 
@@ -365,6 +369,20 @@ function doScan()
 	ucfg.save();
 }
 
+function UserConfig_addxtrn(xtrn)
+{
+	if(this.door[xtrn] == undefined) {
+		this.door[xtrn]=new Object();
+		this.door[xtrn].name=xtrn;
+		if(this.global.defaultSkipScores)
+			this.door[xtrn].skipScores=true;
+		if(this.global.defaultSkipNews)
+			this.door[xtrn].skipNews=true;
+		if(ucfg.global.defaultSkipRunCount)
+			this.door[xtrn].skipRunCount=true;
+	}
+}
+
 function runXtrn(xtrn)
 {
 	if(xtrn_area.prog[xtrn]==undefined)
@@ -381,14 +399,8 @@ function runXtrn(xtrn)
 
 	var ucfg=new UserConfig(user.number, true);
 	if(ucfg.door[xtrn] == undefined) {
-		if(!ucfg.global.noAutoScan) {
-			ucfg.door[xtrn]=new Object();
-			ucfg.door[xtrn].name=xtrn;
-			if(ucfg.global.defaultSkipScores)
-				ucfg.door[xtrn].skipScores=true;
-			if(ucfg.global.defaultSkipNews)
-				ucfg.door[xtrn].skipNews=true;
-		}
+		if(!this.global.noAutoScan)
+			ucfg.addxtrn(xtrn);
 	}
 
 	if(ucfg.door[xtrn] != undefined)
@@ -412,6 +424,28 @@ function runXtrn(xtrn)
 	ucfg.save();
 }
 
+function UserConfig_configure()
+{
+	var dcfg=new DoorConfig();
+
+	/*
+	 * User settings
+	 * Per Door: 
+	 *		skipNews			Does not display the configured news file
+	 *		skipScores			Does not display the configured scores file
+	 *		skipRunCount		Does not display the number of times ran
+	 * Globals:
+	 *		lastScan			Date/Time of last scan
+	 *		addNew				New doors should be added to the scan config
+	 *		noAutoScan			Do not add doors which ara ran to the scan
+	 *		defaultSkipNews		New entries should set skipNews
+	 *		defaultSkipScores	New entries should set skipScores
+	 *		defaultSkipRunCount	New entries should set skipRunCount
+	 */
+
+	// TODO: User configuration
+}
+
 for(i in argv) {
 	switch(argv[i].toLowerCase()) {
 		case 'scan':
@@ -428,8 +462,15 @@ for(i in argv) {
 			dcfg.save();
 			var ucfg=new UserConfig(user.number);
 			ucfg.save();
-		// TODO: User configuration
-		// TODO: Sysop configuration
-		// TODO: Door popularity rankings
+			break;
+		case 'config':
+			new UserConfig(user.number).configure();
+			break;
+		case 'sysconfig':
+			// TODO: Sysop configuration
+			break;
+		case 'rank':
+			// TODO: Door popularity rankings
+			break;
 	}
 }
