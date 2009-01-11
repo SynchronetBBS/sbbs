@@ -268,6 +268,10 @@ function doScan()
 
 	/* First, look for new doors */
 	for(door in dcfg.door) {
+		if(dcfg.skipSection[door]!=undefined && dcfg.skipSection[door])
+			continue;
+		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
+			continue;
 		if(dcfg.door[door].installed > ucfg.global.lastScan) {
 			/* This door is NEW! */
 			
@@ -306,6 +310,8 @@ function doScan()
 	for(door in ucfg.door) {
 		if(dcfg.skipSection[door]!=undefined && dcfg.skipSection[door])
 			continue;
+		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
+			continue;
 		tmp=ucfg.global.lastScan;
 		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > tmp)
 			tmp=ucfg.door[door].lastExit;
@@ -314,42 +320,42 @@ function doScan()
 
 			/* News File */
 			if(!ucfg.door[door].skipNews) {
-				if(dcfg.door[door].News != undefined) {
+				if(dcfg.door[door].news != undefined) {
 					/*
 					 * If the news file has not been updated, don't bother
 					 * Some doors only update the news during maintenance
 					 */
 					
-					if(new Date(file_date(dcfg.door[door].News)*1000) >= tmp) {
+					if(new Date(file_date(dcfg.door[door].news)*1000) >= tmp) {
 						/* Assume ANSI */
-						if(dcfg.door[door].NewsType==undefined)
-							dsp.ANSI(dcfg.door[door].News);
+						if(dcfg.door[door].newsType==undefined)
+							dsp.ANSI(dcfg.door[door].news);
 						else {
-							if(dsp[dcfg.door[door].NewsType] == undefined)
-								log("doorscan WARNING News type "+dcfg.door[door].NewsType+" for door "+door+" does not have a display method.");
+							if(dsp[dcfg.door[door].newsType] == undefined)
+								log("doorscan WARNING News type "+dcfg.door[door].newsType+" for door "+door+" does not have a display method.");
 							else
-								dsp[dcfg.door[door].NewsType](dcfg.door[door].News);
+								dsp[dcfg.door[door].newsType](dcfg.door[door].news);
 						}
 					}
 				}
 			}
 
 			if(!ucfg.door[door].skipScores) {
-				if(dcfg.door[door].Scores != undefined) {
+				if(dcfg.door[door].scores != undefined) {
 					/*
 					 * If the Scores file has not been updated, don't bother
 					 * Some doors only update the Scores during maintenance
 					 */
 					
-					if(new Date(file_date(dcfg.door[door].Scores)*1000) >= tmp) {
+					if(new Date(file_date(dcfg.door[door].scores)*1000) >= tmp) {
 						/* Assume ANSI */
-						if(dcfg.door[door].ScoresType==undefined)
-							dsp.ANSI(dcfg.door[door].Scores);
+						if(dcfg.door[door].scoresType==undefined)
+							dsp.ANSI(dcfg.door[door].scores);
 						else {
-							if(dsp[dcfg.door[door].ScoresType] == undefined)
-								log("doorscan WARNING Scores type "+dcfg.door[door].ScoresType+" for door "+door+" does not have a display method.");
+							if(dsp[dcfg.door[door].scoresType] == undefined)
+								log("doorscan WARNING Scores type "+dcfg.door[door].scoresType+" for door "+door+" does not have a display method.");
 							else
-								dsp[dcfg.door[door].ScoresType](dcfg.door[door].Scores);
+								dsp[dcfg.door[door].scoresType](dcfg.door[door].scores);
 						}
 					}
 				}
@@ -443,7 +449,32 @@ function UserConfig_configure()
 	 *		defaultSkipRunCount	New entries should set skipRunCount
 	 */
 
+	/*
+	 * Default scan config - new UserConfig(null)
+	 */
+
 	// TODO: User configuration
+}
+
+function sysop_config()
+{
+	/*
+	 * Door Scan configuration
+	 * Per Door:
+	 *		ad					Path to ad file
+	 *		atType				Ad file type
+	 *		score				Path to score file
+	 *		scoreType			Score file type
+	 *		news				Path to News file
+	 *		newsType			News file type
+	 *		skip				Do not include this door in scans
+	 * Globals:
+	 * Top-level:
+	 *		skipSection			Object which contains bool properties
+	 *							If the bool property is true, the door with the
+	 *							same internal code as the property name will
+	 *							not be included in scans.
+	 */
 }
 
 for(i in argv) {
