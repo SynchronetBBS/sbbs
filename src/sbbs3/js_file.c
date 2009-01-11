@@ -1078,9 +1078,13 @@ js_iniSetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 {
 	char*		name="name";
     jsuint      i;
+    jsint       j;
     jsuint      count;
     JSObject*	array;
-	jsval		set_argv[2];
+    JSObject*	object;
+	jsval		oval;
+	jsval		set_argv[3];
+	JSIdArray*	id_array;
 
 	*rval = JSVAL_FALSE;
 
@@ -1100,14 +1104,29 @@ js_iniSetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	/* enumerate the array */
 	for(i=0; i<count; i++)  {
-        if(!JS_GetElement(cx, array, i, &set_argv[1]))
+        if(!JS_GetElement(cx, array, i, &oval))
 			break;
-		if(!JSVAL_IS_OBJECT(set_argv[1]))	/* must be an array of objects */
+		if(!JSVAL_IS_OBJECT(oval))	/* must be an array of objects */
 			break;
-		if(!JS_GetProperty(cx, JSVAL_TO_OBJECT(set_argv[1]), name, &set_argv[0]))
+		object=JSVAL_TO_OBJECT(oval);
+		if(!JS_GetProperty(cx, object, name, &set_argv[0]))
 			continue;
-		if(!js_iniSetObject(cx, obj, 2, set_argv, rval))
-			break;
+		if((id_array=JS_Enumerate(cx,object))==NULL)
+			return(JS_TRUE);
+
+		for(j=0; j<id_array->length; j++)  {
+			/* property */
+			JS_IdToValue(cx,id_array->vector[j],&set_argv[1]);	
+			/* check if not name */
+			if(strcmp(JS_GetStringBytes(JS_ValueToString(cx, set_argv[1])),name)==0)
+				continue;
+			/* value */
+			JS_GetProperty(cx,object,JS_GetStringBytes(JSVAL_TO_STRING(set_argv[1])),&set_argv[2]);
+			if(!js_iniSetValue(cx,obj,3,set_argv,rval))
+				break;
+		}
+
+		JS_DestroyIdArray(cx,id_array);
 	}
 
     return(JS_TRUE);
