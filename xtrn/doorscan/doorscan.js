@@ -95,17 +95,17 @@ function NewsDisplay()
 	this.ASC=NewsDisplay_ASC;
 }
 
-function NewsDisplay_ANSI(filename, ucfg)
+function NewsDisplay_ANSI(filename, since)
 {
 	new Display().ANSI(filename);
 }
 
-function NewsDisplay_ASCII(filename, ucfg)
+function NewsDisplay_ASCII(filename, since)
 {
 	new Display().ASCII(filename);
 }
 
-function NewsDisplay_ASC(filename, ucfg)
+function NewsDisplay_ASC(filename, since)
 {
 	new Display().ASC(filename);
 }
@@ -130,8 +130,15 @@ function DoorConfig(leaveopen)
 			sections[i].lastExit=new Date(sections[i].lastExit);
 		this.door[sections[i].name]=sections[i];
 	}
-	// Not yet used...
 	this.global=this.file.iniGetObject();
+	this.skipSection=new Object();
+	if(this.global.skipSections != undefined) {
+		var sections=this.global.skipSections.split(/,/);
+		for(var sec in sections) {
+			this.skipSection[sections[sec]]=true;
+		}
+		delete this.global.skipSections;
+	}
 
 	var updated=false;
 	for(var door in xtrn_area.prog) {
@@ -163,7 +170,16 @@ function DoorConfig_save()
 	for(var door in this.door)
 		sections.push(this.door[door]);
 
+	var sections=new Array();
+	for(var section in this.skipSection) {
+		if(this.skipSection[section])
+			sections.push(section);
+	}
+	this.global.skipSections=sections.join(',');
+
 	this.file.iniSetObject(null,this.global);
+	delete this.global.skipSections;
+
 	this.file.iniSetAllObjects(sections);
 
 	this.file.close();
@@ -173,25 +189,43 @@ function DoorConfig_save()
 
 function UserConfig(unum, leaveopen)
 {
+	var parsefile=true;
+
 	if(leaveopen==undefined)
 		leaveopen=false;
-	this.file=LockedOpen(format("%suser/%04u.doorscan",system.data_dir,unum), "r+");
-
-	this.user_number=unum;
-
-	var sections=this.file.iniGetAllObjects();
-	if(sections==undefined)
-		sections=new Array();
-
 	this.door=new Object();
-	for(var i in sections) {
-		if(sections[i].lastRan != undefined)
-			sections[i].lastRan=new Date(sections[i].lastRan);
-		if(sections[i].lastExit != undefined)
-			sections[i].lastExit=new Date(sections[i].lastExit);
-		this.door[sections[i].name]=sections[i];
+	this.user_number=unum;
+	this.save=UserConfig_save;
+
+	if(unum==undefined) {
+		this.file=LockedOpen(doorscan_dir+"defaults.ini", "r+");
 	}
-	this.global=this.file.iniGetObject();
+	else {
+		this.file=LockedOpen(format("%suser/%04u.doorscan",system.data_dir,unum), "r+");
+		if(this.file.length==0) {
+			var defaults=new UserConfig();
+
+			this.global=eval(defaults.global.toSource());
+			this.door=eval(defaults.door.toSource());
+			parsefile=false;
+		}
+	}
+
+	if(parsefile) {
+		var sections=this.file.iniGetAllObjects();
+		if(sections==undefined)
+			sections=new Array();
+
+		for(var i in sections) {
+			if(sections[i].lastRan != undefined)
+				sections[i].lastRan=new Date(sections[i].lastRan);
+			if(sections[i].lastExit != undefined)
+				sections[i].lastExit=new Date(sections[i].lastExit);
+			this.door[sections[i].name]=sections[i];
+		}
+		this.global=this.file.iniGetObject();
+	}
+
 	if(this.global.lastScan==undefined) {
 		this.global.lastScan=new Date();
 	}
@@ -199,7 +233,6 @@ function UserConfig(unum, leaveopen)
 		this.global.lastScan=new Date(this.global.lastScan);
 	}
 
-	this.save=UserConfig_save;
 	if(!leaveopen) {
 		this.file.close();
 		Unlock(this.file.name);
@@ -239,7 +272,7 @@ function doScan()
 			/* If the user can't run it, don't display it. */
 			if(!xtrn_area.prog[door].can_run)
 				continue;
-			
+
 			tmp=false;
 			if(dcfg.door[door].ad != undefined) {
 				/* Assume ANSI */
@@ -267,6 +300,8 @@ function doScan()
 	 * newer
 	 */
 	for(door in ucfg.door) {
+		if(dcfg.skipSection[door]!=undefined && dcfg.skipSection[door])
+			continue;
 		tmp=ucfg.global.lastScan;
 		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > tmp)
 			tmp=ucfg.door[door].lastExit;
@@ -388,6 +423,11 @@ for(i in argv) {
 			else
 				throw("XTRN code not included on command-line!");
 			break;
+		case 'test':
+			var dcfg=new DoorConfig();
+			dcfg.save();
+			var ucfg=new UserConfig(user.number);
+			ucfg.save();
 		// TODO: User configuration
 		// TODO: Sysop configuration
 		// TODO: Door popularity rankings
