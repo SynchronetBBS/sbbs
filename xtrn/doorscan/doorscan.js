@@ -272,7 +272,7 @@ function doScan()
 			tmp=ucfg.door[door].lastExit;
 		if(dcfg.door[door].lastRan != undefined && dcfg.door[door].lastRan > tmp) {
 			/* Yes, this has been played... */
-			
+
 			/* News File */
 			if(!ucfg.door[door].skipNews) {
 				if(dcfg.door[door].News != undefined) {
@@ -315,13 +315,14 @@ function doScan()
 					}
 				}
 			}
-			
+
 			if(!ucfg.door[door].skipRunCount) {
 				if(ucfg.door[door].lastRunCount != undefined) {
 					console.attributes=LIGHTCYAN;
 					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+(dcfg.door[door].runCount-ucfg.door[door].lastRunCount)+" times since you last played");
 				}
 			}
+			// TODO: List how many users have played and possible who (needs more logging)
 		}
 	}
 	ucfg=new UserConfig(user.number, true);
@@ -387,9 +388,8 @@ for(i in argv) {
 			else
 				throw("XTRN code not included on command-line!");
 			break;
-		case 'test':
-			var tmp=new DoorConfig();
-			tmp.save();
-			break;
+		// TODO: User configuration
+		// TODO: Sysop configuration
+		// TODO: Door popularity rankings
 	}
 }
