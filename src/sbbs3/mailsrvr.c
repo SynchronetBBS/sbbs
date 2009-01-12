@@ -60,6 +60,7 @@
 #include "js_request.h"
 
 /* Constants */
+static const char*	server_name="Synchronet Mail Server";
 #define FORWARD			"forward:"
 #define NO_FORWARD		"local:"
 
@@ -102,6 +103,7 @@ static time_t	uptime;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
+static js_server_props_t js_server_props;
 
 struct mailproc {
 	char		cmdline[INI_MAX_VALUE_LEN];
@@ -1650,39 +1652,16 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		JS_SetContextPrivate(js_cx, &sock);
 
-		/* Global Object */
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL))==NULL)
+		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
+		if((js_glob=js_CreateCommonObjects(js_cx, &scfg, &scfg, NULL
+					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+					,&js_branch									/* js */
+					,client, sock								/* client */
+					,&js_server_props							/* server */
+			))==NULL)
 			break;
 
-		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
-			break;
-
-		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, js_glob, &js_branch)==NULL)
-			break;
-
-		/* Client Object */
-		if(js_CreateClientObject(js_cx, js_glob, "client", client, sock)==NULL)
-			break;
-
-		/* System Object */
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL)
-			break;
-
-		/* Socket Class */
-		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
-			break;
-
-		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
-			break;
-
-		/* File Class */
-		if(js_CreateFileClass(js_cx, js_glob)==NULL)
-			break;
-
-		/* User class */
-		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+		if(!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* Area and "user" Objects */
@@ -1820,7 +1799,7 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 	if(!stricmp(field, "DATE")) {
 		msg->hdr.when_written=rfc822date(p);
 		*type=UNKNOWN;
-		return SMB_SUCCESS
+		return SMB_SUCCESS;
 	}
 	if(!stricmp(field, "MESSAGE-ID"))
 		return smb_hfield_str(msg, *type=RFC822MSGID, p);
@@ -2709,11 +2688,12 @@ static void smtp_thread(void* arg)
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"Received: from %s (%s [%s])\r\n"
-						"          by %s [%s] (Synchronet Mail Server %s-%s) with %s\r\n"
+						"          by %s [%s] (%s %s-%s) with %s\r\n"
 						"          for %s; %s\r\n"
 						"          (envelope-from %s)"
 						,host_name,hello_name,host_ip
 						,startup->host_name,inet_ntoa(server_addr.sin_addr)
+						,server_name
 						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
 						,rcpt_name,msgdate(msg.hdr.when_imported,date)
@@ -4293,8 +4273,9 @@ const char* DLLCALL mail_ver(void)
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	sprintf(ver,"Synchronet Mail Server %s%s  SMBLIB %s  "
+	sprintf(ver,"%s %s%s  SMBLIB %s  "
 		"Compiled %s %s with %s"
+		,server_name
 		,revision
 #ifdef _DEBUG
 		," Debug"
@@ -4373,6 +4354,13 @@ void DLLCALL mail_server(void* arg)
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 
+	ZERO_VAR(js_server_props);
+	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
+	js_server_props.version_detail=mail_ver();
+	js_server_props.clients=&active_clients;
+	js_server_props.options=&startup->options;
+	js_server_props.interface_addr=&startup->interface_addr;
+
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -4389,7 +4377,8 @@ void DLLCALL mail_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"Synchronet Mail Server Revision %s%s"
+		lprintf(LOG_INFO,"%s Revision %s%s"
+			,server_name
 			,revision
 #ifdef _DEBUG
 			," Debug"
