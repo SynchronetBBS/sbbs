@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -132,7 +132,7 @@ void sbbs_t::log(char *str)
 		fprintf(logfile_fp,"   ");
 		logcol=4; }
 	fprintf(logfile_fp,str);
-	if(str[strlen(str)-1]==LF) {
+	if(*lastchar(str)==LF) {
 		logcol=1;
 		fflush(logfile_fp);
 	}
