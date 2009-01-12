@@ -2995,7 +2995,6 @@ bool sbbs_t::init()
 			lprintf(LOG_ERR,"Perhaps this node is already running");
 			return(false); 
 		}
-		setvbuf(logfile_fp, NULL, _IOLBF, 0);
 
 		if(filelength(fileno(logfile_fp))) {
 			log(crlf);
