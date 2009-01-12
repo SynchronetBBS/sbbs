@@ -2358,6 +2358,10 @@ static void smtp_thread(void* arg)
 						if(!mailproc_match[i])
 							continue;
 
+						if(mailproc_list[i].from!=NULL 
+							&& !findstr_in_list(sender_addr, mailproc_list[i].from))
+							continue;
+
 						if(!mailproc_list[i].passthru)
 							msg_handled=TRUE;
 
@@ -3314,8 +3318,6 @@ static void smtp_thread(void* arg)
 				if(mailproc_list[i].disabled)
 					continue;
 				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
-					continue;
-				if(mailproc_list[i].from!=NULL && !findstr_in_list(p, mailproc_list[i].from))
 					continue;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
