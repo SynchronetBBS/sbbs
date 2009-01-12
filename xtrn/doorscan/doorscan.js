@@ -307,7 +307,7 @@ function UserConfig_addxtrn(xtrn)
 			this.door[xtrn].skipScores=true;
 		if(this.global.defaultSkipNews)
 			this.door[xtrn].skipNews=true;
-		if(ucfg.global.defaultSkipRunCount)
+		if(this.global.defaultSkipRunCount)
 			this.door[xtrn].skipRunCount=true;
 	}
 }
@@ -375,8 +375,9 @@ function runXtrn(xtrn)
 
 	var ucfg=new UserConfig(user.number, true);
 	if(ucfg.door[xtrn] == undefined) {
-		if(!this.global.noAutoScan)
+		if(ucfg.global == undefined || (!ucfg.global.noAutoScan)) {
 			ucfg.addxtrn(xtrn);
+		}
 	}
 
 	if(ucfg.door[xtrn] != undefined)
@@ -385,8 +386,8 @@ function runXtrn(xtrn)
 	ucfg.save();
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
-			&& !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
-		bbs.log_str("   DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
+			|| !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
+		bbs.log_str("DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
 	}
 
 	bbs.exec_xtrn(xtrn);
@@ -396,7 +397,7 @@ function runXtrn(xtrn)
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
 			&& !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
-		bbs.log_str("   DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
+		bbs.log_str("DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
 	}
 
 	dcfg.door[xtrn].lastExit=now;
