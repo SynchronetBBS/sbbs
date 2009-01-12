@@ -31,17 +31,38 @@ function Message_DoCommand(command)
 	var tmp;
 	var sock=new Socket(SOCK_STREAM, "spamc");
 	var ret={message:'', isSpam:false, score:'unknown', threshold:'unknown', symbols:[]};
+	var	inserted_header_fields="";
 
 	if(!sock.connect(this.addr, this.port)) {
 		ret.error='Failed to connect to spamd';
 		return(ret);
 	}
 
+	var content_length = file_size(this.messagefile);
+
+	if(this.reverse_path)
+		inserted_header_fields += "Return-Path: " + this.reverse_path + "\r\n";
+	if(this.hello_name) {
+		inserted_header_fields += format(
+						"Received: from %s (%s [%s])\r\n" +
+						"          by %s [%s] (%s)\r\n" +
+						"          for %s; %s %s\r\n"
+						,client.host_name,this.hello_name,client.ip_address
+						,system.host_name,server.interface_ip_address
+						,server.version
+						,"unknown"
+						,strftime("%a, %d %b %Y %H:%M:%S"),system.zonestr()
+						);
+	}
+	log("SPAMD: inserted headers = " + inserted_header_fields);
+	content_length += inserted_header_fields.length;
+
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
-	sock.write("Content-length: "+file_size(this.messagefile)+"\r\n");
+	sock.write("Content-length: "+content_length+"\r\n");
 	if(this.user)	// Optional
 		sock.write("User: " + this.user + "\r\n");
 	sock.write("\r\n");
+	sock.write(inserted_header_fields);
 	sock.sendfile(this.messagefile);
 	sock.is_writeable=false;
 
