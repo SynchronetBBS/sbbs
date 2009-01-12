@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -101,7 +101,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case USENETNEWSGROUPS:	return("Newsgroups");			/* RFC-compliant */
 
 		case SMTPCOMMAND:		return("SMTPCommand");
-		case SMTPREVERSEPATH:	return("SMTPReversePath");
+		case SMTPREVERSEPATH:	return("Return-Path");			/* RFC-compliant */
 		case SMTPFORWARDPATH:	return("SMTPForwardPath");
 
 		case SMTPSYSMSG:		return("SMTPSysMsg");
