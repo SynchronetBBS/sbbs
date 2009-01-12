@@ -2098,7 +2098,6 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>r+</tt> DENYALL - Does not allow other scripts to open the file when <i>shareable</i> is set to true<br>"
 		"<tt>w+</tt> DENYALL - Does not allow other scripts to open the file when <i>shareable</i> is set to true<br>"
 		"<tt>a+</tt> DENYALL - Does not allow other scripts to open the file when <i>shareable</i> is set to true<br>"
-		"<tt>e&nbsp</tt>  DENYALL - Does not allow other scripts to open the file when <i>shareable</i> is set to true<br>"
 		"When <i>shareable</i> is true uses fopen(), "
 		"and will only attempt to open the file once and will perform no locking.  The behaviour "
 		"when one script has a file opened with <i>shareable</i> set to a different value than is used "
