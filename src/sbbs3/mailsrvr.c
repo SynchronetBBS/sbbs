@@ -108,6 +108,7 @@ static js_server_props_t js_server_props;
 struct mailproc {
 	char		cmdline[INI_MAX_VALUE_LEN];
 	str_list_t	to;
+	str_list_t	from;
 	BOOL		passthru;
 	BOOL		native;
 	BOOL		ignore_on_error;	/* Ignore mail message if cmdline fails */
@@ -3314,6 +3315,8 @@ static void smtp_thread(void* arg)
 					continue;
 				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
 					continue;
+				if(mailproc_list[i].from!=NULL && !findstr_in_list(p, mailproc_list[i].from))
+					continue;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
 						if(stricmp(p,mailproc_list[i].to[j])==0) {
@@ -4233,6 +4236,7 @@ static void cleanup(int code)
 			if(mailproc_list[i].ar!=NULL && mailproc_list[i].ar!=nular)
 				free(mailproc_list[i].ar);
 			strListFree(&mailproc_list[i].to);
+			strListFree(&mailproc_list[i].from);
 		}
 		FREE_AND_NULL(mailproc_list);
 	}
@@ -4448,6 +4452,8 @@ void DLLCALL mail_server(void* arg)
 					SAFECOPY(mailproc_list[i].cmdline,sec_list[i]);
 					mailproc_list[i].to =
 						iniReadStringList(fp,sec_list[i],"to",",",NULL);
+					mailproc_list[i].from =
+						iniReadStringList(fp,sec_list[i],"from",",",NULL);
 					mailproc_list[i].passthru =
 						iniReadBool(fp,sec_list[i],"passthru",TRUE);
 					mailproc_list[i].native =
