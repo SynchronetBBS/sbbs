@@ -1600,7 +1600,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* cmdline
 			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
 			,char* rcptlst_fname, char* proc_err_fname
-			,char* sender, char* sender_addr, char* reverse_path
+			,char* sender, char* sender_addr, char* reverse_path, char* hello_name
 			,int* result)
 {
 	char*		p;
@@ -1719,6 +1719,10 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		JS_DefineProperty(js_cx, js_glob, "reverse_path"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,reverse_path))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "hello_name"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,hello_name))
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		if((js_script=JS_CompileFile(js_cx, js_glob, path))==NULL)
@@ -2378,7 +2382,7 @@ static void smtp_thread(void* arg)
 							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
-								,sender, sender_addr, reverse_path, &j) || j!=0) {
+								,sender, sender_addr, reverse_path, hello_name, &j) || j!=0) {
 #if 0 /* calling exit() in a script causes js_mailproc to return FALSE */
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
 									,socket, str, j);
