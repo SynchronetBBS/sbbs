@@ -466,9 +466,12 @@ function doScan()
 			continue;
 		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
 			continue;
+		var lastPlayed=false;
 		tmp=ucfg.global.lastScan;
-		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > tmp)
+		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > tmp) {
+			lastPlayed=true;
 			tmp=ucfg.door[door].lastExit;
+		}
 		if(dcfg.door[door].lastRan != undefined && dcfg.door[door].lastRan > tmp) {
 			/* Yes, this has been played... */
 
@@ -518,7 +521,7 @@ function doScan()
 			if(!ucfg.door[door].skipRunCount) {
 				if(ucfg.door[door].lastRunCount != undefined) {
 					console.attributes=LIGHTCYAN;
-					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+(dcfg.door[door].runCount-ucfg.door[door].lastRunCount)+" times since you last played");
+					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+(dcfg.door[door].runCount-ucfg.door[door].lastRunCount)+" times since you last "+(lastPlayed?"played":"scanned"));
 				}
 			}
 			// TODO: List how many users have played and possible who (needs more logging)
