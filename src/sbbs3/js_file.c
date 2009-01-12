@@ -187,6 +187,70 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_sopen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		mode="r+";	/* default mode */
+	int			shmode=3;	/* Default share mode is SH_DENYRW */
+	int			real_shmode;
+	uintN		i;
+	JSString*	str;
+	private_t*	p;
+	jsrefcount	rc;
+
+	*rval = JSVAL_FALSE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(p->fp!=NULL)
+		return(JS_TRUE);
+
+	for(i=0;i<argc;i++) {
+		if(JSVAL_IS_STRING(argv[i])) {	/* open mode */
+			if((str = JS_ValueToString(cx, argv[i]))==NULL) {
+				JS_ReportError(cx,"Invalid mode specified: %s",str);
+				return(JS_TRUE);
+			}
+			mode=JS_GetStringBytes(str);
+		} else if(JSVAL_IS_NUMBER(argv[i])) {	/* share mode */
+			if(!JS_ValueToInt32(cx,argv[i],&shmode))
+				return(JS_FALSE);
+		}
+	}
+	SAFECOPY(p->mode,mode);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	switch(shmode) {
+		case 0:
+			real_shmode=SH_COMPAT;
+			break;
+		case 1:
+			real_shmode=SH_DENYNO;
+			break;
+		case 2:
+			real_shmode=SH_DENYWR;
+			break;
+		case 3:
+			real_shmode=SH_DENYRW;
+			break;
+		default:	/* Invalid share mode */
+			real_shmode=-1;
+	}
+	if(real_shmode != -1) {
+		p->fp=_fsopen(p->name,p->mode,real_shmode);
+		if(p->fp!=NULL) {
+			*rval = JSVAL_TRUE;
+			dbprintf(FALSE, p, "opened: %s",p->name);
+		}
+	}
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		mode="r+";	/* default mode */
@@ -2034,6 +2098,29 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"the second open will always succeed.<br>"
 		)
 	,310
+	},		
+	{"sopen",			js_sopen,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"w+\"</tt>] [,share_mode=<tt>SH_DENYRW</tt>]")
+	,JSDOCSTR("open file with DOS share mode<br>"
+		"mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br>"
+		"<tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br>"
+		"<tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br>"
+		"<tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br>"
+		"<tt>r+</tt> open for both reading and writing (the file must exist)<br>"
+		"<tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br>"
+		"<tt>a+</tt> open for reading and appending<br>"
+		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
+		"share_mode (default: <tt>'SH_COMPAT'</tt>) specifies the type of share protection requested for the file, as follows:<br>"
+		"<tt>SH_COMPAT</tt> Sets compatibility mode - Allows other opens with SH_COMPAT. The call will fail if the file has already been opened in any other shared mode.<br>"
+		"<tt>SH_DENYNO</tt> Permits read/write access - Allows other shared opens to the file, but not other SH_COMPAT opens.<br>"
+		"<tt>SH_DENYWR</tt> Denies write access - Allows only reads from any other open to the file<br>"
+		"<tt>SH_DENYRW</tt> Denies read/write access - Only the current object may have access to the file<br>"
+		"<br><b>Note:</b> When using the <tt>iniSet</tt> methods to modify a <tt>.ini</tt> file, "
+		"the file must be opened for both reading and writing.<br>"
+		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing, "
+		"use the <i>file_exists</i> function like so:<br>"
+		"<tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>"
+		)
+	,315
 	},		
 	{"popen",			js_popen,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"r+\"</tt>] [,buffer_length]")
 	,JSDOCSTR("open pipe to command, <i>buffer_length</i> defaults to 2048 bytes, "
