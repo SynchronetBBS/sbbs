@@ -2026,6 +2026,12 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<br><b>Note:</b> To open an existing or create a new file for both reading and writing, "
 		"use the <i>file_exists</i> function like so:<br>"
 		"<tt>file.open(file_exists(file.name) ? 'r+':'w+');</tt>"
+		"<br><b>Note:</b> When <i>shareable</i> is false, uses nopen() which will lock the file "
+		"exclusively and perform automatic retries.  When <i>shareable</i> is true uses fopen(), "
+		"and will only attempt to open the file once and will perform no locking.  The behaviour "
+		"when one script has a file opened with <i>shareable</i> set to a different value than is used "
+		"with a new call is OS specific.  On Windows, the second open will always fail and on *nix, "
+		"the second open will always succeed.<br>"
 		)
 	,310
 	},		
