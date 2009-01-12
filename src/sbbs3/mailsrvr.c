@@ -430,6 +430,11 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	ulong		lines;
 
 	/* HEADERS (in recommended order per RFC822 4.1) */
+
+	if(msg->reverse_path!=NULL)
+		if(!sockprintf(socket,"Return-Path: %s", msg->reverse_path))
+			return(0);
+
 	if(!sockprintf(socket,"Date: %s",msgdate(msg->hdr.when_written,date)))
 		return(0);
 
@@ -1815,13 +1820,18 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 	if(!stricmp(field, "DATE")) {
 		msg->hdr.when_written=rfc822date(p);
 		*type=UNKNOWN;
-		return(0);
+		return SMB_SUCCESS
 	}
 	if(!stricmp(field, "MESSAGE-ID"))
 		return smb_hfield_str(msg, *type=RFC822MSGID, p);
 
 	if(!stricmp(field, "IN-REPLY-TO"))
 		return smb_hfield_str(msg, *type=RFC822REPLYID, p);
+
+	if(!stricmp(field, "RETURN-PATH")) {
+		*type=UNKNOWN;
+		return SMB_SUCCESS;	/* Ignore existing "Return-Path" header fields */
+	}
 
 	/* Fall-through */
 	return smb_hfield_str(msg, *type=RFC822HEADER, buf);
@@ -2700,12 +2710,14 @@ static void smtp_thread(void* arg)
 					snprintf(hdrfield,sizeof(hdrfield),
 						"Received: from %s (%s [%s])\r\n"
 						"          by %s [%s] (Synchronet Mail Server %s-%s) with %s\r\n"
-						"          for %s; %s"
+						"          for %s; %s\r\n"
+						"          (envelope-from %s)"
 						,host_name,hello_name,host_ip
 						,startup->host_name,inet_ntoa(server_addr.sin_addr)
 						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
-						,rcpt_name,msgdate(msg.hdr.when_imported,date));
+						,rcpt_name,msgdate(msg.hdr.when_imported,date)
+						,reverse_path);
 					smb_hfield_str(&newmsg, RFC822HEADER, hdrfield);
 
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
