@@ -115,12 +115,14 @@ function DoorConfig(leaveopen)
 	if(leaveopen==undefined)
 		leaveopen=false;
 	this.file=LockedOpen(doorscan_dir+"doors.ini", "r+");
+	this.save=DoorConfig_save;
+	this.door=new Object();
+	this.skipSection=new Object();
 
 	var sections=this.file.iniGetAllObjects();
 	if(sections==undefined)
 		sections=new Array();
 
-	this.door=new Object();
 	for(var i in sections) {
 		if(sections[i].installed != undefined)
 			sections[i].installed=new Date(sections[i].installed);
@@ -131,7 +133,6 @@ function DoorConfig(leaveopen)
 		this.door[sections[i].name]=sections[i];
 	}
 	this.global=this.file.iniGetObject();
-	this.skipSection=new Object();
 	if(this.global.skipSections != undefined) {
 		var sections=this.global.skipSections.split(/,/);
 		for(var sec in sections) {
@@ -149,26 +150,22 @@ function DoorConfig(leaveopen)
 		}
 	}
 	if(updated) {
-		this.file.iniSetObject(null,this.global);
-		this.file.iniSetAllObjects(sections);
+		this.save(leaveopen);
 	}
-
-	this.save=DoorConfig_save;
-	if(!leaveopen) {
-		this.file.close();
-		Unlock(this.file.name);
+	else {
+		if(!leaveopen) {
+			this.file.close();
+			Unlock(this.file.name);
+		}
 	}
 }
 
-function DoorConfig_save()
+function DoorConfig_save(leaveopen)
 {
+	if(leaveopen==undefined)
+		leaveopen=false;
 	if(!this.file.is_open)
 		this.file=LockedOpen(this.file.name, "r+");
-
-	var sections=new Array();
-
-	for(var door in this.door)
-		sections.push(this.door[door]);
 
 	var sections=new Array();
 	for(var section in this.skipSection) {
@@ -180,10 +177,35 @@ function DoorConfig_save()
 	this.file.iniSetObject(null,this.global);
 	delete this.global.skipSections;
 
+	sections=new Array();
+
+	for(var door in this.door) {
+		/* Convert dates to strings */
+		if(this.door[door].installed != undefined)
+			this.door[door].installed=this.door[door].installed.toString();
+		if(this.door[door].lastRan != undefined)
+			this.door[door].lastRan=this.door[door].lastRan.toString();
+		if(this.door[door].lastExit != undefined)
+			this.door[door].lastExit=this.door[door].lastExit.toString();
+		sections.push(this.door[door]);
+	}
+
 	this.file.iniSetAllObjects(sections);
 
-	this.file.close();
-	Unlock(this.file.name);
+	for(door in this.door) {
+		/* Convert strings back to dates */
+		if(this.door[door].installed != undefined)
+			this.door[door].installed=new Date(this.door[door].installed);
+		if(this.door[door].lastRan != undefined)
+			this.door[door].lastRan=new Date(this.door[door].lastRan);
+		if(this.door[door].lastExit != undefined)
+			this.door[door].lastExit=new Date(this.door[door].lastExit);
+	}
+
+	if(!leaveopen) {
+		this.file.close();
+		Unlock(this.file.name);
+	}
 	return(true);
 }
 
@@ -247,15 +269,146 @@ function UserConfig_save()
 		this.file=LockedOpen(this.file.name, "r+");
 	var sections=new Array();
 
-	for(var door in this.door)
+	for(var door in this.door) {
+		/* Dates to strings */
+		if(this.door[door].lastRan!=undefined)
+			this.door[door].lastRan=this.door[door].lastRan.toString();
+		if(this.door[door].lastExit!=undefined)
+			this.door[door].lastRan=this.door[door].lastExit.toString();
 		sections.push(this.door[door]);
+	}
 
+	this.global.lastScan=this.global.lastScan.toString();
 	this.file.iniSetObject(null,this.global);
+	this.global.lastScan=new Date(this.global.lastScan.toString());
+
 	this.file.iniSetAllObjects(sections);
+
+	for(var door in this.door) {
+		/* Strings to Dates */
+		if(this.door[door].lastRan!=undefined)
+			this.door[door].lastRan=new Date(this.door[door].lastRan);
+		if(this.door[door].lastExit!=undefined)
+			this.door[door].lastRan=new Date(this.door[door].lastExit);
+		sections.push(this.door[door]);
+	}
 
 	this.file.close();
 	Unlock(this.file.name);
 	return(true);
+}
+
+function UserConfig_addxtrn(xtrn)
+{
+	if(this.door[xtrn] == undefined) {
+		this.door[xtrn]=new Object();
+		this.door[xtrn].name=xtrn;
+		if(this.global.defaultSkipScores)
+			this.door[xtrn].skipScores=true;
+		if(this.global.defaultSkipNews)
+			this.door[xtrn].skipNews=true;
+		if(ucfg.global.defaultSkipRunCount)
+			this.door[xtrn].skipRunCount=true;
+	}
+}
+
+function UserConfig_configure()
+{
+	var dcfg=new DoorConfig();
+
+	/*
+	 * User settings
+	 * Per Door: 
+	 *		skipNews			Does not display the configured news file
+	 *		skipScores			Does not display the configured scores file
+	 *		skipRunCount		Does not display the number of times ran
+	 * Globals:
+	 *		lastScan			Date/Time of last scan
+	 *		addNew				New doors should be added to the scan config
+	 *		noAutoScan			Do not add doors which ara ran to the scan
+	 *		defaultSkipNews		New entries should set skipNews
+	 *		defaultSkipScores	New entries should set skipScores
+	 *		defaultSkipRunCount	New entries should set skipRunCount
+	 */
+
+	/*
+	 * Default scan config - new UserConfig(null)
+	 */
+
+	// TODO: User configuration
+}
+
+function sysop_config()
+{
+	/*
+	 * Door Scan configuration
+	 * Per Door:
+	 *		ad					Path to ad file
+	 *		atType				Ad file type
+	 *		score				Path to score file
+	 *		scoreType			Score file type
+	 *		news				Path to News file
+	 *		newsType			News file type
+	 *		skip				Do not include this door in scans
+	 * Globals:
+	 * Top-level:
+	 *		skipSection			Object which contains bool properties
+	 *							If the bool property is true, the door with the
+	 *							same internal code as the property name will
+	 *							not be included in scans.
+	 */
+}
+
+function runXtrn(xtrn)
+{
+	if(xtrn_area.prog[xtrn]==undefined)
+		throw("Unknown external: "+xtrn);
+	if(!xtrn_area.prog[xtrn].can_run)
+		throw("User "+user.name+" is not allowed to run "+xtrn);
+
+	var now=new Date();
+	var dcfg=new DoorConfig(true);
+
+	dcfg.door[xtrn].lastRan=now;
+	dcfg.door[xtrn].runCount++;
+	dcfg.save();
+
+	var ucfg=new UserConfig(user.number, true);
+	if(ucfg.door[xtrn] == undefined) {
+		if(!this.global.noAutoScan)
+			ucfg.addxtrn(xtrn);
+	}
+
+	if(ucfg.door[xtrn] != undefined)
+		ucfg.door[xtrn].lastRan=now;
+
+	ucfg.save();
+
+	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
+			&& !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
+		bbs.log_str("   DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
+	}
+
+	bbs.exec_xtrn(xtrn);
+
+	now=new Date();
+	dcfg=new DoorConfig(true);
+
+	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
+			&& !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
+		bbs.log_str("   DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
+	}
+
+	dcfg.door[xtrn].lastExit=now;
+	dcfg.save();
+
+	ucfg=new UserConfig(user.number, true);
+	if(ucfg.door[xtrn] != undefined) {
+		ucfg.door[xtrn].lastExit=now;
+		ucfg.door[xtrn].lastRunCount=dcfg.door[xtrn].runCount;
+	}
+
+	ucfg.save();
 }
 
 function doScan()
@@ -373,108 +526,6 @@ function doScan()
 	ucfg=new UserConfig(user.number, true);
 	ucfg.global.lastScan=new Date();
 	ucfg.save();
-}
-
-function UserConfig_addxtrn(xtrn)
-{
-	if(this.door[xtrn] == undefined) {
-		this.door[xtrn]=new Object();
-		this.door[xtrn].name=xtrn;
-		if(this.global.defaultSkipScores)
-			this.door[xtrn].skipScores=true;
-		if(this.global.defaultSkipNews)
-			this.door[xtrn].skipNews=true;
-		if(ucfg.global.defaultSkipRunCount)
-			this.door[xtrn].skipRunCount=true;
-	}
-}
-
-function runXtrn(xtrn)
-{
-	if(xtrn_area.prog[xtrn]==undefined)
-		throw("Unknown external: "+xtrn);
-	if(!xtrn_area.prog[xtrn].can_run)
-		throw("User "+user.name+" is not allowed to run "+xtrn);
-
-	var now=new Date();
-	var dcfg=new DoorConfig(true);
-
-	dcfg.door[xtrn].lastRan=now;
-	dcfg.door[xtrn].runCount++;
-	dcfg.save();
-
-	var ucfg=new UserConfig(user.number, true);
-	if(ucfg.door[xtrn] == undefined) {
-		if(!this.global.noAutoScan)
-			ucfg.addxtrn(xtrn);
-	}
-
-	if(ucfg.door[xtrn] != undefined)
-		ucfg.door[xtrn].lastRan=now;
-
-	ucfg.save();
-
-	bbs.exec_xtrn(xtrn);
-
-	dcfg=new DoorConfig(true);
-
-	dcfg.door[xtrn].lastExit=now;
-	dcfg.save();
-
-	ucfg=new UserConfig(user.number, true);
-	if(ucfg.door[xtrn] != undefined) {
-		ucfg.door[xtrn].lastExit=now;
-		ucfg.door[xtrn].lastRunCount=dcfg.door[xtrn].runCount;
-	}
-
-	ucfg.save();
-}
-
-function UserConfig_configure()
-{
-	var dcfg=new DoorConfig();
-
-	/*
-	 * User settings
-	 * Per Door: 
-	 *		skipNews			Does not display the configured news file
-	 *		skipScores			Does not display the configured scores file
-	 *		skipRunCount		Does not display the number of times ran
-	 * Globals:
-	 *		lastScan			Date/Time of last scan
-	 *		addNew				New doors should be added to the scan config
-	 *		noAutoScan			Do not add doors which ara ran to the scan
-	 *		defaultSkipNews		New entries should set skipNews
-	 *		defaultSkipScores	New entries should set skipScores
-	 *		defaultSkipRunCount	New entries should set skipRunCount
-	 */
-
-	/*
-	 * Default scan config - new UserConfig(null)
-	 */
-
-	// TODO: User configuration
-}
-
-function sysop_config()
-{
-	/*
-	 * Door Scan configuration
-	 * Per Door:
-	 *		ad					Path to ad file
-	 *		atType				Ad file type
-	 *		score				Path to score file
-	 *		scoreType			Score file type
-	 *		news				Path to News file
-	 *		newsType			News file type
-	 *		skip				Do not include this door in scans
-	 * Globals:
-	 * Top-level:
-	 *		skipSection			Object which contains bool properties
-	 *							If the bool property is true, the door with the
-	 *							same internal code as the property name will
-	 *							not be included in scans.
-	 */
 }
 
 for(i in argv) {
