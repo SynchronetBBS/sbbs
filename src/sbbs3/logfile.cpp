@@ -132,8 +132,10 @@ void sbbs_t::log(char *str)
 		fprintf(logfile_fp,"   ");
 		logcol=4; }
 	fprintf(logfile_fp,str);
-	if(str[strlen(str)-1]==LF)
+	if(str[strlen(str)-1]==LF) {
 		logcol=1;
+		fflush(logfile_fp);
+	}
 	else
 		logcol+=strlen(str);
 }
@@ -179,6 +181,7 @@ void sbbs_t::logline(const char *code, const char *str)
 		fprintf(logfile_fp,"\r\n");
 	fprintf(logfile_fp,"%-2.2s %s\r\n",code,str);
 	logcol=1;
+	fflush(logfile_fp);
 }
 
 /****************************************************************************/
