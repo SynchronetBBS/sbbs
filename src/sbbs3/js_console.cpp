@@ -1424,11 +1424,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,310
 	},		
 	{"yesno",			js_yesno,			1, JSTYPE_BOOLEAN,	JSDOCSTR("question")
-	,JSDOCSTR("YES/no question")
+	,JSDOCSTR("YES/no question - returns <i>true</i> if yes is selected")
 	,310
 	},		
 	{"noyes",			js_noyes,			1, JSTYPE_BOOLEAN,	JSDOCSTR("question")
-	,JSDOCSTR("NO/yes question")
+	,JSDOCSTR("NO/yes question - returns <i>true</i> if no is selected")
 	,310
 	},		
 	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		JSDOCSTR("text")
