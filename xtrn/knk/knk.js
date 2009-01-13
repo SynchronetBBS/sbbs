@@ -282,10 +282,10 @@ function Player_produce()
 
 	if(this.soldiers) {
 		if(this.gold < this.soldiers) {
-			console.attributes=LIGHTGREEN;
+			console.attributes |= HIGH;
 			console.writeln("* "+(this.soldiers-this.gold)+" of "+this.refer_posessive+" men defected from not being paid!!");
 			this.soldiers=this.gold;
-			console.attributes=GREEN;
+			console.attributes &= ~HIGH;
 		}
 	}
 	if(this.soldiers) {
@@ -304,10 +304,10 @@ function Player_produce()
 	if(this.soldiers) {
 		var canfeed=parseInt(this.food/2);
 		if(canfeed < this.soldiers) {
-			console.attributes=LIGHTGREEN;
+			console.attributes |= HIGH;
 			console.writeln("* "+(this.soldiers-canfeed)+" of "+this.refer_posessive+" soldiers have starved to death!!");
 			this.soldiers=canfeed;
-			console.attributes=GREEN;
+			console.attributes &= ~HIGH;
 		}
 	}
 	tmp=this.soldiers*2;
@@ -317,10 +317,10 @@ function Player_produce()
 
 	if(this.civilians) {
 		if(this.food < this.civilians) {
-			console.attributes=LIGHTGREEN;
+			console.attributes |= HIGH;
 			console.writeln("* "+(this.civilians-this.food)+" of "+this.refer_posessive+" citizens have starved to death!!");
 			this.civilians=this.food;
-			console.attributes=GREEN;
+			console.attributes &= ~HIGH;
 		}
 	}
 	if(this.civilians)
