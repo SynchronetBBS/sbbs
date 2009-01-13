@@ -613,10 +613,12 @@ function LogParser_parselog(filename)
 
 	if(this.parsed[filename]!=undefined)
 		return
-	if(!f.open("rb", true)) {
-		if(f.exists)
-			throw("Unable to open file "+filename);
+	if(!f.exists) {
+		this.parsed[filename]=true;
+		return;
 	}
+	if(!f.open("rb", true))
+		throw("Unable to open file "+filename);
 	while((line=f.readln())!=null) {
 		if(line=='') {
 			uname=undefined;
@@ -677,38 +679,49 @@ function LogParser_parsesince(since)
 	var nm,nd,ny;
 	var i;
 
+	if(this.donesince!=undefined) {
+		if(this.donesince <= since)
+			return;
+		now=this.donesince;
+	}
+	m=ldate.getMonth();
+	d=ldate.getDate();
+	y=ldate.getFullYear();
 	nm=now.getMonth();
 	nd=now.getDate();
 	ny=now.getFullYear();
+
+	/* Silly paranoia */
+	if(y < ny - 100) {
+		ldate=eval(now.toSource());
+		ldate.setFullYear(ldate.getFullYear()-100);
+		y=ldate.getFullYear();
+	}
+	if(y == ny-100) {
+		while(m <= nm) {
+			m++;
+			if(m==12) {
+				ldate.setFullYear(y+1);
+				ldate.setMonth(0);
+				break;
+			}
+			else {
+				ldate.setMonth(m);
+			}
+		}
+	}
 
 	while(ldate <= now) {
 		m=ldate.getMonth();
 		d=ldate.getDate();
 		y=ldate.getFullYear();
 
-		/* Silly paranoia */
-		if(y < ny - 100) {
-			ldate=eval(now.toSource());
-			ldate.setFullYear(ldate.getFullYear()-99);
-			continue;
-		}
-		if(y == ny-100) {
-			if(m <= nm) {
-				m++;
-				if(m==12) {
-					ldate.setFullYear(y+1);
-					ldate.setMonth(0);
-				}
-				else {
-					ldate.setMonth(m);
-				}
-				continue;
-			}
-		}
 		fname=format("%slogs/%2.2d%2.2d%2.2d.log",system.data_dir,m+1,d,y%100);
 		this.parseLog(fname);
 		ldate.setDate(ldate.getDate()+1);
 	}
+
+	this.donesince=since;
 
 	for(i in system.node_list) {
 		this.parseLog(system.node_list[i].dir);
