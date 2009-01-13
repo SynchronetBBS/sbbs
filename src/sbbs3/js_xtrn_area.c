@@ -48,6 +48,7 @@ static char* xtrn_sec_prop_desc[] = {
 	,"external program section internal code"
 	,"external program section name"
 	,"external program section access requirements"
+	,"user has sufficient access to enter this section <i>(introduced in v3.15)</i>"
 	,NULL
 };
 
@@ -283,6 +284,13 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, secobj, "ars", &val))
+			return(NULL);
+
+		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user))
+			val=JSVAL_TRUE;
+		else
+			val=JSVAL_FALSE;
+		if(!JS_SetProperty(cx, progobj, "can_access", &val))
 			return(NULL);
 
 		/* prog_list[] */
