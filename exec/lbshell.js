@@ -860,6 +860,7 @@ function draw_main(topline)
 	/* Disable CTRL keys that we "know" how to handle. */
 	console.ctrlkey_passthru="+KOPTU";
 	if(topline) {
+		console.line_counter=0;
 		console.clear();
 		cleararea(1,1,console.screen_columns,console.screen_rows,true);
 	}
