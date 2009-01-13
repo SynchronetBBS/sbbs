@@ -218,6 +218,7 @@ function NewsDisplay()
 	this.ANSI=NewsDisplay_ANSI;
 	this.ASCII=NewsDisplay_ASCII;
 	this.ASC=NewsDisplay_ASC;
+	this.LORD=NewsDisplay_LORD;
 }
 
 function NewsDisplay_ANSI(filename, since)
@@ -233,6 +234,18 @@ function NewsDisplay_ASCII(filename, since)
 function NewsDisplay_ASC(filename, since)
 {
 	new Display().ASC(filename);
+}
+
+function NewsDisplay_LORD(filename, since)
+{
+	var now=new Date();
+
+	/*
+	 * TODO: Show yesterdays log...
+	 */
+	//if(now.getDate() != since.getDate()) {
+	//}
+	new Display().LORD(filename);
 }
 
 function DoorConfig(leaveopen)
@@ -439,7 +452,7 @@ function UserConfig_addxtrn(xtrn)
 	}
 }
 
-function UserConfig_configure(dcfg, sec)
+function UserConfig_configure()
 {
 	var door;
 	var index=new Array();
@@ -456,15 +469,15 @@ function UserConfig_configure(dcfg, sec)
 			index.push(sec);
 			console.uselect(index.length, "External Program Section", xtrn_area.sec[sec].name);
 		}
-		console.uselect(index.length, "External Program Section", "Global Settings");
+		console.uselect(index.length+1, "External Program Section", "Global Settings");
 		if(index.length==0)
 			return;
 		xsec=console.uselect();
-		if(xsec < 1 || xsec > index.length) {
+		if(xsec < 1 || xsec > index.length+1) {
 			this.save();
 			return;
 		}
-		if(xsec < index.length)
+		if(xsec <= index.length)
 			this.configureSec(dcfg, index[xsec-1]);
 		else
 			this.configureDefaults();
@@ -698,25 +711,189 @@ function LogParser_usersOfSince(xtrn, since)
 	return(ret);
 }
 
+//==============================
+
+function sysop_config_externs(dcfg)
+{
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xsec;
+
+	while(1) {
+		for(sec in xtrn_area.sec) {
+			index.push(sec);
+			console.uselect(index.length, "External Program Section", xtrn_area.sec[sec].name);
+		}
+		if(index.length==0)
+			return;
+		xsec=console.uselect();
+		if(xsec < 1 || xsec >= index.length)
+			return;
+		sysop_config_externs_sec(dcfg, index[xsec-1]);
+	}
+}
+
+function sysop_get_newstype(dflt)
+{
+	var i=0;
+	var news=new NewsDisplay();
+	var index=new Array();
+
+	for(var t in news) {
+		index.push(t);
+		console.uselect(index.length, "News File Type", t);
+	}
+	i=console.uselect();
+	if(i < 1 || i > index.length)
+		return(dflt);
+	return(index[i-1]);
+	
+}
+
+function sysop_get_scorestype(dflt)
+{
+	var i=0;
+	var news=new NewsDisplay();
+	var index=new Array();
+
+	for(var t in news) {
+		index.push(t);
+		console.uselect(index.length, "Scores File Type", t);
+	}
+	i=console.uselect();
+	if(i < 1 || i > index.length)
+		return(dflt);
+	return(index[i-1]);
+}
+
+function sysop_config_externs_sec(dcfg, sec)
+{
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xprog;
+
+	while(1) {
+		for(door in xtrn_area.prog) {
+			if(xtrn_area.prog[door].sec_code != sec)
+				continue;
+			index.push(door);
+			console.uselect(index.length, "External",xtrn_area.prog[door].name);
+		}
+		if(!index.length)
+			return;
+		xprog=console.uselect();
+		if(xprog < 1 || xprog > index.length)
+			return;
+		sysop_config_externs_prog(dcfg, index[xprog-1]);
+	}
+}
+
+function sysop_config_externs_prog(dcfg, door)
+{
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xprog;
+
+	while(1) {
+		console.uselect(1, door+" Scan Config", "Skip this door "+(dcfg.door[door].skip?"Yes":"No"));
+		console.uselect(2, door+" Scan Config", "Ad File: "+(dcfg.door[door].ad?dcfg.door[door].ad:''));
+		console.uselect(3, door+" Scan Config", "Ad Type: "+(dcfg.door[door].adType));
+		console.uselect(4, door+" Scan Config", "Score File: "+(dcfg.door[door].score?dcfg.door[door].score:''));
+		console.uselect(5, door+" Scan Config", "Score Type: "+(dcfg.door[door].scoreType));
+		console.uselect(6, door+" Scan Config", "News File: "+(dcfg.door[door].news?dcfg.door[door].news:''));
+		console.uselect(7, door+" Scan Config", "News Type: "+(dcfg.door[door].newsType));
+		switch(console.uselect()) {
+			case 1:
+				dcfg.door[door].skip=!dcfg.door[door].skip;
+				break;
+			case 2:
+				if(dcfg.door[door].ad==undefined)
+					dcfg.door[door].ad='';
+				dcfg.door[door].ad=console.getstr(dcfg.door[door].ad, K_EDIT);
+				if(dcfg.door[door].ad=='')
+					delete dcfg.door[door].ad;
+				break;
+			case 3:
+				dcfg.door[door].adType=sysop_get_scorestype(dcfg.door[door].adType==undefined?'ANSI':dcfg.door[door].adType);
+				break;
+			case 4:
+				if(dcfg.door[door].score==undefined)
+					dcfg.door[door].score='';
+				dcfg.door[door].score=console.getstr(dcfg.door[door].score, K_EDIT);
+				if(dcfg.door[door].score=='')
+					delete dcfg.door[door].score;
+				break;
+			case 5:
+				dcfg.door[door].scoreType=sysop_get_scorestype(dcfg.door[door].scoreType==undefined?'ANSI':dcfg.door[door].scoreType);
+				break;
+			case 6:
+				if(dcfg.door[door].news==undefined)
+					dcfg.door[door].news='';
+				dcfg.door[door].news=console.getstr(dcfg.door[door].news, K_EDIT);
+				if(dcfg.door[door].news=='')
+					delete dcfg.door[door].news;
+				break;
+			case 7:
+				dcfg.door[door].newsType=sysop_get_scorestype(dcfg.door[door].newsType==undefined?'ANSI':dcfg.door[door].newsType);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+//==============================
+
+
+function sysop_config_skip(dcfg)
+{
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xsec;
+
+	while(1) {
+		for(sec in xtrn_area.sec) {
+			index.push(sec);
+			console.uselect(index.length, "External Program Section", 
+					format("%-40s %s",xtrn_area.sec[sec].name
+					,(dcfg.skipSection[sec] != undefined && dcfg.skipSection[sec])?"Skip":"Include"));
+		}
+		if(index.length==0)
+			return;
+		xsec=console.uselect();
+		if(xsec < 1 || xsec > index.length)
+			return;
+		dcfg.skipSection[index[xsec-1]]=!dcfg.skipSection[index[xsec-1]];
+	}
+}
+
 function sysop_config()
 {
-	/*
-	 * Door Scan configuration
-	 * Per Door:
-	 *		ad					Path to ad file
-	 *		atType				Ad file type
-	 *		score				Path to score file
-	 *		scoreType			Score file type
-	 *		news				Path to News file
-	 *		newsType			News file type
-	 *		skip				Do not include this door in scans
-	 * Globals:
-	 * Top-level:
-	 *		skipSection			Object which contains bool properties
-	 *							If the bool property is true, the door with the
-	 *							same internal code as the property name will
-	 *							not be included in scans.
-	 */
+	var dcfg=new DoorConfig();
+
+	while(1) {
+		console.uselect(1, "DoorScan Setting", "Modify default scan settings");
+		console.uselect(2, "DoorScan Setting", "Mark sections to skip");
+		console.uselect(3, "DoorScan Setting", "Configure individual externals");
+		switch(console.uselect()) {
+			case 1:
+				new UserConfig().configure();
+				break;
+			case 2:
+				sysop_config_skip(dcfg);
+				break;
+			case 3:
+				sysop_config_externs(dcfg);
+				break;
+			default:
+				dcfg.save();
+				return;
+		}
+	}
 }
 
 function runXtrn(xtrn)
@@ -860,21 +1037,21 @@ function doScan()
 			}
 
 			if(!ucfg.door[door].skipScores) {
-				if(dcfg.door[door].scores != undefined) {
+				if(dcfg.door[door].score != undefined) {
 					/*
 					 * If the Scores file has not been updated, don't bother
 					 * Some doors only update the Scores during maintenance
 					 */
 					
-					if(new Date(file_date(dcfg.door[door].scores)*1000) >= scantime) {
+					if(new Date(file_date(dcfg.door[door].score)*1000) >= scantime) {
 						/* Assume ANSI */
-						if(dcfg.door[door].scoresType==undefined)
-							dsp.ANSI(dcfg.door[door].scores);
+						if(dcfg.door[door].scoreType==undefined)
+							dsp.ANSI(dcfg.door[door].score);
 						else {
-							if(dsp[dcfg.door[door].scoresType] == undefined)
-								log("doorscan WARNING Scores type "+dcfg.door[door].scoresType+" for door "+door+" does not have a display method.");
+							if(dsp[dcfg.door[door].scoreType] == undefined)
+								log("doorscan WARNING Scores type "+dcfg.door[door].scoreType+" for door "+door+" does not have a display method.");
 							else
-								dsp[dcfg.door[door].scoresType](dcfg.door[door].scores);
+								dsp[dcfg.door[door].scoreType](dcfg.door[door].score);
 						}
 					}
 				}
@@ -931,7 +1108,7 @@ for(i in argv) {
 			new UserConfig(user.number).configure();
 			break;
 		case 'sysconfig':
-			// TODO: Sysop configuration
+			sysop_config();
 			break;
 		case 'rank':
 			// TODO: Door popularity rankings
