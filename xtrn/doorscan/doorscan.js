@@ -611,12 +611,12 @@ function LogParser_parselog(filename)
 	var line;
 	var m;
 
+	if(this.parsed[filename]!=undefined)
+		return
 	if(!f.open("rb", true)) {
 		if(f.exists)
 			throw("Unable to open file "+filename);
 	}
-	if(this.parsed[filename]!=undefined)
-		return
 	while((line=f.readln())!=null) {
 		if(line=='') {
 			uname=undefined;
