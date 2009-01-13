@@ -993,6 +993,10 @@ function doScan()
 
 	/* First, look for new doors */
 	for(door in dcfg.door) {
+		if(xtrn_area.prog[door]==undefined) {
+			log("Unknown door! "+door);
+			continue;
+		}
 		if(dcfg.skipSection[xtrn_area.prog[door].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[door].sec_code])
 			continue;
 		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
