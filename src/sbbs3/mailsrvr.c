@@ -106,7 +106,9 @@ static int		mailproc_count;
 static js_server_props_t js_server_props;
 
 struct mailproc {
+	char		name[INI_MAX_VALUE_LEN];
 	char		cmdline[INI_MAX_VALUE_LEN];
+	char		eval[INI_MAX_VALUE_LEN];
 	str_list_t	to;
 	str_list_t	from;
 	BOOL		passthru;
@@ -1599,6 +1601,7 @@ static JSFunctionSpec js_global_functions[] = {
 static BOOL
 js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* cmdline
+			,char* eval
 			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
 			,char* rcptlst_fname, char* proc_err_fname
 			,char* sender, char* sender_addr, char* reverse_path, char* hello_name
@@ -1726,7 +1729,11 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,hello_name))
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-		if((js_script=JS_CompileFile(js_cx, js_glob, path))==NULL)
+		if(eval!=NULL && *eval!=0)
+			js_script=JS_CompileScript(js_cx, js_glob, eval, strlen(eval), NULL, 1);
+		else
+			js_script=JS_CompileFile(js_cx, js_glob, path);
+		if(js_script==NULL)
 			break;
 
 		success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
@@ -2044,7 +2051,7 @@ static void smtp_thread(void* arg)
 	smtp_t		smtp=*(smtp_t*)arg;
 	SOCKADDR_IN server_addr;
 	IN_ADDR		dnsbl_result;
-	BOOL*		mailproc_match;
+	BOOL*		mailproc_to_match;
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
@@ -2088,14 +2095,14 @@ static void smtp_thread(void* arg)
 		return;
 	} 
 
-	if((mailproc_match=alloca(sizeof(BOOL)*mailproc_count))==NULL) {
-		lprintf(LOG_ERR,"%04d !SMTP ERROR allocating memory for mailproc_match", socket);
+	if((mailproc_to_match=alloca(sizeof(BOOL)*mailproc_count))==NULL) {
+		lprintf(LOG_ERR,"%04d !SMTP ERROR allocating memory for mailproc_to_match", socket);
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
 		return;
 	} 
-	memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
+	memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 
 	memset(&smb,0,sizeof(smb));
 	memset(&msg,0,sizeof(msg));
@@ -2354,8 +2361,14 @@ static void smtp_thread(void* arg)
 					remove(proc_err_fname);
 
 					for(i=0;i<mailproc_count;i++) {
+	
+						if(mailproc_list[i].disabled)
+							continue;
 
-						if(!mailproc_match[i])
+						if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
+							continue;
+
+						if(mailproc_list[i].to!=NULL && !mailproc_to_match[i])
 							continue;
 
 						if(mailproc_list[i].from!=NULL 
@@ -2385,6 +2398,7 @@ static void smtp_thread(void* arg)
 							}
 						} else {  /* JavaScript */
 							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
+								,mailproc_list[i].eval
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
 								,sender, sender_addr, reverse_path, hello_name, &j) || j!=0) {
@@ -3050,7 +3064,7 @@ static void smtp_thread(void* arg)
 			}
 			rcpt_count=0;
 
-			memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
+			memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 
 			sockprintf(socket,ok_rsp);
 			badcmds=0;
@@ -3313,24 +3327,12 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 
-			memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
 			for(i=0;i<mailproc_count;i++) {
-				if(mailproc_list[i].disabled)
-					continue;
-				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
-					continue;
-				if(mailproc_list[i].to!=NULL) {
-					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
-						if(stricmp(p,mailproc_list[i].to[j])==0) {
-							mailproc_match[i]=TRUE;
-							if(!mailproc_list[i].passthru)
-								break;
-						}
-					}
-					if(mailproc_list[i].to[j]!=NULL)
+				if(!mailproc_to_match[i]) {
+					mailproc_to_match[i]=findstr_in_list(p, mailproc_list[i].to);
+					if(mailproc_to_match[i] && !mailproc_list[i].passthru)
 						break;
-				} else
-					mailproc_match[i]=TRUE;
+				}
 			}
 			/* destined for an external mail processor */
 			if(i<mailproc_count) {
@@ -3340,7 +3342,7 @@ static void smtp_thread(void* arg)
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),1);
 #endif
 				lprintf(LOG_INFO,"%04d SMTP Routing mail for %s to External Mail Processor: %s"
-					,socket, rcpt_addr, mailproc_list[i].cmdline);
+					,socket, rcpt_addr, mailproc_list[i].name);
 				sockprintf(socket,ok_rsp);
 				state=SMTP_STATE_RCPT_TO;
 				continue;
@@ -4451,17 +4453,21 @@ void DLLCALL mail_server(void* arg)
 				char buf[INI_MAX_VALUE_LEN+1];
 				for(i=0;i<mailproc_count;i++) {
 					memset(&mailproc_list[i],0,sizeof(struct mailproc));
-					SAFECOPY(mailproc_list[i].cmdline,sec_list[i]);
+					SAFECOPY(mailproc_list[i].name,sec_list[i]);
+					SAFECOPY(mailproc_list[i].cmdline,
+						iniReadString(fp,sec_list[i],"Command",sec_list[i],buf));
+					SAFECOPY(mailproc_list[i].eval,
+						iniReadString(fp,sec_list[i],"Eval","",buf));
 					mailproc_list[i].to =
-						iniReadStringList(fp,sec_list[i],"to",",",NULL);
+						iniReadStringList(fp,sec_list[i],"To",",",NULL);
 					mailproc_list[i].from =
-						iniReadStringList(fp,sec_list[i],"from",",",NULL);
+						iniReadStringList(fp,sec_list[i],"From",",",NULL);
 					mailproc_list[i].passthru =
-						iniReadBool(fp,sec_list[i],"passthru",TRUE);
+						iniReadBool(fp,sec_list[i],"PassThru",TRUE);
 					mailproc_list[i].native =
-						iniReadBool(fp,sec_list[i],"native",FALSE);
+						iniReadBool(fp,sec_list[i],"Native",FALSE);
 					mailproc_list[i].disabled = 
-						iniReadBool(fp,sec_list[i],"disabled",FALSE);
+						iniReadBool(fp,sec_list[i],"Disabled",FALSE);
 					mailproc_list[i].ignore_on_error = 
 						iniReadBool(fp,sec_list[i],"IgnoreOnError",FALSE);
 					mailproc_list[i].ar = 
