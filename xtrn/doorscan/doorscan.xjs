@@ -1,0 +1,42 @@
+<html>
+<head>
+  <title>Monthly Door Log for <? write(system.name) ?></title>
+</head>
+<body>
+<? load("../xtrn/doorscan/doorscan.js");
+   var lp=new LogParser(); ?>
+  <table>
+    <tr>
+      <th>Door Name:</th>
+      <th>Users</th>
+      <th>Times Played</th>
+      <th>Time Spent Playing</th>
+    <tr>
+<?
+	var alldoors=new Array();
+	var since=new Date();
+	since.setMonth(since.getMonth()-1);
+	for(door in xtrn_area.prog) {
+		if(!user.compare_ars(xtrn_area.prog.ars))
+			continue;
+		var tr=lp.usersOfSince(door, since);
+		if(tr.total > 0)
+			alldoors.push(tr);
+	}
+	alldoors=alldoors.sort(function (a,b) {
+			return(b.total-a.total);
+		});
+	for(door in alldoors) {
+?>
+    <tr>
+      <td><? write(xtrn_area.prog[alldoors[door].prog].name) ?></td>
+      <td align="center"><? write(alldoors[door].users) ?></td>
+      <td align="center"><? write(alldoors[door].total) ?></td>
+      <td align="center"><? write(system.secondstr(alldoors[door].total_duration)) ?></td>
+    </tr>
+<?
+	}
+?>
+  </table>
+</body>
+</html>
