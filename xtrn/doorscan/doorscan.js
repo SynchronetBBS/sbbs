@@ -724,6 +724,7 @@ function LogParser_usersOfSince(xtrn, since)
 	ret.total=0;
 	ret.total_duration=0;
 	ret.users=0;
+	ret.prog=xtrn;
 
 	for(var i in this.door[xtrn].log) {
 		if(this.door[xtrn].log[i].date >= since) {
