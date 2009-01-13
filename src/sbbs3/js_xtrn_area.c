@@ -72,6 +72,7 @@ static char* xtrn_prog_prop_desc[] = {
 	,"extra time given to users running this program"
 	,"maximum time allowed in program"
 	,"execution cost (credits to run this program)"
+	,"user has sufficient access to see this program"
 	/* Insert here */
 	,"user has sufficient access to run this program"
 	,NULL
@@ -350,6 +351,13 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user))
+				val=JSVAL_TRUE;
+			else
+				val=JSVAL_FALSE;
+			if(!JS_SetProperty(cx, progobj, "can_access", &val))
 				return(NULL);
 
 			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user))
