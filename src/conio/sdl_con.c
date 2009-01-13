@@ -504,8 +504,10 @@ char *sdl_getcliptext(void)
 			ret=(char *)malloc(strlen(sdl_pastebuf)+1);
 			if(ret!=NULL)
 				strcpy(ret,sdl_pastebuf);
-			sdl.SemPost(sdl_pastebuf_copied);
 		}
+		else
+			retNULL;
+		sdl.SemPost(sdl_pastebuf_copied);
 		return(ret);
 
 	}
@@ -519,8 +521,10 @@ char *sdl_getcliptext(void)
 			ret=(char *)malloc(strlen(sdl_pastebuf)+1);
 			if(ret!=NULL)
 				strcpy(ret,sdl_pastebuf);
-			sdl.SemPost(sdl_pastebuf_copied);
 		}
+		else
+			ret=NULL;
+		sdl.SemPost(sdl_pastebuf_copied);
 		return(ret);
 	}
 #endif
