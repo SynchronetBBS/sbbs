@@ -1,5 +1,5 @@
 You will need to run the setup utility using jsexec.
-/sbbs/exec/jsexec ../xtrn/twint500.js
+/sbbs/exec/jsexec ../xtrn/tw2/twint500.js
 
 (Modify the paths as appropriate... the path to twint500.js is relative to the
 ctrl directory.)
