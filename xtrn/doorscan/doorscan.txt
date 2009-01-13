@@ -1,0 +1,103 @@
+DoorScan is a utility to notify users of which externals have been ran, how
+often, and by whom.
+
+To function properly, doorscan must be used to launch all the monitored doors
+on your BBS.  Integrating doorscan into your BBS is done as follows:
+
+Setting up the login event:
+===========================
+The actual scan should be ran during the users login.  There are a few
+different ways of accomplishing this:
+1) As a logon fixed event:
+	SCFG -> External Programs -> Fixed Events -> Logon Event
+	Set to "*../xtrn/doorscan/doorscan.js scan"
+
+2) As an External
+	SCFG -> External Programs -> Online Programs (Doors) -> Main 
+	-> Available Online Programs -> Add
+
+	Name                       Door Scan                    
+	Internal Code              DOORSCAN                     
+	Start-up Directory                                      
+	Command Line               ?../xtrn/doorscan/doorscan.js scan
+	Clean-up Command Line                                   
+	Execution Cost             None                         
+	Access Requirements                                     
+	Execution Requirements                                  
+	Multiple Concurrent Users  Yes                          
+	Intercept Standard I/O     No                           
+	Native (32-bit) Executable No                           
+	Use Shell to Execute       No                           
+	Modify User Data           No                           
+	Execute on Event           Logon, Only                  
+	Pause After Execution      No                           
+	BBS Drop File Type         None                         
+	Place Drop File In         Node Directory               
+
+3) In your logon script.
+	For logon.js, add the following line where appropriate:
+	load("../xtrn/doorscan/doorscan.js","scan");
+
+Integrating Doorscan Into your Shell
+====================================
+If your shell uses xtrn_sec.js (as most do) edit xtrn_sec.js and look for the
+line "bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code);"
+Comment out that line and replace it with:
+//bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code);
+try {
+    load("../xtrn/doorscan/doorscan.js","run",xtrn_area.sec_list[xsec].prog_list[i].code);
+}
+catch(e) {
+    console.writeln("DOORSCAN ERROR: "+e);
+    log("Error running "+xtrn_area.sec_list[xsec].prog_list[i].code+" "+e);
+}
+
+If your shell does not use xtrn_sec.js, you should be able to figure out how to
+modify it to accomlish the same end.
+
+Adding a Door Scan Configuration Item
+=====================================
+	SCFG -> External Programs -> Online Programs (Doors) -> Main 
+	-> Available Online Programs -> Add
+
+	Name                       Door Scan Configuration      
+	Internal Code              DOORSCFG                     
+	Start-up Directory                                      
+	Command Line               ?../xtrn/doorscan/doorscan.js config
+	Clean-up Command Line                                   
+	Execution Cost             None                         
+	Access Requirements                                     
+	Execution Requirements                                  
+	Multiple Concurrent Users  Yes                          
+	Intercept Standard I/O     No                           
+	Native (32-bit) Executable No                           
+	Use Shell to Execute       No                           
+	Modify User Data           No                           
+	Execute on Event           No                           
+	Pause After Execution      No                           
+	BBS Drop File Type         None                         
+	Place Drop File In         Node Directory               
+
+Adding a SYSOP Configuration Item
+=================================
+	SCFG -> External Programs -> Online Programs (Doors) -> Main 
+	-> Available Online Programs -> Add
+
+	Name                       Door Scan Sysop Config      
+	Internal Code              DOORSSC                     
+	Start-up Directory                                     
+	Command Line               ../xtrn/doorscan/doorscan.js sysconfig
+	Clean-up Command Line                                  
+	Execution Cost             None                        
+	Access Requirements        LEVEL 90                    
+	Execution Requirements     LEVEL 90                    
+	Multiple Concurrent Users  Yes                         
+	Intercept Standard I/O     No                          
+	Native (32-bit) Executable No                          
+	Use Shell to Execute       No                          
+	Modify User Data           No                          
+	Execute on Event           No                          
+	Pause After Execution      No                          
+	BBS Drop File Type         None                        
+	Place Drop File In         Node Directory              
+
