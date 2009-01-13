@@ -572,47 +572,6 @@ function UserConfig_configure_sec(dcfg, sec)
 				&& this.door[index[xprog-1]].skipNews)
 			delete this.door[index[xprog-1]];
 	}
-
-	// External:                        News | Scores | Run Count
-	// 1) Kannons and Katapults          Y   |   Y    |  Y
-	// 2) TradeWars v2                   Y   |   Y    |  Y
-	//
-	// Select External: 1
-	//
-	// Enter the first letter of the items to SKIP or 'D' to delete from the scan: N
-	//
-	// External:                        News | Scores | Run Count
-	// 1) Kannons and Katapults          N   |   Y    |  Y
-	// 2) TradeWars v2                   Y   |   Y    |  Y
-	//
-	// Select External: 2
-	//
-	// Enter the first letter of the items to SKIP or 'D' to delete from the scan: D
-	//
-	// External:                        News | Scores | Run Count
-	// 1) Kannons and Katapults          N   |   Y    |  Y
-	// 2) TradeWars v2                   -   |   -    |  -
-	//
-	/*
-	 * User settings
-	 * Per Door: 
-	 *		skipNews			Does not display the configured news file
-	 *		skipScores			Does not display the configured scores file
-	 *		skipRunCount		Does not display the number of times ran
-	 * Globals:
-	 *		lastScan			Date/Time of last scan
-	 *		addNew				New doors should be added to the scan config
-	 *		noAutoScan			Do not add doors which ara ran to the scan
-	 *		defaultSkipNews		New entries should set skipNews
-	 *		defaultSkipScores	New entries should set skipScores
-	 *		defaultSkipRunCount	New entries should set skipRunCount
-	 */
-
-	/*
-	 * Default scan config - new UserConfig(null).configure()
-	 */
-
-	// TODO: User configuration
 }
 
 function LogParser()
