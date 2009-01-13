@@ -606,6 +606,8 @@ function LogParser_parselog(filename)
 {
 	var f=new File(filename);
 	var uname=undefined;
+	var dname=undefined;
+	var obj=undefined;
 	var line;
 	var m;
 
@@ -618,18 +620,42 @@ function LogParser_parselog(filename)
 	while((line=f.readln())!=null) {
 		if(line=='') {
 			uname=undefined;
+			dname=undefined;
+			obj=undefined;
 		}
 		else if((m=line.match(/^\+\+ \([0-9]+\)  (.{25})  Logon [0-9]+ - [0-9]+$/))!=null) {
 			uname=m[1].replace(/^(.*?)\s*$/,"$1");
 		}
 		else if((m=line.match(/^   DOORSCAN - (.+?) starting @ (.*)$/))!=null) {
 			if(uname!=undefined) {
+				dname=m[1];
 				if(this.door[m[1]]!=undefined) {
-					this.door[m[1]].log.push({user:uname, date:(new Date(m[2]))});
+					obj={user:uname, date:(new Date(m[2])), elapsed:0};
+					this.door[m[1]].log.push(obj);
 				}
 				else {
 					log("Door "+m[1]+" logged but not configured");
 				}
+			}
+			else {
+				log("User name not found for line "+line);
+			}
+		}
+		else if((m=line.match(/^   DOORSCAN - (.+?) ending @ (.*)$/))!=null) {
+			if(uname!=undefined) {
+				if(this.door[m[1]]!=undefined) {
+					if(m[1]==dname) {
+						obj.elapsed += (new Date(m[2]) - obj.date)/1000;
+					}
+					else {
+						log("Door "+m[1]+" exited without starting");
+					}
+				}
+				else {
+					log("Door "+m[1]+" logged but not configured");
+				}
+				dname=undefined;
+				obj=undefined;
 			}
 			else {
 				log("User name not found for line "+line);
@@ -696,16 +722,21 @@ function LogParser_usersOfSince(xtrn, since)
 	var ret=new Object();
 	ret.user=new Object();
 	ret.total=0;
+	ret.total_duration=0;
 	ret.users=0;
 
 	for(var i in this.door[xtrn].log) {
 		if(this.door[xtrn].log[i].date >= since) {
 			ret.total++;
+			ret.total_duration+=this.door[xtrn].log[i].elapsed;
 			if(ret.user[this.door[xtrn].log[i].user]==undefined) {
-				ret.user[this.door[xtrn].log[i].user]=0;
+				ret.user[this.door[xtrn].log[i].user]=new Object();
+				ret.user[this.door[xtrn].log[i].user].duration=0;
+				ret.user[this.door[xtrn].log[i].user].count=0;
 				ret.users++;
 			}
-			ret.user[this.door[xtrn].log[i].user]++;
+			ret.user[this.door[xtrn].log[i].user].count++;
+			ret.user[this.door[xtrn].log[i].user].duration+=this.door[xtrn].log[i].elapsed;
 		}
 	}
 	return(ret);
@@ -1061,13 +1092,13 @@ function doScan()
 				if(ucfg.door[door].lastRunCount != undefined) {
 					var rc=logdetails.usersOfSince(door, scantime);
 					console.attributes=LIGHTCYAN;
-					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+rc.total+" times by "+rc.users+" users since you last "+(lastPlayed?"played":"scanned")+"\r\n");
+					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+rc.total+" times for "+system.secondstr(rc.total_duration)+" by "+rc.users+" users since you last "+(lastPlayed?"played":"scanned")+"\r\n");
 					tmp=false;
 					var str;
 					var str1;
 					for(var i in rc.user) {
 						var col=0;
-						str1=format("%s (%u)", i, rc.user[i]);
+						str1=format("%s (%u for %s)", i, rc.user[i].count, system.secondstr(rc.user[i].duration));
 						if(!tmp) {
 							str='';
 							tmp=true;
