@@ -859,8 +859,10 @@ function draw_main(topline)
 	 */
 	/* Disable CTRL keys that we "know" how to handle. */
 	console.ctrlkey_passthru="+KOPTU";
-	if(topline)
+	if(topline) {
+		console.clear();
 		cleararea(1,1,console.screen_columns,console.screen_rows,true);
+	}
 	else
 		cleararea(1,2,console.screen_columns,console.screen_rows,true);
 }
@@ -1879,6 +1881,8 @@ function show_messagemenu()
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
 				while(1) {
+					var subonly;
+
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1892,28 +1896,49 @@ function show_messagemenu()
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 							bbs.scan_subs(SCAN_FIND, /* All? */true);
+							console.crlf();
+							if(console.line_counter)
+								console.pause();
 							draw_main(true);
 							messagemenu.draw();
 							break;
 						case 'G':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
 							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
-							if(str.length)
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-									if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
-										break;
+							if(str.length) {
+								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++) {
+									if(subonly)
+										bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
+									else {
+										if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
+											break;
+									}
+								}
+							}
+							console.crlf();
+							if(console.line_counter)
+								console.pause();
 							draw_main(true);
 							messagemenu.draw();
 							break;
 						case 'S':
 							clear_screen();
 							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
 							console.putmsg(bbs.text(SearchStringPrompt));
 							str=console.getstr("",40,K_LINE|K_UPPER);
-							if(str.length)
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+							if(str.length) {
+								if(subonly)
+									bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+								else
+									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+							}
+							console.crlf();
+							if(console.line_counter)
+								console.pause();
 							draw_main(true);
 							messagemenu.draw();
 							break;
