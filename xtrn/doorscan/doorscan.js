@@ -1,4 +1,5 @@
 load("sbbsdefs.js");
+load("text.js");
 load("lockfile.js");
 
 var doorscan_dir='.';
@@ -20,7 +21,7 @@ function LockedOpen(filename, fmode)
 		wr=true;
 	}
 
-	/* TODO: Possible race here in mode */
+	/* TODO: Possible race condition here in mode */
 	var m=fmode.match(/[rwa]/);
 	if(m==null)
 		throw("Unknown file mode "+fmode);
@@ -53,6 +54,7 @@ function Display()
 	this.ANSI=Display_ANSI;
 	this.ASCII=Display_ASCII;
 	this.ASC=Display_ASC;
+	this.LORD=Display_LORD;
 }
 
 function Display_ANSI(filename)
@@ -80,6 +82,129 @@ function Display_ASCII(filename)
 function Display_ASC(filename)
 {
 	console.printfile(filename);
+	return(true);
+}
+
+function Display_LORD(filename)
+{
+	var f=LockedOpen(filename, "rb");
+	var txt;
+	var out='';
+
+	while((txt=f.read())!=undefined) {
+		txt=f.read();
+		if(txt==undefined || txt=='')
+			break;
+		for(var i=0; i<txt.length; i++) {
+			var ch=charAt(i);
+			if(ch=='`') {
+				if(out.length)
+					console.write(out);
+				out='';
+				ch=txt.charAt(++i);
+				switch(ch) {
+					case '*':
+						console.attributes=BLINK|BLACK|BG_RED;
+						break;
+					case '1':
+						console.attributes=BLUE;
+						break;
+					case '2':
+						console.attributes=GREEN;
+						break;
+					case '3':
+						console.attributes=CYAN;
+						break;
+					case '4':
+						console.attributes=RED;
+						break;
+					case '5':
+						console.attributes=MAGENTA;
+						break;
+					case '6':
+						console.attributes=BROWN;
+						break;
+					case '7':
+						console.attributes=LIGHTGRAY;
+						break;
+					case '8':
+						console.attributes=DARKGRAY;
+						break;
+					case '9':
+						console.attributes=LIGHTBLUE;
+						break;
+					case '0':
+						console.attributes=LIGHTGREEN;
+						break;
+					case '!':
+						console.attributes=LIGHTCYAN;
+						break;
+					case '@':
+						console.attributes=LIGHTRED;
+						break;
+					case '#':
+						console.attributes=LIGHTMAGENTA;
+						break;
+					case '$':
+						console.attributes=YELLOW;
+						break;
+					case '%':
+						console.attributes=WHITE;
+						break;
+					case 'r':
+						ch=txt.charAt(++i);
+						switch(ch) {
+						case '0':
+							console.attributes=BG_BLACK;
+							break;
+						case '1':
+							console.attributes=BG_BLUE;
+							break;
+						case '2':
+							console.attributes=BG_GREEN;
+							break;
+						case '3':
+							console.attributes=BG_CYAN;
+							break;
+						case '4':
+							console.attributes=BG_RED;
+							break;
+						case '5':
+							console.attributes=BG_MAGENTA;
+							break;
+						case '6':
+							console.attributes=BG_BROWN;
+							break;
+						case '7':
+							console.attributes=BG_LIGHTGRAY;
+							break;
+						}
+						break;
+					case 'c':
+						console.clear();
+						console.crlf();
+						console.crlf();
+						break;
+					case 'l':
+						console.attributes=GREEN;
+						console.write('  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+						break;
+					case '`':
+						ch=console.getkey(K_NOCRLF);
+						break;
+					case 'b':
+					case ')':
+						console.attributes=BLINK|RED;
+						break;
+				}
+			}
+			else {
+				out += ch;
+			}
+		}
+	}
+	if(out.length)
+		console.write(out);
 	return(true);
 }
 
@@ -114,7 +239,7 @@ function DoorConfig(leaveopen)
 {
 	if(leaveopen==undefined)
 		leaveopen=false;
-	this.file=LockedOpen(doorscan_dir+"doors.ini", "r+");
+	this.file=LockedOpen(doorscan_dir+"doors.ini", "rb+");
 	this.save=DoorConfig_save;
 	this.door=new Object();
 	this.skipSection=new Object();
@@ -165,7 +290,7 @@ function DoorConfig_save(leaveopen)
 	if(leaveopen==undefined)
 		leaveopen=false;
 	if(!this.file.is_open)
-		this.file=LockedOpen(this.file.name, "r+");
+		this.file=LockedOpen(this.file.name, "rb+");
 
 	var sections=new Array();
 	for(var section in this.skipSection) {
@@ -220,12 +345,14 @@ function UserConfig(unum, leaveopen)
 	this.save=UserConfig_save;
 	this.addxtrn=UserConfig_addxtrn;
 	this.configure=UserConfig_configure;
+	this.configureSec=UserConfig_configure_sec;
+	this.configureDefaults=UserConfig_configure_defaults;
 
 	if(unum==undefined) {
-		this.file=LockedOpen(doorscan_dir+"defaults.ini", "r+");
+		this.file=LockedOpen(doorscan_dir+"defaults.ini", "rb+");
 	}
 	else {
-		this.file=LockedOpen(format("%suser/%04u.doorscan",system.data_dir,unum), "r+");
+		this.file=LockedOpen(format("%suser/%04u.doorscan",system.data_dir,unum), "rb+");
 		if(this.file.length==0) {
 			var defaults=new UserConfig();
 
@@ -266,7 +393,7 @@ function UserConfig(unum, leaveopen)
 function UserConfig_save()
 {
 	if(!this.file.is_open)
-		this.file=LockedOpen(this.file.name, "r+");
+		this.file=LockedOpen(this.file.name, "rb+");
 	var sections=new Array();
 
 	for(var door in this.door) {
@@ -312,10 +439,160 @@ function UserConfig_addxtrn(xtrn)
 	}
 }
 
-function UserConfig_configure()
+function UserConfig_configure(dcfg, sec)
 {
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xsec;
 	var dcfg=new DoorConfig();
 
+	while(1) {
+		for(sec in xtrn_area.sec) {
+			if(!user.compare_ars(xtrn_area.sec[sec]))
+				continue;
+			if(dcfg.skipSection[sec]!=undefined && dcfg.skipSection[sec])
+				continue;
+			index.push(sec);
+			console.uselect(index.length, "External Program Section", xtrn_area.sec[sec].name);
+		}
+		console.uselect(index.length, "External Program Section", "Global Settings");
+		if(index.length==0)
+			return;
+		xsec=console.uselect();
+		if(xsec < 1 || xsec > index.length) {
+			this.save();
+			return;
+		}
+		if(xsec < index.length)
+			this.configureSec(dcfg, index[xsec-1]);
+		else
+			this.configureDefaults();
+	}
+}
+
+function UserConfig_configure_defaults()
+{
+	while(1) {
+		console.uselect(1, "Global Setting", "Add all new externals to your scan           "+(this.global.addNew?"Yes":"No"));
+		console.uselect(2, "Global Setting", "Add externals to your scan when you run them "+(this.global.noAutoScan?"No":"Yes"));
+		console.uselect(3, "Global Setting", "Default to showing updated news entries      "+(this.global.defaultSkipNews?"No":"Yes"));
+		console.uselect(4, "Global Setting", "Default to showing updated scores entries    "+(this.global.defaultSkipScores?"No":"Yes"));
+		console.uselect(5, "Global Setting", "Default to showing run counts                "+(this.global.skipRunCount?"No":"Yes"));
+		switch(console.uselect()) {
+			case 1:
+				this.global.addNew=!this.global.addNew;
+				break;
+			case 2:
+				this.global.noAutoScan=!this.global.noAutoScan;
+				break;
+			case 3:
+				this.global.defaultSkipNews=!this.global.defaultSkipNews;
+				break;
+			case 4:
+				this.global.defaultSkipScores=!this.global.defaultSkipScores;
+				break;
+			case 5:
+				this.global.skipRunCount=!this.global.skipRunCount;
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+function UserConfig_configure_sec(dcfg, sec)
+{
+	var door;
+	var index=new Array();
+	var n,s,r;
+	var xprog;
+
+	while(1) {
+		for(door in xtrn_area.prog) {
+			if(xtrn_area.prog[door].sec_code != sec)
+				continue;
+			if(dcfg.skipSection[xtrn_area.prog[door].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[door].sec_code])
+				continue;
+			if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
+				continue;
+			index.push(door);
+			if(this.door[door]==undefined) {
+				n=ascii('-');
+				s=ascii('-');
+				r=ascii('-');
+			}
+			else {
+				n=s=r=ascii('Y');
+				if(dcfg.door[door].news==undefined)
+					n=ascii('-');
+				else {
+					if(this.door[door].skipNews)
+						n=ascii('N');
+				}
+				if(dcfg.door[door].score==undefined)
+					s=ascii('-');
+				else {
+					if(this.door[door].skipScores)
+						s=ascii('N');
+				}
+				if(this.door[door].skipRunCount)
+					r=ascii('N');
+			}
+			console.uselect(index.length,"External                                News  Scores  Run Count"
+					,format("%-40s   %c      %c         %c",xtrn_area.prog[door].name,n,s,r));
+		}
+		if(!index.length)
+			return;
+		xprog=console.uselect();
+		if(xprog < 1 || xprog > index.length)
+			return;
+		console.crlf();
+		if(this.door[index[xprog-1]]==undefined)
+			this.addxtrn(index[xprog-1]);
+		if(dcfg.door[index[xprog-1]].news!=undefined) {
+			if(this.door[index[xprog-1]].skipNews)
+				this.door[index[xprog-1]].skipNews=console.noyes("Show updated news files");
+			else
+				this.door[index[xprog-1]].skipNews=!console.yesno("Show updated news files");
+		}
+		if(dcfg.door[index[xprog-1]].score!=undefined) {
+			if(this.door[index[xprog-1]].skipScore)
+				this.door[index[xprog-1]].skipScore=console.noyes("Show updated score files");
+			else
+				this.door[index[xprog-1]].skipScore=!console.yesno("Show updated score files");
+
+		}
+		if(this.door[index[xprog-1]].skipRunCount)
+			this.door[index[xprog-1]].skipRunCount=console.noyes("Show run counts");
+		else
+			this.door[index[xprog-1]].skipRunCount=!console.yesno("Show run counts");
+		if(this.door[index[xprog-1]].skipRunCount
+				&& this.door[index[xprog-1]].skipScore
+				&& this.door[index[xprog-1]].skipNews)
+			delete this.door[index[xprog-1]];
+	}
+
+	// External:                        News | Scores | Run Count
+	// 1) Kannons and Katapults          Y   |   Y    |  Y
+	// 2) TradeWars v2                   Y   |   Y    |  Y
+	//
+	// Select External: 1
+	//
+	// Enter the first letter of the items to SKIP or 'D' to delete from the scan: N
+	//
+	// External:                        News | Scores | Run Count
+	// 1) Kannons and Katapults          N   |   Y    |  Y
+	// 2) TradeWars v2                   Y   |   Y    |  Y
+	//
+	// Select External: 2
+	//
+	// Enter the first letter of the items to SKIP or 'D' to delete from the scan: D
+	//
+	// External:                        News | Scores | Run Count
+	// 1) Kannons and Katapults          N   |   Y    |  Y
+	// 2) TradeWars v2                   -   |   -    |  -
+	//
 	/*
 	 * User settings
 	 * Per Door: 
@@ -332,10 +609,134 @@ function UserConfig_configure()
 	 */
 
 	/*
-	 * Default scan config - new UserConfig(null)
+	 * Default scan config - new UserConfig(null).configure()
 	 */
 
 	// TODO: User configuration
+}
+
+function LogParser()
+{
+	var door;
+	this.door=new Object();
+	this.parsed=new Object();
+	this.parseLog=LogParser_parselog;
+	this.parseSince=LogParser_parsesince;
+	this.usersOfSince=LogParser_usersOfSince;
+
+	for(door in xtrn_area.prog) {
+		this.door[door]=new Object();
+		this.door[door].log=new Array();
+	}
+}
+
+function LogParser_parselog(filename)
+{
+	var f=new File(filename);
+	var uname=undefined;
+	var line;
+	var m;
+
+	if(!f.open("rb", true)) {
+		if(f.exists)
+			throw("Unable to open file "+filename);
+	}
+	if(this.parsed[filename]!=undefined)
+		return
+	while((line=f.readln())!=null) {
+		if(line=='') {
+			uname=undefined;
+		}
+		else if((m=line.match(/^\+\+ \([0-9]+\)  (.{25})  Logon [0-9]+ - [0-9]+$/))!=null) {
+			uname=m[1].replace(/^(.*?)\s*$/,"$1");
+		}
+		else if((m=line.match(/^   DOORSCAN - (.+?) starting @ (.*)$/))!=null) {
+			if(uname!=undefined) {
+				if(this.door[m[1]]!=undefined) {
+					this.door[m[1]].log.push({user:uname, date:(new Date(m[2]))});
+				}
+				else {
+					log("Door "+m[1]+" logged but not configured");
+				}
+			}
+			else {
+				log("User name not found for line "+line);
+			}
+		}
+	}
+	this.parsed[f.name]=true;
+}
+
+/*
+ * Inclusive
+ */
+function LogParser_parsesince(since)
+{
+	var fname;
+	var ldate=eval(since.toSource());
+	var now=new Date();
+	var m,d,y;
+	var nm,nd,ny;
+	var i;
+
+	nm=now.getMonth();
+	nd=now.getDate();
+	ny=now.getFullYear();
+
+	while(ldate <= now) {
+		m=ldate.getMonth();
+		d=ldate.getDate();
+		y=ldate.getFullYear();
+
+		/* Silly paranoia */
+		if(y < ny - 100) {
+			ldate=eval(now.toSource());
+			ldate.setFullYear(ldate.getFullYear()-99);
+			continue;
+		}
+		if(y == ny-100) {
+			if(m <= nm) {
+				m++;
+				if(m==12) {
+					ldate.setFullYear(y+1);
+					ldate.setMonth(0);
+				}
+				else {
+					ldate.setMonth(m);
+				}
+				continue;
+			}
+		}
+		fname=format("%slogs/%2.2d%2.2d%2.2d.log",system.data_dir,m+1,d,y%100);
+		this.parseLog(fname);
+		ldate.setDate(ldate.getDate()+1);
+	}
+
+	for(i in system.node_list) {
+		this.parseLog(system.node_list[i].dir);
+	}
+}
+
+function LogParser_usersOfSince(xtrn, since)
+{
+	this.parseSince(since);
+
+	var ret=new Object();
+	ret.user=new Object();
+	ret.total=0;
+	ret.users=0;
+
+	for(var i in this.door[xtrn].log) {
+		if(this.door[xtrn].log[i].date >= since) {
+			ret.total++;
+			if(ret.user[this.door[xtrn].log[i].user]==undefined) {
+				ret.user[this.door[xtrn].log[i].user]=0;
+				ret.users++;
+			}
+			ret.user[this.door[xtrn].log[i].user]++;
+		}
+	}
+	return(ret);
 }
 
 function sysop_config()
@@ -386,7 +787,7 @@ function runXtrn(xtrn)
 	ucfg.save();
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
-			|| !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
+			|| !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
 		bbs.log_str("DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
 	}
 
@@ -396,7 +797,7 @@ function runXtrn(xtrn)
 	dcfg=new DoorConfig(true);
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
-			&& !(dcfg.skipSection[xtrn]!=undefined && dcfg.skipSection[xtrn])) {
+			&& !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
 		bbs.log_str("DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
 	}
 
@@ -418,11 +819,13 @@ function doScan()
 	var ucfg=new UserConfig(user.number);
 	var dsp=new Display();
 	var door;
+	var scantime;
 	var tmp;
+	var logdetails=new LogParser();
 
 	/* First, look for new doors */
 	for(door in dcfg.door) {
-		if(dcfg.skipSection[door]!=undefined && dcfg.skipSection[door])
+		if(dcfg.skipSection[xtrn_area.prog[door].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[door].sec_code])
 			continue;
 		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
 			continue;
@@ -462,17 +865,17 @@ function doScan()
 	 * newer
 	 */
 	for(door in ucfg.door) {
-		if(dcfg.skipSection[door]!=undefined && dcfg.skipSection[door])
+		if(dcfg.skipSection[xtrn_area.prog[door].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[door].sec_code])
 			continue;
 		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
 			continue;
 		var lastPlayed=false;
-		tmp=ucfg.global.lastScan;
-		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > tmp) {
+		scantime=ucfg.global.lastScan;
+		if(ucfg.door[door].lastExit != undefined && ucfg.door[door].lastExit > scantime) {
 			lastPlayed=true;
-			tmp=ucfg.door[door].lastExit;
+			scantime=ucfg.door[door].lastExit;
 		}
-		if(dcfg.door[door].lastRan != undefined && dcfg.door[door].lastRan > tmp) {
+		if(dcfg.door[door].lastRan != undefined && dcfg.door[door].lastRan > scantime) {
 			/* Yes, this has been played... */
 
 			/* News File */
@@ -483,7 +886,7 @@ function doScan()
 					 * Some doors only update the news during maintenance
 					 */
 					
-					if(new Date(file_date(dcfg.door[door].news)*1000) >= tmp) {
+					if(new Date(file_date(dcfg.door[door].news)*1000) >= scantime) {
 						/* Assume ANSI */
 						if(dcfg.door[door].newsType==undefined)
 							dsp.ANSI(dcfg.door[door].news);
@@ -504,7 +907,7 @@ function doScan()
 					 * Some doors only update the Scores during maintenance
 					 */
 					
-					if(new Date(file_date(dcfg.door[door].scores)*1000) >= tmp) {
+					if(new Date(file_date(dcfg.door[door].scores)*1000) >= scantime) {
 						/* Assume ANSI */
 						if(dcfg.door[door].scoresType==undefined)
 							dsp.ANSI(dcfg.door[door].scores);
@@ -520,11 +923,33 @@ function doScan()
 
 			if(!ucfg.door[door].skipRunCount) {
 				if(ucfg.door[door].lastRunCount != undefined) {
+					var rc=logdetails.usersOfSince(door, scantime);
 					console.attributes=LIGHTCYAN;
-					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+(dcfg.door[door].runCount-ucfg.door[door].lastRunCount)+" times since you last "+(lastPlayed?"played":"scanned"));
+					console.writeln(xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section has been ran "+rc.total+" times by "+rc.users+" users since you last "+(lastPlayed?"played":"scanned")+"\r\n");
+					tmp=false;
+					var str;
+					var str1;
+					for(var i in rc.user) {
+						var col=0;
+						str1=format("%s (%u)", i, rc.user[i]);
+						if(!tmp) {
+							str='';
+							tmp=true;
+						}
+						else {
+							str=', ';
+						}
+						if(col + str.length+str1.length > 77) {
+							str += '\r\n';
+							console.writeln(str);
+							str='';
+							col=0;
+						}
+						str += str1;
+						console.write(str);
+					}
 				}
 			}
-			// TODO: List how many users have played and possible who (needs more logging)
 		}
 	}
 	ucfg=new UserConfig(user.number, true);
@@ -548,6 +973,14 @@ for(i in argv) {
 			dcfg.save();
 			var ucfg=new UserConfig(user.number);
 			ucfg.save();
+			var lp=new LogParser();
+			var sd=new Date();
+			sd.setFullYear(sd.getFullYear()-1);
+			var us=lp.usersOfSince('knk',sd);
+			writeln("total="+us.total);
+			for(var i in us.user) {
+				writeln(i+"="+us.user[i]);
+			}
 			break;
 		case 'config':
 			new UserConfig(user.number).configure();
