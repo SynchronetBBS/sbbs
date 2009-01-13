@@ -927,20 +927,6 @@ for(i in argv) {
 			else
 				throw("XTRN code not included on command-line!");
 			break;
-		case 'test':
-			var dcfg=new DoorConfig();
-			dcfg.save();
-			var ucfg=new UserConfig(user.number);
-			ucfg.save();
-			var lp=new LogParser();
-			var sd=new Date();
-			sd.setFullYear(sd.getFullYear()-1);
-			var us=lp.usersOfSince('knk',sd);
-			writeln("total="+us.total);
-			for(var i in us.user) {
-				writeln(i+"="+us.user[i]);
-			}
-			break;
 		case 'config':
 			new UserConfig(user.number).configure();
 			break;
