@@ -328,7 +328,11 @@ BOOL xptone_open(void)
 					|| ((pa_api->open=xp_dlsym(dl,Pa_OpenDefaultStream))==NULL)
 					|| ((pa_api->close=xp_dlsym(dl,Pa_CloseStream))==NULL)
 					|| ((pa_api->start=xp_dlsym(dl,Pa_StartStream))==NULL)
-					|| ((pa_api->active=xp_dlsym(dl,Pa_StreamActive))==NULL)
+					||
+						(
+							((pa_api->active=xp_dlsym(dl,Pa_StreamActive))==NULL)
+							&& ((pa_api->active=xp_dlsym(dl,Pa_IsStreamActive))==NULL)
+						)
 					|| ((pa_api->stop=xp_dlsym(dl,Pa_StopStream))==NULL)
 					) {
 				if(dl)
@@ -341,7 +345,7 @@ BOOL xptone_open(void)
 				pa_api->ver=1800;
 				if((pa_api->version=xp_dlsym(dl, Pa_GetVersion))!=NULL) {
 					pa_api->ver=pa_api->version();
-					if(pa_api->ver >= 1900) {
+					if(pa_api->ver >= 1899) {
 						if((pa_api->write=xp_dlsym(dl, Pa_WriteStream))==NULL) {
 							xp_dlclose(dl);
 							free(pa_api);
@@ -354,26 +358,28 @@ BOOL xptone_open(void)
                 portaudio_device_open_failed=TRUE;
 			}
 		}
-		if(!portaudio_initialized) {
-			if(pa_api->init() != paNoError)
-				portaudio_device_open_failed=TRUE;
-			else
-				portaudio_initialized=TRUE;
-		}
-		if(portaudio_initialized) {
-			if(pa_api->open(&portaudio_stream
-					, 0	/* No input */
-					, 1	/* Mono output */
-					, paUInt8
-					, S_RATE
-					, 256
-					, 0
-					, pa_api->ver >= 1900 ? NULL : portaudio_callback
-					, &pawave) != paNoError)
-				portaudio_device_open_failed=TRUE;
-			else {
-				handle_type=SOUND_DEVICE_PORTAUDIO;
-				return(TRUE);
+		if(pa_api != NULL) {
+			if(!portaudio_initialized) {
+				if(pa_api->init() != paNoError)
+					portaudio_device_open_failed=TRUE;
+				else
+					portaudio_initialized=TRUE;
+			}
+			if(portaudio_initialized) {
+				if(pa_api->open(&portaudio_stream
+						, 0	/* No input */
+						, 1	/* Mono output */
+						, paUInt8
+						, S_RATE
+						, 256
+						, 0
+						, pa_api->ver >= 1899 ? NULL : portaudio_callback
+						, &pawave) != paNoError)
+					portaudio_device_open_failed=TRUE;
+				else {
+					handle_type=SOUND_DEVICE_PORTAUDIO;
+					return(TRUE);
+				}
 			}
 		}
 	}
@@ -591,7 +597,7 @@ void xp_play_sample_thread(void *data)
 
 	#ifdef WITH_PORTAUDIO
 		if(handle_type==SOUND_DEVICE_PORTAUDIO) {
-			if(pa_api->ver >= 1900) {
+			if(pa_api->ver >= 1899) {
 				pa_api->write(portaudio_stream, sample_buffer, sample_size);
 			}
 			else {
@@ -739,7 +745,7 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
-		if(pa_api->ver >= 1900) {
+		if(pa_api->ver >= 1899) {
 			pa_api->write(portaudio_stream, sample, sample_size);
 		}
 		else {
