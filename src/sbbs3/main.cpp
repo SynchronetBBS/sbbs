@@ -278,6 +278,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 {
 	DWORD seed = time(NULL) ^ (DWORD)GetCurrentThreadId();
 
+	xp_randomize();
 #if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
 	int     rf;
 
