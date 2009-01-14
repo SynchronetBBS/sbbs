@@ -77,25 +77,25 @@ function main()
 			debug = true;
 	}
 	if(max_size && file_size(message_text_filename) > max_size) {
-		log(LOG_INFO,"SPAMC: message size > max_size (" + max_size + ")");
+		log(LOG_INFO,"message size > max_size (" + max_size + ")");
 		return;
 	}
 	var msg=new SPAMC_Message(message_text_filename, address, tcp_port, user);
 	if(msg.error != undefined) {
-		log(LOG_ERR,"SPAMC: !ERROR "+msg.error);
+		log(LOG_ERR,"!ERROR "+msg.error);
 		return;
 	}
 
-	log(LOG_INFO, "SPAMC: processing message with SPAMD at " + address + " port " + tcp_port);
+	log(LOG_INFO, "processing message with SPAMD at " + address + " port " + tcp_port);
 	msg.debug = debug;
 	msg.reverse_path = reverse_path;
 //	if(this.hello_name)
 //		msg.hello_name = this.hello_name;
 	var ret=msg.process();
 	if(ret.warning != undefined)
-		log(LOG_WARNING, "SPAMC: WARNING "+ret.warning);
+		log(LOG_WARNING, "WARNING "+ret.warning);
 	if(ret.error != undefined) {
-		log(LOG_ERR,"SPAMC: !ERROR "+ret.error);
+		log(LOG_ERR,"!ERROR "+ret.error);
 		return;
 	}
 
@@ -103,16 +103,16 @@ function main()
 	if(ret.symbols && ret.symbols.length)
 		details += ', tests: ' + ret.symbols;
 
-	log(LOG_INFO, "SPAMC: " + details);
+	log(LOG_INFO, details);
 
 	if(!ret.isSpam || ret.score < reject_threshold)
 		reject = false;
 
 	if(reject) {
-		log(LOG_INFO, "SPAMC: rejecting SPAM with SMTP error");
+		log(LOG_INFO, "rejecting SPAM with SMTP error");
 		var error_file = new File(processing_error_filename);
 		if(!error_file.open("w")) {
-			log(LOG_ERR,format("SPAMC: !ERROR %d opening processing error file: %s"
+			log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
 				,error_file.error, processing_error_filename));
 			return;
 		}
@@ -124,10 +124,10 @@ function main()
 	// Modify message
 	if(spamonly && !ret.isSpam)
 		return;
-	log(LOG_INFO, "SPAMC: re-writing message");
+	log(LOG_INFO, "re-writing message");
 	var msg_file = new File(message_text_filename);
 	if(!msg_file.open("w")) {
-		log(LOG_ERR,format("SPAMC: !ERROR %d opening message text file: %s"
+		log(LOG_ERR,format("!ERROR %d opening message text file: %s"
 			,msg_file.error, message_text_filename));
 		return;
 	}

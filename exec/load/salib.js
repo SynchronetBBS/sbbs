@@ -54,7 +54,7 @@ function Message_DoCommand(command)
 						,strftime("%a, %d %b %Y %H:%M:%S"),system.zonestr()
 						);
 	}
-	log("SPAMD: inserted headers = " + inserted_header_fields);
+	log(LOG_DEBUG, "inserted headers = " + inserted_header_fields);
 	content_length += inserted_header_fields.length;
 
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
