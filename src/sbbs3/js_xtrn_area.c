@@ -291,7 +291,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			val=JSVAL_TRUE;
 		else
 			val=JSVAL_FALSE;
-		if(!JS_SetProperty(cx, progobj, "can_access", &val))
+		if(!JS_SetProperty(cx, secobj, "can_access", &val))
 			return(NULL);
 
 		/* prog_list[] */
