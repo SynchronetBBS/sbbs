@@ -26,6 +26,10 @@ ifeq ($(shell if [ -c /dev/urandom ] ; then echo YES ; fi),YES)
  XPDEV-MT_CFLAGS	+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"
  XPDEV_CFLAGS		+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"
 endif
+ifeq ($(shell if [ -L /dev/urandom ] ; then echo YES ; fi),YES)
+ XPDEV-MT_CFLAGS	+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"
+ XPDEV_CFLAGS		+=	-DHAS_DEV_URANDOM -DURANDOM_DEV=\"/dev/urandom\"
+endif
 ifeq ($(shell if [ -c /dev/random ] ; then echo YES ; fi),YES)
  XPDEV-MT_CFLAGS	+=	-DHAS_DEV_RANDOM -DRANDOM_DEV=\"/dev/random\"
  XPDEV_CFLAGS		+=	-DHAS_DEV_RANDOM -DRANDOM_DEV=\"/dev/random\"
