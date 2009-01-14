@@ -1,3 +1,9 @@
+To run locally:
+/sbbs/exec/jsexec ../xtrn/pisorama/pisorama.js
+
+
+SCFG Configuration:
+
 [Piss-o-Rama]
  1: Name                       Piss-o-Rama
  2: Internal Code              PISORAMA
