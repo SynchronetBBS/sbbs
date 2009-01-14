@@ -17,7 +17,7 @@ var ini_fname = file_cfgname(system.ctrl_dir, "listserver.ini");
 
 ini_file = new File(ini_fname);
 if(!ini_file.open("r")) {
-	log(LOG_ERR,format("ListServer: !ERROR %d opening ini_file: %s"
+	log(LOG_ERR,format("!ERROR %d opening ini_file: %s"
 		,ini_file.error, ini_fname));
 	exit();
 }
@@ -28,12 +28,12 @@ disabled=ini_file.iniGetValue(null,"disabled",false);
 list_array=ini_file.iniGetAllObjects("name");
 ini_file.close();
 if(!list_array.length) {
-	log(LOG_ERR,"ListServer: !No lists defined in " + ini_fname);
+	log(LOG_ERR,"!No lists defined in " + ini_fname);
 	exit();
 }
 
 if(disabled) {
-	log(LOG_WARNING,"ListServer: !Disabled in " + ini_fname);
+	log(LOG_WARNING,"!Disabled in " + ini_fname);
 	exit();
 }
 
@@ -45,7 +45,7 @@ for(var l in list_array) {
 	if(!list.address)
 		list.address = format("%s@%s", list.name, system.inet_addr);
 	if(!msg_area.sub[list.sub.toLowerCase()]) {
-		log(LOG_WARNING,"ListServer: !Unrecognized sub-board internal code: '" + list.sub + "'");
+		log(LOG_WARNING,"!Unrecognized sub-board internal code: '" + list.sub + "'");
 		list.disabled=true;
 		continue;
 	}
@@ -56,7 +56,7 @@ for(var l in list_array) {
 
 	var msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
-		log(LOG_ERR,format("ListServer: %s !ERROR %s opening msgbase: %s"
+		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
 			,list.name, msgbase.error, list.sub));
 		continue;
 	}
@@ -70,7 +70,7 @@ for(var l in list_array) {
 
 mailbase = new MsgBase("mail");
 if(mailbase.open()==false) {
-	log(LOG_ERR,"ListServer: !ERROR " + mailbase.error + " opening mail database");
+	log(LOG_ERR,"!ERROR " + mailbase.error + " opening mail database");
 	exit();
 }
 
@@ -79,23 +79,23 @@ if(this.recipient_list_filename!=undefined) {
 
 	log("reverse_path = " + reverse_path);
 	if(reverse_path=='' || reverse_path=='<>') {
-		log(LOG_WARNING,"ListServer: No reverse path");
+		log(LOG_WARNING,"No reverse path");
 		exit();
 	}
 	if(reverse_path=='<' + listserver_address + '>') {
-		log(LOG_WARNING,"ListServer: Invalid reverse path (loop?)");
+		log(LOG_WARNING,"Invalid reverse path (loop?)");
 		exit();
 	}
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
-		log(LOG_ERR,format("ListServer: !ERROR %d opening processing error file: %s"
+		log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
 			,error_file.error, processing_error_filename));
 		exit();
 	}
 
 	var rcptlst_file = new File(recipient_list_filename);
 	if(!rcptlst_file.open("r")) {
-		error_file.writeln(log(LOG_ERR,format("ListServer: !ERROR %d opening recipient list: %s"
+		error_file.writeln(log(LOG_ERR,format("!ERROR %d opening recipient list: %s"
 			,rcptlst_file.error, recipient_list_filename)));
 		exit();
 	}
@@ -104,7 +104,7 @@ if(this.recipient_list_filename!=undefined) {
 
 	var msgtxt_file = new File(message_text_filename);
 	if(!msgtxt_file.open("r")) {
-		error_file.writeln(log(LOG_ERR,format("ListServer: !ERROR %d opening message text: %s"
+		error_file.writeln(log(LOG_ERR,format("!ERROR %d opening message text: %s"
 			,msgtxt_file.error, message_text_filename)));
 		exit();
 	}
@@ -118,7 +118,7 @@ if(this.recipient_list_filename!=undefined) {
 	header = convert_msg_header(header);
 
 	if(header.from_net_addr == listserver_address) {
-		error_file.writeln(log(LOG_ERR,format("ListServer: refusing to process message from %s (loop?)"
+		error_file.writeln(log(LOG_ERR,format("refusing to process message from %s (loop?)"
 			,header.from_net_addr)));
 		exit();
 	}
@@ -143,7 +143,7 @@ if(this.recipient_list_filename!=undefined) {
 				break;
 		}
 		if(l<list_array.length) {	/* match found */
-			log(LOG_INFO,format("ListServer: Contribution message from %s to %s: %s"
+			log(LOG_INFO,format("Contribution message from %s to %s: %s"
 				,header.from, rcpt_list[r].To, header.subject));
 			handled=true;
 			if(!process_contribution(header, body, list))
@@ -154,7 +154,7 @@ if(this.recipient_list_filename!=undefined) {
 		exit();
 
 
-	log(LOG_INFO,format("ListServer: Control message from %s to %s: %s"
+	log(LOG_INFO,format("Control message from %s to %s: %s"
 		,header.from, header.to, header.subject));
 
 	file_remove(recipient_list_filename);
@@ -177,9 +177,9 @@ if(this.recipient_list_filename!=undefined) {
 
 	/* Write response to message */
 	if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
-		log(LOG_INFO,"ListServer: Response to control message created");
+		log(LOG_INFO,"Response to control message created");
 	else
-		log(LOG_ERR,format("ListServer: !ERROR %s saving response message to mail msgbase"
+		log(LOG_ERR,format("!ERROR %s saving response message to mail msgbase"
 			,msgbase.error));
 
 	exit();
@@ -188,7 +188,7 @@ if(this.recipient_list_filename!=undefined) {
 for(var l in list_array) {
 
 	if(js.terminated) {
-		log(LOG_WARNING,"ListServer: Terminated");
+		log(LOG_WARNING,"Terminated");
 		break;
 	}
 
@@ -199,7 +199,7 @@ for(var l in list_array) {
 
 	msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
-		log(LOG_ERR,format("ListServer: %s !ERROR %s opening msgbase: %s"
+		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
 			,list.name, msgbase.error, list.sub));
 		delete msgbase;
 		continue;
@@ -226,7 +226,7 @@ for(var l in list_array) {
 		file_touch(ptr_fname);
 	ptr_file = new File(ptr_fname);
 	if(!ptr_file.open("r+")) {
-		log(LOG_ERR,format("ListServer: %s !ERROR %d opening/creating file: %s"
+		log(LOG_ERR,format("%s !ERROR %d opening/creating file: %s"
 			,list.name, ptr_file.error, ptr_fname));
 		delete msgbase;
 		continue;
@@ -235,7 +235,7 @@ for(var l in list_array) {
 	var last_msg = msgbase.last_msg;
 	var ptr = Number(ptr_file.readln());
 
-	log(LOG_DEBUG,format("ListServer: %s pointer read: %u"
+	log(LOG_DEBUG,format("%s pointer read: %u"
 		,list.name, ptr));
 
 	if(isNaN(ptr))
@@ -258,13 +258,13 @@ for(var l in list_array) {
 			continue;
 		}
 		if(hdr.attr&(MSG_DELETE|MSG_PRIVATE))	{ /* marked for deletion */
-			log(LOG_NOTICE,format("ListServer: %s Skipping %s message #%lu from %s: %s"
+			log(LOG_NOTICE,format("%s Skipping %s message #%lu from %s: %s"
 				,list.name, hdr.attr&MSG_DELETE ? "deleted":"private"
 				,ptr, hdr.from, hdr.subject));
 			continue;
 		}
 		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
-			log(LOG_NOTICE,format("ListServer: %s Stopping at unvalidated moderated message #%lu from %s: %s"
+			log(LOG_NOTICE,format("%s Stopping at unvalidated moderated message #%lu from %s: %s"
 				,list.name, ptr, hdr.from, hdr.subject));
 			ptr--;
 			break;
@@ -278,7 +278,7 @@ for(var l in list_array) {
 				,true	/* include tails */
 				);
 		if(body == null) {
-			log(LOG_ERR,format("ListServer: %s !ERROR %s reading text of message #%lu"
+			log(LOG_ERR,format("%s !ERROR %s reading text of message #%lu"
 				,list.name, msgbase.error, ptr));
 			continue;
 		}
@@ -289,7 +289,7 @@ for(var l in list_array) {
 				break;
 			if(user_list[u].disabled || !user_list[u].address)
 				continue;
-			log(LOG_DEBUG,format("ListServer: %s Enqueing message #%lu for %s <%s>"
+			log(LOG_DEBUG,format("%s Enqueing message #%lu for %s <%s>"
 				,list.name, ptr, user_list[u].name, user_list[u].address));
 			rcpt_list.push(	{	to:				user_list[u].name,
 								to_net_addr:	user_list[u].address, 
@@ -301,26 +301,28 @@ for(var l in list_array) {
 			break;
 		}
 		if(rcpt_list.length < 1) {
-			log(LOG_NOTICE,format("ListServer: %s No active subscriptions", list.name));
+			log(LOG_NOTICE,format("%s No active subscriptions", list.name));
 			continue;
 		}
 
-		log(LOG_INFO,format("ListServer: %s Sending message #%lu from %s to %lu recipients: %s"
+		log(LOG_INFO,format("%s Sending message #%lu from %s to %lu recipients: %s"
 			,list.name, ptr, hdr.from, rcpt_list.length, hdr.subject));
 
 		hdr.replyto_net_type = NET_INTERNET;
 		hdr.replyto_net_addr = list.address;
+		hdr.from_agent = AGENT_PROCESS;
+		hdr.reverse_path = listserver_address;
 		if(list.subject_mod==true && hdr.subject.indexOf("[" + list.name + "]")==-1)
 			hdr.subject = "[" + list.name + "] " + hdr.subject;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
-			log(LOG_ERR,format("ListServer: %s !ERROR %s saving mail message"
+			log(LOG_ERR,format("%s !ERROR %s saving mail message"
 				,list.name, mailbase.error));
 	}
 
 	if(ptr > last_msg)
 		ptr = last_msg;
 
-	log(LOG_DEBUG,format("ListServer: %s pointer written: %u"
+	log(LOG_DEBUG,format("%s pointer written: %u"
 		,list.name, ptr));
 
 	ptr_file.rewind();
@@ -401,7 +403,7 @@ function open_user_list(list, mode)
 	var user_fname = list.msgbase_file + user_list_ext;
 	var user_file = new File(user_fname);
 	if(!user_file.open(mode)) {
-		log(LOG_ERR,format("ListServer: %s !ERROR %d opening file: %s"
+		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
 			,list.name, user_file.error, user_fname));
 		return(null);
 	}
@@ -458,12 +460,12 @@ function subscription_control(cmd, list, address)
 	if(!address)
 		address=sender_address;
 
-	log(LOG_INFO,format("ListServer: %s Subscription control command (%s) from %s"
+	log(LOG_INFO,format("%s Subscription control command (%s) from %s"
 		,list.name,cmd,address));
 
 	/* Get subscriber list */
 	if((user_file=open_user_list(list,"r+"))==null)
-		return log(LOG_ERR,format("ListServer: %s !ERROR opening subscriber list",list.name));
+		return log(LOG_ERR,format("%s !ERROR opening subscriber list",list.name));
 
 	user_list = read_user_list(user_file);
 	
@@ -471,14 +473,14 @@ function subscription_control(cmd, list, address)
 		case "unsubscribe":
 			if(remove_user(user_list, address)) {
 				write_user_list(user_list, user_file);
-				return log(LOG_INFO,format("ListServer: %s %s unsubscribed successfully"
+				return log(LOG_INFO,format("%s %s unsubscribed successfully"
 					,list.name, address));
 			}
-			return log(LOG_WARNING,format("ListServer: %s !subscriber not found: %s"
+			return log(LOG_WARNING,format("%s !subscriber not found: %s"
 				,list.name, address));
 		case "subscribe":
 			if(find_user(user_list, address)!=-1)
-				return log(LOG_WARNING,format("ListServer: %s !%s is already subscribed"
+				return log(LOG_WARNING,format("%s !%s is already subscribed"
 					,list.name, address));
 			var now=time();
 			user_list.push({ 
@@ -489,7 +491,7 @@ function subscription_control(cmd, list, address)
 				,last_activity_time:	format("%08lx",now)
 				});
 			write_user_list(user_list, user_file);
-			return log(LOG_INFO,format("ListServer: %s %s subscription successful"
+			return log(LOG_INFO,format("%s %s subscription successful"
 				,list.name, address));
 	}
 }
@@ -504,7 +506,7 @@ function process_contribution(header, body, list)
 	// verify author/sender is a list subscriber here
 
 	if(find_user(user_list, sender_address)==-1) {
-		error_file.writeln(log(LOG_WARNING,format("ListServer: %s !ERROR %s is not a subscriber"
+		error_file.writeln(log(LOG_WARNING,format("%s !ERROR %s is not a subscriber"
 			,list.name, sender_address)));
 //		error_file.writeln();
 //		error_file.writeln("To subscribe to this list, send an e-mail to " 
@@ -515,7 +517,7 @@ function process_contribution(header, body, list)
 
 	var msgbase=new MsgBase(list.sub);
 	if(!msgbase.open()) {
-		error_file.writeln(log(LOG_ERR,format("ListServer: %s !ERROR %s opening msgbase: %s"
+		error_file.writeln(log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
 			,list.name, msgbase.error, list.sub)));
 		return(false);
 	}
@@ -527,7 +529,7 @@ function process_contribution(header, body, list)
 	header.subject=header.subject.replace(RegExp("\\["+list.name+"\\]\\s*"), "");
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
-		log(LOG_ERR,format("ListServer: %s !ERROR %s saving message to sub: %s"
+		log(LOG_ERR,format("%s !ERROR %s saving message to sub: %s"
 			,list.name, msgbase.error, list.sub));
 		return(false);
 	}
