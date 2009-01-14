@@ -556,10 +556,10 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 			i=sockprintf(socket,"%.*s",MAX_LINE_LEN,p);
 		if(!i)
 			break;
+		lines++;
 		if(tp==NULL)
 			break;
 		p=tp+1;
-		lines++;
 		/* release time-slices every x lines */
 		if(startup->lines_per_yield
 			&& !(lines%startup->lines_per_yield))	
@@ -1124,6 +1124,10 @@ static void pop3_thread(void* arg)
 					continue;
 				}
 
+				if(lines > 0					/* Works around BlackBerry mail server */
+					&& lines >= strlen(msgtxt))	/* which requests the number of bytes (instead of lines) using TOP */
+					lines=-1;					
+
 				sockprintf(socket,"+OK message follows");
 				lprintf(LOG_DEBUG,"%04d POP3 sending message text (%u bytes)"
 					,socket,strlen(msgtxt));
@@ -1518,20 +1522,27 @@ static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 }
 #ifdef JAVASCRIPT
 
+typedef struct {
+	SOCKET		sock;
+	const char*	log_prefix;
+	const char*	proc_name;
+} private_t;
+
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char	line[64];
 	char	file[MAX_PATH+1];
 	char*	warning;
-	SOCKET*		sock;
+	private_t*	p;
 	jsrefcount	rc;
 
-	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
+	if((p=(private_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
 
 	if(report==NULL) {
-		lprintf(LOG_ERR,"!JavaScript: %s", message);
+		lprintf(LOG_ERR,"%04d %s %s !JavaScript: %s"
+			, p->sock, p->log_prefix, p->proc_name, message);
 		return;
     }
 
@@ -1554,8 +1565,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		warning="";
 
 	rc=JS_SUSPENDREQUEST(cx);
-	lprintf(LOG_ERR,"%04d !JavaScript %s%s%s: %s"
-		,*sock, warning ,file, line, message);
+	lprintf(LOG_ERR,"%04d %s %s !JavaScript %s%s%s: %s"
+		,p->sock, p->log_prefix, p->proc_name
+		,warning ,file, line, message);
 	JS_RESUMEREQUEST(cx, rc);
 }
 
@@ -1565,10 +1577,10 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     uintN		i=0;
 	int32		level=LOG_INFO;
     JSString*	str=NULL;
-	SOCKET*		sock;
+	private_t*	p;
 	jsrefcount	rc;
 
-	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
+	if((p=(private_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	if(JSVAL_IS_NUMBER(argv[i]))
@@ -1578,7 +1590,8 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
-		lprintf(level,"%04d JavaScript: %s",*sock,JS_GetStringBytes(str));
+		lprintf(level,"%04d %s %s: %s"
+			,p->sock,p->log_prefix,p->proc_name,JS_GetStringBytes(str));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
@@ -1599,28 +1612,31 @@ static JSFunctionSpec js_global_functions[] = {
 };
 
 static BOOL
-js_mailproc(SOCKET sock, client_t* client, user_t* user
+js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailproc
 			,char* cmdline
-			,char* eval
 			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
 			,char* rcptlst_fname, char* proc_err_fname
 			,char* sender, char* sender_addr, char* reverse_path, char* hello_name
-			,int* result)
+			,int* result
+			,JSRuntime**	js_runtime
+			,JSContext**	js_cx
+			,JSObject**		js_glob
+			,const char*	log_prefix
+)
 {
 	char*		p;
 	char		fname[MAX_PATH+1];
 	char		path[MAX_PATH+1];
 	char		arg[MAX_PATH+1];
 	BOOL		success=FALSE;
-	JSRuntime*	js_runtime=NULL;
-	JSContext*	js_cx=NULL;
-	JSObject*	js_glob;
+	JSObject*	js_scope=NULL;
 	JSObject*	argv;
 	jsuint		argc;
 	JSScript*	js_script;
 	js_branch_t	js_branch;
 	jsval		val;
 	jsval		rval=JSVAL_VOID;
+	private_t	priv;
 
 	ZERO_VAR(js_branch);
 
@@ -1638,43 +1654,92 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 	*result = 0;
 	do {
+		if(*js_runtime==NULL) {
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes\n"
+				,sock, log_prefix, startup->js.max_bytes);
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes\n"
-			,sock, startup->js.max_bytes);
+			if((*js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
+				break;
+		}
 
-		if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
-			break;
+		if(*js_cx==NULL) {
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Initializing context (stack: %lu bytes)\n"
+				,sock, log_prefix, startup->js.cx_stack);
 
-		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)\n"
-			,sock, startup->js.cx_stack);
+			if((*js_cx = JS_NewContext(*js_runtime, startup->js.cx_stack))==NULL)
+				break;
+		}
+		JS_BEGINREQUEST(*js_cx);
 
-		if((js_cx = JS_NewContext(js_runtime, startup->js.cx_stack))==NULL)
-			break;
-		JS_BEGINREQUEST(js_cx);
+		JS_SetErrorReporter(*js_cx, js_ErrorReporter);
 
-		JS_SetErrorReporter(js_cx, js_ErrorReporter);
+		priv.sock=sock;
+		priv.log_prefix=log_prefix;
+		priv.proc_name=mailproc->name;
+		JS_SetContextPrivate(*js_cx, &priv);
 
-		JS_SetContextPrivate(js_cx, &sock);
+		if(*js_glob==NULL) {
+			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
+			if((*js_glob=js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
+						,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+						,&js_branch									/* js */
+						,client, sock								/* client */
+						,&js_server_props							/* server */
+				))==NULL)
+				break;
 
-		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
-		if((js_glob=js_CreateCommonObjects(js_cx, &scfg, &scfg, NULL
-					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
-					,&js_branch									/* js */
-					,client, sock								/* client */
-					,&js_server_props							/* server */
-			))==NULL)
-			break;
+			if(!JS_DefineFunctions(*js_cx, *js_glob, js_global_functions))
+				break;
 
-		if(!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
-			break;
+			/* Area and "user" Objects */
+			if(!js_CreateUserObjects(*js_cx, *js_glob, &scfg, user, NULL, NULL)) 
+				break;
 
-		/* Area and "user" Objects */
-		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, user, NULL, NULL)) 
+			/* Mailproc "API" filenames */
+			JS_DefineProperty(*js_cx, *js_glob, "message_text_filename"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,msgtxt_fname))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "new_message_text_filename"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,newtxt_fname))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "log_text_filename"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,logtxt_fname))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "recipient_list_filename"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,rcptlst_fname))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "processing_error_filename"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,proc_err_fname))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "sender_name"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,sender))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "sender_address"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,sender_addr))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "reverse_path"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,reverse_path))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+			JS_DefineProperty(*js_cx, *js_glob, "hello_name"
+				,STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,hello_name))
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		}
+
+		if((js_scope=JS_NewObject(*js_cx, NULL, NULL, *js_glob))==NULL)
 			break;
 
 		/* Convert command-line to argv/argc */
-		argv=JS_NewArrayObject(js_cx, 0, NULL);
-		JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
+		argv=JS_NewArrayObject(*js_cx, 0, NULL);
+		JS_DefineProperty(*js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 		p=cmdline;
@@ -1683,81 +1748,60 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 		for(argc=0;*p;argc++) {
 			SAFECOPY(arg,p);
 			truncstr(arg," \t");
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,arg));
-			if(!JS_SetElement(js_cx, argv, argc, &val))
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx,arg));
+			if(!JS_SetElement(*js_cx, argv, argc, &val))
 				break;
 			FIND_WHITESPACE(p);
 			SKIP_WHITESPACE(p);
 		}
-		JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
+		JS_DefineProperty(*js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-		/* Mailproc "API" filenames */
-		JS_DefineProperty(js_cx, js_glob, "message_text_filename"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,msgtxt_fname))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "new_message_text_filename"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,newtxt_fname))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "log_text_filename"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,logtxt_fname))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "recipient_list_filename"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,rcptlst_fname))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "processing_error_filename"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,proc_err_fname))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "sender_name"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,sender))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "sender_address"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,sender_addr))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "reverse_path"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,reverse_path))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		JS_DefineProperty(js_cx, js_glob, "hello_name"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,hello_name))
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-		if(eval!=NULL && *eval!=0)
-			js_script=JS_CompileScript(js_cx, js_glob, eval, strlen(eval), NULL, 1);
-		else
-			js_script=JS_CompileFile(js_cx, js_glob, path);
+		if(mailproc->eval!=NULL && *mailproc->eval!=0) {
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Evaluating: %s"
+				,sock, log_prefix, mailproc->eval);
+			js_script=JS_CompileScript(*js_cx, js_scope, mailproc->eval, strlen(mailproc->eval), NULL, 1);
+		} else {
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Executing: %s"
+				,sock, log_prefix, cmdline);
+			js_script=JS_CompileFile(*js_cx, js_scope, path);
+		}
 		if(js_script==NULL)
 			break;
 
-		success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		success=JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
 
-		JS_ReportPendingException(js_cx);
+		JS_ReportPendingException(*js_cx);
 
-		js_EvalOnExit(js_cx, js_glob, &js_branch);
+		js_EvalOnExit(*js_cx, js_scope, &js_branch);
 
-		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+		JS_GetProperty(*js_cx, *js_glob, "exit_code", &rval);
+
+		JS_DestroyScript(*js_cx, js_script);
+
+		JS_ClearScope(*js_cx, js_scope);
+
+		JS_GC(*js_cx);
 
 	} while(0);
 
-	if(js_cx!=NULL) {
+	if(*js_cx!=NULL) {
 
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
-			JS_ValueToInt32(js_cx,rval,result);
+			JS_ValueToInt32(*js_cx,rval,result);
 
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
+		JS_ENDREQUEST(*js_cx);
 	}
-	if(js_runtime!=NULL)
-		jsrt_Release(js_runtime);
 
 	return(success);
+}
+
+js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
+{
+	if(js_cx!=NULL)
+		JS_DestroyContext(js_cx);
+	if(js_runtime!=NULL)
+		jsrt_Release(js_runtime);
 }
 #endif
 
@@ -2052,6 +2096,10 @@ static void smtp_thread(void* arg)
 	SOCKADDR_IN server_addr;
 	IN_ADDR		dnsbl_result;
 	BOOL*		mailproc_to_match;
+	JSRuntime*	js_runtime=NULL;
+	JSContext*	js_cx=NULL;
+	JSObject*	js_glob=NULL;
+
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
@@ -2383,10 +2431,12 @@ static void smtp_thread(void* arg)
 							,rcptlst_fname, proc_err_fname
 							,host_name, host_ip, relay_user.number
 							,sender, sender_addr, reverse_path, str);
-						lprintf(LOG_DEBUG,"%04d SMTP Executing external process: %s"
-							,socket, str);
+						lprintf(LOG_INFO,"%04d SMTP Executing external mail processor: %s"
+							,socket, mailproc_list[i].name);
 
 						if(mailproc_list[i].native) {
+							lprintf(LOG_DEBUG,"%04d SMTP Executing external command: %s"
+								,socket, str);
 							if((j=system(str))!=0) {
 								lprintf(LOG_NOTICE,"%04d !SMTP system(%s) returned %d (errno: %d)"
 									,socket, str, j, errno);
@@ -2397,11 +2447,14 @@ static void smtp_thread(void* arg)
 								}
 							}
 						} else {  /* JavaScript */
-							if(!js_mailproc(socket, &client, &relay_user, str /* cmdline */
-								,mailproc_list[i].eval
+							if(!js_mailproc(socket, &client, &relay_user
+								,&mailproc_list[i]
+								,str /* cmdline */
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
-								,sender, sender_addr, reverse_path, hello_name, &j) || j!=0) {
+								,sender, sender_addr, reverse_path, hello_name, &j
+								,&js_runtime, &js_cx, &js_glob
+								,"SMTP") || j!=0) {
 #if 0 /* calling exit() in a script causes js_mailproc to return FALSE */
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
 									,socket, str, j);
@@ -2424,7 +2477,7 @@ static void smtp_thread(void* arg)
 							if(!fgets(str,sizeof(str),proc_err))
 								break;
 							truncsp(str);
-							lprintf(LOG_WARNING,"%04d !SMTP external process error: %s", socket, str);
+							lprintf(LOG_WARNING,"%04d !SMTP External mail processor error: %s", socket, str);
 							i=atoi(str);
 							if(i>=100 && i<1000)
 								sockprintf(socket,"%s", str);
@@ -2437,7 +2490,7 @@ static void smtp_thread(void* arg)
 						msg_handled=TRUE;
 					}
 					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
-						lprintf(LOG_WARNING,"%04d SMTP External process removed %s file"
+						lprintf(LOG_NOTICE,"%04d SMTP External mail processor removed %s file"
 							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
 						msg_handled=TRUE;
@@ -3549,6 +3602,7 @@ static void smtp_thread(void* arg)
 	remove(rcptlst_fname);
 	if(spy!=NULL)
 		fclose(spy);
+	js_cleanup(js_runtime, js_cx);
 
 	status(STATUS_WFC);
 
@@ -3602,7 +3656,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		return(FALSE);
 	}
 
-	if(msg->from_agent!=AGENT_PERSON	/* don't bounce 'bounce messages' */
+	if(msg->from_agent==AGENT_SMTPSYSMSG	/* don't bounce 'bounce messages' */
 		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
 		|| (msg->reverse_path!=NULL && *msg->reverse_path==0)) {
 		lprintf(LOG_WARNING,"0000 !Deleted undeliverable message from %s", msg->from);
@@ -3618,16 +3672,21 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 
 	SAFEPRINTF(str,"Delivery failure: %s",newmsg.subj);
 	smb_hfield_str(&newmsg, SUBJECT, str);
-	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
-	if(newmsg.from_ext!=NULL) { /* Back to sender */
-		smb_hfield_str(&newmsg, RECIPIENTEXT, newmsg.from_ext);
-		newmsg.from_ext=NULL;	/* Clear the sender extension */
-	}
+	if(msg->from_agent==AGENT_PERSON) {
 
-	if((newmsg.from_net.type==NET_QWK || newmsg.from_net.type==NET_INTERNET)
-		&& newmsg.reverse_path!=NULL) {
-		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
-		smb_hfield_str(&newmsg, RECIPIENTNETADDR, newmsg.reverse_path);
+		smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
+		if(newmsg.from_ext!=NULL) { /* Back to sender */
+			smb_hfield_str(&newmsg, RECIPIENTEXT, newmsg.from_ext);
+			newmsg.from_ext=NULL;	/* Clear the sender extension */
+		}
+
+		if((newmsg.from_net.type==NET_QWK || newmsg.from_net.type==NET_INTERNET)
+			&& newmsg.reverse_path!=NULL) {
+			smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
+			smb_hfield_str(&newmsg, RECIPIENTNETADDR, newmsg.reverse_path);
+		}
+	} else {
+
 	}
 	strcpy(str,"Mail Delivery Subsystem");
 	smb_hfield_str(&newmsg, SENDER, str);
