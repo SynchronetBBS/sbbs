@@ -90,7 +90,7 @@ int pktdump(FILE* fp, const char* fname)
 		&& pkthdr.fill.two_plus.cword&1) {
 		fprintf(stdout,"2+");
 		dest.point=pkthdr.fill.two_plus.destpoint;
-		if(orig.net==-1)	/* see FSC-0048 for details */
+		if(orig.net==0xffff)	/* see FSC-0048 for details */
 			orig.net=pkthdr.fill.two_plus.auxnet;
 	} else if(pkthdr.baud==2) {					/* Type 2.2 Packet Header */
 		fprintf(stdout,"2.2");
