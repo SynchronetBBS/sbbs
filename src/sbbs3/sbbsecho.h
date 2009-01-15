@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -191,6 +191,11 @@ typedef struct {
 	ushort		arctype 			/* De/archiver to use for this node */
 			   ,numflags			/* Number of flags defined for this node */
 			   ,pkt_type;			/* Packet type to use for outgoing PKTs */
+									/* Packet types for nodecfg_t.pkt_type value ONLY: */
+#define PKT_TWO_PLUS	0			/* Type 2+ Packet Header				*/
+#define PKT_TWO_TWO 	1			/* Type 2.2 Packet Header				*/
+#define PKT_TWO 		2			/* Old Type Packet Header				*/
+
 	ushort		attr;				/* Message bits to set for this node */
 	char		password[26];		/* Areafix password for this node */
 	char		pktpwd[9];			/* Packet password for this node */
