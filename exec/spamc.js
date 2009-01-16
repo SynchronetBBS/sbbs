@@ -49,7 +49,7 @@ function main()
 	var	max_size = 500000;	/* bytes */
 
 	// Process arguments:
-	for(i in argv) {
+	for(i=0; i<argc; i++) {
 
 		// Strip any pre-pended slashes
 		while(argv[i].charAt(0)=='-')
@@ -104,7 +104,6 @@ function main()
 		details += ', tests: ' + ret.symbols;
 
 	log(LOG_INFO, details);
-
 	if(!ret.isSpam || ret.score < reject_threshold)
 		reject = false;
 
