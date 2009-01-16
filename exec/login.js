@@ -31,7 +31,7 @@ for(var c=0; c<10; c++) {
 
 	// Get login string
 	var str=console.getstr(/* maximum user name length: */ 25
-						 , /* getkey/str mode flags: */ K_UPRLWR | K_TAB);
+						 , /* getkey/str mode flags: */ K_UPRLWR | K_TAB | K_ANSI_CPR);
 	truncsp(str);
 	if(!str.length) // blank
 		continue;

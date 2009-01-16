@@ -38,7 +38,7 @@ if_greater
 else
 	print "\r\n\1nEnter Name, Number, or '\1hNew\1n'\r\nNN: "
 	end_if
-getstr str 25 K_UPRLWR|K_LOWPRIO|K_E71DETECT|K_TAB
+getstr str 25 K_UPRLWR|K_LOWPRIO|K_E71DETECT|K_TAB|K_ANSI_CPR
 truncsp str
 compare_str ""
 if_true

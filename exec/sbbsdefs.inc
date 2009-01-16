@@ -2,7 +2,7 @@
 
 # Baja include file defining various Synchronet related constants
 
-# $id: $
+# $Id$
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -172,6 +172,7 @@
 !define K_LEFTEXIT      .19 	 
 !define K_USEOFFSET     .20 	 
 !define K_NOSPIN        .21     # Ignore user's spinning cursor setting 	 
+!define K_ANSI_CPR		.22		# ANSI Cursor Position Report expected
 
 				# Bits in 'mode' for PRINTFILE function
 !define P_NOABORT	.0	# Disallows abortion of a message
