@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -255,7 +255,6 @@ bool sbbs_t::answer()
 			"\x1b[6n"	/* Get cursor position */
 			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
-			"\x1b[0t_"	/* WIP? */
 			"\2\2?HTML?"/* HTML? */
 			"\x1b[0m_"	/* "Normal" colors */
 			"\x1b[2J"	/* clear screen */
@@ -291,7 +290,7 @@ bool sbbs_t::answer()
 	str[l]=0;
 
     if(l) {
-        if(str[0]==ESC && str[1]=='[') {
+        if(str[0]==ESC && str[1]=='[') {	/* TODO: verify this is actually a cursor position report */
 			if(terminal[0]==0)
 				SAFECOPY(terminal,"ANSI");
 			autoterm|=(ANSI|COLOR);
@@ -306,12 +305,6 @@ bool sbbs_t::answer()
 				SAFECOPY(terminal,"RIP");
 			logline("@R",strstr(str,"RIPSCRIP"));
 			autoterm|=(RIP|COLOR|ANSI); }
-		else if(strstr(str,"DC-TERM")
-			&& toupper(*(strstr(str,"DC-TERM")+12))=='W') {
-			if(terminal[0]==0)
-				SAFECOPY(terminal,"WIP");
-			logline("@W",strstr(str,"DC-TERM"));
-			autoterm|=(WIP|COLOR|ANSI); }
 		else if(strstr(str,"!HTML!"))  {
 			if(terminal[0]==0)
 				SAFECOPY(terminal,"HTML");
@@ -394,11 +387,11 @@ bool sbbs_t::answer()
 
 		/* Display ANSWER screen */
 		sprintf(str,"%sanswer",cfg.text_dir);
-		sprintf(tmp,"%s.%s",str,autoterm&WIP ? "wip":"rip");
+		sprintf(tmp,"%s.rip",str);
 		sprintf(path,"%s.html",str);
 		sprintf(str2,"%s.ans",str);
-		if(autoterm&(RIP|WIP) && fexist(tmp))
-			strcat(str,autoterm&WIP ? ".wip":".rip");
+		if(autoterm&RIP && fexist(tmp))
+			strcat(str,".rip");
 		else if(autoterm&HTML && fexist(path))
 			strcat(str,".html");
 		else if(autoterm&ANSI && fexist(str2))
