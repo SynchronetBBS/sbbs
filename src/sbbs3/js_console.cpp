@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1140,7 +1140,7 @@ js_pushxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ANSI_SAVE();
+	sbbs->ansi_save();
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -1155,7 +1155,7 @@ js_popxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ANSI_RESTORE();
+	sbbs->ansi_restore();
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -1182,7 +1182,7 @@ js_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->GOTOXY(x,y);
+	sbbs->ansi_gotoxy(x,y);
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }

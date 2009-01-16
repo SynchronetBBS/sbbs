@@ -159,3 +159,30 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 
 	return(true);
 }
+
+bool sbbs_t::ansi_gotoxy(int x, int y)
+{
+	if(term_supports(ANSI)) {
+		rprintf("\x1b[%d;%dH",y,x);
+		return true;
+	}
+	return false;
+}
+
+bool sbbs_t::ansi_save(void)
+{
+	if(term_supports(ANSI)) {
+		rputs("\x1b[s");
+		return true;
+	}
+	return false;
+}
+
+bool sbbs_t::ansi_restore(void)
+{
+	if(term_supports(ANSI)) {
+		rputs("\x1b[u");
+		return true;
+	}
+	return false;
+}
