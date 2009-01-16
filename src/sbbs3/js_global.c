@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -3364,7 +3364,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"script/thread by reading from and/or writing to the <i>parent_queue</i> "
 		"(an automatically created <i>Queue</i> object). " 
 		"The result (last executed statement) of the executed script "
-		"(or the optional <i>exit_code</i> passed to the <i>exit()/<i> function) "
+		"(or the optional <i>exit_code</i> passed to the <i>exit()</i> function) "
 		"will be automatically written to the <i>parent_queue</i> "
 		"which may be read later by the parent script (using <i>load_result.read()</i>, for example).")
 	,312
