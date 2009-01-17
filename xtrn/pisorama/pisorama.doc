@@ -8,7 +8,7 @@ SCFG Configuration:
  1: Name                       Piss-o-Rama
  2: Internal Code              PISORAMA
  3: Start-up Directory         ../xtrn/pisorama
- 4: Command Line               *../xtrn/knk/pisorama.js
+ 4: Command Line               *../xtrn/pisorama/pisorama.js
  5: Clean-up Command Line
  6: Execution Cost             None
  7: Access Requirements
