@@ -1039,8 +1039,11 @@ function doScan()
 				console.writeln("New external: "+xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section.");
 				console.crlf();
 			}
-			if(ucfg.door[door]==undefined && ucfg.global.addNew)
-				ucfg.door[door].addxtrn(door);
+			if(ucfg.door[door]==undefined && ucfg.global.addNew) {
+				ucfg=new UserConfig(user.number, true);
+				ucfg.addxtrn(door);
+				ucfg.save();
+			}
 		}
 	}
 
