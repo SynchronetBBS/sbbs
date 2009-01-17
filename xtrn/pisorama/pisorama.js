@@ -276,43 +276,6 @@ function mainmenu()
 	} while (!ab);
 }
 
-/*
- * If we're running under jsexec, fake it!
- */
-if(this.console==undefined) {
-	console=new Object();
-	console.clear=function() { write("\x0c"); };
-	console.getstr=function(dflt, maxlen) {
-		return(readln().substr(0,maxlen));
-	};
-	console.pause=function() {
-		write("[Hit Enter]");
-		readln();
-		write("\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b");
-	};
-	console.getkeys=function(str) {
-		var ret;
-
-		str=str.toUpperCase();
-		while(1) {
-			ret=readln().toUpperCase();
-			if(ret.length > 1)
-				continue;
-			if(str.indexOf(ret)!=-1)
-				return(ret);
-		}
-	};
-	console.attributes=0;
-	console.write=function(str) {
-		/* Strip CTRL-A, ANSI, and CTRL characters except tab, \r, and \n */
-		write(str.replace(/\x01./g,'').replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'').replace(/[\x00-\x06\x0b\x0e-\x1f]/g,''));
-	}
-	console.writeln=function(str) {
-		/* Strip CTRL-A, ANSI, and CTRL characters except tab, \r, and \n */
-		writeln(str.replace(/\x01./g,'').replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g,'').replace(/[\x00-\x06\x0b\x0e-\x1f]/g,''));
-	}
-}
-
 console.clear();
 writeln("");
 writeln("");
