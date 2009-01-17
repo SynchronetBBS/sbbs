@@ -86,7 +86,7 @@ Adding a SYSOP Configuration Item
 	Name                       Door Scan Sysop Config      
 	Internal Code              DOORSSC                     
 	Start-up Directory                                     
-	Command Line               ../xtrn/doorscan/doorscan.js sysconfig
+	Command Line               ?../xtrn/doorscan/doorscan.js sysconfig
 	Clean-up Command Line                                  
 	Execution Cost             None                        
 	Access Requirements        LEVEL 90                    
