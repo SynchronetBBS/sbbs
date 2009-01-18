@@ -8,13 +8,7 @@
 load("sbbsdefs.js");
 
 /* text.dat entries */
-const R_ExternalPrograms	=123
-const NoXtrnPrograms		=379
-const XtrnProgLstHdr		=380
-const XtrnProgLstTitles		=381
-const XtrnProgLstUnderline	=382
-const XtrnProgLstFmt		=383
-const WhichXtrnProg			=384
+load("text.js");
 
 var multicolumn = true;
 var sort = false;
