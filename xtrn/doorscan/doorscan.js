@@ -1053,6 +1053,8 @@ function doScan()
 	 * newer
 	 */
 	for(door in ucfg.door) {
+		if(xtrn_area.prog[door]==undefined)
+			continue;
 		if(dcfg.skipSection[xtrn_area.prog[door].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[door].sec_code])
 			continue;
 		if(dcfg.door[door].skip != undefined && dcfg.door[door].skip)
