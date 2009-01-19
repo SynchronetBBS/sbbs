@@ -536,6 +536,10 @@ static int sock_sendbuf(SOCKET *sock, const char *buf, size_t len, BOOL *failed)
 						lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",*sock);
 					else if(ERROR_VALUE==ECONNABORTED) 
 						lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",*sock);
+#ifdef EPIPE
+					else if(ERROR_VALUE==EPIPE) 
+						lprintf(LOG_NOTICE,"%04d Unable to send to peer",*sock);
+#endif
 					else
 						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",*sock,ERROR_VALUE);
 					if(failed)
@@ -1744,7 +1748,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 				return(-1);
 			default:
 				/* Timeout */
-				lprintf(LOG_WARNING,"%04d Session timeout due to inactivity (%d seconds)",session->socket,startup->max_inactivity);
+				lprintf(LOG_NOTICE,"%04d Session timeout due to inactivity (%d seconds)",session->socket,startup->max_inactivity);
 				return(-1);
 		}
 

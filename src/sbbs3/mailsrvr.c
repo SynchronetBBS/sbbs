@@ -1912,7 +1912,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 		if(startup->options&MAIL_OPT_DNSBL_DEBUG)
 			lprintf(LOG_DEBUG,"%04d DEBUG checking %s (%s)",socket,host_name,ip);
 		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl,dnsbl_ip))!=0)
-				lprintf(LOG_WARNING,"%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
+				lprintf(LOG_NOTICE,"%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 					,socket, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
 	} while(0);
 	free(fromstr);
@@ -2230,7 +2230,7 @@ static void smtp_thread(void* arg)
 		/*  SPAM Filters (mail-abuse.org) */
 		dnsbl_result.s_addr = dns_blacklisted(socket,smtp.client_addr.sin_addr,host_name,dnsbl,dnsbl_ip);
 		if(dnsbl_result.s_addr) {
-			lprintf(LOG_WARNING,"%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
+			lprintf(LOG_NOTICE,"%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 				,socket, dnsbl, host_name, dnsbl_ip, inet_ntoa(dnsbl_result));
 			if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
@@ -2239,7 +2239,7 @@ static void smtp_thread(void* arg)
 					,"550 Mail from %s refused due to listing at %s"
 					,dnsbl_ip, dnsbl);
 				mail_close_socket(socket);
-				lprintf(LOG_WARNING,"%04d !SMTP REFUSED SESSION from blacklisted server"
+				lprintf(LOG_NOTICE,"%04d !SMTP REFUSED SESSION from blacklisted server"
 					,socket);
 				thread_down();
 				if(active_clients)
@@ -2555,7 +2555,7 @@ static void smtp_thread(void* arg)
 								,(int)sizeof(str)/2, startup->dnsbl_tag
 								,(int)sizeof(str)/2, p);
 							p=str;
-							lprintf(LOG_WARNING,"%04d !SMTP TAGGED MAIL SUBJECT from blacklisted server with: %s"
+							lprintf(LOG_NOTICE,"%04d !SMTP TAGGED MAIL SUBJECT from blacklisted server with: %s"
 								,socket, startup->dnsbl_tag);
 						}
 						smb_hfield_str(&msg, SUBJECT, p);
@@ -2600,7 +2600,7 @@ static void smtp_thread(void* arg)
 
 				/* SPAM Filtering/Logging */
 				if(relay_user.number==0 && msg.subj!=NULL && trashcan(&scfg,msg.subj,"subject")) {
-					lprintf(LOG_WARNING,"%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
+					lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
 						,socket, msg.subj, reverse_path);
 					SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
 						,msg.subj, reverse_path);
@@ -2623,7 +2623,7 @@ static void smtp_thread(void* arg)
 				}
 				if(relay_user.number==0 && dnsbl_result.s_addr) {
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
-						lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL from blacklisted server"
+						lprintf(LOG_NOTICE,"%04d !SMTP IGNORED MAIL from blacklisted server"
 							,socket);
 						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "IGNORED"
@@ -2638,7 +2638,7 @@ static void smtp_thread(void* arg)
 							,startup->dnsbl_hdr, dnsbl_ip
 							,dnsbl, inet_ntoa(dnsbl_result));
 						smb_hfield_str(&msg, RFC822HEADER, str);
-						lprintf(LOG_WARNING,"%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
+						lprintf(LOG_NOTICE,"%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
 							,socket, startup->dnsbl_hdr);
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
@@ -3245,11 +3245,11 @@ static void smtp_thread(void* arg)
 			/* Check for SPAM bait recipient */
 			if(findstr(rcpt_addr,spam_bait)) {
 				SAFEPRINTF(str,"SPAM BAIT (%s) taken", rcpt_addr);
-				lprintf(LOG_WARNING,"%04d !SMTP %s by: %s"
+				lprintf(LOG_NOTICE,"%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
 				strcpy(tmp,"REFUSED");
 				if(dnsbl_result.s_addr==0)	{ /* Don't double-filter */
-					lprintf(LOG_WARNING,"%04d !BLOCKING IP ADDRESS: %s in %s", socket, host_ip, spam_block);
+					lprintf(LOG_NOTICE,"%04d !BLOCKING IP ADDRESS: %s in %s", socket, host_ip, spam_block);
 					filter_ip(&scfg, "SMTP", str, host_name, host_ip, reverse_path, spam_block);
 					strcat(tmp," and BLOCKED");
 				}
@@ -3265,7 +3265,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if(relay_user.number==0 && dnsbl_result.s_addr && startup->options&MAIL_OPT_DNSBL_BADUSER) {
-				lprintf(LOG_WARNING,"%04d !SMTP REFUSED MAIL from blacklisted server"
+				lprintf(LOG_NOTICE,"%04d !SMTP REFUSED MAIL from blacklisted server"
 					,socket);
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
