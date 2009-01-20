@@ -1590,7 +1590,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
-		lprintf(level,"%04d %s %s: %s"
+		lprintf(level,"%04d %s %s %s"
 			,p->sock,p->log_prefix,p->proc_name,JS_GetStringBytes(str));
 		JS_RESUMEREQUEST(cx, rc);
 	}
@@ -1758,11 +1758,11 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 		if(mailproc->eval!=NULL && *mailproc->eval!=0) {
-			lprintf(LOG_DEBUG,"%04d %s JavaScript: Evaluating: %s"
+			lprintf(LOG_DEBUG,"%04d %s Evaluating: %s"
 				,sock, log_prefix, mailproc->eval);
 			js_script=JS_CompileScript(*js_cx, js_scope, mailproc->eval, strlen(mailproc->eval), NULL, 1);
 		} else {
-			lprintf(LOG_DEBUG,"%04d %s JavaScript: Executing: %s"
+			lprintf(LOG_DEBUG,"%04d %s Executing: %s"
 				,sock, log_prefix, cmdline);
 			js_script=JS_CompileFile(*js_cx, js_scope, path);
 		}
@@ -2442,7 +2442,7 @@ static void smtp_thread(void* arg)
 									,socket, str, j, errno);
 								if(mailproc_list[i].ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) error: %d"
-										,socket, str, j);
+										,socket, mailproc_list[i].name, j);
 									msg_handled=TRUE;
 								}
 							}
@@ -2460,7 +2460,7 @@ static void smtp_thread(void* arg)
 									,socket, str, j);
 								if(mailproc_list[i].ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) failure"
-										,socket, str);
+										,socket, mailproc_list[i].name);
 									msg_handled=TRUE;
 								}
 #endif
@@ -2477,7 +2477,8 @@ static void smtp_thread(void* arg)
 							if(!fgets(str,sizeof(str),proc_err))
 								break;
 							truncsp(str);
-							lprintf(LOG_WARNING,"%04d !SMTP External mail processor error: %s", socket, str);
+							lprintf(LOG_WARNING,"%04d !SMTP External mail processor (%s) error: %s"
+								,socket, mailproc_list[i].name, str);
 							i=atoi(str);
 							if(i>=100 && i<1000)
 								sockprintf(socket,"%s", str);
@@ -2490,8 +2491,10 @@ static void smtp_thread(void* arg)
 						msg_handled=TRUE;
 					}
 					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
-						lprintf(LOG_NOTICE,"%04d SMTP External mail processor removed %s file"
-							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
+						lprintf(LOG_NOTICE,"%04d SMTP External mail processor (%s) removed %s file"
+							,socket
+							,mailproc_list[i].name
+							,fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
 						msg_handled=TRUE;
 					}
@@ -2512,8 +2515,8 @@ static void smtp_thread(void* arg)
 				}
 			
 				if(msg_handled) {
-					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor"
-						,socket);
+					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor (%s)"
+						,socket, mailproc_list[i].name);
 					continue;
 				}
 
@@ -3381,13 +3384,13 @@ static void smtp_thread(void* arg)
 			}
 
 			for(i=0;i<mailproc_count;i++) {
-				if(!mailproc_to_match[i]) {
-					mailproc_to_match[i]=findstr_in_list(p, mailproc_list[i].to);
-					if(mailproc_to_match[i] && !mailproc_list[i].passthru)
+				if(findstr_in_list(p, mailproc_list[i].to)) {
+					mailproc_to_match[i]=TRUE;
+					if(!mailproc_list[i].passthru)
 						break;
 				}
 			}
-			/* destined for an external mail processor */
+			/* destined for a (non-passthru) external mail processor */
 			if(i<mailproc_count) {
 				fprintf(rcptlst,"[%u]\n",rcpt_count++);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
