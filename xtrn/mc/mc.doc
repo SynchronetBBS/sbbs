@@ -1,0 +1,22 @@
+My setup:
+
+[Milliway's Casino]
+ 1: Name                       Milliway's Casino
+ 2: Internal Code              MILLIWAY
+ 3: Start-up Directory         ../xtrn/mc
+ 4: Command Line               ?../xtrn/mc/mc.js
+ 5: Clean-up Command Line
+ 6: Execution Cost             None
+ 7: Access Requirements
+ 8: Execution Requirements
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable No
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: Pause After Execution      No
+16: BBS Drop File Type         None
+17: Place Drop File In         Node Directory
+18: Time Options...
+
