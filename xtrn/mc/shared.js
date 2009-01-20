@@ -212,6 +212,8 @@ function checkhangup()
 	// TODO: More stuff to check?
 	if(js.terminated)
 		hangup=true;
+	if(!bbs.online)
+		hangup=true;
 }
 
 function leave()
@@ -232,6 +234,9 @@ function leave()
 	}
 	player.Put();
 	stranger.Put();
+	// Restore old auto-terminate
+	js.auto_terminate=original_auto_terminate;
+	exit(0);
 }
 
 function setcol(c)
@@ -325,9 +330,6 @@ function player_stats()
 {
 	var str;	/* temp */
 
-	checkhangup();
-	if(hangup)
-		leave();
 	console.crlf();
 	console.crlf();
 	console.print('Your Name '+player.name+'\r\n');
@@ -375,15 +377,9 @@ function player_stats()
 
 function sell_to_bruno(temp_money)
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print("You don't have the funds, so a large man named Bruno"+'\r\n');
 	console.print('comes over, and'+'\r\n');
 	do {
-		checkhangup();
-		if(hangup)
-			leave();
 		switch(++player.bruno) {
 			case 1:
 				console.print('you sell your plane ticket for $100!'+'\r\n');
@@ -456,9 +452,6 @@ function strangers_gets_more_money(strangers_temp_money)
 			i=random(10000)+20000;
 		} while(i%100);
 	}
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print("The stranger's cash seems to have run out."+'\r\n');
 	console.print(' He whispers something into the ear of one of the girls sitting'+'\r\n');
 	console.print('around him, and she leaves, returning in a few minutes with an'+'\r\n');
@@ -501,9 +494,6 @@ function buy_from_bruno()
 	women=500000;
 
 	do {
-		checkhangup();
-		if(hangup)
-			leave();
 		if(player.players_money > women && player.bruno == 6)
 			i=6;
 		else if(player.players_money > business && player.bruno == 5)
@@ -523,9 +513,6 @@ function buy_from_bruno()
 			console.crlf();
 			switch(i) {
 				case 1:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('You can now buy your airplane ticket back'+'\r\n');
 					console.write('from Bruno for $150.  Do you wish to do so? ');
 					if(yn()) {
@@ -540,9 +527,6 @@ function buy_from_bruno()
 						nope=true;
 					break;
 				case 2:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('You may now buy your watch back from Bruno for $1,250.'+'\r\n');
 					console.write('Do you wish to do so?' );
 					if(yn()) {
@@ -558,9 +542,6 @@ function buy_from_bruno()
 						nope=true;
 					break;
 				case 3:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('Bruno offers to return the limo for $12,500.'+'\r\n');
 					console.write('Do you take him up on his offer? ');
 					if(yn()) {
@@ -576,9 +557,6 @@ function buy_from_bruno()
 						nope=true;
 					break;
 				case 4:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('Bruno offers to sell you your home back for $35,000.'+'\r\n');
 					console.write('Do you want to buy your house back? ');
 					if(yn()) {
@@ -593,9 +571,6 @@ function buy_from_bruno()
 						nope=true;
 					break;
 				case 5:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('Bruno offers to sell your business back to you for $150,000.'+'\r\n');
 					console.write('Do you want to buy your business back? ');
 					if(yn()) {
@@ -614,9 +589,6 @@ function buy_from_bruno()
 					}
 					break;
 				case 6:
-					checkhangup();
-					if(hangup)
-						leave();
 					console.print('Bruno walks up to you and says the arab prince has not left'+'\r\n');
 					console.print('and might be willing to return your nieces back to you (for a small handling fee, of course).'+'\r\n');
 					console.print("It seems he's got his eye out for the chorus line, and needs"+'\r\n');
@@ -946,9 +918,6 @@ function stranger_dates()
 	if(!stranger_dates_kathy) {
 		h=random(100);
 		if(h>75) {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.crlf();
 			if(player.hooker==0) {
 				console.print('  A beautiful blonde comes up to the stranger and asks him'+'\r\n');
@@ -973,9 +942,6 @@ function stranger_dates()
 				console.crlf();
 				console.crlf();
 				console.pause();
-				checkhangup();
-				if(hangup)
-					leave();
 				console.print('  You get up out of your chair, and leave the casino and find'+'\r\n');
 				if(player.bruno==0)
 					console.print('the young lady'+'\r\n');
@@ -991,9 +957,6 @@ function stranger_dates()
 				if(yn())
 					date_kathy();
 				else {
-					checkhangup();
-					if(hangup)
-						leave();
 					console.crlf();
 					player.turned_down_date++;
 					console.print("  You tell her that you can't leave right now, but you"+'\r\n');
@@ -1008,9 +971,6 @@ function stranger_dates()
 						console.crlf();
 						console.write('Do you pick it up? ');
 						if(yn()) {
-							checkhangup();
-							if(hangup)
-								leave();
 							console.crlf();
 							player.condom++;
 							console.print('It is a condom.  Your mind begins to wonder about'+'\r\n');
@@ -1052,9 +1012,6 @@ function date_kathy()
 	i=random(10)*100;
 	if(player.hooker==0) {
 		player.hooker++;
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('  The young lady introduces herself as Kathy.  '+'\r\n');
 		console.print('The two of you go out and spend several hours together enjoying'+'\r\n');
 		console.print('the nightlife.  After a while, you and Kathy end up in her suite.  '+'\r\n');
@@ -1064,9 +1021,6 @@ function date_kathy()
 		console.crlf();
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('  She comes back out of the bedroom, wearing a long black robe'+'\r\n');
 		console.print('that covers her from her neck down to her ankles.  She sits down'+'\r\n');
 		console.print('next to you, takes her drink, and finishes it off in one swallow.  '+'\r\n');
@@ -1079,9 +1033,6 @@ function date_kathy()
 	}
 	else {
 		player.hooker++;
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('  You and Kathy again go out, spending several hours'+'\r\n');
 		console.print('enjoying the nightlife of Los Vegas, and once again,'+'\r\n');
 		console.print('end up back in her apartment.'+'\r\n');
@@ -1109,9 +1060,6 @@ function date_kathy()
 			}
 		}
 		if(player.screwed==0) {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.print('  You are stunned, although deep in you mind, you knew this was going'+'\r\n');
 			console.print('happen sooner or later.  You turn to look at her and her lips approach yours...'+'\r\n');
 			console.crlf();
@@ -1132,9 +1080,6 @@ function date_kathy()
 			console.pause();
 		}
 		else {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.print('  Once again you and Kathy spend several lovely hours together, and you return'+'\r\n');
 			console.print('to the Casino, $1000 poorer, but happy with your experience with her.'+'\r\n');
 			console.crlf();
@@ -1147,9 +1092,6 @@ function date_kathy()
 	else {
 /*{********* BEGIN NO MAKE LOVE ***********}*/
 		if(player.screwed==0) {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.print('  You politely refuse, saying that you believe that 2 people should'+'\r\n');
 			console.print('not do such things unless they are deeply in love and are married.'+'\r\n');
 			console.print('Kathy looks at you in surprise, but realizes that you mean what you'+'\r\n');
@@ -1173,9 +1115,6 @@ function date_kathy()
 	if(player.screwed==0 && player.hooker >= 10 && player.players_money > win_money && player.condom > 0) {
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print("  You notice tears running out of Kathy's eyes, and she turns her"+'\r\n');
 		console.print('to try and hide them from you.  You hold her in your arms, and ask'+'\r\n');
 		console.print('her what is wrong.  She says she has a confession to make, that she'+'\r\n');
@@ -1186,9 +1125,6 @@ function date_kathy()
 		console.crlf();
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('  You turn your face towards hers, look her in the eyes, and tell her'+'\r\n');
 		console.print('that you have known she was a hooker for quite a while, and that'+'\r\n');
 		console.print('you had fallen in love with her from the moment you first laid eyes on'+'\r\n');
@@ -1197,9 +1133,6 @@ function date_kathy()
 		console.crlf();
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('  Kathy begins crying all over again, and you hold her tightly'+'\r\n');
 		console.print('in your arms.  After a short time, the closeness of her body'+'\r\n');
 		console.print('to yours starts to make you feel very funny.  You look her in the'+'\r\n');
@@ -1208,9 +1141,6 @@ function date_kathy()
 		console.crlf();
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('The next morning, you wake up and look over at Kathy laying there'+'\r\n');
 		console.print('next to you.  She wakes up, smiles, and kisses you shyly.  You'+'\r\n');
 		console.print('are feeling strange, and ask her, stutteringly, if she will'+'\r\n');
@@ -1224,9 +1154,6 @@ function date_kathy()
 		console.crlf();
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		won=true;
 	}
 	if(!won) {
@@ -1249,9 +1176,6 @@ function date_kathy()
 
 function refuse_date()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	if(player.hooker==0) {
 		console.print('You politely refuse the invitation, saying that you'+'\r\n');
 		console.print("really don't care to see the nightlife right now."+'\r\n');
@@ -1274,9 +1198,6 @@ function hooker()
 {
 	var temp,temp_num,y,i,dated,condom;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	if(player.hooker==0) {
 		console.print('  A beautiful blonde comes up to you and sits down beside you.'+'\r\n');
 		console.print('She mentions that she has been watching you play, and would like'+'\r\n');
@@ -1307,9 +1228,6 @@ function check_random()
 	var hooker_money=100000.;
 	var i;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	tleft();
 	i=random(500)+1;
 	if(i>=200 && i<=300)

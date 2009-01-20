@@ -10,9 +10,6 @@ function baccarat_init_deck()
 {
 	var s1;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('New Deck\r\n');
 	deck=[
 			 [0,0,0,0,0,0,0,0,0,0,0,0,0]
@@ -37,9 +34,6 @@ function baccarat_bet()
 	if(stranger.strangers_money <= 100)
 		strangers_gets_more_money();
 	do {
-		checkhangup();
-		if(hangup)
-			leave();
 		this.betamount=0;
 		console.print('The stranger has '+format_money(stranger.strangers_money)+'.\r\n');
 		console.print(player.name+', you have '+format_money(player.players_money)+'.\r\n');
@@ -106,9 +100,6 @@ function baccarat_ask_for_card()
 {
 	var i;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print("You have a total of '5'\r\n");
 	console.print('You have the option of drawing another card\r\n');
 	console.print('Do you want to draw another card? ');
@@ -121,9 +112,6 @@ function baccarat_ask_for_card()
 
 function baccarat_instructions()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('   Baccarat is a very popular game in Las Vegas.  The player\r\n');
 	console.print("and banker each receive two cards from a 'shoe' containing\r\n");
 	console.print('8 decks of cards.  All card combinations totaling ten are\r\n');
@@ -140,9 +128,6 @@ function baccarat_instructions()
 	console.print('throughout the world.  This process has resulted in wide\r\n');
 	console.print("variations in playing rules and what is called 'baccarat' in\r\n");
 	console.print("one casino may more nearly resemble the 'chemin de fer' of another.\r\n");
-	checkhangup();
-	if(hangup)
-		leave();
 	console.crlf();
 	console.crlf();
 	console.pause();
@@ -175,9 +160,6 @@ function baccarat_instructions()
 	console.print('same number tie and there is a new deal.\r\n');
 	console.crlf();
 	console.crlf();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.pause();
 	console.print('   When the result is not decided by a natural, the banker\r\n');
 	console.print('must give a card to his opponent on request or the opponent\r\n');
@@ -189,13 +171,7 @@ function baccarat_instructions()
 	console.print('   Then the banker decides whether to stand or take a card:\r\n');
 	console.crlf();
 	console.crlf();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.pause();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('IF BANKER GIVES      BANKER STANDS ON     BANKER DRAWS TO\r\n');
 	console.print('Face card or ten     4,5,6,7              3,2,1,0\r\n');
 	console.print('Nine                 4,5,6,7 (or 3)       2,1,0 (or 3)\r\n');
@@ -222,9 +198,6 @@ function baccarat_instructions()
 
 function baccarat_welcome()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('  As you enter the baccarat room, you notice how quite things\r\n');
 	console.print('seem to be.  There are only 8 tables in this room, and you see\r\n');
 	console.print('huge amounts of money being lost and won.  You observe as one\r\n');
@@ -243,20 +216,11 @@ function baccarat_play()
 	var banker_draws, tie, i, natural, banker_natural, draw_max, x, y, new_deck;
 
 	this.welcome();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('Do you wish instructions? ');
 	if(yn())
 		this.instructions();
-	checkhangup();
-	if(hangup)
-		leave();
 	this.init_deck();
 	while(1) {
-		checkhangup();
-		if(hangup)
-			leave();
 		banker_draws=false;
 		this.gave=5;
 		tie=false;
@@ -294,9 +258,6 @@ function baccarat_play()
 		console.print('Total:'+this.player_count);
 		console.crlf();
 		console.pause();
-		checkhangup();
-		if(hangup)
-			leave();
 		natural=false;
 		switch(this.player_count) {
 			case 5:
@@ -400,9 +361,6 @@ function baccarat_play()
 			console.print("It's a tie.  The hand is played over.\r\n");
 			tie=true;
 			if(this.banco) {
-				checkhangup();
-				if(hangup)
-					leave();
 				console.crlf();
 				console.print('The stranger looks up at you, as if he dares you to try\r\n');
 				console.print('again.\r\n');
@@ -413,9 +371,6 @@ function baccarat_play()
 		if(this.banker_count > this.player_count) {
 			console.print('The banker wins!\r\n');
 			if(this.banco) {
-				checkhangup();
-				if(hangup)
-					leave();
 				console.crlf();
 				console.print('The stranger extends his hand to you, but you refuse to shake\r\n');
 				console.print('hands with the man that has just turned you into a pauper.\r\n');
@@ -438,9 +393,6 @@ function baccarat_play()
 		if(this.banker_count < this.player_count) {
 			console.print('You win!\r\n');
 			if(this.banco) {
-				checkhangup();
-				if(hangup)
-					leave();
 				console.crlf();
 				console.print('The stranger stands up, and extends his hand to you.  You are\r\n');
 				console.print('still shaken by the unexpected win, but shake his hand.  He\r\n');
@@ -459,9 +411,6 @@ function baccarat_play()
 			}
 		}
 		console.crlf();
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('---------- New Game ----------\r\n');
 		console.crlf();
 		for(x in deck) {

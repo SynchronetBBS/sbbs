@@ -8,9 +8,6 @@
 
 function roulette_play_again()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	if(player.bruno > 0)
 		buy_from_bruno();
 	console.print('TOTALS'+'\r\n');
@@ -35,9 +32,6 @@ function roulette_slost(str)
 
 function roulette_process_strangers_bets()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	switch(this.strangers_bettype) {
 			case 43:
 				if(this.win_number < 19 && this.win_number > 0)
@@ -88,9 +82,6 @@ function roulette_process_strangers_bets()
 
 function roulette_won(odds, amount, betnum, str)
 {
-	checkhangup()
-	if(hangup)
-		leave();
 	console.print('You won '+(amount*odds)+' dollars on bet #' + betnum + ' ' + str+'\r\n');
 	player.players_money += amount*odds;
 	player.won_today += amount*odds;
@@ -99,9 +90,6 @@ function roulette_won(odds, amount, betnum, str)
 
 function roulette_lost(amount,betnum,str)
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('You lost '+amount+' dollars on bet #' + betnum + ' ' +str+'\r\n');
 	player.players_money -= amount;
 	stranger.jackpot += (amount * 0.10);
@@ -114,9 +102,6 @@ function roulette_process_players_bets()
 	var betamount;
 
 	while(this.betamount.length) {
-		checkhangup();
-		if(hangup)
-			leave();
 		betamount=this.betamount.shift();
 		bettype=this.bettype.shift();
 		betnum++;
@@ -235,9 +220,6 @@ function roulette_spin()
 	console.print('Spinning the wheel'+'\r\n');
 	rnd=random(20)+10;
 	for(i=0; i<rnd; i++) {
-		checkhangup();
-		if(hangup)
-			leave();
 		this.win_number=random(this.namebets.length);
 		if(this.namebets[this.win_number].red)
 			console.print(red+' '+this.namebets[this.win_number].name+' ');
@@ -307,9 +289,6 @@ function roulette_strangers_bets()
 
 function roulette_betting_odds()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('35:1 bets are:'+'\r\n');
 	console.print('  the numbers (1-36), (49)-0, and (50)-00'+'\r\n');
 	console.crlf();
@@ -345,9 +324,6 @@ function roulette_bets()
 	check_random();
 	do {
 		num_bets=0;
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('B for betting odds chart'+'\r\n');
 		console.print('S for player stats'+'\r\n');
 		console.print('Q to quit'+'\r\n');
@@ -371,9 +347,6 @@ function roulette_bets()
 	temp_money=player.players_money;
 	for(bet_num=0; bet_num < num_bets; bet_num++) {
 		do {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.print("'B' for odds and types of bets."+'\r\n');
 			console.print("'S' for player_stats."+'\r\n');
 			console.print('Bet #'+(bet_num+1)+'\r\n')
@@ -406,9 +379,6 @@ function roulette_bets()
 		if(temp_money < 0)
 			temp_money=sell_to_bruno(temp_money);
 		do {
-			checkhangup();
-			if(hangup)
-				leave();
 			good=false;
 			console.print('What are you betting on (1-50)? ');
 			switch((ch=console.getkeys('BS',50))) {
@@ -436,16 +406,10 @@ function roulette_bets()
 
 function roulette_instructions()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.crlf();
 	console.crlf();
 	console.crlf();
 	console.print('Bets are made on the following'+'\r\n');
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('35:1 bets are:'+'\r\n');
 	console.print('  the numbers (1-36), (49)-0, and (50)-00'+'\r\n');
 	console.crlf();
@@ -489,9 +453,6 @@ function roulette_instructions()
 
 function roulette_welcome()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.crlf();
 	console.crlf();
   	console.print ('  Smoke fills the air as you look across a vast room.  There'+'\r\n');
@@ -528,9 +489,6 @@ function roulette_play()
 		roulette_instructions()
 	while(1) {
 		tleft();
-		checkhangup();
-		if(hangup)
-			leave();
 		if(this.bets()) {
 			if(!stranger_dates_kathy)
 				this.sbets();

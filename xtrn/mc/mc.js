@@ -109,6 +109,7 @@ game_dir=game_dir.replace(/[\/\\][^\/\\]*$/,'');
 game_dir=backslash(game_dir);
 
 load(game_dir+"shared.js");
+js.on_exit('leave()');
 load(game_dir+"roulette.js");
 load(game_dir+"slots.js");
 load(game_dir+"baccarat.js");
@@ -118,6 +119,7 @@ var roulette=new Roulette();
 var slots=new Slots();
 var baccarat=new Baccarat();
 var Twenty1=new Twenty1();
+var original_auto_terminate=js.auto_terminate;
 
 function create_player()
 {
@@ -154,9 +156,6 @@ function enter_casino()
 	console.crlf();
 	console.crlf();
 	console.crlf();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print ('After a short time, the hostess returns with your card.  You notice\r\n');
 	console.print ('that your name is embossed on it, along with a logo that looks like\r\n');
 	console.crlf();
@@ -229,9 +228,6 @@ function find_player()
 
 function welcome()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	find_player()
 	if(player.times_on != 1) {
 		console.crlf();
@@ -409,9 +405,6 @@ function logon(a)
 
 function general_instructions()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('  The goal of the game is simple.  Accumulate $1,000,000, and marry\r\n');
 	console.print('Kathy.  However, there are several obstacles in your way.  First of\r\n');
 	console.print("all, you have a rival for Kathy's affections--the 'Stranger', who\r\n");
@@ -421,9 +414,6 @@ function general_instructions()
 	console.crlf();
 	console.crlf();
 	console.pause();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('  Another obstacle in the game is Bruno.  He is a friendly chap, and\r\n');
 	console.print("has been known to help out players that don't have enough money to\r\n");
 	console.print('cover a bet by buying different items from the player, then selling\r\n');
@@ -433,9 +423,6 @@ function general_instructions()
 	console.crlf();
 	console.crlf();
 	console.pause();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('  Most of the casino games are familiar to all.  There is also a\r\n');
 	console.print('constantly changing slots jackpot.  The money for the jackpot changes\r\n');
 	console.print('according to what has been won or lost.  If the house wins, 10% of the\r\n');
@@ -446,9 +433,6 @@ function general_instructions()
 	console.crlf();
 	console.crlf();
 	console.pause();
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('GOOD LUCK!\r\n');
 }
 
@@ -467,9 +451,6 @@ function do_stats()
 	console.print("Player's Name                                     Money         Real\r\n");
 	console.print('---------------------------------------------   ----------   -----------\r\n');
 	for(i in all_players) {
-		checkhangup();
-		if(hangup)
-			leave();
 		real_money=real_dough(all_players[i]);
 		console.print(format("%-41s   %10s  %11s\r\n",all_players[i].name,format_money(all_players[i].players_money),format_money(real_money)));
 	}
@@ -484,9 +465,6 @@ function mc_main()
 {
 	sysoplog("     Played Milliway's Casino");
 	won=false;
-	checkhangup();
-	if(hangup)
-		exit(0);
 	welcome();
 	setcol(1);
 	console.print("Do you wish to see what's\r\n");
@@ -500,9 +478,6 @@ function mc_main()
 	slot=roul=twenty=bacc=false;
 	do {
 		tleft();
-		checkhangup();
-		if(hangup)
-			leave();
 		check_winnings();
 		console.print('You are standing in front of 4 doors.\r\n');
 		console.print('Each door is numbered, and has a sign underneath.\r\n');

@@ -10,9 +10,6 @@ function slots_process_bets()
 {
 	var jack_pot,win;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	switch(this.win_number.length) {
 		case 2:
 			if(this.win_number[0] != this.win_number[1]) {
@@ -125,9 +122,6 @@ function slots_bet()
 	check_random();
 	this.betamount=0;
 	do {
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('A voice comes out of the machine:\r\n');
 		console.print(player.name+', you may bet between 10 & 5000 dollars.\r\n');
 		console.print('S for stats, B for odds, Q to quit.\r\n');
@@ -175,9 +169,6 @@ function slots_welcome()
 
 function slots_odds()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	console.print('  3 Bars    : JACKPOT!     2 Bars    : 25xbet\r\n');
 	console.print('  3 Sevens  : 25xbet       2 Sevens  : 10xbet\r\n');
 	console.print('  3 Cherrys : 15xbet       2 Cherrys : 5xbet\r\n');
@@ -186,21 +177,12 @@ function slots_odds()
 
 function slots_play()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	this.welcome();
 	while(1) {
 		tleft();
-		checkhangup();
-		if(hangup)
-			leave();
 		if(player.bruno > 0)
 			buy_from_bruno();
 		console.print("You have "+format_money(player.players_money)+".\r\n");
-		checkhangup();
-		if(hangup)
-			leave();
 		if(this.bet()) {
 			this.spin();
 			this.process_bets();

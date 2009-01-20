@@ -66,9 +66,6 @@ function twenty1_showcard(hand, showit)
 	var i,j,x,y,c,s,cv;
 
 	for(i in hand) {
-		checkhangup();
-		if(hangup)
-			leave();
 		x=hand[i];
 		c=x % 13;
 		s=parseInt(x/13);
@@ -140,9 +137,6 @@ function twenty1_get_bet()
 	check_winnings();
 	check_random();
 	do {
-		checkhangup();
-		if(hangup)
-			leave();
 		console.print('The dealer tells you to place your bet.\r\n');
 		console.print('('+this.min_name+'-'+this.max_name+')\r\n');
 		console.print('(Q to quit)\r\n');
@@ -266,9 +260,6 @@ function twenty1_players_hand()
 {
 	var test_num, player_double, cha, player_done;
 
-	checkhangup();
-	if(hangup)
-		leave();
 	player_double=false;
 	cha=' ';
 	this.dcardval=this.handvalue(this.dealer_hand);
@@ -353,9 +344,6 @@ function twenty1_players_hand()
 		this.player_payoff=1;
 		player_done=false;
 		do {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.crlf();
 			console.print('your hand:\r\n');
 			this.showcard(this.player_hand, true);
@@ -407,9 +395,6 @@ function twenty1_dealers_hand()
 	var dealer_done=false;
 	if((this.pcardval != 22 || this.scardval != 22) && (this.pcardval != 0 || this.scardval != 0) && ((!this.player_hand_done) || (!this.strangers_hand_done))) {
 		do {
-			checkhangup();
-			if(hangup)
-				leave();
 			console.crlf();
 			this.showcard(this.dealer_hand, true);
 			this.dcardval=this.handvalue(this.dealer_hand);
@@ -439,10 +424,6 @@ function twenty1_process_hands()
 {
 	var player_won=strangers_won=player_push=strangers_push=false;
 	var player_amount,strangers_amount;
-
-	checkhangup();
-	if(hangup)
-		leave();
 
 	/* look forwinning hands */
 	if(this.pcardval > this.dcardval || this.player_blackjack)
@@ -557,9 +538,6 @@ function twenty1_process_hands()
 
 function twenty1_play()
 {
-	checkhangup();
-	if(hangup)
-		leave();
 	this.welcome();
 	console.print('You take your seat');
 	if(!stranger_dates_kathy) {
@@ -576,18 +554,12 @@ function twenty1_play()
 		this.player_hand_done=this.strangers_hand_done=false;
 		this.player_blackjack=this.strangers_blackjack=this.dealer_blackjack=false;
 		this.player_busted=this.strangers_busted=this.dealer_busted=false;
-		checkhangup();
-		if(hangup)
-			leave();
 		if(player.bruno)
 			buy_from_bruno();
 		console.crlf();
 		if(!stranger_dates_kathy)
 			console.print('The stranger has '+format_money(stranger.strangers_money)+'.\r\n');
 		console.print('You have '+format_money(player.players_money)+'.\r\n');
-		checkhangup();
-		if(hangup)
-			leave();
 		if(!this.get_bet())
 			break;
 		this.deal_first_cards();
