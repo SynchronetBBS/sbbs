@@ -101,11 +101,18 @@
 */
 
 load("recordfile.js");
-load("/synchronet/src/xtrn/mc/shared.js");
-load("/synchronet/src/xtrn/mc/roulette.js");
-load("/synchronet/src/xtrn/mc/slots.js");
-load("/synchronet/src/xtrn/mc/baccarat.js");
-load("/synchronet/src/xtrn/mc/twenty1.js");
+load("sbbsdefs.js");
+
+var game_dir='.';
+try { throw barfitty.barf(barf) } catch(e) { game_dir=e.fileName }
+game_dir=game_dir.replace(/[\/\\][^\/\\]*$/,'');
+game_dir=backslash(game_dir);
+
+load(game_dir+"shared.js");
+load(game_dir+"roulette.js");
+load(game_dir+"slots.js");
+load(game_dir+"baccarat.js");
+load(game_dir+"twenty1.js");
 
 var roulette=new Roulette();
 var slots=new Slots();

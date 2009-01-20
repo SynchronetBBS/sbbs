@@ -1,10 +1,3 @@
-load("sbbsdefs.js");
-
-var game_dir='.';
-try { throw barfitty.barf(barf) } catch(e) { game_dir=e.fileName }
-game_dir=game_dir.replace(/[\/\\][^\/\\]*$/,'');
-game_dir=backslash(game_dir);
-
 var messagefile=new File(game_dir+'casino.msg');
 var hangup=false;
 const win_money=1000000;
