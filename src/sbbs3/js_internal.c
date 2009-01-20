@@ -425,7 +425,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 	jsval	rval;
 	JSScript* script;
 
-	branch->auto_terminate=false;
+	branch->auto_terminate=FALSE;
 
 	while((p=strListPop(&branch->exit_func))!=NULL) {
 		if((script=JS_CompileScript(cx, obj, p, strlen(p), NULL, 0))!=NULL) {
