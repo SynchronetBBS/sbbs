@@ -161,8 +161,50 @@ function tleft() {}
 function sysoplog() {}
 
 function ansic(x) {
-	// TODO: This needs a proper mapping...
-	console.attributes=x;
+	if(x==1 || x==0)
+		x=0;
+	else {
+		if(x==2)
+			x=7;
+		else
+			x-=2;
+	}
+	
+	switch(x) {
+		case 0:
+			console.attributes=7;
+			break;
+		case 1:
+			console.attributes=LIGHTCYAN;
+			break;
+		case 2:
+			console.attributes=YELLOW;
+			break;
+		case 3:
+			console.attributes=MAGENTA;
+			break;
+		case 4:
+			console.attributes=WHITE|BG_BLUE;
+			break;
+		case 5:
+			console.attributes=GREEN;
+			break;
+		case 6:
+			console.attributes=LIGHTRED|BLINK;
+			break;
+		case 7:
+			console.attributes=LIGHTBLUE;
+			break;
+		case 8:
+			console.attributes=BLUE;
+			break;
+		case 9:
+			console.attributes=CYAN;
+			break;
+		default:
+			console.attributes=7;
+			break;
+	}
 }
 
 function checkhangup() 
@@ -1079,6 +1121,7 @@ function date_kathy()
 				console.crlf();
 			ansic(8);
 			console.print("FOOLED YOU DIDN'T I!"+'\r\n');
+			ansic(0);
 			console.crlf();
 			console.print("This is a family program, so leaving out the details, let's just say"+'\r\n');
 			console.print('that you leave the suite 12 hours later, with a smile on your face and'+'\r\n');

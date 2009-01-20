@@ -173,7 +173,7 @@ function find_player()
 	var found=false;
 	var i;
 
-	if(messagefile.length==0) {
+	if((!messagefile.exists) || messagefile.length==0) {
 		messagefile.open('a');
 		messagefile.writeln('Current file begins on '+system.datestr()+'.');
 		messagefile.writeln('');
@@ -306,7 +306,7 @@ function check_played(i)
 function logon(a)
 {
 	var j='               ';
-	ansic(5);
+	ansic(4);
 	console.print(j);
 	console.print('浜様様様様様様様様様様様様様様様様様様様様様様融\r\n');
 	ansic(4);
@@ -404,6 +404,7 @@ function logon(a)
 		ansic(2);
 		console.print('!\r\n');
 	}
+	ansic(0);
 }
 
 function general_instructions()
@@ -490,6 +491,7 @@ function mc_main()
 	setcol(1);
 	console.print("Do you wish to see what's\r\n");
 	console.print("happened to the others in the game? ");
+	setcol(0);
 	if(yn()) {
 		console.printfile(messagefile.name);
 		console.pause();
@@ -497,7 +499,6 @@ function mc_main()
 	done=false;
 	slot=roul=twenty=bacc=false;
 	do {
-		ansic(7);
 		tleft();
 		checkhangup();
 		if(hangup)

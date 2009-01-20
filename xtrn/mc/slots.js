@@ -69,6 +69,7 @@ function slots_process_bets()
 					ansic(4); console.print('*** ');
 					ansic(8); console.print('JACKPOT');
 					ansic(4); console.print(' ***\r\n');
+					ansic(0);
 					sysoplog(player.name+'WON THE JACKPOT!!!');
 					console.crlf();
 					break;
