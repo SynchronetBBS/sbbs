@@ -57,7 +57,7 @@ function Lock(filename, lockid, forwrite, timeout)
 					if(LockedFiles[filename]!=undefined)
 						file_remove(readlock.name);
 					/* We have got the lock... wait for all read locks to close */
-					while(file_exists(filename+".lock_*")) {
+					while(file_exists(filename+".lock.*")) {
 						mswait(1);
 						if(system.timer > endtime) {
 							/* If we were upgrading, restor our old lock... */
@@ -111,7 +111,10 @@ function Unlock(filename)
 
 function UnlockAll()
 {
+	var old_at=js.auto_terminate;
+	js.auto_terminate=false;
 	for(filename in LockedFiles) {
 		Unlock(filename);
 	}
+	js.auto_terminate=old_at;
 }
