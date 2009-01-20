@@ -489,6 +489,9 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	}
 	if(!s)
 		return(0);
+	if((p=smb_get_hfield(msg,SMB_CARBONCOPY,NULL))!=NULL)
+		if(!sockprintf(socket,"CC: %s",p))
+			return(0);
 	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
@@ -1862,6 +1865,9 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 
 	if(!stricmp(field, "IN-REPLY-TO"))
 		return smb_hfield_str(msg, *type=RFC822REPLYID, p);
+
+	if(!stricmp(field, "CC"))
+		return smb_hfield_str(msg, *type=SMB_CARBONCOPY, p);
 
 	if(!stricmp(field, "RETURN-PATH")) {
 		*type=UNKNOWN;
