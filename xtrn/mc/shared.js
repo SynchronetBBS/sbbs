@@ -159,7 +159,7 @@ var game=new RecordFile(game_dir+'game.dat', GameProperties);
 
 function tleft()
 {
-	bbs.gettimeleft();
+	bbs.get_time_left();
 }
 function sysoplog() {}
 
