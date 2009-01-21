@@ -234,8 +234,6 @@ function leave()
 	}
 	player.Put();
 	stranger.Put();
-	// Restore old auto-terminate
-	js.auto_terminate=original_auto_terminate;
 	exit(0);
 }
 

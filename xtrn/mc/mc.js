@@ -119,7 +119,6 @@ var roulette=new Roulette();
 var slots=new Slots();
 var baccarat=new Baccarat();
 var Twenty1=new Twenty1();
-var original_auto_terminate=js.auto_terminate;
 
 function create_player()
 {
