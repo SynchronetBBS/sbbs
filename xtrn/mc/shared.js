@@ -157,7 +157,10 @@ var GameProperties = [
 ];
 var game=new RecordFile(game_dir+'game.dat', GameProperties);
 
-function tleft() {}
+function tleft()
+{
+	bbs.gettimeleft();
+}
 function sysoplog() {}
 
 function ansic(x) {
@@ -244,7 +247,7 @@ function setcol(c)
 
 function tlef()
 {
-	var tl=bbs.time_left;
+	var tl=bbs.get_time_left();
 	return(parseInt(tl/60)+":"+format("%02d",tl%80));
 }
 
