@@ -764,6 +764,14 @@ enum {
 	,NodeActionPaging
 	,NodeActionRetrieving
 	,YN
+	,ViewSignatureQ
+	,DeleteSignatureQ
+	,CreateEditSignatureQ
+	,SpinningCursorOnPauseQ
+	,UseExternalEditorQ
+	,ExternalEditorHeading
+	,CommandShellHeading
+	,ArchiveTypeHeading
 
 	,TOTAL_TEXT 
 };

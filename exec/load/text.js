@@ -760,5 +760,13 @@ var NodeActionPrivateChat=717;
 var NodeActionPaging=718;
 var NodeActionRetrieving=719;
 var YN=720;
+var ViewSignatureQ=721;
+var DeleteSignatureQ=722;
+var CreateEditSignatureQ=723;
+var SpinningCursorOnPauseQ=724;
+var UseExternalEditorQ=725;
+var ExternalEditorHeading=726;
+var CommandShellHeading=727;
+var ArchiveTypeHeading=728;
 
 var TOTAL_TEXT=720; 

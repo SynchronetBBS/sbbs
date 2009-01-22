@@ -866,3 +866,11 @@
 ""                                                      718 NodeActionPaging
 ""                                                      719 NodeActionRetrieving
 "YNQ*"                                                  720 YNQP (Yes/No/Quit/Password chars)
+"View signature"                                        721 ViewSignatureQ
+"Delete signature"                                      722 DeleteSignatureQ
+"Create/Edit signature"                                 723 CreateEditSignatureQ
+"Spinning cursor on pause prompts"                      724 SpinningCursorOnPauseQ
+"Use an external editor"                                725 UseExternalEditorQ
+"External Editor"                                       726 ExternalEditorHeading
+"Command Shell"                                         727 CommandShellHeading
+"Archive Type"                                          728 ArchiveTypeHeading
