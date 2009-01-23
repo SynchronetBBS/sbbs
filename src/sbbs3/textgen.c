@@ -144,41 +144,27 @@ char *readtext(FILE *stream, char **comment_ret)
 char *format_as_cstr(char *orig)
 {
 	int		len=0;
-	int		outpos=0;
 	char	*ret=NULL;
 	char	*in;
-	char	*tmp;
 	char	hex[32];
+	int		outpos=0;
 
-	if(!orig)
-		return(NULL);
+	len=strlen(orig);
+	len += ((len / 32)*2);
+	len *= 6;
+	len += 32;	/* Only needs to be three, the extra is for luck  ;-) */
+
+	ret=(char *)malloc(len);
+	if(ret==NULL)
+		return(ret);
+	strcpy(ret,"\"");
 	for(in=orig; *in; in++) {
-		if(outpos >= len-7) {
-			len += strlen(in)+7;
-			tmp=realloc(ret, len);
-			if(tmp==NULL) {
-				free(ret);
-				return(NULL);
-			}
-			ret=tmp;
-		}
-		if(*in < ' ' || *in > '~') {
-			sprintf(hex, "%02x", (unsigned char)*in);
-			ret[outpos++]='\\';
-			ret[outpos++]='x';
-			ret[outpos++]=hex[0];
-			ret[outpos++]=hex[1];
-			ret[outpos++]='"';
-			ret[outpos++]='"';
-		}
-		else
-			ret[outpos++]=*in;
+		sprintf(hex, "\\x%02x", (unsigned char)*in);
+		strcat(ret,hex);
+		if((++outpos)%32==0)
+			strcat(ret,"\"\n\t\t\"");
 	}
-	if(in==orig) {
-		ret=(char *)malloc(1);
-	}
-	if(ret)
-		ret[outpos]=0;
+	strcat(ret, "\"");
 	return(ret);
 }
 
@@ -331,7 +317,7 @@ int main(int argc, char **argv)
 			}
 			fprintf(text_h, "\t%c%s\n", i==1?' ':',', macro);
 			fprintf(text_js, "var %s=%d;\n", macro, i);
-			fprintf(text_defaults_c, "\t%c\"%s\"\n", i==1?' ':',', cstr);
+			fprintf(text_defaults_c, "\t%c%s\n", i==1?' ':',', cstr);
 		}
 	} while(p != NULL);
 	fclose(text_dat);
