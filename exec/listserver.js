@@ -131,20 +131,24 @@ if(this.recipient_list_filename!=undefined) {
 	/* contribution to mailing list? */
 	for(r=0;r<rcpt_list.length;r++) {
 		var l;
+		var recipient;
 		for(l=0;l<list_array.length;l++) {
 			var list = list_array[l];
 /** DEBUG
 			for(var p in list)
 				log("list_array["+l+"]."+p+" = "+list[p]);
 **/
-			if(rcpt_list[r].To.toLowerCase()==list.address.toLowerCase()
+			recipient=rcpt_list[r].To;
+			if(!recipient)	// for pre v3.15 compatibility
+				recipient=rcpt_list[r].Recipient;
+			if(recipient.toLowerCase()==list.address.toLowerCase()
 				&& !list.disabled
 				&& !list.readonly)
 				break;
 		}
 		if(l<list_array.length) {	/* match found */
 			log(LOG_INFO,format("Contribution message from %s to %s: %s"
-				,header.from, rcpt_list[r].To, header.subject));
+				,header.from, recipient, header.subject));
 			handled=true;
 			if(!process_contribution(header, body, list))
 				break;
