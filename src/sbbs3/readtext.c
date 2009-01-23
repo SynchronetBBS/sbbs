@@ -10,8 +10,12 @@ char *readtext(long *line,FILE *stream,long dflt)
 	char buf[2048],str[2048],tmp[256],*p,*p2;
 	int i,j,k;
 
-	if(!fgets(buf,256,stream))
+	if(!fgets(buf,256,stream)) {
+		/* Hide the EOF */
+		if(feof(stream))
+			clearerr(stream);
 		goto use_default;
+	}
 	if(line)
 		(*line)++;
 	if(buf[0]=='#')
@@ -24,8 +28,12 @@ char *readtext(long *line,FILE *stream,long dflt)
 	}
 	if(*(p+1)=='\\')	/* merge multiple lines */
 		while(strlen(buf)<2000) {
-			if(!fgets(str,255,stream))
+			if(!fgets(str,255,stream)) {
+				/* Hide the EOF */
+				if(feof(stream))
+					clearerr(stream);
 				goto use_default;
+			}
 			if(line)
 				(*line)++;
 			p2=strchr(str,'"');
