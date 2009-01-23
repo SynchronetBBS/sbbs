@@ -37,7 +37,7 @@
 
 /****************************************************************************/
 /* Values for elements of the array of pointers (bbs.text()) to static text	*/
-/* Should correlate with CTRL\TEXT.DAT										*/
+/* Auto-generated from CTRL\TEXT.DAT										*/
 /****************************************************************************/
 
 var MsgSubj=1;
@@ -583,7 +583,7 @@ var WaitingForNodeInPChat=540;
 var NodeJoinedPrivateChat=541;
 var NodeLeftPrivateChat=542;
 var NoOneHasLoggedOnToday=543;
-var Unused544=544;	/* was LastFewCallers */
+var Unused544 /* Was LastFewCallers */=544;
 var LastFewCallersFmt=545;
 var CallersToday=546;
 var DoYouMeanThisUserQ=547;
@@ -603,7 +603,7 @@ var Yes=560;
 var No=561;
 var NoYesQuestion=562;
 var Pause=563;
-var ContinueQ=564; /* was Wait */
+var ContinueQ /* was Wait */=564;
 var SysStatsLogHdr=565;
 var NodeStatsLogHdr=566;
 var ReducedTime=567;
@@ -759,7 +759,7 @@ var NodeActionQWK=716;
 var NodeActionPrivateChat=717;
 var NodeActionPaging=718;
 var NodeActionRetrieving=719;
-var YN=720;
+var YN /* (Yes/No/Quit/Password chars) */=720;
 var ViewSignatureQ=721;
 var DeleteSignatureQ=722;
 var CreateEditSignatureQ=723;
@@ -768,5 +768,3 @@ var UseExternalEditorQ=725;
 var ExternalEditorHeading=726;
 var CommandShellHeading=727;
 var ArchiveTypeHeading=728;
-
-var TOTAL_TEXT=720; 
