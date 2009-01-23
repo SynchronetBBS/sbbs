@@ -383,6 +383,10 @@ SOURCE=.\qwktomsg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\readtext.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\readmail.cpp
 # End Source File
 # Begin Source File
