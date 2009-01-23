@@ -153,8 +153,8 @@ char *format_as_cstr(char *orig)
 	if(!orig)
 		return(NULL);
 	for(in=orig; *in; in++) {
-		if(outpos >= len-5) {
-			len += strlen(in)+5;
+		if(outpos >= len-7) {
+			len += strlen(in)+7;
 			tmp=realloc(ret, len);
 			if(tmp==NULL) {
 				free(ret);
@@ -168,6 +168,8 @@ char *format_as_cstr(char *orig)
 			ret[outpos++]='x';
 			ret[outpos++]=hex[0];
 			ret[outpos++]=hex[1];
+			ret[outpos++]='"';
+			ret[outpos++]='"';
 		}
 		else
 			ret[outpos++]=*in;
