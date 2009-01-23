@@ -11,7 +11,7 @@
 	"wÀÄÄÄÄÄÄcÄÄÄÄÄÄÄÄÄnÄÄÄÄÄÄÄÄÄÄhkÄÄÄÄ"\
 	"ÄÄÄÄncÄÄÄÄÄÄÄbÄÄÄÄÄÄÄúúúúúún"
 "_\r\nbhE-mail (User name or number): w"            010 Email
-"\r\nPost on %s %s"                                     011 PostQ
+"\r\nPost on %s %s"                                     011 Post
 "rh\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
 "rh\r\n\7You have posted too many times today.\r\n"   013 TooManyPostsToday
 "\r\7nrhCannot add w%sr to queue - n"             014 CantAddToQueue
@@ -408,9 +408,9 @@
 "_bh[cûb] yEnter your city, state: w"            346 EnterYourCityState
 "_bh[cûb] yEnter your zip (or postal) code: w"   347 EnterYourZipCode
 "_yhEnter a description of your computer: w"        348 EnterYourComputer
-"Are you calling from North America"                    349 CallingFromNAmericaQ
+"Are you calling from North America"                    349 CallingFromNorthAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
-"bUser #c%-4d      b: c%s\r\n"                      351 LiUserNumName
+"bUser #c%-4d      b: c%s\r\n"                      351 LiUserNumberName
 "bLogons Today    : c%-5u b(Max c%ub)\r\n"         352 LiLogonsToday
 "bTime on Today   : c%-5u b(Max c%ub)\r\n"        353 LiTimeonToday
 "bMail Waiting    : c%u\r\n"                          354 LiMailWaiting
@@ -452,7 +452,7 @@
 	"validated!n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
 "lnch%s ncExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
-"ncNum h³nc Name                           "       381 XtrnProgLstTitle
+"ncNum h³nc Name                           "       381 XtrnProgLstTitles
 "hÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ      "               382 XtrnProgLstUnderline
 "hc%3u ³ nc%-25.25sh      "                        383 XtrnProgLstFmt
 "\r\n-cWhich or h~Qncuit: h"                      384 WhichXtrnProg
@@ -486,7 +486,7 @@
 "rhiThat's your current password!n"                 409 PasswordNotChanged
 "rhiYou call that a password?n"                     410 PasswordInvalid
 "rhiThat password is too obvious!n"                 411 PasswordObvious
-"\r\nnA) IBM (or compatible)\r\nB) Apple\r\nC) "\      412 ComuterTypeMenu
+"\r\nnA) IBM (or compatible)\r\nB) Apple\r\nC) "\      412 ComputerTypeMenu
 	"Macintosh\r\nD) Amiga\r\nE) Other\r\n\r\n"
 "_yhPrimary Computer: n"                            413 ComputerTypePrompt
 "Apple"                                                 414 ComputerTypeB
@@ -508,7 +508,7 @@
 	"h%s\r\n"
 "ncComputer  : h%-30.30s  ncModem type   : "\      426 UeditComputerModem
 	"h%s\r\n"
-"ncComment %c : h%s\r\n"                             427 UeditComment
+"ncComment %c : h%s\r\n"                             427 UeditCommentLine
 "ncFirst on  : h%-8.8s  ncExpire    : h%-8.8s  "\ 428 UserDates
 	"ncLast on   : h%-8.8s  %02u:%02u\r\n"
 "ncTime on   : h%-5u     ncToday     : "\          429 UserTimes
@@ -584,10 +584,10 @@
 "nb[hwRnb] hRemember Current Sub-board    nb: c%s\r\n"   486 UserDefaultsRemember
 "nb[hwBnb] hBatch Download File Flagging  nb: c%s\r\n"   487 UserDefaultsBatFlag
 "nb[hwMnb] hForward E-mail to NetMail     nb: c%s\r\n"   488 UserDefaultsNetMail
-"nb[hwKnb] hCommand Shell                 nb: c%s\r\n"   489 UserDefaultsCmdShell
+"nb[hwKnb] hCommand Shell                 nb: c%s\r\n"   489 UserDefaultsCommandSet
 "nb[hwDnb] hDefault to Quiet Mode         nb: c%s\r\n"   490 UserDefaultsQuiet
 "nb[hwWnb] hChange Password or Signature\r\n"               491 UserDefaultsPassword
-"nb[hwAnb] hTemporary/QWK Archive Type    nb: c%s\r\n"   492 UserDefualtsArcType
+"nb[hwAnb] hTemporary/QWK Archive Type    nb: c%s\r\n"   492 UserDefaultsArcType
 "nb[hwZnb] hDefault Download Protocol     nb: c%s "\     493 UserDefaultsProtocol
 	"b%s\r\n"
 "\r\nnhbWhich or [wQb]uit: c"                   494 UserDefaultsWhich
@@ -639,7 +639,7 @@
 "\7_whNode %2d: g%sng is paging you to chat.\r\n" 530 NodePageMsg
 "\7_whNode %2d: g%sng is paging all nodes "\      531 AllNodePageMsg
 	"to chat.\r\n"
-"\7_whNode %2d: g%sng is paging you for private"\ 532 NodePageMsg
+"\7_whNode %2d: g%sng is paging you for private"\ 532 NodePChatPageMsg
 	" chat.\r\n"
 "\r\nYou can't send messages.\r\n"                      533 R_SendMessages
 "\r\nhyNode, Name, w#yNumber, "\                    534 NodeToSendMsgTo
@@ -657,7 +657,7 @@
 "_whNode %2d: g%sng joined private chat.n\r\n"   541 NodeJoinedPrivateChat
 "\r\n_whNode %2d: g%sng left private chat.n\r\n" 542 NodeLeftPrivateChat
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
-"ghLast few callers:\r\nng"                         544 LastFewCallers (*)
+"ghLast few callers:\r\nng"                         544 Unused544 /* Was LastFewCallers */
 "\r\nnhm%-2d nm%-6u wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
 	"nm%02u:%02u h%-8.8s nm%-3.3d"
 "\r\nghCallers Today:ng"                            546 CallersToday
@@ -687,7 +687,7 @@
 "No"                                                    561 No
 "@EXEC:noyesbar@"                                       562 NoYesQuestion
 "_rh[Hit a key] "                                    563 Pause
-"Continue"                                              564 ContinueQ
+"Continue"                                              564 ContinueQ /* was Wait */
 "-g\r\nSystem Statistics Log:\r\n\r\nn"              565 SysStatsLogHdr
 "-g\r\nNode #%d Statistics Log:\r\n\r\nn"            566 NodeStatsLogHdr
 "_rhYour time has been reduced due to an "\          567 ReducedTime
@@ -712,7 +712,7 @@
 "_whInvalid Conference %d\r\n"                       582 QWKInvalidConferenceN
 "\r\n_hwCreating %s..."                              583 CreatingFileList
 "\rbCreated %s>"                                      584 CreatedFileList
-"\rbNo Files.>"                                       585 NoNewFiles
+"\rbNo Files.>"                                       585 NoFiles
 "\r\nMessage pointers reset to initial values.\r\n"     586 MsgPtrsInitialized
 "-\r\ngThe current conversion rate is h%u "\         587 ConversionRate
 	"ngminutes for h100kng credits.\r\n\r\nn"
@@ -727,7 +727,7 @@
 "\r\n%u credits have been added to your account.\r\n"  592 CreditedAccount
 "\r\nANSI Capture is now %s\r\n"                        593 ANSICaptureIsNow
 "nm\r\nRetrieving h%snm..."                        594 RetrievingFile
-"n\r\nAlternate upload path now: %s\r\n"               595 AltULPathNow
+"n\r\nAlternate upload path now: %s\r\n"               595 AltULPathIsNow
 "\r\nPrivate"                                           596 PrivatePostQ
 "\r\n_yhPost to: "                                   597 PostTo
 "\r\nPrivate posts require a destination user "\        598 NoToUser
@@ -741,7 +741,7 @@
 "Short Name : %s\r\n"                                   605 SubInfoShortName
 "QWK Name   : %s\r\n"                                   606 SubInfoQWKName
 "Max Msgs   : %u\r\n"                                   607 SubInfoMaxMsgs
-"\r\nQWK packet network using the tagline:\r\n%sn\r\n" 608 SubInfoTagline
+"\r\nQWK packet network using the tagline:\r\n%sn\r\n" 608 SubInfoTagLine
 "\r\nnFidoNet EchoMail Conference:\r\n%s (%s)\r\n"     609 SubInfoFidoNet
 "View sub-board information file"                       610 SubInfoViewFileQ
 "\r\nghDirectory Information:\r\n\r\nn"              611 DirInfoHdr
@@ -766,22 +766,22 @@
 "\r\nngUploading h%s.REP\r\n"                        628 UploadingREP
 "ngReceived nh%sng from h%sng via QWK.\r\n"    629 ReceivedFileViaQWK
 "rhi\rQWK packet message limit reached.nh\r\n"     630 QWKmsgLimitReached
-"\r\nnPrivate posts not allowed on this sub.\r\n"      631 PrivatePostNotAllowed
+"\r\nnPrivate posts not allowed on this sub.\r\n"      631 PrivatePostsNotAllowed
 "_whLoading message pointers..."                     632 LoadingMsgPtrs
 "\r                               \r"                   633 LoadedMsgPtrs
 "\r\nQuote original message"                            634 QuoteMessageQ
 "\r\nbhLine numbers (#,#), Range (#-#), w~Lbist "\  635 QuoteLinesPrompt
 	"or [%s]: w"
 "\r\n_chMultinode Chat Channels:\r\n\r\n"            636 ChatChanLstHdr
-"ncNum Name                         Cost"             637 ChatChanLstTitle
+"ncNum Name                         Cost"             637 ChatChanLstTitles
 "hÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ    ÄÄÄÄ"               638 ChatChanLstUnderline
 "hc%3u nc%-25.25sh%8u"                           639 ChatChanLstFmt
 "\r\nYou can't access that channel.\r\n"                640 CantAccessThatChannel
 "\r\nYou can't download from this directory.\r\n"       641 CantDownloadFromDir
 "_whSearching for duplicates..."                     642 SearchingForDupes
 "\rn                                 \r"               643 SearchedForDupes
-"nhYour account will expire in ri%dnh days.\r\n"  644 AcctWillExpireInNDays
-"nrhiYour account has expired!n\r\n"               645 AcctHasExpired
+"nhYour account will expire in ri%dnh days.\r\n"  644 AccountWillExpireInNDays
+"nrhiYour account has expired!n\r\n"               645 AccountHasExpired
 "\r\nDownload files in batch queue now"                 646 DownloadBatchQ
 "_rh\r\nWaiting for Slow Media Device #%u..."        647 WaitingForDeviceN
 "\7nyh%snc sent you E-mail.\r\n"                   648 UserSentYouMail
@@ -798,14 +798,14 @@
 "ng(h%dng) %sh\r\n"                               659 CfgLibLstFmt
 "_chListing nc(h%unc) %s "\                     660 BatchFlagPrompt
 	"(h%unc) %s (h?nc=Menu) (h%unc Filesnc): n"
-"nl4  hy[wBy]atch Download  "\                   661
+"nl4  hy[wBy]atch Download  "\                   661 FileListBatchCommands
 	"[wVy]iew Content  [wEy]xtended "\
 	"Info  [wPy]revious Files  [wQy]uit  n\r\n"
 "\r\nDownload attached file: w%sb (%s bytes)"         662 DownloadAttachedFileQ
 "\r\n\r\nnTime left : %13u\r\n"                        663 FreeMinLeft
 "bh\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
 	"(w%u Maxb): n"
-"\r\nE-mail file attachments not allowed.\r\n"          665 EmailFileNotAllowed
+"\r\nE-mail file attachments not allowed.\r\n"          665 EmailFilesNotAllowed
 "\r\nnSorry, you have insufficient access to run "\    666 CantRunThatProgram
 	"that program.\r\n\r\np"
 "nh\r\n\7\r\nYou only have ri%unh minute%s "\     667 OnlyXminutesLeft
@@ -865,7 +865,7 @@
 ""                                                      717 NodeActionPrivateChat
 ""                                                      718 NodeActionPaging
 ""                                                      719 NodeActionRetrieving
-"YNQ*"                                                  720 YNQP (Yes/No/Quit/Password chars)
+"YNQ*"                                                  720 YN /* (Yes/No/Quit/Password chars) */
 "View signature"                                        721 ViewSignatureQ
 "Delete signature"                                      722 DeleteSignatureQ
 "Create/Edit signature"                                 723 CreateEditSignatureQ
