@@ -37,7 +37,7 @@
 
 /****************************************************************************/
 /* Macros for elements of the array of pointers (text[]) to static text		*/
-/* Should correlate with CTRL\TEXT.DAT										*/
+/* Auto-generated from CTRL\TEXT.DAT										*/
 /****************************************************************************/
 
 #ifndef _TEXT_H
@@ -587,7 +587,7 @@ enum {
 	,NodeJoinedPrivateChat
 	,NodeLeftPrivateChat
 	,NoOneHasLoggedOnToday
-	,Unused544	/* was LastFewCallers */
+	,Unused544 /* Was LastFewCallers */
 	,LastFewCallersFmt
 	,CallersToday
 	,DoYouMeanThisUserQ
@@ -763,7 +763,7 @@ enum {
 	,NodeActionPrivateChat
 	,NodeActionPaging
 	,NodeActionRetrieving
-	,YN
+	,YN /* (Yes/No/Quit/Password chars) */
 	,ViewSignatureQ
 	,DeleteSignatureQ
 	,CreateEditSignatureQ
@@ -773,7 +773,7 @@ enum {
 	,CommandShellHeading
 	,ArchiveTypeHeading
 
-	,TOTAL_TEXT 
+	,TOTAL_TEXT
 };
 
 #endif

@@ -1102,7 +1102,7 @@ BOOL 	md(char *path);
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);
 
-	char *	readtext(long *line, FILE *stream);
+	char *	readtext(long *line, FILE *stream, long dflt);
 
 	/* ver.cpp */
 	char*	socklib_version(char* str, char* winsock_ver);

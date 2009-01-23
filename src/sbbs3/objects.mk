@@ -82,6 +82,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)qwktomsg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)readmail$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)readmsgs$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scandirs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scansubs$(OFILE)\
@@ -94,6 +95,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telgate$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)text_sec$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)tmp_xfer$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)un_qwk$(OFILE)\

@@ -1268,7 +1268,7 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 	for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
-		if((sbbs->text[i]=readtext((long *)NULL,stream))==NULL) {
+		if((sbbs->text[i]=readtext((long *)NULL,stream,i))==NULL) {
 			i--;
 			continue; 
 		}
