@@ -59,8 +59,8 @@ __published:	// IDE-managed Components
 	TStaticText *Status;
 	TToolButton *ToolButton3;
 	TProgressBar *ProgressBar;
-	TMemo *Log;
 	TToolButton *RecycleButton;
+    TRichEdit *Log;
 	void __fastcall FormHide(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

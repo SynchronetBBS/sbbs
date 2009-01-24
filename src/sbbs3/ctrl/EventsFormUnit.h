@@ -42,11 +42,12 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
+#include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
 class TEventsForm : public TForm
 {
 __published:	// IDE-managed Components
-    TMemo *Log;
+    TRichEdit *Log;
     void __fastcall FormHide(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

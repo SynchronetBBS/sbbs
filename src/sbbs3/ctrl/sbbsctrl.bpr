@@ -57,10 +57,9 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
-      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\include\cryptlib 
-      -src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM -DRINGBUF_MUTEX 
-      -DUSE_CRYPTLIB -boa"/>
+    <IDLCFLAGS value="-src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM -DRINGBUF_MUTEX 
+      -DUSE_CRYPTLIB -I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
+      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\include\cryptlib -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -138,7 +137,7 @@ CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
 FileVersion=3.15.0.0
 InternalName=
-LegalCopyright=(C) 2008 Rob Swindell
+LegalCopyright=(C) 2009 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
@@ -221,7 +220,7 @@ Item5=SBBS;SMB_GETMSGTXT;_DEBUG
 Item6=SBBS;SMB_GETMSGTXT
 
 [Debugging]
-DebugSourceDirs=$(BCB)\source\vcl;C:\src\xpdev\
+DebugSourceDirs=$(BCB)\source\vcl;C:\src\xpdev\;C:\src\sbbs3\
 
 [Parameters]
 RunParams=

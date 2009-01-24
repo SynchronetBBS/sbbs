@@ -49,7 +49,6 @@
 class TServicesForm : public TForm
 {
 __published:	// IDE-managed Components
-    TMemo *Log;
     TToolBar *ToolBar;
     TToolButton *StartButton;
     TToolButton *StopButton;
@@ -58,6 +57,7 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton2;
     TStaticText *Status;
 	TToolButton *RecycleButton;
+    TRichEdit *Log;
     void __fastcall FormHide(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

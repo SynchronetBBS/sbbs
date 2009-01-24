@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 9
     Width = 312
     Height = 272
-    ActivePage = JavaScriptTabSheet
+    ActivePage = AdvancedTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 3
+    TabIndex = 2
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -285,6 +285,60 @@ object PropertiesDlg: TPropertiesDlg
           'Services Log'
           'All  Windows')
       end
+      object LogFontGroupBox: TGroupBox
+        Left = 8
+        Top = 128
+        Width = 281
+        Height = 97
+        Caption = 'Log Fonts'
+        TabOrder = 6
+        object LogLevelLabel: TLabel
+          Left = 22
+          Top = 26
+          Width = 113
+          Height = 23
+          Alignment = taRightJustify
+          AutoSize = False
+          Caption = 'Log Level'
+        end
+        object LogLevelComboBox: TComboBox
+          Left = 146
+          Top = 24
+          Width = 119
+          Height = 24
+          ItemHeight = 16
+          ItemIndex = 7
+          TabOrder = 0
+          Text = 'Debug'
+          OnChange = LogLevelComboBoxChange
+          Items.Strings = (
+            'Emergency'
+            'Alert'
+            'Critical'
+            'Error'
+            'Warning'
+            'Notice'
+            'Normal'
+            'Debug')
+        end
+        object LogFontExampleEdit: TEdit
+          Left = 146
+          Top = 56
+          Width = 119
+          Height = 24
+          TabOrder = 1
+          Text = 'Example'
+        end
+        object LogFontButton: TButton
+          Left = 16
+          Top = 56
+          Width = 122
+          Height = 24
+          Caption = 'Change Font'
+          TabOrder = 2
+          OnClick = LogFontButtonClick
+        end
+      end
     end
     object AdvancedTabSheet: TTabSheet
       Caption = 'Advanced'
@@ -347,7 +401,7 @@ object PropertiesDlg: TPropertiesDlg
         Width = 168
         Height = 24
         Hint = 
-          'Maximum number of bytes to store in log windows before auto-dele' +
+          'Maximum number of lines to store in log windows before auto-dele' +
           'ting old lines'
         ParentShowHint = False
         ShowHint = True

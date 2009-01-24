@@ -56,7 +56,7 @@ __published:	// IDE-managed Components
     TStaticText *Status;
     TToolButton *ToolButton3;
     TProgressBar *ProgressBar;
-    TMemo *Log;
+    TRichEdit *Log;
 private:	// User declarations
 public:		// User declarations
     __fastcall TWebForm(TComponent* Owner);

@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -58,6 +58,7 @@ void __fastcall TPropertiesDlg::FormShow(TObject *Sender)
 	TrayIconCheckBoxClick(Sender);
     PageControl->ActivePage=SettingsTabSheet;
     SourceComboBoxChange(Sender);
+    LogLevelComboBoxChange(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -175,6 +176,24 @@ void __fastcall TPropertiesDlg::ApplyButtonClick(TObject *Sender)
         	ChangeScheme(i);
     } else
         ChangeScheme(TargetComboBox->ItemIndex);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDlg::LogLevelComboBoxChange(TObject *Sender)
+{
+    LogFontExampleEdit->Font->Assign(MainForm->LogFont[LogLevelComboBox->ItemIndex]);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TPropertiesDlg::LogFontButtonClick(TObject *Sender)
+{
+	TFontDialog *FontDialog=new TFontDialog(this);
+
+    FontDialog->Font=LogFontExampleEdit->Font;
+    if(FontDialog->Execute()) {
+        LogFontExampleEdit->Font->Assign(FontDialog->Font);
+	    MainForm->LogFont[LogLevelComboBox->ItemIndex]->Assign(FontDialog->Font);
+    }
+    delete FontDialog;
 }
 //---------------------------------------------------------------------------
 

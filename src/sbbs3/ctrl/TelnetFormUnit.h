@@ -60,9 +60,14 @@ __published:	// IDE-managed Components
 	TStaticText *Status;
 	TToolButton *ToolButton3;
 	TProgressBar *ProgressBar;
-	TMemo *Log;
 	TToolButton *RecycleButton;
+    TToolButton *ToolButton4;
+    TUpDown *LogLevelUpDown;
+    TStaticText *LogLevelText;
+    TRichEdit *Log;
     void __fastcall FormHide(TObject *Sender);
+    void __fastcall LogLevelUpDownChangingEx(TObject *Sender,
+          bool &AllowChange, short NewValue, TUpDownDirection Direction);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TTelnetForm(TComponent* Owner);
