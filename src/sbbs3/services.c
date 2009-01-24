@@ -119,7 +119,7 @@ static int lprintf(int level, const char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup==NULL || startup->lputs==NULL)
+    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
 
 #if defined(_WIN32)
