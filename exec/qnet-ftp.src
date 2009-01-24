@@ -178,8 +178,10 @@ if_true
 	lprintf "QNET-FTP: Downloaded %s successfully" str
 else
 	lprintf "QNET-FTP: %s NOT downloaded socket_error=%d (no new messages?)" str _socket_error
-    remove_file qwk
+	remove_file qwk
 	end_if
+
+ftp_logout sock
 
 #################
 # Exit routine	#
