@@ -1539,6 +1539,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char*	warning;
 	private_t*	p;
 	jsrefcount	rc;
+	int		log_level;
 
 	if((p=(private_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
@@ -1564,11 +1565,14 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			warning="strict warning";
 		else
 			warning="warning";
-	} else
+		log_level=LOG_WARNING;
+	} else {
+		log_level=LOG_ERR;
 		warning="";
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	lprintf(LOG_ERR,"%04d %s %s !JavaScript %s%s%s: %s"
+	lprintf(log_level,"%04d %s %s !JavaScript %s%s%s: %s"
 		,p->sock, p->log_prefix, p->proc_name
 		,warning ,file, line, message);
 	JS_RESUMEREQUEST(cx, rc);

@@ -540,6 +540,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	file[MAX_PATH+1];
 	const char*	warning;
 	jsrefcount	rc;
+	int		log_level;
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(report==NULL) {
@@ -563,10 +564,13 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			warning="strict warning";
 		else
 			warning="warning";
-	} else
+		log_level=LOG_WARNING;
+	} else {
+		log_level=LOG_ERR;
 		warning="";
+	}
 
-	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
+	lprintf(log_level,"!JavaScript %s%s%s: %s",warning,file,line,message);
 	JS_RESUMEREQUEST(cx, rc);
 }
 

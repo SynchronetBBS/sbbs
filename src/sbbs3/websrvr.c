@@ -1389,7 +1389,7 @@ BOOL http_checkuser(http_session_t * session)
 	if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS) {
 		if(session->last_js_user_num==session->user.number)
 			return(TRUE);
-		lprintf(LOG_INFO,"%04d JavaScript: Initializing User Objects",session->socket);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing User Objects",session->socket);
 		JS_BEGINREQUEST(session->js_cx);
 		if(session->user.number>0) {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
@@ -3871,6 +3871,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	file[MAX_PATH+1];
 	char*	warning;
 	http_session_t* session;
+	int		log_level;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
@@ -3897,10 +3898,13 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			warning="strict warning";
 		else
 			warning="warning";
-	} else
+		log_level=LOG_WARNING;
+	} else {
+		log_level=LOG_ERR;
 		warning="";
+	}
 
-	lprintf(LOG_ERR,"%04d !JavaScript %s%s%s: %s",session->socket,warning,file,line,message);
+	lprintf(log_level,"%04d !JavaScript %s%s%s: %s",session->socket,warning,file,line,message);
 	if(session->req.fp!=NULL)
 		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
@@ -4394,20 +4398,20 @@ js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
 
-	lprintf(LOG_INFO,"%04d JavaScript: Initializing context (stack: %lu bytes)"
+	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
 		,session->socket,startup->js.cx_stack);
 
     if((js_cx = JS_NewContext(session->js_runtime, startup->js.cx_stack))==NULL)
 		return(NULL);
 	JS_BEGINREQUEST(js_cx);
 
-	lprintf(LOG_INFO,"%04d JavaScript: Context created",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",session->socket);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	lprintf(LOG_INFO,"%04d JavaScript: Creating Global Objects and Classes",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Creating Global Objects and Classes",session->socket);
 	if((session->js_glob=js_CreateCommonObjects(js_cx, &scfg, NULL
 									,NULL						/* global */
 									,uptime						/* system */
@@ -4433,7 +4437,7 @@ static BOOL js_setup(http_session_t* session)
 
 #ifndef ONE_JS_RUNTIME
 	if(session->js_runtime == NULL) {
-		lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
+		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
 			,session->socket,startup->js.max_bytes);
 
 		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
@@ -4467,14 +4471,14 @@ static BOOL js_setup(http_session_t* session)
 	else
 		JS_BEGINREQUEST(session->js_cx);
 
-	lprintf(LOG_INFO,"%04d JavaScript: Initializing HttpRequest object",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpRequest object",session->socket);
 	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
 		JS_ENDREQUEST(session->js_cx);
 		return(FALSE);
 	}
 
-	lprintf(LOG_INFO,"%04d JavaScript: Initializing HttpReply object",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpReply object",session->socket);
 	if(js_CreateHttpReplyObject(session->js_cx, session->js_glob, session)==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpReply object",session->socket);
 		JS_ENDREQUEST(session->js_cx);
@@ -5050,14 +5054,14 @@ void http_session_thread(void* arg)
 	http_logoff(&session,socket,__LINE__);
 
 	if(session.js_cx!=NULL) {
-		lprintf(LOG_INFO,"%04d JavaScript: Destroying context",socket);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying context",socket);
 		JS_DestroyContext(session.js_cx);	/* Free Context */
 		session.js_cx=NULL;
 	}
 
 #ifndef ONE_JS_RUNTIME
 	if(session.js_runtime!=NULL) {
-		lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",socket);
+		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying runtime",socket);
 		jsrt_Release(session.js_runtime);
 		session.js_runtime=NULL;
 	}
@@ -5512,7 +5516,7 @@ void DLLCALL web_server(void* arg)
 
 #ifdef ONE_JS_RUNTIME
 	    if(js_runtime == NULL) {
-    	    lprintf(LOG_INFO,"%04d JavaScript: Creating runtime: %lu bytes"
+    	    lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
         	    ,server_socket,startup->js.max_bytes);
 
     	    if((js_runtime=jsrt_GetNew(startup->js.max_bytes, 0, __FILE__, __LINE__))==NULL) {
@@ -5737,7 +5741,7 @@ void DLLCALL web_server(void* arg)
 
 #ifdef ONE_JS_RUNTIME
     	if(js_runtime!=NULL) {
-        	lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",server_socket);
+        	lprintf(LOG_DEBUG,"%04d JavaScript: Destroying runtime",server_socket);
         	jsrt_Release(js_runtime);
     	    js_runtime=NULL;
 	    }
