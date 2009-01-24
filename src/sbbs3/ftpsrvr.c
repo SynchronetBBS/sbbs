@@ -4798,9 +4798,8 @@ void DLLCALL ftp_server(void* arg)
 			return;
 		}
 
-		lprintf(LOG_INFO,"%04d FTP Server listening on port %d",server_socket,startup->port);
+		lprintf(LOG_INFO,"%04d FTP Server listening on port %u",server_socket,startup->port);
 		status(STATUS_WFC);
-		lprintf(LOG_INFO,"%04d FTP Server thread started",server_socket);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","ftp");
@@ -4812,10 +4811,11 @@ void DLLCALL ftp_server(void* arg)
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
 
-
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
+
+		lprintf(LOG_INFO,"%04d FTP Server thread started",server_socket);
 
 		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 

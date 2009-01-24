@@ -1762,7 +1762,7 @@ void passthru_output_thread(void* arg)
 
 		if(rd == 0)
 		{
-			lprintf(LOG_NOTICE,"Node %d passthru input socket disconnected", sbbs->cfg.node_num);
+			lprintf(LOG_DEBUG,"Node %d passthru input socket disconnected", sbbs->cfg.node_num);
 			break;
 		}
 
@@ -2948,7 +2948,7 @@ bool sbbs_t::init()
 				,cfg.node_num, result, ERROR_VALUE);
 			return(false);
 		} 
-		lprintf(LOG_INFO,"Node %d attached to local interface %s port %d"
+		lprintf(LOG_INFO,"Node %d attached to local interface %s port %u"
 			,cfg.node_num, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 		local_addr=addr.sin_addr.s_addr;
@@ -3901,7 +3901,7 @@ void node_thread(void* arg)
 		|| sbbs->passthru_input_thread_running || sbbs->passthru_output_thread_running
 #endif
 		) {
-		lprintf(LOG_INFO,"Node %d Waiting for %s to terminate..."
+		lprintf(LOG_DEBUG,"Node %d Waiting for %s to terminate..."
 			,sbbs->cfg.node_num
 			,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                	"I/O threads" : sbbs->input_thread_running
@@ -4478,7 +4478,7 @@ void DLLCALL bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-	lprintf(LOG_INFO,"Telnet server listening on port %d",startup->telnet_port);
+	lprintf(LOG_INFO,"Telnet Server listening on port %u",startup->telnet_port);
 
 	if(startup->options&BBS_OPT_ALLOW_RLOGIN) {
 
@@ -4526,7 +4526,7 @@ void DLLCALL bbs_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-		lprintf(LOG_INFO,"RLogin server listening on port %d",startup->rlogin_port);
+		lprintf(LOG_INFO,"RLogin Server listening on port %u",startup->rlogin_port);
 	}
 
 #ifdef USE_CRYPTLIB
@@ -4618,7 +4618,7 @@ void DLLCALL bbs_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-		lprintf(LOG_INFO,"SSH server listening on port %d",startup->ssh_port);
+		lprintf(LOG_INFO,"SSH Server listening on port %u",startup->ssh_port);
 	}
 NO_SSH:
 #endif
@@ -4657,7 +4657,6 @@ NO_SSH:
 		sbbs->putnodedat(i,&node);
 	}
 
-	lprintf(LOG_INFO,"BBS System thread started for nodes %d through %d", first_node, last_node);
 	status(STATUS_WFC);
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
@@ -4751,6 +4750,7 @@ NO_SSH:
     if(startup->started!=NULL)
     	startup->started(startup->cbdata);
 
+	lprintf(LOG_INFO,"BBS System thread started for nodes %d through %d", first_node, last_node);
 
 	while(!terminate_server) {
 
@@ -5203,7 +5203,7 @@ NO_SSH:
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
-			lprintf(LOG_INFO,"Listening passthru socket listening on port %d",htons(tmp_addr.sin_port));
+			lprintf(LOG_INFO,"Listening passthru socket listening on port %u",htons(tmp_addr.sin_port));
 
     		new_node->passthru_socket = open_socket(SOCK_STREAM, "passthru");
 
