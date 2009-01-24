@@ -214,7 +214,7 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 	/* Terminated? */
 	if(branch->auto_terminate &&
 		(branch->terminated!=NULL && *branch->terminated)) {
-		JS_ReportError(cx,"Terminated");
+		JS_ReportWarning(cx,"Terminated");
 		branch->counter=0;
 		return(JS_FALSE);
 	}
