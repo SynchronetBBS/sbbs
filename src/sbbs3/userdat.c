@@ -659,11 +659,8 @@ uint DLLCALL getage(scfg_t* cfg, char *birth)
 			((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mday))
 			age--; 
 	}
-	if(age<0)
-		return(0);
 	return(age);
 }
-
 
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
