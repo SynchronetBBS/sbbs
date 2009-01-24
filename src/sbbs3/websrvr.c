@@ -576,12 +576,12 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		lprintf(LOG_DEBUG,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return (TRUE);
 	}
 
-    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
+    lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
 	return (FALSE);
 }
 
@@ -5174,7 +5174,7 @@ void http_logging_thread(void* arg)
 
 	thread_up(TRUE /* setuid */);
 
-	lprintf(LOG_DEBUG,"%04d http logging thread started", server_socket);
+	lprintf(LOG_INFO,"%04d HTTP logging thread started", server_socket);
 
 	for(;;) {
 		struct log_data *ld;
@@ -5195,7 +5195,7 @@ void http_logging_thread(void* arg)
 		if(ld==NULL) {
 			if(terminate_http_logging_thread)
 				break;
-			lprintf(LOG_ERR,"%04d http logging thread received NULL linked list log entry"
+			lprintf(LOG_ERR,"%04d HTTP logging thread received NULL linked list log entry"
 				,server_socket);
 			continue;
 		}
@@ -5255,7 +5255,7 @@ void http_logging_thread(void* arg)
 		logfile=NULL;
 	}
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d http logging thread terminated",server_socket);
+	lprintf(LOG_INFO,"%04d HTTP logging thread terminated",server_socket);
 
 	http_logging_thread_running=FALSE;
 }
@@ -5400,8 +5400,8 @@ void DLLCALL web_server(void* arg)
 		scfg.size=sizeof(scfg);
 		SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
 		if(!load_cfg(&scfg, NULL, TRUE, logstr)) {
-			lprintf(LOG_ERR,"!ERROR %s",logstr);
-			lprintf(LOG_ERR,"!FAILED to load configuration files");
+			lprintf(LOG_CRIT,"!ERROR %s",logstr);
+			lprintf(LOG_CRIT,"!FAILED to load configuration files");
 			cleanup(1);
 			return;
 		}
@@ -5410,7 +5410,7 @@ void DLLCALL web_server(void* arg)
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
 		MKDIR(temp_dir);
 		if(!isdir(temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", temp_dir);
+			lprintf(LOG_CRIT,"!Invalid temp directory: %s", temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -5444,7 +5444,7 @@ void DLLCALL web_server(void* arg)
 		server_socket = open_socket(SOCK_STREAM);
 
 		if(server_socket == INVALID_SOCKET) {
-			lprintf(LOG_ERR,"!ERROR %d creating HTTP socket", ERROR_VALUE);
+			lprintf(LOG_CRIT,"!ERROR %d creating HTTP socket", ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
@@ -5461,7 +5461,7 @@ void DLLCALL web_server(void* arg)
 		setsockopt(server_socket, SOL_SOCKET, SO_ACCEPTFILTER, &afa, sizeof(afa));
 #endif
 
-		lprintf(LOG_INFO,"%04d Web Server socket opened",server_socket);
+		lprintf(LOG_DEBUG,"%04d Web Server socket opened",server_socket);
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -5483,7 +5483,7 @@ void DLLCALL web_server(void* arg)
 				startup->seteuid(TRUE);
 		}
 		if(result != 0) {
-			lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
+			lprintf(LOG_CRIT,"%s",BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}
@@ -5491,7 +5491,7 @@ void DLLCALL web_server(void* arg)
 		result = listen(server_socket, 64);
 
 		if(result != 0) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%d) listening on socket"
+			lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on socket"
 				,server_socket, result, ERROR_VALUE);
 			cleanup(1);
 			return;

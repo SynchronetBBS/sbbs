@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -510,7 +510,7 @@ static BOOL winsock_startup(void)
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0)
 		return(TRUE);
 
-    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
+    lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
 	return(FALSE);
 }
 
@@ -1549,7 +1549,6 @@ int main(int argc, char** argv)
 						show_usage(argv[0]);
 						return(1);
 				}
-				break;
 				break;
 			case 'G':	/* GET */
 				switch(toupper(*(arg++))) {

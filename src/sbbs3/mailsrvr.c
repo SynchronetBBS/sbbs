@@ -149,7 +149,7 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		lprintf(LOG_DEBUG,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return (TRUE);
 	}
@@ -1620,7 +1620,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			,char* msgtxt_fname, char* newtxt_fname, char* logtxt_fname
 			,char* rcptlst_fname, char* proc_err_fname
 			,char* sender, char* sender_addr, char* reverse_path, char* hello_name
-			,int* result
+			,int32* result
 			,JSRuntime**	js_runtime
 			,JSContext**	js_cx
 			,JSObject**		js_glob
@@ -1799,7 +1799,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	return(success);
 }
 
-js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
+void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
 {
 	if(js_cx!=NULL)
 		JS_DestroyContext(js_cx);
@@ -2105,6 +2105,7 @@ static void smtp_thread(void* arg)
 	JSRuntime*	js_runtime=NULL;
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob=NULL;
+	int32		js_result;
 
 	enum {
 			 SMTP_STATE_INITIAL
@@ -2132,7 +2133,7 @@ static void smtp_thread(void* arg)
 
 	socket=smtp.socket;
 
-	lprintf(LOG_DEBUG,"%04d SMTP RX Session thread started", socket);
+	lprintf(LOG_DEBUG,"%04d SMTP Session thread started", socket);
 
 #ifdef _WIN32
 	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
@@ -2458,12 +2459,12 @@ static void smtp_thread(void* arg)
 								,str /* cmdline */
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcptlst_fname, proc_err_fname
-								,sender, sender_addr, reverse_path, hello_name, &j
+								,sender, sender_addr, reverse_path, hello_name, &js_result
 								,&js_runtime, &js_cx, &js_glob
-								,"SMTP") || j!=0) {
+								,"SMTP") || js_result!=0) {
 #if 0 /* calling exit() in a script causes js_mailproc to return FALSE */
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
-									,socket, str, j);
+									,socket, str, js_result);
 								if(mailproc_list[i].ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) failure"
 										,socket, mailproc_list[i].name);
@@ -3620,7 +3621,7 @@ static void smtp_thread(void* arg)
 	client_off(socket);
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d SMTP RX Session thread terminated (%u threads remain, %lu clients served)"
+	lprintf(LOG_INFO,"%04d SMTP Session thread terminated (%u threads remain, %lu clients served)"
 		,socket, thread_count, served);
 
 	/* Must be last */
@@ -3825,7 +3826,7 @@ static void sendmail_thread(void* arg)
 	sendmail_running=TRUE;
 	terminate_sendmail=FALSE;
 
-	lprintf(LOG_DEBUG,"0000 SendMail thread started");
+	lprintf(LOG_INFO,"0000 SendMail thread started");
 
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
@@ -4290,7 +4291,7 @@ static void sendmail_thread(void* arg)
 
 void DLLCALL mail_terminate(void)
 {
-  	lprintf(LOG_DEBUG,"%04d Mail Server terminate",server_socket);
+  	lprintf(LOG_INFO,"%04d Mail Server terminate",server_socket);
 	terminate_server=TRUE;
 }
 
@@ -4471,7 +4472,7 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-		lprintf(LOG_INFO,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+		lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
 		sbbs_srand();
 
@@ -4490,8 +4491,8 @@ void DLLCALL mail_server(void* arg)
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
-			lprintf(LOG_ERR,"!ERROR %s",error);
-			lprintf(LOG_ERR,"!Failed to load configuration files");
+			lprintf(LOG_CRIT,"!ERROR %s",error);
+			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);
 			return;
 		}
@@ -4504,7 +4505,7 @@ void DLLCALL mail_server(void* arg)
 		MKDIR(scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", scfg.temp_dir);
+			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -4573,7 +4574,7 @@ void DLLCALL mail_server(void* arg)
 		server_socket = mail_open_socket(SOCK_STREAM,"smtp");
 
 		if(server_socket == INVALID_SOCKET) {
-			lprintf(LOG_ERR,"!ERROR %d opening socket", ERROR_VALUE);
+			lprintf(LOG_CRIT,"!ERROR %d opening socket", ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
@@ -4600,29 +4601,29 @@ void DLLCALL mail_server(void* arg)
 				startup->seteuid(TRUE);
 		}
 		if(result != 0) {
-			lprintf(LOG_ERR,"%04d %s",server_socket, BIND_FAILURE_HELP);
+			lprintf(LOG_CRIT,"%04d %s",server_socket, BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}
-
-		lprintf(LOG_DEBUG,"%04d SMTP socket bound to port %u"
-			,server_socket, startup->smtp_port);
 
 		result = listen(server_socket, 1);
 
 		if(result != 0) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%d) listening on socket"
+			lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on SMTP socket"
 				,server_socket, result, ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
+
+		lprintf(LOG_INFO,"%04d SMTP Server listening on port %u"
+			,server_socket, startup->smtp_port);
 
 		if(startup->options&MAIL_OPT_USE_SUBMISSION_PORT) {
 
 			submission_socket = mail_open_socket(SOCK_STREAM,"submission");
 
 			if(submission_socket == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR %d opening socket", ERROR_VALUE);
+				lprintf(LOG_CRIT,"!ERROR %d opening socket", ERROR_VALUE);
 				cleanup(1);
 				return;
 			}
@@ -4649,22 +4650,22 @@ void DLLCALL mail_server(void* arg)
 					startup->seteuid(TRUE);
 			}
 			if(result != 0) {
-				lprintf(LOG_ERR,"%04d %s",submission_socket, BIND_FAILURE_HELP);
+				lprintf(LOG_CRIT,"%04d %s",submission_socket, BIND_FAILURE_HELP);
 				cleanup(1);
 				return;
 			}
-
-			lprintf(LOG_DEBUG,"%04d SUBMISSION socket bound to port %u"
-				,submission_socket, startup->submission_port);
 
 			result = listen(submission_socket, 1);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"%04d !ERROR %d (%d) listening on socket"
+				lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on SUBMISSION socket"
 					,submission_socket, result, ERROR_VALUE);
 				cleanup(1);
 				return;
 			}
+
+			lprintf(LOG_INFO,"%04d SUBMISSION Server listening on port %u"
+				,submission_socket, startup->submission_port);
 		}
 
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
@@ -4674,7 +4675,7 @@ void DLLCALL mail_server(void* arg)
 			pop3_socket = mail_open_socket(SOCK_STREAM,"pop3");
 
 			if(pop3_socket == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR %d opening POP3 socket", ERROR_VALUE);
+				lprintf(LOG_CRIT,"!ERROR %d opening POP3 socket", ERROR_VALUE);
 				cleanup(1);
 				return;
 			}
@@ -4701,22 +4702,22 @@ void DLLCALL mail_server(void* arg)
 					startup->seteuid(FALSE);
 			}
 			if(result != 0) {
-				lprintf(LOG_ERR,"%04d %s",pop3_socket,BIND_FAILURE_HELP);
+				lprintf(LOG_CRIT,"%04d %s",pop3_socket,BIND_FAILURE_HELP);
 				cleanup(1);
 				return;
 			}
-
-			lprintf(LOG_DEBUG,"%04d POP3 socket bound to port %u"
-				,pop3_socket, startup->pop3_port);
 
 			result = listen(pop3_socket, 1);
 
 			if(result != 0) {
-				lprintf(LOG_ERR,"%04d !ERROR %d (%d) listening on POP3 socket"
+				lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on POP3 socket"
 					,pop3_socket, result, ERROR_VALUE);
 				cleanup(1);
 				return;
 			}
+
+			lprintf(LOG_INFO,"%04d POP3 Server listening on port %u"
+				,pop3_socket, startup->pop3_port);
 		}
 
 		sem_init(&sendmail_wakeup_sem,0,0);
@@ -4724,7 +4725,7 @@ void DLLCALL mail_server(void* arg)
 		if(!(startup->options&MAIL_OPT_NO_SENDMAIL))
 			_beginthread(sendmail_thread, 0, NULL);
 
-		lprintf(LOG_NOTICE,"%04d Mail Server thread started",server_socket);
+		lprintf(LOG_INFO,"%04d Mail Server thread started",server_socket);
 		status(STATUS_WFC);
 
 		/* Setup recycle/shutdown semaphore file lists */

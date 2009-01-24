@@ -158,12 +158,12 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		lprintf(LOG_DEBUG,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return (TRUE);
 	}
 
-    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
+    lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
 	return (FALSE);
 }
 
@@ -1287,7 +1287,7 @@ static char* cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *c
 
 void DLLCALL ftp_terminate(void)
 {
-   	lprintf(LOG_DEBUG,"%04d FTP Server terminate",server_socket);
+   	lprintf(LOG_INFO,"%04d FTP Server terminate",server_socket);
 	terminate_server=TRUE;
 }
 
@@ -2430,7 +2430,7 @@ static void ctrl_thread(void* arg)
 
 	SAFECOPY(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
 
-	lprintf(LOG_DEBUG,"%04d CTRL connection accepted from: %s port %u"
+	lprintf(LOG_INFO,"%04d CTRL connection accepted from: %s port %u"
 		,sock, host_ip, ntohs(ftp.client_addr.sin_port));
 
 	if(startup->options&FTP_OPT_NO_HOST_LOOKUP)
@@ -4520,14 +4520,14 @@ static void ctrl_thread(void* arg)
 		active_clients--, update_clients();
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d CTRL thread terminated (%d clients, %u threads remain, %lu served)"
+	lprintf(LOG_INFO,"%04d CTRL thread terminated (%d clients, %u threads remain, %lu served)"
 		,sock, active_clients, thread_count, served);
 }
 
 static void cleanup(int code, int line)
 {
 #ifdef _DEBUG
-	lprintf(LOG_INFO,"0000 cleanup called from line %d",line);
+	lprintf(LOG_DEBUG,"0000 cleanup called from line %d",line);
 #endif
 	free_cfg(&scfg);
 	free_text(text);
@@ -4691,8 +4691,8 @@ void DLLCALL ftp_server(void* arg)
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 		if(!load_cfg(&scfg, text, TRUE, error)) {
-			lprintf(LOG_ERR,"!ERROR %s",error);
-			lprintf(LOG_ERR,"!Failed to load configuration files");
+			lprintf(LOG_CRIT,"!ERROR %s",error);
+			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1,__LINE__);
 			return;
 		}
@@ -4715,7 +4715,7 @@ void DLLCALL ftp_server(void* arg)
 		MKDIR(scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", scfg.temp_dir);
+			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
 			cleanup(1,__LINE__);
 			return;
 		}
@@ -4755,7 +4755,7 @@ void DLLCALL ftp_server(void* arg)
 		/* open a socket and wait for a client */
 
 		if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-			lprintf(LOG_ERR,"!ERROR %d opening socket", ERROR_VALUE);
+			lprintf(LOG_CRIT,"!ERROR %d opening socket", ERROR_VALUE);
 			cleanup(1,__LINE__);
 			return;
 		}
@@ -4782,20 +4782,21 @@ void DLLCALL ftp_server(void* arg)
 				startup->seteuid(TRUE);
 		}
 		if(result!=0) {
-			lprintf(LOG_ERR,"%04d %s", server_socket, BIND_FAILURE_HELP);
+			lprintf(LOG_CRIT,"%04d %s", server_socket, BIND_FAILURE_HELP);
 			cleanup(1,__LINE__);
 			return;
 		}
 
 		if((result=listen(server_socket, 1))!= 0) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%d) listening on socket"
+			lprintf(LOG_CRIT,"%04d !ERROR %d (%d) listening on socket"
 				,server_socket, result, ERROR_VALUE);
 			cleanup(1,__LINE__);
 			return;
 		}
 
-		lprintf(LOG_NOTICE,"%04d FTP Server thread started on port %d",server_socket,startup->port);
+		lprintf(LOG_INFO,"%04d FTP Server listening on port %d",server_socket,startup->port);
 		status(STATUS_WFC);
+		lprintf(LOG_INFO,"%04d FTP Server thread started",server_socket);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","ftp");
@@ -4912,7 +4913,7 @@ void DLLCALL ftp_server(void* arg)
 			served++;
 		}
 
-#ifdef _DEBUG
+#if 0 /* def _DEBUG */
 		lprintf(LOG_DEBUG,"0000 server_socket: %d",server_socket);
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif

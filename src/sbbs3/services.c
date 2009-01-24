@@ -145,7 +145,7 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		lprintf(LOG_DEBUG,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return (TRUE);
 	}
@@ -969,7 +969,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 	/* Terminated? */ 
 	if(client->branch.auto_terminate && terminated) {
-		JS_ReportError(cx,"Terminated");
+		JS_ReportWarning(cx,"Terminated");
 		client->branch.counter=0;
 		return(JS_FALSE);
 	}
@@ -1184,7 +1184,7 @@ static void js_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d %s JavaScript service thread terminated (%u clients remain, %d total, %lu served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
 		, socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
@@ -1283,7 +1283,7 @@ static void js_static_service_thread(void* arg)
 	}
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d %s static JavaScript service thread terminated (%lu clients served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
 		,socket, service->protocol, service->served);
 
 	close_socket(service->socket);
@@ -1341,7 +1341,7 @@ static void native_static_service_thread(void* arg)
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d %s static service thread terminated (%lu clients served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
 		,socket, service->protocol, service->served);
 
 	close_socket(service->socket);
@@ -1474,7 +1474,7 @@ static void native_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_DEBUG,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
+	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %d total, %lu served)"
 		,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
@@ -1515,11 +1515,11 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	uint32_t	stack_size;
 
 	if((fp=fopen(services_ini,"r"))==NULL) {
-		lprintf(LOG_ERR,"!ERROR %d opening %s", errno, services_ini);
+		lprintf(LOG_CRIT,"!ERROR %d opening %s", errno, services_ini);
 		return(NULL);
 	}
 
-	lprintf(LOG_INFO,"Reading %s",services_ini);
+	lprintf(LOG_DEBUG,"Reading %s",services_ini);
 	list=iniReadFile(fp);
 	fclose(fp);
 
@@ -1625,7 +1625,7 @@ static void cleanup(int code)
 
 	thread_down();
 	if(terminated || code)
-		lprintf(LOG_DEBUG,"#### Services thread terminated (%lu clients served)",served);
+		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served)",served);
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
@@ -1755,8 +1755,8 @@ void DLLCALL services_thread(void* arg)
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
-			lprintf(LOG_ERR,"!ERROR %s",error);
-			lprintf(LOG_ERR,"!Failed to load configuration files");
+			lprintf(LOG_CRIT,"!ERROR %s",error);
+			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);
 			return;
 		}
@@ -1769,7 +1769,7 @@ void DLLCALL services_thread(void* arg)
 		MKDIR(scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", scfg.temp_dir);
+			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -1803,7 +1803,7 @@ void DLLCALL services_thread(void* arg)
 				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
 				,service[i].protocol))
 				==INVALID_SOCKET) {
-				lprintf(LOG_ERR,"!ERROR %d opening %s socket"
+				lprintf(LOG_CRIT,"!ERROR %d opening %s socket"
 					,ERROR_VALUE, service[i].protocol);
 				cleanup(1);
 				return;
@@ -1873,7 +1873,7 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-		lprintf(LOG_INFO,"0000 %u service sockets bound", total_sockets);
+		lprintf(LOG_INFO,"0000 Services thread started (%u service sockets bound)", total_sockets);
 
 		/* Setup static service threads */
 		for(i=0;i<(int)services;i++) {
