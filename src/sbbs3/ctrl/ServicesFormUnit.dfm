@@ -83,6 +83,37 @@ object ServicesForm: TServicesForm
       Caption = 'Down'
       TabOrder = 0
     end
+    object ToolButton3: TToolButton
+      Left = 258
+      Top = 0
+      Width = 8
+      Caption = 'ToolButton3'
+      ImageIndex = 6
+      Style = tbsSeparator
+    end
+    object LogLevelText: TStaticText
+      Left = 266
+      Top = 0
+      Width = 75
+      Height = 22
+      Hint = 'Web Server Log Level'
+      AutoSize = False
+      BorderStyle = sbsSunken
+      TabOrder = 1
+    end
+    object LogLevelUpDown: TUpDown
+      Left = 341
+      Top = 0
+      Width = 16
+      Height = 22
+      Hint = 'Log Level Adjustment'
+      Min = 0
+      Max = 7
+      Position = 0
+      TabOrder = 2
+      Wrap = False
+      OnChangingEx = LogLevelUpDownChangingEx
+    end
   end
   object Log: TRichEdit
     Left = 0

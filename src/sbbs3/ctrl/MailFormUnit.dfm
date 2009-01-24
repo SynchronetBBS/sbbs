@@ -1,7 +1,7 @@
 object MailForm: TMailForm
   Left = 670
   Top = 170
-  Width = 350
+  Width = 480
   Height = 150
   Caption = 'Mail Server'
   Color = clBtnFace
@@ -21,7 +21,7 @@ object MailForm: TMailForm
   object ToolBar: TToolBar
     Left = 0
     Top = 0
-    Width = 342
+    Width = 472
     Height = 25
     Caption = 'ToolBar'
     EdgeBorders = []
@@ -101,11 +101,42 @@ object MailForm: TMailForm
       Step = 1
       TabOrder = 1
     end
+    object ToolButton2: TToolButton
+      Left = 341
+      Top = 0
+      Width = 8
+      Caption = 'ToolButton2'
+      ImageIndex = 7
+      Style = tbsSeparator
+    end
+    object LogLevelText: TStaticText
+      Left = 349
+      Top = 0
+      Width = 75
+      Height = 22
+      Hint = 'Web Server Log Level'
+      AutoSize = False
+      BorderStyle = sbsSunken
+      TabOrder = 2
+    end
+    object LogLevelUpDown: TUpDown
+      Left = 424
+      Top = 0
+      Width = 16
+      Height = 22
+      Hint = 'Log Level Adjustment'
+      Min = 0
+      Max = 7
+      Position = 0
+      TabOrder = 3
+      Wrap = False
+      OnChangingEx = LogLevelUpDownChangingEx
+    end
   end
   object Log: TRichEdit
     Left = 0
     Top = 25
-    Width = 342
+    Width = 472
     Height = 92
     Align = alClient
     Font.Charset = DEFAULT_CHARSET

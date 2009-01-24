@@ -60,7 +60,7 @@ void __fastcall TTelnetForm::LogLevelUpDownChangingEx(TObject *Sender,
         AllowChange = false;
     else {
         MainForm->bbs_startup.log_level = NewValue;
-        LogLevelText->Caption = LogLevelDesc[MainForm->bbs_startup.log_level];
+        LogLevelText->Caption = LogLevelDesc[NewValue];
         MainForm->SaveIniSettings(Sender);
     }
 }

@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -51,6 +51,21 @@ __fastcall TServicesForm::TServicesForm(TComponent* Owner)
 void __fastcall TServicesForm::FormHide(TObject *Sender)
 {
     MainForm->ViewServices->Checked=false;
+}
+//---------------------------------------------------------------------------
+
+
+
+void __fastcall TServicesForm::LogLevelUpDownChangingEx(TObject *Sender,
+      bool &AllowChange, short NewValue, TUpDownDirection Direction)
+{
+    if(NewValue < 0 || NewValue > LOG_DEBUG)
+        AllowChange = false;
+    else {
+        MainForm->services_startup.log_level = NewValue;
+        LogLevelText->Caption = LogLevelDesc[NewValue];
+        MainForm->SaveIniSettings(Sender);
+    }
 }
 //---------------------------------------------------------------------------
 
