@@ -1113,7 +1113,7 @@ void sbbs_t::js_create_user_objects(void)
 {
 	if(js_cx==NULL)
 		return;
-
+	
 	JS_BEGINREQUEST(js_cx);
 	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)) 
 		lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
@@ -1572,6 +1572,8 @@ void input_thread(void *arg)
 #ifdef __unix__
 			if(sock==sbbs->client_socket)  {
 #endif
+				if(!sbbs->online)	// sbbs_t::hangup() called?
+					break;
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf(LOG_NOTICE,"Node %d socket closed by peer on receive", sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNRESET) 
@@ -3494,6 +3496,10 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 
 void sbbs_t::hangup(void)
 {
+	if(online) {
+		lprintf(LOG_DEBUG,"Node %d disconnecting client", cfg.node_num);
+		online=FALSE;	// moved from the bottom of this fucntion on Jan-25-2009
+	}
 	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
 		closesocket(client_socket_dup);
 	client_socket_dup=INVALID_SOCKET;
@@ -3505,7 +3511,6 @@ void sbbs_t::hangup(void)
 		client_socket=INVALID_SOCKET;
 	}
 	sem_post(&outbuf.sem);
-	online=FALSE;
 }
 
 int sbbs_t::incom(unsigned long timeout)
