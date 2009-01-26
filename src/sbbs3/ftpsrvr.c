@@ -1346,6 +1346,7 @@ static void send_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
+	SetThreadName("FTP Send thread");
 	thread_up(TRUE /* setuid */);
 
 	length=flength(xfer.filename);
@@ -1604,6 +1605,7 @@ static void receive_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
+	SetThreadName("FTP RECV Thread");
 	thread_up(TRUE /* setuid */);
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
@@ -2396,6 +2398,7 @@ static void ctrl_thread(void* arg)
 	JSString*	js_str;
 #endif
 
+	SetThreadName("FTP CTRL thread");
 	thread_up(TRUE /* setuid */);
 
 	lastactive=time(NULL);
@@ -4604,6 +4607,7 @@ void DLLCALL ftp_server(void* arg)
 	ftp_ver();
 
 	startup=(ftp_startup_t*)arg;
+	SetThreadName("FTP Server");
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)

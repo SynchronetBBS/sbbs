@@ -4752,6 +4752,7 @@ void http_output_thread(void *arg)
 	int		i;
 	unsigned mss=OUTBUF_LEN;
 
+	SetThreadName("HTTP Output Thread");
 	obuf=&(session->outbuf);
 	/* Destroyed at end of function */
 	if((i=pthread_mutex_init(&session->outbuf_write,NULL))!=0) {
@@ -4869,6 +4870,7 @@ void http_session_thread(void* arg)
 	int				loop_count;
 	BOOL			init_error;
 
+	SetThreadName("HTTP Session Thread");
 	pthread_mutex_lock(&((http_session_t*)arg)->struct_filled);
 	pthread_mutex_unlock(&((http_session_t*)arg)->struct_filled);
 	pthread_mutex_destroy(&((http_session_t*)arg)->struct_filled);
@@ -5173,6 +5175,7 @@ void http_logging_thread(void* arg)
 	if(!base[0])
 		SAFEPRINTF(base,"%slogs/http-",scfg.logs_dir);
 
+	SetThreadName("HTTP Logging Thread");
 	filename[0]=0;
 	newfilename[0]=0;
 
@@ -5296,6 +5299,7 @@ void DLLCALL web_server(void* arg)
 
 	startup=(web_startup_t*)arg;
 
+	SetThreadName("Web Server");
 	web_ver();	/* get CVS revision */
 
     if(startup==NULL) {
