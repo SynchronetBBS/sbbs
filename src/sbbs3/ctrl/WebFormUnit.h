@@ -60,6 +60,7 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton4;
     TStaticText *LogLevelText;
     TUpDown *LogLevelUpDown;
+    TToolButton *LogPauseButton;
     void __fastcall LogLevelUpDownChangingEx(TObject *Sender,
           bool &AllowChange, short NewValue, TUpDownDirection Direction);
 private:	// User declarations

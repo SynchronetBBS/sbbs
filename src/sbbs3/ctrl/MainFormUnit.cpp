@@ -304,6 +304,8 @@ static int bbs_lputs(void* p, int level, const char *str)
         MainForm->LogAttributes(level, TelnetForm->Log->Color, TelnetForm->Log->Font));
 	TelnetForm->Log->Lines->Add(Line);
     ReleaseMutex(mutex);
+    if(!TelnetForm->LogPauseButton->Down)
+        SendMessage(TelnetForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
     return(Line.Length());
 }
 
@@ -344,7 +346,8 @@ static void bbs_terminated(void* p, int code)
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=true;
 	MainForm->TelnetStop->Enabled=false;
-	MainForm->TelnetRecycle->Enabled=false;    
+	MainForm->TelnetRecycle->Enabled=false;
+    TelnetForm->LogPauseButton->Enabled=false;    
     Application->ProcessMessages();
 }
 static void bbs_started(void* p)
@@ -352,7 +355,8 @@ static void bbs_started(void* p)
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=false;
     MainForm->TelnetStop->Enabled=true;
-    MainForm->TelnetRecycle->Enabled=true;    
+    MainForm->TelnetRecycle->Enabled=true;
+    TelnetForm->LogPauseButton->Enabled=true;    
     Application->ProcessMessages();
 }
 static void bbs_start(void)
@@ -393,6 +397,8 @@ static int event_lputs(int level, const char *str)
     EventsForm->Log->SelAttributes->Assign(
         MainForm->LogAttributes(level, EventsForm->Log->Color, EventsForm->Log->Font));
 	EventsForm->Log->Lines->Add(Line);
+    if(!TelnetForm->LogPauseButton->Down)
+        SendMessage(EventsForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
     ReleaseMutex(mutex);
     return(Line.Length());
 }
@@ -414,6 +420,8 @@ static int service_lputs(void* p, int level, const char *str)
     ServicesForm->Log->SelAttributes->Assign(
         MainForm->LogAttributes(level, ServicesForm->Log->Color, ServicesForm->Log->Font));
 	ServicesForm->Log->Lines->Add(Line);
+    if(!ServicesForm->LogPauseButton->Down)
+        SendMessage(ServicesForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
     ReleaseMutex(mutex);
     return(Line.Length());
 }
@@ -437,6 +445,7 @@ static void services_terminated(void* p, int code)
 	MainForm->ServicesStart->Enabled=true;
 	MainForm->ServicesStop->Enabled=false;
     MainForm->ServicesRecycle->Enabled=false;
+    ServicesForm->LogPauseButton->Enabled=false;
     Application->ProcessMessages();
 }
 static void services_started(void* p)
@@ -445,6 +454,7 @@ static void services_started(void* p)
 	MainForm->ServicesStart->Enabled=false;
     MainForm->ServicesStop->Enabled=true;
     MainForm->ServicesRecycle->Enabled=true;
+    ServicesForm->LogPauseButton->Enabled=true;    
     Application->ProcessMessages();
 }
 
@@ -478,6 +488,8 @@ static int mail_lputs(void* p, int level, const char *str)
     MailForm->Log->SelAttributes->Assign(
         MainForm->LogAttributes(level, MailForm->Log->Color, MailForm->Log->Font));
 	MailForm->Log->Lines->Add(Line);
+    if(!MailForm->LogPauseButton->Down)
+        SendMessage(MailForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
 
     if(MainForm->MailLogFile && MainForm->MailStop->Enabled) {
         AnsiString LogFileName
@@ -540,6 +552,7 @@ static void mail_terminated(void* p, int code)
 	MainForm->MailStart->Enabled=true;
 	MainForm->MailStop->Enabled=false;
     MainForm->MailRecycle->Enabled=false;
+    MailForm->LogPauseButton->Enabled=false;
     Application->ProcessMessages();
 }
 static void mail_started(void* p)
@@ -548,6 +561,7 @@ static void mail_started(void* p)
 	MainForm->MailStart->Enabled=false;
     MainForm->MailStop->Enabled=true;
     MainForm->MailRecycle->Enabled=true;
+    MailForm->LogPauseButton->Enabled=true;   
     Application->ProcessMessages();
 }
 static void mail_start(void)
@@ -597,6 +611,9 @@ static int ftp_lputs(void* p, int level, const char *str)
     FtpForm->Log->SelAttributes->Assign(
         MainForm->LogAttributes(level, FtpForm->Log->Color, FtpForm->Log->Font));
 	FtpForm->Log->Lines->Add(Line);
+
+    if(!FtpForm->LogPauseButton->Down)
+        SendMessage(FtpForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
 
     if(MainForm->FtpLogFile && MainForm->FtpStop->Enabled) {
         AnsiString LogFileName
@@ -660,6 +677,7 @@ static void ftp_terminated(void* p, int code)
 	MainForm->FtpStart->Enabled=true;
 	MainForm->FtpStop->Enabled=false;
     MainForm->FtpRecycle->Enabled=false;
+    FtpForm->LogPauseButton->Enabled=false;
     Application->ProcessMessages();
 }
 static void ftp_started(void* p)
@@ -668,6 +686,7 @@ static void ftp_started(void* p)
 	MainForm->FtpStart->Enabled=false;
     MainForm->FtpStop->Enabled=true;
     MainForm->FtpRecycle->Enabled=true;
+    FtpForm->LogPauseButton->Enabled=true;
     Application->ProcessMessages();
 }
 static void ftp_start(void)
@@ -717,6 +736,10 @@ static int web_lputs(void* p, int level, const char *str)
     WebForm->Log->SelAttributes->Assign(
         MainForm->LogAttributes(level, WebForm->Log->Color, WebForm->Log->Font));
 	WebForm->Log->Lines->Add(Line);
+
+    if(!WebForm->LogPauseButton->Down)
+        SendMessage(WebForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
+
 #if 0
     if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
         AnsiString LogFileName
@@ -780,6 +803,7 @@ static void web_terminated(void* p, int code)
 	MainForm->WebStart->Enabled=true;
 	MainForm->WebStop->Enabled=false;
     MainForm->WebRecycle->Enabled=false;
+    WebForm->LogPauseButton->Enabled=false;
     Application->ProcessMessages();
 }
 static void web_started(void* p)
@@ -788,6 +812,7 @@ static void web_started(void* p)
 	MainForm->WebStart->Enabled=false;
     MainForm->WebStop->Enabled=true;
     MainForm->WebRecycle->Enabled=true;
+    WebForm->LogPauseButton->Enabled=true;    
     Application->ProcessMessages();
 }
 static void web_start(void)
@@ -3809,4 +3834,5 @@ TFont* __fastcall TMainForm::LogAttributes(int log_level, TColor Color, TFont* F
     return LogFont[log_level];
 }
 //---------------------------------------------------------------------------
+
 

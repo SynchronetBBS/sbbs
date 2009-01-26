@@ -64,6 +64,7 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton2;
     TStaticText *LogLevelText;
     TUpDown *LogLevelUpDown;
+    TToolButton *LogPauseButton;
     void __fastcall FormHide(TObject *Sender);
     void __fastcall LogLevelUpDownChangingEx(TObject *Sender,
           bool &AllowChange, short NewValue, TUpDownDirection Direction);

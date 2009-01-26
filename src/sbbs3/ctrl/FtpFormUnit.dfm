@@ -1,7 +1,7 @@
 object FtpForm: TFtpForm
-  Left = 709
-  Top = 771
-  Width = 469
+  Left = 446
+  Top = 759
+  Width = 525
   Height = 150
   Caption = 'FTP Server'
   Color = clBtnFace
@@ -19,7 +19,7 @@ object FtpForm: TFtpForm
   object ToolBar: TToolBar
     Left = 0
     Top = 0
-    Width = 461
+    Width = 517
     Height = 25
     Caption = 'ToolBar'
     EdgeBorders = []
@@ -34,18 +34,26 @@ object FtpForm: TFtpForm
       Top = 0
       Action = MainForm.FtpStart
     end
-    object StopButton: TToolButton
+    object LogPauseButton: TToolButton
       Left = 23
+      Top = 0
+      Hint = 'Pause Log Scrolling'
+      Enabled = False
+      ImageIndex = 67
+      Style = tbsCheck
+    end
+    object StopButton: TToolButton
+      Left = 46
       Top = 0
       Action = MainForm.FtpStop
     end
     object RecycleButton: TToolButton
-      Left = 46
+      Left = 69
       Top = 0
       Action = MainForm.FtpRecycle
     end
     object ToolButton1: TToolButton
-      Left = 69
+      Left = 92
       Top = 0
       Width = 8
       Caption = 'ToolButton1'
@@ -53,12 +61,12 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object ConfigureButton: TToolButton
-      Left = 77
+      Left = 100
       Top = 0
       Action = MainForm.FtpConfigure
     end
     object ToolButton2: TToolButton
-      Left = 100
+      Left = 123
       Top = 0
       Width = 8
       Caption = 'ToolButton2'
@@ -66,7 +74,7 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object Status: TStaticText
-      Left = 108
+      Left = 131
       Top = 0
       Width = 150
       Height = 22
@@ -79,7 +87,7 @@ object FtpForm: TFtpForm
       TabOrder = 0
     end
     object ToolButton3: TToolButton
-      Left = 258
+      Left = 281
       Top = 0
       Width = 8
       Caption = 'ToolButton3'
@@ -87,7 +95,7 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object ProgressBar: TProgressBar
-      Left = 266
+      Left = 289
       Top = 0
       Width = 75
       Height = 22
@@ -99,7 +107,7 @@ object FtpForm: TFtpForm
       TabOrder = 1
     end
     object ToolButton4: TToolButton
-      Left = 341
+      Left = 364
       Top = 0
       Width = 8
       Caption = 'ToolButton4'
@@ -107,17 +115,17 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object LogLevelText: TStaticText
-      Left = 349
+      Left = 372
       Top = 0
       Width = 75
       Height = 22
-      Hint = 'Web Server Log Level'
+      Hint = 'Log Level'
       AutoSize = False
       BorderStyle = sbsSunken
       TabOrder = 2
     end
     object LogLevelUpDown: TUpDown
-      Left = 424
+      Left = 447
       Top = 0
       Width = 16
       Height = 22
@@ -133,7 +141,7 @@ object FtpForm: TFtpForm
   object Log: TRichEdit
     Left = 0
     Top = 25
-    Width = 461
+    Width = 517
     Height = 92
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
