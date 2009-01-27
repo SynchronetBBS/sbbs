@@ -1904,6 +1904,132 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
 			if(!stricmp(scfg->sub[p->smb.subnum]->code,base))	/* null ptr dereference here Apr-16-2003 */
 				break;											/* and again, Aug-18-2004 upon recycle */
+/* One more time, Mon Jan 26 22:44:23 PST 2009 */
+/*
+#0  0x282d61b6 in js_msgbase_constructor (cx=0x288bf180, obj=0x29e39460, argc=1, argv=0x28e7413c, rval=0xbf0e8b30)
+    at js_msgbase.c:1905
+#1  0x2813cb9f in js_Invoke (cx=0x288bf180, argc=1, flags=1) at jsinterp.c:1375
+#2  0x2813e6c7 in js_InvokeConstructor (cx=0x288bf180, vp=0x28e74134, argc=1) at jsinterp.c:1947
+#3  0x28146a3b in js_Interpret (cx=0x288bf180, pc=0x28e828dd "#", result=0xbf0e9450) at jsinterp.c:3396
+#4  0x2813d669 in js_Execute (cx=0x288bf180, chain=0x288c79a0, script=0x28e82800, down=0x0, flags=0, 
+    result=0xbf0e9a60) at jsinterp.c:1633
+#5  0x2810208a in JS_ExecuteScript (cx=0x288bf180, obj=0x288c79a0, script=0x28e82800, rval=0xbf0e9a60)
+    at jsapi.c:4188
+#6  0x282c4f1f in js_load (cx=0x288bf180, obj=0x288c66c0, argc=1, argv=0x28e74024, rval=0xbf0e9a60)
+    at js_global.c:364
+#7  0x2813cb9f in js_Invoke (cx=0x288bf180, argc=1, flags=0) at jsinterp.c:1375
+#8  0x2814bfe3 in js_Interpret (cx=0x288bf180, pc=0x28e17a97 ":", result=0xbf0ea300) at jsinterp.c:3944
+#9  0x2813d669 in js_Execute (cx=0x288bf180, chain=0x288c79a0, script=0x28e17a60, down=0x0, flags=0, 
+    result=0xbf0eabc0) at jsinterp.c:1633
+#10 0x2810208a in JS_ExecuteScript (cx=0x288bf180, obj=0x288c79a0, script=0x28e17a60, rval=0xbf0eabc0)
+    at jsapi.c:4188
+#11 0x2828c066 in sbbs_t::js_execfile (this=0x28ac8000, cmd=0x28ad178e "chinkmaster.js") at exec.cpp:645
+#12 0x283725c7 in sbbs_t::external (this=0x28ac8000, cmdline=0x28ad178d "?chinkmaster.js", mode=256, 
+    startup_dir=0x28a2bcaa "") at xtrn.cpp:1318
+#13 0x283068d9 in event_thread (arg=0x28ac8000) at main.cpp:2713
+#14 0x28550a99 in pthread_getprio () from /lib/libthr.so.3
+#15 0x00000000 in ?? ()
+(gdb) print scfg
+$1 = (scfg_t *) 0x2842f480
+(gdb) print scfg->sub
+$2 = (sub_t **) 0x0
+(gdb) print scfg->sub
+$3 = (sub_t **) 0x0
+(gdb) print p
+$4 = (private_t *) 0x29e3c000
+(gdb) print *scfg
+$5 = {size = 23200, prepped = 1, grp = 0x0, total_grps = 3, sub = 0x0, total_subs = 79, lib = 0x0, 
+  total_libs = 6, dir = 0x0, total_dirs = 232, txtsec = 0x0, total_txtsecs = 0, xtrnsec = 0x0, 
+  total_xtrnsecs = 3, xtrn = 0x0, total_xtrns = 44, mdm_result = 0x0, mdm_results = 3, prot = 0x0, 
+  total_prots = 9, fextr = 0x0, total_fextrs = 3, fcomp = 0x0, total_fcomps = 3, fview = 0x0, total_fviews = 12, 
+  ftest = 0x0, total_ftests = 5, xedit = 0x0, total_xedits = 4, qhub = 0x0, total_qhubs = 1, phub = 0x0, 
+  total_phubs = 0, chan = 0x0, total_chans = 3, chatact = 0x0, total_chatacts = 132, actset = 0x0, 
+  total_actsets = 1, page = 0x0, total_pages = 2, event = 0x0, total_events = 16, dlevent = 0x0, 
+  total_dlevents = 0, faddr = 0x0, total_faddrs = 0, swap = 0x0, total_swaps = 19, natvpgm = 0x0, 
+  total_natvpgms = 10, guru = 0x0, total_gurus = 1, shell = 0x0, total_shells = 11, hotkey = 0x0, 
+  total_hotkeys = 0, com_base = 15, com_irq = 3, com_rate = 2400, com_port = 1 '\001', 
+  mdm_init = "AT&FS0=0S2=128E0V0X4&C1&D2", '\0' <repeats 37 times>, mdm_spec = '\0' <repeats 63 times>, 
+  mdm_term = "ATE1V1", '\0' <repeats 57 times>, mdm_dial = "ATDT", '\0' <repeats 59 times>, 
+  mdm_offh = "ATM0H1", '\0' <repeats 57 times>, mdm_answ = "ATA", '\0' <repeats 60 times>, 
+  mdm_hang = '\0' <repeats 63 times>, mdm_misc = 0, mdm_reinit = 0, mdm_ansdelay = 5, mdm_rings = 1 '\001', 
+  sys_misc = -2045643832, sys_pass = "XXXXXXXX", '\0' <repeats 32 times>, 
+  sys_name = "Synchronix", '\0' <repeats 30 times>, sys_id = "SYNCNIX\000", sys_psname = '\0' <repeats 12 times>, 
+  sys_psnum = 0, sys_inetaddr = "nix.synchro.net", '\0' <repeats 112 times>, 
+  sys_location = "Springside, SK", '\0' <repeats 26 times>, sys_timezone = 16864, 
+  sys_daily = '\0' <repeats 63 times>, sys_logon = '\0' <repeats 63 times>, sys_logout = '\0' <repeats 63 times>, 
+  sys_pwdays = 0, sys_deldays = 14, sys_autodel = 180, sys_nodes = 4, sys_op = "Deuce", '\0' <repeats 35 times>, 
+  sys_guru = "The Guru", '\0' <repeats 32 times>, sys_exp_warn = 30 '\036', sys_def_stat = 1 '\001', 
+  sys_phonefmt = '!' <repeats 12 times>, sys_lastnode = 250, sys_autonode = 1, 
+  sys_chat_arstr = '\0' <repeats 40 times>, sys_chat_ar = 0x2837ca04 "", msg_misc = -65536, file_misc = 0, 
+  xtrn_misc = 0, node_comspec = '\0' <repeats 63 times>, node_editor = '\0' <repeats 63 times>, 
+  node_viewer = "%!list %f", '\0' <repeats 54 times>, node_daily = '\0' <repeats 63 times>, 
+  node_scrnlen = 0 '\0', node_scrnblank = 0 '\0', node_misc = 33298, node_valuser = 1, node_ivt = 1, 
+  node_swap = 2 '\002', node_swapdir = '\0' <repeats 63 times>, node_minbps = 300, node_num = 1, 
+  node_phone = "XXX-XXX-XXXX", node_name = "Node 1", '\0' <repeats 34 times>, 
+  node_arstr = '\0' <repeats 40 times>, node_ar = 0x2837ca04 "", node_cost = 0, node_dollars_per_call = 0 '\0', 
+  node_sem_check = 5, node_stat_check = 5, new_install = 0 '\0', new_pass = '\0' <repeats 40 times>, 
+  new_magic = '\0' <repeats 20 times>, new_sif = "\000\000\000\000\000\000\000\000", 
+  new_sof = "\000\000\000\000\000\000\000\000", new_level = 50 '2', new_flags1 = 0, new_flags2 = 0, 
+  new_flags3 = 0, new_flags4 = 0, new_exempt = 0, new_rest = 0, new_cdt = 10485760, new_min = 0, 
+  new_xedit = "\000\000\000\000\000\000\000\000", new_shell = 0, new_misc = 26896, new_expire = 0, 
+  new_prot = 90 'Z', val_level = "\n\n\024\036(2<FPZ", val_flags1 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, val_flags2 = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, val_flags3 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, val_flags4 = {0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0}, val_exempt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, val_rest = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
+  val_cdt = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, val_expire = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 
+---Type <return> to continue, or q <return> to quit---
+  level_expireto = '\0' <repeats 99 times>, level_timepercall = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 
+    14, 15, 16, 17, 18, 19, 10, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 240, 51, 52, 53, 54, 55, 56, 57, 58, 59, 90, 120, 90, 63, 64, 65, 66, 67, 
+    68, 69, 120, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 120, 120, 120, 120, 120, 
+    120, 120, 120, 120, 480, 500}, level_timeperday = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 11, 12, 13, 14, 15, 16, 
+    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 
+    44, 45, 46, 47, 48, 49, 480, 51, 52, 53, 54, 55, 56, 57, 58, 59, 120, 120, 120, 63, 64, 65, 66, 67, 68, 69, 
+    120, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 480, 240, 240, 240, 240, 240, 
+    240, 240, 240, 500, 500}, level_callsperday = {0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 
+    4 <repeats 29 times>, 50, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 10, 8, 8, 8, 8, 8, 8, 8, 10 <repeats 11 times>, 4, 
+    4, 4, 4, 4, 4, 4, 4, 200, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500}, level_linespermsg = {
+    20 <repeats 11 times>, 40 <repeats 39 times>, 200, 50, 50, 50, 50, 50, 50, 50, 50, 50, 60 <repeats 11 times>, 
+    70, 70, 70, 70, 70, 70, 70, 70, 70, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 90, 90, 90, 90, 90, 90, 90, 90, 
+    90, 9999}, level_postsperday = {50 <repeats 50 times>, 20, 50 <repeats 48 times>, 500}, level_emailperday = {
+    50 <repeats 50 times>, 20, 50 <repeats 48 times>, 500}, level_freecdtperday = {0 <repeats 50 times>, 4194304, 
+    0 <repeats 49 times>}, level_misc = {0 <repeats 100 times>}, expired_level = 0 '\0', expired_flags1 = 0, 
+  expired_flags2 = 0, expired_flags3 = 0, expired_flags4 = 0, expired_exempt = 0, expired_rest = 0, 
+  min_dspace = 4096, max_batup = 25, max_batdn = 100, max_userxfer = 5, max_minutes = 0, max_qwkmsgs = 10000, 
+  preqwk_arstr = '\0' <repeats 40 times>, preqwk_ar = 0x2837ca04 "", cdt_min_value = 6, cdt_per_dollar = 2097152, 
+  cdt_up_pct = 100, cdt_dn_pct = 90, node_dir = "/synchronet/sbbs/node1/", '\0' <repeats 40 times>, 
+  ctrl_dir = "/synchronet/sbbs/ctrl/", '\0' <repeats 41 times>, 
+  data_dir = "/synchronet/sbbs/data/", '\0' <repeats 41 times>, 
+  text_dir = "/synchronet/sbbs/text/", '\0' <repeats 41 times>, 
+  exec_dir = "/synchronet/sbbs/exec/", '\0' <repeats 41 times>, 
+  temp_dir = "/tmp/SyncTemp/", '\0' <repeats 49 times>, 
+  mods_dir = "/synchronet/sbbs/mods/", '\0' <repeats 41 times>, 
+  logs_dir = "/synchronet/sbbs/data/", '\0' <repeats 41 times>, node_path = {
+    "/synchronet/sbbs/node1/", '\0' <repeats 40 times>, "/synchronet/sbbs/node2/", '\0' <repeats 40 times>, 
+    "/synchronet/sbbs/node3/", '\0' <repeats 40 times>, "/synchronet/sbbs/node4/", '\0' <repeats 40 times>, 
+    '\0' <repeats 63 times> <repeats 246 times>}, sysop_dir = 11, user_dir = 12, upload_dir = 10, altpath = 0x0, 
+  altpaths = 0, leech_pct = 0, leech_sec = 60, netmail_cost = 0, 
+  netmail_dir = "/synchronet/sbbs/fido/outbound/", '\0' <repeats 32 times>, netmail_misc = 41, 
+  inetmail_misc = 17, inetmail_cost = 0, smtpmail_sem = '\0' <repeats 63 times>, 
+  inetmail_sem = '\0' <repeats 63 times>, echomail_dir = '\0' <repeats 63 times>, 
+  fidofile_dir = "/synchronet/sbbs/fido/inbsecure/", '\0' <repeats 31 times>, 
+  netmail_sem = "%jfidoout.now", '\0' <repeats 50 times>, 
+  echomail_sem = "%jfidoout.now", '\0' <repeats 50 times>, origline = '\0' <repeats 50 times>, 
+  qnet_tagline = "My Brand-New BBS (All the cool SysOps run STOCK!)", '\0' <repeats 78 times>, uq = 151027, 
+---Type <return> to continue, or q <return> to quit---
+  mail_maxcrcs = 0, mail_maxage = 0, dflt_faddr = {zone = 0, net = 0, node = 0, point = 0}, 
+  logon_mod = "logon\000\000\000", logoff_mod = "\000\000\000\000\000\000\000\000", newuser_mod = "newuser\000", 
+  login_mod = "login\000\000\000", logout_mod = "\000\000\000\000\000\000\000\000", 
+  sync_mod = "\000\000\000\000\000\000\000\000", expire_mod = "\000\000\000\000\000\000\000\000", 
+  scfg_cmd = "%!scfg %k /t%w", '\0' <repeats 49 times>, smb_retry_time = 30 '\036', sec_warn = 180, 
+  sec_hangup = 300, color = 0x0, total_colors = 0, ctrlkey_passthru = 0, wfc_cmd = {'\0' <repeats 63 times>, 
+    "%!list ..\\data\\error.log", '\0' <repeats 39 times>, "%!list ..\\data\\guru.log", '\0' <repeats 40 times>, 
+    "%!list ..\\data\\logons.lst", '\0' <repeats 38 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, 
+    '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>}, 
+  wfc_scmd = {"%!qnet", '\0' <repeats 57 times>, "%!pnet", '\0' <repeats 57 times>, '\0' <repeats 63 times>, 
+    '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, 
+    '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, '\0' <repeats 63 times>, 
+    '\0' <repeats 63 times>}, user_backup_level = 5, mail_backup_level = 5}
+*/
 		}
 		if(p->smb.subnum<scfg->total_subs) {
 			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
