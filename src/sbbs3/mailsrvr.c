@@ -1089,8 +1089,8 @@ static void pop3_thread(void* arg)
 				}
 				msg.hdr.number=mail[msgnum-1].number;
 
-				lprintf(LOG_INFO,"%04d POP3 %s retrieving message #%ld"
-					,socket, user.alias, msg.hdr.number);
+				lprintf(LOG_INFO,"%04d POP3 %s retrieving message #%ld with command: %s"
+					,socket, user.alias, msg.hdr.number, buf);
 
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
 					lprintf(LOG_ERR,"%04d !POP3 ERROR %d (%s) getting message index"
@@ -3924,7 +3924,7 @@ static void sendmail_thread(void* arg)
 
 			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf(LOG_ERR,"0000 SEND Message #%lu from %s to %s - in transit"
+				lprintf(LOG_NOTICE,"0000 SEND Message #%lu from %s to %s - in transit"
 					,msg.hdr.number, msg.from, msg.to_net.addr);
 				continue;
 			}
