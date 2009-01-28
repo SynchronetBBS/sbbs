@@ -1090,7 +1090,7 @@ static void handle_sigs(void)
 	int			sig=0;
 	sigset_t	sigs;
 
-	SetThreadName("Signal Handler Thread");
+	SetThreadName("Signal Handler");
 	thread_up(NULL,TRUE,TRUE);
 
 	if (is_daemon) {
@@ -1198,7 +1198,7 @@ int main(int argc, char** argv)
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
-	SetThreadName("Main Thread");
+	SetThreadName("Main");
 	atexit(cleanup);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */

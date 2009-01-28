@@ -1051,7 +1051,7 @@ static void js_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
 
-	SetThreadName("JS Service Thread");
+	SetThreadName("JS Service");
 	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
@@ -1218,7 +1218,7 @@ static void js_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s static JavaScript service thread started", service->socket, service->protocol);
 
-	SetThreadName("JS Static Service Thread");
+	SetThreadName("JS Static Service");
 	thread_up(TRUE /* setuid */);
 
 	memset(&service_client,0,sizeof(service_client));
@@ -1311,7 +1311,7 @@ static void native_static_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s static service thread started", socket, service->protocol);
 
-	SetThreadName("Native Static Service Thread");
+	SetThreadName("Static Service");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _WIN32
@@ -1375,7 +1375,7 @@ static void native_service_thread(void* arg)
 
 	lprintf(LOG_DEBUG,"%04d %s service thread started", socket, service->protocol);
 
-	SetThreadName("Native Service Thread");
+	SetThreadName("Native Service");
 	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
@@ -1719,7 +1719,7 @@ void DLLCALL services_thread(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 
-	SetThreadName("Services Thread");
+	SetThreadName("Services");
 
 	do {
 

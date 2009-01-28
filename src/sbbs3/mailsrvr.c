@@ -696,7 +696,7 @@ static void pop3_thread(void* arg)
 	mail_t*		mail;
 	pop3_t		pop3=*(pop3_t*)arg;
 
-	SetThreadName("POP3 Thread");
+	SetThreadName("POP3");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -2130,7 +2130,7 @@ static void smtp_thread(void* arg)
 
 	} cmd = SMTP_CMD_NONE;
 
-	SetThreadName("SMTP Thread");
+	SetThreadName("SMTP");
 	thread_up(TRUE /* setuid */);
 
 	free(arg);
@@ -3824,7 +3824,7 @@ static void sendmail_thread(void* arg)
 	size_t		len;
 	BOOL		sending_locally=FALSE;
 
-	SetThreadName("SendMail Thread");
+	SetThreadName("SendMail");
 	thread_up(TRUE /* setuid */);
 
 	sendmail_running=TRUE;

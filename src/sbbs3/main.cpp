@@ -1414,7 +1414,7 @@ void input_thread(void *arg)
 	SOCKET		high_socket;
 	SOCKET		sock;
 
-	SetThreadName("Node Input Thread");
+	SetThreadName("Node Input");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
@@ -1688,7 +1688,7 @@ void passthru_output_thread(void* arg)
 	int		rd;
 	int		wr;
 
-	SetThreadName("Passthrough Output Thread");
+	SetThreadName("Passthrough Output");
 	thread_up(FALSE /* setuid */);
 
     sbbs->passthru_output_thread_running = true;
@@ -1800,7 +1800,7 @@ void passthru_input_thread(void* arg)
 	BYTE	ch;
 	int		i;
 
-	SetThreadName("Passthrough Input Thread");
+	SetThreadName("Passthrough Input");
 	thread_up(FALSE /* setuid */);
 
 	sbbs->passthru_input_thread_running = true;
@@ -1893,7 +1893,7 @@ void output_thread(void* arg)
 	struct timeval tv;
 	ulong		mss=IO_THREAD_BUF_SIZE;
 
-	SetThreadName("Node Output Thread");
+	SetThreadName("Node Output");
 	thread_up(TRUE /* setuid */);
 
     if(sbbs->cfg.node_num)
@@ -2107,7 +2107,7 @@ void event_thread(void* arg)
 
 	sbbs_srand();	/* Seed random number generator */
 
-	SetThreadName("BBS Events Thread");
+	SetThreadName("BBS Events");
 	thread_up(TRUE /* setuid */);
 
 #ifdef JAVASCRIPT
@@ -3802,7 +3802,7 @@ void node_thread(void* arg)
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
-	SetThreadName("Node Thread");
+	SetThreadName("Node");
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
@@ -4305,7 +4305,7 @@ void DLLCALL bbs_thread(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=false;
 
-	SetThreadName("BBS Thread");
+	SetThreadName("BBS");
 
 	do {
 
