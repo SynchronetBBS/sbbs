@@ -311,7 +311,7 @@
 "\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
-"_yh%sw%7ukb:"                                    266 BulkUploadDescPrompt
+"_yh%sw%7ukb:"                                     266 BulkUploadDescPrompt
 "\r\nrhiNo files in batch queue.n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
 "_\r\nyhBatch: n"                                   268 BatchMenuPrompt
