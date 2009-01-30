@@ -3675,6 +3675,7 @@ JSLINT = function () {
                 case 'function':
                 case 'var':
                 case 'unused':
+                case 'const':
                     warning("'{a}' used out of scope.", token, v);
                     break;
                 case 'label':
@@ -3702,6 +3703,7 @@ JSLINT = function () {
                         case 'function':
                         case 'var':
                         case 'unused':
+						case 'const':
                             s[v] = 'closure';
                             funct[v] = 'outer';
                             break;
@@ -4232,6 +4234,8 @@ JSLINT = function () {
 
     stmt('var', varstatement);
 
+    stmt('const', varstatement);
+
     stmt('new', function () {
         error("'new' should not be used as a statement.");
     });
@@ -4521,11 +4525,16 @@ JSLINT = function () {
         advance('(');
         nonadjacent(this, t);
         nospace();
-        if (peek(nexttoken.id === 'var' ? 1 : 0).id === 'in') {
+        if (peek((nexttoken.id === 'var' || nexttoken.id === 'const' ) ? 1 : 0).id === 'in') {
             if (nexttoken.id === 'var') {
                 advance('var');
                 varstatement(true);
-            } else {
+            } 
+			else if (nexttoken.id === 'const') {
+                advance('const');
+                varstatement(true);
+            }
+			else {
                 advance();
             }
             advance('in');
@@ -4544,7 +4553,12 @@ JSLINT = function () {
                 if (nexttoken.id === 'var') {
                     advance('var');
                     varstatement();
-                } else {
+                }
+				else if (nexttoken.id === 'const') {
+                    advance('const');
+                    varstatement();
+                }
+				else {
                     for (;;) {
                         parse(0, 'for');
                         if (nexttoken.id !== ',') {
@@ -4980,6 +4994,9 @@ JSLINT = function () {
                             cl.push(k);
                             break;
                         case 'var':
+                            va.push(k);
+                            break;
+                        case 'const':
                             va.push(k);
                             break;
                         case 'unused':
