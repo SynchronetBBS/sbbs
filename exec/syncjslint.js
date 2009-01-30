@@ -5065,13 +5065,13 @@ JSLINT = function () {
 function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 {
 	var i;
-	var tmp_fname;
+	var tmp;
 
 	if(!file_exists(fname)) {
-		tmp_fname=file_getname(fname);
+		tmp=file_getname(fname);
 		for(i=0; i<paths.length; i++) {
-			if(file_exists(paths[i]+tmp_fname)) {
-				fname=paths[i]+tmp_fname;
+			if(file_exists(paths[i]+tmp)) {
+				fname=paths[i]+tmp;
 				break;
 			}
 		}
@@ -5088,8 +5088,11 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 			lines.splice(pos+i, 0, all_lines[i]);
 			index.splice(pos+i, 0, fname+":"+(i+1));
 
+			tmp=all_lines[i];
+			tmp=tmp.replace(/\/\*.*?\*\//g,'');
+			tmp=tmp.replace(/\/\/.*^/,'');
 			/* TODO: smart string parsing... */
-			if((m=all_lines[i].match(/^\s*load\(['"](.*)['"]\)/))!=null) {
+			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!=null) {
 				pos+=SYNCJSLINT_LOADFILE(lines,index,pos+i,m[1],paths);
 			}
 		}
