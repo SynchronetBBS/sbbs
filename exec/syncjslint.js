@@ -5109,8 +5109,8 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 }
 
 var SYNCJSLINT_paths=[backslash(system.exec_dir)];
-var SYNCJSLINT_all_lines=new Array();
-var SYNCJSLINT_index=new Array();
+var SYNCJSLINT_all_lines;
+var SYNCJSLINT_index;
 var SYNCJSLINT_options={cap:true,eqeqeq:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true};
 var SYNCJSLINT_myResult;
 var SYNCJSLINT_tmpVar1;
@@ -5138,6 +5138,8 @@ for(var SYNCJSLINT_tmpVar1 in argv) {
 		}
 	}
 
+	SYNCJSLINT_all_lines=[];
+	SYNCJSLINT_index=[];
 	SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths);
 	writeln("Linting...");
 	var SYNCJSLINT_myResult=JSLINT(SYNCJSLINT_all_lines,SYNCJSLINT_options);
