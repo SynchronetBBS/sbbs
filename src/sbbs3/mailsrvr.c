@@ -736,7 +736,7 @@ static void pop3_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf(LOG_NOTICE,"%04d !POP3 BLOCKED CLIENT IP ADDRESS: %s"
+		lprintf(LOG_NOTICE,"%04d !POP3 CLIENT BLOCKED in ip.can: %s"
 			,socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
 		mail_close_socket(socket);
@@ -745,7 +745,7 @@ static void pop3_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d !POP3 BLOCKED CLIENT HOSTNAME: %s"
+		lprintf(LOG_NOTICE,"%04d !POP3 CLIENT BLOCKED in host.can: %s"
 			,socket, host_name);
 		sockprintf(socket,"-ERR Access denied.");
 		mail_close_socket(socket);
@@ -2217,7 +2217,7 @@ static void smtp_thread(void* arg)
 		dnsbl_result.s_addr=0;
 	} else {
 		if(trashcan(&scfg,host_ip,"ip") || findstr(host_ip,spam_block)) {
-			lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED SERVER IP ADDRESS: %s"
+			lprintf(LOG_NOTICE,"%04d !SMTP CLIENT BLOCKED in ip.can: %s"
 				,socket, host_ip);
 			sockprintf(socket,"550 Access denied.");
 			mail_close_socket(socket);
@@ -2228,7 +2228,7 @@ static void smtp_thread(void* arg)
 		}
 
 		if(trashcan(&scfg,host_name,"host") || findstr(host_name,spam_block)) {
-			lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED SERVER HOSTNAME: %s"
+			lprintf(LOG_NOTICE,"%04d !SMTP CLIENT BLOCKED in host.can: %s"
 				,socket, host_name);
 			sockprintf(socket,"550 Access denied.");
 			mail_close_socket(socket);
