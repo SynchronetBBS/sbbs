@@ -1194,7 +1194,7 @@ JSLINT = function () {
                     function esc(n) {
                         var i = parseInt(s.substr(j + 1, n), 16);
                         j += n;
-                        if (i >= 32 && i <= 127 &&
+                        if (i >= 32 && i <= 126 &&
                                 i !== 34 && i !== 92 && i !== 39) {
                             warningAt("Unnecessary escapement.", line, character);
                         }
