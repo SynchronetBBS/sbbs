@@ -4774,11 +4774,13 @@ void http_output_thread(void *arg)
 			/* Check for sanity... */
 			if(i>100) {
 				obuf->highwater_mark=i-12;
-				lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
+				lprintf(LOG_DEBUG,"%04d Autotuning outbuf highwater mark to %d based on MSS"
+					,session->socket,i);
 				mss=obuf->highwater_mark;
 				if(mss>OUTBUF_LEN) {
 					mss=OUTBUF_LEN;
-					lprintf(LOG_DEBUG,"MSS (%d) is higher than OUTBUF_LEN (%d)",i,OUTBUF_LEN);
+					lprintf(LOG_DEBUG,"%04d MSS (%d) is higher than OUTBUF_LEN (%d)"
+						,session->socket,i,OUTBUF_LEN);
 				}
 			}
 		}
