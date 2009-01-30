@@ -5069,6 +5069,7 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 {
 	var i;
 	var tmp;
+	var offset=0;
 
 	if(!file_exists(fname)) {
 		tmp=file_getname(fname);
@@ -5088,19 +5089,19 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 	if(f.open("r")) {
 		all_lines=f.readAll();
 		for(i=0; i<all_lines.length; i++) {
-			lines.splice(pos+i, 0, all_lines[i]);
-			index.splice(pos+i, 0, fname+":"+(i+1));
+			lines.splice(pos+offset+i, 0, all_lines[i]);
+			index.splice(pos+offset+i, 0, fname+":"+(i+1));
 
 			tmp=all_lines[i];
 			tmp=tmp.replace(/\/\*.*?\*\//g,'');
 			tmp=tmp.replace(/\/\/.*^/,'');
 			/* TODO: smart string parsing... */
 			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!=null) {
-				pos+=SYNCJSLINT_LOADFILE(lines,index,pos+i,m[1],paths);
+				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+i,m[1],paths);
 			}
 		}
 		f.close();
-		return(all_lines.length);
+		return(all_lines.length+offset);
 	}
 	else {
 		writeln("!!Load failed");
