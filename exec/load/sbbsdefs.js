@@ -616,7 +616,7 @@ var FI_USERXFER  	=6;			/* User Xfer Download                       */
 var FI_CLOSE 	  	=7;			/* Close any open records					*/
 					    		/********************************************/
 
-if(this.LOG_EMERG==undefined) {	/* temporary backward compatibility kludge	*/
+if(this.LOG_EMERG===undefined) {	/* temporary backward compatibility kludge	*/
 	                            /********************************************/   
                                 /* Log "levels" supported by log() function */   
                                 /********************************************/   
