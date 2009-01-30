@@ -75,7 +75,7 @@ if(mailbase.open()==false) {
 }
 
 /* Inbound message from SMTP Server? */
-if(this.recipient_list_filename!=undefined) {	
+if(js.global.recipient_list_filename!=undefined) {	
 
 	log("reverse_path = " + reverse_path);
 	if(reverse_path=='' || reverse_path=='<>') {
