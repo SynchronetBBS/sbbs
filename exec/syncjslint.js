@@ -242,7 +242,8 @@ JSLINT = function () {
             strict     : true, // require the "use strict"; pragma
             sub        : true, // if all forms of subscript notation are tolerated
             white      : true, // if strict whitespace rules apply
-            widget     : true  // if the Yahoo Widgets globals should be predefined
+            widget     : true, // if the Yahoo Widgets globals should be predefined
+			paranoidbrace : true, // If we should warn on if(something) doSomething();
         },
 
 // browser contains a set of global names which are commonly provided by a
@@ -2466,8 +2467,10 @@ JSLINT = function () {
             }
             advance('}', t);
         } else {
-            warning("Expected '{a}' and instead saw '{b}'.",
-                    nexttoken, '{', nexttoken.value);
+			if(option.paranoidbrace) {
+        	    warning("Expected '{a}' and instead saw '{b}'.",
+            	        nexttoken, '{', nexttoken.value);
+			}
             noreach = true;
             a = [statement()];
             noreach = false;
