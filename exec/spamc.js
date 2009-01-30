@@ -117,6 +117,11 @@ function main()
 		}
 		error_file.writeln("SpamAssassin rejected your mail: " + details);
 		error_file.close();
+		system.spamlog("SMTP","REJECTED"
+			,"SpamAssassin " + details
+			,client.host_name, client.ip_address
+			,recipient_address
+			,reverse_path);
 		return;
 	}
 
