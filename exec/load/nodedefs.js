@@ -38,17 +38,17 @@
 								/********************************************/
  								/* Legal values for Node.status				*/
 								/********************************************/
-var   NODE_WFC			    =0	/* Waiting for Call							*/
-var   NODE_LOGON            =1	/* at logon prompt							*/
-var   NODE_NEWUSER          =2	/* New user applying						*/
-var   NODE_INUSE            =3	/* In Use									*/
-var   NODE_QUIET            =4	/* In Use - quiet mode						*/
-var   NODE_OFFLINE          =5	/* Offline									*/
-var   NODE_NETTING          =6	/* Networking								*/
-var   NODE_EVENT_WAITING    =7	/* Waiting for all nodes to be inactive		*/
-var   NODE_EVENT_RUNNING    =8	/* Running an external event				*/
-var   NODE_EVENT_LIMBO      =9	/* Allowing another node to run an event	*/		
-var   NODE_LAST_STATUS	    =10	/* Must be last								*/
+var   NODE_WFC			    =0;	/* Waiting for Call							*/
+var   NODE_LOGON            =1;	/* at logon prompt							*/
+var   NODE_NEWUSER          =2;	/* New user applying						*/
+var   NODE_INUSE            =3;	/* In Use									*/
+var   NODE_QUIET            =4;	/* In Use - quiet mode						*/
+var   NODE_OFFLINE          =5;	/* Offline									*/
+var   NODE_NETTING          =6;	/* Networking								*/
+var   NODE_EVENT_WAITING    =7;	/* Waiting for all nodes to be inactive		*/
+var   NODE_EVENT_RUNNING    =8;	/* Running an external event				*/
+var   NODE_EVENT_LIMBO      =9;	/* Allowing another node to run an event	*/		
+var   NODE_LAST_STATUS	    =10;/* Must be last								*/
 								/********************************************/
 
 								/********************************************/
@@ -68,32 +68,32 @@ var NodeStatus		=[			/* Node.status value descriptions			*/
 								/********************************************/
 								/* Legal values for Node.action				*/
 								/********************************************/
-var   NODE_MAIN			    =0  /* Main Prompt								*/
-var   NODE_RMSG             =1  /* Reading Messages							*/
-var   NODE_RMAL             =2  /* Reading Mail								*/
-var   NODE_SMAL             =3  /* Sending Mail								*/
-var   NODE_RTXT             =4  /* Reading G-Files							*/
-var   NODE_RSML             =5  /* Reading Sent Mail						*/
-var   NODE_PMSG             =6  /* Posting Message							*/
-var   NODE_AMSG             =7  /* Auto-message								*/
-var   NODE_XTRN             =8  /* Running External Program					*/
-var   NODE_DFLT             =9  /* Main Defaults Section					*/
-var   NODE_XFER             =10 /* Transfer Prompt							*/
-var   NODE_DLNG             =11 /* Downloading File							*/
-var   NODE_ULNG             =12 /* Uploading File							*/
-var   NODE_BXFR             =13 /* Bidirectional Transfer					*/
-var   NODE_LFIL             =14 /* Listing Files							*/
-var   NODE_LOGN             =15 /* Logging on								*/
-var   NODE_LCHT             =16 /* In Local Chat with Sysop					*/
-var   NODE_MCHT             =17 /* In Multi-Chat with Other Nodes			*/
-var   NODE_GCHT             =18 /* In Local Chat with Guru					*/
-var   NODE_CHAT             =19 /* In Chat Section							*/
-var   NODE_SYSP             =20 /* Sysop Activity							*/
-var   NODE_TQWK             =21 /* Transferring QWK packet					*/
-var   NODE_PCHT             =22 /* In Private Chat							*/
-var   NODE_PAGE             =23 /* Paging another node for Private Chat		*/
-var   NODE_RFSD             =24 /* Retrieving file from seq dev (aux=dev)	*/
-var   NODE_LAST_ACTION	    =25	/* Must be last								*/
+var   NODE_MAIN			    =0; /* Main Prompt								*/
+var   NODE_RMSG             =1; /* Reading Messages							*/
+var   NODE_RMAL             =2; /* Reading Mail								*/
+var   NODE_SMAL             =3; /* Sending Mail								*/
+var   NODE_RTXT             =4; /* Reading G-Files							*/
+var   NODE_RSML             =5; /* Reading Sent Mail						*/
+var   NODE_PMSG             =6; /* Posting Message							*/
+var   NODE_AMSG             =7; /* Auto-message								*/
+var   NODE_XTRN             =8; /* Running External Program					*/
+var   NODE_DFLT             =9; /* Main Defaults Section					*/
+var   NODE_XFER             =10;/* Transfer Prompt							*/
+var   NODE_DLNG             =11;/* Downloading File							*/
+var   NODE_ULNG             =12;/* Uploading File							*/
+var   NODE_BXFR             =13;/* Bidirectional Transfer					*/
+var   NODE_LFIL             =14;/* Listing Files							*/
+var   NODE_LOGN             =15;/* Logging on								*/
+var   NODE_LCHT             =16;/* In Local Chat with Sysop					*/
+var   NODE_MCHT             =17;/* In Multi-Chat with Other Nodes			*/
+var   NODE_GCHT             =18;/* In Local Chat with Guru					*/
+var   NODE_CHAT             =19;/* In Chat Section							*/
+var   NODE_SYSP             =20;/* Sysop Activity							*/
+var   NODE_TQWK             =21;/* Transferring QWK packet					*/
+var   NODE_PCHT             =22;/* In Private Chat							*/
+var   NODE_PAGE             =23;/* Paging another node for Private Chat		*/
+var   NODE_RFSD             =24;/* Retrieving file from seq dev (aux=dev)	*/
+var   NODE_LAST_ACTION	    =25;/* Must be last								*/
 								/********************************************/
 
 								/********************************************/
@@ -128,19 +128,19 @@ var NodeAction		=[			/* Node.action value descriptions			*/
 								/********************************************/
                                 /* Bit values for Node.misc					*/
 								/********************************************/
-var   NODE_ANON		=(1<<0)     /* Anonymous User							*/
-var   NODE_LOCK   	=(1<<1)     /* Locked for sysops only					*/
-var   NODE_INTR   	=(1<<2)     /* Interrupted - hang up					*/
-var   NODE_MSGW   	=(1<<3)     /* Message is waiting (old way)				*/
-var   NODE_POFF   	=(1<<4)     /* Page disabled							*/
-var   NODE_AOFF   	=(1<<5)     /* Activity Alert disabled					*/
-var   NODE_UDAT   	=(1<<6)     /* User data has been updated				*/
-var   NODE_RRUN   	=(1<<7)     /* Re-run this node when log off			*/
-var   NODE_EVENT  	=(1<<8)     /* Must run node event after log off		*/
-var   NODE_DOWN   	=(1<<9)     /* Down this node after logoff				*/
-var   NODE_RPCHT  	=(1<<10)    /* Reset private chat						*/
-var   NODE_NMSG   	=(1<<11)    /* Node message waiting (new way)			*/
-var   NODE_EXT    	=(1<<12)    /* Extended info on node action				*/
-var   NODE_LCHAT	=(1<<13)    /* Being pulled into local chat				*/
+var   NODE_ANON		=(1<<0);    /* Anonymous User							*/
+var   NODE_LOCK   	=(1<<1);    /* Locked for sysops only					*/
+var   NODE_INTR   	=(1<<2);    /* Interrupted - hang up					*/
+var   NODE_MSGW   	=(1<<3);    /* Message is waiting (old way)				*/
+var   NODE_POFF   	=(1<<4);    /* Page disabled							*/
+var   NODE_AOFF   	=(1<<5);    /* Activity Alert disabled					*/
+var   NODE_UDAT   	=(1<<6);    /* User data has been updated				*/
+var   NODE_RRUN   	=(1<<7);    /* Re-run this node when log off			*/
+var   NODE_EVENT  	=(1<<8);    /* Must run node event after log off		*/
+var   NODE_DOWN   	=(1<<9);    /* Down this node after logoff				*/
+var   NODE_RPCHT  	=(1<<10);   /* Reset private chat						*/
+var   NODE_NMSG   	=(1<<11);   /* Node message waiting (new way)			*/
+var   NODE_EXT    	=(1<<12);   /* Extended info on node action				*/
+var   NODE_LCHAT	=(1<<13);   /* Being pulled into local chat				*/
 								/********************************************/
 
