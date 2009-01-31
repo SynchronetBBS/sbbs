@@ -2450,7 +2450,7 @@ static void smtp_thread(void* arg)
 							,msgtxt_fname, newtxt_fname, logtxt_fname
 							,rcptlst_fname, proc_err_fname
 							,host_name, host_ip, relay_user.number
-							,rctp_addr
+							,rcpt_addr
 							,sender, sender_addr, reverse_path, str);
 						lprintf(LOG_INFO,"%04d SMTP Executing external mail processor: %s"
 							,socket, mailproc_list[i].name);
