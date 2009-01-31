@@ -624,6 +624,7 @@ JSLINT = function () {
 			write		: true,
 			write_raw	: true,
 			writeln		: true,
+			print		: true,
 			printf		: true,
 			alert		: true,
 			prompt		: true,
