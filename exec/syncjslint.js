@@ -5065,12 +5065,20 @@ JSLINT = function () {
 
 }();
 
-function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
+var SYNCJSLINT_already_loaded=new Object();
+function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
 {
 	var i;
 	var tmp;
 	var offset=0;
 
+	if(options.multiload) {
+		if(SYNCJSLINT_already_loaded[fname] !== undefined) {
+			writeln("Skipping "+fname);
+			return(0);
+		}
+	}
+	SYNCJSLINT_already_loaded[fname]=true;
 	if(!file_exists(fname)) {
 		tmp=file_getname(fname);
 		for(i=0; i<paths.length; i++) {
@@ -5092,13 +5100,14 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 			lines.splice(pos+offset+i, 0, all_lines[i]);
 			index.splice(pos+offset+i, 0, fname+":"+(i+1));
 
+			/* TODO: smart string parsing... */
 			tmp=all_lines[i];
 			tmp=tmp.replace(/\/\*.*?\*\//g,'');
 			tmp=tmp.replace(/\/\/.*^/,'');
-			/* TODO: smart string parsing... */
 			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!=null) {
-				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+i,m[1],paths);
+				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
 			}
+
 		}
 		f.close();
 		return(all_lines.length+offset);
@@ -5131,17 +5140,17 @@ for(var SYNCJSLINT_tmpVar1 in argv) {
 			continue;
 		}
 		if(argv[SYNCJSLINT_tmpVar1].charAt(0)=='-') {
-			if(options[argv[SYNCJSLINT_tmpVar1].substr(1)] == undefined)
-				options[argv[SYNCJSLINT_tmpVar1].substr(1)]=true;
+			if(SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)] == undefined)
+				SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=true;
 			else
-				options[argv[SYNCJSLINT_tmpVar1].substr(1)]=!options[argv[i].substr(1)];
+				SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=!SYNCJSLINT_options[argv[i].substr(1)];
 			continue;
 		}
 	}
 
 	SYNCJSLINT_all_lines=[];
 	SYNCJSLINT_index=[];
-	SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths);
+	SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths, SYNCJSLINT_options);
 	writeln("Linting...");
 	var SYNCJSLINT_myResult=JSLINT(SYNCJSLINT_all_lines,SYNCJSLINT_options);
 	if(!SYNCJSLINT_myResult) {
