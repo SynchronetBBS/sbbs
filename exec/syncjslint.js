@@ -167,7 +167,27 @@ SOFTWARE.
     unwatch, updateNow, value, valueOf, var, version, "vertical-align",
     violet, visibility, visited, watch, wheat, white, "white-space",
     whitesmoke, widget, width, window, "word-spacing", yahooCheckLogin,
-    yahooLogin, yahooLogout, yellow, yellowgreen, "z-index"
+    yahooLogin, yahooLogout, yellow, yellowgreen, "z-index",
+
+    Synchronet,
+    log,read,readln,write,write_raw,writeln,print,printf,alert,prompt,
+    confirm,exit,load,mswait,yield,random,time,beep,sound,ctrl,ascii,
+    ascii_str,strip_ctrl,strip_exascii,truncsp,truncstr,lfexpand,
+    wildmatch,backslash,file_getname,file_getext,file_getcase,file_cfgname,
+    file_exists,file_remove,file_removecase,file_rename,file_copy,file_backup,
+    file_isdir,file_attrib,file_date,file_size,file_utime,file_touch,file_mutex,
+    file_compare,directory,dir_freespace,disk_size,socket_select,mkdir,
+    rmdir,strftime,format,html_encode,html_decode,word_wrap,quote_msg,
+    rot13_translate,base64_encode,base64_decode,crc16_calc,crc32_calc,
+    chksum_calc,md5_calc,resolve_ip,resolve_host,netaddr_type,
+    list_named_queues,flags_str,
+    argc,argv,errno,errnostr,socket_errno,
+    global,js,system,server,client,user,bbs,console,msg_area,
+    file_area,xtrn_area,MsgBase,File,Queue,Socket,User,
+
+    paranoidbrace, multiload,
+
+    readAll,splice,exec_dir
 */
 
 // We build the application inside a function so that we produce only a single
@@ -243,7 +263,7 @@ JSLINT = function () {
             sub        : true, // if all forms of subscript notation are tolerated
             white      : true, // if strict whitespace rules apply
             widget     : true, // if the Yahoo Widgets globals should be predefined
-			paranoidbrace : true, // If we should warn on if(something) doSomething();
+			paranoidbrace : true // If we should warn on if(something) doSomething();
         },
 
 // browser contains a set of global names which are commonly provided by a
@@ -5066,7 +5086,7 @@ JSLINT = function () {
 
 }();
 
-var SYNCJSLINT_already_loaded=new Object();
+var SYNCJSLINT_already_loaded={};
 function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
 {
 	var i;
@@ -5105,7 +5125,7 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
 			tmp=all_lines[i];
 			tmp=tmp.replace(/\/\*.*?\*\//g,'');
 			tmp=tmp.replace(/\/\/.*^/,'');
-			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!=null) {
+			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!==null) {
 				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
 			}
 
@@ -5127,39 +5147,45 @@ var SYNCJSLINT_myResult;
 var SYNCJSLINT_tmpVar1;
 var SYNCJSLINT_tmpVar2;
 var SYNCJSLINT_optdone=false;
-for(var SYNCJSLINT_tmpVar1 in argv) {
-	if(!SYNCJSLINT_optdone) {
-		if(argv[SYNCJSLINT_tmpVar1]=='--') {
-			SYNCJSLINT_optdone=true;
-			continue;
-		}
-		if(argv[SYNCJSLINT_tmpVar1].substr(0,3)=='-L:') {
-			SYNCJSLINT_myResult=argv[SYNCJSLINT_tmpVar1].substr(3).split(/:/);
-			for(SYNCJSLINT_tmpVar2 in SYNCJSLINT_myResult) {
-				SYNCJSLINT_paths.push(SYNCJSLINT_myResult[SYNCJSLINT_tmpVar2]);
+for(SYNCJSLINT_tmpVar1 in argv) {
+	if(SYNCJSLINT_tmpVar1.search(/^[0-9]+$/)!=-1) {
+		if(!SYNCJSLINT_optdone) {
+			if(argv[SYNCJSLINT_tmpVar1]=='--') {
+				SYNCJSLINT_optdone=true;
+				continue;
 			}
-			continue;
+			if(argv[SYNCJSLINT_tmpVar1].substr(0,3)=='-L:') {
+				SYNCJSLINT_myResult=argv[SYNCJSLINT_tmpVar1].substr(3).split(/:/);
+				for(SYNCJSLINT_tmpVar2 in SYNCJSLINT_myResult) {
+					if(SYNCJSLINT_tmpVar2.search(/^[0-9]+$/)!=-1) {
+						SYNCJSLINT_paths.push(SYNCJSLINT_myResult[SYNCJSLINT_tmpVar2]);
+					}
+				}
+				continue;
+			}
+			if(argv[SYNCJSLINT_tmpVar1].charAt(0)=='-') {
+				if(SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)] === undefined)
+					SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=true;
+				else
+					SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=!SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)];
+				continue;
+			}
 		}
-		if(argv[SYNCJSLINT_tmpVar1].charAt(0)=='-') {
-			if(SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)] == undefined)
-				SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=true;
-			else
-				SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=!SYNCJSLINT_options[argv[i].substr(1)];
-			continue;
-		}
-	}
 
-	SYNCJSLINT_all_lines=[];
-	SYNCJSLINT_index=[];
-	SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths, SYNCJSLINT_options);
-	writeln("Linting...");
-	var SYNCJSLINT_myResult=JSLINT(SYNCJSLINT_all_lines,SYNCJSLINT_options);
-	if(!SYNCJSLINT_myResult) {
-		for(SYNCJSLINT_tmpVar2 in JSLINT.errors) {
-			writeln("-----");
-			writeln(SYNCJSLINT_index[JSLINT.errors[SYNCJSLINT_tmpVar2].line]+"@"+JSLINT.errors[SYNCJSLINT_tmpVar2].character+": "+JSLINT.errors[SYNCJSLINT_tmpVar2].reason);
-			writeln(JSLINT.errors[SYNCJSLINT_tmpVar2].evidence);
-			writeln(format("%.*s",JSLINT.errors[SYNCJSLINT_tmpVar2].character,JSLINT.errors[SYNCJSLINT_tmpVar2].evidence).replace(/[^\x00-\x1f]/g,' ')+'^');
+		SYNCJSLINT_all_lines=[];
+		SYNCJSLINT_index=[];
+		SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths, SYNCJSLINT_options);
+		writeln("Linting...");
+		SYNCJSLINT_myResult=JSLINT(SYNCJSLINT_all_lines,SYNCJSLINT_options);
+		if(!SYNCJSLINT_myResult) {
+			for(SYNCJSLINT_tmpVar2 in JSLINT.errors) {
+				if(SYNCJSLINT_tmpVar2.search(/^[0-9]+$/)!=-1) {
+					writeln("-----");
+					writeln(SYNCJSLINT_index[JSLINT.errors[SYNCJSLINT_tmpVar2].line]+"@"+JSLINT.errors[SYNCJSLINT_tmpVar2].character+": "+JSLINT.errors[SYNCJSLINT_tmpVar2].reason);
+					writeln(JSLINT.errors[SYNCJSLINT_tmpVar2].evidence);
+					writeln(format("%.*s",JSLINT.errors[SYNCJSLINT_tmpVar2].character,JSLINT.errors[SYNCJSLINT_tmpVar2].evidence).replace(/[^\x00-\x1f]/g,' ')+'^');
+				}
+			}
 		}
 	}
 }
