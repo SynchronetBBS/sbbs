@@ -5112,7 +5112,7 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths)
 var SYNCJSLINT_paths=[backslash(system.exec_dir)];
 var SYNCJSLINT_all_lines;
 var SYNCJSLINT_index;
-var SYNCJSLINT_options={cap:true,eqeqeq:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true};
+var SYNCJSLINT_options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true};
 var SYNCJSLINT_myResult;
 var SYNCJSLINT_tmpVar1;
 var SYNCJSLINT_tmpVar2;
