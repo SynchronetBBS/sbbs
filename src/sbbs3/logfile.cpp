@@ -110,6 +110,20 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return(TRUE);
 }
 
+extern "C" int errorlog(scfg_t* cfg, const char* text)
+{
+	FILE*	fp;
+	char	buf[128];
+	char	path[MAX_PATH+1];
+
+	sprintf(path,"%serror.log",cfg->logs_dir);
+	if((fp=fnopen(NULL,path,O_WRONLY|O_CREAT|O_APPEND))==NULL)
+		return -1; 
+	fprintf(fp,"%s\r\n%s\r\n\r\n",timestr(cfg,time(NULL),buf), text);
+	fclose(fp);
+	return 0;
+}
+
 void sbbs_t::logentry(const char *code, const char *entry)
 {
 	char str[512];
@@ -368,12 +382,12 @@ void sbbs_t::errorlog(const char *text)
 		logline("!!",tmp2);
 		errorlog_inside=0;
 		return; }
-	sprintf(hdr,"%s Node %2d: %s #%d"
+	sprintf(hdr,"%s\r\nNode %2d: %s #%d\r\n"
 		,timestr(now),cfg.node_num,useron.alias,useron.number);
 	write(file,hdr,strlen(hdr));
-	write(file,crlf,2);
 	write(file,text,strlen(text));
 	write(file,"\r\n\r\n",4);
 	close(file);
 	errorlog_inside=0;
 }
+

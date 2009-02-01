@@ -119,6 +119,14 @@ static int lprintf(int level, const char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
+	va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+
+	if(level <= LOG_ERR)
+		errorlog(&scfg,sbuf);
+
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
 
@@ -127,10 +135,6 @@ static int lprintf(int level, const char *fmt, ...)
 		return(0);
 #endif
 
-	va_start(argptr,fmt);
-    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-    va_end(argptr);
     return(startup->lputs(startup->cbdata,level,sbuf));
 }
 

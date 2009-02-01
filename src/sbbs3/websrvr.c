@@ -485,13 +485,22 @@ static int lprintf(int level, const char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
-        return(0);
-
 	va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
+
+	if(level <= LOG_ERR)
+		errorlog(&scfg,sbuf);
+
+    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
+        return(0);
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
+
     return(startup->lputs(startup->cbdata,level,sbuf));
 }
 

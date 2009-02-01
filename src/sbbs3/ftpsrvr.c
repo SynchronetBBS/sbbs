@@ -130,20 +130,26 @@ BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
 
 static int lprintf(int level, const char *fmt, ...)
 {
-	int		result;
 	va_list argptr;
 	char sbuf[1024];
-
-    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
-        return(0);
 
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    result=startup->lputs(startup->cbdata,level,sbuf);
 
-	return(result);
+	if(level <= LOG_ERR)
+		errorlog(&scfg,sbuf);
+
+    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
+		return(0);
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
+
+    return startup->lputs(startup->cbdata,level,sbuf);
 }
 
 #ifdef _WINSOCKAPI_

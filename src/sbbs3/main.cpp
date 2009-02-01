@@ -151,8 +151,16 @@ static void thread_down()
 
 int lputs(int level, const char* str)
 {
+	if(level <= LOG_ERR)
+		errorlog(&scfg,str);
+
 	if(startup==NULL || startup->lputs==NULL || str==NULL || level > startup->log_level)
     	return(0);
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
 
     return(startup->lputs(startup->cbdata,level,str));
 }
@@ -1994,7 +2002,8 @@ void output_thread(void* arg)
 					,node,ERROR_VALUE,sbbs->client_socket);
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
-			RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
+			RingBufReInit(&sbbs->outbuf);	/* Purge output ring buffer */
+			bufbot=buftop=0;				/* Purge linear buffer */
 			continue;
 		}
 		if(i<1) {
