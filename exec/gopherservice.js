@@ -227,7 +227,7 @@ switch(field[0]) {
 
 		if(Number(field[2])) {
 			hdr=msgbase.get_msg_header(false,Number(field[2]));
-			if(hdr.attr&MSG_DELETE)
+			if(hdr==null || hdr.attr&MSG_DELETE)
 				break;
 			writeln("Subj : " + hdr.subject);
 			writeln("To   : " + hdr.to);
