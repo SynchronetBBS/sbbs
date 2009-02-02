@@ -103,6 +103,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SMTPCOMMAND:		return("SMTPCommand");
 		case SMTPREVERSEPATH:	return("Return-Path");			/* RFC-compliant */
 		case SMTPFORWARDPATH:	return("SMTPForwardPath");
+		case SMTPRECEIVED:		return("Received");				/* RFC-compliant */
 
 		case SMTPSYSMSG:		return("SMTPSysMsg");
 

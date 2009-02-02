@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -226,6 +226,8 @@
 
 #define FORWARDED			0x48
 
+#if 0	/* Deprecating the following fields: (Jan-2009) never used */
+
 #define RECEIVEDBY			0x50
 #define RECEIVEDBYAGENT 	0x51
 #define RECEIVEDBYNETTYPE	0x52
@@ -235,6 +237,8 @@
 #define RECEIVEDBYORG		0x56
 
 #define RECEIVED			0x58
+
+#endif
 
 #define SUBJECT 			0x60	/* or filename */
 #define SMB_SUMMARY 		0x61	/* or file description */
@@ -290,9 +294,10 @@
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
 
-#define SMTPCOMMAND			0xd0		/* Aribtrary SMTP command */
+#define SMTPCOMMAND			0xd0		/* Arbitrary SMTP command */
 #define SMTPREVERSEPATH		0xd1		/* MAIL FROM: argument, "reverse path" */
 #define SMTPFORWARDPATH		0xd2		/* RCPT TO: argument, "forward path" */
+#define SMTPRECEIVED		0xd3		/* SMTP "Received" information */
 
 #define SMTPSYSMSG			0xd8		/* for delivery failure notification */
 

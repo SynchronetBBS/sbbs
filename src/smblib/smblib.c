@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -53,7 +53,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.50"      /* SMB library version */
+#define SMBLIB_VERSION		"2.51"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -1113,7 +1113,7 @@ int SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 /* Adds a header field to the 'msg' structure (in memory only)              */
 /****************************************************************************/
-int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
+int SMBCALL smb_hfield_add(smbmsg_t* msg, ushort type, size_t length, void* data, BOOL insert)
 {
 	void**		vpp;
 	hfield_t*	hp;
@@ -1125,12 +1125,17 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	i=msg->total_hfields;
 	if((hp=(hfield_t *)realloc(msg->hfield,sizeof(hfield_t)*(i+1)))==NULL) 
 		return(SMB_ERR_MEM);
-
 	msg->hfield=hp;
+
 	if((vpp=(void* *)realloc(msg->hfield_dat,sizeof(void* )*(i+1)))==NULL) 
 		return(SMB_ERR_MEM);
-	
 	msg->hfield_dat=vpp;
+
+	if(insert) {
+		memmove(msg->hfield+1, msg->hfield, sizeof(hfield_t)*i);
+		memmove(msg->hfield_dat+1, msg->hfield_dat, sizeof(void*)*i);
+		i=0;
+	}
 	msg->total_hfields++;
 	msg->hfield[i].type=type;
 	msg->hfield[i].length=length;
@@ -1150,7 +1155,7 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 /****************************************************************************/
 /* Adds a list of header fields to the 'msg' structure (in memory only)     */
 /****************************************************************************/
-int	SMBCALL smb_hfield_addlist(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat)
+int	SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, BOOL insert)
 {
 	int			retval;
 	unsigned	n;
@@ -1159,8 +1164,8 @@ int	SMBCALL smb_hfield_addlist(smbmsg_t* msg, hfield_t** hfield_list, void** hfi
 		return(SMB_FAILURE);
 
 	for(n=0;hfield_list[n]!=NULL;n++)
-		if((retval=smb_hfield(msg
-			,hfield_list[n]->type,hfield_list[n]->length,hfield_dat[n]))!=SMB_SUCCESS)
+		if((retval=smb_hfield_add(msg
+			,hfield_list[n]->type,hfield_list[n]->length,hfield_dat[n],insert))!=SMB_SUCCESS)
 			return(retval);
 
 	return(SMB_SUCCESS);
@@ -1169,15 +1174,15 @@ int	SMBCALL smb_hfield_addlist(smbmsg_t* msg, hfield_t** hfield_list, void** hfi
 /****************************************************************************/
 /* Convenience function to add an ASCIIZ string header field				*/
 /****************************************************************************/
-int SMBCALL smb_hfield_str(smbmsg_t* msg, ushort type, const char* str)
+int SMBCALL smb_hfield_add_str(smbmsg_t* msg, ushort type, const char* str, BOOL insert)
 {
-	return smb_hfield(msg, type, strlen(str), (void*)str);
+	return smb_hfield_add(msg, type, strlen(str), (void*)str, insert);
 }
 
 /****************************************************************************/
 /* Convenience function to add an ASCIIZ string header field				*/
 /****************************************************************************/
-int	SMBCALL smb_hfield_netaddr(smbmsg_t* msg, ushort type, const char* str, ushort* nettype)
+int	SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, ushort type, const char* str, ushort* nettype, BOOL insert)
 {
 	fidoaddr_t	sys_addr = {0,0,0,0};	/* replace unspecified fields with 0 (don't assume 1:1/1) */
 	fidoaddr_t	fidoaddr;
@@ -1189,9 +1194,9 @@ int	SMBCALL smb_hfield_netaddr(smbmsg_t* msg, ushort type, const char* str, usho
 		*nettype=smb_netaddr_type(str);
 	if(*nettype==NET_FIDO) {
 		fidoaddr=smb_atofaddr(&sys_addr,str);
-		return smb_hfield_bin(msg,type,fidoaddr);
+		return smb_hfield_add(msg,type,sizeof(fidoaddr),&fidoaddr,insert);
 	} else
-		return smb_hfield_str(msg,type,str);
+		return smb_hfield_add_str(msg,type,str,insert);
 }
 
 /****************************************************************************/
