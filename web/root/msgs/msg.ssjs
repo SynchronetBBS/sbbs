@@ -27,6 +27,14 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 var hdr=msgbase.get_msg_header(false,m);
 if(hdr==null)
 	error(msgbase.last_error);
+if((!(system.settings & SYS_USRVDELM)) || (user.security.level >= 90 && (!(system.settings & SYS_SYSVDELM))) ) {
+	if(hdr.attr & MSG_DELETE)
+		error("Message has been deleted");
+}
+if(hdr.attr & MSG_MODERATED) {
+	if(!(hdr.attr & MSG_VALIDATED))
+		error("Message pending moderator validation");
+}
 if(hdr.from_ext != null) {
 	template.u_num = hdr.from_ext;
 	usr = new User(template.u_num);
