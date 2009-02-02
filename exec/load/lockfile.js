@@ -6,8 +6,11 @@
 
 // @format.tab-size 4, @format.use-tabs true
 
-var LockedFiles=new Object();
+var LockedFiles={};
 js.on_exit("UnlockAll()");
+
+if(js.global.LOG_ERR===undefined)
+	load("sbbsdefs.js");
 
 function Lock(filename, lockid, forwrite, timeout)
 {
@@ -16,7 +19,7 @@ function Lock(filename, lockid, forwrite, timeout)
 	var endtime=system.timer+timeout;
 
 	/* Do we already hold a lock on this file? */
-	if(LockedFiles[filename] != undefined) {
+	if(LockedFiles[filename] !== undefined) {
 		/* do we hold THIS lock on this file? */
 		if(LockedFiles[filename].lockid == lockid) {
 			if(LockedFiles[filename].forwrite == forwrite)
@@ -24,14 +27,14 @@ function Lock(filename, lockid, forwrite, timeout)
 			/*
 			 * We currently hold a write lock and are requesting a read lock...
 			 */
-			if(forwrite==false) {
+			if(forwrite===false) {
 				if(readlock.open("we")) {
 					readlock.close();
-					LockedFiles[filename].forwrite==false;
-					file_remote(writelock.name);
+					LockedFiles[filename].forwrite=false;
+					file_remove(writelock.name);
 				}
 				else {
-					log(LOG_ERROR, "!LOCK ERROR! -- cannot read lock a file we have write locked!");
+					log(LOG_ERR, "!LOCK ERROR! -- cannot read lock a file we have write locked!");
 					return(false);
 				}
 			}
@@ -54,14 +57,14 @@ function Lock(filename, lockid, forwrite, timeout)
 				if(writelock.open("we")) {
 					writelock.close();
 					/* If we are upgading from a read lock, delete our read lock */
-					if(LockedFiles[filename]!=undefined)
+					if(LockedFiles[filename]!==undefined)
 						file_remove(readlock.name);
 					/* We have got the lock... wait for all read locks to close */
 					while(file_exists(filename+".lock.*")) {
 						mswait(1);
 						if(system.timer > endtime) {
 							/* If we were upgrading, restor our old lock... */
-							if(LockedFiles[filename]!=undefined) {
+							if(LockedFiles[filename]!==undefined) {
 								if(readlock.open("we")) {
 									readlock.close();
 								}
@@ -70,7 +73,7 @@ function Lock(filename, lockid, forwrite, timeout)
 							return(false);
 						}
 					}
-					LockedFiles[filename]=new Object();
+					LockedFiles[filename]={};
 					LockedFiles[filename].forwrite=true;
 					LockedFiles[filename].lockid=lockid;
 					return(true);
@@ -79,7 +82,7 @@ function Lock(filename, lockid, forwrite, timeout)
 			else {
 				if(readlock.open("we")) {
 					readlock.close();
-					LockedFiles[filename]=new Object();
+					LockedFiles[filename]={};
 					LockedFiles[filename].forwrite=false;
 					LockedFiles[filename].lockid=lockid;
 					return(true);
@@ -97,7 +100,7 @@ function Unlock(filename)
 	var readlock;
 	var writelock=new File(filename+".lock");
 
-	if(LockedFiles[filename]==undefined)
+	if(LockedFiles[filename]===undefined)
 		return;
 	readlock=new File(filename+".lock."+LockedFiles[filename].lockid);
 
@@ -113,7 +116,7 @@ function UnlockAll()
 {
 	var old_at=js.auto_terminate;
 	js.auto_terminate=false;
-	for(filename in LockedFiles) {
+	for(var filename in LockedFiles) {
 		Unlock(filename);
 	}
 	js.auto_terminate=old_at;
