@@ -110,7 +110,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return(TRUE);
 }
 
-extern "C" int errorlog(scfg_t* cfg, const char* text)
+extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* text)
 {
 	FILE*	fp;
 	char	buf[128];
