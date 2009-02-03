@@ -86,4 +86,7 @@ function HTML_Profile(user_num)
 			this[html_profile_fields[i].property]=o.value;
 		this.values.push(o);
 	}
+
+	if(prefsfile.is_open)
+		prefsfile.close();
 }
