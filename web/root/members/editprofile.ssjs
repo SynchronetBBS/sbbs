@@ -14,7 +14,7 @@ else
 
 template.title=system.name +" - Edit Your Profile";
 
-use=new HTML_Profile(user.number);
+usr=new HTML_Profile(user.number);
 
 template.profile = new Array;
 
