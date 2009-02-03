@@ -1,6 +1,7 @@
 /* $Id$ */
 
 load("../web/lib/template.ssjs");
+load("../web/lib/profile_config.ssjs");
 
 var sub = '';
 
@@ -9,24 +10,7 @@ var is_sysop=false;
 if(user.number==1 || user.security.level>=90)
 	is_sysop=true;
 
-var u = new User(http_request.query.showuser[0]);
-
-usr=new Object;
-
-if(system.newuser_questions & UQ_REALNAME)
-	usr.name=u.name.toString();
-if(system.newuser_questions & UQ_ALIASES)
-	usr.alias=u.alias.toString();
-if(system.newuser_questions & UQ_HANDLE)
-	usr.handle=u.handle.toString();
-if(system.newuser_questions & UQ_LOCATION)	
-	usr.location=u.location.toString();
-	usr.netmail=u.netmail.toString();
-if(system.newuser_questions & UQ_PHONE)
-	usr.phone=u.phone.toString();
-	usr.connection=u.connection.toString();
-	usr.logon=strftime("%b-%d-%y",u.stats.laston_date);
-	usr.laston=0-u.stats.laston_date;
+var usr=new HTML_Profile(http_request.query.showuser[0]);
 
 if(is_sysop)
 template.title = system.name + " - View/Edit Profile for: " + usr.alias;
@@ -34,39 +18,6 @@ else
 template.title = system.name + " - View Profile for: " + usr.alias;
 
 template.profile = new Array;
-
-if(file_exists(prefs_dir +format("%04d.html_prefs",u.number))) {
-	prefsfile=new File(prefs_dir + format("%04d.html_prefs",u.number));
-	if(prefsfile.open("r",false)) {
-				usr.icq = prefsfile.iniGetValue('Profile', 'ICQ');
-				usr.msn = prefsfile.iniGetValue('Profile', 'MSN');
-				usr.yahoo = prefsfile.iniGetValue('Profile', 'Yahoo');
-				usr.aim = prefsfile.iniGetValue('Profile', 'AIM');
-				usr.homepage = prefsfile.iniGetValue('Profile', 'Homepage');
-				usr.hobbies = prefsfile.iniGetValue('Profile', 'Hobbies');
-				usr.picture = prefsfile.iniGetValue('Profile', 'Picture');
-				usr.avatar = prefsfile.iniGetValue('Profile', 'Avatar');
-		prefsfile.close();
-	}
-}
-
-
-if(usr.icq==undefined)
-	usr.icq='';
-if(usr.msn==undefined)
-	usr.msn='';
-if(usr.yahoo==undefined)
-	usr.yahoo='';
-if(usr.aim==undefined)
-	usr.aim='';
-if(usr.homepage==undefined)
-	usr.homepage='';
-if(usr.hobbies==undefined)
-	usr.hobbies='';
-if(usr.picture==undefined)
-	usr.picture='';
-if(usr.avatar==undefined)
-	usr.avatar='';
 
 if(is_sysop) {
 	template.profile.push({html: '<h1>Edit/View Profile</h1>' });

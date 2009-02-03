@@ -1,6 +1,7 @@
 /* $Id$ */
 
 load("../web/lib/template.ssjs");
+load("../web/lib/profile_config.ssjs");
 
 var sub = '';
 
@@ -13,63 +14,7 @@ else
 
 template.title=system.name +" - Edit Your Profile";
 
-usr = new Object;
-
-usr.name = user.name;
-if(usr.name==undefined)
-	usr.name='';
-usr.alias = user.alias;
-if(usr.alias==undefined)
-	usr.alias='';
-usr.handle = user.handle;
-if(usr.handle==undefined)
-	usr.handle='';
-usr.netmail = user.netmail;
-if(usr.netmail==undefined)
-	usr.netmail='';
-usr.location = user.location;
-if(usr.location==undefined)
-	usr.location='';
-usr.address = user.address;
-if(usr.address==undefined)
-	usr.address='';
-usr.zipcode = user.zipcode;
-if(usr.zipcode==undefined)
-	usr.zipcode='';
-usr.phone = user.phone;
-if(usr.phone==undefined)
-	usr.phone='';
-
-if(file_exists(prefs_dir +format("%04d.html_prefs",user.number))) {
-	prefsfile=new File(prefs_dir + format("%04d.html_prefs",user.number));
-	if(prefsfile.open("r",false)) {
-				usr.icq = prefsfile.iniGetValue('Profile', 'ICQ');
-				if(usr.icq==undefined)
-					usr.icq='';
-				usr.msn = prefsfile.iniGetValue('Profile', 'MSN');
-				if(usr.msn==undefined)
-					usr.msn='';
-				usr.yahoo = prefsfile.iniGetValue('Profile', 'Yahoo');
-				if(usr.yahoo==undefined)
-					usr.yahoo='';
-				usr.aim = prefsfile.iniGetValue('Profile', 'AIM');
-				if(usr.aim==undefined)
-					usr.aim='';
-				usr.homepage = prefsfile.iniGetValue('Profile', 'Homepage');
-				if(usr.homepage==undefined)
-					usr.homepage='';
-				usr.hobbies = prefsfile.iniGetValue('Profile', 'Hobbies');
-				if(usr.hobbies==undefined)
-					usr.hobbies='';
-				usr.picture = prefsfile.iniGetValue('Profile', 'Picture');
-				if(usr.picture==undefined)
-					usr.picture='';
-				usr.avatar = prefsfile.iniGetValue('Profile', 'Avatar');
-				if(usr.avatar==undefined)
-					usr.avatar='';
-		prefsfile.close();
-	}
-}
+use=new HTML_Profile(user.number);
 
 template.profile = new Array;
 
