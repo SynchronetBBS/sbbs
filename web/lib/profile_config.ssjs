@@ -81,7 +81,7 @@ function HTML_Profile(user_num)
 		if(o.defaultValue===undefined)
 			o.defaultValue='';
 		if(prefsfile.is_open)
-			o.value=prefsfile.iniGetValue('Profile', 'ICQ', o.defaultValue);
+			o.value=prefsfile.iniGetValue('Profile', o.iniKey, o.defaultValue);
 		if(html_profile_fields[i].property != undefined)
 			this[html_profile_fields[i].property]=o.value;
 		this.values.push(o);
