@@ -185,7 +185,7 @@ SOFTWARE.
     global,js,system,server,client,user,bbs,console,msg_area,
     file_area,xtrn_area,MsgBase,File,Queue,Socket,User,
 
-    paranoidbrace, multiload,
+    paranoidbrace, multiload, noradix, noescapement,
 
     readAll,splice,exec_dir
 */
@@ -1309,7 +1309,9 @@ JSLINT = function () {
                                     esc(2);
                                     break;
                                 default:
-                                    warningAt("Bad escapement.", line, character);
+                                    if(!option.noescapement) {
+                                        warningAt("Bad escapement.", line, character);
+                                    }
                                 }
                             }
                         }
@@ -4051,8 +4053,10 @@ JSLINT = function () {
         advance(')');
         nospace(prevtoken, token);
         if (typeof left === 'object') {
-            if (left.value === 'parseInt' && n === 1) {
-                warning("Missing radix parameter.", left);
+            if(!option.noradix) {
+                if (left.value === 'parseInt' && n === 1) {
+                    warning("Missing radix parameter.", left);
+                }
             }
             if (!option.evil) {
                 if (left.value === 'eval' || left.value === 'Function' ||
@@ -5125,7 +5129,7 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
 			tmp=all_lines[i];
 			tmp=tmp.replace(/\/\*.*?\*\//g,'');
 			tmp=tmp.replace(/\/\/.*^/,'');
-			if((m=tmp.match(/^\s*load\(['"](.*)['"]\)/))!==null) {
+			if((m=tmp.match(/^\s*load\([^"']*['"](.*)['"]\)/))!==null) {
 				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
 			}
 
@@ -5158,7 +5162,7 @@ for(SYNCJSLINT_tmpVar1 in argv) {
 				SYNCJSLINT_myResult=argv[SYNCJSLINT_tmpVar1].substr(3).split(/:/);
 				for(SYNCJSLINT_tmpVar2 in SYNCJSLINT_myResult) {
 					if(SYNCJSLINT_tmpVar2.search(/^[0-9]+$/)!=-1) {
-						SYNCJSLINT_paths.push(SYNCJSLINT_myResult[SYNCJSLINT_tmpVar2]);
+						SYNCJSLINT_paths.push(backslash(SYNCJSLINT_myResult[SYNCJSLINT_tmpVar2]));
 					}
 				}
 				continue;
