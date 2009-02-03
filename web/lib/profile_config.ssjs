@@ -68,6 +68,7 @@ function HTML_Profile(user_num)
 	prefsfile=new File(prefs_dir + format("%04d.html_prefs",u.number));
 	prefsfile.open("r");
 
+	this.values=[];
 	for(i=0; i<html_profile_fields.length; i++) {
 		o={};
 		o.iniKey=html_profile_fields[i].iniKey;
@@ -83,5 +84,6 @@ function HTML_Profile(user_num)
 			o.value=prefsfile.iniGetValue('Profile', 'ICQ', o.defaultValue);
 		if(html_profile_fields[i].property != undefined)
 			this[html_profile_fields[i].property]=o.value;
+		this.values.push(o);
 	}
 }
