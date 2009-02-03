@@ -1,7 +1,7 @@
 if(js.global.UQ_REALNAME===undefined)
 	load("sbbsdefs.js");
 if(js.global.prefs_dir===undefined)
-	load("../web/lib/global_defs.js");
+	load("../web/lib/global_defs.ssjs");
 
 function HTML_Profile(user_num)
 {
