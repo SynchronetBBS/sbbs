@@ -4953,6 +4953,127 @@ JSLINT = function () {
 
 // Report generator.
 
+    itself.reportObj = function (option, sep) {
+        var a = [], c, e, f, i, k, l, m = '', n, o = [], s, v, cl, va, un, ou, gl, la;
+		var rpt={};
+
+        rpt.Functions={};
+
+        if (urls.length > 0) {
+			rpt.URLs=urls;
+        }
+
+        s = to_array(scope).sort();
+        if (s.length === 0) {
+            if (jsonmode) {
+                if (k === 0) {
+					rpt.JSON='good';
+                } else {
+					rpt.JSON='bad';
+                }
+            }
+        } else {
+			rpt.Globals=[];
+			for(i=0; i<s.length; i++) {
+				rpt.Globals.push(s[i]);
+			}
+        }
+
+		if(functions.length > 0) {
+			rpt.Functions=[];
+		}
+        for (i = 0; i < functions.length; i += 1) {
+            f = functions[i];
+			func = {};
+            cl = [];
+            va = [];
+            un = [];
+            ou = [];
+            gl = [];
+            la = [];
+
+			func.name=f['(name)'];
+			func.line=f['(line)'];
+			func.params=f['(params)'];
+            for (k in f) {
+                if (f.hasOwnProperty(k) && k.charAt(0) !== '(') {
+                    v = f[k];
+                    switch (v) {
+                    case 'closure':
+                        cl.push(k);
+                        break;
+                    case 'var':
+                        va.push(k);
+                        break;
+                    case 'const':
+                        va.push(k);
+                        break;
+                    case 'unused':
+                        un.push(k);
+                        break;
+                    case 'label':
+                        la.push(k);
+                        break;
+                    case 'outer':
+                        ou.push(k);
+                        break;
+                    case true:
+                        gl.push(k);
+                        break;
+                    }
+                }
+            }
+			if(cl.length) {
+				func.Closure=cl;
+			}
+			if(va.length) {
+				func.Variables=va;
+			}
+			if(ou.length) {
+				func.Outer=ou;
+			}
+			if(gl.length) {
+				func['Uses Globals']=gl;
+			}
+			if(un.length) {
+				func.Unused=un;
+			}
+			if(la.length) {
+				func.Labels=la;
+			}
+			rpt.Functions.push(func);
+        }
+        a = [];
+        for (k in member) {
+            if (typeof member[k] === 'number') {
+                a.push(k);
+            }
+        }
+        if (a.length) {
+            a = a.sort();
+            rpt.Members = '/*members ';
+            l = 10;
+            for (i = 0; i < a.length; i += 1) {
+                k = a[i];
+                n = k.name();
+                if (l + n.length > 72) {
+					rpt.Members += '\r\n';
+                    rpt.Members += '    ';
+                    l = 1;
+                }
+                l += n.length + 2;
+                if (member[k] === 1) {
+                    n = '*' + n + '*';	// TODO: Why is this italics?
+                }
+                if (i < a.length - 1) {
+                    n += ', ';
+                }
+                rpt.Members += n;
+            }
+			rpt.Members += '\r\n*/';
+        }
+        return rpt;
+    };
     itself.report = function (option, sep) {
         var a = [], c, e, f, i, k, l, m = '', n, o = [], s, v, cl, va, un, ou, gl, la;
 
@@ -5103,106 +5224,224 @@ JSLINT = function () {
 
 }();
 
-var SYNCJSLINT_already_loaded={};
-function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
+function SYNCJSLINT(argc, argv)
 {
-	var i;
-	var tmp;
-	var offset=0;
+	var already_loaded={};
+	function LOADFILE(lines, index, pos, fname, paths, options)
+	{
+		var i;
+		var tmp;
+		var offset=0;
 
-	if(options.multiload) {
-		if(SYNCJSLINT_already_loaded[fname] !== undefined) {
-			writeln("Skipping "+fname);
-			return(0);
-		}
-	}
-	SYNCJSLINT_already_loaded[fname]=true;
-	if(!file_exists(fname)) {
-		tmp=file_getname(fname);
-		for(i=0; i<paths.length; i++) {
-			if(file_exists(paths[i]+tmp)) {
-				fname=paths[i]+tmp;
-				break;
+		if(options.multiload) {
+			if(already_loaded[fname] !== undefined) {
+				writeln("Skipping "+fname);
+				return(0);
 			}
 		}
+		already_loaded[fname]=true;
+		if(!file_exists(fname)) {
+			tmp=file_getname(fname);
+			for(i=0; i<paths.length; i++) {
+				if(file_exists(paths[i]+tmp)) {
+					fname=paths[i]+tmp;
+					break;
+				}
+			}
+		}
+
+		var all_lines;
+		var f=new File(fname);
+		var m;
+
+		writeln("Loading "+fname);
+		if(f.open("r")) {
+			all_lines=f.readAll();
+			for(i=0; i<all_lines.length; i++) {
+				lines.splice(pos+offset+i, 0, all_lines[i]);
+				index.splice(pos+offset+i, 0, fname+":"+(i+1));
+	
+				/* TODO: smart string parsing... */
+				tmp=all_lines[i];
+				tmp=tmp.replace(/\/\*.*?\*\//g,'');
+				tmp=tmp.replace(/\/\/.*^/,'');
+				if((m=tmp.match(/^\s*load\([^"']*['"](.*)['"]\)/))!==null) {
+					offset+=LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
+				}
+	
+			}
+			f.close();
+			return(all_lines.length+offset);
+		}
+		else {
+			writeln("!!Load failed");
+		}
+		return(0);
 	}
 
+	var paths=[backslash(system.exec_dir)];
 	var all_lines;
-	var f=new File(fname);
-	var m;
-
-	writeln("Loading "+fname);
-	if(f.open("r")) {
-		all_lines=f.readAll();
-		for(i=0; i<all_lines.length; i++) {
-			lines.splice(pos+offset+i, 0, all_lines[i]);
-			index.splice(pos+offset+i, 0, fname+":"+(i+1));
-
-			/* TODO: smart string parsing... */
-			tmp=all_lines[i];
-			tmp=tmp.replace(/\/\*.*?\*\//g,'');
-			tmp=tmp.replace(/\/\/.*^/,'');
-			if((m=tmp.match(/^\s*load\([^"']*['"](.*)['"]\)/))!==null) {
-				offset+=SYNCJSLINT_LOADFILE(lines,index,pos+offset+i,m[1],paths,options);
+	var index;
+	var options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true};
+	var myResult;
+	var tmpVar1;
+	var tmpVar2;
+	var tmpVar3;
+	var optdone=false;
+	for(tmpVar1 in argv) {
+		if(tmpVar1.search(/^[0-9]+$/)!=-1) {
+			if(!optdone) {
+				if(argv[tmpVar1]=='--') {
+					optdone=true;
+					continue;
+				}
+				if(argv[tmpVar1].substr(0,3)=='-L:') {
+					myResult=argv[tmpVar1].substr(3).split(/:/);
+					for(tmpVar2 in myResult) {
+						if(tmpVar2.search(/^[0-9]+$/)!=-1) {
+							paths.push(backslash(myResult[tmpVar2]));
+						}
+					}
+					continue;
+				}
+				if(argv[tmpVar1].charAt(0)=='-') {
+					if(options[argv[tmpVar1].substr(1)] === undefined)
+						options[argv[tmpVar1].substr(1)]=true;
+					else
+						options[argv[tmpVar1].substr(1)]=!options[argv[tmpVar1].substr(1)];
+					continue;
+				}
 			}
 
-		}
-		f.close();
-		return(all_lines.length+offset);
-	}
-	else {
-		writeln("!!Load failed");
-	}
-	return(0);
-}
-
-var SYNCJSLINT_paths=[backslash(system.exec_dir)];
-var SYNCJSLINT_all_lines;
-var SYNCJSLINT_index;
-var SYNCJSLINT_options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true};
-var SYNCJSLINT_myResult;
-var SYNCJSLINT_tmpVar1;
-var SYNCJSLINT_tmpVar2;
-var SYNCJSLINT_optdone=false;
-for(SYNCJSLINT_tmpVar1 in argv) {
-	if(SYNCJSLINT_tmpVar1.search(/^[0-9]+$/)!=-1) {
-		if(!SYNCJSLINT_optdone) {
-			if(argv[SYNCJSLINT_tmpVar1]=='--') {
-				SYNCJSLINT_optdone=true;
-				continue;
-			}
-			if(argv[SYNCJSLINT_tmpVar1].substr(0,3)=='-L:') {
-				SYNCJSLINT_myResult=argv[SYNCJSLINT_tmpVar1].substr(3).split(/:/);
-				for(SYNCJSLINT_tmpVar2 in SYNCJSLINT_myResult) {
-					if(SYNCJSLINT_tmpVar2.search(/^[0-9]+$/)!=-1) {
-						SYNCJSLINT_paths.push(backslash(SYNCJSLINT_myResult[SYNCJSLINT_tmpVar2]));
+			all_lines=[];
+			index=[];
+			LOADFILE(all_lines, index, 0, argv[tmpVar1], paths, options);
+			writeln("Linting...");
+			myResult=JSLINT(all_lines,options);
+			if(!myResult) {
+				for(tmpVar2 in JSLINT.errors) {
+					if(tmpVar2.search(/^[0-9]+$/)!=-1) {
+						if(JSLINT.errors[tmpVar2]==undefined)
+							continue;
+						writeln("-----");
+						writeln(index[JSLINT.errors[tmpVar2].line]+"@"+JSLINT.errors[tmpVar2].character+": "+JSLINT.errors[tmpVar2].reason);
+						writeln(JSLINT.errors[tmpVar2].evidence);
+						writeln(format("%.*s",JSLINT.errors[tmpVar2].character,JSLINT.errors[tmpVar2].evidence).replace(/[^\x00-\x1f]/g,' ')+'^');
 					}
 				}
-				continue;
 			}
-			if(argv[SYNCJSLINT_tmpVar1].charAt(0)=='-') {
-				if(SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)] === undefined)
-					SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=true;
-				else
-					SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)]=!SYNCJSLINT_options[argv[SYNCJSLINT_tmpVar1].substr(1)];
-				continue;
-			}
-		}
 
-		SYNCJSLINT_all_lines=[];
-		SYNCJSLINT_index=[];
-		SYNCJSLINT_LOADFILE(SYNCJSLINT_all_lines, SYNCJSLINT_index, 0, argv[SYNCJSLINT_tmpVar1], SYNCJSLINT_paths, SYNCJSLINT_options);
-		writeln("Linting...");
-		SYNCJSLINT_myResult=JSLINT(SYNCJSLINT_all_lines,SYNCJSLINT_options);
-		if(!SYNCJSLINT_myResult) {
-			for(SYNCJSLINT_tmpVar2 in JSLINT.errors) {
-				if(SYNCJSLINT_tmpVar2.search(/^[0-9]+$/)!=-1) {
-					writeln("-----");
-					writeln(SYNCJSLINT_index[JSLINT.errors[SYNCJSLINT_tmpVar2].line]+"@"+JSLINT.errors[SYNCJSLINT_tmpVar2].character+": "+JSLINT.errors[SYNCJSLINT_tmpVar2].reason);
-					writeln(JSLINT.errors[SYNCJSLINT_tmpVar2].evidence);
-					writeln(format("%.*s",JSLINT.errors[SYNCJSLINT_tmpVar2].character,JSLINT.errors[SYNCJSLINT_tmpVar2].evidence).replace(/[^\x00-\x1f]/g,' ')+'^');
+			function dumparray(obj,indent) {
+				var prop;
+				var ind=format("%*s",indent,'');
+
+				writeln(ind+obj.sort().join("\r\n"+ind));
+			}
+
+			function dumpobjs(obj,indent) {
+				var prop;
+				var ind=format("%*s",indent,'');
+
+				if(obj.constructor.toString().substr(0,16) == 'function Array()')
+					dumparray(obj,indent);
+				else {
+					for(prop in obj) {
+						if(typeof(obj[prop])=='object') {
+							writeln(ind+prop+":");
+							if(obj[prop].constructor.toString().substr(0,16) == 'function Array()')
+								dumparray(obj[prop],indent+2);
+							else
+								dumpobjs(obj[prop],indent+2);
+						}
+						else {
+							writeln(ind+prop+": "+obj[prop]);
+						}
+					}
+				}
+			}
+
+			function dumpFunc(obj) {
+				var prop;
+				var indent=2;
+				var ind=format("%*s",indent,'');
+
+				writeln(ind+obj.name+"("+(obj.params===undefined?'':obj.params)+"):");
+				indent+=2;
+				ind=format("%*s",indent,'');
+				writeln(ind+index[obj.line]);
+				for(prop in obj) {
+					switch(prop) {
+						case 'name':
+						case 'line':
+						case 'params':
+							break;
+						default:
+							if(typeof(obj[prop])=='object') {
+								writeln(ind+prop+":");
+								dumpobjs(obj[prop],indent+2);
+							}
+							else {
+								writeln(ind+prop+": "+obj[prop]);
+							}
+					}
+				}
+			}
+
+			function dumpFuncs(obj) {
+				var f;
+				var indent=0;
+				var ind=format("%*s",indent,'');
+
+				if(obj !== undefined) {
+					writeln("Functions:");
+					for(f in obj) {
+						dumpFunc(obj[f]);
+						writeln('');
+					}
+				}
+			}
+
+			function dumpGlobals(obj) {
+				var gl;
+
+				if(obj !== undefined) {
+					writeln('Defined Globals:');
+					writeln('  '+obj.sort().join("\r\n  "));
+				}
+			}
+
+			function dumpURLs(obj) {
+				var gl;
+
+				if(obj !== undefined) {
+					writeln('URLs:');
+					writeln('  '+obj.sort().join("\r\n  "));
+				}
+			}
+
+			function dumpJSON(obj) {
+				if(obj !== undefined) {
+					writeln('JSON: '+obj);
+				}
+			}
+
+			if(options.report) {
+				myResult=JSLINT.reportObj();
+
+				if(myResult===undefined) {
+					writeln("Report NOT generated");
+				}
+				else {
+					dumpGlobals(myResult.Globals);
+					writeln('');
+					dumpFuncs(myResult.Functions);
+					dumpURLs(myResult.URLs);
+					dumpJSON(myResult.JSON);
+					//dumpobjs(myResult,0);
 				}
 			}
 		}
 	}
 }
+
+SYNCJSLINT(argc, argv);
