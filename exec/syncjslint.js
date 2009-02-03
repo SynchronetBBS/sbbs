@@ -185,7 +185,8 @@ SOFTWARE.
     global,js,system,server,client,user,bbs,console,msg_area,
     file_area,xtrn_area,MsgBase,File,Queue,Socket,User,
 
-    paranoidbrace, multiload, noradix, noescapement,
+    paranoidbrace, multiload, noradix, noescapement, poorrelations,
+    noliteral, noextracomma
 
     readAll,splice,exec_dir
 */
@@ -2189,6 +2190,8 @@ JSLINT = function () {
 
 
     function isPoorRelation(node) {
+	if(option.poorrelations)
+            return(false);
         return (node.type === '(number)' && !+node.value) ||
                (node.type === '(string)' && !node.value) ||
                 node.type === 'true' ||
@@ -3906,10 +3909,14 @@ JSLINT = function () {
                 c['new'] = true;
                 switch (c.value) {
                 case 'Object':
-                    warning("Use the object literal notation {}.", token);
+                    if(!option.noliteral) {
+                        warning("Use the object literal notation {}.", token);
+                    }
                     break;
                 case 'Array':
-                    warning("Use the array literal notation [].", token);
+                    if(!option.noliteral) {
+                        warning("Use the array literal notation [].", token);
+                    }
                     break;
                 case 'Number':
                 case 'String':
@@ -4143,7 +4150,9 @@ JSLINT = function () {
                 if (nexttoken.id === ',') {
                     warning("Extra comma.", token);
                 } else if (nexttoken.id === ']') {
-                    warning("Extra comma.", token);
+                    if(!option.noextracomma) {
+                        warning("Extra comma.", token);
+                    }
                     break;
                 }
                 nonadjacent(token, nexttoken);
@@ -4203,8 +4212,12 @@ JSLINT = function () {
                 if (nexttoken.id === ',') {
                     adjacent(token, nexttoken);
                     advance(',');
-                    if (nexttoken.id === ',' || nexttoken.id === '}') {
+                    if (nexttoken.id === ',') {
                         warning("Extra comma.", token);
+                    } else if(nexttoken.id === '}') {
+                        if(!option.noextracomma) {
+                            warning("Extra comma.", token);
+                        }
                     }
                     nonadjacent(token, nexttoken);
                 } else {
@@ -5146,7 +5159,7 @@ function SYNCJSLINT_LOADFILE(lines, index, pos, fname, paths, options)
 var SYNCJSLINT_paths=[backslash(system.exec_dir)];
 var SYNCJSLINT_all_lines;
 var SYNCJSLINT_index;
-var SYNCJSLINT_options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true};
+var SYNCJSLINT_options={cap:true,evil:true,laxbreak:true,newcap:true,nomen:true,undef:true,multiload:true,noradix:true,noescapement:true,poorrelations:true,noliteral:true,noextracomma:true};
 var SYNCJSLINT_myResult;
 var SYNCJSLINT_tmpVar1;
 var SYNCJSLINT_tmpVar2;
