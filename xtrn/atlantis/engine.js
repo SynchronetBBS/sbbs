@@ -16,42 +16,18 @@ script_dir=script_dir.replace(/[\/\\][^\/\\]*$/,'');
 script_dir=backslash(script_dir);
 
 load(script_dir+'gamedata.js');
-if(!js.global.scramble==undefined)
+if(js.global.scramble==undefined)
 	load(script_dir+'utilfuncs.js');
-if(!js.global.Troop==undefined)
+if(js.global.Troop==undefined)
 	load(script_dir+'troop.js');
 
-function reportcasualties(unit)
-{
-}
+function mistakestr(fact_no,str) {}
 
-function mistake2(order,str)
-{
-}
+function mistake2(order,str) {}
 
-function mistakeu(unit,str)
-{
-}
+function mistakeu(unit,str) {}
 
-function battlerecord(str)
-{
-}
-
-function battlepunit(unit)
-{
-}
-
-function sparagraph(battles,str,indent,istr)
-{
-}
-
-function doshot()
-{
-}
-
-function addbattle(faction,str)
-{
-}
+function sparagraph(battles,str,indent,istr) {}
 
 function lovar (n)
 {
@@ -663,6 +639,276 @@ function process_attack()
 	var dh, reportcasualtiesdh;
 
 	log("Processing ATTACK orders...");
+
+	function terminate(i)
+	{
+		if(!troops[i].attacked) {
+			troops[i].attacked=true;
+			toattack[defender.side]--;
+		}
+
+		troops[i].status=1;
+		left[defender.side]--;
+		if(infront[defender.side])
+			infront[defender.side]--;
+		if(troops[i].runesword)
+			runeswords[defender.side]--;
+	}
+
+	function validtarget(i)
+	{
+		return((!troops[i].status) && troops[i].side == defender.side && (!troops[i].behind || !infront[defender.side]));
+	}
+
+	function selecttarget()
+	{
+		var i;
+
+		do {
+			i=random(troops.length);
+		} while(!validtarget(i));
+
+		return(i);
+	}
+
+	function battlerecord(str) {}
+
+	function battlepunit(unit) {}
+
+	function addbattle(faction,str) {}
+
+	function docombatspell(i)
+	{
+		var j,z,n,m,buf;
+
+		function dozap(n)
+		{
+			n=lovar(n*(1+attacker.power));
+			n=Math.min(n,left[defender.side]);
+
+			buf += ", inflicting "+n+" "+(n==1?"casualty":"casualties");
+
+			while(--n >= 0)
+				terminate(selecttarget());
+		}
+
+		function canberemoralized(i)
+		{
+			return((!troops[i].status) && troops[i].side==attacker.side && troops[i].demoralized);
+		}
+
+		function canbedemoralized(i)
+		{
+			return(validtarget(i) && !troops[i].demoralized);
+		}
+
+		function canbedazzled(i)
+		{
+			return(validtarget(i) && !troops[i].dazzled);
+		}
+
+		z=troops[i].unit.combatspell;
+		buf=troops[i].unit.id+" casts "+spelldata[z].name;
+
+		if(shields[defender.side]) {
+			if(random(2)) {
+				buf += ", and gets through the shield";
+				shields[defender.side] -= 1 + attacker.power;
+			}
+			else {
+				buf += ", but the spell is deflected by the shield!";
+				battlerecord(buf);
+				return;
+			}
+		}
+
+		switch(z) {
+			case SP_BLACK_WIND:
+				dozap(1250);
+				break;
+
+			case SP_CAUSE_FEAR:
+				if(runeswords[defender.side] && random(2))
+					break;
+				n=lovar(100*(1+attacker.power));
+				m=0;
+				for(j=0; j<troops.length; j++) {
+					if(canbedemoralized(j))
+						m++;
+				}
+
+				n=Math.min(n,m);
+				buf += ", affecting "+n+" "+(n==1?'person':'people');
+			
+				while(--n >= 0) {
+					do {
+						j=random(troops.length);
+					} while(!canbedemoralized(j));
+					troops[j].demoralized=1;
+				}
+				break;
+
+			case SP_DAZZLING_LIGHT:
+				n=lovar(50*(1+attacker.power));
+				m=0;
+				for(j=0; j<troops.length; j++) {
+					if(canbedazzled(j))
+						m++;
+				}
+				n=Math.min(n,m);
+				buf += ", dazzling "+n+" "+(n==1?'person':'people');
+			
+				while(--n >= 0) {
+					do {
+						j=random(troops.length);
+					} while(!canbedazzled(j));
+					troops[j].dazzled=1;
+				}
+				break;
+
+			case SP_FIREBALL:
+				dozap(50);
+				break;
+			case SP_HAND_OF_DEATH:
+				dozap(250);
+				break;
+			case SP_INSPIRE_COURAGE:
+				n=lovar(100*(1+attacker.power));
+				m=0;
+				for(j=0;j<troops.length;j++) {
+					if(canberemoralized(j))
+						m++;
+				}
+				n=Math.min(n,m);
+				buf += ", affecting "+n+" "+(n==1?'person':'people');
+				while(--n >= 0) {
+					do {
+						j=random(troops.length);
+					} while(!canberemoralized(j));
+					troops[j].demoralized=0;
+				}
+				break;
+			case SP_LIGHTNING_BOLT:
+				dozap(10);
+				break;
+			case SP_SHIELD:
+				shields[attacker.side] += 1+attacker.power;
+				break;
+			case SP_SUNFIRE:
+				dozap(6250);
+				break;
+			default:
+				throw("Unhandled Spell!");
+		}
+		buf += '!';
+		battlerecord(buf);
+	}
+
+	function doshot()
+	{
+		var ai,di;
+
+		function hits()
+		{
+			var k;
+
+			function contest(a,d)
+			{
+				var i;
+				var table=[10,25,40];
+
+				i=a-d + 1;
+				if(i<0)
+					return(random(100) < 1);
+				if(i>2)
+					return(random(100) < 49);
+				return(random(100) < table[i]);
+			}
+
+			if(defender.weapon == I_CROSSBOW || defender.weapon == I_LONGBOW)
+				defender.skill = -2;
+			defender.skill += defender.inside;
+			attacker.skill -= (attacker.demoralized + attacker.dazzled);
+			defender.skill -= (defender.demoralized + defender.dazzled);
+			
+			switch(attacker.weapon) {
+				case 0:
+				case I_SWORD:
+					k = contest(attacker.skill, defender.skill);
+					break;
+				case I_CROSSBOW:
+					k = contest(attacker.skill, 0);
+					break;
+				case I_LONGBOW:
+					k = contest(attacker.skill, 2);
+					break;
+			}
+
+			if(defender.invulnerable && random(10000))
+				k = 0;
+			if(random(3) < defender.armor)
+				k = 0;
+			return k;
+		}
+
+		do {
+			ai=random(troops.length);
+		} while(troops[ai].attacked);
+
+		attacker=troops[ai];
+		toattack[attacker.side]--;
+		defender.side=1-attacker.side;
+
+		troops[ai].dazzled=0;
+
+		if(attacker.unit.no != undefined) {
+			if(attacker.behind && infront[attacker.side] && !attacker.missile)
+				return;
+			if(attacker.shieldstone)
+				shields[attacker.side] += 1+attacker.power;
+			if(attacker.unit.combatspell >= 0) {
+				docombatspell(ai);
+				return;
+			}
+			if(attacker.reload) {
+				troops[ai].reload--;
+				return;
+			}
+			if(attacker.weapon==I_CROSSBOW)
+				troops[ai].reload=2;
+		}
+
+		/* Select defender */
+		di = selecttarget();
+		defender=troops[di];
+		if(defender.side != 1-attacker.side) {
+			throw("Defdender side "+defender.side+" is not inverse of attacker side "+attacker.side);
+		}
+
+		if(hits())
+			terminate(di);
+	}
+
+	function reportcasualties(unit)
+	{
+		var buf;
+
+		if(!unit.dead)
+			return;
+		if(!reportcasualtiesdh) {
+			battlerecord("");
+			reportcasualtiesdh=1;
+		}
+		if(unit.number==1)
+			buf=unit.id+" is dead.";
+		else {
+			if(unit.dead == unit.number)
+				buf=unit.id+" is wiped out.";
+			else
+				buf=unit.id+" loses "+unit.dead+".";
+		}
+		battlerecord(buf);
+	}
 
 	for (r in regions)
 	{
@@ -1682,11 +1928,13 @@ function process_economic()
 		}
 
 		for(u in region.units) {
-			event=new Event();
-			event.location=region;
-			event.unit=region.units[u];
-			event.text=region.units[u].id+" recruits "+region.units[u].n+".";
-			region.units[u].faction.push(event);
+			if(region.units[u].n >= 0) {
+				event=new Event();
+				event.location=region;
+				event.unit=region.units[u];
+				event.text=region.units[u].id+" recruits "+region.units[u].n+".";
+				region.units[u].faction.events.push(event);
+			}
 		}
 	}
 }
@@ -1853,7 +2101,7 @@ function process_sail()
 		for (u=0; u<region.units.length; u++)	// TODO: This array changes as we work through it!
 		{
 			unit=region.units[u];
-			if(u < region.units.length)
+			if(u < region.units.length-1)
 				next=region.units[u+1].no;
 			else
 				next=null;
@@ -2008,7 +2256,7 @@ function process_production()
 			produceorders[j]=new Array();
 
 		for (u in region.units) {
-			unit=region.units[r];
+			unit=region.units[u];
 			switch (unit.thisorder.command)
 			{
 				case K_BUILD:
@@ -2359,8 +2607,8 @@ function process_production()
 
 		for (i = 0, n = terrains[region.terrain].maxfoodoutput; i < workorders.length && n; i++, n--)
 		{
-			workorders[i].money++;
-			workorders[i].n++;
+			workorders[i].unit.money++;
+			workorders[i].unit.n++;
 		}
 
 		region.money += Math.min (n,region.peasants * terrains[region.terrain].foodproductivity);
@@ -2751,8 +2999,8 @@ function processorders()
 			/* Warn players who haven't sent in orders */
 
 	for (f in factions)
-		if (turn - factions[r].lastorders == ORDERGAP)
-			factions[r].messages.push("Please send orders next turn if you wish to continue playing.");
+		if (turn - factions[f].lastorders == ORDERGAP)
+			factions[f].messages.push("Please send orders next turn if you wish to continue playing.");
 }
 
 function writesummary()
@@ -2763,6 +3011,269 @@ function writesummary()
 	sfile.close();
 }
 
-initgame(argc > 0? argv[0] : '.');
+function readorders()
+{
+	var orderfiles=directory(game_dir+'orders/*.'+turn);
+	var orderfile;
+	var orders;
+	var f;
+	var ordereval,order;
+	var unitno,unit;
+	var fano;
+	var tmp;
+
+	for(orderfile in orderfiles) {
+		tmp=file_getname(orderfile).split(/\./,2);
+		fano=tmp[0];
+		f=new File(orderfile);
+		f.open("r");
+		ordereval=js.eval(f.readAll.join('\n'));
+		f.close();
+		for(unitno in ordereval) {
+			unit=findunit(unitno);
+			if(unit == null || unit.faction.no != fano) {
+				mistakestr(fano,"Unit "+unitno+" is not on of your units!");
+				continue;
+			}
+			unit.faction.lastorders=turn;
+			for(order in ordereval[unitno]) {
+				unit.orders.push(ordereval[unitno][order]);
+			}
+		}
+	}
+}
+
+function reports()
+{
+	var f,f2,rf,tmp,tmp2,prop,rep,i,prop2,arr,r,region,u,unit,ret;
+
+	for(f in factions) {
+		ret={};
+		ret.faction={};
+		tmp=ret.faction;
+		for(prop in factions[f]) {
+			switch(prop) {
+				/* Keep Unchanged */
+				case 'no':
+				case 'name':
+				case 'lastorders':
+				case 'money':
+				case 'id':
+				case 'addr':
+					tmp[prop]=factions[f][prop];
+					break;
+
+				/* Clean up sub-objects */
+				case 'mistakes':	// TODO: Clean up sub-objects
+				case 'messages':	// TODO: Clean up sub-objects
+				case 'battles':		// TODO: Clean up sub-objects
+				case 'events':
+					tmp[prop]=[];
+					for(i in factions[f][prop]) {
+						if(typeof(factions[f][prop][i])=='object') {
+							tmp[prop][i]={};
+							for(prop2 in factions[f][prop][i]) {
+								if(factions[f][prop][i][prop2] !== null && typeof(factions[f][prop][i][prop2])=='object') {
+									if(factions[f][prop][i][prop2].id != undefined) {
+										tmp[prop][i][prop2]=factions[f][prop][i][prop2].id;
+									}
+									else if(factions[f][prop][i][prop2].no != undefined) {
+										tmp[prop][i][prop2]=factions[f][prop][i][prop2].no;
+									}
+									else {
+										log("Unknown object type: ["+prop+"]["+i+"]["+prop2+"]");
+										tmp[prop][i][prop2]='Unknown Type';
+									}
+								}
+								else
+									tmp[prop][i][prop2]=factions[f][prop][i][prop2];
+							}
+						}
+						else
+							tmp[prop][i]=factions[f][prop][i];
+					}
+					break;
+
+				/* Convert Other Faction */
+				case 'accept':
+				case 'allies':
+				case 'admit':
+					/* Convert to just an array of IDs */
+					for(i in factions[f][prop])
+						tmp[prop][i]=factions[f][prop][i].id;
+					break;
+			}
+		}
+		ret.factions=[];
+		r=ret.factions;
+		for(f2 in factions) {
+			if(factions[f2].no==factions[f].no)
+				continue;
+			tmp={};
+			for(prop in factions[f2]) {
+				switch(prop) {
+					/* Keep Unchanged */
+					case 'no':
+					case 'name':
+					case 'id':
+					case 'addr':
+						tmp[prop]=factions[f2][prop];
+						break;
+				}
+			}
+			arr.push(tmp);
+		}
+
+		ret.regions=[];
+		arr=ret.regions;
+		for(r in regions) {
+			region=regions[r];
+			if(factions[f].ispresent(region)) {
+				tmp={};
+				for(prop in region) {
+					switch(prop) {
+						/* Keep Unchanged */
+						case 'x':
+						case 'y':
+						case 'name':
+						case 'id':
+						case 'terrain':
+						case 'peasants':
+						case 'money':
+							tmp[prop]=region[prop];
+							break;
+
+						/* Modify - remove region and modify owner */
+						case 'buildings':
+						case 'ships':
+							tmp[prop]=[];
+							for(i in region[prop]) {
+								tmp[prop][i]={};
+								for(prop2 in region[prop][i]) {
+									switch(prop2) {
+										/* Keep Unchanged */
+										case 'no':
+										case 'name':
+										case 'display':
+										case 'size':
+										case 'id':
+										case 'type':
+											tmp[prop][i][prop2]=region[prop][i][prop2];
+											break;
+										/* Replace with ID */
+										case 'owner':
+											tmp[prop][i][prop2]=region[prop][i][prop2].id;
+											break;
+									}
+								}
+							}
+							break;
+					}
+				}
+				tmp.units=[];
+				for(u in region.units) {
+					unit=region.units[u];
+					switch(factions[f].cansee(unit)) {
+						case 1:	/* Limited visibility */
+							tmp2={};
+							for(prop in unit) {
+								switch(prop) {
+									/* Keep Unchanged */
+									case 'name':
+									case 'no':
+									case 'id':
+									case 'number':
+									case 'guard':
+									case 'items':
+									case 'display':
+										tmp2[prop]=unit[prop];
+										break;
+								}
+							}
+							tmp.units.push(tmp2);
+							break;
+						case 2: /* Full visibility */
+							tmp2={};
+							/* Only for self */
+							if(factions[f].no==unit.faction.no) {
+								tmp2.behind=unit.behind;
+								tmp2.money=unit.money;
+								tmp2.skills=unit.skills;
+								tmp2.spells=unit.spells;
+								tmp2.combatspell=unit.combatspell;
+							}
+							for(prop in unit) {
+								switch(prop) {
+									/* Keep Unchanged */
+									case 'name':
+									case 'no':
+									case 'id':
+									case 'number':
+									case 'guard':
+									case 'items':
+									case 'display':
+										tmp2[prop]=unit[prop];
+										break;
+									/* Modify - use ID */
+									case 'faction':
+										tmp2[prop]=unit[prop].id;
+								}
+							}
+							tmp.units.push(tmp2);
+							break;
+					}
+				}
+				arr.push(tmp);
+			}
+			else {
+				/* Not present... */
+				tmp={};
+				for(prop in region) {
+					switch(prop) {
+						/* Keep Unchanged */
+						case 'x':
+						case 'y':
+						case 'name':
+						case 'terrain':
+							tmp[prop]=region[prop];
+							break;
+					}
+				}
+				arr.push(tmp);
+			}
+		}
+
+		rf=new File(game_dir+"reports/"+f+"."+turn);
+		rf.open("w");
+		rf.write(ret.toSource());
+	}
+}
+
+function processturn()
+{
+	turn++;
+	readorders();
+	processorders();
+	reports();
+	//writesummary();
+	//writegame();
+}
+
+if(argc < 2) {
+	alert("Invalid usage!");
+	exit(1);
+}
+switch(argv[1]) {
+	case 'process':
+		initgame(argv[0]);
+		processturn();
+		addplayers();
+		break;
+	case 'init':
+		initgame(argv[0]);
+		addplayers();
+		break;
+}
 writesummary();
 writegame();
+

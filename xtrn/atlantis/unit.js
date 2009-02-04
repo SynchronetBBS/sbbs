@@ -292,13 +292,16 @@ function Unit(region)
 				for(u in regions[r].units)
 					if(regions[r].units[u].no >= n && regions[r].units[u].no < n + 1000)
 						v[regions[r].units[u].no]=true;
-			for(i=0; i<1000; i++)
+			for(i=0; i<1000; i++) {
+				if(n+i==0)			// Prevent unit zero
+					continue;
 				if(v[i]==undefined) {
 					this.no=n+i;
 					this.name="Unit "+this.no;
 					region.units.push(this);
 					return;
 				}
+			}
 		}
 	}
 }
@@ -328,7 +331,7 @@ function removeempty()
 
 	for (r in regions)
 	{
-		for (u in regions[r].units)
+		for (u=0; u < regions[r].units.length; u++)
 		{
 			if (!regions[r].units[u].number)
 			{
@@ -348,11 +351,12 @@ function removeempty()
 					regions[r].money += regions[r].units[u].money;
 
 				regions[r].units.splice(u,1);
+				u--;
 			}
 		}
 
 		if (regions[r].terrain == T_OCEAN)
-			for (sh in regions[r].ships)
+			for (sh=0; sh < regions[r].ships.length; sh++)
 			{
 				f=false;
 				for (u in regions[r].units)
@@ -361,8 +365,10 @@ function removeempty()
 						break;
 					}
 
-				if (f)
+				if (f) {
 					regions[r].ships.splice(sh,1);
+					sh--;
+				}
 			}
 	}
 }

@@ -133,20 +133,23 @@ function removenullfactions()
 	var f,f2,f3;
 	var rf,rf2;
 
-	for (f in factions)
+	for (f=0; f<factions.length; f++)
 	{
 		if (!factions[f].alive)
 		{
 			printf ("Removing %s.\n",factions[f].name);
 
 			for (f3 in factions)
-				for (rf in factions[f3].allies)
+				for (rf=0; rf < factions[f3].allies.length; rf++)
 				{
-					if (factions[f3].allies[rf].no == factions[f].no)
+					if (factions[f3].allies[rf].no == factions[f].no) {
 						factions[f3].allies.splice(rf,1);
+						rf--;
+					}
 				}
 
 			factions.splice(f,1);
+			f--;
 		}
 	}
 }

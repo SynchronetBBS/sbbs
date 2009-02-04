@@ -136,7 +136,7 @@ function makeblock (x1,y1)
 
 function writegame ()
 {
-	var tmp,tmp2,i,f,r,u,b,s,prop,prop2,arr;
+	var tmp,tmp2,tmp3,i,f,r,u,b,s,prop,prop2,prop3,arr;
 	var gfile=new File(game_dir+"data/"+turn);
 
 	gfile.open("w");
@@ -192,7 +192,7 @@ function writegame ()
 								case 'name':
 								case 'display':
 								case 'size':
-									tmp2[prop]=regions[r].buildings[b][prop];
+									tmp2[prop2]=regions[r].buildings[b][prop2];
 									break;
 							}
 						}
@@ -210,7 +210,7 @@ function writegame ()
 								case 'display':
 								case 'type':
 								case 'left':
-									tmp2[prop]=regions[r].ships[s][prop];
+									tmp2[prop2]=regions[r].ships[s][prop2];
 									break;
 							}
 						}
@@ -219,9 +219,9 @@ function writegame ()
 					break;
 				case 'units':
 					tmp.units=new Array();
-					for(u in tmp.units) {
+					for(u in regions[r].units) {
 						tmp2=new Object();
-						for(prop2 in tmp2) {
+						for(prop2 in regions[r].units[u]) {
 							switch(prop2) {
 								case 'no':
 								case 'name':
@@ -231,9 +231,19 @@ function writegame ()
 								case 'owner':
 								case 'behind':
 								case 'guard':
-								case 'lastorder':
 								case 'combatspell':
-									tmp2[prop]=regions[r].units[u][prop];
+									tmp2[prop2]=regions[r].units[u][prop2];
+									break;
+								case 'lastorder':
+									tmp2[prop2]={};
+									for(prop3 in regions[r].units[u].lastorder) {
+										switch(prop3) {
+											case 'unit':
+												break;
+											default:
+												tmp2[prop2][prop3]=regions[r].units[u].lastorder[prop3];
+										}
+									}
 									break;
 								case 'faction':
 									tmp2.faction=regions[r].units[u].faction.no;
@@ -291,25 +301,32 @@ function readgame ()
 		for(b in regions[r].buildings) {
 			n=new Building();
 			for(prop in regions[r].buildings[b])
-				n[prop]=regions[r].buildings[b];
+				n[prop]=regions[r].buildings[b][prop];
 			regions[r].buildings[b]=n;
 			regions[r].buildings[b].region=regions[r];
 		}
 		for(s in regions[r].ships) {
 			n=new Ship();
 			for(prop in regions[r].ships[s])
-				n[prop]=regions[r].ships[s];
+				n[prop]=regions[r].ships[s][prop];
 			regions[r].ships[s]=n;
 			regions[r].ships[s].region=regions[r];
 		}
 		for(u in regions[r].units) {
-			regions[r].units[u].region=regions[r];
-			regions[r].units[u].faction=findfaction(regions[r].units[u].faction);
-			regions[r].units[u].building=findbuilding(regions[r].units[u].building);
-			regions[r].units[u].ship=findship(regions[r].units[u].ship);
+			n=new Unit();
+			for(prop in regions[r].units[u])
+				n[prop]=regions[r].units[u][prop];
+			n.region=regions[r];
+			n.faction=findfaction(regions[r].units[u].faction);
+			n.building=findbuilding(regions[r].units[u].building);
+			n.ship=findship(regions[r].units[u].ship);
+			n.lastorder.unit=regions[r].units[u];
+
+			regions[r].units[u]=n;
 
 			if(regions[r].units[u].faction.seendata == undefined)
 				regions[r].units[u].faction.seendata=new Array(MAXSPELLS);
+
 
 			/* Initialize faction seendata values */
 			for(i=0; i<MAXSPELLS; i++) {
@@ -580,7 +597,6 @@ function initgame(dir)
 	if(d.length > 0) {
 		turn=getturn();
 		readgame();
-		addplayers();
 		writegame();
 	}
 	else {

@@ -1,4 +1,4 @@
-if(!js.global.scramble==undefined)
+if(js.global.scramble==undefined)
 	load(script_dir+'utilfuncs.js');
 
 function Order()
@@ -23,6 +23,7 @@ function expandorders(r,orders)
 		for(i=0; i<orders[o].qty; i++) {
 			neworder=new Object();
 
+			neworder.unit=orders[o].unit;
 			neworder.unit.n=0;
 			for(prop in orders[o]) {
 				if(prop != 'qty')
