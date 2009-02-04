@@ -27,6 +27,8 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 var hdr=msgbase.get_msg_header(false,m);
 if(hdr==null)
 	error(msgbase.last_error);
+if(hdr.attr&MSG_DELETE)
+	error("Deleted message");
 if((!(system.settings & SYS_USRVDELM)) || (user.security.level >= 90 && (!(system.settings & SYS_SYSVDELM))) ) {
 	if(hdr.attr & MSG_DELETE)
 		error("Message has been deleted");
