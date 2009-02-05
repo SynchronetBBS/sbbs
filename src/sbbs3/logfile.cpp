@@ -331,7 +331,7 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 		getkey(0);
 		CRLF;
 	}
-	sprintf(str,"\r\n    source: %s\r\n      line: %d\r\n    action: %s\r\n"
+	sprintf(str,"    source: %s\r\n      line: %d\r\n    action: %s\r\n"
 		"    object: %s\r\n    access: %ld"
 		,src,line,action,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
@@ -342,7 +342,7 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 		strcat(str,tmp);
 	}
 	if(errno) {
-		sprintf(tmp,"\r\n     errno: %d (%s)",errno,strerror(errno));
+		sprintf(tmp,"\r\n     errno: %d (%s)",errno,STRERROR(errno));
 		strcat(str,tmp); 
 		errno=0;
 	}
