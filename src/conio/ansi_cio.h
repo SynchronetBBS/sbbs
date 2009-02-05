@@ -39,11 +39,21 @@
 #endif
 
 #include "ciolib.h"
-extern int	CIOLIB_ANSI_TIMEOUT;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+extern int	CIOLIB_ANSI_TIMEOUT;
+extern int  (*ciolib_ansi_readbyte_cb)(void);
+extern int  (*ciolib_ansi_writebyte_cb)(unsigned char ch);
+extern int  (*ciolib_ansi_initio_cb)(void);
+extern int  (*ciolib_ansi_writestr_cb)(unsigned char *str, size_t len);
+
+int ansi_readbyte_cb(void);
+int ansi_writebyte_cb(unsigned char ch);
+int ansi_initio_cb(void);
+int ansi_writestr_cb(unsigned char *str, size_t len);
+
 int ansi_puttext(int sx, int sy, int ex, int ey, void *fill);
 int ansi_gettext(int sx, int sy, int ex, int ey, void *fill);
 void ansi_textattr(int);
