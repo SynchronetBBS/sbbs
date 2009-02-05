@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2008 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Server to server operation is governed here.
 //
@@ -183,16 +183,17 @@ function Server_Work(cmdline) {
 		if (!cmd[6])
 			break;
 		if (!ThisOrigin.uline) {
-			umode_notice(USERMODE_OPER,"Notice","Non-U:Lined server " + ThisOrigin.nick
-				+ " trying to utilize AKILL.");
+			umode_notice(USERMODE_OPER,"Notice","Non-U:Lined server "
+				+ ThisOrigin.nick + " trying to utilize AKILL.");
 			break;
 		}
+
+		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + cmdline);
 
 		this_uh = cmd[2] + "@" + cmd[1];
 		if (isklined(this_uh))
 			break;
 		KLines.push(new KLine(this_uh,IRC_string(cmdline,6),"A"));
-		this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + cmdline);
 		scan_for_klined_clients();
 		break;
 	case "AWAY":
@@ -716,7 +717,7 @@ function Server_Work(cmdline) {
 				var lcserver = cmd[1].toLowerCase();
 				var new_id = "id" + next_client_id;
 				next_client_id++;
-				Servers[lcserver] = new IRC_Server;
+				Servers[lcserver] = new IRC_Server();
 				var newsrv = Servers[lcserver];
 				newsrv.hops = cmd[2];
 				newsrv.nick = cmd[1];
@@ -1095,30 +1096,61 @@ function Server_Work(cmdline) {
 				+ dest_server.nick + " :" + IRC_string(cmd[2],0));
 		}
 		break;
-	case "SAMODE":
+	case "TKL": /* DreamForge/Unreal style global network line modification */
+		if (!ThisOrigin.uline) {
+			umode_notice(USERMODE_OPER,"Notice","Non-U:Lined server "
+				+ ThisOrigin.nick + " trying to utilize TKL.");
+			break;
+		}
+		if (cmd[2] != "G") /* We don't support anything other than G:Lines. */
+			break;
+		var tkl_add = false;
+		if (cmd[1] == "+")
+			tkl_add = true;
+
+		var akill_reason = IRC_string(cmdline,8);
+
+		var snd_prefix = ":" + ThisOrigin.nick + " ";
+
+		/* Propagate this to the network */
+		this.bcast_to_servers_raw(snd_prefix + cmdline,DREAMFORGE);
+		this.bcast_to_servers_raw(snd_prefix + "AKILL "
+			+ cmd[4] + " "				/* host */
+			+ cmd[3] + " "				/* user */
+			+ (cmd[7]-cmd[6]) + " "		/* length */
+			+ cmd[5] + " "				/* akiller */
+			+ ":" + akill_reason		/* reason */
+		,BAHAMUT);
+
+		var this_uh = cmd[3] + "@" + cmd[4];
+		if (isklined(this_uh))
+			break;
+		KLines.push(new KLine(this_uh,akill_reason,"A"));
+		scan_for_klined_clients();
+		break;
+	case "SAMODE": /* :source o #channel modechange modeparams */
 		break;
 	case "CAPAB":
 	case "BURST":
 	case "SVSMODE":
 	case "NETINFO": /* Dreamforge/Unreal/CR */
-	case "SMO": /* Dreamforge/Unreal/CR */
-	case "EOS": /* Dreamforge/Unreal/CR */
+	case "SMO": /* Dreamforge/Unreal/CR -- Send Usermode */
+	case "EOS": /* Dreamforge/Unreal/CR -- End Of Synch */
 	case "TUNL": /* Dreamforge/Unreal/CR */
 	case "SETHOST": /* We do not honour SETHOST. */
 		break; // Silently ignore for now.
 	default:
 		umode_notice(USERMODE_OPER,"Notice","Server " + ThisOrigin.nick + " sent unrecognized command: "
 			+ cmdline);
-		legal_command = false;
-		break;
+		return 0;
 	}
 
-	if (legal_command) {
-		if (!Profile[command])
-			Profile[command] = new StatsM;
-		Profile[command].executions++;
-		Profile.ticks += system.timer - clockticks;
-	}
+	/* This part only executed if the command was legal. */
+
+	if (!Profile[command])
+		Profile[command] = new StatsM;
+	Profile[command].executions++;
+	Profile.ticks += system.timer - clockticks;
 }
 
 ////////// Functions //////////

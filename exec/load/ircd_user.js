@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2008 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 // ** Handle registered clients.
 //
@@ -1490,16 +1490,15 @@ function User_Work(cmdline) {
 		break;
 	default:
 		this.numeric("421", command + " :Unknown command.");
-		legal_command = false;
-		break;
+		return 0;
 	}
 
-	if (legal_command) {
-		if (!Profile[command])
-			Profile[command] = new StatsM;
-		Profile[command].executions++;
-		Profile[command].ticks += system.timer - clockticks;
-	}
+	/* This part only executed if the command was legal. */
+
+	if (!Profile[command])
+		Profile[command] = new StatsM;
+	Profile[command].executions++;
+	Profile[command].ticks += system.timer - clockticks;
 
 }
 
