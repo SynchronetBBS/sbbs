@@ -1977,7 +1977,7 @@ void output_thread(void* arg)
 			 * into linear buffer.
 			 */
            	if(avail>sizeof(buf)) {
-               	lprintf(LOG_WARNING,"!%s: Insufficient linear output buffer (%lu > %lu)"
+               	lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %lu)"
 					,node, avail, sizeof(buf));
                	avail=sizeof(buf);
            	}
@@ -1998,7 +1998,7 @@ void output_thread(void* arg)
 		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
 		if(i==SOCKET_ERROR) {
 			if(sbbs->client_socket!=INVALID_SOCKET)
-				lprintf(LOG_ERR,"!%s: ERROR %d selecting socket %u for send"
+				lprintf(LOG_ERR,"%s !ERROR %d selecting socket %u for send"
 					,node,ERROR_VALUE,sbbs->client_socket);
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
@@ -2015,7 +2015,7 @@ void output_thread(void* arg)
 			int err;
 			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 				/* Handle the SSH error here... */
-				lprintf(LOG_ERR,"!%s: ERROR %d sending on Cryptlib session", node, err);
+				lprintf(LOG_ERR,"%s !ERROR %d sending on Cryptlib session", node, err);
 				i=-1;
 				sbbs->online=FALSE;
 				i=buftop-bufbot;	// Pretend we sent it all
@@ -2034,7 +2034,7 @@ void output_thread(void* arg)
             else if(ERROR_VALUE==ECONNABORTED) 
 				lprintf(LOG_NOTICE,"%s connection aborted by peer on send", node);
 			else
-				lprintf(LOG_WARNING,"!%s: ERROR %d sending on socket %d"
+				lprintf(LOG_WARNING,"%s !ERROR %d sending on socket %d"
                 	,node, ERROR_VALUE, sbbs->client_socket);
 			sbbs->online=FALSE;
 			/* was break; on 4/7/00 */
@@ -2061,7 +2061,7 @@ void output_thread(void* arg)
 		}
 
 		if(i!=(int)(buftop-bufbot)) {
-			lprintf(LOG_WARNING,"!%s: Short socket send (%u instead of %u)"
+			lprintf(LOG_WARNING,"%s !Short socket send (%u instead of %u)"
 				,node, i ,buftop-bufbot);
 			short_sends++;
 		}
@@ -5161,7 +5161,7 @@ NO_SSH:
 			SAFECOPY(new_node->client_ident,identity);
 
 		if(new_node->init()==false) {
-			lprintf(LOG_INFO,"%04d !Node %d Initialization failure"
+			lprintf(LOG_INFO,"%04d Node %d !Initialization failure"
 				,client_socket,new_node->cfg.node_num);
 			SAFEPRINTF(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
