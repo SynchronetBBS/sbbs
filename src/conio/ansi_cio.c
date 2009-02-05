@@ -664,7 +664,37 @@ static void ansi_keyparse(void *par)
 			sem_wait(&got_key);
 
 		ch=ansi_raw_inch;
-		if(gotnull) {
+		if(ch==-2) {
+			ansi_inch=0x0100;
+			sem_post(&got_input);
+			/* Two-byte code, need to post twice times and wait for one to
+			   be received */
+			sem_wait(&used_input);
+			sem_wait(&goahead);
+			sem_post(&got_input);
+			sem_wait(&used_input);
+		}
+		if(gotnull==2) {
+			// 0xe0 enhanced keyboard key... translate to 0x00 key for now.
+
+			ansi_inch=ch<<8;	// (ch<<8)|0xe0;
+			sem_post(&got_input);
+			/* Two-byte code, need to post twice times and wait for one to
+			   be received */
+			sem_wait(&used_input);
+			sem_wait(&goahead);
+			sem_post(&got_input);
+			sem_wait(&used_input);
+			gotnull=0;
+			continue;
+		}
+		if(gotnull==1) {
+			if(ch==0xe0) {
+				gotnull=2;
+				// Need another key... keep looping.
+				sem_post(&goahead);
+				continue;
+			}
 			ansi_inch=ch<<8;
 			sem_post(&got_input);
 			/* Two-byte code, need to post twice and wait for one to
@@ -781,7 +811,7 @@ static void ansi_keythread(void *params)
 		sem_getvalue(&got_key,&sval);
 		if(!sval) {
 			ansi_raw_inch=ciolib_ansi_readbyte_cb();
-			if(ansi_raw_inch >= 0)
+			if(ansi_raw_inch >= 0 || ansi_raw_inch==-2)
 				sem_post(&got_key);
 			else
 				SLEEP(1);
