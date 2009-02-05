@@ -1768,7 +1768,10 @@ function show_messagemenu()
 							messagemenu.draw();
 							break;
 						case 'R':
+							clear_screen();
 							bbs.reinit_msg_ptrs()
+							draw_main(true);
+							messagemenu.draw();
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
