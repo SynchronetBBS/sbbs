@@ -140,7 +140,7 @@ int inkey(void)
 	int c;
 
 	c=getch();
-	if(!c || c==0xff)
+	if(!c || c==0xe0)
 		c|=(getch()<<8);
 	return(c);
 }
@@ -314,7 +314,7 @@ void docopy(void)
 	gettext(1,1,api->scrn_width,api->scrn_len+1,screen);
 	while(1) {
 		key=getch();
-		if(key==0 || key==0xff)
+		if(key==0 || key==0xe0)
 			key|=getch()<<8;
 		switch(key) {
 			case CIO_KEY_MOUSE:
@@ -1097,6 +1097,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				case CTRL_V:
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_F(6);	/* paste */
+					break;
+				case CIO_KEY_ABORT:
+					gotkey=ESC;
 					break;
 			}
 			if(gotkey>255) {
@@ -2081,6 +2084,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						j--;
 					}
 					continue;
+				case CIO_KEY_ABORT:
 				case CTRL_C:
 				case ESC:
 					{
