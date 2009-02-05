@@ -58,12 +58,19 @@ while(1) {
 			bbs.exec("?sbbsimsg");
 			break;
 		case 'R':
-			writeln("");
-			write("\001n\001y\001hServer and channel: ");
-			str="irc.synchro.net 6667 #Synchronet";
-			str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
-			if(!console.aborted)
-				bbs.exec("?irc -a "+str);
+			{
+				var server = "irc.synchro.net 6667";
+				if(user.security.level >= 90) {
+					write("\r\n\001n\001y\001hIRC Server: ");
+					server=console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
+					if(console.aborted)
+						break;
+				}
+				write("\r\n\001n\001y\001hIRC Channel: ");
+				var channel=console.getstr("#Synchronet", 40, K_EDIT|K_LINE|K_AUTODEL);
+				if(!console.aborted)
+					bbs.exec("?irc -a " + server + " " + channel);
+			}
 			break;
 		case 'J':
 			bbs.multinode_chat();
