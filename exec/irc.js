@@ -1003,7 +1003,7 @@ function Channels_part(cname,message)  {
 			this.length -= 1;
 		}
 	}
-	if(this.index>=(this.channels.length-1))  {
+	if(this.index>=(this.channel.length-1))  {
 		this.index=0;
 	}
 }
