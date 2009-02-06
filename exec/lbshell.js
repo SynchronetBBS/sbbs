@@ -583,7 +583,7 @@ var mainbar=new Mainbar;
 
 draw_main(true);
 var next_key='';
-while(1) {
+while(bbs.online) {
 	var done=0;
 	var key=next_key;
 	var extra_select=false;
@@ -681,7 +681,7 @@ while(1) {
 				curr_xtrnsec=parseInt(x_sec);
 				var this_xtrnsec=new Xtrnsec(curr_xtrnsec);
 				menus_displayed.push(this_xtrnsec);
-				while(1) {
+				while(bbs.online) {
 					x_prog=this_xtrnsec.getval();
 					if(x_prog==KEY_LEFT) {
 						cleararea(this_xtrnsec.xpos,this_xtrnsec.ypos,this_xtrnsec.items[0].text.length,this_xtrnsec.items.length,true);
@@ -716,7 +716,7 @@ while(1) {
 		case 'V':
 			var infomenu=new Infomenu;
 			menus_displayed.push(infomenu);
-			infoloop: while(1) {
+			infoloop: while(bbs.online) {
 				key=infomenu.getval();
 				switch(key) {
 					case ctrl('O'): /* CTRL-O - Pause */
@@ -760,7 +760,7 @@ while(1) {
 					case 'U':
 						var userlists=new Userlists;
 						menus_displayed.push(userlists);
-						userlistloop: while(1) {
+						userlistloop: while(bbs.online) {
 							key=userlists.getval();
 							switch(key) {
 								case ctrl('O'): /* CTRL-O - Pause */
@@ -900,7 +900,7 @@ function show_filemenu()
 	var cur=1;
 	var nd=false;
 	bbs.node_action=NODE_XFER;
-	while(1) {
+	while(bbs.online) {
 		var filemenu=new Filemenu();
 		var ret;
 		var i;
@@ -943,7 +943,7 @@ function show_filemenu()
 				changedir: do {
 					if(!file_area.lib_list.length)
 						break changedir;
-					while(1) {
+					while(bbs.online) {
 						var orig_lib=bbs.curlib;
 						i=0;
 						j=0;
@@ -1021,7 +1021,7 @@ function show_filemenu()
 			case 'N':
 				var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, true);
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1084,7 +1084,7 @@ function show_filemenu()
 			case 'F':
 				var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, false);
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1147,7 +1147,7 @@ function show_filemenu()
 			case 'T':
 				var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, false);
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1225,7 +1225,7 @@ function show_filemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1295,7 +1295,7 @@ function show_filemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1402,7 +1402,7 @@ function show_filemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1512,7 +1512,7 @@ function show_filemenu()
 				break;
 			case 'S':
 				var cur=1;
-				while(1) {
+				while(bbs.online) {
 					var typemenu=new Lightbar;
 					var width=28;
 					if(user.settings&USER_EXTDESC)
@@ -1619,7 +1619,7 @@ function show_messagemenu()
 				clear_screen();
 				if(!msg_area.grp_list.length)
 					break;
-				msgjump: while(1) {
+				msgjump: while(bbs.online) {
 					var orig_grp=bbs.curgrp;
 					var i=0;
 					var j=0;
@@ -1721,7 +1721,7 @@ function show_messagemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1809,7 +1809,7 @@ function show_messagemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -1884,7 +1884,7 @@ function show_messagemenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					var subonly;
 
 					ret=typemenu.getval();
@@ -1998,7 +1998,7 @@ function show_emailmenu()
 	emailmenu.current=cur;
 	menus_displayed.push(emailmenu);
 
-	while(1) {
+	while(bbs.online) {
 		var i;
 		var j;
 		var ret;
@@ -2052,7 +2052,7 @@ function show_emailmenu()
 				typemenu.timeout=100;
 				typemenu.callback=message_callback;
 				menus_displayed.push(typemenu);
-				while(1) {
+				while(bbs.online) {
 					ret=typemenu.getval();
 					switch(ret) {
 						case ctrl('O'): /* CTRL-O - Pause */
@@ -2161,7 +2161,7 @@ function show_chatmenu()
 	chatmenu.current=cur;
 	menus_displayed.push(chatmenu);
 
-	while(1) {
+	while(bbs.online) {
 		var i;
 		var j;
 		var ret;
@@ -2226,11 +2226,19 @@ function show_chatmenu()
 				break;
 			case 'R':
 				clear_screen();
-				write("\001n\001y\001hServer and channel: ");
-				str="irc.synchro.net 6667 #Synchronet";
-				str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
-				if(!console.aborted)
-					bbs.exec("?irc -a "+str);
+				{
+					var server = "irc.synchro.net 6667";
+					if(user.security.level >= 90 || user.security.exemptions&UFLAG_C) {
+						write("\001n\001y\001hIRC Server: ");
+						server=console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
+						if(console.aborted)
+							break;
+					}
+					write("\001n\001y\001hIRC Channel: ");
+					var channel=console.getstr("#Synchronet", 40, K_EDIT|K_LINE|K_AUTODEL);
+					if(!console.aborted)
+						bbs.exec("?irc -a " + server + " " + channel);
+				}
 				draw_main(true);
 				break;
 			case 'I':
@@ -2239,7 +2247,7 @@ function show_chatmenu()
 				draw_main(true);
 				break;
 			case 'S':
-				while(1) {
+				while(bbs.online) {
 					var typemenu=new Lightbar;
 					var width=24;
 					if(user.chat_settings&CHAT_SPLITP)
@@ -2304,7 +2312,7 @@ function show_settingsmenu()
 	var ret;
 
 	menus_displayed.push(settingsmenu);
-	while(1) {
+	while(bbs.online) {
 		ret=settingsmenu.getval();
 		switch(ret) {
 			case ctrl('O'): /* CTRL-O - Pause */
