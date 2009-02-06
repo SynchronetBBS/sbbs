@@ -1098,7 +1098,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_F(6);	/* paste */
 					break;
-				case CIO_KEY_ABORT:
+				case CIO_KEY_ABORTED:
 					gotkey=ESC;
 					break;
 			}
@@ -2084,7 +2084,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						j--;
 					}
 					continue;
-				case CIO_KEY_ABORT:
+				case CIO_KEY_ABORTED:
 				case CTRL_C:
 				case ESC:
 					{
