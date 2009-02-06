@@ -321,6 +321,9 @@ int xpd_rwrite(const char *data, int data_len)
 {
 	struct text_info	ti;
 
+	if(data_len == -1)
+		data_len=strlen(data);
+
 	/* Set up cterm to match conio */
 	gettextinfo(&ti);
 	cterm.x=ti.winleft+ti.curx-1;
