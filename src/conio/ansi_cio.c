@@ -217,8 +217,13 @@ static void ansi_sendch(char ch)
 		ciolib_ansi_writebyte_cb(0);
 	ciolib_ansi_writebyte_cb((unsigned char)ch);
 	/* We sent a control char... better make the next movement explicit */
-	if(ch<' ' && ch > 0)
-		force_move=1;
+	if(ch<' ' && ch > 0) {
+		if(doorway_enabled) {
+			/* In doorway mode, some chars may want to force movement... */
+		}
+		else
+			force_move=1;
+	}
 }
 
 static void ansi_sendstr(char *str,int len)
