@@ -568,6 +568,7 @@ long sbbs_t::js_execfile(const char *cmd)
 	JSScript*	js_script=NULL;
 	jsval		rval;
 	int32		result=0;
+	BOOL		auto_terminate = js_branch.auto_terminate;
 	
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
@@ -659,6 +660,9 @@ long sbbs_t::js_execfile(const char *cmd)
 	if(rval!=JSVAL_VOID)
 		JS_ValueToInt32(js_cx,rval,&result);
 	JS_ENDREQUEST(js_cx);
+
+	// Restore saved auto_terminate state
+	js_branch.auto_terminate = auto_terminate;
 		
 	return(result);
 }
