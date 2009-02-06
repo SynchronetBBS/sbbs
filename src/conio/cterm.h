@@ -67,6 +67,7 @@ struct cterminal {
 	int music_enable;
 	char	musicbuf[1024];
 	int music;
+	int quiet;
 	int	tempo;
 	int	octave;
 	int notelen;
