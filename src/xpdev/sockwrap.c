@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -351,7 +351,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 		if((result=bind(s,addr,addrlen))==0)
 			break;
 		if(lprintf!=NULL)
-			lprintf(i<retries ? LOG_WARNING:LOG_ERR
+			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
 				,"%04d !ERROR %d binding %s socket%s", s, ERROR_VALUE, prot, port_str);
 		if(i<retries) {
 			if(lprintf!=NULL)
