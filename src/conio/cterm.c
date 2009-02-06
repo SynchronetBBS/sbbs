@@ -250,7 +250,7 @@ void play_music(void)
 	struct	note_params *np;
 	int		fore_count;
 
-	if(cterm.quiet)
+	if(cterm.quiet) {
 		cterm.music=0;
 		cterm.musicbuf[0]=0;
 		return;
