@@ -1,0 +1,8 @@
+XPDOOR	=	$(LIBODIR)$(DIRSEP)xpdoor$(LIBFILE)
+EXAMPLE	=	$(EXEODIR)$(DIRSEP)example$(EXEFILE)
+
+all: xpdev-mt ciolib-mt uifc-mt $(MTOBJODIR) $(LIBODIR) $(XPDOOR) $(EXEODIR) $(EXAMPLE)
+
+$(XPDOOR):	$(XPDEV-MT_LIB) $(CIOLIB-MT) $(UIFCLIB-MT)
+
+$(EXAMPLE):	$(XPDOOR)
