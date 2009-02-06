@@ -140,19 +140,35 @@ void xpd_parse_cmdline(int argc, char **argv)
 	int	i;
 
 	for(i=0; i<argc; i++) {
-		if(strncmp(argv[i],"--io-type=",10)) {
-			if(stricmp(argv[i]+10, "stdio"))
+		if(strncmp(argv[i],"--io-type=",10)==0) {
+			if(stricmp(argv[i]+10, "stdio")==0)
 				xpd_info.io_type=XPD_IO_STDIO;
-			else if(stricmp(argv[i]+10, "com"))
+			else if(stricmp(argv[i]+10, "com")==0)
 				xpd_info.io_type=XPD_IO_COM;
-			else if(stricmp(argv[i]+10, "socket"))
+			else if(stricmp(argv[i]+10, "socket")==0)
 				xpd_info.io_type=XPD_IO_SOCKET;
-			else if(stricmp(argv[i]+10, "telnet"))
+			else if(stricmp(argv[i]+10, "telnet")==0)
 				xpd_info.io_type=XPD_IO_TELNET;
-			else if(stricmp(argv[i]+10, "local"))
+			else if(stricmp(argv[i]+10, "local")==0)
 				xpd_info.io_type=XPD_IO_LOCAL;
 		}
+		else if(strncmp(argv[i],"--io-com=",9)==0) {
+			xpd_info.io_type=XPD_IO_COM;
+			xpd_info.io.com=atoi(argv[i]+9);
+		}
+		else if(strncmp(argv[i],"--io-socket=",12)==0) {
+			xpd_info.io_type=XPD_IO_SOCKET;
+			xpd_info.io.sock=atoi(argv[i]+12);
+		}
+		else if(strncmp(argv[i],"--drop-path=",12)==0) {
+			xpd_info.drop.path=strdup(argv[i]+12);
+		}
 	}
+}
+
+int xpd_exit()
+{
+	ansi_ciolib_setdoorway(0);
 }
 
 int xpd_init()
@@ -178,7 +194,7 @@ int xpd_init()
 
 #define GETBUF()	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing
 #define GETIBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; x = atoi(buf)
-#define GETSBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; x = strdup(buf)
+#define GETSBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; x = strdup(truncnl(buf))
 #define GETDBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; { \
 						int m,d,y; \
 						char *p; \
@@ -190,12 +206,24 @@ int xpd_init()
 								if(p) { \
 									y=strtol(buf,NULL,10); y+=(y<100?2000:1900); if(y > xpDateTime_now().date.year) y-=100; x = isoDate_create(y,m,d); \
 					}}}}
+#define GETTBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; { \
+						int h,m; \
+						char *p; \
+						p=strtok(buf,":"); \
+						if(p) { \
+							h=strtol(buf,NULL,10); p=strtok(NULL, ":"); \
+							if(p) { \
+								m=strtol(buf,NULL,10); x = isoTime_create(h,m,0); \
+					}}}
+#define GETBBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; if(buf[0]=='Y' || buf[0]=='y') x=TRUE
+#define GETCBUF(x)	if(fgets(buf,sizeof(buf),df)==NULL) goto done_parsing; x=buf[0]
 
 int xpd_parse_dropfile()
 {
 	FILE	*df=NULL;
 	char	*p;
 	char	buf[1024];
+	int		tmp;
 
 	if(xpd_info.drop.path==NULL)
 		goto error_return;
@@ -205,10 +233,10 @@ int xpd_parse_dropfile()
 	p=getfname(xpd_info.drop.path);
 	if(p==NULL)
 		goto error_return;
-	if(stricmp(p,"door.sys")) {
+	if(stricmp(p,"door.sys")==0) {
 		/* COM0:, COM1:, COM0:STDIO, COM0:SOCKET123 */
 		GETBUF();
-		if(strcmp(buf,"COM0:STDIO"==0)) {
+		if(strcmp(buf,"COM0:STDIO")==0) {
 			xpd_info.io_type=XPD_IO_STDIO;
 		}
 		else if(strncmp(buf,"COM0:SOCKET",11)==0) {
@@ -222,6 +250,7 @@ int xpd_parse_dropfile()
 		GETBUF();
 		GETBUF();
 		GETBUF();
+		GETBUF();
 		GETSBUF(xpd_info.drop.user.full_name);
 		GETSBUF(xpd_info.drop.user.location);
 		GETSBUF(xpd_info.drop.user.home_phone);
@@ -230,6 +259,46 @@ int xpd_parse_dropfile()
 		GETIBUF(xpd_info.drop.user.level);
 		GETIBUF(xpd_info.drop.user.times_on);
 		GETDBUF(xpd_info.drop.user.last_call_date);
+		GETIBUF(xpd_info.drop.user.seconds_remaining);
+		GETIBUF(tmp);
+		if(tmp*60 > xpd_info.drop.user.seconds_remaining)
+			xpd_info.drop.user.seconds_remaining = tmp*60;
+		xpd_info.end_time=time(NULL)+xpd_info.drop.user.seconds_remaining;
+		GETBUF();
+		if(strcmp(buf,"GR"))
+			xpd_info.drop.user.dflags |= XPD_ANSI_SUPPORTED|XPD_CP437_SUPPORTED;
+		else if(strcmp(buf,"NG"))
+			xpd_info.drop.user.dflags |= XPD_CP437_SUPPORTED;
+		GETIBUF(xpd_info.drop.user.rows);
+		GETBBUF(xpd_info.drop.user.expert);
+		GETDBUF(xpd_info.drop.user.expiration);
+		GETIBUF(xpd_info.drop.user.number);
+		GETCBUF(xpd_info.drop.user.protocol);
+		GETIBUF(xpd_info.drop.user.uploads);
+		GETIBUF(xpd_info.drop.user.downloads);
+		GETIBUF(xpd_info.drop.user.download_k_today);
+		GETIBUF(xpd_info.drop.user.max_download_k_today);
+		GETDBUF(xpd_info.drop.user.birthday);
+		GETSBUF(xpd_info.drop.sys.main_dir);
+		GETSBUF(xpd_info.drop.sys.gen_dir);
+		GETSBUF(xpd_info.drop.sys.sysop_name);
+		GETSBUF(xpd_info.drop.user.alias);
+		GETBUF();
+		GETBUF();
+		GETBUF();
+		GETBUF();
+		GETIBUF(xpd_info.drop.sys.default_attr);
+		GETBUF();
+		GETBUF();
+		GETTBUF(xpd_info.drop.user.call_time);
+		GETTBUF(xpd_info.drop.user.last_call_time);
+		GETIBUF(xpd_info.drop.user.max_files_per_day);
+		GETIBUF(xpd_info.drop.user.downloads_today);
+		GETIBUF(xpd_info.drop.user.total_upload_k);
+		GETIBUF(xpd_info.drop.user.total_download_k);
+		GETSBUF(xpd_info.drop.user.comment);
+		GETIBUF(xpd_info.drop.user.total_doors);
+		GETIBUF(xpd_info.drop.user.total_messages);
 	}
 
 error_return:
@@ -263,8 +332,8 @@ int xpd_rwrite(const char *data, int data_len)
 	ciolib_ansi_writebyte_cb=dummy_writebyte_cb;
 
 	/* Send data to cterm */
-	cterm_write(data, data_len, NULL, 0, NULL);
-	xpd_ansi_writestr_cb(data,data_len);
+	cterm_write((char *)data, data_len, NULL, 0, NULL);
+	xpd_ansi_writestr_cb((char *)data,data_len);
 
 	/* Re-enable ciolib */
 	ciolib_ansi_writebyte_cb=xpd_ansi_writebyte_cb;
