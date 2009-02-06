@@ -495,7 +495,7 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_cgets(char *str)
 				break;
 		}
 	}
-early_return;
+early_return:
 	str[len+2]=0;
 	*((unsigned char *)(str+1))=(unsigned char)len;
 	ciolib_putch('\r');
