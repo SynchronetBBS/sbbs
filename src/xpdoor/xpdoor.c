@@ -326,22 +326,25 @@ int xpd_rwrite(const char *data, int data_len)
 
 	/* Set up cterm to match conio */
 	gettextinfo(&ti);
-	cterm.x=ti.winleft+ti.curx-1;
-	cterm.y=ti.wintop+ti.cury-1;
+	cterm.xpos=ti.winleft+ti.curx-1;
+	cterm.ypos=ti.wintop+ti.cury-1;
 	cterm.attr=ti.attribute;
 	cterm.quiet=TRUE;
+	cterm.doorway_mode=TRUE;
 
 	/* Disable ciolib output for ANSI */
 	ciolib_ansi_writebyte_cb=dummy_writebyte_cb;
 
 	/* Send data to cterm */
 	cterm_write((char *)data, data_len, NULL, 0, NULL);
+
+	/* Send data to remote */
 	xpd_ansi_writestr_cb((char *)data,data_len);
 
-	/* Re-enable ciolib */
-	ciolib_ansi_writebyte_cb=xpd_ansi_writebyte_cb;
-
 	/* Set conio to match cterm */
-	gotoxy(cterm.x-ti.winleft+1, cterm.y-ti.winright+1);
+	gotoxy(cterm.xpos-ti.winleft+1, cterm.ypos-ti.winright+1);
 	textattr(cterm.attr);
+
+	/* Re-enable ciolib output */
+	ciolib_ansi_writebyte_cb=xpd_ansi_writebyte_cb;
 }
