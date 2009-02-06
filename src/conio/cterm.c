@@ -1325,7 +1325,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 	if(retbuf!=NULL)
 		retbuf[0]=0;
 	gettextinfo(&ti);
-	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winleft != cterm.y+cterm.height-1)
+	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winbottom != cterm.y+cterm.height-1)
 		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
 	gotoxy(cterm.xpos,cterm.ypos);
 	textattr(cterm.attr);
