@@ -10,6 +10,7 @@
 #include <dirwrap.h>
 
 struct xpd_info		xpd_info;
+static BOOL raw_write=FALSE;
 
 static int xpd_ansi_readbyte_cb(void)
 {
@@ -54,6 +55,11 @@ static int xpd_ansi_readbyte_cb(void)
 			}
 	}
 	return(-2);
+}
+
+static int dummy_writebyte_cb(unsigned char ch)
+{
+	return(ch);
 }
 
 static int xpd_ansi_writebyte_cb(unsigned char ch)
@@ -245,14 +251,24 @@ done_parsing:
 int xpd_rwrite(const char *data, int data_len)
 {
 	struct text_info	ti;
+
 	/* Set up cterm to match conio */
 	gettextinfo(&ti);
 	cterm.x=ti.winleft+ti.curx-1;
 	cterm.y=ti.wintop+ti.cury-1;
 	cterm.attr=ti.attribute;
 	cterm.quiet=TRUE;
+
+	/* Disable ciolib output for ANSI */
+	ciolib_ansi_writebyte_cb=dummy_writebyte_cb;
+
 	/* Send data to cterm */
 	cterm_write(data, data_len, NULL, 0, NULL);
+	xpd_ansi_writestr_cb(data,data_len);
+
+	/* Re-enable ciolib */
+	ciolib_ansi_writebyte_cb=xpd_ansi_writebyte_cb;
+
 	/* Set conio to match cterm */
 	gotoxy(cterm.x-ti.winleft+1, cterm.y-ti.winright+1);
 	textattr(cterm.attr);
