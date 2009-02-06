@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 	getch();
 
 	xpd_rwrite("\x1b[2J\x1b[1;1H\x1b[32mTest\r\n", -1);
-	
+
 	cputs("\r\nPress <ENTER> for an ASCII table: ");
 	getch();
 	clrscr();
@@ -25,12 +25,19 @@ int main(int argc, char **argv)
 	for(i=0; i<256; i++) {
 		textattr(8);
 		cprintf("%02x:",i);
+#if 0
 		buf[0]=i;
 		buf[1]=7;
 		x=wherex();
 		y=wherey();
 		putch(' ');
 		puttext(x,y,x,y,buf);
+#else
+		textattr(7);
+		buf[0]=0;
+		buf[1]=i;
+		xpd_rwrite(buf,2);
+#endif
 		putch(' ');
 	}
 	textattr(7);
