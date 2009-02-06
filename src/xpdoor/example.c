@@ -2,6 +2,9 @@
 
 int main(int argc, char **argv)
 {
+	int		i,x,y;
+	char	buf[2];
+
 	xpd_init();
 	xpd_parse_cmdline(argc, argv);
 	xpd_parse_dropfile();
@@ -15,6 +18,23 @@ int main(int argc, char **argv)
 
 	xpd_rwrite("\x1b[2J\x1b[1;1H\x1b[32mTest\r\n", -1);
 	
+	cputs("\r\nPress <ENTER> for an ASCII table: ");
+	getch();
+	clrscr();
+	gotoxy(1,1);
+	for(i=0; i<256; i++) {
+		textattr(8);
+		cprintf("%02x:",i);
+		buf[0]=i;
+		buf[1]=7;
+		x=wherex();
+		y=wherey();
+		putch(' ');
+		puttext(x,y,x,y,buf);
+		putch(' ');
+	}
+	textattr(7);
+
 	cputs("\r\nPress <ENTER> to exit: ");
 	getch();
 	cputs("\r\n");
