@@ -17,7 +17,8 @@
 # SBBSUSER = Owner for the installed files
 # SBBSGROUP = Group for the installed files
 # NOCVS	= do not do CVS update
-# JSLIB = Full path and filename to JavaScript library.
+# JSLIB = Library name of JavaScript library.
+# JSLIBDIR = Full path to JavaScript library
 # CVSTAG = CVS tag to pull
 # NO_X = Don't include build conio library (ciolib) for X
 # NO_GLADE = Don't build Glade-based sysop tools
@@ -84,6 +85,10 @@ BUILDPATH	?=	$(BUILD)
 
 ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
+endif
+
+ifdef JSLIBDIR
+ MKFLAGS	+=	JSLIBDIR=$(JSLIBDIR)
 endif
 
 ifdef NO_X
