@@ -19,6 +19,11 @@
 # NOCVS	= do not do CVS update
 # JSLIB = Library name of JavaScript library.
 # JSLIBDIR = Full path to JavaScript library
+# CRYPTLIBINCLUDE = Path to cryptlib header file(s)
+# CRYPTLIBDIR = Path to libcl.*
+# NSPRDIR = Path to nspr4 library
+# NSPRINCLUDE = Path to NSPR header files
+# SDL_CONFIG = Path to sdl-config program
 # CVSTAG = CVS tag to pull
 # NO_X = Don't include build conio library (ciolib) for X
 # NO_GLADE = Don't build Glade-based sysop tools
@@ -89,6 +94,26 @@ endif
 
 ifdef JSLIBDIR
  MKFLAGS	+=	JSLIBDIR=$(JSLIBDIR)
+endif
+
+ifdef CRYPTLIBINCLUDE
+ MKFLAGS	+=	CRYPTLIBINCLUDE=$(CRYPTLIBINCLUDE)
+endif
+
+ifdef CRYPTLIBDIR
+ MKFLAGS	+=	CRYPTLIBDIR=$(CRYPTLIBDIR)
+endif
+
+ifdef NSPRDIR
+ MKFLAGS	+=	NSPRDIR=$(NSPRDIR)
+endif
+
+ifdef NSPRINCLUDE
+ MKFLAGS	+=	NSPRINCLUDE=$(NSPRINCLUDE)
+endif
+
+ifdef SDL_CONFIG
+ MKFLAGS	+=	SDL_CONFIG=$(SDL_CONFIG)
 endif
 
 ifdef NO_X
