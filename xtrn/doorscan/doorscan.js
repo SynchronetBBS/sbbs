@@ -76,6 +76,7 @@ function Display_ASCII(filename)
 			break;
 		console.write(txt);
 	}
+	f.close();
 	return(true);
 }
 
@@ -203,6 +204,7 @@ function Display_LORD(filename)
 			}
 		}
 	}
+	f.close();
 	if(out.length)
 		console.write(out);
 	return(true);
