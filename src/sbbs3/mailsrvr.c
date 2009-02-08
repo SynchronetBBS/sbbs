@@ -243,7 +243,7 @@ int mail_close_socket(SOCKET sock)
 	sockets--;
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf(LOG_ERR,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
+			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
 	}
 #if 0 /*def _DEBUG */
 	else 

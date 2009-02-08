@@ -230,7 +230,7 @@ int close_socket(SOCKET sock)
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
-		lprintf(LOG_ERR,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
+		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
 }
 
@@ -3512,7 +3512,7 @@ void sbbs_t::hangup(void)
 {
 	if(online) {
 		lprintf(LOG_DEBUG,"Node %d disconnecting client", cfg.node_num);
-		online=FALSE;	// moved from the bottom of this fucntion on Jan-25-2009
+		online=FALSE;	// moved from the bottom of this function on Jan-25-2009
 	}
 	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
 		closesocket(client_socket_dup);
