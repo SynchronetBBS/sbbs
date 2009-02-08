@@ -134,6 +134,6 @@ int xpd_rwrite(const char *data, int data_len);
 /*
  * Enables doorway mode
  */
-void xpd_doorway(int enable)
+void xpd_doorway(int enable);
 
 #endif
