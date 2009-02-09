@@ -695,6 +695,8 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_textmode(int mode)
 		lastmode=cio_textinfo.currmode;
 	}
 	else {
+		if(mode==64)
+			mode=C80X50;
 		lastmode=cio_textinfo.currmode;
 		cio_api.textmode(mode);
 	}
