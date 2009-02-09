@@ -1,0 +1,36 @@
+   In this directory are some examples of VIDEO HANDLING FUNCTIONS. Some of
+ them you can compile and use as programming utilities.
+   The demo example/program is located at DEMO\ subdirectory in CRT2_1.ZIP
+ main subdirectory.
+
+* * * IMPORTANT:
+   If the screen becomes unreadable or very strange after running some of
+ these examples, use VOLTA.COM to recover the screen. VOLTA selects
+ text mode 3, thus recovering the screen defaults.
+   It's recommended to write down this name (VOLTA) in some piece of paper or
+ somewhere else for cases of emergency.
+
+Example of enhanced VIDEO HANDLING FUNCTIONS:
+   In the subdirectory PLUS\ inside this subdirectory you will find a example
+ that uses a enhanced version of mkline and crtframe - in fact crtframe is the
+ same, but crtframe_mat is enhanced by the example - that enables drawing menu
+ boxes with triple and quadruple outlines. To enable this a bitmapped font
+ was created (DOSFONT\LINEDRW2.FNT)
+   The example file is PLUS.CPP.  XMLINE.C and CRTFONT.C  aren't different
+ examples, they are just required by PLUS.CPP.
+   PLUS.CPP has in it's first lines a comment explaining how to compile it.
+   You may try also to use these enhanced versions of mkline and crtframe in
+ your own programs, to do so, include XMKLINE.C, and some lines from PLUS.CPP
+ in your example. You may also include CRTFONT.C in your program.
+   Sure it worths seeing this example.
+
+   CRTFONT.C provides functions for reading and selecting a font stored in a
+ file. I plan to include it in the VIDEO HANDLING FUNCTIONS main libraries
+ in the next version.
+
+WARNING:
+   If you are running these examples under a MS-Windows MS-DOS prompt, be sure
+ that the MS-DOS prompt is running in full screen mode, because some of the
+ functions used by the examples may not be effective in a MS-DOS window.
+
+   Many examples here requires at least an EGA video adapter or better (VGA)

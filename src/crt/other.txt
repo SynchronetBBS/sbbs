@@ -1,0 +1,23 @@
+   If CRT2_1.ZIP is not enough to you, you may try the following libraries
+ related to C/C++ programming and Textual User Interface (TUI) (written
+ by others):
+ At Simtelnet MS-DOS collection:
+   - BESTL232.ZIP  => 360 freeware functions for C/C++
+   - JPT40K_S.ZIP  => Recommended: C/C++ Free TUI Lib (source code)
+   - JPTUI4KB.ZIP  => Recommended: C/C++ Free TUI Lib (for Borland 4/5)
+   - JPTUI4KD.ZIP  => Recommended: C/C++ Free TUI Lib (for DJGPP)
+   - SW16.ZIP
+   - EOUE1097.ZIP  => Handles Japanese fonts in any VGA video adapter
+   - CONSL11.ZIP
+   - SVGLIB10.ZIP
+   - STEPH1D0.ZIP
+   - OBJEAS3A/OBJEAS3B => Shareware Graphics/Textual User Interface
+
+ At other Internet Sites:
+    Try to find something in CUG (C users group), probably there you will
+ find much more.
+    Other hot sites are Borland(nowadays Inprise) site, Microsoft site, and
+ DJGPP site.
+
+ The list above lists very few libraries for C/C++. But if you know where
+ can be find more, please contact me.

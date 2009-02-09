@@ -1,0 +1,58 @@
+CONVERTING THE ON-LINE HELP TO OTHER HELP FORMATS:
+
+ To convert VIDEOHLP.TXT to the desired help format, you will need first to
+ convert it to .HDF format. The created .HDF file can be further converted
+ to many different help formats. To get a better result, unhighlight the
+ highlighted lines of VIDEOHLP.TXT with UNHIGH.EXE
+
+ To unhighlight highlighted lines of VIDEOHLP.TXT
+   Simple enter at the command line: UNHIGH
+
+   UNHIGH will replace every occurrence of '%' character at the begin of each
+   row in VIDEOHLP.TXT by a blank space in VIDEOHLP.TMP, unhighlightting
+   highlighted text.
+
+   VIDEOHLP.TMP is a copy of VIDEOHLP.TXT, but without any highlighted lines.
+   Note that VIDEOHLP.TMP is still in HelpPC format.
+
+ To convert VIDEOHLP.TMP (or VIDEOHLP.TXT) to .HDF format do the following:
+     - Create a subdirectory and change to that subdirectory.
+     - Copy VIDEOHLP.TMP (or VIDEOHLP.TXT) to the subdirectory created.
+     - Download the file HPCHDK10.ZIP or better from SimtelNet MS-DOS
+       collection, unzip this file to the directory created.
+     - Type:
+         HPC2HDK VIDEOHLP.TMP (or HPC2HDK VIDEOHLP.TXT)
+
+   This will create VIDEOHLP.HDF and HELPPC.HDF.
+      HELPPC.HDF is the main index help file that has a link to VIDEOHLP.HDF
+      you may remove it, as it is not necessary.
+      VIDEOHLP.HDF is the VIDEO HANDLING FUNCTIONS On-line help in HDF format
+
+ To convert VIDEOHLP.HDF to the desired format do the following:
+     - Download HelpDK archive A (file: HDK115A.ZIP) also available at
+       SimtelNet MS-DOS collection.
+     - unzip it to a directory.
+     - Use HELPC to convert VIDEOHLP.HDF to the desired format.
+
+      HELPC supports the following help formats:
+
+    DOS(Paradox)                 DOS(Mem)                   Winhelp
+    Turbo IDE's Help (THELP)     QuickHelp                  TVHC
+    PopHelp                      DESQview                   IPF OS2
+    .TXT (plain text)           .RTF (Rich Text Format)     MultiMedia-Viewer
+    WWW HTML
+
+ Many target help formats are help sources, so for some formats you
+ will need also the specific compiler.
+
+ Probably you will have to edit VIDEOHLP.HDF or the target help sources
+ to have a better result.
+
+ HelpDK is a shareware program composed by the following archives:
+   HDK115A.ZIP, HDK115B.ZIP, HDK115L.ZIP
+
+ SimtelNet site is:
+   http://www.simtel.net/
+
+ To find the ZIP files above, click on search MSDOS-INDEX utility at SimtelNet
+ main page.

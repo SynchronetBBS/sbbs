@@ -1,0 +1,131 @@
+EXTRAIA ver 2.0b
+
+EXTRAIA.EXE is a simple program that is used to ungroup text files (such as
+source codes of programs in C and C++ or any other text files) grouped in one
+.SRC large archive, created by hand or by MONTA utility.
+ It's usage is:
+
+    EXTRAIA filename[.SRC] [/B]       where:
+
+    filename     pathname of archive
+    /B           extracts archives with binary file tags.
+
+The .SRC extension is optional. However if you don't specify the filename
+extension EXTRAIA will assume it to be .SRC
+
+The .SRC archive is usually a fully ASCII file where each stored file starts
+in the immediate line after the file opening tag and ends in the preceding
+line of a file closing tag. To be effective these tags must be at the
+beginning of the line (excluding the first line, which is reserved for comments,
+title, etc). The remaining space on the line after the file opentag is also
+reserved for comments.
+
+EXTRAIA.EXE allows nested archives, which means that a EXTRAIA/MONTA archive
+can also stores other archives without misusing the end of a stored archive.
+
+File tags:
+
+The file opening tag (file opentag) is in the format of:
+ //<FILE="filename">
+
+The file closing tag (file closetag) is in the format of:
+ //</FILE>
+
+THE /B option
+   The /B option has been provided to allow compatibility with older versions,
+such as the .SRC archives that comes with CRT1_6s.ZIP. This option instructs
+EXTRAIA to seek for binary file opentag and file closetag in the archive
+instead of normal ASCII TAGS. The earlier versions recognized only these
+binary file tags because they are much smaller and easier to handle by
+computer. Although they are smaller, it's not advisable to use these tags
+because most text editor's can't handle them very well (I mean, even though
+they cause no problem to the editor, it's hard to write them in hand (you
+might need a binary editor to do so) and most Windows based editors can't
+display them correctly). They are:
+
+Binary opentag => //filename
+Binary closetag => //
+
+   EXTRAIA doesn't recognize binary tags and normal ASCII tags simultaneously.
+So when /B option is on, normal ASCII tags are considered as comments.
+
+NOTICE: EXTRAIA doesn't recognize any file tag on the first line or in the
+middle of any line because a file tag is actually composed of a
+carriage-return/newline pair plus the tag as shown above. This is valid
+for ASCII tags and binary tags.
+
+A VERY SIMPLE EXAMPLE
+   This is a very simple example of a .SRC archive. To test it you may use
+EXTRAIA with this file or simply copy the lines below. REMEMBER, the file
+opentag mustn't be on the first line. The file created will by DUMMY.FIL
+//<FILE="DUMMY.FIL">
+   HELLO WORLD!
+//</FILE>
+
+A VERY IMPORTANT EXAMPLE
+   This example shows the results of misusing file tags and other EXTRAIA
+features not listed above.
+   Copy the lines below the dashed line and save it as a new filename, then
+try EXTRAIA on it.
+--------------------------------Example----------------------------------------
+The first line is reserved for comments. If any tag is located on this line it will be ignored
+
+The first file:
+//<FILE="EXAMPLE1.TXT" Comments
+Comments> The comments ends in the line with a '>' character if the tag is an ASCII tag.
+This is the first example file. Run EXTRAIA again to check the nesting
+capabilities of EXTRAIA. EXAMPLE2.TXT, NULL.TXT and EXAMPLE3.TXT will be
+extracted
+//<FILE="example2.txt">
+Example 2
+//</FILE>
+  ways the tags doesn't work:
+	//<FILE="ERROR1.TXT">
+	 The file tags mustn't be in the first line or in the middle of a line
+	//</FILE>
+//<File="ErroR2.Txt">
+The file tags must be in capital letters, but EXTRAIA is not case sensitive
+with filenames.
+//</File>
+
+   If there's only one line between file opentag and file closetag, only the
+contents of the line will be saved. If the line is empty the file
+created will be zero in size (NULL.TXT).
+
+//<FILE="NULL.TXT">This file is a empty file
+
+//</FILE>
+//<FILE="EXAMPLE3.TXT">
+   A file open tag can be in the immediate line after a file close tag,
+but they can't be in the same line.
+   This is not true in the opposite case. Between a file open tag and a file
+close tag there must be at least one line.
+//</FILE>
+//</FILE> end of example1.txt
+
+
+COPYRIGHT:
+   These programs (MONTA.EXE, EXTRAIA.EXE and their source code) are
+freeware, that means you can use it and distribute it free of charges,
+but do not distribute modified versions, unless you explicitly
+warns the user the changes you've done. You can also use the ideas used
+in this program (they are on public domain).
+   I'm not responsible for any problem the misuse of this program causes in
+your system, so in no situation I will compensate any harm or damage caused
+by the misuse of this program OR any resulting from any ERROR this program
+might have.
+
+   In the case of any doubts, complains, suggestions, or mistakes found,
+please reply to (preferably) jlfialho@iconet.com.br OR (alternate e-mail)
+jlfialho@yahoo.com
+
+   I would be glad to receive (via e-mail) any improved version of this program
+you might create as any comments or suggestions about the program. Complains are
+also welcome.
+
+For further information read MONTA.TXT or e-mail me.
+
+By M rcio Afonso Arimura Fialho
+
+http://pessoal.iconet.com.br/jlfialho
+E-mail: jlfialho@iconet.com.br OR (only in the case the first one doesn't work): jlfialho@yahoo.com

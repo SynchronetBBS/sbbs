@@ -1,0 +1,5518 @@
+@VIDEO HANDLING FUNCTIONS ver 2.1 INDEX
+
+:Introduction:!!!INTRODUCTION
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İVideo Handling Functions Ş          <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß                            ver 2.1
+
+    The header file <CRT.H> declares a group of functions that can access
+  the screen either directly to video RAM or via BIOS calls, being really
+  fast (when they use RAM access) and small (all them together takes only
+  6.5k in small memory model).
+    Access via BIOS is provided to allow them to work in any IBM compatible
+  video adapter and also in graphics mode.
+    They are available in "compact", "small", "medium", "large" and "huge"
+  memory models.
+
+% Contents:
+    ~CRT Functions~
+    ~Functions~
+    ~Macro Functions~
+    ~Global Variables~
+    ~Data types~
+    ~Declarations~ of Functions, Macros, Global Variables,...
+    ~CRT.H~ header file help
+    ~Appendix A~ => Portability
+    ~Appendix B~ => Colors
+
+:CRT Functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İVideo Handling Functions Routines, by CategoryŞ          <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+ This Help screen is a categorical list of functions and macro functions
+ in the Video Handling Functions library.
+
+ If you know the name of the function, choose this Help link:
+
+   Video Handling Functions, by Name => ~CRT.H~
+
+ If you don't know the exact name of the function, but you know the type of
+ action it performs, choose a category from this list:
+
+ ~Character handling functions~
+ ~String handling functions~
+ ~Screen/text window background functions~
+ ~Text window/box functions~
+ ~Screen/text window save/restore functions~
+ ~Video standard/miscellaneous functions~
+ ~Palette functions~
+ ~Character pattern functions~ => Enable to change the font on screen.
+
+% See Also:
+    ~Functions~    ~Macro Functions~   ~Declarations~ of functions
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+
+:Character handling functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İCharacter handling functionsŞ       <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions writes or reads characters on/from screen.
+
+    ş ~getcrtchar~      Gets the character from screen position (x,y).
+    ş ~getcrtcolor~     Gets the color from screen position (x,y).
+    ş ~biosprintc~      Sends a character into screen at position (x,y) via
+                      BIOS.
+    ş ~printcn~         Sends a character at position (x,y) with no color.
+    ş ~printc~          Sends a character to screen with a color.
+    ş ~changecolor~     Changes the color from (x,y) position on screen.
+    ş ~printct~         Changes the character and/or color or keeps old
+                      character and/or color of (x,y) position according to
+                      a user given parameter.
+
+:String handling functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İString handling functionsŞ       <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions writes strings on screen or a text window (defined by
+ crtwin_dta).
+
+    ş ~printsn~         Writes a string at position (x,y) with no color.
+    ş ~prints~          Writes a string at position (x,y) with color.
+    ş ~printxy~         Writes a string on screen in any direction, with color.
+    ş ~printx~          Outputs a string with special text format instructions.
+                      Writes the string with color.
+    ş ~printtext~       Writes a string inside current box at position(x,y),
+                      continuing in the next line if text doesn't fit in one.
+                      Writes string with color.
+    ş ~printsj~         Justified writes a string inside the current text box.
+                      Writes string with color.
+    ş ~printsjc~        Enhanced printsj with special text color instructions.
+    ş ~printsnf~        Sends formatted output to screen using printsn.
+    ş ~printsf~         Sends formatted output to screen using prints.
+    ş ~printxyf~        Sends formatted output to screen using printxy.
+    ş ~printxf~         Sends formatted output to screen using printx.
+    ş ~printtextf~      Sends formatted output to screen using printtext.
+    ş ~printsjf~        Sends formatted output to screen using printsj.
+    ş ~printsjcf~       Sends formatted output to screen using printsjc.
+
+:Screen/text window background functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İScreen/text window background functionsŞ       <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions fills the screen or a text window with a specific color or
+ character.
+
+    ş ~crt_clrscr~      Clears the screen.
+    ş ~fillscr~         Fills the screen with a character and a color.
+    ş ~barcolor~        Replaces the color of a text window.
+    ş ~fillbar~         Fills a text window with a character and a color.
+    ş ~fillbarw~        Fills a text window given by crtwin_dta with a
+                      character and a color.
+    ş ~fillbox~         Replaces the characters and/or colors or keeps old
+                      characters and/or colors of a text window according to a
+                      user given parameter.
+    ş ~fillboxw~        Same as fillbox, but text window coordinates are given
+                      by crtwin_dta.
+
+
+:text window/box functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İtext window/box functionsŞ          <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions draws text boxes on screen.
+
+    ş ~crtframe~        Draws a colored text frame (single line, double line,
+                      ...) (frame is a text box outline)
+    ş ~crtframew~       Draws a colored text frame with coordinates given by
+                      crtwin_dta with single outline, double outline,...
+    ş ~mkline_aux~      It's mkline's character replacement algorithm.
+    ş ~mkline~          Draws frame lines replacing frame line intersections
+                      by corresponding characters automatically.
+    ş ~crtwindow~       Draws a text box with border and title.
+
+ Related Macros:
+    ş crtframe function:
+       ş ~moldura~      Draws a text frame with single outline (type = 0).
+       ş ~moldurad~     Draws a text frame with double outline (type = 1).
+
+    ş crtframew function: (text frame coordinates given by crtwin_dta)
+       ş ~molduraw~     Draws a text frame with single outline (type = 0).
+       ş ~molduradw~    Draws a text frame with double outline (type = 1).
+
+
+    ş mkline function:
+       ş ~linha_hor~    Draws a horizontal line with single outline.
+       ş ~linha_ver~    Draws a vertical line with single outline.
+       ş ~linhad_hor~   Draws a horizontal line with double outline.
+       ş ~linhad_ver~   Draws a vertical line with double outline.
+
+    ş crtwindow function:
+       ş ~janela~       Draws a text box with single outline.
+       ş ~janelad~      Draws a text box with double outline.
+
+ This macro controls the coordinates of the CRT.H standard text window
+    ş ~setcrtwin~       Defines active text box used by many functions.
+                      Changes crtwin_dta global variable.
+
+ For background color and character of a text window, see
+ ~Screen/text window background functions~
+
+:Screen/text window save/restore functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İScreen/text window save/restore functionsŞ       <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions reads or writes the contents (characters or colors or both)
+ from/onto the screen/text window.
+
+    ş ~savevideo~       Saves the screen contents into a buffer.
+    ş ~restorevideo~    Writes a drawing saved in a buffer into screen.
+    ş ~savevideowin~    Saves a text window into a buffer.
+    ş ~restorevideowin~ Writes a drawing saved in a buffer into a text window
+    ş ~savevideow~      Saves a text window given by crtwin_dta into a buffer.
+    ş ~restorevideow~   Writes a drawing saved in a buffer into a text window
+                      given by crtwin_dta.
+    ş ~savecrt~*        Saves the screen contents into a buffer with mode.
+    ş ~restorecrt~*     Writes a drawing saved in a buffer into screen with
+                      mode.
+    ş ~savecrtwin~*     Saves a text window into a buffer with mode.
+    ş ~restorecrtwin~*  Writes a drawing saved in a buffer into a text window
+                      with mode.
+    ş ~savecrtw~*       Saves a text window given by crtwin_dta into a buffer
+                      with mode.
+    ş ~restorecrtw~*    Writes a drawing saved in a buffer into a text window
+                      given by crtwin_dta with mode.
+
+  * To use them is needed to be defined a macro before including CRT.H, see
+  ~CRT_FULL~
+
+% Remark:
+
+    ş savevideo       is a macro when defined ~CRT_FULL~ or ~SAVECRTú~
+    ş restorevideo    is a macro when defined CRT_FULL or ~RESTORECRTú~
+    ş savevideowin    is a macro when defined CRT_FULL or ~SAVECRTWINú~
+    ş restorevideowin is a macro when defined CRT_FULL or ~RESTORECRTWINú~
+    ş savevideow      is a macro when defined CRT_FULL or ~SAVECRTWINú~
+    ş restorevideow   is a macro when defined CRT_FULL or ~RESTORECRTWINú~
+
+
+:Video standard/miscellaneous functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İVideo standard/miscellaneous functionsŞ       <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ Some of the functions below initializes VIDEO HANDLING FUNCTIONS global
+ variables, other are standard functions provided by most video BIOSes.
+
+    ş ~crt_detect~      Detects current video mode, active display page,
+                      number of columns, rows, current page start address,...
+    ş ~crt_init~        Calls crt_detect and updates crtwin_dta coordinates
+                      to full screen and crtwin_just to CENTER_TEXT.
+    ş ~videomode~       Selects the number of columns and rows, via an input
+                      argument. (Obsolete function, use crt_detect instead).
+    ş ~setcrtmode~      Changes current video mode, then call getcrtmode.
+    ş ~getcrtmode~      Gets current video mode, number of columns and current
+                      page.
+    ş ~setcrtpage~      Selects video display page.
+    ş ~crt_gotoxy~      Changes cursor position.
+    ş ~crt_getxy~       Gets cursor position.
+
+    ş ~setcursorsh~     Changes cursor shape.
+    ş ~getcursorsh~     Gets cursor current shape.
+
+
+:Palette functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İPalette functionsŞ                  <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßß
+
+ These functions performs operations with pallete on EGA or better video
+ adapters
+
+    ş ~setpalreg~       Sets a single palette register color (DAC register)
+    ş ~getpalreg~       Reads the color (DAC register) from a single palette
+                      register.
+    ş ~setbordercolor~  Sets the border(overscan) color (DAC register)
+    ş ~getbordercolor~  Reads the border (overscan) color (DAC register)
+    ş ~setdacreg~       Sets the rgb color of a DAC register.
+    ş ~getdacreg~       Reads the rgb color of a DAC register.
+    ş ~setdacpage~      Selects video DAC color page.
+    ş ~setdacpgmode~    Selects video DAC paging mode.
+    ş ~getdacpgstate~   Gets current video DAC color page and paging mode.
+    ş ~settextblink~    Toggles color/attribute intensity/blinking bit.
+
+:Character pattern functions
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İCharacter pattern functionsŞ        <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ These functions enables the character patterns on screen to be changed, or
+ controls font displayment.
+
+    ş ~changechar~      Replaces text mode character patterns with user
+                      specified patterns
+    ş ~changecharg~     Replaces graphics mode character patterns with user
+                      specified patterns
+    ş ~crtfontspec~     selects which character set blocks are displayed on
+                      screen.
+    ş ~setchrboxwidth~  Changes the character box width in VGA or better
+                      monitors.
+
+:Functions
+%FUNCTIONS:
+
+    ş ~crt_detect~      Detects current video mode, active display page,
+                      number of columns, rows, current page start address,...
+    ş ~crt_init~        Calls crt_detect and updates crtwin_dta coordinates
+                      to full screen and crtwin_just to CENTER_TEXT.
+    ş ~videomode~       Selects the number of columns and rows, via an input
+                      argument. (Obsolete function, use crt_detect instead).
+    ş ~setcrtmode~      Changes current video mode, then call getcrtmode.
+    ş ~getcrtmode~      Gets current video mode, number of columns and current
+                      page.
+    ş ~setcrtpage~      Selects video display page.
+    ş ~crt_gotoxy~      Changes cursor position.
+    ş ~crt_getxy~       Gets cursor position.
+    ş ~getcrtchar~      Gets the character from screen position (x,y).
+    ş ~getcrtcolor~     Gets the color from screen position (x,y).
+    ş ~biosprintc~      Sends a character into screen at position (x,y) via
+                      BIOS.
+    ş ~printcn~         Sends a character at position (x,y) with no color.
+    ş ~printc~          Sends a character to screen with a color.
+    ş ~changecolor~     Changes the color from (x,y) position on screen.
+    ş ~printct~         Changes the character and/or color or keeps old
+                      character and/or color of (x,y) position according to
+                      a user given parameter.
+    ş ~printsn~         Writes a string at position (x,y) with no color.
+    ş ~prints~          Writes a string at position (x,y) with color.
+    ş ~printxy~         Writes a string on screen in any direction, with color.
+    ş ~printx~          Outputs a string with special text format instructions.
+                      Writes the string with color.
+    ş ~printtext~       Writes a string inside current box at position(x,y),
+                      continuing in the next line if text doesn't fit in one.
+                      Writes string with color.
+    ş ~printsj~         Justified writes a string inside the current text box.
+                      Writes string with color.
+    ş ~printsjc~        Enhanced printsj with special text color instructions.
+    ş ~printsnf~        Sends formatted output to screen using printsn.
+    ş ~printsf~         Sends formatted output to screen using prints.
+    ş ~printxyf~        Sends formatted output to screen using printxy.
+    ş ~printxf~         Sends formatted output to screen using printx.
+    ş ~printtextf~      Sends formatted output to screen using printtext.
+    ş ~printsjf~        Sends formatted output to screen using printsj.
+    ş ~printsjcf~       Sends formatted output to screen using printsjc.
+
+    ş ~fillscr~         Fills the screen with a character and a color.
+    ş ~barcolor~        Replaces the color of a text window.
+    ş ~fillbar~         Fills a text window with a character and a color.
+    ş ~fillbarw~        Fills a text window given by crtwin_dta with a
+                      character and a color.
+    ş ~fillbox~         Replaces the characters and/or colors or keeps old
+                      characters and/or colors of a text window according to a
+                      user given parameter.
+    ş ~fillboxw~        Same as fillbox, but text window coordinates are given
+                      by crtwin_dta.
+    ş ~crtframe~        Draws a colored text frame (single line, double line,
+                      ...) (frame is a text box outline)
+    ş ~crtframew~       Draws a colored text frame with coordinates given by
+                      crtwin_dta with single outline, double outline,...
+    ş ~mkline_aux~      It's mkline's character replacement algorithm.
+    ş ~mkline~          Draws frame lines replacing frame line intersections
+                      by corresponding characters automatically.
+    ş ~crtwindow~       Draws a text box with border and title.
+    ş ~savevideo~       Saves the screen contents into a buffer.
+    ş ~restorevideo~    Writes a drawing saved in a buffer into screen.
+    ş ~savevideowin~    Saves a text window into a buffer.
+    ş ~restorevideowin~ Writes a drawing saved in a buffer into a text window
+    ş ~savevideow~      Saves a text window given by crtwin_dta into a buffer.
+    ş ~restorevideow~   Writes a drawing saved in a buffer into a text window
+                      given by crtwin_dta.
+    ş ~savecrt~*        Saves the screen contents into a buffer with mode.
+    ş ~restorecrt~*     Writes a drawing saved in a buffer into screen with
+                      mode.
+    ş ~savecrtwin~*     Saves a text window into a buffer with mode.
+    ş ~restorecrtwin~*  Writes a drawing saved in a buffer into a text window
+                      with mode.
+    ş ~savecrtw~*       Saves a text window given by crtwin_dta into a buffer
+                      with mode.
+    ş ~restorecrtw~*    Writes a drawing saved in a buffer into a text window
+                      given by crtwin_dta with mode.
+
+    ş ~crt_clrscr~      Clears the screen.
+    ş ~setcursorsh~     Changes cursor shape.
+    ş ~getcursorsh~     Gets cursor current shape.
+    ş ~setpalreg~       Sets a single palette register color (DAC register)
+    ş ~getpalreg~       Reads the color (DAC register) from a single palette
+                      register.
+    ş ~setbordercolor~  Sets the border(overscan) color (DAC register)
+    ş ~getbordercolor~  Reads the border (overscan) color (DAC register)
+    ş ~setdacreg~       Sets the rgb color of a DAC register.
+    ş ~getdacreg~       Reads the rgb color of a DAC register.
+    ş ~setdacpage~      Selects video DAC color page.
+    ş ~setdacpgmode~    Selects video DAC paging mode.
+    ş ~getdacpgstate~   Gets current video DAC color page and paging mode.
+    ş ~setchrboxwidth~  Changes the character box width in VGA or better
+                      monitors.
+    ş ~settextblink~    Toggles color/attribute intensity/blinking bit.
+    ş ~changechar~      Replaces text mode character patterns with user
+                      specified patterns
+    ş ~changecharg~     Replaces graphics mode character patterns with user
+                      specified patterns
+    ş ~crtfontspec~     selects which character set blocks are displayed on
+                      screen.
+
+  * To use them is needed to be defined a macro before including CRT.H, see
+  ~CRT_FULL~
+
+% See Also:
+    ~CRT Functions~, by category
+    ~Macro Functions~   ~Declarations~ of functions
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+:Macro Functions
+%MACRO FUNCTIONS:
+
+    ş ~crtframe~ function:
+       ş ~moldura~      Draws a text frame with single outline (type = 0).
+       ş ~moldurad~     Draws a text frame with double outline (type = 1).
+
+    ş ~crtframew~ function: (text frame coordinates given by crtwin_dta)
+       ş ~molduraw~     Draws a text frame with single outline (type = 0).
+       ş ~molduradw~    Draws a text frame with double outline (type = 1).
+
+
+    ş ~mkline~ function:
+       ş ~linha_hor~    Draws a horizontal line with single outline.
+       ş ~linha_ver~    Draws a vertical line with single outline.
+       ş ~linhad_hor~   Draws a horizontal line with double outline.
+       ş ~linhad_ver~   Draws a vertical line with double outline.
+
+    ş ~crtwindow~ function:
+       ş ~janela~       Draws a text box with single outline.
+       ş ~janelad~      Draws a text box with double outline.
+
+    ş ~setcrtwin~       Defines active text box used by many functions.
+                      Changes crtwin_dta global variable.
+
+    ş ~savevideo~       Is a macro when defined ~CRT_FULL~ or ~SAVECRTú~
+    ş ~restorevideo~    Is a macro when defined ~CRT_FULL~ or ~RESTORECRTú~
+    ş ~savevideowin~    Is a macro when defined ~CRT_FULL~ or ~SAVECRTWINú~
+    ş ~restorevideowin~ Is a macro when defined ~CRT_FULL~ or ~RESTORECRTWINú~
+    ş ~savevideow~      Is a macro when defined ~CRT_FULL~ or ~SAVECRTWINú~
+    ş ~restorevideow~   Is a macro when defined ~CRT_FULL~ or ~RESTORECRTWINú~
+
+% See Also:
+    ~CRT Functions~, by category
+    ~Functions~
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+:Global Variables
+%GLOBAL VARIABLES:
+
+    ş  ~vmode_x~    =>  tells the expected number of columns in current text
+                      mode.
+    ş  ~vmode_y~    =>  tells the expected number of rows in current text mode.
+    ş  ~vmode_mode~ =>  tells the expected video mode.
+    ş  ~crt_direct~ =>  determines if the screen access goes directly to video
+                      RAM (crt_direct==0) or via BIOS calls. (crt_direct!=0).
+                      (default == 0)
+    ş  ~crt_page~   =>  defines the text page that must be used by the
+                      functions when they use access via BIOS. (default == 0).
+    ş  ~video_addr~ =>  text mode video RAM base address. (Used when
+                      crt_direct=0) (default = B800:0000h).
+    ş  ~crt_EVGA_addr~ => determines EGA/VGA/SVGA adapter base port address.
+                            (default (primary) = 3C0h / alternate = 2C0h)
+
+    ş  ~crtframe_mat~  => array that holds the characters used by crtframe.
+    ş  ~mkline_mat~    => array that holds the characters used by mkline and
+                        mkline_aux.
+    ş  ~crtwin_just~   => defines if text outputted by printsj will be left
+                        justified, or center justified or right justified.
+    ş  ~crtwin_dta~    => a struct that defines the active text box or text
+                        window (that is used by printsj and crtwindow)
+                        coordinates. See (struct ~crtwin~) type.
+    ş  ~changechar_height~ => determines character pattern size (in bytes) and
+                            height (in bits). Used by changechar and
+                            changecharg.
+    ş  ~changechar_func~   => _AX value in call to changechar. determines if
+                            number of screen rows is recalculated or not.
+    ş  ~changechar_blk~    => block to load character patterns in map 2. used
+                            by changechar.
+
+  Remark: vmode_x and vmode_y can be changed to any value intending to obtain
+    interesting effects.
+       All variables above can be accessed by the programmer. However, there
+    are some global variables which are for exclusive and internal use of the
+    functions. They are: crtvar_p, vmode_lm and vmode_am (if I haven't
+    forgotten any)
+
+% See Also:
+    ~CRT Functions~, by category
+    ~Data Types~
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+:Data Types
+%DATA TYPES:
+
+    ş  ~crtwin~      => struct that holds a window or box coordinates.
+    ş  ~crtwin_inp~  => The structure of input arguments of crtwindow function.
+
+% See Also:
+    ~CRT Functions~, by category
+    ~Global Variables~
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+
+:Declarations
+%DECLARATION OF FUNCTIONS:
+
+ void ~crt_detect~   (int mode);
+ void ~crt_init~     (int mode);
+ void ~videomode~    (int newmode);
+ void ~setcrtmode~   (int mode);
+ int  ~getcrtmode~   (void);
+ void ~setcrtpage~   (int page);
+ void ~crt_gotoxy~   (int x,  int y);
+ int  ~crt_getxy~    (int *x, int *y);
+ int  ~getcrtchar~   (int x,  int y);
+ int  ~getcrtcolor~  (int x,  int y);
+ void ~biosprintc~   (int chr, int x, int y, int color, int func);
+ void ~printcn~      (int c, int x, int y);
+ void ~printc~       (int c, int x, int y, int color);
+ void ~changecolor~  (int x, int y, int color);
+ void ~printct~      (int c, int x, int y, int color, unsigned int type);
+ void ~printsn~      (char *s, int x, int y);
+ void ~prints~       (char *s, int x, int y, int color);
+ void ~printxy~      (char *s, int x, int y, int dx, int dy, int color);
+ void ~printx~       (char *s, int x, int y, int color);
+ int  ~printtext~    (char *s, int x, int y, int color);
+ void ~printsj~      (char *s, int y, int color);
+ void ~printsjc~     (char *s, int y, int color);
+ int  ~printsnf~     (int x, int y,                            char *fmt,... );
+ int  ~printsf~      (int x, int y,                 int color, char *fmt,... );
+ int  ~printxyf~     (int x, int y, int dx, int dy, int color, char *fmt,... );
+ int  ~printxf~      (int x, int y,                 int color, char *fmt,... );
+ int  ~printtextf~   (int x, int y, int color, char *fmt,... );
+ int  ~printsjf~     (int y, int color, char *fmt,... );
+ int  ~printsjcf~    (int y, int color, char *fmt,... );
+ void ~fillscr~   (int c, int color);
+ void ~barcolor~  (int xi, int yi, int xf, int yf, int color);
+ void ~fillbar~   (int c, int xi, int yi, int xf, int yf, int color);
+ void ~fillbarw~  (int c, int color);
+ void ~fillbox~   (int c, int xi, int yi, int xf, int yf, int color, int func);
+ void ~fillboxw~  (int c, int color, int func);
+ void ~crtframe~  (int xi, int yi, int xf, int yf, int color, unsigned type);
+ void ~crtframew~    (int color, unsigned int type);
+ void ~mkline_aux~   (int cnt, int var, unsigned mode, int pos, int color);
+ void ~mkline~       (int cnt, int bgn, int end, int color, unsigned mode);
+ void ~crtwindow~    (struct crtwin_inp p0);
+ char far *~savevideo~        (char far *s);
+ char far *~restorevideo~     (char far *s);
+ char far *~savevideowin~     (char far *s, int xi, int yi, int xf, int yf);
+ char far *~restorevideowin~  (char far *s, int xi, int yi, int xf, int yf);
+ char far *~savevideow~       (char far *s);
+ char far *~restorevideow~    (char far *s);
+ char far *~savecrt~          (char far *s, int mode);
+ char far *~restorecrt~       (char far *s, int mode);
+ char far *~savecrtwin~    (char far *s, int xi,int yi,int xf,int yf,int mode);
+ char far *~restorecrtwin~ (char far *s, int xi,int yi,int xf,int yf,int mode);
+ char far *~savecrtw~      (char far *s, int mode);
+ char far *~restorecrtw~   (char far *s, int mode);
+ void ~crt_clrscr~      (void);
+ void ~setcursorsh~     (unsigned shape);
+ int  ~getcursorsh~     (void);
+ int  ~getpalreg~       (int regpal);
+ void ~setpalreg~       (int regpal, int val);
+ int  ~getbordercolor~  (void);
+ void ~setbordercolor~  (int val);
+ void ~getdacreg~    (int dacreg, char *red, char *green, char *blue);
+ void ~setdacreg~    (int dacreg, char  red, char  green, char  blue);
+ void ~setdacpgmode~ (int pgmode);
+ void ~setdacpage~   (int page);
+ int  ~getdacpgstate~   (void);
+ void ~setchrboxwidth~  (int cmd);
+ void ~settextblink~    (int cmd);
+ void ~changechar~   (unsigned char *fmt, int ind, int qt);
+ void ~changecharg~  (unsigned char *fmt, int rows);
+ void ~crtfontspec~  (int blkspec);
+
+%DECLARATION OF MACROS:
+
+ void  ~moldura~  (int xi, int yi, int xf, int yf, int color);
+ void  ~moldurad~ (int xi, int yi, int xf, int yf, int color);
+ void  ~molduraw~    (int color);
+ void  ~molduradw~   (int color);
+ void  ~linha_hor~  (int y, int xi, int xf, int color);
+ void  ~linha_ver~  (int x, int yi, int yf, int color);
+ void  ~linhad_hor~ (int y, int xi, int xf, int color);
+ void  ~linhad_ver~ (int x, int yi, int yf, int color);
+ void  ~janela~   (struct crtwin_inp p0);
+ void  ~janelad~  (struct crtwin_inp p0);
+ void  ~setcrtwin~  (int xi, int yi, int xf, int yf);
+
+ char far *~savevideo~        (char far *s);
+ char far *~restorevideo~     (char far *s);
+ char far *~savevideowin~     (char far *s, int xi, int yi, int xf, int yf);
+ char far *~restorevideowin~  (char far *s, int xi, int yi, int xf, int yf);
+ char far *~savevideow~       (char far *s);
+ char far *~restorevideow~    (char far *s);
+
+ Remark: savevideo, restorevideo, savevideowin, restorevideowin, savevideow
+  and restorevideow are macros if ~CRT_FULL~ is defined before the line.
+   #include <CRT.H>
+
+
+%DECLARATION OF GLOBAL VARIABLES:
+
+ int ~vmode_x~;
+ int ~vmode_y~;
+ int ~vmode_mode~;
+ int ~crt_direct~;
+ int ~crt_page~;
+ int ~crtwin_just~;
+ struct crtwin ~crtwin_dta~;
+ char far *~video_addr~;
+ const char ~crtframe_mat~[];
+ const char ~mkline_mat~[];
+ int ~changechar_height~;
+ int ~changechar_func~;
+ int ~changechar_blk~;
+ int ~crt_EVGA_addr~;
+
+
+%GENERAL DESCRIPTION OF ARGUMENTS:
+
+ x,y   => Start position, or the position where a character or attribute is
+          read or written. Where: x=> column; y=> row (or line).
+           Remark: The upper left corner is the position (0,0) for all functions
+           declared in CRT.H
+ chr,c => character.
+ color => color.
+ s     => string to be outputted or buffer for ...video... or ...crt...
+ xi,yi => Start position (upper left corner)
+ xf,yf => End position (lower right corner)
+ (for other variables see functions helps)
+
+% See Also:
+    ~CRT Functions~, by category           ~Functions~
+    ~Global Variables~                     ~Data Types~
+    ~Macro Functions~
+
+% Return to:
+    ~Introduction~   ~CRT.H~
+
+:CRT.H
+%  ÜÜÜÜÜÜÜ
+%   CRT.H
+%  ßßßßßßß
+%  Functions
+%  ßßßßßßßßß
+    ~barcolor~        ~biosprintc~      ~changechar~      ~changecharg~
+    ~changecolor~     ~crt_clrscr~      ~crt_detect~      ~crt_getxy~
+    ~crt_gotoxy~      ~crt_init~        ~crtframe~        ~crtframew~
+    ~crtfontspec~     ~crtwindow~
+    ~fillbar~         ~fillbarw~        ~fillbox~         ~fillboxw~
+    ~fillscr~         ~getbordercolor~  ~getcrtchar~      ~getcrtcolor~
+    ~getcrtmode~      ~getcursorsh~     ~getdacpgstate~   ~getdacreg~
+    ~getpalreg~       ~janela~          ~janelad~         ~linha_hor~
+    ~linha_ver~       ~linhad_hor~      ~linhad_ver~      ~mkline~
+    ~mkline_aux~      ~moldura~         ~moldurad~        ~molduradw~
+    ~molduraw~        ~printc~          ~printcn~         ~printct~
+    ~prints~          ~printsf~         ~printsj~         ~printsjc~
+    ~printsjcf~       ~printsjf~        ~printsn~         ~printsnf~
+    ~printtext~       ~printtextf~      ~printx~          ~printxf~
+    ~printxy~         ~printxyf~        ~restorecrt~      ~restorecrtw~
+    ~restorecrtwin~   ~restorevideo~    ~restorevideow~   ~restorevideowin~
+    ~savecrt~         ~savecrtw~        ~savecrtwin~      ~savevideo~
+    ~savevideow~      ~savevideowin~    ~setbordercolor~  ~setchrboxwidth~
+    ~setcrtmode~      ~setcrtpage~      ~setcrtwin~       ~setcursorsh~
+    ~setdacpage~      ~setdacpgmode~    ~setdacreg~       ~setpalreg~
+    ~settextblink~    ~videomode~
+
+%  Constants, data types, and global variables
+%  ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+    ~BKCOLOR~           ~CHANGCHR_NORM~     ~CHANGCHR_RECALC~
+    ~CRT_FULL~          ~CRT_COLORS~        ~DACPAGE_16~
+    ~DACPAGE_64~        ~RESTORECRTú~       ~RESTORECRTWINú~
+    ~SAVECRTú~          ~SAVECRTWINú~       ~TEXTBLINK~
+
+    ~crt_EVGA_addr~     ~changechar_height~ ~changechar_func~
+    ~changechar_blk~    ~crt_direct~        ~crt_page~
+    ~crtframe_mat~      ~crtwin~            ~crtwin_dta~
+    ~crtwin_inp~        ~crtwin_just~       ~mkline_mat~
+    ~video_addr~        ~vmode_mode~        ~vmode_x~
+    ~vmode_y~
+
+%  See Also
+%  ßßßßßßßß
+    ~List of all Header files~   ~Pre-compiled headers~   CRT.H file
+
+%  Return to:
+    ~Introduction~
+
+:CRT_COLORS:BKCOLOR:TEXTBLINK
+%   CRT_COLORS                         <CRT.H>
+%  ßßßßßßßßßßßß
+    Enumerated Constants for color.
+
+    CRT_COLORS is equivalent to ~COLORS~
+
+    Constant     ³Value
+   ÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍ
+    BLACK        ³  0
+    BLUE         ³  1
+    GREEN        ³  2
+    CYAN         ³  3
+    RED          ³  4
+    MAGENTA      ³  5
+    BROWN        ³  6
+    LIGHTGRAY    ³  7
+    DARKGRAY     ³  8
+    LIGHTBLUE    ³  9
+    LIGHTGREEN   ³ 10
+    LIGHTCYAN    ³ 11
+    LIGHTRED     ³ 12
+    LIGHTMAGENTA ³ 13
+    YELLOW       ³ 14
+    WHITE        ³ 15
+   ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄ
+    BKCOLOR      ³ 16 *
+   ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄ
+    TEXTBLINK    ³128 **
+
+   Colors 0 through 15 are foreground colors if alone, but you can set a
+ foreground and background color by multiplying the desired background color
+ (0 - 15) by BKCOLOR and adding it to the desired foreground color.
+   * BKCOLOR is only defined in CRT.H
+   ** TEXTBLINK is the same of ~BLINK~
+
+   These colors can be redefined in an EGA/VGA/SVGA adapter with ~setpalreg~
+ or ~setdacreg~ (VGA/SVGA)
+
+% See Also:
+    ~Appendix B~
+
+:vmode_x:vmode_y
+% vmode_x and vmode_y                  <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßß
+    vmode_x and vmode_y tells the VIDEO HANDLING FUNCTIONS (prototyped in CRT.H
+  the screen shape (number of columns and rows).
+
+   ş vmode_x stores the expected number of columns by CRT functions.
+   ş vmode_y stores the expected number of rows by CRT functions.
+
+% Declaration:
+   ş int vmode_x;
+   ş int vmode_y;
+
+% Remarks:
+    These global variables defines the number of rows and columns of current
+  text mode (or text mode that should be selected).
+
+    The default values for vmode_x and vmode_y are: 80, 25, respectively.
+
+    Note that vmode_x and vmode_y doesn't store the actual number of rows
+  and columns of the current text mode. They store the expected number of
+  rows and columns, delimiting the area that can be used by the functions
+  declared in CRT.H, so if the value of vmode_x or vmode_y is different from
+  the actual number of columns or rows, these functions will write and read
+  at unexpected position, which can be used to obtain interesting effects,
+  without need of extra logic. * * * Do some tests with a little different
+  values for vmode_x and vmode_y than normal. They can be changed to any value,
+  but beware the danger of loosing important data with very big values.
+
+    Also remember that very big values may cause segment overflow. If this
+  occurs a character that was expected to be written in another text video
+  page, or at the bottom of current page (if page has >100 lines) will be
+  written closer to the top.
+
+    To update vmode_x and vmode_y to actual number of columns and lines on
+  screen use ~crt_detect~ or ~crt_init~.
+
+    All functions declared in CRT.H consider the upper left corner as being
+  position (0,0), the same as BIOS. Most C and C++ functions consider the upper
+  left corner as being position (1,1).
+
+% See Also:
+    All ~global variables~ list             ~crt_direct~    ~video_addr~
+
+:vmode_mode
+%  vmode_mode                          <~CRT.H~>
+% ßßßßßßßßßßßß
+    Defines current (or expected) video mode.
+
+% Declaration:
+    int vmode_mode;
+
+% Remarks:
+    vmode_mode is used to tell the programmer the current video mode. The
+  default value is 3. Notice that not always the value stored in vmode_mode
+  is the actual current mode. To update it to current video mode value
+  use one of the folowwing:
+    ~setcrtmode~, ~getcrtmode~, ~crt_detect~ or ~crt_init~ call.
+
+% See also:
+    ~crt_page~   ~crt_direct~   ~video_addr~   ~vmode_x~   ~vmode_y~
+
+:crt_direct
+%  crt_direct                          <~CRT.H~>
+% ßßßßßßßßßßßß
+  Controls video access.
+
+% Declaration:
+    int crt_direct;
+
+% Remarks:
+   crt_direct defines if the video access is done directly to video RAM
+   (video map) or via BIOS calls
+
+  Value³ Meaning
+  ÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+    0  ³ (Default) Defines direct video RAM access
+    1  ³ Defines access via BIOS calls (int 10h)
+    >1 ³ Same as value 1, but are reserved for future versions
+ 
+    If you set crt_direct to direct video RAM access (default), your system's
+  video hardware must be compatible with IBM display adapters, and text mode
+  must be set, otherwise the video handling functions won't work properly.
+  The advantage of this mode is that functions are executed extremely fast.
+  (Tests done under Windows 3.11/95 have shown that these functions work fine
+  in a DOS-PROMPT box even if crt_direct==0)
+
+    If you set crt_direct to access via BIOS, these functions will work in any
+  IBM-BIOS compatible system and even in graphics mode, however they will be
+  executed much slower (hundreds time slower!).
+
+    To detect if current video mode is a text mode or a graphics mode, use
+  crt_detect or crt_init. These functions automatically updates crt_direct
+  according to current video mode. If current video mode is a text mode,
+  crt_direct=0. If current mode is a graphics mode, crt_direct=1. It works
+  in almost every cases.
+
+    If you use graphics mode or if you need it to work in any video hardware,
+  then you might need to change crt_direct value to 1, for video handling
+  functions work properly. (except for few functions that use always
+  BIOS calls), because with crt_direct==0, these function outputs/reads only
+  from text video RAM, which is not active and possibly disabled when graphics
+  mode is selected.
+
+    The access via BIOS calls has been provided to increase portability. (this
+  allows these functions working in almost any video hardware and even in
+  graph mode, but note that it isn't selected by default, as it is very slow.
+
+  IMPORTANT: Although any other value than zero or 1 will have the same effect
+  as 1, it's not advisable to use any other value than specified, as them are
+  reserved for future versions.
+
+% See Also:
+    All ~global variables~ list     ~crt_detect~   ~crt_init~   ~video_addr~
+
+:crt_page
+%  crt_page                            <~CRT.H~>
+% ßßßßßßßßßß
+  Selects the video page which will be used when the functions write or
+  read via BIOS.
+
+% Declaration:
+    int crt_page;
+
+% Remarks:
+    crt_page selects the video page that will be used by the functions, when
+  they use BIOS calls.
+    The default value is 0.
+
+  To update crt_page to active display page number, use ~getcrtmode~,
+  ~crt_detect~ or ~crt_init~.
+
+% See Also:
+    All ~global variables~ list     ~vmode_mode~  ~crt_direct~  ~video_addr~
+
+
+:video_addr
+%  video_addr                          <~CRT.H~>
+% ßßßßßßßßßßßß
+  Defines text video RAM (video map) base address.
+
+% Declaration:
+    char far *video_addr;
+
+    video_addr defines the memory address where begins the video map or video
+  RAM in text mode. Is the memory address where is written or read the
+  character at position (0,0), when crt_direct==0. The default value is
+  B800:0000h
+
+% Remarks:
+    video_addr can be changed to different values if the video RAM starts at a
+  different memory address, or if the programmer desires to obtain interesting
+  effects.
+    When changing video_addr to another value left a low OFFSET value to avoid
+  the possibility of segment overflow that will cause the data to be read or
+  written in a smaller memory address position than expected. This is specially
+  dangerous if that memory position is being used by another program. Another
+  solution would be to use huge pointers.
+    Beware of important data loss if video_addr points to an memory address
+  used by a program or operating system.
+
+    The functions that writes at video RAM have an internal protection that
+  prevents them from writing outside the area that is delimited by video_addr,
+  vmode_x and vmode_y, which means that they can only write into a memory area
+  that goes from (video_addr) thru (video_addr + 2 * vmode_x * vmode_y - 1).
+  To exceed this limit, increase the value of vmode_y or decrease the
+  video_addr segment.
+    video_addr is used only when crt_direct==0.
+
+    To update video_addr to current video page start address use crt_detect or
+  crt_init.
+
+    video_addr is also changed by a setcrtpage call
+
+% See Also:
+    All ~global variables~ list        ~vmode_x~  ~vmode_y~  ~crt_direct~
+      ~far~ pointers      ~huge~ pointers  ~crt_detect~  ~crt_init~
+
+:crt_EVGA_addr
+%  crt_EVGA_addr                       <~CRT.H~>
+% ßßßßßßßßßßßßßßß
+  crt_EVGA_addr determines EGA/VGA+ adapter base I/O port address.
+
+% Declaration:
+    int crt_EVGA_addr;
+
+% Remarks:
+   crt_EVGA_addr is used by some VIDEO HANDLING FUNCTIONS routines that
+ access directly the video adapter through I/O ports.
+
+   Change the value of crt_EVGA according to the video adapter you are going
+ to use:
+
+   Value ³ Video adapter
+  ÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   3C0h  ³ (Default) primary EGA/VGA+
+   2C0h  ³ alternate EGA/VGA+
+
+   Beware of hardware installed at 2C0h.
+
+% See Also:
+    All ~global variables~ list
+
+
+:crtframe_mat:mkline_mat
+%  crtframe_mat and mkline_mat         <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+  ş crtframe_mat is an array used by ~crtframe~.
+  ş mkline_mat is an array used by ~mkline_aux~ and ~mkline~.
+
+% Declaration:
+  ş const char crtframe_mat[];
+  ş const char mkline_mat[];
+
+% Remarks:
+
+    The programmer will be able to read characters from these arrays, but
+  won't be able to change them, because they are declared in CRT.H as
+  constants. To change them remove the "const" keyword (in CRT.H) before
+  their declaration.
+    They are:
+
+    ş const char crtframe_mat[]="ÚÄ¿³ÙÄÀ³ÉÍ»º¼ÍÈºŞßİİİÜŞŞÛÛÛÛÛÛÛÛ";
+
+    ş const char mkline_mat[]="\
+ ÿÿÿÄÿÿÿÍ\
+ ÿÚ¿ÂÿÕ¸Ñ\
+ ÿÀÙÁÿÔ¾Ï\
+ ³Ã´Å³ÆµØ\
+ ÿÿÿÄÿÿÿÍ\
+ ÿÖ·ÒÿÉ»Ë\
+ ÿÓ½ĞÿÈ¼Ê\
+ ºÇ¶×ºÌ¹Î\
+ ";
+
+  Note that in mkline_mat:
+  The blank spaces represents character FFh.
+  Each row has eight elements. The first is mkline_mat[0], and the last is
+  mkline_mat[63].
+
+% See Also:
+    All ~global variables~ list
+
+:crtwin_just
+%  crtwin_just                         <~CRT.H~>
+% ßßßßßßßßßßßßß
+  Controls the text justification for ~printsj~... functions, inside active
+  text box.
+
+% Declaration:
+    int crtwin_just;
+
+% Remarks:
+    The default value is 1 (CENTER_TEXT)
+    You may also use the symbolic constants defined by text_just enum declared
+  in GRAPHICS.H
+
+        Constant    ³Value³ Meaning
+       ÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+        LEFT_TEXT   ³  0  ³ Left-justify text
+        CENTER_TEXT ³  1  ³ Center text
+        RIGHT_TEXT  ³  2  ³ Right-justify text
+
+    crtwin_just only affects ~printsj~, ~printsjc~, ~printsjf~ and ~printsjcf~
+  and is affected by ~crt_init~.
+
+% See Also:
+    All ~global variables~ list     ~text_just~
+
+:crtwin
+%  crtwin                              <~CRT.H~>
+% ßßßßßßßß
+    Structure type used to store text windows or text box coordinates.
+
+    struct crtwin
+     {
+       int left;
+       int top;
+       int right;
+       int bottom;
+     };
+
+% See Also:
+    ~crtwin_dta~
+
+
+:crtwin_dta
+%  crtwin_dta                          <~CRT.H~>
+% ßßßßßßßßßßßß
+    A ~crtwin~ struct that defines the active text box (text window) (that is
+  used by ~printsj~ and ~crtwindow~) coordinates. Note that this active text
+  window has no relationship with ~window~ function defined in ~CONIO.H~.
+    It's value may be loaded from another crtwin struct or via ~setcrtwin~
+  macro.
+
+% Default values are:
+       crtwin_dta.left=-1      crtwin_dta.right=80
+       crtwin_dta.top=-1     crtwin_dta.bottom=25
+
+% See Also:
+    All ~global variables~ list      ~setcrtwin~
+
+:crtwin_inp
+%  crtwin_inp                          <~CRT.H~>
+% ßßßßßßßßßßßß
+    The structure of the values passed to ~crtwindow~ function call.
+
+    struct crtwin_inp
+     {
+       char *title; //Text Box Title (if title==NULL doesn't print title)
+       int tcolor; //Title color
+       int fchr;   //character used to fill window internal area
+       int fcolor; //internal window area color
+       int bcolor; //box border color
+       int btype;  //box border type, same as crtframe
+     };
+
+% See Also:
+   ~crtwin~     ~crtwindow~
+
+:crt_detect:crt_init
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrt_detect and crt_initŞ            <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş crt_detect      Detects current video mode, number of columns, rows, video
+                      page, current page start address,...
+    ş crt_init        Calls crt_detect and updates crtwin_dta coordinates and
+                      crtwin_just to CENTER_TEXT.
+
+% Declaration:
+    ş void crt_detect (int mode);
+    ş void crt_init   (int mode);
+
+% Remarks:
+    crt_detect detects current video mode, active display page, number of
+  screen columns and rows. It also detects active display page base address
+  and if current mode is a text or graphics mode.
+
+    After a call to crt_detect, CRT.H global variables are updated as follow:
+  ~vmode_mode~ = current video mode
+  ~crt_page~   = active video page
+  ~crt_direct~ = 0 if current mode is a text mode;
+             = 1 if current mode is a graphics mode
+  ~video_addr~ = active video page base address(if current mode is a text mode)
+  ~vmode_x~    = number of columns of current mode
+  ~vmode_y~    = number of rows on screen
+
+    crt_init calls crt_detect and after updates ~crtwin_dta~ and ~crtwin_just~
+  as follows:
+
+  crtwin_dta.left   = -1
+  crtwin_dta.top    = -1
+  crtwin_dta.right  = vmode_x
+  crtwin_dta.bottom = vmode_y
+  crtwin_just       = 1 (CENTER_TEXT)
+
+    The main reason to call crt_detect directly is to keep crtwin_dta
+  coordinates and crtwin_just unchanged and update CRT.H global variables
+  listed above.
+
+    mode specifies the system video adapter, according to the table below
+
+      Value  ³ Video adapter
+    ÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+     1       ³ CGA
+     2       ³ MCGA *
+     3,4,5   ³ EGA  *
+     9       ³ VGA, SVGA or better
+
+   * Not tested.
+
+    To detect your video adapter you may try ~detectgraph~ declared in
+  ~GRAPHICS.H~. Compilers earlier than Turbo C 3.0 may have enhanced versions
+  of detectgraph that may return other values for a SVGA+ adapter. Unhapply
+  I don't have these new versions.
+
+    mode is the same as enum ~graphics_drivers~ (declared in GRAPHICS.H) for
+  values 1(CGA) 2 (MCGA) 3,4,5 (EGA) and 9(VGA or better).
+
+    crt_detect reads video hardware to detect if video is in text mode or
+  in graphics mode.
+
+    crt_detect is also affected by ~crt_EVGA_addr~
+
+    Important: I can't guarantee that crt_detect and crt_init will detect
+  the above CRT.H global variables correctly in a adapter other than CGA
+  or color VGA/SVGA.
+
+% Return Value:
+    Both functions return nothing.
+
+% Portability:
+    See ~appendix A~
+
+% Hardware Compatibility:
+    CGA, MCGA, EGA, VGA, SVGA and newer (tested only CGA and SVGA)
+
+% See also:
+    ~detectgraph~
+
+% Example:
+
+  Warning: Before running this example, check your video adapter type.
+  If your adapter is not a color VGA (or SVGA or better), replace crt_detect/
+  crt_init input argument by one of the following: CGA, MCGA, EGA.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ #define CGA 1
+ #define MCGA 2
+ #define EGA 3
+ #define VGA 9
+
+ void main ()
+  {
+    //Messages
+    char *msg[2]={"Text","Graphics"};
+    char *msg2[2]={
+       "Current page base address (video_addr)",
+       "Value of video_addr (not changed)"};
+
+    //Detects screen mode, number of columns, rows, etc
+    //If your adapter is not VGA/SVGA replace crt_init/crt_detect parameter.
+    //You may choose between calling crt_init or calling crt_detect,
+    //setcrtwin and updating crtwin_just
+    crt_init (VGA);  //or
+    //crt_detect (VGA);
+    //setcrtwin (-1,-1,vmode_x,vmode_y);
+    //crtwin_just=1;
+
+    //Paints the screen and displays the title
+    fillscr ('°',0x19);
+    fillbar (' ',2,4,60,16,0x17);
+    printsj ("* * * CRT_DETECT/CRT_INIT EXAMPLE * * *",1,0x1E);
+
+    //Displays a report after a call to crt_init
+    printxf (5,5,0x1f,"Current video mode (vmode_mode) = %d (%.2X)h",
+       vmode_mode,vmode_mode);
+    printxf (5,7,0x1f,"Active display page (crt_page) = %d",crt_page);
+    printxf (5,9,0x1f,"%s mode selected. (crt_direct = %d)",msg[crt_direct],
+       crt_direct);
+    printxf (5,11,0x1f,"%s = %Fp",msg2[crt_direct],video_addr);
+    printxf (5,13,0x1f,"Number of columns (vmode_x) = %d",vmode_x);
+    printxf (5,15,0x1f,"Number of rows (vmode_y) = %d",vmode_y);
+
+    //Displays message to exit and pauses
+    printsj (" - - - Hit any key to exit - - - ",vmode_y-1,0x9e);
+    getch ();
+  }
+
+:videomode
+% ÜÜÜÜÜÜÜÜÜÜÜ
+% İvideomodeŞ                          <~CRT.H~>
+% ßßßßßßßßßßß
+  Changes ~vmode_x~ and ~vmode_y~ to normally used values (commonly text mode
+ number of rows and columns) (obsolete function)
+
+% Declaration:
+    void videomode (int newmode);
+
+% Remarks:
+    newmode changes global variables vmode_x and vmode_y to predefined values.
+  These global variables defines the number of rows and columns of current text
+  mode (or text mode that should be selected). The predefined values are the
+  most common number of rows and columns of text modes, they are listed in the
+  table below:
+
+                   ³  (expected text mode size)
+       newmode:    ³  vmode_y     vmode_x
+  ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+    -1 (LASTMODE)  ³  (last mode values)   (default=25 X 80)
+    0  (BW40)      ³     25   X   40
+    1  (C40)       ³     25   X   40
+    2  (BW80)      ³     25   X   80
+    3  (C80)       ³     25   X   80       (default)
+    7  (MONO)      ³     25   X   80
+    24             ³     43   X   40
+    32             ³     43   X   80
+    48             ³     50   X   40
+    64 (C4350)     ³     50   X   80
+
+  (The values in parenthesis refer to text_modes enum defined in CONIO.H)
+
+    It was at first designed to be used with textmode, using the same value.
+  textmode selects video mode and videomode updates vmode_x and vmode_y. As
+  we can see in the table above, videomode is not perfect, for example
+  (C4350) may select 50 or 43 columns in textmode, but only 50 in videomode.
+  With creation of crt_detect, there's no need to use videomode anymore.
+
+  Note that: The videomode function has no effect in current text mode and
+  color display, it changes only vmode_x and vmode_y.
+
+  IMPORTANT: As it is an obsolete function, it might not exist in future
+  versions. If it does it will probably be enhanced or have another
+  functionality.
+
+% Return Value:
+    None.
+
+% Hardware Compatibility:
+    modes 0,1,2,3,7 => CGA,EGA,VGA,SVGA,(mono?)
+    modes 24,32 => EGA (works with some limitations on VGA/SVGA)
+    modes 48,64 => VGA/SVGA (EGA?)
+    See also ~Appendix A~
+
+% See also:
+  ~crt_detect~   ~textmode~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    textmode (3);
+    fillscr ('°',0x19);
+    prints ("Default mode: 25 rows x 80 columns",20,1,0x1f);
+    getch ();
+
+    videomode (1);
+    fillscr ('°',0x2a);
+    prints ("Incorrect use of Videomode",0,0,0x2f);
+    prints ("25 X 40 screen size for functions",5,2,0x2f);
+    prints ("But in 25 X 80 text mode",10,3,0x2f);//note the interesting effect
+    getch ();
+
+    textmode (1);
+    videomode (1);
+    fillscr ('°',0x2a);
+    prints ("Right use of Videomode",0,0,0x2f);
+    prints ("25 X 40 screen size for functions",5,1,0x2f);
+    prints ("on 25 X 40 text mode",10,3,0x2f);
+    //with vmode_x and vmode_y corresponding to real values, there's no problem.
+    getch ();
+
+    textmode (64); //if your monitor is CGA this mode change is not effective
+                   //I don't know if it's dangerous to try this in
+                   //monitors older than EGA.
+
+    videomode (48); //if your monitor is EGA use videomode(24) instead
+    fillscr ('°',0x19);
+    prints ("Videomode in 50 X 40 text mode",5,1,0x1f);
+    getch ();
+
+    textmode (3);
+    textmode (C4350); //if your monitor is CGA this mode change is not effective
+                      //I don't know if it's dangerous to try this in
+                      //monitors older than EGA.
+
+    videomode (C4350); //if your monitor is EGA use videomode(32) instead
+    fillscr ('±',0x19);
+    prints ("High resolution mode (50 X 80)",25,1,0x1f);
+    getch ();
+
+    crt_clrscr();//clears the screen
+  }
+
+:setcrtmode:getcrtmode
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetcrtmode and getcrtmodeŞ          <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş setcrtmode changes current video mode and calls getcrtmode
+   ş getcrtmode gets current video mode updating vmode_x and crt_page
+
+% Declaration:
+   ş void setcrtmode (int mode);
+   ş int getcrtmode (void);
+
+% Remarks:
+    setcrtmode calls getcrtmode after changing video mode, which stores the
+ selected video mode in ~vmode_mode~.
+    getcrtmode loads vmode_x with number of columns, ~crt_page~ with current
+ video page and vmode_mode with current video mode. It uses INT 10h/AH=0Fh
+    getcrtmode doesn't update ~vmode_y~(screen height). To update vmode_y
+ use ~crt_detect~. You may try also ~gettextinfo~.
+
+% Return Value:
+    ş setcrtmode:  none
+    ş getcrtmode:  current video mode (also stored in vmode_mode);
+
+% Hardware Compatibility:
+    CGA,EGA,PS,VGA,SVGA and newer (tested only CGA and SVGA)
+
+% See also:
+    ~textmode~    ~crt_detect~    ~crt_init~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+ #include <stdio.h>
+
+ void main ()
+  {
+    char msg[]="\nscreen width=%d\nscreen height=%d\ncurrent video page=%d\
+ \ncurrent video mode=%.2Xh\n"; //message to be displayed
+    getcrtmode(); //get current video mode and updates vmode_x and crt_page
+                  //doesn't update vmode_y => vmode_y might be incorrect
+    printf (msg,vmode_x,vmode_y, crt_page, vmode_mode); //display message
+    getch ();
+    setcrtmode(1); //set video mode 1.
+    printf (msg,vmode_x,vmode_y, crt_page, vmode_mode);
+    getch ();
+    setcrtmode(7);
+    printf (msg,vmode_x,vmode_y, crt_page, vmode_mode);
+    getch();
+    setcrtmode(3);
+    printf (msg,vmode_x,vmode_y, crt_page, vmode_mode);
+    getch ();
+  }
+
+:setcrtpage
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetcrtpageŞ                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    Selects video active display page.
+
+% Declaration:
+    void setcrtpage (int page);
+
+% Remarks:
+    After selecting the active display page, setcrtpage calls ~getcrtmode~ to
+ update ~vmode_x~, ~vmode_mode~ and ~crt_page~ to their actual values. After
+ this setcrtpage updates ~video_addr~ to starting address of current page.
+ crt_page stores the current video page.
+
+% Return value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    CGA,EGA,PS,VGA,SVGA (tested only in CGA/SVGA)
+    May work in monochrome monitors (not tested)
+    May not work in PCjunior, Tandy 1000, Corona/Cordata BIOS v4.10+
+
+% See also:
+    ~getcrtmode~
+
+% Examples:
+    ~setcrtpage example~    ~Example 4~
+
+:setcrtpage example
+%   setcrtpage example
+%  ßßßßßßßßßßßßßßßßßßßß
+
+ #include <stdio.h>
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int c0,a0;
+    char page_cor[4]={ 0x1c, 0x1e, 0x1f, 0x1b}; //colors for each page
+
+    setcrtmode (3); //changes video mode
+
+  /*Here the user enters the text for each video page */
+    for (c0=0;c0<4;c0++)
+     {
+       setcrtpage(c0); //select video page given by c0
+
+       //selects background color and text color of each page according to
+       //page_cor
+       fillscr (' ',page_cor[c0]);
+
+       //writes a message to the user reporting the current video page
+       printsf (20,1,0x1f,"Current video page = %d",crt_page);
+       printsf (10,2,0x1f,"Write below the text for page %d. \
+ To continue hit ESC key",crt_page);
+
+       //reads the text written by the user until user hits ESC key
+       crt_gotoxy(0,3);
+       do
+        {
+          a0=getch();
+          if (a0==0x0d)
+             putchar(0x0a);
+          putchar(a0);
+        }
+        while(a0!=0x1b);
+     }
+
+  /*Here each page is displayed */
+    for (c0=0;c0<4;c0++)
+     {
+       setcrtpage(c0);
+
+       //reuses the messages written before, replacing some words
+       prints ("  The text you wrote",10,2,0x1f);
+       prints ("any",59,2,0x1f);
+
+       getch (); //waits until user hits any key
+     }
+    setcrtpage(0); //Select page 0 as active page (default)
+    crt_clrscr();
+  }
+
+:crt_gotoxy:crt_getxy
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrt_gotoxy and crt_getxyŞ           <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş crt_gotoxy changes current cursor position.
+   ş crt_getxy gets current cursor position.
+
+% Declaration:
+    void crt_gotoxy (int x,  int y );
+    int  crt_getxy  (int *x, int *y);
+
+% Remarks:
+    crt_gotoxy and crt_getxy works in video page selected by ~crt_page~.
+    crt_gotoxy moves the cursor to position (x,y), where "x" indicates the
+  column and "y" indicates the row, where (0,0) is the upper left corner. If
+  argument values are incorrect, the behavior will depend on BIOS type.
+    crt_getxy may return the current cursor position in two ways. The first is
+  by the contents of *x pointer and *y pointer, where *x=column and *y=row.
+  The second is by an integer value returned by this function, that is given
+  by (row * 100h + column (DX register)). crt_getxy uses INT 10h/AH=03h.
+
+% Return Value:
+   ş crt_gotoxy:   none
+   ş crt_getxy:    row*100h + column (DX register from INT 10h/AH=03h)
+
+% Hardware Compatibility:
+    All video adapters. (or almost all of them)
+
+% See also:
+    ~gotoxy~   ~wherex~   ~wherey~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int x, y;
+    int x0, y0, z;
+    //clears the screen
+    fillscr (' ',0x07);
+    //saves current cursor position in x, y and z.
+    z=crt_getxy(&x0,&y0);
+    //outputs current position
+    printsf (x0%10,y0%10,0x1f,"Current cursor position = (%d,%d)",x0,y0);
+    printsf (x0%10,y0%10+1,0x1f,"Value returned by crt_getxy = %.4Xh",z);
+    getch ();
+    //moves the cursor to a new position
+    crt_gotoxy (x0%10+31,y0%20+2);
+    crt_getxy(&x,&y);
+    printsf (x%10,y%10+2,0x1f,"New cursor position = (%d,%d) => ",x,y);
+    getch ();
+    //restores initial position
+    crt_gotoxy (x0,y0);
+    printsf (x0%10,y0%10+3,0x1f,"Old cursor position = (%d,%d)",x0,y0);
+    getch ();
+  }
+
+
+:getcrtchar:getcrtcolor
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İgetcrtchar and getcrtcolorŞ         <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş getcrtchar gets the character from position (x,y).
+   ş getcrtcolor gets the color from position (x,y).
+
+% Declaration:
+   ş int   getcrtchar  (int x, int y);
+   ş int   getcrtcolor (int x, int y);
+
+% Remarks:
+
+    These functions uses direct VIDEO RAM access when crt_direct==0,
+  otherwise they use access via BIOS calls (INT 10h/AH=8).
+    In graphics mode, crt_direct must be different than 0 (zero), and
+  getcrtchar and getcrtcolor may not work properly. Documentation about
+  INT 10h/AH=8 says that in graphics mode only characters drawn with
+  white foreground pixels are matched by the pattern-comparison routine.
+
+% Return Value:
+   On success: got character and color.
+   On error: random value (for example, if you gave coordinates outside the
+   range of the current screen mode, or if BIOS calls fail)
+
+% Examples:
+    ~Example 1~
+
+%   getcrtchar and getcrtcolor example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int a0,a1;
+    a0=getcrtchar(0,0); //getcrtchar reads the char from position (0,0)
+    a1=getcrtcolor(0,0); //getcrtcolor gets the color from position (0,0)
+
+    //the character and color found at position (0,0) are displayed
+    printsf(0,2,15,"Character at position (0,0)='%c' ",a0);
+    printsf(0,3,15,"Color at position (0,0)=%.2Xh ",a1);
+    getch ();
+  }
+
+:biosprintc
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İbiosprintcŞ                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    outputs a character into screen via BIOS calls.
+
+% Declaration:
+    void biosprintc (int chr, int x, int y, int color, int func);
+
+% Remarks:
+    The function biosprintc is used by other functions to access the screen
+  when ~crt_direct~ != 0, but it can also be used by the programmer.
+    The argument "func" defines which BIOS function will be used. The only
+  accepted values (as I know) are 09h or 0Ah, different values may let to
+  unpredictable and likely disastrous results.
+    crt_direct has no effect over biosprintc.
+    values for "func":
+       09h   => outputs character with color (both in text and
+                graphics mode).
+       0Ah   => Outputs character. In text mode writes only the character,
+                keeping the color of position (x,y)
+                In graphics mode draws character with color (just as when
+                func==9).
+
+    The argument "func" is the value of AH register in a call to INT 10h,
+  which selects the video function that must be used. Other arguments are
+  similar to printc arguments.
+    If attribute bit 7 is set in <256-color graphics mode, character is XOR'ed
+  onto screen.
+
+% Return value:
+    None.
+
+% Hardware Compatibility:
+    All PC video adapters. (at least most of them)
+
+% See also:
+    ~printc~   ~printcn~   ~changecolor~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    clrscr (); //clears the screen
+    getch ();
+    biosprintc ('A',2,2,0x1e,9);
+       //sends character 'A' with color 1Eh (yellow with blue background)
+    getch ();
+    biosprintc ('B',2,3,0x1f,10);
+       //sends character 'B'
+       //On text mode, keeps the previous color at position. In graphics mode
+       //outputs with color 1Fh
+    getch ();
+  }
+
+:printcn:printc:changecolor
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İprintcn, printcŞ                    <~CRT.H~>
+% İand changecolorŞ
+% ßßßßßßßßßßßßßßßßß
+   ş printcn outputs a character with no color onscreen.
+   ş printc  outputs a character with color onscreen.
+   ş changecolor changes the color of position (x,y).
+
+% Declaration:
+   ş void  printcn     (int c, int x, int y           );
+   ş void  printc      (int c, int x, int y, int color);
+   ş void  changecolor (       int x, int y, int color);
+
+% Remarks:
+    printc, printcn and changecolor use video RAM access when ~crt_direct~==0,
+  otherwise they use ~biosprintc~ (output via BIOS calls).
+
+    With crt_direct==0 they work only in text mode and:
+     - printcn outputs the character keeping the previous color.
+     - printc outputs the character with color (attribute)
+     - changecolor replaces the existing color (attribute) by a new one.
+
+    With crt_direct!=0:
+     - printcn calls biosprintc with color 0x07 and "func"=0x0a.
+     - printc calls biosprintc with argument "func"=0x09.
+     - changecolor gets the character from position and redraws it with a
+       new color (using biosprintc).
+
+% Return Value:
+    none (for all them)
+
+% Hardware Compatibility:
+    All PC video adapters (or almost all of them)
+
+% See Also:
+    ~printct~   ~print...~ functions   ~printx~
+
+% Examples:
+    ~Example 1~
+
+%   printcn, printc and changecolor example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //Notice what happens at the upper left corner of the screen
+
+ void main ()
+  {
+    fillscr (' ',0x07); //clears the screen
+    getch ();
+    printcn ('A',0,0); //writes character A onscreen at the upper left corner
+    getch ();
+    printc ('B',1,0,0x1e); //writes character B beside A character
+    getch ();
+    changecolor (0,0,0x21); //changes the color of A character
+    getch ();
+  }
+
+:printct
+% ÜÜÜÜÜÜÜÜÜ
+% İprintctŞ                            <~CRT.H~>
+% ßßßßßßßßß
+    Changes the character and color of position (x,y) or keeps old character
+  and/or color according to type parameter.
+
+% Declaration:
+    void printct(int c, int x, int y, int color, unsigned int type);
+
+% Remarks:
+    printct is a generalization of ~printcn~, ~printc~ and ~changecolor~. It's
+  output will depend on ~printct type~ parameter.
+
+    printct (c,x,y,color,1) is equivalent to printcn
+    printct (c,x,y,color,2) is equivalent to changecolor
+    printct (c,x,y,color,3) is equivalent to printc
+
+    To use printct in graphics mode, ~crt_direct~ must be different of
+  zero. To detect if video is in text or graphics mode use ~crt_detect~.
+
+% Return value:
+    None.
+
+% See also:
+    ~fillbox~
+
+% Example:
+ //To run this example in graphics mode, set crt_direct to 1
+
+ #include <CRT.H>
+
+ void main ()
+  {
+    fillscr ('.',LIGHTBLUE);//fills the screen with '.' and color LIGHTBLUE
+
+ //printct called with char. 'A' and color 2Eh at position (8,5) with type=0
+    prints ("=> type = 0",10,5,0x07);
+    printct('A',8,5,0x2e,0);
+
+ //printct called with char. 'A' and color 2Eh at position (8,6) with type=1
+    prints ("=> type = 1",10,6,0x07);
+    printct('A',8,6,0x2e,1);
+
+ //printct called with char. 'A' and color 2Eh at position (8,7) with type=2
+    prints ("=> type = 2",10,7,0x07);
+    printct('A',8,7,0x2e,2);
+
+ //printct called with char. 'A' and color 2Eh at position (8,8) with type=3
+    prints ("=> type = 3",10,8,0x07);
+    printct('A',8,8,0x2e,3);
+  }
+
+:printct type
+%   type argument of printct and fillbox
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+
+ bitfields for type:
+
+    ÉÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍËÍÍËÍÍ»
+    º15³14³13³12³11³10³ 9³ 8³ 7³ 6³ 5³ 4³ 3³ 2º 1º 0º
+    ÈÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÎÍÍÎÍÍ¼
+       bits 15-2 are reserved for future        ³  ³
+    versions, although printct works with any   ³  ³
+    value in these bits, they should be zero, to³  ³
+    enable compatibility with future versions   ³  ³
+                                                ³  ³
+    Color control bit ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ  ³
+       0 = printct doesn't replace color in text   ³
+           mode. In some graphics mode color is 7h ³
+           (light gray)                            ³
+       1 = printct replaces the color of position  ³
+           (x,y) by (color)                        ³
+                                                   ³
+    Text control bit ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+       0 = printct doesn't replace character in text mode.
+           In graphics mode character is read from (x,y) position
+           and rewritten. (character may not be the same, due to
+           failure of BIOS routine that reads character from screen
+           in graphics mode)
+
+
+:printsn:prints:printxy:print...
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İprintsn, prints and printxyŞ        <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş printsn outputs a string into screen keeping the previous color of each
+     position.
+   ş prints  outputs a string into screen with color.
+   ş printxy outputs a string into screen with color and user defined spacing
+     between characters.
+
+% Declaration:
+   ş void  printsn (char *s, int x, int y);
+   ş void  prints  (char *s, int x, int y, int color);
+   ş void  printxy (char *s, int x, int y, int dx, int dy, int color);
+
+% Remarks:
+    The start position is given by (x,y). prints and printsn outputs the
+  string in horizontal, while printxy may output in any direction.
+
+    prints and printxy use ~printc~ function, while printsn uses ~printcn~.
+
+    In printxy, the dx and dy arguments defines the horizontal and vertical
+  increments between characters, respectively. For example, if dx=-1 and dy=0,
+  the string is displayed in backward direction.
+
+% Return Value:
+     None (all of them)
+
+% Hardware Compatibility:
+    Depends on ~printc~ and ~printcn~ compatibility.
+
+% See also:
+    ~printx~   ~printtext~   ~printsj~   ~printsjc~
+    CRT.H ~print...f~ functions
+
+% Examples:
+    ~Example 1~
+
+%   printsn, prints, and printxy example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr (' ',0x07); //clears the screen
+    getch ();
+    printsn("PRINTSN EXAMPLE",2,0); //outputs string without replacing
+       //previous color
+    getch ();
+    prints("PRINTS EXAMPLE",2,1,0x1e); //outputs string in yellow with a blue
+       //background
+    getch ();
+    printxy("READ THIS -< ELPMAXE YXTNIRP",60,2,-2,0,0x1f); //outputs string
+       //in backward direction. The color is white with a blue background
+    getch ();
+  }
+
+:printx
+% ÜÜÜÜÜÜÜÜ
+% İprintxŞ                             <~CRT.H~>
+% ßßßßßßßß
+    Outputs a string into screen with special options possibilities.
+
+% Declaration:
+    void printx (char *s, int x, int y, int color);
+
+% Remarks:
+    This function allows you to output a hole text with different colors and
+  justifying options with a single call.
+    The string (s) is a null terminated buffer that contains the text to be
+  outputted and instructions character to be interpreted. In fact this function
+  has it's own instruction set.
+    The arguments (x,y,color) loads only the initial values, that can be
+  changed by some instructions inside the string.
+
+  The printx's "instruction set" is: (sorted by "opcode")
+    (05)h     => Outputs the third byte with the color defined by the second
+                 byte.
+    (ENQ)          Format => "... \5<color><character(3rd byte)> ..."
+
+    (06)h     => Changes current color to color defined by next byte.
+    (ACK)          Format => "... \6<color> ..."
+
+    (07)h     => Emits a "beep" via DOS call.
+    (BELL)         Format => "... \a ..." OR "... \7 ..."
+
+    (08)h     => Non destructive backspace. If current position is left side,
+    (BKSPACE)    returns to the end of upper line (row).
+                   Format => "... \b ..." OR "... \10 ..."
+
+    (09)h     => Non destructive Tab (default tab size = 8)
+    (TAB)          Format => "... \t ..." OR "... \11 ..."
+
+    (0A)h     => New line and "carriage return" to taboffset value. (default==0)
+    (NF)         It has the same effect of \n in ...printf functions,
+                 if taboffset==0. (taboffset is an internal variable)
+                   Format => "... \n ..." OR "... \12 ..."
+
+    (0B)h     => New line (character (0A)h function in printer)
+    (VT)           Format => "... \v ..." OR "... \13 ..."
+
+    (0C)h     => Goes to upper left corner (position (0,0)).
+    (FF)           Format => "... \f ..." OR "... \14 ..."
+
+    (0D)h     => Returns to left size with offset defined by (taboffset)
+    (CR)         (default for taboffset == 0).
+                   Format => "... \r ..." OR "... \15 ..."
+
+    (0E)h     => Changes x value. (column where next character will be
+                 outputted)
+    (SO)           Format => "... \16<new column position> ..."
+
+    (0F)h     => Changes y value. (row where next character will be outputted)
+    (SI)           Format => "... \17<new row position> ..."
+
+    (10)h     => Changes tab size (default size = 8).
+                   Format => "... \20<new tab size> ..."
+
+    (11)h     => Changes taboffset value (offset for TAB) (default = 0).
+                   Format => "... \21<taboffset> ..."
+
+    (12)h     => Increments x value (column).
+                   Format => "... \22 ..."
+
+    (13)h     => Decrements y value (row).
+                   Format => "... \23 ..."
+
+    (14)h     => Pauses until a key is available from keyboard, checking
+                 ^C/^BREAK.
+                  Uses DOS function INT 21h/AH=08h
+                   Format => "... \24 ..."
+
+    (15)h     => Pauses until a key is available from keyboard. ^C/^BREAK are
+                 not checked.
+                  Uses DOS function INT 21h/AH=07h
+                   Format => "... \25 ..."
+
+    (1B)h     => Allows to output special characters ("opcodes" as characters)
+    (ESC)          Format => "... \33<char.> ..."
+
+
+  IMPORTANT: Do not left a instruct character that requires any complement
+  (instructions 05h, 06h, 0Eh, 0Fh 10h 11h 1Bh) being the last of the string,
+  the reason is that printx will confuse the null terminating character (\0)
+  (automatically appended at the end of each string by the compiler) as
+  a complement. As result printx will write and process beyond the end of
+  the string (if you are not lucky it will continue far beyond and you will
+  need to wait for hours until it stops).
+
+% Return Value:
+    None.
+
+% Portability:
+    Requires DOS or DOS compatible O.S (such as WINDOWS, WINDOWS 95/98)
+    See also ~appendix A~.
+
+% Hardware Compatibility:
+    Will depend most of function ~printc~.
+
+% See Also:
+    ~prints~  ~printxy~   ~printtext~   ~printsj~   ~printsjc~
+    CRT.H ~print...f~ functions.
+
+% Example:
+    ~printx example~
+
+:printx example
+%   printx example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+ //THIS IS THE STRING CONTAINING THE TEXT TO BE OUTPUTTED. THE SPECIAL EFFECTS
+ //ARE OBTAINED VIA SPECIAL CHARACTERS (IN FACT PRINTX "OPCODES") For example
+ //\n is an "instruction opcode" with the same function as \n in printf
+    int a0;
+    char sentence []= //\24 is the pause character, byte or "opcode"
+ "* * * printx example * * *\
+ \16\5\17\4\6\36\
+ Example of printx function.\
+ \n\Outputting (sentence) string contents\n\
+ Hit any key to continue\24\
+ \
+ \6\x1f new color \24\
+ \
+ temporary color at \"\5\x1c\C\"\n\24\
+ \
+ BEEP\a\a\a\24\
+ \
+ \b\b\b\bBKSPACE 4 times\24\
+ \
+ \t\tTabulation\24\
+ \
+ \n\n\nNew line and return to begin of line\24\
+ \
+ \v\New line without returning to it's begin\24\
+ \
+ \rreturn to begin of line\24\
+ \
+ \fgoes to upper left corner\24\
+ \
+ \16\30\17\20Moves to position (24,16) => (30,20)octal\n\24\
+ \
+ \
+ Tab size = 3:\20\3\na\ta\ta\ta\ta\n\24\
+ \
+ Tab Offset = 1:\21\1\na\ta\ta\ta\ta\n\n\24\
+ \
+ \33\5 Special character.\24\
+ Pauses checking ^C/^BREAK.\24\
+ Pauses without checking ^C/^BREAK.\25\
+ \
+ \
+ \16\20\17\27\6\x9e - - - THE END - HIT ANY KEY TO RETURN - - -\25\
+ ";//here ends the string.
+
+ //ONLY THIS IS THE PROGRAM ITSELF
+
+    fillscr ('°',0x19); //fills the screen with character '°' and color 0x19
+
+  //all that text is outputted via this function! This function does almost
+    printx (sentence,27,1,0x1f); //everything in this program!
+
+  /*This displays the contents of sentence string with no formatting.*/
+
+    fillscr (' ',7); //clears the screen
+    prints ("(sentence) string contents with no formatting :",16,0,0x0f);
+    a0=printtext(sentence,0,2,0x07); //displays the text in raw format
+    printsf (0,11,0x0e,"(sentence) string size = %d bytes",a0);
+       //a0=number of bytes in sentence
+    getch ();
+  }
+
+:printtext
+% ÜÜÜÜÜÜÜÜÜÜÜ
+% İprinttextŞ                          <~CRT.H~>
+% ßßßßßßßßßßß
+    Writes a string inside a box continuing in the next line if text doesn't
+  fit in one line.
+
+% Declaration:
+    int printtext (char *s, int x, int y, int color);
+
+% Remarks:
+    printtext writes inside the box defined by ~crtwin_dta~ struct. It starts
+  writing at position (x,y) in relation to (crtwin_dta.left+1,crtwin_dta.top+1)
+  with color defined by color. When reaching the end of line (column
+  crtwin_dta.right-1) it continues in the next line (starting at column
+  crtwin_dta.left+1). When it reaches the end of the last line of the box
+  (position (crtwin_dta.right-1,crtwin_bottom-1)) it stops.
+    If one (or both) of the coordinates is negative, the call to printtext is
+  ignored.
+
+% Return value:
+    number of bytes written.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    Depends on ~printc~
+
+% See also:
+    ~prints~   ~printx~   ~printsj~    ~printsjc~
+    CRT.H ~print...f~ functions
+
+% Examples:
+
+ ~printtext example~   ~printx example~    ~Example 3~
+
+:printtext example
+%   printtext example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr (' ',0x07);
+    printtext (
+ "This is an example of printtext function. Notice that printtext continues in\
+  the next line if text doesn't fit in one line. Text is outputted inside text\
+  window defined by crtwin_dta",10,1,0x1f);
+    getch();
+  }
+
+:printsj:printsjc
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İprintsj and printsjcŞ               <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßß
+    şprinstj writes a string inside the current text box defined by
+  ~crtwin_dta~ struct with justification defined by ~crtwin_just~.
+    şprintsjc is a enhanced version of printsj that allows color change
+  inside the text to be outputted.
+
+% Declaration:
+    ş void printsj  (char *s, int y, int color);
+    ş void printsjc (char *s, int y, int color);
+
+% Remarks:
+
+    printsj and printsjc write the null terminated string (s) with color
+  (color) (y+1) lines below the line defined by (crtwin_dta.top)
+    If coordinates given by crtwin_dta are invalid, the call to printsj or
+  printsjc is ignored.
+    for (y) values greater than the box height or smaller than zero, y assumes
+  any value between 0 and the box height or any of both values.
+    if crtwin_just is not 0 nor 1 nor 2, the call to printsj or printsjc is
+  ignored. (That means printsj or printsjc returns without doing anything.)
+
+    printsjc allows you to output a hole text with different colors with a
+  single call. The argument color gives the beginning color of the text.
+    The string (s) is a null terminated string that contains the text to be
+  outputted and "instructions" character to be interpreted. These characters
+  constitute printsjc "instruction set" (kind of a subset of printx
+  instruction set).
+    The arguments (x,y,color) loads only the initial values, that can be
+  changed by some instructions inside the string.
+
+  The printsjc's "instruction set" is: (sorted by "opcode")
+    (05)h     => Outputs the third byte with the color defined by the second
+                 byte.
+    (ENQ)          Format => "... \5<color><character(3rd byte)> ..."
+
+    (06)h     => Changes current color to color defined by next byte.
+    (ACK)          Format => "... \6<color> ..."
+
+    (1B)h     => Allows to output special characters ("opcodes" as characters)
+    (ESC)          Format => "... \33<char.> ..."
+
+
+  IMPORTANT: Do not left a instruct character being the last of the string,
+  the reason is that printsjc will confuse the null terminating character (\0)
+  (automatically appended at the end of each string by the compiler) as a
+  complement. As result printsjc will write and process beyond the end of the
+  string (if you are not lucky it will continue far beyond and you will need
+  to wait for some minutes until it stops (the screen will become a mess)).
+
+    printsjc uses special color "instruction" characters to change the
+  color inside the text.
+
+  Both functions use function ~printc~.
+
+% Return Value:
+    ş printsj:  none
+    ş printsjc: none
+
+% Portability:
+    See ~appendix A~.
+
+% Hardware Compatibility:
+    Depends on ~printc~ compatibility.
+
+% See Also:
+    ~printsn~   ~prints~   ~printxy~   ~printx~   ~printtext~
+    CRT.H ~print...f~ functions
+
+% Examples:
+    ~printsj example~   ~printsjc example~   ~Example 3~
+
+:printsj example
+%   printsj example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <conio.h>
+ #include <CRT.H>
+
+ void main ()
+  {
+    fillscr (' ',0x17);
+    printsj("* * * PRINTSJ EXAMPLE * * *",1,0x1f);
+
+ //LEFT JUSTIFIED TEXT
+    crtwin_just=0;
+    printsj("LEFT JUSTIFIED TEXT => crtwin_just=0",4,0x1e);
+ 
+ //CENTER JUSTIFIED TEXT
+    crtwin_just=1;
+    printsj("CENTER JUSTIFIED TEXT => crtwin_just=1",6,0x1a);
+ 
+ //RIGHT JUSTIFIED TEXT
+    crtwin_just=2;
+    printsj("RIGHT JUSTIFIED TEXT => crtwin_just=2",8,0x1b);
+    getch ();
+  }
+ 
+:printsjc example
+%   printsjc example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+ 
+ void main ()
+  {
+    fillscr (' ',0x17);
+    printsjc("* * * PRINTSJC EXAMPLE * * *",1,0x1f);
+ 
+ //LEFT JUSTIFIED TEXT
+    crtwin_just=0;
+    printsjc("LEFT JUSTIFIED TEXT => crtwin_just=0",4,0x1e);
+ 
+ //CENTER JUSTIFIED TEXT
+    crtwin_just=1;
+    printsjc("CENTER JUSTIFIED TEXT => crtwin_just=1",6,0x1a);
+ 
+ //RIGHT JUSTIFIED TEXT
+    crtwin_just=2;
+    printsjc("RIGHT JUSTIFIED TEXT => crtwin_just=2",8,0x1b);
+
+ //COLOR INSTRUCTIONS
+    crtwin_just=1;
+    printsjc("EACH\6\x1e WORD\6\x1f WITH \5\x1a\x41 \6\x1b\x44IFERENT\6\x19 \
+ COLOR\6\x1d !!!",11,0x1c);
+    printsjc("EXAMPLE OF \"INST.\" CHARS. New color at '\5\x1b\x43'. \
+ New \6\x1e\x63olor. Special chars => \x1b\5 \x1b\6 \x1b\x1b",14,0x1f);
+    getch ();
+  }
+
+:printsnf:printsf:printxyf:printxf:printtextf:printsjf:printsjcf:print...f
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İCRT.H print...f functionsŞ          <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş printsnf   sends formatted output to screen via printsn.
+   ş printsf    sends formatted output to screen via prints.
+   ş printxyf   sends formatted output to screen via printxy.
+   ş printxf    sends formatted output to screen via printx.
+   ş printtext  sends formatted output to screen via printtext.
+   ş printsjf   sends formatted output to screen via printsj.
+   ş printsjcf  sends formatted output to screen via printsjc.
+ 
+% Declaration:
+   ş int  printsnf    (int x, int y,                            char *fmt,... );
+   ş int  printsf     (int x, int y,                 int color, char *fmt,... );
+   ş int  printxyf    (int x, int y, int dx, int dy, int color, char *fmt,... );
+   ş int  printxf     (int x, int y,                 int color, char *fmt,... );
+   ş int  printtextf  (int x, int y,                 int color, char *fmt,... );
+   ş int  printsjf    (       int y,                 int color, char *fmt,... );
+   ş int  printsjcf   (       int y,                 int color, char *fmt,... );
+
+% Remarks:
+    These functions uses ~vsprintf~ to create the formatted string to be
+    displayed.
+    The formatted string mustn't exceed the internal buffer size of these
+    function. If the buffer is exceeded, unpredictable and likely disastrous
+    results may occur. (see table below):
+
+     Functions ³ Internal Buffer size
+    ÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+     printsnf  ³ 256 bytes
+     printsf   ³ 256 bytes
+     printxyf  ³ 256 bytes
+     printxf   ³ 4096 bytes
+     printxtext³ 4096 bytes
+     printsjf  ³ 256 bytes
+     printsjcf ³ 256 bytes
+ 
+    For further information see ...~printf~ functions
+ 
+% Return Value:
+    ş On success, the print...f functions return the number of bytes outputted
+       by vsprintf in the internal string.
+    ş On error, these functions return EOF
+
+% Portability:
+    It will depend on vsprintf and print... (CRT.H) functions portability.
+    See also ~Appendix A~
+
+% See Also:
+   vsprintf     CRT.H      va_arg       va_end   va_start
+ 
+  print...f example:
+ 
+    The print...f functions declared in CRT.H are used in a very similar manner
+ as printf is used, except that they output the formatted string using print...
+ functions declared in CRT.H. For example:
+    char s[4096];
+    .
+    .
+    .
+    sprintf(s,fmt,...);
+    printx(s,x,y,color);
+ 
+ is equivalent to:
+    .
+    .
+    .
+    printxf(x,y,color,fmt,...);
+ 
+% Example:
+ 
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int c0=8, c1=35, c2, c3, c4, c5, c6,c7;
+    fillscr ('°',0x19);
+    c2=printsnf(10,0,"%d * %d = %d",c0,c1,c0*c1);
+    getch();
+    c3=printsf(10,1,0x1f,"%d / %d = %d and %d %c %d = %d",c1,c0,c1/c0,c1,'%',
+       c0,c1%c0);
+    getch();
+    c4=printxyf(20,3,2,0,0x1f,"c1='%c'=%d=%xh",c1,c1,c1);
+    getch ();
+    setcrtwin(12,8,60,16);
+    moldurad(12,8,60,16,0x1e);
+    fillbar (' ',13,9,59,15,0x1f);
+    c5=printsjf(1,0x1f,"Current text box is (%d,%d),(%d,%d)",
+       crtwin_dta.left,crtwin_dta.top,crtwin_dta.right,crtwin_dta.bottom);
+    getch ();
+    c6=printsjcf(2,0x1f,"Selecting \6%ccolor given by crtwin_dta.top",
+       crtwin_dta.top);
+    getch ();
+    c7=printtextf (2,4,0x1f,"Printtextf example => crtwin_dta.bottom=%d \
+ crtwin_dta.right=%d",crtwin_dta.bottom,crtwin_dta.right);
+    getch ();
+    printxf (0,18,0x1e,"printsnf returned %d\tprintsf  returned %d\
+ \nprintxyf returned %d\tprintsjf returned %d\tprintsjcf returned %d\
+ \nprinttext returned %d%c",c2,c3,c4,c5,c6,c7,0x15);
+    // 0x15=='\x15' is pause "opcode" in printx (see printx)
+  }
+
+
+:fillscr
+% ÜÜÜÜÜÜÜÜÜ
+% İfillscrŞ                            <~CRT.H~>
+% ßßßßßßßßß
+    Fills the screen with character "c" and color "color".
+
+% Declaration:
+    void  fillscr (int c, int color);
+
+% Remarks:
+    As printc... functions the fillscr function uses only the memory area
+  delimited by ~video_addr~, ~vmode_x~ and ~vmode_y~. For a properly work,
+  vmode_x and vmode_y must be equal to actual number of columns and rows of
+  current text mode, if it's not you may obtain interesting effects. It's not
+  advisable to set vmode_x and vmode_y to higher values than 256 . The reason
+  is that you may destroy important data stored above C800:0000h used by
+  programs stored at high UMB's, when using fillscr. (Anyway I can't be liable
+  for any sillyness you might do. So be careful)
+
+    If ~crt_direct~==0 it access directly the video RAM, otherwise
+  (crtdirect!=0) the access to video is done via biosprintc
+  (no direct memory handling).
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    The same of ~printc~ function.
+
+% See Also:
+    ~fillbar~   ~barcolor~   ~fillbox~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //Example for fillscr function
+ //by M rcio Afonso Arimura Fialho
+
+ void main ()
+  {
+    getch (); //shows the initial screen drawing.
+    fillscr ('°',0x19); //fills the screen with character '°' and color 19h
+                         //(light blue with a blue background)
+    getch ();
+    fillscr ('A',0x2e); //fills the screen with character 'A' and color 17h
+                         //(yellow with a green background)
+    getch ();
+    fillscr ('°',0x9b); //fills the screen with character '°' and color 9Bh
+                         //(blinking light cyan with a blue background)
+    getch ();
+    fillscr (' ',7); //clears the screen
+  }
+
+:barcolor
+% ÜÜÜÜÜÜÜÜÜÜ
+% İbarcolorŞ                           <~CRT.H~>
+% ßßßßßßßßßß
+    Replaces the color of a text window to color (color)
+
+% Declaration:
+    void barcolor (int xi, int yi, int xf, int yf, int color);
+
+% Remarks:
+    xi,yi are the upper left corner co-ordinates.
+    xf,yf are the lower right corner co-ordinates.
+    xi,yi,xf,yf can be also understood as the left, top, right, bottom sides
+  co-ordinates of the window, respectively.
+
+    This function has no relationship with ~window~ function.
+
+  Uses function ~changecolor~.
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    Depends on ~changecolor~ compatibility.
+
+% See also:
+    ~fillscr~     ~fillbar~     ~fillbox~
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    textmode (3);
+    fillscr (' ',7);
+    prints ("The color inside the box will change.",10,8,0x0f);
+    moldura (20,10,40,16,0x07);
+    fillbar ('A',21,11,39,15,0x07);
+    getch ();
+    prints ("has changed!",35,8,0x0f);
+    barcolor (21,11,39,15,0x1e);
+    getch ();
+  }
+
+
+:fillbar:fillbarw
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İfillbar and fillbarwŞ               <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßß
+    ş fillbar fills a text window with the character "c" and color "color".
+    ş fillbarw fills a text window given by crtwin_dta with character "c" and
+      color "color".
+
+% Declaration:
+    ş void fillbar (int c, int xi, int yi, int xf, int yf, int color);
+    ş void fillbarw (int c, int color);
+
+% Remarks:
+    xi,yi are the upper left corner co-ordinates.
+    xf,yf are the lower right corner co-ordinates.
+    xi,yi,xf,yf can be also understood as the left, top, right, bottom sides
+  co-ordinates of the window, respectively.
+
+    fillbarw calls fillbar with:
+       xi=crtwin_dta.left+1;   yi=crtwin_dta.top+1;
+       xf=crtwin_dta.right-1;  yf=crtwin_dta.bottom-1;
+
+    These functions have no relationship with ~window~ function.
+
+  Use function ~printc~.
+
+% Return Value: none.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    Depends on printc compatibility.
+
+% See also:
+    ~fillscr~     ~barcolor~     ~crtwin_dta~
+
+% Examples:
+    ~fillbar example~     ~fillbarw example~     ~Example 2~
+
+:fillbar example
+%   fillbar example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    textmode (3);
+    fillscr (' ',7);
+    prints ("There's a box:",10,8,0x0f);
+    moldura (20,10,40,16,0x07);
+    getch ();
+    fillbar ('A',21,11,39,15,0x1e);
+    prints ("That has been filled up by fillbar",10,18,0x0f);
+    getch ();
+  }
+
+:fillbox:fillboxw
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İfillbox and fillboxwŞ               <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßß
+    ş fillbox replaces the characters and colors of a text window or keeps old
+      characters and/or colors according to type parameter.
+    ş fillboxw is similar to fillbox, but text window coordinates are given by
+      ~crtwin_dta~.
+
+% Declaration:
+    ş void fillbox  (int c, int xi, int yi, int xf, int yf,int color,int func);
+    ş void fillboxw (int c, int color, int func);
+
+% Remarks:
+    c is the character, color is the character color or attribute.
+    xi,yi are the upper left corner co-ordinates.
+    xf,yf are the lower right corner co-ordinates.
+    xi,yi,xf,yf can be also understood as the left, top, right, bottom sides
+  co-ordinates of the window, respectively.
+
+    fillbox is a generalization of fillbar and barcolor functions. It's output
+  will depend on func argument, which has the same functionality of
+  ~printct type~ argument.
+
+    fillboxw calls fillbox with:
+       xi=crtwin_dta.left+1;   yi=crtwin_dta.top+1;
+       xf=crtwin_dta.right-1;  yf=crtwin_dta.bottom-1;
+
+    fillbox and fillboxw have no relationship with ~window~ function.
+
+    fillbox uses function ~printct~.
+    fillboxw uses function fillbox.
+
+% Return Value: none.
+
+% See Also:
+    ~fillscr~     ~fillbar~     ~barcolor~
+
+% Examples:
+    ~fillbox example~   ~fillboxw example~
+
+:fillbox example
+%   fillbox example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+
+ void main ()
+  {
+
+    fillscr ('.',0x09);//fills the screen with character '.' and color 09h
+                       //(light blue with black background)
+
+ //fillbox called with character 'A' and color 2Eh with type=0
+    prints ("fillbox called with type = 0",7,3,0x07);
+    fillbox ('A',10,5,30,10,0x2e,0);
+
+ //fillbox called with character 'A' and color 2Eh with type=1
+    prints ("fillbox called with type = 1",47,3,0x07);
+    fillbox ('A',50,5,70,10,0x2e,1);
+
+ //fillbox called with character 'A' and color 2Eh with type=2
+    prints ("fillbox called with type = 2",7,13,0x07);
+    fillbox ('A',10,15,30,20,0x2e,2);
+
+ //fillbox called with character 'A' and color 2Eh with type=3
+    prints ("fillbox called with type = 3",47,13,0x07);
+    fillbox ('A',50,15,70,20,0x2e,3);
+  }
+
+
+:fillboxw example
+%   fillboxw example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //This example draws a text box filled with character '.' and color 19h
+ //(light blue with blue background), and them calls fillboxw.
+ //To test this example in other video modes than 80x25, use crt_detect(X)
+ //where X is your video adapter (1=CGA,2=MCGA,3=EGA,9=VGA/SVGA).
+
+ void main ()
+  {
+    int c0;
+
+    //crt_detect (X);
+    fillscr ('°',0x19); //fills the screen
+    setcrtwin (20,7,60,17); //change text box/window coordinates
+    molduradw (0x1f); //draws the text box border
+
+    for (c0=0;c0<4;c0++)
+     {
+      //displays current type value and draws the box
+       printsf (21,5,0x1e,"Before a call to fillbox with type = %d",c0);
+       fillbarw ('.',0x19);
+       getch ();
+      //notice what fillboxw does according to type value
+       prints (" After",21,5,0x1e); //fixes the message displayed on screen
+       fillboxw ('A',0x1e,c0);
+       getch ();
+     }
+  }
+
+:crtframe:crtframew
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrtframe and crtframewŞ             <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßß
+    ş crtframe draws the border of a text box (frame) with selectable or user
+  defined outline.
+    ş crtframew is similar to crtframe, but uses box coordinates given by
+  crtwin_dta.
+
+% Declaration:
+    ş void crtframe (int xi, int yi, int xf, int yf, int color,
+      unsigned int type);
+    ş void crtframew (int color, unsigned int type);
+
+% Remarks:
+    (xi,yi) is the upper left corner of the box.
+    (xf,yf) is the lower right corner of the box.
+
+    The frame goes from (xi,yi) to (xf,yf).
+    For a better understanding, xi,yi,xf,yf can be understood as the left, top,
+  right, bottom sides coordinates of the frame, respectively.
+    The "color" argument is the color which the border of the text box will be
+  drawn.
+    The "type" argument selects which outline type will be used. There are
+  three predefined types, and a user defined type, that can be defined if
+  type is greater than 255 (FFh).
+    The predefined types are:
+       type = 0 => text box with single outline. (moldura macro)
+       type = 1 => text box with double outline. (moldurad macro)
+       type = 2 => text box with bold outline.
+
+    The user defined type can be selected either if type==3 or if type is
+  greater than 255 or smaller than 0.
+    If type==3 it draws the border with current user defined character, without
+       replacing it. (default='Û'= DBh)
+    If type>=100h it replaces the current user defined character and draws the
+       border with this new character. This character is obtained from the
+       remainder of "type" divided by 100h (new character=type%256) (the 8
+       least significant bits of "type").
+    "type" values greater than 3 or smaller than 256 are reserved for future
+    versions. If type is inside this interval, the call to crtframe will be
+    ignored.
+    The table below summarizes the frame types according to type argument:
+
+        type  ³~crtframe_mat~ ³  frame
+       value  ³ characters  ³  type
+   ÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄ
+         0    ³ 0  thru 7   ³ pre-defined
+         1    ³ 8  thru 15  ³ pre-defined
+         2    ³ 16 thru 23  ³ pre-defined
+         3    ³ 24 thru 31  ³ user defined (default = 'Û')
+    3<type<256³    <none>   ³ none (reserved for future versions)
+        >256  ³ 24 thru 31  ³ least 8 significant bits of type/
+              ³             ³ redefines user defined outline
+
+
+    crtframe uses crtframe_mat buffer to draw the frames, so if you want
+  redefine pre-defined frames, remove from CRT.H the const directive in front
+  of crtframe_mat declaration. This will allow you to edit this buffer. Note
+  that characters 24 thru 31 (the number refers to it's index in on
+  crtframe_mat) are changed when crtframe is called with type greater than 255,
+  and are all the same.
+
+    crtframew calls crtframe with (xi,yi)=(crtwin_dta.left,crtwin_dta.top)
+  and (xf,yf)=(crtwin_dta.right,crtwin_dta.bottom).
+
+  If you wish you may use these crtframe and crtframew macros:
+      ~moldura~         ~molduraw~
+      ~moldurad~        ~molduradw~
+
+  They use function ~printc~.
+
+% Return Value:
+    None. (for both functions)
+
+% Portability:
+    See ~Appendix A~
+
+% See Also:
+    ~mkline~
+
+% Examples:
+    ~crtframe example~      ~crtframew example~       ~Example 2~
+
+:crtframe example
+%   crtframe example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr (' ',0x07); //clears the screen
+    printsj ("- - - Hit any key to see the examples - - -",24,0x8e);
+    getch ();
+
+  //Draws a text frame with single outline
+    prints ("Type = 0",6,3,0x1f); //message
+    crtframe (5,5,15,10,0x1a,0); //draws the frame
+    getch (); //pause
+
+  //Draws a text frame with double outline
+    prints ("Type = 1",26,3,0x1f);
+    crtframe (25,5,35,10,0x1b,1);
+    getch();
+
+  //The outline now is in bold
+    prints ("Type = 2",46,3,0x1f);
+    crtframe (45,5,55,10,0x1c,2);
+    getch ();
+
+  //Draws a text frame with user defined outline (by default='Û' (DBh))
+    prints ("Type = 3",66,3,0x1f);
+    crtframe (65,5,75,10,0x1d,3);
+    getch ();
+
+  //Outline now is character A. Changes user defined outline.
+    prints ("Type = 256+'A'",3,13,0x1f);
+    crtframe (5,15,15,20,0x1e,'A'+0x100);
+    getch ();
+
+  //Draws a text frame with user defined outline (now ='A' (41h))
+    prints ("Type = 3 (again)",22,13,0x1f);
+    crtframe (25,15,35,20,0x1f,3);
+    getch ();
+  }
+
+:crtframew example:fillbarw example
+%  crtframew and fillbarw example
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr ('°',0x19);
+    setcrtwin (10,5,30,15); //set crtwin_dta coordinates
+    crtframew (0x1e,1); //draws the box frame
+    getch ();
+    fillbarw (' ',0x17); //fills the box internally
+    getch ();
+  }
+
+:mkline_aux
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İmkline_auxŞ                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    Performs frame characters auto replacement according to its arguments.
+  It's ~mkline~'s replacement algorithm.
+
+% Declaration:
+    void  mkline_aux (int cnt, int var, unsigned int mode, int pos, int color);
+
+% Remarks:
+    The frame characters, as I will call are defined in mkline_mat buffer, and
+  are these used to draw text box or text frames, as found in menus of programs
+  like MS-DOS EDIT.
+    mkline calls this function for any character to be analyzed and possibly
+  replaced. mkline only manages the replacement.
+
+    If the character found at position where the replacement will be done
+  isn't in ~mkline_mat~ or if it is FFh, pos arguments is set internally to 3
+  and it performs complete replacement (as drawing a line).
+
+  arguments
+
+    Arg.  ³ What it is?, What it does?
+  ÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   cnt    ³  It's the co-ordinate that remains constant in successive calls by
+          ³ mkline (may be either x or y)
+   var    ³  It's the co-ordinate that is incremented in each call by mkline.
+          ³ if (cnt==x var==y) if (cnt==y var==x)
+   mode   ³  Indicates the kind of line to be draw (outline and orientation)
+   pos    ³  Indicates in which position the replacement is going to be done
+          ³ (if it's going to be done at the beginning, at the middle, or at
+          ³ the end of line draw by mkline).
+
+    The cnt and var arguments have the same meaning in mkline function, they
+  define the position where the replacement occurs.
+
+   mode value   ³ use and operation. (by with mkline)
+  ÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+    0           ³horizontal line drawing. Single outline
+                ³y=cnt, x=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    1           ³vertical line drawing. Single outline
+                ³x=cnt, y=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    2           ³horizontal line drawing. Double outline
+                ³y=cnt, x=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    3           ³vertical line drawing. Double outline.
+                ³x=cnt, y=var.
+
+   pos value    ³ use and operation*
+  ÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+    0           ³no replacement is done.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    1           ³replacement with end direction trace.
+                ³(used at the beginning of line)
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    2           ³replacement with beginning direction trace.
+                ³(used at the end of line)
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    3           ³replacement with both directions trace.
+                ³(used at the middle of line)
+
+    * If character read at position doesn't exist in mkline_mat
+    buffer or if it is FFh, not depending of pos value, it is internally
+    assumed to be 3.
+
+    The identification and replacement algorithm used by mkline_aux is based
+  in finding the character's index on mkline_mat buffer and Boolean ORing it
+  with mode and pos arguments.
+  Uses functions ~getcrtchar~, ~getcrtcolor~ and ~printc~.
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Examples:
+    ~mkline_aux example 1~        ~mkline_aux example 2~
+
+:mkline_aux example 1
+%   mkline_aux example 1
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int c0,c1;
+    fillscr ('°',0x19);
+    prints ("* * * mkline_aux Example and use of mkline_mat * * *",14,1,0x1e);
+    fillbar (mkline_mat[0x18],10,6,25,6,0x1f); //try also with mkline_mat[0x38]
+    prints ("pos = ",10,8,0x1f);
+    for (c0=0;c0<4;c0++)
+     {
+       getch ();
+       printc (c0+0x30,16,8,0x1e);
+       for (c1=0;c1<4;c1++)
+        {
+          mkline_aux (6,4*c0+c1+10,0,c0,0x1e); //draws the line over frame
+                                            //characters.
+          mkline_aux (4,4*c0+c1+10,0,c0,0x1e); //draws the upper line.
+             //notice that it is the same call, the only difference is y value,
+             //drawing the line where there's no frame character.
+          //try also with argument mode=2 in calls to mkline_aux
+        }
+     }
+    getch ();
+  }
+
+:mkline_aux example 2
+%   mkline_aux example 2
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //This program displays the contents of mkline_mat buffer onscreen and
+ //what happens to the copy of mkline_mat on screen (inside the blue boxes)
+ //after a call to mkline_aux.
+ //Inside the green box is the contents of mkline_mat unchanged
+
+ void main ()
+  {
+    int c0,c1,c2,c3;
+    int a0,a1;
+    for (c0=0;c0<4;c0++)
+     {
+       fillscr ('°',0x19);
+       prints("* * * mkline_aux example and use of mkline_mat * * *",14,1,0x1e);
+       setcrtwin(10,15,19,24);
+       molduradw(0x1a);
+       printtext((char *)mkline_mat,0,0,0x1f);
+       prints (" => Contents of mkline_mat, unchanged.",26,20,0x1e);
+       moldurad(39,16,47,18,0x1e);
+       printsf (40,17,0x1f," pos=%d ",c0);
+       for (c1=0;c1<4;c1++)
+        {
+          printsf (6+c1*20,3,0x1f,"mode = %d",c1);
+          setcrtwin (5+c1*20,4,14+c1*20,13);
+          molduradw(0x1b);
+          printtext((char *)mkline_mat,0,0,0x1f);
+          for (c2=0;c2<8;c2++)
+             for (c3=0;c3<8;c3++)
+              {
+                if (!(c1%2))
+                   mkline_aux(c2+5,c3+c1*20+6,c1,c0,0x1e);
+                 else
+                   mkline_aux(c2+c1*20+6,c3+5,c1,c0,0x1e);
+              }
+        }
+       getch ();
+    }
+  }
+
+
+:mkline
+% ÜÜÜÜÜÜÜÜ
+% İmklineŞ                             <~CRT.H~>
+% ßßßßßßßß
+    Draws a menu frame line, performing automatic character replacement
+  when it founds a menu frame character on its path.
+
+% Declaration:
+    void  mkline (int cnt, int bgn, int end, int color, unsigned int mode);
+
+  Purpose:
+
+    This function has been developed to make easy the programmer's work in
+  drawing menu lines inside a box. For example, imagine that you have a menu
+  box like the one draw below:
+
+    ÉÍÍÍÍÍÍÍ»
+    º       º
+    º       º
+ A->º       º<-B
+    º       º
+    º       º
+    ÈÍÍÍÍÍÍÍ¼
+
+    If you desired to divide it in two parts by drawing a line from A to
+   B, you would have print a string from A to B with character 'Ä'. The
+   frame would appear in the best like this:
+
+    ÉÍÍÍÍÍÍÍ»
+    º       º
+    º       º
+ A->ºÄÄÄÄÄÄÄº<-B
+    º       º
+    º       º
+    ÈÍÍÍÍÍÍÍ¼
+
+    Note that the corners A and B aren't OK. The best would be the following:
+
+    ÉÍÍÍÍÍÍÍ»
+    º       º
+    º       º
+ A->ÇÄÄÄÄÄÄÄ¶<-B
+    º       º
+    º       º
+    ÈÍÍÍÍÍÍÍ¼
+
+     One solution would be to print the characters ('Ç' and '¶') at positions
+  A and B, but that is too hard, because you need to know the ASCII codes of
+  these characters, make one call to ~prints~ and two calls to ~printc~. With
+  mkline, all you have to do is to supply it with the coordinates of A and
+  one coordinate of B (only one is needed, because the other is supplied by A),
+  the outline and the orientation of the line to be draw. Which becomes easier
+  if you use ~linha...~ macros defined in CRT.H
+
+% Remarks:
+    The replacement is done from A thru B.
+
+    Arguments:
+    Arg.  ³ What it is? What it does?
+  ÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   cnt    ³ is the common coordinate of A and B
+   bgn    ³ is the other A coordinate
+   end    ³ is the other B coordinate
+   mode   ³ defines the orientation and outline of the line to be draw.
+    If (cnt==column) bgn,end==row. If (cnt==row) bgn,end==column.
+
+   mode value   ³ use and operation.
+  ÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+    0           ³horizontal line drawing. Single outline
+                ³y=cnt, x=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    1           ³vertical line drawing. Single outline
+                ³x=cnt, y=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    2           ³horizontal line drawing. Double outline
+                ³y=cnt, x=var.
+  ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+    3           ³vertical line drawing. Double outline.
+                ³x=cnt, y=var.
+
+
+  mkline uses function ~mkline_aux~ as replacement algorithm.
+
+% Return Value:
+    None
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~crtframe~    ~mkline_aux~    ~mkline_mat~
+
+% Examples:
+    ~Example 2~
+
+%   crtwin example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr ('°',0x19);
+    printsj ("* * * Simple examples of mkline function * * *",1,0x1e);
+    printsj ("- - - Hit any key to continue - - -",24,0x9e);
+
+  //The example above (the one you had to imagine):
+    moldurad (20,6,30,10,0x1f);
+    getch ();
+    mkline (8,20,30,0x1e,0);
+    getch ();
+
+  //another example
+    moldura (50,6,60,10,0x1f);
+    getch ();
+    mkline (55,6,10,0x1e,3);
+    getch ();
+  }
+
+:crtwindow
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrtwindow Ş                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    Draws a text box with border and title.
+
+% Declaration:
+    void crtwindow    (struct ~crtwin_inp~ p0);
+
+% Remarks:
+    p0 is the input struct filled with input arguments for crtwindow.
+    If p0.title==NULL it doesn't print any title nor lefts any space for the
+  title.
+    The box coordinates are given by ~crtwin_dta~ global variable.
+    Before calling crtwindow crtwin_dta values must be set to values inside
+  the screen, otherwise the box will not appear completely.
+    crtwindow doesn't truncate the title to fit in the box upper border. So
+  if the title is very big or the box is narrow, the title will exceed the
+  box width.
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~crtframe~    ~mkline~     ~setcrtwin~
+
+% Examples:
+    ~Example 3~
+
+%   crtwindow example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    struct crtwin_inp licos;
+    licos.title="CRTWINDOW EXAMPLE"; //title
+    licos.tcolor=0x1b; //title color
+    licos.fchr='±'; //fill character
+    licos.fcolor=0x2a; //fill color
+    licos.bcolor=0x1f; //border color
+    licos.btype=1; //border type, same of crtframe
+
+    fillscr ('°',0x19);
+    setcrtwin (10,5,30,15); //the coordinates for crtwindow
+    crtwindow (licos);
+
+    licos.title=NULL;
+    licos.fcolor=0x19;
+    licos.bcolor=0x1e;
+    setcrtwin (52,5,68,14);
+    crtwindow (licos);
+    getch ();
+  }
+
+:savevideo:restorevideo:savevideowin:restorevideowin:savevideow:restorevideow:savevideo...:restorevideo...
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsavevideo,     restorevideo,    Ş   <~CRT.H~>
+% İsavevideowin,  restorevideowin, Ş
+% İsavevideow and restorevideow    Ş
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+   ş savevideo saves the contents of screen into a far buffer.
+   ş restorevideo restores the contents of screen previously saved into a far
+     buffer.
+   ş savevideowin saves the contents of a text window into a far buffer.
+   ş restorevideowin restores the contents of a text window previously saved
+     into a far buffer.
+   ş savevideow is similar to savevideowin, but the window coordinates are
+     given by ~crtwin_dta~.
+   ş restorevideow is similar to savevideowin, but the window coordinates are
+     given by crtwin_dta.
+
+
+% Declaration:
+   ş char far *savevideo       (char far *s);
+   ş char far *restorevideo    (char far *s);
+   ş char far *savevideowin    (char far *s, int xi, int yi, int xf, int yf);
+   ş char far *restorevideowin (char far *s, int xi, int yi, int xf, int yf);
+   ş char far *savevideow      (char far *s);
+   ş char far *restorevideow   (char far *s);
+
+
+% Remarks:
+    If ~vmode_x~ and ~vmode_y~ corresponds to the actual number of rows and
+  columns in current text mode, savevideo and restorevideo use the hole screen.
+    savevideowin and restorevideowin use only a rectangle (text window)
+  which upper left corner is (xi,yi), and lower right corner is (xf,yf).
+    (xi,yi) and (xf,yf) doesn't need to be inside the range given by vmode_x
+  and vmode_y for these functions work. For example:
+    savevideowin(buffer,-2,-2,100,60);
+  is a valid call.
+    savevideow/restorevideow calls savevideowin/restorevideowin with:
+       xi=crtwin_dta.left;     yi=crtwin_dta.top;
+       xf=crtwin_dta.right;    yf=crtwin_dta.bottom;
+
+    In savevideo, the buffer size must be at least 2*(vmode_x * vmode_y) to
+  avoid possible data loss, which normally causes unpredictable and
+  likely disastrous results, and can lead to serious problems.
+    In savevideowin, the buffer size must be at least 2*(yf-yi+1)(xf-xi+1), by
+  the same reason as above. (even when xi, xf ,yi ,yf are out of range given
+  by vmode_x and vmode_y)
+    If you save many screens or windows in the same buffer, remember that
+  the buffer size must be at least the sum of required size for each screen or
+  window. The formulas above determines the required size for each screen or
+  window data storage.
+    savevideo and restorevideo use only the memory area that goes from
+  ~video_addr~ thru video_addr + 2*vmode_x*vmode_y - 1 (when ~crt_direct~==0),
+  and/or the window (0,0) thru (vmode_x-1,vmode_y-1) (always).
+
+    When is defined ~CRT_FULL~ before including CRT.H these functions are
+  replaced by macros that have equivalent functionality, but use ~savecrt...~
+  and ~restorecrt...~ functions.
+   (for further information see these macros or CRT.H file)
+
+% Return Value:
+    All these functions return a pointer that points to buffer's next free
+  position, that is, the position where the next screen or window can be saved
+  or retrieved.
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    Depends on ~printc~, ~getcrtchar~ and ~getcrtcolor~ compatibility.
+
+% See Also:
+    ~CRT_FULL~ #defines     ~savecrt...~     ~restorecrt...~
+    ~crtwin_dta~            ~gettext~        ~puttext~
+
+% Examples:
+    ~savevideo example~                ~restorevideo example~
+    ~savevideowin example~             ~restorevideowin example~
+    ~savevideow example~               ~restorevideow example~
+
+:savevideo example:restorevideo example
+%   savevideo and restorevideo example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char buffer[4096]; //buffer>=4000= 2*(25 * 80) Be sure that vmode_x<=80
+                       //and vmode_y<=25
+    fillscr ('°',0x19);
+    prints ("* * * SAVEVIDEO AND RESTOREVIDEO EXAMPLE * * *",17,1,0x1e);
+    prints ("- - - Hit any key to continue - - -",23,24,0x9e);
+    getch ();
+    savevideo (buffer); //saves in buffer "buffer" the screen contents
+    fillscr (' ',7); //clears the screen
+    prints ("- - - Hit any key to see previous screen - - -",16,24,7);
+    getch ();
+    restorevideo (buffer); //restore the screen contents saved in "buffer"
+    getch ();
+  }
+
+:savevideowin example:restorevideowin example
+%   savevideowin and restorevideowin example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char buffer[420]; // buffer>= 420 = 2*(74-5+1) * (24-22+1)
+    fillscr ('°',0x19);
+    prints ("* * * SAVEVIDEOWIN AND RESTOREVIDEOWIN EXAMPLE * * *",13,1,0x1e);
+    prints ("- - - Hit any key to continue - - -",20,24,0x9e);
+    getch ();
+    savevideowin (buffer,5,22,74,24); //saves in "buffer" a text window
+    fillscr (' ',0x07); //clears the screen
+    prints ("- - - Hit any key to see a part of previous screen - - -",11,23,7);
+    getch ();
+    restorevideowin(buffer,5,11,74,13);//restores saved window at a new position
+    getch ();
+  }
+
+:savevideow example:restorevideow example
+%   savevideow and restorevideow example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char buffer[462]; // buffer>= 462 = 2*(50-30+1) * (15-5+1)
+    fillscr ('°',0x19);
+    printsj ("* * * SAVEVIDEOW AND RESTOREVIDEOW EXAMPLE * * *",1,0x1e);
+    printsj ("- - - Hit any key to continue - - -",24,0x9e);
+    setcrtwin(30,5,50,15);
+    molduradw (0x1e);
+    fillbarw ('ş',0x18);
+    printsj("This box is stored",1,0x1f);
+    printsj("in a buffer",2,0x1f);
+    getch ();
+    savevideow (buffer);
+       //saves in "buffer" the text window defined by crtwin_dta
+    fillscr (' ',0x07); //clears the screen
+    prints ("- - - Hit any key to see the text box again - - -",16,23,7);
+    getch ();
+    restorevideow (buffer);
+       //restores saved window at position given by crtwin_dta
+    getch ();
+  }
+
+:CRT_FULL:SAVECRTú:RESTORECRTú:SAVECRTWINú:RESTORECRTWINú
+%  CRT_FULL #defines                   <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßß
+
+  SAVECRT, RESTORECRT, SAVECRTWIN, RESTORECRTWIN, OR CRT_FULL are #defines
+  needed to be defined before including CRT.H to include ~savecrt...~ and
+  ~restorecrt...~ functions. They have been created to allow optimization
+  (about 600 bytes all them together).
+
+  For example:
+    savecrt has the same functionality of savevideo, the difference is that
+  savecrt has more options than savevideo, being larger. So if the program
+  requires only savevideo, it would be a waste of memory and code to use
+  savecrt working as savevideo. But if a program requires both savevideo
+  and savecrt, it would be a waste to include savevideo, because savecrt can
+  do everything as well as savevideo does and there's almost no difference in
+  execution time between both functions, so including savevideo code's would
+  be useless. It would pay off including both functions only if both appears
+  hundreds time in source code, in a way that the extra argument that savecrt
+  has would make difference in size.
+    So what has been done is a mechanism that allows only one of both
+  functions to be used. For example, a program A uses only savevideo (see
+  example below), but then the programmer decides to include in this program
+  savecrt function (program B).
+
+     Program A:                            Program B:
+
+                                        #define SAVECRT
+ #include <CRT.H>                       #include <CRT.H>
+ void main ()                           void main ()
+  {                                      {
+    char s[4000];                          char s1[4000];
+    savevideo(s);  //savevideo(s);         char s2[2000];
+    .                                      savevideo (s); //savecrt(s,0)
+    .                                      savecrt (s2,2);
+    .                                      .
+    .                                      .
+                                           .
+
+    To compile program B, the programmer will be forced to define SAVECRT
+  before including CRT.H. By defining SAVECRT, savevideo is replaced by a
+  macro with the same name that calls savecrt. So, even if the source code
+  appears to use both functions, in fact it uses only savecrt.
+    However if the programmer wishes to include both functions in the
+  compiled code, he/she has to undefine the macro that replaces savevideo
+  before the call to savevideo, as follows:
+    #undef savevideo
+
+    The same idea is valid for other functions listed in the table below
+  with their respectively macros and equivalent functions:
+
+  ~savevideo~        ~savecrt~        SAVECRT
+  ~restorevideo~     ~restorecrt~     RESTORECRT
+  ~savevideowin~     ~savecrtwin~     SAVECRTWIN
+  ~restorevideowin~  ~restorecrtwin~  RESTORECRTWIN
+  ~savevideow~       ~savecrtw~       SAVECRTWIN
+  ~restorevideow~    ~restorecrtw~    RESTORECRTWIN
+
+
+    If you use all these functions, instead of defining these four macros
+  in the table above, you may define CRT_FULL. By doing so, CRT.H
+  automatically defines these four macros.
+
+ #define CRT_FULL
+    is the same as (internally defines)
+ #define SAVECRT
+ #define RESTORECRT
+ #define SAVECRTWIN
+ #define RESTORECRTWIN
+
+    For further information see CRT.H file.
+    If you think that this macro structure is too complicated, you may remove
+  it editing CRT.H file.
+
+:savecrt:restorecrt:savecrtwin:restorecrtwin:savecrtw:restorecrtw:savecrt...:restorecrt...
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsavecrt,      restorecrt,   Ş       <~CRT.H~>
+% İsavecrtwin,   restorecrtwin,Ş
+% İsavecrtw  and restorecrtw   Ş
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+  These functions do the following:
+   ş savecrt saves the contents of screen into a far buffer;
+   ş restorecrt restores the contents of screen previously saved into a far
+     buffer;
+   ş savecrtwin saves the contents of a text window into a far buffer;
+   ş restorecrtwin restores the contents of a text window previously saved
+     into a far buffer;
+   ş savevideow is similar to savevideowin, but the window coordinates are
+     given by crtwin_dta.
+   ş restorevideow is similar to savevideowin, but the window coordinates are
+     given by crtwin_dta.
+
+  all them with options (mode).
+
+% Declaration:
+   ş char far *savecrt      (char far *s, int mode);
+   ş char far *restorecrt   (char far *s, int mode);
+   ş char far *savecrtwin   (char far *s, int xi, int yi, int xf, int yf,
+                             int mode);
+   ş char far *restorecrtwin(char far *s, int xi, int yi, int xf, int yf,
+                             int mode);
+   ş char far *savecrtw     (char far *s, int mode);
+   ş char far *restorecrtw  (char far *s, int mode);
+
+
+% Remarks:
+    savecrt, restorecrt, savecrtwin, restorecrtwin, savecrtw and restorecrtw
+  are similar to their ~savevideo...~ and ~restorevideo...~ counterparts,
+  except that they have one more input parameter, which defines the mode that
+  data must be saved or retrieved from buffer, the mode argument.
+    (xi,yi) is the upper left corner.
+    (xf,yf) is the lower right corner.
+    (xi,yi) and (xf,yf) doesn't need to be inside the range given by vmode_x
+  and vmode_y for these functions work. For example:
+    savecrtwin(buffer,-2,-2,100,60);
+  is a valid call.
+
+    savecrtw/restorecrtw calls savecrtwin/restorecrtwin with:
+       xi=crtwin_dta.left;     yi=crtwin_dta.top;
+       xf=crtwin_dta.right;    yf=crtwin_dta.bottom;
+
+    If mode==0, these functions work exactly as the same as their ...video...
+  counterparts, except that they are a bit larger.
+
+    mode values:
+
+  mode³ Function
+ ÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   0  ³ Writes or reads characters and attributes (colors) sequentially
+   1  ³ Writes or reads attributes and characters sequentially
+   2  ³ Writes or reads only characters
+   3  ³ Writes or reads only attributes
+   >3 ³ Reserved for future versions
+
+    If mode is greater than 3 the call these functions is ignored and
+  they return NULL.
+
+    Hint: You can exchange characters by colors on screen using a call to
+ savecrt... with mode==0 and restoring the saved screen (or window) at
+ the same position with mode==1.
+
+     To use them is needed to define the matching #define or define CRT_FULL
+  before including CRT.H (See table below)
+
+  Function      ³ Lines before #include <CRT.H> (in source code)
+ ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+ savecrt        ³#define SAVECRT        or    #define CRT_FULL
+ restorecrt     ³#define RESTORECRT     or    #define CRT_FULL
+ savecrtwin     ³#define SAVECRTWIN     or    #define CRT_FULL
+ restorecrtwin  ³#define RESTORECRTWIN  or    #define CRT_FULL
+ savecrtw       ³#define SAVECRTWIN     or    #define CRT_FULL
+ restorecrtw    ³#define RESTORECRTWIN  or    #define CRT_FULL
+
+
+    For further information, see CRT_FULL #defines.
+
+    The buffer "s" size must be at least: *
+  - for mode==0 or mode==1:
+       s>=(2 * vmode_x * vmode_y) => for savecrt and restorecrt
+       s>=(2 * (xf-xi+1) * (yf-yi+1)  => for savecrtwin and restorecrtwin
+  - for mode==2 or mode==3:
+       s>=vmode_x * vmode_y => for savecrt and restorecrt
+       s>=(xf-xi+1) * (yf-yi+1)  => for savecrtwin and restorecrtwin
+
+   * Even when xi, xf ,yi ,yf are out of range given by vmode_x and vmode_y
+
+    If you save many screens or windows in the same buffer, remember that
+  the buffer size must be at least the sum of required size for each screen
+  or window. The formulas above determines the required size for each
+  screen or window data storage.
+
+% Return Value:
+    On success: These functions return a pointer that points to buffer's
+  next free position, that is, the position where can be saved or retrieved
+  the next screen or window. (see examples)
+    On error: these functions return NULL. (only happens if mode is invalid)
+
+% Portability:
+    See ~Appendix A~.
+
+% Hardware Compatibility:
+    Depends on ~printc~, ~getcrtchar~ and ~getcrtcolor~ compatibility.
+
+% See Also:
+    ~CRT_FULL~ #defines     ~savevideo...~   ~restorevideo...~
+    ~crtwin_dta~            ~gettext~        ~puttext~
+
+% Examples:
+    ~savecrt example~                  ~restorecrt example~
+    ~savecrtwin example~               ~restorecrtwin example~
+    ~savecrtw example~                 ~restorecrtw example~
+
+:savecrt example:restorecrt example
+%   savecrt and restorecrt example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /* In this example is used a 4000 bytes buffer. The first 2000 bytes are used
+ by the first savecrt call to save the characters from screen, returning
+ a pointer that points to the rest of the buffer. This pointer is used by a
+ second savecrt call to save the attributes from screen in the remaining 2000
+ bytes*/
+
+ #define SAVECRT      //or
+ #define RESTORECRT   //#define CRT_FULL
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char savebuf[4000]; //savebuf>=(25 * 80) + (25 * 80)
+    char *savebuf2;
+    fillscr ('°',0x19);
+    prints ("* * * SAVECRT AND RESTORECRT EXAMPLE * * *",18,1,0x1e);
+    prints ("- - - Hit any key to continue - - -",22,24,0x9e);
+    getch ();
+    savebuf2=(char *)savecrt(savebuf,2);//saves first the characters(2000 bytes)
+    savecrt(savebuf2,3); //saves the attributes (remaining 2000 bytes)
+    fillscr (' ',0x07);
+    printsn ("- - - Hit any key to see previous screen - - -",16,23);
+    printsn ("- - - first characters, then colors - - -",18,24);
+    getch ();
+    savebuf2=savebuf;
+    savebuf2=(char *)restorecrt (savebuf2,2);
+    getch ();
+    restorecrt (savebuf2,3);
+    getch ();
+  }
+
+:savecrtwin example:restorecrtwin example
+%   savecrtwin and restorecrtwin example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /* In this example is used a 272 bytes buffer. The first 136 bytes are used
+ by the first savecrtwin call to save the characters from screen, returning
+ a pointer that points to the rest of the buffer. This pointer is used by a
+ second savecrtwin call to save the attributes from screen in the remaining
+ 136 bytes*/
+
+ #define SAVECRTWIN      //or
+ #define RESTORECRTWIN   //#define CRT_FULL
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char savebuf[272]; //savebuf>=272=((72-5+1)*(24-23+1)) +((72-5+1)*(24-23+1))
+    char *savebuf2;
+    fillscr ('°',0x19);
+    prints ("* * * SAVECRTWIN AND RESTORECRTWIN EXAMPLE * * *",18,1,0x1e);
+    prints ("- - - Hit any key to continue - - -",22,24,0x9e);
+    getch ();
+    savebuf2=(char *)savecrtwin(savebuf,5,23,72,24,3); //saves first attributes
+    savecrtwin(savebuf2,5,23,72,24,2); //then saves characters
+    fillscr (' ',0x07);
+    printsj("- - - Hit any key to see a part of previous screen - - -",23,0x07);
+    printsj ("- - - first attributes (colors), then characters - - -",24,0x07);
+    getch ();
+    savebuf2=savebuf;
+    savebuf2=(char *)restorecrtwin(savebuf2,5,20,72,21,3);
+    getch ();
+    restorecrtwin (savebuf2,5,20,72,21,2);
+    getch ();
+  }
+
+:savecrtw example:restorecrtw example
+%   savecrtw and restorecrtw example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /* In this example is used a 272 bytes buffer. The first 136 bytes are used
+ by the first savecrtw call to save the characters from screen, returning
+ a pointer that points to the rest of the buffer. This pointer is used by a
+ second savecrtw call to save the attributes from screen in the remaining
+ 136 bytes*/
+
+ #define SAVECRTWIN      //or
+ #define RESTORECRTWIN   //#define CRT_FULL
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    char savebuf[272]; //savebuf>=272=((72-5+1)*(24-23+1)) +((72-5+1)*(24-23+1))
+    char *savebuf2;
+    fillscr ('°',0x19);
+    prints ("* * * SAVECRTW AND RESTORECRTW EXAMPLE * * *",18,1,0x1e);
+    prints ("- - - Hit any key to continue - - -",22,24,0x9e);
+    getch ();
+    setcrtwin (5,23,72,24);
+    savebuf2=(char *)savecrtw(savebuf,3); //saves first attributes
+    savecrtw(savebuf2,2); //then saves characters
+    fillscr (' ',0x07);
+    prints ("- - - Hit any key to see a part of previous screen - - -",
+      12,23,0x07);
+    prints ("- - - first attributes (colors), then characters - - -",
+      13,24,0x07);
+    getch ();
+    setcrtwin (5,20,72,21);
+    savebuf2=(char *)restorecrtw(savebuf,3);
+    getch ();
+    restorecrtw (savebuf2,2);
+    getch ();
+  }
+
+:crt_clrscr
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrt_clrscrŞ                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    Clears the screen
+
+% Declaration:
+    void crt_clrscr (void);
+
+% Remarks:
+    crt_clrscr clears the screen in current video page and places the cursor
+  in the upper left-hand corner (at position 0,0).
+    Internally crt_clrscr calls ~fillscr~ with character ' ' and color 7
+  (light gray), after it calls ~crt_gotoxy~.
+
+  crt_clrscr () ==> fillscr(' ',7); crt_gotoxy(0,0);
+
+% Return Value:
+     None
+
+% See Also:
+     ~clrscr~
+
+% Example:
+
+ #include <crt.h>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr ('°',0x19);
+    printsj ("- - - Hit any key to clear the screen - - -",1,0x9e);
+    prints ("Look at the cursor => ",30,10,0x1f);
+    crt_gotoxy (51,10);
+    getch ();
+    crt_clrscr (); //clears the screen
+    getch ();
+  }
+
+:setcursorsh:getcursorsh
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetcursorsh and getcursorshŞ        <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş setcursorsh changes cursor shape
+    ş getcursorsh gets cursor shape
+
+% Declaration:
+    ş void setcursorsh (unsigned shape);
+    ş int getcursorsh (void);
+
+% Remarks:
+
+    ş setcursorsh uses function INT 10h / AH = 01h
+    ş getcursorsh uses function INT 10h / AH = 03h
+
+    shape argument bits.  (source: Ralf Brown's ~Interrupt List~ / some tests)
+       15 must be 0.
+       14,13 cursor blinking
+          (00=normal, 01=invisible, 10=erratic, 11=slow)
+          (00=normal, other=invisible on EGA/VGA)
+       12-8 topmost scan line containing cursor
+       7    When calling setcursorsh this bit should be set in some video
+            adapters (or system configuration) for the cursor shape be
+            correctly changed (undocumented). I've tested setcursorsh in
+            my computer (The video adapter is SVGA and DISPLAY.SYS was
+            installed) and it worked fine only when this bit was set.
+            Do some tests with this bit set and clear.
+       4-0  lowermost scan line containing cursor
+
+    setcursorsh loads _AL with ~vmode_mode~, before calling INT 10, to avoid
+  problem with some buggy BIOSes
+    Important Notice: It has been reported in INT 10h/AH=01h documentation that
+  AMI 386 BIOS and AST Premier 386 BIOS will lock up the system if AL is not
+  equal to current video mode. So when calling setcursorsh in systems that
+  use these BIOSes, be sure that vmode_mode corresponds to the actual selected
+  mode.
+
+  On VGA/SVGA systems:
+    In 25 rows text modes, the cursor is draw with 16 horizontal lines. In 43
+  or 50 rows text modes, the cursor is draw with 8 horizontal lines.
+
+  On CGA systems the cursor is draw with 8 horizontal lines, in 25 rows
+ text modes.
+
+  shape example: shape = 0506h
+
+       line 0// °°°°°°°°
+       line 1// °°°°°°°°
+       line 2// °°°°°°°°
+       line 3// °°°°°°°°
+       line 4// °°°°°°°°
+       line 5// ÛÛÛÛÛÛÛÛ
+       line 6// ÛÛÛÛÛÛÛÛ
+       line 7// °°°°°°°°
+
+  IMPORTANT: When calling getcursorsh (INT 10h/AH=03h) many ROM BIOSes
+  incorrectly return the cursor default size for a color display (start 06h,
+  end 07h) when a monochrome display is attached.
+
+% Return Value:
+    ş setcursorsh returns nothing.
+    ş getcursorsh returns the current cursor shape in video page defined by
+      crt_page.
+
+% Portability:
+    On DOS window mode (WINDOWS), it has same effect.
+    See ~Appendix A~ for further information.
+
+% Hardware Compatibility:
+    Probably every PC compatible video adapter.
+
+% Examples:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main () //turns cursor invisible for a moment
+  {
+    int a0;
+    a0=getcursorsh (); //a0=old cursor shape
+    getch (); //pause
+    setcursorsh (0x2000); //turns cursor invisible
+    getch ();
+    setcursorsh (a0); //restores cursor shape
+    getch ();
+  }
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void showcursorsh (int y)
+ //displays the current cursor shape
+ //y == row where message will be displayed
+  {
+    printsf (20,y,0x1f,"%.4Xh :  Û",
+    getcursorsh());
+    getch ();
+  }
+
+ void main ()
+  {
+    int shape;
+    textmode (3);
+    fillscr (' ',0x1e);
+    printsj ("* * * 25 LINES TEXT MODE * * *",0,0x1e);
+    printsj ("- - - Hit any key for the next example - - -",15,0x9e);
+    shape=getcursorsh(); //saves initial cursor shape
+    printsf (4,12,0x1f,"initial shape = %.4Xh :  Û",shape);
+    //outputs the initial cursor shape
+    gotoxy (28,13);
+    getch ();
+
+    prints ("selected",3 ,12,0x1f);
+    setcursorsh (0x0203);   showcursorsh (12);
+    setcursorsh (0x0f0f);   showcursorsh (12);
+    setcursorsh (0x000f);   showcursorsh (12);
+    setcursorsh (0x0605);   showcursorsh (12);
+
+    textmode (64);
+    videomode (64);
+    crtwin_dta.bottom=50;
+    fillscr (' ',0x1e);
+    printsj ("* * * 50 OR 43 LINES TEXT MODE * * *",0,0x1e);
+    printsj ("- - - Hit any key for the next example - - -",30,0x9e);
+    prints ("selected shape =",3,22,0x1f);
+    gotoxy (28,23);
+
+    setcursorsh (0x0001);   showcursorsh (22);
+    setcursorsh (0x0102);   showcursorsh (22);
+    setcursorsh (0x0203);   showcursorsh (22);
+    setcursorsh (0x0304);   showcursorsh (22);
+    setcursorsh (0x0607);   showcursorsh (22);
+    setcursorsh (0x080C);   showcursorsh (22);
+
+    barcolor (0,30,79,30,0x11);
+    printsj ("- - - HIT ANY KEY TO EXIT - - -",30,0x9c);
+    getch ();
+    textmode (3); //set default text mode
+    setcursorsh (shape);//restores initial cursor shape.
+   }
+
+:setpalreg:getpalreg
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetpalreg and getpalregŞ            <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş setpalreg sets a single palette register value, enabling to change usual
+       text colors by others.
+    ş getpalreg gets individual palette register value.
+
+% Declaration:
+    ş void setpalreg (int regpal, int val);
+    ş int getpalreg (int regpal);
+
+% Remarks:
+    ş setpalreg uses function INT 10h / AX = 1000h
+    ş getpalreg uses function INT 10h / AX = 1007h
+
+    setpalreg loads the register given by (regpal) with value given by (val).
+    For (regpal == 00h through 0Fh) regpal is a palette register and val is a
+  DAC register.
+    For (regpal == 11h) regpal is overscan color register and val is a DAC
+  register.
+    For (regpal == 10h,12h,13h,14h) regpal is a specific CRT register and
+  val is it's value. You should beware that misprogramming of these register
+  may cause undesired results or disastrous results, specially register 10h,
+  which you should let BIOS control.
+     regpal values greater than 0Fh are undocumented, so not necessarily
+  this information above and the table below will be correct for regpal values
+  greater or equal to 10h.
+    The table below summarizes regpal values and the register accessed
+
+    regpal   Register Accessed
+
+   00-0Fh    palette register
+    10h      attribute mode control register (should let BIOS control this)
+    11h      overscan color register (see also AX=1001h)
+    12h      color plane enable register (bits 3-0 enable corresponding
+             text attribute bit)
+    13h      horizontal PEL panning register
+    14h      color select register
+
+    The DAC register is the register that holds the color that's is being
+  used as overscan color and/or by a (or many) palette register.
+    In most CRT.H functions and ~CONIO.H~ functions the color/attribute
+  is a combination where bits 6-4 selects the palette register for background
+  color and bits 3-0 selects the foreground color. Bit 7 is usually text
+  blinking enable bit, but it may be reprogrammed to be background color
+  bit. (see ~settextblink~ and ~Appendix B~)
+    In VGA/SVGA or better adapters, the DAC register for a palette register
+  or is selected by the (6 or 4) least significant bits of palette register
+  value plus current video DAC color page times the size (in DAC registers)
+  of a page. (see also setdacpage).
+    In other adapters the DAC register for a palette register is given by
+  it's value (not tested).
+
+    The overscan register is not affected by DAC registers paging.
+
+     For further details see the source code and INT 10h / AX=(1000h/1007h) in
+  Ralf Brown's ~Interrupt List~.
+
+  Standard values for palette registers:
+
+     regpal* ³     Color    ³ val**
+   ÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍ
+       0     ³ BLACK        ³  0
+       1     ³ BLUE         ³  1
+       2     ³ GREEN        ³  2
+       3     ³ CYAN         ³  3
+       4     ³ RED          ³  4
+       5     ³ MAGENTA      ³  5
+       6     ³ BROWN        ³ 20
+       7     ³ LIGHTGRAY    ³  7
+       8     ³ DARKGRAY     ³ 56
+       9     ³ LIGHTBLUE    ³ 57
+      10     ³ LIGHTGREEN   ³ 58
+      11     ³ LIGHTCYAN    ³ 59
+      12     ³ LIGHTRED     ³ 60
+      13     ³ LIGHTMAGENTA ³ 61
+      14     ³ YELLOW       ³ 62
+      15     ³ WHITE        ³ 63
+   ÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄ
+      17***  ³ OVERSCAN     ³  0
+
+   * palette register number (onscreen text color (see ~Appendix B~))
+  ** palette register value (range: 0-63) (same of EGA_COLORS)
+ *** overscan register (undocumented) (see ~setbordercolor~)
+     The range of overscan register value is 0-255 in VGA+ video adapters.
+
+% Hardware Compatibility:
+    ş setpalreg: PCjr,Tandy,EGA,MCGA,VGA and above
+    ş getpalreg: EGA(with UltraVision v2+), VGA, UltraVision v2+, and above
+
+% Portability:
+    Will depend most of INT 10h/AX=1000h (for setpalreg) and INT 10h/AX=1007h
+  (for getpalreg) BIOS functions.
+    See also ~Appendix A~ for further information.
+
+% See Also:
+   Ralf Brown's ~Interrupt List~   ~setbordercolor~    ~getbordercolor~
+   ~setdacreg~    ~getdacreg~
+
+% Examples:
+    ~Example 5~    ~Example 6~
+
+%   setpalreg and getpalreg example:
+
+    To run this example you will need at least a VGA adapter or an EGA adapter
+  with UltraVision v2+.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int a0,a1;
+    fillscr (' ',0x07);
+    printsj ("- - - Hit any key to turn black \
+ into white and write into black - - -",2,0x8f);
+    getch ();
+
+ //Exchanges palette register 0 and 15 values
+    a0=getpalreg (0);
+    a1=getpalreg (15);
+    setpalreg(0,a1);
+    setpalreg(15,a0);
+    printsj (" - - - Hit any key to unexchange colors - - - ",3,0x83);
+    getch ();
+
+ //Restores old palette register 0 and 15 values
+    setpalreg(0,a0);
+    setpalreg(15,a1);
+    printsj (" - - - Hit any key to return - - -",24,0x8e);
+    getch ();
+  }
+
+:setbordercolor:getbordercolor
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetbordercolor and getbordercolorŞ  <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş setbordercolor sets overscan color register value.
+    ş getbordercolor reads overscan color register value.
+
+% Declaration:
+    ş void setbordercolor (int val);
+    ş int  getbordercolor (void);
+
+% Remarks:
+    ş setbordercolor uses function INT 10h / AX = 1001h
+    ş getbordercolor uses function INT 10h / AX = 1008h
+
+    The value returned by getbordercolor or stored in setbordercolor is the
+  value of overscan color register. This value is the number of a DAC register.
+    The color displayed is given by the DAC register for the overscan color
+  register.
+    The overscan register is not affected by DAC registers paging.
+    BUG: In setbordercolor, the original IBM VGA BIOS incorrectly updates the
+  parameter save area and places the border color at offset 11h of the palette
+  table rather than offset 10h.
+
+% Hardware Compatibility:
+    ş setbordercolor: PCjr,Tandy,EGA,VGA and above
+    ş getbordercolor: EGA(with UltraVision v2+), VGA, UltraVision v2+, and above
+
+% Portability:
+    Will depend most of INT 10h/AX=1001h (for setbordercolor) and
+  INT 10h/AX=1007h (for getbordercolor) BIOS functions.
+    See also ~Appendix A~ for further information.
+
+% See Also:
+    Ralf Brown's ~Interrupt List~   ~setpalreg~   ~getpalreg~
+    ~setdacreg~    ~getdacreg~
+
+% Examples:
+    ~Example 5~
+
+%   setbordercolor and getbordercolor example:
+
+    To run this example you will need at least a VGA adapter or an EGA adapter
+  with UltraVision v2+.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int a0;
+    fillscr (' ',0x07);
+    printsj ("- - - Hit any key to change the overscan color - - -",1,0x8f);
+    getch ();
+
+  //changes the overscan color
+    a0=getbordercolor(); //saves the border color in a0
+    setbordercolor(55); //bordercolor will become light yellow
+
+    printsj ("- - - Hit any key to restore the overscan color - - -",2,0x8f);
+    getch ();
+
+  //restores the overscan color
+    setbordercolor(a0);
+
+    printsj ("- - - Hit any key to continue - - -",3,0x8f);
+    getch ();
+  }
+
+:setdacreg:getdacreg
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetdacreg and getdacregŞ            <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş setdacreg sets the color of a video DAC register.
+    ş getdacreg reads the color from a video DAC register.
+
+% Declaration:
+    ş void setdacreg (int dacreg, char red, char green, char blue);
+    ş void getdacreg (int dacreg, char *red, char *green, char *blue);
+
+% Remarks:
+    dacreg is the DAC register (0-255) and red, green, blue are the red, green
+  and blue values to be loaded or read from the DAC register. The range of
+  red/green/blue (rgb) values is 0(darkest) to 63(lightest), allowing 256k
+  different colors.
+    dacreg range is 0 to 255.
+
+    ş setdacreg uses INT 10h/AX=1010h
+    ş getdacreg uses INT 10h/AX=1015h
+
+% Hardware Compatibility:
+    ş setdacreg: MCGA, VGA or above
+    ş getdacreg: MCGA, VGA or above
+
+% Portability:
+    Will depend most of INT 10h
+  See also ~Appendix A~ for further information.
+
+% See Also:
+    Ralf Brown's ~Interrupt List~          ~setpalreg~    ~getpalreg~
+    ~setbordercolor~     ~getbordercolor~    ~setdacpage~   ~setdacpgmode~
+    ~getdacpgstate~
+
+% Examples:
+    ~Example 6~
+
+%   setdacreg and getdacreg example:
+
+    To run this example you will need at least a VGA or MCGA adapter. Works
+  fine in a SVGA or better adapter.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ // This program replaces the black color temporarily by another, by
+ // replacing the DAC register 0 value and restoring it's old value after.
+ // The DAC register 0 usually is selected by palette register 0(black)
+
+ void main ()
+  {
+    char red,green,blue;
+
+    fillscr ('.',0x07);
+    prints ("Hit any key to change  the black color",5,1,0x0f);
+    getch ();
+
+    getdacreg (0,&red,&green,&blue); //saves old values in red,green,blue
+    setdacreg (0,12,0,24); //changes the black color (DAC register 0)
+    prints ("restore",20,1,0x0f);
+    getch ();
+
+    setdacreg (0,red,green,blue); //restores the color
+    prints ("return.................",20,1,0x0f);
+    getch ();
+  }
+
+:pgmode:DACPAGE_64:DACPAGE_16
+%   setdacpgmode pgmode argument
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+  The values for pgmode are:
+
+     value  ³ Symbolic Constants ³ number of pages (n) ³ size of each page*
+    ÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+       0    ³ DACPAGE_64         ³          4          ³       64
+       1    ³ DACPAGE_16         ³         16          ³       16
+
+    * Number of DAC registers per page.
+
+% See Also:
+    ~setdacpgmode~
+
+:setdacpage:setdacpgmode:getdacpgstate
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetdacpage, setdacpgmodeŞ           <~CRT.H~>
+% İ and getdacpgstate      Ş
+% ßßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş setdacpage selects video DAC color page
+    ş setdacpgmode selects video DAC paging mode
+    ş getdacpgstate gets current video DAC page and paging mode.
+
+% Declaration:
+    ş void setdacpage(int page);
+    ş void setdacpgmode (int pgmode);
+    ş int  getdacpgstate (void);
+
+% Remarks:
+    In VGA/SVGA and better adapters the 256 DAC register are grouped in (n)
+  pages, each with (x) DAC register. (n) may be 4 or 16. If n==4,x=64 (default).
+  If n==16, x=16.
+    In these adapters, the DAC register for a palette/overscan register
+  is selected by the (6 or 4) least significant bits of it's value plus
+  current video DAC color page times the size (in DAC registers) of a page.
+    setdacpage set's the current video DAC color page ((0-3) if each page
+  has 64 DAC regs, or (0-15) if each page has 16 DAC regs.
+    sedacpgmode set's the number of pages and the number of DAC registers
+  per page, according to ~pgmode~ value.
+
+    getdacpgstate returns the current video DAC page and paging mode in a word.
+  In this word bits (15-8) gives the current page and bits (7-0) returns
+  current paging mode. The values for paging mode are the same of pgmode
+  (see table above)
+  Summarizing: getdacpgstate()/256 returns the current DAC page number.
+               getdacpgstate()%256 returns current paging mode.
+
+% Hardware Compatibility:
+    All functions: VGA/SVGA and better
+
+% Portability:
+    Will depend most of INT 10h
+  See also ~Appendix A~ for further information.
+
+% See Also:
+   Ralf Brown's ~Interrupt List~             ~setpalreg~   ~getpalreg~
+   ~setbordercolor~     ~getbordercolor~       ~setdacreg~   ~getdacreg~
+
+% Examples:
+    ~Example 6~
+
+%   setdacpage,setdacpgmode and getdacpgstate example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //   dispmsg displays the value returned by getdacpgstate, current video DAC
+ //color page and video DAC paging mode
+ void dispmsg (void)
+  {
+    unsigned int a0=getdacpgstate
+     ();
+    printsjf (1,0x0f,"getdacpgstate returned %.4Xh.  Video DAC color-page \
+ = %.2Xh.  Paging mode = %.2Xh.",a0,a0/0x100,a0%0x100);
+    getch ();
+  }
+
+ void main ()
+  {
+    fillscr (' ',7); //clears the screen
+    dispmsg ();
+    setdacpgmode (DACPAGE_16); //sets video DAC paging mode to 1
+    dispmsg ();
+    setdacpage (1); //selects video DAC page 1
+    dispmsg ();
+    setdacpage (3);
+    dispmsg ();
+    setdacpgmode (DACPAGE_64); //sets video DAC paging mode to 0 (VIDEO default)
+    setdacpage (0); //selects video DAC page 0 (VIDEO default)
+    dispmsg ();
+  }
+
+:setchrboxwidth
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetchrboxwidthŞ                     <~CRT.H~>
+% ßßßßßßßßßßßßßßßß
+    Changes the character box width in VGA or better monitors.
+
+% Declaration:
+    void setchrboxwidth (int cmd);
+
+% Remarks:
+    if cmd == 0, boxwidth set's the character box width to be 9.
+    if cmd == 1, boxwidth set's the character box width to be 8.
+    if cmd == 2, boxwidth set's the character box width to be 8
+  if it was 9 and vice versa.
+    boxwidth works only in modes (0,1,2,3 and 7 (including extensions
+  of these modes with more lines)).
+
+    The video adapter base address is given by ~crt_EVGA_addr~. It's default
+  value is 3C0h. If you are using a alternate VGA adapter, change this value
+  to 2C0h (alternate EGA/VGA)
+
+    Use this function with care, I can't guarantee that it will work fine in
+  your system.
+
+% Return Value:
+    None.
+
+% Hardware Compatibility:
+    VGA, SVGA or better.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    Ralf Brown's ~Interrupt List~    PC Ports 03C4h,03C5h,03CCh,03C2h
+
+% Example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    fillscr ('°',0x19);
+    setchrboxwidth (0);
+    getch ();
+    setchrboxwidth (1);
+    getch ();
+    setchrboxwidth (2);
+    getch ();
+    setchrboxwidth (2);
+    getch ();
+    setchrboxwidth (0);
+    getch ();
+  }
+
+:settextblink
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsettextblinkŞ                       <~CRT.H~>
+% ßßßßßßßßßßßßßß
+    Toggles color/attribute intensity/blinking bit.
+
+% Declaration:
+    void settextblink (int cmd);
+
+% Remarks:
+    if cmd==0 instructs video adapter to use color bit 7 as background
+  intensity bit
+    if cmd==1 instructs video adapter to use color bit 7 as text blink
+  enable bit (default)
+    if cmd>1 or cmd<0 the call to textblink is ignored.
+
+    To get the state of color bit 7, bit 5 of 0040h:0065h indicates the state.
+
+    textblink uses INT 10h / AX=1003h
+
+% Return Value:
+    None.
+
+% Hardware Compatibility:
+    Jr, PS, TANDY 1000, EGA, VGA or better.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~Appendix B~
+
+% Examples:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    //message
+    fillscr (' ',0x07);
+    printsj ("Hit any key to toggle color bit 7 between blink/intensity bit",
+       1,0x8F);
+    getch ();
+
+    settextblink (0); //define color bit 7 as background intensity bit
+    printsj ("Hit any key to return to normal",2,0x8e);
+    getch ();
+
+    settextblink (1); //define color bit 7 as blink enable bit (default)
+    printsj ("Hit any key to return",3,0x0f);
+    getch ();
+  }
+
+%   Another example:
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void dispmsg ()
+    //displays the value stored at 0040:0065h and bit 5 of this value
+  {
+    int a0;
+    a0=*(char far*)0x00400065L;
+    printsf (10,10,0x07,"Contents of memory position 0040:0065h = %.2Xh. \
+ (bit 5) = %d", a0,(a0&0x20)/0x20);
+    getch ();
+  }
+
+ void main ()
+  {
+    //message
+    fillscr (' ',0x07);
+    printsj ("Hit any key to toggle color bit 7 between blink/intensity bit",
+       1,0x8F);
+    dispmsg(); //displays the value stored at 0040:0065h
+               //and bit 5 of this value
+
+    settextblink (0); //define color bit 7 as background intensity bit
+    printsj ("Hit any key to return to normal",2,0x8e);
+    dispmsg();
+
+    settextblink (1); //define color bit 7 as blink enable bit (default)
+    printsj ("Hit any key to return",3,0x0f);
+    dispmsg();
+  }
+
+:changechar_func:CHANGCHR_NORM:CHANGCHR_RECALC
+%   changechar_func                    <~CRT.H~>
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+    changechar_func defines the INT 10h function that is going to be used by
+  ~changechar~, the valid values are:
+
+  Declaration:   int changechar_func;
+
+    Symbolic Constant³ Value ³ changechar operation
+    ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+     CHANGCHR_NORM   ³ 1100h ³ only replaces text mode font. (default)
+                     ³       ³
+     CHANGCHR_RECALC ³ 1110h ³ replaces text mode font, recalculating character
+                               box height, number of display rows and CRT
+                               buffer length. CRTC registers are reprogrammed.
+                               (page 0 must be active)
+                               (meant to be called immediately after a mode set)
+
+
+:changechar_height
+%   changechar_height                  <~CRT.H~>
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+     changechar_height controls character height in calls to ~changechar~
+  and ~changecharg~
+
+  Declaration: int changechar_height;
+
+   changechar_height = height of characters (in pixels) = number of bytes of
+ each character pattern.
+
+
+:changechar_blk
+%   changechar_blk                     <~CRT.H~>
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+     changechar_blk defines the video character set block in map 2 that will
+  receive the user defined character patterns when using ~changechar~.
+
+% Declaration:
+   int changechar_blk;
+
+% Remarks:
+
+    In TEXT mode most video adapters support more than one user specified
+ character sets (fonts). Each one is stored in a block in map 2 (I don't
+ know exactly what is map 2). EGA and MCGA can store 4 character sets, while
+ VGA and SVGA can store 8 character sets (perhaps some SVGA adapters may
+ be able to store more than 8). However EGA, MCGA, VGA and SVGA can display
+ no more than 2 character sets at the same time. To select which blocks
+ will be displayed on screen use ~crtfontspec~ (This function enables two
+ character sets to be displayed simultaneously).
+
+% See Also:
+   ~crtfontspec~    ~changechar_height~     ~changechar_func~
+
+:changechar:changecharg
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İchangechar and changechargŞ         <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+    ş changechar replaces text mode character patterns with user specified
+      patterns
+    ş changecharg replaces graphics mode character patterns with user
+      specified patterns
+
+% Declaration:
+    ş void changechar (unsigned char *fmt, int ind, int qt);
+    ş void changecharg (unsigned char *fmt, int rows);
+
+% Remarks:
+    (fmt) is the buffer that holds the user specified patterns.
+    (ind) is the index of the first character that has it's pattern changed
+    (qt) is the count of patterns to store (starting at character (ind))
+    (rows) number of rows.
+    In text mode, changecharg sets the number of scroll lines to (rows)
+
+    changechar is also affected by changechar_func, changechar_height and
+  changechar_blk global variables.
+
+    ~changechar_func~ defines the operation of changechar.
+      (you must see ~changechar_func~)
+
+    ~changechar_height~ defines the character height.
+
+    ~changechar_blk~ defines the character set block in map 2 that will load
+  the user specified patterns.
+
+  Use changechar with changechar_func==~CHANGCHR_RECALC~ if you want to change
+  current character height and number of screen rows. When calling changechar
+  with changechar_func == CHANGCHR_RECALC, page 0 must be active.
+    If changechar_func value is incorrect, the call to changechar is ignored.
+  This is to avoid the possibility of calling wrong INT 10 functions.
+
+    To display more than one character sets on screen simultaneously, load the
+  first character set (if not already loaded) in one character set block and
+  the other in another block, then call ~crtfontspec~ to select both blocks.
+  This procedure enables to be displayed two character sets simultaneously on
+  screen. A example is available at ~crtfontspec example~.
+
+    changecharg is only affected by changechr_height global variable.
+
+    changechar causes a mode set, completely resetting the video environment,
+  but without clearing the video buffer.
+
+    changechar and changecharg are designed to be called immediately after a
+  mode set.
+
+   şchangechar uses INT 10h/AX=changechar_func
+   şchangecharg uses INT 10h/AX=1121h
+
+
+% Return value:
+    None (both functions)
+
+% Hardware Compatibility:
+    Both functions: PS, EGA, VGA, SVGA or better.
+
+% Portability:
+    Will depend most of INT 10h
+  See also ~Appendix A~ for further information.
+
+% See Also:
+    ~crtfontspec~          Ralf Brown's ~Interrupt List~
+
+% Examples:
+     ~changechar example~         ~changecharg example~
+     ~crtfontspec example~
+
+
+:crtfontspec
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İcrtfontspecŞ                        <~CRT.H~>
+% ßßßßßßßßßßßßß
+    crtfontspec selects which character set blocks are displayed.
+
+% Declaration:
+    void crtfontspec (int blkspec);
+
+% Renmarks:
+    crtfontspec sets which character set blocks (in map 2) are selected by
+ attribute (color) bit 3, thus allowing two character sets to appear on
+ screen simultaneously. It uses INT 10/AX=1103h to load the block specifier
+ with blkspec value.
+
+    blkspec == new value for block specifier
+
+    Each character set is stored in one block of 256 character patterns.
+
+    EGA and MCGA video adapters can store up to 4 character sets.
+    VGA, SVGA and better can store up to 8 (or perhaps more) character sets.
+
+ bitfields for block specifier:
+ (excerp from Ralf Brown's ~Interrupt List~ (Table 00020))
+    Bit(s) Description
+   ---EGA/MCGA---
+      0,1   block selected by characters with attribute bit 3 clear
+      2,3   block selected by characters with attribute bit 3 set
+   ---VGA/SVGA---
+     0,1,4  block selected by characters with attribute bit 3 clear
+     2,3,5  block selected by characters with attribute bit 3 set
+
+
+ bitfields for block specifier::
+
+        ÉÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍÑÍÍËÍÍËÍÍËÍÍÑÍÍËÍÍÑÍÍ»
+        º15³14³13³12³11³10³ 9³ 8³ 7³ 6º 5º 4º 3³ 2º 1³ 0º
+        ÈÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÏÍÍÎÍÍÎÍÍÎÍÍÏÍÍÎÍÍÏÍÍ¹
+           bits 15-6 are reserved for   ³  ³   ³     ³
+        future versions.                ³  ³   ³     ³
+                                        ³  ³   ³     ³
+    block selected by ... bit 3 set  ÄÄÄÙ  ³   ³     ³
+    (VGA/SVGA) (MSB bit)                   ³   ³     ³
+                                           ³   ³     ³
+    block selected by ... bit 3 clear  ÄÄÄÄÙ   ³     ³
+    clear (VGA/SVGA) (MSB bit)                 ³     ³
+                                               ³     ³
+    block selected by characters with       ÄÄÄÙ     ³
+    attribute bit 3 set (EGA/MCGA/VGA/SVGA)          ³
+                                                     ³
+    block selected by characters with          ÄÄÄÄÄÄÙ
+    attribute bit 3 clear (EGA/MCGA/VGA/SVGA)
+
+
+    Normally the block specifier value is 0, so the same character set
+ (the one stored in block 0) is selected by characters with attribute bit 3
+ set and by characters with attribute bit 3 clear. That's why usually only
+ one character set is displayed on screen at the same time on video adapters
+ that support dual character set display in text mode.
+
+  I did some tests with a SVGA video adapter and the results where:
+
+       A mode set clears the block specifier, thus selecting block 0 for
+    characters with bit 3 set and characters with bit 3 clear. It loads
+    block 0 with default character patterns. When the mode set is a text mode,
+    the block 0 is loaded with default character patterns and the others are
+    left unchanged. When the mode set is a graphics mode, sometimes the blocks
+    other than zero are destroyed (possibly block 0 is also destroyed). (In
+    graphics mode possibly the character patterns are stored elsewhere)
+       crtfontspec was not effective under graphics mode.
+
+  Note: Remember that I've tested this only in my computer, so another system
+  will not necessarily behave in the same manner, specially if the video
+  adapter is completely different.
+
+% Return value:
+    None
+
+% Hardware Compatibility:
+    PS, EGA, VGA, SVGA or better.
+
+% Portability:
+    Will depend most of ~INT 10h~
+  See ~Appendix A~ for further information.
+
+% See Also:
+    ~changechar~           ~changechar_blk~
+    Ralf Brown's ~Interrupt List~
+
+% Examples:
+     ~crtfontspec example~
+
+:changechar example
+%   changechar example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /*WARNING: This example may not run properly under a video adapter inferior
+ to an EGA */
+
+ #include <crt.h>
+ #include <conio.h>
+
+ void main ()
+  {
+    changechar_func=CHANGCHR_NORM; //try also with CHANGCHR_RECALC
+    char newpattern[]={
+ //this array holds the new character patterns for characters: A B C D E F
+  0x00,0x00,0x1C,0x22, 0x42,0x40,0x40,0x40, //Letter A
+  0x40,0x62,0x52,0xCD, 0x00,0x00,0x00,0x00, //Letter A
+  0x00,0x00,0x38,0x44, 0x42,0x44,0x78,0x44, //Letter B
+  0x42,0x42,0x46,0xB9, 0x00,0x00,0x00,0x00, //Letter B
+  0x00,0x00,0x0E,0x11, 0x21,0x20,0x20,0x20, //Letter C
+  0x20,0x20,0x50,0x8F, 0x00,0x00,0x00,0x00, //Letter C
+  0x00,0x00,0x80,0xC4, 0x4A,0x4A,0x4A,0x4A, //Letter D
+  0x42,0x42,0x46,0xF9, 0x00,0x00,0x00,0x00, //Letter D
+  0x00,0x00,0x3C,0x42, 0x42,0x40,0x30,0x40, //Letter E
+  0x40,0x40,0x42,0x3D, 0x00,0x00,0x00,0x00, //Letter E
+  0x00,0x00,0x43,0x3F, 0x02,0x02,0x42,0x3F, //Letter F
+  0x02,0x02,0x46,0x39, 0x00,0x00,0x00,0x00, //Letter F
+    }; //each two rows are the pattern for each character
+
+    setcrtmode (3);
+    fillscr (' ',0x07);
+    prints("Hit any key to change the following characters: @ A B C D E F G",
+       10,1,0x0f);
+    getch ();
+
+    changechar (newpattern, 0x41, 6); //changes the pattern 6 of characters
+       //starting at character A (41h)
+
+    getch ();
+    setcrtmode (3); //a mode set restores previous character patterns
+  }
+
+:changecharg example
+%   changecharg example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /*WARNING: This example may not run properly under a video adapter inferior
+ to an EGA */
+
+ #include <crt.h>
+ #include <conio.h>
+ #include <stdio.h>
+
+ void main ()
+  {
+    int k; //user input
+
+    setcrtmode (3);
+
+    fillscr (' ',0x07);
+    prints("Hit any key to set the number of scroll lines to 5",10,1,0x0f);
+    getch ();
+
+    changecharg (NULL, 5); //changes graphics character to contents of NULL
+      //pointer (interrupt vectors). In text mode set the number of scroll
+      //lines to 5
+
+   //Writes on screen what user types, until user hits ESC key
+    prints ("To exit hit ESC",10,2,0x0f);
+    crt_gotoxy (0,3);
+    do
+     {
+       k=getch ();
+       if (k==0x0d)
+        {
+          putchar (k);
+          putchar (0x0a);
+        }
+        else
+          putchar(k);
+     }
+     while (k!=0x1b);
+
+    setcrtmode (3); //a mode set restores default number of scroll lines
+  }
+
+:crtfontspec example
+%   crtfontspec example
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /*WARNING: This example may not run properly under a video adapter inferior
+ to an EGA */
+
+ #include <crt.h>
+ #include <conio.h>
+
+ void main ()
+  {
+    int c0;
+    changechar_func=CHANGCHR_NORM; //try also with CHANGCHR_RECALC
+    char newpattern[]={
+ //this array holds the new character patterns for characters: @ through Z
+ //each two rows are the pattern for each character
+        //Shape of characters: 064 (40)h thru 090 (5A)h
+ 0x00,0x00,0x00,0x3C, 0x42,0x82,0x9E,0x92,// @
+ 0x9E,0x80,0x42,0x3C, 0x00,0x00,0x00,0x00,// @ 64(40)
+ 0x00,0x00,0x1C,0x22, 0x42,0x40,0x40,0x40,// A
+ 0x42,0x62,0x55,0xC9, 0x00,0x00,0x00,0x00,// A 65(41)
+ 0x00,0x00,0x38,0x44, 0x42,0x44,0x78,0x44,// B
+ 0x42,0x42,0x46,0xB9, 0x00,0x00,0x00,0x00,// B 66(42)
+ 0x00,0x00,0x1C,0x22, 0x42,0x40,0x40,0x40,// C
+ 0x40,0x40,0xA0,0x9E, 0x00,0x00,0x00,0x00,// C 67(43)
+ 0x00,0x00,0x80,0xC6, 0x49,0x49,0x49,0x49,// D
+ 0x49,0x41,0x43,0xFD, 0x00,0x00,0x00,0x00,// D 68(44)
+ 0x00,0x00,0x3C,0x42, 0x42,0x40,0x30,0x40,// E
+ 0x40,0x40,0x42,0x3D, 0x00,0x00,0x00,0x00,// E 69(45)
+ 0x00,0x00,0x43,0x3F, 0x02,0x02,0x42,0x3F,// F
+ 0x02,0x02,0x46,0x39, 0x00,0x00,0x00,0x00,// F 70(46)
+ 0x00,0x00,0x3C,0x42, 0x80,0x80,0x80,0x80,// G
+ 0x80,0x4C,0x3F,0x0C, 0x14,0x24,0x2C,0x18,// G 71(47)
+ 0x00,0x00,0x82,0x44, 0x44,0x44,0x7C,0x44,// H
+ 0x44,0x44,0x44,0x83, 0x00,0x00,0x00,0x00,// H 72(48)
+ 0x04,0x00,0x04,0x04, 0x7C,0x04,0x04,0x04,// I
+ 0x04,0x04,0x44,0x3B, 0x00,0x00,0x00,0x00,// I 73(49)
+ 0x00,0x00,0x04,0x0A, 0x7C,0x08,0x08,0x08,// J
+ 0x08,0x08,0x08,0x1F, 0x28,0x48,0x50,0x20,// J 74(4A)
+ 0x00,0x00,0x40,0x42, 0x44,0x48,0x70,0x50,// K
+ 0x48,0x44,0x42,0x41, 0x00,0x00,0x00,0x00,// K 75(4B)
+ 0x00,0x00,0x1C,0x22, 0x20,0x20,0x20,0x20,// L
+ 0x20,0x20,0xE0,0xFF, 0x00,0x00,0x00,0x00,// L 76(4C)
+ 0x00,0x00,0x00,0x82, 0xC6,0xFE,0x92,0x92,// M
+ 0x92,0x92,0x82,0x81, 0x00,0x00,0x00,0x00,// M 77(4D)
+ 0x00,0x00,0x00,0x40, 0x3C,0x22,0x22,0x22,// N
+ 0x22,0x22,0x22,0x21, 0x00,0x00,0x00,0x00,// N 78(4E)
+ 0x00,0x00,0x0C,0x92, 0x92,0x92,0x92,0x92,// O
+ 0x92,0x82,0x46,0x38, 0x00,0x00,0x00,0x00,// O 79(4F)
+ 0x00,0x00,0xBC,0x42, 0x42,0x42,0x7C,0x40,// P
+ 0x40,0x40,0x40,0xFF, 0x00,0x00,0x00,0x00,// P 80(50)
+ 0x00,0x00,0x4C,0x92, 0x92,0x92,0x92,0x82,// Q
+ 0x82,0xBA,0xC4,0x7F, 0x00,0x00,0x00,0x00,// Q 81(51)
+ 0x00,0x00,0x98,0x64, 0x42,0x44,0x78,0x50,// R
+ 0x48,0x44,0x42,0x81, 0x00,0x00,0x00,0x00,// R 82(52)
+ 0x00,0x10,0x10,0x28, 0x24,0x24,0x24,0x42,// S
+ 0x42,0x42,0x52,0xCF, 0x00,0x00,0x00,0x00,// S 83(53)
+ 0x00,0x03,0x06,0x7A, 0x02,0x02,0x02,0x02,// T
+ 0x02,0x02,0x86,0x79, 0x00,0x00,0x00,0x00,// T 84(54)
+ 0x00,0x00,0x82,0x82, 0x82,0x82,0x82,0x82,// U
+ 0x82,0x82,0x46,0x39, 0x00,0x00,0x00,0x00,// U 85(55)
+ 0x00,0x00,0xC3,0x42, 0x42,0x42,0x42,0x42,// V
+ 0x24,0x24,0x1C,0x1B, 0x00,0x00,0x00,0x00,// V 86(56)
+ 0x00,0x00,0x82,0x42, 0x42,0x42,0x5A,0x5A,// W
+ 0x5A,0x5A,0x26,0x01, 0x00,0x00,0x00,0x00,// W 87(57)
+ 0x00,0x00,0x81,0x42, 0x24,0x18,0x18,0x18,// X
+ 0x18,0x24,0x42,0x81, 0x00,0x00,0x00,0x00,// X 88(58)
+ 0x00,0x00,0x42,0x42, 0x42,0x42,0x22,0x26,// Y
+ 0x1C,0x04,0x1F,0x24, 0x48,0x48,0x70,0x00,// Y 89(59)
+ 0x00,0x00,0x38,0x44, 0x84,0x04,0x08,0xF8,// Z
+ 0x04,0x0F,0x12,0x22, 0x44,0x78,0x00,0x00,// Z 90(5A)
+    }; //excerpt from HANDSCR.FNT (converted by FNTTOCPP.EXE)
+
+    char newpattern2[]={0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
+      //pattern of space character
+
+    setcrtmode (3); //set video mode to 3, clearing the screen
+
+    changechar_blk=1; //makes changechar loads the new patterns in block 1
+
+    changechar (newpattern, 0x40, 27); //changes the pattern 27 of characters
+       //in block 1 of map 2 starting at character @ (40h)
+    changechar (newpattern2,0x20,1);
+       //changes the pattern of ' ' character in block 1.
+
+    fillscr (' ',0x1f); //fills the screen with spaces and a blue background
+
+    //outputs title for character sets
+    prints ("CHARACTER SET FOR LIGHT COLORS:",5,1,0x1e);
+    prints ("CHARACTER SET FOR DARK COLORS:",45,1,0x16);
+
+    //displays the character set twice on screen (256 characters each)
+    for (c0=0;c0<256;c0++)
+     {
+       printc(c0,(c0%32)+5,c0/32+3,0x1b);
+       printc(c0,(c0%32)+45,c0/32+3,0x17);
+     }
+
+    //bottom message
+    printsj ("HIT ANY KEY TO SELECT THE CHARACTER SET STORED IN BLOCK 1",
+       23,0x1e);
+    printsjc ("WITH \6\26DARK\6\36 COLORS",24,0x1e);
+    getch (); //pauses
+
+    //makes block 1 selectable by dark colors
+    crtfontspec(1);   //1 = 00000001b
+       //notice that from now on more than 256 characters are visible on
+       //screen simultaneously
+
+    //bottom message
+    printsjc ("WITH \6\37LIGHT\6\36 COLORS AND SELECT BLOCK 0 FOR \
+ DARK COLORS",24,0x1e);
+    getch ();
+
+    //makes block 1 selectable by light colors
+    crtfontspec(4); //4 = 00000100b
+
+    //bottom message
+    fillbar (' ',0,23,79,24,0x17);
+    printsj (" - - - HIT ANY KEY TO GO BACK TO NORMAL - - -",24,0x97);
+    getch ();
+
+    //makes block 0 selectable by light and dark colors (default)
+    crtfontspec (0); //0 = 00000000b
+       //now back to normal
+
+    //bottom message
+    fillbar (' ',0,24,79,24,0x1f);
+    printsj (" - - - HIT ANY KEY TO RETURN - - -",24,0x9e);
+    getch ();
+
+    setcrtmode (3); //a mode set clears the screen
+                    //(usually only when bit 7 is clear)
+  }
+
+:moldura:moldurad
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İmoldura and molduradŞ               <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßß
+
+   ş moldura is a macro that draws a frame with single outline.
+   ş moldurad is a macro that draws a frame with double outline.
+
+% Declaration:
+   ş void moldura  (xi,yi,xf,yf,color);
+   ş void moldurad (xi,yi,xf,yf,color);
+
+% Remarks:
+    Both macros use function ~crtframe~. Their definition are:
+       moldura(xi,yi,xf,yf,color)    => crtframe(xi,yi,xf,yf,color,0)
+       moldurad(xi,yi,xf,yf,color)   => crtframe(xi,yi,xf,yf,color,1)
+
+    The frame coordinates are given by (xi,yi) and (xf,yf).
+    Their name comes from Portuguese language, where "moldura" means frame.
+  The letter d in front of moldurad stands for "duplo" (double).
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~crtframe~    ~mkline~    ~linha...~    ~molduraw~    ~molduradw~
+
+% Examples:
+    ~Example 2~
+
+%  moldura and moldurad example:
+
+ #include <CRT.H>
+
+ void main ()
+  {
+    moldura (10,5,30,15,0x0a); //draws the first box frame
+    moldurad (50,5,70,15,0x0b); //draws the second box frame
+  }
+
+:molduraw:molduradw
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İmolduraw and molduradwŞ             <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßßßßß
+
+   ş moldura is a macro that draws a frame with single outline.
+   ş moldurad is a macro that draws a frame with double outline.
+
+% Declaration:
+   ş void molduraw  (color);
+   ş void molduradw (color);
+
+% Remarks:
+    Both macros uses function ~crtframew~. Their definition are:
+       molduraw(color)    => crtframew(color,0)
+       molduradw(color)   => crtframew(color,1)
+
+    The frame coordinates are given by ~crtwin_dta~
+
+% Return Value: none.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~crtframew~   ~crtwin_dta~   ~mkline~   ~linha...~   ~moldura~   ~moldurad~
+
+% Example:
+
+ #include <CRT.H>
+
+ void main ()
+  {
+    setcrtwin (10,5,30,15);
+    molduraw (0x0e); //draws the first box frame
+
+    crtwin_dta.left+=40;
+    crtwin_dta.right+=40;
+    molduradw (0x0f); //draws the second box frame
+  }
+
+:linha_hor:linha_ver:linhad_hor:linhad_ver:linha...
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İlinha_hor,     linha_ver,Ş          <~CRT.H~>
+% İlinhad_hor and linhad_verŞ
+% ßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+   ş linha_hor  draws a horizontal line with single outline.
+   ş linha_ver  draws a vertical line with single outline.
+   ş linhad_hor draws a horizontal line with double outline.
+   ş linhad_ver draws a vertical line with double outline.
+  All these macros use automatic frame character replacement algorithm.
+
+% Declaration:
+
+   ş void linha_hor  (y,xi,xf,color);
+   ş void linha_ver  (x,yi,yf,color);
+   ş void linhad_hor (y,xi,xf,color);
+   ş void linhad_ver (x,yi,yf,color);
+
+% Remarks:
+    These macros have been created to make easy ~mkline~ use. They are defined
+ as follows:
+
+    linha_hor(y,xi,xf,color)   => mkline(y,xi,xf,color,0)
+    linha_ver(y,xi,xf,color)   => mkline(y,xi,xf,color,1)
+    linhad_hor(y,xi,xf,color)  => mkline(y,xi,xf,color,2)
+    linhad_ver(y,xi,xf,color)  => mkline(y,xi,xf,color,3)
+
+    They are useful to build divisions or lines inside text boxes, text frames
+  and anywhere else.
+    The name "linha" comes from Portuguese. "Linha" means line
+    Further information is available in ~mkline~ and ~mkline_aux~
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% See Also:
+    ~moldura~     ~moldurad~     ~molduraw~     ~molduradw~
+
+% Examples:
+    ~Example 2~
+
+%  linha_hor, linha_ver, linhad_hor and linhad_ver example:
+
+ #include <CRT.H>
+
+ void main ()
+  {
+    moldura (10,5,30,15,0x0f); //draws the first box frame
+    linha_hor (10,10,30,0x0f); //and create divisions inside
+    linha_ver (20,5,15,0x0f); //the box
+
+    moldurad (50,5,70,15,0x0e); //draws the second box frame
+    linhad_hor (10,50,70,0x0e); //and create divisions inside
+    linhad_ver (60,5,15,0x0e); //the box
+  }
+
+  See also example 2 at the end of file.
+
+
+:janela:janelad
+% ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+% İjanela and janelad Ş                <~CRT.H~>
+% ßßßßßßßßßßßßßßßßßßßßß
+
+   ş janela is a macro that draws a text box with single outline.
+   ş janelad is a macro that draws a text box with double outline.
+
+% Declaration:
+   ş void janela   (struct ~crtwin_inp~ p0);
+   ş void janelad  (struct crtwin_inp p0);
+
+% Remarks:
+    Both macros use function ~crtwindow~. Their definition are:
+       janela(p0)              =>    p0.type=0;
+                                     crtwindow(p0);
+
+       janelad(p0)             =>    p0.type=1;
+                                     crtwindow(p0);
+
+    As you can see above these macros changes p0.
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Example:
+    ~Example 3~
+
+:setcrtwin
+% ÜÜÜÜÜÜÜÜÜÜÜÜ
+% İsetcrtwin Ş                         <~CRT.H~>
+% ßßßßßßßßßßßß
+    setcrtwindow is a macro defined to make easy the work of assigning values
+ for ~crtwin_dta~ global variable.
+
+% Declaration:
+   ş void setcrtwin   (int xi, int yi, int xf, int yf);
+
+% Remarks:
+    This macro is the same as the lines below
+       crtwin_dta.left=xi;
+       crtwin_dta.top=yi;
+       crtwin_dta.right=xf;
+       crtwin_dta.bottom=yf;
+
+% Return Value:
+    None.
+
+% Portability:
+    See ~Appendix A~.
+
+% Examples:
+    ~Example 3~
+
+:Example 1
+%   CRT.H functions Example 1
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+
+ #include <CRT.H>
+ #include <conio.h>
+ #include <stdio.h>
+
+ void main ()
+  {
+    textmode (3);
+    fillscr ('°',0x19);
+       //fills the screen with character ° and color 19h
+
+    prints ("* * * CRT FUNCTIONS EXAMPLE n. 1 * * *",21,0,0x1f);
+       //this is a prints example
+    getch ();//pauses
+
+    printsn ("TEXT ONLY OUTPUT - PRINTSN",10,2);
+    getch ();
+
+    printxy ("PRINTXY EXAMPLE",10,5,2,1,0x20);
+    getch ();
+
+    printc ('0',79,0,0x3f);
+       //writes 0 at upper right corner with a write color and cyan background
+    getch ();
+
+    printcn ('M',79,1); //the same as printc, but with no color. Outputs
+       //letter 'M' just below the '0'
+    getch ();
+
+    changecolor (79,2,0x1f); //replaces the color at position (79,2) for (1F)h
+       //write with a blue background
+    getch ();
+
+  //getcrtchar and getcrtcolor example
+    printsf(10,10,0x1e,"The character at position (79,0) is '%c' and it's color\
+  is (%x)h", getcrtchar (79,0),getcrtcolor (79,0));
+    //printsf is a kind o printf that uses prints to output formatted string
+    getch ();
+
+    prints ("- - - Hit any key to return - - -",23,24,0x9e);
+       //colors greater than 80h are usually blinking in DOS full screen,
+       //but aren't in DOS window mode (WINDOWS)
+
+    getch ();
+    //the lines below are equivalent to clrscr();
+    crt_gotoxy (0,0);
+    fillscr (' ',0x07);
+  }
+
+:Example 2
+%   CRT.H functions Example 2
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+
+ #include <CRT.H>
+ #include <conio.h>
+ //crtframe, mkline, and macros examples.
+ //This example contains many sub-examples. Perhaps it is interesting
+ //to separate them.
+
+ void main ()
+  {
+    int i=0,j=0,k=0;
+
+ //crtframe and mkline macros examples
+
+    fillscr ('°',0x19);
+    prints ("* * * fillbar, crtframe and mkline example * * *",16,1,0x1e);
+    prints ("Using macros moldura... and linha_...",21,2,0x1f);
+
+    moldura (10,5,30,13,0x1f);
+    getch ();
+    fillbar ('.',11,6,29,12,0x19);
+    getch ();
+    fillbar ('ú',51,6,69,12,0x19);
+    getch ();
+    moldurad (50,5,70,13,0x1f);
+    getch ();
+
+    linha_hor (9,10,30,0x1e);
+    getch ();
+    linhad_hor (9,50,70,0x1e);
+    getch ();
+    linha_ver (20,5,13,0x1e);
+    getch ();
+    linhad_ver (60,5,13,0x1e);
+    getch ();
+    prints ("- - - Hit any key to continue - - -",22,24,0x9e);
+    getch ();
+
+ //crtframe example
+
+    fillscr ('°',0x19);
+    prints ("* * * Example of any frames draw by crtframe * * *",15,1,0x1e);
+    getch ();
+
+    crtframe (10,5,20,8,0x1f,0);
+    prints ("type = 0",11,9,0x1f);
+    getch ();
+
+    crtframe (37,5,47,8,0x1f,1);
+    prints ("type = 1",38,9,0x1f);
+    getch ();
+
+    crtframe (63,5,73,8,0x1f,2);
+    prints ("type = 2",64,9,0x1f);
+    getch ();
+
+    crtframe (10,15,20,18,0x1f,3);  //default user defined character='Û'
+    prints ("type = 3",12,19,0x1f);
+    getch ();
+
+    crtframe (37,15,47,18,0x1f,'ş\1');
+      //user defined character is redefined as'ş'
+    prints ("type = 1FEh",37,19,0x1f);
+    getch ();
+
+    crtframe (63,15,73,18,0x1f,3);  //current user defined character='ş');
+    prints ("type = 3",64,19,0x1f);
+    getch ();
+
+ /*
+ Remark: Compiler details (Borland's Turbo C++ 3.0)
+ 'a0' is the same as 0x3061 where 30h and 61 are the ASCII code of '0' and 'a'
+ respectively
+ 'a0' can also be represented by 'a\x30' or 'a\60' or 0x3061 or ...
+ 'ş\1' is the same as 0x01FE
+ 'a' is the same as 'a\0' = 0x0061. But (for values greater than 7Fh)
+ 'ş' is the same as 'ş\xff'= 0xfffe that is different from 0x00FE = 'ş\0'
+ */
+
+ //crtframe and mkline example
+
+    #define L0 18     //column initial position
+    #define L1 5      //row (line) initial position
+    #define L2 8      //each x side size
+    #define L3 6      //each y side size
+    #define L4 4      //x median
+    #define L5 3      //y median
+    #define L6 10     //smaller spacing in x
+    #define L7 8      //spacing in y
+    #define L8 24     //bigger spacing in x
+    #define CF 0x1e
+    #define CL 0x1f
+
+    fillscr ('°',0x19);
+    prints ("* * * FRAME TYPES * * *",28,1,0x1e);
+    prints ("Using crtframe and mkline",27,3,0x1b);
+    for (i=0;i<2;i++)
+       for (j=0;j<2;j++)
+          for (k=0;k<2;k++)
+           {
+             crtframe (L0+L6*k+L8*i,L1+L7*j,L0+L2+L6*k+L8*i,L1+L3+L7*j,CF,i);
+             mkline(L1+L5+L7*j,L0+L6*k+L8*i,L0+L2+L6*k+L8*i,CL,2*k);
+             mkline(L0+L4+L6*k+L8*i,L1+L7*j,L1+L3+L7*j,CL,2*j+1);
+           }
+    getch ();
+    prints ("- - - Hit any key to return - - -",23,24,0x9f);
+    getch();
+    crt_gotoxy (0,0); //clears the screen and moves the cursor to upper
+    fillscr (' ',0x07); //left corner => these two functions together are
+                        //similar to clrscr
+  }
+
+
+:Example 3
+%   CRT.H functions Example 3
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //symbolic constants
+ #define LEFT_TEXT 0
+ #define CENTER_TEXT 1
+ #define RIGHT_TEXT 2
+
+ void main ()
+  {
+    struct crtwin_inp licos;
+    textmode(3);
+    fillscr ('°',0x19);
+
+ //setcrtwin, janela and janelad examples
+
+ // setcrtwin(-1,-1,80,25); default
+    printsj ("* * * MACRO EXAMPLES * * *",0,0x1f);
+    licos.title="JANELA EXAMPLE";//if licos.title==NULL doesn't output
+                                 //title nor left space for it.
+    licos.tcolor=0x1f;
+    licos.fchr='°';
+    licos.fcolor=0x13;
+    licos.bcolor=0x1e;
+    setcrtwin(5,5,35,13);
+    //licos.btype=0; =>done by janela macro
+    janela (licos);
+    getch();
+    setcrtwin(45,5,75,13);
+    licos.title="JANELAD EXAMPLE";
+    //licos.btype=1; =>done by janelad macro
+    janelad (licos);
+    setcrtwin(-1,-1,80,25);
+    printsj("- - - Hit any key to continue - - -",24,0x9e);
+    getch ();
+
+ //crtwindow and printsj example
+    int c0;
+    struct crtwin_inp lelecos[4]={
+ {"WINDOW 1",0x1f,'°',0x13,0x1e,0},//lelecos[0] declaration
+ {"WINDOW 2",0x1f,'°',0x13,0x1e,1},//lelecos[1] declaration
+ {"WINDOW 3",0x1f,'°',0x13,0x1e,2},//lelecos[2] declaration
+ {"WINDOW 4",0x1f,'.',0x13,0x1e,'ş\1'}//lelecos[3] declaration
+ //key to each line:
+ //{(title),(title color),(chr to fill),(color to fill),(border color),
+ //(border type)},
+ };
+    struct crtwin deflt={-1,-1,80,25};//default values for crtwin_dta
+    struct crtwin kiko[4]={{5,3,35,10},{45,3,75,10},{5,13,35,20},{45,13,75,20}};
+
+    fillscr ('°',0x19);
+    printsj ("* * * CRTWINDOW EXAMPLE * * *",0,0x1f);
+    for (c0=0;c0<4;c0++)
+     {
+       crtwin_dta=kiko[c0];
+       crtwindow(lelecos[c0]);
+     }
+    crtwin_dta=deflt;//similar to setcrtwin
+    printsj("- - - Hit any key to continue - - -",24,0x9e);
+    getch();
+    setcrtwin(10,0,80,25);
+    printsj ("AND PRINTSJ EXAMPLE",0,0x1f);
+    for (c0=0;c0<4;c0++)
+     {
+       crtwin_dta=kiko[c0];
+       crtwin_just=0; printsj("LEFT TEXT",0,0x1b);
+       crtwin_just=1; printsj("CENTER TEXT",1,0x1f);
+       crtwin_just=2; printsj("RIGHT TEXT",2,0x1e);
+     }
+    crtwin_dta=deflt;
+    crtwin_just=CENTER_TEXT;//or 1
+    printsj("- - - Hit any key to continue - - -",24,0x9e);
+    getch ();
+    fillbar ('°',0,0,79,20,0x19);
+ //hint call twice crtwindow to draw text box with another title format
+    printsj("HINT: call twice crtwindow with different values for p0.btype",
+       0,0x1f);
+    printsj("to obtain this interesting effect in title",1,0x1f);
+    for (c0=0;c0<2;c0++)
+     {
+       crtwin_dta=kiko[c0];
+       crtwindow (lelecos[c0]);
+       getch ();
+       lelecos[c0].btype=0x00ff;
+       crtwindow (lelecos[c0]);
+       getch();
+     }
+
+ //printtext example
+    crtwin_dta.left=24;
+    crtwin_dta.top=12;
+    crtwin_dta.right=55;
+    crtwin_dta.bottom=20;
+    licos.title="PRINTTEXT EXAMPLE";
+    crtwindow (licos);
+    printtext ("Using printtext you can write texts inside a box",3,1,0x1f);
+    getch ();
+
+    crtwin_dta=deflt;
+    crtwin_just=CENTER_TEXT;//or 1
+    printsj("  - - - Hit any key to exit - - -  ",24,0x9e);
+    getch ();
+  }
+
+:Example 4
+%   CRT.H functions Example 4
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+ /* Example of setcrtmode, getcrtmode and setcrtpage */
+
+ #include <CRT.H>
+ #include <conio.h>
+ #include <dos.h>
+
+ #define PG 3 //page to select
+    //0-7 for EGA/VGA   and   0-3 for CGA
+
+ void main ()
+  {
+    int a0;
+
+    crt_page=10000; //loading crt_page with value that's not actual
+    //notice that this page number is impossible
+
+    printsjf (1,0x1f,"vmode_mode=%d vmode_x=%d vmode_y=%d crt_page=%d (not a \
+ video page number)",vmode_mode, vmode_x,vmode_y,crt_page);
+    getch ();
+    a0=getcrtmode();
+       //vmode_mode<-current mode   vmode_x<-actual number of columns
+       //crt_page<-actual display page a0<-vmode_mode
+ 
+    printsjf (2,0x1f,"crtmode=%d = vmode_mode=%d vmode_x=%d vmode_y=%d \
+ crt_page=%d (current video page)",a0,vmode_mode,vmode_x,vmode_y,crt_page);
+    getch ();
+
+    setcrtmode (1); //text mode 1
+    a0=getcrtmode();
+    printxf (0,1,0x1f,"crtmode=%d = vmode_mode=%d vmode_x=%d \n\tvmode_y=%d \
+ crt_page=%d",a0,vmode_mode,vmode_x,vmode_y,crt_page);
+    getch ();
+ 
+    setcrtmode (3); //text mode 3
+    setcrtpage (PG); //selects page PG
+    printsjf (2,0x1f,"vmode_mode=%d vmode_x=%d vmode_y=%d crt_page=%d \
+ video_addr=%Fp",vmode_mode, vmode_x,vmode_y,crt_page,video_addr);
+    //notice that each page has a different start address, setcrtpage
+    //automatically updates video_addr to page start address.
+    getch ();
+ 
+    setcrtpage(0);
+    //selects page 0. video_addr not changed (Reason: no longer used)
+  }
+
+
+:Example 5
+%   CRT.H functions Example 5
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+    To run this example you will need at least a VGA adapter or an EGA adapter
+  with UltraVision v2+.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ void main ()
+  {
+    int c0;
+    char oldpalette[16]; //used to store original register palette values
+    int oldbordercolor; //used to store the original overscan register value
+
+    char newpalette[16]= //new values for the palette
+ // {8,25,0,1, 9,41,57,25, 43,11,17,35, 3,27,31,63}; //blue palette
+    {63,1,13,2, 23,51,60,62, 16,9,38,26, 21,47,46,31};
+    //try also the blue palette.
+
+    int newbordercolor=8; //new value for overscan register
+
+  //Draws the presentation screen and displays some important messages
+    fillscr ('°',0x19);
+    printsj ("* * * SETPALREG AND GETPALREG EXAMPLE * * *",0,0x1e);
+    prints ("The current register values are: ",10,2,0x17);
+    fillbar (' ',3,4,32,23,0x17);
+    for (c0=0;c0<16;c0++)
+     {
+       oldpalette[c0]=getpalreg(c0); //saves each palette register in oldpalette
+
+    //displays each palette register number and it's value (DAC register number)
+       printsf (5,c0+5,0x1f,"register %2d value= %3d ( )",c0,getpalreg(c0));
+       printc ('ş',29,c0+5,c0+0x10);
+     }
+    oldbordercolor=getbordercolor(); //saves overscan register in oldbordercolor
+    printsf (4,22,0x1f,"Overscan register value =%3d",oldbordercolor);
+ 
+  //Message
+    prints (" - - - Hit any key to - - - ",40,4,0x9b);
+    prints (" - - - change the palette - - -",42,5,0x9b);
+    prints (" - - - and overscan color - - -",44,6,0x9b);
+    getch ();
+ 
+  //Changes palette and overscan color
+    for (c0=0;c0<16;c0++)
+       setpalreg (c0, newpalette[c0]); //replaces the value of each palette
+          //register by the value given by newpalette[c0]
+
+    setbordercolor(newbordercolor); //replaces the value of overscan register
+       //by newbordercolor. If this doesn't work or locks up your system try
+       //using getbordercolor instead.
+
+  //Updates table in the left side
+    for (c0=0;c0<16;c0++)
+       printsf (24,c0+5,0x1f,"%3d",getpalreg(c0));
+    printsf(29,22,0x1f,"%3d",getbordercolor());
+ 
+  //Message
+    prints ("restore the palette - - -",49,5,0x9b);
+    getch ();
+ 
+  //Restores old values of palette and overscan registers
+    for (c0=0;c0<16;c0++)
+       setpalreg (c0, oldpalette[c0]); //restores the value of each palette
+          //register
+
+    setbordercolor (oldbordercolor); //restores the value of overscan register
+       //If this doesn't work or locks up your system try using setbordercolor
+       //instead.
+ 
+
+  //Updates table in the left side
+    for (c0=0;c0<16;c0++)
+       printsf (24,c0+5,0x1f,"%3d",getpalreg(c0));
+    printsf(29,22,0x1f,"%3d",getbordercolor());
+
+
+  //Message
+    fillbar ('°',42,5,74,6,0x19);
+    prints (" - - - to exit - - -",42,5,0x9b);
+    getch ();
+  }
+
+:Example 6
+%   CRT.H functions Example 6
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+    To run this example you will need a VGA adapter or better. Works
+  fine in a SVGA or better adapter.
+
+ //This program displays the palette register, their values, and allows
+ //you to select one palette register, and change it's value. It displays
+ //also the DAC register of selected palette register, the current DAC
+ //page and paging mode.
+
+ #include <CRT.H>
+ #include <conio.h>
+
+ //Displays message about paging mode and current page
+ void dacpagemsg ()
+  {
+    int a0;
+    char *n0,*n1;
+    a0=getdacpgstate();
+    if (a0%256==0) //if paging mode == 0
+     {
+       n0="4"; n1="64";
+     }
+     else if (a0%256) //if paging mode == 1
+     {
+       n0="16"; n1="16";
+     }
+     else //if paging mode != 0 and 1
+     {
+       n0="???"; n1="???";
+     }
+    printsf (40,3,0x0f,"Current page = %d of %s pages.  ",a0/256,n0);
+    printsf (40,4,0x0f,"Each page has %s DAC registers",n1);
+    printsf (40,5,0x0f,"Current paging mode = %d",a0%256);
+  }
+
+ void main ()
+  {
+    int c0, a0;
+    int red,green,blue;
+    int palettereg=0, paletteval=0, dacpage=0, dacpgmode=0;
+    int k; //input key;
+ // char newpalette[]={0,1,2,3, 20,21,22,23, 40,41,42,43, 60,61,62,63};
+
+  //message
+    fillscr (' ',0x07);
+    printsj ("- - - Please Wait. Writing DAC registers - - -",12,0x8F);
+
+  // changes the color of DAC register from 40h through FFh
+    for (c0=64;c0<256;c0++) //changes the color of DAC registers
+       setdacreg (c0,((c0/64)*16)%64,((c0/8)*8)%64,(c0*8)%64);
+
+  //message
+    fillscr (' ',0x07);
+    prints ("Directions: To change palette register type 1.",0,18,0x0b);
+    prints ("To change palette register value, type 2 or 3.",10,19,0x0b);
+    prints ("To change page, type 4.",10,20,0x0b);
+    prints ("To change paging mode, type 5.",10,21,0x0b);
+    prints ("To change the DAC register which determines the color of",
+       10,22,0x0b);
+    prints ("selected palette register type R or G or B.",10,23,0x0b);
+    prints ("To finish type ESC",10,24,0x0b);
+
+  //program main loop
+    do
+     {
+       setdacpgmode (dacpgmode); //sets paging mode given by dacpgmode
+       setdacpage (dacpage); //sets DAC page
+       setpalreg (palettereg, paletteval);
+          //changes the value for selected palette register
+
+      //displays the value of each palette register
+       for (c0=0;c0<16;c0++)
+        {
+          printsf (0,c0+2,0x1f,"register %2d value=%3d ( ) ",c0,getpalreg(c0));
+          printc ('ş',23,c0+2,c0+0x10);
+        }
+
+      //Displays message about paging mode and current page
+       dacpagemsg ();
+
+      //Displays selected palette register and it's value
+       a0=getpalreg(palettereg); //a0 = palette register value
+       printsf (40,7,0x0f,"Selected palette register = %2d",palettereg);
+       printsf (40,8,0x0f,"Selected palette register value = %3d",a0);
+
+      //Determines the DAC register which gives the color of selected
+      //palette register
+       if(getdacpgstate()%256==0)
+        {
+          a0%=64;
+          a0+=(getdacpgstate()/256)*64;
+        }
+        else
+        {
+          a0%=16;
+          a0+=(getdacpgstate()/256)*16;
+        }
+
+      //Displays the number of DAC register which determines the color
+      //of selected palette register.
+       printsf (40,9,0x0f,"Selected palette DAC register = %3d",a0);
+       getdacreg(a0,(char *)&red,(char *)&green,(char *)&blue);
+       printsf (40,10,0x0f,"DAC register %3d color(rgb) = (%2d,%2d,%2d)",a0,
+          red&0x00FF,green&0x00FF,blue&0x00FF);
+
+      //k <= user input
+       k=getch ();
+       switch (k)
+        {
+          case '1': //selects another palette register
+             palettereg++;
+             palettereg%=16;
+             paletteval=getpalreg(palettereg);
+           break;
+          case '3': //changes palette register value
+             paletteval+=15;
+          case '2': //changes palette register value
+             paletteval++;
+             paletteval%=256;
+           break;
+          case '4': //changes video DAC color page
+             dacpage++;
+             dacpage%=16;
+           break;
+          case '5': //changes video DAC color paging
+             dacpage=0;
+             dacpgmode++;
+             dacpgmode%=2;
+           break;
+          case 'R':
+          case 'r':
+          case 'G':
+          case 'g':
+          case 'B':
+          case 'b':
+           //Changes the DAC register which determines the color
+                 //of selected palette register.
+             if (k=='R')
+                red+=8;
+             else if (k=='r')
+                red++;
+             else if (k=='G')
+                green+=8;
+             else if (k=='g')
+                green++;
+             else if (k=='B')
+                blue+=8;
+             else if (k=='b')
+                blue++;
+             red%=64;
+             green%=64;
+             blue%=64;
+             setdacreg(a0,red,green,blue);
+          break;
+        }
+     }
+     while (k!=0x1b); //if user hits ESC, returns
+
+    setcrtmode (3); //set video to mode 3, restoring palette and DAC registers
+  }
+
+
+:Appendix A
+%   Appendix A: Portability
+%  ßßßßßßßßßßßßßßßßßßßßßßßß
+
+    These functions have been developed and tested in MS-DOS operating system
+ versions 6.22 and 7.0, being executed directly or under WINDOWS (3.11 or 95)
+ No compatibility tests with UNIX, ANSI C alone and C++ alone have been done.
+ So I can only speculate if these functions will work fine in other compilers
+ and other operating systems. I suppose that they may work in UNIX only if the
+ hardware and the BIOS are the same of IBM PC machines, perhaps with some
+ restrictions, as some functions (for example printx) uses DOS calls. About
+ compilers, the user may experience some trouble trying to compile in 32 bit
+ mode in newer compilers, in this case you will probably need to change some
+ lines of the source code of these functions to solve some portability
+ problems.
+    At least I know that under Windows some specific hardware functions,
+ as changechar or textblink are not effective in a MS-DOS box. However
+ they are fully effective if the MS-DOS prompt is running in full screen
+ mode.
+
+    If you port these functions to a 32 bit environment, to a 32 bit compiler
+ or to DJGPP, let me know.
+
+    If you experience some problems (portability, other) report me to
+ jlfialho@iconet.com.br or (alternate) jlfialho@yahoo.com
+    All these functions have been tested in Borland's Turbo C++ 3.0 (1992) in
+ MS-DOS environment. All them have worked fine.
+
+    * * * IMPORTANT: Test these functions thoroughly if you are going * * *
+    * * * to use them in other environments than specified.           * * *
+
+    * * * READ README.1ST FOR DISCLAIMER INFORMATION (if you haven't) * * *
+
+   I've tested them a lot and I did them in the best of my ability (in the
+ time I had to do them), but I can't guarantee that there's no bug left or
+ that they will work in systems that I'm not the owner. I believe they are
+ reasonably safe and very hardly would cause problem, but never is too much
+ to check for errors and test them.
+
+:Appendix B
+%   Appendix B : color Bits
+%  ßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+    The color or attribute is given in accordance to bits of (color) argument,
+*  which are the same as used by graphics adapters.
+    Usually:
+
+  color (DOS or WINDOWS DOS prompt in full screen)  => LRGB IRGB
+                                                 background character
+
+  color (WINDOWS DOS prompt in a DOS box)           => IRGB IRGB
+                                                 background character
+
+  L = > blinking bit
+  I = > intensity (light/normal)
+  R = > red
+  G = > green
+  B = > blue
+
+  bit 7=> in full screen mode or real DOS mode it may be character blinking
+  switch (more common) or intensity bit of background color
+  (see ~settextblink~).
+  In a DOS window box (WINDOWS) it is the intensity bit of background color
+  and as I know you can't toggle it between intensity/blink enable bit.
+
+  bit 6=> red bit of background color.
+  bit 5=> green bit of background color.
+  bit 4=> blue bit of background color
+
+  bit 3=> intensity bit of foreground color (on full screen mode, it may select
+  a second DOS font)
+  bit 2=> red bit of foreground color.
+  bit 1=> green bit of foreground color.
+  bit 0=> blue bit of foreground color.
+
+ The bit function is active when it's set (bit==1)
+ The characters are draw with foreground color.
+
+
+ Brief description of color and color indexes:
+
+     index ³  index ³ index  ³
+     (dec) ³ (hex)  ³ IRGB   ³ color description
+    ÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+        0  ³    0   ³ 0000   ³black
+        1  ³    1   ³ 0001   ³blue
+        2  ³    2   ³ 0010   ³green
+        3  ³    3   ³ 0011   ³cyan
+        4  ³    4   ³ 0100   ³red
+        5  ³    5   ³ 0101   ³magenta
+        6  ³    6   ³ 0110   ³brown
+        7  ³    7   ³ 0111   ³light gray
+        8  ³    8   ³ 1000   ³dark gray
+        9  ³    9   ³ 1001   ³light blue
+       10  ³    A   ³ 1010   ³light green
+       11  ³    B   ³ 1011   ³light cyan
+       12  ³    C   ³ 1100   ³light red
+       13  ³    D   ³ 1101   ³light magenta
+       14  ³    E   ³ 1110   ³yellow
+       15  ³    F   ³ 1111   ³white
+
+    These colors can be redefined in a EGA or VGA or better monitor using
+  ~setpalreg~ or ~setdacreg~(VGA,SVGA or better).
+
+    If you desire you may use combinations of symbolic color constants
+ (~CRT_COLORS~) instead of using numbers. For example:
+    fillscr ('°',BLUE*BKCOLOR+LIGHTGRAY);
+  is the same as:
+    fillscr ('°',0x17);
+
+% See Also:
+    ~CRT_COLORS~   ~COLORS~   ~textattr~
+
+:Interrupt List
+%   Ralf Brown's Interrupt List
+%  ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+
+    Ralf Brown's Interrupt List is a listing of PC interrupts with over 2Mb of
+  text. It's available in the following Web Pages:
+    Main site:
+      http://www.cs.cmu.edu/afs/cs/user/ralf/pub/WWW/files.html
+
+    Alternate Sites:
+      http://www.simtel.net/msdos/info.html
+      http://oak.oakland.edu/msdos/info.html => mirror of Simtel Net
+      ftp://ftp.cdrom.com/pub/simtelnet/msdos/info/interRRA.ZIP
+                                                   interRRB.ZIP
+                                                       .
+                                                       .
+                                                       .
+                                                   interRRG.ZIP
+        RR is the release number (in January 1999, RR was 60).
+
+    Ralf Brown's E-mail is: ralf@pobox.com
+
+    Perhaps Ralf Brown's Interrupt List is too much detailed, so you may try
+  also the Interrupt List that comes with HelpPc (see README.1ST for further
+  details)
+
+:úúAbout
+%   VIDEO HANDLING FUNCTIONS ver 2.1
+
+ Copyright (C) 1998, 1999 by M rcio A. A. Fialho.
+ Email = jlfialho@iconet.com.br or jlfialho@yahoo.com (alternate)
+ http://pessoal.iconet.com.br/jlfialho
+ Freeware / Public Domain.

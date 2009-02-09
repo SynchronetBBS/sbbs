@@ -1,0 +1,133 @@
+Read first FILELIST.TXT to see the files contained in this directory
+(DOSFONT\) with a brief description.
+
+WARNING: This is still a beta version, I'm not sure if all programs here
+work fine or if they are free of bugs, the source code of all .EXE files
+is stored in DOSFONT\SOURCE\.
+
+WARNING: If you run the programs in this subdirectory in a MS-DOS prompt under
+Windows, be sure that the MS-DOS prompt is running in full screen mode,
+because some functions used by these programs are not effective in a MS-DOS
+prompt window.
+
+
+INSTALLATION:
+  Copy all files to a subdirectory and add that subdirectory to your path.
+
+.FNT files:
+   .FNT is a file format of files containing the bitmapped character patterns
+ for all 256 Extended ASCII Character in raw format(it is, in the way they are
+ loaded in video's RAM) and with no control data. Notice that .FNT files size
+ is always a multiple of 256.
+   The .FNT files can be edited with FONTEDIT and selected with FONTSEL. They
+ can also be converted to C/C++ source code files with FNTTOCPP.
+   If you think that in this subdirectory is too few .FNT files or that
+ the fonts here are ugly, there are many nice fonts on the Internet. You
+ may try the address below:
+   http://www.simtel.net/msdos/screen.html
+ 
+  .FNT Format:
+ 256 * (character height) Bytes => 256 character patters
+
+ character pattern format: (character height) bytes
+ byte 0 => Topmost scan line of character cell
+ .
+ .
+ .
+ byte (character height -1) => Lowermost scan line of character cell
+
+ Each byte format:
+           bit 7 is the left most of character CELL scan line
+           bit 0 is the right most of character CELL scan line
+         when bit is set, pixel is on
+
+SEL.BAT:
+   SEL.BAT works only in DOSFONT subdir. It is a batch files that calls
+ FONTSEL.EXE and after DETECT.EXE.
+ Example:
+   SEL 12
+ With this example, fontsel will select a character font with 12 pixels
+ character height.
+
+ SEL.BAT is nothing more than:
+fontsel fonts\marcio%1.fnt /h%1 /r %2 %3 %4 %5 %6 %7 %8 %9
+detect
+
+* * * IMPORTANT: SEL.BAT requires at least an EGA video adapter or better.
+
+VOLTA.COM source code: (in Assembly language)
+   mov ax,0003h
+   int 10h
+   mov ax,4c00h
+   int 21h
+   int 20h
+
+MARCIO.CPI:
+   MARCIO.CPI is a DOS codepage file with MARCIO.FNT, MARCIO14.FNT and
+ MARCIO8.FNT font information. To select it add or edit the lines in
+ the files:
+ CONFIG.SYS:
+   DEVICE=\DOS\DISPLAY.SYS CON=(EGA,,2)
+ AUTOEXEC.BAT
+   MODE CON CP PREP=((100)DOSFONT\MARCIO.CPI) => edit this line if DOSFONT\ isn't copied to the root of the same drive used by DOS
+   MODE CON CP SEL=100
+
+FNTTOCPP:
+ Syntax:
+   FNTTOCPP <source file [.FNT]> <character size> <name> <target file[.CPP]>
+ Example:
+   FNTTOCPP linedraw 16 linedraw_dta linefont
+ The command line above will create LINEFONT.CPP with a array named
+ linedraw_dta that stores the 256 character patterns defined in LINEDRAW.FNT
+   Notice: You must give character_size and array name.
+
+FONTEDIT:
+ Syntax:
+   FONTEDIT <font name[.FNT]> [Height]
+ Example:
+   FONTEDIT maluco
+
+   You must give a name, but height is optional (default=16)
+
+   To create new fonts, copy a existing one with copy command to the file
+ you want to create, as the example below:
+   COPY MALUCO.FNT LICOS.FNT
+ Then edit the created file (in the example LICOS.FNT)
+ For more information, read FONTEDIT.DOC
+
+* * * IMPORTANT: FONTEDIT.EXE requires at least an EGA video adapter or better.
+
+FONTRESZ:
+ For help and syntax, type FONTRESZ with no parameters.
+ Example:
+   FONTRESZ linedraw 16 linedr32 32
+
+FONTSEL:
+ Type FONTSEL /? for help and syntax.
+ Examples:
+   FONTSEL LINEDRAW
+   FONTSEL MARCIO8 /r /m1 /h8
+
+ The block specifier option /C has the following bitfields:
+ R1:R0:L2:D2:L1:L0:D1:D0
+ MSB                  LSB
+  Where:
+  R1:R0 => reserved
+  L2:L1:L0 => defines the block that is selected by characters with light colors
+  D2:D1:D0 => defines the block that is selected by characters with dark colors
+  Bits L2 and D2 are available only in VGA and better video adapters.
+
+* * * IMPORTANT: FONTSEL.EXE requires at least an EGA video adapter or better.
+
+Compile also the examples in EXAMPLE\ subdir, there are many useful utilities
+to use with DOSFONT.
+
+For further information read README.1ST (at CRT2_1.ZIP main subdir)
+
+DOSFONT is freeware!!!
+The fonts in this subdirectory can be distributed in any format and also
+included in other programs.
+
+By M rcio Afonso Arimura Fialho
+http://pessoal.iconet.com.br/jlfialho
+e-mail: jlfialho@iconet.com.br OR (if the first doesn't work) jlfialho@yahoo.com

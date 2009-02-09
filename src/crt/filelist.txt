@@ -1,0 +1,101 @@
+ CONTENTS OF CRT2_1a.ZIP
+
+ - README.1ST   => The main help file and basic directions. You MUST read it.
+ - FILE_ID.DIZ  => Brief description of CRT2_1.ZIP
+ - FILELIST.TXT => This File
+ - INSTALL.BAT  => Installs VIDEO HANDLING FUNCTIONS
+ - REMOVE.BAT   => VIDEO HANDLING FUNCTIONS uninstall program
+ - REMOVE.DAT   => List of all VIDEO HANDLING FUNCTIONS modules, used by REMOVE.BAT
+ - OTHER.TXT    => Related programs written by others.
+
+ - SOURCE\README.TXT  => Instructions on how to extract and compile the source code.
+ - SOURCE\EXTRAIA.EXE => Utility used to extract files from .SRC files
+ - SOURCE\VIDEO.SRC   => Archive that stores the source code files. (an ASCII file)
+ - SOURCE\VIDEO.PRJ   => Turbo C++ 3.0 Project file
+ - SOURCE\VIDEO.DSK   => Desktop file for VIDEO.PRJ
+
+ - INCLUDE\CRT.H   => VIDEO HANDLING FUNCTIONS header (include) file.
+
+ - LIB\VIDEOS.LIB  => library file in small memory model
+ - LIB\VIDEOM.LIB  => library file in medium memory model
+ - LIB\VIDEOC.LIB  => library file in compact memory model
+ - LIB\VIDEOL.LIB  => library file in large memory model
+ - LIB\VIDEOH.LIB  => library file in huge memory model
+
+ - DOC\VIDEOHLP.TXT => On-line Help File (in HelpPc 2.10 format) (an ASCII file)
+ - DOC\CONVERT.TXT  => Instructions for converting VIDEOHLP.TXT to other help formats.
+ - DOC\UNHIGH.CPP   => Source code of UNHIGH.EXE
+ - DOC\UNHIGH.EXE   => Unhighlight every highlighted lines in VIDEOHLP.TXT
+ - DOC\ONLINE.TXT   => Instructions on how turning VIDEOHLP.TXT into an on-line help.
+
+ - EXAMPLES\HEXTOI.C     => Conversion routine for some examples in this subdirectory.
+ - EXAMPLES\ASCII.CPP    => Utility that displays all 256 ASCII characters.
+ - EXAMPLES\BOXWIDTH.CPP => Toggles character cell width in VGA+ video adapters.
+ - EXAMPLES\CURSOR.CPP   => Replaces cursor shape
+ - EXAMPLES\MICO.CPP     => An example of fillscr function
+ - EXAMPLES\PALETTE.CPP  => Utility that displays all text mode colors.
+ - EXAMPLES\SETFNTSP.CPP => Utility that enables two character set to appear on screen simultaneously
+ - EXAMPLES\SETMODE.CPP  => Changes current video page.
+ - EXAMPLES\SETPAGE.CPP  => Changes active display page.
+ - EXAMPLES\TEXTBLNK.CPP => Toggles Blink Enable/Background Intensity bit.
+ - EXAMPLES\EXAMPLES.TXT => Help file of examples.
+ - EXAMPLES\VOLTA.COM    => Simple utility that restores video defaults, by selecting video mode 3.
+
+ - EXAMPLES\PLUS\PLUS.CPP     => Example that enables triple and quadruple outlines.
+ - EXAMPLES\PLUS\CRTFONT.C    => Some functions that select fonts from disk.
+ - EXAMPLES\PLUS\XMKLINE.C    => Enhanced version of mkline_aux and mkline functions. (used by PLUS.CPP)
+ - EXAMPLES\PLUS\LINEDRW2.FNT => Font that stores the patterns used by the example (required by PLUS.EXE, generated when PLUS.CPP is compiled)
+
+ - DEMO\CRAZY8.CPP   => Holds a Font array used when compiling CRTTEST.CPP
+ - DEMO\CRTTEST.CPP  => Demo program source code.
+ - DEMO\FONT12.CPP   => Holds a Font array used when compiling CRTTEST.CPP
+ - DEMO\HANDSCR.CPP  => Holds a Font array used when compiling CRTTEST.CPP
+ - DEMO\CRTTEST.EXE  => Demo program
+ - DEMO\README.TXT   => help file about demo program.
+
+ - UTIL\EXTRAIA.CPP  => Utility that extracts files (usually source code files) stored in a .SRC file. 
+ - UTIL\EXTRAIA.TXT  => EXTRAIA.EXE help, informations.
+ - UTIL\MONTA.CPP    => Utility that stores text files in a text .SRC file (opposite of EXTRAIA) (source code)
+ - UTIL\MONTA.TXT    => MONTA.EXE help, informations.
+ - UTIL\READNAME.CPP => Required by EXTRAIA.CPP and MONTA.CPP
+
+ - DOSFONT\EXAMPLE.BAT     => Example of DOSFONT capabilities and FONTSEL usage
+ - DOSFONT\SEL.BAT         => Selects character height
+ - DOSFONT\VOLTA.COM       => Changes video mode to 3 (a mode change resets video environment)
+ - DOSFONT\MARCIO.CPI      => DOS codepage file, selects 8, 14 and 16 pixels high fonts defined by DOSFONT\FONTS\MARCIO??.FNT (??=08,14,16). Codepage number == 100
+ - DOSFONT\DETECT.EXE      => Displays current video adapter status/settings
+ - DOSFONT\FNTTOCPP.EXE    => converts .FNT files to .CPP files
+ - DOSFONT\FONTEDIT.EXE    => edit .FNT files
+ - DOSFONT\FONTEDIT.DOC    => FONTEDIT.EXE documentation and help file.
+ - DOSFONT\FONTRESZ.EXE    => resize .FNT files
+ - DOSFONT\FONTSEL.EXE     => selects .FNT files with many options.
+ - DOSFONT\CRAZY8.FNT      => A crazy DOS font (8 pixels high)
+ - DOSFONT\HANDSCR.FNT     => Handscript Font File (16 pixels high)
+ - DOSFONT\LINEDRAW.FNT    => This font allows to draw triple outline menu boxes. (16 pixels high)
+ - DOSFONT\LINEDRW2.FNT    => Enhanced LINEDRAW.FNT, enables quadruple outline menu boxes. (16 pixels high)
+ - DOSFONT\MARCIO_2.FNT    => Enhanced version of FONTS\MARCIO16.FNT with some interesting characters (16 pixels high)
+ - DOSFONT\DOSFONT.TXT     => Help file
+ - DOSFONT\FILELIST.TXT    => This file
+ - DOSFONT\LINEDRAW.TXT    => All menu boxes characters to be used when LINEDRAW.FNT is selected
+ - DOSFONT\MOLDURA.TXT     => Displays menu box characters
+ - DOSFONT\MOLDURA2.TXT    => Displays extended menu box characters (when LINEDRAW.FNT is selected)
+ - DOSFONT\MOLDURA3.TXT    => Displays ultra-extended menu boxes (when LINEDRW2.FNT is selected)
+
+ - DOSFONT\FONTS\MARCIO04.FNT =>  4 pixels high font
+ - DOSFONT\FONTS\MARCIO06.FNT =>  6 pixels high font
+ - DOSFONT\FONTS\MARCIO08.FNT =>  8 pixels high font (also included in MARCIO.CPI)
+ - DOSFONT\FONTS\MARCIO10.FNT => 10 pixels high font
+ - DOSFONT\FONTS\MARCIO12.FNT => 12 pixels high font
+ - DOSFONT\FONTS\MARCIO14.FNT => 14 pixels high font (also included in MARCIO.CPI)
+ - DOSFONT\FONTS\MARCIO16.FNT => 16 pixels high font (also included in MARCIO.CPI)
+ - DOSFONT\FONTS\MARCIO20.FNT => 20 pixels high font
+ - DOSFONT\FONTS\MARCIO24.FNT => 24 pixels high font
+ - DOSFONT\FONTS\MARCIO28.FNT => 28 pixels high font
+ - DOSFONT\FONTS\MARCIO32.FNT => 32 pixels high font
+
+ - DOSFONT\SOURCE\DETECT.CPP   => DETECT.EXE source code
+ - DOSFONT\SOURCE\FNTTOCPP.CPP => FNTTOCPP.EXE source code
+ - DOSFONT\SOURCE\FONTEDIT.CPP => FONTEDIT.EXE source code
+ - DOSFONT\SOURCE\FONTRESZ.CPP => FONTRESZ.EXE source code
+ - DOSFONT\SOURCE\FONTSEL.CPP  => FONTSEL.EXE source code
+ - DOSFONT\SOURCE\READNAME.CPP => Required by some programs source code above.

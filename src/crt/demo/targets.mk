@@ -1,0 +1,2 @@
+all: $(EXEODIR)/crttest
+

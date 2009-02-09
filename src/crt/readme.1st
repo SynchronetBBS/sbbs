@@ -1,0 +1,365 @@
+              * * * * *  VIDEO HANDLING FUNCTIONS  * * * * *
+                                                 ver 2.1a
+
+Contents:
+ - Package Contents
+ - Introduction
+ - How to Install
+ - The VIDEO HANDLING FUNCTIONS (ON-LINE) Help
+ - The Source Code
+ - How to Uninstall
+ - Copyright
+ - How to Contact Me
+
+ - - -                                                               - - -
+
+                        * * * PACKAGE CONTENTS * * *
+
+
+   This package (CRT2_1a.ZIP) contains the VIDEO HANDLING FUNCTIONS:
+     - Source code;
+     - Include file;
+     - Help file;
+     - Libraries;
+     - Examples/Development utilities with source;
+     - DEMO program with source;
+
+   And also:
+     - EXTRAIA.EXE/MONTA.EXE => groups and ungroups C/C++ source files or any
+        text file. (UTIL\ subdir)
+     - DOSFONT => DOS character font edit and select utilities, plus some
+        example fonts. (DOSFONT\ subdir)
+
+   The file FILELIST.TXT contains a list with a brief description of all files
+ stored in CRT2_1a.ZIP.
+
+ NOTICE:
+   Possibly in future versions, EXTRAIA/MONTA and DOSFONT will be published
+ in standalone packages.
+
+ IMPORTANT NOTICE: 
+   The letter 'a' in the version number means that this version differs
+ very slightly from version 2.1 (only some small fixes in documentation and
+ installation programs), so slightly that many times CRT 2_1a.ZIP is referred
+ as CRT2_1.ZIP and version 2.1a as version 2.1.
+
+
+ - - -                                                               - - -
+
+                          * * * INTRODUCTION * * *
+
+
+   VIDEO HANDLING FUNCTIONS is a C/C++ library of functions for 16 bit DOS
+ environments (although they work fine in 32 bit DOS (that comes with WINDOWS
+ 95/98)). They have been developed to provide an easy, but powerful and high
+ performance access to screen in text mode.
+   The main features of this library is:
+   - possibility to work in many video modes (including graphics modes)
+   - possibility to work in many video pages.
+   - possibly run in many video adapters (they work fine in CGA* and SVGA+)
+       *with some restrictions in CGA.
+   - almost as fast as assembly code. (when direct video RAM memory access is
+       enabled)
+   - in one function call specify the color and the position of text to be
+       written (no need to move cursor).
+   - create executable files compatible with almost all PC computers (since
+       the very old PC's(including PC-XT) to the latest Pentium III computers)
+   - Functions for:
+      - character/attribute read/write from screen
+      - string output on screen at a given position.
+      - string output on screen with special effects
+         (color change, any direction, justification,...)
+      - formatted output with special effects or standard
+      - screen/text-window painting.
+      - functions for drawing menu boxes / text boxes.
+      - screen/text-window saving/restoring with options or not.
+      - window relative functions.
+      - character shape (pattern) replacement.
+      - cursor shape resize, and cursor reposition.
+      - palette/overscan color/video DAC registers color change.
+      - video mode and video page change / detection
+      - detection of current video mode, active display page, number of
+          columns, rows, etc.
+      - miscellaneous EGA/VGA functions.
+
+   - Over 60 functions and many macro functions occupying all together only
+   6.5 kbytes in small memory model. All with source code and examples.
+
+   Extensive documentation and examples are found in DOC\VIDEOHLP.TXT
+ help file. VIDEOHLP.TXT is in Borland C++ 3.0 Help style and requires
+ Helppc 2.10 to be browsed (it is, to be on-line). However VIDEOHLP.TXT is
+ also readable by common text editors.
+
+    Why 16 bit version instead of a 32 bit?
+     - 16 bit versions works in almost every computer (since very old PC
+       dinosaurs to the latest computers).
+     - Can be supervised by 32 bit protected mode programs such as Windows
+     - I don't have a 32 bit compiler.
+
+   I didn't have time to get a newer compiler and to port it to 32 bit.
+ But you are encouraged to port it to 32 bit and to distribute it with another
+ name. (If you do so, please tell me, so I will be able to inform other users
+ about your version).
+   You may try also to port it to DJGPP, a freeware 32 bit development
+ environment.
+
+ IMPORTANT NOTICE: To allow these functions to work in almost any computer,
+ they have been compiled with 8086/8088 instruction set, however to get a
+ better performance, you may recompile them with a newer processor (such
+ as 80386, 80486 or better) instruction set. Instructions on how compiling
+ the functions can be found in SOURCE\README.TXT.
+
+
+ - - -                                                               - - -
+
+                         * * * HOW TO INSTALL * * *
+
+
+   The VIDEO HANDLING FUNCTIONS are compiled and grouped in libraries (see
+ FILELIST.TXT), one for each memory model.
+   The libraries have been compiled with the aid of \SOURCE\VIDEO.PRJ and with
+ options SUPRESS REDUNDANT LOADS (-Z in TCC) and JUMP OPTIMIZATION (-O in TCC)
+ switched on. All comment records and debug information have been purged from
+ libraries to reduce file size. The compiler was Turbo C++ 3.0 IDE. (See at
+ the end of file SOURCE\README.TXT for more information about the libraries).
+
+BEFORE INSTALLATION:
+
+  Go to the subdirectory where you unzipped CRT2_1a.ZIP, there should exist
+ the subdirectories LIB\ INCLUDE\ and DOC\. If these directories don't exist,
+ unzip CRT2_1a.ZIP with -d option (with pkunzip) to restore original directory
+ structure. You may try also Winzip (be sure that USE FOLDER NAME option is
+ checked), or another extractor.
+
+IF YOU ARE USING TURBO C/C++:
+     From the DOS prompt:
+ In the subdirectory where you unzipped CRT2_1a.ZIP, type
+
+   INSTALL <Turbo C/C++ path>
+
+ for example:
+
+   INSTALL C:\TC
+
+IF YOU ARE USING BORLAND C/C++ or compatible:
+   Verify if the librarian name is TLIB. If it's not edit INSTALL.BAT and
+ replace every occurrence of TLIB by your compiler's librarian name.
+ After run INSTALL.BAT with the path of your C/C++ compiler.
+
+IF YOU ARE USING ANOTHER C/C++ COMPILER that is not compatible with libraries
+in LIB\ subdir.
+   Port the source code files stored in SOURCE to your compiler.
+   The source code of these functions is stored in a large archive named
+ VIDEO.SRC, extract files from VIDEO.SRC using EXTRAIA utility, located at
+ the same subdir. For more information on how to extract the source code
+ of these function, read README.TXT also located in the same subdir.
+
+DOING BY HAND:
+   If you desire, you may install by hand.
+
+ The header file is:              INCLUDE\CRT.H
+ The libraries are located at:    LIB\    (each file for each memory model)
+ The Help file is:                DOC\VIDEOHLP.TXT
+
+
+IMPORTANT: INSTALL.BAT doesn't installs the VIDEO HANDLING FUNCTIONS help in
+such a way it becomes On-line. It simply copies the help file (VIDEOHLP.TXT)
+ to the \DOC subdirectory of your C/C++ compiler.
+
+
+
+ - - -                                                               - - -
+
+
+           * * * THE VIDEO HANDLING FUNCTIONS (ON-LINE) HELP * * *
+
+
+   The Help file located in DOC\ subdirectory and named VIDEOHLP.TXT is
+ in Helppc 2.10 format. To be browsed (it is, to be On-line) it requires
+ Helppc ver 2.10 or better. However VIDEOHLP.TXT is a common text file also
+ being readable by common text editors.
+   HelpPC is a shareware program written by David Jurgens, it's available on
+ the Internet at SimtelNet and it's mirrors at:
+ http://www.simtel.net/simtel.net/msdos/info.html (as helppc21.zip)
+   or at
+ ftp://ftp.cdrom.com/pub/simtelnet/msdos/info/helppc21.zip
+
+   VIDEOHLP.TXT is in Borland Turbo C++ 3.0 style, being familiar to
+ Borland or Turbo C/C++ programmers.
+
+   To turn it into an On-Line help, read DOC\ONLINE.TXT
+
+   To convert VIDEOHLP.TXT to other help formats, read DOC\CONVERT.TXT
+
+- - -                                                                - - -
+
+
+                       * * * THE SOURCE CODE * * *
+
+
+   The source code of all functions is available at SOURCE\ subdir, stored in
+ VIDEO.SRC archive. To see how to extract source code from VIDEO.SRC and how
+ to compile the functions to build libraries, read SOURCE\README.TXT.
+
+   The source code was developed with Turbo C++ 3.0
+
+   VIDEO.SRC is an ASCII file, being editable by common text editors.
+
+
+
+- - -                                                                - - -
+
+                       * * * HOW TO UNISTALL * * *
+
+
+
+IF YOU ARE USING TURBO C/C++:
+     From the DOS prompt:
+ In the subdirectory where you unzipped CRT2_1a.ZIP, type
+
+   REMOVE <Turbo C/C++ path>
+
+ for example:
+
+   REMOVE C:\TC
+
+IF YOU ARE USING BORLAND C/C++ or compatible:
+   Verify if the librarian name is TLIB. If it's not edit REMOVE.BAT and
+ replace every occurrence of TLIB by your compiler's librarian name.
+ After run REMOVE.BAT with the path of your C/C++ compiler.
+
+IF YOU ARE USING ANOTHER C/C++ COMPILER OR DOING BY HAND:
+   Locate the files below and remove them:
+
+      CRT.H => Header File
+      VIDEOHLP.TXT => The VIDEO HANDLING FUNCTIONS Help
+
+   If you've installed the functions in your compiler RTL libraries, remove
+ the VIDEO HANDLING FUNCTIONS modules using your librarian. The file
+ REMOVE.DAT has a listing of all modules included.
+
+
+
+- - -                                                                - - -
+
+                          * * * COPYRIGHT * * *
+
+
+   The copyright notes below refer to VIDEO HANDLING FUNCTIONS and all other
+ programs and examples included in this package (CRT2_1a.ZIP).
+
+   This software is classified as FREEWARE and the ideas comprised here
+ (including algorithms used by the functions) are on PUBLIC DOMAIN. That means
+ you can FREELY distribute and get this software, but I still retain some
+ rights over it.
+
+   It's prohibited to sell this software or parts of it, but I allow to
+ include it in collections or softwares that are sold, and also to charge
+ some fee for the material used in distribution (diskettes,CD-ROM,etc), and
+ for handling/shipping operations. This restriction doesn't apply for works
+ based in this software (including modified versions)
+
+   Distribute preferably the package in it's original form. But permission is
+ granted to create modified versions of it, or to distribute it/parts of it
+ in other formats provided that:
+   - You use another name in your package, so my users will know that it was
+     done by another person. (for example VIDCRT instead of CRT)
+     But if you port it to other programming languages you can use similar
+     names (but not the same) (for example CRT++)
+     NOTE ABOUT THE NAME: The name of the package is CRT, CRT2_1a is the name
+     of the package plus the version (in this case version 2.1a)
+     The letter 'a' in the version number means that this version differs
+     very slightly from version 2.1 (only some small fixes in documentation and
+     installation programs), so slightly that sometimes it is referred simply
+     as version 2.1
+
+   - You must state the changes you've done and write your name as the author
+     of modifications.
+
+   - You must give some kind of credit to me, including my name and where
+     your user can find this software (including my E-mail and homepage is
+     not essential, but it would be nice)
+
+   The above restrictions doesn't apply for programs that only uses the
+ functions that have been linked or compiled to the program or .FNT files
+ stored in \DOSFONT\ subdirectory.
+
+   You may not use it to harm or disturb mankind. And please do not use it
+ for evil purposes.
+
+DISCLAIMER:
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+EITHER EXPRESSED OR IMPLIED. THE ENTIRE RISK AS TO THE QUALITY
+AND PERFORMANCE OF THE PRODUCT IS WITH YOU. SHOULD THE PRODUCT
+PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+REPAIR OR CORRECTION.
+
+IN NO EVENT WILL BE THE AUTHOR, OR ANY OTHER PARTY WHO MAY HAVE
+REDISTRIBUTED THE PRODUCT, BE LIABLE TO YOU FOR
+DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR
+CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE
+THE PRODUCT (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA
+BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+PARTIES OR A FAILURE OF THE PRODUCT TO OPERATE WITH ANY OTHER
+PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGES.
+
+   I've done my best, but I can't guarantee that it's free of errors or
+ that it will work fine in a particular system. If anything occurs, please
+ report it to me. Anyway telling me the defects of my work will prevent
+ future versions from failing or causing disaster in other users system.
+ I would be glad to receive messages telling any error.
+
+   Any patent registered in the world about this software will be void, as it
+ is distributed freely worldwide.
+
+ Copyright (c) 1998,1999 by M rcio Afonso Arimura Fialho.
+
+
+CREDITS:
+
+   Thanks to Ralf Brown and everyone who has helped me to develop these
+ functions, without their help it would be impossible.
+
+ Bibliography:
+  - Ralf Brown's Interrupt list:
+      http://www.cs.cmu.edu/afs/cs/user/ralf/pub/WWW/files.html
+      ralf@pobox.com
+    Ralf Brown's Interrupt list: => alternate sites, main site above
+        http://www.simtel.net/msdos/info.html
+        http://oak.oakland.edu/msdos/info.html => mirror of Simtel Net
+        ftp://ftp.cdrom.com/pub/simtelnet/msdos/info/interRRA.ZIP
+                                                     interRRB.ZIP
+                                                        .
+                                                        .
+                                                        .
+                                                     interRRG.ZIP
+          RR is the release number (at the time I wrote this, RR was 60).
+
+  - Turbo C++ Completo e Total
+  - Other sources.
+
+   Thanks also to David Jurgens, who has created HelpPc, a very simple and
+ useful help browser. (Although it has very few resources, it helps a lot).
+   ftp://ftp.cdrom.com/pub/simtelnet/msdos/info/helppc21.zip
+
+
+
+- - -                                                                - - -
+
+                       * * * HOW TO CONTACT ME * * *
+
+
+   Any doubt's, suggestions, complains, enhancements you may have in mind,
+ please report them to me, or at least tell me what you think about the
+ programs comprised in CRT2_1a.ZIP.
+
+ Author: M rcio Afonso Arimura Fialho
+ Email: jlfialho@iconet.com.br
+ Home page: http://pessoal.iconet.com.br/jlfialho
+ Version: 2.1 of 1999.07.31 (year.month.day)
+  Subversion: 2.1a of 1999.08.01
+
+ P.S.:If you can't access my homepage, e-mail me, reporting the problem.
+      If you can't access my E-mail, use my father's e-mail:
+         jlfialho@yahoo.com

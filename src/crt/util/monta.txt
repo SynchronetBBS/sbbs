@@ -1,0 +1,62 @@
+MONTA ver 2.0
+
+MONTA.EXE is a simple program that is used to group text files (such as
+source codes of programs in C and C++ or any other text files) in a large
+text file easely editable by any DOS editor. It was created intending to
+simplify the handling of many C/C++ source files (such as replacing the name
+of a global variable that appears in many files) in projects with many files.
+The large text file (archive) is created with .SRC extension, if none is
+supplied. 
+
+ It's usage is:
+
+    MONTA [/B] filename[.SRC]           where:
+
+    filename     pathname of archive
+    /B           creates archive with binary file tags
+
+MONTA.EXE allows nested archives, which means that you can store a
+MONTA archive inside another.
+
+Archives created by MONTA can be extracted by EXTRAIA.EXE
+
+Example: 
+   MONTA HELP.SRC MONTA.TXT EXTRAIA.TXT
+ The above example will store MONTA.TXT (this file) and EXTRAIA.TXT in HELP.SRC
+
+   Typing MONTA, the name of an existing archive and the names of files to be
+stored. MONTA will prompt for the user (Overwrite/Append/Quit?).
+If the user types O, the archive will be overwritten by the new files to
+store.
+If the user types A, the files to store will be included to the archive,
+without removing the existing files from archive.
+If the user types Q, MONTA will be finished.
+
+THE /B option
+   The /B option has been provided to allow compatibility with older versions,
+such as the .SRC archives that comes with CRT1_6s.ZIP. This option instructs
+MONTA to write binary file TAGS in the archive instead of normal ASCII TAGS.
+The earlier versions writes only these binary file tags because they are much
+smaller and easier to handle by computer. Although they are smaller, it's not
+advisable to use these tags because most text editor's can't handle them very
+well (I mean, even though they cause no problem to the editor, it's hard to
+write them in hand (you might need a binary editor to do so) and most Windows
+based editors can't display them correctly). They are displayed below:
+
+Binary opentag => //filename
+Binary closetag => //
+
+   EXTRAIA doesn't recognize binary tags and normal ASCII tags simultaneously.
+So creating archives with files stored by normal file TAGS and files stored
+by binary file tags, will create archives with two types of stored files.
+Those that can be extracted without (and only without) the /B switch, and
+those that can be extracted with (and only with) the /B switch.
+
+For further information, read EXTRAIA.TXT
+
+Copyright notices are also in EXTRAIA.TXT
+
+By M rcio Afonso Arimura Fialho
+
+http://pessoal.iconet.com.br/jlfialho
+e-mail: jlfialho@iconet.com.br OR (only in the case the first one doesn't work): jlfialho@yahoo.com

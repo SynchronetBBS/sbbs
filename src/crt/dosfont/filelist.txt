@@ -1,0 +1,25 @@
+Listing of DOSFONT\
+
+EXAMPLE  BAT    => Example of DOSFONT capabilities and FONTSEL usage
+SEL      BAT    => Selects character height
+VOLTA    COM    => Changes video mode to 3 (a mode change resets video environment)
+MARCIO   CPI    => DOS codepage file, select fonts defined by MARCIO??.FNT. Codepage number == 100
+DETECT   EXE    => Displays current video adapter status/settings
+FNTTOCPP EXE    => converts .FNT files to .CPP files
+FONTEDIT EXE    => edit .FNT files
+FONTEDIT DOC    => FONTEDIT.EXE documentation and help file.
+FONTRESZ EXE    => resize .FNT files
+FONTSEL  EXE    => selects .FNT files with many options.
+CRAZY8   FNT    => A crazy DOS font (8 pixels high)
+HANDSCR  FNT    => Handscript Font File (16 pixels high)
+LINEDRAW FNT    => This font allows to draw triple outline menu boxes. (16 pixels high)
+LINEDRW2 FNT    => Enhaced LINEDRAW.FNT, enables quadruple outline menu boxes. (16 pixels high)
+MARCIO_2 FNT    => Enhaced version of FONTS\MARCIO16.FNT with some interesting characters
+DOSFONT  TXT    => Help file
+FILELIST TXT    => This file
+LINEDRAW TXT    => All menu boxes characters to be used when LINEDRAW.FNT is selected
+MOLDURA  TXT    => Displays menu box characters
+MOLDURA2 TXT    => Displays extended menu box characters (when LINEDRAW.FNT is selected)
+MOLDURA3 TXT    => Displays ultra-extended menu boxes (when LINEDRW2.FNT is selected)
+
+   For more information, read DOSFONT.TXT

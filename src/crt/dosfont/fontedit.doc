@@ -1,0 +1,112 @@
+	   * * * FONTEDIT ver 1.3 HELP AND DOCUMENTATION * * *
+
+
+   FONTEDIT is a freeware program that enables to change DOS bitmapped fonts
+(.FNT). To select fonts edited by FONTEDIT, use FONTSEL.
+
+ Syntax:
+   FONTEDIT <font name[.FNT]> [Height]
+ Example:
+   FONTEDIT maluco
+
+   You must give a name, but height is optional (default=16)
+
+   To create new fonts, copy a existing one with copy command to the file
+ you want to create, as the example below:
+   COPY MALUCO.FNT LICOS.FNT
+ Then edit the created file (in the example LICOS.FNT)
+
+   FONTEDIT supports mouse (Microsoft compatible) and requires at least
+an EGA video adapter (preferably VGA or SVGA).
+   If FONTEDIT works with non MS compatible mouses, please tell me.
+
+   FONTEDIT was designed to run under DOS, but it also works under Windows,
+provided that it is running in full screen mode or under true DOS sessions.
+
+   This version of FONTEDIT displays five windows when it is started. Some
+of them can be turned off by the user.
+
+   The leftmost window is the character pattern edit window, where the user
+can change the shape of current selected character. It is always visible.
+This window will be reffered as Edit window. When the font is changed, a
+star appears on the bottom of this window. When the font is saved, it
+disapears.
+
+   On the middle, appears the Character Set window. This window displays
+the characters with their default patterns. It can be toggled on/off by
+pressing ALT and A keys simultaneously.
+
+   On the right, appears a Miniature of the selected character (Miniature
+window) and a miniature of the pattern stored in the clipboard (Clipboard
+window). They can be toggled on/off by pressing ALT-M and ALT-B,
+respectively.
+
+   Over the Miniature and the Clipboard window appears a message reporting
+the selected character index and it's default character pattern.
+
+   Near the bottom of the screen appears a window with a brief help of
+FONTEDIT commands. This window cannot be turned off.
+
+   To display the edited font, use FONTSEL with /R /H?? /A options.
+
+   To exit, press ESC. If the user attempts to exit without saving first
+the font (if it was changed) a dialog window will pop-up. The user may
+choose between saving the modifications and then exit, or exit and discard
+every unsaved modification, or returning to the program, by pressing the
+Cancel key. This dialog window doesn't support TAB and ENTER keys.
+   To save the font, press F2.
+
+   To select a character to be edited, use PG-UP, PG-DNW, CTRL-PG-UP,
+CTRL-PG-DNW or ALT-(arrow keys) to browse the Character Table. If the
+Character Set window is visible, you may choose the character directly by
+moving the mouse cursor over the desired character and them pressing the
+mouse left button or Enter key. Note that the ALT-(arrow keys) are active
+even if the Character Set window is not visible, it is, you can browse the
+Character Set window even if its not visible.
+   The table below shows how much the selected character index is incremented
+or decremented after hitting the following keys:
+   PG-UP, PG-DWN, ALT-LEFT and ALT-RIGHT..................1
+   CTRL-PG-UP and CTRL-PG-DWN............................16
+   ALT-UP and ALT-DWN....................................32
+
+   To change the shape of the selected character, move the mouse cursor to
+the Edit window on the left. Press mouse buttons or +, -, ENTER keys to edit
+the character. The mouse cursor can be moved by the mouse and also by the
+keyboard arrows (for a more precise action). If no mouse is installed, the
+text mode cursor will appear inside the Edit window. To move it, use the
+arrow keys, and press keys +, - or ENTER to edit the character.
+
+   CTRL-C or CTRL-INS copies the pattern from the Edit window to the
+   clipboard.
+
+   CTRL-V pastes the pattern stored in the clipboard over the selected
+   character pattern.
+
+   CTRL-(arrows) move the pattern for up, down, sides.
+
+   ALT-I inverts the colors of the character pattern.
+
+   ALT-C clears the character pattern.
+
+   ALT-V, ALT-H flips the character pattern.
+   ALT-R rotates the character pattern 180 degrees.
+
+   The clipboard is not editable.
+
+* * * IMPORTANT: I haven't done all the tests required to assure that * * *
+* * * FONTEDIT is free of errors, so it might not work properly in    * * *
+* * * some system configurations (those I haven't tested), hence use  * * *
+* * * it with CARE and at your OWN RISK. In brief: This is still a    * * *
+* * * BETA version. If you find any error or if you have any comment, * * *
+* * * please e-mail me:						      * * *
+* * *             jlfialho@iconet.com.br                              * * *
+
+
+   FONTEDIT is a part of DOSFONT. Distribute preferably all DOSFONT
+   files together.
+
+   FOR help about other DOSFONT programs and files, read DOSFONT.TXT
+
+by Marcio A. A. Fialho
+http://pessoal.iconet.com.br/jlfialho
+e-mail: jlfialho@iconet.com.br

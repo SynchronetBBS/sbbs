@@ -1,0 +1,25 @@
+CRT2_1a - VIDEO HANDLING FUNCTIONS ver 2.1a
+   A C/C++ library of text mode functions,
+fully documented, plus examples. Over 60
+functions and over 10 macros, including
+functions for EGA/VGA/SVGA special features.
+Works in almost every EGA/VGA/SVGA video
+modes, including extended modes and graphics
+video modes. All with source code.
+   Some features:
+      - character/attribute read/write from screen
+      - string output on screen with special effects
+         (color change, any direction, justification,...)
+      - formatted output with special effects
+      - screen/text-window painting
+      - functions for menu boxes.
+      - screen/text-window saving/restoring
+      - character shape replacement
+      - cursor shape resize, and cursor reposition
+      - palette color change
+      - detects current video mode, active page,
+         number of columns, rows, etc.
+	and more ...
+   Compatible with CGA,MCGA,EGA,VGA,SVGA and better
+   P.S.: This version hasn't yet a 32 bit version.
+   P.S.: Many times CRT2_1a.ZIP is referred as CRT2_1.ZIP

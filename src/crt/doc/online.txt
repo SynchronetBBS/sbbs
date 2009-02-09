@@ -1,0 +1,59 @@
+INSTRUCTIONS ON HOW TURNING VIDEOHLP.TXT INTO AN ONLINE HELP
+
+
+ - To turn VIDEOHLP.TXT into an online help, first you will need to
+   download HelpPC 2.10+. HelpPC is available in the following ftp/http
+   addresses: (and also in their mirrors)
+     http://www.simtel.net/simtel.net/msdos/info.html (as helppc21.zip)
+     ftp://ftp.cdrom.com/pub/simtelnet/msdos/info/helppc21.zip
+
+ - Unzip the downloaded file to a subdirectory, for example (C:\TC\HELPPC).
+   This subdirectory I will call from now HelpPC subdirectory.
+   Before continuing from this point, you'd better read HELPPC.DOC in HelpPC
+   subdirectory to have a better idea of what you are going to do from this
+   point.
+
+ - Add the following line to your AUTOEXEC.BAT file:
+
+     SET HLP=d:pathname	(no blanks, except between "SET HLP")
+
+    Where 'd:' is the drive and 'pathname' is the HelpPC subdirectory
+    (this should be fully qualified, with or without the trailing '\').
+
+    For example:
+
+     SET HLP=C:\TC\HELPPC
+
+ - Move or copy VIDEOHLP.TXT to HelpPC subdirectory. If you have used
+   INSTALL.BAT VIDEOHLP.TXT should also be at the \DOC subdirectory of your
+   compiler (for example: C:\TC\DOC)
+
+ - From HelpPC subdirectory, type:
+
+     INDEXHLP VIDEOHLP
+
+   or (if you desire also to include the .TXT help files provided by HelpPC,
+   type:
+
+     BUILD VIDEOHLP.TXT
+
+ - Include HelpPC subdirectory in your path.
+
+ To access the VIDEO HANDLING FUNCTIONS online help, just type from a DOS
+ prompt HELPPC
+
+ If you are using Turbo C++ 3.0 or similar, you may also include the online
+ help in your compiler IDE. To do so, go to Options menu and them to Transfer...
+ submenu. This will show a window with a box named Program Titles. Go to the
+ last line, and click on Edit button. This will show another window. Fill that
+ window with the desired title for HelpPC, HELPPC.COM plus it's path, and
+ leave the last line empty. In the left side, assign a hot key and click on
+ New (or Modify) button if everything is OK. Now the previous window should
+ appear and you should see in it a new entry with the title you gave for
+ HelpPC. If more than one entry for HelpPC appears, remove the exceeding
+ entries for HelpPC. If everything is OK, click over the OK button. To test,
+ just hit the assigned hot key when editing any file in the IDE.
+
+ If you wish you may try to convert VIDEOHLP.TXT to a help format readable
+ by THELP and them include VIDEOHLP into Turbo C++ online help. To do so,
+ read CONVERT.TXT in this subdirectory.

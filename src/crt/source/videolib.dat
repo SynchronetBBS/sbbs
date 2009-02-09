@@ -1,0 +1,12 @@
++ crtvar   + crtdtect + crt_init + vmode    + crtmode  &
++ crtpage  + crt_gtxy + getxy    + getcrtch + getcrtco &
++ b_printc + printcn  + printc   + changeco + printct  &
++ printsn  + prints   + printxy  + printx   + printt   &
++ printsj  + printsjc + printsnf + printsf  + printxyf &
++ printxf  + printtf  + printsjf + prntsjcf + fillscr  &
++ barcolor + fillbar  + fillbarw + fillbox  + fillboxw &
++ crtframe + crtframw + mkline   + crtwin   + savvideo &
++ rstvideo + savevidw + rstvidw  + savvidw2 + rstvidw2 &
++ savecrt  + rstcrt   + savecrtw + rstcrtw  + savcrtw2 &
++ rstcrtw2 + crtclrsc + cursorsh + crtpal   + crtbord  &
++ crtdacr  + boxwidth + textblnk + changchr + crtfntsp
