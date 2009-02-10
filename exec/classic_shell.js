@@ -46,12 +46,12 @@ while(1) {
 	bbs.main_cmds++;
 
 	// Display main Prompt
-	console.putmsg("-c\r\nþ bhMain ncþ h");
+	console.print("-c\r\nþ bhMain ncþ h");
 	if(user.compare_ars("exempt T"))
 		console.putmsg("@TUSED@",P_SAVEATR);
 	else
 		console.putmsg("@TLEFT@",P_SAVEATR);
-	console.putmsg(" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n");
+	console.print(" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n");
 
 	// Get key (with / extended commands allowed)
 	str=get_next_key();
@@ -178,7 +178,7 @@ while(1) {
 			continue main;
 
 		case 'B':
-			console.putmsg("\r\nchBrowse/New Message Scan\r\n");
+			console.print("\r\nchBrowse/New Message Scan\r\n");
 			bbs.scan_subs(SCAN_NEW|SCAN_BACK);
 			continue main;
 
@@ -195,7 +195,7 @@ while(1) {
 			continue main;
 
 		case 'F':
-			console.putmsg("\r\nchFind Text in Messages\r\n");
+			console.print("\r\nchFind Text in Messages\r\n");
 			bbs.scan_subs(SCAN_FIND);
 			continue main;
 
@@ -225,14 +225,13 @@ while(1) {
 						console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
 						for(i=0; i<msg_area.grp_list.length; i++) {
 							if(i==bbs.curgrp)
-								console.putmsg('*',P_SAVEATR);
+								console.print('*');
 							else
-								console.putmsg(' ',P_SAVEATR);
+								console.print(' ');
 							if(i<9)
-								console.putmsg(' ',P_SAVEATR);
+								console.print(' ');
 							if(i<99)
-								console.putmsg(' ',P_SAVEATR);
-							// We use console.putmsg to expand ^A, @, etc
+								console.print(' ');
 							console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description),P_SAVEATR);
 						}
 					}
@@ -258,13 +257,13 @@ while(1) {
 						if(!msgbase.open())
 							continue;
 						if(i==bbs.cursub)
-							console.putmsg('*',P_SAVEATR);
+							console.print('*');
 						else
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						if(i<9)
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						if(i<99)
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
 						msgbase.close();
 					}
@@ -297,7 +296,7 @@ while(1) {
 			continue main;
 
 		case 'N':
-			console.putmsg("\r\nchNew Message Scan\r\n");
+			console.print("\r\nchNew Message Scan\r\n");
 			bbs.scan_subs(SCAN_NEW);
 			continue main;
 
@@ -340,17 +339,17 @@ while(1) {
 			continue main;
 
 		case 'S':
-			console.putmsg("\r\nchScan for Messages Posted to You\r\n");
+			console.print("\r\nchScan for Messages Posted to You\r\n");
 			bbs.scan_subs(SCAN_TOYOU);
 			continue main;
 
 		case '/S':
-			console.putmsg("\r\nchScan for Messages Posted to You\r\n");
+			console.print("\r\nchScan for Messages Posted to You\r\n");
 			bbs.scan_subs(SCAN_TOYOU,true);
 			continue main;
 
 		case 'U':
-			console.putmsg("\r\nchList Users\r\n");
+			console.print("\r\nchList Users\r\n");
 			console.mnemonics("\r\n~Logons Today, ~Sub-board, or ~All: ");
 			switch(get_next_keys("LSA",false)) {
 				case 'L':
@@ -375,7 +374,7 @@ while(1) {
 			continue main;
 
 		case 'Z':
-			console.putmsg("\r\nchContinuous New Message Scan\r\n");
+			console.print("\r\nchContinuous New Message Scan\r\n");
 			bbs.scan_subs(SCAN_NEW|SCAN_CONST);
 			continue main;
 
@@ -400,13 +399,13 @@ while(1) {
 					if(!msgbase.open())
 						continue;
 					if(i==bbs.cursub)
-						console.putmsg('*',P_SAVEATR);
+						console.print('*');
 					else
-						console.putmsg(' ',P_SAVEATR);
+						console.print(' ');
 					if(i<9)
-						console.putmsg(' ',P_SAVEATR);
+						console.print(' ');
 					if(i<99)
-						console.putmsg(' ',P_SAVEATR);
+						console.print(' ');
 					console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[bbs.curgrp].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
 					msgbase.close();
 				}
@@ -422,13 +421,13 @@ while(1) {
 					console.putmsg(bbs.text(GrpLstHdr),P_SAVEATR);
 					for(i=0; i<msg_area.grp_list.length; i++) {
 						if(i==bbs.curgrp)
-							console.putmsg('*',P_SAVEATR);
+							console.print('*');
 						else
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						if(i<9)
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						if(i<99)
-							console.putmsg(' ',P_SAVEATR);
+							console.print(' ');
 						// We use console.putmsg to expand ^A, @, etc
 						console.putmsg(format(bbs.text(GrpLstFmt),i+1,msg_area.grp_list[i].description,"",msg_area.grp_list[i].sub_list.length),P_SAVEATR);
 					}
@@ -441,17 +440,17 @@ while(1) {
 			continue main;
 
 		case '#':
-			console.putmsg("\r\nchType the actual number, not the symbol.\r\n");
+			console.print("\r\nchType the actual number, not the symbol.\r\n");
 			continue main;
 
 		case '/#':
-			console.putmsg("\r\nchType the actual number, not the symbol.\r\n");
+			console.print("\r\nchType the actual number, not the symbol.\r\n");
 			continue main;
 	}
 // fall through
-	console.putmsg("\r\nchUnrecognized command.");
+	console.print("\r\nchUnrecognized command.");
 	if(user.settings & USER_EXPERT)
-		console.putmsg(" Hit 'i?nch' for a menu.",P_SAVEATR);
+		console.print(" Hit 'i?nch' for a menu.");
 	console.crlf();
 }
 
@@ -473,7 +472,7 @@ function email()
 
 		// async
 
-		console.putmsg("\r\nyhE-mail: n");
+		console.print("\r\nyhE-mail: n");
 		key=get_next_keys("?SRFNUKQ\r");
 		bbs.log_key(key);
 		switch(key) {
@@ -483,7 +482,7 @@ function email()
 				break;
 
 			case 'S':
-				console.putmsg("_\r\nbhE-mail (User name or number): w");
+				console.print("_\r\nbhE-mail (User name or number): w");
 				str=get_next_str("",40,K_UPRLWR,false);
 				if(str==null || str=="")
 					break;
@@ -499,7 +498,7 @@ function email()
 				break;
 
 			case 'U':
-				console.putmsg("_\r\nbhE-mail (User name or number): w");
+				console.print("_\r\nbhE-mail (User name or number): w");
 				str=get_next_str("",40,K_UPRLWR,false);
 				if(str==null || str=="")
 					break;
@@ -557,7 +556,7 @@ function main_info()
 
 		// async
 
-		console.putmsg("\r\nyhInfo: n");
+		console.print("\r\nyhInfo: n");
 		key=get_next_keys("?QISVY\r");
 		bbs.log_key(key);
 		switch(key) {
@@ -601,7 +600,7 @@ function main_cfg()
 			bbs.menu("maincfg");
 		
 		// async
-		console.putmsg("\r\nyhConfig: n");
+		console.print("\r\nyhConfig: n");
 		key=get_next_keys("?QNPIS\r");
 		bbs.log_key(key);
 
@@ -664,12 +663,12 @@ file_transfers:
 		bbs.file_cmds++;
 
 		// Display main Prompt
-		console.putmsg("-c\r\nþ bhFile ncþ h");
+		console.print("-c\r\nþ bhFile ncþ h");
 		if(user.compare_ars("exempt T"))
 			console.putmsg("@TUSED@",P_SAVEATR);
 		else
 			console.putmsg("@TLEFT@",P_SAVEATR);
-		console.putmsg(" nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n");
+		console.print(" nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n");
 
 		// Get key (with / extended commands allowed)
 		str=get_next_key();
@@ -800,7 +799,7 @@ file_transfers:
 				continue file_transfers;
 
 			case 'D':
-				console.putmsg("\r\nchDownload File(s)\r\n");
+				console.print("\r\nchDownload File(s)\r\n");
 				if(bbs.batch_dnload_total>0) {
 					if(console.yesno(bbs.text(DownloadBatchQ))) {
 						bbs.batch_download();
@@ -813,12 +812,12 @@ file_transfers:
 				if(file_area.lib_list.length==0)
 					continue file_transfers;
 				if(user.security.restrictions&UFLAG_D) {
-					console.putmsg(bbs.text(R_Download));
+					console.putmsg(bbs.text(R_Download),P_SAVEATR);
 					continue file_transfers;
 				}
 				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_DOWNLOAD)) {
 					var s=0;
-					console.putmsg(bbs.text(SearchingAllDirs));
+					console.putmsg(bbs.text(SearchingAllDirs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 						if(i!=bbs.curdir &&
 								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_DOWNLOAD))!=0) {
@@ -827,7 +826,7 @@ file_transfers:
 							}
 						}
 					}
-					console.putmsg(bbs.text(SearchingAllLibs));
+					console.putmsg(bbs.text(SearchingAllLibs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list.length; i++) {
 						if(i==bbs.curlib)
 							continue;
@@ -844,26 +843,26 @@ file_transfers:
 
 			case '/D':
 				if(file_area.user_dir==undefined)
-					console.putmsg(bbs.text(NoUserDir));
+					console.putmsg(bbs.text(NoUserDir),P_SAVEATR);
 				else {
 					if(user.compare_ars("rest D"))
-						console.putmsg(bbs.text(R_Download));
+						console.putmsg(bbs.text(R_Download),P_SAVEATR);
 					else {
 						console.crlf();
 						if(!bbs.list_file_info(file_area.user_dir, FI_USERXFER))
-							console.putmsg(bbs.text(NoFilesForYou));
+							console.putmsg(bbs.text(NoFilesForYou),P_SAVEATR);
 					}
 				}
 				continue file_transfers;
 
 			case 'E':
-				console.putmsg("\r\nchList Extended File Information\r\n");
+				console.print("\r\nchList Extended File Information\r\n");
 				str=bbs.get_filespec();
 				if(str==null)
 					continue file_transfers;
 				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
 					var s=0;
-					console.putmsg(bbs.text(SearchingAllDirs));
+					console.putmsg(bbs.text(SearchingAllDirs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 						if(i!=bbs.curdir &&
 								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))!=0) {
@@ -872,7 +871,7 @@ file_transfers:
 							}
 						}
 					}
-					console.putmsg(bbs.text(SearchingAllLibs));
+					console.putmsg(bbs.text(SearchingAllLibs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list.length; i++) {
 						if(i==bbs.curlib)
 							continue;
@@ -888,7 +887,7 @@ file_transfers:
 				continue file_transfers;
 
 			case 'F':
-				console.putmsg("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
+				console.print("\r\nchFind Text in File Descriptions (no wildcards)\r\n");
 				bbs.scan_dirs(FL_FINDDESC);
 				continue file_transfers;
 
@@ -914,13 +913,13 @@ file_transfers:
 							console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
 							for(i=0; i<file_area.lib_list.length; i++) {
 								if(i==bbs.curlib)
-									console.putmsg('*',P_SAVEATR);
+									console.print('*');
 								else
-									console.putmsg(' ',P_SAVEATR);
+									console.print(' ');
 								if(i<9)
-									console.putmsg(' ',P_SAVEATR);
+									console.print(' ');
 								if(i<99)
-									console.putmsg(' ',P_SAVEATR);
+									console.print(' ');
 								// We use console.putmsg to expand ^A, @, etc
 								console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
 							}
@@ -942,13 +941,13 @@ file_transfers:
 						console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
 						for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
 							if(i==bbs.curdir)
-								console.putmsg('*',P_SAVEATR);
+								console.print('*');
 							else
-								console.putmsg(' ',P_SAVEATR);
+								console.print(' ');
 							if(i<9)
-								console.putmsg(' ',P_SAVEATR);
+								console.print(' ');
 							if(i<99)
-								console.putmsg(' ',P_SAVEATR);
+								console.print(' ');
 							console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
 						}
 					}
@@ -986,7 +985,7 @@ file_transfers:
 				continue file_transfers;
 
 			case 'N':
-				console.putmsg("\r\nchNew File Scan\r\n");
+				console.print("\r\nchNew File Scan\r\n");
 				bbs.scan_dirs(FL_ULTIME);
 				continue file_transfers;
 
@@ -1013,13 +1012,13 @@ file_transfers:
 				continue file_transfers;
 
 			case 'R':
-				console.putmsg("\r\nchRemove/Edit File(s)\r\n");
+				console.print("\r\nchRemove/Edit File(s)\r\n");
 				str=bbs.get_filespec();
 				if(str==null)
 					continue file_transfers;
 				if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
 					var s=0;
-					console.putmsg(bbs.text(SearchingAllDirs));
+					console.putmsg(bbs.text(SearchingAllDirs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 						if(i!=bbs.curdir &&
 								(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
@@ -1028,7 +1027,7 @@ file_transfers:
 							}
 						}
 					}
-					console.putmsg(bbs.text(SearchingAllLibs));
+					console.putmsg(bbs.text(SearchingAllLibs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list.length; i++) {
 						if(i==bbs.curlib)
 							continue;
@@ -1044,7 +1043,7 @@ file_transfers:
 				continue file_transfers;
 
 			case 'S':
-				console.putmsg("\r\nchSearch for Filename(s)\r\n");
+				console.print("\r\nchSearch for Filename(s)\r\n");
 				bbs.scan_dirs(FL_NO_HDR);
 				continue file_transfers;
 
@@ -1057,7 +1056,7 @@ file_transfers:
 				continue file_transfers;
 
 			case 'U':
-				console.putmsg("\r\nchUpload File\r\n");
+				console.print("\r\nchUpload File\r\n");
 				i=0xffff;	/* INVALID_DIR */
 				if(file_exists(system.text_dir+"menu/upload.*"))
 					bbs.menu("upload");
@@ -1074,20 +1073,20 @@ file_transfers:
 				continue file_transfers;
 
 			case '/U':
-				console.putmsg("\r\nchUpload File to User\r\n");
+				console.print("\r\nchUpload File to User\r\n");
 				if(file_area.upload_dir == undefined)
-					console.putmsg(bbs.text(NoUserDir));
+					console.putmsg(bbs.text(NoUserDir),P_SAVEATR);
 				else
 					bbs.upload_file(file_area.upload_dir.number);
 				continue file_transfers;
 
 			case 'V':
-				console.putmsg("\r\nchView File(s)\r\n");
+				console.print("\r\nchView File(s)\r\n");
 				str=bbs.get_filespec();
 				if(str==null)
 					continue file_transfers;
 				if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
-					console.putmsg(bbs.text(SearchingAllDirs));
+					console.putmsg(bbs.text(SearchingAllDirs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 						if(i==bbs.curdir)
 							continue;
@@ -1096,7 +1095,7 @@ file_transfers:
 					}
 					if(i<file_area.lib_list[bbs.curlib].dir_list.length)
 						continue file_transfers;
-					console.putmsg(bbs.text(SearchingAllLibs));
+					console.putmsg(bbs.text(SearchingAllLibs),P_SAVEATR);
 					for(i=0; i<file_area.lib_list.length; i++) {
 						if(i==bbs.curlib)
 							continue;
@@ -1109,9 +1108,9 @@ file_transfers:
 				continue file_transfers;
 
 			case 'Z':
-				console.putmsg("\r\nchUpload File to Sysop\r\n");
+				console.print("\r\nchUpload File to Sysop\r\n");
 				if(file_area.sysop_dir == undefined)
-					console.putmsg(bbs.text(NoSysopDir));
+					console.putmsg(bbs.text(NoSysopDir),P_SAVEATR);
 				else
 					bbs.upload_file(file_area.sysop_dir.number);
 				continue file_transfers;
@@ -1129,17 +1128,17 @@ file_transfers:
 				console.putmsg(format(bbs.text(DirLstHdr),file_area.lib_list[bbs.curlib].description),P_SAVEATR);
 				for(i=0;i<file_area.lib_list[bbs.curlib].dir_list.length;i++) {
 					if(i==bbs.curdir)
-						console.putmsg('*');
+						console.print('*');
 					else
-						console.putmsg(' ');
+						console.print(' ');
 					str=format(bbs.text(DirLstFmt),i+1
 						,file_area.lib_list[bbs.curlib].dir_list[i].description,""
 						,todo_getfiles(bbs.curlib,i));
 					if(i<9)
-						console.putmsg(' ');
+						console.print(' ');
 					if(i<99)
-						console.putmsg(' ');
-					console.putmsg(str);
+						console.print(' ');
+					console.putmsg(str,P_SAVEATR);
 				}
 				continue file_transfers;
 
@@ -1153,12 +1152,12 @@ file_transfers:
 				console.putmsg(bbs.text(LibLstHdr),P_SAVEATR);
 				for(i=0;i<file_area.lib_list.length;i++) {
 					if(i==bbs.curlib)
-						console.putmsg('*');
+						console.print('*');
 					else
-						console.putmsg(' ');
+						console.print(' ');
 					if(i<9)
-						console.putmsg(' ');
-					console.putmsg(format(bbs.text(LibLstFmt),i+1,file_area.lib_list[i].description,"",file_area.lib_list[i].dir_list.length));
+						console.print(' ');
+					console.putmsg(format(bbs.text(LibLstFmt),i+1,file_area.lib_list[i].description,"",file_area.lib_list[i].dir_list.length),P_SAVEATR);
 				}
 				continue file_transfers;
 
@@ -1168,7 +1167,7 @@ xfercfg:
 					if(!(user.settings & USER_EXPERT))
 						bbs.menu("xfercfg");
 					// async
-					console.putmsg("\r\nyhConfig: n",P_SAVEATR);
+					console.print("\r\nyhConfig: n");
 					key=get_next_keys("?QBEP\r");
 					bbs.log_key(key);
 					switch(key) {
@@ -1196,18 +1195,18 @@ xfercfg:
 				continue file_transfers;
 
 			case '#':
-				console.putmsg("\r\nchType the actual number, not the symbol.\r\n");
+				console.print("\r\nchType the actual number, not the symbol.\r\n");
 				continue file_transfers;
 
 			case '/#':
-				console.putmsg("\r\nchType the actual number, not the symbol.\r\n");
+				console.print("\r\nchType the actual number, not the symbol.\r\n");
 				continue file_transfers;
 
 			default:
 				// fall through
-				console.putmsg("\r\nchUnrecognized command.",P_SAVEATR);
+				console.print("\r\nchUnrecognized command.");
 				if(user.settings & USER_EXPERT)
-					console.putmsg(" Hit 'i?nch' for a menu.");
+					console.print(" Hit 'i?nch' for a menu.");
 		}
 		console.crlf();
 	}
@@ -1228,7 +1227,7 @@ function file_info()
 			bbs.menu("xferinfo");
 
 		// async
-		console.putmsg("\r\nyhInfo: n");
+		console.print("\r\nyhInfo: n");
 		key=get_next_keys("?TYDUQ\r");
 		bbs.log_key(key);
 
