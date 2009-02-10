@@ -73,10 +73,10 @@ void changechar (unsigned char *fmt, int ind, int qt)
 				break;
 		}
 		if(changechar_blk==crt_main_font) {
-			setfont(255-crt_main_font, FALSE, 0);
+			setfont(255-crt_main_font, FALSE, 1);
 		}
 		if(changechar_blk==crt_secondary_font) {
-			setfont(255-crt_secondary_font, FALSE, 1);
+			setfont(255-crt_secondary_font, FALSE, 2);
 		}
 	}
  }

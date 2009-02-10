@@ -30,7 +30,7 @@ void crtfontspec (int blkspec) //enables the display of two character fonts
 		setvideoflags(i);
 	}
 	crt_main_font=new_main;
-	setfont(255-crt_main_font, 0, 0);
+	setfont(255-crt_main_font, 0, 1);
 	crt_secondary_font=new_second;
-	setfont(255-crt_secondary_font, 0, 1);
+	setfont(255-crt_secondary_font, 0, 2);
  }

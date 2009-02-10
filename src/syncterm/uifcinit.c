@@ -1,4 +1,4 @@
-/* Copyright (C), 2007 by Stephen Hurd */
+/* Copyright (C), 2007 by Sephen Hurd */
 
 /* $Id$ */
 
@@ -31,7 +31,7 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 		/* Get old font... */
 		uifc_old_font=getfont();
 		if(uifc_old_font >= 32 && uifc_old_font <= 36)
-			setfont(0, FALSE,0);
+			setfont(0, FALSE,1);
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;
 		if((i=uifcini32(&uifc))!=0) {
@@ -76,7 +76,7 @@ void uifcbail(void)
 	if(uifc_initialized) {
 		uifc.bail();
 		if(uifc_old_font != getfont())
-			setfont(uifc_old_font, FALSE,0);
+			setfont(uifc_old_font, FALSE,1);
 	}
 	uifc_initialized=0;
 }

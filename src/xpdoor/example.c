@@ -23,6 +23,8 @@ int main(int argc, char **argv)
 	clrscr();
 	gotoxy(1,1);
 	for(i=0; i<256; i++) {
+//if(i==0x0a)
+//continue;
 		textattr(8);
 		cprintf("%02x:",i);
 #if 0

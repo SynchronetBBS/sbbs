@@ -1794,7 +1794,7 @@ void font_control(struct bbslist *bbs)
 					filepick_free(&fpick);
 				}
 				else {
-					setfont(i,FALSE,0);
+					setfont(i,FALSE,1);
 					uifc_old_font=getfont();
 				}
 			}

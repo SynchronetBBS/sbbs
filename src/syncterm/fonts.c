@@ -198,6 +198,8 @@ void load_font_files(void)
 			default_font=i;
 		}
 	}
+	/* Set default font */
+	setfont(default_font, FALSE, 0);
 	font_names[i]="";
 }
 

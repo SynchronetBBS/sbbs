@@ -1294,7 +1294,7 @@ int main(int argc, char **argv)
 			uifcbail();
 			textmode(screen_to_ciolib(bbs->screen_mode));
 			load_font_files();
-			setfont(find_font_id(bbs->font),TRUE,0);
+			setfont(find_font_id(bbs->font),TRUE,1);
 			sprintf(str,"SyncTERM - %s",bbs->name);
 			settitle(str);
 			term.nostatus=bbs->nostatus;
@@ -1318,15 +1318,14 @@ int main(int argc, char **argv)
 				fclose(log_fp);
 				log_fp=NULL;
 			}
-			setfont(default_font,TRUE,0);
+			load_font_files();
+			textmode(txtinfo.currmode);
 			for(i=CONIO_FIRST_FREE_FONT; i<256; i++) {
 				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
 				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
 				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
-			load_font_files();
-			textmode(txtinfo.currmode);
 			settitle("SyncTERM");
 		}
 		if(exit_now || url[0]) {

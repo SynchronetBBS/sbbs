@@ -230,15 +230,15 @@ void viewofflinescroll(void)
 	textmode(scrollback_mode);
 	switch(ciolib_to_screen(scrollback_mode)) {
 		case SCREEN_MODE_C64:
-			setfont(33,TRUE,0);
+			setfont(33,TRUE,1);
 			break;
 		case SCREEN_MODE_C128_40:
 		case SCREEN_MODE_C128_80:
-			setfont(35,TRUE,0);
+			setfont(35,TRUE,1);
 			break;
 		case SCREEN_MODE_ATARI:
 		case SCREEN_MODE_ATARI_XEP80:
-			setfont(36,TRUE,0);
+			setfont(36,TRUE,1);
 			break;
 	}
 	drawwin();
@@ -345,7 +345,6 @@ void viewofflinescroll(void)
 	}
 
 	textmode(txtinfo.currmode);
-	setfont(default_font,TRUE,0);
 	init_uifc(TRUE,TRUE);
 	return;
 }
