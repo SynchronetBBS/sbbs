@@ -328,6 +328,7 @@ function wrap_line(l)
 	var nline;
 	var m;
 	var m2;
+	var i;
 
 	while(1) {
 		if(line[l]==undefined)
@@ -353,6 +354,15 @@ function wrap_line(l)
 		if(m!=null) {
 			if(line[l+1]==undefined)
 				line.push(new Line);
+			else {
+				if(line[l].hardcr) {
+					line.splice(l+1,0,new Line);
+					line[l].hardcr=false;
+					line[l+1].hardcr=true;
+					for(i=l+2; i<line.length; i++)
+						draw_line(i);
+				}
+			}
 			line[l+1].text=m[2]+line[l+1].text;
 			line[l+1].attr=line[l].attr.substr(m[1].length)+line[l+1].attr;
 			line[l].text=m[1];
