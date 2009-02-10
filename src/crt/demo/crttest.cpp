@@ -104,7 +104,6 @@ void dispdacvalues () //display DAC register associated with each palette
 	for (c0=0;c0<16;c0++)
 	 {
 		u2=(unsigned)getpalreg(c0)%u1+(u0/256u)*u1;
-		/* TODO: Next line was disabled! */
 		//getdacreg(u2,&(char)red,&(char)green,&(char)blue);
 		printsf(51,4+c0,0x1f," %.3d        %.2Xh  %.2Xh  %.2Xh ",
 			u2,(unsigned char)red,(unsigned char)green,(unsigned char)blue);
@@ -158,6 +157,7 @@ void dispascii ()
 //this file contains the 8x8 font information for changecharg example
 #include "crazy8.cpp"
 
+extern "C" {
 int main ()
  {
 	int c0,c1,c2,c3;
@@ -597,6 +597,7 @@ WARNING: If you are running this demo from a MS-WINDOWS MS-DOS prompt and\n\
 	crt_gotoxy(0,2);
 	return(0);
  }
+}
 
 //By M rcio Afonso Arimura Fialho
 //http://pessoal.iconet.com.br/jlfialho

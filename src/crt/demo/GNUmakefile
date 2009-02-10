@@ -6,4 +6,4 @@ LDFLAGS +=      -L../source/$(LIBODIR) -lcrt $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDF
 
 $(EXEODIR)/crttest: $(EXEODIR) $(OBJS)
 	@echo Linking $@
-	${QUIET}$(CC) $(OBJS) -o $@ $(LDFLAGS) $(MT_LDFLAGS)
+	${QUIET}$(CXX) $(OBJS) -o $@ $(LDFLAGS) $(MT_LDFLAGS)
