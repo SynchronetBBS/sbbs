@@ -467,6 +467,7 @@ public:
 	void	automsg(void);
 	bool	writemsg(const char *str, const char *top, char *title, long mode, int subnum
 				,const char *dest);
+	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	char	putmsg(const char *str, long mode);
 	bool	msgabort(void);
@@ -487,6 +488,8 @@ public:
 				,uint subnum);
 	void	copyfattach(uint to, uint from, char *title);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
+	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines);
+	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines);
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, smbmsg_t* msg, long wm_mode);
