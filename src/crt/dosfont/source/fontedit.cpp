@@ -109,6 +109,7 @@ void fontedithelp(); //fontedit help
 #define H_XF 60
 #define H_YF 26
 
+extern "C" {
 int main (int n, char *ent[3])
   {
 	int c0;
@@ -156,7 +157,7 @@ Usage:   FONTEDIT <font name[.FNT]> [height]\n\n\
 \theight is the character height in pixels  (valid: 1 - 32, default = 16)\n\
 \nBy Marcio Afonso Arimura Fialho\nhttp://pessoal.iconet.com.br/jlfialho\n\
 e-mail: jlfialho@iconet.com.br\n");
-		return;
+		return(1);
 	 }
 
 	if (n>=3) //reads the character height
@@ -165,7 +166,7 @@ e-mail: jlfialho@iconet.com.br\n");
 		if((unsigned)c_height>32u)
 		 {
 			printf ("ERROR: Incorrect input parameters.%s",msg_about);
-			return;
+			return(1);
 		 }
 	 }
 	 else
@@ -179,7 +180,7 @@ e-mail: jlfialho@iconet.com.br\n");
 	 {
 		printf ("ERROR: File \"%s\" doesn't exist or couldnt be read.%s",licos,msg_about);
 		fcloseall();
-		return;
+		return(1);
 	 }
 
 	buffer=(byte *)malloc(256*c_height); //allocates memory for character font
@@ -188,7 +189,7 @@ e-mail: jlfialho@iconet.com.br\n");
 	 {     //displays error message and returns
 		printf ("ERROR: Not enough memory to store font.%s",msg_about);
 		fcloseall ();
-		return;
+		return(1);
 	 }
 	for (aux=buffer,cont=0;cont<c_height*256;cont++) //loads character font into buffer
 	 {
@@ -469,6 +470,7 @@ helpplus[a0],helpplus[a0+8],helpplus[a0+10],helpplus[a0+2],helpplus[a0+4],helppl
 	fcloseall();
 	return(0);
  }
+}
 
 void redraw()
  {
