@@ -51,7 +51,7 @@ while(1) {
 		console.putmsg("@TUSED@",P_SAVEATR);
 	else
 		console.putmsg("@TLEFT@",P_SAVEATR);
-	console.print(" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n");
+	console.putmsg(" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n",P_SAVEATR);
 
 	// Get key (with / extended commands allowed)
 	str=get_next_key();
@@ -668,7 +668,7 @@ file_transfers:
 			console.putmsg("@TUSED@",P_SAVEATR);
 		else
 			console.putmsg("@TLEFT@",P_SAVEATR);
-		console.print(" nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n");
+		console.putmsg(" nc(h@LN@nc) @LIB@ (h@DN@nc) @DIR@: n",P_SAVEATR);
 
 		// Get key (with / extended commands allowed)
 		str=get_next_key();
