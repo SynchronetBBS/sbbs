@@ -8,6 +8,7 @@ OBJS = \
 	$(OBJODIR)$(DIRSEP)crtbord$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtclrsc$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtdtect$(OFILE) \
+	$(OBJODIR)$(DIRSEP)crtfntsp$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtframe$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtframw$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtmode$(OFILE) \
@@ -52,13 +53,12 @@ OBJS = \
 	$(OBJODIR)$(DIRSEP)savevidw$(OFILE) \
 	$(OBJODIR)$(DIRSEP)savvideo$(OFILE) \
 	$(OBJODIR)$(DIRSEP)savvidw2$(OFILE) \
+	$(OBJODIR)$(DIRSEP)textblnk$(OFILE) \
 	$(OBJODIR)$(DIRSEP)vmode$(OFILE) \
 	$(OBJODIR)$(DIRSEP)stubs$(OFILE)
 
 REMOVED = \
 	$(OBJODIR)$(DIRSEP)crtdacr$(OFILE) \
-	$(OBJODIR)$(DIRSEP)crtfntsp$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtpage$(OFILE) \
 	$(OBJODIR)$(DIRSEP)crtpal$(OFILE) \
-	$(OBJODIR)$(DIRSEP)textblnk$(OFILE) \
 	$(OBJODIR)$(DIRSEP)boxwidth$(OFILE)
