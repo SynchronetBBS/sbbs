@@ -183,17 +183,18 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	int			quote_count=0;
 	int			old_prefix_bytes=0;
 	int			outbuf_size=0;
+	int			inbuf_len=strlen(inbuf);
 
-	outbuf_size=strlen(inbuf)*3+1;
+	outbuf_size=inbuf_len*3+1;
 	if((outbuf=(char*)malloc(outbuf_size))==NULL)
 		return NULL;
 	outp=outbuf;
 
-	if((linebuf=(char*)malloc((len*2)+2))==NULL) /* room for ^A codes ToDo: This isn't actually "enough" room */
+	if((linebuf=(char*)malloc(inbuf_len+1))==NULL) /* room for ^A codes */
 		return NULL;
 
 	if(handle_quotes) {
-		if((prefix=(char *)malloc((len*2)+2))==NULL) { /* room for ^A codes ToDo: This isn't actually "enough" room */
+		if((prefix=(char *)malloc(inbuf_len+1))==NULL) { /* room for ^A codes */
 			free(linebuf);
 			return NULL;
 		}
