@@ -412,7 +412,7 @@ int pty_connect(struct bbslist *bbs)
 	child_pid = forkpty(&master, NULL, &ts, &ws);
 	switch(child_pid) {
 	case -1:
-		setfont(default_font,TRUE);
+		setfont(default_font,TRUE,0);
 		load_font_files();
 		textmode(ti.currmode);
 		settitle("SyncTERM");
@@ -427,7 +427,7 @@ int pty_connect(struct bbslist *bbs)
 	}
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
-		setfont(default_font,TRUE);
+		setfont(default_font,TRUE,0);
 		load_font_files();
 		textmode(ti.currmode);
 		settitle("SyncTERM");
@@ -435,7 +435,7 @@ int pty_connect(struct bbslist *bbs)
 	}
 	if(!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
 		destroy_conn_buf(&conn_inbuf);
-		setfont(default_font,TRUE);
+		setfont(default_font,TRUE,0);
 		load_font_files();
 		textmode(ti.currmode);
 		settitle("SyncTERM");
@@ -444,7 +444,7 @@ int pty_connect(struct bbslist *bbs)
 	if(!(conn_api.rd_buf=(unsigned char *)malloc(BUFFER_SIZE))) {
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
-		setfont(default_font,TRUE);
+		setfont(default_font,TRUE,0);
 		load_font_files();
 		textmode(ti.currmode);
 		settitle("SyncTERM");
@@ -455,7 +455,7 @@ int pty_connect(struct bbslist *bbs)
 		free(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
-		setfont(default_font,TRUE);
+		setfont(default_font,TRUE,0);
 		load_font_files();
 		textmode(ti.currmode);
 		settitle("SyncTERM");
