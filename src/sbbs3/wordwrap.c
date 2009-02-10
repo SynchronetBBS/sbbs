@@ -33,6 +33,7 @@
 
 #include <genwrap.h>
 #include <stdlib.h>		/* realloc */
+#include "wordwrap.h"
 
 static int get_prefix(const char *text, int *bytes, int *len, int maxlen)
 {
@@ -166,7 +167,7 @@ static int compare_prefix(char *old_prefix, int old_prefix_bytes, const char *ne
 	return(0);
 }
 
-char* wordwrap(const char* inbuf, int len, int oldlen, BOOL handle_quotes)
+char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 {
 	int			l;
 	int			crcount=0;
@@ -395,7 +396,7 @@ char* wordwrap(const char* inbuf, int len, int oldlen, BOOL handle_quotes)
 	if(!crcount) {
 		for(inbuf=outbuf; *inbuf; inbuf++) {
 			if(*inbuf=='\r')
-				memmove((void*)inbuf, inbuf+1, strlen(inbuf));
+				memmove(inbuf, inbuf+1, strlen(inbuf));
 		}
 	}
 

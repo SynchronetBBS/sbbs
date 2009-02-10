@@ -34,6 +34,6 @@
 #ifndef _WORDWRAP_H_
 #define _WORDWRAP_H_
 
-char* wordwrap(const char* inbuf, int len, int oldlen, BOOL handle_quotes);
+char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes);
 
 #endif /* Don't add anything after this line */
