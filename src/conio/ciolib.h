@@ -117,6 +117,10 @@ enum {
 #define BLINK 128
 #endif
 
+#define CIOLIB_VIDEO_ALTCHARS	(1<<0)	// Attribute bit 3 selects alternate char set
+#define CIOLIB_VIDEO_NOBRIGHT	(1<<1)	// Attribute bit 3 does not increase intensity
+#define CIOLIB_VIDEO_BGBRIGHT	(1<<2)	// Attribute bit 7 selects high intensity background, not blink
+
 enum text_modes
 {
     /* DOS-compatible modes */
@@ -269,6 +273,8 @@ typedef struct {
 	int		(*get_window_info)		(int* width, int* height, int* xpos, int* ypos);
 	void	(*getcustomcursor)	(int *startline, int *endline, int *range, int *blink, int *visible);
 	void	(*setcustomcursor)	(int startline, int endline, int range, int blink, int visible);
+	void	(*setvideoflags)	(int flags);
+	int		(*getvideoflags)	();
 	int		*ESCDELAY;
 } cioapi_t;
 
@@ -332,6 +338,8 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int 
 CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_getcustomcursor(int *startline, int *endline, int *range, int *blink, int *visible);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setcustomcursor(int startline, int endline, int range, int blink, int visible);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setvideoflags(int flags);
+CIOLIBEXPORT int CIOLIBCALL ciolib_getvideoflags(void);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -389,6 +397,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define beep()				ciolib_beep()
 	#define getcustomcursor(a,b,c,d,e)	ciolib_getcustomcursor(a,b,c,d,e)
 	#define setcustomcursor(a,b,c,d,e)	ciolib_setcustomcursor(a,b,c,d,e)
+	#define setvideoflags(a)		ciolib_setvideoflags(a)
+	#define getvideoflags()			ciolib_getvideoflags()
 #endif
 
 #ifdef WITH_SDL

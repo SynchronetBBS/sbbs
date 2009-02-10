@@ -563,6 +563,21 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							cterm.cursor=_NORMALCURSOR;
 							_setcursortype(cterm.cursor);
 						}
+						if(!strcmp(cterm.escbuf,"[?31h")) {
+							i=getvideoflags();
+							i|=CIOLIB_VIDEO_ALTCHARS;
+							setvideoflags(i);
+						}
+						if(!strcmp(cterm.escbuf,"[?32h")) {
+							i=getvideoflags();
+							i|=CIOLIB_VIDEO_NOBRIGHT;
+							setvideoflags(i);
+						}
+						if(!strcmp(cterm.escbuf,"[?33h")) {
+							i=getvideoflags();
+							i|=CIOLIB_VIDEO_BGBRIGHT;
+							setvideoflags(i);
+						}
 						if(!strcmp(cterm.escbuf,"[=255h"))
 							cterm.doorway_mode=1;
 						break;
@@ -570,6 +585,21 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						if(!strcmp(cterm.escbuf,"[?25l")) {
 							cterm.cursor=_NOCURSOR;
 							_setcursortype(cterm.cursor);
+						}
+						if(!strcmp(cterm.escbuf,"[?31l")) {
+							i=getvideoflags();
+							i&=~CIOLIB_VIDEO_ALTCHARS;
+							setvideoflags(i);
+						}
+						if(!strcmp(cterm.escbuf,"[?32l")) {
+							i=getvideoflags();
+							i&=~CIOLIB_VIDEO_NOBRIGHT;
+							setvideoflags(i);
+						}
+						if(!strcmp(cterm.escbuf,"[?33l")) {
+							i=getvideoflags();
+							i&=~CIOLIB_VIDEO_BGBRIGHT;
+							setvideoflags(i);
 						}
 						if(!strcmp(cterm.escbuf,"[=255l"))
 							cterm.doorway_mode=0;

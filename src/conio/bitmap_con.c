@@ -252,6 +252,37 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	pthread_mutex_unlock(&vstatlock);
 }
 
+int bitmap_getvideoflags(void)
+{
+	int flags=0;
+
+	if(vstat.bright_background)
+		flags |= CIOLIB_VIDEO_BGBRIGHT;
+	if(vstat.no_bright)
+		flags |= CIOLIB_VIDEO_NOBRIGHT;
+	if(vstat.bright_altcharset)
+		flags |= CIOLIB_VIDEO_ALTCHARS;
+	return(flags);
+}
+
+void bitmap_setvideoflags(int flags)
+{
+	if(flags & CIOLIB_VIDEO_BGBRIGHT)
+		vstat.bright_background=1;
+	else
+		vstat.bright_background=0;
+
+	if(flags & CIOLIB_VIDEO_NOBRIGHT)
+		vstat.no_bright=1;
+	else
+		vstat.no_bright=0;
+
+	if(flags & CIOLIB_VIDEO_ALTCHARS)
+		vstat.bright_altcharset=1;
+	else
+		vstat.bright_altcharset=0;
+}
+
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 {
 	int	direction=1;
@@ -598,7 +629,7 @@ int bitmap_loadfont(char *filename)
 		if(current_secondary_font==-1)
 			memcpy(secondary_font, font, fontsize);
 	}
-	if(current_font != -1 || secondary_font != -1) {
+	if(current_font != -1 || current_secondary_font != -1) {
 		switch(vstat.charwidth) {
 			case 8:
 				switch(vstat.charheight) {
@@ -608,9 +639,10 @@ int bitmap_loadfont(char *filename)
 								goto error_return;
 							memcpy(font, conio_fontdata[current_font].eight_by_eight, fontsize);
 						}
-						if(secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_eight==NULL)
+						if(current_secondary_font != -1) {
+							if(conio_fontdata[current_secondary_font].eight_by_eight==NULL) {
 								FREE_AND_NULL(secondary_font);
+							}
 							else
 								memcpy(font, conio_fontdata[current_secondary_font].eight_by_eight, fontsize);
 						}
@@ -621,9 +653,10 @@ int bitmap_loadfont(char *filename)
 								goto error_return;
 							memcpy(font, conio_fontdata[current_font].eight_by_fourteen, fontsize);
 						}
-						if(secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_fourteen==NULL)
+						if(current_secondary_font != -1) {
+							if(conio_fontdata[current_secondary_font].eight_by_fourteen==NULL) {
 								FREE_AND_NULL(secondary_font);
+							}
 							else
 								memcpy(font, conio_fontdata[current_secondary_font].eight_by_fourteen, fontsize);
 						}
@@ -634,9 +667,10 @@ int bitmap_loadfont(char *filename)
 								goto error_return;
 							memcpy(font, conio_fontdata[current_font].eight_by_sixteen, fontsize);
 						}
-						if(secondary_font != -1) {
-							if(conio_fontdata[current_secondary_font].eight_by_sixteen==NULL)
+						if(current_secondary_font != -1) {
+							if(conio_fontdata[current_secondary_font].eight_by_sixteen==NULL) {
 								FREE_AND_NULL(secondary_font);
+							}
 							else
 								memcpy(font, conio_fontdata[current_secondary_font].eight_by_sixteen, fontsize);
 						}

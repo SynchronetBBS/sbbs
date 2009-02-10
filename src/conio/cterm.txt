@@ -367,6 +367,27 @@ CSI [ ? 25 h
 
 	SOURCE: "Installing and Using the VT320 Video Terminal"
 
+CSI [ ? 31 h
+	NON-STANDARD EXTENSION
+	Enable alt character set
+
+	With this mode set, the bright (1) graphic rendition selects characters
+	from an alternate character set.
+
+CSI [ ? 32 h
+	NON-STANDARD EXTENSION
+	Bright Intensity Disable
+
+	With this mode set, the bright (1) graphic rendition does not cause
+	characters to be display in a bright colour
+
+CSI [ ? 33 h
+	NON-STANDARD EXTENSION
+	Blink to Bright Intensity Background
+
+	With this mode set, the blink (5,6) graphic renditions cause the
+	background colour to be high intensity rather than causing blink
+
 CSI [ = 255 l
 	NON-STANDARD EXTENSION
 	Disable DoorWay Mode
@@ -378,6 +399,24 @@ CSI [ ? 25 l
 	Hide the cursor
 
 	SOURCE: "Installing and Using the VT320 Video Terminal"
+
+CSI [ ? 31 l
+	NON-STANDARD EXTENSION
+	Disable alt character set
+
+	Reverses CSI [ ? 31 h
+
+CSI [ ? 32 l
+	NON-STANDARD EXTENSION
+	Bright Intensity Enable
+
+	Reverses CSI [ ? 32 h
+
+CSI [ ? 33 l
+	NON-STANDARD EXTENSION
+	Blink Normal
+
+	Reverses CSI [ ? 33 h
 
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition

@@ -848,7 +848,7 @@ void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 		*v=ci.bVisible?1:0;
 }
 
-void win32_set customcursor(int s, int e, int r, int b, int v)
+void win32_setcustomcursor(int s, int e, int r, int b, int v)
 {
 	CONSOLE_CURSOR_INFO	ci;
 	HANDLE				h;
@@ -865,4 +865,15 @@ void win32_set customcursor(int s, int e, int r, int b, int v)
 		else
 			ci.dwSize=100;
 	}
+}
+
+int win32_getvideoflags(void)
+{
+	DWORD	mode;
+
+	if(!NT_GetConsoleDisplayMode(&mode))
+		return(CIOLIB_VIDEO_BGBRIGHT);
+	if(mode==CONSOLE_FULLSCREEN_MODE)
+		return(0);
+	return(CIOLIB_VIDEO_BGBRIGHT);
 }
