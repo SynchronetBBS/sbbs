@@ -36,9 +36,8 @@ for(i in argv) {
 				break;
 			default:
 				if(this.f==undefined) {
-					f = new File(file_getcase(argv[i]));
-					filename=file_getcase(argv[i]);
-					filename=filename.replace(/^.*[\\\/]/,'');
+					this.f = new File(file_getcase(argv[i]));
+					filename=this.f.name.replace(/^.*[\\\/]/,'');
 				}
 		}
 	}
