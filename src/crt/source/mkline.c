@@ -1,16 +1,15 @@
 extern int getcrtchar (int x, int y);
 extern void printc (int c, int x, int y, int color);
 
-char const mkline_mat[]="\
-\xff\xff\xffÄ\xff\xff\xffÍ\
-\xffÚ¿Â\xffÕ¸Ñ\
-\xffÀÙÁ\xffÔ¾Ï\
-³Ã´Å³ÆµØ\
-\xff\xff\xffÄ\xff\xff\xffÍ\
-\xffÖ·Ò\xffÉ»Ë\
-\xffÓ½Ğ\xffÈ¼Ê\
-ºÇ¶×ºÌ¹Î\
-";
+unsigned char const mkline_mat[]=""
+	"\xff\xff\xffÄ\xff\xff\xffÍ"
+	"\xffÚ¿Â\xffÕ¸Ñ"
+	"\xffÀÙÁ\xffÔ¾Ï"
+	"³Ã´Å³ÆµØ"
+	"\xff\xff\xffÄ\xff\xff\xffÍ"
+	"\xffÖ·Ò\xffÉ»Ë"
+	"\xffÓ½Ğ\xffÈ¼Ê"
+	"ºÇ¶×ºÌ¹Î";
 //these characters are used in automatic frame lines intersection replacement
 //algorithm by mkline_aux and mkline.
 
