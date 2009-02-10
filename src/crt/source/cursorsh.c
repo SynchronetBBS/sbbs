@@ -1,4 +1,5 @@
 #include <ciolib.h>
+#include <vidmodes.h>
 
 static int curr_shape=0x2f00;
 
@@ -8,6 +9,11 @@ void setcursorsh (unsigned int shape) //changes the cursor shape.
 	//bits 12-8 -> upper scan line		bits 4-0 -> lower scan line
 	//Data from Ralf Brown Files
  {
+	struct text_info ti;
+	int	s,e,r,vm;
+
+	gettextinfo(&ti);
+
 	if(((shape >> 8) & 0x1f) < (shape & 0x1f)) {
 		_setcursortype(_NOCURSOR);
 	}
@@ -16,6 +22,17 @@ void setcursorsh (unsigned int shape) //changes the cursor shape.
 	}
 	else {
 		_setcursortype(_SOLIDCURSOR);
+	}
+	if((vm=find_vmode(ti.currmode))!=-1) {
+		s=(shape & 0x1f00)>>8;
+		e=shape & 0x1f, 0x1f;
+		r=vparams[vm].charheight;
+		if(s>=r)
+			s=r-1;
+		if(e>=r)
+			e=r-1;
+		
+		setcustomcursor(s,e,r, shape & 0x20, (shape & 0x40?0:1));
 	}
 	curr_shape=shape;
  }

@@ -128,7 +128,7 @@ unsigned char palettes[5][16] = {
 	},
 };
 
-struct dac_colors dac_default[34] = {
+struct dac_colors dac_default[TOTAL_DAC_SIZE] = {
 	{0, 0, 0},    {0, 0, 168},   {0, 168, 0},   {0, 168, 168},
 	{168, 0, 0},   {168, 0, 168},  {168, 84, 0},  {168, 168, 168},
 	{84, 84, 84}, {84, 84, 255}, {84, 255, 84}, {84, 255, 255},
@@ -176,6 +176,11 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->curs_end=vparams[i].curs_end;
 	vs->default_curs_start=vparams[i].curs_start;
 	vs->default_curs_end=vparams[i].curs_end;
+	vs->curs_blink=1;
+	vs->curs_visible=1;
+	vs->bright_background=0;
+	vs->no_bright=0;
+	vs->bright_altcharset=0;
 	if(vs->curs_row < 0)
 		vs->curs_row=0;
 	if(vs->curs_row >= vparams[i].rows)
@@ -184,7 +189,8 @@ int load_vmode(struct video_stats *vs, int mode)
 		vs->curs_col=0;
 	if(vs->curs_col >= vparams[i].cols)
 		vs->curs_col=vparams[i].cols-1;
-	vs->palette=palettes[vparams[i].palette];
+	memcpy(vs->palette, palettes[vparams[i].palette], sizeof(vs->palette));
+	memcpy(vs->dac_colors, dac_default, sizeof(dac_default));
 	vs->charheight=vparams[i].charheight;
 	vs->charwidth=vparams[i].charwidth;
 	vs->mode=mode;

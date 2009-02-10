@@ -131,6 +131,8 @@ int try_sdl_init(int mode)
 		cio_api.movetext=bitmap_movetext;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
+		cio_api.getcustomcursor=bitmap_getcustomcursor;
+		cio_api.setcustomcursor=bitmap_setcustomcursor;
 
 		cio_api.kbhit=sdl_kbhit;
 		cio_api.getch=sdl_getch;
@@ -172,6 +174,8 @@ int try_x_init(int mode)
 		cio_api.movetext=bitmap_movetext;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
+		cio_api.getcustomcursor=bitmap_getcustomcursor;
+		cio_api.setcustomcursor=bitmap_setcustomcursor;
 
 		cio_api.kbhit=x_kbhit;
 		cio_api.getch=x_getch;
@@ -263,6 +267,8 @@ int try_conio_init(int mode)
 		cio_api.getcliptext=win32_getcliptext;
 		cio_api.suspend=win32_suspend;
 		cio_api.resume=win32_resume;
+		cio_api.getcustomcursor=win32_getcustomcursor;
+		cio_api.setcustomcursor=win32_setcustomcursor;
 		return(1);
 	}
 	return(0);
@@ -1217,12 +1223,12 @@ CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void)
 }
 
 /* Optional */
-CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force)
+CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num)
 {
 	CIOLIB_INIT();
 
 	if(cio_api.setfont!=NULL)
-		return(cio_api.setfont(font,force));
+		return(cio_api.setfont(font,force,font_num));
 	else
 		return(-1);
 }
@@ -1276,4 +1282,18 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void)
 		return(cio_api.beep());
 	BEEP(440,100);
 	return(0);
+}
+
+/* Optional */
+CIOLIBEXPORT void ciolib_getcustomcursor(int *start, int *end, int *range, int *blink, int *visible)
+{
+	if(cio_api.getcustomcursor)
+		cio_api.getcustomcursor(start,end,range,blink,visible);
+}
+
+/* Optional */
+CIOLIBEXPORT void ciolib_setcustomcursor(int start, int end, int range, int blink, int visible)
+{
+	if(cio_api.setcustomcursor)
+		cio_api.setcustomcursor(start,end,range,blink,visible);
 }

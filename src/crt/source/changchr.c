@@ -53,7 +53,7 @@ void changechar (unsigned char *fmt, int ind, int qt)
 				conio_fontdata[255].eight_by_eight=newfont;
 				break;
 		}
-		setfont(255,0);
+		setfont(255,0,0);
 	}
  }
 

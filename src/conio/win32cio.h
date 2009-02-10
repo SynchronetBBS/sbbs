@@ -56,6 +56,8 @@ void win32_copytext(const char *text, size_t buflen);
 char *win32_getcliptext(void);
 void	win32_suspend(void);
 void	win32_resume(void);
+void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v);
+void win32_setcustomcursor(int s, int e, int r, int b, int v);
 
 #ifdef __cplusplus
 }

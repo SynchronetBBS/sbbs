@@ -826,3 +826,43 @@ char *win32_getcliptext(void)
 	
 	return(ret);
 }
+
+void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
+{
+	CONSOLE_CURSOR_INFO	ci;
+	HANDLE				h;
+
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return(0);
+
+	GetConsoleCursorInfo(h, &ci);
+	if(s)
+		*s=100-ci.dwSize;
+	if(e)
+		*e=99;
+	if(r)
+		*r=100;
+	if(b)
+		*b=1;
+	if(v)
+		*v=ci.bVisible?1:0;
+}
+
+void win32_set customcursor(int s, int e, int r, int b, int v)
+{
+	CONSOLE_CURSOR_INFO	ci;
+	HANDLE				h;
+
+	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return(0);
+
+	ci.bVisible=v;
+	if(e>s)
+		ci.bVisible=0;
+	else {
+		if(r>0)
+			ci.dwSize=(1+e-s)/r;
+		else
+			ci.dwSize=100;
+	}
+}

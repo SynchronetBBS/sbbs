@@ -664,8 +664,10 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 									j=atoi(p);
 								}
 							}
-							if(i==0) {	/* Only the primary font is currently supported */
-								setfont(j,FALSE);
+							switch(i) {
+								case 0:	/* Only the primary and secondary font is currently supported */
+								case 1:
+									setfont(j,FALSE,i);
 							}
 						}
 					}
@@ -1851,15 +1853,15 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, 
 							/* Font change... whee! */
 							case 14:	/* Lower case font */
 								if(ti.currmode == C64_40X25)
-									setfont(33,FALSE);
+									setfont(33,FALSE,0);
 								else	/* Assume C128 */
-									setfont(35,FALSE);
+									setfont(35,FALSE,0);
 								break;
 							case 142:	/* Upper case font */
 								if(ti.currmode == C64_40X25)
-									setfont(32,FALSE);
+									setfont(32,FALSE,0);
 								else	/* Assume C128 */
-									setfont(34,FALSE);
+									setfont(34,FALSE,0);
 								break;
 							case 18:	/* Reverse mode on */
 								cterm.c64reversemode = 1;

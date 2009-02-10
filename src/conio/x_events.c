@@ -217,9 +217,9 @@ static int init_window()
 
 	/* Get the pixel and GC values */
 	for(i=0; i<sizeof(dac_default)/sizeof(struct dac_colors); i++) {
-		color.red=dac_default[i].red << 8;
-		color.green=dac_default[i].green << 8;
-		color.blue=dac_default[i].blue << 8;
+		color.red=dac_default[i].red << 8 | dac_default[i].red;
+		color.green=dac_default[i].green << 8 | dac_default[i].green;
+		color.blue=dac_default[i].blue << 8 | dac_default[i].blue;
 		if(x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color))
 			pixel[i]=color.pixel;
 		gcv.foreground=color.pixel;

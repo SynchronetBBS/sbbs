@@ -24,5 +24,7 @@ int bitmap_init(void (*drawrect_cb) (int xpos, int ypos, int width, int height, 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy);
 void bitmap_clreol(void);
 void bitmap_clrscr(void);
+void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v);
+void bitmap_setcustomcursor(int s, int e, int r, int b, int v);
 
 #endif

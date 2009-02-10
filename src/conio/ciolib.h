@@ -263,10 +263,12 @@ typedef struct {
 	char 	*(*getcliptext)	(void);
 	void	(*suspend)		(void);
 	void	(*resume)		(void);
-	int		(*setfont)		(int font, int force);
+	int		(*setfont)		(int font, int force, int font_num);
 	int		(*getfont)		(void);
 	int		(*loadfont)		(char *filename);
 	int		(*get_window_info)		(int* width, int* height, int* xpos, int* ypos);
+	void	(*getcustomcursor)	(int *startline, int *endline, int *range, int *blink, int *visible);
+	void	(*setcustomcursor)	(int startline, int endline, int range, int blink, int visible);
 	int		*ESCDELAY;
 } cioapi_t;
 
@@ -323,11 +325,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_showmouse(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
-CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force);
+CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getfont(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_loadfont(char *filename);
 CIOLIBEXPORT int CIOLIBCALL ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
 CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void);
+CIOLIBEXPORT void CIOLIBCALL ciolib_getcustomcursor(int *startline, int *endline, int *range, int *blink, int *visible);
+CIOLIBEXPORT void CIOLIBCALL ciolib_setcustomcursor(int startline, int endline, int range, int blink, int visible);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -378,11 +382,13 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define settitle(a)				ciolib_settitle(a)
 	#define copytext(a,b)			ciolib_copytext(a,b)
 	#define getcliptext()			ciolib_getcliptext()
-	#define setfont(a,b)			ciolib_setfont(a,b)
+	#define setfont(a,b,c)			ciolib_setfont(a,b,c)
 	#define getfont()				ciolib_getfont()
 	#define loadfont(a)				ciolib_loadfont(a)
 	#define get_window_info(a,b,c,d)	ciolib_get_window_info(a,b,c,d)
 	#define beep()				ciolib_beep()
+	#define getcustomcursor(a,b,c,d,e)	ciolib_getcustomcursor(a,b,c,d,e)
+	#define setcustomcursor(a,b,c,d,e)	ciolib_setcustomcursor(a,b,c,d,e)
 #endif
 
 #ifdef WITH_SDL
