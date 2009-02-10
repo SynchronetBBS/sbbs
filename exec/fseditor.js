@@ -312,7 +312,7 @@ function unwrap_line(l)
 	}
 	if(old_lines!=line.length) {
 		/* We need to redraw everything... line(s) deleted */
-		for(;l<line.length;l++)
+		for(;l<=line.length;l++)
 			draw_line(l);
 	}
 	return(ret);
@@ -1532,8 +1532,9 @@ function edit(quote_first)
 						line[ypos].hardcr=false;
 					}
 				}
-				if(!rewrap())
+				if(!rewrap()) {
 					draw_line(ypos,xpos);
+				}
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				add_char(' ');
