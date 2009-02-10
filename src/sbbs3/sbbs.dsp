@@ -491,6 +491,10 @@ SOURCE=.\viewfile.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\wordwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\writemsg.cpp
 # End Source File
 # Begin Source File

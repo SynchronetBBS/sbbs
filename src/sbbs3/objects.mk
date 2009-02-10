@@ -105,6 +105,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)useredit$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)viewfile$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)writemsg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn_sec$(OFILE)\
