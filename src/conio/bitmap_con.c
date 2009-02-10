@@ -644,7 +644,7 @@ int bitmap_loadfont(char *filename)
 								FREE_AND_NULL(secondary_font);
 							}
 							else
-								memcpy(font, conio_fontdata[current_secondary_font].eight_by_eight, fontsize);
+								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_eight, fontsize);
 						}
 						break;
 					case 14:
@@ -658,7 +658,7 @@ int bitmap_loadfont(char *filename)
 								FREE_AND_NULL(secondary_font);
 							}
 							else
-								memcpy(font, conio_fontdata[current_secondary_font].eight_by_fourteen, fontsize);
+								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_fourteen, fontsize);
 						}
 						break;
 					case 16:
@@ -672,7 +672,7 @@ int bitmap_loadfont(char *filename)
 								FREE_AND_NULL(secondary_font);
 							}
 							else
-								memcpy(font, conio_fontdata[current_secondary_font].eight_by_sixteen, fontsize);
+								memcpy(secondary_font, conio_fontdata[current_secondary_font].eight_by_sixteen, fontsize);
 						}
 						break;
 					default:
@@ -792,7 +792,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	}
 	this_font=font;
 	if(vstat.bright_altcharset) {
-		if(fg & 0x80) {
+		if(fg & 0x08) {
 			this_font=secondary_font;
 			if(this_font==NULL)
 				this_font=font;
