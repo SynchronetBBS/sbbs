@@ -5,6 +5,6 @@ int getcrtchar (int x, int y)
  {
 	unsigned char	buf[2];
 
-	gettext(x+1,y+2,x+1,y+1,buf);
+	gettext(x+1,y+1,x+1,y+1,buf);
 	return(buf[0]);
  }
