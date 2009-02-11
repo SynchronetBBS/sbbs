@@ -294,6 +294,7 @@ static int svc_lputs(void* p, int level, const char* str)
 	len = strlen(str);
 	SAFECOPY(msg.buf, str);
 	msg.level = level;
+	GetLocalTime(&msg.time);
 
 	/* Mailslot Logging (for sbbsctrl) */
 	if(svc->log_handle != INVALID_HANDLE_VALUE /* Invalid log handle? */

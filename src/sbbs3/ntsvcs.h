@@ -55,8 +55,9 @@ enum {
 };
 
 typedef struct {
-	char level;
-	char buf[1024];
+	SYSTEMTIME	time;
+	char		level;
+	char		buf[1000];
 } log_msg_t;
 
 #endif	/* Don't add anything after this line */
