@@ -10,6 +10,12 @@ last character on the line.
 
 Control characters:
 
+NUL:
+	In doorway mode, indicates that the next character is
+	a literal character.  The IBM CP437 character will
+	be displayed.  This allows ESC and other control
+	characters to be placed on the screen.
+
 CR:
 	Move cursor position to column 1 of the current line
 
@@ -105,6 +111,69 @@ CSI = [ p1 [ ; p2 ] ] {
 	SOURCE: CTerm only.
 
 
+CSI [ = 255 h
+	NON-STANDARD EXTENSION
+	Enable DoorWay Mode
+
+	SOURCE: BANSI.TXT
+
+CSI [ ? 25 h
+	NON-STANDARD EXTENSION
+	Display the cursor
+
+	SOURCE: "Installing and Using the VT320 Video Terminal"
+
+CSI [ ? 31 h
+	NON-STANDARD EXTENSION
+	Enable alt character set
+
+	With this mode set, the bright (1) graphic rendition selects characters
+	from an alternate character set.
+
+CSI [ ? 32 h
+	NON-STANDARD EXTENSION
+	Bright Intensity Disable
+
+	With this mode set, the bright (1) graphic rendition does not cause
+	characters to be display in a bright colour
+
+CSI [ ? 33 h
+	NON-STANDARD EXTENSION
+	Blink to Bright Intensity Background
+
+	With this mode set, the blink (5,6) graphic renditions cause the
+	background colour to be high intensity rather than causing blink
+
+CSI [ = 255 l
+	NON-STANDARD EXTENSION
+	Disable DoorWay Mode
+
+	SOURCE: BANSI.TXT
+
+CSI [ ? 25 l
+	NON-STANDARD EXTENSION
+	Hide the cursor
+
+	SOURCE: "Installing and Using the VT320 Video Terminal"
+
+CSI [ ? 31 l
+	NON-STANDARD EXTENSION
+	Disable alt character set
+
+	Reverses CSI [ ? 31 h
+
+CSI [ ? 32 l
+	NON-STANDARD EXTENSION
+	Bright Intensity Enable
+
+	Reverses CSI [ ? 32 h
+
+CSI [ ? 33 l
+	NON-STANDARD EXTENSION
+	Blink Normal
+
+	Reverses CSI [ ? 33 h
+
 CSI [ p1 [ ; p2 ] ] * r
 	NON-STANDARD EXTENSION.
 	Set the output emulation speed.
@@ -180,8 +249,9 @@ CSI [ p1 [ ; p2 ] ] sp D
 	Defaults: p1 = 0  p2 = 0
 	"sp" indicates a single space character.
 	Sets font p1 to be the one indicated bu p2.  Currently only the primary
-	font (Font zero) is supported.  p2 must be between 0 and 255.  Not all
-	output types support font selection.  Only X11 and SDL currently do.
+	font (Font zero) and secondary font (Font one) are supported.  p2 must 
+	be between 0 and 255.  Not all output types support font selection.  Only
+	X11 and SDL currently do.
 	Currently included fonts are:
 		0  - Codepage 437 English
 		1  - Codepage 1251 Cyrillic, (swiss)
@@ -215,6 +285,11 @@ CSI [ p1 [ ; p2 ] ] sp D
 		29 - Ukrainian font cp866u
 		30 - ISO-8859-1 West European, (thin)
 		31 - Codepage 1131 Belarusian, (swiss)
+		32 - Commodore 64 (UPPER)
+		33 - Commodore 64 (Lower)
+		34 - Commodore 128 (UPPER)
+		35 - Commodore 128 (Lower)
+		36 - Atari
 	Not all fonts are supported in all modes.  If a font is not supported in
 	the current mode, no action is taken.
 
@@ -223,9 +298,18 @@ CSI [ p1 [ ; p2 ] ] sp D
 CSI [ p1 ] E
 	Cursor Next Line
 	Defaults: p1 = 1
-	Moves the cursor position down p1 columns from the current position.
+	Moves the cursor to the first column of the line p1 down from the current position.
 	Moving past the bottom of the screen scrolls the screen up the remaining
 	number of lines filling newly added lines with the current attribute.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI [ p1 ] F
+	Cursor Preceding Line
+	Defaults: p1 = 1
+	Moves the cursor to the first column if the row p1 up from the current position.
+	Attempting to move past the screen boundaries stops the cursor
+	at the screen boundary.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -354,69 +438,6 @@ CSI [ p1 ] c
 	one!
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI [ = 255 h
-	NON-STANDARD EXTENSION
-	Enable DoorWay Mode
-
-	SOURCE: BANSI.TXT
-
-CSI [ ? 25 h
-	NON-STANDARD EXTENSION
-	Display the cursor
-
-	SOURCE: "Installing and Using the VT320 Video Terminal"
-
-CSI [ ? 31 h
-	NON-STANDARD EXTENSION
-	Enable alt character set
-
-	With this mode set, the bright (1) graphic rendition selects characters
-	from an alternate character set.
-
-CSI [ ? 32 h
-	NON-STANDARD EXTENSION
-	Bright Intensity Disable
-
-	With this mode set, the bright (1) graphic rendition does not cause
-	characters to be display in a bright colour
-
-CSI [ ? 33 h
-	NON-STANDARD EXTENSION
-	Blink to Bright Intensity Background
-
-	With this mode set, the blink (5,6) graphic renditions cause the
-	background colour to be high intensity rather than causing blink
-
-CSI [ = 255 l
-	NON-STANDARD EXTENSION
-	Disable DoorWay Mode
-
-	SOURCE: BANSI.TXT
-
-CSI [ ? 25 l
-	NON-STANDARD EXTENSION
-	Hide the cursor
-
-	SOURCE: "Installing and Using the VT320 Video Terminal"
-
-CSI [ ? 31 l
-	NON-STANDARD EXTENSION
-	Disable alt character set
-
-	Reverses CSI [ ? 31 h
-
-CSI [ ? 32 l
-	NON-STANDARD EXTENSION
-	Bright Intensity Enable
-
-	Reverses CSI [ ? 32 h
-
-CSI [ ? 33 l
-	NON-STANDARD EXTENSION
-	Blink Normal
-
-	Reverses CSI [ ? 33 h
 
 CSI [ p1 [ ; pX ... ] ] m
 	Select Graphic Rendition

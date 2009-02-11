@@ -716,8 +716,10 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					if(i==0)
 						i=1;
 					i=wherey()+i;
-					if(i>cterm.height)
-						i=cterm.height;
+					while(i>cterm.height) {
+						scrollup();
+						i--;
+					}
 					gotoxy(1,i);
 					break;
 				case 'F':	/* Cursor preceding line */
