@@ -17179,10 +17179,10 @@ object MainForm: TMainForm
   object SaveDialog: TSaveDialog
     Left = 600
   end
-  object BBSLogTimer: TTimer
+  object LogTimer: TTimer
     Enabled = False
     Interval = 250
-    OnTimer = BBSLogTimerTick
+    OnTimer = LogTimerTick
     Left = 536
     Top = 40
   end
@@ -17199,33 +17199,5 @@ object MainForm: TMainForm
     OnTimer = SemFileTimerTick
     Left = 472
     Top = 40
-  end
-  object FtpLogTimer: TTimer
-    Enabled = False
-    Interval = 250
-    OnTimer = FtpLogTimerTick
-    Left = 568
-    Top = 40
-  end
-  object MailLogTimer: TTimer
-    Enabled = False
-    Interval = 250
-    OnTimer = MailLogTimerTick
-    Left = 472
-    Top = 72
-  end
-  object ServicesLogTimer: TTimer
-    Enabled = False
-    Interval = 250
-    OnTimer = ServicesLogTimerTick
-    Left = 504
-    Top = 72
-  end
-  object WebLogTimer: TTimer
-    Enabled = False
-    Interval = 250
-    OnTimer = WebLogTimerTick
-    Left = 536
-    Top = 72
   end
 end

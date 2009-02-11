@@ -273,7 +273,7 @@ __published:	// IDE-managed Components
 	TMenuItem *N10;
 	TMenuItem *SpamBaitList;
 	TMenuItem *SpamBlockList;
-    TTimer *BBSLogTimer;
+    TTimer *LogTimer;
 	TTimer *ServiceStatusTimer;
     TMenuItem *ViewWebServerMenuItem;
     TAction *ViewWebServer;
@@ -304,10 +304,6 @@ __published:	// IDE-managed Components
     TMenuItem *HelpTechnicalSupportMenuItem;
     TTimer *SemFileTimer;
     TMenuItem *ViewErrorLogMenuItem;
-    TTimer *FtpLogTimer;
-    TTimer *MailLogTimer;
-    TTimer *ServicesLogTimer;
-    TTimer *WebLogTimer;
     TAction *TelnetPause;
     TMenuItem *TelnetPauseMenuItem;
     TAction *MailPause;
@@ -357,7 +353,7 @@ __published:	// IDE-managed Components
 	void __fastcall TextMenuItemEditClick(TObject *Sender);
 	void __fastcall CtrlMenuItemEditClick(TObject *Sender);
     void __fastcall UpTimerTick(TObject *Sender);
-    void __fastcall BBSLogTimerTick(TObject *Sender);
+    void __fastcall LogTimerTick(TObject *Sender);
     void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
@@ -407,10 +403,6 @@ __published:	// IDE-managed Components
     void __fastcall WebConfigureExecute(TObject *Sender);
     void __fastcall ViewServicesExecute(TObject *Sender);
     void __fastcall SemFileTimerTick(TObject *Sender);
-    void __fastcall FtpLogTimerTick(TObject *Sender);
-    void __fastcall MailLogTimerTick(TObject *Sender);
-    void __fastcall ServicesLogTimerTick(TObject *Sender);
-    void __fastcall WebLogTimerTick(TObject *Sender);
     void __fastcall TelnetPauseExecute(TObject *Sender);
     void __fastcall MailPauseExecute(TObject *Sender);
     void __fastcall FtpPauseExecute(TObject *Sender);
