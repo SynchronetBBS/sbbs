@@ -54,7 +54,7 @@ StampBlock(char under)
 void 
 CopyBlock(char Mode)
 {
-	char            under = -1;
+	char            under = 0;
 	int             x, y, ch, ymax = 22;
 	struct			text_info	ti;
 	struct			mouse_event	me;
@@ -90,7 +90,7 @@ CopyBlock(char Mode)
 			for(x=X1;x<=X2;x++) {
 				if(CursorX+x-X1>=80)
 					continue;
-				if(under==TRUE) {
+				if(under) {
 					if(buf[((CursorY+y-Y1))*160+(CursorX+x-X1)*2]==32 || buf[((CursorY+y-Y1))*160+(CursorX+x-X1)*2]==0) {
 						buf[((CursorY+y-Y1))*160+(CursorX+x-X1)*2]=Screen[COPYPage][y][x*2];
 						buf[((CursorY+y-Y1))*160+(CursorX+x-X1)*2+1]=Screen[COPYPage][y][x*2+1];
