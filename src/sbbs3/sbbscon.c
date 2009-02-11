@@ -835,7 +835,7 @@ static void services_terminated(void* p, int code)
 /****************************************************************************/
 /* Event thread local/log print routine										*/
 /****************************************************************************/
-static int event_lputs(int level, const char *str)
+static int event_lputs(void* p, int level, const char *str)
 {
 	char		logline[512];
 	char		tstr[64];
