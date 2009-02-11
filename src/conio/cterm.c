@@ -314,7 +314,7 @@ void play_music(void)
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.tempo=atoi(numbuf);
+				cterm.tempo=strtoul(numbuf,NULL,10);
 				if(cterm.tempo>255)
 					cterm.tempo=255;
 				if(cterm.tempo<32)
@@ -325,7 +325,7 @@ void play_music(void)
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.octave=atoi(numbuf);
+				cterm.octave=strtoul(numbuf,NULL,10);
 				if(cterm.octave>6)
 					cterm.octave=6;
 				break;
@@ -334,7 +334,7 @@ void play_music(void)
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.notelen=atoi(numbuf);
+				cterm.notelen=strtoul(numbuf,NULL,10);
 				if(cterm.notelen<1)
 					cterm.notelen=1;
 				if(cterm.notelen>64)
@@ -348,7 +348,7 @@ void play_music(void)
 						p++;
 					}
 					*out=0;
-					notenum=atoi(numbuf);
+					notenum=strtoul(numbuf,NULL,10);
 				}
 				if(notenum==0) {
 					notenum=-1;
@@ -391,7 +391,7 @@ void play_music(void)
 							p++;
 						}
 						*out=0;
-						notelen=atoi(numbuf);
+						notelen=strtoul(numbuf,NULL,10);
 						i=1;
 					}
 				}
@@ -544,7 +544,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				switch(*p) {
 					case 'M':
 						if(cterm.escbuf[1] == '=') {	/* ANSI Music setup */
-							i=atoi(cterm.escbuf+2);
+							i=strtoul(cterm.escbuf+2,NULL,10);
 							switch(i) {
 								case 1:					/* BANSI (ESC[N) music only) */
 									cterm.music_enable=CTERM_MUSIC_BANSI;
@@ -610,11 +610,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							j=0;
 							if(strlen(cterm.escbuf)>2) {
 								if((p=strtok(cterm.escbuf+2,";"))!=NULL) {
-									i=atoi(p);
+									i=strtoul(p,NULL,10);
 									if(!i && cterm.escbuf[2] != '0')
 										i=255;
 									if((p=strtok(NULL,";"))!=NULL) {
-										j=atoi(p);
+										j=strtoul(p,NULL,10);
 									}
 								}
 							}
@@ -646,7 +646,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case '@':	/* Insert Char */
 					i=wherex();
 					j=wherey();
-					k=atoi(cterm.escbuf+1);
+					k=strtoul(cterm.escbuf+1,NULL,10);
 					if(k<1)
 						k=1;
 					if(k>cterm.width - j)
@@ -657,7 +657,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(i,j);
 					break;
 				case 'A':	/* Cursor Up */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()-i;
@@ -666,7 +666,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(wherex(),i);
 					break;
 				case 'B':	/* Cursor Down */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()+i;
@@ -675,7 +675,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(wherex(),i);
 					break;
 				case 'C':	/* Cursor Right */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherex()+i;
@@ -689,9 +689,9 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						j=0;
 						if(strlen(cterm.escbuf)>2) {
 							if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
-								i=atoi(p);
+								i=strtoul(p,NULL,10);
 								if((p=strtok(NULL,";"))!=NULL) {
-									j=atoi(p);
+									j=strtoul(p,NULL,10);
 								}
 							}
 							switch(i) {
@@ -702,7 +702,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						}
 					}
 					else {
-						i=atoi(cterm.escbuf+1);
+						i=strtoul(cterm.escbuf+1,NULL,10);
 						if(i==0)
 							i=1;
 						i=wherex()-i;
@@ -712,7 +712,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					}
 					break;
 				case 'E':	/* Cursor next line */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()+i;
@@ -723,7 +723,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(1,i);
 					break;
 				case 'F':	/* Cursor preceding line */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()-i;
@@ -738,9 +738,9 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					*p=0;
 					if(strlen(cterm.escbuf)>1) {
 						if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
-							row=atoi(p);
+							row=strtoul(p,NULL,10);
 							if((p=strtok(NULL,";"))!=NULL) {
-								col=atoi(p);
+								col=strtoul(p,NULL,10);
 							}
 						}
 					}
@@ -755,7 +755,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(col,row);
 					break;
 				case 'J':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					switch(i) {
 						case 0:
 							clreol();
@@ -784,7 +784,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					}
 					break;
 				case 'K':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					switch(i) {
 						case 0:
 							clreol();
@@ -804,7 +804,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'L':		/* Insert line */
 					row=wherey();
 					col=wherex();
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					if(i>cterm.height-row)
@@ -822,7 +822,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						cterm.music=1;
 					}
 					else {
-						i=atoi(cterm.escbuf+1);
+						i=strtoul(cterm.escbuf+1,NULL,10);
 						if(i<1)
 							i=1;
 						dellines(i);
@@ -838,7 +838,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					row=wherey();
 					col=wherex();
 
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					if(i>cterm.width-col+1)
@@ -849,14 +849,14 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(col,row);
 					break;
 				case 'S':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0 && cterm.escbuf[1] != '0')
 						i=1;
 					for(j=0; j<i; j++)
 						scrollup();
 					break;
 				case 'T':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0 && cterm.escbuf[1] != '0')
 						i=1;
 					for(j=0; j<i; j++)
@@ -870,7 +870,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					break;
 #endif
 				case 'X':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i<1)
 						i=1;
 					if(i>cterm.width-wherex())
@@ -884,7 +884,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1+i-1,cterm.y+wherey()-1,p2);
 					break;
 				case 'Z':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(i==0 && cterm.escbuf[0] != '0')
 						i=1;
 					for(j=(sizeof(cterm_tabs)/sizeof(cterm_tabs[0]))-1;j>=0;j--) {
@@ -900,7 +900,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'b':	/* ToDo?  Banana ANSI */
 					break;
 				case 'c':	/* Device Attributes */
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					if(!i) {
 						if(retbuf!=NULL) {
 							if(strlen(retbuf)+strlen(cterm.DA) < retsize)
@@ -926,7 +926,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					}
 					while((p=strtok(p2,";"))!=NULL) {
 						p2=NULL;
-						switch(atoi(p)) {
+						switch(strtoul(p,NULL,10)) {
 							case 0:
 								cterm.attr=ti.normattr;
 								break;
@@ -1030,7 +1030,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					textattr(cterm.attr);
 					break;
 				case 'n':
-					i=atoi(cterm.escbuf+1);
+					i=strtoul(cterm.escbuf+1,NULL,10);
 					switch(i) {
 						case 5:
 							if(retbuf!=NULL) {
@@ -1083,11 +1083,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						if(cterm.escbuf[1]) {
 							p=strtok(cterm.escbuf+1,";");
 							if(p!=NULL) {
-								if(p!=cterm.escbuf+1 || atoi(p)<2) {
+								if(p!=cterm.escbuf+1 || strtoul(p,NULL,10)<2) {
 									if(p==cterm.escbuf+1)
 										p=strtok(NULL,";");
 									if(p!=NULL) {
-										switch(atoi(p)) {
+										switch(strtoul(p,NULL,10)) {
 											case 0:
 												newspeed=0;
 												break;
