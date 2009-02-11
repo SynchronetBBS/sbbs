@@ -253,7 +253,7 @@ __published:	// IDE-managed Components
 	TAction *ServicesRecycle;
 	TMenuItem *Recycle1;
 	TMenuItem *Recycle2;
-	TMenuItem *Recycle3;
+    TMenuItem *ServicesRecycleMenuItem;
 	TAction *TelnetRecycle;
 	TMenuItem *DnsBlacklists;
 	TMenuItem *ExportSettingsMenuItem;
@@ -273,7 +273,7 @@ __published:	// IDE-managed Components
 	TMenuItem *N10;
 	TMenuItem *SpamBaitList;
 	TMenuItem *SpamBlockList;
-	TTimer *LogTimer;
+    TTimer *BBSLogTimer;
 	TTimer *ServiceStatusTimer;
     TMenuItem *ViewWebServerMenuItem;
     TAction *ViewWebServer;
@@ -283,10 +283,10 @@ __published:	// IDE-managed Components
     TAction *WebRecycle;
     TAction *WebConfigure;
     TMenuItem *WebMenuItem;
-    TMenuItem *Configure1;
-    TMenuItem *Start1;
-    TMenuItem *Stop1;
-    TMenuItem *Recycle4;
+    TMenuItem *WebConfigureMenuItem;
+    TMenuItem *WebStartMenuItem;
+    TMenuItem *WebStopMenuItem;
+    TMenuItem *WebRecycleMenuItem;
     TMenuItem *N11;
     TMenuItem *WebEditMenuItem;
     TMenuItem *WebEditMimeTypesMenuItem;
@@ -303,6 +303,21 @@ __published:	// IDE-managed Components
     TMenuItem *ConfigureServicesTrayMenuItem;
     TMenuItem *HelpTechnicalSupportMenuItem;
     TTimer *SemFileTimer;
+    TMenuItem *ViewErrorLogMenuItem;
+    TTimer *FtpLogTimer;
+    TTimer *MailLogTimer;
+    TTimer *ServicesLogTimer;
+    TTimer *WebLogTimer;
+    TAction *TelnetPause;
+    TMenuItem *TelnetPauseMenuItem;
+    TAction *MailPause;
+    TAction *WebPause;
+    TAction *FtpPause;
+    TAction *ServicesPause;
+    TMenuItem *MailPauseMenuItem;
+    TMenuItem *FtpPauseMenuItem;
+    TMenuItem *WebPauseMenuItem;
+    TMenuItem *ServicesPauseMenuItem;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -342,7 +357,7 @@ __published:	// IDE-managed Components
 	void __fastcall TextMenuItemEditClick(TObject *Sender);
 	void __fastcall CtrlMenuItemEditClick(TObject *Sender);
     void __fastcall UpTimerTick(TObject *Sender);
-    void __fastcall LogTimerTick(TObject *Sender);
+    void __fastcall BBSLogTimerTick(TObject *Sender);
     void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
@@ -392,6 +407,15 @@ __published:	// IDE-managed Components
     void __fastcall WebConfigureExecute(TObject *Sender);
     void __fastcall ViewServicesExecute(TObject *Sender);
     void __fastcall SemFileTimerTick(TObject *Sender);
+    void __fastcall FtpLogTimerTick(TObject *Sender);
+    void __fastcall MailLogTimerTick(TObject *Sender);
+    void __fastcall ServicesLogTimerTick(TObject *Sender);
+    void __fastcall WebLogTimerTick(TObject *Sender);
+    void __fastcall TelnetPauseExecute(TObject *Sender);
+    void __fastcall MailPauseExecute(TObject *Sender);
+    void __fastcall FtpPauseExecute(TObject *Sender);
+    void __fastcall ServicesPauseExecute(TObject *Sender);
+    void __fastcall WebPauseExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

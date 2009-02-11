@@ -37,9 +37,7 @@ object FtpForm: TFtpForm
     object LogPauseButton: TToolButton
       Left = 23
       Top = 0
-      Hint = 'Pause Log Scrolling'
-      Enabled = False
-      ImageIndex = 67
+      Action = MainForm.FtpPause
       Style = tbsCheck
     end
     object StopButton: TToolButton
