@@ -785,6 +785,8 @@ for(i in area) {
 			}
         } 
 		
+		body=decode_news_body(hdr, body);
+
 		if(truncsp(body).length==0) {
 			printf("Message %lu not imported (blank)\r\n",ptr);
 			continue;

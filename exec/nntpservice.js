@@ -748,6 +748,8 @@ while(client.socket.is_connected && !quit) {
 			for(h in hfields)
 				parse_news_header(hdr,hfields[h]);	// from newsutil.js
 
+			body=decode_news_body(hdr, body);
+
 			var newsgroups=hdr.newsgroups.split(',');
 
 			if(hdr.to==undefined && hdr.reply_id!=undefined)
