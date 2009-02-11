@@ -179,7 +179,7 @@ function parse_news_header(hdr, line)
 					},
 					hdr_name: line,
 					hdr_data: data,
-					toString: function() { return this.hdr_data; };
+					toString: function() { return this.hdr_data; }
 				};
 			hdr.field_list.push(hdr[line.toLowerCase()]);
 			break;
@@ -189,15 +189,15 @@ function parse_news_header(hdr, line)
 /*
  * Returns TRUE if hdr and/or body are modified
  */
-function parse_transfer_encoding(hdr, body)
+function decode_news_body(hdr, body)
 {
 	if(hdr["content-transfer-encoding"]===undefined)
-		return(false);
-	switch(hdr["content-transfer-encoding"].toLowerCase()) {
+		return(body);
+	switch(hdr["content-transfer-encoding"].hdr_data.toLowerCase()) {
 		case '7bit':
 		case '8bit':
 		case 'binary':
-			return(false);
+			break;
 		case 'quoted-printable':
 			/* Remove trailing whitespace from lines */
 			body=body.replace(/\s+\x0d\x0a/g,'\x0d\x0a');
@@ -206,15 +206,15 @@ function parse_transfer_encoding(hdr, body)
 			body=body.replace(/=\x0d\x0a/g,'');
 
 			/* Collapse =XX encoded bytes */
-			body=body.replace(/=([0-9A-F])/g,function(str, p1) { return(ascii(parseInt(p1,16))); });
+			body=body.replace(/=([0-9A-F][0-9A-F])/g,function(str, p1) { return(ascii(parseInt(p1,16))); });
 			hdr["content-transfer-encoding"].hdr_data='8bit';
-			return(true);
+			break;
 		case 'base64':
 			/* Remove non-base64 bytes */
 			body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=]/g,'');
 			body=b64_decode(body);
 			hdr["content-transfer-encoding"].hdr_data='8bit';
-			return(true);
+			break;
 	}
-	return(false);
+	return(body);
 }
