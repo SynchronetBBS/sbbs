@@ -175,7 +175,7 @@ function test_ctrl(results)
 					return(console.yesno("Are the previous two lines identical"));
 				}
 				else {
-					console.writeln('\x0e"This is a test\x0fb"');
+					console.writeln('\x0e"This is a test"\x0f');
 					return(console.yesno('Does the previous line contain "This is a test"'));
 				}
 			},
