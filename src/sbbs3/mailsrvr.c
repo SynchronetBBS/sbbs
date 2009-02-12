@@ -670,10 +670,9 @@ static u_long resolve_ip(char *inaddr)
 	if(!(*p))
 		return(inet_addr(addr));
 
-	if((host=gethostbyname(inaddr))==NULL) {
-		lprintf(LOG_WARNING,"0000 !ERROR resolving hostname: %s",inaddr);
+	if((host=gethostbyname(inaddr))==NULL)
 		return((u_long)INADDR_NONE);
-	}
+
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
@@ -4083,6 +4082,7 @@ static void sendmail_thread(void* arg)
 				ip_addr=resolve_ip(server);
 				if(ip_addr==INADDR_NONE) {
 					SAFEPRINTF(err,"Failed to resolve SMTP hostname: %s",server);
+					lprintf(LOG_WARNING,"%04d !SEND failure resolving hostname: %s", sock, server);
 					continue;
 				}
 
