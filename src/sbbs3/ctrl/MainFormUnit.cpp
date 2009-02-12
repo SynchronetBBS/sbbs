@@ -1034,6 +1034,12 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     listInit(&web_log_list, LINK_LIST_MUTEX);
     listInit(&mail_log_list, LINK_LIST_MUTEX);
     listInit(&services_log_list, LINK_LIST_MUTEX);
+
+    TelnetPause->DisableIfNoHandler=false;
+    MailPause->DisableIfNoHandler=false;
+    WebPause->DisableIfNoHandler=false;
+    FtpPause->DisableIfNoHandler=false;
+    ServicesPause->DisableIfNoHandler=false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FileExitMenuItemClick(TObject *Sender)
@@ -3852,33 +3858,8 @@ TFont* __fastcall TMainForm::LogAttributes(int log_level, TColor Color, TFont* F
     return LogFont[log_level];
 }
 //---------------------------------------------------------------------------
-void __fastcall TMainForm::TelnetPauseExecute(TObject *Sender)
-{
-    ;
-}
-//---------------------------------------------------------------------------
 
-void __fastcall TMainForm::MailPauseExecute(TObject *Sender)
-{
-    ;    
-}
-//---------------------------------------------------------------------------
 
-void __fastcall TMainForm::FtpPauseExecute(TObject *Sender)
-{
-    ;    
-}
-//---------------------------------------------------------------------------
 
-void __fastcall TMainForm::ServicesPauseExecute(TObject *Sender)
-{
-    ;    
-}
-//---------------------------------------------------------------------------
 
-void __fastcall TMainForm::WebPauseExecute(TObject *Sender)
-{
-    ;    
-}
-//---------------------------------------------------------------------------
 

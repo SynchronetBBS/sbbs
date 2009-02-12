@@ -14310,7 +14310,6 @@ object MainForm: TMainForm
       Enabled = False
       Hint = 'Pause Telnet Server Logging'
       ImageIndex = 67
-      OnExecute = TelnetPauseExecute
     end
     object TelnetStop: TAction
       Enabled = False
@@ -14351,7 +14350,6 @@ object MainForm: TMainForm
       Enabled = False
       Hint = 'Pause Mail Server Logging'
       ImageIndex = 67
-      OnExecute = MailPauseExecute
     end
     object MailStop: TAction
       Enabled = False
@@ -14451,7 +14449,6 @@ object MainForm: TMainForm
       Enabled = False
       Hint = 'Pause FTP Server Logging'
       ImageIndex = 67
-      OnExecute = FtpPauseExecute
     end
     object FtpStop: TAction
       Enabled = False
@@ -14519,7 +14516,6 @@ object MainForm: TMainForm
       Enabled = False
       Hint = 'Pause Services Logging'
       ImageIndex = 67
-      OnExecute = ServicesPauseExecute
     end
     object ServicesStop: TAction
       Caption = 'Stop'
@@ -14553,7 +14549,6 @@ object MainForm: TMainForm
       Enabled = False
       Hint = 'Pause Web Server Logging'
       ImageIndex = 67
-      OnExecute = WebPauseExecute
     end
     object WebStop: TAction
       Caption = 'Stop'

@@ -403,11 +403,6 @@ __published:	// IDE-managed Components
     void __fastcall WebConfigureExecute(TObject *Sender);
     void __fastcall ViewServicesExecute(TObject *Sender);
     void __fastcall SemFileTimerTick(TObject *Sender);
-    void __fastcall TelnetPauseExecute(TObject *Sender);
-    void __fastcall MailPauseExecute(TObject *Sender);
-    void __fastcall FtpPauseExecute(TObject *Sender);
-    void __fastcall ServicesPauseExecute(TObject *Sender);
-    void __fastcall WebPauseExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
