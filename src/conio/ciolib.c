@@ -1290,14 +1290,14 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_beep(void)
 }
 
 /* Optional */
-CIOLIBEXPORT void ciolib_getcustomcursor(int *start, int *end, int *range, int *blink, int *visible)
+CIOLIBEXPORT void CIOLIBCALL ciolib_getcustomcursor(int *start, int *end, int *range, int *blink, int *visible)
 {
 	if(cio_api.getcustomcursor)
 		cio_api.getcustomcursor(start,end,range,blink,visible);
 }
 
 /* Optional */
-CIOLIBEXPORT void ciolib_setcustomcursor(int start, int end, int range, int blink, int visible)
+CIOLIBEXPORT void CIOLIBCALL ciolib_setcustomcursor(int start, int end, int range, int blink, int visible)
 {
 	if(cio_api.setcustomcursor)
 		cio_api.setcustomcursor(start,end,range,blink,visible);
