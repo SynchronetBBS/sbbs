@@ -274,7 +274,7 @@ typedef struct {
 	void	(*getcustomcursor)	(int *startline, int *endline, int *range, int *blink, int *visible);
 	void	(*setcustomcursor)	(int startline, int endline, int range, int blink, int visible);
 	void	(*setvideoflags)	(int flags);
-	int		(*getvideoflags)	();
+	int		(*getvideoflags)	(void);
 	int		*ESCDELAY;
 } cioapi_t;
 
