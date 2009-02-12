@@ -617,7 +617,7 @@ js_conio_setfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if(argc > 0 && JSVAL_IS_NUMBER(argv[arg]) && JS_ValueToInt32(cx,argv[arg],&font)) {
 		for(arg=1; arg<argc; arg++) {
 			if(JSVAL_IS_NUMBER(argv[arg])) {
-				if(!JS_ValueToInt32(cx,argv[arg],&fnum)
+				if(!JS_ValueToInt32(cx,argv[arg],&fnum))
 					return(JS_FALSE);
 			}
 			else if(JSVAL_IS_BOOLEAN(argv[arg])) {
