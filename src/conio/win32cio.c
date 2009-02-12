@@ -833,7 +833,7 @@ void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 	HANDLE				h;
 
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
-		return(0);
+		return;
 
 	GetConsoleCursorInfo(h, &ci);
 	if(s)
@@ -854,7 +854,7 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v)
 	HANDLE				h;
 
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
-		return(0);
+		return;
 
 	ci.bVisible=v;
 	if(e>s)

@@ -703,7 +703,7 @@ error_return:
 }
 
 /* vstatlock is held */
-static void bitmap_draw_cursor()
+static void bitmap_draw_cursor(void)
 {
 	int x;
 	int y;

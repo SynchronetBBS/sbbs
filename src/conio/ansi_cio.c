@@ -916,12 +916,12 @@ int ansi_readbyte_cb(void)
 
 int ansi_writebyte_cb(unsigned char ch)
 {
-	fwrite(&ch,1,1,stdout);
+	return(fwrite(&ch,1,1,stdout));
 }
 
 int ansi_writestr_cb(unsigned char *str, size_t len)
 {
-	fwrite(str,len,1,stdout);
+	return(fwrite(str,len,1,stdout));
 }
 
 int ansi_initio_cb(void)
@@ -954,6 +954,7 @@ int ansi_initio_cb(void)
 		atexit(ansi_fixterm);
 	}
 #endif
+	return(0);
 }
 
 #if defined(__BORLANDC__)
