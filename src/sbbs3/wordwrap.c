@@ -401,21 +401,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 		}
 	}
 
-	free(linebuf);		/* "Damaged Block" assertion here (Feb-09-2009) */
-						/* l=0, len=76, k=0, oldlen=79, outbuf_size=1810 */
-						/* Linebuf:
-035932B8  0D 0A 64 20 01 68 01 6D 57 01 6E 69 6E 01  ..d .h.mW.nin.
-035932C6  68 01 6D 56 01 6E 69 73 74 61 20 01 68 01  h.mV.nista .h.
-035932D4  67 2A 01 6E 66 61 69 6C 65 64 01 68 01 67  g*.nfailed.h.g
-035932E2  2A 01 6E 20 74 6F 20 66 69 78 01 68 01 67  *.n to fix.h.g
-035932F0  2C 01 6E 20 72 69 67 68 74 01 68 01 67 3F  ,.n right.h.g?
-035932FE  01 6E 0D 0A 01 62 33 01 68 01 67 2E 01 68  .n...b3.h.g..h
-0359330C  01 62 31 01 68 01 67 2C 01 6E 20 01 68 01  .b1.h.g,.n .h.
-0359331A  6D 57 01 6E 69 6E 20 01 68 01 62 33 01 68  mW.nin .h.b3.h
-03593328  01 67 2E 01 68 01 62 31 31 34 01 68 01 6D  .g..h.b114.h.m
-03593336  57 47 01 68 01 67 2C 01 6E 20 01 68 01 6D  WG.h.g,.n .h.m
-03593344  57 01 6E 69 6E 01 68 01 62 39 20 61 6E 20  W.nin.h.b9 an 
-03593352  68 FD FD FD DD DD 05 00 */
+	free(linebuf);
 
 	if(prefix)
 		free(prefix);
