@@ -60,7 +60,7 @@ function test_ctrl(results)
 				}
 				console.crlf();
 				if(retstr != '') {
-					console.writeln("FAILED!  Returned "+retstr);
+					console.writeln('FAILED!  Returned "'+retstr+'"');
 					return(false);
 				}
 				console.writeln("Passed");
