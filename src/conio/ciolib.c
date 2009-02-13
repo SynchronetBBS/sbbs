@@ -68,7 +68,7 @@
 
 CIOLIBEXPORT cioapi_t	cio_api;
 
-static const int tabs[10]={9,17,25,33,41,49,57,65,73,80};
+static const int tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};
 static int ungotch;
 struct text_info cio_textinfo;
 static int lastmode=3;
@@ -1097,7 +1097,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 			ciolib_beep();
 			break;
 		case '\t':
-			for(i=0;i<10;i++) {
+			for(i=0;i<(sizeof(tabs)/sizeof(int));i++) {
 				if(tabs[i]>cio_textinfo.curx) {
 					buf[0]=' ';
 					while(cio_textinfo.curx<tabs[i]) {
@@ -1107,11 +1107,13 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_putch(int a)
 								,cio_textinfo.cury+cio_textinfo.wintop-1
 								,buf);
 						ciolib_gotoxy(cio_textinfo.curx+1,cio_textinfo.cury);
+						if(cio_textinfo.curx==cio_textinfo.screenwidth)
+							break;
 					}
 					break;
 				}
 			}
-			if(i==10) {
+			if(cio_textinfo.curx==cio_textinfo.screenwidth) {
 				ciolib_gotoxy(1,cio_textinfo.cury);
 				if(cio_textinfo.cury==cio_textinfo.winbottom-cio_textinfo.wintop+1)
 					ciolib_wscroll();
