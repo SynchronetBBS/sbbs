@@ -1,6 +1,6 @@
 /* main.cpp */
 
-/* Synchronet main/telnet server thread and related functions */
+/* Synchronet terminal server thread and related functions */
 
 /* $Id$ */
 
@@ -52,7 +52,7 @@
 
 //---------------------------------------------------------------------------
 
-#define TELNET_SERVER "Synchronet Telnet Server"
+#define TELNET_SERVER "Synchronet Terminal Server"
 #define STATUS_WFC	"Listening"
 
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
@@ -4868,9 +4868,9 @@ NO_SSH:
 			if(i==0)
 				continue;
 			if(ERROR_VALUE==EINTR)
-				lprintf(LOG_DEBUG,"Telnet Server listening interrupted");
+				lprintf(LOG_DEBUG,"Terminal Server listening interrupted");
 			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf(LOG_NOTICE,"Telnet Server sockets closed");
+            	lprintf(LOG_NOTICE,"Terminal Server sockets closed");
 			else
 				lprintf(LOG_WARNING,"!ERROR %d selecting sockets",ERROR_VALUE);
 			continue;

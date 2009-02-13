@@ -225,7 +225,7 @@ object PropertiesDlg: TPropertiesDlg
         Items.Strings = (
           'Node List'
           'Client List'
-          'Telnet Server Log'
+          'Terminal Server Log'
           'Event Log'
           'FTP Server Log'
           'Mail Server Log'
@@ -277,7 +277,7 @@ object PropertiesDlg: TPropertiesDlg
         Items.Strings = (
           'Node List'
           'Client List'
-          'Telnet Server Log'
+          'Terminal Server Log'
           'Event Log'
           'FTP Server Log'
           'Mail Server Log'

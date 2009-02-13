@@ -176,18 +176,18 @@ static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\tdefaults   show default settings and options\n"
 							"\n"
 							;
-static const char* telnet_usage  = "Telnet server settings:\n\n"
-							"\ttf<node>   set first Telnet node number\n"
-							"\ttl<node>   set last Telnet node number\n"
+static const char* telnet_usage  = "Terminal server settings:\n\n"
+							"\ttf<node>   set first node number\n"
+							"\ttl<node>   set last node number\n"
 							"\ttp<port>   set Telnet server port\n"
 							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
 							"\tr2         use second RLogin name in BSD RLogin\n"
-							"\tto<value>  set Telnet server options value (advanced)\n"
+							"\tto<value>  set Terminal server options value (advanced)\n"
 							"\tta         enable auto-logon via IP address\n"
 							"\ttd         enable Telnet command debug output\n"
 							"\ttc         emabble sysop availability for chat\n"
 							"\ttq         disable QWK events\n"
-							"\tt-         disable Telnet/RLogin server\n"
+							"\tt-         disable Terminal server\n"
 							"\n"
 							;
 static const char* ftp_usage  = "FTP server settings:\n"
@@ -1381,9 +1381,9 @@ int main(int argc, char** argv)
 			printf("Default settings:\n");
 			printf("\n");
 			printf("Telnet server port:\t%u\n",bbs_startup.telnet_port);
-			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
-			printf("Telnet last node:\t%u\n",bbs_startup.last_node);
-			printf("Telnet server options:\t0x%08lX\n",bbs_startup.options);
+			printf("Terminal first node:\t%u\n",bbs_startup.first_node);
+			printf("Terminal last node:\t%u\n",bbs_startup.last_node);
+			printf("Terminal server options:\t0x%08lX\n",bbs_startup.options);
 			printf("FTP server port:\t%u\n",ftp_startup.port);
 			printf("FTP server options:\t0x%08lX\n",ftp_startup.options);
 			printf("Mail SMTP server port:\t%u\n",mail_startup.smtp_port);
@@ -1403,7 +1403,7 @@ int main(int argc, char** argv)
 						SAFECOPY(log_facility,arg++);
 				break;
 #endif
-			case 'T':	/* Telnet settings */
+			case 'T':	/* Terminal server settings */
 				switch(toupper(*(arg++))) {
 					case '-':	
 						run_bbs=FALSE;
@@ -1623,7 +1623,7 @@ int main(int argc, char** argv)
 					case 'S':	/* Services */
 						run_services=FALSE;
 						break;
-					case 'T':	/* Telnet */
+					case 'T':	/* Terminal Server */
 						run_bbs=FALSE;
 						break;
 					case 'E': /* No Events */

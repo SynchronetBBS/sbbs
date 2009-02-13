@@ -13919,7 +13919,7 @@ object MainForm: TMainForm
       end
     end
     object TelnetMenuItem: TMenuItem
-      Caption = '&Telnet'
+      Caption = '&Terminal'
       object TelnetConfigureMenuItem: TMenuItem
         Action = TelnetConfigure
         Caption = '&Configure'
@@ -14300,7 +14300,7 @@ object MainForm: TMainForm
     Left = 392
     Top = 65533
     object TelnetStart: TAction
-      Hint = 'Start Telnet Server'
+      Hint = 'Start Terminal Server'
       ImageIndex = 0
       OnExecute = TelnetStartExecute
     end
@@ -14308,23 +14308,23 @@ object MainForm: TMainForm
       AutoCheck = True
       Caption = 'Pause'
       Enabled = False
-      Hint = 'Pause Telnet Server Logging'
+      Hint = 'Pause Terminal Server Logging'
       ImageIndex = 67
     end
     object TelnetStop: TAction
       Enabled = False
-      Hint = 'Stop Telnet Server'
+      Hint = 'Stop Terminal Server'
       ImageIndex = 2
       OnExecute = TelnetStopExecute
     end
     object TelnetRecycle: TAction
       Caption = 'Recycle'
-      Hint = 'Recycle Telnet Server'
+      Hint = 'Recycle Terminal Server'
       ImageIndex = 55
       OnExecute = TelnetRecycleExecute
     end
     object TelnetConfigure: TAction
-      Hint = 'Configure Telnet Server'
+      Hint = 'Configure Terminal Server'
       ImageIndex = 4
       OnExecute = TelnetConfigureExecute
     end
@@ -14371,9 +14371,9 @@ object MainForm: TMainForm
     end
     object ViewTelnet: TAction
       AutoCheck = True
-      Caption = '&Telnet Server'
+      Caption = '&Terminal Server'
       Checked = True
-      Hint = 'View Telnet Server Window'
+      Hint = 'View Terminal Server Window'
       ImageIndex = 9
       OnExecute = ViewTelnetExecute
     end
@@ -17135,7 +17135,7 @@ object MainForm: TMainForm
         OnClick = BBSConfigureMenuItemClick
       end
       object ConfigureTelnetTrayMenuItem: TMenuItem
-        Caption = 'Telnet Server'
+        Caption = 'Terminal Server'
         OnClick = TelnetConfigureExecute
       end
       object ConfigureFtpTrayMenuItem: TMenuItem

@@ -1191,8 +1191,8 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 
     if(TelnetStop->Enabled && !bbsServiceEnabled()) {
      	if(!terminating && TelnetForm->ProgressBar->Position
-	        && Application->MessageBox("Shut down the Telnet Server?"
-        	,"Telnet Server In Use", MB_OKCANCEL)!=IDOK)
+	        && Application->MessageBox("Shut down the Terminal Server?"
+        	,"Terminal Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         TelnetStopExecute(Sender);
 	}
