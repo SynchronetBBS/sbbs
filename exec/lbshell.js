@@ -836,9 +836,12 @@ while(bbs.online) {
 			menus_displayed.pop();
 			cleararea(infomenu.xpos,infomenu.ypos,infomenu.items[0].text.length,infomenu.items.length,true);
 			break;
-		case 'G':
-			if(!extra_select)
+		case 'G':       // Goodbye
+			if(!extra_select) {
+                                console.clear(LIGHTGRAY);
+                                bbs.logoff(/* prompt? */false);
 				exit(1);
+                        }
 	}
 }
 
