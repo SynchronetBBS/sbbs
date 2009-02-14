@@ -838,10 +838,10 @@ while(bbs.online) {
 			break;
 		case 'G':       // Goodbye
 			if(!extra_select) {
-                                console.clear(LIGHTGRAY);
-                                bbs.logoff(/* prompt? */false);
-				exit(1);
-                        }
+                console.clear(LIGHTGRAY);
+                bbs.logoff(/* prompt? */false);
+				draw_main(true);
+           }
 	}
 }
 
