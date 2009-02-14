@@ -1,11 +1,15 @@
 load("sbbsdefs.js");
 
-function run_tests(results,section,keys)
+function run_tests(results,section,keys,skip_printable)
 {
 	var key;
 	var tested;
 
 	for(key in keys) {
+		if(console.aborted) {
+			console.aborted=false;
+			break;
+		}
 		tested=false;
 		console.line_counter=0;
 		console.crlf();
@@ -22,12 +26,14 @@ function run_tests(results,section,keys)
 				continue;
 			}
 		}
-		if(keys[key].printable) {
-			tested=true;
-			write_raw('"'+keys[key].char+'" '+keys[key].desc+"\r\n");
-			if(!console.yesno("Does the character in quotes match the description")) {
-				results[section][key]=false;
-				continue;
+		if(!skip_printable) {
+			if(keys[key].printable) {
+				tested=true;
+				write_raw('"'+keys[key].char+'" '+keys[key].desc+"\r\n");
+				if(!console.yesno("Does the character in quotes match the description")) {
+					results[section][key]=false;
+					continue;
+				}
 			}
 		}
 		if(tested)
@@ -37,7 +43,7 @@ function run_tests(results,section,keys)
 	}
 }
 
-function test_ctrl(results)
+function test_ctrl(results,skip)
 {
 
 	var ctrl_keys={
@@ -339,7 +345,7 @@ function test_ctrl(results)
 
 	if(results.ctrl==undefined)
 		results.ctrl={};
-	run_tests(results, "ctrl", ctrl_keys);
+	run_tests(results, "ctrl", ctrl_keys,skip);
 }
 
 function test_c1(results)
@@ -508,6 +514,78 @@ function test_c1(results)
 	run_tests(results, "c1", c1_keys);
 }
 
+function get_curr_pos()
+{
+	var buf='';
+	var state=0;
+	var row=0;
+	var col=0;
+	var ret=null;
+
+	console.write("\033[6n");
+	for(i=0; i<3; i++) {
+		tmp=console.inkey(K_NONE, 1000);
+		if(tmp != '') {
+			switch(state) {
+				case 0:
+					if(tmp=='\033') {
+						i=0;
+						state++;
+					}
+					break;
+				case 1:
+					if(tmp=='[') {
+						i=0;
+						state++;
+					}
+					else {
+						state=0;
+					}
+					break;
+				case 2:
+					if(tmp >= '0' && tmp <= '9') {
+						buf+=tmp;
+					}
+					else if(tmp==';') {
+						if((row=parseInt(buf,10))!=NaN) {
+							i=0;
+							buf='';
+							state++;
+						}
+						else {
+							state=0;
+						}
+					}
+					else {
+						state=0;
+					}
+					break;
+				case 3:
+					if(tmp >= '0' && tmp <= '9') {
+						buf+=tmp;
+					}
+					else if(tmp=='R') {
+						if((col=parseInt(buf,10))!=NaN) {
+							ret={
+								row:row,
+								col:col,
+							};
+							return(ret);
+						}
+						else {
+							state=0;
+						}
+					}
+					else {
+						state=0;
+					}
+					break;
+			}
+		}
+	}
+	return(null);	
+}
+
 function test_ctrl_seqs(results)
 {
 	var ctrl_seqs={
@@ -533,17 +611,28 @@ function test_ctrl_seqs(results)
 				console.writeln(" \033[2ALine 3");
 				console.writeln(" Line 4");
 				return(console.yesno('Does "Line 1" to "Line 4" line up with no gaps'));
-			}
+			},
 		},
 		"CUD":{
 			char:"B",
 			test:function(results) {
 				if(results.ctrl_seqs.CUU) {
-				}
-				else if(results.ctrl.FF) {
+					console.crlf();
+					console.crlf();
+					console.crlf();
+					console.crlf();
+					console.write("\033[4A");
+					console.write(" Line 1\b\b\b\b\b\b");
+					console.write("\033[BLine 2\b\b\b\b\b\b");
+					console.write("\033[1BLine 3\b\b\b\b\b\b");
+					console.write("\033[A\033[2B");
+					console.write("Line 4");
+					console.write("\033[33B");
+					console.writeln("\b\b\b\b\b\bLine 5");
+					return(console.yesno('Does "Line 1" to "Line 5" line up with no gaps'));
 				}
 				return(null);
-			}
+			},
 		},
 		"CUF":{
 			char:"C",
@@ -676,6 +765,8 @@ function test_ctrl_seqs(results)
 		},
 		"DSR":{
 			char:"n",
+			test:function(results) {
+			},
 		},
 		"DAQ":{
 			char:"o",
@@ -885,104 +976,136 @@ function test_ind_ctrl_funcs(results)
 	var ind_ctrl_funcs={
 		"DMI":{
 			char:"`",
+			untestable:true,
 		},
 		"INT":{
 			char:"a",
+			untestable:true,
 		},
 		"EMI":{
 			char:"b",
+			untestable:true,
 		},
 		"RIS":{
 			char:"c",
+			untestable:true,
 		},
 		"CMD":{
 			char:"d",
+			untestable:true,
 		},
 		"Undef-e":{
 			char:"e",
+			untestable:true,
 		},
 		"Undef-f":{
 			char:"f",
+			untestable:true,
 		},
 		"Undef-g":{
 			char:"g",
+			untestable:true,
 		},
 		"Undef-h":{
 			char:"h",
+			untestable:true,
 		},
 		"Undef-i":{
 			char:"i",
+			untestable:true,
 		},
 		"Undef-j":{
 			char:"j",
+			untestable:true,
 		},
 		"Undef-k":{
 			char:"k",
+			untestable:true,
 		},
 		"Undef-l":{
 			char:"l",
+			untestable:true,
 		},
 		"Undef-m":{
 			char:"m",
+			untestable:true,
 		},
 		"LS2":{
 			char:"n",
 			desc:"Locking-Shift Two",
+			untestable:true,
 		},
 		"LS3":{
 			char:"o",
 			desc:"Locking-Shift Three",
+			untestable:true,
 		},
 		"Undef-p":{
 			char:"p",
+			untestable:true,
 		},
 		"Undef-q":{
 			char:"q",
+			untestable:true,
 		},
 		"Undef-r":{
 			char:"r",
+			untestable:true,
 		},
 		"Undef-s":{
 			char:"s",
+			untestable:true,
 		},
 		"Undef-t":{
 			char:"t",
+			untestable:true,
 		},
 		"Undef-u":{
 			char:"u",
+			untestable:true,
 		},
 		"Undef-v":{
 			char:"v",
+			untestable:true,
 		},
 		"Undef-w":{
 			char:"w",
+			untestable:true,
 		},
 		"Undef-x":{
 			char:"x",
+			untestable:true,
 		},
 		"Undef-y":{
 			char:"y",
+			untestable:true,
 		},
 		"Undef-z":{
 			char:"z",
+			untestable:true,
 		},
 		"Undef-{":{
 			char:"{",
+			untestable:true,
 		},
 		"LS3R":{
 			char:"|",
 			desc:"Locking-Shift Three Right",
+			untestable:true,
 		},
 		"LS2R":{
 			char:"}",
 			desc:"Locking-Shift Two Right",
+			untestable:true,
 		},
 		"LS1R":{
 			char:"~",
 			desc:"Locking-Shift One Right",
+			untestable:true,
 		},
 		"Undef-DEL":{
 			char:"\x7f",
+			untestable:true,
 		},
 	};
 
@@ -1022,20 +1145,38 @@ function print_results(results)
 function run_all_tests() {
 	var results={};
 	var orig_pt=console.ctrlkey_passthru;
+	var skip;
 
+	skip=console.yesno("Skip glyph validation");
 	/* Disable parsing */
 	console.ctrlkey_passthru="+@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_";
 
-	test_ctrl(results);
-	test_c1(results);
-	test_ctrl_seqs(results);
-	test_ind_ctrl_funcs(results);
+	test_ctrl(results,skip);
+	test_c1(results,skip);
+	test_ctrl_seqs(results,skip);
+	test_ind_ctrl_funcs(results,skip);
 
 	/* Restore CTRL parsing */
 	console.ctrlkey_passthru=orig_pt;
 
 	console.crlf();
 	print_results(results);
+}
+
+function run_deuces_tests() {
+	var results={};
+	var orig_pt=console.ctrlkey_passthru;
+
+	/* Disable parsing */
+	console.ctrlkey_passthru="+@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_";
+
+	var curr_pos=get_curr_pos();
+	for(i in curr_pos) {
+		console.writeln(i+" = "+curr_pos[i]);
+	}
+
+	/* Restore CTRL parsing */
+	console.ctrlkey_passthru=orig_pt;
 }
 
 run_all_tests();
