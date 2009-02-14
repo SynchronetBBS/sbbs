@@ -843,7 +843,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						i=1;
 					if(i>cterm.width-col+1)
 						i=cterm.width-col+1;
-					movetext(cterm.x+col-1+i,cterm.y+row-1,cterm.x+cterm.width-1-i,cterm.y+row-1,cterm.x+col-1,cterm.y+row-1);
+					movetext(cterm.x+col-1+i,cterm.y+row-1,cterm.x+cterm.width-1,cterm.y+row-1,cterm.x+col-1,cterm.y+row-1);
 					gotoxy(cterm.width-i,col);
 					clreol();
 					gotoxy(col,row);
