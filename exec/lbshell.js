@@ -2341,6 +2341,7 @@ function show_settingsmenu()
 				break;
 			case 'U':
 				clear_screen();
+				user.cached=false;
 				var oldshell=user.command_shell;
 				bbs.user_config();
 				user.cached=false;
