@@ -872,6 +872,7 @@ function draw_main(topline)
 	 */
 	/* Disable CTRL keys that we "know" how to handle. */
 	console.ctrlkey_passthru="+KOPTU";
+	console.aborted=false;
 	if(topline) {
 		console.line_counter=0;
 		console.clear();
