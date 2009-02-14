@@ -199,7 +199,7 @@ function test_ctrl(results)
 		},
 		"SO - LS1":{
 			char:"\x0e",
-			desc:"Beamed Eighth Notes",
+			desc:"Beamed Sixteenth Notes",
 			type:"control",
 			printable:true,
 			test:function(results) {
@@ -245,7 +245,7 @@ function test_ctrl(results)
 		},
 		"DC3":{
 			char:"\x13",
-			desc:"Double Exclimation",
+			desc:"Double Exclamation",
 			normal:true,
 			type:"control",
 			printable:true,
