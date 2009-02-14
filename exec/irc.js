@@ -6,6 +6,14 @@
 // $Id$
 
 // disable auto-termination.
+var old_auto_terminate=js.auto_terminate;
+
+function restore_auto_terminate()
+{
+	js.auto_terminate=old_auto_terminate;
+}
+
+js.on_exit("restore_auto_terminate");
 js.auto_terminate=false;
 
 const REVISION = "$Revision$".split(' ')[1];

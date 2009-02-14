@@ -514,12 +514,36 @@ function test_ctrl_seqs(results)
 		/* No intermediate bytes */
 		"ICH":{
 			char:"@",
+			test:function(results) {
+				if(results.ctrl.BS) {
+					console.writeln("InsertCharTest\b\b\b\b\033[@\b\b\b\b\033[@");
+					return(console.yesno('Are there spaces in "Insert Char Test"'));
+				}
+				return(null);
+			},
 		},
 		"CUU":{
 			char:"A",
+			test:function(results) {
+				console.writeln(" Line 1");
+				console.crlf();
+				console.writeln(" \033[ALine 2");
+				console.crlf();
+				console.crlf();
+				console.writeln(" \033[2ALine 3");
+				console.writeln(" Line 4");
+				return(console.yesno('Does "Line 1" to "Line 4" line up with no gaps'));
+			}
 		},
 		"CUD":{
 			char:"B",
+			test:function(results) {
+				if(results.ctrl_seqs.CUU) {
+				}
+				else if(results.ctrl.FF) {
+				}
+				return(null);
+			}
 		},
 		"CUF":{
 			char:"C",

@@ -8,22 +8,23 @@
 
 load("sbbsdefs.js");	// USER_HTML
 
-var NORMAL			="\1N\1H"
-var HEADING1		="\1H\1Y"
-var HEADING2		="\1H\1C"
-var HEADING3		="\1H\1M"
-var HEADING4		="\1H\1G"
-var HEADING5		="\1H\1B"	
-var HEADING6		="\1H\1R"
-var BOLD			="\1H\1C\x014"
-var ITALIC			="\1H\1G\x012"
-var UNDERLINE		="\1H\1W\x016"
-var STRIKE_THROUGH	="\1N\1K\x017"
-var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G"
+var NORMAL			="\1N\1H";
+var HEADING1		="\1H\1Y";
+var HEADING2		="\1H\1C";
+var HEADING3		="\1H\1M";
+var HEADING4		="\1H\1G";
+var HEADING5		="\1H\1B";
+var HEADING6		="\1H\1R";
+var BOLD			="\1H\1C\x014";
+var ITALIC			="\1H\1G\x012";
+var UNDERLINE		="\1H\1W\x016";
+var STRIKE_THROUGH	="\1N\1K\x017";
+var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G";
 
 var f;
 var mono=true;
 var i;
+var buf;
 
 for(i in argv) {
 	switch(argv[i].toLowerCase()) {
