@@ -671,7 +671,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if(startup!=NULL && startup->event_lputs!=NULL && level <= startup->log_level)
 				startup->event_lputs(startup->event_cbdata,level,JS_GetStringBytes(str));
 		} else
-			lputs(level,JS_GetStringBytes(str));
+			lprintf(level,"Node %d %s", sbbs->cfg.node_num, JS_GetStringBytes(str));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
