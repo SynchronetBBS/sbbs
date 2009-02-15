@@ -731,6 +731,14 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						i=1;
 					gotoxy(1,i);
 					break;
+				case 'G':
+					col=strtoul(cterm.escbuf+1,NULL,10);
+					if(col<1)
+						col=1;
+					if(col>cterm.width)
+						col=cterm.width;
+					gotoxy(col,wherey());
+					break;
 				case 'f':
 				case 'H':
 					row=1;
