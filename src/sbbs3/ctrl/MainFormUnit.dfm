@@ -13768,6 +13768,11 @@ object MainForm: TMainForm
           Hint = 'MENU/LOGON.ASC'
           OnClick = TextMenuItemEditClick
         end
+        object LogoffMessage: TMenuItem
+          Caption = 'Logoff Message'
+          Hint = 'MENU/LOGOFF.ASC'
+          OnClick = TextMenuItemEditClick
+        end
         object BBSEditAutoMsg: TMenuItem
           Caption = 'Auto Message'
           Hint = 'MSGS/AUTO.MSG'

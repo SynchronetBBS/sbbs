@@ -314,6 +314,7 @@ __published:	// IDE-managed Components
     TMenuItem *FtpPauseMenuItem;
     TMenuItem *WebPauseMenuItem;
     TMenuItem *ServicesPauseMenuItem;
+    TMenuItem *LogoffMessage;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
