@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -68,7 +68,8 @@ void sbbs_t::useredit(int usernumber)
 		if(!(cfg.sys_misc&SM_L_SYSOP))
 			return;
 		if(cfg.node_misc&NM_SYSPW && !chksyspass())
-			return; }
+			return; 
+	}
 #endif
 	if(usernumber)
 		user.number=usernumber;
@@ -89,13 +90,16 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[NoUserData]);
 				getkey(0);
 				sys_status&=~SS_INUEDIT;
-				return; } }
+				return; 
+			} 
+		}
 		unixtodstr(&cfg,time(NULL),str);
 		unixtodstr(&cfg,user.laston,tmp);
 		if(strcmp(str,tmp) && user.ltoday) {
 			user.ltoday=user.ttoday=user.ptoday=user.etoday=user.textra=0;
 			user.freecdt=cfg.level_freecdtperday[user.level];
-			putuserdat(&cfg,&user); }	/* Leave alone */
+			putuserdat(&cfg,&user); 	/* Leave alone */
+		}
 		if(user.misc&DELETED)
 			bputs(text[Deleted]);
 		else if(user.misc&INACTIVE)
@@ -117,7 +121,7 @@ void sbbs_t::useredit(int usernumber)
 		if(user.netmail[0])
 			bprintf(text[UserNetMail],user.netmail);
 
-		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
+		SAFEPRINTF2(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 		i=fexist(str);
 		if(user.comment[0] || i)
 			bprintf(text[UeditCommentLine],i ? '+' : ' '
@@ -146,7 +150,7 @@ void sbbs_t::useredit(int usernumber)
 
 		bprintf(text[UserUploads],ultoac(user.ulb,tmp),user.uls);
 		if(user.leech)
-			sprintf(str,text[UserLeech],user.leech);
+			SAFEPRINTF(str,text[UserLeech],user.leech);
 		else
 			str[0]=0;
 		bprintf(text[UserDownloads],ultoac(user.dlb,tmp),user.dls,str);
@@ -163,13 +167,14 @@ void sbbs_t::useredit(int usernumber)
 			lncntr=0;
 		bprintf(text[UeditPrompt],user.number,l);
 		if(user.level>useron.level && console&CON_R_INPUT)
-			strcpy(str,"QG[]?/{},");
+			SAFECOPY(str,"QG[]?/{},");
 		else
-			strcpy(str,"ABCDEFGHIJKLMNOPQRSTUVWXYZ+[]?/{}~*$#");
+			SAFECOPY(str,"ABCDEFGHIJKLMNOPQRSTUVWXYZ+[]?/{}~*$#");
 		l=getkeys(str,l);
 		if(l&0x80000000L) {
 			user.number=(ushort)(l&~0x80000000L);
-			continue; }
+			continue; 
+		}
 		switch(l) {
 			case 'A':
 				bputs(text[EnterYourAlias]);
@@ -197,35 +202,44 @@ void sbbs_t::useredit(int usernumber)
 					if(!noyes(text[UeditRestoreQ])) {
 						putuserrec(&cfg,user.number,U_MISC,8
 							,ultoa(user.misc&~DELETED,str,16));
-						putusername(&cfg,user.number,user.alias); }
-					break; }
+						putusername(&cfg,user.number,user.alias); 
+					}
+					break; 
+				}
 				if(user.misc&INACTIVE) {
 					if(!noyes(text[UeditActivateQ]))
 						putuserrec(&cfg,user.number,U_MISC,8
 							,ultoa(user.misc&~INACTIVE,str,16));
-					break; }
+					break; 
+				}
 				if(!noyes(text[UeditDeleteQ])) {
 					getsmsg(user.number);
 					if(getmail(&cfg,user.number,0)) {
 						if(yesno(text[UeditReadUserMailWQ]))
-							readmail(user.number,MAIL_YOUR); }
+							readmail(user.number,MAIL_YOUR); 
+					}
 					if(getmail(&cfg,user.number,1)) {
 						if(yesno(text[UeditReadUserMailSQ]))
-							readmail(user.number,MAIL_SENT); }
+							readmail(user.number,MAIL_SENT); 
+					}
 					putuserrec(&cfg,user.number,U_MISC,8
 						,ultoa(user.misc|DELETED,str,16));
 					putusername(&cfg,user.number,nulstr);
-					break; }
+					break; 
+				}
 				if(!noyes(text[UeditDeactivateUserQ])) {
 					if(getmail(&cfg,user.number,0)) {
 						if(yesno(text[UeditReadUserMailWQ]))
-							readmail(user.number,MAIL_YOUR); }
+							readmail(user.number,MAIL_YOUR); 
+					}
 					if(getmail(&cfg,user.number,1)) {
 						if(yesno(text[UeditReadUserMailSQ]))
-							readmail(user.number,MAIL_SENT); }
+							readmail(user.number,MAIL_SENT); 
+					}
 					putuserrec(&cfg,user.number,U_MISC,8
 						,ultoa(user.misc|INACTIVE,str,16));
-					break; }
+					break; 
+				}
 				break;
 			case 'E':
 				if(!yesno(text[ChangeExemptionQ]))
@@ -238,12 +252,14 @@ void sbbs_t::useredit(int usernumber)
 					if(c==CR) break;
 					if(c=='?') {
 						menu("exempt");
-						continue; }
+						continue; 
+					}
 					if(user.level>useron.level 
 						&& !(useron.exempt&FLAG(c)) && console&CON_R_INPUT)
 						continue;
 					user.exempt^=FLAG(c);
-					putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,tmp,16)); }
+					putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,tmp,16)); 
+				}
 				break;
 			case 'F':
 				i=1;
@@ -261,18 +277,21 @@ void sbbs_t::useredit(int usernumber)
 							break;
 						case 4:
 							bprintf(text[FlagEditing],ltoaf(user.flags4,tmp));
-							break; }
+							break; 
+					}
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?1234\r",0);
 					if(sys_status&SS_ABORT)
 						break;
 					if(c==CR) break;
 					if(c=='?') {
-						sprintf(str,"flags%d",i);
+						SAFEPRINTF(str,"flags%d",i);
 						menu(str);
-						continue; }
+						continue; 
+					}
 					if(isdigit(c)) {
 						i=c&0xf;
-						continue; }
+						continue; 
+					}
 					if(user.level>useron.level && console&CON_R_INPUT)
 						switch(i) {
 							case 1:
@@ -290,7 +309,8 @@ void sbbs_t::useredit(int usernumber)
 							case 4:
 								if(!(useron.flags4&FLAG(c)))
 									continue;
-								break; }
+								break; 
+					}
 					switch(i) {
 						case 1:
 							user.flags1^=FLAG(c);
@@ -311,7 +331,9 @@ void sbbs_t::useredit(int usernumber)
 							user.flags4^=FLAG(c);
 							putuserrec(&cfg,user.number,U_FLAGS4,8
 								,ultoa(user.flags4,tmp,16));
-							break; } }
+							break; 
+					} 
+				}
 				break;
 			case 'G':
 				bputs(text[GoToUser]);
@@ -320,14 +342,17 @@ void sbbs_t::useredit(int usernumber)
 						i=atoi(str);
 						if(i>lastuser(&cfg))
 							break;
-						if(i) user.number=i; }
+						if(i) user.number=i; 
+					}
 					else {
 						i=finduser(str);
-						if(i) user.number=i; } }
+						if(i) user.number=i; 
+					} 
+				}
 				break;
 			case 'H': /* edit user's information file */
 				attr(LIGHTGRAY);
-				sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
+				SAFEPRINTF2(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 				editfile(str);
 				break;
 			case 'I':
@@ -436,7 +461,7 @@ void sbbs_t::useredit(int usernumber)
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditUploads]);
-				sprintf(str,"%u",user.uls);
+				SAFEPRINTF(str,"%u",user.uls);
 				if(getstr(str,5,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
 					putuserrec(&cfg,user.number,U_ULS,5,str);
 				if(sys_status&SS_ABORT)
@@ -448,7 +473,7 @@ void sbbs_t::useredit(int usernumber)
 				if(sys_status&SS_ABORT)
 					break;
 				bputs(text[UeditDownloads]);
-				sprintf(str,"%u",user.dls);
+				SAFEPRINTF(str,"%u",user.dls);
 				if(getstr(str,5,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
 					putuserrec(&cfg,user.number,U_DLS,5,str);
 				break;
@@ -459,7 +484,8 @@ void sbbs_t::useredit(int usernumber)
 					bprintf(text[QuickValidateFmt]
 						,i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],str)
 						,ltoaf(cfg.val_exempt[i],tmp)
-						,ltoaf(cfg.val_rest[i],tmp3)); }
+						,ltoaf(cfg.val_rest[i],tmp3)); 
+				}
 				ASYNC;
 				bputs(text[QuickValidatePrompt]);
 				c=getkey(0);
@@ -479,7 +505,8 @@ void sbbs_t::useredit(int usernumber)
 					if(user.expire<now)
 						user.expire=now+((long)cfg.val_expire[i]*24L*60L*60L);
 					else
-						user.expire+=((long)cfg.val_expire[i]*24L*60L*60L); }
+						user.expire+=((long)cfg.val_expire[i]*24L*60L*60L); 
+				}
 				putuserdat(&cfg,&user);
 				break;
 			case 'W':
@@ -489,7 +516,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'X':
 				attr(LIGHTGRAY);
-				sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
+				SAFEPRINTF2(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 				printfile(str,0);
 				pause();
 				break;
@@ -500,7 +527,9 @@ void sbbs_t::useredit(int usernumber)
 					if((int)i>0) {
 						user.number=i;
 						putusername(&cfg,user.number,user.alias);
-						putuserdat(&cfg,&user); } }
+						putuserdat(&cfg,&user); 
+					} 
+				}
 				break;
 			case 'Z':
 				if(!yesno(text[ChangeRestrictsQ]))
@@ -513,9 +542,11 @@ void sbbs_t::useredit(int usernumber)
 					if(c==CR) break;
 					if(c=='?') {
 						menu("restrict");
-						continue; }
+						continue; 
+					}
 					user.rest^=FLAG(c);
-					putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,tmp,16)); }
+					putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,tmp,16)); 
+				}
 				break;
 			case '?':
 				CLS;
@@ -556,7 +587,7 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_MIN,10,ultoa(user.min,tmp,10));
 				break;
 			case '#': /* read new user questionaire */
-				sprintf(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
+				SAFEPRINTF2(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
 				if(!cfg.new_sof[0] || !fexist(str))
 					break;
 				read_sif_dat(cfg.new_sof,str);
@@ -588,9 +619,12 @@ void sbbs_t::useredit(int usernumber)
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user)) {
 							outchar(BEL);
-							break; } }
+							break; 
+						} 
+					}
 					if(!i)
-						user.number=k; }
+						user.number=k; 
+				}
 				break;
 			case '}':
 				if(stype==SEARCH_TXT)
@@ -605,9 +639,12 @@ void sbbs_t::useredit(int usernumber)
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user)) {
 							outchar(BEL);
-							break; } }
+							break; 
+						} 
+					}
 					if(i>j)
-						user.number=k; }
+						user.number=k; 
+				}
 				break;
 			case ']':
 				if(user.number==lastuser(&cfg))
@@ -641,7 +678,7 @@ int sbbs_t::searchup(char *search,int usernum)
 
 	if(!search[0])
 		return(usernum);
-	sprintf(userdat,"%suser/user.dat", cfg.data_dir);
+	SAFEPRINTF(userdat,"%suser/user.dat", cfg.data_dir);
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
 
@@ -699,7 +736,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 
 	if(!search[0])
 		return(usernum);
-	sprintf(userdat,"%suser/user.dat", cfg.data_dir);
+	SAFEPRINTF(userdat,"%suser/user.dat", cfg.data_dir);
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
 	while(i) {
@@ -754,7 +791,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			rows=user->rows;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		sprintf(str,"%s%s%s%s%s"
+		safe_snprintf(str,sizeof(str),"%s%s%s%s%s"
 							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
 							,user->misc&ANSI ? "ANSI ":"TTY "
 							,user->misc&COLOR ? "(Color) ":"(Mono) "
@@ -768,7 +805,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
 		else
-			sprintf(tmp,"Auto Detect (%ld)",rows);
+			SAFEPRINTF(tmp,"Auto Detect (%ld)",rows);
 		bprintf(text[UserDefaultsRows],tmp);
 		if(cfg.total_shells>1)
 			bprintf(text[UserDefaultsCommandSet]
@@ -805,9 +842,9 @@ void sbbs_t::maindflts(user_t* user)
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
 		if(user->prot!=' ')
-			sprintf(str,"%c",user->prot);
+			SAFEPRINTF(str,"%c",user->prot);
 		else
-			strcpy(str,"None");
+			SAFECOPY(str,"None");
 		bprintf(text[UserDefaultsProtocol],str
 			,user->misc&AUTOHANG ? "(Hang-up After Xfer)":nulstr);
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
@@ -815,7 +852,7 @@ void sbbs_t::maindflts(user_t* user)
 
 		ASYNC;
 		bputs(text[UserDefaultsWhich]);
-		strcpy(str,"HTBALPRSYFNCQXZ\r");
+		SAFECOPY(str,"HTBALPRSYFNCQXZ\r");
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			strcat(str,"W");
 		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
@@ -835,19 +872,22 @@ void sbbs_t::maindflts(user_t* user)
 				if(yesno(text[AutoTerminalQ])) {
 					user->misc|=AUTOTERM;
 					user->misc&=~(ANSI|RIP|WIP|HTML);
-					user->misc|=autoterm; }
+					user->misc|=autoterm; 
+				}
 				else
 					user->misc&=~AUTOTERM;
 				if(!(user->misc&AUTOTERM)) {
 					if(yesno(text[AnsiTerminalQ]))
 						user->misc|=ANSI;
 					else
-						user->misc&=~(ANSI|COLOR); }
+						user->misc&=~(ANSI|COLOR); 
+				}
 				if(user->misc&ANSI) {
 					if(yesno(text[ColorTerminalQ]))
 						user->misc|=COLOR;
 					else
-						user->misc&=~COLOR; }
+						user->misc&=~COLOR; 
+				}
 				if(!yesno(text[ExAsciiTerminalQ]))
 					user->misc|=NO_EXASCII;
 				else
@@ -856,7 +896,8 @@ void sbbs_t::maindflts(user_t* user)
 					if(!noyes(text[RipTerminalQ]))
 						user->misc|=RIP;
 					else
-						user->misc&=~RIP; }
+						user->misc&=~RIP; 
+				}
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'B':
@@ -866,7 +907,8 @@ void sbbs_t::maindflts(user_t* user)
 			case 'E':
 				if(noyes(text[UseExternalEditorQ])) {
 					putuserrec(&cfg,user->number,U_XEDIT,8,nulstr);
-					break; }
+					break; 
+				}
 				if(user->xedit)
 					user->xedit--;
 				for(i=0;i<cfg.total_xedits;i++)
@@ -942,7 +984,8 @@ void sbbs_t::maindflts(user_t* user)
 					bputs(text[EnterNetMailAddress]);
 					if(!getstr(user->netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE))
 						break;
-					putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); }
+					putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
+				}
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'C':
@@ -966,7 +1009,8 @@ void sbbs_t::maindflts(user_t* user)
 					if(strcmp(str,user->pass)) {
 						bputs(text[WrongPassword]);
 						pause();
-						break; }
+						break; 
+					}
 					bputs(text[NewPassword]);
 					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
 						break;
@@ -974,7 +1018,8 @@ void sbbs_t::maindflts(user_t* user)
 					if(!chkpass(str,user,false)) {
 						CRLF;
 						pause();
-						break; }
+						break; 
+					}
 					bputs(text[VerifyPassword]);
 					console|=CON_R_ECHOX;
 					getstr(tmp,LEN_PASS*2,K_UPPER);
@@ -982,17 +1027,18 @@ void sbbs_t::maindflts(user_t* user)
 					if(strcmp(str,tmp)) {
 						bputs(text[WrongPassword]);
 						pause();
-						break; }
+						break; 
+					}
 					if(!online)
 						break;
 					putuserrec(&cfg,user->number,U_PASS,LEN_PASS,str);
 					now=time(NULL);
 					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
 					bputs(text[PasswordChanged]);
-					sprintf(str,"%s changed password",useron.alias);
+					SAFEPRINTF(str,"%s changed password",useron.alias);
 					logline(nulstr,str);
 				}
-				sprintf(str,"%suser/%04u.sig",cfg.data_dir,user->number);
+				SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,user->number);
 				if(fexist(str) && yesno(text[ViewSignatureQ]))
 					printfile(str,P_NOATCODES);
 				if(!noyes(text[CreateEditSignatureQ]))
@@ -1004,15 +1050,17 @@ void sbbs_t::maindflts(user_t* user)
 				xfer_prot_menu(XFER_DOWNLOAD);
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
-				strcpy(str,"Q");
+				SAFECOPY(str,"Q");
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
-						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(str,tmp); }
+						SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
+						strcat(str,tmp); 
+					}
 				ch=(char)getkeys(str,0);
 				if(ch=='Q' || sys_status&SS_ABORT) {
 					ch=' ';
-					putuserrec(&cfg,user->number,U_PROT,1,&ch); }
+					putuserrec(&cfg,user->number,U_PROT,1,&ch); 
+				}
 				else
 					putuserrec(&cfg,user->number,U_PROT,1,&ch);
 				if(yesno(text[HangUpAfterXferQ]))
@@ -1022,7 +1070,9 @@ void sbbs_t::maindflts(user_t* user)
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			default:
-				return; } }
+				return; 
+		} 
+	}
 }
 
 void sbbs_t::purgeuser(int usernumber)
@@ -1032,7 +1082,7 @@ void sbbs_t::purgeuser(int usernumber)
 
 	user.number=usernumber;
 	getuserdat(&cfg,&user);
-	sprintf(str,"Purged %s #%u",user.alias,usernumber);
+	SAFEPRINTF2(str,"Purged %s #%u",user.alias,usernumber);
 	logentry("!*",str);
 	delallmail(usernumber);
 	putusername(&cfg,usernumber,nulstr);
