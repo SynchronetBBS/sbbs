@@ -134,6 +134,7 @@ function send_newuser_welcome_msg(fname)
 		to_ext: String(user.number), 
 		from: system.operator, 
 		from_ext: "1",
+		attr: MSG_KILLREAD,
 		subject: "Welcome to " + system.name + "!" 
 	};
 
