@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -311,6 +311,8 @@ void sbbs_t::readmail(uint usernumber, int which)
 				if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
 					if(loadmsg(&msg,msg.idx.number)) {
 						msg.hdr.attr|=MSG_READ;
+						if(msg.hdr.attr&MSG_KILLREAD)
+							msg.hdr.attr|=MSG_DELETE;
 						msg.idx.attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
 							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
