@@ -99,7 +99,7 @@ function test_ctrl(results,skip)
 				console.crlf();
 				if(retstr != '') {
 					console.writeln('FAILED!  Returned "'+retstr+'"');
-					return(false);
+					return("ENQ Response: '"+retstr+"'");
 				}
 				console.writeln("Passed");
 				return(true);
@@ -116,8 +116,19 @@ function test_ctrl(results,skip)
 			desc:"Beeps",
 			type:"control",
 			test:function(results) {
-				console.write(this.char);
-				return(console.yesno("Did your terminal beep"));
+				do {
+					var ret;
+
+					console.write(this.char);
+					ret=console.yesno("Did your terminal beep");
+					if(!ret) {
+						if(!console.yesno("Do you want to try again"))
+							return(false);
+					}
+					else {
+						return(true);
+					}
+				} while(1);
 			},
 		},
 		"BS":{
@@ -125,11 +136,43 @@ function test_ctrl(results,skip)
 			desc:"Backspace",
 			type:"control",
 			test:function(results) {
+				var ret;
+
 				console.writeln("Backspace Test");
 				console.writeln("Back     \b\b\b\b\bspace Test");
 				console.writeln("Back      Test\b\b\b\b\b\b\b\b\b\bspace");
 				console.writeln("\b\b\bBackspace Test");
-				return(console.yesno("Are the previous four lines identical"));
+				ret=console.yesno("Are the previous four lines identical");
+				if(!ret) {
+					ret='';
+
+					console.writeln("Backspace Test");
+					console.writeln("Back     \b\b\b\b\bspace Test");
+					ret=console.yesno("Are the previous two lines identical");
+					if(!ret) {
+						// Completely non-functional
+						return(false);
+					}
+					console.writeln("Backspace Test");
+					console.writeln("Back      Test\b\b\b\b\b\b\b\b\b\bspace");
+					if(!console.yesno("Are the previous two lines identical")) {
+						// Destructive
+						ret += "Destructive Backspace";
+					}
+					console.writeln("Backspace Test");
+					console.writeln("\b\b\bBackspace Test");
+					if(!console.yesno("Are the previous two lines identical")) {
+						// Wraps
+						if(ret.length)
+							ret += "\r\n";
+						ret += "Backspace Wraps";
+					}
+					if(ret=='') {
+						console.writeln("I thought you said they didn't line up!");
+						return(true);
+					}
+				}
+				return(ret);
 			},
 			source:"ECMA-48",
 		},
@@ -594,7 +637,8 @@ function test_ctrl_seqs(results)
 			char:"@",
 			test:function(results) {
 				if(results.ctrl.BS) {
-					console.writeln("InsertCharTest\b\b\b\b\033[@\b\b\b\b\033[@");
+					console.writeln("InsertCharTest\b\b\b\b\033[@\b\b\b\b\033[01@");
+					console.write("\033[99@");
 					return(console.yesno('Are there spaces in "Insert Char Test"'));
 				}
 				return(null);
@@ -608,7 +652,7 @@ function test_ctrl_seqs(results)
 				console.writeln(" \033[ALine 2");
 				console.crlf();
 				console.crlf();
-				console.writeln(" \033[2ALine 3");
+				console.writeln(" \033[02ALine 3");
 				console.writeln(" Line 4");
 				return(console.yesno('Does "Line 1" to "Line 4" line up with no gaps'));
 			},
@@ -616,7 +660,7 @@ function test_ctrl_seqs(results)
 		"CUD":{
 			char:"B",
 			test:function(results) {
-				if(results.ctrl_seqs.CUU) {
+				if(results.ctrl_seqs.CUU && results.ctrl.BS) {
 					console.crlf();
 					console.crlf();
 					console.crlf();
@@ -625,9 +669,9 @@ function test_ctrl_seqs(results)
 					console.write(" Line 1\b\b\b\b\b\b");
 					console.write("\033[BLine 2\b\b\b\b\b\b");
 					console.write("\033[1BLine 3\b\b\b\b\b\b");
-					console.write("\033[A\033[2B");
+					console.write("\033[A\033[02B");
 					console.write("Line 4");
-					console.write("\033[33B");
+					console.write("\033[99B");
 					console.writeln("\b\b\b\b\b\bLine 5");
 					return(console.yesno('Does "Line 1" to "Line 5" line up with no gaps'));
 				}
@@ -636,18 +680,71 @@ function test_ctrl_seqs(results)
 		},
 		"CUF":{
 			char:"C",
+			test:function(results) {
+				if(results.ctrl.CR) {
+					console.writeln("C\r\033[Cu\r\033[2Cr\r\033[3Cs\r\033[4Co\r\033[5Cr\r\033[7CF\r\033[8Co\r\033[9Cr\r\033[10Cw\r\033[011Ca\r\033[012Cr\r\033[13Cd");
+					console.writeln("Cursor Forward");
+					return(console.yesno("Are the two previous lines identical"));
+				}
+				return(null);
+			},
 		},
 		"CUB":{
 			char:"D",
+			test:function(results) {
+				var ret;
+
+				console.writeln("Cursor Backwards Test");
+				console.writeln("Cursor           \033[D\033[2D\033[03D\033[4DBackwards Test");
+				console.writeln("Cursor           Test\033[014DBackwards");
+				console.writeln("\033[D\033[2DCursor Backwards Test");
+				console.write("\033[99D");
+				ret=console.yesno("Are the previous four lines identical");
+				return(ret);
+			},
 		},
 		"CNL":{
+			char:"\x0a",
+			desc:"Cursor Next Line",
+			test:function(results) {
+				if(results.ctrl_seqs.CUU) {
+					console.writeln("Cursor Next Line Test\033[ECursor Next Line Test\033[A\033[2ECursor Next Line Test");
+					return(console.yesno("Are the previous three lines identical"));
+				}
+				return(null);
+			},
 			char:"E",
 		},
 		"CPL":{
 			char:"F",
+			desc:"Cursor Preceding Line",
+			test:function(results) {
+				if(results.ctrl.LF) {
+					console.crlf();
+					console.crlf();
+					console.crlf();
+					console.write("\033[3F");
+					console.writeln(" Line 1\n\n");
+					console.writeln("\033[2F Line 2");
+					console.crlf();
+					console.writeln("\033[F Line 3");
+					return(console.yesno('Does "Line 1" to "Line 3" line up with no gaps'));
+				}
+			}
 		},
 		"CHA":{
 			char:"G",
+			test:function(results) {
+				var ret;
+
+				console.writeln("Cursor Character Absolute Test");
+				console.writeln("Cursor           \033[8GCharacter Absolute Test");
+				console.write("Cursor           Absolute Test\033[08GCharacter\n");
+				console.writeln("\033[GCursor Character Absolute Test");
+				console.write("\033[99G\033[0G");
+				ret=console.yesno("Are the previous four lines identical");
+				return(ret);
+			},
 		},
 		"CUP":{
 			char:"H",
