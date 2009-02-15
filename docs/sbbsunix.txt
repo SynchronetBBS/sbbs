@@ -217,11 +217,9 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    *> If your system already has the JavaScript library, skip ahead to step 2.
 
    E. Get the required JavaScript library for your platform and build type:
-      # cvs co lib/mozilla/js/linux.debug
-      or:
       # cvs co lib/mozilla/js/linux.release
       or:
-      # cvs co lib/mozilla/js/freebsd.debug
+      # cvs co lib/mozilla/js/freebsd.release
       etc.
       Note: If you want to get the full source code to the Mozilla JavaScript
             library to build it yourself, the cvs repository is:
@@ -229,18 +227,16 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
             the module name is mozilla/js/src.
 
    F. Get the required NSPR library for your platform and build type:
-      # cvs co lib/mozilla/nspr/linux.debug
-      or:
       # cvs co lib/mozilla/nspr/linux.release
       or:
-      # cvs co lib/mozilla/nspr/freebsd.debug
+      # cvs co lib/mozilla/nspr/freebsd.release
       etc.
       Note: This step is not necessary if your system already has the file
             /usr/lib/libnspr4.so
 
    G. Create symbolic links to the Mozilla Libraries (JavaScript and NSPR) in 
       your /usr/lib directory:
-      # ln -s /sbbs/lib/mozilla/*/linux.debug/*.so /usr/lib
+      # ln -s /sbbs/lib/mozilla/*/linux.release/*.so /usr/lib
 
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
@@ -255,7 +251,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    I. Create symbolic links to the Cryptlib Library in your /usr/lib
       directory:
-      # ln -s /sbbs/lib/cryptlib/linux.debug/*.so /usr/lib
+      # ln -s /sbbs/lib/cryptlib/linux.release/*.so /usr/lib
 
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
@@ -274,7 +270,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       # cd /sbbs/src/sbbs3
 
    B. Build the main executable (and utilities):
-      # gmake
+      # gmake RELEASE=1
       NOTES:
       1: If you're linking with /usr/lib/libmozjs.so, don't forget to add
          "JSLIB=mozjs" to the gmake command-line
@@ -290,11 +286,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
          If you'd like a verifiably-buildable source code base, either
          download one of the source code archives (e.g. sbbs_src.tgz) or
          use a release label (tag) when checking out files from CVS.
-      6: By default, this will build DEBUG binaries which will be larger,
-         slower, and consume more resources than a RELEASE build.  If you
-         wish a RELEASE build, add "RELEASE=1" to the gmake command-line.
-         This will make it more difficult to send us usefull error reports
-         though.
+      6: By default, this will build RELEASE binaries which will be smaller,
+         faster, and consume less resources than a DEBUG build.  If you
+         wish a DEBUG build, remove "RELEASE=1" from the gmake command-line.
+         This will allow you to send us more useful error reports.
 
    C. Change to the src/sbbs3/scfg directory:
       # cd /sbbs/src/sbbs3/scfg
@@ -314,28 +309,28 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       # cd /sbbs/exec
 
    B. Copy (or create symbolic links to) the following files:
-      ../src/sbbs3/gcc.linux.exe.debug/*
-      ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg*
+      ../src/sbbs3/gcc.linux.exe.release/*
+      ../src/sbbs3/scfg/gcc.linux.exe.release/scfg*
       (the paths will be different for other platforms or release builds)
 
       Example:
-      # ln -s ../src/sbbs3/gcc.linux.exe.debug/* /sbbs/exec
-      # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* /sbbs/exec
+      # ln -s ../src/sbbs3/gcc.linux.exe.release/* /sbbs/exec
+      # ln -s ../src/sbbs3/scfg/gcc.linux.exe.release/scfg* /sbbs/exec
 
    C. Copy (or create symbolic links to) the following shared libraries:
-      ../src/sbbs3/gcc.linux.lib.debug/*
+      ../src/sbbs3/gcc.linux.lib.release/*
       (the path will be different for other platforms or release builds)
 
       Example:
-      # ln -s ../src/sbbs3/gcc.linux.lib.debug/* /sbbs/exec
+      # ln -s ../src/sbbs3/gcc.linux.lib.release/* /sbbs/exec
 
       Note: Another option is to create the symbolic links in your /usr/lib
             directory (note the trailing dot):
-            # ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so /usr/lib
+            # ln -s /sbbs/src/sbbs3/gcc.linux.lib.release/*.so /usr/lib
 
         OR: set the LD_LIBRARY_PATH environment variable to point to your 
             gcc.<os>.lib.<build> directory:
-            # export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
+            # export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.release
 
    D. Build the required Baja {tm} modules (exec/*.bin):
       # gmake
