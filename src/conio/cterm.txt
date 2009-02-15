@@ -313,6 +313,13 @@ CSI [ p1 ] F
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI [ p1 ] G
+	Cursor Character Absolute
+	Defaults: p1 = 1
+	Movies the cursor to column p1 of the current row.
+	
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI [ p1 [ ; p2 ] ] H
 CSI [ p1 [ ; p2 ] ] f
 	Cusror Position
