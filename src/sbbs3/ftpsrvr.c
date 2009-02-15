@@ -4074,7 +4074,7 @@ static void ctrl_thread(void* arg)
 						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 				} else {
-					if(fexist(fname)) {
+					if(fexistcase(fname)) {
 						success=TRUE;
 						if(!getsize && !getdate && !delecmd)
 							lprintf(LOG_INFO,"%04d %s downloading: %s (%lu bytes) in %s mode"
@@ -4098,7 +4098,7 @@ static void ctrl_thread(void* arg)
 					,1900+tm.tm_year,tm.tm_mon+1,tm.tm_mday
 					,tm.tm_hour,tm.tm_min,tm.tm_sec);
 			} else if(delecmd && success) {
-				if(remove(fname)!=0) {
+				if(removecase(fname)!=0) {
 					lprintf(LOG_ERR,"%04d !ERROR %d deleting %s",sock,errno,fname);
 					sockprintf(sock,"450 %s could not be deleted (error: %d)"
 						,fname,errno);
