@@ -140,6 +140,11 @@ A. Yes, you'll need to use chcon on each of the shared objects (.so files)
    chcon -t texrel_shlib_t /path/to/libwhatever.so
    Do this for each .so file that Synchronet creates.
 
+Q. How much disk space do I need?
+A. A fresh install (as of Feb-2009) requires about 70MBytes.
+   Much of the space consumed is in the form of intermediate build files which
+   may be removed after the build is complete if space is a concern.
+
 
 Quick Install/Configure/Run Instructions
 ========================================
@@ -156,7 +161,31 @@ Note: Type each of the following commands at a Unix shell prompt.
 # /sbbs/exec/sbbs
 
 If you have any problem with these commands, see the detailed step-by-step
-instructions below:
+instructions below.
+
+
+Non-CVS Install/Configure/Run Instructions for Linux-x86 only
+=============================================================
+# mkdir /sbbs
+# cd /sbbs
+# wget ftp://vert.synchro.net/Synchronet/sbbs_src.tgz
+# wget ftp://vert.synchro.net/Synchronet/sbbs_run.tgz
+# tar -xzf sbbs_src.tgz
+# tar -xzf sbbs_run.tgz
+# ln -s /sbbs/lib/cryptlib/linux.release/*.so /usr/lib
+# cd /sbbs/src/sbbs3; gmake RELEASE=1
+# cd /sbbs/src/sbbs3/scfg; gmake RELEASE=1
+# cd /sbbs/xtrn/sbj; gmake
+# cd /sbbs/xtrn/sbl; gmake
+# cd /sbbs/exec
+# ln -s ../src/sbbs3/gcc.linux.exe.release/* .
+# ln -s ../src/sbbs3/scfg/gcc.linux.exe.release/scfg* .
+# gmake
+# ./scfg
+# ./sbbs
+
+If you have any problem with these commands, see the detailed step-by-step
+instructions below.
 
 
 Step-by-step Instructions
