@@ -523,6 +523,9 @@ size_t DLLCALL strip_invalid_attr(char *str)
 			if(str[c+1]==0)
 				break;
 			if(!valid_ctrl_a_attr(str[c+1])) {
+				/* convert non-destructive backspace to a destructive backspace */
+				if(str[c+1]=='<' && d)	
+					d--;
 				c++;
 				continue; 
 			}
