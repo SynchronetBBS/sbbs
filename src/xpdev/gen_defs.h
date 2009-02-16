@@ -97,7 +97,7 @@
 #define CR		'\r'				/* Carriage return			^M	*/
 #endif
 
-
+#ifndef CTRL_A
 enum {
 	 CTRL_A=1
 	,CTRL_B
@@ -126,6 +126,7 @@ enum {
 	,CTRL_Y
 	,CTRL_Z
 };
+#endif
 
 /* Unsigned type short-hands	*/
 #ifndef uchar
