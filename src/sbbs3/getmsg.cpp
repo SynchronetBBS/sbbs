@@ -223,6 +223,7 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 
 	buf=smb_getmsgtxt(&smb,msg,tails);
 	if(buf!=NULL) {
+		strip_invalid_attr(buf);
 		fputs(buf,out);
 		smb_freemsgtxt(buf); 
 	} else if(smb_getmsgdatlen(msg)>2)
