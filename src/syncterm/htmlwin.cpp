@@ -58,10 +58,10 @@ public:
 
 protected:
 	wxHtmlOpeningStatus OnOpeningURL(wxHtmlURLType type,const wxString& url, wxString *redirect) const;
-	void MyHTML::OnKeyDown(wxKeyEvent& event);
-	void MyHTML::OnUpdate(wxCommandEvent &event);
-	void MyHTML::OnState(wxCommandEvent &event);
-	void MyHTML::UnHide(void);
+	void OnKeyDown(wxKeyEvent& event);
+	void OnUpdate(wxCommandEvent &event);
+	void OnState(wxCommandEvent &event);
+	void UnHide(void);
 
 	DECLARE_EVENT_TABLE()
 };
@@ -232,7 +232,7 @@ class MyFrame: public wxFrame
 public:
 	MyFrame(wxWindow * parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style);
 private:
-	void MyFrame::OnCloseWindow(wxCloseEvent& event);
+	void OnCloseWindow(wxCloseEvent& event);
 
 	DECLARE_EVENT_TABLE()
 };
@@ -284,8 +284,8 @@ void html_thread(void *args)
 	char *argv[2];
 
 	html_thread_running=true;
-	argv[0]="wxHTML";
-	argv[1]="--sync";
+	argv[0]=(char *)"wxHTML";
+	argv[1]=(char *)"--sync";
 	wxEntry(argc, argv);
 	if(wxTheApp) {
 		wxTheApp->OnExit();
