@@ -506,7 +506,7 @@ char *sdl_getcliptext(void)
 				strcpy(ret,sdl_pastebuf);
 		}
 		else
-			retNULL;
+			ret=NULL;
 		sdl.SemPost(sdl_pastebuf_copied);
 		return(ret);
 
