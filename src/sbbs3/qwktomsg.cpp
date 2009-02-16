@@ -346,7 +346,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			if(!fromhub && qwkbuf[k]==BEL && useron.rest&FLAG('B'))   
 				continue;
 			/* ANSI restriction */
-			if(!fromhub && (qwkbuf[k]==1 || qwkbuf[k]==ESC)
+			if(!fromhub && (qwkbuf[k]==CTRL_A || qwkbuf[k]==ESC)
 				&& useron.rest&FLAG('A'))
 				continue;
 			if(qwkbuf[k]!=1 && lastch!=1)
