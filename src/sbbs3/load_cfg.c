@@ -48,10 +48,12 @@ int 	lprintf(int level, const char *fmt, ...);	/* log output */
 /****************************************************************************/
 BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 {
-	char	str[256],fname[13];
 	int		i;
 	long	line=0L;
+#ifdef SBBS
 	FILE 	*instream;
+	char	str[256],fname[13];
+#endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
 		sprintf(error,"cfg->size (%ld) != sizeof(scfg_t) (%d)"

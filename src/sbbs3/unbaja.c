@@ -247,7 +247,7 @@ char* bruteforce(unsigned long name)
 	int	counter=0;
 	unsigned char	*pos;
 	size_t	l=0;
-	size_t	i,j;
+	size_t	i;
 
 	if(!brute_len)
 		return(NULL);
