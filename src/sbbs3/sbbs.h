@@ -867,7 +867,8 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL prep_file_desc(const char *str, char* dest);
 	DLLEXPORT char *	DLLCALL strip_ctrl(const char *str, char* dest);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
-	DLLEXPORT BOOL		DLLCALL validattr(char a);
+	DLLEXPORT BOOL		DLLCALL valid_ctrl_a_attr(char a);
+	DLLEXPORT BOOL		DLLCALL valid_ctrl_a_code(char a);
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
 	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
 	DLLEXPORT char *	DLLCALL rot13(char* str);

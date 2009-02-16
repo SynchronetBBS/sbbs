@@ -443,9 +443,9 @@ uint hptoi(const char *str)
 }
 
 /****************************************************************************/
-/* Returns 1 if a is a valid ctrl-a "attribute" code, 0 if it isn't.        */
+/* Returns TRUE if a is a valid ctrl-a "attribute" code, FALSE if it isn't. */
 /****************************************************************************/
-BOOL DLLCALL validattr(char a)
+BOOL DLLCALL valid_ctrl_a_attr(char a)
 {
 	switch(toupper(a)) {
 		case '+':	/* push attr	*/
@@ -473,6 +473,20 @@ BOOL DLLCALL validattr(char a)
 			return(TRUE); 
 	}
 	return(FALSE);
+}
+
+/****************************************************************************/
+/* Returns TRUE if a is a valid QWKnet compatible Ctrl-A code, else FALSE	*/
+/****************************************************************************/
+BOOL DLLCALL valid_ctrl_a_code(char a)
+{
+	switch(toupper(a)) {
+		case 'P':		/* Pause */
+		case 'L':		/* CLS */
+		case ',':		/* 100ms delay */
+			return TRUE;
+	}
+	return valid_ctrl_a_attr(a);
 }
 
 /****************************************************************************/
@@ -508,7 +522,7 @@ size_t DLLCALL strip_invalid_attr(char *str)
 			a++;
 			if(str[c+1]==0)
 				break;
-			if(!validattr(str[c+1])) {
+			if(!valid_ctrl_a_attr(str[c+1])) {
 				c++;
 				continue; 
 			}

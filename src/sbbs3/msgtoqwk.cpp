@@ -391,7 +391,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 					size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
 				continue; 
 			} 						/* End Expand */
-			if(mode&A_LEAVE) {
+			if(mode&A_LEAVE && valid_ctrl_a_code(ch)) {
 				fputc(CTRL_A,qwk_fp);
 				fputc(ch,qwk_fp);
 				size+=2L; 

@@ -351,7 +351,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 				continue;
 			if(qwkbuf[k]!=1 && lastch!=1)
 				col++;
-			if(lastch==CTRL_A && !validattr(qwkbuf[k])) {
+			if(lastch==CTRL_A && !valid_ctrl_a_code(qwkbuf[k])) {
 				if(taillen) taillen--;
 				else		bodylen--;
 				lastch=0;
