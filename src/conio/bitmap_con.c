@@ -59,6 +59,15 @@ struct rectangle {
 
 static int update_rect(int sx, int sy, int width, int height, int force);
 
+static __inline void *locked_screen_check(void)
+{
+	void *ret;
+	pthread_mutex_lock(&screenlock);
+	ret=screen;
+	pthread_mutex_unlock(&screenlock);
+	return(ret);
+}
+
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
@@ -67,7 +76,7 @@ static void blinker_thread(void *data)
 	while(1) {
 		do {
 			SLEEP(10);
-		} while(screen==NULL);
+		} while(locked_screen_check()==NULL);
 		count++;
 		pthread_mutex_lock(&vstatlock);
 		if(count==50) {
