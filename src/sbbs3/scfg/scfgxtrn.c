@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,6 +40,26 @@
 
 char *daystr(char days);
 static void hotkey_cfg(void);
+
+static char* monthstr(uint16_t months)
+{
+	int		i;
+	static	char str[256];
+
+	if(months==0)
+		return("Any");
+
+	str[0]=0;
+	for(i=0;i<12;i++) {
+		if((months&(1<<i))==0)
+			continue;
+		if(str[0])
+			strcat(str," ");
+		strcat(str,mon[i]);
+	}
+	
+	return(str);
+}
 
 static char* mdaystr(long mdays)
 {
@@ -362,6 +382,8 @@ This is the internal code for the timed event.
 		sprintf(opt[k++],"%-32.32s%s","Enabled"
 			,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
 		sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
+		sprintf(opt[k++],"%-32.32s%s","Execution Months"
+			,monthstr(cfg.event[i]->months));
 		sprintf(opt[k++],"%-32.32s%s","Execution Days of Month"
 			,mdaystr(cfg.event[i]->mdays));
 		sprintf(opt[k++],"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
@@ -488,6 +510,34 @@ This is the node number to execute the timed event.
 			case 5:
 				SETHELP(WHERE);
 /*
+`Months to Execute Event:`
+
+Specifies the months (`Jan`-`Dec`, separated by spaces) on which 
+to execute this event, or `Any` to execute event for any/all months.
+*/
+				SAFECOPY(str,monthstr(cfg.event[i]->months));
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Months to Execute Event (or Any)"
+					,str,50,K_EDIT);
+				cfg.event[i]->months=0;
+				for(p=str;*p;p++) {
+					if(atoi(p)) {
+						cfg.event[i]->months|=(1<<(atoi(p)-1));
+						while(*p && isdigit(*p))
+							p++;
+					} else {
+						for(j=0;j<12;j++)
+							if(strnicmp(mon[j],p,3)==0) {
+								cfg.event[i]->months|=(1<<j);
+								p+=2;
+								break;
+							}
+						p++;
+					}
+				}
+				break;
+			case 6:
+				SETHELP(WHERE);
+/*
 `Days of Month to Execute Event:`
 
 Specifies the days of the month (`1-31`, separated by spaces) on which 
@@ -506,7 +556,7 @@ the month.
 						p++;
 				}
 				break;
-			case 6:
+			case 7:
 				j=0;
 				while(1) {
 					for(k=0;k<7;k++)
@@ -534,7 +584,7 @@ These are the days of the week that this event will be executed.
 					uifc.changes=1; 
 				}
 				break;
-			case 7:
+			case 8:
                 if(cfg.event[i]->freq==0)
                     k=0;
                 else
@@ -591,7 +641,7 @@ per day.
                         }
                     }
                 break;
-			case 8:
+			case 9:
 				k=cfg.event[i]->misc&EVENT_EXCL ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -612,7 +662,7 @@ option to Yes.
 					cfg.event[i]->misc&=~EVENT_EXCL;
 					uifc.changes=1; }
                 break;
-			case 9:
+			case 10:
 				k=cfg.event[i]->misc&EVENT_FORCE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -634,7 +684,7 @@ execute precisely on time, set this option to Yes.
                     uifc.changes=1; }
                 break;
 
-			case 10:
+			case 11:
 				k=cfg.event[i]->misc&EX_NATIVE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -658,7 +708,7 @@ set this option to Yes.
                 }
                 break;
 
-			case 11:
+			case 12:
 				k=cfg.event[i]->misc&XTRN_SH ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -682,7 +732,7 @@ shell script or DOS batch file), set this option to ~Yes~.
                 }
                 break;
 
-			case 12:
+			case 13:
 				k=cfg.event[i]->misc&EX_BG ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -706,7 +756,7 @@ set this option to Yes. Exclusive events will not run in the background.
                 }
                 break;
 
-			case 13:
+			case 14:
 				k=cfg.event[i]->misc&EVENT_INIT ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");

@@ -436,6 +436,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 			return(NULL);
 
+		if(!JS_DefineProperty(cx, eventobj, "months", INT_TO_JSVAL(cfg->event[l]->months)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			return(NULL);
+
 		if(!JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(cfg->event[l]->last)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 			return(NULL);

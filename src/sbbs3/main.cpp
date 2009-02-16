@@ -2576,7 +2576,9 @@ void event_thread(void* arg)
 				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday)
 				&& (sbbs->cfg.event[i]->mdays==0 
-					|| sbbs->cfg.event[i]->mdays&(1<<now_tm.tm_mday)))) 
+					|| sbbs->cfg.event[i]->mdays&(1<<now_tm.tm_mday))
+				&& (sbbs->cfg.event[i]->months==0
+					|| sbbs->cfg.event[i]->months&(1<<now_tm.tm_mon)))) 
 			{
 				if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 

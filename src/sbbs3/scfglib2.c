@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -593,8 +593,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->event[i]->dir,instream);
 		get_int(cfg->event[i]->freq,instream);
 		get_int(cfg->event[i]->mdays,instream);
+		get_int(cfg->event[i]->months,instream);
 
-		for(j=0;j<5;j++)
+		for(j=0;j<4;j++)
 			get_int(n,instream);
 	}
 	cfg->total_events=i;

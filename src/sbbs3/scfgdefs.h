@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -289,16 +289,17 @@ typedef struct {						/* External Editors */
 
 
 typedef struct {						/* Generic Timed Event */
-	char	code[LEN_CODE+1],			/* Internal code */
-			days,						/* week days to run event */
-			dir[LEN_DIR+1], 			/* Start-up directory */
-			cmd[LEN_CMD+1]; 			/* Command line */
-	uint16_t	node,						/* Node to execute event */
-			time,						/* Time to run event */
-			freq;						/* Frequency to run event */
-	uint32_t	misc,						/* Misc bits */
-			mdays;						/* days of month (if non-zero) to run event */
-	time32_t	last;						/* Last time event ran */
+	char		code[LEN_CODE+1],		/* Internal code */
+				days,					/* Week days to run event */
+				dir[LEN_DIR+1], 		/* Start-up directory */
+				cmd[LEN_CMD+1]; 		/* Command line */
+	uint16_t	node,					/* Node to execute event */
+				time,					/* Time to run event */
+				freq;					/* Frequency to run event */
+	uint32_t	misc,					/* Misc bits */
+				mdays;					/* Days of month (if non-zero) to run event */
+	uint16_t	months;					/* Months (if non-zero) to run event */
+	time32_t	last;					/* Last time event ran */
 
 } event_t;
 
