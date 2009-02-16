@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1233,20 +1233,8 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL r
 	smb_unlockmsghdr(&(p->smb), msg); 
 	smb_freemsgmem(msg);
 
-	if(strip_ctrl_a) {
-		char* newbuf;
-		if((newbuf=malloc(strlen(buf)+1))!=NULL) {
-			int i,j;
-			for(i=j=0;buf[i];i++) {
-				if(buf[i]==CTRL_A && buf[i+1]!=0)
-					i++;
-				else newbuf[j++]=buf[i]; 
-			}
-			newbuf[j]=0;
-			strcpy(buf,newbuf);
-			free(newbuf);
-		}
-	}
+	if(strip_ctrl_a)
+		remove_ctrl_a(buf, buf);
 
 	if(rfc822) {	/* must escape lines starting with dot ('.') */
 		char* newbuf;
