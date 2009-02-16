@@ -102,7 +102,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 			continue; 
 		}
 		/* Strip FidoNet Kludge Lines? */
-		if(buf[l]==1 && useron.xedit
+		if(buf[l]==CTRL_A && useron.xedit
 			&& cfg.xedit[useron.xedit-1]->misc&STRIPKLUDGE) {
 			while(buf[l] && buf[l]!=LF) 
 				l++;
@@ -539,12 +539,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 /****************************************************************************/
 void quotestr(char *str)
 {
-	int j;
-
-	j=strlen(str);
-	while(j && (str[j-1]==' ' || str[j-1]==LF || str[j-1]==CR)) j--;
-	str[j]=0;
-	remove_ctrl_a(str,NULL);
+	truncsp(str);
+	remove_ctrl_a(str,str);
 }
 
 /****************************************************************************/
