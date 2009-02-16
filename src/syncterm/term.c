@@ -2264,7 +2264,7 @@ BOOL doterm(struct bbslist *bbs)
 				break;
 			}
 		}
-		if(updated && sleep) {
+		if(updated) {
 			hold_update=FALSE;
 			gotoxy(wherex(), wherey());
 		}
