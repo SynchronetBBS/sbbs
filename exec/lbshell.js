@@ -583,7 +583,6 @@ var mainbar=new Mainbar;
 
 draw_main(true);
 var next_key='';
-console.abortable=false;
 while(bbs.online) {
 	var done=0;
 	var key=next_key;
