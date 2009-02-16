@@ -1169,7 +1169,8 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				j+=sprintf(tmpbuf+j,"&gt;");
 				break;
 			case '\b':
-				j--;
+				if(j)
+					j--;
 				break;
 			default:
 				if(inbuf[i]&0x80) {
