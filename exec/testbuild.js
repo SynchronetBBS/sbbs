@@ -30,15 +30,21 @@ var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\
 var build_output = "build_output.txt";
 var archive;
 var archive_cmd;
+var lib;
+var lib_cmd;
 var cleanup;
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
 	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
+	lib="lib-win32.zip";
+	lib_cmd="pkzip25 -add -dir -max " + lib;
 	cleanup="rmdir /s /q ";
 } else {
 	archive="sbbs_src.tgz";
 	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
+	lib="lib-" + platform + ".tgz";
+	lib_cmd="tar -czvf " + lib + " *";
 	cleanup="rm -r -f "
 }
 
@@ -48,6 +54,7 @@ var builds
 		[""					,"cvs co lib-"+platform+".debug"	,"2> " + build_output],
 		[""					,"cvs co lib-"+platform+".release"	,"2> " + build_output],
 		[""					,archive_cmd						,"2> " + build_output],
+		["lib"				,lib_cmd							,"2> " + build_output],
 		["src/sbbs3"		,make + " DEBUG=1"					,"2> " + build_output],
 		["src/sbbs3"		,make + " RELEASE=1"				,"2> " + build_output],
 		["src/sbbs3/scfg"	,make + " DEBUG=1"					,"2> " + build_output],
@@ -175,6 +182,11 @@ var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+
+dest = file_area.dir["sbbs"].path+lib;
+log(LOG_INFO,format("Copying %s to %s",lib,dest));
+if(!file_copy(lib,dest))
+	log(LOG_ERR,format("!ERROR copying %s to %s",lib,dest));
 
 if(platform=="win32") {
 
