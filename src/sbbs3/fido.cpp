@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -34,6 +34,9 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
+
+/* TODO: This file is made up almost *entirely* of copy/pasted crap and		*/
+/* it needs to go away - FTN netmail should be handled by sbbsecho anyway.	*/
 
 #include "sbbs.h"
 #include "qwk.h"
@@ -326,25 +329,32 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		pt_zone_kludge(hdr,fido);
 
 		if(cfg.netmail_misc&NMAIL_DIRECT) {
-			sprintf(str,"\1FLAGS DIR\r\n");
+			SAFECOPY(str,"\1FLAGS DIR\r\n");
 			write(fido,str,strlen(str)); }
 		if(mode&WM_FILE) {
-			sprintf(str,"\1FLAGS KFS\r\n");
+			SAFECOPY(str,"\1FLAGS KFS\r\n");
 			write(fido,str,strlen(str)); }
 
 		if(cc_sent) {
-			sprintf(str,"* Originally to: %s\r\n\r\n",into);
+			SAFEPRINTF(str,"* Originally to: %s\r\n\r\n",into);
 			write(fido,str,strlen(str)); }
 
 		l=0L;
 		while(l<length) {
-			if(buf[l]==CTRL_A)	/* Ctrl-A, so skip it and the next char */
+			if(buf[l]==CTRL_A) {		/* Ctrl-A, so skip it and the next char */
 				l++;
+				if(l>=length || toupper(buf[l])=='Z')	/* EOF */
+					break;
+				if((ch=ctrl_a_to_ascii_char(buf[l])) != 0)
+					write(fido,&ch,1);
+			}
 			else if(buf[l]!=LF) {
 				if((uchar)buf[l]==0x8d)   /* r0dent i converted to normal i */
 					buf[l]='i';
-				write(fido,buf+l,1); }
-			l++; }
+				write(fido,buf+l,1); 
+			}
+			l++; 
+		}
 		l=0;
 		write(fido,&l,1);	/* Null terminator */
 		close(fido);
@@ -863,14 +873,22 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		while(l<n*QWK_BLOCK_LEN && qwkbuf[l]!=QWK_NEWLINE) l++;
 		l++; }
 
-	while(l<n*QWK_BLOCK_LEN) {
-		if(qwkbuf[l]==CTRL_A)   /* Ctrl-A, so skip it and the next char */
+	length=n*QWK_BLOCK_LEN;
+	while(l<length) {
+		if(qwkbuf[l]==CTRL_A) {   /* Ctrl-A, so skip it and the next char */
 			l++;
+			if(l>=length || toupper(qwkbuf[l])=='Z')	/* EOF */
+				break;
+			if((ch=ctrl_a_to_ascii_char(qwkbuf[l])) != 0)
+				write(fido,&ch,1);
+		}
 		else if(qwkbuf[l]!=LF) {
 			if(qwkbuf[l]==QWK_NEWLINE) /* QWK cr/lf char converted to hard CR */
 				qwkbuf[l]=CR;
-			write(fido,(char *)qwkbuf+l,1); }
-		l++; }
+			write(fido,(char *)qwkbuf+l,1); 
+		}
+		l++;
+	}
 	l=0;
 	write(fido,&l,1);	/* Null terminator */
 	close(fido);

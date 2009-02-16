@@ -642,10 +642,7 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
-	if((buf=strdup(p))==NULL)
-		return(JS_FALSE);
-
-	strip_ctrl(buf);
+	buf=strip_ctrl(p, NULL);
 
 	js_str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
@@ -669,10 +666,7 @@ js_strip_exascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	if((p=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
-	if((buf=strdup(p))==NULL)
-		return(JS_FALSE);
-
-	strip_exascii(buf);
+	buf=strip_exascii(p, NULL);
 
 	js_str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
@@ -1201,7 +1195,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						esccount++;
 						tmpbuf[j++]=inbuf[i];
 					}
-					else if(ctrl_a && inbuf[i]==1)
+					else if(ctrl_a && inbuf[i]==CTRL_A)
 					{
 						esccount++;
 						tmpbuf[j++]=inbuf[i];
@@ -1590,7 +1584,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						break;
 					case ']':
 						currrow++;
-						if(hpos!=0 && tmpbuf[i+2]!=CR && !(tmpbuf[i+2]==1 && tmpbuf[i+3]=='['))
+						if(hpos!=0 && tmpbuf[i+2]!=CR && !(tmpbuf[i+2]==CTRL_A && tmpbuf[i+3]=='['))
 						{
 							outbuf[j++]='\r';
 							outbuf[j++]='\n';

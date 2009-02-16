@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -43,30 +43,6 @@
 
 #include "sbbs.h"
 
-/***************************************************/
-/* Seven bit table for EXASCII to ASCII conversion */
-/***************************************************/
-static const char *sbtbl="CUeaaaaceeeiiiAAEaAooouuyOUcLYRfaiounNao?--24!<>"
-			"###||||++||++++++--|-+||++--|-+----++++++++##[]#"
-			"abrpEout*ono%0ENE+><rj%=o..+n2* ";
-
-/****************************************************************************/
-/* Convert string from IBM extended ASCII to just ASCII						*/
-/****************************************************************************/
-char* DLLCALL ascii_str(uchar* str)
-{
-	size_t i;
-
-	for(i=0;str[i];i++)
-		if(str[i]&0x80)
-			str[i]=sbtbl[str[i]^0x80];  /* seven bit table */
-		else if(str[i]==CTRL_A	        /* ctrl-a */
-			&& str[i+1]!=0)				/* valid */
-			i++;						/* skip the attribute code */
-
-	return((char*)str);
-}
-
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
 /* Handles ctrl-a characters                                                */
@@ -80,10 +56,11 @@ int sbbs_t::bputs(const char *str)
 		return(eprintf(LOG_INFO,"%s",str));
 
 	while(str[l]) {
-		if(str[l]==CTRL_A	        /* ctrl-a */
-			&& str[l+1]!=0) {		/* valid */
-			ctrl_a(str[++l]);       /* skip the ctrl-a */
-			l++;					/* skip the attribute code */
+		if(str[l]==CTRL_A && str[l+1]!=0) {
+			l++;
+			if(toupper(str[l])=='Z')	/* EOF */
+				break;
+			ctrl_a(str[l++]);
 			continue; 
 		}
 		if(str[l]=='@') {           /* '@' */
@@ -211,7 +188,7 @@ void sbbs_t::outchar(char ch)
 	else
 		outchar_esc=0;
 	if(term_supports(NO_EXASCII) && ch&0x80)
-		ch=sbtbl[(uchar)ch^0x80];  /* seven bit table */
+		ch=exascii_to_ascii_char(ch);  /* seven bit table */
 	if(ch==FF && lncntr>1 && !tos) {
 		lncntr=0;
 		CRLF;

@@ -268,7 +268,7 @@ bool sbbs_t::answer()
 	strcpy(str,VERSION_NOTICE);
 	strcat(str,"  ");
 	strcat(str,COPYRIGHT_NOTICE);
-	strip_ctrl(str);
+	strip_ctrl(str, str);
 	center(str);
 
 	while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */

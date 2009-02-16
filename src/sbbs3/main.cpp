@@ -189,7 +189,7 @@ int eprintf(int level, const char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-	strip_ctrl(sbuf);
+	strip_ctrl(sbuf, sbuf);
     return(startup->event_lputs(startup->event_cbdata,level,sbuf));
 }
 

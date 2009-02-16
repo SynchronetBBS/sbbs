@@ -1794,8 +1794,8 @@ static void receive_thread(void* arg)
 						ext[i]=0;
 						if(!f.desc[0]) {			/* use for normal description */
 							SAFECOPY(desc,ext);
-							strip_exascii(desc);	/* strip extended ASCII chars */
-							prep_file_desc(desc);	/* strip control chars and dupe chars */
+							strip_exascii(desc, desc);	/* strip extended ASCII chars */
+							prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
 							for(i=0;desc[i];i++)	/* find approprate first char */
 								if(isalnum(desc[i]))
 									break;

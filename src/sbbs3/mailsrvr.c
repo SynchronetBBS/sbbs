@@ -549,15 +549,6 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 
 	/* MESSAGE BODY */
 	lines=0;
-#if 0	/* This is now handled in smb_getmsgtxt() */
-    for(i=0;i<msg->total_hfields;i++) {			/* delivery failure notification? */
-		if(msg->hfield[i].type==SMTPSYSMSG || msg->hfield[i].type==SMB_COMMENT) { 
-			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
-				return(0);
-			lines++;
-		}
-    }
-#endif
 	p=msgtxt;
 	while(*p && lines<maxlines) {
 		tp=strchr(p,'\n');
@@ -1139,6 +1130,8 @@ static void pop3_thread(void* arg)
 					sockprintf(socket,"-ERR retrieving message text");
 					continue;
 				}
+
+				remove_ctrl_a(msgtxt, msgtxt);
 
 				if(lines > 0					/* Works around BlackBerry mail server */
 					&& lines >= strlen(msgtxt))	/* which requests the number of bytes (instead of lines) using TOP */
@@ -2906,7 +2899,7 @@ static void smtp_thread(void* arg)
 			hdr_lines++;
 			continue;
 		}
-		strip_ctrl(buf);
+		strip_ctrl(buf, buf);
 		lprintf(LOG_DEBUG,"%04d SMTP RX: %s", socket, buf);
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
@@ -3975,6 +3968,8 @@ static void sendmail_thread(void* arg)
 				lprintf(LOG_ERR,"0000 !SEND ERROR (%s) retrieving message text",smb.last_error);
 				continue;
 			}
+
+			remove_ctrl_a(msgtxt, msgtxt);
 
 			port=0;
 
