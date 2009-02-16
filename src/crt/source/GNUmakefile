@@ -1,4 +1,4 @@
-SRC_ROOT	:=	/synchronet/src/src
+SRC_ROOT	:=	../..
 include ${SRC_ROOT}/build/Common.gmake
 
 CFLAGS  +=      $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
