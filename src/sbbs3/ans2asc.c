@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -77,6 +77,7 @@ int main(int argc, char **argv)
 	while((ch=fgetc(in))!=EOF) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
 			ni=0;				/* zero number index */
+			memset(n,1,sizeof(n));
 			while((ch=fgetc(in))!=EOF) {
 				if(isdigit(ch)) {			/* 1 digit */
 					n[ni]=ch&0xf;
@@ -185,8 +186,20 @@ int main(int argc, char **argv)
 									fputc('7',out);
 									break; } }
 						break;
-					case 'C':
+					case 'B':	/* cursor down */
+						while(n[0]) {
+							fprintf(out,"\n");
+							n[0]--;
+						}
+						break;
+					case 'C':	/* cursor right */
 						fprintf(out,"\1%c",0x7f+n[0]);
+						break;
+					case 'D':	/* cursor left */
+						while(n[0]) {
+							fprintf(out,"\b");
+							n[0]--;
+						}
 						break;
 					default:
 						fprintf(stderr,"Unsupported ANSI code '%c' (0x%02X)\r\n",ch,ch);
