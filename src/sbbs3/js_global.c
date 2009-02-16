@@ -1429,7 +1429,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 				i+=(int)(lastparam-ansi_seq)+2;
 			}
-			else if(ctrl_a && tmpbuf[i]==1)		/* CTRL-A codes */
+			else if(ctrl_a && tmpbuf[i]==CTRL_A)		/* CTRL-A codes */
 			{
 /*				j+=sprintf(outbuf+j,"<!-- CTRL-A-%c (%u) -->",tmpbuf[i+1],tmpbuf[i+1]); */
 				if(nodisplay && tmpbuf[i+1] != ')')
@@ -1545,7 +1545,10 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					case '.':
 					case 'S':
 					case '>':
-					case '<':
+						break;
+					case '<':		/* convert non-destructive backspace into destructive backspace */
+						if(j)
+							j--;
 						break;
 
 					case '!':		/* This needs to be fixed! (Somehow) */
