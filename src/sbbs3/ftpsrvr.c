@@ -962,7 +962,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 						extdesc[0]=0;
 						getextdesc(&scfg, dir, f.datoffset, extdesc);
 						/* Remove Ctrl-A Codes and Ex-ASCII code */
-						remove_ctrl_a(extdesc,NULL);
+						remove_ctrl_a(extdesc,extdesc);
 					}
 					SAFEPRINTF3(vpath,"/%s/%s/%s"
 						,scfg.lib[scfg.dir[dir]->lib]->sname
