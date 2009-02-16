@@ -1557,7 +1557,7 @@ void input_thread(void *arg)
 				if(err==CRYPT_ERROR_TIMEOUT)
 					continue;
 				/* Handle the SSH error here... */
-				lprintf(LOG_ERR,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
+				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving on Cryptlib session", sbbs->cfg.node_num, err);
 				break;
 			}
 			else {
@@ -2015,7 +2015,7 @@ void output_thread(void* arg)
 			int err;
 			if(!cryptStatusOK((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 				/* Handle the SSH error here... */
-				lprintf(LOG_ERR,"%s !ERROR %d sending on Cryptlib session", node, err);
+				lprintf(LOG_WARNING,"%s !ERROR %d sending on Cryptlib session", node, err);
 				i=-1;
 				sbbs->online=FALSE;
 				i=buftop-bufbot;	// Pretend we sent it all
