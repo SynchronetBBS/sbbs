@@ -50,7 +50,7 @@ function str_cmds(str)
 		}
 	);
 
-	bbs.log(str);
+	bbs.log_str(str);
 	if(str=="HELP")
 		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
 
