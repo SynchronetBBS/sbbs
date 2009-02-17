@@ -77,10 +77,10 @@ over-writing by future upgrades.
 <p><span style="font-family: Arial">JavaScript files can be executed from:</span></p>
 
 <ul>
-  <li><span style="font-family: Arial"><b>Telnet/Rlogin Server</b>&nbsp;<br>
+  <li><b><span style="font-family: Arial">Terminal</span></b><span style="font-family: Arial"><b> Server</b>&nbsp;<br>
  as a timed event, external program (door), login/logon/newuser module,<br>
     basically anywhere a Baja module or executable can be launched</span></li>
-  <li><span style="font-family: Arial"><b>Web Server (v3.12+)</b><br>
+  <li><span style="font-family: Arial"><b>Web Server</b><br>
     dynamically generates HTML files<br>
     see <samp>web/html/*.ssjs</samp></span>
   <li><span style="font-family: Arial"><b>FTP Server</b><br>
@@ -90,13 +90,25 @@ over-writing by future upgrades.
     all services at this time (both static and dynamic) are written in
     JavaScript<br>
     see <samp>exec/*service.js</samp> and <samp>ctrl/services.ini</samp></span></li>
+  <li><span style="font-family: Arial"><b>Mail Server</b><br>
+    inbound mail processors may be written in JavaScript<br>
+  see <samp>exec/mailproc_util.js</samp> and <samp>ctrl/mailproc.ini</samp></span></li>
+  <li><b><span style="font-family: Arial">JSexec</span></b><span style="font-family: Arial"><br>
+    some script files may be executed outside of Synchronet (e.g. as a CGI 
+  script or daemon) using <i>jsexec</i><br>
+  examples: <samp>ircd.js, newslink.js</samp></span></li>
 </ul>
-<p><span style="font-family: Arial">From the Telnet/Rlogin server, a JavaScript file is executed on a native command-line
+<p><span style="font-family: Arial">From the Terminal Server, a JavaScript file is executed on a native command-line
 by placing a question mark (<samp>?</samp>) at the beginning of the command-line
 before the JavaScript file name (in SCFG). It is not necessary to specify the <b><samp>.js</samp></b>
 portion of the file name on the command-line. For example, the command-line to execute
 the file <tt>exec/newslink.js</tt> would be &quot;<tt>?newslink</tt>&quot; or 
 &quot;<tt>?newslink.js</tt>&quot;.</span></p>
+
+<p><span style="font-family: Arial">From within a Baja module, a JavaScript file 
+may be executed using the following Baja mode:<br>
+</span><font face="Courier New">exec &quot;?modname&quot;</font><span style="font-family: Arial"> 
+where <i>modname </i>is the JavaScript file.</span></p>
 
 <h2><span style="font-family: Arial">Object Model (methods and properties)</span></h2>
 <p><span style="font-family: Arial">Synchronet has its own constantly evolving JavaScript object
