@@ -1384,7 +1384,7 @@ function edit(quote_first)
 	if(quote_first) {
 		if(quote_mode()) {
 			console.line_counter=0;
-			return;
+			return 1;	/* aborted */
 		}
 	}
 	while(1) {
@@ -1666,7 +1666,7 @@ function edit(quote_first)
 				break;
 			case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
 				console.line_counter=0;
-				return;
+				return 1;	/* aborted */
 			case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
 				redraw_screen();
 				break;
@@ -1879,7 +1879,7 @@ if(subj=='') {
 	subj=to;
 	subj=subj.replace(/^.*[\\\/]/,'');
 }
-edit(use_quotes);
+var exit_code=edit(use_quotes);
 /* Delete all existing result.ed files */
 var result=file_getcase(system.node_dir + "result.ed");
 while(result!=undefined) {
@@ -1898,3 +1898,4 @@ if(edit_top==5 && info[0]!=subj) {
 console.ctrlkey_passthru=oldpass;
 bbs.sys_status=old_status;
 console.clear();
+exit(exit_code);
