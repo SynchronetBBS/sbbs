@@ -313,11 +313,15 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				}
 				if(ch=='R') {       /* cursor position report */
 					if(mode&K_ANSI_CPR && i && !(useron.rows)) {	/* auto-detect rows */
+						int	x,y;
 						str[i]=0;
-						rows=atoi(str);
-						lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %u rows"
-							,cfg.node_num, rows);
-						if(rows<10 || rows>99) rows=24; 
+						if(sscanf(str,"%u;%u",&y,&x)==2) {
+							lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %ux%u"
+								,cfg.node_num, x, y);
+							/* Sanity check the coordinates in the response: */
+							if(x>=10 && x<=255) cols=x; 
+							if(y>=40 && y<=255) rows=y;
+						}
 					}
 					return(0); 
 				}

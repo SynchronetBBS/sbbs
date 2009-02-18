@@ -181,6 +181,7 @@ bool sbbs_t::answer()
 		request_telnet_opt(TELNET_DO,TELNET_TERM_TYPE);
 		request_telnet_opt(TELNET_DO,TELNET_TERM_SPEED);
 		request_telnet_opt(TELNET_DO,TELNET_SEND_LOCATION);
+		request_telnet_opt(TELNET_DO,TELNET_NEGOTIATE_WINDOW_SIZE);
 	}
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
@@ -251,7 +252,8 @@ bool sbbs_t::answer()
 	rioctl(IOFI);		/* flush input buffer */
 	putcom( "\r\n"		/* locate cursor at column 1 */
 			"\x1b[s"	/* save cursor position (necessary for HyperTerm auto-ANSI) */
-    		"\x1b[99B_"	/* locate cursor as far down as possible */
+    		"\x1b[255;255H"	/* locate cursor as far down and right as possible */
+			"_"			/* need a printable at this location to actually move cursor */
 			"\x1b[6n"	/* Get cursor position */
 			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
@@ -290,14 +292,22 @@ bool sbbs_t::answer()
 	str[l]=0;
 
     if(l) {
-        if(str[0]==ESC && str[1]=='[') {	/* TODO: verify this is actually a cursor position report */
+		c_escape_str(str,tmp,sizeof(tmp),TRUE);
+		lprintf(LOG_DEBUG,"Node %d Terminal type detection response: '%s'"
+			,cfg.node_num,tmp);
+        if(str[0]==ESC && str[1]=='[' && str[l-1]=='R') {
+			int	x,y;
+
 			if(terminal[0]==0)
 				SAFECOPY(terminal,"ANSI");
 			autoterm|=(ANSI|COLOR);
-            rows=atoi(str+2);
-			lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %u rows"
-				,cfg.node_num, rows);
-			if(rows<10 || rows>99) rows=24; 
+			if(sscanf(str+2,"%u;%u",&y,&x)==2) {
+				lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %ux%u"
+					,cfg.node_num, x, y);
+				/* Sanity check the coordinates in the response: */
+				if(x>=10 && x<=255) cols=x; 
+				if(y>=40 && y<=255) rows=y;
+			}
 		}
 		truncsp(str);
 		if(strstr(str,"RIPSCRIP")) {

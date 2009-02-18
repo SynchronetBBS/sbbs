@@ -196,29 +196,8 @@ void sbbs_t::outchar(char ch)
 			pause();
 			while(lncntr && online && !(sys_status&SS_ABORT))
 				pause(); 
-#if 0	/* This line was added in rev 1.41, but it prevents Ctrl-C or 'N' 
-			from the forced-pause prompt from aborting the currently displayed file: */
-			sys_status&=~SS_ABORT;
-#endif
 		}
 	}
-#if 0
-	if(sys_status&SS_CAP	/* Writes to Capture File */
-		&& (sys_status&SS_ANSCAP || (ch!=ESC /* && !lclaes() */)))
-		fwrite(&ch,1,1,capfile);
-#endif
-#if 0 
-	if(console&CON_L_ECHO) {
-		if(console&CON_L_ECHOX && (uchar)ch>=' ')
-			putch(password_char);
-		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
-		else if(ch==BEL) {
-				sbbs_beep(2000,110);
-				nosound(); 
-		}
-		else putch(ch); 
-	}
-#endif
 
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
 		if(console&CON_R_ECHOX && (uchar)ch>=' ' && !outchar_esc) {
@@ -249,14 +228,18 @@ void sbbs_t::outchar(char ch)
 			} 
 		} 
 	}
-	if(ch==LF) {
+	if(!outchar_esc && isprint(ch))
+		column++;
+	if(ch==LF || column>=cols) {
 		lncntr++;
 		lbuflen=0;
 		tos=0;
+		column=0;
 	} else if(ch==FF) {
 		lncntr=0;
 		lbuflen=0;
 		tos=1;
+		column=0;
 	} else {
 		if(!lbuflen)
 			latr=curatr;
@@ -365,17 +348,17 @@ void sbbs_t::cursor_left(int count)
 
 void sbbs_t::cleartoeol(void)
 {
+	int i,j;
+
 	if(term_supports(ANSI))
 		rputs("\x1b[K");
-#if 0
 	else {
-		i=j=lclwx();	/* commented out */
-		while(i++<79)
+		i=j=column;
+		while(i++<cols)
 			outchar(' ');
-		while(j++<79)
+		while(j++<cols)
 			outchar(BS); 
 	}
-#endif                
 }
 
 /****************************************************************************/

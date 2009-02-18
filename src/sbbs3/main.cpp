@@ -2856,6 +2856,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, const char* name, SOCKET sd,
 	telnet_last_rxch=0;
 
 	sys_status=lncntr=tos=criterrs=slcnt=0L;
+	column=0;
 	curatr=LIGHTGRAY;
 	attr_sp=0;	/* attribute stack pointer */
 	errorlevel=0;
