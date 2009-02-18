@@ -269,9 +269,9 @@ char* xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t max
  * -2			"14"
  * -1			"14:02"
  * 0            "14:02:39"
- * 1            "14.02:39.8"
- * 2            "14.02:39.82"
- * 3            "14.02:39.829"
+ * 1            "14:02:39.8"
+ * 2            "14:02:39.82"
+ * 3            "14:02:39.829"
  */
 char* xpTime_to_isoTimeStr(xpTime_t ti, const char* sep, int precision
 								   ,char* str, size_t maxlen)
