@@ -1005,7 +1005,7 @@ js_editfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	cstr=JS_GetStringBytes(str);
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->editfile(JS_GetStringBytes(str));
+	*rval = BOOLEAN_TO_JSVAL(sbbs->editfile(JS_GetStringBytes(str)));
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -1514,7 +1514,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("print last x lines of file with optional mode")
 	,310
 	},		
-	{"editfile",		js_editfile,		1, JSTYPE_VOID,		JSDOCSTR("filename")
+	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename")
 	,JSDOCSTR("edit/create a text file using the user's preferred message editor")
 	,310
 	},		
