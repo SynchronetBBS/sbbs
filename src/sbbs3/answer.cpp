@@ -293,7 +293,7 @@ bool sbbs_t::answer()
 
     if(l) {
 		c_escape_str(str,tmp,sizeof(tmp),TRUE);
-		lprintf(LOG_DEBUG,"Node %d Terminal type detection response: '%s'"
+		lprintf(LOG_DEBUG,"Node %d Terminal auto-detection response: '%s'"
 			,cfg.node_num,tmp);
         if(str[0]==ESC && str[1]=='[' && str[l-1]=='R') {
 			int	x,y;
@@ -328,16 +328,9 @@ bool sbbs_t::answer()
 	rioctl(IOFI); /* flush left-over or late response chars */
 
 	if(!autoterm && str[0]) {
-		lputs(LOG_DEBUG,"Terminal Auto-detect failed, Response: ");
-        str2[0]=0;
-		for(i=0;str[i];i++) {
-        	if(str[i]>=' ' && str[i]<='~')
-            	sprintf(tmp,"%c", str[i]);
-            else
-				sprintf(tmp,"<%02X>", (uchar)str[i]);
-            strcat(str2,tmp);
-        }
-        lputs(LOG_DEBUG,str2);
+		c_escape_str(str,tmp,sizeof(tmp),TRUE);
+		lprintf(LOG_NOTICE,"Node %d Terminal auto-detection failed, response: '%s'"
+			,cfg.node_num, tmp);
 	}
 
 	/* AutoLogon via IP or Caller ID here */
