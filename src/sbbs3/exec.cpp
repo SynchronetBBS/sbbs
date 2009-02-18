@@ -645,11 +645,13 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
-	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
+	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+	if(rval!=JSVAL_VOID)
+		JS_ValueToInt32(js_cx,rval,&result);
 
 	js_EvalOnExit(js_cx, js_scope, &js_branch);
 
-	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
 
 	JS_DestroyScript(js_cx, js_script);
 
@@ -657,13 +659,11 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_GC(js_cx);
 
-	if(rval!=JSVAL_VOID)
-		JS_ValueToInt32(js_cx,rval,&result);
 	JS_ENDREQUEST(js_cx);
 
 	// Restore saved auto_terminate state
 	js_branch.auto_terminate = auto_terminate;
-		
+	
 	return(result);
 }
 #endif
