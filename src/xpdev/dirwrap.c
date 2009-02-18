@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -634,7 +634,7 @@ int DLLCALL getfattr(const char* filename)
 }
 
 #ifdef __unix__
-int removecase(char *path)
+int removecase(const char *path)
 {
 	char inpath[MAX_PATH+1];
 	char fname[MAX_PATH*4+1];
