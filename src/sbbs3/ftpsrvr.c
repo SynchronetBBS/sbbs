@@ -3730,9 +3730,15 @@ static void ctrl_thread(void* arg)
 							,sock, str);
 					t=time(NULL);
 					while(fexist(str)) {
+						if(!socket_check(sock,NULL,NULL,0))
+							break;
 						if(time(NULL)-t>startup->qwk_timeout)
 							break;
 						mswait(1000);
+					}
+					if(!socket_check(sock,NULL,NULL,0)) {
+						remove(str);
+						continue;
 					}
 					if(fexist(str)) {
 						lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for QWK packet creation",sock);
