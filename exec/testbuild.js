@@ -38,13 +38,13 @@ if(platform=="win32") {
 	archive="sbbs_src.zip";
 	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
 	lib="lib-win32.zip";
-	lib_cmd="pkzip25 -add -dir -max " + lib;
+	lib_cmd="pkzip25 -exclude=*output.txt -add -dir -max ../" + lib;
 	cleanup="rmdir /s /q ";
 } else {
 	archive="sbbs_src.tgz";
 	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
 	lib="lib-" + platform + ".tgz";
-	lib_cmd="tar -czvf " + lib + " *";
+	lib_cmd="tar --exclude=*output.txt -czvf ../" + lib + " *";
 	cleanup="rm -r -f "
 }
 
