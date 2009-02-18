@@ -319,8 +319,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %ux%u"
 								,cfg.node_num, x, y);
 							/* Sanity check the coordinates in the response: */
-							if(x>=10 && x<=255) cols=x; 
-							if(y>=40 && y<=255) rows=y;
+							if(x>=40 && x<=255) cols=x; 
+							if(y>=10 && y<=255) rows=y;
 						}
 					}
 					return(0); 

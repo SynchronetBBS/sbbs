@@ -252,7 +252,8 @@ bool sbbs_t::answer()
 	rioctl(IOFI);		/* flush input buffer */
 	putcom( "\r\n"		/* locate cursor at column 1 */
 			"\x1b[s"	/* save cursor position (necessary for HyperTerm auto-ANSI) */
-    		"\x1b[255;255H"	/* locate cursor as far down and right as possible */
+    		"\x1b[255B"	/* locate cursor as far down as possible */
+			"\x1b[255C"	/* locate cursor as far right as possible */
 			"_"			/* need a printable at this location to actually move cursor */
 			"\x1b[6n"	/* Get cursor position */
 			"\x1b[u"	/* restore cursor position */
@@ -305,8 +306,8 @@ bool sbbs_t::answer()
 				lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %ux%u"
 					,cfg.node_num, x, y);
 				/* Sanity check the coordinates in the response: */
-				if(x>=10 && x<=255) cols=x; 
-				if(y>=40 && y<=255) rows=y;
+				if(x>=40 && x<=255) cols=x; 
+				if(y>=10 && y<=255) rows=y;
 			}
 		}
 		truncsp(str);
