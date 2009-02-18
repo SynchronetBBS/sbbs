@@ -796,19 +796,19 @@ long js_exec(const char *fname, char** args)
 
 	start=xp_timer();
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
+		mfprintf(statfp,"Using JavaScript exit_code: %s",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
+		JS_ValueToInt32(js_cx,rval,&result);
+	}
 	js_EvalOnExit(js_cx, js_glob, &branch);
+
+	JS_ReportPendingException(js_cx);
 
 	if((diff=xp_timer()-start) > 0)
 		mfprintf(statfp,"%s executed in %.2Lf seconds"
 			,path
 			,diff);
-
-	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
-
-	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
-		mfprintf(statfp,"Using JavaScript exit_code: %s",JS_GetStringBytes(JS_ValueToString(js_cx,rval)));
-		JS_ValueToInt32(js_cx,rval,&result);
-	}
 
 	JS_DestroyScript(js_cx, js_script);
 
