@@ -803,7 +803,7 @@ void sbbs_t::privchat(bool local)
 		return;
 
 	if(((sys_status&SS_USERON && useron.chat&CHAT_SPLITP) || !(sys_status&SS_USERON))
-		&& term_supports(ANSI) && rows>=24)
+		&& term_supports(ANSI) && rows>=24 && cols>=80)
 		sys_status|=SS_SPLITP;
 	else
 		sys_status&=~SS_SPLITP;
