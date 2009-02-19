@@ -254,7 +254,7 @@ bool sbbs_t::answer()
 			"\x1b[s"	/* save cursor position (necessary for HyperTerm auto-ANSI) */
     		"\x1b[255B"	/* locate cursor as far down as possible */
 			"\x1b[255C"	/* locate cursor as far right as possible */
-			"_"			/* need a printable at this location to actually move cursor */
+			"\b_"		/* need a printable at this location to actually move cursor */
 			"\x1b[6n"	/* Get cursor position */
 			"\x1b[u"	/* restore cursor position */
 			"\x1b[!_"	/* RIP? */
