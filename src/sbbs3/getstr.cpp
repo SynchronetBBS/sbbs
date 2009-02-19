@@ -81,7 +81,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			i|=(cfg.color[clr_inputline]&0x77)>>4;
 			attr(i); 
 		}
-		rputs(str1);
+		column+=rputs(str1);
 		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)) && term_supports(ANSI))
 			cleartoeol();  /* destroy to eol */ 
 	}
@@ -99,7 +99,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		else {
 			for(i=0;i<l;i++)
 				outchar(BS);
-			rputs(str1);
+			column+=rputs(str1);
 			i=l; 
 		}
 		if(ch!=' ' && ch!=TAB)
