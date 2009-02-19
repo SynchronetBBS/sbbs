@@ -164,7 +164,7 @@ bool sbbs_t::ansi_gotoxy(int x, int y)
 {
 	if(term_supports(ANSI)) {
 		rprintf("\x1b[%d;%dH",y,x);
-		if(x)
+		if(x>0)
 			column=x-1;
 		return true;
 	}
