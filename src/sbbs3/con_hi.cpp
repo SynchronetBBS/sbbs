@@ -43,14 +43,11 @@
 /****************************************************************************/
 void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 {
-    char str[256];
-
-	sprintf(str,"%-*.*s",l,l,strin);
 	cursor_left(i);
 	if(mode&K_MSG)
-		bputs(str);
+		bprintf("%-*.*s",l,l,strin);
 	else
-		column+=rputs(str);
+		column+=rprintf("%-*.*s",l,l,strin);
 	cleartoeol();
 	if(i<l)
 		cursor_left(l-i); 
