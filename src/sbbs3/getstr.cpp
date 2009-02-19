@@ -82,7 +82,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			attr(i); 
 		}
 		column+=rputs(str1);
-		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)) && term_supports(ANSI))
+		if(mode&K_EDIT && !(mode&(K_LINE|K_AUTODEL)))
 			cleartoeol();  /* destroy to eol */ 
 	}
 
@@ -153,7 +153,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						l++;
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
-					rprintf("%.*s",l-i,str1+i);
+					column+=rprintf("%.*s",l-i,str1+i);
 					cursor_left(l-i);
 #if 0
 					if(i==maxlen-1)
@@ -163,7 +163,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				outchar(str1[i++]=1);
 				break;
 			case CTRL_B: /* Ctrl-B Beginning of Line */
-				if(term_supports(ANSI) && i && !(mode&K_NOECHO)) {
+				if(i && !(mode&K_NOECHO)) {
 					cursor_left(i);
 					i=0; 
 				}
@@ -344,7 +344,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					redrwstr(str1,i,l,0);
 				break;
 			case CTRL_V:	/* Ctrl-V			Toggles Insert/Overwrite */
-				if(!term_supports(ANSI) || mode&K_NOECHO)
+				if(mode&K_NOECHO)
 					break;
 				console^=CON_INSERT;
 				insert_indicator();
@@ -388,7 +388,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				break;
 			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
 				if(i!=l) {	/* if not at EOL */
-					if(term_supports(ANSI) && !(mode&K_NOECHO))
+					if(!(mode&K_NOECHO))
 						cleartoeol();
 					l=i; 
 					break;
@@ -398,20 +398,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				if(mode&K_NOECHO)
 					l=0;
 				else {
-					if(term_supports(ANSI)) {
-						cursor_left(i);
-						cleartoeol();
-						l=0;
-					} else {
-						while(i<l) {
-							outchar(' ');
-							i++; 
-						}
-						while(l) {
-							l--;
-							backspace(); 
-						} 
-					}
+					cursor_left(i);
+					cleartoeol();
+					l=0;
 				}
 				i=0;
 				console|=CON_DELETELINE;
@@ -420,11 +409,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				SAFECOPY(str1,undo);
 				i=l=strlen(str1);
 				rprintf("\r%s",str1);
-				if(term_supports(ANSI))
-					cleartoeol();  /* destroy to eol */ 
+				cleartoeol();
 				break;
 			case 28:    /* Ctrl-\ Previous word */
-				if(i && term_supports(ANSI) && !(mode&K_NOECHO)) {
+				if(i && !(mode&K_NOECHO)) {
 					x=i;
 					while(str1[i-1]==' ' && i)
 						i--;
@@ -439,7 +427,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						console|=CON_LEFTARROW;
 					break;
 				}
-				if(term_supports(ANSI) && !(mode&K_NOECHO)) {
+				if(!(mode&K_NOECHO)) {
 					cursor_left();   /* move cursor left one */
 					i--; 
 				}
@@ -533,7 +521,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							l++;
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
-						rprintf("%.*s",l-i,str1+i);
+						column+=rprintf("%.*s",l-i,str1+i);
 						cursor_left(l-i);
 #if 0
 						if(i==maxlen-1) {
@@ -636,16 +624,18 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 
 void sbbs_t::insert_indicator(void)
 {
-	ansi_save();
-	ansi_gotoxy(cols,1);
-	uchar z=curatr;                       /* and go to EOL */
-	if(console&CON_INSERT) {
-		attr(BLINK|BLACK|(LIGHTGRAY<<4));
-		outchar('I');
-	} else {
-		attr(LIGHTGRAY);
-		outchar(' ');
+	if(term_supports(ANSI)) {
+		ansi_save();
+		ansi_gotoxy(cols,1);
+		uchar z=curatr;                       /* and go to EOL */
+		if(console&CON_INSERT) {
+			attr(BLINK|BLACK|(LIGHTGRAY<<4));
+			outchar('I');
+		} else {
+			attr(LIGHTGRAY);
+			outchar(' ');
+		}
+		attr(z);
+		ansi_restore();
 	}
-	attr(z);
-	ansi_restore();
 }
