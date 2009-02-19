@@ -84,11 +84,11 @@ int sbbs_t::show_atcode(const char *instr)
 		return(0);
 
 	if(padded_left)
-		rprintf("%-*.*s",disp_len,disp_len,cp);
+		bprintf("%-*.*s",disp_len,disp_len,cp);
 	else if(padded_right)
-		rprintf("%*.*s",disp_len,disp_len,cp);
+		bprintf("%*.*s",disp_len,disp_len,cp);
 	else
-		rputs(cp);
+		bputs(cp);
 
 	return(len);
 }
