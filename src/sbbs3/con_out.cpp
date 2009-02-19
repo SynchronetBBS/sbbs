@@ -88,9 +88,8 @@ int sbbs_t::bputs(const char *str)
 }
 
 /****************************************************************************/
-/* Outputs a NULL terminated string locally and remotely (if applicable)    */
-/* Does not expand ctrl-a characters (raw)                                  */
-/* Max length of str is 64 kbytes                                           */
+/* Outputs a NULL terminated string remotely (if applicable)				*/
+/* Does not expand ctrl-A codes or track line counter, etc. (raw)           */
 /****************************************************************************/
 int sbbs_t::rputs(const char *str)
 {
@@ -98,9 +97,9 @@ int sbbs_t::rputs(const char *str)
 
 	if(online==ON_LOCAL && console&CON_L_ECHO)	/* script running as event */
 		return(eprintf(LOG_INFO,"%s",str));
-
+	
 	while(str[l])
-		outchar(str[l++]);
+		outcom(str[l++]);
 	return(l);
 }
 
@@ -337,6 +336,7 @@ void sbbs_t::cursor_right(int count)
 		for(int i=0;i<count;i++)
 			outchar(' ');
 	}
+	column+=count;
 }
 
 void sbbs_t::cursor_left(int count)
@@ -352,6 +352,10 @@ void sbbs_t::cursor_left(int count)
 		for(int i=0;i<count;i++)
 			outchar('\b');
 	}
+	if(column > count)
+		column-=count;
+	else
+		column=0;
 }
 
 void sbbs_t::cleartoeol(void)
