@@ -316,7 +316,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						int	x,y;
 						str[i]=0;
 						if(sscanf(str,"%u;%u",&y,&x)==2) {
-							lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %ux%u"
+							lprintf(LOG_DEBUG,"Node %d received ANSI cursor position report: %ux%u"
 								,cfg.node_num, x, y);
 							/* Sanity check the coordinates in the response: */
 							if(x>=40 && x<=255) cols=x; 
