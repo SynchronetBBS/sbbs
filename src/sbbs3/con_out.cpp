@@ -140,14 +140,11 @@ int sbbs_t::rprintf(const char *fmt, ...)
 /****************************************************************************/
 void sbbs_t::backspace(void)
 {
-	int		oldconsole;
-
-	oldconsole=console;
-	console &= ~(CON_R_ECHOX|CON_L_ECHOX);
-	outchar('\b');
-	outchar(' ');
-	outchar('\b');
-	console=oldconsole;
+	outcom('\b');
+	outcom(' ');
+	outcom('\b');
+	if(column)
+		column--;
 }
 
 /****************************************************************************/
@@ -279,16 +276,9 @@ void sbbs_t::center(char *instr)
 
 void sbbs_t::clearline(void)
 {
-	int i;
-
-	outchar(CR);
-	if(term_supports(ANSI))
-		rputs("\x1b[K");
-	else {
-		for(i=0;i<cols-1;i++)
-			outchar(' ');
-		outchar(CR); 
-	}
+	outcom(CR);
+	column=0;
+	cleartoeol();
 }
 
 void sbbs_t::cursor_home(void)
@@ -296,7 +286,7 @@ void sbbs_t::cursor_home(void)
 	if(term_supports(ANSI))
 		rputs("\x1b[H");
 	else
-		outchar(FF);
+		outchar(FF);	/* this will clear some terminals, do nothing with others */
 }
 
 void sbbs_t::cursor_up(int count)
@@ -334,7 +324,7 @@ void sbbs_t::cursor_right(int count)
 			rputs("\x1b[C");
 	} else {
 		for(int i=0;i<count;i++)
-			outchar(' ');
+			outcom(' ');
 	}
 	column+=count;
 }
@@ -350,7 +340,7 @@ void sbbs_t::cursor_left(int count)
 			rputs("\x1b[D");
 	} else {
 		for(int i=0;i<count;i++)
-			outchar('\b');
+			outcom('\b');
 	}
 	if(column > count)
 		column-=count;
@@ -367,9 +357,9 @@ void sbbs_t::cleartoeol(void)
 	else {
 		i=j=column;
 		while(++i<cols)
-			outchar(' ');
+			outcom(' ');
 		while(++j<cols)
-			outchar(BS); 
+			outcom(BS); 
 	}
 }
 
