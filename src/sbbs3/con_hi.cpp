@@ -43,12 +43,10 @@
 /****************************************************************************/
 void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 {
-    char str[256],c;
+    char str[256];
 
 	sprintf(str,"%-*.*s",l,l,strin);
-	c=i;
-	while(c--)
-		outchar(BS);
+	cursor_left(i);
 	if(mode&K_MSG)
 		bputs(str);
 	else
