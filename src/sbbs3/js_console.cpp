@@ -1588,13 +1588,15 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,311
 	},
 	{"ansi_getlines",	js_getlines,		0, JSTYPE_ALIAS },
-	{"getlines",		js_getlines,		0, JSTYPE_VOID,		JSDOCSTR("")
-	,JSDOCSTR("auto-detect the number of rows/lines on the user's terminal (ANSI)")
+	{"getlines",		js_getlines,		0, JSTYPE_ALIAS },
+	{"getdimensions",	js_getlines,		0, JSTYPE_VOID,		JSDOCSTR("")
+	,JSDOCSTR("query the number of rows and columns on the remote terminal (ANSI)")
 	,311
 	},
 	{"ansi_getxy",		js_getxy,			0, JSTYPE_ALIAS },
 	{"getxy",			js_getxy,			0, JSTYPE_OBJECT,	JSDOCSTR("")
-	,JSDOCSTR("returns the current cursor position as an object (with x and y properties)")
+	,JSDOCSTR("query the current cursor position on the remote terminal (ANSI) "
+		"and returns the coordinates as an object (with x and y properties)")
 	,311
 	},
 	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[lock=<tt>true</tt>]")
@@ -1682,7 +1684,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Controls the user's terminal",310);
+	js_DescribeSyncObject(cx,obj,"Controls the remote terminal",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", con_prop_desc, JSPROP_READONLY);
 #endif
 
