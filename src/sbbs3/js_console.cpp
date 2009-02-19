@@ -1682,7 +1682,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Controls the user's Telnet/RLogin terminal",310);
+	js_DescribeSyncObject(cx,obj,"Controls the user's terminal",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", con_prop_desc, JSPROP_READONLY);
 #endif
 
