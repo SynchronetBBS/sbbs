@@ -182,7 +182,7 @@ void sbbs_t::outchar(char ch)
 			outchar_esc=0;
 	}
 	else if(outchar_esc==2) {
-		if((ch>='@' && ch<='Z') || (ch>='a' && ch<='z'))
+		if(ch>='@' && ch<='~')
 			outchar_esc++;
 	}
 	else
@@ -228,8 +228,16 @@ void sbbs_t::outchar(char ch)
 			} 
 		} 
 	}
-	if(!outchar_esc && isprint(ch))
-		column++;
+	if(!outchar_esc) {
+		if((uchar)ch>=' ')
+			column++;
+		else if(ch=='\r')
+			column=0;
+		else if(ch=='\b') {
+			if(column)
+				column--;
+		}
+	}
 	if(ch==LF || column>=cols) {
 		lncntr++;
 		lbuflen=0;
