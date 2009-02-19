@@ -46,6 +46,7 @@
 enum {
 	 CON_PROP_STATUS
 	,CON_PROP_LNCNTR 
+	,CON_PROP_COLUMN
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
 	,CON_PROP_ROWS
@@ -88,6 +89,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_LNCNTR:
 			val=sbbs->lncntr;
+			break;
+		case CON_PROP_COLUMN:
+			val=sbbs->column;
 			break;
 		case CON_PROP_ATTR:
 			val=sbbs->curatr;
@@ -191,6 +195,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_LNCNTR:
 			sbbs->lncntr=val;
+			break;
+		case CON_PROP_COLUMN:
+			sbbs->column=val;
 			break;
 		case CON_PROP_ATTR:
 			if(JSVAL_IS_STRING(*vp)) {
@@ -302,6 +309,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 
 	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,310},
 	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,310},
+	{	"current_column"	,CON_PROP_COLUMN			,CON_PROP_FLAGS ,315},
 	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,310},
 	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,310},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,310},
@@ -329,11 +337,12 @@ static jsSyncPropertySpec js_console_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* con_prop_desc[] = {
 	 "status bitfield (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"current line counter (used for automatic screen pause)"
+	,"current 0-based line counter (used for automatic screen pause)"
+	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
 	,"current display attributes (set with number or string value)"
-	,"set to 1 if the terminal cursor is already at the top of the screen"
-	,"number of terminal screen rows (in lines)"
-	,"number of terminal screen columns (in character cells)"
+	,"set to <i>true</i> if the terminal cursor is already at the top of the screen"
+	,"number of remote terminal screen rows (in lines)"
+	,"number of remote terminal screen columns (in character cells)"
 	,"bitfield of automatically detected terminal settings "
 		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"terminal type description (e.g. 'ANSI')"
@@ -342,8 +351,8 @@ static char* con_prop_desc[] = {
 	,"user/keyboard inactivity timeout reference value (time_t format)"
 	,"number of low time-left (5 or fewer minutes remaining) warnings displayed to user"
 	,"input/output has been aborted"
-	,"output can be aborted with Ctrl-C"
-	,"current telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"remote output can be asynchronously aborted with Ctrl-C"
+	,"current Telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"word-wrap buffer (used by getstr) - <small>READ ONLY</small>"
 	,"current yes/no question (set by yesno and noyes)"
 	,"cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
@@ -1482,7 +1491,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,311
 	},
 	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("text")
-	,JSDOCSTR("display a string (supports Ctrl-A codes)")
+	,JSDOCSTR("display a string (supports Ctrl-A codes, auto-screen pausing, etc.)")
 	,310
 	},		
 	{"write",			js_write,			1, JSTYPE_VOID,		JSDOCSTR("text")
