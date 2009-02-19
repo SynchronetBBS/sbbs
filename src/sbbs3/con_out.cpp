@@ -366,9 +366,9 @@ void sbbs_t::cleartoeol(void)
 		rputs("\x1b[K");
 	else {
 		i=j=column;
-		while(++i<cols)
+		while(++i<cols-1)
 			outchar(' ');
-		while(++j<cols)
+		while(++j<cols-1)
 			outchar(BS); 
 	}
 }
