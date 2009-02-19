@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -881,12 +881,12 @@ void sbbs_t::privchat(bool local)
 	if(sys_status&SS_SPLITP) {
 		lncntr=0;
 		CLS;
-		ANSI_SAVE();
+		ansi_save();
 #if 0
 		if(local)
 			bprintf(text[SysopIsHere],cfg.sys_op);
 #endif
-		GOTOXY(1,13);
+		ansi_gotoxy(1,13);
 		remote_y=1;
 		bprintf(local ? local_sep : sep
 			,thisnode.misc&NODE_MSGW ? 'T':' '
@@ -933,8 +933,8 @@ void sbbs_t::privchat(bool local)
 					}
 					remote_y=1+remoteline;
 					bputs("\1i_\1n");  /* Fake cursor */
-					ANSI_SAVE();
-					GOTOXY(1,13);
+					ansi_save();
+					ansi_gotoxy(1,13);
 					bprintf(local ? local_sep : sep
 						,thisnode.misc&NODE_MSGW ? 'T':' '
 						,sectostr(timeleft,tmp)
@@ -963,7 +963,7 @@ void sbbs_t::privchat(bool local)
 					localchar=0;
 
 					if(sys_status&SS_SPLITP && local_y==24) {
-						GOTOXY(1,13);
+						ansi_gotoxy(1,13);
 						bprintf(local ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
@@ -973,7 +973,7 @@ void sbbs_t::privchat(bool local)
 							rprintf("\x1b[%d;1H\x1b[K",x+1);
 							if(y<=localline)
 								bprintf("%s\r\n",localbuf[y]); }
-						GOTOXY(1,local_y=(15+localline));
+						ansi_gotoxy(1,local_y=(15+localline));
 						localline=0; }
 					else {
 						if(localline>=4)
@@ -1021,7 +1021,7 @@ void sbbs_t::privchat(bool local)
 			activity=1;
 			if(sys_status&SS_SPLITP && !remote_activity) {
 				ansi_getxy(&x,&y);
-				ANSI_RESTORE();
+				ansi_restore();
 			}
 			attr(cfg.color[clr_chatremote]);
 			if(sys_status&SS_SPLITP && !remote_activity)
@@ -1061,7 +1061,7 @@ void sbbs_t::privchat(bool local)
 							if(i<=remoteline)
 								bprintf("%s\r\n",remotebuf[i]); }
 						remoteline=0;
-						GOTOXY(1, remote_y=6); }
+						ansi_gotoxy(1, remote_y=6); }
 					else {
 						if(remoteline>=4)
 							for(i=0;i<4;i++)
@@ -1086,8 +1086,8 @@ void sbbs_t::privchat(bool local)
 
 		if(sys_status&SS_SPLITP && remote_activity) {
 			bputs("\1i_\1n");  /* Fake cursor */
-			ANSI_SAVE();
-			GOTOXY(x,y); 
+			ansi_save();
+			ansi_gotoxy(x,y); 
 		}
 
 		now=time(NULL);

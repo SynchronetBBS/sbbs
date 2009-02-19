@@ -831,9 +831,6 @@ enum {							/* Values of mode for userlist function     */
 						  nodesync(); }
 #define ASYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
 						  nodesync(); }
-#define ANSI_SAVE() 	rputs("\x1b[s")
-#define ANSI_RESTORE()	rputs("\x1b[u")
-#define GOTOXY(x,y)     rprintf("\x1b[%d;%dH",y,x);
 #define TM_YEAR(yy)		((yy)%100)
 #define sbbs_beep(f,d)	BEEP(f,d)
 #define mswait(x)		SLEEP(x)
