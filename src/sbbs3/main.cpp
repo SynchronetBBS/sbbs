@@ -1993,6 +1993,8 @@ void output_thread(void* arg)
 		tv.tv_usec=1000;
 
 		FD_ZERO(&socket_set);
+		if(sbbs->client_socket==INVALID_SOCKET)		// Make the race condition less likely to actually happen... TODO: Fix race
+			continue;
 		FD_SET(sbbs->client_socket,&socket_set);
 
 		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
@@ -5398,6 +5400,3 @@ NO_PASSTHRU:
 	} while(!terminate_server);
 
 }
-
-
-
