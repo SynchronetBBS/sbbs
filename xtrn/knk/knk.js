@@ -20,7 +20,7 @@ var losses=0;
 function check_syncterm_music()
 {
 	// Check if it's CTerm and supports ANSI music...
-	var ver=new Array(0,0);
+	var ver;
 
 	// Disable parsed input... we need to do ESC processing ourselves here.
 	var oldctrl=console.ctrlkey_passthru;
@@ -31,7 +31,7 @@ function check_syncterm_music()
 
 	while(1) {
 		var ch=console.inkey(0, 5000);
-		if(ch=="")
+		if(ch==="")
 			break;
 		response += ch;
 		if(ch != '\x1b' && ch != '[' && (ch < ' ' || ch > '/') && (ch<'0' || ch > '?'))
@@ -50,7 +50,7 @@ function check_syncterm_music()
 	}
 	var version_str=response.substr(21);
 	version_str=version_str.replace(/c/,"");
-	var ver=version_str.split(/;/);
+	ver=version_str.split(/;/);
 	cterm_major=parseInt(ver[0]);
 	cterm_minor=parseInt(ver[1]);
 	console.ctrlkey_passthru=oldctrl;
@@ -116,7 +116,7 @@ function show_intro()
 	console.crlf();
 	console.center("Running on "+system.name+" courtesy of "+system.operator+".");
 	console.crlf();
-	syncterm_music=check_syncterm_music();
+	check_syncterm_music();
 	console.gotoxy(1,console.screen_rows);
 	if(console.line_counter > console.screen_rows/2)
 		console.pause();
@@ -333,6 +333,7 @@ function Player_powerbar()
 {
 	var lastattr=console.attributes;
 	var pow=this.power;
+	var i;
 	var bars="\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe\xfe";
 
 	if(pow > 0) {
@@ -365,7 +366,7 @@ function Player_drawscreen(month)
 		console.attributes=GREEN;
 	}
 	else {
-		var mstr=mstr = format("%-27s", "*  Month # "+month+"  *");
+		var mstr=format("%-27s", "*  Month # "+month+"  *");
 		console.print("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\r\n");
 		console.crlf();
 		console.attributes=CYAN;
@@ -480,7 +481,7 @@ function Player_purchase(name, propname, cost)
 //		console.attributes=CYAN;
 	}
 	i=console.getkeys("M\r\n", max);
-	if(i=='' || i=='\r' || i=='\n' || i==0)
+	if(i==='' || i=='\r' || i=='\n' || i==0)
 		return(false);
 	if(i=='M')
 		i=max;
@@ -577,7 +578,7 @@ function Player_dodamage(other, damage, men)
 		console.attributes=YELLOW;
 	else
 		console.attributes=LIGHTCYAN;
-		
+
 	for(i=0; i<damage; i++) {
 		console.line_counter=0;
 		bad=random(7);	// Each damage does 0-7 points of "bad"
@@ -855,6 +856,14 @@ function Player_playermove(month, other)
 				loop=true;
 				break;
 			case 'A':
+				if(this.assassins==0) {
+					console.crlf();
+					console.attributes=LIGHTGREEN|BLINK;
+					console.writeln("You don't have any assassins!");
+					console.crlf();
+					loop=true;
+					break;
+				}
 				return(this.assassinate(other));
 			case 'C':
 				/* TODO: Disable colour */
@@ -1041,7 +1050,6 @@ function Player_playermove(month, other)
 				loop=true;
 				break;
 			case '$':
-				/* TODO: Show Scoreboard */
 				console.crlf();
 				console.attributes=LIGHTGREEN;
 				console.write("Show which [T] this months or [L] last months scoreboard? -=> ");
@@ -1069,7 +1077,7 @@ function Player_computermove(month, other)
 				,need_assassins:0, need_weapons:0, need_food:0
 				,need_soldiers:0, need_guards:0, need_kastle:0
 				,need_release:0};
-	var names=new Array();
+	var names=[];
 	var name;
 
 	console.print("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
@@ -1191,7 +1199,7 @@ function Player_computermove(month, other)
 							return(weight[b]-weight[a]);
 						});
 
-	while((name=names.shift())!=undefined) {
+	while((name=names.shift())!==undefined) {
 		var amount=0;
 		switch(name) {
 			case 'loss_soldiers':
@@ -1418,11 +1426,11 @@ function update_userfile(player, computer, won)
 	var computer_wins=0;
 	var computer_losses=0;
 	var	updated=false;
-	var lines=new Array();
+	var lines=[];
 	var line;
 	var now=new Date();
 	var nowmonth=['January','February','March','April','May','June','July','August','September','Optober','November','December'][now.getMonth()];
-	var all_ud=new Array();
+	var all_ud=[];
 
 	if(!Lock(f.name, system.node_num, true, 1))
 		return;
@@ -1436,7 +1444,7 @@ function update_userfile(player, computer, won)
 	if(lines.length > 0) {
 		var lastdate=new Date(lines[0]);
 		if(now.getMonth() != lastdate.getMonth() || now.getYear() != lastdate.getYear()) {
-			lines=new Array();
+			lines=[];
 			if(Lock(game_dir+"knk-last.asc", system.node_num, true, 1)) {
 				file_remove(game_dir+"knk-last.asc");
 				file_rename(game_dir+"knk-best.asc", game_dir+"knk-last.asc")
@@ -1588,7 +1596,7 @@ function play_game()
 	month=1;
 	player=new Player(title, name, true);
 	computer=new Player("King", "Computer", false);
-	turn_order=random(2)?(new Array(player,computer)):(new Array(computer,player));
+	turn_order=random(2)?([player,computer]):([computer,player]);
 	while(winner===false) {
 		turn_order[turn].drawscreen(month);
 		console.crlf();
@@ -1635,7 +1643,7 @@ function play_game()
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
 	var dat_file=read_dat();
-	if(dat_file==undefined || dat_file.shortestgame == undefined || dat_file.shortestgame.months == undefined || dat_file.shortestgame.months >= month) {
+	if(dat_file===undefined || dat_file.shortestgame === undefined || dat_file.shortestgame.months === undefined || dat_file.shortestgame.months >= month) {
 		console.attributes=YELLOW|BLINK;
 		console.writeln("This is the shortest game to date!!!!");
 		console.crlf();
@@ -1644,7 +1652,7 @@ function play_game()
 		dat_file.shortestgame.winner=winner.full_name;
 		dat_file.shortestgame.loser=loser.full_name;
 	}
-	if(dat_file==undefined || dat_file.longestgame == undefined || dat_file.longestgame.months == undefined || dat_file.longestgame.months <= month) {
+	if(dat_file===undefined || dat_file.longestgame === undefined || dat_file.longestgame.months === undefined || dat_file.longestgame.months <= month) {
 		console.attributes=YELLOW|BLINK;
 		console.writeln("This is the longest game to date!!!!");
 		console.crlf();
@@ -1654,7 +1662,7 @@ function play_game()
 		dat_file.longestgame.loser=loser.full_name;
 	}
 	console.attributes=WHITE;
-	if(dat_file.lastgame != undefined && dat_file.lastgame.months != undefined)
+	if(dat_file.lastgame !== undefined && dat_file.lastgame.months !== undefined)
 		console.writeln("The last game lasted "+dat_file.lastgame.months+" months won by "+dat_file.lastgame.winner+" vs. "+dat_file.lastgame.loser+".");
 	dat_file.lastgame=new Object();
 	dat_file.lastgame.months=month;
