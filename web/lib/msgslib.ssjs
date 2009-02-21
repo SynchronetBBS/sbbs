@@ -158,7 +158,7 @@ function clean_msg_headers(hdr,flags)
 
 function idx_to_user(fromidx)
 {
-	var istouser=0;
+	var istouser=false;
 
 	if(sub=='mail') {
 		if(fromidx.to==user.number)
@@ -171,6 +171,8 @@ function idx_to_user(fromidx)
 		if(fromidx.to==aliascrc || fromidx.to==namecrc || fromidx.to==sysopcrc) {
 			/* Could be to this user */
 			var fromhdr=msgbase.get_msg_header(true,fromidx.offset);
+			if(!fromhdr)
+				return(false);
 			if(user.alias.toLowerCase()==fromhdr.to.toLowerCase())
 				istouser=true;
 			else if(user.name.toLowerCase()==fromhdr.to.toLowerCase())
