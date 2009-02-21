@@ -2505,13 +2505,14 @@ static void smtp_thread(void* arg)
 					if(flength(proc_err_fname)>0 
 						&& (proc_err=fopen(proc_err_fname,"r"))!=NULL) {
 						while(!feof(proc_err)) {
+							int n;
 							if(!fgets(str,sizeof(str),proc_err))
 								break;
 							truncsp(str);
 							lprintf(LOG_WARNING,"%04d !SMTP External mail processor (%s) error: %s"
 								,socket, mailproc_list[i].name, str);
-							i=atoi(str);
-							if(i>=100 && i<1000)
+							n=atoi(str);
+							if(n>=100 && n<1000)
 								sockprintf(socket,"%s", str);
 							else
 								sockprintf(socket,"554%c%s"
