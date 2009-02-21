@@ -748,7 +748,7 @@ void msg_opts()
 {
 	char str[128],*p;
 	static int msg_dflt;
-	int i,j;
+	int i,j,n;
 
 	while(1) {
 		i=0;
@@ -792,6 +792,8 @@ void msg_opts()
 			,cfg.sys_misc&SM_DELREADM ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Receive E-mail by Real Name"
 			,cfg.msg_misc&MM_REALNAME ? "Yes" : "No");
+		sprintf(opt[i++],"%-33.33s%s","Include Signatures in E-mail"
+			,cfg.msg_misc&MM_EMAILSIG ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Users Can View Deleted Messages"
 			,cfg.sys_misc&SM_USRVDELM ? "Yes" : cfg.sys_misc&SM_SYSVDELM
 				? "Sysops Only":"No");
@@ -1276,6 +1278,32 @@ addressed to a user's real name (rather than their alias).
 				}
                 break;
 			case 14:
+				n=(cfg.sub[i]->misc&MM_EMAILSIG) ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+`Include User Signatures in E-mail:`
+
+If you wish to have user signatures automatically appended to e-mail
+messages, set this option to ~Yes~.
+*/
+				n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+					,"Include User Signatures in E-mail",opt);
+				if(n==-1)
+                    break;
+				if(!n && !(cfg.msg_misc&MM_EMAILSIG)) {
+					uifc.changes=1;
+					cfg.msg_misc|=MM_EMAILSIG;
+					break; 
+				}
+				if(n==1 && cfg.msg_misc&MM_EMAILSIG) {
+					uifc.changes=1;
+					cfg.msg_misc&=~MM_EMAILSIG; 
+				}
+                break;
+			case 15:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				strcpy(opt[2],"Sysops Only");
@@ -1312,7 +1340,7 @@ appropriate) can view deleted messages.
 					cfg.sys_misc&=~SM_USRVDELM;
 					uifc.changes=1; }
                 break;
-			case 15:
+			case 16:
 				SETHELP(WHERE);
 /*
 Extra Attribute Codes...

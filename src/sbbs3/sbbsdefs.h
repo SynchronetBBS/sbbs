@@ -278,8 +278,9 @@ typedef struct {
 									/* Bit values for cfg.file_misc				*/
 #define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/
 
-									/* Bit values for cfg.msg_misc				*/
+									/* Bit values for cfg.msg_misc (upper 16-bits default to on) */
 #define MM_REALNAME	(1<<16)			/* Allow receipt of e-mail using real names	*/
+#define MM_EMAILSIG	(1<<17)			/* Include user signatures in e-mail msgs */
 
 									/* errormsg() codes */
 #define ERR_OPEN	"opening"		/* opening a file */
