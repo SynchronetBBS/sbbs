@@ -1,7 +1,23 @@
+
    Configuring Synchronet Version 3: Answers to Frequently Asked Questions
    -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 $Id$
+
+Q: DOS programs (e.g. editors, door games) won't run on my Windows Vista-32
+   system running Synchronet-Win32.
+A: There are 2 new requirements for 16-bit DOS programs to work under
+   Synchronet-Win32 on Windows Vista-32:
+   1. You must have SBBSEXEC.DLL rev 38 or later (this is included in SBBS
+      v3.14a).
+   2. You must copy SBBSEXEC.DLL to your Windows "System32" folder.
+
+Q: DOS programs won't run on my 64-bit Windows system.
+A: Microsoft does not include Virtual DOS Machine (NTVDM) support in their
+   64-bit operating systems. Synchronet for Windows relies on NTVDM for
+   16-bit DOS program support, so you need to either run a 32-bit Windows
+   (e.g. re-install, use dual-boot, or run in a Virtual Machine) or forego
+   DOS programs on your BBS.
 
 Q: I want to create custom menus. Is there any detailed documentation or
    samples regarding custom menus on Synchronet?  
@@ -9,12 +25,6 @@ A: Yes, see the customization chapter in the Synchronet Sysop Manual
    (http://synchro.net/docs/customization.html), the Baja Manual
    (http://synchro.net/docs/baja.html), or Synchronet JavaScript page
    (http://synchro.net/docs/js.html) for details.
-
-Q: I seem to missing the menu files for non-default (Synchronet Classic)
-   command shells on v3.10L-win32.
-A: These files were accidentally excluded from the v3.10L-win32 install.
-   Download ftp://vert.synchro.net/Synchronet/menu.zip and extract (with
-   directories) into your Synchronet text/menu directory.
 
 Q: How do I get on the Synchronet BBS List (http://synchro.net/sbbslist.html)?
 A: The best way is to first join DOVE-Net, then run the Synchronet BBS List
@@ -43,27 +53,14 @@ A: First get your BBS on the Synchronet BBS List (sbbslist.html), and if your
 Q: How do I know what ports Synchronet needs opened through my firewall?
 A: The answer depends on what Synchronet servers and services you have enabled
    and whatever ports you have configured Synchronet to use for each.
-
-   The default port values for Synchronet servers and services are:
-   Telnet: 23 (TCP)
-   RLogin: 513 (TCP)
-   FTP: 21 (TCP)
-   SMTP: 25 (TCP)
-   POP3: 110 (TCP)
-   NNTP: 119 (TCP)
-   Gopher: 70 (TCP)
-   Finger: 79 (UDP and TCP)
-   HTTP: 80 (TCP)
-   IRC: 6667 (TCP)
-
-   You can check your configured port values in ctrl/sbbs.ini and services.ini.
+   See http://synchro.net/docs/tcpip_faq.html for details.
 
 Q: How do I join DOVE-Net?
-A: If you've installed v3.10, Telnet to vert.synchro.net and create a new
-   account for your QWKnet transfers (using your system's QWK-ID for the user
-   name), then edit your "Call-out Command Line" in SCFG->Networks->QWK->Hubs
-   ->VERT: replace "YOURPASS" with the password you used when creating your
-   QWKnet user account. Do NOT change anything else in the command-line!
+A: If you've installed v3.10 or later, Telnet to vert.synchro.net and create a
+   new account for your QWKnet transfers (using your system's QWK-ID for the
+   user name), then edit your "Call-out Command Line" in SCFG->Networks->QWK->
+   Hubs->VERT: replace "YOURPASS" with the password you used when creating
+   your QWKnet user account. Do NOT change anything else in the command-line!
    That's it! For more details, see docs/dove-net.txt.
 
 Q: What is my system's QWK-ID?
@@ -72,8 +69,7 @@ A: This is normally an abbreviation of your BBS's name that YOU determine
    in DOVE-NET.ZIP for any conflicts with other DOVE-Net systems' QWK-IDs.
 
 Q: How do I get my FTP server to work behind my firewall/NAT/router?
-A: See http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html for
-   details.
+A: See http://synchro.net/docs/tcpip_faq.html for details.
 
 Q: How do I disable the New User Feedback requirement?
 A: In sbbs v3.10-win32, run the Configuration Wizard and un-check the
@@ -132,17 +128,9 @@ A: The easiest way is to use the ADDFILES utility which can automatically
 
 Q: Long filename support doesn't seem to be fully functional.
 A: Support for files with long filenames (greater than the MS-DOS 8.3 format)
-   is a work in progress. There are two main issues:
-   A: The current Synchronet file database format only supports 8.3 filenames.
-   B: The only X/Y/Zmodem file transfer program that currently works with 
-      Synchronet-Win32 is FDSZ, which is a 16-bit DOS programs (which therefore 
-      only supports 8.3 format filenames).
-   Synchronet v3.10 will display long filenames, but the files must be added to
-   the database using a means other than X/Y/Zmodem (at this time).
-   The file database format is being replaced in v3.20 and will store long
+   is a work in progress.
+   The file database format is being replaced in v4.00 and will store long
    filenames as well as many other improvements.
-   There is work being done to create a good 32-bit Winsock alternative to FDSZ
-   that will support long filenames as well as consume less resources.
 
 Q: How do I enable forced upload/download ratios.
 A: By default, Synchronet utilizes a "credit" system, where a user typically
@@ -170,11 +158,6 @@ A: Add the disallowed host names to your text/host.can file or IP addresses
    host name, use the ~ wildcard character (e.g. "mofoisp.com~").
    in Synchronet v3.10+, you can use the familiar '*' wildcard character
    (e.g. "*.aol.com" and "192.168.*").
-
-Q: My CPU/kernel-utilization meter reports 100% when a user is online and
-   entering a string/line of text.
-A: Set SBBSCTRL:BBS->Configure->Nodes->Node X->Toggle Options->Low Priority
-   string input to "Yes" (where X is your first telnet node).
 
 Q: How do I allow anonymous logins to the Synchronet FTP Server?
 A: You need to create a Guest account on your BBS. Create a new user (login
@@ -210,163 +193,6 @@ A: Make sure you have "Intercept I/O Interrupts" set to "No" for all FOSSIL
    and that the door is configured to use a FOSSIL driver. Synchronet's
    FOSSIL driver is automatically configured and loaded when needed - there
    is nothing you need to do to install or load the Synchronet FOSSIL driver.
-
-Q: SyncEdit isn't working correctly.
-A: See the docs/syedtfaq.txt for details.
-
-Q: When I read messages on my v2.3c (or earlier) nodes, I sometimes get a
-   garbled Message Attributes line.
-A: Synchronet v3 introduced a new message attribute (REPLIED) and this
-   attribute is not currently supported in v2.3c. To work around this problem,
-   remove one of the %s's from the MsgAttr line of your CTRL\TEXT.DAT file.
-   I plan on releasing a v2.3d with this fix (and others) in the future).
-
-Q: I have Scroll-Lock on, but I'm still not available for chat page.
-A: Synchronet version 3 no longer uses Scroll-Lock to indicate sysop
-   availability. Instead, there is a button on the SBBSCTRL tool bar and on
-   the BBS menu to toggle the sysop availability for chat (added in v3.00b).
-
-Q: Is there any updated documentation for Synchronet v3?
-Q: The documentation I have (sysop.doc) appears to be for v2.3 for DOS/OS2?
-Q: Do you have documentation that is easier for me to view/print/etc?
-A: Yes, the documentation included in Synchronet v3.00b was the same old
-   SYSOP.DOC (ASCII text file) created for Synchronet for DOS and OS/2 v2.30.
-   It was reformatted in HTML and updated for version 3.00c (as of
-   December 2000). You can view the progress of the Synchronet Documentation 
-   project at: http://synchro.net/docs. Contributors are welcome!
-   The Synchronet HTML docs have been converted to PDF for your
-   viewing/printing pleasure and can be downloaded @ vert.synchro.net.
-
-*** OLD (ver 3.0) ANSWERS TO FREQUENTLY ASKED QUESTIONS ***
-
-Q: The SBBSCTRL:BBS->Login menu option isn't working for me.
-A: The default local login command in v3.00 ("start telnet://localhost") does
-   not work on NT-based OSes (including Win2K and WinXP). If you're running 
-   v3.00, run REGEDIT and go into
-   HKEY_CURRENT_USER\Software\Swindell\Synchronet Control Panel
-   and change "LoginCommand" to "telnet localhost" or "mtel localhost" or 
-   whatever your favorite telnet client is.
-
-   If you're running v3.10e or later, then the "start telnet://localhost" 
-   command line should work (start up your registered telnet client).
-
-Q: The SBBSCTRL:BBS->Configure menu option isn't working for me.
-A: SCFG and SCFG32 are console-mode programs that only work in an 80x25 
-   console window. If you're seeing the message "USCRN failed!" that means
-   you probably have your default console window set to a dimensions larger 
-   than 80x25.
-
-   You can fix this on Windows NT/2K/XP by adjusting the properties of your
-   System32\command.pif file. Make sure "restore settings at startup" 
-   (under the "Screen" tab) is not checked. Also, make sure the screen buffer
-   size is no larger than the screen window size (80x25).
-
-Q: How come some of the times diplayed are off by exactly one hour?
-A: In v3.10, try setting SCFG->System->Toggle Options->Use Local/System Time
-   Zone to "Yes". That *should* fix the problem.
-A: There is a time-zone bug in the Microsoft Visual C++ run-time library I'm
-   using in Synchronet v3 related to day-light savings time. Those of you
-   using v3 in a timezone which has daylight savings, may see a different time
-   in the BBS (ctrl-T for example) than you do in SBBSCTRL or your system tray.
-
-   You can fix the problem by removing Windows' knowledge of daylight savings
-   altogether (which I think is a dumb idea to begin with). You need to run
-   TZEDIT which is included on the Win98 CD in the tools\reskit\config
-   directory. It's included with Win95 OSR2 in the Admin\Apptools\Tzedit
-   directory. Anyway, run tzedit, select your time-zone from the list (it
-   should already be selected), click the "Edit" button, and UN-CHECK the
-   "Automatically set Daylight Savings Time" check box. Then clck OK, then
-   click CLOSE.
-
-   Now, you need to RE-SELECT the time-zone by double-clicking the time in your
-   system-tray (lower right corner) or by re-selecting the time zone in the
-   control panel. Now when you run Synchronet and user logs on (for example),
-   the times should all be correct.
-
-Q: I get an error message that contains "file: c:\src\sbbs3\etc" or something
-   similar but I do not have Synchronet installed on drive C or that path does
-   not exist?
-A: The "Source" or "File" portion of the error message is for the author's
-   reference only and has nothing to do with your Synchronet configuration. The
-   file path in question was the original source code file where the error
-   occured, which you do not need to concern yourself with (unless you are
-   modifying the source code). Send the ENTIRE error message (as shown in your
-   data/error.log file) to the author if you still have any questions or
-   concerns that aren't answered here or in the sysop documentation.
-
-Q: My long filenames aren't appearing correctly on the BBS?
-A: The Synchronet file database currently only supports the DOS 8.3 naming
-   format. Longer filenames will be shown in their Micros~1 mangled form.
-   The Synchronet FTP server does automatically detect and display long
-   filenames, however. Long filenames will be supported in the BBS/Telnet
-   server in a future release (v3.10).
-
-Q: File transfers (DSZ) aren't working.
-A: You need to use FDSZ (FOSSIL version of DSZ) in place of DSZ:
-   1. Verify you have FDSZ.EXE in your Synchronet EXEC directory.
-   2. Change the command lines in SBBSCTRL:BBS->Configure->File Options->
-      Transfer Protocols from "%!dsz ..." to "%!fdsz ...".
-A: If you're using an NT-based OS (including Win2K and WinXP), you'll need
-   to upgrade to v3.10e or later to get the fix for Zmodem transfers.
-
-Q: Why do I get an SBBS.DLL error about missing GetDiskFreeSpaceEx?
-A: You're attempting to run Synchronet v3.0 on pre-OSR2 Windows 95 or Windows 
-   NT 3.x. Support for pre-OSR2 Windows 95 was added in Synchronet v3.00c.
-   See http://www.synchro.net/platforms.html for a matrix of supported 
-   platforms.
-
-Q: Can I run version 3 under Windows NT4/2000?
-A: The first beta release (v3.00a) did not include a FOSSIL/DOS interrupt
-   driver for NT/2000, so only Windows 95/98 was fully supported. Version
-   3.00b includes a FOSSIL/DOS interrupt driver for NT4/2000. If running under
-   NT4/2000, see NTREADME.TXT for configuration details.
-
-Q: How do I get Synchronet to create a DOOR32.SYS drop file?
-A: In v3.10, you just select "Door32.sys" from the drop file list.
-
-Q: How do I tell Synchronet that a program is 32-bit?
-A: Add the program's base filename to SBBSCTRL:BBS->Configure->External
-   Programs->OS/2 Program List (this is actually the native 32-bit program
-   list). If you specified the executable file extension (e.g. ".exe") on
-   the program's command-line, then you'll also need to include the
-   filename with the extension in the 32-bit Program List.
-   In v3.10, you just set "Native Executable" to "Yes".
-
-Q: What is SCFG?
-A: The Synchronet Configuration Utility (exec/scfg.exe). This 16-bit 
-   console/text-mode program is left-over from Synchronet v2 and is still used 
-   (as of v3.0) to configure many of the aspects of Synchronet v3
-   (SBBSCTRL:BBS->Configure). See http://synchro.net/docs/system_config.html 
-   for details.
-
-   There is also a 32-bit version of SCFG, SCFG32.EXE, that should be used in
-   place of SCFG.EXE when more than a few hundred kilobytes of memory are 
-   required for configuration information (typically, for large numbers 
-   of message areas). 
-
-   You can change the program and command-line used with the 
-   SBBSCTRL:BBS->Configure menu option: in v3.00, run REGEDIT, and change
-   HKEY_CURRENT_USER\Software\Swindell\Synchronet Control Panel\ConfigCommand
-   or in v3.10, go to SBBSCTRL:File->Properties. Change the string to 
-   "%sSCFG32 %s" (removing the "/t2") to utilize the 32-bit version of SCFG.
-
-   You can run SCFG/SCFG32 from the command-line by specifying the path to your
-   Synchronet CTRL directory as the first parameter
-   (e.g. "c:\sbbs\exec\scfg32 c:\sbbs\ctrl"). When running the 16-bit version of
-   SCFG under Windows, it is highly recommended to use the "/t2" command-line
-   switch to yield Windows time-slices.
-
-   SCFG and SCFG32 only work in 80x25 text windows (on Win32-based OSes). 
-   SCFG will fail with a "USCRN failed!" error message when run in a non-80x25
-   window.
-
-   ** UPDATE **
-   SCFG.EXE v3.10 (included with Synchronet v3.10g and later) is 32-bit; 
-   there is no more SCFG32.EXE (you can safely delete this file). Also, SCFG.EXE
-   is no longer limited to 80x25 text windows.
-   
-   If you find SCFG is running in a Window where not all of the application is
-   visible, add "-l25" to your SCFG command-line to force it to 25-line mode.
 
 As always, see the documentation if you have any questions that aren't
 answered here: http://synchro.net/docs
