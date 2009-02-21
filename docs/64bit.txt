@@ -1,5 +1,5 @@
-Notes on building Synchronet on 64-bit systems
-==============================================
+Notes on building Synchronet on 64-bit *nix systems
+===================================================
 The 64-bit port is a relatively new effort on the part of the Synchronet
 developers.  Since none of the active developers are currently running 64-bit
 OSs, progress on this port is relatively slow.  However, the BBS itself and
