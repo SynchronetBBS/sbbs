@@ -499,7 +499,7 @@ public:
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
 	void	telluser(smbmsg_t* msg);
-	void	delallmail(uint usernumber);
+	void	delallmail(uint usernumber, int which);
 
 	/* getmsg.cpp */
 	post_t* loadposts(int32_t *posts, uint subnum, ulong ptr, long mode);

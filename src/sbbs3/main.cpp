@@ -4109,7 +4109,7 @@ void sbbs_t::daily_maint(void)
 			> sbbs->cfg.sys_autodel)) {			/* Inactive too long */
 			SAFEPRINTF2(str,"Auto-Deleted %s #%u",user.alias,user.number);
 			sbbs->logentry("!*",str);
-			sbbs->delallmail(user.number);
+			sbbs->delallmail(user.number, MAIL_ANY);
 			putusername(&sbbs->cfg,user.number,nulstr);
 			putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
 		}

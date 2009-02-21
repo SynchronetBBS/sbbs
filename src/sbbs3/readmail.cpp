@@ -711,6 +711,13 @@ void sbbs_t::readmail(uint usernumber, int which)
 	if(smb.msgs)
 		free(mail);
 
+	SAFEPRINTF(str,text[DeleteMailQ],"everyone");
+	if(which==MAIL_YOUR 
+		&& getmail(&cfg, usernumber, /* sent: */FALSE)
+		&& bputs(crlf)
+		&& !noyes(str))
+		delallmail(usernumber, MAIL_YOUR);
+
 	/***************************************/
 	/* Delete messages marked for deletion */
 	/***************************************/

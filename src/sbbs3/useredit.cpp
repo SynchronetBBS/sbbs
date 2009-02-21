@@ -1087,7 +1087,7 @@ void sbbs_t::purgeuser(int usernumber)
 	getuserdat(&cfg,&user);
 	SAFEPRINTF2(str,"Purged %s #%u",user.alias,usernumber);
 	logentry("!*",str);
-	delallmail(usernumber);
+	delallmail(usernumber, MAIL_ANY);
 	putusername(&cfg,usernumber,nulstr);
 	putuserrec(&cfg,usernumber,U_MISC,8,ultoa(user.misc|DELETED,str,16));
 }
