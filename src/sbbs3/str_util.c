@@ -47,10 +47,9 @@
 /****************************************************************************/
 char* DLLCALL remove_ctrl_a(const char *str, char *dest)
 {
-	char*		tmp;
-	uint		i,j;
+	int	i,j;
 
-	if((tmp=strdup(str))==NULL)
+	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
@@ -61,22 +60,17 @@ char* DLLCALL remove_ctrl_a(const char *str, char *dest)
 			if(str[i]=='<' && j)	
 				j--;
 		}
-		else tmp[j++]=str[i]; 
+		else dest[j++]=str[i]; 
 	}
-	tmp[j]=0;
-	if(dest==NULL)
-		return tmp;	/* Must be freed! */
-	strcpy(dest,tmp);
-	free(tmp);
+	dest[j]=0;
 	return dest;
 }
 
 char* DLLCALL strip_ctrl(const char *str, char* dest)
 {
-	char*	tmp;
-	int		i,j;
+	int	i,j;
 
-	if((tmp=strdup(str))==NULL)
+	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++) {
 		if(str[i]==CTRL_A) {
@@ -88,40 +82,30 @@ char* DLLCALL strip_ctrl(const char *str, char* dest)
 				j--;
 		}
 		else if((uchar)str[i]>=' ')
-			tmp[j++]=str[i];
+			dest[j++]=str[i];
 	}
-	tmp[j]=0;
-	if(dest==NULL)
-		return tmp;	/* Must be freed! */
-	strcpy(dest,tmp);
-	free(tmp);
+	dest[j]=0;
 	return dest;
 }
 
 char* DLLCALL strip_exascii(const char *str, char* dest)
 {
-	char*	tmp;
-	int		i,j;
+	int	i,j;
 
-	if((tmp=strdup(str))==NULL)
+	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
 		if(!(str[i]&0x80))
-			tmp[j++]=str[i];
-	tmp[j]=0;
-	if(dest==NULL)
-		return tmp;	/* Must be freed! */
-	strcpy(dest,tmp);
-	free(tmp);
+			dest[j++]=str[i];
+	dest[j]=0;
 	return dest;
 }
 
 char* DLLCALL prep_file_desc(const char *str, char* dest)
 {
-	char*	tmp;
-	int		i,j;
+	int	i,j;
 
-	if((tmp=strdup(str))==NULL)
+	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
@@ -132,19 +116,15 @@ char* DLLCALL prep_file_desc(const char *str, char* dest)
 			if(str[i]=='<' && j)	
 				j--;
 		}
-		else if(j && str[i]<=' ' && tmp[j-1]==' ')
+		else if(j && str[i]<=' ' && dest[j-1]==' ')
 			continue;
 		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
 			continue;
 		else if((uchar)str[i]>=' ')
-			tmp[j++]=str[i];
+			dest[j++]=str[i];
 		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=' ';
-	tmp[j]=0;
-	if(dest==NULL)
-		return tmp;	/* Must be freed! */
-	strcpy(dest,tmp);
-	free(tmp);
+			dest[j++]=' ';
+	dest[j]=0;
 	return dest;
 }
 
@@ -512,11 +492,10 @@ char DLLCALL ctrl_a_to_ascii_char(char a)
 /****************************************************************************/
 size_t DLLCALL strip_invalid_attr(char *str)
 {
-    char*	tmp;
+    char*	dest;
     size_t	a,c,d;
 
-	if((tmp=strdup(str))==NULL)
-		return 0;
+	dest=str;
 	for(a=c=d=0;str[c];c++) {
 		if(str[c]==CTRL_A) {
 			a++;
@@ -530,11 +509,9 @@ size_t DLLCALL strip_invalid_attr(char *str)
 				continue; 
 			}
 		}
-		tmp[d++]=str[c]; 
+		dest[d++]=str[c]; 
 	}
-	tmp[d]=0;
-	strcpy(str,tmp);
-	free(tmp);
+	dest[d]=0;
 	return(a);
 }
 
