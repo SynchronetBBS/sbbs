@@ -98,8 +98,12 @@ int sbbs_t::rputs(const char *str)
 	if(online==ON_LOCAL && console&CON_L_ECHO)	/* script running as event */
 		return(eprintf(LOG_INFO,"%s",str));
 	
-	while(str[l])
-		outcom(str[l++]);
+	while(str[l]) {
+		outcom(str[l]);
+		if(lbuflen<LINE_BUFSIZE)
+			lbuf[lbuflen++]=str[l]; 
+		l++;
+	}
 	return(l);
 }
 
