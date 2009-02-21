@@ -379,7 +379,8 @@ public:
 	uint	sysvar_li;
 
     /* ansi_term.cpp */
-	const char *	ansi(int atr);			/* Returns ansi escape sequence for atr */
+	const char*	ansi(int atr);			/* Returns ansi escape sequence for atr */
+	char*	ansi(int atr, int curatr, char* str);
     bool	ansi_gotoxy(int x, int y);
 	bool	ansi_getxy(int* x, int* y);
 	bool	ansi_save(void);
