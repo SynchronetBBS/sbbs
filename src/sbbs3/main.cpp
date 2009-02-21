@@ -3560,14 +3560,16 @@ int sbbs_t::outcom(uchar ch)
 	return(0);
 }
 
-void sbbs_t::putcom(const char *str, int len)
+int sbbs_t::putcom(const char *str, size_t len)
 {
-	int i;
+	size_t i;
 
-    if(!len)
-    	len=strlen(str);
-    for(i=0;i<len && online; i++)
-        outcom(str[i]);
+	if(!len)
+		len=strlen(str);
+    for(i=0;i<len && online;i++)
+        if(outcom(str[i])!=0)
+			break;
+	return i;
 }
 
 /* Legacy Remote I/O Control Interface */

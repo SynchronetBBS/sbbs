@@ -202,7 +202,7 @@ public:
 
 	void	spymsg(const char *msg);		// send message to active spies
 
-	void	putcom(const char *str, int len=0);  // Send string
+	int		putcom(const char *str, size_t len=0);  // Send string
 	void	hangup(void);		   // Hangup modem
 
 	uchar	telnet_local_option[0x100];
@@ -512,10 +512,10 @@ public:
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
-	int		bputs(const char *str);				/* BBS puts function */
-	int		rputs(const char *str);				/* BBS raw puts function */
-	int		bprintf(const char *fmt, ...);		/* BBS printf function */
-	int		rprintf(const char *fmt, ...);		/* BBS raw printf function */
+	int		bputs(const char *str);					/* BBS puts function */
+	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
+	int		bprintf(const char *fmt, ...);			/* BBS printf function */
+	int		rprintf(const char *fmt, ...);			/* BBS raw printf function */
 	void	backspace(void);				/* Output a destructive backspace via outchar */
 	void	outchar(char ch);				/* Output a char - check echo and emu.  */
 	void	center(char *str);

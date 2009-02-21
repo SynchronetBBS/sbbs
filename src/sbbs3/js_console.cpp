@@ -900,7 +900,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((str=js_ValueToStringBytes(cx, argv[i], &len))==NULL)
 		    return(JS_FALSE);
 		rc=JS_SUSPENDREQUEST(cx);
-		sbbs->putcom(str, len);
+		sbbs->rputs(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
