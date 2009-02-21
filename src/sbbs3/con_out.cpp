@@ -575,7 +575,7 @@ void sbbs_t::attr(int atr)
 
 	if(!term_supports(ANSI))
 		return;
-	rputs(ansi(atr,curatr,str,sizeof(str)-1));
+	rputs(ansi(atr,curatr,str));
 	curatr=atr;
 }
 
