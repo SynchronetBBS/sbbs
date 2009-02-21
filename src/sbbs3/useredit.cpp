@@ -841,12 +841,15 @@ void sbbs_t::maindflts(user_t* user)
 		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
-		if(user->prot!=' ')
-			SAFEPRINTF(str,"%c",user->prot);
-		else
-			SAFECOPY(str,"None");
+		SAFECOPY(str,"None");
+		for(i=0;i<cfg.total_prots;i++) {
+			if(user->prot==cfg.prot[i]->mnemonic) {
+				SAFECOPY(str,cfg.prot[i]->name);
+				break;
+			}
+		}
 		bprintf(text[UserDefaultsProtocol],str
-			,user->misc&AUTOHANG ? "(Hang-up After Xfer)":nulstr);
+			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			bputs(text[UserDefaultsPassword]);
 
