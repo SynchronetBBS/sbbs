@@ -1,12 +1,12 @@
-"nhcÚÄÄÄÄÄÄnÄÄÄÄÄÄhkÄÄÄÄÄÄÄncÄÄÄÄÄúúúú\r\n"\	001 MsgSubj
+"nhcÚÄÄÄÄÄÄnÄÄÄÄÄÄhkÄÄÄÄÄÄÄncÄÄÄÄÄúúúú\r\n"\	001 MsgSubj 
 	"h³ bSubjnb: hc%.70s\r\n"
 "³ bAttrnb: hc%s%s%s%s%s%s%s%s%s%s\r\n"            002 MsgAttr
 "³ bTo  nb: hc%.70s"                               003 MsgTo
 " #%s"                                                  004 MsgToExt
-" (%s)"                                                 005 MsgToNet
+" (%.40s)"                                              005 MsgToNet
 "\r\nw³ bFromnb: hc%.70s"                         006 MsgFrom
 " #%s"                                                  007 MsgFromExt
-" (%s)"                                                 008 MsgFromNet
+" (%.40s)"                                              008 MsgFromNet
 "\r\nw³ bDatenb: hc%.24s %s\r\n"\                 009 MsgDate
 	"wÀÄÄÄÄÄÄcÄÄÄÄÄÄÄÄÄnÄÄÄÄÄÄÄÄÄÄhkÄÄÄÄ"\
 	"ÄÄÄÄncÄÄÄÄÄÄÄbÄÄÄÄÄÄÄúúúúúún"
@@ -61,7 +61,7 @@
 "  hbRenb: hc%s\r\n  "\  				   053 RegardingByToOn	
 	"bBynb: hc%s bto c%s bon "\       
 	"c%sn\r\n\r\n"
-"Delete %s's mail"                                      054 DeleteMailQ
+"Delete mail from %s"                                   054 DeleteMailQ
 "OK"                                                    055 OK
 "\r\n_bhForward mail to: w"                         056 ForwardMailTo
 "Save/Append messsage to another file"                  057 SaveMsgToFile
