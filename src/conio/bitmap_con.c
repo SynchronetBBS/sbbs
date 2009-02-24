@@ -482,7 +482,7 @@ int bitmap_setfont(int font, int force, int font_num)
 	switch(vstat.charheight) {
 		case 8:
 			if(conio_fontdata[font].eight_by_eight==NULL) {
-				if(force)
+				if(!force)
 					goto error_return;
 				else
 					changemode=1;
@@ -490,7 +490,7 @@ int bitmap_setfont(int font, int force, int font_num)
 			break;
 		case 14:
 			if(conio_fontdata[font].eight_by_fourteen==NULL) {
-				if(force)
+				if(!force)
 					goto error_return;
 				else
 					changemode=1;
@@ -498,7 +498,7 @@ int bitmap_setfont(int font, int force, int font_num)
 			break;
 		case 16:
 			if(conio_fontdata[font].eight_by_sixteen==NULL) {
-				if(force)
+				if(!force)
 					goto error_return;
 				else
 					changemode=1;
