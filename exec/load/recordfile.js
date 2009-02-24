@@ -32,126 +32,30 @@ function GetRecordLength(RecordDef)
 	return(len);
 }
 
-function RecordFile(filename, definition)
-{
-	this.file=new File(filename);
-	this.fields=definition;
-	this.RecordLength=GetRecordLength(this.fields);
-	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
-		return(null);
-	this.length getter=function() {return parseInt(this.file.length/this.RecordLength);};
-
-	/* Read a record by index */
-	this.Get=RecordFile_Get;
-	/* Create a new record */
-	this.New=RecordFile_New;
-	/* Read a single field from the current position */
-	this.ReadField=RecordFile_ReadField;
-	/* Write a single field from the current position */
-	this.WriteField=RecordFile_WriteField;
-}
-
-function RecordFile_ReadField(fieldtype)
+function RecordFileRecord_ReInit()
 {
 	var i;
-	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
 
-	if(m!=null) {
-		var ret=new Array();
-		for(i=0; i<parseInt(m[1]); i++)
-			ret.push(this.ReadField(m[2]));
-		return(ret);
-	}
-	else {
-		switch(fieldtype) {
-			case "Float":
-				var tmp=this.file.read(22);
-				return(parseFloat(tmp));
-			case "SignedInteger":
-				var ret=this.file.readBin(4);
-				if(ret>=2147483648)
-					ret-=4294967296;
-				return(ret);
-			case "Integer":
-				return(this.file.readBin(4));
-			case "Date":
-				var tmp=this.file.read(8);
-				return(tmp.replace(/\x00/g,""));
-			case "Boolean":
-				if(this.file.readBin(1) > 0)
-					return(true);
-				return(false);
-			default:
-				var m=fieldtype.match(/^String:([0-9]+)$/);
-				if(m!=null) {
-					var tmp=this.file.read(parseInt(m[1]));
-					return(tmp.replace(/\x00/g,""));
-				}
-				return(null);
-		}
-	}
+	for(i=0; i<this.parent.fields.length; i++)
+		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
 }
 
-function RecordFile_WriteField(val, fieldtype, def)
+function RecordFileRecord_Put()
 {
 	var i;
-	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
 
-	if(m!=null) {
-		var ret=new Array();
-		for(i=0; i<parseInt(m[1]); i++) {
-			this.WriteField(val[i], m[2], def[i]);
-		}
-		return(ret);
-	}
-	else {
-		if(val==undefined)
-			val=def;
-		switch(fieldtype) {
-			case "Float":
-				var wr=val.toExponential(15);
-				while(wr.length < 22)
-					wr=wr+"\x00";
-				this.file.write(wr,22);
-				break;
-			case "SignedInteger":
-				if(val < -2147483648)
-					val = -2147483648;
-				if(val > 2147483647)
-					val = 2147483647;
-				this.file.writeBin(val,4);
-				break;
-			case "Integer":
-				if(val<0)
-					val=0;
-				if(val>4294967295)
-					val=4294967295;
-				this.file.writeBin(val,4);
-				break;
-			case "Date":
-				var wr=val.substr(0,8);
-				while(wr.length < 8)
-					wr=wr+"\x00";
-				this.file.write(wr,8);
-				break;
-			case "Boolean":
-				if(val.valueOf())
-					this.file.writeBin(255,1);
-				else
-					this.file.writeBin(0,1);
-				break;
-			default:
-				var m=fieldtype.match(/^String:([0-9]+)$/);
-				if(m!=null) {
-					var len=parseInt(m[1]);
-					var wr=val.substr(0,len);
-					while(wr.length < len)
-						wr=wr+"\x00";
-					this.file.write(wr,len);
-				}
-				break;
-		}
-	}
+	this.parent.file.position=this.Record * this.parent.RecordLength;
+	for(i=0; i<this.parent.fields.length; i++)
+		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
+}
+
+function RecordFileRecord_ReLoad(num)
+{
+	var i;
+
+	this.parent.file.position=(this.Record)*this.parent.RecordLength;
+	for(i=0; i<this.parent.fields.length; i++)
+		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
 }
 
 function RecordFile_Get(num)
@@ -198,28 +102,130 @@ function RecordFile_New()
 	return(ret);
 }
 
-function RecordFileRecord_ReInit()
+function RecordFile_ReadField(fieldtype)
 {
 	var i;
+	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
+	var ret;
+	var tmp;
 
-	for(i=0; i<this.parent.fields.length; i++)
-		this[this.parent.fields[i].prop]=eval(this.parent.fields[i].def.toSource());
+	if(m!=null) {
+		ret=new Array();
+		for(i=0; i<parseInt(m[1]); i++)
+			ret.push(this.ReadField(m[2]));
+		return(ret);
+	}
+	else {
+		switch(fieldtype) {
+			case "Float":
+				tmp=this.file.read(22);
+				return(parseFloat(tmp));
+			case "SignedInteger":
+				ret=this.file.readBin(4);
+				if(ret>=2147483648)
+					ret-=4294967296;
+				return(ret);
+			case "Integer":
+				return(this.file.readBin(4));
+			case "Date":
+				tmp=this.file.read(8);
+				return(tmp.replace(/\x00/g,""));
+			case "Boolean":
+				if(this.file.readBin(1) > 0)
+					return(true);
+				return(false);
+			default:
+				m=fieldtype.match(/^String:([0-9]+)$/);
+				if(m!=null) {
+					tmp=this.file.read(parseInt(m[1]));
+					return(tmp.replace(/\x00/g,""));
+				}
+				return(null);
+		}
+	}
 }
 
-function RecordFileRecord_Put()
+function RecordFile_WriteField(val, fieldtype, def)
 {
 	var i;
+	var m=fieldtype.match(/^Array:([0-9]+):(.*)$/);
+	var wr;
+	var len;
+	var ret;
 
-	this.parent.file.position=this.Record * this.parent.RecordLength;
-	for(i=0; i<this.parent.fields.length; i++)
-		this.parent.WriteField(this[this.parent.fields[i].prop], this.parent.fields[i].type, this.parent.fields[i].def);
+	if(m!=null) {
+		ret=new Array();
+		for(i=0; i<parseInt(m[1]); i++) {
+			this.WriteField(val[i], m[2], def[i]);
+		}
+		return(ret);
+	}
+	else {
+		if(val==undefined)
+			val=def;
+		switch(fieldtype) {
+			case "Float":
+				wr=val.toExponential(15);
+				while(wr.length < 22)
+					wr=wr+"\x00";
+				this.file.write(wr,22);
+				break;
+			case "SignedInteger":
+				if(val < -2147483648)
+					val = -2147483648;
+				if(val > 2147483647)
+					val = 2147483647;
+				this.file.writeBin(val,4);
+				break;
+			case "Integer":
+				if(val<0)
+					val=0;
+				if(val>4294967295)
+					val=4294967295;
+				this.file.writeBin(val,4);
+				break;
+			case "Date":
+				wr=val.substr(0,8);
+				while(wr.length < 8)
+					wr=wr+"\x00";
+				this.file.write(wr,8);
+				break;
+			case "Boolean":
+				if(val.valueOf())
+					this.file.writeBin(255,1);
+				else
+					this.file.writeBin(0,1);
+				break;
+			default:
+				m=fieldtype.match(/^String:([0-9]+)$/);
+				if(m!=null) {
+					len=parseInt(m[1]);
+					wr=val.substr(0,len);
+					while(wr.length < len)
+						wr=wr+"\x00";
+					this.file.write(wr,len);
+				}
+				break;
+		}
+	}
 }
 
-function RecordFileRecord_ReLoad(num)
+function RecordFile(filename, definition)
 {
-	var i;
+	this.file=new File(filename);
+	this.fields=definition;
+	this.RecordLength=GetRecordLength(this.fields);
+	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength))
+		return(null);
+	this.length getter=function() {return parseInt(this.file.length/this.RecordLength);};
 
-	this.parent.file.position=(this.Record)*this.parent.RecordLength;
-	for(i=0; i<this.parent.fields.length; i++)
-		this[this.parent.fields[i].prop]=this.parent.ReadField(this.parent.fields[i].type);
+	/* Read a record by index */
+	this.Get=RecordFile_Get;
+	/* Create a new record */
+	this.New=RecordFile_New;
+	/* Read a single field from the current position */
+	this.ReadField=RecordFile_ReadField;
+	/* Write a single field from the current position */
+	this.WriteField=RecordFile_WriteField;
 }
+
