@@ -79,7 +79,7 @@ function LocateTeam()
 	var count=0;
 	var i;
 	for(i=1;i<players.length; i++) {
-		otherplayer=players.Get(i);
+		var otherplayer=players.Get(i);
 		if(otherplayer.Record!=player.Record
 				&& otherplayer.UserNumber!=0
 				&& otherplayer.TeamNumber==player.TeamNumber) {

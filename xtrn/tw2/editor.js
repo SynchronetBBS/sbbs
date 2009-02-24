@@ -1,5 +1,7 @@
 function EditOneProperty(obj, prop, extrastr)
 {
+	var flt,tmpstr,i;
+
 	console.write(prop.name+extrastr);
 	switch(prop.type) {
 		case 'Boolean':
@@ -12,21 +14,21 @@ function EditOneProperty(obj, prop, extrastr)
 		case "Float":
 			console.write('? ');
 			var tmpstr=console.getstr(obj[prop.prop].toString(), 30, K_EDIT);
-			var flt=parseFloat(tmpstr);
+			flt=parseFloat(tmpstr);
 			if((!isNaN(flt)) && isFinite(flt))
 				obj[prop.prop]=flt;
 			break;
 		case "SignedInteger":
 			console.write('? ');
-			var tmpstr=console.getstr(obj[prop.prop].toString(), 11, K_EDIT);
-			var i=parseInt(tmpstr);
+			tmpstr=console.getstr(obj[prop.prop].toString(), 11, K_EDIT);
+			i=parseInt(tmpstr);
 			if((!isNaN(i)) && isFinite(i))
 				obj[prop.prop]=i;
 			break;
 		case "Integer":
 			console.write('? ');
-			var tmpstr=console.getstr(obj[prop.prop].toString(), 10, K_EDIT);
-			var flt=parseFloat(tmpstr);
+			tmpstr=console.getstr(obj[prop.prop].toString(), 10, K_EDIT);
+			flt=parseFloat(tmpstr);
 			if(flt >= 0 && flt <= 4294967295)
 				obj[prop.prop]=Math.floor(flt);
 			break;
@@ -43,7 +45,7 @@ function EditOneProperty(obj, prop, extrastr)
 			else {
 				m=prop.type.match(/^Array:([0-9]+):(.*)$/);
 				var arraylen=parseInt(m[1]);
-				var i;
+				i;
 				for(i=0; i<arraylen; i++) {
 					console.write("\r");
 					console.cleartoeol();
@@ -187,7 +189,7 @@ function PlayerEdit()
 	var p=null;
 
 	console.write("Player name or sector number: ");
-	name=console.getstr(42).toUpperCase();
+	var name=console.getstr(42).toUpperCase();
 	for(i=1; i<players.length; i++) {
 		p=players.Get(i);
 		if(p.UserNumber==0)

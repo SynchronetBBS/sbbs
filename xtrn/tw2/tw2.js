@@ -26,12 +26,16 @@ var Commodities=[
 		,price:35
 	}
 ];
+var Settings;
+var today;
+var player=null;
+var exit_tw2=false;
 
 load("recordfile.js");
 load("lockfile.js");
 load(startup_path+"filename.js");
 load(fname("gamesettings.js"));
-var Settings=new GameSettings();
+Settings=new GameSettings();
 
 load(fname("ports.js"));
 load(fname("planets.js"));
@@ -43,48 +47,6 @@ load(fname("messages.js"));
 load(fname("computer.js"));
 load(fname("input.js"));
 load(fname("editor.js"));
-
-var today=system.datestr(system.datestr());
-
-js.on_exit("do_exit()");
-js.auto_terminate=false;
-/* Run maintenance */
-if(Settings.MaintLastRan != system.datestr()) {
-	RunMaint();
-}
-
-console.attributes="C";
-console.crlf();
-console.crlf();
-console.center("Trade Wars (v.ii)");
-console.center("By Chris Sherrick (PTL)");
-console.center("Copyright 1986 Chris Sherrick");
-console.crlf();
-console.center(system.name);
-console.center("Sysop  "+system.operator);
-console.crlf();
-console.crlf();
-console.printfile(fname("twopeng.asc"));
-if(file_exists(fname("twopeng.dat")))
-	console.printfile(fname("twopeng.dat"));
-console.crlf();
-console.attributes="W";
-console.writeln("Initializing...");
-console.writeln("Searching my records for your name.");
-var player=null;
-if(!LoadPlayer())
-	exit(0);
-
-var exit_tw2=false;
-
-console.pause();
-
-while(player.KilledBy==0 && exit_tw2==false) {
-	if(EnterSector()) {
-		if(CheckSector())
-			Menu();
-	}
-}
 
 function Menu()
 {
@@ -104,7 +66,7 @@ function Menu()
 			if(sector.Warps[i]>0)
 				valid.push(sector.Warps[i].toString());
 		}
-		var inp=InputFunc(valid)
+		var inp=InputFunc(valid);
 		switch(inp) {
 			case '':
 				console.writeln("? = Help");
@@ -256,3 +218,48 @@ function Production(place)
 	place.LastUpdate=newupd;
 	place.Put();
 }
+
+function main()
+{
+	today=system.datestr(system.datestr());
+
+	js.on_exit("do_exit()");
+	js.auto_terminate=false;
+	/* Run maintenance */
+	if(Settings.MaintLastRan != system.datestr()) {
+		RunMaint();
+	}
+
+	console.attributes="C";
+	console.crlf();
+	console.crlf();
+	console.center("Trade Wars (v.ii)");
+	console.center("By Chris Sherrick (PTL)");
+	console.center("Copyright 1986 Chris Sherrick");
+	console.crlf();
+	console.center(system.name);
+	console.center("Sysop  "+system.operator);
+	console.crlf();
+	console.crlf();
+	console.printfile(fname("twopeng.asc"));
+	if(file_exists(fname("twopeng.dat")))
+		console.printfile(fname("twopeng.dat"));
+	console.crlf();
+	console.attributes="W";
+	console.writeln("Initializing...");
+	console.writeln("Searching my records for your name.");
+	if(!LoadPlayer())
+		exit(0);
+
+	console.pause();
+
+	while(player.KilledBy==0 && exit_tw2==false) {
+		if(EnterSector()) {
+			if(CheckSector())
+				Menu();
+		}
+	}
+
+}
+
+main();

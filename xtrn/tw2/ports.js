@@ -51,32 +51,19 @@ var PortProperties = [
 
 var ports=new RecordFile(fname("ports.dat"), PortProperties);
 
-function DockAtPort()
+function SolReport()
 {
-	console.attributes="HR";
+	var holdprice=parseInt(50*Math.sin(0.89756*(today/86400)) + 0.5)+500;
+	var fighterprice=parseInt(10*Math.sin(0.89714*(today/86400) + 1.5707) + 0.5)+100;
+	var turnprice=300;
+
+	console.writeln("Commerce report for Sol: " + system.timestr());
+	console.writeln("  Cargo holds: " + holdprice + " credits/hold");
+	console.writeln("  Fighters   : " + fighterprice + " credits/fighter");
+	console.writeln("  Turns      : "+turnprice+" credits each.");
 	console.crlf();
-	console.writeln("Docking...");
-	if(player.TurnsLeft<1) {
-		console.writeln("Sorry, but you don't have any turns left.");
-		return;
-	}
-	var sector=sectors.Get(player.Sector);
-	if(sector.Port<1) {
-		console.writeln("There are no ports in this sector.");
-		return;
-	}
-	player.TurnsLeft--;
-	player.Ported=true;
-	player.Put();
-	console.writeln("One turn deducted");
-	if(player.Sector==1) {
-		DockAtSol();
-	}
-	else {
-		DockAtRegularPort();
-	}
-	player.Ported=false;
-	player.Put();
+
+	return([holdprice,fighterprice,turnprice]);
 }
 
 /*
@@ -86,16 +73,19 @@ function DockAtSol()
 {
 	/* 33200 */
 	var prices=SolReport();
+	var maxbuy;
+	var buy;
+	
 	console.attributes="HR";
 	console.writeln("You have " + player.Credits + " credits.");
 	console.crlf();
 	/* Holds */
-	var maxbuy=parseInt(player.Credits/prices[0]);
+	maxbuy=parseInt(player.Credits/prices[0]);
 	if(player.Holds+maxbuy>50)
 		maxbuy=50-player.Holds;
 	if(maxbuy > 0) {
 		console.write("How many holds do you want to buy [0]? ");
-		var buy=InputFunc([{min:0,max:maxbuy}]);
+		buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Holds+=buy;
 			player.Credits -= buy*prices[0];
@@ -104,12 +94,12 @@ function DockAtSol()
 		}
 	}
 	/* Fighters */
-	var maxbuy=parseInt(player.Credits/prices[1]);
+	maxbuy=parseInt(player.Credits/prices[1]);
 	if(player.Fighters+maxbuy>9999)
 		maxbuy=9999-player.Fighters;
 	if(maxbuy > 0) {
 		console.write("How many fighters do you want to buy [0]? ");
-		var buy=InputFunc([{min:0,max:maxbuy}]);
+		buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.Fighters+=buy;
 			player.Credits -= buy*prices[1];
@@ -118,10 +108,10 @@ function DockAtSol()
 		}
 	}
 	/* Turns */
-	var maxbuy=parseInt(player.Credits/prices[2]);
+	maxbuy=parseInt(player.Credits/prices[2]);
 	if(maxbuy > 0) {
 		console.write("How many turns do you want to buy [0]? ");
-		var buy=InputFunc([{min:0,max:maxbuy}]);
+		buy=InputFunc([{min:0,max:maxbuy}]);
 		if(buy>0) {
 			player.TurnsLeft+=buy;
 			player.Credits -= buy*prices[2];
@@ -130,68 +120,6 @@ function DockAtSol()
 		}
 	}
 }
-
-function DockAtRegularPort()
-{
-	var sector=sectors.Get(player.Sector);
-
-	/* Lock the port file and ensure we can dock... */
-	if(!Lock(ports.file.name, bbs.node_num, true, 5)) {
-		console.writeln("The port is busy.  Try again later.");
-		return;
-	}
-	var port=ports.Get(sector.Port);
-	if(port.OccupiedBy != 0) {
-		console.writeln("The port is busy.  Try again later.");
-		Unlock(ports.file.name);
-		return;
-	}
-	port.OccupiedBy=player.Record;
-	port.Put();
-	Unlock(ports.file.name);
-	Production(port);
-	var sale=PortReport(sector);
-	console.attributes="HR";
-	var count=0;
-
-	console.writeln();
-
-	console.attributes="HY";
-	/* Sell... */
-	for(i=0; i<Commodities.length; i++) {
-		if(sale[i].Vary < 0) {
-			var amount=Transact(i, sale[i].Price, sale[i].Vary, sale[i].Number);
-			if(amount >= 0) {
-				count++;
-				port.Commodities[i] -= amount;
-				port.Put();
-			}
-		}
-	}
-	/* Buy... */
-	for(i=0; i<Commodities.length; i++) {
-		if(sale[i].Vary > 0) {
-			var amount=Transact(i, sale[i].Price, sale[i].Vary, sale[i].Number);
-			if(amount >= 0) {
-				count++;
-				port.Commodities[i] -= amount;
-				port.Put();
-			}
-		}
-	}
-	if(count==0) {
-		console.attributes="IC";
-		console.writeln("You don't have anything they want, and they don't have anything you can buy");
-		console.attributes="C";
-	}
-
-	if(!Lock(ports.file.name, bbs.node_num, true, 10))
-		twmsg.writeln("!!! Error locking ports file!");
-	port.OccupiedBy=0;
-	port.Put();
-	Unlock(ports.file.name);
-}
-
 
 function PortReport(sec) {
 	var port=ports.Get(sec.Port);
@@ -206,7 +134,7 @@ function PortReport(sec) {
 		ret[i]=new Object();
 		ret[i].Vary=port.PriceVariance[i];
 		ret[i].Number=parseInt(port.Commodities[i]);
-		ret[i].Price=parseInt(Commodities[i].price*(1-ret[i].Vary*ret[i].Number/port.Production[i]/1000)+.5);
+		ret[i].Price=parseInt(Commodities[i].price*(1-ret[i].Vary*ret[i].Number/port.Production[i]/1000)+0.5);
 	}
 	console.crlf();
 	console.writeln("Commerce report for "+port.Name+": "+system.timestr());
@@ -223,21 +151,6 @@ function PortReport(sec) {
 				,player.Commodities[i]));
 	}
 	return(ret);
-}
-
-function SolReport()
-{
-	var holdprice=parseInt(50*Math.sin(.89756*(today/86400)) + .5)+500;
-	var fighterprice=parseInt(10*Math.sin(.89714*(today/86400) + 1.5707) + .5)+100;
-	var turnprice=300;
-
-	console.writeln("Commerce report for Sol: " + system.timestr());
-	console.writeln("  Cargo holds: " + holdprice + " credits/hold");
-	console.writeln("  Fighters   : " + fighterprice + " credits/fighter");
-	console.writeln("  Turns      : "+turnprice+" credits each.");
-	console.crlf();
-
-	return([holdprice,fighterprice,turnprice]);
 }
 
 function Transact(type, price, vary, avail)
@@ -281,7 +194,7 @@ function Transact(type, price, vary, avail)
 				console.write("Our final offer is ");
 			else
 				console.write("We'll "+weare+" them for ");
-			console.writeln(parseInt(price*amount*(1+vary/1000)+.5));
+			console.writeln(parseInt(price*amount*(1+vary/1000)+0.5));
 			offer=0;
 			while(offer==0) {
 				console.write("Your offer? ");
@@ -309,12 +222,12 @@ function Transact(type, price, vary, avail)
 				player.Put();
 				return(amount);
 			}
-			var worstoffer=parseInt(amount*price*(1-vary/250/(hag+1)) + .5);
+			var worstoffer=parseInt(amount*price*(1-vary/250/(hag+1)) + 0.5);
 			if(buy && offer < worstoffer)
 				break;
 			if(!buy && offer > worstoffer)
 				break;
-			price = .7*price + .3*offer/amount;
+			price = 0.7*price + 0.3*offer/amount;
 		}
 
 		if(offer > 0) {
@@ -329,10 +242,104 @@ function Transact(type, price, vary, avail)
 	return(0);
 }
 
+function DockAtRegularPort()
+{
+	var sector=sectors.Get(player.Sector);
+	var amount;
+	var sale;
+	var count;
+	var port;
+
+	/* Lock the port file and ensure we can dock... */
+	if(!Lock(ports.file.name, bbs.node_num, true, 5)) {
+		console.writeln("The port is busy.  Try again later.");
+		return;
+	}
+	port=ports.Get(sector.Port);
+	if(port.OccupiedBy != 0) {
+		console.writeln("The port is busy.  Try again later.");
+		Unlock(ports.file.name);
+		return;
+	}
+	port.OccupiedBy=player.Record;
+	port.Put();
+	Unlock(ports.file.name);
+	Production(port);
+	sale=PortReport(sector);
+	console.attributes="HR";
+	count=0;
+
+	console.writeln();
+
+	console.attributes="HY";
+	/* Sell... */
+	for(i=0; i<Commodities.length; i++) {
+		if(sale[i].Vary < 0) {
+			amount=Transact(i, sale[i].Price, sale[i].Vary, sale[i].Number);
+			if(amount >= 0) {
+				count++;
+				port.Commodities[i] -= amount;
+				port.Put();
+			}
+		}
+	}
+	/* Buy... */
+	for(i=0; i<Commodities.length; i++) {
+		if(sale[i].Vary > 0) {
+			amount=Transact(i, sale[i].Price, sale[i].Vary, sale[i].Number);
+			if(amount >= 0) {
+				count++;
+				port.Commodities[i] -= amount;
+				port.Put();
+			}
+		}
+	}
+	if(count==0) {
+		console.attributes="IC";
+		console.writeln("You don't have anything they want, and they don't have anything you can buy");
+		console.attributes="C";
+	}
+
+	if(!Lock(ports.file.name, bbs.node_num, true, 10))
+		twmsg.writeln("!!! Error locking ports file!");
+	port.OccupiedBy=0;
+	port.Put();
+	Unlock(ports.file.name);
+}
+
+
+function DockAtPort()
+{
+	console.attributes="HR";
+	console.crlf();
+	console.writeln("Docking...");
+	if(player.TurnsLeft<1) {
+		console.writeln("Sorry, but you don't have any turns left.");
+		return;
+	}
+	var sector=sectors.Get(player.Sector);
+	if(sector.Port<1) {
+		console.writeln("There are no ports in this sector.");
+		return;
+	}
+	player.TurnsLeft--;
+	player.Ported=true;
+	player.Put();
+	console.writeln("One turn deducted");
+	if(player.Sector==1) {
+		DockAtSol();
+	}
+	else {
+		DockAtRegularPort();
+	}
+	player.Ported=false;
+	player.Put();
+}
+
 function InitializePorts()
 {
 	uifc.pop("Placing Ports");
-	port=ports.New();
+	var port=ports.New();
 	port.Put();
 
 	/* Place ports */

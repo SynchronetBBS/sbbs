@@ -95,6 +95,20 @@ var GameSettingProperties=[
 			}
 		];
 
+function GameSettings_Save()
+{
+	var f=new File(fname("game.ini"));
+
+	f.open(file_exists(f.name) ? 'r+':'w+');
+	for(i=0; i<GameSettingProperties.length; i++) {
+		if(GameSettingProperties[i].type=="Date" || this[GameSettingProperties[i].prop]!=GameSettingProperties[i].def)
+			f.iniSetValue(null, GameSettingProperties[i].prop, this[GameSettingProperties[i].prop]);
+		else
+			f.iniRemoveKey(null, GameSettingProperties[i].prop);
+	}
+	f.close();
+}
+
 function GameSettings()
 {
 	var f=new File(fname("game.ini"));
@@ -113,18 +127,4 @@ function GameSettings()
 		}
 	}
 	this.save=GameSettings_Save;
-}
-
-function GameSettings_Save()
-{
-	var f=new File(fname("game.ini"));
-
-	f.open(file_exists(f.name) ? 'r+':'w+');
-	for(i=0; i<GameSettingProperties.length; i++) {
-		if(GameSettingProperties[i].type=="Date" || this[GameSettingProperties[i].prop]!=GameSettingProperties[i].def)
-			f.iniSetValue(null, GameSettingProperties[i].prop, this[GameSettingProperties[i].prop]);
-		else
-			f.iniRemoveKey(null, GameSettingProperties[i].prop);
-	}
-	f.close();
 }

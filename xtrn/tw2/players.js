@@ -293,7 +293,7 @@ function KilledBy(killed, killer, notify)	/* 15300 */
 
 	if(killed.TeamNumber > 0) {
 		var team=teams.Get(killed.TeamNumber);
-		var i;
+		i;
 		for(i=0; i<team.Members.length; i++) {
 			if(team.Members[i]==killed.Record) {
 				team.Members[i]=0;
@@ -373,16 +373,17 @@ function TWRank()
 		}
 	}
 	var tsort=new Array();
+	var tr;
 	for(tr in trank) {
 		var ts=new Object();
 		ts.Record=tr;
 		ts.Score=trank[tr];
 		tsort.push(tr);
 	}
+	function sortfunc(a,b) {
+		return(a.Score-b.Score);
+	}
 	if(tsort.length > 0) {
-		function sortfunc(a,b) {
-			return(a.Score-b.Score);
-		}
 
 		tsort.sort(sortfunc);
 		rf.writeln();
@@ -483,6 +484,8 @@ function MatchPlayer(name)
 
 function DeletePlayer(player)
 {
+	var msg;
+
 	/* Delete player */
 	player.ReInit();
 	player.UserNumber=0;
@@ -504,7 +507,7 @@ function DeletePlayer(player)
 	}
 	/* Set messages TO the deleted player as read and FROM as from deleted */
 	for(i=0; i<twpmsg.length; i++) {
-		var msg=twpmsg.Get(i);
+		msg=twpmsg.Get(i);
 
 		if(msg.To==player.Record && !msg.Read) {
 			msg.Read=true;
@@ -517,7 +520,7 @@ function DeletePlayer(player)
 	}
 	/* Set radio messages TO the deleted player as read and FROM as from deleted */
 	for(i=0; i<twrmsg.length; i++) {
-		var msg=twrmsg.Get(i);
+		msg=twrmsg.Get(i);
 
 		if(msg.To==player.Record && !msg.Read) {
 			msg.Read=true;
@@ -555,6 +558,7 @@ function MoveTo(to)
 				player.LastIn=player.Sector;
 				player.Sector=to;
 				player.Put();
+				var location=playerLocation.Get(player.Record);
 				location.Sector=player.Sector; location.Put();
 				return(true);
 			}
@@ -667,7 +671,7 @@ function LoadPlayer()
 			player.ReInit();
 		}
 	}
-	file_touch(system.data_dir+format("user/%04d.tw2",player.UserNumber))
+	file_touch(system.data_dir+format("user/%04d.tw2",player.UserNumber));
 
 	ReadRadio();
 
@@ -676,7 +680,7 @@ function LoadPlayer()
 		player.Sector=1;
 		player.Put();
 	}
-	location=playerLocation.Get(player.Record);
+	var location=playerLocation.Get(player.Record);
 	location.Sector=player.Sector;
 	location.Put();
 
@@ -706,7 +710,7 @@ function DropFighters()
 	var newf=player.Fighters+sector.Fighters;
 	if(newf > 9999)
 		newf=9999;
-	var newf=InputFunc([{min:0,max:newf}]);
+	newf=InputFunc([{min:0,max:newf}]);
 	if(newf >= 0 && newf <=player.Fighters+sector.Fighters) {
 		if((player.Fighters+sector.Fighters)-newf > 9999) {
 			console.writeln("Too many ships in your fleet!  You are limited to 9999");

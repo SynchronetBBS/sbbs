@@ -4,6 +4,7 @@ function ComputerMenu()
 	console.attributes="HW";
 	console.writeln("<Computer activated>");
 	var showhelp=true;
+	var sec;
 
 	for(;;) {
 		if(showhelp) {
@@ -26,7 +27,7 @@ function ComputerMenu()
 			case '2':
 				/* 33780 */
 				console.write("What sector number is the port in? ");
-				var sec=InputFunc([{min:0,max:sectors.length-1}]);
+				sec=InputFunc([{min:0,max:sectors.length-1}]);
 				if(sec > 0 && sec < sectors.length) {
 					var sector=sectors.Get(sec);
 					if(sector.Port==0 || (sector.Fighters>0 && sector.Fighters!=player.Record)) {
@@ -45,7 +46,7 @@ function ComputerMenu()
 			case '3':
 				/* 33830 */
 				console.write("What sector do you want to get to? ");
-				var sec=InputFunc([{min:0,max:sectors.length-1}]);
+				sec=InputFunc([{min:0,max:sectors.length-1}]);
 				if(sec > 0 && sec < sectors.length) {
 					if(sec==player.Sector) {
 						console.writeln("You are in that sector.");

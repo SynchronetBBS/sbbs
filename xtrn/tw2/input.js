@@ -4,7 +4,7 @@ try {
 	lastmisc=system.node_list[bbs.node_num-1].misc;
 	laststatus=system.node_list[bbs.node_num-1].status;
 }
-catch (e) {}
+catch (er) {}
 
 function CheckNode()
 {
@@ -29,8 +29,8 @@ function CheckTime()
 {
 	/* Time Check */
 	if((player.TimedUsed + (time()-on_at)) > (Settings.MaxTime*60)) {
-		console.crlf()
-		console.crlf()
+		console.crlf();
+		console.crlf();
 		console.writeln("You are out of time for today");
 		exit(0);
 	}

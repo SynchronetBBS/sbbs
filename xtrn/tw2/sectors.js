@@ -63,11 +63,13 @@ function EnterSector()	/* 20000 */
 {
 	var sector=sectors.Get(player.Sector);
 	var fighterteam=-1;
+	var otherplayer;
+	var location;
 
 	console.attributes="Y";
 	DisplaySector(sector.Record);
 	if(sector.FighterOwner > 0) {
-		var otherplayer=players.Get(sector.FighterOwner);
+		otherplayer=players.Get(sector.FighterOwner);
 		if(otherplayer.TeamNumber > 0)
 			fighterteam=otherplayer.TeamNumber;
 	}
@@ -81,9 +83,9 @@ function EnterSector()	/* 20000 */
 				var otherteam=false;
 
 				if(sector.FighterOwner > 0) {
-					var otherplayer=players.Get(sector.FighterOwner);
+					otherplayer=players.Get(sector.FighterOwner);
 					if(otherplayer.TeamNumber>0)
-						otherteam-true;
+						otherteam=true;
 				}
 				var killed=DoBattle(sector, otherteam);
 				if(killed > 0) {
@@ -112,6 +114,7 @@ function EnterSector()	/* 20000 */
 				console.writeln("<Retreat>");
 				if(player.LastIn<1 || player.LastIn>=sectors.length)
 					player.LastIn=random(sectors.length-1)+1;
+				location=playerSector.Get(player.Record);
 				if(player.Fighters<1) {
 					if(random(2)==1) {
 						console.writeln("You escaped!");
@@ -160,12 +163,13 @@ function DisplaySector(secnum)
 	var i;
 	var count=0;
 	var otherships=new Array();
+	var otherplayer;
 	
 	for(i=1;i<players.length;i++) {
 		var otherloc=playerLocation.Get(i);
 
 		if(otherloc.Sector==secnum) {
-			var otherplayer=players.Get(i);
+			otherplayer=players.Get(i);
 
 			if(otherplayer.UserNumber > 0 && otherplayer.Sector==secnum) {
 				if(otherplayer.Record==player.Record)
@@ -199,7 +203,7 @@ function DisplaySector(secnum)
 	console.write("Port   ");
 	if(sector.Port > 0) {
 		var port=ports.Get(sector.Port);
-		console.write(port.Name+", class "+port.Class)
+		console.write(port.Name+", class "+port.Class);
 	}
 	else
 		console.write("None");
@@ -213,7 +217,7 @@ function DisplaySector(secnum)
 	console.writeln("Other Ships");
 	console.attributes="C";
 	for(i in otherships) {
-		var otherplayer=otherships[i];
+		otherplayer=otherships[i];
 		console.crlf();
 		console.write("   "+otherplayer.Alias);
 		if(otherplayer.TeamNumber>0)
@@ -241,10 +245,10 @@ function DisplaySector(secnum)
 		else if(sector.FighterOwner==player.Record)
 			console.writeln(" (yours)");
 		else {
-			var otherplayer=players.Get(sector.FighterOwner);
+			otherplayer=players.Get(sector.FighterOwner);
 			console.write(" (belong to "+otherplayer.Alias);
 			if(otherplayer.TeamNumber)
-				console.write("  Team ["+otherplayer.TeamNumber+"]")
+				console.write("  Team ["+otherplayer.TeamNumber+"]");
 			console.writeln(")");
 		}
 	}
@@ -314,6 +318,8 @@ function ShortestPath(start, end)
 
 function InitializeSectors()
 {
+	var i,prop;
+
 	uifc.pop("Writing Sectors");
 	/* Write sectors.dat */
 	sector=sectors.New();

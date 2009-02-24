@@ -50,7 +50,7 @@ function DeleteInactive()
 		var p=players.Get(i);
 		if(p.UserNumber > 0) {
 			if((!file_exists(system.data_dir+format("user/%04d.tw2",p.UserNumber))) || (system.datestr(p.LastOnDay) < oldest_allowed && p.KilledBy != 0)) {
-				DeletePlayer(p)
+				DeletePlayer(p);
 			}
 		}
 	}
@@ -58,6 +58,8 @@ function DeleteInactive()
 
 function MoveCabalGroup(cabal, target)
 {
+	var i;
+
 	if(cabal.Sector==0 || cabal.Size < 1)
 		return;
 	var sector=sectors.Get(cabal.Sector);
@@ -93,7 +95,7 @@ function MoveCabalGroup(cabal, target)
 			}
 		}
 		/* Place into twpmsg.dat */
-		var i;
+		i;
 		var msg=null;
 		for(i=0; i<twpmsg.length; i++) {
 			msg=twpmsg.Get(i);
@@ -126,7 +128,7 @@ function MoveCabalGroup(cabal, target)
 		return;
 
 	/* Merge into another group */
-	var i;
+	i;
 	for(i=1; i<cabals.length; i++) {
 		if(i==cabal.Record)
 			continue;
@@ -151,12 +153,16 @@ function MoveCabal()
 {
 	var total=0;
 	var i;
+	var cabal;
+	var group2;
+	var wgroup,agroup,hgroup;
+	var path,next;
 
 	console.writeln("Moving the Cabal.");
 	twmsg.writeln("    Cabal report:");
 	/* Validate Groups and count the total */
 	for(i=1; i<cabals.length; i++) {
-		var cabal=cabals.Get(i);
+		cabal=cabals.Get(i);
 		var sector=sectors.Get(cabal.Sector);
 		cabal.Size=sector.Fighters;
 		if(sector.FighterOwner != -1 || sector.Fighters==0) {
@@ -169,7 +175,7 @@ function MoveCabal()
 	}
 
 	/* Move group 2 into sector 85 (merge into group 1) */
-	var cabal=cabals.Get(2);
+	cabal=cabals.Get(2);
 	MoveCabalGroup(cabal, 85);
 
 	/* Note, this seems to have a max limit of 2000 for regeneration */
@@ -192,7 +198,7 @@ function MoveCabal()
 
 	/* Create wandering groups */
 	for(i=3; i<6; i++) {
-		var wgroup=cabals.Get(i);
+		wgroup=cabals.Get(i);
 		if(wgroup.Size < 1 || wgroup.Sector < 1 || wgroup.Sector >= sectors.length) {
 			if(group2.size >= 600) {
 				wgroup.Size=100;
@@ -211,7 +217,7 @@ function MoveCabal()
 
 	/* Create attack groups */
 	for(i=6; i<9; i++) {
-		var agroup=cabals.Get(i);
+		agroup=cabals.Get(i);
 		if(agroup.Size < 1 || agroup.Sector < 1 || agroup.Sector >= sectors.length) {
 			if(group2.size >= 550) {
 				agroup.Size=50;
@@ -229,7 +235,7 @@ function MoveCabal()
 	}
 	
 	/* Create hunter group */
-	var hgroup=cabals.Get(9);
+	hgroup=cabals.Get(9);
 	if(hgroup.Size < 1 || hgroup.Sector < 1 || hgroup.Sector >= sectors.length) {
 		if(group2.size >= 500) {
 			hgroup.Size=group2.Size-500;
@@ -246,7 +252,7 @@ function MoveCabal()
 
 	/* Move wandering groups */
 	for(i=3; i<6; i++) {
-		var wgroup=cabals.Get(i);
+		wgroup=cabals.Get(i);
 		if(wgroup.Size < 1 || wgroup.Sector == 0)
 			continue;
 		/* Choose new target */
@@ -257,7 +263,7 @@ function MoveCabal()
 		}
 		if(wgroup.Size < 50 || wgroup.Size > 100)
 			wgroup.Goal=85;
-		var path=ShortestPath(wgroup.Sector, wgroup.Goal);
+		path=ShortestPath(wgroup.Sector, wgroup.Goal);
 		while(path[0] < 8)
 			path.shift();
 		MoveCabalGroup(wgroup,path[0]);
@@ -265,7 +271,7 @@ function MoveCabal()
 
 	/* Move Attack Groups */
 	for(i=6; i<9; i++) {
-		var agroup=cabals.Get(i);
+		agroup=cabals.Get(i);
 		if(agroup.Size < 1 || agroup.Sector == 0)
 			continue;
 		/* Choose new target */
@@ -276,10 +282,9 @@ function MoveCabal()
 		}
 		if(agroup.Size < 20 || agroup.Size > 50)
 			agroup.Goal=85;
-		var path=ShortestPath(agroup.Sector, agroup.Goal);
-		var next;
+		path=ShortestPath(agroup.Sector, agroup.Goal);
 		while(path.length > 0 && agroup.Size > 0) {
-			var next=path.shift();
+			next=path.shift();
 			if(next < 8)
 				continue;
 			MoveCabalGroup(agroup,next);
@@ -288,7 +293,7 @@ function MoveCabal()
 
 	/* Move hunter groups... */
 	for(i=9; i<10; i++) {
-		var hgroup=cabals.Get(i);
+		hgroup=cabals.Get(i);
 		if(hgroup.Size < 1 || hgroup.Sector == 0)
 			continue;
 		/* Choose target */
@@ -296,10 +301,9 @@ function MoveCabal()
 		if(ranks.length < 0) {
 			var player=players.Get(ranks[0].Record);
 			hgroup.Goal=player.Sector;
-			var path=ShortestPath(hgroup.Sector, hgroup.Goal);
-			var next;
+			path=ShortestPath(hgroup.Sector, hgroup.Goal);
 			while(path.length > 0 && hgroup.Size > 0) {
-				var next=path.shift();
+				next=path.shift();
 				MoveCabalGroup(hgroup,next);
 			}
 		}
