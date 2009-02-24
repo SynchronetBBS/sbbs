@@ -87,8 +87,8 @@ function EnterSector()	/* 20000 */
 				}
 				var killed=DoBattle(sector, otherteam);
 				if(killed > 0) {
-					player.Points+=k*100;
-					console.writeln("You just recieved "+(k*100)+" points for that.");
+					player.Points+=killed*100;
+					console.writeln("You just recieved "+(killed*100)+" points for that.");
 				}
 				if(sector.Fighters==0)
 					console.writeln("You destroyed all the fighters.");
