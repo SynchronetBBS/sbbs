@@ -1103,7 +1103,7 @@ int main(int argc, char **argv)
 	char	*inpath=NULL;
 	BOOL	exit_now=FALSE;
 	int		conn_type=CONN_TYPE_TELNET;
-	BOOL	dont_set_mode=FALSE;
+	int		text_mode;
 	BOOL	override_conn=FALSE;
 	char	*last_bbs=NULL;
 
@@ -1121,6 +1121,7 @@ int main(int argc, char **argv)
 
 	load_settings(&settings);
 	ciolib_mode=settings.output_mode;
+	text_mode=settings.startup_mode;
 
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
@@ -1184,8 +1185,32 @@ int main(int argc, char **argv)
 					}
 					break;
                 case 'L':
-                    uifc.scrn_len=atoi(argv[i]+2);
-					dont_set_mode=TRUE;
+                    switch(atoi(argv[i]+2)) {
+            			case 14:
+                			text_mode=C80X14;
+                			break;
+            			case 21:
+                			text_mode=C80X21;
+                			break;
+            			case 25:
+                			text_mode=C80;
+                			break;
+            			case 28:
+                			text_mode=C80X28;
+                			break;
+            			case 43:
+                			text_mode=C80X43;
+                			break;
+            			case 50:
+                			text_mode=C80X50;
+                			break;
+            			case 60:
+                			text_mode=C80X60;
+                			break;
+            			default:
+                			text_mode=C4350;
+                			break;
+					}
                     break;
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
@@ -1212,8 +1237,7 @@ int main(int argc, char **argv)
 	if(initciolib(ciolib_mode))
 		return(1);
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
-	if(!dont_set_mode)
-		textmode(screen_to_ciolib(settings.startup_mode));
+	textmode(text_mode);
 
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
