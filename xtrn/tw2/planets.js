@@ -328,7 +328,7 @@ function PlanetIncreaseProd(planet)
 		if(incr > 0 && incr <= max) {
 			if(!Lock(planets.file.name, bbs.node_num, true, 5)) {
 				console.writeln("!UNABLE TO LOCK planet.dat!");
-				return();
+				return;
 			}
 			if(planet.Production[keynum]+incr > 20)
 				incr=20-planet.Production[keynum];
