@@ -147,11 +147,13 @@ int sbbs_t::rprintf(const char *fmt, ...)
 /****************************************************************************/
 void sbbs_t::backspace(void)
 {
-	outcom('\b');
-	outcom(' ');
-	outcom('\b');
-	if(column)
-		column--;
+	if(!(console&CON_ECHO_OFF)) {
+		outcom('\b');
+		outcom(' ');
+		outcom('\b');
+		if(column)
+			column--;
+	}
 }
 
 /****************************************************************************/
