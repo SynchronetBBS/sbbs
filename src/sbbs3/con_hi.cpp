@@ -108,25 +108,15 @@ bool sbbs_t::chksyspass()
 		logline("S!","Remote sysop access disabled");
 		return(false);
 	}
-#if 0	/* no local logins in v3 */
-	if(online==ON_LOCAL) {
-		if(!(cfg.sys_misc&SM_L_SYSOP))
-			return(false);
-		if(!(cfg.node_misc&NM_SYSPW) && !(cfg.sys_misc&SM_REQ_PW))
-			return(false); 
-	}
-#endif
 	bputs(text[SystemPassword]);
-	console&=~(CON_R_ECHO|CON_L_ECHO);
-	getstr(str,40,K_UPPER);
-	console=orgcon;
+	getstr(str,40,K_UPPER|K_NOECHO);
 	CRLF;
 	if(strcmp(cfg.sys_pass,str)) {
 		if(cfg.sys_misc&SM_ECHO_PW) 
-			sprintf(str2,"%s #%u System password attempt: '%s'"
+			SAFEPRINTF3(str2,"%s #%u System password attempt: '%s'"
 				,useron.alias,useron.number,str);
 		else
-			sprintf(str2,"%s #%u System password verification failure"
+			SAFEPRINTF2(str2,"%s #%u System password verification failure"
 				,useron.alias,useron.number);
 		logline("S!",str2);
 		return(false); 
