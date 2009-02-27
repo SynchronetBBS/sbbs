@@ -97,6 +97,8 @@ int sbbs_t::rputs(const char *str, size_t len)
 {
     size_t	l;
 
+	if(console&CON_ECHO_OFF)
+		return 0;
 	if(len==0)
 		len=strlen(str);
 	for(l=0;l<len && online;l++) {
