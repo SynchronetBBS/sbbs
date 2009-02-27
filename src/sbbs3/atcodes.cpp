@@ -57,7 +57,7 @@ int sbbs_t::show_atcode(const char *instr)
 	bool	padded_right=false;
 	const char *cp;
 
-	sprintf(str,"%.80s",instr);
+	SAFECOPY(str,instr);
 	tp=strchr(str+1,'@');
 	if(!tp)                 /* no terminating @ */
 		return(0);
