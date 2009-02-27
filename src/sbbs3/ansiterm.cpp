@@ -262,6 +262,7 @@ bool sbbs_t::ansi_gotoxy(int x, int y)
 		rprintf("\x1b[%d;%dH",y,x);
 		if(x>0)
 			column=x-1;
+		lncntr=0;
 		return true;
 	}
 	return false;
