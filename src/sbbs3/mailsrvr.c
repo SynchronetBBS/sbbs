@@ -4513,6 +4513,9 @@ void DLLCALL mail_server(void* arg)
 		lprintf(LOG_INFO,"Initializing on %.24s with options: %lx"
 			,ctime_r(&t,str),startup->options);
 
+		if(chdir(startup->ctrl_dir)!=0)
+			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
