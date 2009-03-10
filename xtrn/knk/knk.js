@@ -1126,8 +1126,8 @@ function Player_computermove(month, other)
 	else {
 		if(this.soldiers < other.soldiers * .66)
 			weight.need_soldiers += 1 - other.soldiers/this.soldiers;
-		if(this.soldiers < 4000) {
-			weight.need_soldiers += 1 - this.soldiers/4000;
+		if(this.soldiers < 3000) {
+			weight.need_soldiers += 1 - this.soldiers/3000;
 			if(weight.need_soldiers > 1)
 				weight.need_soldiers = 1;
 		}
@@ -1142,11 +1142,11 @@ function Player_computermove(month, other)
 			weight.need_kastle += 1 - this.kastle/10000;
 	}
 
-	if(this.mfood==0)
+	if(this.mfood<.5)
 		weight.loss_food=1;
 	else {
 		if(this.mfood < 2)
-			weight.need_food += 1 - this.mfood/2;
+			weight.need_food += 1 - ((this.mfood-.5)/2+.25);
 	}
 
 	if(this.guards==0)
