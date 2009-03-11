@@ -211,7 +211,7 @@ function decode_news_body(hdr, body)
 			break;
 		case 'base64':
 			/* Remove non-base64 bytes */
-			body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=]/g,'');
+			body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\/=]/g,'');
 			body=base64_decode(body);
 			hdr["content-transfer-encoding"].hdr_data='8bit';
 			break;
