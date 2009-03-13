@@ -1219,7 +1219,7 @@ function IRCClient_lusers() {
 	this.numeric(250, ":Highest connection count: " + hcc_total + " ("
 		+ hcc_users + " clients.)");
 	this.server_notice(hcc_counter + " clients have connected since "
-		+ strftime("%a %b %e %H:%M:%S %Y %Z",server_uptime));
+		+ strftime("%a %b %d %H:%M:%S %Y %Z",server_uptime));
 }
 
 function num_noninvis_users() {

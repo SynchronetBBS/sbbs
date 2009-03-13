@@ -374,7 +374,7 @@ function Unregistered_Welcome() {
 	hcc_counter++;
 	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + servername + ", running version " + VERSION);
-	this.numeric("003", ":This server was created " + strftime("%a %b %e %Y at %H:%M:%S %Z",server_uptime));
+	this.numeric("003", ":This server was created " + strftime("%a %b %d %Y at %H:%M:%S %Z",server_uptime));
 	this.numeric("004", servername + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
 	this.numeric("005", "NETWORK=Synchronet MAXBANS=" + max_bans + " "
 		+ "MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " "
