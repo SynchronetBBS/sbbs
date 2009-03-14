@@ -34,11 +34,11 @@ endif
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD)
 
 $(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 	@echo Linking $@
-	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV-LIBS)
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV_LIB_BUILD)
 
 $(XPDEV_LIB_BUILD): $(OBJODIR) $(OBJS)
 	@echo Creating $@
