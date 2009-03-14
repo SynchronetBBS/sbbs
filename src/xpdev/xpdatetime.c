@@ -92,13 +92,34 @@ xpTimeZone_t xpTimeZone_local(void)
 
 	localtime_r(&t, &tm);
 	return(tm.tm_gmtoff/60);
+#elif defined(_WIN32)
+	TIME_ZONE_INFORMATION	tz;
+	DWORD					tzRet;
+
+	/*****************************/
+	/* Get Time-zone information */
+	/*****************************/
+    memset(&tz,0,sizeof(tz));
+	tzRet=GetTimeZoneInformation(&tz);
+	switch(tzRet) {
+		case TIME_ZONE_ID_DAYLIGHT:
+			tz.Bias += tz.DaylightBias;
+			break;
+		case TIME_ZONE_ID_STANDARD:
+			tz.Bias += tz.StandardBias;
+			break;
+	}
+
+	return -tz.Bias;
 #else
+
 #if defined(__BORLANDC__) || defined(__CYGWIN__)
 	#define timezone _timezone
 #endif
 
 	/* Converts (_)timezone from seconds west of UTC to minutes east of UTC */
-	return -timezone/60;
+	/* Adjust for DST, assuming adjustment is 60 seconds <sigh> */
+	return -((timezone/60) - (daylight*60));
 #endif
 }
 
