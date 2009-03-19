@@ -196,12 +196,18 @@ BOOL DLLCALL findstr_in_list(const char* insearchof, str_list_t list)
 {
 	size_t	index;
 	BOOL	found=FALSE;
+	char*	p;
 
 	if(list==NULL || insearchof==NULL)
 		return(FALSE);
 
-	for(index=0;list[index]!=NULL && !found; index++)
-		found=findstr_in_string(insearchof, list[index]);
+	for(index=0; list[index]!=NULL; index++) {
+		p=list[index];
+		SKIP_WHITESPACE(p);
+		found=findstr_in_string(insearchof,p);
+		if(found!=(*p=='!'))
+			break;
+	}
 	return(found);
 }
 
