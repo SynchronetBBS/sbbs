@@ -111,6 +111,8 @@ struct mailproc {
 	char		eval[INI_MAX_VALUE_LEN];
 	str_list_t	to;
 	str_list_t	from;
+	str_list_t	host;
+	str_list_t	ip;
 	BOOL		passthru;
 	BOOL		native;
 	BOOL		ignore_on_error;	/* Ignore mail message if cmdline fails */
@@ -1831,6 +1833,7 @@ void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
 static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 {
 	char*	p;
+	char*	tp;
 	char	field[128];
 	int		len;
 	ushort	nettype;
@@ -1860,9 +1863,10 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 
 	if(!stricmp(field, "REPLY-TO")) {
 		smb_hfield_str(msg, *type=RFC822REPLYTO, p);
-		if(*p=='<')  {
-			p++;
-			truncstr(p,">");
+		if((tp=strrchr(p,'<'))!=NULL)  {
+			tp++;
+			truncstr(tp,">");
+			p=tp;
 		}
 		nettype=NET_INTERNET;
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
@@ -1957,7 +1961,7 @@ static void parse_mail_address(char* p
 	SKIP_WHITESPACE(p);
 
 	/* Get the address */
-	if((tp=strchr(p,'<'))!=NULL)
+	if((tp=strrchr(p,'<'))!=NULL)
 		tp++;
 	else
 		tp=p;
@@ -2450,6 +2454,14 @@ static void smtp_thread(void* arg)
 
 						if(mailproc_list[i].from!=NULL 
 							&& !findstr_in_list(sender_addr, mailproc_list[i].from))
+							continue;
+
+						if(mailproc_list[i].host!=NULL 
+							&& !findstr_in_list(host_name, mailproc_list[i].host))
+							continue;
+
+						if(mailproc_list[i].ip!=NULL 
+							&& !findstr_in_list(host_ip, mailproc_list[i].ip))
 							continue;
 
 						if(!mailproc_list[i].passthru)
@@ -3312,7 +3324,7 @@ static void smtp_thread(void* arg)
 			/* Check for full address aliases */
 			p=alias(&scfg,p,alias_buf);
 			if(p==alias_buf) 
-				lprintf(LOG_INFO,"%04d SMTP ADDRESS ALIAS: %s (for %s)"
+				lprintf(LOG_DEBUG,"%04d SMTP ADDRESS ALIAS: %s (for %s)"
 					,socket,p,rcpt_addr);
 
 			tp=strrchr(p,'@');
@@ -3396,7 +3408,7 @@ static void smtp_thread(void* arg)
 
 			p=alias(&scfg,p,name_alias_buf);
 			if(p==name_alias_buf) 
-				lprintf(LOG_INFO,"%04d SMTP NAME ALIAS: %s (for %s)"
+				lprintf(LOG_DEBUG,"%04d SMTP NAME ALIAS: %s (for %s)"
 					,socket,p,rcpt_addr);
 		
 			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
@@ -3597,7 +3609,7 @@ static void smtp_thread(void* arg)
 			}
 			/* These vars are potentially over-written by parsing an RFC822 header */
 			/* get sender_addr */
-			p=strchr(reverse_path,'<');
+			p=strrchr(reverse_path,'<');
 			if(p==NULL)	
 				p=reverse_path;
 			else 
@@ -3614,6 +3626,8 @@ static void smtp_thread(void* arg)
 				state=SMTP_STATE_DATA_BODY;	/* No RFC headers in Telegrams */
 			else
 				state=SMTP_STATE_DATA_HEADER;
+			lprintf(LOG_INFO,"%04d SMTP Receiving %s message from: %s"
+				,socket, telegram ? "telegram":"mail", reverse_path);
 			hdr_lines=0;
 			continue;
 		}
@@ -4338,6 +4352,8 @@ static void cleanup(int code)
 				free(mailproc_list[i].ar);
 			strListFree(&mailproc_list[i].to);
 			strListFree(&mailproc_list[i].from);
+			strListFree(&mailproc_list[i].host);
+			strListFree(&mailproc_list[i].ip);
 		}
 		FREE_AND_NULL(mailproc_list);
 	}
@@ -4562,6 +4578,10 @@ void DLLCALL mail_server(void* arg)
 						iniReadStringList(fp,sec_list[i],"To",",",NULL);
 					mailproc_list[i].from =
 						iniReadStringList(fp,sec_list[i],"From",",",NULL);
+					mailproc_list[i].host =
+						iniReadStringList(fp,sec_list[i],"Host",",",NULL);
+					mailproc_list[i].ip =
+						iniReadStringList(fp,sec_list[i],"Ip",",",NULL);
 					mailproc_list[i].passthru =
 						iniReadBool(fp,sec_list[i],"PassThru",TRUE);
 					mailproc_list[i].native =
