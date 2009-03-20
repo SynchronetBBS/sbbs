@@ -24,11 +24,21 @@ function DataQueue(root,name,log_)
 	{
 		this.UpdateUsers();
 		var data=[];
-		if(this.stream.poll(ident)) {
-			while(this.stream.poll(ident)) 
+		if(ident)
+		{
+			while(this.stream.poll(ident))
 			{
 				var incoming_data=this.stream.read(ident);
-				Log("received data from user: " + system.username(incoming_data.user));
+				Log("received signed data from user: " + system.username(incoming_data.user));
+				data.push=incoming_data;
+			}
+		}
+		else 
+		{
+			while(this.stream.data_waiting())
+			{
+				var incoming_data=this.stream.read();
+				Log("received unsigned data from user: " + system.username(incoming_data.user));
 				data.push=incoming_data;
 			}
 		}
@@ -36,11 +46,11 @@ function DataQueue(root,name,log_)
 	}
 	this.SendData=function(data,ident)
 	{
+		this.UpdateUsers();
 		for(user_ in this.users) 
 		{
-			this.UpdateUsers();
 			this.users[user_].Send(data,ident);
-			Log("sending data to user: " + this.users[user_].user);
+			Log("sending data to user: " + system.username(this.users[user_].user));
 		}
 	}
 	this.UpdateUsers=function()
@@ -68,6 +78,11 @@ function DataQueue(root,name,log_)
 				Log("removing absent user: " + system.username(user_));
 			}
 		}
+	}
+	this.DataWaiting=function(ident)
+	{
+		if(this.stream.poll(ident)) return true;
+		return false;
 	}
 	this.Init=function(data)
 	{
