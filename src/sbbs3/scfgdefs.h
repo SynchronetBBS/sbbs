@@ -529,6 +529,7 @@ typedef struct
 	uint16_t		max_userxfer;	/* Max dest. users of user to user xfer */
 	uint32_t		max_minutes;	/* Maximum minutes a user can have */
 	uint32_t		max_qwkmsgs;	/* Maximum messages per QWK packet */
+	uint16_t		max_qwkmsgage;	/* Maximum age (in days) of QWK messages to be imported */
 	char			preqwk_arstr[LEN_ARSTR+1]; /* pre pack QWK */
 	uchar*			preqwk_ar;
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */

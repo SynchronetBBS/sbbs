@@ -130,7 +130,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		fclose(rep);
 		bputs(text[QWKReplyNotReceived]);
 		logline("U!",AttemptedToUploadREPpacket);
-		logline(nulstr,"Incorrect BBSID");
+		logline(nulstr,"Incorrect QWK BBS ID");
 		return(false); 
 	}
 	logline("U+","Uploaded REP packet");
@@ -149,6 +149,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		fclose(fp);
 	}
 
+	now=time(NULL);
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
 		if(terminated) {
 			bprintf("!Terminated");
@@ -174,8 +175,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 		qwk_new_msg(&msg, block, /* offset: */l, headers, /* parse_sender_hfields: */useron.rest&FLAG('Q') ? true:false);
 
+		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
+			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
+			SAFEPRINTF2(str,"!Filtering QWK message from %s due to age: %u days"
+				,msg.from
+				,(now-msg.hdr.when_written.time)/(24*60*60)); 
+			logline("P!",str);
+			continue;
+		}
+
 		if(findstr_in_list(msg.from_ip,ip_can)) {
-			SAFEPRINTF2(str,"!Filtering message from %s due to blocked IP: %s"
+			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked IP: %s"
 				,msg.from
 				,msg.from_ip); 
 			logline("P!",str);
@@ -183,7 +193,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 
 		if(findstr_in_list(msg.from_host,host_can)) {
-			SAFEPRINTF2(str,"!Filtering message from %s due to blocked hostname: %s"
+			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked hostname: %s"
 				,msg.from
 				,msg.from_host); 
 			logline("P!",str);
@@ -191,7 +201,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 
 		if(findstr_in_list(msg.subj,subject_can)) {
-			SAFEPRINTF2(str,"!Filtering message from %s due to filtered subject: %s"
+			SAFEPRINTF2(str,"!Filtering QWK message from %s due to filtered subject: %s"
 				,msg.from
 				,msg.subj); 
 			logline("P!",str);
@@ -308,7 +318,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				putuserrec(&cfg,useron.number,U_ETODAY,5
 					,ultoa(useron.etoday,tmp,10));
 				bprintf(text[Emailed],username(&cfg,usernum,tmp),usernum);
-				SAFEPRINTF3(str,"%s sent e-mail to %s #%d"
+				SAFEPRINTF3(str,"%s sent QWK e-mail to %s #%d"
 					,useron.alias,username(&cfg,usernum,tmp),usernum);
 				logline("E+",str);
 				for(k=1;k<=cfg.sys_nodes;k++) { /* Tell user, if online */
@@ -355,7 +365,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				k--;	/* k is sub */
 				if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf) {
 					bprintf(text[QWKInvalidConferenceN],n);
-					SAFEPRINTF2(str,"%s: Invalid conference number %lu",useron.alias,n);
+					SAFEPRINTF2(str,"%s: Invalid QWK conference number %lu",useron.alias,n);
 					logline("P!",str);
 					continue; 
 				} 
@@ -387,13 +397,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			if(useron.rest&FLAG('Q') && !(cfg.sub[n]->misc&SUB_QNET)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","Attempted to post on non-QWKnet sub");
+				logline("P!","Attempted to post QWK message on non-QWKnet sub");
 				continue; 
 			}
 
 			if(useron.rest&FLAG('P')) {
 				bputs(text[R_Post]);
-				logline("P!","Post attempted");
+				logline("P!","QWK Post attempted");
 				continue; 
 			}
 
@@ -406,20 +416,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(useron.rest&FLAG('N')
 				&& cfg.sub[n]->misc&(SUB_FIDO|SUB_PNET|SUB_QNET|SUB_INET)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","Networked post attempted");
+				logline("P!","QWK Networked post attempted");
 				continue; 
 			}
 
 			if(!chk_ar(cfg.sub[n]->post_ar,&useron,&client)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","Post attempted");
+				logline("P!","QWK Post attempted");
 				continue; 
 			}
 
 			if((block[0]=='*' || block[0]=='+')
 				&& !(cfg.sub[n]->misc&SUB_PRIV)) {
 				bputs(text[PrivatePostsNotAllowed]);
-				logline("P!","Private post attempt");
+				logline("P!","QWK Private post attempt");
 				continue; 
 			}
 
@@ -444,7 +454,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			/* TWIT FILTER */
 			if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-				SAFEPRINTF4(str,"Filtering post from %s to %s on %s %s"
+				SAFEPRINTF4(str,"Filtering QWK post from %s to %s on %s %s"
 					,msg.from
 					,msg.to
 					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
@@ -499,7 +509,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				user_posted_msg(&cfg, &useron, 1);
 				bprintf(text[Posted],cfg.grp[cfg.sub[n]->grp]->sname
 					,cfg.sub[n]->lname);
-				SAFEPRINTF3(str,"%s posted on %s %s"
+				SAFEPRINTF3(str,"%s posted QWK message on %s %s"
 					,useron.alias,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
 				signal_sub_sem(&cfg,n);
 				logline("P+",str); 

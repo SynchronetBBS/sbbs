@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -127,7 +127,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		fseek(qwk,l,SEEK_SET);
 		fread(block,QWK_BLOCK_LEN,1,qwk);
 		if(block[0]<' ' || block[0]&0x80) {
-			eprintf(LOG_NOTICE,"!Invalid message status (%02X) at offset %lu in %s"
+			eprintf(LOG_NOTICE,"!Invalid QWK message status (%02X) at offset %lu in %s"
 				,block[0], l, packet);
 			blocks=1;
 			continue;
@@ -135,7 +135,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
-			eprintf(LOG_NOTICE,"!Invalid number of blocks (%d) at offset %lu in %s"
+			eprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
 				,blocks, l+116, packet);
 			blocks=1;
 			continue; 
@@ -147,29 +147,38 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 		qwk_new_msg(&msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true);
 
+		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
+			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
+			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
+				,msg.from
+				,(now-msg.hdr.when_written.time)/(24*60*60)); 
+			logline("P!",str);
+			continue;
+		}
+
 		if(findstr_in_list(msg.from_ip,ip_can)) {
-			eprintf(LOG_NOTICE,"!Filtering message from %s due to blocked IP: %s"
+			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
 				,msg.from
 				,msg.from_ip); 
 			continue;
 		}
 
 		if(findstr_in_list(msg.from_host,host_can)) {
-			eprintf(LOG_NOTICE,"!Filtering message from %s due to blocked hostname: %s"
+			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 				,msg.from
 				,msg.from_host); 
 			continue;
 		}
 
 		if(findstr_in_list(msg.subj,subject_can)) {
-			eprintf(LOG_NOTICE,"!Filtering message from %s due to filtered subject: %s"
+			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
 				,msg.from
 				,msg.subj); 
 			continue;
 		}
 
 		if(!n) {		/* NETMAIL */
-			eprintf(LOG_INFO,"NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
+			eprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
 			if(!stricmp(msg.to,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(qwk,(char *)block,NULL,hubnum+1);
 				continue; 
@@ -184,7 +193,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(!usernum)
 				usernum=matchuser(&cfg,msg.to,TRUE /* sysop_alias */);
 			if(!usernum) {
-				eprintf(LOG_NOTICE,"!NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, msg.to);
+				eprintf(LOG_NOTICE,"!QWK NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, msg.to);
 				continue; 
 			}
 
@@ -244,7 +253,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(cfg.qhub[hubnum]->conf[j]==n)
 				break;
 		if(j>=cfg.qhub[hubnum]->subs) {	/* ignore messages for subs not in config */
-			eprintf(LOG_NOTICE,"!Message from %s on UNKNOWN CONFERENCE NUMBER: %u"
+			eprintf(LOG_NOTICE,"!Message from %s on UNKNOWN QWK CONFERENCE NUMBER: %u"
 				,cfg.qhub[hubnum]->id, n);
 			continue;
 		}
@@ -253,7 +262,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 		/* TWIT FILTER */
 		if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-			eprintf(LOG_NOTICE,"!Filtering post from %s to %s on %s %s"
+			eprintf(LOG_NOTICE,"!Filtering QWK post from %s to %s on %s %s"
 				,msg.from
 				,msg.to
 				,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
@@ -266,12 +275,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				t=time(NULL)-startsub;
 				if(t<1)
 					t=1;
-				eprintf(LOG_INFO,"Imported %lu msgs in %lu seconds (%lu msgs/sec)", msgs,t,msgs/t);
+				eprintf(LOG_INFO,"Imported %lu QWK msgs in %lu seconds (%lu msgs/sec)", msgs,t,msgs/t);
 			}
 			msgs=0;
 			startsub=time(NULL);
 
-			eprintf(LOG_INFO,"Importing messages from %s into %s %s"
+			eprintf(LOG_INFO,"Importing QWK messages from %s into %s %s"
 				,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
 
 			if(lastsub!=INVALID_SUB)
