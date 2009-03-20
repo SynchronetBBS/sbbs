@@ -111,8 +111,6 @@ struct mailproc {
 	char		eval[INI_MAX_VALUE_LEN];
 	str_list_t	to;
 	str_list_t	from;
-	str_list_t	host;
-	str_list_t	ip;
 	BOOL		passthru;
 	BOOL		native;
 	BOOL		ignore_on_error;	/* Ignore mail message if cmdline fails */
@@ -2456,14 +2454,6 @@ static void smtp_thread(void* arg)
 							&& !findstr_in_list(sender_addr, mailproc_list[i].from))
 							continue;
 
-						if(mailproc_list[i].host!=NULL 
-							&& !findstr_in_list(host_name, mailproc_list[i].host))
-							continue;
-
-						if(mailproc_list[i].ip!=NULL 
-							&& !findstr_in_list(host_ip, mailproc_list[i].ip))
-							continue;
-
 						if(!mailproc_list[i].passthru)
 							msg_handled=TRUE;
 
@@ -4352,8 +4342,6 @@ static void cleanup(int code)
 				free(mailproc_list[i].ar);
 			strListFree(&mailproc_list[i].to);
 			strListFree(&mailproc_list[i].from);
-			strListFree(&mailproc_list[i].host);
-			strListFree(&mailproc_list[i].ip);
 		}
 		FREE_AND_NULL(mailproc_list);
 	}
@@ -4578,10 +4566,6 @@ void DLLCALL mail_server(void* arg)
 						iniReadStringList(fp,sec_list[i],"To",",",NULL);
 					mailproc_list[i].from =
 						iniReadStringList(fp,sec_list[i],"From",",",NULL);
-					mailproc_list[i].host =
-						iniReadStringList(fp,sec_list[i],"Host",",",NULL);
-					mailproc_list[i].ip =
-						iniReadStringList(fp,sec_list[i],"Ip",",",NULL);
 					mailproc_list[i].passthru =
 						iniReadBool(fp,sec_list[i],"PassThru",TRUE);
 					mailproc_list[i].native =
