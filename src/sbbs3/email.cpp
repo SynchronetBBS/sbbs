@@ -291,6 +291,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	if(useron.misc&NETMAIL) {
+		if(useron.rest&FLAG('G'))
+			smb_hfield_str(&msg,REPLYTO,useron.name);
 		nettype=smb_netaddr_type(useron.netmail);
 		if(nettype!=NET_NONE && nettype!=NET_UNKNOWN) {
 			smb_hfield(&msg,REPLYTONETTYPE,sizeof(nettype),&nettype);
