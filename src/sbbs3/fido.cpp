@@ -228,19 +228,6 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		if(fexistcase(str)) {
 			bputs(text[FileAlreadyThere]);
 			return(false); }
-#if 0	/* no such thing as local logon */
-		if(online==ON_LOCAL) {		/* Local upload */
-			bputs(text[EnterPath]);
-			if(!getstr(str,60,K_LINE|K_UPPER)) {
-				bputs(text[Aborted]);
-				return(false); 
-			}
-			backslash(str);
-			strcat(str,fname);
-			if(mv(str,subj,1))
-				return(false); 
-		} else 
-#endif
 		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);

@@ -122,18 +122,6 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
 			return(false); }
-#if 0	/* no such thing as local logon */
-		if(online==ON_LOCAL) {		/* Local upload */
-			bputs(text[EnterPath]);
-			if(!getstr(str,60,K_LINE|K_UPPER)) {
-				bputs(text[Aborted]);
-				remove(msgpath);
-				return(false); }
-			backslash(str);
-			strcat(str,title);
-			mv(str,str2,1); }
-		else 
-#endif
 		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);

@@ -237,24 +237,6 @@ void sbbs_t::readmail(uint usernumber, int which)
 						sprintf(str3,text[DownloadAttachedFileQ]
 							,tp,ultoac(length,tmp));
 						if(length>0L && yesno(str3)) {
-#if 0	/* no such thing as local logon */
-							if(online==ON_LOCAL) {
-								bputs(text[EnterPath]);
-								if(getstr(str3,60,K_LINE)) {
-									backslashcolon(str3);
-									sprintf(tmp,"%s%s",str3,tp);
-									if(!mv(str2,tmp,which!=MAIL_YOUR)) {
-										logon_dlb+=length;
-										logon_dls++;
-										useron.dls=(ushort)adjustuserrec(&cfg,useron.number
-											,U_DLS,5,1);
-										useron.dlb=adjustuserrec(&cfg,useron.number
-											,U_DLB,10,length);
-										bprintf(text[FileNBytesSent]
-											,fd.name,ultoac(length,tmp)); } } }
-
-							else 
-#endif
 							{	/* Remote User */
 								xfer_prot_menu(XFER_DOWNLOAD);
 								mnemonics(text[ProtocolOrQuit]);

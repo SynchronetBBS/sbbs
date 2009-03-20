@@ -882,10 +882,6 @@ void sbbs_t::privchat(bool local)
 		lncntr=0;
 		CLS;
 		ansi_save();
-#if 0
-		if(local)
-			bprintf(text[SysopIsHere],cfg.sys_op);
-#endif
 		ansi_gotoxy(1,13);
 		remote_y=1;
 		bprintf(local ? local_sep : sep

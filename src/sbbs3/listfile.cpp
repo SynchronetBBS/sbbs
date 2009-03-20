@@ -1233,26 +1233,6 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
-#if 0	/* no such thing as local logon */
-					if(online==ON_LOCAL) {
-						bputs(text[EnterPath]);
-						if(getstr(path,60,K_LINE)) {
-							backslash(path);
-							strcat(path,fname);
-							sprintf(str,"%s%s",dirpath,fname);
-							if(!mv(str,path,1))
-								downloadfile(&f);
-							for(j=0;j<cfg.total_dlevents;j++)
-								if(!stricmp(cfg.dlevent[j]->ext,f.name+9)
-									&& chk_ar(cfg.dlevent[j]->ar,&useron)) {
-									bputs(cfg.dlevent[j]->workstr);
-									external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr
-										,NULL)
-										,EX_OUTL);
-									CRLF; }
-								} }
-					else 
-#endif
 					{
 						delfiles(cfg.temp_dir,ALLFILES);
 						if(cfg.dir[f.dir]->seqdev) {
