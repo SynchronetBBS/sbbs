@@ -1186,6 +1186,24 @@ char *decompile_ars(uchar *ars, int len)
 				out=strchr(buf,0);
 				artype=*in;
 				break;
+			case AR_HOST:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"HOST");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
+			case AR_IP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"IP");
+				out=strchr(buf,0);
+				artype=*in;
+				break;
 			case AR_GUEST:
 				if(not)
 					*(out++)='!';

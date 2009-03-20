@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1347,7 +1347,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	user.qwk=QWK_DEFAULT;
 
 	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user))
+		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user,/* client: */NULL))
 			break;
 	if(i<cfg->total_xedits)
 		user.xedit=i+1;
@@ -1356,7 +1356,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(i==0) {
-		userobj=js_CreateUserObject(cx, obj, cfg, NULL, user.number);
+		userobj=js_CreateUserObject(cx, obj, cfg, NULL, user.number, /* client: */NULL);
 		*rval = OBJECT_TO_JSVAL(userobj);
 	} else
 		*rval = INT_TO_JSVAL(i);

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -265,7 +265,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(usrlibs) {
 				i=usrdir[curlib][curdir[curlib]];
 				if(cfg.upload_dir!=INVALID_DIR
-					&& !chk_ar(cfg.dir[i]->ul_ar,&useron))
+					&& !chk_ar(cfg.dir[i]->ul_ar,&useron,&client))
 					i=cfg.upload_dir; 
 			} else
 				i=cfg.upload_dir;

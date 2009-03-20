@@ -261,13 +261,13 @@ void sbbs_t::readmail(uint usernumber, int which)
 								strcpy(str3,"Q");
 								for(i=0;i<cfg.total_prots;i++)
 									if(cfg.prot[i]->dlcmd[0]
-										&& chk_ar(cfg.prot[i]->ar,&useron)) {
+										&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 										sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 										strcat(str3,tmp); }
 								ch=(char)getkeys(str3,0);
 								for(i=0;i<cfg.total_prots;i++)
 									if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
-										&& chk_ar(cfg.prot[i]->ar,&useron))
+										&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 										break;
 								if(i<cfg.total_prots) {
 									error=protocol(cfg.prot[i],XFER_DOWNLOAD,str2,nulstr,false);

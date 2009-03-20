@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -101,7 +101,7 @@ void sbbs_t::batchmenu()
 					break; 
 				}
 				for(i=0,totalcdt=0;i<batdn_total;i++)
-					if(!is_download_free(&cfg,batdn_dir[i],&useron))
+					if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
 						totalcdt+=batdn_cdt[i];
 				if(totalcdt>useron.cdt+useron.freecdt) {
 					bprintf(text[YouOnlyHaveNCredits]
@@ -122,7 +122,7 @@ void sbbs_t::batchmenu()
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(tmp2,"Q");
 				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+					if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(tmp2,tmp); }
 				ungetkey(useron.prot);
@@ -131,7 +131,7 @@ void sbbs_t::batchmenu()
 					break;
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->bicmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron))
+						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
 					if(!create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false))
@@ -288,7 +288,7 @@ void sbbs_t::batchmenu()
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(str,"Q");
 				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(str,tmp); 
 					}
@@ -297,7 +297,7 @@ void sbbs_t::batchmenu()
 					break;
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron))
+						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
 					sprintf(str,"%sBATCHUP.LST",cfg.node_dir);
@@ -354,7 +354,7 @@ BOOL sbbs_t::start_batch_download()
 		return(FALSE); 
 	}
 	for(i=0,totalcdt=0;i<batdn_total;i++)
-		if(is_download_free(&cfg,batdn_dir[i],&useron))
+		if(is_download_free(&cfg,batdn_dir[i],&useron,&client))
 			totalcdt+=batdn_cdt[i];
 	if(totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[YouOnlyHaveNCredits]
@@ -376,7 +376,7 @@ BOOL sbbs_t::start_batch_download()
 	mnemonics(text[ProtocolOrQuit]);
 	strcpy(str,"Q");
 	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 			strcat(str,tmp); 
 		}
@@ -386,7 +386,7 @@ BOOL sbbs_t::start_batch_download()
 		return(FALSE);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
-			&& chk_ar(cfg.prot[i]->ar,&useron))
+			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 			break;
 	if(i>=cfg.total_prots)
 		return(FALSE);	/* no protocol selected */
@@ -443,7 +443,7 @@ BOOL sbbs_t::start_batch_download()
 		for(j=0;j<cfg.total_dlevents;j++) {
 			if(stricmp(cfg.dlevent[j]->ext,batdn_name[i]+9))
 				continue;
-			if(!chk_ar(cfg.dlevent[j]->ar,&useron))
+			if(!chk_ar(cfg.dlevent[j]->ar,&useron,&client))
 				continue;
 			bputs(cfg.dlevent[j]->workstr);
 			external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL),EX_OUTL);
@@ -792,17 +792,17 @@ bool sbbs_t::addtobatdl(file_t* f)
 		return(false); 
 	}
 	for(i=0,totalcdt=0;i<batdn_total;i++)
-		if(!is_download_free(&cfg,batdn_dir[i],&useron))
+		if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
 			totalcdt+=batdn_cdt[i];
 	if(cfg.dir[f->dir]->misc&DIR_FREE) f->cdt=0L;
-	if(!is_download_free(&cfg,f->dir,&useron))
+	if(!is_download_free(&cfg,f->dir,&useron,&client))
 		totalcdt+=f->cdt;
 	if(totalcdt>useron.cdt+useron.freecdt) {
 		bprintf(text[CantAddToQueue],f->name);
 		bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
 		return(false); 
 	}
-	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron)) {
+	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[CantDownloadFromDir]);
 		return(false); 

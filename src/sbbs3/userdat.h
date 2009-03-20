@@ -40,6 +40,7 @@
 
 #include "scfgdefs.h"   /* scfg_t */
 #include "dat_rec.h"	/* getrec/putrec prototypes */
+#include "client.h"		/* client_t */
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
@@ -97,7 +98,7 @@ DLLEXPORT int	DLLCALL putnmsg(scfg_t* cfg, int num, char *strin);
 DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
 							,BOOL del);
 
-DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t* cfg, uchar* str, user_t* user); /* checks access requirements */
+DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t* cfg, uchar* str, user_t*, client_t*); /* checks access requirements */
 
 DLLEXPORT int	DLLCALL getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
 DLLEXPORT int	DLLCALL putuserrec(scfg_t*, int usernumber, int start, uint length, const char *str);
@@ -106,8 +107,8 @@ DLLEXPORT BOOL	DLLCALL logoutuserdat(scfg_t*, user_t*, time_t now, time_t logont
 DLLEXPORT void	DLLCALL resetdailyuserdat(scfg_t*, user_t*);
 DLLEXPORT void	DLLCALL subtract_cdt(scfg_t*, user_t*, long amt);
 DLLEXPORT int	DLLCALL user_rec_len(int offset);
-DLLEXPORT BOOL	DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, uint* reason);
-DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user);
+DLLEXPORT BOOL	DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uint* reason);
+DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client);
 DLLEXPORT BOOL	DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr, char* username, char* fname);
 
 /* New atomic numeric user field adjustment functions: */

@@ -1712,7 +1712,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 				break;
 
 			/* Area and "user" Objects */
-			if(!js_CreateUserObjects(*js_cx, *js_glob, &scfg, user, NULL, NULL)) 
+			if(!js_CreateUserObjects(*js_cx, *js_glob, &scfg, user, client, NULL, NULL)) 
 				break;
 
 			/* Mailproc "API" filenames */
@@ -2446,7 +2446,7 @@ static void smtp_thread(void* arg)
 						if(mailproc_list[i].disabled)
 							continue;
 
-						if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user))
+						if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user,&client))
 							continue;
 
 						if(mailproc_list[i].to!=NULL && !mailproc_to_match[i])
@@ -2737,7 +2737,7 @@ static void smtp_thread(void* arg)
 					if(relay_user.number==0)
 						memset(&relay_user,0,sizeof(relay_user));
 
-					if(!can_user_post(&scfg,subnum,&relay_user,&reason)) {
+					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
 						lprintf(LOG_WARNING,"%04d !SMTP %s (user #%u) cannot post on %s (reason: %u)"
 							,socket, sender_addr, relay_user.number
 							,scfg.sub[subnum]->sname, reason);

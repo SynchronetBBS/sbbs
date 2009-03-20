@@ -63,7 +63,7 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 		uselect_total=0;
 
 	if(add) {
-		if(ar && !chk_ar(ar,&useron))
+		if(ar && !chk_ar(ar,&useron,&client))
 			return(0);
 		if(!uselect_total)
 			bprintf(text[SelectItemHdr],title);

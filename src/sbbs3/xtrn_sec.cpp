@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -70,7 +70,7 @@ int sbbs_t::xtrn_sec()
 
 	while(online) {
 		for(i=0,usrxsecs=0;i<cfg.total_xtrnsecs;i++)
-			if(chk_ar(cfg.xtrnsec[i]->ar,&useron))
+			if(chk_ar(cfg.xtrnsec[i]->ar,&useron,&client))
 				usrxsec[usrxsecs++]=i;
 		if(!usrxsecs) {
 			bputs(text[NoXtrnPrograms]);
@@ -100,7 +100,7 @@ int sbbs_t::xtrn_sec()
 		else
 			xsec=0;
 
-		while(!chk_ar(cfg.xtrnsec[xsec]->ar,&useron))
+		while(!chk_ar(cfg.xtrnsec[xsec]->ar,&useron,&client))
 			xsec++;
 
 		if(xsec>=cfg.total_xtrnsecs) {
@@ -116,7 +116,7 @@ int sbbs_t::xtrn_sec()
 					continue;
 				if(cfg.xtrn[i]->event && cfg.xtrn[i]->misc&EVENTONLY)
 					continue;
-				if(!chk_ar(cfg.xtrn[i]->ar,&useron))
+				if(!chk_ar(cfg.xtrn[i]->ar,&useron,&client))
 					continue;
 				usrxtrn[usrxtrns++]=i; 
 			}
@@ -402,7 +402,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,str,strlen(str));			/* Total external programs */
 
 		for(i=0;i<cfg.total_xtrns;i++) {		/* Each program's name */
-			if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron))
+			if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron,&client))
 				strcpy(str,cfg.xtrn[i]->name);
 			else
 				str[0]=0;						/* Blank if no access */
@@ -1591,8 +1591,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
-	if(!chk_ar(cfg.xtrn[xtrnnum]->run_ar,&useron)
-		|| !chk_ar(cfg.xtrnsec[cfg.xtrn[xtrnnum]->sec]->ar,&useron)) {
+	if(!chk_ar(cfg.xtrn[xtrnnum]->run_ar,&useron,&client)
+		|| !chk_ar(cfg.xtrnsec[cfg.xtrn[xtrnnum]->sec]->ar,&useron,&client)) {
 		bputs(text[CantRunThatProgram]);
 		return(false); 
 	}
@@ -1787,8 +1787,8 @@ bool sbbs_t::user_event(user_event_t event)
 	for(i=0;i<cfg.total_xtrns;i++) {
 		if(cfg.xtrn[i]->event!=event)
 			continue;
-		if(!chk_ar(cfg.xtrn[i]->ar,&useron)
-			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron))
+		if(!chk_ar(cfg.xtrn[i]->ar,&useron,&client)
+			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron,&client))
 			continue;
 		success=exec_xtrn(i); 
 	}

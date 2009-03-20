@@ -312,7 +312,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_XEDIT,8,str);
 	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(str,cfg->xedit[i]->code) && chk_ar(cfg,cfg->xedit[i]->ar,user))
+		if(!stricmp(str,cfg->xedit[i]->code) && chk_ar(cfg,cfg->xedit[i]->ar,user,/* client: */NULL))
 			break;
 	user->xedit=i+1;
 	if(user->xedit>cfg->total_xedits)
@@ -1298,13 +1298,14 @@ static int getgrpnum(scfg_t* cfg, char* code)
 	return(-1);
 }
 
-static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
+static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 {
 	BOOL	result,not,or,equal;
 	uint	i,n,artype=AR_LEVEL,age;
 	ulong	l;
 	time_t	now;
 	struct tm tm;
+	const char*	p;
 
 	result = TRUE;
 
@@ -1335,7 +1336,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 
 		if((**ptrptr)==AR_BEGNEST) {
 			(*ptrptr)++;
-			if(ar_exp(cfg,ptrptr,user))
+			if(ar_exp(cfg,ptrptr,user,client))
 				result=!not;
 			else
 				result=not;
@@ -1537,7 +1538,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				(*ptrptr)++;
 				break;
 			case AR_SUBCODE:
-				if(user!=NULL && stricmp(user->cursub,(char *)*ptrptr)==0)
+				if(user!=NULL && !findstr_in_string(user->cursub,(char *)*ptrptr)==0)
 					result=!not;
 				else
 					result=not;
@@ -1570,7 +1571,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				(*ptrptr)++;
 				break;
 			case AR_DIRCODE:
-				if(user!=NULL && stricmp(user->curdir,(char *)*ptrptr)==0)
+				if(user!=NULL && !findstr_in_string(user->curdir,(char *)*ptrptr)==0)
 					result=!not;
 				else
 					result=not;
@@ -1769,7 +1770,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 			case AR_SHELL:
 				if(user==NULL 
 					|| user->shell>=cfg->total_shells
-					|| stricmp(cfg->shell[user->shell]->code,(char*)*ptrptr))
+					|| !findstr_in_string(cfg->shell[user->shell]->code,(char*)*ptrptr))
 					result=not;
 				else
 					result=!not;
@@ -1777,8 +1778,41 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					(*ptrptr)++;
 				break;
 			case AR_PROT:
-				if(user==NULL
-					|| stricmp(user->modem,(char*)*ptrptr))	/* should this be changed to client.prot? */
+				if(client!=NULL)
+					p=client->protocol;
+				else if(user!=NULL)
+					p=user->modem;
+				else
+					p=NULL;
+				if(!findstr_in_string(p,(char*)*ptrptr))
+					result=not;
+				else
+					result=!not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			case AR_HOST:
+				if(client!=NULL)
+					p=client->host;
+				else if(user!=NULL)
+					p=user->comp;
+				else
+					p=NULL;
+				if(!findstr_in_string(p,(char*)*ptrptr))
+					result=not;
+				else
+					result=!not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			case AR_IP:
+				if(client!=NULL)
+					p=client->addr;
+				else if(user!=NULL)
+					p=user->note;
+				else
+					p=NULL;
+				if(!findstr_in_string(p,(char*)*ptrptr))
 					result=not;
 				else
 					result=!not;
@@ -1790,7 +1824,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 	return(result);
 }
 
-BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
+BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user, client_t* client)
 {
 	uchar *p;
 
@@ -1799,7 +1833,7 @@ BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
 	if(!VALID_CFG(cfg))
 		return(FALSE);
 	p=ar;
-	return(ar_exp(cfg,&p,user));
+	return(ar_exp(cfg,&p,user,client));
 }
 
 /****************************************************************************/
@@ -2445,7 +2479,7 @@ int DLLCALL user_rec_len(int offset)
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
 /* the reason the user cannot post, when returning FALSE.					*/
 /****************************************************************************/
-BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, uint* reason)
+BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantPostOnSub;
@@ -2453,11 +2487,11 @@ BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, uint* reason)
 		return FALSE;
 	if(subnum>=cfg->total_subs)
 		return FALSE;
-	if(!chk_ar(cfg,cfg->grp[cfg->sub[subnum]->grp]->ar,user))
+	if(!chk_ar(cfg,cfg->grp[cfg->sub[subnum]->grp]->ar,user,client))
 		return FALSE;
-	if(!chk_ar(cfg,cfg->sub[subnum]->ar,user))
+	if(!chk_ar(cfg,cfg->sub[subnum]->ar,user,client))
 		return FALSE;
-	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user))
+	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user,client))
 		return FALSE;
 	if(cfg->sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
 		&& user->rest&FLAG('N'))		/* network restriction? */
@@ -2478,7 +2512,7 @@ BOOL DLLCALL can_user_post(scfg_t* cfg, uint subnum, user_t* user, uint* reason)
 /* Determine if downloads from the specified directory are free for the		*/
 /* specified user															*/
 /****************************************************************************/
-BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user)
+BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
 		return(FALSE);
@@ -2498,7 +2532,7 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user)
 	if(cfg->dir[dirnum]->ex_ar==NULL || cfg->dir[dirnum]->ex_ar[0]==0)
 		return(FALSE);
 
-	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user));
+	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
 
 /****************************************************************************/

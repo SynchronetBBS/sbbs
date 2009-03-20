@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -412,7 +412,7 @@ void sbbs_t::qwk_sec()
 	for(i=0;i<cfg.total_subs;i++)
 		sav_ptr[i]=subscan[i].ptr;
 	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron))
+		if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 			bi++;				/* number of bidirectional protocols configured */
 	if(useron.rest&FLAG('Q'))
 		getusrsubs();
@@ -580,7 +580,7 @@ void sbbs_t::qwk_sec()
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+				if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); }
 			ch=(char)getkeys(tmp2,0);
@@ -591,7 +591,7 @@ void sbbs_t::qwk_sec()
 				continue; }
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->bicmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron))
+					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_prots) {
 				batup_total=1;
@@ -663,7 +663,7 @@ void sbbs_t::qwk_sec()
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); }
 			ungetkey(useron.prot);
@@ -675,7 +675,7 @@ void sbbs_t::qwk_sec()
 				continue; }
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron))
+					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_prots) {
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
@@ -711,7 +711,7 @@ void sbbs_t::qwk_sec()
 			bprintf(text[UploadingREP],cfg.sys_id);
 			for(k=0;k<cfg.total_fextrs;k++)
 				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
-					&& chk_ar(cfg.fextr[k]->ar,&useron))
+					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
 					break;
 			if(k>=cfg.total_fextrs) {
 				bputs(text[QWKExtractionFailed]);
@@ -725,7 +725,7 @@ void sbbs_t::qwk_sec()
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); }
 			ch=(char)getkeys(tmp2,0);
@@ -733,7 +733,7 @@ void sbbs_t::qwk_sec()
 				continue;
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron))
+					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i>=cfg.total_prots)	/* This shouldn't happen */
 				continue;

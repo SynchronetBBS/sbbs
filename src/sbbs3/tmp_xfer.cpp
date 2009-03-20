@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -153,7 +153,7 @@ void sbbs_t::temp_xfer()
 					&& f.size/(ulong)cur_cps>timeleft) {
 					bputs(text[NotEnoughTimeToDl]);
 					break; }
-				if(!chk_ar(cfg.dir[temp_dirnum]->dl_ar,&useron)) {
+				if(!chk_ar(cfg.dir[temp_dirnum]->dl_ar,&useron,&client)) {
 					bputs(text[CantDownloadFromDir]);
 					break; }
 				addfiledat(&cfg,&f);
@@ -162,14 +162,14 @@ void sbbs_t::temp_xfer()
 				mnemonics(text[ProtocolOrQuit]);
 				SAFECOPY(tmp2,"Q");
 				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(tmp2,tmp); }
 				ungetkey(useron.prot);
 				ch=(char)getkeys(tmp2,0);
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron))
+						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
 					getnodedat(cfg.node_num,&thisnode,1);
@@ -331,7 +331,7 @@ void sbbs_t::extract(uint dirnum)
 	SAFECOPY(str,f.name);
 	truncsp(str);
 	for(i=0;i<cfg.total_fextrs;i++)
-		if(!stricmp(str+9,cfg.fextr[i]->ext) && chk_ar(cfg.fextr[i]->ar,&useron)) {
+		if(!stricmp(str+9,cfg.fextr[i]->ext) && chk_ar(cfg.fextr[i]->ar,&useron,&client)) {
 			SAFECOPY(excmd,cfg.fextr[i]->cmd);
 			break; }
 	if(i==cfg.total_fextrs) {
@@ -471,7 +471,7 @@ char * sbbs_t::temp_cmd(void)
 		return(nulstr); }
 	for(i=0;i<cfg.total_fcomps;i++)
 		if(!stricmp(useron.tmpext,cfg.fcomp[i]->ext)
-			&& chk_ar(cfg.fcomp[i]->ar,&useron))
+			&& chk_ar(cfg.fcomp[i]->ar,&useron,&client))
 			return(cfg.fcomp[i]->cmd);
 	return(cfg.fcomp[0]->cmd);
 }

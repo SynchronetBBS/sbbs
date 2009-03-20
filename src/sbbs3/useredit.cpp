@@ -617,7 +617,7 @@ void sbbs_t::useredit(int usernumber)
 					for(i=k-1;i;i--) {
 						user.number=i;
 						getuserdat(&cfg,&user);
-						if(chk_ar(ar,&user)) {
+						if(chk_ar(ar,&user,/* client: */NULL)) {
 							outchar(BEL);
 							break; 
 						} 
@@ -637,7 +637,7 @@ void sbbs_t::useredit(int usernumber)
 					for(i=k+1;i<=j;i++) {
 						user.number=i;
 						getuserdat(&cfg,&user);
-						if(chk_ar(ar,&user)) {
+						if(chk_ar(ar,&user,/* client: */NULL)) {
 							outchar(BEL);
 							break; 
 						} 
@@ -1055,7 +1055,7 @@ void sbbs_t::maindflts(user_t* user)
 				mnemonics(text[ProtocolOrQuit]);
 				SAFECOPY(str,"Q");
 				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
 						strcat(str,tmp); 
 					}

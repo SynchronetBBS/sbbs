@@ -341,7 +341,7 @@ BOOL sbbs_t::newuser()
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
 	for(i=0;i<cfg.total_xedits;i++)
-		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit) && chk_ar(cfg.xedit[i]->ar,&useron))
+		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit) && chk_ar(cfg.xedit[i]->ar,&useron,&client))
 			break;
 	if(i<cfg.total_xedits)
 		useron.xedit=i+1;

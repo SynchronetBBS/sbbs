@@ -183,7 +183,7 @@ BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* x
 
 
 JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-										  ,user_t* user)
+										  ,user_t* user, client_t* client)
 {
 	JSObject*	areaobj;
 	JSObject*	allsec;
@@ -246,7 +246,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			return(NULL);
 
 		sec_index=-1;
-		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user)) {
+		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user,client)) {
 
 			if(!JS_GetArrayLength(cx, sec_list, &sec_index))
 				return(NULL);
@@ -287,7 +287,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, secobj, "ars", &val))
 			return(NULL);
 
-		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user))
+		if(user==NULL || chk_ar(cfg,cfg->xtrnsec[l]->ar,user,client))
 			val=JSVAL_TRUE;
 		else
 			val=JSVAL_FALSE;
@@ -314,7 +314,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			prog_index=-1;
-			if((user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user))
+			if((user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user,client))
 				&& !(cfg->xtrn[d]->event && cfg->xtrn[d]->misc&EVENTONLY)) {
 
 				if(!JS_GetArrayLength(cx, prog_list, &prog_index))
@@ -353,14 +353,14 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user))
+			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->ar,user,client))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, progobj, "can_access", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user))
+			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user,client))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
@@ -468,7 +468,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 	for(l=0;l<cfg->total_xedits;l++) {
 
-		if(user!=NULL && !chk_ar(cfg,cfg->xedit[l]->ar,user))
+		if(user!=NULL && !chk_ar(cfg,cfg->xedit[l]->ar,user,client))
 			continue;
 
 		if((xeditobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)

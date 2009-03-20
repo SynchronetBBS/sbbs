@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -37,12 +37,13 @@
 
 #include "sbbs.h"
 
-bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
+bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 {
 	bool	result,_not,_or,equal;
 	uint	i,n,artype,age;
 	ulong	l;
 	struct tm tm;
+	const char*	p;
 
 	result = true;
 
@@ -70,7 +71,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 
 		if((**ptrptr)==AR_BEGNEST) {
 			(*ptrptr)++;
-			if(ar_exp(ptrptr,user))
+			if(ar_exp(ptrptr,user,client))
 				result=!_not;
 			else
 				result=_not;
@@ -293,7 +294,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 				break;
 			case AR_SUBCODE:
 				if(cursubnum>=cfg.total_subs
-					|| stricmp(cfg.sub[cursubnum]->code,(char*)*ptrptr))
+					|| !findstr_in_string(cfg.sub[cursubnum]->code,(char*)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -328,7 +329,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 				break;
 			case AR_DIRCODE:
 				if(curdirnum>=cfg.total_dirs
-					|| stricmp(cfg.dir[curdirnum]->code,(char *)*ptrptr))
+					|| !findstr_in_string(cfg.dir[curdirnum]->code,(char *)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -562,7 +563,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 				break; 
 			case AR_SHELL:
 				if(user->shell>=cfg.total_shells
-					|| stricmp(cfg.shell[user->shell]->code,(char*)*ptrptr))
+					|| !findstr_in_string(cfg.shell[user->shell]->code,(char*)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -570,7 +571,35 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 					(*ptrptr)++;
 				break;
 			case AR_PROT:
-				if(stricmp(user->modem,(char*)*ptrptr))	/* should this be changed to client.prot? */
+				if(client!=NULL)
+					p=client->protocol;
+				else
+					p=user->modem;
+				if(!findstr_in_string(p,(char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			case AR_HOST:
+				if(client!=NULL)
+					p=client->host;
+				else
+					p=user->comp;
+				if(!findstr_in_string(p,(char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			case AR_IP:
+				if(client!=NULL)
+					p=client->addr;
+				else
+					p=user->note;
+				if(!findstr_in_string(p,(char*)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -582,14 +611,14 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user)
 	return(result);
 }
 
-bool sbbs_t::chk_ar(const uchar *ar, user_t* user)
+bool sbbs_t::chk_ar(const uchar *ar, user_t* user, client_t* client)
 {
 	const uchar *p;
 
 	if(ar==NULL)
 		return(true);
 	p=ar;
-	return(ar_exp(&p,user));
+	return(ar_exp(&p,user,client));
 }
 
 
@@ -602,11 +631,11 @@ void sbbs_t::getusrsubs()
     uint i,j,k,l;
 
 	for(j=0,i=0;i<cfg.total_grps;i++) {
-		if(!chk_ar(cfg.grp[i]->ar,&useron))
+		if(!chk_ar(cfg.grp[i]->ar,&useron,&client))
 			continue;
 		for(k=0,l=0;l<cfg.total_subs;l++) {
 			if(cfg.sub[l]->grp!=i) continue;
-			if(!chk_ar(cfg.sub[l]->ar,&useron))
+			if(!chk_ar(cfg.sub[l]->ar,&useron,&client))
 				continue;
 			usrsub[j][k++]=l; 
 		}
@@ -635,11 +664,11 @@ void sbbs_t::getusrdirs()
 		return; 
 	}
 	for(j=0,i=0;i<cfg.total_libs;i++) {
-		if(!chk_ar(cfg.lib[i]->ar,&useron))
+		if(!chk_ar(cfg.lib[i]->ar,&useron,&client))
 			continue;
 		for(k=0,l=0;l<cfg.total_dirs;l++) {
 			if(cfg.dir[l]->lib!=i) continue;
-			if(!chk_ar(cfg.dir[l]->ar,&useron))
+			if(!chk_ar(cfg.dir[l]->ar,&useron,&client))
 				continue;
 			usrdir[j][k++]=l; }
 		usrdirs[j]=k;
@@ -689,7 +718,7 @@ uint sbbs_t::getusrsub(uint subnum)
 
 int sbbs_t::dir_op(uint dirnum)
 {
-	return(SYSOP || (cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron)));
+	return(SYSOP || (cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron,&client)));
 }
 
 

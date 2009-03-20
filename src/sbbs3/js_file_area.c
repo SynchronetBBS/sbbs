@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -98,7 +98,7 @@ static char* dir_prop_desc[] = {
 
 
 JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-										  ,user_t* user, char* html_index_file)
+										  ,user_t* user, client_t* client, char* html_index_file)
 {
 	char		vpath[MAX_PATH+1];
 	JSObject*	areaobj;
@@ -172,7 +172,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 		val=OBJECT_TO_JSVAL(libobj);
 		lib_index=-1;
-		if(user==NULL || chk_ar(cfg,cfg->lib[l]->ar,user)) {
+		if(user==NULL || chk_ar(cfg,cfg->lib[l]->ar,user,client)) {
 
 			if(!JS_GetArrayLength(cx, lib_list, &lib_index))
 				return(NULL);
@@ -240,7 +240,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 			val=OBJECT_TO_JSVAL(dirobj);
 			dir_index=-1;
-			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ar,user)) {
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ar,user,client)) {
 
 				if(!JS_GetArrayLength(cx, dir_list, &dir_index))
 					return(NULL);								
@@ -408,7 +408,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			if(user==NULL 
-				|| (chk_ar(cfg,cfg->dir[d]->ul_ar,user) && !(user->rest&FLAG('U'))))
+				|| (chk_ar(cfg,cfg->dir[d]->ul_ar,user,client) && !(user->rest&FLAG('U'))))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
@@ -416,14 +416,14 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				return(NULL);
 
 			if(user==NULL 
-				|| (chk_ar(cfg,cfg->dir[d]->dl_ar,user) && !(user->rest&FLAG('D'))))
+				|| (chk_ar(cfg,cfg->dir[d]->dl_ar,user,client) && !(user->rest&FLAG('D'))))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
 			if(!JS_SetProperty(cx, dirobj, "can_download", &val))
 				return(NULL);
 
-			if(is_download_free(cfg,d,user))
+			if(is_download_free(cfg,d,user,client))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
@@ -433,7 +433,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(user!=NULL 
 				&& (user->level>=SYSOP_LEVEL 
 					|| (cfg->dir[d]->op_ar[0]!=0 
-						&& chk_ar(cfg,cfg->dir[d]->op_ar,user))))
+						&& chk_ar(cfg,cfg->dir[d]->op_ar,user,client))))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;

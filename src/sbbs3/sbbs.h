@@ -625,8 +625,8 @@ public:
 	int		nopen(char *str, int access);
 	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
 	bool	chksyspass(void);
-	bool	chk_ar(const uchar * str, user_t * user); /* checks access requirements */
-	bool	ar_exp(const uchar ** ptrptr, user_t * user);
+	bool	chk_ar(const uchar * str, user_t* user, client_t* client); /* checks access requirements */
+	bool	ar_exp(const uchar ** ptrptr, user_t*, client_t*);
 	void	daily_maint(void);
 
 	/* upload.cpp */
@@ -1032,23 +1032,23 @@ extern "C" {
 	/* js_user.c */
 	DLLEXPORT JSObject*	DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
 	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,char* name, uint usernumber);
+													,char* name, uint usernumber, client_t* client);
 	DLLEXPORT JSBool	DLLCALL js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user, char* html_index_file
+													,user_t* user, client_t* client, char* html_index_file
 													,subscan_t* subscan);
 	/* js_file_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user, char* html_index_file);
+													,user_t* user, client_t* client, char* html_index_file);
 
 	/* js_msg_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user, subscan_t* subscan);
+													,user_t* user, client_t* client, subscan_t* subscan);
 	DLLEXPORT BOOL		DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
 													,JSObject* subobj, uint subnum);
 
 	/* js_xtrn_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user);
+													,user_t* user, client_t* client);
 
 	/* js_msgbase.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg);

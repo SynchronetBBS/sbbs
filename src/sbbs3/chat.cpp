@@ -80,7 +80,7 @@ void sbbs_t::multinodechat(int channel)
 		free(gurubuf);
 		gurubuf=NULL; }
 	if(cfg.chan[channel-1]->misc&CHAN_GURU && cfg.chan[channel-1]->guru<cfg.total_gurus
-		&& chk_ar(cfg.guru[cfg.chan[channel-1]->guru]->ar,&useron)) {
+		&& chk_ar(cfg.guru[cfg.chan[channel-1]->guru]->ar,&useron,&client)) {
 		sprintf(str,"%s%s.dat",cfg.ctrl_dir,cfg.guru[cfg.chan[channel-1]->guru]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -215,7 +215,7 @@ void sbbs_t::multinodechat(int channel)
 						gurubuf=NULL; }
 					if(cfg.chan[savch-1]->misc&CHAN_GURU
 						&& cfg.chan[savch-1]->guru<cfg.total_gurus
-						&& chk_ar(cfg.guru[cfg.chan[savch-1]->guru]->ar,&useron
+						&& chk_ar(cfg.guru[cfg.chan[savch-1]->guru]->ar,&useron,&client
 						)) {
 						sprintf(str,"%s%s.dat",cfg.ctrl_dir
 							,cfg.guru[cfg.chan[savch-1]->guru]->code);
@@ -523,7 +523,7 @@ bool sbbs_t::guru_page(void)
 		bprintf(text[SysopIsNotAvailable],"The Guru");
 		return(false); 
 	}
-	if(cfg.total_gurus==1 && chk_ar(cfg.guru[0]->ar,&useron))
+	if(cfg.total_gurus==1 && chk_ar(cfg.guru[0]->ar,&useron,&client))
 		i=0;
 	else {
 		for(i=0;i<cfg.total_gurus;i++)
@@ -614,7 +614,7 @@ void sbbs_t::chatsection()
 				no_rip_menu=1;
 				if(sysop_page())
 					break;
-				if(cfg.total_gurus && chk_ar(cfg.guru[0]->ar,&useron)) {
+				if(cfg.total_gurus && chk_ar(cfg.guru[0]->ar,&useron,&client)) {
 					sprintf(str,text[ChatWithGuruInsteadQ],cfg.guru[0]->name);
 					if(!yesno(str))
 						break; }
@@ -658,14 +658,14 @@ bool sbbs_t::sysop_page(void)
 	}
 
 	if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
-		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
+		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron,&client))
 		|| useron.exempt&FLAG('C')) {
 
 		sprintf(str,"%s paged sysop for chat",useron.alias);
 		logline("C",str);
 
 		for(i=0;i<cfg.total_pages;i++)
-			if(chk_ar(cfg.page[i]->ar,&useron))
+			if(chk_ar(cfg.page[i]->ar,&useron,&client))
 				break;
 		if(i<cfg.total_pages) {
 			bprintf(text[PagingGuru],cfg.sys_op);
@@ -700,7 +700,7 @@ bool sbbs_t::sysop_page(void)
 bool sbbs_t::chan_access(uint cnum)
 {
 
-	if(!cfg.total_chans || cnum>=cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar,&useron)) {
+	if(!cfg.total_chans || cnum>=cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar,&useron,&client)) {
 		bputs(text[CantAccessThatChannel]);
 		return(false); }
 	if(!(useron.exempt&FLAG('J')) && cfg.chan[cnum]->cost>useron.cdt+useron.freecdt) {
@@ -1712,7 +1712,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			cp=strchr(str,']');
 			if(cp) *cp=0;
 			ar=arstr(NULL,str,&cfg);
-			c=chk_ar(ar,&useron);
+			c=chk_ar(ar,&useron,&client);
 			if(ar[0]!=AR_NULL)
 				free(ar);
 			if(!c && _and) {

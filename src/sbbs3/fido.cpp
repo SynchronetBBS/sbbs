@@ -246,16 +246,17 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)
-				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron)) {
+				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
-					strcat(str,tmp); }
+					strcat(str,tmp); 
+				}
 			ch=(char)getkeys(str,0);
 			if(ch=='Q' || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				return(false); }
 			for(x=0;x<cfg.total_prots;x++)
 				if(cfg.prot[x]->ulcmd[0] && cfg.prot[x]->mnemonic==ch
-					&& chk_ar(cfg.prot[x]->ar,&useron))
+					&& chk_ar(cfg.prot[x]->ar,&useron,&client))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cfg.prot[x],XFER_UPLOAD,subj,nulstr,true); 

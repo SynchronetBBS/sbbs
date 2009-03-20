@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1181,7 +1181,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					found=-1;
 					break; }
 				continue; }
-			if(!is_download_free(&cfg,f.dir,&useron)
+			if(!is_download_free(&cfg,f.dir,&useron,&client)
 				&& f.cdt>(useron.cdt+useron.freecdt)) {
 				SYNC;
 				bprintf(text[YouOnlyHaveNCredits]
@@ -1191,7 +1191,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					found=-1;
 					break; }
 				continue; }
-			if(!chk_ar(cfg.dir[f.dir]->dl_ar,&useron)) {
+			if(!chk_ar(cfg.dir[f.dir]->dl_ar,&useron,&client)) {
 				SYNC;
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);
@@ -1215,7 +1215,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			strcpy(str,"BQ\r");
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
-					&& chk_ar(cfg.prot[i]->ar,&useron)) {
+					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(str,tmp); }
 	//		  ungetkey(useron.prot);
@@ -1230,7 +1230,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			else if(ch!=CR) {
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron))
+						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 						break;
 				if(i<cfg.total_prots) {
 #if 0	/* no such thing as local logon */
@@ -1270,7 +1270,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						}
 						for(j=0;j<cfg.total_dlevents;j++)
 							if(!stricmp(cfg.dlevent[j]->ext,f.name+9)
-								&& chk_ar(cfg.dlevent[j]->ar,&useron)) {
+								&& chk_ar(cfg.dlevent[j]->ar,&useron,&client)) {
 								bputs(cfg.dlevent[j]->workstr);
 								external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
 									,EX_OUTL);

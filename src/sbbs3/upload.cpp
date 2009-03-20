@@ -80,7 +80,7 @@ bool sbbs_t::uploadfile(file_t *f)
 	truncsp(tmp);
 	for(i=0;i<cfg.total_ftests;i++)
 		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(tmp+9,cfg.ftest[i]->ext)) {
-			if(!chk_ar(cfg.ftest[i]->ar,&useron))
+			if(!chk_ar(cfg.ftest[i]->ar,&useron,&client))
 				continue;
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
@@ -151,7 +151,7 @@ bool sbbs_t::uploadfile(file_t *f)
 	}
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		for(i=0;i<cfg.total_fextrs;i++)
-			if(!stricmp(cfg.fextr[i]->ext,tmp+9) && chk_ar(cfg.fextr[i]->ar,&useron))
+			if(!stricmp(cfg.fextr[i]->ext,tmp+9) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
 				break;
 		if(i<cfg.total_fextrs) {
 			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
@@ -266,7 +266,7 @@ bool sbbs_t::upload(uint dirnum)
 		bputs(text[CantUploadHere]);
 		return(false);
 	}
-	if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron)) {
+	if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron,&client)) {
 		bputs(dirnum==cfg.user_dir ? text[CantUploadToUser] : 
 			dirnum==cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
 		return(false); 
@@ -397,8 +397,8 @@ bool sbbs_t::upload(uint dirnum)
 				}
 				getuserdat(&cfg,&user);
 				if((user.rest&(FLAG('T')|FLAG('D')))
-					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user)
-					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user)) {
+					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user,/* client: */NULL)
+					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user,/* client: */NULL)) {
 					bprintf(text[UserWontBeAbleToDl],user.alias); 
 				} else {
 					bprintf(text[UserAddedToDestList],user.alias);
@@ -478,7 +478,7 @@ bool sbbs_t::upload(uint dirnum)
 			strcat(keys,"B"); 
 		}
 		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
+			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 				sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 				strcat(keys,tmp); 
 			}
@@ -506,7 +506,7 @@ bool sbbs_t::upload(uint dirnum)
 		} else {
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron))
+					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_prots) {
 				start=time(NULL);
@@ -626,7 +626,7 @@ bool sbbs_t::recvfile(char *fname, char prot)
 		mnemonics(text[ProtocolOrQuit]);
 		strcpy(keys,"Q");
 		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron))
+			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
 
 		ch=(char)getkeys(keys,0);
@@ -635,7 +635,7 @@ bool sbbs_t::recvfile(char *fname, char prot)
 			return(false); 
 	}
 	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
+		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
 			break;
 	if(i<cfg.total_prots) {
 		if(protocol(cfg.prot[i],XFER_UPLOAD,fname,fname,true)==0)

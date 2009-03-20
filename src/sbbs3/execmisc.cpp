@@ -964,7 +964,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					cmdstr((char *)csi->ip,csi->str,csi->str,str);
 					while(*(csi->ip++));	/* Find NULL */
 					for(i=0;i<cfg.total_prots;i++)
-						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
+						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
 							break;
 					csi->logic=LOGIC_FALSE;
 					if(i<cfg.total_prots)
@@ -979,7 +979,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					for(i=0;i<cfg.total_prots;i++)
-						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
+						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
 							break;
 					csi->logic=LOGIC_FALSE;
 					if(!pp || !(*pp))
@@ -1465,7 +1465,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 			return(0);
 		case CS_COMPARE_ARS:
 			i=*(csi->ip++);  /* Length of ARS stored as byte before ARS */
-			csi->logic=!chk_ar(csi->ip,&useron);
+			csi->logic=!chk_ar(csi->ip,&useron,&client);
 			csi->ip+=i;
 			return(0);
 		case CS_TOGGLE_USER_MISC:

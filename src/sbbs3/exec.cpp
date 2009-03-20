@@ -1748,7 +1748,7 @@ int sbbs_t::exec(csi_t *csi)
 			csi->logic=LOGIC_TRUE;
 			for(i=0;i<cfg.total_shells;i++)
 				if(!stricmp(csi->str,cfg.shell[i]->code)
-					&& chk_ar(cfg.shell[i]->ar,&useron))
+					&& chk_ar(cfg.shell[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_shells) {
 				useron.shell=i;
@@ -1764,7 +1764,7 @@ int sbbs_t::exec(csi_t *csi)
 			csi->logic=LOGIC_TRUE;
 			for(i=0;i<cfg.total_xedits;i++)
 				if(!stricmp(csi->str,cfg.xedit[i]->code)
-					&& chk_ar(cfg.xedit[i]->ar,&useron))
+					&& chk_ar(cfg.xedit[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_xedits) {
 				useron.xedit=i+1;

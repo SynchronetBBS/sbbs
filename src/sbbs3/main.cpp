@@ -1123,7 +1123,7 @@ void sbbs_t::js_create_user_objects(void)
 		return;
 	
 	JS_BEGINREQUEST(js_cx);
-	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)) 
+	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, &client, NULL, subscan)) 
 		lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
 	JS_ENDREQUEST(js_cx);
 }
@@ -2291,7 +2291,7 @@ void event_thread(void* arg)
 
 					if(sbbs->useron.number
 						&& !(sbbs->useron.misc&(DELETED|INACTIVE))	 /* Pre-QWK */
-						&& sbbs->chk_ar(sbbs->cfg.preqwk_ar,&sbbs->useron)) { 
+						&& sbbs->chk_ar(sbbs->cfg.preqwk_ar,&sbbs->useron,/* client: */NULL)) { 
 						for(k=1;k<=sbbs->cfg.sys_nodes;k++) {
 							if(sbbs->getnodedat(k,&node,0)!=0)
 								continue;

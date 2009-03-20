@@ -1401,7 +1401,7 @@ BOOL http_checkuser(http_session_t * session)
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing User Objects",session->socket);
 		JS_BEGINREQUEST(session->js_cx);
 		if(session->user.number>0) {
-			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 				,NULL /* ftp index file */, session->subscan /* subscan */)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
@@ -1410,7 +1410,7 @@ BOOL http_checkuser(http_session_t * session)
 			}
 		}
 		else {
-			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, NULL
+			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */NULL, &session->client
 				,NULL /* ftp index file */, session->subscan /* subscan */)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
@@ -1680,7 +1680,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	ar = arstr(NULL,session->req.ars,&scfg);
-	authorized=chk_ar(&scfg,ar,&session->user);
+	authorized=chk_ar(&scfg,ar,&session->user,&session->client);
 	if(ar!=NULL && ar!=nular)
 		FREE_AND_NULL(ar);
 
@@ -4184,7 +4184,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_RESUMEREQUEST(cx, rc);
 
 	/* user-specific objects */
-	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 		,NULL /* ftp index file */, session->subscan /* subscan */)) {
 		lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 		send_error(session,"500 Error initializing JavaScript User Objects");

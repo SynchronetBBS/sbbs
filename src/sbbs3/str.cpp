@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -69,11 +69,11 @@ void sbbs_t::userlist(long mode)
 		if(mode==UL_SUB) {
 			if(!usrgrps)
 				continue;
-			if(!chk_ar(cfg.grp[usrgrp[curgrp]]->ar,&user))
+			if(!chk_ar(cfg.grp[usrgrp[curgrp]]->ar,&user,/* client: */NULL))
 				continue;
-			if(!chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->ar,&user)
+			if(!chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->ar,&user,/* client: */NULL)
 				|| (cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar[0]
-				&& !chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar,&user)))
+				&& !chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->read_ar,&user,/* client: */NULL)))
 				continue; 
 		}
 		else if(mode==UL_DIR) {
@@ -81,9 +81,9 @@ void sbbs_t::userlist(long mode)
 				continue;
 			if(!usrlibs)
 				continue;
-			if(!chk_ar(cfg.lib[usrlib[curlib]]->ar,&user))
+			if(!chk_ar(cfg.lib[usrlib[curlib]]->ar,&user,/* client: */NULL))
 				continue;
-			if(!chk_ar(cfg.dir[usrdir[curlib][curdir[curlib]]]->ar,&user))
+			if(!chk_ar(cfg.dir[usrdir[curlib][curdir[curlib]]]->ar,&user,/* client: */NULL))
 				continue; 
 		}
 		if(sort) {
@@ -960,7 +960,7 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 	CRLF;
 	int printed=0;
 	for(int i=0;i<cfg.total_prots;i++) {
-		if(!chk_ar(cfg.prot[i]->ar,&useron))
+		if(!chk_ar(cfg.prot[i]->ar,&useron,&client))
 			continue;
 		if(type==XFER_UPLOAD && cfg.prot[i]->ulcmd[0]==0)
 			continue;
