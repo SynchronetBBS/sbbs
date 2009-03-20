@@ -74,19 +74,6 @@ bool sbbs_t::logon()
 	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP))
 		return(false);
 
-#if 0
-	if(cur_rate<cfg.node_minbps && !(useron.exempt&FLAG('M'))) {
-		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
-		sprintf(str,"%stooslow.msg",cfg.text_dir);
-		if(fexist(str))
-			printfile(str,0);
-		sprintf(str,"(%04u)  %-25s  Modem speed: %lu<%u"
-			,useron.number,useron.alias,cur_rate,cfg.node_minbps);
-		logline("+!",str);
-		return(false); 
-	}
-#endif
-
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
 		useron.rows=0;
@@ -110,21 +97,6 @@ bool sbbs_t::logon()
 		useron.prot=cfg.new_prot;
 		useron.shell=cfg.new_shell; 
 	}
-
-#if 0
-	if(cfg.node_dollars_per_call) {
-		adjustuserrec(&cfg,useron.number,U_CDT,10
-			,cfg.cdt_per_dollar*cfg.node_dollars_per_call);
-		bprintf(text[CreditedAccount]
-			,cfg.cdt_per_dollar*cfg.node_dollars_per_call);
-		sprintf(str,"%s #%u was billed $%d T: %lu seconds"
-			,useron.alias,useron.number
-			,cfg.node_dollars_per_call,(ulong)(now-answertime));
-		logline("$+",str);
-		hangup();
-		return(false); 
-	}
-#endif
 
 	if(!chk_ar(cfg.node_ar,&useron,&client)) {
 		bputs(text[NoNodeAccess]);
@@ -234,10 +206,6 @@ bool sbbs_t::logon()
 	CLS;
 	if(useron.rows)
 		rows=useron.rows;
-#if 0	/* no such thing as local logon */
-	else if(online==ON_LOCAL)
-		rows=cfg.node_scrnlen-1;
-#endif
 	unixtodstr(&cfg,logontime,str);
 	if(!strncmp(str,useron.birth,5) && !(useron.rest&FLAG('Q'))) {
 		bputs(text[HappyBirthday]);
