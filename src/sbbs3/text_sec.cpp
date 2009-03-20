@@ -57,11 +57,13 @@ int sbbs_t::text_sec()
 	for(i=j=0;i<cfg.total_txtsecs;i++) {
 		if(!chk_ar(cfg.txtsec[i]->ar,&useron,&client))
 			continue;
-		usrsec[j++]=i; }
+		usrsec[j++]=i; 
+	}
 	usrsecs=j;
 	if(!usrsecs) {
 		bputs(text[NoTextSections]);
-		return(1); }
+		return(1); 
+	}
 	action=NODE_RTXT;
 	while(online) {
 		sprintf(str,"%smenu/text_sec.*",cfg.text_dir);
@@ -72,7 +74,9 @@ int sbbs_t::text_sec()
 			for(i=0;i<usrsecs && !msgabort();i++) {
 				sprintf(str,text[TextSectionLstFmt],i+1,cfg.txtsec[usrsec[i]]->name);
 				if(i<9) outchar(' ');
-				bputs(str); } }
+				bputs(str); 
+			}
+		}
 		ASYNC;
 		mnemonics(text[WhichTextSection]);
 		if((cursec=getnum(usrsecs))<1)
@@ -83,47 +87,57 @@ int sbbs_t::text_sec()
 			if(fexist(str)) {
 				sprintf(str,"text%lu",cursec+1);
 				menu(str);
-				usemenu=1; }
+				usemenu=1; 
+			}
 			else {
 				bprintf(text[TextFilesLstHdr],cfg.txtsec[usrsec[cursec]]->name);
-				usemenu=0; }
+				usemenu=0; 
+			}
 			sprintf(str,"%stext/%s.ixt",cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
 			j=0;
 			if(fexist(str)) {
 				if((stream=fnopen((int *)&i,str,O_RDONLY))==NULL) {
 					errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-					return(0); }
+					return(0); 
+				}
 				while(!ferror(stream) && !msgabort()) {  /* file open too long */
 					if(!fgets(str,81,stream))
 						break;
 					str[strlen(str)-2]=0;   /* chop off CRLF */
 					if((file[j]=(char *)malloc(strlen(str)+1))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,strlen(str)+1);
-						continue; }
+						continue; 
+					}
 					strcpy(file[j],str);
 					fgets(str,81,stream);
 					if(!usemenu) bprintf(text[TextFilesLstFmt],j+1,str);
-					j++; }
-				fclose(stream); }
+					j++; 
+				}
+				fclose(stream); 
+			}
 			ASYNC;
 			if(SYSOP) {
 				strcpy(str,"QARE?");
-				mnemonics(text[WhichTextFileSysop]); }
+				mnemonics(text[WhichTextFileSysop]); 
+			}
 			else {
 				strcpy(str,"Q?");
-				mnemonics(text[WhichTextFile]); }
+				mnemonics(text[WhichTextFile]); 
+			}
 			i=getkeys(str,j);
 			if(!(i&0x80000000L)) {		  /* no file number */
 				for(l=0;l<j;l++)
 					free(file[l]);
 				if((i=='E' || i=='R') && !j)
-					continue; }
+					continue; 
+			}
 			if(i=='Q' || !i)
 				break;
 			if(i==-1) {  /* ctrl-c */
 				for(i=0;i<j;i++)
 					free(file[i]);
-				return(0); }
+				return(0); 
+			}
 			if(i=='?')  /* ? means re-list */
 				continue;
 			if(i=='A') {    /* Add text file */
@@ -149,24 +163,29 @@ int sbbs_t::text_sec()
 				if(i==j) {  /* just add to end */
 					if((i=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 						errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
-						return(0); }
+						return(0); 
+					}
 					write(i,addpath,strlen(addpath));
 					write(i,addstr,strlen(addstr));
 					close(i);
-					continue; }
+					continue; 
+				}
 				j=i; /* inserting in middle of file */
 				if((stream=fnopen((int *)&i,str,O_RDWR))==NULL) {
 					errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-					return(0); }
+					return(0); 
+				}
 				length=filelength(i);
 				for(i=0;i<j;i++) {  /* skip two lines for each entry */
 					fgets(tmp,81,stream);
-					fgets(tmp,81,stream); }
+					fgets(tmp,81,stream); 
+				}
 				l=ftell(stream);
 				if((buf=(char *)malloc(length-l))==NULL) {
 					fclose(stream);
 					errormsg(WHERE,ERR_ALLOC,str,length-l);
-					return(0); }
+					return(0); 
+				}
 				fread(buf,1,length-l,stream);
 				fseek(stream,l,SEEK_SET); /* go back to where we need to insert */
 				fputs(addpath,stream);
@@ -174,7 +193,8 @@ int sbbs_t::text_sec()
 				fwrite(buf,1,length-l,stream);
 				fclose(stream);
 				free(buf);
-				continue; }
+				continue; 
+			}
 			if(i=='R' || i=='E') {   /* Remove or Edit text file */
 				ch=(char)i;
 				if(ch=='R')
@@ -189,10 +209,12 @@ int sbbs_t::text_sec()
 				j=i-1;
 				if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 					errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-					return(0); }
+					return(0); 
+				}
 				for(i=0;i<j;i++) {  /* skip two lines for each entry */
 					fgets(tmp,81,stream);
-					fgets(tmp,81,stream); }
+					fgets(tmp,81,stream); 
+				}
 				fgets(addpath,81,stream);
 				truncsp(addpath);
 				fclose(stream);
@@ -205,14 +227,18 @@ int sbbs_t::text_sec()
 					if(fexist(tmp)) {
 						sprintf(str,text[DeleteTextFileQ],tmp);
 						if(!noyes(str))
-							if(remove(tmp)) errormsg(WHERE,ERR_REMOVE,tmp,0); }
+							if(remove(tmp)) errormsg(WHERE,ERR_REMOVE,tmp,0); 
+					}
 					sprintf(str,"%stext/%s.ixt"
 						,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
-					removeline(str,addpath,2,0); }
+					removeline(str,addpath,2,0); 
+				}
 				else {                      /* Edit */
 					strcpy(str,tmp);
-					editfile(str); }
-				continue; }
+					editfile(str); 
+				}
+				continue; 
+			}
 			i=(i&~0x80000000L)-1;
 			if(!strchr(file[i],'\\') && !strchr(file[i],'/'))
 				sprintf(str,"%stext/%s/%s"
@@ -227,7 +253,9 @@ int sbbs_t::text_sec()
 			pause();
 			sys_status&=~SS_ABORT;
 			for(i=0;i<j;i++)
-				free(file[i]); } }
+				free(file[i]); 
+		} 
+	}
 	return(0);
 }
 

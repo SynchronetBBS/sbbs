@@ -78,23 +78,28 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				ar[j++]=AR_NOT;
 			not=equal=0;
 			ar[j++]=AR_BEGNEST;
-			continue; }
+			continue; 
+		}
 
 		if(str[i]==')') {
 			ar[j++]=AR_ENDNEST;
-			continue; }
+			continue; 
+		}
 
 		if(str[i]=='|') {
 			ar[j++]=AR_OR;
-			continue; }
+			continue; 
+		}
     
 		if(str[i]=='!') {
 			not=1;
-			continue; }
+			continue; 
+		}
 
 		if(str[i]=='=') {
 			equal=1;
-			continue; }
+			continue; 
+		}
 
 		if(str[i]=='&')
 			continue;
@@ -106,30 +111,37 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			if(n==2 && !strnicmp(p,"OR",2)) {
 				ar[j++]=AR_OR;
 				i++;
-				continue; }
+				continue; 
+			}
 
 			if(n==3 && !strnicmp(p,"AND",3)) {    /* AND is ignored */
 				i+=2;
-				continue; }
+				continue; 
+			}
 
 			if(n==3 && !strnicmp(p,"NOT",3)) {
 				not=1;
 				i+=2;
-				continue; }
+				continue; 
+			}
 
 			if(n==2 && equal && !strnicmp(p,"TO",2)) {	/* EQUAL TO */
 				i++;
-				continue; }
+				continue; 
+			}
 
 			if(n==5 && !strnicmp(p,"EQUAL",5)) {
 				equal=1;
 				i+=4;
-				continue; }
+				continue; 
+			}
 
 			if(n==6 && !strnicmp(p,"EQUALS",6)) {
 				equal=1;
 				i+=5;
-				continue; } }
+				continue; 
+			} 
+		}
 
 		if(str[i]=='$') {
 			arg_expected=TRUE;
@@ -242,64 +254,84 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			n=i;
 			if(!strnicmp(str+i,"AGE",3)) {
 				artype=AR_AGE;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"BPS",3)) {
 				artype=AR_BPS;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"PCR",3)) {
 				artype=AR_PCR;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"SEX",3)) {
 				artype=AR_SEX;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"UDR",3)) {
 				artype=AR_UDR;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"ULS",3)) {
 				artype=AR_ULS;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"ULK",3)) {
 				artype=AR_ULK;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"ULM",3)) {
 				artype=AR_ULM;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DLS",3)) {
 				artype=AR_DLS;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DLK",3)) {
 				artype=AR_DLK;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DLM",3)) {
 				artype=AR_DLM;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DAY",3)) {
 				artype=AR_DAY;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"RIP",3)) {
 				artype=AR_RIP;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"WIP",3)) {
 				artype=AR_WIP;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"OS2",3)) {
 				artype=AR_OS2;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DOS",3)) {
 				artype=AR_DOS;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"WIN32",5)) {
 				artype=AR_WIN32;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"UNIX",4)) {
 				artype=AR_UNIX;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"LINUX",5)) {
 				artype=AR_LINUX;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"PROT",4)) {
 				artype=AR_PROT;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"HOST",4)) {
 				artype=AR_HOST;
 				i+=3; 
@@ -310,109 +342,144 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			}
 			else if(!strnicmp(str+i,"SUBCODE",7)) {
 				artype=AR_SUBCODE;
-				i+=6; }
+				i+=6; 
+			}
 			else if(!strnicmp(str+i,"SUB",3)) {
 				artype=AR_SUB;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"LIB",3)) {
 				artype=AR_LIB;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"DIRCODE",7)) {
 				artype=AR_DIRCODE;
-				i+=6; }
+				i+=6; 
+			}
 			else if(!strnicmp(str+i,"DIR",3)) {
 				artype=AR_DIR;
-				i+=2; }
+				i+=2; 
+			}
 			else if(!strnicmp(str+i,"ANSI",4)) {
 				artype=AR_ANSI;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"UDFR",4)) {
 				artype=AR_UDFR;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"FLAG",4)) {
 				artype=AR_FLAG1;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"NODE",4)) {
 				artype=AR_NODE;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"NULL",4)) {
 				artype=AR_NULL;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"USER",4)) {
 				artype=AR_USER;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"TIME",4)) {
 				artype=AR_TIME;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"REST",4)) {
 				artype=AR_REST;
-				i+=3; }
+				i+=3; 
+			}
 			else if(!strnicmp(str+i,"LEVEL",5)) {
 				artype=AR_LEVEL;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"TLEFT",5)) {
 				artype=AR_TLEFT;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"TUSED",5)) {
 				artype=AR_TUSED;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"LOCAL",5)) {
 				artype=AR_LOCAL;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"GROUP",5)) {
 				artype=AR_GROUP;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"EXPIRE",6)) {
 				artype=AR_EXPIRE;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"ACTIVE",6)) {
 				artype=AR_ACTIVE;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"INACTIVE",8)) {
 				artype=AR_INACTIVE;
-				i+=7; }
+				i+=7; 
+			}
 			else if(!strnicmp(str+i,"DELETED",7)) {
 				artype=AR_DELETED;
-				i+=6; }
+				i+=6; 
+			}
 			else if(!strnicmp(str+i,"EXPERT",6)) {
 				artype=AR_EXPERT;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"SYSOP",5)) {
 				artype=AR_SYSOP;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"GUEST",5)) {
 				artype=AR_GUEST;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"QNODE",5)) {
 				artype=AR_QNODE;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"QUIET",5)) {
 				artype=AR_QUIET;
-				i+=4; }
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"EXEMPT",6)) {
 				artype=AR_EXEMPT;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"RANDOM",6)) {
 				artype=AR_RANDOM;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"LASTON",6)) {
 				artype=AR_LASTON;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"LOGONS",6)) {
 				artype=AR_LOGONS;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"CREDIT",6)) {
 				artype=AR_CREDIT;
-				i+=5; }
+				i+=5; 
+			}
 			else if(!strnicmp(str+i,"MAIN_CMDS",9)) {
 				artype=AR_MAIN_CMDS;
-				i+=8; }
+				i+=8; 
+			}
 			else if(!strnicmp(str+i,"FILE_CMDS",9)) {
 				artype=AR_FILE_CMDS;
-				i+=8; }
+				i+=8; 
+			}
 			else if(!strnicmp(str+i,"SHELL",5)) {
 				artype=AR_SHELL;
-				i+=4; }
+				i+=4; 
+			}
 
 			if(n!=i)		/* one of the above */
 			{
@@ -463,8 +530,10 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break;
 				case '4':
 					artype=AR_FLAG4;
-					break; }
-			continue; }
+					break; 
+			}
+			continue; 
+		}
 
 		arg_expected=FALSE;
 
@@ -485,7 +554,8 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				*((short *)(ar+j))=n;
 				j+=2;
 				while(isdigit(str[i+1]) || str[i+1]==':') i++;
-				continue; }
+				continue; 
+			}
 			n=atoi(str+i);
 			switch(artype) {
 				case AR_DAY:
@@ -531,9 +601,11 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break;
 				default:                    /* invalid numeric AR type */
 					j--;
-					break; }
+					break; 
+			}
 			while(isdigit(str[i+1])) i++;
-			continue; }
+			continue; 
+		}
 		maxlen=128;
 		switch(artype) {
 			case AR_SUBCODE:
@@ -572,7 +644,8 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 						break;
 				if(n<(uint)cfg->total_subs) {
 					*((short *)(ar+j))=n;
-					j+=2; }
+					j+=2; 
+				}
 				else        /* Unknown sub-board */
 					j--;
 				while(isalpha(str[i+1])) i++;
@@ -583,7 +656,8 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 						break;
 				if(n<(uint)cfg->total_dirs) {
 					*((short *)(ar+j))=n;
-					j+=2; }
+					j+=2; 
+				}
 				else        /* Unknown directory */
 					j--;
 				while(isalpha(str[i+1])) i++;

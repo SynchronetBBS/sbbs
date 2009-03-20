@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -80,10 +80,12 @@ time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 		tm.tm_year+=100;
 	if(cfg->sys_misc&SM_EURODATE) {
 		tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
-		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); }
+		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); 
+	}
 	else {
 		tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
-		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); }
+		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); 
+	}
 	if (tm.tm_mon)
 		tm.tm_mon--;	/* zero-based month field */
 	tm.tm_isdst=-1;		/* Do not adjust for DST */
@@ -106,7 +108,8 @@ char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 		}
 		if(tm.tm_mon>11) {	  /* DOS leap year bug */
 			tm.tm_mon=0;
-			tm.tm_year++; }
+			tm.tm_year++; 
+		}
 		if(tm.tm_mday>31)
 			tm.tm_mday=1;
 		if(cfg->sys_misc&SM_EURODATE)
@@ -114,7 +117,8 @@ char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 				,TM_YEAR(tm.tm_year));
 		else
 			sprintf(str,"%02u/%02u/%02u",tm.tm_mon+1,tm.tm_mday
-				,TM_YEAR(tm.tm_year)); }
+				,TM_YEAR(tm.tm_year)); 
+	}
 	return(str);
 }
 

@@ -100,14 +100,18 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 			break;
 	if(i<cfg.total_qhubs) {
 		strcpy(fulladdr,node);
-		return(0); }
+		return(0); 
+	}
 
 	i=matchuser(&cfg,node,FALSE);			/* Check if destination is a node */
 	if(i) {
 		getuserrec(&cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q')) {
 			strcpy(fulladdr,node);
-			return(i); } }
+			return(i); 
+		}
+		
+	}
 
 	sprintf(node,"%.8s",inaddr);            /* node = next hop */
 	p=strchr(node,'/');
@@ -121,14 +125,18 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 				break;
 		if(i<cfg.total_qhubs) {
 			strcpy(fulladdr,inaddr);
-			return(0); }
+			return(0); 
+		}
 
 		i=matchuser(&cfg,node,FALSE);			/* Check if next hop is a node */
 		if(i) {
 			getuserrec(&cfg,i,U_REST,8,str);
 			if(ahtoul(str)&FLAG('Q')) {
 				strcpy(fulladdr,inaddr);
-				return(i); } } }
+				return(i); 
+			}
+		}
+	}
 
 	p=strchr(node,' ');
 	if(p) *p=0;
@@ -146,7 +154,10 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 			fclose(stream);
 			truncsp(str);
 			sprintf(fulladdr,"%s/%s",str+9+strlen(node),inaddr);
-			break; } }
+			break; 
+		}
+		
+	}
 
 	fclose(stream);
 	if(!fulladdr[0])			/* First hop not found in ROUTE.DAT */
@@ -167,7 +178,8 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	if(i) {
 		getuserrec(&cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q'))
-			return(i); }
+			return(i); 
+	}
 	fulladdr[0]=0;
 	return(0);
 }
@@ -197,23 +209,29 @@ void sbbs_t::update_qwkroute(char *via)
 				if(qwk_time[i]>t)
 					fprintf(stream,"%s %s:%s\r\n"
 						,unixtodstr(&cfg,qwk_time[i],str),qwk_node[i],qwk_path[i]);
-			fclose(stream); }
+			fclose(stream); 
+		}
 		else
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 		for(i=0;i<total_nodes;i++) {
 			free(qwk_node[i]);
-			free(qwk_path[i]); }
+			free(qwk_path[i]); 
+		}
 		if(qwk_node) {
 			free(qwk_node);
-			qwk_node=NULL; }
+			qwk_node=NULL; 
+		}
 		if(qwk_path) {
 			free(qwk_path);
-			qwk_path=NULL; }
+			qwk_path=NULL; 
+		}
 		if(qwk_time) {
 			free(qwk_time);
-			qwk_time=NULL; }
+			qwk_time=NULL; 
+		}
 		total_nodes=0;
-		return; }
+		return; 
+	}
 
 	if(!total_nodes) {
 		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
@@ -237,26 +255,36 @@ void sbbs_t::update_qwkroute(char *via)
 				if(i==total_nodes) {
 					if((qwk_node=(char **)realloc(qwk_node,sizeof(char *)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,9*(i+1));
-						break; }
+						break; 
+					}
 					if((qwk_path=(char **)realloc(qwk_path,sizeof(char *)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,sizeof(char*)*(i+1));
-						break; }
+						break; 
+					}
 					if((qwk_time=(time_t *)realloc(qwk_time,sizeof(time_t)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,sizeof(time_t)*(i+1));
-						break; }
+						break; 
+					}
 					if((qwk_node[i]=(char *)malloc(9))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,9);
-						break; }
+						break; 
+					}
 					if((qwk_path[i]=(char *)malloc(MAX_PATH+1))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
-						break; }
-					total_nodes++; }
+						break; 
+					}
+					total_nodes++; 
+				}
 				strcpy(qwk_node[i],node);
 				p++;
 				while(*p && *p<=' ') p++;
 				sprintf(qwk_path[i],"%.127s",p);
-				qwk_time[i]=t; }
-			fclose(stream); } }
+				qwk_time[i]=t; 
+			}
+			fclose(stream); 
+		}
+		
+	}
 
 	strupr(via);
 	p=strchr(via,'/');   /* Skip uplink */
@@ -275,25 +303,32 @@ void sbbs_t::update_qwkroute(char *via)
 		if(i==total_nodes) {		/* Not in list */
 			if((qwk_node=(char **)realloc(qwk_node,sizeof(char *)*(total_nodes+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,9*(total_nodes+1));
-				break; }
+				break; 
+			}
 			if((qwk_path=(char **)realloc(qwk_path,sizeof(char *)*(total_nodes+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,sizeof(char *)*(total_nodes+1));
-				break; }
+				break; 
+			}
 			if((qwk_time=(time_t *)realloc(qwk_time,sizeof(time_t)*(total_nodes+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,sizeof(time_t)*(total_nodes+1));
-				break; }
+				break; 
+			}
 			if((qwk_node[total_nodes]=(char *)malloc(9))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,9);
-				break; }
+				break; 
+			}
 			if((qwk_path[total_nodes]=(char *)malloc(MAX_PATH+1))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
-				break; }
-			total_nodes++; }
+				break; 
+			}
+			total_nodes++; 
+		}
 		sprintf(qwk_node[i],"%.8s",node);
 		sprintf(qwk_path[i],"%.*s",(int)((p-1)-via),via);
 		qwk_time[i]=time(NULL);
-		p=strchr(p,'/'); }
+		p=strchr(p,'/'); 
+	}
 	}
 
 /****************************************************************************/
@@ -325,7 +360,10 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 
 		if(!bi) {
 			batch_download(-1);
-			delfiles(cfg.temp_dir,ALLFILES); } }
+			delfiles(cfg.temp_dir,ALLFILES); 
+		}
+		
+	}
 
 	if(useron.rest&FLAG('Q'))
 		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
@@ -335,7 +373,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-			return; }
+			return; 
+		}
 
 		mail=loadmail(&smb,&msgs,useron.number,0
 			,useron.qwk&QWK_ALLMAIL ? 0 : LM_UNREAD);
@@ -345,14 +384,16 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
-			return; }
+			return; 
+		}
 
 		if((i=smb_getstatus(&smb))!=0) {
 			if(msgs)
 				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-			return; }
+			return; 
+		}
 
 		/* Mark as READ and DELETE */
 		for(l=0;l<msgs;l++) {
@@ -367,7 +408,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 					telluser(&msg);
 				msg.hdr.attr|=MSG_READ;
 				msg.idx.attr=msg.hdr.attr;
-				smb_putmsg(&smb,&msg); }
+				smb_putmsg(&smb,&msg); 
+			}
 			if(!(msg.hdr.attr&MSG_PERMANENT)
 				&& ((msg.hdr.attr&MSG_KILLREAD && msg.hdr.attr&MSG_READ)
 				|| (useron.qwk&QWK_DELMAIL))) {
@@ -376,15 +418,18 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 				if((i=smb_putmsg(&smb,&msg))!=0)
 					errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 				else
-					deleted++; }
+					deleted++; 
+			}
 			smb_freemsgmem(&msg);
-			smb_unlockmsghdr(&smb,&msg); }
+			smb_unlockmsghdr(&smb,&msg); 
+		}
 
 		if(deleted && cfg.sys_misc&SM_DELEMAIL)
 			delmail(useron.number,MAIL_YOUR);
 		smb_close(&smb);
 		if(msgs)
-			free(mail); }
+			free(mail); 
+	}
 
 }
 
@@ -408,7 +453,8 @@ void sbbs_t::qwk_sec()
 	fd.dir=cfg.total_dirs;
 	if((sav_ptr=(ulong *)malloc(sizeof(ulong)*cfg.total_subs))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
-		return; }
+		return; 
+	}
 	for(i=0;i<cfg.total_subs;i++)
 		sav_ptr[i]=subscan[i].ptr;
 	for(i=0;i<cfg.total_prots;i++)
@@ -437,17 +483,20 @@ void sbbs_t::qwk_sec()
 				&& !(useron.rest&FLAG('Q')))
 				continue;
 			menu("qwk");
-			continue; }
+			continue; 
+		}
 		if(ch=='S') {
 			new_scan_cfg(SUB_CFG_NSCAN);
 			delfiles(cfg.temp_dir,ALLFILES);
-			continue; }
+			continue; 
+		}
 		if(ch=='P') {
 			new_scan_ptr_cfg();
 			for(i=0;i<cfg.total_subs;i++)
 				sav_ptr[i]=subscan[i].ptr;
 			delfiles(cfg.temp_dir,ALLFILES);
-			continue; }
+			continue; 
+		}
 		if(ch=='C') {
 			while(online) {
 				CLS;
@@ -507,7 +556,8 @@ void sbbs_t::qwk_sec()
 							useron.qwk|=QWK_EXPCTLA;
 						else if(useron.qwk&QWK_EXPCTLA) {
 							useron.qwk&=~QWK_EXPCTLA;
-							useron.qwk|=QWK_RETCTLA; }
+							useron.qwk|=QWK_RETCTLA; 
+						}
 						else
 							useron.qwk&=~(QWK_EXPCTLA|QWK_RETCTLA);
 						break;
@@ -517,14 +567,16 @@ void sbbs_t::qwk_sec()
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
 							strcpy(useron.tmpext,cfg.fcomp[s]->ext);
-							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext); }
+							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext); 
+						}
 						break;
 					case 'E':
 						if(!(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)))
 							useron.qwk|=QWK_EMAIL;
 						else if(useron.qwk&QWK_EMAIL) {
 							useron.qwk&=~QWK_EMAIL;
-							useron.qwk|=QWK_ALLMAIL; }
+							useron.qwk|=QWK_ALLMAIL; 
+						}
 						else
 							useron.qwk&=~(QWK_EMAIL|QWK_ALLMAIL);
 						break;
@@ -562,9 +614,11 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_EXT;
 						break;
 				}
-				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16)); }
+				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16)); 
+			}
 			delfiles(cfg.temp_dir,ALLFILES);
-			continue; }
+			continue; 
+		}
 
 
 		if(ch=='B') {   /* Bidirectional QWK and REP packet transfer */
@@ -574,7 +628,8 @@ void sbbs_t::qwk_sec()
 					subscan[i].ptr=sav_ptr[i];
 				remove(str);
 				last_ns_time=ns_time;
-				continue; }
+				continue; 
+			}
 			bprintf(text[UploadingREP],cfg.sys_id);
 			xfer_prot_menu(XFER_BIDIR);
 			mnemonics(text[ProtocolOrQuit]);
@@ -582,13 +637,15 @@ void sbbs_t::qwk_sec()
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp); }
+					strcat(tmp2,tmp); 
+				}
 			ch=(char)getkeys(tmp2,0);
 			if(ch=='Q' || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];	/* re-load saved pointers */
 				last_ns_time=ns_time;
-				continue; }
+				continue; 
+			}
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->bicmd[0] && cfg.prot[i]->mnemonic==ch
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -604,7 +661,8 @@ void sbbs_t::qwk_sec()
 					|| !create_batchup_lst()
 					|| !create_bimodem_pth()) {
 					batup_total=batdn_total=0;
-					continue; }
+					continue; 
+				}
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
@@ -632,7 +690,10 @@ void sbbs_t::qwk_sec()
 			else {
 				last_ns_time=ns_time;
 				for(i=0;i<cfg.total_subs;i++)
-					subscan[i].ptr=sav_ptr[i]; } }
+					subscan[i].ptr=sav_ptr[i]; 
+			}
+			
+		}
 
 		else if(ch=='D') {   /* Download QWK Packet of new messages */
 			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
@@ -641,7 +702,8 @@ void sbbs_t::qwk_sec()
 					subscan[i].ptr=sav_ptr[i];
 				last_ns_time=ns_time;
 				remove(str);
-				continue; }
+				continue; 
+			}
 
 			l=flength(str);
 			bprintf(text[FiFilename],getfname(str));
@@ -665,14 +727,16 @@ void sbbs_t::qwk_sec()
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp); }
+					strcat(tmp2,tmp); 
+				}
 			ungetkey(useron.prot);
 			ch=(char)getkeys(tmp2,0);
 			if(ch=='Q' || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 				last_ns_time=ns_time;
-				continue; }
+				continue; 
+			}
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
@@ -704,7 +768,8 @@ void sbbs_t::qwk_sec()
 	/*
 			if(useron.rest&FLAG('Q') && useron.rest&FLAG('P')) {
 				bputs(text[R_Post]);
-				continue; }
+				continue; 
+				}
 	*/
 
 			delfiles(cfg.temp_dir,ALLFILES);
@@ -716,7 +781,8 @@ void sbbs_t::qwk_sec()
 			if(k>=cfg.total_fextrs) {
 				bputs(text[QWKExtractionFailed]);
 				errorlog("Couldn't extract REP packet - configuration error");
-				continue; }
+				continue; 
+			}
 
 			/******************/
 			/* Receive Packet */
@@ -727,7 +793,8 @@ void sbbs_t::qwk_sec()
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp); }
+					strcat(tmp2,tmp); 
+				}
 			ch=(char)getkeys(tmp2,0);
 			if(ch=='Q' || sys_status&SS_ABORT || !online)
 				continue;
@@ -742,7 +809,8 @@ void sbbs_t::qwk_sec()
 			unpack_rep();
 			delfiles(cfg.temp_dir,ALLFILES);
 			//autohangup();
-			} }
+		} 
+	}
 	delfiles(cfg.temp_dir,ALLFILES);
 	free(sav_ptr);
 }
@@ -755,7 +823,8 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
 		l=dstrtounix(&cfg,buf);
 		subscan[subnum].ptr=getmsgnum(subnum,l);
-		return; }
+		return; 
+	}
 	l=atol(buf);
 	if(l>=0)							  /* ptr specified */
 		subscan[subnum].ptr=l;
@@ -764,7 +833,8 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 		if(-l>(long)last)
 			subscan[subnum].ptr=0;
 		else
-			subscan[subnum].ptr=last+l; }
+			subscan[subnum].ptr=last+l; 
+	}
 	else if(reset)
 		getlastmsg(subnum,&(subscan[subnum].ptr),0);
 }
@@ -799,125 +869,151 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 				if(x>=usrgrps || y>=usrsubs[x]) {
 					bprintf(text[QWKInvalidConferenceN],l);
 					sprintf(str,"Invalid conference number %lu",l);
-					logline("Q!",str); }
+					logline("Q!",str); 
+				}
 				else
-					subscan[usrsub[x][y]].cfg&=~SUB_CFG_NSCAN; }
-			return; }
+					subscan[usrsub[x][y]].cfg&=~SUB_CFG_NSCAN; 
+			}
+			return; 
+		}
 
 		if(!strncmp(str,"ADD YOURS ",10)) {               /* Add to new-scan */
 			subscan[subnum].cfg|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
 			qwksetptr(subnum,str+10,0);
-			return; }
+			return; 
+		}
 
 		else if(!strncmp(str,"YOURS ",6)) {
 			subscan[subnum].cfg|=(SUB_CFG_NSCAN|SUB_CFG_YSCAN);
 			qwksetptr(subnum,str+6,0);
-			return; }
+			return; 
+		}
 
 		else if(!strncmp(str,"ADD ",4)) {               /* Add to new-scan */
 			subscan[subnum].cfg|=SUB_CFG_NSCAN;
 			subscan[subnum].cfg&=~SUB_CFG_YSCAN;
 			qwksetptr(subnum,str+4,0);
-			return; }
+			return; 
+		}
 
 		if(!strncmp(str,"RESET ",6)) {             /* set msgptr */
 			qwksetptr(subnum,str+6,1);
-			return; }
+			return; 
+		}
 
 		if(!strncmp(str,"SUBPTR ",7)) {
 			qwksetptr(subnum,str+7,1);
-			return; }
+			return; 
+		}
 		}
 
 	if(!strncmp(str,"RESETALL ",9)) {              /* set all ptrs */
 		for(x=y=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
 				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
-					qwksetptr(usrsub[x][y],str+9,1); }
+					qwksetptr(usrsub[x][y],str+9,1); 
+	}
 
 	else if(!strncmp(str,"ALLPTR ",7)) {              /* set all ptrs */
 		for(x=y=0;x<usrgrps;x++)
 			for(y=0;y<usrsubs[x];y++)
 				if(subscan[usrsub[x][y]].cfg&SUB_CFG_NSCAN)
-					qwksetptr(usrsub[x][y],str+7,1); }
+					qwksetptr(usrsub[x][y],str+7,1); 
+	}
 
 	else if(!strncmp(str,"FILES ",6)) {                 /* files list */
 		if(!strncmp(str+6,"ON ",3))
 			useron.qwk|=QWK_FILES;
 		else if(str[8]=='/' && str[11]=='/') {      /* set scan date */
 			useron.qwk|=QWK_FILES;
-			ns_time=dstrtounix(&cfg,str+6); }
+			ns_time=dstrtounix(&cfg,str+6); 
+		}
 		else
-			useron.qwk&=~QWK_FILES; }
+			useron.qwk&=~QWK_FILES; 
+	}
 
 	else if(!strncmp(str,"OWN ",4)) {                   /* message from you */
 		if(!strncmp(str+4,"ON ",3))
 			useron.qwk|=QWK_BYSELF;
 		else
 			useron.qwk&=~QWK_BYSELF;
-		return; }
+		return; 
+	}
 
 	else if(!strncmp(str,"NDX ",4)) {                   /* include indexes */
 		if(!strncmp(str+4,"OFF ",4))
 			useron.qwk|=QWK_NOINDEX;
 		else
-			useron.qwk&=~QWK_NOINDEX; }
+			useron.qwk&=~QWK_NOINDEX; 
+	}
 
 	else if(!strncmp(str,"CONTROL ",8)) {               /* exclude ctrl files */
 		if(!strncmp(str+8,"OFF ",4))
 			useron.qwk|=QWK_NOCTRL;
 		else
-			useron.qwk&=~QWK_NOCTRL; }
+			useron.qwk&=~QWK_NOCTRL; 
+	}
 
 	else if(!strncmp(str,"VIA ",4)) {                   /* include @VIA: */
 		if(!strncmp(str+4,"ON ",3))
 			useron.qwk|=QWK_VIA;
 		else
-			useron.qwk&=~QWK_VIA; }
+			useron.qwk&=~QWK_VIA; 
+	}
 
 	else if(!strncmp(str,"MSGID ",6)) {                 /* include @MSGID: */
 		if(!strncmp(str+6,"ON ",3))
 			useron.qwk|=QWK_MSGID;
 		else
-			useron.qwk&=~QWK_MSGID; }
+			useron.qwk&=~QWK_MSGID; 
+	}
 
 	else if(!strncmp(str,"TZ ",3)) {                    /* include @TZ: */
 		if(!strncmp(str+3,"ON ",3))
 			useron.qwk|=QWK_TZ;
 		else
-			useron.qwk&=~QWK_TZ; }
+			useron.qwk&=~QWK_TZ; 
+	}
 
 	else if(!strncmp(str,"ATTACH ",7)) {                /* file attachments */
 		if(!strncmp(str+7,"ON ",3))
 			useron.qwk|=QWK_ATTACH;
 		else
-			useron.qwk&=~QWK_ATTACH; }
+			useron.qwk&=~QWK_ATTACH; 
+	}
 
 	else if(!strncmp(str,"DELMAIL ",8)) {               /* delete mail */
 		if(!strncmp(str+8,"ON ",3))
 			useron.qwk|=QWK_DELMAIL;
 		else
-			useron.qwk&=~QWK_DELMAIL; }
+			useron.qwk&=~QWK_DELMAIL; 
+	}
 
 	else if(!strncmp(str,"CTRL-A ",7)) {                /* Ctrl-a codes  */
 		if(!strncmp(str+7,"KEEP ",5)) {
 			useron.qwk|=QWK_RETCTLA;
-			useron.qwk&=~QWK_EXPCTLA; }
+			useron.qwk&=~QWK_EXPCTLA; 
+		}
 		else if(!strncmp(str+7,"EXPAND ",7)) {
 			useron.qwk|=QWK_EXPCTLA;
-			useron.qwk&=~QWK_RETCTLA; }
+			useron.qwk&=~QWK_RETCTLA; 
+		}
 		else
-			useron.qwk&=~(QWK_EXPCTLA|QWK_RETCTLA); }
+			useron.qwk&=~(QWK_EXPCTLA|QWK_RETCTLA); 
+	}
 
 	else if(!strncmp(str,"MAIL ",5)) {                  /* include e-mail */
 		if(!strncmp(str+5,"ALL ",4)) {
 			useron.qwk|=QWK_ALLMAIL;
-			useron.qwk&=~QWK_EMAIL; }
+			useron.qwk&=~QWK_EMAIL; 
+		}
 		else if(!strncmp(str+5,"ON ",3)) {
 			useron.qwk|=QWK_EMAIL;
-			useron.qwk&=~QWK_ALLMAIL; }
+			useron.qwk&=~QWK_ALLMAIL; 
+		}
 		else
-			useron.qwk&=~(QWK_ALLMAIL|QWK_EMAIL); }
+			useron.qwk&=~(QWK_ALLMAIL|QWK_EMAIL); 
+	}
 
 	else if(!strncmp(str,"FREQ ",5)) {                  /* file request */
 		padfname(str+5,f.name);
@@ -926,10 +1022,12 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 				if(findfile(&cfg,usrdir[x][y],f.name))
 					break;
 			if(y<usrdirs[x])
-				break; }
+				break; 
+		}
 		if(x>=usrlibs) {
 			bprintf("\r\n%s",f.name);
-			bputs(text[FileNotFound]); }
+			bputs(text[FileNotFound]); 
+		}
 		else {
 			f.dir=usrdir[x][y];
 			getfileixb(&cfg,&f);
@@ -938,7 +1036,10 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 			if(f.size==-1L)
 				bprintf(text[FileIsNotOnline],f.name);
 			else
-				addtobatdl(&f); } }
+				addtobatdl(&f); 
+		}
+		
+	}
 
 	else {
 		attr(cfg.color[clr_err]);

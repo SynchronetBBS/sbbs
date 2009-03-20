@@ -65,7 +65,9 @@ int sbbs_t::exec_file(csi_t *csi)
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
 							bprintf(text[CfgLibLstFmt]
-								,i+1,cfg.lib[usrlib[i]]->lname); } }
+								,i+1,cfg.lib[usrlib[i]]->lname); 
+						} 
+					}
 					sprintf(str,text[JoinWhichLib],curlib+1);
 					mnemonics(str);
 					j=getnum(usrlibs);
@@ -74,11 +76,13 @@ int sbbs_t::exec_file(csi_t *csi)
 					if(!j)
 						j=curlib;
 					else
-						j--; }
+						j--; 
+				}
 				sprintf(str,"%smenu/dirs%u.*", cfg.text_dir, usrlib[j]+1);
 				if(fexist(str)) {
 					sprintf(str,"dirs%u",usrlib[j]+1);
-					menu(str); }
+					menu(str); 
+				}
 				else {
 					CLS;
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
@@ -90,14 +94,17 @@ int sbbs_t::exec_file(csi_t *csi)
 							,getfiles(&cfg,usrdir[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
-						bputs(str); } }
+						bputs(str); 
+					} 
+				}
 				sprintf(str,text[JoinWhichDir],curdir[j]+1);
 				mnemonics(str);
 				i=getnum(usrdirs[j]);
 				if((int)i==-1) {
 					if(usrlibs==1)
 						return(0);
-					continue; }
+					continue; 
+				}
 				if(!i)
 					i=curdir[j];
 				else
@@ -105,7 +112,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				curlib=j;
 				curdir[curlib]=i;
 				csi->logic=LOGIC_TRUE;
-				return(0); }
+				return(0); 
+			}
 			return(0);
 
 		case CS_FILE_GET_DIR_NUM:
@@ -114,7 +122,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				i=atoi(csi->str);
 				if(i && i<=usrdirs[curlib] && usrlibs)
 					curdir[curlib]=i-1;
-				return(0); }
+				return(0); 
+			}
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
@@ -124,11 +133,13 @@ int sbbs_t::exec_file(csi_t *csi)
 				if(!isdigit(ch) && ch!=CR) {
 					ungetkey(ch);
 					curdir[curlib]=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				outchar(ch);
 				if(ch==CR) {
 					curdir[curlib]=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				logch(ch,0);
 				i+=ch&0xf;
 				if(i*10<=usrdirs[curlib]) { 	/* 100+ dirs */
@@ -137,16 +148,20 @@ int sbbs_t::exec_file(csi_t *csi)
 					if(!isdigit(ch) && ch!=CR) {
 						ungetkey(ch);
 						curdir[curlib]=(i/10)-1;
-						return(0); }
+						return(0); 
+					}
 					outchar(ch);
 					if(ch==CR) {
 						curdir[curlib]=(i/10)-1;
-						return(0); }
+						return(0); 
+					}
 					logch(ch,0);
-					i+=ch&0xf; }
+					i+=ch&0xf; 
+				}
 				if(i<=usrdirs[curlib])
 					curdir[curlib]=i-1;
-				return(0); }
+				return(0); 
+			}
 			if((ch&0xf)<=(int)usrdirs[curlib] && (ch&0xf) && usrlibs)
 				curdir[curlib]=(ch&0xf)-1;
 			return(0);
@@ -157,7 +172,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				i=atoi(csi->str);
 				if(i && i<=usrlibs)
 					curlib=i-1;
-				return(0); }
+				return(0); 
+			}
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
@@ -167,16 +183,19 @@ int sbbs_t::exec_file(csi_t *csi)
 				if(!isdigit(ch) && ch!=CR) {
 					ungetkey(ch);
 					curlib=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				outchar(ch);
 				if(ch==CR) {
 					curlib=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				logch(ch,0);
 				i+=ch&0xf;
 				if(i<=usrlibs)
 					curlib=i-1;
-				return(0); }
+				return(0); 
+			}
 			if((ch&0xf)<=(int)usrlibs && (ch&0xf))
 				curlib=(ch&0xf)-1;
 			return(0);
@@ -186,7 +205,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			sprintf(str,"%smenu/libs.*", cfg.text_dir);
 			if(fexist(str)) {
 				menu("libs");
-				return(0); }
+				return(0); 
+			}
 			bputs(text[LibLstHdr]);
 			for(i=0;i<usrlibs && !msgabort();i++) {
 				if(i==curlib)
@@ -194,7 +214,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				else outchar(' ');
 				if(i<9) outchar(' ');
 				bprintf(text[LibLstFmt],i+1
-					,cfg.lib[usrlib[i]]->lname,nulstr,usrdirs[i]); }
+					,cfg.lib[usrlib[i]]->lname,nulstr,usrdirs[i]); 
+			}
 			return(0);
 
 		case CS_FILE_SHOW_DIRECTORIES:
@@ -203,7 +224,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(fexist(str)) {
 				sprintf(str,"dirs%u",usrlib[curlib]+1);
 				menu(str);
-				return(0); }
+				return(0); 
+			}
 			CRLF;
 			bprintf(text[DirLstHdr],cfg.lib[usrlib[curlib]]->lname);
 			for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
@@ -214,7 +236,8 @@ int sbbs_t::exec_file(csi_t *csi)
 					,getfiles(&cfg,usrdir[curlib][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
-				bputs(str); }
+				bputs(str); 
+			}
 			return(0);
 
 		case CS_FILE_LIBRARY_UP:
@@ -246,7 +269,8 @@ int sbbs_t::exec_file(csi_t *csi)
 					if(!stricmp(csi->str,cfg.dir[usrdir[i][j]]->code)) {
 						curlib=i;
 						curdir[i]=j;
-						return(0); }
+						return(0); 
+					}
 			csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_FILE_SET_LIBRARY:
@@ -291,7 +315,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(!usrlibs) return(0);
 			if(useron.rest&FLAG('D')) {
 				bputs(text[R_Download]);
-				return(0); }
+				return(0); 
+			}
 			padfname(csi->str,str);
 			strupr(str);
 			if(!listfileinfo(usrdir[curlib][curdir[curlib]],str,FI_DOWNLOAD)) {
@@ -307,16 +332,20 @@ int sbbs_t::exec_file(csi_t *csi)
 					for(j=0;j<usrdirs[i];j++)
 						if((s=listfileinfo(usrdir[i][j],str,FI_DOWNLOAD))!=0)
 							if(s==-1 || (!strchr(str,'?') && !strchr(str,'*')))
-								return(0); } }
+								return(0); 
+				} 
+			}
 			return(0);
 		case CS_FILE_DOWNLOAD_USER: /* Download from user dir */
 			csi->logic=LOGIC_FALSE;
 			if(cfg.user_dir==INVALID_DIR) {
 				bputs(text[NoUserDir]);
-				return(0); }
+				return(0); 
+			}
 			if(useron.rest&FLAG('D')) {
 				bputs(text[R_Download]);
-				return(0); }
+				return(0); 
+			}
 			CRLF;
 			if(!listfileinfo(cfg.user_dir,nulstr,FI_USERXFER))
 				bputs(text[NoFilesForYou]);
@@ -326,7 +355,8 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_DOWNLOAD_BATCH:
 			if(batdn_total && yesno(text[DownloadBatchQ])) {
 				start_batch_download();
-				csi->logic=LOGIC_TRUE; }
+				csi->logic=LOGIC_TRUE; 
+			}
 			else
 				csi->logic=LOGIC_FALSE;
 			return(0);
@@ -343,7 +373,8 @@ int sbbs_t::exec_file(csi_t *csi)
 					if(findfile(&cfg,usrdir[x][y],f.name))
 						break;
 				if(y<usrdirs[x])
-					break; }
+					break; 
+			}
 			if(x>=usrlibs)
 				return(0);
 			f.dir=usrdir[x][y];
@@ -356,14 +387,16 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_BATCH_CLEAR:
 			if(!batdn_total) {
 				csi->logic=LOGIC_FALSE;
-				return(0); }
+				return(0); 
+			}
 			csi->logic=LOGIC_TRUE;
 			for(i=0;i<batdn_total;i++) {
 				f.dir=batdn_dir[i];
 				f.datoffset=batdn_offset[i];
 				f.size=batdn_size[i];
 				strcpy(f.name,batdn_name[i]);
-				closefile(&f); }
+				closefile(&f); 
+			}
 			batdn_total=0;
 			return(0);
 
@@ -378,7 +411,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			for(i=0;i<usrdirs[curlib];i++) {
 				if(i==curdir[curlib]) continue;
 				if(listfiles(usrdir[curlib][i],str,0,FL_VIEW))
-					break; }
+					break; 
+			}
 			if(i<usrdirs[curlib])
 				return(0);
 			bputs(text[SearchingAllLibs]);
@@ -386,7 +420,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				if(i==curlib) continue;
 				for(j=0;j<usrdirs[i];j++)
 					if(listfiles(usrdir[i][j],str,0,FL_VIEW))
-						return(0); }
+						return(0); 
+			}
 			csi->logic=LOGIC_FALSE;
 			bputs(text[FileNotFound]);
 			return(0);
@@ -395,12 +430,14 @@ int sbbs_t::exec_file(csi_t *csi)
 			csi->logic=LOGIC_FALSE;
 			if(!getfiles(&cfg,usrdir[curlib][curdir[curlib]])) {
 				bputs(text[EmptyDir]);
-				return(0); }
+				return(0); 
+			}
 			padfname(csi->str,str);
 			strupr(str);
 			s=listfiles(usrdir[curlib][curdir[curlib]],str,0,0);
 			if(s>1) {
-				bprintf(text[NFilesListed],s); }
+				bprintf(text[NFilesListed],s); 
+			}
 			csi->logic=!s;
 			return(0);
 		case CS_FILE_LIST_EXTENDED: /* Extended Information on files */
@@ -420,7 +457,9 @@ int sbbs_t::exec_file(csi_t *csi)
 					for(j=0;j<usrdirs[i];j++)
 						if((s=listfileinfo(usrdir[i][j],str,FI_INFO))!=0)
 							if(s==-1 || (!strchr(str,'?') && !strchr(str,'*')))
-								return(0); } }
+								return(0); 
+				} 
+			}
 			return(0);
 		case CS_FILE_FIND_TEXT: 	/* Find text in descriptions */
 			scandirs(FL_FINDDESC);
@@ -453,7 +492,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(!usrlibs) return(0);
 			if(useron.rest&FLAG('R')) {
 				bputs(text[R_RemoveFiles]);
-				return(0); }
+				return(0); 
+			}
 			padfname(csi->str,str);
 			strupr(str);
 			if(!listfileinfo(usrdir[curlib][curdir[curlib]],str,FI_REMOVE)) {
@@ -474,7 +514,9 @@ int sbbs_t::exec_file(csi_t *csi)
 					for(j=0;j<usrdirs[i]; j++)
 						if((s=listfileinfo(usrdir[i][j],str,FI_REMOVE))!=0)
 							if(s==-1 || (!strchr(str,'?') && !strchr(str,'*')))
-								return(0); } }
+								return(0); 
+				} 
+			}
 			return(0);
 	 }
 

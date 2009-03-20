@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -59,7 +59,8 @@ void sbbs_t::logout()
 			sprintf(str,"%s  T:%3u sec\r\n"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,(uint)(now-answertime));
-			logline("@-",str); }
+			logline("@-",str); 
+		}
 		return; 
 	}
 	strcpy(lastuseron,useron.alias);	/* for use with WFC status display */
@@ -80,7 +81,8 @@ void sbbs_t::logout()
 					sprintf(str,text[NodeLoggedOff],cfg.node_num
 						,thisnode.misc&NODE_ANON
 						? text[UNKNOWN_USER] : useron.alias);
-					putnmsg(&cfg,i,str); } }
+					putnmsg(&cfg,i,str); } 
+			}
 
 	if(!online) {		/* NOT re-login */
 
@@ -101,8 +103,10 @@ void sbbs_t::logout()
 			while(!lkbrd(1)) {
 				sbbs_beep(1000,200);
 				nosound();
-				mswait(200); }
-			lkbrd(0); }
+				mswait(200); 
+			}
+			lkbrd(0); 
+		}
 #endif
 		sys_status&=~SS_SYSALERT;
 		if(cfg.sys_logout[0])		/* execute system logout event */
@@ -141,7 +145,8 @@ void sbbs_t::logout()
 			useron.min-=j;
 		else
 			useron.min=0L;
-		putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,str,10)); }
+		putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,str,10)); 
+	}
 
 	if(timeleft>0 && starttime-logontime>0) 			/* extra time */
 		useron.textra+=(ushort)((starttime-logontime)/60);
@@ -187,20 +192,24 @@ void sbbs_t::backout()
 	sprintf(str,"%sbackout.dab",cfg.node_dir);
 	if(flength(str)<1L) {
 		remove(str);
-		return; }
+		return; 
+	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
-		return; }
+		return; 
+	}
 	if(read(file,buf,length)!=length) {
 		close(file);
 		free(buf);
 		errormsg(WHERE,ERR_READ,str,length);
-		return; }
+		return; 
+	}
 	close(file);
 	for(l=0;l<length;l+=BO_LEN) {
 		switch(buf[l]) {
@@ -213,10 +222,12 @@ void sbbs_t::backout()
 				if(i<cfg.total_dirs) {		/* found internal code */
 					f.dir=i;
 					memcpy(&f.datoffset,buf+l+9,4);
-					closefile(&f); }
+					closefile(&f); 
+				}
 				break;
 			default:
-				errormsg(WHERE,ERR_CHK,str,buf[l]); } }
+				errormsg(WHERE,ERR_CHK,str,buf[l]); } 
+	}
 	free(buf);
 	remove(str);	/* always remove the backout file */
 }
@@ -238,7 +249,8 @@ void sbbs_t::logofflist()
 		,TM_YEAR(tm.tm_year));
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-		return; }
+		return; 
+	}
 	sprintf(str,"%-*.*s %-2d %-8.8s %2.2d:%2.2d %2.2d:%2.2d %3d%3ld%3ld%3ld%3ld"
 		"%3ld%3ld\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
 		,tm.tm_hour,tm.tm_min,tm_now.tm_hour,tm_now.tm_min

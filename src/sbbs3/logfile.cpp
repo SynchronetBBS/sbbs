@@ -141,10 +141,12 @@ void sbbs_t::log(char *str)
 	if(logfile_fp==NULL || online==ON_LOCAL) return;
 	if(logcol>=78 || (78-logcol)<strlen(str)) {
 		fprintf(logfile_fp,"\r\n");
-		logcol=1; }
+		logcol=1; 
+	}
 	if(logcol==1) {
 		fprintf(logfile_fp,"   ");
-		logcol=4; }
+		logcol=4; 
+	}
 	fprintf(logfile_fp,str);
 	if(*lastchar(str)==LF) {
 		logcol=1;
@@ -326,7 +328,8 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 			sbbs_beep(500,220); sbbs_beep(250,220);
 			sbbs_beep(500,220); sbbs_beep(250,220);
 			sbbs_beep(500,220); sbbs_beep(250,220);
-			nosound(); }
+			nosound(); 
+		}
 		bputs("\r\n\r\nThe sysop has been notified. <Hit a key>");
 		getkey(0);
 		CRLF;
@@ -336,7 +339,8 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 		,src,line,action,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
 		sprintf(tmp," (0x%lX)",access);
-		strcat(str,tmp); }
+		strcat(str,tmp); 
+	}
 	if(extinfo!=NULL) {
 		sprintf(tmp,"\r\n      info: %s",extinfo);
 		strcat(str,tmp);
@@ -381,7 +385,9 @@ void sbbs_t::errorlog(const char *text)
 		sprintf(tmp2,"!ERROR %d opening/creating %s",errno,str);
 		logline("!!",tmp2);
 		errorlog_inside=0;
-		return; }
+		return; 
+
+	}
 	sprintf(hdr,"%s\r\nNode %2d: %s #%d\r\n"
 		,timestr(now),cfg.node_num,useron.alias,useron.number);
 	write(file,hdr,strlen(hdr));

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -90,7 +90,8 @@ void sbbs_t::fileinfo(file_t* f)
 		getextdesc(&cfg,f->dir,f->datoffset,ext);
 		CRLF;
 		putmsg(ext,P_NOATCODES);
-		CRLF; }
+		CRLF; 
+	}
 	if(f->size==-1L) {
 		bprintf(text[FileIsNotOnline],f->name);
 		if(SYSOP)
@@ -117,12 +118,14 @@ void sbbs_t::openfile(file_t* f)
 	sprintf(str1,"%s%s.dat",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str1,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_RDWR);
-		return; }
+		return; 
+	}
 	lseek(file,f->datoffset+F_OPENCOUNT,SEEK_SET);
 	if(read(file,str2,3)!=3) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str1,3);
-		return; }
+		return; 
+	}
 	str2[3]=0;
 	ultoa(atoi(str2)+1,str3,10);
 	putrec(str2,0,3,str3);
@@ -130,7 +133,8 @@ void sbbs_t::openfile(file_t* f)
 	if(write(file,str2,3)!=3) {
 		close(file);
 		errormsg(WHERE,ERR_WRITE,str1,3);
-		return; }
+		return; 
+	}
 	close(file);
 	/**********************************/
 	/* Add transaction to BACKOUT.DAB */
@@ -138,7 +142,8 @@ void sbbs_t::openfile(file_t* f)
 	sprintf(str1,"%sbackout.dab",cfg.node_dir);
 	if((file=nopen(str1,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_WRONLY|O_APPEND|O_CREAT);
-		return; }
+		return; 
+	}
 	ch=BO_OPENFILE;
 	write(file,&ch,1);				/* backout type */
 	write(file,cfg.dir[f->dir]->code,8); /* directory code */
@@ -163,12 +168,14 @@ void sbbs_t::closefile(file_t* f)
 	sprintf(str1,"%s%s.dat",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str1,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_RDWR);
-		return; }
+		return; 
+	}
 	lseek(file,f->datoffset+F_OPENCOUNT,SEEK_SET);
 	if(read(file,str2,3)!=3) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str1,3);
-		return; }
+		return; 
+	}
 	str2[3]=0;
 	ch=atoi(str2);
 	if(ch) ch--;
@@ -178,7 +185,8 @@ void sbbs_t::closefile(file_t* f)
 	if(write(file,str2,3)!=3) {
 		close(file);
 		errormsg(WHERE,ERR_WRITE,str1,3);
-		return; }
+		return; 
+	}
 	close(file);
 	/*****************************************/
 	/* Removing transaction from BACKOUT.DAB */
@@ -188,21 +196,25 @@ void sbbs_t::closefile(file_t* f)
 		return;
 	if((file=nopen(str1,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_RDONLY);
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str1,length);
-		return; }
+		return; 
+	}
 	if(read(file,buf,length)!=length) {
 		close(file);
 		free(buf);
 		errormsg(WHERE,ERR_READ,str1,length);
-		return; }
+		return; 
+	}
 	close(file);
 	if((file=nopen(str1,O_WRONLY|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_WRONLY|O_TRUNC);
-		return; }
+		return; 
+	}
 	ch=0;								/* 'ch' is a 'file already removed' flag */
 	for(l=0;l<length;l+=BO_LEN) {       /* in case file is in backout.dab > 1 */
 		if(!ch && buf[l]==BO_OPENFILE) {
@@ -211,8 +223,11 @@ void sbbs_t::closefile(file_t* f)
 			memcpy(&offset,buf+l+9,4);
 			if(!stricmp(str1,cfg.dir[f->dir]->code) && offset==f->datoffset) {
 				ch=1;
-				continue; } }
-		write(file,buf+l,BO_LEN); }
+				continue; 
+			}
+		}
+		write(file,buf+l,BO_LEN); 
+	}
 	free(buf);
 	close(file);
 }

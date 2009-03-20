@@ -124,7 +124,8 @@ void sbbs_t::batchmenu()
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->bicmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(tmp2,tmp); }
+						strcat(tmp2,tmp); 
+					}
 				ungetkey(useron.prot);
 				ch=(char)getkeys(tmp2,0);
 				if(ch=='Q')
@@ -174,7 +175,8 @@ void sbbs_t::batchmenu()
 						if(cfg.dir[batdn_dir[i]]->seqdev) {
 							unpadfname(batdn_name[i],tmp);
 							sprintf(tmp2,"%s%s",cfg.temp_dir,tmp);
-							remove(tmp2); }
+							remove(tmp2); 
+						}
 					batch_upload();
 					batch_download(xfrprot);
 					if(batdn_total)     /* files still in queue, not xfered */
@@ -196,7 +198,8 @@ void sbbs_t::batchmenu()
 							f.datoffset=batdn_offset[i];
 							f.size=batdn_size[i];
 							strcpy(f.name,batdn_name[i]);
-							closefile(&f); }
+							closefile(&f); 
+						}
 						batdn_total=0;
 						bputs(text[DownloadQueueCleared]); 
 					} 
@@ -210,7 +213,8 @@ void sbbs_t::batchmenu()
 					bputs(text[UploadQueueLstHdr]);
 					for(i=0;i<batup_total;i++)
 						bprintf(text[UploadQueueLstFmt],i+1,batup_name[i]
-							,batup_desc[i]); }
+							,batup_desc[i]); 
+				}
 				if(batdn_total) {
 					bputs(text[DownloadQueueLstHdr]);
 					for(i=0,totalcdt=0,totalsize=0;i<batdn_total;i++) {
@@ -221,11 +225,13 @@ void sbbs_t::batchmenu()
 							? sectostr(batdn_size[i]/(ulong)cur_cps,tmp2)
 							: "??:??:??");
 						totalsize+=batdn_size[i];
-						totalcdt+=batdn_cdt[i]; }
+						totalcdt+=batdn_cdt[i]; 
+					}
 					bprintf(text[DownloadQueueTotals]
 						,ultoac(totalcdt,tmp),ultoac(totalsize,str),cur_cps
 						? sectostr(totalsize/(ulong)cur_cps,tmp2)
-						: "??:??:??"); }
+						: "??:??:??"); 
+				}
 				break;  /* Questionable line ^^^, see note above function */
 			case 'R':
 				if(batup_total) {
@@ -240,7 +246,8 @@ void sbbs_t::batchmenu()
 							batup_alt[n]=batup_alt[n+1];
 							strcpy(batup_name[n],batup_name[n+1]);
 							strcpy(batup_desc[n],batup_desc[n+1]);
-							n++; }
+							n++; 
+						}
 						if(!batup_total)
 							bputs(text[UploadQueueCleared]); 
 					} 

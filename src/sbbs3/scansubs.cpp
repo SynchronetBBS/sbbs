@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -72,7 +72,9 @@ void sbbs_t::scansubs(long mode)
 				logline(nulstr,tmp);
 				if(!found)
 					CRLF;
-				return; } }
+				return; 
+			} 
+		}
 		else if(mode&SCAN_TOYOU && i) {
 			if(ch=='S')
 				found=listsub(usrsub[curgrp][cursub[curgrp]],SCAN_TOYOU,0,NULL);
@@ -81,20 +83,25 @@ void sbbs_t::scansubs(long mode)
 					found=listsub(usrsub[curgrp][i],SCAN_TOYOU,0,NULL);
 			if(!found)
 				CRLF;
-			return; } }
+			return; 
+		} 
+	}
 
 	if(ch=='S') {
 		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
-			menu("msgscan"); }
+			menu("msgscan"); 
+		}
 		i=scanposts(usrsub[curgrp][cursub[curgrp]],mode,str);
 		subs_scanned++;
 		bputs(text[MessageScan]);
 		if(i) bputs(text[MessageScanAborted]);
 		else bprintf(text[MessageScanComplete],subs_scanned);
-		return; }
+		return; 
+	}
 	if(ch=='G') {
 		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
-			menu("msgscan"); }
+			menu("msgscan"); 
+		}
 		for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 			if(((mode&SCAN_NEW &&
 				(subscan[usrsub[curgrp][i]].cfg&SUB_CFG_NSCAN
@@ -109,7 +116,8 @@ void sbbs_t::scansubs(long mode)
 		bputs(text[MessageScan]);
 		if(i==usrsubs[curgrp]) bprintf(text[MessageScanComplete],subs_scanned);
 			else bputs(text[MessageScanAborted]);
-		return; }
+		return; 
+	}
 
 	scanallsubs(mode);
 }
@@ -144,7 +152,9 @@ void sbbs_t::scanallsubs(long mode)
 				sprintf(tmp,"%s searched %lu sub-boards for '%s'"
 					,useron.alias,subs_scanned,str);
 				logline(nulstr,tmp);
-				return; } }
+				return; 
+			}
+		}
 		else if(mode&SCAN_TOYOU && i) {
 			for(i=0;i<usrgrps;i++) {
 				for(j=0;j<usrsubs[i] && !msgabort();j++) 
@@ -159,7 +169,8 @@ void sbbs_t::scanallsubs(long mode)
 	}
 
 	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
-		menu("msgscan"); }
+		menu("msgscan"); 
+	}
 	for(i=0;i<usrgrps;i++) {
 		for(j=0;j<usrsubs[i] && !msgabort();j++) {
 			if(((mode&SCAN_NEW && subscan[usrsub[i][j]].cfg&SUB_CFG_NSCAN)
@@ -200,7 +211,8 @@ void sbbs_t::new_scan_ptr_cfg()
 			checkline();
 			if(i<9) outchar(' ');
 			if(i<99) outchar(' ');
-			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname); }
+			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname); 
+		}
 		SYNC;
 		mnemonics(text[WhichOrAll]);
 		s=getkeys("AQ",usrgrps);
@@ -219,8 +231,11 @@ void sbbs_t::new_scan_ptr_cfg()
 					for(i=0;i<usrgrps && online;i++)
 						for(j=0;j<usrsubs[i] && online;j++) {
 							checkline();
-							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); } }
-				continue; }
+							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); 
+						} 
+				}
+				continue; 
+			}
 			if(s=='L')
 				s=0;
 			if(s)
@@ -233,8 +248,10 @@ void sbbs_t::new_scan_ptr_cfg()
 					if(s>(long)l)
 						subscan[usrsub[i][j]].ptr=0;
 					else
-						subscan[usrsub[i][j]].ptr=l-s; }
-			continue; }
+						subscan[usrsub[i][j]].ptr=l-s; 
+				}
+			continue; 
+		}
 		i=(s&~0x80000000L)-1;
 		while(online) {
 			l=0;
@@ -247,13 +264,15 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(t>(long)l)
 					l=t;
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
-					,timestr(t),nulstr); }
+					,timestr(t),nulstr); 
+			}
 			SYNC;
 			mnemonics(text[WhichOrAll]);
 			s=getkeys("AQ",usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
-				return; }
+				return; 
+			}
 			if(s==-1 || !s || s=='Q')
 				break;
 			if(s=='A') {    /* The entire group */
@@ -268,8 +287,11 @@ void sbbs_t::new_scan_ptr_cfg()
 						bputs(text[LoadingMsgPtrs]);
 						for(j=0;j<usrsubs[i] && online;j++) {
 							checkline();
-							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); } }
-					continue; }
+							subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); 
+						} 
+					}
+					continue; 
+				}
 				if(s=='L')
 					s=0;
 				if(s)
@@ -281,8 +303,10 @@ void sbbs_t::new_scan_ptr_cfg()
 					if(s>(long)l)
 						subscan[usrsub[i][j]].ptr=0;
 					else
-						subscan[usrsub[i][j]].ptr=l-s; }
-				continue; }
+						subscan[usrsub[i][j]].ptr=l-s; 
+				}
+				continue; 
+			}
 			else {
 				j=(s&~0x80000000L)-1;
 				mnemonics("\r\nEnter number of messages from end, ~Date, ~Quit, or"
@@ -294,8 +318,10 @@ void sbbs_t::new_scan_ptr_cfg()
 					t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
 					if(inputnstime(&t) && !(sys_status&SS_ABORT)) {
 						bputs(text[LoadingMsgPtrs]);
-						subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); }
-					continue; }
+						subscan[usrsub[i][j]].ptr=getmsgnum(usrsub[i][j],t); 
+					}
+					continue; 
+				}
 				if(s=='L')
 					s=0;
 				if(s)
@@ -304,8 +330,10 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(s>(long)l)
 					subscan[usrsub[i][j]].ptr=0;
 				else
-					subscan[usrsub[i][j]].ptr=l-s; }
-				} }
+					subscan[usrsub[i][j]].ptr=l-s; 
+			}
+		} 
+	}
 }
 
 void sbbs_t::new_scan_cfg(ulong misc)
@@ -320,7 +348,8 @@ void sbbs_t::new_scan_cfg(ulong misc)
 			checkline();
 			if(i<9) outchar(' ');
 			if(i<99) outchar(' ');
-			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname); }
+			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname); 
+		}
 		SYNC;
 		if(misc&SUB_CFG_NSCAN)
 			mnemonics(text[NScanCfgWhichGrp]);
@@ -352,7 +381,8 @@ void sbbs_t::new_scan_cfg(ulong misc)
 			s=getkeys("AQ",usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
-				return; }
+				return; 
+			}
 			if(!s || s==-1 || s=='Q')
 				break;
 			if(s=='A') {
@@ -366,14 +396,20 @@ void sbbs_t::new_scan_cfg(ulong misc)
 					else  {
 						if(misc&SUB_CFG_NSCAN)
 							subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN;
-						subscan[usrsub[i][j]].cfg|=misc; } }
-				continue; }
+						subscan[usrsub[i][j]].cfg|=misc; 
+					} 
+				}
+				continue; 
+			}
 			j=(s&~0x80000000L)-1;
 			if(misc&SUB_CFG_NSCAN && !(subscan[usrsub[i][j]].cfg&misc)) {
 				if(!(useron.rest&FLAG('Q')) && !noyes("Messages to you only"))
 					subscan[usrsub[i][j]].cfg|=SUB_CFG_YSCAN;
 				else
-					subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN; }
-			subscan[usrsub[i][j]].cfg^=misc; } }
+					subscan[usrsub[i][j]].cfg&=~SUB_CFG_YSCAN; 
+			}
+			subscan[usrsub[i][j]].cfg^=misc; 
+		} 
+	}
 }
 

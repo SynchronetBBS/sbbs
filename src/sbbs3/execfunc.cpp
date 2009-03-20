@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -116,7 +116,8 @@ int sbbs_t::exec_function(csi_t *csi)
 				user_event(EVENT_LOGOFF);
 				menu("logoff");
 				SYNC;
-				hangup(); }
+				hangup(); 
+			}
 			return(0);
 		case CS_LOGOFF_FAST:
 			SYNC;
@@ -180,7 +181,8 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_MAIL_SEND:		 /* Send E-mail */
 			if(strchr(csi->str,'@')) {
 				i=1;
-				netmail(csi->str,nulstr,0); }
+				netmail(csi->str,nulstr,0); 
+			}
 			else if((i=finduser(csi->str))!=0 
 				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str,false))!=0))
 				email(i,nulstr,nulstr,WM_EMAIL);
@@ -195,7 +197,8 @@ int sbbs_t::exec_function(csi_t *csi)
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(str,60,K_LINE)) {
 				netmail(str,nulstr,0);
-				csi->logic=LOGIC_TRUE; }
+				csi->logic=LOGIC_TRUE; 
+			}
 			else
 				csi->logic=LOGIC_FALSE;
 			return(0);
@@ -204,7 +207,8 @@ int sbbs_t::exec_function(csi_t *csi)
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(str,60,K_LINE)) {
 				netmail(str,nulstr,WM_FILE);
-				csi->logic=LOGIC_TRUE; }
+				csi->logic=LOGIC_TRUE; 
+			}
 			else
 				csi->logic=LOGIC_FALSE;
 			return(0);
@@ -212,7 +216,8 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_MAIL_SEND_FILE:   /* Upload Attached File to E-mail */
 			if(strchr(csi->str,'@')) {
 				i=1;
-				netmail(csi->str,nulstr,WM_FILE); }
+				netmail(csi->str,nulstr,WM_FILE); 
+			}
 			else if((i=finduser(csi->str))!=0
 				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str,false))!=0))
 				email(i,nulstr,nulstr,WM_EMAIL|WM_FILE);
@@ -272,13 +277,15 @@ int sbbs_t::exec_function(csi_t *csi)
 				bputs(text[ErrorLogHdr]);
 				printfile(str,0);
 				if(!noyes(text[DeleteErrorLogQ]))
-					remove(str); }
+					remove(str); 
+			}
 			else
 				bprintf(text[FileDoesNotExist],str);
 			for(i=1;i<=cfg.sys_nodes;i++) {
 				getnodedat(i,&node,0);
 				if(node.errors)
-					break; }
+					break; 
+			}
 			if(i<=cfg.sys_nodes || criterrs) {
 				if(!noyes(text[ClearErrCounter])) {
 					for(i=1;i<=cfg.sys_nodes;i++) {
@@ -316,7 +323,8 @@ int sbbs_t::exec_function(csi_t *csi)
 				printfile(str,0);
 				CRLF;
 				if(!noyes(text[DeleteGuruLogQ]))
-					remove(str); }
+					remove(str); 
+			}
 			return(0);
 		case CS_FILE_SET_ALT_PATH:
 			altul=atoi(csi->str);
@@ -330,28 +338,33 @@ int sbbs_t::exec_function(csi_t *csi)
 					getnodedat(i,&node,0);
 					if(node.status==NODE_INUSE
 						|| node.status==NODE_QUIET)
-						break; }
+						break; 
+				}
 
 			if(i<=cfg.sys_nodes) {
 				bputs(text[ResortWarning]);
-				return(0); }
+				return(0); 
+			}
 
 			if(!stricmp(csi->str,"ALL")) {     /* all libraries */
 				for(i=0;i<usrlibs;i++)
 					for(j=0;j<usrdirs[i];j++)
 						resort(usrdir[i][j]);
-				return(0); }
+				return(0); 
+			}
 			if(!stricmp(csi->str,"LIB")) {     /* current library */
 				for(i=0;i<usrdirs[curlib];i++)
 					resort(usrdir[curlib][i]);
-				return(0); }
+				return(0); 
+			}
 			resort(usrdir[curlib][curdir[curlib]]);
 			return(0);
 
 		case CS_FILE_GET:
 			if(!fexist(csi->str)) {
 				bputs(text[FileNotFound]);
-				return(0); }
+				return(0); 
+			}
 			if(!chksyspass())
 				return(0);
 
@@ -378,15 +391,19 @@ int sbbs_t::exec_function(csi_t *csi)
 					for(j=0;j<usrdirs[i];j++) {
 						if(cfg.lib[i]->offline_dir==usrdir[i][j])
 							continue;
-						if(bulkupload(usrdir[i][j])) return(0); }
-				return(0); }
+						if(bulkupload(usrdir[i][j])) return(0); 
+					}
+				return(0); 
+			}
 			if(!stricmp(csi->str,"LIB")) {     /* current library */
 				for(i=0;i<usrdirs[curlib];i++) {
 					if(cfg.lib[usrlib[curlib]]->offline_dir
 						==usrdir[curlib][i])
 						continue;
-					if(bulkupload(usrdir[curlib][i])) return(0); }
-				return(0); }
+					if(bulkupload(usrdir[curlib][i])) return(0); 
+				}
+				return(0); 
+			}
 			bulkupload(usrdir[curlib][curdir[curlib]]); /* current dir */
 			return(0);
 
@@ -409,16 +426,20 @@ int sbbs_t::exec_function(csi_t *csi)
 			bputs(" for files ");
 			if(*(csi->ip-1)==CS_FILE_FIND_OLD_UPLOADS) {
 				l=FI_OLDUL;
-				bprintf("uploaded before %s\r\n",timestr(ns_time)); }
+				bprintf("uploaded before %s\r\n",timestr(ns_time)); 
+			}
 			else if(*(csi->ip-1)==CS_FILE_FIND_OLD) { /* go by download date */
 				l=FI_OLD;
-				bprintf("not downloaded since %s\r\n",timestr(ns_time)); }
+				bprintf("not downloaded since %s\r\n",timestr(ns_time)); 
+			}
 			else if(*(csi->ip-1)==CS_FILE_FIND_OFFLINE) {
 				l=FI_OFFLINE;
-				bputs("not online...\r\n"); }
+				bputs("not online...\r\n"); 
+			}
 			else {
 				l=FI_CLOSE;
-				bputs("currently open...\r\n"); }
+				bputs("currently open...\r\n"); 
+			}
 			if(!stricmp(csi->str,"ALL")) {
 				for(i=0;i<usrlibs;i++)
 					for(j=0;j<usrdirs[i];j++) {
@@ -426,30 +447,39 @@ int sbbs_t::exec_function(csi_t *csi)
 							continue;
 						if((s=listfileinfo(usrdir[i][j],str,(char)l))==-1)
 							return(0);
-						else k+=s; } }
+						else k+=s; 
+					} 
+			}
 			else if(!stricmp(csi->str,"LIB")) {
 				for(i=0;i<usrdirs[curlib];i++) {
 					if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
 							continue;
 					if((s=listfileinfo(usrdir[curlib][i],str,(char)l))==-1)
 						return(0);
-					else k+=s; } }
+					else k+=s; 
+				} 
+			}
 			else {
 				s=listfileinfo(usrdir[curlib][curdir[curlib]],str,(char)l);
 				if(s==-1)
 					return(0);
-				k=s; }
+				k=s; 
+			}
 			if(k>1) {
-				bprintf(text[NFilesListed],k); }
-			return(0); }
+				bprintf(text[NFilesListed],k); 
+			}
+			return(0); 
+	}
 
 	if(*(csi->ip-1)>=CS_MSG_SET_AREA && *(csi->ip-1)<=CS_MSG_UNUSED1) {
 		csi->ip--;
-		return(exec_msg(csi)); }
+		return(exec_msg(csi)); 
+	}
 
 	if(*(csi->ip-1)>=CS_FILE_SET_AREA && *(csi->ip-1)<=CS_FILE_RECEIVE) {
 		csi->ip--;
-		return(exec_file(csi)); }
+		return(exec_file(csi)); 
+	}
 
 	errormsg(WHERE,ERR_CHK,"shell function",*(csi->ip-1));
 	return(0);

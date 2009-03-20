@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -52,25 +52,32 @@ void sbbs_t::scandirs(long mode)
 	ch=(char)getkeys("DLA\r",0);
 	if(sys_status&SS_ABORT || ch==CR) {
 		lncntr=0;
-		return; }
+		return; 
+	}
 	if(ch!='A') {
 		if(mode&FL_ULTIME) {			/* New file scan */
 			bprintf(text[NScanHdr],timestr(ns_time));
-			str[0]=0; }
+			str[0]=0; 
+		}
 		else if(mode==FL_NO_HDR) {		/* Search for a string */
 			if(!getfilespec(tmp))
 				return;
-			padfname(tmp,str); }
+			padfname(tmp,str); 
+		}
 		else if(mode==FL_FINDDESC) {	/* Find text in description */
 			if(!noyes(text[SearchExtendedQ]))
 				mode=FL_EXFIND;
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
-				return; }
+				return; 
+			}
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER)) {
 				lncntr=0;
-				return; } } }
+				return; 
+			} 
+		}
+	}
 	if(ch=='D') {
 		if((s=listfiles(usrdir[curlib][curdir[curlib]],str,0,mode))==-1)
 			return;
@@ -79,7 +86,8 @@ void sbbs_t::scandirs(long mode)
 			bprintf(text[NFilesListed],s);
 		else if(!s && !(mode&FL_ULTIME))
 			bputs(text[FileNotFound]);
-		return; }
+		return; 
+	}
 	if(ch=='L') {
 		k=0;
 		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
@@ -93,13 +101,15 @@ void sbbs_t::scandirs(long mode)
 				continue;
 			else if((s=listfiles(usrdir[curlib][i],str,0,mode))==-1)
 				return;
-			else k+=s; }
+			else k+=s; 
+		}
 		bputs("\r\1>");
 		if(k>1)
 			bprintf(text[NFilesListed],k);
 		else if(!k && !(mode&FL_ULTIME))
 			bputs(text[FileNotFound]);
-		return; }
+		return; 
+	}
 
 	scanalldirs(mode);
 }
@@ -118,21 +128,26 @@ void sbbs_t::scanalldirs(long mode)
 	k=0;
 	if(mode&FL_ULTIME) {			/* New file scan */
 		bprintf(text[NScanHdr],timestr(ns_time));
-		str[0]=0; }
+		str[0]=0; 
+	}
 	else if(mode==FL_NO_HDR) {		/* Search for a string */
 		if(!getfilespec(tmp))
 			return;
-		padfname(tmp,str); }
+		padfname(tmp,str); 
+	}
 	else if(mode==FL_FINDDESC) {	/* Find text in description */
 		if(!noyes(text[SearchExtendedQ]))
 			mode=FL_EXFIND;
 		if(sys_status&SS_ABORT) {
 			lncntr=0;
-			return; }
+			return; 
+		}
 		bputs(text[SearchStringPrompt]);
 		if(!getstr(str,40,K_LINE|K_UPPER)) {
 			lncntr=0;
-			return; } }
+			return; 
+		}
+	}
 	for(i=d=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i] && !msgabort();j++,d++) {
 			attr(LIGHTGRAY);
@@ -145,9 +160,11 @@ void sbbs_t::scanalldirs(long mode)
 				continue;
 			else if((s=listfiles(usrdir[i][j],str,0,mode))==-1)
 				return;
-			else k+=s; }
+			else k+=s; 
+		}
 		if(j<usrdirs[i])   /* aborted */
-			break; }
+			break; 
+	}
 	bputs("\r\1>");
 	if(k>1)
 		bprintf(text[NFilesListed],k);

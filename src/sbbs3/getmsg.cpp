@@ -163,12 +163,14 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			sender=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && sender)
 			bprintf(text[ForwardedFrom],sender
-				,timestr(*(time32_t *)msg->hfield_dat[i])); }
+				,timestr(*(time32_t *)msg->hfield_dat[i])); 
+	}
 
 	/* Debug stuff
 	if(SYSOP) {
 		bprintf("\1n\1c\r\nAux  : \1h%08lX",msg->hdr.auxattr);
-		bprintf("\1n\1c\r\nNum  : \1h%lu",msg->hdr.number); }
+		bprintf("\1n\1c\r\nNum  : \1h%lu",msg->hdr.number); 
+		}
 	*/
 
 	CRLF;
@@ -202,7 +204,8 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 
 	if((out=fnopen(&i,str,O_WRONLY|O_CREAT|O_APPEND))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,0);
-		return; }
+		return; 
+	}
 	if(header) {
 		fprintf(out,"\r\n");
 		fprintf(out,"Subj : %s\r\n",msg->subj);
@@ -219,7 +222,8 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		fprintf(out,"\r\nDate : %.24s %s"
 			,timestr(msg->hdr.when_written.time)
 			,smb_zonestr(msg->hdr.when_written.zone,NULL));
-		fprintf(out,"\r\n\r\n"); }
+		fprintf(out,"\r\n\r\n"); 
+	}
 
 	buf=smb_getmsgtxt(&smb,msg,tails);
 	if(buf!=NULL) {
@@ -248,27 +252,32 @@ ulong sbbs_t::getmsgnum(uint subnum, time_t t)
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 
 	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
 
 	if(!total) {		   /* Empty base */
 		smb_close(&smb);
-		return(0); }
+		return(0); 
+	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 
 	if((i=smb_getlastidx(&smb,&msg.idx))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 
 	if((time_t)msg.idx.time<=t) {
 		smb_close(&smb);
-		return(msg.idx.number); }
+		return(msg.idx.number); 
+	}
 
 	bot=0;
 	top=total;
@@ -283,12 +292,15 @@ ulong sbbs_t::getmsgnum(uint subnum, time_t t)
 		if((time_t)msg.idx.time>t) {
 			top=l;
 			l=bot+((top-bot)/2);
-			continue; }
+			continue; 
+		}
 		if((time_t)msg.idx.time<t) {
 			bot=l;
 			l=top-((top-bot)/2);
-			continue; }
-		break; }
+			continue; 
+		}
+		break; 
+	}
 	smb_close(&smb);
 	return(msg.idx.number);
 }
@@ -307,31 +319,38 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	if(!filelength(fileno(smb.sid_fp))) {			/* Empty base */
 		smb_close(&smb);
-		return(0); }
+		return(0); 
+	}
 	msg.offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg)) {				/* Get first message index */
 		smb_close(&smb);
-		return(0); }
+		return(0); 
+	}
 	if(!ptr || msg.idx.number>=ptr) {			/* ptr is before first message */
 		smb_close(&smb);
-		return(msg.idx.time); } 				/* so return time of first msg */
+		return(msg.idx.time);   				/* so return time of first msg */
+	}
 
 	if(smb_getlastidx(&smb,&lastidx)) { 			 /* Get last message index */
 		smb_close(&smb);
-		return(0); }
+		return(0); 
+	}
 	if(lastidx.number<ptr) {					/* ptr is after last message */
 		smb_close(&smb);
-		return(lastidx.time); } 				/* so return time of last msg */
+		return(lastidx.time);	 				/* so return time of last msg */
+	}
 
 	msg.idx.time=0;
 	msg.hdr.number=ptr;
 	if(!smb_getmsgidx(&smb,&msg)) {
 		smb_close(&smb);
-		return(msg.idx.time); }
+		return(msg.idx.time); 
+	}
 
 	if(ptr-msg.idx.number < lastidx.number-ptr) {
 		msg.offset=0;
@@ -340,16 +359,19 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 			msg.hdr.number=0;
 			if(smb_getmsgidx(&smb,&msg) || msg.idx.number>=ptr)
 				break;
-			msg.offset++; }
+			msg.offset++; 
+		}
 		smb_close(&smb);
-		return(msg.idx.time); }
+		return(msg.idx.time); 
+	}
 
 	ptr--;
 	while(ptr) {
 		msg.hdr.number=ptr;
 		if(!smb_getmsgidx(&smb,&msg))
 			break;
-		ptr--; }
+		ptr--; 
+	}
 	smb_close(&smb);
 	return(msg.idx.time);
 }
@@ -377,19 +399,23 @@ ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 
 	if(!filelength(fileno(smb.sid_fp))) {			/* Empty base */
 		smb_close(&smb);
-		return(0); }
+		return(0); 
+	}
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	if((i=smb_getlastidx(&smb,&idx))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);

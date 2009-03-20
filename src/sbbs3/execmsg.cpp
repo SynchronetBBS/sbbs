@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -63,7 +63,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
 							bprintf(text[CfgGrpLstFmt]
-								,i+1, cfg.grp[usrgrp[i]]->lname); } }
+								,i+1, cfg.grp[usrgrp[i]]->lname); } 
+					}
 					sprintf(str,text[JoinWhichGrp],curgrp+1);
 					mnemonics(str);
 					j=getnum(usrgrps);
@@ -72,11 +73,13 @@ int sbbs_t::exec_msg(csi_t *csi)
 					if(!j)
 						j=curgrp;
 					else
-						j--; }
+						j--; 
+				}
 				sprintf(str,"%smenu/subs%u.*", cfg.text_dir, usrgrp[j]+1);
 				if(fexist(str)) {
 					sprintf(str,"subs%u",usrgrp[j]+1);
-					menu(str); }
+					menu(str); 
+				}
 				else {
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
@@ -88,14 +91,16 @@ int sbbs_t::exec_msg(csi_t *csi)
 							,getposts(&cfg,usrsub[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
-						bputs(str); } }
+						bputs(str); } 
+				}
 				sprintf(str,text[JoinWhichSub],cursub[j]+1);
 				mnemonics(str);
 				i=getnum(usrsubs[j]);
 				if((int)i==-1) {
 					if(usrgrps==1)
 						return(0);
-					continue; }
+					continue; 
+				}
 				if(!i)
 					i=cursub[j];
 				else
@@ -103,7 +108,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				curgrp=j;
 				cursub[curgrp]=i;
 				csi->logic=LOGIC_TRUE;
-				return(0); }
+				return(0); 
+			}
 			return(0);
 
 		case CS_MSG_GET_SUB_NUM:
@@ -112,7 +118,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				i=atoi(csi->str);
 				if(i && usrgrps && i<=usrsubs[curgrp])
 					cursub[curgrp]=i-1;
-				return(0); }
+				return(0); 
+			}
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
@@ -122,11 +129,13 @@ int sbbs_t::exec_msg(csi_t *csi)
 				if(!isdigit(ch) && ch!=CR) {
 					ungetkey(ch);
 					cursub[curgrp]=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				outchar(ch);
 				if(ch==CR) {
 					cursub[curgrp]=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				logch(ch,0);
 				i+=ch&0xf;
 				if(i*10<=usrsubs[curgrp]) { 	/* 100+ subs */
@@ -135,16 +144,20 @@ int sbbs_t::exec_msg(csi_t *csi)
 					if(!isdigit(ch) && ch!=CR) {
 						ungetkey(ch);
 						cursub[curgrp]=(i/10)-1;
-						return(0); }
+						return(0); 
+					}
 					outchar(ch);
 					if(ch==CR) {
 						cursub[curgrp]=(i/10)-1;
-						return(0); }
+						return(0); 
+					}
 					logch(ch,0);
-					i+=ch&0xf; }
+					i+=ch&0xf; 
+				}
 				if(i<=usrsubs[curgrp])
 					cursub[curgrp]=i-1;
-				return(0); }
+				return(0); 
+			}
 			if((uint)(ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
 				cursub[curgrp]=(ch&0xf)-1;
 			return(0);
@@ -155,7 +168,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				i=atoi(csi->str);
 				if(i && i<=usrgrps)
 					curgrp=i-1;
-				return(0); }
+				return(0); 
+			}
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
@@ -165,16 +179,19 @@ int sbbs_t::exec_msg(csi_t *csi)
 				if(!isdigit(ch) && ch!=CR) {
 					ungetkey(ch);
 					curgrp=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				outchar(ch);
 				if(ch==CR) {
 					curgrp=(i/10)-1;
-					return(0); }
+					return(0); 
+				}
 				logch(ch,0);
 				i+=ch&0xf;
 				if(i<=usrgrps)
 					curgrp=i-1;
-				return(0); }
+				return(0); 
+			}
 			if((uint)(ch&0xf)<=usrgrps && (ch&0xf))
 				curgrp=(ch&0xf)-1;
 			return(0);
@@ -195,7 +212,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			sprintf(str,"%smenu/grps.*", cfg.text_dir);
 			if(fexist(str)) {
 				menu("grps");
-				return(0); }
+				return(0); 
+			}
 			bputs(text[GrpLstHdr]);
 			for(i=0;i<usrgrps && !msgabort();i++) {
 				if(i==curgrp)
@@ -203,7 +221,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				else outchar(' ');
 				if(i<9) outchar(' ');
 				bprintf(text[GrpLstFmt],i+1
-					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); }
+					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); 
+			}
 			return(0);
 
 		case CS_MSG_SHOW_SUBBOARDS:
@@ -212,7 +231,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			if(fexist(str)) {
 				sprintf(str,"subs%u",usrgrp[curgrp]+1);
 				menu(str);
-				return(0); }
+				return(0); 
+			}
 			CRLF;
 			bprintf(text[SubLstHdr],cfg.grp[usrgrp[curgrp]]->lname);
 			for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
@@ -223,7 +243,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 					,getposts(&cfg,usrsub[curgrp][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
-				bputs(str); }
+				bputs(str); 
+			}
 			return(0);
 
 		case CS_MSG_GROUP_UP:
@@ -255,7 +276,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 					if(!stricmp(csi->str,cfg.sub[usrsub[i][j]]->code)) {
 						curgrp=i;
 						cursub[i]=j;
-						return(0); }
+						return(0); 
+					}
 			csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_MSG_READ:
@@ -317,7 +339,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return(0);
 		case CS_MSG_YOUR_SCAN_ALL:
 			scanallsubs(SCAN_TOYOU);
-			return(0); }
+			return(0); 
+	}
 	errormsg(WHERE,ERR_CHK,"shell function",*(csi->ip-1));
 	return(0);
 }

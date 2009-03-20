@@ -69,7 +69,8 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 			bprintf(text[SelectItemHdr],title);
 		uselect_num[uselect_total++]=n;
 		bprintf(text[SelectItemFmt],uselect_total,item);
-		return(0); }
+		return(0); 
+	}
 
 	if(!uselect_total)
 		return(-1);
@@ -92,7 +93,8 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 				return(uselect_num[u]);
 		if(n<t)
 			return(uselect_num[n]);
-		return(-1); }
+		return(-1); 
+	}
 	return(uselect_num[i-1]);
 }
 

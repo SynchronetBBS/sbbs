@@ -1108,7 +1108,9 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			case '?':
 				menu("msgscan");
 				domsg=0;
-				break;	} }
+				break;	
+		} 
+	}
 	if(msg.total_hfields)
 		smb_freemsgmem(&msg);
 	if(post)
