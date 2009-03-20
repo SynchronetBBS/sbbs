@@ -866,7 +866,6 @@ char *decompile_ars(uchar *ars, int len)
 	static char	buf[1024];
 	char	*out;
 	uchar	*in;
-	uint	artype;
 	uint	n;
 	int		equals=0;
 	int		not=0;
@@ -879,7 +878,7 @@ char *decompile_ars(uchar *ars, int len)
 				break;
 			case AR_OR:
 				*(out++)='|';
-				artype=*in;
+				
 				break;
 			case AR_NOT:
 				not=1;
@@ -892,120 +891,120 @@ char *decompile_ars(uchar *ars, int len)
 					*(out++)='!';
 				not=0;
 				*(out++)='(';
-				artype=*in;
+				
 				break;
 			case AR_ENDNEST:
 				*(out++)=')';
-				artype=*in;
+				
 				break;
 			case AR_LEVEL:
 				*(out++)='$';
 				*(out++)='L';
-				artype=*in;
+				
 				break;
 			case AR_AGE:
 				*(out++)='$';
 				*(out++)='A';
-				artype=*in;
+				
 				break;
 			case AR_BPS:
 				*(out++)='$';
 				*(out++)='B';
-				artype=*in;
+				
 				break;
 			case AR_NODE:
 				*(out++)='$';
 				*(out++)='N';
-				artype=*in;
+				
 				break;
 			case AR_TLEFT:
 				*(out++)='$';
 				*(out++)='R';
-				artype=*in;
+				
 				break;
 			case AR_TUSED:
 				*(out++)='$';
 				*(out++)='O';
-				artype=*in;
+				
 				break;
 			case AR_USER:
 				*(out++)='$';
 				*(out++)='U';
-				artype=*in;
+				
 				break;
 			case AR_TIME:
 				*(out++)='$';
 				*(out++)='T';
-				artype=*in;
+				
 				break;
 			case AR_PCR:
 				*(out++)='$';
 				*(out++)='P';
-				artype=*in;
+				
 				break;
 			case AR_FLAG1:
 				*(out++)='$';
 				*(out++)='F';
 				*(out++)='1';
-				artype=*in;
+				
 				break;
 			case AR_FLAG2:
 				*(out++)='$';
 				*(out++)='F';
 				*(out++)='2';
-				artype=*in;
+				
 				break;
 			case AR_FLAG3:
 				*(out++)='$';
 				*(out++)='F';
 				*(out++)='3';
-				artype=*in;
+				
 				break;
 			case AR_FLAG4:
 				*(out++)='$';
 				*(out++)='F';
 				*(out++)='4';
-				artype=*in;
+				
 				break;
 			case AR_EXEMPT:
 				*(out++)='$';
 				*(out++)='X';
-				artype=*in;
+				
 				break;
 			case AR_REST:
 				*(out++)='$';
 				*(out++)='Z';
-				artype=*in;
+				
 				break;
 			case AR_SEX:
 				*(out++)='$';
 				*(out++)='S';
-				artype=*in;
+				
 				break;
 			case AR_UDR:
 				*(out++)='$';
 				*(out++)='K';
-				artype=*in;
+				
 				break;
 			case AR_UDFR:
 				*(out++)='$';
 				*(out++)='D';
-				artype=*in;
+				
 				break;
 			case AR_EXPIRE:
 				*(out++)='$';
 				*(out++)='E';
-				artype=*in;
+				
 				break;
 			case AR_CREDIT:
 				*(out++)='$';
 				*(out++)='C';
-				artype=*in;
+				
 				break;
 			case AR_DAY:
 				*(out++)='$';
 				*(out++)='W';
-				artype=*in;
+				
 				break;
 			case AR_ANSI:
 				if(not)
@@ -1013,7 +1012,7 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*(out++)='$';
 				*(out++)='[';
-				artype=*in;
+				
 				break;
 			case AR_RIP:
 				if(not)
@@ -1021,7 +1020,7 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*(out++)='$';
 				*(out++)='*';
-				artype=*in;
+				
 				break;
 			case AR_LOCAL:
 				if(not)
@@ -1029,27 +1028,27 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*(out++)='$';
 				*(out++)='G';
-				artype=*in;
+				
 				break;
 			case AR_GROUP:
 				*(out++)='$';
 				*(out++)='M';
-				artype=*in;
+				
 				break;
 			case AR_SUB:
 				*(out++)='$';
 				*(out++)='H';
-				artype=*in;
+				
 				break;
 			case AR_LIB:
 				*(out++)='$';
 				*(out++)='I';
-				artype=*in;
+				
 				break;
 			case AR_DIR:
 				*(out++)='$';
 				*(out++)='J';
-				artype=*in;
+				
 				break;
 			case AR_EXPERT :
 				if(not)
@@ -1057,8 +1056,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"EXPERT");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_SYSOP:
 				if(not)
@@ -1066,8 +1065,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"SYSOP");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_QUIET:
 				if(not)
@@ -1075,35 +1074,35 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"QUIET");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_MAIN_CMDS:
 				*out=0;
 				strcat(out,"MAIN_CMDS");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_FILE_CMDS:
 				*out=0;
 				strcat(out,"FILE_CMDS");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_RANDOM:
 				*(out++)='$';
 				*(out++)='Q';
-				artype=*in;
+				
 				break;
 			case AR_LASTON:
 				*(out++)='$';
 				*(out++)='Y';
-				artype=*in;
+				
 				break;
 			case AR_LOGONS:
 				*(out++)='$';
 				*(out++)='V';
-				artype=*in;
+				
 				break;
 			case AR_WIP:
 				if(not)
@@ -1111,20 +1110,20 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"WIP");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_SUBCODE:
 				*out=0;
-				strcat(out,"SUBCODE");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"SUB ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_DIRCODE:
 				*out=0;
-				strcat(out,"DIRCODE");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"DIR ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_OS2:
 				if(not)
@@ -1132,8 +1131,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"OS2");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_DOS:
 				if(not)
@@ -1141,8 +1140,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"DOS");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_WIN32:
 				if(not)
@@ -1150,8 +1149,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"WIN32");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_UNIX:
 				if(not)
@@ -1159,8 +1158,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"UNIX");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_LINUX :
 				if(not)
@@ -1168,41 +1167,32 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"LINUX");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_SHELL:
 				*out=0;
-				strcat(out,"SHELL");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"SHELL ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_PROT:
-				if(not)
-					*(out++)='!';
-				not=0;
 				*out=0;
-				strcat(out,"PROT");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"PROT ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_HOST:
-				if(not)
-					*(out++)='!';
-				not=0;
 				*out=0;
-				strcat(out,"HOST");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"HOST ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_IP:
-				if(not)
-					*(out++)='!';
-				not=0;
 				*out=0;
-				strcat(out,"IP");
-				out=strchr(buf,0);
-				artype=*in;
+				strcat(out,"IP ");
+				out=strchr(out,0);
+				
 				break;
 			case AR_GUEST:
 				if(not)
@@ -1210,8 +1200,8 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"GUEST");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			case AR_QNODE:
 				if(not)
@@ -1219,11 +1209,11 @@ char *decompile_ars(uchar *ars, int len)
 				not=0;
 				*out=0;
 				strcat(out,"QNODE");
-				out=strchr(buf,0);
-				artype=*in;
+				out=strchr(out,0);
+				
 				break;
 			default:
-				printf("Error decoding ARS!\n");
+				printf("Error decoding AR: %02Xh, offset: %u\n", *in, in-ars);
 				return("Unknown ARS String");
 		}
 		switch(*in) {
@@ -1291,6 +1281,9 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_SUBCODE:
 			case AR_DIRCODE:
 			case AR_SHELL:
+			case AR_PROT:
+			case AR_HOST:
+			case AR_IP:
 				if(not)
 					*(out++)='!';
 				if(equals)

@@ -39,6 +39,20 @@
 
 const uchar* nular=(uchar*)"";	/* AR_NULL */
 
+static BOOL ar_string_arg(int artype)
+{
+	switch(artype) {
+		case AR_SUBCODE:
+		case AR_DIRCODE:
+		case AR_SHELL:
+		case AR_PROT:
+		case AR_HOST:
+		case AR_IP:
+			return TRUE;	/* These ARS Keywords expect a string argument */
+	}
+	return FALSE;
+}
+
 /* Converts ASCII ARS string into binary ARS buffer */
 
 #ifdef __BORLANDC__	/* Eliminate warning when buildling Baja */
@@ -46,9 +60,14 @@ const uchar* nular=(uchar*)"";	/* AR_NULL */
 #endif
 uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 {
-	char *p;
-	uchar ar[256],*ar_buf;
-	uint i,j,n,artype=AR_LEVEL,not=0,equal=0;
+	char*	p;
+	char*	np;
+	char	ch;
+	uchar	ar[1024],*ar_buf;
+	int		artype=AR_INVALID;
+	uint	i,j,n,not=0,equal=0;
+	uint	maxlen;
+	BOOL	arg_expected=FALSE;
 
 	for(i=j=0;str[i];i++) {
 		if(str[i]==' ')
@@ -81,37 +100,40 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			continue;
 
 		if(isalpha(str[i])) {
-			if(!strnicmp(str+i,"OR",2)) {
+			p=np=str+i;
+			SKIP_ALPHA(np);
+			n=np-p;
+			if(n==2 && !strnicmp(p,"OR",2)) {
 				ar[j++]=AR_OR;
 				i++;
 				continue; }
 
-			if(!strnicmp(str+i,"AND",3)) {    /* AND is ignored */
+			if(n==3 && !strnicmp(p,"AND",3)) {    /* AND is ignored */
 				i+=2;
 				continue; }
 
-			if(!strnicmp(str+i,"NOT",3)) {
+			if(n==3 && !strnicmp(p,"NOT",3)) {
 				not=1;
 				i+=2;
 				continue; }
 
-			if(!strnicmp(str+i,"EQUAL TO",8)) {
-				equal=1;
-				i+=7;
+			if(n==2 && equal && !strnicmp(p,"TO",2)) {	/* EQUAL TO */
+				i++;
 				continue; }
 
-			if(!strnicmp(str+i,"EQUAL",5)) {
+			if(n==5 && !strnicmp(p,"EQUAL",5)) {
 				equal=1;
 				i+=4;
 				continue; }
 
-			if(!strnicmp(str+i,"EQUALS",6)) {
+			if(n==6 && !strnicmp(p,"EQUALS",6)) {
 				equal=1;
 				i+=5;
 				continue; } }
 
 		if(str[i]=='$') {
-			switch(toupper(str[i+1])) {
+			arg_expected=TRUE;
+			switch((ch=toupper(str[++i]))) {
 				case 'A':
 					artype=AR_AGE;
 					break;
@@ -129,13 +151,6 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break;
 				case 'F':
 					artype=AR_FLAG1;
-					break;
-				case 'G':
-					artype=AR_LOCAL;
-					if(not)
-						ar[j++]=AR_NOT;
-					not=0;
-					ar[j++]=artype;
 					break;
 				case 'H':
 					artype=AR_SUB;
@@ -193,30 +208,37 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break;
 				case 'Z':
 					artype=AR_REST;
-					break;
-				case '[':
-					artype=AR_ANSI;
-					if(not)
-						ar[j++]=AR_NOT;
-					not=0;
-					ar[j++]=artype;
-					break;
+				/* Boolean (no argument) symbols */
 				case '0':
-					artype=AR_NULL;
-					break;
+				case 'G':
 				case '*':
-					artype=AR_RIP;
+				case '[':
+					switch(ch) {
+						case '0':
+							artype=AR_NULL;
+							break;
+						case 'G':
+							artype=AR_LOCAL;
+							break;
+						case '*':
+							artype=AR_RIP;
+							break;
+						case '[':
+							artype=AR_ANSI;
+							break;
+					}
 					if(not)
 						ar[j++]=AR_NOT;
 					not=0;
 					ar[j++]=artype;
+					artype=AR_INVALID;
+					arg_expected=FALSE;
 					break;
+			}
+			continue; 
+		}
 
-				}
-			i++;
-			continue; }
-
-		if(isalpha(str[i])) {
+		if(!arg_expected && isalpha(str[i])) {
 			n=i;
 			if(!strnicmp(str+i,"AGE",3)) {
 				artype=AR_AGE;
@@ -256,74 +278,34 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=2; }
 			else if(!strnicmp(str+i,"RIP",3)) {
 				artype=AR_RIP;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=2; }
 			else if(!strnicmp(str+i,"WIP",3)) {
 				artype=AR_WIP;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=2; }
 			else if(!strnicmp(str+i,"OS2",3)) {
 				artype=AR_OS2;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=2; }
 			else if(!strnicmp(str+i,"DOS",3)) {
 				artype=AR_DOS;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=2; }
 			else if(!strnicmp(str+i,"WIN32",5)) {
 				artype=AR_WIN32;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"UNIX",4)) {
 				artype=AR_UNIX;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=3; }
 			else if(!strnicmp(str+i,"LINUX",5)) {
 				artype=AR_LINUX;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"PROT",4)) {
 				artype=AR_PROT;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=3; }
 			else if(!strnicmp(str+i,"HOST",4)) {
 				artype=AR_HOST;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=3; 
 			}
 			else if(!strnicmp(str+i,"IP",2)) {
 				artype=AR_IP;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i++; 
 			}
 			else if(!strnicmp(str+i,"SUBCODE",7)) {
@@ -343,10 +325,6 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=2; }
 			else if(!strnicmp(str+i,"ANSI",4)) {
 				artype=AR_ANSI;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=3; }
 			else if(!strnicmp(str+i,"UDFR",4)) {
 				artype=AR_UDFR;
@@ -380,10 +358,6 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=4; }
 			else if(!strnicmp(str+i,"LOCAL",5)) {
 				artype=AR_LOCAL;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"GROUP",5)) {
 				artype=AR_GROUP;
@@ -393,59 +367,27 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=5; }
 			else if(!strnicmp(str+i,"ACTIVE",6)) {
 				artype=AR_ACTIVE;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=5; }
 			else if(!strnicmp(str+i,"INACTIVE",8)) {
 				artype=AR_INACTIVE;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=7; }
 			else if(!strnicmp(str+i,"DELETED",7)) {
 				artype=AR_DELETED;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=6; }
 			else if(!strnicmp(str+i,"EXPERT",6)) {
 				artype=AR_EXPERT;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=5; }
 			else if(!strnicmp(str+i,"SYSOP",5)) {
 				artype=AR_SYSOP;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"GUEST",5)) {
 				artype=AR_GUEST;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"QNODE",5)) {
 				artype=AR_QNODE;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"QUIET",5)) {
 				artype=AR_QUIET;
-				if(not)
-					ar[j++]=AR_NOT;
-				not=0;
-				ar[j++]=artype;
 				i+=4; }
 			else if(!strnicmp(str+i,"EXEMPT",6)) {
 				artype=AR_EXEMPT;
@@ -471,13 +413,43 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			else if(!strnicmp(str+i,"SHELL",5)) {
 				artype=AR_SHELL;
 				i+=4; }
-			if(n!=i)            /* one of the above */
-				continue; 
-		}
 
+			if(n!=i)		/* one of the above */
+			{
+				arg_expected=TRUE;
+				switch(artype) {
+					case AR_RIP:
+					case AR_WIP:
+					case AR_ANSI:
+					case AR_DOS:
+					case AR_OS2:
+					case AR_UNIX:
+					case AR_LINUX:
+					case AR_WIN32:
+					case AR_LOCAL:
+					case AR_ACTIVE:
+					case AR_INACTIVE:
+					case AR_DELETED:
+					case AR_EXPERT:
+					case AR_SYSOP:
+					case AR_GUEST:
+					case AR_QNODE:
+					case AR_QUIET:
+						/* Boolean (No arguments) */
+						if(not)
+							ar[j++]=AR_NOT;
+						not=0;
+						ar[j++]=artype;
+						artype=AR_INVALID;
+						arg_expected=FALSE;
+						break;
+				}
+				continue; 
+			}
+		}
 		if(not)
 			ar[j++]=AR_NOT;
-		if(equal)
+		if(equal && !ar_string_arg(artype))
 			ar[j++]=AR_EQUAL;
 		not=equal=0;
 
@@ -494,13 +466,17 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break; }
 			continue; }
 
+		arg_expected=FALSE;
+
 		if(artype==AR_SUB && !isdigit(str[i]))
 			artype=AR_SUBCODE;
 		if(artype==AR_DIR && !isdigit(str[i]))
 			artype=AR_DIRCODE;
 
+		if(artype==AR_INVALID)
+			artype=AR_LEVEL;
 		ar[j++]=artype;
-		if(isdigit(str[i])) {
+		if(isdigit(str[i]) && !ar_string_arg(artype)) {
 			if(artype==AR_TIME) {
 				n=atoi(str+i)*60;
 				p=strchr(str+i,':');
@@ -543,7 +519,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				case AR_DLK:
 				case AR_DLM:
 					*((short *)(ar+j))=n;
-					j+=2;
+					j+=sizeof(short);
 					break;
 				case AR_GROUP:
 				case AR_LIB:
@@ -558,21 +534,29 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break; }
 			while(isdigit(str[i+1])) i++;
 			continue; }
-		if(artype==AR_SUBCODE || artype==AR_DIRCODE || artype==AR_SHELL) {
-			for(n=0;n<LEN_EXTCODE
-				&& str[i]
-				&& str[i]!=' '
-				&& str[i]!='('
-				&& str[i]!=')'
-				&& str[i]!='='
-				&& str[i]!='|'
-				;n++)
-				ar[j++]=toupper(str[i++]);
-			ar[j++]=0;
-			i--;
-			continue; 
-		}
+		maxlen=128;
 		switch(artype) {
+			case AR_SUBCODE:
+			case AR_DIRCODE:
+			case AR_SHELL:
+				maxlen=LEN_EXTCODE;
+			case AR_PROT:
+			case AR_HOST:
+			case AR_IP:
+				/* String argument */
+				for(n=0;n<maxlen
+					&& str[i]
+					&& str[i]!=' '
+					&& str[i]!='('
+					&& str[i]!=')'
+					&& str[i]!='='
+					&& str[i]!='|'
+					&& str[i]!='&'
+					;n++)
+					ar[j++]=toupper(str[i++]);
+				ar[j++]=0;
+				i--;
+				break;
 			case AR_FLAG1:
 			case AR_FLAG2:
 			case AR_FLAG3:
@@ -582,12 +566,11 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			case AR_REST:
 				ar[j++]=toupper(str[i]);
 				break;
-	#ifdef SBBS
 			case AR_SUB:
-				for(n=0;n<cfg->total_subs;n++)
+				for(n=0;n<(uint)cfg->total_subs;n++)
 					if(!strnicmp(str+i,cfg->sub[n]->code,strlen(cfg->sub[n]->code)))
 						break;
-				if(n<cfg->total_subs) {
+				if(n<(uint)cfg->total_subs) {
 					*((short *)(ar+j))=n;
 					j+=2; }
 				else        /* Unknown sub-board */
@@ -595,17 +578,16 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				while(isalpha(str[i+1])) i++;
 				break;
 			case AR_DIR:
-				for(n=0;n<cfg->total_dirs;n++)
+				for(n=0;n<(uint)cfg->total_dirs;n++)
 					if(!strnicmp(str+i,cfg->dir[n]->code,strlen(cfg->dir[n]->code)))
 						break;
-				if(n<cfg->total_dirs) {
+				if(n<(uint)cfg->total_dirs) {
 					*((short *)(ar+j))=n;
 					j+=2; }
 				else        /* Unknown directory */
 					j--;
 				while(isalpha(str[i+1])) i++;
 				break;
-	#endif
 			case AR_DAY:
 				if(toupper(str[i])=='S' 
 					&& toupper(str[i+1])=='U')				/* Sunday */
@@ -636,7 +618,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 	ar[j++]=AR_NULL;
 	/** DEBUG stuff
 	for(i=0;i<j;i++)
-		lprintf("%02X ",(uint)ar[i]);
+		lprintf(LOG_DEBUG,"%02X ",(uint)ar[i]);
 	lputs("\r\n");
 	***/
 	if((ar_buf=(uchar *)calloc(j+4,1))==NULL)	/* Padded for ushort dereferencing */
@@ -647,3 +629,580 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 	return(ar_buf);
 }
 
+#ifdef ARS_VERIFY	/* Verification for arstr() */
+
+char *decompile_ars(uchar *ars, int len)
+{
+	static char	buf[1024];
+	char	*out;
+	uchar	*in;
+	uint	n;
+	int		equals=0;
+	int		not=0;
+
+	out=buf;
+	buf[0]=0;
+	for(in=ars;in<ars+len;in++) {
+		switch(*in) {
+			case AR_NULL:
+				break;
+			case AR_OR:
+				*(out++)='|';
+				
+				break;
+			case AR_NOT:
+				not=1;
+				break;
+			case AR_EQUAL:
+				equals=1;
+				break;
+			case AR_BEGNEST:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='(';
+				
+				break;
+			case AR_ENDNEST:
+				*(out++)=')';
+				
+				break;
+			case AR_LEVEL:
+				*(out++)='$';
+				*(out++)='L';
+				
+				break;
+			case AR_AGE:
+				*(out++)='$';
+				*(out++)='A';
+				
+				break;
+			case AR_BPS:
+				*(out++)='$';
+				*(out++)='B';
+				
+				break;
+			case AR_NODE:
+				*(out++)='$';
+				*(out++)='N';
+				
+				break;
+			case AR_TLEFT:
+				*(out++)='$';
+				*(out++)='R';
+				
+				break;
+			case AR_TUSED:
+				*(out++)='$';
+				*(out++)='O';
+				
+				break;
+			case AR_USER:
+				*(out++)='$';
+				*(out++)='U';
+				
+				break;
+			case AR_TIME:
+				*(out++)='$';
+				*(out++)='T';
+				
+				break;
+			case AR_PCR:
+				*(out++)='$';
+				*(out++)='P';
+				
+				break;
+			case AR_FLAG1:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='1';
+				
+				break;
+			case AR_FLAG2:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='2';
+				
+				break;
+			case AR_FLAG3:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='3';
+				
+				break;
+			case AR_FLAG4:
+				*(out++)='$';
+				*(out++)='F';
+				*(out++)='4';
+				
+				break;
+			case AR_EXEMPT:
+				*(out++)='$';
+				*(out++)='X';
+				
+				break;
+			case AR_REST:
+				*(out++)='$';
+				*(out++)='Z';
+				
+				break;
+			case AR_SEX:
+				*(out++)='$';
+				*(out++)='S';
+				
+				break;
+			case AR_UDR:
+				*(out++)='$';
+				*(out++)='K';
+				
+				break;
+			case AR_UDFR:
+				*(out++)='$';
+				*(out++)='D';
+				
+				break;
+			case AR_EXPIRE:
+				*(out++)='$';
+				*(out++)='E';
+				
+				break;
+			case AR_CREDIT:
+				*(out++)='$';
+				*(out++)='C';
+				
+				break;
+			case AR_DAY:
+				*(out++)='$';
+				*(out++)='W';
+				
+				break;
+			case AR_ANSI:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='[';
+				
+				break;
+			case AR_RIP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='*';
+				
+				break;
+			case AR_LOCAL:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*(out++)='$';
+				*(out++)='G';
+				
+				break;
+			case AR_GROUP:
+				*(out++)='$';
+				*(out++)='M';
+				
+				break;
+			case AR_SUB:
+				*(out++)='$';
+				*(out++)='H';
+				
+				break;
+			case AR_LIB:
+				*(out++)='$';
+				*(out++)='I';
+				
+				break;
+			case AR_DIR:
+				*(out++)='$';
+				*(out++)='J';
+				
+				break;
+			case AR_EXPERT :
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"EXPERT");
+				out=strchr(out,0);
+				
+				break;
+			case AR_SYSOP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"SYSOP");
+				out=strchr(out,0);
+				
+				break;
+			case AR_QUIET:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"QUIET");
+				out=strchr(out,0);
+				
+				break;
+			case AR_MAIN_CMDS:
+				*out=0;
+				strcat(out,"MAIN_CMDS");
+				out=strchr(out,0);
+				
+				break;
+			case AR_FILE_CMDS:
+				*out=0;
+				strcat(out,"FILE_CMDS");
+				out=strchr(out,0);
+				
+				break;
+			case AR_RANDOM:
+				*(out++)='$';
+				*(out++)='Q';
+				
+				break;
+			case AR_LASTON:
+				*(out++)='$';
+				*(out++)='Y';
+				
+				break;
+			case AR_LOGONS:
+				*(out++)='$';
+				*(out++)='V';
+				
+				break;
+			case AR_WIP:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"WIP");
+				out=strchr(out,0);
+				
+				break;
+			case AR_SUBCODE:
+				*out=0;
+				strcat(out,"SUB ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_DIRCODE:
+				*out=0;
+				strcat(out,"DIR ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_OS2:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"OS2");
+				out=strchr(out,0);
+				
+				break;
+			case AR_DOS:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"DOS");
+				out=strchr(out,0);
+				
+				break;
+			case AR_WIN32:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"WIN32");
+				out=strchr(out,0);
+				
+				break;
+			case AR_UNIX:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"UNIX");
+				out=strchr(out,0);
+				
+				break;
+			case AR_LINUX :
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"LINUX");
+				out=strchr(out,0);
+				
+				break;
+			case AR_SHELL:
+				*out=0;
+				strcat(out,"SHELL ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_PROT:
+				*out=0;
+				strcat(out,"PROT ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_HOST:
+				*out=0;
+				strcat(out,"HOST ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_IP:
+				*out=0;
+				strcat(out,"IP ");
+				out=strchr(out,0);
+				
+				break;
+			case AR_GUEST:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"GUEST");
+				out=strchr(out,0);
+				
+				break;
+			case AR_QNODE:
+				if(not)
+					*(out++)='!';
+				not=0;
+				*out=0;
+				strcat(out,"QNODE");
+				out=strchr(out,0);
+				
+				break;
+			default:
+				printf("Error decoding AR: %02Xh, offset: %u\n", *in, in-ars);
+				return("Unknown ARS String");
+		}
+		switch(*in) {
+			case AR_TIME:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				n=*((short *)in);
+				in++;
+				out+=sprintf(out,"%02d:%02d",n/60,n%60);
+				break;
+			case AR_AGE:    /* byte operands */
+			case AR_PCR:
+			case AR_UDR:
+			case AR_UDFR:
+			case AR_NODE:
+			case AR_LEVEL:
+			case AR_TLEFT:
+			case AR_TUSED:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				out+=sprintf(out,"%d",*in);
+				break;
+			case AR_BPS:    /* int operands */
+			case AR_MAIN_CMDS:
+			case AR_FILE_CMDS:
+			case AR_EXPIRE:
+			case AR_CREDIT:
+			case AR_USER:
+			case AR_RANDOM:
+			case AR_LASTON:
+			case AR_LOGONS:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+    			n=*((short *)in);
+				in++;
+				out+=sprintf(out,"%d",n);
+    			break;
+			case AR_GROUP:
+			case AR_LIB:
+			case AR_DIR:
+			case AR_SUB:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+    			n=*((short *)in);
+				n++;              /* convert from to 0 base */
+				in++;
+				out+=sprintf(out,"%d",n);
+    			break;
+			case AR_SUBCODE:
+			case AR_DIRCODE:
+			case AR_SHELL:
+			case AR_PROT:
+			case AR_HOST:
+			case AR_IP:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				n=sprintf(out,"%s ",in);
+				out+=n;
+				in+=n-1;
+				break;
+			case AR_FLAG1:
+			case AR_FLAG2:
+			case AR_FLAG3:
+			case AR_FLAG4:
+			case AR_EXEMPT:
+			case AR_SEX:
+			case AR_REST:
+				if(not)
+					*(out++)='!';
+				if(equals)
+					*(out++)='=';
+				not=equals=0;
+				in++;
+				*(out++)=*in;
+				break;
+		}
+	}
+	*out=0;
+	return(buf);
+}
+
+void main(void)
+{
+	char*	example[] =
+	{
+		 "LEVEL 60"
+		,"LEVEL60"
+		,"$L60"
+		,"60"
+		,"NOT LEVEL 60"
+		,"LEVEL NOT 60"
+		,"LEVEL !60"
+		,"$L!60"
+		,"!60"
+		,"LEVEL EQUAL 60"
+		,"LEVEL EQUALS 60"
+		,"LEVEL EQUAL TO 60"
+		,"LEVEL = 60"
+		,"LEVEL=60"
+		,"=60"
+		,"LEVEL 60 AND FLAG 1A"
+		,"LEVEL 60 FLAG 1A"
+		,"LEVEL 60 AND FLAG A"
+		,"LEVEL 60 AND FLAG1 A"
+		,"LEVEL 60 AND FLAG 1 A"
+		,"LEVEL 60 AND FLAG1A"
+		,"LEVEL 60 & $F A"
+		,"$L60 AND $FA"
+		,"$L60$FA"
+		,"60$FA"
+		,"SEX F OR LEVEL 90"
+		,"SEX F | LEVEL 90"
+		,"SEXF|LEVEL90"
+		,"$SF | $L90"
+		,"$SF|$L90"
+		,"USER NOT EQUAL TO 20"
+		,"$U!=20"
+		,"BPS 9600 OR NOT TIME 19:00"
+		,"BPS 9600 OR NOT TIME 19"
+		,"BPS 96 OR NOT TIME 19"
+		,"$B 9600 OR NOT $T19"
+		,"BPS9600|!TIME19"
+		,"$B96|!$T19"
+		,"BPS 9600 OR TIME NOT 18:00 OR TIME 21:30"
+		,"BPS 9600 OR TIME NOT 18:00 OR 21:30"
+		,"$B 9600 OR NOT $T 18 OR 21:30"
+		,"$B96|$T!18|21:30"
+		,"FLAG A OR FLAG B OR FLAG C OR LEVEL 90"
+		,"FLAG A OR B OR C OR LEVEL 90"
+		,"FLAG A|B|C OR LEVEL 90"
+		,"$FA|B|C|$L90"
+		,"USER EQUALS 145 OR LEVEL 90"
+		,"USER=145 OR LEVEL 90"
+		,"$U=145|$L90"
+		,"LEVEL 60 AND FLAG X AND FLAG Y AND FLAG Z"
+		,"LEVEL 60 AND FLAG X AND Y AND Z"
+		,"LEVEL 60 AND FLAG X Y Z"
+		,"LEVEL 60 FLAG XYZ"
+		,"LEVEL60 FLAGXYZ"
+		,"$L60 $FXYZ"
+		,"60$FXYZ"
+		,"FLAG 2A OR FLAG 2B OR FLAG 4Z"
+		,"FLAG 2A OR B OR FLAG 4Z"
+		,"FLAG 2A OR FLAG B OR FLAG 4Z"		/* not the same as above and below */
+		,"FLAG2A|B OR FLAG4Z"
+		,"$F2A|B|$F4Z"
+		,"NOT FLAG 2G"
+		,"FLAG NOT 2G"
+		,"FLAG 2 NOT G"
+		,"!$F2G"
+		,"$F!2G"
+		,"$F2!G"
+		,"BPS 9600 OR (BPS 2400 AND TIME NOT 15:00)"
+		,"$B9600|($B2400$T!15)"
+		,"(SEX M AND AGE 21) OR (SEX F AND AGE 18)"
+		,"($SM$A21)|($SF$A18)"
+		,"AGE 21 OR (SEX F AND AGE 18)"
+		,"(BPS 2400 AND PCR 20) OR LEVEL 90"
+		,"(BPS 2400 AND PCR 20) OR 90"
+		,"($B 2400 $P 20) | $L 90"
+		,"($B2400$P20)|$L90"
+		,"NOT (USER=1 OR USER=20)"
+		,"NOT USER=1 AND NOT USER=20"
+		,"LEVEL 90 OR (TIME 12:00 AND TIME NOT 18:00)"
+		,"(TIME 12:00 AND TIME NOT 18:00) OR LEVEL 90"
+		,"(TIME 12:00 AND NOT 18:00) OR LEVEL 90"
+		,"($T12!18)|90"
+		,"PROT NOTIFY"
+		,"PROT NOT IFY"
+		,"PROT NOT NOTIFY"
+		,"NOT PROT NOTIFY"
+		,"HOST NOT SEXY"
+		,"HOST !*.YAHOO.COM"
+		,"FLAGA SEXY"
+		,"FLAGA SEX Y"
+		,"FLAGA AND SEX Y"
+		,"FLAG SEXY"
+		,"FLAG SEX2Y"
+		,"FLAG 2 SEXY"
+		,"FLAG2SEXY"
+		,"FLAG2ASEXY"
+		,"IP192.168.1.*"
+		,"HOST!=LOCALHOST&IP!=127.0.0.1"
+		/* terminator */
+		,NULL
+	};
+	int		i,j;
+	uchar*	ar;
+	ushort	cnt;
+
+	for(i=0;example[i]!=NULL;i++) {
+		printf("Example   : %s\n", example[i]);
+		ar=arstr(&cnt, example[i], NULL);
+		printf("Compiled  : ");
+		for(j=0;j<cnt;j++)
+			printf("%02X ",ar[j]);
+		printf("\n");
+		printf("Decompiled: %s\n\n", decompile_ars(ar,cnt));
+	}
+}
+
+#endif
