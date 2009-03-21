@@ -132,8 +132,7 @@ enum {
 
 static void js_getuserdat(private_t* p)
 {
-	if(!p->cached && !(p->user->rest&FLAG('G'))) {
-		
+	if(!p->cached) {
 		if(getuserdat(p->cfg,p->user)==0)
 			p->cached=TRUE;
 	}
@@ -436,8 +435,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ValueToInt32(cx, *vp, &usernumber);
 			rc=JS_SUSPENDREQUEST(cx);
-			if(usernumber!=p->user->number)
+			if(usernumber!=p->user->number) {
 				p->user->number=(ushort)usernumber;
+				p->cached=FALSE;
+			}
 			break;
 		case USER_PROP_ALIAS:
 			SAFECOPY(p->user->alias,str);
@@ -643,7 +644,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			return(JS_TRUE);	/* intentional early return */
 
 	}
-	p->cached=FALSE;
+	if(!(p->user->rest&FLAG('G')))
+		p->cached=FALSE;
 
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
