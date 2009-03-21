@@ -1356,7 +1356,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(i==0) {
-		userobj=js_CreateUserObject(cx, obj, cfg, NULL, user.number, /* client: */NULL);
+		userobj=js_CreateUserObject(cx, obj, cfg, NULL, &user, /* client: */NULL, /* global_user: */FALSE);
 		*rval = OBJECT_TO_JSVAL(userobj);
 	} else
 		*rval = INT_TO_JSVAL(i);

@@ -1032,7 +1032,7 @@ extern "C" {
 	/* js_user.c */
 	DLLEXPORT JSObject*	DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
 	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,char* name, uint usernumber, client_t* client);
+													,char* name, user_t* user, client_t* client, BOOL global_user);
 	DLLEXPORT JSBool	DLLCALL js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, char* html_index_file
 													,subscan_t* subscan);

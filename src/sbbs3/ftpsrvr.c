@@ -3925,7 +3925,7 @@ static void ctrl_thread(void* arg)
 						if(js_CreateFileClass(js_cx, js_glob)==NULL) 
 							lprintf(LOG_ERR,"%04d !JavaScript ERROR creating file class",sock);
 
-						if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number, &client)==NULL) 
+						if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user, &client, /* global_user: */TRUE)==NULL) 
 							lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user object",sock);
 
 						if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
