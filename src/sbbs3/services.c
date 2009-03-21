@@ -443,7 +443,6 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
 	JSBool		inc_logons=JS_FALSE;
-	user_t		user;
 	jsval		val;
 	JSString*	js_str;
 	service_client_t* client;
@@ -462,29 +461,29 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	memset(&user,0,sizeof(user));
+	memset(&client->user,0,sizeof(user_t));
 
 	if(isdigit(*p))
-		user.number=atoi(p);
+		client->user.number=atoi(p);
 	else if(*p)
-		user.number=matchuser(&scfg,p,FALSE);
+		client->user.number=matchuser(&scfg,p,FALSE);
 
-	if(getuserdat(&scfg,&user)!=0) {
+	if(getuserdat(&scfg,&client->user)!=0) {
 		lprintf(LOG_NOTICE,"%04d %s !USER NOT FOUND: '%s'"
 			,client->socket,client->service->protocol,p);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
 
-	if(user.misc&(DELETED|INACTIVE)) {
+	if(client->user.misc&(DELETED|INACTIVE)) {
 		lprintf(LOG_WARNING,"%04d %s !DELETED OR INACTIVE USER #%d: %s"
-			,client->socket,client->service->protocol,user.number,p);
+			,client->socket,client->service->protocol,client->user.number,p);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
 
 	/* Password */
-	if(user.pass[0]) {
+	if(client->user.pass[0]) {
 		if((js_str=JS_ValueToString(cx, argv[1]))==NULL)  {
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_FALSE);
@@ -495,9 +494,9 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_FALSE);
 		}
 
-		if(stricmp(user.pass,p)) { /* Wrong password */
+		if(stricmp(client->user.pass,p)) { /* Wrong password */
 			lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
-				,client->socket,client->service->protocol,user.alias);
+				,client->socket,client->service->protocol,client->user.alias);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
@@ -509,25 +508,23 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(client->client!=NULL) {
-		SAFECOPY(user.note,client->client->addr);
-		SAFECOPY(user.comp,client->client->host);
-		SAFECOPY(user.modem,client->service->protocol);
+		SAFECOPY(client->user.note,client->client->addr);
+		SAFECOPY(client->user.comp,client->client->host);
+		SAFECOPY(client->user.modem,client->service->protocol);
 	}
 
 	if(inc_logons) {
-		user.logons++;
-		user.ltoday++;
+		client->user.logons++;
+		client->user.ltoday++;
 	}	
 
-	putuserdat(&scfg,&user);
+	putuserdat(&scfg,&client->user);
 	JS_RESUMEREQUEST(cx, rc);
 
 	/* user-specific objects */
-	if(!js_CreateUserObjects(cx, obj, &scfg, &user, client->client, NULL, NULL)) 
+	if(!js_CreateUserObjects(cx, obj, &scfg, &client->user, client->client, NULL, NULL)) 
 		lprintf(LOG_ERR,"%04d %s !JavaScript ERROR creating user objects"
 			,client->socket,client->service->protocol);
-
-	memcpy(&client->user,&user,sizeof(user));
 
 	if(client->client!=NULL) {
 		client->client->user=client->user.alias;
