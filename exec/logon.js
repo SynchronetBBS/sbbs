@@ -215,9 +215,6 @@ if(user.security.level==99				/* Sysop logging on */
 	console.crlf();
 }
 
-// Force reload of user record (for Guest logons)
-bbs.user_sync();
-
 // Change to "true" if you want your RLogin server to act as a door game server only
 if(false	
 	&& bbs.sys_status&SS_RLOGIN) {
