@@ -437,6 +437,7 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	char		msgid[256];
 	char		date[64];
 	char*		p;
+	char*		np;
 	char*		tp;
 	char*		content_type=NULL;
 	int			i;
@@ -506,14 +507,18 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 	if((p=smb_get_hfield(msg,SMB_CARBONCOPY,NULL))!=NULL)
 		if(!sockprintf(socket,"CC: %s",p))
 			return(0);
+	np=NULL;
 	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
+		np=msg->replyto;
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
-		else if(msg->replyto!=NULL)
-			p=msg->replyto;
 	}
-	if(p!=NULL)
-		s=sockprintf(socket,"Reply-To: %s",p);	/* use original RFC822 header field */
+	if(p!=NULL) {
+		if(np!=NULL)
+			s=sockprintf(socket,"Reply-To: \"%s\" <%s>",np,p);
+		else 
+			s=sockprintf(socket,"Reply-To: %s",p);
+	}
 	if(!s)
 		return(0);
 	if(!sockprintf(socket,"Message-ID: %s",get_msgid(&scfg,INVALID_SUB,msg,msgid,sizeof(msgid))))
