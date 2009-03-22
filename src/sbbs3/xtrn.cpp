@@ -404,6 +404,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	else
 		lprintf(LOG_DEBUG,"Node %d Executing external: %s",cfg.node_num,cmdline);
 
+	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
+		errormsg(WHERE, ERR_CHK, startup_dir, 0);
+		return -1;
+	}
+
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
 
@@ -1311,6 +1316,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(online==ON_LOCAL)
 		eprintf(LOG_INFO,"Executing external: %s",cmdline);
 
+	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
+		errormsg(WHERE, ERR_CHK, startup_dir, 0);
+		return -1;
+	}
+
 	if(startup_dir==NULL)
 		startup_dir=nulstr;
 
@@ -1723,7 +1733,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		else
 #endif
 		if(startup_dir!=NULL && startup_dir[0])
-			chdir(startup_dir);
+			if(chdir(startup_dir)!=0) {
+				errormsg(WHERE,ERR_CHDIR,startup_dir,0);
+				return(-1);
+			}
 
 		if(mode&EX_SH || strcspn(fullcmdline,"<>|;\"")!=strlen(fullcmdline)) {
 			argv[0]=comspec;
