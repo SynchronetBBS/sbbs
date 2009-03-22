@@ -293,7 +293,7 @@ typedef struct {
 #define ERR_CHK		"checking"		/* checking */
 #define ERR_LEN		"checking length"
 #define ERR_EXEC	"executing"		/* executing */
-#define ERR_CHDIR	"changing directory */
+#define ERR_CHDIR	"changing directory"
 #define ERR_CREATE	"creating" 		/* creating */
 #define ERR_LOCK	"locking"		/* locking */
 #define ERR_UNLOCK 	"unlocking"		/* unlocking */
