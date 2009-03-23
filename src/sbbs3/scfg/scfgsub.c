@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,6 +39,8 @@ void sub_cfg(uint grpnum)
 {
 	static int dflt,tog_dflt,opt_dflt,net_dflt,adv_dflt,bar;
 	char str[81],str2[81],done=0,code[9],*p;
+	char path[MAX_PATH+1];
+	char data_dir[MAX_PATH+1];
 	int j,m,n,ptridx,q,s;
 	uint i,subnum[MAX_OPTS+1];
 	static sub_t savsub;
@@ -194,21 +196,26 @@ If you want to delete all the messages for this sub-board, select Yes.
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
 		opt[2][0]=0;
-		j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-			,"Delete Data in Sub-board",opt);
-		if(j==-1)
-			continue;
-		if(j==0) {
-				sprintf(str,"%s%s.*"
-					,cfg.grp[cfg.sub[i]->grp]->code_prefix
-					,cfg.sub[i]->code_suffix);
-				strlwr(str);
-				if(!cfg.sub[subnum[i]]->data_dir[0])
-					sprintf(tmp,"%ssubs/",cfg.data_dir);
-				else
-					strcpy(tmp,cfg.sub[subnum[i]]->data_dir);
-				delfiles(tmp,str);
-				clearptrs(subnum[i]); 
+		SAFEPRINTF2(str,"%s%s.*"
+			,cfg.grp[cfg.sub[subnum[i]]->grp]->code_prefix
+			,cfg.sub[subnum[i]]->code_suffix);
+		strlwr(str);
+		if(!cfg.sub[subnum[i]]->data_dir[0])
+			SAFEPRINTF(data_dir,"%ssubs/",cfg.data_dir);
+		else
+			SAFECOPY(data_dir,cfg.sub[subnum[i]]->data_dir);
+
+		SAFEPRINTF2(path,"%s%s",data_dir,str);
+		if(fexist(path)) {
+			SAFEPRINTF(str2,"Delete %s",path);
+			j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
+				,str2,opt);
+			if(j==-1)
+				continue;
+			if(j==0) {
+					delfiles(data_dir,str);
+					clearptrs(subnum[i]); 
+			}
 		}
 		free(cfg.sub[subnum[i]]);
 		cfg.total_subs--;
