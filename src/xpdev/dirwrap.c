@@ -447,19 +447,23 @@ BOOL DLLCALL fexist(const char *filespec)
 
 	long	handle;
 	struct _finddata_t f;
+	BOOL	found;
 
 	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
 		return(fnameexist(filespec));
 
 	if((handle=_findfirst((char*)filespec,&f))==-1)
 		return(FALSE);
+	found=TRUE;
+	while(f.attrib&_A_SUBDIR)
+		if(_findnext(handle,&f)!=0) {
+			found=FALSE;
+			break;
+		}
 
  	_findclose(handle);
 
- 	if(f.attrib&_A_SUBDIR)
-		return(FALSE);
-
-	return(TRUE);
+	return(found);
 
 #else /* Unix or OS/2 */
 	
