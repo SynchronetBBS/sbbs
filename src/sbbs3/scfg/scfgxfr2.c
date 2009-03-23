@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2006 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -648,7 +648,8 @@ command: DIR /ON /AD /B > DIRS.RAW
 void dir_cfg(uint libnum)
 {
 	static int dflt,bar,tog_dflt,tog_bar,adv_dflt,opt_dflt;
-	char str[81],str2[81],code[9],path[128],done=0,*p;
+	char str[81],str2[81],code[9],path[MAX_PATH+1],done=0,*p;
+	char data_dir[MAX_PATH+1];
 	int j,n;
 	uint i,dirnum[MAX_OPTS+1];
 	static dir_t savdir;
@@ -782,20 +783,24 @@ select Yes.
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
 		opt[2][0]=0;
-		j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-			,"Delete Data in Sub-board",opt);
-		if(j==-1)
-			continue;
-		if(j==0) {
-				sprintf(str,"%s%s.*"
-					,cfg.lib[cfg.dir[dirnum[i]]->lib]->code_prefix
-					,cfg.dir[dirnum[i]]->code_suffix);
-				strlwr(str);
-				if(!cfg.dir[dirnum[i]]->data_dir[0])
-					sprintf(tmp,"%sdirs/",cfg.data_dir);
-				else
-					strcpy(tmp,cfg.dir[dirnum[i]]->data_dir);
-				delfiles(tmp,str); }
+		SAFEPRINTF2(str,"%s%s.*"
+			,cfg.lib[cfg.dir[dirnum[i]]->lib]->code_prefix
+			,cfg.dir[dirnum[i]]->code_suffix);
+		strlwr(str);
+		if(!cfg.dir[dirnum[i]]->data_dir[0])
+			SAFEPRINTF(data_dir,"%sdirs/",cfg.data_dir);
+		else
+			SAFECOPY(data_dir,cfg.dir[dirnum[i]]->data_dir);
+		SAFEPRINTF2(path,"%s%s", data_dir, str);
+		if(fexist(path)) {
+			SAFEPRINTF(str2,"Delete %s",path);
+			j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
+				,str2,opt);
+			if(j==-1)
+				continue;
+			if(j==0)
+					delfiles(data_dir,str); 
+		}
 		free(cfg.dir[dirnum[i]]);
 		cfg.total_dirs--;
 		for(j=dirnum[i];j<cfg.total_dirs;j++)
