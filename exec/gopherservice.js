@@ -19,7 +19,6 @@ const REVISION = "$Revision$".split(' ')[1];
 const GOPHER_PORT = client.socket.local_port;
 
 var debug = false;
-var no_anonymous = false;
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -88,7 +87,6 @@ if(request=="" || request=='/') { /* "root" */
 			+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
 			+ "\t" + system.host_name
 			+ "\t" + GOPHER_PORT);
-/** to-do
 	for(l in file_area.lib_list) 
 		writeln(format("1%s\tlib:%s\t%s\t%u"
 			,file_area.lib_list[l].description
@@ -96,7 +94,6 @@ if(request=="" || request=='/') { /* "root" */
 			,system.host_name
 			,GOPHER_PORT
 			));
-**/
 	writeln(prefix
 		+ "0Node List\tnodelist"
 		+"\t" + system.host_name
@@ -206,15 +203,18 @@ switch(field[0]) {
 	case "lib":
 		for(l in file_area.lib_list) 
 			if(file_area.lib_list[l].name.toLowerCase()==field[1]) {
-				for(d in file_area.lib_list[l].dir_list)
-					writeln(format(prefix
-						+ "1[%s] %s\tdir:%s\t%s\t%u"
-						,file_area.lib_list[l].name
-						,file_area.lib_list[l].dir_list[d].description
-						,file_area.lib_list[l].dir_list[d].code.toLowerCase()
-						,system.host_name
-						,GOPHER_PORT
-						));
+				for(d in file_area.lib_list[l].dir_list) {
+					if(file_area.lib_list[l].dir_list[d].can_download
+					&& file_area.lib_list[l].dir_list[d].settings&DIR_FREE)
+						writeln(format(prefix
+							+ "1[%s] %s\tdir:%s\t%s\t%u"
+							,file_area.lib_list[l].name
+							,file_area.lib_list[l].dir_list[d].description
+							,file_area.lib_list[l].dir_list[d].code.toLowerCase()
+							,system.host_name
+							,GOPHER_PORT
+							));
+				}
 				break;
 			}
 		break;
@@ -271,7 +271,39 @@ switch(field[0]) {
 		msgbase.close();
 		break;
 	case "dir":
-		/* to-do */
+		var code=field[1];
+		if((dir = file_area.dir[code]) != undefined) {
+			var files = directory(dir.path + '*');
+			for(i in files) {
+				var fileinfo=format("%-25.25s %10u   %s"
+					,file_getname(files[i])
+					,file_size(files[i])
+					,system.timestr(file_date(files[i]))
+					);
+				writeln("9" + fileinfo + "\tfile:"
+					+ code + "/" + file_getname(files[i]) + "\t"
+					+ system.host_name + "\t"
+					+ GOPHER_PORT
+					);
+			}
+		}
+		break;
+	case "file":
+		var args=field[1].split('/');
+		var code=args[0];
+		if((dir = file_area.dir[code]) != undefined) {
+			if(dir.can_download	&& dir.settings&DIR_FREE) {
+				var fname = dir.path + file_getname(args[1]);
+				if(file_exists(fname)) {
+					log(LOG_INFO,format("Downloading file: %s (%u bytes)"
+						,fname, file_size(fname)));
+					if(client.socket.sendfile(fname))
+						log(LOG_INFO,"Sent file: " + fname);
+					else
+						log(LOG_NOTICE,"!ERROR sending file: " + fname);
+				}	
+			}
+		}
 		break;
 }
 
