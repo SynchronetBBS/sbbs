@@ -14,7 +14,7 @@ if(js.global.LOG_ERR===undefined)
 
 function Lock(filename, lockid, forwrite, timeout)
 {
-	var readlock=new File(filename+".lock."+lockid);
+	var readlock=new File(filename+".lock_"+lockid);
 	var writelock=new File(filename+".lock");
 	var endtime=system.timer+timeout;
 
@@ -60,7 +60,7 @@ function Lock(filename, lockid, forwrite, timeout)
 					if(LockedFiles[filename]!==undefined)
 						file_remove(readlock.name);
 					/* We have got the lock... wait for all read locks to close */
-					while(file_exists(filename+".lock.*")) {
+					while(file_exists(filename+".lock_*")) {
 						mswait(1);
 						if(system.timer > endtime) {
 							/* If we were upgrading, restor our old lock... */
@@ -102,7 +102,7 @@ function Unlock(filename)
 
 	if(LockedFiles[filename]===undefined)
 		return;
-	readlock=new File(filename+".lock."+LockedFiles[filename].lockid);
+	readlock=new File(filename+".lock_"+LockedFiles[filename].lockid);
 
 	if(LockedFiles[filename].forwrite)
 		file_remove(writelock.name);
