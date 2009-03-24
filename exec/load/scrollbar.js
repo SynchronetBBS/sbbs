@@ -29,6 +29,28 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 		}
 		else exit(); //if scrollbar orientation is not vertical or horizontal do not continue
 	}
+	this.increase=function()
+	{
+		if(this.index<this.length) this.index++;
+		else if(this.wrap) this.index=0;
+		this.draw();
+	}
+	this.decrease=function()
+	{
+		if(this.index>0) this.index--;
+		else if(this.wrap) this.index=this.length;
+		this.draw();
+	}
+	this.end=function()
+	{
+		this.index=this.length;
+		this.draw();
+	}
+	this.home=function()
+	{
+		this.index=0;
+		this.draw();
+	}
 	this.draw=function(position, total)
 	{
 		if(!this.first || !this.last) return; 		//if no start or end points initialized, do not draw
