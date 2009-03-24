@@ -459,6 +459,7 @@ enum {
 	 SMB_HASH_SOURCE_BODY
 	,SMB_HASH_SOURCE_MSG_ID
 	,SMB_HASH_SOURCE_FTN_ID
+	,SMB_HASH_SOURCE_SUBJECT
 
 /* Add new ones here (max value of 31) */
 

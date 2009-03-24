@@ -264,6 +264,10 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags, body))!=NULL)
 		hashes[h++]=hash;
 
+	if(msg->subj!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_SUBJECT)) &&
+		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_SUBJECT, flags, msg->subj))!=NULL)
+		hashes[h++]=hash;
+
 	return(hashes);
 }
 
