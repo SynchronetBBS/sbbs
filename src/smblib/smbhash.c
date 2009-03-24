@@ -189,6 +189,9 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
 {
 	hash_t*	hash;
 
+	if(length==0)		/* Don't hash 0-length sources (e.g. empty/blank message bodies) */
+		return(NULL);
+
 	if((hash=(hash_t*)malloc(sizeof(hash_t)))==NULL)
 		return(NULL);
 
