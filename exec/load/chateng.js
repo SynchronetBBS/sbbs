@@ -17,7 +17,7 @@
 	For more advanced chatting, see 
 	ChatEngine this.Init() method
 */
-function Chat(Engine,control,key)
+function Chat(Engine,key)
 {
 	if(!Engine) Exit(0);
 	if(Engine.fullscreen) console.clear();
@@ -26,16 +26,18 @@ function Chat(Engine,control,key)
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
 	}
-	if(control)
+	if(key)
 	{
 		while(1)
 		{
-			key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(!key) key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			Engine.ProcessKey(key);
-			switch(key.toUpperCase())
+			switch(key)
 			{
-				case 'Q':
+				case '\r':
 					return true;
+				case '\x1b':	
+					return false;
 				default:
 					key="";
 					break;
@@ -46,11 +48,11 @@ function Chat(Engine,control,key)
 	{
 		while(1)
 		{
-			if(!key) key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			Engine.ProcessKey(key);
-			switch(key)
+			switch(key.toUpperCase())
 			{
-				case '\r':
+				case '\x1b':	
 					return true;
 				default:
 					key="";
@@ -92,7 +94,7 @@ function ChatEngine(root,name,log_)
 
 	this.Init=function(mode,columns,rows,input_line,posx,posy,boxed)
 	{
-		this.fullscreen=(mode=="FULL"?true:false);
+		this.fullscreen=(mode=="full"?true:false);
 		if(columns) 	this.columns=columns;
 		if(rows)		this.rows=rows;
 		if(input_line)	this.input_line=input_line;
@@ -170,9 +172,18 @@ function ChatEngine(root,name,log_)
 		}
 		return true;
 	}
+	this.Alert=function(msg)
+	{
+		if(this.input_line)
+		{
+			this.ClearInputLine();
+			console.gotoxy(this.input_line.x,this.input_line.y);
+		}
+		console.putmsg(msg);
+	}
 	this.ClearInputLine=function()
 	{
-		ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
+		if(this.input_line)	ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
 	}
 	this.BackSpace=function()
 	{
