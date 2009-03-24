@@ -250,61 +250,6 @@ void sbbs_t::errormsg(int line, const char *source, const char* action, const ch
 
 	/* Don't log path to source code */
 	src=getfname(source);
-#if 0
-	switch(action) {
-		case ERR_OPEN:
-			actstr="opening";
-			break;
-		case ERR_CLOSE:
-			actstr="closing";
-			break;
-		case ERR_FDOPEN:
-			actstr="fdopen";
-			break;
-		case ERR_READ:
-			actstr="reading";
-			break;
-		case ERR_WRITE:
-			actstr="writing";
-			break;
-		case ERR_REMOVE:
-			actstr="removing";
-			break;
-		case ERR_ALLOC:
-			actstr="allocating memory";
-			break;
-		case ERR_CHK:
-			actstr="checking";
-			break;
-		case ERR_LEN:
-			actstr="checking length";
-			break;
-		case ERR_EXEC:
-			actstr="executing";
-			break;
-		case ERR_CHDIR:
-			actstr="changing directory";
-			break;
-		case ERR_CREATE:
-			actstr="creating";
-			break;
-		case ERR_LOCK:
-			actstr="locking";
-			break;
-		case ERR_UNLOCK:
-			actstr="unlocking";
-			break;
-		case ERR_TIMEOUT:
-    		actstr="time-out waiting for resource";
-			break;
-		case ERR_IOCTL:
-    		actstr="sending IOCTL";
-			break;
-		default:
-			actstr="UNKNOWN"; 
-			break;
-	}
-#endif
 	sprintf(str,"Node %d !ERROR %d "
 #ifdef _WIN32
 		"(WinError %d) "
