@@ -150,6 +150,7 @@ char* SMBCALL smb_hashsourcetype(uchar type)
 		case SMB_HASH_SOURCE_BODY:		return(smb_dfieldtype(TEXT_BODY));
 		case SMB_HASH_SOURCE_MSG_ID:	return(smb_hfieldtype(RFC822MSGID));
 		case SMB_HASH_SOURCE_FTN_ID:	return(smb_hfieldtype(FIDOMSGID));
+		case SMB_HASH_SOURCE_SUBJECT:	return(smb_hfieldtype(SUBJECT));
 	}
 	sprintf(str,"%02Xh",type);
 	return(str);
@@ -162,6 +163,8 @@ char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
 			return(msg->id);
 		case SMB_HASH_SOURCE_FTN_ID:
 			return(msg->ftn_msgid);
+		case SMB_HASH_SOURCE_SUBJECT:
+			return(msg->subj);
 	}
 	return("hash");
 }
