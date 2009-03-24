@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -344,7 +344,7 @@ int main(int argc, char **argv)
 
 		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
 			/* Look-up the message hashes */
-			hashes=smb_msghashes(&msg,body);
+			hashes=smb_msghashes(&msg,body,SMB_HASH_SOURCE_ALL);
 			if(hashes!=NULL 
 				&& hashes[0]!=NULL 
 				&& (i=smb_findhash(&smb,hashes,NULL,SMB_HASH_SOURCE_ALL,/* mark */TRUE ))
