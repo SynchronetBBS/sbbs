@@ -344,10 +344,10 @@ int main(int argc, char **argv)
 
 		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
 			/* Look-up the message hashes */
-			hashes=smb_msghashes(&msg,body,SMB_HASH_SOURCE_ALL);
+			hashes=smb_msghashes(&msg,body,SMB_HASH_SOURCE_DUPE);
 			if(hashes!=NULL 
 				&& hashes[0]!=NULL 
-				&& (i=smb_findhash(&smb,hashes,NULL,SMB_HASH_SOURCE_ALL,/* mark */TRUE ))
+				&& (i=smb_findhash(&smb,hashes,NULL,SMB_HASH_SOURCE_DUPE,/* mark */TRUE ))
 					!=SMB_SUCCESS) {
 				for(h=0;hashes[h]!=NULL;h++) {
 					if(hashes[h]->flags&SMB_HASH_MARKED)

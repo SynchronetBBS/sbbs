@@ -289,9 +289,9 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	if(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
 		return(SMB_SUCCESS);
 
-	hashes=smb_msghashes(msg,text,SMB_HASH_SOURCE_ALL);
+	hashes=smb_msghashes(msg,text,SMB_HASH_SOURCE_DUPE);
 
-	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_ALL, update)==SMB_SUCCESS && !update) {
+	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_DUPE, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"duplicate %s: %s found in message #%lu"

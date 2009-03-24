@@ -85,7 +85,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		msg->hdr.number=smb->status.last_msg+1;
 		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))) {
 
-			hashes=smb_msghashes(msg,body,SMB_HASH_SOURCE_ALL);
+			hashes=smb_msghashes(msg,body,SMB_HASH_SOURCE_DUPE);
 
 			if(smb_findhash(smb, hashes, &found, dupechk_hashes, /* mark? */FALSE)==SMB_SUCCESS) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)

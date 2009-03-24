@@ -183,7 +183,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	int 		i;
 	ushort		agent=AGENT_SMBUTIL;
 	smbmsg_t	msg;
-	long		dupechk_hashes=SMB_HASH_SOURCE_ALL;
+	long		dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 
 	/* Read message text from stream (file or stdin) */
 	msgtxtlen=0;

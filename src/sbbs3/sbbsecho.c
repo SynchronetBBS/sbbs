@@ -2236,7 +2236,7 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	ushort	xlat=XLAT_NONE,net;
 	ulong	l,m,length,bodylen,taillen,crc;
 	ulong	save;
-	long	dupechk_hashes=SMB_HASH_SOURCE_ALL;
+	long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	faddr_t faddr,origaddr,destaddr;
 	smb_t*	smbfile;
 	char	fname[MAX_PATH+1];

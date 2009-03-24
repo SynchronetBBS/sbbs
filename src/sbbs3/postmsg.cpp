@@ -425,7 +425,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	ushort	xlat=XLAT_NONE;
 	int 	i;
 	int		storage=SMB_SELFPACK;
-	long	dupechk_hashes=SMB_HASH_SOURCE_ALL;
+	long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 
 	if(msg==NULL)
 		return(SMB_FAILURE);
