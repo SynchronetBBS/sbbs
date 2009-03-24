@@ -5,8 +5,6 @@
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
 
-load("sbbsdefs.js");
-
 function Graphic(w,h,attr,ch)
 {
 	if(ch==undefined)
@@ -40,6 +38,7 @@ function Graphic(w,h,attr,ch)
 		}
 	}
 	this.draw=Graphic_draw;
+	this.save=Graphic_save;
 	this.load=Graphic_load;
 	this.write=Graphic_write;
 	this.scroll=Graphic_scroll;
@@ -147,9 +146,38 @@ function Graphic_scroll(lines)
 	}
 }
 
-/* Returns the number of times scrolled unless returnonscroll is true */
-/* If returnonscroll is true, returns the text AFTER the scroll */
-function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
+/* Converts a text string to binary format and appends it to a file */
+function Graphic_save(file,txt)
+{
+	var binFile=new File(file);
+	binFile.open('ab');
+	
+	// if regular text or numbers are passed, append the data to file
+	if(typeof txt=='string' || typeof txt=='number') {
+		txt=txt.replace(/(\S)/g,"$1");
+		binFile.write(txt.replace(/ /g," "));
+	}
+	// if an array is passed, check to see if it is 2 dimensional, and write data
+	else if(typeof txt=='object') { 
+		for(t in txt) {
+			if(typeof txt[t]=='object') {
+				for(tt in text[t]) {
+					txt[t][tt]=txt[t][tt].replace(/(\S)/g,"$1");
+					binFile.write(txt[t][tt].replace(/ /g," "));
+				}
+			}
+			else {
+			txt[t]=txt[t].replace(/(\S)/g,"$1");
+			binFile.write(txt[t].replace(/ /g," "));
+			}
+		}
+	}
+	else alert("Incompatible data type");
+	binFile.close();
+}
+
+/* Returns the number of times scrolled */
+function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
@@ -158,31 +186,16 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 	var p=0;
 	var scrolls=0;
 
-	if(mode==undefined)
-		mode=P_NONE;
 	if(curattr==undefined)
 		curattr=this.attribute;
 	/* Expand @-codes */
-	if(txt==undefined || txt==null || txt.length==0) {
-		if(returnonscroll)
-			return('');
+	if(txt==undefined || txt==null || txt.length==0)
 		return(0);
-	}
-	if(!(mode & P_NOATCODES)) {
-		txt=txt.toString().replace(/@(.*?)@/g,
-			function (str, code, offset, s) {
-				console.line_counter=0;
-				var ret=bbs.atcode(code);
-				if(ret==null)
-					return("@"+code+"@");
-				return(ret);
-			}
-		);
-	}
-	if(returnonscroll == undefined)
-		returnonscroll=false;
-	if(returnonscroll)
-		scroll=true;
+	txt=txt.toString().replace(/@(.*)@/g,
+		function (str, code, offset, s) {
+			return bbs.atcode(code);
+		}
+	);
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
@@ -201,8 +214,6 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 							x=0;
 							y++;
 							if(scroll && y>=this.height) {
-								if(returnonscroll)
-									return(txt.substr(p));
 								scrolls++;
 								this.scroll(1);
 								y--;
@@ -280,8 +291,6 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 					case ']':	/* LF */
 						y++;
 						if(scroll && y>=this.height) {
-							if(returnonscroll)
-								return(txt.substr(p));
 							scrolls++;
 							this.scroll(1);
 							y--;
@@ -303,13 +312,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 			case '\n':
 				y++;
 				if(scroll && y>=this.height) {
-					if(returnonscroll)
-						return(txt.substr(p));
 					scrolls++;
 					this.scroll(1);
 					y--;
 				}
-				x=0;
 				break;
 			default:
 				this.data[x][y].ch=ch;
@@ -319,8 +325,6 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 					x=0;
 					y++;
 					if(scroll && y>=this.height) {
-						if(returnonscroll)
-							return(txt.substr(p));
 						scrolls++;
 						this.scroll(1);
 						y--;
@@ -328,7 +332,5 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll, returnonscroll, mode)
 				}
 		}
 	}
-	if(returnonscroll)
-		return(txt.substr(p));
 	return(scrolls);
 }
