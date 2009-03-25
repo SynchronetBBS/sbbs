@@ -469,7 +469,10 @@ enum {
 #define SMB_HASH_SOURCE_MASK	0x1f
 #define SMB_HASH_SOURCE_NONE	0
 #define SMB_HASH_SOURCE_ALL		0xff
+								/* These are the hash sources stored/compared for duplicate message detection: */
 #define SMB_HASH_SOURCE_DUPE	((1<<SMB_HASH_SOURCE_BODY)|(1<<SMB_HASH_SOURCE_MSG_ID)|(1<<SMB_HASH_SOURCE_FTN_ID))
+								/* These are the hash sources stored/compared for SPAM message detection: */
+#define SMB_HASH_SOURCE_SPAM	((1<<SMB_HASH_SOURCE_BODY)|(1<<SMB_HASH_SOURCE_SUBJECT))
 
 typedef struct _PACK {
 
