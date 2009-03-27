@@ -3315,7 +3315,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	}
 
 	if(match>=scfg.total_faddrs && !(misc&IGNORE_ADDRESS)) {
-		printf("Wrong address");
+		printf("Foreign address");
 		if(!path[0]) {
 			printf(" - ");
 			pkt_to_msg(fidomsg,&hdr,info);
