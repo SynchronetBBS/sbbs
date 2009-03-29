@@ -1,6 +1,6 @@
 object UserListForm: TUserListForm
-  Left = 185
-  Top = 233
+  Left = 380
+  Top = 245
   Width = 870
   Height = 640
   Caption = 'Synchronet User List'
@@ -21,7 +21,7 @@ object UserListForm: TUserListForm
     Left = 0
     Top = 0
     Width = 862
-    Height = 608
+    Height = 607
     Align = alClient
     Columns = <
       item
@@ -89,6 +89,8 @@ object UserListForm: TUserListForm
     ViewStyle = vsReport
     OnColumnClick = ListViewColumnClick
     OnCompare = ListViewCompare
+    OnDblClick = EditUserPopupClick
+    OnKeyPress = ListViewKeyPress
   end
   object PopupMenu: TPopupMenu
     Left = 232

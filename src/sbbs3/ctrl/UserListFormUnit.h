@@ -23,6 +23,7 @@ __published:	// IDE-managed Components
           TListItem *Item2, int Data, int &Compare);
     void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
     void __fastcall EditUserPopupClick(TObject *Sender);
+    void __fastcall ListViewKeyPress(TObject *Sender, char &Key);
 private:	// User declarations
 public:		// User declarations
     __fastcall TUserListForm(TComponent* Owner);
