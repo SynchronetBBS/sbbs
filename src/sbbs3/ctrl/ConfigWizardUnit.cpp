@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -145,7 +145,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
     if(!load_cfg(&scfg,NULL,FALSE,error)) {
-        Application->MessageBox(error,"ERROR Loadin Configuration"
+        Application->MessageBox(error,"ERROR Loading Configuration"
         	,MB_OK|MB_ICONEXCLAMATION);
         Close();
         return;
@@ -174,10 +174,21 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
                     break;
                 default:
 					scfg.sys_timezone=tz.Bias|WESTERN_ZONE;
+			        if(tzRet==TIME_ZONE_ID_DAYLIGHT)
+			   	    	scfg.sys_timezone|=DAYLIGHT;
                     break;
             }
-		} else if(tz.Bias<0)
+		} else if(tz.Bias<0) {
+            switch(tzRet) {
+                case TIME_ZONE_ID_DAYLIGHT:
+                    tz.Bias += tz.DaylightBias;
+                    break;
+                case TIME_ZONE_ID_STANDARD:
+                    tz.Bias += tz.StandardBias;
+                    break;
+            }
 			scfg.sys_timezone=(-tz.Bias)|EASTERN_ZONE;
+        }
 #if 0
         /* Get DNS Server Address */
         str_list_t dns_list = getNameServerList();
