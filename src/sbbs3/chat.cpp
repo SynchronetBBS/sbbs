@@ -1743,7 +1743,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			mswait(500+sbbs_random(1000));	 /* thinking time */
 			if(action!=NODE_MCHT) {
 				for(i=0;i<k;i++) {
-					if(mistakes && theanswer[i]!=theanswer[i-1] &&
+					if(i && mistakes && theanswer[i]!=theanswer[i-1] &&
 						((!isalnum(theanswer[i]) && !sbbs_random(100))
 						|| (isalnum(theanswer[i]) && !sbbs_random(30)))) {
 						c=j=((uint)sbbs_random(3)+1);	/* 1 to 3 chars */
