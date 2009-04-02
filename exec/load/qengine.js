@@ -7,18 +7,24 @@ load("sbbsdefs.js");
 load("logging.js");
 load("funclib.js");
 
-var QueueEngineLog;
+var KillFile;
+var KillThread;
+js.on_exit("QuitQueue(KillFile,KillThread)");
 
 function DataQueue(root,name,log_)
 {
-	QueueEngineLog=(log_?log_:new Logger(root,name));
+	this.root=			(root?root:"/sbbs/");
+	this.name=			(name?name:"default");
+	this.queuelog=		(log_?log_:new Logger(this.root,this.name));
 
-	this.root=root;
-	this.name=name;
-	this.users=[];
 	this.notices=[];
-	this.stream=	new Queue(this.name + "_" + user.number);
-	this.user_file=	new File(this.root + user.number + ".usr");
+	this.stream=	new Queue(this.name + "." + user.number);
+	this.user_file=	new File(this.root + "users.lst");
+	this.last_user_update=0;
+	this.users;
+	this.thread;
+
+	KillFile=this.user_file;
 	
 	this.ReceiveData=function(ident)
 	{
@@ -26,19 +32,19 @@ function DataQueue(root,name,log_)
 		var data=[];
 		if(ident)
 		{
-			while(this.stream.poll(ident))
+			while(this.stream.poll()==ident)
 			{
 				var incoming_data=this.stream.read(ident);
-				Log("received signed data from user: " + system.username(incoming_data.user));
+				this.log("-Receiving signed data");
 				data.push=incoming_data;
 			}
 		}
 		else 
 		{
-			while(this.stream.data_waiting())
+			while(this.stream.data_waiting)
 			{
 				var incoming_data=this.stream.read();
-				Log("received unsigned data from user: " + system.username(incoming_data.user));
+				this.log("-Receiving unsigned data");
 				data.push=incoming_data;
 			}
 		}
@@ -50,60 +56,79 @@ function DataQueue(root,name,log_)
 		for(user_ in this.users) 
 		{
 			this.users[user_].Send(data,ident);
-			Log("sending data to user: " + system.username(this.users[user_].user));
+			this.log("sending data to user: " + this.users[user_].name);
 		}
 	}
 	this.UpdateUsers=function()
 	{
-		var user_list=directory(this.root + "*.usr");
+		if(this.user_file.date==this.last_user_update) return;
+		this.last_user_update=this.user_file.date;
+		this.user_file.open('r+');
+		var user_list=this.user_file.iniGetKeys(this.thread);
 		for(user_ in user_list)
 		{
-			var user_file=user_list[user_];
-			var user_file_name=file_getname(user_file);
-			var user_number=user_file_name.substring(0,user_file_name.indexOf("."));
-			if(!this.users[user_number] && user_number!=user.number) 
+			var user_name=user_list[user_];
+			var user_status=this.user_file.iniGetValue(this.thread,user_name);
+			var user_number=system.matchuser(user_name);
+
+			if(user_name!=user.alias && !this.users[user_name])
 			{
-				var user_queue=this.name+"_"+user_number;
-				this.users[user_number]=new QueueUser(user_number,user_file,user_queue);
-				this.notices.push(system.username(user_number) + " is here.");
-				Log("loaded new user: " + system.username(user_number));
+				var user_queue=this.name+"."+user_number;
+				this.users[user_name]=new QueueUser(user_name,user_status,user_queue);
+				this.notices.push("\1r\1h" + user_name + " is here.");
+				this.log("loaded new user: " + user_name);
 			}
 		}
 		for(user_ in this.users) 
 		{
-			if(!file_exists(this.users[user_].file))
+			if(!this.user_file.iniGetValue(this.thread,this.users[user_].name))
 			{
+				this.notices.push("\1r\1h" + this.users[user_].name + " has left.");
+				this.log("removing absent user: " + this.users[user_].name);
 				delete this.users[user_];
-				this.notices.push(system.username(user_) + " has left.");
-				Log("removing absent user: " + system.username(user_));
 			}
 		}
+		this.user_file.close();
 	}
 	this.DataWaiting=function(ident)
 	{
-		if(this.stream.poll(ident)) return true;
+		if(this.stream.poll()==ident) return true;
 		return false;
 	}
-	this.Init=function(data)
+	this.Init=function(thread,status)
 	{
-		this.UpdateUsers();
-		this.user_file.open('w+');
-		if(data) this.user_file.writeAll(data);
-		this.user_file.close();
+		if(thread==this.thread) return;
+		else 
+		{
+			this.users=[];
+			this.UpdateUsers();
+			this.user_file.open(file_exists(this.user_file.name) ? 'r+':'w+'); 	
+			this.user_file.iniRemoveKey(this.thread,user.alias);
+			this.thread=thread;
+			KillThread=this.thread;
+			this.log("Initializing queue: room: " + this.thread + " file: " + this.user_file.name);
+			this.user_file.iniSetValue(thread,user.alias,"(" + status + ")");
+			this.user_file.close();
+		}
 	}
-	function Log(text)
+	this.log=function(text)
 	{
-		QueueEngineLog.Log(text);
+		this.queuelog.Log(text);
 	}
-	this.Init();
 }
-function QueueUser(user_number,user_file,user_queue)
+function QueueUser(user_name,user_status,user_queue)
 {
-	this.user=user_number;
-	this.file=user_file;
+	this.name=user_name;
+	this.status=user_status;
 	this.queue=new Queue(user_queue);
 	this.Send=function(data,ident)
 	{
 		this.queue.write(data,ident);
 	}
+}
+function QuitQueue(userfile,thread)
+{
+	userfile.open("r+");
+	userfile.iniRemoveKey(thread,user.alias);
+	userfile.close();
 }
