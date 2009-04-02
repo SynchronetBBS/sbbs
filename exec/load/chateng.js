@@ -20,12 +20,6 @@
 function Chat(Engine,key)
 {
 	if(!Engine) Exit(0);
-	if(Engine.fullscreen) console.clear();
-	else
-	{
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
-	}
 	if(key)
 	{
 		while(1)
@@ -63,22 +57,15 @@ function Chat(Engine,key)
 }
 //*************MAIN ENGINE*************
 load("qengine.js");
-var ChatLog;
-var oldpass=console.ctrlkey_passthru;
-var killfile;
-js.on_exit("file_remove(killfile)");
-
 
 function ChatEngine(root,name,log_)
 {
-	ChatLog=		(log_?log_:new Logger(this.root,this.name));
 	this.root=		(root?root:Quit(100));
 	this.name=		(name?name:"chat");
-	
+	this.chatlog=	(log_?log_:new Logger(this.root,this.name));
+
 	//DEFAULT VALUES FOR FULL SCREEN CHAT MODE WITH NO DEDICATED INPUT LINE
 	this.fullscreen=true;
-	this.input_line=false;
-	this.boxed=		false;
 	this.columns=	79;
 	this.rows=		24;
 	this.x=			1;
@@ -86,25 +73,38 @@ function ChatEngine(root,name,log_)
 	
 	this.local_color=	"\1n\1g";
 	this.remote_color=	"\1n\1c";
-	
-	this.buffer=	"";
-	this.messages=	[];
-	this.history=	[];
-	this.queue=new DataQueue(this.root,this.name,ChatLog);
 
-	this.Init=function(mode,columns,rows,input_line,posx,posy,boxed)
+	this.boxed;
+	this.input_line;
+	this.buffer;
+	this.messages;
+	this.history;
+	this.queue=new DataQueue(this.root,this.name,this.chatlog);
+	
+	this.Init=function(room,input_line,columns,rows,posx,posy,boxed)
 	{
-		this.fullscreen=(mode=="full"?true:false);
+		this.fullscreen=(columns?false:true);
+		if(input_line)	this.input_line=input_line;
 		if(columns) 	this.columns=columns;
 		if(rows)		this.rows=rows;
-		if(input_line)	this.input_line=input_line;
 		if(posx)		this.x=posx;
 		if(posy)		this.y=posy;
 		if(boxed)		this.boxed=boxed;
 		
-		Log("Chat Initialized: Mode: " + mode);
-		killfile=this.queue.user_file.name;
-		bbs.sys_status |= SS_PAUSEOFF;		
+		this.buffer="";
+		this.messages=[];
+		this.history=[];
+	
+		this.queue.Init(room,"");
+		this.log("Chat Initialized: Room: " + room);
+		this.DrawLines();
+	}
+	this.DrawLines=function()
+	{
+		if(!this.boxed) return;
+		DrawLine(this.input_line.x-1,this.input_line.y-1,this.columns+2);
+		if(this.y>1) DrawLine(this.x-1,this.y-1,this.columns+2);
+		if(this.input_line.y<24) DrawLine(this.input_line.x-1,this.input_line.y+1,this.columns+2);
 	}
 	this.Cycle=function()
 	{
@@ -162,7 +162,7 @@ function ChatEngine(root,name,log_)
 				this.buffer="";
 				break;
 			}
-			var message={message:this.buffer,user:user.number};
+			var message={"message":this.buffer,"name":user.alias};
 			this.buffer="";
 			this.Send(message);
 			break;
@@ -226,6 +226,7 @@ function ChatEngine(root,name,log_)
 	this.Redraw=function()
 	{
 		this.Display();
+		this.DrawLines();
 		this.ClearInputLine();
 		this.Buffer();
 	}
@@ -239,19 +240,20 @@ function ChatEngine(root,name,log_)
 	}
 	this.Display=function(text,color,user_)
 	{
-		if(!color) color="\1r\1h";
+		if(!text) return;
+		color=color?color:"\1r\1h";
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
 		if(this.fullscreen)	
 		{
-			if(user_) console.putmsg("\r" + color + system.username(user_) + ": " + text + "\r\n",P_SAVEATR);
+			if(user_) console.putmsg("\r" + color + user_ + ": " + text + "\r\n",P_SAVEATR);
 			else console.putmsg("\r" + color + text + "\r\n",P_SAVEATR);
 			if(this.buffer.length) console.putmsg(this.local_color+this.buffer);
 		}
 		else
 		{
 			//FOR ALL OTHER MODES, STORE MESSAGES IN AN ARRAY AND HANDLE WRAPPING 
-			if(user_) this.Concat(color + system.username(user_)+ ": " + text);
-			else if(text) this.Concat(color + text);
+			if(user_) this.Concat(color + user_+ ": " + text);
+			else this.Concat(color + text);
 			console.gotoxy(this.x,this.y);
 			for(msg in this.messages)
 			{
@@ -286,17 +288,17 @@ function ChatEngine(root,name,log_)
 				*/
 			}
 			if(data[item].message) 
-				this.Display(data[item].message,this.remote_color,data[item].user);
+				this.Display(data[item].message,this.remote_color,data[item].name);
 		}
 	}
 	this.Send=function(data)
 	{
 		this.queue.SendData(data,this.name);
-		if(data.message) this.Display(data.message,this.local_color,user.number);
+		if(data.message) this.Display(data.message,this.local_color,user.alias);
 	}
-	function Log(text)
+	this.log=function(text)
 	{
-		ChatLog.Log(text);
+		this.chatlog.Log(text);
 	}
 	function Quit(ERR)
 	{
@@ -305,19 +307,16 @@ function ChatEngine(root,name,log_)
 			switch(ERR)
 			{
 				case 100:
-					Log("Error: No root directory specified");
+					this.log("Error: No root directory specified");
 					break;
 				case 200:
-					Log("Error: No chat window parameters specified");
+					this.log("Error: No chat window parameters specified");
 					break;
 				default:
-					Log("Error: Unknown");
+					this.log("Error: Unknown");
 					break;
 			}
 		}
-		console.ctrlkey_passthru=oldpass;
-		bbs.sys_status&=~SS_MOFF;
-		bbs.sys_status&=~SS_PAUSEOFF;
 		exit(0);
 	}
 }
