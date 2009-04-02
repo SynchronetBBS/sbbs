@@ -54,13 +54,13 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 	this.draw=function(position, total)
 	{
 		if(!this.first || !this.last) return; 		//if no start or end points initialized, do not draw
-		if(position && total)
+		if(position>=0 && total>=0)
 		{
 			if(position>total) return; 	//invalid position = do not draw
 			var percentage=position/total;
 			this.index=parseInt(percentage*this.length);
 		}		
-		else if(!this.index) return;	//no position supplied and no index = do not draw
+		else if(!this.index>=0) return;	//no position supplied and no index = do not draw
 		
 		if(this.orientation==1) this.drawVert();
 		else this.drawHoriz();
@@ -71,7 +71,7 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 		
 		console.gotoxy(this.first.x,this.first.y);
 		console.putmsg(this.color + "\1h" + ascii(30));
-		for(i=1;i<=this.length;i++)
+		for(i=0;i<this.length;i++)
 		{
 			console.down();
 			console.left();
