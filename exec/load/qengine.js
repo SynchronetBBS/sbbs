@@ -35,7 +35,7 @@ function DataQueue(root,name,log_)
 			while(this.stream.poll()==ident)
 			{
 				var incoming_data=this.stream.read(ident);
-				this.log("-Receiving signed data");
+				this.log("-Receiving signed data: " + ident);
 				data.push=incoming_data;
 			}
 		}
@@ -61,8 +61,8 @@ function DataQueue(root,name,log_)
 	}
 	this.UpdateUsers=function()
 	{
-		if(this.user_file.date==this.last_user_update) return;
-		this.last_user_update=this.user_file.date;
+		if(file_date(this.user_file.name)==this.last_user_update) return;
+		this.last_user_update=file_date(this.user_file.name);
 		this.user_file.open('r+');
 		var user_list=this.user_file.iniGetKeys(this.thread);
 		for(user_ in user_list)
