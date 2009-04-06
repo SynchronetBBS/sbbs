@@ -240,11 +240,11 @@ function ChatEngine(root,name,log_)
 	}
 	this.Display=function(text,color,user_)
 	{
-		if(!text) return;
 		color=color?color:"\1r\1h";
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
 		if(this.fullscreen)	
 		{
+			if(!text) return;
 			if(user_) console.putmsg("\r" + color + user_ + ": " + text + "\r\n",P_SAVEATR);
 			else console.putmsg("\r" + color + text + "\r\n",P_SAVEATR);
 			if(this.buffer.length) console.putmsg(this.local_color+this.buffer);
@@ -252,8 +252,11 @@ function ChatEngine(root,name,log_)
 		else
 		{
 			//FOR ALL OTHER MODES, STORE MESSAGES IN AN ARRAY AND HANDLE WRAPPING 
-			if(user_) this.Concat(color + user_+ ": " + text);
-			else this.Concat(color + text);
+			if(text)
+			{
+				if(user_) this.Concat(color + user_+ ": " + text);
+				else this.Concat(color + text);
+			}
 			console.gotoxy(this.x,this.y);
 			for(msg in this.messages)
 			{
