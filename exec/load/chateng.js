@@ -28,6 +28,12 @@ function Chat(Engine,key)
 			Engine.ProcessKey(key);
 			switch(key)
 			{
+				case '\x02':	/* CTRL-B KEY_HOME */
+				case '\x05':	/* CTRL-E KEY_END */
+				case KEY_UP:
+				case KEY_DOWN:
+					Engine.ShowHistory(key);
+					return true;
 				case '\r':
 					return true;
 				case '\x1b':	
@@ -102,7 +108,9 @@ function ChatEngine(root,name,log_)
 		this.history=[];
 	
 		this.queue.Init(this.room,"");
-		this.scrollbar=new Scrollbar(this.x-1,this.y,this.x-1,this.y+this.rows-1,"\1k");
+		
+		var fx=this.x+this.columns;
+		this.scrollbar=new Scrollbar(fx,this.y,fx,this.y+this.rows-1,"\1y");
 		this.LoadHistory();
 		this.DrawLines();
 		this.log("Chat Initialized: Room: " + this.room);
@@ -155,7 +163,6 @@ function ChatEngine(root,name,log_)
 			break;
 		case KEY_UP:
 		case KEY_DOWN:
-			this.ShowHistory(key);
 			break;
 		case '\b':
 			this.BackSpace();
@@ -214,6 +221,12 @@ function ChatEngine(root,name,log_)
 		
 		switch(key)
 		{
+			case '\x02':	/* CTRL-B KEY_HOME */
+				this.history_index=this.history.length;
+				break;
+			case '\x05':	/* CTRL-E KEY_END */
+				this.history_index=0;
+				break;
 			case KEY_DOWN:
 				if(this.history_index>0) this.history_index--;
 				break;
@@ -258,42 +271,47 @@ function ChatEngine(root,name,log_)
 	}
 	this.BackSpace=function()
 	{
-		write(console.ansi(ANSI_NORMAL));
 		if(this.buffer.length>0) 
 		{
-			if(!this.fullscreen)
-			{
-				var offset=this.buffer.length;
-				console.gotoxy(this.input_line.x+offset,this.input_line.y);
-			}
+			write(console.ansi(ANSI_NORMAL));
 			this.buffer=this.buffer.substring(0,this.buffer.length-1);
-			console.left();
-			if(this.fullscreen) console.cleartoeol();
-			else ClearLine(this.columns-this.buffer.length);
+			if(this.fullscreen) 
+			{
+				console.left();
+				console.cleartoeol();
+			}
+			this.Buffer();
 		}
 	}
 	this.Buffer=function(key)
 	{
 		if(!this.fullscreen)
 		{
-			if(this.buffer.length>=this.input_line.columns)
+			var offset=key?1:0;
+			if(this.buffer.length+offset>this.input_line.columns)
 			{
-				var overrun=(this.buffer.length-this.input_line.columns)+1;
+				var overrun=(this.buffer.length+offset-this.input_line.columns);
 				var truncated=this.buffer.substr(overrun);
 				console.gotoxy(this.input_line.x,this.input_line.y);
 				console.putmsg(truncated,P_SAVEATR);
 			}
+			else if(this.buffer.length==this.input_line.columns && !key)
+			{
+				console.gotoxy(this.input_line.x,this.input_line.y);
+				console.putmsg(this.buffer,P_SAVEATR);
+			} 
 			else 
 			{
-				var offset=this.buffer.length;
+				offset=this.buffer.length;
 				console.gotoxy(this.input_line.x+offset,this.input_line.y);
 			}
 		}
-		if(key)
+		if(key) 
 		{
+			console.putmsg(key,P_SAVEATR);
 			this.buffer+=key;
-			console.putmsg("\1n" + key,P_SAVEATR);
 		}
+		if(this.buffer.length<this.columns)	ClearLine(this.columns-this.buffer.length);
 	}
 	this.Redraw=function()
 	{
