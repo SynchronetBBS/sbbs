@@ -10,7 +10,10 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 	this.orientation;
 	this.index;
 	this.length;
+	this.wrap=false;
 	this.color=color?color:'\1n';
+	this.dark=(color=="\1k"?"\1k\1h":"\1n"+color);
+	this.light=(color=="\1k"?"\1k\1h":color+"\1h");
 	
 	this.init=function(fx,fy,lx,ly)
 	{
@@ -32,12 +35,12 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 	this.increase=function()
 	{
 		if(this.index<this.length) this.index++;
-		else if(this.wrap) this.index=0;
+		else if(this.wrap) this.index=1;
 		this.draw();
 	}
 	this.decrease=function()
 	{
-		if(this.index>0) this.index--;
+		if(this.index>1) this.index--;
 		else if(this.wrap) this.index=this.length;
 		this.draw();
 	}
@@ -48,19 +51,24 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 	}
 	this.home=function()
 	{
-		this.index=0;
+		this.index=1;
 		this.draw();
 	}
 	this.draw=function(position, total)
 	{
-		if(!this.first || !this.last) return; 		//if no start or end points initialized, do not draw
+		if(!this.first || !this.last) 
+		{
+			Log("Scrollbar error: no start or end points supplied");
+			return; 		//if no start or end points initialized, do not draw
+		}
 		if(position>=0 && total>=0)
 		{
 			if(position>total) return; 	//invalid position = do not draw
 			var percentage=position/total;
-			this.index=parseInt(percentage*this.length);
+			this.index=Math.round(percentage*this.length);
+			if(this.index==0) this.index=1;
 		}		
-		else if(!this.index>=0) return;	//no position supplied and no index = do not draw
+		else if(this.index<1) return;	//no position supplied and no index = do not draw
 		
 		if(this.orientation==1) this.drawVert();
 		else this.drawHoriz();
@@ -70,30 +78,30 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 		if(this.length==0) return; //who needs a zero length scrollbar?
 		
 		console.gotoxy(this.first.x,this.first.y);
-		console.putmsg(this.color + "\1h" + ascii(30));
-		for(i=0;i<this.length;i++)
+		console.putmsg(this.light + ascii(30));
+		for(i=1;i<=this.length;i++)
 		{
 			console.down();
 			console.left();
 			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
-			else console.putmsg('\1n' + this.color + '\xB0');
+			else console.putmsg(this.dark + '\xB0');
 		}
 		console.down();
 		console.left();
-		console.putmsg(this.color + "\1h" + ascii(31));
+		console.putmsg(this.light + ascii(31));
 	}
 	this.drawHoriz=function()
 	{
 		if(this.length==0) return; //who needs a zero length scrollbar?
 		
 		console.gotoxy(this.first.x,this.first.y);
-		console.putmsg(this.color + "\1h" + ascii(17));
+		console.putmsg(this.light + ascii(17));
 		for(i=1;i<=this.length;i++)
 		{
 			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
-			else console.putmsg('\1n' + this.color + '\xB0');
+			else console.putmsg(this.dark + '\xB0');
 		}
-		console.putmsg(this.color + "\1h" + ascii(16));
+		console.putmsg(this.light + ascii(16));
 	}
 	if(firstx && firsty && lastx && lasty) 
 	{
