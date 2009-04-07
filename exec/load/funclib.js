@@ -74,7 +74,6 @@ function DrawLine(x,y,length,color)
 }
 function ClearLine(length,x,y)
 {
-	write(console.ansi(ANSI_NORMAL));
 	if(x && y) console.gotoxy(x,y);
 	if(length) printf("%*s",length,"");
 	else console.cleartoeol();
