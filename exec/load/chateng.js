@@ -57,12 +57,14 @@ function Chat(Engine,key)
 }
 //*************MAIN ENGINE*************
 load("qengine.js");
+load("scrollbar.js");
 
 function ChatEngine(root,name,log_)
 {
 	this.root=		(root?root:Quit(100));
 	this.name=		(name?name:"chat");
 	this.chatlog=	(log_?log_:new Logger(this.root,this.name));
+	this.room;
 
 	//DEFAULT VALUES FOR FULL SCREEN CHAT MODE WITH NO DEDICATED INPUT LINE
 	this.fullscreen=true;
@@ -78,7 +80,10 @@ function ChatEngine(root,name,log_)
 	this.input_line;
 	this.buffer;
 	this.messages;
-	this.history;
+	this.scrollbar;
+	this.history=[];
+	this.history_index=0;
+	this.hFile=new File(this.root + this.name + ".his");
 	this.queue=new DataQueue(this.root,this.name,this.chatlog);
 	
 	this.Init=function(room,input_line,columns,rows,posx,posy,boxed)
@@ -90,14 +95,17 @@ function ChatEngine(root,name,log_)
 		if(posx)		this.x=posx;
 		if(posy)		this.y=posy;
 		if(boxed)		this.boxed=boxed;
+		if(room)		this.room=room;
 		
 		this.buffer="";
 		this.messages=[];
 		this.history=[];
 	
-		this.queue.Init(room,"");
-		this.log("Chat Initialized: Room: " + room);
+		this.queue.Init(this.room,"");
+		this.scrollbar=new Scrollbar(this.x-1,this.y,this.x-1,this.y+this.rows-1,"\1k");
+		this.LoadHistory();
 		this.DrawLines();
+		this.log("Chat Initialized: Room: " + this.room);
 	}
 	this.DrawLines=function()
 	{
@@ -142,10 +150,12 @@ function ChatEngine(root,name,log_)
 		case '\x1f':	/* CTRL-_ Safe quick-abort*/
 		case '\x7f':	/* DELETE */
 		case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
-		case KEY_UP:
-		case KEY_DOWN:
 		case KEY_LEFT:
 		case KEY_RIGHT:
+			break;
+		case KEY_UP:
+		case KEY_DOWN:
+			this.ShowHistory(key);
 			break;
 		case '\b':
 			this.BackSpace();
@@ -172,6 +182,66 @@ function ChatEngine(root,name,log_)
 		}
 		return true;
 	}
+	this.StoreHistory=function()
+	{
+		this.log("Storing message history");
+		for(msg in this.messages)
+		{
+			this.history.push(this.messages[msg]);
+		}
+		this.hFile.open(file_exists(this.hFile.name) ? 'r+':'w+'); 	
+		for(his in this.history)
+		{
+			this.hFile.iniSetValue(this.room,his,this.history[his]);
+		}
+		this.hFile.close();
+	}
+	this.LoadHistory=function()
+	{
+		if(!file_exists(this.hFile.name)) return false;
+		this.log("Loading message history");
+		this.hFile.open('r'); 
+		var history=hFile.iniGetKeys(this.room);
+		for(his in history)
+		{
+			this.history.push(this.hFile.iniGetValue(history[his]));
+		}
+		this.hFile.close();
+	}
+	this.ShowHistory=function(key)
+	{
+		if(!this.history.length) return false;
+		
+		switch(key)
+		{
+			case KEY_DOWN:
+				if(this.history_index>0) this.history_index--;
+				break;
+			case KEY_UP:
+				if(this.history_index<this.history.length) this.history_index++;
+				break;
+		}
+		var index=this.history.length-this.history_index;
+		this.scrollbar.draw(index,this.history.length);
+		var line=0;
+		while(index<this.history.length && line<this.rows)
+		{
+			console.gotoxy(this.x,this.y+line);
+			console.putmsg(this.history[index],P_SAVEATR);
+			ClearLine(this.columns-console.strlen(strip_ctrl(this.history[index])));
+			index++;
+			line++;
+		}
+		var msg=0;
+		while(line<this.rows)
+		{
+			console.gotoxy(this.x,this.y+line);
+			console.putmsg(this.messages[msg],P_SAVEATR);
+			ClearLine(this.columns-console.strlen(strip_ctrl(this.messages[msg])));
+			line++;
+			msg++;
+		}
+	}
 	this.Alert=function(msg)
 	{
 		if(this.input_line)
@@ -183,10 +253,12 @@ function ChatEngine(root,name,log_)
 	}
 	this.ClearInputLine=function()
 	{
+		write(console.ansi(ANSI_NORMAL));
 		if(this.input_line)	ClearLine(this.input_line.columns,this.input_line.x,this.input_line.y);
 	}
 	this.BackSpace=function()
 	{
+		write(console.ansi(ANSI_NORMAL));
 		if(this.buffer.length>0) 
 		{
 			if(!this.fullscreen)
@@ -209,7 +281,7 @@ function ChatEngine(root,name,log_)
 				var overrun=(this.buffer.length-this.input_line.columns)+1;
 				var truncated=this.buffer.substr(overrun);
 				console.gotoxy(this.input_line.x,this.input_line.y);
-				console.write(truncated);
+				console.putmsg(truncated,P_SAVEATR);
 			}
 			else 
 			{
@@ -220,7 +292,7 @@ function ChatEngine(root,name,log_)
 		if(key)
 		{
 			this.buffer+=key;
-			console.putmsg("\1n" + key);
+			console.putmsg("\1n" + key,P_SAVEATR);
 		}
 	}
 	this.Redraw=function()
@@ -240,13 +312,19 @@ function ChatEngine(root,name,log_)
 	}
 	this.Display=function(text,color,user_)
 	{
+		write(console.ansi(ANSI_NORMAL));
 		color=color?color:"\1r\1h";
+		if(this.history.length) 
+		{
+			this.scrollbar.draw(1,1); //SHOW SCROLLBAR AT BOTTOM LIMIT
+			this.history_index=0;
+		}
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
 		if(this.fullscreen)	
 		{
 			if(!text) return;
-			if(user_) console.putmsg("\r" + color + user_ + ": " + text + "\r\n",P_SAVEATR);
-			else console.putmsg("\r" + color + text + "\r\n",P_SAVEATR);
+			if(user_) console.putmsg(color + user_ + ": " + text + "\r\n",P_SAVEATR);
+			else console.putmsg(color + text + "\r\n",P_SAVEATR);
 			if(this.buffer.length) console.putmsg(this.local_color+this.buffer);
 		}
 		else
@@ -254,7 +332,7 @@ function ChatEngine(root,name,log_)
 			//FOR ALL OTHER MODES, STORE MESSAGES IN AN ARRAY AND HANDLE WRAPPING 
 			if(text)
 			{
-				if(user_) this.Concat(color + user_+ ": " + text);
+				if(user_) this.Concat(color + user_+ "\1h: \1n" + color + text);
 				else this.Concat(color + text);
 			}
 			console.gotoxy(this.x,this.y);
@@ -275,7 +353,7 @@ function ChatEngine(root,name,log_)
 		array=array.split(/[\r\n$]+/);
 		for(item in array)
 			if(array[item]!="") this.messages.push(RemoveSpaces(array[item]));
-		while(this.messages.length>=this.rows)
+		while(this.messages.length>this.rows)
 			this.history.push(this.messages.shift());
 	}
 	this.Receive=function()
