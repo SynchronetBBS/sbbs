@@ -81,13 +81,27 @@ function Scrollbar(firstx,firsty,lastx,lasty,color)
 		console.putmsg(this.light + ascii(30));
 		for(i=1;i<=this.length;i++)
 		{
-			console.down();
-			console.left();
+			if(this.first.x==80)
+			{
+				console.gotoxy(this.first.x,this.first.y+i);
+			}
+			else
+			{
+				console.down();
+				console.left();
+			}
 			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
 			else console.putmsg(this.dark + '\xB0');
 		}
-		console.down();
-		console.left();
+		if(this.first.x==80)
+		{
+			console.gotoxy(this.last.x,this.last.y);
+		}
+		else
+		{
+			console.down();
+			console.left();
+		}
 		console.putmsg(this.light + ascii(31));
 	}
 	this.drawHoriz=function()
