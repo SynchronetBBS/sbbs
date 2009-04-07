@@ -161,10 +161,9 @@ function 	PutMessage(message,x,y)
 
 function	ShowWinner(g)
 {
-	ClearArea(16,menuColumn,9);
-	console.gotoxy(51,17);
+	console.gotoxy(51,18);
 	console.putmsg("\1n\1r\1hThis game was won by: ");
-	console.gotoxy(53,18);
+	console.gotoxy(53,19);
 	if(g.winner>=0)
 	{
 		console.putmsg("\1n\1r\1h" + system.username(g.winner));

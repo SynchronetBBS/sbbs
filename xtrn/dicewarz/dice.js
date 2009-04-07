@@ -939,7 +939,6 @@ function	PlayGame(gameNumber)
 							"~Quit"							];
 	pMenu.add(pmenu_items);	
 	pMenu.disable(["A","E","T","F"]);
-
 	ClearArea(16,menuColumn,9);
 
 	while(1)
@@ -954,64 +953,54 @@ function	PlayGame(gameNumber)
 			currentPlayer=-1;
 			userInGame=false;
 		}
-		if(g.status==0)
+		var turn=g.turnOrder[g.nextTurn];
+		while(g.players[turn].user<0 && userInGame && g.status==1) 
 		{
-			pMenu.disable(["A","E","T","F"]);
-			pMenu.enable("Q");
-			ShowWinner(g);
-		}
-		else
-		{
-			var turn=g.turnOrder[g.nextTurn];
-			var humans=g.CountActiveHumans();
-			while(g.players[turn].user<0 && userInGame && g.status==1 && humans>=1) 
+			////////////////////////////////////
+				GameLog("####COMPUTER PLAYER TAKING TURN");
+				ClearLine(1,48);
+				console.gotoxy(2,1);
+				console.putmsg("\1r\1hPlease wait. " + g.players[turn].AI.name + " taking turn.");
+				mswait(750);
+			/////////////////////////////////////
+			g.players[turn].AI.turns=0;
+			g.players[turn].AI.moves=0;
+			while(g.CanAttack(turn))
 			{
-				ClearArea(16,menuColumn,8);
-				////////////////////////////////////
-					GameLog("####COMPUTER PLAYER TAKING TURN");
-					ClearLine(1,48);
-					console.gotoxy(2,1);
-					console.putmsg("\1r\1hPlease wait. " + g.players[turn].AI.name + " taking turn.");
-					mswait(750);
-				/////////////////////////////////////
-				g.players[turn].AI.turns=0;
-				g.players[turn].AI.moves=0;
-				while(g.CanAttack(turn))
-				{
-					if(!TakeTurnAI(gameNumber,turn))
-						break;
-				}
-				g.takingTurn=true;
-				EndTurn(gameNumber,turn);
-				humans=g.CountActiveHumans();
-				g.DisplayPlayers();
-				turn=g.turnOrder[g.nextTurn];
+				if(!TakeTurnAI(gameNumber,turn))
+					break;
 			}
-			if(!g.takingTurn)
+			g.takingTurn=true;
+			EndTurn(gameNumber,turn);
+			g.DisplayPlayers();
+			turn=g.turnOrder[g.nextTurn];
+		}
+		if(!g.takingTurn)
+		{
+			ClearArea(16,50,8);
+			console.gotoxy(51,16);
+			console.putmsg("\1r\1hGame \1n\1r#\1h" + gameNumber);
+			if(g.status==0)
 			{
-				if(turn==currentPlayer)
+				pMenu.disable(["A","E","T","F"]);
+				pMenu.enable(["Q"]);
+				ShowWinner(g);
+			}
+			else if(turn==currentPlayer) 
+			{
+				pMenu.enable("T");
+				GameLog("it is the current user's turn");
+			}
+			else  
+			{
+				console.gotoxy(51,18);
+				console.putmsg("\1r\1hIt is " + GetUserName(g.players[turn],turn) + "'s turn");
+				var daysOld=g.FindDaysOld();
+				var hoursOld=parseInt(daysOld*24);
+				if(daysOld>0)
 				{
-					pMenu.enable("T");
-					GameLog("it is the current user's turn");
-				}
-				else if(g.status==0) 
-				{
-					pMenu.disable(["A","E","T"]);
-					pMenu.enable(["F","Q"]);
-					ShowWinner(g);
-				}
-				else  
-				{
-					ClearArea(16,50,8);
-					console.gotoxy(51,16);
-					console.putmsg("\1r\1hIt is " + GetUserName(g.players[turn],turn) + "'s turn");
-					var daysOld=g.FindDaysOld();
-					var hoursOld=parseInt(daysOld*24);
-					if(daysOld>0)
-					{
-						console.gotoxy(51,17);
-						console.putmsg("\1r\1hLast turn taken " + hoursOld + " hours ago");
-					}
+					console.gotoxy(51,19);
+					console.putmsg("\1r\1hLast turn taken " + hoursOld + " hours ago");
 				}
 			}
 		}

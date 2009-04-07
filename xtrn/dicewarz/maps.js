@@ -152,6 +152,7 @@ function 	Map(c,r,p,gn)
 		var humans=this.CountActiveHumans();
 		if(numEliminated==(this.maxPlayers-1) || humans==0)
 		{
+			this.winner=this.lastEliminator;
 			if(this.lastEliminator==(-1))
 			{	
 				GameLog("game over - computer winner");
@@ -159,9 +160,9 @@ function 	Map(c,r,p,gn)
 			else
 			{	
 				GameLog("game over - player winner");
-				this.winner=this.lastEliminator;
 				this.AssignPoints();
 			}
+			this.status=0;
 			return true;
 		}
 		else return false;
@@ -187,7 +188,6 @@ function 	Map(c,r,p,gn)
 	this.AssignPoints=			function()	//TODO: REWORK SCORING SYSTEM COMPLETELY
 	{
 		scores=games.LoadRankings();
-		this.status=0;
 		if(this.singlePlayer) 
 		{
 			scores[this.winner].wins+=1;
