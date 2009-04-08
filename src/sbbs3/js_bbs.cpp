@@ -1009,7 +1009,7 @@ js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
 	sbbs_t*		sbbs;
-	long		mode=0;
+	int32		mode=0;
     JSString*	cmd;
 	JSString*	startup_dir=NULL;
 	char*		p_startup_dir=NULL;
@@ -1024,7 +1024,7 @@ js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			startup_dir=JS_ValueToString(cx,argv[i]);
 	}
@@ -2096,7 +2096,7 @@ static JSBool
 js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		usernumber=1;
-	long		mode=WM_EMAIL;
+	int32		mode=WM_EMAIL;
 	const char*	top="";
 	const char*	subj="";
 	JSString*	js_top=NULL;
@@ -2111,7 +2111,7 @@ js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ValueToInt32(cx,argv[0],&usernumber);
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i]) && js_top==NULL)
 			js_top=JS_ValueToString(cx,argv[i]);
 		else if(JSVAL_IS_STRING(argv[i]))
@@ -2131,7 +2131,7 @@ js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_netmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=0;
+	int32		mode=0;
 	const char*	subj="";
 	JSString*	js_to;
 	JSString*	js_subj=NULL;
@@ -2147,7 +2147,7 @@ js_netmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			js_subj=JS_ValueToString(cx,argv[i]);
 	}
@@ -2539,7 +2539,7 @@ js_getfilespec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=0;
+	int32		mode=0;
 	const char*	fspec=ALLFILES;
 	char		buf[MAX_PATH+1];
 	uint		dirnum;
@@ -2559,7 +2559,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
 			fspec=JS_GetStringBytes(js_str);
@@ -2579,7 +2579,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=FI_INFO;
+	int32		mode=FI_INFO;
 	const char*	fspec=ALLFILES;
 	char		buf[MAX_PATH+1];
 	uint		dirnum;
@@ -2599,7 +2599,7 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
 			fspec=JS_GetStringBytes(js_str);
@@ -2615,7 +2615,7 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=0;
+	int32		mode=0;
 	uint		subnum;
 	uintN		n;
 	JSObject*	hdrobj;
@@ -2638,7 +2638,7 @@ js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(n=1; n<argc; n++) {
 		if(JSVAL_IS_NUM(argv[n]))
-			JS_ValueToInt32(cx,argv[n],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[n],&mode);
 		else if(JSVAL_IS_OBJECT(argv[n])) {
 			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
 				return(JS_TRUE);
@@ -2659,7 +2659,7 @@ js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_msgscan_cfg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=SUB_CFG_NSCAN;
+	int32		mode=SUB_CFG_NSCAN;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2667,7 +2667,7 @@ js_msgscan_cfg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 
 	if(argc && JSVAL_IS_NUM(argv[0]))
-		JS_ValueToInt32(cx,argv[0],(int32*)&mode);
+		JS_ValueToInt32(cx,argv[0],&mode);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs->new_scan_cfg(mode);
@@ -2716,7 +2716,7 @@ js_msgscan_reinit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSBool
 js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=SCAN_NEW;
+	int32		mode=SCAN_NEW;
 	BOOL		all=FALSE;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2726,7 +2726,7 @@ js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(uintN i=0;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
 			all=JSVAL_TO_BOOLEAN(argv[i]);
 	}
@@ -2744,7 +2744,7 @@ js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		mode=0;
+	int32		mode=0;
 	BOOL		all=FALSE;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2754,7 +2754,7 @@ js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(uintN i=0;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
 			all=JSVAL_TO_BOOLEAN(argv[i]);
 	}
@@ -2773,7 +2773,7 @@ static JSBool
 js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	const char*	find="";
-	long		mode=0;
+	int32		mode=0;
 	uint		subnum;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2790,7 +2790,7 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUM(argv[i]))
-			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
+			JS_ValueToInt32(cx,argv[i],&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			find=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
 	}
@@ -2808,8 +2808,8 @@ static JSBool
 js_listmsgs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	const char*	find="";
-	long		mode=0;
-	long		start=0;
+	int32		mode=0;
+	int32		start=0;
 	uint		subnum;
 	sbbs_t*		sbbs;
 	uintN		argn=0;
@@ -2826,9 +2826,9 @@ js_listmsgs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	if(JSVAL_IS_NUM(argv[argn]))
-		JS_ValueToInt32(cx,argv[argn++],(int32*)&mode);
+		JS_ValueToInt32(cx,argv[argn++],&mode);
 	if(JSVAL_IS_NUM(argv[argn]))
-		JS_ValueToInt32(cx,argv[argn++],(int32*)&start);
+		JS_ValueToInt32(cx,argv[argn++],&start);
 	if(JSVAL_IS_STRING(argv[argn]))
 		find=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
 
