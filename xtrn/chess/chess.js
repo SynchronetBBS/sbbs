@@ -34,8 +34,10 @@ function ChessLobby()
 	this.table_markers=[];
 	this.scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
 	this.scroll_index=0;
+	this.last_table_number=0;
 	this.tables;
 	this.table_index;
+	this.menu;
 
 	this.SplashStart=function()
 	{
@@ -104,6 +106,7 @@ function ChessLobby()
 		for(i in game_files)
 		{
 			var table=new ChessGame(game_files[i]);
+			if(table.gamenumber>this.last_table_number) this.last_table_number=table.gamenumber;
 			this.table_index[table.gamenumber]=this.tables.length;
 			this.tables.push(table);
 		}
@@ -132,10 +135,10 @@ function ChessLobby()
 				this.FormatStats(tab.players["white"].player,posx,posy+5,"white");
 				this.FormatStats(tab.players["black"].player,posx,posy+7,"black");
 				this.table_graphic.draw(posx,posy);
-				write(console.ansi(ANSI_NORMAL));
 				index++;
 			}
 		}
+		write(console.ansi(BG_BLACK));
 	}
 	this.FormatStats=function(player,x,y,color)
 	{
@@ -194,15 +197,19 @@ function ChessLobby()
 						break;
 					case "/":
 						if(!chesschat.buffer.length) this.LobbyMenu();
+						else if(!Chat(k,chesschat)) return;
 						break;
 					case "\x1b":	
 						this.SplashExit();
 						break;
 					case "?":
-						if(!chesschat.buffer.length) this.Help();
+						if(!chesschat.buffer.length) this.ListCommands();
+						else if(!Chat(k,chesschat)) return;
+						break;
+					default:
+						if(!Chat(k,chesschat)) return;
 						break;
 				}
-				Chat(k,chesschat);
 				this.LoadTables();
 				this.DrawTables();
 			}
@@ -210,7 +217,17 @@ function ChessLobby()
 	}
 	this.LobbyMenu=function()
 	{
-		chesschat.Alert("\1c\1hS\1nelect Game Re\1c\1hd\1nraw \1c\1hN\1new Game \1c\1hR\1nankings");
+		var x=chesschat.input_line.x;
+		var y=chesschat.input_line.y;
+		this.menu=new Menu(		x,y,"\1n","\1c\1h");
+		var menu_items=[		"~Select Game"					, 
+								"~New Game"						,
+								"~Rankings"						,
+								"~Help"							,
+								"Re~draw"						];
+		this.menu.add(menu_items);
+		this.menu.displayHorizontal();
+		
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO);
 		switch(k.toUpperCase())
 		{
@@ -219,6 +236,9 @@ function ChessLobby()
 				break;
 			case "R":
 				this.ShowRankings();
+				break;
+			case "H":
+				this.Help();
 				break;
 			case "D":
 				this.Redraw();
@@ -231,6 +251,10 @@ function ChessLobby()
 		}
 		chesschat.ClearInputLine();
 	}
+	this.ListCommands=function()
+	{
+		
+	}
 	this.Help=function()
 	{
 		//TODO: write help file
@@ -241,7 +265,7 @@ function ChessLobby()
 	this.SelectGame=function()
 	{
 		chesschat.Alert("\1nEnter Table \1h#: ");
-		var num=console.getkeys("\x1bQ\r",this.tables.length);
+		var num=console.getkeys("\x1bQ\r",this.last_table_number);
 		var tnum=this.table_index[num];
 		if(this.tables[tnum])
 		{
