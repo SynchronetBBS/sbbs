@@ -64,6 +64,15 @@ function 	Menu(title,x,y,color,hkey_color)
 	{
 		printf("\1h\1w" + this.title);
 	}
+	this.countEnabled=function()
+	{
+		var items=[];
+		for(i in this.items)
+		{
+			if(this.items[i].enabled) items.push(i);
+		}
+		return items;
+	}
 	this.getHotKey=function(item)
 	{
 		keyindex=item.indexOf("~")+1;
@@ -71,11 +80,14 @@ function 	Menu(title,x,y,color,hkey_color)
 	}	
 	this.displayHorizontal=function()
 	{
+		var enabled=this.countEnabled();
+		if(!enabled.length) return false;
 		ClearLine(1,48);
 		console.gotoxy(orig_x,orig_y);
-		for(i in this.items)
+		for(e=0;e<enabled.length;e++)
 		{
-			if(this.items[i].enabled) console.putmsg(this.items[i].text);
+			console.putmsg(this.items[enabled[e]].text);
+			if(e<enabled.length-1) write(" ");
 		}
 	}
 }
