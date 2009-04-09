@@ -4,6 +4,7 @@ function GameSession(game)
 	this.game=game;
 	this.board;
 	this.queue;
+	this.menu;
 	
 /*	
 	CHAT ENGINE DEPENDENT FUNCTIONS
@@ -34,19 +35,6 @@ function GameSession(game)
 		while(1)
 		{
 			this.Cycle();
-			/*
-			if(this.InCheck(this.king)) {
-				this.Alert("\1r\1hYou are in check!");
-				chesschat.ClearLine();
-			}
-			var checkers=this.InCheck(this.king);
-			if(checkers) {
-				if(this.FindCheckMate(checkers)) {
-					this.Alert("\1r\1hCheckmate! You lose!");
-					return true;
-				}
-			}
-			*/
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
 			{
@@ -54,14 +42,18 @@ function GameSession(game)
 				{
 					case "/":
 						if(!chesschat.buffer.length) this.ChessMenu();
+						else if(!Chat(k,chesschat)) return;
 						break;
 					case "\x1b":	
 						return;
 					case "?":
-						if(!chesschat.buffer.length) this.Help();
+						if(!chesschat.buffer.length) this.ListCommands();
+						else if(!Chat(k,chesschat)) return;
+						break;
+					default:
+						if(!Chat(k,chesschat)) return;
 						break;
 				}
-				Chat(k,chesschat);
 			}
 		}
 	}
@@ -69,22 +61,22 @@ function GameSession(game)
 	{
 		var x=chesschat.input_line.x;
 		var y=chesschat.input_line.y;
-		
-		var cmenu=new Menu(		""								,x,y,"\1n","\1c\1h");
-		var cmenu_items=[		"~Sit"							, 
+		this.menu=new Menu(		x,y,"\1n","\1c\1h");
+		var menu_items=[		"~Sit"							, 
 								"~Resign"						,
 								"~New Game"						,
 								"~Game Info"					,
 								"~Move"							,
+								"~Help"							,
 								"Move ~List"					,
 								"Re~draw"						];
-		cmenu.add(cmenu_items);
-		if(this.game.started || this.game.currentplayer) cmenu.disable(["S"]);
-		if(!this.game.started || !this.game.currentplayer) cmenu.disable(["R"]);
-		if(!this.game.finished || !this.game.currentplayer) cmenu.disable(["N"]);
-		if(!this.game.started || this.game.turn!=this.game.currentplayer || this.game.finished) cmenu.disable(["M"]);
-		if(!this.game.movelist.length) cmenu.disable(["L"]);
-		cmenu.displayHorizontal();
+		this.menu.add(menu_items);
+		if(this.game.started || this.game.currentplayer) this.menu.disable(["S"]);
+		if(!this.game.started || !this.game.currentplayer) this.menu.disable(["R"]);
+		if(!this.game.finished || !this.game.currentplayer) this.menu.disable(["N"]);
+		if(!this.game.started || this.game.turn!=this.game.currentplayer || this.game.finished) this.menu.disable(["M"]);
+		if(!this.game.movelist.length) this.menu.disable(["L"]);
+		this.menu.displayHorizontal();
 
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
 		this.ClearAlert();
@@ -122,6 +114,13 @@ function GameSession(game)
 		else Log("Invalid or Disabled key pressed: " + k);
 		delete cmenu;
 	}
+	this.Help=function()
+	{
+	}
+	this.ListCommands=function()
+	{
+		
+	}
 	this.ClearAlert=function()
 	{
 		chesschat.ClearInputLine();
@@ -141,6 +140,14 @@ function GameSession(game)
 				this.GetMove(data[move]);
 			}
 			this.game.NextTurn();
+		}
+		if(this.queue.DataWaiting("castle"))
+		{
+			var data=this.queue.ReceiveData("castle");
+			for(move in data)
+			{
+				this.GetMove(data[move]);
+			}
 		}
 	}
 	this.Redraw=function()
@@ -178,9 +185,6 @@ function GameSession(game)
 		this.game.StoreGame();
 	}
 	this.ListMoves=function()
-	{
-	}
-	this.Help=function()
 	{
 	}
 	this.GameInfo=function()
@@ -272,7 +276,6 @@ function GameSession(game)
 			this.board.grid[to.x][to.y].contents=temp_to;
 			return false;
 		}
-		this.board.DrawMove(from,to);
 		var move=new ChessMove(from,to);
 		this.game.movelist.push(move);
 		this.game.NextTurn();
@@ -280,31 +283,26 @@ function GameSession(game)
 		this.Send(move,"move");
 		return true;
 	}
-	this.GetCastle=function(from,to)
-	{
-		if(to.x==1 || to.x==2) {
-			this.board.grid[to.x+1][0].contents=this.board.grid[0][0].contents;
-			this.board.grid[0][0].contents=false;
-			//this.board.DrawTile(0,0);
-			//this.board.DrawTile(to.x+1,0);
-		}
-		else {
-			this.board.grid[to.x-1][0].contents=this.board.grid[7][0].contents;
-			this.board.grid[7][0].contents=false;
-			//this.board.DrawTile(7,0);
-			//this.board.DrawTile(to.x-1,0);
-		}
-	}
 	this.GetMove=function(data)
 	{
 		var from=data.from;
 		var to=data.to;
 		Log("coords received: from " + from.x + "," + from.y + " to " + to.x + "," + to.y);
-		this.board.grid[to.x][to.y].contents=this.board.grid[from.x][from.y].contents;
-		this.board.grid[from.x][from.y].contents=false;
-		this.board.DrawMove(from,to);
-		if(this.InCheck(this.game.players[this.game.currentplayer].king)) {
-			this.Alert("\1r\1hYou are in check!");
+		this.board.Move(from,to);
+		if(this.game.currentplayer)
+		{
+			if(this.InCheck(this.game.players[this.game.currentplayer].king)) {
+				this.Alert("\1r\1hYou are in check!");
+			}
+			/*
+			var checkers=this.InCheck(this.king);
+			if(checkers) {
+				if(this.FindCheckMate(checkers)) {
+					this.Alert("\1r\1hCheckmate! You lose!");
+					return true;
+				}
+			}
+			*/
 		}
 	}
 	this.SelectTile=function(start,placeholder)
@@ -532,7 +530,11 @@ function GameSession(game)
 			{
 				case "white":
 					if(from.y<to.y) return false; //CANNOT MOVE BACKWARDS
-					if(ygap==2 && from.y!=6) return false;
+					if(ygap==2)
+					{
+						if(from.y!=6) return false;
+						if(this.board.grid[from.x][from.y-1].contents) return false;
+					}
 					if(to.y==0) this.board.grid[from.x][from.y].contents=new ChessPiece("queen",this.board.grid[from.x][from.y].contents.color);
 					if(xgap==ygap && !to_tile.contents)
 					{
@@ -543,7 +545,11 @@ function GameSession(game)
 					break;
 				case "black":
 					if(from.y>to.y) return false; //CANNOT MOVE BACKWARDS
-					if(ygap==2 && from.y!=1) return false;
+					if(ygap==2)
+					{
+						if(from.y!=1) return false;
+						if(this.board.grid[from.x][from.y+1].contents) return false;
+					}
 					if(to.y==7) this.board.grid[from.x][from.y].contents=new ChessPiece("queen",this.board.grid[from.x][from.y].contents.color);
 					if(xgap==ygap && !to_tile.contents)
 					{
@@ -663,34 +669,27 @@ function GameSession(game)
 			else return false;
 		}
 
-		Log(from_tile.contents.color + " " + from_tile.contents.name + " moved from " + from.x + "," + from.y + " to " + to.x + "," + to.y);
-		to_tile.contents=from_tile.contents;
-		to_tile.contents.has_moved=true;
-		from_tile.contents=false;
+		this.board.Move(from,to);
 		return true;
 	}
 	this.Castle=function(from,to)
 	{
-		this.board.grid[to.x][to.y].contents=this.board.grid[from.x][from.y].contents;
-		this.board.grid[to.x][to.y].contents.has_moved=true;
-		this.board.grid[from.x][from.y].contents=false;
-
-		var xgap=Math.abs(from.x-to.x);
-		if(xgap==2) 
+		var rfrom;
+		var rto;
+		if(from.x-to.x==2) 
 		{	//QUEENSIDE
-			this.board.grid[to.x+1][to.y].contents=this.board.grid[to.x-2][to.y].contents;
-			this.board.grid[to.x+1][to.y].contents.has_moved=true;
-			this.board.grid[to.x-2][to.y].contents=false;
-			this.board.DrawTile(to.x-2,to.y);
+			var rfrom={'x':to.x-2,'y':to.y};
+			var rto={'x':to.x+1,'y':to.y};
+			
 		}
 		else 
 		{	//KINGSIDE
-			this.board.grid[to.x-1][to.y].contents=this.board.grid[to.x+1][to.y].contents;
-			this.board.grid[to.x-1][to.y].contents.has_moved=true;
-			this.board.grid[to.x+1][to.y].contents=false;
-			this.board.DrawTile(to.x-1,to.y);
+			var rfrom={'x':to.x+1,'y':to.y};
+			var rto={'x':to.x-1,'y':to.y};
 		}
-		this.board.DrawTile(to.x+1,to.y);
+		var move=new ChessMove(rfrom,rto);
+		this.board.Move(rfrom,rto);
+		this.Send(move,"castle");
 	}
 	this.FindCheckMate=function(checkers)
 	{
@@ -856,8 +855,8 @@ function ChessGame(gamefile)
 		if(this.timed) gFile.iniSetValue(null,"timed",this.timed);
 		if(this.board.lastmove) 
 		{
-			gFile.iniSetValue("lastmove","from",this.GetPosition(this.board.lastmove.from));
-			gFile.iniSetValue("lastmove","to",this.GetPosition(this.board.lastmove.to));
+			gFile.iniSetValue("lastmove","from",GetChessPosition(this.board.lastmove.from));
+			gFile.iniSetValue("lastmove","to",GetChessPosition(this.board.lastmove.to));
 		}
 		for(x in this.board.grid)
 		{
@@ -866,7 +865,7 @@ function ChessGame(gamefile)
 				var contents=this.board.grid[x][y].contents;
 				if(contents)
 				{
-					var position=this.GetPosition({'x':x,'y':y});
+					var position=GetChessPosition({'x':x,'y':y});
 					var section="board."+position;
 					gFile.iniSetValue(section,"piece",contents.name);
 					gFile.iniSetValue(section,"color",contents.color);
@@ -875,27 +874,12 @@ function ChessGame(gamefile)
 			}
 			for(move in this.movelist)
 			{
-				gFile.iniSetValue("move." + move,"from",this.GetPosition(this.movelist[move].from));
-				gFile.iniSetValue("move." + move,"to",this.GetPosition(this.movelist[move].to));
+				gFile.iniSetValue("move." + move,"from",GetChessPosition(this.movelist[move].from));
+				gFile.iniSetValue("move." + move,"to",GetChessPosition(this.movelist[move].to));
 				if(this.movelist[move].check) gFile.iniSetValue("move." + move,"check",this.movelist[move].check);
 			}
 		}
 		this.gamefile.close();
-	}
-	this.GetPosition=function(position)
-	{
-		var letters="abcdefgh";
-		if(typeof position=="string")
-		{
-			//CONVERT BOARD POSITION IDENTIFIER TO XY COORDINATES
-			var position={x:letters.indexOf(position.charAt(0)),y:8-(parseInt(position.charAt(1)))};
-			return(position);
-		}
-		else if(typeof position=="object")
-		{
-			//CONVERT XY COORDINATES TO STANDARD CHESS BOARD FORMAT
-			return(letters.charAt(position.x)+(8-position.y));
-		}
 	}
 	this.LoadGameTable=function()
 	{
@@ -937,14 +921,14 @@ function ChessGame(gamefile)
 		var lastmove=gFile.iniGetObject("lastmove");
 		if(lastmove.from)
 		{
-			this.board.lastmove=new ChessMove(this.GetPosition(lastmove.from),this.GetPosition(lastmove.to));
+			this.board.lastmove=new ChessMove(GetChessPosition(lastmove.from),GetChessPosition(lastmove.to));
 		}
 		
 		//LOAD PIECES
 		var pieces=gFile.iniGetAllObjects("position","board.");
 		for(p in pieces)
 		{
-			var pos=this.GetPosition(pieces[p].position);
+			var pos=GetChessPosition(pieces[p].position);
 			var name=pieces[p].piece;
 			var color=pieces[p].color;
 			
@@ -956,8 +940,8 @@ function ChessGame(gamefile)
 		var moves=gFile.iniGetAllObjects("number","move.");
 		for(move in moves)
 		{
-			var from=this.GetPosition(moves[move].from);
-			var to=this.GetPosition(moves[move].to);
+			var from=GetChessPosition(moves[move].from);
+			var to=GetChessPosition(moves[move].to);
 			var check=moves[move].check;
 			this.movelist.push(new ChessMove(from,to,check));
 		}
@@ -1089,9 +1073,15 @@ function ChessBoard()
 		}
 		this.DrawLastMove();
 	}
-	this.DrawMove=function(from,to)
+	this.Move=function(from,to)
 	{
 		this.ClearLastMove();
+		var from_tile=this.grid[from.x][from.y];
+		var to_tile=this.grid[to.x][to.y];
+		Log(from_tile.contents.color + " " + from_tile.contents.name + " moved from " + from.x + "," + from.y + " to " + to.x + "," + to.y);
+		to_tile.contents=from_tile.contents;
+		to_tile.contents.has_moved=true;
+		from_tile.contents=false;
 		this.DrawTile(from.x,from.y,true);
 		this.DrawTile(to.x,to.y,true);
 		this.lastmove=new ChessMove(from,to);
@@ -1188,5 +1178,20 @@ function ChessTile(color,x,y)
 		console.gotoxy(x+4,y+2);
 		console.putmsg("\1r\1h" + this.bg + "\xD9");
 		console.gotoxy(79,1);
+	}
+}
+function GetChessPosition(position)
+{
+	var letters="abcdefgh";
+	if(typeof position=="string")
+	{
+		//CONVERT BOARD POSITION IDENTIFIER TO XY COORDINATES
+		var position={x:letters.indexOf(position.charAt(0)),y:8-(parseInt(position.charAt(1)))};
+		return(position);
+	}
+	else if(typeof position=="object")
+	{
+		//CONVERT XY COORDINATES TO STANDARD CHESS BOARD FORMAT
+		return(letters.charAt(position.x)+(8-position.y));
 	}
 }
