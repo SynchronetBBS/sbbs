@@ -1,42 +1,11 @@
-function 	Menu(title,x,y,color,hkey_color)		
-{								//MENU CLASSES
-	this.title=title;
-	//this.disabled=[];
-	//this.disabled_color="\1k\1h";
+function 	Menu(x,y,color,hkey_color)		
+{								
 	this.items=[];
-	var orig_x=x;
-	var orig_y=y;
+	this.color=color;
+	this.hkey_color=hkey_color;
+	this.x=x;
+	this.y=y;
 
-	this.showline=function()
-	{
-		var yyyy=orig_y;
-		console.gotoxy(xxxx,yyyy); yyyy++;
-		console.cleartoeol();
-		DrawLine("\1w\1h",79); console.crlf();
-	}
-	this.display=function()
-	{
-		var yyyy=orig_y;
-	
-		var clear=5;
-		var cleared=0;
-		for(i in this.items)
-		{
-			if(this.items[i].enabled)
-			{
-				console.gotoxy(orig_x,yyyy); yyyy++;
-				console.putmsg(this.items[i].text);
-				console.cleartoeol();
-				cleared++;
-			}
-		}
-		for(i=cleared;i<clear;i++)
-		{
-			console.gotoxy(orig_x,yyyy); yyyy++;
-			console.cleartoeol();
-
-		}
-	}
 	this.disable=function(items)
 	{
 		for(item in items)
@@ -51,18 +20,18 @@ function 	Menu(title,x,y,color,hkey_color)
 			this.items[items[item]].enabled=true;
 		}
 	}
+	this.getHotKey=function(item)
+	{
+		var keyindex=item.indexOf("~")+1;
+		return(item.charAt(keyindex));
+	}	
 	this.add=function(items)
 	{
 		for(i=0;i<items.length;i++)
 		{
-			hotkey=this.getHotKey(items[i]);
-			this.items[hotkey.toUpperCase()]=new MenuItem(items[i],hotkey,color,hkey_color);
-			this.items[hotkey.toUpperCase()].Init(color,hkey_color);
+			var hotkey=this.getHotKey(items[i]);
+			this.items[hotkey.toUpperCase()]=new MenuItem(items[i],this.color,hotkey,this.hkey_color);
 		}
-	}
-	this.displayTitle=function()
-	{
-		printf("\1h\1w" + this.title);
 	}
 	this.countEnabled=function()
 	{
@@ -73,34 +42,42 @@ function 	Menu(title,x,y,color,hkey_color)
 		}
 		return items;
 	}
-	this.getHotKey=function(item)
+	this.displayItems=function()
 	{
-		keyindex=item.indexOf("~")+1;
-		return item.charAt(keyindex);
-	}	
+		var enabled=this.countEnabled();
+		if(!enabled.length) return false;
+		console.gotoxy(this.x,this.y);
+		for(e=0;e<enabled.length;e++)
+		{
+			console.putmsg(this.items[enabled[e]].text);
+			if(e<enabled.length-1) write(console.ansi(ANSI_NORMAL) + " ");
+		}
+	}
 	this.displayHorizontal=function()
 	{
 		var enabled=this.countEnabled();
 		if(!enabled.length) return false;
-		ClearLine(1,48);
-		console.gotoxy(orig_x,orig_y);
+		console.gotoxy(this.x,this.y);
+		console.putmsg(this.color + "[");
 		for(e=0;e<enabled.length;e++)
 		{
-			console.putmsg(this.items[enabled[e]].text);
-			if(e<enabled.length-1) write(" ");
+			console.putmsg(this.hkey_color + this.items[enabled[e]].hotkey.toUpperCase());
+			if(e<enabled.length-1) console.putmsg(this.color + ",");
 		}
+		console.putmsg(this.color + "]");
 	}
 }
-function 	MenuItem(item,hotkey,color,hkey_color)
-{								//MENU ITEM OBJECT
+function 	MenuItem(item,color,hotkey,hkey_color)
+{							
+	this.item=item;
 	this.displayColor=color;
 	this.keyColor=hkey_color;
-	this.item=item;
+	this.hotkey=hotkey;
 	this.enabled=true;
 	
-	this.hotkey=hotkey;
-	this.Init=function(color,hkey_color)
+	this.Init=function()
 	{
-		this.text=this.item.replace(("~" + hotkey) , (hkey_color + hotkey + color));
+		this.text=this.item.replace(("~" + this.hotkey) , (this.keyColor + this.hotkey + this.displayColor));
 	}
+	this.Init();
 }
