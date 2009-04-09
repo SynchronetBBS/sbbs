@@ -28,16 +28,15 @@ function ChessLobby()
 {
 	this.table_graphic=new Graphic(8,4);
 	this.table_graphic.load(chessroot+"chessbrd.bin");
-	this.lobby_graphic=new Graphic(40,24);
+	this.lobby_graphic=new Graphic(80,24);
 	this.lobby_graphic.load(chessroot+"lobby.bin");
 	this.clearinput=true;
 	this.table_markers=[];
-	this.scrollBar=new Scrollbar(1,1,1,24,"\1y");
-	this.list_index=0;
+	this.scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
+	this.scroll_index=0;
 	this.tables;
 	this.table_index;
 
-/**	GAME INITIALIZATION FUNCTIONS	**/
 	this.SplashStart=function()
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
@@ -69,19 +68,19 @@ function ChessLobby()
 	}
 	this.Init=function()
 	{
-		var rows=21;
-		var columns=37;
-		var posx=42;
-		var posy=2;
-		var input_line={x:42,y:23,columns:37};
-		chesschat.Init("Chess Lobby",input_line,columns,rows,posx,posy,true);
+		var rows=19;
+		var columns=40;
+		var posx=40;
+		var posy=3;
+		var input_line={x:40,y:23,columns:40};
+		chesschat.Init("Chess Lobby",input_line,columns,rows,posx,posy,false,"\1y");
 		this.Redraw();
 	}
 	this.ProcessGraphic=function()
 	{
-		for(posy=0;posy<24;posy++)
+		for(posx=0;posx<this.lobby_graphic.data.length;posx++) 
 		{
-			for(posx=0;posx<this.lobby_graphic.data.length;posx++) 
+			for(posy=0;posy<this.lobby_graphic.data[posx].length;posy++)
 			{
 				var position={"x" : posx+1, "y" : posy+1};
 				if(this.lobby_graphic.data[posx][posy].ch=="@") 
@@ -98,6 +97,7 @@ function ChessLobby()
 	}
 	this.LoadTables=function()
 	{
+		Log("Loading Games");
 		var game_files=directory(chessroot+"*.chs");
 		this.tables=[];
 		this.table_index=[];
@@ -110,14 +110,16 @@ function ChessLobby()
 	}
 	this.DrawTables=function()
 	{
-		if(this.tables.length>4) this.scrollBar.draw(this.list_index,this.tables.length);
-		var index=this.list_index;
+		var range=(this.tables.length%2==1?this.tables.length+1:this.tables.length);
+		if(this.tables.length>4) this.scrollBar.draw(this.scroll_index,range);
+		var index=this.scroll_index;
 		for(i in this.table_markers)
 		{
+			var posx=this.table_markers[i].x;
+			var posy=this.table_markers[i].y;
+			ClearBlock(posx,posy,18,10);
 			if(this.tables[index])
 			{
-				posx=this.table_markers[i].x;
-				posy=this.table_markers[i].y;
 				
 				var tab=this.tables[index];
 				console.gotoxy(posx+9,posy);
@@ -130,9 +132,9 @@ function ChessLobby()
 				this.FormatStats(tab.players["white"].player,posx,posy+5,"white");
 				this.FormatStats(tab.players["black"].player,posx,posy+7,"black");
 				this.table_graphic.draw(posx,posy);
+				write(console.ansi(ANSI_NORMAL));
 				index++;
 			}
-			else break;
 		}
 	}
 	this.FormatStats=function(player,x,y,color)
@@ -157,9 +159,17 @@ function ChessLobby()
 		this.lobby_graphic.draw();
 		this.DrawTables();
 	}
+	this.Redraw=function()
+	{
+		write(console.ansi(ANSI_NORMAL));
+		console.clear();
+		this.LoadTables();
+		this.DrawLobby();
+		chesschat.Redraw();
+	}
 
 
-/**	MAIN FUNCTIONS	**/
+/*	MAIN FUNCTIONS	*/
 	this.Main=function()
 	{
 		while(1)
@@ -168,6 +178,7 @@ function ChessLobby()
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
 			{
+				var range=(this.tables.length%2==1?this.tables.length+1:this.tables.length);
 				if(this.clearinput) 
 				{
 					chesschat.ClearInputLine();
@@ -175,29 +186,50 @@ function ChessLobby()
 				} 
 				switch(k.toUpperCase())
 				{
-					case KEY_UP:
-						if(this.list_index>0) this.list_index-=2;
+					case KEY_LEFT:
+						if(this.scroll_index>0 && this.tables.length>4) this.scroll_index-=2;
 						break;
-					case KEY_DOWN:
-						if(this.list_index<this.tables.length) this.list_index+=2;
+					case KEY_RIGHT:
+						if((this.scroll_index+1)<=range && this.tables.length>4) this.scroll_index+=2;
 						break;
 					case "/":
-						this.LobbyMenu();
+						if(!chesschat.buffer.length) this.LobbyMenu();
 						break;
 					case "\x1b":	
 						this.SplashExit();
 						break;
 					case "?":
-						this.Help();
+						if(!chesschat.buffer.length) this.Help();
 						break;
-					default:
-						if(Chat(chesschat,k)) break; 
-						else this.SplashExit();
 				}
+				Chat(k,chesschat);
 				this.LoadTables();
-				this.DrawLobby();
+				this.DrawTables();
 			}
 		}
+	}
+	this.LobbyMenu=function()
+	{
+		chesschat.Alert("\1c\1hS\1nelect Game Re\1c\1hd\1nraw \1c\1hN\1new Game \1c\1hR\1nankings");
+		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO);
+		switch(k.toUpperCase())
+		{
+			case "N":
+				this.StartNewGame();
+				break;
+			case "R":
+				this.ShowRankings();
+				break;
+			case "D":
+				this.Redraw();
+				break;
+			case "S":
+				if(this.SelectGame()) this.Init();
+				break;
+			default:
+				break;
+		}
+		chesschat.ClearInputLine();
 	}
 	this.Help=function()
 	{
@@ -217,14 +249,6 @@ function ChessLobby()
 			return true;
 		}
 		else return false;
-	}
-	this.Redraw=function()
-	{
-		write(console.ansi(ANSI_NORMAL));
-		console.clear();
-		this.LoadTables();
-		this.DrawLobby();
-		chesschat.Redraw();
 	}
 	this.StartNewGame=function()
 	{
@@ -277,29 +301,6 @@ function ChessLobby()
 		}
 		chesschat.Alert("\1g\1hGame #" + parseInt(newgame.gamenumber,10) + " created");
 		newgame.StoreGame();
-	}
-	this.LobbyMenu=function()
-	{
-		chesschat.Alert("\1c\1hS\1nelect Game Re\1c\1hd\1nraw \1c\1hN\1new Game \1c\1hR\1nankings");
-		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO);
-		switch(k.toUpperCase())
-		{
-			case "N":
-				this.StartNewGame();
-				break;
-			case "R":
-				this.ShowRankings();
-				break;
-			case "D":
-				this.Redraw();
-				break;
-			case "S":
-				if(this.SelectGame()) this.Init();
-				break;
-			default:
-				break;
-		}
-		chesschat.ClearInputLine();
 	}
 
 	this.SplashStart();

@@ -5,6 +5,14 @@ function GameSession(game)
 	this.board;
 	this.queue;
 	
+/*	
+	CHAT ENGINE DEPENDENT FUNCTIONS
+	
+	some of these functions are redundant
+	so as to make modification of the 
+	method of data transfer between nodes/systems
+	simpler
+*/
 	this.Init=function()
 	{
 		//LOAD GAME DATA
@@ -28,38 +36,32 @@ function GameSession(game)
 			this.Cycle();
 			/*
 			if(this.InCheck(this.king)) {
-				chesschat.Alert("\1r\1hYou are in check!");
+				this.Alert("\1r\1hYou are in check!");
 				chesschat.ClearLine();
 			}
 			var checkers=this.InCheck(this.king);
 			if(checkers) {
 				if(this.FindCheckMate(checkers)) {
-					chesschat.Alert("\1r\1hCheckmate! You lose!");
+					this.Alert("\1r\1hCheckmate! You lose!");
 					return true;
 				}
 			}
 			*/
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
-			switch(k)
 			{
-				case KEY_UP:
-				case KEY_DOWN:
-				case KEY_LEFT:
-				case KEY_RIGHT:
-					this.Move();
-					break;
-				case "/":
-					this.ChessMenu();
-					break;
-				case "\x1b":	
-					return;
-				case "?":
-					this.Help();
-					break;
-				default:
-					Chat(chesschat,k);
-					break;
+				switch(k)
+				{
+					case "/":
+						if(!chesschat.buffer.length) this.ChessMenu();
+						break;
+					case "\x1b":	
+						return;
+					case "?":
+						if(!chesschat.buffer.length) this.Help();
+						break;
+				}
+				Chat(k,chesschat);
 			}
 		}
 	}
@@ -69,21 +71,23 @@ function GameSession(game)
 		var y=chesschat.input_line.y;
 		
 		var cmenu=new Menu(		""								,x,y,"\1n","\1c\1h");
-		var cmenu_items=[		"~Sit "							, 
-								"~Resign "						,
-								"Re~match "						,
-								"~Game Info "					,
-								"Move ~List "					,
+		var cmenu_items=[		"~Sit"							, 
+								"~Resign"						,
+								"~New Game"						,
+								"~Game Info"					,
+								"~Move"							,
+								"Move ~List"					,
 								"Re~draw"						];
 		cmenu.add(cmenu_items);
 		if(this.game.started || this.game.currentplayer) cmenu.disable(["S"]);
 		if(!this.game.started || !this.game.currentplayer) cmenu.disable(["R"]);
-		if(!this.game.finished || !this.game.currentplayer) cmenu.disable(["M"]);
+		if(!this.game.finished || !this.game.currentplayer) cmenu.disable(["N"]);
+		if(!this.game.started || this.game.turn!=this.game.currentplayer || this.game.finished) cmenu.disable(["M"]);
 		if(!this.game.movelist.length) cmenu.disable(["L"]);
 		cmenu.displayHorizontal();
 
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		chesschat.ClearInputLine();
+		this.ClearAlert();
 		if(cmenu.items[k] && cmenu.items[k].enabled)
 		switch(k)
 		{
@@ -102,10 +106,14 @@ function GameSession(game)
 			case "G":
 				this.GameInfo();
 				break;
+			case "M":
+				this.board.ClearLastMove();
+				this.Move();
+				break;
 			case "L":
 				this.ListMoves();
 				break;
-			case "M":
+			case "N":
 				this.Rematch();
 				break;
 			default:
@@ -114,8 +122,14 @@ function GameSession(game)
 		else Log("Invalid or Disabled key pressed: " + k);
 		delete cmenu;
 	}
-
-/**	GAMEPLAY FUNCTIONS	*/
+	this.ClearAlert=function()
+	{
+		chesschat.ClearInputLine();
+	}
+	this.Alert=function(msg)
+	{
+		chesschat.Alert(msg);
+	}
 	this.Cycle=function()
 	{
 		chesschat.Cycle();
@@ -129,6 +143,20 @@ function GameSession(game)
 			this.game.NextTurn();
 		}
 	}
+	this.Redraw=function()
+	{
+		console.clear();
+		this.board.DrawBoard();
+		write(console.ansi(ANSI_NORMAL));
+		chesschat.Redraw();
+	}
+	this.Send=function(data,name)
+	{
+		this.queue.SendData(data,name);
+	}
+	
+	
+/*	GAMEPLAY FUNCTIONS	*/
 	this.Rematch=function()
 	{
 	}
@@ -185,38 +213,71 @@ function GameSession(game)
 		
 		return newrating;
 	}
-	this.Redraw=function()
-	{
-		console.clear();
-		this.board.DrawBoard();
-		chesschat.Redraw();
-	}
 	this.Move=function()
 	{
-		if(!this.game.started || !this.game.currentplayer || this.game.turn!=this.game.currentplayer) return false;
-		var from=this.SelectTile();
-		if(!from || !this.board.grid[from.x][from.y].contents) return false;
-		var to=this.SelectTile(from);
+		var from;
+		var to;
+		var placeholder;
+		var unselect;
 		
-		if(!to) return false;
-		else {
-			var temp_from=this.board.grid[from.x][from.y].contents;
-			var temp_to=this.board.grid[to.x][to.y].contents;
-			if(!this.CheckRules(from,to)) return false;
-			if(this.InCheck(this.game.players[this.game.currentplayer].king)) 
+		while(1)
+		{
+			unselect=false;
+			while(1)
 			{
-				chesschat.Alert("\1r\1hIllegal Move");
-				this.board.grid[from.x][from.y].contents=temp_from;
-				this.board.grid[to.x][to.y].contents=temp_to;
-				return false;
+				from=this.SelectTile(false,from);
+				if(from==false) return false;
+				else if(	this.board.grid[from.x][from.y].contents && 
+							this.board.grid[from.x][from.y].contents.color == this.game.turn) 
+					break;
+				else 
+				{
+					this.Alert("\1r\1hInvalid Selection");
+				}
 			}
+			placeholder=from;
+			while(1)
+			{
+				to=this.SelectTile(from,placeholder);
+				if(to==false) return false;
+				else if(from.x==to.x && from.y==to.y) 
+				{
+					unselect=true;
+					break;
+				}
+				else if(!this.board.grid[to.x][to.y].contents || 
+						this.board.grid[to.x][to.y].contents.color != this.game.turn)
+				{
+					if(!this.CheckMove(from,to)) 
+					{
+						placeholder=to;
+						this.Alert("\1r\1hIllegal Move");
+					}
+					else break;
+				}
+				else 
+				{
+					placeholder=to;
+					this.Alert("\1r\1hInvalid Selection");
+				}
+			}
+			if(!unselect) break;
+		}
+		var temp_from=this.board.grid[from.x][from.y].contents;
+		var temp_to=this.board.grid[to.x][to.y].contents;
+		
+		if(this.InCheck(this.game.players[this.game.currentplayer].king)) 
+		{
+			this.board.grid[from.x][from.y].contents=temp_from;
+			this.board.grid[to.x][to.y].contents=temp_to;
+			return false;
 		}
 		this.board.DrawMove(from,to);
 		var move=new ChessMove(from,to);
 		this.game.movelist.push(move);
 		this.game.NextTurn();
 		this.game.StoreGame();
-		this.queue.SendData(move,"move");
+		this.Send(move,"move");
 		return true;
 	}
 	this.GetCastle=function(from,to)
@@ -243,91 +304,92 @@ function GameSession(game)
 		this.board.grid[from.x][from.y].contents=false;
 		this.board.DrawMove(from,to);
 		if(this.InCheck(this.game.players[this.game.currentplayer].king)) {
-			chesschat.Alert("\1r\1hYou are in check!");
+			this.Alert("\1r\1hYou are in check!");
 		}
 	}
-	this.SelectTile=function(start)
+	this.SelectTile=function(start,placeholder)
 	{
-		if(this.board.side=="white")
-		{
-			selected=(start?{"x":start.x, "y":start.y}:{"x":0,"y":7});
-			while(1)
-			{
-				if(start) this.board.DrawTile(start.x,start.y,true);
-				var key=console.getkey((K_NOECHO,K_NOCRLF,K_UPPER));
-				if(key=="\r") return selected;
-				switch(key)
-				{
-					case KEY_DOWN:
-					case "2":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.y==7) selected.y=0;
-						else selected.y++;
-						break;
-					case KEY_UP:
-					case "8":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.y==0) selected.y=7;
-						else selected.y--;
-						break;
-					case KEY_LEFT:
-					case "4":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==0) selected.x=7;
-						else selected.x--;
-						break;
-					case KEY_RIGHT:
-					case "6":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==7) selected.x=0;
-						else selected.x++;
-						break;
-					case "7":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==0) selected.x=7;
-						else selected.x--;
-						if(selected.y==0) selected.y=7;
-						else selected.y--;
-						break;
-					case "9":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==7) selected.x=0;
-						else selected.x++;
-						if(selected.y==0) selected.y=7;
-						else selected.y--;
-						break;
-					case "1":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==0) selected.x=7;
-						else selected.x--;
-						if(selected.y==7) selected.y=0;
-						else selected.y++;
-						break;
-					case "3":
-						this.board.DrawTile(selected.x,selected.y);
-						if(selected.x==7) selected.x=0;
-						else selected.x++;
-						if(selected.y==7) selected.y=0;
-						else selected.y++;
-						break;
-					case "\x1B":
-						if(start) this.board.DrawTile(start.x,start.y);
-						this.board.DrawTile(selected.x,selected.y);
-						return false;
-					default:
-						continue;
-				}
-				this.board.DrawTile(selected.x,selected.y,true);
-			}
-		}
+		if(placeholder) selected={"x":placeholder.x, "y":placeholder.y};
+		else if(start) selected={"x":start.x, "y":start.y};
 		else
 		{
-			selected=(start?{"x":start.x, "y":start.y}:{"x":7,"y":0});
-			while(1)
+			if(this.board.side=="white") selected={"x":0,"y":7};
+			else selected={"x":7,"y":0};
+		}
+		while(1)
+		{
+			if(start) this.board.DrawTile(start.x,start.y,true);
+			this.board.DrawTile(selected.x,selected.y,true);
+			var key=console.getkey((K_NOECHO,K_NOCRLF,K_UPPER));
+			this.ClearAlert();
+			if(key=="\r") return selected;
+			if(this.board.side=="white")
 			{
-				if(start) this.board.DrawTile(start.x,start.y,true);
-				var key=console.getkey((K_NOECHO,K_NOCRLF,K_UPPER));
-				if(key=="\r") return selected;
+				switch(key)
+				{
+					case KEY_DOWN:
+					case "2":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.y==7) selected.y=0;
+						else selected.y++;
+						break;
+					case KEY_UP:
+					case "8":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.y==0) selected.y=7;
+						else selected.y--;
+						break;
+					case KEY_LEFT:
+					case "4":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==0) selected.x=7;
+						else selected.x--;
+						break;
+					case KEY_RIGHT:
+					case "6":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==7) selected.x=0;
+						else selected.x++;
+						break;
+					case "7":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==0) selected.x=7;
+						else selected.x--;
+						if(selected.y==0) selected.y=7;
+						else selected.y--;
+						break;
+					case "9":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==7) selected.x=0;
+						else selected.x++;
+						if(selected.y==0) selected.y=7;
+						else selected.y--;
+						break;
+					case "1":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==0) selected.x=7;
+						else selected.x--;
+						if(selected.y==7) selected.y=0;
+						else selected.y++;
+						break;
+					case "3":
+						this.board.DrawTile(selected.x,selected.y);
+						if(selected.x==7) selected.x=0;
+						else selected.x++;
+						if(selected.y==7) selected.y=0;
+						else selected.y++;
+						break;
+					case "\x1B":
+						if(start) this.board.DrawTile(start.x,start.y);
+						this.board.DrawTile(selected.x,selected.y);
+						return false;
+					default:
+						continue;
+				}
+				this.board.DrawTile(selected.x,selected.y,true);
+			}
+			else
+			{
 				switch(key)
 				{
 					case KEY_UP:
@@ -392,15 +454,12 @@ function GameSession(game)
 				this.board.DrawTile(selected.x,selected.y,true);
 			}
 		}
-		this.board.DrawTile(selected.x,selected.y,true);
 	}
-	this.CheckRules=function(from,to)
-	{	
-		var frompiece=this.board.grid[from.x][from.y].contents;
-		Log(frompiece.color + " " + frompiece.name + " moving from " + from.x + "," + from.y + " to " + to.x + "," + to.y);
+	this.CheckMove=function(from,to)
+	{
+	
 		var from_tile=this.board.grid[from.x][from.y];
 		var to_tile=this.board.grid[to.x][to.y];
-		
 		if(to.x==from.x && to.y==from.y) 
 		{
 			Log("Invalid Move: Target Position same as Source Position")
@@ -414,10 +473,23 @@ function GameSession(game)
 		//KING RULESET
 		if(from_tile.contents.name=="king") 
 		{
-			if(this.InCheck(to)) return false;
-			else if(Math.abs(from.x-to.x)==2 && !this.InCheck(from)) 
+			if(this.InCheck(to)) 
 			{
-				if(from_tile.contents.has_moved) return false;
+				Log("Invalid Move: Would cause check");
+				return false;
+			}
+			else if(Math.abs(from.x-to.x)==2) 
+			{
+				if(this.InCheck(from))
+				{
+					Log("Invalid Move: King is in check");
+					return false;
+				}
+				if(from_tile.contents.has_moved) 
+				{
+					Log("Invalid Move: King has already moved and cannot castle");
+					return false;
+				}
 				if(from.x > to.x) {
 					var x=from.x-1;
 					while(x>0) {
@@ -439,31 +511,16 @@ function GameSession(game)
 				this.Castle(from,to);
 			}
 			else {
-				if(Math.abs(from.x-to.x)>1) return false;
-				if(Math.abs(from.y-to.y)>1) return false;
+				if(Math.abs(from.x-to.x)>1 || Math.abs(to.x-to.y)>1) 
+				{
+					Log("Invalid Move: King can only move one space unless castling");
+					return false;
+				}
 			}
 			this.game.players[this.game.currentplayer].king=to;
 		}
-		else {
-			if(!this.CheckMove(from,to)) return false;
-			this.board.grid[to.x][to.y].contents=this.board.grid[from.x][from.y].contents;
-			this.board.grid[to.x][to.y].contents.has_moved=true;
-			this.board.grid[from.x][from.y].contents=false;
-		}
-		this.board.DrawTile(from.x,from.y);
-		this.board.DrawTile(to.x,to.y);
-		return true;
-	}
-	this.CheckMove=function(from,to)
-	{
-		var from_tile=this.board.grid[from.x][from.y];
-		var to_tile=this.board.grid[to.x][to.y];
-		
-		//NECESSARY FOR DETERMINING CHECK... SINCE KING IS NOT DEFINED IN THIS RULESET
-		if(to.x==from.x && to.y==from.y) return false;
-		
 		//PAWN RULESET
-		if(from_tile.contents.name=="pawn") 
+		else if(from_tile.contents.name=="pawn") 
 		{
 			var xgap=Math.abs(from.x-to.x);
 			var ygap=Math.abs(from.y-to.y);
@@ -605,6 +662,11 @@ function GameSession(game)
 			}
 			else return false;
 		}
+
+		Log(from_tile.contents.color + " " + from_tile.contents.name + " moved from " + from.x + "," + from.y + " to " + to.x + "," + to.y);
+		to_tile.contents=from_tile.contents;
+		to_tile.contents.has_moved=true;
+		from_tile.contents=false;
 		return true;
 	}
 	this.Castle=function(from,to)
@@ -864,7 +926,6 @@ function ChessGame(gamefile)
 		this.rated=gFile.iniGetValue(null,"rated");
 		this.timed=gFile.iniGetValue(null,"timed");
 		
-		Log("Loaded game: " + this.gamenumber);
 		gFile.close();
 	}
 	this.LoadGameData=function()
