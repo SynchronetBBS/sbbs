@@ -53,6 +53,20 @@ function 	Menu(x,y,color,hkey_color)
 			if(e<enabled.length-1) write(console.ansi(ANSI_NORMAL) + " ");
 		}
 	}
+	this.getList=function()
+	{
+		var list=[];
+		list.push(this.color + "\1hMenu Commands:");
+		var items=this.countEnabled();
+		for(item in items)
+		{
+			var cmd=this.items[items[item]];
+			var text=(cmd.displayColor + "[" + cmd.keyColor + cmd.hotkey.toUpperCase() + cmd.displayColor + "] ");
+			text+=cmd.item.replace(("~" + cmd.hotkey) , (cmd.hotkey));
+			list.push(text);
+		}
+		return list;
+	}
 	this.displayHorizontal=function()
 	{
 		var enabled=this.countEnabled();
@@ -69,7 +83,7 @@ function 	Menu(x,y,color,hkey_color)
 }
 function 	MenuItem(item,color,hotkey,hkey_color)
 {							
-	this.item=item;
+	this.item=color + item;
 	this.displayColor=color;
 	this.keyColor=hkey_color;
 	this.hotkey=hotkey;
