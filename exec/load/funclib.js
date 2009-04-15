@@ -72,6 +72,14 @@ function DrawLine(x,y,length,color)
 		console.putmsg((color?color:"\1k\1h") + "\xc4");
 	}
 }
+function ClearBlock(x,y,w,h)
+{
+	write(console.ansi(ANSI_NORMAL));
+	for(line=0;line<h;line++)
+	{
+		ClearLine(w,x,y+line);
+	}
+}
 function ClearLine(length,x,y)
 {
 	if(x && y) console.gotoxy(x,y);
