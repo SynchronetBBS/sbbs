@@ -31,12 +31,11 @@ function ChessLobby()
 	this.lobby_graphic=new Graphic(80,24);
 	this.lobby_graphic.load(chessroot+"lobby.bin");
 	this.clearinput=true;
-	this.table_markers=[];
 	this.scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
 	this.scroll_index=0;
 	this.last_table_number=0;
-	this.tables;
-	this.table_index;
+	this.table_markers=[];
+	this.tables=[];
 	this.menu;
 
 	this.SplashStart=function()
@@ -72,10 +71,10 @@ function ChessLobby()
 	this.InitChat=function()
 	{
 		var rows=19;
-		var columns=40;
-		var posx=40;
+		var columns=38;
+		var posx=42;
 		var posy=3;
-		var input_line={x:40,y:23,columns:40};
+		var input_line={x:42,y:23,columns:38};
 		chesschat.Init("Chess Lobby",input_line,columns,rows,posx,posy,false,"\1y");
 		this.Redraw();
 	}
@@ -114,50 +113,105 @@ function ChessLobby()
 		if(!this.tables.length) this.menu.disable(["S"]);
 		else this.menu.enable(["S"]);
 	}
+	this.GetTablePointers=function()
+	{
+		var pointers=[];
+		for(t in this.tables)
+		{
+			pointers.push(t);
+		}
+		return pointers;
+	}
 	this.UpdateTables=function()
 	{
-		//TODO: ?? MAYBE WRITE A MORE EFFICIENT WAY OF UPDATING THE LOBBY TABLE LIST?
-	}
-	this.LoadTables=function()
-	{
-		Log("Loading Games");
+		var update=false;
 		var game_files=directory(chessroot+"*.chs");
-		this.tables=[];
-		this.table_index=[];
 		for(i in game_files)
 		{
-			var table=new ChessGame(game_files[i]);
-			if(table.gamenumber>this.last_table_number) this.last_table_number=table.gamenumber;
-			this.table_index[table.gamenumber]=this.tables.length;
-			this.tables.push(table);
+			var filename=file_getname(game_files[i]);
+			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")));
+			if(this.tables[gamenumber]) 
+			{
+				var lastupdated=file_date(game_files[i]);
+				var lastloaded=this.tables[gamenumber].lastupdated;
+				if(lastupdated>lastloaded)
+				{
+					Log("Updating existing game: " +  game_files[i]);
+					this.LoadTable(game_files[i]);
+					update=true;
+				}
+			}
+			else 
+			{
+				Log("Loading new table: " + game_files[i]);
+				this.LoadTable(game_files[i]);
+				update=true;
+			}
 		}
+		for(t in this.tables)
+		{
+			var table=this.tables[t];
+			if(table && !file_exists(table.gamefile.name)) 
+			{
+				Log("Removing deleted game: " + table.gamefile.name);
+				delete this.tables[t];
+				update=true;
+			}
+		}
+		if(update) this.DrawTables();
+	}
+	this.LoadTable=function(gamefile,index)
+	{
+		var table=new ChessGame(gamefile);
+		if(table.gamenumber>this.last_table_number) this.last_table_number=table.gamenumber;
+		this.tables[table.gamenumber]=table;
 	}
 	this.DrawTables=function()
 	{
-		var range=(this.tables.length%2==1?this.tables.length+1:this.tables.length);
+		var pointers=this.GetTablePointers();
+		var range=(pointers.length%2==1?pointers.length+1:pointers.length);
 		if(this.tables.length>4) this.scrollBar.draw(this.scroll_index,range);
+
 		var index=this.scroll_index;
 		for(i in this.table_markers)
 		{
 			var posx=this.table_markers[i].x;
 			var posy=this.table_markers[i].y;
 			ClearBlock(posx,posy,18,10);
-			if(this.tables[index])
+			
+			var pointer=pointers[index];
+			if(this.tables[pointer])
 			{
-				var tab=this.tables[index];
+				var tab=this.tables[pointer];
 				console.gotoxy(posx+9,posy);
-				console.putmsg("\1n\1yTABLE:\1h" + tab.gamenumber);
-				console.gotoxy(posx+9,posy+2);
+				console.putmsg("\1n\1yTABLE: \1h" + tab.gamenumber);
+				console.gotoxy(posx+9,posy+1);
 				console.putmsg("\1n\1yRATED: \1h" + (tab.rated?"Y":"N"));
-				console.gotoxy(posx+9,posy+3);
+				console.gotoxy(posx+9,posy+2);
 				console.putmsg("\1n\1yTIMED: \1h" + (tab.timed?tab.timed:"N"));
+				if(tab.minrating)
+				{
+					console.gotoxy(posx+9,posy+3);
+					console.putmsg("\1n\1yMIN: \1h" + tab.minrating + "+");
+				}
+				if(tab.password)
+				{
+					console.gotoxy(posx,posy+4);
+					console.putmsg("\1r\1hPRIVATE");
+				}
 				
 				var turn=false;
+				var x=posx;
+				var y=posy+6;
 				if(tab.started && !tab.finished) turn=tab.turn;
-				chessplayers.FormatPlayer(tab.players["white"],posx,posy+5,"white",turn);
-				chessplayers.FormatStats(tab.players["white"],posx,posy+6);
-				chessplayers.FormatPlayer(tab.players["black"],posx,posy+7,"black",turn);
-				chessplayers.FormatStats(tab.players["black"],posx,posy+8);
+				for(player in tab.players)
+				{
+					console.gotoxy(x,y);
+					console.putmsg(PrintPadded(chessplayers.FormatPlayer(tab.players[player],player,turn),19));
+					console.gotoxy(x+1,y+1);
+					console.putmsg(chessplayers.FormatStats(tab.players[player]));
+					y+=2;
+				}
 				this.table_graphic.draw(posx,posy);
 				index++;
 			}
@@ -173,7 +227,6 @@ function ChessLobby()
 	{
 		write(console.ansi(ANSI_NORMAL));
 		console.clear();
-		this.LoadTables();
 		this.DrawLobby();
 		chesschat.Redraw();
 	}
@@ -184,6 +237,7 @@ function ChessLobby()
 	{
 		while(1)
 		{
+			this.UpdateTables();
 			chesschat.Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
@@ -197,10 +251,18 @@ function ChessLobby()
 				switch(k.toUpperCase())
 				{
 					case KEY_LEFT:
-						if(this.scroll_index>0 && this.tables.length>4) this.scroll_index-=2;
+						if(this.scroll_index>0 && this.tables.length>4) 
+						{
+							this.scroll_index-=2;
+							this.DrawTables();
+						}
 						break;
 					case KEY_RIGHT:
-						if((this.scroll_index+1)<=range && this.tables.length>4) this.scroll_index+=2;
+						if((this.scroll_index+1)<=range && this.tables.length>4) 
+						{
+							this.scroll_index+=2;
+							this.DrawTables();
+						}
 						break;
 					case "/":
 						if(!chesschat.buffer.length) 
@@ -219,8 +281,6 @@ function ChessLobby()
 						if(!Chat(k,chesschat)) return;
 						break;
 				}
-				this.LoadTables();
-				this.DrawTables();
 			}
 		}
 	}
@@ -263,10 +323,15 @@ function ChessLobby()
 	{
 		chesschat.Alert("\1nEnter Table \1h#: ");
 		var num=console.getkeys("\x1bQ\r",this.last_table_number);
-		var tnum=this.table_index[num];
-		if(this.tables[tnum])
+		if(this.tables[num])
 		{
-			var play=new GameSession(this.tables[tnum]);
+			if(this.tables[num].password)
+			{
+				chesschat.Alert("\1nPassword: ");
+				var password=console.getstr(25);
+				if(password!=this.tables[num].password) return false;
+			}
+			var play=new GameSession(this.tables[num]);
 			return true;
 		}
 		else return false;
@@ -289,12 +354,29 @@ function ChessLobby()
 				chesschat.Alert("\1r\1hGame Creation Aborted");
 				return;
 		}
+		chesschat.Alert("\1nMinimum rating? [\1hY\1n,\1hN\1n]: ");
+		var minrating=console.getkeys("\x1bYN");
+		switch(minrating)
+		{
+			case "Y":
+				var maxrating=chessplayers.GetPlayerRating(user.alias);
+				chesschat.Alert("\1nEnter minimum [" + maxrating + "]: ");
+				minrating=console.getkeys("\x1b",maxrating);
+				newgame.minrating=(minrating?minrating:false);
+				break;
+			case "N":
+				newgame.minrating=false;
+				break;
+			default:
+				chesschat.Alert("\1r\1hGame Creation Aborted");
+				return;
+		}
 		chesschat.Alert("\1nTimed game? [\1hY\1n,\1hN\1n]: ");
 		var timed=console.getkeys("\x1bYN");
 		switch(timed)
 		{
 			case "Y":
-				chesschat.Alert("\1nTimer length? [\1h1\1n-\1h20\1n]: ")
+				chesschat.Alert("\1nTimer length? [\1h1\1n-\1h20\1n]: ");
 				timed=console.getkeys("\x1b",20);
 				newgame.timed=(timed?timed:false);
 				break;
@@ -305,20 +387,54 @@ function ChessLobby()
 				chesschat.Alert("\1r\1hGame Creation Aborted");
 				return;
 		}
+		chesschat.Alert("\1nPrivate game? [\1hY\1n,\1hN\1n]: ");
+		var password=console.getkeys("\x1bYN");
+		switch(password)
+		{
+			case "Y":
+				chesschat.Alert("\1nPassword: ");
+				password=console.getstr(25);
+				if(password.length) newgame.password=password;
+				else 
+				{
+					chesschat.Alert("\1r\1hGame Creation Aborted");
+					return;
+				}
+				break;
+			case "N":
+				newgame.password=false;
+				break;
+			default:
+				chesschat.Alert("\1r\1hGame Creation Aborted");
+				return;
+		}
 		chesschat.Alert("\1g\1hGame #" + parseInt(newgame.gamenumber,10) + " created");
 		newgame.StoreGame();
 	}
-
 	this.SplashStart();
 	this.Main();
 	this.SplashExit();
 }
+function ChessPlayer(name)
+{
+	Log("Creating new player: " + name);
+	this.name=name;
+	this.rating=1200;
+	this.wins=0;
+	this.losses=0;
+	this.draws=0;
+}
 function PlayerList()
 {
-	this.suffix="@"+system.qwk_id; //BBS SUFFIX FOR INTERBBS PLAY?? WE'LL SEE
+	this.prefix=system.qwk_id + "."; //BBS prefix FOR INTERBBS PLAY?? WE'LL SEE
 	this.players=[];
 	this.current;
 	
+	this.GetPlayerRating=function(name)
+	{
+		var fullname=this.prefix + name;
+		return this.players[fullname].rating;
+	}
 	this.StorePlayer=function(id)
 	{
 		var player=this.players[id];
@@ -330,39 +446,31 @@ function PlayerList()
 		pFile.iniSetValue(id,"draws",player.draws);
 		pFile.close();
 	}
-	this.FormatStats=function(index,x,y)
+	this.FormatStats=function(index)
 	{
-		var player;
-		if(index) player=this.players[index.id];
-		if(!player) return;
-		else
-		{
-			console.gotoxy(x,y);
-			console.putmsg(	"\1y\1hR\1n\1y" +
-							PrintPadded(player.rating,4,"0","right") + " \1hW\1n\1y" +
-							PrintPadded(player.wins,3,"0","right") + "\1hL\1n\1y" +
-							PrintPadded(player.losses,3,"0","right") + "\1hS\1n\1y" +
-							PrintPadded(player.draws,3,"0","right"));
-		}
+		if(!index.id) return("");
+		var player=this.players[index.id];
+		return(	"\1n\1yR\1h" +
+						PrintPadded(player.rating,4,"0","right") + "\1n\1yW\1h" +
+						PrintPadded(player.wins,3,"0","right") + "\1n\1yL\1h" +
+						PrintPadded(player.losses,3,"0","right") + "\1n\1yS\1h" +
+						PrintPadded(player.draws,3,"0","right"));
 	}
-	this.FormatPlayer=function(index,x,y,color,turn)
+	this.FormatPlayer=function(index,color,turn)
 	{
-		var player;
-		if(index) player=this.players[index.id];
-		var col=(color==turn?"\1r\1h>":" ") + (color=="white"?"\1n\1h":"\1k\1h");
-		console.gotoxy(x,y);
-		
-		if(!player) console.putmsg(col+"[Empty Seat]");
-		else console.putmsg(col + player.name);
+		var name=(index.id?this.players[index.id].name:"Empty Seat");
+		var col=(color=="white"?"\1n\1h":"\1k\1h");
+		var highlight=(color==turn?"\1r\1h":col);
+		return (highlight + "[" + col + name + highlight + "]");
 	}
 	this.LoadPlayers=function()
 	{
 		var pFile=new File(chessroot + "players.dat");
 		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
 		
-		if(!pFile.iniGetValue(user.alias  + this.suffix,"name"))
+		if(!pFile.iniGetValue(this.prefix + user.alias,"name"))
 		{
-			pFile.iniSetObject(user.alias  + this.suffix,new Player(user.alias));
+			pFile.iniSetObject(this.prefix + user.alias,new ChessPlayer(user.alias));
 		}
 		var players=pFile.iniGetSections();
 		for(player in players)
@@ -374,17 +482,7 @@ function PlayerList()
 	}
 	this.GetFullName=function(name)
 	{
-		return(name + this.suffix);
-	}
-
-	function Player(name)
-	{
-		Log("Creating new player: " + name);
-		this.name=name;
-		this.rating=1200;
-		this.wins=0;
-		this.losses=0;
-		this.draws=0;
+		return(this.prefix + name);
 	}
 	this.LoadPlayers();
 }
