@@ -70,6 +70,7 @@ function ChatEngine(root,name,logger,queue)
 	this.scrollbar;
 	this.local_color=	"\1n\1g";
 	this.remote_color=	"\1n\1c";
+	this.notice_color=	"\1n\1r";
 	this.messages=		[];
 	this.history=		[];
 	this.history_index=	0;
@@ -117,6 +118,10 @@ function ChatEngine(root,name,logger,queue)
 		this.Receive();
 		this.GetNotices();
 	}
+	this.FindUser=function(id)
+	{
+		return this.queue.FindUser(id);
+	}
 	this.ClearChatWindow=function() //CLEARS THE ENTIRE CHAT WINDOW
 	{
 		ClearBlock(this.x,this.y,this.columns,this.rows);
@@ -128,12 +133,10 @@ function ChatEngine(root,name,logger,queue)
 		for(line in array)
 		{
 			var newlines=this.Concat(array[line]);
-			if(!newlines) newarray.push(array[line]);
-			else
-				for(newline in newlines)
-				{
-					newarray.push(newlines[newline]);
-				}
+			for(newline in newlines)
+			{
+				newarray.push(newlines[newline]);
+			}
 		}
 		for(item=0;item<newarray.length;item++)
 		{
@@ -359,21 +362,20 @@ function ChatEngine(root,name,logger,queue)
 	{
 		for(notice in this.queue.notices)
 		{
-			this.Display(this.queue.notices[notice]);
+			this.Display(this.queue.notices[notice],this.notice_color);
 		}
 		this.queue.notices=[];
 	}
 	this.Display=function(text,color,user_)
 	{
-		write(console.ansi(ANSI_NORMAL));
-		color=color?color:"\1r\1h";
+		var col=color?color:"\1n\1r";
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
 		if(this.fullscreen)	
 		{
 			if(!text) return;
-			if(user_) console.putmsg(color + user_ + ": " + text + "\r\n",P_SAVEATR);
-			else console.putmsg(color + text + "\r\n",P_SAVEATR);
-			if(this.buffer.length) console.putmsg(this.local_color+this.buffer);
+			if(user_) console.putmsg(col + user_ + ": " + text + "\r\n",P_SAVEATR);
+			else console.putmsg(col + text + "\r\n",P_SAVEATR);
+			if(this.buffer.length) console.putmsg(this.local_color+this.buffer,P_SAVEATR);
 		}
 		else
 		{
@@ -381,8 +383,11 @@ function ChatEngine(root,name,logger,queue)
 			if(text)
 			{
 				var array;
-				if(user_) array=this.Concat(color + user_+ "\1h: \1n" + color + text);
-				else array=this.Concat(color + text);
+				if(user_) 
+				{
+					array=this.Concat(col + user_+ "\1h: \1n" + col + text);
+				}
+				else array=this.Concat(col + text);
 				for(item in array) this.messages.push(array[item]);
 				while(this.messages.length>this.rows)
 					this.history.push(this.messages.shift());
@@ -406,13 +411,15 @@ function ChatEngine(root,name,logger,queue)
 	}
 	this.Concat=function(text) //WRAP AND CONCATENATE NEW MESSAGE DATA
 	{
-		var str=strip_ctrl(text);
-		if(text.length<=this.columns) return false;
 		var newarray=[];
-		var array=word_wrap(text,this.columns,text.length,false);
-		array=array.split(/[\r\n$]+/);
-		for(item in array)
-			if(array[item]!="") newarray.push(RemoveSpaces(array[item]));
+		if(console.strlen(text)<=this.columns) newarray.push(text);
+		else
+		{
+			var array=word_wrap(text,this.columns,text.length,false);
+			array=array.split(/[\r\n$]+/);
+			for(item in array)
+				if(array[item]!="") newarray.push(RemoveSpaces(array[item]));
+		}
 		return newarray;
 	}
 	this.Receive=function()
