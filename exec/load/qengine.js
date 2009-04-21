@@ -18,7 +18,7 @@ function DataQueue(root,name,log_)
 	this.queuelog=		(log_?log_:new Logger(this.root,this.name));
 
 	this.notices=[];
-	this.stream=	new Queue(this.name + "." + user.number);
+	this.stream=	new Queue(this.name + "." + user.alias);
 	this.user_file=	new File(this.root + "users.lst");
 	this.last_user_update=0;
 	this.users;
@@ -56,8 +56,23 @@ function DataQueue(root,name,log_)
 		for(user_ in this.users) 
 		{
 			this.users[user_].Send(data,ident);
-			this.log("sending data to user: " + this.users[user_].name);
+			this.log("sending: " + ident + " to user: " + this.users[user_].name);
 		}
+	}
+	this.FindUser=function(id)
+	{
+		this.user_file.open('r+');
+		var section_list=this.user_file.iniGetSections();
+		for(section in section_list)
+		{
+			var user_list=this.user_file.iniGetKeys(section_list[section]);
+			for(user_ in user_list)
+			{
+				this.log("found user: " + id + " in room: " + section_list[section]);
+				if(user_list[user_]==id) return section_list[section];
+			}
+		}
+		return false;
 	}
 	this.UpdateUsers=function()
 	{
@@ -67,23 +82,22 @@ function DataQueue(root,name,log_)
 		var user_list=this.user_file.iniGetKeys(this.thread);
 		for(user_ in user_list)
 		{
-			var user_name=user_list[user_];
-			var user_status=this.user_file.iniGetValue(this.thread,user_name);
-			var user_number=system.matchuser(user_name);
-
-			if(user_name!=user.alias && !this.users[user_name])
+			var user_fullname=user_list[user_];
+			var user_alias=user_fullname.substr(user_fullname.indexOf(".")+1);
+			var user_status=this.user_file.iniGetValue(this.thread,user_fullname);
+			if(user_alias!=user.alias && !this.users[user_fullname])
 			{
-				var user_queue=this.name+"."+user_number;
-				this.users[user_name]=new QueueUser(user_name,user_status,user_queue);
-				this.notices.push("\1r\1h" + user_name + " is here.");
-				this.log("loaded new user: " + user_name);
+				var user_queue=this.name+"."+user_alias;
+				this.users[user_fullname]=new QueueUser(user_fullname,user_status,user_queue);
+				this.notices.push(user_alias + " is here.");
+				this.log("loaded new user: " + user_fullname);
 			}
 		}
 		for(user_ in this.users) 
 		{
 			if(!this.user_file.iniGetValue(this.thread,this.users[user_].name))
 			{
-				this.notices.push("\1r\1h" + this.users[user_].name + " has left.");
+				this.notices.push(this.users[user_].alias + " has left.");
 				this.log("removing absent user: " + this.users[user_].name);
 				delete this.users[user_];
 			}
@@ -119,6 +133,7 @@ function DataQueue(root,name,log_)
 function QueueUser(user_name,user_status,user_queue)
 {
 	this.name=user_name;
+	this.alias=this.name.substr(this.name.indexOf(".")+1);
 	this.status=user_status;
 	this.queue=new Queue(user_queue);
 	this.Send=function(data,ident)
