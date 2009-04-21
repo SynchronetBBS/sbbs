@@ -56,7 +56,12 @@ function PrintPadded(string,length,padding,justification)
 {
 	if(!padding) padding=" ";
 	if(!justification) justification="left";
-	var padlength=length-console.strlen(string);
+	var strlength=console.strlen(string);
+	if(strlength>length)
+	{
+		string=string.substring(0,length);
+	}
+	var padlength=length-strlength;
 	var newstring=string;
 	var padded="";
 	for(p=0;p<padlength;p++) padded+=padding;
