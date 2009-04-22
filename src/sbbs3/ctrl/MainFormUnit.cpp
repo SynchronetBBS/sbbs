@@ -2431,10 +2431,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ServiceStatusTimer->Enabled=true;
 
     TelnetForm->LogLevelUpDown->Position=bbs_startup.log_level;
+    TelnetForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
     FtpForm->LogLevelUpDown->Position=ftp_startup.log_level;
+    FtpForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
     MailForm->LogLevelUpDown->Position=mail_startup.log_level;
+    MailForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
     WebForm->LogLevelUpDown->Position=web_startup.log_level;
-    ServicesForm->LogLevelUpDown->Position=services_startup.log_level;            
+    WebForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
+    ServicesForm->LogLevelUpDown->Position=services_startup.log_level;
+    ServicesForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
 
     if(!Application->Active)	/* Starting up minimized? */
     	FormMinimize(Sender);   /* Put icon in systray */
