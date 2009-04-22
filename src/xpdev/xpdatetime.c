@@ -118,7 +118,7 @@ xpTimeZone_t xpTimeZone_local(void)
 #endif
 
 	/* Converts (_)timezone from seconds west of UTC to minutes east of UTC */
-	/* Adjust for DST, assuming adjustment is 60 seconds <sigh> */
+	/* Adjust for DST, assuming adjustment is always 60 minutes <sigh> */
 	return -((timezone/60) - (daylight*60));
 #endif
 }
