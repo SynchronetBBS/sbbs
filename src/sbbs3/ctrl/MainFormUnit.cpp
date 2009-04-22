@@ -3852,7 +3852,8 @@ void __fastcall TMainForm::SemFileTimerTick(TObject *Sender)
 //---------------------------------------------------------------------------
 TFont* __fastcall TMainForm::LogAttributes(int log_level, TColor Color, TFont* Font)
 {
-    if(log_level==LOG_INFO || LogFont[log_level]->Color==Color)
+    if(log_level==LOG_INFO || LogFont[log_level]->Color==Color
+        || log_level > LOG_DEBUG)
         return Font;
 
     return LogFont[log_level];
