@@ -99,6 +99,8 @@ typedef struct {
 #define MAX_FILES	  10000 /* Maximum number of files per dir			*/
 #define MAX_USERXFER	500 /* Maximum number of dest. users of usrxfer */
 
+#define MAX_TEXTDAT_ITEM_LEN	2000
+
 
 #define LEN_DIR		63		/* Maximum length of directory paths		*/
 #define LEN_CMD		63		/* Maximum length of command lines			*/

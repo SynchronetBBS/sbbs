@@ -538,7 +538,7 @@ public:
 	char	getkey(long mode); 		/* Waits for a key hit local or remote  */
 	long	getkeys(const char *str, ulong max);
 	void	ungetkey(char ch);		/* Places 'ch' into the input buffer    */
-	char	question[128];
+	char	question[MAX_TEXTDAT_ITEM_LEN+1];
 	bool	yesno(const char *str);
 	bool	noyes(const char *str);
 	void	pause(void);
