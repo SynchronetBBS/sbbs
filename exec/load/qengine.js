@@ -61,17 +61,23 @@ function DataQueue(root,name,log_)
 	}
 	this.FindUser=function(id)
 	{
-		this.user_file.open('r+');
+		var exclusive;
+		if(!this.user_file.is_open) 
+		{
+			exclusive=true;
+			this.user_file.open('r+');
+		}
 		var section_list=this.user_file.iniGetSections();
 		for(section in section_list)
 		{
 			var user_list=this.user_file.iniGetKeys(section_list[section]);
-			for(user_ in user_list)
+			for(u in user_list)
 			{
 				this.log("found user: " + id + " in room: " + section_list[section]);
-				if(user_list[user_]==id) return section_list[section];
+				if(user_list[u]==id) return section_list[section];
 			}
 		}
+		if(exclusive) this.user_file.close();
 		return false;
 	}
 	this.UpdateUsers=function()
@@ -95,10 +101,18 @@ function DataQueue(root,name,log_)
 		}
 		for(user_ in this.users) 
 		{
-			if(!this.user_file.iniGetValue(this.thread,this.users[user_].name))
+			var usr=this.users[user_];
+			if(!this.user_file.iniGetValue(this.thread,usr.name))
 			{
-				this.notices.push(this.users[user_].alias + " has left.");
-				this.log("removing absent user: " + this.users[user_].name);
+				var room=this.FindUser(usr.name);
+				if(room)
+				{
+					this.notices.push(usr.alias + " joined " + room + ".");
+				}
+				else 
+				{
+					this.notices.push(usr.alias + " has left.");
+				}
 				delete this.users[user_];
 			}
 		}
@@ -117,11 +131,11 @@ function DataQueue(root,name,log_)
 			this.users=[];
 			this.UpdateUsers();
 			this.user_file.open(file_exists(this.user_file.name) ? 'r+':'w+'); 	
-			this.user_file.iniRemoveKey(this.thread,user.alias);
+			this.user_file.iniRemoveKey(this.thread,system.qwk_id + "." + user.alias);
 			this.thread=thread;
 			KillThread=this.thread;
 			this.log("Initializing queue: room: " + this.thread + " file: " + this.user_file.name);
-			this.user_file.iniSetValue(thread,user.alias,"(" + status + ")");
+			this.user_file.iniSetValue(thread,system.qwk_id + "." + user.alias,"(" + status + ")");
 			this.user_file.close();
 		}
 	}
@@ -144,6 +158,6 @@ function QueueUser(user_name,user_status,user_queue)
 function QuitQueue(userfile,thread)
 {
 	userfile.open("r+");
-	userfile.iniRemoveKey(thread,user.alias);
+	userfile.iniRemoveKey(thread,system.qwk_id + "." + user.alias);
 	userfile.close();
 }
