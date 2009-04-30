@@ -16,8 +16,8 @@ load("scrollbar.js");
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
-var gamelog=new Logger(gameroot,"seabattl");
-//var gamelog=false;
+//var gamelog=new Logger(gameroot,"seabattl");
+var gamelog=false;
 
 gamechat=argv[0]?argv[0]:new ChatEngine(gameroot,"seabattle",gamelog);
 
