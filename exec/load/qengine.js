@@ -15,7 +15,7 @@ function DataQueue(root,name,log_)
 {
 	this.root=			(root?root:"/sbbs/");
 	this.name=			(name?name:"default");
-	this.queuelog=		(log_?log_:new Logger(this.root,this.name));
+	this.queuelog=		(log_?log_:false);
 
 	this.notices=[];
 	this.stream=	new Queue(this.name + "." + user.alias);
@@ -127,7 +127,7 @@ function DataQueue(root,name,log_)
 	}
 	this.log=function(text)
 	{
-		this.queuelog.Log(text);
+		if(this.queuelog) this.queuelog.Log(text);
 	}
 }
 function QueueUser(user_name,user_status,user_queue)

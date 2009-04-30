@@ -56,7 +56,7 @@ function ChatEngine(root,name,logger,queue)
 {
 	this.root=			(root?root:"/sbbs/");
 	this.name=			(name?name:"chat");
-	this.chatlog=		(logger?logger:new Logger(this.root,this.name));
+	this.chatlog=		(logger?logger:false);
 	this.queue=			(queue?queue:new DataQueue(this.root,this.name,this.chatlog));
 	this.room;
 	this.fullscreen;
@@ -100,7 +100,7 @@ function ChatEngine(root,name,logger,queue)
 		this.queue.Init(this.room,"");
 		this.LoadHistory();
 		this.DrawLines();
-		this.chatlog.Log("Chat Room Initialized: " + this.room);
+		this.Log("Chat Room Initialized: " + this.room);
 	}
 	this.Resize=function(x,y,columns,rows) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
 	{
@@ -112,6 +112,7 @@ function ChatEngine(root,name,logger,queue)
 		this.rows=rows;
 		this.ClearChatWindow();
 		this.Redraw();
+		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical",this.scrollbar.color); 
 	}
 	this.Cycle=function()
 	{
@@ -220,7 +221,7 @@ function ChatEngine(root,name,logger,queue)
 	}
 	this.StoreHistory=function() //WRITE MESSAGE HISTORY TO FILE 
 	{
-		this.chatlog.Log("Storing message history");
+		this.Log("Storing message history");
 		for(msg in this.messages)
 		{
 			this.history.push(this.messages[msg]);
@@ -305,7 +306,7 @@ function ChatEngine(root,name,logger,queue)
 	this.LoadHistory=function() //LOAD CHAT ROOM HISTORY FROM FILE
 	{
 		if(!file_exists(this.history_file.name)) return false;
-		this.chatlog.Log("Loading message history");
+		this.Log("Loading message history");
 		this.history_file.open('r'); 
 		var history=history_file.iniGetKeys(this.room);
 		for(his in history)
@@ -365,6 +366,10 @@ function ChatEngine(root,name,logger,queue)
 			this.Display(this.queue.notices[notice],this.notice_color);
 		}
 		this.queue.notices=[];
+	}
+	this.Log=function(text)
+	{
+		if(this.chatlog) this.chatlog.Log(text);
 	}
 	this.Display=function(text,color,user_)
 	{
