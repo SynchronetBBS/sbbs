@@ -15,7 +15,9 @@ load("scrollbar.js");
 
 try { barfitty.barf(barf); } catch(e) { chessroot = e.fileName; }
 chessroot = chessroot.replace(/[^\/\\]*$/,"");
-var chesslog=new Logger(chessroot,"chess");
+
+//var chesslog=new Logger(chessroot,"chess");
+var chesslog=false;
 
 chesschat=argv[0]?argv[0]:new ChatEngine(chessroot,"chess",chesslog);
 
@@ -488,7 +490,7 @@ function PlayerList()
 }
 function Log(text)
 {
-	chesslog.Log(text);
+	if(chesslog) chesslog.Log(text);
 }
 
 chessplayers=new PlayerList();
