@@ -16,8 +16,8 @@ load("scrollbar.js");
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
-//var gamelog=new Logger(gameroot,"seabattl");
-var gamelog=false;
+var gamelog=new Logger(gameroot,"seabattl");
+//var gamelog=false;
 
 gamechat=argv[0]?argv[0]:new ChatEngine(gameroot,"seabattle",gamelog);
 
@@ -67,7 +67,7 @@ function GameLobby()
 		var posx=42;
 		var posy=3;
 		var input_line={x:42,y:23,columns:38};
-		gamechat.Init("Sea Battle Lobby",input_line,columns,rows,posx,posy,false,"\1y");
+		gamechat.Init("Sea-Battle Lobby",input_line,columns,rows,posx,posy,false,"\1y");
 		this.Redraw();
 	}
 	this.InitMenu=function()
@@ -429,7 +429,7 @@ function PlayerList()
 	{
 		var player=this.players[id];
 		var pFile=new File(gameroot + "players.dat");
-		pFile.open("r+"); 
+		pFile.open("r+",true); 
 		pFile.iniSetValue(id,"wins",player.wins);
 		pFile.iniSetValue(id,"losses",player.losses);
 		pFile.close();
@@ -450,7 +450,7 @@ function PlayerList()
 	this.LoadPlayers=function()
 	{
 		var pFile=new File(gameroot + "players.dat");
-		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
+		pFile.open((file_exists(pFile.name) ? "r+":"w+"),true); 
 		
 		if(!pFile.iniGetValue(this.prefix + user.alias,"name"))
 		{

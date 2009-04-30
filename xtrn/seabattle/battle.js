@@ -4,6 +4,7 @@ function GameSession(game,join)
 	this.queue=gamechat.queue;
 	this.clearinput=true;
 	this.currentplayer;
+	this.shots;
 	this.menu;
 	this.name;
 	this.infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: false)
@@ -20,7 +21,7 @@ function GameSession(game,join)
 	{
 		this.game.LoadGame();
 		this.game.LoadPlayers();
-		this.name="Bombard Table " + this.game.gamenumber;
+		this.name="Sea-Battle Table " + this.game.gamenumber;
 		if(join)
 		{
 			this.game.turn=gameplayers.GetFullName(user.alias);
@@ -57,11 +58,6 @@ function GameSession(game,join)
 		if(this.game.started && this.currentplayer)
 		{
 			if(this.game.turn==this.currentplayer.id) this.Notice("\1c\1hIt's your turn");
-			else Log("not your turn");
-		}
-		else 
-		{
-			Log("game not started");
 		}
 		while(1)
 		{
@@ -321,16 +317,20 @@ function GameSession(game,join)
 	this.Attack=function()
 	{
 		var letters="abcdefghij";
-		var opponent=game.FindOpponent();
 		var player=this.currentplayer;
-		var numshots=(this.game.multishot?this.CountShips(player.id):1);
-		while(numshots>0)
+		var opponent=game.FindOpponent();
+		if(!this.shots) this.shots=(this.game.multishot?this.CountShips(player.id):1);
+		while(this.shots>0)
 		{
 			this.Cycle();
-			this.Alert("\1c\1hAttack which sector? [\1hshots\1n\1c: \1h" + numshots + "\1n\1c]\1h: ");
-			var attack=console.getkey(K_NOCRLF|K_NOSPIN|K_ALPHA);
-			if(letters.indexOf(attack.toLowerCase())<0) return false;
-			attack+=console.getkey(K_NOCRLF|K_NOSPIN|K_NUMBER);
+			this.Alert("\1c\1hAttack which sector? [\1hshots\1n\1c: \1h" + this.shots + "\1n\1c]\1h: ");
+			var attack="";
+			while(attack.length<2)
+			{
+				var key=console.inkey(K_NOCRLF|K_NOSPIN);
+				console.putmsg(key);
+				attack+=key;
+			}
 			var coords=GetBoardPosition(attack);
 			if(coords && !opponent.board.shots[coords.x][coords.y])
 			{
@@ -338,24 +338,22 @@ function GameSession(game,join)
 				opponent.board.DrawSpace(coords.x,coords.y);
 				this.SendAttack(coords,opponent);
 				this.game.StoreShot(coords,opponent.id);
+				var hit=this.CheckShot(coords,opponent);
 				if(this.game.bonusattack) 
 				{
-					if(!this.CheckShot(coords,opponent))
-					{
-						numshots--;
-					}
+					if(!hit) this.shots--;
 				}
-				else numshots--;
+				else this.shots--;
 				var count=this.CountShips(opponent.id);
 				if(count==0) this.EndGame(opponent.id);
 				this.InfoBar();
 			}
 		}
+		this.shots=false;
 		this.game.NextTurn();
 		this.game.StoreGame();
 		this.game.NotifyPlayer();
 		this.InfoBar();
-		
 		this.Send("endturn","endturn");
 		return true;
 	}
@@ -731,7 +729,7 @@ function GameData(gamefile)
 		}
 		var fName=gameroot + gNum + ".bom";
 		this.gamefile=new File(fName);
-		this.gamenumber=gNum;
+		this.gamenumber=parseInt(gNum);
 	}
 	this.StoreBoard=function(id)
 	{
