@@ -72,6 +72,7 @@ function PrintPadded(string,length,padding,justification)
 function DrawLine(x,y,length,color)
 {
 	console.gotoxy(x,y);
+	if(y==24) while(x+length>80) length-=1;
 	for(i=0;i<length;i++)
 	{
 		console.putmsg((color?color:"\1k\1h") + "\xc4");
