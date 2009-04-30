@@ -65,7 +65,7 @@ function DataQueue(root,name,log_)
 		if(!this.user_file.is_open) 
 		{
 			exclusive=true;
-			this.user_file.open('r+');
+			this.user_file.open('r+',true);
 		}
 		var section_list=this.user_file.iniGetSections();
 		for(section in section_list)
@@ -73,7 +73,6 @@ function DataQueue(root,name,log_)
 			var user_list=this.user_file.iniGetKeys(section_list[section]);
 			for(u in user_list)
 			{
-				this.log("found user: " + id + " in room: " + section_list[section]);
 				if(user_list[u]==id) return section_list[section];
 			}
 		}
@@ -84,7 +83,7 @@ function DataQueue(root,name,log_)
 	{
 		if(file_date(this.user_file.name)==this.last_user_update) return;
 		this.last_user_update=file_date(this.user_file.name);
-		this.user_file.open('r+');
+		this.user_file.open('r+',true);
 		var user_list=this.user_file.iniGetKeys(this.thread);
 		for(user_ in user_list)
 		{
@@ -130,11 +129,11 @@ function DataQueue(root,name,log_)
 		{
 			this.users=[];
 			this.UpdateUsers();
-			this.user_file.open(file_exists(this.user_file.name) ? 'r+':'w+'); 	
+			this.user_file.open((file_exists(this.user_file.name) ? 'r+':'w+'),true); 	
 			this.user_file.iniRemoveKey(this.thread,system.qwk_id + "." + user.alias);
 			this.thread=thread;
 			KillThread=this.thread;
-			this.log("Initializing queue: room: " + this.thread + " file: " + this.user_file.name);
+			this.log("Initializing queue: room: " + this.thread + " file: " + this.user_file.name + " time: " + time());
 			this.user_file.iniSetValue(thread,system.qwk_id + "." + user.alias,"(" + status + ")");
 			this.user_file.close();
 		}
@@ -157,7 +156,7 @@ function QueueUser(user_name,user_status,user_queue)
 }
 function QuitQueue(userfile,thread)
 {
-	userfile.open("r+");
+	userfile.open("r+",true);
 	userfile.iniRemoveKey(thread,system.qwk_id + "." + user.alias);
 	userfile.close();
 }

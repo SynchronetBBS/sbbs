@@ -226,7 +226,7 @@ function ChatEngine(root,name,logger,queue)
 		{
 			this.history.push(this.messages[msg]);
 		}
-		this.history_file.open(file_exists(this.history_file.name) ? 'r+':'w+'); 	
+		this.history_file.open((file_exists(this.history_file.name) ? 'r+':'w+'),true); 	
 		for(his in this.history)
 		{
 			this.history_file.iniSetValue(this.room,his,this.history[his]);
@@ -307,7 +307,7 @@ function ChatEngine(root,name,logger,queue)
 	{
 		if(!file_exists(this.history_file.name)) return false;
 		this.Log("Loading message history");
-		this.history_file.open('r'); 
+		this.history_file.open('r',true); 
 		var history=history_file.iniGetKeys(this.room);
 		for(his in history)
 		{
