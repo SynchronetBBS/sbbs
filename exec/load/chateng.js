@@ -165,6 +165,7 @@ function ChatEngine(root,name,logger,queue)
 	}
 	this.Redraw=function()
 	{
+		ClearBlock(this.x,this.y,this.columns,this.rows);
 		this.Display();
 		this.DrawLines();
 		this.ClearInputLine();
