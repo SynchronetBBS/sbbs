@@ -22,11 +22,21 @@ Example configuration:
 
 Replace all folder names with appropriate local equivalents.
 
+Included files:
+
+battle.js
+seabattl.js
+bsmall.bin
+blarge.bin
+lobby.bin
+sysop.doc
+
 This game is also dependent upon the existence of the following files 
 within the \sbbs\exec directory:
 
 logging.js
 funclib.js
 qengine.js
+helpfile.js
 chateng.js
 scrollbar.js
