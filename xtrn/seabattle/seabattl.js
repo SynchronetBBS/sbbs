@@ -9,9 +9,11 @@ var gameplayers;
 var gamelobby;
 var gameroot;
 var gamechat;
+var gamehelp;
 load("chateng.js");
 load("graphic.js");
 load("scrollbar.js");
+load("helpfile.js");
 
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
@@ -265,7 +267,7 @@ function GameLobby()
 						{
 							this.RefreshCommands();
 							this.ListCommands();
-							this.LobbyMenu();
+							this.Commands();
 							this.Redraw();
 						}
 						else if(!Chat(k,gamechat)) return;
@@ -280,7 +282,7 @@ function GameLobby()
 			}
 		}
 	}
-	this.LobbyMenu=function()
+	this.Commands=function()
 	{
 		this.menu.displayHorizontal();
 		
@@ -289,13 +291,13 @@ function GameLobby()
 			switch(k.toUpperCase())
 			{
 				case "N":
-					this.StartNewGame();
+					if(this.StartNewGame()) this.InitChat();
 					break;
 				case "R":
 					this.ShowRankings();
 					break;
 				case "H":
-					this.Help();
+					gamehelp.help("lobby");
 					break;
 				case "D":
 					this.Redraw();
@@ -353,7 +355,7 @@ function GameLobby()
 				break;
 			case "\x1b":
 				gamechat.Alert("\1r\1hGame Creation Aborted");
-				return;
+				return false;
 			default:
 				newgame.password=false;
 				break;
@@ -368,7 +370,7 @@ function GameLobby()
 				break;
 			case "\x1b":
 				gamechat.Alert("\1r\1hGame Creation Aborted");
-				return;
+				return false;
 			default:
 				newgame.multishot=false;
 				break;
@@ -385,7 +387,7 @@ function GameLobby()
 					break;
 				case "\x1b":
 					gamechat.Alert("\1r\1hGame Creation Aborted");
-					return;
+					return false;
 				default:
 					newgame.bonusattack=false;
 					break;
@@ -401,23 +403,17 @@ function GameLobby()
 				break;
 			case "\x1b":
 				gamechat.Alert("\1r\1hGame Creation Aborted");
-				return;
+				return false;
 			default:
 				newgame.spectate=false;
 				break;
 		}
 		var newsession=new GameSession(newgame,true);
+		return true;
 	}
 	this.SplashStart();
 	this.Main();
 	this.SplashExit();
-}
-function GamePlayer(name)
-{
-	Log("Creating new player: " + name);
-	this.name=name;
-	this.wins=0;
-	this.losses=0;
 }
 function PlayerList()
 {
@@ -472,6 +468,13 @@ function PlayerList()
 	{
 		return(this.prefix + alias);
 	}
+	function GamePlayer(name)
+	{
+		Log("Creating new player: " + name);
+		this.name=name;
+		this.wins=0;
+		this.losses=0;
+	}
 	this.LoadPlayers();
 }
 function Log(text)
@@ -479,5 +482,6 @@ function Log(text)
 	if(gamelog) gamelog.Log(text);
 }
 
+gamehelp=new HelpFile(gameroot + "seabattl.hlp");
 gameplayers=new PlayerList();
 gamelobby=new GameLobby();

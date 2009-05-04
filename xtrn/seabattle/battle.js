@@ -21,7 +21,7 @@ function GameSession(game,join)
 	{
 		this.game.LoadGame();
 		this.game.LoadPlayers();
-		this.name="Sea-Battle Table " + this.game.gamenumber;
+		this.name="Sea-Battle table " + this.game.gamenumber;
 		if(join)
 		{
 			this.game.turn=gameplayers.GetFullName(user.alias);
@@ -48,6 +48,7 @@ function GameSession(game,join)
 								"~Place Ships"					,
 								"~Attack"						,
 								"~Help"							,
+								"Game ~Info"					,
 								"Re~draw"						];
 		this.menu.add(menu_items);
 		this.RefreshMenu();
@@ -55,10 +56,7 @@ function GameSession(game,join)
 	this.Main=function()
 	{
 		this.Redraw();
-		if(this.game.started && this.currentplayer)
-		{
-			if(this.game.turn==this.currentplayer.id) this.Notice("\1c\1hIt's your turn");
-		}
+		this.UpdateStatus();
 		while(1)
 		{
 			this.Cycle();
@@ -79,24 +77,77 @@ function GameSession(game,join)
 							this.ListCommands();
 							this.Commands();
 						}
-						else if(!Chat(k,gamechat) && this.HandleExit()) return;
+						else if(!Chat(k,gamechat) && this.HandleExit()) return true;
 						break;
 					case "\x1b":	
-						if(this.HandleExit()) return;
+						if(this.HandleExit()) return true;
 						break;
 					case "?":
 						if(!gamechat.buffer.length) 
 						{
 							this.ToggleGameInfo();
 						}
-						else if(!Chat(k,gamechat) && this.HandleExit()) return;
+						else if(!Chat(k,gamechat) && this.HandleExit()) return true;
 						break;
 					default:
-						if(!Chat(k,gamechat) && this.HandleExit()) return;
+						if(!Chat(k,gamechat) && this.HandleExit()) return true;
 						break;
 				}
 			}
 		}
+	}
+	this.UpdateStatus=function()
+	{
+		var status=[];
+		status.push("\1n\1cGAME STATUS\1h:")
+		if(this.game.finished)
+		{
+			status.push("\1n\1c Game completed");
+			status.push("\1n\1c Winner\1h: " + gameplayers.GetAlias(this.game.winner));
+			
+		}
+		else if(this.game.started)
+		{
+			status.push("\1n\1c Game in progress");
+			if(this.currentplayer && this.game.turn==this.currentplayer.id) status.push("\1n\1c It's your turn");
+		}
+		else
+		{
+			if(this.game.players.length <2)
+			{
+				status.push("\1n\1c Waiting for more players");
+			}
+			for(p in this.game.players)
+			{
+				var player=this.game.players[p];
+				if(!player.ready)
+				{
+					if(this.currentplayer && this.currentplayer.id==player.id)
+					{
+						status.push("\1n\1c You must place your ships");
+					}
+					else
+					{
+						status.push("\1n\1c " + player.name + " is not ready");
+					}
+				}
+				else
+				{
+					if(this.currentplayer && this.currentplayer.id==player.id)					
+					{
+						status.push("\1n\1c You are ready");
+					}
+					else
+					{
+						status.push("\1n\1c " + player.name + " is ready");
+					}
+				}
+			}
+		}
+		this.DisplayInfo(status);
+		this.Alert("\1r\1h[Press any key]");
+		while(console.inkey()=="");
+		gamechat.Redraw();
 	}
 	this.ClearChatWindow=function()
 	{
@@ -104,16 +155,10 @@ function GameSession(game,join)
 	}
 	this.HandleExit=function()
 	{
-		if(this.game.finished)
+		if(this.game.finished && this.currentplayer && this.currentplayer.id!=this.game.winner)
 		{
 			if(file_exists(this.game.gamefile.name))
 				file_remove(this.game.gamefile.name);
-		}
-		else if(this.game.timed && this.game.started && this.game.movelist.length)
-		{
-			this.Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
-			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-			this.EndGame("loss");
 		}
 		return true;
 	}
@@ -153,10 +198,13 @@ function GameSession(game,join)
 						this.JoinGame();
 						break;
 					case "H":
-						this.Help();
+						gamehelp.help("gameplay");
 						break;
 					case "D":
 						this.Redraw();
+						break;
+					case "I":
+						this.UpdateStatus();
 						break;
 					case "P":
 						this.PlaceShips();
@@ -175,9 +223,6 @@ function GameSession(game,join)
 			}
 			else Log("Invalid or Disabled key pressed: " + k);
 		}
-	}
-	this.Help=function()
-	{
 	}
 	this.ListCommands=function()
 	{
@@ -301,7 +346,6 @@ function GameSession(game,join)
 		this.game.Redraw();
 		this.InfoBar();
 		gamechat.Redraw();
-		
 	}
 	this.Send=function(data,ident)
 	{
@@ -312,42 +356,37 @@ function GameSession(game,join)
 		gamechat.ClearInputLine();
 	}
 
-	
 /*	ATTACK FUNCTIONS	*/
 	this.Attack=function()
 	{
-		var letters="abcdefghij";
 		var player=this.currentplayer;
 		var opponent=game.FindOpponent();
 		if(!this.shots) this.shots=(this.game.multishot?this.CountShips(player.id):1);
 		while(this.shots>0)
 		{
 			this.Cycle();
-			this.Alert("\1c\1hAttack which sector? [\1hshots\1n\1c: \1h" + this.shots + "\1n\1c]\1h: ");
-			var attack="";
-			while(attack.length<2)
+			this.Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + this.shots + "\1n)");
+			var coords=this.ChooseTarget(opponent);
+			if(!coords) return false;
+			opponent.board.shots[coords.x][coords.y]=true;
+			opponent.board.DrawSpace(coords.x,coords.y);
+			this.SendAttack(coords,opponent);
+			this.game.StoreShot(coords,opponent.id);
+			var hit=this.CheckShot(coords,opponent);
+			if(this.game.bonusattack) 
 			{
-				var key=console.inkey(K_NOCRLF|K_NOSPIN);
-				console.putmsg(key);
-				attack+=key;
+				if(!hit) this.shots--;
 			}
-			var coords=GetBoardPosition(attack);
-			if(coords && !opponent.board.shots[coords.x][coords.y])
+			else this.shots--;
+			var count=this.CountShips(opponent.id);
+			if(count==0) 
 			{
-				opponent.board.shots[coords.x][coords.y]=true;
-				opponent.board.DrawSpace(coords.x,coords.y);
-				this.SendAttack(coords,opponent);
-				this.game.StoreShot(coords,opponent.id);
-				var hit=this.CheckShot(coords,opponent);
-				if(this.game.bonusattack) 
-				{
-					if(!hit) this.shots--;
-				}
-				else this.shots--;
-				var count=this.CountShips(opponent.id);
-				if(count==0) this.EndGame(opponent.id);
-				this.InfoBar();
+				var p1=this.game.FindCurrentUser();
+				var p2=this.game.FindOpponent();
+				this.EndGame(p1,p2);
+				break;
 			}
+			this.InfoBar();
 		}
 		this.shots=false;
 		this.game.NextTurn();
@@ -356,6 +395,95 @@ function GameSession(game,join)
 		this.InfoBar();
 		this.Send("endturn","endturn");
 		return true;
+	}
+	this.ChooseTarget=function(opponent)
+	{
+		var letters="abcdefghij";
+		var selected;
+		var board=opponent.board;
+		selected={"x":0,"y":0};
+		board.DrawSelected(selected.x,selected.y);
+		while(1)
+		{
+			this.Cycle();
+			var key=console.inkey((K_NOECHO,K_NOCRLF,K_UPPER),50);
+			if(key)
+			{
+				this.Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + this.shots + "\1n)");
+				if(key=="\r")
+				{
+					if(!board.shots[selected.x][selected.y]) 
+					{
+						board.UnDrawSelected(selected.x,selected.y);
+						return selected;
+					}
+					else
+					{
+						this.Alert("\1r\1hInvalid Selection");
+					}
+				}
+				switch(key.toLowerCase())
+				{
+					case KEY_DOWN:
+						board.UnDrawSelected(selected.x,selected.y);
+						if(selected.y<9) selected.y++;
+						else selected.y=0;
+						break;
+					case KEY_UP:
+						board.UnDrawSelected(selected.x,selected.y);
+						if(selected.y>0) selected.y--;
+						else selected.y=9;
+						break;
+					case KEY_LEFT:
+						board.UnDrawSelected(selected.x,selected.y);
+						if(selected.x>0) selected.x--;
+						else selected.x=9;
+						break;
+					case KEY_RIGHT:
+						board.UnDrawSelected(selected.x,selected.y);
+						if(selected.x<9) selected.x++;
+						else selected.x=0;
+						break;
+					case "0":
+						key=10;
+					case "1":
+					case "2":
+					case "3":
+					case "4":
+					case "5":
+					case "6":
+					case "7":
+					case "8":
+					case "9":
+						key-=1;
+						board.UnDrawSelected(selected.x,selected.y);
+						selected.x=key;
+						break;
+					case "a":
+					case "b":
+					case "c":
+					case "d":
+					case "e":
+					case "f":
+					case "g":
+					case "h":
+					case "i":
+					case "j":
+						board.UnDrawSelected(selected.x,selected.y);
+						selected.y=letters.indexOf(key.toLowerCase());
+						break;
+					case "\x1B":
+						board.UnDrawSelected(selected.x,selected.y);
+						return false;
+					case "?":
+						gamehelp.help("choosing target");
+					default:
+						continue;
+				}
+				board.DrawSelected(selected.x,selected.y);
+			}
+		}
+		
 	}
 	this.SendAttack=function(coords,opponent)
 	{
@@ -426,6 +554,55 @@ function GameSession(game,join)
 		}
 		return(board.ships.length-sunk);
 	}
+
+/*	GAMEPLAY FUNCTIONS	*/
+	this.CheckInterference=function(position,ship)
+	{
+		var segments=[];
+		var board=this.currentplayer.board;
+		var xinc=(ship.orientation=="vertical"?0:1);
+		var yinc=(ship.orientation=="vertical"?1:0);
+
+		for(segment=0;segment<ship.segments.length;segment++)
+		{
+			var posx=(segment*xinc)+position.x;
+			var posy=(segment*yinc)+position.y;
+			if(board.grid[posx][posy])
+			{
+				segments.push({'x':posx,'y':posy});
+			}
+		}
+
+		if(segments.length) return segments;
+		return false;
+	}
+	this.PlaceShips=function()
+	{	
+		var board=this.currentplayer.board;
+		for(id in board.ships)
+		{
+			this.Cycle();
+			var ship=board.ships[id];
+			this.Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] rotate");
+			while(1)
+			{
+				var position=this.SelectTile(ship);
+				if(position) 
+				{
+					board.AddShip(position,id);
+					break;
+				}
+				//else return false;
+			}
+			//TODO: keep track of ships placed
+		}
+		this.currentplayer.ready=true;
+		this.game.StoreGame();
+		this.game.StoreBoard(this.currentplayer.id);
+		this.game.StorePlayer(this.currentplayer.id);
+		this.UpdateStatus();
+		this.Send("update","update");
+	}
 	this.SelectTile=function(ship,placeholder)
 	{
 		var selected;
@@ -445,7 +622,7 @@ function GameSession(game,join)
 			var key=console.inkey((K_NOECHO,K_NOCRLF,K_UPPER),50);
 			if(key)
 			{
-				this.ClearAlert();
+				this.Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] toggle");
 				if(key=="\r")
 				{
 					if(!interference) return selected;
@@ -535,6 +712,9 @@ function GameSession(game,join)
 								break;
 						}
 						break;
+					case "?":
+						gamehelp.help("placing ships");
+						break;
 					case "\x1B":
 						board.UnDrawShip(selected.x,selected.y,ship);
 						return false;
@@ -553,45 +733,6 @@ function GameSession(game,join)
 			}
 		}
 	}
-
-/*	GAMEPLAY FUNCTIONS	*/
-	this.CheckInterference=function(position,ship)
-	{
-		var segments=[];
-		var board=this.currentplayer.board;
-		var xinc=(ship.orientation=="vertical"?0:1);
-		var yinc=(ship.orientation=="vertical"?1:0);
-
-		for(segment=0;segment<ship.segments.length;segment++)
-		{
-			var posx=(segment*xinc)+position.x;
-			var posy=(segment*yinc)+position.y;
-			if(board.grid[posx][posy])
-			{
-				segments.push({'x':posx,'y':posy});
-			}
-		}
-
-		if(segments.length) return segments;
-		return false;
-	}
-	this.PlaceShips=function()
-	{	
-		var board=this.currentplayer.board;
-		for(id in board.ships)
-		{
-			this.Cycle();
-			var ship=board.ships[id];
-			var position=this.SelectTile(ship);
-			if(position) board.AddShip(position,id);
-			else return false;
-		}
-		this.currentplayer.ready=true;
-		this.game.StoreGame();
-		this.game.StoreBoard(this.currentplayer.id);
-		this.game.StorePlayer(this.currentplayer.id);
-		this.Send("update","update");
-	}
 	this.NewGame=function()
 	{
 		//TODO: Add the ability to change game settings (timed? rated?) when restarting/rematching
@@ -600,18 +741,25 @@ function GameSession(game,join)
 	}
 	this.Forfeit=function()
 	{
-		this.Alert("\1c\1hAre you sure? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
-		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return;
-		this.EndGame("loss");
+		this.Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
+		var p1=this.game.FindCurrentUser();
+		var p2=this.game.FindOpponent();
+		this.EndGame(p2,p1);
 	}
-	this.EndGame=function(id)
+	this.EndGame=function(winner,loser)
 	{
-		var loser=gameplayers.players[id];
-		var winner=gameplayers.players[this.currentplayer.id];
-		winner.wins++;
-		loser.losses++;
+		var wdata=gameplayers.players[winner.id]
+		var ldata=gameplayers.players[loser.id];
+		
+		wdata.wins++;
+		ldata.losses++;
+		
 		gameplayers.StorePlayer(winner.id);
 		gameplayers.StorePlayer(loser.id);
+		
+		this.Notice("\1r\1hYou sank all of " + ldata.name + "'s ships!");
+		this.game.winner=winner.id;
 		this.game.End();
 		var endgame={'winner':winner.id, 'loser':loser.id};
 		this.Send(endgame,"endgame");
@@ -639,6 +787,7 @@ function GameData(gamefile)
 	this.lastupdated;
 	this.players=[];
 	this.password;
+	this.winner;
 	this.turn;
 	this.started;
 	this.finished; 
@@ -665,6 +814,7 @@ function GameData(gamefile)
 		for(player in this.players)
 		{
 			this.players[player].board.hidden=false;
+			this.players[player].board.DrawBoard();
 		}
 		delete this.turn;
 		this.finished=true;
@@ -802,6 +952,7 @@ function GameData(gamefile)
 		gFile.iniSetValue(null,"multishot",this.multishot);
 		gFile.iniSetValue(null,"bonusattack",this.bonusattack);
 		gFile.iniSetValue(null,"spectate",this.spectate);
+		gFile.iniSetValue(null,"winner",this.winner);
 		gFile.close();
 	}
 	this.LoadPlayers=function()
@@ -864,6 +1015,7 @@ function GameData(gamefile)
 		this.multishot=gFile.iniGetValue(null,"multishot");
 		this.bonusattack=gFile.iniGetValue(null,"bonusattack");
 		this.spectate=gFile.iniGetValue(null,"spectate");
+		this.winner=gFile.iniGetValue(null,"winner");
 		var playerlist=this.gamefile.iniGetKeys("players");
 		for(player in playerlist)
 		{
@@ -875,7 +1027,6 @@ function GameData(gamefile)
 	this.StartGame=function()
 	{
 		if(this.players.length<2) return false;
-		var start=true;
 		for(player in this.players)
 		{
 			if(!this.players[player].ready) return false;
@@ -887,12 +1038,13 @@ function GameData(gamefile)
 	}
 	this.NotifyPlayer=function()
 	{
-		var currentuser=this.FindCurrentUser();
-		if(!gamechat.FindUser(this.turn) && this.turn!=currentuser.id)
+		var currentplayer=this.FindCurrentUser();
+		if(!gamechat.FindUser(this.turn) && this.turn!=currentplayer.id)
 		{
-			var player=this.FindPlayer(this.turn);
+			var nextturn=this.FindPlayer(this.turn);
+			var unum=system.matchuser(nextturn.name);
 			var message="\1n\1gIt is your turn in \1c\1hSea\1n\1c-\1hBattle\1n\1g\1g game #\1h" + this.gamenumber + "\r\n\r\n";
-			system.put_telegram(player.name, message);
+			//system.put_telegram(unum, message);
 			//TODO: make this handle interbbs games if possible
 		}
 	}
@@ -914,7 +1066,7 @@ function GameData(gamefile)
 				if(segment==0)	player.board.ships[id].orientation=orientation;
 				if(positions[pos].shot)
 				{
-					board.ships[id].segments[segment].hit=positions[pos].shot;
+					board.ships[id].TakeHit(segment);
 				}
 			}
 		}
@@ -1017,7 +1169,6 @@ function BattleShip(name)
 	{
 		this.hgraph=hgraph;
 		this.vgraph=vgraph;
-		this.bg=console.ansi(BG_BLACK);
 		this.fg="\1n\1h";
 		this.hit=false;
 		this.Draw=function(orientation)
@@ -1026,7 +1177,7 @@ function BattleShip(name)
 			var graphic=(orientation=="horizontal"?this.hgraph:this.vgraph);
 			for(character in graphic)
 			{
-				console.print(color + this.bg + graphic[character]);
+				console.print(color + graphic[character]);
 				if(orientation=="vertical") 
 				{
 					console.down();
@@ -1039,7 +1190,7 @@ function BattleShip(name)
 			var graphic=(orientation=="horizontal"?this.hgraph:this.vgraph);
 			for(character in graphic)
 			{
-				console.print(this.bg + " ");
+				console.print(" ");
 				if(orientation=="vertical") 
 				{
 					console.down();
@@ -1083,6 +1234,18 @@ function GameBoard(x,y,hidden)
 					cruiser2,
 					destroyer];
 	}
+	this.DrawSelected=function(x,y)
+	{
+		this.GetCoords(x,y);
+		console.attributes=BLINK + BG_MAGENTA;
+		this.DrawSpace(x,y);
+	}
+	this.UnDrawSelected=function(x,y)
+	{
+		this.GetCoords(x,y);
+		console.attributes=ANSI_NORMAL;
+		this.DrawSpace(x,y);
+	}
 	this.ResetBoard=function()
 	{
 		this.grid=new Array(10);
@@ -1109,12 +1272,22 @@ function GameBoard(x,y,hidden)
 			{
 				this.DrawHit(x,y);
 			}
+			else 
+			{
+				this.GetCoords(x,y);
+				console.putmsg(" ",P_SAVEATR);
+			}
 		}
 		else
 		{
 			if(this.shots[x][y])
 			{
 				this.DrawMiss(x,y);
+			}
+			else 
+			{
+				this.GetCoords(x,y);
+				console.putmsg(" ",P_SAVEATR);
 			}
 		}
 	}
@@ -1136,12 +1309,12 @@ function GameBoard(x,y,hidden)
 	this.DrawMiss=function(x,y)
 	{
 		this.GetCoords(x,y);
-		console.putmsg("\1c\1h\xFE");
+		console.putmsg("\1c\1h\xFE",P_SAVEATR);
 	}
 	this.DrawHit=function(x,y)
 	{
 		this.GetCoords(x,y);
-		console.putmsg("\1r\1h\xFE");
+		console.putmsg("\1r\1h\xFE",P_SAVEATR);
 	}
 	this.AddShip=function(position,id)
 	{
@@ -1169,15 +1342,17 @@ function GetBoardPosition(position)
 	if(typeof position=="string")
 	{
 		//CONVERT BOARD POSITION IDENTIFIER TO XY COORDINATES
-		var x=parseInt(position.charAt(1)==0?9:position.charAt(1)-1);
-		var y=parseInt(letters.indexOf(position.charAt(0).toLowerCase()));
-		var position={'x':x,'y':y};
-		return(position);
+		var x=position.charAt(1);
+		var y=position.charAt(0);
+		x=parseInt(x==0?9:position.charAt(1)-1);
+		y=parseInt(letters.indexOf(y.toLowerCase()));
+		position={'x':x,'y':y};
 	}
 	else if(typeof position=="object")
 	{
 		//CONVERT XY COORDINATES TO STANDARD CHESS BOARD FORMAT
 		var x=(position.x==9?0:parseInt(position.x)+1);
-		return(letters.charAt(position.y) + x);
+		position=(letters.charAt(position.y) + x);
 	}
+	return(position);
 }
