@@ -67,7 +67,7 @@ function ChessLobby()
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
-		write(console.ansi(ANSI_NORMAL));
+		console.attributes=(ANSI_NORMAL);
 		exit(0);
 	}
 	this.InitChat=function()

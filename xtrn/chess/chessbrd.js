@@ -299,7 +299,7 @@ function GameSession(game)
 			this.game.LoadGameTable();
 			this.game.LoadGameData();
 			this.InfoBar();
-			this.ShowTimers();
+			if(this.game.timed) this.ShowTimers();
 		}
 		if(this.queue.DataWaiting("timer"))
 		{
@@ -447,6 +447,7 @@ function GameSession(game)
 	this.SendMove=function(move)
 	{
 		this.game.NextTurn();
+		this.game.NotifyPlayer();
 		this.board.lastmove=move;
 		this.game.movelist.push(move);
 		this.game.StoreGame();
@@ -1327,7 +1328,7 @@ function ChessGame(gamefile)
 		}
 		var fName=chessroot + gNum + ".chs";
 		this.gamefile=new File(fName);
-		this.gamenumber=gNum;
+		this.gamenumber=parseInt(gNum);
 	}
 	this.StoreGame=function()
 	{
@@ -1445,6 +1446,18 @@ function ChessGame(gamefile)
 			this.movelist.push(new ChessMove(from,to,color,check));
 		}
 		gFile.close();
+	}
+	this.NotifyPlayer=function()
+	{
+		var nextturn=this.players[this.turn];
+		if(!chesschat.FindUser(nextturn.id))
+		{
+			var uname=chessplayers.players[nextturn.id].name;
+			var unum=system.matchuser(uname);
+			var message="\1n\1yIt is your turn in \1hChess\1n\1y game #\1h" + this.gamenumber + "\r\n\r\n";
+			system.put_telegram(unum, message);
+			//TODO: make this handle interbbs games if possible
+		}
 	}
 	this.NewGame=function()
 	{
