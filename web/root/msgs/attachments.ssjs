@@ -31,7 +31,7 @@ if(hdr==undefined) {
 	error("No such message!");
 }
 body=msgbase.get_msg_body(false,id);
-if(path==undefined) {
+if(body==undefined) {
 	error("Can not read message body!");
 }
 
