@@ -339,26 +339,44 @@ function GameLobby()
 		var newgame=new GameData();
 		this.clearinput=true;
 
-		gamechat.Alert("\1nPrivate game? [\1hy\1n,\1hN\1n]: ");
-		var password=console.getkeys("\x1bYN");
-		switch(password)
+		gamechat.Alert("\1nSingle Player Game? [\1hy\1n,\1hN\1n]: ");
+		var single=console.getkeys("\x1bYN");
+		switch(single)
 		{
 			case "Y":
-				gamechat.Alert("\1nPassword: ");
-				password=console.getstr(25);
-				if(password.length) newgame.password=password;
-				else 
-				{
-					gamechat.Alert("\1r\1hGame Creation Aborted");
-					return;
-				}
+				newgame.singleplayer=true;
 				break;
 			case "\x1b":
 				gamechat.Alert("\1r\1hGame Creation Aborted");
 				return false;
 			default:
-				newgame.password=false;
+				newgame.singleplayer=false;
 				break;
+		}
+		
+		if(!newgame.singleplayer)
+		{
+			gamechat.Alert("\1nPrivate game? [\1hy\1n,\1hN\1n]: ");
+			var password=console.getkeys("\x1bYN");
+			switch(password)
+			{
+				case "Y":
+					gamechat.Alert("\1nPassword: ");
+					password=console.getstr(25);
+					if(password.length) newgame.password=password;
+					else 
+					{
+						gamechat.Alert("\1r\1hGame Creation Aborted");
+						return;
+					}
+					break;
+				case "\x1b":
+					gamechat.Alert("\1r\1hGame Creation Aborted");
+					return false;
+				default:
+					newgame.password=false;
+					break;
+			}
 		}
 
 		gamechat.Alert("\1nAttacks equal to # of ships? [\1hy\1n,\1hN\1n]: ");
@@ -432,6 +450,7 @@ function PlayerList()
 	}
 	this.FormatStats=function(player)
 	{
+		if(this.GetAlias(player)=="CPU") return "";
 		var player=this.players[player];
 		return(			"\1n\1cW\1h" +
 						PrintPadded(player.wins,3,"0","right") + "\1n\1cL\1h" +
@@ -439,7 +458,7 @@ function PlayerList()
 	}
 	this.FormatPlayer=function(player,turn)
 	{
-		var name=this.players[player].name;
+		var name=this.GetAlias(player);
 		var highlight=(player==turn?"\1r\1h":"\1n\1h");
 		return (highlight + "[" + "\1n" + name + highlight + "]");
 	}

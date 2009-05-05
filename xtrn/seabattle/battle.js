@@ -26,6 +26,7 @@ function GameSession(game,join)
 		{
 			this.game.turn=gameplayers.GetFullName(user.alias);
 			this.game.StoreGame();
+			if(this.game.singleplayer) this.ComputerInit();
 			this.JoinGame();
 		}
 		else this.currentplayer=this.game.FindCurrentUser();
@@ -309,7 +310,7 @@ function GameSession(game,join)
 			var str2=data.loser + "'s";
 			if(this.currentplayer)
 			{
-				if(loser==this.currentplayer.id) str2="your";
+				if(data.loser==this.currentplayer.id) str2="your";
 			}
 			for(player in this.game.players)
 			{
@@ -391,7 +392,8 @@ function GameSession(game,join)
 		this.shots=false;
 		this.game.NextTurn();
 		this.game.StoreGame();
-		this.game.NotifyPlayer();
+		if(this.game.turn==gameplayers.GetFullName("CPU") && !this.game.finished) this.ComputerTurn();
+		else this.game.NotifyPlayer();
 		this.InfoBar();
 		this.Send("endturn","endturn");
 		return true;
@@ -556,10 +558,9 @@ function GameSession(game,join)
 	}
 
 /*	GAMEPLAY FUNCTIONS	*/
-	this.CheckInterference=function(position,ship)
+	this.CheckInterference=function(position,ship,board)
 	{
 		var segments=[];
-		var board=this.currentplayer.board;
 		var xinc=(ship.orientation=="vertical"?0:1);
 		var yinc=(ship.orientation=="vertical"?1:0);
 
@@ -613,7 +614,7 @@ function GameSession(game,join)
 			selected={"x":0,"y":0};
 		}
 		board.DrawShip(selected.x,selected.y,ship);
-		var interference=this.CheckInterference(selected,ship);
+		var interference=this.CheckInterference(selected,ship,board);
 		var ylimit=(ship.orientation=="vertical"?ship.segments.length-1:0);
 		var xlimit=(ship.orientation=="horizontal"?ship.segments.length-1:0);
 		while(1)
@@ -729,7 +730,7 @@ function GameSession(game,join)
 					}
 				}
 				board.DrawShip(selected.x,selected.y,ship);
-				interference=this.CheckInterference(selected,ship);
+				interference=this.CheckInterference(selected,ship,board);
 			}
 		}
 	}
@@ -752,13 +753,20 @@ function GameSession(game,join)
 		var wdata=gameplayers.players[winner.id]
 		var ldata=gameplayers.players[loser.id];
 		
-		wdata.wins++;
-		ldata.losses++;
-		
-		gameplayers.StorePlayer(winner.id);
-		gameplayers.StorePlayer(loser.id);
-		
-		this.Notice("\1r\1hYou sank all of " + ldata.name + "'s ships!");
+		if(winner.name!="CPU")
+		{
+			wdata.wins++;
+			gameplayers.StorePlayer(winner.id);
+			if(winner.id==this.currentplayer.id)
+			{
+				this.Notice("\1r\1hYou sank all of " + loser.name + "'s ships!");
+			}
+		}
+		if(loser.name!="CPU")
+		{
+			ldata.losses++;
+			gameplayers.StorePlayer(loser.id);
+		}
 		this.game.winner=winner.id;
 		this.game.End();
 		var endgame={'winner':winner.id, 'loser':loser.id};
@@ -767,12 +775,121 @@ function GameSession(game,join)
 	}
 	this.JoinGame=function()
 	{
-		this.game.AddPlayer();
+		this.game.AddPlayer(user.alias);
 		this.currentplayer=this.game.FindCurrentUser();
 		this.Send("update","update");
 		this.InfoBar();
 	}
 
+/* AI FUNCTIONS	*/
+	this.ComputerTurn=function()
+	{
+		Log("Computer player taking turn");
+		var cpu=this.game.FindComputer();
+		var opponent=this.currentplayer;
+		var shots=(this.game.multishot?this.CountShips(cpu.id):1);
+		while(shots>0)
+		{
+			var coords=this.ComputerAttack(opponent);
+			opponent.board.shots[coords.x][coords.y]=true;
+			this.SendAttack(coords,opponent);
+			this.game.StoreShot(coords,opponent.id);
+			var hit=this.CheckComputerAttack(coords,opponent);
+			if(this.game.bonusattack) 
+			{
+				if(!hit) shots--;
+			}
+			else shots--;
+			opponent.board.DrawSpace(coords.x,coords.y);
+			var count=this.CountShips(opponent.id);
+			if(count==0) 
+			{
+				var winner=cpu;
+				var loser=opponent;
+				this.EndGame(winner,loser);
+				break;
+			}
+		}
+		this.game.NextTurn();
+		this.game.StoreGame();
+		this.Send("endturn","endturn");
+		return true;
+	}
+	this.CheckComputerAttack=function(coords,opponent)
+	{
+		if(opponent.board.grid[coords.x][coords.y])
+		{
+			var segment=opponent.board.grid[coords.x][coords.y].segment;
+			var shipid=opponent.board.grid[coords.x][coords.y].id;
+			var ship=opponent.board.ships[shipid];
+			ship.TakeHit(segment);
+			if(ship.sunk)
+			{
+				this.Notice("\1r\1hYou sank " + opponent.name + "'s ship!");
+			}
+			else this.Notice("\1r\1hComputer hit your ship!");
+			return true;
+		}
+		else
+		{
+			this.Notice("\1c\1hComputer fired and missed!");
+			return false;
+		}
+	}
+	this.ComputerAttack=function(opponent)
+	{
+		while(1)
+		{
+			var randcolumn=random(10);
+			var randrow=random(10);
+			if(!opponent.board.shots[randcolumn][randrow]) return({'x':randcolumn,'y':randrow});
+		}
+		return false;
+	}
+	this.ComputerPlacement=function()
+	{
+		var cpu=this.game.FindComputer();
+		var board=cpu.board;
+		for(s in board.ships)
+		{
+			Log("computer placing ship: " + board.ships[s].name);
+			var ship=board.ships[s];
+			var randcolumn=random(10);
+			var randrow=random(10);
+			var randorient=random(2);
+			var orientation=(randorient==1?"horizontal":"vertical");
+			var position={'x':randcolumn, 'y':randrow};
+			ship.orientation=orientation;
+			while(1)
+			{
+				var xlimit=(orientation=="horizontal"?ship.segments.length:0);
+				var ylimit=(orientation=="vertical"?ship.segments.length:0);
+				if(position.x + xlimit <=9 && position.y + ylimit<=9)
+				{
+					if(!this.CheckInterference(position,ship,board))
+					{
+						break;
+					}
+				}
+				randcolumn=random(10);
+				randrow=random(10);
+				randorient=random(2);
+				orientation=(randorient==1?"horizontal":"vertical");
+				position={'x':randcolumn, 'y':randrow};
+				ship.orientation=orientation;
+			}
+			board.AddShip(position,s);
+		}
+		cpu.ready=true;
+		this.game.StoreBoard(cpu.id);
+		this.game.StorePlayer(cpu.id);
+		this.Send("update","update");
+	}
+	this.ComputerInit=function()
+	{
+		this.game.AddPlayer("CPU");
+		this.ComputerPlacement();
+	}
 	this.InitGame();
 	this.InitChat();
 	this.InitMenu();
@@ -787,6 +904,7 @@ function GameData(gamefile)
 	this.lastupdated;
 	this.players=[];
 	this.password;
+	this.singleplayer;
 	this.winner;
 	this.turn;
 	this.started;
@@ -820,15 +938,35 @@ function GameData(gamefile)
 		this.finished=true;
 		this.StoreGame();
 	}
-	this.AddPlayer=function()
+	this.AddPlayer=function(name)
 	{
-		var id=gameplayers.GetFullName(user.alias);
+		var start;
+		var hidden;
+		if(name=="CPU") 
+		{
+			start={'x':24,'y':3};
+			hidden=true;
+		}
+		else 
+		{
+			start={'x':2,'y':3};
+			hidden=false;
+		}
+		var id=gameplayers.GetFullName(name);
 		var player=new Object();
-		player.name=user.alias;
+		player.name=name;
 		player.id=id;
-		player.board=new GameBoard(2,3,false);
+		player.board=new GameBoard(start.x,start.y,hidden);
 		this.players.push(player);
 		this.StorePlayer(player.id);
+	}
+	this.FindComputer=function()
+	{
+		for(player in this.players)
+		{
+			if(this.players[player].name=="CPU") return this.players[player];
+		}
+		return false;
 	}
 	this.FindPlayer=function(id)
 	{
@@ -946,6 +1084,7 @@ function GameData(gamefile)
 		gFile.open((file_exists(gFile.name) ? 'r+':'w+'),true); 		
 		gFile.iniSetValue(null,"gamenumber",this.gamenumber);
 		gFile.iniSetValue(null,"turn",this.turn);
+		gFile.iniSetValue(null,"singleplayer",this.singleplayer);
 		gFile.iniSetValue(null,"finished",this.finished);
 		gFile.iniSetValue(null,"started",this.started);
 		gFile.iniSetValue(null,"password",this.password);
@@ -1009,6 +1148,7 @@ function GameData(gamefile)
 		gFile.open("r",true);
 		this.gamenumber=parseInt(gFile.iniGetValue(null,"gamenumber"),10);
 		this.turn=gFile.iniGetValue(null,"turn");
+		this.singleplayer=gFile.iniGetValue(null,"singleplayer");
 		this.finished=gFile.iniGetValue(null,"finished");
 		this.started=gFile.iniGetValue(null,"started");
 		this.password=gFile.iniGetValue(null,"password");
