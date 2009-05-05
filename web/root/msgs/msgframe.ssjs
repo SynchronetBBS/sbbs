@@ -7,12 +7,16 @@
 load("../web/lib/template.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
-var path=http_request.path_info.split(/\//);
+var path=http_request.path_info.split(/[\\\/]/);
 if(path==undefined) {
         error("No path info!");
 }
 var sub=path[1];
 var id=parseInt(path[2]);
+
+if(sub==undefined) {
+    error("Invalid path: " + http_request.path_info);
+}
 
 var msgbase = new MsgBase(sub);
 
