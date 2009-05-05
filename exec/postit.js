@@ -1,6 +1,5 @@
 /*
 	Javascript port of post-it notes
-	Matt Johnson - 2008
 */
 load("sbbsdefs.js");
 load("funclib.js");
@@ -12,7 +11,6 @@ var root_dir;
 try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
 root_dir = root_dir.replace(/[^\/\\]*$/,'');
 var logger=new Logger(root_dir,root_name);
-js.on_exit("logger.ScreenDump()");
 
 var current=new MessageList(root_dir,root_name,".dat");
 var history=new MessageList(root_dir,root_name,".his");
