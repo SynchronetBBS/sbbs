@@ -195,8 +195,9 @@ function 	Map(c,r,p,gn)
 		}
 		else 
 		{
-			scores[this.winner].score+=2;
-			GameLog("giving 2 points to user " + this.winner);
+			var points=this.players.length<5?1:2;
+			scores[this.winner].score+=points;
+			GameLog("giving " + points + " points to user " + this.winner);
 		}
 		games.StoreRankings();
 	}
@@ -217,8 +218,9 @@ function 	Map(c,r,p,gn)
 			}
 			else
 			{
-				pointBuffer=7-this.maxPlayers;
-				pts=points[pointBuffer+(this.eliminated.length-1)];
+				var pointBuffer=7-this.maxPlayers;
+				var offset=(this.players.length<5?2:1);
+				pts=points[pointBuffer+(this.eliminated.length-offset)];
 				scores[dead.user].score+=pts;
 				GameLog("giving " + pts + " points to user " + system.username(dead.user));
 			}

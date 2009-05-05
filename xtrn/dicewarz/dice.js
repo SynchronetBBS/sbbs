@@ -13,6 +13,7 @@
 
 	load("sbbsdefs.js");
 	load("graphic.js");
+	load("logging.js");
 	var game_dir;
 	try { barfitty.barf(barf); } catch(e) { game_dir = e.fileName; }
 	game_dir = game_dir.replace(/[^\/\\]*$/,'');
@@ -45,27 +46,16 @@
 
 //######################### DO NOT CHANGE THIS SECTION ##########################	
 
-	var log_list=[];
 	if(!file_isdir(game_dir+"logs")) mkdir(game_dir+"logs");
-	else log_list=directory(game_dir + "logs/*.log"); 		
-	var logfile=new File(game_dir + "logs/dice" + log_list.length + ".log");
-	logfile.open('w+',false);
-	logfile.writeln("######DICE WARZ LOG DATA####### " + system.datestr() +" - "+ system.timestr());
-
-
-	//TODO: 	MAKE BETTER USER OF THE USER FILES. CAN BE USED FOR REALTIME MULTIPLAYER, AND FOR USER PRESENCE DETECTION
-	//		IN THE EVENT A USER IS BEING NOTIFIED OF HIS OR HER TURN IN A GAME, THE TELEGRAMS WILL BE SUPPRESSED IF THE USER IS ALREADY RUNNING THE PROGRAM
+	var gamelog=new Logger(game_dir + "logs/","dice");
 	var userFileName=game_dir + user.alias + ".usr";
 	var userFile=new File(userFileName);
 	userFile.open('a');
 	userFile.close();
 
-	//TODO:  MAKE REALTIME MULTIPLAYER FEATURES POSSIBLY USING THE EXISTING FILE LOCK SYSTEM OR QUEUES
-	// var 	dataQueue=		new Queue(dice);
-	
 	const	daySeconds=		86400;
 	const 	startRow=		4;
-	const  	startColumn=	3;
+	const  startColumn=	3;
 	const	menuRow=		1;
 	const	menuColumn=		50;
 	const 	columns=		9;
@@ -1592,7 +1582,7 @@ function	GameStatusInfo()
 }
 function	GameLog(data)
 {
-	logfile.writeln(data);
+	gamelog.Log(data);
 }
 
 	SplashScreen();
