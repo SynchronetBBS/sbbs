@@ -48,6 +48,7 @@ function GameSession(game,join)
 								"~New Game"						,
 								"~Place Ships"					,
 								"~Attack"						,
+								"~Forfeit"						,
 								"~Help"							,
 								"Game ~Info"					,
 								"Re~draw"						];
@@ -156,10 +157,13 @@ function GameSession(game,join)
 	}
 	this.HandleExit=function()
 	{
-		if(this.game.finished && this.currentplayer && this.currentplayer.id!=this.game.winner)
+		if(this.game.finished && this.currentplayer)
 		{
-			if(file_exists(this.game.gamefile.name))
-				file_remove(this.game.gamefile.name);
+			if(this.currentplayer.id!=this.game.winner || this.game.singleplayer)	
+			{
+				if(file_exists(this.game.gamefile.name))
+					file_remove(this.game.gamefile.name);
+			}
 		}
 		return true;
 	}
@@ -203,6 +207,9 @@ function GameSession(game,join)
 						break;
 					case "D":
 						this.Redraw();
+						break;
+					case "F":
+						this.Forfeit();
 						break;
 					case "I":
 						this.UpdateStatus();
@@ -822,29 +829,111 @@ function GameSession(game,join)
 			var segment=opponent.board.grid[coords.x][coords.y].segment;
 			var shipid=opponent.board.grid[coords.x][coords.y].id;
 			var ship=opponent.board.ships[shipid];
+			this.game.lastcpuhit=coords;
 			ship.TakeHit(segment);
 			if(ship.sunk)
 			{
-				this.Notice("\1r\1hYou sank " + opponent.name + "'s ship!");
+				this.Notice("\1r\1hCPU sank your ship!");
 			}
-			else this.Notice("\1r\1hComputer hit your ship!");
+			else this.Notice("\1r\1hCPU hit your ship!");
 			return true;
 		}
 		else
 		{
-			this.Notice("\1c\1hComputer fired and missed!");
+			this.Notice("\1c\1hCPU fired and missed!");
 			return false;
 		}
 	}
 	this.ComputerAttack=function(opponent)
 	{
-		while(1)
+		var coords=new Object();
+		if(this.game.lastcpuhit && opponent.board.grid[this.game.lastcpuhit.x][this.game.lastcpuhit.y])
 		{
-			var randcolumn=random(10);
-			var randrow=random(10);
-			if(!opponent.board.shots[randcolumn][randrow]) return({'x':randcolumn,'y':randrow});
+			var shipid=opponent.board.grid[this.game.lastcpuhit.x][this.game.lastcpuhit.y].id;
+			if(!opponent.board.ships[shipid].sunk)
+			{
+				var start={'x':this.game.lastcpuhit.x,'y':this.game.lastcpuhit.y};
+				coords=this.FindNearbyTarget(opponent.board,start);
+				if(coords) return coords;
+			}
+		}
+		else
+		{
+			for(x in opponent.board.shots)
+			{
+				for(y in opponent.board.shots[x])
+				{
+					if(opponent.board.grid[x][y])
+					{
+						var shipid=opponent.board.grid[x][y].id;
+						if(!opponent.board.ships[shipid].sunk)
+						{
+							var start={'x':x,'y':y};
+							coords=this.FindNearbyTarget(opponent.board,start);
+							if(coords) return coords;
+						}
+					}
+				}
+			}
+		}
+		coords=this.FindRandomTarget(opponent.board);
+		return(coords);
+	}
+	this.FindNearbyTarget=function(board,coords)
+	{
+		var tried=[];
+		var tries=4;
+		while(tries>0)
+		{
+			var randdir=random(4);
+			if(!tried[randdir])
+			{
+				switch(randdir)
+				{
+					case 0: //north
+						if(coords.y>0 && !board.shots[coords.x][coords.y-1]) 
+						{
+							coords.y--;
+							return coords;
+						}
+						break;
+					case 1: //south
+						if(coords.y<9 && !board.shots[coords.x][coords.y+1]) 
+						{
+							coords.y++;
+							return coords;
+						}
+						break;
+					case 2: //east
+						if(coords.x<9 && !board.shots[coords.x+1][coords.y]) 
+						{
+							coords.x++;
+							return coords;
+						}
+						break;
+					case 3: //west
+						if(coords.x>0 && !board.shots[coords.x-1][coords.y]) 
+						{
+							coords.x--;
+							return coords;
+						}
+						break;
+				}
+				tried[randdir]=true;
+				tries--;
+			}
 		}
 		return false;
+	}
+	this.FindRandomTarget=function(board)
+	{
+		while(1)
+		{
+			column=random(10);
+			row=random(10);
+			if(!board.shots[column][row]) break;
+		}
+		return({'x':column,'y':row});
 	}
 	this.ComputerPlacement=function()
 	{
@@ -905,6 +994,7 @@ function GameData(gamefile)
 	this.players=[];
 	this.password;
 	this.singleplayer;
+	this.lastcpuhit;
 	this.winner;
 	this.turn;
 	this.started;
@@ -1075,6 +1165,7 @@ function GameData(gamefile)
 		var position=GetBoardPosition({'x':coords.x,'y':coords.y});
 		var section=id+".board."+position;
 		this.gamefile.iniSetValue(section,"shot",true);
+		this.gamefile.iniSetValue(null,"lastcpuhit",GetBoardPosition(this.lastcpuhit));
 		this.gamefile.close();
 	}
 	this.StoreGame=function()
@@ -1084,7 +1175,6 @@ function GameData(gamefile)
 		gFile.open((file_exists(gFile.name) ? 'r+':'w+'),true); 		
 		gFile.iniSetValue(null,"gamenumber",this.gamenumber);
 		gFile.iniSetValue(null,"turn",this.turn);
-		gFile.iniSetValue(null,"singleplayer",this.singleplayer);
 		gFile.iniSetValue(null,"finished",this.finished);
 		gFile.iniSetValue(null,"started",this.started);
 		gFile.iniSetValue(null,"password",this.password);
@@ -1092,6 +1182,7 @@ function GameData(gamefile)
 		gFile.iniSetValue(null,"bonusattack",this.bonusattack);
 		gFile.iniSetValue(null,"spectate",this.spectate);
 		gFile.iniSetValue(null,"winner",this.winner);
+		gFile.iniSetValue(null,"singleplayer",this.singleplayer);
 		gFile.close();
 	}
 	this.LoadPlayers=function()
@@ -1156,6 +1247,7 @@ function GameData(gamefile)
 		this.bonusattack=gFile.iniGetValue(null,"bonusattack");
 		this.spectate=gFile.iniGetValue(null,"spectate");
 		this.winner=gFile.iniGetValue(null,"winner");
+		this.lastcpuhit=GetBoardPosition(gFile.iniGetValue(null,"lastcpuhit"));
 		var playerlist=this.gamefile.iniGetKeys("players");
 		for(player in playerlist)
 		{

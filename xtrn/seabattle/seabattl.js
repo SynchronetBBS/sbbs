@@ -394,22 +394,19 @@ function GameLobby()
 				break;
 		}
 		
-		if(!newgame.multishot)
+		gamechat.Alert("\1nBonus attack for each hit? [\1hy\1n,\1hN\1n]: ");
+		var bonus=console.getkeys("\x1bYN");
+		switch(bonus)
 		{
-			gamechat.Alert("\1nBonus attack for each hit? [\1hy\1n,\1hN\1n]: ");
-			var bonus=console.getkeys("\x1bYN");
-			switch(bonus)
-			{
-				case "Y":
-					newgame.bonusattack=true;
-					break;
-				case "\x1b":
-					gamechat.Alert("\1r\1hGame Creation Aborted");
-					return false;
-				default:
-					newgame.bonusattack=false;
-					break;
-			}
+			case "Y":
+				newgame.bonusattack=true;
+				break;
+			case "\x1b":
+				gamechat.Alert("\1r\1hGame Creation Aborted");
+				return false;
+			default:
+				newgame.bonusattack=false;
+				break;
 		}
 		
 		gamechat.Alert("\1nAllow spectators to see board? [\1hy\1n,\1hN\1n]: ");
