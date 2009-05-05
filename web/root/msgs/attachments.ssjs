@@ -9,7 +9,7 @@
 load("../web/lib/template.ssjs");
 load("../web/lib/mime_decode.ssjs");
 
-var path=http_request.path_info.split(/\//);
+var path=http_request.path_info.split(/[\\\/]/);
 if(path==undefined) {
 	error("No path info!");
 }
