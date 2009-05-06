@@ -215,13 +215,13 @@ function mime_get_attach(hdr, body, filename)
 		msgbits=body.split(re);
 		/* Search for attachments */
 		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+			var pieces=msgbits[bit].split(/\r+\n\r+\n/);
 			var disp=pieces[0].match(/content-disposition:\s+(?:attachment|inline)[;\s]*filename="?([^";\r\n]*)"?/i);
 			if(disp==undefined)
 				continue;
 			if(disp[1]==filename) {
 				var contyp=pieces[0].match(/content-type:\s*([^\r\n]*)/i);
-				var content=pieces.slice(2).join('');
+				var content=pieces.slice(1).join('');
 				if(contyp!=undefined && contyp[0]!=undefined)
 					Message.content_type=contyp[1];
 				Message.body=decode_body(undefined,pieces[0],content);
