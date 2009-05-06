@@ -30,7 +30,7 @@ hdr=msgbase.get_msg_header(false,id);
 if(hdr==undefined) {
 	error("No such message!");
 }
-if(sub=='mail' && hdr.from_ext!=user.number)
+if(sub=='mail' && hdr.to_ext!=user.number)
     error("You can only read e-mail attachments addressed to yourself!");
 
 body=msgbase.get_msg_body(false,id);
