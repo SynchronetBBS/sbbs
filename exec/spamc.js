@@ -130,7 +130,7 @@ function main()
 		return;
 	log(LOG_INFO, "re-writing message");
 	var msg_file = new File(message_text_filename);
-	if(!msg_file.open("w")) {
+	if(!msg_file.open("wb")) {
 		log(LOG_ERR,format("!ERROR %d opening message text file: %s"
 			,msg_file.error, message_text_filename));
 		return;
