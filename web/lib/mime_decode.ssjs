@@ -96,7 +96,7 @@ function mime_decode(hdr, body)
 				var pheads=pieces[0];
 				if(pheads==undefined)
 					continue;
-				var content=pieces.slice(2).join('');
+				var content=pieces.slice(1).join('');
 				if(content==undefined)
 					continue;
 				if(pheads.search(/content-type: text\/html/i)!=-1) {
@@ -117,7 +117,7 @@ function mime_decode(hdr, body)
 			for(bit in msgbits) {
 				var pieces=msgbits[bit].split(/\r?\n\r?\n/);
 				var pheads=pieces[0];
-				var content=pieces.slice(2).join('');
+				var content=pieces.slice(1).join('');
 				if(content==undefined)
 					continue;
 				if(pheads.search(/content-type: text\/plain/i)!=-1) {
@@ -265,7 +265,7 @@ function mime_get_cid_attach(hdr, body, cid)
 				continue;
 			if(disp[1]==cid) {
 				var contyp=pieces[0].match(/content-type:\s*([^\r\n]*)/i);
-				var content=pieces.slice(2).join('');
+				var content=pieces.slice(1).join('');
 				if(contyp!=undefined && contyp[0]!=undefined)
 					Message.content_type=contyp[1];
 				Message.body=decode_body(undefined,pieces[0],content);
