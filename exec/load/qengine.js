@@ -16,9 +16,9 @@ function DataQueue(root,name,log_)
 	this.root=			(root?root:"/sbbs/");
 	this.name=			(name?name:"default");
 	this.queuelog=		(log_?log_:false);
+	this.stream=		new Queue(this.name + "." + user.alias);
 
 	this.notices=[];
-	this.stream=	new Queue(this.name + "." + user.alias);
 	this.user_file=	new File(this.root + "users.lst");
 	this.last_user_update=0;
 	this.users;
@@ -81,7 +81,7 @@ function DataQueue(root,name,log_)
 	}
 	this.UpdateUsers=function()
 	{
-		if(file_date(this.user_file.name)==this.last_user_update) return;
+		if(file_date(this.user_file.name)==this.last_user_update) return false;
 		this.last_user_update=file_date(this.user_file.name);
 		this.user_file.open('r+',true);
 		var user_list=this.user_file.iniGetKeys(this.thread);
@@ -116,6 +116,7 @@ function DataQueue(root,name,log_)
 			}
 		}
 		this.user_file.close();
+		return true;
 	}
 	this.DataWaiting=function(ident)
 	{
