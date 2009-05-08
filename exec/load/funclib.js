@@ -52,6 +52,20 @@ function RemoveSpaces(text)
 	while(text.indexOf(" ")==0) text=text.substr(1);
 	return truncsp(text);
 }
+function SplitPadded(string1,string2,length,padding)
+{
+	if(!padding) padding=" ";
+	var strlength=console.strlen(string1 + string2);
+	if(strlength>length)
+	{
+		string=string.substring(0,length);
+	}
+	var padlength=length-strlength;
+	var padded="";
+	for(p=0;p<padlength;p++) padded+=padding;
+	newstring=(string1 + padded + string2);
+	return(newstring);
+}
 function PrintPadded(string,length,padding,justification)
 {
 	if(!padding) padding=" ";
@@ -71,8 +85,11 @@ function PrintPadded(string,length,padding,justification)
 }
 function DrawLine(x,y,length,color)
 {
-	console.gotoxy(x,y);
-	if(y==24) while(x+length>80) length-=1;
+	if(x && y)
+	{
+		console.gotoxy(x,y);
+		if(y==24) while(x+length>80) length-=1;
+	}
 	for(i=0;i<length;i++)
 	{
 		console.putmsg((color?color:"\1k\1h") + "\xc4");
