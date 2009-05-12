@@ -15,67 +15,118 @@ load("clock.js");
 var root;
 try { barfitty.barf(barf); } catch(e) { root = e.fileName; }
 root = root.replace(/[^\/\\]*$/,"");
-var logger=new Logger(root,"chatshell");
+var logger=new Logger(root,"cshell");
 bbs.sys_status |= SS_PAUSEOFF;	
 console.clear();
 var fullredraw=false;
 
 function Main()
 {
+	var use_bg=false;
 	var clearinput=true;
-	while(1)
+	menulist.LoadMenu("main");
+	
+	function Main()
 	{
-		Cycle();
-		var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-		if(k)
+		chatroom.Welcome();
+		while(1)
 		{
-			if(clearinput) 
+			Cycle();
+			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(k)
 			{
-				chatroom.ClearInputLine();
-				clearinput=false;
-			} 
-			switch(k.toUpperCase())
+				if(clearinput) 
+				{
+					chatroom.ClearInputLine();
+					clearinput=false;
+				} 
+				switch(k.toUpperCase())
+				{
+					case KEY_LEFT:
+						Menu();
+						break;
+					case KEY_RIGHT:
+						break;
+					case ';':
+						if(!chatroom.chat.buffer.length) 
+						{
+							chatroom.Alert("Command (? For Help): ");
+							if(!console.aborted) {
+								var str=console.getstr("",40,K_EDIT);
+								menulist.clear_screen();
+								if(str=='?') {
+									if(!user.compare_ars("SYSOP"))
+										str='HELP';
+								}
+								if(str=='?') {
+									//TODO: list sysop commands in chat window
+								}
+								else {
+									var oldshell=user.command_shell;
+									str_cmds(str);
+									/* Still using this shell? */
+									if(user.command_shell != oldshell)
+										exit(0);
+								}
+							}					
+						}
+						else if(!Chat(k,chatroom.chat)) return;
+						break;
+					case "/":
+						if(!chatroom.chat.buffer.length) 
+						{
+							chatroom.ListCommands();
+							chatroom.Menu();
+							chatroom.Redraw();
+						}
+						else if(!Chat(k,chatroom.chat)) return;
+						break;
+					case "\x1b":	
+						Exit();
+						break;
+					default:
+						if(!Chat(k,chatroom.chat)) return;
+						break;
+				}
+			}
+		}
+	}
+	function Menu()
+	{
+		var diff=0;
+		var width=0;
+		var next_key='';
+		while(1) 
+		{
+			var key=next_key;
+			next_key='';
+			if(key=='')
 			{
+				diff=menulist.menu.width-width+2;
+				chatroom.Expand(-(diff),"left");
+				key=menulist.menu.getval()
+			}
+			else menulist.menu.draw();
+			width=menulist.menu.width+2;
+			switch(key)
+			{
+				case ctrl('O'): /* CTRL-O - Pause */
+				case ctrl('U'): /* CTRL-U User List */
+				case ctrl('T'): /* CTRL-T Time Info */
+				case ctrl('K'): /* CTRL-K Control Key Menu */
+				case ctrl('P'): /* Ctrl-P Messages */
+					this.ControlKeys.handle(key);
+					break;
 				case KEY_LEFT:
-					mainmenu.Main();
+					menulist.PreviousMenu();
 					break;
 				case KEY_RIGHT:
-					break;
-				case ';':
-					chatroom.Alert("Command (? For Help): ");
-					if(!console.aborted) {
-						var str=console.getstr("",40,K_EDIT);
-						MainMenu.clear_screen();
-						if(str=='?') {
-							if(!user.compare_ars("SYSOP"))
-								str='HELP';
-						}
-						if(str=='?') {
-							//TODO: list sysop commands in chat window
-						}
-						else {
-							var oldshell=user.command_shell;
-							str_cmds(str);
-							/* Still using this shell? */
-							if(user.command_shell != oldshell)
-								exit(0);
-						}
-					}
-					break;
-				case "/":
-					if(!chatroom.chat.buffer.length) 
-					{
-						chatroom.ListCommands();
-						chatroom.Menu();
-						chatroom.Redraw();
-					}
-					else if(!Chat(k,chatroom.chat)) return;
-					break;
-				case "\x1b":	
-					Exit();
-					break;
+				case "\x1b":
+					diff=menulist.menu.width+2;
+					chatroom.Expand(diff,"left");
+					return;
 				default:
-					if(!Chat(k,chatroom.chat)) return;
+					menulist.process(key);
 					break;
 			}
 		}
@@ -95,6 +146,7 @@ function Exit()
 }
 function Redraw()
 {
+	console.clear();
 	userlist.Redraw();
 	chatroom.Redraw();
 	clock.Redraw();
@@ -109,6 +161,7 @@ function ChatRoom()
 	this.columns=59;
 	this.menu;
 	this.chat=new ChatEngine(root,"chatshell",logger);
+
 	this.InitChat=function()
 	{
 		var rows=this.rows;
@@ -116,6 +169,24 @@ function ChatRoom()
 		var posx=this.x;
 		var posy=this.y;
 		this.chat.Init("Main Menu",true,columns,rows,posx,posy,false,true,"\1k\1h",true);
+	}
+	this.Welcome=function()
+	{
+		var welcome=[];
+		welcome.push("\1b\1hWelcome to the BRoKEN BuBBLE BBS!");
+		welcome.push("\1k\1h---------------------------------");
+		welcome.push("\1n\1cThis menu shell is a work in");
+		welcome.push("\1n\1cprogress. Press the left arrow");
+		welcome.push("\1n\1ckey at any time for the main menu");
+		welcome.push("\1n\1cor '/' for an in-chat menu.");
+		welcome.push("\1n\1cJust start typing to chat with");
+		welcome.push("\1n\1cother users. Let me know of any");
+		welcome.push("\1n\1cbugs or issues -- MCMLXXIX");
+		this.chat.DisplayInfo(welcome);
+		this.Alert("\1r\1h[Press any key]");
+		while(console.inkey()=="");
+		this.Redraw();
+		
 	}
 	this.Alert=function(text)
 	{
@@ -133,33 +204,40 @@ function ChatRoom()
 	{
 		this.chat.Redraw();
 	}
-	this.Resize=function(width,height,x,y)
+	this.Expand=function(width,side)
 	{
-		var rows=this.rows;
-		var columns=this.columns;
-		var posx=this.x;
-		var posy=this.y;
-		if(width)
+		var cols=this.columns;
+		var x=this.x;
+		if(side=="left")
 		{
-			width+=2;
-			columns-=width;
-			if(x)
-			{
-				posx=x;
-			}
-			else posx+=width;
+			x-=width;
+			cols+=width;
 		}
-		if(height)
+		if(side=="right")
 		{
-			height+=2;
-			rows-=height;
-			if(y)
-			{
-				posy=y;
-			}
-			else posy+=height;
+			cols+=width;
 		}
-		this.chat.Resize(posx,posy,columns,rows);
+		this.Resize(cols,undefined,x);
+	}
+	this.Resize=function(cols,rows,x,y)
+	{
+		if(x)
+		{
+			this.x=x;
+		}
+		if(y)
+		{
+			this.y=y;
+		}
+		if(cols)
+		{
+			this.columns=cols;
+		}
+		if(rows)
+		{
+			this.rows=rows;
+		}
+		this.chat.Resize(this.x,this.y,this.columns,this.rows);
 		if(fullredraw) 
 		{
 			Redraw();
@@ -172,6 +250,8 @@ function ChatRoom()
 		this.menu=new Menu(	this.chat.input_line.x,this.chat.input_line.y,"\1n","\1c\1h");
 		var menu_items=[		"~Logoff Fast"					, 
 								"~Help"							,
+								"Toggle ~user list"				,
+								"Toggle ~clock"					,
 								"Re~draw"						];
 		this.menu.add(menu_items);
 	}
@@ -191,6 +271,30 @@ function ChatRoom()
 				case "H":
 					this.Help();
 					break;
+				case "C":
+					if(clock.hidden)
+					{
+						clock.Unhide();
+						userlist.Resize(undefined,-(clock.rows+2),clock.x,clock.y+clock.rows+2);
+					}
+					else 
+					{
+						clock.Hide();
+						userlist.Resize(undefined,clock.rows+2,clock.x,clock.y);
+					}
+					break;
+				case "U":
+					if(userlist.hidden)
+					{
+						this.Expand(-(userlist.columns+2),"right");
+						userlist.Unhide();
+					}
+					else
+					{
+						this.Expand(userlist.columns+2,"right");
+						userlist.Hide();
+					}
+					break;
 				case "D":
 					Redraw();
 					break;
@@ -204,6 +308,7 @@ function ChatRoom()
 	this.Help=function()
 	{
 		//TODO: write help file
+		this.Welcome();
 	}
 	function Menu(x,y,color,hkey_color)		
 	{								
@@ -306,16 +411,8 @@ function ChatRoom()
 	this.InitChat();
 	this.InitMenu();
 }
-function MainMenu()
+function MenuList()
 {
-	const LBShell_Attr=0x37;
-	const MessageWindow_Attr=7;
-	const MessageTimeout=6000;		/* 100ths of a second */
-	const posx=1;
-	const posy=8;
-	
-	var use_bg=false;
-	var MessageWindow=new Graphic(80,console.screen_rows,MessageWindow_Attr,' ');
 	var bars80="\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4";
 	var spaces80="                                                                               ";
 	var msg_rows=0;
@@ -326,270 +423,15 @@ function MainMenu()
 	var orig_passthru=console.ctrlkey_passthru;
 	var hangup_now=false;
 	var done=0;
+	var previous=[];
+	var curr_xtrnsec=0;
+	const LBShell_Attr=0x37;
+	const posx=1;
+	const posy=8;
 	
-	this.Main=function()
-	{
-		var next_key='';
-		while(1) 
-		{
-			var done=0;
-			var key=next_key;
-			var extra_select=false;
-			next_key='';
-			bbs.node_action=NODE_MAIN;
-			if(key=='')
-			{
-				chatroom.Resize(mainbar.width);
-				key=mainbar.getval()
-			}
-			else
-				mainbar.draw();
-			extra_select=false;
-			if(key==KEY_RIGHT) 
-			{
-				chatroom.Resize();
-				return;
-			}
-			if(key=='\x1b')
-			{
-				chatroom.Resize();
-				return;
-			}
-			switch(key) 
-			{
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(key);
-					break;
-				case 'F':
-					if(!show_filemenu()) 
-					{
-						chatroom.Resize();
-						return;;
-					}
-					break;
-				case 'S':
-					if(!show_settingsmenu())
-					{
-						chatroom.Resize();
-						return;;
-					}
-					break;
-				case 'E':
-					if(!show_emailmenu())
-					{
-						chatroom.Resize();
-						return;;
-					}
-					break;
-				case 'M':
-					if(!show_messagemenu())
-					{
-						chatroom.Resize();
-						return;;
-					}
-					break;
-				case 'C':
-					if(!show_chatmenu())
-					{
-						chatroom.Resize();
-						return;;
-					}
-					break;
-				case 'O':
-					var curr_xtrnsec=0;
-					var x_sec;
-					var x_prog;
-					done=false;
-					var xtrnsec=new Xtrnsecs;
-					chatroom.Resize(xtrnsec.width);
-					menus_displayed.push(xtrnsec);
-					while(!done) 
-					{
-						x_sec=xtrnsec.getval();
-						if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
-							break;
-						if(x_sec==KEY_RIGHT)
-						{
-							chatroom.Resize();
-							return;
-						}
-						if(x_sec==KEY_LEFT)
-						{
-							break;
-						}
-						if(x_sec==ctrl('O')
-								|| x_sec==ctrl('U')
-								|| x_sec==ctrl('T')
-								|| x_sec==ctrl('K')
-								|| x_sec==ctrl('P')) {
-							handle_a_ctrlkey(x_sec);
-							continue;
-						}
-						curr_xtrnsec=parseInt(x_sec);
-						var this_xtrnsec=new Xtrnsec(curr_xtrnsec);
-						chatroom.Resize(this_xtrnsec.width);
-						menus_displayed.push(this_xtrnsec);
-						while(1) {
-							x_prog=this_xtrnsec.getval();
-							if(x_prog==KEY_LEFT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') 
-							{
-								done=1;
-								break;
-							}
-							if(x_prog==KEY_RIGHT) 
-							{
-								chatroom.Resize();
-								return;
-							}
-							if(x_prog==ctrl('O')
-									|| x_prog==ctrl('U')
-									|| x_prog==ctrl('T')
-									|| x_prog==ctrl('K')
-									|| x_prog==ctrl('P')) {
-								handle_a_ctrlkey(x_prog);
-								continue;
-							}
-							clear_screen();
-							bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
-							draw_main();
-							xtrnsec.draw();
-						}
-						menus_displayed.pop();
-					}
-					menus_displayed.pop();
-					break;
-				case 'V':
-					var infomenu=new Infomenu;
-					chatroom.Resize(infomenu.width);
-					menus_displayed.push(infomenu);
-					infoloop: while(1) {
-						key=infomenu.getval();
-						switch(key) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(key);
-								break;
-							case 'I':
-								clear_screen();
-								bbs.sys_info();
-								console.pause();
-								draw_main();
-								break;
-							case 'V':
-								clear_screen();
-								bbs.ver();
-								console.pause();
-								draw_main();
-								break;
-							case 'S':
-								clear_screen();
-								bbs.sub_info();
-								console.pause();
-								draw_main();
-								break;
-							case 'Y':
-								clear_screen();
-								bbs.user_info();
-								console.pause();
-								draw_main();
-								break;
-							case KEY_LEFT:
-								if(infomenu.items[infomenu.current].retval!='U') {
-									done=1;
-									break infoloop;
-								}
-								// Fall-through
-							case 'U':
-								var userlists=new Userlists;
-								chatroom.Resize(userlists.width);
-								menus_displayed.push(userlists);
-								userlistloop: 
-								while(1) 
-								{
-									key=userlists.getval();
-									switch(key) {
-										case ctrl('O'): /* CTRL-O - Pause */
-										case ctrl('U'): /* CTRL-U User List */
-										case ctrl('T'): /* CTRL-T Time Info */
-										case ctrl('K'): /* CTRL-K Control Key Menu */
-										case ctrl('P'): /* Ctrl-P Messages */
-											handle_a_ctrlkey(key);
-											break;
-										case KEY_LEFT:
-											break infoloop;
-										case KEY_RIGHT:
-										case '\b':
-										case '\x7f':
-										case '\x1b':
-											chatroom.Resize();
-											return;
-										case 'L':
-											clear_screen();
-											bbs.list_logons();
-											console.pause();
-											draw_main();
-											infomenu.draw();
-											break;
-										case 'S':
-											clear_screen();
-											bbs.list_users(UL_SUB);
-											console.pause();
-											draw_main();
-											infomenu.draw();
-											break;
-										case 'A':
-											clear_screen();
-											bbs.list_users(UL_ALL);
-											console.pause();
-											draw_main();
-											infomenu.draw();
-											break;
-									}
-								}
-								menus_displayed.pop();
-								break;
-							case 'T':
-								clear_screen();
-								bbs.text_sec();
-								draw_main();
-								break infoloop;
-							case KEY_RIGHT:
-								chatroom.Resize();
-								return;
-							case '\b':
-							case '\x7f':
-							case '\x1b':
-								break infoloop;
-						}
-					}
-					menus_displayed.pop();
-					break;
-
-				case 'L':
-					if(bbs.batch_dnload_total) {
-						if(console.yesno(bbs.text(DownloadBatchQ))) {
-							bbs.batch_download();
-							bbs.logoff();
-						}
-					}
-					else
-						bbs.hangup();
-
-				case 'Q':
-					if(!extra_select)
-						exit(1);
-			}
-		}
+	this.menu;
+	this.process;
 	
-	}
-
 	function Mainbar()
 	{
 		/* ToDo: They all need this... feels like a bug to ME */
@@ -627,8 +469,8 @@ function MainMenu()
 		this.items=new Array();
 		// Width of longest line with no dynamic variables
 		var width=0;
-		if(width < 12+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
-			width=12+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
+		if(width < 14+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
+			width=14+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
 		this.width=width;
 		this.xpos=posx;
 		this.ypos=posy;
@@ -698,31 +540,6 @@ function MainMenu()
 		this.callback=message_callback;
 	}
 	Filedirmenu.prototype=new Lightbar;
-	function Fileinfo()
-	{
-		this.width=32;
-		this.items=new Array();
-		this.xpos=posx;
-		this.ypos=posy;
-		this.lpadding="\xb3";
-		this.rpadding="\xb3";
-		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-		this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		this.add("File |Transfer Policy","T",32);
-		this.add("Information on |Directory","D",32);
-		this.add("|Users With Access to Dir","U",32);
-		this.add("|Your File Transfer Statistics","Y",32);
-		while(this.items.length<console.screen_rows-(this.ypos+2))
-		{
-			this.add("","",12);
-		}
-		this.add("|< Previous Menu","",12);
-		this.add(format_opt("Return to Chat",32,true),"",32);
-		this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
-	}
-	Fileinfo.prototype=new Lightbar;
 	function Settingsmenu()
 	{
 		var width=18;
@@ -776,6 +593,7 @@ function MainMenu()
 	Emailmenu.prototype=new Lightbar;
 	function Messagemenu()
 	{
+		this.items=new Array();
 		var width=31;
 		this.width=width;
 
@@ -913,7 +731,8 @@ function MainMenu()
 	Xtrnsec.prototype=new Lightbar;
 	function Infomenu()
 	{
-		this.width=25;
+		var width=25;
+		this.width=width;
 		this.items=new Array();
 		this.xpos=posx;
 		this.ypos=posy;
@@ -921,17 +740,17 @@ function MainMenu()
 		this.rpadding="\xb3";
 		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
 		this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
-		this.add("System |Information","I",25);
-		this.add("Synchronet |Version Info","V",25);
-		this.add("Info on |Sub-Board","S",25);
-		this.add("|Your Statistics","Y",25);
-		this.add("|User Lists","U",25);
-		this.add("|Text Files","T",25);
+		this.add("System |Information","I",width);
+		this.add("Synchronet |Version Info","V",width);
+		this.add("Info on |Sub-Board","S",width);
+		this.add("|Your Statistics","Y",width);
+		this.add("|User Lists","U",width);
+		this.add("|Text Files","T",width);
 		while(this.items.length<console.screen_rows-(this.ypos+2))
 		{
-			this.add("","",25);
+			this.add("","",width);
 		}
-		this.add("|< Previous Menu","",25);
+		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
 		this.timeout=100;
@@ -947,7 +766,7 @@ function MainMenu()
 		this.lpadding="\xb3";
 		this.rpadding="\xb3";
 		this.hotkeys=KEY_RIGHT+KEY_LEFT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-		this.add("\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf",undefined,undefined,"","");
+		this.add(top_bar(this.width),undefined,undefined,"","");
 		this.add("|Logons Today","L",12);
 		this.add("|Sub-Board","S",12);
 		this.add("|All","A",12);
@@ -957,55 +776,1250 @@ function MainMenu()
 		}
 		this.add("|< Previous Menu","",12);
 		this.add(format_opt("Return to Chat",width,true),"",width);
-		this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
 		this.timeout=100;
 		this.callback=message_callback;
 	}
 	Userlists.prototype=new Lightbar;
-
-	function handle_a_ctrlkey(key)
+	function Emailtargetmenu()
 	{
-		var i;
-		var pause=false;
-		switch(key) {
-			case ctrl('O'):	/* CTRL-O - Pause */
+		this.items=new Array();
+		this.width=30;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('To |Sysop','S',this.width,undefined,undefined,user.compare_ars("REST S"));
+		this.add('To |Local User','L',this.width,undefined,undefined,user.compare_ars("REST E"));
+		this.add('To Local User with |Attachment','A',this.width,undefined,undefined,user.compare_ars("REST E"));
+		this.add('To |Remote User','R',this.width,undefined,undefined,user.compare_ars("REST E OR REST M"));
+		this.add('To Remote User with A|ttachment','T',this.width,undefined,undefined,user.compare_ars("REST E OR REST M"));
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Emailtargetmenu.prototype=new Lightbar;
+	function Download()
+	{
+		this.items=new Array();
+		this.width=17;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('|Batch','B',this.width,undefined,undefined,bbs.batch_dnload_total<=0);
+		this.add('By |Name/File spec','N',this.width);
+		this.add('From |User','U',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Download.prototype=new Lightbar;
+	function Upload()
+	{
+		this.items=new Array();
+		this.width=19;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
+			if(this.width<9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
+				this.width=9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
+		}
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
+			this.add('To |Dir ('+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+')','C',this.width,undefined,undefined,!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload);
+		}
+		else {
+			this.add('To Upload |Dir','P',this.width);
+		}
+		this.add('To |Sysop Only','S',this.width,undefined,undefined,file_area.sysop_dir==undefined);
+		this.add('To Specific |User(s)','U',this.width,undefined,undefined,file_area.user_dir==undefined);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Upload.prototype=new Lightbar;
+	function Fileinfo()
+	{
+		this.items=new Array();
+		this.width=32;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('File |Contents','C',this.width);
+		this.add('File |Information','I',this.width);
+		this.add('File Transfer |Policy','P',this.width);
+		this.add('|Directory Info','D',this.width);
+		this.add('|Users with Access to Dir','U',this.width);
+		this.add('Your File Transfer |Statistics','S',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Fileinfo.prototype=new Lightbar;
+	function Filesettings(value)
+	{
+		this.items=new Array();
+		this.width=28;
+		if(user.settings&USER_EXTDESC)
+			this.width++;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('Set Batch Flagging '+(user.settings&USER_BATCHFLAG?'Off':'On'),'B',this.width);
+		this.add('Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.current=value;
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Filesettings.prototype=new Lightbar;
+	function Newscan()
+	{
+		this.items=new Array();
+		this.width=29;
+		if(this.width<8+msg_area.grp_list[bbs.curgrp].name.length)
+			this.width=8+msg_area.grp_list[bbs.curgrp].name.length;
+		if(this.width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
+			this.width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('|All Message Areas','A',this.width);
+		this.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',this.width);
+		this.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',this.width);
+		this.add('Change New Scan |Configuration','C',this.width);
+		this.add('Change New Scan |Pointers','P',this.width);
+		this.add('|Reset New Scan Pointers','R',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Newscan.prototype=new Lightbar;
+	function Scantoyou()
+	{
+		this.items=new Array();
+		this.width=30;
+		if(this.width<8+msg_area.grp_list[bbs.curgrp].name.length)
+			this.width=8+msg_area.grp_list[bbs.curgrp].name.length;
+		if(this.width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
+			this.width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('|All Message Areas','A',this.width);
+		this.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',this.width);
+		this.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',this.width);
+		this.add('Change Your Scan |Configuration','C',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Scantoyou.prototype=new Lightbar;
+	function Searchmsgtxt()
+	{
+		this.items=new Array();
+		this.width=17;
+		if(this.width<8+msg_area.grp_list[bbs.curgrp].name.length)
+			this.width=8+msg_area.grp_list[bbs.curgrp].name.length;
+		if(this.width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
+			this.width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add('|All Message Areas','A',this.width);
+		this.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',this.width);
+		this.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Searchmsgtxt.prototype=new Lightbar;
+	function Chatsettings()
+	{
+		this.items=new Array();
+		this.width=24;
+		if(user.chat_settings&CHAT_SPLITP)
+			this.width++;
+		this.xpos=posx;
+		this.ypos=posy;
+		this.lpadding="\xb3";
+		this.rpadding="\xb3";
+		this.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+		this.add(top_bar(this.width),undefined,undefined,"","");
+		this.add("Set |Split Screen Chat "+(user.chat_settings&CHAT_SPLITP?"Off":"On"),'S',this.width);
+		this.add("Set A|vailability "+(user.chat_settings&CHAT_NOPAGE?"On":"Off"),'V',this.width);
+		this.add("Set Activity |Alerts "+(user.chat_settings&CHAT_NOACT?"On":"Off"),'A',this.width);
+		while(this.items.length<console.screen_rows-(this.ypos+2))
+		{
+			this.add("","",this.width);
+		}
+		this.add("|< Previous Menu","",this.width);
+		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
+		this.add(bottom_bar(this.width),undefined,undefined,"","");
+		this.timeout=100;
+		this.callback=message_callback;
+	}
+	Chatsettings.prototype=new Lightbar;
+	
+	function show_mainmenu(key)
+	{
+		previous.push("main");
+		switch(key) 
+		{
+			case ctrl('O'): /* CTRL-O - Pause */
+			case ctrl('U'): /* CTRL-U User List */
+			case ctrl('T'): /* CTRL-T Time Info */
+			case ctrl('K'): /* CTRL-K Control Key Menu */
+			case ctrl('P'): /* Ctrl-P Messages */
+				handle_a_ctrlkey(key);
 				break;
-			case ctrl('L'):	/* CTRL-L - Global War Menu */
-				clear_screen();
-				bbs.menu("gwarmenu");
+			case 'F':
+				this.LoadMenu("file");
 				break;
-			case ctrl('U'):	/* CTRL-U User List */
-			case ctrl('T'):	/* CTRL-T Time Info */
-			case ctrl('K'):	/* CTRL-K Control Key Menu */
-				pause=true;
-			case ctrl('P'):	/* Ctrl-P Messages */
+			case 'S':
+				this.LoadMenu("settings");
+				break;
+			case 'E':
+				this.LoadMenu("email");
+				break;
+			case 'M':
+				this.LoadMenu("message");
+				break;
+			case 'C':
+				this.LoadMenu("chat");
+				break;
+			case 'O':
+				this.LoadMenu("xtrnsecs");
+				break;
+			case 'V':
+				this.LoadMenu("info");
+				break;
+			case 'L':
+				if(bbs.batch_dnload_total) {
+					if(console.yesno(bbs.text(DownloadBatchQ))) {
+						bbs.batch_download();
+						bbs.logoff();
+					}
+				}
+				else
+					bbs.hangup();
+			case 'Q':
+					exit(1);
+		}
+	}
+	function show_infomenu(key)
+	{
+		switch(key) 
+		{
+			case 'I':
 				clear_screen();
-				console.handle_ctrlkey(key);
-				if(pause)
-					console.pause();
+				bbs.sys_info();
+				console.pause();
 				draw_main();
-				for(i=0; i<menus_displayed.length; i++)
-					menus_displayed[i].draw();
+				break;
+			case 'V':
+				clear_screen();
+				bbs.ver();
+				console.pause();
+				draw_main();
+				break;
+			case 'S':
+				clear_screen();
+				bbs.sub_info();
+				console.pause();
+				draw_main();
+				break;
+			case 'Y':
+				clear_screen();
+				bbs.user_info();
+				console.pause();
+				draw_main();
+				break;
+			case 'U':
+				this.LoadMenu("userlist");
+				break;
+			case 'T':
+				clear_screen();
+				bbs.text_sec();
+				draw_main();
 				break;
 		}
 	}
+	function show_userlistmenu(key)
+	{
+		switch(key) 
+		{
+			case 'L':
+				clear_screen();
+				bbs.list_logons();
+				console.pause();
+				draw_main();
+				break;
+			case 'S':
+				clear_screen();
+				bbs.list_users(UL_SUB);
+				console.pause();
+				draw_main();
+				break;
+			case 'A':
+				clear_screen();
+				bbs.list_users(UL_ALL);
+				console.pause();
+				draw_main();
+				break;
+		}
+	}
+	function show_xtrnsecs(key)
+	{
+		previous.push("xtrnsecs");
+		curr_xtrnsec=parseInt(key);
+		this.LoadMenu("xtrnsec",curr_xtrnsec);
+	}
+	function show_xtrnsec(key)
+	{
+		clear_screen();
+		bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(key)].number);
+		draw_main();
+	}
+	function show_filemenu(key)
+	{
+		previous.push("file");
+		var cur=1;
+		var nd=false;
+		var i;
+		var j;
+		this.menu.nodraw=nd;
+		this.menu.current=cur;
+		switch(key) 
+		{
+			case 'C':
+				clear_screen();
+				changedir: 
+				do 
+				{
+					if(!file_area.lib_list.length)
+						break changedir;
+					while(1) {
+						var orig_lib=bbs.curlib;
+						i=0;
+						j=0;
+						if(file_area.lib_list.length>1) {
+							console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
+							for(i=0; i<file_area.lib_list.length; i++) {
+								if(i==bbs.curlib)
+									console.putmsg('*',P_SAVEATR);
+								else
+									console.putmsg(' ',P_SAVEATR);
+								if(i<9)
+									console.putmsg(' ',P_SAVEATR);
+								if(i<99)
+									console.putmsg(' ',P_SAVEATR);
+								// We use console.putmsg to expand ^A, @, etc
+								console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
+							}
+							console.mnemonics(format(bbs.text(JoinWhichLib),bbs.curlib+1));
+							j=console.getnum(file_area.lib_list.length,false);
+							if(j<0)
+								break changedir;
+							if(!j)
+								j=bbs.curlib;
+							else
+								j--;
+						}
+						bbs.curlib=j;
+						console.line_counter=0;
+						 console.clear();
+						 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
+						 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
+							if(i==bbs.curdir)
+								console.putmsg('*',P_SAVEATR);
+							else
+								console.putmsg(' ',P_SAVEATR);
+							if(i<9)
+								console.putmsg(' ',P_SAVEATR);
+							if(i<99)
+								console.putmsg(' ',P_SAVEATR);
+							console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
+						}
+						console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
+						i=console.getnum(file_area.lib_list[j].dir_list.length);
+						if(i==-1) {
+							if(file_area.lib_list.length==1) {
+								bbs.curlib=orig_lib;
+								break changedir;
+							}
+							continue;
+						}
+						if(!i)
+							i=bbs.curdir;
+						else
+							i--;
+						bbs.curdir=i;
+						break changedir;
+					}
+				} while(0);
+				draw_main();
+				break;
+			case 'L':
+				clear_screen();
+				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
+				console.pause();
+				draw_main();
+				break;
+			case 'N':
+				this.LoadMenu("filedir1",true);
+				break;
+			case 'F':
+				this.LoadMenu("filedir2",true);
+				break;
+			case 'T':
+				this.LoadMenu("filedir3",true);
+				break;
+			case 'D':
+				this.LoadMenu("download");
+				break;
+			case 'U':
+				this.LoadMenu("upload");
+				break;
+			case 'R':
+				clear_screen();
+				fileremove: do {
+					console.putmsg("\r\nchRemove/Edit File(s)\r\n");
+					str=bbs.get_filespec();
+					if(str==null)
+						break fileremove;
+					if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
+						var s=0;
+						console.putmsg(bbs.text(SearchingAllDirs));
+						for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if(i!=bbs.curdir &&
+									(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
+								if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+									break fileremove;
+								}
+							}
+						}
+						console.putmsg(bbs.text(SearchingAllLibs));
+						for(i=0; i<file_area.lib_list.length; i++) {
+							if(i==bbs.curlib)
+								continue;
+							for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+								if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE))!=0) {
+									if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+										break fileremove;
+									}
+								}
+							}
+						}
+					}
+				} while(0);
+				draw_main();
+				break;
+			case 'B':
+				console.attributes=LBShell_Attr;
+				clear_screen();
+				bbs.batch_menu();
+				draw_main();
+				break;
+			case 'V':
+				this.LoadMenu("fileinfo");
+				break;
+			case 'S':
+				this.LoadMenu("filesettings",cur);
+				break;
+			default:
+				break;
+		}
+		cur=this.menu.current;
+		nd=this.menu.nodraw;
+	}
+	function show_fileinfo(key)
+	{
+		switch(key) 
+		{
+			case 'C':
+				clear_screen();
+				console.putmsg("\r\nchView File(s)\r\n");
+				str=bbs.get_filespec();
+				if(str!=null) {
+					if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
+						console.putmsg(bbs.text(SearchingAllDirs));
+						for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if(i==bbs.curdir)
+								continue;
+							if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FL_VIEW))
+								break;
+						}
+						if(i<file_area.lib_list[bbs.curlib].dir_list.length)
+							break;
+						console.putmsg(bbs.text(SearchingAllLibs));
+						libloop: for(i=0; i<file_area.lib_list.length; i++) {
+							if(i==bbs.curlib)
+								continue;
+							for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+								if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
+								break libloop;
+							}
+						}
+					}
+				}
+				console.pause();
+				draw_main();
+				break;
+			case 'I':
+				clear_screen();
+				console.putmsg("\r\nchView File Information\r\n");
+				str=bbs.get_filespec();
+				if(str!=null) 
+				{
+					if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
+						console.putmsg(bbs.text(SearchingAllDirs));
+						for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if(i==bbs.curdir)
+								continue;
+							if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))
+								break;
+						}
+						if(i<file_area.lib_list[bbs.curlib].dir_list.length)
+							break;
+						console.putmsg(bbs.text(SearchingAllLibs));
+						libloop: for(i=0; i<file_area.lib_list.length; i++) {
+							if(i==bbs.curlib)
+								continue;
+							for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+								if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FI_INFO))
+								break libloop;
+							}
+						}
+					}
+				}
+				console.pause();
+				draw_main();
+				break;
+			case 'P':
+				clear_screen();
+				bbs.xfer_policy();
+				console.pause();
+				draw_main();
+				break;
+			case 'D':
+				clear_screen();
+				bbs.dir_info();
+				console.pause();
+				draw_main();
+				break;
+			case 'U':
+				clear_screen();
+				bbs.list_users(UL_DIR);
+				console.pause();
+				draw_main();
+				break;
+			case 'S':
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_filedirmenu1(key)
+	{
+		switch(key) 
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\nchNew File Scan (All)\r\n");
+				bbs.scan_dirs(FL_ULTIME,true);
+				console.pause();
+				draw_main();
+				break;
+			case 'L':
+				/* Scan this lib only */
+				clear_screen();
+				console.putmsg("\r\nchNew File Scan (Lib)\r\n");
+				for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
+					bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME);
+				console.pause();
+				draw_main();
+				break;
+			case 'D':
+				/* Scan this dir only */
+				clear_screen();
+				console.putmsg("\r\nchNew File Scan (Dir)\r\n");
+				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
+				console.pause();
+				draw_main();
+				break;
+			case 'N':
+				// ToDo: Don't clear screen here, just do one line
+				clear_screen();
+				bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
+				draw_main();
+				break;
+			default:	// Anything else will escape.
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_filedirmenu2(key)
+	{
+		switch(key)
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\nchSearch for Filename(s) (All)\r\n");
+				var spec=bbs.get_filespec();
+				for(i=0; i<file_area.lib_list.length; i++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
+						bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0);
+				}
+				console.pause();
+				draw_main();
+				break;
+			case 'L':
+				/* Scan this lib only */
+				clear_screen();
+					console.putmsg("\r\nchSearch for Filename(s) (Lib)\r\n");
+				var spec=bbs.get_filespec();
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
+					bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0);
+				console.pause();
+				draw_main();
+				break;
+			case 'D':
+				/* Scan this dir only */
+				clear_screen();
+				console.putmsg("\r\nchSearch for Filename(s) (Dir)\r\n");
+				var spec=bbs.get_filespec();
+				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,0);
+				console.pause();
+				draw_main();
+				break;
+			default:	// Anything else will escape.
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_filedirmenu3(key)
+	{
+		switch(key) 
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\nchSearch for Text in Description(s) (All)\r\n");
+				console.putmsg(bbs.text(SearchStringPrompt));
+				var spec=console.getstr(40,K_LINE|K_UPPER);
+				for(i=0; i<file_area.lib_list.length; i++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
+						bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC);
+				}
+				console.pause();
+				draw_main();
+				break;
+			case 'L':
+				/* Scan this lib only */
+				clear_screen();
+				console.putmsg("\r\nchSearch for Text in Description(s) (Lib)\r\n");
+				console.putmsg(bbs.text(SearchStringPrompt));
+				var spec=console.getstr(40,K_LINE|K_UPPER);
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
+					bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC);
+				console.pause();
+				draw_main();
+				break;
+			case 'D':
+				/* Scan this dir only */
+				clear_screen();
+				console.putmsg("\r\nchSearch for Text in Description(s) (Dir)\r\n");
+				console.putmsg(bbs.text(SearchStringPrompt));
+				var spec=console.getstr(40,K_LINE|K_UPPER);
+				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,FL_FINDDESC);
+				console.pause();
+				draw_main();
+				break;
+			default:	// Anything else will escape.
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_uploadmenu(key)
+	{
+		switch(key) {
+			case 'C':	// Current dir
+				clear_screen();
+				bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
+				draw_main();
+				break;
+			case 'P':	// Upload dir
+				clear_screen();
+				bbs.upload_file(file_area.upload_dir);
+				draw_main();
+				break;
+			case 'S':	// Sysop dir
+				clear_screen();
+				bbs.upload_file(file_area.sysop_dir);
+				draw_main();
+				break;
+			case 'U':	// To user
+				clear_screen();
+				bbs.upload_file(file_area.user_dir);
+				draw_main();
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_downloadmenu(key)
+	{
+		switch(key) 
+		{
+			case 'B':
+				clear_screen();
+				bbs.batch_download();
+				draw_main();
+				break;
+			case 'N':
+				clear_screen();
+				var spec=bbs.get_filespec();
+				bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
+				draw_main();
+				break;
+			case 'U':
+				clear_screen();
+				bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
+				draw_main();
+				break;
+			default:
+				this.menu.nodraw=true;
+				break
+		}
+	}
+	function show_filesettings(key)
+	{
+		switch(key) 
+		{
+			case 'B':
+				user.settings ^= USER_BATCHFLAG;
+				break;
+			case 'S':
+				user.settings ^= USER_EXTDESC;
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_messagemenu(key)
+	{
+		previous.push("message");
+		var cur=1;
+		var nd=false;
+		var i;
+		var j;
+		this.menu.current=cur;
+		this.menu.nodraw=nd;
+		message: 
+		switch(key) 
+		{
+			case 'C':
+				clear_screen();
+				if(!msg_area.grp_list.length)
+					break;
+				msgjump: 
+				while(1) 
+				{
+					var orig_grp=bbs.curgrp;
+					var i=0;
+					var j=0;
+					if(msg_area.grp_list.length>1) {
+						console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
+						for(i=0; i<msg_area.grp_list.length; i++) 
+						{
+							if(i==bbs.curgrp)
+								console.putmsg('*',P_SAVEATR);
+							else
+								console.putmsg(' ',P_SAVEATR);
+							if(i<9)
+								console.putmsg(' ',P_SAVEATR);
+							if(i<99)
+								console.putmsg(' ',P_SAVEATR);
+							// We use console.putmsg to expand ^A, @, etc
+							console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description),P_SAVEATR);
+						}
+						console.mnemonics(format(bbs.text(JoinWhichGrp),bbs.curgrp+1));
+						j=console.getnum(msg_area.grp_list.length);
+						if(j<0)
+							break msgjump;
+						if(!j)
+							j=bbs.curgrp;
+						else
+							j--;
+					}
+					bbs.curgrp=j;
+					console.line_counter=0;
+					console.clear();
+					console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description),P_SAVEATR);
+					for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) 
+					{
+						var msgbase=new MsgBase(msg_area.grp_list[j].sub_list[i].code);
+						if(msgbase==undefined)
+							continue;
+						if(!msgbase.open())
+							continue;
+						if(i==bbs.cursub)
+							console.putmsg('*',P_SAVEATR);
+						else
+							console.putmsg(' ',P_SAVEATR);
+						if(i<9)
+							console.putmsg(' ',P_SAVEATR);
+						if(i<99)
+							console.putmsg(' ',P_SAVEATR);
+						console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
+						msgbase.close();
+					}
+					console.mnemonics(format(bbs.text(JoinWhichSub),bbs.cursub+1));
+					i=console.getnum(msg_area.grp_list[j].sub_list.length);
+					if(i==-1) 
+					{
+						if(msg_area.grp_list.length==1) 
+						{
+							bbs.curgrp=orig_grp;
+							break msgjump;
+						}
+						continue;
+					}
+					if(!i)
+						i=bbs.cursub;
+					else
+						i--;
+					bbs.cursub=i;
+					break;
+				}
+				draw_main();
+				break;
+			case 'R':
+				clear_screen();
+				bbs.scan_posts();
+				draw_main();
+				break;
+			case 'N':
+				this.LoadMenu("newscan");
+				break;
+			case 'Y':
+				this.LoadMenu("scantoyou");
+				break;
+			case 'T':
+				this.LoadMenu("searchmsgtxt");
+				break;
+			case 'P':
+				clear_screen();
+				bbs.post_msg();
+				draw_main();
+				break;
+			case 'A':
+				clear_screen();
+				bbs.auto_msg();
+				draw_main();
+				break;
+			case 'Q':
+				clear_screen();
+				bbs.qwk_sec();
+				draw_main();
+				break;
+			case 'V':
+				clear_screen();
+				bbs.sub_info();
+				console.pause();
+				draw_main();
+				break;
+		}
+		cur=messagemenu.current;
+		nd=messagemenu.nodraw;
+	}
+	function show_searchmsgtxt(key)
+	{
+		switch(key) 
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+				console.putmsg(bbs.text(SearchStringPrompt));
+				str=console.getstr("",40,K_LINE|K_UPPER);
+				for(i=0; i<msg_area.grp_list.length; i++) {
+					for(j=0; j<msg_area.grp_list[i].sub_list.length; j++) {
+						bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str);
+					}
+				}
+				draw_main();
+				break;
+			case 'G':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+				str=console.getstr("",40,K_LINE|K_UPPER);
+				for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+					bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
+				draw_main();
+				break;
+			case 'S':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+				str=console.getstr("",40,K_LINE|K_UPPER);
+				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+				draw_main();
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_scantoyou(key)
+	{
+		switch(key) 
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+				for(j=0; j<msg_area.grp_list.length; j++) {
+					for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
+						bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
+				}
+				draw_main();
+				break;
+			case 'G':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+				for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+					bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
+				draw_main();
+				break;
+			case 'S':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
+				draw_main();
+				break;
+			case 'C':
+				clear_screen();
+				bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
+				draw_main();
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_newscan(key)
+	{
+		switch(key) 
+		{
+			case 'A':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+				for(j=0; j<msg_area.grp_list.length; j++) {
+					for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
+						bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_NEW);
+				}
+				draw_main();
+				break;
+			case 'G':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+				for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+					bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
+				draw_main();
+				break;
+			case 'S':
+				clear_screen();
+				console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
+				draw_main();
+				break;
+			case 'C':
+				clear_screen();
+				bbs.cfg_msg_scan(SCAN_CFG_NEW);
+				draw_main();
+				break;
+			case 'P':
+				clear_screen();
+				bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
+				draw_main();
+				break;
+			case 'R':
+				bbs.reinit_msg_ptrs()
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_emailtargetmenu(key)
+	{
+		switch(key) 
+		{
+			case 'S':
+				clear_screen();
+				bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
+				draw_main();
+				break;
+			case 'L':
+				clear_screen();
+				console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+				str=console.getstr("",40,K_UPRLWR);
+				if(str!=null && str!="") {
+					if(str=="Sysop")
+						str="1";
+					if(str.search(/\@/)!=-1)
+						bbs.netmail(str);
+					else {
+						i=bbs.finduser(str);
+						if(i>0)
+							bbs.email(i,WM_EMAIL);
+					}
+				}
+				draw_main();
+				break;
+			case 'A':
+				clear_screen();
+				console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+				str=console.getstr("",40,K_UPRLWR);
+				if(str!=null && str!="") {
+					i=bbs.finduser(str);
+					if(i>0)
+						bbs.email(i,WM_EMAIL|WM_FILE);
+				}
+				draw_main();
+				break;
+			case 'R':
+				clear_screen();
+				if(console.noyes("\r\nAttach a file"))
+					i=0;
+				else
+					i=WM_FILE;
+				console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
+				str=console.getstr("",60,K_LINE);
+				if(str!=null && str !="")
+					bbs.netmail(str,i);
+				draw_main();
+				break;
+			case 'T':
+				clear_screen();
+				console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+				str=console.getstr("",40,K_UPRLWR);
+				if(str!=null && str!="")
+					bbs.netmail(str,WM_FILE);
+				draw_main();
+				break;
+		}
+	}
+	function show_emailmenu(key)
+	{
+		previous.push("email");
+		var cur=1;
+		this.menu.current=cur;
+		var i;
+		var j;
+		switch(key) 
+		{
+			case 'S':
+				this.LoadMenu("emailtarget");
+				break;
+			case 'R':
+				clear_screen();
+				bbs.read_mail(MAIL_YOUR);
+				console.pause();
+				draw_main();
+				break;
+			case 'M':
+				clear_screen();
+				bbs.read_mail(MAIL_SENT);
+				console.pause();
+				draw_main();
+				break;
+		}
+		cur=this.menu.current;
+	}
+	function show_chatmenu(key)
+	{
+		previous.push("chat");
+		var cur=1;
+		this.menu.current=cur;
+		var i;
+		var j;
+		chat: 
+		switch(key)
+		{
+			case 'M':
+				clear_screen();
+				bbs.multinode_chat();
+				draw_main();
+				break;
+			case 'P':
+				clear_screen();
+				bbs.private_chat();
+				draw_main();
+				break;
+			case 'C':
+				clear_screen();
+				if(!bbs.page_sysop())
+					bbs.page_guru();
+				draw_main();
+				break;
+			case 'T':
+				clear_screen();
+				bbs.page_guru();
+				draw_main();
+				break;
+			case 'F':
+				clear_screen();
+				bbs.exec("?finger");
+				console.pause();
+				draw_main();
+				break;
+			case 'R':
+				clear_screen();
+				write("\001n\001y\001hServer and channel: ");
+				str="irc.synchro.net 6667 #Synchronet";
+				str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
+				if(!console.aborted)
+					bbs.exec("?irc -a "+str);
+				draw_main();
+				break;
+			case 'I':
+				clear_screen();
+				bbs.exec("?sbbsimsg");
+				draw_main();
+				break;
+			case 'S':
+				this.LoadMenu("chatsettings");
+				break;
+		}
+		cur=this.menu.current;
+	}
+	function show_chatsettings(key)
+	{
+		switch(key) 
+		{
+			case 'S':
+				if(user.chat_settings&CHAT_SPLITP)
+				user.chat_settings ^= CHAT_SPLITP;
+				break;
+			case 'V':
+				user.chat_settings ^= CHAT_NOPAGE;
+				break;
+			case 'A':
+				user.chat_settings ^= CHAT_NOACT;
+				break;
+			default:
+				this.menu.nodraw=true;
+				break;
+		}
+	}
+	function show_settingsmenu(key)
+	{
+		previous.push("settings");
+		switch(key) 
+		{
+			case 'U':
+				clear_screen();
+				var oldshell=user.command_shell;
+				bbs.user_config();
+				/* Still using this shell? */
+				if(user.command_shell != oldshell)
+					exit(0);
+				draw_main();
+				break;
+			case 'B':
+				clear_screen();
+				bbs.time_bank();
+				draw_main();
+				break;
+		}
+	}
+
 	function get_message()
 	{
-		var rows=0;
-
 		/* Update node action */
 		if(bbs.node_action != system.node_list[bbs.node_num-1].action)
 			system.node_list[bbs.node_num-1].action = bbs.node_action;
 
 		/* Check for messages */
 		if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
-			rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_telegram(user.number),MessageWindow_Attr,true);
+			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,system.get_telegram(user.number),sysinfo.attr,true);
 		if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
-			rows+=MessageWindow.putmsg(1,MessageWindow.height,system.get_node_message(bbs.node_num),MessageWindow_Attr,true);
+			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,system.get_node_message(bbs.node_num),sysinfo.attr,true);
 
 		/* Fix up node status */
 		if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
-			log("NODE STATUS FIXUP");
 			system.node_list[bbs.node_num-1].status=NODE_INUSE;
 		}
 
@@ -1017,8 +2031,7 @@ function MainMenu()
 
 		/* Interrupted? */
 		if(system.node_list[bbs.node_num-1].misc & NODE_INTR) {
-			rows+=MessageWindow.putmsg(1,MessageWindow.height,bbs.text(NodeLocked),MessageWindow_Attr,true);
-			log("Interrupted");
+			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,bbs.text(NodeLocked),sysinfo.attr,true);
 			hangup_now=true;
 		}
 
@@ -1028,15 +2041,11 @@ function MainMenu()
 			// bbs.private_chat();
 			bbs.nodesync();
 			draw_main();
-			for(i=0; i<menus_displayed.length; i++)
-				menus_displayed[i].draw();
 		}
 
 		/* New day? */
 	//	if(!(system.status & SS_NEWDAY))
 	//		bbs.nodesync();
-
-		return(rows);
 	}
 	function message_callback()
 	{
@@ -1077,7 +2086,7 @@ function MainMenu()
 		/* Increment the ticks and expire as necessary */
 		for(i=0; i<msg_timeouts.length; i++) {
 			msg_timeouts[i].ticks++;
-			if(msg_timeouts[i].ticks>=MessageTimeout) {
+			if(msg_timeouts[i].ticks>=sysinfo.messagetimeout) {
 				msg_rows -= msg_timeouts[i].rows;
 				i--;
 				msg_timeouts.shift();
@@ -1137,1412 +2146,135 @@ function MainMenu()
 		/* Disable CTRL keys that we "know" how to handle. */
 		console.ctrlkey_passthru="+KOPTU";
 	}
-	function show_filemenu()
+
+	this.PreviousMenu=function()
 	{
-		var cur=1;
-		var nd=false;
-		bbs.node_action=NODE_XFER;
-		while(1) {
-			var filemenu=new Filemenu();
-			chatroom.Resize(filemenu.width);
-			var ret;
-			var i;
-			var j;
-			filemenu.nodraw=nd;
-			filemenu.current=cur;
-
-			menus_displayed.push(filemenu);
-			ret=filemenu.getval();
-			file: 
-			switch(ret) 
-			{
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(ret);
-					break;
-				case KEY_LEFT:
-					menus_displayed.pop();
-					return true;
-				case '\b':
-				case '\x7f':
-				case '\x1b':
-					menus_displayed.pop();
-					return true;
-				case KEY_RIGHT:
-					menus_displayed.pop();
-					return false;
-				case 'C':
-					clear_screen();
-					changedir: do {
-						if(!file_area.lib_list.length)
-							break changedir;
-						while(1) {
-							var orig_lib=bbs.curlib;
-							i=0;
-							j=0;
-							if(file_area.lib_list.length>1) {
-								if(file_exists(system.text_dir+"menu/libs.*"))
-									bbs.menu("libs");
-								else {
-									console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
-									for(i=0; i<file_area.lib_list.length; i++) {
-										if(i==bbs.curlib)
-											console.putmsg('*',P_SAVEATR);
-										else
-											console.putmsg(' ',P_SAVEATR);
-										if(i<9)
-											console.putmsg(' ',P_SAVEATR);
-										if(i<99)
-											console.putmsg(' ',P_SAVEATR);
-										// We use console.putmsg to expand ^A, @, etc
-										console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
-									}
-								}
-								console.mnemonics(format(bbs.text(JoinWhichLib),bbs.curlib+1));
-								j=console.getnum(file_area.lib_list.length,false);
-								if(j<0)
-									break changedir;
-								if(!j)
-									j=bbs.curlib;
-								else
-									j--;
-							}
-							bbs.curlib=j;
-							if(file_exists(system.text_dir+"menu/dirs"+(bbs.curlib+1)))
-								bbs.menu("dirs"+(bbs.curlib+1));
-							else {
-								console.line_counter=0;
-								 console.clear();
-								 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
-								 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
-									if(i==bbs.curdir)
-										console.putmsg('*',P_SAVEATR);
-									else
-										console.putmsg(' ',P_SAVEATR);
-									if(i<9)
-										console.putmsg(' ',P_SAVEATR);
-									if(i<99)
-										console.putmsg(' ',P_SAVEATR);
-									console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
-								}
-							}
-							console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
-							i=console.getnum(file_area.lib_list[j].dir_list.length);
-							if(i==-1) {
-								if(file_area.lib_list.length==1) {
-									bbs.curlib=orig_lib;
-									break changedir;
-								}
-								continue;
-							}
-							if(!i)
-								i=bbs.curdir;
-							else
-								i--;
-							bbs.curdir=i;
-							break changedir;
-						}
-					} while(0);
-					draw_main();
-					break;
-				case 'L':
-					clear_screen();
-					bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
-					console.pause();
-					draw_main();
-					break;
-				case 'N':
-					var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, true);
-					chatroom.Resize(typemenu.width);
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\nchNew File Scan (All)\r\n");
-								bbs.scan_dirs(FL_ULTIME,true);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'L':
-								/* Scan this lib only */
-								clear_screen();
-								console.putmsg("\r\nchNew File Scan (Lib)\r\n");
-								for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
-									bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'D':
-								/* Scan this dir only */
-								clear_screen();
-								console.putmsg("\r\nchNew File Scan (Dir)\r\n");
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'N':
-								// ToDo: Don't clear screen here, just do one line
-								clear_screen();
-								bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
-								draw_main();
-								filemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:	// Anything else will escape.
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-					}
-					break;
-				case 'F':
-					var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, false);
-					chatroom.Resize(typemenu.width);
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\nchSearch for Filename(s) (All)\r\n");
-								var spec=bbs.get_filespec();
-								for(i=0; i<file_area.lib_list.length; i++) {
-									for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-										bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0);
-								}
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'L':
-								/* Scan this lib only */
-								clear_screen();
-									console.putmsg("\r\nchSearch for Filename(s) (Lib)\r\n");
-								var spec=bbs.get_filespec();
-								for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-									bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'D':
-								/* Scan this dir only */
-								clear_screen();
-								console.putmsg("\r\nchSearch for Filename(s) (Dir)\r\n");
-								var spec=bbs.get_filespec();
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,0);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:	// Anything else will escape.
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-					}
-					break;
-				case 'T':
-					var typemenu=new Filedirmenu(filemenu.xpos+filemenu.items[0].text.length, filemenu.current+1, false);
-					chatroom.Resize(typemenu.width);
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\nchSearch for Text in Description(s) (All)\r\n");
-								console.putmsg(bbs.text(SearchStringPrompt));
-								var spec=console.getstr(40,K_LINE|K_UPPER);
-								for(i=0; i<file_area.lib_list.length; i++) {
-									for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-										bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC);
-								}
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'L':
-								/* Scan this lib only */
-								clear_screen();
-								console.putmsg("\r\nchSearch for Text in Description(s) (Lib)\r\n");
-								console.putmsg(bbs.text(SearchStringPrompt));
-								var spec=console.getstr(40,K_LINE|K_UPPER);
-								for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-									bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'D':
-								/* Scan this dir only */
-								clear_screen();
-								console.putmsg("\r\nchSearch for Text in Description(s) (Dir)\r\n");
-								console.putmsg(bbs.text(SearchStringPrompt));
-								var spec=console.getstr(40,K_LINE|K_UPPER);
-								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,FL_FINDDESC);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:	// Anything else will escape.
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-					}
-					break;
-				case 'D':
-					var typemenu=new Lightbar;
-					chatroom.Resize(17);
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(17),undefined,undefined,"","");
-					typemenu.add('|Batch','B',17,undefined,undefined,bbs.batch_dnload_total<=0);
-					typemenu.add('By |Name/File spec','N',17);
-					typemenu.add('From |User','U',17);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",17);
-					}
-					typemenu.add("|< Previous Menu","",17);
-					typemenu.add(format_opt("Return to Chat",17,true),"",17);
-					typemenu.add(bottom_bar(17),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'B':
-								clear_screen();
-								bbs.batch_download();
-								/* Redraw just in case */
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'N':
-								clear_screen();
-								var spec=bbs.get_filespec();
-								bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'U':
-								clear_screen();
-								bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
-								draw_main();
-								filemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-					}
-					break;
-				case 'U':
-					var typemenu=new Lightbar;
-					var width=19;
-					chatroom.Resize(width);
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
-						if(width<9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length)
-							width=9+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.length;
-					}
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
-						typemenu.add('To |Dir ('+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+')','C',width,undefined,undefined,!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload);
-					}
-					else {
-						typemenu.add('To Upload |Dir','P',width);
-					}
-					typemenu.add('To |Sysop Only','S',width,undefined,undefined,file_area.sysop_dir==undefined);
-					typemenu.add('To Specific |User(s)','U',width,undefined,undefined,file_area.user_dir==undefined);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'C':	// Current dir
-								clear_screen();
-								bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'P':	// Upload dir
-								clear_screen();
-								bbs.upload_file(file_area.upload_dir);
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'S':	// Sysop dir
-								clear_screen();
-								bbs.upload_file(file_area.sysop_dir);
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'U':	// To user
-								clear_screen();
-								bbs.upload_file(file_area.user_dir);
-								draw_main();
-								filemenu.draw();
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-					}
-					break;
-				case 'R':
-					clear_screen();
-					fileremove: do {
-						console.putmsg("\r\nchRemove/Edit File(s)\r\n");
-						str=bbs.get_filespec();
-						if(str==null)
-							break fileremove;
-						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
-							var s=0;
-							console.putmsg(bbs.text(SearchingAllDirs));
-							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-								if(i!=bbs.curdir &&
-										(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
-									if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
-										break fileremove;
-									}
-								}
-							}
-							console.putmsg(bbs.text(SearchingAllLibs));
-							for(i=0; i<file_area.lib_list.length; i++) {
-								if(i==bbs.curlib)
-									continue;
-								for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-									if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE))!=0) {
-										if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
-											break fileremove;
-										}
-									}
-								}
-							}
-						}
-					} while(0);
-					draw_main();
-					break;
-				case 'B':
-					console.attributes=LBShell_Attr;
-					clear_screen();
-					bbs.batch_menu();
-					draw_main();
-					break;
-				case 'V':
-					var typemenu=new Lightbar;
-					var width=32;
-					chatroom.Resize(width);
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('File |Contents','C',width);
-					typemenu.add('File |Information','I',width);
-					typemenu.add('File Transfer |Policy','P',width);
-					typemenu.add('|Directory Info','D',width);
-					typemenu.add('|Users with Access to Dir','U',width);
-					typemenu.add('Your File Transfer |Statistics','S',width);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'C':
-								clear_screen();
-								console.putmsg("\r\nchView File(s)\r\n");
-								str=bbs.get_filespec();
-								if(str!=null) {
-									if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
-										console.putmsg(bbs.text(SearchingAllDirs));
-										for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-											if(i==bbs.curdir)
-												continue;
-											if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FL_VIEW))
-												break;
-										}
-										if(i<file_area.lib_list[bbs.curlib].dir_list.length)
-											break file;
-										console.putmsg(bbs.text(SearchingAllLibs));
-										libloop: for(i=0; i<file_area.lib_list.length; i++) {
-											if(i==bbs.curlib)
-												continue;
-											for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-												if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
-												break libloop;
-											}
-										}
-									}
-								}
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'I':
-								clear_screen();
-								console.putmsg("\r\nchView File Information\r\n");
-								str=bbs.get_filespec();
-								if(str!=null) {
-									if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
-										console.putmsg(bbs.text(SearchingAllDirs));
-										for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-											if(i==bbs.curdir)
-												continue;
-											if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))
-												break;
-										}
-										if(i<file_area.lib_list[bbs.curlib].dir_list.length)
-											break file;
-										console.putmsg(bbs.text(SearchingAllLibs));
-										libloop: for(i=0; i<file_area.lib_list.length; i++) {
-											if(i==bbs.curlib)
-												continue;
-											for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-												if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FI_INFO))
-												break libloop;
-											}
-										}
-									}
-								}
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'P':
-								clear_screen();
-								bbs.xfer_policy();
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'D':
-								clear_screen();
-								bbs.dir_info();
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'U':
-								clear_screen();
-								bbs.list_users(UL_DIR);
-								console.pause();
-								draw_main();
-								filemenu.draw();
-								break;
-							case 'S':
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								menus_displayed.pop();
-								filemenu.nodraw=true;
-								break file;
-						}
-					}
-					break;
-				case 'S':
-					var cur=1;
-					while(1) {
-						var typemenu=new Lightbar;
-						var width=28;
-						chatroom.Resize(width);
-						if(user.settings&USER_EXTDESC)
-							width++;
-						typemenu.xpos=posx;
-						typemenu.ypos=posy;
-						typemenu.lpadding="\xb3";
-						typemenu.rpadding="\xb3";
-						typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-						typemenu.add(top_bar(width),undefined,undefined,"","");
-						typemenu.add('Set Batch Flagging '+(user.settings&USER_BATCHFLAG?'Off':'On'),'B',width);
-						typemenu.add('Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S',width);
-						while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-						{
-							typemenu.add("","",width);
-						}
-						typemenu.add("|< Previous Menu","",width);
-						typemenu.add(format_opt("Return to Chat",width,true),"",width);
-						typemenu.add(bottom_bar(width),undefined,undefined,"","");
-						typemenu.current=cur;
-						typemenu.timeout=100;
-						typemenu.callback=message_callback;
-						menus_displayed.push(typemenu);
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'B':
-								user.settings ^= USER_BATCHFLAG;
-								break;
-							case 'S':
-								/* Need to clear for shorter menu */
-								user.settings ^= USER_EXTDESC;
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								filemenu.nodraw=true;
-								menus_displayed.pop();
-								break file;
-						}
-						cur=typemenu.current;
-						menus_displayed.pop();
-					}
-					break;
-			}
-			cur=filemenu.current;
-			nd=filemenu.nodraw;
-			menus_displayed.pop();
-		}
-	}
-	function show_messagemenu()
-	{
-		var cur=1;
-		var nd=false;
-
-		while(!done) {
-			var i;
-			var j;
-			var ret;
-			var messagemenu=new Messagemenu();
-			chatroom.Resize(messagemenu.width);
-			messagemenu.current=cur;
-			messagemenu.nodraw=nd;
-
-			menus_displayed.push(messagemenu);
-			ret=messagemenu.getval();
-			if(ret==KEY_RIGHT) {
-				if(messagemenu.items[messagemenu.current].text.substr(-2,2)==' >')
-					ret=messagemenu.items[messagemenu.current].retval;
-			}
-			message: switch(ret) {
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(ret);
-					break;
-				case KEY_LEFT:
-					menus_displayed.pop();
-					return true;
-				case '\b':
-				case '\x7f':
-				case '\x1b':
-					menus_displayed.pop();
-					return true;
-				case KEY_RIGHT:
-					menus_displayed.pop();
-					return false;
-				case 'C':
-					clear_screen();
-					if(!msg_area.grp_list.length)
-						break;
-					msgjump: while(1) {
-						var orig_grp=bbs.curgrp;
-						var i=0;
-						var j=0;
-						if(msg_area.grp_list.length>1) {
-							if(file_exists(system.text_dir+"menu/grps.*"))
-								bbs.menu("grps");
-							else {
-								console.putmsg(bbs.text(CfgGrpLstHdr),P_SAVEATR);
-								for(i=0; i<msg_area.grp_list.length; i++) {
-									if(i==bbs.curgrp)
-										console.putmsg('*',P_SAVEATR);
-									else
-										console.putmsg(' ',P_SAVEATR);
-									if(i<9)
-										console.putmsg(' ',P_SAVEATR);
-									if(i<99)
-										console.putmsg(' ',P_SAVEATR);
-									// We use console.putmsg to expand ^A, @, etc
-									console.putmsg(format(bbs.text(CfgGrpLstFmt),i+1,msg_area.grp_list[i].description),P_SAVEATR);
-								}
-							}
-							console.mnemonics(format(bbs.text(JoinWhichGrp),bbs.curgrp+1));
-							j=console.getnum(msg_area.grp_list.length);
-							if(j<0)
-								break msgjump;
-							if(!j)
-								j=bbs.curgrp;
-							else
-								j--;
-						}
-						bbs.curgrp=j;
-						if(file_exists(system.text_dir+"menu/subs"+(bbs.curgrp+1)))
-							bbs.menu("subs"+(bbs.curgrp+1));
-						else {
-							console.line_counter=0;
-							console.clear();
-							console.putmsg(format(bbs.text(SubLstHdr), msg_area.grp_list[j].description),P_SAVEATR);
-							for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) {
-								var msgbase=new MsgBase(msg_area.grp_list[j].sub_list[i].code);
-								if(msgbase==undefined)
-									continue;
-								if(!msgbase.open())
-									continue;
-								if(i==bbs.cursub)
-									console.putmsg('*',P_SAVEATR);
-								else
-									console.putmsg(' ',P_SAVEATR);
-								if(i<9)
-									console.putmsg(' ',P_SAVEATR);
-								if(i<99)
-									console.putmsg(' ',P_SAVEATR);
-								console.putmsg(format(bbs.text(SubLstFmt),i+1, msg_area.grp_list[j].sub_list[i].description,"",msgbase.total_msgs),P_SAVEATR);
-								msgbase.close();
-							}
-						}
-						console.mnemonics(format(bbs.text(JoinWhichSub),bbs.cursub+1));
-						i=console.getnum(msg_area.grp_list[j].sub_list.length);
-						if(i==-1) {
-							if(msg_area.grp_list.length==1) {
-								bbs.curgrp=orig_grp;
-								break msgjump;
-							}
-							continue;
-						}
-						if(!i)
-							i=bbs.cursub;
-						else
-							i--;
-						bbs.cursub=i;
-						break;
-					}
-					draw_main();
-					break;
-				case 'R':
-					clear_screen();
-					bbs.scan_posts();
-					draw_main();
-					break;
-				case 'N':
-					var typemenu=new Lightbar;
-					var width=29;
-					chatroom.Resize(29);
-					if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
-						width=8+msg_area.grp_list[bbs.curgrp].name.length;
-					if(width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
-						width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('|All Message Areas','A',width);
-					typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
-					typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
-					typemenu.add('Change New Scan |Configuration','C',width);
-					typemenu.add('Change New Scan |Pointers','P',width);
-					typemenu.add('|Reset New Scan Pointers','R',width);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-								for(j=0; j<msg_area.grp_list.length; j++) {
-									for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
-										bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_NEW);
-								}
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'G':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'S':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'C':
-								clear_screen();
-								bbs.cfg_msg_scan(SCAN_CFG_NEW);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'P':
-								clear_screen();
-								bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'R':
-								bbs.reinit_msg_ptrs()
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								messagemenu.nodraw=true;
-								menus_displayed.pop();
-								break message;
-						}
-					}
-					break;
-				case 'Y':
-					var typemenu=new Lightbar;
-					var width=30;
-					chatroom.Resize(width);
-					if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
-						width=8+msg_area.grp_list[bbs.curgrp].name.length;
-					if(width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
-						width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('|All Message Areas','A',width);
-					typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
-					typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
-					typemenu.add('Change Your Scan |Configuration','C',width);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-								for(j=0; j<msg_area.grp_list.length; j++) {
-									for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
-										bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
-								}
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'G':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'S':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'C':
-								clear_screen();
-								bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								messagemenu.nodraw=true;
-								menus_displayed.pop();
-								break message;
-						}
-					}
-					break;
-				case 'T':
-					var typemenu=new Lightbar;
-					var width=17;
-					chatroom.Resize(width);
-					if(width<8+msg_area.grp_list[bbs.curgrp].name.length)
-						width=8+msg_area.grp_list[bbs.curgrp].name.length;
-					if(width<6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length)
-						width=6+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.length;
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('|All Message Areas','A',width);
-					typemenu.add("|Group ("+msg_area.grp_list[bbs.curgrp].name+")",'G',width);
-					typemenu.add('|Sub ('+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name+')','S',width);
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) {
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-								console.putmsg(bbs.text(SearchStringPrompt));
-								str=console.getstr("",40,K_LINE|K_UPPER);
-								for(i=0; i<msg_area.grp_list.length; i++) {
-									for(j=0; j<msg_area.grp_list[i].sub_list.length; j++) {
-										bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str);
-									}
-								}
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'G':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-								str=console.getstr("",40,K_LINE|K_UPPER);
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
-									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case 'S':
-								clear_screen();
-								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-								str=console.getstr("",40,K_LINE|K_UPPER);
-								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
-								draw_main();
-								messagemenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								messagemenu.nodraw=true;
-								menus_displayed.pop();
-								break message;
-						}
-					}
-					break;
-				case 'P':
-					clear_screen();
-					bbs.post_msg();
-					draw_main();
-					break;
-				case 'A':
-					clear_screen();
-					bbs.auto_msg();
-					draw_main();
-					break;
-				case 'Q':
-					clear_screen();
-					bbs.qwk_sec();
-					draw_main();
-					break;
-				case 'V':
-					clear_screen();
-					bbs.sub_info();
-					console.pause();
-					draw_main();
-					break;
-			}
-			cur=messagemenu.current;
-			nd=messagemenu.nodraw;
-			menus_displayed.pop();
-		}
-	}
-	function show_emailmenu()
-	{
-		var cur=1;
-		/* There's nothing dynamic, so we can fiddle this here */
-		var emailmenu=new Emailmenu();
-		chatroom.Resize(emailmenu.width);
-		/* For consistency */
-		emailmenu.current=cur;
-		menus_displayed.push(emailmenu);
-
-		while(1) {
-			var i;
-			var j;
-			var ret;
-
-			/* Nothing dynamic, so we don't need to save/restore nodraw */
-
-			ret=emailmenu.getval();
-			email: 
-			switch(ret) 
-			{
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(ret);
-					break;
-				case KEY_LEFT:
-				case '\b':
-				case '\x7f':
-				case '\x1b':
-					menus_displayed.pop();
-					return true;
-				case KEY_RIGHT:
-					menus_displayed.pop();
-					return false;
-				case 'S':
-					var typemenu=new Lightbar;
-					var width=30;
-					chatroom.Resize(width);
-					typemenu.xpos=posx;
-					typemenu.ypos=posy;
-					typemenu.lpadding="\xb3";
-					typemenu.rpadding="\xb3";
-					typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-					typemenu.add(top_bar(width),undefined,undefined,"","");
-					typemenu.add('To |Sysop','S',width,undefined,undefined,user.compare_ars("REST S"));
-					typemenu.add('To |Local User','L',width,undefined,undefined,user.compare_ars("REST E"));
-					typemenu.add('To Local User with |Attachment','A',width,undefined,undefined,user.compare_ars("REST E"));
-					typemenu.add('To |Remote User','R',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
-					typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
-					while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-					{
-						typemenu.add("","",width);
-					}
-					typemenu.add("|< Previous Menu","",width);
-					typemenu.add(format_opt("Return to Chat",width,true),"",width);
-					typemenu.add(bottom_bar(width),undefined,undefined,"","");
-					typemenu.timeout=100;
-					typemenu.callback=message_callback;
-					menus_displayed.push(typemenu);
-					while(1) 
-					{
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'S':
-								clear_screen();
-								bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
-								draw_main();
-								emailmenu.draw();
-								break;
-							case 'L':
-								clear_screen();
-								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-								str=console.getstr("",40,K_UPRLWR);
-								if(str!=null && str!="") {
-									if(str=="Sysop")
-										str="1";
-									if(str.search(/\@/)!=-1)
-										bbs.netmail(str);
-									else {
-										i=bbs.finduser(str);
-										if(i>0)
-											bbs.email(i,WM_EMAIL);
-									}
-								}
-								draw_main();
-								emailmenu.draw();
-								break;
-							case 'A':
-								clear_screen();
-								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-								str=console.getstr("",40,K_UPRLWR);
-								if(str!=null && str!="") {
-									i=bbs.finduser(str);
-									if(i>0)
-										bbs.email(i,WM_EMAIL|WM_FILE);
-								}
-								draw_main();
-								emailmenu.draw();
-								break;
-							case 'R':
-								clear_screen();
-								if(console.noyes("\r\nAttach a file"))
-									i=0;
-								else
-									i=WM_FILE;
-								console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
-								str=console.getstr("",60,K_LINE);
-								if(str!=null && str !="")
-									bbs.netmail(str,i);
-								draw_main();
-								emailmenu.draw();
-								break;
-							case 'T':
-								clear_screen();
-								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-								str=console.getstr("",40,K_UPRLWR);
-								if(str!=null && str!="")
-									bbs.netmail(str,WM_FILE);
-								draw_main();
-								emailmenu.draw();
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								emailmenu.nodraw=true;
-								menus_displayed.pop();
-								break email;
-						}
-					}
-					break;
-				case 'R':
-					clear_screen();
-					bbs.read_mail(MAIL_YOUR);
-					console.pause();
-					draw_main();
-					break;
-				case 'M':
-					clear_screen();
-					bbs.read_mail(MAIL_SENT);
-					console.pause();
-					draw_main();
-					break;
-			}
-			cur=emailmenu.current;
-		}
-	}
-	function show_chatmenu()
-	{
-		var cur=1;
-		/* There's nothing dynamic, so we can fiddle this here */
-		var chatmenu=new Chatmenu();
-		chatroom.Resize(chatmenu.width);
-		/* For consistency */
-		chatmenu.current=cur;
-		menus_displayed.push(chatmenu);
-
-		while(1) {
-			var i;
-			var j;
-			var ret;
-
-			/* Nothing dynamic, so we don't need to save/restore nodraw */
-
-			ret=chatmenu.getval();
-			chat: switch(ret) {
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(ret);
-					break;
-				case KEY_LEFT:
-				case '\b':
-				case '\x7f':
-				case '\x1b':
-					menus_displayed.pop();
-					return true;
-				case KEY_RIGHT:
-					menus_displayed.pop();
-					return false;
-				case 'M':
-					clear_screen();
-					bbs.multinode_chat();
-					draw_main();
-					break;
-				case 'P':
-					clear_screen();
-					bbs.private_chat();
-					draw_main();
-					break;
-				case 'C':
-					clear_screen();
-					if(!bbs.page_sysop())
-						bbs.page_guru();
-					draw_main();
-					break;
-				case 'T':
-					clear_screen();
-					bbs.page_guru();
-					draw_main();
-					break;
-				case 'F':
-					clear_screen();
-					bbs.exec("?finger");
-					console.pause();
-					draw_main();
-					break;
-				case 'R':
-					clear_screen();
-					write("\001n\001y\001hServer and channel: ");
-					str="irc.synchro.net 6667 #Synchronet";
-					str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
-					if(!console.aborted)
-						bbs.exec("?irc -a "+str);
-					draw_main();
-					break;
-				case 'I':
-					clear_screen();
-					bbs.exec("?sbbsimsg");
-					draw_main();
-					break;
-				case 'S':
-					while(1) {
-						var typemenu=new Lightbar;
-						var width=24;
-						chatroom.Resize(width);
-						if(user.chat_settings&CHAT_SPLITP)
-							width++;
-						typemenu.xpos=posx;
-						typemenu.ypos=posy;
-						typemenu.lpadding="\xb3";
-						typemenu.rpadding="\xb3";
-						typemenu.hotkeys=KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-						typemenu.add(top_bar(width),undefined,undefined,"","");
-						typemenu.add("Set |Split Screen Chat "+(user.chat_settings&CHAT_SPLITP?"Off":"On"),'S',width);
-						typemenu.add("Set A|vailability "+(user.chat_settings&CHAT_NOPAGE?"On":"Off"),'V',width);
-						typemenu.add("Set Activity |Alerts "+(user.chat_settings&CHAT_NOACT?"On":"Off"),'A',width);
-						while(typemenu.items.length<console.screen_rows-(typemenu.ypos+2))
-						{
-							typemenu.add("","",width);
-						}
-						typemenu.add("|< Previous Menu","",width);
-						typemenu.add(format_opt("Return to Chat",width,true),"",width);
-						typemenu.add(bottom_bar(width),undefined,undefined,"","");
-						typemenu.timeout=100;
-						typemenu.callback=message_callback;
-						menus_displayed.push(typemenu);
-						ret=typemenu.getval();
-						switch(ret) {
-							case ctrl('O'): /* CTRL-O - Pause */
-							case ctrl('U'): /* CTRL-U User List */
-							case ctrl('T'): /* CTRL-T Time Info */
-							case ctrl('K'): /* CTRL-K Control Key Menu */
-							case ctrl('P'): /* Ctrl-P Messages */
-								handle_a_ctrlkey(ret);
-								break;
-							case 'S':
-								if(user.chat_settings&CHAT_SPLITP)
-								user.chat_settings ^= CHAT_SPLITP;
-								break;
-							case 'V':
-								user.chat_settings ^= CHAT_NOPAGE;
-								break;
-							case 'A':
-								user.chat_settings ^= CHAT_NOACT;
-								break;
-							case KEY_RIGHT:
-								menus_displayed.pop();
-								menus_displayed.pop();
-								return false;
-							default:
-								chatmenu.nodraw=true;
-								menus_displayed.pop();
-								break chat;
-						}
-						menus_displayed.pop();
-					}
-					break;
-			}
-			cur=chatmenu.current;
-		}
-	}
-	function show_settingsmenu()
-	{
-		var settingsmenu=new Settingsmenu();
-		chatroom.Resize(settingsmenu.width);
-		var ret;
-
-		menus_displayed.push(settingsmenu);
-		while(1) 
+		if(previous.length)
 		{
-			ret=settingsmenu.getval();
-			switch(ret) 
-			{
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					handle_a_ctrlkey(ret);
-					break;
-				case 'U':
-					clear_screen();
-					var oldshell=user.command_shell;
-					bbs.user_config();
-					/* Still using this shell? */
-					if(user.command_shell != oldshell)
-						exit(0);
-					draw_main();
-					break;
-				case 'B':
-					clear_screen();
-					bbs.time_bank();
-					draw_main();
-					break;
-				case KEY_RIGHT:
-					menus_displayed.pop();
-					return false;
-				case KEY_LEFT:
-				case '\b':
-				case '\x7f':
-				case '\x1b':
-					menus_displayed.pop();
-					return true;
-			}
+			this.LoadMenu(previous.pop());
 		}
 	}
-	
-	var mainbar=new Mainbar();
+	this.LoadMenu=function(name,value)
+	{
+		switch(name)
+		{
+			case "xtrnsecs":
+				this.menu=new Xtrnsecs;
+				this.process=show_xtrnsecs;
+				bbs.node_action=NODE_XTRN;
+				break
+			case "xtrnsec":
+				this.menu=new Xtrnsec(value);
+				this.process=show_xtrnsec;
+				bbs.node_action=NODE_XTRN;
+				break;
+			case "file":
+				this.menu=new Filemenu;
+				this.process=show_filemenu;
+				bbs.node_action=NODE_XFER;
+				break;
+			case "message":
+				this.menu=new Messagemenu;
+				this.process=show_messagemenu;
+				break;
+			case "chat":
+				this.menu=new Chatmenu;
+				this.process=show_chatmenu;
+				bbs.node_action=NODE_CHAT;
+				break;
+			case "email":
+				this.menu=new Emailmenu;
+				this.process=show_emailmenu;
+				break;
+			case "emailtarget":
+				this.menu=new Emailtargetmenu;
+				this.process=show_emailtargetmenu;
+				break;
+			case "fileinfo":
+				this.menu=new Fileinfo;
+				this.process=show_fileinfo;
+				bbs.node_action=NODE_XFER;
+				break;
+			case "settings":
+				this.menu=new Settingsmenu;
+				this.process=show_settingsmenu;
+				bbs.node_action=NODE_DFLT;
+				break;
+			case "filedir":
+				this.menu=new Filedirmenu(value);
+				this.process=show_filedirmenu;
+				bbs.node_action=NODE_XFER;
+				break;
+			case "main":
+				this.menu=new Mainbar;
+				this.process=show_mainmenu;
+				bbs.node_action=NODE_MAIN;
+				break;
+			case "info":
+				this.menu=new Infomenu;
+				this.process=show_infomenu;
+				break;
+			case "userlist":
+				this.menu=new Userlists;
+				this.process=show_userlistmenu;
+				break;
+			case "fileinfo":
+				this.menu=new Fileinfo;
+				this.process=show_fileinfo;
+				break;
+			case "chatsettings":
+				this.menu=new Chatsettings;
+				this.process=show_chatsettings;
+				break;
+			case "searchmsgtxt":
+				this.menu=new Searchmsgtxt;
+				this.process=show_searchmsgtxt;
+				break;
+			case "scantoyou":
+				this.menu=new Scantoyou;
+				this.process=show_scantoyou;
+				break;
+			case "newscan":
+				this.menu=new Newscan;
+				this.process=show_newscan;
+				break;
+			case "download":
+				this.menu=new Download;
+				this.process=show_downloadmenu;
+				break;
+			case "filesettings":
+				this.menu=new Filesettings(value);
+				this.process=show_filesettings;
+				break;
+			case "upload":
+				this.menu=new Upload;
+				this.process=show_uploadmenu;
+				break;
+		}
+	}
+}
+function ControlKeys()
+{
+	this.handle(key)
+	{
+		var pause=false;
+		switch(key) {
+			case ctrl('O'):	/* CTRL-O - Pause */
+				break;
+			case ctrl('L'):	/* CTRL-L - Global War Menu */
+				break;
+			case ctrl('U'):	/* CTRL-U User List */
+			case ctrl('T'):	/* CTRL-T Time Info */
+			case ctrl('K'):	/* CTRL-K Control Key Menu */
+				pause=true;
+			case ctrl('P'):	/* Ctrl-P Messages */
+				clear_screen();
+				console.handle_ctrlkey(key);
+				if(pause)
+					console.pause();
+				break;
+		}
+	}
 }
 function Log(text)
 {
@@ -2550,18 +2282,18 @@ function Log(text)
 }
 function InfoBox()
 {
+	this.attr=7;
+	this.messagetimeout=6000;		/* 100ths of a second */
 	this.x=chatroom.x-1;
 	this.y=1;
 	this.columns=chatroom.columns;
 	this.rows=5;
+	this.box=new Graphic(this.columns,this.rows,this.attr,' ');
 
-	var sys=" \1n\1cSystem:\1h " + system.name;
-	var sysop=" \1n\1c SysOp:\1h " + system.operator;
-	var date=" \1n\1c  Date:\1h " + system.datestr();
-	var loc=" \1n\1cLocation:\1h " + system.location;
-	var addr=" \1n\1c Address:\1h " + system.inet_addr;
-	var platform=" \1n\1cPlatform:\1h " + system.platform;
-	
+	this.Cycle=function()
+	{
+		
+	}
 	this.Init=function()
 	{
 		this.DrawBox();
@@ -2574,6 +2306,12 @@ function InfoBox()
 	}
 	this.DrawInfo=function()
 	{
+		var sys=" \1n\1cSystem:\1h " + system.name;
+		var sysop=" \1n\1c SysOp:\1h " + system.operator;
+		var date=" \1n\1c  Date:\1h " + system.datestr();
+		var loc=" \1n\1cLocation:\1h " + system.location;
+		var addr=" \1n\1c Address:\1h " + system.inet_addr;
+		var platform=" \1n\1cPlatform:\1h " + system.platform;
 		console.gotoxy(this.x+1,this.y+2);
 		console.putmsg(PrintPadded(sys,37) + addr);
 		console.gotoxy(this.x+1,this.y+3);
@@ -2603,7 +2341,7 @@ function InfoBox()
 }
 
 clock=new DigitalClock(62,1,LIGHTBLUE);
-mainmenu=new MainMenu();
+menulist=new MenuList();
 chatroom=new ChatRoom();
 sysinfo=new InfoBox();
 userlist=new UserList(62,8,17,15);
