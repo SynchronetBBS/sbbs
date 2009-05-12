@@ -52,6 +52,7 @@ if(this.SYS_CLOSED==undefined)
  */
 function Lightbar(items)
 {
+	this.width=10;
 	this.fg=7;
 	this.bg=1;
 	this.xpos=1;
