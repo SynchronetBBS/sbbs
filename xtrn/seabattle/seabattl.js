@@ -69,7 +69,7 @@ function GameLobby()
 		var posx=42;
 		var posy=3;
 		var input_line={x:42,y:23,columns:38};
-		gamechat.Init("Sea-Battle Lobby",input_line,columns,rows,posx,posy,false,"\1y");
+		gamechat.Init("Sea-Battle Lobby",input_line,columns,rows,posx,posy,false,false,"\1y");
 		this.Redraw();
 	}
 	this.InitMenu=function()

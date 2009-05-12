@@ -1,7 +1,7 @@
 function GameSession(game,join) 
 {
 	this.game=game;
-	this.queue=gamechat.queue;
+	this.queue=queue;
 	this.clearinput=true;
 	this.currentplayer;
 	this.shots;
@@ -1276,7 +1276,7 @@ function GameData(gamefile)
 			var nextturn=this.FindPlayer(this.turn);
 			var unum=system.matchuser(nextturn.name);
 			var message="\1n\1gIt is your turn in \1c\1hSea\1n\1c-\1hBattle\1n\1g\1g game #\1h" + this.gamenumber + "\r\n\r\n";
-			//system.put_telegram(unum, message);
+			system.put_telegram(unum, message);
 			//TODO: make this handle interbbs games if possible
 		}
 	}
