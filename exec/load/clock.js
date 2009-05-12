@@ -7,6 +7,7 @@ function DigitalClock(x,y,color)
 	this.rows=5;
 	this.lastupdate=-1;
 	this.digits=[];
+	this.hidden=false;
 	
 	this.Init=function()
 	{
@@ -14,8 +15,18 @@ function DigitalClock(x,y,color)
 		this.DrawBox();
  		this.Update();
 	}
+	this.Hide=function()
+	{
+		this.hidden=true;
+	}
+	this.Unhide=function()
+	{
+		this.hidden=false;
+		this.Redraw();
+	}
 	this.Update=function(forced)
 	{
+		if(this.hidden) return;
 		var date=new Date();
 		var hours=date.getHours();
 		if(hours>12) hours-=12;
@@ -28,6 +39,7 @@ function DigitalClock(x,y,color)
 		var time=hours.toString() + ":" + minutes.toString();
 		if(minutes>this.lastupdate || forced) 
 		{
+			this.DrawBox();
 			this.lastupdate=minutes;
 			this.DrawClock(time);
 		}
@@ -52,7 +64,6 @@ function DigitalClock(x,y,color)
 	}
 	this.Redraw=function()
 	{
-		this.DrawBox();
 		this.Update(true);
 	}
 	this.DrawBox=function()
