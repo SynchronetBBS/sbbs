@@ -3,7 +3,7 @@ function GameSession(game)
 	this.name;
 	this.game=game;
 	this.board;
-	this.queue=chesschat.queue;
+	this.queue=queue;
 	this.menu;
 	this.currentplayer;
 	this.infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: true)
