@@ -83,4 +83,15 @@ function URL(url, base)
 			loop=true;
 		}
 	} while(loop);
+
+	this.request_path getter=function() {
+		var ret='';
+
+		if(this.path != undefined)
+			ret += this.path;
+		if(this.query != undefined)
+			ret += '?'+this.query;
+		if(this.fragment != undefined)
+			ret += '#'+this.fragment;
+	};
 }
