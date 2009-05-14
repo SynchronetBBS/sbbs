@@ -576,7 +576,7 @@ var	SCAN_UNREAD		=(1<<5);	/* Find un-read messages to you 			*/
 								/********************************************/
 								/* Bits in msg_area.sub[].scan_cfg			*/
 								/********************************************/
-var SCAN_CFG_NEW	=(1<<0);	/* Auto-scan for new messages				*/
+var SCAN_CFG_NEW	=5;	        /* Auto-scan for new messages				*/
 var SCAN_CFG_TOYOU	=(1<<1);	/* Auto-scan for unread messages to you		*/
 var SCAN_CFG_YONLY	=(1<<8);	/* Auto-scan for new messages to you only	*/
 								/********************************************/
