@@ -9,5 +9,6 @@ function HelpFile(helpfile)
 	{
 		//TODO: parse help information from a single help file divided into sections
 	}
+	this.back=[];
 	this.load();
 }
