@@ -30,12 +30,13 @@
 	
 //######################### InitIALIZE PROGRAM VARIABLES #########################
 
-	const 	pointsToWin=	100;
-	const	minScore=		-2;
-	const 	maxGames=		100;
-	const 	minPlayers=		3;
-	const 	maxPlayers=		7;
-	const 	maxDice=		8;
+	var 	pointsToWin=	100;
+	var		minScore=		-2;
+	var 	maxGames=		100;
+	var 	minPlayers=		3;
+	var 	maxPlayers=		7;
+	var 	maxDice=		8;
+	var 	gamelog=		false;
 	const 	root=			"game";
 	const	scorefile=		"dicerank";
 	const	halloffame=		"dicehof";
@@ -48,8 +49,6 @@
 
 //######################### DO NOT CHANGE THIS SECTION ##########################	
 
-	if(!file_isdir(game_dir+"logs")) mkdir(game_dir+"logs");
-	var gamelog=new Logger(game_dir + "logs/","dice");
 	var userFileName=game_dir + user.alias + ".usr";
 	var userFile=new File(userFileName);
 	userFile.open('a');
@@ -1121,6 +1120,25 @@ function 	Quit(err)
 	exit(0);
 }
 //#######################MAIN GAME CLASS###################################
+function	LoadSettings()
+{
+	var sfile=new File(game_dir + "dice.ini");
+	sfile.open('r',true);
+	pointsToWin=	sfile.iniGetValue(null,"pointstowin");
+	minScore=		sfile.iniGetValue(null,"minscore");
+	maxGames=		sfile.iniGetValue(null,"maxgames");
+	minPlayers=		sfile.iniGetValue(null,"minplayers");
+	maxPlayers=		sfile.iniGetValue(null,"maxplayers");
+	maxDice=		sfile.iniGetValue(null,"maxdice");
+	logEnabled=		sfile.iniGetValue(null,"enablelogging");
+	
+	if(logEnabled)
+	{
+		if(!file_isdir(game_dir+"logs")) mkdir(game_dir+"logs");
+		gamelog=new Logger(game_dir + "logs/",root);
+	}
+	sfile.close();
+}
 function	GameStatusInfo()
 {
 	this.gameData=[]; //master game data array
@@ -1568,9 +1586,10 @@ function	GameStatusInfo()
 }
 function	GameLog(data)
 {
-	gamelog.Log(data);
+	if(gamelog) gamelog.Log(data);
 }
 
+	LoadSettings();
 	SplashScreen();
 	GameMenu();
 	
