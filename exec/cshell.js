@@ -11,14 +11,20 @@ load("str_cmds.js");
 load("chateng.js");
 load("graphic.js");
 load("clock.js");
+load("msgwndw.js");
 
 var root;
 try { barfitty.barf(barf); } catch(e) { root = e.fileName; }
-root = root.replace(/[^\/\\]*$/,"");
+root = root.replace(/[^\/\\]*$/,"") + "chat/";
+mkdir(root);
+
 var logger=new Logger(root,"cshell");
+var orig_passthru=console.ctrlkey_passthru;
 bbs.sys_status |= SS_PAUSEOFF;	
-console.clear();
 var fullredraw=false;
+var screen_rows=console.screen_rows;
+var screen_columns=console.screen_columns;
+var windows={"info":"userlist","userlist":"chat","chat":"info"};
 
 function Main()
 {
@@ -28,6 +34,7 @@ function Main()
 	
 	function Main()
 	{
+		console.ctrlkey_passthru="+KOPTU";
 		chatroom.Welcome();
 		while(1)
 		{
@@ -42,18 +49,34 @@ function Main()
 				} 
 				switch(k.toUpperCase())
 				{
+					case '\x09':	/* CTRL-I TAB...*/
+						NextWindow("chat");
+						break;
+					case ctrl(120):
+						chatroom.Alert("\1n\1cshift-tab");
+						break;
+					case ctrl('O'): /* CTRL-O - Pause */
+					case ctrl('U'): /* CTRL-U User List */
+					case ctrl('T'): /* CTRL-T Time Info */
+					case ctrl('K'): /* CTRL-K Control Key Menu */
+					case ctrl('P'): /* Ctrl-P Messages */
+						controlkeys.handle(k);
+						break;
 					case KEY_LEFT:
 						Menu();
 						break;
 					case KEY_RIGHT:
 						break;
+					case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+						Redraw();
+						break;
 					case ';':
 						if(!chatroom.chat.buffer.length) 
 						{
-							chatroom.Alert("Command (? For Help): ");
-							if(!console.aborted) {
+							if(!console.aborted) 
+							{
 								var str=console.getstr("",40,K_EDIT);
-								menulist.clear_screen();
+								chatroom.Alert("Command (? For Help): ");
 								if(str=='?') {
 									if(!user.compare_ars("SYSOP"))
 										str='HELP';
@@ -66,7 +89,7 @@ function Main()
 									str_cmds(str);
 									/* Still using this shell? */
 									if(user.command_shell != oldshell)
-										exit(0);
+										Exit();
 								}
 							}					
 						}
@@ -98,6 +121,7 @@ function Main()
 		var next_key='';
 		while(1) 
 		{
+			Cycle();
 			var key=next_key;
 			next_key='';
 			if(key=='')
@@ -110,16 +134,18 @@ function Main()
 			width=menulist.menu.width+2;
 			switch(key)
 			{
+				case ctrl('R'):	/* CTRL-R (Quick Redraw in SyncEdit) */
 				case ctrl('O'): /* CTRL-O - Pause */
 				case ctrl('U'): /* CTRL-U User List */
 				case ctrl('T'): /* CTRL-T Time Info */
 				case ctrl('K'): /* CTRL-K Control Key Menu */
 				case ctrl('P'): /* Ctrl-P Messages */
-					this.ControlKeys.handle(key);
+					controlkeys.handle(key);
 					break;
 				case KEY_LEFT:
 					menulist.PreviousMenu();
 					break;
+				case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				case KEY_RIGHT:
 				case "\x1b":
 					diff=menulist.menu.width+2;
@@ -135,13 +161,31 @@ function Main()
 }
 function Cycle()
 {
+	if(console.screen_columns!=screen_columns)
+	{
+		Init();
+		screen_rows=console.screen_rows;
+		screen_columns=console.screen_columns;
+	}
+	else if(console.screen_rows!=screen_rows)
+	{
+		var r=console.screen_rows-screen_rows;
+		screen_rows=console.screen_rows;
+		chatroom.Stretch(r);
+		menulist.Reload();
+		userlist.Resize(undefined,r);
+		Redraw();
+	}
 	chatroom.Cycle();
+	sysinfo.Cycle();
 	userlist.UpdateList();
-	clock.Update();
 }
 function Exit()
 {
+	QuitQueue(KillFile,KillThread);
 	bbs.sys_status&=~SS_PAUSEOFF;
+	console.ctrlkey_passthru=orig_passthru;
+	console.clear();
 	exit(0);
 }
 function Redraw()
@@ -149,42 +193,47 @@ function Redraw()
 	console.clear();
 	userlist.Redraw();
 	chatroom.Redraw();
-	clock.Redraw();
 	sysinfo.Redraw();
+	clock.Redraw();
+}
+function NextWindow()
+{
+	
 }
 
 function ChatRoom()
 {
-	this.x=2;
-	this.y=9;
-	this.rows=13;
-	this.columns=59;
+	this.x;
+	this.y;
+	this.rows;
+	this.columns;
 	this.menu;
 	this.chat=new ChatEngine(root,"chatshell",logger);
 
-	this.InitChat=function()
+	this.Init=function(x,y,c,r)
 	{
-		var rows=this.rows;
-		var columns=this.columns;
-		var posx=this.x;
-		var posy=this.y;
-		this.chat.Init("Main Menu",true,columns,rows,posx,posy,false,true,"\1k\1h",true);
+		this.rows=r?r:console.screen_rows;
+		this.columns=c?c:console.screen_columns;
+		this.x=x?x:2;
+		this.y=y?y:2;
+		this.chat.Init("Main",true,this.columns,this.rows,this.x,this.y,false,true,"\1k\1h",true);
+		this.InitMenu();
 	}
 	this.Welcome=function()
 	{
 		var welcome=[];
-		welcome.push("\1b\1hWelcome to the BRoKEN BuBBLE BBS!");
-		welcome.push("\1k\1h---------------------------------");
-		welcome.push("\1n\1cThis menu shell is a work in");
-		welcome.push("\1n\1cprogress. Press the left arrow");
-		welcome.push("\1n\1ckey at any time for the main menu");
-		welcome.push("\1n\1cor '/' for an in-chat menu.");
-		welcome.push("\1n\1cJust start typing to chat with");
-		welcome.push("\1n\1cother users. Let me know of any");
-		welcome.push("\1n\1cbugs or issues -- MCMLXXIX");
+		welcome.push("\1b\1h********* Welcome to the BRoKEN BuBBLE BBS! *********");
+		welcome.push("\1k\1h-----------------------------------------------------");
+		welcome.push("\1n\1cThis menu shell is a work in progress. Press the left");
+		welcome.push("\1n\1carrow key at any time for the main menu or '/' for an");
+		welcome.push("\1n\1cin-chat menu. Just start typing to chat with other users.");
+		welcome.push("\1n\1cYou can quit and go back to the regular command shell");
+		welcome.push("\1n\1cat any time by pressing 'Escape'. Right arrow key returns");
+		welcome.push("\1n\1cto chat. Let me know of any bugs or issues. -- MCMLXXIX");
+		welcome.push("\1n\1cshell: " + user.command_shell);
 		this.chat.DisplayInfo(welcome);
-		this.Alert("\1r\1h[Press any key]");
-		while(console.inkey()=="");
+		this.Alert("\1r\1h[Press 'Y' if you understand]");
+		while(console.inkey(K_UPPER)!="Y");
 		this.Redraw();
 		
 	}
@@ -203,6 +252,12 @@ function ChatRoom()
 	this.Redraw=function()
 	{
 		this.chat.Redraw();
+	}
+	this.Stretch=function(height)
+	{
+		var rows=this.rows;
+		rows+=height;
+		this.Resize(undefined,rows);
 	}
 	this.Expand=function(width,side)
 	{
@@ -238,12 +293,6 @@ function ChatRoom()
 			this.rows=rows;
 		}
 		this.chat.Resize(this.x,this.y,this.columns,this.rows);
-		if(fullredraw) 
-		{
-			Redraw();
-			fullredraw=false;
-		}
-		else this.Redraw();
 	}
 	this.InitMenu=function()
 	{
@@ -251,7 +300,8 @@ function ChatRoom()
 		var menu_items=[		"~Logoff Fast"					, 
 								"~Help"							,
 								"Toggle ~user list"				,
-								"Toggle ~clock"					,
+								"Chat ~room list"				,
+								"~Join chat room"				,
 								"Re~draw"						];
 		this.menu.add(menu_items);
 	}
@@ -272,15 +322,15 @@ function ChatRoom()
 					this.Help();
 					break;
 				case "C":
-					if(clock.hidden)
+					if(sysinfo.clock.hidden)
 					{
-						clock.Unhide();
-						userlist.Resize(undefined,-(clock.rows+2),clock.x,clock.y+clock.rows+2);
+						sysinfo.clock.Unhide();
+						userlist.Resize(undefined,-(sysinfo.clock.rows+2),sysinfo.clock.x,sysinfo.clock.y+sysinfo.clock.rows+2);
 					}
 					else 
 					{
-						clock.Hide();
-						userlist.Resize(undefined,clock.rows+2,clock.x,clock.y);
+						sysinfo.clock.Hide();
+						userlist.Resize(undefined,sysinfo.clock.rows+2,sysinfo.clock.x,sysinfo.clock.y);
 					}
 					break;
 				case "U":
@@ -295,15 +345,32 @@ function ChatRoom()
 						userlist.Hide();
 					}
 					break;
+				case "R":
+					this.ListChatRooms();
+					break;
+				case "J":
+					this.Alert("\1nEnter room name: ");
+					var room=console.getstr(20,K_NOSPIN|K_NOCRLF|K_UPRLWR);
+					if(room.length)	this.chat.Init(room,true,this.columns,this.rows,this.x,this.y,false,true,"\1k\1h",true);
+					break;
 				case "D":
 					Redraw();
 					break;
 				case "L":
+					QuitQueue(KillFile,KillThread);
 					bbs.hangup();
 					break;
 				default:
 					break;
 			}
+	}
+	this.ListChatRooms=function()
+	{
+		var array=userlist.ChannelList();
+		this.chat.DisplayInfo(array);
+		this.Alert("\1r\1h[Press any key]");
+		while(console.inkey()=="");
+		this.Redraw();
 	}
 	this.Help=function()
 	{
@@ -407,9 +474,6 @@ function ChatRoom()
 		}
 		this.Init();
 	}
-	
-	this.InitChat();
-	this.InitMenu();
 }
 function MenuList()
 {
@@ -420,7 +484,6 @@ function MenuList()
 	var menus_displayed=new Array();
 	var lastmessage_time=0;
 	var lastmessage_type=0;
-	var orig_passthru=console.ctrlkey_passthru;
 	var hangup_now=false;
 	var done=0;
 	var previous=[];
@@ -429,6 +492,7 @@ function MenuList()
 	const posx=1;
 	const posy=8;
 	
+	this.currentmenu;
 	this.menu;
 	this.process;
 	
@@ -460,8 +524,8 @@ function MenuList()
 		}
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Mainbar.prototype=new Lightbar;
 	function Filemenu()
@@ -506,8 +570,7 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
 	}
 	Filemenu.prototype=new Lightbar;
 	function Filedirmenu(changenewscan)
@@ -536,8 +599,6 @@ function MenuList()
 		}
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
-		this.timeout=100;
-		this.callback=message_callback;
 	}
 	Filedirmenu.prototype=new Lightbar;
 	function Settingsmenu()
@@ -561,8 +622,6 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
 	}
 	Settingsmenu.prototype=new Lightbar;
 	function Emailmenu()
@@ -587,8 +646,8 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Emailmenu.prototype=new Lightbar;
 	function Messagemenu()
@@ -624,8 +683,8 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Messagemenu.prototype=new Lightbar;
 	function Chatmenu()
@@ -655,8 +714,8 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Chatmenu.prototype=new Lightbar;
 	function Xtrnsecs()
@@ -688,8 +747,8 @@ function MenuList()
 		this.add("|< Previous Menu","",xtrnsecwidth);
 		this.add(format_opt("Return to Chat",xtrnsecwidth,true),"",xtrnsecwidth);
 		this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Xtrnsecs.prototype=new Lightbar;
 	function Xtrnsec(sec)
@@ -725,8 +784,8 @@ function MenuList()
 		this.add("|< Previous Menu","",xtrnsecprogwidth);
 		this.add(format_opt("Return to Chat",xtrnsecprogwidth,true),"",xtrnsecprogwidth);
 		this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Xtrnsec.prototype=new Lightbar;
 	function Infomenu()
@@ -753,8 +812,8 @@ function MenuList()
 		this.add("|< Previous Menu","",width);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add("\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9",undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Infomenu.prototype=new Lightbar;
 	function Userlists()
@@ -777,8 +836,8 @@ function MenuList()
 		this.add("|< Previous Menu","",12);
 		this.add(format_opt("Return to Chat",width,true),"",width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Userlists.prototype=new Lightbar;
 	function Emailtargetmenu()
@@ -803,8 +862,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Emailtargetmenu.prototype=new Lightbar;
 	function Download()
@@ -827,8 +886,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Download.prototype=new Lightbar;
 	function Upload()
@@ -860,8 +919,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Upload.prototype=new Lightbar;
 	function Fileinfo()
@@ -887,8 +946,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Fileinfo.prototype=new Lightbar;
 	function Filesettings(value)
@@ -913,8 +972,8 @@ function MenuList()
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
 		this.current=value;
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Filesettings.prototype=new Lightbar;
 	function Newscan()
@@ -944,8 +1003,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Newscan.prototype=new Lightbar;
 	function Scantoyou()
@@ -973,8 +1032,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Scantoyou.prototype=new Lightbar;
 	function Searchmsgtxt()
@@ -1001,8 +1060,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Searchmsgtxt.prototype=new Lightbar;
 	function Chatsettings()
@@ -1027,8 +1086,8 @@ function MenuList()
 		this.add("|< Previous Menu","",this.width);
 		this.add(format_opt("Return to Chat",this.width,true),"",this.width);
 		this.add(bottom_bar(this.width),undefined,undefined,"","");
-		this.timeout=100;
-		this.callback=message_callback;
+		
+		
 	}
 	Chatsettings.prototype=new Lightbar;
 	
@@ -2006,96 +2065,6 @@ function MenuList()
 		}
 	}
 
-	function get_message()
-	{
-		/* Update node action */
-		if(bbs.node_action != system.node_list[bbs.node_num-1].action)
-			system.node_list[bbs.node_num-1].action = bbs.node_action;
-
-		/* Check for messages */
-		if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
-			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,system.get_telegram(user.number),sysinfo.attr,true);
-		if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
-			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,system.get_node_message(bbs.node_num),sysinfo.attr,true);
-
-		/* Fix up node status */
-		if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
-			system.node_list[bbs.node_num-1].status=NODE_INUSE;
-		}
-
-		/* Check if user data has changed */
-		if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
-			user.cached=false;
-			system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
-		}
-
-		/* Interrupted? */
-		if(system.node_list[bbs.node_num-1].misc & NODE_INTR) {
-			rows+=sysinfo.box.putmsg(sysinfo.x,sysinfo.y,bbs.text(NodeLocked),sysinfo.attr,true);
-			hangup_now=true;
-		}
-
-		/* Sysop Chat? */
-		if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
-			// TODO: No way of calling bbs.priave_chat(true)
-			// bbs.private_chat();
-			bbs.nodesync();
-			draw_main();
-		}
-
-		/* New day? */
-	//	if(!(system.status & SS_NEWDAY))
-	//		bbs.nodesync();
-	}
-	function message_callback()
-	{
-		var rows;
-		var display=false;
-		var i;
-		var old_rows=msg_rows;
-
-		rows=get_message();
-		if(rows>0) {
-			display=true;
-			/* 
-			 * ToDo: This currently assumes that the
-			 * current menu is the only one protruding into the message window
-			 * This would not be correct with (for example) 20 external areas
-			 * and 20 externals in one area
-			 */
-			 
-			/* Create new timeout object. */
-			if(rows > console.screen_rows-1)
-				rows=console.screen_rows-1;
-			var timeout=new Object;
-			timeout.ticks=0;
-			timeout.rows=rows;
-			msg_timeouts.push(timeout);
-			msg_rows+=rows;
-			if(msg_rows > console.screen_rows-1) {
-				/* Find and remove older messages that have scrolled off the top (or at least partially). */
-				for(i=0; i<msg_timeouts.length; i++) {
-					timeout=msg_timeouts.shift();
-					msg_rows -= timeout.rows;
-					if(msg_rows < console.screen_rows-1)
-						break;
-				}
-			}
-			console.beep();
-		}
-		/* Increment the ticks and expire as necessary */
-		for(i=0; i<msg_timeouts.length; i++) {
-			msg_timeouts[i].ticks++;
-			if(msg_timeouts[i].ticks>=sysinfo.messagetimeout) {
-				msg_rows -= msg_timeouts[i].rows;
-				i--;
-				msg_timeouts.shift();
-				display=true;
-			}
-		}
-		if(hangup_now)
-			bbs.hangup();
-	}
 	function top_bar(width)
 	{
 		return("\xda"+bars80.substr(0,width)+"\xbf");
@@ -2147,6 +2116,10 @@ function MenuList()
 		console.ctrlkey_passthru="+KOPTU";
 	}
 
+	this.Reload=function()
+	{
+		this.LoadMenu(this.currentmenu);
+	}
 	this.PreviousMenu=function()
 	{
 		if(previous.length)
@@ -2156,6 +2129,7 @@ function MenuList()
 	}
 	this.LoadMenu=function(name,value)
 	{
+		this.currentmenu=name;
 		switch(name)
 		{
 			case "xtrnsecs":
@@ -2255,25 +2229,27 @@ function MenuList()
 }
 function ControlKeys()
 {
-	this.handle(key)
+	this.handle=function(key)
 	{
 		var pause=false;
 		switch(key) {
-			case ctrl('O'):	/* CTRL-O - Pause */
+			case ctrl('R'):
+				Redraw();	
 				break;
-			case ctrl('L'):	/* CTRL-L - Global War Menu */
+			case ctrl('O'):	/* CTRL-O - Pause */
 				break;
 			case ctrl('U'):	/* CTRL-U User List */
 			case ctrl('T'):	/* CTRL-T Time Info */
 			case ctrl('K'):	/* CTRL-K Control Key Menu */
 				pause=true;
 			case ctrl('P'):	/* Ctrl-P Messages */
-				clear_screen();
+				console.clear();
 				console.handle_ctrlkey(key);
 				if(pause)
 					console.pause();
 				break;
 		}
+		Redraw();
 	}
 }
 function Log(text)
@@ -2284,66 +2260,153 @@ function InfoBox()
 {
 	this.attr=7;
 	this.messagetimeout=6000;		/* 100ths of a second */
-	this.x=chatroom.x-1;
-	this.y=1;
-	this.columns=chatroom.columns;
-	this.rows=5;
-	this.box=new Graphic(this.columns,this.rows,this.attr,' ');
+	this.x;
+	this.y;
+	this.clock;
+	this.columns;
+	this.rows;
+	this.window;
+	this.box;
+	this.messages=0;
 
+	this.Menu=function()
+	{
+		while(1) 
+		{
+			Cycle();
+			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			switch(k)
+			{
+				case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+						Redraw();
+						break;
+				case ctrl('O'): /* CTRL-O - Pause */
+				case ctrl('U'): /* CTRL-U User List */
+				case ctrl('T'): /* CTRL-T Time Info */
+				case ctrl('K'): /* CTRL-K Control Key Menu */
+				case ctrl('P'): /* Ctrl-P Messages */
+					controlkeys.handle(key);
+					break;
+				case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
+					NextWindow("info");
+					break;
+				case "\x1b":
+					return;
+				default:
+					break;
+			}
+		}
+	}
 	this.Cycle=function()
 	{
-		
+		this.GetMessage();
 	}
-	this.Init=function()
+	this.Init=function(x,y)
 	{
-		this.DrawBox();
+		this.x=x?x:1;
+		this.y=y?y:1;
+		this.columns=(console.screen_columns-20)-this.x;
+		this.rows=5;
+		this.window=new Graphic(this.columns,this.rows,this.attr,' ');
+		this.box=new Window("INFO",this.x,this.y,this.columns,this.rows);
+		this.box.Draw(this.messages);
 		this.DrawInfo();
 	}
 	this.Redraw=function()
 	{
-		this.DrawBox();
-		this.DrawInfo();
+		this.box.Draw(this.messages);
+		if(this.messages==0) this.DrawInfo();
 	}
 	this.DrawInfo=function()
 	{
-		var sys=" \1n\1cSystem:\1h " + system.name;
-		var sysop=" \1n\1c SysOp:\1h " + system.operator;
-		var date=" \1n\1c  Date:\1h " + system.datestr();
-		var loc=" \1n\1cLocation:\1h " + system.location;
-		var addr=" \1n\1c Address:\1h " + system.inet_addr;
-		var platform=" \1n\1cPlatform:\1h " + system.platform;
+		var addr="\1n\1c Address:\1h " + system.inet_addr;
+		var date="\1n\1c    Date:\1h " + system.datestr();
+		var loc="\1n\1cLocation:\1h " + system.location;
+		var logons="\1n\1c  Logons:\1h " + system.stats.total_logons;
+		console.gotoxy(this.x+1,this.y+1);
+		console.putmsg("\1b\1h    T H e  -  B R o K E N  -  B U B B L e  -  B B S");
 		console.gotoxy(this.x+1,this.y+2);
-		console.putmsg(PrintPadded(sys,37) + addr);
+		console.putmsg(PrintPadded(addr,32) +	"\1n\1cGlobal Commands\1h:");
 		console.gotoxy(this.x+1,this.y+3);
-		console.putmsg(PrintPadded(sysop,37) + loc);
+		console.putmsg(PrintPadded(loc,32) + 	"\1n\1c[\1hCtrl-R\1n\1c] Redraw Screen");
 		console.gotoxy(this.x+1,this.y+4);
-		console.putmsg(PrintPadded(date,37) + platform);
+		console.putmsg(PrintPadded(date,32) +	"\1n\1c[\1hCtrl-P\1n\1c] MSG/Telegram/Chat");
+		console.gotoxy(this.x+1,this.y+5);
+		console.putmsg(PrintPadded(logons,32) +"\1n\1c[\1hCtrl-U\1n\1c] Users Online");
 	}
-	this.DrawBox=function()
+	this.GetMessage=function()
 	{
-		console.gotoxy(this.x,this.y);
-		console.putmsg("\1n\1h\xDA");
-		DrawLine(false,false,this.columns-6,"\1n\1h");
-		console.putmsg("\1n\1h\xB4\1nINFO\1h\xC3\1n\1h\xBF");
-		for(line = 1; line<=this.rows; line++)
+		/* Update node action */
+		if(bbs.node_action != system.node_list[bbs.node_num-1].action)
 		{
-			console.gotoxy(this.x,this.y+line);
-			printf("\1n\1h\xB3%*s\xB3",this.columns,"");
+			system.node_list[bbs.node_num-1].action = bbs.node_action;
+			userlist.Redraw();
 		}
-		console.gotoxy(this.x,this.y + this.rows+1);
-		console.putmsg("\1n\1h\xC0");
-		DrawLine(false,false,this.columns,"\1n\1h");
-		var spot=console.getxy();
-		if(spot.y==24 && spot.x==80);
-		else console.putmsg("\1n\1h\xD9");
+
+		/* Check for messages */
+		if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
+		{
+			this.messages++;
+			var telegram=system.get_telegram(user.number);
+			this.window.putmsg(1,1,telegram,this.attr,true);
+			this.window.draw(this.x+1,this.y+1);
+		}
+		if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
+		{
+			this.messages++;
+			var nodemsg=system.get_node_message(bbs.node_num);
+			this.window.putmsg(1,1,nodemsg,this.attr,true);
+			this.window.draw(this.x+1,this.y+1);
+		}
+		/* Interrupted? */
+		if(system.node_list[bbs.node_num-1].misc & NODE_INTR) 
+		{
+			this.messages++;
+			this.window.putmsg(1,1,bbs.text(NodeLocked),this.attr,true);
+			this.window.draw(this.x+1,this.y+1);
+			hangup_now=true;
+		}
+
+		/* Fix up node status */
+		if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
+			system.node_list[bbs.node_num-1].status=NODE_INUSE;
+		}
+
+		/* Check if user data has changed */
+		if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
+			user.cached=false;
+			system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
+		}
+
+
+		/* Sysop Chat? */
+		if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
+			// TODO: No way of calling bbs.priave_chat(true)
+			// bbs.private_chat();
+			bbs.nodesync();
+			draw_main();
+		}
+
+		/* New day? */
+	//	if(!(system.status & SS_NEWDAY))
+	//		bbs.nodesync();
 	}
-	this.Init();
+}
+function Init()
+{
+	console.clear();
+	sysinfo.Init(1,1);
+	clock.Init(console.screen_columns-18,sysinfo.y,LIGHTBLUE);
+	userlist.Init(console.screen_columns-18,sysinfo.y+sysinfo.rows+2,17,console.screen_rows-(clock.y+clock.rows+3));
+	chatroom.Init(2,sysinfo.y+sysinfo.rows+3,console.screen_columns-(userlist.columns+4),console.screen_rows-(sysinfo.y+sysinfo.rows+5));
 }
 
-clock=new DigitalClock(62,1,LIGHTBLUE);
-menulist=new MenuList();
-chatroom=new ChatRoom();
-sysinfo=new InfoBox();
-userlist=new UserList(62,8,17,15);
+var controlkeys=new ControlKeys();
+var clock=new DigitalClock();
+var menulist=new MenuList();
+var sysinfo=new InfoBox();
+var chatroom=new ChatRoom();
+var userlist=new UserList();
 
+Init();
 Main();
