@@ -639,19 +639,20 @@ function GameSession(game)
 	{ 
 		var from_tile=this.board.grid[from.x][from.y];
 		var to_tile=this.board.grid[to.x][to.y];
-		if(to_tile.contents && to_tile.contents.color==from_tile.contents.color) {
+		from.y=parseInt(from.y);
+		from.x=parseInt(from.x);
+		to.y=parseInt(to.y);
+		to.x=parseInt(to.x);
+		
+		if(to_tile.contents && to_tile.contents.color==from_tile.contents.color) 
+		{
 			Log("Invalid Move: Target Color same as Source Color");
 			return false
 		}
 		//KING RULESET
 		if(from_tile.contents.name=="king") 
 		{
-			if(this.InCheck(to,from_tile.contents.color)) 
-			{
-				Log("Invalid Move: Would cause check");
-				return false;
-			}
-			else if(Math.abs(from.x-to.x)==2) 
+			if(Math.abs(from.x-to.x)==2) 
 			{
 				if(this.InCheck(from,from_tile.contents.color))
 				{
@@ -663,18 +664,22 @@ function GameSession(game)
 					Log("Invalid Move: King has already moved and cannot castle");
 					return false;
 				}
-				if(from.x > to.x) {
+				if(from.x > to.x) 
+				{
 					var x=from.x-1;
-					while(x>0) {
+					while(x>0) 
+					{
 						var spot_check={"x":x,"y":from.y};
 						if(this.board.grid[x][from.y].contents) return false;
 						if(this.InCheck(spot_check,from_tile.contents.color)) return false;
 						x--;
 					}
 				}
-				else {
+				else 
+				{
 					var x=from.x+1;
-					while(x<7) {
+					while(x<7) 
+					{
 						var spot_check={"x":x,"y":from.y};
 						if(this.board.grid[x][from.y].contents) return false;
 						if(this.InCheck(spot_check,from_tile.contents.color)) return false;
@@ -683,7 +688,8 @@ function GameSession(game)
 				}
 				return "castle";
 			}
-			else {
+			else 
+			{
 				if(Math.abs(from.x-to.x)>1 || Math.abs(from.y-to.y)>1) 
 				{
 					Log("Invalid Move: King can only move one space unless castling");
@@ -799,16 +805,21 @@ function GameSession(game)
 					}
 				}
 			}
-			else if(from.y==to.y) {
-				if(from.x<to.x) {
+			else if(from.y==to.y) 
+			{
+				if(from.x<to.x) 
+				{
 					var distance=to.x-from.x;
-					for(check = 1;check<distance;check++) {
+					for(check = 1;check<distance;check++) 
+					{
 						if(this.board.grid[from.x+check][from.y].contents) return false;
 					}
 				}
-				else {
+				else 
+				{
 					var distance=from.x-to.x;
-					for(check = 1;check<distance;check++) {
+					for(check = 1;check<distance;check++)
+					{
 						if(this.board.grid[from.x-check][from.y].contents) return false;
 					}
 				}
@@ -1070,7 +1081,10 @@ function GameSession(game)
 					if(this.board.grid[column][row].contents.name=="king");
 					else if(this.board.grid[column][row].contents.color!=player) {
 						var from={"x":column, "y":row};
-						if(this.CheckRules(from,position)) {
+						if(this.CheckRules(from,position)) 
+						{
+							Log("x: "+ column + " y: " + row);
+							Log("piece: " + this.board.grid[column][row].color + this.board.grid[column][row].contents.name + " can take piece.");
 							check_pieces.push(this.board.grid[column][row]);
 						}
 					}
