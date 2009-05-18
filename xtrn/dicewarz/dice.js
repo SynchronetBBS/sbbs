@@ -31,12 +31,14 @@
 //######################### InitIALIZE PROGRAM VARIABLES #########################
 
 	const 	pointsToWin=	100;
+	const	minScore=		-2;
 	const 	maxGames=		100;
 	const 	minPlayers=		3;
 	const 	maxPlayers=		7;
 	const 	maxDice=		8;
 	const 	root=			"game";
 	const	scorefile=		"dicerank";
+	const	halloffame=		"dicehof";
 	const	instructions=	"dice.doc";
 	const 	bColors=		[BG_BLUE,	BG_CYAN,	BG_RED,		BG_GREEN,	BG_BROWN,	BG_MAGENTA,	BG_LIGHTGRAY]; 		//MAP BACKGROUND COLORS
 	const 	bfColors=		[BLUE,		CYAN,		RED,		GREEN,		BROWN,		MAGENTA,	LIGHTGRAY]; 		//MAP BACKGROUND COLORS (FOREGROUND CHARS)
@@ -144,6 +146,7 @@ function	ViewInstructions()
 }
 function	ViewRankings()
 {
+	games.HallOfFame();
 	scores=games.LoadRankings();
     var scoredata=SortScores();
 	console.clear();
@@ -167,7 +170,7 @@ function	ViewRankings()
 	for(hs in scoredata)
 	{
 		thisuser=scoredata[hs];
-		if(scores[thisuser].score>0 || scores[thisuser].wins>0) 
+		if(scores[thisuser].score!=0 || scores[thisuser].wins>0 || scores[thisuser].losses>0) 
 		{
 			var winPercentage=0;
 			if(scores[thisuser].wins>0) winPercentage=(scores[thisuser].wins/(scores[thisuser].wins+scores[thisuser].losses))*100;
@@ -291,7 +294,6 @@ function	SplashScreen()
 }
 function 	GameMenu()
 {
-	if(!(user.settings & USER_PAUSE)) console.pause();
 	var gMenu=new Menu(		""								,1,19,GetColor("green"),GetColor("green","high"));
 	var gmenu_items=[		"~Rankings"						, 
 							"~Select Game"					,
@@ -856,6 +858,7 @@ function	Battle(attackFrom,attackTo,gameNumber)
 	attackFrom.displayBorder(border_color);
 	attackTo.displayBorder(border_color);
 	attackTo.show();
+	g.DisplayPlayers();
 }
 function	EndTurn(gameNumber,pl)
 {
@@ -909,6 +912,7 @@ function	Forfeit(gameNumber,playerNumber)
 			games.StoreGame(gameNumber);
 		}
 	}
+	g.DisplayPlayers();
 	games.StoreRankings();
 }
 //MAIN GAMEPLAY FUNCTION
@@ -1113,7 +1117,7 @@ function 	Quit(err)
 	
 	//TODO:  CREATE A GAME EXIT ANSI SCREEN
 	printf("\n\r\1r\1h  Thanks for playing!\r\n\r\n");
-	mswait(1000);
+	mswait(500);
 	exit(0);
 }
 //#######################MAIN GAME CLASS###################################
@@ -1155,47 +1159,64 @@ function	GameStatusInfo()
 	}
 	this.LoadRankings=function()
 	{
-		var reset=true;
-		while(reset)
+		var data=[];
+		var reset=false;
+		sfilename=game_dir+scorefile+".dat";
+		var lfile=new File(sfilename);
+		if(file_exists(sfilename))
 		{
-			reset=false;
-			data=[];
-			sfilename=game_dir+scorefile+".dat";
-			var lfile=new File(sfilename);
-			if(file_exists(sfilename))
+			GameLog("loading scores from file: " + sfilename);
+			lfile.open('r',true);
+			for(sc=0;!(lfile.eof);sc++) 
 			{
-				GameLog("loading scores from file: " + sfilename);
-				lfile.open('r',true);
-				for(sc=0;!(lfile.eof);sc++) 
+				plyr=lfile.readln();
+				if(plyr==undefined || plyr=="") break;
+				else
 				{
-					plyr=lfile.readln();
-					if(plyr==undefined || plyr=="") break;
-					else
-					{
-						player=parseInt(plyr);
-						var score=parseInt(lfile.readln());
-						if(score>=pointsToWin) 
-						{		
-							this.ResetScores();
-							reset=true;
-						}
-						var wins=parseInt(lfile.readln());
-						var losses=parseInt(lfile.readln());
-						data[player]={'score':score,'wins':wins,'losses':losses};
-						GameLog(system.username(player) + ":" + data[player].score + ":" + data[player].wins +":"+data[player].losses);
+					player=parseInt(plyr);
+					var score=parseInt(lfile.readln());
+					if(score>=pointsToWin) 
+					{	
+						lfile.close();
+						file_remove(lfile.name);
+						this.WinRound(player);
+						reset=true;
+						break;
 					}
+					var wins=parseInt(lfile.readln());
+					var losses=parseInt(lfile.readln());
+					data[player]={'score':score,'wins':wins,'losses':losses};
+					GameLog(system.username(player) + ":" + data[player].score + ":" + data[player].wins +":"+data[player].losses);
 				}
-				lfile.close();
 			}
-			else GameLog("score file: " + sfilename + " does not exist");
+			lfile.close();
 		}
+		else GameLog("score file: " + sfilename + " does not exist");
+		if(reset) data=[];
 		return data;
 	}
-
-
-	this.ResetScores=function()
-	{
-		//TODO: ADD BULLETIN OUTPUT METHOD FOR BULLSEYE BULLETINS & HISTORICAL WINNERS LIST
+	this.WinRound=function(player)
+	{	
+		hfilename=game_dir+halloffame+".dat";
+		var hfile=new File(hfilename);
+		if(!file_exists(hfile.name))
+		{
+			hfile.open('w+');
+			hfile.writeln("\1y\1hDICE-WARZ HALL OF FAME (Round Winners):");
+			hfile.writeln();
+		}
+		else hfile.open('a');
+		hfile.writeln(system.username(player) + ": " + system.datestr());
+		hfile.close();
+	}
+	this.HallOfFame=function()
+	{	
+		if(file_exists(game_dir+halloffame+".dat"))
+		{
+			console.clear();
+			console.printfile(game_dir + dicehof + ".dat");
+			console.pause();
+		}
 	}
 	this.LoadGame=function(gamefile,gameNumber,lastModified)
 	{
@@ -1383,50 +1404,15 @@ function	GameStatusInfo()
 				{
 					GameLog("game " + gd + " needs updating");
 					this.gameData[gd]=this.LoadGame(fileName,gd,lastModified);
-					this.FilterData();
 				}
 			}
 			else
 			{
 				GameLog("gamefile " + fileName + " deleted, removing data");
-				for(gnf in this.notFull) {
-					if(this.notFull[gnf]==gd) {
-						this.notFull.splice(gnf,1);
-					}
-				}
-				for(inp in this.inProgress) {
-					if(this.inProgress[inp]==gd) {
-						this.inProgress.splice(inp,1);
-					}
-				}
-				for(yg in this.yourGames) {
-					if(this.yourGames[yg]==gd) {
-						this.yourGames.splice(yg,1);
-					}
-				}
-				for(yt in this.yourTurn)
-				{
-					if(this.yourTurn[yt]==gd) {
-						this.yourTurn.splice(yt,1);
-					}
-				}
-				for(sp in this.singleGames)
-				{
-					if(this.singleGames[sp]==gd) {
-						this.singleGames.splice(sp,1);
-					}
-				}
 				delete this.gameData[gd];
 			}
 		}
-		this.inProgress=this.SortArray(this.inProgress);
-		this.notFull=this.SortArray(this.notFull);
-		this.completed=this.SortArray(this.completed);
-		this.youWin=this.SortArray(this.youWin);
-		this.yourGames=this.SortArray(this.yourGames);
-		this.yourTurn=this.SortArray(this.yourTurn);
-		this.eliminated=this.SortArray(this.eliminated);
-		this.singleGames=this.SortArray(this.singleGames);
+		this.FilterData();
 	}
 	this.SortArray=function(data)
 	{
@@ -1501,7 +1487,7 @@ function	GameStatusInfo()
 	}
 	this.LoadGames=function()
 	{	
-		var open_list=directory(game_dir + root + "*.dat"); 		// scan for voting topic files
+		var open_list=directory(game_dir + root + "*.dat"); 	
 		GameLog("today's date: " + time());
 		if(open_list.length)
 		{
@@ -1516,6 +1502,8 @@ function	GameStatusInfo()
 				this.gameData[gameNumber]=lgame;
 			}
 		}
+		this.FilterData();
+		this.DeleteOld();
 	}
 	this.DeleteOld=function()
 	{
@@ -1575,8 +1563,6 @@ function	GameStatusInfo()
 		scores=games.LoadRankings();
 		this.LoadGames();
 		games.StoreRankings();
-		this.FilterData();
-		this.DeleteOld();
 		this.SkipPlayers();
 	}
 }

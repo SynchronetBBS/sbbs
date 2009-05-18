@@ -109,33 +109,36 @@ function 	Map(c,r,p,gn)
 		nextTurn=this.nextTurn;
 		nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
 		
-		if(this.CountActiveHumans<2) 
+		if(this.status!=0)
 		{
-			GameLog("only one human player active, no notification sent");
-			return;
-		}
-		if(nextTurnPlayer>0 && nextTurnPlayer!=user.number) 
-		{
-			DeliverMessage(nextTurnPlayer,this.gameNumber);
-			GameLog("next player notified of turn: " + system.username(nextTurnPlayer));
-		}
-		else
-		{
-			while(1)
+			if(this.CountActiveHumans<2) 
 			{
-				if(nextTurn==this.maxPlayers-1) nextTurn=0;
-				else nextTurn++;
-				nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
-				if(nextTurnPlayer==this.players[this.turnOrder[this.nextTurn]].user) 
+				GameLog("only one human player active, no notification sent");
+				return;
+			}
+			if(nextTurnPlayer>0 && nextTurnPlayer!=user.number) 
+			{
+				DeliverMessage(nextTurnPlayer,this.gameNumber);
+				GameLog("next player notified of turn: " + system.username(nextTurnPlayer));
+			}
+			else
+			{
+				while(1)
 				{
-					GameLog("all other human players eliminated, no other players notified");
-					break;
-				}
-				else if(nextTurnPlayer>0 && this.status!=0) 
-				{
-					DeliverMessage(nextTurnPlayer,this.gameNumber);
-					GameLog("skipped computer notices, next human user notified of turn: " + system.username(nextTurnPlayer));
-					break;
+					if(nextTurn==this.maxPlayers-1) nextTurn=0;
+					else nextTurn++;
+					nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
+					if(nextTurnPlayer==this.players[this.turnOrder[this.nextTurn]].user) 
+					{
+						GameLog("all other human players eliminated, no other players notified");
+						break;
+					}
+					else if(nextTurnPlayer>0) 
+					{
+						DeliverMessage(nextTurnPlayer,this.gameNumber);
+						GameLog("skipped computer notices, next human user notified of turn: " + system.username(nextTurnPlayer));
+						break;
+					}
 				}
 			}
 		}
@@ -222,6 +225,7 @@ function 	Map(c,r,p,gn)
 				var offset=(this.players.length<5?2:1);
 				pts=points[pointBuffer+(this.eliminated.length-offset)];
 				scores[dead.user].score+=pts;
+				if(scores[dead.user].score<minScore) scores[dead.user].score=minScore;
 				GameLog("giving " + pts + " points to user " + system.username(dead.user));
 			}
 			games.StoreRankings();
@@ -418,6 +422,7 @@ function 	Map(c,r,p,gn)
 		for(ply=0;ply<this.maxPlayers;ply++)
 		{
 				playerNumber=this.turnOrder[ply];
+				this.CountDice(playerNumber);
 				player=this.players[playerNumber];
 				if(player.eliminated) { player.bColor=blackBG; player.fColor="\1n\1k\1h"; }
 				
