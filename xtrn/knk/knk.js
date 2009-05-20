@@ -51,8 +51,8 @@ function check_syncterm_music()
 	var version_str=response.substr(21);
 	version_str=version_str.replace(/c/,"");
 	ver=version_str.split(/;/);
-	cterm_major=parseInt(ver[0]);
-	cterm_minor=parseInt(ver[1]);
+	cterm_major=ver[0]|0;
+	cterm_minor=ver[1]|0;
 	console.ctrlkey_passthru=oldctrl;
 }
 
@@ -217,7 +217,7 @@ function Player(t, n, p)
 	this.guards=8+random(15);
 	this.gold=17500+random(2500);
 	this.food=200000+random(100000);
-	this.power getter=function() { var p=parseInt(this.kastle/500)+parseInt(this.soldiers/750); if(p>46) return(46); return(p); };
+	this.power getter=function() { var p=((this.kastle/500)|0)+((this.soldiers/750)|0); if(p>46) return(46); return(p); };
 	this.mfood getter=function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); };
 	this.mfoodstr getter=function() { return(format("%-6.3f", this.mfood).substr(0,6).replace(/\.$/,'')); };
 	this.produce=Player_produce;
@@ -243,7 +243,7 @@ function Player_loadwagons(propname, count)
 	var price={kannons:100, guards:1000, assassins:7500, katapults:25000, food:0.2, kastle:10};
 	var i;
 
-	count=parseInt(count);
+	count=count|0;
 
 	/*
 	 * Round sacks up
@@ -252,7 +252,7 @@ function Player_loadwagons(propname, count)
 		if(count%5)
 			count += (5-(count%5));
 	}
-	this.gold -= parseInt(price[propname]*count);
+	this.gold -= (price[propname]*count)|0;
 	this[propname] += count;
 	for(i=0; i<count*load_count[propname]; i++)
 		playmusic("MFT80O5L64FP64CFP64F");
@@ -270,7 +270,7 @@ function Player_produce()
 		console.attributes=GREEN;
 	else
 		console.attributes=CYAN;
-	tmp=parseInt(this.kastle/100);
+	tmp=(this.kastle/100)|0;
 	if(tmp > 0)
 		console.writeln("* "+tmp+" civilians have immigrated to "+this.refer_posessive+" kastle.");
 	this.civilians += tmp;
@@ -302,7 +302,7 @@ function Player_produce()
 	}
 
 	if(this.soldiers) {
-		var canfeed=parseInt(this.food/2);
+		var canfeed=(this.food/2)|0;
 		if(canfeed < this.soldiers) {
 			console.attributes |= HIGH;
 			console.writeln("* "+(this.soldiers-canfeed)+" of "+this.refer_posessive+" soldiers have starved to death!!");
@@ -453,7 +453,7 @@ function Player_purchase(name, propname, cost)
 {
 	var max;
 
-	max=parseInt(this.gold/cost);
+	max=(this.gold/cost)|0;
 	console.crlf();
 	console.attributes=YELLOW|BG_RED;
 	console.print("Press \1w[ENTER]\1y to abort.");
@@ -464,9 +464,9 @@ function Player_purchase(name, propname, cost)
 		var i=this.civilians+this.soldiers*2;
 		console.attributes=RED;
 		console.writeln("You have "+this.food+" sacks of food.");
-		console.writeln("This is enough to feed your population for "+parseInt(this.mfood)+" months.");
+		console.writeln("This is enough to feed your population for "+((this.mfood)|0)+" months.");
 		console.writeln("You have "+this.gold+" gold and can afford "+max+" sacks of food.");
-		console.writeln("This will increase your reserves of food by "+(i==0?0:parseInt(max/i))+" months.");
+		console.writeln("This will increase your reserves of food by "+(i==0?0:((max/i)|0)+" months.");
 		console.writeln("You need "+i+" sacks of food per month to feed your population.");
 		console.attributes=LIGHTRED;
 		console.crlf();
@@ -485,7 +485,7 @@ function Player_purchase(name, propname, cost)
 		return(false);
 	if(i=='M')
 		i=max;
-	i=parseInt(i);
+	i|=0;
 	console.attributes=CYAN;
 	console.crlf();
 	console.writeln("Loading your wagons sire. Thank you for your gold!");
@@ -834,7 +834,7 @@ function Player_playermove(month, other)
 	var tl=bbs.time_left;
 
 	do {
-		console.print("\1n\1h\1cTime:\1g "+parseInt(tl/60)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
+		console.print("\1n\1h\1cTime:\1g "+((tl/60)|0)+":"+format("%02d",tl%80)+"  \1y*  A,C,D,F,K,P,Q,R,S,T,Z,$ or ? for Help -=> \1n\1g");
 		loop=false;
 		switch(getkeys("ACDFKPQRSTZ$?\r\n")) {
 			case '?':
@@ -1205,17 +1205,17 @@ function Player_computermove(month, other)
 			case 'loss_soldiers':
 			case 'need_soldiers':
 				if(this.civilians > 1000) {
-					amount=parseInt(other.soldiers * 1.25);
+					amount=(other.soldiers * 1.25)|0;
 					if(other.mfood < .9 && (this.soldiers + this.civilians > other.soldiers * 3))
 						amount=this.civilians;
 					else {
 						if(amount > this.civilians/2)
-							amount=parseInt(this.civilians/2);
+							amount=(this.civilians/2)|0;
 						if(amount < other.soldiers * .5)
-							amount=parseInt(other.soldiers * .5);
+							amount=(other.soldiers * .5)|0;
 						amount -= this.soldiers;
 						if(amount > this.civilians*.8)
-							amount=parseInt(this.civilians*.75);
+							amount=(this.civilians*.75)|0;
 						if(amount < 1000)
 							break;
 					}
@@ -1230,7 +1230,7 @@ function Player_computermove(month, other)
 				break;
 			case 'loss_kastle':
 			case 'need_kastle':
-				amount=parseInt(this.gold/10);
+				amount=(this.gold/10)|0;
 				if(this.kastle + amount > other.kastle * 2)
 					amount = (other.kastle*2)-this.kastle;
 				if(amount < 2000)
@@ -1242,7 +1242,7 @@ function Player_computermove(month, other)
 			case 'need_guards':
 				amount=20-this.guards;
 				if(amount*1000 > this.gold)
-					amount=parseInt(this.gold/1000);
+					amount=(this.gold/1000)|0;
 				if(amount < 5)
 					break;
 				console.writeln("Hiring "+amount+" guards for "+amount*1000);
@@ -1279,7 +1279,7 @@ function Player_computermove(month, other)
 			case 'need_assassins':
 				amount=4-this.assassins;
 				if(amount*7500 > this.gold)
-					amount=parseInt(this.gold/7500);
+					amount=(this.gold/7500)|0;
 				if(amount < 1)
 					break;
 				console.writeln("Hiring "+amount+" assassins for "+amount*7500+" gold!");
@@ -1289,9 +1289,9 @@ function Player_computermove(month, other)
 				return(false);
 			case 'need_weapons':
 				if(this.kannons > this.katapults * 500 && (this.kannons > 500 || this.gold < 25000)) {
-					amount=parseInt(this.gold/100);
+					amount=(this.gold/100)|0;
 					if(this.mfood < 2)
-						amount=parseInt(amount/2);
+						amount=amount>>1;
 					if(this.kannons > 2 && amount < this.kannons/2)
 						break;
 					if(amount < 20)
@@ -1303,9 +1303,9 @@ function Player_computermove(month, other)
 					return(false);
 				}
 				else {
-					amount=parseInt(this.gold/25000);
+					amount=(this.gold/25000)|0;
 					if(this.mfood < 2)
-						amount=parseInt(amount/2);
+						amount=(amount/2)|0;
 					if(this.katapults > 2 && amount < this.katapults/2)
 						break;
 					if(amount < 1)
@@ -1389,16 +1389,16 @@ function Player_checkresults(other)
 function UserData(alias, wins, losses, score)
 {
 	this.alias=alias;
-	this.wins=parseInt(wins);
-	this.losses=parseInt(losses);
-	this.score=parseInt(score);
+	this.wins=(wins)|0;
+	this.losses=(losses)|0;
+	this.score=(score)|0;
 	this.lines getter=function() { return([this.alias, this.wins, this.losses, this.score].join('\r\n')); };
 }
 
 function pretty_number(num)
 {
 	var delimiter = ","; // replace comma if desired
-	var i = parseInt(num);
+	var i = (num)|0;
 	if(isNaN(i)) { return ''; }
 	var minus = '';
 	if(i < 0) { minus = '-'; }
@@ -1453,7 +1453,7 @@ function update_userfile(player, computer, won)
 		}
 	}
 	if(lines.length > 1)
-		computer_total=parseInt(lines[1]);
+		computer_total=(lines[1])|0;
 	computer_total+=computer.score;
 	for(line=2; line<lines.length; line+=4) {
 		var ud=new UserData(lines[line], lines[line+1], lines[line+2], lines[line+3]);
@@ -1465,8 +1465,8 @@ function update_userfile(player, computer, won)
 			ud.score+=player.score;
 			updated=true;
 		}
-		computer_losses+=parseInt(ud.wins);
-		computer_wins+=parseInt(ud.losses);
+		computer_losses+=(ud.wins)|0;
+		computer_wins+=(ud.losses)|0;
 		all_ud.push(ud);
 	}
 	if(!updated)
@@ -1498,7 +1498,7 @@ function update_userfile(player, computer, won)
 							,all_ud[ud].wins+all_ud[ud].losses
 							,all_ud[ud].wins
 							,all_ud[ud].losses
-							,parseInt(all_ud[ud].wins/(all_ud[ud].wins+all_ud[ud].losses)*100)
+							,(all_ud[ud].wins/(all_ud[ud].wins+all_ud[ud].losses)*100)|0
 							,pretty_number(all_ud[ud].score)));
 		}
 		f.writeln("--------------------------------------------------------------------");
@@ -1515,7 +1515,7 @@ function update_userfile(player, computer, won)
 								,computer_wins+computer_losses
 								,computer_losses
 								,computer_wins
-								,parseInt(computer_losses/(computer_losses+computer_wins)*100)
+								,(computer_losses/(computer_losses+computer_wins)*100)|0
 								,pretty_number(player_total)));
 			}
 			else {
@@ -1525,7 +1525,7 @@ function update_userfile(player, computer, won)
 								,computer_wins+computer_losses
 								,computer_wins
 								,computer_losses
-								,parseInt(computer_wins/(computer_wins+computer_losses)*100)
+								,(computer_wins/(computer_wins+computer_losses)*100)|0
 								,pretty_number(computer_total)));
 			}
 		}
@@ -1547,13 +1547,13 @@ function read_dat()
 
 	if(Lock(f.name, system.node, true, 1)) {
 		if(f.open("r")) {
-			dat_file.shortestgame.months=parseInt(f.readln());
+			dat_file.shortestgame.months=(f.readln())|0;
 			dat_file.shortestgame.winner=f.readln();
 			dat_file.shortestgame.loser=f.readln();
-			dat_file.longestgame.months=parseInt(f.readln());
+			dat_file.longestgame.months=(f.readln())|0;
 			dat_file.longestgame.winner=f.readln();
 			dat_file.longestgame.loser=f.readln();
-			dat_file.lastgame.months=parseInt(f.readln());
+			dat_file.lastgame.months=(f.readln())|0;
 			dat_file.lastgame.winner=f.readln();
 			dat_file.lastgame.loser=f.readln();
 			f.close();
