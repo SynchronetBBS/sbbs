@@ -38,7 +38,7 @@
 	var 	maxDice=		8;
 	var 	gamelog=		false;
 	const 	root=			"game";
-	const	scorefile=		"dicerank";
+	const	scorefile=		"rankings";
 	const	halloffame=		"dicehof";
 	const	instructions=	"dice.doc";
 	const 	bColors=		[BG_BLUE,	BG_CYAN,	BG_RED,		BG_GREEN,	BG_BROWN,	BG_MAGENTA,	BG_LIGHTGRAY]; 		//MAP BACKGROUND COLORS
@@ -146,49 +146,56 @@ function	ViewInstructions()
 function	ViewRankings()
 {
 	games.HallOfFame();
-	scores=games.LoadRankings();
-    var scoredata=SortScores();
+	games.LoadRankings();
+	var scoredata=SortScores();
 	console.clear();
 	
 	printf("\1k\1h\xDA");
-	printf(PrintPadded("\xC2",31,"\xC4","right"));
-	printf(PrintPadded("\xC2",9,"\xC4","right"));
+	printf(PrintPadded("\xC2",23,"\xC4","right"));
+	printf(PrintPadded("\xC2",8,"\xC4","right"));
+	printf(PrintPadded("\xC2",8,"\xC4","right"));
 	printf(PrintPadded("\xC2",12,"\xC4","right"));
 	printf(PrintPadded("\xC2",14,"\xC4","right"));
 	printf(PrintPadded("\xBF",13,"\xC4","right"));
-	
-	printf("\1k\1h\xB3\1n\1g DICE WARZ RANKINGS           \1k\1h\xB3 \1n\1gPOINTS \1k\1h\xB3 \1n\1gSOLO WINS \1k\1h\xB3 \1n\1gSOLO LOSSES \1k\1h\xB3 \1n\1gSOLO WIN % \1k\1h\xB3");
-	
+	console.crlf();
+	printf("\1k\1h\xB3\1n\1g DICE WARZ RANKINGS   \1k\1h\xB3 \1n\1gSCORE \1k\1h\xB3 \1n\1gKILLS \1k\1h\xB3 \1n\1gSOLO WINS \1k\1h\xB3 \1n\1gSOLO LOSSES \1k\1h\xB3 \1n\1gSOLO WIN % \1k\1h\xB3");
+	console.crlf();
 	printf("\xC3");
-	printf(PrintPadded("\xC5",31,"\xC4","right"));
-	printf(PrintPadded("\xC5",9,"\xC4","right"));
+	printf(PrintPadded("\xC5",23,"\xC4","right"));
+	printf(PrintPadded("\xC5",8,"\xC4","right"));
+	printf(PrintPadded("\xC5",8,"\xC4","right"));
 	printf(PrintPadded("\xC5",12,"\xC4","right"));
 	printf(PrintPadded("\xC5",14,"\xC4","right"));
 	printf(PrintPadded("\xB4",13,"\xC4","right"));
+	console.crlf();
  	
 	for(hs in scoredata)
-	{
+	{ 
 		thisuser=scoredata[hs];
-		if(scores[thisuser].score!=0 || scores[thisuser].wins>0 || scores[thisuser].losses>0) 
+		if(scores[thisuser].score!=0 || scores[thisuser].wins>0 || scores[thisuser].losses>0 || scores[thisuser].kills>0) 
 		{
 			var winPercentage=0;
 			if(scores[thisuser].wins>0) winPercentage=(scores[thisuser].wins/(scores[thisuser].wins+scores[thisuser].losses))*100;
 			printf("\1k\1h\xB3");
-			printf(PrintPadded("\1y\1h " + system.username(thisuser),30," ","left"));
+			printf(PrintPadded("\1y\1h" + system.username(thisuser),22," ","left"));
 			printf("\1k\1h\xB3");
-			printf(PrintPadded("\1w\1h" + scores[thisuser].score + " \1k\1h\xB3",9," ","right"));
-			printf(PrintPadded("\1w\1h" + scores[thisuser].wins + " \1k\1h\xB3",12," ","right"));
-			printf(PrintPadded("\1w\1h" + scores[thisuser].losses + " \1k\1h\xB3",14," ","right"));
+			printf(PrintPadded("\1w\1h" + scores[thisuser].score + "\1k\1h\xB3",8," ","right"));
+			printf(PrintPadded("\1w\1h" + scores[thisuser].kills + "\1k\1h\xB3",8," ","right"));
+			printf(PrintPadded("\1w\1h" + scores[thisuser].wins + "\1k\1h\xB3",12," ","right"));
+			printf(PrintPadded("\1w\1h" + scores[thisuser].losses + "\1k\1h\xB3",14," ","right"));
 			printf(PrintPadded("\1w\1h" + winPercentage.toFixed(2) + " % \1k\1h\xB3",13," ","right"));
+			console.crlf();
 		}
 	}
 	
 	printf("\1k\1h\xC0");
-	printf(PrintPadded("\xC1",31,"\xC4","right"));
-	printf(PrintPadded("\xC1",9,"\xC4","right"));
+	printf(PrintPadded("\xC1",23,"\xC4","right"));
+	printf(PrintPadded("\xC1",8,"\xC4","right"));
+	printf(PrintPadded("\xC1",8,"\xC4","right"));
 	printf(PrintPadded("\xC1",12,"\xC4","right"));
 	printf(PrintPadded("\xC1",14,"\xC4","right"));
 	printf(PrintPadded("\xD9",13,"\xC4","right"));
+	console.crlf();
 	
 	console.putmsg("\r\n\1y\1h Scores will be reset when a player reaches \1c" + pointsToWin + " \1ypoints.");
 	
@@ -272,6 +279,19 @@ function 	DeliverMessage(nextTurnPlayer,gameNumber)
 		nextUserFile.close();
 	}
 	else system.put_telegram(nextTurnPlayer, message);
+}
+function 	DeliverKillMessage(killer,eliminated,gameNumber)
+{
+	var killed=system.username(eliminated);
+	var message="\1r\1h" + killer + " has eliminated you in \1yDice\1r-\1yWarz\1r game #\1y" + gameNumber + "\1r!\r\n\r\n";
+	var deaduserfile=game_dir + killed + ".usr";
+	if(file_exists(deaduserfile)) {
+		var deaduserfile=new File(deaduserfile);
+		deaduserfile.open('a',true);
+		deaduserfile.writeln(message);
+		deaduserfile.close();
+	}
+	else system.put_telegram(eliminated, message);
 }
 
 
@@ -848,7 +868,19 @@ function	Battle(attackFrom,attackTo,gameNumber)
 		g.grid[defending].dice=(attackFrom.dice-1);
 		if(g.players[defender].territories.length==0) 
 		{
-			g.EliminatePlayer(defender,g.players[attacker].user);
+			var killer=g.players[attacker].user;
+			var killed=g.players[defender].user;
+			g.EliminatePlayer(defender,killer);
+			if(killer>=0)
+			{
+				scores[killer].kills++;
+				games.StoreRankings();
+			}
+			if(killed>=0)
+			{
+				var kname= (killer<0?g.players[attacker].AI.name:system.username(killer));
+				DeliverKillMessage(kname,killed,gameNumber);
+			} 
 			if(g.CheckElimination()) games.StoreGame(gameNumber); 
 		}
 	}
@@ -1142,7 +1174,6 @@ function	LoadSettings()
 function	GameStatusInfo()
 {
 	this.gameData=[]; //master game data array
-
 	this.inProgress=[];
 	this.notFull=[];
 	this.completed=[];
@@ -1156,20 +1187,20 @@ function	GameStatusInfo()
 	//TODO: REWORK SCOREFILE CODE....BECAUSE IT SUCKS
 	this.StoreRankings=function()
 	{
-		sfilename=game_dir+scorefile+".dat";
+		var sfilename=game_dir+scorefile+".dat";
 		var sfile=new File(sfilename);
 		if(!Locked(scorefile,true))
 		{
 			GameLog("storing rankings in file: " + sfilename);
 			Lock(scorefile);
-			sfile.open('w+', false);
-			for(score in scores) //WHERE SCORE IS USER NUMBER
+			sfile.open((file_exists(sfilename)?'r+':'w+'), true);
+			for(s in scores)
 			{
-				GameLog("storing score: " + scores[score].score + " for user: " + system.username(score));
-				sfile.writeln(score);
-				sfile.writeln(scores[score].score); // scorescoer..score score score... SCORES SCORE SCORE! SCORE
-				sfile.writeln(scores[score].wins); 
-				sfile.writeln(scores[score].losses); 
+				var score=scores[s];
+				sfile.iniSetValue(s,"score",score.score);
+				sfile.iniSetValue(s,"kills",score.kills);
+				sfile.iniSetValue(s,"wins",score.wins);
+				sfile.iniSetValue(s,"losses",score.losses);
 			}
 			sfile.close();
 			Unlock(scorefile);
@@ -1177,41 +1208,53 @@ function	GameStatusInfo()
 	}
 	this.LoadRankings=function()
 	{
-		var data=[];
-		var reset=false;
-		sfilename=game_dir+scorefile+".dat";
-		var lfile=new File(sfilename);
+		if(file_exists(game_dir + "dicerank.dat")) this.UpdateScoreFile();
+		var sfilename=game_dir+scorefile+".dat";
 		if(file_exists(sfilename))
 		{
+			var lfile=new File(sfilename);
 			GameLog("loading scores from file: " + sfilename);
 			lfile.open('r',true);
-			for(sc=0;!(lfile.eof);sc++) 
+			var plyrs=lfile.iniGetAllObjects("user");
+			for(p in plyrs)
 			{
-				plyr=lfile.readln();
-				if(plyr==undefined || plyr=="") break;
-				else
-				{
-					player=parseInt(plyr);
-					var score=parseInt(lfile.readln());
-					if(score>=pointsToWin) 
-					{	
-						lfile.close();
-						file_remove(lfile.name);
-						this.WinRound(player);
-						reset=true;
-						break;
-					}
-					var wins=parseInt(lfile.readln());
-					var losses=parseInt(lfile.readln());
-					data[player]={'score':score,'wins':wins,'losses':losses};
-					GameLog(system.username(player) + ":" + data[player].score + ":" + data[player].wins +":"+data[player].losses);
+				var plyr=plyrs[p];
+				scores[plyr.user]=plyr;
+				if(plyr.score>=pointsToWin) 
+				{	
+					lfile.close();
+					file_remove(lfile.name);
+					this.WinRound(player);
+					scores=[];
+					break;
 				}
 			}
 			lfile.close();
 		}
 		else GameLog("score file: " + sfilename + " does not exist");
-		if(reset) data=[];
-		return data;
+	}
+	this.UpdateScoreFile=function() //FOR BACKWARD COMPATIBILITY WITH OLD SCORE FILES (for sysops who dont want to reset their scores with the latest changes)
+	{
+		GameLog("updating score file");		
+		var sfile=new File(game_dir+"dicerank.dat");
+		sfile.open('r',true);
+		for(sc=0;!(sfile.eof);sc++) 
+		{
+			plyr=sfile.readln();
+			if(plyr==undefined || plyr=="") break;
+			else
+			{
+				player=parseInt(plyr);
+				var score=parseInt(sfile.readln());
+				var wins=parseInt(sfile.readln());
+				var losses=parseInt(sfile.readln());
+				scores[player]={'score':score,'kills':0,'wins':wins,'losses':losses};
+				GameLog("loaded old score: " + score + " w: " + wins + " l: " + losses);		
+			}
+		}
+		sfile.close();
+		file_remove(sfile.name);
+		this.StoreRankings();
 	}
 	this.WinRound=function(player)
 	{	
@@ -1232,7 +1275,7 @@ function	GameStatusInfo()
 		if(file_exists(game_dir+halloffame+".dat"))
 		{
 			console.clear();
-			console.printfile(game_dir + dicehof + ".dat");
+			console.printfile(game_dir + halloffame + ".dat");
 			console.pause();
 		}
 	}
@@ -1266,8 +1309,8 @@ function	GameStatusInfo()
 					{
 						if(!scores[userNumber]) 
 						{
-							//INITIALIZE ALL PLAYERS WHO HAVE NO SCORE ENTRY AS ZERO POINTS ZERO WINS
-							scores[userNumber]={'score':0,'wins':0,'losses':0};
+							//INITIALIZE ALL PLAYERS WHO HAVE NO SCORE ENTRY AS ZERO POINTS ZERO WINS ZERO KILLS ZERO LOSSES
+							scores[userNumber]={'score':0,'kills':0,'wins':0,'losses':0};
 						}
 					}
 				}
@@ -1578,9 +1621,9 @@ function	GameStatusInfo()
 	}
 	this.Init=function()
 	{
-		scores=games.LoadRankings();
+		this.LoadRankings();
 		this.LoadGames();
-		games.StoreRankings();
+		this.StoreRankings();
 		this.SkipPlayers();
 	}
 }
