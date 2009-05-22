@@ -873,11 +873,13 @@ function	Battle(attackFrom,attackTo,gameNumber)
 			g.EliminatePlayer(defender,killer);
 			if(killer>=0)
 			{
+				GameLog("player scored a kill: " + system.username(killer));
 				scores[killer].kills++;
 				games.StoreRankings();
 			}
 			if(killed>=0)
 			{
+				GameLog("player has been killed: " + system.username(killed));
 				var kname= (killer<0?g.players[attacker].AI.name:system.username(killer));
 				DeliverKillMessage(kname,killed,gameNumber);
 			} 
