@@ -466,7 +466,7 @@ function Player_purchase(name, propname, cost)
 		console.writeln("You have "+this.food+" sacks of food.");
 		console.writeln("This is enough to feed your population for "+((this.mfood)|0)+" months.");
 		console.writeln("You have "+this.gold+" gold and can afford "+max+" sacks of food.");
-		console.writeln("This will increase your reserves of food by "+(i==0?0:((max/i)|0)+" months.");
+		console.writeln("This will increase your reserves of food by "+(i==0?0:((max/i)|0))+" months.");
 		console.writeln("You need "+i+" sacks of food per month to feed your population.");
 		console.attributes=LIGHTRED;
 		console.crlf();
