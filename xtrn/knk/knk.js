@@ -118,18 +118,16 @@ function show_intro()
 	console.crlf();
 	check_syncterm_music();
 	console.gotoxy(1,console.screen_rows);
-	if(console.line_counter > console.screen_rows/2)
-		console.pause();
+	console.pause();
 
 	console.clear();
 	console.crlf();
 	console.crlf();
 	console.crlf();
-	console.crlf();	console.attributes=YELLOW; 
+	console.crlf();	console.attributes=YELLOW;
 	console.writeln("The object of Kannons & Kataputs is to defeat King Computer. There are 3");
 	console.writeln("ways to do this. You may destroy his kastle, defeat his army or have him");
-	console.writeln("assassinated. If this sounds easy to you Deuce, you should be warned that");
-	console.writeln("King Computer is no push over!");
+	console.write(word_wrap("assassinated. If this sounds easy to you "+user.alias+", you should be warned that King Computer is no push over!",77).replace(/\n/g,"\r\n"));
 	console.crlf();
 	console.crlf(); console.attributes=WHITE;
 	console.writeln("Although it may seem that the game is rigged, the odds are exactly even.");
