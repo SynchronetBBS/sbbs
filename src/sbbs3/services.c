@@ -2047,7 +2047,7 @@ void DLLCALL services_thread(void* arg)
 					result=bind(client_socket, (struct sockaddr *) &addr, sizeof(addr));
 					if(result==SOCKET_ERROR) {
 						/* Failed to re-bind to same port number, use user port */
-						lprintf(LOG_ERR,"%04d %s ERROR %d re-binding socket to port %u failed, "
+						lprintf(LOG_NOTICE,"%04d %s ERROR %d re-binding socket to port %u failed, "
 							"using user port"
 							,client_socket, service[i].protocol, ERROR_VALUE, service[i].port);
 						addr.sin_port=0;
