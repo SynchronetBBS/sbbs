@@ -2540,12 +2540,19 @@ static char *get_request(http_session_t * session, char *req_line)
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
 	unescape(session->req.physical_path);
+
 	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
 		/* Set HOST value... ignore HOST header */
 		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
+		/* Remove path of present */
+		strtok_r(session->req.host,"/",&last);
+
+		/* Set vhost value */
 		SAFECOPY(session->req.vhost,session->req.host);
-		/* Remove port specification */
+		/* Remove port specification from vhost */
 		strtok_r(session->req.vhost,":",&last);
+
+		/* Do weird physical_path dance... TODO: Understand this code */
 		if(strtok_r(session->req.physical_path,"/",&last))
 			p=strtok_r(NULL,"/",&last);
 		else
@@ -5224,12 +5231,13 @@ void http_logging_thread(void* arg)
 				strcat(newfilename,"-");
 		}
 		strftime(strchr(newfilename,0),15,"%Y-%m-%d.log",&ld->completed);
-		if(strcmp(newfilename,filename)) {
+		if(logfile==NULL || strcmp(newfilename,filename)) {
 			if(logfile!=NULL)
 				fclose(logfile);
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
-			lprintf(LOG_INFO,"%04d HTTP logfile is now: %s",server_socket,filename);
+			if(logfile)
+				lprintf(LOG_INFO,"%04d HTTP logfile is now: %s",server_socket,filename);
 		}
 		if(logfile!=NULL) {
 			if(ld->status) {
@@ -5256,8 +5264,7 @@ void http_logging_thread(void* arg)
 			}
 		}
 		else {
-			logfile=fopen(filename,"ab");
-			lprintf(LOG_ERR,"%04d HTTP logfile %s was not open!",server_socket,filename);
+			lprintf(LOG_ERR,"%04d HTTP server failed to open logfile %s (%d)!",server_socket,filename,errno);
 		}
 		FREE_AND_NULL(ld->hostname);
 		FREE_AND_NULL(ld->ident);
