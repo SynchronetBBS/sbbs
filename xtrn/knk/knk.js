@@ -1640,6 +1640,8 @@ function play_game()
 		console.pause();
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
+	if(console.line_counter > console.screen_rows/2)
+		console.pause();
 	var dat_file=read_dat();
 	if(dat_file===undefined || dat_file.shortestgame === undefined || dat_file.shortestgame.months === undefined || dat_file.shortestgame.months >= month) {
 		console.attributes=YELLOW|BLINK;
