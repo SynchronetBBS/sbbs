@@ -16,7 +16,7 @@
 	#define DLLCALL
 #endif
 
-#define SHARED_RUNTIMES
+//#define SHARED_RUNTIMES
 
 struct jsrt_queue {
 	JSRuntime       *rt;
