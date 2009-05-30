@@ -4945,9 +4945,12 @@ void http_session_thread(void* arg)
 
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		lprintf(LOG_INFO,"%04d Hostname: %s", session.socket, host_name);
+#if	0 /* gethostbyaddr() is apparently not (always) thread-safe
+	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL 
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
+#endif
 		if(trashcan(&scfg,host_name,"host")) {
 			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
 			close_socket(&session.socket);

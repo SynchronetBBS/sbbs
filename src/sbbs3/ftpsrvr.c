@@ -2460,11 +2460,14 @@ static void ctrl_thread(void* arg)
 	else
 		host_name="<no name>";
 
+#if	0 /* gethostbyaddr() is apparently not (always) thread-safe
+	     and getnameinfo() doesn't return alias information */
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP)) {
 		lprintf(LOG_INFO,"%04d Hostname: %s", sock, host_name);
 		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", sock, host->h_aliases[i]);
 	}
+#endif
 
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
