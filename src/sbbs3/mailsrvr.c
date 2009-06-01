@@ -737,13 +737,6 @@ static void pop3_thread(void* arg)
 	else
 		strcpy(host_name,"<no name>");
 
-	if(startup->options&MAIL_OPT_DEBUG_POP3
-		&& !(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
-		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
-		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
-			lprintf(LOG_INFO,"%04d POP3 HostAlias: %s", socket, host->h_aliases[i]);
-	}
-
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf(LOG_NOTICE,"%04d !POP3 CLIENT BLOCKED in ip.can: %s"
 			,socket, host_ip);
@@ -2208,26 +2201,6 @@ static void smtp_thread(void* arg)
 		SAFECOPY(host_name,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
-
-	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
-		lprintf(LOG_INFO,"%04d SMTP Hostname: %s", socket, host_name);
-		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
-			lprintf(LOG_INFO,"%04d SMTP HostAlias: %s", socket, host->h_aliases[i]);
-#if 0
-		if(host!=NULL) {
-			ip=resolve_ip(host_name);
-			if(ip!=smtp.client_addr.sin_addr.s_addr) {
-				smtp.client_addr.sin_addr.s_addr=ip;
-				lprintf(LOG_WARNING,"%04d !SMTP DNS/IP ADDRESS MISMATCH: %s vs %s"
-					,socket, inet_ntoa(smtp.client_addr.sin_addr), host_ip);
-				sockprintf(socket,"550 DNS and IP address mismatch");
-				mail_close_socket(socket);
-				thread_down();
-				return;
-			}
-		}
-#endif
-	}
 
 	active_clients++, update_clients();
 
