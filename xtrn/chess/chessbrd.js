@@ -98,6 +98,8 @@ function GameSession(game)
 		{
 			if(file_exists(this.game.gamefile.name))
 				file_remove(this.game.gamefile.name);
+			if(file_exists(chessroot + this.name + ".his"))
+				file_remove(chessroot + this.name + ".his");
 		}
 		else if(this.game.timed && this.game.started && this.game.movelist.length)
 		{
@@ -119,12 +121,15 @@ function GameSession(game)
 		{
 			this.menu.disable(["M"]);
 			this.menu.disable(["R"]);
-			this.menu.disable(["O"]);
 		}
 		else 
 		{
 			this.menu.enable(["M"]);
 			this.menu.enable(["R"]);
+		}
+		if(this.game.draw || this.game.turn != this.currentplayer) this.menu.disable(["O"]);
+		else
+		{
 			this.menu.enable(["O"]);
 		}
 		if(!this.game.movelist.length) this.menu.disable(["L"]);
@@ -169,7 +174,7 @@ function GameSession(game)
 						this.ListMoves();
 						break;
 					case "N":
-						this.Rematch();
+						this.NewGame();
 						break;
 					default:
 						break;
@@ -246,7 +251,7 @@ function GameSession(game)
 	}
 	this.ClearAlert=function()
 	{
-		chesschat.ClearInputLine();
+		if(!chesschat.buffer.length) chesschat.ClearInputLine();
 	}
 	this.DisplayInfo=function(array)
 	{
@@ -271,6 +276,50 @@ function GameSession(game)
 			}
 			this.game.NextTurn();
 			this.InfoBar();
+		}
+		if(this.queue.DataWaiting("draw"))
+		{
+			Log("received draw offer");
+			var trash=this.queue.ReceiveData("draw");
+			if(this.Draw())
+			{
+				this.Send("\1g\1hDraw offer accepted.","alert");
+			}
+			else
+			{
+				this.game.StoreGame();
+				this.Send("\1g\1hDraw offer refused.","alert");
+			}
+			delete this.game.draw;
+			this.ClearAlert();
+		}
+		else if(this.game.draw)
+		{
+			if(this.game.draw!=this.currentplayer)
+			{
+				Log("received draw offer from: " + this.game.draw);
+				if(this.Draw())
+				{
+					this.Send("\1g\1hDraw offer accepted.","alert");
+				}
+				else
+				{
+					this.Send("\1g\1hDraw offer refused.","alert");
+					this.game.StoreGame();
+				}
+			}
+			delete this.game.draw;
+			this.ClearAlert();
+		}
+		if(this.queue.DataWaiting("alert"))
+		{
+			Log("received alert");
+			var alert=this.queue.ReceiveData("alert");
+			this.DisplayInfo(alert);
+			this.Alert("\1r\1h[Press any key]");
+			while(console.inkey=="");
+			this.ClearChatWindow();
+			chesschat.Redraw();
 		}
 		if(this.queue.DataWaiting("castle"))
 		{
@@ -298,6 +347,7 @@ function GameSession(game)
 			var trash=this.queue.ReceiveData("update");
 			this.game.LoadGameTable();
 			this.game.LoadGameData();
+			chessplayers.LoadPlayers();
 			this.InfoBar();
 			if(this.game.timed) this.ShowTimers();
 		}
@@ -494,14 +544,18 @@ function GameSession(game)
 		while(1)
 		{
 			this.Cycle();
-			var key=console.inkey((K_NOECHO,K_NOCRLF,K_UPPER),50);
-			if(key=="\r") return selected;
+			var key=console.inkey((K_NOECHO,K_NOCRLF),50);
+			if(key=="\r") 
+			{
+				if(chesschat.buffer.length) Chat(key,chesschat);
+				else return selected;
+			}
 			if(key)
 			{
 				if(this.board.side=="white")
 				{
 					this.ClearAlert();
-					if(start) this.board.DrawTile(start.x,start.y,true);
+					if(start) this.board.DrawTile(start.x,start.y,true,"\1b\1h");
 					switch(key)
 					{
 						case KEY_DOWN:
@@ -561,6 +615,7 @@ function GameSession(game)
 							this.board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
+							if(!Chat(key,chesschat)) return;
 							continue;
 					}
 					this.board.DrawTile(selected.x,selected.y,true);
@@ -628,6 +683,7 @@ function GameSession(game)
 							this.board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
+							if(!Chat(key,chesschat)) return;
 							continue;
 					}
 					this.board.DrawTile(selected.x,selected.y,true);
@@ -652,6 +708,11 @@ function GameSession(game)
 		//KING RULESET
 		if(from_tile.contents.name=="king") 
 		{
+			if(this.InCheck(to,from_tile.contents.color))
+			{
+				Log("Illegal Move: King would be in check");
+				return false;
+			}
 			if(Math.abs(from.x-to.x)==2) 
 			{
 				if(this.InCheck(from,from_tile.contents.color))
@@ -969,9 +1030,11 @@ function GameSession(game)
 	{
 		var position=this.board.FindKing(player);
 		if(this.KingCanMove(position,player)) return false;
+		Log("king cannot move");
 		for(checker in checkers) 
 		{
 			var spot=checkers[checker];
+			Log("checking if " + player + " can take " +  spot.contents.color + " " + spot.contents.name);
 			if(spot.contents.name=="knight" || spot.contents.name=="pawn") 
 			{
 				var canmove=this.CanMoveTo(spot,player);
@@ -986,7 +1049,11 @@ function GameSession(game)
 						this.game.UnMove(move);
 					}
 					//if player is no longer in check after move is attempted - game continues
-					else return false;
+					else 
+					{
+						this.game.UnMove(move);
+						return false;
+					}						
 				}
 			}
 			else 
@@ -1003,7 +1070,11 @@ function GameSession(game)
 						{
 							this.game.UnMove(move);
 						}
-						else return false;
+						else 
+						{
+							this.game.UnMove(move);
+							return false;
+						}						
 					}
 				}
 			}
@@ -1038,11 +1109,18 @@ function GameSession(game)
 	{
 		var pieces=this.board.FindAllPieces(player);
 		var canmove=[];
-		for(piece in pieces)
+		for(p in pieces)
 		{
-			if(this.CheckRules(pieces[piece],position))
+			var piece=pieces[p];
+			var gridposition=this.board.grid[piece.x][piece.y];
+			if(gridposition.contents.name=="king")
 			{
-				canmove.push(pieces[piece]);
+				Log("skipping king, moves already checked");
+			}
+			else if(this.CheckRules(piece,position))
+			{
+				Log("piece can cancel check: " + gridposition.contents.color + " " + gridposition.contents.name);
+				canmove.push(piece);
 			}
 		}
 		if(canmove.length) return canmove;
@@ -1050,6 +1128,7 @@ function GameSession(game)
 	}
 	this.KingCanMove=function(king,player)
 	{
+		Log("checking if king can move from x: " + king.x + " y: " + king.y);
 		var north=		(king.y>0?					{"x":king.x,	"y":king.y-1}:false);
 		var northeast=	(king.y>0 && king.x<7?		{"x":king.x+1,	"y":king.y-1}:false);
 		var northwest=	(king.y>0 && king.x>0?		{"x":king.x-1,	"y":king.y-1}:false);
@@ -1062,13 +1141,24 @@ function GameSession(game)
 		var directions=[north,northeast,northwest,south,southeast,southwest,east,west];
 		for(dir in directions) 
 		{
-			if(directions[dir] && this.CheckRules(king,directions[dir])) 
+			var direction=directions[dir];
+			if(direction && this.CheckRules(king,directions[dir])) 
 			{
-				Log("king can move");
-				return true;
+				var move=new ChessMove(king,direction,player);
+				this.game.Move(move);
+				if(this.InCheck(direction,player)) 
+				{
+					Log("taking piece would cause check");
+					this.game.UnMove(move);
+				}
+				else
+				{
+					Log("king can move to x: " + direction.x + " y: " + direction.y);
+					this.game.UnMove(move);
+					return true;
+				}
 			}
 		}
-		Log("king cannot move");
 		return false;
 	}
 	this.InCheck=function(position,player)
@@ -1094,7 +1184,13 @@ function GameSession(game)
 		if(check_pieces.length) return check_pieces;
 		else return false;
 	}
-	
+	this.Draw=function()
+	{
+		this.Alert("\1c\1hOpponent offered a draw. Accept? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
+		this.EndGame("draw");
+		return true;
+	}
 /*	GAMEPLAY FUNCTIONS	*/
 	this.PlayerInGame=function()
 	{
@@ -1102,7 +1198,11 @@ function GameSession(game)
 	}
 	this.OfferDraw=function()
 	{
-		//TODO: !!!
+		this.Alert("\1c\1hOffer your opponent a draw? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
+		this.game.draw=this.currentplayer;
+		this.game.StoreGame();
+		this.Send("draw","draw");
 	}
 	this.NewGame=function()
 	{
@@ -1165,12 +1265,23 @@ function GameSession(game)
 						p2.rating=this.GetRating(p2.rating,p1.rating,"draw");
 						break;
 				}
+			
 			chessplayers.StorePlayer(id1);
 			chessplayers.StorePlayer(id2);
 		}
 		this.game.End();
 		this.InfoBar();
 		this.Send("update","update");
+	}
+	this.ShowNewRatings=function(p1,p2)
+	{
+		var info=[];
+		info.push("\1c\1hGame Completed");
+		info.push("\1c\1h" + p1.name + "'s new rating: " + p1.rating);
+		info.push("\1c\1h" + p2.name + "'s new rating: " + p2.rating);
+		this.DisplayInfo(info);
+		this.Alert("\1r\1h[Press any key]");
+		while(console.inkey()=="");
 	}
 	this.JoinGame=function()
 	{
@@ -1270,6 +1381,7 @@ function ChessGame(gamefile)
 	this.rated;
 	this.timed;
 	this.minrating;
+	this.draw;
 	
 	this.Init=function()
 	{
@@ -1370,6 +1482,10 @@ function ChessGame(gamefile)
 			gFile.iniSetValue("lastmove","from",GetChessPosition(this.board.lastmove.from));
 			gFile.iniSetValue("lastmove","to",GetChessPosition(this.board.lastmove.to));
 		}
+		if(this.draw)
+		{
+			gFile.iniSetValue(null,"draw",this.draw);
+		}
 		for(x in this.board.grid)
 		{
 			for(y in this.board.grid[x])
@@ -1438,6 +1554,11 @@ function ChessGame(gamefile)
 		if(lastmove.from)
 		{
 			this.board.lastmove=new ChessMove(GetChessPosition(lastmove.from),GetChessPosition(lastmove.to));
+		}
+		var draw=gFile.iniGetValue(null,"draw");
+		if(draw)
+		{
+			this.draw=draw;
 		}
 		
 		//LOAD PIECES
@@ -1570,9 +1691,9 @@ function ChessBoard()
 	{
 		this.side=(this.side=="white"?"black":"white");
 	}
-	this.DrawTile=function(x,y,selected)
+	this.DrawTile=function(x,y,selected,color)
 	{
-		this.grid[x][y].Draw(this.side,selected);
+		this.grid[x][y].Draw(this.side,selected,color);
 		console.gotoxy(79,24);
 		write(console.ansi(ANSI_NORMAL));
 	}
@@ -1636,8 +1757,8 @@ function ChessBoard()
 			Log("Drawing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y,true);
-			this.DrawTile(to.x,to.y,true);
+			this.DrawTile(from.x,from.y,true,"\1g\1h");
+			this.DrawTile(to.x,to.y,true,"\1g\1h");
 		}
 	}
 	this.DrawBoard=function()
@@ -1727,7 +1848,7 @@ function ChessTile(color,x,y)
 	{
 		delete this.contents;
 	}
-	this.Draw=function(side,selected)
+	this.Draw=function(side,selected,color)
 	{
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
@@ -1744,23 +1865,24 @@ function ChessTile(color,x,y)
 		{
 			this.contents.Draw(this.bg,x,y);
 		}
-		if(selected==true) this.DrawSelected(side);
+		if(selected==true) this.DrawSelected(side,color);
 	}
-	this.DrawSelected=function(side)
+	this.DrawSelected=function(side,color)
 	{
+		var color=color?color:"\1r\1h";
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
 		var x=posx*5+1;
 		var y=posy*3+1;
 		
 		console.gotoxy(x,y);
-		console.putmsg("\1r\1h" + this.bg + "\xDA");
+		console.putmsg(color + this.bg + "\xDA");
 		console.gotoxy(x+4,y);
-		console.putmsg("\1r\1h" + this.bg + "\xBF");
+		console.putmsg(color + this.bg + "\xBF");
 		console.gotoxy(x,y+2);
-		console.putmsg("\1r\1h" + this.bg + "\xC0");
+		console.putmsg(color + this.bg + "\xC0");
 		console.gotoxy(x+4,y+2);
-		console.putmsg("\1r\1h" + this.bg + "\xD9");
+		console.putmsg(color + this.bg + "\xD9");
 		console.gotoxy(79,1);
 	}
 }
