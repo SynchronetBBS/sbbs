@@ -163,6 +163,8 @@ function GameSession(game,join)
 			{
 				if(file_exists(this.game.gamefile.name))
 					file_remove(this.game.gamefile.name);
+				if(file_exists(gameroot + this.name + ".his"))
+					file_remove(gameroot + this.name + ".his");
 			}
 		}
 		return true;
@@ -180,10 +182,12 @@ function GameSession(game,join)
 		if(!this.game.started || this.game.turn!=this.currentplayer.id || this.game.finished) 
 		{
 			this.menu.disable(["A"]);
+			this.menu.disable(["F"]);
 		}
 		else 
 		{
 			this.menu.enable(["A"]);
+			this.menu.enable(["F"]);
 		}
 	}
 	this.Commands=function()
@@ -773,6 +777,7 @@ function GameSession(game,join)
 		{
 			ldata.losses++;
 			gameplayers.StorePlayer(loser.id);
+			this.game.NotifyLoser(loser.id);
 		}
 		this.game.winner=winner.id;
 		this.game.End();
@@ -1267,6 +1272,16 @@ function GameData(gamefile)
 		this.StoreGame();
 		this.NotifyPlayer();
 		return true;
+	}
+	this.NotifyLoser=function(id)
+	{
+		if(!gamechat.FindUser(id))
+		{
+			var loser=gameplayers.players[id].name;
+			var unum=system.matchuser(loser);
+			var message="\1n\1gYour fleet has been destroyed in \1c\1hSea\1n\1c-\1hBattle\1n\1g game #\1h" + this.gamenumber + "\1n\1g!\r\n\r\n";
+			system.put_telegram(unum, message);
+		}
 	}
 	this.NotifyPlayer=function()
 	{
