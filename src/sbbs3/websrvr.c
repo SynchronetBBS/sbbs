@@ -4878,7 +4878,6 @@ void http_output_thread(void *arg)
 
 void http_session_thread(void* arg)
 {
-	int				i;
 	char*			host_name;
 	HOSTENT*		host;
 	SOCKET			socket;

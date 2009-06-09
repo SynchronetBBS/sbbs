@@ -1024,7 +1024,6 @@ static void js_init_args(JSContext* js_cx, JSObject* js_obj, const char* cmdline
 
 static void js_service_thread(void* arg)
 {
-	int						i;
 	char*					host_name;
 	HOSTENT*				host;
 	SOCKET					socket;
@@ -1361,7 +1360,6 @@ static void native_static_service_thread(void* arg)
 
 static void native_service_thread(void* arg)
 {
-	int						i;
 	char					cmd[MAX_PATH];
 	char					fullcmd[MAX_PATH*2];
 	char*					host_name;
