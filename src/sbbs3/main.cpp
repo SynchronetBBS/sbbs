@@ -2750,9 +2750,9 @@ void event_thread(void* arg)
 		mswait(1000);
 	}
 	sbbs->cfg.node_num=0;
-    sbbs->event_thread_running = false;
-
 	sbbs->js_cleanup(sbbs->client_name);
+
+    sbbs->event_thread_running = false;
 
 	thread_down();
 	eprintf(LOG_INFO,"BBS Events thread terminated");
