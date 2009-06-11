@@ -569,7 +569,7 @@ function	JoinGame(gameNumber)
 	if(console.noyes("\1n\1gJoin this game?"));
 	else
 	{
-		if(g.maxPlayers>g.minPlayers) vote=GetVote();
+		if(g.maxPlayers>g.minPlayers && g.players.length+1<g.maxPlayers) vote=GetVote();
 		g.addPlayer(user.number,vote);
 		if(g.players.length>=g.minPlayers)
 		{
@@ -612,56 +612,83 @@ function 	CreateNewGame()
 		console.cleartoeol();
 		return false;
 	}
-	while(1)
+	x=2; y=3;
+	console.gotoxy(x,y);
+	console.cleartoeol();
+	y++;
+	if(!console.noyes("\1n\1gSingle Player Game?"))
 	{
-		x=2; y=4;
-		console.gotoxy(x,y);
-		console.cleartoeol();
-		console.putmsg("\1n\1gEnter minimum number of players [\1h" + minPlayers + "\1n\1g-\1h" + maxPlayers + "\1n\1g] or [\1hQ\1n\1g]uit: ");
-		var num=console.getkeys("Q",maxPlayers);
-		if(num>=minPlayers && num<=maxPlayers) 
-		{
-			minNumPlayers=num;
-			break;
-		}
-		else if(num=="Q") return false; 
-		else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
-	}
-	if(minNumPlayers<maxPlayers) {
+		singlePlayer=true;
 		while(1)
 		{
-			x=2; y=5;
 			console.gotoxy(x,y);
 			console.cleartoeol();
-			console.putmsg("\1n\1gEnter maximum number of players [\1h" + minNumPlayers + "\1n\1g-\1h" + maxPlayers + "\1n\1g] or [\1hQ\1n\1g]uit: ");
-			var num=console.getkeys("Q",maxPlayers);
-			if(num>=minNumPlayers && num<=maxPlayers) 
+			console.putmsg("\1n\1gEnter number of opponents [\1h" + (minPlayers-1) + "\1n\1g-\1h" + (maxPlayers-1) + "\1n\1g] or [\1hQ\1n\1g]uit: ");
+			var num=console.getkeys("Q",maxPlayers-1);
+			if(num>=minPlayers-1 && num<maxPlayers) 
 			{
-				maxNumPlayers=num;
+				minNumPlayers=num+1;
+				maxNumPlayers=num+1;
+				numComputerPlayers=num;
+				y++;
 				break;
 			}
-			else if(num=="Q") return false;
+			else if(num=="Q") return false; 
 			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
 		}
 	}
-	if(minNumPlayers==maxNumPlayers) fixedPlayers=true;
-	while(1)
+	else	
 	{
-		x=2; y=6;
-		console.gotoxy(x,y);
-		console.cleartoeol();
-		if(console.noyes("\1n\1gInclude computer players?")) break;
-		console.gotoxy(x,y);
-		console.cleartoeol();
-		console.putmsg("\1n\1gHow many? [\1h1\1n\1g-\1h" + (maxNumPlayers-1) + "\1n\1g] or [\1hQ\1n\1g]uit: ");
-		cnum=console.getkeys("Q",maxNumPlayers-1);
-		if(cnum<=(maxNumPlayers-1) && cnum>0) 
+		while(1)
 		{
-			numComputerPlayers=cnum;
-			break;
+			console.gotoxy(x,y);
+			console.cleartoeol();
+			console.putmsg("\1n\1gEnter minimum number of players [\1h" + minPlayers + "\1n\1g-\1h" + maxPlayers + "\1n\1g] or [\1hQ\1n\1g]uit: ");
+			var num=console.getkeys("Q",maxPlayers);
+			if(num>=minPlayers && num<=maxPlayers) 
+			{
+				minNumPlayers=num;
+				y++;
+				break;
+			}
+			else if(num=="Q") return false; 
+			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
 		}
-		else if(cnum=="Q") return false;
-		else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+		if(minNumPlayers<maxPlayers) {
+			while(1)
+			{
+				console.gotoxy(x,y);
+				console.cleartoeol();
+				console.putmsg("\1n\1gEnter maximum number of players [\1h" + minNumPlayers + "\1n\1g-\1h" + maxPlayers + "\1n\1g] or [\1hQ\1n\1g]uit: ");
+				var num=console.getkeys("Q",maxPlayers);
+				if(num>=minNumPlayers && num<=maxPlayers) 
+				{
+					maxNumPlayers=num;
+					y++;
+					break;
+				}
+				else if(num=="Q") return false;
+				else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+			}
+		}
+		else fixedPlayers=true;
+		while(1)
+		{
+			console.gotoxy(x,y);
+			console.cleartoeol();
+			if(console.noyes("\1n\1gInclude computer players?")) break;
+			console.gotoxy(x,y);
+			console.cleartoeol();
+			console.putmsg("\1n\1gHow many? [\1h1\1n\1g-\1h" + (maxNumPlayers-1) + "\1n\1g] or [\1hQ\1n\1g]uit: ");
+			cnum=console.getkeys("Q",maxNumPlayers-1);
+			if(cnum<=(maxNumPlayers-1) && cnum>0) 
+			{
+				numComputerPlayers=cnum;
+				break;
+			}
+			else if(cnum=="Q") return false;
+			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+		}
 	}
 	games.gameData[gameNumber]=new NewGame(minNumPlayers,maxNumPlayers,gameNumber);
 	games.gameData[gameNumber].fileName=GetFileName(gameNumber);
@@ -669,11 +696,8 @@ function 	CreateNewGame()
 	{
 		games.gameData[gameNumber].addPlayer(-1, -1); //NO USER NUMBER, NO VOTE
 	}
-	if(numComputerPlayers+1==maxNumPlayers) {
-		singlePlayer=true;
-		GameLog("single player game");
-	}
-	else {
+	if(!singlePlayer)
+	{
 		if(fixedPlayers) games.gameData[gameNumber].fixedPlayers=true;
 		else
 		{
