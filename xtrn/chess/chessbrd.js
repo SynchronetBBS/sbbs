@@ -54,10 +54,44 @@ function GameSession(game)
 	{
 		this.Redraw();
 		this.ScanCheck();
+		if(this.game.turn==this.game.currentplayer)
+		{
+			this.Notice("\1g\1hIt's your turn.");
+			this.Notice("\1n\1gUse arrow keys or number pad to move around, and [\1henter\1n\1g] to select.");
+			this.Notice("\1n\1gPress [\1hescape\1n\1g] to cancel.");
+		}
 		while(1)
 		{
 			this.Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(this.game.turn==this.game.currentplayer)
+			{
+				switch(k)
+				{
+					case "1":
+					case "2":
+					case "3":
+					case "4":
+					case "5":
+					case "6":
+					case "7":
+					case "8":
+					case "9":
+						if(chesschat.buffer.length) 
+						{
+							if(!Chat(k,chesschat) && this.HandleExit()) return;						
+						}
+					case KEY_UP:
+					case KEY_DOWN:
+					case KEY_LEFT:
+					case KEY_RIGHT:
+						this.TryMove();
+						this.board.DrawLastMove();
+						break;
+					default:
+						break;
+				}
+			}
 			if(k)
 			{
 				switch(k)
@@ -165,6 +199,7 @@ function GameSession(game)
 						break;
 					case "M":
 						this.TryMove();
+						this.board.DrawLastMove();
 						break;
 					case "V":
 						this.Reverse();
@@ -253,6 +288,10 @@ function GameSession(game)
 	{
 		if(!chesschat.buffer.length) chesschat.ClearInputLine();
 	}
+	this.Notice=function(txt)
+	{
+		chesschat.AddNotice(txt);
+	}
 	this.DisplayInfo=function(array)
 	{
 		chesschat.DisplayInfo(array);
@@ -276,6 +315,14 @@ function GameSession(game)
 			}
 			this.game.NextTurn();
 			this.InfoBar();
+			if(this.game.turn==this.game.currentplayer)
+			{
+				this.Notice("\1g\1hIt's your turn.");
+			}
+			else
+			{
+				this.Notice("\1g\1hIt is " + this.game.GetAlias(this.game.turn) + "'s turn.");
+			}
 		}
 		if(this.queue.DataWaiting("draw"))
 		{
@@ -408,7 +455,6 @@ function GameSession(game)
 		var to;
 		var placeholder;
 		var reselect;
-		
 		while(1)
 		{
 			reselect=false;
@@ -497,6 +543,7 @@ function GameSession(game)
 	this.SendMove=function(move)
 	{
 		this.game.NextTurn();
+		this.Notice("\1g\1hIt is " + this.game.GetAlias(this.game.turn) + "'s turn.");
 		this.game.NotifyPlayer();
 		this.board.lastmove=move;
 		this.game.movelist.push(move);
@@ -512,8 +559,8 @@ function GameSession(game)
 		this.game.Move(move);
 		this.board.ClearLastMove();
 		this.board.lastmove=move;
-		this.board.DrawTile(move.from.x,move.from.y,true);
-		this.board.DrawTile(move.to.x,move.to.y,true);
+		this.board.DrawTile(move.from.x,move.from.y,true,"\1r\1h");
+		this.board.DrawTile(move.to.x,move.to.y,true,"\1r\1h");
 	}
 	this.ScanCheck=function()
 	{
@@ -525,22 +572,35 @@ function GameSession(game)
 				if(this.FindCheckMate(checkers,this.currentplayer)) 
 				{
 					this.EndGame("loss");
-					this.Alert("\1r\1hCheckmate! You lose!");
+					this.Notice("\1r\1hCheckmate! You lose!");
 				}
-				this.Alert("\1r\1hYou are in check!");
+				else this.Notice("\1r\1hYou are in check!");
 			}
 		}
 	}
 	this.SelectTile=function(start,placeholder)
 	{
-		if(placeholder) selected={"x":placeholder.x, "y":placeholder.y};
-		else if(start) selected={"x":start.x, "y":start.y};
+		if(start) 
+		{
+			var sel=false;
+			if(!placeholder) 
+			{
+				selected={"x":start.x, "y":start.y};
+				sel=true;
+			}
+			this.board.DrawBlinking(start.x,start.y,sel,"\1n\1b");
+		}
+		if(placeholder) 
+		{
+			selected={"x":placeholder.x, "y":placeholder.y};
+			this.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
+		}
 		else
 		{
 			if(this.board.side=="white") selected={"x":0,"y":7};
 			else selected={"x":7,"y":0};
+			this.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
 		}
-		this.board.DrawTile(selected.x,selected.y,true);
 		while(1)
 		{
 			this.Cycle();
@@ -555,56 +615,79 @@ function GameSession(game)
 				if(this.board.side=="white")
 				{
 					this.ClearAlert();
-					if(start) this.board.DrawTile(start.x,start.y,true,"\1b\1h");
 					switch(key)
 					{
 						case KEY_DOWN:
 						case "2":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_UP:
 						case "8":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_LEFT:
 						case "4":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_RIGHT:
 						case "6":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "7":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case "9":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case "1":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "3":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
@@ -615,64 +698,96 @@ function GameSession(game)
 							this.board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
-							if(!Chat(key,chesschat)) return;
+							if(!Chat(key,chesschat)) 
+							{
+								if(start) this.board.DrawTile(start.x,start.y);
+								this.board.DrawTile(selected.x,selected.y);
+								return false;
+							}
 							continue;
 					}
-					this.board.DrawTile(selected.x,selected.y,true);
+					if(start && start.x==selected.x && start.y==selected.y) 
+							this.board.DrawBlinking(start.x,start.y,true);
+					else
+						this.board.DrawTile(selected.x,selected.y,true);
 				}
 				else
 				{
 					this.ClearAlert();
-					if(start) this.board.DrawTile(start.x,start.y,true);
+					if(start) this.board.DrawBlinking(start.x,start.y);
 					switch(key)
 					{
 						case KEY_UP:
 						case "2":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_DOWN:
 						case "8":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_RIGHT:
 						case "4":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_LEFT:
 						case "6":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "3":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case "1":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==0) selected.y=7;
 							else selected.y--;
 							break;
 						case "9":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "7":
-							this.board.DrawTile(selected.x,selected.y);
+							if(start && start.x==selected.x && start.y==selected.y) 
+									this.board.DrawBlinking(start.x,start.y);
+							else
+								this.board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
@@ -683,10 +798,18 @@ function GameSession(game)
 							this.board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
-							if(!Chat(key,chesschat)) return;
+							if(!Chat(key,chesschat)) 
+							{
+								if(start) this.board.DrawTile(start.x,start.y);
+								this.board.DrawTile(selected.x,selected.y);
+								return false;
+							}
 							continue;
 					}
-					this.board.DrawTile(selected.x,selected.y,true);
+					if(start && start.x==selected.x && start.y==selected.y) 
+							this.board.DrawBlinking(start.x,start.y,true);
+					else
+						this.board.DrawTile(selected.x,selected.y,true);
 				}
 			}
 		}
@@ -1034,15 +1157,16 @@ function GameSession(game)
 		for(checker in checkers) 
 		{
 			var spot=checkers[checker];
-			Log("checking if " + player + " can take " +  spot.contents.color + " " + spot.contents.name);
+			Log("checking if " + player + " can take or block " +  spot.contents.color + " " + spot.contents.name);
 			if(spot.contents.name=="knight" || spot.contents.name=="pawn") 
 			{
 				var canmove=this.CanMoveTo(spot,player);
 				//if king cannot move and no pieces can take either the attacking knight or pawn - checkmate!
-				if(!canmove) return true; 
+				if(!canmove) return true;
 				//otherwise attempt each move, then scan for check - if check still exists after all moves are attempted - checkmate!
-				for(move in canmove)
+				for(piece in canmove)
 				{
+					var move=new ChessMove(canmove[piece],spot);
 					this.game.Move(move);
 					if(this.InCheck(position,player)) 
 					{
@@ -1061,20 +1185,25 @@ function GameSession(game)
 				path=this.FindPath(spot,position);
 				for(p in path)
 				{
-					var canmove=this.CanMoveTo(path[p],player);
-					for(piece in canmove)
+					var spot=path[p];
+					var canmove=this.CanMoveTo(spot,player);
+					if(canmove)
 					{
-						var move=new ChessMove(canmove[piece],path[p]);
-						this.game.Move(move);
-						if(this.InCheck(position,player)) 
+						for(piece in canmove)
 						{
-							this.game.UnMove(move);
+							Log("attempting block move: " + canmove[piece].contents.name);
+							var move=new ChessMove(canmove[piece],spot);
+							this.game.Move(move);
+							if(this.InCheck(position,player)) 
+							{
+								this.game.UnMove(move);
+							}
+							else 
+							{
+								this.game.UnMove(move);
+								return false;
+							}						
 						}
-						else 
-						{
-							this.game.UnMove(move);
-							return false;
-						}						
 					}
 				}
 			}
@@ -1174,7 +1303,7 @@ function GameSession(game)
 						if(this.CheckRules(from,position)) 
 						{
 							Log("x: "+ column + " y: " + row);
-							Log("piece: " + this.board.grid[column][row].color + this.board.grid[column][row].contents.name + " can take piece.");
+							Log("piece: " + this.board.grid[column][row].color + " " + this.board.grid[column][row].contents.name + " can take piece.");
 							check_pieces.push(this.board.grid[column][row]);
 						}
 					}
@@ -1218,6 +1347,7 @@ function GameSession(game)
 	}
 	this.EndGame=function(outcome)
 	{
+		Log("Ending game - " + this.currentplayer + ": " + outcome);
 		if(this.game.movelist.length) 
 		{
 			var cp=this.currentplayer;
@@ -1280,6 +1410,7 @@ function GameSession(game)
 		info.push("\1c\1h" + p1.name + "'s new rating: " + p1.rating);
 		info.push("\1c\1h" + p2.name + "'s new rating: " + p2.rating);
 		this.DisplayInfo(info);
+		this.Send(info,"alert");
 		this.Alert("\1r\1h[Press any key]");
 		while(console.inkey()=="");
 	}
@@ -1646,7 +1777,7 @@ function ChessPiece(name,color)
 	}
 	this.Init=function()
 	{
-		this.fg=(this.color=="white"?"\1n\1h":"\1n\1k");
+		this.fg=(this.color=="white"?"\1w\1h":"\1n\1k");
 		var base=" \xDF\xDF\xDF ";
 		switch(this.name)
 		{
@@ -1691,11 +1822,17 @@ function ChessBoard()
 	{
 		this.side=(this.side=="white"?"black":"white");
 	}
+	this.DrawBlinking=function(x,y,selected,color)
+	{
+		this.grid[x][y].DrawBlinking(this.side,selected,color);
+		console.attributes=ANSI_NORMAL;
+		console.gotoxy(79,24);
+	}
 	this.DrawTile=function(x,y,selected,color)
 	{
 		this.grid[x][y].Draw(this.side,selected,color);
+		console.attributes=ANSI_NORMAL;
 		console.gotoxy(79,24);
-		write(console.ansi(ANSI_NORMAL));
 	}
 	this.LoadTiles=function()
 	{
@@ -1757,8 +1894,8 @@ function ChessBoard()
 			Log("Drawing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y,true,"\1g\1h");
-			this.DrawTile(to.x,to.y,true,"\1g\1h");
+			this.DrawTile(from.x,from.y,true,"\1r\1h");
+			this.DrawTile(to.x,to.y,true,"\1r\1h");
 		}
 	}
 	this.DrawBoard=function()
@@ -1767,10 +1904,12 @@ function ChessBoard()
 		{
 			for(y=0;y<this.grid[x].length;y++)
 			{
-				this.DrawTile(x,y);
+				this.grid[x][y].Draw(this.side);
 			}
 		}
 		this.DrawLastMove();
+		console.gotoxy(79,24);
+		console.attributes=ANSI_NORMAL;
 	}
 	this.Move=function(from,to)
 	{
@@ -1865,11 +2004,20 @@ function ChessTile(color,x,y)
 		{
 			this.contents.Draw(this.bg,x,y);
 		}
-		if(selected==true) this.DrawSelected(side,color);
+		if(selected) this.DrawSelected(side,color);
+	}
+	this.DrawBlinking=function(side,selected,color)
+	{
+		var posx=(side=="white"?this.x:7-this.x);
+		var posy=(side=="white"?this.y:7-this.y);
+		var x=posx*5+1;
+		var y=posy*3+1;
+		this.contents.Draw(this.bg + console.ansi(BLINK),x,y);
+		if(selected) this.DrawSelected(side,color);
 	}
 	this.DrawSelected=function(side,color)
 	{
-		var color=color?color:"\1r\1h";
+		var color=color?color:"\1n\1b";
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
 		var x=posx*5+1;
