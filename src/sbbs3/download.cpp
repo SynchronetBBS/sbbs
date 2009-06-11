@@ -118,7 +118,7 @@ void sbbs_t::downloadfile(file_t* f)
 	for(l=0;l<(ulong)length;l+=F_IXBSIZE) {
 		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11]=0;
-		if(!strcmp(fname,str)) 
+		if(!stricmp(fname,str)) 
 			break; 
 	}
 	if(l>=(ulong)length) {

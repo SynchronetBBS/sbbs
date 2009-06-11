@@ -701,7 +701,7 @@ int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
 	for(l=0;l<length;l+=F_IXBSIZE) {
 		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11]=0;
-		if(!strcmp(fname,str)) break; 
+		if(!stricmp(fname,str)) break; 
 	}
 	if(l>=length) {
 		close(file);
