@@ -976,12 +976,18 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 	jsrefcount	rc;
 	int		log_level;
+	char	nodestr[128];
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
+
+    if(sbbs->cfg.node_num)
+    	SAFEPRINTF(nodestr,"Node %d",sbbs->cfg.node_num);
+    else
+    	SAFECOPY(nodestr,sbbs->client_name);
 	
 	if(report==NULL) {
-		lprintf(LOG_ERR,"!JavaScript: %s", message);
+		lprintf(LOG_ERR,"%s !JavaScript: %s", nodestr, message);
 		return;
     }
 
@@ -1010,7 +1016,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	if(sbbs->online==ON_LOCAL) 
 		eprintf(log_level,"!JavaScript %s%s%s: %s",warning,file,line,message);
 	else {
-		lprintf(log_level,"!JavaScript %s%s%s: %s",warning,file,line,message);
+		lprintf(log_level,"%s !JavaScript %s%s%s: %s",nodestr,warning,file,line,message);
 		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
 	}
 	JS_RESUMEREQUEST(cx, rc);
