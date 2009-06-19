@@ -492,7 +492,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 				}
 				uifc.pop("Importing Areas...");
 				while(!feof(stream)) {
-					if(!fgets(str,128,stream)) break;
+					if(!fgets(str,sizeof(str),stream)) break;
 					truncsp(str);
 					if(!str[0])
 						continue;
@@ -530,65 +530,65 @@ command: DIR /ON /AD /B > DIRS.RAW
 					}
 					else {
 						sprintf(tmpdir.lname,"%.*s",LEN_SLNAME,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.sname,"%.*s",LEN_SSNAME,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						SAFECOPY(tmp_code,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.data_dir,"%.*s",LEN_DIR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.arstr,"%.*s",LEN_ARSTR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.ul_arstr,"%.*s",LEN_ARSTR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.dl_arstr,"%.*s",LEN_ARSTR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.op_arstr,"%.*s",LEN_ARSTR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
                         truncsp(str);
                         sprintf(tmpdir.path,"%.*s",LEN_DIR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
                         truncsp(str);
                         sprintf(tmpdir.upload_sem,"%.*s",LEN_DIR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
                         truncsp(str);
 						tmpdir.maxfiles=atoi(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
                         truncsp(str);
 						sprintf(tmpdir.exts,"%.*s",40,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.misc=ahtoul(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.seqdev=atoi(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.sort=atoi(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						sprintf(tmpdir.ex_arstr,"%.*s",LEN_ARSTR,str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.maxage=atoi(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.up_pct=atoi(str);
-						if(!fgets(str,128,stream)) break;
+						if(!fgets(str,sizeof(str),stream)) break;
 						truncsp(str);
 						tmpdir.dn_pct=atoi(str);
 
 						ported++;
 						while(!feof(stream)
 							&& strcmp(str,"***END-OF-DIR***")) {
-							if(!fgets(str,128,stream)) break;
+							if(!fgets(str,sizeof(str),stream)) break;
 							truncsp(str); 
 						} 
 					}
