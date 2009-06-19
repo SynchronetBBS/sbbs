@@ -358,6 +358,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	post_t	*post;
 	smbmsg_t	msg;
 
+	find_buf[0]=0;
 	cursubnum=subnum;	/* for ARS */
 	if(!chk_ar(cfg.sub[subnum]->read_ar,&useron,&client)) {
 		bprintf("\1n\r\nYou can't read messages on %s %s\r\n"
@@ -791,7 +792,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				if((i=get_start_msg(this,&smb))<0)
 					break;
 				bputs(text[SearchStringPrompt]);
-				if(!getstr(find_buf,40,K_LINE|K_UPPER))
+				if(!getstr(find_buf,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
 				if(yesno(text[DisplaySubjectsOnlyQ]))
 					searchposts(subnum,post,(long)i,smb.msgs,find_buf);
