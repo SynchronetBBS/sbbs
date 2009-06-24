@@ -83,6 +83,23 @@ function PrintPadded(string,length,padding,justification)
 	if(justification=="right") newstring=(padded + newstring);
 	return(newstring);
 }
+function CenterString(string,length,padding)
+{
+	if(!padding) padding=" ";
+	var strlength=console.strlen(string);
+	if(strlength>length)
+	{
+		string=string.substring(0,length);
+	}
+	var padlength=length-strlength;
+	var newstring=string;
+	for(p=1;p<=padlength;p++)
+	{
+		if(p%2==0) newstring+=padding;
+		else newstring=padding+newstring;
+	}
+	return newstring;
+}
 function DrawLine(x,y,length,color)
 {
 	if(x && y)
