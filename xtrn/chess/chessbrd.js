@@ -44,6 +44,7 @@ function GameSession(game)
 								"~New Game"						,
 								"~Move"							,
 								"Re~verse"						,
+								"Toggle Board E~xpansion"		,
 								"~Help"							,
 								"Move ~List"					,
 								"Re~draw"						];
@@ -208,6 +209,9 @@ function GameSession(game)
 					case "L":
 						this.ListMoves();
 						break;
+					case "X":
+						this.ToggleBoardSize();
+						break;
 					case "N":
 						this.NewGame();
 						break;
@@ -220,11 +224,35 @@ function GameSession(game)
 			else Log("Invalid or Disabled key pressed: " + k);
 		}
 	}
+	this.ToggleBoardSize=function()
+	{
+		this.board.large=this.board.large?false:true;
+		if(this.board.large)
+		{
+			console.screen_rows=50;
+			var rows=3;
+			var columns=77;
+			var posx=2;
+			var posy=45;
+			var input_line={'x':2,'y':50,columns:77};
+			chesschat.Init(this.name,input_line,columns,rows,posx,posy,false);
+			//reinitialize chat beneath large board
+		}
+		else
+		{
+			console.screen_rows=24;
+			this.InitChat();
+			//reinitialize chat beside small board
+		}
+		this.InitMenu();
+		this.Redraw();
+	}
 	this.Help=function()
 	{
 	}
 	this.ListCommands=function()
 	{
+		if(this.board.large) return;
 		var list=this.menu.getList();
 		this.DisplayInfo(list);
 	}
@@ -244,6 +272,7 @@ function GameSession(game)
 	}
 	this.InfoBar=function()
 	{
+		if(this.board.large) return;
 		console.gotoxy(chesschat.x,1);
 		console.putmsg("\1k\1h[\1cEsc\1k\1h]\1wQuit \1k\1h[\1c/\1k\1h]\1wMenu \1k\1h[\1c?\1k\1h]\1wToggle \1k\1h[\1c" + ascii(30) + "\1k\1h,\1c" + ascii(31) +"\1k\1h]\1wScroll");
 		if(this.infobar)
@@ -1767,12 +1796,14 @@ function ChessPiece(name,color)
 	this.color=color;
 	this.fg;
 	this.has_moved;
-	this.graphic;
+	this.small;
+	this.large;
 	
-	this.Draw=function(bg,x,y)
+	this.Draw=function(bg,x,y,large)
 	{
-		for(offset=0;offset<3;offset++) {
-			console.gotoxy(x,y+offset); console.print(this.fg + bg + this.graphic[offset]);
+		var graphic=large?this.large:this.small;
+		for(offset=0;offset<graphic.length;offset++) {
+			console.gotoxy(x,y+offset); console.print(this.fg + bg + graphic[offset]);
 		}
 	}
 	this.Init=function()
@@ -1782,25 +1813,33 @@ function ChessPiece(name,color)
 		switch(this.name)
 		{
 			case "pawn":
-				this.graphic=["  \xF9  ","  \xDB  ",base];
+				this.small=["  \xF9  ","  \xDB  ",base];
+				this.large=["         ","         ","    \xFE    ","    \xDB    ","   \xDF\xDF\xDF   "];
 				break;
 			case "rook":
-				this.graphic=[" \xDC \xDC "," \xDE\xDB\xDD ",base];
+				this.small=[" \xDC \xDC "," \xDE\xDB\xDD ",base];
+				this.large=["         ","  \xDB\xDC\xDB\xDC\xDB  ","  \xDE\xDD\xDB\xDB\xDD  ","  \xDE\xDB\xDB\xDE\xDD  ","  \xDF\xDF\xDF\xDF\xDF  "];
 				break;
 			case "knight":
-				this.graphic=["  \xDC  "," \xDF\xDB\xDD ",base];
+				this.small=["  \xDC  "," \xDF\xDB\xDD ",base];
+				//this.large=["   \xDC\xDC    ","  \xDF\xDF\xDB\xDD   ","   \xDE\xDB\xDD   ","   \xDC\xDB\xDC   ","  \xDF\xDF\xDF\xDF\xDF  "];
+				this.large=["    \xDC    ","   \xDF\xDB\xDD   ","   \xDE\xDB\xDD   ","   \xDC\xDB\xDC   ","  \xDF\xDF\xDF\xDF\xDF  "];
 				break;
 			case "bishop":
-				this.graphic=["  \x06  ","  \xDB  ",base];
+				this.small=["  \x06  ","  \xDB  ",base];
+				this.large=["    \xDC    ","   \xDE\xDE\xDD   ","    \xDB    ","   \xDE\xDB\xDD   ","   \xDF\xDF\xDF   "];
 				break;
 			case "queen":
-				this.graphic=[" <Q> ","  \xDB  ",base];
+				this.small=[" <Q> ","  \xDB  ",base];
+				this.large=["   \xF2\xF3   ","   \xDE\xDB\xDD   ","    \xDB    ","   \xDE\xDB\xDD   ","   \xDF\xDF\xDF   "];
 				break;
 			case "king":
-				this.graphic=[" \xF3\xF1\xF2 ","  \xDB  ",base];
+				this.small=[" \xF3\xF1\xF2 ","  \xDB  ",base];
+				this.large=["    \xC5    ","   \xDE\xDB\xDD   ","    \xDB    ","   \xDE\xDB\xDD   ","   \xDF\xDF\xDF   "];
 				break;
 			default:
-				this.graphic=["","\1r\1h ERR ",""];
+				this.small=["\1r\1hERR"];
+				this.large=["\1r\1hERR"];
 				break;
 		}
 	}
@@ -1814,9 +1853,13 @@ function ChessBoard()
 	this.gridpositions;
 	this.grid;
 	this.side="white";
+	this.large=false;
+	this.background=new Graphic(80,50);
+	
 	this.Init=function()
 	{
 		this.LoadTiles();
+		this.background.load(chessroot + "largebg.bin");
 	}
 	this.Reverse=function()
 	{
@@ -1824,13 +1867,13 @@ function ChessBoard()
 	}
 	this.DrawBlinking=function(x,y,selected,color)
 	{
-		this.grid[x][y].DrawBlinking(this.side,selected,color);
+		this.grid[x][y].DrawBlinking(this.side,selected,color,this.large);
 		console.attributes=ANSI_NORMAL;
 		console.gotoxy(79,24);
 	}
 	this.DrawTile=function(x,y,selected,color)
 	{
-		this.grid[x][y].Draw(this.side,selected,color);
+		this.grid[x][y].Draw(this.side,selected,color,this.large);
 		console.attributes=ANSI_NORMAL;
 		console.gotoxy(79,24);
 	}
@@ -1884,8 +1927,8 @@ function ChessBoard()
 			Log("Clearing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y);
-			this.DrawTile(to.x,to.y);
+			this.DrawTile(from.x,from.y,false,false,this.large);
+			this.DrawTile(to.x,to.y,false,false,this.large);
 		}
 	}
 	this.DrawLastMove=function()
@@ -1894,17 +1937,18 @@ function ChessBoard()
 			Log("Drawing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y,true,"\1r\1h");
-			this.DrawTile(to.x,to.y,true,"\1r\1h");
+			this.DrawTile(from.x,from.y,true,"\1r\1h",this.large);
+			this.DrawTile(to.x,to.y,true,"\1r\1h",this.large);
 		}
 	}
 	this.DrawBoard=function()
 	{
+		if(this.large) this.background.draw();
 		for(x=0;x<this.grid.length;x++) 
 		{
 			for(y=0;y<this.grid[x].length;y++)
 			{
-				this.grid[x][y].Draw(this.side);
+				this.grid[x][y].Draw(this.side,false,false,this.large);
 			}
 		}
 		this.DrawLastMove();
@@ -1987,49 +2031,58 @@ function ChessTile(color,x,y)
 	{
 		delete this.contents;
 	}
-	this.Draw=function(side,selected,color)
+	this.Draw=function(side,selected,color,large)
 	{
+		var xinc=large?9:5;
+		var yinc=large?5:3;
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
-		var x=posx*5+1;
-		var y=posy*3+1;
+		var x=posx*xinc+(large?5:1);
+		var y=posy*yinc+(large?3:1);
 		
 		if(!this.contents) 
 		{
-			for(pos = 0;pos<3;pos++) {
-				console.gotoxy(x,y+pos); write(this.bg+"     ");
+			var spaces=large?"         ":"     ";
+			var lines=large?5:3;
+			for(pos = 0;pos<lines;pos++) {
+				console.gotoxy(x,y+pos); write(this.bg+spaces);
 			}
 		}
 		else 
 		{
-			this.contents.Draw(this.bg,x,y);
+			this.contents.Draw(this.bg,x,y,large);
 		}
-		if(selected) this.DrawSelected(side,color);
+		if(selected) this.DrawSelected(side,color,large);
 	}
-	this.DrawBlinking=function(side,selected,color)
+	this.DrawBlinking=function(side,selected,color,large)
 	{
+		var xinc=large?9:5;
+		var yinc=large?5:3;
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
-		var x=posx*5+1;
-		var y=posy*3+1;
-		this.contents.Draw(this.bg + console.ansi(BLINK),x,y);
-		if(selected) this.DrawSelected(side,color);
+		var x=posx*xinc+(large?5:1);
+		var y=posy*yinc+(large?3:1);
+		
+		this.contents.Draw(this.bg + console.ansi(BLINK),x,y,large);
+		if(selected) this.DrawSelected(side,color,large);
 	}
-	this.DrawSelected=function(side,color)
+	this.DrawSelected=function(side,color,large)
 	{
 		var color=color?color:"\1n\1b";
+		var xinc=large?9:5;
+		var yinc=large?5:3;
 		var posx=(side=="white"?this.x:7-this.x);
 		var posy=(side=="white"?this.y:7-this.y);
-		var x=posx*5+1;
-		var y=posy*3+1;
+		var x=posx*xinc+(large?5:1);
+		var y=posy*yinc+(large?3:1);
 		
 		console.gotoxy(x,y);
 		console.putmsg(color + this.bg + "\xDA");
-		console.gotoxy(x+4,y);
+		console.gotoxy(x+(xinc-1),y);
 		console.putmsg(color + this.bg + "\xBF");
-		console.gotoxy(x,y+2);
+		console.gotoxy(x,y+(yinc-1));
 		console.putmsg(color + this.bg + "\xC0");
-		console.gotoxy(x+4,y+2);
+		console.gotoxy(x+(xinc-1),y+(yinc-1));
 		console.putmsg(color + this.bg + "\xD9");
 		console.gotoxy(79,1);
 	}
