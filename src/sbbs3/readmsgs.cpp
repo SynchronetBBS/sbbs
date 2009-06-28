@@ -680,7 +680,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					bputs(text[CantPostOnSub]);
 					break; 
 				}
-				quotemsg(&msg,0);
+				quotemsg(&msg,/* include tails: */FALSE);
 				FREE_AND_NULL(post);
 				postmsg(subnum,&msg,WM_QUOTE);
 				if(mode&SCAN_TOYOU)
@@ -845,7 +845,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					break;
 
 				FREE_AND_NULL(post);
-				quotemsg(&msg,1);
+				quotemsg(&msg,/* include tails: */TRUE);
 				if(smb_netaddr_type(str)==NET_INTERNET)
 					inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
 				else {
@@ -919,6 +919,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 								menu("sysmscan");
 							continue;
 						case 'P':   /* Purge user */
+							if(noyes(text[AreYouSureQ]))
+								break;
 							purgeuser(cfg.sub[subnum]->misc&SUB_NAME
 								? userdatdupe(0,U_NAME,LEN_NAME,msg.from,0)
 								: matchuser(&cfg,msg.from,FALSE));
