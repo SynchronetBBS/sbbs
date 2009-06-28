@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -764,6 +764,12 @@ void msg_opts()
 			sprintf(str,"Unlimited");
 		sprintf(opt[i++],"%-33.33s%s"
 			,"Maximum QWK Messages",str);
+		if(cfg.max_qwkmsgage)
+			sprintf(str,"%u days",cfg.max_qwkmsgage);
+		else
+			sprintf(str,"Unlimited");
+		sprintf(opt[i++],"%-33.33s%s"
+			,"Maximum QWK Message Age",str);
 		sprintf(opt[i++],"%-33.33s%s","Pre-pack QWK Requirements",cfg.preqwk_arstr);
 		if(cfg.mail_maxage)
 			sprintf(str,"Enabled (%u days old)",cfg.mail_maxage);
@@ -1075,6 +1081,22 @@ QWK network nodes (Q restriction). If set to 0, no limit is imposed.
 			case 4:
 				SETHELP(WHERE);
 /*
+`Maximum Age of Messages Imported From QWK Packets:`
+
+This is the maximum age of messages (in days), allowed for messages in
+QWK packets. Messages with an age older than this value will not be
+imported. If set to `0`, no age limit is imposed.
+*/
+
+				itoa(cfg.max_qwkmsgage,str,10);
+				uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Maximum Age (in days) of QWK-imported Messages (0=No Limit)"
+					,str,4,K_NUMBER|K_EDIT);
+				cfg.max_qwkmsgage=atoi(str);
+                break;
+			case 5:
+				SETHELP(WHERE);
+/*
 Pre-pack QWK Requirements:
 
 ALL user accounts on the BBS meeting this requirmenet will have a QWK
@@ -1088,7 +1110,7 @@ system (in the DATA\FILE directory).
 */
 				getar("Pre-pack QWK (Use with caution!)",cfg.preqwk_arstr);
 				break;
-			case 5:
+			case 6:
 				sprintf(str,"%u",cfg.mail_maxage);
                 SETHELP(WHERE);
 /*
@@ -1100,7 +1122,7 @@ This value is the maximum number of days that mail will be kept.
                     "(in days)",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxage=atoi(str);
                 break;
-			case 6:
+			case 7:
 				strcpy(opt[0],"Daily");
 				strcpy(opt[1],"Immediately");
 				opt[2][0]=0;
@@ -1128,7 +1150,7 @@ day.
 					cfg.sys_misc|=SM_DELEMAIL;
 					uifc.changes=1; }
                 break;
-			case 7:
+			case 8:
 				sprintf(str,"%lu",cfg.mail_maxcrcs);
                 SETHELP(WHERE);
 /*
@@ -1142,7 +1164,7 @@ CRCs will be automatically purged.
                     "CRCs",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxcrcs=atol(str);
                 break;
-			case 8:
+			case 9:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1164,7 +1186,7 @@ anonymously, set this option to Yes.
 					cfg.sys_misc&=~SM_ANON_EM;
 					uifc.changes=1; }
 				break;
-			case 9:
+			case 10:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1186,7 +1208,7 @@ responding in E-mail, set this option to Yes.
 					cfg.sys_misc&=~SM_QUOTE_EM;
 					uifc.changes=1; }
 				break;
-			case 10:
+			case 11:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1208,7 +1230,7 @@ an E-mail message, set this option to Yes.
 					cfg.sys_misc&=~SM_FILE_EM;
 					uifc.changes=1; }
 				break;
-			case 11:
+			case 12:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1231,7 +1253,7 @@ set this option to Yes.
 					cfg.sys_misc&=~SM_FWDTONET;
 					uifc.changes=1; }
                 break;
-			case 12:
+			case 13:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1253,7 +1275,7 @@ automatically deleted when message base maintenance is run.
 					cfg.sys_misc&=~SM_DELREADM;
 					uifc.changes=1; }
                 break;
-			case 13:
+			case 14:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -1277,7 +1299,7 @@ addressed to a user's real name (rather than their alias).
 					uifc.changes=1; 
 				}
                 break;
-			case 14:
+			case 15:
 				n=(cfg.sub[i]->misc&MM_EMAILSIG) ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1303,7 +1325,7 @@ messages, set this option to ~Yes~.
 					cfg.msg_misc&=~MM_EMAILSIG; 
 				}
                 break;
-			case 15:
+			case 16:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				strcpy(opt[2],"Sysops Only");
@@ -1340,7 +1362,7 @@ appropriate) can view deleted messages.
 					cfg.sys_misc&=~SM_USRVDELM;
 					uifc.changes=1; }
                 break;
-			case 16:
+			case 17:
 				SETHELP(WHERE);
 /*
 Extra Attribute Codes...
