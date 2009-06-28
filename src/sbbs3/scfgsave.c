@@ -458,13 +458,13 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->mail_maxage,stream);
 	put_str(cfg->preqwk_arstr,stream);
 	put_int(cfg->smb_retry_time,stream);
+	put_int(cfg->max_qwkmsgage,stream);
 	n=0;
-	for(i=0;i<234;i++)
+	for(i=0;i<233;i++)
 		put_int(n,stream);
 	put_int(cfg->msg_misc,stream);
-	put_int(cfg->max_qwkmsgage,stream);
 	n=0xffff;
-	for(i=0;i<254;i++)
+	for(i=0;i<255;i++)
 		put_int(n,stream);
 
 	/* Message Groups */
