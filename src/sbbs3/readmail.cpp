@@ -365,7 +365,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					break; 
 				}
 
-				quotemsg(&msg,1);
+				quotemsg(&msg,/* include tails: */TRUE);
 
 				if(msg.from_net.addr==NULL)
 					SAFECOPY(str,msg.from);
