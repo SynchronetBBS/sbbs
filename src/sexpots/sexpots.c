@@ -39,12 +39,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/* Windows */
-#ifdef _WIN32
-/* Doesn't this come in from sockwrap.h? */
-#include <winsock.h>
-#endif
-
 /* xpdev lib */
 #include "dirwrap.h"
 #include "datewrap.h"
@@ -1511,7 +1505,6 @@ service_loop(int argc, char** argv)
 	}
 
 	lprintf(LOG_INFO,"%s set to %ld bps DTE rate", com_dev, comGetBaudRate(com_handle));
-
 
 	if(ident)
 		_beginthread(ident_server_thread, 0, NULL);
