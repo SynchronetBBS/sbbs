@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -52,6 +52,7 @@ COM_HANDLE comOpen(const char* device)
 {
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
+	DCB	dcb;
 
 	if((handle=CreateFile(device
 		,GENERIC_READ|GENERIC_WRITE 	/* Access */
@@ -71,6 +72,14 @@ COM_HANDLE comOpen(const char* device)
 		timeouts.WriteTotalTimeoutMultiplier=0;
 		timeouts.WriteTotalTimeoutConstant=5000;	// 5 seconds
 		SetCommTimeouts(handle,&timeouts);
+	}
+
+	/* Force N-8-1 mode: */
+	if(GetCommState(handle, &dcb)==TRUE) {
+		dcb.ByteSize	= 8;
+		dcb.Parity		= NOPARITY;
+		dcb.StopBits	= ONESTOPBIT;
+		SetCommState(handle, &dcb);
 	}
 
 	return handle;
