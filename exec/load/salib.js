@@ -89,13 +89,14 @@ function Message_DoCommand(command)
 		return(ret)
 	}
 
-	tmp=rcvd[0].split(/\s+/,3);
+	tmp=rcvd[0].split(/\s+/);	/* was ,3 */
 	if(tmp.length < 3) {
 		ret.error="Unable to parse line '"+rcvd[0];
 		return(ret)
 	}
 	if(tmp[1] != '0') {
-		ret.error="spamd returned error "+tmp[2]+" ("+tmp[1]+")";
+		tmp.shift();
+		ret.error="spamd returned error: " + tmp.join(" ");
 		return(ret)
 	}
 
