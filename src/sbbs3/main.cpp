@@ -2726,10 +2726,15 @@ void event_thread(void* arg)
 						ex_mode |= EX_SH;
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
-					sbbs->external(
-						 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,sbbs->cfg.event[i]->dir,NULL)
-						,ex_mode
-						,sbbs->cfg.event[i]->dir);
+					{
+						int result=
+						sbbs->external(
+							 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,sbbs->cfg.event[i]->dir,NULL)
+							,ex_mode
+							,sbbs->cfg.event[i]->dir);
+						if(!(ex_mode&EX_BG))
+							eprintf(LOG_INFO,"Timed event: %s returned %d",strupr(str), result);
+					}
 					sbbs->cfg.event[i]->last=time(NULL);
 					SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 					if((file=sbbs->nopen(str,O_WRONLY))==-1) {
