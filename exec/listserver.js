@@ -225,20 +225,25 @@ for(var l in list_array) {
 	}
 ***/
 
+	var ptr=NaN;
 	/* Get export message pointer */
+	/* Old way: */
 	ptr_fname = list.msgbase_file + ".list.ptr";
-	if(!file_exists(ptr_fname))
-		file_touch(ptr_fname);
 	ptr_file = new File(ptr_fname);
-	if(!ptr_file.open("r+")) {
-		log(LOG_ERR,format("%s !ERROR %d opening/creating file: %s"
-			,list.name, ptr_file.error, ptr_fname));
-		delete msgbase;
-		continue;
+	if(ptr_file.open("r")) {
+		ptr = Number(ptr_file.readln());
+		ptr_file.close();
+	}
+	delete ptr_file;
+	/* New way: */
+	ini_fname = list.msgbase_file + ".ini";
+	ini_file = new File(ini_fname);
+	if(ini_file.open("r")) {
+		ptr=ini_file.iniGetValue("ListServer","export_ptr",ptr);
+		ini_file.close();
 	}
 
 	var last_msg = msgbase.last_msg;
-	var ptr = Number(ptr_file.readln());
 
 	log(LOG_DEBUG,format("%s pointer read: %u"
 		,list.name, ptr));
@@ -329,13 +334,17 @@ for(var l in list_array) {
 	if(ptr > last_msg)
 		ptr = last_msg;
 
-	log(LOG_DEBUG,format("%s pointer written: %u"
-		,list.name, ptr));
-
-	ptr_file.rewind();
-	ptr_file.length=0;		// truncate
-	ptr_file.writeln(ptr);
-	ptr_file.close();
+	if(!ini_file.open(ini_file.exists ? "r+":"w+"))
+		printf("!ERROR %d creating/opening %s\r\n",errno,ini_file.name);
+	else {
+		ini_file.iniSetValue("ListServer", "export_ptr", ptr);
+		ini_file.close();
+		log(LOG_DEBUG,format("%s pointer written: %u"
+			,list.name, ptr));
+		if(file_exists(ptr_fname))
+			file_remove(ptr_fname);
+	}
+	delete ini_file;
 }
 
 /* clean-up */
