@@ -360,14 +360,26 @@ for(i in area) {
 	import_ptr = NaN;			// Set to highest possible message number (by default)
 	if(flags.indexOf('i')>=0)	// import all
 		import_ptr = 0;
+	/* Old way to store pointers: */
 	ptr_fname = msgbase.file + ".snl";
 	ptr_file = new File(ptr_fname);
 	if(ptr_file.open("rb")) {
 		export_ptr = ptr_file.readBin();
-		printf("%s export ptr: %ld\r\n",sub,export_ptr);
+		printf("%s.snl export ptr: %ld\r\n",sub,export_ptr);
 		import_ptr = ptr_file.readBin();
-		printf("%s import ptr: %ld\r\n",sub,import_ptr);
+		printf("%s.snl import ptr: %ld\r\n",sub,import_ptr);
 		ptr_file.close();
+	}
+	delete ptr_file;
+	/* New way to store pointers: */
+	ini_fname = msgbase.file + ".ini";
+	ini_file = new File(ini_fname);
+	if(ini_file.open("r")) {
+		export_ptr=ini_file.iniGetValue("NewsLink","export_ptr",export_ptr);
+		printf("%s.ini export ptr: %ld\r\n",sub,export_ptr);
+		import_ptr=ini_file.iniGetValue("NewsLink","import_ptr",import_ptr);
+		printf("%s.ini import ptr: %ld\r\n",sub,import_ptr);
+		ini_file.close();
 	}
 
 	if(reset_export_ptrs)
@@ -511,7 +523,7 @@ for(i in area) {
 	rsp = readln();
 	if(rsp==null || rsp[0]!='2') {
 		printf("!GROUP %s FAILURE: %s\r\n",newsgroup,rsp);
-		delete ptr_file;
+		delete ini_file;
 		delete msgbase;
 		continue;
 	}
@@ -859,14 +871,14 @@ for(i in area) {
 	import_ptr = ptr;
 
 	/* Save Pointers */
-	if(!ptr_file.open("wb"))
-		printf("!ERROR %d creating/opening %s\r\n",errno,ptr_fname);
+	if(!ini_file.open(ini_file.exists ? "r+":"w+"))
+		printf("!ERROR %d creating/opening %s\r\n",errno,ini_file.name);
 	else {
-		ptr_file.writeBin(export_ptr);
-		ptr_file.writeBin(import_ptr);
-		ptr_file.close();
+		ini_file.iniSetValue("NewsLink", "export_ptr", export_ptr);
+		ini_file.iniSetValue("NewsLink", "import_ptr", import_ptr);
+		ini_file.close();
 	}
-	delete ptr_file;
+	delete ini_file;
 	msgbase.close();
 	delete msgbase;
 
