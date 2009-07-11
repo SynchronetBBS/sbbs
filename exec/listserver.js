@@ -56,8 +56,8 @@ for(var l in list_array) {
 
 	var msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
-		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
-			,list.name, msgbase.error, list.sub));
+		log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
+			,list.name, msgsbase.status, msgbase.error, list.sub));
 		continue;
 	}
 	list.msgbase_file = msgbase.file;
@@ -70,7 +70,8 @@ for(var l in list_array) {
 
 mailbase = new MsgBase("mail");
 if(mailbase.open()==false) {
-	log(LOG_ERR,"!ERROR " + mailbase.error + " opening mail database");
+	log(LOG_ERR,format("!ERROR %d (%s) opening mail database"
+		,mailbase.status, mailbase.error));
 	exit();
 }
 
@@ -183,8 +184,8 @@ if(js.global.recipient_list_filename!=undefined) {
 	if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
 		log(LOG_INFO,"Response to control message created");
 	else
-		log(LOG_ERR,format("!ERROR %s saving response message to mail msgbase"
-			,msgbase.error));
+		log(LOG_ERR,format("!ERROR %d (%s) saving response message to mail msgbase"
+			,msgbase.status, msgbase.error));
 
 	exit();
 }
@@ -203,8 +204,8 @@ for(var l in list_array) {
 
 	msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
-		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
-			,list.name, msgbase.error, list.sub));
+		log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
+			,list.name, msgbase.status, msgbase.error, list.sub));
 		delete msgbase;
 		continue;
 	}
@@ -256,8 +257,8 @@ for(var l in list_array) {
 			);
 		if(hdr == null) {
 			/**
-			log(LOG_WARNING,format("%s !ERROR %s getting msg header #%lu"
-				,list.name, msgbase.error, ptr));
+			log(LOG_WARNING,format("%s !ERROR %d (%s) getting msg header #%lu"
+				,list.name, msgbase.status, msgbase.error, ptr));
 			**/
 			continue;
 		}
@@ -282,8 +283,8 @@ for(var l in list_array) {
 				,true	/* include tails */
 				);
 		if(body == null) {
-			log(LOG_ERR,format("%s !ERROR %s reading text of message #%lu"
-				,list.name, msgbase.error, ptr));
+			log(LOG_ERR,format("%s !ERROR %d (%s) reading text of message #%lu"
+				,list.name, msgbase.status, msgbase.error, ptr));
 			continue;
 		}
 
@@ -293,6 +294,8 @@ for(var l in list_array) {
 				break;
 			if(user_list[u].disabled || !user_list[u].address)
 				continue;
+			if(!user_list[u].name)
+				user_list[u].name = user_list[u].address;
 			log(LOG_DEBUG,format("%s Enqueing message #%lu for %s <%s>"
 				,list.name, ptr, user_list[u].name, user_list[u].address));
 			rcpt_list.push(	{	to:				user_list[u].name,
@@ -319,8 +322,8 @@ for(var l in list_array) {
 		if(list.subject_mod==true && hdr.subject.indexOf("[" + list.name + "]")==-1)
 			hdr.subject = "[" + list.name + "] " + hdr.subject;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
-			log(LOG_ERR,format("%s !ERROR %s saving mail message"
-				,list.name, mailbase.error));
+			log(LOG_ERR,format("%s !ERROR %d (%s) saving mail message"
+				,list.name, mailbase.status, mailbase.error));
 	}
 
 	if(ptr > last_msg)
@@ -521,8 +524,8 @@ function process_contribution(header, body, list)
 
 	var msgbase=new MsgBase(list.sub);
 	if(!msgbase.open()) {
-		error_file.writeln(log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
-			,list.name, msgbase.error, list.sub)));
+		error_file.writeln(log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
+			,list.name, msgbase.status, msgbase.error, list.sub)));
 		return(false);
 	}
 
@@ -533,8 +536,8 @@ function process_contribution(header, body, list)
 	header.subject=header.subject.replace(RegExp("\\["+list.name+"\\]\\s*"), "");
 
 	if(!msgbase.save_msg(header, body.join('\r\n'))) {
-		log(LOG_ERR,format("%s !ERROR %s saving message to sub: %s"
-			,list.name, msgbase.error, list.sub));
+		log(LOG_ERR,format("%s !ERROR %d (%s) saving message to sub: %s"
+			,list.name, msgbase.status, msgbase.error, list.sub));
 		return(false);
 	}
 
