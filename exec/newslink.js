@@ -877,6 +877,8 @@ for(i in area) {
 		ini_file.iniSetValue("NewsLink", "export_ptr", export_ptr);
 		ini_file.iniSetValue("NewsLink", "import_ptr", import_ptr);
 		ini_file.close();
+		if(file_exists(ptr_fname))
+			file_remove(ptr_fname);
 	}
 	delete ini_file;
 	msgbase.close();
