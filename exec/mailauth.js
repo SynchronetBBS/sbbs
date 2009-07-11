@@ -17,8 +17,10 @@ if(user.number && !(user.security.restrictions&UFLAG_G))
 
 var sender_host = sender_address.slice(sender_address.indexOf('@')+1);
 
-if(sender_host == system.host_name
-	|| system.findstr(system.ctrl_dir + "domains.cfg", sender_host)) {
+if((sender_host == system.host_name
+	|| system.findstr(system.ctrl_dir + "domains.cfg", sender_host))
+	&& client.ip_address!="127.0.0.1"
+	&& client.ip_address!=server.interface_ip_address) {
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
 		log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
