@@ -1443,7 +1443,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 			buf_sent=0;
 		}
 
-		if(zm->current_file_pos >= zm->current_file_size || n==0)	/* can't use feof() here! */
+		if(zm->current_file_pos+n >= zm->current_file_size || n==0)	/* can't use feof() here! */
 			type = ZCRCE;
 
 		/* Note: No support for sending ZCRCQ data sub-packets here */
