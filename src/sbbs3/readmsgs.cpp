@@ -636,6 +636,37 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				posts_read++;
 				subscan[subnum].ptr=post[smb.curmsg].number; 
 			} 
+
+			if(sub_op(subnum) && (msg.idx.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+				SAFEPRINTF2(str,text[ValidatePostQ],msg.hdr.number,msg.subj);
+				if(!noyes(str))
+					msg.idx.attr|=MSG_VALIDATED;
+				else {
+					SAFEPRINTF2(str,text[DeletePostQ],msg.hdr.number,msg.subj);
+					if(yesno(str))
+						msg.idx.attr|=MSG_DELETE;
+				}
+				if(msg.idx.attr!=msg.hdr.attr) {
+					if(msg.total_hfields)
+						smb_freemsgmem(&msg);
+					msg.total_hfields=0;
+					msg.idx.offset=0;
+					if(!smb_locksmbhdr(&smb)) { 			  /* Lock the entire base */
+						if(loadmsg(&msg,msg.idx.number)) {
+							msg.hdr.attr=msg.idx.attr;
+							if((i=smb_putmsg(&smb,&msg))!=0)
+								errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+							smb_unlockmsghdr(&smb,&msg); 
+						}
+						smb_unlocksmbhdr(&smb); 
+					}
+					if(!msg.total_hfields) {				/* unsuccessful reload */
+						domsg=0;
+						continue; 
+					} 
+				}
+
+			}
 		}
 		else domsg=1;
 		if(mode&SCAN_CONST) {
