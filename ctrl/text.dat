@@ -875,3 +875,4 @@
 "External Editor"                                       726 ExternalEditorHeading
 "Command Shell"                                         727 CommandShellHeading
 "Archive Type"                                          728 ArchiveTypeHeading
+"Validate message #%u '%s'"				729 ValidatePostQ
