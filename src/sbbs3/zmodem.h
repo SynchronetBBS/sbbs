@@ -296,7 +296,7 @@ char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
 int			zmodem_rx(zmodem_t* zm);
 int			zmodem_tx(zmodem_t* zm, BYTE ch);
-int			zmodem_abort_receive(zmodem_t*);
+int			zmodem_send_zabort(zmodem_t*);
 int			zmodem_send_ack(zmodem_t*, int32_t pos);
 int			zmodem_send_nak(zmodem_t*);
 int			zmodem_send_zskip(zmodem_t* zm);
