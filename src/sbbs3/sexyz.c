@@ -878,7 +878,10 @@ static int send_files(char** fname, uint fnames)
 			if(success) {
 				xm.sent_files++;
 				xm.sent_bytes+=fsize;
-				lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
+				if(zm.file_skipped)
+					lprintf(LOG_WARNING,"File Skipped");
+				else
+					lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 						,t/60,t%60,cps);
 
 				if(xm.total_files-xm.sent_files)
@@ -1140,7 +1143,7 @@ static int receive_files(char** fname_list, int fnames)
 
 			errors=zmodem_recv_file_data(&zm,fp,0);
 
-			if(errors<=zm.max_errors)
+			if(errors<=zm.max_errors && !zm.cancelled)
 				success=TRUE;
 
 		} else {
@@ -1209,11 +1212,14 @@ static int receive_files(char** fname_list, int fnames)
 		
 		t=time(NULL)-startfile;
 		if(!t) t=1;
-		if(success)
+		if(zm.file_skipped)
+			lprintf(LOG_WARNING,"File Skipped");
+		else if(success)
 			lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 				,t/60,t%60,file_bytes/t);	
 		else
-			lprintf(LOG_ERR,"File Transfer %s", zm.local_abort ? "Aborted":"Failure");
+			lprintf(LOG_ERR,"File Transfer %s"
+				,zm.local_abort ? "Aborted": zm.cancelled ? "Cancelled":"Failure");
 
 		if(!(mode&XMODEM) && ftime)
 			setfdate(str,ftime); 

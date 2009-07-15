@@ -1800,7 +1800,9 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		if(type == ZSKIP) {
 			zm->file_skipped=TRUE;
-			lprintf(zm,LOG_WARNING,"File skipped by receiver at offset: %lu", pos);
+			lprintf(zm,LOG_WARNING,"File skipped by receiver at offset: %lu", pos + sent_bytes);
+			/* ZOC sends a ZRINIT after mid-file ZSKIP, so consume the ZRINIT here */
+			zmodem_recv_header(zm);
 			return(TRUE);
 		}
 
