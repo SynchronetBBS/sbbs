@@ -896,8 +896,8 @@ static int send_files(char** fname, uint fnames)
 				lprintf(LOG_DEBUG,"Updating DSZLOG: %s", dszlog);
 				fprintf(logfp,"%c %7lu %5u bps %6lu cps %3u errors %5u %4u "
 					"%s -1\n"
-					,success ? (mode&ZMODEM ? 'z':'S') 
-						: (mode&ZMODEM && zm.file_skipped) ? 's' 
+					,(mode&ZMODEM && zm.file_skipped) ? 's' 
+						: success ? (mode&ZMODEM ? 'z':'S') 
 						: 'E'
 					,sent_bytes
 					,115200 /* baud */

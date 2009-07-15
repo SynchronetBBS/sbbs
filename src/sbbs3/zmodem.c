@@ -1588,7 +1588,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 }
 
 /*
- * send a file; returns true when session is successful.
+ * send a file; returns true when session is successful. (or file is skipped)
  */
 
 BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, uint32_t* sent)
