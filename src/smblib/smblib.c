@@ -1750,7 +1750,7 @@ int SMBCALL smb_tzutc(short zone)
 	tz=zone&0xfff;
 	if(zone&(WESTERN_ZONE|US_ZONE)) {	/* West of UTC? */
 		if(zone&DAYLIGHT)
-			tz-=60;
+			tz-=60;			/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 		return(-tz);
 	}
 	return(tz);
