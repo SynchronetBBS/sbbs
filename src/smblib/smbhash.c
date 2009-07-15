@@ -262,14 +262,25 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
-	flags|=SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A;
 	if(body!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_BODY)) &&
-		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags, body))!=NULL)
+		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags|SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A, body))!=NULL)
 		hashes[h++]=hash;
 
-	if(msg->subj!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_SUBJECT)) &&
-		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_SUBJECT, flags, msg->subj))!=NULL)
-		hashes[h++]=hash;
+	if(msg->subj!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_SUBJECT))) {
+		char*	p=msg->subj;
+		while(*p) {
+			char* tp=strchr(p,':');
+			char* sp=strchr(p,' ');
+			if(tp!=NULL && (sp==NULL || tp<sp)) {
+				p=tp+1;
+				SKIP_WHITESPACE(p);
+				continue;
+			}
+			break;
+		}
+		if((hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_SUBJECT,flags, msg->subj))!=NULL)
+			hashes[h++]=hash;
+	}
 
 	return(hashes);
 }
