@@ -192,7 +192,7 @@ function Cells()
 		function StatusLine()
 		{
 			console.gotoxy(1,24);
-			console.putmsg("\1c\1h[\1n\1cArrows\1h]\1n\1c Move \1h[\1n\1cEnter\1h]\1n\1c Place \1h[\1n\1cSpace\1h] \1h[\1n\1cQ\1h] Save \1h[\1n\1cEscape\1h]\1n\1c Exit \1n\1cToggle cell: \1h" + cells[current]);
+			console.putmsg("\1c\1h[\1n\1cArrows\1h]\1n\1c Move \1h[\1n\1cEnter\1h]\1n\1c Place \1h[\1n\1cQ\1h] \1c\1nSave \1h[\1n\1cEscape\1h]\1n\1c Exit \1h[\1n\1cSpace\1h] \1n\1cToggle cell: \1h" + cells[current]);
 		}
 		function Toggle()
 		{
