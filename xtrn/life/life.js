@@ -30,28 +30,38 @@ function Cells()
 	var board;
 	var clear=[];
 	var generation=0;
+	var colors=["\1r","\1c","\1y","\1b","\1m","\1g","\1w"];
+	var highlight=["\1n","\1h"];
+	var col=colors[random(7)];
 	
 	function Main()
 	{
-		var list=ListConfigs();
-		var config=ChooseConfig(list);
-		if(!config) exit(0);
-		
-		Run();
+		while(1) 
+		{
+			if(ChooseConfig()) Run();
+			else break;
+		}
 	}
-	function ChooseConfig(list)
+	function ChooseConfig()
 	{
-		console.putmsg("\r\n\1nChoose a pattern: ");
 		while(1)
 		{
-			var pattern=console.inkey();
+			console.clear();
+			var list=ListConfigs();
+			console.putmsg("\r\n\r\n\1nR: Random Pattern");
+			console.putmsg("\r\n\1nE: Edit Pattern");
+			console.putmsg("\r\n\1nESC: Exit Program");
+			console.putmsg("\r\n\r\n\1nChoose a pattern: ");
+			var pattern=console.getkey();
 			switch(pattern.toUpperCase())
 			{
 				case "\x1b":
 					return false;
 				case "R":
-					RandomStart();
-					return true;
+					if(RandomStart()) return true;
+					break;
+				case "E":
+					if(CustomStart()) return true;
 					break;
 				default:
 					if(list[pattern])
@@ -68,9 +78,9 @@ function Cells()
 		var list=directory(gameroot+"*.bin");
 		for(var f in list)
 		{
-			console.putmsg("\r\n\1n" + f + ":" + list[f]);
+			var name=file_getname(list[f]);
+			console.putmsg("\r\n\1n" + f + ": " + name.substring(0,name.indexOf(".")).toUpperCase());
 		}
-		console.crlf();
 		return list;
 	}
 	function LoadPattern(filename)
@@ -94,15 +104,18 @@ function Cells()
 		Display();
 		while(1)
 		{
-			var k=console.inkey();
+			var k=console.inkey(K_NOECHO|K_NOSPIN);
 			switch(k)
 			{
 				case "\x1b":
 					return;
+				case " ":
+					console.getkey();
+					break;
 				default:
 					break;
 			}
-			mswait(25);
+			mswait(5);
 			board=Evolve();
 			Display();
 		}
@@ -119,6 +132,80 @@ function Cells()
 			var randy=random(44);
 			if(!board[randx][randy]) board[randx][randy]=1;
 			else n--;
+		}
+		return true;
+	}
+	function CustomStart()
+	{
+		console.clear();
+		DrawLine(1,23,80);
+		var cells=["\xDF","\xDC","\xDB"];
+		var current=2;
+		var grid=WipeBoard();
+		StatusLine();
+		
+		console.gotoxy(40,11);
+		while(1)
+		{
+			var k=console.inkey(K_NOECHO|K_NOSPIN);
+			if(k)
+			{
+				var position=console.getxy();
+				switch(k.toUpperCase())
+				{
+					case "\x1b":
+						return false;
+					case " ":
+						Toggle();
+						console.pushxy();
+						StatusLine();
+						console.popxy();
+						break;
+					case "Q":
+						return true;
+					case ctrl("M"):
+						LoadCell(position.x,position.y);
+						console.putmsg(cells[current]);
+						break;
+					case KEY_DOWN:
+						if(position.y<22) console.down();
+						else console.gotoxy(position.x,1);
+						break;
+					case KEY_UP:
+						if(position.y>1) console.up();
+						else console.gotoxy(position.x,22);
+						break;
+					case KEY_LEFT:
+						if(position.x>1) console.left();
+						else console.gotoxy(80,position.y);
+						break;
+					case KEY_RIGHT:
+						if(position.x<80) console.right();
+						else console.gotoxy(1,position.y);
+						break;
+					default:
+						break;
+				}
+				board=grid;
+			}
+		}
+		function StatusLine()
+		{
+			console.gotoxy(1,24);
+			console.putmsg("\1c\1h[\1n\1cArrows\1h]\1n\1c Move \1h[\1n\1cEnter\1h]\1n\1c Place \1h[\1n\1cSpace\1h] \1h[\1n\1cQ\1h] Save \1h[\1n\1cEscape\1h]\1n\1c Exit \1n\1cToggle cell: \1h" + cells[current]);
+		}
+		function Toggle()
+		{
+			current++;
+			if(current>2) current=0;
+		}
+		function LoadCell(x,y)
+		{
+			var t=(current==0 || current==2)?true:false;
+			var b=(current==1 || current==2)?true:false;
+			y=(y-1)*2;
+			if(t) grid[x-1][y]=1;
+			if(b) grid[x-1][y+1]=1;
 		}
 	}
 	function WipeBoard()
@@ -167,13 +254,16 @@ function Cells()
 						c=bottom;
 					}
 					else c=whole;
-					console.putmsg(c);
+					
+					//var color=highlight[random(2)] + colors[random(8)];
+					var hl=highlight[random(2)];
+					console.putmsg(hl + col + c);
 				}
 				line++;
 			}
 		}
 		console.gotoxy(1,24);
-		console.putmsg("\1nTotal: " + totalcount + " Generation: " + generation);
+		console.putmsg("\1y\1h[\1n\1ySpace\1h]\1n\1y Toggle Pause \1h[\1n\1yEscape\1h]\1n\1y Quit \1h--- \1n\1yTotal Live Cells: " + totalcount + " Generation: " + generation);
 	}
 	function Evolve()
 	{
@@ -247,6 +337,7 @@ function Cells()
 	}
 	SplashStart();
 	Main();
+	SplashExit();
 }	
 function Log(txt)
 {
