@@ -96,8 +96,8 @@ function Calendar(x,y,fg,hl,sel)
 			}
 			var day=this.month.days[l];
 			var color="\1-" + this.fg + "\1h";
-			if(this.highlights[day.number]) color=this.hl;
-			else if(day.number==this.selected) color=this.sel;
+			if(day.number==this.selected) color=this.sel;
+			else if(this.highlights[day.number]) color=this.hl;
 			console.putmsg("\1-" + this.fg + "\xB3",P_SAVEATR);
 			day.draw(color);
 		}
@@ -110,7 +110,7 @@ function Calendar(x,y,fg,hl,sel)
 	this.drawDay=function(num,col)
 	{
 		var color=col?col:"\1-" + this.fg + "\1h";
-		if(this.highlights[num]) color=this.hl;
+		if(!col && this.highlights[num]) color=this.hl;
 		var index=num + this.offset -1;
 		var day=this.month.days[index];
 		var posx=this.x+1 + ((index%7)*3);
@@ -118,15 +118,15 @@ function Calendar(x,y,fg,hl,sel)
 		console.gotoxy(posx,posy);
 		day.draw(color);
 	}
-	this.SelectDay=function()
+	this.SelectDay=function(dir)
 	{
+		var k=dir?dir:undefined;
 		var original=this.selected;
 		while(1)
 		{
-			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
 			{
-				switch(k.toUpperCase())
+				switch(k)
 				{
 					case KEY_UP:
 						if(this.selected>7) 
@@ -164,12 +164,14 @@ function Calendar(x,y,fg,hl,sel)
 						this.drawDay(this.selected);
 						this.selected=original;
 						this.drawDay(this.selected,this.sel);
+						return false;
 					case "\r":
 						return this.selected;
 					default:
 						break;
 				}
 			}
+			k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 		}
 	}
 	this.Init();
