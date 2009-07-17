@@ -171,6 +171,7 @@ char *format_as_cstr(char *orig)
 int main(int argc, char **argv)
 {
 	FILE			*text_dat;
+	char			path[MAX_PATH+1];
 	char			*p;
 	char			*cstr;
 	char			*comment;
@@ -181,12 +182,15 @@ int main(int argc, char **argv)
 	FILE			*text_js;
 	FILE			*text_defaults_c;
 
-	if((text_dat=fopen("../../ctrl/text.dat","r"))==NULL) {
-		fprintf(stderr,"Can't open text.dat!\n");
+	if((p=getenv("SBBSCTRL"))==NULL)
+		p="/sbbs/ctrl";
+	sprintf(path,"%s/text.dat",p);
+	if((text_dat=fopen(path,"r"))==NULL) {
+		perror(path);
 		return(1);
 	}
 	if((text_h=fopen("text.h", "w"))==NULL) {
-		fprintf(stderr,"Can't open text.h!\n");
+		perror("text.h");
 		return(1);
 	}
 	fputs("/* text.h */\n",text_h);
@@ -199,7 +203,7 @@ int main(int argc, char **argv)
 	fputs(" * @format.tab-size 4		(Plain Text/Source Code File Header)			*\n",text_h);
 	fputs(" * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*\n",text_h);
 	fputs(" *																			*\n",text_h);
-	fputs(" * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*\n",text_h);
+	fputs(" * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*\n",text_h);
 	fputs(" *																			*\n",text_h);
 	fputs(" * This program is free software; you can redistribute it and/or			*\n",text_h);
 	fputs(" * modify it under the terms of the GNU General Public License				*\n",text_h);
@@ -235,8 +239,12 @@ int main(int argc, char **argv)
 	fputs("#define _TEXT_H\n",text_h);
 	fputs("\n",text_h);
 	fputs("enum {\n",text_h);
-	if((text_js=fopen("../../exec/text.js", "w"))==NULL) {
-		fprintf(stderr,"Can't open text.js!\n");
+
+	if((p=getenv("SBBSEXEC"))==NULL)
+		p="/sbbs/exec";
+	sprintf(path,"%s/text.js",p);
+	if((text_js=fopen(path, "w"))==NULL) {
+		perror(path);
 		return(1);
 	}
 	fputs("/* text.js */\n",text_js);
@@ -249,7 +257,7 @@ int main(int argc, char **argv)
 	fputs(" * @format.tab-size 4		(Plain Text/Source Code File Header)			*\n",text_js);
 	fputs(" * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*\n",text_js);
 	fputs(" *																			*\n",text_js);
-	fputs(" * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*\n",text_js);
+	fputs(" * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*\n",text_js);
 	fputs(" *																			*\n",text_js);
 	fputs(" * This program is free software; you can redistribute it and/or			*\n",text_js);
 	fputs(" * modify it under the terms of the GNU General Public License				*\n",text_js);
