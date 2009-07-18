@@ -1,5 +1,8 @@
 /*
-	Javascript port of post-it notes
+	Javascript clone of Aspect Technologies Post-It Notes (BAJA)
+	Inspired by all post-it notes apps, one liners, books and Jesus
+	Thanks to Jas Hud for being a big whiny douche
+	by Matt Johnson (2008)
 */
 load("sbbsdefs.js");
 load("funclib.js");
