@@ -28,3 +28,4 @@ LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) `pkg-config gtk+-
 $(GTKCHAT): $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(LDFLAGS) $(OBJS) -o $@ $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)cd $(EXEODIR) && ln -s ../gtkchat.glade .
