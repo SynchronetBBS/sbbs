@@ -1121,7 +1121,10 @@ int main(int argc, char **argv)
 
 	load_settings(&settings);
 	ciolib_mode=settings.output_mode;
-	text_mode=_ORIGMODE;
+	if(settings.startup_mode != SCREEN_MODE_CURRENT)
+		text_mode=screen_to_ciolib(settings.startup_mode);
+	else
+		text_mode=_ORIGMODE;
 
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
