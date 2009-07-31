@@ -3554,6 +3554,7 @@ static BOOL exec_cgi(http_session_t *session)
 	char*	env_block;
 	char	startup_dir[MAX_PATH+1];
 	int		wr;
+	BOOL	rd;
 	HANDLE	rdpipe=INVALID_HANDLE_VALUE;
 	HANDLE	wrpipe=INVALID_HANDLE_VALUE;
 	HANDLE	rdoutpipe;
@@ -3655,6 +3656,20 @@ static BOOL exec_cgi(http_session_t *session)
 			lprintf(LOG_WARNING,"%04d CGI Process %s timed out after %u seconds of inactivity"
 				,session->socket,getfname(cmdline),startup->max_cgi_inactivity);
 			break;
+		}
+
+		/* Check socket for received POST Data */
+		if(!socket_check(session->socket, &rd, NULL, /* timeout: */0)) {
+			lprintf(LOG_WARNING,"%04d CGI Socket disconected", session->socket);
+			break;
+		}
+		if(rd) {
+			/* Send received POST Data to stdin of CGI process */
+			if((i=recv(session->socket, buf, sizeof(buf), 0)) > 0)  {
+				lprintf(LOG_DEBUG,"%04d CGI Received %d bytes of POST data"
+					,session->socket, i);
+				WriteFile(wrpipe, buf, i, &wr, /* Overlapped: */NULL);
+			}
 		}
 
 		waiting = 0;
