@@ -2270,10 +2270,10 @@ static BOOL parse_headers(http_session_t * session)
 									session->req.auth.nonce_count=strdup(get_token_value(&p));
 								}
 								else {
-									while(*p && *p != ',')
+									while(*p && *p != '=')
 										p++;
-									if(*p == ',')
-										p++;
+									if(*p == '=')
+										get_token_value(&p);
 								}
 							}
 							if(session->req.auth.digest_uri==NULL)
