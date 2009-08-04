@@ -454,7 +454,6 @@ int main(int argc, char *argv[]) {
     /* load the interface */
 	strcpy(glade_path, argv[0]);
 	strcpy(getfname(glade_path), "gtkmonitor.glade");
-fprintf(stderr,"Path: %s\n",glade_path);
     xml = glade_xml_new(glade_path, "MainWindow", NULL);
 
     /* connect the signals in the interface */
