@@ -75,6 +75,7 @@ function Boggle()
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
 		console.attributes=ANSI_NORMAL;
+		players.StorePlayer();
 		exit(0);
 	}
 	function UpdateCalendar()
@@ -119,7 +120,7 @@ function Boggle()
 	}
 	function ShowMessage(txt)
 	{
-		console.gotoxy(26,20);
+		console.gotoxy(26,21);
 		console.putmsg("\1-" + (txt?txt:""),P_SAVEATR);
 		console.cleartoeol(ANSI_NORMAL);
 	}
@@ -435,7 +436,7 @@ function Boggle()
 	//GAME OBJECTS
 	function Lobby(x,y)
 	{
-		this.graphic=new Graphic(80,23);
+		this.graphic=new Graphic(80,24);
 		this.graphic.load(gameroot + "lobby.bin");
 		this.x=x;
 		this.y=y;
@@ -474,20 +475,39 @@ function Boggle()
 						}
 					}
 				}
-				var name=plyr.name;
-				var laston=plyr.laston;
-				var points=plyr.points;
-				
-				Log("Loading player data: " + name);
-				this.players[plyr.name]=new Player(name,points,days,laston);
+				if(plyr.name==user.alias) plyr.laston=time();
+				Log("Loading player data: " + plyr.name);
+				this.players[plyr.name]=new Player(plyr.name,plyr.points,days,plyr.laston);
 			}
+		}
+		this.FormatDate=function(timet)
+		{
+			var date=new Date(timet*1000);
+			var m=date.getMonth()+1;
+			var d=date.getDate();
+			var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
+			
+			if(m<10) m="0"+m;
+			if(d<10) d="0"+d;
+			if(y<10) y="0"+y;
+			
+			return (m + "/" + d + "/" + y);
+		}
+		this.Reset=function()
+		{
+			file_remove(this.file.name);
+			this.Init();
 		}
 		this.GetAverage=function(alias)
 		{
 			var p=this.FindUser(alias);
 			var count=this.GetDayCount(alias);
 			var avg=p.points/count;
-			if(avg>0) return avg;
+			if(avg>0) 
+			{
+				if(avg<10) return("0"+avg.toFixed(1));
+				return avg.toFixed(1);
+			}
 			return 0;
 		}
 		this.GetDayCount=function(alias)
@@ -521,6 +541,7 @@ function Boggle()
 		this.currentdate=new Date();
 		this.currentmonth=this.currentdate.getMonth();
 		this.games=[];
+		this.winner=false;
 		this.datafile=new File(gameroot + "month.ini");
 		
 		this.Init=function()
@@ -542,6 +563,17 @@ function Boggle()
 					this.FindRoundWinner();
 					this.NewMonth();
 				}
+				else
+				{
+					this.datafile.open('r',true);
+					var name=this.datafile.iniGetValue(null,"winner");
+					var points=this.datafile.iniGetValue(null,"points");
+					this.datafile.close();
+					if(points>0) 
+					{
+						this.winner={"name":name,"points":points};
+					}
+				}
 			}
 			else
 			{
@@ -561,12 +593,24 @@ function Boggle()
 		}
 		this.FindRoundWinner=function()
 		{
+			for(p in players.players)
+			{
+				if(!this.winner) this.winner=players.players[p];
+				else
+				{
+					if(players.players[p].points>this.winner.points) this.winner=players.players[p];
+				}
+			}
+			this.datafile.open('w+',true);
+			this.datafile.iniSetValue(null,"winner",this.winner.name);
+			this.datafile.iniSetValue(null,"points",this.winner.points);
+			this.datafile.close();
+			players.Reset();
 		}
 		this.NewMonth=function()
 		{
 			this.games=[];
-			this.datafile.open('w+');
-			this.datafile.close();
+			file_touch(this.datafile.name);
 			var numdays=this.currentdate.daysInMonth();
 			for(var dn=1;dn<=numdays;dn++)
 			{
@@ -854,11 +898,20 @@ function Boggle()
 				console.right(23-score.name.length);
 				console.putmsg(PrintPadded(score.points,5,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(players.GetAverage(score.name).toFixed(1),P_SAVEATR);
+				console.putmsg(players.GetAverage(score.name),P_SAVEATR);
 				console.right(3);
 				console.putmsg(PrintPadded(plays,4,undefined,"right"),P_SAVEATR);
+				console.right(3);
+				console.putmsg(PrintPadded(players.FormatDate(score.laston),8,undefined,"right"),P_SAVEATR);
 				index++;
 			}
+		}
+		if(month.winner)
+		{
+			console.gotoxy(48,18);
+			console.putmsg("\1c\1h" + month.winner.name);
+			console.gotoxy(75,18);
+			console.putmsg("\1c\1h" + month.winner.points);
 		}
 	}
 	function SortScores()
