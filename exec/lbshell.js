@@ -710,7 +710,7 @@ while(bbs.online) {
 						}
 						catch(e) {
     						console.writeln("DOORSCAN ERROR: "+e);
-    						log("Error running "+xtrn_area.sec_list[xsec].prog_list[i].code+" "+e);
+    						log("Error running "+xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].code+" "+e);
 						}
 					}
 					else {
