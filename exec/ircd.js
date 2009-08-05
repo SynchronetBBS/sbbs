@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2008 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 load("sbbsdefs.js");
@@ -206,6 +206,7 @@ while (!server.terminated) {
 				+ open_plines[pl].local_port);
 			var client_sock=open_plines[pl].accept();
 			if(client_sock) {
+				client_sock.nonblocking = true;
 				if (!client_sock.remote_ip_address) {
 					log(LOG_DEBUG,"Socket has no IP address.  Closing.");
 					client_sock.close();
@@ -229,15 +230,6 @@ while (!server.terminated) {
 		}
 	}
 
-	// Check for ping timeouts
-	// FIXME: In the future these just need to be maps.  This is stupid.
-	for(this_sock in Selectable_Sockets) {
-		if (Selectable_Sockets_Map[this_sock]) {
-			Selectable_Sockets_Map[this_sock].check_timeout();
-			Selectable_Sockets_Map[this_sock].check_queues();
-		}
-	}
-
 	// Check for pending DNS hostname resolutions.
 	for(this_unreg in Unregistered) {
 		if (Unregistered[this_unreg] &&
@@ -255,6 +247,15 @@ while (!server.terminated) {
 		}
 		rebuild_socksel_array = false;
 	}
+
+	/* Check for ping timeouts and process queues. */
+	/* FIXME/TODO: These need to be changed to a mapping system ASAP. */
+	for(this_sock in Selectable_Sockets) {
+		if (Selectable_Sockets_Map[this_sock]) {
+			Selectable_Sockets_Map[this_sock].check_timeout();
+            Selectable_Sockets_Map[this_sock].check_queues();
+        }
+    }
 
 	// do some work.
 	if (Selectable_Sockets.length) {
@@ -303,6 +304,7 @@ while (!server.terminated) {
 			connect_to_server(CLines[thisCL]);
 		}
 	}
+
 }
 
 // End of our run, so terminate everything before we go.
@@ -930,8 +932,7 @@ function rawout(str) {
 		return 0;
 	}
 
-	if (this.sendq.bytes || !sendsock.send(str + "\r\n"))
-		this.sendq.add(str);
+	this.sendq.add(str);
 }
 
 function originatorout(str,origin) {
@@ -957,8 +958,7 @@ function originatorout(str,origin) {
 		return 0;
 	}
 
-	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
-		this.sendq.add(send_data);
+	this.sendq.add(send_data);
 }
 
 function ircout(str) {
@@ -978,8 +978,7 @@ function ircout(str) {
 	}
 
 	send_data = ":" + servername + " " + str;
-	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
-		this.sendq.add(send_data);
+	this.sendq.add(send_data);
 }
 
 function Queue_Add(str) {
@@ -1613,7 +1612,7 @@ function IRCClient_do_info() {
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.3a ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":  IRCd Copyright 2003-2008 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":  IRCd Copyright 2003-2009 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
@@ -2870,7 +2869,8 @@ function IRCClient_check_timeout() {
 }
 
 function IRCClient_check_queues() {
-	if (this.sendq.bytes && this.socket.send(this.sendq.queue[0] + "\r\n")) {
+	if (this.sendq.bytes && this.socket.poll(0,true /*write?*/)>=1) {
+		this.socket.send(this.sendq.queue[0] + "\r\n");
 		this.sendq.bytes -= this.sendq.queue[0].length;
 		this.sendq.queue.shift();
 	}
