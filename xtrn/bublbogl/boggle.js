@@ -38,6 +38,7 @@ function Boggle()
 	wordvalues[7]=5;
 	wordvalues[8]=11;
 	
+	var max_future=2;
 	var calendar;
 	var month;
 	var current;
@@ -91,6 +92,11 @@ function Boggle()
 		var newdate=console.getnum(calendar.daysinmonth);
 		if(newdate>0) 
 		{
+			if(newdate>current+max_future)
+			{
+				ShowMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
+				return false;
+			}
 			calendar.selected=newdate;
 			calendar.drawDay(current);
 			current=newdate;
@@ -104,10 +110,17 @@ function Boggle()
 	function BrowseCalendar(k)
 	{
 		ShowMessage("\1r\1hUse Arrow keys to change date and [\1n\1rEnter\1h] to select");
-		var newdate=calendar.SelectDay(k);
-		if(newdate) 
+		if(calendar.SelectDay(k)) 
 		{
-			current=newdate;
+			if(calendar.selected>current+max_future)
+			{
+				ShowMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
+				calendar.drawDay(calendar.selected);
+				calendar.selected=current;
+				calendar.drawDay(current,calendar.sel);
+				return false;
+			}
+			current=calendar.selected;
 			ShowMessage("\1r\1hChanged date to " + calendar.date.getMonthName() + " " + current + ", " + calendar.date.getFullYear());
 			Log("Changed date to " + calendar.date.getMonthName() + " " + current);
 		}
