@@ -166,7 +166,7 @@ function Calendar(x,y,fg,hl,sel)
 						this.drawDay(this.selected,this.sel);
 						return false;
 					case "\r":
-						return this.selected;
+						return true;
 					default:
 						break;
 				}
