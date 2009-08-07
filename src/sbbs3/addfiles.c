@@ -270,11 +270,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-					remove(tmp);
+					removecase(tmp);
 					system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-						remove(tmp);
+						removecase(tmp);
 						system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
@@ -473,11 +473,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					break;
 			if(i<scfg.total_fextrs) {
 				sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-				remove(tmp);
+				removecase(tmp);
 				system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
 				if(!fexistcase(tmp)) {
 					sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-					remove(tmp);
+					removecase(tmp);
 					system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 					fexistcase(tmp);
 				}
@@ -895,11 +895,11 @@ int main(int argc, char **argv)
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-					remove(tmp);
+					removecase(tmp);
 					system(mycmdstr(scfg.fextr[i]->cmd,str,"FILE_ID.DIZ",NULL));
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-						remove(tmp);
+						removecase(tmp);
 						system(mycmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
