@@ -8,6 +8,7 @@ function	NewGame(minp,maxp,n)
 	this.users=[];
 	this.fixedPlayers=false;
 	this.singlePlayer=false;
+	this.hiddenNames=false;
 	this.lastModified=0;
 	this.fileName="";
 	
@@ -78,6 +79,7 @@ function 	Map(c,r,p,gn)
 	this.status=1;						//GAME STATUS INDICATOR
 	this.takingTurn=false;
 	this.singlePlayer=false;
+	this.hiddenNames=false;
 	this.eliminated=[];
 	this.lastEliminator=-1;
 	this.lastMapPosition=-1;
@@ -417,21 +419,32 @@ function 	Map(c,r,p,gn)
 	}
 	this.DisplayPlayers=		function()
 	{										//DISPLAY PLAYER INFO (RIGHT SIDE)
-		xxx=menuColumn;
-		yyy=menuRow;
-		for(ply=0;ply<this.maxPlayers;ply++)
+		var xxx=menuColumn;
+		var yyy=menuRow;
+		
+		for(var ply=0;ply<this.maxPlayers;ply++)
 		{
-				playerNumber=this.turnOrder[ply];
-				this.CountDice(playerNumber);
-				player=this.players[playerNumber];
-				if(player.eliminated) { player.bColor=blackBG; player.fColor="\1n\1k\1h"; }
-				
-				console.gotoxy(xxx,yyy); yyy++;
-				console.putmsg(PrintPadded(player.bColor + player.fColor + " " + GetUserName(player,playerNumber) + ":",36," ", "left"));
-				console.gotoxy(xxx,yyy); yyy++;
-				console.putmsg(player.fColor + player.bColor+ " LAND: " + PrintPadded(player.fColor + player.territories.length,3," ", "right"));
-				console.putmsg(player.fColor + player.bColor+ " DICE: " + PrintPadded(player.fColor + player.totalDice,3," ", "right"));
-				console.putmsg(player.fColor + player.bColor+ " RSRV: " + PrintPadded(player.fColor + player.reserve,3," ", "right") + " ");
+			var playerNumber=this.turnOrder[ply];
+			this.CountDice(playerNumber);
+			var player=this.players[playerNumber];
+			var name=GetUserName(player,playerNumber);
+			
+			if(player.eliminated) 
+			{
+				player.bColor=blackBG; 
+				player.fColor="\1n\1k\1h"; 
+			}
+			else if(this.hiddenNames && name!=user.alias)
+			{
+				name="Player " + playerNumber;
+			}
+			
+			console.gotoxy(xxx,yyy); yyy++;
+			console.putmsg(PrintPadded(player.bColor + player.fColor + " " + name + ":",36," ", "left"));
+			console.gotoxy(xxx,yyy); yyy++;
+			console.putmsg(player.fColor + player.bColor+ " LAND: " + PrintPadded(player.fColor + player.territories.length,3," ", "right"));
+			console.putmsg(player.fColor + player.bColor+ " DICE: " + PrintPadded(player.fColor + player.totalDice,3," ", "right"));
+			console.putmsg(player.fColor + player.bColor+ " RSRV: " + PrintPadded(player.fColor + player.reserve,3," ", "right") + " ");
 		}
 		console.print(blackBG);
 	}

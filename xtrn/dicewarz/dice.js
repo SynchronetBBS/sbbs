@@ -33,6 +33,7 @@
 	var 	pointsToWin=	100;
 	var		minScore=		-2;
 	var 	maxGames=		100;
+	var 	maxPerPlayer=	20;
 	var 	minPlayers=		3;
 	var 	maxPlayers=		7;
 	var 	maxDice=		8;
@@ -64,7 +65,7 @@
 	const 	blackBG=		console.ansi(ANSI_NORMAL);
 	
 	//TODO: FIX SCORING SYSTEM... BECAUSE RIGHT NOW IT SUCKS
-	const	points=			[-2,-2,-2,-1,0,1,2];			//POINTS GAINED/LOST FOR WINNING/LOSING
+	const	points=			[-2,-2,-1,-1,0,2,4];			//POINTS GAINED/LOST FOR WINNING/LOSING
 	var		scores=			[];
 	
 	var		messages=		[];								//MESSAGES QUEUED FOR DISPLAY UPON RELOADING MAIN MENU
@@ -509,9 +510,14 @@ function	ViewGameInfo(gameNumber)
 	console.putmsg("\1n\1g Players In This Game:\r\n");
 	for(playerNumber=0;playerNumber<g.players.length;playerNumber++)
 	{
-		player=g.players[playerNumber];
+		var player=g.players[playerNumber];
+		var name=GetUserName(player,playerNumber);
+		if(g.hiddenNames && name!=user.alias)
+		{
+			name="Player " + playerNumber;
+		}
 
-		console.putmsg("\1g\1h  " + GetUserName(player,playerNumber));
+		console.putmsg("\1g\1h  " + name);
 		if(player.vote>=0) {
 			if(g.maxPlayers>g.minPlayers)
 				console.putmsg(" \1n\1gvotes to \1h" + g.getVote(playerNumber));
@@ -526,9 +532,11 @@ function	StartGame(gameNumber)
 	var players=games.gameData[gameNumber].players;
 	var oldFn=games.gameData[gameNumber].fileName
 	var oldSp=games.gameData[gameNumber].singlePlayer;
+	var oldhn=games.gameData[gameNumber].hiddenNames;
 	games.gameData[gameNumber]=new Map(columns,rows,maxPlayers,gameNumber);
 	games.gameData[gameNumber].fileName = oldFn;
 	games.gameData[gameNumber].singlePlayer = oldSp;
+	games.gameData[gameNumber].hiddenNames = oldhn;
 	g=games.gameData[gameNumber];
 	games.gameData[gameNumber].players=players;
 	games.inProgress.push(gameNumber);
@@ -564,6 +572,12 @@ function	StartGame(gameNumber)
 }
 function	JoinGame(gameNumber)
 {
+	var numplayergames=games.yourGames.length-games.eliminated.length;
+	if(numplayergames>=maxPerPlayer)
+	{
+		console.pause();
+		return;
+	}
 	var vote=-1;
 	g=games.gameData[gameNumber];
 	if(console.noyes("\1n\1gJoin this game?"));
@@ -584,7 +598,14 @@ function	JoinGame(gameNumber)
 	}
 }
 function 	CreateNewGame()
-{	
+{
+	var numplayergames=games.yourGames.length-games.eliminated.length;
+	if(numplayergames>=maxPerPlayer) 
+	{
+		QueueMessage("\1r\1hYou can only be active in " + maxPerPlayer + " games at a time",30,20);
+		return false;
+	}
+
 	var minNumPlayers=-1;
 	var maxNumPlayers=7;
 	var numComputerPlayers=-1;
@@ -616,7 +637,7 @@ function 	CreateNewGame()
 	console.gotoxy(x,y);
 	console.cleartoeol();
 	y++;
-	if(!console.noyes("\1n\1gSingle Player Game?"))
+	if(!console.noyes("\1n\1gSingle player game?"))
 	{
 		singlePlayer=true;
 		while(1)
@@ -639,6 +660,9 @@ function 	CreateNewGame()
 	}
 	else	
 	{
+		console.gotoxy(x,y);
+		y++;
+		hiddenNames=console.noyes("\1n\1gKeep player names hidden?");
 		while(1)
 		{
 			console.gotoxy(x,y);
@@ -698,6 +722,7 @@ function 	CreateNewGame()
 	}
 	if(!singlePlayer)
 	{
+		if(hiddenNames) games.gameData[gameNumber].hiddenNames=true;
 		if(fixedPlayers) games.gameData[gameNumber].fixedPlayers=true;
 		else
 		{
@@ -899,6 +924,7 @@ function	Battle(attackFrom,attackTo,gameNumber)
 			{
 				GameLog("player scored a kill: " + system.username(killer));
 				scores[killer].kills++;
+				scores[killer].points++;
 				games.StoreRankings();
 			}
 			if(killed>=0)
@@ -1181,10 +1207,13 @@ function 	Quit(err)
 function	LoadSettings()
 {
 	var sfile=new File(game_dir + "dice.ini");
+	if(!file_exists(sfile.name)) return;
+	
 	sfile.open('r',true);
 	pointsToWin=	sfile.iniGetValue(null,"pointstowin");
 	minScore=		sfile.iniGetValue(null,"minscore");
 	maxGames=		sfile.iniGetValue(null,"maxgames");
+	maxPerPlayer=	sfile.iniGetValue(null,"maxperplayer");
 	minPlayers=		sfile.iniGetValue(null,"minplayers");
 	maxPlayers=		sfile.iniGetValue(null,"maxplayers");
 	maxDice=		sfile.iniGetValue(null,"maxdice");
@@ -1234,7 +1263,6 @@ function	GameStatusInfo()
 	}
 	this.LoadRankings=function()
 	{
-		if(file_exists(game_dir + "dicerank.dat")) this.UpdateScoreFile();
 		var sfilename=game_dir+scorefile+".dat";
 		if(file_exists(sfilename))
 		{
@@ -1258,29 +1286,6 @@ function	GameStatusInfo()
 			lfile.close();
 		}
 		else GameLog("score file: " + sfilename + " does not exist");
-	}
-	this.UpdateScoreFile=function() //FOR BACKWARD COMPATIBILITY WITH OLD SCORE FILES (for sysops who dont want to reset their scores with the latest changes)
-	{
-		GameLog("updating score file");		
-		var sfile=new File(game_dir+"dicerank.dat");
-		sfile.open('r',true);
-		for(sc=0;!(sfile.eof);sc++) 
-		{
-			plyr=sfile.readln();
-			if(plyr==undefined || plyr=="") break;
-			else
-			{
-				player=parseInt(plyr);
-				var score=parseInt(sfile.readln());
-				var wins=parseInt(sfile.readln());
-				var losses=parseInt(sfile.readln());
-				scores[player]={'score':score,'kills':0,'wins':wins,'losses':losses};
-				GameLog("loaded old score: " + score + " w: " + wins + " l: " + losses);		
-			}
-		}
-		sfile.close();
-		file_remove(sfile.name);
-		this.StoreRankings();
 	}
 	this.WinRound=function(player)
 	{	
@@ -1312,6 +1317,7 @@ function	GameStatusInfo()
 		gfile.open('r',true);
 		var lgame;
 
+		var hn=parseInt(gfile.readln())==0?false:true;
 		var status=parseInt(gfile.readln());
 		if(status<0) 
 		{
@@ -1358,6 +1364,7 @@ function	GameStatusInfo()
 		lgame.nextTurn=nt;
 		lgame.status=status;
 		lgame.playerTerr=pt;
+		lgame.hiddenNames=hn;
 		
 		for(to=0;to<np;to++)
 		{
@@ -1436,6 +1443,7 @@ function	GameStatusInfo()
 		var gfile=new File(gamefullname);
 		gfile.open('w+',false);
 		
+		gfile.writeln(g.hiddenNames?1:0);
 		gfile.writeln(g.status);
 		if(g.status<0)
 		{
