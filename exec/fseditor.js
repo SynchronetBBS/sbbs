@@ -266,8 +266,13 @@ function unwrap_line(l)
 				line[l].kludged=false;
 		}
 		/* Get first word(s) of next line */
-		re=new RegExp("^(.{1,"+space+"}(?![^\\s])\\s*)","");
-		words=line[l+1].text.match(re);
+		if(space < 1) {
+			words=null;
+		}
+		else {
+			re=new RegExp("^(.{1,"+space+"}(?![^\\s])\\s*)","");
+			words=line[l+1].text.match(re);
+		}
 		if(words != null) {
 			line[l].text+=words[1];
 			line[l].attr+=line[l+1].attr.substr(0,words[1].length);
