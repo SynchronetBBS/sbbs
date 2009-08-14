@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 501
-  Top = 339
+  Left = 516
+  Top = 157
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 303
@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = AdvancedTabSheet
-    TabIndex = 7
+    ActivePage = DNSBLTabSheet
+    TabIndex = 6
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -854,13 +854,13 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 2
         OnClick = DNSBLExemptionsButtonClick
       end
-      object BLDebugCheckBox: TCheckBox
+      object DNSBLSpamHashCheckBox: TCheckBox
         Left = 256
         Top = 9
         Width = 73
         Height = 25
-        Hint = 'Enable debug logging of DNSBL lookups'
-        Caption = 'Debug'
+        Hint = 'Store hashes of messages from blacklisted servers in SPAM base '
+        Caption = 'Hash'
         TabOrder = 3
       end
     end

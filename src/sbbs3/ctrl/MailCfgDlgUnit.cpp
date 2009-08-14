@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -157,8 +157,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 	    BLIgnoreRadioButton->Checked=true;
 	else
 	    BLTagRadioButton->Checked=true;
-    BLDebugCheckBox->Checked=MainForm->mail_startup.options
-    	&MAIL_OPT_DNSBL_DEBUG;
+    DNSBLSpamHashCheckBox->Checked=MainForm->mail_startup.options
+    	&MAIL_OPT_DNSBL_SPAMHASH;
 
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
@@ -320,10 +320,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_REFUSE;
     else if(BLBadUserRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_BADUSER;
-    if(BLDebugCheckBox->Checked==true)
-    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_DEBUG;
+    if(DNSBLSpamHashCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_SPAMHASH;
     else
-	    MainForm->mail_startup.options&=~MAIL_OPT_DNSBL_DEBUG;
+	    MainForm->mail_startup.options&=~MAIL_OPT_DNSBL_SPAMHASH;
 
 	if(HostnameCheckBox->Checked==false)
     	MainForm->mail_startup.options|=MAIL_OPT_NO_HOST_LOOKUP;
@@ -433,6 +433,8 @@ void __fastcall TMailCfgDlg::DNSBLRadioButtonClick(TObject *Sender)
    	BLHeaderEdit->Enabled=BLTagRadioButton->Checked;
     BLSubjectLabel->Enabled=BLTagRadioButton->Checked;
    	BLHeaderLabel->Enabled=BLTagRadioButton->Checked;
+    DNSBLSpamHashCheckBox->Enabled
+        =(BLTagRadioButton->Checked ||  BLIgnoreRadioButton->Checked);
 }
 //---------------------------------------------------------------------------
 
