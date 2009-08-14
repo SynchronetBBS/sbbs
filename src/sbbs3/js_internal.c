@@ -441,7 +441,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 	branch->auto_terminate = auto_terminate;
 }
 
-JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch)
+JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch, js_startup_t* startup)
 {
 	JSObject*	obj;
 
@@ -451,6 +451,30 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 
 	if(!JS_SetPrivate(cx, obj, branch))	/* Store a pointer to js_branch_t */
 		return(NULL);
+
+	if(startup!=NULL) {
+		JSObject*	load_path_list;
+		jsval		val;
+
+		if((load_path_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+			return(NULL);
+		val=OBJECT_TO_JSVAL(load_path_list);
+		if(!JS_SetProperty(cx, obj, JAVASCRIPT_LOAD_PATH_LIST, &val)) 
+			return(NULL);
+
+		if(startup->load_path!=NULL) {
+			JSString*	js_str;
+			unsigned	i;
+
+			for(i=0; startup->load_path[i]!=NULL; i++) {
+				if((js_str=JS_NewStringCopyZ(cx, startup->load_path[i]))==NULL)
+					return(NULL);
+				val=STRING_TO_JSVAL(js_str);
+				if(!JS_SetElement(cx, load_path_list, i, &val))
+					return(NULL);
+			}
+		}
+	}
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"JavaScript execution and garbage collection control object",311);

@@ -52,6 +52,7 @@ typedef struct {
 	ulong	branch_limit;	/* maximum number of branches (for infinite loop detection) */
 	ulong	gc_interval;	/* number of branches between garbage collection attempts */
 	ulong	yield_interval;	/* number of branches between time-slice yields */
+	str_list_t	load_path;	/* additional directories to search for load()ed scripts */
 } js_startup_t;
 
 typedef struct {

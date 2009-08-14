@@ -1066,6 +1066,7 @@ bool sbbs_t::js_init(ulong* stack_frame)
 		if((js_glob=js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
 					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
 					,&js_branch									/* js */
+					,&startup->js
 					,&client, client_socket						/* client */
 					,&js_server_props							/* server */
 			))==NULL)

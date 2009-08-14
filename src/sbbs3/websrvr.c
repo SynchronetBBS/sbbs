@@ -3663,7 +3663,7 @@ static BOOL exec_cgi(http_session_t *session)
 
 		/* Check socket for received POST Data */
 		if(!socket_check(session->socket, &rd, NULL, /* timeout: */0)) {
-			lprintf(LOG_WARNING,"%04d CGI Socket disconected", session->socket);
+			lprintf(LOG_WARNING,"%04d CGI Socket disconnected", session->socket);
 			break;
 		}
 		if(rd) {
@@ -4452,6 +4452,7 @@ js_initcx(http_session_t *session)
 									,startup->host_name			/* system */
 									,SOCKLIB_DESC				/* system */
 									,&session->js_branch		/* js */
+									,&startup->js				/* js */
 									,&session->client			/* client */
 									,session->socket			/* client */
 									,&js_server_props			/* server */

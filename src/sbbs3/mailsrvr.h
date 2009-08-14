@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -138,7 +138,7 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_DNSBL_BADUSER			(1<<17) /* Refuse mail (bad user name) */
 #define MAIL_OPT_DNSBL_CHKRECVHDRS		(1<<18)	/* Check all Recieved: from addresses */
 #define MAIL_OPT_DNSBL_THROTTLE			(1<<19)	/* Throttle receive from blacklisted servers */
-#define MAIL_OPT_DNSBL_DEBUG			(1<<20) /* Debug DNSBL activity */
+#define MAIL_OPT_DNSBL_SPAMHASH			(1<<20) /* Store hashes of ignored or tagged messages in spam.hash */
 #define MAIL_OPT_SMTP_AUTH_VIA_IP		(1<<21)	/* Allow SMTP authentication via IP */
 #define MAIL_OPT_SEND_INTRANSIT			(1<<22)	/* Send mail, even if already "in transit" */
 #define MAIL_OPT_RELAY_AUTH_PLAIN		(1<<23)
@@ -177,7 +177,7 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_DNSBL_BADUSER		,"DNSBL_BADUSER"		},
 	{ MAIL_OPT_DNSBL_CHKRECVHDRS	,"DNSBL_CHKRECVHDRS"	},
 	{ MAIL_OPT_DNSBL_THROTTLE		,"DNSBL_THROTTLE"		},
-	{ MAIL_OPT_DNSBL_DEBUG			,"DNSBL_DEBUG"			},
+	{ MAIL_OPT_DNSBL_SPAMHASH		,"DNSBL_SPAMHASH"		},
 	{ MAIL_OPT_SEND_INTRANSIT		,"SEND_INTRANSIT"		},
 	{ MAIL_OPT_RELAY_AUTH_PLAIN		,"RELAY_AUTH_PLAIN"		},
 	{ MAIL_OPT_RELAY_AUTH_LOGIN		,"RELAY_AUTH_LOGIN"		},

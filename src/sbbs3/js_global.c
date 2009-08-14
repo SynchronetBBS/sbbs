@@ -55,8 +55,9 @@
 #ifdef JAVASCRIPT
 
 typedef struct {
-	scfg_t				*cfg;
-	jsSyncMethodSpec	*methods;
+	scfg_t*				cfg;
+	jsSyncMethodSpec*	methods;
+	js_startup_t*		startup;
 } private_t;
 
 /* Global Object Properites */
@@ -253,11 +254,13 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		bg->parent_cx = cx;
 
 		/* Setup default values for branch settings */
-		bg->branch.limit=JAVASCRIPT_BRANCH_LIMIT;
-		bg->branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
-		bg->branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
+		bg->branch.limit=p->startup->branch_limit;
+		bg->branch.gc_interval=p->startup->gc_interval;
+		bg->branch.yield_interval=p->startup->yield_interval;
+#if 0
 		if(JS_GetProperty(cx, obj,"js",&val))	/* copy branch settings from parent */
 			memcpy(&bg->branch,JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)),sizeof(bg->branch));
+#endif
 		bg->branch.terminated=NULL;	/* could be bad pointer at any time */
 		bg->branch.counter=0;
 		bg->branch.gc_attempts=0;
@@ -277,6 +280,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				,""				/* hostname */
 				,""				/* socklib_desc */
 				,&bg->branch	/* js */
+				,p->startup		/* js */
 				,NULL			/* client */
 				,INVALID_SOCKET	/* client_socket */
 				,NULL			/* server props */
@@ -340,11 +344,45 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	errno = 0;
 	if(isfullpath(filename))
-		strcpy(path,filename);
+		SAFECOPY(path,filename);
 	else {
-		sprintf(path,"%s%s",p->cfg->mods_dir,filename);
-		if(p->cfg->mods_dir[0]==0 || !fexistcase(path))
-			sprintf(path,"%s%s",p->cfg->exec_dir,filename);
+		path[0]=0;
+		if(JS_GetProperty(cx, obj, "js", &val)) {
+			JSObject* js = JSVAL_TO_OBJECT(val);
+			if(JS_GetProperty(cx, js, JAVASCRIPT_LOAD_PATH_LIST, &val) && JSVAL_IS_OBJECT(val)) {
+				JSObject*	list = JSVAL_TO_OBJECT(val);
+				jsuint		i;
+				char		prefix[MAX_PATH+1];
+				for(i=0;path[0]==0;i++) {
+					if(!JS_GetElement(cx, list, i, &val) || val==JSVAL_VOID)
+						break;
+					if(!JSVAL_IS_STRING(val))
+						continue;
+					SAFECOPY(prefix,js_ValueToStringBytes(cx, val, NULL));
+					if(prefix[0]==0)
+						continue;
+					backslash(prefix);
+					if(isfullpath(prefix)) {
+						SAFEPRINTF2(path,"%s%s",prefix,filename);
+						if(!fexistcase(path))
+							path[0]=0;
+					} else {
+						/* relative path */
+						SAFEPRINTF3(path,"%s%s%s",p->cfg->mods_dir,prefix,filename);
+						if(p->cfg->mods_dir[0]==0 || !fexistcase(path)) {
+							SAFEPRINTF3(path,"%s%s%s",p->cfg->exec_dir,prefix,filename);
+							if(!fexistcase(path))
+								path[0]=0;
+						}
+					}
+				}
+			}
+		}
+		if(path[0]==0) {
+			SAFEPRINTF2(path,"%s%s",p->cfg->mods_dir,filename);
+			if(p->cfg->mods_dir[0]==0 || !fexistcase(path))
+				SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
+		}
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3433,7 +3471,7 @@ static JSClass js_global_class = {
 	,js_global_finalize		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods)
+JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup)
 {
 	JSObject*	glob;
 	private_t*	p;
@@ -3443,6 +3481,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethod
 
 	p->cfg = cfg;
 	p->methods = methods;
+	p->startup = startup;
 
 	if((glob = JS_NewObject(cx, &js_global_class, NULL, NULL)) ==NULL)
 		return(NULL);
@@ -3469,6 +3508,7 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,char* host_name			/* system */
 										,char* socklib_desc			/* system */
 										,js_branch_t* branch		/* js */
+										,js_startup_t* js_startup	/* js */
 										,client_t* client			/* client */
 										,SOCKET client_socket		/* client */
 										,js_server_props_t* props	/* server */
@@ -3480,7 +3520,7 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		node_cfg=cfg;
 
 	/* Global Object */
-	if((js_glob=js_CreateGlobalObject(js_cx, cfg, methods))==NULL)
+	if((js_glob=js_CreateGlobalObject(js_cx, cfg, methods, js_startup))==NULL)
 		return(NULL);
 
 	/* System Object */
@@ -3489,7 +3529,7 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 
 	/* Internal JS Object */
 	if(branch!=NULL 
-		&& js_CreateInternalJsObject(js_cx, js_glob, branch)==NULL)
+		&& js_CreateInternalJsObject(js_cx, js_glob, branch, js_startup)==NULL)
 		return(NULL);
 
 	/* Client Object */

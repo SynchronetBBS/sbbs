@@ -76,6 +76,8 @@
 #define JAVASCRIPT_BRANCH_LIMIT		99999999
 #define JAVASCRIPT_YIELD_INTERVAL	10000
 #define JAVASCRIPT_GC_INTERVAL		100 
+#define JAVASCRIPT_LOAD_PATH		"load"
+#define JAVASCRIPT_LOAD_PATH_LIST	"load_path_list"
 
 typedef struct {
 	ulong	counter;
@@ -391,6 +393,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_SH			(1<<18)		/* Use command shell to execute			*/
 #define XTRN_PAUSE		(1<<19)		/* Force a screen pause on exit			*/
 #define XTRN_NOECHO		(1<<20)		/* Don't echo stdin to stdout			*/
+#define QUOTEWRAP		(1<<21)		/* Word-wrap the quoted text			*/
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
