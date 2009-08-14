@@ -346,26 +346,30 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(isfullpath(filename))
 		SAFECOPY(path,filename);
 	else {
-		path[0]=0;
+		JSObject* js_load_list = NULL;
+
+		path[0]=0;	/* Empty path, indicates load file not found (yet) */
+
 		if(JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
-			JSObject* js = JSVAL_TO_OBJECT(val);
-			if(JS_GetProperty(cx, js, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
+			JSObject* js_obj = JSVAL_TO_OBJECT(val);
+			
+			/* if js.exec_dir is defined (location of executed script), search their first */
+			if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
 				SAFEPRINTF2(path,"%s%s",js_ValueToStringBytes(cx, val, NULL),filename);
 				if(!fexistcase(path))
 					path[0]=0;
 			}
-			if(path[0]==0
-				&& JS_GetProperty(cx, js, JAVASCRIPT_LOAD_PATH_LIST, &val) 
-				&& val!=JSVAL_VOID
-				&& JSVAL_IS_OBJECT(val)) {
-				JSObject*	list = JSVAL_TO_OBJECT(val);
+			if(JS_GetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))
+				js_load_list = JSVAL_TO_OBJECT(val);
+
+			/* if mods_dir is defined, search mods/js.load_path_list[n] next */
+			if(path[0]==0 && p->cfg->mods_dir[0]!=0 && js_load_list!=NULL) {
 				jsuint		i;
 				char		prefix[MAX_PATH+1];
+
 				for(i=0;path[0]==0;i++) {
-					if(!JS_GetElement(cx, list, i, &val) || val==JSVAL_VOID)
+					if(!JS_GetElement(cx, js_load_list, i, &val) || val==JSVAL_VOID)
 						break;
-					if(!JSVAL_IS_STRING(val))
-						continue;
 					SAFECOPY(prefix,js_ValueToStringBytes(cx, val, NULL));
 					if(prefix[0]==0)
 						continue;
@@ -377,20 +381,45 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 					} else {
 						/* relative path */
 						SAFEPRINTF3(path,"%s%s%s",p->cfg->mods_dir,prefix,filename);
-						if(p->cfg->mods_dir[0]==0 || !fexistcase(path)) {
-							SAFEPRINTF3(path,"%s%s%s",p->cfg->exec_dir,prefix,filename);
-							if(!fexistcase(path))
-								path[0]=0;
-						}
+						if(!fexistcase(path))
+							path[0]=0;
 					}
 				}
 			}
 		}
-		if(path[0]==0) {
+		/* if mods_dir is defined, search their next */
+		if(path[0]==0 && p->cfg->mods_dir[0]!=0) {
 			SAFEPRINTF2(path,"%s%s",p->cfg->mods_dir,filename);
-			if(p->cfg->mods_dir[0]==0 || !fexistcase(path))
-				SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
+			if(!fexistcase(path))
+				path[0]=0;
 		}
+		/* if js.load_path_list is defined, search exec/load_path_list[n] next */
+		if(path[0]==0 && js_load_list!=NULL) {
+			jsuint		i;
+			char		prefix[MAX_PATH+1];
+
+			for(i=0;path[0]==0;i++) {
+				if(!JS_GetElement(cx, js_load_list, i, &val) || val==JSVAL_VOID)
+					break;
+				SAFECOPY(prefix,js_ValueToStringBytes(cx, val, NULL));
+				if(prefix[0]==0)
+					continue;
+				backslash(prefix);
+				if(isfullpath(prefix)) {
+					SAFEPRINTF2(path,"%s%s",prefix,filename);
+					if(!fexistcase(path))
+						path[0]=0;
+				} else {
+					/* relative path */
+					SAFEPRINTF3(path,"%s%s%s",p->cfg->exec_dir,prefix,filename);
+					if(!fexistcase(path))
+						path[0]=0;
+				}
+			}
+		}
+		/* lastly, search exec dir */
+		if(path[0]==0)
+			SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
