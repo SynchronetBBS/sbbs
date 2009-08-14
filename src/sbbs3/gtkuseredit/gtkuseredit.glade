@@ -1475,7 +1475,7 @@
 			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			  <property name="snap_to_ticks">False</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 0 4294969856 1000 100000 100000</property>
+			  <property name="adjustment">1 0 4294969856 1000 100000 0</property>
 			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:29:42 GMT"/>
 			</widget>
 			<packing>
@@ -1514,7 +1514,7 @@
 			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			  <property name="snap_to_ticks">False</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 0 4294969856 1000 100000 100000</property>
+			  <property name="adjustment">1 0 4294969856 1000 100000 0</property>
 			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:29:53 GMT"/>
 			</widget>
 			<packing>
@@ -1554,7 +1554,7 @@
 			  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			  <property name="snap_to_ticks">False</property>
 			  <property name="wrap">False</property>
-			  <property name="adjustment">1 0 4294967296 1000 100000 100000</property>
+			  <property name="adjustment">1 0 4294967296 1000 100000 0</property>
 			  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:30:04 GMT"/>
 			</widget>
 			<packing>
@@ -1628,7 +1628,7 @@
 		      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 		      <property name="snap_to_ticks">False</property>
 		      <property name="wrap">False</property>
-		      <property name="adjustment">10 0 99 1 10 10</property>
+		      <property name="adjustment">10 0 99 1 10 0</property>
 		      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 07:17:08 GMT"/>
 		    </widget>
 		    <packing>
@@ -5317,7 +5317,7 @@
 				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				      <property name="snap_to_ticks">False</property>
 				      <property name="wrap">False</property>
-				      <property name="adjustment">0 0 65535 1 100 100</property>
+				      <property name="adjustment">0 0 65535 1 100 0</property>
 				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:50:57 GMT"/>
 				    </widget>
 				    <packing>
@@ -5356,7 +5356,7 @@
 				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				      <property name="snap_to_ticks">False</property>
 				      <property name="wrap">False</property>
-				      <property name="adjustment">0 0 4294967296 1000 100000 100000</property>
+				      <property name="adjustment">0 0 4294967296 1000 100000 0</property>
 				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:51:11 GMT"/>
 				    </widget>
 				    <packing>
@@ -5396,7 +5396,7 @@
 				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				      <property name="snap_to_ticks">False</property>
 				      <property name="wrap">False</property>
-				      <property name="adjustment">0 0 255 1 10 10</property>
+				      <property name="adjustment">0 0 255 1 10 0</property>
 				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:52:35 GMT"/>
 				    </widget>
 				    <packing>
@@ -5576,7 +5576,7 @@
 				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				  <property name="snap_to_ticks">False</property>
 				  <property name="wrap">False</property>
-				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <property name="adjustment">0 0 65535 1 100 0</property>
 				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:58:38 GMT"/>
 				</widget>
 				<packing>
@@ -5599,7 +5599,7 @@
 				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				  <property name="snap_to_ticks">False</property>
 				  <property name="wrap">False</property>
-				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <property name="adjustment">0 0 65535 1 100 0</property>
 				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:58:52 GMT"/>
 				</widget>
 				<packing>
@@ -5622,7 +5622,7 @@
 				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				  <property name="snap_to_ticks">False</property>
 				  <property name="wrap">False</property>
-				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <property name="adjustment">0 0 65535 1 100 0</property>
 				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:59:55 GMT"/>
 				</widget>
 				<packing>
@@ -5828,7 +5828,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <property name="adjustment">0 0 65535 1 60 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:45:38 GMT"/>
 			    </widget>
 			    <packing>
@@ -5851,7 +5851,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <property name="adjustment">0 0 65535 1 60 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:47:02 GMT"/>
 			    </widget>
 			    <packing>
@@ -5874,7 +5874,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <property name="adjustment">0 0 65535 1 60 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:47:22 GMT"/>
 			    </widget>
 			    <packing>
@@ -5897,7 +5897,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 60 60</property>
+			      <property name="adjustment">0 0 65535 1 60 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:48:51 GMT"/>
 			    </widget>
 			    <packing>
@@ -6046,7 +6046,7 @@
 				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				  <property name="snap_to_ticks">False</property>
 				  <property name="wrap">False</property>
-				  <property name="adjustment">0 0 65535 1 100 100</property>
+				  <property name="adjustment">0 0 65535 1 100 0</property>
 				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:20 GMT"/>
 				</widget>
 				<packing>
@@ -6085,7 +6085,7 @@
 				  <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				  <property name="snap_to_ticks">False</property>
 				  <property name="wrap">False</property>
-				  <property name="adjustment">0 0 4294967296 1000 100000 100000</property>
+				  <property name="adjustment">0 0 4294967296 1000 100000 0</property>
 				  <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:11 GMT"/>
 				</widget>
 				<packing>
@@ -6521,7 +6521,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <property name="adjustment">0 0 65535 1 100 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:37:32 GMT"/>
 			    </widget>
 			    <packing>
@@ -6544,7 +6544,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <property name="adjustment">0 0 65535 1 100 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:49 GMT"/>
 			    </widget>
 			    <packing>
@@ -6687,7 +6687,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <property name="adjustment">0 0 65535 1 100 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:41 GMT"/>
 			    </widget>
 			    <packing>
@@ -6710,7 +6710,7 @@
 			      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
-			      <property name="adjustment">0 0 65535 1 100 100</property>
+			      <property name="adjustment">0 0 65535 1 100 0</property>
 			      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 19:44:30 GMT"/>
 			    </widget>
 			    <packing>
@@ -7081,7 +7081,7 @@
 				      <property name="update_policy">GTK_UPDATE_IF_VALID</property>
 				      <property name="snap_to_ticks">False</property>
 				      <property name="wrap">False</property>
-				      <property name="adjustment">1 0 255 1 10 10</property>
+				      <property name="adjustment">1 0 255 1 10 0</property>
 				      <signal name="changed" handler="user_changed" last_modification_time="Sat, 06 May 2006 20:01:37 GMT"/>
 				    </widget>
 				    <packing>
