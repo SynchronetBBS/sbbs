@@ -845,8 +845,8 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* user_stats_prop_desc[] = {
 
-	 "date of previous logon"
-	,"date of first logon"
+	 "date of previous logon (time_t format)"
+	,"date of first logon (time_t format)"
 	,"total number of logons"
 	,"total logons today"
 	,"total time used (in minutes)"
