@@ -853,6 +853,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
 {
     /* Defaults */
+    memset(&global,0,sizeof(global));
     SAFECOPY(global.ctrl_dir,"c:\\sbbs\\ctrl\\");
     global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
     global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
