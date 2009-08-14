@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -247,7 +247,6 @@ size_t strListInsertList(str_list_t* list, const str_list_t add_list, size_t ind
 {
 	size_t	i;
 
-
 	for(i=0; add_list[i]!=NULL; i++)
 		if(strListInsert(list,add_list[i],index++)==NULL)
 			break;
@@ -301,7 +300,7 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 	return(new_list);
 }
 
-size_t	strListMerge(str_list_t* list, str_list_t add_list)
+size_t strListMerge(str_list_t* list, str_list_t add_list)
 {
 	size_t	i;
 	size_t	count;
@@ -311,6 +310,27 @@ size_t	strListMerge(str_list_t* list, str_list_t add_list)
 		str_list_append(list,add_list[i],count++);
 
 	return(i);
+}
+
+char* strListCombine(str_list_t list, char* buf, size_t maxlen, const char* delimit)
+{
+	size_t	i;
+	char*	end;
+	char*	ptr;
+
+	if(list==NULL || maxlen<1)
+		return(NULL);
+
+	if(buf==NULL)
+		if((buf=(char*)malloc(maxlen))==NULL)
+			return(NULL);
+
+	*buf=0;
+	end=buf+maxlen;
+	for(i=0, ptr=buf; list[i]!=NULL && buf<end; i++)
+		ptr += safe_snprintf(ptr, end-ptr, "%s%s", i ? delimit:"", list[i]);
+
+	return(buf);
 }
 
 #if defined(_WIN32)

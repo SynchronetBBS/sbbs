@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -97,6 +97,11 @@ str_list_t	strListSplitCopy(str_list_t*, const char* str, const char* delimit);
 
 /* Merge 2 string lists (no copying of string data) */
 size_t		strListMerge(str_list_t*, str_list_t append_list);
+
+/* Create a single delimited string from the specified list */
+/* If buf is NULL, the buf is malloc'd and should be freed using strListFreeBlock() */
+/* Note: maxlen includes '\0' terminator */
+char*		strListCombine(str_list_t, char* buf, size_t maxlen, const char* delimit);
 
 /* Count the number of strings in the list and returns the count */
 size_t		strListCount(const str_list_t);
