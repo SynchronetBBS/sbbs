@@ -609,7 +609,7 @@ js_conio_setfont(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	int force=JS_FALSE;
 	int32 fnum=0;
 	jsrefcount	rc;
-	int arg=0;
+	uintN arg=0;
 
 	if(argc > 2)
 		return(JS_FALSE);
@@ -724,7 +724,7 @@ js_conio_cgets(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		if(maxlen > 255)
 			return(JS_FALSE);
 	}
-	buf[0]=maxlen;
+	buf[0]=(char)maxlen;
 	rc=JS_SUSPENDREQUEST(cx);
 	ret=cgets(buf);
 	JS_RESUMEREQUEST(cx, rc);
@@ -780,7 +780,8 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 {
 	int32	args[4];
 	unsigned char	*buffer;
-	int32	i,j;
+	jsuint	i;
+	int32	j;
 	jsuint	size;
 	jsval	val;
 	JSObject *array;
@@ -829,7 +830,7 @@ js_conio_puttext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 			free(buffer);
 			return(JS_FALSE);
 		}
-		buffer[i]=j;
+		buffer[i]=(unsigned char)j;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
