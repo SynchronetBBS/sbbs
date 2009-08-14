@@ -802,6 +802,7 @@ long js_exec(const char *fname, char** args)
 			,path
 			,diff);
 
+	js_PrepareToExecute(js_cx, js_glob, fname==NULL ? NULL : path);
 	start=xp_timer();
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);

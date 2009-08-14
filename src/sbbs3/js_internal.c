@@ -483,3 +483,31 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 
 	return(obj);
 }
+
+void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename)
+{
+	JSString*	str;
+	jsval		val;
+
+	if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val)) {
+		JSObject* js = JSVAL_TO_OBJECT(val);
+		char	dir[MAX_PATH+1];
+
+		if(filename!=NULL) {
+			char* p;
+
+			if((str=JS_NewStringCopyZ(cx, filename)) != NULL)
+				JS_DefineProperty(cx, js, "exec_path", STRING_TO_JSVAL(str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			if((str=JS_NewStringCopyZ(cx, getfname(filename))) != NULL)
+				JS_DefineProperty(cx, js, "exec_file", STRING_TO_JSVAL(str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			SAFECOPY(dir,filename);
+			p=getfname(dir);
+			*p=0;
+			if((str=JS_NewStringCopyZ(cx, dir)) != NULL)
+				JS_DefineProperty(cx, js, "exec_dir", STRING_TO_JSVAL(str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		}
+	}
+}
