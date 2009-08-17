@@ -80,7 +80,7 @@ $(SBBSMONO): $(MONO_OBJS) $(OBJS)
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
 	$(QUIET)$(MKSHLIB) $(MT_LDFLAGS) -lGi -e$@ $(LDFLAGS) $(SHLIBOPTS) \
-		$(SMBLIB) $(XPDEV-MT_LIB) $(CRYPTLIB) @&&|
+		$(SMBLIB) $(XPDEV-MT_LIB) $(CRYPTLIB) iphlpapi.lib @&&|
 	$**
 |
 
