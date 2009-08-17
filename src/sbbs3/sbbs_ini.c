@@ -135,8 +135,8 @@ void sbbs_get_js_settings(
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
 
-    if(js->load_path != defaults->load_path)
-    	iniFreeStringList(js->load_path);
+//    if(js->load_path != defaults->load_path)      /* Memory leak, ToDo Fix! */
+//    	iniFreeStringList(js->load_path);
 	if((load_path = iniGetStringList(list, section,strJavaScriptLoadPath,",",NULL)) == NULL)
 		load_path = defaults->load_path;
 	js->load_path = load_path;
