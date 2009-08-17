@@ -67,6 +67,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	str_list_t	host_can=NULL;
 	str_list_t	subject_can=NULL;
 	str_list_t	twit_list=NULL;
+	const char* hostname;
 
 	memset(&msg,0,sizeof(msg));
 
@@ -163,10 +164,11 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 		}
 
-		if(findstr_in_list(msg.from_host,host_can)) {
+		hostname=getHostNameByAddr(msg.from_host);
+		if(findstr_in_list(hostname,host_can)) {
 			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 				,msg.from
-				,msg.from_host); 
+				,hostname); 
 			continue;
 		}
 
