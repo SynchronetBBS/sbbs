@@ -245,7 +245,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	global->js.gc_interval		= JAVASCRIPT_GC_INTERVAL;
 	global->js.yield_interval	= JAVASCRIPT_YIELD_INTERVAL;
     if(global->js.load_path==NULL)
-    	global->js.load_path	= strListSplit(NULL, JAVASCRIPT_LOAD_PATH, ",");
+    	global->js.load_path	= strListSplitCopy(NULL, JAVASCRIPT_LOAD_PATH, ",");
 
 	/* Read .ini values here */
 	sbbs_get_js_settings(list, section, &global->js, &global->js);
