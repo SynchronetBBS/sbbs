@@ -618,7 +618,7 @@ static BOOL js_init(char** environ)
 	js_startup_t	startup;
 
 	memset(&startup,0,sizeof(startup));
-	startup.load_path=strListSplit(NULL, load_path_list, ",");
+	startup.load_path=strListSplitCopy(NULL, load_path_list, ",");
 
 	fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
 
