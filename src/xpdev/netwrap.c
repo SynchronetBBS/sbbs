@@ -111,7 +111,9 @@ const char* getHostNameByAddr(const char* str)
 	if((h=gethostbyaddr((char *)&ip,sizeof(ip),AF_INET))==NULL)
 		return NULL;
 
+#ifdef _WIN32
 	WSACleanup();
+#endif
 
 	return h->h_name;
 }
