@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -37,6 +37,7 @@
 
 #include "genwrap.h"	/* truncsp */
 #include "netwrap.h"	/* verify prototypes */
+#include "sockwrap.h"
 
 #include <stdlib.h>		/* malloc() */
 #include <ctype.h>		/* isspace() */
@@ -96,6 +97,25 @@ str_list_t getNameServerList(void)
 #endif
 }
 
+const char* getHostNameByAddr(const char* str)
+{
+	HOSTENT*	h;
+	uint32_t	ip;
+
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
+	if((ip=inet_addr(str)) == INADDR_NONE)
+		return str;
+	if((h=gethostbyaddr((char *)&ip,sizeof(ip),AF_INET))==NULL)
+		return NULL;
+
+	WSACleanup();
+
+	return h->h_name;
+}
+
 /* In case we want to DLL-export getNameServerList in the future */
 void freeNameServerList(str_list_t list)
 {
@@ -103,7 +123,7 @@ void freeNameServerList(str_list_t list)
 }
 
 #if NETWRAP_TEST
-int main(void)
+int main(int argc, char** argv)
 {
 	size_t		i;
 	str_list_t	list;
@@ -114,6 +134,8 @@ int main(void)
 		freeNameServerList(list);
 	}
 
+	if(argc>1)
+		printf("%s\n", getHostNameByAddr(argv[1]));
 	return 0;
 }
 #endif
