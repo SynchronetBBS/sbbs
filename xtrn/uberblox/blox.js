@@ -101,6 +101,7 @@ function Blox()
 		{
 			if(gameover) 
 			{
+				EndGame();
 				while(console.inkey()=="");
 				return;
 			}
@@ -124,7 +125,7 @@ function Blox()
 						break;
 					case "\x1b":	
 					case "Q":
-						EndGame();
+						gameover=true;
 						break;
 					case "\r":
 					case "\n":
@@ -159,7 +160,6 @@ function Blox()
 		console.putmsg(CenterString("\1n\1y" + points,13));
 		console.gotoxy(52,13);
 		console.putmsg(CenterString("\1n\1y" + (parseInt(level)+1),13));
-		gameover=true;
 	}
 	function SplashStart()
 	{
@@ -314,15 +314,16 @@ function Blox()
 				{
 					mswait(1000);
 					LevelUp();
+					Redraw();
 				}
-				else EndGame();
-				Redraw();
+				else gameover=true;
 			}
 		}
 		else
 		{
 			counted=Grid(columns,rows);
-			if(Search(selx,sely))
+			Search(selx,sely);
+			if(selection.length>=minimum_cluster)			
 			{
 				Log("Selecting " + selection.length + " tiles");
 				Select();
@@ -350,8 +351,6 @@ function Blox()
 				}
 			}
 		}
-		if(selection.length>=minimum_cluster) return true;
-		else return false;
 	}
 	function Coord(x,y)
 	{
@@ -394,7 +393,8 @@ function Blox()
 			current.grid[coord.x].splice(coord.y,1);
 			if(current.grid[coord.x].length==0) current.grid.splice(coord.x,1);
 		}
-		if(current.tiles>0) current.tiles-=selection.length;
+		current.tiles-=selection.length;
+		if(current.tiles<0) current.tiles=0;
 		points+=CalculatePoints();
 		selection=[];
 		Unselect();
@@ -451,19 +451,22 @@ function Blox()
 	}
 	function FindValidMove()
 	{
-		var canmove=false;
-		for(var x=0;x<current.grid.length && !canmove;x++)
+		counted=Grid(columns,rows);
+		for(var x=0;x<current.grid.length;x++)
 		{
-			for(var y=0;y<current.grid[x].length && !canmove;y++)
+			for(var y=0;y<current.grid[x].length;y++)
 			{
-				if(Search(x,y)) 
-				{
-					canmove=true;
-				}
 				selection=[];
+				Search(x,y); 
+				if(selection.length>=minimum_cluster) 
+				{
+					selection=[];
+					return true;
+				}
 			}
 		}
-		return canmove;
+		Log("no valid move found");
+		return false;
 	}
 	function SortScores()
 	{
