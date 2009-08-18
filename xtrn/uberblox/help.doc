@@ -1,0 +1,49 @@
+            ****************************************
+            *  UBER BLOX! - for Synchronet v3.15+  * 
+            *  by Matt Johnson - 2009              *
+            ****************************************
+
+Uber Blox is a puzzle strategy game similar to that of the  popular
+web game "Super Collapse" by GameHouse. The object is to either clear
+the screen entirely, or clear the number of blocks specified by the
+"GOAL" for each particular level before running out of moves. 
+
+Each level increases the "GOAL" to make it more difficult to clear 
+the level and after a certain number of levels the game will add
+another color to the block field.
+
+***COMMANDS***
+
+ARROW KEYS (up,down,left,right): 
+
+	Navigate the field, highlighting the color of the block over 
+	which you are current positioned.
+
+ENTER KEY:
+
+	When you press the ENTER key, it will light up a cluster of 
+	connected blocks of the same color as the block you are 
+	currently on. The point value of this cluster will be shown
+	in the "SELECTION" field to the right of the block field. 
+
+	If you wish to clear this cluster of blocks, Press the ENTER
+	key again and the score shown in the "SELECTION" field will be
+	added to your score. Otherwise, simply move your position 
+	using the arrow keys and it will deselect the cluster.
+
+QUITTING:
+	
+	If you press "Q" or the ESCAPE key, your current game will be
+	ended and your score will be saved if it is higher than your
+	current best score. Otherwise your score will be discarded
+	until you beat your previous best score.
+
+***RULES***
+
+By default, the smallest grouping of blocks you can select is THREE. 
+If you try to select a single block or TWO blocks grouped together
+(depending on your SysOp's game setup) it will ignore the command.
+
+
+
+
