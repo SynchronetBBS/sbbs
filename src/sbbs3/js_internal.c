@@ -455,6 +455,7 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	if(startup!=NULL) {
 		JSObject*	load_path_list;
 		jsval		val;
+		str_list_t	load_path;
 
 		if((load_path_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 			return(NULL);
@@ -462,17 +463,18 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 		if(!JS_SetProperty(cx, obj, JAVASCRIPT_LOAD_PATH_LIST, &val)) 
 			return(NULL);
 
-		if(startup->load_path!=NULL) {
+		if((load_path=strListSplitCopy(NULL, startup->load_path, ",")) != NULL) {
 			JSString*	js_str;
 			unsigned	i;
 
-			for(i=0; startup->load_path[i]!=NULL; i++) {
-				if((js_str=JS_NewStringCopyZ(cx, startup->load_path[i]))==NULL)
-					return(NULL);
+			for(i=0; load_path[i]!=NULL; i++) {
+				if((js_str=JS_NewStringCopyZ(cx, load_path[i]))==NULL)
+					break;
 				val=STRING_TO_JSVAL(js_str);
 				if(!JS_SetElement(cx, load_path_list, i, &val))
-					return(NULL);
+					break;
 			}
+			strListFree(&load_path);
 		}
 	}
 
