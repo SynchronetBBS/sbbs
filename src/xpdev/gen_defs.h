@@ -63,6 +63,10 @@
 #include <sys/types.h>
 #ifdef HAS_INTTYPES_H
 #include <inttypes.h>
+#else
+#ifdef HAS_STDINT_H
+#include <stdint.h>
+#endif
 #endif
 
 									/* Control characters */
@@ -140,7 +144,7 @@ enum {
 	#endif
 #endif
 
-#if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES)
+#if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES) && !defined(HAS_STDINT_H)
 
 typedef char	int8_t;
 typedef short	int16_t;
