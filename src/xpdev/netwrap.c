@@ -106,6 +106,8 @@ const char* getHostNameByAddr(const char* str)
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
+	if(str==NULL)
+		return NULL;
 	if((ip=inet_addr(str)) == INADDR_NONE)
 		return str;
 	if((h=gethostbyaddr((char *)&ip,sizeof(ip),AF_INET))==NULL)
