@@ -27,8 +27,8 @@ function Blox()
 	const bg=[BG_GREEN,BG_BLUE,BG_RED,BG_BROWN,BG_MAGENTA,BG_CYAN];
 	const fg=[LIGHTGREEN,LIGHTBLUE,LIGHTRED,YELLOW,LIGHTMAGENTA,LIGHTCYAN];
 
-	var level=0;
-	var points=0;
+	var level;
+	var points;
 	var current;
 	var scores;
 	var players;
@@ -94,6 +94,8 @@ function Blox()
 	}
 	function Main()
 	{
+		level=0;
+		points=0;
 		gameover=false;
 		GenerateLevel();
 		Redraw();
