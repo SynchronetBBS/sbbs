@@ -43,9 +43,9 @@ object PropertiesDlg: TPropertiesDlg
     Top = 9
     Width = 312
     Height = 272
-    ActivePage = AdvancedTabSheet
+    ActivePage = JavaScriptTabSheet
     Anchors = [akLeft, akTop, akBottom]
-    TabIndex = 2
+    TabIndex = 3
     TabOrder = 2
     object SettingsTabSheet: TTabSheet
       Caption = 'Settings'
@@ -491,6 +491,14 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'Thread Stack'
       end
+      object Label16: TLabel
+        Left = 9
+        Top = 204
+        Width = 109
+        Height = 24
+        AutoSize = False
+        Caption = 'Load Path'
+      end
       object JS_MaxBytesEdit: TEdit
         Left = 121
         Top = 12
@@ -556,6 +564,16 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+      end
+      object JS_LoadPathEdit: TEdit
+        Left = 121
+        Top = 204
+        Width = 168
+        Height = 24
+        Hint = 'Comma-separated list of directories to search for loaded scripts'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
       end
     end
   end

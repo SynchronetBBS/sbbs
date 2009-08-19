@@ -3234,6 +3234,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(global.js.branch_limit);
     PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(global.js.gc_interval);
     PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
+    PropertiesDlg->JS_LoadPathEdit->Text=global.js.load_path;
 
     if(MaxLogLen==0)
 		PropertiesDlg->MaxLogLenEdit->Text="<unlimited>";
@@ -3296,6 +3297,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         	=PropertiesDlg->JS_GcIntervalEdit->Text.ToIntDef(JAVASCRIPT_GC_INTERVAL);
         global.js.yield_interval
         	=PropertiesDlg->JS_YieldIntervalEdit->Text.ToIntDef(JAVASCRIPT_YIELD_INTERVAL);
+        SAFECOPY(global.js.load_path, PropertiesDlg->JS_LoadPathEdit->Text.c_str());
 
         /* Copy global settings, if appropriate (not unique) */
         if(memcmp(&bbs_startup.js,&js,sizeof(js))==0)       bbs_startup.js=global.js;
