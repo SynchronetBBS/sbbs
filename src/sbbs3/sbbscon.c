@@ -1044,7 +1044,7 @@ void cleanup(void)
 }
 
 #if defined(_WIN32)
-BOOL WINAPI ControlHandler(DWORD CtrlType)
+BOOL WINAPI ControlHandler(unsigned long CtrlType)
 {
 	terminated=TRUE;
 	return TRUE;

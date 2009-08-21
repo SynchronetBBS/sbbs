@@ -385,13 +385,13 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	HANDLE	wrinpipe;
     PROCESS_INFORMATION process_info;
 	DWORD	hVM;
-	DWORD	rd;
+	unsigned long	rd;
     DWORD	wr;
-    DWORD	len;
+    unsigned long	len;
     DWORD	avail;
-	DWORD	dummy;
-	DWORD	msglen;
-	DWORD	retval;
+	unsigned long	dummy;
+	unsigned long	msglen;
+	unsigned long	retval;
 	DWORD	last_error;
 	DWORD	loop_since_io=0;
 	struct	tm tm;
@@ -877,7 +877,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
             		len=avail;
 
 				while(rd<len) {
-					DWORD waiting=0;
+					unsigned long waiting=0;
 
 					if(use_pipes)
 						PeekNamedPipe(

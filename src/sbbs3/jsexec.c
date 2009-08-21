@@ -844,7 +844,7 @@ void recycle_handler(int type)
 
 
 #if defined(_WIN32)
-BOOL WINAPI ControlHandler(DWORD CtrlType)
+BOOL WINAPI ControlHandler(unsigned long CtrlType)
 {
 	break_handler((int)CtrlType);
 	return TRUE;

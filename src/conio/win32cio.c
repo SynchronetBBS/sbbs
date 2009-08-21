@@ -517,7 +517,7 @@ void win32_resume(void)
 		SetConsoleMode(h, conmode);
 }
 
-static BOOL WINAPI ControlHandler(DWORD CtrlType)
+static BOOL WINAPI ControlHandler(unsigned long CtrlType)
 {
 	return TRUE;
 }
