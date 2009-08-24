@@ -29,6 +29,20 @@ int init_crypt(void)
 	if(crypt_loaded)
 		return(0);
 
+#ifdef STATIC_CRYPTLIB
+	cl.PopData=cryptPopData;
+	cl.PushData=cryptPushData;
+	cl.FlushData=cryptFlushData;
+	cl.Init=cryptInit;
+	cl.End=cryptEnd;
+	cl.CreateSession=cryptCreateSession;
+	cl.GetAttribute=cryptGetAttribute;
+	cl.GetAttributeString=cryptGetAttributeString;
+	cl.SetAttribute=cryptSetAttribute;
+	cl.SetAttributeString=cryptSetAttributeString;
+	cl.DestroySession=cryptDestroySession;
+	cl.AddRandom=cryptAddRandom;
+#else
 	cryptlib=xp_dlopen(libnames,RTLD_LAZY, CRYPTLIB_VERSION/1000);
 	if(cryptlib==NULL)
 		return(-1);
@@ -80,6 +94,7 @@ int init_crypt(void)
 		xp_dlclose(cryptlib);
 		return(-1);
 	}
+#endif
 	if(cryptStatusOK(cl.Init())) {
 		if(cryptStatusOK(cl.AddRandom(NULL, CRYPT_RANDOM_SLOWPOLL))) {
 			crypt_loaded=1;
