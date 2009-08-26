@@ -1,4 +1,4 @@
-/* 
+/*
 ** by: Walter Bright via Usenet C newsgroup
 **
 ** modified by: Bob Stout based on a recommendation by Ray Gardner
@@ -21,7 +21,7 @@
 #include <fcntl.h>
 
 #if !defined(__ZTC__) && !defined(__TURBOC__)
- #include <sys/types.h>
+#include <sys/types.h>
 #endif
 
 #include "defines.h"
@@ -30,110 +30,104 @@
 
 _INT16 file_append(char *from, char *to)
 {
-      _INT16 fdfrom,fdto;
-      _INT16 bufsiz;
+	_INT16 fdfrom,fdto;
+	_INT16 bufsiz;
 
-      fdfrom = open(from,O_RDONLY|O_BINARY,0);
-      if (fdfrom < 0)
-            return 1;
+	fdfrom = open(from,O_RDONLY|O_BINARY,0);
+	if (fdfrom < 0)
+		return 1;
 
-      /* Open R/W by owner, R by everyone else        */
+	/* Open R/W by owner, R by everyone else        */
 
 #ifdef __unix__
-      fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 #else
-      fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IREAD|S_IWRITE);
+	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IREAD|S_IWRITE);
 #endif
-      if (fdto < 0)
-            goto err;
+	if (fdto < 0)
+		goto err;
 
-      /* Use the largest buffer we can get    */
+	/* Use the largest buffer we can get    */
 
-      for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1)
-      {
-            register char *buffer;
+	for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1) {
+		register char *buffer;
 
-            buffer = (char *) malloc(bufsiz);
-            if (buffer)
-            {
-                  while (1)
-                  {
-                        register _INT16 n;
+		buffer = (char *) malloc(bufsiz);
+		if (buffer) {
+			while (1) {
+				register _INT16 n;
 
-                        n = read(fdfrom,buffer,bufsiz);
-                        if (n == -1)                /* if error             */
-                              break;
-                        if (n == 0)                 /* if end of file       */
-                        {
-                              free(buffer);
-                              close(fdto);
-                              close(fdfrom);
-                              return 0;             /* success              */
-                        }
-                        if (n != write(fdto,buffer,(unsigned) n))
-                              break;
-                  }
-                  free(buffer);
-                  break;
-            }
-      }
-      close(fdto);
-      remove(to);                               /* delete any partial file  */
-err:  close(fdfrom);
-      return 1;
+				n = read(fdfrom,buffer,bufsiz);
+				if (n == -1)                /* if error             */
+					break;
+				if (n == 0) {               /* if end of file       */
+					free(buffer);
+					close(fdto);
+					close(fdfrom);
+					return 0;             /* success              */
+				}
+				if (n != write(fdto,buffer,(unsigned) n))
+					break;
+			}
+			free(buffer);
+			break;
+		}
+	}
+	close(fdto);
+	remove(to);                               /* delete any partial file  */
+err:
+	close(fdfrom);
+	return 1;
 }
 
 _INT16 file_copy(char *from, char *to)
 {
-      _INT16 fdfrom,fdto;
-      _INT16 bufsiz;
+	_INT16 fdfrom,fdto;
+	_INT16 bufsiz;
 
-      fdfrom = open(from,O_RDONLY|O_BINARY,0);
-      if (fdfrom < 0)
-            return 1;
+	fdfrom = open(from,O_RDONLY|O_BINARY,0);
+	if (fdfrom < 0)
+		return 1;
 
-      /* Open R/W by owner, R by everyone else        */
+	/* Open R/W by owner, R by everyone else        */
 
 #ifdef __unix__
-      fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 #else
-      fdto=open(to,O_BINARY|O_CREAT|O_TRUNC|O_RDWR,S_IREAD|S_IWRITE);
+	fdto=open(to,O_BINARY|O_CREAT|O_TRUNC|O_RDWR,S_IREAD|S_IWRITE);
 #endif
-      if (fdto < 0)
-            goto err;
+	if (fdto < 0)
+		goto err;
 
-      /* Use the largest buffer we can get    */
+	/* Use the largest buffer we can get    */
 
-      for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1)
-      {
-            register char *buffer;
+	for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1) {
+		register char *buffer;
 
-            buffer = (char *) malloc(bufsiz);
-            if (buffer)
-            {
-                  while (1)
-                  {
-                        register _INT16 n;
+		buffer = (char *) malloc(bufsiz);
+		if (buffer) {
+			while (1) {
+				register _INT16 n;
 
-                        n = read(fdfrom,buffer,bufsiz);
-                        if (n == -1)                /* if error             */
-                              break;
-                        if (n == 0)                 /* if end of file       */
-                        {
-                              free(buffer);
-                              close(fdto);
-                              close(fdfrom);
-                              return 0;             /* success              */
-                        }
-                        if (n != write(fdto,buffer,(unsigned) n))
-                              break;
-                  }
-                  free(buffer);
-                  break;
-            }
-      }
-      close(fdto);
-      remove(to);                               /* delete any partial file  */
-err:  close(fdfrom);
-      return 1;
+				n = read(fdfrom,buffer,bufsiz);
+				if (n == -1)                /* if error             */
+					break;
+				if (n == 0) {               /* if end of file       */
+					free(buffer);
+					close(fdto);
+					close(fdfrom);
+					return 0;             /* success              */
+				}
+				if (n != write(fdto,buffer,(unsigned) n))
+					break;
+			}
+			free(buffer);
+			break;
+		}
+	}
+	close(fdto);
+	remove(to);                               /* delete any partial file  */
+err:
+	close(fdfrom);
+	return 1;
 }

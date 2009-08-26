@@ -1,6 +1,6 @@
 
-  void GameLoop( void );
+void GameLoop(void);
 
-  void Menus_ChatRoom ( char *pszFileName );
+void Menus_ChatRoom(char *pszFileName);
 
-  _INT16 WorldMenu ( void );
+_INT16 WorldMenu(void);

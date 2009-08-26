@@ -44,193 +44,186 @@ extern __BOOL Verbose;
 
 void DisplayStr(char *);
 
-  void ClansIni_Init ( void )
-  {
-    /* read in quests file and allocate memory for quest names */
-    _INT16 iTemp;
-    FILE *fp;
-    char szLine[128], *pcCurrentPos;
-    char szToken[MAX_TOKEN_CHARS + 1];
-    _INT16 iKeyWord;
-    _INT16 CurNPCFile, CurItemFile, CurRaceFile, CurClassFile, CurSpellFile;
+void ClansIni_Init(void)
+{
+	/* read in quests file and allocate memory for quest names */
+	_INT16 iTemp;
+	FILE *fp;
+	char szLine[128], *pcCurrentPos;
+	char szToken[MAX_TOKEN_CHARS + 1];
+	_INT16 iKeyWord;
+	_INT16 CurNPCFile, CurItemFile, CurRaceFile, CurClassFile, CurSpellFile;
 
-    if (Verbose)
-    {
-      DisplayStr("> ClansIni_Init()\n");
-      delay(500);
-    }
+	if (Verbose) {
+		DisplayStr("> ClansIni_Init()\n");
+		delay(500);
+	}
 
 
-    IniFile.Initialized = FALSE;
+	IniFile.Initialized = FALSE;
 
-    for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
-      IniFile.pszNPCFileName[iTemp] = NULL;
-    for (iTemp = 0; iTemp < MAX_SPELLFILES; iTemp++)
-      IniFile.pszSpells[iTemp] = NULL;
-    for (iTemp = 0; iTemp < MAX_ITEMFILES; iTemp++)
-      IniFile.pszItems[iTemp] = NULL;
-    for (iTemp = 0; iTemp < MAX_RACEFILES; iTemp++)
-      IniFile.pszRaces[iTemp] = NULL;
-    for (iTemp = 0; iTemp < MAX_CLASSFILES; iTemp++)
-      IniFile.pszClasses[iTemp] = NULL;
-    for (iTemp = 0; iTemp < MAX_VILLFILES; iTemp++)
-      IniFile.pszVillages[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
+		IniFile.pszNPCFileName[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_SPELLFILES; iTemp++)
+		IniFile.pszSpells[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_ITEMFILES; iTemp++)
+		IniFile.pszItems[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_RACEFILES; iTemp++)
+		IniFile.pszRaces[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_CLASSFILES; iTemp++)
+		IniFile.pszClasses[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_VILLFILES; iTemp++)
+		IniFile.pszVillages[iTemp] = NULL;
 
-    IniFile.pszLanguage = NULL;
+	IniFile.pszLanguage = NULL;
 
-    fp = _fsopen("clans.ini", "r", SH_DENYWR);
-    if (!fp)
-    {
-      System_Error("No clans.ini\n");
-    }
+	fp = _fsopen("clans.ini", "r", SH_DENYWR);
+	if (!fp) {
+		System_Error("No clans.ini\n");
+	}
 
-    /* read in all lines and get event names */
-    CurNPCFile = -1;
-    CurItemFile = -1;
-    CurRaceFile = -1;
-    CurClassFile = -1;
-    CurSpellFile = -1;
-    for (;;)
-    {
-      /* read in a line */
-      if (fgets(szLine, 128, fp) == NULL) break;
+	/* read in all lines and get event names */
+	CurNPCFile = -1;
+	CurItemFile = -1;
+	CurRaceFile = -1;
+	CurClassFile = -1;
+	CurSpellFile = -1;
+	for (;;) {
+		/* read in a line */
+		if (fgets(szLine, 128, fp) == NULL) break;
 
-      /* Ignore all of line after comments or CR/LF char */
-      pcCurrentPos=(char *)szLine;
+		/* Ignore all of line after comments or CR/LF char */
+		pcCurrentPos=(char *)szLine;
 
-      ParseLine(pcCurrentPos);
+		ParseLine(pcCurrentPos);
 
-      /* If no token was found, proceed to process the next line */
-      if(!*pcCurrentPos) continue;
+		/* If no token was found, proceed to process the next line */
+		if (!*pcCurrentPos) continue;
 
-      GetToken(pcCurrentPos, szToken);
+		GetToken(pcCurrentPos, szToken);
 
-      if (szToken[0] == '$')
-        break;
+		if (szToken[0] == '$')
+			break;
 
-      /* Loop through list of keywords */
-      for(iKeyWord = 0; iKeyWord < MAX_INI_WORDS; ++iKeyWord)
-      {
-        /* If keyword matches */
-        if(stricmp(szToken, papszIniKeyWords[iKeyWord]) == 0)
-        {
-          /* Process config token */
-          switch (iKeyWord)
-          {
-            case 0 :  /* npcfile */
-              if (CurNPCFile == MAX_NPCFILES)
-                break;
+		/* Loop through list of keywords */
+		for (iKeyWord = 0; iKeyWord < MAX_INI_WORDS; ++iKeyWord) {
+			/* If keyword matches */
+			if (stricmp(szToken, papszIniKeyWords[iKeyWord]) == 0) {
+				/* Process config token */
+				switch (iKeyWord) {
+					case 0 :  /* npcfile */
+						if (CurNPCFile == MAX_NPCFILES)
+							break;
 
-              CurNPCFile++;
+						CurNPCFile++;
 
-              IniFile.pszNPCFileName[ CurNPCFile ] =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszNPCFileName[ CurNPCFile ], pcCurrentPos);
-              break;
-            case 1 :  /* Language */
-              if (IniFile.pszLanguage)
-              {
-                free(IniFile.pszLanguage);
-                IniFile.pszLanguage = NULL;
-              }
-              IniFile.pszLanguage =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszLanguage, pcCurrentPos);
-              break;
-            case 2 :  // item files
-              if (CurItemFile == MAX_ITEMFILES)
-                break;
+						IniFile.pszNPCFileName[ CurNPCFile ] =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszNPCFileName[ CurNPCFile ], pcCurrentPos);
+						break;
+					case 1 :  /* Language */
+						if (IniFile.pszLanguage) {
+							free(IniFile.pszLanguage);
+							IniFile.pszLanguage = NULL;
+						}
+						IniFile.pszLanguage =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszLanguage, pcCurrentPos);
+						break;
+					case 2 :  // item files
+						if (CurItemFile == MAX_ITEMFILES)
+							break;
 
-              CurItemFile++;
+						CurItemFile++;
 
-              IniFile.pszItems[ CurItemFile ] =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszItems[ CurItemFile ], pcCurrentPos);
+						IniFile.pszItems[ CurItemFile ] =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszItems[ CurItemFile ], pcCurrentPos);
 
-              // printf("itemfile = %d. %s\n", CurItemFile,
-              //    IniFile.pszItems[ CurItemFile ]);
-              break;
-            case 3 :  // races files
-              if (CurRaceFile == MAX_RACEFILES)
-                break;
+						// printf("itemfile = %d. %s\n", CurItemFile,
+						//    IniFile.pszItems[ CurItemFile ]);
+						break;
+					case 3 :  // races files
+						if (CurRaceFile == MAX_RACEFILES)
+							break;
 
-              CurRaceFile++;
+						CurRaceFile++;
 
-              IniFile.pszRaces[ CurRaceFile ] =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszRaces[ CurRaceFile ], pcCurrentPos);
+						IniFile.pszRaces[ CurRaceFile ] =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszRaces[ CurRaceFile ], pcCurrentPos);
 
-              // printf("race = %d. %s\n", CurRaceFile,
-              //     IniFile.pszRaces[ CurRaceFile ]);
-              break;
-            case 4 :  // class files
-              if (CurClassFile == MAX_CLASSFILES)
-                break;
+						// printf("race = %d. %s\n", CurRaceFile,
+						//     IniFile.pszRaces[ CurRaceFile ]);
+						break;
+					case 4 :  // class files
+						if (CurClassFile == MAX_CLASSFILES)
+							break;
 
-              CurClassFile++;
+						CurClassFile++;
 
-              IniFile.pszClasses[ CurClassFile ] =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszClasses[ CurClassFile ], pcCurrentPos);
+						IniFile.pszClasses[ CurClassFile ] =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszClasses[ CurClassFile ], pcCurrentPos);
 
-              // printf("class = %d. %s\n", CurClassFile,
-              //     IniFile.pszClasses[ CurClassFile ]);
-              break;
-            case 5 :  // spell files
-              if (CurSpellFile == MAX_SPELLFILES)
-                break;
+						// printf("class = %d. %s\n", CurClassFile,
+						//     IniFile.pszClasses[ CurClassFile ]);
+						break;
+					case 5 :  // spell files
+						if (CurSpellFile == MAX_SPELLFILES)
+							break;
 
-              CurSpellFile++;
+						CurSpellFile++;
 
-              IniFile.pszSpells[ CurSpellFile ] =
-                MakeStr( strlen(pcCurrentPos) + 1);
-              strcpy(IniFile.pszSpells[ CurSpellFile ], pcCurrentPos);
+						IniFile.pszSpells[ CurSpellFile ] =
+							MakeStr(strlen(pcCurrentPos) + 1);
+						strcpy(IniFile.pszSpells[ CurSpellFile ], pcCurrentPos);
 
-              // printf("spellfile = %d. %s\n", CurSpellFile,
-              //     IniFile.pszSpells[ CurSpellFile ]);
-              break;
-          }
-        }
-      }
-    }
+						// printf("spellfile = %d. %s\n", CurSpellFile,
+						//     IniFile.pszSpells[ CurSpellFile ]);
+						break;
+				}
+			}
+		}
+	}
 
-    fclose(fp);
-  }
+	fclose(fp);
+}
 
-  void ClansIni_Close ( void )
-  {
-    _INT16 iTemp;
+void ClansIni_Close(void)
+{
+	_INT16 iTemp;
 
-    if (IniFile.Initialized == FALSE) return;
+	if (IniFile.Initialized == FALSE) return;
 
-    if (IniFile.pszLanguage)
-      free(IniFile.pszLanguage);
+	if (IniFile.pszLanguage)
+		free(IniFile.pszLanguage);
 
-    // NPC filenames
-    for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
-      if (IniFile.pszNPCFileName[iTemp])
-        free(IniFile.pszNPCFileName[iTemp]);
+	// NPC filenames
+	for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
+		if (IniFile.pszNPCFileName[iTemp])
+			free(IniFile.pszNPCFileName[iTemp]);
 
-    // spell filenames
-    for (iTemp = 0; iTemp < MAX_SPELLFILES; iTemp++)
-      if (IniFile.pszSpells[iTemp])
-        free(IniFile.pszSpells[iTemp]);
+	// spell filenames
+	for (iTemp = 0; iTemp < MAX_SPELLFILES; iTemp++)
+		if (IniFile.pszSpells[iTemp])
+			free(IniFile.pszSpells[iTemp]);
 
-    for (iTemp = 0; iTemp < MAX_ITEMFILES; iTemp++)
-      if (IniFile.pszItems[iTemp])
-        free(IniFile.pszItems[iTemp]);
+	for (iTemp = 0; iTemp < MAX_ITEMFILES; iTemp++)
+		if (IniFile.pszItems[iTemp])
+			free(IniFile.pszItems[iTemp]);
 
-    for (iTemp = 0; iTemp < MAX_RACEFILES; iTemp++)
-      if (IniFile.pszRaces[iTemp])
-        free(IniFile.pszRaces[iTemp]);
+	for (iTemp = 0; iTemp < MAX_RACEFILES; iTemp++)
+		if (IniFile.pszRaces[iTemp])
+			free(IniFile.pszRaces[iTemp]);
 
-    for (iTemp = 0; iTemp < MAX_CLASSFILES; iTemp++)
-      if (IniFile.pszClasses[iTemp])
-        free(IniFile.pszClasses[iTemp]);
+	for (iTemp = 0; iTemp < MAX_CLASSFILES; iTemp++)
+		if (IniFile.pszClasses[iTemp])
+			free(IniFile.pszClasses[iTemp]);
 
-    for (iTemp = 0; iTemp < MAX_VILLFILES; iTemp++)
-      if (IniFile.pszVillages[iTemp])
-        free(IniFile.pszVillages[iTemp]);
+	for (iTemp = 0; iTemp < MAX_VILLFILES; iTemp++)
+		if (IniFile.pszVillages[iTemp])
+			free(IniFile.pszVillages[iTemp]);
 
-    IniFile.Initialized = FALSE;
-  }
+	IniFile.Initialized = FALSE;
+}

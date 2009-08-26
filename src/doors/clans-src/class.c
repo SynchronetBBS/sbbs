@@ -47,109 +47,104 @@ extern __BOOL Verbose;
 
 // ------------------------------------------------------------------------- //
 
-  void Load_PClasses ( struct PClass *PClass[MAX_PCLASSES], __BOOL GetPClasses )
-    /*
-     * This function will load classes from file into PClass[].
-     *
-     * PRE: GetPClasses = TRUE if we're get classes, FALSE if getting races.
-     */
-  {
-    _INT16 iTemp, NumClasses, CurFile, CurClass = 0, MaxFiles;
-    struct FileHeader ClassFile;
+void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], __BOOL GetPClasses)
+/*
+ * This function will load classes from file into PClass[].
+ *
+ * PRE: GetPClasses = TRUE if we're get classes, FALSE if getting races.
+ */
+{
+	_INT16 iTemp, NumClasses, CurFile, CurClass = 0, MaxFiles;
+	struct FileHeader ClassFile;
 
-    if (GetPClasses)
-      MaxFiles = MAX_CLASSFILES;
-    else
-      MaxFiles = MAX_RACEFILES;
+	if (GetPClasses)
+		MaxFiles = MAX_CLASSFILES;
+	else
+		MaxFiles = MAX_RACEFILES;
 
-    // for each file, read in the data
-    for (CurFile = 0; CurFile < MaxFiles; CurFile++)
-    {
-      if (GetPClasses && IniFile.pszClasses[CurFile] == NULL)
-        break;
-      else if (!GetPClasses && IniFile.pszRaces[CurFile] == NULL)
-        break;
+	// for each file, read in the data
+	for (CurFile = 0; CurFile < MaxFiles; CurFile++) {
+		if (GetPClasses && IniFile.pszClasses[CurFile] == NULL)
+			break;
+		else if (!GetPClasses && IniFile.pszRaces[CurFile] == NULL)
+			break;
 
-      // open file if possible
-      if (GetPClasses)
-        MyOpen(IniFile.pszClasses[CurFile], "rb", &ClassFile);
-      else
-        MyOpen(IniFile.pszRaces[CurFile], "rb", &ClassFile);
+		// open file if possible
+		if (GetPClasses)
+			MyOpen(IniFile.pszClasses[CurFile], "rb", &ClassFile);
+		else
+			MyOpen(IniFile.pszRaces[CurFile], "rb", &ClassFile);
 
-      if (ClassFile.fp == NULL) continue;
+		if (ClassFile.fp == NULL) continue;
 
-      // read in data
+		// read in data
 
-      /* get num classes */
-      fread(&NumClasses, sizeof(_INT16), 1, ClassFile.fp);
+		/* get num classes */
+		fread(&NumClasses, sizeof(_INT16), 1, ClassFile.fp);
 
-      /* read them in */
-      for (iTemp = 0; iTemp < NumClasses; iTemp++)
-      {
-        PClass[CurClass] = malloc(sizeof(struct PClass));
-        CheckMem(PClass[CurClass]);
+		/* read them in */
+		for (iTemp = 0; iTemp < NumClasses; iTemp++) {
+			PClass[CurClass] = malloc(sizeof(struct PClass));
+			CheckMem(PClass[CurClass]);
 
-        fread(PClass[CurClass], sizeof(struct PClass), 1, ClassFile.fp);
+			fread(PClass[CurClass], sizeof(struct PClass), 1, ClassFile.fp);
 
-        //printf("%s\n\r", PClass[CurClass]->szName);
+			//printf("%s\n\r", PClass[CurClass]->szName);
 
-        CurClass++;
-        if (CurClass == MAX_PCLASSES) break;
-      }
-      fclose(ClassFile.fp);
+			CurClass++;
+			if (CurClass == MAX_PCLASSES) break;
+		}
+		fclose(ClassFile.fp);
 
-      if (CurClass == MAX_PCLASSES) break;
-    }
-  }
+		if (CurClass == MAX_PCLASSES) break;
+	}
+}
 
-  void Free_PClasses( struct PClass *PClass[MAX_PCLASSES])                  
-    /*
-     * This function will free the classes loaded by Load_PClasses
-     */
-  {
-    _INT16 iTemp;
+void Free_PClasses(struct PClass *PClass[MAX_PCLASSES])
+/*
+ * This function will free the classes loaded by Load_PClasses
+ */
+{
+	_INT16 iTemp;
 
-    for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++)
-    {
-      if (PClass[iTemp])
-      {
-        free(PClass[iTemp]);
-        PClass[iTemp] = NULL;
-      }
-    }
-  }
+	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++) {
+		if (PClass[iTemp]) {
+			free(PClass[iTemp]);
+			PClass[iTemp] = NULL;
+		}
+	}
+}
 
 
 // ------------------------------------------------------------------------- //
 
-  void PClass_Init ( void )
-    /*
-     * Initialize classes and races.
-     *
-     */
-  {
-    if (Verbose)
-    {
-      DisplayStr("> PClass_Init()\n");
-      delay(500);
-    }
+void PClass_Init(void)
+/*
+ * Initialize classes and races.
+ *
+ */
+{
+	if (Verbose) {
+		DisplayStr("> PClass_Init()\n");
+		delay(500);
+	}
 
-    Load_PClasses(Races, FALSE);
-    Load_PClasses(PClasses, TRUE);
+	Load_PClasses(Races, FALSE);
+	Load_PClasses(PClasses, TRUE);
 
-    ClassesInitialized = TRUE;
-  }
+	ClassesInitialized = TRUE;
+}
 
-  void PClass_Close ( void )
-    /*
-     * DeInitializes classes and races.
-     *
-     */
-  {
-    if (ClassesInitialized == FALSE) return;
+void PClass_Close(void)
+/*
+ * DeInitializes classes and races.
+ *
+ */
+{
+	if (ClassesInitialized == FALSE) return;
 
-    Free_PClasses(PClasses);
-    Free_PClasses(Races);
+	Free_PClasses(PClasses);
+	Free_PClasses(Races);
 
-    ClassesInitialized = FALSE;
-  }
+	ClassesInitialized = FALSE;
+}

@@ -1,1 +1,1 @@
-void SystemInit ( void );                       // Initializes the system
+void SystemInit(void);                          // Initializes the system

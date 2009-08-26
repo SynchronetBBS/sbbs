@@ -6,13 +6,13 @@ struct PACKED Quest {
 	BOOL Known;
 } PACKED;
 
-  void ClearFlags ( char *Flags );
+void ClearFlags(char *Flags);
 
-  BOOL RunEvent ( BOOL QuoteToggle, char *szEventFile, char *szEventName,
-    struct NPCInfo *NPCInfo, char *szNPCIndex );
+BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
+			  struct NPCInfo *NPCInfo, char *szNPCIndex);
 
-  void Quests_GoQuest ( void );
+void Quests_GoQuest(void);
 
 
-  void Quests_Init ( void );
-  void Quests_Close ( void );
+void Quests_Init(void);
+void Quests_Close(void);

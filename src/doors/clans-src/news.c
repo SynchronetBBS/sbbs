@@ -37,108 +37,101 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern struct Language *Language;
 extern struct system System;
 
-  void News_AddNews(char *szString)
-  {
-    FILE *fpNewsFile;
+void News_AddNews(char *szString)
+{
+	FILE *fpNewsFile;
 
-    /* open news file */
+	/* open news file */
 
-    /* add to it */
+	/* add to it */
 
-    fpNewsFile = _fsopen("today.asc", "at", SH_DENYWR);
+	fpNewsFile = _fsopen("today.asc", "at", SH_DENYWR);
 
-    fputs(szString, fpNewsFile);
+	fputs(szString, fpNewsFile);
 
-    fclose(fpNewsFile);
-  }
+	fclose(fpNewsFile);
+}
 
-  void News_ReadNews( BOOL Today )
-  {
-    _INT16 CurLine = 0, NumLines, cTemp;
-    FILE *fp;
-    char *Lines[30];
+void News_ReadNews(BOOL Today)
+{
+	_INT16 CurLine = 0, NumLines, cTemp;
+	FILE *fp;
+	char *Lines[30];
 
-    /* now display it according to the type of file it is */
+	/* now display it according to the type of file it is */
 
-    if (Today)
-      fp = _fsopen ("today.asc", "r", SH_DENYWR);
-    else
-      fp = _fsopen ("yest.asc", "r", SH_DENYWR);
-    if (!fp)
-    {
-      rputs("No news to report.\n\n%P");
-      return;
-    }
+	if (Today)
+		fp = _fsopen("today.asc", "r", SH_DENYWR);
+	else
+		fp = _fsopen("yest.asc", "r", SH_DENYWR);
+	if (!fp) {
+		rputs("No news to report.\n\n%P");
+		return;
+	}
 
-    /* init mem */
-    for (cTemp = 0; cTemp < 30; cTemp++)
-    {
-      Lines[cTemp] = malloc(255);
-      CheckMem(Lines[cTemp]);
-    }
+	/* init mem */
+	for (cTemp = 0; cTemp < 30; cTemp++) {
+		Lines[cTemp] = malloc(255);
+		CheckMem(Lines[cTemp]);
+	}
 
-    for (;;)
-    {
-      /* get SCREEN_LENGTH-4 lines if possible */
-      for (cTemp = 0; cTemp < (od_control.user_screen_length-4); cTemp++)
-      {
-        fgets(Lines[cTemp], 255, fp);
-        if (feof(fp))
-          break;
-      }
-      NumLines = cTemp;
+	for (;;) {
+		/* get SCREEN_LENGTH-4 lines if possible */
+		for (cTemp = 0; cTemp < (od_control.user_screen_length-4); cTemp++) {
+			fgets(Lines[cTemp], 255, fp);
+			if (feof(fp))
+				break;
+		}
+		NumLines = cTemp;
 
-      /* display them all */
-      for (CurLine = 0; CurLine < NumLines; CurLine++)
-          rputs(Lines[CurLine]);
+		/* display them all */
+		for (CurLine = 0; CurLine < NumLines; CurLine++)
+			rputs(Lines[CurLine]);
 
-      /* pause if SCREEN_LENGTH-4 lines */
-      if (CurLine == (od_control.user_screen_length-4) && Door_AllowScreenPause ())
-      {
-        rputs(ST_MORE);
-        od_sleep(0);
-          if (toupper(od_get_key(TRUE)) == 'N')
-        {
-          rputs("\r                       \r");
-          break;
-        }
-        rputs("\r                       \r");
+		/* pause if SCREEN_LENGTH-4 lines */
+		if (CurLine == (od_control.user_screen_length-4) && Door_AllowScreenPause()) {
+			rputs(ST_MORE);
+			od_sleep(0);
+			if (toupper(od_get_key(TRUE)) == 'N') {
+				rputs("\r                       \r");
+				break;
+			}
+			rputs("\r                       \r");
 
-        CurLine = 0;
-      }
-      else if (Door_AllowScreenPause() == FALSE)
-        CurLine = 0;
+			CurLine = 0;
+		}
+		else if (Door_AllowScreenPause() == FALSE)
+			CurLine = 0;
 
-        /* see if end of file, if so, exit */
-      if (feof(fp))
-        break;
+		/* see if end of file, if so, exit */
+		if (feof(fp))
+			break;
 
-      /* see if key hit */
-      if (od_get_key(FALSE)) break;
-      }
+		/* see if key hit */
+		if (od_get_key(FALSE)) break;
+	}
 
-    /* de-init mem */
-      for (cTemp = 0; cTemp < 30; cTemp++)
-      {
-        free(Lines[cTemp]);
-        Lines[cTemp] = NULL;
-      }
+	/* de-init mem */
+	for (cTemp = 0; cTemp < 30; cTemp++) {
+		free(Lines[cTemp]);
+		Lines[cTemp] = NULL;
+	}
 
-    fclose(fp);
+	fclose(fp);
 
-    door_pause();
+	door_pause();
 
-  }
+}
 
-  void News_CreateTodayNews  ( void )
-  {
-    /* this initializes the TODAY.ASC file */
+void News_CreateTodayNews(void)
+{
+	/* this initializes the TODAY.ASC file */
 
-    char szString[128];
+	char szString[128];
 
-    sprintf(szString, ST_NEWSFOR, System.szTodaysDate);
-    News_AddNews(szString);
+	sprintf(szString, ST_NEWSFOR, System.szTodaysDate);
+	News_AddNews(szString);
 
-    /* give other info like increase in cost of etc. */
-  }
+	/* give other info like increase in cost of etc. */
+}
 

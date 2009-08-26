@@ -1,4 +1,4 @@
 
-  void PawnShop ( void );
+void PawnShop(void);
 
-  void PS_Maint ( void );
+void PS_Maint(void);

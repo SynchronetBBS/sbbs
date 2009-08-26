@@ -27,71 +27,70 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "defines.h"
 
-#define TOTAL_MONTHS	12
+#define TOTAL_MONTHS    12
 
-  long DaysSinceJan1( char szTheDate[] )
-  {
-    long CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
-    BOOL LeapYear;
-    _INT16 NumDaysPerMonth[2][TOTAL_MONTHS] = {
-      { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-      { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }  };
+long DaysSinceJan1(char szTheDate[])
+{
+	long CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
+	BOOL LeapYear;
+	_INT16 NumDaysPerMonth[2][TOTAL_MONTHS] = {
+		{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
+		{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+	};
 
-    ThisDay = atoi(&szTheDate[3]);
-    ThisMonth = atoi(szTheDate);
-    ThisYear = atoi(&szTheDate[6]);
+	ThisDay = atoi(&szTheDate[3]);
+	ThisMonth = atoi(szTheDate);
+	ThisYear = atoi(&szTheDate[6]);
 
-    for (CurMonth = 1; CurMonth < ThisMonth; CurMonth++)
-    {
-      LeapYear = (ThisYear % 4) == 0;
+	for (CurMonth = 1; CurMonth < ThisMonth; CurMonth++) {
+		LeapYear = (ThisYear % 4) == 0;
 
-      Days += (long) NumDaysPerMonth[LeapYear + 0][CurMonth - 1];
-    }
+		Days += (long) NumDaysPerMonth[LeapYear + 0][CurMonth - 1];
+	}
 
-    Days += ThisDay;
+	Days += ThisDay;
 
-    return (Days);
+	return (Days);
 
-  }
+}
 
-  long DaysSince1970 ( char szTheDate[] )
-  {
-    long Days = 0, ThisYear, CurYear;
-    BOOL LeapYear;
+long DaysSince1970(char szTheDate[])
+{
+	long Days = 0, ThisYear, CurYear;
+	BOOL LeapYear;
 
-    ThisYear = atoi(&szTheDate[6]);
+	ThisYear = atoi(&szTheDate[6]);
 
-    for (CurYear = 1970; CurYear < ThisYear; CurYear++)
-    {
-      LeapYear = (CurYear % 4) == 0;
+	for (CurYear = 1970; CurYear < ThisYear; CurYear++) {
+		LeapYear = (CurYear % 4) == 0;
 
-      if (LeapYear)
-        Days += 366;
-      else
-        Days += 365;
-    }
+		if (LeapYear)
+			Days += 366;
+		else
+			Days += 365;
+	}
 
-    Days += DaysSinceJan1(szTheDate);
+	Days += DaysSinceJan1(szTheDate);
 
-    return (Days);
-  }
+	return (Days);
+}
 
-  long DaysBetween ( char szFirstDate[], char szLastDate[] )
-    /*
-     * This function returns the number of days between the first date and
-     * last date.
-     *
-     *
-     * DaysBetween = LastDate - FirstDate
-     *
-     *
-     * LastDate is MOST recent date.
-     */
-  {
-    long Days;
+long DaysBetween(char szFirstDate[], char szLastDate[])
+/*
+ * This function returns the number of days between the first date and
+ * last date.
+ *
+ *
+ * DaysBetween = LastDate - FirstDate
+ *
+ *
+ * LastDate is MOST recent date.
+ */
+{
+	long Days;
 
-    Days = DaysSince1970(szLastDate) - DaysSince1970(szFirstDate);
+	Days = DaysSince1970(szLastDate) - DaysSince1970(szFirstDate);
 
-    return (Days);
-  }
+	return (Days);
+}
 

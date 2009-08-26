@@ -3,14 +3,14 @@
 
 #define VERSION                 "v0.96b2"
 
-#define NTRUE			581 					// "True" used for reg info
-#define NFALSE			0
+#define NTRUE           581                     // "True" used for reg info
+#define NFALSE          0
 // results of fighting
-#define FT_RAN			0
-#define FT_WON			1
-#define FT_LOST 		2
+#define FT_RAN          0
+#define FT_WON          1
+#define FT_LOST         2
 
-#define MAX_ITEMSTAKEN	2		// allow this many items to be stolen in combat
+#define MAX_ITEMSTAKEN  2       // allow this many items to be stolen in combat
 
 
 #define MAX_SPELLS              40
@@ -29,39 +29,39 @@
 
 #define SPECIAL_CODE    '%'
 
-#define STR_YESNO	" |0A(|0BYes|0C/no|0A) |0F"
-#define STR_NOYES	" |0A(|0Cyes/|0BNo|0A) |0F"
-#define YES 		1
-#define NO			0
+#define STR_YESNO   " |0A(|0BYes|0C/no|0A) |0F"
+#define STR_NOYES   " |0A(|0Cyes/|0BNo|0A) |0F"
+#define YES         1
+#define NO          0
 
-#define MAX_PCLASSES	15
+#define MAX_PCLASSES    15
 
 // INI Specific data
-#define MAX_NPCFILES	32
-#define MAX_SPELLFILES	8
-#define MAX_RACEFILES	8
-#define MAX_CLASSFILES	8
-#define MAX_VILLFILES	8
-#define MAX_ITEMFILES	8
-#define MAX_CLANCOMBAT	20
+#define MAX_NPCFILES    32
+#define MAX_SPELLFILES  8
+#define MAX_RACEFILES   8
+#define MAX_CLASSFILES  8
+#define MAX_VILLFILES   8
+#define MAX_ITEMFILES   8
+#define MAX_CLANCOMBAT  20
 
 #define MAX_LEVELS      100
-#define MAX_ITEMS_HELD	30
+#define MAX_ITEMS_HELD  30
 
 #define MAX_BUILDINGS 32
 
-#define MAX_ITEMS		60
-#define I_ITEM			0
-#define I_WEAPON		1
-#define I_ARMOR 		2
-#define I_SHIELD		3
-#define I_SCROLL		4
-#define I_BOOK			5
-#define I_OTHER 		6
+#define MAX_ITEMS       60
+#define I_ITEM          0
+#define I_WEAPON        1
+#define I_ARMOR         2
+#define I_SHIELD        3
+#define I_SCROLL        4
+#define I_BOOK          5
+#define I_OTHER         6
 
 // display types for GetStringChoice
 #define DT_WIDE     0
-#define DT_LONG 		1
+#define DT_LONG         1
 
 // XOR Values
 #define XOR_VILLAGE   (char)9
@@ -93,10 +93,10 @@
 #define SF_RAISEUNDEAD          16
 #define SF_BANISHUNDEAD         32
 
-#define MAX_ALLIES		5						// player may be in 5 alliances
+#define MAX_ALLIES      5                       // player may be in 5 alliances
 #define MAX_ALLIANCES 16
 #define MAX_ALLIANCEMEMBERS 20
-#define MAX_ALLIANCEITEMS	30
+#define MAX_ALLIANCEITEMS   30
 
 /* interBBS stuff */
 #define WS_STAYING              0           /* they're staying */
@@ -105,66 +105,66 @@
 
 // Village types
 #define V_ALL         0
-#define V_WOODLAND		1
+#define V_WOODLAND      1
 #define V_COASTAL     2
-#define V_WASTELAND 	3
+#define V_WASTELAND     3
 
 // gov't system
-#define GS_DEMOCRACY	0
-#define GS_DICTATOR 	1
+#define GS_DEMOCRACY    0
+#define GS_DICTATOR     1
 
-#define NUM_BUILDINGTYPES	10
+#define NUM_BUILDINGTYPES   10
 
-#define B_BARRACKS		0
-#define B_WALL			1
-#define B_TOWER 		2
-#define B_STEELMILL 	3
-#define B_STABLES		4
-#define B_AGENCY		5
-#define B_SECURITY		6
-#define B_GYM			7
-#define B_DEVELOPERS	8
-#define B_BUSINESS		9
-
-
-#define MAX_QUESTS		64
-#define MAX_OPTIONS 	16
-#define MAX_QUOTES		64
-#define MAX_TOPICS		10
+#define B_BARRACKS      0
+#define B_WALL          1
+#define B_TOWER         2
+#define B_STEELMILL     3
+#define B_STABLES       4
+#define B_AGENCY        5
+#define B_SECURITY      6
+#define B_GYM           7
+#define B_DEVELOPERS    8
+#define B_BUSINESS      9
 
 
-#define NPCS_NOTHERE	0	// status of NPC, not here -- i.e. not in town
-#define NPCS_HERE		1
+#define MAX_QUESTS      64
+#define MAX_OPTIONS     16
+#define MAX_QUOTES      64
+#define MAX_TOPICS      10
+
+
+#define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town
+#define NPCS_HERE       1
 
 #define MAX_CHATSPERDAY 4
-#define MAX_MONSTERS	255 					// Number of monsters in .MON file
+#define MAX_MONSTERS    255                     // Number of monsters in .MON file
 
 
 /* IBBS Stuff */
 #define MAX_IBBSNODES   50
 
 
-#define WN_NONE 		0						// not a wanderer
-#define WN_CHURCH		1
-#define WN_STREET		2
-#define WN_MARKET		3
+#define WN_NONE         0                       // not a wanderer
+#define WN_CHURCH       1
+#define WN_STREET       2
+#define WN_MARKET       3
 #define WN_TOWNHALL 5
-#define WN_THALL		6
-#define WN_MINE 		8
+#define WN_THALL        6
+#define WN_MINE         8
 
-#define MAX_NPCS		16
+#define MAX_NPCS        16
 
 // empire owner types
-#define EO_VILLAGE		0
-#define EO_ALLIANCE 	1
-#define EO_CLAN 		2
+#define EO_VILLAGE      0
+#define EO_ALLIANCE     1
+#define EO_CLAN         2
 
 
-#define MAX_PAWNLEVEL	5
+#define MAX_PAWNLEVEL   5
 #define MAX_WIZARDLEVEL 5
 #define MAX_MARKETLEVEL 5
 #define MAX_CHURCHLEVEL 5
-#define MAX_THALLLEVEL	4
+#define MAX_THALLLEVEL  4
 
 #define MAX_PACKETAGE   2       // number of days before a packet is old
 #define MAX_BACKUPAGE   4       // number of days before a backup packet is old
@@ -177,9 +177,9 @@
 // uncomment for Turbo C++
 // typedef char BOOL;
 #ifdef __unix__
-# define BOOL char			// Stops OpenDoor.h from re-defining it.
+# define BOOL char          // Stops OpenDoor.h from re-defining it.
 # define FAR
-# define _INT16	short
+# define _INT16 short
 #elif defined(_MSC_VER)
 # define _INT16 short int
 # ifndef FAR
@@ -196,7 +196,8 @@ typedef char __BOOL;
 # define PACKED __attribute__ ((packed))
 #elif defined(_MSC_VER)
 # define PACKED
-// # pragma warning(disable:4103)  // Not sure what this does... 
+// # pragma warning(disable:4103)  // Not sure what this does...
+
 # pragma pack(1)
 #endif
 
@@ -217,7 +218,7 @@ enum PlayerStats { stAgility, stDexterity, stStrength, stWisdom, stArmorStr };
 enum action { acAttack, acRun, acCast, acRead, acSkip, acNone };
 typedef _INT16 action;
 
-_INT16	_argc;
-char	**_argv;
+_INT16  _argc;
+char    **_argv;
 
 #endif /* THE_CLANS__DEFINES___H */

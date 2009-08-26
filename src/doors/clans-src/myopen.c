@@ -38,176 +38,163 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "system.h"
 
-void cipher (void *, void *, size_t, unsigned char);
+void cipher(void *, void *, size_t, unsigned char);
 
-  void MyOpen( char *szFileName, char *szMode, struct FileHeader *FileHeader )
-    /*
-     * This function opens the file specified and sees if it is a .PAKfile
-     * file or a regular DOS file.
-     */
-  {
-    FILE *fp;
-    BOOL FoundFile = FALSE;
-    char szPakFileName[50], szModFileName[50], *pc;
+void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
+/*
+ * This function opens the file specified and sees if it is a .PAKfile
+ * file or a regular DOS file.
+ */
+{
+	FILE *fp;
+	BOOL FoundFile = FALSE;
+	char szPakFileName[50], szModFileName[50], *pc;
 
-    strcpy(szModFileName, szFileName);
+	strcpy(szModFileName, szFileName);
 
-    if (szFileName[0] == '@')
-    {
-      // different .PAK file
-      strcpy(szPakFileName, &szFileName[1]);
+	if (szFileName[0] == '@') {
+		// different .PAK file
+		strcpy(szPakFileName, &szFileName[1]);
 
-      // find the '/' char and put a null there
+		// find the '/' char and put a null there
 
-      pc = szPakFileName;
+		pc = szPakFileName;
 
-      while (*pc)
-      {
-        if (*pc == '/')
-        {
-          strcpy(szModFileName, pc);
+		while (*pc) {
+			if (*pc == '/') {
+				strcpy(szModFileName, pc);
 
-          *pc = 0;
-          break;
-        }
-        pc++;
-      }
-
-    }
-    else
-    {
-      strcpy(szPakFileName, "clans.pak");
-    }
-
-    // if file starts with / then it is in pakfile
-    FileHeader->fp = NULL;
-    if (szModFileName[0] == '/')
-    {
-      // look for the file
-      // fp = _fsopen(szPakFileName, "rb", SH_DENYWR);
-      fp = fopen(szPakFileName, "rb");
-
-		if (! fp)  {
-	      System_Error("Can't open CLANS.PAK file.\n");
+				*pc = 0;
+				break;
+			}
+			pc++;
 		}
 
-      for (;;)
-      {
-        if (fread(FileHeader, sizeof(struct FileHeader), 1, fp) == 0)
-          break;
+	}
+	else {
+		strcpy(szPakFileName, "clans.pak");
+	}
 
-        // od_printf("read in %s\n\r", FileHeader->szFileName);
+	// if file starts with / then it is in pakfile
+	FileHeader->fp = NULL;
+	if (szModFileName[0] == '/') {
+		// look for the file
+		// fp = _fsopen(szPakFileName, "rb", SH_DENYWR);
+		fp = fopen(szPakFileName, "rb");
 
-        if (stricmp(FileHeader->szFileName, szModFileName) == 0)
-        {
-          FoundFile = TRUE;
-          break;
-        }
-        else  // go onto next file
-          fseek(fp, FileHeader->lFileSize, SEEK_CUR);
-      }
+		if (! fp)  {
+			System_Error("Can't open CLANS.PAK file.\n");
+		}
 
-      // found file and at start of it, close file, reopen with szMode
-      fclose(fp);
+		for (;;) {
+			if (fread(FileHeader, sizeof(struct FileHeader), 1, fp) == 0)
+				break;
 
-      if (FoundFile)
-      {
-        FileHeader->fp = fopen(szPakFileName, szMode);
-        fseek(FileHeader->fp, FileHeader->lStart, SEEK_SET);
-      }
-      else
-	  {
-	      // open file from dos
-    	  fp = _fsopen(szModFileName, szMode, SH_DENYWR);
-	      if (!fp) return;
+			// od_printf("read in %s\n\r", FileHeader->szFileName);
 
-    	  // read in file stats
-	      FileHeader->lStart = 0;
+			if (stricmp(FileHeader->szFileName, szModFileName) == 0) {
+				FoundFile = TRUE;
+				break;
+			}
+			else  // go onto next file
+				fseek(fp, FileHeader->lFileSize, SEEK_CUR);
+		}
 
-    	  fseek(fp, 0L, SEEK_END);
-	      FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
-    	  fseek(fp, 0L, SEEK_SET);
+		// found file and at start of it, close file, reopen with szMode
+		fclose(fp);
 
-	      FileHeader->fp = fp;
-	  }
-      return;
-    }
-    else
-    {
-      // open file from dos
-      fp = _fsopen(szModFileName, szMode, SH_DENYWR);
-      if (!fp) return;
+		if (FoundFile) {
+			FileHeader->fp = fopen(szPakFileName, szMode);
+			fseek(FileHeader->fp, FileHeader->lStart, SEEK_SET);
+		}
+		else {
+			// open file from dos
+			fp = _fsopen(szModFileName, szMode, SH_DENYWR);
+			if (!fp) return;
 
-      // read in file stats
-      FileHeader->lStart = 0;
+			// read in file stats
+			FileHeader->lStart = 0;
 
-      fseek(fp, 0L, SEEK_END);
-      FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
-      fseek(fp, 0L, SEEK_SET);
+			fseek(fp, 0L, SEEK_END);
+			FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
+			fseek(fp, 0L, SEEK_SET);
 
-      FileHeader->fp = fp;
+			FileHeader->fp = fp;
+		}
+		return;
+	}
+	else {
+		// open file from dos
+		fp = _fsopen(szModFileName, szMode, SH_DENYWR);
+		if (!fp) return;
 
-      return;
-    }
-  }
+		// read in file stats
+		FileHeader->lStart = 0;
 
-  void EncryptWrite ( void *Data, long DataSize, FILE *fp, char XorValue )
-  {
-    char *EncryptedData;
+		fseek(fp, 0L, SEEK_END);
+		FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
+		fseek(fp, 0L, SEEK_SET);
 
-    if (DataSize == 0)
-    {
-      System_Error("EncryptWrite() called with 0 bytes\n");
-    }
+		FileHeader->fp = fp;
 
-    //printf("EncryptWrite(): Data size is %d\n", (_INT16)DataSize);
-    EncryptedData = malloc((_INT16)DataSize);
-    CheckMem(EncryptedData);
+		return;
+	}
+}
 
-/*  -- Removed the original Encrypt() function for simplicity
-    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
-	cipher (EncryptedData, Data, DataSize, (unsigned char)XorValue);
+void EncryptWrite(void *Data, long DataSize, FILE *fp, char XorValue)
+{
+	char *EncryptedData;
 
-    fwrite(EncryptedData, (_INT16)DataSize, 1, fp);
+	if (DataSize == 0) {
+		System_Error("EncryptWrite() called with 0 bytes\n");
+	}
 
-    free(EncryptedData);
-  }
+	//printf("EncryptWrite(): Data size is %d\n", (_INT16)DataSize);
+	EncryptedData = malloc((_INT16)DataSize);
+	CheckMem(EncryptedData);
 
-  _INT16 EncryptRead ( void *Data, long DataSize, FILE *fp, char XorValue )
-  {
-    char *EncryptedData;
-    _INT16 Result;
+	/*  -- Removed the original Encrypt() function for simplicity
+	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
+	cipher(EncryptedData, Data, DataSize, (unsigned char)XorValue);
 
-    if (DataSize == 0)
-    {
-      System_Error("EncryptRead() called with 0 bytes\n");
-    }
+	fwrite(EncryptedData, (_INT16)DataSize, 1, fp);
 
-    EncryptedData = malloc(DataSize);
-    CheckMem(EncryptedData);
+	free(EncryptedData);
+}
 
-    Result = fread(EncryptedData, 1, DataSize, fp);
+_INT16 EncryptRead(void *Data, long DataSize, FILE *fp, char XorValue)
+{
+	char *EncryptedData;
+	_INT16 Result;
 
-/*  -- Removed the original Decrypt() function for simplicity  
-	Decrypt((char *)Data, EncryptedData, DataSize, XorValue);*/
+	if (DataSize == 0) {
+		System_Error("EncryptRead() called with 0 bytes\n");
+	}
+
+	EncryptedData = malloc(DataSize);
+	CheckMem(EncryptedData);
+
+	Result = fread(EncryptedData, 1, DataSize, fp);
+
+	/*  -- Removed the original Decrypt() function for simplicity
+	    Decrypt((char *)Data, EncryptedData, DataSize, XorValue);*/
 	if (Result)
 		cipher(Data, EncryptedData, DataSize, (unsigned char)XorValue);
 
-    free(EncryptedData);
+	free(EncryptedData);
 
-    return Result;
-  }
+	return Result;
+}
 
 /* -- Replacement Encrypt/Decrypt function, reduces redundant code */
-  void cipher (void *dest, void *src, size_t len, unsigned char xor_val)
-  {
+void cipher(void *dest, void *src, size_t len, unsigned char xor_val)
+{
 	if (!dest || !src || !len || !xor_val)
-		System_Error ("Invalid Parameters to cipher");
+		System_Error("Invalid Parameters to cipher");
 
-	while (len--)
-	{
+	while (len--) {
 		*(char *)dest = *(char *)src ^ xor_val;
 		dest = (char *)dest + 1;
 		src = (char *)src + 1;
 	}
-  }
+}

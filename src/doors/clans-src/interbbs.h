@@ -7,7 +7,7 @@
 
 
 /******************************************************************************/
-/*						   Configuration Constants							  */
+/*                         Configuration Constants                            */
 /******************************************************************************/
 #define PROG_NAME_CHARS    35
 #define PATH_CHARS         80
@@ -23,7 +23,7 @@
 #define LOCATION_CHARS     40
 
 /******************************************************************************/
-/*								  Data Types								  */
+/*                                Data Types                                  */
 /******************************************************************************/
 #ifndef tBool
 typedef _INT16 tBool;
@@ -45,95 +45,90 @@ typedef unsigned _INT16 WORD;
 #endif
 #endif
 
-typedef enum
-   {
-   eSuccess,
-   eNoMoreMessages,
-   eGeneralFailure,
-   eBadParameter,
-   eNoMemory,
-   eMissingDir,
-   eFileOpenError
-   } tIBResult;
+typedef enum {
+	eSuccess,
+	eNoMoreMessages,
+	eGeneralFailure,
+	eBadParameter,
+	eNoMemory,
+	eMissingDir,
+	eFileOpenError
+} tIBResult;
 
-typedef struct PACKED
-   {
-   char szAddress[NODE_ADDRESS_CHARS + 1];
-   char szSystemName[SYSTEM_NAME_CHARS + 1];
-   char szLocation[LOCATION_CHARS + 1];
-   } PACKED tOtherNode;
+typedef struct PACKED {
+	char szAddress[NODE_ADDRESS_CHARS + 1];
+	char szSystemName[SYSTEM_NAME_CHARS + 1];
+	char szLocation[LOCATION_CHARS + 1];
+} PACKED tOtherNode;
 
-typedef struct PACKED
-   {
-   char szThisNodeAddress[NODE_ADDRESS_CHARS + 1];
-   char szProgName[PROG_NAME_CHARS + 1];
-   char szNetmailDir[PATH_CHARS + 1];
-   tBool bCrash;
-   tBool bHold;
-   tBool bEraseOnSend;
-   tBool bEraseOnReceive;
-   _INT16 nTotalSystems;
-   tOtherNode *paOtherSystem;
-   }  PACKED tIBInfo;
+typedef struct PACKED {
+	char szThisNodeAddress[NODE_ADDRESS_CHARS + 1];
+	char szProgName[PROG_NAME_CHARS + 1];
+	char szNetmailDir[PATH_CHARS + 1];
+	tBool bCrash;
+	tBool bHold;
+	tBool bEraseOnSend;
+	tBool bEraseOnReceive;
+	_INT16 nTotalSystems;
+	tOtherNode *paOtherSystem;
+}  PACKED tIBInfo;
 
 
 /******************************************************************************/
 /*                         InterBBS API Functions                             */
 /******************************************************************************/
 tIBResult IBSend(tIBInfo *pInfo, char *pszDestNode, void *pBuffer,
-                 _INT16 nBufferSize);
+				 _INT16 nBufferSize);
 tIBResult IBSendAll(tIBInfo *pInfo, void *pBuffer, _INT16 nBufferSize);
 tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, _INT16 nMaxBufferSize);
 tIBResult IBReadConfig(tIBInfo *pInfo, char *pszConfigFile);
 
 
 /******************************************************************************/
-/*							 Private Declarations							  */
+/*                           Private Declarations                             */
 /******************************************************************************/
-typedef struct PACKED
-   {
-   char szFromUserName[36];
-   char szToUserName[36];
-   char szSubject[72];
-   char szDateTime[20]; 		/* "DD Mon YY  HH:MM:SS" */
-   WORD wTimesRead;
-   WORD wDestNode;
-   WORD wOrigNode;
-   WORD wCost;					/* Lowest unit of originator's currency */
-   WORD wOrigNet;
-   WORD wDestNet;
-   WORD wDestZone;
-   WORD wOrigZone;
-   WORD wDestPoint;
-   WORD wOrigPoint;
-   WORD wReplyTo;
-   WORD wAttribute;
-   WORD wNextReply;
-   }  PACKED tMessageHeader;
+typedef struct PACKED {
+	char szFromUserName[36];
+	char szToUserName[36];
+	char szSubject[72];
+	char szDateTime[20];         /* "DD Mon YY  HH:MM:SS" */
+	WORD wTimesRead;
+	WORD wDestNode;
+	WORD wOrigNode;
+	WORD wCost;                  /* Lowest unit of originator's currency */
+	WORD wOrigNet;
+	WORD wDestNet;
+	WORD wDestZone;
+	WORD wOrigZone;
+	WORD wDestPoint;
+	WORD wOrigPoint;
+	WORD wReplyTo;
+	WORD wAttribute;
+	WORD wNextReply;
+}  PACKED tMessageHeader;
 
-#define ATTRIB_PRIVATE		0x0001
-#define ATTRIB_CRASH		0x0002
-#define ATTRIB_RECEIVED 	0x0004
-#define ATTRIB_SENT 		0x0008
-#define ATTRIB_FILE_ATTACH	0x0010
-#define ATTRIB_IN_TRANSIT	0x0020
-#define ATTRIB_ORPHAN		0x0040
-#define ATTRIB_KILL_SENT	0x0080
-#define ATTRIB_LOCAL		0x0100
-#define ATTRIB_HOLD 		0x0200
+#define ATTRIB_PRIVATE      0x0001
+#define ATTRIB_CRASH        0x0002
+#define ATTRIB_RECEIVED     0x0004
+#define ATTRIB_SENT         0x0008
+#define ATTRIB_FILE_ATTACH  0x0010
+#define ATTRIB_IN_TRANSIT   0x0020
+#define ATTRIB_ORPHAN       0x0040
+#define ATTRIB_KILL_SENT    0x0080
+#define ATTRIB_LOCAL        0x0100
+#define ATTRIB_HOLD         0x0200
 #define ATTRIB_FILE_REQUEST 0x0800
-#define ATTRIB_RECEIPT_REQ	0x1000
-#define ATTRIB_IS_RECEIPT	0x2000
-#define ATTRIB_AUDIT_REQ	0x4000
-#define ATTRIB_FILE_UPDATE	0x8000
+#define ATTRIB_RECEIPT_REQ  0x1000
+#define ATTRIB_IS_RECEIPT   0x2000
+#define ATTRIB_AUDIT_REQ    0x4000
+#define ATTRIB_FILE_UPDATE  0x8000
 
-typedef struct PACKED
-   {
-   WORD wZone;
-   WORD wNet;
-   WORD wNode;
-   WORD wPoint;
-   } PACKED tFidoNode;
+typedef struct PACKED {
+	WORD wZone;
+	WORD wNet;
+	WORD wNode;
+	WORD wPoint;
+} PACKED tFidoNode;
 
 
 tBool DirExists(const char *pszDirName);
@@ -155,7 +150,7 @@ void DecodeBuffer(const char *pszSource, void *pDestBuffer, _INT16 nBufferSize);
 void ConvertAddressToString(char *pszDest, const tFidoNode *pNode);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
 tBool ProcessConfigFile(char *pszFileName, _INT16 nKeyWords, char **papszKeyWord,
-                  void (*pfCallBack)(int, char *, void *), void *pCallBackData);
+						void (*pfCallBack)(int, char *, void *), void *pCallBackData);
 void ProcessConfigLine(_INT16 nKeyword, char *pszParameter, void *pCallbackData);
 tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName);
 #endif

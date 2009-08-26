@@ -55,147 +55,140 @@ extern __BOOL Verbose;
 
 // ------------------------------------------------------------------------- //
 
-  __BOOL Game_Read ( void )
-    /*
-     * Reads in the GAME.DAT file.  If not found, returns FALSE.
-     */
-  {
-    FILE *fp;
+__BOOL Game_Read(void)
+/*
+ * Reads in the GAME.DAT file.  If not found, returns FALSE.
+ */
+{
+	FILE *fp;
 
-    fp = _fsopen("game.dat", "rb", SH_DENYWR);
-    if (!fp)  return FALSE;
+	fp = _fsopen("game.dat", "rb", SH_DENYWR);
+	if (!fp)  return FALSE;
 
-    EncryptRead(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
-    fclose(fp);
-    return TRUE;
-  }
+	EncryptRead(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
+	fclose(fp);
+	return TRUE;
+}
 
-  void Game_Write ( void )
-    /*
-     * Writes the game.dat file.
-     */
-  {
-    FILE *fp;
+void Game_Write(void)
+/*
+ * Writes the game.dat file.
+ */
+{
+	FILE *fp;
 
-    Game.Data->CRC = CRCValue(Game.Data, sizeof(struct game_data) - sizeof(long));
+	Game.Data->CRC = CRCValue(Game.Data, sizeof(struct game_data) - sizeof(long));
 
-    fp = _fsopen("game.dat", "wb", SH_DENYRW);
-    if (fp)
-    {
-      EncryptWrite(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
-      fclose(fp);
-    }
-  }
+	fp = _fsopen("game.dat", "wb", SH_DENYRW);
+	if (fp) {
+		EncryptWrite(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
+		fclose(fp);
+	}
+}
 
-  void Game_Destroy ( void )
-    /*
-     * Frees mem held by Game
-     */
-  {
-    free(Game.Data);
-    Game.Initialized = FALSE;
-  }
-
-// ------------------------------------------------------------------------- //
-
-  void Game_Settings ( void )
-  {
-    char szString[128];
-
-    sprintf(szString, ST_GSETTINGS0, Game.Data->szDateGameStart);
-    rputs(szString);
-    /* REP:
-    sprintf(szString, ST_GSETTINGS1, Game.Data->EliminationMode ? "On" : "Off");
-    rputs(szString);
-    */
-    sprintf(szString, ST_GSETTINGS2, Game.Data->MaxPermanentMembers);
-    rputs(szString);
-
-    if (Game.Data->InterBBS)
-    {
-      sprintf(szString, ST_GSETTINGS3, Game.Data->ClanTravel ? "allowed" : "disabled");
-      rputs(szString);
-    }
-
-    sprintf(szString, ST_GSETTINGS4, Game.Data->ClanEmpires ? "allowed" : "disabled");
-    rputs(szString);
-
-    sprintf(szString, ST_GSETTINGS5, Game.Data->MineFights);
-    rputs(szString);
-    sprintf(szString, ST_GSETTINGS6, Game.Data->ClanFights);
-    rputs(szString);
-    sprintf(szString, ST_GSETTINGS7, Game.Data->DaysOfProtection);
-    rputs(szString);
-    door_pause();
-  }
-
+void Game_Destroy(void)
+/*
+ * Frees mem held by Game
+ */
+{
+	free(Game.Data);
+	Game.Initialized = FALSE;
+}
 
 // ------------------------------------------------------------------------- //
 
-  void Game_Start ( void )
-    /*
-     * Function is called when the game starts up for FIRST time (i.e. when
-     * the StartGameDate is reached.
-     */
-  {
-    // this sets up all the necessary stuff to start the game
-    News_AddNews(ST_NEWSLOCALRESET);
-    Game.Data->GameState = 0;
+void Game_Settings(void)
+{
+	char szString[128];
 
-    Game_Write();
-  }
+	sprintf(szString, ST_GSETTINGS0, Game.Data->szDateGameStart);
+	rputs(szString);
+	/* REP:
+	sprintf(szString, ST_GSETTINGS1, Game.Data->EliminationMode ? "On" : "Off");
+	rputs(szString);
+	*/
+	sprintf(szString, ST_GSETTINGS2, Game.Data->MaxPermanentMembers);
+	rputs(szString);
+
+	if (Game.Data->InterBBS) {
+		sprintf(szString, ST_GSETTINGS3, Game.Data->ClanTravel ? "allowed" : "disabled");
+		rputs(szString);
+	}
+
+	sprintf(szString, ST_GSETTINGS4, Game.Data->ClanEmpires ? "allowed" : "disabled");
+	rputs(szString);
+
+	sprintf(szString, ST_GSETTINGS5, Game.Data->MineFights);
+	rputs(szString);
+	sprintf(szString, ST_GSETTINGS6, Game.Data->ClanFights);
+	rputs(szString);
+	sprintf(szString, ST_GSETTINGS7, Game.Data->DaysOfProtection);
+	rputs(szString);
+	door_pause();
+}
 
 
 // ------------------------------------------------------------------------- //
 
-  void Game_Init ( void )
-    /*
-     * Initializes Game by reading in the GAME.DAT file.  If file not found,
-     * outputs error message and returns to DOS.
-     */
-  {
-    if (Verbose)
-    {
-      DisplayStr("> Game_Init()\n");
-      delay(500);
-    }
+void Game_Start(void)
+/*
+ * Function is called when the game starts up for FIRST time (i.e. when
+ * the StartGameDate is reached.
+ */
+{
+	// this sets up all the necessary stuff to start the game
+	News_AddNews(ST_NEWSLOCALRESET);
+	Game.Data->GameState = 0;
 
-    Game.Data = malloc(sizeof(struct game_data));
-    CheckMem(Game.Data);
-    Game.Initialized = TRUE;
+	Game_Write();
+}
 
-    if (!Game_Read())
-    {
-      Game_Destroy();
-      System_Error("GAME.DAT not found!  Please run reset.exe\n");
-    }
 
-    // ensure CRC is correct
-    if (CheckCRC(Game.Data, sizeof(struct game_data) - sizeof(long), Game.Data->CRC) == FALSE)
-    {
-      Game_Destroy();
-      System_Error("Game data corrupt!\n");
-    }
+// ------------------------------------------------------------------------- //
 
-    // If game has not yet begun and is waiting for day to start
-    if (Game.Data->GameState == 1)
-    {
-      // if today is game's start date
-      if (DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate) >= 0)
-      {
-        // today is the start of new game
-        Game_Start();
-      }
-    }
-  }
+void Game_Init(void)
+/*
+ * Initializes Game by reading in the GAME.DAT file.  If file not found,
+ * outputs error message and returns to DOS.
+ */
+{
+	if (Verbose) {
+		DisplayStr("> Game_Init()\n");
+		delay(500);
+	}
 
-  void Game_Close ( void )
-    /*
-     * Deinitializes Game.
-     */
-  {
-    if (Game.Initialized == FALSE) return;
+	Game.Data = malloc(sizeof(struct game_data));
+	CheckMem(Game.Data);
+	Game.Initialized = TRUE;
 
-    Game_Write();
-    Game_Destroy();
-  }
+	if (!Game_Read()) {
+		Game_Destroy();
+		System_Error("GAME.DAT not found!  Please run reset.exe\n");
+	}
+
+	// ensure CRC is correct
+	if (CheckCRC(Game.Data, sizeof(struct game_data) - sizeof(long), Game.Data->CRC) == FALSE) {
+		Game_Destroy();
+		System_Error("Game data corrupt!\n");
+	}
+
+	// If game has not yet begun and is waiting for day to start
+	if (Game.Data->GameState == 1) {
+		// if today is game's start date
+		if (DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate) >= 0) {
+			// today is the start of new game
+			Game_Start();
+		}
+	}
+}
+
+void Game_Close(void)
+/*
+ * Deinitializes Game.
+ */
+{
+	if (Game.Initialized == FALSE) return;
+
+	Game_Write();
+	Game_Destroy();
+}

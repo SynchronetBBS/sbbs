@@ -2,7 +2,7 @@
 //
 // Contains the string definitions.
 
-#define ERRORBASE		900
+#define ERRORBASE       900
 
 #define ST_PAUSE        &Language->BigString[Language->StrOffsets[1]]
 #define ST_MORE         &Language->BigString[Language->StrOffsets[2]]

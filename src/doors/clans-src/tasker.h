@@ -8,8 +8,8 @@
 #define DG_TASKER
 
 struct PACKED ts_os_ver {
-      _INT16 maj;
-      _INT16 min;
+	_INT16 maj;
+	_INT16 min;
 };
 
 #define TOT_OS  5
@@ -20,7 +20,7 @@ struct PACKED ts_os_ver {
 #define WINS    3
 #define WIN3    4
 
-                        /*   76543210  */
+/*   76543210  */
 #define is_DOS  0x01    /* b'00000001' */
 #define is_OS2  0x02    /* b'00000010' */
 #define is_DV   0x04    /* b'00000100' */

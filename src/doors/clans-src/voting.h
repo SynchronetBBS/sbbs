@@ -1,4 +1,4 @@
 
-  void VotingBooth ( void );
+void VotingBooth(void);
 
-  void ChooseNewLeader ( void );
+void ChooseNewLeader(void);

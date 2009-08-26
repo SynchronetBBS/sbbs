@@ -25,137 +25,128 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "defines.h"
 #include <string.h>
 
-void Convert ( char *Dest, char *From );
+void Convert(char *Dest, char *From);
 
-struct PACKED LanguageHeader
-{
-    char Signature[30];         // "The Clans Language File v1.0"
+struct PACKED LanguageHeader {
+	char Signature[30];         // "The Clans Language File v1.0"
 
-    unsigned _INT16 StrOffsets[2000];  // offsets for up to 500 strings
-    unsigned _INT16 NumBytes;          // how big is the bigstring!?
+	unsigned _INT16 StrOffsets[2000];  // offsets for up to 500 strings
+	unsigned _INT16 NumBytes;          // how big is the bigstring!?
 
-    char *BigString;        // All 500 strings jumbled together into
-                                // one
+	char *BigString;        // All 500 strings jumbled together into
+	// one
 } PACKED Language;
 
-int main ( int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-    FILE *fFrom, *fTo;
-    _INT16 iTemp, CurString;
-    char TempString[800], String[800], FromFile[30], ToFile[30];
+	FILE *fFrom, *fTo;
+	_INT16 iTemp, CurString;
+	char TempString[800], String[800], FromFile[30], ToFile[30];
 
-    printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
+	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
 
-    if (argc != 2)
-    {
-        printf("Format:  Langcomp <Language>\n");
-        exit(0);
-    }
+	if (argc != 2) {
+		printf("Format:  Langcomp <Language>\n");
+		exit(0);
+	}
 
-    strcpy(FromFile, argv[1]);
+	strcpy(FromFile, argv[1]);
 
-    for (iTemp = strlen(FromFile); iTemp>0; iTemp--)
-        if (FromFile[iTemp] == '.')
-            break;
+	for (iTemp = strlen(FromFile); iTemp>0; iTemp--)
+		if (FromFile[iTemp] == '.')
+			break;
 
-    if (iTemp == 0)
-    {
-        strcpy(ToFile, FromFile);
-        strcat(ToFile, ".xl");
-        strcat(FromFile, ".txt");
-    }
-    else
-    {
-        FromFile[iTemp] = 0;
-        strcpy(ToFile, FromFile);
-        strcat(ToFile, ".xl");
-        FromFile[iTemp] = '.';
-    }
+	if (iTemp == 0) {
+		strcpy(ToFile, FromFile);
+		strcat(ToFile, ".xl");
+		strcat(FromFile, ".txt");
+	}
+	else {
+		FromFile[iTemp] = 0;
+		strcpy(ToFile, FromFile);
+		strcat(ToFile, ".xl");
+		FromFile[iTemp] = '.';
+	}
 
-    fFrom = fopen(FromFile, "r");
-    if (!fFrom)
-    {
-        printf("Error opening %s\n", FromFile);
-        exit(0);
-    }
+	fFrom = fopen(FromFile, "r");
+	if (!fFrom) {
+		printf("Error opening %s\n", FromFile);
+		exit(0);
+	}
 
-    // initialize the big string
-    strcpy(Language.Signature, "The Clans Language File v1.0\x1A");
-    for (iTemp = 0;  iTemp < 2000; iTemp++)
-        Language.StrOffsets[iTemp] = 0;
-    Language.NumBytes = 0;
+	// initialize the big string
+	strcpy(Language.Signature, "The Clans Language File v1.0\x1A");
+	for (iTemp = 0;  iTemp < 2000; iTemp++)
+		Language.StrOffsets[iTemp] = 0;
+	Language.NumBytes = 0;
 
-    Language.BigString = malloc(64000);
-    if (!Language.BigString)
-    {
-        printf("Couldn't allocate enough memory to run!");
-        fclose(fFrom);
-        exit(0);
-    }
+	Language.BigString = malloc(64000);
+	if (!Language.BigString) {
+		printf("Couldn't allocate enough memory to run!");
+		fclose(fFrom);
+		exit(0);
+	}
 
-    // just to ensure it works out, make the first string in BigString = ""
-    Language.BigString[0] = 0;
-    Language.NumBytes = 1;
+	// just to ensure it works out, make the first string in BigString = ""
+	Language.BigString[0] = 0;
+	Language.NumBytes = 1;
 
-    // read through line by line
-    for (;;)
-    {
-        if (!fgets(TempString, 800, fFrom)) break;
+	// read through line by line
+	for (;;) {
+		if (!fgets(TempString, 800, fFrom)) break;
 
-        if (TempString[0] == '#')   continue;       // skip if comment line
-        if (TempString[0] == ' ')   continue;       // skip if comment line
+		if (TempString[0] == '#')   continue;       // skip if comment line
+		if (TempString[0] == ' ')   continue;       // skip if comment line
 
-        // break down string
-        // get rid of \n and \r
+		// break down string
+		// get rid of \n and \r
 		while (TempString[ strlen(TempString) - 1] == '\n' || TempString[ strlen(TempString) - 1] == '\r')
 			TempString[ strlen(TempString) - 1] = 0;
 
-        // convert @@ at end to \n
-        if (TempString[ strlen(TempString) - 2] == '@' &&
-            TempString[ strlen(TempString) - 1] == '@')
-        {
-            TempString[ strlen(TempString) - 2] = 0;
-            strcat(TempString, "\n");
-        }
+		// convert @@ at end to \n
+		if (TempString[ strlen(TempString) - 2] == '@' &&
+				TempString[ strlen(TempString) - 1] == '@') {
+			TempString[ strlen(TempString) - 2] = 0;
+			strcat(TempString, "\n");
+		}
 
-        CurString = atoi(TempString);
-        if (CurString == 0) continue;
+		CurString = atoi(TempString);
+		if (CurString == 0) continue;
 
-        // convert string's special language codes
-        Convert(String, &TempString[5]);
-        // strcpy(String, &TempString[5]);
+		// convert string's special language codes
+		Convert(String, &TempString[5]);
+		// strcpy(String, &TempString[5]);
 
-        Language.StrOffsets[CurString] = Language.NumBytes;
-        strcpy( &Language.BigString[ Language.NumBytes ], String);
-        Language.NumBytes += (strlen(String)+1); // must also include zero byte
-        //Language.BigString[ Language.NumBytes ] = 0;
-        //Language.NumBytes++;
+		Language.StrOffsets[CurString] = Language.NumBytes;
+		strcpy(&Language.BigString[ Language.NumBytes ], String);
+		Language.NumBytes += (strlen(String)+1); // must also include zero byte
+		//Language.BigString[ Language.NumBytes ] = 0;
+		//Language.NumBytes++;
 
-        //sprintf(String, "%04d %s", CurString, &Language.BigString[ Language.StrOffsets[CurString] ]);
-        //String[50] = 0;
-        //strcat(String, "\r");
-        //puts(String);
-    }
+		//sprintf(String, "%04d %s", CurString, &Language.BigString[ Language.StrOffsets[CurString] ]);
+		//String[50] = 0;
+		//strcat(String, "\r");
+		//puts(String);
+	}
 
-    fclose(fFrom);
+	fclose(fFrom);
 
-    // now write it to the file
-    fTo = fopen(ToFile, "wb");
-    if (!fTo)
-    {
-        printf("Error opening %s\n", ToFile);
-        free(Language.BigString);
-        exit(0);
-    }
+	// now write it to the file
+	fTo = fopen(ToFile, "wb");
+	if (!fTo) {
+		printf("Error opening %s\n", ToFile);
+		free(Language.BigString);
+		exit(0);
+	}
 
-    fwrite(&Language, sizeof(Language), 1, fTo);
-    fwrite(Language.BigString, Language.NumBytes, 1, fTo);
+	fwrite(&Language, sizeof(Language), 1, fTo);
+	fwrite(Language.BigString, Language.NumBytes, 1, fTo);
 
-    fclose(fTo);
+	fclose(fTo);
 
-    free(Language.BigString);
+	free(Language.BigString);
 
-    printf("Done!\n\n%u bytes were used.  (max 64000).\n", Language.NumBytes);
+	printf("Done!\n\n%u bytes were used.  (max 64000).\n", Language.NumBytes);
 	return(0);
 }
 
@@ -173,84 +164,74 @@ int main ( int argc, char *argv[])
     } LanguageHeader;
 */
 
-void Convert ( char *Dest, char *From )
+void Convert(char *Dest, char *From)
 {
-    _INT16 dCurChar = 0, fCurChar = 0;
+	_INT16 dCurChar = 0, fCurChar = 0;
 
-    Dest[dCurChar] = 0;    // make it 0 length
+	Dest[dCurChar] = 0;    // make it 0 length
 
-    while (From[fCurChar])
-    {
-        if (From[fCurChar] == '^')
-        {
-            if (From[fCurChar+1] == 'M')
-            {
-                Dest[dCurChar] = '\n';
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else if (From[fCurChar+1] == '[')
-            {
-                Dest[dCurChar] = 27;
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else if (From[fCurChar+1] == '-')
-            {
-                Dest[dCurChar] = 0;
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else if (From[fCurChar+1] == 'H')
-            {
-                Dest[dCurChar] = '\b';
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else if (From[fCurChar+1] == 'N')
-            {
-                Dest[dCurChar] = '\r';
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else if (From[fCurChar+1] == 'G')
-            {
-                Dest[dCurChar] = 7;
-                dCurChar++;
-                fCurChar += 2;
-            }
-            else
-            {
-                Dest[dCurChar] = From[fCurChar];
-                dCurChar++;
-                fCurChar++;
-            }
-        }
-        /*
-        else if (From[fCurChar] == '&' && (isalnum(From[fCurChar+1]) || From[fCurChar+1] == '-') )
-        {
-            // &s turns to %s
-            Dest[dCurChar] = '%';
-            dCurChar++;
-            fCurChar++;
-        }
-        else if (From[fCurChar] == '%' && (isalpha(From[fCurChar+1]) || From[fCurChar+1] == '!') )
-        {
-            // % codes turn to &
-            Dest[dCurChar] = '&';
-            dCurChar++;
-            fCurChar++;
-        }
-        */
-        else
-        {
-            Dest[dCurChar] = From[fCurChar];
+	while (From[fCurChar]) {
+		if (From[fCurChar] == '^') {
+			if (From[fCurChar+1] == 'M') {
+				Dest[dCurChar] = '\n';
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else if (From[fCurChar+1] == '[') {
+				Dest[dCurChar] = 27;
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else if (From[fCurChar+1] == '-') {
+				Dest[dCurChar] = 0;
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else if (From[fCurChar+1] == 'H') {
+				Dest[dCurChar] = '\b';
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else if (From[fCurChar+1] == 'N') {
+				Dest[dCurChar] = '\r';
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else if (From[fCurChar+1] == 'G') {
+				Dest[dCurChar] = 7;
+				dCurChar++;
+				fCurChar += 2;
+			}
+			else {
+				Dest[dCurChar] = From[fCurChar];
+				dCurChar++;
+				fCurChar++;
+			}
+		}
+		/*
+		else if (From[fCurChar] == '&' && (isalnum(From[fCurChar+1]) || From[fCurChar+1] == '-') )
+		{
+		    // &s turns to %s
+		    Dest[dCurChar] = '%';
+		    dCurChar++;
+		    fCurChar++;
+		}
+		else if (From[fCurChar] == '%' && (isalpha(From[fCurChar+1]) || From[fCurChar+1] == '!') )
+		{
+		    // % codes turn to &
+		    Dest[dCurChar] = '&';
+		    dCurChar++;
+		    fCurChar++;
+		}
+		*/
+		else {
+			Dest[dCurChar] = From[fCurChar];
 
-            fCurChar++;
-            dCurChar++;
-        }
-    }
+			fCurChar++;
+			dCurChar++;
+		}
+	}
 
-    Dest[dCurChar] = 0;
+	Dest[dCurChar] = 0;
 
 }

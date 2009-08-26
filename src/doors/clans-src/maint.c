@@ -49,67 +49,66 @@ extern struct game Game;
 extern struct system System;
 extern struct ibbs IBBS;
 
-  void Maintenance ( void )
-    /*
-     * Daily maintenance is run.
-     *
-     *  If this is an IBBS game AND maint was already run, it will not run
-     *  again.  Otherwise, Maintenance() will ALWAYS run.
-     *
-     * PreCondition   System is initialized (excluding Door_Init).
-     *
-     */
-  {
-    DisplayStr("|09Maintenance running\n");
+void Maintenance(void)
+/*
+ * Daily maintenance is run.
+ *
+ *  If this is an IBBS game AND maint was already run, it will not run
+ *  again.  Otherwise, Maintenance() will ALWAYS run.
+ *
+ * PreCondition   System is initialized (excluding Door_Init).
+ *
+ */
+{
+	DisplayStr("|09Maintenance running\n");
 
-    // if IBBS game AND maintenance already run, don't run it again
-    // otherwise, run it again
-    // REP: remove FALSE so cheating not allowed
-    if ((DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) <= 0) &&
+	// if IBBS game AND maintenance already run, don't run it again
+	// otherwise, run it again
+	// REP: remove FALSE so cheating not allowed
+	if ((DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) <= 0) &&
 #ifdef PRELAB
-         Game.Data->InterBBS && FALSE)
+			Game.Data->InterBBS && FALSE)
 #else
-         Game.Data->InterBBS)
+			Game.Data->InterBBS)
 #endif
-    {
-      System_Error("Maintenance already run today.\n");
-    }
+	{
+		System_Error("Maintenance already run today.\n");
+	}
 
-    // update today's date
-    strcpy(Game.Data->szTodaysDate, System.szTodaysDate);
-
-
-    // if the game has not yet begun, skip reset of maintenance
-    if (Game.Data->GameState == 1 || Game.Data->GameState == 2)
-    {
-      DisplayStr("* Game currently not in progress, maintenance skipped.\n");
-      return;
-    }
+	// update today's date
+	strcpy(Game.Data->szTodaysDate, System.szTodaysDate);
 
 
-    System_Maint();
+	// if the game has not yet begun, skip reset of maintenance
+	if (Game.Data->GameState == 1 || Game.Data->GameState == 2) {
+		DisplayStr("* Game currently not in progress, maintenance skipped.\n");
+		return;
+	}
 
-    Village_Maint();
 
-    IBBS_Maint();
+	System_Maint();
 
-    User_Maint();
+	Village_Maint();
 
-    Mail_Maint();
+	IBBS_Maint();
 
-    NPC_Maint();
+	User_Maint();
 
-    Trades_Maint();
+	Mail_Maint();
 
-    PS_Maint();
+	NPC_Maint();
 
-    // remove disbanding user names
-    unlink("disband.dat");
+	Trades_Maint();
 
-    Alliance_Maint();
+	PS_Maint();
 
-    Game_Write();
+	// remove disbanding user names
+	unlink("disband.dat");
 
-    DisplayStr("Done.\n");
+	Alliance_Maint();
 
-  }
+	Game_Write();
+
+	DisplayStr("Done.\n");
+
+}
