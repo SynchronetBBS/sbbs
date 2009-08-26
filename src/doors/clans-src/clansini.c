@@ -47,12 +47,12 @@ void DisplayStr(char *);
 void ClansIni_Init(void)
 {
 	/* read in quests file and allocate memory for quest names */
-	_INT16 iTemp;
+	int iTemp;
 	FILE *fp;
 	char szLine[128], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-	_INT16 iKeyWord;
-	_INT16 CurNPCFile, CurItemFile, CurRaceFile, CurClassFile, CurSpellFile;
+	int iKeyWord;
+	int CurNPCFile, CurItemFile, CurRaceFile, CurClassFile, CurSpellFile;
 
 	if (Verbose) {
 		DisplayStr("> ClansIni_Init()\n");
@@ -192,7 +192,7 @@ void ClansIni_Init(void)
 
 void ClansIni_Close(void)
 {
-	_INT16 iTemp;
+	int iTemp;
 
 	if (IniFile.Initialized == FALSE) return;
 

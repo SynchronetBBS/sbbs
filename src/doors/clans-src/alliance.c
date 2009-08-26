@@ -59,8 +59,8 @@ extern struct clan *PClan;
 
 void RemoveFromAlliance(struct Alliance *Alliance)
 {
-	_INT16 iTemp;
-	_INT16 WhichMember = 0, ClanID[2];
+	int     iTemp, WhichMember = 0;
+	_INT16  ClanID[2];
 	char szName[40], /*cKey,*/ szString[128];
 	struct clan *TmpClan;
 
@@ -127,8 +127,8 @@ void RemoveFromAlliance(struct Alliance *Alliance)
 
 void SeeMemberStats(struct Alliance *Alliance)
 {
-	/*    char szName[30];*/
-	_INT16 ClanID[2], iTemp;
+	_INT16      ClanID[2];
+	int         iTemp;
 	struct clan *TmpClan;
 
 	// ask for member name
@@ -161,9 +161,9 @@ void SeeMemberStats(struct Alliance *Alliance)
 
 void ShowAllianceItems(struct Alliance *Alliance)
 {
-	_INT16 iTemp, iTemp2, Length, LastItem = 0, FoundItem = FALSE;
-	_INT16 CurItem;
-	char szString[100];
+	int     iTemp, iTemp2, Length, LastItem = 0, FoundItem = FALSE;
+	int     CurItem;
+	char    szString[100];
 
 	rputs("|0B # Name                      ");
 	rputs("|0B # Name                 \n");
@@ -212,9 +212,9 @@ void ShowAllianceItems(struct Alliance *Alliance)
 void DonationRoom(struct Alliance *Alliance)
 {
 	/* modify item stats, assume it's the player */
-	_INT16 ItemIndex, /*OneItemFound,*/ RoomItemIndex, EmptySlot;
-	_INT16 DefaultItemIndex, iTemp/*, WhoEquip*/;
-	char /*szKeys[10],*/ szString[100]/*, szTemp[60]*/;
+	int     ItemIndex, RoomItemIndex, EmptySlot;
+	int     DefaultItemIndex, iTemp;
+	char    szString[100];
 
 	/* options available
 
@@ -272,7 +272,7 @@ void DonationRoom(struct Alliance *Alliance)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ALLIANCEITEMS);
+				ItemIndex = GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ALLIANCEITEMS);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
@@ -315,7 +315,7 @@ void DonationRoom(struct Alliance *Alliance)
 
 				DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
@@ -365,8 +365,8 @@ void DonationRoom(struct Alliance *Alliance)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong("Which item to destroy? (0=abort)",
-											 DefaultItemIndex, MAX_ALLIANCEITEMS);
+				ItemIndex = GetLong("Which item to destroy? (0=abort)",
+									DefaultItemIndex, MAX_ALLIANCEITEMS);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
@@ -422,8 +422,8 @@ void DonationRoom(struct Alliance *Alliance)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong("|0STake which item from the room? (0=abort)",
-											 DefaultItemIndex, MAX_ALLIANCEITEMS);
+				ItemIndex = GetLong("|0STake which item from the room? (0=abort)",
+									DefaultItemIndex, MAX_ALLIANCEITEMS);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
@@ -451,8 +451,8 @@ void DonationRoom(struct Alliance *Alliance)
 
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
-	FILE *fp;
-	_INT16 iTemp;
+	FILE    *fp;
+	int     iTemp;
 
 	// init alliances as NULLs
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
@@ -479,7 +479,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int iTemp;
 
 	fp = fopen("ally.dat", "wb");
 	if (fp) {
@@ -495,7 +495,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 
 void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_ALLIANCES])
 {
-	_INT16 iTemp;
+	int iTemp;
 	char szName[30], szString[128];
 	BOOL AllianceNameInUse;
 
@@ -573,7 +573,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 
 void ShowAlliances(struct clan *Clan)
 {
-	_INT16 iTemp, NumAlliances = 0, CurAlliance;
+	int iTemp, NumAlliances = 0, CurAlliance;
 	char /*szName[25],*/ szString[50];
 	struct Alliance *Alliances[MAX_ALLIANCES];
 
@@ -615,7 +615,7 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 {
 	char *szTheOptions[13], *szString, szName[25];
 	char szFileName[13];
-	_INT16 iTemp;
+	int iTemp;
 
 	// show stats
 
@@ -730,8 +730,7 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 	}
 }
 
-
-void KillAlliance(_INT16 AllianceID)
+void KillAlliance(int AllianceID)
 {
 	// go through player file
 	// skip user online
@@ -740,7 +739,7 @@ void KillAlliance(_INT16 AllianceID)
 
 	struct clan *TmpClan;
 	FILE *fpPlayerFile;
-	_INT16 CurClan, CurAlliance;
+	int CurClan, CurAlliance;
 	long Offset;
 
 	TmpClan = malloc(sizeof(struct clan));
@@ -795,7 +794,7 @@ void KillAlliance(_INT16 AllianceID)
 void Alliance_Maint(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
-	_INT16 iTemp;
+	int iTemp;
 
 	GetAlliances(Alliances);
 
@@ -819,9 +818,9 @@ void Alliance_Maint(void)
 }
 
 
-void FormAlliance(_INT16 AllyID)
+void FormAlliance(int AllyID)
 {
-	_INT16 iTemp, UserAllianceSlot, WhichAlliance;
+	int iTemp, UserAllianceSlot, WhichAlliance;
 	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	// see if this guy can ally any more

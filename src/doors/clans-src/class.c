@@ -54,7 +54,8 @@ void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], __BOOL GetPClasses)
  * PRE: GetPClasses = TRUE if we're get classes, FALSE if getting races.
  */
 {
-	_INT16 iTemp, NumClasses, CurFile, CurClass = 0, MaxFiles;
+	int iTemp, CurFile, CurClass = 0, MaxFiles;
+	_INT16 NumClasses;
 	struct FileHeader ClassFile;
 
 	if (GetPClasses)
@@ -80,7 +81,7 @@ void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], __BOOL GetPClasses)
 		// read in data
 
 		/* get num classes */
-		fread(&NumClasses, sizeof(_INT16), 1, ClassFile.fp);
+		fread(&NumClasses, sizeof(NumClasses), 1, ClassFile.fp);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumClasses; iTemp++) {
@@ -105,7 +106,7 @@ void Free_PClasses(struct PClass *PClass[MAX_PCLASSES])
  * This function will free the classes loaded by Load_PClasses
  */
 {
-	_INT16 iTemp;
+	int iTemp;
 
 	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++) {
 		if (PClass[iTemp]) {

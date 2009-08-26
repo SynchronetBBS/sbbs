@@ -70,7 +70,7 @@ extern struct Language *Language;
 extern struct clan *PClan;
 extern char Spells_szCastDestination[25];
 extern char Spells_szCastSource[25];
-extern _INT16 Spells_CastValue;
+extern int Spells_CastValue;
 extern struct village Village;
 extern struct game Game;
 extern BOOL Verbose;

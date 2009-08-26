@@ -47,7 +47,7 @@ extern struct village Village;
 
 char Spells_szCastDestination[25];
 char Spells_szCastSource[25];
-_INT16 Spells_CastValue;
+int Spells_CastValue;
 extern BOOL Verbose;
 
 
