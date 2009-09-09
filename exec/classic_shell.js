@@ -1177,7 +1177,7 @@ xfercfg:
 							break;
 
 						case 'P':
-							bbs.get_newscantime(bbs.new_file_time);
+							bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
 							break;
 
 						case 'B':
