@@ -506,7 +506,8 @@ function	ViewGameInfo(gameNumber)
 		console.putmsg("\1n\1g Minimum Players: \1h" + g.minPlayers + " \1n\1gMaximum: \1h" + g.maxPlayers + "\r\n");
 	else 
 		console.putmsg("\1n\1g Players Needed to Start: \1h" + g.maxPlayers + "\r\n");
-
+	
+	console.putmsg("\1n\1g Player names hidden: \1h" + g.hiddenNames + "\r\n");
 	console.putmsg("\1n\1g Players In This Game:\r\n");
 	for(playerNumber=0;playerNumber<g.players.length;playerNumber++)
 	{
@@ -514,7 +515,7 @@ function	ViewGameInfo(gameNumber)
 		var name=GetUserName(player,playerNumber);
 		if(g.hiddenNames && name!=user.alias)
 		{
-			name="Player " + playerNumber;
+			name="Player " + (playerNumber+1);
 		}
 
 		console.putmsg("\1g\1h  " + name);
@@ -612,6 +613,7 @@ function 	CreateNewGame()
 	var singlePlayer=false;
 	var fixedPlayers=false;
 	var vote=-1;
+	var hiddenNames=false;
 	
 	var x=30; var y=19
 	console.gotoxy(x,y);
@@ -662,7 +664,7 @@ function 	CreateNewGame()
 	{
 		console.gotoxy(x,y);
 		y++;
-		hiddenNames=console.noyes("\1n\1gKeep player names hidden?");
+		if(!console.noyes("\1n\1gKeep player names hidden?")) hiddenNames=true;
 		while(1)
 		{
 			console.gotoxy(x,y);
@@ -1317,7 +1319,7 @@ function	GameStatusInfo()
 		gfile.open('r',true);
 		var lgame;
 
-		var hn=parseInt(gfile.readln())==0?false:true;
+		var hn=gfile.readln()==0?false:true;
 		var status=parseInt(gfile.readln());
 		if(status<0) 
 		{
@@ -1325,6 +1327,7 @@ function	GameStatusInfo()
 			var maxp=parseInt(gfile.readln());
 			lgame=new NewGame(minp,maxp,gameNumber);
 			lgame.lastModified=lastModified;
+			lgame.hiddenNames=hn;
 			lgame.fileName=gamefile;
 			if(minp==maxp) lgame.fixedPlayers=true;
 			
@@ -1347,6 +1350,7 @@ function	GameStatusInfo()
 					}
 				}
 			}
+			GameLog("game " + gameNumber + " loaded");
 			gfile.close();
 			return lgame;
 		}

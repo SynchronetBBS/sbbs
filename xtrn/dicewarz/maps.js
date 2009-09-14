@@ -436,7 +436,7 @@ function 	Map(c,r,p,gn)
 			}
 			else if(this.hiddenNames && name!=user.alias)
 			{
-				name="Player " + playerNumber;
+				name="Player " + (playerNumber+1);
 			}
 			
 			console.gotoxy(xxx,yyy); yyy++;
