@@ -561,6 +561,7 @@ function GameSession(game)
 			this.game.Move(move);
 			if(this.InCheck(this.board.FindKing(this.currentplayer),this.currentplayer)) 
 			{
+				Log("Illegal Move: King would be in check");
 				this.game.UnMove(move);
 				return false;
 			}
@@ -847,6 +848,7 @@ function GameSession(game)
 	{ 
 		var from_tile=this.board.grid[from.x][from.y];
 		var to_tile=this.board.grid[to.x][to.y];
+		
 		from.y=parseInt(from.y);
 		from.x=parseInt(from.x);
 		to.y=parseInt(to.y);
@@ -860,11 +862,6 @@ function GameSession(game)
 		//KING RULESET
 		if(from_tile.contents.name=="king") 
 		{
-			if(this.InCheck(to,from_tile.contents.color))
-			{
-				Log("Illegal Move: King would be in check");
-				return false;
-			}
 			if(Math.abs(from.x-to.x)==2) 
 			{
 				if(this.InCheck(from,from_tile.contents.color))
@@ -1322,17 +1319,19 @@ function GameSession(game)
 	this.InCheck=function(position,player)
 	{
 		var check_pieces=[];
-		for(column in this.board.grid) { 
-			for(row in this.board.grid[column]) {
+		for(var column in this.board.grid) 
+		{ 
+			for(var row in this.board.grid[column]) 
+			{
 				if(this.board.grid[column][row].contents)
 				{
 					if(this.board.grid[column][row].contents.name=="king");
-					else if(this.board.grid[column][row].contents.color!=player) {
+					else if(this.board.grid[column][row].contents.color!=player) 
+					{
 						var from={"x":column, "y":row};
 						if(this.CheckRules(from,position)) 
 						{
-							Log("x: "+ column + " y: " + row);
-							Log("piece: " + this.board.grid[column][row].color + " " + this.board.grid[column][row].contents.name + " can take piece.");
+							Log(this.board.grid[column][row].color + " " + this.board.grid[column][row].contents.name + " at " + column + "," + row + " can take king");
 							check_pieces.push(this.board.grid[column][row]);
 						}
 					}
