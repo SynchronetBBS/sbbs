@@ -4,7 +4,7 @@ Configuration in Synchronet:
  1: Name                       Uber Blox
  2: Internal Code              UBERBLOX
  3: Start-up Directory         
- 4: Command Line               *../xtrn/blox/blox.js
+ 4: Command Line               *../xtrn/uberblox/blox.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
