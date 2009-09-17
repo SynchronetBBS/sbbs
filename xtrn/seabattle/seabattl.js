@@ -123,7 +123,7 @@ function GameLobby()
 		for(i in game_files)
 		{
 			var filename=file_getname(game_files[i]);
-			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")));
+			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")),10);
 			if(this.tables[gamenumber]) 
 			{
 				var lastupdated=file_date(game_files[i]);

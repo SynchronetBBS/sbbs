@@ -9,28 +9,16 @@ var chessplayers;
 var chesslobby;
 var chessroot;
 var chesschat;
-var chatroot;
-var chatname;
 load("chateng.js");
 load("graphic.js");
 load("scrollbar.js");
 
 try { barfitty.barf(barf); } catch(e) { chessroot = e.fileName; }
 chessroot = chessroot.replace(/[^\/\\]*$/,"");
-if(user.command_shell=="cshell")
-{
-	chatroot="/sbbs/exec/chat/";
-	chatname="cshell";
-}
-else 
-{
-	chatroot=chessroot;
-	chatname="chess";
-}
 
-var chesslog=new Logger(chessroot,"chess");
-//var chesslog=false;
-chesschat=argv[0]?argv[0]:new ChatEngine(chatroot,chatname,chesslog);
+//var chesslog=new Logger(chessroot,"chess");
+var chesslog=false;
+chesschat=argv[0]?argv[0]:new ChatEngine(chessroot,"chess",chesslog);
 
 load(chessroot + "chessbrd.js");
 load(chessroot + "menu.js");
@@ -142,7 +130,7 @@ function ChessLobby()
 		for(i in game_files)
 		{
 			var filename=file_getname(game_files[i]);
-			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")));
+			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")),10);
 			if(this.tables[gamenumber]) 
 			{
 				var lastupdated=file_date(game_files[i]);
