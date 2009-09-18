@@ -27,6 +27,7 @@ function HelpFile(helpfile)
 	this.initSections=function()
 	{
 		var sections=this.file.iniGetSections();
+		if(!sections) return false;
 		var positions=new Array;
 		for(var s=0;s<sections.length;s++)
 		{
@@ -38,6 +39,7 @@ function HelpFile(helpfile)
 	}
 	this.loadSections=function(positions)
 	{
+		if(!positions) return false;
 		this.sections.shift();
 		for(var p=0;p<positions.length;p++)
 		{
