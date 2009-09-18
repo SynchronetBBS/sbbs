@@ -52,7 +52,7 @@ char* nulstr="";
 /* Makes dots and underscores synomynous with spaces for comparisions		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
 /****************************************************************************/
-uint DLLCALL matchuser(scfg_t* cfg, char *name, BOOL sysop_alias)
+uint DLLCALL matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 {
 	int		file,c;
 	char*	p;
@@ -109,6 +109,10 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name, BOOL sysop_alias)
 		/* convert underscores to spaces */
 		strcpy(str,dat);
 		REPLACE_CHARS(str,'_',' ',p);
+		if(!stricmp(str,name)) 
+			break;
+		/* strip spaces */
+		strip_space(dat,str);
 		if(!stricmp(str,name)) 
 			break;
 	}
@@ -2195,7 +2199,7 @@ void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user)
 
 /****************************************************************************/
 /****************************************************************************/
-char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
+char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, const char* name)
 {
 	int i;
 
@@ -2206,21 +2210,25 @@ char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
 		strcpy(addr,name);
 		return(addr);
 	}
-	if(strchr(name,'!') || (strchr(name,'.') && strchr(name,' ')))
-		sprintf(addr,"\"%s\"@",name);
-	else {
-		sprintf(addr,"%s@",name);
-		/* convert "first last@" to "first.last@" */
+	if(strchr(name,'.') && strchr(name,' ')) {
+		/* convert "Dr. Seuss" to "Dr.Seuss" */
+		strip_space(name,addr);
+	} else if(strchr(name,'!')) {
+		sprintf(addr,"\"%s\"",name);
+	} else {
+		strcpy(addr,name);
+		/* convert "first last" to "first.last" */
 		for(i=0;addr[i];i++)
 			if(addr[i]==' ' || addr[i]&0x80)
 				addr[i]='.';
 		strlwr(addr);
 	}
+	strcat(addr,"@");
 	strcat(addr,cfg->sys_inetaddr);
 	return(addr);
 }
 
-char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
+char* DLLCALL alias(scfg_t* cfg, const char* name, char* buf)
 {
 	char	line[128];
 	char*	p;
@@ -2235,11 +2243,11 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 	if(!VALID_CFG(cfg) || name==NULL || buf==NULL)
 		return(NULL);
 
-	p=name;
+	p=(char*)name;
 
 	sprintf(fname,"%salias.cfg",cfg->ctrl_dir);
 	if((fp=fopen(fname,"r"))==NULL)
-		return(name);
+		return((char*)name);
 
 	while(!feof(fp)) {
 		if(!fgets(line,sizeof(line),fp))
@@ -2606,7 +2614,7 @@ time_t DLLCALL gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 /*************************************************************************/
 /* Check a supplied name/alias and see if it's valid by our standards.   */
 /*************************************************************************/
-BOOL DLLCALL check_name(scfg_t* cfg, char* name)
+BOOL DLLCALL check_name(scfg_t* cfg, const char* name)
 {
 	char	tmp[512];
 	size_t	len;
