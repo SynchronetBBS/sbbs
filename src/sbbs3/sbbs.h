@@ -867,6 +867,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
 	DLLEXPORT str_list_t DLLCALL trashcan_list(scfg_t* cfg, const char* name);
 	DLLEXPORT char *	DLLCALL strip_exascii(const char *str, char* dest);
+	DLLEXPORT char *	DLLCALL strip_space(const char *str, char* dest);
 	DLLEXPORT char *	DLLCALL prep_file_desc(const char *str, char* dest);
 	DLLEXPORT char *	DLLCALL strip_ctrl(const char *str, char* dest);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
