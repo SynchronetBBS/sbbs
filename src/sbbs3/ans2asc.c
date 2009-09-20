@@ -42,7 +42,7 @@
 
 int main(int argc, char **argv)
 {
-	char esc,n[25];
+	unsigned char esc,n[25];
 	char revision[16];
 	int i,ch,ni;
 	FILE *in,*out;
