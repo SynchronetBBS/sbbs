@@ -196,10 +196,13 @@ int main(int argc, char **argv)
 						fprintf(out,"\1%c",0x7f+n[0]);
 						break;
 					case 'D':	/* cursor left */
-						while(n[0]) {
-							fprintf(out,"\b");
-							n[0]--;
-						}
+						if(n[0]>=80)
+							fprintf(out,"\r");
+						else
+							while(n[0]) {
+								fprintf(out,"\b");
+								n[0]--;
+							}
 						break;
 					default:
 						fprintf(stderr,"Unsupported ANSI code '%c' (0x%02X)\r\n",ch,ch);
