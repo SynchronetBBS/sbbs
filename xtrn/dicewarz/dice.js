@@ -1072,8 +1072,13 @@ function	PlayGame(gameNumber)
 			}
 			else  
 			{
+				var name=GetUserName(g.players[turn],turn);
+				if(g.hiddenNames)
+				{
+					name="Player " + (parseInt(turn)+1);
+				}
 				console.gotoxy(51,18);
-				console.putmsg("\1r\1hIt is " + GetUserName(g.players[turn],turn) + "'s turn");
+				console.putmsg("\1r\1hIt is " + name + "'s turn");
 				var daysOld=g.FindDaysOld();
 				var hoursOld=parseInt(daysOld*24);
 				if(daysOld>0)
