@@ -2648,7 +2648,7 @@ static void smtp_thread(void* arg)
 						lprintf(LOG_NOTICE,"%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
 							,socket, startup->dnsbl_hdr);
 					}
-					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
+					if((startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) && !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
 						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
@@ -2743,7 +2743,7 @@ static void smtp_thread(void* arg)
 
 						if((i=smb_findhash(&spam, hashes, &found, SMB_HASH_SOURCE_SPAM, /* Mark: */TRUE))==SMB_SUCCESS
 							&& !is_spam) {
-							SAFEPRINTF2(str,"%s %s found in SPAM database"
+							SAFEPRINTF2(str,"%s '%s' found in SPAM database"
 								,smb_hashsourcetype(found.source)
 								,smb_hashsource(&msg,found.source)
 								);
@@ -2769,16 +2769,17 @@ static void smtp_thread(void* arg)
 						smb_freehashes(hashes);
 					}
 
-					if(is_spam) {
+					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
-						if(dnsbl_recvhdr || dnsbl_result.s_addr) {
+						if(is_spam)
+							lprintf(LOG_INFO,"%04d SMTP IGNORED SPAM MESSAGE",socket);
+						else {
 							SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 							lprintf(LOG_NOTICE,"%04d !SMTP IGNORED MAIL from server: %s"
 								,socket, str);
 							spamlog(&scfg, "SMTP", "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
-						} else
-							lprintf(LOG_INFO,"%04d SMTP IGNORED SPAM MESSAGE",socket);
+						}
 						/* pretend we received it */
 						sockprintf(socket,ok_rsp);
 						subnum=INVALID_SUB;
