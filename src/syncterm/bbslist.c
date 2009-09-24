@@ -662,12 +662,10 @@ int list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly
 	int i;
 
 	if(list==NULL) {
-		char	listpath[MAX_PATH+1];
 		FILE	*listfile;
 		str_list_t	inifile;
 
-		get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
-		if((listfile=fopen(listpath,"r"))!=NULL) {
+		if((listfile=fopen(settings.list_path,"r"))!=NULL) {
 			inifile=iniReadFile(listfile);
 			i=iniSectionExists(inifile, bbsname);
 			strListFree(&inifile);
@@ -1180,8 +1178,8 @@ void change_settings(void)
 	char	inipath[MAX_PATH+1];
 	FILE	*inifile;
 	str_list_t	inicontents;
-	char	opts[10][80];
-	char	*opt[11];
+	char	opts[11][80];
+	char	*opt[12];
 	int		i,j;
 	char	str[64];
 	int	cur=0;
@@ -1195,7 +1193,7 @@ void change_settings(void)
 		inicontents=strListInit();
 	}
 
-	for(i=0; i<10; i++)
+	for(i=0; i<11; i++)
 		opt[i]=opts[i];
 	opt[i]=NULL;
 
@@ -1219,7 +1217,9 @@ void change_settings(void)
 						"~ Modem Init String ~\n"
 						"        The command string to use to initialize the modem.\n\n"
 						"~ Modem Dial String ~\n"
-						"        The command string to use to dial the modem.\n\n"						;
+						"        The command string to use to dial the modem.\n\n"
+						"~ List Path ~\n"
+						"        The complete path to the users BBS list.\n\n";
 		sprintf(opts[0],"Confirm Program Exit    %s",settings.confirm_close?"Yes":"No");
 		sprintf(opts[1],"Prompt to Save          %s",settings.prompt_save?"Yes":"No");
 		sprintf(opts[2],"Startup Screen Mode     %s",screen_modes[settings.startup_mode]);
@@ -1233,10 +1233,11 @@ void change_settings(void)
 		sprintf(opts[6],"Modem/Comm Rate         %s",str);
 		sprintf(opts[7],"Modem Init String       %s",settings.mdm.init_string);
 		sprintf(opts[8],"Modem Dial String       %s",settings.mdm.dial_string);
+		sprintf(opts[9],"List Path               %s",settings.list_path);
 #ifdef __unix__
-		sprintf(opts[9],"TERM For Shell          %s",settings.TERM);
+		sprintf(opts[10],"TERM For Shell          %s",settings.TERM);
 #else
-		opts[9][0]=0;
+		opts[10][0]=0;
 #endif
 		switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
 			case -1:
@@ -1370,7 +1371,7 @@ void change_settings(void)
 								"Example: \"`"
 								DEFAULT_MODEM_DEV
 								"`\"";
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Device",settings.mdm.device_name,LIST_NAME_MAX,K_EDIT)>=0)
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Device",settings.mdm.device_name,INI_MAX_VALUE_LEN,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
 				break;
 			case 6:
@@ -1381,7 +1382,7 @@ void change_settings(void)
 								"This rate is sometimes (incorrectly) referred to as the `baud rate`.\n\n"
 								"Enter `0` to use the current or default rate of the communication port";
 				sprintf(str,"%lu",settings.mdm.com_rate);
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Rate",str,LIST_NAME_MAX,K_EDIT)>=0) {
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Rate",str,12,K_EDIT)>=0) {
 					settings.mdm.com_rate=strtol(str,NULL,10);
 					iniSetLongInt(&inicontents,"SyncTERM","ModemComRate",settings.mdm.com_rate,&ini_style);
 				}
@@ -1407,18 +1408,24 @@ void change_settings(void)
 								"Locked speed               &B1\n"
 								"CTS/RTS Flow Control       &H1&R2\n"
 								"Disable Software Flow      &I0\n";
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,LIST_NAME_MAX,K_EDIT)>=0)
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,INI_MAX_VALUE_LEN-1,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
 				break;
 			case 8:
 				uifc.helpbuf=   "`Modem Dial String`\n\n"
 								"The command string to dial the modem goes here.\n\n"
 								"Example: \"`ATDT`\" will dial a Hayes-compatible modem in touch-tone mode.";
-				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Dial String",settings.mdm.dial_string,LIST_NAME_MAX,K_EDIT)>=0)
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Dial String",settings.mdm.dial_string,INI_MAX_VALUE_LEN-1,K_EDIT)>=0)
 					iniSetString(&inicontents,"SyncTERM","ModemDial",settings.mdm.dial_string,&ini_style);
 				break;
-#ifdef __unix__
 			case 9:
+				uifc.helpbuf=   "`List Path`\n\n"
+								"The complete path to the BBS list goes here.\n";
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"List Path",settings.list_path,MAX_PATH,K_EDIT)>=0)
+					iniSetString(&inicontents,"SyncTERM","ListPath",settings.list_path,&ini_style);
+				break;
+#ifdef __unix__
+			case 10:
 				uifc.helpbuf=   "`TERM For Shell`\n\n"
 								"The value to set the TERM envirnonment variable to goes here.\n\n"
 								"Example: \"`ansi`\" will select a dumb ANSI mode.";
@@ -1502,9 +1509,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 	if(init_uifc(connected?FALSE:TRUE, TRUE))
 		return(NULL);
 
-	get_syncterm_filename(listpath, sizeof(listpath), SYNCTERM_PATH_LIST, FALSE);
 	get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
-	load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, current?strdup(current):NULL);
+	load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, current?strdup(current):NULL);
 
 	uifc.helpbuf="Help Button Hack";
 	uifc.list(WIN_T2B|WIN_RHT|WIN_EXTKEYS|WIN_DYN|WIN_HLP|WIN_ACT|WIN_INACT
@@ -1688,8 +1694,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 								listcount--;
 							}
 							else {
-								add_bbs(listpath,list[listcount-1]);
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[listcount-1]?strdup(list[listcount-1]->name):NULL);
+								add_bbs(settings.list_path,list[listcount-1]);
+								load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[listcount-1]?strdup(list[listcount-1]->name):NULL);
 								oldopt=-1;
 							}
 							break;
@@ -1727,8 +1733,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 							i=0;
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,str,YesNo)!=0)
 								break;
-							del_bbs(listpath,list[opt]);
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, NULL, NULL, NULL);
+							del_bbs(settings.list_path,list[opt]);
+							load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, NULL, NULL, NULL);
 							oldopt=-1;
 							break;
 						case MSK_EDIT:
@@ -1739,8 +1745,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 								uifc.msg("Cannot edit list in safe mode");
 								break;
 							}
-							if(edit_list(list, list[opt],listpath,FALSE)) {
-								load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
+							if(edit_list(list, list[opt],settings.list_path,FALSE)) {
+								load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
 								oldopt=-1;
 							}
 							break;
@@ -1754,8 +1760,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 											"directory.";
 							uifc.msg("Cannot edit list in safe mode");
 						}
-						else if(edit_list(list, list[opt],listpath,FALSE)) {
-							load_bbslist(list, sizeof(list), &defaults, listpath, sizeof(listpath), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
+						else if(edit_list(list, list[opt],settings.list_path,FALSE)) {
+							load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
 							oldopt=-1;
 						}
 					}
@@ -1818,7 +1824,7 @@ struct bbslist *show_bbslist(char *current, int connected)
 						free_list(&list[0],listcount);
 						return(NULL);
 					case 0:			/* Edit default connection settings */
-						edit_list(NULL, &defaults,listpath,TRUE);
+						edit_list(NULL, &defaults,settings.list_path,TRUE);
 						break;
 #ifdef CONFIGURABLE_MOUSE_ACTIONS
 					case 1:			/* Mouse Actions setup */
@@ -1856,6 +1862,8 @@ struct bbslist *show_bbslist(char *current, int connected)
 						break;
 					case 3:			/* Program settings */
 						change_settings();
+						load_bbslist(list, sizeof(list), &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[listcount-1]?strdup(list[listcount-1]->name):NULL);
+						oldopt=-1;
 						break;
 				}
 			}
