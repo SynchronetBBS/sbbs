@@ -2551,7 +2551,7 @@ static char *get_request(http_session_t * session, char *req_line)
 		/* Set HOST value... ignore HOST header */
 		SAFECOPY(session->req.host,session->req.physical_path);
 
-		/* Remove path if present (everything after the forst /) */
+		/* Remove path if present (everything after the first /) */
 		strtok_r(session->req.host,"/",&last);
 
 		/* Set vhost value to host value */
@@ -2560,18 +2560,15 @@ static char *get_request(http_session_t * session, char *req_line)
 		/* Remove port specification from vhost (if present) */
 		strtok_r(session->req.vhost,":",&last);
 
-		/* Do weird physical_path dance... This sets p to point to the first character after the first slash */
-		if(strtok_r(session->req.physical_path,"/",&last))
-			p=strtok_r(NULL,"/",&last);
-		else
-			p=NULL;
-
+		/* Sets p to point to the first character after the first slash */
+		p=strchr(session->req.physical_path, "/");
+		
 		/*
-		 * If we have a character after the first slash, make it the first char in the string.
-		 * otherwise, clear the string
+		 * If we have a slash, make it the first char in the string.
+		 * otherwise, set path to "/"
 		 */
 		if(p==NULL) {
-			session->req.physical_path[0]=0;
+			strcpy(session->req.physical_path, "/");
 		}
 		else {
 			offset=p-session->req.physical_path;
