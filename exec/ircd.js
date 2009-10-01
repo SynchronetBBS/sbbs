@@ -286,7 +286,7 @@ while (!server.terminated) {
 			terminate_everything("A fatal error occured!", /* ERROR? */true);
 		}
 	} else {
-		mswait(1000);
+		mswait(100);
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
@@ -932,7 +932,8 @@ function rawout(str) {
 		return 0;
 	}
 
-	this.sendq.add(str);
+	if (this.sendq.bytes || !sendsock.send(str + "\r\n"))
+		this.sendq.add(str);
 }
 
 function originatorout(str,origin) {
@@ -958,7 +959,8 @@ function originatorout(str,origin) {
 		return 0;
 	}
 
-	this.sendq.add(send_data);
+	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
+		this.sendq.add(send_data);
 }
 
 function ircout(str) {
@@ -978,7 +980,8 @@ function ircout(str) {
 	}
 
 	send_data = ":" + servername + " " + str;
-	this.sendq.add(send_data);
+	if (this.sendq.bytes || !sendsock.send(send_data + "\r\n"))
+		this.sendq.add(send_data);
 }
 
 function Queue_Add(str) {
