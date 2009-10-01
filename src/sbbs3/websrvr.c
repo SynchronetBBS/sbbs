@@ -2545,31 +2545,41 @@ static char *get_request(http_session_t * session, char *req_line)
 	unescape(session->req.physical_path);
 
 	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
+		/* Remove http:// from start of physical_path */
+		memmove(session->req.physical_path, session->req.physical_path+http_scheme_len, strlen(session->req.physical_path+http_scheme_len)+1);
+
 		/* Set HOST value... ignore HOST header */
-		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
-		/* Remove path of present */
+		SAFECOPY(session->req.host,session->req.physical_path);
+
+		/* Remove path if present (everything after the forst /) */
 		strtok_r(session->req.host,"/",&last);
 
-		/* Set vhost value */
+		/* Set vhost value to host value */
 		SAFECOPY(session->req.vhost,session->req.host);
-		/* Remove port specification from vhost */
+
+		/* Remove port specification from vhost (if present) */
 		strtok_r(session->req.vhost,":",&last);
 
-		/* Do weird physical_path dance... TODO: Understand this code */
+		/* Do weird physical_path dance... This sets p to point to the first character after the first slash */
 		if(strtok_r(session->req.physical_path,"/",&last))
 			p=strtok_r(NULL,"/",&last);
 		else
 			p=NULL;
+
+		/*
+		 * If we have a character after the first slash, make it the first char in the string.
+		 * otherwise, clear the string
+		 */
 		if(p==NULL) {
-			/* Do not allow host values larger than 128 bytes */
-			session->req.host[0]=0;
-			p=session->req.physical_path+http_scheme_len;
+			session->req.physical_path[0]=0;
 		}
-		offset=p-session->req.physical_path;
-		memmove(session->req.physical_path
-			,session->req.physical_path+offset
-			,strlen(session->req.physical_path+offset)+1	/* move '\0' terminator too */
-			);
+		else {
+			offset=p-session->req.physical_path;
+			memmove(session->req.physical_path
+				,session->req.physical_path+offset
+				,strlen(session->req.physical_path+offset)+1	/* move '\0' terminator too */
+				);
+		}
 	}
 	if(query!=NULL)
 		SAFECOPY(session->req.query_str,query);
