@@ -18,7 +18,7 @@ try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 load("graphic.js");
-load("sbbsdefs.js")
+load("sbbsdefs.js");
 load("logging.js");
 load("helpfile.js");
 load("funclib.js");
@@ -167,9 +167,9 @@ function Boggle()
 					case "P":
 						for(var d in player.days)
 						{
-							if(player.days[d]==parseInt(current)) 
+							if(player.days[d]==parseInt(current,10)) 
 							{
-								Log(user.alias + " has already played day: " + parseInt(current));
+								Log(user.alias + " has already played day: " + parseInt(current,10));
 								ShowMessage("\1r\1hYou have already played this date");
 								continue mainloop;
 							}
@@ -194,7 +194,7 @@ function Boggle()
 	{
 		console.clear(ANSI_NORMAL);
 		Log(user.alias + " playing game " + current);
-		var game=month.games[parseInt(current)];
+		var game=month.games[parseInt(current,10)];
 		playinggame=true;
 		
 		function Play()
@@ -387,7 +387,7 @@ function Boggle()
 		}
 		function ScanDictionary(word,lower,upper,dict)
 		{
-			middle=parseInt(lower+((upper-lower)/2));
+			middle=parseInt(lower+((upper-lower)/2),10);
 			dict.position=middle-25;
 			var checkword=dict.readln();
 			while(dict.position<=middle) checkword=dict.readln();
@@ -435,7 +435,7 @@ function Boggle()
 			var p=players.players[user.alias];
 			var points=info.score.points;
 			p.points+=points;
-			p.days.push(parseInt(current));
+			p.days.push(parseInt(current,10));
 			players.StorePlayer();
 			playinggame=false;
 		}
@@ -718,8 +718,8 @@ function Boggle()
 						}
 						else
 						{
-							var posx=parseInt(this.graphic.data[x+1][y].ch);
-							var posy=parseInt(this.graphic.data[x+2][y].ch);
+							var posx=parseInt(this.graphic.data[x+1][y].ch,10);
+							var posy=parseInt(this.graphic.data[x+2][y].ch,10);
 							this.grid[posx][posy]=new LetterBox(x+1,y+1);
 						}
 						this.graphic.data[x][y].ch=" ";
@@ -764,7 +764,7 @@ function Boggle()
 		{
 			this.x=x;
 			this.y=y;
-			this.letter;
+			//this.letter;
 			this.selected=false;
 			
 			this.draw=function(selected,valid)
@@ -802,7 +802,7 @@ function Boggle()
 		{
 			this.x=x;
 			this.y=y;
-			this.date;
+			//this.date;
 			this.Draw=function()
 			{
 				console.gotoxy(this.x,this.y);
@@ -818,7 +818,7 @@ function Boggle()
 		this.Draw=function(txt)
 		{
 			console.gotoxy(this.x,this.y);
-			console.putmsg(txt)
+			console.putmsg(txt);
 		}
 	}
 	function InputLine(x,y)
@@ -958,10 +958,10 @@ function Boggle()
 	}
 	function Game()
 	{
-		this.file;
-		this.board;
-		this.gamenumber;
-		this.info;
+		//this.file;
+		//this.board;
+		//this.gamenumber;
+		//this.info;
 		
 		this.Init=function(fileName)
 		{
@@ -1069,7 +1069,7 @@ function Boggle()
 			}
 			var fName=gameroot + gNum + ".bog";
 			this.file=new File(fName);
-			this.gamenumber=parseInt(gNum);
+			this.gamenumber=parseInt(gNum,10);
 		}
 		this.draw=function()
 		{

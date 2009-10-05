@@ -201,7 +201,7 @@ function 	Map(c,r,p,gn)
 		else 
 		{
 			var points=this.players.length<5?1:2;
-			scores[this.winner].score=parseInt(scores[this.winner].score) + points;
+			scores[this.winner].score=parseInt(scores[this.winner].score,10) + points;
 			GameLog("giving " + points + " points to user " + this.winner);
 		}
 		games.StoreRankings();
@@ -226,8 +226,8 @@ function 	Map(c,r,p,gn)
 				var pointBuffer=7-this.maxPlayers;
 				var offset=(this.players.length<5?2:1);
 				pts=points[pointBuffer+(this.eliminated.length-offset)];
-				scores[dead.user].score=parseInt(scores[dead.user].score) + pts;
-				if(scores[dead.user].score<minScore) scores[dead.user].score=parseInt(minScore);
+				scores[dead.user].score=parseInt(scores[dead.user].score,10) + pts;
+				if(scores[dead.user].score<minScore) scores[dead.user].score=parseInt(minScore,10);
 				GameLog("giving " + pts + " points to user " + system.username(dead.user));
 			}
 			games.StoreRankings();
@@ -434,7 +434,7 @@ function 	Map(c,r,p,gn)
 				player.bColor=blackBG; 
 				player.fColor="\1n\1k\1h"; 
 			}
-			else if(this.hiddenNames && name!=user.alias)
+			else if(this.status!=0 && this.hiddenNames && name!=user.alias)
 			{
 				name="Player " + (playerNumber+1);
 			}

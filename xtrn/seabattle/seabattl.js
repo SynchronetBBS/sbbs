@@ -8,20 +8,19 @@
 var gameplayers;
 var gamelobby;
 var gameroot;
-var gamechat;
-var gamehelp;
+//var gamehelp;
+
 load("chateng.js");
 load("graphic.js");
 load("scrollbar.js");
-load("helpfile.js");
+//load("helpfile.js"); //TODO: write instructions!
 
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 //var gamelog=new Logger(gameroot,"seabattl");
 var gamelog=false;
-
-gamechat=argv[0]?argv[0]:new ChatEngine(gameroot,"seabattle",gamelog);
+var gamechat=argv[0]?argv[0]:new ChatEngine(gameroot,"seabattle",gamelog);
 
 load(gameroot + "battle.js");
 load(gameroot + "menu.js");
@@ -30,30 +29,30 @@ var oldpass=console.ctrl_key_passthru;
 
 function GameLobby()
 {
-	this.table_graphic=new Graphic(10,5);
-	this.table_graphic.load(gameroot+"bsmall.bin");
-	this.lobby_graphic=new Graphic(80,24);
-	this.lobby_graphic.load(gameroot+"lobby.bin");
-	this.clearinput=true;
-	this.scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
-	this.scroll_index=0;
-	this.last_table_number=0;
-	this.table_markers=[];
-	this.tables=[];
-	this.menu;
+	var table_graphic=new Graphic(10,5);
+	table_graphic.load(gameroot+"bsmall.bin");
+	var lobby_graphic=new Graphic(80,24);
+	lobby_graphic.load(gameroot+"lobby.bin");
+	var clearinput=true;
+	var scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
+	var scroll_index=0;
+	var last_table_number=0;
+	var table_markers=[];
+	var tables=[];
+	var menu;
 
-	this.SplashStart=function()
+	function SplashStart()
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status |= SS_PAUSEOFF;	
-		console.clear();
+		console.clear(ANSI_NORMAL);
 		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-		this.ProcessGraphic();
-		this.InitChat();
-		this.InitMenu();
+		ProcessGraphic();
+		InitChat();
+		InitMenu();
 	}
-	this.SplashExit=function()
+	function SplashExit()
 	{
 		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
 		console.ctrlkey_passthru=oldpass;
@@ -62,7 +61,7 @@ function GameLobby()
 		console.attributes=ANSI_NORMAL;
 		exit(0);
 	}
-	this.InitChat=function()
+	function InitChat()
 	{
 		var rows=19;
 		var columns=38;
@@ -70,53 +69,52 @@ function GameLobby()
 		var posy=3;
 		var input_line={x:42,y:23,columns:38};
 		gamechat.Init("Sea-Battle Lobby",input_line,columns,rows,posx,posy,false,false,"\1y");
-		this.Redraw();
 	}
-	this.InitMenu=function()
+	function InitMenu()
 	{
-		this.menu=new Menu(	gamechat.input_line.x,gamechat.input_line.y,"\1n","\1c\1h");
+		menu=new Menu(	gamechat.input_line.x,gamechat.input_line.y,"\1n","\1c\1h");
 		var menu_items=[		"~Select Game"					, 
 								"~New Game"						,
 								"~Rankings"						,
 								"~Help"							,
 								"Re~draw"						];
-		this.menu.add(menu_items);
+		menu.add(menu_items);
 	}
-	this.ProcessGraphic=function()
+	function ProcessGraphic()
 	{
-		for(posx=0;posx<this.lobby_graphic.data.length;posx++) 
+		for(posx=0;posx<lobby_graphic.data.length;posx++) 
 		{
-			for(posy=0;posy<this.lobby_graphic.data[posx].length;posy++)
+			for(posy=0;posy<lobby_graphic.data[posx].length;posy++)
 			{
 				var position={"x" : posx+1, "y" : posy+1};
-				if(this.lobby_graphic.data[posx][posy].ch=="@") 
+				if(lobby_graphic.data[posx][posy].ch=="@") 
 				{
-					this.table_markers.push(position);
-					this.lobby_graphic.data[posx][posy].ch=" ";
+					table_markers.push(position);
+					lobby_graphic.data[posx][posy].ch=" ";
 				}
 			}
 		}
 	}
-	this.ListCommands=function()
+	function ListCommands()
 	{
-		var list=this.menu.getList();
+		var list=menu.getList();
 		gamechat.DisplayInfo(list);
 	}
-	this.RefreshCommands=function()
+	function RefreshCommands()
 	{
-		if(!this.tables.length) this.menu.disable(["S"]);
-		else this.menu.enable(["S"]);
+		if(!tables.length) menu.disable(["S"]);
+		else menu.enable(["S"]);
 	}
-	this.GetTablePointers=function()
+	function GetTablePointers()
 	{
 		var pointers=[];
-		for(t in this.tables)
+		for(t in tables)
 		{
 			pointers.push(t);
 		}
 		return pointers;
 	}
-	this.UpdateTables=function()
+	function UpdateTables()
 	{
 		var update=false;
 		var game_files=directory(gameroot+"*.bom");
@@ -124,59 +122,59 @@ function GameLobby()
 		{
 			var filename=file_getname(game_files[i]);
 			var gamenumber=parseInt(filename.substring(0,filename.indexOf(".")),10);
-			if(this.tables[gamenumber]) 
+			if(tables[gamenumber]) 
 			{
 				var lastupdated=file_date(game_files[i]);
-				var lastloaded=this.tables[gamenumber].lastupdated;
+				var lastloaded=tables[gamenumber].lastupdated;
 				if(lastupdated>lastloaded)
 				{
 					Log("Updating existing game: " +  game_files[i]);
-					this.LoadTable(game_files[i]);
+					LoadTable(game_files[i]);
 					update=true;
 				}
 			}
 			else 
 			{
 				Log("Loading new table: " + game_files[i]);
-				this.LoadTable(game_files[i]);
+				LoadTable(game_files[i]);
 				update=true;
 			}
 		}
-		for(t in this.tables)
+		for(t in tables)
 		{
-			var table=this.tables[t];
+			var table=tables[t];
 			if(table && !file_exists(table.gamefile.name)) 
 			{
 				Log("Removing deleted game: " + table.gamefile.name);
-				delete this.tables[t];
+				delete tables[t];
 				update=true;
 			}
 		}
-		if(update) this.DrawTables();
+		return update;
 	}
-	this.LoadTable=function(gamefile,index)
+	function LoadTable(gamefile,index)
 	{
 		var table=new GameData(gamefile);
-		if(table.gamenumber>this.last_table_number) this.last_table_number=table.gamenumber;
-		this.tables[table.gamenumber]=table;
+		if(table.gamenumber>last_table_number) last_table_number=table.gamenumber;
+		tables[table.gamenumber]=table;
 	}
-	this.DrawTables=function()
+	function DrawTables()
 	{
-		var pointers=this.GetTablePointers();
+		var pointers=GetTablePointers();
 		var range=(pointers.length%2==1?pointers.length+1:pointers.length);
-		if(this.tables.length>4) this.scrollBar.draw(this.scroll_index,range);
+		if(tables.length>4) scrollBar.draw(scroll_index,range);
 
-		var index=this.scroll_index;
-		for(i in this.table_markers)
+		var index=scroll_index;
+		for(i in table_markers)
 		{
-			var posx=this.table_markers[i].x;
-			var posy=this.table_markers[i].y;
+			var posx=table_markers[i].x;
+			var posy=table_markers[i].y;
 			ClearBlock(posx,posy,19,10);
 			
 			var pointer=pointers[index];
-			if(this.tables[pointer])
+			if(tables[pointer])
 			{
-				var tab=this.tables[pointer];
+				var tab=tables[pointer];
 				
 				console.gotoxy(posx+11,posy);
 				console.putmsg("\1n\1yTABLE: \1h" + tab.gamenumber);
@@ -210,70 +208,70 @@ function GameLobby()
 					console.putmsg(gameplayers.FormatStats(tab.players[player].id));
 					y+=2;
 				}
-				this.table_graphic.draw(posx,posy);
+				table_graphic.draw(posx,posy);
 				index++;
 			}
 		}
 	}
-	this.DrawLobby=function()
+	function DrawLobby()
 	{
-		this.lobby_graphic.draw();
-		this.DrawTables();
+		lobby_graphic.draw();
 		write(console.ansi(BG_BLACK));
 	}
-	this.Redraw=function()
+	function Redraw()
 	{
-		write(console.ansi(ANSI_NORMAL));
-		console.clear();
-		this.DrawLobby();
+		console.clear(ANSI_NORMAL);
+		UpdateTables();
+		DrawLobby();
+		DrawTables();
 		gamechat.Redraw();
 	}
 
 
 /*	MAIN FUNCTIONS	*/
-	this.Main=function()
+	function Main()
 	{
 		while(1)
 		{
-			this.UpdateTables();
+			if(UpdateTables()) DrawTables();
 			gamechat.Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
 			{
-				var range=(this.tables.length%2==1?this.tables.length+1:this.tables.length);
-				if(this.clearinput) 
+				var range=(tables.length%2==1?tables.length+1:tables.length);
+				if(clearinput) 
 				{
 					gamechat.ClearInputLine();
-					this.clearinput=false;
+					clearinput=false;
 				} 
 				switch(k.toUpperCase())
 				{
 					case KEY_LEFT:
-						if(this.scroll_index>0 && this.tables.length>4) 
+						if(scroll_index>0 && tables.length>4) 
 						{
-							this.scroll_index-=2;
-							this.DrawTables();
+							scroll_index-=2;
+							DrawTables();
 						}
 						break;
 					case KEY_RIGHT:
-						if((this.scroll_index+1)<=range && this.tables.length>4) 
+						if((scroll_index+1)<=range && tables.length>4) 
 						{
-							this.scroll_index+=2;
-							this.DrawTables();
+							scroll_index+=2;
+							DrawTables();
 						}
 						break;
 					case "/":
 						if(!gamechat.buffer.length) 
 						{
-							this.RefreshCommands();
-							this.ListCommands();
-							this.Commands();
-							this.Redraw();
+							RefreshCommands();
+							ListCommands();
+							Commands();
+							Redraw();
 						}
 						else if(!Chat(k,gamechat)) return;
 						break;
 					case "\x1b":	
-						this.SplashExit();
+						SplashExit();
 						break;
 					default:
 						if(!Chat(k,gamechat)) return;
@@ -282,62 +280,59 @@ function GameLobby()
 			}
 		}
 	}
-	this.Commands=function()
+	function Commands()
 	{
-		this.menu.displayHorizontal();
+		menu.displayHorizontal();
 		
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		if(this.menu.items[k] && this.menu.items[k].enabled) 
+		if(menu.items[k] && menu.items[k].enabled) 
 			switch(k.toUpperCase())
 			{
 				case "N":
-					if(this.StartNewGame()) this.InitChat();
+					if(StartNewGame()) InitChat();
 					break;
 				case "R":
-					this.ShowRankings();
+					ShowRankings();
 					break;
 				case "H":
 					gamehelp.help("lobby");
 					break;
-				case "D":
-					this.Redraw();
-					break;
 				case "S":
-					if(this.SelectGame()) this.InitChat();
+					if(SelectGame()) InitChat();
 					break;
 				default:
 					break;
 			}
 		gamechat.ClearInputLine();
 	}
-	this.Help=function()
+	function Help()
 	{
 		//TODO: write help file
 	}
-	this.ShowRankings=function()
+	function ShowRankings()
 	{
 	}
-	this.SelectGame=function()
+	function SelectGame()
 	{
 		gamechat.Alert("\1nEnter Table \1h#: ");
-		var num=console.getkeys("\x1bQ\r",this.last_table_number);
-		if(this.tables[num])
+		var num=console.getkeys("\x1bQ\r",last_table_number);
+		if(tables[num])
 		{
-			if(this.tables[num].password)
+			if(tables[num].password)
 			{
 				gamechat.Alert("\1nPassword: ");
 				var password=console.getstr(25);
-				if(password!=this.tables[num].password) return false;
+				if(password!=tables[num].password) return false;
 			}
-			var play=new GameSession(this.tables[num]);
+			GameSession(tables[num]);
 			return true;
 		}
 		else return false;
 	}
-	this.StartNewGame=function()
+	function StartNewGame()
 	{
 		var newgame=new GameData();
-		this.clearinput=true;
+		clearinput=true;
 
 		gamechat.Alert("\1nSingle Player Game? [\1hy\1n,\1hN\1n]: ");
 		var single=console.getkeys("\x1bYN");
@@ -426,15 +421,16 @@ function GameLobby()
 		var newsession=new GameSession(newgame,true);
 		return true;
 	}
-	this.SplashStart();
-	this.Main();
-	this.SplashExit();
+	SplashStart();
+	Redraw();
+	Main();
+	SplashExit();
 }
 function PlayerList()
 {
 	this.prefix=system.qwk_id + "."; //BBS prefix FOR INTERBBS PLAY?? WE'LL SEE
 	this.players=[];
-	this.current;
+	//this.current;
 	
 	this.StorePlayer=function(id)
 	{
@@ -469,7 +465,7 @@ function PlayerList()
 			pFile.iniSetObject(this.prefix + user.alias,new GamePlayer(user.alias));
 		}
 		var players=pFile.iniGetSections();
-		for(player in players)
+		for(var player in players)
 		{
 			this.players[players[player]]=pFile.iniGetObject(players[player]);
 			Log("Loaded player: " + this.players[players[player]].name);
@@ -498,6 +494,7 @@ function Log(text)
 	if(gamelog) gamelog.Log(text);
 }
 
-gamehelp=new HelpFile(gameroot + "seabattl.hlp");
+//gamehelp=new HelpFile(gameroot + "seabattl.hlp");
 gameplayers=new PlayerList();
-gamelobby=new GameLobby();
+
+GameLobby();

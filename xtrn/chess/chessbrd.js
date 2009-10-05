@@ -1,12 +1,10 @@
 function GameSession(game) 
 {
-	this.name;
-	this.game=game;
-	this.board;
-	this.queue=queue;
-	this.menu;
-	this.currentplayer;
-	this.infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: true)
+	var name;
+	var board;
+	var menu;
+	var currentplayer;
+	var infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: true)
 	
 /*	
 	CHAT ENGINE DEPENDENT FUNCTIONS
@@ -16,28 +14,28 @@ function GameSession(game)
 	method of data transfer between nodes/systems
 	simpler
 */
-	this.InitGame=function()
+	function InitGame()
 	{
-		this.game.LoadGameTable();
-		this.game.LoadGameData();
-		this.board=this.game.board;
-		this.name="Chess Table " + game.gamenumber;
+		game.LoadGameTable();
+		game.LoadGameData();
+		board=game.board;
+		name="Chess Table " + game.gamenumber;
 		
-		this.currentplayer=this.game.currentplayer;
-		this.board.side=(this.currentplayer?this.currentplayer:"white");
+		currentplayer=game.currentplayer;
+		board.side=(currentplayer?currentplayer:"white");
 	}
-	this.InitChat=function()
+	function InitChat()
 	{
-		var rows=(this.infobar?15:20);
+		var rows=(infobar?15:20);
 		var columns=38;
 		var posx=42;
-		var posy=(this.infobar?8:3);
+		var posy=(infobar?8:3);
 		var input_line={'x':42,'y':24,columns:38};
-		chesschat.Init(this.name,input_line,columns,rows,posx,posy,true);
+		chesschat.Init(name,input_line,columns,rows,posx,posy,true);
 	}
-	this.InitMenu=function()
+	function InitMenu()
 	{
-		this.menu=new Menu(		chesschat.input_line.x,chesschat.input_line.y,"\1n","\1c\1h");
+		menu=new Menu(		chesschat.input_line.x,chesschat.input_line.y,"\1n","\1c\1h");
 		var menu_items=[		"~Sit"							, 
 								"~Resign"						,
 								"~Offer Draw"					,
@@ -48,24 +46,24 @@ function GameSession(game)
 								"~Help"							,
 								"Move ~List"					,
 								"Re~draw"						];
-		this.menu.add(menu_items);
-		this.RefreshMenu();
+		menu.add(menu_items);
+		RefreshMenu();
 	}
-	this.Main=function()
+	function Main()
 	{
-		this.Redraw();
-		this.ScanCheck();
-		if(this.game.turn==this.game.currentplayer)
+		Redraw();
+		ScanCheck();
+		if(game.turn==game.currentplayer)
 		{
-			this.Notice("\1g\1hIt's your turn.");
-			this.Notice("\1n\1gUse arrow keys or number pad to move around, and [\1henter\1n\1g] to select.");
-			this.Notice("\1n\1gPress [\1hescape\1n\1g] to cancel.");
+			Notice("\1g\1hIt's your turn.");
+			Notice("\1n\1gUse arrow keys or number pad to move around, and [\1henter\1n\1g] to select.");
+			Notice("\1n\1gPress [\1hescape\1n\1g] to cancel.");
 		}
 		while(1)
 		{
-			this.Cycle();
+			Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(this.game.turn==this.game.currentplayer)
+			if(game.turn==game.currentplayer)
 			{
 				switch(k)
 				{
@@ -73,21 +71,20 @@ function GameSession(game)
 					case "2":
 					case "3":
 					case "4":
-					case "5":
 					case "6":
 					case "7":
 					case "8":
 					case "9":
 						if(chesschat.buffer.length) 
 						{
-							if(!Chat(k,chesschat) && this.HandleExit()) return;						
+							if(!Chat(k,chesschat) && HandleExit()) return;						
 						}
 					case KEY_UP:
 					case KEY_DOWN:
 					case KEY_LEFT:
 					case KEY_RIGHT:
-						this.TryMove();
-						this.board.DrawLastMove();
+						TryMove();
+						board.DrawLastMove();
 						break;
 					default:
 						break;
@@ -100,134 +97,134 @@ function GameSession(game)
 					case "/":
 						if(!chesschat.buffer.length) 
 						{
-							this.RefreshMenu();
-							this.ListCommands();
-							this.ChessMenu();
+							RefreshMenu();
+							ListCommands();
+							ChessMenu();
 						}
-						else if(!Chat(k,chesschat) && this.HandleExit()) return;
+						else if(!Chat(k,chesschat) && HandleExit()) return;
 						break;
 					case "\x1b":	
-						if(this.HandleExit()) return;
+						if(HandleExit()) return;
 						break;
 					case "?":
 						if(!chesschat.buffer.length) 
 						{
-							this.ToggleGameInfo();
+							ToggleGameInfo();
 						}
-						else if(!Chat(k,chesschat) && this.HandleExit()) return;
+						else if(!Chat(k,chesschat) && HandleExit()) return;
 						break;
 					default:
-						if(!Chat(k,chesschat) && this.HandleExit()) return;
+						if(!Chat(k,chesschat) && HandleExit()) return;
 						break;
 				}
 			}
 		}
 	}
-	this.ClearChatWindow=function()
+	function ClearChatWindow()
 	{
 		chesschat.ClearChatWindow();
 	}
-	this.HandleExit=function()
+	function HandleExit()
 	{
-		if(this.game.finished)
+		if(game.finished)
 		{
-			if(file_exists(this.game.gamefile.name))
-				file_remove(this.game.gamefile.name);
-			if(file_exists(chessroot + this.name + ".his"))
-				file_remove(chessroot + this.name + ".his");
+			if(file_exists(game.gamefile.name))
+				file_remove(game.gamefile.name);
+			if(file_exists(chessroot + name + ".his"))
+				file_remove(chessroot + name + ".his");
 		}
-		else if(this.game.timed && this.game.started && this.game.movelist.length)
+		else if(game.timed && game.started && game.movelist.length)
 		{
-			this.Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+			Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-			this.EndGame("loss");
+			EndGame("loss");
 		}
 		return true;
 	}
-	this.RefreshMenu=function()
+	function RefreshMenu()
 	{
-		if(this.game.started || this.game.finished || this.currentplayer) this.menu.disable(["S"]);
-		else if(this.game.password && this.game.password != user.alias) this.menu.disable(["S"]);
-		else if(this.game.minrating && this.game.minrating > chessplayers.GetPlayerRating(user.alias)) this.menu.disable(["S"]);
-		else this.menu.enable(["S"]);
-		if(!this.game.finished || !this.currentplayer) this.menu.disable(["N"]);
-		else this.menu.enable(["N"]);
-		if(!this.game.started || this.game.turn!=this.currentplayer || this.game.finished) 
+		if(game.started || game.finished || currentplayer) menu.disable(["S"]);
+		else if(game.password && game.password != user.alias) menu.disable(["S"]);
+		else if(game.minrating && game.minrating > chessplayers.GetPlayerRating(user.alias)) menu.disable(["S"]);
+		else menu.enable(["S"]);
+		if(!game.finished || !currentplayer) menu.disable(["N"]);
+		else menu.enable(["N"]);
+		if(!game.started || game.turn!=currentplayer || game.finished) 
 		{
-			this.menu.disable(["M"]);
-			this.menu.disable(["R"]);
+			menu.disable(["M"]);
+			menu.disable(["R"]);
 		}
 		else 
 		{
-			this.menu.enable(["M"]);
-			this.menu.enable(["R"]);
+			menu.enable(["M"]);
+			menu.enable(["R"]);
 		}
-		if(this.game.draw || this.game.turn != this.currentplayer) this.menu.disable(["O"]);
+		if(game.draw || game.turn != currentplayer) menu.disable(["O"]);
 		else
 		{
-			this.menu.enable(["O"]);
+			menu.enable(["O"]);
 		}
-		if(!this.game.movelist.length) this.menu.disable(["L"]);
-		else this.menu.enable(["L"]);
+		if(!game.movelist.length) menu.disable(["L"]);
+		else menu.enable(["L"]);
 	}
-	this.ChessMenu=function()
+	function ChessMenu()
 	{	
-		this.menu.displayHorizontal();
+		menu.displayHorizontal();
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		this.ClearAlert();
+		ClearAlert();
 		if(k)
 		{
-			this.ClearChatWindow();
+			ClearChatWindow();
 			chesschat.Redraw();
-			if(this.menu.items[k] && this.menu.items[k].enabled) 
+			if(menu.items[k] && menu.items[k].enabled) 
 			{
 				switch(k)
 				{
 					case "R":
-						this.Resign();
+						Resign();
 						break;
 					case "S":
-						this.JoinGame();
+						JoinGame();
 						break;
 					case "H":
-						this.Help();
+						Help();
 						break;
 					case "D":
-						this.Redraw();
+						Redraw();
 						break;
 					case "O":
-						this.OfferDraw();
+						OfferDraw();
 						break;
 					case "M":
-						this.TryMove();
-						this.board.DrawLastMove();
+						TryMove();
+						board.DrawLastMove();
 						break;
 					case "V":
-						this.Reverse();
-						this.Redraw();
+						Reverse();
+						Redraw();
 						break;
 					case "L":
-						this.ListMoves();
+						ListMoves();
 						break;
 					case "X":
-						this.ToggleBoardSize();
+						ToggleBoardSize();
 						break;
 					case "N":
-						this.NewGame();
+						NewGame();
 						break;
 					default:
 						break;
 				}
-				this.ClearChatWindow();
+				ClearChatWindow();
 				chesschat.Redraw();
 			}
 			else Log("Invalid or Disabled key pressed: " + k);
 		}
 	}
-	this.ToggleBoardSize=function()
+	function ToggleBoardSize()
 	{
-		this.board.large=this.board.large?false:true;
-		if(this.board.large)
+		board.large=board.large?false:true;
+		if(board.large)
 		{
 			console.screen_rows=50;
 			var rows=3;
@@ -235,250 +232,250 @@ function GameSession(game)
 			var posx=2;
 			var posy=45;
 			var input_line={'x':2,'y':50,columns:77};
-			chesschat.Init(this.name,input_line,columns,rows,posx,posy,false);
+			chesschat.Init(name,input_line,columns,rows,posx,posy,false);
 			//reinitialize chat beneath large board
 		}
 		else
 		{
 			console.screen_rows=24;
-			this.InitChat();
+			InitChat();
 			//reinitialize chat beside small board
 		}
-		this.InitMenu();
-		this.Redraw();
+		InitMenu();
+		Redraw();
 	}
-	this.Help=function()
+	function Help()
 	{
 	}
-	this.ListCommands=function()
+	function ListCommands()
 	{
-		if(this.board.large) return;
-		var list=this.menu.getList();
-		this.DisplayInfo(list);
+		if(board.large) return;
+		var list=menu.getList();
+		DisplayInfo(list);
 	}
-	this.ToggleGameInfo=function()
+	function ToggleGameInfo()
 	{
-		if(this.infobar)
+		if(infobar)
 		{
-			this.infobar=false;
+			infobar=false;
 			chesschat.Resize(chesschat.x,3,chesschat.columns,20);
 		}
 		else
 		{
-			this.infobar=true;
+			infobar=true;
 			chesschat.Resize(chesschat.x,8,chesschat.columns,15);
 		}
-		this.InfoBar();
+		InfoBar();
 	}
-	this.InfoBar=function()
+	function InfoBar()
 	{
-		if(this.board.large) return;
+		if(board.large) return;
 		console.gotoxy(chesschat.x,1);
 		console.putmsg("\1k\1h[\1cEsc\1k\1h]\1wQuit \1k\1h[\1c/\1k\1h]\1wMenu \1k\1h[\1c?\1k\1h]\1wToggle \1k\1h[\1c" + ascii(30) + "\1k\1h,\1c" + ascii(31) +"\1k\1h]\1wScroll");
-		if(this.infobar)
+		if(infobar)
 		{
 			var x=chesschat.x;
 			var y=3;
 			var turn=false;
-			if(this.game.started && !this.game.finished) turn=this.game.turn;
+			if(game.started && !game.finished) turn=game.turn;
 			
-			for(player in this.game.players)
+			for(player in game.players)
 			{
 				console.gotoxy(x,y);
-				console.putmsg(PrintPadded(chessplayers.FormatPlayer(this.game.players[player],player,turn),21));
-				console.putmsg(chessplayers.FormatStats(this.game.players[player]));
-				if(this.game.timed && this.game.started) 
+				console.putmsg(PrintPadded(chessplayers.FormatPlayer(game.players[player],player,turn),21));
+				console.putmsg(chessplayers.FormatStats(game.players[player]));
+				if(game.timed && game.started) 
 				{
 					console.gotoxy(x,y+1);
-					this.game.players[player].timer.Display(this.game.turn);
+					game.players[player].timer.Display(game.turn);
 				}
 				y+=2;
 			}
 		}
 	}
-	this.ShowTimers=function()
+	function ShowTimers()
 	{
-		if(!this.infobar) return;
+		if(!infobar) return;
 		var x=chesschat.x;
 		var y=4;
-		for(player in this.game.players)
+		for(player in game.players)
 		{
-			var timer=this.game.players[player].timer;
+			var timer=game.players[player].timer;
 			var current=time();
-			if(current!=timer.lastshown && this.game.turn==player)
+			if(current!=timer.lastshown && game.turn==player)
 			{
 				console.gotoxy(x,y);
-				this.game.players[player].timer.Display(this.game.turn);
+				game.players[player].timer.Display(game.turn);
 			}
-			y+=2
+			y+=2;
 		}
 	}
-	this.ClearAlert=function()
+	function ClearAlert()
 	{
 		if(!chesschat.buffer.length) chesschat.ClearInputLine();
 	}
-	this.Notice=function(txt)
+	function Notice(txt)
 	{
 		chesschat.AddNotice(txt);
 	}
-	this.DisplayInfo=function(array)
+	function DisplayInfo(array)
 	{
 		chesschat.DisplayInfo(array);
 	}
-	this.Alert=function(msg)
+	function Alert(msg)
 	{
 		chesschat.Alert(msg);
 	}
-	this.Cycle=function()
+	function Cycle()
 	{
 		chesschat.Cycle();
-		if(this.queue.DataWaiting("move"))
+		if(queue.DataWaiting("move"))
 		{
-			var data=this.queue.ReceiveData("move");
+			var data=queue.ReceiveData("move");
 			for(move in data)
 			{
 				var m=new ChessMove(data[move].from,data[move].to,data[move].color);
-				this.GetMove(m);
-				this.game.movelist.push(m);
-				this.ScanCheck();
+				GetMove(m);
+				game.movelist.push(m);
+				ScanCheck();
 			}
-			this.game.NextTurn();
-			this.InfoBar();
-			if(this.game.turn==this.game.currentplayer)
+			game.NextTurn();
+			InfoBar();
+			if(game.turn==game.currentplayer)
 			{
-				this.Notice("\1g\1hIt's your turn.");
+				Notice("\1g\1hIt's your turn.");
 			}
 			else
 			{
-				this.Notice("\1g\1hIt is " + this.game.GetAlias(this.game.turn) + "'s turn.");
+				Notice("\1g\1hIt is " + game.GetAlias(game.turn) + "'s turn.");
 			}
 		}
-		if(this.queue.DataWaiting("draw"))
+		if(queue.DataWaiting("draw"))
 		{
 			Log("received draw offer");
-			var trash=this.queue.ReceiveData("draw");
-			if(this.Draw())
+			var trash=queue.ReceiveData("draw");
+			if(Draw())
 			{
-				this.Send("\1g\1hDraw offer accepted.","alert");
+				Send("\1g\1hDraw offer accepted.","alert");
 			}
 			else
 			{
-				this.game.StoreGame();
-				this.Send("\1g\1hDraw offer refused.","alert");
+				game.StoreGame();
+				Send("\1g\1hDraw offer refused.","alert");
 			}
-			delete this.game.draw;
-			this.ClearAlert();
+			delete game.draw;
+			ClearAlert();
 		}
-		else if(this.game.draw)
+		else if(game.draw)
 		{
-			if(this.game.draw!=this.currentplayer)
+			if(game.draw!=currentplayer)
 			{
-				Log("received draw offer from: " + this.game.draw);
-				if(this.Draw())
+				Log("received draw offer from: " + game.draw);
+				if(Draw())
 				{
-					this.Send("\1g\1hDraw offer accepted.","alert");
+					Send("\1g\1hDraw offer accepted.","alert");
 				}
 				else
 				{
-					this.Send("\1g\1hDraw offer refused.","alert");
-					this.game.StoreGame();
+					Send("\1g\1hDraw offer refused.","alert");
+					game.StoreGame();
 				}
 			}
-			delete this.game.draw;
-			this.ClearAlert();
+			delete game.draw;
+			ClearAlert();
 		}
-		if(this.queue.DataWaiting("alert"))
+		if(queue.DataWaiting("alert"))
 		{
 			Log("received alert");
-			var alert=this.queue.ReceiveData("alert");
-			this.DisplayInfo(alert);
-			this.Alert("\1r\1h[Press any key]");
-			while(console.inkey=="");
-			this.ClearChatWindow();
+			var alert=queue.ReceiveData("alert");
+			DisplayInfo(alert);
+			Alert("\1r\1h[Press any key]");
+			while(console.inkey==="");
+			ClearChatWindow();
 			chesschat.Redraw();
 		}
-		if(this.queue.DataWaiting("castle"))
+		if(queue.DataWaiting("castle"))
 		{
-			var data=this.queue.ReceiveData("castle");
+			var data=queue.ReceiveData("castle");
 			for(move in data)
 			{
-				this.GetMove(data[move]);
+				GetMove(data[move]);
 			}
 		}
-		if(this.queue.DataWaiting("updatetile"));
+		if(queue.DataWaiting("updatetile"))
 		{ 
-			var data=this.queue.ReceiveData("updatetile");
+			var data=queue.ReceiveData("updatetile");
 			for(tile in data)
 			{
 				var newpiece=false;
-				var update=this.board.grid[data[tile].x][data[tile].y];
+				var update=board.grid[data[tile].x][data[tile].y];
 				if(data[tile].contents) newpiece=new ChessPiece(data[tile].contents.name,data[tile].contents.color);
 				update.contents=newpiece;
-				update.Draw(this.board.side,true);
+				update.Draw(board.side,true);
 			}
 		}
-		if(this.queue.DataWaiting("update"))
+		if(queue.DataWaiting("update"))
 		{
 			Log("updating game data");
-			var trash=this.queue.ReceiveData("update");
-			this.game.LoadGameTable();
-			this.game.LoadGameData();
+			var trash=queue.ReceiveData("update");
+			game.LoadGameTable();
+			game.LoadGameData();
 			chessplayers.LoadPlayers();
-			this.InfoBar();
-			if(this.game.timed) this.ShowTimers();
+			InfoBar();
+			if(game.timed) ShowTimers();
 		}
-		if(this.queue.DataWaiting("timer"))
+		if(queue.DataWaiting("timer"))
 		{
-			var data=this.queue.ReceiveData("timer");
+			var data=queue.ReceiveData("timer");
 			for(item in data)
 			{
 				var timer=data[item];
 				var player=timer.player;
 				var countdown=timer.countdown;
-				this.game.players[player].timer.Update(countdown);
+				game.players[player].timer.Update(countdown);
 			}
-			this.InfoBar();
+			InfoBar();
 		}
-		if(this.game.timed && this.game.started && !this.game.finished) 
+		if(game.timed && game.started && !game.finished) 
 		{
-			for(player in this.game.players)
+			for(player in game.players)
 			{
-				if(this.game.turn==player && this.game.movelist.length)
+				if(game.turn==player && game.movelist.length)
 				{
-					var timer=this.game.players[player].timer;
+					var timer=game.players[player].timer;
 					var current=time();
-					if(timer.lastupdate==false) this.game.players[player].timer.lastupdate=current;
+					if(timer.lastupdate===false) game.players[player].timer.lastupdate=current;
 					if(timer.lastupdate!=current) 
 					{
 						var counted=timer.Countdown(current);
-						if(!counted && player==this.currentplayer) this.EndGame("loss");
+						if(!counted && player==currentplayer) EndGame("loss");
 					}
 				}
 			}
-			this.ShowTimers();
+			ShowTimers();
 		}
 	}
-	this.Redraw=function()
+	function Redraw()
 	{
 		console.clear();
-		this.board.DrawBoard();
-		this.InfoBar();
+		board.DrawBoard();
+		InfoBar();
 		chesschat.Redraw();
 	}
-	this.Send=function(data,ident)
+	function Send(data,ident)
 	{
-		this.queue.SendData(data,ident);
+		queue.SendData(data,ident);
 	}
-	this.Reverse=function()
+	function Reverse()
 	{
-		this.board.Reverse();
+		board.Reverse();
 	}
 
 	
 /*	MOVEMENT FUNCTIONS	*/
-	this.TryMove=function()
+	function TryMove()
 	{
-		this.board.ClearLastMove();
+		board.ClearLastMove();
 		var moved=false;
 		var from;
 		var to;
@@ -489,30 +486,30 @@ function GameSession(game)
 			reselect=false;
 			while(1)
 			{
-				from=this.SelectTile(false,from);
-				if(from==false) return false;
-				else if(	this.board.grid[from.x][from.y].contents && 
-							this.board.grid[from.x][from.y].contents.color == this.game.turn) 
+				from=SelectTile(false,from);
+				if(from===false) return false;
+				else if(	board.grid[from.x][from.y].contents && 
+							board.grid[from.x][from.y].contents.color == game.turn) 
 					break;
 				else 
 				{
-					this.Alert("\1r\1hInvalid Selection");
+					Alert("\1r\1hInvalid Selection");
 				}
 			}
 			placeholder=from;
 			while(1)
 			{
-				to=this.SelectTile(from,placeholder);
-				if(to==false) return false;
+				to=SelectTile(from,placeholder);
+				if(to===false) return false;
 				else if(from.x==to.x && from.y==to.y) 
 				{
 					reselect=true;
 					break;
 				}
-				else if(!this.board.grid[to.x][to.y].contents || 
-						this.board.grid[to.x][to.y].contents.color != this.game.turn)
+				else if(!board.grid[to.x][to.y].contents || 
+						board.grid[to.x][to.y].contents.color != game.turn)
 				{
-					if(this.CheckMove(from,to)) 
+					if(CheckMove(from,to)) 
 					{
 						moved=true;
 						break; 
@@ -520,95 +517,95 @@ function GameSession(game)
 					else 
 					{
 						placeholder=to;
-						this.Alert("\1r\1hIllegal Move");
+						Alert("\1r\1hIllegal Move");
 					}
 				}
 				else 
 				{
 					placeholder=to;
-					this.Alert("\1r\1hInvalid Selection");
+					Alert("\1r\1hInvalid Selection");
 				}
 			}
 			if(!reselect) break;
 		}
-		this.board.DrawTile(from.x,from.y,moved);
-		this.board.DrawTile(to.x,to.y,moved);
+		board.DrawTile(from.x,from.y,moved);
+		board.DrawTile(to.x,to.y,moved);
 		return true;
 	}
-	this.CheckMove=function(from,to)
+	function CheckMove(from,to)
 	{ 
-		var movetype=this.CheckRules(from,to);
+		var movetype=CheckRules(from,to);
 		if(!movetype) return false; //illegal move
 		
-		var from_tile=this.board.grid[from.x][from.y];
-		var to_tile=this.board.grid[to.x][to.y];
+		var from_tile=board.grid[from.x][from.y];
+		var to_tile=board.grid[to.x][to.y];
 		var move=new ChessMove(from,to,from_tile.contents.color);
 
 		if(movetype=="en passant")
 		{
-			if(!this.EnPassant(from_tile,to_tile,move)) return false;
+			if(!EnPassant(from_tile,to_tile,move)) return false;
 		}
 		else if(movetype=="pawn promotion")
 		{
-			if(!this.PawnPromotion(to_tile,move)) return false;
+			if(!PawnPromotion(to_tile,move)) return false;
 		}
 		else if(movetype=="castle")
 		{
-			if(!this.Castle(from_tile,to_tile)) return false;
+			if(!Castle(from_tile,to_tile)) return false;
 		}
 		else
 		{
-			this.game.Move(move);
-			if(this.InCheck(this.board.FindKing(this.currentplayer),this.currentplayer)) 
+			game.Move(move);
+			if(InCheck(board.FindKing(currentplayer),currentplayer)) 
 			{
 				Log("Illegal Move: King would be in check");
-				this.game.UnMove(move);
+				game.UnMove(move);
 				return false;
 			}
-			this.SendMove(move);
+			SendMove(move);
 		}
-		this.InfoBar();
+		InfoBar();
 		return true;
 	}
-	this.SendMove=function(move)
+	function SendMove(move)
 	{
-		this.game.NextTurn();
-		this.Notice("\1g\1hIt is " + this.game.GetAlias(this.game.turn) + "'s turn.");
-		this.game.NotifyPlayer();
-		this.board.lastmove=move;
-		this.game.movelist.push(move);
-		this.game.StoreGame();
-		this.Send(move,"move");
-		if(this.game.timed) 
+		game.NextTurn();
+		Notice("\1g\1hIt is " + game.GetAlias(game.turn) + "'s turn.");
+		game.NotifyPlayer();
+		board.lastmove=move;
+		game.movelist.push(move);
+		game.StoreGame();
+		Send(move,"move");
+		if(game.timed) 
 		{
-			this.Send(this.game.players[this.currentplayer].timer,"timer");
+			Send(game.players[currentplayer].timer,"timer");
 		}
 	}
-	this.GetMove=function(move)
+	function GetMove(move)
 	{
-		this.game.Move(move);
-		this.board.ClearLastMove();
-		this.board.lastmove=move;
-		this.board.DrawTile(move.from.x,move.from.y,true,"\1r\1h");
-		this.board.DrawTile(move.to.x,move.to.y,true,"\1r\1h");
+		game.Move(move);
+		board.ClearLastMove();
+		board.lastmove=move;
+		board.DrawTile(move.from.x,move.from.y,true,"\1r\1h");
+		board.DrawTile(move.to.x,move.to.y,true,"\1r\1h");
 	}
-	this.ScanCheck=function()
+	function ScanCheck()
 	{
-		if(this.currentplayer)
+		if(currentplayer)
 		{
-			var checkers=this.InCheck(this.board.FindKing(this.currentplayer),this.currentplayer);
+			var checkers=InCheck(board.FindKing(currentplayer),currentplayer);
 			if(checkers) 
 			{
-				if(this.FindCheckMate(checkers,this.currentplayer)) 
+				if(FindCheckMate(checkers,currentplayer)) 
 				{
-					this.EndGame("loss");
-					this.Notice("\1r\1hCheckmate! You lose!");
+					EndGame("loss");
+					Notice("\1r\1hCheckmate! You lose!");
 				}
-				else this.Notice("\1r\1hYou are in check!");
+				else Notice("\1r\1hYou are in check!");
 			}
 		}
 	}
-	this.SelectTile=function(start,placeholder)
+	function SelectTile(start,placeholder)
 	{
 		if(start) 
 		{
@@ -618,23 +615,23 @@ function GameSession(game)
 				selected={"x":start.x, "y":start.y};
 				sel=true;
 			}
-			this.board.DrawBlinking(start.x,start.y,sel,"\1n\1b");
+			board.DrawBlinking(start.x,start.y,sel,"\1n\1b");
 		}
 		if(placeholder) 
 		{
 			selected={"x":placeholder.x, "y":placeholder.y};
-			this.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
+			board.DrawTile(selected.x,selected.y,true,"\1n\1b");
 		}
 		else
 		{
-			if(this.board.side=="white") selected={"x":0,"y":7};
+			if(board.side=="white") selected={"x":0,"y":7};
 			else selected={"x":7,"y":0};
-			this.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
+			board.DrawTile(selected.x,selected.y,true,"\1n\1b");
 		}
 		while(1)
 		{
-			this.Cycle();
-			var key=console.inkey((K_NOECHO,K_NOCRLF),50);
+			Cycle();
+			var key=console.inkey(K_NOECHO|K_NOCRLF,50);
 			if(key=="\r") 
 			{
 				if(chesschat.buffer.length) Chat(key,chesschat);
@@ -642,212 +639,212 @@ function GameSession(game)
 			}
 			if(key)
 			{
-				if(this.board.side=="white")
+				if(board.side=="white")
 				{
-					this.ClearAlert();
+					ClearAlert();
 					switch(key)
 					{
 						case KEY_DOWN:
 						case "2":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_UP:
 						case "8":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.y==0) selected.y=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_LEFT:
 						case "4":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_RIGHT:
 						case "6":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "7":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
-							if(selected.y==0) selected.y=7;
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case "9":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
-							if(selected.y==0) selected.y=7;
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case "1":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "3":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "\x1B":
-							if(start) this.board.DrawTile(start.x,start.y);
-							this.board.DrawTile(selected.x,selected.y);
+							if(start) board.DrawTile(start.x,start.y);
+							board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
 							if(!Chat(key,chesschat)) 
 							{
-								if(start) this.board.DrawTile(start.x,start.y);
-								this.board.DrawTile(selected.x,selected.y);
+								if(start) board.DrawTile(start.x,start.y);
+								board.DrawTile(selected.x,selected.y);
 								return false;
 							}
 							continue;
 					}
 					if(start && start.x==selected.x && start.y==selected.y) 
-							this.board.DrawBlinking(start.x,start.y,true);
+							board.DrawBlinking(start.x,start.y,true);
 					else
-						this.board.DrawTile(selected.x,selected.y,true);
+						board.DrawTile(selected.x,selected.y,true);
 				}
 				else
 				{
-					this.ClearAlert();
-					if(start) this.board.DrawBlinking(start.x,start.y);
+					ClearAlert();
+					if(start) board.DrawBlinking(start.x,start.y);
 					switch(key)
 					{
 						case KEY_UP:
 						case "2":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_DOWN:
 						case "8":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.y==0) selected.y=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_RIGHT:
 						case "4":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_LEFT:
 						case "6":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "3":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
-							if(selected.y==0) selected.y=7;
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case "1":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
-							if(selected.y==0) selected.y=7;
+							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case "9":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
-							if(selected.x==0) selected.x=7;
+								board.DrawTile(selected.x,selected.y);
+							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "7":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									this.board.DrawBlinking(start.x,start.y);
+									board.DrawBlinking(start.x,start.y);
 							else
-								this.board.DrawTile(selected.x,selected.y);
+								board.DrawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "\x1B":
-							if(start) this.board.DrawTile(start.x,start.y);
-							this.board.DrawTile(selected.x,selected.y);
+							if(start) board.DrawTile(start.x,start.y);
+							board.DrawTile(selected.x,selected.y);
 							return false;
 						default:
 							if(!Chat(key,chesschat)) 
 							{
-								if(start) this.board.DrawTile(start.x,start.y);
-								this.board.DrawTile(selected.x,selected.y);
+								if(start) board.DrawTile(start.x,start.y);
+								board.DrawTile(selected.x,selected.y);
 								return false;
 							}
 							continue;
 					}
 					if(start && start.x==selected.x && start.y==selected.y) 
-							this.board.DrawBlinking(start.x,start.y,true);
+							board.DrawBlinking(start.x,start.y,true);
 					else
-						this.board.DrawTile(selected.x,selected.y,true);
+						board.DrawTile(selected.x,selected.y,true);
 				}
 			}
 		}
 	}
-	this.CheckRules=function(from,to)
+	function CheckRules(from,to)
 	{ 
-		var from_tile=this.board.grid[from.x][from.y];
-		var to_tile=this.board.grid[to.x][to.y];
+		var from_tile=board.grid[from.x][from.y];
+		var to_tile=board.grid[to.x][to.y];
 		
 		from.y=parseInt(from.y);
 		from.x=parseInt(from.x);
@@ -857,14 +854,14 @@ function GameSession(game)
 		if(to_tile.contents && to_tile.contents.color==from_tile.contents.color) 
 		{
 			Log("Invalid Move: Target Color same as Source Color");
-			return false
+			return false;
 		}
 		//KING RULESET
 		if(from_tile.contents.name=="king") 
 		{
 			if(Math.abs(from.x-to.x)==2) 
 			{
-				if(this.InCheck(from,from_tile.contents.color))
+				if(InCheck(from,from_tile.contents.color))
 				{
 					Log("Invalid Move: King is in check");
 					return false;
@@ -880,8 +877,8 @@ function GameSession(game)
 					while(x>0) 
 					{
 						var spot_check={"x":x,"y":from.y};
-						if(this.board.grid[x][from.y].contents) return false;
-						if(this.InCheck(spot_check,from_tile.contents.color)) return false;
+						if(board.grid[x][from.y].contents) return false;
+						if(InCheck(spot_check,from_tile.contents.color)) return false;
 						x--;
 					}
 				}
@@ -891,8 +888,8 @@ function GameSession(game)
 					while(x<7) 
 					{
 						var spot_check={"x":x,"y":from.y};
-						if(this.board.grid[x][from.y].contents) return false;
-						if(this.InCheck(spot_check,from_tile.contents.color)) return false;
+						if(board.grid[x][from.y].contents) return false;
+						if(InCheck(spot_check,from_tile.contents.color)) return false;
 						x++;
 					}
 				}
@@ -924,21 +921,21 @@ function GameSession(game)
 					{
 						if(from.y!=6) 
 							return false;
-						if(this.board.grid[from.x][from.y-1].contents) 
+						if(board.grid[from.x][from.y-1].contents) 
 							return false;
 					}
-					if(to.y==0) return "pawn promotion";
+					if(to.y===0) return "pawn promotion";
 					if(xgap==ygap && !to_tile.contents)
 					{
 						//EN PASSANT
 						if(to.y==2) 
 						{
-							var lastmove=this.board.lastmove;
+							var lastmove=board.lastmove;
 							if(lastmove.to.x!=to.x) 
 							{ 
 								return false; 
 							}
-							var lasttile=this.board.grid[lastmove.to.x][lastmove.to.y];
+							var lasttile=board.grid[lastmove.to.x][lastmove.to.y];
 							if(Math.abs(lastmove.from.y-lastmove.to.y)!=2)
 							{ 
 								return false; 
@@ -957,7 +954,7 @@ function GameSession(game)
 					if(ygap==2)
 					{
 						if(from.y!=1) return false;
-						if(this.board.grid[from.x][from.y+1].contents) return false;
+						if(board.grid[from.x][from.y+1].contents) return false;
 					}
 					if(to.y==7) return "pawn promotion";
 					if(xgap==ygap && !to_tile.contents)
@@ -965,12 +962,12 @@ function GameSession(game)
 						//EN PASSANT
 						if(to.y==5)
 						{
-							var lastmove=this.board.lastmove;
+							var lastmove=board.lastmove;
 							if(lastmove.to.x!=to.x) 
 							{ 
 								return false; 
 							}
-							var lasttile=this.board.grid[lastmove.to.x][lastmove.to.y];
+							var lasttile=board.grid[lastmove.to.x][lastmove.to.y];
 							if(Math.abs(lastmove.from.y-lastmove.to.y)!=2)
 							{ 
 								return false; 
@@ -1003,7 +1000,7 @@ function GameSession(game)
 					var distance=to.y-from.y;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[from.x][from.y+check].contents) return false;
+						if(board.grid[from.x][from.y+check].contents) return false;
 					}
 				}
 				else 
@@ -1011,7 +1008,7 @@ function GameSession(game)
 					var distance=from.y-to.y;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[from.x][from.y-check].contents) return false;
+						if(board.grid[from.x][from.y-check].contents) return false;
 					}
 				}
 			}
@@ -1022,7 +1019,7 @@ function GameSession(game)
 					var distance=to.x-from.x;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[from.x+check][from.y].contents) return false;
+						if(board.grid[from.x+check][from.y].contents) return false;
 					}
 				}
 				else 
@@ -1030,7 +1027,7 @@ function GameSession(game)
 					var distance=from.x-to.x;
 					for(check = 1;check<distance;check++)
 					{
-						if(this.board.grid[from.x-check][from.y].contents) return false;
+						if(board.grid[from.x-check][from.y].contents) return false;
 					}
 				}
 			}
@@ -1051,7 +1048,7 @@ function GameSession(game)
 					if(diffy<0) checky++;
 					else checky--;
 					Log("checking space: " + checkx + "," + checky);
-					if(this.board.grid[checkx][checky].contents) return false;
+					if(board.grid[checkx][checky].contents) return false;
 				}
 			}
 			else return false;
@@ -1072,7 +1069,7 @@ function GameSession(game)
 					else checkx--;
 					if(diffy<0) checky++;
 					else checky--;
-					if(this.board.grid[checkx][checky].contents) return false;
+					if(board.grid[checkx][checky].contents) return false;
 				}
 			}
 			else if(from.x==to.x) 
@@ -1082,7 +1079,7 @@ function GameSession(game)
 					var distance=to.y-from.y;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[from.x][parseInt(from.y)+check].contents) return false;
+						if(board.grid[from.x][parseInt(from.y,10)+check].contents) return false;
 					}
 				}
 				else 
@@ -1090,7 +1087,7 @@ function GameSession(game)
 					var distance=from.y-to.y;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[from.x][from.y-check].contents) return false;
+						if(board.grid[from.x][from.y-check].contents) return false;
 					}
 				}
 			}
@@ -1101,7 +1098,7 @@ function GameSession(game)
 					var distance=to.x-from.x;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[parseInt(from.x)+check][from.y].contents) return false;
+						if(board.grid[parseInt(from.x,10)+check][from.y].contents) return false;
 					}
 				}
 				else 
@@ -1109,7 +1106,7 @@ function GameSession(game)
 					var distance=from.x-to.x;
 					for(check = 1;check<distance;check++) 
 					{
-						if(this.board.grid[parseInt(from.x)-check][from.y].contents) return false;
+						if(board.grid[parseInt(from.x)-check][from.y].contents) return false;
 					}
 				}
 			}
@@ -1118,27 +1115,27 @@ function GameSession(game)
 
 		return true;
 	}
-	this.EnPassant=function(from,to,move)
+	function EnPassant(from,to,move)
 	{
 		Log("trying en passant");
 		var row=(to.y<from.y?to.y+1:to.y-1);
-		var cleartile=this.board.grid[to.x][row];
+		var cleartile=board.grid[to.x][row];
 		var temp=cleartile.contents;
 		delete cleartile.contents;
-		this.game.Move(move);
-		if(this.InCheck(this.board.FindKing(this.currentplayer),this.currentplayer)) 
+		game.Move(move);
+		if(InCheck(board.FindKing(currentplayer),currentplayer)) 
 		{
 			Log("restoring original piece");
-			this.game.UnMove(move);
+			game.UnMove(move);
 			cleartile.contents=temp;
 			return false;
 		}
-		this.board.DrawTile(cleartile.x,cleartile.y);
-		this.Send(cleartile,"updatetile");
-		this.SendMove(move);
+		board.DrawTile(cleartile.x,cleartile.y);
+		Send(cleartile,"updatetile");
+		SendMove(move);
 		return true;
 	}
-	this.Castle=function(from,to)
+	function Castle(from,to)
 	{
 		Log("trying castle");
 		var rfrom;
@@ -1155,30 +1152,30 @@ function GameSession(game)
 		}
 		var castle=new ChessMove(rfrom,rto);
 		var move=new ChessMove(from,to);
-		this.game.Move(castle);
-		this.game.Move(move);
-		this.Send(castle,"castle");
-		this.SendMove(move);
-		this.board.DrawTile(rfrom.x,rfrom.y,false);
-		this.board.DrawTile(rto.x,rto.y,false);
+		game.Move(castle);
+		game.Move(move);
+		Send(castle,"castle");
+		SendMove(move);
+		board.DrawTile(rfrom.x,rfrom.y,false);
+		board.DrawTile(rto.x,rto.y,false);
 		return true;
 	}
-	this.PawnPromotion=function(to_tile,move)
+	function PawnPromotion(to_tile,move)
 	{
-		this.game.Move(move);
-		if(this.InCheck(this.board.FindKing(this.currentplayer),this.currentplayer)) 
+		game.Move(move);
+		if(InCheck(board.FindKing(currentplayer),currentplayer)) 
 		{
-			this.game.UnMove(move);
+			game.UnMove(move);
 			return false;
 		}
-		this.SendMove(move);
+		SendMove(move);
 		to_tile.contents=new ChessPiece("queen",to_tile.contents.color);
-		this.Send(to_tile,"updatetile");
+		Send(to_tile,"updatetile");
 	}
-	this.FindCheckMate=function(checkers,player)
+	function FindCheckMate(checkers,player)
 	{
-		var position=this.board.FindKing(player);
-		if(this.KingCanMove(position,player)) return false;
+		var position=board.FindKing(player);
+		if(KingCanMove(position,player)) return false;
 		Log("king cannot move");
 		for(checker in checkers) 
 		{
@@ -1186,47 +1183,47 @@ function GameSession(game)
 			Log("checking if " + player + " can take or block " +  spot.contents.color + " " + spot.contents.name);
 			if(spot.contents.name=="knight" || spot.contents.name=="pawn") 
 			{
-				var canmove=this.CanMoveTo(spot,player);
+				var canmove=CanMoveTo(spot,player);
 				//if king cannot move and no pieces can take either the attacking knight or pawn - checkmate!
 				if(!canmove) return true;
 				//otherwise attempt each move, then scan for check - if check still exists after all moves are attempted - checkmate!
 				for(piece in canmove)
 				{
 					var move=new ChessMove(canmove[piece],spot);
-					this.game.Move(move);
-					if(this.InCheck(position,player)) 
+					game.Move(move);
+					if(InCheck(position,player)) 
 					{
-						this.game.UnMove(move);
+						game.UnMove(move);
 					}
 					//if player is no longer in check after move is attempted - game continues
 					else 
 					{
-						this.game.UnMove(move);
+						game.UnMove(move);
 						return false;
 					}						
 				}
 			}
 			else 
 			{
-				path=this.FindPath(spot,position);
+				path=FindPath(spot,position);
 				for(p in path)
 				{
-					var spot=path[p];
-					var canmove=this.CanMoveTo(spot,player);
+					var pos=path[p];
+					var canmove=CanMoveTo(pos,player);
 					if(canmove)
 					{
 						for(piece in canmove)
 						{
 							Log("attempting block move: " + canmove[piece].contents.name);
-							var move=new ChessMove(canmove[piece],spot);
-							this.game.Move(move);
-							if(this.InCheck(position,player)) 
+							var move=new ChessMove(canmove[piece],pos);
+							game.Move(move);
+							if(InCheck(position,player)) 
 							{
-								this.game.UnMove(move);
+								game.UnMove(move);
 							}
 							else 
 							{
-								this.game.UnMove(move);
+								game.UnMove(move);
 								return false;
 							}						
 						}
@@ -1236,7 +1233,7 @@ function GameSession(game)
 		}
 		return true;
 	}
-	this.FindPath=function(from,to)
+	function FindPath(from,to)
 	{
 		var path=[];
 		var incrementx=0;
@@ -1260,19 +1257,19 @@ function GameSession(game)
 		}
 		return path;
 	}
-	this.CanMoveTo=function(position,player)
+	function CanMoveTo(position,player)
 	{
-		var pieces=this.board.FindAllPieces(player);
+		var pieces=board.FindAllPieces(player);
 		var canmove=[];
 		for(p in pieces)
 		{
 			var piece=pieces[p];
-			var gridposition=this.board.grid[piece.x][piece.y];
+			var gridposition=board.grid[piece.x][piece.y];
 			if(gridposition.contents.name=="king")
 			{
 				Log("skipping king, moves already checked");
 			}
-			else if(this.CheckRules(piece,position))
+			else if(CheckRules(piece,position))
 			{
 				Log("piece can cancel check: " + gridposition.contents.color + " " + gridposition.contents.name);
 				canmove.push(piece);
@@ -1281,7 +1278,7 @@ function GameSession(game)
 		if(canmove.length) return canmove;
 		return false;
 	}
-	this.KingCanMove=function(king,player)
+	function KingCanMove(king,player)
 	{
 		Log("checking if king can move from x: " + king.x + " y: " + king.y);
 		var north=		(king.y>0?					{"x":king.x,	"y":king.y-1}:false);
@@ -1297,42 +1294,42 @@ function GameSession(game)
 		for(dir in directions) 
 		{
 			var direction=directions[dir];
-			if(direction && this.CheckRules(king,directions[dir])) 
+			if(direction && CheckRules(king,directions[dir])) 
 			{
 				var move=new ChessMove(king,direction,player);
-				this.game.Move(move);
-				if(this.InCheck(direction,player)) 
+				game.Move(move);
+				if(InCheck(direction,player)) 
 				{
 					Log("taking piece would cause check");
-					this.game.UnMove(move);
+					game.UnMove(move);
 				}
 				else
 				{
 					Log("king can move to x: " + direction.x + " y: " + direction.y);
-					this.game.UnMove(move);
+					game.UnMove(move);
 					return true;
 				}
 			}
 		}
 		return false;
 	}
-	this.InCheck=function(position,player)
+	function InCheck(position,player)
 	{
 		var check_pieces=[];
-		for(var column in this.board.grid) 
+		for(column in board.grid) 
 		{ 
-			for(var row in this.board.grid[column]) 
+			for(var row in board.grid[column]) 
 			{
-				if(this.board.grid[column][row].contents)
+				if(board.grid[column][row].contents)
 				{
-					if(this.board.grid[column][row].contents.name=="king");
-					else if(this.board.grid[column][row].contents.color!=player) 
+					if(board.grid[column][row].contents.name=="king");
+					else if(board.grid[column][row].contents.color!=player) 
 					{
 						var from={"x":column, "y":row};
-						if(this.CheckRules(from,position)) 
+						if(CheckRules(from,position)) 
 						{
-							Log(this.board.grid[column][row].color + " " + this.board.grid[column][row].contents.name + " at " + column + "," + row + " can take king");
-							check_pieces.push(this.board.grid[column][row]);
+							Log(board.grid[column][row].color + " " + board.grid[column][row].contents.name + " at " + column + "," + row + " can take king");
+							check_pieces.push(board.grid[column][row]);
 						}
 					}
 				}
@@ -1341,50 +1338,50 @@ function GameSession(game)
 		if(check_pieces.length) return check_pieces;
 		else return false;
 	}
-	this.Draw=function()
+	function Draw()
 	{
-		this.Alert("\1c\1hOpponent offered a draw. Accept? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		Alert("\1c\1hOpponent offered a draw. Accept? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-		this.EndGame("draw");
+		EndGame("draw");
 		return true;
 	}
 /*	GAMEPLAY FUNCTIONS	*/
-	this.PlayerInGame=function()
+	function PlayerInGame()
 	{
-		return this.game.PlayerInGame();
+		return game.PlayerInGame();
 	}
-	this.OfferDraw=function()
+	function OfferDraw()
 	{
-		this.Alert("\1c\1hOffer your opponent a draw? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		Alert("\1c\1hOffer your opponent a draw? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-		this.game.draw=this.currentplayer;
-		this.game.StoreGame();
-		this.Send("draw","draw");
+		game.draw=currentplayer;
+		game.StoreGame();
+		Send("draw","draw");
 	}
-	this.NewGame=function()
+	function NewGame()
 	{
 		//TODO: Add the ability to change game settings (timed? rated?) when restarting/rematching
-		this.game.NewGame();
-		this.send("update","update");
+		game.NewGame();
+		send("update","update");
 	}
-	this.Resign=function()
+	function Resign()
 	{
-		this.Alert("\1c\1hAre you sure? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		Alert("\1c\1hAre you sure? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return;
-		this.EndGame("loss");
+		EndGame("loss");
 	}
-	this.EndGame=function(outcome)
+	function EndGame(outcome)
 	{
-		Log("Ending game - " + this.currentplayer + ": " + outcome);
-		if(this.game.movelist.length) 
+		Log("Ending game - " + currentplayer + ": " + outcome);
+		if(game.movelist.length) 
 		{
-			var cp=this.currentplayer;
+			var cp=currentplayer;
 			
 			var side1=(cp=="white"?"white":"black");
 			var side2=(cp=="white"?"black":"white");
 			
-			var id1=this.game.players[side1].id;
-			var id2=this.game.players[side2].id;
+			var id1=game.players[side1].id;
+			var id2=game.players[side2].id;
 			
 			var p1=chessplayers.players[id1];
 			var p2=chessplayers.players[id2];
@@ -1407,52 +1404,52 @@ function GameSession(game)
 					p2.draws+=1;
 					break;
 			}
-			if(this.game.rated)
+			if(game.rated)
 				switch(outcome)
 				{
 					case "win":
-						p1.rating=this.GetRating(p1.rating,p2.rating,"win");
-						p2.rating=this.GetRating(p2.rating,p1.rating,"loss");
+						p1.rating=GetRating(p1.rating,p2.rating,"win");
+						p2.rating=GetRating(p2.rating,p1.rating,"loss");
 						break;
 					case "loss":
-						p1.rating=this.GetRating(p1.rating,p2.rating,"loss");
-						p2.rating=this.GetRating(p2.rating,p1.rating,"win");
+						p1.rating=GetRating(p1.rating,p2.rating,"loss");
+						p2.rating=GetRating(p2.rating,p1.rating,"win");
 						break;
 					case "draw":
-						p1.rating=this.GetRating(p1.rating,p2.rating,"draw");
-						p2.rating=this.GetRating(p2.rating,p1.rating,"draw");
+						p1.rating=GetRating(p1.rating,p2.rating,"draw");
+						p2.rating=GetRating(p2.rating,p1.rating,"draw");
 						break;
 				}
 			
 			chessplayers.StorePlayer(id1);
 			chessplayers.StorePlayer(id2);
 		}
-		this.game.End();
-		this.InfoBar();
-		this.Send("update","update");
+		game.End();
+		InfoBar();
+		Send("update","update");
 	}
-	this.ShowNewRatings=function(p1,p2)
+	function ShowNewRatings(p1,p2)
 	{
 		var info=[];
 		info.push("\1c\1hGame Completed");
 		info.push("\1c\1h" + p1.name + "'s new rating: " + p1.rating);
 		info.push("\1c\1h" + p2.name + "'s new rating: " + p2.rating);
-		this.DisplayInfo(info);
-		this.Send(info,"alert");
-		this.Alert("\1r\1h[Press any key]");
-		while(console.inkey()=="");
+		DisplayInfo(info);
+		Send(info,"alert");
+		Alert("\1r\1h[Press any key]");
+		while(console.inkey()==="");
 	}
-	this.JoinGame=function()
+	function JoinGame()
 	{
-		if(this.game.players["white"].id) 
+		if(game.players.white.id) 
 		{
-			this.game.AddPlayer("black",user.alias);
-			this.game.Start("black");
+			game.AddPlayer("black",user.alias);
+			game.Start("black");
 		}
-		else if(this.game.players["black"].id) 
+		else if(game.players.black.id) 
 		{
-			this.game.AddPlayer("white",user.alias);
-			this.game.Start("white");
+			game.AddPlayer("white",user.alias);
+			game.Start("white");
 		}
 		else 
 		{
@@ -1461,39 +1458,39 @@ function GameSession(game)
 			switch(color)
 			{
 				case "W":
-					this.game.AddPlayer("white",user.alias);
+					game.AddPlayer("white",user.alias);
 					break;
 				case "B":
-					this.game.AddPlayer("black",user.alias);
+					game.AddPlayer("black",user.alias);
 					break;
 				default:
 					return;
 			}
-			this.game.StoreGame();
+			game.StoreGame();
 		}
-		this.currentplayer=this.game.currentplayer;
-		this.Send("update","update");
-		this.Redraw();
+		currentplayer=game.currentplayer;
+		Send("update","update");
+		Redraw();
 	}
-	this.ListMoves=function()
+	function ListMoves()
 	{
 		var list=["\1c\1hMOVE HISTORY"];
-		for(m=0;m<this.game.movelist.length;m++)
+		for(m=0;m<game.movelist.length;m++)
 		{	
-			var move=this.game.movelist[m];
-			var text=this.game.movelist[m].Format();
+			var move=game.movelist[m];
+			var text=game.movelist[m].Format();
 			m++;
-			if(this.game.movelist[m])
+			if(game.movelist[m])
 			{
-				text+=("  " + this.game.movelist[m].Format());
+				text+=("  " + game.movelist[m].Format());
 			}
 			list.push(text);
 		}
-		this.DisplayInfo(list);
-		this.Alert("\1r\1hPress a key to continue");
+		DisplayInfo(list);
+		Alert("\1r\1hPress a key to continue");
 		console.getkey();
 	}
-	this.GetRating=function(r1,r2,outcome)
+	function GetRating(r1,r2,outcome)
 	{
 		//OUTCOME SHOULD BE RELATIVE TO PLAYER 1 (R1 = PLAYER ONE RATING)
 		//WHERE PLAYER 1 IS THE USER RUNNING THE CURRENT INSTANCE OF THE SCRIPT
@@ -1511,7 +1508,7 @@ function GameSession(game)
 				points=0;
 				break;
 			case "draw":
-				points=.5;
+				points=0.5;
 				break;
 		}
 		var expected=1/(1+Math.pow(10,(r2-r1)/400));
@@ -1519,28 +1516,28 @@ function GameSession(game)
 		return newrating;
 	}
 
-	this.InitGame();
-	this.InitChat();
-	this.InitMenu();
-	this.Main();
+	InitGame();
+	InitChat();
+	InitMenu();
+	Main();
 }
 function ChessGame(gamefile)
 {
 	this.board=new ChessBoard();
 	this.players=[];
 	this.movelist=[];
-	this.gamefile;		
-	this.gamenumber;
-	this.lastupdated;
-	this.currentplayer;
-	this.password;
-	this.turn;
-	this.started;
-	this.finished;  
-	this.rated;
-	this.timed;
-	this.minrating;
-	this.draw;
+	//this.gamefile;		
+	//this.gamenumber;
+	//this.lastupdated;
+	//this.currentplayer;
+	//this.password;
+	//this.turn;
+	//this.started;
+	//this.finished;  
+	//this.rated;
+	//this.timed;
+	//this.minrating;
+	//this.draw;
 	
 	this.Init=function()
 	{
@@ -1613,7 +1610,7 @@ function ChessGame(gamefile)
 		}
 		var fName=chessroot + gNum + ".chs";
 		this.gamefile=new File(fName);
-		this.gamenumber=parseInt(gNum);
+		this.gamenumber=parseInt(gNum,10);
 	}
 	this.StoreGame=function()
 	{
@@ -1680,8 +1677,8 @@ function ChessGame(gamefile)
 		var wp=gFile.iniGetValue(null,"white");
 		var bp=gFile.iniGetValue(null,"black");
 		
-		this.players["white"]=wp?{"id":wp}:new Object();
-		this.players["black"]=bp?{"id":bp}:new Object();
+		this.players.white=wp?{"id":wp}:new Object();
+		this.players.black=bp?{"id":bp}:new Object();
 		
 		this.gamenumber=parseInt(gFile.iniGetValue(null,"gamenumber"),10);
 		this.turn=gFile.iniGetValue(null,"turn");
@@ -1694,8 +1691,8 @@ function ChessGame(gamefile)
 		
 		if(this.timed)
 		{
-			this.players["white"].timer=new ChessTimer(this.timed,"white");
-			this.players["black"].timer=new ChessTimer(this.timed,"black");
+			this.players.white.timer=new ChessTimer(this.timed,"white");
+			this.players.black.timer=new ChessTimer(this.timed,"black");
 		}
 		
 		this.currentplayer=this.PlayerInGame();
@@ -1757,8 +1754,8 @@ function ChessGame(gamefile)
 	{
 		this.board=new ChessBoard();
 		this.board.ResetBoard();
-		this.players["white"]=new Object();
-		this.players["black"]=new Object();
+		this.players.white=new Object();
+		this.players.black=new Object();
 		this.started=false;
 		this.finished=false;
 		this.movelist=[];
@@ -1793,10 +1790,10 @@ function ChessPiece(name,color)
 {
 	this.name=name;
 	this.color=color;
-	this.fg;
-	this.has_moved;
-	this.small;
-	this.large;
+	//this.fg;
+	//this.has_moved;
+	//this.small;
+	//this.large;
 	
 	this.Draw=function(bg,x,y,large)
 	{
@@ -1847,10 +1844,10 @@ function ChessPiece(name,color)
 function ChessBoard()
 {
 	this.lastmove=false;
-	this.tempfrom;
-	this.tempto;
+	//this.tempfrom;
+	//this.tempto;
 	this.gridpositions;
-	this.grid;
+	//this.grid;
 	this.side="white";
 	this.large=false;
 	this.background=new Graphic(80,50);
@@ -1884,7 +1881,7 @@ function ChessBoard()
 			this.grid[x]=new Array(8);
 			for(y=0;y<this.grid[x].length;y++) 
 			{
-				if((x+y)%2==0) 	var color="white"; //SET TILE COLOR
+				if((x+y)%2===0) 	var color="white"; //SET TILE COLOR
 				else 				var color="black";
 				this.grid[x][y]=new ChessTile(color,x,y);
 			}
@@ -2019,7 +2016,7 @@ function ChessTile(color,x,y)
 	this.x=x;
 	this.y=y;
 	this.color=color;
-	this.contents;
+	//this.contents;
 	this.bg=(this.color=="white"?console.ansi(BG_LIGHTGRAY):console.ansi(BG_CYAN));
 
 	this.AddPiece=function(piece)
@@ -2067,7 +2064,7 @@ function ChessTile(color,x,y)
 	}
 	this.DrawSelected=function(side,color,large)
 	{
-		var color=color?color:"\1n\1b";
+		color=color?color:"\1n\1b";
 		var xinc=large?9:5;
 		var yinc=large?5:3;
 		var posx=(side=="white"?this.x:7-this.x);
@@ -2099,7 +2096,7 @@ function ChessTimer(length,player,turn)
 	this.Display=function(turn)
 	{
 		var color=(turn==this.player?"\1r\1h":"\1k\1h");
-		var mins=parseInt(this.countdown/60);
+		var mins=parseInt(this.countdown/60,10);
 		var secs=this.countdown%60;
 		printf(color + "Time Remaining: %02d:%02d",mins,secs);
 		this.lastshown=time();
@@ -2118,8 +2115,8 @@ function GetChessPosition(position)
 	if(typeof position=="string")
 	{
 		//CONVERT BOARD POSITION IDENTIFIER TO XY COORDINATES
-		var position={x:letters.indexOf(position.charAt(0)),y:8-(parseInt(position.charAt(1)))};
-		return(position);
+		var pos={x:letters.indexOf(position.charAt(0)),y:8-(parseInt(position.charAt(1),10))};
+		return(pos);
 	}
 	else if(typeof position=="object")
 	{

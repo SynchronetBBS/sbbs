@@ -1,13 +1,11 @@
 function GameSession(game,join) 
 {
-	this.game=game;
-	this.queue=queue;
-	this.clearinput=true;
-	this.currentplayer;
-	this.shots;
-	this.menu;
-	this.name;
-	this.infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: false)
+	var clearinput=true;
+	var currentplayer;
+	var shots;
+	var menu;
+	var name;
+	var infobar=true; //TOGGLE FOR GAME INFORMATION BAR AT TOP OF CHAT WINDOW (default: false)
 	
 /*	
 	CHAT ENGINE DEPENDENT FUNCTIONS
@@ -17,33 +15,33 @@ function GameSession(game,join)
 	method of data transfer between nodes/systems
 	simpler
 */
-	this.InitGame=function()
+	function InitGame()
 	{
-		this.game.LoadGame();
-		this.game.LoadPlayers();
-		this.name="Sea-Battle table " + this.game.gamenumber;
+		game.LoadGame();
+		game.LoadPlayers();
+		name="Sea-Battle table " + game.gamenumber;
 		if(join)
 		{
-			this.game.turn=gameplayers.GetFullName(user.alias);
-			this.game.StoreGame();
-			if(this.game.singleplayer) this.ComputerInit();
-			this.JoinGame();
+			game.turn=gameplayers.GetFullName(user.alias);
+			game.StoreGame();
+			if(game.singleplayer) ComputerInit();
+			JoinGame();
 		}
-		else this.currentplayer=this.game.FindCurrentUser();
-		if(!this.game.started) this.game.StartGame();
+		else currentplayer=game.FindCurrentUser();
+		if(!game.started) game.StartGame();
 	}
-	this.InitChat=function()
+	function InitChat()
 	{
-		var rows=(this.infobar?16:19);
+		var rows=(infobar?16:19);
 		var columns=35;
 		var posx=45;
-		var posy=(this.infobar?6:3);
+		var posy=(infobar?6:3);
 		var input_line={'x':45,'y':23,columns:35};
-		gamechat.Init(this.name,input_line,columns,rows,posx,posy,true);
+		gamechat.Init(name,input_line,columns,rows,posx,posy,true);
 	}
-	this.InitMenu=function()
+	function InitMenu()
 	{
-		this.menu=new Menu(		gamechat.input_line.x,gamechat.input_line.y,"\1n","\1c\1h");
+		menu=new Menu(		gamechat.input_line.x,gamechat.input_line.y,"\1n","\1c\1h");
 		var menu_items=[		"~Sit"							, 
 								"~New Game"						,
 								"~Place Ships"					,
@@ -52,79 +50,86 @@ function GameSession(game,join)
 								"~Help"							,
 								"Game ~Info"					,
 								"Re~draw"						];
-		this.menu.add(menu_items);
-		this.RefreshMenu();
+		menu.add(menu_items);
+		RefreshMenu();
 	}
-	this.Main=function()
+	function Main()
 	{
-		this.Redraw();
-		this.UpdateStatus();
+		Redraw();
+		UpdateStatus();
 		while(1)
 		{
-			this.Cycle();
+			Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k)
 			{
-				if(this.clearinput) 
+				if(clearinput) 
 				{
 					gamechat.ClearInputLine();
-					this.clearinput=false;
+					clearinput=false;
 				} 
 				switch(k)
 				{
+					case KEY_UP:
+					case KEY_DOWN:
+					case KEY_LEFT:
+					case KEY_RIGHT:
+						if(game.turn==currentplayer.id && !game.finished)
+							Attack();
+						else if(!Chat(k,gamechat) && HandleExit()) return true;
+						break;
 					case "/":
 						if(!gamechat.buffer.length) 
 						{
-							this.RefreshMenu();
-							this.ListCommands();
-							this.Commands();
+							RefreshMenu();
+							ListCommands();
+							Commands();
 						}
-						else if(!Chat(k,gamechat) && this.HandleExit()) return true;
+						else if(!Chat(k,gamechat) && HandleExit()) return true;
 						break;
 					case "\x1b":	
-						if(this.HandleExit()) return true;
+						if(HandleExit()) return true;
 						break;
 					case "?":
 						if(!gamechat.buffer.length) 
 						{
-							this.ToggleGameInfo();
+							ToggleGameInfo();
 						}
-						else if(!Chat(k,gamechat) && this.HandleExit()) return true;
+						else if(!Chat(k,gamechat) && HandleExit()) return true;
 						break;
 					default:
-						if(!Chat(k,gamechat) && this.HandleExit()) return true;
+						if(!Chat(k,gamechat) && HandleExit()) return true;
 						break;
 				}
 			}
 		}
 	}
-	this.UpdateStatus=function()
+	function UpdateStatus()
 	{
-		var status=[];
-		status.push("\1n\1cGAME STATUS\1h:")
-		if(this.game.finished)
+		var status=["\1n\1cGAME STATUS\1h:"];
+		if(game.finished)
 		{
 			status.push("\1n\1c Game completed");
-			status.push("\1n\1c Winner\1h: " + gameplayers.GetAlias(this.game.winner));
+			status.push("\1n\1c Winner\1h: " + gameplayers.GetAlias(game.winner));
 			
 		}
-		else if(this.game.started)
+		else if(game.started)
 		{
 			status.push("\1n\1c Game in progress");
-			if(this.currentplayer && this.game.turn==this.currentplayer.id) status.push("\1n\1c It's your turn");
+			if(currentplayer && game.turn==currentplayer.id) status.push("\1n\1c It's your turn");
 		}
 		else
 		{
-			if(this.game.players.length <2)
+			if(game.players.length <2)
 			{
 				status.push("\1n\1c Waiting for more players");
 			}
-			for(p in this.game.players)
+			for(p in game.players)
 			{
-				var player=this.game.players[p];
+				var player=game.players[p];
 				if(!player.ready)
 				{
-					if(this.currentplayer && this.currentplayer.id==player.id)
+					if(currentplayer && currentplayer.id==player.id)
 					{
 						status.push("\1n\1c You must place your ships");
 					}
@@ -135,7 +140,7 @@ function GameSession(game,join)
 				}
 				else
 				{
-					if(this.currentplayer && this.currentplayer.id==player.id)					
+					if(currentplayer && currentplayer.id==player.id)					
 					{
 						status.push("\1n\1c You are ready");
 					}
@@ -146,270 +151,273 @@ function GameSession(game,join)
 				}
 			}
 		}
-		this.DisplayInfo(status);
-		this.Alert("\1r\1h[Press any key]");
-		while(console.inkey()=="");
+		DisplayInfo(status);
+		Alert("\1r\1h[Press any key]");
+		while(console.inkey()==="");
 		gamechat.Redraw();
 	}
-	this.ClearChatWindow=function()
+	function ClearChatWindow()
 	{
 		gamechat.ClearChatWindow();
 	}
-	this.HandleExit=function()
+	function HandleExit()
 	{
-		if(this.game.finished && this.currentplayer)
+		if(game.finished && currentplayer)
 		{
-			if(this.currentplayer.id!=this.game.winner || this.game.singleplayer)	
+			if(currentplayer.id!=game.winner || game.singleplayer)	
 			{
-				if(file_exists(this.game.gamefile.name))
-					file_remove(this.game.gamefile.name);
-				if(file_exists(gameroot + this.name + ".his"))
-					file_remove(gameroot + this.name + ".his");
+				if(file_exists(game.gamefile.name))
+					file_remove(game.gamefile.name);
+				if(file_exists(gameroot + name + ".his"))
+					file_remove(gameroot + name + ".his");
 			}
 		}
 		return true;
 	}
-	this.RefreshMenu=function()
+	function RefreshMenu()
 	{
-		if(!this.currentplayer || this.currentplayer.ready) this.menu.disable(["P"]);
-		else if(this.game.started || this.game.finished) this.menu.disable(["P"]);
-		else this.menu.enable(["P"]);
-		if(this.currentplayer) this.menu.disable(["S"]);
-		else if(this.game.players.length==2) this.menu.disable(["S"]);
-		else this.menu.enable(["S"]);
-		if(!this.game.finished || !this.currentplayer) this.menu.disable(["N"]);
-		else this.menu.enable(["N"]);
-		if(!this.game.started || this.game.turn!=this.currentplayer.id || this.game.finished) 
+		if(!currentplayer || currentplayer.ready) menu.disable(["P"]);
+		else if(game.started || game.finished) menu.disable(["P"]);
+		else menu.enable(["P"]);
+		if(currentplayer) menu.disable(["S"]);
+		else if(game.players.length==2) menu.disable(["S"]);
+		else menu.enable(["S"]);
+		if(!game.finished || !currentplayer) menu.disable(["N"]);
+		else menu.enable(["N"]);
+		if(!game.started || game.turn!=currentplayer.id || game.finished) 
 		{
-			this.menu.disable(["A"]);
-			this.menu.disable(["F"]);
+			menu.disable(["A"]);
+			menu.disable(["F"]);
 		}
 		else 
 		{
-			this.menu.enable(["A"]);
-			this.menu.enable(["F"]);
+			menu.enable(["A"]);
+			menu.enable(["F"]);
 		}
 	}
-	this.Commands=function()
+	function Commands()
 	{	
-		this.menu.displayHorizontal();
+		menu.displayHorizontal();
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		this.ClearAlert();
+		ClearAlert();
 		if(k)
 		{
-			this.ClearChatWindow();
+			ClearChatWindow();
 			gamechat.Redraw();
-			if(this.menu.items[k] && this.menu.items[k].enabled) 
+			if(menu.items[k] && menu.items[k].enabled) 
 			{
 				switch(k)
 				{
 					case "S":
-						this.JoinGame();
+						JoinGame();
 						break;
 					case "H":
 						gamehelp.help("gameplay");
 						break;
 					case "D":
-						this.Redraw();
+						Redraw();
 						break;
 					case "F":
-						this.Forfeit();
+						Forfeit();
 						break;
 					case "I":
-						this.UpdateStatus();
+						UpdateStatus();
 						break;
 					case "P":
-						this.PlaceShips();
+						PlaceShips();
 						break;
 					case "A":
-						this.Attack();
+						Attack();
 						break;
 					case "N":
-						this.Rematch();
+						Rematch();
 						break;
 					default:
 						break;
 				}
-				this.ClearChatWindow();
+				ClearChatWindow();
 				gamechat.Redraw();
 			}
 			else Log("Invalid or Disabled key pressed: " + k);
 		}
 	}
-	this.ListCommands=function()
+	function ListCommands()
 	{
-		var list=this.menu.getList();
-		this.DisplayInfo(list);
+		var list=menu.getList();
+		DisplayInfo(list);
 	}
-	this.ToggleGameInfo=function()
+	function ToggleGameInfo()
 	{
-		if(this.infobar)
+		if(infobar)
 		{
-			this.infobar=false;
+			infobar=false;
 			gamechat.Resize(gamechat.x,3,gamechat.columns,19);
 		}
 		else
 		{
-			this.infobar=true;
+			infobar=true;
 			gamechat.Resize(gamechat.x,6,gamechat.columns,16);
 		}
-		this.InfoBar();
+		InfoBar();
 	}
-	this.InfoBar=function()
+	function InfoBar()
 	{
 		console.gotoxy(gamechat.x-1,1);
 		console.putmsg("\1k\1h[\1cEsc\1k\1h]\1wQuit \1k\1h[\1c/\1k\1h]\1wMenu \1k\1h[\1c?\1k\1h]\1wInfo \1k\1h[\1c" + ascii(30) + "\1k\1h,\1c" + ascii(31) +"\1k\1h]\1wScroll");
-		if(this.infobar)
+		if(infobar)
 		{
 			var x=gamechat.x;
 			var y=3;
 			var turn=false;
-			if(this.game.started && !this.game.finished) turn=this.game.turn;
-			for(player in this.game.players)
+			if(game.started && !game.finished) turn=game.turn;
+			for(player in game.players)
 			{
 				console.gotoxy(x,y);
-				console.putmsg(PrintPadded(gameplayers.FormatPlayer(this.game.players[player].id,turn),27));
-				console.putmsg("\1nShips\1h: \1n" + this.CountShips(this.game.players[player].id));
+				console.putmsg(PrintPadded(gameplayers.FormatPlayer(game.players[player].id,turn),27));
+				console.putmsg("\1nShips\1h: \1n" + CountShips(game.players[player].id));
 				y+=1;
 			}
 		}
 	}
-	this.ClearAlert=function()
+	function ClearAlert()
 	{
 		gamechat.ClearInputLine();
 	}
-	this.DisplayInfo=function(array)
+	function DisplayInfo(array)
 	{
 		gamechat.DisplayInfo(array);
 	}
-	this.Notice=function(msg)
+	function Notice(msg)
 	{
 		gamechat.AddNotice(msg);
 	}
-	this.Alert=function(msg)
+	function Alert(msg)
 	{
 		gamechat.Alert(msg);
-		this.clearinput=true;
+		clearinput=true;
 	}
-	this.Cycle=function()
+	function Cycle()
 	{
 		gamechat.Cycle();
-		if(this.queue.DataWaiting("attack"))
+		if(queue.DataWaiting("attack"))
 		{
-			var data=this.queue.ReceiveData("attack");
+			var data=queue.ReceiveData("attack");
 			for(attack in data)
 			{
 				var shot=data[attack];
-				this.GetAttack(shot);
+				GetAttack(shot);
 			}
-			this.InfoBar();
+			InfoBar();
 		}
-		if(this.queue.DataWaiting("endturn"))
+		if(queue.DataWaiting("endturn"))
 		{
-			var trash=this.queue.ReceiveData("endturn");
-			this.game.NextTurn();
-			if(this.currentplayer)
+			var trash=queue.ReceiveData("endturn");
+			game.NextTurn();
+			if(currentplayer)
 			{
-				if(this.game.turn==this.currentplayer.id) this.Notice("\1c\1hIt's your turn");
+				if(game.turn==currentplayer.id) Notice("\1c\1hIt's your turn");
 			}
-			this.InfoBar();
+			InfoBar();
 		}
-		if(this.queue.DataWaiting("endgame"))
+		if(queue.DataWaiting("endgame"))
 		{
-			var data=this.queue.ReceiveData("endgame");
-			var str1=data.winner;
-			var str2=data.loser + "'s";
-			if(this.currentplayer)
+			var data=queue.ReceiveData("endgame");
+			for(var d in data)
 			{
-				if(data.loser==this.currentplayer.id) str2="your";
-			}
-			for(player in this.game.players)
-			{
-				this.game.players[player].board.hidden=false;
-				this.game.players[player].board.DrawBoard();
-			}
-			this.Notice("\1r\1h" + str1 + " sank all of " + str2 + " ships!");
-			this.game.finished=true;
-		}
-		if(this.queue.DataWaiting("update"))
-		{
-			var trash=this.queue.ReceiveData("update");
-			this.game.LoadGame();
-			this.game.LoadPlayers();
-			if(!this.currentplayer && this.game.spectate && this.game.started)
-			{
-				for(player in this.game.players)
+				var str1=data[d].winner;
+				var str2=data[d].loser + "'s";
+				if(currentplayer)
 				{
-					this.game.players[player].board.hidden=false;
-					this.game.players[player].board.DrawBoard();
+					if(data[d].loser==currentplayer.id) str2="your";
+				}
+				for(player in game.players)
+				{
+					game.players[player].board.hidden=false;
+					game.players[player].board.DrawBoard();
+				}
+				Notice("\1r\1h" + str1 + " sank all of " + str2 + " ships!");
+			}
+			game.finished=true;
+		}
+		if(queue.DataWaiting("update"))
+		{
+			var trash=queue.ReceiveData("update");
+			game.LoadGame();
+			game.LoadPlayers();
+			if(!currentplayer && game.spectate && game.started)
+			{
+				for(player in game.players)
+				{
+					game.players[player].board.hidden=false;
+					game.players[player].board.DrawBoard();
 				}
 			}
-			this.InfoBar();
+			InfoBar();
 		}
-		if(!this.game.started) 
+		if(!game.started) 
 		{
-			var start=this.game.StartGame();
-			if(start) this.InfoBar();
+			var start=game.StartGame();
+			if(start) InfoBar();
 		}
 	}
-	this.Redraw=function()
+	function Redraw()
 	{
 		console.clear();
-		this.game.Redraw();
-		this.InfoBar();
+		game.Redraw();
+		InfoBar();
 		gamechat.Redraw();
 	}
-	this.Send=function(data,ident)
+	function Send(data,ident)
 	{
-		this.queue.SendData(data,ident);
+		queue.SendData(data,ident);
 	}
-	this.ClearAlert=function()
+	function ClearAlert()
 	{
 		gamechat.ClearInputLine();
 	}
 
 /*	ATTACK FUNCTIONS	*/
-	this.Attack=function()
+	function Attack()
 	{
-		var player=this.currentplayer;
+		var player=currentplayer;
 		var opponent=game.FindOpponent();
-		if(!this.shots) this.shots=(this.game.multishot?this.CountShips(player.id):1);
-		while(this.shots>0)
+		if(!shots) shots=(game.multishot?CountShips(player.id):1);
+		while(shots>0)
 		{
-			this.Cycle();
-			this.Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + this.shots + "\1n)");
-			var coords=this.ChooseTarget(opponent);
+			Cycle();
+			Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + shots + "\1n)");
+			var coords=ChooseTarget(opponent);
 			if(!coords) return false;
 			opponent.board.shots[coords.x][coords.y]=true;
 			opponent.board.DrawSpace(coords.x,coords.y);
-			this.SendAttack(coords,opponent);
-			this.game.StoreShot(coords,opponent.id);
-			var hit=this.CheckShot(coords,opponent);
-			if(this.game.bonusattack) 
+			SendAttack(coords,opponent);
+			game.StoreShot(coords,opponent.id);
+			var hit=CheckShot(coords,opponent);
+			if(game.bonusattack) 
 			{
-				if(!hit) this.shots--;
+				if(!hit) shots--;
 			}
-			else this.shots--;
-			var count=this.CountShips(opponent.id);
-			if(count==0) 
+			else shots--;
+			var count=CountShips(opponent.id);
+			if(count===0) 
 			{
-				var p1=this.game.FindCurrentUser();
-				var p2=this.game.FindOpponent();
-				this.EndGame(p1,p2);
+				var p1=game.FindCurrentUser();
+				var p2=game.FindOpponent();
+				EndGame(p1,p2);
 				break;
 			}
-			this.InfoBar();
+			InfoBar();
 		}
-		this.shots=false;
-		this.game.NextTurn();
-		this.game.StoreGame();
-		if(this.game.turn==gameplayers.GetFullName("CPU") && !this.game.finished) this.ComputerTurn();
-		else this.game.NotifyPlayer();
-		this.InfoBar();
-		this.Send("endturn","endturn");
+		shots=false;
+		game.NextTurn();
+		game.StoreGame();
+		if(game.turn==gameplayers.GetFullName("CPU") && !game.finished) ComputerTurn();
+		else game.NotifyPlayer();
+		InfoBar();
+		Send("endturn","endturn");
 		return true;
 	}
-	this.ChooseTarget=function(opponent)
+	function ChooseTarget(opponent)
 	{
 		var letters="abcdefghij";
 		var selected;
@@ -418,11 +426,11 @@ function GameSession(game,join)
 		board.DrawSelected(selected.x,selected.y);
 		while(1)
 		{
-			this.Cycle();
-			var key=console.inkey((K_NOECHO,K_NOCRLF,K_UPPER),50);
+			Cycle();
+			var key=console.inkey(K_NOECHO|K_NOCRLF|K_UPPER,50);
 			if(key)
 			{
-				this.Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + this.shots + "\1n)");
+				Alert("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + shots + "\1n)");
 				if(key=="\r")
 				{
 					if(!board.shots[selected.x][selected.y]) 
@@ -432,7 +440,7 @@ function GameSession(game,join)
 					}
 					else
 					{
-						this.Alert("\1r\1hInvalid Selection");
+						Alert("\1r\1hInvalid Selection");
 					}
 				}
 				switch(key.toLowerCase())
@@ -498,12 +506,12 @@ function GameSession(game,join)
 		}
 		
 	}
-	this.SendAttack=function(coords,opponent)
+	function SendAttack(coords,opponent)
 	{
-		var attack={'source':this.currentplayer.id,'target':opponent.id,'coords':coords};
-		this.Send(attack,"attack");
+		var attack={'source':currentplayer.id,'target':opponent.id,'coords':coords};
+		Send(attack,"attack");
 	}
-	this.CheckShot=function(coords,opponent)
+	function CheckShot(coords,opponent)
 	{
 		if(opponent.board.grid[coords.x][coords.y])
 		{
@@ -513,28 +521,28 @@ function GameSession(game,join)
 			ship.TakeHit(segment);
 			if(ship.sunk)
 			{
-				this.Notice("\1r\1hYou sank " + opponent.name + "'s ship!");
+				Notice("\1r\1hYou sank " + opponent.name + "'s ship!");
 			}
 			else
 			{
-				this.Notice("\1r\1hYou hit " + opponent.name + "'s ship!");
+				Notice("\1r\1hYou hit " + opponent.name + "'s ship!");
 			}
 			return true;
 		}
 		else
 		{
-			this.Notice("\1c\1hYou missed!");
+			Notice("\1c\1hYou missed!");
 			return false;
 		}
 	}
-	this.GetAttack=function(attack)
+	function GetAttack(attack)
 	{
-		var source=this.game.FindPlayer(attack.source);
-		var target=this.game.FindPlayer(attack.target);
+		var source=game.FindPlayer(attack.source);
+		var target=game.FindPlayer(attack.target);
 		var coords=attack.coords;
 		var board=target.board;
 		var targetname=target.name + "'s";
-		if(this.currentplayer && target.id==this.currentplayer.id) targetname="your";
+		if(currentplayer && target.id==currentplayer.id) targetname="your";
 		if(board.grid[coords.x][coords.y])
 		{
 			var shipid=board.grid[coords.x][coords.y].id;
@@ -542,23 +550,23 @@ function GameSession(game,join)
 			board.ships[shipid].TakeHit(segment);
 			if(board.ships[shipid].sunk)
 			{
-				this.Notice("\1r\1h" + source.name  + " sank " + targetname + " ship!");
+				Notice("\1r\1h" + source.name  + " sank " + targetname + " ship!");
 			}
 			else
 			{
-				this.Notice("\1r\1h" + source.name  + " hit " + targetname + " ship!");
+				Notice("\1r\1h" + source.name  + " hit " + targetname + " ship!");
 			}
 		}
 		else
 		{
-			this.Notice("\1c\1h" + source.name  + " fired and missed!");
+			Notice("\1c\1h" + source.name  + " fired and missed!");
 		}
 		board.shots[coords.x][coords.y]=true;
 		board.DrawSpace(coords.x,coords.y);
 	}
-	this.CountShips=function(id)
+	function CountShips(id)
 	{
-		var player=this.game.FindPlayer(id);
+		var player=game.FindPlayer(id);
 		var board=player.board;
 		var sunk=0;
 		for(ship in board.ships)
@@ -569,7 +577,7 @@ function GameSession(game,join)
 	}
 
 /*	GAMEPLAY FUNCTIONS	*/
-	this.CheckInterference=function(position,ship,board)
+	function CheckInterference(position,ship,board)
 	{
 		var segments=[];
 		var xinc=(ship.orientation=="vertical"?0:1);
@@ -588,17 +596,17 @@ function GameSession(game,join)
 		if(segments.length) return segments;
 		return false;
 	}
-	this.PlaceShips=function()
+	function PlaceShips()
 	{	
-		var board=this.currentplayer.board;
+		var board=currentplayer.board;
 		for(id in board.ships)
 		{
-			this.Cycle();
+			Cycle();
 			var ship=board.ships[id];
-			this.Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] rotate");
+			Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] rotate");
 			while(1)
 			{
-				var position=this.SelectTile(ship);
+				var position=SelectTile(ship);
 				if(position) 
 				{
 					board.AddShip(position,id);
@@ -608,39 +616,39 @@ function GameSession(game,join)
 			}
 			//TODO: keep track of ships placed
 		}
-		this.currentplayer.ready=true;
-		this.game.StoreGame();
-		this.game.StoreBoard(this.currentplayer.id);
-		this.game.StorePlayer(this.currentplayer.id);
-		this.UpdateStatus();
-		this.Send("update","update");
+		currentplayer.ready=true;
+		game.StoreGame();
+		game.StoreBoard(currentplayer.id);
+		game.StorePlayer(currentplayer.id);
+		UpdateStatus();
+		Send("update","update");
 	}
-	this.SelectTile=function(ship,placeholder)
+	function SelectTile(ship,placeholder)
 	{
 		var selected;
-		var board=this.currentplayer.board;
+		var board=currentplayer.board;
 		if(placeholder) selected={"x":start.x, "y":start.y};
 		else
 		{
 			selected={"x":0,"y":0};
 		}
 		board.DrawShip(selected.x,selected.y,ship);
-		var interference=this.CheckInterference(selected,ship,board);
+		var interference=CheckInterference(selected,ship,board);
 		var ylimit=(ship.orientation=="vertical"?ship.segments.length-1:0);
 		var xlimit=(ship.orientation=="horizontal"?ship.segments.length-1:0);
 		while(1)
 		{
-			this.Cycle();
-			var key=console.inkey((K_NOECHO,K_NOCRLF,K_UPPER),50);
+			Cycle();
+			var key=console.inkey(K_NOECHO|K_NOCRLF|K_UPPER,50);
 			if(key)
 			{
-				this.Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] toggle");
+				Alert("\1nPlace ships [\1h?\1n] help [\1hspace\1n] toggle");
 				if(key=="\r")
 				{
 					if(!interference) return selected;
 					else
 					{
-						this.Alert("\1r\1hInvalid Selection");
+						Alert("\1r\1hInvalid Selection");
 					}
 				}
 				switch(key)
@@ -741,124 +749,124 @@ function GameSession(game,join)
 					}
 				}
 				board.DrawShip(selected.x,selected.y,ship);
-				interference=this.CheckInterference(selected,ship,board);
+				interference=CheckInterference(selected,ship,board);
 			}
 		}
 	}
-	this.NewGame=function()
+	function NewGame()
 	{
 		//TODO: Add the ability to change game settings (timed? rated?) when restarting/rematching
-		this.game.NewGame();
-		this.send("update","update");
+		game.NewGame();
+		send("update","update");
 	}
-	this.Forfeit=function()
+	function Forfeit()
 	{
-		this.Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-		var p1=this.game.FindCurrentUser();
-		var p2=this.game.FindOpponent();
-		this.EndGame(p2,p1);
+		var p1=game.FindCurrentUser();
+		var p2=game.FindOpponent();
+		EndGame(p2,p1);
 	}
-	this.EndGame=function(winner,loser)
+	function EndGame(winner,loser)
 	{
-		var wdata=gameplayers.players[winner.id]
+		var wdata=gameplayers.players[winner.id];
 		var ldata=gameplayers.players[loser.id];
 		
 		if(winner.name!="CPU")
 		{
 			wdata.wins++;
 			gameplayers.StorePlayer(winner.id);
-			if(winner.id==this.currentplayer.id)
+			if(winner.id==currentplayer.id)
 			{
-				this.Notice("\1r\1hYou sank all of " + loser.name + "'s ships!");
+				Notice("\1r\1hYou sank all of " + loser.name + "'s ships!");
 			}
 		}
 		if(loser.name!="CPU")
 		{
 			ldata.losses++;
 			gameplayers.StorePlayer(loser.id);
-			this.game.NotifyLoser(loser.id);
+			game.NotifyLoser(loser.id);
 		}
-		this.game.winner=winner.id;
-		this.game.End();
+		game.winner=winner.id;
+		game.End();
 		var endgame={'winner':winner.id, 'loser':loser.id};
-		this.Send(endgame,"endgame");
-		this.InfoBar();
+		Send(endgame,"endgame");
+		InfoBar();
 	}
-	this.JoinGame=function()
+	function JoinGame()
 	{
-		this.game.AddPlayer(user.alias);
-		this.currentplayer=this.game.FindCurrentUser();
-		this.Send("update","update");
-		this.InfoBar();
+		game.AddPlayer(user.alias);
+		currentplayer=game.FindCurrentUser();
+		Send("update","update");
+		InfoBar();
 	}
 
 /* AI FUNCTIONS	*/
-	this.ComputerTurn=function()
+	function ComputerTurn()
 	{
 		Log("Computer player taking turn");
-		var cpu=this.game.FindComputer();
-		var opponent=this.currentplayer;
-		var shots=(this.game.multishot?this.CountShips(cpu.id):1);
+		var cpu=game.FindComputer();
+		var opponent=currentplayer;
+		var shots=(game.multishot?CountShips(cpu.id):1);
 		while(shots>0)
 		{
-			var coords=this.ComputerAttack(opponent);
+			var coords=ComputerAttack(opponent);
 			opponent.board.shots[coords.x][coords.y]=true;
-			this.SendAttack(coords,opponent);
-			this.game.StoreShot(coords,opponent.id);
-			var hit=this.CheckComputerAttack(coords,opponent);
-			if(this.game.bonusattack) 
+			SendAttack(coords,opponent);
+			game.StoreShot(coords,opponent.id);
+			var hit=CheckComputerAttack(coords,opponent);
+			if(game.bonusattack) 
 			{
 				if(!hit) shots--;
 			}
 			else shots--;
 			opponent.board.DrawSpace(coords.x,coords.y);
-			var count=this.CountShips(opponent.id);
-			if(count==0) 
+			var count=CountShips(opponent.id);
+			if(count===0) 
 			{
 				var winner=cpu;
 				var loser=opponent;
-				this.EndGame(winner,loser);
+				EndGame(winner,loser);
 				break;
 			}
 		}
-		this.game.NextTurn();
-		this.game.StoreGame();
-		this.Send("endturn","endturn");
+		game.NextTurn();
+		game.StoreGame();
+		Send("endturn","endturn");
 		return true;
 	}
-	this.CheckComputerAttack=function(coords,opponent)
+	function CheckComputerAttack(coords,opponent)
 	{
 		if(opponent.board.grid[coords.x][coords.y])
 		{
 			var segment=opponent.board.grid[coords.x][coords.y].segment;
 			var shipid=opponent.board.grid[coords.x][coords.y].id;
 			var ship=opponent.board.ships[shipid];
-			this.game.lastcpuhit=coords;
+			game.lastcpuhit=coords;
 			ship.TakeHit(segment);
 			if(ship.sunk)
 			{
-				this.Notice("\1r\1hCPU sank your ship!");
+				Notice("\1r\1hCPU sank your ship!");
 			}
-			else this.Notice("\1r\1hCPU hit your ship!");
+			else Notice("\1r\1hCPU hit your ship!");
 			return true;
 		}
 		else
 		{
-			this.Notice("\1c\1hCPU fired and missed!");
+			Notice("\1c\1hCPU fired and missed!");
 			return false;
 		}
 	}
-	this.ComputerAttack=function(opponent)
+	function ComputerAttack(opponent)
 	{
 		var coords=new Object();
-		if(this.game.lastcpuhit && opponent.board.grid[this.game.lastcpuhit.x][this.game.lastcpuhit.y])
+		if(game.lastcpuhit && opponent.board.grid[game.lastcpuhit.x][game.lastcpuhit.y])
 		{
-			var shipid=opponent.board.grid[this.game.lastcpuhit.x][this.game.lastcpuhit.y].id;
+			var shipid=opponent.board.grid[game.lastcpuhit.x][game.lastcpuhit.y].id;
 			if(!opponent.board.ships[shipid].sunk)
 			{
-				var start={'x':this.game.lastcpuhit.x,'y':this.game.lastcpuhit.y};
-				coords=this.FindNearbyTarget(opponent.board,start);
+				var start={'x':game.lastcpuhit.x,'y':game.lastcpuhit.y};
+				coords=FindNearbyTarget(opponent.board,start);
 				if(coords) return coords;
 			}
 		}
@@ -874,17 +882,17 @@ function GameSession(game,join)
 						if(!opponent.board.ships[shipid].sunk)
 						{
 							var start={'x':x,'y':y};
-							coords=this.FindNearbyTarget(opponent.board,start);
+							coords=FindNearbyTarget(opponent.board,start);
 							if(coords) return coords;
 						}
 					}
 				}
 			}
 		}
-		coords=this.FindRandomTarget(opponent.board);
+		coords=FindRandomTarget(opponent.board);
 		return(coords);
 	}
-	this.FindNearbyTarget=function(board,coords)
+	function FindNearbyTarget(board,coords)
 	{
 		var tried=[];
 		var tries=4;
@@ -930,7 +938,7 @@ function GameSession(game,join)
 		}
 		return false;
 	}
-	this.FindRandomTarget=function(board)
+	function FindRandomTarget(board)
 	{
 		while(1)
 		{
@@ -940,9 +948,9 @@ function GameSession(game,join)
 		}
 		return({'x':column,'y':row});
 	}
-	this.ComputerPlacement=function()
+	function ComputerPlacement()
 	{
-		var cpu=this.game.FindComputer();
+		var cpu=game.FindComputer();
 		var board=cpu.board;
 		for(s in board.ships)
 		{
@@ -960,7 +968,7 @@ function GameSession(game,join)
 				var ylimit=(orientation=="vertical"?ship.segments.length:0);
 				if(position.x + xlimit <=9 && position.y + ylimit<=9)
 				{
-					if(!this.CheckInterference(position,ship,board))
+					if(!CheckInterference(position,ship,board))
 					{
 						break;
 					}
@@ -975,38 +983,38 @@ function GameSession(game,join)
 			board.AddShip(position,s);
 		}
 		cpu.ready=true;
-		this.game.StoreBoard(cpu.id);
-		this.game.StorePlayer(cpu.id);
-		this.Send("update","update");
+		game.StoreBoard(cpu.id);
+		game.StorePlayer(cpu.id);
+		Send("update","update");
 	}
-	this.ComputerInit=function()
+	function ComputerInit()
 	{
-		this.game.AddPlayer("CPU");
-		this.ComputerPlacement();
+		game.AddPlayer("CPU");
+		ComputerPlacement();
 	}
-	this.InitGame();
-	this.InitChat();
-	this.InitMenu();
-	this.Main();
+	InitGame();
+	InitChat();
+	InitMenu();
+	Main();
 }
 function GameData(gamefile)
 {
 	this.graphic=new Graphic(43,24);
 	this.graphic.load(gameroot+"blarge.bin");
-	this.gamefile;		
-	this.gamenumber;
-	this.lastupdated;
 	this.players=[];
-	this.password;
-	this.singleplayer;
-	this.lastcpuhit;
-	this.winner;
-	this.turn;
-	this.started;
-	this.finished; 
-	this.multishot;
-	this.bonusattack;
-	this.spectate;
+//	this.gamefile;		
+//	this.gamenumber;
+//	this.lastupdated;
+//	this.password;
+//	this.singleplayer;
+//	this.lastcpuhit;
+//	this.winner;
+//	this.turn;
+//	this.started;
+//	this.finished; 
+//	this.multishot;
+//	this.bonusattack;
+//	this.spectate;
 	
 	this.Init=function()
 	{
@@ -1065,7 +1073,7 @@ function GameData(gamefile)
 	}
 	this.FindPlayer=function(id)
 	{
-		for(player in this.players)
+		for(var player in this.players)
 		{
 			if(this.players[player].id==id) return this.players[player];
 		}
@@ -1112,7 +1120,7 @@ function GameData(gamefile)
 		}
 		var fName=gameroot + gNum + ".bom";
 		this.gamefile=new File(fName);
-		this.gamenumber=parseInt(gNum);
+		this.gamenumber=parseInt(gNum,10);
 	}
 	this.StoreBoard=function(id)
 	{
@@ -1264,7 +1272,7 @@ function GameData(gamefile)
 	this.StartGame=function()
 	{
 		if(this.players.length<2) return false;
-		for(player in this.players)
+		for(var player in this.players)
 		{
 			if(!this.players[player].ready) return false;
 		}
@@ -1296,12 +1304,14 @@ function GameData(gamefile)
 		}
 	}
 	this.LoadBoard=function(id)
-	{
+	{	
+		Log("Loading grid data: " + id);
 		var player=	this.FindPlayer(id);
 		var board=		player.board;
 		var positions=	this.gamefile.iniGetAllObjects("position",id + ".board.");
 		for(pos in positions)
 		{
+			Log("Loading position data: " + positions[pos].position);
 			var coords=				GetBoardPosition(positions[pos].position);
 			if(positions[pos].shot)		board.shots[coords.x][coords.y]=positions[pos].shot;
 			if(positions[pos].ship_id>=0)	
@@ -1310,7 +1320,7 @@ function GameData(gamefile)
 				var segment=positions[pos].segment;
 				var orientation=positions[pos].orientation;
 				player.board.grid[coords.x][coords.y]={'id':id,'segment':segment,'orientation':orientation};
-				if(segment==0)	player.board.ships[id].orientation=orientation;
+				if(segment===0)	player.board.ships[id].orientation=orientation;
 				if(positions[pos].shot)
 				{
 					board.ships[id].TakeHit(segment);
@@ -1338,8 +1348,8 @@ function BattleShip(name)
 {
 	this.name=name;
 	this.orientation="horizontal";
-	this.segments;
-	this.sunk;
+	//this.segments;
+	//this.sunk;
 	
 	this.Toggle=function()
 	{
@@ -1409,8 +1419,6 @@ function BattleShip(name)
 		{
 			this.segments[segment]=new Segment(horizontal[segment],vertical[segment]);
 		}
-		delete horizontal;
-		delete vertical;
 	}
 	function Segment(hgraph,vgraph)
 	{
@@ -1452,10 +1460,11 @@ function GameBoard(x,y,hidden)
 {
 	this.x=x;
 	this.y=y;
-	this.grid;
-	this.shots;
-	this.ships;
 	this.hidden=hidden;
+
+//	this.grid;
+//	this.shots;
+//	this.ships;
 	
 	this.Init=function()
 	{
@@ -1591,14 +1600,14 @@ function GetBoardPosition(position)
 		//CONVERT BOARD POSITION IDENTIFIER TO XY COORDINATES
 		var x=position.charAt(1);
 		var y=position.charAt(0);
-		x=parseInt(x==0?9:position.charAt(1)-1);
-		y=parseInt(letters.indexOf(y.toLowerCase()));
+		x=parseInt(x==0?9:position.charAt(1)-1,10);
+		y=parseInt(letters.indexOf(y.toLowerCase()),10);
 		position={'x':x,'y':y};
 	}
 	else if(typeof position=="object")
 	{
 		//CONVERT XY COORDINATES TO STANDARD CHESS BOARD FORMAT
-		var x=(position.x==9?0:parseInt(position.x)+1);
+		var x=(position.x==9?0:parseInt(position.x,10)+1);
 		position=(letters.charAt(position.y) + x);
 	}
 	return(position);

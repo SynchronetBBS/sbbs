@@ -21,8 +21,8 @@ function DataQueue(root,name,log_)
 	this.notices=[];
 	this.user_file=	new File(this.root + "users.lst");
 	this.last_user_update=0;
-	this.users;
-	this.thread;
+	//this.users;
+	//this.thread;
 
 	KillFile=this.user_file;
 	
@@ -134,7 +134,9 @@ function DataQueue(root,name,log_)
 			this.user_file.iniRemoveKey(this.thread,system.qwk_id + "." + user.alias);
 			this.thread=thread;
 			KillThread=this.thread;
-			this.log("Initializing queue: room: " + this.thread + " file: " + this.user_file.name + " time: " + time());
+			this.log("Initializing room: " + this.thread);
+			this.log("User file: " + this.user_file.name);
+			this.log("Time: " + system.timestr());
 			this.user_file.iniSetValue(thread,system.qwk_id + "." + user.alias,"(" + status + ")");
 			this.user_file.close();
 		}

@@ -7,12 +7,13 @@
 	for Synchronet v3.15+
 */
 
+
 var gameroot;
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 load("graphic.js");
-load("sbbsdefs.js")
+load("sbbsdefs.js");
 load("logging.js");
 load("funclib.js");
  
@@ -24,8 +25,8 @@ function Blox()
 {
 	const columns=20;
 	const rows=11;
-	const bg=[BG_GREEN,BG_BLUE,BG_RED,BG_BROWN,BG_MAGENTA,BG_CYAN];
-	const fg=[LIGHTGREEN,LIGHTBLUE,LIGHTRED,YELLOW,LIGHTMAGENTA,LIGHTCYAN];
+	const bg=[BG_GREEN,BG_BLUE,BG_RED,BG_CYAN,BG_BROWN,BG_MAGENTA];
+	const fg=[LIGHTGREEN,LIGHTBLUE,LIGHTRED,LIGHTCYAN,YELLOW,LIGHTMAGENTA];
 
 	var level;
 	var points;
@@ -104,7 +105,7 @@ function Blox()
 			if(gameover) 
 			{
 				EndGame();
-				while(console.inkey()=="");
+				while(console.inkey()==="");
 				return;
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
@@ -161,7 +162,7 @@ function Blox()
 		console.gotoxy(52,5);
 		console.putmsg(CenterString("\1n\1y" + points,13));
 		console.gotoxy(52,13);
-		console.putmsg(CenterString("\1n\1y" + (parseInt(level)+1),13));
+		console.putmsg(CenterString("\1n\1y" + (parseInt(level,10)+1),13));
 	}
 	function SplashStart()
 	{
@@ -271,7 +272,7 @@ function Blox()
 				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;		
 				break;
 		}
-		ShowPosition()
+		ShowPosition();
 	}
 	function Grid(c,r)
 	{
@@ -310,6 +311,8 @@ function Blox()
 		if(selected) 
 		{
 			RemoveBlocks();
+			DrawGrid();
+			ShowScore();
 			if(!FindValidMove())
 			{
 				if(current.tiles<=0) 
@@ -319,6 +322,12 @@ function Blox()
 					Redraw();
 				}
 				else gameover=true;
+			}
+			else
+			{
+				if(selx>=current.grid.length) selx=current.grid.length-1;
+				if(sely>=current.grid[selx].length) sely=current.grid[selx].length-1;
+				ShowPosition();
 			}
 		}
 		else
@@ -402,12 +411,6 @@ function Blox()
 		Unselect();
 		ShowTiles();
 		
-		if(selx>=current.grid.length) selx=current.grid.length-1;
-		if(sely>=current.grid[selx].length) sely=current.grid[selx].length-1;
-
-		ShowScore();
-		DrawGrid();
-		ShowPosition();
 	}
 	function ShowPosition()
 	{
@@ -431,7 +434,7 @@ function Blox()
 	function ShowLevel()
 	{
 		console.gotoxy(63,18);
-		console.putmsg("\1w\1h" + (parseInt(level)+1));
+		console.putmsg("\1w\1h" + (parseInt(level,10)+1));
 	}
 	function ShowTiles()
 	{
