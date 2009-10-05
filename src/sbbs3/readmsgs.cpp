@@ -39,7 +39,7 @@
 
 int sbbs_t::sub_op(uint subnum)
 {
-	return(SYSOP || (cfg.sub[subnum]->op_ar[0] && chk_ar(cfg.sub[subnum]->op_ar,&useron,&client)));
+	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
 

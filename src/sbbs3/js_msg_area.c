@@ -454,7 +454,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 			val=OBJECT_TO_JSVAL(subobj);
 			sub_index=-1;
-			if(user==NULL || chk_ar(cfg,cfg->sub[d]->ar,user,client)) {
+			if(user==NULL || can_user_access_sub(cfg,d,user,client)) {
 
 				if(!JS_GetArrayLength(cx, sub_list, &sub_index))
 					return(NULL);							
@@ -478,11 +478,11 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 
 			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d))
 				return(NULL);
-			
-			if(user==NULL || chk_ar(cfg,cfg->sub[d]->read_ar,user,client))
+		
+			if(user==NULL)
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=BOOLEAN_TO_JSVAL(can_user_read_sub(cfg,d,user,client));
 			if(!JS_SetProperty(cx, subobj, "can_read", &val))
 				return(NULL);
 
@@ -493,12 +493,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "can_post", &val))
 				return(NULL);
 
-			if(user!=NULL &&
-				(user->level>=SYSOP_LEVEL ||
-					(cfg->sub[d]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[d]->op_ar,user,client))))
+			if(user!=NULL)
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
-				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+				val=BOOLEAN_TO_JSVAL(is_user_subop(cfg,d,user,client));
 			if(!JS_SetProperty(cx, subobj, "is_operator", &val))
 				return(NULL);
 
