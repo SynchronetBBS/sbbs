@@ -2561,7 +2561,7 @@ static char *get_request(http_session_t * session, char *req_line)
 		strtok_r(session->req.vhost,":",&last);
 
 		/* Sets p to point to the first character after the first slash */
-		p=strchr(session->req.physical_path, "/");
+		p=strchr(session->req.physical_path, '/');
 		
 		/*
 		 * If we have a slash, make it the first char in the string.
