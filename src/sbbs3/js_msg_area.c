@@ -493,7 +493,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "can_post", &val))
 				return(NULL);
 
-			if(user!=NULL)
+			if(user==NULL)
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
 				val=BOOLEAN_TO_JSVAL(is_user_subop(cfg,d,user,client));
