@@ -118,6 +118,7 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 int main(int argc, char **argv)
 {
 	char		str[128],*p,*s,*beep="";
+	char		from[26];
 	char*		body;
 	char*		tail;
 	int 		h,i,j,x,y,lzh,errors,errlast;
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
 				,delidx
 				,delhdrblocks,deldatblocks,hdrerr,lockerr,hdrnumerr,hdrlenerr
 				,getbodyerr,gettailerr
-				,hasherr
+				,hasherr,badhash
 				,acthdrblocks,actdatblocks
 				,dfieldlength,dfieldoffset
 				,dupenum,dupenumhdr,dupeoff,attr,actalloc
@@ -145,10 +146,11 @@ int main(int argc, char **argv)
 	smbmsg_t	msg;
 	hash_t**	hashes;
 	char		revision[16];
+	time_t		now=time(NULL);
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	fprintf(stderr,"\nCHKSMB v2.20-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
+	fprintf(stderr,"\nCHKSMB v2.30-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
 		,PLATFORM_DESC,revision,smb_lib_ver());
 
 	if(argc<2) {
@@ -268,7 +270,7 @@ int main(int argc, char **argv)
 	actalloc=datactalloc=deldatblocks=delhdrblocks=xlaterr=0;
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
 	getbodyerr=gettailerr=0;
-	hasherr=0;
+	hasherr=badhash=0;
 	unvalidated=0;
 	intransit=0;
 	acthdrblocks=actdatblocks=0;
@@ -309,9 +311,10 @@ int main(int argc, char **argv)
 		smb_unlockmsghdr(&smb,&msg);
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
 
-		truncsp(msg.from);
-		strip_ctrl(msg.from);
-		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
+		SAFECOPY(from,msg.from);
+		truncsp(from);
+		strip_ctrl(from);
+		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,from);
 
 		if(msg.hdr.length!=smb_getmsghdrlen(&msg)) {
 			fprintf(stderr,"%sHeader length mismatch\n",beep);
@@ -745,6 +748,35 @@ int main(int argc, char **argv)
 
 	}	/* if(total) */
 
+	if(!(smb.status.attr&SMB_EMAIL) && chkhash && smb_open_hash(&smb)==SMB_SUCCESS) {
+		hash_t hash;
+
+		fprintf(stderr,"\nChecking %s Hashes\n\n",smb.file);
+
+		length=filelength(fileno(smb.hash_fp));
+
+		fseek(smb.hash_fp,0L,SEEK_SET);
+		for(l=0;l<length;l+=sizeof(hash_t)) {
+			if(((l/sizeof(hash_t))%10)==0)
+				fprintf(stderr,"\r%2lu%%  ",l ? (long)(100.0/((float)length/l)) : 0);
+			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
+				break;
+			if(hash.number==0 || hash.number > smb.status.last_msg)
+				fprintf(stderr,"\r%sInvalid message number (%u)\n", beep, hash.number), badhash++;
+			else if(hash.time < 0x40000000 || hash.time > (ulong)now)
+				fprintf(stderr,"\r%sInvalid time (0x%08lX)\n", beep, hash.time), badhash++;
+			else if(hash.length < 1 || hash.length > 1024*1024)
+				fprintf(stderr,"\r%sInvalid length (%lu)\n", beep, hash.length), badhash++;
+			else if(hash.source >= SMB_HASH_SOURCE_TYPES)
+				fprintf(stderr,"\r%sInvalid source type (%u)\n", beep, hash.source), badhash++;
+		}
+
+		smb_close_hash(&smb);
+
+		fprintf(stderr,"\r%79s\r100%%\n",""); 
+	}
+
+
 	totalmsgs+=smb.status.total_msgs;
 	totalmsgbytes+=(acthdrblocks*SHD_BLOCK_LEN)+(actdatblocks*SDT_BLOCK_LEN);
 	totaldelmsgs+=deleted;
@@ -912,13 +944,17 @@ int main(int argc, char **argv)
 			,"Invalid Data Field Lengths"
 			,dfieldlength);
 
+	if(badhash)
+		printf("%-35.35s (!): %lu\n"
+			,"Invalid Hash Entries"
+			,badhash);
 
 	printf("\n%s Message Base ",smb.file);
 	if(/* (headers-deleted)!=smb.status.total_msgs || */
 		total!=smb.status.total_msgs
 		|| (headers-deleted)!=total-delidx
 		|| idxzeronum || zeronum
-		|| hdrlenerr || hasherr
+		|| hdrlenerr || hasherr || badhash
 		|| getbodyerr || gettailerr
 		|| orphan || dupenumhdr || dupenum || dupeoff || attr
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
