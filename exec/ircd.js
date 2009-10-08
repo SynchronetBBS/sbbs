@@ -2886,6 +2886,11 @@ function IRCClient_check_queues() {
 }
 
 function IRCClient_finalize_server_connect(states,sendps) {
+	var statestr = " :" + states;
+	/* DreamForge-based servers do not support passing state information
+	   along on the PASS message */
+	if (this.type&DREAMFORGE)
+		statestr = "";
 	hcc_counter++;
 	gnotice("Link with " + this.nick + "[unknown@" + this.hostname +
 		"] established, states: " + states);
@@ -2894,11 +2899,12 @@ function IRCClient_finalize_server_connect(states,sendps) {
 	if (sendps) {
 		for (cl in CLines) {
 			if(wildmatch(this.nick,CLines[cl].servername)) {
-				this.rawout("PASS " + CLines[cl].password + " :" + states);
+				this.rawout("PASS " + CLines[cl].password + statestr);
 				break;
 			}
 		}
-		this.rawout("CAPAB " + server_capab);
+		if (this.type&BAHAMUT)
+			this.rawout("CAPAB " + server_capab);
 		this.rawout("SERVER " + servername + " 1 :" + serverdesc);
 	}
 	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick
