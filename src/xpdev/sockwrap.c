@@ -378,7 +378,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 		FD_ZERO(&socket_set);
 		FD_SET(sock,&socket_set);
 		if(select(sock,NULL,&socket_set,NULL,&tv)==1)
-			return 0;	/* success */
+			getsockopt(sock, SOL_SOCKET, SO_ERROR, &result, sizeof(result));
 	}
 	return result;
 }
