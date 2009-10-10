@@ -3,6 +3,40 @@
 	Inspired by all post-it notes apps, one liners, books and Jesus
 	Thanks to Jas Hud for being a big whiny douche
 	by Matt Johnson (2008)
+
+	SAMPLE CONFIGURATION:
+
+	[Post-It Notes]
+	 1: Name                       Post-It Notes
+	 2: Internal Code              POSTIT
+	 3: Start-up Directory         \sbbs\xtrn\postit\
+	 4: Command Line               *..\xtrn\postit\postit.js postit 60
+	 5: Clean-up Command Line
+	 6: Execution Cost             None
+	 7: Access Requirements
+	 8: Execution Requirements
+	 9: Multiple Concurrent Users  Yes
+	10: Intercept Standard I/O     No
+	11: Native (32-bit) Executable No
+	12: Use Shell to Execute       No
+	13: Modify User Data           No
+	14: Execute on Event           Logon
+	15: Pause After Execution      No
+	16: BBS Drop File Type         None
+	17: Place Drop File In         Node Directory
+	18: Time Options...
+
+`	Please note that the program takes two arguments which determine the minimum
+	minimum security level to add notes and also the root file name for data storage.
+
+	while this file has been uploaded to the \sbbs\exec\ repository, it may be advisable
+	to move it to its own directory in \sbbs\xtrn\ so that the related data files and log files
+	can be easily maintained.
+	
+	Command line parameters:
+
+	 4: Command Line               *..\xtrn\postit\postit.js <root filename> <minimum security level>
+	
 */
 load("sbbsdefs.js");
 load("funclib.js");
