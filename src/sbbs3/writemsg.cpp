@@ -994,9 +994,11 @@ bool sbbs_t::editfile(char *fname)
 		if(external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir)!=0)
 			return false;
 		l=process_edited_file(msgtmp, path, /* mode: */0, &lines);
-		SAFEPRINTF4(str,"%s created or edited file: %s (%u bytes, %u lines)"
-			,useron.alias, path, l, lines);
-		logline(nulstr,str);
+		if(l>0) {
+			SAFEPRINTF4(str,"%s created or edited file: %s (%u bytes, %u lines)"
+				,useron.alias, path, l, lines);
+			logline(nulstr,str);
+		}
 		rioctl(IOSM|PAUSE|ABORT); 
 		return true; 
 	}
