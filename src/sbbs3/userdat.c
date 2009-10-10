@@ -58,6 +58,7 @@ uint DLLCALL matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 	char*	p;
 	char	dat[LEN_ALIAS+2];
 	char	str[256];
+	char	tmp[256];
 	ulong	l,length;
 	FILE*	stream;
 
@@ -111,9 +112,10 @@ uint DLLCALL matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		REPLACE_CHARS(str,'_',' ',p);
 		if(!stricmp(str,name)) 
 			break;
-		/* strip spaces */
+		/* strip spaces (from both) */
 		strip_space(dat,str);
-		if(!stricmp(str,name)) 
+		strip_space(name,tmp);
+		if(!stricmp(str,tmp)) 
 			break;
 	}
 	fclose(stream);
