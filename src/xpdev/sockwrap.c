@@ -373,12 +373,13 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 		&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
 		fd_set		socket_set;
 		struct		timeval tv;
+		socklen_t	optlen=sizeof(result);
 		tv.tv_sec = timeout;
 		tv.tv_usec = 0;
 		FD_ZERO(&socket_set);
 		FD_SET(sock,&socket_set);
 		if(select(sock,NULL,&socket_set,NULL,&tv)==1)
-			getsockopt(sock, SOL_SOCKET, SO_ERROR, &result, sizeof(result));
+			getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen);
 	}
 	return result;
 }
