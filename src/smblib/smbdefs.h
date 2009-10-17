@@ -331,6 +331,7 @@
 #define MSG_MODERATED		(1<<7)
 #define MSG_VALIDATED		(1<<8)
 #define MSG_REPLIED			(1<<9)		/* User replied to this message */
+#define MSG_NOREPLY			(1<<10)		/* No replies (or bounces) should be sent to the sender */
 
 										/* Auxillary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
@@ -490,9 +491,9 @@ typedef struct _PACK {
 
 typedef struct _PACK {		/* Message base header (fixed portion) */
 
-    uchar   id[LEN_HEADER_ID];	/* SMB<^Z> */
-    uint16_t  version;        /* version number (initially 100h for 1.00) */
-    uint16_t  length;         /* length including this struct */
+    uchar		id[LEN_HEADER_ID];	/* SMB<^Z> */
+    uint16_t	version;        /* version number (initially 100h for 1.00) */
+    uint16_t	length;         /* length including this struct */
 
 } smbhdr_t;
 
@@ -502,23 +503,23 @@ typedef struct _PACK {		/* Message base status header */
 	uint32_t	total_msgs; 	/* total messages */
 	uint32_t	header_offset;	/* byte offset to first header record */
 	uint32_t	max_crcs;		/* Maximum number of CRCs to keep in history */
-    uint32_t   max_msgs;       /* Maximum number of message to keep in sub */
-    uint16_t  max_age;        /* Maximum age of message to keep in sub (in days) */
+    uint32_t	max_msgs;       /* Maximum number of message to keep in sub */
+    uint16_t	max_age;        /* Maximum age of message to keep in sub (in days) */
 	uint16_t	attr;			/* Attributes for this message base (SMB_HYPER,etc) */
 
 } smbstatus_t;
 
 typedef struct _PACK {		/* Message header */
 
-	/* 00 */ uchar	id[LEN_HEADER_ID];	/* SHD<^Z> */
+	/* 00 */ uchar		id[LEN_HEADER_ID];	/* SHD<^Z> */
     /* 04 */ uint16_t	type;				/* Message type (normally 0) */
     /* 06 */ uint16_t	version;			/* Version of type (initially 100h for 1.00) */
     /* 08 */ uint16_t	length;				/* Total length of fixed record + all fields */
 	/* 0a */ uint16_t	attr;				/* Attributes (bit field) (duped in SID) */
 	/* 0c */ uint32_t	auxattr;			/* Auxillary attributes (bit field) */
     /* 10 */ uint32_t	netattr;			/* Network attributes */
-	/* 14 */ when_t	when_written;		/* Date/time/zone message was written */
-	/* 1a */ when_t	when_imported;		/* Date/time/zone message was imported */
+	/* 14 */ when_t		when_written;		/* Date/time/zone message was written */
+	/* 1a */ when_t		when_imported;		/* Date/time/zone message was imported */
     /* 20 */ uint32_t	number;				/* Message number */
     /* 24 */ uint32_t	thread_back;		/* Message number for backwards threading (aka thread_orig) */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
@@ -526,7 +527,7 @@ typedef struct _PACK {		/* Message header */
 	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
 	/* 32 */ uint32_t	times_downloaded;	/* Total number of times downloaded */
 	/* 36 */ uint32_t	last_downloaded;	/* Date/time of last download */
-	/* 3a */ uchar	reserved[6];		/* Reserved for future use */
+	/* 3a */ uchar		reserved[6];		/* Reserved for future use */
     /* 40 */ uint32_t	offset;				/* Offset for buffer into data file (0 or mod 256) */
 	/* 44 */ uint16_t	total_dfields;		/* Total number of data fields */
 
@@ -537,8 +538,8 @@ typedef struct _PACK {		/* Message header */
 typedef struct _PACK {		/* Data field */
 
 	uint16_t	type;			/* Type of data field */
-    uint32_t   offset;         /* Offset into buffer */ 
-    uint32_t   length;         /* Length of data field */
+    uint32_t	offset;         /* Offset into buffer */ 
+    uint32_t	length;         /* Length of data field */
 
 } dfield_t;
 
@@ -564,8 +565,8 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
 typedef struct {		/* Network (type and address) */
 
-    uint16_t  type;
-	void	*addr;
+    uint16_t	type;
+	void*		addr;
 
 } net_t;
 
@@ -621,23 +622,23 @@ typedef struct {				/* Message */
 
 typedef struct {			/* Message base */
 
-    char    file[128];      /* Path and base filename (no extension) */
-    FILE*	sdt_fp;			/* File pointer for data (.sdt) file */
-    FILE*	shd_fp;			/* File pointer for header (.shd) file */
-    FILE*	sid_fp;			/* File pointer for index (.sid) file */
-    FILE*	sda_fp;			/* File pointer for data allocation (.sda) file */
-    FILE*	sha_fp;			/* File pointer for header allocation (.sha) file */
-	FILE*	hash_fp;		/* File pointer for hash (.hash) file */
+    char		file[128];      /* Path and base filename (no extension) */
+    FILE*		sdt_fp;			/* File pointer for data (.sdt) file */
+    FILE*		shd_fp;			/* File pointer for header (.shd) file */
+    FILE*		sid_fp;			/* File pointer for index (.sid) file */
+    FILE*		sda_fp;			/* File pointer for data allocation (.sda) file */
+    FILE*		sha_fp;			/* File pointer for header allocation (.sha) file */
+	FILE*		hash_fp;		/* File pointer for hash (.hash) file */
 	uint32_t	retry_time; 	/* Maximum number of seconds to retry opens/locks */
 	uint32_t	retry_delay;	/* Time-slice yield (milliseconds) while retrying */
 	smbstatus_t status; 	/* Status header record */
-	BOOL	locked;			/* SMB header is locked */
-	char	last_error[MAX_PATH*2];		/* Last error message */
+	BOOL		locked;			/* SMB header is locked */
+	char		last_error[MAX_PATH*2];		/* Last error message */
 
 	/* Private member variables (not initialized by or used by smblib) */
 	uint32_t	subnum;			/* Sub-board number */
-	int32_t	msgs;			/* Number of messages loaded (for user) */
-	int32_t	curmsg;			/* Current message number (for user) */
+	int32_t		msgs;			/* Number of messages loaded (for user) */
+	int32_t		curmsg;			/* Current message number (for user) */
 
 } smb_t;
 

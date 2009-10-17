@@ -3734,6 +3734,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	}
 
 	if(msg->from_agent==AGENT_SMTPSYSMSG	/* don't bounce 'bounce messages' */
+		|| (msg->hdr.attr&MSG_NOREPLY)
 		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
 		|| (msg->reverse_path!=NULL && *msg->reverse_path==0)) {
 		lprintf(LOG_WARNING,"0000 !Deleted undeliverable message from %s", msg->from);
@@ -3749,9 +3750,9 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 
 	SAFEPRINTF(str,"Delivery failure: %s",newmsg.subj);
 	smb_hfield_str(&newmsg, SUBJECT, str);
+	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
 	if(msg->from_agent==AGENT_PERSON) {
 
-		smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
 		if(newmsg.from_ext!=NULL) { /* Back to sender */
 			smb_hfield_str(&newmsg, RECIPIENTEXT, newmsg.from_ext);
 			newmsg.from_ext=NULL;	/* Clear the sender extension */
@@ -3763,7 +3764,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 			smb_hfield_str(&newmsg, RECIPIENTNETADDR, newmsg.reverse_path);
 		}
 	} else {
-
+		smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(msg->from_agent), &msg->from_agent);
 	}
 	strcpy(str,"Mail Delivery Subsystem");
 	smb_hfield_str(&newmsg, SENDER, str);

@@ -104,7 +104,7 @@ void sbbs_t::show_msgattr(ushort attr)
 		,attr&MSG_MODERATED ? "Moderated  " :nulstr
 		,attr&MSG_VALIDATED ? "Validated  " :nulstr
 		,attr&MSG_REPLIED	? "Replied  "	:nulstr
-		,nulstr
+		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,nulstr
 		,nulstr
 		,nulstr

@@ -630,7 +630,7 @@ var LOG_INFO        =6;			/* informational                            */
 var LOG_DEBUG       =7;			/* debug-level messages                     */   
                                 /********************************************/ 
 }
-								/* Message attributes */
+									/* Message attributes */
 var MSG_PRIVATE 		=(1<<0);
 var MSG_READ			=(1<<1);
 var MSG_PERMANENT		=(1<<2);
@@ -640,7 +640,8 @@ var MSG_ANONYMOUS		=(1<<5);
 var MSG_KILLREAD		=(1<<6);
 var MSG_MODERATED		=(1<<7);
 var MSG_VALIDATED		=(1<<8);
-var MSG_REPLIED			=(1<<9);// User replied to this message
+var MSG_REPLIED			=(1<<9);	// User replied to this message
+var MSG_NOREPLY			=(1<<10);	// No replies (or bounces) should be sent to the sender
 
 								/* Auxillary header attributes */
 var MSG_FILEREQUEST 	=(1<<0);// File request
