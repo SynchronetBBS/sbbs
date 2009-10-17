@@ -36,7 +36,7 @@
 set _online ON_LOCAL
 
 # Variables
-int i argc argv sock port
+int i argc argv sock port flen
 str tmp rep qwk hubid addr user password 
 str cmdline
 
@@ -175,7 +175,14 @@ sprintf str "%s.qwk" hubid
 lprintf "QNET-FTP: Downloading QWK Packet: %s" str
 ftp_get sock str qwk
 if_true
-	lprintf "QNET-FTP: Downloaded %s successfully" str
+	get_file_length flen qwk
+	compare flen 0
+	if_equal
+		lprintf "QNET-FTP: Downloaded 0-byte %s" qwk
+		remove_file qwk
+	else
+		lprintf "QNET-FTP: Downloaded %s successfully" str
+		end_if
 else
 	lprintf "QNET-FTP: %s NOT downloaded socket_error=%d (no new messages?)" str _socket_error
 	remove_file qwk
