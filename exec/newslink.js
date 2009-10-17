@@ -20,6 +20,7 @@
 // t		do not add tearline to imported messages
 // a		convert extended-ASCII chars to ASCII on imported messages
 // r		remove "Newsgroups:" header field from imported messages
+// o		over-write "Newsgroups:" header field for exported messages
 // b        decode binary attachments
 // i		import all (not just new articles)
 // s		no subject filtering
@@ -480,7 +481,7 @@ for(i in area) {
 				,hdr.from.replace(/ /g,".").toLowerCase()
 				,system.inetaddr,antispam));
 
-		if(hdr.newsgroups==undefined)
+		if(hdr.newsgroups==undefined || flags.indexOf('o')>=0)
 			hdr.newsgroups=newsgroup;
 
 		if(hdr.from_org==undefined && !hdr.from_net_type)
