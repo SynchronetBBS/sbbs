@@ -54,7 +54,7 @@
 "_\r\nyhStart with number [w%uy]: w"             048 StartWithN
 "\r\nncþ bhReading E-mail ncþ bh(w?b=Menu)"\  049 ReadingMail
 	" (w%ub of w%ub): n"
-"n\r\nYou can't reply to an anonymous message.\r\n"    050 CantReplyToAnonMsg
+"n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
 "  hbRenb: hc%sn\r\n\r\n"                        051 Regarding
 "  hbRenb: hc%s\r\n  "\				   052 RegardingByOn
 	"bBynb: hc%s bon c%sn\r\n\r\n"    	
@@ -137,9 +137,9 @@
 "bTime Today      : c%s minutes\r\n"                  112 SiTimeToday
 "\r\nView system information file"                      113 ViewSysInfoFileQ
 "View logon message"                                    114 ViewLogonMsgQ
-"\r\n\r\nYou can't read mail you've sent.\r\n"          115 R_ReadSentMail
+"\r\n\r\nSorry, you can't read mail you've sent.\r\n"   115 R_ReadSentMail
 "\r\nwhMessage Scan "                                 116 MessageScan
-"nc(h%u ncsub-boards)hw complete.\r\n"          117 MessageScanComplete
+"nc(h%u ncsub-boards)hw complete.\r\n"           117 MessageScanComplete
 "riaborted.n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
@@ -182,7 +182,7 @@
 "Feedback Today  : %s\r\n"                              153 StatsFeedbacksToday
 "_\r\nyhChange to (User Name or Number): n"         154 ChUserPrompt
 "PW: "                                                  155 ChUserPwPrompt
-"<UNUSED156>"                                           156 Unused156
+"\r\nYou must include a comma between the city and state.\r\n"	156 CommaInLocationRequired
 "\r\nError log:\r\n"                                    157 ErrorLogHdr
 "Delete error log"                                      158 DeleteErrorLogQ
 "\r\n\1n\1r\1hDirectory does not exist: \1c%s\1n\r\n"   159 DirectoryDoesNotExist
@@ -570,8 +570,8 @@
 	"Mega/Kilobytes, or $): n"
 "_yhAdjust Minutes (- to subtract, H = Hours): n"   472 ModifyMinutes
 "\r\nDelete Questionaire"                               473 DeleteQuestionaireQ
-"hbDefault settings for w%s #%d\r\n\r\n"             474 UserDefaultsHdr
-"nb[hwTnb] hTerminal Mode                 nb: c%s\r\n"	 475 UserDefaultsTerminal
+"hbUser Settings for w%s #%d\r\n\r\n"                474 UserDefaultsHdr
+"nb[hwTnb] hTerminal Mode                 nb: c%s\r\n"   475 UserDefaultsTerminal
 "nb[hwEnb] hExternal Editor               nb: c%s\r\n"   476 UserDefaultsXeditor
 "nb[hwLnb] hScreen Length                 nb: c%s\r\n"   477 UserDefaultsRows
 "nb[hwXnb] hExpert Menu Mode              nb: c%s\r\n"   478 UserDefaultsMenuMode
@@ -876,3 +876,35 @@
 "Command Shell"                                         727 CommandShellHeading
 "Archive Type"                                          728 ArchiveTypeHeading
 "Validate message #%u '%s'"				729 ValidatePostQ
+"Waiting for call"					730 NodeStatusWaitingForCall
+"At logon prompt"					731 NodeStatusLogon
+"New user applying for access"				732 NodeStatusNewUser
+"Offline"						733 NodeStatusOffline
+"Waiting for all nodes to become inactive"		734 NodeStatusEventWaiting
+"Running external event"				735 NodeStatusEventRunning
+"Waiting for node %u to finish external event"		736 NodeStatusEventLimbo
+"via telnet"						737 NodeConnectionTelnet
+"via rlogin"						738 NodeConnectionRLogin
+"via ssh"						739 NodeConnectionSSH
+"at %ubps"						740 NodeConnectionModem
+"\1h\1bQWK Settings for \1w%s #%u:\1n\r\n\r\n"		741 QWKSettingsHdr
+"\1n\1b[\1h\1wA\1n\1b] \1hCtrl-A Color Codes           \1n\1b: \1c%s\r\n"	742 QWKSettingsCtrlA
+"\1n\1b[\1h\1wT\1n\1b] \1hArchive Type                 \1n\1b: \1c%s\r\n"	743 QWKSettingsArchive
+"\1n\1b[\1h\1wE\1n\1b] \1hInclude E-mail Messages      \1n\1b: \1c%s\r\n"	744 QWKSettingsEmail
+"\1n\1b[\1h\1wI\1n\1b] \1hInclude File Attachments     \1n\1b: \1c%s\r\n"	745 QWKSettingsAttach
+"\1n\1b[\1h\1wD\1n\1b] \1hDelete  E-mail Automatically \1n\1b: \1c%s\r\n"	746 QWKSettingsDeleteEmail
+"\1n\1b[\1h\1wF\1n\1b] \1hInclude New Files List       \1n\1b: \1c%s\r\n"	747 QWKSettingsNewFilesList
+"\1n\1b[\1h\1wN\1n\1b] \1hInclude Index Files          \1n\1b: \1c%s\r\n"	748 QWKSettingsIndex
+"\1n\1b[\1h\1wC\1n\1b] \1hInclude Control Files        \1n\1b: \1c%s\r\n"	749 QWKSettingsControl
+"\1n\1b[\1h\1wH\1n\1b] \1hInclude HEADERS.DAT File     \1n\1b: \1c%s\r\n"	750 QWKSettingsHeaders
+"\1n\1b[\1h\1wY\1n\1b] \1hInclude Messages from You    \1n\1b: \1c%s\r\n"	751 QWKSettingsBySelf
+"\1n\1b[\1h\1wZ\1n\1b] \1hInclude Time Zone (TZ)       \1n\1b: \1c%s\r\n"	752 QWKSettingsTimeZone
+"\1n\1b[\1h\1wV\1n\1b] \1hInclude Message Path (VIA)   \1n\1b: \1c%s\r\n"	753 QWKSettingsVIA
+"\1n\1b[\1h\1wM\1n\1b] \1hInclude Message/Reply IDs    \1n\1b: \1c%s\r\n"	754 QWKSettingsMsgID
+"\1n\1b[\1h\1wX\1n\1b] \1hExtended (QWKE) Packet Format\1n\1b: \1c%s\r\n"	755 QWKSettingsExtended
+"\r\nnhbWhich or [wQb]uit: c"                   	756 QWKSettingsWhich
+"\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
+"\1n\r\nSorry, you can't delete this message.\r\n"	758 CantDeleteMsg
+"\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
+"\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
+"\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
