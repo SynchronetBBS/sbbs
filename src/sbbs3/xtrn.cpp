@@ -399,7 +399,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
-	if(online==ON_LOCAL)
+	if(cfg.node_num==0)
 		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
 	else
 		lprintf(LOG_DEBUG,"Node %d Executing external: %s",cfg.node_num,cmdline);
@@ -1313,8 +1313,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	int	high_fd;
 	struct timeval timeout;
 
-	if(online==ON_LOCAL)
-		eprintf(LOG_INFO,"Executing external: %s",cmdline);
+	if(cfg.node_num==0)
+		eprintf(LOG_DEBUG,"Executing external: %s",cmdline);
 
 	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
 		errormsg(WHERE, ERR_CHK, startup_dir, 0);
@@ -1786,7 +1786,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		_exit(-1);	/* should never get here */
 	}
 
-	if(online!=ON_LOCAL)
+	if(cfg.node_num)
 		lprintf(LOG_INFO,"Node %d executing external: %s",cfg.node_num,fullcmdline);
 
 	/* Disable Ctrl-C checking */
