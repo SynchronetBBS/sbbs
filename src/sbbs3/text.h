@@ -93,7 +93,7 @@ enum {
 	,MailWaitingLstFmt
 	,StartWithN
 	,ReadingMail
-	,CantReplyToAnonMsg
+	,CantReplyToMsg
 	,Regarding
 	,RegardingByOn
 	,RegardingByToOn
@@ -199,7 +199,7 @@ enum {
 	,StatsFeedbacksToday
 	,ChUserPrompt
 	,ChUserPwPrompt
-	,Unused156
+	,CommaInLocationRequired
 	,ErrorLogHdr
 	,DeleteErrorLogQ
 	,DirectoryDoesNotExist
@@ -773,6 +773,38 @@ enum {
 	,CommandShellHeading
 	,ArchiveTypeHeading
 	,ValidatePostQ
+	,NodeStatusWaitingForCall
+	,NodeStatusLogon
+	,NodeStatusNewUser
+	,NodeStatusOffline
+	,NodeStatusEventWaiting
+	,NodeStatusEventRunning
+	,NodeStatusEventLimbo
+	,NodeConnectionTelnet
+	,NodeConnectionRLogin
+	,NodeConnectionSSH
+	,NodeConnectionModem
+	,QWKSettingsHdr
+	,QWKSettingsCtrlA
+	,QWKSettingsArchive
+	,QWKSettingsEmail
+	,QWKSettingsAttach
+	,QWKSettingsDeleteEmail
+	,QWKSettingsNewFilesList
+	,QWKSettingsIndex
+	,QWKSettingsControl
+	,QWKSettingsHeaders
+	,QWKSettingsBySelf
+	,QWKSettingsTimeZone
+	,QWKSettingsVIA
+	,QWKSettingsMsgID
+	,QWKSettingsExtended
+	,QWKSettingsWhich
+	,CantEditMsg
+	,CantDeleteMsg
+	,CantReadSub
+	,CantPostMsg
+	,OperatorPrompt
 
 	,TOTAL_TEXT
 };

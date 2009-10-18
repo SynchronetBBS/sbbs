@@ -271,7 +271,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			attr(cfg.color[clr_err]);
-			bputs("Duplicate message!\r\n");
+			bputs(text[CantPostMsg]);
 			return(false); 
 		} 
 	}

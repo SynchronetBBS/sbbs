@@ -1617,7 +1617,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 					c=cfg.sys_nodes+1; 
 				}
 				else if(node.misc&NODE_ANON)
-					SAFECOPY(str,"UNKNOWN USER");
+					SAFECOPY(str,text[UNKNOWN_USER]);
 				else
 					username(&cfg,node.useron,str);
 				bprintf(text[UserRunningXtrn],str

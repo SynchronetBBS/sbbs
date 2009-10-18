@@ -411,7 +411,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 				smb_putmsg(&smb,&msg); 
 			}
 			if(!(msg.hdr.attr&MSG_PERMANENT)
-				&& ((msg.hdr.attr&MSG_KILLREAD && msg.hdr.attr&MSG_READ)
+				&& (((msg.hdr.attr&MSG_KILLREAD) && (msg.hdr.attr&MSG_READ))
 				|| (useron.qwk&QWK_DELMAIL))) {
 				msg.hdr.attr|=MSG_DELETE;
 				msg.idx.attr=msg.hdr.attr;
@@ -500,53 +500,40 @@ void sbbs_t::qwk_sec()
 		if(ch=='C') {
 			while(online) {
 				CLS;
-				bputs("\1n\1gQWK Settings:\1n\r\n\r\n");
-				bprintf("\1hA\1n) %-30s: \1h%s\r\n"
-					,"Ctrl-A Color Codes"
+				bprintf(text[QWKSettingsHdr],useron.alias,useron.number);
+				bprintf(text[QWKSettingsCtrlA]
 					,useron.qwk&QWK_EXPCTLA
 					? "Expand to ANSI" : useron.qwk&QWK_RETCTLA ? "Leave in"
 					: "Strip");
-				bprintf("\1hT\1n) %-30s: \1h%s\r\n"
-					,"Archive Type"
-					,useron.tmpext);
-				bprintf("\1hE\1n) %-30s: \1h%s\r\n"
-					,"Include E-mail Messages"
+				bprintf(text[QWKSettingsArchive],useron.tmpext);
+				bprintf(text[QWKSettingsEmail]
 					,useron.qwk&QWK_EMAIL ? "Un-read Only"
 					: useron.qwk&QWK_ALLMAIL ? text[Yes] : text[No]);
-				bprintf("\1hI\1n) %-30s: \1h%s\r\n"
-					,"Include File Attachments"
-					,useron.qwk&QWK_ATTACH ? text[Yes] : text[No]);
-				bprintf("\1hD\1n) %-30s: \1h%s\r\n"
-					,"Delete E-mail Automatically"
-					,useron.qwk&QWK_DELMAIL ? text[Yes]:text[No]);
-				bprintf("\1hF\1n) %-30s: \1h%s\r\n"
-					,"Include New Files List"
+				if(useron.qwk&(QWK_ALLMAIL|QWK_EMAIL)) {
+					bprintf(text[QWKSettingsAttach]
+						,useron.qwk&QWK_ATTACH ? text[Yes] : text[No]);
+					bprintf(text[QWKSettingsDeleteEmail]
+						,useron.qwk&QWK_DELMAIL ? text[Yes]:text[No]);
+				}
+				bprintf(text[QWKSettingsNewFilesList]
 					,useron.qwk&QWK_FILES ? text[Yes]:text[No]);
-				bprintf("\1hN\1n) %-30s: \1h%s\r\n"
-					,"Include Index Files"
+				bprintf(text[QWKSettingsIndex]
 					,useron.qwk&QWK_NOINDEX ? text[No]:text[Yes]);
-				bprintf("\1hC\1n) %-30s: \1h%s\r\n"
-					,"Include Control Files"
+				bprintf(text[QWKSettingsControl]
 					,useron.qwk&QWK_NOCTRL ? text[No]:text[Yes]);
-				bprintf("\1hH\1n) %-30s: \1h%s\r\n"
-					,"Include HEADERS.DAT"
+				bprintf(text[QWKSettingsHeaders]
 					,useron.qwk&QWK_HEADERS ? text[Yes]:text[No]);
-				bprintf("\1hY\1n) %-30s: \1h%s\r\n"
-					,"Include Messages from You"
+				bprintf(text[QWKSettingsBySelf]
 					,useron.qwk&QWK_BYSELF ? text[Yes]:text[No]);
-				bprintf("\1hZ\1n) %-30s: \1h%s\r\n"
-					,"Include Time Zone (TZ)"
+				bprintf(text[QWKSettingsTimeZone]
 					,useron.qwk&QWK_TZ ? text[Yes]:text[No]);
-				bprintf("\1hV\1n) %-30s: \1h%s\1n\r\n"
-					,"Include Message Path (VIA)"
+				bprintf(text[QWKSettingsVIA]
 					,useron.qwk&QWK_VIA ? text[Yes]:text[No]);
-				bprintf("\1hM\1n) %-30s: \1h%s\1n\r\n"
-					,"Include Message/Reply IDs"
+				bprintf(text[QWKSettingsMsgID]
 					,useron.qwk&QWK_MSGID ? text[Yes]:text[No]);
-				bprintf("\1hX\1n) %-30s: \1h%s\1n\r\n"
-					,"Extended (QWKE) Packet Format"
+				bprintf(text[QWKSettingsExtended]
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
-				bputs(text[UserDefaultsWhich]);
+				bputs(text[QWKSettingsWhich]);
 				ch=(char)getkeys("AEDFHIOQTYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
@@ -563,7 +550,7 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'T':
 						for(i=0;i<cfg.total_fcomps;i++)
-							uselect(1,i,"Archive Types",cfg.fcomp[i]->ext,cfg.fcomp[i]->ar);
+							uselect(1,i,text[ArchiveTypeHeading],cfg.fcomp[i]->ext,cfg.fcomp[i]->ar);
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
 							strcpy(useron.tmpext,cfg.fcomp[s]->ext);

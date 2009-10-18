@@ -336,7 +336,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			attr(cfg.color[clr_err]);
-			bputs("Duplicate message!\r\n");
+			bputs(text[CantPostMsg]);
 			return(false); 
 		} 
 	}

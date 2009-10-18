@@ -1934,7 +1934,7 @@ bool sbbs_t::select_shell(void)
 	int i;
 
 	for(i=0;i<cfg.total_shells;i++)
-		uselect(1,i,"Command Shell",cfg.shell[i]->name,cfg.shell[i]->ar);
+		uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 	if((i=uselect(0,useron.shell,0,0,0))>=0) {
 		useron.shell=i;
 		putuserrec(&cfg,useron.number,U_SHELL,8,cfg.shell[i]->code); 
@@ -1948,7 +1948,7 @@ bool sbbs_t::select_editor(void)
 	int i;
 
 	for(i=0;i<cfg.total_xedits;i++)
-		uselect(1,i,"External Editor",cfg.xedit[i]->name,cfg.xedit[i]->ar);
+		uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name,cfg.xedit[i]->ar);
 	if(useron.xedit) useron.xedit--;
 	if((i=uselect(0,useron.xedit,0,0,0))>=0) {
 		useron.xedit=i+1;

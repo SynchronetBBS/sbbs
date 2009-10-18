@@ -263,7 +263,7 @@ BOOL sbbs_t::newuser()
 			if(getstr(useron.location,LEN_LOCATION,kmode)
 				&& (cfg.uq&UQ_NOCOMMAS || strchr(useron.location,',')))
 				break;
-			bputs("\r\nYou must include a comma between the city and state.\r\n");
+			bputs(text[CommaInLocationRequired]);
 			useron.location[0]=0; 
 		}
 		if(cfg.uq&UQ_ADDRESS)
@@ -347,9 +347,9 @@ BOOL sbbs_t::newuser()
 		useron.xedit=i+1;
 
 	if(cfg.total_xedits && cfg.uq&UQ_XEDIT) {
-		if(yesno("Use an external message editor")) {
+		if(yesno(text[UseExternalEditorQ])) {
 			for(i=0;i<cfg.total_xedits;i++)
-				uselect(1,i,"External Editor",cfg.xedit[i]->name,cfg.xedit[i]->ar);
+				uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name,cfg.xedit[i]->ar);
 			if((int)(i=uselect(0,useron.xedit ? useron.xedit-1 : 0,0,0,0))>=0)
 				useron.xedit=i+1; 
 		} else
@@ -358,7 +358,7 @@ BOOL sbbs_t::newuser()
 
 	if(cfg.total_shells>1 && cfg.uq&UQ_CMDSHELL) {
 		for(i=0;i<cfg.total_shells;i++)
-			uselect(1,i,"Command Shell",cfg.shell[i]->name,cfg.shell[i]->ar);
+			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
 			useron.shell=i; 
 	}
