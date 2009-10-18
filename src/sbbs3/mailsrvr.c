@@ -3766,6 +3766,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	} else {
 		smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(msg->from_agent), &msg->from_agent);
 	}
+	newmsg.hdr.attr|=MSG_NOREPLY;
 	strcpy(str,"Mail Delivery Subsystem");
 	smb_hfield_str(&newmsg, SENDER, str);
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
