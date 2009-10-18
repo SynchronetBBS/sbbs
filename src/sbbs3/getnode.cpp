@@ -402,7 +402,7 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 {
 	switch(conn) {
 		case NODE_CONNECTION_LOCAL:
-			return "Locally";	/* obsolete */
+			return " Locally";	/* obsolete */
 		case NODE_CONNECTION_TELNET:
 			return sbbs->text[NodeConnectionTelnet];
 		case NODE_CONNECTION_RLOGIN:
@@ -577,7 +577,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				default:
 					bputs(ultoa(node->action,tmp,10));
 					break;  }
-			bprintf(" %s",node_connection_desc(this, node->connection, tmp));
+			bputs(node_connection_desc(this, node->connection, tmp));
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {
 					hour=node->aux/60;
