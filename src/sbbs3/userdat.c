@@ -846,11 +846,12 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
         case NODE_OFFLINE:
             strcpy(str,"Offline");
             break;
-        case NODE_NETTING:
+        case NODE_NETTING:	/* Obsolete */
             strcpy(str,"Networking");
             break;
         case NODE_LOGON:
-            strcpy(str,"At logon prompt");
+            sprintf(str,"At logon prompt %s"
+				,node_connection_desc(node->connection, tmp));
             break;
         case NODE_EVENT_WAITING:
             strcpy(str,"Waiting for all nodes to become inactive");
