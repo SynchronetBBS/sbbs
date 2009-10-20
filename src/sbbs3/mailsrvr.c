@@ -2950,7 +2950,14 @@ static void smtp_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250-%s",startup->host_name);
-			sockprintf(socket,"250 AUTH PLAIN LOGIN CRAM-MD5 SEND SOML SAML");
+			sockprintf(socket,"250-AUTH");
+			sockprintf(socket,"250-PLAIN");
+			sockprintf(socket,"250-LOGIN");
+			sockprintf(socket,"250-CRAM-MD5");
+			sockprintf(socket,"250-SEND");
+			sockprintf(socket,"250-SOML");
+			sockprintf(socket,"250-SAML");
+			sockprintf(socket,"250 SIZE %lu", startup->max_msg_size);
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -3202,6 +3209,8 @@ static void smtp_thread(void* arg)
 			}
 			SKIP_WHITESPACE(p);
 			SAFECOPY(reverse_path,p);
+			if((p=strchr(reverse_path,' '))!=NULL)	/* Truncate "<user@domain> KEYWORD=VALUE" to just "<user@domain>" per RFC 1869 */
+				*p=0;
 
 			/* If MAIL FROM address is in dnsbl_exempt.cfg, clear DNSBL results */
 			if(dnsbl_result.s_addr && email_addr_is_exempt(reverse_path)) {
