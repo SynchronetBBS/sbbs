@@ -2950,10 +2950,7 @@ static void smtp_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250-%s",startup->host_name);
-			sockprintf(socket,"250-AUTH");
-			sockprintf(socket,"250-PLAIN");
-			sockprintf(socket,"250-LOGIN");
-			sockprintf(socket,"250-CRAM-MD5");
+			sockprintf(socket,"250-AUTH PLAIN LOGIN CRAM-MD5");
 			sockprintf(socket,"250-SEND");
 			sockprintf(socket,"250-SOML");
 			sockprintf(socket,"250-SAML");
