@@ -1,0 +1,16 @@
+This is an overview of game design changes from the original Usurper pascal
+source code:
+
+Memory mapped files
+===================
+IPC data will be transferred using memory-mapped files instead of read/write
+on the same files.  So far this is simplifying the code, but the
+synchronization method has not yet been settled, but POSIX semaphores in the
+mmap region is most likely.  Possibly each record will have a separate
+semaphore.
+
+Output
+======
+The output is intended to be line-wrapped progamatically rather than hard coded
+line lengths.  This allows much better flexability.  However, the current text
+reads very choppy, so this retrofit may take a very long time.
