@@ -1,12 +1,33 @@
 /*******************************************************************************
 FILE: emailval.js v0.2
-BY  : Michael J. Ryan (tracker1 [at] theroughnecks [dot] net)
+BY  : Michael J. Ryan (http://tracker1.info/)
 ON  : 2005-02-14
 
 TABS: 4 character tabstops.
 
 --------------------------------------------------------------------------------
 This is a simple telnet email validation script.
+
+Installation instructions for emailval.js (requires SBBS 3.12a+)
+
+STEP 1:
+First, make sure that you have two Security Levels setup in order to use the
+Email validation system.. one setting for new users (unvalidated) and another
+that is intended for validated users.
+
+STEP 2:
+Edit mailval.js in notepad and edit the following values to match your
+pre-validation and post-validation security levels.
+        LEVEL_BEFORE_VALIDATION and LEVEL_AFTER_VALIDATION
+
+STEP 3:
+add the following to the top of logon.js
+    load("emailval.js");
+
+or, if using logon.bin/src
+    EXEC "?emailval.js"
+
+That's it!
 *******************************************************************************/
 
 //should match USER LEVEL settings for you bbs
