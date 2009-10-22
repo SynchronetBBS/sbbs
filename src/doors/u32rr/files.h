@@ -47,93 +47,93 @@ enum sex {
 };
 
 enum onloc {
-	Nowhere,
-	MainStreet,
-	TheInn,
-	DarkAlley,	// outside the shady shops
-	Church,
-	WeaponShop,
-	Master,
-	MagicShop,
-	Dungeons,
-	DeathMaze,
-	MadMage		= 17,	// groggos shop, reached from shady shops
-	ArmorShop,
-	Bank,
-	ReportRoom,
-	Healer,
-	MarketPlace,
-	FoodStore,
-	PlyMarket,
-	Recruit,	// hall of recruitment, recruite.pas
-	Dormitory,
-	AnchorRoad,
-	Orbs,
-	OrbsMixing,	// mixing own drink at orbs bar
-	OrbsBrowse,	// browsing drink file at orbs bar
-	BobsBeer,	// Bobs Beer Hut
-	onloc_Alchemist,
-	Steroids,
-	Drugs,
-	Darkness,
-	Whores,
-	DarkerAlley,
-	Gigalos,
-	OutsideInn,
-	OnARaid,
-	TeamCorner,
-	Mystic,
-	RobbingBank,
-	BountyRoom,
-	ReadingNews,
-	CheckPlys,
-	Temple,		// altar of the gods
-	BobThieves,
-	BobDrink,	// beer drinking competiton
-	UmanRest,
-	UmanTame,
-	UmanWRest,
-	Innfight,
-	DormFight,	// fight in the dormitory
-	Entering,	// entering game
-	GangPrep,	// attacking/viewing other teams
-	ReadingMail,// reading mail, scanning news
-	PostingMail,// posting mail/writing letter
-	CombMaster,	// visiting Liu Zei, close combat master, at the market place
-	DormFists,	// fistfight at the Dormitory
-	Gymfists,	// fistfight at the Gym
-	Temples,	// temple of the gods, temple.pas. 't' from the challenge menu
-	TheGym,		// the gym
-	MultiChat,	// Multi Node Chat at the Inn - IMPORTANT! when this location is entered then usurper will scan for IPC files at every "wait for key" state, see ddplus.pas
-	OutsideGym,	// outside the gym
-	GossipMonger,//{gossip monger [Lydia], at lovers.pas
-	LoveHistory,// love history room, at lovers.pas
-	BeggarsWall,// beggars wall, reached from the marketplace
-	Castle		= 70,		// royal castle
-	RoyalMail,	// reading royal mail (in the castle), scanning news
-	CourtMage,	// visiting court magician
-	WarChamber,	// visiting war chamber
-	QuestMaster,// royal quest master
-	QuestHall,	// player visiting quest hall
-	QuestAttemp,// player attempts a [monster] quest
-	RoyOrphanag,// royal orphanage
-	GuardOffice	= 80,// players applying for guard jobs or quitting
-	OutCastle,	// players outside the Castle, deciding what to do
-	Prison		= 90,		// king visiting prison
-	Prisoner,	// prisoners in their cells
-	PrisonerOp,	// prisoner, but the cell door is open
-	PrisonerEx,	// prisoner, execution
-	PrisonWalk,	// outside the prison
-	PrisonBreak,// outside the prison, attempting to liberate a prisoner
-	LoveStreet	= 200,	// love street
-	Home,		// managing family affairs
-	Nursery,	// in the childrens room
-	Kidnapper,	// home and maintaining kidnapped children
-	GiftShop,	// visiting gift-shop
-	IceCaves	= 300,
-	Heaven		= 400,
-	HeavenBoss,	// visiting boss god
-	Closed		= 30000,	// used by fakeplayers when deciding where to go. see 'online.pas' and procedure 'give_me_exits_from'
+	ONLOC_Nowhere,
+	ONLOC_MainStreet,
+	ONLOC_TheInn,
+	ONLOC_DarkAlley,	// outside the shady shops
+	ONLOC_Church,
+	ONLOC_WeaponShop,
+	ONLOC_Master,
+	ONLOC_MagicShop,
+	ONLOC_Dungeons,
+	ONLOC_DeathMaze,
+	ONLOC_MadMage		= 17,	// groggos shop, reached from shady shops
+	ONLOC_ArmorShop,
+	ONLOC_Bank,
+	ONLOC_ReportRoom,
+	ONLOC_Healer,
+	ONLOC_MarketPlace,
+	ONLOC_FoodStore,
+	ONLOC_PlyMarket,
+	ONLOC_Recruit,	// hall of recruitment, recruite.pas
+	ONLOC_Dormitory,
+	ONLOC_AnchorRoad,
+	ONLOC_Orbs,
+	ONLOC_OrbsMixing,	// mixing own drink at orbs bar
+	ONLOC_OrbsBrowse,	// browsing drink file at orbs bar
+	ONLOC_BobsBeer,	// Bobs Beer Hut
+	ONLOC_Alchemist,
+	ONLOC_Steroids,
+	ONLOC_Drugs,
+	ONLOC_Darkness,
+	ONLOC_Whores,
+	ONLOC_DarkerAlley,
+	ONLOC_Gigalos,
+	ONLOC_OutsideInn,
+	ONLOC_OnARaid,
+	ONLOC_TeamCorner,
+	ONLOC_Mystic,
+	ONLOC_RobbingBank,
+	ONLOC_BountyRoom,
+	ONLOC_ReadingNews,
+	ONLOC_CheckPlys,
+	ONLOC_Temple,		// altar of the gods
+	ONLOC_BobThieves,
+	ONLOC_BobDrink,	// beer drinking competiton
+	ONLOC_UmanRest,
+	ONLOC_UmanTame,
+	ONLOC_UmanWRest,
+	ONLOC_Innfight,
+	ONLOC_DormFight,	// fight in the dormitory
+	ONLOC_Entering,	// entering game
+	ONLOC_GangPrep,	// attacking/viewing other teams
+	ONLOC_ReadingMail,// reading mail, scanning news
+	ONLOC_PostingMail,// posting mail/writing letter
+	ONLOC_CombMaster,	// visiting Liu Zei, close combat master, at the market place
+	ONLOC_DormFists,	// fistfight at the Dormitory
+	ONLOC_GymFists,	// fistfight at the Gym
+	ONLOC_Temples,	// temple of the gods, temple.pas. 't' from the challenge menu
+	ONLOC_TheGym,		// the gym
+	ONLOC_MultiChat,	// Multi Node Chat at the Inn - IMPORTANT! when this location is entered then usurper will scan for IPC files at every "wait for key" state, see ddplus.pas
+	ONLOC_OutsideGym,	// outside the gym
+	ONLOC_GossipMonger,//{gossip monger [Lydia], at lovers.pas
+	ONLOC_LoveHistory,// love history room, at lovers.pas
+	ONLOC_BeggarsWall,// beggars wall, reached from the marketplace
+	ONLOC_Castle		= 70,		// royal castle
+	ONLOC_RoyalMail,	// reading royal mail (in the castle), scanning news
+	ONLOC_CourtMage,	// visiting court magician
+	ONLOC_WarChamber,	// visiting war chamber
+	ONLOC_QuestMaster,// royal quest master
+	ONLOC_QuestHall,	// player visiting quest hall
+	ONLOC_QuestAttemp,// player attempts a [monster] quest
+	ONLOC_RoyOrphanag,// royal orphanage
+	ONLOC_GuardOffice	= 80,// players applying for guard jobs or quitting
+	ONLOC_OutCastle,	// players outside the Castle, deciding what to do
+	ONLOC_Prison		= 90,		// king visiting prison
+	ONLOC_Prisoner,	// prisoners in their cells
+	ONLOC_PrisonerOp,	// prisoner, but the cell door is open
+	ONLOC_PrisonerEx,	// prisoner, execution
+	ONLOC_PrisonWalk,	// outside the prison
+	ONLOC_PrisonBreak,// outside the prison, attempting to liberate a prisoner
+	ONLOC_LoveStreet	= 200,	// love street
+	ONLOC_Home,		// managing family affairs
+	ONLOC_Nursery,	// in the childrens room
+	ONLOC_Kidnapper,	// home and maintaining kidnapped children
+	ONLOC_GiftShop,	// visiting gift-shop
+	IONLOC_ceCaves	= 300,
+	ONLOC_Heaven		= 400,
+	ONLOC_HeavenBoss,	// visiting boss god
+	ONLOC_Closed		= 30000,	// used by fakeplayers when deciding where to go. see 'online.pas' and procedure 'give_me_exits_from'
 };
 
 enum onlinetype {
@@ -232,6 +232,54 @@ struct object {
 	bool			restr[MAXCLASSES];
 };
 
+enum aitype {
+	AI_Computer,
+	AI_Human
+};
+
+enum alignment {
+	AlignAll,
+	AlignGood,
+	AlignEvil,
+	AlignNone
+};
+
+#define KINGGUARDS	5
+struct king {
+	char			name[31];
+	enum aitype		ai;
+	enum sex		sexy;
+	long			daysinpower;
+	uint8_t			tax;
+	enum alignment	taxalignment;
+	long			treasury;
+	uint8_t			prisonsleft;	// # of people king can imprison today. new every day
+	uint8_t			executeleft;	// # of death sentences left today. new every day
+	uint16_t		questsleft;		// # of new quests the king can issue today
+	uint16_t		marryactions;	// # of marriages the king can interfer in today
+	uint8_t			wolffeed;		// # kids have can be tossed to the wolves/day, set to config.allowfeedingthewolves at maint
+	uint8_t			royaladoptions;	// # kids can be placed in the Royal Orphanage/day, set to config.allowRoyalAdoption at maint
+	char			moatid[16];		// unique moat creature ID
+	int				moatnr;			// how many crocodiles (or whatever) in the moat?
+	char			guard[KINGGUARDS][31];	// king body guards, name
+	long			guardpay[KINGGUARDS];	// king body guards, salary
+	enum aitype		guardai[KINGGUARDS];	// king body guards, ai
+	enum sex		guardsex[KINGGUARDS];	// king body guards, sex
+	/* Shops open... */
+	bool			shop_weapon;
+	bool			shop_armor;
+	bool			shop_magic;
+	bool			shop_alabat;
+	bool			shop_plmarket;
+	bool			shop_healing;
+	bool			shop_drugs;
+	bool			shop_steroids;
+	bool			shop_orbs;
+	bool			shop_evilmagic;
+	bool			shop_bobs;
+	bool			shop_gigolos;
+};
+
 extern struct poison	*poison;
 extern struct onliner	*onliners;
 extern struct onliner	*onliner;
@@ -239,5 +287,8 @@ extern struct player	*players;
 extern struct player	*player;
 extern struct player	*npcs;
 extern struct object	*objects;
+extern struct king		*king;
+
+void open_files(void);
 
 #endif

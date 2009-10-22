@@ -70,24 +70,30 @@ enum colors {
 
 #define Asprintf(fmt, ...) (char *)({ \
 	char *Asprintf_tmp_str; \
-	int  len=vsnprintf(NULL, 0, fmt, __VA_ARGS__); \
+	int  len=snprintf(NULL, 0, fmt, __VA_ARGS__); \
 \
 	Asprintf_tmp_str=(char *)alloca(len+1); \
-	vsnprintf(Asprintf_tmp_str, len+1, fmt, __VA_ARGS__); \
-	Asprintf_tmp_strAsprintf_tmp_str; \
+	snprintf(Asprintf_tmp_str, len+1, fmt, __VA_ARGS__); \
+	Asprintf_tmp_str; \
 })
 
-#define ljust(str, len) Asprintf("%.*s", len, str)
+#define ljust(str, len) Asprintf("%-*s", len, str)
 
-#define PART(text)	d(config.textcolor, text, NULL)		// GREEN
-#define PLAYER(text)	d(config.plycolor, text, NULL)		// BRIGHT_GREEN
+#define kingstring(sex)		(sex==Male?"King":"Queen")
 
-#define TEXT(text)	dl(config.textcolor, text, NULL)	// GREEN
-#define SAY(text)	dl(config.talkcolor, text, NULL)	// BRIGHT_MAGENTA
-#define BAD(text)	dl(config.badcolor, text, NULL)		// BRIGHT_RED
-#define GOOD(text)	dl(config.goodcolor, text, NULL)	// WHITE
-#define HEADER(text)	dl(config.headercolor, text, NULL)	// MAGENTA
-#define NOTICE(text)	dl(config.noticecolor, text, NULL)
-#define TITLE(text)	dl(config.titlecolor, text, NULL)
+#define PART(...)	d(config.textcolor, __VA_ARGS__, NULL)			// GREEN
+#define PLAYER(...)	d(config.plycolor, __VA_ARGS__, NULL)			// BRIGHT_GREEN
+
+#define TEXT(...)	dl(config.textcolor, __VA_ARGS__, NULL)	// GREEN
+#define SAY(...)	dl(config.talkcolor, __VA_ARGS__, NULL)			// BRIGHT_MAGENTA
+#define BAD(...)	dl(config.badcolor, __VA_ARGS__, NULL)			// BRIGHT_RED
+#define GOOD(...)	dl(config.goodcolor, __VA_ARGS__, NULL)			// WHITE
+#define HEADER(...)	dl(config.headercolor, __VA_ARGS__, NULL)		// MAGENTA
+#define NOTICE(...)	dl(config.noticecolor, __VA_ARGS__, NULL)
+#define TITLE(...)	dl(config.titlecolor, __VA_ARGS__, NULL)
+#define D(...)		d(..., NULL)
+#define DC(...)		d(..., D_DONE)
+#define DL(...)		d(..., NULL)
+#define DLC(...)	d(..., D_DONE)
 
 #endif

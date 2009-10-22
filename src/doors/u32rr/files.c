@@ -27,11 +27,14 @@ struct map_file npc_map;
 struct player	*npcs;
 
 struct map_file onliner_map;
-extern struct onliner	*onliner;
-extern struct onliner	*onliners;
+struct onliner	*onliner;
+struct onliner	*onliners;
 
 struct map_file object_map;
 struct object	*objects;
+
+struct map_file king_map;
+struct king		*king;
 
 static size_t align(size_t val)
 {
@@ -63,6 +66,10 @@ void open_files(void)
 	npcs=npc_map.data;
 	map_file("objects.dat", &object_map, MAX_OBJECTS * sizeof(struct object));
 	objects=object_map.data;
+	map_file("onliner.dat", &onliner_map, MAX_OBJECTS * sizeof(struct onliner));
+	onliners=onliner_map.data;
+	map_file("king.dat", &king_map, MAX_OBJECTS * sizeof(struct king));
+	king=king_map.data;
 }
 
 void create_poison_file(void)

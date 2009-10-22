@@ -72,8 +72,6 @@ static const char *Alchemist_Poison(const struct player *rec)
 
 static void Meny()
 {
-	const char *s;
-
 	newscreen();
 	pbreak();
 	HEADER("-*- Alchemists Heaven -*-");
@@ -289,7 +287,7 @@ static void Create_Poison(void)
 	menu("(A)bort");
 	PART(":");
 	do {
-		ch=toupper(getchar());
+		ch=toupper(gchar());
 	} while(strchr("A12345",ch)==NULL);
 
 	pbreak();
@@ -360,7 +358,7 @@ static void Enter_Chamber(void)
 	pbreak();
 
 	ch='?';
-	onliner->location = Mystic;
+	onliner->location = ONLOC_Mystic;
 	strcpy(onliner->doing, location_desc(onliner->location));
 
 	do {
@@ -408,7 +406,7 @@ static void Enter_Chamber(void)
 
 		PART("The Order (E,C,S,U,?) :");
 
-		ch=toupper(getchar());
+		ch=toupper(gchar());
 	} while(ch != 'U');
 	pbreak();
 	pbreak();
@@ -486,14 +484,14 @@ void Alchemisty(void)
 
 	do {
 		// update online location, if necessary
-		if(onliner->location != onloc_Alchemist) {
+		if(onliner->location != ONLOC_Alchemist) {
 			refresh=true;
-			onliner->location = onloc_Alchemist;
+			onliner->location = ONLOC_Alchemist;
 			strcpy(onliner->doing, location_desc(onliner->location));
 		}
 		Display_Menu(true,true,&refresh);
 
-		switch((ch=toupper(getchar()))) {
+		switch((ch=toupper(gchar()))) {
 			case '?':	// Display Menu
 				if(player->expert)
 					Display_Menu(true, false, &refresh);

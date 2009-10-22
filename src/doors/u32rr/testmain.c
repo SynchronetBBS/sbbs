@@ -102,6 +102,14 @@ void dc(int color, const char *str, ...)
 	va_end(ap);
 }
 
+char gchar(void)
+{
+	char	str[10];
+
+	fgets(str, sizeof(str), stdin);
+	return(str[0]);
+}
+
 void upause(void)
 {
 	char	str[10];
@@ -137,9 +145,18 @@ char confirm(const char *prompt, char dflt)
 {
 	char	str[5];
 
-	printf("CONFIRM: %s", str);
+	printf("CONFIRM: %s", prompt);
 	fgets(str, sizeof(str), stdin);
-	return toupper(str[0])==toupper(dflt);
+	switch(toupper(str[0])) {
+	case 'Y':
+		return true;
+	case 'N':
+		return false;
+	default:
+		if(toupper(dflt)=='Y')
+			return true;
+		return false;
+	}
 }
 
 int rand_num(int limit)
@@ -202,20 +219,52 @@ struct config config={
 	MAGENTA,
 	BRIGHT_GREEN,
 	BRIGHT_BLUE,
+	BRIGHT_CYAN,
 
-	"|G",
-	"|M",
+	"|g",
+	"|m",
 
 	"gold",
 	"coin",
 	"coins",
 	"Reese",
-	"Groggo"
+	"Groggo",
+	"Bob's Place",
+
+	true,
+	true,
 };
+
+void Bobs_Inn(void)
+{
+	BAD("Bob's Inn not implemented!");
+}
+
+void Groggos_Magic(void)
+{
+	BAD("Groggo's Magic not implemented!");
+}
+
+void Drug_Store(void)
+{
+	BAD("Drug Store not implemented!");
+}
+
+void Steroid_Store(void)
+{
+	BAD("Steroid Store not implemented!");
+}
+
+void Orb_Center(void)
+{
+	BAD("Orb Center not implemented!");
+}
 
 int main(int argc, char **argv)
 {
 	open_files();
 	player=players;
-	Alchemisty();
+	printf("Name: %s Level: %d  Gold: %d Class: %d\n", player->name2, player->level, player->gold, player->class);
+	onliner=onliners;
+	Shady_Shops();
 }
