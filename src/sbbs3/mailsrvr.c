@@ -90,12 +90,10 @@ static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static SOCKET	submission_socket=INVALID_SOCKET;
 static SOCKET	pop3_socket=INVALID_SOCKET;
-static DWORD	active_clients=0;
+static ulong	active_clients=0;
 static int		active_sendmail=0;
-static DWORD	thread_count=0;
+static ulong	thread_count=0;
 static BOOL		sendmail_running=FALSE;
-static DWORD	sockets=0;
-static DWORD	served=0;
 static BOOL		terminate_server=FALSE;
 static BOOL		terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
@@ -105,6 +103,22 @@ static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
+
+struct {
+	ulong	sockets;
+	ulong	errors;
+	ulong	crit_errors;
+	ulong	connections_ignored;
+	ulong	connections_refused;
+	ulong	connections_served;
+	ulong	pop3_served;
+	ulong	smtp_served;
+	/* SMTP: */
+	ulong	sessions_refused;
+	ulong	msgs_ignored;
+	ulong	msgs_refused;
+	ulong	msgs_received;
+} stats;
 
 struct mailproc {
 	char		name[INI_MAX_VALUE_LEN];
@@ -137,7 +151,10 @@ static int lprintf(int level, const char *fmt, ...)
     va_end(argptr);
 
 	if(level <= LOG_ERR)
-		errorlog(&scfg,sbuf);
+		errorlog(&scfg,sbuf), stats.errors++;
+
+	if(level <= LOG_CRIT)
+		stats.crit_errors++;
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -224,9 +241,9 @@ SOCKET mail_open_socket(int type, const char* protocol)
 		if(set_socket_options(&scfg, sock, section, error, sizeof(error)))
 			lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
-		sockets++;
+		stats.sockets++;
 #if 0 /*def _DEBUG */
-		lprintf(LOG_DEBUG,"%04d Socket opened (%d sockets in use)",sock,sockets);
+		lprintf(LOG_DEBUG,"%04d Socket opened (%d sockets in use)",sock,stats.sockets);
 #endif
 	}
 	return(sock);
@@ -243,14 +260,14 @@ int mail_close_socket(SOCKET sock)
 	result=closesocket(sock);
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
-	sockets--;
+	stats.sockets--;
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
 	}
 #if 0 /*def _DEBUG */
 	else 
-		lprintf(LOG_DEBUG,"%04d Socket closed (%d sockets in use)",sock,sockets);
+		lprintf(LOG_DEBUG,"%04d Socket closed (%d sockets in use)",sock,stats.sockets);
 #endif
 
 	return(result);
@@ -576,9 +593,9 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 		if(!sockprintf(socket, "%s%.*s", *p=='.' ? ".":"", tlen, p))
 			break;
 		lines++;
-		if(*(p+len)==0)
-			break;
-		if(len!=MAX_LINE_LEN)
+		if(*(p+len)=='\r')
+			len++;
+		if(*(p+len)=='\n')
 			len++;
 		p+=len;
 		/* release time-slices every x lines */
@@ -1274,7 +1291,7 @@ static void pop3_thread(void* arg)
 	thread_down();
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf(LOG_DEBUG,"%04d POP3 session thread terminated (%u threads remain, %lu clients served)"
-			,socket, thread_count, served);
+			,socket, thread_count, stats.pop3_served);
 
 	/* Must be last */
 	mail_close_socket(socket);
@@ -1834,9 +1851,9 @@ void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx)
 }
 #endif
 
-static char* get_header_field(uchar* buf, char* name, size_t maxlen)
+static uchar* get_header_field(uchar* buf, char* name, size_t maxlen)
 {
-	char*	p;
+	uchar*	p;
 	size_t	len;
 
 	if(buf[0]<=' ')	/* folded header */
@@ -2239,7 +2256,7 @@ static void smtp_thread(void* arg)
 
 	addr_len=sizeof(server_addr);
 	if((i=getsockname(socket, (struct sockaddr *)&server_addr,&addr_len))!=0) {
-		lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%d) getting address/port"
+		lprintf(LOG_CRIT,"%04d !SMTP ERROR %d (%d) getting address/port"
 			,socket, i, ERROR_VALUE);
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
@@ -2248,7 +2265,7 @@ static void smtp_thread(void* arg)
 	} 
 
 	if((mailproc_to_match=alloca(sizeof(BOOL)*mailproc_count))==NULL) {
-		lprintf(LOG_ERR,"%04d !SMTP ERROR allocating memory for mailproc_to_match", socket);
+		lprintf(LOG_CRIT,"%04d !SMTP ERROR allocating memory for mailproc_to_match", socket);
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
 		thread_down();
@@ -2298,6 +2315,7 @@ static void smtp_thread(void* arg)
 			thread_down();
 			if(active_clients)
 				active_clients--, update_clients();
+			stats.sessions_refused++;
 			return;
 		}
 
@@ -2309,6 +2327,7 @@ static void smtp_thread(void* arg)
 			thread_down();
 			if(active_clients)
 				active_clients--, update_clients();
+			stats.sessions_refused++;
 			return;
 		}
 
@@ -2329,6 +2348,7 @@ static void smtp_thread(void* arg)
 				thread_down();
 				if(active_clients)
 					active_clients--, update_clients();
+				stats.sessions_refused++;
 				return;
 			}
 		}
@@ -2336,7 +2356,7 @@ static void smtp_thread(void* arg)
 
 	SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 	if(smb_islocked(&smb)) {
-		lprintf(LOG_WARNING,"%04d !SMTP MAIL BASE LOCKED: %s"
+		lprintf(LOG_CRIT,"%04d !SMTP MAIL BASE LOCKED: %s"
 			,socket, smb.last_error);
 		sockprintf(socket,sys_unavail);
 		mail_close_socket(socket);
@@ -2356,7 +2376,7 @@ static void smtp_thread(void* arg)
 	SAFEPRINTF2(rcptlst_fname,"%sSBBS_SMTP.%s.lst", scfg.temp_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
-		lprintf(LOG_ERR,"%04d !SMTP ERROR %d creating recipient list: %s"
+		lprintf(LOG_CRIT,"%04d !SMTP ERROR %d creating recipient list: %s"
 			,socket, errno, rcptlst_fname);
 		sockprintf(socket,sys_error);
 		mail_close_socket(socket);
@@ -2384,6 +2404,8 @@ static void smtp_thread(void* arg)
 
 	SAFEPRINTF(str,"SMTP: %s",host_ip);
 	status(str);
+
+	/* SMTP session active: */
 
 	sockprintf(socket,"220 %s Synchronet SMTP Server %s-%s Ready"
 		,startup->host_name,revision,PLATFORM_DESC);
@@ -2426,6 +2448,7 @@ static void smtp_thread(void* arg)
 					SAFEPRINTF2(tmp,"Twit-listed sender: %s <%s>", sender, sender_addr);
 					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket, "554 Sender not allowed.");
+					stats.msgs_refused++;
 					continue;
 				}
 
@@ -2684,6 +2707,7 @@ static void smtp_thread(void* arg)
 				}
 				if(smb_error!=SMB_SUCCESS) {	/* SMB Error */
 					sockprintf(socket, errmsg);
+					stats.msgs_refused++;
 					continue;
 				}
 				if((p=smb_get_hfield(&msg, RFC822TO, NULL))!=NULL) {
@@ -2706,6 +2730,7 @@ static void smtp_thread(void* arg)
 					spamlog(&scfg, "SMTP", "REFUSED"
 						,tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket, "554 Subject not allowed.");
+					stats.msgs_refused++;
 					continue;
 				}
 				dnsbl_recvhdr=FALSE;
@@ -2741,6 +2766,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !SMTP MISSING mail header 'FROM' field", socket);
 					sockprintf(socket, "554 Mail header missing 'FROM' field");
 					subnum=INVALID_SUB;
+					stats.msgs_refused++;
 					continue;
 				}
 				nettype=NET_INTERNET;
@@ -2759,6 +2785,7 @@ static void smtp_thread(void* arg)
 					sockprintf(socket, "552 Message size (%lu) exceeds maximum: %lu bytes"
 						,length,startup->max_msg_size);
 					subnum=INVALID_SUB;
+					stats.msgs_refused++;
 					continue;
 				}
 
@@ -2785,6 +2812,7 @@ static void smtp_thread(void* arg)
 							,scfg.sub[subnum]->sname, reason);
 						sockprintf(socket,"550 Insufficient access");
 						subnum=INVALID_SUB;
+						stats.msgs_refused++;
 						continue;
 					}
 
@@ -2803,6 +2831,7 @@ static void smtp_thread(void* arg)
 							,socket, sender_addr, scfg.sub[subnum]->sname);
 						sockprintf(socket,ok_rsp);
 						signal_smtp_sem();
+						stats.msgs_received++;
 					}
 					free(msgbuf);
 					smb_close(&smb);
@@ -2872,6 +2901,7 @@ static void smtp_thread(void* arg)
 							spamlog(&scfg, "SMTP", "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						}
+						stats.msgs_ignored++;
 						/* pretend we received it */
 						sockprintf(socket,ok_rsp);
 						subnum=INVALID_SUB;
@@ -2886,7 +2916,7 @@ static void smtp_thread(void* arg)
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
-					lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%s) saving message"
+					lprintf(LOG_CRIT,"%04d !SMTP ERROR %d (%s) saving message"
 						,socket,i,smb.last_error);
 					sockprintf(socket, "452 ERROR %d (%s) saving message"
 						,i,smb.last_error);
@@ -2989,6 +3019,7 @@ static void smtp_thread(void* arg)
 						smb_incmsg_dfields(&smb,&msg,(ushort)(rcpt_count-1));
 					sockprintf(socket,ok_rsp);
 					signal_smtp_sem();
+					stats.msgs_received++;
 				}
 #if 0 /* This shouldn't be necessary here */
 				smb_close_da(&smb);
@@ -3448,6 +3479,7 @@ static void smtp_thread(void* arg)
 				spamlog(&scfg, "SMTP", "REFUSED", tmp
 					,host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket, "552 Too many recipients");
+				stats.msgs_refused++;
 				continue;
 			}
 
@@ -3458,7 +3490,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d SMTP %s by: %s"
 					,socket, reason, reverse_path);
 				if(relay_user.number==0) {
-					strcpy(tmp,"REFUSED");
+					strcpy(tmp,"IGNORED");
 					if(dnsbl_result.s_addr==0)	{ /* Don't double-filter */
 						lprintf(LOG_NOTICE,"%04d !BLOCKING IP ADDRESS: %s in %s", socket, host_ip, spam_block);
 						filter_ip(&scfg, "SMTP", reason, host_name, host_ip, reverse_path, spam_block);
@@ -3487,6 +3519,7 @@ static void smtp_thread(void* arg)
 				sockprintf(socket
 					,"550 Mail from %s refused due to listing at %s"
 					,host_ip, dnsbl);
+				stats.sessions_refused++;
 				break;
 			}
 
@@ -3546,8 +3579,10 @@ static void smtp_thread(void* arg)
 							sockprintf(socket, "553 Relaying through this server "
 							"requires authentication.  "
 							"Please authenticate before sending.");
-						else
+						else {
 							sockprintf(socket, "550 Relay not allowed.");
+							stats.msgs_refused++;
+						}
 						break;
 					}
 
@@ -3837,7 +3872,7 @@ static void smtp_thread(void* arg)
 
 	thread_down();
 	lprintf(LOG_INFO,"%04d SMTP Session thread terminated (%u threads remain, %lu clients served)"
-		,socket, thread_count, served);
+		,socket, thread_count, stats.smtp_served);
 
 	/* Must be last */
 	mail_close_socket(socket);
@@ -4559,8 +4594,11 @@ static void cleanup(int code)
 	thread_down();
 	status("Down");
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"#### Mail Server thread terminated (%u threads remain, %lu clients served)"
-			,thread_count, served);
+		lprintf(LOG_INFO,"#### Mail Server thread terminated (connections served: %u, refused: %u, ignored: %u, sessions refused: %u, messages received: %u, refused: %u, ignored: %u, errors: %u, critical: %u)"
+			,stats.connections_served, stats.connections_refused, stats.connections_ignored
+			,stats.sessions_refused
+			,stats.msgs_received, stats.msgs_refused, stats.msgs_ignored
+			,stats.errors, stats.crit_errors);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4663,7 +4701,7 @@ void DLLCALL mail_server(void* arg)
 	js_server_props.interface_addr=&startup->interface_addr;
 
 	uptime=0;
-	served=0;
+	memset(&stats,0,sizeof(stats));
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
@@ -5061,10 +5099,11 @@ void DLLCALL mail_server(void* arg)
 				}
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
-				sockets++;
+				stats.sockets++;
 
 				if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {
 					mail_close_socket(client_socket);
+					stats.connections_ignored++;
 					continue;
 				}
 
@@ -5074,13 +5113,14 @@ void DLLCALL mail_server(void* arg)
 					sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 					mswait(3000);
 					mail_close_socket(client_socket);
+					stats.connections_refused++;
 					continue;
 				}
 
 				l=1;
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-					lprintf(LOG_ERR,"%04d SMTP !ERROR %d (%d) disabling blocking on socket"
+					lprintf(LOG_CRIT,"%04d SMTP !ERROR %d (%d) disabling blocking on socket"
 						,client_socket, i, ERROR_VALUE);
 					mail_close_socket(client_socket);
 					continue;
@@ -5096,7 +5136,8 @@ void DLLCALL mail_server(void* arg)
 				smtp->socket=client_socket;
 				smtp->client_addr=client_addr;
 				_beginthread(smtp_thread, 0, smtp);
-				served++;
+				stats.connections_served++;
+				stats.smtp_served++;
 			}
 
 			if(pop3_socket!=INVALID_SOCKET
@@ -5124,10 +5165,11 @@ void DLLCALL mail_server(void* arg)
 				}
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
-				sockets++;
+				stats.sockets++;
 
 				if(trashcan(&scfg,inet_ntoa(client_addr.sin_addr),"ip-silent")) {
 					mail_close_socket(client_socket);
+					stats.connections_ignored++;
 					continue;
 				}
 
@@ -5137,6 +5179,7 @@ void DLLCALL mail_server(void* arg)
 					sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
 					mswait(3000);
 					mail_close_socket(client_socket);
+					stats.connections_refused++;
 					continue;
 				}
 
@@ -5144,7 +5187,7 @@ void DLLCALL mail_server(void* arg)
 				l=1;
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-					lprintf(LOG_ERR,"%04d POP3 !ERROR %d (%d) disabling blocking on socket"
+					lprintf(LOG_CRIT,"%04d POP3 !ERROR %d (%d) disabling blocking on socket"
 						,client_socket, i, ERROR_VALUE);
 					sockprintf(client_socket,"-ERR System error, please try again later.");
 					mswait(3000);
@@ -5165,7 +5208,8 @@ void DLLCALL mail_server(void* arg)
 				pop3->client_addr=client_addr;
 
 				_beginthread(pop3_thread, 0, pop3);
-				served++;
+				stats.connections_served++;
+				stats.pop3_served++;
 			}
 		}
 
