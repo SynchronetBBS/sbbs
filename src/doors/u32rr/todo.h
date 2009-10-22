@@ -178,6 +178,7 @@ struct config {
 	int	titlecolor;	// Colour for titles (ie: "The Secret Alchemist Order")
 	int	menucolor;	// Colour for menus
 	int placecolor;	// Colour for places
+	int hotkeycolor;	// textcolor2
 
 	// String colours
 	char	textcol1[3];

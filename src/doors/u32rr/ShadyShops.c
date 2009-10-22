@@ -26,10 +26,14 @@ Copyright 2007 Jakob Dangarden
 
 #include "macros.h"
 #include "files.h"
+#include "various.h"
 
 #include "Alchemisty.h"
 
 #include "todo.h"
+
+static const char *name="Shady Shops";
+static const char *expert_prompt="(B,A,G,O,S,D,R,?)";
 
 static void Meny(void)
 {
@@ -57,31 +61,6 @@ static void Meny(void)
 	menu("(R)eturn to street");
 }
 
-static void Display_Menu(bool force, bool terse, bool *refresh)
-{
-	sethotkeys_on(NoKill, "BAGOSDR\n?");
-
-	if(terse) {
-		if(!player->expert) {
-			if(*refresh && player->auto_meny) {
-				*refresh=false;
-				Meny();
-			}
-			pbreak();
-			dc(config.textcolor, "Shady Shops (", config.textcolor2, "?", config.textcolor, " for menu) :", D_DONE);
-		}
-		else {
-			pbreak();
-			PART("Shady Shops (B,A,G,O,S,D,R,?) :");
-		}
-	}
-	else {
-		if((!player->expert) || force) {
-			Meny();
-		}
-	}
-}
-
 void Shady_Shops(void)
 {
 	char cho=0;
@@ -97,7 +76,7 @@ void Shady_Shops(void)
 		// auto-travel
 		switch(player->auto_probe) {
 			case NoWhere:
-				Display_Menu(true, true, &refresh);
+				Display_Menu(true, true, &refresh, name, expert_prompt, Meny);
 				cho=toupper(gchar());
 				break;
 			case UmanCave:
@@ -127,9 +106,9 @@ void Shady_Shops(void)
 		switch(cho) {
 			case '?':
 				if(player->expert)
-					Display_Menu(true, false, &refresh);
+					Display_Menu(true, false, &refresh, name, expert_prompt, Meny);
 				else
-					Display_Menu(false, false, &refresh);
+					Display_Menu(false, false, &refresh, name, expert_prompt, Meny);
 				break;
 			case 'R':	// Return
 				done=true;

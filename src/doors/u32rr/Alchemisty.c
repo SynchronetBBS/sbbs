@@ -32,9 +32,12 @@ C translation Copyright 2009 Stephen Hurd
 #include "macros.h"
 #include "files.h"
 #include "structs.h"
+#include "various.h"
 
 #include "todo.h"
 
+static const char *name="Alchemist Store";
+static const char *expert_prompt="(B,S,T,R,?)";
 static void Failed_Quest(uint8_t level)
 {
 	char *str;
@@ -91,30 +94,6 @@ static void Meny()
 	menu("(T)he Secret Order");
 	menu("(S)tatus");
 	menu("(R)eturn to street");
-}
-
-static void Display_Menu(bool force, bool expert, bool *refresh)
-{
-	sethotkeys_on(NoKill, "BSUR\r?");
-	if(expert) {
-		if(!player->expert) {
-			if(*refresh && player->auto_meny) {
-				*refresh=false;
-				Meny();
-			}
-			pbreak();
-			dc(config.textcolor, "Alchemist Store (", config.textcolor2, "?", config.textcolor, " for menu) :", D_DONE);
-		}
-		else {
-			pbreak();
-			TEXT("Alchemist (B,S,T,R,?) :");
-		}
-	}
-	else {
-		if((!player->expert) || force) {
-			Meny();
-		}
-	}
 }
 
 static void Join_Order(void)
@@ -489,14 +468,14 @@ void Alchemisty(void)
 			onliner->location = ONLOC_Alchemist;
 			strcpy(onliner->doing, location_desc(onliner->location));
 		}
-		Display_Menu(true,true,&refresh);
+		Display_Menu(true, true, &refresh, name, expert_prompt, Meny);
 
 		switch((ch=toupper(gchar()))) {
 			case '?':	// Display Menu
 				if(player->expert)
-					Display_Menu(true, false, &refresh);
+					Display_Menu(true, false, &refresh, name, expert_prompt, Meny);
 				else
-					Display_Menu(false, false, &refresh);
+					Display_Menu(false, false, &refresh, name, expert_prompt, Meny);
 				break;
 			case 'S':	// Status
 				newscreen();
