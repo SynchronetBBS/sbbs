@@ -31,7 +31,7 @@ extern struct onliner	*onliner;
 extern struct onliner	*onliners;
 
 struct map_file object_map;
-struct player	*objects;
+struct object	*objects;
 
 static size_t align(size_t val)
 {
@@ -47,7 +47,8 @@ static void map_file(char *name, struct map_file *map, size_t len)
 	map->fd=open(name, O_RDWR);
 	if(map->fd == -1)
 		CRASHF("Error opening map \"%s\"\n", name);
-	map->data=mmap(0, align(len), PROT_READ|PROT_WRITE, MAP_SHARED, map->fd, 0);
+	map->len=align(len);
+	map->data=mmap(0, map->len, PROT_READ|PROT_WRITE, MAP_SHARED, map->fd, 0);
 	if(map->data==MAP_FAILED)
 		CRASH;
 }

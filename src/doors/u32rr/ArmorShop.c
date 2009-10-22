@@ -53,7 +53,7 @@ static bool Purchase_Now(uint16_t i)
 	PLAYER(config.reese_name);
 	TEXT(" says.");
 	PART("You can get it for ");
-	d_comma(YELLOW, objects[i].value);
+	d_part(YELLOW, commastr(objects[i].value));
 	PART(" ");
 	PART(config.moneytype);
 	PART(" ");
@@ -139,6 +139,30 @@ static void Meny(void)
 {
 	newscreen();
 	pbreak();
+
+	d_part(MAGENTA, "Armorshop, run by ");
+	d_part(MAGENTA, config.reese_name);
+	d_line(MAGENTA, " the elf");
+	d_line(MAGENTA, mkstring(strlen(config.reese_name)+26);
+	pbreak();
+
+	TEXT("As you enter the store you notice a strange but appealing smell.");
+	TEXT("You recall that some merchants use magic elixirs to make their selling easier...");
+	PLAYER(config.reese_name);
+	TEXT(" suddenly appears out of nowhere, with a smile on his face.");
+	TEXT("He is known as a respectable citizen, although evil tounges speaks of meetings with dark and mysterious creatures from the deep dungeons.");
+	PART("You are interrupted in your thougts as ");
+	PLAYER(config.reese_name);
+	TEXT(" kindly asks");
+	TEXT("what you want :");
+
+	PART("(You have ");
+	d_part(YELLOW, commastr(player->gold));
+	TEXT(" ");
+	TEXT(config.moneytype);
+	TEXT(" ");
+	TEXT(config.moneytype3);
+	TEXT(")");
 	
 Procedure Meny;
 var justval : byte;

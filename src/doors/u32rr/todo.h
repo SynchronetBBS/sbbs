@@ -6,11 +6,6 @@
 #include "structs.h"
 
 /*
- * Formats a number with commas into a malloc()ed buffer
- */
-char *acommastr(int64_t num);
-
-/*
  * Sets input hotkeys
  */
 #define NoKill	0	// Type for sethotkeys_on (Delete?)
@@ -47,17 +42,24 @@ void newsy(bool, ...);
 /*
  * Displays a partial line (no trailing linefeed)
  */
-void d_part(int color, const char *text);
+void d(int color, const char *text, ...);
 
 /*
- * Displays a comma formatted number (no trailing lnefeed)
+ * Displays a partial line (no trailing linefeed)
+ * Each string has a colour
  */
-void d_comma(int color, long number);
+void dc(int color, const char *text, ...);
 
 /*
  * Displays a line (with trailing linefeed)
  */
-void d_line(int color, const char *text);
+void dl(int color, const char *text, ...);
+
+/*
+ * Displays a line (with trailing linefeed)
+ * Each string has a colour
+ */
+void dlc(int color, const char *text, ...);
 
 /*
  * Does the pause thing
@@ -137,15 +139,34 @@ struct player {
 #define MAX_NPCS	1024
 
 struct config {
+	// Integer colours
 	int	textcolor;	// Normal text colour for display (same as textcol1)
-	char	textcol1[6];	// Text colour "1" (normal for news)
-	char	textcol2[6];	// Text colour "2" (normal for prompt chars)
+	int	highlightcolor;	// Colour of highlights in textcolor
+	int	textcolor2;	// Text colour "2" (normal for prompt chars)
+	int	plycolor;	// Colour for player names
+	int	talkcolor;	// Colour for phrases
+	int	badcolor;	// Colour for bad stuff (You died, etc)
+	int	goodcolor;	// Colour for good stuff (You won!, etc)
+	int	headercolor;	// Colour for menu headers
+	int	noticecolor;	// Colour for notices (slightly good/bad)
+	int	monstercolor;	// Colour for monster names
+	int	objectcolor;	// Colour for object names
+	int	titlecolor;	// Colour for titles (ie: "The Secret Alchemist Order")
+	int	menucolor;	// Colour for menus
+	
+	// String colours
+	char	textcol1[3];
+	char	textcol2[3];
+
+	// Strings
 	char	moneytype[23];	// Name of money (ie: Gold)
+	char	moneytype2[23];
 	char	moneytype3[23];	// Unknown... "can get it for 3,000 moneytype moneytype3" ("coins" maybe?)
 	char	reese_name[23];	// Name of "Reese" from Armor shoppe
+	char	groggo_name[23];// Name of "Groggo" from shady shoppe
 };
 
-struct config config;
+extern struct config config;
 #define global_plycol BRIGHT_GREEN
 #define global_talkcol BRIGHT_MAGENTA
 extern bool global_begged;
