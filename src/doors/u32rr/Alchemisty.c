@@ -313,10 +313,70 @@ static void Create_Poison(void)
 	}
 }
 
+static bool Chamber_Menu(void)
+{
+	char ch;
+	int		x,i;
+
+	if(onliner->location != ONLOC_Mystic) {
+		ch='?';
+		onliner->location = ONLOC_Mystic;
+		strcpy(onliner->doing, location_desc(onliner->location));
+	}
+	else {
+		PART("The Order (E,C,S,U,?) :");
+		ch=toupper(gchar());
+	}
+	switch(ch) {
+		case '?':
+			pbreak();
+			menu("(E)xamine book");
+			menu("(C)reate poison");
+			menu("(S)tatus");
+			menu("(U)p");
+			break;
+		case 'S':
+			newscreen();
+			status(player);
+			break;
+		case 'C':
+			Create_Poison();
+			break;
+		case 'E':
+			pbreak();
+			pbreak();
+			TEXT("It's the list of all members");
+			pbreak();
+			dl(WHITE, "**-- Members of the Order --**", NULL);
+			x = 0;
+			for(i=0; i<MAX_PLAYERS; i++) {
+				if(players[i].amember && !players[i].deleted) {
+					x++;
+					PLAYER(players[i].name2);
+					TEXT("");
+				}
+			}
+
+			for(i=0; i<MAX_NPCS; i++) {
+				if(npcs[i].amember && !npcs[i].deleted) {
+					x++;
+					PLAYER(npcs[i].name2);
+					TEXT("");
+				}
+			}
+
+			dlc(config.textcolor, "The Order has a total of ", config.highlightcolor, commastr(x), config.textcolor, " members.");
+			break;
+		case 'U':
+			return false;
+	}
+	
+	return true;
+}
+
 static void Enter_Chamber(void)
 {
 	char	ch;
-	int		x,i;
 	char	str[256];
 
 	TEXT("You enter the secret chamber behind the counter. "
@@ -341,53 +401,8 @@ static void Enter_Chamber(void)
 	onliner->location = ONLOC_Mystic;
 	strcpy(onliner->doing, location_desc(onliner->location));
 
-	do {
-		switch(ch) {
-			case '?':
-				pbreak();
-				menu("(E)xamine book");
-				menu("(C)reate poison");
-				menu("(S)tatus");
-				menu("(U)p");
-				break;
-			case 'S':
-				newscreen();
-				status(player);
-				break;
-			case 'C':
-				Create_Poison();
-				break;
-			case 'E':
-				pbreak();
-				pbreak();
-				TEXT("It's the list of all members");
-				pbreak();
-				dl(WHITE, "**-- Members of the Order --**", NULL);
-				x = 0;
-				for(i=0; i<MAX_PLAYERS; i++) {
-					if(players[i].amember && !players[i].deleted) {
-						x++;
-						PLAYER(players[i].name2);
-						TEXT("");
-					}
-				}
-
-				for(i=0; i<MAX_NPCS; i++) {
-					if(npcs[i].amember && !npcs[i].deleted) {
-						x++;
-						PLAYER(npcs[i].name2);
-						TEXT("");
-					}
-				}
-
-				dlc(config.textcolor, "The Order has a total of ", config.highlightcolor, scommastr(str, x), config.textcolor, " members.");
-				break;
-		}
-
-		PART("The Order (E,C,S,U,?) :");
-
-		ch=toupper(gchar());
-	} while(ch != 'U');
+	while(Chamber_Menu())
+		;
 	pbreak();
 	pbreak();
 	TEXT("You leave up...");
