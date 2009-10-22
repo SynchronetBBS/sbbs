@@ -842,6 +842,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
+	/* ToDo: call js_CreateCommonObjects() instead */
+
 	do {
 
 		JS_SetContextPrivate(js_cx, service_client);
@@ -875,6 +877,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		/* File Class */
 		if(js_CreateFileClass(js_cx, js_glob)==NULL)
+			break;
+
+		/* Queue Class */
+		if(js_CreateQueueClass(js_cx, js_glob)==NULL)
 			break;
 
 		/* user-specific objects */
