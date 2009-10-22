@@ -315,8 +315,9 @@ static void Create_Poison(void)
 
 static void Enter_Chamber(void)
 {
-	char ch;
-	int  x,i;
+	char	ch;
+	int		x,i;
+	char	str[256];
 
 	TEXT("You enter the secret chamber behind the counter. "
 			"You remove the old rug and open the trap-door. "
@@ -379,7 +380,7 @@ static void Enter_Chamber(void)
 					}
 				}
 
-				dlc(config.textcolor, "The Order has a total of ", config.highlightcolor, commastr(x), config.textcolor, " members.");
+				dlc(config.textcolor, "The Order has a total of ", config.highlightcolor, scommastr(str, x), config.textcolor, " members.");
 				break;
 		}
 
@@ -456,52 +457,61 @@ static void Buy_Poison(void)
 		pbreak();
 }
 
+static bool Menu(bool * refresh)
+{
+	char ch;
+
+	// update online location, if necessary
+	if(onliner->location != ONLOC_Alchemist) {
+		*refresh=true;
+		onliner->location = ONLOC_Alchemist;
+		strcpy(onliner->doing, location_desc(onliner->location));
+	}
+	Display_Menu(true, true, refresh, name, expert_prompt, Meny);
+
+	switch((ch=toupper(gchar()))) {
+		case '?':	// Display Menu
+			if(player->expert)
+				Display_Menu(true, false, refresh, name, expert_prompt, Meny);
+			else
+				Display_Menu(false, false, refresh, name, expert_prompt, Meny);
+			break;
+		case 'S':	// Status
+			newscreen();
+			status(player);
+			break;
+		case 'T':	// The Secret Order
+			pbreak();
+			pbreak();
+			if(player->level < 10) {
+				PLAYER("Usilama");
+				TEXT(" looks at you.");
+				SAY("You are not yet worthy to join the Order!");
+				SAY("You must at least be a level 10 Alchemist before we can deal with your application!");
+			}
+			else {
+				if(!player->amember) {
+					Join_Order();
+				}
+				else {
+					Enter_Chamber();
+				}
+			}
+			break;
+		case 'B':
+			Buy_Poison();
+			break;
+		case 'R':
+			return false;
+	}
+	return true;
+}
+
 void Alchemisty(void)
 {
 	char	ch;
 	bool	refresh=true;
 
-	do {
-		// update online location, if necessary
-		if(onliner->location != ONLOC_Alchemist) {
-			refresh=true;
-			onliner->location = ONLOC_Alchemist;
-			strcpy(onliner->doing, location_desc(onliner->location));
-		}
-		Display_Menu(true, true, &refresh, name, expert_prompt, Meny);
-
-		switch((ch=toupper(gchar()))) {
-			case '?':	// Display Menu
-				if(player->expert)
-					Display_Menu(true, false, &refresh, name, expert_prompt, Meny);
-				else
-					Display_Menu(false, false, &refresh, name, expert_prompt, Meny);
-				break;
-			case 'S':	// Status
-				newscreen();
-				status(player);
-				break;
-			case 'T':	// The Secret Order
-				pbreak();
-				pbreak();
-				if(player->level < 10) {
-					PLAYER("Usilama");
-					TEXT(" looks at you.");
-					SAY("You are not yet worthy to join the Order!");
-					SAY("You must at least be a level 10 Alchemist before we can deal with your application!");
-				}
-				else {
-					if(!player->amember) {
-						Join_Order();
-					}
-					else {
-						Enter_Chamber();
-					}
-				}
-				break;
-			case 'B':
-				Buy_Poison();
-				break;
-		}
-	} while(ch != 'R');
+	while(Menu(&refresh))
+		;
 }

@@ -221,6 +221,7 @@ struct config config={
 	BRIGHT_BLUE,
 	BRIGHT_CYAN,
 	MAGENTA,
+	BRIGHT_GREEN,
 
 	"|g",
 	"|m",

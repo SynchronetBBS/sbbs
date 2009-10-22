@@ -164,21 +164,22 @@ struct player {
 
 struct config {
 	// Integer colours
-	int	textcolor;	// Normal text colour for display (same as textcol1)
+	int	textcolor;		// Normal text colour for display (same as textcol1)
 	int	highlightcolor;	// Colour of highlights in textcolor
-	int	textcolor2;	// Text colour "2" (normal for prompt chars)
-	int	plycolor;	// Colour for player names
-	int	talkcolor;	// Colour for phrases
-	int	badcolor;	// Colour for bad stuff (You died, etc)
-	int	goodcolor;	// Colour for good stuff (You won!, etc)
+	int	textcolor2;		// Text colour "2" (normal for prompt chars)
+	int	plycolor;		// Colour for player names
+	int	talkcolor;		// Colour for phrases
+	int	badcolor;		// Colour for bad stuff (You died, etc)
+	int	goodcolor;		// Colour for good stuff (You won!, etc)
 	int	headercolor;	// Colour for menu headers
 	int	noticecolor;	// Colour for notices (slightly good/bad)
 	int	monstercolor;	// Colour for monster names
 	int	objectcolor;	// Colour for object names
-	int	titlecolor;	// Colour for titles (ie: "The Secret Alchemist Order")
-	int	menucolor;	// Colour for menus
-	int placecolor;	// Colour for places
+	int	titlecolor;		// Colour for titles (ie: "The Secret Alchemist Order")
+	int	menucolor;		// Colour for menus
+	int placecolor;		// Colour for places
 	int hotkeycolor;	// textcolor2
+	int eventcolor;		// Events
 
 	// String colours
 	char	textcol1[3];

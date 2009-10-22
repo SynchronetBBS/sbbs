@@ -46,25 +46,35 @@ enum colors {
 	mkstring_tmp_str; \
 })
 
-#define upcasestr(str) ({ \
-	char *upcasestr_tmp_str = (char *)alloca(strlen(str)+1); \
+#define supcasestr(dest, str) ({ \
 	char *upcasestr_tmp_ptr; \
 \
-	strcpy(upcasestr_tmp_str, str); \
-	for(upcasestr_tmp_ptr=upcasestr_tmp_str; *upcasestr_tmp_ptr; upcasestr_tmp_ptr++) \
+	strcpy(dest, str); \
+	for(upcasestr_tmp_ptr=dest; *upcasestr_tmp_ptr; upcasestr_tmp_ptr++) \
 		*upcasestr_tmp_ptr=toupper(*upcasestr_tmp_ptr); \
-	upcasestr_tmp_str; \
+	dest; \
+})
+
+#define upcasestr(str) ({ \
+	char *upcasestr_tmp_str = (char *)alloca(strlen(str)+1); \
+	supcasestr(upcasestr_tmp_str,str); \
+})
+
+#define scommastr(str, val) (char *)({ \
+	char *scommastr_tmp_ptr; \
+\
+	if(sprintf(str, "%lld", (long long)(val))<0) \
+		CRASH; \
+	for(scommastr_tmp_ptr=strchr(str, 0)-3; scommastr_tmp_ptr > str; scommastr_tmp_ptr-=3) { \
+		memmove(scommastr_tmp_ptr+1, scommastr_tmp_ptr, strlen(scommastr_tmp_ptr)+1); \
+		*scommastr_tmp_ptr=','; \
+	} \
+	str; \
 })
 
 #define commastr(val) (char *)({ \
 	char *acommastr_tmp_str = (char *)alloca(64); \
-	char *acommastr_tmp_ptr; \
-\
-	sprintf(acommastr_tmp_str, "%lld", (long long)(val)); \
-	for(acommastr_tmp_ptr=strchr(acommastr_tmp_str, 0)-3; acommastr_tmp_ptr > acommastr_tmp_str; acommastr_tmp_ptr-=3) { \
-		memmove(acommastr_tmp_ptr+1, acommastr_tmp_ptr, strlen(acommastr_tmp_ptr)+1); \
-		*acommastr_tmp_ptr=','; \
-	} \
+	scommastr(acommastr_tmp_str, val); \
 	acommastr_tmp_str; \
 })
 
@@ -91,6 +101,7 @@ enum colors {
 #define HEADER(...)	dl(config.headercolor, __VA_ARGS__, NULL)		// MAGENTA
 #define NOTICE(...)	dl(config.noticecolor, __VA_ARGS__, NULL)
 #define TITLE(...)	dl(config.titlecolor, __VA_ARGS__, NULL)
+#define EVENT(...)	dl(config.eventcolor, __VA_ARGS__, NULL)
 #define D(...)		d(..., NULL)
 #define DC(...)		d(..., D_DONE)
 #define DL(...)		d(..., NULL)
