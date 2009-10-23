@@ -38,7 +38,7 @@ Copyright 2007 Jakob Dangarden
 static const char *name="Shady Shops";
 static const char *expert_prompt="(B,A,G,O,S,D,R,?)";
 
-static void Meny(void)
+static void Meny(void *cbdata)
 {
 	const int offset = 25;
 
@@ -76,7 +76,7 @@ static bool Menu(bool * refresh)
 	// auto-travel
 	switch(player->auto_probe) {
 		case NoWhere:
-			Display_Menu(true, true, refresh, name, expert_prompt, Meny);
+			Display_Menu(true, true, refresh, name, expert_prompt, Meny, NULL);
 			cho=toupper(gchar());
 			break;
 		case UmanCave:
@@ -105,10 +105,7 @@ static bool Menu(bool * refresh)
 
 	switch(cho) {
 		case '?':
-			if(player->expert)
-				Display_Menu(true, false, refresh, name, expert_prompt, Meny);
-			else
-				Display_Menu(false, false, refresh, name, expert_prompt, Meny);
+			Display_Menu(player->expert, false, refresh, name, expert_prompt, Meny, NULL);
 			break;
 		case 'R':	// Return
 			return false;

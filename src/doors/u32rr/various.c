@@ -9,13 +9,13 @@
 
 #include "todo.h"
 
-void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const char *expert_prompt, void (*Meny)(void))
+void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const char *expert_prompt, void (*Meny)(void *), void *cbdata)
 {
 	if(terse) {
 		if(!player->expert) {
 			if(*refresh && player->auto_meny) {
 				*refresh=false;
-				Meny();
+				Meny(cbdata);
 			}
 			nl();
 			D(config.textcolor, name, " (", config.hotkeycolor, "?", config.textcolor, " for menu) :");
@@ -27,7 +27,7 @@ void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const
 	}
 	else {
 		if((!player->expert) || force) {
-			Meny();
+			Meny(cbdata);
 		}
 	}
 }

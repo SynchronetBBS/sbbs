@@ -76,7 +76,7 @@ static const char *Alchemist_Poison(const struct player *rec)
 	return "None";
 }
 
-static void Meny()
+static void Meny(void *cbdata)
 {
 	clr();
 	nl();
@@ -484,14 +484,11 @@ static bool Menu(bool * refresh)
 		onliner->location = ONLOC_Alchemist;
 		strcpy(onliner->doing, location_desc(onliner->location));
 	}
-	Display_Menu(true, true, refresh, name, expert_prompt, Meny);
+	Display_Menu(true, true, refresh, name, expert_prompt, Meny, NULL);
 
 	switch((ch=toupper(gchar()))) {
 		case '?':	// Display Menu
-			if(player->expert)
-				Display_Menu(true, false, refresh, name, expert_prompt, Meny);
-			else
-				Display_Menu(false, false, refresh, name, expert_prompt, Meny);
+			Display_Menu(player->expert, false, refresh, name, expert_prompt, Meny, NULL);
 			break;
 		case 'S':	// Status
 			clr();
