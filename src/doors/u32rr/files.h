@@ -341,10 +341,64 @@ extern struct player	*npcs;
 extern struct map_file onliner_map;
 extern struct onliner	*onliner;
 extern struct onliner	*onliners;
-extern struct map_file object_map;
-extern struct object	*objects;
 extern struct map_file king_map;
 extern struct king		*king;
+
+extern struct map_file abody_map;
+extern struct object	*abody;
+
+extern struct map_file armor_map;
+extern struct armor	*armor;
+
+extern struct map_file arms_map;
+extern struct object	*arms;
+
+extern struct map_file body_map;
+extern struct object	*body;
+
+extern struct map_file drink_map;
+extern struct object	*drink;
+
+extern struct map_file face_map;
+extern struct object	*face;
+
+extern struct map_file feets_map;
+extern struct object	*feets;
+
+extern struct map_file food_map;
+extern struct object	*food;
+
+extern struct map_file hands_map;
+extern struct object	*hands;
+
+extern struct map_file head_map;
+extern struct object	*head;
+
+extern struct map_file legs_map;
+extern struct object	*legs;
+
+extern struct map_file neck_map;
+extern struct object	*neck;
+
+extern struct map_file rings_map;
+extern struct object	*rings;
+
+extern struct map_file shields_map;
+extern struct object	*shields;
+
+extern struct map_file waist_map;
+extern struct object	*waist;
+
+extern struct map_file weapons_map;
+extern struct object	*weapons;
+
+extern struct map_file weapon_map;
+extern struct weapon	*weapon;
+
+extern struct map_file monster_map;
+extern struct monster	*monster;
+
+
 
 void open_files(void);
 void map_file(char *name, struct map_file *map, size_t len);
