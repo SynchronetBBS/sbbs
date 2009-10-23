@@ -130,6 +130,7 @@ int CIOLIB_main(int argc, char **argv)
 	strcpy(player->name1, "Deuce");
 	strcpy(player->name2, "Deuce");
 	player->allowed=true;
+	player->deleted=false;
 	//player->hps=200;
 	//player->gold=50000;
 	player->class=Alchemist;
