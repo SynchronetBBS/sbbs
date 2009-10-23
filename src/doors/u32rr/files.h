@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include <time.h>
+#include <unistd.h>
 
 #define MAX_POISON	21
 
@@ -144,8 +145,9 @@ enum onlinetype {
 };
 
 #define MAXNOD		5
-
+#define MAX_ONLINERS	1000
 struct onliner {
+	bool			online;
 	char			name[31];		// Player Alias
 	char			realname[31];	// BBS Name
 	char			node[4];		// Node as a three character string (zero padded)
@@ -188,7 +190,7 @@ enum objtype {
 	Food,
 	Drink,
 	Weapon,
-	Abody
+	ABody
 };
 
 enum cures {
@@ -230,6 +232,18 @@ struct object {
 	bool			good;					// does character need to be good to use item?
 	bool			evil;					// does character need to be evil to use item?
 	bool			restr[MAXCLASSES];
+};
+
+struct armor {
+	char			name[31];
+	long			val;
+	long			pow;
+};
+
+struct weapon {
+	char			name[31];
+	long			value;
+	long			pow;
 };
 
 enum aitype {
@@ -280,15 +294,60 @@ struct king {
 	bool			shop_gigolos;
 };
 
+#define MAXMSPELLS	6
+struct monster {
+	char	name[31];	// Name of creature
+	long	weapnr;		// Weapon (from weapon data file) used
+	long	armnr;		// Armour (from data file) used
+	bool	grabweap;	// Can weapon be taken
+	bool	grabarm;	// Car armour be taken
+	char	phrase[71];	// Intro phrase from monster
+	int	magicres;	// Magic resistance
+	int	strength;
+	int	defence;
+	bool	wuser;		// Weapon User
+	bool	auser;		// Armour User
+	long	hps;
+	char	weapon[41];	// Name of weapon
+	char	armor[41];	// Name of armour
+	bool	disease;	// Infected by a disease?
+	long	weappow;	// Weapon Power
+	long	armpow;		// Armour power
+	int	iq;
+	uint8_t	evil;		// Evilne4ss (0-100%)
+	uint8_t	magiclevel;	// The higher this is, the better the magic is
+	int	mana;		// Manna remaining
+	int	maxmana;
+	bool	spell[MAXMSPELLS];	// Monster Spells
+
+	long	punch;		// Temporary battle var(!)
+	bool	poisoned;	// Temporary battle var(!)
+	int	target;		// Temp. battle var
+};
+
+struct map_file {
+	int		fd;
+	off_t	len;
+	void	*data;
+};
+
+extern struct map_file poison_map;
 extern struct poison	*poison;
-extern struct onliner	*onliners;
-extern struct onliner	*onliner;
-extern struct player	*players;
+extern struct map_file player_map;
 extern struct player	*player;
+extern struct player	*players;
+extern struct map_file npc_map;
 extern struct player	*npcs;
+extern struct map_file onliner_map;
+extern struct onliner	*onliner;
+extern struct onliner	*onliners;
+extern struct map_file object_map;
 extern struct object	*objects;
+extern struct map_file king_map;
 extern struct king		*king;
 
 void open_files(void);
+void map_file(char *name, struct map_file *map, size_t len);
+void unmap_file(struct map_file *map);
 
 #endif

@@ -150,6 +150,49 @@ void Add_Object(
 	write(fd, &obj, sizeof(obj));
 }
 
+void create_king_file(void)
+{
+	int	fd;
+	struct	king king;
+
+	fd=open("king.dat", O_WRONLY|O_TRUNC|O_CREAT, 0666);
+	memset(&king, 0, sizeof(king));
+	strcpy(king.name, "Nobody");
+	king.ai=AI_Computer;
+	king.sexy=Male;
+	king.daysinpower=0;
+	king.tax=3;
+	king.taxalignment=AlignAll;
+	strcpy(king.moatid, "crocodile");
+	king.shop_weapon=true;
+	king.shop_armor=true;
+	king.shop_magic=true;
+	king.shop_alabat=true;
+	king.shop_plmarket=true;
+	king.shop_healing=true;
+	king.shop_drugs=true;
+	king.shop_steroids=true;
+	king.shop_orbs=true;
+	king.shop_evilmagic=true;
+	king.shop_bobs=true;
+	king.shop_gigolos=true;
+	write(fd, &king, sizeof(king));
+	close(fd);
+}
+
+void create_onliner_file(void)
+{
+	int	fd;
+	struct	onliner ol;
+	int	i;
+
+	fd=open("onliner.dat", O_WRONLY|O_TRUNC|O_CREAT, 0666);
+	memset(&ol, 0, sizeof(ol));
+	for(i=0; i<MAX_ONLINERS; i++)
+		write(fd, &ol, sizeof(ol));
+	close(fd);
+}
+
 void create_npc_file(void)
 {
 	int	fd;
@@ -351,4 +394,6 @@ int main(int argc, char **argv)
 	create_poison_file();
 	create_player_file();
 	create_npc_file();
+	create_king_file();
+	create_onliner_file();
 }
