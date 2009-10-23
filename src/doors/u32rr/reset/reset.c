@@ -391,6 +391,14 @@ int main(int argc, char **argv)
 	Reset_Monsters();
 	close(fd);
 
+	fd=open("weapons.dat", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	Reset_Weapons();
+	close(fd);
+
+	fd=open("weapon.dat", O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	Reset_Weapon();
+	close(fd);
+
 	create_poison_file();
 	create_player_file();
 	create_npc_file();
