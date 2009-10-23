@@ -38,7 +38,7 @@ static void Note_It(const char *spook)
 {
 	char	*str;
 
-	if(asprintf(&str, " %s%s%s bought a %s%s%s.", uplc, player->name2, config.textcol1, uitemc, spook, config.textcol1)<0)
+	if(asprintf(&str, " %s%s%s bought a %s%s%s.", config.plycolor, player->name2, config.textcol1, uitemc, spook, config.textcol1)<0)
 		CRASH;
 	newsy(true, "Armor", str, NULL);
 	free(str);

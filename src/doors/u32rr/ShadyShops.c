@@ -24,6 +24,9 @@ Copyright 2007 Jakob Dangarden
 #include <ctype.h>
 #include <string.h>
 
+#include "Config.h"
+#include "IO.h"
+
 #include "macros.h"
 #include "files.h"
 #include "various.h"
@@ -39,21 +42,21 @@ static void Meny(void)
 {
 	const int offset = 25;
 
-	newscreen();
-	pbreak();
+	clr();
+	nl();
 	HEADER("-*- Shady Shops -*-");
-	pbreak();
+	nl();
 	TEXT("You stumble in to the dark areas of the town. "
 			"It is here where you can get what you want, "
 			"without any questions being asked. Trouble "
 			"is never far away in these neighbourhood.");
-	pbreak();
+	nl();
 
 	menu2(ljust("(D)rug Palace", offset));
 	menu("(S)teroid Shop");
 
 	menu2(ljust("(O)rbs Health Club", offset));
-	menu(Asprintf("(G) %s%s%s Magic Services", uplc, config.groggo_name, config.textcol1));
+	menu(Asprintf("(G) %s%s%s Magic Services", config.plycolor, config.groggo_name, config.textcol1));
 
 	menu2(ljust("(B)eer Hut", offset));
 	menu("(A)lchemists Heaven");
@@ -88,13 +91,13 @@ static bool Menu(bool * refresh)
 
 	// Filter out disabled options
 	if(cho=='D' && (!config.allow_drugs)) {
-		pbreak();
+		nl();
 		BAD("Drugs are banned in this game.");
 		upause();
 		cho=' ';
 	}
 	else if(cho=='S' && (!config.allow_steroids)) {
-		pbreak();
+		nl();
 		BAD("Steroids are banned in this game.");
 		upause();
 		cho=' ';
@@ -112,21 +115,21 @@ static bool Menu(bool * refresh)
 			break;
 		case 'O':	// Orbs drink cener
 			if((!king->shop_orbs) && (!player->king)) {
-				pbreak();
-				dl(config.badcolor, "Orbs Health Club is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!", NULL);
+				nl();
+				DL(config.badcolor, "Orbs Health Club is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!");
 			}
 			else {
-				pbreak();
-				pbreak();
+				nl();
+				nl();
 				TEXT("You decide to enter this somewhat dubious place.");
 				Orb_Center();
 			}
 			break;
 		case 'A':	// alchemist secret order
 			if(player->class != Alchemist) {
-				pbreak();
-				dl(MAGENTA, "The guards outside the building humiliate you and block the entrance.", NULL);
-				dl(MAGENTA, "It seems as only Alchemists are allowed.", NULL);
+				nl();
+				DL(magenta, "The guards outside the building humiliate you and block the entrance.");
+				DL(magenta, "It seems as only Alchemists are allowed.");
 			}
 			else {
 				Alchemisty();
@@ -134,19 +137,19 @@ static bool Menu(bool * refresh)
 			break;
 		case 'B':	// Bobs Beer Hut
 			if((!king->shop_bobs) && (!player->king)) {
-				pbreak();
+				nl();
 				BAD(config.bobsplace, " is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!)");
 			}
 			else {
-				pbreak();
-				pbreak();
-				dlc(config.textcolor, "You enter ", config.placecolor, config.bobsplace, D_DONE);
+				nl();
+				nl();
+				DL(config.textcolor, "You enter ", config.placecolor, config.bobsplace);
 				Bobs_Inn();
 			}
 			break;
 		case 'G':
 			if((!king->shop_evilmagic) && (!player->king)) {
-				pbreak();
+				nl();
 				BAD(config.groggo_name, "s place is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!");
 			}
 			else {
@@ -155,7 +158,7 @@ static bool Menu(bool * refresh)
 			break;
 		case 'D':	// Drugs
 			if((!king->shop_drugs) && (!player->king)) {
-				pbreak();
+				nl();
 				BAD("The Drug Palace is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!)");
 			}
 			else {
@@ -164,7 +167,7 @@ static bool Menu(bool * refresh)
 			break;
 		case 'S':	// Steroids
 			if((!king->shop_steroids) && (!player->king)) {
-				pbreak();
+				nl();
 				BAD("The Steroid Shop is closed! (The ", upcasestr(kingstring(king->sexy)), "s order!)");
 			}
 			else {
@@ -182,5 +185,5 @@ void Shady_Shops(void)
 	while(Menu(&refresh))
 		;
 
-	pbreak();
+	nl();
 }

@@ -5,7 +5,7 @@
 #include <inttypes.h>
 #include <time.h>
 
-#define MAX_POISON	22
+#define MAX_POISON	21
 
 struct poison {
 	uint32_t	cost;

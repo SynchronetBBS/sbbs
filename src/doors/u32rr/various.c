@@ -2,8 +2,11 @@
  * Various functions
  */
 
+#include "IO.h"
+#include "Config.h"
 #include "files.h"
 #include "macros.h"
+
 #include "todo.h"
 
 void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const char *expert_prompt, void (*Meny)(void))
@@ -14,11 +17,11 @@ void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const
 				*refresh=false;
 				Meny();
 			}
-			pbreak();
-			dc(config.textcolor, name, config.textcolor, " (", config.hotkeycolor, "?", config.textcolor, " for menu) :", D_DONE);
+			nl();
+			D(config.textcolor, name, " (", config.hotkeycolor, "?", config.textcolor, " for menu) :");
 		}
 		else {
-			pbreak();
+			nl();
 			TEXT(name, " ", expert_prompt, " :");
 		}
 	}

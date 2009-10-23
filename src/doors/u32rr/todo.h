@@ -40,63 +40,6 @@ void newsy(bool, ...);
 #define pbreak()	TEXT("")
 
 /*
- * Displays a partial line (no trailing linefeed)
- */
-void d(int color, const char *text, ...);
-
-/*
- * Displays a partial line (no trailing linefeed)
- * Each string has a colour
- */
-void dc(int color, const char *text, ...);
-
-/*
- * Displays a line (with trailing linefeed)
- */
-void dl(int color, const char *text, ...);
-
-/*
- * Displays a line (with trailing linefeed)
- * Each string has a colour
- */
-void dlc(int color, const char *text, ...);
-
-/*
- * Returns the next char pressed
- */
-char gchar(void);
-
-/*
- * Does the pause thing
- */
-void upause(void);
-
-/*
- * Exits game normally
- */
-void halt(void);
-
-/*
- * Starts a new screen (clear screen)
- */
-void newscreen(void);
-
-/*
- * Displays a meny option "(B)uy Poison" for example with trailing newline
- */
-void menu(const char *);
-
-/*
- * Displays a meny option "(B)uy Poison" for example without trailing newline
- */
-void menu2(const char *);
-
-/*
- * Y/N prompt
- */
-char confirm(const char *player, char dflt);
-
-/*
  * Random integer less than parameter
  */
 int rand_num(int limit);
@@ -117,8 +60,6 @@ void objekt_affect(int, uint16_t, enum objtype, struct player *player, bool loud
 void user_save(struct player *player);
 
 void decplayermoney(struct player *player, int amount);
-
-int get_number(int min, int max);
 
 extern char *uplc;	// Colour string for player name in messages
 extern char *uitemc;	// Colour string for items in messages
@@ -162,41 +103,6 @@ struct player {
 #define MAX_PLAYERS	1024
 #define MAX_NPCS	1024
 
-struct config {
-	// Integer colours
-	int	textcolor;		// Normal text colour for display (same as textcol1)
-	int	highlightcolor;	// Colour of highlights in textcolor
-	int	textcolor2;		// Text colour "2" (normal for prompt chars)
-	int	plycolor;		// Colour for player names
-	int	talkcolor;		// Colour for phrases
-	int	badcolor;		// Colour for bad stuff (You died, etc)
-	int	goodcolor;		// Colour for good stuff (You won!, etc)
-	int	headercolor;	// Colour for menu headers
-	int	noticecolor;	// Colour for notices (slightly good/bad)
-	int	monstercolor;	// Colour for monster names
-	int	objectcolor;	// Colour for object names
-	int	titlecolor;		// Colour for titles (ie: "The Secret Alchemist Order")
-	int	menucolor;		// Colour for menus
-	int placecolor;		// Colour for places
-	int hotkeycolor;	// textcolor2
-	int eventcolor;		// Events
-
-	// String colours
-	char	textcol1[3];
-	char	textcol2[3];
-
-	// Strings
-	char	moneytype[23];	// Name of money (ie: Gold)
-	char	moneytype2[23];
-	char	moneytype3[23];	// Unknown... "can get it for 3,000 moneytype moneytype3" ("coins" maybe?)
-	char	reese_name[23];	// Name of "Reese" from Armor shoppe
-	char	groggo_name[23];// Name of "Groggo" from shady shoppe
-	char	bobsplace[23];	// Name of Bobs Place
-
-	// Allow/disallow
-	bool	allow_drugs;
-	bool	allow_steroids;
-};
 
 #ifdef getchar
 #undef getchar
