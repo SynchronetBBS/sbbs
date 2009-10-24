@@ -616,7 +616,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 		if (std_facilities)
 			syslog(level|LOG_AUTH,"%s",str);
 		else
-			syslog(level,"     %s",str);
+			syslog(level,"term %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -629,7 +629,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
 	
