@@ -49,13 +49,6 @@ void newsy(bool, ...);
  */
 int rand_num(int limit);
 
-/*
- * Display status for specified player
- */
-void status(struct player *);
-
-void reduce_player_resurrections(struct player *, bool);
-
 void objekt_affect(int, uint16_t, enum objtype, struct player *player, bool loud);
 
 /*
@@ -63,8 +56,6 @@ void objekt_affect(int, uint16_t, enum objtype, struct player *player, bool loud
  * Force write, unlock area(?)
  */
 void user_save(struct player *player);
-
-void decplayermoney(struct player *player, int amount);
 
 extern char *uplc;	// Colour string for player name in messages
 extern char *uitemc;	// Colour string for items in messages

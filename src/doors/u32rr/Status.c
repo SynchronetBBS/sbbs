@@ -312,11 +312,11 @@ static bool HealingMenu(struct player *pl)
 
 	switch(ch) {
 		case 'Q':
-			quick_healing(pl);
+			Quick_Healing(pl);
 			upause();
 			break;
 		case 'H':
-			healing(pl);
+			Healing(pl);
 			upause();
 			break;
 		case 'D':

@@ -49,34 +49,14 @@ int rand_num(int limit)
 	return(limit-1);
 }
 
-void reduce_player_resurrections(struct player *pl, bool doit)
-{
-	DL("REDUCE PLAYER RESURRECTIONS");
-}
-
 void objekt_affect(int i, uint16_t index, enum objtype type, struct player *pl, bool loud)
 {
 	DL("OBJEKT AFFECT");
 }
 
-void decplayermoney(struct player *pl, int amount)
-{
-	pl->gold -= amount;
-}
-
 void user_save(struct player *pl)
 {
 	DL(lred, "SAVING USER");
-}
-
-void quick_healing(struct player *pl)
-{
-	DL(lred,"QUICK HEALING");
-}
-
-void healing(struct player *pl)
-{
-	DL(lred,"HEALING");
 }
 
 void inventory_display(struct player *pl)
@@ -94,9 +74,9 @@ void Display_Member(struct player *pl, bool doit)
 	DL(lred,"DISPLAY MEMBER");
 }
 
-void Display_Members(const char *team, bool doit)
+void Display_Members(const char *team, bool topbar)
 {
-	DL(lred,"DISPLAY MEMBERS");
+	DL(lred, "DISPLAY MEMBERS");
 }
 
 void inventory_sort(struct player *pl)

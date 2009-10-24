@@ -31,6 +31,7 @@ C translation Copyright 2009 Stephen Hurd
 
 #include "IO.h"
 #include "Config.h"
+#include "Status.h"
 
 #include "macros.h"
 #include "files.h"
@@ -55,7 +56,7 @@ static void Failed_Quest(int level)
 	BAD("Oh No! You have failed the test! You may try again tomorrow...");
 	nl();
 	player->allowed=false;
-	reduce_player_resurrections(player, true);
+	Reduce_Player_Resurrections(player, true);
 	upause();
 	halt();
 }

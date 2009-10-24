@@ -7,5 +7,9 @@ void Display_Menu(bool force, bool terse, bool *refresh, const char *name, const
 long level_raise(int level, long exp);
 struct object *items(enum objtype type);
 const char *immunity(int val);
+void Reduce_Player_Resurrections(struct player *pl, bool typeinfo);
+void decplayermoney(struct player *pl, long coins);
+void Quick_Healing(struct player *pl);
+void Healing(struct player *pl);
 
 #endif
