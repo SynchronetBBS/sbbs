@@ -160,6 +160,7 @@ void create_level_file(void)
 	fd=open("level.dat", O_WRONLY|O_TRUNC|O_CREAT, 0666);
 	memset(&lvl, 0, sizeof(lvl));
 
+	add_level( 0 );
 	add_level( 900 );
 	add_level( 5000 );
 	add_level( 10000 );
