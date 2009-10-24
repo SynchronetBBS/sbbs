@@ -398,7 +398,7 @@ static void Shakedown(void)
 				post(MailSend, player->name2, player->ai, false, mailrequest_nothing(),
 						"",
 						Asprintf("%sLast breath%s", umailheadc, config.textcol1),
-						mkstring(11,'_'),
+						mkstring(11,196),
 						Asprintf("You were killed by a band of thieves outside %s.", config.bobsplace),
 						Asprintf("They took all your %s.", config.moneytype),
 						"You ended up with a dagger in the back...",
@@ -1154,7 +1154,7 @@ void Bobs_Inn(void)
        end;
    'S':begin
        clearscreen;
-       status(player);
+       Status(player);
        end;
    'D':begin
         crlf; crlf;

@@ -41,7 +41,7 @@ C translation Copyright 2009 Stephen Hurd
 
 static const char *name="Alchemist Store";
 static const char *expert_prompt="(B,S,T,R,?)";
-static void Failed_Quest(uint8_t level)
+static void Failed_Quest(int level)
 {
 	char *str;
 
@@ -63,7 +63,7 @@ static void Failed_Quest(uint8_t level)
 /*
  * Returns a string with info on how strong the current poison is
  */
-static const char *Alchemist_Poison(const struct player *rec)
+const char *Alchemist_Poison(const struct player *rec)
 {
 	if(rec->poison  > 80)
 		return "Deadly";
@@ -340,7 +340,7 @@ static bool Chamber_Menu(void)
 			break;
 		case 'S':
 			clr();
-			status(player);
+			Status(player);
 			break;
 		case 'C':
 			Create_Poison();
@@ -492,7 +492,7 @@ static bool Menu(bool * refresh)
 			break;
 		case 'S':	// Status
 			clr();
-			status(player);
+			Status(player);
 			break;
 		case 'T':	// The Secret Order
 			nl();

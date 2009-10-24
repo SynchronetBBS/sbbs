@@ -24,6 +24,9 @@ void DefaultConfig()
 	config.eventcolor=lgreen;	// Events
 	config.moneycolor=yellow;
 	config.bracketcolor=green;	// Use by menu()
+	config.teamcolor=cyan;
+	config.bashcolor=cyan;
+	config.itemcolor=lcyan;
 
 	// String colours
 	strcpy(config.textcol1, config.textcolor);
@@ -36,8 +39,13 @@ void DefaultConfig()
 	strcpy(config.reese_name, "Reese");
 	strcpy(config.groggo_name, "Groggo");
 	strcpy(config.bobsplace, "Bob's Place");
+	strcpy(config.returnenter, "Return");
 
 	// Allow/disallow
 	config.allow_drugs=true;
 	config.allow_steroids=true;
+	memset(config.allowitem, 0xff, sizeof(config.allowitem));
+
+	// Gameplay
+	config.classic=false;
 }

@@ -2,44 +2,18 @@
 #define _FILES_H_
 
 #include <stdbool.h>
-#include <inttypes.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "Races.h"
+#include "Classes.h"
 
 #define MAX_POISON	21
 
 struct poison {
-	uint32_t	cost;
-	uint16_t	strength;
+	int			cost;
+	int			strength;
 	char		name[71];
-};
-
-enum race {
-	Human,
-	Hobbit,
-	Elf,
-	HalfElf,
-	Dwarf,
-	Troll,
-	Orc,
-	Gnome,
-	Gnoll,
-	Mutant
-};
-
-enum class {
-	Alchemist,
-	Assassin,
-	Barbarian,
-	Bard,
-	Cleric,
-	Jester,
-	Magician,
-	Paladin,
-	Ranger,
-	Sage,
-	Warrior,
-	MAXCLASSES
 };
 
 enum sex {
@@ -146,6 +120,13 @@ enum onlinetype {
 
 #define MAXNOD		5
 #define MAX_ONLINERS	1000
+
+enum ear {
+	ear_all,
+	ear_personal,
+	ear_quiet
+};
+
 struct onliner {
 	bool			online;
 	char			name[31];		// Player Alias
@@ -166,7 +147,7 @@ struct onliner {
 	char			chatsend[MAXNOD][91];
 	char			info[MAXNOD][91];
 	char			infosend[MAXNOD][31];
-	uint8_t			ear;			// how much info does the player want to get when online, see cms.pas and ear constants
+	enum ear		ear;			// how much info does the player want to get when online, see cms.pas and ear constants
 	char			bname[31];		// online opponents name
 	char			comfile[91];	// name of file in which online comm will take place
 	char			com;			// used in player<=>player online routines
@@ -190,7 +171,8 @@ enum objtype {
 	Food,
 	Drink,
 	Weapon,
-	ABody
+	ABody,
+	TOTAL_OBJTYPES
 };
 
 enum cures {
@@ -264,15 +246,15 @@ struct king {
 	enum aitype		ai;
 	enum sex		sexy;
 	long			daysinpower;
-	uint8_t			tax;
+	char			tax;			// Percentage
 	enum alignment	taxalignment;
 	long			treasury;
-	uint8_t			prisonsleft;	// # of people king can imprison today. new every day
-	uint8_t			executeleft;	// # of death sentences left today. new every day
-	uint16_t		questsleft;		// # of new quests the king can issue today
-	uint16_t		marryactions;	// # of marriages the king can interfer in today
-	uint8_t			wolffeed;		// # kids have can be tossed to the wolves/day, set to config.allowfeedingthewolves at maint
-	uint8_t			royaladoptions;	// # kids can be placed in the Royal Orphanage/day, set to config.allowRoyalAdoption at maint
+	int				prisonsleft;	// # of people king can imprison today. new every day
+	int				executeleft;	// # of death sentences left today. new every day
+	int				questsleft;		// # of new quests the king can issue today
+	int				marryactions;	// # of marriages the king can interfer in today
+	int				wolffeed;		// # kids have can be tossed to the wolves/day, set to config.allowfeedingthewolves at maint
+	int				royaladoptions;	// # kids can be placed in the Royal Orphanage/day, set to config.allowRoyalAdoption at maint
 	char			moatid[16];		// unique moat creature ID
 	int				moatnr;			// how many crocodiles (or whatever) in the moat?
 	char			guard[KINGGUARDS][31];	// king body guards, name
@@ -302,9 +284,9 @@ struct monster {
 	bool	grabweap;	// Can weapon be taken
 	bool	grabarm;	// Car armour be taken
 	char	phrase[71];	// Intro phrase from monster
-	int	magicres;	// Magic resistance
-	int	strength;
-	int	defence;
+	int		magicres;	// Magic resistance
+	int		strength;
+	int		defence;
 	bool	wuser;		// Weapon User
 	bool	auser;		// Armour User
 	long	hps;
@@ -314,15 +296,19 @@ struct monster {
 	long	weappow;	// Weapon Power
 	long	armpow;		// Armour power
 	int	iq;
-	uint8_t	evil;		// Evilne4ss (0-100%)
-	uint8_t	magiclevel;	// The higher this is, the better the magic is
-	int	mana;		// Manna remaining
-	int	maxmana;
+	int		evil;		// Evilne4ss (0-100%)
+	int		magiclevel;	// The higher this is, the better the magic is
+	int		mana;		// Manna remaining
+	int		maxmana;
 	bool	spell[MAXMSPELLS];	// Monster Spells
 
 	long	punch;		// Temporary battle var(!)
 	bool	poisoned;	// Temporary battle var(!)
 	int	target;		// Temp. battle var
+};
+
+struct level {
+	int		xpneed;
 };
 
 struct map_file {
@@ -398,6 +384,8 @@ extern struct weapon	*weapon;
 extern struct map_file monster_map;
 extern struct monster	*monster;
 
+extern struct map_file level_map;
+extern struct level	*levels;
 
 
 void open_files(void);

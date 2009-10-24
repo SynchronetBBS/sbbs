@@ -1,3 +1,8 @@
+#ifndef _DOORIO_H_
+#define _DOORIO_H_
+
+#include <stdbool.h>
+
 /*
  * Sets the current DOS text attribute to attr
  */
@@ -19,7 +24,20 @@ void door_nl(void);
 int door_readch(void);
 
 /*
- * Clears the screen (either to black OR to corrent attr... doesn't matter
+ * Clears the screen (either to black OR to corrent attr... doesn't matter)
+ * and moves to position 1;1
  */
 void door_clearscreen(void);
 
+struct dropfile_info {
+	bool	ansi;
+};
+
+struct door_info {
+	int		time_left;	// Minutes
+};
+
+extern struct dropfile_info dropfile;
+extern struct door_info door;
+
+#endif

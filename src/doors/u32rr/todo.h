@@ -1,9 +1,14 @@
+#ifndef _TODO_H_
+#define _TODO_H_
+
 /*
  * TODO functions and constants used in current code
  */
 #include <stdbool.h>
 #include <inttypes.h>
+#include "Bash.h"
 #include "structs.h"
+#include "files.h"
 
 /*
  * Sets input hotkeys
@@ -74,6 +79,7 @@ enum places {
 	UmanCave
 };
 
+#define MAXITEM			15	// Most items you can carry at a time...
 struct player {
 	char		name1[71];	// BBS Name
 	char		name2[71];	// Game name (used in news messages)
@@ -87,17 +93,84 @@ struct player {
 	int			gold;
 	bool		deleted;
 	enum places	auto_probe;	// When AutoProbe is set to a direction the player auto travels there
-	uint16_t	head;
-	uint16_t	body;
-	uint16_t	arms;
-	uint16_t	hands;
-	uint16_t	legs;
-	uint16_t	feet;
-	uint16_t	face;
-	uint16_t	abody;
-	uint16_t	shield;
+	int			head;
+	int			body;
+	int			arms;
+	int			hands;
+	int			legs;
+	int			feet;
+	int			face;
+	int			abody;
+	int			shield;
+	int			lhand;
+	int			neck;
+	int			neck2;
+	int			rfinger;
+	int			lfinger;
+	int			waist;
 	bool		king;
 	enum class	class;
+	enum sex	sex;
+	unsigned long	exp;
+	enum race	race;
+	int			weapon;
+	int			armor;
+	int			trains;
+	int			age;
+	int			bankgold;
+	int			healing;
+	int			maxhps;
+	int			strength;
+	int			defence;
+	char		team[26];
+	int			wpow;
+	int			apow;
+	int			mana;
+	int			maxmana;
+	int			pickpocketattempts;
+	int			rhand;
+	bool		blind;
+	bool		plague;
+	bool		smallpox;
+	bool		measles;
+	bool		leprosy;
+	int			skill[BASH_COUNT];
+	char		beendefeated[71];
+	char		begging[71];
+	char		battlecry[71];
+	char		spareopp[71];
+	char		dontspareopp[71];
+	char		attacked[71];
+	char		defeatedopp[71];
+	bool		autohate;
+	bool		autoheal;
+	enum ear	ear;
+	char		desc[4][71];
+	bool		automeny;
+	int			item[MAXITEM];
+	enum objtype	itemtype[MAXITEM];
+	int			wisdom;
+	int			dark;
+	int			charisma;
+	int			fights;
+	int			agility;
+	int			tfights;
+	int			dex;
+	int			chiv;
+	int			stamina;
+	int			disres;
+	int			addict;
+	int			mental;
+	int			height;
+	int			hair;
+	int			weight;
+	int			eyes;
+	int			skin;
+	int			m_kills;
+	int			m_defeats;
+	int			p_kills;
+	int			p_defeats;
+	int			resurrections;
 };
 
 #define MAX_PLAYERS	1024
@@ -114,3 +187,5 @@ extern struct config config;
 #define global_talkcol BRIGHT_MAGENTA
 extern bool global_begged;
 extern bool global_nobeg;
+
+#endif

@@ -84,6 +84,9 @@ struct weapon	*weapon;
 struct map_file monster_map;
 struct monster	*monster;
 
+struct map_file level_map;
+struct level	*levels;
+
 static size_t align(size_t val)
 {
 	int		pagesize=getpagesize();
@@ -188,4 +191,7 @@ void open_files(void)
 
 	map_file("weapons.dat", &weapons_map, SIZE_T_MAX);
 	weapons=weapons_map.data;
+
+	map_file("level.dat", &level_map, SIZE_T_MAX);
+	levels=level_map.data;
 }

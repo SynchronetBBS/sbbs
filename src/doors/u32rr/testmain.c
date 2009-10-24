@@ -4,6 +4,7 @@
 
 #include <ciolib.h>
 
+#include "doorIO.h"
 #include "IO.h"
 #include "Config.h"
 #include "macros.h"
@@ -12,6 +13,16 @@
 
 #include "todo.h"
 
+struct dropfile_info dropfile;
+struct door_info door;
+
+void get_string(char *str, size_t size)
+{
+	DL(lred, "NO GETSTRING!");
+	strncpy(str, "NO GETSTRING!", size);
+	str[size-1]=0;
+}
+
 const char *location_desc(enum onloc loc)
 {
 	return("NO LOCATION DESCRIPTION");
@@ -19,7 +30,7 @@ const char *location_desc(enum onloc loc)
 
 void player_vs_monsters(enum pl_vs_type type, struct monster **mosnters, struct player **players)
 {
-	puts("A battle occurs!");
+	DL("A battle occurs!");
 }
 
 void newsy(bool trailing_line, ...)
@@ -38,19 +49,14 @@ int rand_num(int limit)
 	return(limit-1);
 }
 
-void status(struct player *pl)
-{
-	puts("DISPLAY USER STATUS");
-}
-
 void reduce_player_resurrections(struct player *pl, bool doit)
 {
-	puts("REDUCE PLAYER RESURRECTIONS");
+	DL("REDUCE PLAYER RESURRECTIONS");
 }
 
 void objekt_affect(int i, uint16_t index, enum objtype type, struct player *pl, bool loud)
 {
-	puts("OBJEKT AFFECT");
+	DL("OBJEKT AFFECT");
 }
 
 void decplayermoney(struct player *pl, int amount)
@@ -60,7 +66,62 @@ void decplayermoney(struct player *pl, int amount)
 
 void user_save(struct player *pl)
 {
-	puts("SAVING USER");
+	DL(lred, "SAVING USER");
+}
+
+void quick_healing(struct player *pl)
+{
+	DL(lred,"QUICK HEALING");
+}
+
+void healing(struct player *pl)
+{
+	DL(lred,"HEALING");
+}
+
+void inventory_display(struct player *pl)
+{
+	DL(lred,"INVENTORY DISPLAY");
+}
+
+void spell_list(struct player *pl)
+{
+	DL(lred, "SPELL LIST");
+}
+
+void Display_Member(struct player *pl, bool doit)
+{
+	DL(lred,"DISPLAY MEMBER");
+}
+
+void Display_Members(const char *team, bool doit)
+{
+	DL(lred,"DISPLAY MEMBERS");
+}
+
+void inventory_sort(struct player *pl)
+{
+	DL(lred,"INVENTORY SORT");
+}
+
+void item_select(struct player *pl)
+{
+	DL(lred,"ITEM SELECT");
+}
+
+void use_item(int item)
+{
+	DL(lred,"USE ITEM");
+}
+
+void drop_item(struct player *pl)
+{
+	DL(lred,"DROP ITEM");
+}
+
+void Remove_Item(void)
+{
+	DL(lred,"REMOVE ITEM");
 }
 
 void door_textattr(int attr)
@@ -86,6 +147,7 @@ int door_readch(void)
 void door_clearscreen(void)
 {
 	clrscr();
+	gotoxy(1,1);
 }
 
 char *uplc="PLAYER_COLOUR";	// Colour string for player name in messages
@@ -137,4 +199,5 @@ int CIOLIB_main(int argc, char **argv)
 	onliner=onliners;
 	DefaultConfig();
 	Shady_Shops();
+	return(0);
 }
