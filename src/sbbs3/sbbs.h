@@ -916,7 +916,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir, size_t buflen);
 
 	/* logfile.cpp */
-	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* text);
+	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text);
 
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text
 										,char* host, SOCKADDR_IN* addr);

@@ -152,7 +152,7 @@ static void thread_down()
 int lputs(int level, const char* str)
 {
 	if(level <= LOG_ERR)
-		errorlog(&scfg,str);
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
 
 	if(startup==NULL || startup->lputs==NULL || str==NULL || level > startup->log_level)
     	return(0);

@@ -125,7 +125,7 @@ static int lprintf(int level, const char *fmt, ...)
     va_end(argptr);
 
 	if(level <= LOG_ERR)
-		errorlog(&scfg,sbuf);
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);

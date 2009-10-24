@@ -110,7 +110,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return(TRUE);
 }
 
-extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* text)
+extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text)
 {
 	FILE*	fp;
 	char	buf[128];
@@ -119,7 +119,7 @@ extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* text)
 	sprintf(path,"%serror.log",cfg->logs_dir);
 	if((fp=fnopen(NULL,path,O_WRONLY|O_CREAT|O_APPEND))==NULL)
 		return -1; 
-	fprintf(fp,"%s\r\n%s\r\n\r\n",timestr(cfg,time(NULL),buf), text);
+	fprintf(fp,"%s %s\r\n%s\r\n\r\n", timestr(cfg,time(NULL),buf), host==NULL ? "":host, text);
 	fclose(fp);
 	return 0;
 }
