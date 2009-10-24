@@ -387,7 +387,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				}
 			}
 		}
-		/* if mods_dir is defined, search their next */
+		/* if mods_dir is defined, search there next */
 		if(path[0]==0 && p->cfg->mods_dir[0]!=0) {
 			SAFEPRINTF2(path,"%s%s",p->cfg->mods_dir,filename);
 			if(!fexistcase(path))
