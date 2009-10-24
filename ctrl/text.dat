@@ -409,7 +409,7 @@
 "_bh[cûb] yEnter your city, state: w"            346 EnterYourCityState
 "_bh[cûb] yEnter your zip (or postal) code: w"   347 EnterYourZipCode
 "_yhEnter a description of your computer: w"        348 EnterYourComputer
-"Are you calling from North America"                    349 CallingFromNorthAmericaQ
+"Are you connecting from North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
 "bUser #c%-4d      b: c%s\r\n"                      351 LiUserNumberName
 "bLogons Today    : c%-5u b(Max c%ub)\r\n"         352 LiLogonsToday
@@ -658,10 +658,10 @@
 "_whNode %2d: g%sng joined private chat.n\r\n"   541 NodeJoinedPrivateChat
 "\r\n_whNode %2d: g%sng left private chat.n\r\n" 542 NodeLeftPrivateChat
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
-"ghLast few callers:\r\nng"                         544 Unused544 /* Was LastFewCallers */
+"UNUSED544"                         			544 Unused544 /* Was LastFewCallers */
 "\r\nnhm%-2d nm%-6u wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
 	"nm%02u:%02u h%-8.8s nm%-3.3d"
-"\r\nghCallers Today:ng"                            546 CallersToday
+"\r\nghConnections Today:ng"                        546 CallersToday
 "_bhDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
 	"(cYbes, cNbo, or cQbuit) ? n"
 "UNKNOWN USER"                                          548 UNKNOWN_USER
@@ -876,7 +876,7 @@
 "Command Shell"                                         727 CommandShellHeading
 "Archive Type"                                          728 ArchiveTypeHeading
 "Validate message #%u '%s'"				729 ValidatePostQ
-"Waiting for call"					730 NodeStatusWaitingForCall
+"Waiting for connection"				730 NodeStatusWaitingForCall
 "At logon prompt"					731 NodeStatusLogon
 "New user applying for access"				732 NodeStatusNewUser
 "Offline"						733 NodeStatusOffline
