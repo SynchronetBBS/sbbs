@@ -92,8 +92,9 @@ typedef struct {
 	void*	event_cbdata;			/* Private data passed to event_lputs callback */
 
 	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int, const char*);			/* Log - put string					*/
+	int 	(*lputs)(void*, int , const char*);			/* Log - put string					*/
     int 	(*event_lputs)(void*, int, const char*);	/* Event log - put string			*/
+	void	(*errormsg)(void*, int level, const char* msg);
 	void	(*status)(void*, const char*);
     void	(*started)(void*);
 	void	(*recycle)(void*);

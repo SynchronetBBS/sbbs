@@ -151,8 +151,11 @@ static void thread_down()
 
 int lputs(int level, const char* str)
 {
-	if(level <= LOG_ERR)
+	if(level <= LOG_ERR) {
 		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, str);
+		if(startup!=NULL && startup->errormsg!=NULL)
+			startup->errormsg(startup->cbdata,level,str);
+	}
 
 	if(startup==NULL || startup->lputs==NULL || str==NULL || level > startup->log_level)
     	return(0);
@@ -182,13 +185,20 @@ int eprintf(int level, const char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
-        return(0);
-
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
+
+	if(level <= LOG_ERR) {
+		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, sbuf);
+		if(startup!=NULL && startup->errormsg!=NULL)
+			startup->errormsg(startup->cbdata,level,sbuf);
+	}
+
+    if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
+        return(0);
+
 	strip_ctrl(sbuf, sbuf);
     return(startup->event_lputs(startup->event_cbdata,level,sbuf));
 }
@@ -4199,7 +4209,7 @@ void DLLCALL bbs_terminate(void)
 
 static void cleanup(int code)
 {
-    lputs(LOG_INFO,"BBS System thread terminating");
+    lputs(LOG_INFO,"Terminal Server thread terminating");
 
 	if(telnet_socket!=INVALID_SOCKET) {
 		close_socket(telnet_socket);
@@ -4252,8 +4262,9 @@ static void cleanup(int code)
 	status("Down");
 	thread_down();
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"BBS System thread terminated (%u threads remain, %lu clients served)"
-			,thread_count, served);
+		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
+	if(thread_count)
+		lprintf(LOG_ERR,"!Terminal Server threads (%u) remain active after termination", thread_count);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4665,7 +4676,7 @@ NO_SSH:
 #endif
 
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
-		,"BBS System", telnet_socket, &scfg, text, NULL);
+		,"Terminal Server", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
 	if(sbbs->init()==false) {
 		lputs(LOG_CRIT,"!BBS initialization failed");
@@ -4791,7 +4802,7 @@ NO_SSH:
     if(startup->started!=NULL)
     	startup->started(startup->cbdata);
 
-	lprintf(LOG_INFO,"BBS System thread started for nodes %d through %d", first_node, last_node);
+	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
 
 	while(!terminate_server) {
 
