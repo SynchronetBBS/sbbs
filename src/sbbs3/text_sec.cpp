@@ -245,6 +245,7 @@ int sbbs_t::text_sec()
 					,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code,file[i]);
 			else
 				strcpy(str,file[i]);
+			fexistcase(str);
 			attr(LIGHTGRAY);
 			printfile(str,0);
 			sprintf(str,"%s read text file: %s"
