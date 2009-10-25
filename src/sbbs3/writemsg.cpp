@@ -166,7 +166,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
 bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode, int subnum
-	,const char *dest)
+	,const char *dest, char** editor)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
@@ -181,6 +181,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 	unsigned lines;
 
 	useron_level=useron.level;
+
+	if(editor!=NULL)
+		*editor=NULL;
 
 	if((buf=(char*)malloc(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN))
 		==NULL) {
@@ -415,6 +418,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 
 
 	else if(useron.xedit) {
+
+		if(editor!=NULL)
+			*editor=cfg.xedit[useron.xedit-1]->name;
 
 		editor_inf(useron.xedit,dest,title,mode,subnum);
 		if(cfg.xedit[useron.xedit-1]->type) {

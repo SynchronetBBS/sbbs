@@ -48,6 +48,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	char	str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
 			,buf[SDT_BLOCK_LEN];
 	char 	tmp[512];
+	char	pid[128];
+	char*	editor=NULL;
 	ushort	msgattr=0;
 	uint16_t xlat=XLAT_NONE;
 	ushort	nettype;
@@ -111,7 +113,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 
 	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
 	username(&cfg,usernumber,str2);
-	if(!writemsg(msgpath,top,title,mode,INVALID_SUB,str2)) {
+	if(!writemsg(msgpath,top,title,mode,INVALID_SUB,str2,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -304,6 +306,12 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
+
+	/* Generate FidoNet Program Identifier */
+	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+
+	if(editor!=NULL)
+		smb_hfield_str(&msg,SMB_EDITOR,editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

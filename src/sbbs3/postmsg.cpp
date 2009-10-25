@@ -37,7 +37,9 @@
 
 #include "sbbs.h"
 
-static char* program_id(char* pid)
+/****************************************************************************/
+/****************************************************************************/
+extern "C" char* DLLCALL msg_program_id(char* pid)
 {
 	char compiler[64];
 
@@ -65,6 +67,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	char	touser[64];
 	char	from[64];
 	char	pid[128];
+	char*	editor=NULL;
 	uint16_t xlat;
 	ushort	msgattr;
 	int 	i,j,x,file,storage;
@@ -181,7 +184,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		bputs(text[UsingRealName]);
 
 	msg_tmp_fname(useron.xedit, str, sizeof(str));
-	if(!writemsg(str,top,title,wm_mode,subnum,touser)
+	if(!writemsg(str,top,title,wm_mode,subnum,touser,&editor)
 		|| (long)(length=flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
 		return(false); 
@@ -293,6 +296,18 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	fclose(instream);
 	crc=~crc;
 
+	if(cfg.sub[subnum]->maxcrcs) {
+		i=smb_addcrc(&smb,crc);
+		if(i) {
+			smb_freemsgdat(&smb,offset,length,1);
+			smb_close(&smb);
+			smb_stack(&smb,SMB_STACK_POP);
+			attr(cfg.color[clr_err]);
+			bputs(text[CantPostMsg]);
+			return(false); 
+		} 
+	}
+
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
 	msg.hdr.attr=msgattr;
@@ -301,17 +316,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	msg.hdr.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
-	smb_hfield_str(&msg,FIDOPID,program_id(pid));
-
-	/* Generate default (RFC822) message-id (always) */
-	get_msgid(&cfg,subnum,&msg,msg_id,sizeof(msg_id));
-	smb_hfield_str(&msg,RFC822MSGID,msg_id);
-
-	/* Generate FTN (FTS-9) MSGID */
-	if(cfg.sub[subnum]->misc&SUB_FIDO) {
-		ftn_msgid(cfg.sub[subnum],&msg,msg_id,sizeof(msg_id));
-		smb_hfield_str(&msg,FIDOMSGID,msg_id);
-	}
 	if(remsg) {
 
 		msg.hdr.thread_back=remsg->hdr.number;	/* needed for threading backward */
@@ -328,27 +332,12 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			errormsg(WHERE,"updating thread",smb.file,i,smb.last_error); 
 	}
 
-
-	if(cfg.sub[subnum]->maxcrcs) {
-		i=smb_addcrc(&smb,crc);
-		if(i) {
-			smb_freemsgdat(&smb,offset,length,1);
-			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
-			attr(cfg.color[clr_err]);
-			bputs(text[CantPostMsg]);
-			return(false); 
-		} 
-	}
-
 	msg.hdr.offset=offset;
 
 	smb_hfield_str(&msg,RECIPIENT,touser);
-	strlwr(touser);
 
 	SAFECOPY(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
-	strlwr(str);
 
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
@@ -357,6 +346,22 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
+
+	/* Generate default (RFC822) message-id (always) */
+	get_msgid(&cfg,subnum,&msg,msg_id,sizeof(msg_id));
+	smb_hfield_str(&msg,RFC822MSGID,msg_id);
+
+	/* Generate FTN (FTS-9) MSGID */
+	if(cfg.sub[subnum]->misc&SUB_FIDO) {
+		ftn_msgid(cfg.sub[subnum],&msg,msg_id,sizeof(msg_id));
+		smb_hfield_str(&msg,FIDOMSGID,msg_id);
+	}
+
+	/* Generate FidoNet Program Identifier */
+	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+
+	if(editor!=NULL)
+		smb_hfield_str(&msg,SMB_EDITOR,editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -500,10 +505,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	if(client!=NULL)
 		msg_client_hfields(msg,client);
  
-	/* Generate FidoNet Program Identifier */
- 	if(msg->ftn_pid==NULL) 	
- 		smb_hfield_str(msg,FIDOPID,program_id(pid));
- 
  	/* Generate RFC-822 Message-id  */
  	if(msg->id==NULL) {
  		get_msgid(cfg,smb->subnum,msg,msg_id,sizeof(msg_id));
@@ -516,6 +517,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  		ftn_msgid(cfg->sub[smb->subnum],msg,msg_id,sizeof(msg_id));
  		smb_hfield_str(msg,FIDOMSGID,msg_id);
  	}
+
+	/* Generate FidoNet Program Identifier */
+ 	if(msg->ftn_pid==NULL) 	
+ 		smb_hfield_str(msg,FIDOPID,msg_program_id(pid));
 
 	if((i=smb_addmsg(smb,msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */)

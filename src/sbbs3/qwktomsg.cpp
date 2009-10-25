@@ -135,6 +135,10 @@ static void qwk_parse_header_list(smbmsg_t* msg, str_list_t* headers, bool parse
 	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=FIDOCTRL),value))!=NULL)
 		smb_hfield_str(msg,hfield_type,p);
 
+	/* Synchronet */
+	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=SMB_EDITOR),value))!=NULL)
+		smb_hfield_str(msg,hfield_type,p);
+
 	/* USENET */
 	while((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=USENETPATH),value))!=NULL)
 		smb_hfield_str(msg,hfield_type,p);

@@ -45,6 +45,8 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 	char	str[256],str2[256],msgpath[256],title[256],name[256],ch
 			,buf[SDT_BLOCK_LEN],*p,addr[256];
 	char 	tmp[512];
+	char	pid[128];
+	char*	editor=NULL;
 	char	your_addr[128];
 	ushort	xlat=XLAT_NONE,net=NET_INTERNET;
 	int 	i,j,x,file;
@@ -95,7 +97,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 	nodesync();
 
 	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,mode,INVALID_SUB,into)) {
+	if(!writemsg(msgpath,nulstr,title,mode,INVALID_SUB,into,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -256,7 +258,12 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
-	SAFECOPY(str,title);
+
+	/* Generate FidoNet Program Identifier */
+	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+
+	if(editor!=NULL)
+		smb_hfield_str(&msg,SMB_EDITOR,editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
@@ -297,6 +304,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 	char	str[256],msgpath[128],title[128],to[128],fulladdr[128]
 			,buf[SDT_BLOCK_LEN],*addr;
 	char 	tmp[512];
+	char	pid[128];
+	char*	editor=NULL;
 	ushort	xlat=XLAT_NONE,net=NET_QWK,touser;
 	int 	i,j,x,file;
 	ulong	length,offset;
@@ -342,7 +351,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 	nodesync();
 
 	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,INVALID_SUB,to)) {
+	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,INVALID_SUB,to,&editor)) {
 		bputs(text[Aborted]);
 		return(false); 
 	}
@@ -456,6 +465,12 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
+
+	/* Generate FidoNet Program Identifier */
+	smb_hfield_str(&msg,FIDOPID,msg_program_id(pid));
+
+	if(editor!=NULL)
+		smb_hfield_str(&msg,SMB_EDITOR,editor);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

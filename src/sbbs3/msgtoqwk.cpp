@@ -146,6 +146,10 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOTID,NULL))!=NULL)	
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 
+		/* Synchronet */
+		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_EDITOR,NULL))!=NULL)	
+			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
+
 		/* USENET */
 		if((p=(char*)smb_get_hfield(msg,hfield_type=USENETPATH,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
