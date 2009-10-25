@@ -248,6 +248,7 @@
 #define SMB_EXPIRATION		0x65
 #define SMB_PRIORITY		0x66
 #define SMB_COST			0x67
+#define	SMB_EDITOR			0x68
 
 #define FILEATTACH			0x70
 #define DESTFILE			0x71

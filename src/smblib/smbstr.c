@@ -77,6 +77,7 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SMB_EXPIRATION:	return("Expiration");
 		case SMB_PRIORITY:		return("Priority");
 		case SMB_COST:			return("Cost");
+		case SMB_EDITOR:		return("Editor");
 		case FORWARDED:			return("Forwarded");
 
 		/* All X-FTN-* are RFC-compliant */
