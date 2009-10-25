@@ -841,7 +841,7 @@ char* DLLCALL nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen)
 
     switch(node->status) {
         case NODE_WFC:
-            strcpy(str,"Waiting for call");
+            strcpy(str,"Waiting for connection");
             break;
         case NODE_OFFLINE:
             strcpy(str,"Offline");
