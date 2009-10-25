@@ -168,7 +168,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log to Disk'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 9
       end
       object LinesPerYieldEdit: TEdit
         Left = 113
@@ -191,7 +191,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log Responses'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 7
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 185
@@ -202,7 +202,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log RX Headers'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
+        TabOrder = 8
       end
     end
     object SMTPTabSheet: TTabSheet
@@ -268,7 +268,7 @@ object MailCfgDlg: TMailCfgDlg
           'ysop")'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 6
       end
       object AllowRelayCheckBox: TCheckBox
         Left = 9
@@ -279,7 +279,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Allow Authenticated Users to Relay Mail'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 7
         OnClick = AllowRelayCheckBoxClick
       end
       object MaxRecipientsEdit: TEdit
@@ -290,7 +290,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Maximum number of recipients for a single message'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 5
       end
       object MaxMsgSizeEdit: TEdit
         Left = 113
@@ -313,7 +313,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Allow Authentication via POP3, Telnet, etc.'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 8
       end
       object NotifyCheckBox: TCheckBox
         Left = 185
@@ -324,7 +324,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Notify Recipients'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 1
       end
       object SubPortEdit: TEdit
         Left = 113
@@ -334,7 +334,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'TCP port number for incoming SMTP submissions (default=587)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 2
       end
       object UseSubPortCheckBox: TCheckBox
         Left = 185
@@ -343,7 +343,7 @@ object MailCfgDlg: TMailCfgDlg
         Height = 17
         Hint = 'Enable the SMTP submission port'
         Caption = 'Enabled'
-        TabOrder = 8
+        TabOrder = 3
         OnClick = UseSubPortCheckBoxClick
       end
     end
@@ -440,7 +440,7 @@ object MailCfgDlg: TMailCfgDlg
         Checked = True
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
         TabStop = True
         OnClick = DNSRadioButtonClick
       end
@@ -452,7 +452,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Host name or IP address of your ISP'#39's DNS server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 6
       end
       object TcpDnsCheckBox: TCheckBox
         Left = 250
@@ -463,7 +463,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'TCP'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 7
       end
       object RelayRadioButton: TRadioButton
         Left = 169
@@ -474,7 +474,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Use Relay Server'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 5
         OnClick = DNSRadioButtonClick
       end
       object DeliveryAttemptsEdit: TEdit
@@ -517,7 +517,7 @@ object MailCfgDlg: TMailCfgDlg
         Hint = 'Character set specified for locally generated e-mail messages'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 3
       end
     end
     object RelayTabSheet: TTabSheet
@@ -760,7 +760,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Mail from Blacklisted Servers:'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 3
         object BLSubjectLabel: TLabel
           Left = 16
           Top = 92
@@ -851,7 +851,7 @@ object MailCfgDlg: TMailCfgDlg
         Height = 25
         Hint = 'Blacklist Exempted IPs, hostnames, and e-mail addresses'
         Caption = 'Exemptions'
-        TabOrder = 2
+        TabOrder = 1
         OnClick = DNSBLExemptionsButtonClick
       end
       object DNSBLSpamHashCheckBox: TCheckBox
@@ -861,7 +861,7 @@ object MailCfgDlg: TMailCfgDlg
         Height = 25
         Hint = 'Store hashes of messages from blacklisted servers in SPAM base '
         Caption = 'Hash'
-        TabOrder = 3
+        TabOrder = 2
       end
     end
     object AdvancedTabSheet: TTabSheet
