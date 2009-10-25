@@ -1593,7 +1593,7 @@ This is the internal code for the external editor.
 		k=0;
 		sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
 		sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
-		sprintf(opt[k++],"%-32.32s%.40s","Remote Command Line",cfg.xedit[i]->rcmd);
+		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.xedit[i]->rcmd);
 		sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
 		sprintf(opt[k++],"%-32.32s%s%s","Intercept Standard I/O"
 			,cfg.xedit[i]->misc&IO_INTS ? "Yes":"No"
@@ -1664,11 +1664,11 @@ abreviation of the name.
 		   case 2:
 				SETHELP(WHERE);
 /*
-External Editor Remote Command Line:
+External Editor Command Line:
 
-This is the command line to execute when using this editor remotely.
+This is the command line to execute when using this editor.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,10,"Remote"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 					,cfg.xedit[i]->rcmd,sizeof(cfg.xedit[i]->rcmd)-1,K_EDIT);
 				break;
 			case 3:
@@ -2296,7 +2296,7 @@ This is the global control key used to execute this event.
 
 This is the command line to execute when this hot key is pressed.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 					,cfg.hotkey[i]->cmd,sizeof(cfg.hotkey[i]->cmd)-1,K_EDIT);
 				break;
 				} } }
