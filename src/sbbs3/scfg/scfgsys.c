@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -244,8 +244,6 @@ be able to logon as New, leave this option blank.
 					,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
 					,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Sound Alarm on Error"
-					,cfg.sys_misc&SM_ERRALARM ? "Yes" : "No");
                 sprintf(opt[i++],"%-33.33s%s","Include Sysop in Statistics"
                     ,cfg.sys_misc&SM_SYSSTAT ? "Yes" : "No");
                 sprintf(opt[i++],"%-33.33s%s","Closed to New Users"
@@ -412,27 +410,6 @@ than continuous random tones, set this option to Yes.
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=cfg.sys_misc&SM_ERRALARM ? 0:1;
-						SETHELP(WHERE);
-/*
-Sound Alarm on Error:
-
-If you would like to have an alarm sounded locally when a critical
-system error has occured, set this option to Yes.
-*/
-						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Sound Alarm on Error",opt);
-						if(i==1 && cfg.sys_misc&SM_ERRALARM) {
-							cfg.sys_misc&=~SM_ERRALARM;
-                            uifc.changes=1; }
-						else if(!i && !(cfg.sys_misc&SM_ERRALARM)) {
-							cfg.sys_misc|=SM_ERRALARM;
-                            uifc.changes=1; }
-                        break;
-					case 7:
-                        strcpy(opt[0],"Yes");
-                        strcpy(opt[1],"No");
-						opt[2][0]=0;
                         i=cfg.sys_misc&SM_SYSSTAT ? 0:1;
 						SETHELP(WHERE);
 /*
@@ -453,7 +430,7 @@ include sysop maintenance activity.
                             cfg.sys_misc&=~SM_SYSSTAT;
                             uifc.changes=1; }
                         break;
-					case 8:
+					case 7:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -473,7 +450,7 @@ If you want callers to be able to logon as New, set this option to No.
                             cfg.sys_misc&=~SM_CLOSED;
                             uifc.changes=1; }
                         break;
-					case 9:
+					case 8:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -496,7 +473,7 @@ set this option to Yes. If this option is set to No, the user notes
 							cfg.sys_misc&=~SM_LISTLOC;
                             uifc.changes=1; }
                         break;
-					case 10:
+					case 9:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -522,7 +499,7 @@ time on your system(s) for you.
                             uifc.changes=1; 
 						}
                         break;
-					case 11:
+					case 10:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -543,7 +520,7 @@ format always, set this option to Yes.
 							cfg.sys_misc&=~SM_MILITARY;
                             uifc.changes=1; }
                         break;
-					case 12:
+					case 11:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -564,7 +541,7 @@ instead of MM/DD/YY format, set this option to Yes.
 							cfg.sys_misc&=~SM_EURODATE;
                             uifc.changes=1; }
                         break;
-					case 13:
+					case 12:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -585,7 +562,7 @@ time online, then set this option to Yes.
 							cfg.sys_misc&=~SM_TIME_EXP;
                             uifc.changes=1; }
                         break;
-					case 14:
+					case 13:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -606,7 +583,7 @@ to Yes.
 							cfg.sys_misc|=SM_NOSYSINFO;
                             uifc.changes=1; }
                         break;
-					case 15:
+					case 14:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
