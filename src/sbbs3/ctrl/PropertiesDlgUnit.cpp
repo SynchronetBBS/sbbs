@@ -44,6 +44,7 @@
 #include "MailFormUnit.h"
 #include "ServicesFormUnit.h"
 #include "PropertiesDlgUnit.h"
+#include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 TPropertiesDlg *PropertiesDlg;
@@ -194,6 +195,16 @@ void __fastcall TPropertiesDlg::LogFontButtonClick(TObject *Sender)
 	    MainForm->LogFont[LogLevelComboBox->ItemIndex]->Assign(FontDialog->Font);
     }
     delete FontDialog;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TPropertiesDlg::ErrorSoundButtonClick(TObject *Sender)
+{
+	OpenDialog->FileName=ErrorSoundEdit->Text;
+	if(OpenDialog->Execute()==true) {
+        ErrorSoundEdit->Text=OpenDialog->FileName;
+        sndPlaySound(OpenDialog->FileName.c_str(),SND_ASYNC);
+    }
 }
 //---------------------------------------------------------------------------
 

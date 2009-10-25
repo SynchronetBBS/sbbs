@@ -172,7 +172,7 @@ object PropertiesDlg: TPropertiesDlg
         Caption = 'Minimize to System Tray'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 8
         OnClick = TrayIconCheckBoxClick
       end
       object PasswordEdit: TEdit
@@ -184,7 +184,7 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         PasswordChar = '*'
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 9
       end
       object SemFreqEdit: TEdit
         Left = 240
@@ -194,7 +194,7 @@ object PropertiesDlg: TPropertiesDlg
         Hint = 'Frequency of checks for signaled semaphore files'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 6
         Text = '1'
       end
       object SemFreqUpDown: TUpDown
@@ -206,7 +206,7 @@ object PropertiesDlg: TPropertiesDlg
         Min = 1
         Max = 99
         Position = 1
-        TabOrder = 9
+        TabOrder = 7
         Wrap = False
       end
     end
@@ -375,6 +375,14 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'Temp Directory'
       end
+      object ErrorSoundLabel: TLabel
+        Left = 9
+        Top = 140
+        Width = 80
+        Height = 25
+        AutoSize = False
+        Caption = 'Error Sound'
+      end
       object CtrlDirEdit: TEdit
         Left = 121
         Top = 12
@@ -393,7 +401,7 @@ object PropertiesDlg: TPropertiesDlg
         Hint = 'Hostname (if different than configured in SCFG)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 2
       end
       object MaxLogLenEdit: TEdit
         Left = 121
@@ -405,7 +413,7 @@ object PropertiesDlg: TPropertiesDlg
           'ting old lines'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object TempDirEdit: TEdit
         Left = 121
@@ -415,29 +423,48 @@ object PropertiesDlg: TPropertiesDlg
         Hint = 'Temp directory (e.g. C:\SBBSTEMP)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 1
       end
       object UndockableCheckBox: TCheckBox
         Left = 9
-        Top = 145
+        Top = 177
         Width = 280
         Height = 25
         Hint = 'Allow child windows to be "un-docked" from main window'
         Caption = 'Undockable Windows'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 6
       end
       object FileAssociationsCheckBox: TCheckBox
         Left = 9
-        Top = 177
+        Top = 209
         Width = 280
         Height = 25
         Hint = 'Use Windows file associations when viewing or editing files'
         Caption = 'Use File Associations'
         ParentShowHint = False
         ShowHint = True
+        TabOrder = 7
+      end
+      object ErrorSoundEdit: TEdit
+        Left = 121
+        Top = 140
+        Width = 137
+        Height = 24
+        Hint = 'Sound file to play when an error condition is logged'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+      object ErrorSoundButton: TButton
+        Left = 263
+        Top = 140
+        Width = 25
+        Height = 26
+        Caption = '...'
         TabOrder = 5
+        OnClick = ErrorSoundButtonClick
       end
     end
     object JavaScriptTabSheet: TTabSheet
@@ -531,7 +558,7 @@ object PropertiesDlg: TPropertiesDlg
           'ection (0=disabled)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
       end
       object JS_GcIntervalEdit: TEdit
         Left = 121
@@ -543,7 +570,7 @@ object PropertiesDlg: TPropertiesDlg
           'bled)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
       end
       object JS_YieldIntervalEdit: TEdit
         Left = 121
@@ -553,7 +580,7 @@ object PropertiesDlg: TPropertiesDlg
         Hint = 'Number of branches between forced yields (0=disabled)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 5
       end
       object JS_ThreadStackEdit: TEdit
         Left = 121
@@ -563,7 +590,7 @@ object PropertiesDlg: TPropertiesDlg
         Hint = 'JS thread stack limit (in bytes, 0=unlimited)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 2
       end
       object JS_LoadPathEdit: TEdit
         Left = 121
@@ -592,5 +619,11 @@ object PropertiesDlg: TPropertiesDlg
     Ctl3D = True
     Left = 368
     Top = 232
+  end
+  object OpenDialog: TOpenDialog
+    Filter = 'Wave Files|*.wav'
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing, ofDontAddToRecent]
+    Left = 376
+    Top = 152
   end
 end

@@ -111,6 +111,10 @@ __published:
     TLabel *LogLevelLabel;
     TLabel *Label16;
     TEdit *JS_LoadPathEdit;
+    TLabel *ErrorSoundLabel;
+    TEdit *ErrorSoundEdit;
+    TButton *ErrorSoundButton;
+    TOpenDialog *OpenDialog;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
@@ -119,6 +123,7 @@ __published:
 	void __fastcall ApplyButtonClick(TObject *Sender);
     void __fastcall LogLevelComboBoxChange(TObject *Sender);
     void __fastcall LogFontButtonClick(TObject *Sender);
+    void __fastcall ErrorSoundButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TPropertiesDlg(TComponent* AOwner);
