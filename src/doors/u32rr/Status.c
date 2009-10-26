@@ -160,6 +160,7 @@ static void Meny(void *cbdata)
 					itemstr[x][1]=nada;
 				else
 					itemstr[x][1]=arrays[i][current[i]].name;
+				x++;
 			}
 		}
 
