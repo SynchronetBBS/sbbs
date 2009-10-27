@@ -4264,7 +4264,7 @@ static void cleanup(int code)
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
 	if(thread_count)
-		lprintf(LOG_ERR,"!Terminal Server threads (%u) remain active after termination", thread_count);
+		lprintf(LOG_WARNING,"!Terminal Server threads (%u) remain after termination", thread_count);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4849,6 +4849,7 @@ NO_SSH:
 		}
 
     	sbbs->online=FALSE;
+		sbbs->client_socket=INVALID_SOCKET;
 #ifdef USE_CRYPTLIB
 		sbbs->ssh_mode=false;
 #endif

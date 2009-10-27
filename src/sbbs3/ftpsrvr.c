@@ -4590,7 +4590,7 @@ static void cleanup(int code, int line)
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served)", served);
 	if(thread_count)
-		lprintf(LOG_ERR,"#### !FTP Server threads (%u) remain active after termination", thread_count);
+		lprintf(LOG_WARNING,"#### !FTP Server threads (%u) remain after termination", thread_count);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
