@@ -323,18 +323,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 				SAFEPRINTF3(str,"%s sent QWK e-mail to %s #%d"
 					,useron.alias,username(&cfg,usernum,tmp),usernum);
 				logline("E+",str);
-				for(k=1;k<=cfg.sys_nodes;k++) { /* Tell user, if online */
-					getnodedat(k,&node,0);
-					if(node.useron==usernum && !(node.misc&NODE_POFF)
-						&& (node.status==NODE_INUSE
-						|| node.status==NODE_QUIET)) {
-						SAFEPRINTF2(str,text[EmailNodeMsg]
-							,cfg.node_num,msg.from);
-						putnmsg(&cfg,k,str);
-						break; 
-					} 
+				if(cfg.node_num) {
+					for(k=1;k<=cfg.sys_nodes;k++) { /* Tell user, if online */
+						getnodedat(k,&node,0);
+						if(node.useron==usernum && !(node.misc&NODE_POFF)
+							&& (node.status==NODE_INUSE
+							|| node.status==NODE_QUIET)) {
+							SAFEPRINTF2(str,text[EmailNodeMsg]
+								,cfg.node_num,msg.from);
+							putnmsg(&cfg,k,str);
+							break; 
+						} 
+					}
 				}
-				if(k>cfg.sys_nodes) {
+				if(cfg.node_num==0 || k>cfg.sys_nodes) {
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
 					putsmsg(&cfg,usernum,str); 
 				} 
