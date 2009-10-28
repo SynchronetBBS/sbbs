@@ -2367,6 +2367,8 @@ static void smtp_thread(void* arg)
 		return;
 	}
 	SAFEPRINTF(spam.file,"%sspam",scfg.data_dir);
+	spam.retry_time=scfg.smb_retry_time;
+	spam.subnum=INVALID_SUB;
 
 	srand(time(NULL) ^ (DWORD)GetCurrentThreadId());	/* seed random number generator */
 	rand();	/* throw-away first result */
@@ -2869,7 +2871,10 @@ static void smtp_thread(void* arg)
 									,str, host_name, host_ip, rcpt_addr, reverse_path);
 								is_spam=TRUE;
 							}
-						}
+						} else if(i!=SMB_ERR_NOT_FOUND)
+							lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%s) opening SPAM database"
+								,socket, i, spam.last_error);
+						
 						if(is_spam) {
 							size_t	n,total=0;
 							for(n=0;hashes[n]!=NULL;n++)
