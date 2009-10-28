@@ -843,12 +843,12 @@ while(client.socket.is_connected && !quit) {
 							    posted=true;
 								msgs_posted++;
 						    } else
-							    log(format("!ERROR saving mesage: %s",msgbase.last_error));
+							    log(LOG_ERR,format("!ERROR saving mesage: %s",msgbase.last_error));
 					    }
 			if(posted)
 			    writeln("240 article posted ok");
 			else {
-				log(LOG_ERR,"!post failure");
+				log(LOG_WARNING,"!post failure");
 				writeln("441 posting failed");
 			}
    			break;
