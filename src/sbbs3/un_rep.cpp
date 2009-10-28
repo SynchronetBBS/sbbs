@@ -458,7 +458,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			/* TWIT FILTER */
 			if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-				SAFEPRINTF4(str,"Filtering QWK post from %s to %s on %s %s"
+				SAFEPRINTF4(str,"!Filtering QWK post from %s to %s on %s %s"
 					,msg.from
 					,msg.to
 					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
