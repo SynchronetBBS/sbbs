@@ -2909,6 +2909,32 @@ js_get_time_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	return(JS_TRUE);
 }
 
+static JSBool
+js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uchar*		ar;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	ar = arstr(NULL,JS_GetStringBytes(js_str),&sbbs->cfg);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->chk_ar(ar,&sbbs->useron,&sbbs->client));
+
+	if(ar!=NULL && ar!=nular)
+		free(ar);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("code_string")
 	,JSDOCSTR("returns @-code value, specified <i>code</i> string does not include @ character delimiters")
@@ -3271,6 +3297,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"This method will inform (and disconnect) the user when they are out of time")
 	,31401
 	},
+	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
+	,JSDOCSTR("verify the current user online meets the specified Access Requirements String")
+	,315
+	},		
 	{0}
 };
 
