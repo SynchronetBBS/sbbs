@@ -58,7 +58,7 @@ var sysop_mode=false;
 
 function main()
 {
-	if(user.compare_ars("SYSOP"))
+	if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP))
 	{
 		sysop_mode=true;
 		max_msg_length=20;

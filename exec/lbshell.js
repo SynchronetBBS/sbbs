@@ -117,7 +117,7 @@ function get_message()
 	}
 
 	/* Time left warning? */
-	if((bbs.time_left/60)<(5-console.timeleft_warning) && (!user.compare_ars("SYSOP"))) {
+	if((bbs.time_left/60)<(5-console.timeleft_warning) && !user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) {
 		console.timeleft_warning=5-(bbs.time_left/60);
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60+1,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 	}
@@ -617,7 +617,7 @@ while(bbs.online) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
 				if(str=='?') {
-					if(!user.compare_ars("SYSOP"))
+					if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP))
 						str='HELP';
 				}
 				if(str=='?') {

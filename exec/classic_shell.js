@@ -162,7 +162,7 @@ while(1) {
 	}
 
 	// Sysop Menu
-	if(user.compare_ars("SYSOP or EXEMPT Q or I or N")) {
+	if(user.compare_ars("SYSOP or EXEMPT Q or I or N") || (bbs.sys_status&SS_TMPSYSOP)) {
 		switch(str) {
 			case '!':
 				bbs.menu("sysmain");
@@ -780,7 +780,7 @@ file_transfers:
 				continue file_transfers;
 		}
 
-		if(user.compare_ars("SYSOP")) {
+		if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) {
 			switch(str) {
 				case '!':
 					bbs.menu("sysxfer");

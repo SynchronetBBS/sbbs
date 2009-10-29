@@ -78,7 +78,7 @@ function Main()
 								var str=console.getstr("",40,K_EDIT);
 								chatroom.Alert("Command (? For Help): ");
 								if(str=='?') {
-									if(!user.compare_ars("SYSOP"))
+									if(!user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP))
 										str='HELP';
 								}
 								if(str=='?') {

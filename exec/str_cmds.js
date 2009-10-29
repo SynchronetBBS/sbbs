@@ -54,7 +54,7 @@ function str_cmds(str)
 	if(str=="HELP")
 		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
 
-	if(user.compare_ars("SYSOP")) {
+	if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) {
 		// Change node action to "sysop activities"
 		bbs.node_action=NODE_SYSP;
 		//sync

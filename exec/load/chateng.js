@@ -312,7 +312,7 @@ function ChatEngine(root,name,logger,stream)
 			this.Send(message);
 			break;
 		case '@':
-			if(!user.compare_ars("SYSOP")) break;
+			if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) break;
 		default:
 			if(key) this.Buffer(key);
 			break;
@@ -484,7 +484,7 @@ function ChatEngine(root,name,logger,stream)
 				
 				else console.gotoxy(this.x,this.y+parseInt(line,10));
 				var display=output[line];
-				if(user.compare_ars("SYSOP"))
+				if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP))
 				{
 					if(display.indexOf('@')>=0) display=display.replace(/@/g,"?");
 				}
