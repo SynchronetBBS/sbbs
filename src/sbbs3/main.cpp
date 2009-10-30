@@ -2960,10 +2960,9 @@ bool sbbs_t::init()
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
 
-	if(cfg.node_num>0) {
-		RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
+	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
+	if(cfg.node_num>0)
 		node_inbuf[cfg.node_num-1]=&inbuf;
-	}
 
     RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
 	outbuf.highwater_mark=startup->outbuf_highwater_mark;
@@ -3261,7 +3260,7 @@ sbbs_t::~sbbs_t()
 
 	if(cfg.node_num>0)
 		node_inbuf[cfg.node_num-1]=NULL;
-	if(cfg.node_num>0 && !input_thread_running)
+	if(!input_thread_running)
 		RingBufDispose(&inbuf);
 	if(!output_thread_running)
 		RingBufDispose(&outbuf);
@@ -4849,7 +4848,7 @@ NO_SSH:
 		}
 
     	sbbs->online=FALSE;
-		sbbs->client_socket=INVALID_SOCKET;
+//		sbbs->client_socket=INVALID_SOCKET;
 #ifdef USE_CRYPTLIB
 		sbbs->ssh_mode=false;
 #endif
@@ -5154,6 +5153,16 @@ NO_SSH:
 				continue;
 			if(node.status==NODE_WFC) {
 				node.status=NODE_LOGON;
+#ifdef USE_CRYPTLIB
+				if(ssh)
+					node.connection=NODE_CONNECTION_SSH;
+				else
+#endif
+				if(rlogin)
+					node.connection=NODE_CONNECTION_RLOGIN;
+				else
+					node.connection=NODE_CONNECTION_TELNET;
+
 				sbbs->putnodedat(i,&node);
 				break;
 			}
