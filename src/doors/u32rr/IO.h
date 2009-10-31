@@ -29,6 +29,7 @@ extern int cols;
 void colorcode(const char *color);
 void outstr(const char *str);
 void halt(void);
+void normal_exit(void);
 void nl(void);
 void d(const char *str, ...);
 void f(const char *color, const char *fmt, ...);

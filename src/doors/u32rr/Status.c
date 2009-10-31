@@ -56,21 +56,21 @@ static void Meny(void *cbdata)
 					ALLOW_Shield,
 	};
 	char *aitext[ALLOW_TOTAL] = {
-					"Left Hand  : ",
-					"Head : ",
-					"Face : ",
-					"Neck : ",
-					"Neck : ",
-					"Arms : ",
-					"Body : ",
-					"Right Finger : ",
+					"Left Hand   : ",
+					"Head        : ",
+					"Face        : ",
+					"Neck        : ",
+					"Neck        : ",
+					"Arms        : ",
+					"Body        : ",
+					"Right Finger: ",
 					"Left Finger : ",
 					"Around Body : ",
-					"Legs : ",
-					"Feet : ",
-					"Hands : ",
-					"Waist : ",
-					"Shield : ",
+					"Legs        : ",
+					"Feet        : ",
+					"Hands       : ",
+					"Waist       : ",
+					"Shield      : ",
 	};
 	int current[ALLOW_TOTAL] = {
 					pl->lhand,
@@ -90,7 +90,7 @@ static void Meny(void *cbdata)
 					pl->shield,
 	};
 	struct object *arrays[ALLOW_TOTAL] = {
-					hands,
+					weapons,
 					head,
 					face,
 					neck,
@@ -150,7 +150,7 @@ static void Meny(void *cbdata)
 		// NEW mode displayen starts here
 		x=0;
 		memset(itemstr, 0, sizeof(itemstr));
-		itemstr[x][0]="Weapon     : ";
+		itemstr[x][0]="Weapon      : ";
 		itemstr[x][1]=pl->rhand==-1?nada:weapons[pl->rhand].name;
 		x++;
 		for(i=0; i<ALLOW_TOTAL; i++) {
@@ -240,7 +240,7 @@ static void Meny(void *cbdata)
 			DL(config.textcolor, itemstr[14][0], itemstr[14][1]);
 		else
 			nl();
-		D(config.textcolor, (pl->class==Cleric || pl->class==Sage || pl->class==Magician)?Asprintf("Mana       : %s", Asprintf("%s/%s", commastr(pl->mana), commastr(pl->maxmana))):"                              ");
+		D(config.textcolor, (pl->class==Cleric || pl->class==Sage || pl->class==Magician)?Asprintf("Mana       : %s", Asprintf("%s/%s", commastr(pl->mana), commastr(pl->maxmana))):"                               ");
 		if(itemstr[15][0])
 			DL(config.textcolor, itemstr[15][0], itemstr[15][1]);
 		else
@@ -645,7 +645,7 @@ static bool Inventory_Menu(struct player *pl)
 					if(pl->item[i]>0) {
 						if(!items(pl->itemtype[i])[pl->item[i]].cursed) {
 							DL(config.textcolor, "You drop ", config.itemcolor, items(pl->itemtype[i])[pl->item[i]].name);
-							pl->item[i]=0;
+							pl->item[i]=-1;
 						}
 						else {
 							DL(config.textcolor, "You can't drop the ", config.itemcolor, items(pl->itemtype[i])[pl->item[i]].name, config.textcolor, "! It seems to be cursed!");

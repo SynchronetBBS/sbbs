@@ -65,6 +65,12 @@
 
 #define kingstring(sex)		(sex==Male?"King":"Queen")
 
+#define MANY_MONEY(x)		((x)==1?config.moneytype2:config.moneytype3)
+
+#define SLEEP(x)		({	int sleep_msecs=x; struct timeval tv; \
+						tv.tv_sec=(sleep_msecs/1000); tv.tv_usec=((sleep_msecs%1000)*1000); \
+						select(0,NULL,NULL,NULL,&tv); })
+
 #define PART(...)	d(config.textcolor, __VA_ARGS__, NULL)			// GREEN
 #define PLAYER(...)	d(config.plycolor, __VA_ARGS__, NULL)			// BRIGHT_GREEN
 

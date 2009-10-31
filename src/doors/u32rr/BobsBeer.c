@@ -22,10 +22,22 @@ Copyright 2007 Jakob Dangarden
 
 
 // Usurper - Bobs Beer
+#include <ctype.h>
 #include <math.h>
+#include <stdbool.h>
 
-static char *name=config.bobsplace;
-static const char *expert_prompt="(B,C,D,T,S,R,?)";
+#include "Status.h"
+
+#include "IO.h"
+#include "Config.h"
+
+#include "macros.h"
+#include "str.h"
+#include "various.h"
+
+#include "todo.h"
+
+static const char *expert_keys="(B,C,D,T,S,R,?)";
 
 struct opponent {
 	const char	*name;
@@ -51,7 +63,7 @@ const struct opponent opponents[32] = {
 		false,
 		"mutant",
 		"Alright, run and hide WIMP!",
-		"Oh no...you'+chr(39)+'re gonna take what'+chr(39)+'s coming to ya!",
+		"Oh no...you're gonna take what's coming to ya!",
 	},
 	{
 		"Hobbes",
@@ -82,7 +94,7 @@ const struct opponent opponents[32] = {
 		70,
 		false,
 		"human",
-		"Next time I'+chr(39)+'ll mess ya up bad honey!",
+		"Next time I'll mess ya up bad honey!",
 		"Fistfight!",
 	},
 	{
@@ -107,7 +119,7 @@ const struct opponent opponents[32] = {
 		true,
 		"human",
 		"Get lost scum!",
-		"I'+chr(39)+'m gonna trash you to pieces!",
+		"I'm gonna trash you to pieces!",
 	},
 	{
 		"Soufie",
@@ -147,7 +159,7 @@ const struct opponent opponents[32] = {
 		false,
 		"dwarf",
 		"Hahaha...get lost COWARD!",
-		"BAHAHA! I don'+chr(39)+'t think you realize who I am!",
+		"BAHAHA! I don't think you realize who I am!",
 	},
 	{
 		"Fat Irma",
@@ -195,7 +207,7 @@ const struct opponent opponents[32] = {
 		true,
 		"Half-elf",
 		"I accept your apology!",
-		"I'+chr(39)+'m afraid it'+chr(39)+'s too late for that!",
+		"I'm afraid it's too late for that!",
 	},
 	{
 		"Sbort Afsghar",
@@ -234,7 +246,7 @@ const struct opponent opponents[32] = {
 		155,
 		true,
 		"human",
-		"It'+chr(39)+'s your lucky day!",
+		"It's your lucky day!",
 		"Fight!",
 	},
 	{
@@ -267,7 +279,7 @@ const struct opponent opponents[32] = {
 		true,
 		"half-elf",
 		"Oh my! Getting nervous, are we?",
-		"Let'+chr(39)+'s solve this problem with our fists!",
+		"Let's solve this problem with our fists!",
 	},
 	{
 		"Rooney",
@@ -295,19 +307,19 @@ const struct opponent opponents[32] = {
 	},
 };
 		
-static void Meny(void)
+static void Meny(void *cbdata)
 {
-	newscreen();
-	pbreak();
+	clr();
+	nl();
 	HEADER("-*- ",config.bobsplace, " -*-");
-	pbreak();
+	nl();
 	TEXT("This place is the rendezvous for every lowlife in town. "
 			"Unexperienced characters should not enter here alone. "
 			"If you are looking for trouble, here it is! "
 			"As you enter the hut, there is a short moment of silence. "
 			"But things soon get back to normal when your entrance "
 			"has been noticed.");
-	pbreak();
+	nl();
 	menu2("(B)rawl      ");
 	menu("(C)ompete in Beer Drinking");
 	menu2("(D)ance      ");
@@ -319,9 +331,9 @@ static void Meny(void)
 static char Shakedown_Move(char ch)
 {
 	if(ch=='?') {
-		pbreak();
+		nl();
 		EVENT("Your move?");
-		menu(Asprintf("(G)ive them your cash (%s %s %s)", commastr(player->gold), config.moneytype, player->gold==1?config.moneytype2:config.moneytype3);
+		menu(Asprintf("(G)ive them your cash (%s %s %s)", commastr(player->gold), config.moneytype, MANY_MONEY(player->gold)));
 		menu("(D)efend yourself!");
 	}
 
@@ -330,9 +342,10 @@ static char Shakedown_Move(char ch)
 
 static void Shakedown(void)
 {
-	char ch;
+	char			ch;
+	int				i;
 	struct monster	monster[5];
-	struct monster	*monsters[6]={&monster[0], &monster[1], &monster[2], &monster[3], &monster[4], &monster[5], NULL};
+	struct monster	*monsters[6]={&monster[0], &monster[1], &monster[2], &monster[3], &monster[4], NULL};
 
 	BAD("SHAKEDOWN!");
 	TEXT("A bunch of rough characters suddenly appear from the shadows. "
@@ -340,7 +353,7 @@ static void Shakedown(void)
 	ch='?';
 
 	do {
-		ch=Shakwdown_Move(ch);
+		ch=Shakedown_Move(ch);
 	} while(strchr("DG", ch)==NULL);
 
 	switch(ch) {
@@ -375,29 +388,29 @@ static void Shakedown(void)
 			global_nobeg=true;
 			player_vs_monsters(Pl_Vs_DoorGuards, monsters, NULL);
 			if(player->hps > 0) {
-				for(i=0; i<12)
-					player->spell[i][2]=false;
+				for(i=0; i<12; i++)
+					player->spell[i][1]=false;
 				GOOD("GOOD WORK!");
 				TEXT("The streets are a bit safer now!");
 
 				newsy(true, "Cleaner", 
-						Asprintf(" %s%s%s fought a band of rogues outside %s!", config.plycolor, player.name2, config.textcol1, config.bobsplace), 
-						Asprintf(" %s%s%s was victorious!",  config.plycolor, player.name2, config.textcol1),
+						Asprintf(" %s%s%s fought a band of rogues outside %s!", config.plycolor, player->name2, config.textcolor, config.bobsplace), 
+						Asprintf(" %s%s%s was victorious!",  config.plycolor, player->name2, config.textcolor),
 						NULL);
 			}
 			else {
 				player->hps=0;
 				player->gold=0;
 				newsy(true, "Dead end!", 
-						Asprintf(" %s%s%s was tricked in %s. The stubborn fool refused", config.plycolor, player.name2, config.textcol1, config.bobsplace), 
+						Asprintf(" %s%s%s was tricked in %s. The stubborn fool refused", config.plycolor, player->name2, config.textcolor, config.bobsplace), 
 						Asprintf(" to give up %s %s to a band of thugs.",  sex3[player->sex], config.moneytype),
-						Asprintf(" %s%s%s was killed!", config.plycolor, player.name2, config.textcol1), 
+						Asprintf(" %s%s%s was killed!", config.plycolor, player->name2, config.textcolor), 
 						NULL);
 
 				// Mail player
-				post(MailSend, player->name2, player->ai, false, mailrequest_nothing(),
+				Post(MailSend, player->name2, player->ai, false, MAILREQUEST_Nothing,
 						"",
-						Asprintf("%sLast breath%s", umailheadc, config.textcol1),
+						Asprintf("%sLast breath%s", config.umailheadcolor, config.textcolor),
 						mkstring(11,196),
 						Asprintf("You were killed by a band of thieves outside %s.", config.bobsplace),
 						Asprintf("They took all your %s.", config.moneytype),
@@ -405,15 +418,15 @@ static void Shakedown(void)
 						NULL);
 
 				TEXT("You are dead....!");
-				TEXT(Asprintf("Kill your precious %s goodbye!", config.moneytype));
+				TEXT(Asprintf("Kiss your precious %s goodbye!", config.moneytype));
 				normal_exit();
 			}
 			break;
 		case 'G':
 			player->gold=0;
-			pbreak();
-			DLC(config.badcolor, "\"Wise decision peasant!\"", config.textcolor, ", the leader of the scoundrels says as you hand over the ", config.textcolor, config.moneytype, config.textcolor, ".");
-			mswait(300);
+			nl();
+			DL(config.badcolor, "\"Wise decision peasant!\"", config.textcolor, ", the leader of the scoundrels says as you hand over the ", config.moneytype, ".");
+			SLEEP(300);
 			TEXT("Suddenly you are alone in the alley. You think for yourself that "
 					"perhaps you should have fought those men. Would it been worth it?");
 			upause();
@@ -431,21 +444,21 @@ static void Vitamin_Offer(void)
 				"the stranger leaves.");
 	}
 	else {
-		pbreak();
+		nl();
 		if(confirm("Buy a bottle", 'N')) {
 			decplayermoney(player, x);
 			TEXT("You hand over the ", config.moneytype, " and recieve a bottle filled with something which looks like syrup......");
-			mswait(800);
-			pbreak();
-			d(config.talkcol, "Down the hatch!");
-			mswait(1000);
-			pbreak();
-			pbreak();
+			SLEEP(800);
+			nl();
+			D(config.talkcolor, "Down the hatch!");
+			SLEEP(1000);
+			nl();
+			nl();
 			x=3+rand_num(3);
-			DLC(config.textcolor, "You wake up a short moment later. You are laying in the "
+			DL(config.textcolor, "You wake up a short moment later. You are laying in the "
 						"alley. All your belongings are left untouched. "
 						"Your strength went up with ",
-					config.goodcolor, commastr(x);
+					config.goodcolor, commastr(x),
 					config.textcolor, " !");
 			upause();
 		}
@@ -459,21 +472,17 @@ static void Teleport_UMAN(void)
 {
 	int	x=player->level*1500;
 
-	DLC(config.textcolor, "The stranger says that he will guide you to the UMAN caves for only ",
-			config.moneycolor, commastr(x),
-			config.textcolor, " ",
-			config.textcolor, config.moneytype,
-			config.textcolor, " ",
-			config.textcolor, config.moneytype3);
+	DL(config.textcolor, "The stranger says that he will guide you to the UMAN caves for only ",
+			config.moneycolor, commastr(x), config.textcolor, " ", config.moneytype, " ", config.moneytype3);
 	if(player->gold < x) {
-		TEXT("When you explain that you don't have the ", config.moneytyp, " he is asking "
+		TEXT("When you explain that you don't have the ", config.moneytype, " he is asking "
 				"the stranger leaves.");
 	}
 	else {
 		decplayermoney(player, x);
-		pbreak();
+		nl();
 		TEXT("You hand over the ", config.moneytype, " and start following the stranger...");
-		pbreak();
+		nl();
 		player->auto_probe=UmanCave;
 	}
 }
@@ -482,18 +491,18 @@ static void Man_In_Robes(void)
 {
 	// strange man i robes approaches!
 	if(rand_num(5)==0 && player->gold > 1000) {
-		pbreak();
+		nl();
 		EVENT("You are approached by a stranger in robes!");
 		GOOD("He offers you to see some fine wares he has in store.");
-		pbreak();
+		nl();
 		if(confirm("Follow the stranger outside ",'N')) {
 			// Update player location
-			onliner.location=ONLOC_BobThieves;
-			onliner.doing=location_desc(onliner.location);
-			pbreak();
+			onliner->location=ONLOC_BobThieves;
+			strcpy(onliner->doing,location_desc(onliner->location));
+			nl();
 			TEXT("You follow the stranger out into the nearby alley...");
-			mswait(800);
-			pbreak();
+			SLEEP(800);
+			nl();
 			switch(rand_num(3)) {
 				case 0:
 					Shakedown();
@@ -507,28 +516,302 @@ static void Man_In_Robes(void)
 			}
 		}
 		else {
-			pbreak();
+			nl();
 			GOOD("NO THANKS!");
 		}
 	}
 }
 
+void BarFight(int *pstam, struct opponent *opp)
+{
+	char	ch;
+	int		pcnt;
+	int		i;
+	int		attack;
+	int		chance;
+	char	*str;
+
+	do {
+		ch='?';
+
+		pcnt=*pstam*100/player->stamina;
+
+		str="Excellent Health";
+		if(pcnt<100)
+			str="You have some small wounds and bruises";
+		if(pcnt<80)
+			str="You have some wounds";
+		if(pcnt<70)
+			str="You are pretty hurt!";
+		if(pcnt<50)
+			str="You are in a bad shape!";
+		if(pcnt<30)
+			str="You have some BIG and NASTY wounds!";
+		if(pcnt<20)
+			str="You are in a awful condition!";
+		if(pcnt<5)
+			str="You are bleeding from wounds ALL over your body!";
+		nl();
+		DL(cyan, "Your status : ", lred, str);
+
+		pcnt=opp->cstam*100/player->stamina;
+
+		str="Excellent Health";
+		if(pcnt<100)
+			str="Small wounds and bruises";
+		if(pcnt<80)
+			str="Some wounds";
+		if(pcnt<70)
+			str="Pretty hurt!";
+		if(pcnt<50)
+			str="Bad condition!";
+		if(pcnt<30)
+			str="Have some BIG and NASTY wounds!";
+		if(pcnt<20)
+			str="Is in a awful condition!";
+		if(pcnt<5)
+			str="AWFUL CONDITION!";
+		DL(config.plycolor, opp->name, cyan, " status : ", lred, str);
+		nl();
+
+		D(config.textcolor, "Action (", config.textcolor2, "?", config.textcolor, " for moves) :");
+
+		do {
+			ch=toupper(gchar());
+		} while((ch < 'A' || ch > 'N') && ch != '?');
+
+		nl();
+						
+		if(ch=='?') {
+			char chstr[2];
+
+			chstr[1]=0;
+			nl();
+			for(i=0; i<14; i++) {
+				char	line[80];
+				sprintf(line, ") %-32s %s", UCBashName[i], BashRank[player->skill[i]]);
+				DL(magenta, chstr, config.textcolor, line);
+			}
+		}
+	} while(ch <'A' || ch > 'N');
+
+	nl();
+	switch(ch) {
+		case 'A':
+			nl();
+			DL(config.textcolor, "Here goes...You take run and then charge ", config.plycolor, opp->name, config.textcolor, " and try a tackle!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.plycolor, opp->name, config.textcolor, " evade your attack! You stumble past ", opp->male?"him":"her");
+			else {
+				DL(config.textcolor, "Your tackle hit ", config.plycolor, opp->name, config.textcolor, " VERY hard!");
+				DL(config.plycolor, opp->name, config.textcolor, " lose sense of all directions!");
+				opp->cstam-=rand_num(4)+4;
+			}
+			break;
+		case 'B':
+			DL(config.textcolor, "BANZAI! You rush ", config.plycolor, opp->name, config.textcolor, " and try a Drop-Kick!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.plycolor, opp->name, config.textcolor, "  simply jumps aside, and you fly past ", opp->male?"him":"her", "!");
+			else {
+				DL(config.textcolor, "Your kick hit ", config.plycolor, opp->name, config.textcolor, " hard!");
+				DL(config.textcolor, opp->male?"He":"She", " goes down!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'C':
+			DL(config.textcolor, "You try an uppercut against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.plycolor, opp->name, config.textcolor, " elegantly blocks your assault!");
+			else {
+				DL(config.textcolor, "You hit ", config.plycolor, opp->name, config.textcolor, " right on the chin!");
+				DL(config.textcolor, opp->male?"He":"She", " goes down!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'D':
+			DL(config.textcolor, "You throw yourself against ", config.plycolor, opp->name, config.textcolor, " with a fearsome battlecry!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " elegantly avoid your clumsy assault!");
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " screams in horror as you bite ", opp->male?"him":"her", " hard!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'E':
+			DL(config.textcolor, "You try a Leg-Sweep against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " manage to avoid the assault!");
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " falls heavily to the floor as you sweep away ", opp->male?"his":"her", " legs!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'F':
+			DL(config.textcolor, "You try to get a good grip on ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " blocks your attack!");
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " screams in pain as you crack a bone in ", opp->male?"his":"her", " body! Hehe!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'G':
+			DL(config.textcolor, "You let your right hand go off in an explosive stroke against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " blocks your attack!");
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " looks surprised when your punch hit ", opp->male?"him":"her", " hard in the chest!");
+				DL(config.textcolor, opp->male?"He":"She", " goes down on ", opp->male?"his":"her", " knees, moaning!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'H':
+			DL(config.textcolor, "You send off a stroke against your foe!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0) {
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " avoids your attack with elegance!");
+				DL(config.textcolor, "Instead you collect a counterattack against your upper body!");
+				*pstam -= rand_num(4)+4;	// TODO: This was a BUG!!!
+			}
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " is stunned from your effective punch!");
+				DL(config.textcolor, opp->male?"He":"She", " goes down!");
+				opp->cstam -= rand_num(4)+4;
+				//stunned2=true;
+			}
+			break;
+		case 'I':
+			DL(config.textcolor, "You try to get your hands around ", config.plycolor, opp->name, "s", config.textcolor, " throat!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " takes a couple of ballet steps, and avoid your attack!");
+			else {
+				DL(config.plycolor, opp->name, config.textcolor, " face turns red when ", opp->male?"he":"she", " chokes!", opp->male?"":" (hehe!)");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'J':
+			DL(config.textcolor, "You try a Headbash against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " quickly takes a few steps back!");
+			else {
+				DL(config.textcolor, "You hit ", config.plycolor, opp->name, "s", config.textcolor, " head with a massive blow!");
+				DL(config.textcolor, opp->male?"He":"She", " goes down bleeding from some nasty wounds!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'K':
+			DL(config.textcolor, "You try to grab hold of ", config.plycolor, opp->name, "s", config.textcolor, " hair!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " manages to evade your attack!");
+			else {
+				DL(config.textcolor, "You get a firm grip of ", opp->male?"his":"her", " hair! You drag ", opp->male?"his":"her", " around the room!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'L':
+			DL(config.textcolor, "You try a Kick against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " blocks it!");
+			else {
+				DL(config.textcolor, opp->male?"He":"She", " staggers under your blow!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'M':
+			DL(config.textcolor, "You try a Punch against ", config.plycolor, opp->name, config.textcolor, "!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", config.plycolor, opp->name, config.textcolor, " blocks it!");
+			else {
+				DL(config.textcolor, "You hit ", opp->male?"him":"her", " right on the chin! ", opp->male?"He":"She", " is dazed!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+		case 'N':
+			DL(config.textcolor, "You rush ", config.plycolor, opp->name, config.textcolor, " with your head lowered!");
+			if(rand_num(HitChance(player->skill[ch-'A']))!=0)
+				DL(config.textcolor, "But ", opp->male?"he":"she", " manages to jump aside just before you reach ", opp->male?"him":"her", "!");
+			else {
+				DL(config.textcolor, "You hit ", config.plycolor, opp->name, config.textcolor, " right in Solar-Plexus! You send ", opp->male?"him":"her", " flying!");
+				opp->cstam -= rand_num(4)+4;
+			}
+			break;
+	}
+
+	// enemy move
+	attack=rand_num(14);
+	str=opp->male?"He":"She";
+	switch(attack) {
+		case 0: DL(config.textcolor, str, " tries to tackle you!"); break;
+		case 1: DL(config.textcolor, str, " tries a drop-kick against you!"); break;
+		case 2: DL(config.textcolor, str, " tries an uppercut against your head!"); break;
+		case 3: DL(config.textcolor, str, " tries to bite you in the leg!"); break;
+		case 4: DL(config.textcolor, str, " goes for a leg-sweep against you!"); break;
+		case 5: DL(config.textcolor, str, " tries to break your arm!"); break;
+		case 6: DL(config.textcolor, str, " sends off a Nicehand, aimed at your chest!"); break;
+		case 7: DL(config.textcolor, str, " sends off a nervepunch!"); break;
+		case 8: DL(config.textcolor, "The bastard tries to strangle you!"); break;
+		case 9: DL(config.textcolor, str, " goes for a Headbash! Watch it!"); break;
+		case 10: DL(config.textcolor, str, " tries to pull your hair!"); break;
+		case 11: DL(config.textcolor, str, " goes for a kick, aimed at your body!"); break;
+		case 12: DL(config.textcolor, str, " goes for a straight punch in your face!"); break;
+		case 13: DL(config.textcolor, str, " comes rushing at you in high speed! RAM!"); break;
+	}
+
+	chance=1;
+	if(*pstam>5) chance++;
+	if(player->class==Assassin || player->class==Jester) chance++;
+	if(player->agility > 50) chance++;
+	if(player->agility > 200) chance++;
+	if(player->agility > 700) chance++;
+	if(player->agility > 1300) chance++;
+	if(player->level > 50) chance++;
+	if(player->level > 95) chance++;
+
+	if(rand_num(chance) < 2) {
+		DL(config.textcolor, "You didn't manage to evade!");
+		//if(x==7)
+		//	stunned1=true;
+		switch(attack) {
+			case 0: DL(config.textcolor, "The hard tackle sends you across the floor! You lose your breath!"); break;
+			case 1: DL(config.textcolor, "You stagger under the impact from the kick!"); break;
+			case 2: DL(config.textcolor, "The stroke lands neately on your chin! You see stars and moons!"); break;
+			case 3: DL(config.textcolor, opp->male?"His":"Her", " bite goes deep in your leg! You are bleeding!"); break;
+			case 4: DL(config.textcolor, "You fall heavily to the floor!"); break;
+			case 5: DL(config.textcolor, "Cracck... Something just broke in your body! You are hurt bad!"); break;
+			case 6: DL(config.textcolor, "You lose your breath when ", opp->male?"his":"her", " steelhand goes right in your chest!"); break;
+			case 7: DL(config.textcolor, "The stroke hits a nerve! You are stunned!"); break;
+			case 8: DL(config.textcolor, opp->male?"He":"She", " got you in a chokeholt! You can't breathe!"); break;
+			case 9: DL(config.textcolor, "BONK! You are feeling dizzy! Your head aches!"); break;
+			case 10: DL(config.textcolor, "Arrgghhh! That really hurt! What a dirty trick!"); break;
+			case 11: DL(config.textcolor, "The well placed kick lands right in solar-plexus! Ouch!"); break;
+			case 12: DL(config.textcolor, "The punch lands right on your nose! You lose sense of all directions!"); break;
+			case 13: DL(config.textcolor, opp->male?"His":"Her"," attack sends you sprawling! You fall to the floor!"); break;
+		}
+		*pstam -= rand_num(6)+4;
+	}
+}
+
 void Bobs_Inn(void)
 {
-	struct opponent opp;
-	double	rr;
+	int				pstam;
+	int				reward;
+	int				diff;
+	struct opponent	opp;
+	char			*str;
+	char			ch;
+	bool			refresh;
+	int				chance;
 
 	do {
 		if(player->auto_probe != NoWhere)
 			break;
 		if(rand_num(2)==0 && player->darknr > 0) {	// spaghetti incident?
-			pbreak();
-			pbreak();
+			nl();
+			nl();
 			player->darknr--;
-			D(YELLOW, "Insulted !?");
+			DL(yellow, "Insulted !?");
 
 			// discovery
-			memcpy(opp, opponents[rand_num(sizeof(opponents)/sizeof(opponents[0]))], sizeof(opp));
+			memcpy(&opp, &opponents[rand_num(sizeof(opponents)/sizeof(opponents[0]))], sizeof(opp));
 			if(opp.cstam==-1)
 				opp.cstam=player->stamina;
 			switch(rand_num(5)) {
@@ -562,10 +845,10 @@ void Bobs_Inn(void)
 			}
 
 			if(!confirm("Are you gonna put up with this treatment",'Y')) {
-				pbreak();
-				D(YELLOW, "Yeah! REVENGE!");
-				pbreak();
-				TEXT("You walk up to the ", config.plycolor, opp.type, config.textcol1, " and tap ", opp.mail?"him":"her", " on the shoulder...");
+				nl();
+				DL(yellow, "Yeah! REVENGE!");
+				nl();
+				TEXT("You walk up to the ", config.plycolor, opp.type, config.textcolor, " and tap ", opp.male?"him":"her", " on the shoulder...");
 				upause();
 				TEXT("The ", opp.type, " turns to you and says : ");
 				switch(rand_num(6)) {
@@ -585,54 +868,53 @@ void Bobs_Inn(void)
 						SAY("  Ohhh! I am really SCARED!  Hahaha!");
 						break;
 					case 5:
-						SAY("  What do you want ", race_display(2, player->race, 0),"?");
+						SAY("  What do you want ", LCRaceName[player->race],"?");
 						break;
 				}
-				pbreak();
-				DLC(config.textcolor, "It's ", config.plycolor, opp.name, " that you have run across!");
+				nl();
+				DL(config.textcolor, "It's ", config.plycolor, opp.name, " that you have run across!");
 				TEXT(" Your chances : ");
 
 				pstam = player->stamina;
-				cstammax = opp.cstam
-				reward = cstam*100+rand_num(500);
-				diff=cstam-pstam;
+				reward = opp.cstam*100+rand_num(500);
+				diff=opp.cstam-pstam;
 
-				a2="YOU ARE MAD!";
+				str="YOU ARE MAD!";
 
 				if(diff < 100)
-					a2="Don't even think about it!";
+					str="Don't even think about it!";
 				if(diff < 90)
-					a2="The chances are VERY VERY small!";
+					str="The chances are VERY VERY small!";
 				if(diff < 80)
-					a2="You're gonna get messed up!";
+					str="You're gonna get messed up!";
 				if(diff < 70)
-					a2="No way you can win this!";
+					str="No way you can win this!";
 				if(diff < 60)
-					a2="Are you mad?";
+					str="Are you mad?";
 				if(diff < 50)
-					a2="Feel lucky punk?";
+					str="Feel lucky punk?";
 				if(diff < 40)
-					a2="Risky!";
+					str="Risky!";
 				if(diff < 30)
-					a2="Can get rough...";
+					str="Can get rough...";
 				if(diff < 20)
-					a2="You can't lose!";
+					str="You can't lose!";
 				if(diff < 10)
-					a2="Almost too easy...";
+					str="Almost too easy...";
 				if(diff < 0)
-					a2="Piece of Cake!";
+					str="Piece of Cake!";
 				if(diff < -10)
-					a2="You can do it blindfolded!";
+					str="You can do it blindfolded!";
 
-				DL(MAGENTA, a2);
-				pbreak();
+				DL(magenta, str);
+				nl();
 
 				TEXT("Make your move :");
 				menu("(E)lbow in the face");
 				menu("(S)traight punch in the stomach");
 				menu("(T)rip the scumbag");
 				menu("(B)ite ear");
-				menu(Asprintf("(A)pologize for disturbing %s", opp.name);
+				menu(Asprintf("(A)pologize for disturbing %s", opp.name));
 				PART(":");
 
 				do {
@@ -641,655 +923,232 @@ void Bobs_Inn(void)
 
 				if(ch=='A') {
 					if(rand_num(2)==0) {
-						pbreak();
-						D(YELLOW, "\"", opp.no, "\"");
+						nl();
+						DL(yellow, "\"", opp.no, "\"");
 					}
 					else {
-						pbreak();
-						D(YELLOW, "\"", opp.ok, "\"");
+						nl();
+						DL(yellow, "\"", opp.ok, "\"");
 						upause();
 
 						break;
 					}
 				}
 
-				pbreak();
+				nl();
 
-				if(cstam < 5)
-					cstam=5;
+				if(opp.cstam < 5)
+					opp.cstam=5;
 
 				switch(ch) {
 					case 'E':
 						if(rand_num(2)==0) {
-							DL(BRIGHT_RED, "Bullseye! Your elbow almost crushed ", opp.male?"his":"her", " nose!");
-							cstam -= rand_num(3);
+							DL(lred, "Bullseye! Your elbow almost crushed ", opp.male?"his":"her", " nose!");
+							opp.cstam -= rand_num(3);
 						}
 						else
-							DLC(config.plycolor, opp.name, config.textcolor, " managed to avoid your attack!");
+							DL(config.plycolor, opp.name, config.textcolor, " managed to avoid your attack!");
 						break;
 					case 'S':
 						if(rand_num(2)==0) {
-							DLC(BRIGHT_RED, "Dynamite! ", config.plycolor, opp.name, config.textcolor, " staggers from your unexpected attack!");
-							cstam -= random(3);
+							DL(lred, "Dynamite! ", config.plycolor, opp.name, config.textcolor, " staggers from your unexpected attack!");
+							opp.cstam -= rand_num(3);
 						}
 						else
-							DLC(config.plycolor, opp.name, config.textcolor, " saw that one coming!");
+							DL(config.plycolor, opp.name, config.textcolor, " saw that one coming!");
 						break;
 					case 'T':
 						if(rand_num(2)==0) {
-							DL(BRIGHT_RED, "Success! ", opp.name, " falls heavily to the floor!");
-							cstam -= random(3);
+							DL(lred, "Success! ", opp.name, " falls heavily to the floor!");
+							opp.cstam -= rand_num(3);
 						}
 						else
 							TEXT(opp.name, " managed to retreat from your assault!");
 						break;
-					case 'S':
+					case 'B':
 						if(rand_num(2)==0) {
-							DLC(config.plycolor, opp.name, BRIGHT_RED, " screams loud when you get a bit of ", BRIGHT_RED, opp.male?"his":"her", BRIGHT_RED, "ear!");
-							cstam -= random(3);
+							DL(config.plycolor, opp.name, lred, " screams loud when you get a bite of ", opp.male?"his":"her", "ear!");
+							opp.cstam -= rand_num(3);
 						}
 						else
-							DLC(config.plycolor, opp.name, BRIGHT_RED, "  managed to avoid your clumsy attack!");
+							DL(config.plycolor, opp.name, lred, "  managed to avoid your clumsy attack!");
 						break;
 				}
 
 				do {
-					do {
-						ch='?';
+					BarFight(&pstam, &opp);
+				} while (pstam > 0 && opp.cstam > 0);
 
-						rr=pstam/player->stamina;
-						xx=round(rr*100);
+				if(pstam <=0) {
+					DL(config.textcolor, "Your head starts to spin, and you feel darkness...");
+					DL(config.textcolor, "All your strength is gone!");
+					DL(config.textcolor, "Before you slide into unconsciousness you feel how you are being frisked...");
+					nl();
 
-						a="Excellent Health";
-						if(xx<100)
-							a="You have some small wounds and bruises";
-						if(xx<80)
-							a="You have some wounds";
-						if(xx<70)
-							a="You are pretty hurt!";
-						if(xx<50)
-							a="You are in a bad shape!";
-						if(xx<30)
-							a="You have some BIG and NASTY wounds!";
-						if(xx<20)
-							a="You are in a awful condition!";
-						if(xx<5)
-							a="You are bleeding from wounds ALL over your body!";
-						pbreak();
-						DLC(CYAN, "Your status : ", BRIGHT_RED, a);
+					switch(rand_num(2)) {
+						case 0:
+							newsy(true, "Dork", Asprintf(" %s%s%s tried to show off at %s.", config.plycolor, player->name2, config.textcolor, config.bobsplace),
+									Asprintf(" %s was knocked out after a short fight against %s%s%s, the %s.", sex2[player->sex], config.plycolor, opp.name, config.textcolor, opp.type), NULL);
+							break;
+						case 1:
+							newsy(true, Asprintf("Brawl at %s!", config.bobsplace),
+									Asprintf(" %s%s%s accepted a challenge in %s.", config.plycolor, player->name2, config.textcolor, config.bobsplace),
+									Asprintf(" The violence ended when %s%s%s was knocked out", config.plycolor, player->name2, config.textcolor),
+									Asprintf(" by %s%s%s, the %s.",config.plycolor, opp.name, config.textcolor, opp.type), NULL);
+							break;
+					}
+					player->gold=0;
+					upause();
 
-						rr=cstam/cstammax;
-						xx=round(rr*100);
+					Post(MailSend, player->name2, player->ai, false, MAILREQUEST_Nothing, "", Asprintf("%sDefault!%s", config.umailheadcolor, config.textcolor),
+							mkstring(7, 196),
+							Asprintf("You were knocked out in %s!", config.bobsplace),
+							"Better train some more before starting a brawl!", NULL);
+					normal_exit();
+				}
+				else {
+					nl();
+					DL(yellow, "Victory!");
+					DL(config.textcolor, "You have defeated ", opp.name, "!");
+					DL(config.textcolor, "You frisk your foe and find ", yellow, commastr(reward), config.textcolor, " ", MANY_MONEY(reward), "!");
 
-						a="Excellent Health";
-						if(xx<100)
-							a="Small wounds and bruises";
-						if(xx<80)
-							a="Some wounds";
-						if(xx<70)
-							a="Pretty hurt!";
-						if(xx<50)
-							a="Bad condition!";
-						if(xx<30)
-							a="Have some BIG and NASTY wounds!";
-						if(xx<20)
-							a="Is in a awful condition!";
-						if(xx<5)
-							a="AWFUL CONDITION!";
-						DLC(config.plycolor, opp.name, CYAN, " status : ", BRIGHT_RED, a);
-						pbreak();
+					reward=player->level*rand_num(60)+10;
+					DL(config.textcolor, "You also receive ", yellow, commastr(reward), config.textcolor, " experience points!");
+					DL(config.textcolor, "...");
+					incplayermoney(player, reward);
+					player->exp += reward;
 
-						DC(config.textcolor, "Action (", config.textcolor2, "?", config.textcolor, " for moves) :");
+					newsy(true, "Fistfighter!",
+							Asprintf(" %s%s%s  fought a staggering battle at %s.", config.plycolor,player->name2, config.textcolor, config.bobsplace),
+							Asprintf(" It turned out to be a new victory in %s promising career!", sex3[player->sex]), NULL);
+					upause();
+				}
+			}
+			else {
+				nl();
+				DL(magenta, "You leave things as they are...");
+				DL(magenta, "Wise perhaps, but not very brave.");
+				if(player->charisma > 5)
+					player->charisma -= rand_num(3);
+			}
+			nl();
+		}
 
-						do {
-							ch=toupper(gchar());
-						} while((ch < 'A' || ch > 'N') && ch != '?');
+		if(onliner->location != ONLOC_BobsBeer) {
+			refresh=true;
+			onliner->location=ONLOC_BobsBeer;
+			strcpy(onliner->doing,location_desc(onliner->location));
+		}
 
-						pbreak();
-						
-						if(ch=='?') {
-							char chstr[2];
+		Display_Menu(true, true, &refresh, config.bobsplace, expert_keys, Meny, NULL);
 
-							chstr[1]=0;
-							pbreak();
-							for(i=0; i<14; i++) {
-								char	line[80];
-								sprintf(line, ") %-32s %s", bash_name(i), bash_rank(player->skill[i]));
-								DLC(MAGENTA, chstr, config.textcolor, line);
+		ch=toupper(gchar());
+
+		switch(ch) {
+			case '?':
+				Display_Menu(player->expert, false, &refresh, config.bobsplace, expert_keys, Meny, NULL);
+				break;
+			case 'S':
+				clr();
+				Status(player);
+				break;
+			case 'D':
+				nl();
+				nl();
+				DL(magenta, "You strut your stuff!");
+				DL(config.textcolor, "Many adventurers look your way. They don't seem to appreciate your performance! You are being ridiculed!");
+				nl();
+				upause();
+				break;
+			case 'T':
+				if(player->thiefs < 1)
+					DL(magenta, "You have tried enough for today.");
+				else {
+					chance=10;
+					if(player->class==Assassin) chance--;
+					if(player->dex > 10) chance--;
+					if(player->dex > 20) chance--;
+					if(player->dex > 40) chance--;
+					if(player->dex > 80) chance--;
+					if(player->dex > 140) chance--;
+					if(player->dex > 260) chance--;
+					if(player->dex > 500) chance--;
+
+					switch(chance) {
+						default:
+						case 0: str="Master Thief!"; break;
+						case 1: str="Extremely Good!"; break;
+						case 2: str="Skilled Pick-Pocket"; break;
+						case 3: str="Pick Pocket"; break;
+						case 4: str="Very Good"; break;
+						case 5: str="Good"; break;
+						case 6: str="Pretty Good"; break;
+						case 7: str="Average"; break;
+						case 8: str="Poor"; break;
+						case 9: str="Bad"; break;
+						case 10: str="Worthless"; break;
+					}
+					nl();
+					DL(config.textcolor, "Your thieving skill is ", yellow, str);
+					if(confirm("Do you dare to attempt thievery in here", 'N')) {
+						player->thiefs--;
+						if(rand_num(chance)==0) {
+							reward=rand_num(3000)+500;
+							reward*=player->level;
+							incplayermoney(player, reward);
+							DL(config.textcolor, "Success! You managed to steal ", commastr(reward), " ", MANY_MONEY(reward), "!");
+							nl();
+							upause();
+						}
+						else {
+							DL(config.textcolor, "Failure!! Your clumsy attempt was detected!");
+							if(rand_num(5)==0) {
+								DL(config.textcolor, "You were caught! You must spend the night in jail!");
+								DL(config.textcolor, "Come back tomorrow.");
+								nl();
+								newsy(true, "Thief Caught", Asprintf(" %s%s%s was caught stealing!", config.plycolor, player->name2, config.textcolor),
+										Asprintf(" %s%s%s was thrown in jail!", config.plycolor, player->name2, config.textcolor), NULL);
+								Reduce_Player_Resurrections(player, true);
+								upause();
+								normal_exit();
+							}
+							else {
+								DL(config.textcolor, "You managed to escape!");
+								nl();
+								upause();
 							}
 						}
-					} while(ch <'A' || ch > 'N');
-
-					pbreak();
-					switch(ch) {
-						case 'A':
-							pbreak();
-							DLC(config.textcolor, "Here goes...You take run and then charge ", config.plycolor, opp.name, config.textcolor, " and try a tackle!");
-							if(rand_num(hitchance(player->skill[ch-'A']))!=0) {
-								DLC(config.plycolor, s.name, copnfig.textcolor, "  evade your attack! You stumble past ", config.textcolor, opp.male?"him":"her");
-
-      if ch='?' then begin
-       crlf;
-       for i:=1 to 14 do begin
-        sd(5,chr(64+i));
-        if length(bash_name(i))<>32 then begin
-         a^:='                        ';
-         x:=length(bash_name(i));
-         x:=18-x;
-         sd(config.textcolor,') ');
-         sd(global_bashcol,bash_name(i)+copy(a^,1,x));
-         sd(config.textcolor,bash_rank(player.skill[i]));
-        end;
-        crlf;
-       end;
-      end;
-     until ch in ['A'..'N'];
-
-     crlf;
-     case ch of
-     'A':begin
-         crlf;
-         d(config.textcolor,'Here goes...You take run and then charge '+uplc+s^+config.textcol1+' and try a tackle!');
-         if random(hitchance(player.skill[1]))<>0 then begin
-          if male=true then d(global_plycol,s^+config.textcol1+' evade your attack! You stumble past him!')
-          else d(global_plycol,s^+config.textcol1+' evade your attack! You stumble past her!');
-         end
-         else begin
-          d(config.textcolor,'Your tackle hit '+uplc+s^+config.textcol1+' VERY hard!');
-          d(global_plycol,s^+config.textcol1+' lose sense of all directions!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'B':begin
-         d(config.textcolor,'BANZAI! You rush '+uplc+s^+config.textcol1+' and try a Drop-Kick!');
-         if random(hitchance(player.skill[2]))<>0 then begin
-          if male=true then d(global_plycol,s^+config.textcol1+' simply jumps aside, and you fly past him!')
-          else d(global_plycol,s^+config.textcol1+' simply jumps aside, and you fly past her!');
-         end
-         else begin
-          d(config.textcolor,'Your kick hit '+uplc+s^+config.textcol1+' hard!');
-          if male=true then d(config.textcolor,'He goes down!')
-          else d(config.textcolor,'She goes down!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'C':begin
-         d(config.textcolor,'You try an uppercut against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[3]))<>0 then begin
-          d(global_plycol,s^+config.textcol1+' elegantly blocks your assault!');
-         end
-         else begin
-          d(config.textcolor,'You hit '+uplc+s^+config.textcol1+' right on the chin!');
-          if male=true then d(config.textcolor,'He goes down!')
-          else d(config.textcolor,'She goes down!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'D':begin
-         d(config.textcolor,'You trow yourself against '+uplc+s^+config.textcol1+' with a fearsome battlecry!');
-         if random(hitchance(player.skill[4]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' elegantly avoid your clumsy assault!');
-         end
-         else begin
-          if male=true then d(global_plycol,s^+config.textcol1+' screams in horror as you bite him hard!')
-          else d(global_plycol,s^+config.textcol1+' screams in horror as you bite her hard!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'E':begin
-         d(config.textcolor,'You try a Leg-Sweep against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[5]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' manage to avoid the assault!');
-          crlf;
-         end
-         else begin
-          if male=true then d(global_plycol,s^+config.textcol1+' falls heavily to the floor as you sweep away his legs!')
-          else d(global_plycol,s^+config.textcol1+' falls heavily to the floor as you sweep away her legs!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'F':begin
-         d(config.textcolor,'You try to get a good grip on '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[6]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' blocks your attack!');
-         end
-         else begin
-          if male=true then d(global_plycol,s^+config.textcol1+' screams in pain as you crack a bone in his body! Hehe!')
-          else d(global_plycol,s^+config.textcol1+' screams in pain as you crack a bone in her body! Hehe!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'G':begin
-         d(config.textcolor,'You let your right hand go off in an explosive stroke against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[7]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' blocks your attack!');
-         end
-         else begin
-
-          if male=true then d(global_plycol,s^+config.textcol1+' looks surprised when your punch hit him hard in the chest!')
-          else d(global_plycol,s^+config.textcol1+' looks surprised when your punch hit her hard in the chest!');
-          if male=true then d(config.textcolor,'He goes down oh his knees, moaning!')
-          else d(config.textcolor,'She goes down oh his knees, moaning!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'H':begin
-         d(config.textcolor,'You send off a stroke against your foe!');
-         if random(hitchance(player.skill[8]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' avoids your attack with elegance!');
-          d(config.textcolor,'Instead you collect a counterattack against your upper body!');
-          cstam:=cstam-(random(4)+4);
-         end
-         else begin
-          d(global_plycol,s^+config.textcol1+' is stunned from your effective punch!');
-          if male=true then d(config.textcolor,'He goes down!')
-          else d(config.textcolor,'She goes down!');
-          cstam:=cstam-(random(4)+4);
-          stunned2:=true;
-         end;
-         end;
-     'I':begin
-         d(config.textcolor,'You try to get your hands around '+uplc+s^+'s'+config.textcol1+' throat!');
-         if random(hitchance(player.skill[9]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' takes a couple of ballet steps, and avoid your attack!');
-         end
-         else begin
-          if male=true then d(global_plycol,s^+'s'+config.textcol1+' face turns red when he chokes!')
-          else d(global_plycol,s^+'s'+config.textcol1+' face turns red when she chokes! (hehe!)');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'J':begin
-         d(config.textcolor,'You try a Headbash against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[10]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' quickly takes a few steps back!');
-         end
-         else begin
-          d(config.textcolor,'You hit '+uplc+s^+'s'+config.textcol1+' head with a massive blow!');
-          if male=true then d(config.textcolor,'He goes down bleeding from some nasty wounds!')
-          else d(config.textcolor,'She goes down bleeding from some nasty wounds!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'K':begin
-         d(config.textcolor,'You try to grab hold of '+uplc+s^+'s'+config.textcol1+' hair!');
-         if random(hitchance(player.skill[11]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' manages to evade your attack!');
-         end
-         else begin
-          if male=true then d(config.textcolor,'You get a firm grip of his hair! You drag him around the room!')
-          else d(config.textcolor,'You get a firm grip of her hair! You drag her around the room!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'L':begin
-         d(config.textcolor,'You try a Kick against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[12]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' blocks it!');
-          pause;
-         end
-         else begin
-          if male=true then d(config.textcolor,'He staggers under your blow!')
-          else d(config.textcolor,'She staggers under your blow!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'M':begin
-         d(config.textcolor,'You try a Punch against '+uplc+s^+config.textcol1+'!');
-         if random(hitchance(player.skill[13]))<>0 then begin
-          d(config.textcolor,'But '+uplc+s^+config.textcol1+' blocks it!');
-         end
-         else begin
-          if male=true then d(config.textcolor,'You hit him right on the chin! He is dazed!')
-          else d(config.textcolor,'You hit her right on the chin! Se is dazed!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     'N':begin
-         d(config.textcolor,'You rush '+uplc+s^+config.textcol1+' with your head lowered!');
-         if random(hitchance(player.skill[14]))<>0 then begin
-          if male=true then d(config.textcolor,'But he manages to jump aside just before you reach him!')
-          else d(config.textcolor,'But she manages to jump aside just before you reach her!');
-         end
-         else begin
-          if male=true then d(config.textcolor,'You hit '+uplc+s^+config.textcol1+' right in Solar-Plexus!'
-                              +' You send him flying!')
-          else d(config.textcolor,'You hit '+uplc+s^+config.textcol1+' right in Solar-Plexus! You send her flying!');
-          cstam:=cstam-(random(4)+4);
-         end;
-         end;
-     end;
-
-     {enemy move}
-     x:=random(14)+1;
-     if male=true then a2^:='He'
-                  else a2^:='She';
-
-     case x of
-      1: d(config.textcolor,a2^+' tries to tackle you!');
-      2: d(config.textcolor,a2^+' tries a drop-kick against you!');
-      3: d(config.textcolor,a2^+' tries an uppercut against your head!');
-      4: d(config.textcolor,a2^+' tries to bite you in the leg!');
-      5: d(config.textcolor,a2^+' goes for a leg-sweep against you!');
-      6: d(config.textcolor,a2^+' tries to break your arm!');
-      7: d(config.textcolor,a2^+' sends off a Nicehand, aimed at your chest!');
-      8: d(config.textcolor,a2^+' sends off a nervepunch!');
-      9: d(config.textcolor,'The bastard tries to strangle you!');
-      10: d(config.textcolor,a2^+' goes for a Headbash! Watch it!');
-      11: d(config.textcolor,a2^+' tries to pull your hair!');
-      12: d(config.textcolor,a2^+' goes for a kick, aimed at your body!');
-      13: d(config.textcolor,a2^+' goes for a straight punch in your face!');
-      14: d(config.textcolor,a2^+' comes rushing at you in high speed! RAM!');
-     end; {case .end.}
-
-     y:=1;
-     if pstam>5 then y:=y+1;
-     if (player.class=Assassin) or (player.class=Jester) then y:=y+1;
-     if player.agility>50 then y:=y+1;
-     if player.agility>200 then y:=y+1;
-     if player.agility>700 then y:=y+1;
-     if player.agility>1300 then y:=y+1;
-     if player.level>50 then y:=y+1;
-     if player.level>95 then y:=y+1;
-
-     if random(y)<2 then begin
-      d(config.textcolor,'You didn''t manage to evade!');
-      if x=8 then stunned1:=true;
-      case x of
-       1:d(config.textcolor,'The hard tackle sends you across the floor! You lose your breath!');
-       2:d(config.textcolor,'You stagger under the impact from the kick!');
-       3:d(config.textcolor,'The stroke lands neately on your chin! You see stars and moons!');
-       4:begin
-          if male=true then d(config.textcolor,'His bite goes deep in your leg! You are bleeding!')
-          else d(config.textcolor,'Her bite goes deep in your leg! You are bleeding!');
-         end;
-       5:d(config.textcolor,'You fall heavily to the floor!');
-       6:d(config.textcolor,'Cracck... Something just broke in your body! You are hurt bad!');
-       7:begin
-          if male=true then d(config.textcolor,'You lose your breath when his steelhand goes right in your chest!')
-          else d(config.textcolor,'You lose your breath when her steelhand goes right in your chest!');
-         end;
-       8:d(config.textcolor,'The stroke hits a nerve! You are stunned!');
-       9:begin
-          if male=true then d(config.textcolor,'He got you in a chokeholt! You can''t breathe!')
-          else d(config.textcolor,'She got you in a chokeholt! You can''t breathe!');
-         end;
-       10:d(config.textcolor,'BONK! You are feeling dizzy! Your head aches!');
-       11:d(config.textcolor,'Arrgghhh! That really hurt! What a dirty trick!');
-       12:d(config.textcolor,'The well placed kick lands right in solar-plexus! Ouch!');
-       13:d(config.textcolor,'The punch lands right on your nose! You lose sense of all directions!');
-       14:begin
-           if male=true then d(config.textcolor,'His attack sends you sprawling! You fall to the floor!')
-           else d(config.textcolor,'Her attack sends you sprawling! You fall to the floor!');
-          end;
-      end;
-      pstam:=pstam-(random(6)+4);
-
-     end;
-
-     {fusk}
-     {d(15,commastr(pstam));
-     d(15,commastr(cstam));}
-
-    until (pstam<=0) or (cstam<=0);
-
-    if pstam<=0 then begin
-     d(config.textcolor,'Your head starts to spin, and you feel darkness...');
-     d(config.textcolor,'All your strength is gone!');
-     d(config.textcolor,'Before you slide into unconsciousness you feel how you are being');
-     d(config.textcolor,'frisked...');
-     crlf;
-
-     case random(2) of
-      0:begin
-         newsy(true,
-         'Dork',
-         ' '+uplc+player.name2+config.textcol1+' tried to show off at '+config.bobsplace+'.',
-         ' '+sex2[player.sex]+' was knocked out after a short fight against '+uplc+s^+config.textcol1+', the '+ts^+'.',
-         '',
-         '',
-         '',
-         '',
-         '',
-         '',
-         '');
-        end;
-      1:begin
-         newsy(true,
-         'Brawl at '+config.bobsplace+'!',
-         ' '+uplc+player.name2+config.textcol1+' accepted a challenge in '+config.bobsplace+'.',
-         ' The violence ended when '+uplc+player.name2+config.textcol1+' was knocked out',
-         ' by '+uplc+s^+config.textcol1+', the '+ts^+'.',
-         '',
-         '',
-         '',
-         '',
-         '',
-         '');
-        end;
-     end;
-     player.gold:=0;
-     pause;
-
-     post(MailSend,
-     player.name2,
-     player.ai,
-     false,
-     mailrequest_nothing,
-     '',
-     umailheadc+'Defeat!'+config.textcol1,
-     mkstring(7,underscore),
-     'You were knocked out in '+config.bobsplace+'!',
-     'Better train some more before starting a brawl!',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '');
-
-     normal_exit;
-
-    end
-    else begin
-     crlf;d(14,'Victory!');
-     d(config.textcolor,'You have defeated '+s^+'!');
-     sd(config.textcolor,'You frisk your foe and find ');
-     sd(14,commastr(reward));
-     sd(config.textcolor,' '+many_money(reward)+'!');crlf;
-
-     xx:=player.level*(random(60)+10);
-     sd(config.textcolor,'You also receive ');
-     sd(14,commastr(xx));
-     sd(config.textcolor,' experience points!');
-     crlf; d(config.textcolor,'...');
-     incplayermoney(player,reward);
-     player.exp:=player.exp+xx;
-
-     newsy(true,
-     'Fistfighter!',
-     ' '+uplc+player.name2+config.textcol1+' fought a staggering battle at '+config.bobsplace+'.',
-     ' It turned out to be a new victory in '+sex3[player.sex]+' promising career!',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '',
-     '');
-
-     pause;
-    end;
-
-   end
-   else begin
-    crlf;
-    d(5,'You leave things as they are...');
-    d(5,'Wise perhaps, but not very brave.');
-    if player.charisma>5 then player.charisma:=player.charisma-random(3);
-   end;
-   crlf;
-  end;
-
-  if onliner.location<>onloc_bobsbeer then begin
-   refresh:=true;
-   onliner.location :=onloc_bobsbeer;
-   onliner.doing    :=location_desc(onliner.location);
-   add_onliner(OUpdateLocation,onliner);
-  end;
-
-  display_menu(true,true);
-
-  ch:=upcase(getchar);
-
-  case ch of
-   '?':begin
-        if player.expert=true then display_menu(true,false)
-                              else display_menu(false,false);
-       end;
-   'S':begin
-       clearscreen;
-       Status(player);
-       end;
-   'D':begin
-        crlf; crlf;
-        d(5,'You strut your stuff!');
-        d(config.textcolor,'Many adventurers look your way.');
-        d(config.textcolor,'They don'+chr(39)+'t seem to appreciate your performance!');
-        d(config.textcolor,'You are being ridiculed!');
-        crlf;
-        pause;
-       end;
-   'T':begin
-       if player.thiefs<1 then begin
-        d(5,'You have tried enough for today.');
-       end
-       else begin
-        y:=10;
-        if player.class=Assassin then y:=y-1;
-        if player.dex>10 then dec(y);
-        if player.dex>20 then dec(y);
-        if player.dex>40 then dec(y);
-        if player.dex>80 then dec(y);
-        if player.dex>140 then dec(y);
-        if player.dex>260 then dec(y);
-        if player.dex>500 then dec(y);
-
-        s^:='Master Thief!';
-        case y of
-         0: s^:='Master Thief';
-         1: s^:='Extremely Good!';
-         2: s^:='Skilled Pick-Pocket';
-         3: s^:='Pick Pocket';
-         4: s^:='Very Good';
-         5: s^:='Good';
-         6: s^:='Pretty Good';
-         7: s^:='Average';
-         8: s^:='Poor';
-         9: s^:='Bad';
-        10: s^:='Worthless';
-        end;
-        crlf;
-        sd(config.textcolor,'Your thieving skill is ');
-        sd(14,s^);
-        crlf;
-
-        if confirm('Do you dare to attempt thievery in here','n')=true then begin
-
-         player.thiefs:=player.thiefs-1;
-         if random(y)=0 then begin
-          xx:=random(3000)+500;
-          xx:=xx*player.level;
-          incplayermoney(player,xx);
-          d(config.textcolor,'Success! You managed to steal '+commastr(xx)+' '+many_money(xx)+'!');
-          crlf;
-          pause;
-         end
-         else begin
-          d(config.textcolor,'Failure!! Your clumsy attempt was detected!');
-          if random(5)=0 then begin
-           d(config.textcolor,'You were caught! You must spend the night in jail!');
-           d(config.textcolor,'Come back tomorrow.');
-           crlf;
-
-           newsy(true,
-           'Thief Caught!',
-           ' '+uplc+player.name2+config.textcol1+' was caught stealing!',
-           ' '+uplc+player.name2+config.textcol1+' was thrown in jail!',
-           '',
-           '',
-           '',
-           '',
-           '',
-           '',
-           '');
-
-           {player.allowed:=false;}
-           Reduce_Player_Resurrections(player,true);
-           pause;
-           normal_exit;
-          end
-          else begin
-           d(config.textcolor,'You managed to escape!');
-           crlf;
-           pause;
-          end;
-         end;
-        end;
-       end;
-       end;
-   'B':begin {slagsm†l! BRAWL!}
-        if player.brawls<1 then begin
-         crlf;
-         d(5,'You are too exhausted!');
-         crlf;
-        end
-        else begin
-         crlf;
-         if confirm('Start a fight ','n')=true then begin
-          brawl;
-         end;
-        end;
-
-       end;
-   'C':begin {drinking competition}
-
-        if player.chivnr<1 then begin
-         crlf;
-         d(12,'You are too exhausted!');
-         pause;
-         break;
-        end;
-
-        crlf;
-        crlf;
-
-        if confirm('Initiate a Beerdrinking contest','N')=true then begin
-         dec(player.chivnr);;
-         drinking_competition;
-        end;
-
-       end;
-
-  end; {case .end.}
-
- until ch='R';
- crlf;
-
- {dispose pointer variables}
- dispose(rr);
- dispose(a);
- dispose(a2);
- dispose(s);
- dispose(ts);
- dispose(ok);
- dispose(no);
-
-end; {Bobs_Inn *end*}
-
-end. {Unit Bobs .end.}
+					}
+				}
+				break;
+			case 'B':	// BRAWL!
+				if(player->brawls < 1) {
+					nl();
+					DL(magenta, "You are too exhausted!");
+					nl();
+				}
+				else {
+					nl();
+					if(confirm("Start a fight ",'N'))
+						Brawl();
+				}
+				break;
+			case 'C':	// Drinking Competition
+				if(player->chivnr < 1) {
+					nl();
+					DL(lred, "You are too exhausted!");
+					upause();
+				}
+				else {
+					nl();
+					nl();
+					if(confirm("Initiate a Beerdrinking contest", 'N')) {
+						player->chivnr--;
+						Drinking_Competition();
+					}
+				}
+				break;
+		}
+	} while (ch != 'R');
+	nl();
+}

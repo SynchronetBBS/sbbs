@@ -56,7 +56,7 @@ static void Meny(void *cbdata)
 	menu("(S)teroid Shop");
 
 	menu2(ljust("(O)rbs Health Club", offset));
-	menu(Asprintf("(G) %s%s%s Magic Services", config.plycolor, config.groggo_name, config.textcol1));
+	menu(Asprintf("(G) %s%s%s Magic Services", config.plycolor, config.groggo_name, config.textcolor));
 
 	menu2(ljust("(B)eer Hut", offset));
 	menu("(A)lchemists Heaven");

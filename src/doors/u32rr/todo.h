@@ -71,6 +71,7 @@ enum places {
 };
 
 #define MAXITEM			15	// Most items you can carry at a time...
+#define MAXSPELLS		12	// Max spells available
 struct player {
 	char		name1[71];	// BBS Name
 	char		name2[71];	// Game name (used in news messages)
@@ -162,6 +163,12 @@ struct player {
 	int			p_kills;
 	int			p_defeats;
 	int			resurrections;
+	bool		spell[MAXSPELLS][2];
+	enum aitype	ai;
+	int			darknr;		// Dark Deeds remaining
+	int			thiefs;
+	int			brawls;
+	int			chivnr;		// Good deeds left
 };
 
 #define MAX_PLAYERS	1024
@@ -178,5 +185,48 @@ extern struct config config;
 #define global_talkcol BRIGHT_MAGENTA
 extern bool global_begged;
 extern bool global_nobeg;
+
+enum mailaction {
+	MailRead,
+	MailSend
+};
+
+enum mailspecial {
+	MAILREQUEST_Nothing,
+	MAILREQUEST_BeMyGuard,
+	MAILREQUEST_IWantGuard,
+	MAILREQUEST_DrinkOffer,
+
+	// Immortal
+	MAILREQUEST_ImmortalOffer = 40,
+	MAILREQUEST_RoyalAngel = 50,
+	MAILREQUEST_RoyalAvenger,
+	MAILREQUEST_QuestOffer = 60,
+	MAILREQUEST_Birthday,
+
+	// Relationship
+	MAILREQUEST_HoldHands = 70,
+	MAILREQUEST_Roses,
+	MAILREQUEST_Poison,
+	MAILREQUEST_Dinner,
+	MAILREQUEST_Scorpions,
+	MAILREQUEST_Chocolate,
+	MAILREQUEST_Kiss,
+	MAILREQUEST_HaveSex,
+	MAILREQUEST_HaveDiscreteSex,
+	MAILREQUEST_ScanForBabies,
+	MAILREQUEST_ChildRaisingExp,
+	MAILREQUEST_ChildPoisonedExp,
+	MAILREQUEST_ChildFightExp,
+	MAILREQUEST_SilentExp,
+	MAILREQUEST_ChildCursedExp,
+	MAILREQUEST_ChildDepressedExp,
+	MAILREQUEST_GymMembership = 89,
+	MAILREQUEST_JoinTeam
+};
+void Post(enum mailaction, const char *to, enum aitype toai, bool togod, enum mailspecial special, const char *from, ...);
+void Brawl(void);
+void Drinking_Competition(void);
+
 
 #endif

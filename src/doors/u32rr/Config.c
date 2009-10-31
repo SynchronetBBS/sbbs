@@ -27,10 +27,7 @@ void DefaultConfig()
 	config.teamcolor=cyan;
 	config.bashcolor=cyan;
 	config.itemcolor=lcyan;
-
-	// String colours
-	strcpy(config.textcol1, config.textcolor);
-	strcpy(config.textcol2, config.highlightcolor);
+	config.umailheadcolor=cyan;
 
 	// Strings
 	strcpy(config.moneytype, "gold");	// Name of money (ie: Gold)

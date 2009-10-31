@@ -2,6 +2,8 @@
  * Various functions
  */
 
+#include <sys/limits.h>
+
 #include "IO.h"
 #include "Config.h"
 #include "files.h"
@@ -129,6 +131,13 @@ void decplayermoney(struct player *pl, long coins)
 		pl->gold=0;
 }
 
+void incplayermoney(struct player *pl, long coins)
+{
+	pl->gold += coins;
+	if(pl->gold < 0)
+		pl->gold=INT_MAX;
+}
+
 void Quick_Healing(struct player *pl)
 {
 	int	quaff;
@@ -200,4 +209,35 @@ void Healing(struct player *pl)
 			DL(config.textcolor, "You have ",white,commastr(pl->healing),config.textcolor, pl->healing==1?" potion left":"potions left");
 		}
 	}
+}
+
+int HitChance(int skill)
+{
+	switch(skill) {
+		case 0:
+			return 7;
+		case 1:
+		case 2:
+		case 3:
+			return 6;
+		case 4:
+		case 5:
+		case 6:
+			return 5;
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+			return 4;
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+			return 3;
+		case 15:
+		case 16:
+		case 17:
+			return 2;
+	}
+	return(8);
 }
