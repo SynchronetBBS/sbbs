@@ -11,23 +11,6 @@
 var sepchar="|";
 var debug=true;
 
-// State handling functions
-function not_authenticated()
-{
-}
-
-function authenticated()
-{
-}
-
-function selected()
-{
-}
-
-function logout()
-{
-}
-
 function debug_log(line)
 {
 	if(debug)

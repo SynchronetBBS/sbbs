@@ -1,7 +1,6 @@
 // sbbsimsg.js
 
 // Synchronet inter-bbs instant message module
-// uses Finger and SMTP TCP/IP protocols
 
 // $Id$
 
@@ -152,9 +151,7 @@ function list_users(show)
 		if(sys[i].ip==undefined)
 			continue;
 		/* Try SYSTAT and finger */
-		sock.sendto("\r\n",sys[i].ip,IPPORT_SYSTAT);	// Get list of active users
-		if(!sock.sendto("\r\n",sys[i].ip,IPPORT_FINGER))	// Get list of active users
-			//printf("FAILED! (%d) Sending to %s\r\n",sock.last_error,sys[i].addr);
+		if(!sock.sendto("\r\n",sys[i].ip,IPPORT_SYSTAT))	// Get list of active users
 			continue;
 		udp_req++;
 	}
@@ -192,77 +189,6 @@ function list_users(show)
 	
 	sock.close();
 
-	/* TCP systems */
-	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
-
-		if(sys[i].udp)
-			continue;
-			
-		if(sys[i].failed)
-			continue;
-
-		begin = new Date();
-
-		if(show) {
-			console.line_counter=0;	// defeat pause
-			printf("\1n\1h%-25.25s\1n ",sys[i].addr);
-		}
-		replies++;	// we're adding the number of Finger requests here
-
-		sock = new Socket();
-		sock.bind(0,server.interface_ip_address);
-		is_connected = false;
-		/* Try SYSTAT first */
-		/* By IP */
-		if(sys[i].ip != undefined) {
-			is_connected = sock.connect(sys[i].ip,IPPORT_SYSTAT,5);
-			if(!is_connected) {
-				is_connected = sock.connect(sys[i].ip,IPPORT_FINGER,5);
-				if(!is_connected)
-					sys[i].ip = undefined;	// IP no good, remove from cache
-			}
-		}
-		/* By addr */
-		if(!is_connected) {
-			/* Try by addr */
-			is_connected = sock.connect(sys[i].addr,IPPORT_SYSTAT,5);
-			if(!is_connected) {
-				is_connected = sock.connect(sys[i].addr,IPPORT_FINGER,5);
-			}
-		}
-
-		if(!is_connected) {
-			log(format("!SYSTAT and Finger connections to %s FAILED with error %d"
-				,sys[i].addr,sock.last_error));
-			alert("system not available");
-			sys[i].failed = true;
-			continue;
-		}
-		sys[i].reply=new Date().valueOf()-begin.valueOf();
-
-		// cache the IP address for faster resolution
-		if(sys[i].ip != sock.remote_ip_address)
-			sys[i].ip = sock.remote_ip_address;	
-
-		if(sock.remote_port == IPPORT_FINGER)
-			sock.send("\r\n");	// Get list of active users
-		var response=new Array();
-		while(bbs.online && sock.is_connected) {
-			str=sock.readline();
-			if(str==null)
-				break;
-			str = truncsp(str);
-			if(str=="")
-				continue;
-			response.push(str);
-		}
-		sock.close();
-
-
-		parse_response(response,show);
-	}
-	
-	
 	t = new Date().valueOf()-start.valueOf();
 	printf("\1m\1h%lu systems (%lu UDP) and %lu users listed in %d seconds.\r\n"
 		,replies, udp_replies, users, t/1000);
@@ -295,46 +221,6 @@ function send_msg(dest, msg)
 	do {
 		if(!sock.connect(host,IPPORT_MSP)) {
 			alert("MSP Connection to " + host + " failed with error " + sock.last_error);
-
-			if(!sock.connect(host,IPPORT_SMTP)) {
-				alert("Connection to " + host + " failed with error " + sock.last_error);
-				break;
-			}
-
-			if(Number((rsp=sock.recvline()).slice(0,3))!=220) {
-				alert("Invalid connection response:\r\n" + rsp);
-				break;
-			}
-			sock.send("HELO "+system.inetaddr+"\r\n");
-			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-				alert("Invalid HELO response: " + rsp);
-				break;
-			}
-			sock.send("SOML FROM: "+user.email+"\r\n");
-			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-				alert("Invalid SOML response: " + rsp);
-				break;
-			}
-			if(dest.indexOf('<')<0)
-				dest = '<' + dest + '>';
-			sock.send("RCPT TO: "+dest+"\r\n");
-			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-				alert("Invalid RCPT TO response: " + rsp);
-				break;
-			}
-			sock.send("DATA\r\n");
-			if(Number((rsp=sock.recvline()).slice(0,3))!=354) {
-				alert("Invalid DATA response: " + rsp);
-				break;
-			}
-			sock.send(msg);
-			sock.send("\r\n.\r\n");
-			if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
-				alert("Invalid end of message response: " + rsp);
-				break;
-			}
-			sock.send("QUIT\r\n");
-			print("Message delivered successfully.");
 		}
 		else {
 			sock.send("B"+destuser+"\0"+/* Dest node +*/"\0"+msg+"\0"+user.name+"\0"+"Node: "+bbs.node_num+"\0\0"+system.name+"\0");

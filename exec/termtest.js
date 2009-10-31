@@ -708,7 +708,9 @@ function test_ctrl_seqs(results)
 			desc:"Cursor Next Line",
 			test:function(results) {
 				if(results.ctrl_seqs.CUU) {
-					console.writeln("Cursor Next Line Test\033[ECursor Next Line Test\033[A\033[2ECursor Next Line Test");
+					console.crlf();
+					console.crlf();
+					console.writeln("\033[2ACursor Next Line Test\033[ECursor Next Line Test\033[A\033[2ECursor Next Line Test");
 					return(console.yesno("Are the previous three lines identical"));
 				}
 				return(null);
@@ -748,6 +750,9 @@ function test_ctrl_seqs(results)
 		},
 		"CUP":{
 			char:"H",
+			test:function(results) {
+				
+			},
 		},
 		"CHT":{
 			char:"I",
