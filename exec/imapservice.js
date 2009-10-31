@@ -8,6 +8,8 @@
  * $Id$
  */
 
+load("sbbsdefs.js");
+
 var sepchar="|";
 var debug=true;
 
@@ -207,21 +209,25 @@ function sendrecent()
 	untagged("0 RECENT");
 }
 
-function sublist(group, match)
+function sublist(group, match, subscribed)
 {
 	var grp;
 	var sub;
 	var ret=[];
 
 	match=match.replace(/\%/, "*");
+	group=group.replace(/\%/, "*");
 	for(grp in msg_area.grp_list) {
-//		if(group=='' || msg_area.grp_list[grp].description==group) {
+		if(group=='' || wildmatch(true, msg_area.grp_list[grp].description, group)) {
 			ret.push(msg_area.grp_list[grp].description+sepchar);
 
 			for(sub in msg_area.grp_list[grp].sub_list) {
-				ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
+				if(wildmatch(true, msg_area.grp_list[grp].sub_list[sub].description, match, false)) {
+					if((!subscribed) || msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW)
+						ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
+				}
 			}
-//		}
+		}
 	}
 	return(ret);
 }
@@ -271,17 +277,17 @@ authenticated_command_handlers = {
 		arguments:1,
 		handler:function(args){
 			var tag=args[0];
-			var sub=args[1];
+			var sub=getsub(args[1]);
 
 			base=new MsgBase(sub);
-			if(base == undefined) {
+			if(base == undefined || (!base.open())) {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
 			sendflags(false);
-			untagged("EXISTS");
-			untagged("RECENT");
-			untagged("OK [UNSEEN]");
+			untagged(base.total_msgs+" EXISTS");
+			untagged("0 RECENT");
+			untagged("OK [UNSEEN "+(base.total_msgs+1)+"]");
 			sendflags(true);
 			untagged("OK [UIDNEXT "+(base.last_msg+1)+"]");
 			untagged("OK [UIDVALIDITY 0]");
@@ -320,11 +326,11 @@ authenticated_command_handlers = {
 		arguments:1,
 		handler:function(args) {
 			var tag=args[0];
-			var sub=args[1];
+			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
 				tagged(tag, "OK", "Subscribed...");
-				//msg_area.sub[sub].scan_cfg=SCAN_CFG_NEW;
+				msg_area.sub[sub].scan_cfg|=SCAN_CFG_NEW;
 			}
 			else
 				tagged(tag, "NO", "Can't subscribe to that sub (what is it?)");
@@ -334,11 +340,12 @@ authenticated_command_handlers = {
 		arguments:1,
 		handler:function(args) {
 			var tag=args[0];
-			var sub=args[1];
+			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
 				tagged(tag, "OK", "Unsubscribed...");
-				//msg_area.sub[sub].scan_cfg=0;
+				// This may leave the to you only bit set... yay.
+				msg_area.sub[sub].scan_cfg&=~SCAN_CFG_NEW;
 			}
 			else
 				tagged(tag, "NO", "Can't unsubscribe that sub (what is it?)");
@@ -348,9 +355,17 @@ authenticated_command_handlers = {
 		arguments:2,
 		handler:function(args) {
 			var tag=args[0];
-			var ref=args[1];
+			var group=args[1];
 			var sub=args[2];
-			
+			var groups=sublist(group, sub, false);
+			var group;
+
+			for(group in groups) {
+				if(groups[group].substr(-1)==sepchar)
+					untagged('LIST (\\Noselect) "'+sepchar+'" "'+groups[group].substr(0,groups[group].length-1)+'"');
+				else
+					untagged('LIST () "'+sepchar+'" "'+groups[group]+'"');
+			}
 			tagged(tag, "OK", "There you go.");
 		},
 	},
@@ -360,12 +375,12 @@ authenticated_command_handlers = {
 			var tag=args[0];
 			var group=args[1];
 			var sub=args[2];
-			var groups=sublist(group, sub);
+			var groups=sublist(group, sub, true);
 			var group;
 
 			for(group in groups) {
 				if(groups[group].substr(-1)==sepchar)
-					untagged('LSUB (\Noselect) "'+sepchar+'" "'+groups[group].substr(0,-1)+'"');
+					untagged('LSUB (\\Noselect) "'+sepchar+'" "'+groups[group].substr(0,groups[group].length-1)+'"');
 				else
 					untagged('LSUB () "'+sepchar+'" "'+groups[group]+'"');
 			}
