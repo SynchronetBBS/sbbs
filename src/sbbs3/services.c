@@ -109,6 +109,7 @@ typedef struct {
 	/* Initial UDP datagram */
 	BYTE*			udp_buf;
 	int				udp_len;
+	subscan_t		*subscan;
 } service_client_t;
 
 static service_t	*service=NULL;
@@ -466,6 +467,11 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&client->user,0,sizeof(user_t));
 
+	if(client->user.number) {
+		if(client->subscan!=NULL)
+			putmsgptrs(&scfg, client->user.number, client->subscan);
+	}
+
 	if(isdigit(*p))
 		client->user.number=atoi(p);
 	else if(*p)
@@ -522,10 +528,18 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}	
 
 	putuserdat(&scfg,&client->user);
+	if(client->subscan==NULL) {
+		client->subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+		if(client->subscan==NULL)
+			lprintf(LOG_CRIT,"!MALLOC FAILURE");
+	}
+	if(client->subscan!=NULL) {
+		getmsgptrs(&scfg,client->user.number,client->subscan);
+	}
+
 	JS_RESUMEREQUEST(cx, rc);
 
-	/* user-specific objects */
-	if(!js_CreateUserObjects(cx, obj, &scfg, &client->user, client->client, NULL, NULL)) 
+	if(!js_CreateUserObjects(cx, obj, &scfg, &client->user, client->client, NULL, client->subscan))
 		lprintf(LOG_ERR,"%04d %s !JavaScript ERROR creating user objects"
 			,client->socket,client->service->protocol);
 
@@ -887,7 +901,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		/* user-specific objects */
-		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, /*user: */NULL, service_client->client, NULL, NULL)) 
+		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;
 
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
@@ -1185,10 +1199,13 @@ static void js_service_thread(void* arg)
 	jsrt_Release(js_runtime);
 
 	if(service_client.user.number) {
+		if(service_client.subscan!=NULL)
+			putmsgptrs(&scfg, service_client.user.number, service_client.subscan);
 		lprintf(LOG_INFO,"%04d %s Logging out %s"
 			,socket, service->protocol, service_client.user.alias);
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
 	}
+	FREE_AND_NULL(service_client.subscan);
 
 	if(service->clients)
 		service->clients--;
