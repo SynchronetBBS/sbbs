@@ -37,7 +37,7 @@ set _online ON_LOCAL
 
 # Variables
 int i argc argv sock port flen
-str tmp rep qwk hubid addr user password 
+str tmp rep qwk hubid addr user password portstr
 str cmdline
 
 set _ftp_mode FTP_PASV
@@ -46,6 +46,7 @@ set _ftp_mode FTP_PASV
 set hubid ""
 set addr ""
 set password ""
+set portstr ""
 set port 0
 
 # Display command line
@@ -75,7 +76,7 @@ switch argc
 		strcat password tmp
 		end_case
 	case 3
-		copy port tmp
+		strcat portstr tmp
 		end_case
 	default
 		goto usage
@@ -99,6 +100,7 @@ compare password ""
 if_true
 	goto usage
 	end_if
+copy port portstr
 compare port 0
 if_true
 	# if no Port is passed on the command line, default to 21
