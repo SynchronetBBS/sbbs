@@ -647,7 +647,7 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	js_PrepareToExecute(js_cx, js_scope, path);
+	js_PrepareToExecute(js_cx, js_glob, path);
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
 	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
