@@ -1,19 +1,52 @@
-function DigitalClock(x,y,color)
+function DigitalClock()
 {
-	this.x=x;
-	this.y=y;
-	this.color=color;
+	this.x;
+	this.y;
+	this.color;
 	this.columns=17;
 	this.rows=5;
 	this.lastupdate=-1;
 	this.digits=[];
 	this.hidden=false;
+	this.box;
 	
-	this.Init=function()
+	this.Menu=function()
 	{
+		while(1) 
+		{
+			Cycle();
+			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			switch(k)
+			{
+				case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+						Redraw();
+						break;
+				case ctrl('O'): /* CTRL-O - Pause */
+				case ctrl('U'): /* CTRL-U User List */
+				case ctrl('T'): /* CTRL-T Time Info */
+				case ctrl('K'): /* CTRL-K Control Key Menu */
+				case ctrl('P'): /* Ctrl-P Messages */
+					controlkeys.handle(key);
+					break;
+				case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
+				case KEY_RIGHT:
+					NextWindow("clock");
+				case "\x1b":
+					return;
+				default:
+					break;
+			}
+		}
+	}
+	this.Init=function(x,y,color)
+	{
+		this.x=x?x:1;
+		this.y=y?y:1;
+		this.color=color?color:"\1n\1h";
 		this.LoadDigits();
-		this.DrawBox();
- 		this.Update();
+		this.box=new  Window("TIME",this.x,this.y,this.columns,this.rows);
+		this.box.Draw();
+ 		this.Update(true);
 	}
 	this.Hide=function()
 	{
@@ -39,7 +72,7 @@ function DigitalClock(x,y,color)
 		var time=hours.toString() + ":" + minutes.toString();
 		if(minutes>this.lastupdate || forced) 
 		{
-			this.DrawBox();
+			this.box.Draw();
 			this.lastupdate=minutes;
 			this.DrawClock(time);
 		}
@@ -65,24 +98,6 @@ function DigitalClock(x,y,color)
 	this.Redraw=function()
 	{
 		this.Update(true);
-	}
-	this.DrawBox=function()
-	{
-		console.gotoxy(this.x,this.y);
-		console.putmsg("\1n\1h\xDA\xB4\1nTIME\1h\xC3");
-		DrawLine(false,false,this.columns-6,"\1n\1h");
-		console.putmsg("\1n\1h\xBF");
-		for(line = 1; line<=this.rows; line++)
-		{
-			console.gotoxy(this.x,this.y+line);
-			printf("\1n\1h\xB3%*s\xB3",this.columns,"");
-		}
-		console.gotoxy(this.x,this.y + this.rows+1);
-		console.putmsg("\1n\1h\xC0");
-		DrawLine(false,false,this.columns,"\1n\1h");
-		var spot=console.getxy();
-		if(spot.y==24 && spot.x==80);
-		else console.putmsg("\1n\1h\xD9");
 	}
 	this.LoadDigits=function()
 	{
@@ -110,5 +125,4 @@ function DigitalClock(x,y,color)
 		this.digits[9]=nine;
 		this.digits["colon"]=colon;
 	}
-	this.Init();
 }

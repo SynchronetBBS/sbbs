@@ -52,9 +52,6 @@ function Main()
 					case '\x09':	/* CTRL-I TAB...*/
 						NextWindow("chat");
 						break;
-					case ctrl(120):
-						chatroom.Alert("\1n\1cshift-tab");
-						break;
 					case ctrl('O'): /* CTRL-O - Pause */
 					case ctrl('U'): /* CTRL-U User List */
 					case ctrl('T'): /* CTRL-T Time Info */
@@ -200,7 +197,6 @@ function NextWindow()
 {
 	
 }
-
 function ChatRoom()
 {
 	this.x;
@@ -222,7 +218,7 @@ function ChatRoom()
 	this.Welcome=function()
 	{
 		var welcome=[];
-		welcome.push("\1b\1h********* Welcome to the BRoKEN BuBBLE BBS! *********");
+		welcome.push("\1b\1hWelcome to " + system.name + "!");
 		welcome.push("\1k\1h-----------------------------------------------------");
 		welcome.push("\1n\1cThis menu shell is a work in progress. Press the left");
 		welcome.push("\1n\1carrow key at any time for the main menu or '/' for an");
