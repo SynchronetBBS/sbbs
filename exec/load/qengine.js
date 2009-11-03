@@ -159,7 +159,10 @@ function QueueUser(user_name,user_status,user_queue)
 }
 function QuitQueue(userfile,thread)
 {
-	userfile.open("r+",true);
-	userfile.iniRemoveKey(thread,system.qwk_id + "." + user.alias);
-	userfile.close();
+	if(userfile)
+	{
+		userfile.open("r+",true);
+		userfile.iniRemoveKey(thread,system.qwk_id + "." + user.alias);
+		userfile.close();
+	}
 }
