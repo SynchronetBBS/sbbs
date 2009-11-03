@@ -32,74 +32,202 @@ function untagged(msg)
 	debug_log("IMAP Send: * "+msg);
 }
 
-function parse_line(line) {
-	var args=[];
-	var tmp;
-	var tmp2;
+function handle_command(command, args, defs)
+{
+	if(defs[command] != undefined) {
+		if(defs[command].arguments != undefined) {
+			if(args.length-1 == defs[command].arguments) {
+				defs[command].handler(args);
+				return(true);
+			}
+		}
+		else if(defs[command].arguments_valid(args.length-1)) {
+			defs[command].handler(args);
+			return(true);
+		}
+	}
+	return false;
+}
+
+function compNumbers(a,b) {
+	return(a-b);
+}
+
+/*
+ * Parses a data items FETCH parameter for send_fetch_response()
+ */
+function parse_data_items(obj)
+{
+	if(typeof(obj)=='string') {
+		switch(obj.toUpperCase()) {
+			case 'ALL':
+				obj=["FLAGS","INTERNALDATE","RFC822.SIZE","ENVELOPE"];
+				break;
+			case 'FAST':
+				obj=["FLAGS","INTERNALDATE","RFC822.SIZE"];
+				break;
+			case 'FULL':
+				obj=["FLAGS","INTERNALDATE","RFC822.SIZE","ENVELOPE","BODY"];
+				break;
+			default:
+				obj=[];
+		}
+	}
+
+}
+
+/*
+ * Returns an array of Message Numbers which correspond to the specified sets
+ */
+function parse_seq_set(set, uid) {
+	var response=[];
+	var chunks=set.split(/,/);
+	var chunk;
+	var range;
 	var i;
-	
-	tmp=line.split(/ /);
+	var max;
+	var idx;
 
-	while(tmp.length) {
-		if(tmp[0].substr(0,1)=='"') {
-			tmp2='';
-			while(tmp[0].substr(-1)!='"') {
-				tmp2 += tmp.shift()+" ";
+	if(uid)
+		max=base.last_msg;
+	else
+		max=base.total_msgs;
+	for(chunk in chunks) {
+		range=chunks[chunk].split(/:/);
+		if(range.length == 1)
+			range.push(range[0]);
+		if(range[0]=='*')
+			range[0]=max;
+		if(range[1]=='*')
+			range[1]=max;
+		range[0]=parseInt(range[0],10);
+		range[1]=parseInt(range[1],10);
+		if(range[0] > range[1]) {
+			i=range[0];
+			range[0]=range[1];
+			range[1]=i;
+		}
+		for(i=range[0]; i<=range[1]; i++) {
+			idx=base.get_msg_index(uid?false:true, parseInt(i,10));
+			if(idx!=null) {
+				response.push(idx.number);
 			}
-			tmp2 += tmp.shift();
-			tmp2=tmp2.replace(/^"(.*)"$/, "$1");
-			args.push(tmp2);
-			continue;
 		}
-		if(tmp[0].substr(0,1)=='(') {
-			tmp2=[];
-			while(tmp[0].substr(-1)!=')') {
-				tmp2 += tmp.shift();
+	}
+	response=response.sort(compNumbers);
+	for(i=0; i<response.length; i++) {
+		if(response[i]==response[i+1]) {
+			response.splice(i+1,1);
+			i--;
+		}
+	}
+	return(response);
+}
+
+var line;
+function parse_line() {
+	var at_start=true;
+	var	in_quote=false;
+	var paren_depth=0;
+	var string_len;
+	var args=[];
+	var pos;
+
+	function parse_atom() {
+		var ret='';
+
+		while(line.length) {
+			switch(line.charAt(0)) {
+				case ')':
+					return(ret);
+				case ' ':
+					line=line.substr(1);
+					return(ret);
+				default:
+					ret += line.charAt(0);
+					line=line.substr(1);
+					break;
 			}
-			tmp2 += tmp.shift();
-			tmp2=tmp2.replace(/^"(.*)"$/, "$1");
-			args.push(tmp2);
-			continue;
 		}
-		if(tmp[0].search(/^{[0-9]+}$/) != -1) {
-			tmp2=tmp[0].replace(/^{([0-9]+)}$/, "$1");
-			args.push(client.socket.recv(parseInt(tmp2)));
-			tmp2=client.socket.recvline(1024, 300);
-			tmp=tmp2.split(/ /);
-			continue;
-		}
-		args.push(tmp.shift());
+		return(ret);
 	}
 
-	if(args.length < 2) {
-		tagged(args[0], "BAD", "Bad dog, no cookie.");
-		return;
+	function parse_string()
+	{
+		var ret='';
+
+		line=line.replace(/^{([0-9]+)}$/, "$1");
+		client.socket.send("+\r\n");
+		ret=client.socket.recv(parseInt(line));
+		line=client.socket.recvline(1024, 300);
+
+		return(ret);
 	}
-	command=args[1].toUpperCase();
-	args.splice(1,1);
-	if(any_state_command_handlers[command]!=undefined) {
-		if(args.length-1 == any_state_command_handlers[command].arguments) {
-			any_state_command_handlers[command].handler(args);
+
+	function parse_quotedstring() {
+		var ret='';
+
+		line=line.substr(1);	// Remove leading "
+		while(line.length) {
+			switch(line.charAt(0)) {
+				case '"':
+					line=line.substr(1);
+					return(ret);
+				default:
+					ret += line.charAt(0);
+					line=line.substr(1);
+					break;
+			}
+		}
+		return(ret);
+	}
+
+	while(line.length) {
+		switch(line.charAt(0)) {
+			case '"':
+				args.push(parse_quotedstring());
+				break;
+			case ')':
+				line=line.substr(1);
+				return(args);
+			case '(':
+				line=line.substr(1);
+				args.push(parse_line());
+				break;
+			case '{':
+				args.push(parse_string());
+				break;
+			case ' ':
+				line=line.substr(1);
+				break;
+			default:
+				args.push(parse_atom());
+				break;
+		}
+	}
+	return(args);
+}
+
+function execute_line(args) {
+	if(args.length >= 2) {
+		command=args[1].toUpperCase();
+		args.splice(1,1);
+		if(handle_command(command, args, any_state_command_handlers))
 			return;
+		switch(state) {
+			case UnAuthenticated:
+				if(handle_command(command, args, unauthenticated_command_handlers))
+					return;
+				break;
+			case Authenticated:
+				if(handle_command(command, args, authenticated_command_handlers))
+					return;
+				break;
+			case Selected:
+				if(handle_command(command, args, selected_command_handlers))
+					return;
+				break;
 		}
-	}
-	switch(state) {
-		case UnAuthenticated:
-			if(unauthenticated_command_handlers[command]!=undefined) {
-				if(args.length-1 == unauthenticated_command_handlers[command].arguments) {
-					unauthenticated_command_handlers[command].handler(args);
-					return;
-				}
-			}
-			break;
-		case Authenticated:
-			if(authenticated_command_handlers[command]!=undefined) {
-				if(args.length-1 == authenticated_command_handlers[command].arguments) {
-					authenticated_command_handlers[command].handler(args);
-					return;
-				}
-			}
-			break;
 	}
 	tagged(args[0], "BAD", "Bad dog, no cookie.");
 }
@@ -107,6 +235,7 @@ function parse_line(line) {
 // Global variables
 const UnAuthenticated=0;
 const Authenticated=1;
+const Selected=2;
 var state=UnAuthenticated;
 var base;
 
@@ -271,6 +400,7 @@ authenticated_command_handlers = {
 			untagged("OK [UIDNEXT "+(base.last_msg+1)+"]");
 			untagged("OK [UIDVALIDITY 0]");
 			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been selected");
+			state=Selected;
 		},
 	},
 	EXAMINE:{	// Same as select onlt without the writability
@@ -292,6 +422,7 @@ authenticated_command_handlers = {
 			untagged("OK [UIDNEXT "+(base.last_msg+1)+"]");
 			untagged("OK [UIDVALIDITY 0]");
 			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been selected");
+			state=Selected;
 		},
 	},
 	CREATE:{
@@ -387,11 +518,138 @@ authenticated_command_handlers = {
 			tagged(tag, "OK", "There you go.");
 		},
 	},
+	STATUS:{
+		arguments:2,
+		handler:function(args) {
+			var tag=args[0];
+			var sub=getsub(args[1]);
+			var items=args[2];
+			var i;
+			var response=[];
+
+			if(typeof(items)!="object")
+				items=[items];
+			base=new MsgBase(sub);
+			if(base == undefined || (!base.open())) {
+				tagged(tag, "NO", "Can't find your mailbox");
+				return;
+			}
+			for(i in items) {
+				switch(items[i].toUpperCase()) {
+					case 'MESSAGES':
+						response.push("MESSAGES");
+						response.push(base.total_msgs);
+						break;
+					case 'RECENT':
+						response.push("RECENT");
+						response.push(0);
+						break;
+					case 'UIDNEXT':
+						response.push("UIDNEXT");
+						response.push(base.last_msg+1);
+						break;
+					case 'UIDVALIDITY':
+						response.push("UIDVALIDITY");
+						response.push(0);
+						break;
+					case 'UNSEEN':
+						response.push("UNSEEN");
+						response.push(base.total_msgs);
+						break;
+				}
+			}
+			base.close();
+			untagged("STATUS {"+(args[1].length)+"}\r\n"+args[1]+" ("+response.join(" ")+")");
+			tagged(tag, "OK", "And that's the way it is.");
+		},
+	},
+	APPEND:{
+		arguments_valid:function(count) {
+			if(count >= 2 && count <= 4)
+				return(true);
+			return(false);
+		},
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "NO", "No appending yet... sorry.");
+		},
+	},
+};
+
+selected_command_handlers = {
+	CHECK:{
+		arguments:0,
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "OK", "Check.");
+		},
+	},
+	CLOSE:{
+		arguments:0,
+		handler:function(args) {
+			var tag=args[0];
+
+			base.close();
+			tagged(tag, "OK", "Closed.");
+			state=Authenticated;
+		},
+	},
+	EXPUNGE:{
+		arguments:0,
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "NO", "Can't expunge... wait for maintenance");
+		},
+	},
+	SEARCH:{
+		arguments_valid:function(count) {
+			return(count >= 1);
+		},
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "NO", "Can't search... I'm useless.");
+		}
+	},
+	FETCH:{
+		arguments:2,
+		handler:function(args) {
+			var tag=args[0];
+			var seq=parse_seq_set(args[1],false);
+			var data_items=parse_data_items(args[2]);
+			var i;
+
+			for(i in seq) {
+				send_fetch_response(seq[i], data_items);
+			}
+			//tagged(tag, "OK", "There they are!");
+			tagged(tag, "NO", "Can't fetch... I'm useless.");
+		},
+	},
+	STORE:{
+		arguments:3,
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "NO", "This is read-only.");
+		},
+	},
+	COPY:{
+		arguments:2,
+		handler:function(args) {
+			var tag=args[0];
+
+			tagged(tag, "NO", "Hah! You can't even FETCH yet and you want to COPY?!?!");
+		},
+	},
 	UID:{
 		arguments:3,
 		handler:function(args) {
 			var tag=args[0];
-		
+
 			tagged(tag, "NO", "Help, I'm useless.");
 		},
 	}
@@ -403,7 +661,8 @@ while(1) {
 	line=client.socket.recvline(1024, 300);
 	if(line != null) {
 		debug_log("IMAP RECV: "+line);
-		parse_line(line);
+		args=parse_line();
+		execute_line(args);
 	}
 	else {
 		untagged("BYE No lolligaggers here!");
