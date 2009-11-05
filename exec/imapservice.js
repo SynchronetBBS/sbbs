@@ -83,14 +83,50 @@ function send_fetch_response(msgnum, format, uid)
 			rfc822.header += "Subject: "+hdr.subject+"\r\n";
 			rfc822.header += "Message-ID: "+hdr.id+"\r\n";
 			rfc822.header += "Date: "+hdr.date+"\r\n";
+
+			// From
 			if(!hdr.from_net_type || !hdr.from_net_addr)    /* local message */
 				rfc822.header += "From: " + hdr.from + " <" + hdr.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
 			else if(!hdr.from_net_addr.length)
-				rfc822.header += "From: "+hdr.from+">\r\n";
+				rfc822.header += "From: "+hdr.from+"\r\n";
 			else if(hdr.from_net_addr.indexOf('@')!=-1)
 				rfc822.header += "From: "+hdr.from+" <"+hdr.from_net_addr+">\r\n";
 			else
 				rfc822.header += "From: "+hdr.from+" <"+hdr.from.replace(/ /g,".").toLowerCase()+"@"+hdr.from_net_addr+">\r\n";
+
+			rfc822.header += "X-Comment-To: "+hdr.to+"\r\n";
+			if(hdr.path != undefined)
+				rfc822.header += "Path: "+system.inetaddr+"!"+hdr.path+"\r\n";
+			if(hdr.from_org != undefined)
+				rfc822.header += "Organization: "+hdr.from_org+"\r\n";
+			if(hdr.newsgroups != undefined)
+				rfc822.header += "Newsgroups: "+hdr.newsgroups+"\r\n";
+			if(hdr.replyto != undefined)
+				rfc822.header += "Reply-To: "+hdr.replyto+"\r\n";
+			if(hdr.reply_id != undefined)
+				rfc822.header += "In-Reply-To: "+hdr.reply_id+"\r\n";
+			if(hdr.references != undefined)
+				rfc822.header += "References: "+hdr.references+"\r\n";
+			else if(hdr.reply_id != undefined)
+				rfc822.header += "References: "+hdr.reply_id+"\r\n";
+			if(hdr.reverse_path != undefined)
+				rfc822.header += "Return-Path: "+hdr.reverse_path+"\r\n";
+
+			// Fidonet headers
+			if(hdr.ftn_area != undefined)
+				rfc822.header += "X-FTN-AREA: "+hdr.ftn_area+"\r\n";
+			if(hdr.ftn_pid != undefined)
+				rfc822.header += "X-FTN-PID: "+hdr.ftn_pid+"\r\n";
+			if(hdr.ftn_TID != undefined)
+				rfc822.header += "X-FTN-TID: "+hdr.ftn_tid+"\r\n";
+			if(hdr.ftn_flags != undefined)
+				rfc822.header += "X-FTN-FLAGS: "+hdr.ftn_flags+"\r\n";
+			if(hdr.ftn_msgid != undefined)
+				rfc822.header += "X-FTN-MSGID: "+hdr.ftn_msgid+"\r\n";
+			if(hdr.ftn_reply != undefined)
+				rfc822.header += "X-FTN-REPLY: "+hdr.ftn_reply+"\r\n";
+
+			// Other RFC822 headers
 			if(hdr.field_list!=undefined) {
 				for(i in hdr.field_list) 
 					if(hdr.field_list[i].type==RFC822HEADER) {
