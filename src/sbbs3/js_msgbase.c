@@ -587,8 +587,9 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	memset(&msg,0,sizeof(msg));
 
 	for(n=0;n<argc;n++) {
-		if(JSVAL_IS_BOOLEAN(argv[n]))
+		if(JSVAL_IS_BOOLEAN(argv[n])) {
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		}
 		else if(JSVAL_IS_NUM(argv[n])) {
 			if(by_offset)							/* Get by offset */
 				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
@@ -1701,7 +1702,7 @@ static char* msgbase_prop_desc[] = {
 	,"maximum number of messages before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of messages to store - <small>READ ONLY</small>"
 	,"message base attributes - <small>READ ONLY</small>"
-	,"sub-board number (0-based, -1 for e-mail) - <small>READ ONLY</small>"
+	,"sub-board number (0-based, 65535 for e-mail) - <small>READ ONLY</small>"
 	,"<i>true</i> if the message base has been opened successfully - <small>READ ONLY</small>"
 	,NULL
 };
