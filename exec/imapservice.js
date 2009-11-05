@@ -54,6 +54,28 @@ function compNumbers(a,b) {
 	return(a-b);
 }
 
+function encode_binary(str)
+{
+	return '{'+str.length+'}\r\n'+str;
+}
+
+function encode_string(str)
+{
+	if(str=='')
+		return('""');
+
+	// An Atom
+	//if(str.search(/[\(\)\{ \x00-\x1F\*\%\"\\\]]*/)==-1)
+	//	return str;
+
+	if(str.search(/[\r\n\x80-\xff]/)==-1) {
+		str=str.replace(/[\\\"]/, "\\$1");
+		return '"'+str+'"';
+	}
+
+	return encode_binary(str);
+}
+
 function send_fetch_response(msgnum, format, uid)
 {
 	var idx=base.get_msg_index(msgnum);
@@ -68,6 +90,7 @@ function send_fetch_response(msgnum, format, uid)
 	var tmp;
 	var sent_flags=false;
 	var seen_changed=false;
+	var envelope;
 
 	function get_header() {
 		if(hdr == undefined) {
@@ -143,6 +166,9 @@ function send_fetch_response(msgnum, format, uid)
 				rfc822.header += "Content-Type: text/plain; charset=IBM437\r\n";
 				rfc822.header += "Content-Transfer-Encoding: 8bit\r\n";
 			}
+
+			// Unwrap headers
+			rfc822.header=rfc822.header.replace(/\s*\r\n\s+/g, " ");
 		}
 		rfc822.header += "\r\n";
 	}
@@ -177,10 +203,56 @@ function send_fetch_response(msgnum, format, uid)
 		}
 	}
 
+	function get_envelope() {
+		function parse_header(header, is_addresses) {
+			var m;
+			var m2;
+			var re;
+
+			re=new RegExp("^"+header+":\\s*(.*?)$","im");
+			m=re.exec(rfc822.header);
+			if(m==null) {
+				return("NIL");
+			}
+			else {
+				if(is_addresses) {
+					if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
+						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), encode_string(m2[3])].join(" ")+'))';
+					}
+					else if((m2=m[1].match(/^\s*(.*)\s+<([^@]i)>\s*$/))!=null) {
+						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), NIL].join(" ")+'))';
+					}
+					else
+						return '(('+[encode_string(m[1]), "NIL", "NIL", "NIL"].join(" ")+'))';
+				}
+				else
+					return(encode_string(m[1]));
+			}
+		}
+
+		var m;
+
+		if(envelope==undefined) {
+			get_rfc822_header();
+
+			envelope=[];
+			envelope.push(parse_header("Date", false));
+			envelope.push(parse_header("Subject", false));
+			envelope.push(parse_header("From", true));
+			envelope.push(parse_header("Sender", true));
+			envelope.push(parse_header("Reply-To", true));
+			envelope.push(parse_header("To", true));
+			envelope.push(parse_header("CC", true));
+			envelope.push(parse_header("BCC", true));
+			envelope.push(parse_header("In-Reply-To", false));
+			envelope.push(parse_header("Message-ID", false));
+		}
+	}
+
 	if(base.subnum==65535)
 		resp=inbox_map.offset[msgnum];
 	else
-		resp=idx.offset 
+		resp=idx.offset+1;
 	resp += " FETCH (";
 
 	// Moves flags to the end...
@@ -227,7 +299,7 @@ function send_fetch_response(msgnum, format, uid)
 						}
 					}
 					tmp += "\r\n";
-					resp=resp.substr(0,resp.length-1)+")] {"+tmp.length+"}\r\n"+tmp+" ";
+					resp=resp.substr(0,resp.length-1)+")] "+encode_binary(tmp)+" ";
 					break;
 			}
 			continue;
@@ -256,7 +328,7 @@ function send_fetch_response(msgnum, format, uid)
 				// fall-through
 			case 'BODY.PEEK[TEXT]':
 				get_rfc822_text();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" {"+rfc822.text.length+"}\r\n"+rfc822.text+" ";
+				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
 				break;
 			case 'BODY[HEADER]':
 			case 'RFC822.HEADER':
@@ -264,7 +336,7 @@ function send_fetch_response(msgnum, format, uid)
 				// fall-through
 			case 'BODY.PEEK[HEADER]':
 				get_rfc822_header();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" {"+rfc822.header.length+"}\r\n"+rfc822.header+" ";
+				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
 				break;
 			case 'RFC822':
 			case 'BODY[]':
@@ -272,12 +344,27 @@ function send_fetch_response(msgnum, format, uid)
 				// fall-through
 			case 'BODY.PEEK[]':
 				get_rfc822();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" {"+(rfc822.header.length+rfc822.text.length)+"}\r\n"+rfc822.header+rfc822.text+" ";
+				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
 				break;
 			case 'BODY[HEADER.FIELDS':
 				set_seen_flag();
 			case 'BODY.PEEK[HEADER.FIELDS':
 				objtype=format[i].replace(/\.PEEK/,"").toUpperCase();
+				break;
+			case 'ENVELOPE':
+				get_envelope();
+				resp += 'ENVELOPE ('+envelope.join(" ")+') ';
+				break;
+			case 'BODYSTRUCTURE':
+				get_rfc822_size();
+				get_rfc822_text();
+				resp += 'BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "IBM437") NIL NIL "8BIT" '+rfc822.text.length+' '+rfc822.text.split(/\r\n/).length+" NIL NIL NIL) ";
+				break;
+			case 'BODY[1]':
+				set_seen_flag();
+			case 'BODY.PEEK[1]':
+				get_rfc822_text();
+				resp += 'BODY[1] '+encode_binary(rfc822.text)+' ';
 				break;
 		}
 	}
@@ -287,7 +374,8 @@ function send_fetch_response(msgnum, format, uid)
 	}
 	if(uid && !sent_uid)
 		resp += "UID "+idx.number+" ";
-	resp = resp.substr(0, resp.length-1)+")";
+	resp=resp.replace(/\s*$/,'');
+	resp += ")";
 	untagged(resp);
 }
 
@@ -356,7 +444,7 @@ function parse_seq_set(set, uid) {
 					continue;
 			}
 			else
-				idx=base.get_msg_index(uid?false:true, parseInt(i,10));
+				idx=base.get_msg_index(uid?false:true, parseInt(i,10)-(uid?0:1));
 			if(idx!=null) {
 				response.push(idx.number);
 			}
@@ -838,7 +926,7 @@ function getsub(longname) {
 	return("NONE!!!");
 }
 
-function generate_inbox_map()
+function generate_inbox_map(base)
 {
 	var i;
 	var idx;
@@ -886,7 +974,7 @@ function update_status()
 		return;
 	}
 	if(base.subnum==65535) {
-		inbox_map=generate_inbox_map(true);
+		inbox_map=generate_inbox_map(base);
 		curr_status.exists=inbox_map.uid.length;
 		curr_status.recent=count_recent(base);
 		curr_status.unseen=inbox_map.unseen;
@@ -951,6 +1039,33 @@ function open_sub(sub)
 	untagged("OK [UIDNEXT "+(curr_status.uidnext)+"]");
 	untagged("OK [UIDVALIDITY "+curr_status.uidvalidity+"]");
 	return true;
+}
+
+function display_list(cmd, groups)
+{
+	var group;
+	var base;
+
+	for(group in groups) {
+		if(groups[group].substr(-1)==sepchar)
+			untagged(cmd+' (\\Noselect) '+encode_string(sepchar)+' '+encode_string(groups[group].substr(0,groups[group].length-1)));
+		else {
+			if(groups[group] == '') {
+				untagged(cmd+' (\\Noselect) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+			}
+			else {
+				base=new MsgBase(getsub(groups[group]));
+				if(base.cfg != undefined) {
+					if(base.last_msg > msg_area.sub[base.cfg.code].scan_ptr)
+						untagged(cmd+' (\\Noinferiors \\Marked) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+					else
+						untagged(cmd+' (\\Noinferiors \\UnMarked) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+				}
+				else
+					untagged(cmd+' (\\Noinferiors) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+			}
+		}
+	}
 }
 
 authenticated_command_handlers = {
@@ -1048,30 +1163,8 @@ authenticated_command_handlers = {
 			var group=args[1];
 			var sub=args[2];
 			var groups=sublist(group, sub, false);
-			var group;
-			var base;
-			var interesting=false;
 
-			for(group in groups) {
-				if(groups[group].substr(-1)==sepchar)
-					untagged('LIST (\\Noselect) "'+sepchar+'" "'+groups[group].substr(0,groups[group].length-1)+'"');
-				else {
-					if(groups[group] == '') {
-						untagged('LIST (\\Noselect) "'+sepchar+'" "'+groups[group]+'"');
-					}
-					else {
-						base=new MsgBase(getsub(groups[group]));
-						if(base.cfg != undefined) {
-							if(base.last_msg > msg_area.sub[base.cfg.code].scan_ptr)
-								untagged('LIST (\\Noinferiors \\Marked) "'+sepchar+'" "'+groups[group]+'"');
-							else
-								untagged('LIST (\\Noinferiors \\Unmarked) "'+sepchar+'" "'+groups[group]+'"');
-						}
-						else
-							untagged('LIST (\\Noinferiors) "'+sepchar+'" "'+groups[group]+'"');
-					}
-				}
-			}
+			display_list("LIST", groups);
 			tagged(tag, "OK", "There you go.");
 		},
 	},
@@ -1084,12 +1177,7 @@ authenticated_command_handlers = {
 			var groups=sublist(group, sub, true);
 			var group;
 
-			for(group in groups) {
-				if(groups[group].substr(-1)==sepchar)
-					untagged('LSUB (\\Noselect) "'+sepchar+'" "'+groups[group].substr(0,groups[group].length-1)+'"');
-				else
-					untagged('LSUB () "'+sepchar+'" "'+groups[group]+'"');
-			}
+			display_list("LSUB", groups);
 			tagged(tag, "OK", "There you go.");
 		},
 	},
@@ -1122,7 +1210,7 @@ authenticated_command_handlers = {
 						response.push("MESSAGES");
 						if(base.subnum==65535) {
 							if(!mademap)
-								inbox_map=generate_inbox_map(false);
+								inbox_map=generate_inbox_map(base);
 							response.push(inbox_map.length);
 						}
 						else
@@ -1144,7 +1232,7 @@ authenticated_command_handlers = {
 						response.push("UNSEEN");
 						if(base.subnum==65535) {
 							if(!mademap)
-								inbox_map=generate_inbox_map();
+								inbox_map=generate_inbox_map(base);
 							response.push(inbox_map.unseen);
 						}
 						else
@@ -1154,7 +1242,7 @@ authenticated_command_handlers = {
 			}
 			base.close();
 			update_status();
-			untagged("STATUS {"+(args[1].length)+"}\r\n"+args[1]+" ("+response.join(" ")+")");
+			untagged("STATUS "+encode_string(args[1])+" ("+response.join(" ")+")");
 			tagged(tag, "OK", "And that's the way it is.");
 		},
 	},
