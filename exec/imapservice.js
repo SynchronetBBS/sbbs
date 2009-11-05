@@ -131,7 +131,6 @@ function send_fetch_response(msgnum, format, uid)
 				continue;
 			switch(objtype) {
 				case 'BODY[HEADER.FIELDS':
-				case 'BODY.PEEK[HEADER.FIELDS':
 					tmp='';
 					get_rfc822_header();
 					resp += objtype+" (";
@@ -187,7 +186,7 @@ function send_fetch_response(msgnum, format, uid)
 				// fall-through
 			case 'BODY.PEEK[]':
 				get_rfc822();
-				resp += format[i].toUpperCase()+" {"+(rfc822.header.length+rfc822.text.length)+"}\r\n"+rfc822.header+rfc822.text+" ";
+				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" {"+(rfc822.header.length+rfc822.text.length)+"}\r\n"+rfc822.header+rfc822.text+" ";
 				break;
 			case 'BODY[HEADER.FIELDS':
 			case 'BODY.PEEK[HEADER.FIELDS':
