@@ -1589,6 +1589,13 @@ struct bbslist *show_bbslist(char *current, int connected)
 							break;
 						case -6:		/* CTRL-D */
 							if(!connected) {
+								if(safe_mode) {
+									uifc.helpbuf=	"`Cannot Quick-Connect in safe mode`\n\n"
+													"SyncTERM is currently running in safe mode.  This means you cannot use the\n"
+													"Quick-Connect feature.";
+									uifc.msg("Cannot edit list in safe mode");
+									break;
+								}
 								uifc.changes=0;
 								uifc.helpbuf=	"`SyncTERM Quick-Connect`\n\n"
 												"Enter a URL in the format:\n"
