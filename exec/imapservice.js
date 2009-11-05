@@ -66,10 +66,13 @@ function send_fetch_response(msgnum, format, uid)
 	var m;
 	var re;
 	var tmp;
+	var sent_flags=false;
+	var seen_changed=false;
 
 	function get_header() {
-		if(hdr == undefined)
+		if(hdr == undefined) {
 			hdr=base.get_msg_header(msgnum);
+		}
 	}
 
 	function get_rfc822_header() {
@@ -159,7 +162,52 @@ function send_fetch_response(msgnum, format, uid)
 		rfc822.size=rfc822.header.length+rfc822.text.length;
 	}
 
-	resp=idx.offset + " FETCH (";
+	function set_seen_flag() {
+		if(readonly)
+			return;
+		if(base.subnum==65535) {
+			get_header();
+			if(!(hdr.attr & MSG_READ)) {
+				hdr.attr |= MSG_READ;
+				base.put_msg_header(msgnum);
+				hdr=base.get_msg_header(msgnum);
+				if(hdr.attr & MSG_READ)
+					seen_changed=true;
+			}
+		}
+	}
+
+	if(base.subnum==65535)
+		resp=inbox_map.offset[msgnum];
+	else
+		resp=idx.offset 
+	resp += " FETCH (";
+
+	// Moves flags to the end...
+	function sort_format(a,b)
+	{
+		if(typeof(a)=='object')
+			a=0;
+		else {
+			if(a.substr(0,5).toUpperCase()=='FLAGS')
+				a=100;
+			else
+				a=0;
+		}
+		if(typeof(b)=='object')
+			b=0;
+		else {
+			if(b.substr(0,5).toUpperCase()=='FLAGS')
+				b=100;
+			else
+				b=0;
+		}
+
+		return a-b;
+	}
+
+	format=format.sort(sort_format);
+
 	for(i in format) {
 		if(typeof(format[i])=='object') {
 			// We already handled this I hope...
@@ -186,7 +234,9 @@ function send_fetch_response(msgnum, format, uid)
 		}
 		switch(format[i].toUpperCase()) {
 			case 'FLAGS':
-				resp += "FLAGS () ";
+				get_header();
+				resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
+				sent_flags=true;
 				break;
 			case 'UID':
 				resp += "UID "+idx.number+" ";
@@ -194,7 +244,7 @@ function send_fetch_response(msgnum, format, uid)
 				break;
 			case 'INTERNALDATE':
 				get_header();
-				resp += 'INTERNALDATE '+strftime('"%d-%a-%C%y %H:%M:%S +0000" ', hdr.when_imported_time);
+				resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S +0000" ', hdr.when_imported_time);
 				break;
 			case 'RFC822.SIZE':
 				get_rfc822_size();
@@ -202,7 +252,7 @@ function send_fetch_response(msgnum, format, uid)
 				break;
 			case 'RFC822.TEXT':
 			case 'BODY[TEXT]':
-				// Set "Seen" flag
+				set_seen_flag();
 				// fall-through
 			case 'BODY.PEEK[TEXT]':
 				get_rfc822_text();
@@ -210,7 +260,7 @@ function send_fetch_response(msgnum, format, uid)
 				break;
 			case 'BODY[HEADER]':
 			case 'RFC822.HEADER':
-				// Set "Seen" flag
+				set_seen_flag();
 				// fall-through
 			case 'BODY.PEEK[HEADER]':
 				get_rfc822_header();
@@ -218,17 +268,22 @@ function send_fetch_response(msgnum, format, uid)
 				break;
 			case 'RFC822':
 			case 'BODY[]':
-				// Set "Seen" flag
+				set_seen_flag();
 				// fall-through
 			case 'BODY.PEEK[]':
 				get_rfc822();
 				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" {"+(rfc822.header.length+rfc822.text.length)+"}\r\n"+rfc822.header+rfc822.text+" ";
 				break;
 			case 'BODY[HEADER.FIELDS':
+				set_seen_flag();
 			case 'BODY.PEEK[HEADER.FIELDS':
 				objtype=format[i].replace(/\.PEEK/,"").toUpperCase();
 				break;
 		}
+	}
+	if(seen_changed && !sent_flags) {
+		get_header();
+		resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
 	}
 	if(uid && !sent_uid)
 		resp += "UID "+idx.number+" ";
@@ -273,8 +328,12 @@ function parse_seq_set(set, uid) {
 
 	if(uid)
 		max=base.last_msg;
-	else
-		max=base.total_msgs;
+	else {
+		if(base.subnum==65535)
+			max=inbox_map.uid.length;
+		else
+			max=base.total_msgs;
+	}
 	for(chunk in chunks) {
 		range=chunks[chunk].split(/:/);
 		if(range.length == 1)
@@ -291,7 +350,13 @@ function parse_seq_set(set, uid) {
 			range[1]=i;
 		}
 		for(i=range[0]; i<=range[1]; i++) {
-			idx=base.get_msg_index(uid?false:true, parseInt(i,10));
+			if(base.subnum==65535) {
+				idx=base.get_msg_index(uid?parseInt(i,10):inbox_map.uid[parseInt(i,10)]);
+				if(idx==null || idx.to != user.number)
+					continue;
+			}
+			else
+				idx=base.get_msg_index(uid?false:true, parseInt(i,10));
 			if(idx!=null) {
 				response.push(idx.number);
 			}
@@ -326,6 +391,8 @@ function parse_command(line)
 					break;
 				case Selected:
 					if(handle_command(command, args, selected_command_handlers))
+						return;
+					if(handle_command(command, args, authenticated_command_handlers))
 						return;
 					break;
 			}
@@ -416,6 +483,7 @@ function parse_command(line)
 		return(args);
 	}
 
+	send_updates();
 	return(execute_line(parse_line()));
 }
 
@@ -425,6 +493,7 @@ const Authenticated=1;
 const Selected=2;
 var state=UnAuthenticated;
 var base;
+var inbox_map;
 
 // Command handling functions
 any_state_command_handlers = {
@@ -509,15 +578,209 @@ unauthenticated_command_handlers = {
 
 function sendflags(perm)
 {
+	var flags="";
+	var pflags="";
+
+	if(base.subnum==65535) {
+		flags=calc_msgflags(0xffff, 0xffff, true, null, null, true);
+		pflags=calc_msgflags(0xffff, 0xffff, true, null, null, true);
+	}
+	else {
+		flags=calc_msgflags(0xffff, 0xffff, false, null, null, true);
+		pflags=calc_msgflags(0xffff, 0xffff, false, null, null, true);
+	}
 	if(perm)
-		untagged("OK [PERMANENTFLAGS ()] No flags yet... working on 'er");
+		untagged("OK [PERMANENTFLAGS ("+pflags+")] Overkill!");
 	else
-		untagged("FLAGS () Someday I'll add flags... *sigh*");
+		untagged("FLAGS ("+flags+") Overkill!");
 }
 
-function sendexists()
+function parse_flags(inflags)
 {
-	untagged(base.total_msgs+" EXISTS");
+	var i;
+	var flags={attr:0, netattr:0};
+
+	for(i in inflags) {
+		switch(inflags[i].toUpperCase()) {
+			case '\\SEEN':
+			case 'READ':
+				flags.attr |= MSG_READ;
+				break;
+			case '\\ANSWERED':
+			case 'REPLIED':
+				flags.attr |= MSG_REPLIED;
+				break;
+			case '\\FLAGGED':
+			case 'VALIDATED':
+				flags.attr |= MSG_VALIDATED;
+				break;
+			case '\\DELETED':
+			case 'DELETE':
+				flags.attr |= MSG_DELETE;
+				break;
+			case 'ANONYMOUS':
+				flags.attr |= MSG_ANONYMOUS;
+				break;
+			case 'KILLREAD':
+				flags.attr |= MSG_KILLREAD;
+				break;
+			case 'MODERATED':
+				flags.attr |= MSG_MODERATED;
+				break;
+			case 'NOREPLY':
+				flags.attr |= MSG_NOREPLY;
+				break;
+
+			case 'LOCAL':
+				flags.netattr |= MSG_LOCAL;
+				break;
+			case 'INTRANSIT':
+				flags.netattr |= MSG_INTRANSIT;
+				break;
+			case 'SENT':
+				flags.netattr |= MSG_SENT;
+				break;
+			case 'KILLSENT':
+				flags.netattr |= MSG_KILLSENT;
+				break;
+			case 'ARCHIVESENT':
+				flags.netattr |= MSG_ARCHIVESENT;
+				break;
+			case 'HOLD':
+				flags.netattr |= MSG_HOLD;
+				break;
+			case 'CRASH':
+				flags.netattr |= MSG_CRASH;
+				break;
+			case 'IMMEDIATE':
+				flags.netattr |= MSG_IMMEDIATE;
+				break;
+			case 'DIRECT':
+				flags.netattr |= MSG_DIRECT;
+				break;
+			case 'GATE':
+				flags.netattr |= MSG_GATE;
+				break;
+			case 'ORPHAN':
+				flags.netattr |= MSG_ORPHAN;
+				break;
+			case 'FPU':
+				flags.netattr |= MSG_FPU;
+				break;
+			case 'TYPELOCAL':
+				flags.netattr |= MSG_TYPELOCAL;
+				break;
+			case 'TYPEECHO':
+				flags.netattr |= MSG_TYPECHO;
+				break;
+			case 'TYPENET':
+				flags.netattr |= MSG_TYPENET;
+				break;
+		}
+	}
+	return(flags);
+}
+
+function check_msgflags(attr, netattr, ismail, touser, fromuser, isoperator)
+{
+	var flags={attr:attr, netattr:netattr};
+	const op_perms=(MSG_DELETE|MSG_VALIDATED);
+	const to_perms=(MSG_READ);
+	const from_perms=0;
+	var perms=0;
+
+	if(user.compare_ars("SYSOP"))
+		return(flags);	// SYSOP has godly powers.
+
+	// Only the sysop can diddle the network flags
+	flags.netattr=0;
+
+	if(isoperator)
+		perms |= op_perms;
+	if(touser)
+		perms |= to_perms;
+	if(fromuser)
+		perms |= from_perms;
+
+	flags.attr &= perms;
+	return(flags);
+}
+
+function calc_msgflags(attr, netattr, ismail, code, msg, readonly)
+{
+	var flags='';
+
+	if(attr & MSG_PRIVATE)
+		flags += "PRIVATE ";
+	if(attr & MSG_READ) {
+		if(base.subnum==65535)
+			flags += "\\Seen ";
+		else
+			flags += "READ ";
+	}
+	if(attr & MSG_PERMANENT)
+		flags += "PERMANENT ";
+	if(attr & MSG_LOCKED)
+		flags += "LOCKED ";
+	if(attr & MSG_DELETE)
+		flags += "\\Deleted ";
+	if(attr & MSG_ANONYMOUS)
+		flags += "ANONYMOUS ";
+	if(attr & MSG_KILLREAD)
+		flags += "KILLREAD ";
+	if(attr & MSG_MODERATED)
+		flags += "MODERATED ";
+	if(attr & MSG_VALIDATED)
+		flags += "\\Flagged ";
+	if(attr & MSG_REPLIED) {
+		if(base.subnum==65535)
+			flags += "\\Answered ";
+		else
+			flags += "REPLIED ";
+	}
+	if(attr & MSG_NOREPLY)
+		flags += "NOREPLY ";
+
+	if(netattr & MSG_INTRANSIT)
+		flags += "INTRANSIT ";
+	if(netattr & MSG_SENT)
+		flags += "SENT ";
+	if(netattr & MSG_KILLSENT)
+		flags += "KILLSENT ";
+	if(netattr & MSG_ARCHIVESENT)
+		flags += "ARCHIVESENT ";
+	if(netattr & MSG_HOLD)
+		flags += "HOLD ";
+	if(netattr & MSG_CRASH)
+		flags += "CRASH ";
+	if(netattr & MSG_IMMEDIATE)
+		flags += "IMMEDIATE ";
+	if(netattr & MSG_DIRECT)
+		flags += "DIRECT ";
+	if(netattr & MSG_GATE)
+		flags += "GATE ";
+	if(netattr & MSG_ORPHAN)
+		flags += "ORPHAN ";
+	if(netattr & MSG_FPU)
+		flags += "FPU ";
+	if(netattr & MSG_TYPELOCAL)
+		flags += "TYPELOCAL ";
+	if(netattr & MSG_TYPEECHO)
+		flags += "TYPEECHO ";
+	if(netattr & MSG_TYPENET)
+		flags += "TYPENET ";
+
+	if(msg==null || msg_ptrs[code] < msg)
+		flags += '\\Recent ';
+
+	if(!readonly) {
+		if(msg > msg_ptrs[code])
+			msg_ptrs[code]=msg;
+	}
+
+	if(flags.length)
+		return(flags.substr(0, flags.length-1));
+	return("");
 }
 
 function sublist(group, match, subscribed)
@@ -525,21 +788,33 @@ function sublist(group, match, subscribed)
 	var grp;
 	var sub;
 	var ret=[];
+	var groups={};
+	var wmatch,wgroup;
+	var fmatch;
 
-	match=match.replace(/\%/, "*");
-	group=group.replace(/\%/, "*");
+	if(match=='')
+		return([""]);
+
+	wmatch=match.replace(/^\%/, "|*");
+	wgroup=group.replace(/\%$/, "*|");
+
+	if(wgroup == '')
+		wgroup='*';
+	fmatch=(wgroup+wmatch).replace(/\|\|/,"|");
 	for(grp in msg_area.grp_list) {
-		if(group=='' || wildmatch(true, msg_area.grp_list[grp].description, group)) {
+		if(wildmatch(true, msg_area.grp_list[grp].description, fmatch)) {
 			ret.push(msg_area.grp_list[grp].description+sepchar);
 
 			for(sub in msg_area.grp_list[grp].sub_list) {
-				if(wildmatch(true, msg_area.grp_list[grp].sub_list[sub].description, match, false)) {
+				if(wildmatch(true, msg_area.grp_list[grp].sub_list[sub].description, fmatch, false)) {
 					if((!subscribed) || msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW)
 						ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
 				}
 			}
 		}
 	}
+	if(wildmatch(true, "INBOX", fmatch, false))
+		ret.push("INBOX");
 	return(ret);
 }
 
@@ -548,7 +823,8 @@ function getsub(longname) {
 	var grp;
 	var sub;
 
-	longname=longname.replace(/^"(.*)"$/, "$1");
+	if(longname=='INBOX')
+		return("mail");
 	components=longname.split(sepchar);
 	for(grp in msg_area.grp_list) {
 		if(msg_area.grp_list[grp].description==components[0]) {
@@ -562,6 +838,121 @@ function getsub(longname) {
 	return("NONE!!!");
 }
 
+function generate_inbox_map()
+{
+	var i;
+	var idx;
+	var count=0;
+	var unseen=0;
+	var uid=[];
+	var offset={};
+
+	for(i=base.first_msg; i<=base.last_msg; i++) {
+		idx=base.get_msg_index(i);
+		if(idx != null) {
+			if(idx.to != user.number)
+				continue;
+			uid.push(idx.number);
+			offset[idx.number]=uid.length;
+		}
+	}
+	return({uid:uid,unseen:unseen,offset:offset});
+}
+
+function count_recent(base)
+{
+	var i;
+	var count=0;
+	var idx;
+
+	if(base.cfg==undefined)
+		return 0;
+	for(i=base.first_msg; i<= base.last_msg; i++) {
+		idx=base.get_msg_index(i);
+		if(idx==null)
+			continue;
+		if(base.subnum==65535 && idx.to != user.number)
+			continue;
+		if(i > msg_area.sub[base.cfg.code].scan_ptr)
+			count++;
+	}
+	return(count);
+}
+
+function update_status()
+{
+	if(base==undefined || !base.is_open) {
+		curr_status={exists:-1,recent:-1,unseen:-1,uidnext:-1,uidvalidity:-1};
+		return;
+	}
+	if(base.subnum==65535) {
+		inbox_map=generate_inbox_map(true);
+		curr_status.exists=inbox_map.uid.length;
+		curr_status.recent=count_recent(base);
+		curr_status.unseen=inbox_map.unseen;
+		if(inbox_map.uid.length > 0)
+			curr_status.uidnext=inbox_map.uid[inbox_map.uid.length-1]+1;
+		else
+			curr_status.uidnext=1;
+		curr_status.uidvalidity=0;
+	}
+	else {
+		curr_status.exists=base.total_msgs;
+		curr_status.recent=count_recent(base);
+		curr_status.unseen=base.total_msgs;
+		curr_status.uidnext=base.last_msg+1;
+		curr_status.uidvalidity=0;
+	}
+}
+
+function send_updates()
+{
+	var old_status;
+
+	if(state==Selected) {
+		old_status=eval(curr_status.toSource());
+		update_status();
+		if(old_status.exists != curr_status.exists)
+			untagged(curr_status.exists+" EXISTS");
+		if(old_status.recent != curr_status.recent)
+			untagged(curr_status.recent+" RECENT");
+		if(old_status.unseen != curr_status.unseen)
+			untagged("OK [UNSEEN "+(curr_status.unseen)+"]");
+		if(old_status.uidnext != curr_status.uidnext)
+			untagged("OK [UIDNEXT "+(curr_status.uidnext)+"]");
+		if(old_status.uidvalidity != curr_status.uidvalidity)
+			untagged("OK [UIDVALIDITY "+curr_status.uidvalidity+"]");
+	}
+}
+
+function open_sub(sub)
+{
+	if(base != undefined && base.is_open && base.cfg != undefined) {
+		if(msg_ptrs[base.cfg.code]!=orig_ptrs[base.cfg.code])
+			msg_base.sub[base.cfg.code]=msg_ptrs[base.cfg.code];
+		base.close();
+		update_status();
+	}
+	base=new MsgBase(sub);
+	if(base == undefined || (!base.open()))
+		return false;
+	if(base.cfg != undefined) {
+		if(orig_ptrs[base.cfg.code]==undefined) {
+			orig_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
+			msg_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
+		}
+	}
+	update_status();
+	sendflags(false);
+	untagged(curr_status.exists+" EXISTS");
+	untagged(curr_status.recent+" RECENT");
+	untagged("OK [UNSEEN "+(curr_status.unseen)+"]");
+	sendflags(true);
+	untagged("OK [UIDNEXT "+(curr_status.uidnext)+"]");
+	untagged("OK [UIDVALIDITY "+curr_status.uidvalidity+"]");
+	return true;
+}
+
 authenticated_command_handlers = {
 	SELECT:{
 		arguments:1,
@@ -569,19 +960,12 @@ authenticated_command_handlers = {
 			var tag=args[0];
 			var sub=getsub(args[1]);
 
-			base=new MsgBase(sub);
-			if(base == undefined || (!base.open())) {
+			if(!open_sub(sub)) {
 				tagged(tag, "NO", "Can't find "+args[1]+" ("+sub+")");
 				return;
 			}
-			sendflags(false);
-			untagged(base.total_msgs+" EXISTS");
-			untagged(0+" RECENT");
-			untagged("OK [UNSEEN "+(base.total_msgs+1)+"]");
-			sendflags(true);
-			untagged("OK [UIDNEXT "+(base.last_msg+1)+"]");
-			untagged("OK [UIDVALIDITY 0]");
-			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been selected");
+			tagged(tag, "OK", "[READ-WRITE] Mailbox "+sub+" has been selected");
+			readonly=false;
 			state=Selected;
 		},
 	},
@@ -591,19 +975,12 @@ authenticated_command_handlers = {
 			var tag=args[0];
 			var sub=getsub(args[1]);
 
-			base=new MsgBase(sub);
-			if(base == undefined || (!base.open())) {
-				tagged(tag, "NO", "Can't find your mailbox");
+			if(!open_sub(sub)) {
+				tagged(tag, "NO", "Can't find "+args[1]+" ("+sub+")");
 				return;
 			}
-			sendflags(false);
-			untagged(base.total_msgs+" EXISTS");
-			untagged(0+" RECENT");
-			untagged("OK [UNSEEN "+(base.total_msgs+1)+"]");
-			sendflags(true);
-			untagged("OK [UIDNEXT "+(base.last_msg+1)+"]");
-			untagged("OK [UIDVALIDITY 0]");
-			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been selected");
+			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been examined");
+			readonly=true;
 			state=Selected;
 		},
 	},
@@ -672,12 +1049,28 @@ authenticated_command_handlers = {
 			var sub=args[2];
 			var groups=sublist(group, sub, false);
 			var group;
+			var base;
+			var interesting=false;
 
 			for(group in groups) {
 				if(groups[group].substr(-1)==sepchar)
 					untagged('LIST (\\Noselect) "'+sepchar+'" "'+groups[group].substr(0,groups[group].length-1)+'"');
-				else
-					untagged('LIST () "'+sepchar+'" "'+groups[group]+'"');
+				else {
+					if(groups[group] == '') {
+						untagged('LIST (\\Noselect) "'+sepchar+'" "'+groups[group]+'"');
+					}
+					else {
+						base=new MsgBase(getsub(groups[group]));
+						if(base.cfg != undefined) {
+							if(base.last_msg > msg_area.sub[base.cfg.code].scan_ptr)
+								untagged('LIST (\\Noinferiors \\Marked) "'+sepchar+'" "'+groups[group]+'"');
+							else
+								untagged('LIST (\\Noinferiors \\Unmarked) "'+sepchar+'" "'+groups[group]+'"');
+						}
+						else
+							untagged('LIST (\\Noinferiors) "'+sepchar+'" "'+groups[group]+'"');
+					}
+				}
 			}
 			tagged(tag, "OK", "There you go.");
 		},
@@ -708,6 +1101,9 @@ authenticated_command_handlers = {
 			var items=args[2];
 			var i;
 			var response=[];
+			var base;
+			var mademap=false;
+			var inbox_map;
 
 			if(typeof(items)!="object")
 				items=[items];
@@ -716,15 +1112,25 @@ authenticated_command_handlers = {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
+			if(base.cfg != undefined && orig_ptrs[base.cfg.code]==undefined) {
+				orig_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
+				msg_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
+			}
 			for(i in items) {
 				switch(items[i].toUpperCase()) {
 					case 'MESSAGES':
 						response.push("MESSAGES");
-						response.push(base.total_msgs);
+						if(base.subnum==65535) {
+							if(!mademap)
+								inbox_map=generate_inbox_map(false);
+							response.push(inbox_map.length);
+						}
+						else
+							response.push(base.total_msgs);
 						break;
 					case 'RECENT':
 						response.push("RECENT");
-						response.push(0);
+						response.push(count_recent(base));
 						break;
 					case 'UIDNEXT':
 						response.push("UIDNEXT");
@@ -736,11 +1142,18 @@ authenticated_command_handlers = {
 						break;
 					case 'UNSEEN':
 						response.push("UNSEEN");
-						response.push(base.total_msgs);
+						if(base.subnum==65535) {
+							if(!mademap)
+								inbox_map=generate_inbox_map();
+							response.push(inbox_map.unseen);
+						}
+						else
+							response.push(base.total_msgs+1);
 						break;
 				}
 			}
 			base.close();
+			update_status();
 			untagged("STATUS {"+(args[1].length)+"}\r\n"+args[1]+" ("+response.join(" ")+")");
 			tagged(tag, "OK", "And that's the way it is.");
 		},
@@ -759,14 +1172,48 @@ authenticated_command_handlers = {
 	},
 };
 
+function do_store(seq, uid, item, data)
+{
+	var silent=false;
+	var i,j;
+	var flags;
+	var chflags;
+	var hdr;
+
+	for(i in seq) {
+		hdr=base.get_msg_header(seq[i]);
+		flags=parse_flags(data);
+		switch(item.toUpperCase()) {
+			case 'FLAGS.SILENT':
+				silent=true;
+			case 'FLAGS':
+				chflags={attr:hdr.attr^flags.attr, netattr:hdr.netattr^flags.netattr};
+				break;
+			case '+FLAGS.SILENT':
+				silent=true;
+			case '+FLAGS':
+				chflags={attr:hdr.attr^(hdr.attr|flags.attr), netattr:hdr.netattr^(hdr.netattr|flags.netattr)};
+				break;
+			case '-FLAGS.SILENT':
+				silent=true;
+			case '-FLAGS':
+				chflags={attr:hdr.attr^(hdr.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
+				break
+		}
+		chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==65535, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
+		if(chflags.attr || chflags.netattr) {
+			hdr.attr ^= chflags.attr;
+			hdr.netattr ^= chflags.netattr;
+			if(!readonly)
+				base.put_msg_header(seq[i], hdr);
+			hdr=base.get_msg_header(seq[i]);
+		}
+		if(!silent)
+			send_fetch_response(seq[i], ["FLAGS"], uid);
+	}
+}
+
 selected_command_handlers = {
-	SELECT:{	// Outlook uses SELECT when selected...
-		arguments:1,
-		handler:function(args) {
-			base.close();
-			authenticated_command_handlers.SELECT.handler(args);
-		},
-	},
 	CHECK:{
 		arguments:0,
 		handler:function(args) {
@@ -780,7 +1227,12 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
+			if(base.cfg != undefined) {
+				if(msg_ptrs[base.cfg.code]!=orig_ptrs[base.cfg.code])
+					msg_base.sub[base.cfg.code]=msg_ptrs[base.cfg.code];
+			}
 			base.close();
+			update_status();
 			tagged(tag, "OK", "Closed.");
 			state=Authenticated;
 		},
@@ -815,15 +1267,18 @@ selected_command_handlers = {
 				send_fetch_response(seq[i], data_items, false);
 			}
 			tagged(tag, "OK", "There they are!");
-			//tagged(tag, "NO", "Can't fetch... I'm useless.");
 		},
 	},
 	STORE:{
 		arguments:3,
 		handler:function(args) {
 			var tag=args[0];
+			var seq=parse_seq_set(args[1], false);
+			var item=args[2];
+			var data=args[3];
 
-			tagged(tag, "NO", "This is read-only.");
+			do_store(seq, false, item, data);
+			tagged(tag, "OK", "Stored 'em up");
 		},
 	},
 	COPY:{
@@ -831,16 +1286,21 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "NO", "Hah! You can't even FETCH yet and you want to COPY?!?!");
+			tagged(tag, "NO", "Hah! Not likely!");
 		},
 	},
 	UID:{
-		arguments:3,
+		arguments_valid:function(count) {
+			if(count==3 || count==4)
+				return(true);
+			return(false);
+		},
 		handler:function(args) {
 			var tag=args[0];
 			var cmd=args[1];
 			var seq;
 			var data_items;
+			var data;
 			var i;
 
 			switch(cmd.toUpperCase()) {
@@ -856,6 +1316,17 @@ selected_command_handlers = {
 					}
 					tagged(tag, "OK", "There they are (with UIDs)!");
 					break;
+				case 'STORE':
+					if(args.length != 5) {
+						tagged(args[0], "BAD", "Bad dog, no UID STORE cookie.");
+						return;
+					}
+					seq=parse_seq_set(args[2],true);
+					data_items=args[3];
+					data=args[4];
+					do_store(seq, true, data_items, data);
+					tagged(tag, "OK", "Stored 'em up (with UIDs)!");
+					break;
 				default:
 					tagged(tag, "NO", "Help, I'm useless.");
 			}
@@ -864,6 +1335,10 @@ selected_command_handlers = {
 };
 
 var line;
+var readonly=true;
+var orig_ptrs={};
+var msg_ptrs={};
+var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 client.socket.send("* OK Give 'er\r\n");
 while(1) {
 	line=client.socket.recvline(1024, 300);
