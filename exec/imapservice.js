@@ -50,7 +50,8 @@ function handle_command(command, args, defs)
 	return false;
 }
 
-function compNumbers(a,b) {
+function compNumbers(a,b)
+{
 	return(a-b);
 }
 
@@ -304,68 +305,92 @@ function send_fetch_response(msgnum, format, uid)
 			}
 			continue;
 		}
-		switch(format[i].toUpperCase()) {
-			case 'FLAGS':
-				get_header();
-				resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
-				sent_flags=true;
-				break;
-			case 'UID':
-				resp += "UID "+idx.number+" ";
-				sent_uid=true;
-				break;
-			case 'INTERNALDATE':
-				get_header();
-				resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S +0000" ', hdr.when_imported_time);
-				break;
-			case 'RFC822.SIZE':
-				get_rfc822_size();
-				resp += "RFC822.SIZE "+rfc822.size+" ";
-				break;
-			case 'RFC822.TEXT':
-			case 'BODY[TEXT]':
-				set_seen_flag();
-				// fall-through
-			case 'BODY.PEEK[TEXT]':
-				get_rfc822_text();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
-				break;
-			case 'BODY[HEADER]':
-			case 'RFC822.HEADER':
-				set_seen_flag();
-				// fall-through
-			case 'BODY.PEEK[HEADER]':
-				get_rfc822_header();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
-				break;
-			case 'RFC822':
-			case 'BODY[]':
-				set_seen_flag();
-				// fall-through
-			case 'BODY.PEEK[]':
-				get_rfc822();
-				resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
-				break;
-			case 'BODY[HEADER.FIELDS':
-				set_seen_flag();
-			case 'BODY.PEEK[HEADER.FIELDS':
-				objtype=format[i].replace(/\.PEEK/,"").toUpperCase();
-				break;
-			case 'ENVELOPE':
-				get_envelope();
-				resp += 'ENVELOPE ('+envelope.join(" ")+') ';
-				break;
-			case 'BODYSTRUCTURE':
-				get_rfc822_size();
-				get_rfc822_text();
-				resp += 'BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "IBM437") NIL NIL "8BIT" '+rfc822.text.length+' '+rfc822.text.split(/\r\n/).length+" NIL NIL NIL) ";
-				break;
-			case 'BODY[1]':
-				set_seen_flag();
-			case 'BODY.PEEK[1]':
-				get_rfc822_text();
-				resp += 'BODY[1] '+encode_binary(rfc822.text)+' ';
-				break;
+		if(format[i].toUpperCase().substr(0,4)=='BODY') {
+			switch(format[i].toUpperCase()) {
+				case 'BODY[TEXT]':
+					set_seen_flag();
+					// fall-through
+				case 'BODY.PEEK[TEXT]':
+					get_rfc822_text();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					break;
+
+				case 'BODY[HEADER]':
+					set_seen_flag();
+					// fall-through
+				case 'BODY.PEEK[HEADER]':
+					get_rfc822_header();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					break;
+
+				case 'BODY[]':
+					set_seen_flag();
+					// fall-through
+				case 'BODY.PEEK[]':
+					get_rfc822();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					break;
+
+				case 'BODY[HEADER.FIELDS':
+					set_seen_flag();
+				case 'BODY.PEEK[HEADER.FIELDS':
+					objtype=format[i].replace(/\.PEEK/,"").toUpperCase();
+					break;
+
+				case 'BODYSTRUCTURE':
+					get_rfc822_size();
+					get_rfc822_text();
+					resp += 'BODYSTRUCTURE ("TEXT" "PLAIN" ("CHARSET" "IBM437") NIL NIL "8BIT" '+rfc822.text.length+' '+rfc822.text.split(/\r\n/).length+" NIL NIL NIL) ";
+					break;
+
+				case 'BODY[1]':
+					set_seen_flag();
+				case 'BODY.PEEK[1]':
+					get_rfc822_text();
+					resp += 'BODY[1] '+encode_binary(rfc822.text)+' ';
+					break;
+			}
+		}
+		else {
+			switch(format[i].toUpperCase()) {
+				case 'FLAGS':
+					get_header();
+					resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
+					sent_flags=true;
+					break;
+				case 'UID':
+					resp += "UID "+idx.number+" ";
+					sent_uid=true;
+					break;
+				case 'INTERNALDATE':
+					get_header();
+					resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S +0000" ', hdr.when_imported_time);
+					break;
+				case 'RFC822.SIZE':
+					get_rfc822_size();
+					resp += "RFC822.SIZE "+rfc822.size+" ";
+					break;
+				case 'RFC822.TEXT':
+					set_seen_flag();
+					get_rfc822_text();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					break;
+				case 'RFC822.HEADER':
+					set_seen_flag();
+					get_rfc822_header();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					break;
+				case 'RFC822':
+					set_seen_flag();
+					get_rfc822();
+					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					break;
+				case 'ENVELOPE':
+					set_seen_flag();
+					get_envelope();
+					resp += 'ENVELOPE ('+envelope.join(" ")+') ';
+					break;
+			}
 		}
 	}
 	if(seen_changed && !sent_flags) {
@@ -522,7 +547,7 @@ function parse_command(line)
 			line=line.replace(/^{([0-9]+)}$/, "$1");
 			client.socket.send("+ Give me more of that good stuff\r\n");
 			ret=client.socket.recv(parseInt(line));
-			line=client.socket.recvline(1024, 300);
+			line=client.socket.recvline(10240, 300);
 	
 			return(ret);
 		}
@@ -634,7 +659,7 @@ unauthenticated_command_handlers = {
 
 			if(mechanism.toUpperCase()=="PLAIN") {
 				client.socket.send("+\r\n");
-				line=client.socket.recvline(1024, 300);
+				line=client.socket.recvline(10240, 300);
 				args=base64_decode(line).split(/\x00/);
 				if(!login(args[1],args[2])) {
 					tagged(tag, "NO", "No AUTH for you.");
@@ -879,30 +904,37 @@ function sublist(group, match, subscribed)
 	var groups={};
 	var wmatch,wgroup;
 	var fmatch;
+	var re;
 
 	if(match=='')
 		return([""]);
 
-	wmatch=match.replace(/^\%/, "|*");
-	wgroup=group.replace(/\%$/, "*|");
+	wmatch=group+match;
+log("WMatch: "+wmatch);
+	wmatch=wmatch.replace(/([\\\^\$\+\?\.\(\)\|\{\}])/,"\\$1");
+log("WMatch: "+wmatch);
+	wmatch=wmatch.replace(/\*/, ".\*");
+log("WMatch: "+wmatch);
+	wmatch=wmatch.replace(/\%/, "[^"+sepchar+"]\*");
+log(wmatch);
+	wmatch="^"+wmatch+"$";
+log(wmatch);
+	re=new RegExp(wmatch);
 
-	if(wgroup == '')
-		wgroup='*';
-	fmatch=(wgroup+wmatch).replace(/\|\|/,"|");
+	if(re.test("INBOX"))
+		ret.push("INBOX");
+
 	for(grp in msg_area.grp_list) {
-		if(wildmatch(true, msg_area.grp_list[grp].description, fmatch)) {
+		if(re.test(msg_area.grp_list[grp].description))
 			ret.push(msg_area.grp_list[grp].description+sepchar);
 
-			for(sub in msg_area.grp_list[grp].sub_list) {
-				if(wildmatch(true, msg_area.grp_list[grp].sub_list[sub].description, fmatch, false)) {
-					if((!subscribed) || msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW)
-						ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
-				}
+		for(sub in msg_area.grp_list[grp].sub_list) {
+			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
+				if((!subscribed) || msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW)
+					ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
 			}
 		}
 	}
-	if(wildmatch(true, "INBOX", fmatch, false))
-		ret.push("INBOX");
 	return(ret);
 }
 
@@ -1330,7 +1362,8 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "NO", "Can't expunge... wait for maintenance");
+			tagged(tag, "OK", "How about I pretent to expunge and you pretend that's OK?");
+			//tagged(tag, "NO", "Can't expunge... wait for maintenance");
 		},
 	},
 	SEARCH:{
@@ -1429,7 +1462,7 @@ var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 client.socket.send("* OK Give 'er\r\n");
 while(1) {
-	line=client.socket.recvline(1024, 300);
+	line=client.socket.recvline(10240, 300);
 	if(line != null) {
 		debug_log("IMAP RECV: "+line);
 		parse_command(line);
