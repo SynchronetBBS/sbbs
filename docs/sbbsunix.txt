@@ -47,7 +47,7 @@ A: This is an issue linking the JavaScript library for Linux (libjs.a) on
  
    This issue has been resolved with the addition of libjs.so and libnspr4.so
    to the CVS repository (in the lib/mozilla directory). If you're having this
-   problem, run "cvs update" in your lib and src/sbbs3 directories and
+   problem, run "cvs update -d" in your lib and src/sbbs3 directories and
    rebuild.
 
    Another solution is to use the lib[moz]js.so file included with your Linux 
@@ -476,7 +476,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    C. Get the latest changes from CVS:
       # export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
-      # cvs update docs exec xtrn src lib include
+      # cvs update -d docs exec xtrn src lib include
 
    D. Repeat steps 2, 3 and 4 (only).
 
