@@ -910,15 +910,10 @@ function sublist(group, match, subscribed)
 		return([""]);
 
 	wmatch=group+match;
-log("WMatch: "+wmatch);
 	wmatch=wmatch.replace(/([\\\^\$\+\?\.\(\)\|\{\}])/,"\\$1");
-log("WMatch: "+wmatch);
 	wmatch=wmatch.replace(/\*/, ".\*");
-log("WMatch: "+wmatch);
 	wmatch=wmatch.replace(/\%/, "[^"+sepchar+"]\*");
-log(wmatch);
 	wmatch="^"+wmatch+"$";
-log(wmatch);
 	re=new RegExp(wmatch);
 
 	if(re.test("INBOX"))
