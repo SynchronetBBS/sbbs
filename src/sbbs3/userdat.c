@@ -2601,6 +2601,9 @@ BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host
 	if(fname==NULL)
 		fname=ip_can;
 
+	if(findstr(ip_addr, fname))	/* Already filtered? */
+		return(TRUE);
+
     if((fp=fopen(fname,"a"))==NULL)
     	return(FALSE);
 
