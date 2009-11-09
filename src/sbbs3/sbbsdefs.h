@@ -823,7 +823,7 @@ enum {							/* Values of mode for userlist function     */
 #define REALSYSOP		(useron.level>=SYSOP_LEVEL)
 #define FLAG(x) 		(ulong)(1UL<<(x-'A'))
 #define CLS         	outchar(FF)
-#define WHERE       	__LINE__,__FILE__
+#define WHERE       	__LINE__,getfname(__FILE__)
 #define SAVELINE		{ if(slcnt<SAVE_LINES) { \
 							slatr[slcnt]=latr; \
 							slcuratr[slcnt]=curatr; \
