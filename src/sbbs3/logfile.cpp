@@ -182,15 +182,23 @@ bool sbbs_t::syslog(const char* code, const char *entry)
 }
 
 /****************************************************************************/
-/* Writes 'str' on it's own line in node.log								*/
+/* Writes 'str' on it's own line in node.log (using LOG_INFO level)			*/
 /****************************************************************************/
 void sbbs_t::logline(const char *code, const char *str)
 {
+	logline(LOG_INFO, code, str);
+}
+
+/****************************************************************************/
+/* Writes 'str' on it's own line in node.log								*/
+/****************************************************************************/
+void sbbs_t::logline(int level, const char *code, const char *str)
+{
 	if(strchr(str,'\n')==NULL) {	// Keep the console log pretty
 		if(online==ON_LOCAL)
-			eprintf(LOG_INFO,"%s",str);
+			eprintf(level,"%s",str);
 		else
-			lprintf(LOG_INFO,"Node %d %s", cfg.node_num, str);
+			lprintf(level,"Node %d %s", cfg.node_num, str);
 	}
 	if(logfile_fp==NULL || (online==ON_LOCAL && strcmp(code,"!!"))) return;
 	if(logcol!=1)

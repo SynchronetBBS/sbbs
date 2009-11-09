@@ -2442,7 +2442,7 @@ void event_thread(void* arg)
 							if(rename(str,newname)==0) {
 								char logmsg[MAX_PATH*3];
 								SAFEPRINTF2(logmsg,"%s renamed to %s",str,newname);
-								sbbs->logline("Q!",logmsg);
+								sbbs->logline(LOG_NOTICE,"Q!",logmsg);
 							}
 						}
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
@@ -3053,7 +3053,7 @@ bool sbbs_t::init()
 				,hhmmtostr(&cfg,&tm,tmp)
 				,wday[tm.tm_wday]
 				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
-			logline("L!",str);
+			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(1); 
 		}
@@ -3388,12 +3388,12 @@ int sbbs_t::nopen(char *str, int access)
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         SAFEPRINTF2(logstr,"NOPEN COLLISION - File: \"%s\" Count: %d"
             ,str,count);
-        logline("!!",logstr); 
+        logline(LOG_WARNING,"!!",logstr); 
 	}
     if(file==-1 && (errno==EACCES || errno==EAGAIN)) {
         SAFEPRINTF2(logstr,"NOPEN ACCESS DENIED - File: \"%s\" errno: %d"
 			,str,errno);
-		logline("!!",logstr);
+		logline(LOG_WARNING,"!!",logstr);
 		bputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
 	}
     return(file);

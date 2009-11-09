@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -149,7 +149,7 @@ int sbbs_t::putnodeext(uint number, char *ext)
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		sprintf(str,"NODE.EXB (node %d) COLLISION - Count: %d"
 			,number+1, count);
-		logline("!!",str); 
+		logline(LOG_NOTICE,"!!",str); 
 	}
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_WRITE,"NODE.EXB",number+1);

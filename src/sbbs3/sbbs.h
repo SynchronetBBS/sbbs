@@ -709,7 +709,8 @@ public:
 	void	logentry(const char *code,const char *entry);
 	void	log(char *str);				/* Writes 'str' to node log */
 	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
-	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log */
+	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log (LOG_INFO level) */
+	void	logline(int level, const char *code,const char *str);
 	void	logofflist(void);              /* List of users logon activity */
 	bool	syslog(const char* code, const char *entry);
 	void	errorlog(const char *text);			/* Logs errors to ERROR.LOG and NODE.LOG */

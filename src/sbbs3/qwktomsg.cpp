@@ -499,14 +499,14 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		if(!fromhub) {
 			if(subnum==INVALID_SUB) {
 				SAFEPRINTF2(str,"%s duplicate e-mail attempt (%s)",useron.alias,smb.last_error);
-				logline("E!",str); 
+				logline(LOG_NOTICE,"E!",str); 
 			} else {
 				SAFEPRINTF4(str,"%s duplicate message attempt in %s %s (%s)"
 					,useron.alias
 					,cfg.grp[cfg.sub[subnum]->grp]->sname
 					,cfg.sub[subnum]->lname
 					,smb.last_error);
-				logline("P!",str); 
+				logline(LOG_NOTICE,"P!",str); 
 			}
 		}
 	}

@@ -153,7 +153,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			eprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
 				,msg.from
 				,(now-msg.hdr.when_written.time)/(24*60*60)); 
-			logline("P!",str);
+			logline(LOG_NOTICE,"P!",str);
 			continue;
 		}
 

@@ -278,7 +278,7 @@ char sbbs_t::getkey(long mode)
 						console&=~CON_R_ECHOX; 
 					}
 					bputs(text[CallBackWhenYoureThere]);
-					logline(nulstr,"Inactive");
+					logline(LOG_NOTICE,nulstr,"Inactive");
 					hangup();
 					return(0); 
 				}

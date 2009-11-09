@@ -247,7 +247,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 			if(!fgets(protlog,sizeof(protlog),stream))
 				break;
 			truncsp(protlog);
-			logline(nulstr,protlog);
+			logline(LOG_DEBUG,nulstr,protlog);
 		}
 		fclose(stream);
 	}
@@ -397,7 +397,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 		else if(f->dir==cfg.total_dirs+1)
 			sprintf(str,"%s attempted to download attached file: %s"
 				,useron.alias,f->name);
-		logline("D!",str);
+		logline(LOG_NOTICE,"D!",str);
 		return(false); 
 	}
 	return(true);

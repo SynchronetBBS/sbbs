@@ -1003,7 +1003,7 @@ bool sbbs_t::editfile(char *fname)
 		if(l>0) {
 			SAFEPRINTF4(str,"%s created or edited file: %s (%u bytes, %u lines)"
 				,useron.alias, path, l, lines);
-			logline(nulstr,str);
+			logline(LOG_NOTICE,nulstr,str);
 		}
 		rioctl(IOSM|PAUSE|ABORT); 
 		return true; 

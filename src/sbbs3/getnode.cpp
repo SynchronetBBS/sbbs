@@ -96,7 +96,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	if(count>(LOOP_NODEDAB/2)) {
 		sprintf(str,"NODE.DAB (node %d) COLLISION - Count: %d"
 			,number+1, count);
-		logline("!!",str); 
+		logline(LOG_WARNING,"!!",str); 
 	}
 
 	return(0);
@@ -165,7 +165,7 @@ void sbbs_t::nodesync()
 
 	if(thisnode.misc&NODE_INTR) {
 		bputs(text[NodeLocked]);
-		logline(nulstr,"Interrupted");
+		logline(LOG_NOTICE,nulstr,"Interrupted");
 		hangup();
 		nodesync_inside=0;
 		return; 

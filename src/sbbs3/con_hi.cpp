@@ -107,7 +107,7 @@ bool sbbs_t::chksyspass()
 	int 	orgcon=console;
 
 	if(online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP)) {
-		logline("S!","Remote sysop access disabled");
+		logline(LOG_NOTICE,"S!","Remote sysop access disabled");
 		return(false);
 	}
 	bputs(text[SystemPassword]);
@@ -120,7 +120,7 @@ bool sbbs_t::chksyspass()
 		else
 			SAFEPRINTF2(str2,"%s #%u System password verification failure"
 				,useron.alias,useron.number);
-		logline("S!",str2);
+		logline(LOG_NOTICE,"S!",str2);
 		return(false); 
 	}
 	return(true);

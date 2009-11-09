@@ -102,7 +102,7 @@ bool sbbs_t::logon()
 		bputs(text[NoNodeAccess]);
 		sprintf(str,"(%04u)  %-25s  Insufficient node access"
 			,useron.number,useron.alias);
-		logline("+!",str);
+		logline(LOG_NOTICE,"+!",str);
 		return(false); 
 	}
 
@@ -113,7 +113,7 @@ bool sbbs_t::logon()
 			bputs(text[NodeLocked]);
 			sprintf(str,"(%04u)  %-25s  Locked node logon attempt"
 				,useron.number,useron.alias);
-			logline("+!",str);
+			logline(LOG_NOTICE,"+!",str);
 			return(false); 
 		}
 		if(yesno(text[RemoveNodeLockQ])) {
@@ -277,7 +277,7 @@ bool sbbs_t::logon()
 			bputs(text[NoMoreLogons]);
 			sprintf(str,"(%04u)  %-25s  Out of logons"
 				,useron.number,useron.alias);
-			logline("+!",str);
+			logline(LOG_NOTICE,"+!",str);
 			hangup();
 			return(false); 
 		}
@@ -285,7 +285,7 @@ bool sbbs_t::logon()
 			bputs(text[R_Logons]);
 			sprintf(str,"(%04u)  %-25s  Out of logons"
 				,useron.number,useron.alias);
-			logline("+!",str);
+			logline(LOG_NOTICE,"+!",str);
 			hangup();
 			return(false); 
 		}
@@ -390,7 +390,7 @@ bool sbbs_t::logon()
 	if(!online) {
 		sprintf(str,"(%04u)  %-25s  Unsuccessful logon"
 			,useron.number,useron.alias);
-		logline("+!",str);
+		logline(LOG_NOTICE,"+!",str);
 		return(false); 
 	}
 	SAFECOPY(useron.modem,connection);
@@ -490,7 +490,7 @@ bool sbbs_t::logon()
 				strcpy(tmp,"On two nodes at the same time");
 				sprintf(str,"(%04u)  %-25s  %s"
 					,useron.number,useron.alias,tmp);
-				logline("+!",str);
+				logline(LOG_NOTICE,"+!",str);
 				errorlog(tmp);
 				bputs(text[UserOnTwoNodes]);
 				hangup();

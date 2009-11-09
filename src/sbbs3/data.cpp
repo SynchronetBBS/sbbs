@@ -244,7 +244,7 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 		gettimeleft_inside=1;
 
 		if(!timeleft && !SYSOP && !(sys_status&SS_LCHAT)) {
-			logline(nulstr,"Ran out of time");
+			logline(LOG_NOTICE,nulstr,"Ran out of time");
 			SAVELINE;
 			if(sys_status&SS_EVENT)
 				bprintf(text[ReducedTime],timestr(event_time));

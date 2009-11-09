@@ -91,11 +91,11 @@ int sbbs_t::login(char *username, char *pw)
 			else
 				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
 					,0,useron.alias);
-			logline("+!",tmp); 
+			logline(LOG_NOTICE,"+!",tmp); 
 		} else {
 			bputs(text[UnknownUser]);
 			sprintf(tmp,"Unknown User '%s'",str);
-			logline("+!",tmp); 
+			logline(LOG_NOTICE,"+!",tmp); 
 		}
 		useron.misc=useron_misc;
 		return(LOGIC_FALSE); 
@@ -123,7 +123,7 @@ int sbbs_t::login(char *username, char *pw)
 			else
 				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
 					,useron.number,useron.alias);
-			logline("+!",tmp);
+			logline(LOG_NOTICE,"+!",tmp);
 			useron.number=0;
 			useron.misc=useron_misc;
 			return(LOGIC_FALSE); 

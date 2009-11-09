@@ -856,7 +856,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 				if(x>=usrgrps || y>=usrsubs[x]) {
 					bprintf(text[QWKInvalidConferenceN],l);
 					sprintf(str,"Invalid conference number %lu",l);
-					logline("Q!",str); 
+					logline(LOG_NOTICE,"Q!",str); 
 				}
 				else
 					subscan[usrsub[x][y]].cfg&=~SUB_CFG_NSCAN; 

@@ -1039,7 +1039,7 @@ void sbbs_t::maindflts(user_t* user)
 					putuserrec(&cfg,user->number,U_PWMOD,8,ultoa(now,tmp,16));
 					bputs(text[PasswordChanged]);
 					SAFEPRINTF(str,"%s changed password",useron.alias);
-					logline(nulstr,str);
+					logline(LOG_NOTICE,nulstr,str);
 				}
 				SAFEPRINTF2(str,"%suser/%04u.sig",cfg.data_dir,user->number);
 				if(fexist(str) && yesno(text[ViewSignatureQ]))

@@ -126,7 +126,7 @@ bool sbbs_t::answer()
 							else
 								sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 									,0,useron.alias);
-								logline("+!",str);
+								logline(LOG_NOTICE,"+!",str);
 							bputs(text[PasswordPrompt]);
 							console|=CON_R_ECHOX;
 							getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
@@ -155,7 +155,7 @@ bool sbbs_t::answer()
 							else
 								sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 									,0,useron.alias);
-								logline("+!",str);
+								logline(LOG_NOTICE,"+!",str);
 						}
 						lprintf(LOG_WARNING,"Node %d !CLIENT IP NOT LISTED in %s"
 							,cfg.node_num,path);
@@ -208,7 +208,7 @@ bool sbbs_t::answer()
 					else
 						sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 							,0,useron.alias);
-						logline("+!",str);
+						logline(LOG_NOTICE,"+!",str);
 					bputs(text[PasswordPrompt]);
 					console|=CON_R_ECHOX;
 					getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
@@ -237,7 +237,7 @@ bool sbbs_t::answer()
 					else
 						sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 							,0,useron.alias);
-						logline("+!",str);
+						logline(LOG_NOTICE,"+!",str);
 				}
 				useron.number=0;
 				hangup();

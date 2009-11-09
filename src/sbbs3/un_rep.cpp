@@ -79,8 +79,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 		SAFEPRINTF2(rep_fname,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(rep_fname)) {
 		bputs(text[QWKReplyNotReceived]);
-		logline("U!",AttemptedToUploadREPpacket);
-		logline(nulstr,"REP file not received");
+		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false); 
 	}
 	for(k=0;k<cfg.total_fextrs;k++)
@@ -94,15 +94,15 @@ bool sbbs_t::unpack_rep(char* repfile)
 	i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
 	if(i) {
 		bputs(text[QWKExtractionFailed]);
-		logline("U!",AttemptedToUploadREPpacket);
-		logline(nulstr,"Extraction failed");
+		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+		logline(LOG_NOTICE,nulstr,"Extraction failed");
 		return(false); 
 	}
 	SAFEPRINTF2(msg_fname,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(msg_fname)) {
 		bputs(text[QWKReplyNotReceived]);
-		logline("U!",AttemptedToUploadREPpacket);
-		logline(nulstr,"MSG file not received");
+		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+		logline(LOG_NOTICE,nulstr,"MSG file not received");
 		return(false); 
 	}
 	if((rep=fnopen(&file,msg_fname,O_RDONLY))==NULL) {
@@ -130,8 +130,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			iniFreeStringList(headers);
 		fclose(rep);
 		bputs(text[QWKReplyNotReceived]);
-		logline("U!",AttemptedToUploadREPpacket);
-		logline(nulstr,"Incorrect QWK BBS ID");
+		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+		logline(LOG_NOTICE,nulstr,"Incorrect QWK BBS ID");
 		return(false); 
 	}
 	logline("U+","Uploaded REP packet");
@@ -181,7 +181,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			SAFEPRINTF2(str,"!Filtering QWK message from %s due to age: %u days"
 				,msg.from
 				,(now-msg.hdr.when_written.time)/(24*60*60)); 
-			logline("P!",str);
+			logline(LOG_NOTICE,"P!",str);
 			continue;
 		}
 
@@ -189,7 +189,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked IP: %s"
 				,msg.from
 				,msg.from_ip); 
-			logline("P!",str);
+			logline(LOG_NOTICE,"P!",str);
 			continue;
 		}
 
@@ -198,7 +198,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked hostname: %s"
 				,msg.from
 				,hostname); 
-			logline("P!",str);
+			logline(LOG_NOTICE,"P!",str);
 			continue;
 		}
 
@@ -206,7 +206,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			SAFEPRINTF2(str,"!Filtering QWK message from %s due to filtered subject: %s"
 				,msg.from
 				,msg.subj); 
-			logline("P!",str);
+			logline(LOG_NOTICE,"P!",str);
 			continue;
 		}
 
@@ -370,7 +370,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf) {
 					bprintf(text[QWKInvalidConferenceN],n);
 					SAFEPRINTF2(str,"%s: Invalid QWK conference number %lu",useron.alias,n);
-					logline("P!",str);
+					logline(LOG_NOTICE,"P!",str);
 					continue; 
 				} 
 			}
@@ -401,13 +401,13 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			if(useron.rest&FLAG('Q') && !(cfg.sub[n]->misc&SUB_QNET)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","Attempted to post QWK message on non-QWKnet sub");
+				logline(LOG_NOTICE,"P!","Attempted to post QWK message on non-QWKnet sub");
 				continue; 
 			}
 
 			if(useron.rest&FLAG('P')) {
 				bputs(text[R_Post]);
-				logline("P!","QWK Post attempted");
+				logline(LOG_NOTICE,"P!","QWK Post attempted");
 				continue; 
 			}
 
@@ -420,20 +420,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(useron.rest&FLAG('N')
 				&& cfg.sub[n]->misc&(SUB_FIDO|SUB_PNET|SUB_QNET|SUB_INET)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","QWK Networked post attempted");
+				logline(LOG_NOTICE,"P!","QWK Networked post attempted");
 				continue; 
 			}
 
 			if(!chk_ar(cfg.sub[n]->post_ar,&useron,&client)) {
 				bputs(text[CantPostOnSub]);
-				logline("P!","QWK Post attempted");
+				logline(LOG_NOTICE,"P!","QWK Post attempted");
 				continue; 
 			}
 
 			if((block[0]=='*' || block[0]=='+')
 				&& !(cfg.sub[n]->misc&SUB_PRIV)) {
 				bputs(text[PrivatePostsNotAllowed]);
-				logline("P!","QWK Private post attempt");
+				logline(LOG_NOTICE,"P!","QWK Private post attempt");
 				continue; 
 			}
 
@@ -462,7 +462,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 					,msg.from
 					,msg.to
 					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
-				logline("P!",str);
+				logline(LOG_NOTICE,"P!",str);
 				continue; 
 			}
 
