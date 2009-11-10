@@ -416,10 +416,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	int32		usernumber;
 	jsrefcount	rc;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
-		return(JS_FALSE);
-	}
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_TRUE);
 
 	if((js_str=JS_ValueToString(cx,*vp))==NULL)
 		return(JS_FALSE);
