@@ -426,8 +426,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CHAT_SPLITP (1<<4)	/* Split screen private chat					*/
 																			
 																			
-#define INVALID_DIR 0xffff	/* Invalid directory value						*/
-#define INVALID_SUB 0xffff	/* Invalid sub-board value						*/
+#define INVALID_DIR ((uint)-1)	/* Invalid directory value					*/
+#define INVALID_SUB ((uint)-1)	/* Invalid sub-board value					*/
 																			
 #define KEY_BUFSIZE 1024	/* Size of keyboard input buffer				*/
 #define SAVE_LINES	 4		/* Maximum number of lines to save				*/
