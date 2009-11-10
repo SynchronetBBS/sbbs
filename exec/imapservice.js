@@ -179,8 +179,8 @@ function send_fetch_response(msgnum, format, uid)
 
 			// Unwrap headers
 			rfc822.header=rfc822.header.replace(/\s*\r\n\s+/g, " ");
+			rfc822.header += "\r\n";
 		}
-		rfc822.header += "\r\n";
 	}
 
 	function get_rfc822_text() {
@@ -934,7 +934,6 @@ function sublist(group, match, subscribed)
 	wmatch=wmatch.replace(/\*/g, ".\*");
 	wmatch=wmatch.replace(/\%/g, "[^"+sepchar+"]\*");
 	wmatch="^"+wmatch+"$";
-log("wmatch: "+wmatch);
 	re=new RegExp(wmatch);
 
 	if(re.test("INBOX"))
@@ -1381,7 +1380,6 @@ function parse_rfc822_date(date)
 {
 	var dt=new Date(date);
 
-log("Date: "+date+"=="+dt.toString()+"=="+(dt.valueOf()/1000));
 	return(dt.valueOf()/1000);
 }
 
