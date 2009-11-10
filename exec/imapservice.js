@@ -12,11 +12,14 @@ load("sbbsdefs.js");
 const RFC822HEADER = 0xb0;  // from smbdefs.h
 
 var sepchar="|";
-var debug=true;
+var debug=false;
+var debugRX=true;
 
-function debug_log(line)
+function debug_log(line, rx)
 {
 	if(debug)
+		log(line);
+	else if(rx && debugRX)
 		log(line);
 }
 
@@ -24,13 +27,13 @@ function debug_log(line)
 function tagged(tag, msg, desc)
 {
 	client.socket.send(tag+" "+msg+" "+desc+"\r\n");
-	debug_log("IMAP Send: "+tag+" "+msg+" "+desc);
+	debug_log("IMAP Send: "+tag+" "+msg+" "+desc, false);
 }
 
 function untagged(msg)
 {
 	client.socket.send("* "+msg+"\r\n");
-	debug_log("IMAP Send: * "+msg);
+	debug_log("IMAP Send: * "+msg, false);
 }
 
 function handle_command(command, args, defs)
@@ -77,9 +80,21 @@ function encode_string(str)
 	return encode_binary(str);
 }
 
+function get_from(hdr)
+{
+	// From
+	if(!hdr.from_net_type || !hdr.from_net_addr)    /* local message */
+		return(hdr.from + " <" + hdr.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">");
+	else if(!hdr.from_net_addr.length)
+		return(hdr.from);
+	else if(hdr.from_net_addr.indexOf('@')!=-1)
+		return(hdr.from+" <"+hdr.from_net_addr+">");
+	return(hdr.from+" <"+hdr.from.replace(/ /g,".").toLowerCase()+"@"+hdr.from_net_addr+">");
+}
+
 function send_fetch_response(msgnum, format, uid)
 {
-	var idx=base.get_msg_index(msgnum);
+	var idx;
 	var resp='';
 	var sent_uid=false;
 	var i,j;
@@ -92,6 +107,8 @@ function send_fetch_response(msgnum, format, uid)
 	var sent_flags=false;
 	var seen_changed=false;
 	var envelope;
+
+	idx=base.get_msg_index(msgnum);
 
 	function get_header() {
 		if(hdr == undefined) {
@@ -111,15 +128,7 @@ function send_fetch_response(msgnum, format, uid)
 			rfc822.header += "Message-ID: "+hdr.id+"\r\n";
 			rfc822.header += "Date: "+hdr.date+"\r\n";
 
-			// From
-			if(!hdr.from_net_type || !hdr.from_net_addr)    /* local message */
-				rfc822.header += "From: " + hdr.from + " <" + hdr.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
-			else if(!hdr.from_net_addr.length)
-				rfc822.header += "From: "+hdr.from+"\r\n";
-			else if(hdr.from_net_addr.indexOf('@')!=-1)
-				rfc822.header += "From: "+hdr.from+" <"+hdr.from_net_addr+">\r\n";
-			else
-				rfc822.header += "From: "+hdr.from+" <"+hdr.from.replace(/ /g,".").toLowerCase()+"@"+hdr.from_net_addr+">\r\n";
+			rfc822.header += "From: "+get_from(hdr)+"\r\n";
 
 			rfc822.header += "X-Comment-To: "+hdr.to+"\r\n";
 			if(hdr.path != undefined)
@@ -306,6 +315,7 @@ function send_fetch_response(msgnum, format, uid)
 			continue;
 		}
 		if(format[i].toUpperCase().substr(0,4)=='BODY') {
+			// TODO: Handle BODY* stuff correctly (MIME Decode)
 			switch(format[i].toUpperCase()) {
 				case 'BODY[TEXT]':
 					set_seen_flag();
@@ -464,7 +474,7 @@ function parse_seq_set(set, uid) {
 		}
 		for(i=range[0]; i<=range[1]; i++) {
 			if(base.subnum==65535) {
-				idx=base.get_msg_index(uid?parseInt(i,10):inbox_map.uid[parseInt(i,10)]);
+				idx=base.get_msg_index(uid?parseInt(i,10):inbox_map.uid[parseInt(i,10)-1]);
 				if(idx==null || idx.to != user.number)
 					continue;
 			}
@@ -905,17 +915,27 @@ function sublist(group, match, subscribed)
 	var wmatch,wgroup;
 	var fmatch;
 	var re;
+	var has_sep=false;
 
 	if(match=='')
 		return([""]);
 
-	wmatch=group+match;
+	re=new RegExp("\\"+sepchar+"$");
+	if(group.search(re)!=-1)
+		has_sep=true;
+	re=new RegExp("^\\"+sepchar);
+	if(match.search(re)!=-1)
+		has_sep=true;
+	wmatch=group;
+	if(wmatch.length > 0 && !has_sep)
+		wmatch += sepchar;
+	wmatch += match;
 	wmatch=wmatch.replace(/([\\\^\$\+\?\.\(\)\|\{\}])/g,"\\$1");
 	wmatch=wmatch.replace(/\*/g, ".\*");
 	wmatch=wmatch.replace(/\%/g, "[^"+sepchar+"]\*");
 	wmatch="^"+wmatch+"$";
+log("wmatch: "+wmatch);
 	re=new RegExp(wmatch);
-log("WMATCH="+wmatch);
 
 	if(re.test("INBOX"))
 		ret.push("INBOX");
@@ -1329,6 +1349,197 @@ function do_store(seq, uid, item, data)
 	}
 }
 
+function datestr(date)
+{
+	return(strftime('%d-%b-%C%y', date));
+}
+
+function parse_date(date)
+{
+	var ret=0;
+	var match;
+	var m,d,y;
+	var dt;
+
+	match=date.match(/^([0-9]{1,2})-([A-Za-z]{3})-([0-9]{4})$/);
+	if(match==null)
+		return(0);
+	d=parseInt(match[1],10);
+	m={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[match[2]];
+	y=parseInt(match[3],10);
+	if(m==undefined)
+		return(0);
+	if(d<1 || d>31)
+		return(0);
+	if(y<1970 || y>2099)
+		return(0);
+	dt=new Date(y,m,d);
+	return(dt.valueOf()/1000);
+}
+
+function parse_rfc822_date(date)
+{
+	var dt=new Date(date);
+
+log("Date: "+date+"=="+dt.toString()+"=="+(dt.valueOf()/1000));
+	return(dt.valueOf()/1000);
+}
+
+function do_search(args, uid)
+{
+	var search_set={idx:[],hdr:[],body:[]};
+	var i,j;
+	var failed;
+	var idx,hdr,body;
+	var result=[];
+
+	while(args.length) {
+		switch(args.shift().toUpperCase()) {
+			case 'ALL':
+				search_set.idx.push(function(idx) { return true; });
+				break;
+			case 'ANSWERED':
+				search_set.idx.push(function(idx) { if(base.subnum==65535 && (idx.attr & MSG_REPLIED)) return true; return false; });
+				break;
+			case 'BODY':
+				search_set.body.push(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				break;
+			case 'DELETED':
+				search_set.idx.push(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
+				break;
+			case 'DRAFT':
+				search_set.idx.push(function(idx) { return false; });
+				break;
+			case 'FLAGGED':
+				search_set.idx.push(function(idx) { if(idx.attr & MSG_VERIFIED) return true; return false; });
+				break;
+			case 'FROM':
+				search_set.hdr.push(eval("function(hdr) { return(get_from(hdr).toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				break;
+			case 'KEYWORD':
+				search_set.hdr.push(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
+				break;
+			case 'NEW':
+				// TODO: We don't do \Recent in INBOX and don't do \Seen in subs
+				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return false; if(msg_ptrs[base.cfg.code] < idx.number) return true; return false; }"));
+				break;
+			case 'OLD':
+				// TODO: We don't do \Recent in INBOX and don't do \Seen in subs
+				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return true; if(msg_ptrs[base.cfg.code] < idx.number) return false; return true; }"));
+				break;
+			case 'RECENT':
+				// TODO: We don't do \Recent in INBOX
+				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return false; if(msg_ptrs[base.cfg.code] < idx.number) return true; return false; }"));
+				break;
+			case 'SEEN':
+				// We don't do \Seen in subs
+				search_set.idx.push(function(idx) { if(base.subnum != 65535) return false; if(idx.attr & MSG_READ) return true; return false });
+				break;
+			case 'SUBJECT':
+				search_set.hdr.push(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				break;
+			case 'TO':
+				search_set.hdr.push(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				break;
+			case 'UID':
+				search_set.idx.push(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
+				break;
+			case 'UNANSWERED':
+				search_set.idx.push(function(idx) { if(base.subnum==65535 && (idx.attr & MSG_REPLIED)) return false; return true; });
+				break;
+			case 'UNDELETED':
+				search_set.idx.push(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
+				break;
+			case 'UNDRAFT':
+				search_set.idx.push(function(idx) { return true; });
+				break;
+			case 'UNFLAGGED':
+				search_set.idx.push(function(idx) { if(idx.attr & MSG_VERIFIED) return false; return true; });
+				break;
+			case 'UNKEYWORD':
+				search_set.hdr.push(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
+				break;
+			case 'BEFORE':
+				search_set.hdr.push(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
+				break;
+			case 'ON':
+				search_set.hdr.push(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
+				break;
+			case 'SINCE':
+				search_set.hdr.push(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
+				break;
+			case 'SENTBEFORE':
+				search_set.hdr.push(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
+				break;
+			case 'SENTON':
+				search_set.hdr.push(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
+				break;
+			case 'SENTSINCE':
+				search_set.hdr.push(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
+				break;
+			// TODO: Unhandled SEARCH terms
+			case 'HEADER':
+				args.shift();
+			case 'LARGER':
+			case 'SMALLER':
+				// Calculate RFC822.SIZE
+			case 'CC':
+				// Is there a CC header?
+			case 'BCC':
+				// There's a BCC header?
+			case 'TEXT':
+				// Needs RFC822
+				args.shift();
+			case 'NOT':
+			case 'OR':
+			default:
+				search_set.idx.push(function(idx) { return false; });
+		}
+	}
+
+	for(i=base.first_msg; i<=base.last_msg; i++) {
+		failed=false;
+		idx=base.get_msg_index(i);
+		if(idx==null)
+			continue;
+		if(base.subnum==65535) {
+			if(idx.to != user.number)
+				continue;
+		}
+		if(search_set.idx.length > 0) {
+			for(j in search_set.idx) {
+				if(search_set.idx[j](idx)==false)
+					failed=true;
+			}
+			if(failed)
+				continue;
+		}
+		if(search_set.hdr.length > 0) {
+			hdr=base.get_msg_header(i);
+			for(j in search_set.hdr) {
+				if(search_set.hdr[j](hdr)==false)
+					failed=true;
+			}
+			if(failed)
+				continue;
+		}
+		body=base.get_msg_index(i);
+		if(search_set.body.length > 0) {
+			body=base.get_msg_body(i,true,true,true).toUpperCase();
+			for(j in search_set.body) {
+				if(search_set.body[j](body)==false)
+					failed=true;
+			}
+			if(failed)
+				continue;
+		}
+		if(!failed)
+			result.push(uid?idx.number:(base.subnum==65535?inbox_map.offset[i]:idx.offset+1));
+	}
+
+	untagged("SEARCH "+result.join(" "));
+}
+
 selected_command_handlers = {
 	CHECK:{
 		arguments:0,
@@ -1358,7 +1569,7 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "OK", "How about I pretent to expunge and you pretend that's OK?");
+			tagged(tag, "OK", "How about I pretend to expunge and you pretend that's OK?");
 			//tagged(tag, "NO", "Can't expunge... wait for maintenance");
 		},
 	},
@@ -1369,7 +1580,13 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "NO", "Can't search... I'm useless.");
+			// TODO: Support (or ignore) CHARSET in search commands
+			if(args[1]=='CHARSET') {
+				tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
+				return;
+			}
+			do_search(args.slice(1), false);
+			tagged(tag, "OK", "And that was your results.");
 		}
 	},
 	FETCH:{
@@ -1444,8 +1661,18 @@ selected_command_handlers = {
 					do_store(seq, true, data_items, data);
 					tagged(tag, "OK", "Stored 'em up (with UIDs)!");
 					break;
+				case 'SEARCH':
+					// TODO: Support (or ignore) CHARSET in SEARCH
+					if(args[2]=='CHARSET') {
+						tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
+						return;
+					}
+					do_search(args.slice(2), true);
+					tagged(tag, "OK", "And that was your results.");
+					break;
 				default:
 					tagged(tag, "NO", "Help, I'm useless.");
+					break;
 			}
 		},
 	}
@@ -1460,7 +1687,7 @@ client.socket.send("* OK Give 'er\r\n");
 while(1) {
 	line=client.socket.recvline(10240, 300);
 	if(line != null) {
-		debug_log("IMAP RECV: "+line);
+		debug_log("IMAP RECV: "+line, true);
 		parse_command(line);
 	}
 	else {
