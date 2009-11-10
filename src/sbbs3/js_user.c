@@ -1270,7 +1270,7 @@ static JSBool js_user_enumerate(JSContext *cx, JSObject *obj)
 
 static JSClass js_user_class = {
      "User"					/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+    ,JSCLASS_HAS_PRIVATE|JSCLASS_CONSTRUCT_PROTOTYPE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
 	,js_user_get			/* getProperty	*/
