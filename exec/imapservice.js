@@ -910,11 +910,12 @@ function sublist(group, match, subscribed)
 		return([""]);
 
 	wmatch=group+match;
-	wmatch=wmatch.replace(/([\\\^\$\+\?\.\(\)\|\{\}])/,"\\$1");
-	wmatch=wmatch.replace(/\*/, ".\*");
-	wmatch=wmatch.replace(/\%/, "[^"+sepchar+"]\*");
+	wmatch=wmatch.replace(/([\\\^\$\+\?\.\(\)\|\{\}])/g,"\\$1");
+	wmatch=wmatch.replace(/\*/g, ".\*");
+	wmatch=wmatch.replace(/\%/g, "[^"+sepchar+"]\*");
 	wmatch="^"+wmatch+"$";
 	re=new RegExp(wmatch);
+log("WMATCH="+wmatch);
 
 	if(re.test("INBOX"))
 		ret.push("INBOX");
