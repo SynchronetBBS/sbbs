@@ -305,7 +305,7 @@ static struct JSPropertySpec js_sub_properties[] = {
 
 	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE|JSPROP_SHARED },
 	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"last_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE|JSPROP_SHARED },
 	{0}
 };
 
