@@ -31,6 +31,7 @@ var quote_top;								/* Line number of the first quote line */
 var quote_bottom;							/* Line number of the last quote line */
 var drop_file;
 var info;
+var tab_width=8;
 
 // Message header display format
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
@@ -726,8 +727,8 @@ function redraw_screen()
 	}
 	/* Display tab line */
 	for(i=0;i<(console.screen_columns-1);i++) {
-		if(i && (i%8)==0) {
-			if((i%(8*2))==0) {
+		if(i && (i%tab_width)==0) {
+			if((i%(tab_width*2))==0) {
 				console.attributes=CYAN|HIGH;
 				console.print('|');
 				last_tab='|';
@@ -894,7 +895,7 @@ function make_lines(str, attr, nl_is_hardcr)
 				case '\t':		/* Whitespace... never wrap here. */
 					nl[nl.length-1].text+=' ';
 					nl[nl.length-1].attr+=ascii(thisattr);
-					while(nl[nl.length-1].text.length%8) {
+					while(nl[nl.length-1].text.length%tab_width) {
 						nl[nl.length-1].text+=' ';
 						nl[nl.length-1].attr+=ascii(thisattr);
 					}
@@ -1553,7 +1554,7 @@ function edit(quote_first)
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				add_char(' ');
-				while(xpos%8)
+				while(xpos%tab_width)
 					add_char(' ');
 				break;
 			case '\x0a':	/* CTRL-J KEY_DOWN (Insert Line in SyncEdit) */
@@ -1570,25 +1571,25 @@ function edit(quote_first)
 				console.cleartoeol();
 				console.write("\r\n CTRL-B - Move to beginning of line      CTRL-R - Redraw screen");
 				console.cleartoeol();
-				console.write("\r\n CTRL-C - Center line on screen          CTRL-T - Edit title");
+				console.write("\r\n CTRL-C - Center line on screen          CTRL-S - Edit Subject");
 				console.cleartoeol();
-				console.write("\r\n CTRL-E - Move to end of line            CTRL-U - Enter quote mode");
+				console.write("\r\n CTRL-E - Move to end of line            CTRL-T - Adjust Tab Width");
 				console.cleartoeol();
-				console.write("\r\n CTRL-F - Move right one character       CTRL-V - Toggle insert mode");
+				console.write("\r\n CTRL-F - Move right one character       CTRL-U - Enter quote mode");
 				console.cleartoeol();
-				console.write("\r\n CTRL-G - Enter graphic character        CTRL-W - Delete word backwards");
+				console.write("\r\n CTRL-G - Enter graphic character        CTRL-V - Toggle insert mode");
 				console.cleartoeol();
-				console.write("\r\n CTRL-H - Backspace (BACKSPACE)          CTRL-Y - Delete Line");
+				console.write("\r\n CTRL-H - Backspace (BACKSPACE)          CTRL-W - Delete word backwards");
 				console.cleartoeol();
-				console.write("\r\n CTRL-I - Move to next tabstop (TAB)     CTRL-Z - Save message and exit");
+				console.write("\r\n CTRL-I - Move to next tabstop (TAB)     CTRL-Y - Delete Line");
 				console.cleartoeol();
-				console.write("\r\n CTRL-J - Move down one line             CTRL-] - Move left one character");
+				console.write("\r\n CTRL-J - Move down one line             CTRL-Z - Save message and exit");
 				console.cleartoeol();
-				console.write("\r\n CTRL-L - Insert Line                    CTRL-^ - Move up one line");
+				console.write("\r\n CTRL-L - Insert Line                    CTRL-] - Move left one character");
 				console.cleartoeol();
-				console.write("\r\n CTRL-O - Page Up                        CTRL-_ - Quick Abort (no save)");
+				console.write("\r\n CTRL-O - Page Up                        CTRL-^ - Move up one line");
 				console.cleartoeol();
-				console.write("\r\n CTRL-P - Page Down");
+				console.write("\r\n CTRL-P - Page Down                      CTRL-_ - Quick Abort (no save)");
 				console.cleartoeol();
 				console.write('\r\n');
 				console.cleartoeol();
@@ -1675,9 +1676,7 @@ function edit(quote_first)
 			case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
 				redraw_screen();
 				break;
-			case '\x13':	/* CTRL-S (Xon)  */
-				break;
-			case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
+			case '\x13':	/* CTRL-S (Edit Subject) (Xon)  */
 				if(edit_top==5) {
 					console.gotoxy(7,1);
 					var newsubj=console.getstr(subj, 70, K_LINE|K_EDIT|K_AUTODEL);
@@ -1685,6 +1684,12 @@ function edit(quote_first)
 						subj=newsubj;
 					redraw_screen();
 				}
+				break;
+			case '\x14':	/* CTRL-T (Adjust Tabs) (Justify Line in SyncEdit) */
+                tab_width/=2;
+                if(tab_width==1)
+                    tab_width=8;
+                redraw_screen();
 				break;
 			case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
 				if(quote_line.length>0) {
