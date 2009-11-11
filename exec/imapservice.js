@@ -12,7 +12,7 @@ load("sbbsdefs.js");
 const RFC822HEADER = 0xb0;  // from smbdefs.h
 
 var sepchar="|";
-var debug=false;
+var debug=true;
 var debugRX=true;
 
 function debug_log(line, rx)
@@ -92,7 +92,7 @@ function get_from(hdr)
 	return(hdr.from+" <"+hdr.from.replace(/ /g,".").toLowerCase()+"@"+hdr.from_net_addr+">");
 }
 
-function send_fetch_response(msgnum, format, uid)
+function send_fetch_response(msgnum, fmat, uid)
 {
 	var idx;
 	var resp='';
@@ -288,10 +288,10 @@ function send_fetch_response(msgnum, format, uid)
 		return a-b;
 	}
 
-	format=format.sort(sort_format);
+	fmat=fmat.sort(sort_format);
 
-	for(i in format) {
-		if(typeof(format[i])=='object') {
+	for(i in fmat) {
+		if(typeof(fmat[i])=='object') {
 			// We already handled this I hope...
 			if(objtype == undefined)
 				continue;
@@ -300,9 +300,9 @@ function send_fetch_response(msgnum, format, uid)
 					tmp='';
 					get_rfc822_header();
 					resp += objtype+" (";
-					for(j in format[i]) {
-						resp+=format[i][j]+" ";
-						re=new RegExp("^("+format[i][j]+":.*)$", "im");
+					for(j in fmat[i]) {
+						resp+=fmat[i][j]+" ";
+						re=new RegExp("^("+fmat[i][j]+":.*)$", "im");
 						m=re.exec(rfc822.header);
 						if(m!=null) {
 							tmp += m[1]+"\r\n";
@@ -314,15 +314,15 @@ function send_fetch_response(msgnum, format, uid)
 			}
 			continue;
 		}
-		if(format[i].toUpperCase().substr(0,4)=='BODY') {
+		if(fmat[i].toUpperCase().substr(0,4)=='BODY') {
 			// TODO: Handle BODY* stuff correctly (MIME Decode)
-			switch(format[i].toUpperCase()) {
+			switch(fmat[i].toUpperCase()) {
 				case 'BODY[TEXT]':
 					set_seen_flag();
 					// fall-through
 				case 'BODY.PEEK[TEXT]':
 					get_rfc822_text();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
 					break;
 
 				case 'BODY[HEADER]':
@@ -330,7 +330,7 @@ function send_fetch_response(msgnum, format, uid)
 					// fall-through
 				case 'BODY.PEEK[HEADER]':
 					get_rfc822_header();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
 					break;
 
 				case 'BODY[]':
@@ -338,13 +338,13 @@ function send_fetch_response(msgnum, format, uid)
 					// fall-through
 				case 'BODY.PEEK[]':
 					get_rfc822();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
 					break;
 
 				case 'BODY[HEADER.FIELDS':
 					set_seen_flag();
 				case 'BODY.PEEK[HEADER.FIELDS':
-					objtype=format[i].replace(/\.PEEK/,"").toUpperCase();
+					objtype=fmat[i].replace(/\.PEEK/,"").toUpperCase();
 					break;
 
 				case 'BODYSTRUCTURE':
@@ -362,7 +362,7 @@ function send_fetch_response(msgnum, format, uid)
 			}
 		}
 		else {
-			switch(format[i].toUpperCase()) {
+			switch(fmat[i].toUpperCase()) {
 				case 'FLAGS':
 					get_header();
 					resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
@@ -374,7 +374,7 @@ function send_fetch_response(msgnum, format, uid)
 					break;
 				case 'INTERNALDATE':
 					get_header();
-					resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S +0000" ', hdr.when_imported_time);
+					resp += 'INTERNALDATE '+strftime('"%d-%b-%C%y %H:%M:%S ', hdr.when_imported_time)+format('%+05d " ', hdr.when_imported_zone_offset);
 					break;
 				case 'RFC822.SIZE':
 					get_rfc822_size();
@@ -383,17 +383,17 @@ function send_fetch_response(msgnum, format, uid)
 				case 'RFC822.TEXT':
 					set_seen_flag();
 					get_rfc822_text();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
 					break;
 				case 'RFC822.HEADER':
 					set_seen_flag();
 					get_rfc822_header();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
 					break;
 				case 'RFC822':
 					set_seen_flag();
 					get_rfc822();
-					resp += format[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
 					break;
 				case 'ENVELOPE':
 					set_seen_flag();
@@ -893,8 +893,9 @@ function calc_msgflags(attr, netattr, ismail, code, msg, readonly)
 	if(netattr & MSG_TYPENET)
 		flags += "TYPENET ";
 
-	if(msg==null || msg_ptrs[code] < msg)
+	if(msg==null || msg_ptrs[code] < msg) {
 		flags += '\\Recent ';
+	}
 
 	if(!readonly) {
 		if(msg > msg_ptrs[code])
