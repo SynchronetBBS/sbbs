@@ -314,8 +314,8 @@ typedef struct {							/* QWK Network Hub */
 				node,						/* Node to do the call-out */
 				freq,						/* Frequency of call-outs */
 				subs,						/* Number Sub-boards carried */
-				*sub,						/* Number of local sub-board for ea. */
 				*conf;						/* Conference number of ea. */
+	ulong		*sub;						/* Number of local sub-board for ea. */
 	time32_t	last;						/* Last network attempt */
 
 } qhub_t;
