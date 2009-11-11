@@ -118,7 +118,7 @@ typedef struct {							/* Transfer Library Information */
 				code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 				parent_path[48];			/* Parent for dir paths */
 	uchar		*ar;
-	uint16_t	offline_dir;				/* Offline file directory */
+	uint32_t	offline_dir;				/* Offline file directory */
 
 } lib_t;
 
@@ -545,9 +545,9 @@ typedef struct
 	char			mods_dir[LEN_DIR+1];
 	char			logs_dir[LEN_DIR+1];
 	char			node_path[MAX_NODES][LEN_DIR+1]; /* paths to all node dirs */
-	uint16_t		sysop_dir;			/* Destination for uploads to sysop */
-	uint16_t		user_dir;			/* Directory for user to user xfers */
-	uint16_t		upload_dir; 		/* Directory where all uploads go */
+	uint			sysop_dir;			/* Destination for uploads to sysop */
+	uint			user_dir;			/* Directory for user to user xfers */
+	uint			upload_dir; 		/* Directory where all uploads go */
 	char **			altpath;			/* Alternate paths for files */
 	uint16_t		altpaths;			/* Total number of alternate paths */
 	uint16_t		leech_pct;			/* Leech detection percentage */

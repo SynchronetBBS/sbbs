@@ -79,7 +79,7 @@
 time_t	uptime=0;
 DWORD	served=0;
 
-static	DWORD node_threads_running=0;
+static	ulong node_threads_running=0;
 static	ulong thread_count=0;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */

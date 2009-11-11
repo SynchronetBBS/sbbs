@@ -967,9 +967,9 @@ extern "C" {
 	typedef struct {
 		char		version[128];
 		const char*	version_detail;
-		DWORD*		interface_addr;
-		DWORD*		options;
-		DWORD*		clients;
+		uint32_t*	interface_addr;
+		uint32_t*	options;
+		ulong*		clients;
 	} js_server_props_t;
 
 	enum {

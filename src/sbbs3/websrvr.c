@@ -98,11 +98,11 @@ enum {
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
 static BOOL		http_logging_thread_running=FALSE;
-static DWORD	active_clients=0;
+static ulong	active_clients=0;
 static ulong	sockets=0;
 static BOOL		terminate_server=FALSE;
 static BOOL		terminate_http_logging_thread=FALSE;
-static uint		thread_count=0;
+static ulong	thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
 static SOCKET	server_socket6=INVALID_SOCKET;
 static char		revision[16];
@@ -113,12 +113,12 @@ static char		cgi_dir[MAX_PATH+1];
 static char		cgi_env_ini[MAX_PATH+1];
 static char		default_auth_list[MAX_PATH+1];
 static time_t	uptime=0;
-static DWORD	served=0;
+static ulong	served=0;
 static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
-static int session_threads=0;
+static ulong session_threads=0;
 
 static named_string_t** mime_types;
 static named_string_t** cgi_handlers;

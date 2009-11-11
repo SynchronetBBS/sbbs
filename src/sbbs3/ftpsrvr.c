@@ -79,11 +79,11 @@
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
-static DWORD	active_clients=0;
-static DWORD	sockets=0;
-static DWORD	thread_count=0;
+static ulong	active_clients=0;
+static ulong	sockets=0;
+static ulong	thread_count=0;
 static time_t	uptime=0;
-static DWORD	served=0;
+static ulong	served=0;
 static BOOL		terminate_server=FALSE;
 static char		revision[16];
 static char 	*text[TOTAL_TEXT];
@@ -342,8 +342,8 @@ int getdir(char* p, user_t* user, client_t* client)
 {
 	char*	tp;
 	char	path[MAX_PATH+1];
-	int		dir;
-	int		lib;
+	uint	dir;
+	uint	lib;
 
 	SAFECOPY(path,p);
 	p=path;
