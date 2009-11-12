@@ -141,7 +141,7 @@ function send_fetch_response(msgnum, fmat, uid)
 				rfc822.header += "Reply-To: "+hdr.replyto+"\r\n";
 			else {
 				if(base.subnum != -1)
-					rfc822.header += "Reply-To: "+hdr.from+" <sub:"+base.cfg.code+"@"+system.inet_addr+">\r\n";
+					rfc822.header += 'Reply-To: "'+hdr.from+'" <sub:'+base.cfg.code+'@'+system.inet_addr+'>\r\n';
 			}
 			if(hdr.reply_id != undefined)
 				rfc822.header += "In-Reply-To: "+hdr.reply_id+"\r\n";
@@ -235,9 +235,11 @@ function send_fetch_response(msgnum, fmat, uid)
 			else {
 				if(is_addresses) {
 					if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
+						m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
 						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), encode_string(m2[3])].join(" ")+'))';
 					}
 					else if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)>\s*$/))!=null) {
+						m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
 						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), "NIL"].join(" ")+'))';
 					}
 					else if((m2=m[1].match(/^\s*<([^@]*)@(.*)>\s*$/))!=null) {
