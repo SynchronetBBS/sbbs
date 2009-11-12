@@ -2730,9 +2730,9 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				if((p=smb_get_hfield(&msg, RFC822TO, NULL))!=NULL) {
-					if(*p=='<')	p++;
-					SAFECOPY(rcpt_name,p);
-					truncstr(rcpt_name,">");
+					parse_mail_address(p
+						,rcpt_name	,sizeof(rcpt_name)-1
+						,rcpt_addr	,sizeof(rcpt_addr)-1);
 				}
 				if((p=smb_get_hfield(&msg, RFC822FROM, NULL))!=NULL) {
 					parse_mail_address(p 
@@ -2775,11 +2775,18 @@ static void smtp_thread(void* arg)
 					subnum=INVALID_SUB;
 					continue;
 				}
-				nettype=NET_INTERNET;
+				if(relay_user.number && subnum!=INVALID_SUB) {
+					nettype=NET_NONE;
+					SAFEPRINTF(str,"%u",relay_user.number);
+					smb_hfield_str(&msg, SENDEREXT, str);
+					smb_hfield_str(&msg, SENDER, relay_user.alias);
+				} else {
+					nettype=NET_INTERNET;
+					smb_hfield_str(&msg, SENDER, sender);
+					smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
+					smb_hfield_str(&msg, SENDERNETADDR, sender_addr);
+				}
 				smb_hfield_str(&msg, SMTPREVERSEPATH, reverse_path);
-				smb_hfield_str(&msg, SENDER, sender);
-				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
-				smb_hfield_str(&msg, SENDERNETADDR, sender_addr);
 				if(msg.subj==NULL)
 					smb_hfield(&msg, SUBJECT, 0, NULL);
 
@@ -2855,9 +2862,15 @@ static void smtp_thread(void* arg)
 
 					if(msg.subj==NULL || strlen(msg.subj) < SPAM_HASH_SUBJECT_MIN_LEN)
 						sources&=~SMB_HASH_SOURCE_SUBJECT;
-					lprintf(LOG_DEBUG,"%04d SMTP Calculating message hashes", socket);
+					lprintf(LOG_DEBUG,"%04d SMTP Calculating message hashes (sources=%lx, msglen=%u)"
+						,socket, sources, strlen(msgbuf));
 					if((hashes=smb_msghashes(&msg, msgbuf, sources)) != NULL) {
 						hash_t	found;
+
+						for(i=0;hashes[i];i++)
+							lprintf(LOG_DEBUG,"%04d SMTP Message %s crc32=%lx flags=%lx length=%u"
+								,socket, smb_hashsourcetype(hashes[i]->source)
+								,hashes[i]->crc32, hashes[i]->flags, hashes[i]->length);
 
 						if((i=smb_findhash(&spam, hashes, &found, sources, /* Mark: */TRUE))==SMB_SUCCESS) {
 							SAFEPRINTF3(str,"%s (%s) found in SPAM database (added on %s)"
@@ -2896,7 +2909,8 @@ static void smtp_thread(void* arg)
 						smb_close_hash(&spam);
 
 						smb_freehashes(hashes);
-					}
+					} else
+						lprintf(LOG_ERR,"%04d SMTP smb_msghashes returned NULL", socket);
 
 					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
@@ -4219,6 +4233,7 @@ static void sendmail_thread(void* arg)
 			remove_ctrl_a(msgtxt, msgtxt);
 
 			port=0;
+			mx2[0]=0;
 
 			/* Check if this is a local email ToDo */
 			SAFECOPY(to,(char*)msg.to_net.addr);
@@ -4229,7 +4244,7 @@ static void sendmail_thread(void* arg)
 				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
 				SAFEPRINTF(err,"Invalid destination address: %s", to);
-				bounce(&smb,&msg,err,TRUE);
+				bounce(&smb,&msg,err, /* immediate: */TRUE);
 				continue;
 			}
 			p++;
@@ -4278,7 +4293,7 @@ static void sendmail_thread(void* arg)
 							lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
 								,i,p,dns_server);
 							SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
-							bounce(&smb,&msg,err,FALSE);
+							bounce(&smb,&msg,err, /* immediate: */FALSE);
 							continue;
 						}
 						server=mx;
@@ -4317,6 +4332,7 @@ static void sendmail_thread(void* arg)
 				if(j) {
 					if(startup->options&MAIL_OPT_RELAY_TX || !mx2[0])
 						break;
+					lprintf(LOG_DEBUG,"%04d SEND reverting to second MX: %s", sock, mx2);
 					server=mx2;	/* Give second mx record a try */
 				}
 				
@@ -4357,7 +4373,7 @@ static void sendmail_thread(void* arg)
 			}
 			if(!success) {	/* Failed to send, so bounce */
 				remove_msg_intransit(&smb,&msg);
-				bounce(&smb,&msg,err,FALSE);	
+				bounce(&smb,&msg,err,/* immediate: */FALSE);	
 				continue;
 			}
 
@@ -4367,7 +4383,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"220");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 			if(startup->options&MAIL_OPT_RELAY_TX 
@@ -4378,7 +4394,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 
@@ -4411,7 +4427,7 @@ static void sendmail_thread(void* arg)
 					sockprintf(sock,"AUTH %s",p);
 					if(!sockgetrsp(sock,"334",buf,sizeof(buf))) {
 						SAFEPRINTF3(err,badrsp_err,server,buf,"334 Username/Challenge");
-						bounce(&smb,&msg,err,buf[0]=='5');
+						bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 						continue;
 					}
 					switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
@@ -4447,7 +4463,7 @@ static void sendmail_thread(void* arg)
 					if((startup->options&MAIL_OPT_RELAY_AUTH_MASK)!=MAIL_OPT_RELAY_AUTH_CRAM_MD5) {
 						if(!sockgetrsp(sock,"334",buf,sizeof(buf))) {
 							SAFEPRINTF3(err,badrsp_err,server,buf,"334 Password");
-							bounce(&smb,&msg,err,buf[0]=='5');
+							bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 							continue;
 						}
 						switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
@@ -4463,7 +4479,7 @@ static void sendmail_thread(void* arg)
 				}
 				if(!sockgetrsp(sock,"235",buf,sizeof(buf))) {
 					SAFEPRINTF3(err,badrsp_err,server,buf,"235");
-					bounce(&smb,&msg,err,buf[0]=='5');
+					bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 					continue;
 				}
 			}
@@ -4481,7 +4497,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 			/* RCPT */
@@ -4502,7 +4518,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 			/* DATA */
@@ -4510,7 +4526,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"354", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"354");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 			lprintf(LOG_DEBUG,"%04d SEND sending message text (%u bytes)"
@@ -4519,7 +4535,7 @@ static void sendmail_thread(void* arg)
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
-				bounce(&smb,&msg,err,buf[0]=='5');
+				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
 			lprintf(LOG_DEBUG,"%04d SEND message transfer complete (%lu lines)", sock, lines);
@@ -4906,7 +4922,6 @@ void DLLCALL mail_server(void* arg)
 			cleanup(1);
 			return;
 		}
-
 		result = listen(server_socket, 1);
 
 		if(result != 0) {
@@ -4915,7 +4930,6 @@ void DLLCALL mail_server(void* arg)
 			cleanup(1);
 			return;
 		}
-
 		lprintf(LOG_INFO,"%04d SMTP Server listening on port %u"
 			,server_socket, startup->smtp_port);
 
