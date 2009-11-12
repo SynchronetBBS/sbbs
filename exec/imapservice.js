@@ -83,7 +83,7 @@ function encode_string(str)
 function get_from(hdr)
 {
 	// From
-	if(!hdr.from_net_type || !hdr.from_net_addr)    /* local message */
+	if(!hdr.from_net_type || hdr.from_net_addr.length==0)    /* local message */
 		return(hdr.from + " <" + hdr.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">");
 	else if(!hdr.from_net_addr.length)
 		return(hdr.from);
@@ -108,7 +108,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	var seen_changed=false;
 	var envelope;
 
-	idx=base.get_msg_index(msgnum);
+	idx=index.idx[msgnum];
 
 	function get_header() {
 		if(hdr == undefined) {
@@ -139,6 +139,10 @@ function send_fetch_response(msgnum, fmat, uid)
 				rfc822.header += "Newsgroups: "+hdr.newsgroups+"\r\n";
 			if(hdr.replyto != undefined)
 				rfc822.header += "Reply-To: "+hdr.replyto+"\r\n";
+			else {
+				if(base.subnum != -1)
+					rfc822.header += "Reply-To: "+hdr.from+" <sub:"+base.cfg.code+"@"+system.inet_addr+">\r\n";
+			}
 			if(hdr.reply_id != undefined)
 				rfc822.header += "In-Reply-To: "+hdr.reply_id+"\r\n";
 			if(hdr.references != undefined)
@@ -201,15 +205,19 @@ function send_fetch_response(msgnum, fmat, uid)
 	function set_seen_flag() {
 		if(readonly)
 			return;
-		if(base.subnum==65535) {
+		if(base.subnum==-1) {
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
 				base.put_msg_header(msgnum);
+				index=read_index(base);
 				hdr=base.get_msg_header(msgnum);
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
+		}
+		else {
+			idx.attr |= MSG_READ;
 		}
 	}
 
@@ -229,8 +237,14 @@ function send_fetch_response(msgnum, fmat, uid)
 					if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
 						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), encode_string(m2[3])].join(" ")+'))';
 					}
-					else if((m2=m[1].match(/^\s*(.*)\s+<([^@]i)>\s*$/))!=null) {
-						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), NIL].join(" ")+'))';
+					else if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)>\s*$/))!=null) {
+						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), "NIL"].join(" ")+'))';
+					}
+					else if((m2=m[1].match(/^\s*<([^@]*)@(.*)>\s*$/))!=null) {
+						return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
+					}
+					else if((m2=m[1].match(/^\s*([^@]*)@(.*)\s*$/))!=null) {
+						return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
 					}
 					else
 						return '(('+[encode_string(m[1]), "NIL", "NIL", "NIL"].join(" ")+'))';
@@ -259,10 +273,7 @@ function send_fetch_response(msgnum, fmat, uid)
 		}
 	}
 
-	if(base.subnum==65535)
-		resp=inbox_map.offset[msgnum];
-	else
-		resp=idx.offset+1;
+	resp=idx.offset;
 	resp += " FETCH (";
 
 	// Moves flags to the end...
@@ -365,7 +376,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			switch(fmat[i].toUpperCase()) {
 				case 'FLAGS':
 					get_header();
-					resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
+					resp += "FLAGS ("+calc_msgflags(idx.attr, hdr.netattr, base.subnum, msgnum, readonly)+") ";
 					sent_flags=true;
 					break;
 				case 'UID':
@@ -405,11 +416,11 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 	if(seen_changed && !sent_flags) {
 		get_header();
-		resp += "FLAGS ("+calc_msgflags(hdr.attr, hdr.netattr, base.subnum==65535, base.cfg==undefined?null:base.cfg.code, msgnum, readonly)+") ";
+		resp += "FLAGS ("+calc_msgflags(idx.attr, hdr.netattr, base.subnum, msgnum, readonly)+") ";
 	}
 	if(uid && !sent_uid)
 		resp += "UID "+idx.number+" ";
-	resp=resp.replace(/\s*$/,'');
+	resp=resp.replace(/ $/,'');
 	resp += ")";
 	untagged(resp);
 }
@@ -448,15 +459,12 @@ function parse_seq_set(set, uid) {
 	var i;
 	var max;
 	var idx;
+	var msgnum;
 
 	if(uid)
 		max=base.last_msg;
-	else {
-		if(base.subnum==65535)
-			max=inbox_map.uid.length;
-		else
-			max=base.total_msgs;
-	}
+	else
+		max=index.offsets.length-1;
 	for(chunk in chunks) {
 		range=chunks[chunk].split(/:/);
 		if(range.length == 1)
@@ -473,16 +481,12 @@ function parse_seq_set(set, uid) {
 			range[1]=i;
 		}
 		for(i=range[0]; i<=range[1]; i++) {
-			if(base.subnum==65535) {
-				idx=base.get_msg_index(uid?parseInt(i,10):inbox_map.uid[parseInt(i,10)-1]);
-				if(idx==null || idx.to != user.number)
-					continue;
-			}
-			else
-				idx=base.get_msg_index(uid?false:true, parseInt(i,10)-(uid?0:1));
-			if(idx!=null) {
-				response.push(idx.number);
-			}
+			msgnum=parseInt(i, 10);
+			if(!uid)
+				msgnum=index.offsets[msgnum-1];
+			if(msgnum==undefined || index.idx[msgnum]==undefined)
+				continue;
+			response.push(msgnum);
 		}
 	}
 	response=response.sort(compNumbers);
@@ -616,7 +620,7 @@ const Authenticated=1;
 const Selected=2;
 var state=UnAuthenticated;
 var base;
-var inbox_map;
+var index={offsets:[],idx:{}};
 
 // Command handling functions
 any_state_command_handlers = {
@@ -641,7 +645,7 @@ any_state_command_handlers = {
 		arguments:0,
 		handler:function(args) {
 			var tag=args[0];
-		
+
 			untagged("BYE I'll go now");
 			tagged(tag, "OK", "Thanks for stopping by.");
 			client.socket.close();
@@ -676,6 +680,7 @@ unauthenticated_command_handlers = {
 					return;
 				}
 				tagged(tag, "OK", "Howdy.");
+				read_cfg();
 				state=Authenticated;
 			}
 			else
@@ -694,6 +699,7 @@ unauthenticated_command_handlers = {
 				return;
 			}
 			tagged(tag, "OK", "Sure, come on in.");
+			read_cfg();
 			state=Authenticated;
 		},
 	}
@@ -704,14 +710,8 @@ function sendflags(perm)
 	var flags="";
 	var pflags="";
 
-	if(base.subnum==65535) {
-		flags=calc_msgflags(0xffff, 0xffff, true, null, null, true);
-		pflags=calc_msgflags(0xffff, 0xffff, true, null, null, true);
-	}
-	else {
-		flags=calc_msgflags(0xffff, 0xffff, false, null, null, true);
-		pflags=calc_msgflags(0xffff, 0xffff, false, null, null, true);
-	}
+	flags=calc_msgflags(0xffff, 0xffff, base.subnum, base.last_msg, readonly);
+	pflags=calc_msgflags(0xffff, 0xffff, base.subnum, base.last_msg, readonly);
 	if(perm)
 		untagged("OK [PERMANENTFLAGS ("+pflags+")] Overkill!");
 	else
@@ -726,7 +726,6 @@ function parse_flags(inflags)
 	for(i in inflags) {
 		switch(inflags[i].toUpperCase()) {
 			case '\\SEEN':
-			case 'READ':
 				flags.attr |= MSG_READ;
 				break;
 			case '\\ANSWERED':
@@ -829,18 +828,14 @@ function check_msgflags(attr, netattr, ismail, touser, fromuser, isoperator)
 	return(flags);
 }
 
-function calc_msgflags(attr, netattr, ismail, code, msg, readonly)
+function calc_msgflags(attr, netattr, num, msg, readonly)
 {
 	var flags='';
 
 	if(attr & MSG_PRIVATE)
 		flags += "PRIVATE ";
-	if(attr & MSG_READ) {
-		if(base.subnum==65535)
-			flags += "\\Seen ";
-		else
-			flags += "READ ";
-	}
+	if(attr & MSG_READ)
+		flags += "\\Seen ";
 	if(attr & MSG_PERMANENT)
 		flags += "PERMANENT ";
 	if(attr & MSG_LOCKED)
@@ -856,7 +851,7 @@ function calc_msgflags(attr, netattr, ismail, code, msg, readonly)
 	if(attr & MSG_VALIDATED)
 		flags += "\\Flagged ";
 	if(attr & MSG_REPLIED) {
-		if(base.subnum==65535)
+		if(num==-1)
 			flags += "\\Answered ";
 		else
 			flags += "REPLIED ";
@@ -893,13 +888,15 @@ function calc_msgflags(attr, netattr, ismail, code, msg, readonly)
 	if(netattr & MSG_TYPENET)
 		flags += "TYPENET ";
 
-	if(msg==null || msg_ptrs[code] < msg) {
+	if(attr==0xffff || orig_ptrs[num] < msg) {
 		flags += '\\Recent ';
 	}
 
 	if(!readonly) {
-		if(msg > msg_ptrs[code])
-			msg_ptrs[code]=msg;
+		if(msg > msg_ptrs[num])
+			msg_ptrs[num]=msg;
+		if(base != undefined && base.is_open)
+			scan_ptr=msg;
 	}
 
 	if(flags.length)
@@ -946,7 +943,7 @@ function sublist(group, match, subscribed)
 
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
-				if((!subscribed) || msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW)
+				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY))))
 					ret.push(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description);
 			}
 		}
@@ -974,71 +971,57 @@ function getsub(longname) {
 	return("NONE!!!");
 }
 
-function generate_inbox_map(base)
+function count_unseen(index)
 {
 	var i;
-	var idx;
 	var count=0;
-	var unseen=0;
-	var uid=[];
-	var offset={};
+	var idx;
 
-	for(i=base.first_msg; i<=base.last_msg; i++) {
-		idx=base.get_msg_index(i);
-		if(idx != null) {
-			if(idx.to != user.number)
-				continue;
-			uid.push(idx.number);
-			offset[idx.number]=uid.length;
-		}
+	for(i in index.offsets) {
+		idx=index.idx[index.offsets[i]];
+		if((idx.attr & MSG_READ)==0)
+			count++;
 	}
-	return({uid:uid,unseen:unseen,offset:offset});
+	return(count);
 }
 
-function count_recent(base)
+function count_recent(index, scan_ptr)
 {
 	var i;
 	var count=0;
 	var idx;
 
-	if(base.cfg==undefined)
-		return 0;
-	for(i=base.first_msg; i<= base.last_msg; i++) {
-		idx=base.get_msg_index(i);
-		if(idx==null)
-			continue;
-		if(base.subnum==65535 && idx.to != user.number)
-			continue;
-		if(i > msg_area.sub[base.cfg.code].scan_ptr)
-			count++;
+	for(i in index.offsets) {
+		idx=index.idx[index.offsets[i]];
+		if(idx.number > scan_ptr)
+				count++;
 	}
 	return(count);
 }
 
 function update_status()
 {
+	var i;
+	var idx;
+
 	if(base==undefined || !base.is_open) {
-		curr_status={exists:-1,recent:-1,unseen:-1,uidnext:-1,uidvalidity:-1};
+		curr_status.exists=-1;
+		curr_status.recent=-1;
+		curr_status.unseen=-1;
+		curr_status.uidnext=-1;
+		curr_status.uidvalidity=-1;
 		return;
 	}
-	if(base.subnum==65535) {
-		inbox_map=generate_inbox_map(base);
-		curr_status.exists=inbox_map.uid.length;
-		curr_status.recent=count_recent(base);
-		curr_status.unseen=inbox_map.unseen;
-		if(inbox_map.uid.length > 0)
-			curr_status.uidnext=inbox_map.uid[inbox_map.uid.length-1]+1;
-		else
-			curr_status.uidnext=1;
-		curr_status.uidvalidity=0;
-	}
-	else {
-		curr_status.exists=base.total_msgs;
-		curr_status.recent=count_recent(base);
-		curr_status.unseen=base.total_msgs;
-		curr_status.uidnext=base.last_msg+1;
-		curr_status.uidvalidity=0;
-	}
+	if(base.subnum != index.subnum || base.last_msg != index.last)
+		index=read_index(base);
+	curr_status.exists=index.offsets.length;
+	curr_status.recent=count_recent(index, orig_ptrs[base.subnum]);
+	curr_status.unseen=count_unseen(index);
+	if(index.offsets.length == 0)
+		curr_status.uidnext=1;
+	else
+		curr_status.uidnext=index.idx[index.offsets[index.offsets.length-1]].number+1;
+	curr_status.uidvalidity=0;
 }
 
 function send_updates()
@@ -1061,23 +1044,93 @@ function send_updates()
 	}
 }
 
-function open_sub(sub)
+function read_index(base)
 {
-	if(base != undefined && base.is_open && base.cfg != undefined) {
-		if(msg_ptrs[base.cfg.code]!=orig_ptrs[base.cfg.code])
-			msg_base.sub[base.cfg.code]=msg_ptrs[base.cfg.code];
-		base.close();
-		update_status();
+	var i;
+	var idx;
+	var index;
+
+	index={offsets:[],idx:{}};
+	index.first=base.first_msg;
+	index.last=base.last_msg;
+	index.subnum=base.subnum;
+	index.total=base.total_msgs;
+
+	if(base.cfg != undefined)
+		index.code=base.cfg.code;
+	for(i=0; i<index.total; i++) {
+		idx=base.get_msg_index(true,i);
+		if(idx==null)
+			continue;
+		if(base.subnum==-1) {
+			if(idx.to != user.number)
+				continue;
+		}
+		else {
+			// Fake \Seen
+			idx.attr &= ~MSG_READ;
+			if(idx.number <= msg_area.sub[base.cfg.code].scan_ptr)
+				idx.attr |= MSG_READ;
+		}
+		index.idx[idx.number]=idx;
+		index.offsets.push(idx.number);
+		idx.offset=index.offsets.length;
 	}
-	base=new MsgBase(sub);
-	if(base == undefined || (!base.open()))
-		return false;
-	if(base.cfg != undefined) {
-		if(orig_ptrs[base.cfg.code]==undefined) {
-			orig_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
-			msg_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
+	return(index);
+}
+
+function exit_func()
+{
+	close_sub();
+	save_cfg();
+}
+
+function save_cfg()
+{
+	var cfg;
+
+	if(user.number > 0) {
+		cfg=new File(format(system.data_dir+"user/%04d.imap", user.number));
+		if(cfg.open()) {
+			cfg.iniSetObject("inbox",saved_config.inbox);
+			cfg.close();
 		}
 	}
+}
+
+function close_sub()
+{
+	if(base != undefined && base.is_open) {
+		msg_ptrs[base.subnum]=scan_ptr;
+		if(msg_ptrs[base.subnum]!=orig_ptrs[base.subnum]) {
+			if(base.subnum==-1) {
+				saved_config.inbox.scan_ptr=scan_ptr;
+			}
+			else
+				msg_area.sub[base.cfg.code].scan_ptr=scan_ptr;
+		}
+		base.close();
+	}
+}
+
+function open_sub(sub)
+{
+	var i;
+	var idx;
+
+	close_sub();
+	base=new MsgBase(sub);
+	if(base == undefined || sub=="NONE!!!" || (!base.open())) {
+		update_status();
+		return false;
+	}
+	if(base.cfg != undefined) {
+		if(orig_ptrs[base.subnum]==undefined) {
+			orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
+			msg_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
+		}
+	}
+	scan_ptr=orig_ptrs[base.subnum];
 	update_status();
 	sendflags(false);
 	untagged(curr_status.exists+" EXISTS");
@@ -1123,12 +1176,13 @@ authenticated_command_handlers = {
 			var tag=args[0];
 			var sub=getsub(args[1]);
 
+			readonly=false;
 			if(!open_sub(sub)) {
 				tagged(tag, "NO", "Can't find "+args[1]+" ("+sub+")");
+				state=Authenticated;
 				return;
 			}
 			tagged(tag, "OK", "[READ-WRITE] Mailbox "+sub+" has been selected");
-			readonly=false;
 			state=Selected;
 		},
 	},
@@ -1138,12 +1192,13 @@ authenticated_command_handlers = {
 			var tag=args[0];
 			var sub=getsub(args[1]);
 
+			readonly=true;
 			if(!open_sub(sub)) {
 				tagged(tag, "NO", "Can't find "+args[1]+" ("+sub+")");
+				state=Authenticated;
 				return;
 			}
 			tagged(tag, "OK", "[READ-ONLY] Mailbox "+sub+" has been examined");
-			readonly=true;
 			state=Selected;
 		},
 	},
@@ -1239,7 +1294,7 @@ authenticated_command_handlers = {
 			var response=[];
 			var base;
 			var mademap=false;
-			var inbox_map;
+			var index;
 
 			if(typeof(items)!="object")
 				items=[items];
@@ -1248,29 +1303,23 @@ authenticated_command_handlers = {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
-			if(base.cfg != undefined && orig_ptrs[base.cfg.code]==undefined) {
-				orig_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
-				msg_ptrs[base.cfg.code]=msg_area.sub[base.cfg.code];
-			}
+			if(base.cfg != undefined && orig_ptrs[base.subnum]==undefined)
+				orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
+			index=read_index(base);
+			base.close();
 			for(i in items) {
 				switch(items[i].toUpperCase()) {
 					case 'MESSAGES':
 						response.push("MESSAGES");
-						if(base.subnum==65535) {
-							if(!mademap)
-								inbox_map=generate_inbox_map(base);
-							response.push(inbox_map.length);
-						}
-						else
-							response.push(base.total_msgs);
+						response.push(index.offsets.length);
 						break;
 					case 'RECENT':
 						response.push("RECENT");
-						response.push(count_recent(base));
+						response.push(count_recent(index, orig_ptrs[base.subnum]));
 						break;
 					case 'UIDNEXT':
 						response.push("UIDNEXT");
-						response.push(base.last_msg+1);
+						response.push(index.idx[index.offsets[index.offsets.length-1]].number+1);
 						break;
 					case 'UIDVALIDITY':
 						response.push("UIDVALIDITY");
@@ -1278,18 +1327,10 @@ authenticated_command_handlers = {
 						break;
 					case 'UNSEEN':
 						response.push("UNSEEN");
-						if(base.subnum==65535) {
-							if(!mademap)
-								inbox_map=generate_inbox_map(base);
-							response.push(inbox_map.unseen);
-						}
-						else
-							response.push(base.total_msgs+1);
+						response.push(count_unseen(index));
 						break;
 				}
 			}
-			base.close();
-			update_status();
 			untagged("STATUS "+encode_string(args[1])+" ("+response.join(" ")+")");
 			tagged(tag, "OK", "And that's the way it is.");
 		},
@@ -1336,12 +1377,14 @@ function do_store(seq, uid, item, data)
 				chflags={attr:hdr.attr^(hdr.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
 				break
 		}
-		chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==65535, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
+		chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
 		if(chflags.attr || chflags.netattr) {
 			hdr.attr ^= chflags.attr;
 			hdr.netattr ^= chflags.netattr;
-			if(!readonly)
+			if(!readonly) {
 				base.put_msg_header(seq[i], hdr);
+				index=read_index(base);
+			}
 			hdr=base.get_msg_header(seq[i]);
 		}
 		if(!silent)
@@ -1398,7 +1441,7 @@ function do_search(args, uid)
 				search_set.idx.push(function(idx) { return true; });
 				break;
 			case 'ANSWERED':
-				search_set.idx.push(function(idx) { if(base.subnum==65535 && (idx.attr & MSG_REPLIED)) return true; return false; });
+				search_set.idx.push(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
 				break;
 			case 'BODY':
 				search_set.body.push(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
@@ -1419,20 +1462,16 @@ function do_search(args, uid)
 				search_set.hdr.push(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
 				break;
 			case 'NEW':
-				// TODO: We don't do \Recent in INBOX and don't do \Seen in subs
-				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return false; if(msg_ptrs[base.cfg.code] < idx.number) return true; return false; }"));
+				search_set.idx.push(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
 				break;
 			case 'OLD':
-				// TODO: We don't do \Recent in INBOX and don't do \Seen in subs
-				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return true; if(msg_ptrs[base.cfg.code] < idx.number) return false; return true; }"));
+				search_set.idx.push(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
 				break;
 			case 'RECENT':
-				// TODO: We don't do \Recent in INBOX
-				search_set.idx.push(eval("function(idx) { if(base.cfg==undefined) return false; if(msg_ptrs[base.cfg.code] < idx.number) return true; return false; }"));
+				search_set.idx.push(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
 				break;
 			case 'SEEN':
-				// We don't do \Seen in subs
-				search_set.idx.push(function(idx) { if(base.subnum != 65535) return false; if(idx.attr & MSG_READ) return true; return false });
+				search_set.idx.push(function(idx) { if(idx.attr & MSG_READ) return true; return false });
 				break;
 			case 'SUBJECT':
 				search_set.hdr.push(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
@@ -1444,7 +1483,7 @@ function do_search(args, uid)
 				search_set.idx.push(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
 				break;
 			case 'UNANSWERED':
-				search_set.idx.push(function(idx) { if(base.subnum==65535 && (idx.attr & MSG_REPLIED)) return false; return true; });
+				search_set.idx.push(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
 				break;
 			case 'UNDELETED':
 				search_set.idx.push(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
@@ -1496,15 +1535,9 @@ function do_search(args, uid)
 		}
 	}
 
-	for(i=base.first_msg; i<=base.last_msg; i++) {
+	for(i in index.offsets) {
 		failed=false;
-		idx=base.get_msg_index(i);
-		if(idx==null)
-			continue;
-		if(base.subnum==65535) {
-			if(idx.to != user.number)
-				continue;
-		}
+		idx=index.idx[index.offsets[i]];
 		if(search_set.idx.length > 0) {
 			for(j in search_set.idx) {
 				if(search_set.idx[j](idx)==false)
@@ -1514,7 +1547,7 @@ function do_search(args, uid)
 				continue;
 		}
 		if(search_set.hdr.length > 0) {
-			hdr=base.get_msg_header(i);
+			hdr=base.get_msg_header(idx.number);
 			for(j in search_set.hdr) {
 				if(search_set.hdr[j](hdr)==false)
 					failed=true;
@@ -1522,9 +1555,8 @@ function do_search(args, uid)
 			if(failed)
 				continue;
 		}
-		body=base.get_msg_index(i);
 		if(search_set.body.length > 0) {
-			body=base.get_msg_body(i,true,true,true).toUpperCase();
+			body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
 			for(j in search_set.body) {
 				if(search_set.body[j](body)==false)
 					failed=true;
@@ -1533,7 +1565,7 @@ function do_search(args, uid)
 				continue;
 		}
 		if(!failed)
-			result.push(uid?idx.number:(base.subnum==65535?inbox_map.offset[i]:idx.offset+1));
+			result.push(uid?idx.number:idx.offset);
 	}
 
 	untagged("SEARCH "+result.join(" "));
@@ -1553,11 +1585,7 @@ selected_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			if(base.cfg != undefined) {
-				if(msg_ptrs[base.cfg.code]!=orig_ptrs[base.cfg.code])
-					msg_base.sub[base.cfg.code]=msg_ptrs[base.cfg.code];
-			}
-			base.close();
+			close_sub();
 			update_status();
 			tagged(tag, "OK", "Closed.");
 			state=Authenticated;
@@ -1677,11 +1705,29 @@ selected_command_handlers = {
 	}
 };
 
+function read_cfg()
+{
+	var cfg=new File(format(system.data_dir+"user/%04d.imap",user.number));
+
+	if(cfg.open("r+")) {
+		saved_config.inbox=cfg.iniGetObject("inbox");
+		cfg.close();
+	}
+	else
+		saved_config={inbox:{scan_ptr:0}};
+	msg_ptrs[-1]=saved_config.inbox.scan_ptr;
+	orig_ptrs[-1]=saved_config.inbox.scan_ptr;
+}
+
 var line;
 var readonly=true;
 var orig_ptrs={};
 var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
+var saved_config={inbox:{scan_ptr:0}};
+var scan_ptr;
+
+js.on_exit("exit_func()");
 client.socket.send("* OK Give 'er\r\n");
 while(1) {
 	line=client.socket.recvline(10240, 300);
