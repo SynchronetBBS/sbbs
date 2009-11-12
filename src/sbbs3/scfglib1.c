@@ -629,9 +629,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 		}
 
 		for(j=0;j<k;j++) {
+			uint16_t	subnum;
 			if(feof(instream)) break;
 			get_int(cfg->qhub[i]->conf[cfg->qhub[i]->subs],instream);
-			get_int(cfg->qhub[i]->sub[cfg->qhub[i]->subs],instream);
+			get_int(subnum,instream);
+			cfg->qhub[i]->sub[cfg->qhub[i]->subs]=subnum;
 			get_int(cfg->qhub[i]->mode[cfg->qhub[i]->subs],instream);
 			if(cfg->qhub[i]->sub[cfg->qhub[i]->subs]<cfg->total_subs)
 				cfg->sub[cfg->qhub[i]->sub[cfg->qhub[i]->subs]]->misc|=SUB_QNET;

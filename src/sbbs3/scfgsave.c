@@ -629,7 +629,8 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		put_int(cfg->qhub[i]->subs,stream);
 		for(j=0;j<cfg->qhub[i]->subs;j++) {
 			put_int(cfg->qhub[i]->conf[j],stream);
-			put_int(cfg->qhub[i]->sub[j],stream);
+			n=(uint16_t)cfg->qhub[i]->sub[j];
+			put_int(n,stream);
 			put_int(cfg->qhub[i]->mode[j],stream); }
 		n=0;
 		for(j=0;j<32;j++)
