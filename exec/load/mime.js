@@ -3,12 +3,9 @@
  * The object looks like this:
 {
 	header:{
-		fields:[{name,value}],
-		raw,
-	},
-	mime:{	// As with header but MIME headers only
-		fields:[{name,value}],
-		raw,
+		"::":[Original Headers in Original Order],
+		":mime:":[Original MIME Headers in Original Order],
+		<name>:[<header string>...]
 	},
 	text:"String"
 }
@@ -29,8 +26,8 @@ abnf.DQUOTE='"';
 abnf.HEXDIG="[\\x30-\\x39A-F]";
 abnf.HTAB="\\x09";
 abnf.LF="\\x0a";
-abnf.CRLF="[\\x0a\\x0d]";
-abnf.LWSP="(?:(?:(?:\\x0d\\x0a)?[\\t ])*)";
+abnf.CRLF="(?:"+abnf.CR+abnf.LF+")";
+abnf.LWSP="(?:(?:"+abnf.CRLF+"?[\\t ])*)";
 abnf.OCTET="[\\x00-\\xff]";
 abnf.SP="\\x20";
 abnf.VCHAR="[\\x21-\\x7e]";
@@ -58,7 +55,7 @@ rfc5322abnf.obs_FWS="(?:"+abnf.WSP+"+(?:"+abnf.CRLF+abnf.WSP+"+)*)";
 rfc5322abnf.FWS="(?:(?:(?:"+abnf.WSP+"*"+abnf.CRLF+")?"+abnf.WSP+"+)|"+rfc5322abnf.obs_FWS+")";
 
 // 4.1 Miscellaneous Obsolete Tokens
-rfc5322abnf.obs_unstruct="(?:(?:(?:"+abnf.LF+"*"+abnf.CR+"*"+"(?:"+rfc5322abnf.obs_utext+abnf.LF+"*"+abnf.CR+"*)*)|"+rfc5322abnf.FWS+")*)";
+rfc5322abnf.obs_unstruct="(?:(?:(?:"+abnf.LF+"*(?:"+abnf.CR+"(?!"+abnf.LF+"))*"+"(?:"+rfc5322abnf.obs_utext+abnf.LF+"*(?:"+abnf.CR+"(?!"+abnf.LF+"))*)*)|"+rfc5322abnf.FWS+")*)";
 
 // 3.2.2 Folding White Space and Comments
 rfc5322abnf.ctext="[\\x21-\\x27\\x2a-\\x5b\\x5d-\\x7e]";
@@ -72,15 +69,15 @@ rfc5322abnf.CFWS="(?:(?:(?:"+rfc5322abnf.FWS+"?"+rfc5322abnf.comment+")+"+rfc532
 
 // 3.2.3 Atom
 rfc5322abnf.atext="(?:"+abnf.ALPHA+"|"+abnf.DIGIT+"|[\\!\\#\\$\\%\\&\\+\\-\\/\\=\\?\\^\\_\\`\\{\\|\\}\\~])";
-rfc5322abnf.atom="(?:"+rfc5322abnf.CFWS+"?"+rfc5322abnf.atext+"+"+rfc5322abnf.CFWS+")";
+rfc5322abnf.atom="(?:"+rfc5322abnf.CFWS+"?"+rfc5322abnf.atext+"+"+rfc5322abnf.CFWS+"?)";
 rfc5322abnf.dot_atom_text="(?:"+rfc5322abnf.atext+"+(?:\\."+rfc5322abnf.atext+"+)*)";
 rfc5322abnf.dot_atom="(?:"+rfc5322abnf.CFWS+"?"+rfc5322abnf.dot_atom_text+rfc5322abnf.CFWS+")";
 rfc5322abnf.specials="(?:[\\(\\)\\<\\>\\[\\]\\:\\;\\@\\\\\\,\\.]|"+abnf.DQUOTE+")";
 
 // 3.2.4 Quoted Strings
-rfc5322abnf.qtext="[\\x21\\x32-\\x5b\\x5d-\\x7e]";
+rfc5322abnf.qtext="[\\x21\\x23-\\x5b\\x5d-\\x7e]";
 rfc5322abnf.qcontent="(?:"+rfc5322abnf.qtext+"|"+rfc5322abnf.quoted_pair+")";
-rfc5322abnf.quoted_string="(?:"+rfc5322abnf.CFWS+"?"+abnf.DQUOTE+"(?:"+rfc5322abnf.FWS+"?"+rfc5322abnf.qcontent+")*"+rfc5322abnf.FWS+"?"+abnf.DQUOTE+rfc5322abnf.CFWS+")";
+rfc5322abnf.quoted_string="(?:"+rfc5322abnf.CFWS+"?"+abnf.DQUOTE+"(?:"+rfc5322abnf.FWS+"?"+rfc5322abnf.qcontent+")*"+rfc5322abnf.FWS+"?"+abnf.DQUOTE+rfc5322abnf.CFWS+"?)";
 
 // 3.2.5 Miscellaneous Tokens
 rfc5322abnf.word="(?:"+rfc5322abnf.atom+"|"+rfc5322abnf.quoted_string+")";
@@ -326,7 +323,8 @@ abnf.obs_FWS="(?:"+abnf.WSP+"+(?:"+abnf.CRLF+abnf.WSP+"+)*)";
 abnf.FWS=abnf.obs_FWS;
 
 // 4.1 Miscellaneous Obsolete Tokens
-abnf.obs_unstruct="(?:(?:(?:"+abnf.LF+"*"+abnf.CR+"*"+"(?:"+abnf.obs_utext+abnf.LF+"*"+abnf.CR+"*)*)|"+abnf.FWS+")*)";
+//abnf.obs_unstruct="(?:(?:(?:"+abnf.LF+"*"+abnf.CR+"*"+"(?:"+abnf.obs_utext+abnf.LF+"*"+abnf.CR+"*)*)|"+abnf.FWS+")*)";
+abnf.obs_unstruct="(?:(?:(?:"+abnf.LF+"*(?:"+abnf.CR+"(?!"+abnf.LF+"))*"+"(?:"+rfc5322abnf.obs_utext+abnf.LF+"*(?:"+abnf.CR+"(?!"+abnf.LF+"))*)*)|"+rfc5322abnf.FWS+")*)";
 
 // 3.2.2 Folding White Space and Comments
 abnf.ctext="[\\x21-\\x27\\x2a-\\x5b\\x5d-\\x7e]";
@@ -340,15 +338,15 @@ abnf.CFWS="(?:(?:(?:"+abnf.FWS+"?"+abnf.comment+")+"+abnf.FWS+"?)|"+abnf.FWS+")"
 
 // 3.2.3 Atom
 abnf.atext="[!#-&+\\-/-9=?A-Z\\^-~]";
-abnf.atom="(?:"+abnf.CFWS+"?"+abnf.atext+"+"+abnf.CFWS+")";
+abnf.atom="(?:"+abnf.CFWS+"?"+abnf.atext+"+"+abnf.CFWS+"?)";
 abnf.dot_atom_text="(?:"+abnf.atext+"+(?:\\."+abnf.atext+"+)*)";
 abnf.dot_atom="(?:"+abnf.CFWS+"?"+abnf.dot_atom_text+abnf.CFWS+")";
 abnf.specials="(?:[\\(\\)\\<\\>\\[\\]\\:\\;\\@\\\\\\,\\.]|"+abnf.DQUOTE+")";
 
 // 3.2.4 Quoted Strings
-abnf.qtext="[\\x21\\x32-\\x5b\\x5d-\\x7e]";
+abnf.qtext="[\\x21\\x23-\\x5b\\x5d-\\x7e]";
 abnf.qcontent="(?:"+abnf.qtext+"|"+abnf.quoted_pair+")";
-abnf.quoted_string="(?:"+abnf.CFWS+"?"+abnf.DQUOTE+"(?:"+abnf.FWS+"?"+abnf.qcontent+")*"+abnf.FWS+"?"+abnf.DQUOTE+abnf.CFWS+")";
+abnf.quoted_string="(?:"+abnf.CFWS+"?"+abnf.DQUOTE+"(?:"+abnf.FWS+"?"+abnf.qcontent+")*"+abnf.FWS+"?"+abnf.DQUOTE+abnf.CFWS+"?)";
 
 // 3.2.5 Miscellaneous Tokens
 abnf.word="(?:"+abnf.atom+"|"+abnf.quoted_string+")";
@@ -574,6 +572,14 @@ abnf.obs_fields="(?:abnf.obs_optional*)";
 abnf.body="(?:(?:(?:"+abnf.text+"{0,998}"+abnf.CRLF+")*"+abnf.text+"{0,998})|"+abnf.obs_body+")"
 abnf.message="(?:(?:"+abnf.fields+"|"+abnf.obs_fields+")(?:"+abnf.CFLF+abnf.body+")?)";
 
+/*************************/
+/* From MIME RFCs (2045) */
+/*************************/
+abnf.tspecials="[\\x28\\x29\\x2c\\x2f\\x3a\\x3b\\x3c\\x3d\\x3e\\x3f\\x40\\x5b\\x5c\\x5d]";
+abnf.tspecial_ws="(?:"+abnf.CFWS+"?"+abnf.tspecials+abnf.CFWS+"?)";
+abnf.ttext="[\\x21-\\x27\\x2a\\x2b\\x2d\\x2e\\x30-\\x39\\x41-\\x5a\\x5e-\\x7e]";
+abnf.token="(?:"+abnf.CFWS+"?"+abnf.ttext+"+"+abnf.CFWS+"?)";
+
 var field_info={
 	"date":{min:1, max:1},
 	"from":{min:1, max:1},
@@ -591,33 +597,231 @@ function parse_header(str)
 {
 	var hdr={};
 	var m;
+	var re;
 
-	hdr.orig=str.replace(/^(.*\r\n)[^\t ].*?$/,"$1");
-	hdr.unwrapped=hdr.orig.replace(/\r\n([\t ])/, "$1");
-	hdr.orig.replace(/^([\x21-\x39\x41-\x7e]+):.*$/,"$1");
+	re=new RegExp("^("+abnf.obs_optional+")", "i");
+	m=re.exec(str);
+	if(m==null)
+		return(undefined);
+	hdr.orig=m[1];
+	re=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:","i");
+	m=re.exec(hdr.orig);
+	if(m==null)
+		return(undefined);
+	hdr.field=m[1];
+	hdr.field=hdr.field.toLowerCase();
+	return(hdr);
 }
 
-function parse_mime(str)
+function parse_headers(str)
 {
-	var ret={headers:{},body:''};
+	var hdrs={};
+	var hdr;
+
+	hdrs["::"]=[];
+	hdrs[":mime:"]=[];
+	while(str.length > 0) {
+		hdr=parse_header(str);
+		if(hdr==undefined) {
+			break;
+		}
+		hdrs["::"].push(hdr.orig);
+		if(hdrs[hdr.field]==undefined)
+			hdrs[hdr.field]=[];
+		hdrs[hdr.field].push(hdr.orig);
+		if(hdr.field=='mime-version' || hdr.field.substr(0, 8)=='content-')
+			hdrs[":mime:"].push(hdr.orig);
+		if(hdr.orig.length<=0)
+			str='';
+		str=str.substr(hdr.orig.length);
+	}
+	return(hdrs);
+}
+
+function get_next_symbol(str)
+{
+	var m;
+	var ret={};
+	var sym=new RegExp("^("+abnf.tspecial_ws+"|"+abnf.quoted_string+"|"+abnf.domain_literal+"|"+abnf.comment+"|"+abnf.token+")","i");
+	var strip=new RegExp("^"+abnf.CFWS+"*(.*?)"+abnf.CFWS+"*$","i");
+	var is_quoted=new RegExp("^"+abnf.quoted_string+"$","i");
+	var old_qp=new RegExp(abnf.obs_qp, "i");
+
+	m=sym.exec(str);
+	if(m==null)
+		return(undefined);
+	ret.length=m[1].length;
+	ret.sym=m[1].replace(strip,"$1");
+	if(ret.sym.search(is_quoted)!=-1) {
+		ret.sym=ret.sym.replace(/^"(.*)"$/, "$1");
+		ret.sym=ret.sym.replace(old_qp, "$1".substr(1));
+	}
+	if(ret.sym.search(new RegExp("^"+abnf.domain_literal+"$", "i"))!=-1) {
+		ret.sym=ret.sym.replace(/^\[(.*)\]$/, "$1");
+	}
+
+	return(ret);
+}
+
+function parse_mime_attrs(attrs, str)
+{
+	var tmp;
+	var key;
+
+	while(str.length) {
+		tmp=get_next_symbol(str);
+		if(tmp==undefined || tmp.sym != ";")
+			break;
+		str=str.substr(tmp.length);
+
+		tmp=get_next_symbol(str);
+		if(tmp==undefined)
+			break;
+		str=str.substr(tmp.length);
+		key=tmp.sym.toLowerCase();
+
+		tmp=get_next_symbol(str);
+		if(tmp==undefined || tmp.sym != "=")
+			break;
+		str=str.substr(tmp.length);
+
+		tmp=get_next_symbol(str);
+		if(tmp==undefined)
+			break;
+		str=str.substr(tmp.length);
+		attrs[key]=tmp.sym;
+	}
+}
+
+function parse_mime_header(hdrstr)
+{
+	var hdr={};
+	var tmp;
+	var m;
+	var p;
+
+	hdr.orig=hdrstr;
+	hdr.attrs={};
+	hdr.vals=[];
+
+	m=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:("+abnf.unstructured+")"+abnf.CRLF+"$","i").exec(hdrstr);
+	if(m==null)
+		return(undefined);
+
+	hdr.name=m[1].toLowerCase();
+	hdr.val=m[2];
+	if(hdr.name != "content-description") {
+		/* Strip comments */
+		while((tmp=hdr.val.replace(new RegExp(abnf.comment,"i"),""))!=hdr.val)
+			hdr.val=tmp;
+	}
+	/* Unwrap */
+	hdr.val=hdr.val.replace(/\x0d\x0a[\t ]/," ");
+	switch(hdr.name) {
+		case 'mime-version':				// RFC 2045
+			/* We don't do anything with this... */
+			break;
+		case 'content-type':				// RFC 2045
+			p=hdr.val;
+			/* type */
+			tmp=get_next_symbol(p);
+			if(tmp==undefined)
+				return(undefined);
+			hdr.vals.push(tmp.sym);
+			p=p.substr(tmp.length);
+
+			/* slash */
+			tmp=get_next_symbol(p);
+			if(tmp==undefined || tmp.sym != '/')
+				return(undefined);
+			p=p.substr(tmp.length);
+
+			/* sub-type */
+			tmp=get_next_symbol(p);
+			if(tmp==undefined)
+				return(undefined);
+			hdr.vals.push(tmp.sym);
+			p=p.substr(tmp.length);
+
+			parse_mime_attrs(hdr.attrs,p);
+			break;
+		case 'content-transfer-encoding':	// RFC 2045
+			/* Slash */
+			tmp=get_next_symbol(hdr.val);
+			if(tmp==undefined)
+				return(undefined);
+			hdr.vals.push(tmp.sym);
+			break;
+		case 'content-id':					// RFC 2045
+			if(hdr.val.search(new RegExp("^"+abnr.msg_id+"$","i"))==-1)
+				return(undefined);
+			hdr.vals.push(hdr.val);
+			break;
+		case 'content-description':			// RFC 2045
+			hdr.vals.push(hdr.val);
+			break;
+		case 'content-disposition':			// RFC 2183
+			p=hdr.val;
+			tmp=get_next_symbol(p);
+			if(tmp==undefined)
+				return(undefined);
+			hdr.vals.push(tmp.sym);
+			p=p.substr(tmp.length);
+			parse_mime_attrs(hdr.attrs,p);
+			break;
+	}
+	return(hdr);
+}
+
+function parse_mime(hdrs, text)
+{
+	var i;
+	var ret={};
+	var tmp;
+	var re;
+
+	ret.parsed={};
+	for(i in hdrs[":mime:"]) {
+		tmp=parse_mime_header(hdrs[":mime:"][i]);
+		if(tmp==undefined)
+			continue;
+		ret.parsed[tmp.name]=tmp;
+	}
+
+	// Set up defaults...
+	if(ret.parsed['content-type']==undefined)
+		ret.parsed['content-type']={attrs:{charset:"us-ascii"}, vals:["text","plain"]};
+
+	// Decode content-transfer-encoding?	RFC 2045
+
+	// Decode message/multipart 			RFC 2046
+	if(ret.parsed['content-type'].vals[0]=="multipart") {
+		if(ret.parsed["content-type"].attrs.boundary==undefined)
+			return(undefined);
+		re=new RegExp("\x0d\x0a--"+ret.parsed["content-type"].attrs.boundary+"(?:--)?"+abnf.CFWS+"?\x0d\x0a","i");
+		tmp=text.split(re);
+		if(tmp.length < 2)
+			return(undefined);
+		tmp.shift();
+		tmp.pop();
+		ret.parts=[];
+		for(i in tmp)
+			ret.parts.push(parse_message(tmp[i]));
+	}
+
+	return(ret);
+}
+
+function parse_message(str)
+{
+	var ret={headers:{},text:''};
 	var tmp,tmp2;
 
-	tmp=str.split(/\r\n\r\n/, 2);
-	ret.headers=parse_headers(tmp[0]);
-	ret.body=tmp[1];
+	tmp=str.split(/\r\n\r\n/);
+	ret.headers=parse_headers(tmp.shift()+"\r\n");
+	ret.text=tmp.join("\r\n\r\n");
 
-	// Add default MIME headers
-	if(ret.headers["CONTENT-TRANSFER-ENCODING"]==undefined) {
-	}
-}
-
-for(i in abnf) {
-	writeln();
-	writeln(i+" ("+abnf[i].length+")");
-	try {
-		var re=new RegExp(abnf[i]);
-	}
-	catch(e) {
-		writeln(e);
-	}
+	if(ret.headers[":mime:"].length > 0)
+		ret.mime=parse_mime(ret.headers, ret.text);
+	return(ret);
 }
