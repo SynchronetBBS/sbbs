@@ -609,11 +609,6 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		}
 	}
 
-	if(idx_proto==NULL) {
-		if((idx_proto=JS_NewObject(cx,NULL,NULL,obj))==NULL)
-			return(JS_TRUE);
-	}
-
 	if((idxobj=JS_NewObject(cx,NULL,idx_proto,obj))==NULL)
 		return(JS_TRUE);
 
@@ -1037,11 +1032,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	if((p->msg).hdr.number==0) /* No valid message number/id/offset specified */
 		return(JS_TRUE);
-
-	if(hdr_proto==NULL) {
-		if((hdr_proto=JS_NewObject(cx,NULL,NULL,obj))==NULL)
-			return(JS_TRUE);
-	}
 
 	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,hdr_proto,obj))==NULL) {
 		smb_freemsgmem(&(p->msg));
@@ -2069,9 +2059,19 @@ $5 = {size = 23200, prepped = 1, grp = 0x0, total_grps = 3, sub = 0x0, total_sub
 	return(JS_TRUE);
 }
 
+static struct JSPropertySpec js_msgbase_static_properties[] = {
+/*		 name				,tinyid					,flags,				getter,	setter	*/
+
+	{	"IndexPrototype"		,0	,JSPROP_ENUMERATE|JSPROP_PERMANENT,	NULL,NULL},
+	{	"HeaderPrototype"		,0	,JSPROP_ENUMERATE|JSPROP_PERMANENT,	NULL,NULL},
+	{0}
+};
+
 JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	obj;
+	JSObject*	constructor;
+	jsval		val;
 
 	scfg = cfg;
 	obj = JS_InitClass(cx, parent, NULL
@@ -2080,7 +2080,17 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 		,1	/* number of constructor args */
 		,NULL /* js_msgbase_properties */
 		,NULL /* js_msgbase_functions */
-		,NULL,NULL);
+		,js_msgbase_static_properties,NULL);
+
+
+	if(JS_GetProperty(cx, parent, js_msgbase_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JS_ValueToObject(cx,val,&constructor);
+		if(idx_proto==NULL)
+			idx_proto=JS_DefineObject(cx,constructor,"IndexPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
+
+		if(hdr_proto==NULL)
+			hdr_proto=JS_DefineObject(cx,constructor,"HeaderPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
+	}
 
 	return(obj);
 }
