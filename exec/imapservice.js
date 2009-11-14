@@ -11,11 +11,111 @@
 load("sbbsdefs.js");
 load("822header.js");
 load("mime.js");
-const RFC822HEADER = 0xb0;  // from smbdefs.h
 
 var sepchar="|";
 var debug=true;
 var debugRX=true;
+
+
+/*****************************/
+/* Message header extensions */
+/*****************************/
+
+MsgBase.HeaderPrototype.get_from=function (force)
+{
+	if(force===true)
+		delete this.from_header;
+
+	if(this.from_header==undefined) {
+		if(!this.from_net_type || this.from_net_addr.length==0)    /* local message */
+			this.from_header = this.from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">";
+		else if(!this.from_net_addr.length)
+			this.from_header = this.from;
+		else if(this.from_net_addr.indexOf('@')!=-1)
+			this.from_header = this.from+" <"+this.from_net_addr+">";
+		else
+			this.from_header = this.from+" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">";
+	}
+	return(this.from_header);
+}
+
+MsgBase.HeaderPrototype.parse_headers=function(force)
+{
+	if(force===true)
+		delete this.parsed_headers;
+
+	if(this.parsed_headers==undefined)
+		this.parsed_headers=parse_headers(this.get_rfc822_header(force))
+	return(this.parsed_headers);
+}
+
+MsgBase.HeaderPrototype.get_envelope=function (force)
+{
+	function parse_header(header, is_addresses) {
+		if(header==undefined || header.length==0)
+			return("NIL");
+
+		header=header.pop().replace(new RegExp("^"+abnf.field_name+abnf.WSP+"*:","i"),"");
+		header=strip_CFWS(header);
+
+		/* : Use mime.js ABNF to parse this correctly */
+		if(is_addresses) {
+			if((m2=header.match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
+				m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
+				return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), encode_string(m2[3])].join(" ")+'))';
+			}
+			else if((m2=header.match(/^\s*(.*)\s+<([^@]*)>\s*$/))!=null) {
+				m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
+				return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), "NIL"].join(" ")+'))';
+			}
+			else if((m2=header.match(/^\s*<([^@]*)@(.*)>\s*$/))!=null) {
+				return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
+			}
+			else if((m2=header.match(/^\s*([^@]*)@(.*)\s*$/))!=null) {
+				return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
+			}
+			else
+				return '(('+[encode_string(header), "NIL", "NIL", "NIL"].join(" ")+'))';
+		}
+		else
+			return(encode_string(header));
+	}
+
+	var hdrs;
+
+	if(this.envelope==undefined) {
+		hdrs=this.parse_headers();
+		envelope=[];
+		envelope.push(parse_header(hdrs.date, false));
+		envelope.push(parse_header(hdrs.subject, false));
+		envelope.push(parse_header(hdrs.from, true));
+		envelope.push(parse_header(hdrs.sender, true));
+		envelope.push(parse_header(hdrs['reply-to'], true));
+		envelope.push(parse_header(hdrs.to, true));
+		envelope.push(parse_header(hdrs.cc, true));
+		envelope.push(parse_header(hdrs.bcc, true));
+		envelope.push(parse_header(hdrs['in-reply-to'], false));
+		envelope.push(parse_header(hdrs['message-id'], false));
+	}
+	return(envelope);
+}
+
+
+/***********************/
+/* Debugging Functions */
+/***********************/
+
+function dump_obj(obj, name)
+{
+	var i;
+
+	for(i in obj) {
+		if(typeof(obj[i])=='object')
+			dump_obj(obj[i], name+'['+i+']');
+		else
+			log(name+'['+i+']="'+obj[i]+'"');
+	}
+}
 
 function debug_log(line, rx)
 {
@@ -25,7 +125,11 @@ function debug_log(line, rx)
 		log(line);
 }
 
-// Output handling functions
+
+/**************/
+/* Socket I/O */
+/**************/
+
 function tagged(tag, msg, desc)
 {
 	client.socket.send(tag+" "+msg+" "+desc+"\r\n");
@@ -38,42 +142,16 @@ function untagged(msg)
 	debug_log("IMAP Send: * "+msg, false);
 }
 
-function handle_command(command, args, defs)
-{
-	if(defs[command] != undefined) {
-		if(defs[command].arguments != undefined) {
-			if(args.length-1 == defs[command].arguments) {
-				defs[command].handler(args);
-				return(true);
-			}
-		}
-		else if(defs[command].arguments_valid(args.length-1)) {
-			defs[command].handler(args);
-			return(true);
-		}
-	}
-	return false;
-}
 
-function compNumbers(a,b)
-{
-	return(a-b);
-}
-
+/**********************/
+/* Encoding functions */
+/**********************/
+/* 
+ * These encode at least as is passed (token/string/binary)
+ */
 function encode_binary(str)
 {
 	return '{'+str.length+'}\r\n'+str;
-}
-
-function encode_token(str)
-{
-	if(str=='')
-		return(encode_string(str));
-
-	if(str.search(/[\(\)\{ \x00-\x1F\*\%\"\\\]]/)==-1)
-		return str;
-
-	return(encode_string(str));
 }
 
 function encode_string(str)
@@ -89,30 +167,20 @@ function encode_string(str)
 	return encode_binary(str);
 }
 
-function get_from(hdr)
+function encode_token(str)
 {
-	// From
-	if(!hdr.from_net_type || hdr.from_net_addr.length==0)    /* local message */
-		return(hdr.from + " <" + hdr.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">");
-	else if(!hdr.from_net_addr.length)
-		return(hdr.from);
-	else if(hdr.from_net_addr.indexOf('@')!=-1)
-		return(hdr.from+" <"+hdr.from_net_addr+">");
-	return(hdr.from+" <"+hdr.from.replace(/ /g,".").toLowerCase()+"@"+hdr.from_net_addr+">");
+	if(str=='')
+		return(encode_string(str));
+
+	if(str.search(/[\(\)\{ \x00-\x1F\*\%\"\\\]]/)==-1)
+		return str;
+
+	return(encode_string(str));
 }
 
-function dump_obj(obj, name)
-{
-	var i;
-
-	for(i in obj) {
-		if(typeof(obj[i])=='object')
-			dump_obj(obj[i], name+'['+i+']');
-		else
-			log(name+'['+i+']="'+obj[i]+'"');
-	}
-}
-
+/*************************************************************/
+/* Fetch response generation... this is the tricky bit.  :-) */
+/*************************************************************/
 function send_fetch_response(msgnum, fmat, uid)
 {
 	var idx;
@@ -130,9 +198,11 @@ function send_fetch_response(msgnum, fmat, uid)
 	var envelope;
 	var mime;
 	var part;
+	var extension;
 
-	idx=index.idx[msgnum];
-
+	/*
+	 * Most of these functions just diddle variables in this function
+	 */
 	function get_mime() {
 		if(mime==undefined) {
 			get_rfc822();
@@ -166,6 +236,9 @@ function send_fetch_response(msgnum, fmat, uid)
 		rfc822.size=rfc822.header.length+rfc822.text.length;
 	}
 
+	/*
+	 * Sets the seen flag on a message (for INBOX only)
+	 */
 	function set_seen_flag() {
 		if(readonly)
 			return;
@@ -184,63 +257,6 @@ function send_fetch_response(msgnum, fmat, uid)
 			idx.attr |= MSG_READ;
 		}
 	}
-
-	function get_envelope() {
-		function parse_header(header, is_addresses) {
-			var m;
-			var m2;
-			var re;
-
-			re=new RegExp("^"+header+":\\s*(.*?)$","im");
-			m=re.exec(rfc822.header);
-			if(m==null) {
-				return("NIL");
-			}
-			else {
-				if(is_addresses) {
-					if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
-						m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
-						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), encode_string(m2[3])].join(" ")+'))';
-					}
-					else if((m2=m[1].match(/^\s*(.*)\s+<([^@]*)>\s*$/))!=null) {
-						m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
-						return '(('+[encode_string(m2[1]), "NIL", encode_string(m2[2]), "NIL"].join(" ")+'))';
-					}
-					else if((m2=m[1].match(/^\s*<([^@]*)@(.*)>\s*$/))!=null) {
-						return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
-					}
-					else if((m2=m[1].match(/^\s*([^@]*)@(.*)\s*$/))!=null) {
-						return '(('+["NIL", "NIL", encode_string(m2[1]), encode_string(m2[2])].join(" ")+'))';
-					}
-					else
-						return '(('+[encode_string(m[1]), "NIL", "NIL", "NIL"].join(" ")+'))';
-				}
-				else
-					return(encode_string(m[1]));
-			}
-		}
-
-		var m;
-
-		if(envelope==undefined) {
-			get_rfc822_header();
-
-			envelope=[];
-			envelope.push(parse_header("Date", false));
-			envelope.push(parse_header("Subject", false));
-			envelope.push(parse_header("From", true));
-			envelope.push(parse_header("Sender", true));
-			envelope.push(parse_header("Reply-To", true));
-			envelope.push(parse_header("To", true));
-			envelope.push(parse_header("CC", true));
-			envelope.push(parse_header("BCC", true));
-			envelope.push(parse_header("In-Reply-To", false));
-			envelope.push(parse_header("Message-ID", false));
-		}
-	}
-
-	resp=idx.offset;
-	resp += " FETCH (";
 
 	// Moves flags to the end...
 	function sort_format(a,b)
@@ -265,15 +281,21 @@ function send_fetch_response(msgnum, fmat, uid)
 		return a-b;
 	}
 
+	idx=index.idx[msgnum];
+	resp=idx.offset;
+	resp += " FETCH (";
 	fmat=fmat.sort(sort_format);
 
 	for(i in fmat) {
+		/*
+		 * This bit is for when a paremeter includes a list.
+		 * This list will be an object, so we need special handling
+		 */
 		if(typeof(fmat[i])=='object') {
 			// We already handled this I hope...
 			if(objtype == undefined)
 				continue;
 
-			// TODO: Handle partial HEADER.FIELDS and HEADER.FIELDS.NOT
 			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/)==0) {
 				tmp='';
 				for(j in fmat[i]) {
@@ -299,6 +321,9 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 			continue;
 		}
+		/*
+		 * Handle the MIME stuff
+		 */
 		if(fmat[i].toUpperCase().substr(0,4)=='BODY') {
 			function get_mime_part(fmat) {
 				var m=fmat.match(/^BODY((?:\.PEEK)?)\[([^[\]]*)(?:\]\<([0-9]+)\.([0-9]+)\>)?/i);
@@ -362,9 +387,10 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_mime();
 
 			if((tmp=get_mime_part(fmat[i].toUpperCase()))==undefined) {
+				extension=true;
 				switch(fmat[i].toUpperCase()) {
 					case 'BODY':
-						// TODO: BODY is actually *not* extensible... it's slightly different than BIDYSTRUCTURE
+						extension=false;
 					case 'BODYSTRUCTURE':
 						function add_part(mime) {
 							var i;
@@ -410,6 +436,11 @@ function send_fetch_response(msgnum, fmat, uid)
 								i=mime.text.split(/\x0d\x0a/);
 								ret=ret+encode_token(i.length.toString())+' ';
 							}
+							
+							if(extension) {
+								// TODO Add extension data...
+							}
+							
 							ret=ret.replace(/ $/, ') ');
 							return ret;
 						}
@@ -457,8 +488,8 @@ function send_fetch_response(msgnum, fmat, uid)
 					break;
 				case 'ENVELOPE':
 					set_seen_flag();
-					get_envelope();
-					resp += 'ENVELOPE ('+envelope.join(" ")+') ';
+					get_header();
+					resp += 'ENVELOPE ('+hdr.get_envelope().join(" ")+') ';
 					break;
 			}
 		}
@@ -513,7 +544,7 @@ function parse_seq_set(set, uid) {
 	if(uid)
 		max=base.last_msg;
 	else
-		max=index.offsets.length-1;
+		max=index.offsets.length;
 	for(chunk in chunks) {
 		range=chunks[chunk].split(/:/);
 		if(range.length == 1)
@@ -538,7 +569,7 @@ function parse_seq_set(set, uid) {
 			response.push(msgnum);
 		}
 	}
-	response=response.sort(compNumbers);
+	response=response.sort(function(a,b) { return a-b; });
 	for(i=0; i<response.length; i++) {
 		if(response[i]==response[i+1]) {
 			response.splice(i+1,1);
@@ -546,6 +577,23 @@ function parse_seq_set(set, uid) {
 		}
 	}
 	return(response);
+}
+
+function handle_command(command, args, defs)
+{
+	if(defs[command] != undefined) {
+		if(defs[command].arguments != undefined) {
+			if(args.length-1 == defs[command].arguments) {
+				defs[command].handler(args);
+				return(true);
+			}
+		}
+		else if(defs[command].arguments_valid(args.length-1)) {
+			defs[command].handler(args);
+			return(true);
+		}
+	}
+	return false;
 }
 
 function parse_command(line)
@@ -1478,110 +1526,197 @@ function parse_rfc822_date(date)
 
 function do_search(args, uid)
 {
-	var search_set={idx:[],hdr:[],body:[]};
+	var search_set={idx:[],hdr:[],body:[],all:[]};
 	var i,j;
 	var failed;
 	var idx,hdr,body;
 	var result=[];
 
-	while(args.length) {
+	function get_func(args)
+	{
+		var next1,next2;
+		var tmp;
+	
 		switch(args.shift().toUpperCase()) {
 			case 'ALL':
-				search_set.idx.push(function(idx) { return true; });
+				type="idx";
+				search=(function(idx) { return true; });
 				break;
 			case 'ANSWERED':
-				search_set.idx.push(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
+				type="idx";
+				search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
 				break;
 			case 'BODY':
-				search_set.body.push(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				type="body";
+				search=(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 				break;
 			case 'DELETED':
-				search_set.idx.push(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
+				type="idx";
+				search=(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
 				break;
 			case 'DRAFT':
-				search_set.idx.push(function(idx) { return false; });
+				type="idx";
+				search=(function(idx) { return false; });
 				break;
 			case 'FLAGGED':
-				search_set.idx.push(function(idx) { if(idx.attr & MSG_VERIFIED) return true; return false; });
+				type="idx";
+				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return true; return false; });
 				break;
 			case 'FROM':
-				search_set.hdr.push(eval("function(hdr) { return(get_from(hdr).toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				type="hdr";
+				search=(eval("function(hdr) { return(hdr.get_from()).toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 				break;
 			case 'KEYWORD':
-				search_set.hdr.push(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
+				type="hdr";
+				search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
 				break;
 			case 'NEW':
-				search_set.idx.push(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
+				type="idx";
+				search=(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
 				break;
 			case 'OLD':
-				search_set.idx.push(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
+				type="idx";
+				search=(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
 				break;
 			case 'RECENT':
-				search_set.idx.push(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
+				type="idx";
+				search=(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
 				break;
 			case 'SEEN':
-				search_set.idx.push(function(idx) { if(idx.attr & MSG_READ) return true; return false });
+				type="idx";
+				search=(function(idx) { if(idx.attr & MSG_READ) return true; return false });
 				break;
 			case 'SUBJECT':
-				search_set.hdr.push(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				type="hdr";
+				search=(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 				break;
 			case 'TO':
-				search_set.hdr.push(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				type="hdr";
+				search=(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 				break;
 			case 'UID':
-				search_set.idx.push(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
+				type="idx";
+				search=(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
 				break;
 			case 'UNANSWERED':
-				search_set.idx.push(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
+				type="idx";
+				search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
 				break;
 			case 'UNDELETED':
-				search_set.idx.push(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
+				type="idx";
+				search=(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
 				break;
 			case 'UNDRAFT':
-				search_set.idx.push(function(idx) { return true; });
+				type="idx";
+				search=(function(idx) { return true; });
 				break;
 			case 'UNFLAGGED':
-				search_set.idx.push(function(idx) { if(idx.attr & MSG_VERIFIED) return false; return true; });
+				type="idx";
+				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return false; return true; });
 				break;
 			case 'UNKEYWORD':
-				search_set.hdr.push(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
+				type="hdr";
+				search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
 				break;
 			case 'BEFORE':
-				search_set.hdr.push(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
 				break;
 			case 'ON':
-				search_set.hdr.push(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
 				break;
 			case 'SINCE':
-				search_set.hdr.push(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
 				break;
 			case 'SENTBEFORE':
-				search_set.hdr.push(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
 				break;
 			case 'SENTON':
-				search_set.hdr.push(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
 				break;
 			case 'SENTSINCE':
-				search_set.hdr.push(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
+				type="hdr";
+				search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
 				break;
-			// TODO: Unhandled SEARCH terms
 			case 'HEADER':
-				args.shift();
+				type="hdr";
+				search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
+				break;
 			case 'LARGER':
+				type="all";
+				search=(eval("function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;}"));
+				break;
 			case 'SMALLER':
-				// Calculate RFC822.SIZE
+				type="all";
+				search=(eval("function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;}"));
+				break;
 			case 'CC':
-				// Is there a CC header?
+				type="hdr";
+				search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
+				break;
 			case 'BCC':
-				// There's a BCC header?
+				type="hdr";
+				search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
+				break;
 			case 'TEXT':
-				// Needs RFC822
-				args.shift();
+				type="all";
+				search=(eval("function(idx,hdr,body) { var str="+args.shift().toSource()+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false}"));
+				break;
 			case 'NOT':
+				next1=get_func(args);
+				type=next1[0];
+				search=(eval("function(x) { return !"+next1[1].toSource()+"(x)}"));
+				break;
 			case 'OR':
+				next1=get_func(args);
+				next2=get_func(args);
+				if(next1[0]==next1[1]) {
+					type=next1[0];
+					search=(eval("function(x) { return ("+next1[1].toSource()+"(x)||"+next2[1].toSource()+"(x))}"));
+				}
+				else {
+					// Needs to be all (sigh)
+					type='all';
+					tmp="function(idx,hdr,body) { return ("+next1[1].toSource();
+					switch(next1[0]) {
+						case 'idx':
+						case 'hdr':
+						case 'body':
+							tmp += '('+next1[0]+')';
+							break;
+						case 'all':
+							tmp += '(idx,hdr,body)';
+							break;
+					}
+					tmp += '||'+next2[1].toSource();
+					switch(next2[0]) {
+						case 'idx':
+						case 'hdr':
+						case 'body':
+							tmp += '('+next2[0]+')';
+							break;
+						case 'all':
+							tmp += '(idx,hdr,body)';
+							break;
+					}
+					tmp += ')}';
+					search=eval(tmp);
+				}
+				break;
 			default:
-				search_set.idx.push(function(idx) { return false; });
+				type="idx";
+				search=(function(idx) { return false; });
 		}
+		return([type,search]);
+	}
+
+	while(args.length) {
+		i=get_func(args);
+		search_set[i[0]].push(i[1]);
 	}
 
 	for(i in index.offsets) {
@@ -1595,7 +1730,7 @@ function do_search(args, uid)
 			if(failed)
 				continue;
 		}
-		if(search_set.hdr.length > 0) {
+		if(search_set.hdr.length > 0 || search_set.all.length > 0) {
 			hdr=base.get_msg_header(idx.number);
 			for(j in search_set.hdr) {
 				if(search_set.hdr[j](hdr)==false)
@@ -1604,10 +1739,18 @@ function do_search(args, uid)
 			if(failed)
 				continue;
 		}
-		if(search_set.body.length > 0) {
+		if(search_set.body.length > 0 || search_set.all.length > 0) {
 			body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
 			for(j in search_set.body) {
 				if(search_set.body[j](body)==false)
+					failed=true;
+			}
+			if(failed)
+				continue;
+		}
+		if(search_set.all.length > 0) {
+			for(j in search_set.all) {
+				if(search_set.all[j](idx,hdr,body)==false)
 					failed=true;
 			}
 			if(failed)
@@ -1775,6 +1918,7 @@ var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={inbox:{scan_ptr:0}};
 var scan_ptr;
+const RFC822HEADER = 0xb0;  // from smbdefs.h
 
 js.on_exit("exit_func()");
 client.socket.send("* OK Give 'er\r\n");
