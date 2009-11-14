@@ -364,11 +364,24 @@ function send_fetch_response(msgnum, fmat, uid)
 		}
 		if(fmat[i].toUpperCase().substr(0,4)=='BODY') {
 			function get_mime_part(fmat) {
-				var m=fmat.match(/^BODY((?:\.PEEK)?)\[([^[\]]*)/i);
+				var m=fmat.match(/^BODY((?:\.PEEK)?)\[([^[\]]*)(?:\]\<([0-9]+)\.([0-9]+)\>)?/i);
 				var specifiers;
 				var i;
 				var tmp;
 				var part_name='';
+
+				function encode_binary_part(start, len, str)
+				{
+					if(start==undefined || start=='')
+						start=0;
+					else
+						start=parseInt(start,10);
+					if(len==undefined || len=='')
+						len=str.length;
+					else
+						len=parseInt(len,10);
+					return(encode_binary(str.substr(start,len)));
+				}
 
 				part=mime;
 				if(m==null)
@@ -387,6 +400,8 @@ function send_fetch_response(msgnum, fmat, uid)
 					else
 						break;
 				}
+				if(m[3]!=undefined && m[3]!='')
+					part_name += '<'+m[3]+'>';
 				switch(specifiers[i]) {
 					case 'HEADER':
 						if(specifiers[i+1]!=undefined) {
@@ -394,16 +409,16 @@ function send_fetch_response(msgnum, fmat, uid)
 							return undefined;
 						}
 						else
-							return(part_name+" "+encode_binary(part.headers['::'].join('')+"\r\n")+' ');
+							return(part_name+" "+encode_binary_part(m[3],m[4],part.headers['::'].join('')+"\r\n")+' ');
 					case 'MIME':
-						return(part_name+" "+encode_binary(part.headers[':mime:'].join('')+"\r\n")+' ');
+						return(part_name+" "+encode_binary_part(m[3],m[4],part.headers[':mime:'].join('')+"\r\n")+' ');
 					case '':
 						if(specifiers.length==1)
-							return(part_name+" "+encode_binary(part.headers['::'].join('')+'\r\n'+part.text)+' ');
+							return(part_name+" "+encode_binary_part(m[3],m[4],part.headers['::'].join('')+'\r\n'+part.text)+' ');
 						// Fall-through
 					case undefined:
 					case 'TEXT':
-						return(part_name+' '+encode_binary(part.text)+' ');
+						return(part_name+' '+encode_binary_part(m[3],m[4],part.text)+' ');
 				}
 			}
 
