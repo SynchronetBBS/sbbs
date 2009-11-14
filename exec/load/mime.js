@@ -593,23 +593,26 @@ var field_info={
 	"subject":{min:0, max:1},
 };
 
+function strip_CFWS(str)
+{
+	var strip=new RegExp("^"+abnf.CFWS+"*(.*?)"+abnf.CFWS+"*$","i");
+
+	str=str.replace(strip,"$1");
+	return(str);
+}
+
 function parse_header(str)
 {
 	var hdr={};
 	var m;
 	var re;
 
-	re=new RegExp("^("+abnf.obs_optional+")", "i");
+	re=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:"+rfc5322abnf.unstructured+""+abnf.CRLF,"i");
 	m=re.exec(str);
 	if(m==null)
 		return(undefined);
-	hdr.orig=m[1];
-	re=new RegExp("^("+abnf.field_name+")"+abnf.WSP+"*:","i");
-	m=re.exec(hdr.orig);
-	if(m==null)
-		return(undefined);
-	hdr.field=m[1];
-	hdr.field=hdr.field.toLowerCase();
+	hdr.orig=m[0];
+	hdr.field=m[1].toLowerCase();
 	return(hdr);
 }
 
@@ -622,9 +625,8 @@ function parse_headers(str)
 	hdrs[":mime:"]=[];
 	while(str.length > 0) {
 		hdr=parse_header(str);
-		if(hdr==undefined) {
+		if(hdr==undefined)
 			break;
-		}
 		hdrs["::"].push(hdr.orig);
 		if(hdrs[hdr.field]==undefined)
 			hdrs[hdr.field]=[];
@@ -636,14 +638,6 @@ function parse_headers(str)
 		str=str.substr(hdr.orig.length);
 	}
 	return(hdrs);
-}
-
-function strip_CFWS(str)
-{
-	var strip=new RegExp("^"+abnf.CFWS+"*(.*?)"+abnf.CFWS+"*$","i");
-
-	str=str.replace(strip,"$1");
-	return(str);
 }
 
 function get_next_symbol(str)
