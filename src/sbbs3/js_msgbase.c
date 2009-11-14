@@ -40,7 +40,9 @@
 
 #ifdef JAVASCRIPT
 
-static scfg_t* scfg=NULL;
+static scfg_t* 		scfg=NULL;
+static JSObject*	idx_proto=NULL;
+static JSObject*	hdr_proto=NULL;
 
 typedef struct
 {
@@ -607,7 +609,12 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 		}
 	}
 
-	if((idxobj=JS_NewObject(cx,NULL,NULL,obj))==NULL)
+	if(idx_proto==NULL) {
+		if((idx_proto=JS_NewObject(cx,NULL,NULL,obj))==NULL)
+			return(JS_TRUE);
+	}
+
+	if((idxobj=JS_NewObject(cx,NULL,idx_proto,obj))==NULL)
 		return(JS_TRUE);
 
 	JS_NewNumberValue(cx, msg.idx.number	,&val);
@@ -1031,7 +1038,12 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if((p->msg).hdr.number==0) /* No valid message number/id/offset specified */
 		return(JS_TRUE);
 
-	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
+	if(hdr_proto==NULL) {
+		if((hdr_proto=JS_NewObject(cx,NULL,NULL,obj))==NULL)
+			return(JS_TRUE);
+	}
+
+	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,hdr_proto,obj))==NULL) {
 		smb_freemsgmem(&(p->msg));
 		return(JS_TRUE);
 	}
