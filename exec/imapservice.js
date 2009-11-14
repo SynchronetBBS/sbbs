@@ -337,6 +337,8 @@ function send_fetch_response(msgnum, fmat, uid)
 			// We already handled this I hope...
 			if(objtype == undefined)
 				continue;
+
+			// TODO: Handle partial HEADER.FIELDS and HEADER.FIELDS.NOT
 			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/)==0) {
 				tmp='';
 				for(j in fmat[i]) {
@@ -427,6 +429,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			if((tmp=get_mime_part(fmat[i].toUpperCase()))==undefined) {
 				switch(fmat[i].toUpperCase()) {
 					case 'BODY':
+						// TODO: BODY is actually *not* extensible... it's slightly different than BIDYSTRUCTURE
 					case 'BODYSTRUCTURE':
 						function add_part(mime) {
 							var i;
