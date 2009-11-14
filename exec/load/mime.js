@@ -638,12 +638,19 @@ function parse_headers(str)
 	return(hdrs);
 }
 
+function strip_CFWS(str)
+{
+	var strip=new RegExp("^"+abnf.CFWS+"*(.*?)"+abnf.CFWS+"*$","i");
+
+	str=str.replace(strip,"$1");
+	return(str);
+}
+
 function get_next_symbol(str)
 {
 	var m;
 	var ret={};
 	var sym=new RegExp("^("+abnf.tspecial_ws+"|"+abnf.quoted_string+"|"+abnf.domain_literal+"|"+abnf.comment+"|"+abnf.token+")","i");
-	var strip=new RegExp("^"+abnf.CFWS+"*(.*?)"+abnf.CFWS+"*$","i");
 	var is_quoted=new RegExp("^"+abnf.quoted_string+"$","i");
 	var old_qp=new RegExp(abnf.obs_qp, "i");
 
@@ -651,7 +658,7 @@ function get_next_symbol(str)
 	if(m==null)
 		return(undefined);
 	ret.length=m[1].length;
-	ret.sym=m[1].replace(strip,"$1");
+	ret.sym=strip_CFWS(m[1]);
 	if(ret.sym.search(is_quoted)!=-1) {
 		ret.sym=ret.sym.replace(/^"(.*)"$/, "$1");
 		ret.sym=ret.sym.replace(old_qp, "$1".substr(1));
@@ -753,12 +760,12 @@ function parse_mime_header(hdrstr)
 			hdr.vals.push(tmp.sym);
 			break;
 		case 'content-id':					// RFC 2045
-			if(hdr.val.search(new RegExp("^"+abnr.msg_id+"$","i"))==-1)
+			if(hdr.val.search(new RegExp("^"+abnf.msg_id+"$","i"))==-1)
 				return(undefined);
-			hdr.vals.push(hdr.val);
+			hdr.vals.push(strip_CFWS(hdr.val));
 			break;
 		case 'content-description':			// RFC 2045
-			hdr.vals.push(hdr.val);
+			hdr.vals.push(strip_CFWS(hdr.val));
 			break;
 		case 'content-disposition':			// RFC 2183
 			p=hdr.val;
@@ -783,8 +790,9 @@ function parse_mime(hdrs, text)
 	ret.parsed={};
 	for(i in hdrs[":mime:"]) {
 		tmp=parse_mime_header(hdrs[":mime:"][i]);
-		if(tmp==undefined)
+		if(tmp==undefined) {
 			continue;
+		}
 		ret.parsed[tmp.name]=tmp;
 	}
 
@@ -800,8 +808,9 @@ function parse_mime(hdrs, text)
 			return(undefined);
 		re=new RegExp("\x0d\x0a--"+ret.parsed["content-type"].attrs.boundary+"(?:--)?"+abnf.CFWS+"?\x0d\x0a","i");
 		tmp=text.split(re);
-		if(tmp.length < 2)
+		if(tmp.length < 2) {
 			return(undefined);
+		}
 		tmp.shift();
 		tmp.pop();
 		ret.parts=[];
@@ -821,7 +830,7 @@ function parse_message(str)
 	ret.headers=parse_headers(tmp.shift()+"\r\n");
 	ret.text=tmp.join("\r\n\r\n");
 
-	if(ret.headers[":mime:"].length > 0)
+	//if(ret.headers[":mime:"].length > 0)
 		ret.mime=parse_mime(ret.headers, ret.text);
 	return(ret);
 }
