@@ -9,6 +9,7 @@
  */
 
 load("sbbsdefs.js");
+load("822header.js");
 load("mime.js");
 const RFC822HEADER = 0xb0;  // from smbdefs.h
 
@@ -146,74 +147,8 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 
 	function get_rfc822_header() {
-		var content_type;
-		var i;
-
 		get_header();
-		if(rfc822.header==undefined) {
-			rfc822.header='';
-			rfc822.header += "To: "+hdr.to+"\r\n";
-			rfc822.header += "Subject: "+hdr.subject+"\r\n";
-			rfc822.header += "Message-ID: "+hdr.id+"\r\n";
-			rfc822.header += "Date: "+hdr.date+"\r\n";
-
-			rfc822.header += "From: "+get_from(hdr)+"\r\n";
-
-			rfc822.header += "X-Comment-To: "+hdr.to+"\r\n";
-			if(hdr.path != undefined)
-				rfc822.header += "Path: "+system.inetaddr+"!"+hdr.path+"\r\n";
-			if(hdr.from_org != undefined)
-				rfc822.header += "Organization: "+hdr.from_org+"\r\n";
-			if(hdr.newsgroups != undefined)
-				rfc822.header += "Newsgroups: "+hdr.newsgroups+"\r\n";
-			if(hdr.replyto != undefined)
-				rfc822.header += "Reply-To: "+hdr.replyto+"\r\n";
-			else {
-				if(base.subnum != -1)
-					rfc822.header += 'Reply-To: "'+hdr.from+'" <sub:'+base.cfg.code+'@'+system.inet_addr+'>\r\n';
-			}
-			if(hdr.reply_id != undefined)
-				rfc822.header += "In-Reply-To: "+hdr.reply_id+"\r\n";
-			if(hdr.references != undefined)
-				rfc822.header += "References: "+hdr.references+"\r\n";
-			else if(hdr.reply_id != undefined)
-				rfc822.header += "References: "+hdr.reply_id+"\r\n";
-			if(hdr.reverse_path != undefined)
-				rfc822.header += "Return-Path: "+hdr.reverse_path+"\r\n";
-
-			// Fidonet headers
-			if(hdr.ftn_area != undefined)
-				rfc822.header += "X-FTN-AREA: "+hdr.ftn_area+"\r\n";
-			if(hdr.ftn_pid != undefined)
-				rfc822.header += "X-FTN-PID: "+hdr.ftn_pid+"\r\n";
-			if(hdr.ftn_TID != undefined)
-				rfc822.header += "X-FTN-TID: "+hdr.ftn_tid+"\r\n";
-			if(hdr.ftn_flags != undefined)
-				rfc822.header += "X-FTN-FLAGS: "+hdr.ftn_flags+"\r\n";
-			if(hdr.ftn_msgid != undefined)
-				rfc822.header += "X-FTN-MSGID: "+hdr.ftn_msgid+"\r\n";
-			if(hdr.ftn_reply != undefined)
-				rfc822.header += "X-FTN-REPLY: "+hdr.ftn_reply+"\r\n";
-
-			// Other RFC822 headers
-			if(hdr.field_list!=undefined) {
-				for(i in hdr.field_list) 
-					if(hdr.field_list[i].type==RFC822HEADER) {
-						if(hdr.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
-							content_type = hdr.field_list[i].data;
-						rfc822.header += hdr.field_list[i].data+"\r\n";
-					}
-			}
-			if(content_type==undefined) {
-				/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
-				rfc822.header += "Content-Type: text/plain; charset=IBM437\r\n";
-				rfc822.header += "Content-Transfer-Encoding: 8bit\r\n";
-			}
-
-			// Unwrap headers
-			rfc822.header=rfc822.header.replace(/\s*\r\n\s+/g, " ");
-			rfc822.header += "\r\n";
-		}
+		rfc822.header=hdr.get_rfc822_header();
 	}
 
 	function get_rfc822_text() {
