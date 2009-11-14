@@ -1046,7 +1046,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "MsgBase", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToObject(cx,val,&proto);
-		if(JS_GetProperty(cx, proto, "hEADERPrototype", &val) && !JSVAL_NULL_OR_VOID(val))
+		if(JS_GetProperty(cx, proto, "HeaderPrototype", &val) && !JSVAL_NULL_OR_VOID(val))
 			JS_ValueToObject(cx,val,&proto);
 		else
 			proto=NULL;
