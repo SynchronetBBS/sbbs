@@ -726,7 +726,7 @@ any_state_command_handlers = {
 		handler:function (args) {
 			var tag=args[0];
 
-			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED");
+			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN");
 			tagged(tag, "OK", "Capability completed, no TLS support... deal with it.");
 		},
 	},
@@ -1246,21 +1246,21 @@ function display_list(cmd, groups)
 
 	for(group in groups) {
 		if(groups[group].substr(-1)==sepchar)
-			untagged(cmd+' (\\Noselect) '+encode_string(sepchar)+' '+encode_string(groups[group].substr(0,groups[group].length-1)));
+			untagged(cmd+' (\\Noselect \\HasChildren) '+encode_string(sepchar)+' '+encode_string(groups[group].substr(0,groups[group].length-1)));
 		else {
 			if(groups[group] == '') {
-				untagged(cmd+' (\\Noselect) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+				untagged(cmd+' (\\Noselect \\HasChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
 			}
 			else {
 				base=new MsgBase(getsub(groups[group]));
 				if(base.cfg != undefined) {
 					if(base.last_msg > msg_area.sub[base.cfg.code].scan_ptr)
-						untagged(cmd+' (\\Noinferiors \\Marked) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+						untagged(cmd+' (\\Noinferiors \\Marked \\HasNoChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
 					else
-						untagged(cmd+' (\\Noinferiors \\UnMarked) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+						untagged(cmd+' (\\Noinferiors \\UnMarked \\HasNoChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
 				}
 				else
-					untagged(cmd+' (\\Noinferiors) '+encode_string(sepchar)+' '+encode_string(groups[group]));
+					untagged(cmd+' (\\Noinferiors \\HasNoChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
 			}
 		}
 	}
