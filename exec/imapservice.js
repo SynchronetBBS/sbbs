@@ -726,7 +726,7 @@ any_state_command_handlers = {
 		handler:function (args) {
 			var tag=args[0];
 
-			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN IDLE");
+			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN IDLE UNSELECT");
 			tagged(tag, "OK", "Capability completed, no TLS support... deal with it.");
 		},
 	},
@@ -1799,6 +1799,17 @@ selected_command_handlers = {
 		},
 	},
 	CLOSE:{
+		arguments:0,
+		handler:function(args) {
+			var tag=args[0];
+
+			close_sub();
+			update_status();
+			tagged(tag, "OK", "Closed.");
+			state=Authenticated;
+		},
+	},
+	UNSELECT:{	// RFC3691... like CLOSE with no implied EXPUNGE
 		arguments:0,
 		handler:function(args) {
 			var tag=args[0];
