@@ -658,7 +658,7 @@ function parse_command(line)
 			line=line.replace(/^{([0-9]+)}$/, "$1");
 			client.socket.send("+ Give me more of that good stuff\r\n");
 			ret=client.socket.recv(parseInt(line));
-			line=client.socket.recvline(10240, 300);
+			line=client.socket.recvline(10240, 1800);
 	
 			return(ret);
 		}
@@ -726,7 +726,7 @@ any_state_command_handlers = {
 		handler:function (args) {
 			var tag=args[0];
 
-			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN");
+			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN IDLE");
 			tagged(tag, "OK", "Capability completed, no TLS support... deal with it.");
 		},
 	},
@@ -749,6 +749,32 @@ any_state_command_handlers = {
 			exit();
 		}
 	},
+	IDLE:{	// RFC2177
+		arguments:0,
+		handler:function(args) {
+			var tag=args[0];
+			var elapsed=0;
+
+			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
+			while(1) {
+				line=client.socket.recvline(10240, 5);
+				if(line != null) {
+					debug_log("DONE IDLE: "+line, true);
+					tagged(tag, "OK", "That was fun.");
+					return;
+				}
+				else {
+					elapsed += 5;
+					if(elapsed > 1800) {
+						untagged("BYE And I though *I* liked to idle!");
+						client.socket.close();
+						exit(0);
+					}
+					update_status();
+				}
+			}
+		}
+	}
 };
 
 unauthenticated_command_handlers = {
@@ -770,7 +796,7 @@ unauthenticated_command_handlers = {
 
 			if(mechanism.toUpperCase()=="PLAIN") {
 				client.socket.send("+\r\n");
-				line=client.socket.recvline(10240, 300);
+				line=client.socket.recvline(10240, 1800);
 				args=base64_decode(line).split(/\x00/);
 				if(!login(args[1],args[2])) {
 					tagged(tag, "NO", "No AUTH for you.");
@@ -1894,7 +1920,7 @@ selected_command_handlers = {
 					break;
 			}
 		},
-	}
+	},
 };
 
 function read_cfg()
@@ -1923,7 +1949,7 @@ const RFC822HEADER = 0xb0;  // from smbdefs.h
 js.on_exit("exit_func()");
 client.socket.send("* OK Give 'er\r\n");
 while(1) {
-	line=client.socket.recvline(10240, 300);
+	line=client.socket.recvline(10240, 1800);
 	if(line != null) {
 		debug_log("IMAP RECV: "+line, true);
 		parse_command(line);
