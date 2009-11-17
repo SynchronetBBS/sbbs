@@ -14,13 +14,13 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update)
 		this.rfc822 += "Date: "+this.date+"\r\n";
 
 		if(!this.from_net_type || this.from_net_addr.length==0)    /* local message */
-			this.rfc822 += "From: " + this.from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">";
+			this.rfc822 += "From: " + this.from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
 		else if(!this.from_net_addr.length)
-			this.rfc822 += "From: " + this.from;
+			this.rfc822 += "From: " + this.from + "\r\n";
 		else if(this.from_net_addr.indexOf('@')!=-1)
-			this.rfc822 += "From: " + this.from+" <"+this.from_net_addr+">";
+			this.rfc822 += "From: " + this.from+" <"+this.from_net_addr+">\r\n";
 		else
-			this.rfc822 += "From: " + this.from+" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">";
+			this.rfc822 += "From: " + this.from+" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">\r\n";
 
 		this.rfc822 += "X-Comment-To: "+this.to+"\r\n";
 		if(this.path != undefined)
