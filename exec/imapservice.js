@@ -59,7 +59,7 @@ MsgBase.HeaderPrototype.get_envelope=function (force)
 		header=header.replace(/\r\n$/,'');
 		header=strip_CFWS(header);
 
-		/* : Use mime.js ABNF to parse this correctly */
+		/* TODO: Use mime.js ABNF to parse this correctly */
 		if(is_addresses) {
 			if((m2=header.match(/^\s*(.*)\s+<([^@]*)@(.*)>\s*$/))!=null) {
 				m2[1]=m2[1].replace(/^"(.*)"$/, "$1");
@@ -759,12 +759,7 @@ any_state_command_handlers = {
 			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
 			while(1) {
 				line=client.socket.recvline(10240, 5);
-				if(line != undefined && line != '') {
-					debug_log("DONE IDLE: '"+line+"'", true);
-					tagged(tag, "OK", "That was fun.");
-					return;
-				}
-				else {
+				if(line==null) {
 					elapsed += 5;
 					if(elapsed > 1800) {
 						untagged("BYE And I though *I* liked to idle!");
@@ -772,6 +767,11 @@ any_state_command_handlers = {
 						exit(0);
 					}
 					update_status();
+				}
+				else {
+					debug_log("DONE IDLE: '"+line+"'", true);
+					tagged(tag, "OK", "That was fun.");
+					return;
 				}
 			}
 		}
