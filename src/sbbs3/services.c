@@ -91,8 +91,8 @@ typedef struct {
 	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	uint32_t	clients;
-	uint32_t	served;
+	ulong		clients;
+	ulong		served;
 	SOCKET		socket;
 	BOOL		running;
 	BOOL		terminated;
