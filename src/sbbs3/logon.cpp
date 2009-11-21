@@ -213,14 +213,7 @@ bool sbbs_t::logon()
 		CLS;
 		user_event(EVENT_BIRTHDAY); 
 	}
-	unixtodstr(&cfg,useron.laston,tmp);
-	if(strcmp(str,tmp)) {			/* str still equals logon time */
-		useron.ltoday=1;
-		useron.ttoday=useron.etoday=useron.ptoday=useron.textra=0;
-		useron.freecdt=cfg.level_freecdtperday[useron.level]; 
-	}
-	else
-		useron.ltoday++;
+	useron.ltoday++;
 
 	gettimeleft();
 	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
