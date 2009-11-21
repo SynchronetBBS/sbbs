@@ -202,7 +202,7 @@ BOOL DLLCALL del_lastuser(scfg_t* cfg)
 /****************************************************************************/
 int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 {
-	char userdat[U_LEN+1],str[U_LEN+1],tmp[64];
+	char userdat[U_LEN+1],str[U_LEN+1];
 	int i,file;
 	unsigned user_number;
 
@@ -351,32 +351,44 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	user->number=user_number;	/* Signal of success */
 
-	/* Reset daily stats if not logged on today */
-	unixtodstr(cfg, time(NULL),str);
-	unixtodstr(cfg, user->laston,tmp);
-	if(strcmp(str,tmp) && user->ltoday) 
-		resetdailyuserdat(cfg,user);
+	/* Reset daily stats if not already logged on today */
+	if(user->ltoday || user->etoday || user->ptoday || user->ttoday) {
+		time_t		now;
+		struct tm	now_tm;
+		struct tm	logon_tm;
 
-#if 0 /* removed 01/19/00 Why?  ToDo */
-	if(useron.number==user_number) {
-		if(user!=&useron)
-			useron=*user;
-
-		if(online) {
-
-	#if 0	/* legacy? ToDo */
-			getusrdirs();
-			getusrsubs();
-	#endif
-			if(user->misc&AUTOTERM) {			/* was useron.misc (01/19/00) */
-				user->misc&=~(ANSI|RIP|WIP|HTML);
-				user->misc|=autoterm; 
-			}
-		} 
+		now=time(NULL);
+		if(localtime_r(&now, &now_tm)!=NULL 
+			&& localtime_r(&user->logontime, &logon_tm)!=NULL) {
+			if(now_tm.tm_year!=logon_tm.tm_year
+				|| now_tm.tm_mon!=logon_tm.tm_mon
+				|| now_tm.tm_mday!=logon_tm.tm_mday)
+				resetdailyuserdat(cfg,user,/* write: */FALSE);
+		}
 	}
-#endif
 
 	return(0);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+static void dirtyuserdat(scfg_t* cfg, uint usernumber)
+{
+	int	i,file;
+    node_t	node;
+
+	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
+//		if(i==cfg->node_num)
+//			continue;
+		getnodedat(cfg, i,&node,NULL);
+		if(node.useron==usernumber && (node.status==NODE_INUSE
+			|| node.status==NODE_QUIET)) {
+			getnodedat(cfg, i,&node,&file);
+			node.misc|=NODE_UDAT;
+			putnodedat(cfg, i,&node,file);
+			break; 
+		} 
+	}
 }
 
 /****************************************************************************/
@@ -387,7 +399,6 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 {
     int		i,file;
     char	userdat[U_LEN],str[MAX_PATH+1];
-    node_t	node;
 
 	if(user==NULL)
 		return(-1);
@@ -523,18 +534,7 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	}
 	unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
 	close(file);
-	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
-		if(i==cfg->node_num)
-			continue;
-		getnodedat(cfg, i,&node,NULL);
-		if(node.useron==user->number && (node.status==NODE_INUSE
-			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,&file);
-			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node,file);
-			break; 
-		} 
-	}
+	dirtyuserdat(cfg,user->number);
 	return(0);
 }
 
@@ -1904,7 +1904,6 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const
 	char	str2[256];
 	int		file;
 	uint	c,i;
-	node_t	node;
 
 	if(!VALID_CFG(cfg) || usernumber<1 || str==NULL)
 		return(-1);
@@ -1943,19 +1942,7 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, const
 	write(file,str2,length);
 	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
 	close(file);
-	for(i=1;i<=cfg->sys_nodes;i++) {	/* instant user data update */
-		if(i==cfg->node_num)
-			continue;
-		getnodedat(cfg, i,&node,NULL);
-		if(node.useron==usernumber && (node.status==NODE_INUSE
-			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,&file);
-			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node,file);
-			break; 
-		} 
-	}
-
+	dirtyuserdat(cfg,usernumber);
 	return(0);
 }
 
@@ -1969,7 +1956,6 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	char tmp[32];
 	int i,c,file;
 	long val;
-	node_t node;
 
 	if(!VALID_CFG(cfg) || usernumber<1) 
 		return(0); 
@@ -2022,18 +2008,7 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	}
 	unlock(file,(long)((long)(usernumber-1)*U_LEN)+start,length);
 	close(file);
-	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
-		if(i==cfg->node_num)
-			continue;
-		getnodedat(cfg, i,&node,NULL);
-		if(node.useron==usernumber && (node.status==NODE_INUSE
-			|| node.status==NODE_QUIET)) {
-			getnodedat(cfg, i,&node,&file);
-			node.misc|=NODE_UDAT;
-			putnodedat(cfg, i,&node,file);
-			break; 
-		} 
-	}
+	dirtyuserdat(cfg,usernumber);
 	return(val);
 }
 
@@ -2165,14 +2140,14 @@ BOOL DLLCALL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logonti
 
 	/* Reset daily stats if new day */
 	if(tm.tm_mday!=tm_now.tm_mday) 
-		resetdailyuserdat(cfg, user);
+		resetdailyuserdat(cfg, user, /* write: */TRUE);
 
 	return(TRUE);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user)
+void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
 {
 	char str[128];
 
@@ -2181,23 +2156,23 @@ void DLLCALL resetdailyuserdat(scfg_t* cfg, user_t* user)
 
 	/* logons today */
 	user->ltoday=0;	
-	putuserrec(cfg,user->number,U_LTODAY,5,"0");
+	if(write) putuserrec(cfg,user->number,U_LTODAY,5,"0");
 	/* e-mails today */
 	user->etoday=0;	
-	putuserrec(cfg,user->number,U_ETODAY,5,"0");	
+	if(write) putuserrec(cfg,user->number,U_ETODAY,5,"0");	
 	/* posts today */
 	user->ptoday=0;	
-	putuserrec(cfg,user->number,U_PTODAY,5,"0");
+	if(write) putuserrec(cfg,user->number,U_PTODAY,5,"0");
 	/* free credits per day */				
 	user->freecdt=cfg->level_freecdtperday[user->level];
-	putuserrec(cfg,user->number,U_FREECDT,10		
+	if(write) putuserrec(cfg,user->number,U_FREECDT,10		
 		,ultoa(user->freecdt,str,10));
 	/* time used today */
 	user->ttoday=0;
-	putuserrec(cfg,user->number,U_TTODAY,5,"0");
+	if(write) putuserrec(cfg,user->number,U_TTODAY,5,"0");
 	/* extra time today */
 	user->textra=0;
-	putuserrec(cfg,user->number,U_TEXTRA,5,"0");	
+	if(write) putuserrec(cfg,user->number,U_TEXTRA,5,"0");	
 }
 
 /****************************************************************************/

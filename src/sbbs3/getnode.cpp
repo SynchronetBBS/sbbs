@@ -142,7 +142,7 @@ void sbbs_t::nodesync()
 			unixtodstr(&cfg,now,today);
 			if(strcmp(str,today)) { /* New day, clear "today" user vars */
 				sys_status|=SS_NEWDAY;	// So we don't keep doing this over&over
-				resetdailyuserdat(&cfg,&useron);
+				resetdailyuserdat(&cfg, &useron,/* write: */true);
 			} 
 		}
 		if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {   /* not guest */
