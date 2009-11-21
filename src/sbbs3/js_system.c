@@ -1293,10 +1293,12 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		alias;
 	int			i;
+	uintN		n;
 	scfg_t*		cfg;
 	user_t		user;
 	JSObject*	userobj;
 	jsrefcount	rc;
+	client_t*	client=NULL;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -1311,6 +1313,21 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	memset(&user,0,sizeof(user));
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_OBJECT(argv[n])) {
+			JSClass*	cl;
+			JSObject*	objarg = JSVAL_TO_OBJECT(argv[n]);
+			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
+				client=JS_GetPrivate(cx,objarg);
+				continue;
+			}
+		}
+	}
+	if(client!=NULL) {
+		SAFECOPY(user.modem,client->protocol);
+		SAFECOPY(user.comp,client->host);
+		SAFECOPY(user.note,client->addr);
+	}
 
 	user.sex=' ';
 	SAFECOPY(user.alias,alias);
@@ -1530,9 +1547,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,310
 	},		
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
-	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
+	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias [,client object]")
 	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
-	"returns an numeric error code on failure")
+	"returns an numeric error code on failure (optional <i>client</i> object argument added in v3.15a)")
 	,310
 	},
 	{"exec",			js_exec,			1,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
