@@ -326,7 +326,7 @@ else {
     }
 
 	try { 
-		nuser=system.new_user(http_request.query.alias);
+		nuser=system.new_user(http_request.query.alias, client);
 	} catch(e) {
 		template.err_message = e;
 		log(LOG_ERR,"JavaScript exception: " + e);
