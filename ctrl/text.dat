@@ -448,7 +448,7 @@
 "Sorry, the system is full."                            376 SystemFull
 "*NEW USER*  %-30.30s  Age/Sex/BD   : %-2d %c %s\r\n"\  377 NewUserFeedbackHdr
 "Real name : %-30.30s  Phone number : %s\r\n"\
-"Computer  : %-30.30s  Modem type   : %s\r\n\r\n"
+"Computer  : %-30.30s  Connection   : %s\r\n\r\n"
 "\7\r\nrhiYou must leave %s mail in order to be "\   378 NoFeedbackWarning
 	"validated!n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
@@ -460,7 +460,7 @@
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
 "Remove node lock"                                      386 RemoveNodeLockQ
-"The minimum modem speed for this node is %ubps."       387 MinimumModemSpeed
+"UNUSED387"       						   387 MinimumModemSpeed
 "You do not have sufficient access for this node."      388 NoNodeAccess
 "\1n\1r\1h\r\nSorry, this node is temporarily closed "\ 389 NodeLocked
 	"for maintenance.\1n\r\n"
@@ -507,7 +507,7 @@
 	"h%s\r\n"
 "ncNote      : h%-30.30s  ncHandle       : "\      425 UeditNoteHandle
 	"h%s\r\n"
-"ncComputer  : h%-30.30s  ncModem type   : "\      426 UeditComputerModem
+"ncComputer  : h%-30.30s  ncConnection   : "\      426 UeditComputerModem
 	"h%s\r\n"
 "ncComment %c : h%s\r\n"                             427 UeditCommentLine
 "ncFirst on  : h%-8.8s  ncExpire    : h%-8.8s  "\ 428 UserDates
@@ -660,7 +660,7 @@
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
 "UNUSED544"                         			544 Unused544 /* Was LastFewCallers */
 "\r\nnhm%-2d nm%-6u wh%-25.25s m%-25.25s"\     545 LastFewCallersFmt
-	"nm%02u:%02u h%-8.8s nm%-3.3d"
+	"nm%02u:%02u h%-8.8s nm%3d"
 "\r\nghConnections Today:ng"                        546 CallersToday
 "_bhDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
 	"(cYbes, cNbo, or cQbuit) ? n"
