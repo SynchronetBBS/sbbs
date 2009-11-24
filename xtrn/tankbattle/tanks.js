@@ -18,7 +18,7 @@ var root;
 try { barfitty.barf(barf); } catch(e) { root = e.fileName; } //Deuce is a freak
 root = root.replace(/[^\/\\]*$/,'');
 
-load(root+"logging.js");
+load("logging.js");
 var game=new TankBattle(root);
 var game_log;
 
