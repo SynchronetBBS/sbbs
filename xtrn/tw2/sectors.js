@@ -114,7 +114,7 @@ function EnterSector()	/* 20000 */
 				console.writeln("<Retreat>");
 				if(player.LastIn<1 || player.LastIn>=sectors.length)
 					player.LastIn=random(sectors.length-1)+1;
-				location=playerSector.Get(player.Record);
+				location=player.Sector.Get(player.Record);
 				if(player.Fighters<1) {
 					if(random(2)==1) {
 						console.writeln("You escaped!");
