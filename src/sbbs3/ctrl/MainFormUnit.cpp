@@ -464,7 +464,7 @@ static void mail_log_msg(log_msg_t* msg)
 
     if(MainForm->MailLogFile && MainForm->MailStop->Enabled) {
         AnsiString LogFileName
-            =AnsiString(MainForm->cfg.data_dir)
+            =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\MS"
             +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
             +".LOG";
@@ -579,7 +579,7 @@ static void ftp_log_msg(log_msg_t* msg)
 
     if(MainForm->FtpLogFile && MainForm->FtpStop->Enabled) {
         AnsiString LogFileName
-            =AnsiString(MainForm->cfg.data_dir)
+            =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\FS"
             +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
             +".LOG";
@@ -696,7 +696,7 @@ static void web_log_msg(log_msg_t* msg)
 #if 0
     if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
         AnsiString LogFileName
-            =AnsiString(MainForm->cfg.data_dir)
+            =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\FS"
             +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
             +".LOG";
@@ -3186,7 +3186,7 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
             );
     else
         sprintf(filename,"%s\\%s"
-            ,MainForm->cfg.data_dir
+            ,MainForm->cfg.logs_dir
             ,((TMenuItem*)Sender)->Hint.c_str()
         );
     ViewFile(filename,((TMenuItem*)Sender)->Caption);
