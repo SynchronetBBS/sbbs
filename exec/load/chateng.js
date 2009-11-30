@@ -1,15 +1,14 @@
 /*
 	JAVASCRIPT MULTI-USER CHAT ENGINE -- BY MCMLXXIX (Matt Johnson) 08/2008
+	***UPDATED: 11/2009
 	-----------------------------------------------
 	FULLSCREEN DEFAULT OR WINDOWED MODE WITH SUPPLIED PARAMETERS
-	//TODO: ADD SCROLLBACK HISTORY WINDOW FOR CHAT MESSAGES
 
 	NOTE: 
 	For a simple full screen chat, create a script like the following:
 	
 	load("chateng.js");
-	var chat=new ChatEngine(root_directory,room_name,log_object);
-	Chat(chat);
+	Chat();
 	
 	This will call the following Chat() function 
 	to handle the engine in its simplest form
@@ -19,7 +18,11 @@
 */
 function Chat(key,engine)
 {
-	if(!engine) exit(0);
+	if(!engine) 
+	{
+		engine=new ChatEngine();
+		engine.Init();
+	}
 	if(key)
 	{
 		engine.ProcessKey(key);
@@ -35,6 +38,15 @@ function Chat(key,engine)
 	{
 		while(1)
 		{
+			if(engine.stream) 
+			{
+				var packet=engine.stream.receive();
+				if(packet<0) exit();
+				else if(!packet==0 && (packet.room==engine.room || packet.scope==global_scope)) 
+				{
+					engine.ProcessData(packet.data);
+				}
+			}
 			key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(key) engine.ProcessKey(key);
 			switch(key.toUpperCase())
@@ -49,20 +61,26 @@ function Chat(key,engine)
 	}
 }
 //*************MAIN ENGINE*************
-load("qengine.js");
+load("commclient.js");
 load("scrollbar.js");
 load("nodedefs.js");
-load("funclib.js");
 
-var queue;
-
-function ChatEngine(root,name,logger,stream)
+function ChatEngine(root,stream)
 {
-	this.root=			(root?root:"/sbbs/");
-	this.name=			(name?name:"chat");
-	this.chatlog=		(logger?logger:false);
-	queue=				(stream?stream:new DataQueue(this.root,this.name,this.chatlog));
-	//this.room;
+	const local_color=		"\1n\1g";
+	const remote_color=	"\1n\1c";
+	const notice_color=	"\1n\1r";
+	const input_color=		"\1n\1y";
+	const private_color=	"\1n\1y";
+	const global_color=	"\1n\1m";
+	
+	var root_dir=			(root?root:system.exec_dir);
+	var scope=				normal_scope;
+	var messages=			[];
+
+	this.stream=			stream?stream:new GameConnection("chat");
+	this.buffer=			"";
+	//this.room;	
 	//this.fullscreen;
 	//this.columns;
 	//this.rows;
@@ -71,15 +89,8 @@ function ChatEngine(root,name,logger,stream)
 	//this.boxed;
 	//this.lined;
 	//this.input_line;
-	//this.buffer;
 	//this.scrollbar;
-	this.local_color=	"\1n\1g";
-	this.remote_color=	"\1n\1c";
-	this.notice_color=	"\1n\1r";
-	this.input_color=	"\1n\1y";
-	this.messages=		[];
-	this.history_index=	0;
-	//this.history_file;
+	
 	
 	
 	// USEFUL METHODS 
@@ -95,26 +106,21 @@ function ChatEngine(root,name,logger,stream)
 		this.room=room?room:					"default";	//room name (for lobby style interface)
 		this.userlist=userlist?userlist:		false;		//separate user list window (boolean)
 		this.input_line=input_line?input_line:	false; 	//EX: inputline={'x':1,'y':1,'columns':40};
+		
 		this.buffer="";
-		this.messages=[];
-		if(this.input_line)
+		messages=[];
+ 		if(this.input_line)
 		{
-			var x=this.x;
-			var y=this.y+this.rows+1;
-			this.input_line={'x':x,'y':y};
+			this.input_line={'x':this.x,'y':this.y+this.rows+1};
 			this.fullscreen=false;
 			this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical",scrollbar_color?scrollbar_color:"\1k"); 
 		}
 		else this.fullscreen=true;
-		this.history_file=new File(this.root + this.room + ".his");		
-		queue.Init(this.room,"");
-		this.GetNotices();
-		this.LoadHistory();
+
 		this.DrawLines();
 		this.DrawBox();
 		this.Display();
-		this.Log("Chat Room Initialized: " + this.room);
-		this.Log("Mode: " + (this.fullscreen?"fullscreen":"window"));
+		log("chat room initialized: " + this.room + (this.fullscreen?" (fullscreen)":" (window)"));
 		
 	}
 	this.Resize=function(x,y,columns,rows) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
@@ -130,18 +136,12 @@ function ChatEngine(root,name,logger,stream)
 			this.input_line.x=this.x;
 			this.input_line.y=this.y+this.rows+1;
 		}
-		this.ClearChatWindow();
 		this.Redraw();
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical",this.scrollbar.color); 
 	}
-	this.Cycle=function()
-	{
-		this.Receive();
-		this.GetNotices();
-	}
 	this.FindUser=function(id)
 	{
-		return queue.FindUser(id);
+		//return this.stream.FindUser(id);
 	}
 	this.ClearChatWindow=function() //CLEARS THE ENTIRE CHAT WINDOW
 	{
@@ -176,7 +176,7 @@ function ChatEngine(root,name,logger,stream)
 	}
 	this.AddNotice=function(msg)
 	{
-		queue.notices.push(msg);
+		//this.stream.notices.push(msg);
 	}
 	this.ClearInputLine=function()
 	{
@@ -185,79 +185,24 @@ function ChatEngine(root,name,logger,stream)
 	}
 	this.Redraw=function()
 	{
-		ClearBlock(this.x,this.y,this.columns,this.rows);
+		this.ClearChatWindow();
 		this.DrawLines();
 		this.DrawBox();
 		this.Display();
 		this.ClearInputLine();
 		this.Buffer();
 	}
-	this.Send=function(data)
+	this.Send=function(message)
 	{
-		queue.SendData(data,this.name);
-		if(data.message) 
-		{
-			this.Display(data.message,this.local_color,user.alias);
-			this.StoreHistory(data.message);
-		}
+		var packet=this.PackageData(message);
+		this.stream.send(packet);
+		scope=normal_scope;
+		//this.StoreHistory(data.message);
 	}
-	
-	
 	
 	//INTERNAL METHODS
-	this.ShowHistory=function(key) //ACTIVATE MESSAGE HISTORY SCROLLBACK
-	{
-		var output=[];
-		for(txt in this.messages)
-		{
-			var array=this.Concat(this.messages[txt]);
-			for(item in array)
-			{
-				output.push(array[item]);
-			}
-		}
-		if(output.length<=this.rows) return;
-		switch(key)
-		{
-			case '\x02':	/* CTRL-B KEY_HOME */
-				if(this.history_index+this.rows<output.length) this.history_index=output.length-this.rows;
-				else return;
-				break;
-			case '\x05':	/* CTRL-E KEY_END */
-				if(this.history_index>0) this.history_index=0;
-				else return;
-				break;
-			case KEY_DOWN:
-				if(this.history_index>0) this.history_index--;
-				else return;
-				break;
-			case KEY_UP:
-				if(this.history_index+this.rows<output.length) this.history_index++;
-				else return;
-				break;
-		}
-		var index=output.length-this.history_index-this.rows;
-		this.scrollbar.draw(index,output.length-this.rows);
-		var line=0;
-		while(index<output.length && line<this.rows)
-		{
-			console.gotoxy(this.x,this.y+line);
-			console.putmsg(output[index],P_SAVEATR);
-			var length=console.strlen(strip_ctrl(output[index]));
-			if(length<this.columns) ClearLine(this.columns-length);
-			index++;
-			line++;
-		}
-	}
-	this.StoreHistory=function(text) //WRITE MESSAGE HISTORY TO FILE 
-	{
-		this.history_file.open('a',true); 	
-		this.history_file.writeln(user.alias + ": " + text);
-		this.history_file.close();
-	}
 	this.ProcessKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
 	{
-		this.Cycle();
 		switch(key.toUpperCase())
 		{
 		//borrowed Deuce's feseditor.js
@@ -290,29 +235,31 @@ function ChatEngine(root,name,logger,stream)
 		case '\x05':	/* CTRL-E KEY_END */
 		case KEY_UP:
 		case KEY_DOWN:
-			this.ShowHistory(key);
 			break;
 		case '\b':
 			this.BackSpace();
 			break;
 		case '\r':
-			if(!this.fullscreen) this.ClearInputLine();
-			else 
+		case '\n':
+			if(console.strlen(RemoveSpaces(this.buffer))) 
 			{
-				console.left(this.buffer.length);
-				console.cleartoeol();
+				this.Send(this.buffer);
 			}
-			if(!console.strlen(RemoveSpaces(this.buffer))) 
+			this.ResetInput();
+			break;
+		case '!':
+			if(console.strlen(RemoveSpaces(this.buffer)) || scope==global_scope) 
 			{
-				this.buffer="";
-				break;
+				this.Buffer(key);
 			}
-			var message={"message":this.buffer,"name":user.alias};
-			this.buffer="";
-			this.Send(message);
+			else
+			{
+				scope=global_scope;
+			}
 			break;
 		case '@':
-			if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) break;
+			if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) 
+			break;
 		default:
 			if(key) this.Buffer(key);
 			break;
@@ -350,34 +297,6 @@ function ChatEngine(root,name,logger,stream)
 		var spot=console.getxy();
 		if(!(spot.y==console.screen_rows && spot.x==console.screen_columns)) console.putmsg("\1n\1h\xD9");
 	}
-	this.LoadHistory=function() //LOAD CHAT ROOM HISTORY FROM FILE
-	{
-		if(!file_exists(this.history_file.name)) 
-		{
-			return false;
-		}
-		this.history_file.open('r',true); 
-		var messages=this.history_file.readAll();
-		for(msg in messages)
-		{
-			if(messages[msg].indexOf(":")>=0)
-			{
-				var array=messages[msg].split(":");
-				var name=array[0];
-				color=(name==user.alias?this.local_color:this.remote_color);
-				name=color + name + "\1h:";
-				var text=color + array[1];
-				this.messages.push(name + text);
-			}
-			else 
-			{
-				color=this.notice_color;
-				this.messages.push(this.notice_color + messages[msg]);
-			}
-			
-		}
-		this.history_file.close();
-	}
 	this.BackSpace=function()
 	{
 		if(this.buffer.length>0) 
@@ -404,14 +323,14 @@ function ChatEngine(root,name,logger,stream)
 				var disp=truncated;
 				if(disp.indexOf('@')>=0) disp=disp.replace(/@/g,"?");
 				console.gotoxy(this.input_line.x,this.input_line.y);
-				console.putmsg(this.input_color + disp,P_SAVEATR);
+				console.putmsg(input_color + disp,P_SAVEATR);
 			}
 			else if(!key)
 			{
 				console.gotoxy(this.input_line.x,this.input_line.y);
 				var disp=this.buffer;
 				if(disp.indexOf('@')>=0) disp=disp.replace(/@/g,"?");
-				console.putmsg(this.input_color + disp,P_SAVEATR);
+				console.putmsg(input_color + disp,P_SAVEATR);
 			}
 			else 
 			{
@@ -423,21 +342,9 @@ function ChatEngine(root,name,logger,stream)
 		{
 			this.buffer+=key;
 			if(key=="@") key="?";
-			console.putmsg(this.input_color + key,P_SAVEATR);
+			console.putmsg(input_color + key,P_SAVEATR);
 		}
 		if(!this.fullscreen && this.buffer.length<this.columns)	ClearLine(this.columns-this.buffer.length);
-	}
-	this.GetNotices=function() //RECEIVE ALL GENERAL NOTICES FROM QUEUE AND DISPLAY THEM
-	{
-		for(notice in queue.notices)
-		{
-			this.Display(queue.notices[notice],this.notice_color);
-		}
-		queue.notices=[];
-	}
-	this.Log=function(text)
-	{
-		if(this.chatlog) this.chatlog.Log(text);
 	}
 	this.Display=function(text,color,user_)
 	{
@@ -448,7 +355,7 @@ function ChatEngine(root,name,logger,stream)
 			if(!text) return;
 			if(user_) console.putmsg("\r" + col + user_ + ": " + text + "\r\n",P_SAVEATR);
 			else console.putmsg("\r" + col + text + "\r\n",P_SAVEATR);
-			if(this.buffer.length) console.putmsg(this.local_color+this.buffer,P_SAVEATR);
+			if(this.buffer.length) console.putmsg(local_color+this.buffer,P_SAVEATR);
 		}
 		else
 		{
@@ -458,13 +365,13 @@ function ChatEngine(root,name,logger,stream)
 			{
 				if(user_) 
 				{
-					this.messages.push(col + user_+ "\1h: \1n" + col + text);
+					messages.push(col + user_+ "\1h: \1n" + col + text);
 				}
-				else this.messages.push(col + text);
+				else messages.push(col + text);
 			}
-			for(msg in this.messages)
+			for(msg in messages)
 			{
-				var array=this.Concat(this.messages[msg]);
+				var array=this.Concat(messages[msg]);
 				for(item in array)
 				{
 					output.push(array[item]);
@@ -484,7 +391,7 @@ function ChatEngine(root,name,logger,stream)
 				
 				else console.gotoxy(this.x,this.y+parseInt(line,10));
 				var display=output[line];
-				if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP))
+				if(user.compare_ars("SYSOP"))
 				{
 					if(display.indexOf('@')>=0) display=display.replace(/@/g,"?");
 				}
@@ -509,161 +416,57 @@ function ChatEngine(root,name,logger,stream)
 		}
 		return newarray;
 	}
-	this.Receive=function()
+	this.ProcessData=function(data)
 	{
-		var data=queue.ReceiveData(this.name);
-		for(item in data)
+		var intensity="";
+		if(data.name==user.alias) intensity="\1h";
+		switch(data.scope)
 		{
-			if(data[item].info)
-			{
-				/*
-					TODO: 	ADD PROCESSING RULES FOR NON-MESSAGE DATA
-							I.E. PLAYERS ENTERING GAMES, GAME INVITES, PRIVATE CHAT INVITES
-				*/
-			}
-			if(data[item].message) 
-				this.Display(data[item].message,this.remote_color,data[item].name);
+			case normal_scope:
+				this.Display(data.message,remote_color + intensity,data.name);
+				break;
+			case priv_scope:
+				this.Display(data.message,private_color + intensity,data.name);
+				break;
+			case global_scope:
+				this.Display(data.message,global_color + intensity,data.name);
+				break;
+			default:
+				log("message scope unknown");
+				break;
 		}
 	}
-}
-function UserList()
-{
-	//this.x;
-	//this.y;
-	//this.columns;
-	//this.rows;
-	this.userfile=queue.user_file;
-	//this.userlist;
-	this.hidden=false;
-	//this.box;
+	this.PackageData=function(message)
+	{
+		var data=
+		{
+			"scope":scope,
+			"system":system.qwk_id,
+			"name":user.alias,
+			"message":message
+		};
+		var packet=
+		{
+			"scope":scope,
+			"room":this.room,
+			"type":"chat",
+			"data":data
+		};
+		this.ProcessData(data);
+		return packet;
+	}
+	this.ResetInput=function()
+	{
+		if(!this.fullscreen) this.ClearInputLine();
+		else 
+		{
+			console.left(this.buffer.length);
+			console.cleartoeol();
+		}
+		this.buffer="";
+		scope=normal_scope;
+	}
 	
-	this.Cycle=function()
-	{
-		this.UpdateList();
-	}
-	this.Hide=function()
-	{
-		this.hidden=true;
-	}
-	this.Unhide=function()
-	{
-		this.hidden=false;
-		this.Redraw();
-	}
-	this.Init=function(x,y,c,r,box)
-	{
-		this.x=x?x:1;
-		this.y=y?y:1;
-		this.columns=c?c:25;
-		this.rows=r?r:system.nodes*2;
-		this.box=box?new Window("USERS",this.x,this.y,this.columns,this.rows):false;
-		this.UpdateList();
-		this.Redraw();
-	}
-	this.Resize=function(columns,rows,x,y)
-	{
-		if(columns) this.columns+=columns;
-		if(rows) this.rows+=rows;
-		if(x) this.x=x;
-		if(y) this.y=y;
-		this.box=new Window("USERS",this.x,this.y,this.columns,this.rows);
-		this.Redraw();
-	}
-	this.Redraw=function()
-	{
-		if(this.hidden) return;
-		if(this.box) this.box.Draw();
-		this.DrawNodeList();
-	}
-	this.DrawNodeList=function()
-	{
-		var index=0;
-		for(n=0;n<system.node_list.length;n++) 
-		{
-			if(system.node_list[n].status==NODE_INUSE) 
-			{
-				var number=system.node_list[n].useron;
-				var u=new User(number);
-				console.gotoxy(this.x+1,this.y+(index*2)+1);
-				console.putmsg(PrintPadded("\1n\1mN" + (n+1) + "\1h: \1n\1m" + u.alias,this.columns));
-				console.gotoxy(this.x+1,this.y+(index*2)+2);
-				if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-				{
-					console.putmsg(PrintPadded("\1k\1h-" + xtrn_name(u.curxtrn),this.columns));
-				}
-				else
-				{
-					console.putmsg(PrintPadded("\1k\1h-" + NodeAction[system.node_list[n].action],this.columns));
-				}
-				index++;
-			} 
-		}
-		function xtrn_name(code)
-		{
-			if(this.xtrn_area===undefined)
-				return(code);
-
-			if(xtrn_area.prog!==undefined)
-				if(xtrn_area.prog[code]!==undefined)
-					return(xtrn_area.prog[code].name);
-			else {	/* old way */
-				for(s in xtrn_area.sec_list)
-					for(p in xtrn_area.sec_list[s].prog_list)
-						if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
-							return(xtrn_area.sec_list[s].prog_list[p].name);
-			}
-			return(code);
-		}
-	}
-	this.ChannelList=function()
-	{
-		this.userlist=this.GetChannelList();
-		var list=[];
-		list.push("\1n\1cActive Chat Rooms:");
-		list.push("");
-		for(r in this.userlist)
-		{
-			var room=this.userlist[r].room;
-			list.push("\1g\1h" + room + ":");
-			for(u in this.userlist[r].users)
-			{
-				var usr=this.userlist[r].users[u];
-				var name=usr.substr(usr.indexOf(".")+1);
-				list.push("\1k\1h-\1n\1g" + name);
-			}
-		}
-		return list;
-	}
-	this.GetChannelList=function()
-	{
-		var channels=[];
-		this.userfile.open('r',true);
-		var rooms=this.userfile.iniGetSections();
-		for(r in rooms)
-		{
-			var room=rooms[r];
-			var users=this.userfile.iniGetKeys(room);
-			if(users.length)
-			{
-				channels.push({'room':room,'users':users});
-			}
-			else
-			{
-				var permanent=this.userfile.iniGetValue(room,"@keep");
-				if(permanent)
-				{
-					channels.push({'room':"@" + room})
-				}
-			}
-		}
-		this.userfile.close();
-		return channels;
-	}
-	this.UpdateList=function()
-	{
-		if(!queue.UpdateUsers()) return;
-		this.DrawNodeList();
-	}
 }
 
 
