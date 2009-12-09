@@ -766,6 +766,9 @@ static void pop3_thread(void* arg)
 	else
 		strcpy(host_name,"<no name>");
 
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
+		lprintf(LOG_INFO,"%04d POP3 Hostname: %s", socket, host_name);
+
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf(LOG_NOTICE,"%04d !POP3 CLIENT IP ADDRESS BLOCKED: %s"
 			,socket, host_ip);
@@ -2298,6 +2301,9 @@ static void smtp_thread(void* arg)
 		SAFECOPY(host_name,host->h_name);
 	else
 		strcpy(host_name,"<no name>");
+
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
+		lprintf(LOG_INFO,"%04d SMTP Hostname: %s", socket, host_name);
 
 	active_clients++, update_clients();
 
