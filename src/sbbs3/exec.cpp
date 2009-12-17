@@ -610,6 +610,7 @@ long sbbs_t::js_execfile(const char *cmd)
 		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+		/* TODO: Handle quoted "one arg" syntax here? */
 		if(args!=NULL && argv!=NULL) {
 			while(*args) {
 				p=strchr(args,' ');
