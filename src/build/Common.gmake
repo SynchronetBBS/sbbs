@@ -162,7 +162,7 @@ ifdef BUILD_DEPENDS
  else
   CC			:=	gcc
  endif
- CCPRE			:=	$(shell echo $(CC) | sed -E 's/^.*\///')
+ CCPRE			:=	$(CC)
  CC				:=	$(SRC_ROOT)/build/mkdep -a
  CXX			:=	$(SRC_ROOT)/build/mkdep -a
  LD				:=	echo
@@ -175,7 +175,7 @@ else
  else
   CC			:=	gcc
  endif
- CCPRE			:=	$(shell echo $(CC) | sed -E 's/^.*\///')
+ CCPRE			:=	$(CC)
  CXX			?=	g++
  LD				?=	ld
  COMPILE_MSG	:= Compiling
