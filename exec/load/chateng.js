@@ -69,7 +69,8 @@ function ChatEngine(root,stream)
 {
 	const local_color=		"\1n\1g";
 	const remote_color=	"\1n\1c";
-	const notice_color=	"\1n\1r";
+	const alert_color=		"\1n\1r\1h";
+	const notice_color=	"\1n\1k\1h";
 	const input_color=		"\1n\1y";
 	const private_color=	"\1n\1y";
 	const global_color=	"\1n\1m";
@@ -80,16 +81,16 @@ function ChatEngine(root,stream)
 
 	this.stream=			stream?stream:new GameConnection("chat");
 	this.buffer=			"";
-	//this.room;	
-	//this.fullscreen;
-	//this.columns;
-	//this.rows;
-	//this.x;
-	//this.y;
-	//this.boxed;
-	//this.lined;
-	//this.input_line;
-	//this.scrollbar;
+	this.room;	
+	this.fullscreen;
+	this.columns;
+	this.rows;
+	this.x;
+	this.y;
+	this.boxed;
+	this.lined;
+	this.input_line;
+	this.scrollbar;
 	
 	
 	
@@ -105,11 +106,11 @@ function ChatEngine(root,stream)
 		this.boxed=boxed?boxed:					false;		//frame chat window? (boolean)
 		this.room=room?room:					"default";	//room name (for lobby style interface)
 		this.userlist=userlist?userlist:		false;		//separate user list window (boolean)
-		this.input_line=input_line?input_line:	false; 	//EX: inputline={'x':1,'y':1,'columns':40};
-		
+	
 		this.buffer="";
 		messages=[];
- 		if(this.input_line)
+		
+ 		if(input_line)
 		{
 			this.input_line={'x':this.x,'y':this.y+this.rows+1};
 			this.fullscreen=false;
@@ -119,9 +120,26 @@ function ChatEngine(root,stream)
 
 		this.DrawLines();
 		this.DrawBox();
-		this.Display();
-		log("chat room initialized: " + this.room + (this.fullscreen?" (fullscreen)":" (window)"));
-		
+		this.GetNotices();
+		this.EntryMessage();
+	}
+	this.EntryMessage=function()
+	{
+		var message=user.alias + " has entered the room";
+		var data=
+		{
+			"scope":scope,
+			"system":system.qwk_id,
+			"message":message
+		};
+		var packet=
+		{
+			"scope":scope,
+			"room":this.room,
+			"type":"chat",
+			"data":data
+		};
+		this.stream.send(packet);
 	}
 	this.Resize=function(x,y,columns,rows) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
 	{
@@ -151,18 +169,32 @@ function ChatEngine(root,stream)
 	{
 		this.ClearChatWindow();
 		var newarray=[];
-		for(line in array)
+		for(var l=0;l<array.length;l++)
 		{
-			var newlines=this.Concat(array[line]);
-			for(newline in newlines)
+			var newlines=this.Concat(array[l]);
+			for(var n=0;n<newlines.length;n++)
 			{
-				newarray.push(newlines[newline]);
+				newarray.push(newlines[n]);
 			}
 		}
 		for(item=0;item<newarray.length;item++)
 		{
 			console.gotoxy(this.x,this.y+item);
 			console.putmsg(newarray[item],P_SAVEATR);
+		}
+	}
+	this.Notice=function(msg)
+	{
+		this.Display(notice_color + msg);
+	}
+	this.GetNotices=function()
+	{
+		var msgs=stream.getnotices();
+		if(!msgs) return false;
+		stream.notices=[];
+		for(var m=0;m<msgs.length;m++)
+		{
+			this.Notice(msgs[m]);
 		}
 	}
 	this.Alert=function(msg) //DISPLAYS A MESSAGE ON THE INPUT LINE (OR CURRENT LINE IN FULLSCREEN MODE)
@@ -172,11 +204,7 @@ function ChatEngine(root,stream)
 			this.ClearInputLine();
 			console.gotoxy(this.input_line.x,this.input_line.y);
 		}
-		console.putmsg(msg);
-	}
-	this.AddNotice=function(msg)
-	{
-		//this.stream.notices.push(msg);
+		console.putmsg(alert_color + msg);
 	}
 	this.ClearInputLine=function()
 	{
@@ -346,14 +374,14 @@ function ChatEngine(root,stream)
 		}
 		if(!this.fullscreen && this.buffer.length<this.columns)	ClearLine(this.columns-this.buffer.length);
 	}
-	this.Display=function(text,color,user_)
+	this.Display=function(text,color,username)
 	{
-		var col=color?color:"\1n\1r";
+		var col=color?color:"";
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
 		if(this.fullscreen)	
 		{
 			if(!text) return;
-			if(user_) console.putmsg("\r" + col + user_ + ": " + text + "\r\n",P_SAVEATR);
+			if(username) console.putmsg("\r" + col + username + ": " + text + "\r\n",P_SAVEATR);
 			else console.putmsg("\r" + col + text + "\r\n",P_SAVEATR);
 			if(this.buffer.length) console.putmsg(local_color+this.buffer,P_SAVEATR);
 		}
@@ -363,9 +391,9 @@ function ChatEngine(root,stream)
 			var output=[];
 			if(text)
 			{
-				if(user_) 
+				if(username) 
 				{
-					messages.push(col + user_+ "\1h: \1n" + col + text);
+					messages.push(col + username+ "\1h: " + col + text);
 				}
 				else messages.push(col + text);
 			}
@@ -423,7 +451,8 @@ function ChatEngine(root,stream)
 		switch(data.scope)
 		{
 			case normal_scope:
-				this.Display(data.message,remote_color + intensity,data.name);
+				if(data.name) this.Display(data.message,remote_color + intensity,data.name);
+				else this.Display(data.message,alert_color);
 				break;
 			case priv_scope:
 				this.Display(data.message,private_color + intensity,data.name);
