@@ -74,7 +74,11 @@ function ChessLobby()
 		var columns=38;
 		var posx=42;
 		var posy=3;
-		chesschat.Init(room,true,columns,rows,posx,posy,false,false,"\1y");
+		if(!chesschat.Init(room,true,columns,rows,posx,posy,false,false,"\1y")) 
+		{
+			log("chat initialization failed");
+			exit(0);
+		}
 	}
 	function InitMenu()
 	{
@@ -242,6 +246,8 @@ function ChessLobby()
 	{
 		while(1)
 		{
+			//TODO: figure out why this isnt working?
+			//if(!Cycle()) exit(0);
 			Cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
 			if(k)
@@ -289,9 +295,9 @@ function ChessLobby()
 		GetNotices();
 		UpdateTables();
 		
-		if(!stream) return;
+		if(!stream) return -1;
 		var packet=stream.receive();
-		if(!packet) return;
+		if(!packet) return 0;
 		
 		if(packet.room==room || packet.scope==global_scope)
 		{
@@ -308,6 +314,7 @@ function ChessLobby()
 					break;
 			}
 		}
+		return 1;
 	}
 	function LobbyMenu()
 	{

@@ -122,6 +122,13 @@ function ChatEngine(root,stream)
 		this.DrawBox();
 		this.GetNotices();
 		this.EntryMessage();
+		
+		if(!this.stream) 
+		{
+			log("unable to connect to service...");
+			return false;
+		}
+		return true;
 	}
 	this.EntryMessage=function()
 	{
@@ -223,7 +230,10 @@ function ChatEngine(root,stream)
 	this.Send=function(message)
 	{
 		var packet=this.PackageData(message);
-		this.stream.send(packet);
+		if(!this.stream.send(packet))
+		{
+			this.Notice("message could not be sent..");
+		}
 		scope=normal_scope;
 		//this.StoreHistory(data.message);
 	}

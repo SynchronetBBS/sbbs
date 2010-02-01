@@ -250,17 +250,13 @@ function hub_connect()
 	hub=new Socket();
 	hub.bind(0,server.interface_ip_address);
 	//if a central hub address is provided, attempt connection
-	for(var t=0;t<connection_attempts;t++)
+	hub.connect(hub_address,hub_port,connection_timeout);
+	if(hub.is_connected) 
 	{
-		if(hub.connect(hub_address,hub_port,connection_timeout)) 
-		{
-			//send node identifier and bbs name so hub knows this is a distribution point
-			hub.send(remote + system.name + "\r\n");
-			
-			log("connection to " + hub_address + " successful");
-			return true;
-		}
-		mswait(50);
+		//send node identifier and bbs name so hub knows this is a distribution point
+		hub.send(remote + system.name + "\r\n");
+		log("connection to " + hub_address + " successful");
+		return true;
 	}
 	log("connection to " + hub_address + " failed with error " + hub.error);
 	return false;
@@ -361,6 +357,21 @@ function send_updates(socket)
 //TODO
 function whos_online()
 {
+	var list=[];
+	for(var rc=0;rc<count_remote_sessions;rc++)
+	{
+		var conn=remote_sessions[rc];
+		//hmmmmm
+	}
+	for(var g in local_sessions)
+	{
+		for(var lc=0;lc<local_sessions[g].length;lc++)
+		{
+			var conn=local_sessions[g][lc];
+			//todo?!
+		}
+	}
+	return list;
 }
 function find_user()
 {

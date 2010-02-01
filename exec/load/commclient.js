@@ -15,7 +15,7 @@ const hub_query=			"?";
 const priv_scope=			"%";
 const file_sync=			"@";
 const tries=				5;
-const connection_timeout=	2;
+const connection_timeout=	5;
 
 function GameConnection(id)
 {
@@ -40,14 +40,11 @@ function GameConnection(id)
 	this.init=function()
 	{
 		this.notices.push("Connecting to hub... ");
-		for(var t=0;t<tries;t++)
+		sock.connect(hub,port,connection_timeout);
+		if(sock.is_connected) 
 		{
-			sock.connect(hub,port,connection_timeout);
-			if(sock.is_connected) 
-			{
-				sock.send("&" + this.session_id + "\r\n");
-				return true;
-			}
+			sock.send("&" + this.session_id + "\r\n");
+			return true;
 		}
 		this.notices.push("Connection to " + hub + " failed...");
 		return false;
@@ -75,54 +72,73 @@ function GameConnection(id)
 	{
 		if(!sock.is_connected)
 		{
-			if(!this.init()) return -1;
+			if(!this.init()) return false;
 		}
 		if(!data.scope) 
 		{
 			log("scope undefined");
-			return -1;
+			return false;
 		}
 		var packet=data.scope + this.session_id + "" + data.toSource() + "\r\n";
 		sock.send(packet);
+		return true;
 	}
 	this.recvfile=function(remote_file)
 	{
+		if(!sock.is_connected)
+		{
+			if(!this.init()) return false;
+		}
 		var filesock=new Socket();
 		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
-
 		if(filesock.is_connected) 
 		{
 			filesock.send(file_sync + this.session_id + "#send" + file_getname(remote_file) + "\r\n");
-			while(filesock.is_connected)
+			var count=0;
+			while(filesock.is_connected && count<50)
 			{
-				var data=filesock.recvline(1024,connection_timeout);
-				data=parse_query(data);
-				var response=data[1];
-				var file=data[2];
-				var date=data[3];
-				
-				switch(response)
+				var data=false;
+				if(filesock.data_waiting) data=parse_query(filesock.recvline(1024,connection_timeout));
+				if(data)
 				{
-					case "#askrecv":
-						receive_file(filesock,this.session_id,file,date);
-						break;
-					case "#abort":
-						filesock.close();
-						return false;
-					case "#endquery":
-						filesock.close();
-						return true;
-					default:
-						filesock.close();
-						log("unknown response: " + response);
-						return false;
+					var response=data[1];
+					var file=data[2];
+					var date=data[3];
+					
+					switch(response)
+					{
+						case "#askrecv":
+							receive_file(filesock,this.session_id,file,date);
+							break;
+						case  "#abort":
+							filesock.close();
+							return false;
+						case "#endquery":
+							filesock.close();
+							return true;
+						default:
+							filesock.close();
+							log("unknown response: " + response);
+							return false;
+					}
+					count=0;
+				}
+				else
+				{
+					count++;
+					mswait(25);
 				}
 			}
 		}
 	}
 	this.sendfile=function(local_file)
 	{
+		if(!sock.is_connected)
+		{
+			if(!this.init()) return false;
+		}
+		
 		var filesock=new Socket();
 		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
@@ -160,6 +176,7 @@ function GameConnection(id)
 		}
 		filesock.send("#endquery\r\n");
 		filesock.close();
+		return 1;
 	}
 	this.close=function()
 	{
@@ -172,12 +189,11 @@ function GameConnection(id)
 		filename=working_dir+filename;
 		if(file_date(filename)==filedate)
 		{
-			log("skipping file");
+			log("skipping file: " + file_getname(filename));
 			socket.send(file_sync + session_id + "#skip\r\n");
 			return false;
 		}
 		
-		log("confirming transfer");
 		socket.send(file_sync + session_id + "#ok\r\n");
 		var file=new File(filename + ".tmp");
 		file.open('w',false);
@@ -208,6 +224,7 @@ function GameConnection(id)
 						break;
 					
 				}
+				count=0;
 			}
 			else
 			{
@@ -228,7 +245,7 @@ function GameConnection(id)
 
 	if(!sock.is_connected)
 	{
-		if(!this.init()) return -1;
+		if(!this.init()) return false;
 	}
 }
 

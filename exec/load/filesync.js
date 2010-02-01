@@ -49,28 +49,41 @@ function sync_remote(session_id,dir,filemask)
 		var filedate=file_date(files[f]);
 		
 		sock.send("@" + session_id + "#askrecv" + filename + "" + filedate + "\r\n");
-		var data=sock.recvline(1024,connection_timeout);
-		data=parse_query(data);
-		var response=data[1];
-		
-		switch(response)
+		var count=0;
+		while(count<50)
 		{
-			case "#ok":
-				log("sending file: " + filename);
-				sock.sendfile(files[f]);
-				sock.send("#eof\r\n");
-				log("file sent: " + filename);
+			var data=false;
+			if(sock.data_waiting) data=parse_query(sock.recvline(1024,connection_timeout));
+			if(data)
+			{
+				var response=data[1];
+				switch(response)
+				{
+					case "#ok":
+						log("sending file: " + filename);
+						sock.sendfile(files[f]);
+						sock.send("#eof\r\n");
+						log("file sent: " + filename);
+						break;
+					case "#skip":
+						log("skipping file: " + filename);
+						break;
+					case "#abort":
+						log("aborting query");
+						return false;
+					default:
+						log("unknown response: " + response);
+						sock.send("#abort\r\n");
+						return false;
+				}
+				count=0;
 				break;
-			case "#skip":
-				log("skipping file");
-				break;
-			case "#abort":
-				log("aborting query");
-				return false;
-			default:
-				log("unknown response: " + response);
-				sock.send("#abort\r\n");
-				return false;
+			}
+			else
+			{
+				count++;
+				mswait(50);
+			}
 		}
 	}
 	sock.send("@" + session_id + "#endquery\r\n");
@@ -82,30 +95,41 @@ function sync_local(session_id,dir,filemask)
 	log("retrieving files: " + filemask);
 	if(!sock.is_connected) log("connection interrupted");
 	sock.send("@" + session_id + "#send" + file_getname(filemask) + "\r\n");
-	while(sock.is_connected)
+	
+	var count=0;
+	while(count<50)
 	{
-		var data=sock.recvline(1024,connection_timeout);
-		data=parse_query(data);
-		var response=data[1];
-		var file=data[2];
-		var date=data[3];
-		
-		switch(response)
+		var data=false;
+		if(sock.data_waiting) data=parse_query(sock.recvline(1024,connection_timeout));
+		if(data)
 		{
-			case "#askrecv":
-				receive_file(dir,file,date);
-				break;
-			case "#abort":
-				return false;
-			case "#endquery":
-				return true;
-			default:
-				log("unknown response: " + response);
-				return false;
+			var response=data[1];
+			var file=data[2];
+			var date=data[3];
+			
+			switch(response)
+			{
+				case "#askrecv":
+					receive_file(dir,file,date);
+					break;
+				case "#abort":
+					return false;
+				case "#endquery":
+					return true;
+				default:
+					log("unknown response: " + response);
+					return false;
+			}
+			count=0;
+			break;
+		}
+		else
+		{
+			count++;
+			mswait(25);
 		}
 	}
 	sock.close();
-	log("complete");
 }
 function receive_file(session_id,dir,filename,filedate)
 {
@@ -146,8 +170,8 @@ function receive_file(session_id,dir,filename,filedate)
 				default:
 					file.writeln(data);
 					break;
-				
 			}
+			count=0;
 		}
 		else 
 		{
