@@ -7,7 +7,6 @@
 load("funclib.js");
 load("sbbsdefs.js");
 load("sockdefs.js");
-//load("commsync.js");
 	
 const normal_scope=		"#";
 const global_scope=		"!";
@@ -22,7 +21,7 @@ function GameConnection(id)
 	this.session_id=			(id?id:"default");
 	this.notices=				[];
 
-	var comminit=new File(system.ctrl_dir + "commsync.ini");
+	var comminit=new File(system.ctrl_dir + "filesync.ini");
 	comminit.open('r');
 	var module=comminit.iniGetObject(this.session_id);
 	comminit.close();

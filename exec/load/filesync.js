@@ -10,7 +10,7 @@ function comm_sync()
 	var filedate=data[3];
 	
 	log("synchronizing files: " + filemask);
-	var comminit=new File(system.ctrl_dir + "commsync.ini");
+	var comminit=new File(system.ctrl_dir + "filesync.ini");
 	comminit.open('r');
 	var module=comminit.iniGetObject(session_id);
 	comminit.close();
