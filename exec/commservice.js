@@ -11,13 +11,12 @@
 	
 	Add to "/sbbs/exec/load/" directory:
 		commclient.js
-		chat.js
+		chateng.js
 		funclib.js
-		commsync.js
+		filesync.js
 	
 	Add to "/sbbs/ctrl" directory:
-		commservice.ini
-		commsync.ini
+		filesync.ini
 	
 	Add to "/sbbs/ctrl/services.ini" file:
 
@@ -25,14 +24,14 @@
 	Port=10088
 	MaxClients=20
 	Options=STATIC
-	Command=commservice.js MDJ.ATH.CX 10088
+	Command=commservice.js thebrokenbubble.com 10088
 	
 */
 
 //Data type constants
 const normal=			"#";
 const global=			"!";
-const priv=			"~";
+const priv=				"~";
 const query=			"?";
 
 //Connection type constants
