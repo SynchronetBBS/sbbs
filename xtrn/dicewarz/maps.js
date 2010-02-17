@@ -14,7 +14,6 @@ function	NewGame(minp,maxp,n)
 	
 	this.addPlayer=function(userNumber,vote)
 	{
-		GameLog("adding player: " + userNumber + " vote: " + vote);
 		if(userNumber) this.users[userNumber]=this.players.length;
 		this.players.push(new Player(userNumber,vote));
 	}
@@ -26,18 +25,12 @@ function	NewGame(minp,maxp,n)
 			if(this.players[v].user>0 && this.players[v].vote==1) 
 			{
 				trueVotes++;
-				GameLog("player " + v + " voted to start");
 			}
 		}
-		GameLog("votes to start: " + trueVotes);
-		GameLog("human players: " + this.countHumanPlayers());
-		GameLog("total players: " + this.countPlayers());
 		if(trueVotes==this.countHumanPlayers()) 
 		{
-			GameLog("true votes meets number of humans");
 			if(this.countPlayers()>=this.minPlayers) 
 			{	
-				GameLog("number of players meets minimum");
 				return true;
 			}
 		}
@@ -115,13 +108,11 @@ function 	Map(c,r,p,gn)
 		{
 			if(this.CountActiveHumans<2) 
 			{
-				GameLog("only one human player active, no notification sent");
 				return;
 			}
 			if(nextTurnPlayer>0 && nextTurnPlayer!=user.number) 
 			{
 				DeliverMessage(nextTurnPlayer,this.gameNumber);
-				GameLog("next player notified of turn: " + system.username(nextTurnPlayer));
 			}
 			else
 			{
@@ -132,13 +123,11 @@ function 	Map(c,r,p,gn)
 					nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
 					if(nextTurnPlayer==this.players[this.turnOrder[this.nextTurn]].user) 
 					{
-						GameLog("all other human players eliminated, no other players notified");
 						break;
 					}
 					else if(nextTurnPlayer>0) 
 					{
 						DeliverMessage(nextTurnPlayer,this.gameNumber);
-						GameLog("skipped computer notices, next human user notified of turn: " + system.username(nextTurnPlayer));
 						break;
 					}
 				}
@@ -152,19 +141,13 @@ function 	Map(c,r,p,gn)
 	}
 	this.CheckElimination=		function()
 	{
-		GameLog("checking game elimination data");
 		var numEliminated=this.eliminated.length;
 		var humans=this.CountActiveHumans();
 		if(numEliminated==(this.maxPlayers-1) || humans==0)
 		{
 			this.winner=this.lastEliminator;
-			if(this.lastEliminator==(-1))
+			if(this.lastEliminator>=0)
 			{	
-				GameLog("game over - computer winner");
-			}
-			else
-			{	
-				GameLog("game over - player winner");
 				this.AssignPoints();
 			}
 			this.status=0;
@@ -196,13 +179,11 @@ function 	Map(c,r,p,gn)
 		if(this.singlePlayer) 
 		{
 			scores[this.winner].wins+=1;
-			GameLog("adding win to user " + this.winner);
 		}
 		else 
 		{
 			var points=this.players.length<5?1:2;
 			scores[this.winner].score=parseInt(scores[this.winner].score,10) + points;
-			GameLog("giving " + points + " points to user " + this.winner);
 		}
 		games.StoreRankings();
 	}
@@ -218,7 +199,6 @@ function 	Map(c,r,p,gn)
 			if(this.singlePlayer)
 			{
 				scores[dead.user].losses+=1;
-				GameLog(system.username(dead.user) + " lost single player game " + this.gameNumber);
 				this.status=0;
 			}
 			else
@@ -228,11 +208,9 @@ function 	Map(c,r,p,gn)
 				pts=points[pointBuffer+(this.eliminated.length-offset)];
 				scores[dead.user].score=parseInt(scores[dead.user].score,10) + pts;
 				if(scores[dead.user].score<minScore) scores[dead.user].score=parseInt(minScore,10);
-				GameLog("giving " + pts + " points to user " + system.username(dead.user));
 			}
 			games.StoreRankings();
 		}
-		GameLog("player " + playerNumber + " eliminated");
 	}
 	this.SetEliminated=			function()
 	{										//RUNS AT STARTUP, STORING GAME ELIMINATION DATA UPON LOADING EACH GAME
@@ -250,7 +228,6 @@ function 	Map(c,r,p,gn)
 	}
 	this.GetNextTurn=			function()
 	{
-		GameLog("assigning next turn in turn order");
 		if(this.nextTurn==this.maxPlayers-1) this.nextTurn=0;
 		else this.nextTurn++;
 		nextPlayer=this.turnOrder[this.nextTurn];
@@ -532,7 +509,6 @@ function 	Map(c,r,p,gn)
 		toPlace=numDice;
 		fulldice=false;
 		placed=[];
-		GameLog("Player " + (playerNumber+1) + " Placing " + numDice + " reinforcements");
 		for(sd=0;sd<numDice;sd++)
 		{
 			rand=random(this.players[playerNumber].territories.length);
@@ -540,12 +516,10 @@ function 	Map(c,r,p,gn)
 
 			if(this.players[playerNumber].totalDice==(this.players[playerNumber].territories.length*this.maxDice)) 	//IF ALL OF THIS PLAYER'S TERRITORIES HAVE THE MAXIMUM
 			{ 									  						//AMOUNT OF DICE  PUSH DICE INTO PLAYER'S RESERVE
-				GameLog("all territories full");
 				fulldice=true;
 				reserveCap=(30-this.players[playerNumber].reserve);
 				if(reserveCap>0)
 				{
-					GameLog("reserve: " + this.players[playerNumber].reserve + " reserve cap: " + reserveCap + " adding: " + toPlace);
 					if(reserveCap>=toPlace) this.players[playerNumber].reserve+=toPlace;
 					else this.players[playerNumber].reserve+=reserveCap;
 				}
@@ -566,10 +540,8 @@ function 	Map(c,r,p,gn)
 		}
 		if(this.players[playerNumber].reserve>0)
 		{
-			GameLog("placing reserves");
 			if(this.players[playerNumber].totalDice==(this.players[playerNumber].territories.length*this.maxDice)) 	//IF ALL OF THIS PLAYER'S TERRITORIES HAVE THE MAXIMUM
 			{ 									  						//AMOUNT OF DICE  PUSH DICE INTO PLAYER'S RESERVE
-				GameLog("all territories full");
 				fulldice=true;
 			}
 			else
@@ -586,7 +558,6 @@ function 	Map(c,r,p,gn)
 						this.players[playerNumber].reserve--;
 						if(this.players[playerNumber].totalDice==(this.players[playerNumber].territories.length*this.maxDice)) 	//IF ALL OF THIS PLAYER'S TERRITORIES HAVE THE MAXIMUM
 						{
-							GameLog("all territories full");
 							return placed;
 						}
 					}
@@ -614,13 +585,9 @@ function 	Map(c,r,p,gn)
 	this.Init=					function()
 	{										//InitIALIZE GAME
 		this.SetMap();
-		GameLog("map size set");
 		this.GeneratePlayers();
-		GameLog("players Generated");
 		this.GenerateMap(this.columns, this.rows);
-		GameLog("map Generated");
 		this.SetGrid();
-		GameLog("grid set");
 	}
 									//END METHODS 
 }

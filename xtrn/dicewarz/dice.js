@@ -13,7 +13,6 @@
 
 	load("sbbsdefs.js");
 	load("graphic.js");
-	load("logging.js");
 	var game_dir;
 	try { barfitty.barf(barf); } catch(e) { game_dir = e.fileName; }
 	game_dir = game_dir.replace(/[^\/\\]*$/,'');
@@ -37,7 +36,6 @@
 	var 	minPlayers=		3;
 	var 	maxPlayers=		7;
 	var 	maxDice=		8;
-	var 	gamelog=		false;
 	const 	root=			"game";
 	const	scorefile=		"rankings";
 	const	halloffame=		"dicehof";
@@ -57,7 +55,7 @@
 
 	const	daySeconds=		86400;
 	const 	startRow=		4;
-	const  startColumn=	3;
+	const	startColumn=	3;
 	const	menuRow=		1;
 	const	menuColumn=		50;
 	const 	columns=		9;
@@ -438,12 +436,10 @@ function 	ProcessSelection(gameNumber)
 	
 	if(g.status>=0)
 	{
-		GameLog("Loading game: " + gameNumber);
 		PlayGame(gameNumber);
 	}
 	else 
 	{
-		GameLog("Viewing game info: " + gameNumber);
 		ViewGameInfo(gameNumber);
 		if(g.users[user.number]>=0)
 		{
@@ -626,7 +622,6 @@ function 	CreateNewGame()
 		ClearArea(19,30,5);
 		var gameNumber=GetNextGameNumber();
 		var gnum=gameNumber;
-		GameLog("creating new game: " + gnum);
 		if(gameNumber<10) gnum="0" + gnum;
 		var gamefile=root + gnum;
 		Lock(gamefile);
@@ -766,7 +761,6 @@ function 	GetVote()
 	{
 		vote = 1;
 	}
-	GameLog("got user vote: " + vote);
 	return vote;
 }
 function 	GetUserName(playerData,playerNumber)
@@ -904,7 +898,6 @@ function	Battle(attackFrom,attackTo,gameNumber)
 	ShowSelected(attackFrom,"\1n\1r\1h");
 	ShowSelected(attackTo,"\1n\1r\1h");
 	var totals=RollDice(attackFrom.dice,attackTo.dice);
-	GameLog("attackingfrom: " + attackFrom.dice + " attackingTo: " + attackTo.dice);
 	
 	var defender=attackTo.player;
 	var attacker=attackFrom.player;
@@ -926,14 +919,12 @@ function	Battle(attackFrom,attackTo,gameNumber)
 			g.EliminatePlayer(defender,killer);
 			if(killer>=0)
 			{
-				GameLog("player scored a kill: " + system.username(killer));
 				scores[killer].kills++;
 				scores[killer].points++;
 				games.StoreRankings();
 			}
 			if(killed>=0)
 			{
-				GameLog("player has been killed: " + system.username(killed));
 				var kname= (killer<0?g.players[attacker].AI.name:system.username(killer));
 				DeliverKillMessage(kname,killed,gameNumber);
 			} 
@@ -949,7 +940,6 @@ function	Battle(attackFrom,attackTo,gameNumber)
 }
 function	EndTurn(gameNumber,pl)
 {
-	GameLog("###ENDING TURN");
 	var g=games.gameData[gameNumber];
 	var placed=g.Reinforce(pl);
 	ClearArea(16,menuColumn,9);
@@ -963,19 +953,16 @@ function	EndTurn(gameNumber,pl)
 }
 function	Forfeit(gameNumber,playerNumber)
 {
-	GameLog("Player " + playerNumber + " forfeitting game");
 	var g=games.gameData[gameNumber];
 	if(g.singlePlayer) 
 	{
 		scores[user.number].losses+=1;
-		GameLog("assigning loss to user " + user.alias);
 		file_remove(g.fileName);
 	}
 	else 
 	{
 		var activePlayers=g.countActivePlayers();
 		scores[user.number].score+=points[7-activePlayers.length];
-		GameLog("giving " + points[7-activePlayers.length] + " points to user " + user.alias);
 		if(activePlayers.length==2) 
 		{
 			g.status=0;
@@ -986,7 +973,6 @@ function	Forfeit(gameNumber,playerNumber)
 				{
 					g.winner=g.players[ply].user;
 					scores[g.players[ply].user].points+=2;
-					GameLog("giving " + pts + " points to user " + system.username(g.players[ply].user));
 					break;
 				}
 			}
@@ -1043,7 +1029,6 @@ function	PlayGame(gameNumber)
 				name="Player " + (parseInt(turn,10)+1);
 			}
 			////////////////////////////////////
-				GameLog("####COMPUTER PLAYER TAKING TURN");
 				ClearLine(1,48);
 				console.gotoxy(2,1);
 				console.putmsg("\1r\1hPlease wait. " + name + " taking turn.");
@@ -1075,7 +1060,6 @@ function	PlayGame(gameNumber)
 			else if(turn==currentPlayer) 
 			{
 				pMenu.enable("T");
-				GameLog("it is the current user's turn");
 			}
 			else  
 			{
@@ -1106,7 +1090,6 @@ function	PlayGame(gameNumber)
 				pMenu.enable(["F"]);
 				pMenu.disable(["Q","T"]);
 				g.takingTurn=true;
-				GameLog("######TAKING TURN");
 				if(g.CanAttack(currentPlayer,-1))
 				{
 					pMenu.enable("A");
@@ -1122,12 +1105,8 @@ function	PlayGame(gameNumber)
 				break; 
 			case "A":
 				if(Attack(gameNumber,currentPlayer));
-				else 
-				{
-					GameLog("player cancelled attack");
-					continue; 
-				}
-				g.DisplayPlayers();
+				else continue;
+ 				g.DisplayPlayers();
 				break;
 			case "E":
 				pMenu.disable(["A","E","F"]);
@@ -1193,7 +1172,6 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 	targets.sort(AISortFunctions[computerPlayer.AI.sort]);
 	for(attackNum=0;attackNum<attackQuantity;attackNum++)
 	{
-		GameLog("computer " + (playerNumber+1) + " attacking: " + targets[attackNum].target + " from: " + targets[attackNum].base);
 		attackFrom=g.grid[targets[attackNum].base];
 		attackTo=g.grid[targets[attackNum].target];
 		if(attackFrom.dice>1 && attackTo.player!=playerNumber) {
@@ -1223,20 +1201,13 @@ function	LoadSettings()
 	if(!file_exists(sfile.name)) return;
 	
 	sfile.open('r',true);
-	pointsToWin=	sfile.iniGetValue(null,"pointstowin");
-	minScore=		sfile.iniGetValue(null,"minscore");
-	maxGames=		sfile.iniGetValue(null,"maxgames");
-	maxPerPlayer=	sfile.iniGetValue(null,"maxperplayer");
-	minPlayers=		sfile.iniGetValue(null,"minplayers");
-	maxPlayers=		sfile.iniGetValue(null,"maxplayers");
-	maxDice=		sfile.iniGetValue(null,"maxdice");
-	logEnabled=		sfile.iniGetValue(null,"enablelogging");
-	
-	if(logEnabled)
-	{
-		if(!file_isdir(game_dir+"logs")) mkdir(game_dir+"logs");
-		gamelog=new Logger(game_dir + "logs/",root);
-	}
+	pointsToWin=	parseInt(sfile.iniGetValue(null,"pointstowin"),10);
+	minScore=		parseInt(sfile.iniGetValue(null,"minscore"),10);
+	maxGames=		parseInt(sfile.iniGetValue(null,"maxgames"),10);
+	maxPerPlayer=	parseInt(sfile.iniGetValue(null,"maxperplayer"),10);
+	minPlayers=		parseInt(sfile.iniGetValue(null,"minplayers"),10);
+	maxPlayers=		parseInt(sfile.iniGetValue(null,"maxplayers"),10);
+	maxDice=		parseInt(sfile.iniGetValue(null,"maxdice"),10);
 	sfile.close();
 }
 function	GameStatusInfo()
@@ -1259,7 +1230,6 @@ function	GameStatusInfo()
 		var sfile=new File(sfilename);
 		if(!Locked(scorefile,true))
 		{
-			GameLog("storing rankings in file: " + sfilename);
 			Lock(scorefile);
 			sfile.open((file_exists(sfilename)?'r+':'w+'), true);
 			for(s in scores)
@@ -1280,7 +1250,6 @@ function	GameStatusInfo()
 		if(file_exists(sfilename))
 		{
 			var lfile=new File(sfilename);
-			GameLog("loading scores from file: " + sfilename);
 			lfile.open('r',true);
 			var plyrs=lfile.iniGetAllObjects("user");
 			for(p in plyrs)
@@ -1298,7 +1267,6 @@ function	GameStatusInfo()
 			}
 			lfile.close();
 		}
-		else GameLog("score file: " + sfilename + " does not exist");
 	}
 	this.WinRound=function(player)
 	{	
@@ -1361,7 +1329,6 @@ function	GameStatusInfo()
 					}
 				}
 			}
-			GameLog("game " + gameNumber + " loaded");
 			gfile.close();
 			return lgame;
 		}
@@ -1408,7 +1375,7 @@ function	GameStatusInfo()
 				humans++;
 				if(!scores[u])
 				{
-					scores[u]={'score':0,'wins':0,'losses':0};
+					scores[u]={'score':0,'kills':0,'wins':0,'losses':0};
 				}
 			}
 			else {
@@ -1429,7 +1396,6 @@ function	GameStatusInfo()
 		if(humans<2) 
 		{
 			lgame.singlePlayer=true;
-			GameLog("single player game");
 		}
 		for(sec=0;sec<ms;sec++)
 		{
@@ -1445,14 +1411,12 @@ function	GameStatusInfo()
 		lgame.SetGrid();
 		lgame.SetEliminated();
 		lgame.CountDiceAll();
-		GameLog("game " + gameNumber + " loaded");
 		gfile.close();
 		return lgame;
 	}
 	this.StoreGame=function(gameNumber)
 	{
 		g=this.gameData[gameNumber];
-		GameLog("Storing game: " + gameNumber);
 		var gamefullname=GetFileName(gameNumber);
 		var gfile=new File(gamefullname);
 		gfile.open('w+',false);
@@ -1501,7 +1465,6 @@ function	GameStatusInfo()
 	}	
 	this.UpdateGames=function()
 	{
-		GameLog("updating game data");
 		for(gd in this.gameData)
 		{
 			var fileName=this.gameData[gd].fileName;
@@ -1511,13 +1474,11 @@ function	GameStatusInfo()
 			{
 				if(lastModified>this.gameData[gd].lastModified) 
 				{
-					GameLog("game " + gd + " needs updating");
 					this.gameData[gd]=this.LoadGame(fileName,gd,lastModified);
 				}
 			}
 			else
 			{
-				GameLog("gamefile " + fileName + " deleted, removing data");
 				delete this.gameData[gd];
 			}
 		}
@@ -1542,7 +1503,6 @@ function	GameStatusInfo()
 	}
 	this.FilterData=function()
 	{
-		GameLog("organizing game data");
 		this.singleGames=[]; 
 		this.inProgress=[];
 		this.notFull=[];
@@ -1597,7 +1557,6 @@ function	GameStatusInfo()
 	this.LoadGames=function()
 	{	
 		var open_list=directory(game_dir + root + "*.dat"); 	
-		GameLog("today's date: " + time());
 		if(open_list.length)
 		{
 			for(lg in open_list)
@@ -1606,7 +1565,6 @@ function	GameStatusInfo()
 				var lastModified=file_date(open_list[lg]);
 				var daysOld=(time()-lastModified)/daySeconds;
 				var gameNumber=parseInt(temp_fname.substring(4,temp_fname.indexOf(".")),10);
-				GameLog("game " + gameNumber + " last modified: " + daysOld + " ago");
 				var lgame=this.LoadGame(open_list[lg],gameNumber,lastModified);
 				this.gameData[gameNumber]=lgame;
 			}
@@ -1621,7 +1579,6 @@ function	GameStatusInfo()
 			daysOld=(time()-this.gameData[oldgame].lastModified)/daySeconds;
 			if(this.gameData[oldgame].singlePlayer===true && daysOld>=10)
 			{
-				GameLog("removing old singleplayer game: " + this.gameData[oldgame].gameNumber);
 				file_remove(this.gameData[oldgame].fileName);
 				delete this.gameData[oldgame];
 			}
@@ -1630,12 +1587,10 @@ function	GameStatusInfo()
 		{
 			gm=this.completed[completed];
 			daysOld=(time()-this.gameData[gm].lastModified)/daySeconds;
-			GameLog("game was completed " + daysOld + " days ago");
 			if(this.gameData[gm].singlePlayer===true)
 			{
 				if(daysOld>=1) 
 				{
-					GameLog("removing old singleplayer game: " + this.gameData[gm].gameNumber);
 					file_remove(this.gameData[gm].fileName);
 					delete this.gameData[gm];
 				}
@@ -1644,7 +1599,6 @@ function	GameStatusInfo()
 			{
 				if(daysOld>=4) 
 				{
-					GameLog("removing old game: " + gm.gameNumber);
 					file_remove(this.gameData[gm].fileName);
 					delete this.gameData[gm];
 				}
@@ -1657,11 +1611,9 @@ function	GameStatusInfo()
 		{
 			gm=this.gameData[this.inProgress[inp]];
 			if(gm) daysOld=(time()-gm.lastModified)/daySeconds;
-			GameLog("game: " + this.inProgress[inp] + " last turn was: " + daysOld + " ago");
 			if(daysOld>=4 && !gm.singlePlayer) 
 			{
 				nextTurnPlayer=gm.turnOrder[gm.nextTurn];
-				GameLog("skipping player: " + system.username(gm.players[nextTurnPlayer].user) + " in game " + this.inProgress[inp]);
 				gm.Reinforce(nextTurnPlayer);
 				this.StoreGame(this.inProgress[inp]);
 			}
@@ -1674,10 +1626,6 @@ function	GameStatusInfo()
 		this.StoreRankings();
 		this.SkipPlayers();
 	}
-}
-function	GameLog(data)
-{
-	if(gamelog) gamelog.Log(data);
 }
 
 	LoadSettings();

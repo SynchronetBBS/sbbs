@@ -36,7 +36,6 @@ function 	Menu(title,x,y,color,hkey_color)
 			console.cleartoeol();
 
 		}
-		WipeCursor("right");
 	}
 	this.disable=function(items)
 	{
@@ -78,7 +77,6 @@ function 	Menu(title,x,y,color,hkey_color)
 		{
 			if(this.items[i].enabled) console.putmsg(this.items[i].text + " ");
 		}
-		WipeCursor("left");
 	}
 }
 function 	MenuItem(item,hotkey,color,hkey_color)
