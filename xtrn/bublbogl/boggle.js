@@ -42,6 +42,7 @@ function Boggle()
 	var calendar;
 	var month;
 	var current;
+	var today;
 	var lobby;
 	var players;
 	var player;
@@ -60,6 +61,7 @@ function Boggle()
 		month=new MonthData();
 		lobby=new Lobby(1,1);
 		current=calendar.selected;
+		today=calendar.selected;
 	}
 	function SplashStart()
 	{
@@ -92,7 +94,7 @@ function Boggle()
 		var newdate=console.getnum(calendar.daysinmonth);
 		if(newdate>0) 
 		{
-			if(newdate>current+max_future)
+			if(newdate>today+max_future)
 			{
 				ShowMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
 				return false;
@@ -112,7 +114,7 @@ function Boggle()
 		ShowMessage("\1r\1hUse Arrow keys to change date and [\1n\1rEnter\1h] to select");
 		if(calendar.SelectDay(k)) 
 		{
-			if(calendar.selected>current+max_future)
+			if(calendar.selected>today+max_future)
 			{
 				ShowMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
 				calendar.drawDay(calendar.selected);
