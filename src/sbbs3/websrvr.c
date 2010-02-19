@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -986,23 +986,18 @@ static const char* get_mime_type(char *ext)
 	return(unknown_mime_type);
 }
 
-static BOOL get_cgi_handler(char* cmdline, size_t maxlen)
+static char* get_cgi_handler(const char* fname)
 {
-	char	fname[MAX_PATH+1];
 	char*	ext;
 	size_t	i;
 
-	if(cgi_handlers==NULL || (ext=getfext(cmdline))==NULL)
-		return(FALSE);
-
+	if(cgi_handlers==NULL || (ext=getfext(fname))==NULL)
+		return(NULL);
 	for(i=0;cgi_handlers[i]!=NULL;i++) {
-		if(stricmp(cgi_handlers[i]->name, ext+1)==0) {
-			SAFECOPY(fname,cmdline);
-			safe_snprintf(cmdline,maxlen,"%s %s",cgi_handlers[i]->value,fname);
-			return(TRUE);
-		}
+		if(stricmp(cgi_handlers[i]->name, ext+1)==0)
+			return(cgi_handlers[i]->value);
 	}
-	return(FALSE);
+	return(NULL);
 }
 
 static BOOL get_xjs_handler(char* ext, http_session_t* session)
@@ -3273,13 +3268,14 @@ static BOOL exec_cgi(http_session_t *session)
 		{
 			*p=0;
 			chdir(cgipath);
+			SAFECOPY(cgipath,cmdline);
 		}
 
 		/* Execute command */
-		if(get_cgi_handler(cgipath, sizeof(cgipath))) {
+		if((p=get_cgi_handler(cmdline))!=NULL) {
 			char* shell=os_cmdshell();
-			lprintf(LOG_INFO,"%04d Using handler %s to execute %s",session->socket,cgipath,cmdline);
-			execle(shell,shell,"-c",cgipath,NULL,env_list);
+			lprintf(LOG_INFO,"%04d Using handler %s to execute %s",session->socket,p,cmdline);
+			execle(shell,shell,"-c",p,cmdline,NULL,env_list);
 		}
 		else {
 			execle(cmdline,cmdline,NULL,env_list);
@@ -3584,9 +3580,7 @@ static BOOL exec_cgi(http_session_t *session)
 	startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
     startup_info.wShowWindow=SW_HIDE;
 
-	SAFECOPY(cmdline,session->req.physical_path);
-
-	SAFECOPY(startup_dir,cmdline);
+	SAFECOPY(startup_dir,session->req.physical_path);
 	if((p=strrchr(startup_dir,'/'))!=NULL || (p=strrchr(startup_dir,'\\'))!=NULL)
 		*p=0;
 	else
@@ -3594,7 +3588,12 @@ static BOOL exec_cgi(http_session_t *session)
 
 	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
 
-	get_cgi_handler(cmdline, sizeof(cmdline));
+	if((p=get_cgi_handler(session->req.physical_path))==NULL) {
+		lprintf(LOG_ERR,"%04d !CGI handler not found for %s"
+			,session->socket,session->req.physical_path);
+		return(FALSE);
+	}
+	SAFEPRINTF2(cmdline,"%s %s",p,session->req.physical_path);
 
 	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
 
