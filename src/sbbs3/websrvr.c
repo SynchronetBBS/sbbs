@@ -222,7 +222,7 @@ typedef struct  {
 	BOOL	sent_headers;
 	BOOL	prev_write;
 
-	/* webconfig.ini overrides */
+	/* webctrl.ini overrides */
 	char	*error_dir;
 	char	*cgi_dir;
 	char	*auth_list;
@@ -2928,7 +2928,7 @@ static BOOL check_request(http_session_t * session)
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
-	/* Walk up from root_dir checking for access.ars and webconfig.ini */
+	/* Walk up from root_dir checking for access.ars and webctrl.ini */
 	SAFECOPY(curdir,path);
 	last_slash=curdir+strlen(root_dir)-1;
 	/* Loop while there's more /s in path*/
@@ -3268,7 +3268,6 @@ static BOOL exec_cgi(http_session_t *session)
 		{
 			*p=0;
 			chdir(cgipath);
-			SAFECOPY(cgipath,cmdline);
 		}
 
 		/* Execute command */
