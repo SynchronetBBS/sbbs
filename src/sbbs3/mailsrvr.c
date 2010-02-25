@@ -2320,7 +2320,7 @@ static void smtp_thread(void* arg)
 		if(trashcan(&scfg,host_ip,"ip") || findstr(host_ip,spam_block)) {
 			lprintf(LOG_NOTICE,"%04d !SMTP CLIENT IP ADDRESS BLOCKED: %s (%u total)"
 				,socket, host_ip, ++stats.sessions_refused);
-			sockprintf(socket,"550 Access denied.");
+			sockprintf(socket,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			mail_close_socket(socket);
 			thread_down();
 			if(active_clients)
@@ -2331,7 +2331,7 @@ static void smtp_thread(void* arg)
 		if(trashcan(&scfg,host_name,"host") || findstr(host_name,spam_block)) {
 			lprintf(LOG_NOTICE,"%04d !SMTP CLIENT HOSTNAME BLOCKED: %s (%u total)"
 				,socket, host_name, ++stats.sessions_refused);
-			sockprintf(socket,"550 Access denied.");
+			sockprintf(socket,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			mail_close_socket(socket);
 			thread_down();
 			if(active_clients)
