@@ -403,7 +403,7 @@ int recv_byte(void* unused, unsigned timeout)
 	static uchar	telnet_cmd;
 	static int		telnet_cmdlen;
 
-	while(!terminate) {
+	while((inbuf_len || connected) && !terminate) {
 		if(inbuf_len) {
 			ch=inbuf[inbuf_pos++];
 			i=1;
@@ -449,6 +449,10 @@ int recv_byte(void* unused, unsigned timeout)
 						connected=FALSE;
 						break;
 				}
+			}
+			else if(i==0) {
+				connected=FALSE;
+				break;
 			}
 			else
 				inbuf_len=i;
