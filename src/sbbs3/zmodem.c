@@ -1291,7 +1291,7 @@ int zmodem_recv_header_and_check(zmodem_t* zm)
 	while(is_connected(zm) && !is_cancelled(zm)) {
 		type = zmodem_recv_header_raw(zm,TRUE);		
 
-		if(type != INVHDR && (type&BADSUBPKT) == 0) {
+		if(type != INVHDR && ((type&BADSUBPKT) == 0 || type==TIMEOUT)) {
 			break;
 		}
 
