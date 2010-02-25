@@ -1484,8 +1484,14 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 			the receiver to write its buffer before sending more data.
 		***/
 		/* Note: we always use ZCRCW for the first frame */
-		if(subpkts_sent) {
-			if(zm->current_file_pos+n >= zm->current_file_size || n==0)	/* can't use feof() here! */
+		if(subpkts_sent || n < zm->block_size) {
+			/*  ZMODEM.DOC:
+				In the absence of fatal error, the sender eventually encounters end of
+				file.  If the end of file is encountered within a frame, the frame is
+				closed with a ZCRCE data subpacket which does not elicit a response
+				except in case of error.
+			*/
+			if(n < zm->block_size)
 				type = ZCRCE;
 			else {
 				if(zm->can_overlap_io && !zm->no_streaming && (zm->recv_bufsize==0 || buf_sent+n < zm->recv_bufsize))
@@ -1501,6 +1507,8 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 			return(TIMEOUT);
 
 		zm->current_file_pos += n;
+		if(zm->current_file_pos > zm->current_file_size)
+			zm->current_file_size = zm->current_file_pos;
 		subpkts_sent++;
 
 		if(type == ZCRCW || type == ZCRCE) {	
@@ -1526,16 +1534,10 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint32_t pos, uint32_t* sent)
 
 		buf_sent+=n;
 
-		if(zm->current_file_pos >= zm->current_file_size) {
-			lprintf(zm,LOG_DEBUG,"send_from: end of file reached at offset: %ld", zm->current_file_size);
+		if(n < zm->block_size) {
+			lprintf(zm,LOG_DEBUG,"send_from: end of file (or read error) reached at offset: %lu", zm->current_file_pos);
 			zmodem_send_zeof(zm, zm->current_file_pos);
 			return zmodem_recv_header(zm);	/* If this is ZRINIT, Success */
-		}
-
-		if(n==0) {
-			lprintf(zm,LOG_ERR,"send_from: read error %d at offset %lu"
-				,ferror(fp), zm->current_file_pos);
-			return ZACK;
 		}
 
 		/* 
@@ -1708,9 +1710,9 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	p += strlen(p) + 1;
 
 	sprintf(p,"%lu %lo %lo %d %u %lu %d"
-		,zm->current_file_size
+		,zm->current_file_size	/* use for estimating only, could be zero! */
 		,s.st_mtime
-		,0UL						/* file mode */
+		,0UL					/* file mode */
 		,0						/* serial number */
 		,zm->files_remaining
 		,zm->bytes_remaining
