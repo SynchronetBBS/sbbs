@@ -77,6 +77,7 @@
 #define SINGLE_THREADED		FALSE
 #define MIN_OUTBUF_SIZE		1024
 #define MAX_OUTBUF_SIZE		(64*1024)
+#define INBUF_SIZE		(64*1024)
 
 /***************/
 /* Global Vars */
@@ -115,6 +116,7 @@ BOOL	debug_telnet=FALSE;
 BOOL	pause_on_exit=FALSE;
 BOOL	pause_on_abend=FALSE;
 BOOL	newline=TRUE;
+BOOL	connected=TRUE;
 
 time_t		progress_interval;
 
@@ -126,6 +128,10 @@ RingBuf		outbuf;
 #endif
 unsigned	outbuf_drain_timeout;
 long		outbuf_size;
+
+uchar		inbuf[INBUF_SIZE];
+unsigned	inbuf_pos=0;
+unsigned	inbuf_len=0;
 
 unsigned	flows=0;
 unsigned	select_errors=0;
@@ -321,6 +327,52 @@ void dump(BYTE* buf, int len)
 	}
 }
 
+int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
+{
+	int sent=0;
+	int ret;
+	fd_set		socket_set;
+
+	for(;;) {
+		ret=sendsocket(s,buf,buflen);
+		if(ret==SOCKET_ERROR) {
+			switch(ERROR_VALUE) {
+				case EAGAIN:
+				case ENOBUFS:
+					/* Block until we can send */
+					FD_ZERO(&socket_set);
+#ifdef __unix__
+					if(stdio)
+						FD_SET(STDIN_FILENO,&socket_set);
+					else
+#endif
+						FD_SET(sock,&socket_set);
+
+					if((ret=select(sock+1,&socket_set,NULL,NULL,NULL))<1) {
+						if(ret==SOCKET_ERROR && ERROR_VALUE != EINTR) {
+							lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
+							goto disconnect;
+						}
+					}
+					break;
+				default:
+					goto disconnect;
+			}
+		}
+		else {
+			sent += ret;
+			if(sent >= buflen)
+				return(sent);
+		}
+	}
+
+disconnect:
+	connected=FALSE;
+	if(sent)
+		return sent;
+	return SOCKET_ERROR;
+}
+
 void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 {
 	uchar	buf[3];
@@ -333,7 +385,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 		lprintf(LOG_DEBUG,"Sending telnet command: %s %s"
 			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
 
-	if(sendsocket(sock,buf,sizeof(buf))!=sizeof(buf) && debug_telnet)
+	if(sock_sendbuf(sock,buf,sizeof(buf))!=sizeof(buf) && debug_telnet)
 		lprintf(LOG_ERR,"FAILED");
 }
 
@@ -352,32 +404,56 @@ int recv_byte(void* unused, unsigned timeout)
 	static int		telnet_cmdlen;
 
 	while(!terminate) {
-
-		FD_ZERO(&socket_set);
-#ifdef __unix__
-		if(stdio)
-			FD_SET(STDIN_FILENO,&socket_set);
-		else
-#endif
-			FD_SET(sock,&socket_set);
-		tv.tv_sec=timeout;
-		tv.tv_usec=0;
-
-		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
-			if(i==SOCKET_ERROR) {
-				lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
-			}
-			if(timeout)
-				lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
-			return(NOINP);
+		if(inbuf_len) {
+			ch=inbuf[inbuf_pos++];
+			i=1;
+			if(inbuf_pos >= inbuf_len)
+				inbuf_pos=inbuf_len=0;
 		}
-		
+		else {
 #ifdef __unix__
-		if(stdio)
-			i=read(STDIN_FILENO,&ch,sizeof(ch));
-		else
+			if(stdio)
+				i=read(STDIN_FILENO,inbuf,sizeof(inbuf));
+			else
 #endif
-			i=recv(sock,&ch,sizeof(ch),0);
+				i=recv(sock,inbuf,sizeof(inbuf),0);
+			if(i==SOCKET_ERROR) {
+				switch(ERROR_VALUE) {
+					case EAGAIN:
+					case EINTR:
+						if(timeout) {
+							FD_ZERO(&socket_set);
+#ifdef __unix__
+							if(stdio)
+								FD_SET(STDIN_FILENO,&socket_set);
+							else
+#endif
+								FD_SET(sock,&socket_set);
+							tv.tv_sec=timeout;
+							timeout=0;
+							tv.tv_usec=0;
+							if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
+								if(i==SOCKET_ERROR) {
+									lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
+									connected=FALSE;
+								}
+								else
+									lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
+							}
+							else
+								continue;
+						}
+						return(NOINP);
+						break;
+					default:
+						connected=FALSE;
+						break;
+				}
+			}
+			else
+				inbuf_len=i;
+			continue;
+		}
 
 		if(i!=sizeof(ch)) {
 			if(i==0) {
@@ -515,7 +591,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		i=write(STDOUT_FILENO,buf,len);
 	else
 #endif
-		i=sendsocket(sock,buf,len);
+		i=sock_sendbuf(sock,buf,len);
 	
 	if(i==len) {
 		if(debug_tx)
@@ -599,7 +675,7 @@ static void output_thread(void* arg)
 			i=write(STDOUT_FILENO, (char*)buf+bufbot, buftop-bufbot);
 		else
 #endif
-			i=sendsocket(sock, (char*)buf+bufbot, buftop-bufbot);
+			i=sock_sendbuf(sock, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf(LOG_ERR,"client socket closed on send");
@@ -637,7 +713,9 @@ static void output_thread(void* arg)
 
 BOOL is_connected(void* unused)
 {
-	return socket_check(sock,NULL,NULL,0);
+	if(inbuf_len > inbuf_pos)
+		return TRUE;
+	return connected;
 }
 
 BOOL data_waiting(void* unused, unsigned timeout)
@@ -1671,6 +1749,18 @@ int main(int argc, char **argv)
 #ifdef __unix__
 	}
 #endif
+
+	/* Set non-blocking mode */
+#ifdef __unix__
+	if(stdio) {
+		fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+	}
+	else
+#endif
+	{
+		i=1;
+		ioctlsocket(sock, FIONBIO, &i);
+	}
 
 	if(!socket_check(sock, NULL, NULL, 0)) {
 		lprintf(LOG_WARNING,"No socket connection");
