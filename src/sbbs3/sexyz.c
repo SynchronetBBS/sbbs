@@ -712,7 +712,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 				,l/60L
 				,l%60L
 				,cps
-				,(long)(((float)offset/(float)fsize)*100.0)
+				,fsize?(long)(((float)offset/(float)fsize)*100.0):100
 				);
 		} else if(mode&YMODEM) {
 			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
@@ -726,7 +726,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 				,l/60L
 				,l%60L
 				,cps
-				,(long)(((float)offset/(float)fsize)*100.0)
+				,fsize?(long)(((float)offset/(float)fsize)*100.0):100
 				);
 		} else { /* XModem receive */
 			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
@@ -781,7 +781,7 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 			,l/60L
 			,l%60L
 			,cps
-			,(long)(((float)current_pos/(float)zm.current_file_size)*100.0)
+			,zm.current_file_size?(long)(((float)current_pos/(float)zm.current_file_size)*100.0):100
 			);
 		newline=FALSE;
 		last_progress=now;
