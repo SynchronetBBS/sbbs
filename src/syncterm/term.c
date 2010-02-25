@@ -400,9 +400,15 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 			);
 		clreol();
 		cputs("\r\n");
-		cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
-			,(long)(((float)current_pos/(float)zm->current_file_size)*100.0));
-		l = (long)(60*((float)current_pos/(float)zm->current_file_size));
+		if(zm->current_file_size==0) {
+			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, "", 100);
+			l = 60;
+		}
+		else{
+			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
+				,(long)(((float)current_pos/(float)zm->current_file_size)*100.0));
+			l = (long)(60*((float)current_pos/(float)zm->current_file_size));
+		}
 		cprintf("[%*.*s%*s]", l, l, 
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
