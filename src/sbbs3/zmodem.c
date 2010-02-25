@@ -1419,7 +1419,7 @@ int zmodem_get_zfin(zmodem_t* zm)
 	return type;
 }
 
-BOOL zmodem_handle_zrpos(zmodem_t* zm, ulong* pos)
+BOOL zmodem_handle_zrpos(zmodem_t* zm, uint32_t* pos)
 {
 	if(zm->rxd_header_pos <= zm->current_file_size) {
 		if(*pos != zm->rxd_header_pos) {
