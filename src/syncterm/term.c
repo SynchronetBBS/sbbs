@@ -1191,13 +1191,13 @@ void xmodem_progress(void* cbdata, unsigned block_num, ulong offset, ulong fsize
 				,l/60L
 				,l%60L
 				,cps
-				,(long)(((float)offset/(float)fsize)*100.0)
+				,fsize?(long)(((float)offset/(float)fsize)*100.0):100
 				);
 			clreol();
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
-				,(long)(((float)offset/(float)fsize)*100.0));
-			l = (long)(((float)offset/(float)fsize)*60.0);
+				,fsize?(long)(((float)offset/(float)fsize)*100.0):100);
+			l = fsize?(long)(((float)offset/(float)fsize)*60.0):60;
 			cprintf("[%*.*s%*s]", l, l, 
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
@@ -1223,8 +1223,8 @@ void xmodem_progress(void* cbdata, unsigned block_num, ulong offset, ulong fsize
 			clreol();
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH/2-5, ""
-				,(long)(((float)offset/(float)fsize)*100.0));
-			l = (long)(((float)offset/(float)fsize)*60.0);
+				,fsize?(long)(((float)offset/(float)fsize)*100.0):100);
+			l = fsize?(long)(((float)offset/(float)fsize)*60.0):60;
 			cprintf("[%*.*s%*s]", l, l, 
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
