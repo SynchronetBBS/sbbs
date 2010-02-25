@@ -14037,6 +14037,11 @@ object MainForm: TMainForm
           Hint = 'SPAMBLOCK.CFG'
           OnClick = CtrlMenuItemEditClick
         end
+        object SpamBlockExemptions: TMenuItem
+          Caption = 'Spam Block Exemptions'
+          Hint = 'SPAMBLOCK_EXEMPT.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
         object AllowedRelayList: TMenuItem
           Caption = 'Allowed Relay List'
           Hint = 'RELAY.CFG'
