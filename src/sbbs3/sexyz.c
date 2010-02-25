@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1018,7 +1018,7 @@ static int receive_files(char** fname_list, int fnames)
 					return(0); 
 				}
 				file_bytes=ftime=total_files=total_bytes=0;
-				i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
+				i=sscanf(block+strlen(block)+1,"%lu %lo %lo %lo %u %lu"
 					,&file_bytes			/* file size (decimal) */
 					,&ftime 				/* file time (octal unix format) */
 					,&fmode 				/* file mode (not used) */
@@ -1055,7 +1055,7 @@ static int receive_files(char** fname_list, int fnames)
 			}
 
 			if(!file_bytes)
-				file_bytes=0x7fffffff;
+				file_bytes=0x7fffffff;	/* Should we use 0xffffffff instead? */
 			file_bytes_left=file_bytes;
 			if(!total_files)
 				total_files=fnames-fnum;

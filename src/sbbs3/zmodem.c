@@ -1707,7 +1707,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen(p) + 1;
 
-	sprintf(p,"%lu %lo %lo %d %u %u %d"
+	sprintf(p,"%lu %lo %lo %d %u %lu %d"
 		,zm->current_file_size
 		,s.st_mtime
 		,0UL						/* file mode */
@@ -1731,11 +1731,14 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		lprintf(zm,LOG_DEBUG,"Sending ZFILE frame: '%s'"
 			,zm->tx_data_subpacket+strlen(zm->tx_data_subpacket)+1);
 
-		if(zmodem_send_bin_header(zm,zfile_frame)!=0)
+		if((i=zmodem_send_bin_header(zm,zfile_frame))!=0) {
+			lprintf(zm,LOG_DEBUG,"zmodem_send_bin_header returned %d",i);
 			continue;
-		if(zmodem_send_data_subpkt(zm,ZCRCW,zm->tx_data_subpacket,p - zm->tx_data_subpacket)!=0)
+		}
+		if((i=zmodem_send_data_subpkt(zm,ZCRCW,zm->tx_data_subpacket,p - zm->tx_data_subpacket))!=0) {
+			lprintf(zm,LOG_DEBUG,"zmodem_send_data_subpkt returned %d",i);
 			continue;
-	
+		}
 		/*
 		 * wait for anything but an ZACK packet
 		 */
@@ -1785,6 +1788,8 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	rewind(fp);
 	zm->errors = 0;
 	zm->consecutive_errors = 0;
+
+	lprintf(zm,LOG_DEBUG,"Sending %s from offset %lu", fname, pos);
 	do {
 		/*
 		 * and start sending
@@ -2093,14 +2098,26 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, uint32_t offset)
 {
 	int			type=0;
 	unsigned	errors=0;
+	ulong		pos;
 
 	zm->transfer_start_pos=offset;
 	zm->transfer_start_time=time(NULL);
 
 	fseek(fp,offset,SEEK_SET);
 
-	while(errors<=zm->max_errors && is_connected(zm)
-		&& (uint32_t)ftell(fp) < zm->current_file_size && !is_cancelled(zm)) {
+	/*  zmodem.doc:
+
+		The zmodem receiver uses the file length [from ZFILE data] as an estimate only.
+		It may be used to display an estimate of the transmission time,
+		and may be compared with the amount of free disk space.  The
+		actual length of the received file is determined by the data
+		transfer. A file may grow after transmission commences, and
+		all the data will be sent.
+	*/
+	while(errors<=zm->max_errors && is_connected(zm) && !is_cancelled(zm)) {
+
+		if((pos=ftell(fp)) > zm->current_file_size)
+			zm->current_file_size = pos;
 
 		if(type!=ENDOFFRAME)
 			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);

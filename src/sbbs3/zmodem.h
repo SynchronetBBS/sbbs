@@ -11,6 +11,8 @@
 
 #include <stdio.h>	/* FILE */
 
+#define ZMODEM_FILE_SIZE_MAX	0xffffffff	/* 32-bits, blame Chuck */
+
 /*
  * ascii constants
  */
@@ -234,7 +236,7 @@ typedef struct {
 	unsigned	total_files;
 	uint32_t	total_bytes;
 	unsigned	files_remaining;
-	unsigned	bytes_remaining;
+	uint32_t	bytes_remaining;
 	uint32_t	transfer_start_pos;
 	time_t		transfer_start_time;
 
