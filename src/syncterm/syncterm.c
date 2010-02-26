@@ -808,6 +808,14 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 			break;
 		}
 	}
+	if(i==listcount) {
+		for(i=0;i<listcount;i++) {
+			if(stricmp(bbs->name,list[i]->name)==0) {
+				memcpy(bbs,list[i],sizeof(struct bbslist));
+				break;
+			}
+		}
+	}
 	free_list(&list[0],listcount);
 }
 
