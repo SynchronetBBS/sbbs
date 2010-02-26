@@ -61,10 +61,10 @@ typedef struct {
 	unsigned	max_errors;
 	unsigned	fallback_to_xmodem; /* fallback to Xmodem after this many Ymodem send attempts */
 	unsigned	g_delay;
-	unsigned	total_files;
-	unsigned	total_bytes;
+	ulong		total_files;
+	ulong		total_bytes;
 	unsigned	sent_files;
-	unsigned	sent_bytes;
+	ulong		sent_bytes;
 	int			(*lputs)(void*, int level, const char* str);
 	void		(*progress)(void*, unsigned block_num, ulong offset, ulong fsize, time_t t);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
