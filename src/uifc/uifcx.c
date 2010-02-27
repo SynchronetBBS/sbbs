@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -375,6 +375,16 @@ void sethelp(int line, char* file)
     helpfile=file;
 }
 
+static void uputs(char* ptr)
+{
+	while(*ptr) {
+		if(*ptr>2)
+			putchar(*ptr);
+		ptr++;
+	}
+	putchar('\n');
+}
+
 /****************************************************************************/
 /* Help function.															*/
 /****************************************************************************/
@@ -429,7 +439,7 @@ void help()
     else
         strcpy(hbuf,api->helpbuf);
 
-    puts(hbuf);
+    uputs(hbuf);
     if(strlen(hbuf)>200) {
         printf("Hit enter");
         getstr(str,sizeof(str)-1);
