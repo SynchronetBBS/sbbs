@@ -38,6 +38,7 @@ function Graphic(w,h,attr,ch)
 		}
 	}
 	this.draw=Graphic_draw;
+	this.drawfx=Graphic_drawfx;
 	this.save=Graphic_save;
 	this.load=Graphic_load;
 	this.write=Graphic_write;
@@ -83,7 +84,58 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 	}
 	return(true);
 }
+function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
+{
+	var x;
+	var y;
 
+	if(xpos==undefined)
+		xpos=1;
+	if(ypos==undefined)
+		ypos=1;
+	if(width==undefined)
+		width=this.width;
+	if(height==undefined)
+		height=this.height;
+	if(xoff==undefined)
+		xoff=0;
+	if(yoff==undefined)
+		yoff=0;
+	if(xoff+width > this.width || yoff+height > this.height) {
+		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
+		return(false)
+	}
+	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
+		alert("Attempt to draw outside of screen");
+		return(false);
+	}
+	var placeholder=new Array(width);
+	for(x=0;x<width;x++)
+	{
+		placeholder[x]=new Array(height);
+		for(y=0;y<placeholder[x].length;y++)
+		{
+			placeholder[x][y]={'x':xoff+x,'y':yoff+y};
+		}
+	}
+	while(placeholder.length)
+	{
+		var randx=random(placeholder.length);
+		var randy=random(placeholder[randx].length);
+		var position=placeholder[randx][randy];
+		if(position.x != console.screen_columns
+				|| position.y != console.screen_rows) {
+			console.gotoxy(xpos+position.x,ypos+position.y);
+			console.attributes=this.data[position.x][position.y].attr;
+			console.write(this.data[position.x][position.y].ch);
+			mswait(1);
+		}
+		placeholder[randx].splice(randy,1);
+		if(!placeholder[randx].length) placeholder.splice(randx,1);
+	}
+	console.gotoxy(xpos+width,ypos+height);
+	return(true);
+}
 function Graphic_load(filename)
 {
 	var x;
