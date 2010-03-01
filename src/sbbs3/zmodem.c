@@ -1643,7 +1643,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			lprintf(zm,LOG_WARNING,"send_file: received %s instead of ZRINIT"
 				,frame_desc(i));
 		}
-		if(zm->errors>=zm->max_errors || is_cancelled(zm))
+		if(zm->errors>=zm->max_errors || is_cancelled(zm) || !is_connected(zm))
 			return(FALSE);
 	}
 
