@@ -722,6 +722,12 @@ static void output_thread(void* arg)
 	lprintf(LOG_DEBUG,"output thread terminated\n%s", stats);
 }
 
+/* Flush output buffer */
+void flush(void* unused)
+{
+
+}
+
 BOOL is_connected(void* unused)
 {
 	if(inbuf_len > inbuf_pos)
@@ -1452,8 +1458,8 @@ int main(int argc, char **argv)
 		,__DATE__+7
 		);
 
-	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL);
-	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected,NULL,data_waiting);
+	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);
+	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected,NULL,data_waiting,flush);
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);

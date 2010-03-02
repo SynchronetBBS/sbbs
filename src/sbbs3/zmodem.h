@@ -283,6 +283,7 @@ typedef struct {
 	BOOL		(*is_cancelled)(void*);
 	BOOL		(*data_waiting)(void*, unsigned timeout);
 	BOOL		(*duplicate_filename)(void*, void *zm);
+	void		(*flush)(void*);
 
 } zmodem_t;
 
@@ -294,6 +295,7 @@ void		zmodem_init(zmodem_t*, void* cbdata
 						,BOOL	(*is_connected)(void*)
 						,BOOL	(*is_cancelled)(void*)
 						,BOOL	(*data_waiting)(void*, unsigned timeout)
+						,void	(*flush)(void*)
 						);
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);

@@ -192,6 +192,15 @@ void zmodem_recv_purge(zmodem_t* zm)
 }
 
 /* 
+ * Flush the output buffer
+ */
+void zmodem_flush(zmodem_t* zm)
+{
+	if(zm->flush!=NULL)
+		zm->flush(zm);
+}
+
+/* 
  * transmit a character. 
  * this is the raw modem interface
  */
@@ -351,6 +360,8 @@ int zmodem_send_hex_header(zmodem_t* zm, unsigned char * p)
 
 	if(type!=ZACK && type!=ZFIN)
 		result=zmodem_send_raw(zm, XON);
+
+	zmodem_flush(zm);
 
 	return(result);
 }
@@ -524,6 +535,8 @@ int zmodem_send_data_subpkt(zmodem_t* zm, uchar subpkt_type, unsigned char * p, 
 
 	if(subpkt_type == ZCRCW)
 		result=zmodem_send_raw(zm, XON);
+
+	zmodem_flush(zm);
 
 	return result;
 }
