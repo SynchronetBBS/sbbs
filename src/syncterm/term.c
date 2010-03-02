@@ -427,9 +427,29 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
+
+unsigned char transfer_buffer[BUFFER_SIZE/2];
+unsigned transfer_buf_len=0;
+
+static void flush_send(void *unused)
+{
+	int	sent;
+
+	sent=conn_send(transfer_buffer, transfer_buf_len, 120*1000);
+	if(sent < transfer_buf_len) {
+		memmove(transfer_buffer, transfer_buffer+sent, transfer_buf_len-sent);
+		transfer_buf_len -= sent;
+	}
+	else
+		transfer_buf_len=0;
+}
+
 static int send_byte(void* unused, uchar ch, unsigned timeout /* seconds */)
 {
-	return(conn_send(&ch,sizeof(ch),timeout*1000)!=1);
+	transfer_buffer[transfer_buf_len++]=ch;
+	if(transfer_buf_len==sizeof(transfer_buffer))
+		flush_send(unused);
+	return(!(transfer_buf_len < sizeof(transfer_buffer)));
 }
 
 #if defined(__BORLANDC__)
@@ -787,12 +807,14 @@ void guts_background_download(void *cbdata)
 
 	zmodem_mode=ZMODEM_MODE_RECV;
 
+	transfer_buf_len=0;
 	zmodem_init(&zm
 		,&gi
 		,guts_lputs, guts_zmodem_progress
 		,guts_send_byte,guts_recv_byte,guts_is_connected
 		,NULL /* is_cancelled */
-		,guts_data_waiting);
+		,guts_data_waiting
+		,guts_flush_send);
 
 	/* ToDo: This would be a good time to detach or something. */
 	zmodem_recv_files(&zm,gi.files[0],&bytes_received);
@@ -818,12 +840,14 @@ void guts_background_upload(void *cbdata)
 
 	zmodem_mode=ZMODEM_MODE_SEND;
 
+	transfer_buf_len=0;
 	zmodem_init(&zm
 		,&gi
 		,guts_lputs, guts_zmodem_progress
 		,guts_send_byte,guts_recv_byte,guts_is_connected
 		,NULL /* is_cancelled */
-		,guts_data_waiting);
+		,guts_data_waiting
+		,guts_flush_send);
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 
@@ -978,13 +1002,15 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	cbdata.zm=&zm;
 	cbdata.bbs=bbs;
 	conn_binary_mode_on();
+	transfer_buf_len=0;
 	zmodem_init(&zm
 		,/* cbdata */&cbdata
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
 		,zmodem_check_abort
-		,data_waiting);
+		,data_waiting
+		,flush_send);
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 	
@@ -1084,13 +1110,15 @@ void zmodem_download(struct bbslist *bbs)
 	conn_binary_mode_on();
 	cbdata.zm=&zm;
 	cbdata.bbs=bbs;
+	transfer_buf_len=0;
 	zmodem_init(&zm
 		,/* cbdata */&cbdata
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
 		,zmodem_check_abort
-		,data_waiting);
+		,data_waiting
+		,flush_send);
 
 	zm.duplicate_filename=zmodem_duplicate_callback;
 
@@ -1293,7 +1321,8 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 		,send_byte
 		,recv_byte
 		,is_connected
-		,xmodem_check_abort);
+		,xmodem_check_abort
+		,flush_send);
 	if(!data_waiting(&xm, 0)) {
 		switch(lastch) {
 			case 'G':
@@ -1472,7 +1501,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,send_byte
 		,recv_byte
 		,is_connected
-		,xmodem_check_abort);
+		,xmodem_check_abort
+		,flush_send);
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
 			if(isfullpath(path))
