@@ -621,7 +621,8 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
-				,BOOL	(*is_cancelled)(void*))
+				,BOOL	(*is_cancelled)(void*)
+				,void	(*flush)(void*))
 {
 	memset(xm,0,sizeof(xmodem_t));
 
@@ -646,4 +647,5 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->recv_byte=recv_byte;
 	xm->is_connected=is_connected;
 	xm->is_cancelled=is_cancelled;
+	xm->flush=flush;
 }

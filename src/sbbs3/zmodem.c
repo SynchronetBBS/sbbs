@@ -2252,7 +2252,8 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)
 				,BOOL	(*is_cancelled)(void*)
-				,BOOL	(*data_waiting)(void*, unsigned timeout))
+				,BOOL	(*data_waiting)(void*, unsigned timeout)
+				,void   (*flush)(void*))
 {
 	memset(zm,0,sizeof(zmodem_t));
 
@@ -2273,4 +2274,5 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 	zm->is_connected=is_connected;
 	zm->is_cancelled=is_cancelled;
 	zm->data_waiting=data_waiting;
+	zm->flush=flush;
 }
