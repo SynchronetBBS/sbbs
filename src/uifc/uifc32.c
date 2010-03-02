@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -491,7 +491,7 @@ static void truncsp(char *str)
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
-	uchar line[256],shade[256],*ptr
+	uchar line[MAX_COLS*2],shade[MAX_LINES*4],*ptr
 		,search[MAX_OPLN],bline=0,*win;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
@@ -1644,8 +1644,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int max, int kmode)
 {
-	unsigned char save_buf[2048],in_win[2048]
-		,shade[160];
+	unsigned char save_buf[MAX_COLS*8],in_win[MAX_COLS*6]
+		,shade[MAX_COLS*2];
 	int	width;
 	int height=3;
 	int i,plen,slen,j;
@@ -2184,7 +2184,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 {
 	va_list argptr;
-	char str[256],buf[512];
+	char str[MAX_COLS+1],buf[MAX_COLS*2];
 	int i,j;
 
     va_start(argptr,fmat);

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -86,8 +86,9 @@
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
 #define MAX_BUFS	7		/* Maximum number of screen buffers to save */
 #define MIN_LINES   14      /* Minimum number of screen lines supported */
-#define MAX_LINES   60      /* Maximum number of screen rows supported */ 
-#define MAX_BFLN	80*MAX_LINES*2	/* Maximum size of screen buffers */
+#define MAX_LINES   255     /* Maximum number of screen lines supported (ciolib screenheight is a uchar) */ 
+#define MAX_COLS	255		/* Maximum number of screen columns supported (ciolib screenwidth is a uchar) */ 
+#define MAX_BFLN	(MAX_COLS*MAX_LINES*2)	/* Maximum size of screen buffers, char + attr */
 
 #ifndef uint
 #define uint unsigned int
