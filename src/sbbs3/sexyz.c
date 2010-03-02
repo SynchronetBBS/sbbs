@@ -336,7 +336,7 @@ int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
 	fd_set		socket_set;
 
 	for(;;) {
-		ret=sendsocket(s,buf,buflen);
+		ret=sendsocket(s,buf+sent,buflen-sent);
 		if(ret==SOCKET_ERROR) {
 			switch(ERROR_VALUE) {
 				case EAGAIN:
