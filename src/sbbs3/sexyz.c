@@ -341,7 +341,9 @@ int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
 			switch(ERROR_VALUE) {
 				case EAGAIN:
 				case ENOBUFS:
+#if (EAGAIN != EWOULDBLOCK)
 				case EWOULDBLOCK:
+#endif
 					/* Block until we can send */
 					FD_ZERO(&socket_set);
 #ifdef __unix__
@@ -425,7 +427,9 @@ int recv_byte(void* unused, unsigned timeout)
 				switch(ERROR_VALUE) {
 					case EAGAIN:
 					case EINTR:
+#if (EAGAIN != EWOULDBLOCK)
 					case EWOULDBLOCK:
+#endif
 						if(timeout) {
 							FD_ZERO(&socket_set);
 #ifdef __unix__
