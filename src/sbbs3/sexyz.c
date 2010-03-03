@@ -353,7 +353,7 @@ int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
 #endif
 						FD_SET(sock,&socket_set);
 
-					if((ret=select(sock+1,&socket_set,NULL,NULL,NULL))<1) {
+					if((ret=select(sock+1,NULL,&socket_set,NULL,NULL))<1) {
 						if(ret==SOCKET_ERROR && ERROR_VALUE != EINTR) {
 							lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
 							goto disconnect;
@@ -397,6 +397,75 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 
 #define DEBUG_TELNET FALSE
 
+/*
+ * Returns -1 on disconnect or the number of bytes read.
+ * Does not muck around with ERROR_VALUE (hopefully)
+ */
+static int recv_buffer(int timeout)
+{
+	int i;
+	fd_set		socket_set;
+	struct timeval	tv;
+
+	for(;;) {
+		if(inbuf_len > inbuf_pos)
+			return(inbuf_len-inbuf_pos);
+#ifdef __unix__
+		if(stdio)
+			i=read(STDIN_FILENO,inbuf,sizeof(inbuf));
+		else
+#endif
+			i=recv(sock,inbuf,sizeof(inbuf),0);
+		if(i==SOCKET_ERROR) {
+			switch(ERROR_VALUE) {
+				case EAGAIN:
+				case EINTR:
+#if (EAGAIN != EWOULDBLOCK)
+				case EWOULDBLOCK:
+#endif
+					// Call select()
+					if(timeout) {
+						FD_ZERO(&socket_set);
+#ifdef __unix__
+						if(stdio)
+							FD_SET(STDIN_FILENO,&socket_set);
+						else
+#endif
+							FD_SET(sock,&socket_set);
+						tv.tv_sec=timeout;
+						timeout=0;
+						tv.tv_usec=0;
+						if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
+							if(i==SOCKET_ERROR) {
+								lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
+								connected=FALSE;
+							}
+							else
+								lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
+						}
+						else
+							continue;
+					}
+					return 0;
+				default:
+					lprintf(LOG_DEBUG,"DISCONNECTED line %u, error=%u", __LINE__,ERROR_VALUE);
+					connected=FALSE;
+					return -1;
+			}
+			return -1; // Impossible.
+		}
+		else if(i==0) {
+			lprintf(LOG_DEBUG,"DISCONNECTED line %u", __LINE__);
+			connected=FALSE;
+			return -1;
+		}
+		else {
+			inbuf_len=i;
+			return i;
+		}
+	};
+}
+
 /****************************************************************************/
 /* Receive a byte from remote (single-threaded version)						*/
 /****************************************************************************/
@@ -404,8 +473,6 @@ int recv_byte(void* unused, unsigned timeout)
 {
 	int			i;
 	uchar		ch;
-	fd_set		socket_set;
-	struct timeval	tv;
 	static uchar	telnet_cmd;
 	static int		telnet_cmdlen;
 
@@ -417,57 +484,17 @@ int recv_byte(void* unused, unsigned timeout)
 				inbuf_pos=inbuf_len=0;
 		}
 		else {
-#ifdef __unix__
-			if(stdio)
-				i=read(STDIN_FILENO,inbuf,sizeof(inbuf));
-			else
-#endif
-				i=recv(sock,inbuf,sizeof(inbuf),0);
-			if(i==SOCKET_ERROR) {
-				switch(ERROR_VALUE) {
-					case EAGAIN:
-					case EINTR:
-#if (EAGAIN != EWOULDBLOCK)
-					case EWOULDBLOCK:
-#endif
-						if(timeout) {
-							FD_ZERO(&socket_set);
-#ifdef __unix__
-							if(stdio)
-								FD_SET(STDIN_FILENO,&socket_set);
-							else
-#endif
-								FD_SET(sock,&socket_set);
-							tv.tv_sec=timeout;
-							timeout=0;
-							tv.tv_usec=0;
-							if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
-								if(i==SOCKET_ERROR) {
-									lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
-									connected=FALSE;
-								}
-								else
-									lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
-							}
-							else
-								continue;
-						}
-						return(NOINP);
-						break;
-					default:
-						lprintf(LOG_DEBUG,"DISCONNECTED line %u, error=%u", __LINE__,ERROR_VALUE);
-						connected=FALSE;
-						break;
-				}
+			i=recv_buffer(timeout);
+			switch(i) {
+				case -1:
+					i=0;
+					break;
+				case 0:
+					return NOINP;
+				default:
+					i=1;
+					continue;
 			}
-			else if(i==0) {
-				lprintf(LOG_DEBUG,"DISCONNECTED line %u", __LINE__);
-				connected=FALSE;
-				break;
-			}
-			else
-				inbuf_len=i;
-			continue;
 		}
 
 		if(i!=sizeof(ch)) {
@@ -544,17 +571,20 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		buf[0]=ch;
 
 	if(RingBufFree(&outbuf)<len) {
+		lprintf(LOG_DEBUG,"FLOW! (%d < %d)",RingBufFree(&outbuf),len);
 		fprintf(statfp,"FLOW");
 		flows++;
 		result=WaitForEvent(outbuf_empty,timeout*1000);
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
 		if(result!=WAIT_OBJECT_0) {
-			fprintf(statfp
+			lprintf(LOG_INFO
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
 				,result, timeout, RingBufFull(&outbuf));
 			newline=TRUE;
-			if(RingBufFree(&outbuf)<len)
+			if(RingBufFree(&outbuf)<len) {
+				lprintf(LOG_ERR, "ERROR: %d < %d",RingBufFree(&outbuf),len);
 				return(-1);
+			}
 		}
 	}
 
@@ -629,8 +659,6 @@ static void output_thread(void* arg)
 	ulong		short_sends=0;
     ulong		bufbot=0;
     ulong		buftop=0;
-	fd_set		socket_set;
-	struct timeval tv;
 
 #if 0 /* def _DEBUG */
 	fprintf(statfp,"output thread started\n");
@@ -651,29 +679,6 @@ static void output_thread(void* arg)
 			if(outbuf.highwater_mark)
 				sem_trywait_block(&outbuf.highwater_sem,outbuf_drain_timeout);
 			continue; 
-		}
-
-		/* Check socket for writability (using select) */
-		tv.tv_sec=0;
-		tv.tv_usec=1000;
-
-		FD_ZERO(&socket_set);
-#ifdef __unix__
-		if(stdio)
-			FD_SET(STDOUT_FILENO,&socket_set);
-		else
-#endif
-			FD_SET(sock,&socket_set);
-
-		i=select(sock+1,NULL,&socket_set,NULL,&tv);
-		if(i==SOCKET_ERROR) {
-			lprintf(LOG_ERR,"ERROR %d selecting socket %u for send"
-				,ERROR_VALUE,sock);
-			break;
-		}
-		if(i<1) {
-			select_errors++;
-			continue;
 		}
 
         if(bufbot==buftop) { /* linear buf empty, read from ring buf */
@@ -743,11 +748,9 @@ BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
 
-	if(inbuf_len > inbuf_pos)
+	if(recv_buffer(timeout) > 0)
 		return TRUE;
-	if(!socket_check(sock,&rd,NULL,timeout))
-		return(FALSE);
-	return(rd);
+	return FALSE;
 }
 
 /****************************************************************************/
