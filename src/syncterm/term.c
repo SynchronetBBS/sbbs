@@ -455,12 +455,14 @@ static int send_byte(void* unused, uchar ch, unsigned timeout /* seconds */)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-BYTE	recv_byte_buffer[BUFFER_SIZE/2];
+BYTE	recv_byte_buffer[BUFFER_SIZE];
 unsigned recv_byte_buffer_len=0;
 unsigned recv_byte_buffer_pos=0;
 
 static int recv_byte(void* unused, unsigned timeout /* seconds */)
 {
+	BYTE ch;
+
 	if(recv_byte_buffer_len == 0)
 		recv_byte_buffer_len=conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer), timeout*1000);
 
@@ -740,6 +742,8 @@ void begin_download(struct bbslist *bbs)
 #endif
 static BOOL is_connected(void* unused)
 {
+	if(recv_byte_buffer_len)
+		return TRUE;
 	return(conn_connected());
 }
 
@@ -2156,7 +2160,7 @@ BOOL doterm(struct bbslist *bbs)
 		sleep=TRUE;
 		if(!term.nostatus)
 			update_status(bbs, (bbs->conn_type == CONN_TYPE_SERIAL)?bbs->bpsrate:speed, ooii_mode);
-		for(remain=data_waiting(NULL, 0) /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
+		for(remain=data_waiting(NULL, 0) /* Hack for connection check */ + (!is_connected(NULL)); remain; remain--) {
 			if(speed)
 				thischar=xp_timer();
 
@@ -2166,7 +2170,7 @@ BOOL doterm(struct bbslist *bbs)
 
 				switch(inch) {
 					case -1:
-						if(!conn_connected()) {
+						if(!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update=oldmc;
 #ifdef WITH_WXWIDGETS

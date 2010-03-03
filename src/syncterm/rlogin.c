@@ -49,7 +49,7 @@ void rlogin_input_thread(void *args)
 		buffered=0;
 		while(buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer=conn_buf_wait_free(&conn_inbuf, rd-buffered, 100);
+			buffer=conn_buf_wait_free(&conn_inbuf, rd-buffered, 1000);
 			buffered+=conn_buf_put(&conn_inbuf, conn_api.rd_buf+buffered, buffer);
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
