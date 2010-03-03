@@ -459,12 +459,17 @@ BYTE	recv_byte_buffer[BUFFER_SIZE];
 unsigned recv_byte_buffer_len=0;
 unsigned recv_byte_buffer_pos=0;
 
+static void recv_bytes(unsigned timeout /* Milliseconds */)
+{
+	if(recv_byte_buffer_len == 0)
+		recv_byte_buffer_len=conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer), timeout);
+}
+
 static int recv_byte(void* unused, unsigned timeout /* seconds */)
 {
 	BYTE ch;
 
-	if(recv_byte_buffer_len == 0)
-		recv_byte_buffer_len=conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer), timeout*1000);
+	recv_bytes(timeout*1000);
 
 	if(recv_byte_buffer_len > 0) {
 		ch=recv_byte_buffer[recv_byte_buffer_pos++];
@@ -484,6 +489,12 @@ BOOL data_waiting(void* unused, unsigned timeout)
 	if(recv_byte_buffer_len)
 		return TRUE;
 	return(conn_data_waiting()!=0);
+}
+
+size_t count_data_waiting(void)
+{
+	recv_bytes(0);
+	return recv_byte_buffer_len;
 }
 
 void draw_transfer_window(char* title)
@@ -2160,7 +2171,7 @@ BOOL doterm(struct bbslist *bbs)
 		sleep=TRUE;
 		if(!term.nostatus)
 			update_status(bbs, (bbs->conn_type == CONN_TYPE_SERIAL)?bbs->bpsrate:speed, ooii_mode);
-		for(remain=data_waiting(NULL, 0) /* Hack for connection check */ + (!is_connected(NULL)); remain; remain--) {
+		for(remain=count_data_waiting() /* Hack for connection check */ + (!is_connected(NULL)); remain; remain--) {
 			if(speed)
 				thischar=xp_timer();
 
