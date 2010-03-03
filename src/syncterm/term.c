@@ -841,6 +841,7 @@ void guts_background_download(void *cbdata)
 		,NULL /* is_cancelled */
 		,guts_data_waiting
 		,guts_flush_send);
+	zm.log_level=&log_level;
 
 	/* ToDo: This would be a good time to detach or something. */
 	zmodem_recv_files(&zm,gi.files[0],&bytes_received);
@@ -874,6 +875,7 @@ void guts_background_upload(void *cbdata)
 		,NULL /* is_cancelled */
 		,guts_data_waiting
 		,guts_flush_send);
+	zm.log_level=&log_level;
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 
@@ -1037,6 +1039,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 		,NULL /* zmodem_check_abort */
 		,data_waiting
 		,flush_send);
+	zm.log_level=&log_level;
 
 	zm.current_file_num = zm.total_files = 1;	/* ToDo: support multi-file/batch uploads */
 	
@@ -1145,6 +1148,7 @@ void zmodem_download(struct bbslist *bbs)
 		,NULL /* zmodem_check_abort */
 		,data_waiting
 		,flush_send);
+	zm.log_level=&log_level;
 
 	zm.duplicate_filename=zmodem_duplicate_callback;
 
@@ -1349,6 +1353,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 		,is_connected
 		,NULL /* xmodem_check_abort */
 		,flush_send);
+	xm.log_level=&log_level;
 	if(!data_waiting(&xm, 0)) {
 		switch(lastch) {
 			case 'G':
@@ -1529,6 +1534,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,is_connected
 		,NULL /* xmodem_check_abort */
 		,flush_send);
+	xm.log_level=&log_level;
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
 			if(isfullpath(path))
