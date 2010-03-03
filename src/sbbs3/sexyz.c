@@ -579,7 +579,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		result=WaitForEvent(outbuf_empty,timeout*1000);
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
 		if(result!=WAIT_OBJECT_0) {
-			lprintf(LOG_INFO
+			fprintf(statfp
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
 				,result, timeout, RingBufFull(&outbuf));
 			newline=TRUE;
