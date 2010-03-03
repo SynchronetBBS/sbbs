@@ -455,13 +455,23 @@ static int send_byte(void* unused, uchar ch, unsigned timeout /* seconds */)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
+BYTE	recv_byte_buffer[BUFFER_SIZE/2];
+unsigned recv_byte_buffer_len=0;
+unsigned recv_byte_buffer_pos=0;
+
 static int recv_byte(void* unused, unsigned timeout /* seconds */)
 {
-	BYTE	ch;
+	if(recv_byte_buffer_len == 0)
+		recv_byte_buffer_len=conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer), timeout*1000);
 
-	if(conn_recv(&ch, sizeof(ch), timeout*1000))
-		return(ch);
-	return(-1);
+	if(recv_byte_buffer_len > 0) {
+		ch=recv_byte_buffer[recv_byte_buffer_pos++];
+		if(recv_byte_buffer_pos == recv_byte_buffer_len)
+			recv_byte_buffer_len=recv_byte_buffer_pos=0;
+		return ch;
+	}
+
+	return -1;
 }
 
 #if defined(__BORLANDC__)
@@ -469,6 +479,8 @@ static int recv_byte(void* unused, unsigned timeout /* seconds */)
 #endif
 BOOL data_waiting(void* unused, unsigned timeout)
 {
+	if(recv_byte_buffer_len)
+		return TRUE;
 	return(conn_data_waiting()!=0);
 }
 
@@ -766,14 +778,14 @@ static int guts_send_byte(void* cbdata, uchar ch, unsigned timeout)
 
 static int guts_recv_byte(void* cbdata, unsigned timeout)
 {
-	BOOL	data_waiting;
+	BOOL	data_is_waiting;
 	BYTE	ch;
 	struct GUTS_info *gi=cbdata;
 
-	if(!socket_check(gi->oob_socket, &data_waiting, NULL, timeout*1000))
+	if(!socket_check(gi->oob_socket, &data_is_waiting, NULL, timeout*1000))
 		return(-1);
 
-	if(!data_waiting)
+	if(!data_is_waiting)
 		return(-1);
 
 	if(recv(gi->oob_socket,&ch,1,0)!=1)
@@ -2091,6 +2103,7 @@ BOOL doterm(struct bbslist *bbs)
 	BYTE ooii_init2[] = "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m";	/* for OOII auto-enable */
 #endif
 	int ooii_mode=0;
+	recv_byte_buffer_len=recv_byte_buffer_pos=0;
 
 	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
@@ -2143,7 +2156,7 @@ BOOL doterm(struct bbslist *bbs)
 		sleep=TRUE;
 		if(!term.nostatus)
 			update_status(bbs, (bbs->conn_type == CONN_TYPE_SERIAL)?bbs->bpsrate:speed, ooii_mode);
-		for(remain=conn_data_waiting() /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
+		for(remain=data_waiting(NULL, 0) /* Hack for connection check */ + (!conn_connected()); remain; remain--) {
 			if(speed)
 				thischar=xp_timer();
 
