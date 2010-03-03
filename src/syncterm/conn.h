@@ -58,6 +58,7 @@ struct conn_buffer {
 /*
  * Functions for stuff using connections
  */
+int conn_recv_upto(char *buffer, size_t buflen, unsigned int timeout);
 int conn_recv(char *buffer, size_t buflen, unsigned int timeout);
 int conn_peek(char *buffer, size_t buflen);
 int conn_send(char *buffer, size_t buflen, unsigned int timeout);
