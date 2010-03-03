@@ -215,6 +215,9 @@ static int lprintf(int level, const char *fmt, ...)
 	char sbuf[1024];
 	va_list argptr;
 
+	if(level>log_level)
+		return 0;
+
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
