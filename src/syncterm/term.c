@@ -1034,7 +1034,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
-		,zmodem_check_abort
+		,NULL /* zmodem_check_abort */
 		,data_waiting
 		,flush_send);
 
@@ -1142,7 +1142,7 @@ void zmodem_download(struct bbslist *bbs)
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
-		,zmodem_check_abort
+		,NULL /* zmodem_check_abort */
 		,data_waiting
 		,flush_send);
 
@@ -1210,10 +1210,10 @@ void xmodem_progress(void* cbdata, unsigned block_num, ulong offset, ulong fsize
 	int			old_hold=hold_update;
 	xmodem_t*	xm=(xmodem_t*)cbdata;
 
-	xmodem_check_abort(cbdata);
-
 	now=time(NULL);
 	if(now-last_progress>0 || offset >= fsize) {
+		xmodem_check_abort(cbdata);
+
 		hold_update = TRUE;
 		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
@@ -1347,7 +1347,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 		,send_byte
 		,recv_byte
 		,is_connected
-		,xmodem_check_abort
+		,NULL /* xmodem_check_abort */
 		,flush_send);
 	if(!data_waiting(&xm, 0)) {
 		switch(lastch) {
@@ -1527,7 +1527,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,send_byte
 		,recv_byte
 		,is_connected
-		,xmodem_check_abort
+		,NULL /* xmodem_check_abort */
 		,flush_send);
 	while(is_connected(NULL)) {
 		if(mode&XMODEM) {
