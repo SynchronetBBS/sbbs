@@ -579,7 +579,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		result=WaitForEvent(outbuf_empty,timeout*1000);
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
 		if(result!=WAIT_OBJECT_0) {
-			fprintf(LOG_INFO
+			lprintf(LOG_INFO
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
 				,result, timeout, RingBufFull(&outbuf));
 			newline=TRUE;
@@ -746,8 +746,6 @@ BOOL is_connected(void* unused)
 
 BOOL data_waiting(void* unused, unsigned timeout)
 {
-	BOOL rd;
-
 	if(recv_buffer(timeout) > 0)
 		return TRUE;
 	return FALSE;
