@@ -355,10 +355,9 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 	struct zmodem_cbdata *zcb=(struct zmodem_cbdata *)cbdata;
 	zmodem_t*	zm=zcb->zm;
 
-	zmodem_check_abort(cbdata);
-
 	now=time(NULL);
 	if(now-last_progress>0 || current_pos >= zm->current_file_size) {
+		zmodem_check_abort(cbdata);
 		hold_update = TRUE;
 		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
