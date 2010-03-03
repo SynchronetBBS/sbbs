@@ -1467,8 +1467,8 @@ int main(int argc, char **argv)
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);
 	zmodem_init(&zm,NULL,lputs,zmodem_progress,send_byte,recv_byte,is_connected,NULL,data_waiting,flush);
-	xm->log_level=&log_level;
-	zm->log_level=&log_level;
+	xm.log_level=&log_level;
+	zm.log_level=&log_level;
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);
