@@ -336,7 +336,7 @@ int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
 	fd_set		socket_set;
 
 	for(;;) {
-		ret=sendsocket(s,buf+sent,buflen-sent);
+		ret=sendsocket(s,(char *)buf+sent,buflen-sent);
 		if(ret==SOCKET_ERROR) {
 			switch(ERROR_VALUE) {
 				case EAGAIN:
@@ -743,6 +743,8 @@ BOOL data_waiting(void* unused, unsigned timeout)
 {
 	BOOL rd;
 
+	if(inbuf_len > inbuf_pos)
+		return TRUE;
 	if(!socket_check(sock,&rd,NULL,timeout))
 		return(FALSE);
 	return(rd);
