@@ -245,7 +245,7 @@ BOOL conn_connected(void)
 
 int conn_recv_upto(char *buffer, size_t buflen, unsigned timeout)
 {
-	size_t	found;
+	size_t	found=0;
 
 	pthread_mutex_lock(&(conn_inbuf.mutex));
 	if(conn_buf_wait_bytes(&conn_inbuf, 1, timeout))
