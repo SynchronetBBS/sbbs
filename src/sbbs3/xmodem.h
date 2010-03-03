@@ -65,6 +65,7 @@ typedef struct {
 	ulong		total_bytes;
 	unsigned	sent_files;
 	ulong		sent_bytes;
+	int			*log_level;
 	int			(*lputs)(void*, int level, const char* str);
 	void		(*progress)(void*, unsigned block_num, ulong offset, ulong fsize, time_t t);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);

@@ -60,6 +60,9 @@ static int lprintf(xmodem_t* xm, int level, const char *fmt, ...)
 
 	if(xm->lputs==NULL)
 		return(-1);
+	if(xm->log_level != NULL)
+		if(level > *xm->log_level)
+			return 0;
 
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);

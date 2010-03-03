@@ -56,6 +56,9 @@ static int lprintf(zmodem_t* zm, int level, const char *fmt, ...)
 
 	if(zm->lputs==NULL)
 		return(-1);
+	if(zm->log_level != NULL)
+		if(level > *zm->log_level)
+			return 0;
 
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);

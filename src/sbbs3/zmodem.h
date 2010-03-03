@@ -272,6 +272,7 @@ typedef struct {
 	unsigned	block_size;
 	unsigned	max_block_size;
 	uint32_t	max_file_size;		/* 0 = unlimited */
+	int			*log_level;
 
 	/* Callbacks */
 	void*		cbdata;
