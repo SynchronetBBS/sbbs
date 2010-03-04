@@ -332,14 +332,19 @@ void dump(BYTE* buf, int len)
 	}
 }
 
-int sock_sendbuf(SOCKET s, void *buf, size_t buflen)
+int sendbuf(SOCKET s, void *buf, size_t buflen)
 {
 	size_t		sent=0;
 	int			ret;
 	fd_set		socket_set;
 
 	for(;;) {
-		ret=sendsocket(s,(char *)buf+sent,buflen-sent);
+#ifdef __unix__
+		if(stdio)
+			ret=write(STDOUT_FILENO, (char *)buf+sent,buflen-sent);
+		else
+#endif
+			ret=sendsocket(s,(char *)buf+sent,buflen-sent);
 		if(ret==SOCKET_ERROR) {
 			switch(ERROR_VALUE) {
 				case EAGAIN:
@@ -394,7 +399,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 		lprintf(LOG_DEBUG,"Sending telnet command: %s %s"
 			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
 
-	if(sock_sendbuf(sock,buf,sizeof(buf))!=sizeof(buf) && debug_telnet)
+	if(sendbuf(sock,buf,sizeof(buf))!=sizeof(buf) && debug_telnet)
 		lprintf(LOG_ERR,"FAILED");
 }
 
@@ -409,18 +414,29 @@ static int recv_buffer(int timeout)
 	int i;
 	fd_set		socket_set;
 	struct timeval	tv;
+	int			magic_errno;
 
 	for(;;) {
 		if(inbuf_len > inbuf_pos)
 			return(inbuf_len-inbuf_pos);
 #ifdef __unix__
-		if(stdio)
+		if(stdio) {
 			i=read(STDIN_FILENO,inbuf,sizeof(inbuf));
+			/* Look like a socket using MAGIC! */
+			if(i==0) {
+				i=-1;
+				magic_errno=EAGAIN;
+			}
+		}
 		else
 #endif
+		{
 			i=recv(sock,inbuf,sizeof(inbuf),0);
+			if(i==SOCKET_ERROR)
+				magic_errno=ERROR_VALUE;
+		}
 		if(i==SOCKET_ERROR) {
-			switch(ERROR_VALUE) {
+			switch(magic_errno) {
 				case EAGAIN:
 				case EINTR:
 #if (EAGAIN != EWOULDBLOCK)
@@ -636,7 +652,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		i=write(STDOUT_FILENO,buf,len);
 	else
 #endif
-		i=sock_sendbuf(sock,buf,len);
+		i=sendbuf(sock,buf,len);
 	
 	if(i==len) {
 		if(debug_tx)
@@ -690,12 +706,7 @@ static void output_thread(void* arg)
             buftop=RingBufRead(&outbuf, buf, avail);
             bufbot=0;
         }
-#ifdef __unix__
-		if(stdio)
-			i=write(STDOUT_FILENO, (char*)buf+bufbot, buftop-bufbot);
-		else
-#endif
-			i=sock_sendbuf(sock, (char*)buf+bufbot, buftop-bufbot);
+		i=sendbuf(sock, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf(LOG_ERR,"client socket closed on send");
@@ -734,7 +745,8 @@ static void output_thread(void* arg)
 /* Flush output buffer */
 void flush(void* unused)
 {
-
+	if(stdio)
+		fflush(stdout);
 }
 
 BOOL is_connected(void* unused)
@@ -1427,6 +1439,53 @@ static const char* usage=
 	"path   = directory to receive files into\n"
 	"list   = name of text file with list of filenames to send or receive\n";
 
+#ifdef __unix__
+
+#ifdef __unix__
+	struct termios tio_default;				/* Initial term settings */
+#endif
+
+#ifdef NEEDS_CFMAKERAW
+static void
+cfmakeraw(struct termios *t)
+{
+	t->c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+	t->c_oflag &= ~OPOST;
+	t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+	t->c_cflag &= ~(CSIZE|PARENB);
+	t->c_cflag |= CS8;
+}
+#endif
+
+static void fixterm(void)
+{
+	tcsetattr(STDIN_FILENO,TCSANOW,&tio_default);
+}
+
+static void init_stdio(void)
+{
+	struct termios tio_raw;
+
+	if(isatty(STDERR_FILENO))
+		fclose(stderr);
+
+	if (isatty(STDIN_FILENO))  {
+		tcgetattr(STDIN_FILENO,&tio_default);
+		tio_raw = tio_default;
+		/* cfmakeraw(&tio_raw); */
+		tio_raw.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
+		tio_raw.c_oflag &= ~OPOST;
+		tio_raw.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+		tio_raw.c_cflag &= ~(CSIZE|PARENB);
+		tio_raw.c_cflag |= CS8;
+		tcsetattr(STDIN_FILENO,TCSANOW,&tio_raw);
+		setvbuf(stdout, NULL, _IOFBF, 0);
+		atexit(fixterm);
+	}
+}
+
+#endif
+
 /***************/
 /* Entry Point */
 /***************/
@@ -1744,6 +1803,7 @@ int main(int argc, char **argv)
 		
 		fprintf(statfp,"No socket descriptor specified, using STDIO\n");
 		telnet=FALSE;
+		init_stdio();
 #else
 		fprintf(statfp,"!No socket descriptor specified\n\n");
 		fprintf(errfp,usage,MAX_FILE_SIZE);
