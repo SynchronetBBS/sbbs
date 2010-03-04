@@ -87,32 +87,32 @@ function 	Map(c,r,p,gn)
 	this.maxPlayers=p;					//NUMBER OF PLAYERS IN GAME
 	this.nextTurn=0;
 
-	this.playerTerr=-1;					//InitIALIZE TERRITORIES PER PLAYER (SET DURING Init BY this.SetMap())
-	this.used=[];						//InitIALIZE USED MAP SECTORS (FOR GENERATION OF MAP)
-	this.turnOrder=[];					//InitIALIZE PLAYER TURN ORDER
-	this.players=[];					//InitIALIZE PLAYER DATA
+	this.playerTerr=-1;					//initIALIZE TERRITORIES PER PLAYER (SET DURING init BY this.setMap())
+	this.used=[];						//initIALIZE USED MAP SECTORS (FOR GENERATION OF MAP)
+	this.turnOrder=[];					//initIALIZE PLAYER TURN ORDER
+	this.players=[];					//initIALIZE PLAYER DATA
 	this.users=[];						//ATTACH SYSTEM USER NUMBER TO GAME PLAYER NUMBER
 	
 	this.total=this.columns*this.rows;	//TOTAL NUMBER OF POSSIBLE GRID LOCATIONS
-	this.mapSize=-1;					//InitIALIZE MAP SIZE (NOT THE SAME AS TOTAL)
+	this.mapSize=-1;					//initIALIZE MAP SIZE (NOT THE SAME AS TOTAL)
 	this.minTerr=6;						//MINIMUM FOR RANDOM TERRITORY GENERATION PER PLAYER
 	this.maxTerr=11;					//MAXIMUM FOR RANDOM TERRITORY GENERATION PER PLAYER
 	
 	//NOTIFY NEXT PLAYER OF TURN 
-	this.Notify=				function()	//NOTIFY NEXT PLAYER OF TURN
+	this.notify=				function()	//NOTIFY NEXT PLAYER OF TURN
 	{
 		nextTurn=this.nextTurn;
 		nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
 		
 		if(this.status!=0)
 		{
-			if(this.CountActiveHumans<2) 
+			if(this.countActiveHumans<2) 
 			{
 				return;
 			}
 			if(nextTurnPlayer>0 && nextTurnPlayer!=user.number) 
 			{
-				DeliverMessage(nextTurnPlayer,this.gameNumber);
+				deliverMessage(nextTurnPlayer,this.gameNumber);
 			}
 			else
 			{
@@ -127,28 +127,28 @@ function 	Map(c,r,p,gn)
 					}
 					else if(nextTurnPlayer>0) 
 					{
-						DeliverMessage(nextTurnPlayer,this.gameNumber);
+						deliverMessage(nextTurnPlayer,this.gameNumber);
 						break;
 					}
 				}
 			}
 		}
 	}
-	this.FindDaysOld=			function()	//DETERMINE THE LAST TIME A GAME FILE WAS MODIFIED (LAST TURN TAKEN)
+	this.findDaysOld=			function()	//DETERMINE THE LAST TIME A GAME FILE WAS MODIFIED (LAST TURN TAKEN)
 	{
 		daysOld=(time()-this.lastModified)/daySeconds;
 		return daysOld;
 	}
-	this.CheckElimination=		function()
+	this.checkElimination=		function()
 	{
 		var numEliminated=this.eliminated.length;
-		var humans=this.CountActiveHumans();
+		var humans=this.countActiveHumans();
 		if(numEliminated==(this.maxPlayers-1) || humans==0)
 		{
 			this.winner=this.lastEliminator;
 			if(this.lastEliminator>=0)
 			{	
-				this.AssignPoints();
+				this.assignPoints();
 			}
 			this.status=0;
 			return true;
@@ -164,7 +164,7 @@ function 	Map(c,r,p,gn)
 		}
 		return activePlayers;
 	}
-	this.CountActiveHumans=		function()
+	this.countActiveHumans=		function()
 	{
 		count=0;
 		for(ply in this.players)
@@ -173,9 +173,9 @@ function 	Map(c,r,p,gn)
 		}
 		return count;
 	}
-	this.AssignPoints=			function()	//TODO: REWORK SCORING SYSTEM COMPLETELY
+	this.assignPoints=			function()	//TODO: REWORK SCORING SYSTEM COMPLETELY
 	{
-		games.LoadRankings();
+		games.loadRankings();
 		if(this.singlePlayer) 
 		{
 			scores[this.winner].wins+=1;
@@ -185,9 +185,9 @@ function 	Map(c,r,p,gn)
 			var points=this.players.length<5?1:2;
 			scores[this.winner].score=parseInt(scores[this.winner].score,10) + points;
 		}
-		games.StoreRankings();
+		games.storeRankings();
 	}
-	this.EliminatePlayer=		function(playerNumber,eliminator)
+	this.eliminatePlayer=		function(playerNumber,eliminator)
 	{
 		dead=this.players[playerNumber];
 		dead.eliminated=true;
@@ -195,7 +195,7 @@ function 	Map(c,r,p,gn)
 		this.lastEliminator=eliminator;
 		if(dead.user>0) 
 		{
-			games.LoadRankings();
+			games.loadRankings();
 			if(this.singlePlayer)
 			{
 				scores[dead.user].losses+=1;
@@ -209,10 +209,10 @@ function 	Map(c,r,p,gn)
 				scores[dead.user].score=parseInt(scores[dead.user].score,10) + pts;
 				if(scores[dead.user].score<minScore) scores[dead.user].score=parseInt(minScore,10);
 			}
-			games.StoreRankings();
+			games.storeRankings();
 		}
 	}
-	this.SetEliminated=			function()
+	this.setEliminated=			function()
 	{										//RUNS AT STARTUP, STORING GAME ELIMINATION DATA UPON LOADING EACH GAME
 		this.eliminated=[];
 		for(elp in this.players)
@@ -226,7 +226,7 @@ function 	Map(c,r,p,gn)
 		}
 		if(this.status==0) this.winner=this.lastEliminator;
 	}
-	this.GetNextTurn=			function()
+	this.getNextTurn=			function()
 	{
 		if(this.nextTurn==this.maxPlayers-1) this.nextTurn=0;
 		else this.nextTurn++;
@@ -238,32 +238,32 @@ function 	Map(c,r,p,gn)
 			nextPlayer=this.turnOrder[this.nextTurn];
 		}
 	}
-	this.SetMap=				function()	
+	this.setMap=				function()	
 	{										//SET MAP SIZE
 		this.playerTerr=this.minTerr+random(this.maxTerr-this.minTerr);
 		this.mapSize=this.maxPlayers*(this.playerTerr);
 	}								
-	this.DisplayGrid=			function()
+	this.displayGrid=			function()
 	{										//DISPLAYS THE LOCATION DATA FOR EACH COMPANY
-		DrawVerticalLine("\1w\1h");
+		drawVerticalLine("\1w\1h");
 		for(uu in this.used)
 		{
 			this.grid[uu].displayBorder(border_color);
 		}
 	}
-	this.SetGrid=				function()
+	this.setGrid=				function()
 	{
 		for(uu in this.used)
 		{
 			this.grid[uu].setBorder(this.grid);
 		}
 	}
-	this.Redraw=				function()
+	this.redraw=				function()
 	{
-		this.DisplayPlayers();
-		this.DisplayGrid();
+		this.displayPlayers();
+		this.displayGrid();
 		this.displayGame();
-		WipeCursor("left");
+		wipeCursor("left");
 	}
 	this.displayGame=			function()
 	{										//DISPLAY EACH PLAYER'S TERRITORIES
@@ -285,27 +285,27 @@ function 	Map(c,r,p,gn)
 		console.gotoxy(x,y);
 		return(0);
 	}
-	this.Reinforce=				function(playerNumber)
+	this.reinforce=				function(playerNumber)
 	{
-		numDice=this.FindConnected(playerNumber);
-		placed=this.PlaceDice(playerNumber,numDice);
-		if(this.winner<0) this.CheckElimination();
-		this.GetNextTurn();
+		numDice=this.findConnected(playerNumber);
+		placed=this.placeDice(playerNumber,numDice);
+		if(this.winner<0) this.checkElimination();
+		this.getNextTurn();
 		if(!this.singlePlayer) 
 		{
 			if(this.players[playerNumber].user>0)
-				this.Notify();
+				this.notify();
 		}
 		return placed;
 	}
-	this.CanAttack=				function(playerNumber,mapLocation)
+	this.canAttack=				function(playerNumber,mapLocation)
 	{										//RETURNS TRUE IF PLAYER : playerNumber CAN ATTACK FROM GRID INDEX : mapLocation
 		if(mapLocation>=0)		//IF A LOCATION IS PROVIDED, RETURN AN ARRAY OF NEIGHBORING TERRITORIES THAT CAN BE ATTACKED
 		{
 			options=[];
 			if(this.grid[mapLocation].dice>1)
 			{
-				dirs=this.LoadDirectional(mapLocation);
+				dirs=this.loadDirectional(mapLocation);
 				for(dir in dirs)
 				{
 					current=dirs[dir];
@@ -325,7 +325,7 @@ function 	Map(c,r,p,gn)
 				currentTerritory=this.players[playerNumber].territories[terr];
 				if(this.grid[currentTerritory].dice>1)
 				{
-					dirs=this.LoadDirectional(currentTerritory);
+					dirs=this.loadDirectional(currentTerritory);
 					for(dir in dirs)
 					{
 						current=dirs[dir];
@@ -339,19 +339,19 @@ function 	Map(c,r,p,gn)
 		}
 		return false;
 	}
-	this.LoadDirectional=		function(mapLocation)
+	this.loadDirectional=		function(mapLocation)
 	{
 		current=this.grid[mapLocation];
-		n=current.North;
-		s=current.South;
-		nw=current.Northwest;
-		ne=current.Northeast;
-		sw=current.Southwest;
-		se=current.Southeast;
+		n=current.north;
+		s=current.south;
+		nw=current.northwest;
+		ne=current.northeast;
+		sw=current.southwest;
+		se=current.southeast;
 		dirs=[n,s,nw,ne,sw,se];
 		return dirs;
 	}
-	this.FindConnected=			function(playerNumber)
+	this.findConnected=			function(playerNumber)
 	{										//SCANS ENTIRE MAP AND RETURNS THE NUMBER EQUAL TO THE PLAYER'S LARGEST CLUSTER OF CONNECTED TILES
 		largest_cluster=1;
 		terr=this.players[playerNumber].territories;
@@ -370,7 +370,7 @@ function 	Map(c,r,p,gn)
 				
 				if(!checked[current.location])
 				{
-					dirs=ScanProximity(current.location);
+					dirs=scanProximity(current.location);
 					for(ddd in dirs)
 					{
 						dir=dirs[ddd];
@@ -394,7 +394,7 @@ function 	Map(c,r,p,gn)
 		}
 		return largest_cluster;
 	}
-	this.DisplayPlayers=		function()
+	this.displayPlayers=		function()
 	{										//DISPLAY PLAYER INFO (RIGHT SIDE)
 		var xxx=menuColumn;
 		var yyy=menuRow;
@@ -402,13 +402,13 @@ function 	Map(c,r,p,gn)
 		for(var ply=0;ply<this.maxPlayers;ply++)
 		{
 			var playerNumber=this.turnOrder[ply];
-			this.CountDice(playerNumber);
+			this.countDice(playerNumber);
 			var player=this.players[playerNumber];
-			var name=GetUserName(player,playerNumber);
+			var name=getUserName(player,playerNumber);
 			
 			if(player.eliminated) 
 			{
-				player.bColor=blackBG; 
+				player.bColor=blackbg; 
 				player.fColor="\1n\1k\1h"; 
 			}
 			else if(this.status!=0 && this.hiddenNames && name!=user.alias)
@@ -417,13 +417,13 @@ function 	Map(c,r,p,gn)
 			}
 			
 			console.gotoxy(xxx,yyy); yyy++;
-			console.putmsg(PrintPadded(player.bColor + player.fColor + " " + name + ":",36," ", "left"));
+			console.putmsg(printPadded(player.bColor + player.fColor + " " + name + ":",36," ", "left"));
 			console.gotoxy(xxx,yyy); yyy++;
-			console.putmsg(player.fColor + player.bColor+ " LAND: " + PrintPadded(player.fColor + player.territories.length,3," ", "right"));
-			console.putmsg(player.fColor + player.bColor+ " DICE: " + PrintPadded(player.fColor + player.totalDice,3," ", "right"));
-			console.putmsg(player.fColor + player.bColor+ " RSRV: " + PrintPadded(player.fColor + player.reserve,3," ", "right") + " ");
+			console.putmsg(player.fColor + player.bColor+ " LAND: " + printPadded(player.fColor + player.territories.length,3," ", "right"));
+			console.putmsg(player.fColor + player.bColor+ " DICE: " + printPadded(player.fColor + player.totalDice,3," ", "right"));
+			console.putmsg(player.fColor + player.bColor+ " RSRV: " + printPadded(player.fColor + player.reserve,3," ", "right") + " ");
 		}
-		console.print(blackBG);
+		console.print(blackbg);
 	}
 	this.ShufflePlayers=		function()
 	{										//Generate TURN ORDER (this.turnOrder[])
@@ -434,7 +434,7 @@ function 	Map(c,r,p,gn)
 			else this.turnOrder[rand]=pp;
 		}
 	}
-	this.GeneratePlayers=		function()
+	this.generatePlayers=		function()
 	{
 		for(pl=0;pl<this.maxPlayers;pl++)
 		{
@@ -445,7 +445,7 @@ function 	Map(c,r,p,gn)
 		}
 		this.ShufflePlayers();
 	}
-	this.GenerateMap=			function()
+	this.generateMap=			function()
 	{										//RANDOMLY Generate NEW LAND
 		var unused=[];
 		for(mi=0;mi<this.total;mi++) unused.push(mi);
@@ -459,8 +459,8 @@ function 	Map(c,r,p,gn)
 		{
 			randb=random(unused.length);
 			locationb=unused[randb];
-			prox=ScanProximity(locationb);
-			if(this.LandNearby(prox, this.used))
+			prox=scanProximity(locationb);
+			if(this.landNearby(prox, this.used))
 			{
 	 			this.grid[locationb]=new Territory(locationb);
 				this.used[locationb]=true;
@@ -486,11 +486,11 @@ function 	Map(c,r,p,gn)
 					this.players[ply].territories.push(location);
 				}
 			}
-			this.PlaceDice(ply,this.playerTerr);
+			this.placeDice(ply,this.playerTerr);
 		}
-		this.CountDiceAll();
+		this.countDiceAll();
 	}	
-	this.LandNearby=			function(proximity)
+	this.landNearby=			function(proximity)
 	{										//CHECK IMMEDIATE AREA FOR LAND
 		for(px in proximity)
 		{
@@ -502,10 +502,10 @@ function 	Map(c,r,p,gn)
 		}
 		return false;
 	}
-	this.PlaceDice=				function(playerNum, numDice)
+	this.placeDice=				function(playerNum, numDice)
 	{										//RANDOMLY PLACE X NUMBER OF DICE ON PLAYER TERRITORIES
 		playerNumber=parseInt(playerNum);
-		this.CountDice(playerNumber);
+		this.countDice(playerNumber);
 		toPlace=numDice;
 		fulldice=false;
 		placed=[];
@@ -566,7 +566,7 @@ function 	Map(c,r,p,gn)
 		}
 		return placed;
 	}
-	this.CountDice=				function(playerNumber)
+	this.countDice=				function(playerNumber)
 	{										//COUNT DICE TOTALS FOR EACH PLAYER
 		this.players[playerNumber].totalDice=0;
 		for(td in this.players[playerNumber].territories)
@@ -575,19 +575,19 @@ function 	Map(c,r,p,gn)
 			this.players[playerNumber].totalDice+=this.grid[terr].dice;
 		}
 	}
-	this.CountDiceAll=			function()
+	this.countDiceAll=			function()
 	{
 		for(ppp in this.players)
 		{
-			this.CountDice(ppp);
+			this.countDice(ppp);
 		}
 	}
-	this.Init=					function()
-	{										//InitIALIZE GAME
-		this.SetMap();
-		this.GeneratePlayers();
-		this.GenerateMap(this.columns, this.rows);
-		this.SetGrid();
+	this.init=					function()
+	{										//initIALIZE GAME
+		this.setMap();
+		this.generatePlayers();
+		this.generateMap(this.columns, this.rows);
+		this.setGrid();
 	}
 									//END METHODS 
 }

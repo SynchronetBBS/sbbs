@@ -1,5 +1,5 @@
 //#########################DICE ROLLING FUNCTIONS############################
-function	RollDice(a,b)
+function	rollDice(a,b)
 {								//MAIN DICE ROLLING FUNCTION
 	var totals=[0,0];
 	var x=menuColumn;		var y=16;
@@ -7,7 +7,7 @@ function	RollDice(a,b)
 	bc=console.ansi(BG_RED);
 	fc=console.ansi(LIGHTGRAY);
 
-	FancyRoll(a,x,y,fc,bc);
+	fancyRoll(a,x,y,fc,bc);
 	xx=x;
 	yy=y;
 	for(aa=0;aa<a;aa++)
@@ -23,7 +23,7 @@ function	RollDice(a,b)
 	bc=console.ansi(BG_LIGHTGRAY);
 	fc=console.ansi(RED);
 
-	FancyRoll(b,x,y,fc,bc);
+	fancyRoll(b,x,y,fc,bc);
 	xx=x;
 	yy=y;
 	for(bb=0;bb<b;bb++)
@@ -38,7 +38,7 @@ function	RollDice(a,b)
 	printf("\1n\1r\1hAttacker: " + totals[0] + "\1n   Defender: " + totals[1]);
 	return totals;
 }
-function	FancyRoll(qty,x,y,fc,bc)
+function	fancyRoll(qty,x,y,fc,bc)
 {								//"ROLLING DICE" DISPLAY
 	for(roll=0;roll<8;roll++)
 	{
@@ -82,10 +82,10 @@ function	Die(number)
 		printf(f + b + this.line2);
 		console.gotoxy(x,y);
 		printf(f + b + this.line3);
-		printf(blackBG);
+		printf(blackbg);
 	}
 }
-function	LoadDice()
+function	loadDice()
 {								//INITIALIZE SIX SIDED DICE OBJECTS
 	dice_=[];
 	for(d=1;d<=6;d++)

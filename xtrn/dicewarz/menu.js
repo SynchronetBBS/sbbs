@@ -12,7 +12,7 @@ function 	Menu(title,x,y,color,hkey_color)
 		var yyyy=orig_y;
 		console.gotoxy(xxxx,yyyy); yyyy++;
 		console.cleartoeol();
-		DrawLine("\1w\1h",79); console.crlf();
+		drawLine("\1w\1h",79); console.crlf();
 	}
 	this.display=function()
 	{
@@ -57,7 +57,7 @@ function 	Menu(title,x,y,color,hkey_color)
 		{
 			hotkey=this.getHotKey(items[i]);
 			this.items[hotkey]=new MenuItem(items[i],hotkey,color,hkey_color);
-			this.items[hotkey].Init(color,hkey_color);
+			this.items[hotkey].init(color,hkey_color);
 		}
 	}
 	this.displayTitle=function()
@@ -71,7 +71,7 @@ function 	Menu(title,x,y,color,hkey_color)
 	}	
 	this.displayHorizontal=function()
 	{
-		ClearLine(1,48);
+		clearLine(1,48);
 		console.gotoxy(orig_x,orig_y);
 		for(i in this.items)
 		{
@@ -87,7 +87,7 @@ function 	MenuItem(item,hotkey,color,hkey_color)
 	this.enabled=true;
 	
 	this.hotkey=hotkey;
-	this.Init=function(color,hkey_color)
+	this.init=function(color,hkey_color)
 	{
 		this.text=this.item.replace(("~" + hotkey) , (color + "[" + hkey_color + hotkey + color + "]"));
 	}

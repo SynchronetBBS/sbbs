@@ -1,11 +1,11 @@
 //##########################DISPLAY FUNCTIONS#################################
-function 	ClearLine(row,toColumn)
+function 	clearLine(row,toColumn)
 {
 	console.gotoxy(1,row);
 	console.putmsg(format("%*s", toColumn-1, ""));
 }
 
-function	ClearArea(fromRow,fromColumn,qty)
+function	clearArea(fromRow,fromColumn,qty)
 {
 	var count;
 
@@ -17,7 +17,7 @@ function	ClearArea(fromRow,fromColumn,qty)
 	}
 }
 
-function	Wrap(msg,lst)
+function	wrap(msg,lst)
 {
 	console.pushxy();
 	console.putmsg(msg);
@@ -41,7 +41,7 @@ function	Wrap(msg,lst)
 	console.crlf();
 }
 
-function 	PrintPadded(string,length,padding,justification)
+function 	printPadded(string,length,padding,justification)
 {
 	var padlength=length-console.strlen(string);
 	var newstring=string;
@@ -56,7 +56,7 @@ function 	PrintPadded(string,length,padding,justification)
 	return(newstring);
 }
 
-function 	DrawLine(color,length,character)
+function 	drawLine(color,length,character)
 {
 	var printchar= "\xC4";
 
@@ -66,7 +66,7 @@ function 	DrawLine(color,length,character)
 		console.putmsg(color + printchar);
 }
 
-function 	DrawVerticalLine(color/*, side*/)
+function 	drawVerticalLine(color/*, side*/)
 {
 	var ly=1;
 	var lx=menuColumn-1;
@@ -97,49 +97,19 @@ function 	DrawVerticalLine(color/*, side*/)
 //	console.putmsg(color + bottomside);
 }
 
-function 	WipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
+function 	wipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 {	
 	if(lr=="left") { side=1; row=console.screen_rows; }
 	else { side=console.screen_columns; row=1; }
 	console.gotoxy(side,row);
 }
 
-function 	GetColor(color, intensity)
-{									//TAKE A STRING AND RETURN THE CORRESPONDING ANSI COLOR CODE
-	if(intensity=="high")
-		inten="\1h";
-	else
-		inten="\1n";
-
-	switch(color) {
-		case "black":
-			return(inten+"\1k");
-		case "grey":
-			return ("\1k\1h");
-		case "cyan":
-			return (inten+"\1c");
-		case "yellow":
-			return (inten+"\1y");
-		case "green":
-			return (inten+"\1g");
-		case "white":
-			return (inten+"\1w");
-		case "red":
-			return (inten+"\1r");
-		case "blue":
-			return (inten+"\1b");
-		case "magenta":
-			return (inten+"\1m");
-	}
-    return false;
-}
-
-function 	QueueMessage(message,x,y)
+function 	queueMessage(message,x,y)
 {
 	messages.push({'msg':message,'x':x,'y':y});
 }
 
-function 	DisplayMessages()
+function 	displayMessages()
 {
 	for(mess in messages) {
 		console.gotoxy(messages[mess].x,messages[mess].y+1);
@@ -150,7 +120,7 @@ function 	DisplayMessages()
 	messages=[];
 }
 
-function 	PutMessage(message,x,y)
+function 	putMessage(message,x,y)
 {
 	console.gotoxy(x,y+1);
 	console.putmsg(message);
@@ -159,7 +129,7 @@ function 	PutMessage(message,x,y)
 	console.cleartoeol();
 }
 
-function	ShowWinner(g)
+function	showWinner(g)
 {
 	console.gotoxy(51,18);
 	console.putmsg("\1n\1r\1hThis game was won by: ");
@@ -172,5 +142,5 @@ function	ShowWinner(g)
 	{
 		console.putmsg("\1n\1r\1hcomputer player");
 	}
-	WipeCursor("left");
+	wipeCursor("left");
 }

@@ -27,7 +27,7 @@
 	load(game_dir + "ai.js");
 	var activeGame="";
 	
-//######################### InitIALIZE PROGRAM VARIABLES #########################
+//######################### initIALIZE PROGRAM VARIABLES #########################
 
 	var 	pointsToWin=	100;
 	var		minScore=		-2;
@@ -60,22 +60,22 @@
 	const	menuColumn=		50;
 	const 	columns=		9;
 	const 	rows=			9;
-	const 	blackBG=		console.ansi(ANSI_NORMAL);
+	const 	blackbg=		console.ansi(ANSI_NORMAL);
 	
 	//TODO: FIX SCORING SYSTEM... BECAUSE RIGHT NOW IT SUCKS
-	const	points=			[-2,-2,-1,-1,0,2,4];			//POINTS GAINED/LOST FOR WINNING/LOSING
+	const	points=			[-2,-2,-1,-1,0,1,3];			//POINTS GAINED/LOST FOR WINNING/LOSING
 	var		scores=			[];
 	
 	var		messages=		[];								//MESSAGES QUEUED FOR DISPLAY UPON RELOADING MAIN MENU
 	var		games=			new GameStatusInfo();
-	var		dice=			LoadDice();
+	var		dice=			loadDice();
 	var 	oldpass=		console.ctrlkey_passthru;
 	
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
 
 //########################## MAIN FUNCTIONS ###################################
-function 	ScanProximity(location) 	
+function 	scanProximity(location) 	
 {										
 	var prox=[];
 	var odd=false;
@@ -117,7 +117,7 @@ function 	ScanProximity(location)
 	}
 	return prox;
 }
-function 	GetNextGameNumber()
+function 	getNextGameNumber()
 {
 	var next=1;
 	while(games.gameData[next]) {
@@ -135,37 +135,37 @@ function	CountSparseArray(data)
 	if(count==0) return false;
 	else return count;
 }
-function	ViewInstructions()
+function	viewInstructions()
 {
 	console.clear();
 	console.printfile(game_dir + instructions);
 	if(!(user.settings & USER_PAUSE)) console.pause();
 	console.aborted=false;
 }
-function	ViewRankings()
+function	viewRankings()
 {
-	games.HallOfFame();
-	games.LoadRankings();
-	var scoredata=SortScores();
+	games.hallOfFame();
+	games.loadRankings();
+	var scoredata=sortScores();
 	console.clear();
 	
 	printf("\1k\1h\xDA");
-	printf(PrintPadded("\xC2",23,"\xC4","right"));
-	printf(PrintPadded("\xC2",8,"\xC4","right"));
-	printf(PrintPadded("\xC2",8,"\xC4","right"));
-	printf(PrintPadded("\xC2",12,"\xC4","right"));
-	printf(PrintPadded("\xC2",14,"\xC4","right"));
-	printf(PrintPadded("\xBF",13,"\xC4","right"));
+	printf(printPadded("\xC2",23,"\xC4","right"));
+	printf(printPadded("\xC2",8,"\xC4","right"));
+	printf(printPadded("\xC2",8,"\xC4","right"));
+	printf(printPadded("\xC2",12,"\xC4","right"));
+	printf(printPadded("\xC2",14,"\xC4","right"));
+	printf(printPadded("\xBF",13,"\xC4","right"));
 	console.crlf();
 	printf("\1k\1h\xB3\1n\1g DICE WARZ RANKINGS   \1k\1h\xB3 \1n\1gSCORE \1k\1h\xB3 \1n\1gKILLS \1k\1h\xB3 \1n\1gSOLO WINS \1k\1h\xB3 \1n\1gSOLO LOSSES \1k\1h\xB3 \1n\1gSOLO WIN % \1k\1h\xB3");
 	console.crlf();
 	printf("\xC3");
-	printf(PrintPadded("\xC5",23,"\xC4","right"));
-	printf(PrintPadded("\xC5",8,"\xC4","right"));
-	printf(PrintPadded("\xC5",8,"\xC4","right"));
-	printf(PrintPadded("\xC5",12,"\xC4","right"));
-	printf(PrintPadded("\xC5",14,"\xC4","right"));
-	printf(PrintPadded("\xB4",13,"\xC4","right"));
+	printf(printPadded("\xC5",23,"\xC4","right"));
+	printf(printPadded("\xC5",8,"\xC4","right"));
+	printf(printPadded("\xC5",8,"\xC4","right"));
+	printf(printPadded("\xC5",12,"\xC4","right"));
+	printf(printPadded("\xC5",14,"\xC4","right"));
+	printf(printPadded("\xB4",13,"\xC4","right"));
 	console.crlf();
  	
 	for(hs in scoredata)
@@ -176,24 +176,24 @@ function	ViewRankings()
 			var winPercentage=0;
 			if(scores[thisuser].wins>0) winPercentage=(scores[thisuser].wins/(scores[thisuser].wins+scores[thisuser].losses))*100;
 			printf("\1k\1h\xB3");
-			printf(PrintPadded("\1y\1h" + system.username(thisuser),22," ","left"));
+			printf(printPadded("\1y\1h" + system.username(thisuser),22," ","left"));
 			printf("\1k\1h\xB3");
-			printf(PrintPadded("\1w\1h" + scores[thisuser].score + "\1k\1h\xB3",8," ","right"));
-			printf(PrintPadded("\1w\1h" + scores[thisuser].kills + "\1k\1h\xB3",8," ","right"));
-			printf(PrintPadded("\1w\1h" + scores[thisuser].wins + "\1k\1h\xB3",12," ","right"));
-			printf(PrintPadded("\1w\1h" + scores[thisuser].losses + "\1k\1h\xB3",14," ","right"));
-			printf(PrintPadded("\1w\1h" + winPercentage.toFixed(2) + " % \1k\1h\xB3",13," ","right"));
+			printf(printPadded("\1w\1h" + scores[thisuser].score + "\1k\1h\xB3",8," ","right"));
+			printf(printPadded("\1w\1h" + scores[thisuser].kills + "\1k\1h\xB3",8," ","right"));
+			printf(printPadded("\1w\1h" + scores[thisuser].wins + "\1k\1h\xB3",12," ","right"));
+			printf(printPadded("\1w\1h" + scores[thisuser].losses + "\1k\1h\xB3",14," ","right"));
+			printf(printPadded("\1w\1h" + winPercentage.toFixed(2) + " % \1k\1h\xB3",13," ","right"));
 			console.crlf();
 		}
 	}
 	
 	printf("\1k\1h\xC0");
-	printf(PrintPadded("\xC1",23,"\xC4","right"));
-	printf(PrintPadded("\xC1",8,"\xC4","right"));
-	printf(PrintPadded("\xC1",8,"\xC4","right"));
-	printf(PrintPadded("\xC1",12,"\xC4","right"));
-	printf(PrintPadded("\xC1",14,"\xC4","right"));
-	printf(PrintPadded("\xD9",13,"\xC4","right"));
+	printf(printPadded("\xC1",23,"\xC4","right"));
+	printf(printPadded("\xC1",8,"\xC4","right"));
+	printf(printPadded("\xC1",8,"\xC4","right"));
+	printf(printPadded("\xC1",12,"\xC4","right"));
+	printf(printPadded("\xC1",14,"\xC4","right"));
+	printf(printPadded("\xD9",13,"\xC4","right"));
 	console.crlf();
 	
 	console.putmsg("\r\n\1y\1h Scores will be reset when a player reaches \1c" + pointsToWin + " \1ypoints.");
@@ -202,20 +202,20 @@ function	ViewRankings()
 	console.pause();
 	console.aborted=false;
 }
-function	Sort(iiii)
+function	sort(iiii)
 {
-	var Sorted=[];
+	var sorted=[];
 	for(cc in iiii)
 	{
-		Sorted.push(cc);
+		sorted.push(cc);
 	}
-	Sorted.sort();
-	return Sorted;
+	sorted.sort();
+	return sorted;
 }
-function	AttackMessage(txt)
+function	attackMessage(txt)
 {
 	var x=menuColumn;
-	ClearArea(16,menuColumn,8);
+	clearArea(16,menuColumn,8);
 	console.gotoxy(x,16);
 	console.putmsg("\1r\1h Choose a territory");
 	console.gotoxy(x,17);
@@ -229,7 +229,7 @@ function	AttackMessage(txt)
 	console.gotoxy(x,22);
 	console.putmsg("\1r\1h to select a tile.");
 
-	WipeCursor("left");
+	wipeCursor("left");
 }
 
 /*
@@ -239,7 +239,7 @@ function	AttackMessage(txt)
 	THEN SORT THE LIST HIGHEST SCORE TO LOWEST SCORE AND RETURN A NEW ARRAY OF POINTERS TO SCORE INDICES
 	I'M SURE THERE'S A BETTER WAY, IT JUST HASN'T OCCURRED TO ME YET
 */
-function	CompressScores()
+function	compressScores()
 {
 	compressed=[];
 	for(score in scores)
@@ -248,9 +248,9 @@ function	CompressScores()
 	}
 	return compressed;
 }
-function 	SortScores()
+function 	sortScores()
 { 
-	var data=CompressScores();
+	var data=compressScores();
 	var numScores=data.length;
 	for(n=0;n<numScores;n++)
 	{
@@ -266,7 +266,7 @@ function 	SortScores()
 	}
 	return data;
 }
-function 	DeliverMessage(nextTurnPlayer,gameNumber)
+function 	deliverMessage(nextTurnPlayer,gameNumber)
 {
 	var nextUserName=system.username(nextTurnPlayer);
 	var message="\1r\1hIt is your turn in \1yDice-Warz\1r game #" + gameNumber + "\r\n\r\n";
@@ -279,7 +279,7 @@ function 	DeliverMessage(nextTurnPlayer,gameNumber)
 	}
 	else system.put_telegram(nextTurnPlayer, message);
 }
-function 	DeliverKillMessage(killer,eliminated,gameNumber)
+function 	deliverKillMessage(killer,eliminated,gameNumber)
 {
 	var killed=system.username(eliminated);
 	var message="\1r\1h" + killer + " has eliminated you in \1yDice\1r-\1yWarz\1r game #\1y" + gameNumber + "\1r!\r\n\r\n";
@@ -295,91 +295,110 @@ function 	DeliverKillMessage(killer,eliminated,gameNumber)
 
 
 //########################GAME MENU FUNCTIONS################################
-function	SplashScreen()
+function	splashScreen()
 {
 	console.clear();
 	var splash_filename=game_dir + "dicewarz.bin";
 	var splash_size=file_size(splash_filename);
-	splash_size/=2;		// Divide by two for attr/char pairs
-	splash_size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
-	var Splash=new Graphic(80,splash_size);
-	Splash.load(splash_filename);
-	Splash.draw();
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
 	
 	console.gotoxy(1,23);
 	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 }
-function 	GameMenu()
+function 	splashExit() 
 {
-	var gMenu=new Menu(		""								,1,19,GetColor("green"),GetColor("green","high"));
+	console.ctrlkey_passthru=oldpass;
+	bbs.sys_status&=~SS_MOFF;
+	file_remove(userFileName);
+	console.clear();
+	var splash_filename=game_dir + "exit.bin";
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	exit();
+}
+function 	gameMenu()
+{
+	var gMenu=new Menu(	""								,1,19,"\1n\1g","\1g\1h");
 	var gmenu_items=[		"~Rankings"						, 
 							"~Select Game"					,
 							"~Begin New Game"				,
 							"~Instructions"					,
 							"~Quit to BBS"					];
 	gMenu.add(gmenu_items);
-	games.Init();
+	games.init();
 
 	while(1)
 	{
 		//LOOPING MAIN MENU, UPDATES GAME STATUS INFO UPON REFRESH
 		//TODO: make recently completed games disappear from "your turn" list upon refresh
 		
-		games.UpdateGames();
+		games.updateGames();
 		console.clear();
 		console.putmsg("\1r\1hB B S - D I C E - W A R Z ! \1n\1c- Matt Johnson - 2008");
 		console.crlf();
-		DrawLine("\1n\1w\1h",79);
+		drawLine("\1n\1w\1h",79);
 		console.crlf();
 		console.gotoxy(1,18);
-		DrawLine("\1n\1w\1h",79);
+		drawLine("\1n\1w\1h",79);
 		
 		console.gotoxy(1,24);
-		DrawLine("\1n\1w\1h",79);
+		drawLine("\1n\1w\1h",79);
 		gMenu.display();
 
 		console.gotoxy(1,3);
 		
-		Wrap("\1g Games in progress          ",games.inProgress);
-		Wrap("\1g Games needing more players ",games.notFull);
-		Wrap("\1g Completed Games            ",games.completed);
-		Wrap("\1g You are involved in games  ",games.yourGames);
-		Wrap("\1g It is your turn in games   ",games.yourTurn);
-		Wrap("\1g You are eliminated in games",games.eliminated);
-		Wrap("\1g You have won games         ",games.youWin);
-		Wrap("\1g Single-player games        ",games.singleGames);
+		wrap("\1g Games in progress          ",games.inProgress);
+		wrap("\1g Games needing more players ",games.notFull);
+		wrap("\1g Completed games            ",games.completed);
+		wrap("\1g You are involved in games  ",games.yourGames);
+		wrap("\1g It is your turn in games   ",games.yourTurn);
+		wrap("\1g You are eliminated in games",games.eliminated);
+		wrap("\1g You have won games         ",games.youWin);
+		wrap("\1g Single-player games        ",games.singleGames);
 		
-		DisplayMessages();
+		displayMessages();
 		
-		WipeCursor("right");
+		wipeCursor("right");
 		
-        var cmd=console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF|K_UPPER);
-        switch(cmd)
-        {
-        case "R":
-            ViewRankings();
-            break;
-        case "S":
-            var choice=ChooseGame();
-            if(choice) ProcessSelection(choice);
-            break;
-        case "I":
-            ViewInstructions();
-            break;
-        case "B":
-            CreateNewGame();
-            break;
-        case "Q":
-            Quit(0);
-            break;
-        default:
-            break;
-        }
-        WipeCursor("right");
+		var cmd=console.getkey(K_NOSPIN|K_NOECHO|K_NOCRLF|K_UPPER);
+		switch(cmd)
+		{
+		case "R":
+			viewRankings();
+			break;
+		case "S":
+			var choice=chooseGame();
+			if(choice) processSelection(choice);
+			break;
+		case "I":
+			viewInstructions();
+			break;
+		case "B":
+			createNewGame();
+			break;
+		case "Q":
+			splashExit(0);
+			break;
+		default:
+			break;
+		}
+		wipeCursor("right");
 	}
 }
-function	ChooseGame()
+function	chooseGame()
 {
 	x=30; 
 	y=19;
@@ -389,7 +408,7 @@ function	ChooseGame()
 		console.cleartoeol();
 		if(!games.gameData.length)
 		{
-			PutMessage("\1r\1hThere are currently no games.",x,y);
+			putMessage("\1r\1hThere are currently no games.",x,y);
 			break;
 		}
 		console.putmsg("\1n\1gEnter game number or [\1hQ\1n\1g]uit\1h: ");
@@ -403,7 +422,7 @@ function	ChooseGame()
 			gamefile=root + num;
 
 			if(Locked(gamefile))
-				PutMessage("\1r\1hThat game is in use by another node.",x,y);
+				putMessage("\1r\1hThat game is in use by another node.",x,y);
 			else
 			{
 				if(game_data.singlePlayer) 
@@ -411,18 +430,18 @@ function	ChooseGame()
 					if(games.gameData[game_num].users[user.number]>0);
 					else 
 					{
-						PutMessage("\1r\1hGame #" + game_num + " is private.",x,y);
+						putMessage("\1r\1hGame #" + game_num + " is private.",x,y);
 						continue;
 					}
 				}
 				return game_num;
 			}
 		}
-		else PutMessage("\1r\1hNo Such Game!",x,y);
+		else putMessage("\1r\1hNo Such Game!",x,y);
 	}
 	return false;
 }
-function 	ProcessSelection(gameNumber)
+function 	processSelection(gameNumber)
 {	
 	var num=gameNumber;
 	if(gameNumber<10) num="0" + num;
@@ -432,27 +451,27 @@ function 	ProcessSelection(gameNumber)
 	var g=games.gameData[gameNumber];
 	var fileName=g.fileName;
 	var lastModified=file_date(fileName);
-	if(lastModified>g.lastModified) games.gameData[gameNumber]=LoadGame(fileName,gameNumber,lastModified);
+	if(lastModified>g.lastModified) games.gameData[gameNumber]=loadGame(fileName,gameNumber,lastModified);
 	
 	if(g.status>=0)
 	{
-		PlayGame(gameNumber);
+		playGame(gameNumber);
 	}
 	else 
 	{
-		ViewGameInfo(gameNumber);
+		viewGameInfo(gameNumber);
 		if(g.users[user.number]>=0)
 		{
 			var gamePlayer=g.users[user.number];
-			if(g.fixedPlayers) AskRemove(gameNumber,gamePlayer);
-			else ChangeVote(gameNumber,user.number);
+			if(g.fixedPlayers) askRemove(gameNumber,gamePlayer);
+			else changeVote(gameNumber,user.number);
 		}
-		else JoinGame(gameNumber);
+		else joinGame(gameNumber);
 	}
 	Unlock(gamefile);
-	ClearArea(19,30,4);
+	clearArea(19,30,4);
 }
-function	ChangeVote(gameNumber,userNumber)
+function	changeVote(gameNumber,userNumber)
 {
 	console.gotoxy(30,19);
 	console.cleartoeol();
@@ -463,7 +482,7 @@ function	ChangeVote(gameNumber,userNumber)
 	{
 		console.gotoxy(30,20);
 		console.cleartoeol();
-		AskRemove(gameNumber,gamePlayer);
+		askRemove(gameNumber,gamePlayer);
 	}
 	else 
 	{
@@ -473,12 +492,12 @@ function	ChangeVote(gameNumber,userNumber)
 		if(g.tallyVotes())
 		{
 			g.maxPlayers=g.countPlayers();
-			StartGame(gameNumber);
+			startGame(gameNumber);
 		}
-		games.StoreGame(gameNumber);
+		games.storeGame(gameNumber);
 	}
 }
-function	AskRemove(gameNumber,playerNumber)
+function	askRemove(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	if(console.noyes("\1n\1gRemove yourself from this game?"));
@@ -489,13 +508,13 @@ function	AskRemove(gameNumber,playerNumber)
 		{
 			file_remove(g.fileName);
 		}
-		else games.StoreGame(gameNumber);
+		else games.storeGame(gameNumber);
 	}
 }
-function	ViewGameInfo(gameNumber)
+function	viewGameInfo(gameNumber)
 {
 	g=games.gameData[gameNumber];
-	ClearArea(3,1,14);
+	clearArea(3,1,14);
 	console.gotoxy(2,4);
 	console.putmsg("\1g[ \1hGAME: #" + gameNumber + " \1n\1g]\r\n");
 
@@ -509,12 +528,11 @@ function	ViewGameInfo(gameNumber)
 	for(playerNumber=0;playerNumber<g.players.length;playerNumber++)
 	{
 		var player=g.players[playerNumber];
-		var name=GetUserName(player,playerNumber);
+		var name=getUserName(player,playerNumber);
 		if(g.hiddenNames && name!=user.alias)
 		{
 			name="Player " + (playerNumber+1);
 		}
-
 		console.putmsg("\1g\1h  " + name);
 		if(player.vote>=0) {
 			if(g.maxPlayers>g.minPlayers)
@@ -524,7 +542,7 @@ function	ViewGameInfo(gameNumber)
 	}
 	console.crlf();
 }
-function	StartGame(gameNumber)
+function	startGame(gameNumber)
 {
 	var maxPlayers=games.gameData[gameNumber].maxPlayers;
 	var players=games.gameData[gameNumber].players;
@@ -538,11 +556,11 @@ function	StartGame(gameNumber)
 	g=games.gameData[gameNumber];
 	games.gameData[gameNumber].players=players;
 	games.inProgress.push(gameNumber);
-	games.gameData[gameNumber].Init();
+	games.gameData[gameNumber].init();
 	games.gameData[gameNumber].lastModified=time();
 
-	QueueMessage("\1r\1hGame " + gameNumber + " Initialized!",30,20);
-	games.gameData[gameNumber].Notify();
+	queueMessage("\1r\1hGame " + gameNumber + " initialized!",30,20);
+	games.gameData[gameNumber].notify();
 	/* Set up computer players */
 	var aifile=new File(game_dir + "ai.ini");
 	aifile.open("r");
@@ -553,7 +571,7 @@ function	StartGame(gameNumber)
 				var p=random(possibleplayers.length);
 				g.players[i].AI.name=possibleplayers[p];
 				possibleplayers.splice(p,1);
-				g.players[i].AI.sort=aifile.iniGetValue(g.players[i].AI.name, "Sort", "Random");
+				g.players[i].AI.sort=aifile.iniGetValue(g.players[i].AI.name, "sort", "Random");
 				g.players[i].AI.check=aifile.iniGetValue(g.players[i].AI.name, "Check", "Random");
 				g.players[i].AI.qty=aifile.iniGetValue(g.players[i].AI.name, "Quantity", "Random");
 				if(AISortFunctions[g.players[i].AI.sort]===undefined)
@@ -566,9 +584,9 @@ function	StartGame(gameNumber)
 		}
 	}
 	aifile.close();
-	games.StoreGame(gameNumber);
+	games.storeGame(gameNumber);
 }
-function	JoinGame(gameNumber)
+function	joinGame(gameNumber)
 {
 	var numplayergames=games.yourGames.length-games.eliminated.length;
 	if(numplayergames>=maxPerPlayer)
@@ -578,10 +596,10 @@ function	JoinGame(gameNumber)
 	}
 	var vote=-1;
 	g=games.gameData[gameNumber];
-	if(console.noyes("\1n\1gJoin this game?"));
+	if(console.noyes("\1n\1gjoin this game?"));
 	else
 	{
-		if(g.maxPlayers>g.minPlayers && g.players.length+1<g.maxPlayers) vote=GetVote();
+		if(g.maxPlayers>g.minPlayers && g.players.length+1<g.maxPlayers) vote=getVote();
 		g.addPlayer(user.number,vote);
 		if(g.players.length>=g.minPlayers)
 		{
@@ -589,18 +607,18 @@ function	JoinGame(gameNumber)
 				g.tallyVotes())
 			{
 				g.maxPlayers=g.players.length;
-				StartGame(gameNumber);
+				startGame(gameNumber);
 			}
 		}
-		games.StoreGame(gameNumber);
+		games.storeGame(gameNumber);
 	}
 }
-function 	CreateNewGame()
+function 	createNewGame()
 {
 	var numplayergames=games.yourGames.length-games.eliminated.length;
 	if(numplayergames>=maxPerPlayer) 
 	{
-		QueueMessage("\1r\1hYou can only be active in " + maxPerPlayer + " games at a time",30,20);
+		queueMessage("\1r\1hYou can only be active in " + maxPerPlayer + " games at a time",30,20);
 		return false;
 	}
 
@@ -618,9 +636,9 @@ function 	CreateNewGame()
 	console.cleartoeol();
 	if(console.yesno("\1n\1gBegin a new game?"))
 	{
-		ClearArea(3,1,14);
-		ClearArea(19,30,5);
-		var gameNumber=GetNextGameNumber();
+		clearArea(3,1,14);
+		clearArea(19,30,5);
+		var gameNumber=getNextGameNumber();
 		var gnum=gameNumber;
 		if(gameNumber<10) gnum="0" + gnum;
 		var gamefile=root + gnum;
@@ -654,7 +672,7 @@ function 	CreateNewGame()
 				break;
 			}
 			else if(num=="Q") return false; 
-			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+			else putMessage("\1r\1h Please enter a number within the given range.",x,y);
 		}
 	}
 	else	
@@ -675,7 +693,7 @@ function 	CreateNewGame()
 				break;
 			}
 			else if(num=="Q") return false; 
-			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+			else putMessage("\1r\1h Please enter a number within the given range.",x,y);
 		}
 		if(minNumPlayers<maxPlayers) {
 			while(1)
@@ -691,7 +709,7 @@ function 	CreateNewGame()
 					break;
 				}
 				else if(num=="Q") return false;
-				else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+				else putMessage("\1r\1h Please enter a number within the given range.",x,y);
 			}
 		}
 		else fixedPlayers=true;
@@ -710,11 +728,11 @@ function 	CreateNewGame()
 				break;
 			}
 			else if(cnum=="Q") return false;
-			else PutMessage("\1r\1h Please enter a number within the given range.",x,y);
+			else putMessage("\1r\1h Please enter a number within the given range.",x,y);
 		}
 	}
 	games.gameData[gameNumber]=new NewGame(minNumPlayers,maxNumPlayers,gameNumber);
-	games.gameData[gameNumber].fileName=GetFileName(gameNumber);
+	games.gameData[gameNumber].fileName=getFileName(gameNumber);
 	for(cp=0;cp<numComputerPlayers;cp++)
 	{
 		games.gameData[gameNumber].addPlayer(-1, 1); //NO USER NUMBER, NO VOTE
@@ -726,33 +744,33 @@ function 	CreateNewGame()
 		else
 		{
 			console.crlf();
-			vote=GetVote();
+			vote=getVote();
 		}
 	}
 	games.gameData[gameNumber].addPlayer(user.number, vote);
 	if(singlePlayer) 
 	{
 		games.gameData[gameNumber].singlePlayer=true;
-		StartGame(gameNumber);
+		startGame(gameNumber);
 		games.singleGames.push(gameNumber);
 		games.yourGames.push(gameNumber);
 		games.yourTurn.push(gameNumber);
 	}
 	else games.notFull.push(gameNumber);
 
-	games.StoreGame(gameNumber);
-	QueueMessage("\1r\1hGame " + gameNumber + " Created!",30,20);
+	games.storeGame(gameNumber);
+	queueMessage("\1r\1hGame " + gameNumber + " Created!",30,20);
 	Unlock(gamefile);
 	return true;
 }
-function	GetFileName(gameNumber)
+function	getFileName(gameNumber)
 {
 	var num=gameNumber;
 	if(gameNumber<10) num="0" + gameNumber;
 	var gamefile=root + num;
 	return (game_dir + gamefile + ".dat");
 }
-function 	GetVote()
+function 	getVote()
 {
 	var vote=0;
 	console.putmsg("\1n\1gDo you wish to start the game immediately or wait for more players?");
@@ -763,7 +781,7 @@ function 	GetVote()
 	}
 	return vote;
 }
-function 	GetUserName(playerData,playerNumber)
+function 	getUserName(playerData,playerNumber)
 {
 	if(playerData.user>=0)
 		return(system.username(playerData.user));
@@ -772,7 +790,7 @@ function 	GetUserName(playerData,playerNumber)
 	return("Computer " + (playerNumber+1));
 }
 //###########################GAMEPLAY FUNCTIONS#############################
-function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
+function	selectTile(gameNumber,playerNumber,attackPosition,startPosition)
 {
 	var g=games.gameData[gameNumber];		
 	if(attackPosition>=0) 
@@ -782,7 +800,7 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 	else if(startPosition>=0) 
 	{
 		terr=g.grid[startPosition];		//IF A BOARD POSITION HAS BEEN SUPPLIED TO START FROM, START THERE
-		ShowSelected(terr,"\1n\1w\1h");
+		showSelected(terr,"\1n\1w\1h");
 	}
 	else														//OTHERWISE, START WITH THE FIRST PLAYER TERRITORY THAT IS CAPABLE OF ATTACKING
 	{
@@ -792,7 +810,7 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 			terr=g.grid[p.territories[tile]];
 			if(terr.dice>1) 
 			{
-				ShowSelected(terr,"\1n\1w\1h");
+				showSelected(terr,"\1n\1w\1h");
 				break;
 			}
 		}
@@ -808,12 +826,12 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 				if(terr.player==playerNumber);
 				else
 				{
-					if(terr.location==g.grid[attackPosition].North) return terr;
-					if(terr.location==g.grid[attackPosition].South) return terr;
-					if(terr.location==g.grid[attackPosition].Northeast) return terr;
-					if(terr.location==g.grid[attackPosition].Northwest) return terr;
-					if(terr.location==g.grid[attackPosition].Southeast) return terr;
-					if(terr.location==g.grid[attackPosition].Southwest) return terr;
+					if(terr.location==g.grid[attackPosition].north) return terr;
+					if(terr.location==g.grid[attackPosition].south) return terr;
+					if(terr.location==g.grid[attackPosition].northeast) return terr;
+					if(terr.location==g.grid[attackPosition].northwest) return terr;
+					if(terr.location==g.grid[attackPosition].southeast) return terr;
+					if(terr.location==g.grid[attackPosition].southwest) return terr;
 				}
 			}
 			else if(terr.player==playerNumber && terr.dice>1) return terr;
@@ -822,41 +840,41 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 		{
 			case KEY_DOWN:
 			case '2':
-				if(g.grid[terr.South])
-					dir=terr.South;
+				if(g.grid[terr.south])
+					dir=terr.south;
 				break;
 			case KEY_UP:
 			case '5':
-				if(g.grid[terr.North])
-					dir=terr.North;
+				if(g.grid[terr.north])
+					dir=terr.north;
 				break;
 			case '1':
-				if(g.grid[terr.Southwest])
-					dir=terr.Southwest;
+				if(g.grid[terr.southwest])
+					dir=terr.southwest;
 				break;
 			case '4':
-				if(g.grid[terr.Northwest])
-					dir=terr.Northwest;
+				if(g.grid[terr.northwest])
+					dir=terr.northwest;
 				break;
 			case '3':
-				if(g.grid[terr.Southeast])
-					dir=terr.Southeast;
+				if(g.grid[terr.southeast])
+					dir=terr.southeast;
 				break;
 			case '6':
-				if(g.grid[terr.Northeast])
-					dir=terr.Northeast;
+				if(g.grid[terr.northeast])
+					dir=terr.northeast;
 				break;
 			case KEY_LEFT:
-				if(g.grid[terr.Southwest])
-					dir=terr.Southwest;
-				else if(g.grid[terr.Northwest])
-					dir=terr.Northwest;
+				if(g.grid[terr.southwest])
+					dir=terr.southwest;
+				else if(g.grid[terr.northwest])
+					dir=terr.northwest;
 				break;
 			case KEY_RIGHT:
-				if(g.grid[terr.Northeast])
-					dir=terr.Northeast;
-				else if(g.grid[terr.Southeast])
-					dir=terr.Southeast;
+				if(g.grid[terr.northeast])
+					dir=terr.northeast;
+				else if(g.grid[terr.southeast])
+					dir=terr.southeast;
 				break;
 			case "Q":
 				terr.displayBorder(border_color);
@@ -866,38 +884,38 @@ function	SelectTile(gameNumber,playerNumber,attackPosition,startPosition)
 		}
 		terr.displayBorder(border_color);
 		terr=g.grid[dir];
-		ShowSelected(terr,"\1n\1w\1h");
+		showSelected(terr,"\1n\1w\1h");
 	}
-	WipeCursor("left");
+	wipeCursor("left");
 }
-function	ShowSelected(selection,color)
+function	showSelected(selection,color)
 {
 	selection.displaySelected(color);
-	WipeCursor("left");
+	wipeCursor("left");
 }
-function	Attack(gameNumber,playerNumber)
+function	attack(gameNumber,playerNumber)
 {
-	ClearArea(16,menuColumn,8);
-	AttackMessage("from which to Attack,");
-	var attackFrom=SelectTile(gameNumber,playerNumber,-1,games.gameData[gameNumber].lastMapPosition);
+	clearArea(16,menuColumn,8);
+	attackMessage("from which to Attack,");
+	var attackFrom=selectTile(gameNumber,playerNumber,-1,games.gameData[gameNumber].lastMapPosition);
 	if(attackFrom==false) return false;
 	
-	ClearArea(16,menuColumn,8);
-	AttackMessage("to Attack,");
-	var attackTo=SelectTile(gameNumber,playerNumber,attackFrom.location);
+	clearArea(16,menuColumn,8);
+	attackMessage("to Attack,");
+	var attackTo=selectTile(gameNumber,playerNumber,attackFrom.location);
 	if(attackTo==false) return false;
-	var tofrom=Battle(attackFrom,attackTo,gameNumber);
+	var tofrom=battle(attackFrom,attackTo,gameNumber);
 	if(tofrom=true)	games.gameData[gameNumber].lastMapPosition=attackTo.location;
 	else games.gameData[gameNumber].lastMapPosition=attackFrom.location;
 	return true;
 }
-function	Battle(attackFrom,attackTo,gameNumber)
+function	battle(attackFrom,attackTo,gameNumber)
 {
 	var g=games.gameData[gameNumber];
-	ClearArea(16,menuColumn,8);
-	ShowSelected(attackFrom,"\1n\1r\1h");
-	ShowSelected(attackTo,"\1n\1r\1h");
-	var totals=RollDice(attackFrom.dice,attackTo.dice);
+	clearArea(16,menuColumn,8);
+	showSelected(attackFrom,"\1n\1r\1h");
+	showSelected(attackTo,"\1n\1r\1h");
+	var totals=rollDice(attackFrom.dice,attackTo.dice);
 	
 	var defender=attackTo.player;
 	var attacker=attackFrom.player;
@@ -916,19 +934,19 @@ function	Battle(attackFrom,attackTo,gameNumber)
 		{
 			var killer=g.players[attacker].user;
 			var killed=g.players[defender].user;
-			g.EliminatePlayer(defender,killer);
+			g.eliminatePlayer(defender,killer);
 			if(killer>=0)
 			{
 				scores[killer].kills++;
-				scores[killer].points++;
-				games.StoreRankings();
+				scores[killer].score++;
+				games.storeRankings();
 			}
 			if(killed>=0)
 			{
 				var kname= (killer<0?g.players[attacker].AI.name:system.username(killer));
-				DeliverKillMessage(kname,killed,gameNumber);
+				deliverKillMessage(kname,killed,gameNumber);
 			} 
-			if(g.CheckElimination()) games.StoreGame(gameNumber); 
+			if(g.checkElimination()) games.storeGame(gameNumber); 
 		}
 	}
 	g.grid[attacking].dice=1;
@@ -936,22 +954,22 @@ function	Battle(attackFrom,attackTo,gameNumber)
 	attackFrom.displayBorder(border_color);
 	attackTo.displayBorder(border_color);
 	attackTo.show();
-	g.DisplayPlayers();
+	g.displayPlayers();
 }
-function	EndTurn(gameNumber,pl)
+function	endTurn(gameNumber,pl)
 {
 	var g=games.gameData[gameNumber];
-	var placed=g.Reinforce(pl);
-	ClearArea(16,menuColumn,9);
+	var placed=g.reinforce(pl);
+	clearArea(16,menuColumn,9);
 	console.gotoxy(menuColumn,16);
 	console.putmsg("\1r\1hPlaced " + placed.length + " reinforcements");
 	mswait(500);
-	ClearArea(16,menuColumn,9);
+	clearArea(16,menuColumn,9);
 	for(place in placed) g.grid[placed[place]].show();
 	g.takingTurn=false;
-	games.StoreGame(gameNumber);
+	games.storeGame(gameNumber);
 }
-function	Forfeit(gameNumber,playerNumber)
+function	forfeit(gameNumber,playerNumber)
 {
 	var g=games.gameData[gameNumber];
 	if(g.singlePlayer) 
@@ -972,32 +990,33 @@ function	Forfeit(gameNumber,playerNumber)
 				if(g.players[ply].user!=user.number)
 				{
 					g.winner=g.players[ply].user;
-					scores[g.players[ply].user].points+=2;
+					scores[g.winner].score+=points[6];
 					break;
 				}
 			}
+			games.storeGame(gameNumber);
 		}
 		else 
 		{
 			delete g.users[user.number];
 			g.players[playerNumber].AI.name=user.alias+" AI";
 			g.players[playerNumber].user=-1;
-			games.StoreGame(gameNumber);
+			games.storeGame(gameNumber);
 		}
 	}
-	g.DisplayPlayers();
-	games.StoreRankings();
+	g.displayPlayers();
+	games.storeRankings();
 }
 //MAIN GAMEPLAY FUNCTION
-function	PlayGame(gameNumber)
+function	playGame(gameNumber)
 {
 	console.clear();
 	var g=games.gameData[gameNumber];
 	var userInGame;
 	var currentPlayer;
-	g.Redraw();
+	g.redraw();
 	
-	var pMenu=new Menu(		""								,1,1,GetColor("green"),GetColor("green","high"));
+	var pMenu=new Menu(		""							,1,1,"\1n\1g","\1g\1h");
 	var pmenu_items=[		"~Take Turn"					, 
 							"~Attack"						,
 							"~Forfeit"						,
@@ -1006,7 +1025,7 @@ function	PlayGame(gameNumber)
 							"~Quit"							];
 	pMenu.add(pmenu_items);	
 	pMenu.disable(["A","E","T","F"]);
-	ClearArea(16,menuColumn,9);
+	clearArea(16,menuColumn,9);
 
 	while(1)
 	{
@@ -1029,33 +1048,33 @@ function	PlayGame(gameNumber)
 				name="Player " + (parseInt(turn,10)+1);
 			}
 			////////////////////////////////////
-				ClearLine(1,48);
+				clearLine(1,48);
 				console.gotoxy(2,1);
 				console.putmsg("\1r\1hPlease wait. " + name + " taking turn.");
 				mswait(750);
 			/////////////////////////////////////
 			g.players[turn].AI.turns=0;
 			g.players[turn].AI.moves=0;
-			while(g.CanAttack(turn))
+			while(g.canAttack(turn))
 			{
-				if(!TakeTurnAI(gameNumber,turn))
+				if(!takeTurnAI(gameNumber,turn))
 					break;
 			}
 			g.takingTurn=true;
-			EndTurn(gameNumber,turn);
-			g.DisplayPlayers();
+			endTurn(gameNumber,turn);
+			g.displayPlayers();
 			turn=g.turnOrder[g.nextTurn];
 		}
 		if(!g.takingTurn)
 		{
-			ClearArea(16,50,8);
+			clearArea(16,50,8);
 			console.gotoxy(51,16);
 			console.putmsg("\1r\1hGame \1n\1r#\1h" + gameNumber);
 			if(g.status==0)
 			{
 				pMenu.disable(["A","E","T","F"]);
 				pMenu.enable(["Q"]);
-				ShowWinner(g);
+				showWinner(g);
 			}
 			else if(turn==currentPlayer) 
 			{
@@ -1063,14 +1082,14 @@ function	PlayGame(gameNumber)
 			}
 			else  
 			{
-				var name=GetUserName(g.players[turn],turn);
+				var name=getUserName(g.players[turn],turn);
 				if(g.hiddenNames)
 				{
 					name="Player " + (parseInt(turn,10)+1);
 				}
 				console.gotoxy(51,18);
 				console.putmsg("\1r\1hIt is " + name + "'s turn");
-				var daysOld=g.FindDaysOld();
+				var daysOld=g.findDaysOld();
 				var hoursOld=parseInt(daysOld*24,10);
 				if(daysOld>0)
 				{
@@ -1081,7 +1100,7 @@ function	PlayGame(gameNumber)
 		}
 		pMenu.displayHorizontal();
 		var cmd=console.getkey(K_NOECHO|K_NOCRLF|K_UPPER);
-		WipeCursor("right");
+		wipeCursor("right");
 		if(pMenu.items[cmd] && pMenu.items[cmd].enabled)
 		{
 			switch(cmd)
@@ -1090,7 +1109,7 @@ function	PlayGame(gameNumber)
 				pMenu.enable(["F"]);
 				pMenu.disable(["Q","T"]);
 				g.takingTurn=true;
-				if(g.CanAttack(currentPlayer,-1))
+				if(g.canAttack(currentPlayer,-1))
 				{
 					pMenu.enable("A");
 				}
@@ -1098,38 +1117,37 @@ function	PlayGame(gameNumber)
 				continue;
 			case "F":
 				console.home();
-				if(console.noyes("\1n\1gForfeit this game?")) continue;
-				Forfeit(gameNumber,currentPlayer);
+				if(console.noyes("\1n\1gforfeit this game?")) continue;
+				forfeit(gameNumber,currentPlayer);
 				pMenu.disable(["A","F","E"]);
 				pMenu.enable(["Q"]);
 				break; 
 			case "A":
-				if(Attack(gameNumber,currentPlayer));
+				if(attack(gameNumber,currentPlayer));
 				else continue;
- 				g.DisplayPlayers();
+ 				g.displayPlayers();
 				break;
 			case "E":
 				pMenu.disable(["A","E","F"]);
 				pMenu.enable(["Q"]);
 				g.takingTurn=false;
-				EndTurn(gameNumber,currentPlayer);
-				g.DisplayPlayers();
+				endTurn(gameNumber,currentPlayer);
+				g.displayPlayers();
 				break;
 			case "R":
 				console.clear();
-				g.Redraw();
+				g.redraw();
 				continue;
 			case "Q": 
 				return;
 			default:
-				WipeCursor("left");
+				wipeCursor("left");
 				continue;
 			}
 		}
 	}
 }
-
-function 	TakeTurnAI(gameNumber,playerNumber)
+function 	takeTurnAI(gameNumber,playerNumber)
 {
 	g=games.gameData[gameNumber];
 	computerPlayer=g.players[playerNumber];
@@ -1143,7 +1161,7 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 		if(g.grid[base].dice>1)
 		{
 			/* Find places we can attack */
-			attackOptions=g.CanAttack(playerNumber,base,computerPlayer,g);
+			attackOptions=g.canAttack(playerNumber,base,computerPlayer,g);
 			if(attackOptions!==false) {
 				var basetargets=[];
 
@@ -1175,27 +1193,15 @@ function 	TakeTurnAI(gameNumber,playerNumber)
 		attackFrom=g.grid[targets[attackNum].base];
 		attackTo=g.grid[targets[attackNum].target];
 		if(attackFrom.dice>1 && attackTo.player!=playerNumber) {
-			Battle(attackFrom,attackTo,gameNumber);
+			battle(attackFrom,attackTo,gameNumber);
 			computerPlayer.AI.moves++;
 		}
 	}
 	computerPlayer.AI.turns++;
 	return true;
 }
-function 	Quit(err) 
-{
-	console.ctrlkey_passthru=oldpass;
-	bbs.sys_status&=~SS_MOFF;
-	file_remove(userFileName);
-	console.clear();
-	
-	//TODO:  CREATE A GAME EXIT ANSI SCREEN
-	printf("\n\r\1r\1h  Thanks for playing!\r\n\r\n");
-	mswait(500);
-	exit(0);
-}
 //#######################MAIN GAME CLASS###################################
-function	LoadSettings()
+function	loadSettings()
 {
 	var sfile=new File(game_dir + "dice.ini");
 	if(!file_exists(sfile.name)) return;
@@ -1224,7 +1230,7 @@ function	GameStatusInfo()
 
 	
 	//TODO: REWORK SCOREFILE CODE....BECAUSE IT SUCKS
-	this.StoreRankings=function()
+	this.storeRankings=function()
 	{
 		var sfilename=game_dir+scorefile+".dat";
 		var sfile=new File(sfilename);
@@ -1244,23 +1250,27 @@ function	GameStatusInfo()
 			Unlock(scorefile);
 		}
 	}
-	this.LoadRankings=function()
+	this.loadRankings=function()
 	{
 		var sfilename=game_dir+scorefile+".dat";
 		if(file_exists(sfilename))
 		{
 			var lfile=new File(sfilename);
 			lfile.open('r',true);
-			var plyrs=lfile.iniGetAllObjects("user");
-			for(p in plyrs)
+			var plyrs=lfile.iniGetSections();
+			for(p=0;p<plyrs.length;p++)
 			{
-				var plyr=plyrs[p];
-				scores[plyr.user]=plyr;
-				if(plyr.score>=pointsToWin) 
+				var player=plyrs[p];
+				var score=parseInt(lfile.iniGetValue(player,"score"),10);
+				var kills=parseInt(lfile.iniGetValue(player,"kills"),10);
+				var wins=parseInt(lfile.iniGetValue(player,"wins"),10);
+				var losses=parseInt(lfile.iniGetValue(player,"losses"),10);
+				scores[player]={'score':score,'kills':kills,'wins':wins,'losses':losses};
+				if(score>=pointsToWin) 
 				{	
 					lfile.close();
 					file_remove(lfile.name);
-					this.WinRound(player);
+					this.winRound(player);
 					scores=[];
 					break;
 				}
@@ -1268,7 +1278,7 @@ function	GameStatusInfo()
 			lfile.close();
 		}
 	}
-	this.WinRound=function(player)
+	this.winRound=function(player)
 	{	
 		hfilename=game_dir+halloffame+".dat";
 		var hfile=new File(hfilename);
@@ -1282,7 +1292,7 @@ function	GameStatusInfo()
 		hfile.writeln(system.username(player) + ": " + system.datestr());
 		hfile.close();
 	}
-	this.HallOfFame=function()
+	this.hallOfFame=function()
 	{	
 		if(file_exists(game_dir+halloffame+".dat"))
 		{
@@ -1291,7 +1301,7 @@ function	GameStatusInfo()
 			console.pause();
 		}
 	}
-	this.LoadGame=function(gamefile,gameNumber,lastModified)
+	this.loadGame=function(gamefile,gameNumber,lastModified)
 	{
 		humans=0;
 		var gfile=new File(gamefile);
@@ -1310,22 +1320,18 @@ function	GameStatusInfo()
 			lgame.fileName=gamefile;
 			if(minp==maxp) lgame.fixedPlayers=true;
 			
-			for(nnn=0;!(gfile.eof) && nnn<maxp;nnn++)
+			for(nnn=0;!gfile.eof && nnn<maxp;nnn++)
 			{
 				userNumber=gfile.readln();
-				if(userNumber===undefined || userNumber==="") break;
+				if(userNumber===null || userNumber===undefined || userNumber==="") break;
 				else
 				{
 					userNumber=parseInt(userNumber,10);
 					vote=gfile.readln();
 					lgame.addPlayer(userNumber,parseInt(vote,10));
-					if(userNumber>0) 
+					if(userNumber>0 && !scores[userNumber]) 
 					{
-						if(!scores[userNumber]) 
-						{
-							//INITIALIZE ALL PLAYERS WHO HAVE NO SCORE ENTRY AS ZERO POINTS ZERO WINS ZERO KILLS ZERO LOSSES
-							scores[userNumber]={'score':0,'kills':0,'wins':0,'losses':0};
-						}
+						scores[userNumber]={'score':0,'kills':0,'wins':0,'losses':0};
 					}
 				}
 			}
@@ -1381,7 +1387,7 @@ function	GameStatusInfo()
 			else {
 				/* Set up computer players */
 				lgame.players[pl].AI.name=uname;
-				lgame.players[pl].AI.sort=aifile.iniGetValue(lgame.players[pl].AI.name, "Sort", "Random");
+				lgame.players[pl].AI.sort=aifile.iniGetValue(lgame.players[pl].AI.name, "sort", "Random");
 				lgame.players[pl].AI.check=aifile.iniGetValue(lgame.players[pl].AI.name, "Check", "Random");
 				lgame.players[pl].AI.qty=aifile.iniGetValue(lgame.players[pl].AI.name, "Quantity", "Random");
 				if(AISortFunctions[lgame.players[pl].AI.sort]==undefined)
@@ -1408,16 +1414,16 @@ function	GameStatusInfo()
 			lgame.players[spot_player].territories.push(spot_index);
 			lgame.grid[spot_index].dice=spot_dice;
 		}
-		lgame.SetGrid();
-		lgame.SetEliminated();
-		lgame.CountDiceAll();
+		lgame.setGrid();
+		lgame.setEliminated();
+		lgame.countDiceAll();
 		gfile.close();
 		return lgame;
 	}
-	this.StoreGame=function(gameNumber)
+	this.storeGame=function(gameNumber)
 	{
 		g=this.gameData[gameNumber];
-		var gamefullname=GetFileName(gameNumber);
+		var gamefullname=getFileName(gameNumber);
 		var gfile=new File(gamefullname);
 		gfile.open('w+',false);
 		
@@ -1463,7 +1469,7 @@ function	GameStatusInfo()
 		}
 		gfile.close();
 	}	
-	this.UpdateGames=function()
+	this.updateGames=function()
 	{
 		for(gd in this.gameData)
 		{
@@ -1474,7 +1480,7 @@ function	GameStatusInfo()
 			{
 				if(lastModified>this.gameData[gd].lastModified) 
 				{
-					this.gameData[gd]=this.LoadGame(fileName,gd,lastModified);
+					this.gameData[gd]=this.loadGame(fileName,gd,lastModified);
 				}
 			}
 			else
@@ -1482,9 +1488,9 @@ function	GameStatusInfo()
 				delete this.gameData[gd];
 			}
 		}
-		this.FilterData();
+		this.filterData();
 	}
-	this.SortArray=function(data)
+	this.sortArray=function(data)
 	{
 		var numItems=data.length;
 		for(n=0;n<numItems;n++)
@@ -1501,7 +1507,7 @@ function	GameStatusInfo()
 		}
 		return data;
 	}
-	this.FilterData=function()
+	this.filterData=function()
 	{
 		this.singleGames=[]; 
 		this.inProgress=[];
@@ -1554,7 +1560,7 @@ function	GameStatusInfo()
 			}
 		}
 	}
-	this.LoadGames=function()
+	this.loadGames=function()
 	{	
 		var open_list=directory(game_dir + root + "*.dat"); 	
 		if(open_list.length)
@@ -1565,14 +1571,14 @@ function	GameStatusInfo()
 				var lastModified=file_date(open_list[lg]);
 				var daysOld=(time()-lastModified)/daySeconds;
 				var gameNumber=parseInt(temp_fname.substring(4,temp_fname.indexOf(".")),10);
-				var lgame=this.LoadGame(open_list[lg],gameNumber,lastModified);
+				var lgame=this.loadGame(open_list[lg],gameNumber,lastModified);
 				this.gameData[gameNumber]=lgame;
 			}
 		}
-		this.FilterData();
-		this.DeleteOld();
+		this.filterData();
+		this.deleteOld();
 	}
-	this.DeleteOld=function()
+	this.deleteOld=function()
 	{
 		for(oldgame in this.gameData)
 		{
@@ -1605,7 +1611,7 @@ function	GameStatusInfo()
 			}
 		}
 	}
-	this.SkipPlayers=function()
+	this.skipPlayers=function()
 	{
 		for(inp in this.inProgress)
 		{
@@ -1614,21 +1620,21 @@ function	GameStatusInfo()
 			if(daysOld>=4 && !gm.singlePlayer) 
 			{
 				nextTurnPlayer=gm.turnOrder[gm.nextTurn];
-				gm.Reinforce(nextTurnPlayer);
-				this.StoreGame(this.inProgress[inp]);
+				gm.reinforce(nextTurnPlayer);
+				this.storeGame(this.inProgress[inp]);
 			}
 		}
 	}
-	this.Init=function()
+	this.init=function()
 	{
-		this.LoadRankings();
-		this.LoadGames();
-		this.StoreRankings();
-		this.SkipPlayers();
+		this.loadRankings();
+		this.loadGames();
+		this.storeRankings();
+		this.skipPlayers();
 	}
 }
 
-	LoadSettings();
-	SplashScreen();
-	GameMenu();
+	loadSettings();
+	splashScreen();
+	gameMenu();
 	

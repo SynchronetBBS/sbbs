@@ -11,35 +11,35 @@ function 	Territory(location)
 
 	this.topLeft=">";
 	this.topRight="<";
-	this.bottomLeft=">";
-	this.bottomRight="<";
+	this.bottomleft=">";
+	this.bottomright="<";
 
-	this.North=-1;
-	this.South=-1;
-	this.Northwest=-1;
-	this.Northeast=-1;
-	this.Southwest=-1;
-	this.Southeast=-1;
+	this.north=-1;
+	this.south=-1;
+	this.northwest=-1;
+	this.northeast=-1;
+	this.southwest=-1;
+	this.southeast=-1;
 
 										//OBJECT METHODS
 	this.setBorder=			function(data)
 	{										//CHECK PROXIMITY AND ASSIGN BORDER CHARACTERS
-		proximity=ScanProximity(this.location);
-		this.North=proximity[0];
-		this.South=proximity[1];
-		this.Northwest=proximity[2];
-		this.Northeast=proximity[3];
-		this.Southwest=proximity[4];
-		this.Southeast=proximity[5];
-		if(!data[this.North])
+		proximity=scanProximity(this.location);
+		this.north=proximity[0];
+		this.south=proximity[1];
+		this.northwest=proximity[2];
+		this.northeast=proximity[3];
+		this.southwest=proximity[4];
+		this.southeast=proximity[5];
+		if(!data[this.north])
 		{
-			if(!data[this.Northwest]) this.topLeft=".";
-			if(!data[this.Northeast]) this.topRight=".";
+			if(!data[this.northwest]) this.topLeft=".";
+			if(!data[this.northeast]) this.topRight=".";
 		}
-		if(!data[this.South])
+		if(!data[this.south])
 		{
-			if(!data[this.Southwest]) this.bottomLeft="`";
-			if(!data[this.Southeast]) this.bottomRight="'";
+			if(!data[this.southwest]) this.bottomleft="`";
+			if(!data[this.southeast]) this.bottomright="'";
 		}
 	}
 	this.assign=			function(number,player)
@@ -52,9 +52,9 @@ function 	Territory(location)
 	this.show=				function()
 	{										//DISPLAY THIS TERRITORY ON THE MAP
 //		ALTERNATE MAP POSITION DISPLAY
-//		display=(this.bfColor + ""+ blackBG + this.bColor + this.fColor + " " + this.dice + " " + blackBG + this.bfColor + "");
+//		display=(this.bfColor + ""+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "");
 
-		display=(this.bfColor + "\xFE"+ blackBG + this.bColor + this.fColor + " " + this.dice + " " + blackBG + this.bfColor + "\xFE");
+		display=(this.bfColor + "\xFE"+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "\xFE");
 		console.gotoxy(this.x-1, this.y);
 		console.putmsg(display);
 	}
@@ -66,12 +66,12 @@ function 	Territory(location)
 		printf(color + ">");
 		console.gotoxy(this.x-1, this.y-1);
 		printf(color+this.topLeft);
-		DrawLine(color,3);
+		drawLine(color,3);
 		printf(this.topRight);
 		console.gotoxy(this.x-1, this.y+1);	
-		printf(color+this.bottomLeft)
-		DrawLine(color,3)
-		printf(this.bottomRight);
+		printf(color+this.bottomleft)
+		drawLine(color,3)
+		printf(this.bottomright);
 	}
 	this.displaySelected=	function(color)
 	{										//DISPLAY THIS TERRITORY'S BORDER ON THE MAP
@@ -81,11 +81,11 @@ function 	Territory(location)
 		printf(color + ">");
 		console.gotoxy(this.x-1, this.y-1);
 		printf(color+".");
-		DrawLine(color,3);
+		drawLine(color,3);
 		printf(color+".");
 		console.gotoxy(this.x-1, this.y+1);	
 		printf(color+"`")
-		DrawLine(color,3)
+		drawLine(color,3)
 		printf(color+"'");
 	}
 	this.getXY=				function(loc,sc,sr)

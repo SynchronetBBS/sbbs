@@ -1,4 +1,4 @@
-/* Callbacks for sorting the targets array */
+ /* Callbacks for sorting the targets array */
 function	RandomSort()
 {
 	return(random(2)*2-1);
@@ -51,7 +51,7 @@ function	GroupAndParanoidAISort(a,b)
 	function countem(map, location, player) {
 		var ret=0;
 
-		var dirs=map.LoadDirectional(location);
+		var dirs=map.loadDirectional(location);
 		for(dir in dirs) {
 			current=dirs[dir];
 			if(map.grid[current]) {
@@ -86,7 +86,7 @@ function	RandomAICheck(gameNumber, playerNumber, base, target)
 			if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
 				return(true);
 			else {
-				if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8)
+				if(g.findConnected(playerNumber)+computerPlayer.reserve>=8)
 					return(true);
 			}
 		}
@@ -127,7 +127,7 @@ function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 		if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
 			return(true);
 		else {
-			if(g.FindConnected(playerNumber)+computerPlayer.reserve>=8)
+			if(g.findConnected(playerNumber)+computerPlayer.reserve>=8)
 				return(true);
 		}
 	}
@@ -160,7 +160,7 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 
 	/* First, check if we would leave ourselves open.  If so,
 	 * do not take the risk */
-	var dirs=g.LoadDirectional(base);
+	var dirs=g.loadDirectional(base);
 	for(dir in dirs) {
 		current=dirs[dir];
 		if(current==target)
@@ -176,7 +176,7 @@ function	UltraParanoidAICheck(gameNumber, playerNumber, base, target)
 		return(false);
 
 	/* Finally, check that we will still be at least equal after the capture */
-	dirs=g.LoadDirectional(target);
+	dirs=g.loadDirectional(target);
 	var troublecount=0;
 	for(dir in dirs) {
 		current=dirs[dir];
