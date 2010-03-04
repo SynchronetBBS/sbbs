@@ -1425,7 +1425,11 @@ static const char* usage=
 	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
 	"         -m# set maximum receive file size to # bytes (0=unlimited, default=%u)\n"
 	"         -!  to pause after abnormal exit (error)\n"
+#ifdef __unix__
+	"         -telnet to enable Telnet mode (the default except in stdio mode)\n"
+#else
 	"         -telnet to enable Telnet mode (the default)\n"
+#endif
 	"         -rlogin or -ssh or -raw to disable Telnet mode\n"
 	"\n"
 	"cmd    = v  to display detailed version information\n"
@@ -1502,6 +1506,7 @@ int main(int argc, char **argv)
 	FILE*	fp;
 	BOOL	tcp_nodelay;
 	char	compiler[32];
+	BOOL	telnet_requested=FALSE;
 	str_list_t fname_list;
 
 	fname_list=strListInit();
@@ -1692,10 +1697,12 @@ int main(int argc, char **argv)
 				while(*arg=='-')
 					arg++;
 				if(stricmp(arg,"telnet")==0) {
+					telnet_requested=TRUE;
 					telnet=TRUE;
 					continue;
 				}
 				if(stricmp(arg,"rlogin")==0 || stricmp(arg,"ssh")==0 || stricmp(arg,"raw")==0) {
+					telnet_requested=FALSE;
 					telnet=FALSE;
 					continue;
 				}
@@ -1788,11 +1795,6 @@ int main(int argc, char **argv)
 		} 
 	}
 
-	if(!telnet)
-		zm.escape_telnet_iac = FALSE;
-
-	zm.max_file_size = max_file_size;
-
 	if(sock==INVALID_SOCKET || sock<1) {
 #ifdef __unix__
 		if(STDOUT_FILENO > STDIN_FILENO)
@@ -1800,9 +1802,10 @@ int main(int argc, char **argv)
 		else
 			sock=STDIN_FILENO;
 		stdio=TRUE;
-		
+
 		fprintf(statfp,"No socket descriptor specified, using STDIO\n");
-		telnet=FALSE;
+		if(!telnet_requested)
+			telnet=FALSE;
 		init_stdio();
 #else
 		fprintf(statfp,"!No socket descriptor specified\n\n");
@@ -1814,6 +1817,11 @@ int main(int argc, char **argv)
 	else
 		statfp=stdout;
 #endif
+
+	if(!telnet)
+		zm.escape_telnet_iac = FALSE;
+
+	zm.max_file_size = max_file_size;
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
