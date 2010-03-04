@@ -109,7 +109,6 @@ SOCKET	sock=INVALID_SOCKET;
 BOOL	telnet=TRUE;
 #ifdef __unix__
 BOOL	stdio=FALSE;
-struct termios origterm;
 #endif
 BOOL	terminate=FALSE;
 BOOL	debug_tx=FALSE;
@@ -137,13 +136,6 @@ unsigned	inbuf_len=0;
 
 unsigned	flows=0;
 unsigned	select_errors=0;
-
-#ifdef __unix__
-void resetterm(void)
-{
-	tcsetattr(STDOUT_FILENO, TCSADRAIN, &origterm);
-}
-#endif
 
 #ifdef _WINSOCKAPI_
 
@@ -1834,23 +1826,6 @@ int main(int argc, char **argv)
 		fprintf(statfp,usage,MAX_FILE_SIZE);
 		bail(1); 
 	}
-
-#ifdef __unix__
-	if(stdio) {
-		struct termios term;
-		memset(&term,0,sizeof(term));
-		cfsetispeed(&term,B19200);
-		cfsetospeed(&term,B19200);
-		term.c_iflag &= ~(IMAXBEL|IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
-		term.c_oflag &= ~OPOST;
-		term.c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
-		term.c_cflag &= ~(CSIZE|PARENB);
-		term.c_cflag |= CS8;
-		atexit(resetterm);
-		tcgetattr(STDOUT_FILENO, &origterm);
-		tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
-	}
-#endif
 
 	/* Code disabled.  Why?  ToDo */
 /*	if(mode&RECVDIR)
