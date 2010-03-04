@@ -176,6 +176,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 					retval=0;
 				else
 					retval=WAIT_TIMEOUT;
+				event->nwaiters--;
 				goto DONE;
 				break;
 			case INFINITE:
@@ -190,6 +191,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 						errno=retval;
 						retval=WAIT_FAILED;
 					}
+					event->nwaiters--;
 					goto DONE;
 				}
 		}
