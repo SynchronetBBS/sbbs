@@ -260,15 +260,20 @@ static BOOL zmodem_check_abort(void* vp)
 {
 	struct zmodem_cbdata	*zcb=(struct zmodem_cbdata *)vp;
 	zmodem_t*				zm=zcb->zm;
+	static time_t			last_check=0;
+	time_t					now=time(NULL);
 
-	if(zm!=NULL && kbhit()) {
-		switch(getch()) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				zm->cancelled=TRUE;
-				zm->local_abort=TRUE;
-				break;
+	if(last_check != now) {
+		last_check=now;
+		if(zm!=NULL && kbhit()) {
+			switch(getch()) {
+				case ESC:
+				case CTRL_C:
+				case CTRL_X:
+						zm->cancelled=TRUE;
+					zm->local_abort=TRUE;
+					break;
+			}
 		}
 	}
 	return(zm->cancelled);
@@ -1036,7 +1041,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
-		,NULL /* zmodem_check_abort */
+		,zmodem_check_abort
 		,data_waiting
 		,flush_send);
 	zm.log_level=&log_level;
@@ -1145,7 +1150,7 @@ void zmodem_download(struct bbslist *bbs)
 		,lputs, zmodem_progress
 		,send_byte,recv_byte
 		,is_connected
-		,NULL /* zmodem_check_abort */
+		,zmodem_check_abort
 		,data_waiting
 		,flush_send);
 	zm.log_level=&log_level;
@@ -1175,13 +1180,19 @@ ulong	block_num;						/* Block number 					*/
 static BOOL xmodem_check_abort(void* vp)
 {
 	xmodem_t* xm = (xmodem_t*)vp;
-	if(xm!=NULL && kbhit()) {
-		switch(getch()) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				xm->cancelled=TRUE;
-				break;
+	static time_t			last_check=0;
+	time_t					now=time(NULL);
+
+	if(last_check != now) {
+		last_check=now;
+		if(xm!=NULL && kbhit()) {
+			switch(getch()) {
+				case ESC:
+				case CTRL_C:
+				case CTRL_X:
+					xm->cancelled=TRUE;
+					break;
+			}
 		}
 	}
 	return(xm->cancelled);
@@ -1351,7 +1362,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 		,send_byte
 		,recv_byte
 		,is_connected
-		,NULL /* xmodem_check_abort */
+		,xmodem_check_abort
 		,flush_send);
 	xm.log_level=&log_level;
 	if(!data_waiting(&xm, 0)) {
@@ -1532,7 +1543,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		,send_byte
 		,recv_byte
 		,is_connected
-		,NULL /* xmodem_check_abort */
+		,xmodem_check_abort
 		,flush_send);
 	xm.log_level=&log_level;
 	while(is_connected(NULL)) {
