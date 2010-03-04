@@ -179,10 +179,14 @@ WaitForEvent(xpevent_t event, DWORD ms)
 				goto DONE;
 				break;
 			case INFINITE:
+				pthread_mutex_unlock(&event->lock);
 				retval=pthread_cond_wait(&event->gtzero, &event->lock);
+				pthread_mutex_lock(&event->lock);
 				break;
 			default:
+				pthread_mutex_unlock(&event->lock);
 				retval=pthread_cond_timedwait(&event->gtzero, &event->lock, &abstime);
+				pthread_mutex_lock(&event->lock);
 				if(retval)  {
 					if(retval==ETIMEDOUT)
 						retval=WAIT_TIMEOUT;
