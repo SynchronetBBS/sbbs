@@ -1787,6 +1787,18 @@ int main(int argc, char **argv)
 		} 
 	}
 
+	if(!(mode&(SEND|RECV))) {
+		fprintf(statfp,"!No command specified\n\n");
+		fprintf(statfp,usage,MAX_FILE_SIZE);
+		bail(1); 
+	}
+
+	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
+		fprintf(statfp,"!Must specify filename or filelist\n\n");
+		fprintf(statfp,usage,MAX_FILE_SIZE);
+		bail(1); 
+	}
+
 	if(sock==INVALID_SOCKET || sock<1) {
 #ifdef __unix__
 		if(STDOUT_FILENO > STDIN_FILENO)
@@ -1814,18 +1826,6 @@ int main(int argc, char **argv)
 		zm.escape_telnet_iac = FALSE;
 
 	zm.max_file_size = max_file_size;
-
-	if(!(mode&(SEND|RECV))) {
-		fprintf(statfp,"!No command specified\n\n");
-		fprintf(statfp,usage,MAX_FILE_SIZE);
-		bail(1); 
-	}
-
-	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
-		fprintf(statfp,"!Must specify filename or filelist\n\n");
-		fprintf(statfp,usage,MAX_FILE_SIZE);
-		bail(1); 
-	}
 
 	/* Code disabled.  Why?  ToDo */
 /*	if(mode&RECVDIR)
