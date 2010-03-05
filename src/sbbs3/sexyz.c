@@ -733,8 +733,10 @@ static void output_thread(void* arg)
 /* Flush output buffer */
 void flush(void* unused)
 {
+#ifdef __unix__
 	if(stdio)
 		fflush(stdout);
+#endif
 }
 
 BOOL is_connected(void* unused)
@@ -754,10 +756,10 @@ BOOL data_waiting(void* unused, unsigned timeout)
 /****************************************************************************/
 /* Returns the total number of blocks required to send the file				*/
 /****************************************************************************/
-unsigned num_blocks(unsigned block_num, ulong offset, ulong len, unsigned block_size)
+uint64_t num_blocks(unsigned block_num, uint64_t offset, uint64_t len, unsigned block_size)
 {
-	ulong blocks;
-	ulong remain = len - offset;
+	uint64_t blocks;
+	uint64_t remain = len - offset;
 
 	blocks=block_num + (remain/block_size);
 	if(remain%block_size)
@@ -777,10 +779,10 @@ void dump_block(long block_size)
 	fprintf(statfp,"\n");
 }
 
-void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize, time_t start)
+void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
 {
 	unsigned	cps;
-	unsigned	total_blocks;
+	uint64_t	total_blocks;
 	long		l;
 	long		t;
 	time_t		now;
@@ -791,10 +793,10 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 		t=now-start;
 		if(t<=0)
 			t=1;
-		if((cps=offset/t)==0)
-			cps=1;			/* cps so far */
-		l=fsize/cps;		/* total transfer est time */
-		l-=t;				/* now, it's est time left */
+		if((cps=(unsigned)(offset/t))==0)
+			cps=1;				/* cps so far */
+		l=(long)(fsize/cps);	/* total transfer est time */
+		l-=t;					/* now, it's est time left */
 		if(l<0) l=0;
 		if(mode&SEND) {
 			total_blocks=num_blocks(block_num,offset,fsize,xm.block_size);
@@ -847,7 +849,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
  * show the progress of the transfer like this:
  * zmtx: sending file "garbage" 4096 bytes ( 20%)
  */
-void zmodem_progress(void* cbdata, uint32_t current_pos)
+void zmodem_progress(void* cbdata, int64_t current_pos)
 {
 	unsigned	cps;
 	long		l;
@@ -862,10 +864,10 @@ void zmodem_progress(void* cbdata, uint32_t current_pos)
 			t=1;
 		if(zm.transfer_start_pos>current_pos)
 			zm.transfer_start_pos=0;
-		if((cps=(current_pos-zm.transfer_start_pos)/t)==0)
-			cps=1;		/* cps so far */
-		l=zm.current_file_size/cps;	/* total transfer est time */
-		l-=t;			/* now, it's est time left */
+		if((cps=(unsigned)((current_pos-zm.transfer_start_pos)/t))==0)
+			cps=1;							/* cps so far */
+		l=(long)(zm.current_file_size/cps);	/* total transfer est time */
+		l-=t;								/* now, it's est time left */
 		if(l<0) l=0;
 		fprintf(statfp,"\rKByte: %lu/%lu  %u/CRC-%u  "
 			"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
@@ -897,8 +899,8 @@ static int send_files(char** fname, uint fnames)
 	int			gi;
 	BOOL		success=TRUE;
 	long		fsize;
-	ulong		sent_bytes;
-	uint32_t	total_bytes=0;
+	uint64_t	sent_bytes;
+	uint64_t	total_bytes=0;
 	time_t		t,startfile;
 	time_t		startall;
 	FILE*		fp;
@@ -963,7 +965,7 @@ static int send_files(char** fname, uint fnames)
 				,mode&XMODEM ? 'X' : mode&YMODEM ? 'Y' : 'Z');
 
 			if(mode&ZMODEM)
-				success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, (uint32_t*)&sent_bytes);
+				success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, &sent_bytes);
 			else	/* X/Ymodem */
 				success=xmodem_send_file(&xm, path, fp, &startfile, &sent_bytes);
 
@@ -971,7 +973,7 @@ static int send_files(char** fname, uint fnames)
 
 			if((t=time(NULL)-startfile)<=0) 
 				t=1;
-			if((cps=sent_bytes/t)==0)
+			if((cps=(unsigned)(sent_bytes/t))==0)
 				cps=1;
 			if(success) {
 				xm.sent_files++;
@@ -1072,8 +1074,8 @@ static int receive_files(char** fname_list, int fnames)
 	BOOL	success=FALSE;
 	long	fmode;
 	long	serial_num=-1;
-	ulong	file_bytes=0,file_bytes_left=0;
-	ulong	total_bytes=0;
+	int64_t	file_bytes=0,file_bytes_left=0;
+	int64_t	total_bytes=0;
 	FILE*	fp;
 	time_t	t,startfile,ftime;
 
@@ -1115,7 +1117,8 @@ static int receive_files(char** fname_list, int fnames)
 					lprintf(LOG_INFO,"Received YMODEM termination block");
 					return(0); 
 				}
-				ftime=total_files=total_bytes=0;
+				ftime=total_files=0;
+				total_bytes=0;
 				i=sscanf(block+strlen(block)+1,"%lu %lo %lo %lo %u %lu"
 					,&file_bytes			/* file size (decimal) */
 					,&ftime 				/* file time (octal unix format) */
@@ -1300,8 +1303,8 @@ static int receive_files(char** fname_list, int fnames)
 					break; 
 				}
 				wr=xm.block_size;
-				if(wr>file_bytes_left)
-					wr=file_bytes_left;
+				if(wr>(uint)file_bytes_left)
+					wr=(uint)file_bytes_left;
 				if(fwrite(block,1,wr,fp)!=wr) {
 					lprintf(LOG_ERR,"Error writing %u bytes to file at offset %lu"
 						,wr,ftell(fp));
@@ -1318,9 +1321,9 @@ static int receive_files(char** fname_list, int fnames)
 			file_bytes = zm.current_file_size;	/* file can grow in transit */
 		else {
 			fflush(fp);
-			if(file_bytes < (ulong)filelength(fileno(fp))) {
+			if(file_bytes < filelength(fileno(fp))) {
 				lprintf(LOG_INFO,"Truncating file to %lu bytes", file_bytes);
-				chsize(fileno(fp),file_bytes);
+				chsize(fileno(fp),(ulong)file_bytes);	/* <--- 4GB limit */
 			} else
 				file_bytes = filelength(fileno(fp));
 		}
@@ -1367,7 +1370,7 @@ static int receive_files(char** fname_list, int fnames)
 
 		if(mode&XMODEM)	/* maximum of one file */
 			break;
-		if((cps=file_bytes/t)==0)
+		if((cps=(unsigned)(file_bytes/t))==0)
 			cps=1;
 		total_files--;
 		total_bytes-=file_bytes;

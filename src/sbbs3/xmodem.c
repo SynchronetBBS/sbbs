@@ -472,7 +472,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 	return(FALSE);
 }
 
-BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, ulong* sent)
+BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, int64_t* sent)
 {
 	BOOL		success=FALSE;
 	ulong		sent_bytes=0;
@@ -620,7 +620,7 @@ char* xmodem_ver(char *buf)
 
 void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 				,int	(*lputs)(void*, int level, const char* str)
-				,void	(*progress)(void* unused, unsigned block_num, ulong offset, ulong fsize, time_t t)
+				,void	(*progress)(void* unused, unsigned block_num, int64_t offset, int64_t fsize, time_t t)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout)
 				,BOOL	(*is_connected)(void*)

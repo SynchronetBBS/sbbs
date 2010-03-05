@@ -62,12 +62,12 @@ typedef struct {
 	unsigned	fallback_to_xmodem; /* fallback to Xmodem after this many Ymodem send attempts */
 	unsigned	g_delay;
 	ulong		total_files;
-	ulong		total_bytes;
+	int64_t		total_bytes;
 	unsigned	sent_files;
-	ulong		sent_bytes;
+	int64_t		sent_bytes;
 	int			*log_level;
 	int			(*lputs)(void*, int level, const char* str);
-	void		(*progress)(void*, unsigned block_num, ulong offset, ulong fsize, time_t t);
+	void		(*progress)(void*, unsigned block_num, int64_t offset, int64_t fsize, time_t t);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
 	BOOL		(*is_connected)(void*);
@@ -79,7 +79,7 @@ typedef struct {
 
 void		xmodem_init(xmodem_t*, void* cbdata, long* mode
 						,int	(*lputs)(void*, int level, const char* str)
-						,void	(*progress)(void* unused, unsigned block_num, ulong offset, ulong fsize, time_t t)
+						,void	(*progress)(void* unused, unsigned block_num, int64_t offset, int64_t fsize, time_t t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout)
 						,BOOL	(*is_connected)(void*)
@@ -96,6 +96,6 @@ int			xmodem_put_ack(xmodem_t*);
 int			xmodem_put_nak(xmodem_t*, unsigned block_num);
 int			xmodem_get_block(xmodem_t*, uchar* block, unsigned block_num);
 int			xmodem_put_block(xmodem_t*, uchar* block, unsigned block_size, unsigned block_num);
-BOOL		xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, ulong* sent);
+BOOL		xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, int64_t* sent);
 
 #endif	/* Don't add anything after this line */
