@@ -54,16 +54,6 @@
 
 #include <fcntl.h>		/* O_RDONLY, O_CREAT, etc. */
 
-/************/
-/* Typedefs */
-/************/
-
-#if defined(XPDEV_LARGE_FILE_SUPPORT)
-typedef int64_t		fileoff_t, filelen_t;
-#else
-typedef int32_t		fileoff_t, filelen_t;
-#endif
-
 /**********/
 /* Macros */
 /**********/
