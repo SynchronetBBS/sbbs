@@ -491,12 +491,11 @@ static int recv_byte(void* unused, unsigned timeout /* seconds */)
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
-/* This function is supposed to wait up to 'timeout' seconds for incoming data */
-BOOL data_waiting(void* unused, unsigned timeout)
+BOOL data_waiting(void* unused, unsigned timeout /* seconds */)
 {
 	if(recv_byte_buffer_len)
 		return TRUE;
-	return(conn_data_waiting()!=0);
+	return(conn_buf_wait_bytes(&conn_inbuf, 1, timeout*1000)!=0);
 }
 
 size_t count_data_waiting(void)
