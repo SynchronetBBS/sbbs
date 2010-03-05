@@ -1329,7 +1329,7 @@ BOOL zmodem_get_crc(zmodem_t* zm, int32_t length, uint32_t* crc)
 
 	zmodem_recv_purge(zm);
 	zmodem_send_pos_header(zm,ZCRC,length,TRUE);
-	if(!zmodem_data_waiting(zm,zm->crc_timeout*1000)) {
+	if(!zmodem_data_waiting(zm,zm->crc_timeout)) {
 		lprintf(zm,LOG_ERR,"Timeout waiting for response (%u seconds)", zm->crc_timeout);
 		return(FALSE);
 	}
@@ -1375,7 +1375,7 @@ int zmodem_get_zrinit(zmodem_t* zm)
 	zmodem_send_raw(zm,'\r');
 	zmodem_send_hex_header(zm,zrqinit_header);
 	
-	if(!zmodem_data_waiting(zm,zm->init_timeout*1000))
+	if(!zmodem_data_waiting(zm,zm->init_timeout))
 		return(TIMEOUT);
 	return zmodem_recv_header(zm);
 }
@@ -1568,7 +1568,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		 * check out that header
 		 */
 
-		while(zmodem_data_waiting(zm, zm->consecutive_errors ? 1000:0) 
+		while(zmodem_data_waiting(zm, zm->consecutive_errors ? 1:0) 
 			&& !is_cancelled(zm) && is_connected(zm)) {
 			int rx_type;
 			int c;
@@ -2251,11 +2251,11 @@ char* zmodem_ver(char *buf)
 void zmodem_init(zmodem_t* zm, void* cbdata
 				,int	(*lputs)(void*, int level, const char* str)
 				,void	(*progress)(void* unused, int64_t)
-				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
-				,int	(*recv_byte)(void*, unsigned timeout)
+				,int	(*send_byte)(void*, uchar ch, unsigned timeout /* seconds */)
+				,int	(*recv_byte)(void*, unsigned timeout /* seconds */)
 				,BOOL	(*is_connected)(void*)
 				,BOOL	(*is_cancelled)(void*)
-				,BOOL	(*data_waiting)(void*, unsigned timeout)
+				,BOOL	(*data_waiting)(void*, unsigned timeout /* seconds */)
 				,void   (*flush)(void*))
 {
 	memset(zm,0,sizeof(zmodem_t));

@@ -278,12 +278,12 @@ typedef struct {
 	/* error C2520: conversion from unsigned __int64 to double not implemented, use signed __int64 */
 	void*		cbdata;
 	int			(*lputs)(void*, int level, const char* str);
-	int			(*send_byte)(void*, BYTE ch, unsigned timeout);
-	int			(*recv_byte)(void*, unsigned timeout);
+	int			(*send_byte)(void*, BYTE ch, unsigned timeout /* seconds */);
+	int			(*recv_byte)(void*, unsigned timeout /* seconds */);
 	void		(*progress)(void*, int64_t current_pos);
 	BOOL		(*is_connected)(void*);
 	BOOL		(*is_cancelled)(void*);
-	BOOL		(*data_waiting)(void*, unsigned timeout);
+	BOOL		(*data_waiting)(void*, unsigned timeout /* seconds */);
 	BOOL		(*duplicate_filename)(void*, void *zm);
 	void		(*flush)(void*);
 
