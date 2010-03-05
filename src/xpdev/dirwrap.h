@@ -218,7 +218,7 @@ extern "C" {
 /* General file system wrappers for all platforms and compilers */
 DLLEXPORT BOOL		DLLCALL fexist(const char *filespec);
 DLLEXPORT BOOL		DLLCALL fexistcase(char *filespec);	/* fixes upr/lwr case fname */
-DLLEXPORT int64_t	DLLCALL flength(const char *filename);
+DLLEXPORT filelen_t	DLLCALL flength(const char *filename);
 DLLEXPORT time_t	DLLCALL fdate(const char *filename);
 DLLEXPORT int		DLLCALL setfdate(const char* filename, time_t t);
 DLLEXPORT BOOL		DLLCALL	isdir(const char *filename);

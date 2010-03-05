@@ -390,7 +390,7 @@ int DLLCALL setfdate(const char* filename, time_t t)
 /* Returns the length of the file in 'filename'                             */
 /* or -1 if the file doesn't exist											*/
 /****************************************************************************/
-int64_t DLLCALL flength(const char *filename)
+filelen_t DLLCALL flength(const char *filename)
 {
 #if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
 
@@ -409,20 +409,12 @@ int64_t DLLCALL flength(const char *filename)
 
 #else 
 
-#ifdef _WIN32
-	struct _stati64 st;
-#else
 	struct stat st;
-#endif
 
 	if(access(filename,0)==-1)
 		return(-1);
 
-#ifdef _WIN32
-	if(_stati64(filename, &st)!=0)
-#else
 	if(stat(filename, &st)!=0)
-#endif
 		return(-1);
 
 	return(st.st_size);
