@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -115,6 +115,7 @@
 	#endif
 
 	#define chsize(fd,size)		ftruncate(fd,size)
+	#define _chsize_s(fd,size)	ftruncate(fd,size)		/* supports 64-bit size */
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 	#define eof(fd)				(tell(fd)==filelength(fd))
 
@@ -153,8 +154,9 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
-	DLLEXPORT int	DLLCALL sopen(const char* fn, int sh_access, int share, ...);
-	DLLEXPORT long	DLLCALL filelength(int fd);
+	DLLEXPORT int		DLLCALL sopen(const char* fn, int sh_access, int share, ...);
+	DLLEXPORT long		DLLCALL filelength(int fd);
+	DLLEXPORT int64_t	DLLCALL _filelengthi64(int fd);
 #endif
 
 #if defined(__unix__)
