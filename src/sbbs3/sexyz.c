@@ -587,6 +587,9 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		buf[0]=ch;
 
 	if(RingBufFree(&outbuf)<len) {
+#if !defined(RINGBUF_EVENT)
+		ResetEvent(outbuf_empty);
+#endif
 		fprintf(statfp,"FLOW");
 		flows++;
 		result=WaitForEvent(outbuf_empty,timeout*1000);
@@ -610,9 +613,6 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		}
 	}
 
-#if !defined(RINGBUF_EVENT)
-	ResetEvent(outbuf_empty);
-#endif
 	if((result=RingBufWrite(&outbuf,buf,len))!=len) {
 		lprintf(LOG_ERR,"RingBufWrite() returned %d, expected %d",result,len);
 	}
@@ -1889,8 +1889,11 @@ int main(int argc, char **argv)
 
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
-	if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
-		lprintf(LOG_DEBUG,"FAILURE");
+	if(RingBufFull(&outbuf)) {
+		ResetEvent(outbuf_empty);
+		if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
+			lprintf(LOG_DEBUG,"FAILURE");
+	}
 #endif
 
 	terminate=TRUE;	/* stop output thread */
