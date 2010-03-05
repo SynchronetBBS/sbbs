@@ -1504,7 +1504,6 @@ struct bbslist *show_bbslist(char *current, int connected)
 	struct mouse_event mevent;
 	struct bbslist defaults;
 	char	shared_list[MAX_PATH+1];
-	char	listpath[MAX_PATH+1];
 
 	if(init_uifc(connected?FALSE:TRUE, TRUE))
 		return(NULL);
