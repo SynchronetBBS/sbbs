@@ -722,7 +722,7 @@ static void output_thread(void* arg)
     }
 
 	if(total_sent)
-		sprintf(stats,"(sent %lu bytes in %lu blocks, %lu average, %lu short, %lu errors)"
+		sprintf(stats,"(sent %"PRIu64" bytes in %lu blocks, %lu average, %lu short, %lu errors)"
 			,total_sent, total_pkts, total_sent/total_pkts, short_sends, select_errors);
 	else
 		stats[0]=0;
@@ -800,7 +800,7 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 		if(l<0) l=0;
 		if(mode&SEND) {
 			total_blocks=num_blocks(block_num,offset,fsize,xm.block_size);
-			fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  "
+			fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %"PRIu64"  "
 				"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
@@ -815,7 +815,7 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 				,fsize?(long)(((float)offset/(float)fsize)*100.0):100
 				);
 		} else if(mode&YMODEM) {
-			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
+			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %"PRIu64"  "
 				"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
@@ -829,7 +829,7 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 				,fsize?(long)(((float)offset/(float)fsize)*100.0):100
 				);
 		} else { /* XModem receive */
-			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %lu  "
+			fprintf(statfp,"\rBlock (%lu%s): %lu  Byte: %"PRIu64"  "
 				"Time: %lu:%02lu  %u cps "
 				,xm.block_size%1024L ? xm.block_size: xm.block_size/1024L
 				,xm.block_size%1024L ? "" : "K"
@@ -869,7 +869,7 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 		l=(long)(zm.current_file_size/cps);	/* total transfer est time */
 		l-=t;								/* now, it's est time left */
 		if(l<0) l=0;
-		fprintf(statfp,"\rKByte: %lu/%lu  %u/CRC-%u  "
+		fprintf(statfp,"\rKByte: %"PRIu64"/%"PRIu64"  %u/CRC-%u  "
 			"Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 			,current_pos/1024
 			,zm.current_file_size/1024
@@ -929,7 +929,7 @@ static int send_files(char** fname, uint fnames)
 		return(-1);
 	}
 	if(xm.total_files>1)
-		lprintf(LOG_INFO,"Sending %u files (%lu KB total)"
+		lprintf(LOG_INFO,"Sending %u files (%"PRIu64" KB total)"
 			,xm.total_files,xm.total_bytes/1024);
 
 	zm.files_remaining = xm.total_files;
@@ -960,7 +960,7 @@ static int send_files(char** fname, uint fnames)
 			errors=0;
 			startfile=time(NULL);
 
-			lprintf(LOG_INFO,"Sending %s (%lu KB) via %cMODEM"
+			lprintf(LOG_INFO,"Sending %s (%"PRIu64" KB) via %cMODEM"
 				,path,fsize/1024
 				,mode&XMODEM ? 'X' : mode&YMODEM ? 'Y' : 'Z');
 
@@ -985,7 +985,7 @@ static int send_files(char** fname, uint fnames)
 						,t/60,t%60,cps);
 
 				if(xm.total_files-xm.sent_files)
-					lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
+					lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRIu64
 						,((xm.total_bytes-xm.sent_bytes)/cps)/60
 						,((xm.total_bytes-xm.sent_bytes)/cps)%60
 						,xm.total_files-xm.sent_files
@@ -997,7 +997,7 @@ static int send_files(char** fname, uint fnames)
 			/* DSZLOG entry */
 			if(logfp) {
 				lprintf(LOG_DEBUG,"Updating DSZLOG: %s", dszlog);
-				fprintf(logfp,"%c %7lu %5u bps %6lu cps %3u errors %5u %4u "
+				fprintf(logfp,"%c %7"PRIu64" %5u bps %6lu cps %3u errors %5u %4u "
 					"%s -1\n"
 					,(mode&ZMODEM && zm.file_skipped) ? 's' 
 						: success ? (mode&ZMODEM ? 'z':'S') 
@@ -1055,7 +1055,7 @@ static int send_files(char** fname, uint fnames)
 	if(xm.total_files>1) {
 		t=time(NULL)-startall;
 		if(!t) t=1;
-		lprintf(LOG_INFO,"Overall - Time %02lu:%02lu  KBytes: %lu  CPS: %lu"
+		lprintf(LOG_INFO,"Overall - Time %02lu:%02lu  KBytes: %"PRIu64"  CPS: %lu"
 			,t/60,t%60,total_bytes/1024,total_bytes/t); 
 	}
 	return(0);	/* success */
@@ -1119,7 +1119,7 @@ static int receive_files(char** fname_list, int fnames)
 				}
 				ftime=total_files=0;
 				total_bytes=0;
-				i=sscanf(block+strlen(block)+1,"%lu %lo %lo %lo %u %lu"
+				i=sscanf(block+strlen(block)+1,"%"PRIu64" %lo %lo %lo %u %"PRIu64
 					,&file_bytes			/* file size (decimal) */
 					,&ftime 				/* file time (octal unix format) */
 					,&fmode 				/* file mode (not used) */
@@ -1188,9 +1188,9 @@ static int receive_files(char** fname_list, int fnames)
 					} 
 				} 
 			}
-			fprintf(statfp,"File size: %lu bytes\n", file_bytes);
+			fprintf(statfp,"File size: %"PRIu64" bytes\n", file_bytes);
 			if(total_files>1)
-				fprintf(statfp,"Remaining: %lu bytes in %u files\n", total_bytes, total_files);
+				fprintf(statfp,"Remaining: %"PRIu64" bytes in %u files\n", total_bytes, total_files);
 		}
 
 		lprintf(LOG_DEBUG,"Receiving: %.64s ",str);
@@ -1240,7 +1240,7 @@ static int receive_files(char** fname_list, int fnames)
 				,mode&GMODE ? "-G" : ""
 				,mode&CRC ? "CRC-16":"Checksum");
 		else
-			lprintf(LOG_INFO,"Receiving %s (%lu KB) via %s %s"
+			lprintf(LOG_INFO,"Receiving %s (%"PRIu64" KB) via %s %s"
 				,str
 				,file_bytes/1024
 				,mode&YMODEM ? mode&GMODE ? "YMODEM-G" : "YMODEM" :"ZMODEM"
@@ -1262,7 +1262,7 @@ static int receive_files(char** fname_list, int fnames)
 			while(is_connected(NULL)) {
 				ulong pos=ftell(fp);
 				if(max_file_size!=0 && pos>=max_file_size) {
-					lprintf(LOG_WARNING,"Specified maximum file size (%lu bytes) reached at offset %lu"
+					lprintf(LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
 						,max_file_size, pos);
 					break;
 				}
@@ -1306,8 +1306,8 @@ static int receive_files(char** fname_list, int fnames)
 				if(wr>(uint)file_bytes_left)
 					wr=(uint)file_bytes_left;
 				if(fwrite(block,1,wr,fp)!=wr) {
-					lprintf(LOG_ERR,"Error writing %u bytes to file at offset %lu"
-						,wr,ftell(fp));
+					lprintf(LOG_ERR,"Error writing %u bytes to file at offset %"PRIu64
+						,wr,(uint64_t)ftell(fp));
 					xmodem_cancel(&xm);
 					return(1); 
 				}
@@ -1322,7 +1322,7 @@ static int receive_files(char** fname_list, int fnames)
 		else {
 			fflush(fp);
 			if(file_bytes < filelength(fileno(fp))) {
-				lprintf(LOG_INFO,"Truncating file to %lu bytes", file_bytes);
+				lprintf(LOG_INFO,"Truncating file to %"PRIu64" bytes", file_bytes);
 				chsize(fileno(fp),(ulong)file_bytes);	/* <--- 4GB limit */
 			} else
 				file_bytes = filelength(fileno(fp));
@@ -1335,7 +1335,7 @@ static int receive_files(char** fname_list, int fnames)
 			lprintf(LOG_WARNING,"File Skipped");
 		else if(success)
 			lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
-				,t/60,t%60,file_bytes/t);	
+				,t/60,t%60,(ulong)(file_bytes/t));
 		else
 			lprintf(LOG_ERR,"File Transfer %s"
 				,zm.local_abort ? "Aborted": zm.cancelled ? "Cancelled":"Failure");
@@ -1375,7 +1375,7 @@ static int receive_files(char** fname_list, int fnames)
 		total_files--;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
-			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
+			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRIu64
 				,(total_bytes/cps)/60
 				,(total_bytes/cps)%60
 				,total_files

@@ -482,7 +482,11 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	size_t		i;
 	size_t		rd;
 	time_t		startfile;
+#ifdef _WIN32
+	struct		_stati64 st;
+#else
 	struct		stat st;
+#endif
 	BOOL		sent_header=FALSE;
 
 	if(sent!=NULL)	
@@ -491,7 +495,11 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if(start!=NULL)		
 		*start=time(NULL);
 
+#ifdef _WIN32
+	_fstati64(fileno(fp),&st);
+#else
 	fstat(fileno(fp),&st);
+#endif
 
 	if(xm->total_files==0)
 		xm->total_files=1;
@@ -508,8 +516,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 			memset(block,0,sizeof(block));
 			SAFECOPY(block,getfname(fname));
-			i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %u"
-				,(ulong)st.st_size
+			i=sprintf(block+strlen(block)+1,"%"PRIu64" %lo 0 0 %d %u"
+				,(uint64_t)st.st_size
 				,st.st_mtime
 				,xm->total_files-xm->sent_files
 				,xm->total_bytes-xm->sent_bytes);
@@ -546,14 +554,14 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 
 		block_num=1;
 		xm->errors=0;
-		while(sent_bytes < (ulong)st.st_size && xm->errors<=xm->max_errors && !is_cancelled(xm)
+		while(sent_bytes < st.st_size && xm->errors<=xm->max_errors && !is_cancelled(xm)
 			&& is_connected(xm)) {
 			fseek(fp,sent_bytes,SEEK_SET);
 			memset(block,CPMEOF,xm->block_size);
 			if(!sent_header) {
 				if(xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
-					if((long)(sent_bytes+xm->block_size) > st.st_size) {
-						if((long)(sent_bytes+xm->block_size-XMODEM_MIN_BLOCK_SIZE) >= st.st_size) {
+					if((sent_bytes+xm->block_size) > st.st_size) {
+						if((sent_bytes+xm->block_size-XMODEM_MIN_BLOCK_SIZE) >= st.st_size) {
 							lprintf(xm,LOG_INFO,"Falling back to 128-byte blocks for end of file");
 							xm->block_size=XMODEM_MIN_BLOCK_SIZE;
 						}
@@ -561,8 +569,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				}
 			}
 			if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
-				&& (long)(sent_bytes + rd) != st.st_size) {
-				lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %lu"
+				&& (sent_bytes + rd) != st.st_size) {
+				lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %"PRIu64
 					,rd,xm->block_size,sent_bytes);
 				xm->errors++;
 				continue;
@@ -572,7 +580,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			xmodem_put_block(xm, block, xm->block_size, block_num);
 			if(xmodem_get_ack(xm, /* tries: */5,block_num) != ACK) {
 				xm->errors++;
-				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %ld"
+				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %"PRIu64
 					,block_num, xm->errors,ftell(fp)-xm->block_size);
 				if(xm->errors==3 && block_num==1 && xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
 					lprintf(xm,LOG_NOTICE,"Block %u: Falling back to 128-byte blocks", block_num);
@@ -583,7 +591,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 				sent_bytes+=rd;
 			}
 		}
-		if(sent_bytes >= (ulong)st.st_size && !is_cancelled(xm) && is_connected(xm)) {
+		if(sent_bytes >= st.st_size && !is_cancelled(xm) && is_connected(xm)) {
 
 	#if 0 /* !SINGLE_THREADED */
 			lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
