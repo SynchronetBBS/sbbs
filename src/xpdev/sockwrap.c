@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -164,14 +164,14 @@ socket_option_t* getSocketOptionList(void)
 	return(socket_options);
 }
 
-int sendfilesocket(int sock, int file, long *offset, long count)
+int sendfilesocket(int sock, int file, fileoff_t *offset, filelen_t count)
 {
-	char	buf[1024*16];
-	long	len;
-	int		rd;
-	int		wr=0;
-	int		total=0;
-	int		i;
+	char		buf[1024*16];
+	filelen_t	len;
+	int			rd;
+	int			wr=0;
+	int			total=0;
+	int			i;
 
 /* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
 	len=filelength(file);
@@ -226,7 +226,7 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 	return(total);
 }
 
-int recvfilesocket(int sock, int file, long *offset, long count)
+int recvfilesocket(int sock, int file, fileoff_t *offset, filelen_t count)
 {
 	/* Writes a file from a socket -
 	 *
@@ -252,7 +252,7 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 		return(-1);
 	}
 		
-	if((buf=(char*)alloca(count))==NULL) {
+	if((buf=(char*)alloca((size_t)count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
 	}
@@ -261,7 +261,7 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 		if(lseek(file,*offset,SEEK_SET)<0)
 			return(-1);
 
-	rd=read(sock,buf,count);
+	rd=read(sock,buf,(size_t)count);
 	if(rd!=count)
 		return(-1);
 

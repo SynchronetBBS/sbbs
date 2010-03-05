@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -39,6 +39,7 @@
 #define _SOCKWRAP_H
 
 #include "gen_defs.h"	/* BOOL */
+#include "filewrap.h"	/* fileoff_t, filelen_t */
 
 /***************/
 /* OS-specific */
@@ -172,8 +173,8 @@ socket_option_t*
 		getSocketOptionList(void);
 int		getSocketOptionByName(const char* name, int* level);
 
-int		sendfilesocket(int sock, int file, long *offset, long count);
-int		recvfilesocket(int sock, int file, long *offset, long count);
+int		sendfilesocket(int sock, int file, fileoff_t* offset, filelen_t count);
+int		recvfilesocket(int sock, int file, fileoff_t* offset, filelen_t count);
 BOOL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
 int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
