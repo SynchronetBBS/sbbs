@@ -187,6 +187,8 @@ WaitForEvent(xpevent_t event, DWORD ms)
 				if(retval) {
 					errno=retval;
 					retval=WAIT_FAILED;
+					event->nwaiters--;
+					goto DONE;
 				}
 				break;
 			default:
