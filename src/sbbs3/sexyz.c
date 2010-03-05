@@ -634,33 +634,13 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	uchar		buf[2] = { TELNET_IAC, TELNET_IAC };
 	int			len=1;
 	int			i;
-	fd_set		socket_set;
-	struct timeval	tv;
-
-	FD_ZERO(&socket_set);
-#ifdef __unix__
-	if(stdio)
-		FD_SET(STDOUT_FILENO,&socket_set);
-	else
-#endif
-		FD_SET(sock,&socket_set);
-	tv.tv_sec=timeout;
-	tv.tv_usec=0;
-
-	if(select(sock+1,NULL,&socket_set,NULL,&tv)<1)
-		return(ERROR_VALUE);
 
 	if(telnet && ch==TELNET_IAC)	/* escape IAC char */
 		len=2;
 	else
 		buf[0]=ch;
 
-#ifdef __unix__
-	if(stdio)
-		i=write(STDOUT_FILENO,buf,len);
-	else
-#endif
-		i=sendbuf(sock,buf,len);
+	i=sendbuf(sock,buf,len);
 	
 	if(i==len) {
 		if(debug_tx)
