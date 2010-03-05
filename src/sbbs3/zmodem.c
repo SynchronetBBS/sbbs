@@ -1440,7 +1440,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 	if(zm->rxd_header_pos <= zm->current_file_size) {
 		if(*pos != zm->rxd_header_pos) {
 			*pos = zm->rxd_header_pos;
-			lprintf(zm,LOG_INFO,"Resuming transfer from offset: %lu", *pos);
+			lprintf(zm,LOG_INFO,"Resuming transfer from offset: %"PRIu64, *pos);
 		}
 		return TRUE;
 	}
@@ -1453,7 +1453,7 @@ BOOL zmodem_handle_zack(zmodem_t* zm)
 	if(zm->rxd_header_pos == zm->current_file_pos)
 		return TRUE;
 	lprintf(zm,LOG_WARNING,"ZACK for incorrect offset (%lu vs %lu)"
-		,zm->rxd_header_pos, zm->current_file_pos);
+		,zm->rxd_header_pos, (ulong)zm->current_file_pos);
 	return FALSE;
 }
 
@@ -1551,7 +1551,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		buf_sent+=n;
 
 		if(n < zm->block_size) {
-			lprintf(zm,LOG_DEBUG,"send_from: end of file (or read error) reached at offset: %lu", zm->current_file_pos);
+			lprintf(zm,LOG_DEBUG,"send_from: end of file (or read error) reached at offset: %"PRIu64, zm->current_file_pos);
 			zmodem_send_zeof(zm, (uint32_t)zm->current_file_pos);
 			return zmodem_recv_header(zm);	/* If this is ZRINIT, Success */
 		}
@@ -1613,7 +1613,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 {
 	uint64_t	pos=0;
 	uint64_t	sent_bytes;
-	struct stat	s;
+#ifdef _WIN32
+	struct _stati64 s;
+#else
+	struct stat		s;
+#endif
 	unsigned char * p;
 	uchar		zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
 	int			type;
@@ -1663,7 +1667,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			return(FALSE);
 	}
 
+#ifdef _WIN32
+	_fstati64(fileno(fp),&s);
+#else
 	fstat(fileno(fp),&s);
+#endif
 	zm->current_file_size = s.st_size;
 	SAFECOPY(zm->current_file_name, getfname(fname));
 
@@ -1725,14 +1733,11 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen(p) + 1;
 
-	sprintf(p,"%lu %lo %lo %d %u %lu %d"
+	sprintf(p,"%"PRIu64" %lo 0 0 %u %"PRIu64" 0"
 		,zm->current_file_size	/* use for estimating only, could be zero! */
 		,s.st_mtime
-		,0UL					/* file mode */
-		,0						/* serial number */
 		,zm->files_remaining
 		,zm->bytes_remaining
-		,0						/* file type */
 		);
 
 	p += strlen(p) + 1;
@@ -1807,7 +1812,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	zm->errors = 0;
 	zm->consecutive_errors = 0;
 
-	lprintf(zm,LOG_DEBUG,"Sending %s from offset %lu", fname, pos);
+	lprintf(zm,LOG_DEBUG,"Sending %s from offset %"PRIu64, fname, pos);
 	do {
 		/*
 		 * and start sending
@@ -1823,7 +1828,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		if(type == ZSKIP) {
 			zm->file_skipped=TRUE;
-			lprintf(zm,LOG_WARNING,"File skipped by receiver at offset: %lu", pos + sent_bytes);
+			lprintf(zm,LOG_WARNING,"File skipped by receiver at offset: %"PRIu64, pos + sent_bytes);
 			/* ZOC sends a ZRINIT after mid-file ZSKIP, so consume the ZRINIT here */
 			zmodem_recv_header(zm);
 			return(TRUE);
@@ -1842,7 +1847,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		/* Error of some kind */
 
-		lprintf(zm,LOG_ERR,"Received %s at offset: %lu", chr(type), zm->current_file_pos);
+		lprintf(zm,LOG_ERR,"Received %s at offset: %"PRIu64, chr(type), zm->current_file_pos);
 
 		if(zm->block_size == zm->max_block_size && zm->max_block_size > ZBLOCKLEN)
 			zm->max_block_size /= 2;
@@ -1891,7 +1896,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 		bytes=zm->current_file_size;
 		kbytes=bytes/1024;
 		if(kbytes<1) kbytes=0;
-		lprintf(zm,LOG_INFO,"Downloading %s (%lu KBytes) via Zmodem", zm->current_file_name, kbytes);
+		lprintf(zm,LOG_INFO,"Downloading %s (%"PRIu64" KBytes) via Zmodem", zm->current_file_name, kbytes);
 
 		do {	/* try */
 			skip=TRUE;
@@ -1901,9 +1906,9 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 			lprintf(zm,LOG_DEBUG,"fpath=%s",fpath);
 			if(fexist(fpath)) {
 				l=flength(fpath);
-				lprintf(zm,LOG_WARNING,"%s already exists (%lu bytes)",fpath,l);
+				lprintf(zm,LOG_WARNING,"%s already exists (%"PRIu64" bytes)",fpath,l);
 				if(l>=(int32_t)bytes) {
-					lprintf(zm,LOG_WARNING,"Local file size >= remote file size (%ld)"
+					lprintf(zm,LOG_WARNING,"Local file size >= remote file size (%"PRIu64")"
 						,bytes);
 					if(zm->duplicate_filename==NULL)
 						break;
@@ -1927,7 +1932,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 				crc=fcrc32(fp,(uint32_t)l);	/* Warning: 4GB limit! */
 				fclose(fp);
 				lprintf(zm,LOG_INFO,"CRC of %s (%lu bytes): %08lX"
-					,getfname(fpath), l, crc);
+					,getfname(fpath), (ulong)l, crc);
 				lprintf(zm,LOG_INFO,"Requesting CRC of remote file: %s", zm->current_file_name);
 				if(!zmodem_get_crc(zm,(uint32_t)l,&rcrc)) {
 					lprintf(zm,LOG_ERR,"Failed to get CRC of remote file");
@@ -1969,7 +1974,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 			}
 			else {
 				if(l!=(int32_t)bytes) {
-					lprintf(zm,LOG_WARNING,"Incomplete download (%ld bytes received, expected %lu)"
+					lprintf(zm,LOG_WARNING,"Incomplete download (%"PRIu64" bytes received, expected %"PRIu64")"
 						,l,bytes);
 				} else {
 					if((t=time(NULL)-zm->transfer_start_time)<=0)
@@ -1977,7 +1982,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 					b=l-start_bytes;
 					if((cps=(unsigned)(b/t))==0)
 						cps=1;
-					lprintf(zm,LOG_INFO,"Received %lu bytes successfully (%u CPS)",b,cps);
+					lprintf(zm,LOG_INFO,"Received %"PRIu64" bytes successfully (%u CPS)",b,cps);
 					files_received++;
 					if(bytes_received!=NULL)
 						*bytes_received+=b;
@@ -2071,26 +2076,14 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->files_remaining = 0;
 	zm->bytes_remaining = 0;
 
-	if(sizeof(int32_t)==sizeof(long)) {
-		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%lu %lo %o %lo %u %u"
-			,&zm->current_file_size	/* file size (decimal) */
-			,&tmptime				/* file time (octal unix format) */
-			,&mode					/* file mode */
-			,&serial				/* program serial number */
-			,&zm->files_remaining	/* remaining files to be sent */
-			,&zm->bytes_remaining	/* remaining bytes to be sent */
-			);
-	}
-	else {
-		i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%u %lo %o %lo %u %u"
-			,&zm->current_file_size	/* file size (decimal) */
-			,&tmptime				/* file time (octal unix format) */
-			,&mode					/* file mode */
-			,&serial				/* program serial number */
-			,&zm->files_remaining	/* remaining files to be sent */
-			,&zm->bytes_remaining	/* remaining bytes to be sent */
-			);
-	}
+	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"PRIu64" %lo %o %lo %u %"PRIu64
+		,&zm->current_file_size	/* file size (decimal) */
+		,&tmptime				/* file time (octal unix format) */
+		,&mode					/* file mode */
+		,&serial				/* program serial number */
+		,&zm->files_remaining	/* remaining files to be sent */
+		,&zm->bytes_remaining	/* remaining bytes to be sent */
+		);
 	zm->current_file_time=tmptime;
 
 	lprintf(zm,LOG_DEBUG,"Zmodem file (ZFILE) data (%u fields): %s"
@@ -2138,7 +2131,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 			zm->current_file_size = pos;
 
 		if(zm->max_file_size!=0 && pos >= zm->max_file_size) {
-			lprintf(zm,LOG_WARNING,"Specified maximum file size (%lu bytes) reached at offset %lu"
+			lprintf(zm,LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
 				,zm->max_file_size, pos);
 			break;
 		}
@@ -2150,10 +2143,10 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 		if(type == ZEOF || type == ZFIN)
 			break;
 		if(type==ENDOFFRAME)
-			lprintf(zm,LOG_DEBUG,"Received complete frame at offset: %lu", ftell(fp));
+			lprintf(zm,LOG_DEBUG,"Received complete frame at offset: %lu", (ulong)ftell(fp));
 		else {
 			if(type>0 && !zm->local_abort)
-				lprintf(zm,LOG_ERR,"Received %s at offset: %lu", chr(type), ftell(fp));
+				lprintf(zm,LOG_ERR,"Received %s at offset: %lu", chr(type), (ulong)ftell(fp));
 			errors++;
 		}
 	}

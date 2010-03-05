@@ -898,7 +898,7 @@ static int send_files(char** fname, uint fnames)
 	glob_t		g;
 	int			gi;
 	BOOL		success=TRUE;
-	long		fsize;
+	uint64_t	fsize;
 	uint64_t	sent_bytes;
 	uint64_t	total_bytes=0;
 	time_t		t,startfile;
@@ -955,7 +955,7 @@ static int send_files(char** fname, uint fnames)
 			}
 			setvbuf(fp,NULL,_IOFBF,0x10000);
 
-			fsize=filelength(fileno(fp));
+			fsize=_filelengthi64(fileno(fp));
 
 			errors=0;
 			startfile=time(NULL);
