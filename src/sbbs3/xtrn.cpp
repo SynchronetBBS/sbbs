@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2060,7 +2060,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                 case 'G':   /* Temp directory */
                     strcat(cmd,cfg.temp_dir);
                     break;
-                case 'H':   /* Port Handle or Hardware Flow Control */
+                case 'H':   /* Socket Handle */
                     strcat(cmd,ultoa(client_socket_dup,str,10));
                     break;
                 case 'I':   /* IP address */
@@ -2106,7 +2106,8 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
                     break;
-                case 'W':   /* Time-slice API type (mswtype) */
+                case 'W':   /* Columns (width) */
+                    strcat(cmd,ultoa(cols,str,10));
                     break;
                 case 'X':
                     strcat(cmd,cfg.shell[useron.shell]->code);
