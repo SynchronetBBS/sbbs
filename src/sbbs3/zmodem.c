@@ -1620,11 +1620,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 {
 	uint64_t	pos=0;
 	uint64_t	sent_bytes;
-#ifdef _WIN32
-	struct _stati64 s;
-#else
 	struct stat		s;
-#endif
 	unsigned char * p;
 	uchar		zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
 	int			type;
@@ -1674,11 +1670,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			return(FALSE);
 	}
 
-#ifdef _WIN32
-	_fstati64(fileno(fp),&s);
-#else
 	fstat(fileno(fp),&s);
-#endif
 	zm->current_file_size = s.st_size;
 	SAFECOPY(zm->current_file_name, getfname(fname));
 
@@ -1966,7 +1958,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 				lprintf(zm,LOG_ERR,"Error %d opening/creating/appending %s",errno,fpath);
 				break;
 			}
-			start_bytes=_filelengthi64(fileno(fp));
+			start_bytes=filelength(fileno(fp));
 
 			skip=FALSE;
 			errors=zmodem_recv_file_data(zm,fp,start_bytes);
@@ -2116,7 +2108,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 {
 	int			type=0;
 	unsigned	errors=0;
-	ulong		pos;
+	fileoff_t	pos;
 
 	zm->transfer_start_pos=offset;
 	zm->transfer_start_time=time(NULL);
@@ -2144,7 +2136,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 		}
 
 		if(type!=ENDOFFRAME)
-			zmodem_send_pos_header(zm, ZRPOS, ftell(fp), /* Hex? */ TRUE);
+			zmodem_send_pos_header(zm, ZRPOS, (uint32_t)pos, /* Hex? */ TRUE);
 
 		type = zmodem_recv_file_frame(zm,fp);
 		if(type == ZEOF || type == ZFIN)

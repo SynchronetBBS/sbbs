@@ -401,7 +401,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
  * Returns -1 on disconnect or the number of bytes read.
  * Does not muck around with ERROR_VALUE (hopefully)
  */
-static int recv_buffer(int timeout)
+static int recv_buffer(int timeout /* seconds */)
 {
 	int i;
 	fd_set		socket_set;
@@ -485,7 +485,7 @@ static int recv_buffer(int timeout)
 /****************************************************************************/
 /* Receive a byte from remote (single-threaded version)						*/
 /****************************************************************************/
-int recv_byte(void* unused, unsigned timeout)
+int recv_byte(void* unused, unsigned timeout /* seconds */)
 {
 	int			i;
 	uchar		ch;
@@ -746,7 +746,7 @@ BOOL is_connected(void* unused)
 	return connected;
 }
 
-BOOL data_waiting(void* unused, unsigned timeout)
+BOOL data_waiting(void* unused, unsigned timeout /* seconds */)
 {
 	if(recv_buffer(timeout) > 0)
 		return TRUE;
@@ -955,7 +955,7 @@ static int send_files(char** fname, uint fnames)
 			}
 			setvbuf(fp,NULL,_IOFBF,0x10000);
 
-			fsize=_filelengthi64(fileno(fp));
+			fsize=filelength(fileno(fp));
 
 			errors=0;
 			startfile=time(NULL);
@@ -1260,7 +1260,7 @@ static int receive_files(char** fname_list, int fnames)
 			block_num=1;
 			xmodem_put_nak(&xm, block_num);
 			while(is_connected(NULL)) {
-				ulong pos=ftell(fp);
+				fileoff_t pos=ftell(fp);
 				if(max_file_size!=0 && pos>=max_file_size) {
 					lprintf(LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
 						,max_file_size, pos);

@@ -46,6 +46,7 @@
 /* xpdev */
 #include "genwrap.h"	/* YIELD */
 #include "dirwrap.h"	/* getfname */
+#include "filewrap.h"	/* fileoff_t */
 
 /* sexyz */
 #include "sexyz.h"
@@ -475,18 +476,14 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, int64_t* sent)
 {
 	BOOL		success=FALSE;
-	ulong		sent_bytes=0;
+	int64_t		sent_bytes=0;
 	char		block[XMODEM_MAX_BLOCK_SIZE];
 	size_t		block_len;
 	unsigned	block_num;
 	size_t		i;
 	size_t		rd;
 	time_t		startfile;
-#ifdef _WIN32
-	struct		_stati64 st;
-#else
 	struct		stat st;
-#endif
 	BOOL		sent_header=FALSE;
 
 	if(sent!=NULL)	
@@ -495,11 +492,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if(start!=NULL)		
 		*start=time(NULL);
 
-#ifdef _WIN32
-	_fstati64(fileno(fp),&st);
-#else
 	fstat(fileno(fp),&st);
-#endif
 
 	if(xm->total_files==0)
 		xm->total_files=1;
@@ -556,7 +549,7 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 		xm->errors=0;
 		while(sent_bytes < st.st_size && xm->errors<=xm->max_errors && !is_cancelled(xm)
 			&& is_connected(xm)) {
-			fseek(fp,sent_bytes,SEEK_SET);
+			fseek(fp,(fileoff_t)sent_bytes,SEEK_SET);
 			memset(block,CPMEOF,xm->block_size);
 			if(!sent_header) {
 				if(xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
