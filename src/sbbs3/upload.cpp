@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -139,7 +139,7 @@ bool sbbs_t::uploadfile(file_t *f)
 			} 
 		}
 
-	if((length=flength(path))<=0L) {
+	if((length=(long)flength(path))<=0L) {
 		bprintf(text[FileZeroLength],f->name);
 		remove(path);
 		sprintf(str,"%s attempted to upload %s to %s %s (Zero length)"
@@ -595,7 +595,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 
 		if(findfile(&cfg,f.dir,str)==0) {
 			strcpy(f.name,str);
-			f.cdt=flength(spath);
+			f.cdt=(long)flength(spath);
 			bprintf(text[BulkUploadDescPrompt],f.name,f.cdt/1024);
 			getstr(f.desc,LEN_FDESC,K_LINE);
 			if(sys_status&SS_ABORT)

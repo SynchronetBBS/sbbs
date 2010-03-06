@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -682,7 +682,7 @@ int sbbs_t::searchup(char *search,int usernum)
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
 
-	flen=filelength(file);
+	flen=(long)filelength(file);
 	lseek(file,(long)((long)usernum*U_LEN),0);
 
 	while((i*U_LEN)<=(ulong)flen) {

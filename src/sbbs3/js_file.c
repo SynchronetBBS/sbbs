@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -295,8 +295,8 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_FALSE);
 	} else {
 		rc=JS_SUSPENDREQUEST(cx);
-		len=filelength(fileno(p->fp));
-		offset=ftell(p->fp);
+		len=(long)filelength(fileno(p->fp));
+		offset=(long)ftell(p->fp);
 		if(offset>0)
 			len-=offset;
 		JS_RESUMEREQUEST(cx, rc);
@@ -1398,10 +1398,11 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int32		offset=0;
-	int32		len=0;
+	fileoff_t	offset=0;
+	filelen_t	len=0;
 	private_t*	p;
 	jsrefcount	rc;
+	jsdouble	val;
 
 	*rval = JSVAL_FALSE;
 
@@ -1415,14 +1416,16 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	/* offset */
 	if(argc) {
-		if(!JS_ValueToInt32(cx,argv[0],&offset))
+		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
+		offset=(fileoff_t)val;
 	}
 
 	/* length */
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&len))
+		if(!JS_ValueToNumber(cx,argv[1],&val))
 			return(JS_FALSE);
+		len=(filelen_t)val;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1439,10 +1442,11 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int32		offset=0;
-	int32		len=0;
+	fileoff_t	offset=0;
+	filelen_t	len=0;
 	private_t*	p;
 	jsrefcount	rc;
+	jsdouble	val;
 
 	*rval = JSVAL_FALSE;
 
@@ -1456,14 +1460,16 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	/* offset */
 	if(argc) {
-		if(!JS_ValueToInt32(cx,argv[0],&offset))
+		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
+		offset=(fileoff_t)val;
 	}
 
 	/* length */
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&len))
+		if(!JS_ValueToNumber(cx,argv[1],&val))
 			return(JS_FALSE);
+		len=(filelen_t)val;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1739,7 +1745,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char		str[128];
 	size_t		i;
 	size_t		rd;
-	long		offset;
+	fileoff_t	offset;
 	ulong		sum=0;
 	ushort		c16=0;
 	ulong		c32=~0;
@@ -1751,7 +1757,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	private_t*	p;
 	jsrefcount	rc;
 	time_t		tt;
-	long		lng;
+	filelen_t	lng;
 	int			in;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -1817,7 +1823,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				rc=JS_SUSPENDREQUEST(cx);
 				lng=ftell(p->fp);
 				JS_RESUMEREQUEST(cx, rc);
-				JS_NewNumberValue(cx,lng,vp);
+				JS_NewNumberValue(cx,(double)lng,vp);
 			}
 			else
 				*vp = INT_TO_JSVAL(-1);
@@ -1829,7 +1835,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			else
 				lng = flength(p->name);
 			JS_RESUMEREQUEST(cx, rc);
-			JS_NewNumberValue(cx,lng,vp);
+			JS_NewNumberValue(cx,(double)lng,vp);
 			break;
 		case FILE_PROP_ATTRIBUTES:
 			rc=JS_SUSPENDREQUEST(cx);

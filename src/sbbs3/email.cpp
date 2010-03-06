@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,20 +45,22 @@
 /****************************************************************************/
 bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 {
-	char	str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
-			,buf[SDT_BLOCK_LEN];
-	char 	tmp[512];
-	char	pid[128];
-	char*	editor=NULL;
-	ushort	msgattr=0;
-	uint16_t xlat=XLAT_NONE;
-	ushort	nettype;
-	int 	i,j,x,file;
-	long	l;
-	ulong	length,offset,crc=0xffffffffUL;
-	FILE	*instream;
-	node_t	node;
-	smbmsg_t msg;
+	char		str[256],str2[256],msgpath[256],title[LEN_TITLE+1],ch
+				,buf[SDT_BLOCK_LEN];
+	char 		tmp[512];
+	char		pid[128];
+	char*		editor=NULL;
+	ushort		msgattr=0;
+	uint16_t	xlat=XLAT_NONE;
+	ushort		nettype;
+	int 		i,j,x,file;
+	long		l;
+	long		length;
+	ulong		offset;
+	uint32_t	crc=0xffffffffUL;
+	FILE*		instream;
+	node_t		node;
+	smbmsg_t	msg;
 
 	SAFECOPY(title,subj);
 
@@ -156,7 +158,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		sprintf(tmp,"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(str2) && fexistcase(tmp))
 			mv(tmp,str2,0);
-		l=flength(str2);
+		l=(long)flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
 		else {
@@ -201,7 +203,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 		return(false); 
 	}
 
-	length=flength(msgpath)+2;	 /* +2 for translation string */
+	length=(long)flength(msgpath)+2;	 /* +2 for translation string */
 
 	if(length&0xfff00000UL) {
 		smb_unlocksmbhdr(&smb);

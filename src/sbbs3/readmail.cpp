@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -242,7 +242,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					padfname(tp,fd.name);
 					sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 						,cfg.data_dir,msg.idx.to,tp);
-					length=flength(str2);
+					length=(long)flength(str2);
 					if(length<1)
 						bputs(text[FileNotFound]);
 					else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP

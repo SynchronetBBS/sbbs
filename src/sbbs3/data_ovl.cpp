@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -53,11 +53,11 @@ void sbbs_t::getmsgptrs()
 
 extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 {
-	char	str[256];
-	uint	i;
-	int 	file;
-	long	length;
-	FILE	*stream;
+	char		str[256];
+	uint		i;
+	int 		file;
+	long		length;
+	FILE*		stream;
 
 	/* Initialize to configured defaults */
 	for(i=0;i<cfg->total_subs;i++) {
@@ -78,7 +78,7 @@ extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
 		return(TRUE); 
 
-	length=filelength(file);
+	length=(long)filelength(file);
 	for(i=0;i<cfg->total_subs;i++) {
 		if(length>=(cfg->sub[i]->ptridx+1)*10L) {
 			fseek(stream,(long)cfg->sub[i]->ptridx*10L,SEEK_SET);
@@ -105,12 +105,12 @@ void sbbs_t::putmsgptrs()
 /****************************************************************************/
 extern "C" BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subscan)
 {
-	char	str[256];
-	ushort	idx;
-	uint16_t scancfg;
-	uint	i,j;
-	int 	file;
-	ulong	length;
+	char		str[256];
+	ushort		idx;
+	uint16_t	scancfg;
+	uint		i,j;
+	int 		file;
+	long		length;
 	uint32_t	l=0L;
 
 	if(!usernumber)

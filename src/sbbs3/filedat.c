@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -52,7 +52,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(f->datoffset>length) {
 		close(file);
 		return(FALSE); 
@@ -74,7 +74,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 
 	if(!f->size) {					/* only read disk if this is null */
 			getfilepath(cfg,f,str);
-			if((f->size=flength(str))>=0)
+			if((f->size=(long)flength(str))>=0)
 				f->date=fdate(str);
 	/*
 			}
@@ -130,7 +130,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length%F_LEN) {
 		close(file);
 		return(FALSE); 
@@ -144,7 +144,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	close(file);
 	if(length%F_LEN) {
 		return(FALSE);
@@ -174,7 +174,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW,DEFFILEMODE))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length==0L)
 		l=0L;
 	else {
@@ -213,7 +213,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	close(file);
 	if(length%F_LEN) {
 		return(FALSE);
@@ -240,7 +240,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,DEFFILEMODE))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length) {    /* IXB file isn't empty */
 		if(length%F_IXBSIZE) {
 			close(file);
@@ -316,7 +316,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		write(file,&f->dateuled,4);
 		write(file,&f->datedled,4); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	close(file);
 	return(TRUE);
 }
@@ -337,7 +337,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
 		return(FALSE); 
@@ -388,7 +388,7 @@ BOOL DLLCALL putfileixb(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
 		return(FALSE); 
@@ -444,7 +444,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(!length) {
 		close(file);
 		return(FALSE); 
@@ -508,7 +508,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 		fname[i]=fname[i+1];
 	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) return(FALSE);
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(!length) {
 		close(file);
 		return(FALSE); 
@@ -594,7 +594,7 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 		return(FALSE); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if((ixtbuf=(char *)malloc(length))==NULL) {
 		close(file);
 		return(FALSE); 
@@ -690,7 +690,7 @@ int DLLCALL update_uldate(scfg_t* cfg, file_t* f)
 	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=nopen(str,O_RDWR))==-1)
 		return(errno); 
-	length=filelength(file);
+	length=(long)filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
 		return(-1); 

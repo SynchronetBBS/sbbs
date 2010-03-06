@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -73,7 +73,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
-	l=filelength(file);
+	l=(long)filelength(file);
 	if(!l) {
 		close(file);
 		return(0); 
@@ -96,7 +96,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 		free((char *)ixbbuf);
 		return(0); 
 	}
-	datbuflen=filelength(file);
+	datbuflen=(long)filelength(file);
 	if((datbuf=(char *)malloc(datbuflen))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,datbuflen);
@@ -971,7 +971,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 			return(0); 
 		}
-		usrxfrlen=filelength(file);
+		usrxfrlen=(long)filelength(file);
 		if((usrxfrbuf=(uchar *)malloc(usrxfrlen))==NULL) {
 			close(file);
 			errormsg(WHERE,ERR_ALLOC,str,usrxfrlen);
@@ -988,7 +988,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
-	l=filelength(file);
+	l=(long)filelength(file);
 	if(!l) {
 		close(file);
 		return(0); 

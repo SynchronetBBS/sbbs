@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -258,7 +258,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		sprintf(tmp,"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(subj) && fexistcase(tmp))
 			mv(tmp,subj,0);
-		l=flength(subj);
+		l=(long)flength(subj);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],fname,ultoac(l,tmp));
 		else {
@@ -303,7 +303,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(false); 
 	}
-	length=filelength(file);
+	length=(long)filelength(file);
 	if((buf=(char *)malloc(length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);

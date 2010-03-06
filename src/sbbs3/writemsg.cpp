@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -137,7 +137,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 	long	len;
 	FILE*	fp;
 
-	if((len=flength(src))<1)
+	if((len=(long)flength(src))<1)
 		return -1;
 
 	if((buf=(char*)malloc(len+1))==NULL)
@@ -252,7 +252,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 				return(false); 
 			}
 
-			l=ftell(stream);			/* l now points to start of message */
+			l=(long)ftell(stream);			/* l now points to start of message */
 
 			while(online) {
 				SAFEPRINTF(str,text[QuoteLinesPrompt],linesquoted ? "Done":"All");
@@ -442,7 +442,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		if(!linesquoted)
 			removecase(msgtmp);
 		else {
-			qlen=flength(msgtmp);
+			qlen=(long)flength(msgtmp);
 			qtime=fdate(msgtmp); 
 		}
 
@@ -478,7 +478,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 			free(buf);
 			return(false); 
 		}
-		length=filelength(file);
+		length=(long)filelength(file);
 		l=strlen((char *)buf);	  /* reserve space for top and terminating null */
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
@@ -494,7 +494,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
 		buf[0]=0;
 		if(linesquoted) {
 			if((file=nopen(msgtmp,O_RDONLY))!=-1) {
-				length=filelength(file);
+				length=(long)filelength(file);
 				l=length>(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1
 					? (cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1 : length;
 				lread(file,buf,l);
@@ -621,7 +621,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return; 
 	}
-	flen=filelength(file);
+	flen=(long)filelength(file);
 	slen=strlen(str2);
 	if((buf=(char *)malloc(flen))==NULL) {
 		close(file);
@@ -1013,7 +1013,7 @@ bool sbbs_t::editfile(char *fname)
 		return false; 
 	}
 	if((file=nopen(fname,O_RDONLY))!=-1) {
-		length=filelength(file);
+		length=(long)filelength(file);
 		if(length>(long)maxlines*MAX_LINE_LEN) {
 			close(file);
 			free(buf); 
@@ -1276,7 +1276,7 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	msgtotxt(msg,msgtmp,0,1);
 	if(!editfile(msgtmp))
 		return;
-	length=flength(msgtmp);
+	length=(long)flength(msgtmp);
 	if(length<1L)
 		return;
 
