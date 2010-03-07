@@ -2105,6 +2105,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
+					strcat(cmd,str);
                     break;
                 case 'W':   /* Columns (width) */
                     strcat(cmd,ultoa(cols,str,10));
@@ -2207,6 +2208,8 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                 case 'B':   /* Baud (DTE) Rate */
                     break;
                 case 'C':   /* Connect Description */
+					if(user!=NULL)
+						strcat(cmd,user->modem);
                     break;
                 case 'D':   /* Connect (DCE) Rate */
                     break;
@@ -2221,6 +2224,8 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                 case 'H':   /* Port Handle or Hardware Flow Control */
                     break;
                 case 'I':   /* IP address */
+					if(user!=NULL)
+						strcat(cmd,user->note);
                     break;
                 case 'J':
                     strcat(cmd,cfg->data_dir);
@@ -2261,8 +2266,11 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                     break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
+					strcat(cmd,str);
                     break;
-                case 'W':   /* Time-slice API type (mswtype) */
+                case 'W':   /* Columns/width */
+					if(user!=NULL)
+						strcat(cmd,ultoa(user->cols,str,10));
                     break;
                 case 'X':
 					if(user!=NULL)
