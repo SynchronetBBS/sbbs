@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -645,43 +645,23 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(nulstr);
 	}
 
-	if(!strcmp(sp,"UP")) {
-		cursor_up();
-		return(nulstr);
-	}
-
-	if(!strcmp(sp,"DOWN")) {
-		cursor_down();
-		return(nulstr);
-	}
-
-	if(!strcmp(sp,"RIGHT")) {
-		cursor_right();
-		return(nulstr);
-	}
-
-	if(!strcmp(sp,"LEFT")) {
-		cursor_left();
-		return(nulstr);
-	}
-
 	if(!strncmp(sp,"UP:",3)) {
-		safe_snprintf(str,maxlen,"\x1b[%dA",atoi(sp+3));
+		cursor_up(atoi(sp+3));
 		return(str);
 	}
 
 	if(!strncmp(sp,"DOWN:",5)) {
-		safe_snprintf(str,maxlen,"\x1b[%dB",atoi(sp+5));
+		cursor_down(atoi(sp+5));
 		return(str);
 	}
 
 	if(!strncmp(sp,"LEFT:",5)) {
-		safe_snprintf(str,maxlen,"\x1b[%dC",atoi(sp+5));
+		cursor_left(atoi(sp+5));
 		return(str);
 	}
 
 	if(!strncmp(sp,"RIGHT:",6)) {
-		safe_snprintf(str,maxlen,"\x1b[%dD",atoi(sp+6));
+		cursor_right(atoi(sp+6));
 		return(str);
 	}
 
