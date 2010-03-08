@@ -1306,8 +1306,8 @@ static int receive_files(char** fname_list, int fnames)
 				if(wr>(uint)file_bytes_left)
 					wr=(uint)file_bytes_left;
 				if(fwrite(block,1,wr,fp)!=wr) {
-					lprintf(LOG_ERR,"Error writing %u bytes to file at offset %"PRIu64
-						,wr,(uint64_t)ftell(fp));
+					lprintf(LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
+						,errno, wr, (uint64_t)ftell(fp));
 					xmodem_cancel(&xm);
 					return(1); 
 				}

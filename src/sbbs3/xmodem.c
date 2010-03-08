@@ -563,8 +563,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			}
 			if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
 				&& (sent_bytes + rd) != st.st_size) {
-				lprintf(xm,LOG_ERR,"READ ERROR %d instead of %d at offset %"PRIu64
-					,rd,xm->block_size,sent_bytes);
+				lprintf(xm,LOG_ERR,"ERROR %d reading %u bytes at file offset %"PRIu64
+					,errno,xm->block_size,(uint64_t)ftell(fp));
 				xm->errors++;
 				continue;
 			}
