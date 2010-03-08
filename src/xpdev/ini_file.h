@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -90,8 +90,8 @@ ushort		iniReadShortInt(FILE*, const char* section, const char* key
 					,ushort deflt);
 ulong		iniReadLongInt(FILE*, const char* section, const char* key
 					,ulong deflt);
-ulong		iniReadBytes(FILE*, const char* section, const char* key
-					,ulong unit, ulong deflt);
+int64_t		iniReadBytes(FILE*, const char* section, const char* key
+					,ulong unit, int64_t deflt);
 double		iniReadFloat(FILE*, const char* section, const char* key
 					,double deflt);
 BOOL		iniReadBool(FILE*, const char* section, const char* key
@@ -144,8 +144,8 @@ ushort		iniGetShortInt(str_list_t, const char* section, const char* key
 					,ushort deflt);
 ulong		iniGetLongInt(str_list_t, const char* section, const char* key
 					,ulong deflt);
-ulong		iniGetBytes(str_list_t, const char* section, const char* key
-					,ulong unit, ulong deflt);
+int64_t		iniGetBytes(str_list_t, const char* section, const char* key
+					,ulong unit, int64_t deflt);
 double		iniGetFloat(str_list_t, const char* section, const char* key
 					,double deflt);
 BOOL		iniGetBool(str_list_t, const char* section, const char* key
@@ -186,7 +186,7 @@ char*		iniSetShortInt(str_list_t*, const char* section, const char* key, ushort 
 					,ini_style_t*);
 char*		iniSetLongInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
-char*		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, ulong value
+char*		iniSetBytes(str_list_t*, const char* section, const char* key, ulong unit, int64_t value
 					,ini_style_t*);
 char*		iniSetHexInt(str_list_t*, const char* section, const char* key, ulong value
 					,ini_style_t*);
