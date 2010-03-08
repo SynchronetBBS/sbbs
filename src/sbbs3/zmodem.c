@@ -1481,7 +1481,14 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 	if(sent!=NULL)
 		*sent=0;
 
-	fseek(fp,(fileoff_t)(zm->current_file_pos=pos),SEEK_SET);
+	if(fseek(fp,(fileoff_t)pos,SEEK_SET)!=0) {
+		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRIu64
+			,errno, pos);
+		zmodem_send_pos_header(zm, ZFERR, (uint32_t)pos, /* Hex? */ TRUE);
+		return ZFERR;
+	}
+	zm->current_file_pos=pos;
+
 
 	/*
 	 * send the data in the file
@@ -2113,7 +2120,12 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	zm->transfer_start_pos=offset;
 	zm->transfer_start_time=time(NULL);
 
-	fseek(fp,(fileoff_t)offset,SEEK_SET);
+	if(fseek(fp,(fileoff_t)offset,SEEK_SET)!=0) {
+		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRIu64
+			,errno, offset);
+		zmodem_send_pos_header(zm, ZFERR, (uint32_t)offset, /* Hex? */ TRUE);
+		return 1; /* errors */
+	}
 
 	/*  zmodem.doc:
 
@@ -2132,6 +2144,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 		if(zm->max_file_size!=0 && pos >= zm->max_file_size) {
 			lprintf(zm,LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
 				,zm->max_file_size, pos);
+			zmodem_send_pos_header(zm, ZFERR, (uint32_t)pos, /* Hex? */ TRUE);
 			break;
 		}
 
@@ -2162,9 +2175,9 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 
 int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 {
-	unsigned n;
-	int type;
-	unsigned attempt;
+	unsigned	n;
+	int			type;
+	unsigned	attempt;
 
 	/*
 	 * wait for a ZDATA header with the right file offset
@@ -2211,7 +2224,12 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 /*		fprintf(stderr,"packet len %d type %d\n",n,type);
 */
 		if (type == ENDOFFRAME || type == FRAMEOK) {
-			fwrite(zm->rx_data_subpacket,1,n,fp);
+			if(fwrite(zm->rx_data_subpacket,1,n,fp)!=n) {
+				lprintf(zm,LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
+						,errno, n,(uint64_t)ftell(fp));
+				zmodem_send_pos_header(zm, ZFERR, (uint32_t)ftell(fp), /* Hex? */ TRUE);
+				return FALSE;
+			}
 		}
 
 		if(type==FRAMEOK)
