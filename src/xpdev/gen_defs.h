@@ -165,6 +165,9 @@ typedef unsigned long long int uint64_t;
 
 #define PRIi64	INTTYPES_H_64BIT_PREFIX"i"
 #define PRIu64	INTTYPES_H_64BIT_PREFIX"u"
+#define PRId64	INTTYPES_H_64BIT_PREFIX"d"
+#define PRIx64	INTTYPES_H_64BIT_PREFIX"x"
+#define PRIo64	INTTYPES_H_64BIT_PREFIX"o"
 
 #endif
 
