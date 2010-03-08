@@ -110,9 +110,9 @@ void sbbs_get_js_settings(
 	char	value[INI_MAX_VALUE_LEN];
     char*   p;
 
-	js->max_bytes		= iniGetInteger(list,section,strJavaScriptMaxBytes		,defaults->max_bytes);
-	js->cx_stack		= iniGetInteger(list,section,strJavaScriptContextStack	,defaults->cx_stack);
-	js->thread_stack	= iniGetInteger(list,section,strJavaScriptThreadStack	,defaults->thread_stack);
+	js->max_bytes		= (ulong)iniGetBytes(list,section,strJavaScriptMaxBytes		,/* unit: */1,defaults->max_bytes);
+	js->cx_stack		= (ulong)iniGetBytes(list,section,strJavaScriptContextStack	,/* unit: */1,defaults->cx_stack);
+	js->thread_stack	= (ulong)iniGetBytes(list,section,strJavaScriptThreadStack	,/* unit: */1,defaults->thread_stack);
 	js->branch_limit	= iniGetInteger(list,section,strJavaScriptBranchLimit	,defaults->branch_limit);
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
@@ -154,17 +154,17 @@ BOOL sbbs_set_js_settings(
 	if(js->max_bytes==defaults->max_bytes)
 		iniRemoveValue(lp,section,strJavaScriptMaxBytes);
 	else
-		failure|=iniSetInteger(lp,section,strJavaScriptMaxBytes,js->max_bytes,style)==NULL;
+		failure|=iniSetBytes(lp,section,strJavaScriptMaxBytes,/*unit: */1, js->max_bytes,style)==NULL;
 
 	if(js->cx_stack==defaults->cx_stack)
 		iniRemoveValue(lp,section,strJavaScriptContextStack);
 	else 
-		failure|=iniSetInteger(lp,section,strJavaScriptContextStack,js->cx_stack,style)==NULL;
+		failure|=iniSetBytes(lp,section,strJavaScriptContextStack,/*unit: */1,js->cx_stack,style)==NULL;
 
 	if(js->thread_stack==defaults->thread_stack)
 		iniRemoveValue(lp,section,strJavaScriptThreadStack);
 	else 
-		failure|=iniSetInteger(lp,section,strJavaScriptThreadStack,js->thread_stack,style)==NULL;
+		failure|=iniSetBytes(lp,section,strJavaScriptThreadStack,/*unit: */1,js->thread_stack,style)==NULL;
 
 	if(js->branch_limit==defaults->branch_limit)
 		iniRemoveValue(lp,section,strJavaScriptBranchLimit);
