@@ -220,7 +220,7 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
 		}
 		if(sem_trywait_block(sem, timeleft))
 			retnow=1;
-		pthread_mutex_lock(&(buf->mutex));
+		pthread_mutex_lock(&(buf->mutex));	/* term.c data_waiting() blocks here, seemingly forever */
 		found=cond(buf);
 		if(found > bcount)
 			found=bcount;
