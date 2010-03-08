@@ -457,7 +457,7 @@ int zmodem_send_data32(zmodem_t* zm, uchar subpkt_type, unsigned char * p, size_
 	int	result;
 	uint32_t crc;
 
-	lprintf(zm,LOG_DEBUG,"send_data32: %s (%u bytes)", chr(subpkt_type), l);
+//	lprintf(zm,LOG_DEBUG,"send_data32: %s (%u bytes)", chr(subpkt_type), l);
 
 	crc = 0xffffffffl;
 
@@ -1481,7 +1481,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 	if(sent!=NULL)
 		*sent=0;
 
-	fseek(fp,(int32_t)(zm->current_file_pos=pos),SEEK_SET);
+	fseek(fp,(fileoff_t)(zm->current_file_pos=pos),SEEK_SET);
 
 	/*
 	 * send the data in the file
@@ -1879,9 +1879,9 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 	uint64_t	b;
 	uint32_t	crc;
 	uint32_t	rcrc;
-	uint64_t	bytes;
-	uint64_t	kbytes;
-	uint64_t	start_bytes;
+	int64_t		bytes;
+	int64_t		kbytes;
+	int64_t		start_bytes;
 	unsigned	files_received=0;
 	time_t		t;
 	unsigned	cps;
@@ -1972,7 +1972,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 					lprintf(zm,LOG_INFO,"Deleted 0-byte file %s",fpath);
 			}
 			else {
-				if(l!=(int32_t)bytes) {
+				if(l!=bytes) {
 					lprintf(zm,LOG_WARNING,"Incomplete download (%"PRIu64" bytes received, expected %"PRIu64")"
 						,l,bytes);
 				} else {
@@ -2113,7 +2113,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	zm->transfer_start_pos=offset;
 	zm->transfer_start_time=time(NULL);
 
-	fsetpos(fp,&offset);
+	fseek(fp,(fileoff_t)offset,SEEK_SET);
 
 	/*  zmodem.doc:
 
@@ -2201,7 +2201,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 
 	if(zm->rxd_header_pos!=(uint32_t)ftell(fp)) {
 		lprintf(zm,LOG_WARNING,"Received wrong ZDATA frame (%lu vs %lu)"
-			,zm->rxd_header_pos, ftell(fp));
+			,zm->rxd_header_pos, (ulong)ftell(fp));
 		return FALSE;
 	}
 	
