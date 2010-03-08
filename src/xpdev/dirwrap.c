@@ -84,6 +84,7 @@
 
 #include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
+#include "filewrap.h"	/* LARGE_FILE_SUPPORT */
 
 /****************************************************************************/
 /* Return the filename portion of a full pathname							*/
