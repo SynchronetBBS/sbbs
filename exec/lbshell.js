@@ -2419,6 +2419,8 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 			bgh=BackGround.height-bgyo;
 		if(ypos+bgh > mtop)
 			bgh=mtop-ypos;
+		if(bgxo+bgw>BackGround.width)	/* Too wide? */
+			bgw=BackGround.width-bgxo;
 		if(bgw>0 && bgh>0) {	/* Anything to draw? */
 			BackGround.draw(bgx,bgy,bgw,bgh,bgxo,bgyo);
 			/* Decrement height, increment ypos to account for drawn area */
