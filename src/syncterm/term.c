@@ -493,9 +493,14 @@ static int recv_byte(void* unused, unsigned timeout /* seconds */)
 #endif
 BOOL data_waiting(void* unused, unsigned timeout /* seconds */)
 {
+	BOOL	ret;
+
 	if(recv_byte_buffer_len)
 		return TRUE;
-	return(conn_buf_wait_bytes(&conn_inbuf, 1, timeout*1000)!=0);
+	pthread_mutex_lock(&(conn_inbuf.mutex));
+	ret = conn_buf_wait_bytes(&conn_inbuf, 1, timeout*1000)!=0;
+	pthread_mutex_unlock(&(conn_inbuf.mutex));
+	return ret;
 }
 
 size_t count_data_waiting(void)
