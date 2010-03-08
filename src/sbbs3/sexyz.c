@@ -93,7 +93,7 @@ BOOL	dszlog_short=FALSE;				/* Log Micros~1 short filename		*/
 BOOL	dszlog_quotes=FALSE;			/* Quote filenames in DSZLOG		*/
 int		log_level=LOG_INFO;
 BOOL	use_syslog=FALSE;
-ulong	max_file_size=MAX_FILE_SIZE;
+int64_t	max_file_size=MAX_FILE_SIZE;
 
 xmodem_t xm;
 zmodem_t zm;
@@ -1214,7 +1214,7 @@ static int receive_files(char** fname_list, int fnames)
 		}
 
 		if(!(mode&XMODEM) && max_file_size!=0 && file_bytes > max_file_size) {
-			lprintf(LOG_WARNING,"%s file size (%u) exceeds specified maximum: %u bytes", str, file_bytes, max_file_size);
+			lprintf(LOG_WARNING,"%s file size (%"PRIu64") exceeds specified maximum: %"PRIu64" bytes", str, file_bytes, max_file_size);
 			if(mode&ZMODEM) {
 				zmodem_send_zskip(&zm);
 				continue;
@@ -1551,12 +1551,12 @@ int main(int argc, char **argv)
 	log_level				=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
 	use_syslog				=iniReadBool(fp,ROOT_SECTION,"SysLog",use_syslog);
 
-	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
+	outbuf.highwater_mark	=(ulong)iniReadBytes(fp,ROOT_SECTION,"OutbufHighwaterMark",1,1100);
 	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
-	outbuf_size				=iniReadInteger(fp,ROOT_SECTION,"OutbufSize",16*1024);
+	outbuf_size				=(ulong)iniReadBytes(fp,ROOT_SECTION,"OutbufSize",1,16*1024);
 
 	progress_interval		=iniReadInteger(fp,ROOT_SECTION,"ProgressInterval",1);
-	max_file_size 			=iniReadLongInt(fp,ROOT_SECTION,"MaxFileSize",MAX_FILE_SIZE);
+	max_file_size 			=iniReadBytes(fp,ROOT_SECTION,"MaxFileSize",/* unit: */1,MAX_FILE_SIZE);
 
 	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
@@ -1565,8 +1565,8 @@ int main(int argc, char **argv)
 	xm.recv_timeout			=iniReadInteger(fp,"Xmodem","RecvTimeout",xm.recv_timeout);	/* seconds */
 	xm.byte_timeout			=iniReadInteger(fp,"Xmodem","ByteTimeout",xm.byte_timeout);	/* seconds */
 	xm.ack_timeout			=iniReadInteger(fp,"Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
-	xm.block_size			=iniReadInteger(fp,"Xmodem","BlockSize",xm.block_size);			/* 128 or 1024 */
-	xm.max_block_size		=iniReadInteger(fp,"Xmodem","MaxBlockSize",xm.max_block_size);	/* 128 or 1024 */
+	xm.block_size			=(ulong)iniReadBytes(fp,"Xmodem","BlockSize",1,xm.block_size);			/* 128 or 1024 */
+	xm.max_block_size		=(ulong)iniReadBytes(fp,"Xmodem","MaxBlockSize",1,xm.max_block_size);	/* 128 or 1024 */
 	xm.max_errors			=iniReadInteger(fp,"Xmodem","MaxErrors",xm.max_errors);
 	xm.g_delay				=iniReadInteger(fp,"Xmodem","G_Delay",xm.g_delay);
 	xm.crc_mode_supported	=iniReadBool(fp,"Xmodem","SendCRC",xm.crc_mode_supported);
@@ -1578,10 +1578,10 @@ int main(int argc, char **argv)
 	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
 	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
 	zm.crc_timeout			=iniReadInteger(fp,"Zmodem","CrcTimeout",zm.crc_timeout);	/* seconds */
-	zm.block_size			=iniReadInteger(fp,"Zmodem","BlockSize",zm.block_size);			/* 1024  */
-	zm.max_block_size		=iniReadInteger(fp,"Zmodem","MaxBlockSize", zm.max_block_size); /* 1024 or 8192 */
+	zm.block_size			=(ulong)iniReadBytes(fp,"Zmodem","BlockSize",1,zm.block_size);	/* 1024  */
+	zm.max_block_size		=(ulong)iniReadBytes(fp,"Zmodem","MaxBlockSize",1,zm.max_block_size); /* 1024 or 8192 */
 	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
-	zm.recv_bufsize			=iniReadInteger(fp,"Zmodem","RecvBufSize",0);
+	zm.recv_bufsize			=(ulong)iniReadBytes(fp,"Zmodem","RecvBufSize",1,0);
 	zm.no_streaming			=!iniReadBool(fp,"Zmodem","Streaming",TRUE);
 	zm.want_fcs_16			=!iniReadBool(fp,"Zmodem","CRC32",TRUE);
 	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
@@ -1741,7 +1741,7 @@ int main(int argc, char **argv)
 						pause_on_abend=TRUE;
 						break;
 					case 'M':	/* MaxFileSize */
-						max_file_size=strtoul(arg++,NULL,0);
+						max_file_size=strtoul(arg++,NULL,0);	/* TODO: use strtoull() ? */
 						break;
 				}
 			}
@@ -1785,6 +1785,8 @@ int main(int argc, char **argv)
 			strListAppend(&fname_list,argv[i],fnames++);
 		} 
 	}
+
+	fprintf(statfp,"Maximum receive file size: %"PRIi64"\n", max_file_size);
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
