@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1562,7 +1562,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 
 	/* Get default key values from "root" section */
 	log_level		= iniGetLogLevel(list,ROOT_SECTION,"LogLevel",startup->log_level);
-	stack_size		= iniGetInteger(list,ROOT_SECTION,"StackSize",0);
+	stack_size		= (uint32_t)iniGetBytes(list,ROOT_SECTION,"StackSize",1,0);
 	max_clients		= iniGetInteger(list,ROOT_SECTION,"MaxClients",0);
 	listen_backlog	= iniGetInteger(list,ROOT_SECTION,"ListenBacklog",DEFAULT_LISTEN_BACKLOG);
 	options			= iniGetBitField(list,ROOT_SECTION,"Options",service_options,0);
@@ -1580,7 +1580,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		serv.interface_addr=iniGetIpAddress(list,sec_list[i],"Interface",startup->interface_addr);
 		serv.max_clients=iniGetInteger(list,sec_list[i],"MaxClients",max_clients);
 		serv.listen_backlog=iniGetInteger(list,sec_list[i],"ListenBacklog",listen_backlog);
-		serv.stack_size=iniGetInteger(list,sec_list[i],"StackSize",stack_size);
+		serv.stack_size=(uint32_t)iniGetBytes(list,sec_list[i],"StackSize",1,stack_size);
 		serv.options=iniGetBitField(list,sec_list[i],"Options",service_options,options);
 		serv.log_level=iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
