@@ -164,10 +164,10 @@ socket_option_t* getSocketOptionList(void)
 	return(socket_options);
 }
 
-int sendfilesocket(int sock, int file, fileoff_t *offset, filelen_t count)
+int sendfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	char		buf[1024*16];
-	filelen_t	len;
+	off_t		len;
 	int			rd;
 	int			wr=0;
 	int			total=0;
@@ -226,7 +226,7 @@ int sendfilesocket(int sock, int file, fileoff_t *offset, filelen_t count)
 	return(total);
 }
 
-int recvfilesocket(int sock, int file, fileoff_t *offset, filelen_t count)
+int recvfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	/* Writes a file from a socket -
 	 *

@@ -1683,7 +1683,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		if(i!=NOT_YMODEM)
 			xmodem_put_nak(&xm, block_num);
 		while(is_connected(NULL)) {
-			xmodem_progress(&xm,block_num,ftell(fp),file_bytes,startfile);
+			xmodem_progress(&xm,block_num,ftello(fp),file_bytes,startfile);
 			if(xm.is_cancelled(&xm)) {
 				lprintf(LOG_WARNING,"Cancelled locally");
 				xmodem_cancel(&xm);
@@ -1732,8 +1732,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 			if(wr>(uint)file_bytes_left)
 				wr=(uint)file_bytes_left;
 			if(fwrite(block,1,wr,fp)!=wr) {
-				lprintf(LOG_ERR,"Error writing %u bytes to file at offset %lu"
-					,wr,(ulong)ftell(fp));
+				lprintf(LOG_ERR,"Error writing %u bytes to file at offset %"PRId64
+					,wr,(int64_t)ftello(fp));
 				xmodem_cancel(&xm);
 				goto end; 
 			}

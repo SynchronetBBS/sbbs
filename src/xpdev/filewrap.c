@@ -74,7 +74,7 @@ time_t DLLCALL filetime(int fd)
 /* Returns the length of the file in 'fd'									*/
 /* or -1 if file doesn't exist.												*/
 /****************************************************************************/
-filelen_t DLLCALL filelength(int fd)
+off_t DLLCALL filelength(int fd)
 {
 	struct stat st;
 
@@ -85,7 +85,7 @@ filelen_t DLLCALL filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
-int DLLCALL lock(int fd, fileoff_t pos, filelen_t len)
+int DLLCALL lock(int fd, off_t pos, off_t len)
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
  		struct flock alock;
@@ -119,7 +119,7 @@ int DLLCALL lock(int fd, fileoff_t pos, filelen_t len)
 }
 
 /* Removes a lock from a file record */
-int DLLCALL unlock(int fd, fileoff_t pos, filelen_t len)
+int DLLCALL unlock(int fd, off_t pos, off_t len)
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -247,10 +247,10 @@ int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int DLLCALL lock(int file, fileoff_t offset, filelen_t size) 
+int DLLCALL lock(int file, off_t offset, off_t size) 
 {
 	int	i;
-	fileoff_t pos;
+	off_t pos;
    
 	pos=tell(file);
 	if(offset!=pos)
@@ -261,10 +261,10 @@ int DLLCALL lock(int file, fileoff_t offset, filelen_t size)
 	return(i);
 }
 
-int DLLCALL unlock(int file, fileoff_t offset, filelen_t size)
+int DLLCALL unlock(int file, off_t offset, off_t size)
 {
 	int	i;
-	fileoff_t	pos;
+	off_t	pos;
    
 	pos=tell(file);
 	if(offset!=pos)

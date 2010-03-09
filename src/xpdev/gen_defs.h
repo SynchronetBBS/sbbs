@@ -174,10 +174,8 @@ typedef unsigned long long int uint64_t;
 /* Legacy 32-bit time_t */
 typedef int32_t		time32_t;
 
-#if defined(XPDEV_LARGE_FILE_SUPPORT)
-typedef int64_t		fileoff_t, filelen_t;
-#else
-typedef long		fileoff_t, filelen_t;
+#if defined(_WIN32) && defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
+#define	off_t		int64_t
 #endif
 
 /* Windows Types */

@@ -1481,7 +1481,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 	if(sent!=NULL)
 		*sent=0;
 
-	if(fseek(fp,(fileoff_t)pos,SEEK_SET)!=0) {
+	if(fseeko(fp,(off_t)pos,SEEK_SET)!=0) {
 		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRIu64
 			,errno, pos);
 		zmodem_send_pos_header(zm, ZFERR, (uint32_t)pos, /* Hex? */ TRUE);
@@ -1503,7 +1503,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		n = fread(zm->tx_data_subpacket,sizeof(BYTE),zm->block_size,fp);
 
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata, ftell(fp));
+			zm->progress(zm->cbdata, ftello(fp));
 		
 		type = ZCRCW;
 
@@ -2115,12 +2115,12 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 {
 	int			type=0;
 	unsigned	errors=0;
-	fileoff_t	pos;
+	off_t		pos;
 
 	zm->transfer_start_pos=offset;
 	zm->transfer_start_time=time(NULL);
 
-	if(fseek(fp,(fileoff_t)offset,SEEK_SET)!=0) {
+	if(fseeko(fp,(off_t)offset,SEEK_SET)!=0) {
 		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRIu64
 			,errno, offset);
 		zmodem_send_pos_header(zm, ZFERR, (uint32_t)offset, /* Hex? */ TRUE);
@@ -2138,7 +2138,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	*/
 	while(errors<=zm->max_errors && is_connected(zm) && !is_cancelled(zm)) {
 
-		if((pos=ftell(fp)) > zm->current_file_size)
+		if((pos=ftello(fp)) > zm->current_file_size)
 			zm->current_file_size = pos;
 
 		if(zm->max_file_size!=0 && pos >= zm->max_file_size) {
@@ -2155,10 +2155,10 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 		if(type == ZEOF || type == ZFIN)
 			break;
 		if(type==ENDOFFRAME)
-			lprintf(zm,LOG_DEBUG,"Received complete frame at offset: %lu", (ulong)ftell(fp));
+			lprintf(zm,LOG_DEBUG,"Received complete frame at offset: %lu", (ulong)ftello(fp));
 		else {
 			if(type>0 && !zm->local_abort)
-				lprintf(zm,LOG_ERR,"Received %s at offset: %lu", chr(type), (ulong)ftell(fp));
+				lprintf(zm,LOG_ERR,"Received %s at offset: %lu", chr(type), (ulong)ftello(fp));
 			errors++;
 		}
 	}
@@ -2194,7 +2194,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 				   If the receiver has not received all the bytes of the file, 
 				   the receiver ignores the ZEOF because a new ZDATA is coming.
 				*/
-				if(zm->rxd_header_pos==(uint32_t)ftell(fp))	
+				if(zm->rxd_header_pos==(uint32_t)ftello(fp))	
 					return type;
 				lprintf(zm,LOG_WARNING,"Ignoring ZEOF as all bytes (%lu) have not been received"
 					,zm->rxd_header_pos);
@@ -2212,9 +2212,9 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 		lprintf(zm,LOG_WARNING,"Received %s instead of ZDATA frame", frame_desc(type));
 	}
 
-	if(zm->rxd_header_pos!=(uint32_t)ftell(fp)) {
+	if(zm->rxd_header_pos!=(uint32_t)ftello(fp)) {
 		lprintf(zm,LOG_WARNING,"Received wrong ZDATA frame (%lu vs %lu)"
-			,zm->rxd_header_pos, (ulong)ftell(fp));
+			,zm->rxd_header_pos, (ulong)ftello(fp));
 		return FALSE;
 	}
 	
@@ -2226,8 +2226,8 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 		if (type == ENDOFFRAME || type == FRAMEOK) {
 			if(fwrite(zm->rx_data_subpacket,1,n,fp)!=n) {
 				lprintf(zm,LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
-						,errno, n,(uint64_t)ftell(fp));
-				zmodem_send_pos_header(zm, ZFERR, (uint32_t)ftell(fp), /* Hex? */ TRUE);
+						,errno, n,(uint64_t)ftello(fp));
+				zmodem_send_pos_header(zm, ZFERR, (uint32_t)ftello(fp), /* Hex? */ TRUE);
 				return FALSE;
 			}
 		}
@@ -2236,7 +2236,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp)
 			zm->block_size = n;
 
 		if(zm->progress!=NULL)
-			zm->progress(zm->cbdata, ftell(fp));
+			zm->progress(zm->cbdata, ftello(fp));
 
 		if(is_cancelled(zm))
 			return(ZCAN);

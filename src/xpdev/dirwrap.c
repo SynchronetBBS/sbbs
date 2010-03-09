@@ -84,7 +84,6 @@
 
 #include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
-#include "filewrap.h"	/* LARGE_FILE_SUPPORT */
 
 /****************************************************************************/
 /* Return the filename portion of a full pathname							*/
@@ -391,7 +390,7 @@ int DLLCALL setfdate(const char* filename, time_t t)
 /* Returns the length of the file in 'filename'                             */
 /* or -1 if the file doesn't exist											*/
 /****************************************************************************/
-filelen_t DLLCALL flength(const char *filename)
+off_t DLLCALL flength(const char *filename)
 {
 #if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
 

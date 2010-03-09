@@ -1260,7 +1260,7 @@ static int receive_files(char** fname_list, int fnames)
 			block_num=1;
 			xmodem_put_nak(&xm, block_num);
 			while(is_connected(NULL)) {
-				fileoff_t pos=ftell(fp);
+				off_t pos=ftello(fp);
 				if(max_file_size!=0 && pos>=max_file_size) {
 					lprintf(LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
 						,max_file_size, pos);
@@ -1307,7 +1307,7 @@ static int receive_files(char** fname_list, int fnames)
 					wr=(uint)file_bytes_left;
 				if(fwrite(block,1,wr,fp)!=wr) {
 					lprintf(LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
-						,errno, wr, (uint64_t)ftell(fp));
+						,errno, wr, (uint64_t)ftello(fp));
 					xmodem_cancel(&xm);
 					return(1); 
 				}
