@@ -1740,7 +1740,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(mode&EX_SH || strcspn(fullcmdline,"<>|;\"")!=strlen(fullcmdline)) {
 			argv[0]=comspec;
-			argv[1]="-c";
+			argv[1]=(char*)"-c";
 			argv[2]=fullcmdline;
 			argv[3]=NULL;
 		} else {

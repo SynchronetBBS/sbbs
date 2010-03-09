@@ -1565,7 +1565,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		buf_sent+=n;
 
 		if(n < zm->block_size) {
-			lprintf(zm,LOG_DEBUG,"send_from: end of file (or read error) reached at offset: %"PRIu64, zm->current_file_pos);
+			lprintf(zm,LOG_DEBUG,"send_from: end of file (or read error) reached at offset: %"PRId64, zm->current_file_pos);
 			zmodem_send_zeof(zm, (uint32_t)zm->current_file_pos);
 			return zmodem_recv_header(zm);	/* If this is ZRINIT, Success */
 		}
@@ -1739,7 +1739,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen(p) + 1;
 
-	sprintf(p,"%"PRIu64" %lo 0 0 %u %"PRIu64" 0"
+	sprintf(p,"%"PRId64" %lo 0 0 %u %"PRId64" 0"
 		,zm->current_file_size	/* use for estimating only, could be zero! */
 		,s.st_mtime
 		,zm->files_remaining
@@ -1853,7 +1853,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		/* Error of some kind */
 
-		lprintf(zm,LOG_ERR,"Received %s at offset: %"PRIu64, chr(type), zm->current_file_pos);
+		lprintf(zm,LOG_ERR,"Received %s at offset: %"PRId64, chr(type), zm->current_file_pos);
 
 		if(zm->block_size == zm->max_block_size && zm->max_block_size > ZBLOCKLEN)
 			zm->max_block_size /= 2;
@@ -1902,7 +1902,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 		bytes=zm->current_file_size;
 		kbytes=bytes/1024;
 		if(kbytes<1) kbytes=0;
-		lprintf(zm,LOG_INFO,"Downloading %s (%"PRIu64" KBytes) via Zmodem", zm->current_file_name, kbytes);
+		lprintf(zm,LOG_INFO,"Downloading %s (%"PRId64" KBytes) via Zmodem", zm->current_file_name, kbytes);
 
 		do {	/* try */
 			skip=TRUE;
@@ -1912,9 +1912,9 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 			lprintf(zm,LOG_DEBUG,"fpath=%s",fpath);
 			if(fexist(fpath)) {
 				l=flength(fpath);
-				lprintf(zm,LOG_WARNING,"%s already exists (%"PRIu64" bytes)",fpath,l);
+				lprintf(zm,LOG_WARNING,"%s already exists (%"PRId64" bytes)",fpath,l);
 				if(l>=(int32_t)bytes) {
-					lprintf(zm,LOG_WARNING,"Local file size >= remote file size (%"PRIu64")"
+					lprintf(zm,LOG_WARNING,"Local file size >= remote file size (%"PRId64")"
 						,bytes);
 					if(zm->duplicate_filename==NULL)
 						break;
@@ -1980,7 +1980,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 			}
 			else {
 				if(l!=bytes) {
-					lprintf(zm,LOG_WARNING,"Incomplete download (%"PRIu64" bytes received, expected %"PRIu64")"
+					lprintf(zm,LOG_WARNING,"Incomplete download (%"PRId64" bytes received, expected %"PRId64")"
 						,l,bytes);
 				} else {
 					if((t=time(NULL)-zm->transfer_start_time)<=0)
@@ -2082,7 +2082,7 @@ void zmodem_parse_zfile_subpacket(zmodem_t* zm)
 	zm->files_remaining = 0;
 	zm->bytes_remaining = 0;
 
-	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"PRIu64" %lo %o %lo %u %"PRIu64
+	i=sscanf(zm->rx_data_subpacket+strlen(zm->rx_data_subpacket)+1,"%"PRId64" %lo %o %lo %u %"PRId64
 		,&zm->current_file_size	/* file size (decimal) */
 		,&tmptime				/* file time (octal unix format) */
 		,&mode					/* file mode */
@@ -2121,7 +2121,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	zm->transfer_start_time=time(NULL);
 
 	if(fseeko(fp,(off_t)offset,SEEK_SET)!=0) {
-		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRIu64
+		lprintf(zm,LOG_ERR,"ERROR %d seeking to file offset %"PRId64
 			,errno, offset);
 		zmodem_send_pos_header(zm, ZFERR, (uint32_t)offset, /* Hex? */ TRUE);
 		return 1; /* errors */
@@ -2142,7 +2142,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 			zm->current_file_size = pos;
 
 		if(zm->max_file_size!=0 && pos >= zm->max_file_size) {
-			lprintf(zm,LOG_WARNING,"Specified maximum file size (%"PRIu64" bytes) reached at offset %"PRIu64
+			lprintf(zm,LOG_WARNING,"Specified maximum file size (%"PRId64" bytes) reached at offset %"PRId64
 				,zm->max_file_size, pos);
 			zmodem_send_pos_header(zm, ZFERR, (uint32_t)pos, /* Hex? */ TRUE);
 			break;
