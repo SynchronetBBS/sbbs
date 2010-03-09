@@ -388,10 +388,10 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 		clreol();
 		cputs("\r\n");
 		if(zm->transfer_start_pos)
-			sprintf(orig,"From: %"PRIu64"  ", zm->transfer_start_pos);
+			sprintf(orig,"From: %"PRId64"  ", zm->transfer_start_pos);
 		else
 			orig[0]=0;
-		cprintf("%sByte: %"PRIu64" of %"PRIu64" (%"PRIu64" KB)"
+		cprintf("%sByte: %"PRId64" of %"PRId64" (%"PRId64" KB)"
 			,orig, current_pos, zm->current_file_size, zm->current_file_size/1024);
 		clreol();
 		cputs("\r\n");
@@ -1060,7 +1060,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	
 	fsize=filelength(fileno(fp));
 
-	lprintf(LOG_INFO,"Sending %s (%"PRIu64" KB) via ZMODEM"
+	lprintf(LOG_INFO,"Sending %s (%"PRId64" KB) via ZMODEM"
 		,path,fsize/1024);
 
 	if(zmodem_send_file(&zm, path, fp
@@ -1170,7 +1170,7 @@ void zmodem_download(struct bbslist *bbs)
 	files_received=zmodem_recv_files(&zm,bbs->dldir,&bytes_received);
 
 	if(files_received>1)
-		lprintf(LOG_INFO,"Received %u files (%"PRIu64" bytes) successfully", files_received, bytes_received);
+		lprintf(LOG_INFO,"Received %u files (%"PRId64" bytes) successfully", files_received, bytes_received);
 
 	conn_binary_mode_off();
 	lprintf(LOG_NOTICE,"Hit any key to continue...");
@@ -1256,7 +1256,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 		if(l<0) l=0;
 		if((*(xm->mode))&SEND) {
 			total_blocks=num_blocks(block_num,offset,fsize,xm->block_size);
-			cprintf("Block (%lu%s): %lu/%lu  Byte: %"PRIu64
+			cprintf("Block (%lu%s): %lu/%lu  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
 				,xm->block_size%1024L ? "" : "K"
 				,block_num
@@ -1286,7 +1286,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					, 60-l, "");
 		} else if((*(xm->mode))&YMODEM) {
-			cprintf("Block (%lu%s): %lu  Byte: %"PRIu64
+			cprintf("Block (%lu%s): %lu  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
 				,xm->block_size%1024L ? "" : "K"
 				,block_num
@@ -1313,7 +1313,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 					"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 					, 60-l, "");
 		} else { /* XModem receive */
-			cprintf("Block (%lu%s): %lu  Byte: %"PRIu64
+			cprintf("Block (%lu%s): %lu  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
 				,xm->block_size%1024L ? "" : "K"
 				,block_num
@@ -1401,7 +1401,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 			draw_transfer_window("XMODEM-g Upload");
 		else
 			draw_transfer_window("XMODEM Upload");
-		lprintf(LOG_INFO,"Sending %s (%"PRIu64" KB) via XMODEM%s"
+		lprintf(LOG_INFO,"Sending %s (%"PRId64" KB) via XMODEM%s"
 			,path,fsize/1024,(mode&GMODE)?"-g":"");
 	}
 	else if(mode&YMODEM) {
@@ -1409,7 +1409,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 			draw_transfer_window("YMODEM-g Upload");
 		else
 			draw_transfer_window("YMODEM Upload");
-		lprintf(LOG_INFO,"Sending %s (%"PRIu64" KB) via YMODEM%s"
+		lprintf(LOG_INFO,"Sending %s (%"PRId64" KB) via YMODEM%s"
 			,path,fsize/1024,(mode&GMODE)?"-g":"");
 	}
 	else {
@@ -1618,7 +1618,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				}
 				file_bytes=total_bytes=0;
 				ftime=total_files=0;
-				i=sscanf(block+strlen(block)+1,"%"PRIu64" %lo %lo %lo %d %"PRIu64
+				i=sscanf(block+strlen(block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
 					,&file_bytes			/* file size (decimal) */
 					,&tmpftime 				/* file time (octal unix format) */
 					,&fmode 				/* file mode (not used) */
@@ -1641,9 +1641,9 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				lprintf(LOG_DEBUG,"Incoming filename: %.64s ",getfname(fname));
 
 				sprintf(str,"%s/%s",bbs->dldir,getfname(fname));
-				lprintf(LOG_INFO,"File size: %"PRIu64" bytes", file_bytes);
+				lprintf(LOG_INFO,"File size: %"PRId64" bytes", file_bytes);
 				if(total_files>1)
-					lprintf(LOG_INFO,"Remaining: %"PRIu64" bytes in %u files", total_bytes, total_files);
+					lprintf(LOG_INFO,"Remaining: %"PRId64" bytes in %u files", total_bytes, total_files);
 			}
 		}
 
@@ -1669,7 +1669,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				,mode&GMODE ? "XMODEM-g" : "XMODEM"
 				,mode&CRC ? "CRC-16" : "Checksum");
 		else
-			lprintf(LOG_INFO,"Receiving %s (%"PRIu64" KB) via %s %s"
+			lprintf(LOG_INFO,"Receiving %s (%"PRId64" KB) via %s %s"
 				,str
 				,file_bytes/1024
 				,mode&GMODE ? "YMODEM-g" : "YMODEM"
@@ -1776,7 +1776,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		total_files--;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
-			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRIu64
+			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
 				,(total_bytes/cps)/60
 				,(total_bytes/cps)%60
 				,total_files
