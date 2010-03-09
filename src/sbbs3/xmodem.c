@@ -563,8 +563,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			}
 			if((rd=fread(block,1,xm->block_size,fp))!=xm->block_size 
 				&& (sent_bytes + rd) != st.st_size) {
-				lprintf(xm,LOG_ERR,"ERROR %d reading %u bytes at file offset %"PRIu64
-					,errno,xm->block_size,(uint64_t)ftello(fp));
+				lprintf(xm,LOG_ERR,"ERROR %d reading %u bytes at file offset %"PRId64
+					,errno,xm->block_size,(int64_t)ftello(fp));
 				xm->errors++;
 				continue;
 			}
@@ -573,8 +573,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			xmodem_put_block(xm, block, xm->block_size, block_num);
 			if(xmodem_get_ack(xm, /* tries: */5,block_num) != ACK) {
 				xm->errors++;
-				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %"PRIu64
-					,block_num, xm->errors,ftello(fp)-xm->block_size);
+				lprintf(xm,LOG_WARNING,"Block %u: Error #%d at offset %"PRId64
+					,block_num, xm->errors,(int64_t)(ftello(fp)-xm->block_size));
 				if(xm->errors==3 && block_num==1 && xm->block_size>XMODEM_MIN_BLOCK_SIZE) {
 					lprintf(xm,LOG_NOTICE,"Block %u: Falling back to 128-byte blocks", block_num);
 					xm->block_size=XMODEM_MIN_BLOCK_SIZE;
