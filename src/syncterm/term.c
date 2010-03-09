@@ -1035,7 +1035,7 @@ void ascii_upload(FILE *fp)
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
 	zmodem_t	zm;
-	ulong	fsize;
+	int64_t		fsize;
 	struct zmodem_cbdata cbdata;
 
 	draw_transfer_window("ZMODEM Upload");
