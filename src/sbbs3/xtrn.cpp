@@ -2269,8 +2269,6 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 					strcat(cmd,str);
                     break;
                 case 'W':   /* Columns/width */
-					if(user!=NULL)
-						strcat(cmd,ultoa(user->cols,str,10));
                     break;
                 case 'X':
 					if(user!=NULL)
