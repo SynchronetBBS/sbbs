@@ -1398,8 +1398,8 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	fileoff_t	offset=0;
-	filelen_t	len=0;
+	off_t		offset=0;
+	off_t		len=0;
 	private_t*	p;
 	jsrefcount	rc;
 	jsdouble	val;
@@ -1418,14 +1418,14 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc) {
 		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
-		offset=(fileoff_t)val;
+		offset=(off_t)val;
 	}
 
 	/* length */
 	if(argc>1) {
 		if(!JS_ValueToNumber(cx,argv[1],&val))
 			return(JS_FALSE);
-		len=(filelen_t)val;
+		len=(off_t)val;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1442,8 +1442,8 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	fileoff_t	offset=0;
-	filelen_t	len=0;
+	off_t		offset=0;
+	off_t		len=0;
 	private_t*	p;
 	jsrefcount	rc;
 	jsdouble	val;
@@ -1462,14 +1462,14 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc) {
 		if(!JS_ValueToNumber(cx,argv[0],&val))
 			return(JS_FALSE);
-		offset=(fileoff_t)val;
+		offset=(off_t)val;
 	}
 
 	/* length */
 	if(argc>1) {
 		if(!JS_ValueToNumber(cx,argv[1],&val))
 			return(JS_FALSE);
-		len=(filelen_t)val;
+		len=(off_t)val;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1745,7 +1745,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char		str[128];
 	size_t		i;
 	size_t		rd;
-	fileoff_t	offset;
+	off_t		offset;
 	ulong		sum=0;
 	ushort		c16=0;
 	ulong		c32=~0;
@@ -1757,7 +1757,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	private_t*	p;
 	jsrefcount	rc;
 	time_t		tt;
-	filelen_t	lng;
+	off_t		lng;
 	int			in;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {

@@ -2544,7 +2544,7 @@ static JSBool
 js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
-	filelen_t	fl;
+	off_t		fl;
 	jsrefcount	rc;
 
 	if(JSVAL_IS_VOID(argv[0]))
