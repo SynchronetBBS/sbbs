@@ -162,6 +162,7 @@ void load_font_files(void)
 						free(fontdata);
 					}
 				}
+				fclose(fontfile);
 			}
 		}
 		if(ff[i].path8x14 && ff[i].path8x14[0]) {
@@ -174,6 +175,7 @@ void load_font_files(void)
 						free(fontdata);
 					}
 				}
+				fclose(fontfile);
 			}
 		}
 		if(ff[i].path8x16 && ff[i].path8x16[0]) {
@@ -186,6 +188,7 @@ void load_font_files(void)
 						free(fontdata);
 					}
 				}
+				fclose(fontfile);
 			}
 		}
 		nextfont++;
