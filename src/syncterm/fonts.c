@@ -118,7 +118,7 @@ struct font_files *read_font_files(int *count)
 		ret[*count-1].name=strdup(fontid+5);
 		if((ret[*count-1].path8x8=iniReadString(inifile,fontid,"Path8x8",NULL,fontpath))!=NULL)
 			ret[*count-1].path8x8=strdup(fontpath);
-		if((ret[*count-1].path8x14=iniReadString(inifile,fontid,"Path8x14","",fontpath))!=NULL)
+		if((ret[*count-1].path8x14=iniReadString(inifile,fontid,"Path8x14",NULL,fontpath))!=NULL)
 			ret[*count-1].path8x14=strdup(fontpath);
 		if((ret[*count-1].path8x16=iniReadString(inifile,fontid,"Path8x16",NULL,fontpath))!=NULL)
 			ret[*count-1].path8x16=strdup(fontpath);
