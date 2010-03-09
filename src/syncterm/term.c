@@ -520,6 +520,8 @@ void draw_transfer_window(char* title)
 	gettextinfo(&trans_ti);
 	top=(trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2;
 	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
+	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
+
 	gettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf);
 	memset(outline, YELLOW | (BLUE<<4), sizeof(outline));
 	for(i=2;i < sizeof(outline) - 2; i+=2) {
