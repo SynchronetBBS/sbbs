@@ -1256,7 +1256,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 		if(l<0) l=0;
 		if((*(xm->mode))&SEND) {
 			total_blocks=num_blocks(block_num,offset,fsize,xm->block_size);
-			cprintf("Block (%lu%s): %lu/%lu  Byte: %"PRId64
+			cprintf("Block (%lu%s): %u/%"PRId64"  Byte: %"PRId64
 				,xm->block_size%1024L ? xm->block_size: xm->block_size/1024L
 				,xm->block_size%1024L ? "" : "K"
 				,block_num
