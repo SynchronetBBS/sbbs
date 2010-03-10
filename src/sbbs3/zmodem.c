@@ -115,6 +115,7 @@ static char *chr(int ch)
 		case ZRPOS:				return("ZRPOS");
 		case ZDATA:				return("ZDATA");
 		case ZEOF:				return("ZEOF");
+		case ZFERR:				return("ZFERR");
 		case ZPAD:				return("ZPAD");
 		case ZCAN:				return("ZCAN");
 		case ZDLE:				return("ZDLE");
