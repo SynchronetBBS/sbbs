@@ -667,9 +667,9 @@ int zmodem_rx(zmodem_t* zm)
 	 * will be received.
 	 */
 
-	while(is_connected(zm) && !is_cancelled(zm)) {
+	do {
 
-		while(!is_cancelled(zm)) {
+		do {
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
 	
@@ -699,14 +699,14 @@ int zmodem_rx(zmodem_t* zm)
 					return c;
 			}
 			break;
-		}
+		} while(!is_cancelled(zm));
 	
 		/*
 	 	 * ZDLE encoded sequence or session abort.
 		 * (or something illegal; then back to the top)
 		 */
 
-		while(!is_cancelled(zm)) {
+		do {
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
 
@@ -760,8 +760,8 @@ int zmodem_rx(zmodem_t* zm)
 					break;
 			}
 			break;
-		} 
-	}
+		} while(!is_cancelled(zm));
+	} while(is_connected(zm) && !is_cancelled(zm));
 
 	/*
 	 * not reached (unless cancelled).
