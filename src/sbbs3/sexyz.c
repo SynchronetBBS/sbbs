@@ -1436,9 +1436,7 @@ static const char* usage=
 
 #ifdef __unix__
 
-#ifdef __unix__
-	struct termios tio_default;				/* Initial term settings */
-#endif
+struct termios tio_default;				/* Initial term settings */
 
 #ifdef NEEDS_CFMAKERAW
 static void
@@ -1477,6 +1475,11 @@ static void init_stdio(void)
 		setvbuf(stdout, NULL, _IOFBF, 0);
 		atexit(fixterm);
 	}
+}
+
+BOOL	RingBufIsEmpty(void *buf)
+{
+	return(RingBufFull(buf)==0);
 }
 
 #endif
@@ -1608,6 +1611,10 @@ int main(int argc, char **argv)
 
 #if !defined(RINGBUF_EVENT)
 	outbuf_empty=CreateEvent(NULL,/* ManualReset */TRUE, /*InitialState */TRUE,NULL);
+	outbuf_empty->cbdata=&outbuf;
+#ifdef __unix__
+	outbuf_empty->verify=RingBufIsEmpty;
+#endif
 #endif
 
 #if 0
