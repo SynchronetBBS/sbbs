@@ -43,6 +43,7 @@ const hub_address=argv[0];
 const hub_port=argv[1];
 const connection_timeout=2;
 const connection_attempts=5;
+const timeout=500;
 
 var local_sessions=[];
 var remote_sessions=[];
@@ -51,13 +52,14 @@ var background=[];
 var hub=false;
 
 //main service loop
-while(!server.terminated) 
+while(!server.terminated && !js.terminated) 
 {
-	if(server.terminated) break;
 	sock_cycle();
 	if(server.socket.poll()<1)
 	{
 		mswait(100);
+		if(server.terminated) break;
+		if(js.terminated) break;
 		continue;
 	}
 	store_socket(server.socket.accept());
@@ -268,6 +270,16 @@ function hub_disconnect()
 function store_socket(sock)
 {
 	//receive connection identifier from incoming socket connection (should always be first transmission)
+	var count=0;
+	while(!sock.data_waiting && count<timeout) {
+		mswait(1);
+		count++;
+	}
+	if(count==timeout) {
+		log("connection timed out waiting for handshake");
+		return false;
+	}
+	
 	var handshake=sock.recvline(1024,connection_timeout);
 	var identifier=handshake.charAt(0);
 	var session_id=handshake.substr(1);
