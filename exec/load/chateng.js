@@ -303,9 +303,9 @@ function ChatEngine(root,stream)
 	this.drawLines=function()
 	{
 		if(!this.lined) return;
-		drawLine(this.input_line.x-1,this.input_line.y-1,this.columns+2);
+		drawLine(this.input_line.x-1,this.input_line.y-1,this.columns+2,"\1k\1h");
 		if(this.y>1) drawLine(this.x-1,this.y-1,this.columns+2);
-		if(this.input_line.y<24) drawLine(this.input_line.x-1,this.input_line.y+1,this.columns+2);
+		if(this.input_line.y<24) drawLine(this.input_line.x-1,this.input_line.y+1,this.columns+2,"\1k\1h");
 	}
 	this.drawBox=function()
 	{
