@@ -10,17 +10,17 @@ function Timer(x,y,color)
 	this.lastshown=-1;
 	this.digits=[];
 	
-	this.Init=function(length)
+	this.init=function(length)
 	{
-		this.LoadDigits();
+		this.loadDigits();
 		this.countdown=length;
 		this.lastupdate=time();
 	}
-	this.Redraw=function()
+	this.redraw=function()
 	{
-		this.Update(true);
+		this.update(true);
 	}
-	this.Update=function(forced)
+	this.update=function(forced)
 	{
 		var current=time();
 		if(current>this.lastupdate || forced) 
@@ -31,10 +31,10 @@ function Timer(x,y,color)
 			if(mins==0 && secs<30) this.color="\1r\1h";
 			this.lastshown=current;
 			var t=mins.toString() + ":" + secs.toString();
-			this.DrawClock(t);
+			this.drawClock(t);
 		}
 	}
-	this.DrawClock=function(time)
+	this.drawClock=function(time)
 	{
 		console.attributes=this.color;
 		for(i=0;i<5;i++)
@@ -52,7 +52,7 @@ function Timer(x,y,color)
 		}
 		console.attributes=ANSI_NORMAL;
 	}
-	this.LoadDigits=function()
+	this.loadDigits=function()
 	{
 		var zero=["\xDC\xDC\xDC","\xDB \xDB","\xDB \xDB","\xDB \xDB","\xDF\xDF\xDF"];
 		var one=["\xDC","\xDB","\xDB","\xDB","\xDF"];
@@ -78,7 +78,7 @@ function Timer(x,y,color)
 		this.digits[9]=nine;
 		this.digits["colon"]=colon;
 	}
-	this.Countdown=function(current,difference)
+	this.countDown=function(current,difference)
 	{
 		if(this.countdown<=0) return false;
 		this.countdown-=difference;

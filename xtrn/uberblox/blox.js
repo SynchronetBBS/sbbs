@@ -13,15 +13,15 @@ try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 load("graphic.js");
-load("sbbsdefs.js");
+load("sbbsdefs.js")
 load("logging.js");
 load("funclib.js");
+load("commclient.js");
  
 var oldpass=console.ctrl_key_passthru;
-//var gamelog=new Logger(gameroot,"blox");
-var gamelog=false;
+var stream=new ServiceConnection("uberblox"); 
 
-function Blox()
+function blox()
 {
 	const columns=20;
 	const rows=11;
@@ -53,9 +53,9 @@ function Blox()
 	const xlist=[0,0,1,-1];
 	const ylist=[-1,1,0,0];
 
-	function Lobby()
+	function mainLobby()
 	{
-		DrawLobby();
+		drawLobby();
 		while(1)
 		{
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
@@ -65,17 +65,17 @@ function Blox()
 				{
 					case "\x1b":	
 					case "Q":
-						SplashExit();
+						splashExit();
 					case "I":
-						ShowInstructions();
-						DrawLobby();
+						showInstructions();
+						drawLobby();
 						break;
 					case "P":
-						Main();
-						DrawLobby();
+						main();
+						drawLobby();
 						break;
 					case "R":
-						DrawLobby();
+						drawLobby();
 						break;
 					default:
 						break;
@@ -83,7 +83,7 @@ function Blox()
 			}
 		}
 	}
-	function ShowInstructions()
+	function showInstructions()
 	{
 		console.clear(ANSI_NORMAL);
 		bbs.sys_status&=~SS_PAUSEOFF;
@@ -93,19 +93,19 @@ function Blox()
 		bbs.sys_status&=~SS_PAUSEON;
 		bbs.sys_status|=SS_PAUSEOFF;	
 	}
-	function Main()
+	function main()
 	{
 		level=0;
 		points=0;
 		gameover=false;
-		GenerateLevel();
-		Redraw();
+		generateLevel();
+		redraw();
 		while(1)
 		{
 			if(gameover) 
 			{
-				EndGame();
-				while(console.inkey()==="");
+				endGame();
+				while(console.inkey()=="");
 				return;
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
@@ -119,12 +119,12 @@ function Blox()
 					case KEY_RIGHT:
 						if(selected)
 						{
-							Unselect();
+							unselect();
 						}
-						MovePosition(k);
+						movePosition(k);
 						break;
 					case "R":
-						Redraw();
+						redraw();
 						break;
 					case "\x1b":	
 					case "Q":
@@ -132,7 +132,7 @@ function Blox()
 						break;
 					case "\r":
 					case "\n":
-						ProcessSelection();
+						processSelection();
 						break;
 					default:
 						break;
@@ -140,17 +140,17 @@ function Blox()
 			}
 		}
 	}
-	function DrawLobby()
+	function drawLobby()
 	{
 		lobby.draw(1,1);
-		ShowScores();
+		showScores();
 	}
-	function LevelUp()
+	function levelUp()
 	{
 		level+=1;
-		GenerateLevel();
+		generateLevel();
 	}
-	function EndGame()
+	function endGame()
 	{
 		if(players.players[user.alias].score<points) 
 		{
@@ -160,27 +160,29 @@ function Blox()
 		console.clear();
 		gameend.draw();
 		console.gotoxy(52,5);
-		console.putmsg(CenterString("\1n\1y" + points,13));
+		console.putmsg(centerString("\1n\1y" + points,13));
 		console.gotoxy(52,13);
-		console.putmsg(CenterString("\1n\1y" + (parseInt(level,10)+1),13));
+		console.putmsg(centerString("\1n\1y" + (parseInt(level)+1),13));
 	}
-	function SplashStart()
+	function splashStart()
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
-		bbs.sys_status|=SS_PAUSEOFF;	
+		bbs.sys_status|=SS_PAUSEOFF;
+		getFiles("players.ini");
 		console.clear();
 	}
-	function SplashExit()
+	function splashExit()
 	{
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
 		players.StorePlayer();
+		sendFiles("players.ini");
 		console.clear(ANSI_NORMAL);
 		exit(0);
 	}
-	function Init()
+	function init()
 	{
 		logo=new Graphic(18,22);
 		logo.load(gameroot + "blox.bin");
@@ -190,7 +192,7 @@ function Blox()
 		gameend.load(gameroot + "gameend.bin");
 		players=new PlayerList();
 	}
-	function GenerateLevel()
+	function generateLevel()
 	{
 		var numcolors=colors[level];
 		var tiles=(columns*rows)-(numcolors*tiles_per_color[level]);
@@ -207,17 +209,17 @@ function Blox()
 		}
 		current=new Level(grid,tiles);
 	}
-	function Redraw()
+	function redraw()
 	{
 		console.clear(ANSI_NORMAL);
-		DrawGrid();
-		DrawLogo();
-		DrawInfo();
-		ShowPosition();
+		drawGrid();
+		drawLogo();
+		drawInfo();
+		showPosition();
 	}
-	function DrawGrid()
+	function drawGrid()
 	{
-		ClearBlock(1,1,60,23);
+		clearBlock(1,1,60,23);
 		for(var x=0;x<current.grid.length;x++)
 		{
 			for(var y=0;y<current.grid[x].length;y++)
@@ -227,28 +229,28 @@ function Blox()
 		}
 		console.attributes=ANSI_NORMAL;
 	}
-	function DrawLogo()
+	function drawLogo()
 	{
 		logo.draw(62,1);
 		console.attributes=ANSI_NORMAL;
 	}
-	function DrawInfo()
+	function drawInfo()
 	{
-		ShowPlayer();
-		ShowScore();
-		ShowSelection(selection.length);
-		ShowLevel();
-		ShowTiles();
+		showPlayer();
+		showScore();
+		showSelection(selection.length);
+		showLevel();
+		showTiles();
 		console.gotoxy(1,24);
 		console.putmsg("\1nArrow keys : move \1k\1h[\1nENTER\1k\1h]\1n : select \1k\1h[\1nQ\1k\1h]\1n : quit \1k\1h[\1n?\1k\1h]\1n : help \1k\1h[\1nR\1k\1h]\1n : redraw");
 	}
-	function Gotoxy(x,y)
+	function gotoxy(x,y)
 	{
 		var posx=(x*3)+2;
 		var posy=22-(y*2);
 		console.gotoxy(posx,posy);
 	}
-	function MovePosition(k)
+	function movePosition(k)
 	{
 		current.grid[selx][sely].draw(false,selx,sely);
 		switch(k)
@@ -272,18 +274,9 @@ function Blox()
 				if(sely>=current.grid[selx].length)	sely=current.grid[selx].length-1;		
 				break;
 		}
-		ShowPosition();
+		showPosition()
 	}
-	function Grid(c,r)
-	{
-		var array=new Array(c);
-		for(var cc=0;cc<array.length;cc++)
-		{
-			array[cc]=new Array(r);
-		}
-		return array;
-	}
-	function Select()
+	function select()
 	{
 		for(var s in selection)
 		{
@@ -292,9 +285,9 @@ function Blox()
 			tile.draw(true,spot.x,spot.y);
 		}
 		selected=true;
-		ShowSelection(selection.length);
+		showSelection(selection.length);
 	}
-	function Unselect()
+	function unselect()
 	{
 		for(var s in selection)
 		{
@@ -304,22 +297,22 @@ function Blox()
 		}
 		selection=[];
 		selected=false;
-		ShowSelection(0);
+		showSelection(0);
 	}
-	function ProcessSelection()
+	function processSelection()
 	{
 		if(selected) 
 		{
-			RemoveBlocks();
-			DrawGrid();
-			ShowScore();
-			if(!FindValidMove())
+			removeBlocks();
+			drawGrid();
+			showScore();
+			if(!findValidMove())
 			{
 				if(current.tiles<=0) 
 				{
 					mswait(1000);
-					LevelUp();
-					Redraw();
+					levelUp();
+					redraw();
 				}
 				else gameover=true;
 			}
@@ -327,17 +320,16 @@ function Blox()
 			{
 				if(selx>=current.grid.length) selx=current.grid.length-1;
 				if(sely>=current.grid[selx].length) sely=current.grid[selx].length-1;
-				ShowPosition();
+				showPosition();
 			}
 		}
 		else
 		{
 			counted=Grid(columns,rows);
-			Search(selx,sely);
+			search(selx,sely);
 			if(selection.length>=minimum_cluster)			
 			{
-				Log("Selecting " + selection.length + " tiles");
-				Select();
+				select();
 			}
 			else
 			{
@@ -345,7 +337,7 @@ function Blox()
 			}
 		}
 	}
-	function Search(x,y)
+	function search(x,y)
 	{
 		var testcolor=current.grid[x][y].bg;
 		counted[x][y]=true;
@@ -358,7 +350,7 @@ function Blox()
 			{
 				if(current.grid[spot.x][spot.y] && current.grid[spot.x][spot.y].bg==testcolor)
 				{
-					Search(spot.x,spot.y);
+					search(spot.x,spot.y);
 				}
 			}
 		}
@@ -368,7 +360,7 @@ function Blox()
 		this.x=x;
 		this.y=y;
 	}
-	function SortSelection()
+	function sortSelection()
 	{
 		for(var n=0;n<selection.length;n++)
 		{
@@ -392,11 +384,9 @@ function Blox()
 			}
 		}
 	}
-	function RemoveBlocks()
+	function removeBlocks()
 	{
-		Log("Removing " + selection.length + " blocks");
-		
-		SortSelection();
+		sortSelection();
 		
 		for(var s=0;s<selection.length;s++)
 		{
@@ -408,38 +398,38 @@ function Blox()
 		if(current.tiles<0) current.tiles=0;
 		points+=CalculatePoints();
 		selection=[];
-		Unselect();
-		ShowTiles();
+		unselect();
+		showTiles();
 		
 	}
-	function ShowPosition()
+	function showPosition()
 	{
 		current.grid[selx][sely].draw(true,selx,sely);
 	}
-	function ShowPlayer()
+	function showPlayer()
 	{
 		console.gotoxy(63,9);
 		console.putmsg("\1w\1h" + user.alias);
 	}
-	function ShowScore()
+	function showScore()
 	{
 		console.gotoxy(63,12);
-		console.putmsg(PrintPadded("\1w\1h" + points,15));
+		console.putmsg(printPadded("\1w\1h" + points,15));
 	}
-	function ShowSelection()
+	function showSelection()
 	{
 		console.gotoxy(63,15);
-		console.putmsg(PrintPadded("\1w\1h" + CalculatePoints(),15));
+		console.putmsg(printPadded("\1w\1h" + CalculatePoints(),15));
 	}
-	function ShowLevel()
+	function showLevel()
 	{
 		console.gotoxy(63,18);
-		console.putmsg("\1w\1h" + (parseInt(level,10)+1));
+		console.putmsg("\1w\1h" + (parseInt(level)+1));
 	}
-	function ShowTiles()
+	function showTiles()
 	{
 		console.gotoxy(63,21);
-		console.putmsg(PrintPadded("\1w\1h" + current.tiles,15));
+		console.putmsg(printPadded("\1w\1h" + current.tiles,15));
 	}
 	function CalculatePoints()
 	{
@@ -454,7 +444,7 @@ function Blox()
 		}
 		return 0;
 	}
-	function FindValidMove()
+	function findValidMove()
 	{
 		counted=Grid(columns,rows);
 		for(var x=0;x<current.grid.length;x++)
@@ -462,7 +452,7 @@ function Blox()
 			for(var y=0;y<current.grid[x].length;y++)
 			{
 				selection=[];
-				Search(x,y); 
+				search(x,y); 
 				if(selection.length>=minimum_cluster) 
 				{
 					selection=[];
@@ -470,10 +460,9 @@ function Blox()
 				}
 			}
 		}
-		Log("no valid move found");
 		return false;
 	}
-	function SortScores()
+	function sortScores()
 	{
 		var sorted=[];
 		for(var p in players.players)
@@ -496,13 +485,13 @@ function Blox()
 		}
 		return sorted;
 	}
-	function ShowScores()
+	function showScores()
 	{
 		var posx=3;
 		var posy=4;
 		var index=0;
 		
-		var scores=SortScores();
+		var scores=sortScores();
 		for(var s in scores)
 		{
 			var score=scores[s];
@@ -512,10 +501,12 @@ function Blox()
 				else console.attributes=BROWN;
 				console.gotoxy(posx,posy+index);
 				console.putmsg(score.name,P_SAVEATR);
-				console.right(20-score.name.length);
-				console.putmsg(PrintPadded(score.score,11,undefined,"right"),P_SAVEATR);
+				console.right(17-score.name.length);
+				console.putmsg(score.sys,P_SAVEATR);
+				console.right(25-score.sys.length);
+				console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(PrintPadded(players.FormatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+				console.putmsg(printPadded(players.FormatDate(score.laston),8,undefined,"right"),P_SAVEATR);
 				index++;
 			}
 		}
@@ -523,16 +514,24 @@ function Blox()
 
 //	GAME OBJECTS
 	
+	function Grid(c,r)
+	{
+		var array=new Array(c);
+		for(var cc=0;cc<array.length;cc++)
+		{
+			array[cc]=new Array(r);
+		}
+		return array;
+	}
 	function PlayerList()
 	{
 		this.file=new File(gameroot + "players.ini");
 		this.players=[];
-		this.Init=function()
+		this.init=function()
 		{
 			this.file.open(file_exists(this.file.name)?'r+':'w+',true);
 			if(!this.file.iniGetValue(user.alias,"name"))
 			{
-				Log("Creating new player data: " + user.alias);
 				this.file.iniSetObject(user.alias,new Player());
 			}
 			var plyrs=this.file.iniGetAllObjects();
@@ -540,9 +539,8 @@ function Blox()
 			for(p in plyrs)
 			{
 				var plyr=plyrs[p];
-				Log("Loading player data: " + plyr.name);
 				if(plyr.name==user.alias) plyr.laston=time();
-				this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston);
+				this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston,plyr.sys);
 			}
 		}
 		this.FormatDate=function(timet)
@@ -561,7 +559,7 @@ function Blox()
 		this.Reset=function()
 		{
 			file_remove(this.file.name);
-			this.Init();
+			this.init();
 		}
 		this.StorePlayer=function()
 		{
@@ -573,13 +571,14 @@ function Blox()
 		{
 			return this.players[alias];
 		}
-		function Player(name,score,laston)
-		{
-			this.name=name?name:user.alias;
-			this.score=score?score:0;
-			this.laston=laston?laston:time();
-		}
-		this.Init();
+		this.init();
+	}
+	function Player(name,score,laston,sys)
+	{
+		this.name=name?name:user.alias;
+		this.score=score?score:0;
+		this.laston=laston?laston:time();
+		this.sys=sys?sys:system.name;
 	}
 	function Level(grid,tiles)
 	{
@@ -592,7 +591,7 @@ function Blox()
 		this.fg=fg;
 		this.draw=function(selected,x,y)
 		{
-			Gotoxy(x,y);
+			gotoxy(x,y);
 			if(selected)
 			{
 				console.attributes=this.fg;
@@ -606,14 +605,19 @@ function Blox()
 		}
 	}
 	
-	SplashStart();
-	Init();
-	Lobby();
-	SplashExit();
+	splashStart();
+	init();
+	mainLobby();
+	splashExit();
 }
-function Log(text)
+function getFiles(mask)
 {
-	if(gamelog) gamelog.Log(text);
+	stream.recvfile(mask);
+}
+function sendFiles(mask)
+{
+	stream.sendfile(mask);
 }
 
-Blox();
+
+blox();
