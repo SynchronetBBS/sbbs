@@ -6,15 +6,18 @@
 
 						SET TAB STOPS TO 4 FOR EDITING
 */
+
 load("sbbsdefs.js");
+load("commclient.js");
+var root_dir;
+try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
+root_dir = root_dir.replace(/[^\/\\]*$/,'');
 
 {//######################### INITIALIZE PROGRAM VARIABLES #########################
 
-    var root;
-    try { barfitty.barf(barf); } catch(e) { root = e.fileName; }
-    root = root.replace(/[^\/\\]*$/,'');
-
-	const 	cfgname=			"stars.cfg";
+	var		stream=				new ServiceConnection("starstocks");
+	const 	root=				root_dir;
+	const 	cfgname=			"stars.cfg";  
 	const	high_score_file=	"star_hs.dat";
 	const 	space=				"\xFA";
 	var 	max_companies=		6;
@@ -26,6 +29,7 @@ load("sbbsdefs.js");
 	var 	difficulty=			1;
 	var 	min_difficult=		20;
 	var 	max_difficult=		35;
+	var		interbbs=			true;
 }
 {//######################### DO NOT CHANGE THIS SECTION ##########################	
 	var 	scores=			[];		
@@ -41,6 +45,7 @@ load("sbbsdefs.js");
 			starcolor=
 			star=
 			scolor="";
+	getFiles(high_score_file);
 	loadSettings();
 	loadHighScores();
 	star=starcolor+star;
@@ -52,6 +57,7 @@ load("sbbsdefs.js");
 	var 	max_normal=		max_stars;
 	var game;
 	gameMenu();
+	sendFiles(high_score_file);
 }
 //########################## MAIN FUNCTIONS ###################################
 
@@ -882,7 +888,14 @@ function 	quit(err)
 	mswait(1000);
 	exit(0);
 }
-
+function	getFiles(mask)
+{
+	if(interbbs) stream.recvfile(mask);
+}
+function	sendFiles(mask)
+{
+	if(interbbs) stream.sendfile(mask);
+}
 //########################## CLASSES #########################################
 
 function 	Map(c,r) 				
@@ -1376,4 +1389,3 @@ function	Score(p,s,d,date)
 	this.difficulty=d;
 	this.date=date;
 }
-
