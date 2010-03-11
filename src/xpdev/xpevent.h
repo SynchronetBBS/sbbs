@@ -69,6 +69,8 @@ struct xpevent {
         BOOL			value;
 		BOOL			mreset;
         DWORD			nwaiters;
+		void			*cbdata;
+		BOOL			(*verify)(void *);
 };
 
 #define INFINITE 	((DWORD)(-1))
