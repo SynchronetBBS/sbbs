@@ -14,18 +14,18 @@
 	to handle the engine in its simplest form
 	
 	For more advanced chatting, see 
-	ChatEngine this.Init() method
+	ChatEngine this.init() method
 */
 function Chat(key,engine)
 {
 	if(!engine) 
 	{
 		engine=new ChatEngine();
-		engine.Init();
+		engine.init();
 	}
 	if(key)
 	{
-		engine.ProcessKey(key);
+		engine.processKey(key);
 		switch(key)
 		{
 			case '\x1b':	
@@ -44,11 +44,11 @@ function Chat(key,engine)
 				if(packet<0) exit();
 				else if(!packet==0 && (packet.room==engine.room || packet.scope==global_scope)) 
 				{
-					engine.ProcessData(packet.data);
+					engine.processData(packet.data);
 				}
 			}
 			key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(key) engine.ProcessKey(key);
+			if(key) engine.processKey(key);
 			switch(key.toUpperCase())
 			{
 				case '\x1b':	
@@ -79,7 +79,7 @@ function ChatEngine(root,stream)
 	var scope=				normal_scope;
 	var messages=			[];
 
-	this.stream=			stream?stream:new GameConnection("chat");
+	this.stream=			stream?stream:new ServiceConnection("chat");
 	this.buffer=			"";
 	this.room;	
 	this.fullscreen;
@@ -95,7 +95,7 @@ function ChatEngine(root,stream)
 	
 	
 	// USEFUL METHODS 
-	this.Init=function(room,input_line,columns,rows,posx,posy,lined,boxed,scrollbar_color,userlist) //NOTE: DESTROYS BUFFER AND MESSAGE LIST
+	this.init=function(room,input_line,columns,rows,posx,posy,lined,boxed,userlist) //NOTE: DESTROYS BUFFER AND MESSAGE LIST
 	{
 												//DEFAULT SETTINGS
 		this.columns=columns?columns:			79;			//chat window width
@@ -112,16 +112,16 @@ function ChatEngine(root,stream)
 		
  		if(input_line)
 		{
-			this.input_line={'x':this.x,'y':this.y+this.rows+1};
+			this.input_line=new InputLine(this.x,this.y+this.rows+1,this.columns,BG_BLACK);
 			this.fullscreen=false;
-			this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical",scrollbar_color?scrollbar_color:"\1k"); 
+			this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k"); 
 		}
 		else this.fullscreen=true;
 
-		this.DrawLines();
-		this.DrawBox();
-		this.GetNotices();
-		this.EntryMessage();
+		this.drawLines();
+		this.drawBox();
+		this.getNotices();
+		this.entryMessage();
 		
 		if(!this.stream) 
 		{
@@ -130,7 +130,7 @@ function ChatEngine(root,stream)
 		}
 		return true;
 	}
-	this.EntryMessage=function()
+	this.entryMessage=function()
 	{
 		var message=user.alias + " has entered the room";
 		var data=
@@ -148,10 +148,10 @@ function ChatEngine(root,stream)
 		};
 		this.stream.send(packet);
 	}
-	this.Resize=function(x,y,columns,rows) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
+	this.resize=function(x,y,columns,rows) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
 	{
-		if(this.lined) ClearLine(this.columns+2,this.x-1,this.y-1);
-		this.ClearChatWindow();
+		if(this.lined) clearLine(this.columns+2,this.x-1,this.y-1);
+		this.clearChatWindow();
 		if(x) this.x=x;
 		if(y) this.y=y;
 		if(columns) this.columns=columns;
@@ -161,24 +161,24 @@ function ChatEngine(root,stream)
 			this.input_line.x=this.x;
 			this.input_line.y=this.y+this.rows+1;
 		}
-		this.Redraw();
+		this.redraw();
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical",this.scrollbar.color); 
 	}
-	this.FindUser=function(id)
+	this.findUser=function(id)
 	{
-		//return this.stream.FindUser(id);
+		//return this.stream.findUser(id);
 	}
-	this.ClearChatWindow=function() //CLEARS THE ENTIRE CHAT WINDOW
+	this.clearChatWindow=function() //CLEARS THE ENTIRE CHAT WINDOW
 	{
-		ClearBlock(this.x,this.y,this.columns,this.rows);
+		clearBlock(this.x,this.y,this.columns,this.rows);
 	}
-	this.DisplayInfo=function(array) //DISPLAYS A TEMPORARY MESSAGE IN THE CHAT WINDOW (NOT STORED)
+	this.displayInfo=function(array) //DISPLAYS A TEMPORARY MESSAGE IN THE CHAT WINDOW (NOT STORED)
 	{
-		this.ClearChatWindow();
+		this.clearChatWindow();
 		var newarray=[];
 		for(var l=0;l<array.length;l++)
 		{
-			var newlines=this.Concat(array[l]);
+			var newlines=this.concat(array[l]);
 			for(var n=0;n<newlines.length;n++)
 			{
 				newarray.push(newlines[n]);
@@ -190,63 +190,59 @@ function ChatEngine(root,stream)
 			console.putmsg(newarray[item],P_SAVEATR);
 		}
 	}
-	this.Notice=function(msg)
+	this.notice=function(msg)
 	{
-		this.Display(notice_color + msg);
+		this.display(notice_color + msg);
 	}
-	this.GetNotices=function()
+	this.getNotices=function()
 	{
-		var msgs=stream.getnotices();
+		var msgs=stream.getNotices();
 		if(!msgs) return false;
 		stream.notices=[];
 		for(var m=0;m<msgs.length;m++)
 		{
-			this.Notice(msgs[m]);
+			this.notice(msgs[m]);
 		}
 	}
-	this.Alert=function(msg) //DISPLAYS A MESSAGE ON THE INPUT LINE (OR CURRENT LINE IN FULLSCREEN MODE)
+	this.alert=function(msg) //DISPLAYS A MESSAGE ON THE INPUT LINE (OR CURRENT LINE IN FULLSCREEN MODE)
 	{
 		if(this.input_line)
 		{
-			this.ClearInputLine();
+			this.input_line.clear();
 			console.gotoxy(this.input_line.x,this.input_line.y);
 		}
 		console.putmsg(alert_color + msg);
 	}
-	this.ClearInputLine=function()
+	this.redraw=function()
 	{
-		write(console.ansi(ANSI_NORMAL));
-		if(this.input_line)	ClearLine(this.columns,this.input_line.x,this.input_line.y);
+		this.clearChatWindow();
+		this.drawLines();
+		this.drawBox();
+		this.display();
+		this.input_line.clear();
+		this.bufferKey();
 	}
-	this.Redraw=function()
+	this.send=function(message)
 	{
-		this.ClearChatWindow();
-		this.DrawLines();
-		this.DrawBox();
-		this.Display();
-		this.ClearInputLine();
-		this.Buffer();
-	}
-	this.Send=function(message)
-	{
-		var packet=this.PackageData(message);
+		if(!message.length) return false;
+		var packet=this.packageData(message);
 		if(!this.stream.send(packet))
 		{
-			this.Notice("message could not be sent..");
+			this.notice("message could not be sent..");
 		}
 		scope=normal_scope;
-		//this.StoreHistory(data.message);
+		//this.storeHistory(data.message);
 	}
 	
 	//INTERNAL METHODS
-	this.ProcessKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
+	this.processKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
 	{
 		switch(key.toUpperCase())
 		{
 		//borrowed Deuce's feseditor.js
 		case '\x00':	/* CTRL-@ (NULL) */
 		case '\x03':	/* CTRL-C (Center Line) */
-		case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
+		case '\x04':	/* CTRL-D (Quick find in SyncEdit)*/
 		case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 		case '\x0b':	/* CTRL-K */
 		case '\x0c':	/* CTRL-L (Insert Line) */
@@ -254,11 +250,11 @@ function ChatEngine(root,stream)
 		case '\x0f':	/* CTRL-O (Quick Save/exit in SyncEdit) */
 		case '\x10':	/* CTRL-P */
 		case '\x11':	/* CTRL-Q (XOff) (Quick Abort in SyncEdit) */
-		case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
+		case '\x12':	/* CTRL-R (Quick redraw in SyncEdit) */
 		case '\x13':	/* CTRL-S (Xon)  */
 		case '\x14':	/* CTRL-T (Justify Line in SyncEdit) */
 		case '\x15':	/* CTRL-U (Quick Quote in SyncEdit) */
-		case '\x16':	/* CTRL-V (Toggle insert mode) */
+		case '\x16':	/* CTRL-V (toggle insert mode) */
 		case '\x17':	/* CTRL-W (Delete Word) */
 		case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
 		case '\x19':	/* CTRL-Y (Delete Line in SyncEdit) */
@@ -275,20 +271,20 @@ function ChatEngine(root,stream)
 		case KEY_DOWN:
 			break;
 		case '\b':
-			this.BackSpace();
+			this.backSpace();
 			break;
 		case '\r':
 		case '\n':
-			if(console.strlen(RemoveSpaces(this.buffer))) 
+			if(console.strlen(removeSpaces(this.buffer))) 
 			{
-				this.Send(this.buffer);
+				this.send(this.buffer);
 			}
-			this.ResetInput();
+			this.resetInput();
 			break;
 		case '!':
-			if(console.strlen(RemoveSpaces(this.buffer)) || scope==global_scope) 
+			if(console.strlen(removeSpaces(this.buffer)) || scope==global_scope) 
 			{
-				this.Buffer(key);
+				this.bufferKey(key);
 			}
 			else
 			{
@@ -299,24 +295,24 @@ function ChatEngine(root,stream)
 			if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) 
 			break;
 		default:
-			if(key) this.Buffer(key);
+			if(key) this.bufferKey(key);
 			break;
 		}
 		return true;
 	}
-	this.DrawLines=function()
+	this.drawLines=function()
 	{
 		if(!this.lined) return;
-		DrawLine(this.input_line.x-1,this.input_line.y-1,this.columns+2);
-		if(this.y>1) DrawLine(this.x-1,this.y-1,this.columns+2);
-		if(this.input_line.y<24) DrawLine(this.input_line.x-1,this.input_line.y+1,this.columns+2);
+		drawLine(this.input_line.x-1,this.input_line.y-1,this.columns+2);
+		if(this.y>1) drawLine(this.x-1,this.y-1,this.columns+2);
+		if(this.input_line.y<24) drawLine(this.input_line.x-1,this.input_line.y+1,this.columns+2);
 	}
-	this.DrawBox=function()
+	this.drawBox=function()
 	{
 		if(!this.boxed) return;
 		console.gotoxy(this.x-1,this.y-1);
 		console.putmsg("\1n\1h\xDA");
-		DrawLine(false,false,this.columns-(8+this.room.length),"\1n\1h");
+		drawLine(false,false,this.columns-(8+this.room.length),"\1n\1h");
 		console.putmsg("\1n\1h\xB4\1nCHAT\1h: \1n" + this.room + "\1h\xC3\xBF");
 		for(line = 0; line<this.rows; line++)
 		{
@@ -325,17 +321,17 @@ function ChatEngine(root,stream)
 		}
 		console.gotoxy(this.input_line.x-1,this.input_line.y-1);
 		console.putmsg("\1n\1h\xC3");
-		DrawLine(false,false,this.columns-7,"\1n\1h");
+		drawLine(false,false,this.columns-7,"\1n\1h");
 		console.putmsg("\1n\1h\xB4\1nINPUT\1h\xC3\xB4");
 		console.gotoxy(this.input_line.x-1,this.input_line.y);
 		printf("\1n\1h\xB3%*s\xB3",this.columns,"");
 		console.gotoxy(this.input_line.x-1,this.input_line.y+1);
 		console.putmsg("\1n\1h\xC0");
-		DrawLine(false,false,this.columns,"\1n\1h");
+		drawLine(false,false,this.columns,"\1n\1h");
 		var spot=console.getxy();
 		if(!(spot.y==console.screen_rows && spot.x==console.screen_columns)) console.putmsg("\1n\1h\xD9");
 	}
-	this.BackSpace=function()
+	this.backSpace=function()
 	{
 		if(this.buffer.length>0) 
 		{
@@ -346,10 +342,10 @@ function ChatEngine(root,stream)
 				console.left();
 				console.cleartoeol();
 			}
-			this.Buffer();
+			this.bufferKey();
 		}
 	}
-	this.Buffer=function(key) //ADD A KEY TO THE USER INPUT BUFFER
+	this.bufferKey=function(key) //ADD A KEY TO THE USER INPUT BUFFER
 	{
 		if(!this.fullscreen)
 		{
@@ -382,9 +378,9 @@ function ChatEngine(root,stream)
 			if(key=="@") key="?";
 			console.putmsg(input_color + key,P_SAVEATR);
 		}
-		if(!this.fullscreen && this.buffer.length<this.columns)	ClearLine(this.columns-this.buffer.length);
+		if(!this.fullscreen && this.buffer.length<this.columns)	clearLine(this.columns-this.buffer.length);
 	}
-	this.Display=function(text,color,username)
+	this.display=function(text,color,username)
 	{
 		var col=color?color:"";
 		//FOR FULLSCREEN MODE WITH NO INPUT LINE, DISPLAY MESSAGE IN FULL AND RETURN
@@ -409,7 +405,7 @@ function ChatEngine(root,stream)
 			}
 			for(msg in messages)
 			{
-				var array=this.Concat(messages[msg]);
+				var array=this.concat(messages[msg]);
 				for(item in array)
 				{
 					output.push(array[item]);
@@ -435,11 +431,11 @@ function ChatEngine(root,stream)
 				}
 				console.putmsg(display,P_SAVEATR);
 				var length=console.strlen(strip_ctrl(output[line]));
-				if(length<this.columns) ClearLine(this.columns-length);
+				if(length<this.columns) clearLine(this.columns-length);
 			}
 		}
 	}
-	this.Concat=function(text) //WRAP AND CONCATENATE NEW MESSAGE DATA
+	this.concat=function(text) //WRAP AND CONCATENATE NEW MESSAGE DATA
 	{
 		var newarray=[];
 		if(console.strlen(text)<=this.columns) newarray.push(text);
@@ -449,33 +445,33 @@ function ChatEngine(root,stream)
 			array=array.split(/[\r\n$]+/);
 			for(item in array)
 			{
-				if(array[item]!=="") newarray.push(RemoveSpaces(array[item]));
+				if(array[item]!=="") newarray.push(removeSpaces(array[item]));
 			}
 		}
 		return newarray;
 	}
-	this.ProcessData=function(data)
+	this.processData=function(data)
 	{
 		var intensity="";
 		if(data.name==user.alias) intensity="\1h";
 		switch(data.scope)
 		{
 			case normal_scope:
-				if(data.name) this.Display(data.message,remote_color + intensity,data.name);
-				else this.Display(data.message,alert_color);
+				if(data.name) this.display(data.message,remote_color + intensity,data.name);
+				else this.display(data.message,alert_color);
 				break;
 			case priv_scope:
-				this.Display(data.message,private_color + intensity,data.name);
+				this.display(data.message,private_color + intensity,data.name);
 				break;
 			case global_scope:
-				this.Display(data.message,global_color + intensity,data.name);
+				this.display(data.message,global_color + intensity,data.name);
 				break;
 			default:
 				log("message scope unknown");
 				break;
 		}
 	}
-	this.PackageData=function(message)
+	this.packageData=function(message)
 	{
 		var data=
 		{
@@ -491,12 +487,12 @@ function ChatEngine(root,stream)
 			"type":"chat",
 			"data":data
 		};
-		this.ProcessData(data);
+		this.processData(data);
 		return packet;
 	}
-	this.ResetInput=function()
+	this.resetInput=function()
 	{
-		if(!this.fullscreen) this.ClearInputLine();
+		if(!this.fullscreen) this.input_line.clear();
 		else 
 		{
 			console.left(this.buffer.length);
@@ -507,6 +503,17 @@ function ChatEngine(root,stream)
 	}
 	
 }
-
+function InputLine(x,y,width,bg)
+{
+	this.x=x;
+	this.y=y;
+	this.width=width;
+	this.bg=bg;
+	
+	this.clear=function(bg)
+	{
+		clearLine(this.width,this.x,this.y,bg?bg:this.bg);
+	}
+}
 
 

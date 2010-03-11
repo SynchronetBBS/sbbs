@@ -6,7 +6,7 @@ function Window(name,x,y,w,h)
 	this.columns=w;
 	this.rows=h;
 	this.active=false;
-	this.Draw=function(value)
+	this.draw=function(value)
 	{
 		var title="";
 		var color="";
@@ -17,7 +17,7 @@ function Window(name,x,y,w,h)
 		}
 		console.gotoxy(this.x,this.y);
 		console.putmsg("\1n\1h\xDA");
-		DrawLine(false,false,this.columns-console.strlen(title),"\1n\1h");
+		drawLine(false,false,this.columns-console.strlen(title),"\1n\1h");
 		console.putmsg(title + "\1n\1h\xBF");
 		for(line = 1; line<=this.rows; line++)
 		{
@@ -26,7 +26,7 @@ function Window(name,x,y,w,h)
 		}
 		console.gotoxy(this.x,this.y + this.rows+1);
 		console.putmsg("\1n\1h\xC0");
-		DrawLine(false,false,this.columns,"\1n\1h");
+		drawLine(false,false,this.columns,"\1n\1h");
 		var spot=console.getxy();
 		if(!(spot.y==console.screen_rows && spot.x==console.screen_columns)) console.putmsg("\1n\1h\xD9");
 	}

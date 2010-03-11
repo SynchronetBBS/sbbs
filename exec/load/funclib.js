@@ -3,56 +3,77 @@
 	by MCMLXXIX 
 */
 
-function getColor(color, intensity)
-{									//TAKE A STRING AND RETURN THE CORRESPONDING ANSI COLOR CODE
-	if(intensity=="high") inten="\1h";
-	else inten="\1n";
-
-	switch(color)
+function getColor(color)
+{
+	switch(color.toUpperCase())
 	{
-		case "black":
-			return(inten + "\1k");
-		case "grey":
-			return(inten?("\1n" + inten):"\1n");
-		case "cyan":
-			return(inten + "\1c");
-		case "yellow":
-			return(inten + "\1y");
-		case "green":
-			return(inten + "\1g");
-		case "white":
-			return(inten + "\1w");
-		case "red":
-			return(inten + "\1r");
-		case "blue":
-			return(inten + "\1b");
-		case "magenta":
-			return(inten + "\1m");
+		case "BLACK":
+			return BLACK;
+		case "BLUE":
+			return BLUE;
+		case "CYAN":
+			return CYAN;
+		case "RED":
+			return RED;
+		case "GREEN":
+			return GREEN;
+		case "BROWN":
+			return BROWN;
+		case "MAGENTA":
+			return MAGENTA;
+		case "BG_BLUE":
+			return BG_BLUE;
+		case "BG_CYAN":
+			return BG_CYAN;
+		case "BG_RED":
+			return BG_RED;
+		case "BG_GREEN":
+			return BG_GREEN;
+		case "BG_BROWN":
+			return BG_BROWN;
+		case "BG_MAGENTA":
+			return BG_MAGENTA;
+		case "BG_LIGHTGRAY":
+			return BG_LIGHTGRAY;
+		case "WHITE":
+			return WHITE;
+		case "LIGHTCYAN":
+			return LIGHTCYAN;
+		case "LIGHTRED":
+			return LIGHTRED;
+		case "LIGHTGREEN":
+			return LIGHTGREEN;
+		case "YELLOW":
+			return YELLOW;
+		case "LIGHTMAGENTA":
+			return LIGHTMAGENTA;
+		case "LIGHTGRAY":
+			return LIGHTGRAY;
 		default:
-			return("\1n");
+			return WHITE;
 	}
 }
-function GetLastWord(text)
+function getLastWord(text)
 {
 	last_word=truncsp(text.substr(text.lastIndexOf(" ")));
-	return RemoveSpaces(last_word);
+	return removeSpaces(last_word);
 }
-function GetFirstWord(text)
+function getFirstWord(text)
 {
 	first_word=truncsp(text.substring(0,text.indexOf(" ")));
-	return RemoveSpaces(first_word);
+	return removeSpaces(first_word);
 }
-function RemoveFirstWord(text)
+function removeFirstWord(text)
 {
 	message=truncsp(text.substring(text.indexOf(" ")+1));
 	return message;
 }
-function RemoveSpaces(text)
+function removeSpaces(text)
 {
 	while(text.indexOf(" ")==0) text=text.substr(1);
 	return truncsp(text);
 }
-function SplitPadded(string1,string2,length,padding)
+function splitPadded(string1,string2,length,padding)
 {
 	if(!padding) padding=" ";
 	var strlength=console.strlen(string1 + string2);
@@ -66,7 +87,7 @@ function SplitPadded(string1,string2,length,padding)
 	newstring=(string1 + padded + string2);
 	return(newstring);
 }
-function PrintPadded(string,length,padding,justification)
+function printPadded(string,length,padding,justification)
 {
 	if(!padding) padding=" ";
 	if(!justification) justification="left";
@@ -83,7 +104,7 @@ function PrintPadded(string,length,padding,justification)
 	if(justification=="right") newstring=(padded + newstring);
 	return(newstring);
 }
-function CenterString(string,length,padding)
+function centerString(string,length,padding)
 {
 	if(!padding) padding=" ";
 	var strlength=console.strlen(string);
@@ -100,7 +121,7 @@ function CenterString(string,length,padding)
 	}
 	return newstring;
 }
-function DrawLine(x,y,length,color)
+function drawLine(x,y,length,color)
 {
 	if(x && y)
 	{
@@ -112,17 +133,18 @@ function DrawLine(x,y,length,color)
 		console.putmsg((color?color:"\1k\1h") + "\xc4");
 	}
 }
-function ClearBlock(x,y,w,h)
+function clearBlock(x,y,w,h,bg)
 {
-	write(console.ansi(ANSI_NORMAL));
+	console.attributes=bg?bg:ANSI_NORMAL;
 	for(line=0;line<h;line++)
 	{
-		ClearLine(w,x,y+line);
+		clearLine(w,x,y+line);
 	}
 }
-function ClearLine(length,x,y)
+function clearLine(length,x,y,bg)
 {
 	if(x && y) console.gotoxy(x,y);
-	if(length) printf("%*s",length,"");
+	if(bg) console.attributes=bg;
+	if(length) console.putmsg(format("%*s",length,""),P_SAVEATR);
 	else console.cleartoeol();
 }

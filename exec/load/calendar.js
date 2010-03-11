@@ -53,7 +53,7 @@ function Calendar(x,y,fg,hl,sel)
 	this.selected=new Date().getDate();
 	this.offset=new Date(this.date.getFullYear(), this.date.getMonth(), 1).getDay();    
 	
-	this.Init=function()
+	this.init=function()
 	{
 		var numDays = this.daysinmonth;
 		var startDay = this.offset;     
@@ -118,7 +118,7 @@ function Calendar(x,y,fg,hl,sel)
 		console.gotoxy(posx,posy);
 		day.draw(color);
 	}
-	this.SelectDay=function(dir)
+	this.selectDay=function(dir)
 	{
 		var k=dir?dir:undefined;
 		var original=this.selected;
@@ -174,7 +174,7 @@ function Calendar(x,y,fg,hl,sel)
 			k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 		}
 	}
-	this.Init();
+	this.init();
 }
 function Month(name,year)
 {
