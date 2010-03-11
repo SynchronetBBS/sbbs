@@ -1202,6 +1202,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SOCK_PROP_DESCRIPTOR:
 			JS_ValueToInt32(cx,*vp,(int32*)&(p->sock));
+			p->is_connected=TRUE;
 			break;
 		case SOCK_PROP_LAST_ERROR:
 			JS_ValueToInt32(cx,*vp,(int32*)&(p->last_error));
