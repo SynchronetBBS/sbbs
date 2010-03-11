@@ -1,5 +1,6 @@
 const connection_timeout=2;
 const tries=5;
+const timeout=5000;
 
 function comm_sync()
 {
@@ -8,13 +9,11 @@ function comm_sync()
 	var task=data[1];
 	var filemask=data[2];
 	var filedate=data[3];
+	var module=get_module(session_id);
+	
+	if(!module) return false;
 	
 	log("synchronizing files: " + filemask);
-	var comminit=new File(system.ctrl_dir + "filesync.ini");
-	comminit.open('r');
-	var module=comminit.iniGetObject(session_id);
-	comminit.close();
-
 	switch(task)
 	{
 		case "#send":
@@ -35,25 +34,47 @@ function comm_sync()
 	sock.close();
 	return true;
 }
-function parse_query(query)
+function get_module(id)
 {
-	if(query) return query.split("");
+	var comminit=new File(system.ctrl_dir + "filesync.ini");
+	comminit.open('r');
+	var match=comminit.iniGetSections(id);
+	if(!match.length) {
+		log("module not found, aborting: " + id);
+		sock.send("#abort\r\n");
+		return false;
+	}
+	var module=comminit.iniGetObject(id);
+	comminit.close();
+	return module;
+}
+function parse_query(q)
+{
+	if(q) return q.split("");
 	return false;
 }
 function sync_remote(session_id,dir,filemask)
 {
 	var files=directory(dir + file_getname(filemask));
+	if(files.length>0) log("sending " + files.length + " files");
+	else {
+		log("file(s) not found: " + dir + filemask);
+		sock.send("@" + session_id + "#abort\r\n");
+	}
 	for(var f=0;f<files.length;f++)
 	{
 		var filename=file_getname(files[f]);
 		var filedate=file_date(files[f]);
 		
 		sock.send("@" + session_id + "#askrecv" + filename + "" + filedate + "\r\n");
+
 		var count=0;
-		while(count<50)
-		{
-			var data=false;
-			if(sock.data_waiting) data=parse_query(sock.recvline(1024,connection_timeout));
+		while(!sock.data_waiting && count<timeout) {
+			mswait(1);
+			count++;
+		}
+		if(sock.data_waiting) {
+			data=parse_query(sock.recvline(1024,connection_timeout));
 			if(data)
 			{
 				var response=data[1];
@@ -76,15 +97,9 @@ function sync_remote(session_id,dir,filemask)
 						sock.send("#abort\r\n");
 						return false;
 				}
-				count=0;
-				break;
-			}
-			else
-			{
-				count++;
-				mswait(50);
 			}
 		}
+		else log("transfer timed out: " + files[f]);
 	}
 	sock.send("@" + session_id + "#endquery\r\n");
 	sock.close();
@@ -97,10 +112,12 @@ function sync_local(session_id,dir,filemask)
 	sock.send("@" + session_id + "#send" + file_getname(filemask) + "\r\n");
 	
 	var count=0;
-	while(count<50)
-	{
-		var data=false;
-		if(sock.data_waiting) data=parse_query(sock.recvline(1024,connection_timeout));
+	while(!sock.data_waiting && count<timeout) {
+		mswait(1);
+		count++;
+	}
+	if(sock.data_waiting) {
+		data=parse_query(sock.recvline(1024,connection_timeout));
 		if(data)
 		{
 			var response=data[1];
@@ -120,15 +137,9 @@ function sync_local(session_id,dir,filemask)
 					log("unknown response: " + response);
 					return false;
 			}
-			count=0;
-			break;
-		}
-		else
-		{
-			count++;
-			mswait(25);
 		}
 	}
+	else log("transfer timed out: " + filemask);
 	sock.close();
 }
 function receive_file(session_id,dir,filename,filedate)
@@ -145,41 +156,39 @@ function receive_file(session_id,dir,filename,filedate)
 	var file=new File(fname + ".tmp");
 	file.open('w',false);
 	var count=0;
-
-	while(count<50)
+	while(count<timeout)
 	{
-		var data=false;
-		if(sock.data_waiting) data=sock.recvline(1024,connection_timeout);
-		if(data)
-		{
-			switch(data)
-			{
-				case "#abort":
-					log("transfer aborted");
-					file.close();
-					file_remove(file.name);
-					return false;
-				case "#eof":
-					log("file received: " + filename);
-					file.close();
-					file_utime(file.name,time(),filedate);
-					file_remove(fname);
-					file_rename(file.name,fname);
-					parent_queue.write({'filename':filename,'session_id':session_id,'filedate':filedate,'remote_ip_address':sock.remote_ip_address});
-					return true;
-				default:
-					file.writeln(data);
-					break;
-			}
-			count=0;
-		}
-		else 
-		{
-			mswait(25);
+		while(!sock.data_waiting && count<timeout) {
+			mswait(1);
 			count++;
 		}
+		if(sock.data_waiting) {
+			data=sock.recvline(1024,connection_timeout);
+			if(data)
+			{
+				switch(data)
+				{
+					case "#abort":
+						log("transfer aborted");
+						file.close();
+						file_remove(file.name);
+						return false;
+					case "#eof":
+						file.close();
+						file_rename(fname,fname+".bck");
+						file_rename(file.name,fname);
+						file_utime(filename,time(),filedate);
+						parent_queue.write({'filename':filename,'session_id':session_id,'filedate':filedate,'remote_ip_address':sock.remote_ip_address});
+						return true;
+					default:
+						file.writeln(data);
+						break;
+				}
+				count=0;
+			}
+		}
+		else log("transfer timed out: " + filename);
 	}
-	log("transfer timed out");
 	file.close();
 	file_remove(file.name);
 	return false;
@@ -194,7 +203,7 @@ function hub_route(hub_address,hub_port)
 	log("sent query: " + query);
 	
 	var count=0;
-	while(count<50)
+	while(count<timeout && hub.is_connected)
 	{
 		var data=false;
 		if(hub.data_waiting) 
@@ -210,9 +219,11 @@ function hub_route(hub_address,hub_port)
 		if(!data) 
 		{
 			count++;
-			mswait(25);
+			mswait(1);
 		}
+		else count=0;
 	}
+	if(count==timeout) log("routing connection timed out");
 }
 
 var descriptor=argv[0];

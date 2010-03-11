@@ -15,8 +15,9 @@ const priv_scope=			"%";
 const file_sync=			"@";
 const tries=				5;
 const connection_timeout=	5;
+const timeout=				5000;
 
-function GameConnection(id)
+function ServiceConnection(id)
 {
 	this.session_id=			(id?id:"default");
 	this.notices=				[];
@@ -30,8 +31,8 @@ function GameConnection(id)
 	
 	//hub should point to the local, internal ip address or domain of the computer running commservice.js
 	//port should point to the port the gaming service is set to use in commservice.js
-	const hub=					"localhost";
-	const port=				10088;
+	const hub=						"localhost";
+	const port=					10088;
 	
 	var sock=new Socket();
 	sock.bind(0,server.interface_ip_address);
@@ -48,7 +49,7 @@ function GameConnection(id)
 		this.notices.push("Connection to " + hub + " failed...");
 		return false;
 	}
-	this.getnotices=function()
+	this.getNotices=function()
 	{
 		if(this.notices.length) return this.notices;
 		return false;
@@ -91,14 +92,21 @@ function GameConnection(id)
 		var filesock=new Socket();
 		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
-		if(filesock.is_connected) 
+		if(!filesock.is_connected) { 
+			log("error connecting to service");
+			return false;
+		}
+		
+		filesock.send(file_sync + this.session_id + "#send" + file_getname(remote_file) + "\r\n");
+		while(filesock.is_connected)
 		{
-			filesock.send(file_sync + this.session_id + "#send" + file_getname(remote_file) + "\r\n");
 			var count=0;
-			while(filesock.is_connected && count<50)
-			{
-				var data=false;
-				if(filesock.data_waiting) data=parse_query(filesock.recvline(1024,connection_timeout));
+			while(!filesock.data_waiting && count<timeout) {
+				mswait(1);
+				count++;
+			}
+			if(filesock.data_waiting) {
+				var data=parse_query(filesock.recvline(1024,connection_timeout));
 				if(data)
 				{
 					var response=data[1];
@@ -110,24 +118,21 @@ function GameConnection(id)
 						case "#askrecv":
 							receive_file(filesock,this.session_id,file,date);
 							break;
-						case  "#abort":
+						case "#abort":
 							filesock.close();
-							return false;
+							break;
 						case "#endquery":
 							filesock.close();
-							return true;
+							break;
 						default:
 							filesock.close();
 							log("unknown response: " + response);
-							return false;
+							break;
 					}
-					count=0;
 				}
-				else
-				{
-					count++;
-					mswait(25);
-				}
+			} else {
+				log("transfer timed out: " + (file?file:remote_file));
+				filesock.close();
 			}
 		}
 	}
@@ -141,16 +146,19 @@ function GameConnection(id)
 		var filesock=new Socket();
 		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
+		if(!filesock.is_connected) { 
+			log("error connecting to service");
+			return false;
+		}
 		
 		var files=directory(working_dir + file_getname(local_file));
 		for(var f=0;f<files.length && filesock.is_connected;f++)
 		{
 			var filename=file_getname(files[f]);
 			var filedate=file_date(files[f]);
-			
+
 			filesock.send(file_sync + this.session_id + "#askrecv" + filename + "" + filedate + "\r\n");
-			var data=filesock.recvline(1024,connection_timeout);
-			data=parse_query(data);
+			var data=parse_query(filesock.recvline(1024,connection_timeout));
 			var response=data[1];
 			
 			switch(response)
@@ -175,7 +183,7 @@ function GameConnection(id)
 		}
 		filesock.send("#endquery\r\n");
 		filesock.close();
-		return 1;
+		return true;
 	}
 	this.close=function()
 	{
@@ -196,42 +204,40 @@ function GameConnection(id)
 		socket.send(file_sync + session_id + "#ok\r\n");
 		var file=new File(filename + ".tmp");
 		file.open('w',false);
-
 		var count=0;
-		while(count<50)
+		while(count<timeout)
 		{
-			var data=false;
-			if(socket.data_waiting) data=socket.recvline(1024,connection_timeout);
-			if(data)
-			{
-				switch(data)
-				{
-					case "#abort":
-						log("transfer aborted");
-						file.close();
-						file_remove(file.name);
-						return false;
-					case "#eof":
-						log("file received: " + filename);
-						file.close();
-						file_utime(file.name,time(),filedate);
-						file_remove(filename);
-						file_rename(file.name,filename);
-						return true;
-					default:
-						file.writeln(data);
-						break;
-					
-				}
-				count=0;
-			}
-			else
-			{
+			while(!socket.data_waiting && count<timeout) {
+				mswait(1);
 				count++;
-				mswait(25);
 			}
+			if(socket.data_waiting) {
+				var data=socket.recvline(1024,connection_timeout);
+				if(data)
+				{
+					switch(data)
+					{
+						case "#abort":
+							log("transfer aborted");
+							file.close();
+							file_remove(file.name);
+							return false;
+						case "#eof":
+							log("file received: " + filename);
+							file.close();
+							file_rename(filename,filename+".bck");
+							file_rename(file.name,filename);
+							file_utime(filename,access_time=time(),mod_time=filedate);
+							return true;
+						default:
+							file.writeln(data);
+							break;
+					}
+					count=0;
+				}
+			}
+			else log("transfer timed out: " + filename);
 		}
-		log("transfer timed out");
 		file.close();
 		file_remove(file.name);
 		return false;
