@@ -9,29 +9,31 @@
 
 load("sbbsdefs.js");
 load("commclient.js");
+load("funclib.js");
+load("graphic.js");
 var root_dir;
 try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
 root_dir = root_dir.replace(/[^\/\\]*$/,'');
 
-{//######################### INITIALIZE PROGRAM VARIABLES #########################
+//######################### INITIALIZE PROGRAM VARIABLES #########################
 
 	var		stream=				new ServiceConnection("starstocks");
 	const 	root=				root_dir;
 	const 	cfgname=			"stars.cfg";  
-	const	high_score_file=	"star_hs.dat";
+	const	high_score_file=	"scores.dat";
 	const 	space=				"\xFA";
 	var 	max_companies=		6;
 	var 	max_turns=			80;
 	const	starting_cash=		10000;
-	const   interest_rate=		.05;
-	const   ccolor=				getColor("white");
-	var     partial_company=	"\1n+";
+	const  interest_rate=		.05;
+	const  ccolor=				"\1w\1h"
+	var   partial_company=	"\1n+";
 	var 	difficulty=			1;
 	var 	min_difficult=		20;
 	var 	max_difficult=		35;
 	var		interbbs=			true;
-}
-{//######################### DO NOT CHANGE THIS SECTION ##########################	
+
+//######################### DO NOT CHANGE THIS SECTION ##########################	
 	var 	scores=			[];		
 	var 	border_row=		4;
 	var  	border_column=	1;
@@ -48,8 +50,7 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 	getFiles(high_score_file);
 	loadSettings();
 	loadHighScores();
-	star=starcolor+star;
-	partial_company=ccolor+partial_company;
+	partial_company=partial_company;
 	var oldpass=console.ctrlkey_passthru;
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
@@ -58,7 +59,7 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 	var game;
 	gameMenu();
 	sendFiles(high_score_file);
-}
+	quit();
 //########################## MAIN FUNCTIONS ###################################
 
 function 	gameMenu()
@@ -113,10 +114,9 @@ function 	gameMenu()
 			redraw();
 			continue;
 		case "Q": 
-			quit(0);
+			return;
 		}
 	}
-	quit(0);
 }
 function 	loadHighScores()
 { 
@@ -328,7 +328,7 @@ function 	playGame()
 	}
 	if(countCompanies(game.companies))
 	{
-		var tempscore=new Score(user.number,game.networth,difficulty,system.datestr());
+		var tempscore=new Score(user.alias,game.networth,difficulty,system.datestr());
 		storeHighScores(tempscore);
 		notify();
 		game.completed=true;
@@ -339,9 +339,10 @@ function 	playGame()
 //########################## DISPLAY FUNCTIONS #################################
 function 	notify()
 {
-	if(game.networth==scores[difficulty][0].score && user.number!=scores[difficulty][1].player)
+	if(scores[difficulty].length<2) return false;
+	if(game.networth==scores[difficulty][0].score && user.alias!=scores[difficulty][1].player)
 	{
-		system.put_telegram(scores[difficulty][1].player, "\1r\1h" + system.username(scores[difficulty][0].player) + " \1c\1hbeat your High Score in Star Stocks!\r\n\r\n");
+		system.put_telegram(scores[difficulty][1].player, "\1r\1h" + scores[difficulty][0].player + " \1c\1hbeat your High Score in Star Stocks!\r\n\r\n");
 	}
 }
 function	shortNumber(number)
@@ -397,23 +398,22 @@ function	viewHighScores()
 	for(df in scores)
 	{
 		scores[df]=sortScores(scores[df]);
-		var hx=4;
-		var hy=4;
-		
 		console.clear();
-		console.gotoxy(hx,hy); hy+=2;
-		printf("\1w\1hHIGH SCORES: \1c\1h" + difficulties[df]);
+		console.down(3);
+		console.putmsg("   \1w\1hHIGH SCORES: \1c\1h" + difficulties[df]);
+		console.crlf();
+		console.crlf();
 		for(hs=0;hs<scores[df].length && hs<10;hs++)
 		{
-			console.gotoxy(hx,hy); hy++;
-			printf(print_padded("\1w\1h" + (hs+1) + ": ",4," ","right")); 
-			printf(print_padded("\1y\1h" + system.username(scores[df][hs].player),20," ","left"));
-			printf("\1c\1h$" + print_padded("\1w\1h" + dollarAmount(scores[df][hs].score),18,".","right"));
-			printf("\1n\1g  " + scores[df][hs].date);
+			console.putmsg("  " + printPadded("\1w\1h" + (hs+1) + ": ",4," ","right")); 
+			console.putmsg(printPadded("\1y\1h" + scores[df][hs].player,20," ","left"));
+			console.putmsg("\1c\1h$" + printPadded("\1w\1h" + dollarAmount(scores[df][hs].score),18,"\1h\1k.","right"));
+			console.putmsg("\1n\1g  " + scores[df][hs].date);
 			console.crlf();
 		}
 		console.gotoxy(1,24);
 		console.pause();
+		console.aborted=false;
 	}
 }
 function	viewInstructions()
@@ -433,7 +433,7 @@ function	clearRightColumn(from)
 		console.cleartoeol();
 	}
 }
-function	clearRows(from)
+function 	clearRows(from)
 {
 	var clear=24-from;
 	xx=1;
@@ -444,22 +444,12 @@ function	clearRows(from)
 		console.cleartoeol();
 	}
 }
-function 	print_padded(string,length,padding,justification)
-{
-	var padlength=length-console.strlen(string);
-	var newstring=string;
-	var padded="\1k";
-	for(p=0;p<padlength;p++) padded+=padding;
-	if(justification=="left") newstring+=(padded);
-	if(justification=="right") newstring=(padded + newstring);
-	return(newstring);
-}
 function	displaySummary()
 {
 	console.clear();
 	console.gotoxy(2,2);
-	printf("\1g\1h[ STOCK SUMMARY ]\r\n\1h\1k");
-	drawLine(79); console.crlf();
+	console.putmsg("\1g\1h[ STOCK SUMMARY ]\r\n\1h\1k");
+	drawLine(false,false,79); console.crlf();
 	var sorted=sortCompanies();
 	for(c=0;c<sorted.length;c++)
 	{
@@ -473,6 +463,7 @@ function	displaySummary()
 }
 function 	redraw(grid_only)
 {
+	console.aborted=false;
 	if(grid_only) 
 	{	
 		displayGrid("\xFA");
@@ -493,31 +484,27 @@ function 	redraw(grid_only)
 	}
 	if(game.inProgress && game.options) game.displayOptions();
 }
-function 	drawLine(length)
-{
-	for(i=0;i<length;i++) printf("\xC4");
-}
 function 	displayHeader(turn)
 {
 	console.home();
 	var alert="";
 	if((max_turns-turn)<6) alert="\1h\1r";
 	
-	printf("\1w\1h[\1nSTAR STOCKS\1h]   :  \1r [\1n\1r2007 \1h-\1n\1r Matt Johnson\1h]   \1w:   ");
-	if(turn) printf("\1w\1hTurn \1n[\1h" + alert + turn + "\1n/\1h" + max_turns + "\1n]" );
+	console.putmsg("\1w\1h[\1nSTAR STOCKS\1h]   :  \1r [\1n\1r2007 \1h-\1n\1r Matt Johnson\1h]   \1w:   ");
+	if(turn) console.putmsg("\1w\1hTurn \1n[\1h" + alert + turn + "\1n/\1h" + max_turns + "\1n]" );
 	wipeCursor();
 }
 function 	displayGrid(space)
 {
 	var y=border_row+1;
-	var x=border_column+1; 	
+	var x=border_column+1; 
+	console.attributes=scolor;
 	for(row=0;row<rows;row++)
 	{ 
-		printf(scolor);
 		for(column=0;column<columns;column++)
 		{
 			console.gotoxy(x+(column*2),row+y);
-			printf(space);
+			console.putmsg(space,P_SAVEATR);
 		}
 	}
 }
@@ -529,10 +516,10 @@ function 	displayStocks()
 	var clear=max_companies;
 	var cleared=0;
 	console.gotoxy(xx,yy); yy++
-	printf("\1h\1c: \1wPORTFOLIO");
+	console.putmsg("\1h\1c: \1wPORTFOLIO");
 	console.gotoxy(xx,yy); yy++;
 	console.cleartoeol();
-	drawLine(17);
+	drawLine(false,false,17);
 	var sorted=sortCompanies();
 	for(c=0;c<sorted.length;c++)
 	{
@@ -552,27 +539,28 @@ function 	displayBorder(color)
 	var x=border_column; 
 	var y=border_row;
 	console.gotoxy(x,y);
-	printf(color + "\xDA");
-	drawLine((columns*2)-1);
-	printf(color +"\xBF");
+	console.attributes=color;
+	console.putmsg("\xDA",P_SAVEATR);
+	drawLine(false,false,(columns*2)-1);
+	console.putmsg("\xBF",P_SAVEATR);
 	y++;
 	for(row=0;row<rows;row++)
 	{ 
 		console.gotoxy(x,y);
-		printf(color +"\xB3");
+		console.putmsg("\xB3",P_SAVEATR);
 		console.gotoxy(x+(columns*2),y);
-		printf(color +"\xB3");
+		console.putmsg("\xB3",P_SAVEATR);
 		y++;
 	}
 	console.gotoxy(x,y);
-	printf(color +"\xC0");
-	drawLine((columns*2)-1);
-	printf(color +"\xD9");
+	console.putmsg("\xC0",P_SAVEATR);
+	drawLine(false,false,(columns*2)-1);
+	console.putmsg("\xD9",P_SAVEATR);
 }
 function 	wipeCursor()					//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 {											
 	console.gotoxy(79,24);
-	printf("\1n\1k");
+	console.putmsg("\1n\1k");
 }
 function 	message(msg,x,y,cc)  			//ALERT MESSAGE OUTPUT FUNCTION
 {
@@ -595,12 +583,12 @@ function 	message(msg,x,y,cc)  			//ALERT MESSAGE OUTPUT FUNCTION
 		yyy=23;
 	}
 	console.gotoxy(xxx,yyy);
-	printf(msg);
+	console.putmsg(msg);
 	cleaned=strip_ctrl(msg);
 	clear-=cleaned.length;
 	for(z=0;z<clear;z++)
 	{
-		printf(" ");
+		console.putmsg(" ");
 	}
 	wipeCursor();
 }
@@ -767,7 +755,7 @@ function	buyStockXpert(cmd)
 	var max=parseInt(game.cash/game.companies[cmd].stock_value);
 	console.gotoxy(1,23);
 	console.cleartoeol();
-	printf("\1c\1hBuy how many stocks in company \1y" + cmd + "\1c? [\1n\1cMAX \1y\1h" + max + "\1c]\1n\1c:");
+	console.putmsg("\1c\1hBuy how many stocks in company \1y" + cmd + "\1c? [\1n\1cMAX \1y\1h" + max + "\1c]\1n\1c:");
 	var num=console.getnum(max);
 	game.cash-=(game.companies[cmd].stock_value*num);
 	game.companies[cmd].shares+=num;	
@@ -785,23 +773,12 @@ function 	getMoney()
 	game.cash=game.getCash()
 	game.networth=game.getNetWorth()+game.cash;
 }
-function    showMeTheMoney()
+function	showMeTheMoney()
 {
 	var money;
 	money="\1c\1hNetworth\1w: \1c$\1w" + dollarAmount(game.networth);
 	money+=" \1c\1hCash\1w: \1c$\1w" + dollarAmount(game.cash);
 	message(money,1,24,58);
-}
-function 	getColor(color)
-{									//TAKE A STRING AND RETURN THE CORRESPONDING ANSI COLOR CODE
-	if(color=="black") return "\1n\1k";
-	if(color=="grey") return "\1k\1h";
-	if(color=="cyan") return "\1h\1c";
-	if(color=="yellow") return "\1h\1y";
-	if(color=="green") return "\1h\1g";
-	if(color=="white") return "\1h\1w";
-	if(color=="red") return "\1r\1h";
-	if(color=="magenta") return "\1m\1h";
 }
 function 	countCompanies(companies)
 {									//COUNT THE NUMBER OF COMPANIES CURRENTLY USED
@@ -858,7 +835,6 @@ function 	processSelection(cmd)
 		var location=game.options[cmd];
 		game.options.splice(cmd,1);
 		var prox=game.sortProximity(location);
-//		test(prox);
 		processNearby(location,prox);
 		game.grid[location]=true;
 		game.clearOptions();
@@ -879,14 +855,26 @@ function 	processNearby(location,prox)
 	else if(num_companies>1) game.mergeCompanies(location,nearby);
 	else game.makeNewCompany(location,nearby);
 }
-function 	quit(err) 
+function 	quit() 
 {
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	console.clear();
-	printf("\n\r\1r\1h  Thanks for playing!\r\n\r\n");
-	mswait(1000);
-	exit(0);
+	var splash_filename=root_dir + "exit.bin";
+	if(!file_exists(splash_filename)) exit();
+	
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	console.clear();
+	exit();
 }
 function	getFiles(mask)
 {
@@ -900,7 +888,6 @@ function	sendFiles(mask)
 
 function 	Map(c,r) 				
 {								//MAP CLASS
-{									//OBJECT VARIABLES
 	this.grid=[]; 						//ROWS * COLUMNS IN LENGTH, TRACKS GRID OCCUPANCY (BOOLEAN)
 	this.star_data=[]; 					//STORES GRID[] INDICES FOR FASTER RETRIEVAL & MODIFICATION (SPARSE)
 	this.partial_data=[];				//STORES GRID[] INDICES FOR FASTER RETRIEVAL & MODIFICATION (SPARSE)
@@ -919,9 +906,8 @@ function 	Map(c,r)
 									//####CLEARED EVERY TURN####
 	this.options=[];					//TEMPORARY GRID INDEX STORAGE FOR INITIAL COMPANY SELECTION
 	this.proximity=[];					//TEMPORARY STORAGE FOR COORDINATE PROXIMITY CHECKING
-}
-{									//OBJECT METHODS
-										//DISPLAY FUNCTIONS
+
+	//DISPLAY FUNCTIONS
 	this.displayCompanies=		function()
 	{										//DISPLAYS THE LOCATION DATA FOR EACH COMPANY
 		for(i in this.companies)
@@ -930,7 +916,7 @@ function 	Map(c,r)
 			{
 				location=a;
 				this.getXY(location);
-				printf(ccolor+this.companies[i].name);
+				console.putmsg(ccolor+this.companies[i].name);
 			}
 		}
 	}
@@ -940,36 +926,39 @@ function 	Map(c,r)
 		{
 			location=this.options[i];
 			this.getXY(location);
-			printf("\1h\1g"+(i+1));
+			console.putmsg("\1h\1g"+(i+1));
 		}
 	}
 	this.clearGrid=				function(array)
 	{										//CLEARS SCREEN POSITIONS LISTED IN A SPARSE ARRAY
+		console.attributes=scolor;
 		for(i in array) 
 		{
 			this.getXY(i);
 			this.grid[i]=false;
-			printf(scolor+space);
+			console.putmsg(space,P_SAVEATR);
 		}
 		array=[];
 		return(array);
 	}
 	this.clearOptions=			function()
 	{										//CLEARS OPTIONS CREATED BY generateCompanies
+		console.attributes=scolor;
 		for(i=0;i<this.options.length;i++) 
 		{
 			this.getXY(this.options[i]);
-			printf(scolor+space);
+			console.putmsg(space);
 		}
 		this.options=[];
 	}
 	this.display=				function(data)
 	{										//TAKES A SPARSE ARRAY AND DISPLAYS THE CONTENTS
+		console.attributes=starcolor;
 		for(i in data)
 		{
 			location=i;
 			this.getXY(location);
-			printf(data[location]);
+			console.putmsg(data[location],P_SAVEATR);
 		}
 	}	
 	this.getXY=					function(place)
@@ -988,7 +977,7 @@ function 	Map(c,r)
 		return(index);
 	}
 
-										//DATA FUNCTIONS
+	//DATA FUNCTIONS
 	this.abandonCompany=		function(company)
 	{
 		this.clearGrid(this.companies[company].data);
@@ -1225,11 +1214,8 @@ function 	Map(c,r)
 		this.companies[name].newData(data,location);
 		this.companies[name].calculateValue();
 	}
-}
-{									//CONSTRUCTOR
 	this.generateMap();
 	this.display(this.star_data);
-}
 }
 function 	Company(name)	
 {								//COMPANY CLASS
@@ -1244,7 +1230,6 @@ function 	Company(name)
 	this.times_split=1;						//NUMBER OF TIMES COMPANY HAS SPLIT (1 = 0)
 	this.data=[];							//COMPANY LOCATION DATA
 }
-{										//OBJECT METHODS
 	this.companySize=		function()
 	{
 		var count=0;
@@ -1293,10 +1278,10 @@ function 	Company(name)
 	this.displayLong=		function()
 	{
 		this.calculateValue();
-		printf(	"\1n\1gCOMPANY: \1h\1y" + this.name + 
-				" \1n\1gWORTH: \1h$" + print_padded("\1w\1h"+parseInt(this.networth)+" ",14," ","right") +
-				"\1n\1gSHARE VALUE: \1h$" + print_padded("\1w\1h"+parseInt(this.stock_value)+" ",5," ","right") +
-				"\1n\1gSHARES: " + print_padded("\1w\1h"+parseInt(this.shares)+" ",10," ","right") +
+		console.putmsg(	"\1n\1gCOMPANY: \1h\1y" + this.name + 
+				" \1n\1gWORTH: \1h$" + printPadded("\1w\1h"+parseInt(this.networth)+" ",14," ","right") +
+				"\1n\1gSHARE VALUE: \1h$" + printPadded("\1w\1h"+parseInt(this.stock_value)+" ",5," ","right") +
+				"\1n\1gSHARES: " + printPadded("\1w\1h"+parseInt(this.shares)+" ",10," ","right") +
 				"\1n\1gSPLIT: \1w\1h" + (this.times_split-1) + "x");
 	}
 	this.display=			function(xxxx,yyyy)
@@ -1304,13 +1289,10 @@ function 	Company(name)
 		this.calculateValue();
 		console.gotoxy(xxxx,yyyy); 
 		console.cleartoeol();
-		printf(	"\1h\1c[\1w" + this.name + "\1c]\1w" +
-				" $\1c" + print_padded(parseInt(this.stock_value),4," ","left") +
+		console.putmsg(	"\1h\1c[\1w" + this.name + "\1c]\1w" +
+				" $\1c" + printPadded(parseInt(this.stock_value),4," ","left") +
 				" \1w(\1c" + shortNumber(this.shares) + "\1w)" );
-//				" \1w(\1c" + (this.times_split-1) + "\1w)" );
 	}
-}
-										//CONSTRUCTOR
 }
 function 	Menu(title,x,y)		
 {								//MENU CLASSES
@@ -1328,16 +1310,16 @@ function 	Menu(title,x,y)
 
 		console.gotoxy(xx,yy); yy++;
 		console.cleartoeol();
-		printf("\1h\1w" + this.title);
+		console.putmsg("\1h\1w" + this.title);
 		console.gotoxy(xx,yy); yy++;
 		console.cleartoeol();
-		drawLine(17);
+		drawLine(false,false,17);
 		for(i in this.items)
 		{
 			if(!this.disabled[i])
 			{
 				console.gotoxy(xx,yy); yy++;
-				printf(this.items[i].text);
+				console.putmsg(this.items[i].text);
 				console.cleartoeol();
 				cleared++;
 			}
@@ -1348,7 +1330,7 @@ function 	Menu(title,x,y)
 			console.cleartoeol();
 
 		}
-		printf("\1n\1k");
+		console.putmsg("\1n\1k");
 		console.gotoxy(79,24);
 	}
 	this.disable=function(item)
@@ -1376,8 +1358,8 @@ function 	Menu(title,x,y)
 }
 function 	menuItem(item,hotkey)
 {								//MENU ITEM OBJECT
-	var displayColor=getColor("cyan");
-	var keyColor=getColor("white");
+	var displayColor="\1c\1h";
+	var keyColor="\1w\1h";
 
 	this.hotkey=hotkey;
 	this.text=item.replace(("~" + hotkey) , (displayColor + "[" + keyColor + hotkey + displayColor + "]"));
