@@ -10,54 +10,26 @@ function DigitalClock()
 	this.hidden=false;
 	this.box;
 	
-	this.Menu=function()
-	{
-		while(1) 
-		{
-			Cycle();
-			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			switch(k)
-			{
-				case '\x12':	/* CTRL-R (Quick Redraw in SyncEdit) */
-						Redraw();
-						break;
-				case ctrl('O'): /* CTRL-O - Pause */
-				case ctrl('U'): /* CTRL-U User List */
-				case ctrl('T'): /* CTRL-T Time Info */
-				case ctrl('K'): /* CTRL-K Control Key Menu */
-				case ctrl('P'): /* Ctrl-P Messages */
-					controlkeys.handle(key);
-					break;
-				case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
-				case KEY_RIGHT:
-					NextWindow("clock");
-				case "\x1b":
-					return;
-				default:
-					break;
-			}
-		}
-	}
-	this.Init=function(x,y,color)
+	this.init=function(x,y,color)
 	{
 		this.x=x?x:1;
 		this.y=y?y:1;
 		this.color=color?color:"\1n\1h";
-		this.LoadDigits();
+		this.loadDigits();
 		this.box=new  Window("TIME",this.x,this.y,this.columns,this.rows);
-		this.box.Draw();
- 		this.Update(true);
+		this.box.draw();
+ 		this.update(true);
 	}
-	this.Hide=function()
+	this.hide=function()
 	{
 		this.hidden=true;
 	}
-	this.Unhide=function()
+	this.unhide=function()
 	{
 		this.hidden=false;
-		this.Redraw();
+		this.redraw();
 	}
-	this.Update=function(forced)
+	this.update=function(forced)
 	{
 		if(this.hidden) return;
 		var date=new Date();
@@ -72,12 +44,12 @@ function DigitalClock()
 		var time=hours.toString() + ":" + minutes.toString();
 		if(minutes>this.lastupdate || forced) 
 		{
-			this.box.Draw();
+			this.box.draw();
 			this.lastupdate=minutes;
-			this.DrawClock(time);
+			this.drawClock(time);
 		}
 	}
-	this.DrawClock=function(time)
+	this.drawClock=function(time)
 	{
 		console.attributes=this.color;
 		for(i=0;i<5;i++)
@@ -95,11 +67,11 @@ function DigitalClock()
 		}
 		console.attributes=ANSI_NORMAL;
 	}
-	this.Redraw=function()
+	this.redraw=function()
 	{
-		this.Update(true);
+		this.update(true);
 	}
-	this.LoadDigits=function()
+	this.loadDigits=function()
 	{
 		var zero=["\xDC\xDC\xDC","\xDB \xDB","\xDB \xDB","\xDB \xDB","\xDF\xDF\xDF"];
 		var one=["\xDC","\xDB","\xDB","\xDB","\xDF"];
