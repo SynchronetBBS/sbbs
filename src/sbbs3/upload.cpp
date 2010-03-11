@@ -139,7 +139,7 @@ bool sbbs_t::uploadfile(file_t *f)
 			} 
 		}
 
-	if((length=(long)flength(path))<=0L) {
+	if((length=(long)flength(path))==0L) {
 		bprintf(text[FileZeroLength],f->name);
 		remove(path);
 		sprintf(str,"%s attempted to upload %s to %s %s (Zero length)"
