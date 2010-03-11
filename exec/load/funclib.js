@@ -49,6 +49,8 @@ function getColor(color)
 			return LIGHTMAGENTA;
 		case "LIGHTGRAY":
 			return LIGHTGRAY;
+		case "DARKGRAY":
+			return DARKGRAY;
 		default:
 			return WHITE;
 	}
@@ -130,7 +132,7 @@ function drawLine(x,y,length,color)
 	}
 	for(i=0;i<length;i++)
 	{
-		console.putmsg((color?color:"\1k\1h") + "\xc4");
+		console.putmsg((color?color:"") + "\xc4",P_SAVEATR);
 	}
 }
 function clearBlock(x,y,w,h,bg)
