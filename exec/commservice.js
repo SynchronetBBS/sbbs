@@ -41,9 +41,8 @@ const filesync=		"@";
 
 const hub_address=argv[0];
 const hub_port=argv[1];
-const connection_timeout=2;
+const connection_timeout=5;
 const connection_attempts=5;
-const timeout=500;
 
 var local_sessions=[];
 var remote_sessions=[];
@@ -249,7 +248,6 @@ function hub_connect()
 {
 	log("connecting to hub");
 	hub=new Socket();
-	hub.bind(0,server.interface_ip_address);
 	//if a central hub address is provided, attempt connection
 	hub.connect(hub_address,hub_port,connection_timeout);
 	if(hub.is_connected) 
@@ -270,17 +268,12 @@ function hub_disconnect()
 function store_socket(sock)
 {
 	//receive connection identifier from incoming socket connection (should always be first transmission)
-	var count=0;
-	while(!sock.data_waiting && count<timeout) {
-		mswait(1);
-		count++;
-	}
-	if(count==timeout) {
+	var handshake=sock.recvline(1024,connection_timeout);
+	if(!handshake) {
 		log("connection timed out waiting for handshake");
 		return false;
 	}
-	
-	var handshake=sock.recvline(1024,connection_timeout);
+
 	var identifier=handshake.charAt(0);
 	var session_id=handshake.substr(1);
 	switch(identifier)
