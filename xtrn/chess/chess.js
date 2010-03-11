@@ -18,12 +18,12 @@ if(!chessroot)
 load(chessroot + "chessbrd.js");
 load(chessroot + "menu.js");
 
-var stream=			new GameConnection("chess");
+var stream=				new ServiceConnection("chess");
 var chesschat=			new ChatEngine(chessroot,stream);
 var chessplayers=		new PlayerList();
 var oldpass=			console.ctrl_key_passthru;
 
-function ChessLobby()
+function chess()
 {
 	var table_graphic=new Graphic(8,4);
 	table_graphic.load(chessroot+"chessbrd.bin");
@@ -38,49 +38,62 @@ function ChessLobby()
 	var menu;
 	var room="Chess Lobby";
 
-	function SplashStart()
+	function splashStart()
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status |= SS_PAUSEOFF;	
 		console.clear();
 		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-		ProcessGraphic();
-		InitMenu();
-		InitChat();
-		Redraw();
+		processGraphic();
+		initMenu();
+		initChat();
+		redraw();
 		
-		Alert("Please Wait...");
-		GetFiles();
-		Notice("Loading player data...");
-		LoadPlayers();
-		Notice("Loading game data...");
-		UpdateTables();
-		chesschat.ClearInputLine();
+		notify("Please Wait...");
+		getFiles();
+		notice("loading player data...");
+		loadPlayers();
+		notice("loading game data...");
+		updateTables();
+		chesschat.input_line.clear();
 	}
-	function SplashExit()
+	function splashExit()
 	{
-		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
-		stream.close();
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
-		console.attributes=(ANSI_NORMAL);
-		exit(0);
+		console.attributes=ANSI_NORMAL;
+		console.clear();
+		var splash_filename=chessroot + "exit.bin";
+		if(!file_exists(splash_filename)) exit();
+		
+		var splash_size=file_size(splash_filename);
+		splash_size/=2;		
+		splash_size/=80;	
+		var splash=new Graphic(80,splash_size);
+		splash.load(splash_filename);
+		splash.draw();
+		
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+		console.clear();
+		exit();
 	}
-	function InitChat()
+	function initChat()
 	{
 		var rows=19;
 		var columns=38;
 		var posx=42;
 		var posy=3;
-		if(!chesschat.Init(room,true,columns,rows,posx,posy,false,false,"\1y")) 
+		if(!chesschat.init(room,true,columns,rows,posx,posy,false,false)) 
 		{
 			log("chat initialization failed");
-			exit(0);
+			exit();
 		}
 	}
-	function InitMenu()
+	function initMenu()
 	{
 		menu=new Menu("\1n","\1c\1h");
 		var menu_items=[		"~Select Game"	, 
@@ -90,7 +103,7 @@ function ChessLobby()
 								"Re~draw"		];
 		menu.add(menu_items);
 	}
-	function ProcessGraphic()
+	function processGraphic()
 	{
 		for(var posx=0;posx<lobby_graphic.data.length;posx++) 
 		{
@@ -105,21 +118,21 @@ function ChessLobby()
 			}
 		}
 	}
-	function GetNotices()
+	function getNotices()
 	{
-		chesschat.GetNotices();	
+		chesschat.getNotices();	
 	}
-	function ListCommands()
+	function listCommands()
 	{
 		var list=menu.getList();
-		chesschat.DisplayInfo(list);
+		chesschat.displayInfo(list);
 	}
-	function RefreshCommands()
+	function refreshCommands()
 	{
 		if(!tables.length) menu.disable(["S"]);
 		else menu.enable(["S"]);
 	}
-	function GetTablePointers()
+	function getTablePointers()
 	{
 		var pointers=[];
 		for(t in tables)
@@ -128,11 +141,11 @@ function ChessLobby()
 		}
 		return pointers;
 	}
-	function LoadPlayers()
+	function loadPlayers()
 	{
-		chessplayers.LoadPlayers();
+		chessplayers.loadPlayers();
 	}
-	function UpdateTables()
+	function updateTables()
 	{
 		var update=false;
 		var game_files=directory(chessroot+"*.chs");
@@ -147,14 +160,14 @@ function ChessLobby()
 				if(lastupdated>lastloaded)
 				{
 					log("Updating game: " +  game_files[i]);
-					LoadTable(game_files[i]);
+					loadTable(game_files[i]);
 					update=true;
 				}
 			}
 			else 
 			{
-				log("Loading table: " + game_files[i]);
-				LoadTable(game_files[i]);
+				log("loading table: " + game_files[i]);
+				loadTable(game_files[i]);
 				update=true;
 			}
 		}
@@ -168,17 +181,17 @@ function ChessLobby()
 				update=true;
 			}
 		}
-		if(update) DrawTables();
+		if(update) drawTables();
 	}
-	function LoadTable(gamefile,index)
+	function loadTable(gamefile,index)
 	{
 		var table=new ChessGame(gamefile);
 		if(table.gamenumber>last_table_number) last_table_number=table.gamenumber;
 		tables[table.gamenumber]=table;
 	}
-	function DrawTables()
+	function drawTables()
 	{
-		var pointers=GetTablePointers();
+		var pointers=getTablePointers();
 		var range=(pointers.length%2==1?pointers.length+1:pointers.length);
 		if(tables.length>4) scrollBar.draw(scroll_index,range);
 
@@ -187,7 +200,7 @@ function ChessLobby()
 		{
 			var posx=table_markers[i].x;
 			var posy=table_markers[i].y;
-			ClearBlock(posx,posy,18,10);
+			clearBlock(posx,posy,18,10);
 			
 			var pointer=pointers[index];
 			if(tables[pointer])
@@ -217,9 +230,9 @@ function ChessLobby()
 				for(player in tab.players)
 				{
 					console.gotoxy(x,y);
-					console.putmsg(PrintPadded(chessplayers.FormatPlayer(tab.players[player],player,turn),19));
+					console.putmsg(printPadded(chessplayers.formatPlayer(tab.players[player],player,turn),19));
 					console.gotoxy(x+1,y+1);
-					console.putmsg(chessplayers.FormatStats(tab.players[player]));
+					console.putmsg(chessplayers.formatStats(tab.players[player]));
 					y+=2;
 				}
 				table_graphic.draw(posx,posy);
@@ -228,34 +241,34 @@ function ChessLobby()
 		}
 		write(console.ansi(BG_BLACK));
 	}
-	function DrawLobby()
+	function drawLobby()
 	{
 		lobby_graphic.draw();
 	}
-	function Redraw()
+	function redraw()
 	{
 		console.clear(ANSI_NORMAL);
-		DrawLobby();
-		DrawTables();
-		chesschat.Redraw();
+		drawLobby();
+		drawTables();
+		chesschat.redraw();
 	}
 
 
 /*	MAIN FUNCTIONS	*/
-	function Main()
+	function main()
 	{
 		while(1)
 		{
 			//TODO: figure out why this isnt working?
-			//if(!Cycle()) exit(0);
-			Cycle();
+			//if(!cycle()) exit();
+			cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
 			if(k)
 			{
 				var range=(tables.length%2==1?tables.length+1:tables.length);
 				if(clearinput) 
 				{
-					chesschat.ClearInputLine();
+					chesschat.input_line.clear();
 					clearinput=false;
 				} 
 				switch(k.toUpperCase())
@@ -264,20 +277,20 @@ function ChessLobby()
 						if(scroll_index>0 && tables.length>4) 
 						{
 							scroll_index-=2;
-							DrawTables();
+							drawTables();
 						}
 						break;
 					case KEY_RIGHT:
 						if((scroll_index+1)<=range && tables.length>4) 
 						{
 							scroll_index+=2;
-							DrawTables();
+							drawTables();
 						}
 						break;
 					case "/":
 						if(!chesschat.buffer.length) 
 						{
-							LobbyMenu();
+							lobbyMenu();
 						}
 						else if(!Chat(k,chesschat)) return;
 						break;
@@ -290,10 +303,10 @@ function ChessLobby()
 			}
 		}
 	}
-	function Cycle()
+	function cycle()
 	{
-		GetNotices();
-		UpdateTables();
+		getNotices();
+		updateTables();
 		
 		if(!stream) return -1;
 		var packet=stream.receive();
@@ -304,7 +317,7 @@ function ChessLobby()
 			switch(packet.type.toLowerCase())
 			{
 				case "chat":
-					chesschat.ProcessData(packet.data);
+					chesschat.processData(packet.data);
 					break;
 				case "chess":
 					log("illegal data type received");
@@ -316,11 +329,11 @@ function ChessLobby()
 		}
 		return 1;
 	}
-	function LobbyMenu()
+	function lobbyMenu()
 	{
-		RefreshCommands();
-		ListCommands();
-		chesschat.Alert("\1nMake a selection: ");
+		refreshCommands();
+		listCommands();
+		notify("\1nMake a selection: ");
 		
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
 		if(menu.items[k] && menu.items[k].enabled) 
@@ -328,43 +341,43 @@ function ChessLobby()
 			switch(k.toUpperCase())
 			{
 				case "N":
-					StartNewGame();
+					startNewGame();
 					break;
 				case "R":
-					ShowRankings();
+					showRankings();
 					break;
 				case "H":
-					Help();
+					help();
 					break;
 				case "S":
-					var g=SelectGame();
+					var g=selectGame();
 					if(!g) break;
 					GameSession(tables[g]);
-					InitChat();
+					initChat();
 					break;
 				default:
 					break;
 			}
 		}
-		chesschat.ClearInputLine();
-		Redraw();
+		chesschat.input_line.clear();
+		redraw();
 	}
-	function Help()
+	function help()
 	{
 		//TODO: write help file
 	}
-	function ShowRankings()
+	function showRankings()
 	{
 	}
-	function SelectGame()
+	function selectGame()
 	{
-		chesschat.Alert("\1nEnter Table \1h#: ");
+		notify("\1nEnter Table \1h#: ");
 		var num=console.getkeys("\x1bQ\r",last_table_number);
 		if(tables[num])
 		{
 			if(tables[num].password)
 			{
-				chesschat.Alert("\1nPassword: ");
+				notify("\1nPassword: ");
 				var password=console.getstr(25);
 				if(password!=tables[num].password) return false;
 			}
@@ -372,11 +385,11 @@ function ChessLobby()
 		}
 		else return false;
 	}
-	function StartNewGame()
+	function startNewGame()
 	{
 		var newgame=new ChessGame();
 		clearinput=true;
-		Alert("\1nRated game? [\1hY\1n,\1hN\1n]: ");
+		notify("\1nRated game? [\1hY\1n,\1hN\1n]: ");
 		var rated=console.getkeys("\x1bYN");
 		switch(rated)
 		{
@@ -387,16 +400,16 @@ function ChessLobby()
 				newgame.rated=false;
 				break;
 			default:
-				Alert("\1r\1hGame Creation Aborted");
+				notify("\1r\1hGame Creation Aborted");
 				return;
 		}
-		Alert("\1nMinimum rating? [\1hY\1n,\1hN\1n]: ");
+		notify("\1nMinimum rating? [\1hY\1n,\1hN\1n]: ");
 		var minrating=console.getkeys("\x1bYN");
 		switch(minrating)
 		{
 			case "Y":
-				var maxrating=chessplayers.GetPlayerRating(user.alias);
-				Alert("\1nEnter minimum [" + maxrating + "]: ");
+				var maxrating=chessplayers.getPlayerRating(user.alias);
+				notify("\1nEnter minimum [" + maxrating + "]: ");
 				minrating=console.getkeys("\x1b",maxrating);
 				newgame.minrating=(minrating?minrating:false);
 				break;
@@ -404,15 +417,15 @@ function ChessLobby()
 				newgame.minrating=false;
 				break;
 			default:
-				chesschat.Alert("\1r\1hGame Creation Aborted");
+				notify("\1r\1hGame Creation Aborted");
 				return;
 		}
-		Alert("\1nTimed game? [\1hY\1n,\1hN\1n]: ");
+		notify("\1nTimed game? [\1hY\1n,\1hN\1n]: ");
 		var timed=console.getkeys("\x1bYN");
 		switch(timed)
 		{
 			case "Y":
-				Alert("\1nTimer length? [\1h1\1n-\1h20\1n]: ");
+				notify("\1nTimer length? [\1h1\1n-\1h20\1n]: ");
 				timed=console.getkeys("\x1b",20);
 				newgame.timed=(timed?timed:false);
 				break;
@@ -420,20 +433,20 @@ function ChessLobby()
 				newgame.timed=false;
 				break;
 			default:
-				Alert("\1r\1hGame Creation Aborted");
+				notify("\1r\1hGame Creation Aborted");
 				return;
 		}
-		Alert("\1nPrivate game? [\1hY\1n,\1hN\1n]: ");
+		notify("\1nPrivate game? [\1hY\1n,\1hN\1n]: ");
 		var password=console.getkeys("\x1bYN");
 		switch(password)
 		{
 			case "Y":
-				Alert("\1nPassword: ");
+				notify("\1nPassword: ");
 				password=console.getstr(25);
 				if(password.length) newgame.password=password;
 				else 
 				{
-					Alert("\1r\1hGame Creation Aborted");
+					notify("\1r\1hGame Creation Aborted");
 					return;
 				}
 				break;
@@ -441,112 +454,39 @@ function ChessLobby()
 				newgame.password=false;
 				break;
 			default:
-				Alert("\1r\1hGame Creation Aborted");
+				notify("\1r\1hGame Creation Aborted");
 				return;
 		}
-		Alert("\1g\1hGame #" + parseInt(newgame.gamenumber,10) + " created");
-		StoreGame(newgame);
+		notify("\1g\1hGame #" + parseInt(newgame.gamenumber,10) + " created");
+		storeGame(newgame);
 	}
 
-	SplashStart();
-	Main();
-	SplashExit();
+	splashStart();
+	main();
+	splashExit();
 }
-function ChessPlayer(name)
+function notify(message)
 {
-	log("Creating new player: " + name);
-	this.name=name;
-	this.rating=1200;
-	this.wins=0;
-	this.losses=0;
-	this.draws=0;
+	chesschat.alert(message);
 }
-function PlayerList()
+function notice(message)
 {
-	this.prefix=system.qwk_id + "."; //BBS prefix FOR INTERBBS PLAY?? WE'LL SEE
-	this.players=[];
-	this.GetPlayerRating=function(name)
-	{
-		var fullname=this.prefix + name;
-		return this.players[fullname].rating;
-	}
-	this.StorePlayer=function(id)
-	{
-		var player=this.players[id];
-		var pFile=new File(chessroot + "players.ini");
-		pFile.open("r+"); 
-		pFile.iniSetValue(id,"rating",player.rating);
-		pFile.iniSetValue(id,"wins",player.wins);
-		pFile.iniSetValue(id,"losses",player.losses);
-		pFile.iniSetValue(id,"draws",player.draws);
-		pFile.close();
-		SendFiles(pFile.name);
-	}
-	this.FormatStats=function(index)
-	{
-		if(!index.id) return("");
-		var player=this.players[index.id];
-		return(	"\1n\1yR\1h" +
-						PrintPadded(player.rating,4,"0","right") + "\1n\1yW\1h" +
-						PrintPadded(player.wins,3,"0","right") + "\1n\1yL\1h" +
-						PrintPadded(player.losses,3,"0","right") + "\1n\1yS\1h" +
-						PrintPadded(player.draws,3,"0","right"));
-	}
-	this.FormatPlayer=function(index,color,turn)
-	{
-		var name=(index.id?this.players[index.id].name:"Empty Seat");
-		var col=(color=="white"?"\1n\1h":"\1k\1h");
-		var highlight=(color==turn?"\1r\1h":col);
-		return (highlight + "[" + col + name + highlight + "]");
-	}
-	this.LoadPlayers=function()
-	{
-		var update=false;
-		var pFile=new File(chessroot + "players.ini");
-		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
-		
-		if(!pFile.iniGetValue(this.prefix + user.alias,"name"))
-		{
-			pFile.iniSetObject(this.prefix + user.alias,new ChessPlayer(user.alias));
-			update=true;
-		}
-		var players=pFile.iniGetSections();
-		for(player in players)
-		{
-			this.players[players[player]]=pFile.iniGetObject(players[player]);
-		}
-		pFile.close();
-		if(update) SendFiles(pFile.name);
-	}
-	this.GetFullName=function(name)
-	{
-		return(this.prefix + name);
-	}
+	chesschat.notice(message);
 }
-
-function Alert(message)
+function getFiles(data)
 {
-	chesschat.Alert(message);
-}
-function Notice(message)
-{
-	chesschat.Notice(message);
-}
-function GetFiles(data)
-{
-	Notice("Synchronizing game data...");
+	notice("Synchronizing game data...");
 	stream.recvfile("*.chs");
-	Notice("Synchronizing player data...");
+	notice("Synchronizing player data...");
 	stream.recvfile("players.ini");
 }
-function SendFiles(filename)
+function sendFiles(filename)
 {
 	stream.sendfile(filename);
 }
-function StoreGame(game)
+function storeGame(game)
 {
 	//STORE GAME DATA
-	log("Storing game " + game.gamenumber);
 	var gFile=new File(game.gamefile+".tmp");
 	gFile.open("w+");
 	
@@ -567,8 +507,8 @@ function StoreGame(game)
 	if(game.minrating) gFile.iniSetValue(null,"minrating",game.minrating);
 	if(game.board.lastmove) 
 	{
-		gFile.iniSetValue("lastmove","from",GetChessPosition(game.board.lastmove.from));
-		gFile.iniSetValue("lastmove","to",GetChessPosition(game.board.lastmove.to));
+		gFile.iniSetValue("lastmove","from",getChessPosition(game.board.lastmove.from));
+		gFile.iniSetValue("lastmove","to",getChessPosition(game.board.lastmove.to));
 	}
 	if(game.draw)
 	{
@@ -581,7 +521,7 @@ function StoreGame(game)
 			var contents=game.board.grid[x][y].contents;
 			if(contents)
 			{
-				var position=GetChessPosition({'x':x,'y':y});
+				var position=getChessPosition({'x':x,'y':y});
 				var section="board."+position;
 				gFile.iniSetValue(section,"piece",contents.name);
 				gFile.iniSetValue(section,"color",contents.color);
@@ -591,15 +531,87 @@ function StoreGame(game)
 	}
 	for(move in game.movelist)
 	{
-		gFile.iniSetValue("move." + move,"from",GetChessPosition(game.movelist[move].from));
-		gFile.iniSetValue("move." + move,"to",GetChessPosition(game.movelist[move].to));
+		gFile.iniSetValue("move." + move,"from",getChessPosition(game.movelist[move].from));
+		gFile.iniSetValue("move." + move,"to",getChessPosition(game.movelist[move].to));
 		gFile.iniSetValue("move." + move,"color",game.movelist[move].color);
 		if(game.movelist[move].check) gFile.iniSetValue("move." + move,"check",game.movelist[move].check);
 	}
 	gFile.close();
 	file_remove(game.gamefile);
 	file_rename(gFile.name,game.gamefile);
-	SendFiles(game.gamefile);
+	sendFiles(game.gamefile);
 }
 
-ChessLobby();
+function ChessPlayer(name)
+{
+	log("Creating new player: " + name);
+	this.name=name;
+	this.rating=1200;
+	this.wins=0;
+	this.losses=0;
+	this.draws=0;
+}
+function PlayerList()
+{
+	this.prefix=system.qwk_id + "."; //BBS prefix FOR INTERBBS PLAY?? WE'LL SEE
+	this.players=[];
+	this.getPlayerRating=function(name)
+	{
+		var fullname=this.prefix + name;
+		return this.players[fullname].rating;
+	}
+	this.storePlayer=function(id)
+	{
+		var player=this.players[id];
+		var pFile=new File(chessroot + "players.ini");
+		pFile.open("r+"); 
+		pFile.iniSetValue(id,"rating",player.rating);
+		pFile.iniSetValue(id,"wins",player.wins);
+		pFile.iniSetValue(id,"losses",player.losses);
+		pFile.iniSetValue(id,"draws",player.draws);
+		pFile.close();
+		sendFiles(pFile.name);
+	}
+	this.formatStats=function(index)
+	{
+		if(!index.id) return("");
+		var player=this.players[index.id];
+		return(	"\1n\1yR\1h" +
+						printPadded(player.rating,4,"0","right") + "\1n\1yW\1h" +
+						printPadded(player.wins,3,"0","right") + "\1n\1yL\1h" +
+						printPadded(player.losses,3,"0","right") + "\1n\1yS\1h" +
+						printPadded(player.draws,3,"0","right"));
+	}
+	this.formatPlayer=function(index,color,turn)
+	{
+		var name=(index.id?this.players[index.id].name:"Empty Seat");
+		var col=(color=="white"?"\1n\1h":"\1k\1h");
+		var highlight=(color==turn?"\1r\1h":col);
+		return (highlight + "[" + col + name + highlight + "]");
+	}
+	this.loadPlayers=function()
+	{
+		var update=false;
+		var pFile=new File(chessroot + "players.ini");
+		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
+		
+		if(!pFile.iniGetValue(this.prefix + user.alias,"name"))
+		{
+			pFile.iniSetObject(this.prefix + user.alias,new ChessPlayer(user.alias));
+			update=true;
+		}
+		var players=pFile.iniGetSections();
+		for(player in players)
+		{
+			this.players[players[player]]=pFile.iniGetObject(players[player]);
+		}
+		pFile.close();
+		if(update) sendFiles(pFile.name);
+	}
+	this.getFullName=function(name)
+	{
+		return(this.prefix + name);
+	}
+}
+
+chess();

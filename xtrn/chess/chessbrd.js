@@ -14,23 +14,23 @@ function GameSession(game)
 	method of data transfer between nodes/systems
 	simpler
 */
-	function InitGame()
+	function initGame()
 	{
-		LoadGameData();
+		loadGameData();
 		room="Chess Table " + game.gamenumber;
 		
 		currentplayer=game.currentplayer;
 		game.board.side=(currentplayer?currentplayer:"white");
 	}
-	function InitChat()
+	function initChat()
 	{
 		var rows=(infobar?15:20);
 		var columns=38;
 		var posx=42;
 		var posy=(infobar?8:3);
-		chesschat.Init(room,true,columns,rows,posx,posy,true);
+		chesschat.init(room,true,columns,rows,posx,posy,true);
 	}
-	function InitMenu()
+	function initMenu()
 	{
 		menu=new Menu(			"\1n","\1c\1h");
 		var menu_items=[		"~Sit"							, 
@@ -44,21 +44,21 @@ function GameSession(game)
 								"Move ~List"					,
 								"Re~draw"						];
 		menu.add(menu_items);
-		RefreshMenu();
+		refreshMenu();
 	}
-	function Main()
+	function main()
 	{
-		Redraw();
-		ScanCheck();
+		redraw();
+		scanCheck();
 		if(game.turn==game.currentplayer)
 		{
-			Notice("\1g\1hIt's your turn.");
-			Notice("\1n\1gUse arrow keys or number pad to move around, and [\1henter\1n\1g] to select.");
-			Notice("\1n\1gPress [\1hescape\1n\1g] to cancel.");
+			notice("\1g\1hIt's your turn.");
+			notice("\1n\1gUse arrow keys or number pad to move around, and [\1henter\1n\1g] to select.");
+			notice("\1n\1gPress [\1hescape\1n\1g] to cancel.");
 		}
 		while(1)
 		{
-			Cycle();
+			cycle();
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(game.turn==game.currentplayer)
 			{
@@ -74,14 +74,14 @@ function GameSession(game)
 					case "9":
 						if(chesschat.buffer.length) 
 						{
-							if(!Chat(k,chesschat) && HandleExit()) return;						
+							if(!Chat(k,chesschat) && handleExit()) return;						
 						}
 					case KEY_UP:
 					case KEY_DOWN:
 					case KEY_LEFT:
 					case KEY_RIGHT:
-						TryMove();
-						game.board.DrawLastMove();
+						tryMove();
+						game.board.drawLastMove();
 						break;
 					default:
 						break;
@@ -94,34 +94,34 @@ function GameSession(game)
 					case "/":
 						if(!chesschat.buffer.length) 
 						{
-							RefreshMenu();
-							ListCommands();
-							ChessMenu();
+							refreshMenu();
+							listCommands();
+							showMenu();
 						}
-						else if(!Chat(k,chesschat) && HandleExit()) return;
+						else if(!Chat(k,chesschat) && handleExit()) return;
 						break;
 					case "\x1b":	
-						if(HandleExit()) return;
+						if(handleExit()) return;
 						break;
 					case "?":
 						if(!chesschat.buffer.length) 
 						{
-							ToggleGameInfo();
+							toggleGameInfo();
 						}
-						else if(!Chat(k,chesschat) && HandleExit()) return;
+						else if(!Chat(k,chesschat) && handleExit()) return;
 						break;
 					default:
-						if(!Chat(k,chesschat) && HandleExit()) return;
+						if(!Chat(k,chesschat) && handleExit()) return;
 						break;
 				}
 			}
 		}
 	}
-	function ClearChatWindow()
+	function clearChatWindow()
 	{
-		chesschat.ClearChatWindow();
+		chesschat.clearChatWindow();
 	}
-	function HandleExit()
+	function handleExit()
 	{
 		if(game.finished)
 		{
@@ -132,17 +132,17 @@ function GameSession(game)
 		}
 		else if(game.timed && game.started && game.movelist.length)
 		{
-			Alert("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+			notify("\1c\1hForfeit this game? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-			EndGame("loss");
+			endGame("loss");
 		}
 		return true;
 	}
-	function RefreshMenu()
+	function refreshMenu()
 	{
 		if(game.started || game.finished || currentplayer) menu.disable(["S"]);
 		else if(game.password && game.password != user.alias) menu.disable(["S"]);
-		else if(game.minrating && game.minrating > chessplayers.GetPlayerRating(user.alias)) menu.disable(["S"]);
+		else if(game.minrating && game.minrating > chessplayers.getPlayerRating(user.alias)) menu.disable(["S"]);
 		else menu.enable(["S"]);
 		if(!game.finished || !currentplayer) menu.disable(["N"]);
 		else menu.enable(["N"]);
@@ -164,61 +164,61 @@ function GameSession(game)
 		if(!game.movelist.length) menu.disable(["L"]);
 		else menu.enable(["L"]);
 	}
-	function ChessMenu()
+	function showMenu()
 	{	
-		Alert("Make a selection:");
+		notify("Make a selection:");
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		ClearAlert();
+		clearAlert();
 		if(k)
 		{
-			ClearChatWindow();
-			chesschat.Redraw();
+			clearChatWindow();
+			chesschat.redraw();
 			if(menu.items[k] && menu.items[k].enabled) 
 			{
 				switch(k)
 				{
 					case "R":
-						Resign();
+						resign();
 						break;
 					case "S":
-						JoinGame();
+						joinGame();
 						break;
 					case "H":
-						Help();
+						help();
 						break;
 					case "D":
-						Redraw();
+						redraw();
 						break;
 					case "O":
-						OfferDraw();
+						offerDraw();
 						break;
 					case "M":
-						TryMove();
-						game.board.DrawLastMove();
+						tryMove();
+						game.board.drawLastMove();
 						break;
 					case "V":
-						Reverse();
-						Redraw();
+						reverse();
+						redraw();
 						break;
 					case "L":
-						ListMoves();
+						listMoves();
 						break;
 					case "X":
-						ToggleBoardSize();
+						toggleBoardSize();
 						break;
 					case "N":
-						NewGame();
+						newGame();
 						break;
 					default:
 						break;
 				}
-				ClearChatWindow();
-				chesschat.Redraw();
+				clearChatWindow();
+				chesschat.redraw();
 			}
 			else log("Invalid or Disabled key pressed: " + k);
 		}
 	}
-	function ToggleBoardSize()
+	function toggleBoardSize()
 	{
 		game.board.large=game.board.large?false:true;
 		if(game.board.large)
@@ -229,46 +229,46 @@ function GameSession(game)
 			var posx=2;
 			var posy=45;
 			var input_line={'x':2,'y':50,columns:77};
-			chesschat.Init(room,input_line,columns,rows,posx,posy,false);
+			chesschat.init(room,input_line,columns,rows,posx,posy,false);
 			//reinitialize chat beneath large board
 		}
 		else
 		{
 			console.screen_rows=24;
-			InitChat();
+			initChat();
 			//reinitialize chat beside small board
 		}
-		InitMenu();
-		Redraw();
+		initMenu();
+		redraw();
 	}
-	function Help()
+	function help()
 	{
 	}
-	function ListCommands()
+	function listCommands()
 	{
 		if(game.board.large) return;
 		var list=menu.getList();
-		DisplayInfo(list);
+		displayInfo(list);
 	}
-	function ToggleGameInfo()
+	function toggleGameInfo()
 	{
 		if(infobar)
 		{
 			infobar=false;
-			chesschat.Resize(chesschat.x,3,chesschat.columns,20);
+			chesschat.resize(chesschat.x,3,chesschat.columns,20);
 		}
 		else
 		{
 			infobar=true;
-			chesschat.Resize(chesschat.x,8,chesschat.columns,15);
+			chesschat.resize(chesschat.x,8,chesschat.columns,15);
 		}
-		InfoBar();
+		infoBar();
 	}
-	function InfoBar()
+	function infoBar()
 	{
 		if(game.board.large) return;
 		console.gotoxy(chesschat.x,1);
-		console.putmsg("\1k\1h[\1cEsc\1k\1h]\1wQuit \1k\1h[\1c/\1k\1h]\1wMenu \1k\1h[\1c?\1k\1h]\1wToggle \1k\1h[\1c" + ascii(30) + "\1k\1h,\1c" + ascii(31) +"\1k\1h]\1wScroll");
+		console.putmsg("\1k\1h[\1cEsc\1k\1h]\1wQuit \1k\1h[\1c/\1k\1h]\1wMenu \1k\1h[\1c?\1k\1h]\1wtoggle \1k\1h[\1c" + ascii(30) + "\1k\1h,\1c" + ascii(31) +"\1k\1h]\1wScroll");
 		if(infobar)
 		{
 			var x=chesschat.x;
@@ -279,18 +279,18 @@ function GameSession(game)
 			for(player in game.players)
 			{
 				console.gotoxy(x,y);
-				console.putmsg(PrintPadded(chessplayers.FormatPlayer(game.players[player],player,turn),21));
-				console.putmsg(chessplayers.FormatStats(game.players[player]));
+				console.putmsg(printPadded(chessplayers.formatPlayer(game.players[player],player,turn),21));
+				console.putmsg(chessplayers.formatStats(game.players[player]));
 				if(game.timed && game.started) 
 				{
 					console.gotoxy(x,y+1);
-					game.players[player].timer.Display(game.turn);
+					game.players[player].timer.display(game.turn);
 				}
 				y+=2;
 			}
 		}
 	}
-	function ShowTimers()
+	function showTimers()
 	{
 		if(!infobar) return;
 		var x=chesschat.x;
@@ -302,28 +302,28 @@ function GameSession(game)
 			if(current!=timer.lastshown && game.turn==player)
 			{
 				console.gotoxy(x,y);
-				game.players[player].timer.Display(game.turn);
+				game.players[player].timer.display(game.turn);
 			}
 			y+=2;
 		}
 	}
-	function ClearAlert()
+	function clearAlert()
 	{
-		if(!chesschat.buffer.length) chesschat.ClearInputLine();
+		if(!chesschat.buffer.length) chesschat.input_line.clear();
 	}
-	function Notice(txt)
+	function notice(txt)
 	{
-		chesschat.Notice(txt);
+		chesschat.notice(txt);
 	}
-	function DisplayInfo(array)
+	function displayInfo(array)
 	{
-		chesschat.DisplayInfo(array);
+		chesschat.displayInfo(array);
 	}
-	function Alert(msg)
+	function notify(msg)
 	{
-		chesschat.Alert(msg);
+		chesschat.alert(msg);
 	}
-	function Cycle()
+	function cycle()
 	{
 		if(!stream) exit();
 		
@@ -334,10 +334,10 @@ function GameSession(game)
 			switch(packet.type.toLowerCase())
 			{
 				case "chat":
-					chesschat.ProcessData(packet.data);
+					chesschat.processData(packet.data);
 					break;
 				default:
-					ProcessData(packet);
+					processData(packet);
 					break;
 			}
 		}
@@ -352,15 +352,15 @@ function GameSession(game)
 					if(timer.lastupdate===false) game.players[player].timer.lastupdate=current;
 					if(timer.lastupdate!=current) 
 					{
-						var counted=timer.Countdown(current);
-						if(!counted && player==currentplayer) EndGame("loss");
+						var counted=timer.countdown(current);
+						if(!counted && player==currentplayer) endGame("loss");
 					}
 				}
 			}
-			ShowTimers();
+			showTimers();
 		}
 	}
-	function ProcessData(packet)
+	function processData(packet)
 	{
 		var type=packet.type;
 		var data=packet.data;
@@ -368,79 +368,79 @@ function GameSession(game)
 		switch(type.toLowerCase())
 		{
 			case "move":
-				GetMove(data);
+				getMove(data);
 				game.movelist.push(data);
-				ScanCheck();
-				NextTurn();
-				InfoBar();
+				scanCheck();
+				nextTurn();
+				infoBar();
 				if(game.turn==game.currentplayer)
 				{
-					Notice("\1g\1hIt's your turn.");
+					notice("\1g\1hIt's your turn.");
 				}
 				else
 				{
-					Notice("\1g\1hIt is " + GetAlias(game.turn) + "'s turn.");
+					notice("\1g\1hIt is " + getAlias(game.turn) + "'s turn.");
 				}
 				break;
 			case "draw":
 				log("received draw offer");
-				if(Draw())
+				if(draw())
 				{
-					SendAlert("\1g\1hDraw offer accepted.");
+					sendnotify("\1g\1hdraw offer accepted.");
 				}
 				else
 				{
-					SendAlert("\1g\1hDraw offer refused.");
-					StoreGame(game);
+					sendnotify("\1g\1hdraw offer refused.");
+					storeGame(game);
 				}
 				delete game.draw;
-				ClearAlert();
+				clearAlert();
 				break;
 			case "castle":
-				GetMove(data);
+				getMove(data);
 				break;
 			case "tile":
 				var newpiece=false;
 				var update=game.board.grid[data.x][data.y];
 				if(data.contents) newpiece=new ChessPiece(data.contents.name,data.contents.color);
 				update.contents=newpiece;
-				update.Draw(game.board.side,true);
+				update.draw(game.board.side,true);
 				break;
 			case "alert":
 				log("received alert");
-				DisplayInfo(data.message);
-				Alert("\1r\1h[Press any key]");
+				displayInfo(data.message);
+				notify("\1r\1h[Press any key]");
 				while(console.inkey==="");
-				ClearChatWindow();
-				chesschat.Redraw();
+				clearChatWindow();
+				chesschat.redraw();
 				break;
 			case "update":
 				log("updating game data");
-				game.LoadGameTable();
-				LoadGameData();
-				chessplayers.LoadPlayers();
-				InfoBar();
-				if(game.timed) ShowTimers();
+				game.loadGameTable();
+				loadGameData();
+				chessplayers.loadPlayers();
+				infoBar();
+				if(game.timed) showTimers();
 				break;
 			case "timer":
 				var player=data.player;
 				var countdown=data.countdown;
-				game.players[player].timer.Update(countdown);
-				InfoBar();
+				game.players[player].timer.update(countdown);
+				infoBar();
 				break;
 			default:
 				log("Unknown chess data type received");
 				break;
 		}
 	}
-	function Redraw()
+	function redraw()
 	{
 		console.clear();
-		game.board.DrawBoard();
-		InfoBar();
-		chesschat.Redraw();
+		game.board.drawBoard();
+		infoBar();
+		chesschat.redraw();
 	}
-	function PackageData(data,type)
+	function packageData(data,type)
 	{
 		switch(type.toLowerCase())
 		{
@@ -469,21 +469,21 @@ function GameSession(game)
 		};
 		return packet;
 	}
-	function Send(data,type)
+	function send(data,type)
 	{
-		var d=PackageData(data,type);
+		var d=packageData(data,type);
 		stream.send(d);
 	}
-	function Reverse()
+	function reverse()
 	{
-		game.board.Reverse();
+		game.board.reverse();
 	}
 
 	
 /*	MOVEMENT FUNCTIONS	*/
-	function TryMove()
+	function tryMove()
 	{
-		game.board.ClearLastMove();
+		game.board.clearLastMove();
 		var moved=false;
 		var from;
 		var to;
@@ -494,20 +494,20 @@ function GameSession(game)
 			reselect=false;
 			while(1)
 			{
-				from=SelectTile(false,from);
+				from=selectTile(false,from);
 				if(from===false) return false;
 				else if(	game.board.grid[from.x][from.y].contents && 
 							game.board.grid[from.x][from.y].contents.color == game.turn) 
 					break;
 				else 
 				{
-					Alert("\1r\1hInvalid Selection");
+					notify("\1r\1hInvalid Selection");
 				}
 			}
 			placeholder=from;
 			while(1)
 			{
-				to=SelectTile(from,placeholder);
+				to=selectTile(from,placeholder);
 				if(to===false) return false;
 				else if(from.x==to.x && from.y==to.y) 
 				{
@@ -517,7 +517,7 @@ function GameSession(game)
 				else if(!game.board.grid[to.x][to.y].contents || 
 						game.board.grid[to.x][to.y].contents.color != game.turn)
 				{
-					if(CheckMove(from,to)) 
+					if(checkMove(from,to)) 
 					{
 						moved=true;
 						break; 
@@ -525,24 +525,24 @@ function GameSession(game)
 					else 
 					{
 						placeholder=to;
-						Alert("\1r\1hIllegal Move");
+						notify("\1r\1hIllegal Move");
 					}
 				}
 				else 
 				{
 					placeholder=to;
-					Alert("\1r\1hInvalid Selection");
+					notify("\1r\1hInvalid Selection");
 				}
 			}
 			if(!reselect) break;
 		}
-		game.board.DrawTile(from.x,from.y,moved);
-		game.board.DrawTile(to.x,to.y,moved);
+		game.board.drawTile(from.x,from.y,moved);
+		game.board.drawTile(to.x,to.y,moved);
 		return true;
 	}
-	function CheckMove(from,to)
+	function checkMove(from,to)
 	{ 
-		var movetype=CheckRules(from,to);
+		var movetype=checkRules(from,to);
 		if(!movetype) return false; //illegal move
 		
 		var from_tile=game.board.grid[from.x][from.y];
@@ -551,69 +551,69 @@ function GameSession(game)
 
 		if(movetype=="en passant")
 		{
-			if(!EnPassant(from_tile,to_tile,move)) return false;
+			if(!enPassant(from_tile,to_tile,move)) return false;
 		}
 		else if(movetype=="pawn promotion")
 		{
-			if(!PawnPromotion(to_tile,move)) return false;
+			if(!pawnPromotion(to_tile,move)) return false;
 		}
 		else if(movetype=="castle")
 		{
-			if(!Castle(from_tile,to_tile)) return false;
+			if(!castle(from_tile,to_tile)) return false;
 		}
 		else
 		{
-			game.Move(move);
-			if(InCheck(game.board.FindKing(currentplayer),currentplayer)) 
+			game.move(move);
+			if(inCheck(game.board.findKing(currentplayer),currentplayer)) 
 			{
 				log("Illegal Move: King would be in check");
-				game.UnMove(move);
+				game.unMove(move);
 				return false;
 			}
-			SendMove(move);
+			sendMove(move);
 		}
-		InfoBar();
+		infoBar();
 		return true;
 	}
-	function SendMove(move)
+	function sendMove(move)
 	{
-		NextTurn();
-		Notice("\1g\1hIt is " + GetAlias(game.turn) + "'s turn.");
-		NotifyPlayer();
+		nextTurn();
+		notice("\1g\1hIt is " + getAlias(game.turn) + "'s turn.");
+		notifyPlayer();
 		game.board.lastmove=move;
 		game.movelist.push(move);
-		StoreGame(game);
-		Send(move,"move");
+		storeGame(game);
+		send(move,"move");
 		if(game.timed) 
 		{
-			Send(game.players[currentplayer].timer,"timer");
+			send(game.players[currentplayer].timer,"timer");
 		}
 	}
-	function GetMove(move)
+	function getMove(move)
 	{
-		game.Move(move);
-		game.board.ClearLastMove();
+		game.move(move);
+		game.board.clearLastMove();
 		game.board.lastmove=move;
-		game.board.DrawTile(move.from.x,move.from.y,true,"\1r\1h");
-		game.board.DrawTile(move.to.x,move.to.y,true,"\1r\1h");
+		game.board.drawTile(move.from.x,move.from.y,true,"\1r\1h");
+		game.board.drawTile(move.to.x,move.to.y,true,"\1r\1h");
 	}
-	function ScanCheck()
+	function scanCheck()
 	{
 		if(currentplayer)
 		{
-			var checkers=InCheck(game.board.FindKing(currentplayer),currentplayer);
+			var checkers=inCheck(game.board.findKing(currentplayer),currentplayer);
 			if(checkers) 
 			{
-				if(FindCheckMate(checkers,currentplayer)) 
+				if(findCheckMate(checkers,currentplayer)) 
 				{
-					EndGame("loss");
-					Notice("\1r\1hCheckmate! You lose!");
+					endGame("loss");
+					notice("\1r\1hCheckmate! You lose!");
 				}
-				else Notice("\1r\1hYou are in check!");
+				else notice("\1r\1hYou are in check!");
 			}
 		}
 	}
-	function SelectTile(start,placeholder)
+	function selectTile(start,placeholder)
 	{
 		if(start) 
 		{
@@ -623,22 +623,22 @@ function GameSession(game)
 				selected={"x":start.x, "y":start.y};
 				sel=true;
 			}
-			game.board.DrawBlinking(start.x,start.y,sel,"\1n\1b");
+			game.board.drawBlinking(start.x,start.y,sel,"\1n\1b");
 		}
 		if(placeholder) 
 		{
 			selected={"x":placeholder.x, "y":placeholder.y};
-			game.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
+			game.board.drawTile(selected.x,selected.y,true,"\1n\1b");
 		}
 		else
 		{
 			if(game.board.side=="white") selected={"x":0,"y":7};
 			else selected={"x":7,"y":0};
-			game.board.DrawTile(selected.x,selected.y,true,"\1n\1b");
+			game.board.drawTile(selected.x,selected.y,true,"\1n\1b");
 		}
 		while(1)
 		{
-			Cycle();
+			cycle();
 			var key=console.inkey(K_NOECHO|K_NOCRLF,50);
 			if(key=="\r") 
 			{
@@ -649,50 +649,50 @@ function GameSession(game)
 			{
 				if(game.board.side=="white")
 				{
-					ClearAlert();
+					clearAlert();
 					switch(key)
 					{
 						case KEY_DOWN:
 						case "2":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_UP:
 						case "8":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_LEFT:
 						case "4":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_RIGHT:
 						case "6":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "7":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y===0) selected.y=7;
@@ -700,9 +700,9 @@ function GameSession(game)
 							break;
 						case "9":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y===0) selected.y=7;
@@ -710,9 +710,9 @@ function GameSession(game)
 							break;
 						case "1":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
@@ -720,79 +720,79 @@ function GameSession(game)
 							break;
 						case "3":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "\x1B":
-							if(start) game.board.DrawTile(start.x,start.y);
-							game.board.DrawTile(selected.x,selected.y);
+							if(start) game.board.drawTile(start.x,start.y);
+							game.board.drawTile(selected.x,selected.y);
 							return false;
 						default:
 							if(!Chat(key,chesschat)) 
 							{
-								if(start) game.board.DrawTile(start.x,start.y);
-								game.board.DrawTile(selected.x,selected.y);
+								if(start) game.board.drawTile(start.x,start.y);
+								game.board.drawTile(selected.x,selected.y);
 								return false;
 							}
 							continue;
 					}
 					if(start && start.x==selected.x && start.y==selected.y) 
-							game.board.DrawBlinking(start.x,start.y,true);
+							game.board.drawBlinking(start.x,start.y,true);
 					else
-						game.board.DrawTile(selected.x,selected.y,true);
+						game.board.drawTile(selected.x,selected.y,true);
 				}
 				else
 				{
-					ClearAlert();
-					if(start) game.board.DrawBlinking(start.x,start.y);
+					clearAlert();
+					if(start) game.board.drawBlinking(start.x,start.y);
 					switch(key)
 					{
 						case KEY_UP:
 						case "2":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case KEY_DOWN:
 						case "8":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.y===0) selected.y=7;
 							else selected.y--;
 							break;
 						case KEY_RIGHT:
 						case "4":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							break;
 						case KEY_LEFT:
 						case "6":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							break;
 						case "3":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y===0) selected.y=7;
@@ -800,9 +800,9 @@ function GameSession(game)
 							break;
 						case "1":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y===0) selected.y=7;
@@ -810,9 +810,9 @@ function GameSession(game)
 							break;
 						case "9":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x===0) selected.x=7;
 							else selected.x--;
 							if(selected.y==7) selected.y=0;
@@ -820,36 +820,36 @@ function GameSession(game)
 							break;
 						case "7":
 							if(start && start.x==selected.x && start.y==selected.y) 
-									game.board.DrawBlinking(start.x,start.y);
+									game.board.drawBlinking(start.x,start.y);
 							else
-								game.board.DrawTile(selected.x,selected.y);
+								game.board.drawTile(selected.x,selected.y);
 							if(selected.x==7) selected.x=0;
 							else selected.x++;
 							if(selected.y==7) selected.y=0;
 							else selected.y++;
 							break;
 						case "\x1B":
-							if(start) game.board.DrawTile(start.x,start.y);
-							game.board.DrawTile(selected.x,selected.y);
+							if(start) game.board.drawTile(start.x,start.y);
+							game.board.drawTile(selected.x,selected.y);
 							return false;
 						default:
 							if(!Chat(key,chesschat)) 
 							{
-								if(start) game.board.DrawTile(start.x,start.y);
-								game.board.DrawTile(selected.x,selected.y);
+								if(start) game.board.drawTile(start.x,start.y);
+								game.board.drawTile(selected.x,selected.y);
 								return false;
 							}
 							continue;
 					}
 					if(start && start.x==selected.x && start.y==selected.y) 
-							game.board.DrawBlinking(start.x,start.y,true);
+							game.board.drawBlinking(start.x,start.y,true);
 					else
-						game.board.DrawTile(selected.x,selected.y,true);
+						game.board.drawTile(selected.x,selected.y,true);
 				}
 			}
 		}
 	}
-	function CheckRules(from,to)
+	function checkRules(from,to)
 	{ 
 		var from_tile=game.board.grid[from.x][from.y];
 		var to_tile=game.board.grid[to.x][to.y];
@@ -869,7 +869,7 @@ function GameSession(game)
 		{
 			if(Math.abs(from.x-to.x)==2) 
 			{
-				if(InCheck(from,from_tile.contents.color))
+				if(inCheck(from,from_tile.contents.color))
 				{
 					log("Invalid Move: King is in check");
 					return false;
@@ -886,7 +886,7 @@ function GameSession(game)
 					{
 						var spot_check={"x":x,"y":from.y};
 						if(game.board.grid[x][from.y].contents) return false;
-						if(InCheck(spot_check,from_tile.contents.color)) return false;
+						if(inCheck(spot_check,from_tile.contents.color)) return false;
 						x--;
 					}
 				}
@@ -897,7 +897,7 @@ function GameSession(game)
 					{
 						var spot_check={"x":x,"y":from.y};
 						if(game.board.grid[x][from.y].contents) return false;
-						if(InCheck(spot_check,from_tile.contents.color)) return false;
+						if(inCheck(spot_check,from_tile.contents.color)) return false;
 						x++;
 					}
 				}
@@ -1123,27 +1123,27 @@ function GameSession(game)
 
 		return true;
 	}
-	function EnPassant(from,to,move)
+	function enPassant(from,to,move)
 	{
 		log("trying en passant");
 		var row=(to.y<from.y?to.y+1:to.y-1);
 		var cleartile=game.board.grid[to.x][row];
 		var temp=cleartile.contents;
 		delete cleartile.contents;
-		game.Move(move);
-		if(InCheck(game.board.FindKing(currentplayer),currentplayer)) 
+		game.move(move);
+		if(inCheck(game.board.findKing(currentplayer),currentplayer)) 
 		{
 			log("restoring original piece");
-			game.UnMove(move);
+			game.unMove(move);
 			cleartile.contents=temp;
 			return false;
 		}
-		game.board.DrawTile(cleartile.x,cleartile.y);
-		Send(cleartile,"updatetile");
-		SendMove(move);
+		game.board.drawTile(cleartile.x,cleartile.y);
+		send(cleartile,"updatetile");
+		sendMove(move);
 		return true;
 	}
-	function Castle(from,to)
+	function castle(from,to)
 	{
 		log("trying castle");
 		var rfrom;
@@ -1160,30 +1160,30 @@ function GameSession(game)
 		}
 		var castle=new ChessMove(rfrom,rto);
 		var move=new ChessMove(from,to);
-		game.Move(castle);
-		game.Move(move);
-		Send(castle,"castle");
-		SendMove(move);
-		game.board.DrawTile(rfrom.x,rfrom.y,false);
-		game.board.DrawTile(rto.x,rto.y,false);
+		game.move(castle);
+		game.move(move);
+		send(castle,"castle");
+		sendMove(move);
+		game.board.drawTile(rfrom.x,rfrom.y,false);
+		game.board.drawTile(rto.x,rto.y,false);
 		return true;
 	}
-	function PawnPromotion(to_tile,move)
+	function pawnPromotion(to_tile,move)
 	{
-		game.Move(move);
-		if(InCheck(game.board.FindKing(currentplayer),currentplayer)) 
+		game.move(move);
+		if(inCheck(game.board.findKing(currentplayer),currentplayer)) 
 		{
-			game.UnMove(move);
+			game.unMove(move);
 			return false;
 		}
-		SendMove(move);
+		sendMove(move);
 		to_tile.contents=new ChessPiece("queen",to_tile.contents.color);
-		Send(to_tile,"updatetile");
+		send(to_tile,"updatetile");
 	}
-	function FindCheckMate(checkers,player)
+	function findCheckMate(checkers,player)
 	{
-		var position=game.board.FindKing(player);
-		if(KingCanMove(position,player)) return false;
+		var position=game.board.findKing(player);
+		if(kingCanMove(position,player)) return false;
 		log("king cannot move");
 		for(checker in checkers) 
 		{
@@ -1191,47 +1191,47 @@ function GameSession(game)
 			log("checking if " + player + " can take or block " +  spot.contents.color + " " + spot.contents.name);
 			if(spot.contents.name=="knight" || spot.contents.name=="pawn") 
 			{
-				var canmove=CanMoveTo(spot,player);
+				var canmove=canMoveTo(spot,player);
 				//if king cannot move and no pieces can take either the attacking knight or pawn - checkmate!
 				if(!canmove) return true;
 				//otherwise attempt each move, then scan for check - if check still exists after all moves are attempted - checkmate!
 				for(piece in canmove)
 				{
 					var move=new ChessMove(canmove[piece],spot);
-					game.Move(move);
-					if(InCheck(position,player)) 
+					game.move(move);
+					if(inCheck(position,player)) 
 					{
-						game.UnMove(move);
+						game.unMove(move);
 					}
 					//if player is no longer in check after move is attempted - game continues
 					else 
 					{
-						game.UnMove(move);
+						game.unMove(move);
 						return false;
 					}						
 				}
 			}
 			else 
 			{
-				path=FindPath(spot,position);
+				path=findPath(spot,position);
 				for(p in path)
 				{
 					var pos=path[p];
-					var canmove=CanMoveTo(pos,player);
+					var canmove=canMoveTo(pos,player);
 					if(canmove)
 					{
 						for(piece in canmove)
 						{
 							log("attempting block move: " + canmove[piece].contents.name);
 							var move=new ChessMove(canmove[piece],pos);
-							game.Move(move);
-							if(InCheck(position,player)) 
+							game.move(move);
+							if(inCheck(position,player)) 
 							{
-								game.UnMove(move);
+								game.unMove(move);
 							}
 							else 
 							{
-								game.UnMove(move);
+								game.unMove(move);
 								return false;
 							}						
 						}
@@ -1241,7 +1241,7 @@ function GameSession(game)
 		}
 		return true;
 	}
-	function FindPath(from,to)
+	function findPath(from,to)
 	{
 		var path=[];
 		var incrementx=0;
@@ -1265,9 +1265,9 @@ function GameSession(game)
 		}
 		return path;
 	}
-	function CanMoveTo(position,player)
+	function canMoveTo(position,player)
 	{
-		var pieces=game.board.FindAllPieces(player);
+		var pieces=game.board.findAllPieces(player);
 		var canmove=[];
 		for(p in pieces)
 		{
@@ -1277,7 +1277,7 @@ function GameSession(game)
 			{
 				log("skipping king, moves already checked");
 			}
-			else if(CheckRules(piece,position))
+			else if(checkRules(piece,position))
 			{
 				log("piece can cancel check: " + gridposition.contents.color + " " + gridposition.contents.name);
 				canmove.push(piece);
@@ -1286,7 +1286,7 @@ function GameSession(game)
 		if(canmove.length) return canmove;
 		return false;
 	}
-	function KingCanMove(king,player)
+	function kingCanMove(king,player)
 	{
 		log("checking if king can move from x: " + king.x + " y: " + king.y);
 		var north=		(king.y>0?					{"x":king.x,	"y":king.y-1}:false);
@@ -1302,26 +1302,26 @@ function GameSession(game)
 		for(dir in directions) 
 		{
 			var direction=directions[dir];
-			if(direction && CheckRules(king,directions[dir])) 
+			if(direction && checkRules(king,directions[dir])) 
 			{
 				var move=new ChessMove(king,direction,player);
-				game.Move(move);
-				if(InCheck(direction,player)) 
+				game.move(move);
+				if(inCheck(direction,player)) 
 				{
 					log("taking piece would cause check");
-					game.UnMove(move);
+					game.unMove(move);
 				}
 				else
 				{
 					log("king can move to x: " + direction.x + " y: " + direction.y);
-					game.UnMove(move);
+					game.unMove(move);
 					return true;
 				}
 			}
 		}
 		return false;
 	}
-	function InCheck(position,player)
+	function inCheck(position,player)
 	{
 		var check_pieces=[];
 		for(column in game.board.grid) 
@@ -1334,7 +1334,7 @@ function GameSession(game)
 					else if(game.board.grid[column][row].contents.color!=player) 
 					{
 						var from={"x":column, "y":row};
-						if(CheckRules(from,position)) 
+						if(checkRules(from,position)) 
 						{
 							log(game.board.grid[column][row].color + " " + game.board.grid[column][row].contents.name + " at " + column + "," + row + " can take king");
 							check_pieces.push(game.board.grid[column][row]);
@@ -1346,40 +1346,40 @@ function GameSession(game)
 		if(check_pieces.length) return check_pieces;
 		else return false;
 	}
-	function Draw()
+	function draw()
 	{
-		Alert("\1c\1hOpponent offered a draw. Accept? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		notify("\1c\1hOpponent offered a draw. Accept? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
-		EndGame("draw");
+		endGame("draw");
 		return true;
 	}
 
 	/*	GAMEPLAY FUNCTIONS	*/
-	function PlayerInGame()
+	function playerInGame()
 	{
-		return game.PlayerInGame();
+		return game.playerInGame();
 	}
-	function OfferDraw()
+	function offerDraw()
 	{
-		Alert("\1c\1hOffer your opponent a draw? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		notify("\1c\1hOffer your opponent a draw? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return false;
 		game.draw=currentplayer;
-		StoreGame(game);
-		Send("draw","draw");
+		storeGame(game);
+		send("draw","draw");
 	}
-	function NewGame()
+	function newGame()
 	{
 		//TODO: Add the ability to change game settings (timed? rated?) when restarting/rematching
-		game.NewGame();
+		game.newGame();
 		send("update","update");
 	}
-	function Resign()
+	function resign()
 	{
-		Alert("\1c\1hAre you sure? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
+		notify("\1c\1hAre you sure? \1n\1c[\1hN\1n\1c,\1hy\1n\1c]");
 		if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)!="Y") return;
-		EndGame("loss");
+		endGame("loss");
 	}
-	function EndGame(outcome)
+	function endGame(outcome)
 	{
 		log("Ending game - " + currentplayer + ": " + outcome);
 		if(game.movelist.length) 
@@ -1417,16 +1417,16 @@ function GameSession(game)
 				switch(outcome)
 				{
 					case "win":
-						p1.rating=GetRating(p1.rating,p2.rating,"win");
-						p2.rating=GetRating(p2.rating,p1.rating,"loss");
+						p1.rating=getRating(p1.rating,p2.rating,"win");
+						p2.rating=getRating(p2.rating,p1.rating,"loss");
 						break;
 					case "loss":
-						p1.rating=GetRating(p1.rating,p2.rating,"loss");
-						p2.rating=GetRating(p2.rating,p1.rating,"win");
+						p1.rating=getRating(p1.rating,p2.rating,"loss");
+						p2.rating=getRating(p2.rating,p1.rating,"win");
 						break;
 					case "draw":
-						p1.rating=GetRating(p1.rating,p2.rating,"draw");
-						p2.rating=GetRating(p2.rating,p1.rating,"draw");
+						p1.rating=getRating(p1.rating,p2.rating,"draw");
+						p2.rating=getRating(p2.rating,p1.rating,"draw");
 						break;
 				}
 			
@@ -1436,73 +1436,73 @@ function GameSession(game)
 		delete game.turn;
 		game.started=false;
 		game.finished=true;
-		StoreGame(game);
-		InfoBar();
-		Send("update","update");
+		storeGame(game);
+		infoBar();
+		send("update","update");
 	}
-	function ShowNewRatings(p1,p2)
+	function showNewRatings(p1,p2)
 	{
 		var info=[];
 		info.push("\1c\1hGame Completed");
 		info.push("\1c\1h" + p1.name + "'s new rating: " + p1.rating);
 		info.push("\1c\1h" + p2.name + "'s new rating: " + p2.rating);
-		DisplayInfo(info);
-		Send(info,"alert");
-		Alert("\1r\1h[Press any key]");
+		displayInfo(info);
+		send(info,"alert");
+		notify("\1r\1h[Press any key]");
 		while(console.inkey()==="");
 	}
-	function JoinGame()
+	function joinGame()
 	{
 		if(game.players.white.id) 
 		{
-			AddPlayer("black",user.alias);
-			StartGame("black");
+			addPlayer("black",user.alias);
+			startGame("black");
 		}
 		else if(game.players.black.id) 
 		{
-			AddPlayer("white",user.alias);
-			StartGame("white");
+			addPlayer("white",user.alias);
+			startGame("white");
 		}
 		else 
 		{
-			chesschat.Alert("\1nChoose a side [\1hW\1n,\1hB\1n]: ");
+			chesschat.alert("\1nChoose a side [\1hW\1n,\1hB\1n]: ");
 			var color=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
 			switch(color)
 			{
 				case "W":
-					AddPlayer("white",user.alias);
+					addPlayer("white",user.alias);
 					break;
 				case "B":
-					AddPlayer("black",user.alias);
+					addPlayer("black",user.alias);
 					break;
 				default:
 					return;
 			}
-			StoreGame(game);
+			storeGame(game);
 		}
 		currentplayer=game.currentplayer;
-		Send("update","update");
-		Redraw();
+		send("update","update");
+		redraw();
 	}
-	function ListMoves()
+	function listMoves()
 	{
 		var list=["\1c\1hMOVE HISTORY"];
 		for(m=0;m<game.movelist.length;m++)
 		{	
 			var move=game.movelist[m];
-			var text=game.movelist[m].Format();
+			var text=game.movelist[m].format();
 			m++;
 			if(game.movelist[m])
 			{
-				text+=("  " + game.movelist[m].Format());
+				text+=("  " + game.movelist[m].format());
 			}
 			list.push(text);
 		}
-		DisplayInfo(list);
-		Alert("\1r\1hPress a key to continue");
+		displayInfo(list);
+		notify("\1r\1hPress a key to continue");
 		console.getkey();
 	}
-	function GetRating(r1,r2,outcome)
+	function getRating(r1,r2,outcome)
 	{
 		//OUTCOME SHOULD BE RELATIVE TO PLAYER 1 (R1 = PLAYER ONE RATING)
 		//WHERE PLAYER 1 IS THE USER RUNNING THE CURRENT INSTANCE OF THE SCRIPT
@@ -1529,7 +1529,7 @@ function GameSession(game)
 	}
 
 /*	GAME DATA FUNCTIONS	*/
-	function GetAlias(color)
+	function getAlias(color)
 	{
 		var playerfullname=game.players[color].id;
 		if(playerfullname)
@@ -1538,24 +1538,24 @@ function GameSession(game)
 		}
 		return "[Empty Seat]";
 	}
-	function StartGame(currentplayer)
+	function startGame(currentplayer)
 	{
 		game.currentplayer=currentplayer;
 		game.started=true;
 		game.turn="white";
 		game.board.side=currentplayer;
-		StoreGame(game);
+		storeGame(game);
 	}
-	function AddPlayer(color,player)
+	function addPlayer(color,player)
 	{
-		var fullname=chessplayers.GetFullName(player);
+		var fullname=chessplayers.getFullName(player);
 		game.players[color].id=fullname;
 		game.currentplayer=color;
 		game.board.side=color;
 	}
-	function LoadGameData()
+	function loadGameData()
 	{
-		game.LoadGameTable();
+		game.loadGameTable();
 		var gFile=new File(game.gamefile);
 		if(!file_exists(gFile.name)) return false;
 		gFile.open("r");
@@ -1564,7 +1564,7 @@ function GameSession(game)
 		var lastmove=gFile.iniGetObject("lastmove");
 		if(lastmove.from)
 		{
-			game.board.lastmove=new ChessMove(GetChessPosition(lastmove.from),GetChessPosition(lastmove.to));
+			game.board.lastmove=new ChessMove(getChessPosition(lastmove.from),getChessPosition(lastmove.to));
 		}
 		var draw=gFile.iniGetValue(null,"draw");
 		if(draw)
@@ -1576,7 +1576,7 @@ function GameSession(game)
 		var pieces=gFile.iniGetAllObjects("position","board.");
 		for(p in pieces)
 		{
-			var pos=GetChessPosition(pieces[p].position);
+			var pos=getChessPosition(pieces[p].position);
 			var name=pieces[p].piece;
 			var color=pieces[p].color;
 			game.board.grid[pos.x][pos.y].AddPiece(new ChessPiece(name,color));
@@ -1585,22 +1585,22 @@ function GameSession(game)
 		var moves=gFile.iniGetAllObjects("number","move.");
 		for(move in moves)
 		{
-			var from=GetChessPosition(moves[move].from);
-			var to=GetChessPosition(moves[move].to);
+			var from=getChessPosition(moves[move].from);
+			var to=getChessPosition(moves[move].to);
 			var color=moves[move].color;
 			var check=moves[move].check;
 			game.movelist.push(new ChessMove(from,to,color,check));
 		}
 		gFile.close();
 	}
-	function NextTurn()
+	function nextTurn()
 	{
 		game.turn=(game.turn=="white"?"black":"white");
 	}
-	function NotifyPlayer()
+	function notifyPlayer()
 	{
 		var nextturn=game.players[game.turn];
-		if(!chesschat.FindUser(nextturn.id))
+		if(!chesschat.findUser(nextturn.id))
 		{
 			var uname=chessplayers.players[nextturn.id].name;
 			var unum=system.matchuser(uname);
@@ -1610,10 +1610,10 @@ function GameSession(game)
 		}
 	}
 	
-	InitGame();
-	InitChat();
-	InitMenu();
-	Main();
+	initGame();
+	initChat();
+	initMenu();
+	main();
 }
 function ChessGame(gamefile)
 {
@@ -1633,39 +1633,39 @@ function ChessGame(gamefile)
 	//this.minrating;
 	//this.draw;
 	
-	this.Init=function()
+	this.init=function()
 	{
 		if(gamefile)
 		{
 			this.gamefile=gamefile;
-			this.LoadGameTable();
+			this.loadGameTable();
 		}
 		else
 		{
-			this.SetFileInfo();
-			this.NewGame();
+			this.setFileInfo();
+			this.newGame();
 		}
-		this.currentplayer=this.PlayerInGame();
+		this.currentplayer=this.playerInGame();
 	}
-	this.Move=function(move)
+	this.move=function(move)
 	{
 		log("moving from " + move.from.x + "," + move.from.y + " to "+ move.to.x + "," + move.to.y);
-		this.board.Move(move.from,move.to);
+		this.board.move(move.from,move.to);
 	}
-	this.UnMove=function(move)
+	this.unMove=function(move)
 	{
-		this.board.UnMove(move.from,move.to);
+		this.board.unMove(move.from,move.to);
 	}
-	this.PlayerInGame=function()
+	this.playerInGame=function()
 	{
 		for(player in this.players)
 		{
-			if(this.players[player].id==chessplayers.GetFullName(user.alias))
+			if(this.players[player].id==chessplayers.getFullName(user.alias))
 				return player;
 		}
 		return false;
 	}
-	this.SetFileInfo=function()
+	this.setFileInfo=function()
 	{
 		var gNum=1;
 		if(gNum<10) gNum="0"+gNum;
@@ -1678,7 +1678,7 @@ function ChessGame(gamefile)
 		this.gamefile=fName;
 		this.gamenumber=parseInt(gNum,10);
 	}
-	this.LoadGameTable=function()
+	this.loadGameTable=function()
 	{
 		//LOAD GAME TABLE - BASIC DATA
 		var gFile=new File(this.gamefile);
@@ -1707,13 +1707,13 @@ function ChessGame(gamefile)
 			this.players.black.timer=new ChessTimer(this.timed,"black");
 		}
 		
-		this.currentplayer=this.PlayerInGame();
+		this.currentplayer=this.playerInGame();
 		gFile.close();
 	}
-	this.NewGame=function()
+	this.newGame=function()
 	{
 		this.board=new ChessBoard();
-		this.board.ResetBoard();
+		this.board.resetBoard();
 		this.players.white=new Object();
 		this.players.black=new Object();
 		this.started=false;
@@ -1721,7 +1721,7 @@ function ChessGame(gamefile)
 		this.movelist=[];
 		this.turn="";
 	}
-	this.Init();
+	this.init();
 }
 function ChessMove(from,to,color,check)
 {
@@ -1729,11 +1729,11 @@ function ChessMove(from,to,color,check)
 	this.to=to;
 	this.color=color;
 	this.check=check;
-	this.Format=function()
+	this.format=function()
 	{
 		var color=(this.color=="white"?"\1w\1h":"\1k\1h");
 		var prefix=(this.color=="white"?"W":"B");
-		var text=color + prefix + "\1n\1c: " +color+ GetChessPosition(this.from) + "\1n\1c-" + color + GetChessPosition(this.to);
+		var text=color + prefix + "\1n\1c: " +color+ getChessPosition(this.from) + "\1n\1c-" + color + getChessPosition(this.to);
 		return text;
 	}
 }
@@ -1746,14 +1746,14 @@ function ChessPiece(name,color)
 	//this.small;
 	//this.large;
 	
-	this.Draw=function(bg,x,y,large)
+	this.draw=function(bg,x,y,large)
 	{
 		var graphic=large?this.large:this.small;
 		for(offset=0;offset<graphic.length;offset++) {
 			console.gotoxy(x,y+offset); console.print(this.fg + bg + graphic[offset]);
 		}
 	}
-	this.Init=function()
+	this.init=function()
 	{
 		this.fg=(this.color=="white"?"\1w\1h":"\1n\1k");
 		var base=" \xDF\xDF\xDF ";
@@ -1790,7 +1790,7 @@ function ChessPiece(name,color)
 				break;
 		}
 	}
-	this.Init();
+	this.init();
 }
 function ChessBoard()
 {
@@ -1803,28 +1803,28 @@ function ChessBoard()
 	this.large=false;
 	this.background=new Graphic(80,50);
 	
-	this.Init=function()
+	this.init=function()
 	{
-		this.LoadTiles();
+		this.loadTiles();
 		this.background.load(chessroot + "largebg.bin");
 	}
-	this.Reverse=function()
+	this.reverse=function()
 	{
 		this.side=(this.side=="white"?"black":"white");
 	}
-	this.DrawBlinking=function(x,y,selected,color)
+	this.drawBlinking=function(x,y,selected,color)
 	{
-		this.grid[x][y].DrawBlinking(this.side,selected,color,this.large);
+		this.grid[x][y].drawBlinking(this.side,selected,color,this.large);
 		console.attributes=ANSI_NORMAL;
 		console.gotoxy(79,24);
 	}
-	this.DrawTile=function(x,y,selected,color)
+	this.drawTile=function(x,y,selected,color)
 	{
-		this.grid[x][y].Draw(this.side,selected,color,this.large);
+		this.grid[x][y].draw(this.side,selected,color,this.large);
 		console.attributes=ANSI_NORMAL;
 		console.gotoxy(79,24);
 	}
-	this.LoadTiles=function()
+	this.loadTiles=function()
 	{
 		this.grid=new Array(8);
 		for(x=0;x<this.grid.length;x++) 
@@ -1838,7 +1838,7 @@ function ChessBoard()
 			}
 		}
 	}
-	this.FindKing=function(color)
+	this.findKing=function(color)
 	{
 		for(column in this.grid)
 		{
@@ -1852,7 +1852,7 @@ function ChessBoard()
 			}
 		}
 	}
-	this.FindAllPieces=function(color)
+	this.findAllPieces=function(color)
 	{
 		var pieces=[];
 		for(column in this.grid)
@@ -1868,41 +1868,41 @@ function ChessBoard()
 		}
 		return(pieces);
 	}
-	this.ClearLastMove=function()
+	this.clearLastMove=function()
 	{
 		if(this.lastmove) {
-			log("Clearing last move");
+			log("clearing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y,false,false,this.large);
-			this.DrawTile(to.x,to.y,false,false,this.large);
+			this.drawTile(from.x,from.y,false,false,this.large);
+			this.drawTile(to.x,to.y,false,false,this.large);
 		}
 	}
-	this.DrawLastMove=function()
+	this.drawLastMove=function()
 	{
 		if(this.lastmove) {
-			log("Drawing last move");
+			log("drawing last move");
 			var from=this.lastmove.from;
 			var to=this.lastmove.to;
-			this.DrawTile(from.x,from.y,true,"\1r\1h",this.large);
-			this.DrawTile(to.x,to.y,true,"\1r\1h",this.large);
+			this.drawTile(from.x,from.y,true,"\1r\1h",this.large);
+			this.drawTile(to.x,to.y,true,"\1r\1h",this.large);
 		}
 	}
-	this.DrawBoard=function()
+	this.drawBoard=function()
 	{
 		if(this.large) this.background.draw();
 		for(x=0;x<this.grid.length;x++) 
 		{
 			for(y=0;y<this.grid[x].length;y++)
 			{
-				this.grid[x][y].Draw(this.side,false,false,this.large);
+				this.grid[x][y].draw(this.side,false,false,this.large);
 			}
 		}
-		this.DrawLastMove();
+		this.drawLastMove();
 		console.gotoxy(79,24);
 		console.attributes=ANSI_NORMAL;
 	}
-	this.Move=function(from,to)
+	this.move=function(from,to)
 	{
  		var from_tile=this.grid[from.x][from.y];
 		var to_tile=this.grid[to.x][to.y];
@@ -1910,9 +1910,9 @@ function ChessBoard()
 		this.tempto=to_tile.contents;
 		to_tile.AddPiece(from_tile.contents);
 		to_tile.has_moved=true;
-		from_tile.RemovePiece();
+		from_tile.removePiece();
 	}
-	this.UnMove=function(from,to)
+	this.unMove=function(from,to)
 	{
 		var from_tile=this.grid[from.x][from.y];
 		var to_tile=this.grid[to.x][to.y];
@@ -1921,7 +1921,7 @@ function ChessBoard()
 		delete this.tempfrom;
 		delete this.tempto;
 	}
-	this.GetMoves=function(from)
+	this.getMoves=function(from)
 	{
 		var moves=[];
 		if(this.name=="pawn") {
@@ -1930,7 +1930,7 @@ function ChessBoard()
 			return moves;
 		}
 	}
-	this.LoadPieces=function(color)
+	this.loadPieces=function(color)
 	{
 		var pawn=new ChessPiece("pawn",color);
 		var rook=new ChessPiece("rook",color);
@@ -1948,10 +1948,10 @@ function ChessBoard()
 					rook];
 		return({'backline':order,'pawn':pawn});
 	}
-	this.ResetBoard=function()
+	this.resetBoard=function()
 	{
-		var black_set=this.LoadPieces("black");
-		var white_set=this.LoadPieces("white");
+		var black_set=this.loadPieces("black");
+		var white_set=this.loadPieces("white");
 		for(x=0;x<8;x++) //SET PIECES
 		{
 			this.grid[x][0].AddPiece(black_set.backline[x]);
@@ -1960,7 +1960,7 @@ function ChessBoard()
 			this.grid[x][7].AddPiece(white_set.backline[x]);
 		}
 	}
-	this.Init();
+	this.init();
 }
 function ChessTile(color,x,y)
 {
@@ -1974,11 +1974,11 @@ function ChessTile(color,x,y)
 	{
 		this.contents=piece;
 	}
-	this.RemovePiece=function()
+	this.removePiece=function()
 	{
 		delete this.contents;
 	}
-	this.Draw=function(side,selected,color,large)
+	this.draw=function(side,selected,color,large)
 	{
 		var xinc=large?9:5;
 		var yinc=large?5:3;
@@ -1997,11 +1997,11 @@ function ChessTile(color,x,y)
 		}
 		else 
 		{
-			this.contents.Draw(this.bg,x,y,large);
+			this.contents.draw(this.bg,x,y,large);
 		}
-		if(selected) this.DrawSelected(side,color,large);
+		if(selected) this.drawSelected(side,color,large);
 	}
-	this.DrawBlinking=function(side,selected,color,large)
+	this.drawBlinking=function(side,selected,color,large)
 	{
 		var xinc=large?9:5;
 		var yinc=large?5:3;
@@ -2010,10 +2010,10 @@ function ChessTile(color,x,y)
 		var x=posx*xinc+(large?5:1);
 		var y=posy*yinc+(large?3:1);
 		
-		this.contents.Draw(this.bg + console.ansi(BLINK),x,y,large);
-		if(selected) this.DrawSelected(side,color,large);
+		this.contents.draw(this.bg + console.ansi(BLINK),x,y,large);
+		if(selected) this.drawSelected(side,color,large);
 	}
-	this.DrawSelected=function(side,color,large)
+	this.drawSelected=function(side,color,large)
 	{
 		color=color?color:"\1n\1b";
 		var xinc=large?9:5;
@@ -2040,11 +2040,11 @@ function ChessTimer(length,player,turn)
 	this.countdown=length*60;
 	this.lastupdate=false;
 	this.lastshown=false;
-	this.Update=function(length)
+	this.update=function(length)
 	{
 		this.countdown=length;
 	}
-	this.Display=function(turn)
+	this.display=function(turn)
 	{
 		var color=(turn==this.player?"\1r\1h":"\1k\1h");
 		var mins=parseInt(this.countdown/60,10);
@@ -2052,7 +2052,7 @@ function ChessTimer(length,player,turn)
 		printf(color + "Time Remaining: %02d:%02d",mins,secs);
 		this.lastshown=time();
 	}
-	this.Countdown=function(current)
+	this.countdown=function(current)
 	{
 		if(this.countdown<=0) return false;
 		this.countdown-=(current-this.lastupdate);
@@ -2060,7 +2060,7 @@ function ChessTimer(length,player,turn)
 		return true;
 	}
 }
-function GetChessPosition(position)
+function getChessPosition(position)
 {
 	var letters="abcdefgh";
 	if(typeof position=="string")

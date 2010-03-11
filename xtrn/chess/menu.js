@@ -1,10 +1,8 @@
-function 	Menu(x,y,color,hkey_color)		
+function 	Menu(color,hkey_color)		
 {								
 	this.items=[];
 	this.color=color;
 	this.hkey_color=hkey_color;
-	this.x=x;
-	this.y=y;
 
 	this.disable=function(items)
 	{
@@ -42,17 +40,6 @@ function 	Menu(x,y,color,hkey_color)
 		}
 		return items;
 	}
-	this.displayItems=function()
-	{
-		var enabled=this.countEnabled();
-		if(!enabled.length) return false;
-		console.gotoxy(this.x,this.y);
-		for(e=0;e<enabled.length;e++)
-		{
-			console.putmsg(this.items[enabled[e]].text);
-			if(e<enabled.length-1) write(console.ansi(ANSI_NORMAL) + " ");
-		}
-	}
 	this.getList=function()
 	{
 		var list=[];
@@ -66,19 +53,6 @@ function 	Menu(x,y,color,hkey_color)
 			list.push(text);
 		}
 		return list;
-	}
-	this.displayHorizontal=function()
-	{
-		var enabled=this.countEnabled();
-		if(!enabled.length) return false;
-		console.gotoxy(this.x,this.y);
-		console.putmsg(this.color + "[");
-		for(e=0;e<enabled.length;e++)
-		{
-			console.putmsg(this.hkey_color + this.items[enabled[e]].hotkey.toUpperCase());
-			if(e<enabled.length-1) console.putmsg(this.color + ",");
-		}
-		console.putmsg(this.color + "]");
 	}
 }
 function 	MenuItem(item,color,hotkey,hkey_color)
