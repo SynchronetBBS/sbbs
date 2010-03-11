@@ -15,7 +15,6 @@ const priv_scope=			"%";
 const file_sync=			"@";
 const tries=				5;
 const connection_timeout=	5;
-const timeout=				5000;
 
 function ServiceConnection(id)
 {
@@ -35,8 +34,6 @@ function ServiceConnection(id)
 	const port=					10088;
 	
 	var sock=new Socket();
-	sock.bind(0,server.interface_ip_address);
-
 	this.init=function()
 	{
 		this.notices.push("Connecting to hub... ");
@@ -90,7 +87,6 @@ function ServiceConnection(id)
 			if(!this.init()) return false;
 		}
 		var filesock=new Socket();
-		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
 		if(!filesock.is_connected) { 
 			log("error connecting to service");
@@ -100,35 +96,30 @@ function ServiceConnection(id)
 		filesock.send(file_sync + this.session_id + "#send" + file_getname(remote_file) + "\r\n");
 		while(filesock.is_connected)
 		{
-			var count=0;
-			while(!filesock.data_waiting && count<timeout) {
-				mswait(1);
-				count++;
-			}
-			if(filesock.data_waiting) {
-				var data=parse_query(filesock.recvline(1024,connection_timeout));
-				if(data)
+			var data=filesock.recvline(1024,connection_timeout);
+			if(data!=null)
+			{
+				log(data);
+				data=parse_query(data);
+				var response=data[1];
+				var file=data[2];
+				var date=data[3];
+				
+				switch(response)
 				{
-					var response=data[1];
-					var file=data[2];
-					var date=data[3];
-					
-					switch(response)
-					{
-						case "#askrecv":
-							receive_file(filesock,this.session_id,file,date);
-							break;
-						case "#abort":
-							filesock.close();
-							break;
-						case "#endquery":
-							filesock.close();
-							break;
-						default:
-							filesock.close();
-							log("unknown response: " + response);
-							break;
-					}
+					case "#askrecv":
+						receive_file(filesock,this.session_id,file,date);
+						break;
+					case "#abort":
+						filesock.close();
+						break;
+					case "#endquery":
+						filesock.close();
+						break;
+					default:
+						filesock.close();
+						log("unknown response: " + response);
+						break;
 				}
 			} else {
 				log("transfer timed out: " + (file?file:remote_file));
@@ -144,7 +135,6 @@ function ServiceConnection(id)
 		}
 		
 		var filesock=new Socket();
-		filesock.bind(0,server.interface_ip_address);
 		filesock.connect(hub,port,connection_timeout);
 		if(!filesock.is_connected) { 
 			log("error connecting to service");
@@ -158,27 +148,33 @@ function ServiceConnection(id)
 			var filedate=file_date(files[f]);
 
 			filesock.send(file_sync + this.session_id + "#askrecv" + filename + "" + filedate + "\r\n");
-			var data=parse_query(filesock.recvline(1024,connection_timeout));
-			var response=data[1];
-			
-			switch(response)
+			var data=filesock.recvline(1024,connection_timeout);
+			if(data!=null)
 			{
-				case "#ok":
-					log("sending file: " + filename);
-					filesock.sendfile(files[f]);
-					filesock.send("#eof\r\n");
-					log("file sent: " + filename);
-					break;
-				case "#skip":
-					log("skipping file");
-					break;
-				case "#abort":
-					log("aborting query");
-					return false;
-				default:
-					log("unknown response: " + response);
-					filesock.send("#abort\r\n");
-					return false;
+				data=parse_query(data);
+				var response=data[1];
+				switch(response)
+				{
+					case "#ok":
+						log("sending file: " + filename);
+						filesock.sendfile(files[f]);
+						filesock.send("#eof\r\n");
+						log("file sent: " + filename);
+						break;
+					case "#skip":
+						log("skipping file");
+						break;
+					case "#abort":
+						log("aborting query");
+						return false;
+					default:
+						log("unknown response: " + response);
+						filesock.send("#abort\r\n");
+						return false;
+				}
+			} else {
+				log("query timed out");
+				break;
 			}
 		}
 		filesock.send("#endquery\r\n");
@@ -204,40 +200,38 @@ function ServiceConnection(id)
 		socket.send(file_sync + session_id + "#ok\r\n");
 		var file=new File(filename + ".tmp");
 		file.open('w',false);
-		var count=0;
-		while(count<timeout)
+		log("receiving file: " + file_getname(filename));
+		while(socket.is_connected)
 		{
-			while(!socket.data_waiting && count<timeout) {
-				mswait(1);
-				count++;
-			}
-			if(socket.data_waiting) {
-				var data=socket.recvline(1024,connection_timeout);
-				if(data)
+			var data=socket.recvline(1024,connection_timeout);
+			if(data!=null)
+			{
+				switch(data)
 				{
-					switch(data)
-					{
-						case "#abort":
-							log("transfer aborted");
-							file.close();
-							file_remove(file.name);
-							return false;
-						case "#eof":
-							log("file received: " + filename);
-							file.close();
-							file_rename(filename,filename+".bck");
-							file_rename(file.name,filename);
-							file_utime(filename,access_time=time(),mod_time=filedate);
-							return true;
-						default:
-							file.writeln(data);
-							break;
-					}
-					count=0;
+					case "#abort":
+						log("transfer aborted");
+						file.close();
+						file_remove(file.name);
+						return false;
+					case "#eof":
+						log("file received: " + filename);
+						file.close();
+						file_rename(filename,filename+".bck");
+						file_rename(file.name,filename);
+						file_utime(filename,time(),filedate);
+						return true;
+					default:
+						file.writeln(data);
+						break;
 				}
+			} else {
+				log("transfer timed out: " +  file_getname(filename));
+				file.close();
+				file_remove(file.name);
+				return false;
 			}
-			else log("transfer timed out: " + filename);
 		}
+		log("socket connection error");
 		file.close();
 		file_remove(file.name);
 		return false;
