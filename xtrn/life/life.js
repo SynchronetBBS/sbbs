@@ -8,24 +8,18 @@
 	Matt Johnson ( MCMLXXIX@MDJ.ATH.CX )
 */
 
-
-
-
 var gameroot;
 try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
 gameroot = gameroot.replace(/[^\/\\]*$/,"");
 
 load("graphic.js");
 load("sbbsdefs.js")
-load("logging.js");
 load("helpfile.js");
 load("funclib.js");
  
 var oldpass=console.ctrl_key_passthru;
-//var gamelog=new Logger(gameroot,"cell");
-var gamelog=false;
 
-function Cells()
+function cells()
 {
 	var board;
 	var clear=[];
@@ -33,47 +27,49 @@ function Cells()
 	var colors=["\1r","\1c","\1y","\1b","\1m","\1g","\1w"];
 	var highlight=["\1n","\1h"];
 	var col=colors[random(7)];
+	var cells=["\xDF","\xDC","\xDB"];
+	var current=2;
 	
-	function Main()
+	function main()
 	{
 		while(1) 
 		{
-			if(ChooseConfig()) Run();
+			if(chooseConfig()) run();
 			else break;
 		}
 	}
-	function ChooseConfig()
+	function chooseConfig()
 	{
 		while(1)
 		{
 			console.clear();
-			var list=ListConfigs();
+			var list=listConfigs();
 			console.putmsg("\r\n\r\n\1nR: Random Pattern");
 			console.putmsg("\r\n\1nE: Edit Pattern");
 			console.putmsg("\r\n\1nESC: Exit Program");
-			console.putmsg("\r\n\r\n\1nChoose a pattern: ");
+			console.putmsg("\r\n\r\n\1nchoose a pattern: ");
 			var pattern=console.getkey();
 			switch(pattern.toUpperCase())
 			{
 				case "\x1b":
 					return false;
 				case "R":
-					if(RandomStart()) return true;
+					if(randomStart()) return true;
 					break;
 				case "E":
-					if(CustomStart()) return true;
+					if(customStart()) return true;
 					break;
 				default:
 					if(list[pattern])
 					{
-						LoadPattern(list[pattern]);
+						loadPattern(list[pattern]);
 						return true;
 					}
 					break;
 			}
 		}
 	}
-	function ListConfigs()
+	function listConfigs()
 	{
 		var list=directory(gameroot+"*.bin");
 		for(var f in list)
@@ -83,9 +79,9 @@ function Cells()
 		}
 		return list;
 	}
-	function LoadPattern(filename)
+	function loadPattern(filename)
 	{
-		board=WipeBoard();
+		board=wipeBoard();
 		var pattern=new Graphic(80,44);
 		pattern.load(filename);
 		for(var x=0;x<pattern.data.length;x++) 
@@ -99,9 +95,9 @@ function Cells()
 			}
 		}
 	}
-	function Run()
+	function run()
 	{
-		Display();
+		display();
 		while(1)
 		{
 			var k=console.inkey(K_NOECHO|K_NOSPIN);
@@ -116,13 +112,13 @@ function Cells()
 					break;
 			}
 			mswait(5);
-			board=Evolve();
-			Display();
+			board=evolve();
+			display();
 		}
 	}
-	function RandomStart()
+	function randomStart()
 	{
-		board=WipeBoard(board);
+		board=wipeBoard(board);
 		console.putmsg("\r\n\1nplace how many cells? :");
 		var num=console.getnum(500);
 		if(!num) return false;
@@ -135,14 +131,12 @@ function Cells()
 		}
 		return true;
 	}
-	function CustomStart()
+	function customStart()
 	{
 		console.clear();
-		DrawLine(1,23,80);
-		var cells=["\xDF","\xDC","\xDB"];
-		var current=2;
-		var grid=WipeBoard();
-		StatusLine();
+		drawLine(1,23,80);
+		var grid=wipeBoard();
+		statusLine();
 		
 		console.gotoxy(40,11);
 		while(1)
@@ -156,15 +150,15 @@ function Cells()
 					case "\x1b":
 						return false;
 					case " ":
-						Toggle();
+						toggle();
 						console.pushxy();
-						StatusLine();
+						statusLine();
 						console.popxy();
 						break;
 					case "Q":
 						return true;
 					case ctrl("M"):
-						LoadCell(position.x,position.y);
+						loadCell(position.x,position.y);
 						console.putmsg(cells[current]);
 						break;
 					case KEY_DOWN:
@@ -189,26 +183,26 @@ function Cells()
 				board=grid;
 			}
 		}
-		function StatusLine()
-		{
-			console.gotoxy(1,24);
-			console.putmsg("\1c\1h[\1n\1cArrows\1h]\1n\1c Move \1h[\1n\1cEnter\1h]\1n\1c Place \1h[\1n\1cQ\1h] \1c\1nSave \1h[\1n\1cEscape\1h]\1n\1c Exit \1h[\1n\1cSpace\1h] \1n\1cToggle cell: \1h" + cells[current]);
-		}
-		function Toggle()
-		{
-			current++;
-			if(current>2) current=0;
-		}
-		function LoadCell(x,y)
-		{
-			var t=(current==0 || current==2)?true:false;
-			var b=(current==1 || current==2)?true:false;
-			y=(y-1)*2;
-			if(t) grid[x-1][y]=1;
-			if(b) grid[x-1][y+1]=1;
-		}
 	}
-	function WipeBoard()
+	function statusLine()
+	{
+		console.gotoxy(1,24);
+		console.putmsg("\1c\1h[\1n\1cArrows\1h]\1n\1c Move \1h[\1n\1cEnter\1h]\1n\1c Place \1h[\1n\1cQ\1h] \1c\1nSave \1h[\1n\1cEscape\1h]\1n\1c Exit \1h[\1n\1cSpace\1h] \1n\1ctoggle cell: \1h" + cells[current]);
+	}
+	function toggle()
+	{
+		current++;
+		if(current>2) current=0;
+	}
+	function loadCell(x,y)
+	{
+		var t=(current==0 || current==2)?true:false;
+		var b=(current==1 || current==2)?true:false;
+		y=(y-1)*2;
+		if(t) board[x-1][y]=1;
+		if(b) board[x-1][y+1]=1;
+	}
+	function wipeBoard()
 	{
 		var array=new Array(80);
 		for(var x=0;x<array.length;x++)
@@ -217,7 +211,7 @@ function Cells()
 		}
 		return array;
 	}
-	function Display()
+	function display()
 	{
 		console.clear();
 		var top="\xDF";
@@ -263,17 +257,17 @@ function Cells()
 			}
 		}
 		console.gotoxy(1,24);
-		console.putmsg("\1y\1h[\1n\1ySpace\1h]\1n\1y Toggle Pause \1h[\1n\1yEscape\1h]\1n\1y Quit \1h--- \1n\1yTotal Live Cells: " + totalcount + " Generation: " + generation);
+		console.putmsg("\1y\1h[\1n\1ySpace\1h]\1n\1y toggle Pause \1h[\1n\1yEscape\1h]\1n\1y Quit \1h--- \1n\1yTotal Live Cells: " + totalcount + " Generation: " + generation);
 	}
-	function Evolve()
+	function evolve()
 	{
-		var nextgen=WipeBoard();
+		var nextgen=wipeBoard();
 		generation++;
 		for(var x=0;x<board.length;x++)
 		{
 			for(var y=0;y<board[x].length;y++)
 			{
-				if(CheckProximity(x,y))
+				if(checkProximity(x,y))
 				{
 					nextgen[x][y]=1;
 				}
@@ -281,7 +275,7 @@ function Cells()
 		}
 		return nextgen;
 	}
-	function CheckProximity(x,y)
+	function checkProximity(x,y)
 	{
 		var checkx=[	0,	1,	1,	1,	0,	-1,	-1,	-1	];
 		var checky=[	-1,	-1,	0,	1,	1,	1,	0,	-1	];
@@ -318,7 +312,7 @@ function Cells()
 		}
 		return false;
 	}
-	function SplashStart()
+	function splashStart()
 	{
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
@@ -326,7 +320,7 @@ function Cells()
 		console.clear();
 		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 	}
-	function SplashExit()
+	function splashExit()
 	{
 		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
 		console.ctrlkey_passthru=oldpass;
@@ -335,13 +329,9 @@ function Cells()
 		console.attributes=ANSI_NORMAL;
 		exit(0);
 	}
-	SplashStart();
-	Main();
-	SplashExit();
+	splashStart();
+	main();
+	splashExit();
 }	
-function Log(txt)
-{
-	if(gamelog) gamelog.Log(txt);
-}
 
-Cells();
+cells();
