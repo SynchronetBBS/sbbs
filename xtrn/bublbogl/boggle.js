@@ -69,13 +69,27 @@ function boggle()
 	}
 	function splashExit()
 	{
-		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
 		console.attributes=ANSI_NORMAL;
 		players.storePlayer();
 		sendFiles();
+		console.clear();
+		var splash_filename=gameroot + "exit.bin";
+		if(!file_exists(splash_filename)) exit();
+		
+		var splash_size=file_size(splash_filename);
+		splash_size/=2;		
+		splash_size/=80;	
+		var splash=new Graphic(80,splash_size);
+		splash.load(splash_filename);
+		splash.draw();
+		
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+		console.clear();
 		exit();
 	}
 	function updateCalendar()
@@ -611,7 +625,7 @@ function boggle()
 		{
 			if(file_exists(this.datafile.name))
 			{
-				console.putmsg("\r\n\1r\1hPlease Wait. loading games for this month...");
+				console.putmsg("\rPlease Wait. Loading games for this month...\r\n");
 				var filedate=new Date(file_date(this.datafile.name)*1000);
 				if(filedate.getMonth()!=this.currentmonth)
 				{
@@ -633,7 +647,7 @@ function boggle()
 			}
 			else
 			{
-				console.putmsg("\r\n\1r\1hPlease Wait. Creating games for new month...");
+				console.putmsg("\rPlease Wait. Creating games for new month...\r\n");
 				this.newMonth();
 			}
 		}
@@ -678,7 +692,6 @@ function boggle()
 			var list=directory(gameroot + "*.bog");
 			for(l in list)
 			{
-				log("loading file: " + list[l]);
 				var game=new Game();
 				game.init(list[l]);
 				this.games[game.gamenumber]=game;
@@ -1063,6 +1076,7 @@ function boggle()
 
 function getFiles()
 {
+	console.putmsg("\1nPlease wait. Synchronizing game files with hub...\r\n");
 	stream.recvfile("*.bog");
 	stream.recvfile("players.ini");
 	stream.recvfile("month.ini");
