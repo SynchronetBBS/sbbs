@@ -849,7 +849,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>1 && argv[1]!=JSVAL_VOID)
-		JS_ValueToInt32(cx,argv[1],(int32*)&timeout);
+		JS_ValueToInt32(cx,argv[1],&timeout);
 
 	start=time(NULL);
 	rc=JS_SUSPENDREQUEST(cx);
