@@ -1,3 +1,5 @@
+/* $Id$ */
+
 function URL(url, base)
 {
 	var loop,m,tmp;

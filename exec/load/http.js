@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load('sockdefs.js');
 load("URL.js");
 
