@@ -406,6 +406,18 @@ typedef struct {
 
 } uifcapi_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Return value from uifc_api.list() when uifcYesNoOpts is used */
+enum {
+	uifcYes=0,
+	uifcNo=1
+};
+
+extern char* uifcYesNoOpts[];
+
 /****************************************************************************/
 /* Initialization routines for each UIFC implementation.					*/
 /* Returns 0 on success, non-zero on failure.								*/
@@ -414,5 +426,9 @@ int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
 int uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
 int uifcini32(uifcapi_t*);	/* conio/curses implementation					*/
 /****************************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* Don't add anything after this line! */

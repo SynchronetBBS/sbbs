@@ -94,6 +94,8 @@ static int save_menu_cur=-1;
 static int save_menu_bar=-1;
 static int save_menu_opts=-1;
 
+char* uifcYesNoOpts[]={"Yes","No",NULL};
+
 static void reset_dynamic(void) {
 	last_menu_cur=NULL;
 	last_menu_bar=NULL;
