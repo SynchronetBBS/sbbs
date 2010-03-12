@@ -138,7 +138,7 @@ function sync_local(session_id,dir,filemask)
 function receive_file(session_id,dir,filename,filedate)
 {
 	fname=dir+filename;
-	if(file_date(fname)==filedate)
+	if(compare_dates(file_date(fname),filedate))
 	{
 		sock.send("@" + session_id + "#skip\r\n");
 		return false;
@@ -163,6 +163,7 @@ function receive_file(session_id,dir,filename,filedate)
 				case "#eof":
 					log("file received: " + filename);
 					file.close();
+					if(file_exists(fname+".bck")) file_remove(fname+".bck");
 					file_rename(fname,fname+".bck");
 					file_rename(file.name,fname);
 					file_utime(filename,time(),filedate);
@@ -173,7 +174,6 @@ function receive_file(session_id,dir,filename,filedate)
 					break;
 			}
 		} else {
-			log(sock.error);
 			log("transfer timed out: " + filename);
 			file.close();
 			file_remove(file.name);
@@ -183,6 +183,14 @@ function receive_file(session_id,dir,filename,filedate)
 	file.close();
 	file_remove(file.name);
 	return false;
+}
+function compare_dates(local,remote)
+{
+	//will treat numbers with a difference of 1 or 0 as the same, due to issues with some file systems
+	if(Math.abs(local-remote)<=1) return true;
+	//will reject files with a time_t older than the local copy
+	if(local>remote) return true;
+	else return false;
 }
 function hub_route(hub_address,hub_port)
 {
