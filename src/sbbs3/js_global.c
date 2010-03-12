@@ -851,14 +851,14 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>2)
 		prefix=js_ValueToStringBytes(cx, argv[2], NULL);
 
-	if((outbuf=(char*)malloc((strlen(inbuf)*strlen(prefix))+1))==NULL)
+	if((outbuf=(char*)malloc((strlen(inbuf)*(strlen(prefix)+1))+1))==NULL)
 		return(JS_FALSE);
 
 	len-=strlen(prefix);
 	if(len<=0)
 		return(JS_FALSE);
 
-	if((linebuf=(char*)alloca(len*2+2))==NULL)	/* (Hopefully) Room for ^A codes.  ToDo */
+	if((linebuf=(char*)alloca((len*3)+2))==NULL)	/* (Hopefully) Room for ^A codes.  ToDo */
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
