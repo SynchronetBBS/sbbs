@@ -24,7 +24,7 @@ function HTTPRequest()
 		this.request_headers.push("Accept-Encoding: ");
 		this.request_headers.push("Host: "+this.url.host);
 		if(this.referer != undefined)
-			this.request_headers.push("Referer: "+referer);
+			this.request_headers.push("Referer: "+this.referer);
 		this.request_headers.push("User-Agent: SYNXv0.1");
 	};
 
