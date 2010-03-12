@@ -19,7 +19,8 @@ load("funclib.js");
 load("commclient.js");
  
 var oldpass=console.ctrl_key_passthru;
-var stream=new ServiceConnection("uberblox"); 
+var interbbs=argv[0];
+var stream=interbbs?new ServiceConnection("uberblox"):false;
 
 function blox()
 {
@@ -65,7 +66,7 @@ function blox()
 				{
 					case "\x1b":	
 					case "Q":
-						splashExit();
+						return;
 					case "I":
 						showInstructions();
 						drawLobby();
@@ -169,7 +170,6 @@ function blox()
 		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status|=SS_PAUSEOFF;
-		getFiles("players.ini");
 		console.clear();
 	}
 	function splashExit()
@@ -177,13 +177,28 @@ function blox()
 		console.ctrlkey_passthru=oldpass;
 		bbs.sys_status&=~SS_MOFF;
 		bbs.sys_status&=~SS_PAUSEOFF;
-		players.StorePlayer();
-		sendFiles("players.ini");
+		players.storePlayer();
+		if(interbbs) sendFiles("players.ini");
 		console.clear(ANSI_NORMAL);
-		exit(0);
+		var splash_filename=gameroot + "exit.bin";
+		if(!file_exists(splash_filename)) exit();
+		
+		var splash_size=file_size(splash_filename);
+		splash_size/=2;		
+		splash_size/=80;	
+		var splash=new Graphic(80,splash_size);
+		splash.load(splash_filename);
+		splash.draw();
+		
+		console.gotoxy(1,23);
+		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+		console.clear(ANSI_NORMAL);
+		exit();
 	}
 	function init()
 	{
+		if(interbbs) getFiles("players.ini");
 		logo=new Graphic(18,22);
 		logo.load(gameroot + "blox.bin");
 		lobby=new Graphic(80,23);
@@ -396,7 +411,7 @@ function blox()
 		}
 		current.tiles-=selection.length;
 		if(current.tiles<0) current.tiles=0;
-		points+=CalculatePoints();
+		points+=calculatePoints();
 		selection=[];
 		unselect();
 		showTiles();
@@ -419,7 +434,7 @@ function blox()
 	function showSelection()
 	{
 		console.gotoxy(63,15);
-		console.putmsg(printPadded("\1w\1h" + CalculatePoints(),15));
+		console.putmsg(printPadded("\1w\1h" + calculatePoints(),15));
 	}
 	function showLevel()
 	{
@@ -431,7 +446,7 @@ function blox()
 		console.gotoxy(63,21);
 		console.putmsg(printPadded("\1w\1h" + current.tiles,15));
 	}
-	function CalculatePoints()
+	function calculatePoints()
 	{
 		if(selection.length)
 		{
