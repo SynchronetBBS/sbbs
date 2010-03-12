@@ -1902,7 +1902,9 @@ int main(int argc, char **argv)
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
 	if(RingBufFull(&outbuf)) {
+#if !defined(RINGBUF_EVENT)
 		ResetEvent(outbuf_empty);
+#endif
 		if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
 			lprintf(LOG_DEBUG,"FAILURE");
 	}
