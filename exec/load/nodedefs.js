@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2001 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -38,13 +38,13 @@
 								/********************************************/
  								/* Legal values for Node.status				*/
 								/********************************************/
-var   NODE_WFC			    =0;	/* Waiting for Call							*/
+var   NODE_WFC			    =0;	/* Waiting for Caller/Connection			*/
 var   NODE_LOGON            =1;	/* at logon prompt							*/
 var   NODE_NEWUSER          =2;	/* New user applying						*/
 var   NODE_INUSE            =3;	/* In Use									*/
 var   NODE_QUIET            =4;	/* In Use - quiet mode						*/
 var   NODE_OFFLINE          =5;	/* Offline									*/
-var   NODE_NETTING          =6;	/* Networking								*/
+var   NODE_NETTING          =6;	/* Networking (obsolete)					*/
 var   NODE_EVENT_WAITING    =7;	/* Waiting for all nodes to be inactive		*/
 var   NODE_EVENT_RUNNING    =8;	/* Running an external event				*/
 var   NODE_EVENT_LIMBO      =9;	/* Allowing another node to run an event	*/		
@@ -53,11 +53,11 @@ var   NODE_LAST_STATUS	    =10;/* Must be last								*/
 
 								/********************************************/
 var NodeStatus		=[			/* Node.status value descriptions			*/
-	 "Waiting for call"			/********************************************/
+	 "Waiting for connection"	/********************************************/
 	,"At logon prompt"
 	,"New user"
 	,"In-use"
-	,"Waiting for call"
+	,"Waiting for connection"
 	,"Offline"
 	,"Networking"
 	,"Waiting for all nodes to become inactive"
