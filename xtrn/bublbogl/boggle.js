@@ -22,7 +22,8 @@ load("calendar.js");
 load("commclient.js");
 load(gameroot + "timer.js");
  
-var stream=new ServiceConnection("boggle"); 
+var interbbs=argv[0];
+var stream=interbbs?new ServiceConnection("boggle"):false;
 var oldpass=console.ctrl_key_passthru;
 
 function boggle()
@@ -50,6 +51,7 @@ function boggle()
 	
 	function init()
 	{
+		if(interbbs) getFiles();
 		calendar=new Calendar(58,4,"\1y","\0012\1g\1h");
 		players=new PlayerList();
 		player=players.findUser(user.alias);
@@ -64,7 +66,6 @@ function boggle()
 		bbs.sys_status|=SS_MOFF;
 		bbs.sys_status |= SS_PAUSEOFF;	
 		console.clear();
-		getFiles();
 		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 	}
 	function splashExit()
@@ -74,7 +75,7 @@ function boggle()
 		bbs.sys_status&=~SS_PAUSEOFF;
 		console.attributes=ANSI_NORMAL;
 		players.storePlayer();
-		sendFiles();
+		if(interbbs) sendFiles();
 		console.clear();
 		var splash_filename=gameroot + "exit.bin";
 		if(!file_exists(splash_filename)) exit();
@@ -1073,7 +1074,6 @@ function boggle()
 		}
 	}
 }
-
 function getFiles()
 {
 	console.putmsg("\1nPlease wait. Synchronizing game files with hub...\r\n");
