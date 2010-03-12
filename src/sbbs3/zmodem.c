@@ -1340,23 +1340,35 @@ int zmodem_recv_header_and_check(zmodem_t* zm)
 	return type;
 }
 
-BOOL zmodem_get_crc(zmodem_t* zm, int32_t length, uint32_t* crc)
+BOOL zmodem_request_crc(zmodem_t* zm, int32_t length)
 {
-	int type;
-
 	zmodem_recv_purge(zm);
 	zmodem_send_pos_header(zm,ZCRC,length,TRUE);
 	if(!zmodem_data_waiting(zm,zm->crc_timeout)) {
 		lprintf(zm,LOG_ERR,"Timeout waiting for response (%u seconds)", zm->crc_timeout);
 		return(FALSE);
 	}
+	return TRUE;
+}
+
+BOOL zmodem_recv_crc(zmodem_t* zm, uint32_t* crc)
+{
+	int type;
+
 	if((type=zmodem_recv_header(zm))!=ZCRC) {
 		lprintf(zm,LOG_ERR,"Received %s instead of ZCRC", frame_desc(type));
 		return(FALSE);
 	}
 	if(crc!=NULL)
 		*crc = zm->crc_request;
-	return(TRUE);
+	return TRUE;
+}
+
+BOOL zmodem_get_crc(zmodem_t* zm, int32_t length, uint32_t* crc)
+{
+	if(zmodem_request_crc(zm, length))
+		return zmodem_recv_crc(zm, crc);
+	return FALSE;
 }
 
 void zmodem_parse_zrinit(zmodem_t* zm)
@@ -1951,13 +1963,19 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, int64_t* bytes_rec
 				}
 				setvbuf(fp,NULL,_IOFBF,0x10000);
 
+				lprintf(zm,LOG_NOTICE,"Requesting CRC of remote file: %s", zm->current_file_name);
+				if(!zmodem_request_crc(zm, (uint32_t)l)) {
+					fclose(fp);
+					lprintf(zm,LOG_ERR,"Failed to request CRC of remote file");
+					break;
+				}
 				lprintf(zm,LOG_NOTICE,"Calculating CRC of: %s", fpath);
 				crc=fcrc32(fp,(uint32_t)l);	/* Warning: 4GB limit! */
 				fclose(fp);
 				lprintf(zm,LOG_INFO,"CRC of %s (%lu bytes): %08lX"
 					,getfname(fpath), (ulong)l, crc);
-				lprintf(zm,LOG_NOTICE,"Requesting CRC of remote file: %s", zm->current_file_name);
-				if(!zmodem_get_crc(zm,(uint32_t)l,&rcrc)) {
+				lprintf(zm,LOG_NOTICE,"Waiting for CRC of remote file: %s", zm->current_file_name);
+				if(!zmodem_recv_crc(zm,&rcrc)) {
 					lprintf(zm,LOG_ERR,"Failed to get CRC of remote file");
 					break;
 				}
