@@ -1,0 +1,77 @@
+Sample configuration in Synchronet (SBBSCFG.EXE):
+
+[Bubble Boggle]
+ 1: Name                       Star Stocks
+ 2: Internal Code              STRSTCKS
+ 3: Start-up Directory         
+ 4: Command Line               *../xtrn/starstocks/stars.js INTERBBS <SEE INTERBBS.DOC>
+ 5: Clean-up Command Line      
+ 6: Execution Cost             None
+ 7: Access Requirements        
+ 8: Execution Requirements     
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable No
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: Pause After Execution      No
+16: BBS Drop File Type         None
+17: Place Drop File In         Node Directory
+18: Time Options...
+	
+NOTE:	The command line contains an OPTIONAL argument 'INTERBBS'
+		specifying whether the game is to operate in local
+		or inter-BBS mode. To operate local only, remove the 
+		argument from the command line, otherwise it will attempt
+		to use the inter-BBS service, as described in INTERBBS.DOC.
+		
+NOTE:	It is recommended that you check frequently for updates 
+		from the Synchronet CVS repository located at:
+		
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/starstocks/
+		
+		LINKS:
+		
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/stars.cfg
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/stars.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/exit.bin
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/starstocks.ans
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/stars.doc
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/sysop.doc
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/starstocks/interbbs.doc
+		
+		Replace any outdated local copies with the latest releases from these links.
+		(by default, these files are to be located in your 'XTRN/STARSTOCKS/' path)
+		
+NOTE:	This program REQUIRES the associated service to be configured in order
+		to run properly. See attached INTERBBS.DOC for help.
+	
+*****UPDATING YOUR LOCAL LIBRARIES******
+
+Before you attempt to install the inter-BBS service, it is recommended that you
+update your relative 'EXEC/' and 'EXEC/LOAD/' paths (typically '/SBBS/EXEC/' and '/SBBS/EXEC/LOAD/')
+with the latest files from the Synchronet CVS repository at:
+	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+	
+	RECOMMENDED UPDATES:
+	
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/timer.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
+		
+	NOTE:	Replace any outdated local copies with the latest releases from these links.
+
+Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
+
+
+
+
+
+
+
+
