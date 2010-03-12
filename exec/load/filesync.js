@@ -151,7 +151,6 @@ function receive_file(session_id,dir,filename,filedate)
 	while(sock.is_writeable)
 	{
 		var data=sock.recvline(1024,connection_timeout);
-		log(sock.error);
 		if(data!=null)
 		{
 			switch(data)
