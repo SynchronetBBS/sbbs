@@ -147,15 +147,6 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 
 	retval = RINGBUF_FILL_LEVEL(rb);
 
-#ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL) {
-		if(retval==0)
-			SetEvent(rb->empty_event);
-		else
-			ResetEvent(rb->empty_event);
-	}
-#endif
-
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
 #endif
@@ -175,6 +166,9 @@ DWORD RINGBUFCALL RingBufFree( RingBuf* rb )
 DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 {
 	DWORD max, first, remain;
+
+	if(cnt==0)
+		return(cnt);
 
 	if(rb->pStart==NULL)
 		return(0);
