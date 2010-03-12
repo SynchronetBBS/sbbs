@@ -26,7 +26,7 @@
 	17: Place Drop File In         Node Directory
 	18: Time Options...
 
-`	Please note that the program takes two arguments which determine the minimum
+	Please note that the program takes two arguments which determine the minimum
 	minimum security level to add notes and also the root file name for data storage.
 
 	while this file has been uploaded to the \sbbs\exec\ repository, it may be advisable
@@ -38,23 +38,25 @@
 	 4: Command Line               *..\xtrn\postit\postit.js <root filename> <minimum security level>
 	
 */
+
 load("sbbsdefs.js");
 load("funclib.js");
-load("logging.js");
 
 var security_required=argv[1]; 	//SECOND PASSED ARGUMENT FOR SECURITY LEVEL REQUIRED TO POST
 var root_name=argv[0]; 			//ROOT DATAFILE NAME, USED TO SEPARATE INSTANCES OF THE PROGRAM
 var root_dir;
 try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
 root_dir = root_dir.replace(/[^\/\\]*$/,'');
-var logger=new Logger(root_dir,root_name);
 
 var current=new MessageList(root_dir,root_name,".dat");
 var history=new MessageList(root_dir,root_name,".his");
 
 var max_msg_length=3; 			//MAXIMUM MESSAGE LENGTH FOR 
+var line_width=console.screen_columns-1;
 var default_msg_color="\1g\1h"; //DEFAULT MESSAGE COLOR 
 var sysop_mode=false;
+bbs.sys_status|=SS_PAUSEOFF;	
+js.on_exit(bbs.sys_status&=~SS_PAUSEOFF);
 
 function main()
 {
@@ -62,23 +64,25 @@ function main()
 	{
 		sysop_mode=true;
 		max_msg_length=20;
-		Log("Sysop mode enabled");
 	}
 	var can_add=(user.security.level>=security_required);
-	if(!current.Load()) return false;
+	if(!current.load()) return false;
 	while(1)
 	{
-		current.Display();
+		current.display();
 		console.putmsg(format("\r\n\1n\1c%s[\1hH\1n\1c]istory, or [\1hEnter\1n\1c] to [\1hQ\1n\1c]uit: ",can_add?"[\1hA\1n\1c]dd, ":""),P_SAVEATR);		 
 		var cmd=console.getkey(K_NOECHO|K_NOSPIN);
 		switch(cmd.toUpperCase())
 		{
 		case 'H':
-			ShowHistory(history);
+			showHistory(history);
+			break;
+		case 'D':
+			deleteNote();
 			break;
 		case 'A':
 			if(user.security.level>=security_required)
-				AddNote();
+				addNote();
 			break;
 		case 'Q':
 		case '\r':
@@ -88,7 +92,11 @@ function main()
 		}
 	}
 }
-function AddNote()
+function deleteNote()
+{
+	
+}
+function addNote()
 {
 	var msg=[];
 	var add_to_msg=true;
@@ -151,17 +159,17 @@ function AddNote()
 		var buffer_length=console.strlen(strip_ctrl(buffer));
 		if(buffer_length>0) 
 		{
-			if(	buffer_length==79 && 
+			if(	buffer_length==line_width && 
 				buffer.lastIndexOf(" ")<buffer.length &&
 				buffer.lastIndexOf(" ")>0)
 			{
-				msg.push(RemoveSpaces(buffer.substr(0,buffer.lastIndexOf(" "))));
+				msg.push(removeSpaces(buffer.substr(0,buffer.lastIndexOf(" "))));
 				console.up();
 				print("\r");
 				console.putmsg(msg[msg.length-1],P_SAVEATR);
 				console.cleartoeol();
 				console.crlf();
-				buffer=GetLastWord(buffer);
+				buffer=getLastWord(buffer);
 			}
 			else 
 			{
@@ -170,16 +178,15 @@ function AddNote()
 			}
 		}
 	}
-	if(msg.length && console.yesno("\1n\1cSave this message?")) current.AddPost(msg);
-	UpdateHistory(current.Truncate());
+	if(msg.length && console.yesno("\1n\1cSave this message?")) current.addPost(msg);
+	updateHistory(current.truncate());
 }
-function ShowHistory(list)
+function showHistory(list)
 {
-	if(!list.Load()) return false;
+	if(!list.load()) return false;
 	var temp_list=list.array.slice();
-	Log("number of messages: " + temp_list.length);
 
-	var pages=SetPageBreaks(temp_list);
+	var pages=setPageBreaks(temp_list);
 	var start=0;
 	
 	while(1)
@@ -188,7 +195,7 @@ function ShowHistory(list)
 		var index=pages[start].start;
 		while(index<=pages[start].end)
 		{
-			temp_list[index].Display();
+			temp_list[index].display();
 			index++;
 		}
 		console.putmsg("\r\n\1n\1c[\1hR\1n\1c]everse, [\1h\1n\1c/\1h\1n\1c], [\1hQ\1n\1c]uit, or [\1hEnter\1n\1c] to continue: ");
@@ -200,7 +207,7 @@ function ShowHistory(list)
 		case 'R':
 			temp_list=temp_list.reverse();
 			start=0;
-			pages=SetPageBreaks(temp_list);
+			pages=setPageBreaks(temp_list);
 			break;
 		case KEY_UP:
 			if(start>0) start--;
@@ -214,21 +221,20 @@ function ShowHistory(list)
 		}
 	}
 }
-function SetPageBreaks(list)
+function setPageBreaks(list)
 {
 	var pages=[];
 	var start=0;
 	var end=0;
 	while(start<list.length)
 	{
-		end=CountSegment(start,list);
-		logger.Log("setting page break: " + end);
+		end=countSegment(start,list);
 		pages.push({start:start,end:end});
 		start=end+1;
 	}
 	return pages;
 }
-function CountSegment(index,array)
+function countSegment(index,array)
 {
 	var lines=0;
 	while(lines<console.screen_rows-2)
@@ -241,17 +247,17 @@ function CountSegment(index,array)
 	}
 	return index;
 }
-function FormatDate(date)
+function formatDate(date)
 {
-	return strftime("\1n%m\1y\1h/\1n%d\1y\1h/\1n%y \1k\1h[\1n%H\1y\1h:\1n%M\1y\1h:\1n%S\1k\1h]",date);
+	return strftime("\1k\1h[\1n%H\1y\1h:\1n%M\1y\1h:\1n%S\1k\1h] \1n%m\1y\1h/\1n%d\1y\1h/\1n%y",date);
 }
-function UpdateHistory(array)
+function updateHistory(array)
 {
 	for(msg in array)
 	{
 		history.array.push(array[msg]);
 	}
-	history.FileOut('a+',array);
+	history.fileOut('a+',array);
 }
 
 //MESSAGE LIST OBJECT
@@ -262,27 +268,29 @@ function MessageList(root,name,ext)
 	this.name=name;
 	this.file=new File(this.root + this.name + ext);
 	
-	this.Truncate=function()
+	this.truncate=function()
 	{
 		var truncated=[];
-		var total_lines=this.CountLines();
+		var total_lines=this.countLines();
 		var trim=total_lines-(console.screen_rows-2);
 		while(trim>0)
 		{
-			Log("truncating message: " + this.array[0].message);
 			trim-=this.array[0].message.length+1;
 			truncated.push(this.array.shift());
 		}
-		this.FileOut('w+',this.array);
+		this.fileOut('w+',this.array);
 		return truncated;
 	}
-	this.AddPost=function(msg)
+	this.remove=function(index)
+	{
+		this.array.splice(index,1);
+	}
+	this.addPost=function(msg)
 	{	
-		Log("adding post: " + msg);
-		this.Load(); //UPDATE POSTS FROM FILE BEFORE ADDING NEW POST TO MAINTAIN ORDER & CURRENCY
+		this.load(); //UPDATE POSTS FROM FILE BEFORE ADDING NEW POST TO MAINTAIN ORDER & CURRENCY
 		this.array.push(new Post(user.alias,time(),msg));
 	}
-	this.Load=function()
+	this.load=function()
 	{
 		this.array=[];
 		this.file.open(file_exists(this.file.name) ? 'a+':'w+');
@@ -308,7 +316,7 @@ function MessageList(root,name,ext)
 		}
 		return false;
 	}
-	this.CountLines=function()
+	this.countLines=function()
 	{
 		var count=0;
 		for(msg in this.array)
@@ -317,15 +325,15 @@ function MessageList(root,name,ext)
 		}
 		return count;
 	}
-	this.Display=function()
+	this.display=function()
 	{
 		console.clear();
-		for(post in this.array)
+		for(post=0;post<this.array.length;post++)
 		{
-			this.array[post].Display();
+			this.array[post].display();
 		}
 	}
-	this.FileOut=function(mode,array)
+	this.fileOut=function(mode,array)
 	{
 		this.file.open(mode);
 		for(msg in array)
@@ -347,9 +355,12 @@ function Post(author,date,message)
 	this.date=date;
 	this.message=message;
 	this.header;
-	this.Display=function()
+	this.display=function()
 	{
+		console.pushxy();
 		console.putmsg(this.header + default_msg_color,P_SAVEATR);
+		console.popxy();
+		console.down();
 		for(msg in this.message)
 		{
 			console.putmsg(this.message[msg],P_SAVEATR);
@@ -357,9 +368,9 @@ function Post(author,date,message)
 		}
 		console.putmsg("\1n",P_SAVEATR);
 	}
-	this.CreateHeaderOld=function()
+	this.createHeader=function()
 	{
-		var head_txt="\1k\1h\xB4\1w" + this.author + " \1k[\1y\1k]" + FormatDate(this.date);
+		var head_txt="\1k\1h\xC4\xC4\xB4\1y " + formatDate(this.date)+" \1w\1h" + this.author + "\1k\1h\xC3";
 		var head_len=console.strlen(head_txt);
 		var leader_len=console.screen_columns-head_len;
 		var leader="\1n\1h\1k";
@@ -367,27 +378,9 @@ function Post(author,date,message)
 		{
 			leader+="\xC4";
 		}
-		this.header=leader+head_txt;
+		this.header=head_txt + leader;
 	}
-	this.CreateHeader=function()
-	{
-		var head_txt="\1k\1h\xC4\xC4\xB4\1n" + this.author + " \1h\1k\1y\1k\xC3";
-		var date_txt="\xB4" + FormatDate(this.date);
-		var head_len=console.strlen(head_txt + date_txt);
-		var leader_len=console.screen_columns-head_len;
-		var leader="\1n\1h\1k";
-		for(lead=0;lead<leader_len;lead++)
-		{
-			leader+="\xC4";
-		}
-		this.header=head_txt + leader + date_txt;
-	}
-	this.CreateHeader();
-}
-
-function Log(msg)
-{
-	logger.Log(msg);
+	this.createHeader();
 }
 
 main();
