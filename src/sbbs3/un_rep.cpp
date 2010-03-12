@@ -88,7 +88,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			break;
 	if(k>=cfg.total_fextrs)
 		k=0;
-	ex=EX_OUTL|EX_OUTR;
+	ex=EX_STDOUT;
 	if(online!=ON_REMOTE)
 		ex|=EX_OFFLINE;
 	i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);

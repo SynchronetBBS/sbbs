@@ -429,8 +429,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *title, long mode
  			   ,timeleft,cfg.xedit[useron.xedit-1]->misc); 
 		}
 
-		if(cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
-			ex_mode|=(EX_OUTR|EX_INR);
+		if(cfg.xedit[useron.xedit-1]->misc&XTRN_STDIO) {
+			ex_mode|=EX_STDIO;
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				ex_mode|=EX_WWIV; 
 		}
@@ -990,8 +990,8 @@ bool sbbs_t::editfile(char *fname)
 			mode|=EX_NATIVE;
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
 			mode|=EX_SH;
-		if(cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
-			mode|=(EX_OUTR|EX_INR);
+		if(cfg.xedit[useron.xedit-1]->misc&XTRN_STDIO) {
+			mode|=EX_STDIO;
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				mode|=EX_WWIV; 
 		}

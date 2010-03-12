@@ -70,7 +70,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	const char* p;
 	const char* fmode;
 
-	ex=EX_OUTL|EX_OUTR;	/* Need sh for wildcard expansion */
+	ex=EX_STDOUT;
 	if(prepack)
 		ex|=EX_OFFLINE;
 

@@ -1245,7 +1245,7 @@ int sbbs_t::exec(csi_t *csi)
 				external(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),0);
 				break;
 			case CS_EXEC_INT:
-				external(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),EX_OUTR|EX_INR|EX_OUTL);
+				external(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),EX_STDIO);
 				break;
 			case CS_EXEC_XTRN:
 				for(i=0;i<cfg.total_xtrns;i++)
