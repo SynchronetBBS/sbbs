@@ -1793,7 +1793,8 @@ int main(int argc, char **argv)
 		} 
 	}
 
-	fprintf(statfp,"Maximum receive file size: %"PRIi64"\n", max_file_size);
+	if(max_file_size)
+		fprintf(statfp,"Maximum receive file size: %"PRIi64"\n", max_file_size);
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
