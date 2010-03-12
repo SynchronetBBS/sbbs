@@ -11,13 +11,15 @@ load("sbbsdefs.js");
 load("commclient.js");
 load("funclib.js");
 load("graphic.js");
+
 var root_dir;
 try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
 root_dir = root_dir.replace(/[^\/\\]*$/,'');
 
 //######################### INITIALIZE PROGRAM VARIABLES #########################
 
-	var		stream=				new ServiceConnection("starstocks");
+	var 	interbbs=			argv[0];
+	var		stream=				interbbs?new ServiceConnection("starstocks"):false;
 	const 	root=				root_dir;
 	const 	cfgname=			"stars.cfg";  
 	const	high_score_file=	"scores.dat";
@@ -31,7 +33,6 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 	var 	difficulty=			1;
 	var 	min_difficult=		20;
 	var 	max_difficult=		35;
-	var		interbbs=			true;
 
 //######################### DO NOT CHANGE THIS SECTION ##########################	
 	var 	scores=			[];		
@@ -47,7 +48,7 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 			starcolor=
 			star=
 			scolor="";
-	getFiles(high_score_file);
+	if(interbbs) getFiles(high_score_file);
 	loadSettings();
 	loadHighScores();
 	partial_company=partial_company;
@@ -58,7 +59,7 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 	var 	max_normal=		max_stars;
 	var game;
 	gameMenu();
-	sendFiles(high_score_file);
+	if(interbbs) sendFiles(high_score_file);
 	quit();
 //########################## MAIN FUNCTIONS ###################################
 
