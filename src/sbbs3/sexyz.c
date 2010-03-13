@@ -1611,8 +1611,8 @@ int main(int argc, char **argv)
 
 #if !defined(RINGBUF_EVENT)
 	outbuf_empty=CreateEvent(NULL,/* ManualReset */TRUE, /*InitialState */TRUE,NULL);
-	outbuf_empty->cbdata=&outbuf;
 #ifdef __unix__
+	outbuf_empty->cbdata=&outbuf;
 	outbuf_empty->verify=RingBufIsEmpty;
 #endif
 #endif
