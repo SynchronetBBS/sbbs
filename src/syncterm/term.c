@@ -2586,7 +2586,7 @@ BOOL doterm(struct bbslist *bbs)
 							begin_upload(bbs, FALSE, inch);
 							break;
 						case 4:
-							zmodem_download(bbs);
+							begin_download(bbs);
 							break;
 						case 7:
 							capture_control(bbs);
