@@ -156,7 +156,7 @@ function blox()
 		if(players.players[user.alias].score<points) 
 		{
 			players.players[user.alias].score=points;
-			players.StorePlayer();
+			players.storePlayer();
 		}
 		console.clear();
 		gameend.draw();
@@ -521,7 +521,7 @@ function blox()
 				console.right(25-score.sys.length);
 				console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(printPadded(players.FormatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+				console.putmsg(printPadded(players.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
 				index++;
 			}
 		}
@@ -558,7 +558,7 @@ function blox()
 				this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston,plyr.sys);
 			}
 		}
-		this.FormatDate=function(timet)
+		this.formatDate=function(timet)
 		{
 			var date=new Date(timet*1000);
 			var m=date.getMonth()+1;
@@ -571,18 +571,18 @@ function blox()
 			
 			return (m + "/" + d + "/" + y);
 		}
-		this.Reset=function()
+		this.reset=function()
 		{
 			file_remove(this.file.name);
 			this.init();
 		}
-		this.StorePlayer=function()
+		this.storePlayer=function()
 		{
 			this.file.open('r+',true);
 			this.file.iniSetObject(user.alias,this.players[user.alias]);
 			this.file.close();
 		}
-		this.FindUser=function(alias)
+		this.findUser=function(alias)
 		{
 			return this.players[alias];
 		}
