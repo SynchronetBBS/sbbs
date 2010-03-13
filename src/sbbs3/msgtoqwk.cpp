@@ -270,7 +270,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	for(l=0;buf[l];l++) {
 		ch=buf[l];
 
-		if(ch==LF) {
+		if(ch=='\n') {
 			if(tear)
 				tear++; 				/* Count LFs after tearline */
 			if(tear>3)					/* more than two LFs after the tear */
@@ -283,13 +283,14 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				tearwatch=1;
 			else
 				tearwatch=0;
-			ch=QWK_NEWLINE;
-			fputc(ch,qwk_fp);		  /* Replace LF with funky char */
+			if(l && buf[l-1]=='\r')		/* Replace CRLF with funky char */
+				ch=QWK_NEWLINE;			/* but leave sole LF (soft-NL) alone */
+			fputc(ch,qwk_fp);		  
 			size++;
 			continue; 
 		}
 
-		if(ch==CR) {					/* Ignore CRs */
+		if(ch=='\r') {					/* Ignore CRs */
 			if(tearwatch<4) 			/* LF---CRLF is okay */
 				tearwatch=0;			/* LF-CR- is not okay */
 			continue; 
