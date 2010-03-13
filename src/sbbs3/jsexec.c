@@ -669,11 +669,6 @@ static BOOL js_init(char** environ)
 		return(FALSE);
 	}
 
-	/* JSExec object */
-	if(js_CreateExecObject(js_cx, js_glob, "jsexec")==NULL) {
-		JS_ENDREQUEST(js_cx);
-		return(FALSE);
-	}
 	return(TRUE);
 }
 
