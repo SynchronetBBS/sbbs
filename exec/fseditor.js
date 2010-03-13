@@ -69,8 +69,8 @@ function draw_line(l,x,clear)
 
 	if(x==undefined || x < 0 || isNaN(x))
 		x=0;
-	if(x>79)
-		x=79;
+	if(x>=console.screen_columns)
+		x=console.screen_columns-1;
 	if(clear==undefined)
 		clear=true;
 	if(l==undefined || isNaN(l))
@@ -90,11 +90,11 @@ function draw_line(l,x,clear)
 			return;
 
 		console.gotoxy(x+1,yp);
-		for(; x<line[l].text.length && x<79; x++) {
+		for(; x<line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
 			console.write(line[l].text.substr(x,1));
 		}
-		if(clear && x<79) {
+		if(clear && x<(console.screen_columns-1)) {
 			console.attributes=7;
 			console.cleartoeol();
 		}
@@ -198,8 +198,8 @@ function set_cursor()
 
 	y=edit_top+(ypos-topline);
 	x=xpos+1;
-	if(xpos>80)
-		xpos=80;
+	if(xpos>console.screen_columns)
+		xpos=console.screen_columns;
 	console.gotoxy(x,y);
 	console.attributes=curattr;
 }
@@ -239,7 +239,7 @@ function unwrap_line(l)
 		/* There's a hardcr... all done now. */
 		if(line[l].hardcr)
 			break;
-		space=79-line[l].text.length;
+		space=(console.screen_columns-1)-line[l].text.length;
 		if(space<1)
 			break;
 		/* Attempt to unkludge... */
@@ -335,6 +335,8 @@ function wrap_line(l)
 	var m;
 	var m2;
 	var i;
+	var first_check=new RegExp("^(.{1,"+(console.screen_columns-1)+"}\\s+)([^\\s].*?)$");
+	var kludge_check=new RegExp("^(.{1,"+(console.screen_columns-1)+"})(.*?)$");
 
 	while(1) {
 		if(line[l]==undefined)
@@ -342,19 +344,19 @@ function wrap_line(l)
 		/* Get line length without trailing whitespace */
 		m=line[l].text.match(/^(.*?)\s*$/);
 		if(m!=null) {
-			if(m[1].length<80 && (m[1].length!=line[l].text.length || line[l+1]==undefined || line[l].hardcr==true)) {
+			if(m[1].length<console.screen_columns && (m[1].length!=line[l].text.length || line[l+1]==undefined || line[l].hardcr==true)) {
 				if(ret!=-1)
 					draw_line(l);
 				return(ret);
 			}
 		}
-		m=line[l].text.match(/^(.{1,79}\s+)([^\s].*?)$/);
+		m=line[l].text.match(first_check);
 		if(m==null) {
 			/*
 			 * We couldn't apparently find a space after a char... this means
 			 * we need to kludge wrap this (ick)
 			 */
-			m=line[l].text.match(/^(.{1,79})(.*?)$/);
+			m=line[l].text.match(kludge_check);
 			line[l].kludged=true;
 		}
 		if(m!=null) {
@@ -882,7 +884,7 @@ function make_lines(str, attr, nl_is_hardcr)
 						else {
 							var len;
 							for(len=0; str.length>=len+spos && str.charAt(spos+len)!=' ' && str.charAt(spos+len,1)!='\t'; len++);
-							if(nl[nl.length-1].text.length+len < 80)
+							if(nl[nl.length-1].text.length+len < console.screen_columns)
 								nl[nl.length-1].hardcr=true;
 						}
 					}
@@ -902,7 +904,7 @@ function make_lines(str, attr, nl_is_hardcr)
 					spos++;
 					break;
 				default:		/* Printable char... may need to wrap */
-					if(nl[nl.length-1].text.length>79) {	/* Need to have wrapped */
+					if(nl[nl.length-1].text.length>(console.screen_columns-1)) {	/* Need to have wrapped */
 						var offset;
 						for(offset=nl[nl.length-1].text.length-1; offset>=0; offset--) {
 							if(nl[nl.length-1].text.charAt(offset)!=' ' && nl[nl.length-1].text.charAt(offset)!='\t') {
@@ -1036,7 +1038,10 @@ function make_strings(soft,embed_colour)
 				}
 				return('');
 			});
-			str+='\r\n';
+			if(line[i].hardcr)
+				str+='\r\n';
+			else
+				str+='\n';
 			attrs+=attrs.substr(-1)+attrs.substr(-1);
 		}
 	}
@@ -1125,11 +1130,11 @@ function draw_quote_line(l)
 				x++;
 			}
 		}
-		for(; x<quote_line[l].text.length && x<79; x++) {
+		for(; x<quote_line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(quote_line[l].attr.substr(x,1));
 			console.write(quote_line[l].text.substr(x,1));
 		}
-		if(x<79) {
+		if(x<(console.screen_columns-1)) {
 			console.attributes=7;
 			console.cleartoeol();
 		}
@@ -1494,8 +1499,8 @@ function edit(quote_first)
 						xpos=0;
 					return(t);
 				});
-				var add=parseInt((80-line[ypos].text.length)/2);
-				for(add=parseInt((80-line[ypos].text.length)/2); add>0; add--) {
+				var add=parseInt((console.screen_columns-line[ypos].text.length)/2);
+				for(add=parseInt((console.screen_columns-line[ypos].text.length)/2); add>0; add--) {
 					line[ypos].text=' '+line[ypos].text;
 					line[ypos].attr=ascii(curattr)+line[ypos].attr;
 					xpos++;
