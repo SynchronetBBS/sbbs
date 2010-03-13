@@ -689,7 +689,7 @@ reset_js:
 	js_cx=old_context;
 	js_glob=old_glob;
 
-	memcpy(&js_branch, &js_branch, sizeof(old_branch));
+	memcpy(&js_branch, &old_branch, sizeof(old_branch));
 
 	return(result);
 }
