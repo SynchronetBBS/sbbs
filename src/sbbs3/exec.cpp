@@ -562,6 +562,7 @@ static const char* js_ext(const char* fname)
 
 long sbbs_t::js_execfile(const char *cmd)
 {
+	ulong		stack_frame;
 	char*		p;
 	char*		args=NULL;
 	char*		fname;
@@ -573,11 +574,21 @@ long sbbs_t::js_execfile(const char *cmd)
 	jsval		rval;
 	int32		result=0;
 	BOOL		auto_terminate = js_branch.auto_terminate;
-	
+	JSRuntime	*old_runtime=js_runtime;
+	JSContext	*old_context=js_cx;
+	JSObject	*old_glob=js_glob;
+	js_branch_t	old_branch;
+
+	memcpy(&old_branch, &js_branch, sizeof(old_branch));
+
+	js_init(&stack_frame);
+	js_create_user_objects();
+
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
 		errormsg(WHERE,ERR_EXEC,cmd,0);
-		return(-1);
+		result=-1;
+		goto reset_js;
 	}
 
 	SAFECOPY(cmdline,cmd);
@@ -597,7 +608,8 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	if(!fexistcase(path)) {
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
-		return(-1); 
+		result=-1;
+		goto reset_js;
 	}
 
 	JS_BEGINREQUEST(js_cx);
@@ -641,7 +653,8 @@ long sbbs_t::js_execfile(const char *cmd)
 		JS_ReportPendingException(js_cx);	/* Added Feb-2-2006, rswindell */
 		JS_ENDREQUEST(js_cx);
 		errormsg(WHERE,"compiling",path,0);
-		return(-1);
+		result=-1;
+		goto reset_js;
 	}
 
 	js_branch.counter=0;	// Reset loop counter
@@ -669,7 +682,15 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	// Restore saved auto_terminate state
 	js_branch.auto_terminate = auto_terminate;
-	
+
+reset_js:
+	js_cleanup(client_name);
+	js_runtime=old_runtime;
+	js_cx=old_context;
+	js_glob=old_glob;
+
+	memcpy(&js_branch, &js_branch, sizeof(old_branch));
+
 	return(result);
 }
 #endif
