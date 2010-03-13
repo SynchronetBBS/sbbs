@@ -486,7 +486,7 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 	return(obj);
 }
 
-void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename)
+void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir)
 {
 	JSString*	str;
 	jsval		val;
@@ -511,5 +511,10 @@ void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filen
 				JS_DefineProperty(cx, js, "exec_dir", STRING_TO_JSVAL(str)
 					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 		}
+		if(startup_dir==NULL)
+			startup_dir="";
+		if((str=JS_NewStringCopyZ(cx, startup_dir)) != NULL)
+			JS_DefineProperty(cx, js, "startup_dir", STRING_TO_JSVAL(str)
+				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
 }

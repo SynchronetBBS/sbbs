@@ -279,13 +279,13 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
     return(i<cfg->total_natvpgms);
 }
 
-#define XTRN_LOADABLE_MODULE								\
+#define XTRN_LOADABLE_MODULE(cmdline,startup_dir)			\
 	if(cmdline[0]=='*')		/* Baja module or JavaScript */	\
-		return(exec_bin(cmdline+1,&main_csi))				
+		return(exec_bin(cmdline+1,&main_csi,startup_dir))				
 #ifdef JAVASCRIPT
-	#define XTRN_LOADABLE_JS_MODULE							\
+	#define XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir)	\
 	if(cmdline[0]=='?') 	/* JavaScript */				\
-		return(js_execfile(cmdline+1))						
+		return(js_execfile(cmdline+1,startup_dir))						
 #else
 	#define XTRN_LOADABLE_JS_MODULE
 #endif
@@ -409,8 +409,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		return -1;
 	}
 
-	XTRN_LOADABLE_MODULE;
-	XTRN_LOADABLE_JS_MODULE;
+	XTRN_LOADABLE_MODULE(cmdline,startup_dir);
+	XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir);
 
 	attr(cfg.color[clr_external]);		/* setup default attributes */
 
@@ -1324,8 +1324,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(startup_dir==NULL)
 		startup_dir=nulstr;
 
-	XTRN_LOADABLE_MODULE;
-	XTRN_LOADABLE_JS_MODULE;
+	XTRN_LOADABLE_MODULE(cmdline,startup_dir);
+	XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir);
 
 	attr(cfg.color[clr_external]);  /* setup default attributes */
 

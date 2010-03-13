@@ -560,7 +560,7 @@ static const char* js_ext(const char* fname)
 	return("");
 }
 
-long sbbs_t::js_execfile(const char *cmd)
+long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
 {
 	ulong		stack_frame;
 	char*		p;
@@ -573,7 +573,6 @@ long sbbs_t::js_execfile(const char *cmd)
 	JSScript*	js_script=NULL;
 	jsval		rval;
 	int32		result=0;
-	BOOL		auto_terminate = js_branch.auto_terminate;
 	JSRuntime	*old_runtime=js_runtime;
 	JSContext	*old_context=js_cx;
 	JSObject	*old_glob=js_glob;
@@ -600,9 +599,13 @@ long sbbs_t::js_execfile(const char *cmd)
 	fname=cmdline;
 
 	if(strcspn(fname,"/\\")==strlen(fname)) {
-		SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
-		if(cfg.mods_dir[0]==0 || !fexistcase(path))
-			SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
+		if(startup_dir!=NULL && *startup_dir)
+			SAFEPRINTF3(path,"%s%s%s",startup_dir,fname,js_ext(fname));
+		if(!fexistcase(path)) {
+			SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
+			if(cfg.mods_dir[0]==0 || !fexistcase(path))
+				SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
+		}
 	} else
 		SAFECOPY(path,fname);
 
@@ -661,7 +664,7 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	js_PrepareToExecute(js_cx, js_glob, path);
+	js_PrepareToExecute(js_cx, js_glob, path, startup_dir);
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
 	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
@@ -680,9 +683,6 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_ENDREQUEST(js_cx);
 
-	// Restore saved auto_terminate state
-	js_branch.auto_terminate = auto_terminate;
-
 reset_js:
 	js_cleanup(client_name);
 	js_runtime=old_runtime;
@@ -696,7 +696,7 @@ reset_js:
 #endif
 
 /* Important change as of Nov-16-2006, 'cmdline' may contain args */
-long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
+long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 {
     char    str[MAX_PATH+1];
 	char	mod[MAX_PATH+1];
@@ -718,11 +718,16 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 
 #ifdef JAVASCRIPT
 	if((p=getfext(mod))!=NULL && stricmp(p,".js")==0)
-		return(js_execfile(cmdline));
+		return(js_execfile(cmdline, startup_dir));
+	if(p==NULL && startup_dir!=NULL && *startup_dir) {
+		SAFEPRINTF2(str,"%s%s.js", startup_dir, mod);
+		if(fexistcase(str))
+			return(js_execfile(cmdline, startup_dir));
+	}
 	if(cfg.mods_dir[0]) {
 		SAFEPRINTF2(str,"%s%s.js",cfg.mods_dir,mod);
 		if(fexistcase(str)) 
-			return(js_execfile(cmdline));
+			return(js_execfile(cmdline, startup_dir));
 	}
 #endif
 
@@ -736,7 +741,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi)
 #ifdef JAVASCRIPT
 		SAFEPRINTF2(str,"%s%s.js",cfg.exec_dir,mod);
 		if(fexistcase(str)) 
-			return(js_execfile(cmdline));
+			return(js_execfile(cmdline, startup_dir));
 #endif
 
 		SAFEPRINTF2(str,"%s%s",cfg.exec_dir,modname);
@@ -1276,7 +1281,7 @@ int sbbs_t::exec(csi_t *csi)
 					exec_xtrn(i);
 				break;
 			case CS_EXEC_BIN:
-				exec_bin(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),csi);
+				exec_bin(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),csi,/* startup_dir: */NULL);
 				break;
 			case CS_YES_NO:
 				csi->logic=!yesno(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
