@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -254,11 +254,12 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
         return;
     }
     if(client!=NULL && client->size==sizeof(client_t)) {
+        t=time(NULL);
         if(i>=0) {
             Item=ClientForm->ListView->Items->Item[i];
         } else {
             Item=ClientForm->ListView->Items->Add();
-            Item->Data=(void*)client->time;
+            Item->Data=(void*)t;
             Item->Caption=sock;
         }
         Item->SubItems->Clear();
@@ -267,7 +268,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
         Item->SubItems->Add(client->addr);
         Item->SubItems->Add(client->host);
         Item->SubItems->Add(client->port);
-        t=time(NULL)-(time_t)Item->Data;
+        t-=(time_t)Item->Data;
         sprintf(str,"%d:%02d",t/60,t%60);
         Item->SubItems->Add(str);
     }
