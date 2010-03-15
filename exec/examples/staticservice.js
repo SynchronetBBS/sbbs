@@ -2,12 +2,12 @@
 
 // Example Synchronet "Static" Service module
 
-while(!server.terminated) {
+while(!js.terminated) {
 
 	if(server.socket.poll(10)<1)
 		continue;
 
-	if(server.terminated)
+	if(js.terminated)
 		break;
 
 	log("Incoming...");

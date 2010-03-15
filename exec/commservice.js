@@ -51,7 +51,7 @@ var background=[];
 var hub=false;
 
 //main service loop
-while(!server.terminated && !js.terminated) 
+while(!js.terminated) 
 {
 	sock_cycle();
 	if(server.socket.poll()<1)
