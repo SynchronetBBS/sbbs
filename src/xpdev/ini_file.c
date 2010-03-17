@@ -531,32 +531,35 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong 
 	char	str[INI_MAX_VALUE_LEN];
 	double	bytes;
 
-	switch(unit) {
-		case 1024*1024*1024:
-			SAFEPRINTF(str,"%"PRIi64"G",value);
-			break;
-		case 1024*1024:
-			SAFEPRINTF(str,"%"PRIi64"M",value);
-			break;
-		case 1024:
-			SAFEPRINTF(str,"%"PRIi64"K",value);
-			break;
-		default:
-			if(unit<1)
-				unit=1;
-			bytes=(double)(value*unit);
+	if(value==0)
+		SAFECPY(str,"0");
+	else
+		switch(unit) {
+			case 1024*1024*1024:
+				SAFEPRINTF(str,"%"PRIi64"G",value);
+				break;
+			case 1024*1024:
+				SAFEPRINTF(str,"%"PRIi64"M",value);
+				break;
+			case 1024:
+				SAFEPRINTF(str,"%"PRIi64"K",value);
+				break;
+			default:
+				if(unit<1)
+					unit=1;
+				bytes=(double)(value*unit);
 
-			if(fmod(bytes,1024.0*1024.0*1024.0*1024.0)==0)
-				SAFEPRINTF(str,"%gT",bytes/(1024.0*1024.0*1024.0*1024.0));
-			else if(fmod(bytes,1024*1024*1024)==0)
-				SAFEPRINTF(str,"%gG",bytes/(1024*1024*1024));
-			else if(fmod(bytes,1024*1024)==0)
-				SAFEPRINTF(str,"%gM",bytes/(1024*1024));
-			else if(fmod(bytes,1024)==0)
-				SAFEPRINTF(str,"%gK",bytes/1024);
-			else
-				SAFEPRINTF(str,"%"PRIi64, (int64_t)bytes);
-	}
+				if(fmod(bytes,1024.0*1024.0*1024.0*1024.0)==0)
+					SAFEPRINTF(str,"%gT",bytes/(1024.0*1024.0*1024.0*1024.0));
+				else if(fmod(bytes,1024*1024*1024)==0)
+					SAFEPRINTF(str,"%gG",bytes/(1024*1024*1024));
+				else if(fmod(bytes,1024*1024)==0)
+					SAFEPRINTF(str,"%gM",bytes/(1024*1024));
+				else if(fmod(bytes,1024)==0)
+					SAFEPRINTF(str,"%gK",bytes/1024);
+				else
+					SAFEPRINTF(str,"%"PRIi64, (int64_t)bytes);
+		}
 
 	return iniSetString(list, section, key, str, style);
 }
