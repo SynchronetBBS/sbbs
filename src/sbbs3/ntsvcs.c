@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1352,7 +1352,7 @@ int main(int argc, char** argv)
 	printf("\nAvailable Commands:\n\n");
 	printf("%-20s %s\n","list","to list services");
     printf("%-20s %s\n","install","to install services");
-    printf("%-20s %s\n","remove","to remove serivces");
+    printf("%-20s %s\n","remove","to remove services");
     printf("%-20s %s\n","disable","to disable services");
     printf("%-20s %s\n","enable","to re-enable disabled services");
     printf("%-20s %s\n","start","to start services");
