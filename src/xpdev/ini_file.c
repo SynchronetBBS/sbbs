@@ -532,7 +532,7 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, ulong 
 	double	bytes;
 
 	if(value==0)
-		SAFECPY(str,"0");
+		SAFECOPY(str,"0");
 	else
 		switch(unit) {
 			case 1024*1024*1024:
