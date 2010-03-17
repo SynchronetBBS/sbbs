@@ -998,13 +998,8 @@ iniReadNamedStringList(FILE* fp, const char* section)
 	char*	value;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
-	named_string_t** lp;
+	named_string_t** lp=NULL;
 	named_string_t** np;
-
-	if((lp=(named_string_t**)malloc(sizeof(named_string_t*)))==NULL)
-		return(NULL);
-
-	*lp=NULL;
 
 	if(fp==NULL)
 		return(lp);
@@ -1035,7 +1030,8 @@ iniReadNamedStringList(FILE* fp, const char* section)
 		items++;
 	}
 
-	lp[items]=NULL;	/* terminate list */
+	if(items)
+		lp[items]=NULL;	/* terminate list */
 
 	return(lp);
 }
@@ -1047,13 +1043,8 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	char*	value;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	i,items=0;
-	named_string_t** lp;
+	named_string_t** lp=NULL;
 	named_string_t** np;
-
-	if((lp=(named_string_t**)malloc(sizeof(named_string_t*)))==NULL)
-		return(NULL);
-
-	*lp=NULL;
 
 	if(list==NULL)
 		return(lp);
@@ -1078,7 +1069,8 @@ iniGetNamedStringList(str_list_t list, const char* section)
 		items++;
 	}
 
-	lp[items]=NULL;	/* terminate list */
+	if(items)
+		lp[items]=NULL;	/* terminate list */
 
 	return(lp);
 }
