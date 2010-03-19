@@ -1,9 +1,9 @@
-/* $Id: */
+/* $Id$ */
 
 load("http.js");
 
 var url = argv[0];
-var filename=file_getname(url);
+var filename=js.startup_dir + '/' + file_getname(url);
 
 var file = new File(filename);
 
