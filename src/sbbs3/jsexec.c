@@ -703,9 +703,12 @@ long js_exec(const char *fname, char** args)
 
 	if(fname!=NULL) {
 		if(strcspn(fname,"/\\")==strlen(fname)) {
-			sprintf(path,"%s%s%s",scfg.mods_dir,fname,js_ext(fname));
-			if(scfg.mods_dir[0]==0 || !fexistcase(path))
-				sprintf(path,"%s%s%s",scfg.exec_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",orig_cwd,fname,js_ext(fname));
+			if(!fexistcase(path)) {
+				SAFEPRINTF3(path,"%s%s%s",scfg.mods_dir,fname,js_ext(fname));
+				if(scfg.mods_dir[0]==0 || !fexistcase(path))
+					SAFEPRINTF3(path,"%s%s%s",scfg.exec_dir,fname,js_ext(fname));
+			}
 		} else
 			SAFECOPY(path,fname);
 
@@ -916,6 +919,7 @@ int main(int argc, char **argv, char** environ)
 		return(do_bail(2));
 
 	getcwd(orig_cwd, sizeof(orig_cwd));
+	backslash(orig_cwd);
 
 	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
