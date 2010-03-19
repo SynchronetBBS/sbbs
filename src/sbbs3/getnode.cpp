@@ -402,7 +402,7 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 {
 	switch(conn) {
 		case NODE_CONNECTION_LOCAL:
-			return " Locally";	/* obsolete */
+			return (char*)" Locally";	/* obsolete */
 		case NODE_CONNECTION_TELNET:
 			return sbbs->text[NodeConnectionTelnet];
 		case NODE_CONNECTION_RLOGIN:
