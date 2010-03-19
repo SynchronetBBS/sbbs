@@ -717,7 +717,7 @@ static void pop3_thread(void* arg)
 	char*		msgtxt;
 	int			i;
 	int			rd;
-	BOOL		activity=FALSE;
+	BOOL		activity=TRUE;
 	BOOL		apop=FALSE;
 	long		l;
 	ulong		lines;
@@ -907,6 +907,7 @@ static void pop3_thread(void* arg)
 		/* Update client display */
 		client.user=user.alias;
 		client_on(socket,&client,TRUE /* update */);
+		activity=FALSE;
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)		
 			lprintf(LOG_INFO,"%04d POP3 %s logged in %s", socket, user.alias, apop ? "via APOP":"");
@@ -1278,9 +1279,14 @@ static void pop3_thread(void* arg)
 
 	} while(0);
 
-	if(activity) 
-		lprintf(LOG_INFO,"%04d POP3 %s logged out from port %u on %s [%s]"
-			,socket, user.alias, ntohs(pop3.client_addr.sin_port), host_name, host_ip);
+	if(activity) {
+		if(user.number)
+			lprintf(LOG_INFO,"%04d POP3 %s logged out from port %u on %s [%s]"
+				,socket, user.alias, ntohs(pop3.client_addr.sin_port), host_name, host_ip);
+		else
+			lprintf(LOG_INFO,"%04d POP3 client disconnected from port %u on %s [%s]"
+				,socket, ntohs(pop3.client_addr.sin_port), host_name, host_ip);
+	}
 
 	status(STATUS_WFC);
 
