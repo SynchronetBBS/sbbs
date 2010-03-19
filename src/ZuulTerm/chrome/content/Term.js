@@ -1,12 +1,48 @@
 var connection=null;
 
-function UpdateTerm(data)
+function writeText(data)
 {
 	var term=document.getElementById("frame").contentDocument.getElementById("terminal");
 	var win=document.getElementById("frame").contentWindow;
 
 	term.innerHTML += data;
 	win.scroll(0, term.clientHeight);
+}
+
+function handleCtrl(byte)
+{
+	var term=document.getElementById("frame").contentDocument.getElementById("terminal");
+	var win=document.getElementById("frame").contentWindow;
+
+	switch(byte) {
+		case '\n':
+		case '\t':
+		case '\r':
+			writeText(byte);
+			break;
+		case '\b':
+			term.innerHTML = term.innerHTML.replace(/[^\x00-\x1F]$/,'');
+			break;
+		case '\x0c':	// Formfeed -- clear screen
+			term.innerHTML = '';
+			break;
+	}
+}
+
+function UpdateTerm(data)
+{
+	while(data.length) {
+		data=data.replace(/^([^\x00-\x1F]*)/, function(matched, text) {
+			writeText(text);
+			return '';
+		});
+		if(data.length) {
+			while(data.charCodeAt(0) < 32) {
+				handleCtrl(data.substr(0,1));
+				data=data.substr(1);
+			}
+		}
+	}
 }
 
 function doTerm(host, port)
