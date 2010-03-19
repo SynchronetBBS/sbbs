@@ -6,9 +6,13 @@ function writeHTML(data)
 	var doc=frame.contentDocument;
 	var win=frame.contentWindow;
 	var term=doc.getElementById("terminal");
-	var top;
+	var bottom;
+	var offe;
 
 	term.innerHTML += data;
+
+	var winVisible=win.innerHeight-win.scrollMaxY;
+	/* Scroll to bottom of terminal container */
 	if(term.scroll != undefined && term.clientHeight != undefined) {
 		term.scroll(0, term.clientHeight);
 	}
@@ -19,6 +23,29 @@ function writeHTML(data)
 		if(term.scrollTop != top)
 			term.scrollTop=top;
 	}
+	else {
+		alert("Scroll problems!");
+	}
+
+	/* Scroll window so that the bottom of the terminal container is visible */
+	bottom=term.offsetHeight;
+	offe=term;
+	do {
+		bottom += offe.offsetTop;
+		offe = offe.offsetParent;
+	} while(offe && offe.tagName != 'BODY');
+	top = win.scrollY;
+	if(bottom > win.scrollY+winVisible) {
+		top=bottom-winVisible;
+	}
+	else if(bottom < win.scrollY) {
+		/* TODO: Just show some of the bottom */
+		top=bottom-winVisible;
+	}
+	if(top < 0)
+		top=0;
+	if(top != win.scrollY)
+		win.scroll(win.scrollX,top);
 }
 
 function writeText(data)
@@ -46,7 +73,18 @@ function handleCtrl(byte)
 		case '\r':
 			break;
 		case '\b':
-			term.innerHTML = term.innerHTML.replace(/[^\x00-\x1F]$/,'');
+			if(term.innerHTML.length > 0) {
+				switch(term.innerHTML.charCodeAt(term.innerHTML.length-1)) {
+					case ';':
+						term.innerHTML = term.innerHTML.replace(/&[^&]+;$/,'');
+						break;
+					case '>':
+						break;
+					default:
+						term.innerHTML = term.innerHTML.replace(/.$/,'');
+						break;
+				}
+			}
 			break;
 		case '\x0c':	// Formfeed -- clear screen
 			term.innerHTML = '';
@@ -55,7 +93,7 @@ function handleCtrl(byte)
 			sound.beep();
 			break;
 		case '\x85':	// NEL (Next Line)
-			writeText("\r\n");
+			writeHTML("<br>");
 			break;
 	}
 }
