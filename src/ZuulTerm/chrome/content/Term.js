@@ -36,7 +36,7 @@ function handleCtrl(byte)
 function UpdateTerm(data)
 {
 	while(data.length) {
-		data=data.replace(/^([^\x00-\x1F]*)/, function(matched, text) {
+		data=data.replace(/^([^\x00-\x1F\x80-\x9f]*)/, function(matched, text) {
 			writeText(text);
 			return '';
 		});
