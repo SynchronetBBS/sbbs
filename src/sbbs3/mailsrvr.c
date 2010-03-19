@@ -3808,7 +3808,7 @@ static void smtp_thread(void* arg)
 				}
 			}
 			if(cmd==SMTP_CMD_MAIL) {
-#if 0	/* implement later */
+#if 0	/* TODO implement later */
 				if(useron.etoday>=cfg.level_emailperday[useron.level]
 					&& !(useron.rest&FLAG('Q'))) {
 					bputs(text[TooManyEmailsToday]);
