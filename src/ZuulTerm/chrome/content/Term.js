@@ -1,4 +1,5 @@
 var connection=null;
+var currtext='';
 
 function writeHTML(data)
 {
@@ -9,7 +10,8 @@ function writeHTML(data)
 	var bottom;
 	var offe;
 
-	term.innerHTML += data;
+	currtext += data;
+	term.innerHTML = currtext;
 
 	var winVisible=win.innerHeight-win.scrollMaxY;
 	/* Scroll to bottom of terminal container */
@@ -73,21 +75,24 @@ function handleCtrl(byte)
 		case '\r':
 			break;
 		case '\b':
-			if(term.innerHTML.length > 0) {
-				switch(term.innerHTML.charCodeAt(term.innerHTML.length-1)) {
+			if(currtext.length > 0) {
+				switch(currtext.charAt(currtext.length-1)) {
 					case ';':
-						term.innerHTML = term.innerHTML.replace(/&[^&]+;$/,'');
+						currtext = currtext.replace(/&[^&]+;$/,'');
+						term.innerHTML=currtext;
 						break;
 					case '>':
 						break;
 					default:
-						term.innerHTML = term.innerHTML.replace(/.$/,'');
+						currtext = currtext.replace(/.$/,'');
+						term.innerHTML=currtext;
 						break;
 				}
 			}
 			break;
 		case '\x0c':	// Formfeed -- clear screen
-			term.innerHTML = '';
+			currtext = '';
+			term.innerHTML=currtext;
 			break;
 		case '\x07':	// BEL
 			sound.beep();
@@ -119,6 +124,7 @@ function doTerm(host, port)
 	var ConnOpt=document.getElementById("MainConnectionMenu-connect").disabled=true;
 	var DisconnOpt=document.getElementById("MainConnectionMenu-disconnect").disabled=false;
 	connection=new RLoginConnection(host,port,UpdateTerm);
+	currtext='';
 }
 
 function endTerm()
