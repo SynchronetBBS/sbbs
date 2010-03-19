@@ -26,7 +26,7 @@ function RLoginConnection(address, port, recvfunc)
 
 	this.sock=new Socket();
 	this.sock.connect(address,port);
-	this.write("\x00admin\x00deuce\x00ZuulTerm/115200\x00");
+	this.write("\x00\x00\x00ZuulTerm/115200\x00");
 	if(this.sock.read(1,1,10000)!='\x00')
 		alert("No RLogin ack!");
 	this.sock.asyncRead(this);
