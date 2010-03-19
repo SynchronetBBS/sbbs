@@ -30,6 +30,9 @@ function handleCtrl(byte)
 		case '\x07':	// BEL
 			sound.beep();
 			break;
+		case '\x85':	// NEL (Next Line)
+			writeText("\r\n");
+			break;
 	}
 }
 
