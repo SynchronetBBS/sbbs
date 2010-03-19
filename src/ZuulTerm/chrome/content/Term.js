@@ -1,12 +1,35 @@
 var connection=null;
 
-function writeText(data)
+function writeHTML(data)
 {
-	var term=document.getElementById("frame").contentDocument.getElementById("terminal");
-	var win=document.getElementById("frame").contentWindow;
+	var frame=document.getElementById("frame");
+	var doc=frame.contentDocument;
+	var win=frame.contentWindow;
+	var term=doc.getElementById("terminal");
+	var top;
 
 	term.innerHTML += data;
-	win.scroll(0, term.clientHeight);
+	if(term.scroll != undefined && term.clientHeight != undefined) {
+		term.scroll(0, term.clientHeight);
+	}
+	else if(term.scrollHeight != undefined && term.scrollTop != undefined) {
+		top=term.scrollHeight-term.clientHeight;
+		if(top < 0)
+			top=0;
+		if(term.scrollTop != top)
+			term.scrollTop=top;
+	}
+}
+
+function writeText(data)
+{
+	data=data.replace(/&/g,'&amp;');
+	data=data.replace(/</g,'&lt;');
+	data=data.replace(/>/g,'&gt;');
+	data=data.replace(/'/g,'&apos;');
+	data=data.replace(/"/g,'&quot;');
+	data=data.replace(/ /g,'&nbsp;');
+	writeHTML(data);
 }
 
 function handleCtrl(byte)
@@ -17,9 +40,10 @@ function handleCtrl(byte)
 
 	switch(byte) {
 		case '\n':
+			writeHTML('<br>');
+			break;
 		case '\t':
 		case '\r':
-			writeText(byte);
 			break;
 		case '\b':
 			term.innerHTML = term.innerHTML.replace(/[^\x00-\x1F]$/,'');
