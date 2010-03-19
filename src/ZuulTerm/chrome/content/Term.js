@@ -13,6 +13,7 @@ function handleCtrl(byte)
 {
 	var term=document.getElementById("frame").contentDocument.getElementById("terminal");
 	var win=document.getElementById("frame").contentWindow;
+	const sound = Components.classes["@mozilla.org/sound;1"].createInstance(Components.interfaces.nsISound);
 
 	switch(byte) {
 		case '\n':
@@ -25,6 +26,9 @@ function handleCtrl(byte)
 			break;
 		case '\x0c':	// Formfeed -- clear screen
 			term.innerHTML = '';
+			break;
+		case '\x07':	// BEL
+			sound.beep();
 			break;
 	}
 }
