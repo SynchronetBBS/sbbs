@@ -37,3 +37,68 @@ function nsWaitForDelay(delay) {
         thread.processNextEvent(true);
     }
 }
+
+function decode(encoded)
+{
+	var bytes=0;
+	var i;
+	var val=0xfffd;
+	var firstbyte=encoded.charCodeAt(0);
+
+	if(firstbyte & 0xe0 == 0xd0) {
+		bytes=2;
+		val=firstbyte & 0x1f;
+	}
+	else if(firstbyte & 0xf0 == 0xe0) {
+		bytes=3;
+		val=firstbyte & 0x0f;
+	}
+	else if(firstbyte & 0xf8 == 0xf0) {
+		bytes=4;
+		val=firstbyte & 0x07;
+	}
+	else if(firstbyte & 0xfc == 0xf8) {
+		bytes=5;
+		val=firstbyte & 0x03;
+	}
+	else if(firstbyte & 0xfe == 0xfc) {
+		bytes=6;
+		val=firstbyte & 0x01;
+	}
+	for(i=1; i<bytes; i++) {
+		if(encoded.charCodeAt(i) & 0xc0 != 0x80) {
+			val = 0xfffd;
+			break;
+		}
+		val <<= 6;
+		val |= (encoded.charCodeAt(i) & 0x3f);
+	}
+
+	return String.fromCharCode(val);
+}
+
+function bytesToUnicode(bytes)
+{
+	var ret={unicode:'',remainder:''};
+	var i;
+	var encoded='';
+
+	for(i=0; i<bytes.length; i++) {
+		if(bytes.charCodeAt(i) < 128) {
+			if(encoded.length > 0) {
+				ret.unicode += decode(encoded);
+				encoded='';
+			}
+			ret.unicode += bytes.charAt(i);
+		}
+		else {
+			if(encoded.legnth > 0 && (bytes.charCodeAt(i) & 0x0c) != 0x0c) {
+				ret.unicode += decode(encoded);
+				encoded='';
+			}
+			encoded += bytes.charAt(i);
+		}
+	}
+	ret.remainder=encoded;
+	return ret;
+}

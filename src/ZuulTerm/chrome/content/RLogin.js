@@ -1,6 +1,7 @@
 function RLoginConnection(address, port, recvfunc)
 {
 	this.recvfunc=recvfunc;
+	this.unicode={remainder:''};
 
 	this.onStartRequest=function(request, context) {};
 	this.onStopRequest=function(request, context, status) {
@@ -8,7 +9,8 @@ function RLoginConnection(address, port, recvfunc)
 		endTerm();
 	};
 	this.onDataAvailable=function(request, context, inputStream, offset, count) {
-		this.recvfunc(this.sock.read(count, count, 0));
+		this.unicode=bytesToUnicode(this.unicode.remainder+this.sock.read(count, count, 0));
+		this.recvfunc(this.unicode.unicode);
 	};
 
 	this.write=function(data)
