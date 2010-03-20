@@ -25,5 +25,5 @@
       </menupopup>
     </menu>
   </menubar>
-  <iframe id="frame" src="chrome://ZuulTerm/content/default.html" showcaret="true" onkeypress="sendKey(event)" type="content-primary" flex="1"/>
+  <iframe id="frame" src="chrome://ZuulTerm/content/default.html" onload="this.contentWindow.connection=connection;" showcaret="true" onkeypress="sendKey(event)" type="content-primary" flex="1"/>
 </window>
