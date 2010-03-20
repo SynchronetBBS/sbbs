@@ -171,6 +171,7 @@ function doTerm(host, port)
 	var DisconnOpt=document.getElementById("MainConnectionMenu-disconnect").disabled=false;
 	connection=new RLoginConnection(host,port,UpdateTerm);
 	currtext='';
+	document.getElementById("frame").contentWindow.location="chrome://ZuulTerm/content/default.html";
 }
 
 function endTerm()
