@@ -1,5 +1,6 @@
 var connection=null;
 var currtext='';
+var stringsequence={storing:false,value:'',type:0};
 
 function writeHTML(data)
 {
@@ -11,6 +12,8 @@ function writeHTML(data)
 	var offe;
 
 	currtext += data;
+	if(term==null)
+		return;
 	term.innerHTML = currtext;
 
 	var winVisible=win.innerHeight-win.scrollMaxY;
@@ -52,13 +55,39 @@ function writeHTML(data)
 
 function writeText(data)
 {
-	data=data.replace(/&/g,'&amp;');
-	data=data.replace(/</g,'&lt;');
-	data=data.replace(/>/g,'&gt;');
-	data=data.replace(/'/g,'&apos;');
-	data=data.replace(/"/g,'&quot;');
-	data=data.replace(/ /g,'&nbsp;');
-	writeHTML(data);
+	if(stringsequence.storing) {
+		stringsequence.value += data;
+	}
+	else {
+		data=data.replace(/&/g,'&amp;');
+		data=data.replace(/</g,'&lt;');
+		data=data.replace(/>/g,'&gt;');
+		data=data.replace(/'/g,'&apos;');
+		data=data.replace(/"/g,'&quot;');
+		data=data.replace(/ /g,'&nbsp;');
+		writeHTML(data);
+	}
+}
+
+function handleString(obj)
+{
+	var doc=document.getElementById("frame").contentDocument;
+	var term=doc.getElementById("terminal");
+	var win=document.getElementById("frame").contentWindow;
+	var tmp;
+
+	switch(obj.type) {
+		case '\x90':
+			tmp = obj.value.match(/^([^\s]+) (.*)/);
+			if(tmp != null) {
+				switch(tmp[1]) {
+					case 'GET':
+						win.location=tmp[2];
+						break;
+				}
+			}
+			break;
+	}
 }
 
 function handleCtrl(byte)
@@ -100,20 +129,37 @@ function handleCtrl(byte)
 		case '\x85':	// NEL (Next Line)
 			writeHTML("<br>");
 			break;
+		case '\x98':	// SOS (Start Of String)
+		case '\x90':	// DCS (Device Control String)
+		case '\x9d':	// OSC (Operating System Command)
+		case '\x9e':	// PM  (Privacy Message)
+		case '\x9f':	// APC (Application Program Command)
+			stringsequence.storing=true;
+			stringsequence.value='';
+			stringsequence.type=byte;
+			break;
+		case '\x9c':	// ST  (String Terminator)
+			stringsequence.storing=false;
+			handleString(stringsequence);
+			break;
 	}
 }
 
 function UpdateTerm(data)
 {
+	var val;
+
 	while(data.length) {
-		data=data.replace(/^([^\x00-\x1F\x80-\x9f]*)/, function(matched, text) {
+		data=data.replace(/^([^\x00-\x1F\x80-\x9f]+)/, function(matched, text) {
 			writeText(text);
 			return '';
 		});
 		if(data.length) {
-			while(data.charCodeAt(0) < 32) {
+			val=data.charCodeAt(0);
+			while(val < 32 || (val >= 0x90 && val <= 0x9f)) {
 				handleCtrl(data.substr(0,1));
 				data=data.substr(1);
+				val=data.charCodeAt(0);
 			}
 		}
 	}
