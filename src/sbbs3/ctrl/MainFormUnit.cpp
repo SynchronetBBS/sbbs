@@ -2299,6 +2299,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
    	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Configuration loaded";
 
 	recycle_semfiles=semfile_list_init(cfg.ctrl_dir,"recycle","ctrl");
+    semfile_list_add(&recycle_semfiles,ini_file);
    	semfile_list_check(&initialized,recycle_semfiles);
 
 	shutdown_semfiles=semfile_list_init(cfg.ctrl_dir,"shutdown","ctrl");
@@ -2643,6 +2644,7 @@ bool __fastcall TMainForm::SaveIniSettings(TObject* Sender)
         Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
 	}
 
+   	semfile_list_check(&initialized,recycle_semfiles);    
     return(success);
 }
 
@@ -3409,8 +3411,29 @@ void __fastcall TMainForm::reload_config(void)
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }
-   	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Configuration reloaded";    
+    FILE* fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,&MainForm->bbs_startup
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        );
+    if(fp!=NULL)
+        fclose(fp);
+   	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Configuration reloaded";
    	semfile_list_check(&initialized,recycle_semfiles);
+
+    if(bbs_startup.options&BBS_OPT_SYSOP_AVAILABLE)
+    	ChatToggle->Checked=true;
+    else
+    	ChatToggle->Checked=false;
+        
+    if(bbs_startup.options&BBS_OPT_MUTE)
+    	SoundToggle->Checked=false;
+    else
+    	SoundToggle->Checked=true;
 }
 //---------------------------------------------------------------------------
 
