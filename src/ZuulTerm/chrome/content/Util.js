@@ -45,28 +45,28 @@ function decode(encoded)
 	var val=0xfffd;
 	var firstbyte=encoded.charCodeAt(0);
 
-	if(firstbyte & 0xe0 == 0xd0) {
+	if((firstbyte & 0xe0) == 0xc0) {
 		bytes=2;
 		val=firstbyte & 0x1f;
 	}
-	else if(firstbyte & 0xf0 == 0xe0) {
+	else if((firstbyte & 0xf0) == 0xe0) {
 		bytes=3;
 		val=firstbyte & 0x0f;
 	}
-	else if(firstbyte & 0xf8 == 0xf0) {
+	else if((firstbyte & 0xf8) == 0xf0) {
 		bytes=4;
 		val=firstbyte & 0x07;
 	}
-	else if(firstbyte & 0xfc == 0xf8) {
+	else if((firstbyte & 0xfc) == 0xf8) {
 		bytes=5;
 		val=firstbyte & 0x03;
 	}
-	else if(firstbyte & 0xfe == 0xfc) {
+	else if((firstbyte & 0xfe) == 0xfc) {
 		bytes=6;
 		val=firstbyte & 0x01;
 	}
 	for(i=1; i<bytes; i++) {
-		if(encoded.charCodeAt(i) & 0xc0 != 0x80) {
+		if((encoded.charCodeAt(i) & 0xc0) != 0x80) {
 			val = 0xfffd;
 			break;
 		}
