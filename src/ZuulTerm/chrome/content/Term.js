@@ -87,6 +87,9 @@ function handleString(obj)
 				}
 			}
 			break;
+		case '\x9f':
+			eval(obj.value, win);
+			break;
 	}
 }
 
@@ -176,6 +179,9 @@ function doTerm(host, port)
 
 function endTerm()
 {
+	if(keyinterval != null)
+		clearInterval(keyinterval);
+	keyinterval=null;
 	if(connection != null)
 		connection.close();
 	connection=null;
