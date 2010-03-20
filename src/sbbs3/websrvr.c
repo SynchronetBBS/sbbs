@@ -3580,12 +3580,10 @@ static BOOL exec_cgi(http_session_t *session)
 
 	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
 
-	if((p=get_cgi_handler(session->req.physical_path))==NULL) {
-		lprintf(LOG_ERR,"%04d !CGI handler not found for %s"
-			,session->socket,session->req.physical_path);
-		return(FALSE);
-	}
-	SAFEPRINTF2(cmdline,"%s %s",p,session->req.physical_path);
+	if((p=get_cgi_handler(session->req.physical_path))!=NULL)
+		SAFEPRINTF2(cmdline,"%s %s",p,session->req.physical_path);
+	else
+		SAFECOPY(cmdline,session->req.physical_path);
 
 	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
 
