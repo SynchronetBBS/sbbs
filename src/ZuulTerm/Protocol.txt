@@ -9,7 +9,11 @@ and one or more auxiliary connections for stateless data.
 
 The session is in UTF-8 mode at all times, and the string control characters are
 used as defined in http://www.ecma-inte rnational.org/publications/files/ECMA-ST/Ecma-048.pdf
-No other control characters are supported however.
+
+Data which is not a control character and not part of a control string is HTML escaped and inserted
+at the end of the element on the current page with an ID of "terminal" (if such exists).
+
+Keystrokes are to be send to the remote, and TODO - some way of passing text from onclick - TODO
 
 U+0090
 	Device Control String
@@ -33,6 +37,7 @@ U+009D
 	Operating System Command
 	Used to interact with the OS.  This is *not* a command line to run,
 	but an abstract description of one.
+	Not currently defined
 
 	8.3.89 OSC - OPERATING SYSTEM COMMAND
 		Notation: (C1)
@@ -44,7 +49,7 @@ U+009D
 
 U+009F 
 	Application Program Command
-	The contained string is JavaScript to be executed in the context of the window current window.  Note the
+	The contained string is JavaScript to be executed in the context of the current window.  Note the
 	character set restriction however, the JS must be written in a subset of ASCII.
 
 	8.3.2 APC - APPLICATION PROGRAM COMMAND
@@ -89,3 +94,25 @@ U+0098
 		any bit combination, except those representing SOS or STRING TERMINATOR (ST). The control string
 		is closed by the terminating delimiter STRING TERMINATOR (ST). The interpretation of the character
 		string depends on the application.
+
+Also, the following elements of the C0 set are used:
+U+0010
+    Line Feed
+	Moves to the beginning of the next line.
+
+U+0008
+    Back Space
+	Deletes the last character unless it is part of an HTML tag (such as <br>)  Essentially, this deletes the last
+	character of the last line.
+
+U+0007
+    Bell
+	Sounds the system beep.
+
+U+0012
+    Form Feed
+	Clears the terminal output
+
+U+0085
+    New Line
+	Moves to the beginning of the next line.
