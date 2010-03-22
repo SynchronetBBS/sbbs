@@ -180,16 +180,16 @@ typedef int32_t		time32_t;
 #    define PRIdOFF		PRId64
 #    define PRIuOFF		PRIu64
 #  else
-#    define PRIdOFF		PRId32
-#    define PRIuOFF		PRIu32
+#    define PRIdOFF		"ld"
+#    define PRIuOFF		"lu"
 #  endif
 #elif defined(__linux__) || defined(__sun__)
 #  if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
 #    define PRIdOFF		PRId64
 #    define PRIuOFF		PRIu64
 #  else
-#    define PRIdOFF		PRId64
-#    define PRIuOFF		PRIu64
+#    define PRIdOFF		PRId32
+#    define PRIuOFF		PRIu32
 #  endif
 #else
 #  define PRIdOFF	PRId64
