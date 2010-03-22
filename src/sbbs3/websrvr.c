@@ -4680,7 +4680,7 @@ static void respond(http_session_t * session)
 		send_file=FALSE;
 	if(send_file)  {
 		int snt=0;
-		lprintf(LOG_INFO,"%04d Sending file: %s (%u bytes)"
+		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIuOFF" bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {

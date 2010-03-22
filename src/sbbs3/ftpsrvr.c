@@ -3297,7 +3297,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!strnicmp(cmd,"SIZE ",5)) {
-					sockprintf(sock,"213 %lu",flength(fname));
+					sockprintf(sock,"213 %"PRIuOFF,flength(fname));
 					continue;
 				}
 				if(!strnicmp(cmd,"MDTM ",5)) {
@@ -3321,7 +3321,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				/* RETR */
-				lprintf(LOG_INFO,"%04d %s downloading: %s (%lu bytes) in %s mode"
+				lprintf(LOG_INFO,"%04d %s downloading: %s (%"PRIuOFF" bytes) in %s mode"
 					,sock,user.alias,fname,flength(fname)
 					,mode);
 				sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
@@ -3534,7 +3534,7 @@ static void ctrl_thread(void* arg)
 								t=fdate(np);
 								if(localtime_r(&t,&tm)==NULL)
 									memset(&tm,0,sizeof(tm));
-								fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+								fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRIdOFF" %s %2d %02d:%02d %s\r\n"
 									,NAME_LEN
 									,scfg.sys_id
 									,scfg.sys_id
@@ -3773,7 +3773,7 @@ static void ctrl_thread(void* arg)
 				delfile=TRUE;
 				credits=FALSE;
 				if(!getsize && !getdate)
-					lprintf(LOG_INFO,"%04d %s downloading QWK packet (%lu bytes) in %s mode"
+					lprintf(LOG_INFO,"%04d %s downloading QWK packet (%"PRIuOFF" bytes) in %s mode"
 						,sock,user.alias,flength(fname)
 						,mode);
 			/* ASCII Index File */
@@ -4097,7 +4097,7 @@ static void ctrl_thread(void* arg)
 					if(fexistcase(fname)) {
 						success=TRUE;
 						if(!getsize && !getdate && !delecmd)
-							lprintf(LOG_INFO,"%04d %s downloading: %s (%lu bytes) in %s mode"
+							lprintf(LOG_INFO,"%04d %s downloading: %s (%"PRIuOFF" bytes) in %s mode"
 								,sock,user.alias,fname,flength(fname)
 								,mode);
 					} 
@@ -4108,7 +4108,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 			if(getsize && success)
-				sockprintf(sock,"213 %lu", flength(fname));
+				sockprintf(sock,"213 %"PRIuOFF, flength(fname));
 			else if(getdate && success) {
 				if(file_date==0)
 					file_date = fdate(fname);
