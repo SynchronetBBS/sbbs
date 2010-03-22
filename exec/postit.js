@@ -51,7 +51,7 @@ root_dir = root_dir.replace(/[^\/\\]*$/,'');
 var current=new MessageList(root_dir,root_name,".dat");
 var history=new MessageList(root_dir,root_name,".his");
 
-var max_msg_length=3; 			//MAXIMUM MESSAGE LENGTH FOR 
+var max_msg_length=3; 			//MAXIMUM MESSAGE LENGTH 
 var line_width=console.screen_columns-1;
 var default_msg_color="\1g\1h"; //DEFAULT MESSAGE COLOR 
 var sysop_mode=false;
@@ -94,7 +94,7 @@ function main()
 }
 function deleteNote()
 {
-	
+	//TODO: convert data files to .ini to make this possible (or rather.. plausible)
 }
 function addNote()
 {
@@ -187,8 +187,13 @@ function showHistory(list)
 	var temp_list=list.array.slice();
 
 	var pages=setPageBreaks(temp_list);
-	var start=0;
+	if(!pages.length) {
+		console.putmsg("\r\n\1r\1hNo message history to display! ");
+		console.pause();
+		return false;
+	}
 	
+	var start=0;
 	while(1)
 	{
 		console.clear();
@@ -313,8 +318,10 @@ function MessageList(root,name,ext)
 			}
 			this.file.close();
 			return true;
+		} else { 
+			log("error opening data file");
+			return false;
 		}
-		return false;
 	}
 	this.countLines=function()
 	{
