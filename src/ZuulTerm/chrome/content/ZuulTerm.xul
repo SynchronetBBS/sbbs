@@ -2,6 +2,7 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 
 <window id="MainWindow" title="ZuulTerm" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" persist="width height">
+  <script src="chrome://ZuulTerm/content/Zuul.js" />
   <script src="chrome://ZuulTerm/content/Util.js" />
   <script src="chrome://ZuulTerm/content/Socket.js" />
   <script src="chrome://ZuulTerm/content/RLogin.js" />
@@ -25,5 +26,5 @@
       </menupopup>
     </menu>
   </menubar>
-  <iframe id="frame" src="chrome://ZuulTerm/content/default.html" onload="this.contentWindow.connection=connection;" showcaret="true" onkeypress="sendKey(event)" type="content-primary" flex="1"/>
+  <iframe id="frame" src="chrome://ZuulTerm/content/default.html" onload="this.contentWindow.Zuul=Zuul;" showcaret="true" onkeypress="sendKey(event)" type="content-primary" flex="1"/>
 </window>

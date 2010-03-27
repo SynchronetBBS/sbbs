@@ -1,4 +1,3 @@
-var connection=null;
 var currtext='';
 var stringsequence={storing:false,value:'',type:0};
 
@@ -59,12 +58,14 @@ function writeText(data)
 		stringsequence.value += data;
 	}
 	else {
-		data=data.replace(/&/g,'&amp;');
-		data=data.replace(/</g,'&lt;');
-		data=data.replace(/>/g,'&gt;');
-		data=data.replace(/'/g,'&apos;');
-		data=data.replace(/"/g,'&quot;');
-		data=data.replace(/ /g,'&nbsp;');
+		if(Zuul.escapeHTML) {
+			data=data.replace(/&/g,'&amp;');
+			data=data.replace(/</g,'&lt;');
+			data=data.replace(/>/g,'&gt;');
+			data=data.replace(/'/g,'&apos;');
+			data=data.replace(/"/g,'&quot;');
+			data=data.replace(/ /g,'&nbsp;');
+		}
 		writeHTML(data);
 	}
 }
@@ -172,16 +173,17 @@ function doTerm(host, port)
 {
 	var ConnOpt=document.getElementById("MainConnectionMenu-connect").disabled=true;
 	var DisconnOpt=document.getElementById("MainConnectionMenu-disconnect").disabled=false;
-	connection=new RLoginConnection(host,port,UpdateTerm);
+	Zuul.connection=new RLoginConnection(host,port,UpdateTerm);
 	currtext='';
 	document.getElementById("frame").contentWindow.location="chrome://ZuulTerm/content/default.html";
+	Zuul.escapeHTML=true;
 }
 
 function endTerm()
 {
-	if(connection != null)
-		connection.close();
-	connection=null;
+	if(Zuul.connection != null)
+		Zuul.connection.close();
+	Zuul.connection=null;
 
 	var ConnOpt=document.getElementById("MainConnectionMenu-connect").disabled=false;
 	var DisconnOpt=document.getElementById("MainConnectionMenu-disconnect").disabled=true;
@@ -216,7 +218,7 @@ function translateKey(key)
 
 function sendKey(key)
 {
-	if(connection != null) {
-		connection.write(translateKey(key));
+	if(Zuul.connection != null) {
+		Zuul.connection.write(translateKey(key));
 	}
 }
