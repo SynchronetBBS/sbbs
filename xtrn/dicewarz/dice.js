@@ -143,9 +143,9 @@ function	viewRankings()
 	printf(printPadded("\xC2",8,"\xC4","right"));
 	printf(printPadded("\xC2",7,"\xC4","right"));
 	printf(printPadded("\xC2",9,"\xC4","right"));
-	printf(printPadded("\xBF",9,"\xC4","right"));
+	printf(printPadded("\xBF",10,"\xC4","right"));
 	console.crlf();
-	printf("\1k\1h\xB3\1n\1g DICE WARZ RANKINGS       \1k\1h\xB3 \1n\1gSCORE \1k\1h\xB3 \1n\1gKILLS \1k\1h\xB3 \1n\1gWINS \1k\1h\xB3 \1n\1gLOSSES \1k\1h\xB3 \1n\1gWIN %  \1k\1h\xB3");
+	printf("\1k\1h\xB3\1n\1g DICE WARZ RANKINGS       \1k\1h\xB3 \1n\1gSCORE \1k\1h\xB3 \1n\1gKILLS \1k\1h\xB3 \1n\1gWINS \1k\1h\xB3 \1n\1gLOSSES \1k\1h\xB3 \1n\1gWIN %   \1k\1h\xB3");
 	console.crlf();
 	printf("\xC3");
 	printf(printPadded("\xC5",27,"\xC4","right"));
@@ -153,7 +153,7 @@ function	viewRankings()
 	printf(printPadded("\xC5",8,"\xC4","right"));
 	printf(printPadded("\xC5",7,"\xC4","right"));
 	printf(printPadded("\xC5",9,"\xC4","right"));
-	printf(printPadded("\xB4",9,"\xC4","right"));
+	printf(printPadded("\xB4",10,"\xC4","right"));
 	console.crlf();
  	
 	for(hs in scoredata)
@@ -170,7 +170,7 @@ function	viewRankings()
 			printf(printPadded("\1w\1h" + scores[thisuser].kills + " \1k\1h\xB3",8," ","right"));
 			printf(printPadded("\1w\1h" + scores[thisuser].wins + " \1k\1h\xB3",7," ","right"));
 			printf(printPadded("\1w\1h" + scores[thisuser].losses + " \1k\1h\xB3",9," ","right"));
-			printf(printPadded("\1w\1h" + winPercentage.toFixed(2) + " % \1k\1h\xB3",9," ","right"));
+			printf(printPadded("\1w\1h" + winPercentage.toFixed(2) + " % \1k\1h\xB3",10," ","right"));
 			console.crlf();
 		}
 	}
@@ -181,7 +181,7 @@ function	viewRankings()
 	printf(printPadded("\xC1",8,"\xC4","right"));
 	printf(printPadded("\xC1",7,"\xC4","right"));
 	printf(printPadded("\xC1",9,"\xC4","right"));
-	printf(printPadded("\xD9",9,"\xC4","right"));
+	printf(printPadded("\xD9",10,"\xC4","right"));
 	console.crlf();
 	
 	console.putmsg("\r\n\1y\1h Scores will be reset when a player reaches \1c" + settings.pointsToWin + " \1ypoints.");
