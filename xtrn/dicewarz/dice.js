@@ -254,7 +254,6 @@ function 	deliverMessage(nextTurnPlayer,gameNumber)
 }
 function 	deliverKillMessage(killer,eliminated,gameNumber)
 {
-	var killer=system.username(killer);
 	var message="\1r\1h" + killer + " has eliminated you in \1yDice\1r-\1yWarz\1r game #\1y" + gameNumber + "\1r!\r\n\r\n";
 	if(!storeMessage(eliminated,message)) system.put_telegram(eliminated, message);
 }
@@ -265,7 +264,7 @@ function 	deliverSkipMessage(unum,gameNumber)
 }
 function	storeMessage(unum,msg)
 {
-	var ufname=game_dir + system.username(unum);
+	var ufname=game_dir + system.username(unum) + ".usr";
 	if(!file_exists(ufname)) return false;
 	else {
 		var user_online=false;
@@ -418,7 +417,7 @@ function	chooseGame()
 			{
 				if(game_data.singlePlayer) 
 				{
-					if(games.gameData[game_num].users[user.number]>0);
+					if(games.gameData[game_num].users[user.number]>=0);
 					else 
 					{
 						putMessage("\1r\1hGame #" + game_num + " is private.",x,y);
@@ -775,7 +774,7 @@ function 	getVote()
 }
 function 	getUserName(playerData,playerNumber)
 {
-	if(playerData.user>=0)
+	if(playerData.user>0)
 		return(system.username(playerData.user));
 	if(playerData.AI.name.length > 0)
 		return(playerData.AI.name);
@@ -1195,7 +1194,7 @@ function	GameSettings()
 {
 	//hardcoded defaults (in case of missing settings file)
 	this.pointsToWin=100;
-	this.minPoints=-2;
+	this.minScore=-2;
 	this.maxGames=100;
 	this.maxPerPlayer=30;
 	this.maxDice=8;
@@ -1221,7 +1220,7 @@ function	GameSettings()
 		sfile.open('r',true);
 		this.logEnabled=		sfile.iniGetValue(null,"enablelogging");
 		this.pointsToWin=		parseInt(sfile.iniGetValue(null,"pointstowin"),10);
-		this.minPoints=			parseInt(sfile.iniGetValue(null,"minpoints"),10);
+		this.minScore=			parseInt(sfile.iniGetValue(null,"minscore"),10);
 		this.maxGames=			parseInt(sfile.iniGetValue(null,"maxgames"),10);
 		this.maxPerPlayer=		parseInt(sfile.iniGetValue(null,"maxperplayer"),10);
 		this.minPlayers=		parseInt(sfile.iniGetValue(null,"minplayers"),10);
@@ -1267,7 +1266,8 @@ function	GameStatusInfo()
 			for(s in scores)
 			{
 				var score=scores[s];
-				sfile.iniSetValue(s,"score",score.score);
+				var points=score.score>=settings.minScore?score.score:settings.minScore;
+				sfile.iniSetValue(s,"score",points);
 				sfile.iniSetValue(s,"kills",score.kills);
 				sfile.iniSetValue(s,"wins",score.wins);
 				sfile.iniSetValue(s,"losses",score.losses);

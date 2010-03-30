@@ -146,7 +146,7 @@ function 	Map(c,r,p,gn)
 		if(numEliminated==(this.maxPlayers-1) || humans==0)
 		{
 			this.winner=this.lastEliminator;
-			if(this.lastEliminator>=0)
+			if(this.lastEliminator>0)
 			{	
 				this.assignPoints();
 			}
@@ -194,15 +194,15 @@ function 	Map(c,r,p,gn)
 		
 		dead.eliminated=true;
 		this.eliminated.push(playerNum1);
-		this.lastEliminator=playerNum2;
+		this.lastEliminator=killer.user;
 		var updaterankings=false;
 		
-		if(killer.user>=0)
+		if(killer.user>0)
 		{
 			games.loadRankings();
 			if(this.singlePlayer) scores[killer.user].score+=settings.killPointsSolo;
 			else scores[killer.user].score+=settings.killPointsMulti;
-			scores[killer.user].kills++;
+			scores[killer.user].kills+=1;
 			updaterankings=true;
 		}
 		if(dead.user>0) 
@@ -211,7 +211,7 @@ function 	Map(c,r,p,gn)
 				games.loadRankings();
 				updaterankings=true;
 			}
-			var kname= (killer.user<0?this.players[playerNum2].AI.name:system.username(killer.user));
+			var kname= (killer.user<1?this.players[playerNum2].AI.name:system.username(killer.user));
 			deliverKillMessage(kname,dead.user,this.gameNumber);
 			scores[dead.user].losses+=1;
 			if(this.singlePlayer)
