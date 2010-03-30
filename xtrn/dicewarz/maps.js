@@ -314,6 +314,7 @@ function 	Map(c,r,p,gn)
 	{										//RETURNS TRUE IF PLAYER : playerNumber CAN ATTACK FROM GRID INDEX : mapLocation
 		if(mapLocation>=0)		//IF A LOCATION IS PROVIDED, RETURN AN ARRAY OF NEIGHBORING TERRITORIES THAT CAN BE ATTACKED
 		{
+			if(this.grid[mapLocation].player!=playerNumber) return false;
 			options=[];
 			if(this.grid[mapLocation].dice>1)
 			{
@@ -328,6 +329,7 @@ function 	Map(c,r,p,gn)
 				}
 			}
 			if(options.length) return options;
+			else return false;
 		}
 		else				//OTHERWISE, SIMPLY DETERMINE WHETHER THE PLAYER CAN ATTACK AT ALL, AND RETURN TRUE OR FALSE
 		{
