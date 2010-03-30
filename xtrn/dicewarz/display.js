@@ -70,31 +70,11 @@ function 	drawVerticalLine(color/*, side*/)
 {
 	var ly=1;
 	var lx=menuColumn-1;
-	
-/*	OPTIONAL CODE FOR BOXING IN GAME AREA
-	
-	var topside="\xB4";
-	var bottomside="\xD9";
-	
-	//PARAMETER FOR DRAWING LEFT-HAND OR RIGHT-HAND SIDE OF BOXED IN AREA
-	if(side) 
-	{
-		lx=1;
-		topside="\xC3";
-		bottomside="\xC0";
-	}
- 	console.gotoxy(lx,ly); ly++
-	console.putmsg(color + "\xB3");
-	console.gotoxy(lx,ly); ly++
-	console.putmsg(color + topside); 
-*/
 	for(;ly<=24;ly++)
 	{
 		console.gotoxy(lx,ly);
 		console.putmsg(color + "\xBA");
 	}
-//	console.gotoxy(lx,ly);
-//	console.putmsg(color + bottomside);
 }
 
 function 	wipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
@@ -104,20 +84,30 @@ function 	wipeCursor(lr)			//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 	console.gotoxy(side,row);
 }
 
-function 	queueMessage(message,x,y)
+function 	queueMessage(message)
 {
-	messages.push({'msg':message,'x':x,'y':y});
+	messages.push(message);
 }
 
 function 	displayMessages()
 {
-	for(mess in messages) {
-		console.gotoxy(messages[mess].x,messages[mess].y+1);
-		console.putmsg(messages[mess].msg);
+	var x=30;
+	var y=20;
+	var fileName=game_dir + user.alias + ".usr";
+	if(file_size(fileName)>0) {
+		var file=new File(fileName);
+		file.open('r',false);
+		messages.concat(file.readAll());
+		file.truncate();
+		file.close();
+	}
+	
+	while(messages.length) {
+		console.gotoxy(x,y);
+		console.putmsg(messages.shift());
 		console.cleartoeol();
 		mswait(500);
 	}
-	messages=[];
 }
 
 function 	putMessage(message,x,y)
