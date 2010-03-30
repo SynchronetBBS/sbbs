@@ -211,8 +211,6 @@ function 	Map(c,r,p,gn)
 				games.loadRankings();
 				updaterankings=true;
 			}
-			var kname= (killer.user<1?this.players[playerNum2].AI.name:system.username(killer.user));
-			deliverKillMessage(kname,dead.user,this.gameNumber);
 			scores[dead.user].losses+=1;
 			if(this.singlePlayer)
 			{
@@ -221,6 +219,8 @@ function 	Map(c,r,p,gn)
 			}
 			else
 			{
+				var kname= (killer.user<1?this.players[playerNum2].AI.name:system.username(killer.user));
+				deliverKillMessage(kname,dead.user,this.gameNumber);
 				scores[dead.user].score+=settings.deathPointsMulti;
 				if(scores[dead.user].score<settings.minScore) scores[dead.user].score=settings.minScore;
 			}
