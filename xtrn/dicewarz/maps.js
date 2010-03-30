@@ -83,7 +83,7 @@ function 	Map(c,r,p,gn)
 	
 	this.rows=r;						//MAP ROWS 
 	this.columns=c;						//MAP COLUMNS
-	this.maxDice=maxDice;					//MAXIMUM DICE PER TERRITORY
+	this.maxDice=settings.maxDice;		//MAXIMUM DICE PER TERRITORY
 	this.maxPlayers=p;					//NUMBER OF PLAYERS IN GAME
 	this.nextTurn=0;
 
@@ -104,7 +104,7 @@ function 	Map(c,r,p,gn)
 		nextTurn=this.nextTurn;
 		nextTurnPlayer=this.players[this.turnOrder[nextTurn]].user;
 		
-		if(this.status!=0)
+		if(this.status!=0 && !this.singlePlayer)
 		{
 			if(this.countActiveHumans<2) 
 			{
@@ -173,44 +173,60 @@ function 	Map(c,r,p,gn)
 		}
 		return count;
 	}
-	this.assignPoints=			function()	//TODO: REWORK SCORING SYSTEM COMPLETELY
+	this.assignPoints=			function()	
 	{
 		games.loadRankings();
+		scores[this.winner].wins+=1;
 		if(this.singlePlayer) 
 		{
-			scores[this.winner].wins+=1;
+			scores[this.winner].score+=settings.winPointsSolo;
 		}
 		else 
 		{
-			var points=this.players.length<5?1:2;
-			scores[this.winner].score=parseInt(scores[this.winner].score,10) + points;
+			scores[this.winner].score+=settings.winPointsMulti;
 		}
 		games.storeRankings();
 	}
-	this.eliminatePlayer=		function(playerNumber,eliminator)
+	this.eliminatePlayer=		function(playerNum1,playerNum2)
 	{
-		dead=this.players[playerNumber];
+		var dead=this.players[playerNum1];
+		var killer=this.players[playerNum2];
+		
 		dead.eliminated=true;
-		this.eliminated.push(playerNumber);
-		this.lastEliminator=eliminator;
-		if(dead.user>0) 
+		this.eliminated.push(playerNum1);
+		this.lastEliminator=playerNum2;
+		var updaterankings=false;
+		
+		if(killer.user>=0)
 		{
 			games.loadRankings();
+			if(this.singlePlayer) scores[killer.user].score+=settings.killPointsSolo;
+			else scores[killer.user].score+=settings.killPointsMulti;
+			scores[killer.user].kills++;
+			updaterankings=true;
+		}
+		if(dead.user>0) 
+		{
+			if(!updaterankings)	{
+				games.loadRankings();
+				updaterankings=true;
+			}
+			var kname= (killer.user<0?this.players[playerNum2].AI.name:system.username(killer.user));
+			deliverKillMessage(kname,dead.user,this.gameNumber);
+			scores[dead.user].losses+=1;
 			if(this.singlePlayer)
 			{
-				scores[dead.user].losses+=1;
 				this.status=0;
+				scores[dead.user].score+=settings.deathPointsSolo;
 			}
 			else
 			{
-				var pointBuffer=7-this.maxPlayers;
-				var offset=(this.players.length<5?2:1);
-				pts=points[pointBuffer+(this.eliminated.length-offset)];
-				scores[dead.user].score=parseInt(scores[dead.user].score,10) + pts;
-				if(scores[dead.user].score<minScore) scores[dead.user].score=parseInt(minScore,10);
+				scores[dead.user].score+=settings.deathPointsMulti;
+				if(scores[dead.user].score<settings.minScore) scores[dead.user].score=settings.minScore;
 			}
-			games.storeRankings();
 		}
+		if(updaterankings) games.storeRankings();
+		if(this.checkElimination()) games.storeGame(this.gameNumber); 
 	}
 	this.setEliminated=			function()
 	{										//RUNS AT STARTUP, STORING GAME ELIMINATION DATA UPON LOADING EACH GAME
@@ -245,7 +261,6 @@ function 	Map(c,r,p,gn)
 	}								
 	this.displayGrid=			function()
 	{										//DISPLAYS THE LOCATION DATA FOR EACH COMPANY
-		drawVerticalLine("\1w\1h");
 		for(uu in this.used)
 		{
 			this.grid[uu].displayBorder(border_color);
@@ -291,11 +306,8 @@ function 	Map(c,r,p,gn)
 		placed=this.placeDice(playerNumber,numDice);
 		if(this.winner<0) this.checkElimination();
 		this.getNextTurn();
-		if(!this.singlePlayer) 
-		{
-			if(this.players[playerNumber].user>0)
-				this.notify();
-		}
+		if(this.players[playerNumber].user>0)
+			this.notify();
 		return placed;
 	}
 	this.canAttack=				function(playerNumber,mapLocation)
@@ -396,6 +408,7 @@ function 	Map(c,r,p,gn)
 	}
 	this.displayPlayers=		function()
 	{										//DISPLAY PLAYER INFO (RIGHT SIDE)
+		drawVerticalLine("\1w\1h");
 		var xxx=menuColumn;
 		var yyy=menuRow;
 		
