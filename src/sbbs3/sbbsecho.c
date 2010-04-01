@@ -3649,10 +3649,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 				SAFECOPY(hdr.from,msg.from);
 
 				tt=msg.hdr.when_written.time;
-				tm=localtime(&tt);
-				sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
-					,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
-					,tm->tm_hour,tm->tm_min,tm->tm_sec);
+				if((tm=localtime(&tt)) != NULL)
+					sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
+						,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
+						,tm->tm_hour,tm->tm_min,tm->tm_sec);
 
 				SAFECOPY(hdr.to,msg.to);
 
