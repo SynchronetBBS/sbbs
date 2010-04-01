@@ -103,7 +103,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 			sprintf(error,"%d opening %s",errno,str);
 			return(FALSE); 
 		}
-		for(i=0;i<TOTAL_TEXT && !feof(instream) && !ferror(instream);i++)
+		for(i=0;i<TOTAL_TEXT;i++)
 			if((text[i]=readtext(&line,instream,i))==NULL) {
 				i--;
 				break;
