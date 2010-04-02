@@ -226,6 +226,7 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 		return(JS_FALSE);
 	}
 
+#ifndef USE_JS_OPERATION_CALLBACK
 	/* Give up timeslices every once in a while */
 	if(branch->yield_interval && (branch->counter%branch->yield_interval)==0) {
 		jsrefcount	rc;
@@ -238,6 +239,7 @@ js_CommonBranchCallback(JSContext *cx, js_branch_t* branch)
 	/* Periodic Garbage Collection */
 	if(branch->gc_interval && (branch->counter%branch->gc_interval)==0)
 		JS_MaybeGC(cx), branch->gc_attempts++;
+#endif
 
     return(JS_TRUE);
 }
