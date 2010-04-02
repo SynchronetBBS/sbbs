@@ -254,7 +254,9 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 	JSObject*		obj;
 	JSErrorReporter	reporter;
 #ifndef EVAL_BRANCH_CALLBACK
+#ifndef USE_JS_OPERATION_CALLBACK
 	JSBranchCallback callback;
+#endif
 #endif
 
 	if(argc<1)
@@ -276,12 +278,20 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 
 #ifdef EVAL_BRANCH_CALLBACK
 	JS_SetContextPrivate(cx, JS_GetPrivate(parent_cx, parent_obj));
+#ifdef USE_JS_OPERATION_CALLBACK
+	JS_SetOperationCallback(cx, js_OperationCallback);
+#else
 	JS_SetBranchCallback(cx, js_BranchCallback);
+#endif
 #else	/* Use the branch callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
+#ifdef USE_JS_OPERATION_CALLBACK
+	JS_SetOperationCallback(cx, JS_GetBranchCallback(parent_cx));
+#else
 	callback=JS_SetBranchCallback(parent_cx,NULL);
 	JS_SetBranchCallback(parent_cx, callback);
 	JS_SetBranchCallback(cx, callback);
+#endif
 #endif
 
 	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL

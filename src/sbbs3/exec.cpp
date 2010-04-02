@@ -553,6 +553,19 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	return(js_CommonBranchCallback(cx,&sbbs->js_branch));
 }
 
+#ifdef USE_JS_OPERATION_CALLBACK
+static JSBool
+js_OperationCallback(JSContext *cx)
+{
+	JSBool	ret;
+
+	JS_SetOperationCallback(cx, NULL);
+	ret=js_BranchCallback(cx, NULL);
+	JS_SetOperationCallback(cx, js_OperationCallback);
+	return ret;
+}
+#endif
+
 static const char* js_ext(const char* fname)
 {
 	if(getfext(fname)==NULL)
@@ -663,7 +676,11 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
 
 	js_branch.counter=0;	// Reset loop counter
 
+#ifdef USE_JS_OPERATION_CALLBACK
+	JS_SetOperationCallback(js_cx, js_OperationCallback);
+#else
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
+#endif
 
 	js_PrepareToExecute(js_cx, js_glob, path, startup_dir);
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);

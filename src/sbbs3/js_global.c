@@ -166,6 +166,19 @@ static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
 	return js_CommonBranchCallback(cx,&bg->branch);
 }
 
+#ifdef USE_JS_OPERATION_CALLBACK
+static JSBool
+js_OperationCallback(JSContext *cx)
+{
+	JSBool	ret;
+
+	JS_SetOperationCallback(cx, NULL);
+	ret=js_BranchCallback(cx, NULL);
+	JS_SetOperationCallback(cx, js_OperationCallback);
+	return ret;
+}
+#endif
+
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -298,7 +311,11 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		/* Set our branch callback (which calls the generic branch callback) */
 		JS_SetContextPrivate(bg->cx, bg);
+#ifdef USE_JS_OPERATION_CALLBACK
+		JS_SetOperationCallback(bg->cx, js_OperationCallback);
+#else
 		JS_SetBranchCallback(bg->cx, js_BranchCallback);
+#endif
 
 		/* Save parent's 'log' function (for later use by our log function) */
 		if(JS_GetProperty(cx, obj, "log", &val)) {
