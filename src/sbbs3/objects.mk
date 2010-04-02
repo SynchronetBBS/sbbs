@@ -287,3 +287,9 @@ SMBACTIV_OBJS = \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+
+DSTSEDIT_OBJS = \
+			$(OBJODIR)$(DIRSEP)dstsedit$(OFILE)\
+			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
+			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
+
