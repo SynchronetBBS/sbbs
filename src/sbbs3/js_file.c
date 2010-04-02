@@ -2257,8 +2257,6 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 	}
 
-	*rval = JSVAL_VOID;
-
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"calloc failed");
 		return(JS_FALSE);
