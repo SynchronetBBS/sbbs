@@ -38,6 +38,7 @@ extern "C" {
 #endif
 DLLEXPORT JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line);
 DLLEXPORT void DLLCALL jsrt_Release(JSRuntime *);
+DLLEXPORT void DLLCALL jsrt_TriggerAll(void);
 #if defined(__cplusplus)
 }
 #endif

@@ -126,3 +126,22 @@ void DLLCALL jsrt_Release(JSRuntime *rt)
 	}
 #endif
 }
+
+void DLLCALL jsrt_TriggerAll(void)
+{
+#ifdef USE_JS_OPERATION_CALLBACK
+	int	i;
+	int j;
+	JSContext	*iterp,*cx;
+
+	for(i=0; i<JSRT_QUEUE_SIZE; i++) {
+		pthread_mutex_lock(&jsrt_mutex);
+		if(jsrt_queue[i].used) {
+			iterp=NULL;
+			while((cx = JS_ContextIterator(jsrt_queue[i].rt, &iterp)) != NULL)
+				JS_TriggerOperationCallback(cx);
+		}
+		pthread_mutex_unlock(&jsrt_mutex);
+	}
+#endif
+}
