@@ -1244,7 +1244,11 @@ static void js_static_service_thread(void* arg)
 		val = BOOLEAN_TO_JSVAL(JS_FALSE);
 		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
+#ifdef USE_JS_OPERATION_CALLBACK
+		JS_SetOperationCallback(js_cx, js_OperationCallback);
+#else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
+#endif
 	
 		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL)  {
 			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
