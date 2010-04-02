@@ -286,7 +286,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 #else	/* Use the branch callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
 #ifdef USE_JS_OPERATION_CALLBACK
-	JS_SetOperationCallback(cx, JS_GetBranchCallback(parent_cx));
+	JS_SetOperationCallback(cx, JS_GetOperationCallback(parent_cx));
 #else
 	callback=JS_SetBranchCallback(parent_cx,NULL);
 	JS_SetBranchCallback(parent_cx, callback);
