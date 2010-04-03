@@ -140,7 +140,7 @@ void DLLCALL jsrt_TriggerAll(void)
 		pthread_mutex_lock(&jsrt_mutex);
 #ifdef SHARED_RUNTIMES
 		if(jsrt_queue[i].created) {
-#endif
+#else
 		if(jsrt_queue[i].used) {
 #endif
 			iterp=NULL;
