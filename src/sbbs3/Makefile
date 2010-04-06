@@ -262,3 +262,8 @@ $(SMBACTIV): $(SMBACTIV_OBJS)
 $(SEXYZ): $(SEXYZ_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(MT_LDFLAGS) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV-MT_LIBS)
+
+# DSTSEDIT
+$(DSTSEDIT): $(DSTSEDIT_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(UTIL_LDFLAGS) -e$@ $** $(XPDEV_LIBS)
