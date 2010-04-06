@@ -8,8 +8,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "dirwrap.h"
 #include "sbbs.h"
+#include "dirwrap.h"
 #include "nopen.h"
 #include "sbbsdefs.h"
 #include "conwrap.h"
