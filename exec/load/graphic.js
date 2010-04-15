@@ -25,25 +25,39 @@ function Graphic(w,h,attr,ch)
 		this.width=w;
 
 	this.data=new Array(w);
+	this.past=new Array(w);
+	this.future=new Array(w);
+	this.lines=0;
 	var x;
 	var y;
+	
 	for(y=0; y<this.height; y++) {
 		for(x=0; x<this.width; x++) {
 			if(y==0) {
 				this.data[x]=new Array(h);
+				this.past[x]=[];
+				this.future[x]=[];
 			}
-			this.data[x][y]=new Object;
-			this.data[x][y].ch=ch;
-			this.data[x][y].attr=attr;
+			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
 		}
 	}
+	this.home=Graphic_home;
+	this.end=Graphic_end;
+	this.pgup=Graphic_pgup;
+	this.pgdn=Graphic_pgdn;
 	this.draw=Graphic_draw;
 	this.drawfx=Graphic_drawfx;
+	this.drawslow=Graphic_drawslow;
 	this.save=Graphic_save;
 	this.load=Graphic_load;
 	this.write=Graphic_write;
 	this.scroll=Graphic_scroll;
 	this.putmsg=Graphic_putmsg;
+}
+function Graphic_sector(ch,attr)
+{
+	this.ch=ch;
+	this.attr=attr;
 }
 
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
@@ -78,8 +92,48 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
 				console.attributes=this.data[x+xoff][y+yoff].attr;
+				var ch=this.data[x+xoff][y+yoff].ch;
+				console.write(ch?ch:this.ch);
+			}
+		}
+	}
+	return(true);
+}
+function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
+{
+	var x;
+	var y;
+
+	if(xpos==undefined)
+		xpos=1;
+	if(ypos==undefined)
+		ypos=1;
+	if(width==undefined)
+		width=this.width;
+	if(height==undefined)
+		height=this.height;
+	if(xoff==undefined)
+		xoff=0;
+	if(yoff==undefined)
+		yoff=0;
+	if(xoff+width > this.width || yoff+height > this.height) {
+		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
+		return(false)
+	}
+	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
+		alert("Attempt to draw outside of screen");
+		return(false);
+	}
+	for(y=0;y<height; y++) {
+		console.gotoxy(xpos,ypos+y);
+		for(x=0; x<width; x++) {
+			// Do not draw to the bottom left corner of the screen-would scroll
+			if(xpos+x != console.screen_columns
+					|| ypos+y != console.screen_rows) {
+				console.attributes=this.data[x+xoff][y+yoff].attr;
 				console.write(this.data[x+xoff][y+yoff].ch);
 			}
+			mswait(2);
 		}
 	}
 	return(true);
@@ -157,7 +211,6 @@ function Graphic_load(filename)
 	}
 	return(true);
 }
-
 function Graphic_write(xpos, ypos, txt, attr)
 {
 	var x=xpos-1;
@@ -175,29 +228,75 @@ function Graphic_write(xpos, ypos, txt, attr)
 		}
 	}
 }
-
-function Graphic_scroll(lines)
+function Graphic_end()
 {
-	var x;
-	var y;
-
-	if(lines<1)	/* Do not (yet... ToDo) allow negative scroll */
-		return;
-
-	for(y=lines; y<this.height; y++) {
+	while(this.future[0].length) {
 		for(x=0; x<this.width; x++) {
-			this.data[x][y-lines].ch=this.data[x][y].ch;
-			this.data[x][y-lines].attr=this.data[x][y].attr;
-		}
-	}
-	for(y=this.height-lines; y<this.height; y++) {
-		for(x=0; x<this.width; x++) {
-			this.data[x][y].ch=this.ch;
-			this.data[x][y].attr=this.attribute;
+			this.past[x].push(this.data[x].shift());
+			this.data[x].push(this.future[x].shift());
 		}
 	}
 }
-
+function Graphic_pgup()
+{
+	var line=0;
+	while(this.past[0].length && line<this.height) {
+		for(x=0; x<this.width; x++) {
+			this.future[x].unshift(this.data[x].pop());
+			this.data[x].unshift(this.past[x].pop());
+		}
+		line++;
+	}
+}
+function Graphic_pgdn()
+{
+	var line=0;
+	while(this.future[0].length && line<this.height) {
+		for(x=0; x<this.width; x++) {
+			this.past[x].push(this.data[x].shift());
+			this.data[x].push(this.future[x].shift());
+		}
+		line++;
+	}
+}
+function Graphic_home()
+{
+	while(this.past[0].length) {
+		for(x=0; x<this.width; x++) {
+			this.future[x].unshift(this.data[x].pop());
+			this.data[x].unshift(this.past[x].pop());
+		}
+	}
+}
+function Graphic_scroll(dir)
+{
+	switch(dir) 
+	{
+		case 1:
+			if(this.future[0].length>0) {
+				for(x=0; x<this.width; x++) {
+						this.past[x].push(this.data[x].shift());
+						this.data[x].push(this.future[x].shift());
+				}
+			}
+			break;
+		case -1:
+			if(this.past[0].length>0) {
+				for(x=0; x<this.width; x++) {
+					this.future[x].unshift(this.data[x].pop());
+					this.data[x].unshift(this.past[x].pop());
+				}
+			}
+			break;
+		default:
+			for(x=0; x<this.width; x++) {
+					this.past[x].push(this.data[x].shift());
+					this.data[x].push(new Graphic_sector(this.ch,this.attribute));
+			}
+			if(this.lines<this.height) this.lines++;
+			break;
+	}
+}
 /* Converts a text string to binary format and appends it to a file */
 function Graphic_save(file,txt)
 {
@@ -227,14 +326,13 @@ function Graphic_save(file,txt)
 	else alert("Incompatible data type");
 	binFile.close();
 }
-
 /* Returns the number of times scrolled */
 function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 {
 	var curattr=attr;
 	var ch;
-	var x=xpos-1;
-	var y=ypos-1;
+	var x=xpos?xpos-1:0;
+	var y=ypos?ypos-1:this.lines;
 	var p=0;
 	var scrolls=0;
 
@@ -248,10 +346,15 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			return bbs.atcode(code);
 		}
 	);
+	if(scroll && y==this.height) {
+		scrolls++;
+		this.scroll();
+		y--;
+	};
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
-
+	debug("placing text: " + txt);
 	while(p<txt.length && x<this.width && y<this.height) {
 		ch=txt.substr(p++,1);
 		switch(ch) {
@@ -267,7 +370,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 							y++;
 							if(scroll && y>=this.height) {
 								scrolls++;
-								this.scroll(1);
+								this.scroll();
 								y--;
 							}
 						}
@@ -344,7 +447,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						y++;
 						if(scroll && y>=this.height) {
 							scrolls++;
-							this.scroll(1);
+							this.scroll();
 							y--;
 						}
 						break;
@@ -362,11 +465,14 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				x=0;
 				break;
 			case '\n':
-				y++;
-				if(scroll && y>=this.height) {
-					scrolls++;
-					this.scroll(1);
-					y--;
+				if(this.lines<this.height) this.lines++;
+				if(p<txt.length-1) {
+					y++;
+					if(scroll && y>=this.height) {
+						scrolls++;
+						this.scroll();
+						y--;
+					}
 				}
 				break;
 			default:
@@ -378,7 +484,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					y++;
 					if(scroll && y>=this.height) {
 						scrolls++;
-						this.scroll(1);
+						this.scroll();
 						y--;
 					}
 				}
