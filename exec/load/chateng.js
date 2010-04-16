@@ -185,6 +185,10 @@ function ChatEngine(root)
 		if(ignore[alias]==true) ignore[alias]=false;
 		else ignore[alias]==true;
 	}
+	this.getUserList=function()
+	{
+		
+	}
 	this.findUser=function(id)
 	{
 		//return stream.findUser(id);
@@ -223,7 +227,7 @@ function ChatEngine(root)
 	this.receive=function()
 	{
 		var packet=stream.receive();
-		if(packet && packet.message) {
+		if(packet && packet.txt) {
 			this.processData(packet);
 		}
 	}
@@ -304,7 +308,7 @@ function ChatEngine(root)
 	this.submitMessage=function()
 	{
 		if(strlen(this.buffer)>0) {
-			this.send(this.buffer,message.level,message.scope,message.source,message.target);
+			this.send(this.buffer,message.level,message.scope,user.alias,message.target);
 			switch(message.scope) 
 			{
 			case flag_global:
@@ -455,10 +459,10 @@ function ChatEngine(root)
 		switch(data.scope)
 		{
 		case flag_private:
-			if(data.target==user.alias) this.display(data.message,private_color + "\1h",data.source);
+			if(data.target==user.alias) this.display(data.txt,private_color + "\1h",data.source);
 			break;
 		case flag_global:
-			this.display(data.message,global_color + "\1h",data.source);
+			this.display(data.txt,global_color + "\1h",data.source);
 			break;
 		case flag_normal:
 		default:
@@ -466,16 +470,16 @@ function ChatEngine(root)
 				switch(data.level) 
 				{
 				case flag_alert:
-					this.display(data.message,alert_color);
+					this.display(data.txt,alert_color);
 					break;
 				case flag_notice:
 				default:
-					this.display(data.message,notice_color);
+					this.display(data.txt,notice_color);
 					break;
 				}
 			} else	if(data.source==user.alias) {
-				this.display(data.message,local_color,data.source);
-			} else this.display(data.message,remote_color,source);
+				this.display(data.txt,local_color,data.source);
+			} else this.display(data.txt,remote_color,data.source);
 			break;
 		}
 	}
