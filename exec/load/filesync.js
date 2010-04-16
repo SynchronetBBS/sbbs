@@ -1,36 +1,54 @@
-const connection_timeout=10;
-const tries=5;
+//$Id$
+//$Revision$
+//FILE SYNCHRONIZATION SCRIPT
+//USED BY "commservice.js" & "commclient.js"
+load("funclib.js");
 
-function comm_sync()
+const connection_timeout=5;
+const max_buffer=10240;
+var descriptor=argv[0];
+var query=js.eval(argv[1]);
+var hub_address=argv[2];
+var hub_port=argv[3];
+var sock=new Socket();
+
+function file_sync()
 {
-	var data=parse_query(query);
-	var session_id=data[0].substr(1);
-	var task=data[1];
-	var filemask=data[2];
-	var filedate=data[3];
-	var module=get_module(session_id);
-	
+	if(hub_address && hub_port) {
+		sock.connect(hub_address,hub_port,connection_timeout);
+	} else if(descriptor) {
+		sock.descriptor=descriptor;
+	} else {
+		debug("invalid arguments",LOG_WARNING);
+		return false;
+	}
+	if(!testSocket(sock)) {
+		return false;
+	}
+	var module=get_module(query.id);
 	if(!module) return false;
 	
-	log("synchronizing files: " + filemask);
-	switch(task)
-	{
-		case "#send":
-			sync_remote(session_id,module.working_directory,filemask);
-			break;
-		case "#recv":
-			sync_local(session_id,module.working_directory,filemask);
-			break;
-		case "#askrecv":
-			receive_file(session_id,module.working_directory,filemask,filedate);
-			break;
-		case "#endquery":
-			break;
-		default:
-			log("unknown sync request: " + task);
-			break;
+	debug("synchronizing files: " + query.filemask,LOG_DEBUG);
+	try {
+		switch(query.command)
+		{
+			case "send":
+				sync_remote(query,module.working_directory);
+				break;
+			case "recv":
+				sync_local(query,module.working_directory);
+				break;
+			case "askrecv":
+				receive_file(module.working_directory+query.filemask,query.filedate);
+				break;
+			default:
+				debug("unknown sync request: " + query.command,LOG_WARNING);
+				break;
+		}
+	} catch(e) {
+		debug("FILESYNC ERROR: " + e,LOG_WARNING);
 	}
-	sock.close();
+	if(sock.is_connected) sock.close();
 	return true;
 }
 function get_module(id)
@@ -39,7 +57,7 @@ function get_module(id)
 	comminit.open('r');
 	var match=comminit.iniGetSections(id);
 	if(!match.length) {
-		log("module not found, aborting: " + id);
+		debug("module not found, aborting: " + id,LOG_WARNING);
 		sock.send("#abort\r\n");
 		return false;
 	}
@@ -47,142 +65,186 @@ function get_module(id)
 	comminit.close();
 	return module;
 }
-function parse_query(q)
+function sync_remote(data,dir)
 {
-	if(q) return q.split("");
-	return false;
-}
-function sync_remote(session_id,dir,filemask)
-{
-	var files=directory(dir + file_getname(filemask));
-	if(files.length>0) log("sending " + files.length + " files");
+	var files=directory(dir + file_getname(data.filemask));
+	if(files.length>0) debug("sending " + files.length + " files",LOG_DEBUG);
 	else {
-		log("file(s) not found: " + dir + filemask);
-		sock.send("@" + session_id + "#abort\r\n");
-	}
-	for(var f=0;f<files.length;f++)
-	{
-		var filename=file_getname(files[f]);
-		var filedate=file_date(files[f]);
-		
-		sock.send("@" + session_id + "#askrecv" + filename + "" + filedate + "\r\n");
-		var data=sock.recvline(1024,connection_timeout);
-		if(data!=null)
-		{
-			var response=parse_query(data);
-			switch(response[1])
-			{
-				case "#ok":
-					log("sending file: " + filename);
-					sock.sendfile(files[f]);
-					sock.send("#eof\r\n");
-					log("file sent: " + filename);
-					break;
-				case "#skip":
-					log("skipping file: " + filename);
-					break;
-				case "#abort":
-					log("aborting query");
-					return false;
-				default:
-					log("unknown response: " + response);
-					sock.send("#abort\r\n");
-					return false;
-			}
-		} else {
-			log("transfer timed out: " + files[f]);
-			return false;
-		}
-	}
-	sock.send("@" + session_id + "#endquery\r\n");
-	return true;
-}
-function sync_local(session_id,dir,filemask)
-{
-	log("retrieving files: " + filemask);
-	if(!sock.is_connected) log("connection interrupted");
-	sock.send("@" + session_id + "#send" + file_getname(filemask) + "\r\n");
-	
-	while(sock.is_writeable) 
-	{
-		var data=sock.recvline(1024,connection_timeout);
-		if(data!=null)
-		{
-			data=parse_query(data);
-			var response=data[1];
-			var file=data[2];
-			var date=data[3];
-			
-			switch(response)
-			{
-				case "#askrecv":
-					receive_file(dir,file,date);
-					break;
-				case "#abort":
-					sock.close();
-					break;
-				case "#endquery":
-					sock.close();
-					break;
-				default:
-					log("unknown response: " + response);
-					sock.close();
-					break;
-			}
-		} else {
-			log("transfer timed out: " + filemask);
-			sock.close();
-		}
-	}
-}
-function receive_file(session_id,dir,filename,filedate)
-{
-	fname=dir+filename;
-	if(compare_dates(file_date(fname),filedate))
-	{
-		sock.send("@" + session_id + "#skip\r\n");
+		debug("file(s) not found: " + dir + data.filemask,LOG_WARNING);
 		return false;
 	}
-	sock.send("@" + session_id + "#ok\r\n");
-
-	var file=new File(fname + ".tmp");
-	file.open('w',false);
-	log("receiving file: " + filename);
-	while(sock.is_writeable)
-	{
-		var data=sock.recvline(1024,connection_timeout);
-		if(data!=null)
+	for(var f=0;f<files.length;f++) {
+		if(!send_file(files[f],data)) break;
+	}
+	respond("endquery");
+}	
+function respond(response)
+{
+	var data=new Object();
+	data.command=response;
+	if(!socket_send(data)) return false;
+	return true;
+}
+function send_file(filename,data)
+{
+	/*
+		"data" object already contains the properties 
+		needed by commservice to recognize the information
+		as a file request
+	*/
+	data.command="askrecv";
+	data.filemask=file_getname(filename);
+	data.filedate=file_date(filename);
+	if(!socket_send(data)) return false;
+	var response=get_response();
+	if(response) {
+		switch(response.command)
 		{
-			switch(data)
-			{
-				case "#abort":
-					log("transfer aborted");
-					file.close();
-					file_remove(file.name);
+			case "ok":
+				if(!socket_send(load_file(filename))) {
+					debug("file not sent: " + filename,LOG_WARNING);
 					return false;
-				case "#eof":
-					log("file received: " + filename);
-					file.close();
-					if(file_exists(fname+".bck")) file_remove(fname+".bck");
-					file_rename(fname,fname+".bck");
-					file_rename(file.name,fname);
-					file_utime(filename,time(),filedate);
-					parent_queue.write({'filename':filename,'session_id':session_id,'filedate':filedate,'remote_ip_address':sock.remote_ip_address});
-					return true;
+				}
+				debug("file sent: " + filename,LOG_DEBUG);
+				break;
+			case "skip":
+				debug("skipping file: " + filename,LOG_DEBUG);
+				break;
+			case "abort":
+				debug("aborting query",LOG_DEBUG);
+				return false;
+			default:
+				debug("unknown response: " + response.command,LOG_WARNING);
+				return false;
+		}
+		return true;
+	} else {
+		debug("transfer timed out: " + filename,LOG_WARNING);
+		return false;
+	}
+}
+function socket_send(data)
+{
+	if(!testSocket(sock)) return false;
+	if(!sock.send(data.toSource() + "\r\n")) return false;
+	return true;
+}
+function load_file(filename)
+{
+	var d=new Object();
+	var f=new File(filename);
+	f.open('r',true,max_buffer);
+	var contents=f.readAll();
+	f.close();
+	var filesize=file_size(filename);
+	d.file=contents;
+	d.filesize=filesize;
+	return d;
+}
+function get_response()
+{
+	if(!testSocket(sock)) {
+		debug("error reading from socket",LOG_WARNING);
+		return false;
+	}
+	response=sock.recvline(max_buffer,connection_timeout);
+	if(response != null) {
+		return js.eval(response);
+	} else {
+		if(sock.error) {
+			debug("SOCKET ERROR: " + sock.error,LOG_WARNING);
+			debug(sock,LOG_WARNING);
+		}
+		else {
+			debug("socket timed out",LOG_WARNING);
+		}
+		return false;
+	}
+}
+function sync_local(data,dir)
+{
+	var aborted=false;
+	data.command="send";
+	if(!socket_send(data)) {
+		debug("error retrieving files",LOG_WARNING);
+		return false;
+	}
+	
+	debug("retrieving files: " + dir + data.filemask,LOG_DEBUG);
+	while(!aborted) {
+		var response=get_response();
+		if(response) {
+			switch(response.command)
+			{
+				case "askrecv":
+					if(compare_dates(file_date(response.filemask),response.filedate))
+					{
+						debug("skipping file: " + response.filemask,LOG_DEBUG);
+						respond("skip");
+						break;
+					} else {
+						respond("ok");
+						if(!receive_file(dir+response.filemask,response.filedate)) {
+							aborted=true;
+						} 
+						break;
+					}
+				case "abort":
+					debug("aborting query",LOG_DEBUG);
+					aborted=true;
+					break;
+				case "endquery":
+					debug("query complete",LOG_DEBUG);
+					aborted=true;
+					break;
 				default:
-					file.writeln(data);
+					debug("unknown response: " + response.command,LOG_WARNING);
+					aborted=true;
 					break;
 			}
 		} else {
-			log("transfer timed out: " + filename);
-			file.close();
-			file_remove(file.name);
-			return false;
+			aborted=true;
 		}
 	}
-	file.close();
-	file_remove(file.name);
-	return false;
+	if(sock.is_connected) sock.close();
+}
+function tell_mommy(ip,file,date)
+{
+	if(parent_queue) {
+		var data=new Object();
+		data.remote_ip_address=ip;
+		data.filename=file;
+		data.filedate=date;
+		parent_queue.write(data);
+	}
+}
+function receive_file(filename,filedate)
+{
+	var file=new File(filename + ".tmp");
+	file.open('w',false);
+	if(!file.is_open) {
+		debug("error opening file: " + filename,LOG_WARNING);
+		return false;
+	}
+	
+	debug("receiving file: " + filename,LOG_DEBUG);
+	var data=get_response();
+	if(data) {
+		file.writeAll(data.file);
+		log("received: " + data.filesize + " bytes");
+		file.close();
+		if(file_exists(filename+".bck")) file_remove(filename+".bck");
+		file_rename(filename,filename+".bck");
+		file_rename(file.name,filename);
+		file_utime(filename,time(),filedate);
+		tell_mommy(sock.remote_ip_address,filename,filedate);
+		return true;
+	} else {
+		debug("error transferring file:" + filename,LOG_WARNING);
+		file.close();
+		file_remove(file.name);
+		return false;
+	}
 }
 function compare_dates(local,remote)
 {
@@ -192,35 +254,5 @@ function compare_dates(local,remote)
 	if(local>remote) return true;
 	else return false;
 }
-function hub_route(hub_address,hub_port)
-{
-	log("routing data to hub");
-	var hub=new Socket();
-	hub.connect(hub_address,hub_port,connection_timeout);
-	hub.send(query + "\r\n");
-	log("sent query: " + query);
-	
-	while(hub.is_connected && sock.is_writeable)
-	{
-		if(hub.data_waiting) 
-		{
-			sock.send(hub.recvline(1024,connection_timeout)+"\r\n");
-		}
-		if(sock.data_waiting) 
-		{
-			hub.send(sock.recvline(1024,connection_timeout)+"\r\n");
-		}
-	}
-}
 
-var descriptor=argv[0];
-var query=argv[1];
-var hub_address=argv[2];
-var hub_port=argv[3];
-
-var sock=new Socket();
-sock.descriptor=descriptor;
-
-if(hub_address && hub_port) hub_route(hub_address,hub_port);
-else comm_sync();
-
+file_sync();
