@@ -5,6 +5,7 @@
 
 function getColor(color)
 {
+	if(!color) return false;
 	switch(color.toUpperCase())
 	{
 		case "BLACK":
@@ -123,16 +124,27 @@ function centerString(string,length,padding)
 	}
 	return newstring;
 }
+function shuffle(array)
+{
+	for(var j, x, i = array.length; i; j = parseInt(Math.random() * i), x = array[--i], array[i] = array[j], array[j] = x);
+	return array;
+}
+
+function strlen(str)
+{
+	return console.strlen(removeSpaces(str));
+}
 function drawLine(x,y,length,color)
 {
 	if(x && y)
 	{
 		console.gotoxy(x,y);
-		if(y==24) while(x+length>80) length-=1;
+		if(y==24 && x+length>80) length-=(length-80);
 	}
 	for(i=0;i<length;i++)
 	{
-		console.putmsg((color?color:"") + "\xc4",P_SAVEATR);
+		if(color) console.attributes=color;
+		console.putmsg("\xc4",P_SAVEATR);
 	}
 }
 function clearBlock(x,y,w,h,bg)
@@ -149,4 +161,25 @@ function clearLine(length,x,y,bg)
 	if(bg) console.attributes=bg;
 	if(length) console.putmsg(format("%*s",length,""),P_SAVEATR);
 	else console.cleartoeol();
+}
+function debug(data,LOG_LEVEL)
+{
+	LOG_LEVEL=LOG_LEVEL?LOG_LEVEL:LOG_INFO;
+	if(typeof data=="object") {
+		for(p in data) {
+			debug(p + "=" + data[p],LOG_LEVEL);
+		}
+	}
+	else log(LOG_LEVEL,data);
+}
+function testSocket(socket)
+{
+	if(socket.is_connected) return true;
+	else {
+		if(socket.error) {
+			debug("SOCKET ERROR: " + socket.error,LOG_WARNING);
+			debug(socket,LOG_WARNING);
+		} else debug("socket disconnected",LOG_DEBUG);
+		return false;
+	}
 }
