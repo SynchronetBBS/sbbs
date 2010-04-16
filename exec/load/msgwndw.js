@@ -1,33 +1,57 @@
-function Window(name,x,y,w,h)
+load("graphic.js");
+
+function Window(x,y,w,h)
 {
-	this.name=name?name:false;
+	this.title="";
 	this.x=x;
 	this.y=y;
-	this.columns=w;
-	this.rows=h;
-	this.active=false;
-	this.draw=function(value)
+	this.width=w;
+	this.height=h;
+	
+	this.draw=function(color)
 	{
-		var title="";
-		var color="";
-		if(this.name)
-		{
-			color=(this.active?"\1c\1h":"\1n");		
-			title="\1n\1h\xB4" + color + this.name + (value?": " + value:"") + "\1n\1h\xC3";
+		color=color?color:DARKGRAY;
+		console.attributes=color;
+		console.gotoxy(this);
+		console.pushxy();
+		console.putmsg("\xDA",P_SAVEATR);
+		if(console.strlen(this.title)>0) {
+			
+			drawLine(false,false,this.width-4-console.strlen(this.title));
+			console.putmsg("\xB4",P_SAVEATR);
+			console.putmsg(this.title,P_SAVEATR);
+			console.attributes=color;
+		} else {
+			drawLine(false,false,this.width-2);
 		}
-		console.gotoxy(this.x,this.y);
-		console.putmsg("\1n\1h\xDA");
-		drawLine(false,false,this.columns-console.strlen(title),"\1n\1h");
-		console.putmsg(title + "\1n\1h\xBF");
-		for(line = 1; line<=this.rows; line++)
+		console.putmsg("\xC3\xBF",P_SAVEATR);
+		var line=2;
+		while(line++<this.height)
 		{
-			console.gotoxy(this.x,this.y+line);
-			printf("\1n\1h\xB3%*s\xB3",this.columns,"");
+			console.popxy();
+			console.down();
+			console.pushxy();
+			printf("\xB3%*s\xB3",this.width-2,"");
 		}
-		console.gotoxy(this.x,this.y + this.rows+1);
-		console.putmsg("\1n\1h\xC0");
-		drawLine(false,false,this.columns,"\1n\1h");
+		console.popxy();
+		console.down();
+		console.putmsg(printPadded("\xC0",this.width-1,"\xC4"),P_SAVEATR);
 		var spot=console.getxy();
-		if(!(spot.y==console.screen_rows && spot.x==console.screen_columns)) console.putmsg("\1n\1h\xD9");
+		if(spot.y!=console.screen_rows && spot.x!=console.screen_columns) console.putmsg("\xD9",P_SAVEATR);
+	}
+	this.clear=function()
+	{
+		clearBlock(this.x,this.y,this.columns,this.rows);
+	}
+	this.init=function(title,subtitle)
+	{
+		var name="";
+		if(title)	{
+			name=title;
+			if(subtitle) {
+				name+="\1n:"+subtitle;
+			}
+		}
+		this.title=name;
 	}
 }
