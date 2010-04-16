@@ -245,6 +245,7 @@ function Graphic_end()
 			this.data[x].push(this.future[x].shift());
 		}
 	}
+	this.index=this.length;
 }
 function Graphic_pgup()
 {
@@ -276,6 +277,7 @@ function Graphic_home()
 			this.data[x].unshift(this.past[x].pop());
 		}
 	}
+	this.index=1;
 }
 function Graphic_scroll(dir,loop)
 {
