@@ -17,8 +17,7 @@ function Scrollbar(x,y,length,orientation,color)
 	
 	this.draw=function(index, range)
 	{
-		if(index>=0 && range>=0)
-		{
+		if(index>=0 && range>=0)	{
 			if(index>range) return; 	//invalid position = do not draw
 			var percentage=index/range;
 			this.index=Math.round(percentage*this.length);
@@ -30,28 +29,21 @@ function Scrollbar(x,y,length,orientation,color)
 	}
 	this.drawVert=function()
 	{
-		console.gotoxy(this.x,this.y);
+		console.gotoxy(this);
 		console.putmsg(this.light + ascii(30));
-		for(i=1;i<=this.length;i++)
-		{
-			if(this.x==80)
-			{
+		for(i=1;i<=this.length;i++)	{
+			if(this.x==80)	{
 				console.gotoxy(this.x,this.y+i);
-			}
-			else
-			{
+			} else	{
 				console.down();
 				console.left();
 			}
 			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
 			else console.putmsg(this.dark + '\xB0');
 		}
-		if(this.x==80)
-		{
+		if(this.x==80)	{
 			console.gotoxy(this.x,this.y+this.length+1);
-		}
-		else
-		{
+		} else	{
 			console.down();
 			console.left();
 		}
@@ -59,10 +51,9 @@ function Scrollbar(x,y,length,orientation,color)
 	}
 	this.drawHoriz=function()
 	{
-		console.gotoxy(this.x,this.y);
+		console.gotoxy(this);
 		console.putmsg(this.light + ascii(17));
-		for(i=1;i<=this.length;i++)
-		{
+		for(i=1;i<=this.length;i++)	{
 			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
 			else console.putmsg(this.dark + '\xB0');
 		}
