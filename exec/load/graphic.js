@@ -27,7 +27,8 @@ function Graphic(w,h,attr,ch)
 	this.data=new Array(w);
 	this.past=new Array(w);
 	this.future=new Array(w);
-	this.lines=0;
+	this.length=0;
+	this.index=1;
 	var x;
 	var y;
 	
@@ -41,6 +42,8 @@ function Graphic(w,h,attr,ch)
 			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
 		}
 	}
+	
+	this.getxy=Graphic_getxy;
 	this.home=Graphic_home;
 	this.end=Graphic_end;
 	this.pgup=Graphic_pgup;
@@ -59,7 +62,13 @@ function Graphic_sector(ch,attr)
 	this.ch=ch;
 	this.attr=attr;
 }
-
+function Graphic_getxy()
+{
+	if(this.length>=this.height) {
+		return this.height;
+	}
+	return this.length;
+}
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 {
 	var x;
@@ -268,32 +277,57 @@ function Graphic_home()
 		}
 	}
 }
-function Graphic_scroll(dir)
+function Graphic_scroll(dir,loop)
 {
 	switch(dir) 
 	{
 		case 1:
+			if(this.index<this.length) this.index++;
+			else if(loop) this.index=1;
+			
 			if(this.future[0].length>0) {
 				for(x=0; x<this.width; x++) {
+					this.past[x].push(this.data[x].shift());
+					this.data[x].push(this.future[x].shift());
+				}
+			} else if(loop) {
+				for(x=0; x<this.width; x++) {
+					if(this.past[0].length>0) {
 						this.past[x].push(this.data[x].shift());
-						this.data[x].push(this.future[x].shift());
+						this.data[x].push(this.past[x].shift());
+					} else {
+						this.data[x].push(this.data[x].shift());
+					}
 				}
 			}
 			break;
 		case -1:
+			if(this.index>1) this.index--;	
+			else if(loop) this.index=this.length;
+			
 			if(this.past[0].length>0) {
 				for(x=0; x<this.width; x++) {
 					this.future[x].unshift(this.data[x].pop());
 					this.data[x].unshift(this.past[x].pop());
 				}
+			} else if(loop) {
+				for(x=0; x<this.width; x++) {
+					if(this.future[0].length) {
+						this.future[x].unshift(this.data[x].pop());
+						this.data[x].unshift(this.future[x].pop());
+					} else {
+						this.data[x].unshift(this.data[x].pop());
+					} 
+				}
 			}
 			break;
 		default:
+			this.end();
 			for(x=0; x<this.width; x++) {
-					this.past[x].push(this.data[x].shift());
-					this.data[x].push(new Graphic_sector(this.ch,this.attribute));
+				this.past[x].push(this.data[x].shift());
+				this.data[x].push(new Graphic_sector(this.ch,this.attribute));
 			}
-			if(this.lines<this.height) this.lines++;
+			this.index=++this.length;
 			break;
 	}
 }
@@ -332,7 +366,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	var curattr=attr;
 	var ch;
 	var x=xpos?xpos-1:0;
-	var y=ypos?ypos-1:this.lines;
+	var y=ypos?ypos-1:this.getxy();
 	var p=0;
 	var scrolls=0;
 
@@ -345,16 +379,18 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 		function (str, code, offset, s) {
 			return bbs.atcode(code);
 		}
-	);
-	if(scroll && y==this.height) {
+	)
+	if(scroll && y>=this.height) {
 		scrolls++;
 		this.scroll();
 		y--;
-	};
+	} else {
+		this.index++;
+		this.length++;
+	}
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
-	debug("placing text: " + txt);
 	while(p<txt.length && x<this.width && y<this.height) {
 		ch=txt.substr(p++,1);
 		switch(ch) {
@@ -444,11 +480,13 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						x=0;
 						break;
 					case ']':	/* LF */
-						y++;
-						if(scroll && y>=this.height) {
-							scrolls++;
-							this.scroll();
-							y--;
+						if(p<txt.length-1) {
+							y++;
+							while(scroll && y>=this.height) {
+								scrolls++;
+								this.scroll();
+								y--;
+							}
 						}
 						break;
 					default:	/* Other stuff... specifically, check for right movement */
@@ -465,10 +503,9 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				x=0;
 				break;
 			case '\n':
-				if(this.lines<this.height) this.lines++;
 				if(p<txt.length-1) {
 					y++;
-					if(scroll && y>=this.height) {
+					while(scroll && y>=this.height) {
 						scrolls++;
 						this.scroll();
 						y--;
@@ -476,13 +513,12 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				}
 				break;
 			default:
-				this.data[x][y].ch=ch;
-				this.data[x][y].attr=curattr;
+				this.data[x][y]=new Graphic_sector(ch,curattr);
 				x++;
 				if(x>=this.width) {
 					x=0;
 					y++;
-					if(scroll && y>=this.height) {
+					while(scroll && y>=this.height) {
 						scrolls++;
 						this.scroll();
 						y--;
