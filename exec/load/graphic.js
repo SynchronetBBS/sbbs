@@ -336,6 +336,8 @@ function Graphic_scroll(dir,loop)
 /* Converts a text string to binary format and appends it to a file */
 function Graphic_save(file,txt)
 {
+	//currently stores the file without attributes
+	//TODO: store attributes properly
 	var binFile=new File(file);
 	binFile.open('ab');
 	
