@@ -9,51 +9,76 @@ function getColor(color)
 	switch(color.toUpperCase())
 	{
 		case "BLACK":
+		case "\1K":
 			return BLACK;
 		case "BLUE":
+		case "\1B":
 			return BLUE;
 		case "CYAN":
+		case "\1C":
 			return CYAN;
 		case "RED":
+		case "\1R":
 			return RED;
 		case "GREEN":
+		case "\1G":
 			return GREEN;
 		case "BROWN":
+		case "\1Y":
 			return BROWN;
 		case "MAGENTA":
+		case "\1M":
 			return MAGENTA;
 		case "BG_BLUE":
+		case "\0014":
 			return BG_BLUE;
 		case "BG_CYAN":
+		case "\0016":
 			return BG_CYAN;
 		case "BG_RED":
+		case "\0011":
 			return BG_RED;
 		case "BG_GREEN":
+		case "\0012":
 			return BG_GREEN;
 		case "BG_BROWN":
+		case "\0013":
 			return BG_BROWN;
 		case "BG_MAGENTA":
+		case "\0015":
 			return BG_MAGENTA;
 		case "BG_LIGHTGRAY":
-			return BG_LIGHTGRAY;
+		case "\0017":
+		return BG_LIGHTGRAY;
 		case "WHITE":
+		case "\1W\1H":
 			return WHITE;
 		case "LIGHTCYAN":
+		case "\1C\1H":
 			return LIGHTCYAN;
 		case "LIGHTRED":
+		case "\1R\1H":
 			return LIGHTRED;
 		case "LIGHTGREEN":
+		case "\1G\1H":
 			return LIGHTGREEN;
+		case "LIGHTBLUE":
+		case "\1B\1H":
+			return LIGHTBLUE;
 		case "YELLOW":
+		case "\1Y\1H":
 			return YELLOW;
 		case "LIGHTMAGENTA":
+		case "\1M\1H":
 			return LIGHTMAGENTA;
 		case "LIGHTGRAY":
+		case "\1N":
 			return LIGHTGRAY;
 		case "DARKGRAY":
+		case "\1K\1H":
 			return DARKGRAY;
 		default:
-			return WHITE;
+			return ANSI_NORMAL;
 	}
 }
 function getLastWord(text)
