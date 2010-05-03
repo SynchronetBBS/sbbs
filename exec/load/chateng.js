@@ -60,7 +60,7 @@ function Chat(key,engine)
 load("commclient.js");
 load("scrollbar.js");
 load("graphic.js");
-load("str_cmds.js");
+//load("str_cmds.js");
 load("nodedefs.js");
 load("msgwndw.js");
 
@@ -87,13 +87,14 @@ function ChatEngine(root)
 	//TODO: the only time this will be used is for storing chat history
 	//maybe give ALL chat history files their own home, independent of the parent script
 	var root_dir=(root?root:js.exec_dir);
-	var stream=new ServiceConnection("chat");
+	var stream=new ServiceConnection("chat",user.alias);
 	this.input_line=new InputLine();
 	this.chat_room=new ChatRoom();
 	
 	// USEFUL METHODS 
 	this.init=function(room,c,r,x,y,ix,iy,iw,bg) //NOTE: DESTROYS BUFFER AND MESSAGE LIST
 	{
+		this.changeMessage(room);
 		this.input_line=new InputLine();
 		this.input_line.init(ix,iy,iw,bg);
 		this.chat_room.init(room,x,y,c,r,bg);
@@ -116,14 +117,22 @@ function ChatEngine(root)
 	this.exitMessage=function()
 	{
 		if(user.compare_ars("QUIET")) return false;
-		var message=new Message(user.alias + " disconnected",flag_notice);
+		var message=new Message(user.alias + " has left the room. " + timeStamp(time()),flag_notice);
 		this.send(message);
 	}
 	this.entryMessage=function()
 	{
 		if(user.compare_ars("QUIET")) return false;
-		var message=new Message(user.alias + " connected",flag_notice);
+		var message=new Message(user.alias + " has arrived. " + timeStamp(time()),flag_notice);
 		this.send(message);
+	}
+	this.changeMessage=function(room)
+	{
+		if(user.compare_ars("QUIET")) return false;
+		if(this.chat_room.room && this.chat_room.room!=room) {
+			var message=new Message(user.alias + " joined " + room + ". " + timeStamp(time()),flag_notice);
+			this.send(message);
+		}
 	}
 	this.resize=function(x,y,c,r,ix,iy,iw) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
 	{
@@ -149,6 +158,7 @@ function ChatEngine(root)
 	{
 		if(!message.level) message.level=flag_message;
 		if(!message.scope) message.scope=flag_normal;
+		if(!message.target) message.target=this.chat_room.room;
 		if(!stream.send(message)) {
 			this.alert("message not sent.");
 		}
@@ -200,8 +210,8 @@ function ChatEngine(root)
 			break;
 		case KEY_UP:
 		case KEY_DOWN:
-		case '\x02':	/* CTRL-B KEY_HOME */
-		case '\x05':	/* CTRL-E KEY_END */
+		case KEY_HOME:	
+		case KEY_END:	
 			this.chat_room.scroll(key);
 			break;
 		case '\b':
@@ -306,20 +316,22 @@ function ChatRoom()
 			break;
 		case flag_normal:
 		default:
-			if(!data.source) {
-				switch(data.level) 
-				{
-				case flag_alert:
-					this.post(data.txt,alert_color);
-					break;
-				case flag_notice:
-				default:
-					this.post(data.txt,notice_color);
-					break;
-				}
-			} else	if(data.source==user.alias) {
-				this.post(data.txt,local_color,data.source);
-			} else this.post(data.txt,remote_color,data.source);
+			if(data.target==this.room) {
+				if(!data.source) {
+					switch(data.level) 
+					{
+					case flag_alert:
+						this.post(data.txt,alert_color);
+						break;
+					case flag_notice:
+					default:
+						this.post(data.txt,notice_color);
+						break;
+					}
+				} else	if(data.source==user.alias) {
+					this.post(data.txt,local_color,data.source);
+				} else this.post(data.txt,remote_color,data.source);
+			}
 			break;
 		}
 	}
@@ -373,6 +385,10 @@ function ChatRoom()
 	{
 		this.post(msg,notice_color);
 	}
+	this.clear=function()
+	{
+		clearBlock(this.x,this.y,this.columns,this.rows);
+	}
 	this.alert=function(msg)
 	{
 		this.post(msg,alert_color);
@@ -398,7 +414,7 @@ function InputLine()
 {
 	this.x=1;
 	this.y=1;
-	this.width;
+	this.width=0;
 	this.bg="";
 	this.fg=input_color;
 	this.buffer="";
@@ -408,14 +424,13 @@ function InputLine()
 	
 	this.clear=function() 
 	{
-		if(this.width) {
+		if(this.width>0) {
 			console.gotoxy(this);
 			console.putmsg(this.bg+format("%*s",this.width,""),P_SAVEATR);
 		} else {
 			console.write("\r");
 			console.cleartoeol();
 		}
-		console.gotoxy(this);
 	}
 	this.init=function(x,y,w,bg,fg) 
 	{
@@ -508,7 +523,7 @@ function InputLine()
 		this.buffer="";
 		if(this.scope==flag_private) {
 			this.scope=flag_normal;
-			this.initbox();
+			if(this.box) this.initbox();
 		}
 		this.target="";
 	}
