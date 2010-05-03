@@ -389,8 +389,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 		this.scroll();
 		y--;
 	} else {
-		this.index++;
-		this.length++;
+		this.index=++this.length;
 	}
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
@@ -408,10 +407,14 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						if(x>=this.width) {
 							x=0;
 							y++;
-							if(scroll && y>=this.height) {
-								scrolls++;
-								this.scroll();
-								y--;
+							if(y>=this.height) {
+								while(scroll && y>=this.height) {
+									scrolls++;
+									this.scroll();
+									y--;
+								}
+							} else {
+								this.index=++this.length;
 							}
 						}
 						break;
@@ -522,10 +525,14 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				if(x>=this.width) {
 					x=0;
 					y++;
-					while(scroll && y>=this.height) {
-						scrolls++;
-						this.scroll();
-						y--;
+					if(y>=this.height) {
+						while(scroll && y>=this.height) {
+							scrolls++;
+							this.scroll();
+							y--;
+						}
+					} else {
+						this.index=++this.length;
 					}
 				}
 		}
