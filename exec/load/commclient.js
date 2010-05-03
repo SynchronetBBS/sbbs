@@ -8,15 +8,15 @@ load("funclib.js");
 load("sbbsdefs.js");
 load("sockdefs.js");
 
-const QUERY=				"?";
-const LOCAL=				"&";
-const FILESYNC=			"@";
-const connection_timeout=	5;
-const connection_attempts=	2;
-const connection_interval=	5;
-
-function ServiceConnection(id)
+function ServiceConnection(id,alias)
 {
+	const QUERY=				"?";
+	const LOCAL=				"&";
+	const FILESYNC=			"@";
+	const connection_timeout=	5;
+	const connection_attempts=	2;
+	const connection_interval=	5;
+
 	this.id=				(id?id:"default");
 	this.notices=			[];
 	this.sock=				false;
@@ -39,7 +39,7 @@ function ServiceConnection(id)
 		if(testSocket(this.sock)) {
 			var hello=new Object();
 			hello.context=LOCAL;
-			hello.alias=user.alias;
+			hello.alias=alias?alias:"unknown";
 			this.send(hello);
 			attempts=0;
 			last_attempt=0;
