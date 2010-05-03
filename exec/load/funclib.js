@@ -154,7 +154,16 @@ function shuffle(array)
 	for(var j, x, i = array.length; i; j = parseInt(Math.random() * i), x = array[--i], array[i] = array[j], array[j] = x);
 	return array;
 }
-
+function countSparseArray(array)
+{
+	var count=0;
+	for(var i in array) count++;
+	return count;
+}
+function timeStamp(time_t)
+{
+	return strftime("%H:%M:%S %m/%d/%y",time_t);
+}
 function strlen(str)
 {
 	return console.strlen(removeSpaces(str));
@@ -175,9 +184,15 @@ function drawLine(x,y,length,color)
 function clearBlock(x,y,w,h,bg)
 {
 	console.attributes=bg?bg:ANSI_NORMAL;
+	console.gotoxy(x,y);
 	for(line=0;line<h;line++)
 	{
-		clearLine(w,x,y+line);
+		console.pushxy();
+		clearLine(w);
+		if(line<h-1) {
+			console.popxy();
+			console.down();
+		}
 	}
 }
 function clearLine(length,x,y,bg)
