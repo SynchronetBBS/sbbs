@@ -1,8 +1,10 @@
+load("funclib.js");
+load("commclient.js");
 load(game_dir+"player.js");
 load(game_dir+"rolldice.js");
-load("commclient.js");
 
 var settings=	loadSettings(game_dir+"dice.ini");
+var players=	new PlayerData(game_dir+settings.player_file);
 var game_data=	new GameData(game_dir+"*.dw");
 var stream=	new ServiceConnection("Dice Warz ][","dicewars");
 
@@ -179,7 +181,7 @@ function GameData(filemask)
 	{
 		var file=this.openGameFile(map);
 		file.iniSetValue(null,"num_players",map.num_players);
-		file.iniSetValue(null,"single_player",map.game_number);
+		file.iniSetValue(null,"single_player",map.single_player);
 		file.iniSetValue(null,"in_progress",map.in_progress);
 		file.iniSetValue(null,"winner",map.winner);
 		file.iniSetValue(null,"turn",map.turn);
@@ -201,7 +203,7 @@ function GameData(filemask)
 		file.iniSetValue("t"+tile.id,"s",slist);
 		this.closeGameFile(file,map);
 		
-		var data=new Data("tile");
+		var data=new Packet("tile");
 		data.tile=tile;
 		stream.send(data);
 	}
@@ -225,21 +227,12 @@ function GameData(filemask)
 	}
 	this.init();
 }
-function Data(type)
+function Packet(type)
 {
 	this.type=type;
 }
 
 	//GAME DATA FUNCTIONS
-	function getxy(x,y)
-	{
-		var offset=(x%2);
-		var posx=(x*2)+3;
-		var posy=(y*2)+2+offset;
-		var coords=new Coords(posx,posy);
-		console.gotoxy(coords);
-		return coords;
-	}
 	function loadSettings(filename)
 	{
 		var file=new File(filename);
@@ -254,12 +247,12 @@ function Data(type)
 		file.close();
 		return data;
 	}
-	function getPlayerColors(pnum)
+	function getPlayerColors(map,p)
 	{
 		var colors=new Object();
-		colors.bg=(pnum>=0?getColor(settings.background_colors[pnum]):BG_BLACK);
-		colors.fg=(pnum>=0?getColor(settings.foreground_colors[pnum]):BLACK);
-		colors.txt=(pnum>=0?getColor(settings.text_colors[pnum]):BLUE);
+		colors.bg=map.players[p].active?getColor(settings.background_colors[p]):BG_BLACK;
+		colors.fg=map.players[p].active?getColor(settings.foreground_colors[p]):BLACK;
+		colors.txt=map.players[p].active?getColor(settings.text_colors[p]):LIGHTGRAY;
 		return colors;
 	}
 	function sortGameData(array)
@@ -321,10 +314,14 @@ function Data(type)
 	}
 
 	//MAP DISPLAY FUNCTIONS
-	function findTile(grid,coords)
+	function getxy(x,y)
 	{
-		if(coords && grid[coords.x][coords.y]>=0) return grid[coords.x][coords.y];
-		else return -1;
+		var offset=(x%2);
+		var posx=(x*2)+3;
+		var posy=(y*2)+2+offset;
+		var coords=new Coords(posx,posy);
+		console.gotoxy(coords);
+		return coords;
 	}
 	function drawTile(map,tile)
 	{
@@ -364,7 +361,7 @@ function Data(type)
 		
 		if(current>=0)	{
 			var current_tile=map.tiles[current];
-			current_colors=getPlayerColors(current_tile.owner);
+			current_colors=getPlayerColors(map,current_tile.owner);
 			//MIDDLE CHAR
 			if(x==current_tile.home.x && y==current_tile.home.y) {
 				middle_char=new Char(current_tile.dice,current_colors.txt,current_colors.bg);
@@ -374,7 +371,7 @@ function Data(type)
 			//TOP CHAR
 			if(north>=0) {
 				var north_tile=map.tiles[north];
-				var north_colors=getPlayerColors(north_tile.owner);
+				var north_colors=getPlayerColors(map,north_tile.owner);
 				if(north==current) {
 					top_char=new Char(" ",current_colors.fg,current_colors.bg);
 				} else if(north_tile.owner==current_tile.owner) {
@@ -390,7 +387,7 @@ function Data(type)
 				if(northwest>=0 && map.tiles[northwest].owner==current_tile.owner) {
 					left_char=new Char("\xB3",BLACK,current_colors.bg);
 				} else	if(northwest>=0) {
-					var colors=getPlayerColors(map.tiles[northwest].owner);
+					var colors=getPlayerColors(map,map.tiles[northwest].owner);
 					left_char=new Char("\xDD",colors.fg,current_colors.bg);
 				} else {
 					left_char=new Char("\xDE",current_colors.fg,BG_BLACK);
@@ -413,7 +410,7 @@ function Data(type)
 				if(northeast>=0 && map.tiles[northeast].owner==current_tile.owner) {
 					right_char=new Char("\xB3",BLACK,current_colors.bg);
 				} else	if(northeast>=0) {
-					var colors=getPlayerColors(map.tiles[northeast].owner);
+					var colors=getPlayerColors(map,map.tiles[northeast].owner);
 					right_char=new Char("\xDE",colors.fg,current_colors.bg);
 				} else {
 					right_char=new Char("\xDD",current_colors.fg,BG_BLACK);
@@ -437,15 +434,15 @@ function Data(type)
 			middle_char=new Char("~",BLUE,BG_BLACK);
 			if(north>=0) {
 				var north_tile=map.tiles[north];
-				var north_colors=getPlayerColors(north_tile.owner);
+				var north_colors=getPlayerColors(map,north_tile.owner);
 				top_char=new Char("\xDF",north_colors.fg,BG_BLACK);
 			} else	top_char=new Char(" ",BLACK,BG_BLACK);
 			if(northwest>=0 && northwest==southwest) {
-				var southwest_colors=getPlayerColors(map.tiles[southwest].owner);
+				var southwest_colors=getPlayerColors(map,map.tiles[southwest].owner);
 				left_char=new Char("\xDD",southwest_colors.fg,BG_BLACK);
 			} else left_char=new Char(" ",BLACK,BG_BLACK);
 			if(northeast>=0 && northeast==southeast) {
-				var southeast_colors=getPlayerColors(map.tiles[southeast].owner);
+				var southeast_colors=getPlayerColors(map,map.tiles[southeast].owner);
 				right_char=new Char("\xDE",southeast_colors.fg,BG_BLACK);
 			} else right_char=new Char(" ",BLACK,BG_BLACK);
 		}
@@ -479,227 +476,7 @@ function Data(type)
 		}
 	}
 
-	//MAP DATA FUNCTIONS
-	function updateStatus(map)
-	{
-		for(var p=0;p<map.players.length;p++) {
-			if(map.players[p].active) {
-				if(countTiles(map,p)==0) map.players[p].active=false;
-			}
-		}
-		if(map.single_player) {
-			for(var p=0;p<map.players.length;p++) {
-				var player=map.players[p];
-				/* for a single player game, find the non-AI player and check whether active. if not, game over */
-				if(!player.AI && !player.active) {
-					map.in_progress=false;
-					findWinner(map);
-					break;
-				}
-			}
-		} else {
-			var eliminated=0;
-			for(var p=0;p<map.players.length;p++) {
-				if(!map.players[p].active) eliminated++;
-			}
-			if(eliminated==map.players.length-1) findWinner(map);
-		}
-	}
-	function findWinner(map)
-	{
-	
-	}
-	function placeReinforcements(map,pt,reinforcements)
-	{
-		var placed=[];
-		while(reinforcements>0 && pt.length>0) {
-			var rand=random(pt.length);
-			var tile=pt[rand];
-			if(tile.dice<settings.max_dice) {
-				tile.dice++;
-				reinforcements--;
-				placed.push(tile.id);
-				game_data.saveTile(map,tile);
-			} else {
-				pt.splice(rand,1);
-			}
-		}
-		while(map.players[map.turn].reserve>0 && pt.length>0) {
-			var rand=random(pt.length);
-			var tile=pt[rand];
-			if(tile.dice<settings.max_dice) {
-				tile.dice++;
-				map.players[map.turn].reserve--;
-				placed.push(tile.id);
-				game_data.saveTile(map,tile);
-			} else {
-				pt.splice(rand,1);
-			}
-		}
-		return placed;
-	}
-	function placeReserves(map,num)
-	{
-		var placed=0;
-		if(map.players[map.turn].reserve<settings.max_reserve) { 
-			map.players[map.turn].reserve+=num;
-			placed=num;
-			if(map.players[map.turn].reserve>settings.max_reserve) {
-				placed-=map.players[map.turn].reserve-settings.max_reserve;
-				map.players[map.turn].reserve=settings.max_reserve;
-			}
-			game_data.savePlayer(map,map.players[map.turn],map.turn);
-		}
-		return placed;
-	}
-	function nextTurn(map)
-	{
-		if(map.turn==map.players.length-1) {
-			map.turn=0;
-			map.round++;
-		} else map.turn++;
-		if(!map.players[map.turn].active) nextTurn(map);
-		else {
-			var data=new Data("turn");
-			data.turn=map.turn;
-			stream.send(data);
-		}
-	}
-	function forfeit(map)
-	{
-	}
-	function getPlayerTiles(map,pnum)
-	{
-		var player_tiles=[];
-		for(var t in map.tiles) {
-			if(map.tiles[t].owner==pnum) {
-				player_tiles.push(map.tiles[t]);
-			}
-		}
-		return player_tiles;
-	}
-	function canAttack(map,base)
-	{
-		
-		var valid_targets=[];
-		if(base.dice>1) {
-			var neighbors=getNeighboringTiles(base,map);
-			for(var n=0;n<neighbors.length;n++) {
-				var tile=neighbors[n];
-				if(tile.owner!=base.owner) valid_targets.push(tile);
-			}
-		}
-		return valid_targets;
-	}
-	function countConnected(map,array,player)
-	{	
-		var counted=[];
-		var largest_group=0;
-		var match=player;
-		
-		for(var t in array) {
-			if(!counted[array[t].id]) {
-				var count=[];
-				count[array[t].id]=true;
-				var grid=getBorders(map,array[t]);
-				var connections=trace(map,grid,count,match);
-				counted.concat(connections);
-				var group_size=countSparseArray(connections);
-				if(group_size>largest_group) largest_group=group_size;
-			}
-		}
-		return largest_group;
-	}
-	function trace(map,grid,counted,match)
-	{
-		for(var x in grid) {
-			for(var y in grid[x]) {
-				if(map.grid[x][y]>=0) {
-					var tile=map.tiles[map.grid[x][y]];
-					if(tile.owner==match) {
-						if(!counted[tile.id]) {
-							counted[tile.id]=true;
-							counted.concat(trace(map,getBorders(map,tile),counted,match));
-						}
-					}
-				}
-			}
-		}
-		return counted;
-	}
-	function findPlayer(map,name) 
-	{
-		for(var p in map.players)
-		{
-			if(map.players[p].name==name) return p;
-		}
-		return -1;
-	}
-	function addComputers(map)
-	{
-		var num=settings.num_players-map.players.length;
-		if(num>0) {
-			var aifile=new File(game_dir + settings.ai_file);
-			aifile.open("r",true);
-			var possibleplayers=aifile.iniGetSections();
-			while(num>0) {
-				var p=random(possibleplayers.length);
-				var name=possibleplayers[p];
-				
-				var player=new Player(name,true);
-				var sort=aifile.iniGetValue(name, "sort");
-				var check=aifile.iniGetValue(name, "check");
-				var qty=aifile.iniGetValue(name, "quantity");
-				player.AI=new AI(sort,check,qty);
-				map.players.push(player);
-				
-				possibleplayers.splice(p,1);
-				num--;
-			}
-			aifile.close();
-		}
-	}
-	function addPlayer(map,name,vote)
-	{
-		map.players.push(new Player(name,vote));
-	}
-	function shufflePlayers(map)
-	{
-		map.players=shuffle(map.players);
-	}
-	function dispersePlayers(map)
-	{
-		var tiles_per_player=map.tiles.length/map.players.length;
-		var placeholder=[];
-		
-		for(var p=0;p<map.players.length;p++)
-		{
-			var t=tiles_per_player;
-			var occupied=[];
-			
-			while(t>0)
-			{
-				var rand_t=random(map.tiles.length);
-				if(placeholder[rand_t]) continue;
-				
-				map.tiles[rand_t].assign(p,1);
-				placeholder[rand_t]=true;
-				occupied.push(rand_t);
-				t--;
-			}
-
-			var d=tiles_per_player;
-			if(p==map.players.length-1) d+=2;
-			else if(p>=(map.players.length-1)/2) d++;
-			while(d>0)
-			{
-				var rand_t=occupied[random(occupied.length)];
-				if(map.tiles[rand_t].dice==settings.max_dice) continue;
-				map.tiles[rand_t].dice++;
-				d--;
-			}
-		}
-	}
+	//MAP SCANNING FUNCTIONS
 	function connected(tile1,tile2,map)
 	{
 		for(var c=0;c<tile1.coords.length;c++) {
@@ -787,6 +564,127 @@ function Data(type)
 		}
 		return land;
 	}
+	function findTile(grid,coords)
+	{
+		if(coords && grid[coords.x][coords.y]>=0) return grid[coords.x][coords.y];
+		else return -1;
+	}
+	function canAttack(map,base)
+	{
+		
+		var valid_targets=[];
+		if(base.dice>1) {
+			var neighbors=getNeighboringTiles(base,map);
+			for(var n=0;n<neighbors.length;n++) {
+				var tile=neighbors[n];
+				if(tile.owner!=base.owner) valid_targets.push(tile);
+			}
+		}
+		return valid_targets;
+	}
+	function countConnected(map,array,player)
+	{	
+		var counted=[];
+		var largest_group=0;
+		var match=player;
+		
+		for(var t in array) {
+			if(!counted[array[t].id]) {
+				var count=[];
+				count[array[t].id]=true;
+				var grid=getBorders(map,array[t]);
+				var connections=trace(map,grid,count,match);
+				counted.concat(connections);
+				var group_size=countSparseArray(connections);
+				if(group_size>largest_group) largest_group=group_size;
+			}
+		}
+		return largest_group;
+	}
+	function trace(map,grid,counted,match)
+	{
+		for(var x in grid) {
+			for(var y in grid[x]) {
+				if(map.grid[x][y]>=0) {
+					var tile=map.tiles[map.grid[x][y]];
+					if(tile.owner==match) {
+						if(!counted[tile.id]) {
+							counted[tile.id]=true;
+							counted.concat(trace(map,getBorders(map,tile),counted,match));
+						}
+					}
+				}
+			}
+		}
+		return counted;
+	}
+
+	//MAP INIT FUNCTIONS
+	function addComputers(map)
+	{
+		var num=settings.num_players-map.players.length;
+		if(num>0) {
+			var aifile=new File(game_dir + settings.ai_file);
+			aifile.open("r",true);
+			var possibleplayers=aifile.iniGetSections();
+			while(num>0) {
+				var p=random(possibleplayers.length);
+				var name=possibleplayers[p];
+				
+				var player=new Player(name,true);
+				var sort=aifile.iniGetValue(name, "sort");
+				var check=aifile.iniGetValue(name, "check");
+				var qty=aifile.iniGetValue(name, "quantity");
+				player.AI=new AI(sort,check,qty);
+				map.players.push(player);
+				
+				possibleplayers.splice(p,1);
+				num--;
+			}
+			aifile.close();
+		}
+	}
+	function addPlayer(map,name,vote)
+	{
+		map.players.push(new Player(name,vote));
+	}
+	function shufflePlayers(map)
+	{
+		map.players=shuffle(map.players);
+	}
+	function dispersePlayers(map)
+	{
+		var tiles_per_player=map.tiles.length/map.players.length;
+		var placeholder=[];
+		
+		for(var p=0;p<map.players.length;p++)
+		{
+			var t=tiles_per_player;
+			var occupied=[];
+			
+			while(t>0)
+			{
+				var rand_t=random(map.tiles.length);
+				if(placeholder[rand_t]) continue;
+				
+				map.tiles[rand_t].assign(p,1);
+				placeholder[rand_t]=true;
+				occupied.push(rand_t);
+				t--;
+			}
+
+			var d=tiles_per_player;
+			if(p==map.players.length-1) d+=2;
+			else if(p>=(map.players.length-1)/2) d++;
+			while(d>0)
+			{
+				var rand_t=occupied[random(occupied.length)];
+				if(map.tiles[rand_t].dice==settings.max_dice) continue;
+				map.tiles[rand_t].dice++;
+				d--;
+			}
+		}
+	}
 	function generateMap(map)
 	{		
 		var total=map.width*map.height;
@@ -835,4 +733,107 @@ function Data(type)
 		var grid=new Array(w);
 		for(var x=0;x<grid.length;x++) grid[x]=new Array(h);
 		return grid;
+	}
+
+	//MAP DATA FUNCTIONS
+	function updateStatus(map)
+	{
+		debug("updating game status");
+		for(var p=0;p<map.players.length;p++) {
+			if(map.players[p].active) {
+				if(countTiles(map,p)==0) {
+					debug("inactive player: " + map.players[p].name);
+					map.players[p].active=false;
+				}
+			}
+		}
+		if(map.single_player && map.in_progress) {
+			for(var p=0;p<map.players.length;p++) {
+				var player=map.players[p];
+				/* for a single player game, find the non-AI player and check whether active. if not, game over */
+				if(!player.AI && !player.active) {
+					debug("inactive game");
+					map.in_progress=false;
+					findWinner(map);
+					return;
+				}
+			}
+		}
+		if(countActivePlayers(map)==1) findWinner(map);
+	}
+	function findWinner(map)
+	{
+		var winner=false;
+		var most_tiles=0;
+		
+		for(var p=0;p<map.players.length;p++){
+			if(map.players[p].active) {
+				var num_tiles=countTiles(map,p);
+				if(num_tiles>most_tiles) winner=p;
+			}
+		}
+		map.winner=winner;
+		players.scoreWin(map.players[map.winner].name);
+	}
+	function placeReinforcements(map,pt,reinforcements)
+	{
+		var placed=[];
+		while(reinforcements>0 && pt.length>0) {
+			var rand=random(pt.length);
+			var tile=pt[rand];
+			if(tile.dice<settings.max_dice) {
+				tile.dice++;
+				reinforcements--;
+				if(!placed[tile.id]) placed[tile.id]=0;
+				placed[tile.id]++;
+			} else {
+				pt.splice(rand,1);
+			}
+		}
+		while(map.players[map.turn].reserve>0 && pt.length>0) {
+			var rand=random(pt.length);
+			var tile=pt[rand];
+			if(tile.dice<settings.max_dice) {
+				tile.dice++;
+				map.players[map.turn].reserve--;
+				if(!placed[tile.id]) placed[tile.id]=0;
+				placed[tile.id]++;
+				game_data.saveTile(map,tile);
+			} else {
+				pt.splice(rand,1);
+			}
+		}
+		for(var p in placed) {
+			game_data.saveTile(map,map.tiles[p]);
+		}
+		return placed;
+	}
+	function placeReserves(map,num)
+	{
+		var placed=0;
+		if(map.players[map.turn].reserve<settings.max_reserve) { 
+			map.players[map.turn].reserve+=num;
+			placed=num;
+			if(map.players[map.turn].reserve>settings.max_reserve) {
+				placed-=map.players[map.turn].reserve-settings.max_reserve;
+				map.players[map.turn].reserve=settings.max_reserve;
+			}
+			game_data.savePlayer(map,map.players[map.turn],map.turn);
+		}
+		return placed;
+	}
+	function nextTurn(map)
+	{
+		if(map.turn==map.players.length-1) {
+			map.turn=0;
+			map.round++;
+		} else map.turn++;
+		if(!map.players[map.turn].active) {
+			nextTurn(map);
+		}
+		else {
+			var data=new Packet("turn");
+			data.turn=map.turn;
+			stream.send(data);
+		}
 	}
