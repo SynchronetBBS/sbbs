@@ -1,27 +1,21 @@
+var game_dir=js.exec_dir;
 load("sbbsdefs.js");
 load("graphic.js");
 load("chateng.js");
-load("funclib.js");
-
-var game_dir=js.exec_dir;
-	
 load(game_dir+"maps.js");
 load(game_dir+"menu.js");
 
+//GLOBAL VARIABLES
 var oldpass=console.ctrlkey_passthru;
-console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-bbs.sys_status|=SS_MOFF;
-
 var menu;
-var chat=		new ChatEngine(game_dir);
-var players=	new PlayerData(game_dir+settings.player_file);
-var game_background=loadGraphic(game_dir+settings.background_file);
-var lobby_background=loadGraphic(game_dir+settings.lobby_file);
+var chat=new ChatEngine(game_dir);
 
 //GLOBAL GAME FUNCTIONS
 function splashStart()
 {
 	console.clear();
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	bbs.sys_status|=SS_MOFF;
 	var splash_filename=game_dir + "welcome.bin";
 	if(file_exists(splash_filename)) {
 		var splash=new Graphic(80,24);
@@ -74,6 +68,8 @@ function chatInput()
 				case '\n':
 					hideChatLine();
 					return true;
+				case '\x1b':
+					return false;
 				default:
 					break;
 			}
@@ -121,8 +117,7 @@ function cycle()
 //LOBBY LOOP
 function lobby()
 {
-	initMenu();
-	initChat();
+	var lobby_background=loadGraphic(game_dir+settings.lobby_file);
 	
 	function main()
 	{
@@ -145,6 +140,9 @@ function lobby()
 					break;
 				case "B":
 					createNewGame();
+					break;
+				case "D":
+					redraw();
 					break;
 				case "C":
 					chatInput();
@@ -219,6 +217,7 @@ function lobby()
 							"\1w\1h~S\1n\1k\0013elect game",
 							"\1w\1h~B\1n\1k\0013egin new game",
 							"\1w\1h~H\1n\1k\0013elp",
+							"\1n\1k\0013Re\1w\1hd\1n\1k\0013raw", 
 							"\1w\1h~C\1n\1k\0013hat",
 							"\1w\1h~Q\1n\1k\0013uit"];
 		menu=new Menu(menu_items,BG_BROWN,10,24);	
@@ -294,22 +293,23 @@ function lobby()
 		gameList();
 	}
 	
+	initMenu();
+	initChat();
 	main();
 }
 //GAME LOOP
 function run(map)
 {
+	var game_background=loadGraphic(game_dir+settings.background_file);
 	var activity_window=new Graphic(32,5);
-	var ax=48;
-	var ay=12;
 	var player=findPlayer(map,user.alias);
 	var update=true;
+	var taking_turn=false;
+	var coords=false;
 	
+	//INIT/RUN
 	function main()
 	{
-		menu.draw();
-		turnAlert();
-		var coords=false;
 		if(map.single_player && player>=0 && map.players[map.turn].AI) {
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
@@ -360,42 +360,128 @@ function run(map)
 			}
 		}
 	}
+	function initMenu()
+	{
+		var menu_items=[	"",
+							"\1w\1h~T\1n\1k\0013ake turn",
+							"\1w\1h~A\1n\1k\0013ttack", 
+							"\1w\1h~E\1n\1k\0013nd turn",
+							"\1w\1h~R\1n\1k\0013edraw",
+							"\1w\1h~H\1n\1k\0013elp",
+							"\1w\1h~F\1n\1k\0013orfeit",
+							"\1w\1h~C\1n\1k\0013hat",
+							"\1w\1h~Q\1n\1k\0013uit"];
+		menu=new Menu(menu_items,BG_BROWN,10,24);	
+		setMenuCommands();
+	}
+	function setMenuCommands()
+	{
+		update=true;
+		if(player>=0 && map.in_progress) {
+			if(taking_turn) {
+				menu.enable("A");
+				menu.enable("E");
+				menu.enable("F");
+				menu.disable("T");
+				return;
+			} 
+			if(player==map.turn) {
+				menu.enable("T");
+				menu.disable("A");
+				menu.disable("E");
+				menu.disable("F");
+				return;
+			} 
+		}
+		menu.disable("T");
+		menu.disable("A");
+		menu.disable("E");
+		menu.disable("F");
+	}
+	function initChat()
+	{
+		chat.init("dice warz game #" + map.game_number,31,6,48,18); 
+		chat.input_line.init(10,24,70,"\0017","\1k");
+	}
+	function gameCycle()
+	{
+		cycle();
+		var data=stream.receive();
+		if(data) {
+			switch(data.type)
+			{
+				case "battle":
+					battle(data.a,data.d);
+					updateStatus(map);
+					listPlayers();
+					break;
+				case "turn":
+					map.turn=data.turn;
+					turnAlert();
+					listPlayers();
+					setMenuCommands();
+					break;
+				case "tile":
+					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
+					drawTile(map,map.tiles[data.tile.id]);
+					break;
+				case "activity":
+					activityAlert(data.activity);
+					break;
+				default:
+					break;
+			}
+			if(map.winner) {
+				activityAlert("\1rGame ended");
+				activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
+			}
+		}
+		if(update) {
+			menu.draw();
+			update=false;
+		}
+	}
+
+	//GAMEPLAY
 	function endturn()
 	{
 		reinforce();
 		nextTurn(map);
-		map.attacking=map.turn;
+		updateStatus(map);
+		taking_turn=false;
 		game_data.saveData(map);
+		listPlayers();
+		if(map.winner) {
+			activityAlert("\1rGame ended");
+			activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
+			return;
+		}
 		if(map.players[map.turn].AI) {
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
-		listPlayers();
 	}
 	function reinforce()
 	{
 		var player_tiles=getPlayerTiles(map,map.turn);
 		var reinforcements=countConnected(map,player_tiles,map.turn);
 		var placed=placeReinforcements(map,player_tiles,reinforcements);
-		if(placed.length>0) {
-			for(var p=0;p<placed.length;p++) {
-				var home=map.tiles[placed[p]].home;
-				drawSector(map,home.x,home.y);
-			}
-			activityAlert("\1n\1y" + map.players[map.turn].name + " placed " + placed.length + " dice");
+		var total=0;
+		for(var p in placed) {
+			var home=map.tiles[p].home;
+			drawSector(map,home.x,home.y);
+			total+=placed[p];
 		}
-		var reserved=placeReserves(map,reinforcements-placed.length);
+		var reserved=placeReserves(map,reinforcements-total);
+		if(total>0) {
+			activityAlert("\1n\1y" + map.players[map.turn].name + " placed " + total + " dice");
+		}
 		if(reserved>0) {
 			activityAlert("\1n\1y" + map.players[map.turn].name + " reserved " + reserved + " dice");
 		}
 	}
-	function turnAlert()
-	{
-		if(map.turn==player) activityAlert("\1c\1hIt is your turn");
-		else activityAlert("\1n\1cIt is " + map.players[map.turn].name + "'s turn");
-	}
 	function takeTurn()
 	{
-		map.attacking=player;
+		taking_turn=true;
 	}
 	function attack(coords)
 	{
@@ -449,15 +535,20 @@ function run(map)
 		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.chat_room.x,chat.chat_room.y+3);
 		chat.chat_room.draw();
 		battle(a,d);
-		var data=new Data("battle");
+		var data=new Packet("battle");
 		data.a=a;
 		data.d=d;
 		stream.send(data);
 		
 		if(a.total>d.total) {
+			if(countTiles(map,defending.owner)==1) {
+				players.scoreKill(map.players[attacking.owner].name);
+				players.scoreLoss(map.players[defending.owner].name);
+				map.players[defending.owner].active=false;
+			}
 			defending.assign(attacking.owner,attacking.dice-1);
-			if(countTiles(map,defending.owner)==0) map.players[defending.owner].active=false;
 			drawTile(map,defending);
+			updateStatus(map);
 		} 
 		attacking.dice=1;
 		drawSector(map,attacking.home.x,attacking.home.y);
@@ -466,8 +557,6 @@ function run(map)
 		game_data.saveActivity(map,attacker + ": " + a.total + " " + defender + ": " + d.total);
 		game_data.saveTile(map,attacking);
 		game_data.saveTile(map,defending);
-		
-		updateStatus(map);
 		
 		return coords;
 	}
@@ -594,89 +683,17 @@ function run(map)
 		}
 		
 	}
-	function initMenu()
+
+	//DISPLAY
+	function turnAlert()
 	{
-		var menu_items=[	"",
-							"\1w\1h~T\1n\1k\0013ake turn",
-							"\1w\1h~A\1n\1k\0013ttack", 
-							"\1w\1h~E\1n\1k\0013nd turn",
-							"\1w\1h~R\1n\1k\0013edraw",
-							"\1w\1h~H\1n\1k\0013elp",
-							"\1w\1h~F\1n\1k\0013orfeit",
-							"\1w\1h~C\1n\1k\0013hat",
-							"\1w\1h~Q\1n\1k\0013uit"];
-		menu=new Menu(menu_items,BG_BROWN,10,24);	
-		setMenuCommands();
-	}
-	function setMenuCommands()
-	{
-		update=true;
-		if(player>=0 && map.in_progress) {
-			if(player==map.attacking) {
-				menu.enable("A");
-				menu.enable("E");
-				menu.enable("F");
-				menu.disable("T");
-				return;
-			} 
-			if(player==map.turn) {
-				menu.enable("T");
-				menu.disable("A");
-				menu.disable("E");
-				menu.disable("F");
-				return;
-			} 
-		}
-		menu.disable("T");
-		menu.disable("A");
-		menu.disable("E");
-		menu.disable("F");
-	}
-	function initChat()
-	{
-		chat.init("dice warz game #" + map.game_number,31,6,48,18); 
-		chat.input_line.init(10,24,70,"\0017","\1k");
-	}
-	function initGame()
-	{
+		if(map.turn==player) activityAlert("\1c\1hIt is your turn");
+		else activityAlert("\1n\1cIt is " + map.players[map.turn].name + "'s turn");
 	}
 	function activityAlert(msg)
 	{
 		activity_window.putmsg(undefined,undefined,msg+"\r\n",undefined,true);
-		activity_window.draw(ax,ay);
-	}
-	function gameCycle()
-	{
-		cycle();
-		var data=stream.receive();
-		if(data) {
-			debug(data,LOG_WARNING);
-			switch(data.type)
-			{
-				case "battle":
-					battle(data.a,data.d);
-					break;
-				case "turn":
-					map.turn=data.turn;
-					turnAlert();
-					setMenuCommands();
-					break;
-				case "tile":
-					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
-					drawTile(map,map.tiles[data.tile.id]);
-					break;
-				case "activity":
-					activityAlert(data.activity);
-					break;
-				default:
-					break;
-			}
-			listPlayers();
-		}
-		if(update) {
-			menu.draw();
-			update=false;
-		}
+		activity_window.draw(48,12);
 	}
 	function listPlayers()
 	{
@@ -716,13 +733,14 @@ function run(map)
 		listPlayers();
 		chat.redraw();
 		activity_window.draw(48,12);
+		menu.draw();
 		hideChatLine();
 	}
 	
 	initMenu();
 	initChat();
-	initGame();
 	redraw();
+	turnAlert();
 	main();
 }
 
