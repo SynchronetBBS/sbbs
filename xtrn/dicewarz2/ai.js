@@ -1,4 +1,3 @@
-load("funclib.js");
 var game_number=argv[0];
 var game_dir=argv[1];
 load(game_dir+"maps.js");
@@ -203,10 +202,23 @@ function singleAttackQuantity(tlen)
 }
 
 /* Attack functions */
-function takeTurn()
+function main()
+{
+	while(map.players[map.turn].AI && map.in_progress) {
+		takeTurn();
+		if(countActivePlayers(map)==2 && countTiles(map,map.turn)<map.tiles.length*.4) {
+			forfeit();
+		} else {
+			reinforce();
+			updateStatus(map);
+			nextTurn(map);
+		}
+		game_data.saveData(map);
+	}
+}
+function attack()
 {
 	var computer=map.players[map.turn];
-	debug("computer taking turn: " + computer.name);
 	var territories=getPlayerTiles(map,map.turn);
 	var attacks=[];
 	
@@ -256,12 +268,17 @@ function takeTurn()
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		var data=new Data("battle");
+		var data=new Packet("battle");
 		data.a=a;
 		data.d=d;
 		stream.send(data);
 		
 		if(a.total>d.total) {
+			if(countTiles(map,defending.owner)==1) {
+				players.scoreKill(map.players[attacking.owner].name);
+				players.scoreLoss(map.players[defending.owner].name);
+				map.players[defending.owner].active=false;
+			}
 			defending.assign(attacking.owner,attacking.dice-1);
 		} 
 		attacking.dice=1;
@@ -275,15 +292,36 @@ function takeTurn()
 	computer.AI.turns++;
 	return true;
 }
+function takeTurn()
+{
+	while(map.in_progress) {
+		if(!attack()) break;
+		updateStatus(map);
+		mswait(500);
+	}
+}
+function forfeit()
+{
+	map.in_progress=false;
+	map.players[map.turn].active=false;
+	var data=new Packet("activity");
+	data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
+	stream.send(data);
+	players.scoreLoss(map.players[map.turn].name);
+}
 function reinforce()
 {
 	var player_tiles=getPlayerTiles(map,map.turn);
 	var reinforcements=countConnected(map,player_tiles,map.turn);
 	var placed=placeReinforcements(map,player_tiles,reinforcements);
-	var reserved=placeReserves(map,reinforcements-placed.length);
-	var data=new Data("activity");
-	if(placed.length>0) {
-		data.activity=("\1n\1y" + map.players[map.turn].name + " placed " + placed.length + " dice");
+	var total=0;
+	for(var p in placed) {
+		total+=placed[p];
+	}
+	var reserved=placeReserves(map,reinforcements-total);
+	var data=new Packet("activity");
+	if(total>0) {
+		data.activity=("\1n\1y" + map.players[map.turn].name + " placed " + total + " dice");
 		stream.send(data);
 	}
 	if(reserved>0) {
@@ -292,16 +330,4 @@ function reinforce()
 	}
 }
 
-while(map.players[map.turn].AI && map.in_progress) {
-	while(1) {
-		if(!takeTurn()) {
-			updateStatus(map);
-			break;
-		}
-		updateStatus(map);
-	}
-	reinforce();
-	nextTurn(map);
-	map.attacking=map.turn;
-	game_data.saveData(map);
-}
+main();
