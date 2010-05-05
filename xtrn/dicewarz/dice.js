@@ -1572,6 +1572,12 @@ function	GameStatusInfo()
 						this.inProgress.push(ggg);
 						if(gm.turnOrder[gm.nextTurn]==playerNumber || gm.singlePlayer) {
 							this.yourTurn.push(ggg);
+						} else {
+							var nextTurn=gm.nextTurn;
+							while(gm.players[gm.turnOrder[nextTurn]].user<0) nextTurn++;
+							if(gm.turnOrder[nextTurn]==playerNumber) {
+								this.yourTurn.push(ggg);
+							}
 						}
 					}
 					if(gm.players[playerNumber].eliminated===true) this.eliminated.push(ggg);
