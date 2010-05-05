@@ -1574,7 +1574,10 @@ function	GameStatusInfo()
 							this.yourTurn.push(ggg);
 						} else {
 							var nextTurn=gm.nextTurn;
-							while(gm.players[gm.turnOrder[nextTurn]].user<0) nextTurn++;
+							while(gm.players[gm.turnOrder[nextTurn]].user<0) {
+								nextTurn++;
+								if(nextTurn==gm.maxPlayers) nextTurn=0;
+							}
 							if(gm.turnOrder[nextTurn]==playerNumber) {
 								this.yourTurn.push(ggg);
 							}
