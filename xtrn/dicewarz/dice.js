@@ -441,7 +441,7 @@ function 	processSelection(gameNumber)
 	var g=games.gameData[gameNumber];
 	var fileName=g.fileName;
 	var lastModified=file_date(fileName);
-	if(lastModified>g.lastModified) games.gameData[gameNumber]=loadGame(fileName,gameNumber,lastModified);
+	if(lastModified>g.lastModified) games.gameData[gameNumber]=games.loadGame(fileName,gameNumber,lastModified);
 	
 	if(g.status>=0)
 	{
