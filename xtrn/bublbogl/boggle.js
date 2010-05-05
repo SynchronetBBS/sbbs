@@ -7,7 +7,7 @@
 	Dictionary files created from ENABLe gaming dictionary
 	
 	for customization or installation help contact:
-	Matt Johnson ( MCMLXXIX@MDJ.ATH.CX )
+	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
 var gameroot;
@@ -26,29 +26,29 @@ var interbbs=argv[0];
 var stream=interbbs?new ServiceConnection("boggle"):false;
 var oldpass=console.ctrl_key_passthru;
 
+var wordvalues=[];
+wordvalues[4]=1;
+wordvalues[5]=2;
+wordvalues[6]=3;
+wordvalues[7]=5;
+wordvalues[8]=11;
+
+var max_future=2;
+var calendar;
+var month;
+var current;
+var today;
+var lobby;
+var players;
+var player;
+var input;
+var info;
+var wordlist;
+var playing_game=false;
+var clearalert=false;
+
 function boggle()
 {
-	var wordvalues=[];
-	wordvalues[4]=1;
-	wordvalues[5]=2;
-	wordvalues[6]=3;
-	wordvalues[7]=5;
-	wordvalues[8]=11;
-	
-	var max_future=2;
-	var calendar;
-	var month;
-	var current;
-	var today;
-	var lobby;
-	var players;
-	var player;
-	var input;
-	var info;
-	var wordlist;
-	var playing_game=false;
-	var clearalert=false;
-	
 	function init()
 	{
 		if(interbbs) getFiles();
@@ -453,7 +453,7 @@ function boggle()
 		{
 			var score=scores[s];
 			var plays=players.getDayCount(score.name);
-			if(plays>0)
+			if(score.points>0)
 			{
 				if(score.name==user.alias) console.attributes=LIGHTGREEN;
 				else console.attributes=GREEN;
@@ -507,579 +507,13 @@ function boggle()
 	init();
 	main();
 	splashExit();
-	
-	//GAME OBJECTS
-	function Lobby(x,y)
-	{
-		this.graphic=new Graphic(80,24);
-		this.graphic.load(gameroot + "lobby.bin");
-		this.x=x;
-		this.y=y;
-		
-		this.draw=function()
-		{
-			this.graphic.draw(this.x,this.y);
-		}
-	}
-	function PlayerList()
-	{
-		this.file=new File(gameroot + "players.ini");
-		this.players=[];
-		this.init=function()
-		{
-			this.file.open(file_exists(this.file.name)?'r+':'w+',true);
-			if(!this.file.iniGetValue(user.alias,"name"))
-			{
-				this.file.iniSetObject(user.alias,new Player());
-			}
-			var plyrs=this.file.iniGetAllObjects();
-			this.file.close();
-			for(p in plyrs)
-			{
-				var plyr=plyrs[p];
-				var days=plyr.days;
-				if(days)
-				{
-					days=days.toString().split(',');
-					if(plyr.name==user.alias)
-					{
-						for(d in days)
-						{
-							calendar.highlights[days[d]]=true;
-						}
-					}
-				}
-				if(plyr.name==user.alias) plyr.laston=time();
-				this.players[plyr.name]=new Player(plyr.name,plyr.points,days,plyr.laston);
-			}
-		}
-		this.formatDate=function(timet)
-		{
-			var date=new Date(timet*1000);
-			var m=date.getMonth()+1;
-			var d=date.getDate();
-			var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
-			
-			if(m<10) m="0"+m;
-			if(d<10) d="0"+d;
-			if(y<10) y="0"+y;
-			
-			return (m + "/" + d + "/" + y);
-		}
-		this.reset=function()
-		{
-			file_remove(this.file.name);
-			this.init();
-		}
-		this.getAverage=function(alias)
-		{
-			var p=this.findUser(alias);
-			var count=this.getDayCount(alias);
-			var avg=p.points/count;
-			if(avg>0) 
-			{
-				if(avg<10) return("0"+avg.toFixed(1));
-				return avg.toFixed(1);
-			}
-			return 0;
-		}
-		this.getDayCount=function(alias)
-		{
-			var p=this.findUser(alias);
-			var count=0;
-			for(play in p.days) count++;
-			return count;
-		}
-		this.storePlayer=function()
-		{
-			this.file.open('r+',true);
-			this.file.iniSetObject(user.alias,this.players[user.alias]);
-			this.file.close();
-		}
-		this.findUser=function(alias)
-		{
-			return this.players[alias];
-		}
-		this.init();
-	}
-	function Player(name,points,days,laston)
-	{
-		this.name=name?name:user.alias;
-		this.points=points?points:0;
-		this.days=days?days:[];
-		this.laston=laston?laston:false;
-	}
-	function MonthData()
-	{
-		this.currentdate=new Date();
-		this.currentmonth=this.currentdate.getMonth();
-		this.games=[];
-		this.winner=false;
-		this.datafile=new File(gameroot + "month.ini");
-		
-		this.init=function()
-		{
-			this.loadMonth();
-			this.loadGames();
-		}
-		this.loadMonth=function()
-		{
-			if(file_exists(this.datafile.name))
-			{
-				console.putmsg("\rPlease Wait. Loading games for this month...\r\n");
-				var filedate=new Date(file_date(this.datafile.name)*1000);
-				if(filedate.getMonth()!=this.currentmonth)
-				{
-					this.deleteOldGames();
-					this.findRoundWinner();
-					this.newMonth();
-				}
-				else
-				{
-					this.datafile.open('r',true);
-					var name=this.datafile.iniGetValue(null,"winner");
-					var points=this.datafile.iniGetValue(null,"points");
-					this.datafile.close();
-					if(points>0) 
-					{
-						this.winner={"name":name,"points":points};
-					}
-				}
-			}
-			else
-			{
-				console.putmsg("\rPlease Wait. Creating games for new month...\r\n");
-				this.newMonth();
-			}
-		}
-		this.deleteOldGames=function()
-		{
-			var games=directory(gameroot + "*.bog");
-			for(g in games)
-			{
-				file_remove(games[g]);
-			}
-		}
-		this.findRoundWinner=function()
-		{
-			for(p in players.players)
-			{
-				if(!this.winner) this.winner=players.players[p];
-				else
-				{
-					if(players.players[p].points>this.winner.points) this.winner=players.players[p];
-				}
-			}
-			this.datafile.open('w+',true);
-			this.datafile.iniSetValue(null,"winner",this.winner.name);
-			this.datafile.iniSetValue(null,"points",this.winner.points);
-			this.datafile.close();
-			players.reset();
-		}
-		this.newMonth=function()
-		{
-			this.games=[];
-			file_touch(this.datafile.name);
-			var numdays=this.currentdate.daysInMonth();
-			for(var dn=1;dn<=numdays;dn++)
-			{
-				var game=new Game();
-				game.init();
-				this.games.push(game);
-			}
-		}
-		this.loadGames=function()
-		{
-			var list=directory(gameroot + "*.bog");
-			for(l in list)
-			{
-				var game=new Game();
-				game.init(list[l]);
-				this.games[game.gamenumber]=game;
-			}
-		}
-		this.init();
-	}
-	function InfoBox(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		this.timer;
-		this.score;
-		
-		this.init=function(player)
-		{
-			this.score=new Score();
-			this.timer=new Timer(65,12,"\1b\1h");
-			this.timer.init(180);
-		}
-		this.cycle=function()
-		{
-			if(this.timer.countdown>0)
-			{
-				var current=time();
-				var difference=current-this.timer.lastupdate;
-				if(difference>0)
-				{
-					this.timer.countDown(current,difference);
-					this.timer.redraw();
-				}
-				return true;
-			}
-			return false;
-		}
-		this.draw=function()
-		{
-			this.timer.redraw();
-			console.gotoxy(64,19);
-			console.putmsg("\1y\1h" + player.name.toUpperCase());
-			console.gotoxy(73,21);
-			console.putmsg("\1y\1h" + this.score.words);
-			console.gotoxy(73,22);
-			console.putmsg("\1y\1h" + this.score.points);
-		}
-	}
-	function GameBoard(x,y)
-	{ 
-		this.graphic=new Graphic(80,24);
-		this.graphic.load(gameroot + "board.bin");
-		this.x=x;
-		this.y=y;
-		this.grid;
-		
-		this.init=function()
-		{
-			this.grid=[];
-			for(x=0;x<5;x++)
-			{
-				this.grid.push(new Array(5));
-			}
-			this.scanGraphic();
-		}
-		this.scanGraphic=function()
-		{
-			for(x=0;x<this.graphic.data.length;x++) 
-			{
-				for(y=0;y<this.graphic.data[x].length;y++)
-				{
-					var location=this.graphic.data[x][y];
-					if(location.ch=="@") 
-					{
-						var id=this.graphic.data[x+1][y].ch;
-						if(id=="D")
-						{
-							
-							this.dateline=new DateLine(x+1,y+1);
-						}
-						else
-						{
-							var posx=parseInt(this.graphic.data[x+1][y].ch,10);
-							var posy=parseInt(this.graphic.data[x+2][y].ch,10);
-							this.grid[posx][posy]=new LetterBox(x+1,y+1);
-						}
-						this.graphic.data[x][y].ch=" ";
-						this.graphic.data[x+1][y].ch=" ";
-						this.graphic.data[x+2][y].ch=" ";
-					}
-				}
-			}
-		}
-		this.draw=function()
-		{
-			for(x=0;x<this.grid.length;x++)
-			{
-				for(y=0;y<this.grid[x].length;y++)
-				{
-					this.grid[x][y].draw();
-				}
-			}
-		}
-		this.drawSelected=function(valid)
-		{
-			for(x=0;x<this.grid.length;x++)
-			{
-				for(y=0;y<this.grid[x].length;y++)
-				{
-					if(this.grid[x][y].selected) this.grid[x][y].draw(true,valid);
-				}
-			}
-		}
-		this.clearSelected=function()
-		{
-			for(x=0;x<this.grid.length;x++)
-			{
-				for(y=0;y<this.grid[x].length;y++)
-				{
-					this.grid[x][y].selected=false;
-					this.grid[x][y].draw();
-				}
-			}
-		}
-		this.init();
-	}
-	function LetterBox(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		//this.letter;
-		this.selected=false;
-		
-		this.draw=function(selected,valid)
-		{
-			var letter=(this.letter=="Q"?"Qu":this.letter);
-			var oldattr=console.attributes;
-			if(selected)
-			{
-				console.attributes=valid?LIGHTGREEN + BG_GREEN:LIGHTRED + BG_RED;
-				console.gotoxy(this.x-2,this.y-1);
-				console.putmsg("     ",P_SAVEATR);
-				console.down();
-				console.left(5);
-				console.putmsg(centerString(letter,5),P_SAVEATR);
-				console.down();
-				console.left(5);
-				console.putmsg("     ",P_SAVEATR);
-			}
-			else 
-			{
-				console.gotoxy(this.x-2,this.y-1);
-				console.attributes=BG_BROWN + YELLOW;
-				console.putmsg("     ",P_SAVEATR);
-				console.down();
-				console.left(5);
-				console.putmsg(centerString(letter,5),P_SAVEATR);
-				console.down();
-				console.left(5);
-				console.putmsg("     ",P_SAVEATR);
-			}
-			console.attributes=oldattr;
-		}
-	}
-	function DateLine(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		//this.date;
-		this.draw=function()
-		{
-			console.gotoxy(this.x,this.y);
-			console.putmsg(this.date);
-		}
-	}
-	function MessageLine(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		this.draw=function(txt)
-		{
-			console.gotoxy(this.x,this.y);
-			console.putmsg(txt);
-		}
-	}
-	function InputLine(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		this.buffer="";
-		this.add=function(letter)
-		{
-			if(clearalert) 
-			{
-				this.clear();
-				clearalert=false;
-			}
-			if(letter=="\b")
-			{
-				if(!this.buffer.length) return;
-				this.buffer=this.buffer.substring(0,this.buffer.length-1);
-			}
-			else
-			{
-				if(this.buffer.length==30) return;
-				this.buffer+=letter.toLowerCase();
-			}
-			this.draw(this.buffer);
-		}
-		this.backSpace=function()
-		{
-			this.buffer=this.buffer.substring(0,this.buffer.length-2);
-			this.draw();
-			console.putmsg(" ");
-		}
-		this.clear=function()
-		{
-			this.buffer="";
-			console.gotoxy(this.x,this.y);
-			console.write("                              ");
-		}
-		this.draw=function(text)
-		{
-			console.gotoxy(this.x,this.y);
-			console.putmsg(printPadded("\1n" + text,30));
-		}
-	}
-	function WordList(x,y)
-	{
-		this.x=x;
-		this.y=y;
-		this.words=[];
-		this.draw=function()
-		{
-			var longest=0;
-			var x=this.x;
-			var y=this.y;
-			for(var w=0;w<this.words.length;w++)
-			{
-				if(w%17==0) 
-				{
-					x+=longest+1;
-					longest=0;
-				}
-				if(this.words[w].length>longest) longest=this.words[w].length;
-				console.gotoxy(x,y+(w%17));
-				console.putmsg("\1g\1h" + this.words[w]);
-			}
-		}
-		this.add=function(word)
-		{
-			this.words.push(word);
-			this.draw();
-		}
-	}
-	function Score()
-	{
-		this.points=0;
-		this.words=0;
-	}
-	function Game()
-	{
-		//this.file;
-		//this.board;
-		//this.gamenumber;
-		//this.info;
-		
-		this.init=function(fileName)
-		{
-			this.board=new GameBoard(1,1);
-			if(fileName)
-			{
-				this.file=new File(fileName);
-				
-				var f=file_getname(fileName);
-				this.gamenumber=parseInt(f.substring(0,f.indexOf(".")),10);
-				this.loadGame();
-			}
-			else
-			{
-				this.setFileInfo();
-				this.generateBoard();
-				this.storeGame();
-			}
-		}
-		this.loadGame=function()
-		{
-			this.file.open('r',true);
-			var grid=this.board.grid;
-			for(x in grid)
-			{
-				for(y in grid[x])
-				{
-					grid[x][y].letter=this.file.readln();
-				}
-			}
-			this.file.close();
-		}
-		this.storeGame=function()
-		{
-			this.file.open('w+');
-			var grid=this.board.grid;
-			for(x in grid)
-			{
-				for(y in grid[x])
-				{
-					this.file.writeln(grid[x][y].letter);
-				}
-			}
-			this.file.close();
-		}
-		this.initDice=function()
-		{
-			var dice=new Array(25);
-			dice[0]="AAAFRS";
-			dice[1]="AAEEEE";
-			dice[2]="AAFIRS";
-			dice[3]="ADENNN";
-			dice[4]="AEEEEM";
-			dice[5]="AEEGMU";
-			dice[6]="AEGMNN";
-			dice[7]="AFIRSY";
-			dice[8]="BJKQXZ";
-			dice[9]="CCENST";
-			dice[10]="CEIILT";
-			dice[11]="CEILPT";
-			dice[12]="CEIPST";
-			dice[13]="DDHNOT";
-			dice[14]="DHHLOR";
-			dice[15]="DHLNOR";
-			dice[16]="DHLNOR";
-			dice[17]="EIIITT";
-			dice[18]="EMOTTT";
-			dice[19]="ENSSSU";
-			dice[20]="FIPRSY";
-			dice[21]="GORRVW";
-			dice[22]="IPRRRY";
-			dice[23]="NOOTUW";
-			dice[24]="OOOTTU";
-			return dice;
-		}
-		this.generateBoard=function()
-		{
-			var dice=this.initDice();
-			var shaken=new Array();
-			for(var d=0;d<25;d++)
-			{
-				var spot=random(dice.length);
-				shaken.push(dice.splice(spot,1).toString());
-			}
-			var die=0;
-			for(var x=0;x<this.board.grid.length;x++)
-			{
-				for(var y=0;y<this.board.grid[x].length;y++)
-				{
-					var randletter=shaken[die].charAt(random(6));
-					this.board.grid[x][y].letter=randletter;
-					die++;
-				}
-			}
-		}
-		this.setFileInfo=function()
-		{
-			var gNum=1;
-			if(gNum<10) gNum="0"+gNum;
-			while(file_exists(gameroot+gNum+".bog"))
-			{
-				gNum++;
-				if(gNum<10) gNum="0"+gNum;
-			}
-			var fName=gameroot + gNum + ".bog";
-			this.file=new File(fName);
-			this.gamenumber=parseInt(gNum,10);
-		}
-		this.draw=function()
-		{
-			this.board.graphic.draw(this.board.x,this.board.y);
-			console.gotoxy(2,2);
-			console.putmsg(centerString("\1c\1h" + calendar.date.getMonthName() + " " + this.gamenumber + ", " + calendar.date.getFullYear(),28));
-			this.board.draw();
-		}
-	}
 }
 function getFiles()
 {
 	console.putmsg("\1nPlease wait. Synchronizing game files with hub...\r\n");
 	stream.recvfile("*.bog");
-	stream.recvfile("players.ini");
-	stream.recvfile("month.ini");
+	//stream.recvfile("players.ini");
+	//stream.recvfile("month.ini");
 }
 function sendFiles()
 {
@@ -1088,4 +522,570 @@ function sendFiles()
 	//stream.sendfile("month.ini");		
 }
 
+
+//GAME OBJECTS
+function Lobby(x,y)
+{
+	this.graphic=new Graphic(80,24);
+	this.graphic.load(gameroot + "lobby.bin");
+	this.x=x;
+	this.y=y;
+	
+	this.draw=function()
+	{
+		this.graphic.draw(this.x,this.y);
+	}
+}
+function PlayerList()
+{
+	this.file=new File(gameroot + "players.ini");
+	this.players=[];
+	this.init=function()
+	{
+		this.file.open(file_exists(this.file.name)?'r+':'w+',true);
+		if(!this.file.iniGetValue(user.alias,"name"))
+		{
+			this.file.iniSetObject(user.alias,new Player());
+		}
+		var plyrs=this.file.iniGetAllObjects();
+		this.file.close();
+		for(p in plyrs)
+		{
+			var plyr=plyrs[p];
+			var days=plyr.days;
+			if(days)
+			{
+				days=days.toString().split(',');
+				if(plyr.name==user.alias)
+				{
+					for(d in days)
+					{
+						calendar.highlights[days[d]]=true;
+					}
+				}
+			}
+			if(plyr.name==user.alias) plyr.laston=time();
+			this.players[plyr.name]=new Player(plyr.name,plyr.points,days,plyr.laston);
+		}
+	}
+	this.formatDate=function(timet)
+	{
+		var date=new Date(timet*1000);
+		var m=date.getMonth()+1;
+		var d=date.getDate();
+		var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
+		
+		if(m<10) m="0"+m;
+		if(d<10) d="0"+d;
+		if(y<10) y="0"+y;
+		
+		return (m + "/" + d + "/" + y);
+	}
+	this.reset=function()
+	{
+		file_remove(this.file.name);
+		this.init();
+	}
+	this.getAverage=function(alias)
+	{
+		var p=this.findUser(alias);
+		var count=this.getDayCount(alias);
+		var avg=p.points/count;
+		if(avg>0) 
+		{
+			if(avg<10) return("0"+avg.toFixed(1));
+			return avg.toFixed(1);
+		}
+		return 0;
+	}
+	this.getDayCount=function(alias)
+	{
+		var p=this.findUser(alias);
+		var count=0;
+		for(play in p.days) count++;
+		return count;
+	}
+	this.storePlayer=function()
+	{
+		this.file.open('r+',true);
+		this.file.iniSetObject(user.alias,this.players[user.alias]);
+		this.file.close();
+	}
+	this.findUser=function(alias)
+	{
+		return this.players[alias];
+	}
+	this.init();
+}
+function Player(name,points,days,laston)
+{
+	this.name=name?name:user.alias;
+	this.points=points?points:0;
+	this.days=days?days:[];
+	this.laston=laston?laston:false;
+}
+function MonthData()
+{
+	this.currentdate=new Date();
+	this.currentmonth=this.currentdate.getMonth();
+	this.games=[];
+	this.winner=false;
+	this.datafile=new File(gameroot + "month.ini");
+	
+	this.init=function()
+	{
+		this.loadMonth();
+		this.loadGames();
+	}
+	this.loadMonth=function()
+	{
+		if(file_exists(this.datafile.name))
+		{
+			console.putmsg("\rPlease Wait. Loading games for this month...\r\n");
+			var filedate=new Date(file_date(this.datafile.name)*1000);
+			if(filedate.getMonth()!=this.currentmonth)
+			{
+				this.deleteOldGames();
+				this.findRoundWinner();
+				this.newMonth();
+			}
+			else
+			{
+				this.datafile.open('r',true);
+				var name=this.datafile.iniGetValue(null,"winner");
+				var points=this.datafile.iniGetValue(null,"points");
+				this.datafile.close();
+				if(points>0) 
+				{
+					this.winner={"name":name,"points":points};
+				}
+			}
+		}
+		else
+		{
+			console.putmsg("\rPlease Wait. Creating games for new month...\r\n");
+			this.newMonth();
+		}
+	}
+	this.deleteOldGames=function()
+	{
+		var games=directory(gameroot + "*.bog");
+		for(g in games)
+		{
+			file_remove(games[g]);
+		}
+	}
+	this.findRoundWinner=function()
+	{
+		for(p in players.players)
+		{
+			if(!this.winner) this.winner=players.players[p];
+			else
+			{
+				if(players.players[p].points>this.winner.points) this.winner=players.players[p];
+			}
+		}
+		this.datafile.open('w+',true);
+		this.datafile.iniSetValue(null,"winner",this.winner.name);
+		this.datafile.iniSetValue(null,"points",this.winner.points);
+		this.datafile.close();
+		players.reset();
+	}
+	this.newMonth=function()
+	{
+		this.games=[];
+		file_touch(this.datafile.name);
+		var numdays=this.currentdate.daysInMonth();
+		for(var dn=1;dn<=numdays;dn++)
+		{
+			var game=new Game();
+			game.init();
+			this.games.push(game);
+		}
+	}
+	this.loadGames=function()
+	{
+		var list=directory(gameroot + "*.bog");
+		for(l in list)
+		{
+			var game=new Game();
+			game.init(list[l]);
+			this.games[game.gamenumber]=game;
+		}
+	}
+	this.init();
+}
+function InfoBox(x,y)
+{
+	this.x=x;
+	this.y=y;
+	this.timer;
+	this.score;
+	
+	this.init=function(player)
+	{
+		this.score=new Score();
+		this.timer=new Timer(65,12,"\1b\1h");
+		this.timer.init(180);
+	}
+	this.cycle=function()
+	{
+		if(this.timer.countdown>0)
+		{
+			var current=time();
+			var difference=current-this.timer.lastupdate;
+			if(difference>0)
+			{
+				this.timer.countDown(current,difference);
+				this.timer.redraw();
+			}
+			return true;
+		}
+		return false;
+	}
+	this.draw=function()
+	{
+		this.timer.redraw();
+		console.gotoxy(64,19);
+		console.putmsg("\1y\1h" + player.name.toUpperCase());
+		console.gotoxy(73,21);
+		console.putmsg("\1y\1h" + this.score.words);
+		console.gotoxy(73,22);
+		console.putmsg("\1y\1h" + this.score.points);
+	}
+}
+function GameBoard(x,y)
+{ 
+	this.graphic=new Graphic(80,24);
+	this.graphic.load(gameroot + "board.bin");
+	this.x=x;
+	this.y=y;
+	this.grid;
+	
+	this.init=function()
+	{
+		this.grid=[];
+		for(x=0;x<5;x++)
+		{
+			this.grid.push(new Array(5));
+		}
+		this.scanGraphic();
+	}
+	this.scanGraphic=function()
+	{
+		for(x=0;x<this.graphic.data.length;x++) 
+		{
+			for(y=0;y<this.graphic.data[x].length;y++)
+			{
+				var location=this.graphic.data[x][y];
+				if(location.ch=="@") 
+				{
+					var id=this.graphic.data[x+1][y].ch;
+					if(id=="D")
+					{
+						
+						this.dateline=new DateLine(x+1,y+1);
+					}
+					else
+					{
+						var posx=parseInt(this.graphic.data[x+1][y].ch,10);
+						var posy=parseInt(this.graphic.data[x+2][y].ch,10);
+						this.grid[posx][posy]=new LetterBox(x+1,y+1);
+					}
+					this.graphic.data[x][y].ch=" ";
+					this.graphic.data[x+1][y].ch=" ";
+					this.graphic.data[x+2][y].ch=" ";
+				}
+			}
+		}
+	}
+	this.draw=function()
+	{
+		for(x=0;x<this.grid.length;x++)
+		{
+			for(y=0;y<this.grid[x].length;y++)
+			{
+				this.grid[x][y].draw();
+			}
+		}
+	}
+	this.drawSelected=function(valid)
+	{
+		for(x=0;x<this.grid.length;x++)
+		{
+			for(y=0;y<this.grid[x].length;y++)
+			{
+				if(this.grid[x][y].selected) this.grid[x][y].draw(true,valid);
+			}
+		}
+	}
+	this.clearSelected=function()
+	{
+		for(x=0;x<this.grid.length;x++)
+		{
+			for(y=0;y<this.grid[x].length;y++)
+			{
+				this.grid[x][y].selected=false;
+				this.grid[x][y].draw();
+			}
+		}
+	}
+	this.init();
+}
+function LetterBox(x,y)
+{
+	this.x=x;
+	this.y=y;
+	//this.letter;
+	this.selected=false;
+	
+	this.draw=function(selected,valid)
+	{
+		var letter=(this.letter=="Q"?"Qu":this.letter);
+		var oldattr=console.attributes;
+		if(selected)
+		{
+			console.attributes=valid?LIGHTGREEN + BG_GREEN:LIGHTRED + BG_RED;
+			console.gotoxy(this.x-2,this.y-1);
+			console.putmsg("     ",P_SAVEATR);
+			console.down();
+			console.left(5);
+			console.putmsg(centerString(letter,5),P_SAVEATR);
+			console.down();
+			console.left(5);
+			console.putmsg("     ",P_SAVEATR);
+		}
+		else 
+		{
+			console.gotoxy(this.x-2,this.y-1);
+			console.attributes=BG_BROWN + YELLOW;
+			console.putmsg("     ",P_SAVEATR);
+			console.down();
+			console.left(5);
+			console.putmsg(centerString(letter,5),P_SAVEATR);
+			console.down();
+			console.left(5);
+			console.putmsg("     ",P_SAVEATR);
+		}
+		console.attributes=oldattr;
+	}
+}
+function DateLine(x,y)
+{
+	this.x=x;
+	this.y=y;
+	//this.date;
+	this.draw=function()
+	{
+		console.gotoxy(this.x,this.y);
+		console.putmsg(this.date);
+	}
+}
+function MessageLine(x,y)
+{
+	this.x=x;
+	this.y=y;
+	this.draw=function(txt)
+	{
+		console.gotoxy(this.x,this.y);
+		console.putmsg(txt);
+	}
+}
+function InputLine(x,y)
+{
+	this.x=x;
+	this.y=y;
+	this.buffer="";
+	this.add=function(letter)
+	{
+		if(clearalert) 
+		{
+			this.clear();
+			clearalert=false;
+		}
+		if(letter=="\b")
+		{
+			if(!this.buffer.length) return;
+			this.buffer=this.buffer.substring(0,this.buffer.length-1);
+		}
+		else
+		{
+			if(this.buffer.length==30) return;
+			this.buffer+=letter.toLowerCase();
+		}
+		this.draw(this.buffer);
+	}
+	this.backSpace=function()
+	{
+		this.buffer=this.buffer.substring(0,this.buffer.length-2);
+		this.draw();
+		console.putmsg(" ");
+	}
+	this.clear=function()
+	{
+		this.buffer="";
+		console.gotoxy(this.x,this.y);
+		console.write("                              ");
+	}
+	this.draw=function(text)
+	{
+		console.gotoxy(this.x,this.y);
+		console.putmsg(printPadded("\1n" + text,30));
+	}
+}
+function WordList(x,y)
+{
+	this.x=x;
+	this.y=y;
+	this.words=[];
+	this.draw=function()
+	{
+		var longest=0;
+		var x=this.x;
+		var y=this.y;
+		for(var w=0;w<this.words.length;w++)
+		{
+			if(w%17==0) 
+			{
+				x+=longest+1;
+				longest=0;
+			}
+			if(this.words[w].length>longest) longest=this.words[w].length;
+			console.gotoxy(x,y+(w%17));
+			console.putmsg("\1g\1h" + this.words[w]);
+		}
+	}
+	this.add=function(word)
+	{
+		this.words.push(word);
+		this.draw();
+	}
+}
+function Score()
+{
+	this.points=0;
+	this.words=0;
+}
+function Game()
+{
+	//this.file;
+	//this.board;
+	//this.gamenumber;
+	//this.info;
+	
+	this.init=function(fileName)
+	{
+		this.board=new GameBoard(1,1);
+		if(fileName)
+		{
+			this.file=new File(fileName);
+			
+			var f=file_getname(fileName);
+			this.gamenumber=parseInt(f.substring(0,f.indexOf(".")),10);
+			this.loadGame();
+		}
+		else
+		{
+			this.setFileInfo();
+			this.generateBoard();
+			this.storeGame();
+		}
+	}
+	this.loadGame=function()
+	{
+		this.file.open('r',true);
+		var grid=this.board.grid;
+		for(x in grid)
+		{
+			for(y in grid[x])
+			{
+				grid[x][y].letter=this.file.readln();
+			}
+		}
+		this.file.close();
+	}
+	this.storeGame=function()
+	{
+		this.file.open('w+');
+		var grid=this.board.grid;
+		for(x in grid)
+		{
+			for(y in grid[x])
+			{
+				this.file.writeln(grid[x][y].letter);
+			}
+		}
+		this.file.close();
+	}
+	this.initDice=function()
+	{
+		var dice=new Array(25);
+		dice[0]="AAAFRS";
+		dice[1]="AAEEEE";
+		dice[2]="AAFIRS";
+		dice[3]="ADENNN";
+		dice[4]="AEEEEM";
+		dice[5]="AEEGMU";
+		dice[6]="AEGMNN";
+		dice[7]="AFIRSY";
+		dice[8]="BJKQXZ";
+		dice[9]="CCENST";
+		dice[10]="CEIILT";
+		dice[11]="CEILPT";
+		dice[12]="CEIPST";
+		dice[13]="DDHNOT";
+		dice[14]="DHHLOR";
+		dice[15]="DHLNOR";
+		dice[16]="DHLNOR";
+		dice[17]="EIIITT";
+		dice[18]="EMOTTT";
+		dice[19]="ENSSSU";
+		dice[20]="FIPRSY";
+		dice[21]="GORRVW";
+		dice[22]="IPRRRY";
+		dice[23]="NOOTUW";
+		dice[24]="OOOTTU";
+		return dice;
+	}
+	this.generateBoard=function()
+	{
+		var dice=this.initDice();
+		var shaken=new Array();
+		for(var d=0;d<25;d++)
+		{
+			var spot=random(dice.length);
+			shaken.push(dice.splice(spot,1).toString());
+		}
+		var die=0;
+		for(var x=0;x<this.board.grid.length;x++)
+		{
+			for(var y=0;y<this.board.grid[x].length;y++)
+			{
+				var randletter=shaken[die].charAt(random(6));
+				this.board.grid[x][y].letter=randletter;
+				die++;
+			}
+		}
+	}
+	this.setFileInfo=function()
+	{
+		var gNum=1;
+		if(gNum<10) gNum="0"+gNum;
+		while(file_exists(gameroot+gNum+".bog"))
+		{
+			gNum++;
+			if(gNum<10) gNum="0"+gNum;
+		}
+		var fName=gameroot + gNum + ".bog";
+		this.file=new File(fName);
+		this.gamenumber=parseInt(gNum,10);
+	}
+	this.draw=function()
+	{
+		this.board.graphic.draw(this.board.x,this.board.y);
+		console.gotoxy(2,2);
+		console.putmsg(centerString("\1c\1h" + calendar.date.getMonthName() + " " + this.gamenumber + ", " + calendar.date.getFullYear(),28));
+		this.board.draw();
+	}
+}
 boggle();
