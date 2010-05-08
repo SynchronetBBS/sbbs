@@ -98,7 +98,7 @@ function removeFirstWord(text)
 }
 function removeSpaces(text)
 {
-	while(text.indexOf(" ")==0) text=text.substr(1);
+	while(text[0]==" ") text=text.substr(1);
 	return truncsp(text);
 }
 function splitPadded(string1,string2,length,padding)
@@ -204,13 +204,24 @@ function clearLine(length,x,y,bg)
 }
 function debug(data,LOG_LEVEL)
 {
-	LOG_LEVEL=LOG_LEVEL?LOG_LEVEL:LOG_INFO;
+	LOG_LEVEL=LOG_LEVEL?LOG_LEVEL:LOG_DEBUG;
+	var str=debug_trace(data,1).split("\r\n");
+	while(str.length) log(LOG_LEVEL,str.shift());
+}
+function debug_trace(data,level)
+{
 	if(typeof data=="object") {
+		var prefix=format("%*s",level*2,"");
+		var value="{\r\n";
 		for(p in data) {
-			debug(p + "=" + data[p],LOG_LEVEL);
+			value+=prefix + debug_trace(p + "=" + debug_trace(data[p],level+1) + "\r\n");
 		}
+		value+=prefix.substr(2)+"}";
+		return value;
+	} else if(typeof data=="function") {
+		return data.toSource();
 	}
-	else log(LOG_LEVEL,data);
+	return data;
 }
 function testSocket(socket)
 {
