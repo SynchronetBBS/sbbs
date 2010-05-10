@@ -1,1 +1,0 @@
-OBJS = $(OBJODIR)$(DIRSEP)fontedit$(OFILE)
