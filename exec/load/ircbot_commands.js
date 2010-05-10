@@ -46,12 +46,13 @@ Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(cmd[1]));
 	if (usr.number > 0) {
 		srv.o(target,usr.alias+" has an access level of "
-			+usr.security.level+".");
+			+usr.security.level+". (UID: " + usr.number + ")");
 		if (masks[usr.number])
 			srv.o(target,"Masks: " + masks[usr.number].join(" "));
 		else
 			srv.o(target,usr.alias + " has no IRC masks defined.");
-		srv.o(target,usr.alias + " last signed on " + usr.laston_date + " via "
+		srv.o(target,usr.alias + " last signed on "
+			+ strftime("%m/%d/%Y %H:%M",usr.stats.laston_date) + " via "
 			+ usr.connection + ".");
 	} else {
 		srv.o(target,"I have no such user in my database.");
@@ -306,15 +307,34 @@ Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["EVAL"] = new Bot_Command(0,true,false);
 Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	var query = "";
+
+	var usr = new User(system.matchuser(onick));
+	if (usr.number) {
+		var uid_str = format("%04u", usr.number);
+		var user_js = "/home/bbs/data/user/" +uid_str+ ".eval.js";
+		if (file_exists(user_js)) {
+			var user_file = new File(user_js);
+			if (user_file.open('r+')) {
+				var str;
+				while ((str=user_file.readln())!=null) {
+					query += str;
+				}
+				user_file.close();
+			}
+		}
+	}
+
 	cmd.shift();
-	var query = cmd.join(" ");
+	query += cmd.join(" ");
 	js.branch_limit=1000; // protection
 	js.branch_counter=0; // reset
-	try {
-		srv.o(target, strip_ctrl(js.eval(query)));
-	} catch(e) {
-		srv.o(target,"ERROR: "+e);
-	}
+	var result = js.eval(query);
+	if(result)
+		result = strip_ctrl(result.toString().slice(0,512));
+	else if (result==undefined)
+		result = system.popen("tail -1 /home/bbs/log/ircbot/stderr");
+	srv.o(target,result);
 	js.branch_limit=0; // protection off
 	return;
 }
@@ -543,23 +563,20 @@ Bot_Commands["QUOTE"] = new Bot_Command(0,false,false);
 Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (cmd[1]) {
 		cmd.shift();
-		var searched_quotes = new Array();
+		var searched_quotes = new Object();
 		var search_params = cmd.join(" ");
 		var lucky_number;
-		var found_a_quote = false;
-		while (searched_quotes.length < quotes.length) {
+		while (true_array_len(searched_quotes) < quotes.length) {
 			lucky_number = random(quotes.length);
 			if (!searched_quotes[lucky_number]) {
 				if (quotes[lucky_number].toUpperCase().match(search_params.toUpperCase())) {
 					srv.o(target, quotes[lucky_number]);
-					found_a_quote = true;
-					break;
+					return;
 				}
 				searched_quotes[lucky_number] = true;
 			}
 		}
-		if (!found_a_quote)
-			srv.o(target,"Couldn't find a quote that matches your criteria.");
+		srv.o(target,"Couldn't find a quote that matches your criteria.");
 		return;
 	}
 	srv.o(target, quotes[random(quotes.length)]);
@@ -590,6 +607,20 @@ Bot_Commands["EXEC"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			this_poutput[line] = " ";
 		srv.o(target, this_poutput[line]);
 	}
+	return;
+}
+
+Bot_Commands["SAY"] = new Bot_Command(80,true,false);
+Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	var say_target = cmd.shift();
+	if ( (say_target[0] != "#") && (say_target[0] != "&")
+		&& (lvl<99) ) {
+		srv.o(target, "Can only 'say' to a channel when access level < 99.");
+		return;
+	}
+	var query = cmd.join(" ");
+	srv.o(say_target, strip_ctrl(query));
 	return;
 }
 

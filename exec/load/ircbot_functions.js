@@ -193,8 +193,9 @@ function save_everything() {
 
 	for (m in masks) {
 		var uid_str = format("%04u", m);
-		var us_file = new File("/home/bbs/data/user/" +uid_str+ ".ircbot.ini");
-		if (us_file.open("r+")) {
+		var us_filename = "/home/bbs/data/user/" +uid_str+ ".ircbot.ini";
+		var us_file = new File(us_filename);
+		if (us_file.open(file_exists(us_filename) ? 'r+':'w+')) {
 			us_file.iniSetValue(null, "masks", masks[m].join(","));
 			us_file.close();
 		}
@@ -241,7 +242,7 @@ function Server_Bot_Access(nick,uh) {
 
 function Server_writeout(str) {
 	log("--> " + this.host + ": " + str);
-	this.sock.write(str + "\r\n");
+	this.sock.write(str.slice(0, 512) + "\r\n");
 }
 
 function Server_target_out(target,str) {
@@ -251,6 +252,14 @@ function Server_target_out(target,str) {
 	}
 	var outstr = "PRIVMSG " + target + " :" + str;
 	log("--> " + this.host + ": " + outstr);
-	this.sock.write(outstr + "\r\n");
+	this.sock.write(outstr.slice(0, 512) + "\r\n");
+}
+
+function true_array_len(my_array) {
+	var counter = 0;
+	for (i in my_array) {
+		counter++;
+	}
+	return counter;
 }
 
