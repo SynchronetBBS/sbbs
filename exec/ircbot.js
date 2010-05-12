@@ -22,14 +22,16 @@ load("sockdefs.js");
 load("sbbsdefs.js");
 load("irclib.js");
 
-load("load/ircbot_functions.js");
-
 js.branch_limit=0; /* we're not an infinite loop. */
 
-Module_Save_Data = new Object();
+Module=new Object();
+Module.Save_Data = new Object();
+Module.Functions = new Object();
 Bot_Commands = new Object();
-
 Config_Last_Write = time(); /* Store when the config was last written. */
+
+load("load/ircbot_functions.js");
+//load("load/trivia.js");
 
 /* Global Arrays */
 bot_servers = new Array();
@@ -85,7 +87,7 @@ if (config.open("r")) {
 	exit("Couldn't open config file!");
 }
 
-var user_settings_files = directory("/home/bbs/data/user/*.ircbot.ini");
+var user_settings_files = directory(sysem.data_dir + "user/*.ircbot.ini");
 for (f in user_settings_files) {
 	var us_file = new File(user_settings_files[f]);
 	if (us_file.open("r")) {
@@ -141,6 +143,10 @@ function main() {
 				}
 				log("<-- " + srv.host + ": " + outline);
 				srv.server_command(IRC_parsecommand(cmdline),onick,ouh);
+				// 	TODO: Process module data parsing, if any
+				//	for(var m in Module.command) {
+				//		Module.command[m](IRC_parsecommand(cmdline),onick,ouh);
+				//	}
 			}
 
 			// Run through some commands.
@@ -152,6 +158,11 @@ function main() {
 						srv.channel[c].lastjoin = time() + 60;
 					}
 				}
+			}
+			
+			// Cycle any available module "main" functions
+			for(var l in Module.Functions) {
+				Module.Functions[l](srv);
 			}
 			mswait(10); /* Don't peg the CPU */
 		}
@@ -206,6 +217,7 @@ function Bot_IRC_Channel(name) {
 function Server_User(uh) {
 	this.uh = uh;
 	this.ident = false;
+	this.last_spoke = false;
 }
 
 function Bot_Command(min_security,args_needed,ident_needed) {
@@ -230,6 +242,4 @@ function DCC_Out(target,str) {
 
 /* This must be at the very bottom. */
 load("load/ircbot_commands.js");
-//load("load/ircbot_functions.js");
-//load("ircbot/fieldday.js");
 main();
