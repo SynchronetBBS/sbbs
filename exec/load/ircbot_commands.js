@@ -22,19 +22,24 @@
 
 Bot_Commands["RELOAD"] = new Bot_Command(50,false,false);
 Bot_Commands["RELOAD"].usage =
-	"RELOAD";
-Bot_Commands["RELOAD"].help =
+	command_prefix?command_prefix.toUpperCase():""+" RELOAD";
+Bot_Commands["RELOAD"].help = 
 	"Reloads the internal bot command and function structure.  No arguments.";
 Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	load("load/ircbot_commands.js");
 	load("load/ircbot_functions.js");
+	for(var m in Modules) {
+		for(var l in Modules[m].load) {
+			load(Modules[m],Modules[m].dir + Modules[m].load[l]);
+		}
+	}
 	srv.o(target,"Reloaded.");
 	return;
 }
 
 Bot_Commands["WHOIS"] = new Bot_Command(0,false,false);
 Bot_Commands["WHOIS"].usage =
-	"WHOIS <nick>";
+	get_cmd_prefix() + "WHOIS <nick>";
 Bot_Commands["WHOIS"].help =
 	"Brings up information about a user.  If the <nick> argument is omitted, "
 	+ "then it will display information about you.";
@@ -61,6 +66,10 @@ Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["ADDMASK"] = new Bot_Command(50,1,false);
+Bot_Commands["ADDMASK"].usage =
+	get_cmd_prefix() + "ADDMASK <nick> <user>@<host>";
+Bot_Commands["ADDMASK"].help =
+	"Stores information used by the bot to identify you.";
 Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var addmask = false;
 	var delmask = false;
@@ -195,6 +204,11 @@ Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["CHANGE"] = new Bot_Command(80,2,false);
+Bot_Commands["CHANGE"].usage =
+	get_cmd_prefix() + "CHANGE <nick> <security_level>";
+Bot_Commands["CHANGE"].help =
+	"Allows you to change the security level of users with a lower level " +
+	"than you up to, but not including yours.";
 Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(cmd[1]));
 	if (usr.number == 0) {
@@ -267,6 +281,10 @@ Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["IDENT"] = new Bot_Command(0,true,false);
+Bot_Commands["IDENT"].usage =
+	"/MSG %s IDENT <nick> <pass>";
+Bot_Commands["IDENT"].help =
+	"Identifies a user by alias and password. Use via private message only.";
 Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(onick));
 	if (cmd[2]) { /* Username passed */
@@ -351,8 +369,8 @@ Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["JOINCHANNEL"] = new Bot_Command(99,true,true);
-Bot_Commands["JOINCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["JOINCHAN"] = new Bot_Command(99,true,true);
+Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
 		srv.o(target,"Invalid channel name");
@@ -368,8 +386,8 @@ Bot_Commands["JOINCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["PARTCHANNEL"] = new Bot_Command(99,true,true);
-Bot_Commands["PARTCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["PARTCHAN"] = new Bot_Command(99,true,true);
+Bot_Commands["PARTCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
 		srv.o(target,"Invalid channel name");
@@ -387,9 +405,13 @@ Bot_Commands["PARTCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["DIE"] = new Bot_Command(90,false,false);
+Bot_Commands["DIE"].usage =
+	get_cmd_prefix() + "DIE";
+Bot_Commands["DIE"].help =
+	"Causes me to die. You don't want that, do you?";
 Bot_Commands["DIE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	for (s in bot_servers) {
-		bot_servers[s].writeout("QUIT :" + onick + " told me to die.");
+		bot_servers[s].writeout("QUIT :" + onick + " told me to die. :(");
 	}
 	js.terminated=true;
 	return;
@@ -413,42 +435,45 @@ Bot_Commands["GROUPS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-/* HELP needs to be rewritten.
-case "HELP":
-	if (!cmd[1])
-		cmd[1] = "HELP";
-	var search = "!" + cmd[1].toUpperCase();
-	if (help_file.open("r")) {
-		while (!help_file.eof) {
-			var hf_line = help_file.readln();
-			if (hf_line && (hf_line == search)) {
-				while (!hf_line[0] != "@") {
-					hf_line = help_file.readln();
-					if (hf_line[0] == "@") {
-						break;
-					} else if (hf_line[0] == "^") {
-						hf_line = parseInt(hf_line.slice(1));
-						if (bot_access(onick,ouh) < hf_line)
-							break;
-					} else if (hf_line[0] == ":") {
-						
-						var str = hf_line.slice(1);
-						if (!str)
-							str = " ";
-						this.writeout("NOTICE "+onick+" :" + str);
-					}
-				}
-				if ((hf_line[0] == "@") && hf_line[1]) {
-					hf_line = hf_line.slice(1);
-					this.writeout("NOTICE "+onick+" :Restricted to access level " + hf_line);
-				}
-				help_file.close();
-				break;
-			}
+Bot_Commands["HELP"] = new Bot_Command(50,false,false);
+Bot_Commands["HELP"].usage =
+	get_cmd_prefix() + "HELP <command>";
+Bot_Commands["HELP"].help =
+	"Displays helpful information about bot commands.";
+Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	function help_out(bot_cmd) {
+		if(bot_cmd) {
+			if(bot_cmd.usage) srv.o(onick,format("Usage: " + bot_cmd.usage,srv.curnick));
+			if(bot_cmd.min_security>0) srv.o(onick,"Access level: " + bot_cmd.min_security);
+			if(bot_cmd.help) srv.o(onick,"Help: " + bot_cmd.help);
+			else srv.o(onick,"No help available for this command.");
+		} else {
+			srv.o(onick,"No such command: " + cmd_index);
 		}
 	}
-	break;
-*/
+	function list_out(bot_cmds,name) {
+		var cmdstr="";
+		for(var c in bot_cmds) {
+			if(lvl>=bot_cmds[c].min_security) cmdstr+=","+c;
+		}
+		srv.o(onick,"[" + name + " COMMANDS] " + cmdstr.substr(1));
+	}
+	if(cmd[0]) {
+		help_out(Bot_Commands[cmd[0].toUpperCase()]);
+		for(var m in Modules) {
+			help_out(Modules[m].Bot_Commands[cmd[0].toUpperCase()]);
+		}
+	} else {
+		srv.o(onick,"Command usage: " + get_cmd_prefix() + "<command> <arguments>");
+		list_out(Bot_Commands,"MAIN");
+		for(var m in Modules) {
+			list_out(Modules[m].Bot_Commands,Modules[m].name.toUpperCase());
+		}
+	}
+	return;
+}
+Bot_Commands["?"] = Bot_Commands["HELP"];
 
 Bot_Commands["SUBS"] = new Bot_Command(50,true,false);
 Bot_Commands["SUBS"].command = function (target,onick,ouh,srv,lvl,cmd) {
@@ -573,6 +598,11 @@ Bot_Commands["ADDQUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["GREET"] = new Bot_Command(50,false,false);
+Bot_Commands["GREET"].usage =
+	get_cmd_prefix() + "GREET <greeting> or " +
+	get_cmd_prefix() + "GREET CLEAR"; 
+Bot_Commands["GREET"].help =
+	"Sets or clears the greeting I will display when you enter the room.";
 Bot_Commands["GREET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(onick));
 	if (!usr.number) {
@@ -580,15 +610,23 @@ Bot_Commands["GREET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	if (cmd[1]) {
-		if (cmd[1].toUpperCase() == "NULL")
+		if (cmd[1].toUpperCase() == "DELETE" ||
+			cmd[1].toUpperCase() == "DEL" ||
+			cmd[1].toUpperCase() == "CLEAR") {
+			srv.o(target,"Your greeting has been erased.");
+			usr.comment = "";
+			return;
+		}
+		if (cmd[1].toUpperCase() == "NULL") 
 			cmd[1] = "";
 		cmd.shift();
 		var the_greet = cmd.join(" ");
-		srv.o(target,"Your greet has been changed.");
+		srv.o(target,"Your greeting has been set.");
 		usr.comment = the_greet;
 		return;
 	} else {
-		srv.o(target,"[" + onick + "] " + usr.comment);
+		if(usr.comment.length) srv.o(target,"[" + onick + "] " + usr.comment);
+		else srv.o(target,"You have not defined a greeting.");
 		return;
 	}
 	return;
@@ -656,6 +694,19 @@ Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	var query = cmd.join(" ");
 	srv.o(say_target, strip_ctrl(query));
+	return;
+}
+
+Bot_Commands["PREFIX"] = new Bot_Command(80,false,false);
+Bot_Commands["PREFIX"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if (cmd[0]) {
+		command_prefix = cmd[0].toUpperCase();
+		srv.o(target,"Bot command prefix set: " + command_prefix);
+	} else {
+		command_prefix = "";
+		srv.o(target,"Bot command prefix cleared.");
+	}
 	return;
 }
 

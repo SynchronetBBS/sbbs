@@ -17,85 +17,95 @@
 */
 
 /********** Command Processors. **********/
-function Server_command(cmd,onick,ouh) {
-	var cmdline = cmd.join(" ");
+function Server_command(srv,cmdline,onick,ouh) {
+	var cmd=IRC_parsecommand(cmdline);
 	switch (cmd[0]) {
 		case "001":	// "Welcome."
-			this.is_registered = true;
+			srv.is_registered = true;
 			break;
 		case "352":	// WHO reply.  Process into local cache.
 			var nick = cmd[6].toUpperCase();
-			this.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
+			srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
 			break;
 		case "433":	// Nick already in use.
-			this.juped = true;
-			var newnick = this.nick+"-"+random(50000).toString(36);
-			this.writeout("NICK " + newnick);
-			this.curnick = newnick;
+			srv.juped = true;
+			var newnick = srv.nick+"-"+random(50000).toString(36);
+			srv.writeout("NICK " + newnick);
+			srv.curnick = newnick;
 			log("*** Trying alternative nick, my nick is jupitered.  "
 				+ "(Temp: " + newnick + ")");
 			break;
 		case "JOIN":
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			var chan = this.channel[cmd[1].toUpperCase()];
-			if ((onick == this.curnick) && chan && !chan.is_joined) {
+			var chan = srv.channel[cmd[1].toUpperCase()];
+			if ((onick == srv.curnick) && chan && !chan.is_joined) {
 				chan.is_joined = true;
-				this.writeout("WHO " + cmd[1]);
+				srv.writeout("WHO " + cmd[1]);
 				break;
 			}
 			// Someone else joining.
-			this.users[onick.toUpperCase()] = new Server_User(ouh);
-			var lvl = this.bot_access(onick,ouh);
+			srv.users[onick.toUpperCase()] = new Server_User(ouh);
+			var lvl = srv.bot_access(onick,ouh);
 			if (lvl >= 50) {
 				var usr = new User(system.matchuser(onick));
 				if (lvl >= 60)
-					this.writeout("MODE " + cmd[1] + " +o " + onick);
+					srv.writeout("MODE " + cmd[1] + " +o " + onick);
 				if (usr.number > 0) {
 					if (usr.comment)
-						this.o(cmd[1],"[" + onick + "] " + usr.comment);
+						srv.o(cmd[1],"[" + onick + "] " + usr.comment);
 					login_user(usr);
 				}
 			}
 			break;
 		case "PRIVMSG":
-			if(this.users[onick.toUpperCase()]) this.users[onick.toUpperCase()].last_spoke=time();
+			if(srv.users[onick.toUpperCase()]) srv.users[onick.toUpperCase()].last_spoke=time();
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				var chan = this.channel[cmd[1].toUpperCase()];
+				var chan = srv.channel[cmd[1].toUpperCase()];
 				if (!chan)
 					break;
 				if (!chan.is_joined)
 					break;
-				cmd[2] = cmd[2].slice(1);
-				if ( (cmd[2].toUpperCase() == command_prefix.toUpperCase()) 
+				cmd[2] = cmd[2].substr(1).toUpperCase();
+				if ((cmd[2].toUpperCase() == truncsp(get_cmd_prefix())) 
 					 && cmd[3]) {
 					cmd[3] = cmd[3].toUpperCase();
 					cmd.shift();
 					cmd.shift();
 					cmd.shift();
-					this.check_bot_command(chan.name,onick,ouh,cmd);
+					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
 					break;
+				} else if(cmd[2][0] == truncsp(get_cmd_prefix())) {
+					cmd.shift();
+					cmd.shift();
+					cmd[0] = cmd[0].substr(1).toUpperCase();
+					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
+				} else if(get_cmd_prefix()=="") {
+					cmd.shift();
+					cmd.shift();
+					cmd[0] = cmd[0].toUpperCase();
+					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
 				}
 			} else if (cmd[1].toUpperCase() == 
-			           this.curnick.toUpperCase()) { // MSG?
+			           srv.curnick.toUpperCase()) { // MSG?
 				cmd[2] = cmd[2].slice(1).toUpperCase();
 				cmd.shift();
 				cmd.shift();
 				if (cmd[0][0] == "\1") {
 					cmd[0] = cmd[0].slice(1).toUpperCase();
 					cmd[cmd.length-1] = cmd[cmd.length-1].slice(0,-1);
-					this.ctcp(onick,ouh,cmd);
+					srv.ctcp(onick,ouh,cmd);
 					break;
 				}
-				this.check_bot_command(onick,onick,ouh,cmd);
+				srv.check_bot_command(onick,onick,ouh,cmd.join(" "));
 			}
 			break;
 		case "PING":
-			this.writeout("PONG :" + IRC_string(cmdline));
+			srv.writeout("PONG :" + IRC_string(cmdline));
 			break;
 		case "ERROR":
-			this.sock.close();
-			this.sock = 0;
+			srv.sock.close();
+			srv.sock = 0;
 			break;
 		default:
 			break;
@@ -152,28 +162,29 @@ function Server_CTCP_Reply(nick,str) {
 	this.writeout("NOTICE " + nick + " :\1" + str + "\1");
 }
 
-function Server_check_bot_command(target,onick,ouh,cmd) {
-	var access_level = this.bot_access(onick,ouh);
-	var botcmd = Bot_Commands[cmd[0]];
+function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
+	var cmd=IRC_parsecommand(cmdline);
+	var access_level = srv.bot_access(onick,ouh);
+	var botcmd = bot_cmds[cmd[0].toUpperCase()];
 	if (botcmd) {
-		if (botcmd.ident_needed && !this.users[onick.toUpperCase()].ident) {
-			this.o(target,"You must be identified to use this command.");
+		if (botcmd.ident_needed && !srv.users[onick.toUpperCase()].ident) {
+			srv.o(target,"You must be identified to use this command.");
 			return 0;
 		}
 		if (access_level < botcmd.min_security) {
-			this.o(target,"You do not have sufficient access to this command.");
+			srv.o(target,"You do not have sufficient access to this command.");
 			return 0;
 		}
 		if ((botcmd.args_needed == true) && !cmd[1]) {
-			this.o(target,"Hey buddy, I need some arguments for this command.");
+			srv.o(target,"Hey buddy, I need some arguments for this command.");
 			return 0;
 		} else if ((parseInt(botcmd.args_needed) == botcmd.args_needed)
 					&& !cmd[botcmd.args_needed]) {
-			this.o(target,"Hey buddy, incorrect number of arguments provided.");
+			srv.o(target,"Hey buddy, incorrect number of arguments provided.");
 			return 0;
 		}
 		/* If we made it this far, we're good. */
-		botcmd.command(target,onick,ouh,this,access_level,cmd);
+		botcmd.command(target,onick,ouh,srv,access_level,cmd);
 		return 1;
 	}
 	return 0; /* No such command */
@@ -208,12 +219,17 @@ function save_everything() {
 
 	config.close();
 
-	for (s in Module.Save_Data) {
-		Module.Save_Data[s]();
+	for (var m in Modules) {
+		if(Modules[m].save) Modules[m].save();
 	}
 
 	Config_Last_Write = time();
 	return true;
+}
+
+function get_cmd_prefix() {
+	if(command_prefix) return command_prefix.toUpperCase()+" ";
+	return "";
 }
 
 function login_user(usr) {
