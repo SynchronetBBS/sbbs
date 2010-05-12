@@ -21,22 +21,20 @@
 load("sockdefs.js");
 load("sbbsdefs.js");
 load("irclib.js");
+load("funclib.js");
+
 
 js.branch_limit=0; /* we're not an infinite loop. */
 
-Module=new Object();
-Module.Save_Data = new Object();
-Module.Functions = new Object();
+Modules=new Array();
 Bot_Commands = new Object();
 Config_Last_Write = time(); /* Store when the config was last written. */
-
 load("load/ircbot_functions.js");
-//load("load/trivia.js");
 
 /* Global Arrays */
 bot_servers = new Array();
-masks = new Object();
 quotes = new Array();
+masks = new Object();
 dcc_chats = new Array();
 squelch_list = new Array();
 
@@ -61,10 +59,24 @@ if (config.open("r")) {
 	config_write_delay=parseInt(config.iniGetValue(null, "config_write_delay"));
 //	squelch_list = config.iniGetValue(null, "squelch_list").split(",");
 
+	/* Modules */
+	var ini_modules = config.iniGetSections("module_");
+	for (var m in ini_modules) {
+		var mysec = ini_modules[m];
+		Modules[mysec]=new Object();
+		Modules[mysec].Bot_Commands=new Object();
+		Modules[mysec].load=[];
+		Modules[mysec].load.push(config.iniGetValue(mysec,"functions"));
+		Modules[mysec].load.push(config.iniGetValue(mysec,"commands"));
+		Modules[mysec].load.push(config.iniGetValue(mysec,"main"));
+		Modules[mysec].dir=config.iniGetValue(mysec,"dir");
+		Modules[mysec].name=config.iniGetValue(mysec,"name");
+	}
+	
 	/* Servers */
 	var ini_server_secs = config.iniGetSections("server_");
 	for (s in ini_server_secs) {
-	var mysec = ini_server_secs[s];
+		var mysec = ini_server_secs[s];
 		bot_servers.push(new Bot_IRC_Server(
 			0,  /* Socket */
 			config.iniGetValue(mysec, "addresses"),
@@ -76,18 +88,21 @@ if (config.open("r")) {
 		));
 	}
 
-	/* Quotes */
-	var ini_quotes = config.iniGetKeys("quotes");
-	for (q in ini_quotes) {
-		quotes.push(config.iniGetValue("quotes", ini_quotes[q]));
-	}
-
 	config.close();
 } else {
 	exit("Couldn't open config file!");
 }
 
-var user_settings_files = directory(sysem.data_dir + "user/*.ircbot.ini");
+//LOAD MODULE FILES
+for(var m in Modules) {
+	if(Modules[m].load) {
+		for(var l in Modules[m].load) {
+			load(Modules[m],Modules[m].dir + Modules[m].load[l]);
+		}
+	}
+}
+
+var user_settings_files = directory(system.data_dir + "user/*.ircbot.ini");
 for (f in user_settings_files) {
 	var us_file = new File(user_settings_files[f]);
 	if (us_file.open("r")) {
@@ -142,11 +157,7 @@ function main() {
 					outline = cmdline;
 				}
 				log("<-- " + srv.host + ": " + outline);
-				srv.server_command(IRC_parsecommand(cmdline),onick,ouh);
-				// 	TODO: Process module data parsing, if any
-				//	for(var m in Module.command) {
-				//		Module.command[m](IRC_parsecommand(cmdline),onick,ouh);
-				//	}
+				srv.server_command(cmdline,onick,ouh);
 			}
 
 			// Run through some commands.
@@ -161,14 +172,14 @@ function main() {
 			}
 			
 			// Cycle any available module "main" functions
-			for(var l in Module.Functions) {
-				Module.Functions[l](srv);
+			for(var m in Modules) {
+				if(Modules[m].main) Modules[m].main(srv);
 			}
+			
 			mswait(10); /* Don't peg the CPU */
 		}
 		if ( (time() - Config_Last_Write) > config_write_delay )
 			save_everything();
-
 	}
 }
 
@@ -200,9 +211,21 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.ctcp_reply = Server_CTCP_Reply;
 	this.o = Server_target_out;
 	this.writeout = Server_writeout;
-	this.server_command = Server_command;
-	this.check_bot_command = Server_check_bot_command;
 	this.bot_access = Server_Bot_Access;
+	
+	this.check_bot_command = function(target,onick,ouh,cmd) {
+		Server_check_bot_command(this,Bot_Commands,target,onick,ouh,cmd);
+		for(var bot_cmd in Modules) {
+			Server_check_bot_command(this,Modules[bot_cmd].Bot_Commands,target,onick,ouh,cmd);
+		}
+	}
+
+	this.server_command = function(cmdline,onick,ouh) {
+		Server_command(this,cmdline,onick,ouh);
+		for(var srv_cmd in Modules) {
+			if(Modules[srv_cmd].Server_command) Modules[srv_cmd].Server_command(this,cmdline,onick,ouh);
+		}
+	}
 }
 
 function Bot_IRC_Channel(name) {
