@@ -59,6 +59,7 @@ function Server_command(cmd,onick,ouh) {
 			}
 			break;
 		case "PRIVMSG":
+			if(this.users[onick.toUpperCase()]) this.users[onick.toUpperCase()].last_spoke=time();
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
 				var chan = this.channel[cmd[1].toUpperCase()];
 				if (!chan)
@@ -193,7 +194,7 @@ function save_everything() {
 
 	for (m in masks) {
 		var uid_str = format("%04u", m);
-		var us_filename = "/home/bbs/data/user/" +uid_str+ ".ircbot.ini";
+		var us_filename = system.data_dir + "user/" +uid_str+ ".ircbot.ini";
 		var us_file = new File(us_filename);
 		if (us_file.open(file_exists(us_filename) ? 'r+':'w+')) {
 			us_file.iniSetValue(null, "masks", masks[m].join(","));
@@ -207,12 +208,11 @@ function save_everything() {
 
 	config.close();
 
-	for (s in Module_Save_Data) {
-		Module_Save_Data[s]();
+	for (s in Module.Save_Data) {
+		Module.Save_Data[s]();
 	}
 
 	Config_Last_Write = time();
-
 	return true;
 }
 
