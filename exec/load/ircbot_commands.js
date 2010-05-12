@@ -351,6 +351,41 @@ Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["JOINCHANNEL"] = new Bot_Command(99,true,true);
+Bot_Commands["JOINCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
+		srv.o(target,"Invalid channel name");
+		return;
+	}
+	var chan=cmd[0].toUpperCase();
+	if(srv.channel[chan]) {
+		srv.o(target,"I am already in that channel");
+		return;
+	}
+	srv.channel[chan]=new Bot_IRC_Channel(chan);
+	srv.o(target,"Ok.");
+	return;
+}
+
+Bot_Commands["PARTCHANNEL"] = new Bot_Command(99,true,true);
+Bot_Commands["PARTCHANNEL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
+		srv.o(target,"Invalid channel name");
+		return;
+	}
+	var chan=cmd[0].toUpperCase();
+	if(!srv.channel[chan]) {
+		srv.o(target,"I am not in that channel");
+		return;
+	}
+	srv.writeout("PART " + chan + " :" + onick + " has asked me to leave."); 
+	delete srv.channel[chan];
+	srv.o(target,"Ok.");
+	return;
+}
+
 Bot_Commands["DIE"] = new Bot_Command(90,false,false);
 Bot_Commands["DIE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	for (s in bot_servers) {
