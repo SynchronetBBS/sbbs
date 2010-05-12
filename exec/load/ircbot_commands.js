@@ -448,9 +448,9 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			if(bot_cmd.min_security>0) srv.o(onick,"Access level: " + bot_cmd.min_security);
 			if(bot_cmd.help) srv.o(onick,"Help: " + bot_cmd.help);
 			else srv.o(onick,"No help available for this command.");
-		} else {
-			srv.o(onick,"No such command: " + cmd_index);
-		}
+			return true;
+		} 
+		return false;
 	}
 	function list_out(bot_cmds,name) {
 		var cmdstr="";
@@ -460,10 +460,16 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"[" + name + " COMMANDS] " + cmdstr.substr(1));
 	}
 	if(cmd[0]) {
-		help_out(Bot_Commands[cmd[0].toUpperCase()]);
-		for(var m in Modules) {
-			help_out(Modules[m].Bot_Commands[cmd[0].toUpperCase()]);
+		var found_cmd=false;
+		if(help_out(Bot_Commands[cmd[0].toUpperCase()])) {
+			found_cmd=true;
 		}
+		for(var m in Modules) {
+			if(help_out(Modules[m].Bot_Commands[cmd[0].toUpperCase()])) {
+				found_cmd=true;
+			}
+		}
+		if(!found_cmd) srv.o(onick,"No such command: " + cmd[0]);
 	} else {
 		srv.o(onick,"Command usage: " + get_cmd_prefix() + "<command> <arguments>");
 		list_out(Bot_Commands,"MAIN");
