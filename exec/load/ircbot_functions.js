@@ -59,7 +59,6 @@ function Server_command(srv,cmdline,onick,ouh) {
 			}
 			break;
 		case "PRIVMSG":
-			if(srv.users[onick.toUpperCase()]) srv.users[onick.toUpperCase()].last_spoke=time();
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
 				var chan = srv.channel[cmd[1].toUpperCase()];
 				if (!chan)
@@ -74,7 +73,6 @@ function Server_command(srv,cmdline,onick,ouh) {
 					cmd.shift();
 					cmd.shift();
 					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
-					break;
 				} else if(cmd[2][0] == truncsp(get_cmd_prefix())) {
 					cmd.shift();
 					cmd.shift();
@@ -228,13 +226,11 @@ function save_everything() {
 }
 
 function get_cmd_prefix() {
-	if(command_prefix) return command_prefix.toUpperCase()+" ";
+	if(command_prefix) {
+		if(command_prefix.length==1) return command_prefix.toUpperCase()+"";
+		return command_prefix.toUpperCase()+" ";
+	}
 	return "";
-}
-
-function login_user(usr) {
-	usr.connection = "IRC";
-	usr.logontime = time();
 }
 
 // return the access level of this user.
