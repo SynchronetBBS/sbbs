@@ -54,8 +54,6 @@ if (config.open("r")) {
 	/* Global Variables */
 	command_prefix = config.iniGetValue(null, "command_prefix");
 	real_name = config.iniGetValue(null, "real_name");
-	help_filename = config.iniGetValue(null, "help_filename");
-	help_file = new File(help_filename);
 	config_write_delay=parseInt(config.iniGetValue(null, "config_write_delay"));
 //	squelch_list = config.iniGetValue(null, "squelch_list").split(",");
 
@@ -97,7 +95,7 @@ if (config.open("r")) {
 for(var m in Modules) {
 	if(Modules[m].load) {
 		for(var l in Modules[m].load) {
-			load(Modules[m],Modules[m].dir + Modules[m].load[l]);
+			if(Modules[m].load[l]) load(Modules[m],Modules[m].dir + Modules[m].load[l]);
 		}
 	}
 }
