@@ -197,7 +197,6 @@ function save_everything() {
 
 	config.iniSetValue(null, "command_prefix", command_prefix);
 	config.iniSetValue(null, "real_name", real_name);
-	config.iniSetValue(null, "help_filename", help_filename);
 	config.iniSetValue(null, "config_write_delay", config_write_delay);
 	config.iniSetValue(null, "squelch_list", squelch_list.join(","));
 
