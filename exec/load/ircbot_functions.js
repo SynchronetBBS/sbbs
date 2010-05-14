@@ -25,7 +25,9 @@ function Server_command(srv,cmdline,onick,ouh) {
 			break;
 		case "352":	// WHO reply.  Process into local cache.
 			var nick = cmd[6].toUpperCase();
-			srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
+			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
+			else srv.users[nick].uh=cmd[3] + "@" + cmd[4];
+			srv.users[nick].channels[cmd[2].toUpperCase()]=true;
 			break;
 		case "433":	// Nick already in use.
 			srv.juped = true;
@@ -45,7 +47,9 @@ function Server_command(srv,cmdline,onick,ouh) {
 				break;
 			}
 			// Someone else joining.
-			srv.users[onick.toUpperCase()] = new Server_User(ouh);
+			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh);
+			else srv.users[onick.toUpperCase()].uh=ouh;
+			srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()]=true;
 			var lvl = srv.bot_access(onick,ouh);
 			if (lvl >= 50) {
 				var usr = new User(system.matchuser(onick));
@@ -56,6 +60,26 @@ function Server_command(srv,cmdline,onick,ouh) {
 						srv.o(cmd[1],"[" + onick + "] " + usr.comment);
 					login_user(usr);
 				}
+			}
+			break;
+		case "PART":
+		case "QUIT":
+		case "KICK":
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			var chan = srv.channel[cmd[1].toUpperCase()];
+			if ((onick == srv.curnick) && chan && chan.is_joined) {
+				chan.is_joined = false;
+				break;
+			}
+			// Someone else parting.
+			if(srv.users[onick.toUpperCase()]) {
+				delete srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()];
+				var chan_count=0;
+				for(var c in srv.users[onick.toUpperCase()].channels) {
+					chan_count++;
+				}
+				if(chan_count==0) delete srv.users[onick.toUpperCase()];
 			}
 			break;
 		case "PRIVMSG":
@@ -274,3 +298,7 @@ function true_array_len(my_array) {
 	return counter;
 }
 
+function login_user(usr) {
+	usr.connection = "IRC";
+	usr.logontime = time();
+}
