@@ -29,8 +29,11 @@ Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	load("load/ircbot_commands.js");
 	load("load/ircbot_functions.js");
 	for(var m in Modules) {
+		for(var l in Modules[m].lib) {
+			if(Modules[m].lib[l]) load(Modules[m],Modules[m].lib[l]);
+		}
 		for(var l in Modules[m].load) {
-			if(Modules[m].load[l]) load(Modules[m],Modules[m].dir + Modules[m].load[l]);
+			if(Modules[m].load[l]) load(Modules[m],Modules[m].load[l]);
 		}
 	}
 	srv.o(target,"Reloaded.");
