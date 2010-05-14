@@ -23,7 +23,6 @@ load("sbbsdefs.js");
 load("irclib.js");
 load("funclib.js");
 
-
 js.branch_limit=0; /* we're not an infinite loop. */
 
 Modules=new Array();
@@ -166,13 +165,13 @@ function main() {
 						srv.writeout("JOIN " + srv.channel[c].name);
 						srv.channel[c].lastjoin = time() + 60;
 					}
+					// Cycle any available module "main" functions
+					for(var m in Modules) {
+						if(Modules[m].main) Modules[m].main(srv,srv.channel[c].name);
+					}
 				}
 			}
 			
-			// Cycle any available module "main" functions
-			for(var m in Modules) {
-				if(Modules[m].main) Modules[m].main(srv);
-			}
 			
 			mswait(10); /* Don't peg the CPU */
 		}
@@ -239,6 +238,7 @@ function Server_User(uh) {
 	this.uh = uh;
 	this.ident = false;
 	this.last_spoke = false;
+	this.channels=[];
 }
 
 function Bot_Command(min_security,args_needed,ident_needed) {
