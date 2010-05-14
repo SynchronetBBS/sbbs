@@ -62,12 +62,15 @@ if (config.open("r")) {
 		var mysec = ini_modules[m];
 		Modules[mysec]=new Object();
 		Modules[mysec].Bot_Commands=new Object();
-		Modules[mysec].load=[];
-		Modules[mysec].load.push(config.iniGetValue(mysec,"functions"));
-		Modules[mysec].load.push(config.iniGetValue(mysec,"commands"));
-		Modules[mysec].load.push(config.iniGetValue(mysec,"main"));
 		Modules[mysec].dir=config.iniGetValue(mysec,"dir");
 		Modules[mysec].name=config.iniGetValue(mysec,"name");
+		Modules[mysec].load=directory(Modules[mysec].dir+"*.js");
+		Modules[mysec].lib=[];
+		var lib_list=config.iniGetValue(mysec,"lib");
+		if(lib_list) {
+			lib_list=lib_list.split(",");
+			for(var l in lib_list) Modules[mysec].lib.push(remove_spaces(lib_list[l]));
+		}
 	}
 	
 	/* Servers */
@@ -92,10 +95,11 @@ if (config.open("r")) {
 
 //LOAD MODULE FILES
 for(var m in Modules) {
-	if(Modules[m].load) {
-		for(var l in Modules[m].load) {
-			if(Modules[m].load[l]) load(Modules[m],Modules[m].dir + Modules[m].load[l]);
-		}
+	for(var l in Modules[m].lib) {
+		if(Modules[m].lib[l]) load(Modules[m],Modules[m].lib[l]);
+	}
+	for(var l in Modules[m].load) {
+		if(Modules[m].load[l]) load(Modules[m],Modules[m].load[l]);
 	}
 }
 
