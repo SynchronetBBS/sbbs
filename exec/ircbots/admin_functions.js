@@ -27,8 +27,3 @@ this.Server_command=function(srv,cmdline,onick,ouh) {
 	}
 }
 
-//////////////////// Non-object Functions ////////////////////
-function login_user(usr) {
-	usr.connection = "IRC";
-	usr.logontime = time();
-}
