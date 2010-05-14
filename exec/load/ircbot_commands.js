@@ -30,12 +30,13 @@ Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	load("load/ircbot_functions.js");
 	for(var m in Modules) {
 		for(var l in Modules[m].load) {
-			load(Modules[m],Modules[m].dir + Modules[m].load[l]);
+			if(Modules[m].load[l]) load(Modules[m],Modules[m].dir + Modules[m].load[l]);
 		}
 	}
 	srv.o(target,"Reloaded.");
 	return;
 }
+
 Bot_Commands["JOINCHAN"] = new Bot_Command(99,true,true);
 Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
