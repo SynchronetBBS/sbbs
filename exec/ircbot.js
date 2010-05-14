@@ -69,7 +69,7 @@ if (config.open("r")) {
 		var lib_list=config.iniGetValue(mysec,"lib");
 		if(lib_list) {
 			lib_list=lib_list.split(",");
-			for(var l in lib_list) Modules[mysec].lib.push(remove_spaces(lib_list[l]));
+			for(var l in lib_list) Modules[mysec].lib.push(removeSpaces(lib_list[l]));
 		}
 	}
 	
