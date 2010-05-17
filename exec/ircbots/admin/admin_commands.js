@@ -563,3 +563,18 @@ this.Bot_Commands["LASTSPOKE"].command = function (target,onick,ouh,srv,lvl,cmd)
 	}
 	return;
 }
+
+this.Bot_Commands["FORCE"] = new Bot_Command(90,true,true)
+this.Bot_Commands["FORCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if(!cmd[0] || !cmd[1]) {
+		srv.o(target,"Invalid arguments.");
+		return;
+	}
+	onick=cmd.shift();
+	if(!srv.users[onick.toUpperCase()]) {
+		srv.o(target,"No such user.");
+		return;
+	}
+	srv.check_bot_command(target,onick,srv.users[onick.toUpperCase()].uh,cmd.join(" "));
+}
