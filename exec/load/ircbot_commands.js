@@ -98,7 +98,7 @@ Bot_Commands["RESTART"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["HELP"] = new Bot_Command(50,false,false);
+Bot_Commands["HELP"] = new Bot_Command(0,false,false);
 Bot_Commands["HELP"].usage =
 	get_cmd_prefix() + "HELP <command>";
 Bot_Commands["HELP"].help =
