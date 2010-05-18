@@ -579,7 +579,7 @@ this.Bot_Commands["FORCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	srv.check_bot_command(target,onick,srv.users[onick.toUpperCase()].uh,cmd.join(" "));
 }
 
-this.Bot_Commands["DEBUG"] = new Bot_Command(90,true,true);
+this.Bot_Commands["DEBUG"] = new Bot_Command(99,true,true);
 this.Bot_Commands["DEBUG"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var data=eval(cmd.join(" "));
