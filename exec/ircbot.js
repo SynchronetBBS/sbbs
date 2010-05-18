@@ -175,9 +175,6 @@ function main() {
 					}
 				}
 			}
-			
-			
-			mswait(10); /* Don't peg the CPU */
 		}
 
 		/* Take care of DCC chat sessions */
@@ -185,18 +182,44 @@ function main() {
 			if (!dcc_chats[c].sock.is_connected) {
 				log("Closing session.");
 				dcc_chats[c].sock.close();
+				delete dcc_chats[c];
 				continue;
 			}
 			if (dcc_chats[c].waiting_for_password) {
-				if (var dcc_pwd=dcc_chats[c].sock.readln()) {
-					dcc_chats[c].o("Acknowledged.");
+				var dcc_pwd;
+				if (dcc_pwd=dcc_chats[c].sock.readln()) {
+					var usr = new User(system.matchuser(dcc_chats[c].id));
+					if (!usr ||
+						(dcc_pwd.toUpperCase() != usr.security.password)) {
+						dcc_chats[c].o(null,"Access Denied.");
+						dcc_chats[c].sock.close();
+						delete dcc_chats[c];
+						continue;
+					}
+					if (dcc_pwd.toUpperCase() == usr.security.password) {
+						dcc_chats[c].waiting_for_password = false;
+						dcc_chats[c].o(null,"Welcome aboard.");
+					}
 				}
 				continue;
+			}
+			var line = dcc_chats[c].sock.readln();
+			if (!line || line == "")
+				continue;
+			var usr = new User(system.matchuser(dcc_chats[c].id));
+			var cmd = line.split(" ");
+			cmd[0] = cmd[0].toUpperCase();
+			try {
+				dcc_chats[c].check_bot_command(cmd);
+			} catch (err) {
+				dcc_chats[c].o(null,"ERROR: " + err);
 			}
 		}
 
 		if ( (time() - Config_Last_Write) > config_write_delay )
 			save_everything();
+
+		mswait(10); /* Don't peg the CPU */
 	}
 }
 
@@ -275,6 +298,14 @@ function DCC_Chat(sock,id) {
 	this.waiting_for_password = true;
 	/* Functions */
 	this.o = DCC_Out;
+	this.check_bot_command = function(cmd) {
+		Server_check_bot_command(this,Bot_Commands,null,this.id,null,cmd);
+		for(var bot_cmd in Modules) {
+			Server_check_bot_command(this,Modules[bot_cmd].Bot_Commands,
+				null,this.id,null,cmd
+			);
+		}
+	}
 }
 
 function DCC_Out(target,str) {

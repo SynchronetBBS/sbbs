@@ -137,6 +137,11 @@ function Server_command(srv,cmdline,onick,ouh) {
 function Server_CTCP(onick,ouh,cmd) {
 	switch (cmd[0]) {
 		case "DCC":
+			var usr = new User(system.matchuser(onick));
+			if (!usr.number) {
+				this.o(onick, "I don't talk to strangers.", "NOTICE");
+				return;
+			}
 			if (cmd[4]) {
 				if ((cmd[1].toUpperCase() == "CHAT")
 					&& (cmd[2].toUpperCase() == "CHAT")
@@ -146,7 +151,6 @@ function Server_CTCP(onick,ouh,cmd) {
 						var port = parseInt(cmd[4]);
 						var sock = new Socket();
 						sock.connect(ip, port, 3 /* Timeout */);
-						log("*** DCC Socket Status: " + sock.is_connected);
 						if (sock.is_connected) {
 							sock.write("Enter your password.\r\n");
 							dcc_chats.push(new DCC_Chat(sock,onick));
