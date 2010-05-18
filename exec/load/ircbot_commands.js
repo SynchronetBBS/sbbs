@@ -137,7 +137,7 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"Command usage: " + get_cmd_prefix() + "<command> <arguments>");
 		list_out(Bot_Commands,"MAIN");
 		for(var m in Modules) {
-			list_out(Modules[m].Bot_Commands,Modules[m].name.toUpperCase());
+			list_out(Modules[m].Bot_Commands,m.toUpperCase());
 		}
 	}
 	return;
@@ -201,3 +201,4 @@ Bot_Commands["PREFIX"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	return;
 }
+

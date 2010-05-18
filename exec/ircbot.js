@@ -60,16 +60,16 @@ if (config.open("r")) {
 	var ini_modules = config.iniGetSections("module_");
 	for (var m in ini_modules) {
 		var mysec = ini_modules[m];
-		Modules[mysec]=new Object();
-		Modules[mysec].Bot_Commands=new Object();
-		Modules[mysec].dir=config.iniGetValue(mysec,"dir");
-		Modules[mysec].name=config.iniGetValue(mysec,"name");
-		Modules[mysec].load=directory(Modules[mysec].dir+"*.js");
-		Modules[mysec].lib=[];
+		var module_name=config.iniGetValue(mysec,"name");
+		Modules[module_name]=new Object();
+		Modules[module_name].Bot_Commands=new Object();
+		Modules[module_name].dir=config.iniGetValue(mysec,"dir");
+		Modules[module_name].load=directory(Modules[module_name].dir+"*.js");
+		Modules[module_name].lib=[];
 		var lib_list=config.iniGetValue(mysec,"lib");
 		if(lib_list) {
 			lib_list=lib_list.split(",");
-			for(var l in lib_list) Modules[mysec].lib.push(removeSpaces(lib_list[l]));
+			for(var l in lib_list) Modules[module_name].lib.push(removeSpaces(lib_list[l]));
 		}
 	}
 	
