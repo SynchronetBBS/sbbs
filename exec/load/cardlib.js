@@ -63,7 +63,11 @@ const RANKS = new Array("high card", "pair", "two pair", "three of a kind",
 function Card(value, suit) {
 	this.value = value;
 	this.suit = suit;
+	this.color = "";
 	this.char = VALUE_CHAR[value] + SUIT_CHAR[suit];
+	
+	if(suit==HEARTS || suit==DIAMONDS)	this.color=String.fromCharCode(3)+"5";
+	else if(suit==SPADES || suit==CLUBS)	this.color=String.fromCharCode(3)+"1";
 }
 
 function Deck() {
