@@ -20,10 +20,11 @@ this.Server_command=function(srv,cmdline,onick,ouh)
 				if (!chan.is_joined)
 					break;
 				if(srv.users[onick.toUpperCase()]) {
-					/* 	You can do special command processing here, if you like.
-						This is currently set up to parse public room messages for
-						things like trivia answers, or other responses that
-						are inconvenient for users to submit with a command prefix */
+					/* You can do special command processing here, if you like.
+					   This is currently set up to parse public room messages
+					   for things like trivia answers, or other responses that
+					   are inconvenient for users to submit with a command
+					   prefix */
 				}
 			}
 			break;
@@ -80,33 +81,36 @@ function poker_deal_flop(target,srv) {
 	poker_game.community_cards[0] = poker_game.deck.deal();
 	poker_game.community_cards[1] = poker_game.deck.deal();
 	poker_game.community_cards[2] = poker_game.deck.deal();
-	srv.writeout("PRIVMSG " + target + " :The Flop: " +
-	poker_show_card(poker_game.community_cards[0]) +
-	poker_show_card(poker_game.community_cards[1]) +
-	poker_show_card(poker_game.community_cards[2]));
+	srv.o(target, "The Flop: "
+		+ poker_show_card(poker_game.community_cards[0])
+		+ poker_show_card(poker_game.community_cards[1])
+		+ poker_show_card(poker_game.community_cards[2])
+	);
 }
 
 function poker_deal_turn(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.round = 3;
 	poker_game.community_cards[3] = poker_game.deck.deal();
-	srv.writeout("PRIVMSG " + target + " :The Turn: " + 
-	poker_show_card(poker_game.community_cards[0]) +
-	poker_show_card(poker_game.community_cards[1]) +
-	poker_show_card(poker_game.community_cards[2]) +
-	poker_show_card(poker_game.community_cards[3]));
+	srv.writeout(target, "The Turn: "
+		+ poker_show_card(poker_game.community_cards[0])
+		+ poker_show_card(poker_game.community_cards[1])
+		+ poker_show_card(poker_game.community_cards[2])
+		+ poker_show_card(poker_game.community_cards[3])
+	);
 }
 
 function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.round = 4;
 	poker_game.community_cards[4] = poker_game.deck.deal();
-	srv.writeout("PRIVMSG " + target + " :The River: " + 
-	poker_show_card(poker_game.community_cards[0]) +
-	poker_show_card(poker_game.community_cards[1]) +
-	poker_show_card(poker_game.community_cards[2]) +
-	poker_show_card(poker_game.community_cards[3]) +
-	poker_show_card(poker_game.community_cards[4]));
+	srv.writeout(target, "The River: " + 
+		+ poker_show_card(poker_game.community_cards[0])
+		+ poker_show_card(poker_game.community_cards[1])
+		+ poker_show_card(poker_game.community_cards[2])
+		+ poker_show_card(poker_game.community_cards[3])
+		+ poker_show_card(poker_game.community_cards[4])
+	);
 }
 
 function poker_show_card(card) {
@@ -126,15 +130,16 @@ function poker_load_pot(target,srv) {
 function poker_prompt_player(target,srv) {
 	var poker=poker_games[target];
 	var turn=poker.users_map[poker.turn];
-	srv.writeout("NOTICE " + turn + " :" + "It is your turn. You may CHECK,  CALL, BET, RAISE or FOLD");
-	srv.writeout("NOTICE " + turn + " :" + "Minimum bet: $" + poker.current_bet);
+	srv.o(turn, "It is your turn. You may CHECK,  CALL, BET, RAISE or FOLD"
+		,"NOTICE");
+	srv.o(turn, "Minimum bet: $" + poker.current_bet, "NOTICE");
 }
 
 function poker_verify_game_status(target,srv,onick) {
 	var poker=poker_games[target];
 	if (!poker) {
-		srv.o(target, "No poker game in progress. Type '" + get_cmd_prefix() + "DEAL' to "
-			+ "start a new one.");
+		srv.o(target, "No poker game in progress. Type '" + get_cmd_prefix()
+			+ "DEAL' to start a new one."
 		return false;
 	}
 	if(!poker.users[onick.toUpperCase()]) {
