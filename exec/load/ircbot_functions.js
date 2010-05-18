@@ -250,7 +250,7 @@ function save_everything() {
 
 function get_cmd_prefix() {
 	if(command_prefix) {
-		if(command_prefix.length==1) return command_prefix.toUpperCase()+"";
+		if(command_prefix.length<=1) return command_prefix.toUpperCase()+"";
 		return command_prefix.toUpperCase()+" ";
 	}
 	return "";
@@ -259,7 +259,7 @@ function get_cmd_prefix() {
 // return the access level of this user.
 function Server_Bot_Access(nick,uh) {
 	var ucnick = nick.toUpperCase();
-	if (this.users[ucnick].ident) {
+	if (this.users[ucnick] && this.users[ucnick].ident) {
 		var usrnum = this.users[ucnick].ident;
 		var thisuser = new User(usrnum);
 		return thisuser.security.level;
