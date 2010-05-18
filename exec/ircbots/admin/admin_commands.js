@@ -587,3 +587,18 @@ this.Bot_Commands["DEBUG"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	while(str.length) srv.o(target,str.shift());
 	return;
 }
+
+this.Bot_Commands["OBJKEYS"] = new Bot_Command(99,true,true);
+this.Bot_Commands["OBJKEYS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	cmdline=cmd.join(" ");
+	var data=eval(cmdline);
+	if(data) {
+		var keystr="";
+		for(var i in data) keystr+=", " + i;
+		var output=word_wrap(keystr.substr(2),512).split("\r\n");
+		while(output.length) srv.o(target,"KEYS: " + output.shift());
+	}
+	return;
+}
+
