@@ -206,7 +206,11 @@ function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
 			return 0;
 		}
 		/* If we made it this far, we're good. */
-		botcmd.command(target,onick,ouh,srv,access_level,cmd);
+		try {
+			botcmd.command(target,onick,ouh,srv,access_level,cmd);
+		} catch (err) {
+			srv.o(target,"ERROR: " + err)
+		}
 		return 1;
 	}
 	return 0; /* No such command */
