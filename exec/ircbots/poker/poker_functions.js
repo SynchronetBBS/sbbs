@@ -39,9 +39,12 @@ function poker_deal_hole_cards(target,srv) {
 	for (p in poker_game.users) {
 		poker_game.users[p].cards[0] = poker_game.deck.deal();
 		poker_game.users[p].cards[1] = poker_game.deck.deal();
-		srv.writeout("NOTICE " + p + " :" + "Your hole cards: " + 
-		poker_game.users[p].cards[0].color + "[ " + poker_game.users[p].cards[0].char + " ] " +
-		poker_game.users[p].cards[1].color + "[ " + poker_game.users[p].cards[1].char + " ]");
+		srv.o(p,"Your hole cards: " 
+			+ poker_game.users[p].cards[0].color + "[ "
+			+ poker_game.users[p].cards[0].char + " ] "
+			+ poker_game.users[p].cards[1].color + "[ "
+			+ poker_game.users[p].cards[1].char + " ]"
+		,"NOTICE");
 	}
 }
 

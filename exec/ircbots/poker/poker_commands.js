@@ -150,3 +150,4 @@ this.Bot_Commands["LIST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	srv.o(target,"Poker players:" + list);
 	return;
 }
+
