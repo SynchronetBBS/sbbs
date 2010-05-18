@@ -17,7 +17,7 @@
 */
 
 /********** Command Processors. **********/
-this.Server_command=function(srv,cmdline,onick,ouh) {
+function Server_command(srv,cmdline,onick,ouh) {
 	var cmd=IRC_parsecommand(cmdline);
 	switch (cmd[0]) {
 		case "PRIVMSG":

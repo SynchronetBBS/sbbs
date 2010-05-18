@@ -1,17 +1,10 @@
 /* 	IRC Bot Module - Server Commands
 	You would place all of your module functions in this file.	*/
 	
-this.Server_command=function(srv,cmdline,onick,ouh) 
+function Server_command(srv,cmdline,onick,ouh) 
 {
 	var cmd=IRC_parsecommand(cmdline);
 	switch (cmd[0]) {
-		case "JOIN":
-			if (onick == srv.curnick) break;
-			
-			// Someone else joining? Let's send them a private welcome message!
-			srv.o(onick,"Welcome to the DiceBot show!");
-			srv.o(onick,"This is a module for IRCBot - by Cyan");
-			break;
 		case "PRIVMSG":
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
 				var chan = srv.channel[cmd[1].toUpperCase()];

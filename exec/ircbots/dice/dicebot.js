@@ -6,10 +6,10 @@
 	if there are duplicate command names, they will be superseded in the order
 	in which they are loaded (in the order they are listed in ircbot.ini).
 */
-var working_dir=this.dir;
+working_dir=this.dir;
 
 /* This method is executed by the IRCBot during its "save_everything()" cycle */
-this.save=function()
+function save()
 {
 	//var s_file=new File(working_dir + "file.ini");
 	//if(!s_file.open(file_exists(s_file.name)?"r+":"w+")) return false;
@@ -21,7 +21,7 @@ this.save=function()
 	//s_file.close();
 }
 /* This method is executed by the IRCBot during its "main()" loop, once per cycle (DO NOT MAKE A LOOP) */
-this.main=function(srv)
+function main(srv)
 {	
 	/*	Do some work here.
 		You can use a timer to time events or process scores.

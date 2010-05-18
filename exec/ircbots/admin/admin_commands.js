@@ -20,13 +20,13 @@
 
 */
 
-this.Bot_Commands["WHOIS"] = new Bot_Command(0,false,false);
-this.Bot_Commands["WHOIS"].usage =
+Bot_Commands["WHOIS"] = new Bot_Command(0,false,false);
+Bot_Commands["WHOIS"].usage =
 	get_cmd_prefix() + "WHOIS <nick>";
-this.Bot_Commands["WHOIS"].help =
+Bot_Commands["WHOIS"].help =
 	"Brings up information about a user.  If the <nick> argument is omitted, "
 	+ "then it will display information about you.";
-this.Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (!cmd[1]) {
 		srv.o(target,"You are recognized as access level " + lvl);
 		cmd[1] = onick;
@@ -48,12 +48,12 @@ this.Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["ADDMASK"] = new Bot_Command(50,1,false);
-this.Bot_Commands["ADDMASK"].usage =
+Bot_Commands["ADDMASK"] = new Bot_Command(50,1,false);
+Bot_Commands["ADDMASK"].usage =
 	get_cmd_prefix() + "ADDMASK <nick> <user>@<host>";
-this.Bot_Commands["ADDMASK"].help =
+Bot_Commands["ADDMASK"].help =
 	"Stores information used by the bot to identify you.";
-this.Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var addmask = false;
 	var delmask = false;
 	if (cmd[0] == "ADDMASK") {
@@ -116,10 +116,10 @@ this.Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	return;
 }
-this.Bot_Commands["DELMASK"] = this.Bot_Commands["ADDMASK"];
+Bot_Commands["DELMASK"] = Bot_Commands["ADDMASK"];
 
-this.Bot_Commands["ADDUSER"] = new Bot_Command(80,2,false);
-this.Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["ADDUSER"] = new Bot_Command(80,2,false);
+Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (IRC_check_nick(cmd[1],40)) {
 		srv.o(target,cmd[1] + " isn't a valid nickname.");
 		return;
@@ -186,13 +186,13 @@ this.Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["CHANGE"] = new Bot_Command(80,2,false);
-this.Bot_Commands["CHANGE"].usage =
+Bot_Commands["CHANGE"] = new Bot_Command(80,2,false);
+Bot_Commands["CHANGE"].usage =
 	get_cmd_prefix() + "CHANGE <nick> <security_level>";
-this.Bot_Commands["CHANGE"].help =
+Bot_Commands["CHANGE"].help =
 	"Allows you to change the security level of users with a lower level " +
 	"than you up to, but not including yours.";
-this.Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(cmd[1]));
 	if (usr.number == 0) {
 		srv.o(target,"The user " + cmd[1] + " doesn't exist in my database.");
@@ -215,8 +215,8 @@ this.Bot_Commands["CHANGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["RESETPASS"] = new Bot_Command(90,true,false);
-this.Bot_Commands["RESETPASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["RESETPASS"] = new Bot_Command(90,true,false);
+Bot_Commands["RESETPASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(cmd[1]));
 	if (usr.number > 0) {
 		srv.o(target,usr.alias + "'s password has been reset.  "
@@ -230,8 +230,8 @@ this.Bot_Commands["RESETPASS"].command = function (target,onick,ouh,srv,lvl,cmd)
 	return;
 }
 
-this.Bot_Commands["PASS"] = new Bot_Command(50,true,false);
-this.Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["PASS"] = new Bot_Command(50,true,false);
+Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if ((target[0] == "#") || (target[0] == "&")) {
 		srv.o(target,"Fool!  I'm not setting your password to something "
 			+ "you broadcast in a public channel.  Pick a new password and "
@@ -263,12 +263,12 @@ this.Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["IDENT"] = new Bot_Command(0,true,false);
-this.Bot_Commands["IDENT"].usage =
+Bot_Commands["IDENT"] = new Bot_Command(0,true,false);
+Bot_Commands["IDENT"].usage =
 	"/MSG %s IDENT <nick> <pass>";
-this.Bot_Commands["IDENT"].help =
+Bot_Commands["IDENT"].help =
 	"Identifies a user by alias and password. Use via private message only.";
-this.Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var usr = new User(system.matchuser(onick));
 	if (cmd[2]) { /* Username passed */
 		usr = new User(system.matchuser(cmd[1]));
@@ -306,8 +306,8 @@ this.Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["EVAL"] = new Bot_Command(0,true,false);
-this.Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["EVAL"] = new Bot_Command(0,true,false);
+Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var query = "";
 
 	var usr = new User(system.matchuser(onick));
@@ -340,8 +340,8 @@ this.Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
-this.Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
+Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var query = cmd.join(" ");
 	try {
@@ -352,8 +352,8 @@ this.Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["GROUPS"] = new Bot_Command(50,true,false);
-this.Bot_Commands["GROUPS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["GROUPS"] = new Bot_Command(50,true,false);
+Bot_Commands["GROUPS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	for (g in msg_area.grp_list) {
 		srv.o(target,"[" + msg_area.grp_list[g].number + "] "
 			+ msg_area.grp_list[g].description);
@@ -361,8 +361,8 @@ this.Bot_Commands["GROUPS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["SUBS"] = new Bot_Command(50,true,false);
-this.Bot_Commands["SUBS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["SUBS"] = new Bot_Command(50,true,false);
+Bot_Commands["SUBS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var groupnum = parseInt(cmd[1]);
 	if (!msg_area.grp_list[groupnum]) {
 		srv.o(target,"Group number " + cmd[1] + " doesn't exist!");
@@ -375,10 +375,10 @@ this.Bot_Commands["SUBS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	return;
 }
-this.Bot_Commands["SUBGROUPS"] = this.Bot_Commands["SUBS"];
+Bot_Commands["SUBGROUPS"] = Bot_Commands["SUBS"];
 
-this.Bot_Commands["READ"] = new Bot_Command(50,true,false);
-this.Bot_Commands["READ"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["READ"] = new Bot_Command(50,true,false);
+Bot_Commands["READ"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (!cmd[2]) { // user wants to list msgs?
 		var msgs = new MsgBase(cmd[1]);
 		if(!msgs) {
@@ -414,8 +414,8 @@ this.Bot_Commands["READ"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["FINGER"] = new Bot_Command(50,true,false);
-this.Bot_Commands["FINGER"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["FINGER"] = new Bot_Command(50,true,false);
+Bot_Commands["FINGER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var udpfinger = false;
 	if (cmd[0] == "UDPFINGER")
 		udpfinger = true;
@@ -480,10 +480,10 @@ this.Bot_Commands["FINGER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	return;
 }
-this.Bot_Commands["UDPFINGER"] = this.Bot_Commands["FINGER"];
+Bot_Commands["UDPFINGER"] = Bot_Commands["FINGER"];
 
-this.Bot_Commands["EXEC"] = new Bot_Command(99,true,true);
-this.Bot_Commands["EXEC"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["EXEC"] = new Bot_Command(99,true,true);
+Bot_Commands["EXEC"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var query = cmd.join(" ");
 	var this_poutput = system.popen(query);
@@ -499,8 +499,8 @@ this.Bot_Commands["EXEC"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["ADDQUOTE"] = new Bot_Command(80,true,false);
-this.Bot_Commands["ADDQUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["ADDQUOTE"] = new Bot_Command(80,true,false);
+Bot_Commands["ADDQUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var the_quote = cmd.join(" ");
 	quotes.push(the_quote);
@@ -508,8 +508,8 @@ this.Bot_Commands["ADDQUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) 
 	return;
 }
 
-this.Bot_Commands["QUOTE"] = new Bot_Command(0,false,false);
-this.Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["QUOTE"] = new Bot_Command(0,false,false);
+Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (cmd[1]) {
 		cmd.shift();
 		var searched_quotes = new Object();
@@ -532,8 +532,8 @@ this.Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["SAY"] = new Bot_Command(80,true,false);
-this.Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["SAY"] = new Bot_Command(80,true,false);
+Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var say_target = cmd.shift();
 	if ( (say_target[0] != "#") && (say_target[0] != "&")
@@ -546,8 +546,8 @@ this.Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["LASTSPOKE"] = new Bot_Command(0,false,false);
-this.Bot_Commands["LASTSPOKE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["LASTSPOKE"] = new Bot_Command(0,false,false);
+Bot_Commands["LASTSPOKE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (!cmd[1]) {
 		srv.o(target,"You spoke just now, chief.");
 		return;
@@ -564,8 +564,8 @@ this.Bot_Commands["LASTSPOKE"].command = function (target,onick,ouh,srv,lvl,cmd)
 	return;
 }
 
-this.Bot_Commands["FORCE"] = new Bot_Command(90,true,true)
-this.Bot_Commands["FORCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["FORCE"] = new Bot_Command(90,true,true)
+Bot_Commands["FORCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(!cmd[0] || !cmd[1]) {
 		srv.o(target,"Invalid arguments.");
@@ -579,8 +579,8 @@ this.Bot_Commands["FORCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	srv.check_bot_command(target,onick,srv.users[onick.toUpperCase()].uh,cmd.join(" "));
 }
 
-this.Bot_Commands["DEBUG"] = new Bot_Command(99,true,true);
-this.Bot_Commands["DEBUG"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["DEBUG"] = new Bot_Command(99,true,true);
+Bot_Commands["DEBUG"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var data=eval(cmd.join(" "));
 	var str=debug_trace(data,1).split("\r\n");
@@ -588,8 +588,8 @@ this.Bot_Commands["DEBUG"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-this.Bot_Commands["OBJKEYS"] = new Bot_Command(99,true,true);
-this.Bot_Commands["OBJKEYS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["OBJKEYS"] = new Bot_Command(99,true,true);
+Bot_Commands["OBJKEYS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	cmdline=cmd.join(" ");
 	var data=eval(cmdline);
