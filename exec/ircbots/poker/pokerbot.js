@@ -26,7 +26,8 @@ this.main=function(srv,target)
 				break;
 			} else {
 				delete poker.users[u];
-				srv.o(u,"You have been idle too long. Type 'DEAL' here to resume playing poker.");
+				srv.o(u,"You have been idle too long. "
+					+ "Type 'DEAL' here to resume playing poker.", "NOTICE");
 			}
 		}
 	}

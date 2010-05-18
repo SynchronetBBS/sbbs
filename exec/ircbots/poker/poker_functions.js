@@ -36,7 +36,6 @@ this.Server_command=function(srv,cmdline,onick,ouh)
 //////////////////// Non-object Functions ////////////////////
 function poker_deal_hole_cards(target,srv) {
 	var poker_game=poker_games[target];
-	poker_game.round = 1;
 	for (p in poker_game.users) {
 		poker_game.users[p].cards[0] = poker_game.deck.deal();
 		poker_game.users[p].cards[1] = poker_game.deck.deal();
