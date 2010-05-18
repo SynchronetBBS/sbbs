@@ -179,6 +179,22 @@ function main() {
 			
 			mswait(10); /* Don't peg the CPU */
 		}
+
+		/* Take care of DCC chat sessions */
+		for (c in dcc_chats) {
+			if (!dcc_chats[c].sock.is_connected) {
+				log("Closing session.");
+				dcc_chats[c].sock.close();
+				continue;
+			}
+			if (dcc_chats[c].waiting_for_password) {
+				if (var dcc_pwd=dcc_chats[c].sock.readln()) {
+					dcc_chats[c].o("Acknowledged.");
+				}
+				continue;
+			}
+		}
+
 		if ( (time() - Config_Last_Write) > config_write_delay )
 			save_everything();
 	}
