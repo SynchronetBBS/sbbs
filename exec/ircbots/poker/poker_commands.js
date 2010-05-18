@@ -24,7 +24,7 @@ this.Bot_Commands["GO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target, "No poker game to 'GO' with. Type '" + get_cmd_prefix() + "DEAL' to "
 			+ "start a new one.");
 		return;
-	} else if(poker_games[target].round>0) {
+	} else if(poker_games[target].round>=0) {
 		srv.o(target, "This hand has already started.");
 		return;
 	}
@@ -32,6 +32,7 @@ this.Bot_Commands["GO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target, "At least two players are necessary to start the game.");
 		return;
 	}
+	poker_games[target].round = 0;
 	poker_init_hand(target);
 	poker_deal_hole_cards(target,srv);
 	poker_prompt_player(target,srv);
@@ -46,10 +47,12 @@ this.Bot_Commands["FOLD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	} else	if (!poker_games[target].users[onick.toUpperCase()]) {
 		srv.o(target, onick + ", you aren't playing this game.");
 		return;
-	} else if(poker_games[target].round<1) {
+	} else if(poker_games[target].round<0) {
 		srv.o(target, onick + ", the game hasn't started yet.");
 		return;
 	}
+
+	if(!poker_verify_game_status(target,srv,onick)) return;
 	
 	delete poker_games[target].users[onick.toUpperCase()];
 	srv.o(target, onick + " folded their hand.");
@@ -149,5 +152,26 @@ this.Bot_Commands["LIST"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	srv.o(target,"Poker players:" + list);
 	return;
+}
+
+this.Bot_Commands["SHOW"] = new Bot_Command(0,false,false);
+this.Bot_Commands["SHOW"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	if (!poker_games[target]) {
+		srv.o(target,"There is no active game.");
+		return;
+	}
+	if (!poker_games[target].users[onick.toUpperCase()]) {
+		srv.o(target, onick + ", you aren't playing this game.");
+		return;
+	}
+	if(poker_games[target].round<0) {
+		srv.o(target, onick + ", the game hasn't started yet.");
+		return;
+	}
+
+	srv.o(target, onick + " shows: "
+		+ poker_show_card(poker_games[target].users[onick.toUpperCase()].cards[0])
+		+ poker_show_card(poker_games[target].users[onick.toUpperCase()].cards[1])
+	);
 }
 

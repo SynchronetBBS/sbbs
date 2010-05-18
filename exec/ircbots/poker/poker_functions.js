@@ -76,7 +76,6 @@ function poker_next_turn(target,srv) {
 
 function poker_deal_flop(target,srv) { 
 	var poker_game=poker_games[target];
-	poker_game.round = 2;
 	poker_game.community_cards[0] = poker_game.deck.deal();
 	poker_game.community_cards[1] = poker_game.deck.deal();
 	poker_game.community_cards[2] = poker_game.deck.deal();
@@ -89,7 +88,6 @@ function poker_deal_flop(target,srv) {
 
 function poker_deal_turn(target,srv) {
 	var poker_game=poker_games[target];
-	poker_game.round = 3;
 	poker_game.community_cards[3] = poker_game.deck.deal();
 	srv.o(target, "The Turn: "
 		+ poker_show_card(poker_game.community_cards[0])
@@ -101,7 +99,6 @@ function poker_deal_turn(target,srv) {
 
 function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
-	poker_game.round = 4;
 	poker_game.community_cards[4] = poker_game.deck.deal();
 	srv.o(target, "The River: " + 
 		+ poker_show_card(poker_game.community_cards[0])
@@ -113,7 +110,7 @@ function poker_deal_river(target,srv) {
 }
 
 function poker_show_card(card) {
-	return(card.color + "[ " + card.char + " ]");
+	return(card.color + "[ " + card.char + " ] ");
 }
 
 function poker_load_pot(target,srv) {
@@ -129,9 +126,9 @@ function poker_load_pot(target,srv) {
 function poker_prompt_player(target,srv) {
 	var poker=poker_games[target];
 	var turn=poker.users_map[poker.turn];
-	srv.o(turn, "It is your turn. You may CHECK,  CALL, BET, RAISE or FOLD"
+	srv.o(turn, "It is your turn. You may CHECK, CALL, BET, RAISE or FOLD. "
+		+ "Minimum bet: $" + poker.current_bet
 		,"NOTICE");
-	srv.o(turn, "Minimum bet: $" + poker.current_bet, "NOTICE");
 }
 
 function poker_verify_game_status(target,srv,onick) {
