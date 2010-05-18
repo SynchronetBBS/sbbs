@@ -284,12 +284,16 @@ function Server_writeout(str) {
 	this.sock.write(str.slice(0, 512) + "\r\n");
 }
 
-function Server_target_out(target,str) {
+function Server_target_out(target,str,msgtype) {
 	for (c in squelch_list) {
 		if (target.toUpperCase() == squelch_list[c].toUpperCase())
 			return;
 	}
-	var outstr = "PRIVMSG " + target + " :" + str;
+
+	if (!msgtype)
+		msgtype = "PRIVMSG";
+
+	var outstr = msgtype + " " + target + " :" + str;
 	log("--> " + this.host + ": " + outstr);
 	this.sock.write(outstr.slice(0, 512) + "\r\n");
 }
