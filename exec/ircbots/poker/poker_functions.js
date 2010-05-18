@@ -92,7 +92,7 @@ function poker_deal_turn(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.round = 3;
 	poker_game.community_cards[3] = poker_game.deck.deal();
-	srv.writeout(target, "The Turn: "
+	srv.o(target, "The Turn: "
 		+ poker_show_card(poker_game.community_cards[0])
 		+ poker_show_card(poker_game.community_cards[1])
 		+ poker_show_card(poker_game.community_cards[2])
@@ -104,7 +104,7 @@ function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.round = 4;
 	poker_game.community_cards[4] = poker_game.deck.deal();
-	srv.writeout(target, "The River: " + 
+	srv.o(target, "The River: " + 
 		+ poker_show_card(poker_game.community_cards[0])
 		+ poker_show_card(poker_game.community_cards[1])
 		+ poker_show_card(poker_game.community_cards[2])
