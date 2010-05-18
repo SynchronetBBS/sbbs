@@ -36,7 +36,7 @@ Bot_Commands["GO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	poker_games[target].round = 0;
-	poker_init_hand(target);
+	poker_init_hand(target,srv);
 	poker_deal_hole_cards(target,srv);
 	poker_prompt_player(target,srv);
 	return;
@@ -56,6 +56,13 @@ Bot_Commands["FOLD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 Bot_Commands["CHECK"] = new Bot_Command(0,false,false);
 Bot_Commands["CHECK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if(!poker_verify_game_status(target,srv,onick)) return;
+	var poker=poker_games[target];
+	var current_player=poker.users[onick.toUpperCase()];
+	if(poker.current_bet>current_player.bet) {
+		srv.o(onick,"You have not met the current bet: $" + poker.current_bet,"NOTICE");
+		srv.o(onick,"Your current bet: $" + current_player.bet,"NOTICE");
+		return;
+	}
 	srv.o(target,onick + " checks.");
 	poker_next_turn(target,srv);
 	return;
@@ -92,15 +99,20 @@ Bot_Commands["CALL"] = new Bot_Command(0,false,false);
 Bot_Commands["CALL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if(!poker_verify_game_status(target,srv,onick)) return;
 	var poker=poker_games[target];
-	if(poker.current_bet>poker.users[onick.toUpperCase()].money) {
-		srv.writeout("NOTICE " + onick + " :" + "You don't have enough to call!");
-		srv.writeout("NOTICE " + onick + " :" + "Balance: $" + poker.users[onick.toUpperCase()].money);
+	var current_player=poker.users[onick.toUpperCase()];
+	
+	if(poker.current_bet==current_player.bet) {
+		srv.o(target,onick + " checks.");
+	} else if(poker.current_bet>current_player.money+current_player.bet) {
+		srv.o(onick,"You don't have enough to call!","NOTICE");
+		srv.o(onick,"Balance: $" + current_player.money,"NOTICE");
 		return;
+	} else {
+		srv.o(target,onick + " calls the bet: $" + poker.current_bet);
+		current_player.money-=poker.current_bet;
+		current_player.bet+=poker.current_bet;
+		srv.o(onick,"Balance: $" + current_player.money,"NOTICE");
 	}
-	srv.o(target,onick + " calls the bet: $" + poker.current_bet);
-	poker.users[onick.toUpperCase()].money-=poker.current_bet;
-	poker.users[onick.toUpperCase()].bet+=poker.current_bet;
-	srv.writeout("NOTICE " + onick + " :" + "Balance: $" + poker.users[onick.toUpperCase()].money);
 	poker_next_turn(target,srv);
 	return;
 }

@@ -46,6 +46,7 @@ function Poker_Game()
 	this.pot=0;
 	this.lg_blind=10;
 	this.sm_blind=5;
+	this.dealer=0;
 	this.min_bet=this.sm_blind;
 	this.current_bet=this.min_bet;
 	this.round=-1;

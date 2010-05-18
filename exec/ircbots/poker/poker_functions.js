@@ -1,38 +1,3 @@
-/* 	IRC Bot Module - Server Commands
-	You would place all of your module functions in this file.	*/
-	
-function Server_command(srv,cmdline,onick,ouh) 
-{
-	var cmd=IRC_parsecommand(cmdline);
-	switch (cmd[0]) {
-		case "JOIN":
-			if (onick == srv.curnick) break;
-			
-			// Someone else joining? Let's send them a private welcome message!
-			srv.o(onick,"Welcome to Poker!");
-			srv.o(onick,"This is a module for IRCBot - by Cyan");
-			break;
-		case "PRIVMSG":
-			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				var chan = srv.channel[cmd[1].toUpperCase()];
-				if (!chan)
-					break;
-				if (!chan.is_joined)
-					break;
-				if(srv.users[onick.toUpperCase()]) {
-					/* You can do special command processing here, if you like.
-					   This is currently set up to parse public room messages
-					   for things like trivia answers, or other responses that
-					   are inconvenient for users to submit with a command
-					   prefix */
-				}
-			}
-			break;
-		default:
-			break;
-	}
-}
-
 //////////////////// Non-object Functions ////////////////////
 function poker_deal_hole_cards(target,srv) {
 	var poker_game=poker_games[target];
@@ -50,9 +15,7 @@ function poker_deal_hole_cards(target,srv) {
 
 function poker_next_turn(target,srv) {
 	var poker=poker_games[target];
-	poker.turn++;
-	if(poker.turn==poker.users_map.length) poker.turn=0;
-	
+	poker.turn=get_next_player(poker.users_map,poker.turn);
 	
 	if(poker.deal_next) {
 		poker_load_pot(target,srv);
@@ -76,6 +39,12 @@ function poker_next_turn(target,srv) {
 		if(poker.current_bet==turn_user.bet) poker.deal_next=true;
 	}
 	if(poker.round<4) poker_prompt_player(target,srv);
+}
+
+function get_next_player(map,turn) {
+	turn++;
+	if(turn==map.length) turn=0;
+	return turn;
 }
 
 function poker_compare_hands(target,srv) {
@@ -147,7 +116,8 @@ function poker_load_pot(target,srv) {
 function poker_prompt_player(target,srv) {
 	var poker=poker_games[target];
 	var turn=poker.users_map[poker.turn];
-	srv.o(turn,"It is your turn. Minimum bet: $" + poker.current_bet,"NOTICE");
+	var min_bet=poker.current_bet-poker.users[turn].bet;
+	srv.o(turn,"It is your turn. Minimum bet to call: $" + min_bet,"NOTICE");
 }
 
 function poker_verify_game_status(target,srv,onick) {
@@ -173,11 +143,22 @@ function poker_verify_game_status(target,srv,onick) {
 	return true;
 }
 
-function poker_init_hand(target) {
-	poker_games[target].deck.shuffle();
-	for(var u in poker_games[target].users) {
-		poker_games[target].users_map.push(u);
+function poker_init_hand(target,srv) {
+	var poker=poker_games[target];
+	poker.deck.shuffle();
+	for(var u in poker.users) {
+		poker.users_map.push(u);
 	}
+	var small_blind=get_next_player(poker.users_map,poker.dealer);
+	var large_blind=get_next_player(poker.users_map,small_blind);
+	
+	srv.o(target,poker.users_map[poker.dealer] + " is the dealer for this hand.");
+	poker.users[poker.users_map[small_blind]].bet+=poker.sm_blind;
+	srv.o(target,"Small blind: " + poker.users_map[small_blind]  + " $" + poker.sm_blind);
+	poker.users[poker.users_map[large_blind]].bet+=poker.lg_blind;
+	srv.o(target,"Large blind: " + poker.users_map[large_blind]  + " $" + poker.lg_blind);
+	
+	poker.min_bet=poker.lg_blind;
 }
 
 function load_scores()
