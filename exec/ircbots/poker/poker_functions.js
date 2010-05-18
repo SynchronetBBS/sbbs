@@ -139,7 +139,7 @@ function poker_verify_game_status(target,srv,onick) {
 	var poker=poker_games[target];
 	if (!poker) {
 		srv.o(target, "No poker game in progress. Type '" + get_cmd_prefix()
-			+ "DEAL' to start a new one."
+			+ "DEAL' to start a new one.")
 		return false;
 	}
 	if(!poker.users[onick.toUpperCase()]) {
