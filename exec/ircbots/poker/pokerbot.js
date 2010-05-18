@@ -1,10 +1,11 @@
-var poker_dir=this.dir;
-var poker_scores=[];
-var notice_interval=10; //seconds
-var activity_timeout=120;
-var poker_games=[];
+poker_dir=this.dir;
+poker_scores=[];
+notice_interval=10; //seconds
+activity_timeout=120;
+poker_games=[];
 
-this.save=function()
+// Game functions
+function save()
 {
 	var s_file=new File(poker_dir + "scores.ini");
 	if(!s_file.open(file_exists(s_file.name)?"r+":"w+")) return false;
@@ -14,7 +15,7 @@ this.save=function()
 	}
 	s_file.close();
 }
-this.main=function(srv,target)
+function main(srv,target)
 {	
 	var poker=poker_games[target];
 	if(!poker || poker.paused) return;
@@ -37,6 +38,7 @@ this.main=function(srv,target)
 	}
 }
 
+// Game objects
 function Poker_Game()
 {
 	this.last_update=0;
@@ -68,6 +70,7 @@ function Poker_Player()
 	this.cards=[];
 	this.money=100;
 	this.bet=0;
+	this.active=true;
 }
 
 load_scores();

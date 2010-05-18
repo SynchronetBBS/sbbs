@@ -1,7 +1,7 @@
 /* 	IRC Bot Module - Server Commands
 	You would place all of your module functions in this file.	*/
 	
-this.Server_command=function(srv,cmdline,onick,ouh) 
+function Server_command(srv,cmdline,onick,ouh) 
 {
 	var cmd=IRC_parsecommand(cmdline);
 	switch (cmd[0]) {
@@ -53,6 +53,7 @@ function poker_next_turn(target,srv) {
 	poker.turn++;
 	if(poker.turn==poker.users_map.length) poker.turn=0;
 	
+	
 	if(poker.deal_next) {
 		poker_load_pot(target,srv);
 		switch(++poker.round) {
@@ -65,13 +66,33 @@ function poker_next_turn(target,srv) {
 			case 3:
 				poker_deal_river(target,srv);
 				break;
+			default:
+				poker_compare_hands(target,srv);
+				break;
 		}
 		poker.deal_next=false;
 	} else {
 		var turn_user=poker.users[poker.users_map[poker.turn]];
 		if(poker.current_bet==turn_user.bet) poker.deal_next=true;
 	}
-	poker_prompt_player(target,srv);
+	if(poker.round<4) poker_prompt_player(target,srv);
+}
+
+function poker_compare_hands(target,srv) {
+	var poker=poker_games[target];
+	var winning_hand=-1;
+	var winning_player=-1;
+	for(var p in poker.users) {
+		var player=poker.users[p];
+		var hand=poker.community_cards.concat(player.cards)
+		var rank=Rank(hand);
+		if(rank>winning_hand) {
+			winning_hand=rank;
+			winning_player=p;
+		}
+	}
+	srv.o(target,winning_player + " won this hand with " + RANKS[winning_hand]);
+
 }
 
 function poker_deal_flop(target,srv) { 
@@ -100,7 +121,7 @@ function poker_deal_turn(target,srv) {
 function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.community_cards[4] = poker_game.deck.deal();
-	srv.o(target, "The River: " + 
+	srv.o(target, "The River: " 
 		+ poker_show_card(poker_game.community_cards[0])
 		+ poker_show_card(poker_game.community_cards[1])
 		+ poker_show_card(poker_game.community_cards[2])
@@ -126,9 +147,7 @@ function poker_load_pot(target,srv) {
 function poker_prompt_player(target,srv) {
 	var poker=poker_games[target];
 	var turn=poker.users_map[poker.turn];
-	srv.o(turn, "It is your turn. You may CHECK, CALL, BET, RAISE or FOLD. "
-		+ "Minimum bet: $" + poker.current_bet
-		,"NOTICE");
+	srv.o(turn,"It is your turn. Minimum bet: $" + poker.current_bet,"NOTICE");
 }
 
 function poker_verify_game_status(target,srv,onick) {
@@ -137,8 +156,12 @@ function poker_verify_game_status(target,srv,onick) {
 		srv.o(target, "No poker game in progress. Type '" + get_cmd_prefix()
 			+ "DEAL' to start a new one.")
 		return false;
+	} 
+	if(poker.round<0) {
+		srv.o(target, onick + ", the game hasn't started yet.");
+		return false;
 	}
-	if(!poker.users[onick.toUpperCase()]) {
+	if(!poker.users[onick.toUpperCase()] || !poker.users[onick.toUpperCase()].active) {
 		srv.o(onick, "You're not even in the hand!");
 		return false;
 	}
