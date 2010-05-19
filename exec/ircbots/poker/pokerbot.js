@@ -19,22 +19,14 @@ function main(srv,target)
 {	
 	var poker=poker_games[target];
 	if(!poker || poker.paused) return;
-	var active_users=false;
 	for(var u in srv.users) {
-		if(poker.users[u]) {
-			if(time()-srv.users[u].last_spoke<activity_timeout){
-				active_users=true;
-				break;
-			} else {
-				delete poker.users[u];
+		if(poker.users[u] && poker.users[u].active) {
+			if(time()-srv.users[u].last_spoke>=activity_timeout){
+				poker_fold_player(target,srv,u);
 				srv.o(u,"You have been idle too long. "
 					+ "Type 'DEAL' here to resume playing poker.", "NOTICE");
 			}
 		}
-	}
-	if(!active_users) return;
-	
-	if(poker.cycle()) {
 	}
 }
 
@@ -44,11 +36,11 @@ function Poker_Game()
 	this.last_update=0;
 	this.turn=0;
 	this.pot=0;
-	this.lg_blind=10;
-	this.sm_blind=5;
 	this.dealer=0;
-	this.min_bet=this.sm_blind;
+	this.min_bet=10;
 	this.current_bet=this.min_bet;
+	this.lg_blind=this.min_bet;
+	this.sm_blind=this.min_bet/2;
 	this.round=-1;
 	this.deck=new Deck();
 	this.community_cards=new Array();
@@ -71,6 +63,7 @@ function Poker_Player()
 	this.cards=[];
 	this.money=100;
 	this.bet=0;
+	this.has_bet=false;
 	this.active=true;
 }
 

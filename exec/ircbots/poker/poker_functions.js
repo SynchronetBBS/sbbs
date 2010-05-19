@@ -15,8 +15,17 @@ function poker_deal_hole_cards(target,srv) {
 
 function poker_next_turn(target,srv) {
 	var poker=poker_games[target];
-	poker.turn=get_next_player(poker.users_map,poker.turn);
+	var current_turn=poker.turn;
+	poker.users[poker.users_map[current_turn]].has_bet=true;
+	poker.turn=get_next_player(poker,poker.turn);
+	var next_turn_user=poker.users[poker.users_map[poker.turn]];
 	
+	if(poker_count_active_players(poker)==1) {
+		poker.round=3;
+		poker.deal_next=true;
+	} else	if(poker.current_bet==next_turn_user.bet && next_turn_user.has_bet) {
+		poker.deal_next=true;
+	}
 	if(poker.deal_next) {
 		poker_load_pot(poker);
 		switch(++poker.round) {
@@ -36,20 +45,53 @@ function poker_next_turn(target,srv) {
 		poker.current_bet=0;
 		poker.deal_next=false;
 		if(poker.round<4) {
+			poker.turn=get_next_player(poker,poker.dealer);
 			poker_game_status(target,srv);
 		}
-	} else {
-		var turn_user=poker.users[poker.users_map[poker.turn]];
-		if(poker.current_bet==turn_user.bet) poker.deal_next=true;
 	}
 	if(poker.round<4) {
 		poker_prompt_player(target,srv);
 	}
 }
 
-function get_next_player(map,turn) {
+function poker_count_active_players(poker_game) {
+	var count=0;
+	for(var u in poker_game.users) {
+		if(poker_game.users[u].active) count++;
+	}
+	return count;
+}
+
+function poker_verify_game_status(poker_game) {
+	var active_users=false;
+	for(var u in srv.users) {
+		if(poker.users[u] && poker.users[u].active) {
+			if(time()-srv.users[u].last_spoke<activity_timeout){
+				active_users=true;
+				break;
+			} else {
+				delete poker.users[u];
+				srv.o(u,"You have been idle too long. "
+					+ "Type 'DEAL' here to resume playing poker.", "NOTICE");
+			}
+		}
+	}
+	if(!active_users) return;
+}
+
+function poker_fold_player(target,srv,onick) {
+	poker_games[target].pot+=poker_games[target].users[onick].bet;
+	poker_games[target].users[onick].active=false;
+	srv.o(target, onick + " folded their hand.");
+	poker_next_turn(target,srv);
+}
+
+function get_next_player(poker_game,turn) {
 	turn++;
-	if(turn==map.length) turn=0;
+	if(turn==poker_game.users_map.length) turn=0;
+	if(!poker_game.users[poker_game.users_map[turn]].active) {
+		turn=get_next_player(poker_game,turn);
+	}
 	return turn;
 }
 
@@ -59,14 +101,16 @@ function poker_compare_hands(target,srv) {
 	var winning_player=-1;
 	for(var p in poker.users) {
 		var player=poker.users[p];
-		var hand=poker.community_cards.concat(player.cards)
-		var rank=Rank(hand);
-		if(rank>winning_hand) {
-			winning_hand=rank;
-			winning_player=p;
+		if(player.active) {
+			var hand=poker.community_cards.concat(player.cards)
+			var rank=Rank(hand);
+			if(rank>winning_hand) {
+				winning_hand=rank;
+				winning_player=p;
+			}
 		}
 	}
-	srv.o(target,winning_player + " won this hand with " + RANKS[winning_hand]);
+	srv.o(target,winning_player + " won this hand! Winnings: $" + poker.pot);
 	poker.users[winning_player].money+=poker.pot;
 	poker.winner=winning_player;
 
@@ -97,6 +141,7 @@ function poker_load_pot(poker_game) {
 	for(var p in poker_game.users) {
 		poker_game.pot+=poker_game.users[p].bet;
 		poker_game.users[p].bet=0;
+		poker_game.users[p].has_bet=false;
 	}
 	return;
 }
@@ -109,7 +154,7 @@ function poker_prompt_player(target,srv) {
 	srv.o(turn,"It is your turn. Minimum bet to call: $" + min_bet,"NOTICE");
 }
 
-function poker_verify_game_status(target,srv,onick) {
+function poker_verify_user_status(target,srv,onick) {
 	var poker=poker_games[target];
 	if (!poker) {
 		srv.o(target, "No poker game in progress. Type '" + get_cmd_prefix()
@@ -138,15 +183,15 @@ function poker_init_hand(target,srv) {
 	for(var u in poker.users) {
 		poker.users_map.push(u);
 	}
-	var small_blind=get_next_player(poker.users_map,poker.dealer);
-	var large_blind=get_next_player(poker.users_map,small_blind);
+	var small_blind=get_next_player(poker,poker.dealer);
+	var large_blind=get_next_player(poker,small_blind);
 	
 	srv.o(target,poker.users_map[poker.dealer] + " is the dealer for this hand.");
 	poker.users[poker.users_map[small_blind]].bet+=poker.sm_blind;
 	srv.o(target,"Small blind: " + poker.users_map[small_blind]  + " $" + poker.sm_blind);
 	poker.users[poker.users_map[large_blind]].bet+=poker.lg_blind;
 	srv.o(target,"Large blind: " + poker.users_map[large_blind]  + " $" + poker.lg_blind);
-	
+	poker.turn=get_next_player(poker,large_blind);
 	poker.min_bet=poker.lg_blind;
 }
 
@@ -168,6 +213,9 @@ function poker_game_status(target,srv) {
 	var state="";
 	var cards="";
 		
+	for(var c in poker.community_cards) {
+		if(poker.community_cards[c]) cards+=poker_show_card(poker.community_cards[c]);
+	}
 	switch(poker.round) {
 		case -1:
 			state="Status: waiting for players";
@@ -176,13 +224,13 @@ function poker_game_status(target,srv) {
 			state="Status: First round betting";
 			break;
 		case 1:
-			state="The Flop: ";
+			state="The Flop: " + cards;
 			break;
 		case 2:
-			state="The Turn: ";
+			state="The Turn: " + cards;
 			break;
 		case 3:
-			state="The River: ";
+			state="The River: " + cards;
 			break;
 		case 4:
 			state="Hand complete. Winner: " + poker.winner;
@@ -190,15 +238,12 @@ function poker_game_status(target,srv) {
 		default:
 			break;
 	}
-	for(var c in poker.community_cards) {
-		if(poker.community_cards[c]) cards+=poker_show_card(poker.community_cards[c]);
-	}
-	if(poker.round>=0) {
+	if(poker.round>=0 && poker.round<4) {
 		srv.o(target,"Current pot: $" + poker.pot);
 		srv.o(target,"Current bet: $" + poker.current_bet);
 		srv.o(target,"Current turn: " + poker.users_map[poker.turn]);
 	}
-	srv.o(target,state + cards);
+	srv.o(target,state);
 }
 
 function poker_reset_game(target,srv) {
@@ -207,9 +252,11 @@ function poker_reset_game(target,srv) {
 		poker.users[u].cards=[];
 		poker.users[u].bet=0;
 		poker.users[u].active=true;
+		poker.users[u].has_bet=false;
 	}
-	poker.dealer=get_next_player(poker.users_map,poker.dealer);
+	poker.dealer=get_next_player(poker,poker.dealer);
 	poker.round=-1;
+	poker.current_bet=poker.min_bet/2;
 	poker.pot=0;
 }
 

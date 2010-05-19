@@ -44,18 +44,14 @@ Bot_Commands["GO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["FOLD"] = new Bot_Command(0,false,false);
 Bot_Commands["FOLD"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if(!poker_verify_game_status(target,srv,onick)) return;
-	
-	poker_games[target].bet+=poker_games[target].users[onick].bet;
-	poker_games[target].users[onick].active=false;
-	srv.o(target, onick + " folded their hand.");
-	poker_next_turn(target,srv);
+	if(!poker_verify_user_status(target,srv,onick)) return;
+	poker_fold_player(target,srv,onick);
 	return;
 }
 
 Bot_Commands["CHECK"] = new Bot_Command(0,false,false);
 Bot_Commands["CHECK"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if(!poker_verify_game_status(target,srv,onick)) return;
+	if(!poker_verify_user_status(target,srv,onick)) return;
 	var poker=poker_games[target];
 	var current_player=poker.users[onick];
 	if(poker.current_bet>current_player.bet) {
@@ -70,7 +66,7 @@ Bot_Commands["CHECK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["BET"] = new Bot_Command(0,false,false);
 Bot_Commands["BET"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if(!poker_verify_game_status(target,srv,onick)) return;
+	if(!poker_verify_user_status(target,srv,onick)) return;
 	if(!cmd[1]) {
 		srv.o(onick,"You must specify an amount to bet!","NOTICE");
 		return;
@@ -88,8 +84,8 @@ Bot_Commands["BET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"You don't have that much money! Balance: $" + poker.users[onick].money,"NOTICE");
 		return;
 	}
-	if(cmd[1]<poker.current_bet) {
-		srv.o(onick,"You must meet the minimum bet! Minimum bet: $" + poker.current_bet,"NOTICE");
+	if(cmd[1]<poker.min_bet) {
+		srv.o(onick,"Your bet must meet the minimum! Minimum bet: $" + poker.min_bet,"NOTICE");
 		return;
 	}
 	srv.o(target,onick + " bets $" + cmd[1]);
@@ -103,20 +99,21 @@ Bot_Commands["BET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["CALL"] = new Bot_Command(0,false,false);
 Bot_Commands["CALL"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if(!poker_verify_game_status(target,srv,onick)) return;
+	if(!poker_verify_user_status(target,srv,onick)) return;
 	var poker=poker_games[target];
 	var current_player=poker.users[onick];
 	
-	if(poker.current_bet<=current_player.bet) {
+	if(poker.current_bet==current_player.bet) {
 		srv.o(target,onick + " checks.");
 	} else if(poker.current_bet>current_player.money+current_player.bet) {
 		srv.o(onick,"You don't have enough to call!","NOTICE");
 		srv.o(onick,"Balance: $" + current_player.money,"NOTICE");
 		return;
 	} else {
+		var difference=poker.current_bet-current_player.bet;
 		srv.o(target,onick + " calls the bet: $" + poker.current_bet);
-		current_player.money-=poker.current_bet;
-		current_player.bet+=poker.current_bet;
+		current_player.money-=difference;
+		current_player.bet+=difference;
 		srv.o(onick,"Balance: $" + current_player.money,"NOTICE");
 	}
 	poker_next_turn(target,srv);
@@ -125,7 +122,7 @@ Bot_Commands["CALL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["RAISE"] = new Bot_Command(0,false,false);
 Bot_Commands["RAISE"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if(!poker_verify_game_status(target,srv,onick)) return;
+	if(!poker_verify_user_status(target,srv,onick)) return;
 	var bet=Number(cmd[1]);
 	if(!bet) {
 		srv.o(onick,"You must specify an amount to raise!","NOTICE");
@@ -140,14 +137,16 @@ Bot_Commands["RAISE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	var poker=poker_games[target];
-	if(poker.current_bet+bet>poker.users[onick].money) {
+	var difference=poker.current_bet-poker.users[onick].bet;
+	if(difference+bet>poker.users[onick].money) {
 		srv.o(onick,"You don't have that much money! Balance: $" + poker.users[onick].money,"NOTICE");
 		return;
 	}
-	srv.o(target,onick + " raises the bet to $" + (poker.current_bet+bet));
 	poker.users[onick].money-=bet;
+	poker.users[onick].bet+=difference;
 	poker.users[onick].bet+=bet;
 	poker.current_bet+=bet;
+	srv.o(target,onick + " raises the bet to $" + (poker.current_bet));
 	srv.o(onick,"Balance: $" + poker.users[onick].money,"NOTICE");
 	poker_next_turn(target,srv);
 	return;
@@ -217,3 +216,14 @@ Bot_Commands["HOLE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	,"NOTICE");
 }
 
+Bot_Commands["INVITE"] = new Bot_Command(0,1,false);
+Bot_Commands["INVITE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if(srv.users[cmd[0].toUpperCase()]) {
+		srv.o(target,cmd[0] + " is already here!");
+		return;
+	}
+	srv.o(cmd[0],onick + " invited you to play poker in " + target
+		+ "! /J " + target + " to join.");
+	return;
+}
