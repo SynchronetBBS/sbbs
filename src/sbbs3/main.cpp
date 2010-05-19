@@ -5053,10 +5053,20 @@ NO_SSH:
 				continue;
 			}
 			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
-				if(i==CRYPT_ERROR_BADDATA)
-					lprintf(LOG_NOTICE,"%04d SSH Bad/unrecognised data format", client_socket);
-				else
-					lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting session active",client_socket, i);
+				switch(i) {
+					case CRYPT_ERROR_BADDATA:
+						lprintf(LOG_NOTICE,"%04d SSH Bad/unrecognized data format", client_socket);
+						break;
+					case CRYPT_ERROR_READ:
+						lprintf(LOG_WARNING,"%04d SSH Read failure", client_socket);
+						break;
+					case CRYPT_ERROR_WRITE:
+						lprintf(LOG_WARNING,"%04d SSH Write failure", client_socket);
+						break;
+					default:
+						lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting session active",client_socket, i);
+						break;
+				}
 				cryptDestroySession(sbbs->ssh_session);
 				close_socket(client_socket);
 				continue;
