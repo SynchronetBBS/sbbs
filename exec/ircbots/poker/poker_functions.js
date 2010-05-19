@@ -18,7 +18,7 @@ function poker_next_turn(target,srv) {
 	poker.turn=get_next_player(poker.users_map,poker.turn);
 	
 	if(poker.deal_next) {
-		poker_load_pot(target,srv);
+		poker_load_pot(poker);
 		switch(++poker.round) {
 			case 1:
 				poker_deal_flop(target,srv);
@@ -33,12 +33,18 @@ function poker_next_turn(target,srv) {
 				poker_compare_hands(target,srv);
 				break;
 		}
+		poker.current_bet=0;
 		poker.deal_next=false;
+		if(poker.round<4) {
+			poker_game_status(target,srv);
+		}
 	} else {
 		var turn_user=poker.users[poker.users_map[poker.turn]];
 		if(poker.current_bet==turn_user.bet) poker.deal_next=true;
 	}
-	if(poker.round<4) poker_prompt_player(target,srv);
+	if(poker.round<4) {
+		poker_prompt_player(target,srv);
+	}
 }
 
 function get_next_player(map,turn) {
@@ -61,6 +67,8 @@ function poker_compare_hands(target,srv) {
 		}
 	}
 	srv.o(target,winning_player + " won this hand with " + RANKS[winning_hand]);
+	poker.users[winning_player].money+=poker.pot;
+	poker.winner=winning_player;
 
 }
 
@@ -69,47 +77,27 @@ function poker_deal_flop(target,srv) {
 	poker_game.community_cards[0] = poker_game.deck.deal();
 	poker_game.community_cards[1] = poker_game.deck.deal();
 	poker_game.community_cards[2] = poker_game.deck.deal();
-	srv.o(target, "The Flop: "
-		+ poker_show_card(poker_game.community_cards[0])
-		+ poker_show_card(poker_game.community_cards[1])
-		+ poker_show_card(poker_game.community_cards[2])
-	);
 }
 
 function poker_deal_turn(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.community_cards[3] = poker_game.deck.deal();
-	srv.o(target, "The Turn: "
-		+ poker_show_card(poker_game.community_cards[0])
-		+ poker_show_card(poker_game.community_cards[1])
-		+ poker_show_card(poker_game.community_cards[2])
-		+ poker_show_card(poker_game.community_cards[3])
-	);
 }
 
 function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
 	poker_game.community_cards[4] = poker_game.deck.deal();
-	srv.o(target, "The River: " 
-		+ poker_show_card(poker_game.community_cards[0])
-		+ poker_show_card(poker_game.community_cards[1])
-		+ poker_show_card(poker_game.community_cards[2])
-		+ poker_show_card(poker_game.community_cards[3])
-		+ poker_show_card(poker_game.community_cards[4])
-	);
 }
 
 function poker_show_card(card) {
 	return(card.color + "[ " + card.char + " ] ");
 }
 
-function poker_load_pot(target,srv) {
-	var poker=poker_games[target];
-	for(var p in poker.users) {
-		poker.pot+=poker.users[p].bet;
-		poker.users[p].bet=0;
+function poker_load_pot(poker_game) {
+	for(var p in poker_game.users) {
+		poker_game.pot+=poker_game.users[p].bet;
+		poker_game.users[p].bet=0;
 	}
-	srv.o(target,"Current pot: $" + poker.pot);
 	return;
 }
 
@@ -117,6 +105,7 @@ function poker_prompt_player(target,srv) {
 	var poker=poker_games[target];
 	var turn=poker.users_map[poker.turn];
 	var min_bet=poker.current_bet-poker.users[turn].bet;
+	if(min_bet<0) min_bet=0;
 	srv.o(turn,"It is your turn. Minimum bet to call: $" + min_bet,"NOTICE");
 }
 
@@ -131,12 +120,12 @@ function poker_verify_game_status(target,srv,onick) {
 		srv.o(target, onick + ", the game hasn't started yet.");
 		return false;
 	}
-	if(!poker.users[onick.toUpperCase()] || !poker.users[onick.toUpperCase()].active) {
+	if(!poker.users[onick] || !poker.users[onick].active) {
 		srv.o(onick, "You're not even in the hand!");
 		return false;
 	}
 	var turn_player=poker.users_map[poker.turn];
-	if (turn_player != onick.toUpperCase()) {
+	if (turn_player != onick) {
 		srv.o(target, "Acting out of turn?");
 		return false;
 	}
@@ -161,8 +150,7 @@ function poker_init_hand(target,srv) {
 	poker.min_bet=poker.lg_blind;
 }
 
-function load_scores()
-{
+function load_scores() {
 	var s_file=new File(poker_dir + "scores.ini");
 	if(s_file.open(file_exists(s_file.name)?"r+":"w+")) {
 		writeln("reading scores from file: " + s_file.name);
@@ -174,4 +162,56 @@ function load_scores()
 		s_file.close();
 	}
 }
+
+function poker_game_status(target,srv) {
+	var poker=poker_games[target];
+	var state="";
+	var cards="";
+		
+	switch(poker.round) {
+		case -1:
+			state="Status: waiting for players";
+			break;
+		case 0:
+			state="Status: First round betting";
+			break;
+		case 1:
+			state="The Flop: ";
+			break;
+		case 2:
+			state="The Turn: ";
+			break;
+		case 3:
+			state="The River: ";
+			break;
+		case 4:
+			state="Hand complete. Winner: " + poker.winner;
+			break;
+		default:
+			break;
+	}
+	for(var c in poker.community_cards) {
+		if(poker.community_cards[c]) cards+=poker_show_card(poker.community_cards[c]);
+	}
+	if(poker.round>=0) {
+		srv.o(target,"Current pot: $" + poker.pot);
+		srv.o(target,"Current bet: $" + poker.current_bet);
+		srv.o(target,"Current turn: " + poker.users_map[poker.turn]);
+	}
+	srv.o(target,state + cards);
+}
+
+function poker_reset_game(target,srv) {
+	var poker=poker_games[target];
+	for(var u in poker.users) {
+		poker.users[u].cards=[];
+		poker.users[u].bet=0;
+		poker.users[u].active=true;
+	}
+	poker.dealer=get_next_player(poker.users_map,poker.dealer);
+	poker.round=-1;
+	poker.pot=0;
+}
+
+
 
