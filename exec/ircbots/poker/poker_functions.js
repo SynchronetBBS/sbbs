@@ -188,11 +188,12 @@ function poker_init_hand(target,srv) {
 	
 	srv.o(target,poker.users_map[poker.dealer] + " is the dealer for this hand.");
 	poker.users[poker.users_map[small_blind]].bet+=poker.sm_blind;
+	poker.users[poker.users_map[small_blind]].money-=poker.sm_blind;
 	srv.o(target,"Small blind: " + poker.users_map[small_blind]  + " $" + poker.sm_blind);
 	poker.users[poker.users_map[large_blind]].bet+=poker.lg_blind;
+	poker.users[poker.users_map[large_blind]].money-=poker.lg_blind;
 	srv.o(target,"Large blind: " + poker.users_map[large_blind]  + " $" + poker.lg_blind);
 	poker.turn=get_next_player(poker,large_blind);
-	poker.min_bet=poker.lg_blind;
 }
 
 function load_scores() {
@@ -256,7 +257,8 @@ function poker_reset_game(target,srv) {
 	}
 	poker.dealer=get_next_player(poker,poker.dealer);
 	poker.round=-1;
-	poker.current_bet=poker.min_bet/2;
+	poker.current_bet=poker.min_bet;
+	poker.community_cards=[];
 	poker.pot=0;
 }
 

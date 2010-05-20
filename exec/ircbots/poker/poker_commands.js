@@ -84,14 +84,15 @@ Bot_Commands["BET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"You don't have that much money! Balance: $" + poker.users[onick].money,"NOTICE");
 		return;
 	}
-	if(cmd[1]<poker.min_bet) {
+	if(cmd[1]<poker.current_bet) {
 		srv.o(onick,"Your bet must meet the minimum! Minimum bet: $" + poker.min_bet,"NOTICE");
 		return;
 	}
 	srv.o(target,onick + " bets $" + cmd[1]);
 	poker.users[onick].money-=Number(cmd[1]);
 	poker.users[onick].bet+=Number(cmd[1]);
-	poker.current_bet=Number(cmd[1]);
+	poker.current_bet+=Number(cmd[1]);
+	srv.o(target,"Current bet: $" + poker.current_bet);
 	srv.o(onick,"Balance: $" + poker.users[onick].money,"NOTICE");
 	poker_next_turn(target,srv);
 	return;
@@ -227,3 +228,37 @@ Bot_Commands["INVITE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		+ "! /J " + target + " to join.");
 	return;
 }
+
+Bot_Commands["BALANCE"] = new Bot_Command(0,false,false);
+Bot_Commands["BALANCE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	if (!poker_games[target]) {
+		srv.o(target,"There is no active game.");
+		return;
+	}
+	if(!poker_games[target].users[onick]) {
+		srv.o(target, onick + ", I have no record for you.");
+		return;
+	}
+	srv.o(onick, "Your balance: $" + poker_games[target].users[onick].money,"NOTICE");
+	return;
+}
+
+Bot_Commands["BUYIN"] = new Bot_Command(50,false,false);
+Bot_Commands["BUYIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	if (!poker_games[target]) {
+		srv.o(target,"There is no active game.");
+		return;
+	}
+	if(!poker_games[target].users[onick]) {
+		srv.o(target, onick + ", I have no record for you.");
+		return;
+	}
+	if(poker_games[target].users[onick].money>10) {
+		srv.o(target, onick + ", you already have money in the bank.");
+		return;
+	}
+	poker_games[target].users[onick].money=100;
+	srv.o(onick, "Your balance: $" + poker_games[target].users[onick].money,"NOTICE");
+	return;
+}
+
