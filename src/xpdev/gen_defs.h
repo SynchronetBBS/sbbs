@@ -323,20 +323,20 @@ typedef struct {
 #define REPLACE_CHARS(str,c1,c2,p)	for((p)=(str);*(p);(p)++) if(*(p)==(c1)) *(p)=(c2);
 
 /* ASCIIZ char* parsing helper macros */
-#define SKIP_WHITESPACE(p)			while(*(p) && isspace(*(p)))			(p)++;
-#define FIND_WHITESPACE(p)			while(*(p) && !isspace(*(p)))			(p)++;
-#define SKIP_CHAR(p,c)				while(*(p)==c)							(p)++;
-#define FIND_CHAR(p,c)				while(*(p) && *(p)!=c)					(p)++;
-#define SKIP_CHARSET(p,s)			while(*(p) && strchr(s,*(p))!=NULL)		(p)++;
-#define FIND_CHARSET(p,s)			while(*(p) && strchr(s,*(p))==NULL)		(p)++;
-#define SKIP_ALPHA(p)				while(*(p) && isalpha(*(p)))			(p)++;
-#define FIND_ALPHA(p)				while(*(p) && !isalpha(*(p)))			(p)++;
-#define SKIP_ALPHANUMERIC(p)		while(*(p) && isalnum(*(p)))			(p)++;
-#define FIND_ALPHANUMERIC(p)		while(*(p) && !isalnum(*(p)))			(p)++;
-#define SKIP_DIGIT(p)				while(*(p) && isdigit(*(p)))			(p)++;
-#define FIND_DIGIT(p)				while(*(p) && !isdigit(*(p)))			(p)++;
-#define SKIP_HEXDIGIT(p)			while(*(p) && isxdigit(*(p)))			(p)++;
-#define FIND_HEXDIGIT(p)			while(*(p) && !isxdigit(*(p)))			(p)++;
+#define SKIP_WHITESPACE(p)			while(*(p) && isspace((unsigned char)*(p)))			(p)++;
+#define FIND_WHITESPACE(p)			while(*(p) && !isspace((unsigned char)*(p)))		(p)++;
+#define SKIP_CHAR(p,c)				while(*(p)==c)										(p)++;
+#define FIND_CHAR(p,c)				while(*(p) && *(p)!=c)								(p)++;
+#define SKIP_CHARSET(p,s)			while(*(p) && strchr(s,*(p))!=NULL)					(p)++;
+#define FIND_CHARSET(p,s)			while(*(p) && strchr(s,*(p))==NULL)					(p)++;
+#define SKIP_ALPHA(p)				while(*(p) && isalpha((unsigned char)*(p)))			(p)++;
+#define FIND_ALPHA(p)				while(*(p) && !isalpha((unsigned char)*(p)))		(p)++;
+#define SKIP_ALPHANUMERIC(p)		while(*(p) && isalnum((unsigned char)*(p)))			(p)++;
+#define FIND_ALPHANUMERIC(p)		while(*(p) && !isalnum((unsigned char)*(p)))		(p)++;
+#define SKIP_DIGIT(p)				while(*(p) && isdigit((unsigned char)*(p)))			(p)++;
+#define FIND_DIGIT(p)				while(*(p) && !isdigit((unsigned char)*(p)))		(p)++;
+#define SKIP_HEXDIGIT(p)			while(*(p) && isxdigit((unsigned char)*(p)))		(p)++;
+#define FIND_HEXDIGIT(p)			while(*(p) && !isxdigit((unsigned char)*(p)))		(p)++;
 
 /* Variable/buffer initialization (with zeros) */
 #define ZERO_VAR(var)				memset(&(var),0,sizeof(var))
