@@ -2354,7 +2354,7 @@ static void ctrl_thread(void* arg)
 	WORD		port;
 	uint32_t	ip_addr;
 	socklen_t	addr_len;
-	DWORD		h1,h2,h3,h4;
+	unsigned	h1,h2,h3,h4;
 	u_short		p1,p2;	/* For PORT command */
 	int			i;
 	int			rd;
@@ -2866,7 +2866,7 @@ static void ctrl_thread(void* arg)
 
 			p=cmd+5;
 			SKIP_WHITESPACE(p);
-			sscanf(p,"%ld,%ld,%ld,%ld,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
+			sscanf(p,"%u,%u,%u,%u,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
 			data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
 			data_addr.sin_port=(u_short)((p1<<8)|p2);
 			if(data_addr.sin_port< IPPORT_RESERVED) {	
