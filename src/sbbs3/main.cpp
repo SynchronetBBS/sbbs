@@ -5028,6 +5028,7 @@ NO_SSH:
 		/* Do SSH stuff here */
 
 		if(ssh) {
+			int	ssh_failed=0;
 			if(!cryptStatusOK(i=cryptCreateSession(&sbbs->ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH_SERVER))) {
 				lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d creating session", client_socket, i);
 				close_socket(client_socket);
@@ -5039,34 +5040,51 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
-			/* Accept any credentials */
-			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1))) {
-				lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting AUTHRESPONSE",client_socket, i);
-				cryptDestroySession(sbbs->ssh_session);
-				close_socket(client_socket);
-				continue;
-			}
 			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, client_socket))) {
 				lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting socket",client_socket, i);
 				cryptDestroySession(sbbs->ssh_session);
 				close_socket(client_socket);
 				continue;
 			}
-			if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
-				switch(i) {
-					case CRYPT_ERROR_BADDATA:
-						lprintf(LOG_NOTICE,"%04d SSH Bad/unrecognized data format", client_socket);
-						break;
-					case CRYPT_ERROR_READ:
-						lprintf(LOG_WARNING,"%04d SSH Read failure", client_socket);
-						break;
-					case CRYPT_ERROR_WRITE:
-						lprintf(LOG_WARNING,"%04d SSH Write failure", client_socket);
-						break;
-					default:
-						lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting session active",client_socket, i);
-						break;
+			for(ssh_failed=0; ssh_failed < 2; ssh_failed++) {
+				/* Accept any credentials */
+				if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1))) {
+					ssh_failed=1;
+					break;
 				}
+				if(!cryptStatusOK(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
+					if(i != CRYPT_ENVELOPE_RESOURCE) {
+						ssh_failed=2;
+						break;
+					}
+				}
+				else {
+					ssh_failed=0;
+					break;
+				}
+			}
+			switch(ssh_failed) {
+				case 1:
+					lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting AUTHRESPONSE",client_socket, i);
+					break;
+				case 2:
+					switch(i) {
+						case CRYPT_ERROR_BADDATA:
+							lprintf(LOG_NOTICE,"%04d SSH Bad/unrecognized data format", client_socket);
+							break;
+						case CRYPT_ERROR_READ:
+							lprintf(LOG_WARNING,"%04d SSH Read failure", client_socket);
+							break;
+						case CRYPT_ERROR_WRITE:
+							lprintf(LOG_WARNING,"%04d SSH Write failure", client_socket);
+							break;
+						default:
+							lprintf(LOG_WARNING,"%04d SSH Cryptlib error %d setting session active",client_socket, i);
+							break;
+					}
+					break;
+			}
+			if(ssh_failed) {
 				cryptDestroySession(sbbs->ssh_session);
 				close_socket(client_socket);
 				continue;
