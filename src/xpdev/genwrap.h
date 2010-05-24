@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -131,8 +131,6 @@ extern "C" {
 	#define PLATFORM_DESC	"OS/2"
 #elif defined(__MSDOS__)
 	#define PLATFORM_DESC	"DOS"
-#elif defined(__linux__) && defined(__LP64__)
-	#define PLATFORM_DESC	"Linux64"
 #elif defined(__linux__)
 	#define PLATFORM_DESC	"Linux"
 #elif defined(__FreeBSD__)
@@ -157,6 +155,32 @@ extern "C" {
 	#define PLATFORM_DESC	"Unix"
 #else
 	#error "Need to describe target platform"
+#endif
+
+#if defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__) || defined(__amd64__)
+	#define ARCHITECTURE_DESC "x64"
+#elif defined(__i386__) || _M_IX86 == 300
+	#define ARCHITECTURE_DESC "i386"
+#elif defined(__i486__) || _M_IX86 == 400
+	#define ARCHITECTURE_DESC "i486"
+#elif defined(__i586__) || _M_IX86 == 500
+	#define ARCHITECTURE_DESC "i586"
+#elif defined(__i686__) || _M_IX86 == 600
+	#define ARCHITECTURE_DESC "i686"
+#elif defined(__i786__) || _M_IX86 == 700
+	#define ARCHITECTURE_DESC "i786"
+#elif defined(_X86_) || defined(__x86__) || defined(_M_IX86)
+	#define ARCHITECTURE_DESC "x86"
+#elif defined(__mips__)
+	#define ARCHITECTURE_DESC "mips"
+#elif defined(__arm__)
+	#define ARCHITECTURE_DESC "arm"
+#elif defined(_M_PPC) || defined(__ppc__)
+	#define ARCHITECTURE_DESC "ppc"
+#elif defined(_M_IA64) || defined(__ia64__)
+	#define ARCHITECTURE_DESC "ia64"
+#else
+	#error "Need to describe target architecture"
 #endif
 
 /*********************/
