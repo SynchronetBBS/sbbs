@@ -1876,8 +1876,8 @@ static uchar* get_header_field(uchar* buf, char* name, size_t maxlen)
 		return NULL;
 
 	len = p-buf;
-	if(len > maxlen)
-		len = maxlen;
+	if(len >= maxlen)
+		len = maxlen-1;
 	sprintf(name,"%.*s",len,buf);
 	truncsp(name);
 
