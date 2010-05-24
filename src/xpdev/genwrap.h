@@ -131,6 +131,8 @@ extern "C" {
 	#define PLATFORM_DESC	"OS/2"
 #elif defined(__MSDOS__)
 	#define PLATFORM_DESC	"DOS"
+#elif defined(__linux__) && defined(__LP64__)
+	#define PLATFORM_DESC	"Linux64"
 #elif defined(__linux__)
 	#define PLATFORM_DESC	"Linux"
 #elif defined(__FreeBSD__)
