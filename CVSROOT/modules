@@ -30,9 +30,9 @@ lib-win32.debug     	-a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.re
 lib-linux           	-a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release lib/cryptlib/linux.release
 lib-linux.release   	-a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release lib/cryptlib/linux.release
 lib-linux.debug     	-a lib/mozilla/js/linux.debug     lib/mozilla/nspr/linux.debug lib/cryptlib/linux.release
-lib-linux.x64       	-a lib/cryptlib/linux.x64.release
-lib-linux.x64.release   -a lib/cryptlib/linux.x64.release
-lib-linux.x64.debug     -a lib/cryptlib/linux.x64.release
+lib-linux-x64       	-a lib/cryptlib/linux.x64.release
+lib-linux-x64.release   -a lib/cryptlib/linux.x64.release
+lib-linux-x64.debug     -a lib/cryptlib/linux.x64.release
 lib-freebsd         	-a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release lib/cryptlib/freebsd.release
 lib-freebsd.release 	-a lib/mozilla/js/freebsd.release lib/mozilla/nspr/freebsd.release lib/cryptlib/freebsd.release
 lib-freebsd.debug   	-a lib/mozilla/js/freebsd.debug   lib/mozilla/nspr/freebsd.debug lib/cryptlib/freebsd.release
