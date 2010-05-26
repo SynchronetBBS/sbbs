@@ -4,7 +4,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -147,7 +147,7 @@ static int compare_prefix(char *old_prefix, int old_prefix_bytes, const char *ne
 			if(memcmp(old_prefix, new_prefix, new_prefix_bytes)!=0)
 				return(-1);
 			for(i=new_prefix_bytes; i<old_prefix_bytes; i++) {
-				if(!isspace(old_prefix[i]))
+				if(!isspace((unsigned char)old_prefix[i]))
 					return(-1);
 			}
 		}
@@ -155,7 +155,7 @@ static int compare_prefix(char *old_prefix, int old_prefix_bytes, const char *ne
 			if(memcmp(old_prefix, new_prefix, old_prefix_bytes)!=0)
 				return(-1);
 			for(i=old_prefix_bytes; i<new_prefix_bytes; i++) {
-				if(!isspace(new_prefix[i]))
+				if(!isspace((unsigned char)new_prefix[i]))
 					return(-1);
 			}
 		}
@@ -271,7 +271,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 					ocol=prefix_len+1;
 					old_prefix_bytes=prefix_bytes;
 				}
-				else if(isspace(inbuf[i+1]) && inbuf[i+1] != '\n' && inbuf[i+1] != '\r') {	/* Next line starts with whitespace.  This is a "hard" CR. */
+				else if(isspace((unsigned char)inbuf[i+1]) && inbuf[i+1] != '\n' && inbuf[i+1] != '\r') {	/* Next line starts with whitespace.  This is a "hard" CR. */
 					linebuf[l++]='\r';
 					linebuf[l++]='\n';
 					outbuf_append(&outbuf, &outp, linebuf, l, &outbuf_size);
@@ -281,7 +281,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 				else {
 					if(icol < oldlen) {			/* If this line is overly long, It's impossible for the next word to fit */
 						/* k will equal the length of the first word on the next line */
-						for(k=0; inbuf[i+1+k] && (!isspace(inbuf[i+1+k])); k++);
+						for(k=0; inbuf[i+1+k] && (!isspace((unsigned char)inbuf[i+1+k])); k++);
 						if(icol+k+1 < oldlen) {	/* The next word would have fit but isn't here.  Must be a hard CR */
 							linebuf[l++]='\r';
 							linebuf[l++]='\n';
@@ -292,14 +292,14 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 							ocol=prefix_len+1;
 						}
 						else {		/* Not a hard CR... add space if needed */
-							if(l<1 || !isspace(linebuf[l-1])) {
+							if(l<1 || !isspace((unsigned char)linebuf[l-1])) {
 								linebuf[l++]=' ';
 								ocol++;
 							}
 						}
 					}
 					else {			/* Not a hard CR... add space if needed */
-						if(l<1 || !isspace(linebuf[l-1])) {
+						if(l<1 || !isspace((unsigned char)linebuf[l-1])) {
 							linebuf[l++]=' ';
 							ocol++;
 						}
@@ -345,11 +345,11 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 				linebuf[l++]=inbuf[i];
 				ocol++;
 				icol++;
-				if(ocol>len && !isspace(inbuf[i])) {		/* Need to wrap here */
+				if(ocol>len && !isspace((unsigned char)inbuf[i])) {		/* Need to wrap here */
 					/* Find the start of the last word */
 					k=l;									/* Original next char */
 					l--;									/* Move back to the last char */
-					while((!isspace(linebuf[l])) && l>0)		/* Move back to the last non-space char */
+					while((!isspace((unsigned char)linebuf[l])) && l>0)		/* Move back to the last non-space char */
 						l--;
 					if(l==0) {		/* Couldn't wrap... must chop. */
 						l=k;
@@ -362,7 +362,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes)
 					}
 					t=l+1;									/* Store start position of next line */
 					/* Move to start of whitespace */
-					while(l>0 && isspace(linebuf[l]))
+					while(l>0 && isspace((unsigned char)linebuf[l]))
 						l--;
 					outbuf_append(&outbuf, &outp, linebuf, l+1, &outbuf_size);
 					outbuf_append(&outbuf, &outp, "\r\n", 2, &outbuf_size);
