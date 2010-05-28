@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -278,7 +278,7 @@ char* xpDate_to_isoDateStr(xpDate_t date, const char* sep, char* str, size_t max
 	if(sep==NULL)
 		sep="-";
 
-	snprintf(str,maxlen,"%04lu%s%02lu%s%02lu"
+	snprintf(str,maxlen,"%04u%s%02u%s%02u"
 		,date.year	,sep
 		,date.month	,sep
 		,date.day);
@@ -301,14 +301,14 @@ char* xpTime_to_isoTimeStr(xpTime_t ti, const char* sep, int precision
 		sep=":";
 
 	if(precision < -1)			/* HH */
-		snprintf(str, maxlen, "%02lu", ti.hour);
+		snprintf(str, maxlen, "%02u", ti.hour);
 	else if(precision < 0)		/* HH:MM */
-		snprintf(str, maxlen, "%02lu%s%02lu"
+		snprintf(str, maxlen, "%02u%s%02u"
 			,ti.hour		,sep
 			,ti.minute
 			);
 	else						/* HH:MM:SS[.fract] */
-		snprintf(str, maxlen, "%02lu%s%02lu%s%0*.*f"
+		snprintf(str, maxlen, "%02u%s%02u%s%0*.*f"
 			,ti.hour		,sep
 			,ti.minute		,sep
 			,precision ? (precision+3) : 2
