@@ -2955,9 +2955,8 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	rc=JS_SUSPENDREQUEST(cx);
 	strcpy(str,"-Invalid time-");
 	t=i;
-	if(localtime_r(&t,&tm)==NULL)
-		memset(&tm,0,sizeof(tm));
-	strftime(str,sizeof(str),fmt,&tm);
+	if(localtime_r(&t,&tm)!=NULL)
+		strftime(str,sizeof(str),fmt,&tm);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
