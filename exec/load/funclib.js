@@ -154,7 +154,7 @@ function shuffle(array)
 	for(var j, x, i = array.length; i; j = parseInt(Math.random() * i), x = array[--i], array[i] = array[j], array[j] = x);
 	return array;
 }
-function countObjectMethodsAndPropertiesBecauseThereIsNoSuchThingAsASparseArrayInJavascriptAndWeDontWantToConfuseAnyone(array)
+function countMembers(array)
 {
 	var count=0;
 	for(var i in array) count++;
