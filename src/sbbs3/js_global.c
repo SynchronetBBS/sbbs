@@ -2797,7 +2797,7 @@ js_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		pid=0;
 	int32		sig=0;
-	int			ds=0; /* assumes success by default */
+	int			ds;
 	jsrefcount	rc;
 
 	if(JSVAL_IS_VOID(argv[0]))
@@ -2811,7 +2811,8 @@ js_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_ValueToInt32(cx,argv[1],&pid);
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	if (kill(sig, pid) == -1) /* failure */
+	ds = kill(sig, pid);
+	if (ds == -1)
 		ds = errno;
 	JS_RESUMEREQUEST(cx, rc);
 	JS_NewNumberValue(cx,ds,rval);
