@@ -2797,7 +2797,7 @@ js_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		pid=0;
 	int32		sig=0;
-	int			ds;
+	int			ds=0; /* assumes success by default */
 	jsrefcount	rc;
 
 	if(JSVAL_IS_VOID(argv[0]))
@@ -2811,7 +2811,8 @@ js_kill(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_ValueToInt32(cx,argv[1],&pid);
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	ds=kill(sig, pid);
+	if (kill(sig, pid) == -1) /* failure */
+		ds = errno;
 	JS_RESUMEREQUEST(cx, rc);
 	JS_NewNumberValue(cx,ds,rval);
 
@@ -3328,8 +3329,9 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"kill",			js_kill,			2,	JSTYPE_NUMBER,
 JSDOCSTR("processid, signal")
-	,JSDOCSTR("send a signal to a process, returns a value that should be "
-		"parsed via signal.js.  Useful for checking procees ID validity.")
+	,JSDOCSTR("send a signal to a system process, returns 0 on success, and "
+		"a non-zero errno value upon failure that is likely platform dependent."
+		" Useful for checking process ID validity (i.e., by sending signal 0.)")
 	,311
 	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
