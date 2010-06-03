@@ -60,6 +60,7 @@
 	#endif
 #elif defined(_WIN32)
 	#include <process.h>	/* getpid() */
+	typedef DWORD pid_t;
 #endif
 
 #if !defined(_WIN32)
@@ -347,6 +348,9 @@ typedef		clock_t				msclock_t;
 	#define		MSCLOCKS_PER_SEC	1000
 	msclock_t	msclock(void);
 #endif
+
+DLLEXPORT BOOL		DLLCALL check_pid(pid_t);
+DLLEXPORT BOOL		DLLCALL	terminate_pid(pid_t);
 
 #if defined(__cplusplus)
 }
