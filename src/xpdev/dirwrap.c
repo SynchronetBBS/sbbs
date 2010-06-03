@@ -536,7 +536,7 @@ BOOL DLLCALL fexistcase(char *path)
 	int  i;
 	glob_t	glb;
 	
-	if(path[0]==0)
+	if(path[0]==0)		/* work around glibc bug 574274 */
 		return FALSE;
 
 	if(!strchr(path,'*') && !strchr(path,'?') && fnameexist(path))
