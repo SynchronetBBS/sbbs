@@ -12,7 +12,7 @@ print("Synchronet MailAll " + REVISION);
 print("Enter ARS matches to send mail to or [ENTER] for everyone");
 
 printf("ARS to match: "); 
-if(this.console)
+if(js.global.console)
 	ars=console.getstr(40,K_UPPER);
 else
 	ars=readln();
@@ -21,7 +21,7 @@ if(ars==undefined)
 
 printf("\r\n\1y\1hSubject: ");
 
-if(this.console)
+if(js.global.console)
 	subj=console.getstr(70,K_LINE);
 else
 	subj=readln();
