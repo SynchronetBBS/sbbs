@@ -1473,6 +1473,47 @@ js_chkname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool 
+js_chkpid(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		pid=0;
+	jsrefcount	rc;
+
+	*rval = JSVAL_FALSE;
+
+	if(argc<1)
+		return(JS_TRUE);
+
+	JS_ValueToInt32(cx,argv[0],&pid);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	*rval = BOOLEAN_TO_JSVAL(check_pid(pid));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool 
+js_killpid(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		pid=0;
+	jsrefcount	rc;
+
+	*rval = JSVAL_FALSE;
+
+	if(argc<1)
+		return(JS_TRUE);
+
+	JS_ValueToInt32(cx,argv[0],&pid);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	*rval = BOOLEAN_TO_JSVAL(terminate_pid(pid));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+
 static jsSyncMethodSpec js_system_functions[] = {
 	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("number")
 	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
@@ -1569,6 +1610,16 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"check_name",		js_chkname,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("name/alias")
 	,JSDOCSTR("checks that the provided name/alias string is suitable for a new user account, "
 		"returns <i>true</i> if it is valid")
+	,315
+	},
+	{"check_pid",		js_chkpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
+	,JSDOCSTR("checks that the provided process ID is a valid executing process on the system, "
+		"returns <i>true</i> if it is valid")
+	,315
+	},
+	{"terminate_pid",	js_killpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
+	,JSDOCSTR("terminates executing process on the system with the specified process ID, "
+		"returns <i>true</i> on success")
 	,315
 	},
 	{0}
