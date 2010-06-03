@@ -46,6 +46,7 @@
 #if defined(__unix__)
 	#include <sys/ioctl.h>		/* ioctl() */
 	#include <sys/utsname.h>	/* uname() */
+	#include <signal.h>
 #endif	/* __unix__ */
 
 #include "genwrap.h"	/* Verify prototypes */
