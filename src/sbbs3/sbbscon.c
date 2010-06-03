@@ -374,6 +374,11 @@ BOOL do_setuid(BOOL force)
 	}
 
 	if(getuid() != new_uid || geteuid() != new_uid) {
+		if(initgroups(new_uid_name, new_gid)) {
+			lputs(LOG_ERR,"!initgroups FAILED");
+			lputs(LOG_ERR,strerror(errno));
+			result=FALSE;
+		}	
 		if(setreuid(new_uid,new_uid))
 		{
 			lputs(LOG_ERR,"!setuid FAILED");
