@@ -108,7 +108,7 @@ char* DLLCALL strip_space(const char *str, char* dest)
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
-		if(!isspace(str[i]))
+		if(!isspace((unsigned char)str[i]))
 			dest[j++]=str[i];
 	dest[j]=0;
 	return dest;
@@ -131,7 +131,7 @@ char* DLLCALL prep_file_desc(const char *str, char* dest)
 		}
 		else if(j && str[i]<=' ' && dest[j-1]==' ')
 			continue;
-		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
+		else if(i && !isalnum((unsigned char)str[i]) && str[i]==str[i-1])
 			continue;
 		else if((uchar)str[i]>=' ')
 			dest[j++]=str[i];
