@@ -238,10 +238,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 		return(str);
 	}
 
+	if(!strcmp(sp,"TIMEZONE"))
+		return(smb_zonestr(sys_timezone(&cfg),str));
+
 	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
 		now=time(NULL);
 		return(unixtodstr(&cfg,now,str));
 	}
+
+	if(!strcmp(sp,"DATETIME"))
+		return(timestr(time(NULL)));
 
 	if(!strcmp(sp,"TMSG")) {
 		l=0;
