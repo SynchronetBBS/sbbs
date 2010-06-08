@@ -56,9 +56,9 @@ const FK = 7;
 const SF = 8;
 const RF = 9;
 
-const RANKS = new Array("high card", "pair", "two pair", "three of a kind",
-	"straight", "flush", "full house", "four of a kind", "straight flush",
-	"royal flush");
+const RANKS = new Array("high card", "a pair", "two pair", "three of a kind",
+	"a straight", "a flush", "a full house", "four of a kind", "a straight flush",
+	"a royal flush");
 
 function Card(value, suit) {
 	this.value = value;
@@ -117,9 +117,10 @@ function Hunt_Straight(cards,depth) {
 
 /* This function accepts any number of cards in as a true array */
 function Rank(cards) {
-	var hand_rank = 0;
-	var hands = new Object();
-	var hand_str = "";
+	var hand=new Object();
+	hand.rank = 0;
+	hand.str = "";
+	
 
 	/* First, count up the cards. */
 	var count = new Object();
@@ -128,17 +129,17 @@ function Rank(cards) {
 			count[cards[c].value] = 0;
 		count[cards[c].value]++;
 	}
-
+	
 	if (count[ACE] && count[TWO] && count[THREE] && count[FOUR]
 		&& count[FIVE]) {
-			hand_rank |= STRAIGHT;
-			hand_str = "the wheel";
+			hand.rank |= STRAIGHT;
+			hand.str = "the wheel";
 	}
 	/* Only hunt straights 2 through 10 */
 	for (s=2; s<10; s++) {
 		if (count[s] && count[s+1] && count[s+2] && count[s+3] && count[s+4]) {
-			hand_rank |= STRAIGHT;
-			hand_str = "straight to the " + VALUE_STR[s+3];
+			hand.rank |= STRAIGHT;
+			hand.str = "a straight to the " + VALUE_STR[s+3];
 		}
 	}
 
@@ -154,24 +155,23 @@ function Rank(cards) {
 	}
 	for (u in suited_count) {
 		if (true_array_len(suited_count[u]) >= 5) {
-			hand_rank |= FLUSH;
-			if (hand_rank&STRAIGHT) { /* Possible straight flush on board */
+			hand.rank |= FLUSH;
+			if (hand.rank&STRAIGHT) { /* Possible straight flush on board */
 				if(suited_count[u][ACE] && suited_count[u][TWO]
 					&& suited_count[u][THREE] && suited_count[u][FOUR]
 					&& suited_count[u][FIVE]) {
-						hand_rank |= STRAIGHT_FLUSH;
-						hand_str = "the wheel";
+						hand.rank |= STRAIGHT_FLUSH;
+						hand.str = "the wheel";
 				}
 				/* Only hunt straights 2 through 10 */
 				for (s=TWO; s<TEN; s++) {
 					if (suited_count[u][s] && suited_count[u][s+1]
 						&& suited_count[u][s+2] && suited_count[u][s+3]
 						&& suited_count[u][s+4]) {
-							hand_rank |= STRAIGHT_FLUSH;
-							hand_str = "straight to the " + VALUE_STR[s+3];
+							hand.rank |= STRAIGHT_FLUSH;
+							hand_str = "a straight to the " + VALUE_STR[s+3];
 							if (s == TEN) {
-								hand_rank |= ROYAL_FLUSH;
-								hand_str = "";
+								hand.rank |= ROYAL_FLUSH;
 							}
 					}
 				}
@@ -191,36 +191,63 @@ function Rank(cards) {
 			pair_types[count[c]].unshift(c);
 	}
 	if (true_array_len(pair_types[4]) > 0)
-		hand_rank |= FOUR_OF_A_KIND;
+		hand.rank |= FOUR_OF_A_KIND;
 	else if (   (true_array_len(pair_types[3]) > 0)
 			 && (true_array_len(pair_types[2]) > 0) ) {
-		hand_rank |= FULL_HOUSE;
+		hand.rank |= FULL_HOUSE;
 	} else if (true_array_len(pair_types[3]) > 0)
-		hand_rank |= THREE_OF_A_KIND;
+		hand.rank |= THREE_OF_A_KIND;
 	else if (true_array_len(pair_types[2]) > 1)
-		hand_rank |= TWO_PAIR;
+		hand.rank |= TWO_PAIR;
 	else if (true_array_len(pair_types[2]) == 1)
-		hand_rank |= PAIR;
+		hand.rank |= PAIR;
 
-	if (hand_rank&ROYAL_FLUSH)
-		return RF;
-	if (hand_rank&STRAIGHT_FLUSH)
-		return SF;
-	if (hand_rank&FOUR_OF_A_KIND)
-		return FK;
-	if (hand_rank&FULL_HOUSE)
-		return FH;
-	if (hand_rank&FLUSH)
-		return FL;
-	if (hand_rank&STRAIGHT)
-		return ST;
-	if (hand_rank&THREE_OF_A_KIND)
-		return TK;
-	if (hand_rank&TWO_PAIR)
-		return TP;
-	if (hand_rank&PAIR)
-		return PR;
-	return 0; /* High Card */
+	/* Consolidate "count" array and reverse. */
+	var consolidated=new Array;
+	for(c in count) consolidated.push(c);
+	hand.high=consolidated.reverse();	
+	
+	/* Retrieve hand string from RANKS constant (unless it's a straight) */
+	if(!hand.rank&STRAIGHT) hand.str=RANKS[hand.rank];
+
+	if (hand.rank&ROYAL_FLUSH) {
+		hand.rank=RF;
+		return hand;
+	}
+	if (hand.rank&STRAIGHT_FLUSH) {
+		hand.rank=SF;
+		return hand;
+	}
+	if (hand.rank&FOUR_OF_A_KIND) {
+		hand.rank=FK;
+		return hand;
+	}
+	if (hand.rank&FULL_HOUSE) {
+		hand.rank=FH;
+		return hand;
+	}
+	if (hand.rank&FLUSH) {
+		hand.rank=FL;
+		return hand;
+	}
+	if (hand.rank&STRAIGHT) {
+		hand.rank=ST;
+		return hand;
+	}
+	if (hand.rank&THREE_OF_A_KIND) {
+		hand.rank=TK;
+		return hand;
+	}
+	if (hand.rank&TWO_PAIR) {
+		hand.rank=TP;
+		return hand;
+	}
+	if (hand.rank&PAIR) {
+		hand.rank=PR;
+		return hand;
+	}
+	hand.rank=HC;
+	return hand; /* High Card */
 }
 
 function Sort(cards) {
