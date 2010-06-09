@@ -207,46 +207,28 @@ function Rank(cards) {
 	for(c in count) consolidated.push(c);
 	hand.high=consolidated.reverse();	
 	
-	/* Retrieve hand string from RANKS constant (unless it's a straight) */
-	if(!hand.rank&STRAIGHT) hand.str=RANKS[hand.rank];
-
-	if (hand.rank&ROYAL_FLUSH) {
+	if (hand.rank&ROYAL_FLUSH)
 		hand.rank=RF;
-		return hand;
-	}
-	if (hand.rank&STRAIGHT_FLUSH) {
+	else if (hand.rank&STRAIGHT_FLUSH)
 		hand.rank=SF;
-		return hand;
-	}
-	if (hand.rank&FOUR_OF_A_KIND) {
+	else if (hand.rank&FOUR_OF_A_KIND) 
 		hand.rank=FK;
-		return hand;
-	}
-	if (hand.rank&FULL_HOUSE) {
+	else if (hand.rank&FULL_HOUSE)
 		hand.rank=FH;
-		return hand;
-	}
-	if (hand.rank&FLUSH) {
+	else if (hand.rank&FLUSH)
 		hand.rank=FL;
-		return hand;
-	}
-	if (hand.rank&STRAIGHT) {
+	else if (hand.rank&STRAIGHT)
 		hand.rank=ST;
-		return hand;
-	}
-	if (hand.rank&THREE_OF_A_KIND) {
+	else if (hand.rank&THREE_OF_A_KIND)
 		hand.rank=TK;
-		return hand;
-	}
-	if (hand.rank&TWO_PAIR) {
+	else if (hand.rank&TWO_PAIR)
 		hand.rank=TP;
-		return hand;
-	}
-	if (hand.rank&PAIR) {
+	else if (hand.rank&PAIR)
 		hand.rank=PR;
-		return hand;
-	}
-	hand.rank=HC;
+	else
+		hand.rank=HC;
+
+	if(hand.rank!=ST) hand.str=RANKS[hand.rank];
 	return hand; /* High Card */
 }
 
