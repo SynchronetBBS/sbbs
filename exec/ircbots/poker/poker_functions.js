@@ -97,20 +97,32 @@ function get_next_player(poker_game,turn) {
 
 function poker_compare_hands(target,srv) {
 	var poker=poker_games[target];
-	var winning_hand=-1;
-	var winning_player=-1;
+	var winning_hand=false;
+	var winning_player=false;
 	for(var p in poker.users) {
 		var player=poker.users[p];
 		if(player.active) {
 			var hand=poker.community_cards.concat(player.cards)
-			var rank=Rank(hand);
-			if(rank>winning_hand) {
-				winning_hand=rank;
+			var ranked_hand=Rank(hand);
+			if(!winning_hand) {
+				winning_hand=ranked_hand;
 				winning_player=p;
+			} else if(ranked_hand.rank>winning_hand.rank) {
+				winning_hand=ranked_hand;
+				winning_player=p;
+			} else if(ranked_hand.rank==winning_hand.rank) {
+				for(v=0;v<ranked_hand.high.length;v++) {
+					if(ranked_hand.high[v]>winning_hand.high[v]) {
+						winning_hand=ranked_hand;
+						winning_player=p;
+						break;
+					}
+				}
 			}
 		}
 	}
-	srv.o(target,winning_player + " won this hand! Winnings: $" + poker.pot);
+	srv.o(target,winning_player + " won this hand with " + winning_hand.str + "!");
+	srv.o(winning_player,"Winnings: $" + poker.pot);
 	poker.users[winning_player].money+=poker.pot;
 	poker.winner=winning_player;
 
@@ -118,18 +130,25 @@ function poker_compare_hands(target,srv) {
 
 function poker_deal_flop(target,srv) { 
 	var poker_game=poker_games[target];
+	burn_card(poker_game.deck);
 	poker_game.community_cards[0] = poker_game.deck.deal();
 	poker_game.community_cards[1] = poker_game.deck.deal();
 	poker_game.community_cards[2] = poker_game.deck.deal();
 }
 
+function burn_card(deck) {
+	deck.ptr++;
+}
+
 function poker_deal_turn(target,srv) {
 	var poker_game=poker_games[target];
+	burn_card(poker_game.deck);
 	poker_game.community_cards[3] = poker_game.deck.deal();
 }
 
 function poker_deal_river(target,srv) {
 	var poker_game=poker_games[target];
+	burn_card(poker_game.deck);
 	poker_game.community_cards[4] = poker_game.deck.deal();
 }
 
@@ -257,7 +276,7 @@ function poker_reset_game(target,srv) {
 	}
 	poker.dealer=get_next_player(poker,poker.dealer);
 	poker.round=-1;
-	poker.current_bet=poker.min_bet;
+	poker.current_bet=poker.lg_blind;
 	poker.community_cards=[];
 	poker.pot=0;
 }
