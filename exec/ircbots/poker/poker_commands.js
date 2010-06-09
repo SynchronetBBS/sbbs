@@ -75,25 +75,27 @@ Bot_Commands["BET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"That's not money!","NOTICE");
 		return;
 	}
-	if(cmd[1]<0) {
+	var bet=Number(cmd[1]);
+	if(bet<0) {
 		srv.o(onick,"You must bet a positive number!","NOTICE");
 		return;
 	}
 	var poker=poker_games[target];
-	if(cmd[1]>poker.users[onick].money) {
-		srv.o(onick,"You don't have that much money! Balance: $" + poker.users[onick].money,"NOTICE");
+	var current_player=poker.users[onick];
+	var difference=poker.current_bet-current_player.bet;
+	if(bet>current_player.money) {
+		srv.o(onick,"You don't have that much money! Balance: $" + current_player.money,"NOTICE");
 		return;
 	}
-	if(cmd[1]<poker.current_bet) {
+	if(difference==0 && bet<poker.min_bet) {
 		srv.o(onick,"Your bet must meet the minimum! Minimum bet: $" + poker.min_bet,"NOTICE");
 		return;
 	}
-	srv.o(target,onick + " bets $" + cmd[1]);
-	poker.users[onick].money-=Number(cmd[1]);
-	poker.users[onick].bet+=Number(cmd[1]);
-	poker.current_bet+=Number(cmd[1]);
-	srv.o(target,"Current bet: $" + poker.current_bet);
-	srv.o(onick,"Balance: $" + poker.users[onick].money,"NOTICE");
+	srv.o(target,onick + " bets $" + bet);
+	current_player.money-=bet;
+	current_player.bet+=bet;
+	poker.current_bet+=bet-difference;
+	srv.o(onick,"Balance: $" + current_player.money,"NOTICE");
 	poker_next_turn(target,srv);
 	return;
 }

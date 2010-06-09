@@ -39,7 +39,7 @@ function poker_next_turn(target,srv) {
 				poker_deal_river(target,srv);
 				break;
 			default:
-				poker_compare_hands(target,srv);
+				poker.winner=poker_compare_hands(target,srv);
 				break;
 		}
 		poker.current_bet=0;
@@ -97,35 +97,81 @@ function get_next_player(poker_game,turn) {
 
 function poker_compare_hands(target,srv) {
 	var poker=poker_games[target];
-	var winning_hand=false;
-	var winning_player=false;
+	var winning_hands=false;
+	var winning_players=false;
 	for(var p in poker.users) {
 		var player=poker.users[p];
 		if(player.active) {
 			var hand=poker.community_cards.concat(player.cards)
 			var ranked_hand=Rank(hand);
-			if(!winning_hand) {
-				winning_hand=ranked_hand;
-				winning_player=p;
-			} else if(ranked_hand.rank>winning_hand.rank) {
-				winning_hand=ranked_hand;
-				winning_player=p;
-			} else if(ranked_hand.rank==winning_hand.rank) {
-				for(v=0;v<ranked_hand.high.length;v++) {
-					if(ranked_hand.high[v]>winning_hand.high[v]) {
-						winning_hand=ranked_hand;
-						winning_player=p;
-						break;
+			if(!winning_hands) {
+				winning_hands=[ranked_hand];
+				winning_players=[p];
+			} else {
+				var winning_hand=winning_hands[0];
+				if(ranked_hand.rank>winning_hand.rank) {
+					winning_hands=[ranked_hand];
+					winning_players=[p];
+				} else if(ranked_hand.rank==winning_hand.rank) {
+					/* If the two hands are of the same rank (e.g. Full house, Three of a Kind, etc..)
+						compare the card groups from largest to smallest, comparing card values
+						from largest to smallest, until either a value is greater than or
+						less than the current ranked winning hand. While the values in the groups
+						are the same, it should continue through the list until there is a 
+						clear winner, otherwise it's a split pot */
+					var ranked=false;
+					for(g=ranked_hand.group.length-1;g>=0;g--) {
+						for(v=0;v<ranked_hand.group[g].length;v++) {
+							var p_value=ranked_hand.group[g][v];
+							var w_value=winning_hand.group[g][v];
+							if(p_value>w_value) {
+								/* if the current player's card value is higher than that of 
+									the current ranked winner's, then the current player 
+									becomes the current	ranked winner */
+								winning_hands=[ranked_hand];
+								winning_players=[p];
+								ranked=true;
+								break;
+							} else if(p_value<w_value) {
+								/* if the current player's card value is lower than that of
+									the current ranked winner's, then the current player
+									does not have the winning hand, and we can continue
+									to the next player (if any) */
+								ranked=true;
+								break;
+							}
+						}
+						/* If "ranked" == true, that means this player's hand has been
+							compared to the winner's hand to a depth that determines
+							a clear winner between the two hands, and we can stop the 
+							comparison */
+						if(ranked) break;
+					}
+					
+					/* 	If "ranked" == false, that means we went through all of
+						the current hand's card groups without finding a difference
+						between the current hand and the winning hand. This *SHOULD*
+						signify that the player's hands are of the same overall value
+						and we should split the pot. */
+					if(!ranked) {
+						winning_hands.push(ranked_hand);
+						winning_players.push(p);
 					}
 				}
 			}
 		}
 	}
-	srv.o(target,winning_player + " won this hand with " + winning_hand.str + "!");
-	srv.o(winning_player,"Winnings: $" + poker.pot);
-	poker.users[winning_player].money+=poker.pot;
-	poker.winner=winning_player;
-
+	if(winning_players.length>1) {
+		srv.o(target,winning_players.join(", ") + " split the pot, all having " + winning_hands[0].str + "!");
+	}
+	else srv.o(target,winning_players[0] + " won this hand with " + winning_hands[0].str + "!");
+	var split_pot=parseInt(poker.pot/winning_hands.length,10);
+	var pstr=winning_players.join(", ");
+	for(p=0;p<winning_players.length;p++) {
+		poker.users[winning_players[p]].money+=split_pot;
+		srv.o(winning_players[p],"Winnings: $" + split_pot);
+	}
+	return winning_players;
 }
 
 function poker_deal_flop(target,srv) { 
@@ -182,6 +228,10 @@ function poker_verify_user_status(target,srv,onick) {
 	} 
 	if(poker.round<0) {
 		srv.o(target, onick + ", the game hasn't started yet.");
+		return false;
+	}
+	if(poker.round>3) {
+		srv.o(target,onick + ", this hand has ended. 'GO' to deal a new hand");
 		return false;
 	}
 	if(!poker.users[onick] || !poker.users[onick].active) {
