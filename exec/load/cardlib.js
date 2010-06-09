@@ -118,9 +118,8 @@ function Hunt_Straight(cards,depth) {
 /* This function accepts any number of cards in as a true array */
 function Rank(cards) {
 	var hand=new Object();
-	hand.group = new Object();
-	hand.group[0] = 0; /* Rank - no value */
-	hand.rank = hand.group[0];
+	hand.group = new Array();
+	hand.rank = 0;
 	hand.str = "";
 
 	/* First, count up the cards. */
@@ -227,78 +226,16 @@ function Rank(cards) {
 	if(hand.rank!=ST)
 		hand.str=RANKS[hand.rank];
 
-	/* Consolidate "count" array and reverse. 
-	   Only consolidate cards where count=1 */
-	var consolidated=new Array;
-	for(c in count) {
-		if (count[c]==1)
-			consolidated.push(c);
+	/* Push contents of "count" array into 
+		rank.group array using the count as 
+		the array index. unshift() will leave
+		the cards sorted from high to low. */
+	for(c in count) { 
+		if(!hand.group[count[c]]) 
+			hand.group[count[c]]=new Array();  
+		hand.group[count[c]].unshift(c); 
 	}
-	hand.high=consolidated.reverse();	
-	consolidated = consolidated.sort(sortNumber);
-
-	switch(hand.rank) {
-		case HC:
-		case FL: /* Yes, FL really gets treated like HC. */
-			hand.group[1] = consolidated.pop();
-			hand.group[2] = consolidated.pop();
-			hand.group[3] = consolidated.pop();
-			hand.group[4] = consolidated.pop();
-			hand.group[5] = consolidated.pop();
-			break;
-		case PR:
-			hand.group[1] = hunt_count(count, 2);
-			hand.group[2] = consolidated.pop();
-			hand.group[3] = consolidated.pop();
-			hand.group[4] = consolidated.pop();
-			break;
-		case TP:
-			var first_pair = hunt_count(count, 2);
-			delete count[first_pair];
-			var second_pair = hunt_count(count, 2);
-			if (first_pair > second_pair) {
-				hand.group[1] = first_pair;
-				hand.group[2] = second_pair;
-			} else {
-				hand.group[1] = second_pair;
-				hand.group[2] = first_pair;
-			}
-			hand.group[3] = consolidated.pop();
-			break;
-		case TK:
-			hand.group[1] = hunt_count(count, 3);
-			hand.group[2] = consolidated.pop();
-			break;
-		case ST:
-		case SF:
-			hand.group[1] = consolidated.pop();
-			break;
-		case FH:
-			hand.group[1] = hunt_count(count, 3);
-			hand.group[2] = hunt_count(count, 2);
-			hand.group[3] = consolidated.pop();
-			break;
-		case FK:
-			hand.group[1] = hunt_count(count, 4);
-			hand.group[2] = consolidated.pop();
-			break;
-		case RF:
-		default:
-			break;
-	}
-
 	return hand;
-}
-
-function hunt_count(cards, count) {
-	for (c in cards) {
-		if (cards[c] == count)
-			return c;
-	}
-}
-
-function sortNumber(a,b) {
-	return a - b;
 }
 
 function Sort(cards) {
