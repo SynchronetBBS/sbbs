@@ -31,11 +31,11 @@ Config_Last_Write = time(); /* Store when the config was last written. */
 load("load/ircbot_functions.js");
 
 /* Global Arrays */
-bot_servers = new Array();
-quotes = new Array();
-masks = new Object();
-dcc_chats = new Array();
-squelch_list = new Array();
+Bot_Servers = new Object();
+Quotes = new Array();
+Masks = new Object();
+DCC_Chats = new Array();
+Squelch_List = new Array();
 
 var config_filename = "ircbot.ini";
 for (cmdarg=0;cmdarg<argc;cmdarg++) {
@@ -54,7 +54,7 @@ if (config.open("r")) {
 	command_prefix = config.iniGetValue(null, "command_prefix");
 	real_name = config.iniGetValue(null, "real_name");
 	config_write_delay=parseInt(config.iniGetValue(null, "config_write_delay"));
-//	squelch_list = config.iniGetValue(null, "squelch_list").split(",");
+//	Squelch_List = config.iniGetValue(null, "Squelch_List").split(",");
 
 	/* Modules */
 	var ini_modules = config.iniGetSections("module_");
@@ -77,7 +77,8 @@ if (config.open("r")) {
 	var ini_server_secs = config.iniGetSections("server_");
 	for (s in ini_server_secs) {
 		var mysec = ini_server_secs[s];
-		bot_servers.push(new Bot_IRC_Server(
+		var network = mysec.replace("server_", "").toUpperCase();
+		Bot_Servers[network] = (new Bot_IRC_Server(
 			0,  /* Socket */
 			config.iniGetValue(mysec, "addresses"),
 			config.iniGetValue(mysec, "nick"),
@@ -114,9 +115,9 @@ for (f in user_settings_files) {
 			uid_str = uid_str.slice(1);
 		}
 		printf("***Reading: " + us_file.name + "\r\n");
-		var read_masks = us_file.iniGetValue(null, "masks");
-		if (read_masks)
-			masks[parseInt(uid_str)] = read_masks.split(",");
+		var read_Masks = us_file.iniGetValue(null, "masks");
+		if (read_Masks)
+			Masks[parseInt(uid_str)] = read_Masks.split(",");
 	}
 }
 
@@ -124,9 +125,9 @@ log("*** Entering Main Loop. ***");
 
 function main() {
 	while (!js.terminated) {
-		for (my_srv in bot_servers) {
+		for (my_srv in Bot_Servers) {
 			var cmdline;
-			var srv = bot_servers[my_srv];
+			var srv = Bot_Servers[my_srv];
 			if (!srv.sock &&(srv.lastcon <time())) { //we're not connected.
 				var consock = IRC_client_connect(srv.host, srv.nick,
 					command_prefix, real_name, srv.port);
@@ -178,41 +179,41 @@ function main() {
 		}
 
 		/* Take care of DCC chat sessions */
-		for (c in dcc_chats) {
-			if (!dcc_chats[c].sock.is_connected) {
+		for (c in DCC_Chats) {
+			if (!DCC_Chats[c].sock.is_connected) {
 				log("Closing session.");
-				dcc_chats[c].sock.close();
-				delete dcc_chats[c];
+				DCC_Chats[c].sock.close();
+				delete DCC_Chats[c];
 				continue;
 			}
-			if (dcc_chats[c].waiting_for_password) {
+			if (DCC_Chats[c].waiting_for_password) {
 				var dcc_pwd;
-				if (dcc_pwd=dcc_chats[c].sock.readln()) {
-					var usr = new User(system.matchuser(dcc_chats[c].id));
+				if (dcc_pwd=DCC_Chats[c].sock.readln()) {
+					var usr = new User(system.matchuser(DCC_Chats[c].id));
 					if (!usr ||
 						(dcc_pwd.toUpperCase() != usr.security.password)) {
-						dcc_chats[c].o(null,"Access Denied.");
-						dcc_chats[c].sock.close();
-						delete dcc_chats[c];
+						DCC_Chats[c].o(null,"Access Denied.");
+						DCC_Chats[c].sock.close();
+						delete DCC_Chats[c];
 						continue;
 					}
 					if (dcc_pwd.toUpperCase() == usr.security.password) {
-						dcc_chats[c].waiting_for_password = false;
-						dcc_chats[c].o(null,"Welcome aboard.");
+						DCC_Chats[c].waiting_for_password = false;
+						DCC_Chats[c].o(null,"Welcome aboard.");
 					}
 				}
 				continue;
 			}
-			var line = dcc_chats[c].sock.readln();
+			var line = DCC_Chats[c].sock.readln();
 			if (!line || line == "")
 				continue;
-			var usr = new User(system.matchuser(dcc_chats[c].id));
+			var usr = new User(system.matchuser(DCC_Chats[c].id));
 			var cmd = line.split(" ");
 			cmd[0] = cmd[0].toUpperCase();
 			try {
-				dcc_chats[c].check_bot_command(cmd);
+				DCC_Chats[c].check_bot_command(cmd);
 			} catch (err) {
-				dcc_chats[c].o(null,"ERROR: " + err);
+				DCC_Chats[c].o(null,"ERROR: " + err);
 			}
 		}
 

@@ -602,3 +602,60 @@ Bot_Commands["OBJKEYS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["PIPE"] = new Bot_Command(80,false,false);
+Bot_Commands["PIPE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	if (!cmd[1]) {
+		var pipelist = "";
+		for (s in Bot_Servers) {
+			if (Bot_Servers[s].pipe) {
+				for (p in Bot_Servers[s].pipe) {
+					pipelist += p + "(" + s + ") ";
+				}
+			}
+		}
+		if (!pipelist) {
+			srv.o(target, "No channels being piped on any network.");
+			return;
+		}
+		return;
+	}
+	if (!cmd[3]) {
+		srv.o(target, "Invalid number of arguments.  Usage: ADD <chan> <net>");
+		return;
+	}
+	cmd[1] = cmd[1].toUpperCase();
+	var pipe_chan = cmd[2].toUpperCase();
+	var pipe_srv = Bot_Servers[cmd[3].toUpperCase()];
+	if (!pipe_srv) {
+		srv.o(target, "No such network.");
+		return;
+	}
+	if (!pipe_srv.channel[pipe_chan]) {
+		srv.o(target, "I'm not on that channel.");
+		return;
+	}
+	if (!pipe_srv.pipe)
+		pipe_srv.pipe = new Object();
+	if (cmd[1] == "ADD") {
+		if (pipe_srv.pipe[pipe_chan]) {
+			srv.o(target, "I'm already piping that channel!");
+			return;
+		}
+		pipe_srv.pipe[pipe_chan] = new Object();
+		pipe_srv.pipe[pipe_chan].srv = srv;
+		pipe_srv.pipe[pipe_chan].target = target;
+		srv.o(target, "Now piping " + cmd[2] + " on " + cmd[3]);
+		return;
+	} else if (cmd[1] == "DEL") {
+		if (!pipe_srv.pipe[pipe_chan]) {
+			srv.o(target, "I'm not piping that!");
+			return;
+		}
+		delete pipe_srv.pipe[pipe_chan];
+		srv.o(target, "Okay, stopped piping " + cmd[2] + " on " + cmd[3]);
+		return;
+	}
+	srv.o(target, "Invalid arguments.");
+	return;
+}
+

@@ -84,11 +84,17 @@ function Server_command(srv,cmdline,onick,ouh) {
 			break;
 		case "PRIVMSG":
 			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				var chan = srv.channel[cmd[1].toUpperCase()];
+				var chan_str = cmd[1].toUpperCase();
+				var chan = srv.channel[chan_str];
 				if (!chan)
 					break;
 				if (!chan.is_joined)
 					break;
+				if (srv.pipe && srv.pipe[chan_str]) {
+					var thispipe = srv.pipe[chan_str];
+					thispipe.srv.o(thispipe.target, "<" + onick + "> " 
+						+ IRC_string(cmd.join(" "), 2));
+				}
 				cmd[2] = cmd[2].substr(1).toUpperCase();
 				if ((cmd[2].toUpperCase() == truncsp(get_cmd_prefix())) 
 					 && cmd[3]) {
@@ -227,20 +233,20 @@ function save_everything() {
 	config.iniSetValue(null, "command_prefix", command_prefix);
 	config.iniSetValue(null, "real_name", real_name);
 	config.iniSetValue(null, "config_write_delay", config_write_delay);
-	config.iniSetValue(null, "squelch_list", squelch_list.join(","));
+	config.iniSetValue(null, "squelch_list", Squelch_List.join(","));
 
-	for (m in masks) {
+	for (m in Masks) {
 		var uid_str = format("%04u", m);
 		var us_filename = system.data_dir + "user/" +uid_str+ ".ircbot.ini";
 		var us_file = new File(us_filename);
 		if (us_file.open(file_exists(us_filename) ? 'r+':'w+')) {
-			us_file.iniSetValue(null, "masks", masks[m].join(","));
+			us_file.iniSetValue(null, "masks", Masks[m].join(","));
 			us_file.close();
 		}
 	}
 
-	for (q in quotes) {
-		config.iniSetValue("quotes", q, quotes[q]);
+	for (q in Quotes) {
+		config.iniSetValue("quotes", q, Quotes[q]);
 	}
 
 	config.close();
@@ -273,8 +279,8 @@ function Server_Bot_Access(nick,uh) {
     if (!usrnum)
         return 0;
     var thisuser = new User(usrnum);
-    for (m in masks[usrnum]) {
-        if (wildmatch(uh,masks[usrnum][m]))
+    for (m in Masks[usrnum]) {
+        if (wildmatch(uh,Masks[usrnum][m]))
             return thisuser.security.level;
     }
     return 0; // assume failure
@@ -286,8 +292,8 @@ function Server_writeout(str) {
 }
 
 function Server_target_out(target,str,msgtype) {
-	for (c in squelch_list) {
-		if (target.toUpperCase() == squelch_list[c].toUpperCase())
+	for (c in Squelch_List) {
+		if (target.toUpperCase() == Squelch_List[c].toUpperCase())
 			return;
 	}
 
