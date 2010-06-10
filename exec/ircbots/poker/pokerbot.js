@@ -1,8 +1,8 @@
-poker_dir=this.dir;
-poker_scores=[];
-notice_interval=10; //seconds
-activity_timeout=120;
-poker_games=[];
+var poker_dir=this.dir;
+var poker_scores=[];
+var notice_interval=10; //seconds
+var activity_timeout=120;
+var poker_games=[];
 
 // Game functions
 function save()
@@ -61,7 +61,7 @@ function Poker_Game()
 function Poker_Player()
 {
 	this.cards=[];
-	this.money=100;
+	this.money=1000;
 	this.bet=0;
 	this.has_bet=false;
 	this.active=true;

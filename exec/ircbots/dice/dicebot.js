@@ -6,7 +6,7 @@
 	if there are duplicate command names, they will be superseded in the order
 	in which they are loaded (in the order they are listed in ircbot.ini).
 */
-working_dir=this.dir;
+var working_dir=this.dir;
 
 /* This method is executed by the IRCBot during its "save_everything()" cycle */
 function save()
