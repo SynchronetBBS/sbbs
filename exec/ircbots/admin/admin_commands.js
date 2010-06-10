@@ -35,8 +35,8 @@ Bot_Commands["WHOIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (usr.number > 0) {
 		srv.o(target,usr.alias+" has an access level of "
 			+usr.security.level+". (UID: " + usr.number + ")");
-		if (masks[usr.number])
-			srv.o(target,"Masks: " + masks[usr.number].join(" "));
+		if (Masks[usr.number])
+			srv.o(target,"Masks: " + Masks[usr.number].join(" "));
 		else
 			srv.o(target,usr.alias + " has no IRC masks defined.");
 		srv.o(target,usr.alias + " last signed on "
@@ -90,8 +90,8 @@ Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	if (addmask) {
-		for (m in masks[usr.number]) {
-			if (wildmatch(cmd[2],masks[usr.number][m])) {
+		for (m in Masks[usr.number]) {
+			if (wildmatch(cmd[2],Masks[usr.number][m])) {
 				srv.o(target,"This user already has a mask matching that. "
 					+ "Try deleting it with 'DELMASK' first.");
 				return;
@@ -99,9 +99,9 @@ Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 	}
 	if (delmask) {
-		for (m in masks[usr.number]) {
-			if (masks[usr.number][m].toUpperCase() == cmd[2].toUpperCase()) {
-				masks[usr.number].splice(m,1);
+		for (m in Masks[usr.number]) {
+			if (Masks[usr.number][m].toUpperCase() == cmd[2].toUpperCase()) {
+				Masks[usr.number].splice(m,1);
 				srv.o(target,"Mask deleted for user " + usr.alias + ": "
 					+ cmd[2]);
 				return;
@@ -109,9 +109,9 @@ Bot_Commands["ADDMASK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 		srv.o(target,"Couldn't find the mask you were looking for.");
 	} else if (addmask) {
-		if (!masks[usr.number])
-			masks[usr.number] = new Array();
-		masks[usr.number].push(cmd[2]);
+		if (!Masks[usr.number])
+			Masks[usr.number] = new Array();
+		Masks[usr.number].push(cmd[2]);
 		srv.o(target,"Mask added for user " + usr.alias + ": " + cmd[2]);
 	}
 	return;
@@ -179,7 +179,7 @@ Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	srv.o(target,"This user should now set a password with /MSG " + srv.nick
 		+ " PASS");
 	var newuser = system.new_user(cmd[1]);
-	masks[newuser.number] = mask_array;
+	Masks[newuser.number] = mask_array;
 	login_user(newuser);
 	newuser.settings |= USER_INACTIVE;
 	newuser.security.level = level;
