@@ -60,9 +60,10 @@ if (config.open("r")) {
 	var ini_modules = config.iniGetSections("module_");
 	for (var m in ini_modules) {
 		var mysec = ini_modules[m];
-		var module_name=config.iniGetValue(mysec,"name");
+		var module_name=config.iniGetValue(mysec,"name").toUpperCase();
 		Modules[module_name]=new Object();
 		Modules[module_name].Bot_Commands=new Object();
+		Modules[module_name].enabled=true;
 		Modules[module_name].dir=config.iniGetValue(mysec,"dir");
 		Modules[module_name].load=directory(Modules[module_name].dir+"*.js");
 		Modules[module_name].lib=[];
@@ -257,7 +258,8 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.check_bot_command = function(target,onick,ouh,cmd) {
 		Server_check_bot_command(this,Bot_Commands,target,onick,ouh,cmd);
 		for(var bot_cmd in Modules) {
-			Server_check_bot_command(this,Modules[bot_cmd].Bot_Commands,target,onick,ouh,cmd);
+			if(Modules[bot_cmd].enabled)
+				Server_check_bot_command(this,Modules[bot_cmd].Bot_Commands,target,onick,ouh,cmd);
 		}
 	}
 
