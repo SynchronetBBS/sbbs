@@ -169,7 +169,10 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		p->fp=fopen(p->name,p->mode);
 	else {
 		if((file=nopen(p->name,fopenflags(p->mode)))!=-1) {
-			if((p->fp=fdopen(file,p->mode))==NULL)
+			char fdomode[4];
+			SAFECOPY(fdomode,p->mode);
+			fdomode[strspn(fdomode,"abrwt+")]=0;	/* MSVC10 fdopen() asserts when passed a mode with an unsupported char (e.g. 'e') */
+			if((p->fp=fdopen(file,fdomode))==NULL)
 				close(file);
 		}
 	}
