@@ -177,6 +177,20 @@ function main() {
 					}
 				}
 			}
+			
+			// Cycle server output buffer (srv.buffer)
+			while(srv.sock && srv.burst<srv.max_burst) {
+				srv.burst++;
+				if(!srv.buffers.length>0) break;
+				var next_output=srv.buffers.shift();
+				srv.sock.write(next_output.buffer.shift());
+				if(next_output.buffer.length) srv.buffers.push(next_output);
+			}
+			var curtime=system.timer;
+			if ((curtime-srv.lastout)>srv.delay) {
+				srv.lastout=system.timer;
+				srv.burst=0;
+			}
 		}
 
 		/* Take care of DCC chat sessions */
@@ -245,6 +259,10 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	// Dynamic variables (used for the bot's state.
 	this.curnick = nick;
 	this.lastcon = 0;			// When it's OK to reconnect.
+	this.lastout = 0;			// When it's OK to send the next socket ouput
+	this.burst = 0;
+	this.max_burst = 5;
+	this.delay = 3;
 	this.is_registered = false;
 	this.juped = false;
 	this.users = new Object();	// Store local nicks & uh info.
@@ -253,6 +271,7 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.ctcp_reply = Server_CTCP_Reply;
 	this.o = Server_target_out;
 	this.writeout = Server_writeout;
+	this.buffers=[];
 	this.bot_access = Server_Bot_Access;
 	
 	this.check_bot_command = function(target,onick,ouh,cmd) {
@@ -285,6 +304,11 @@ function Server_User(uh) {
 	this.ident = false;
 	this.last_spoke = false;
 	this.channels=[];
+}
+
+function Server_Buffer(target) {
+	this.target=target;
+	this.buffer=[];
 }
 
 function Bot_Command(min_security,args_needed,ident_needed) {
