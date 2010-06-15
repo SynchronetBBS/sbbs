@@ -219,6 +219,13 @@ Bot_Commands["ENABLE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["ABORT"] = new Bot_Command(80,false,false);
+Bot_Commands["ABORT"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	srv.buffers=[];
+	srv.o(target,"Server output aborted.");
+	return;
+}
+
 Bot_Commands["DISABLE"] = new Bot_Command(80,true,false);
 Bot_Commands["DISABLE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();

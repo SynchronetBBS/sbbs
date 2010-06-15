@@ -288,7 +288,23 @@ function Server_Bot_Access(nick,uh) {
 
 function Server_writeout(str) {
 	log("--> " + this.host + ": " + str);
-	this.sock.write(str.slice(0, 512) + "\r\n");
+	
+	var target="~";
+	var target_buffer=false;
+	
+	for(t=0;t<this.buffers.length;t++) {
+		if(this.buffers[t].target==target) {
+			target_buffer=this.buffers[t];
+			break;
+		}
+	}
+	if(target_buffer) {
+		target_buffer.buffer.push(str.slice(0, 512) + "\r\n");
+	} else {
+		new_buff=new Server_Buffer(target);
+		new_buff.buffer.push(str.slice(0, 512) + "\r\n");
+		this.buffers.push(new_buff);
+	}
 }
 
 function Server_target_out(target,str,msgtype) {
@@ -302,7 +318,21 @@ function Server_target_out(target,str,msgtype) {
 
 	var outstr = msgtype + " " + target + " :" + str;
 	log("--> " + this.host + ": " + outstr);
-	this.sock.write(outstr.slice(0, 512) + "\r\n");
+
+	var target_buffer=false;
+	for(t=0;t<this.buffers.length;t++) {
+		if(this.buffers[t].target==target) {
+			target_buffer=this.buffers[t];
+			break;
+		}
+	}
+	if(target_buffer) {
+		target_buffer.buffer.push(outstr.slice(0, 512) + "\r\n");
+	} else {
+		new_buff=new Server_Buffer(target);
+		new_buff.buffer.push(outstr.slice(0, 512) + "\r\n");
+		this.buffers.push(new_buff);
+	}
 }
 
 function true_array_len(my_array) {
