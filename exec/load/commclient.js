@@ -5,6 +5,7 @@
 */
 
 load("funclib.js");
+load("synchronet-json.js");
 load("sbbsdefs.js");
 load("sockdefs.js");
 
@@ -13,34 +14,35 @@ function ServiceConnection(id,alias)
 	const QUERY=				"?";
 	const LOCAL=				"&";
 	const FILESYNC=			"@";
-	const connection_timeout=	5;
-	const connection_attempts=	2;
-	const connection_interval=	5;
+	const CONNECTION_TIMEOUT=	5;
+	const CONNECTION_ATTEMPTS=	2;
+	const CONNECTION_INTERVAL=	5;
+	const MAX_BUFFER=			512;
+	
+	const hub=					"localhost";
+	const port=				10088;
 
 	this.id=				(id?id:"default");
+	this.queue=				[];
 	this.notices=			[];
 	this.sock=				false;
+	
 	var attempts=0;
 	var last_attempt=0;
 	
 	//hub should point to the local, internal ip address or domain of the computer running commservice.js
 	//port should point to the port the gaming service is set to use in commservice.js
-	const hub=					"localhost";
-	const port=				10088;
 	
 	this.init=function()
 	{
-		if((time()-last_attempt)<connection_interval || attempts>=connection_attempts) {
+		if((time()-last_attempt)<CONNECTION_INTERVAL || attempts>=CONNECTION_ATTEMPTS) {
 			debug("error connecting to hub, exiting program",LOG_WARNING);
 			exit();
 		}
 		this.sock=new Socket();
-		this.sock.connect(hub,port,connection_timeout);
+		this.sock.nonblocking=true;
+		this.sock.connect(hub,port,CONNECTION_TIMEOUT);
 		if(testSocket(this.sock)) {
-			var hello=new Object();
-			hello.context=LOCAL;
-			hello.alias=alias?alias:"unknown";
-			this.send(hello);
 			attempts=0;
 			last_attempt=0;
 			return true;
@@ -67,9 +69,9 @@ function ServiceConnection(id,alias)
 		}
 		if(this.sock.data_waiting)
 		{
-			var raw_data=this.sock.recvline(1024,connection_timeout);
-			if(raw_data != null) return(js.eval(raw_data));
-			return false;
+			var raw_data=this.sock.recvline(10240,CONNECTION_TIMEOUT);
+			if(raw_data == null) return false;
+			return(JSON.parse(raw_data));
 		}
 	}
 	this.send=function(data)
@@ -80,17 +82,26 @@ function ServiceConnection(id,alias)
 		}
 		if(!data.id) data.id=this.id;
 		if(!data.system) data.system=system.name;
+		if(!data.context) data.context=LOCAL;
+		if(!data.alias) data.alias=alias;
 		
-		this.sock.send(data.toSource() + "\r\n");
+		for(var i=0;i<this.queue.length;i++) {
+			var qdata=this.queue.shift();
+			if(!this.sock.write(qdata)) this.queue.push(qdata);
+		}
+		data=JSON.stringify(data)+"\r\n";
+		if(!this.sock.write(data)) {
+			this.queue.push(data);
+		}
 		return true;
 	}
 	this.recvfile=function(files,blocking)
 	{
-		this.filesync(files,"recv",blocking);
+		this.filesync(files,"trysend",blocking);
 	}
 	this.sendfile=function(files,blocking)
 	{
-		this.filesync(files,"send",blocking);
+		this.filesync(files,"tryrecv",blocking);
 	}
 	this.filesync=function(filemask,command,blocking)
 	{
@@ -98,22 +109,23 @@ function ServiceConnection(id,alias)
 		q.filemask=filemask;
 		q.command=command;
 		q.blocking=blocking;
-		q.context=FILESYNC;
+		q.type=FILESYNC;
 		
 		this.send(q);
-		/*
-		if(blocking) {
-			var response=this.receive();
+		if(q.blocking) {
+			/* Do something */
 		}
-		*/
 	}
 	this.close=function()
 	{
 		debug("terminating service connection",LOG_DEBUG);
+		while(this.queue.length) {
+			this.sock.write(this.queue.shift());
+		}
 		this.sock.close();
 	}
 
-	if(!this.init() && attempts>=connection_attempts) return false;
+	if(!this.init() && attempts>=CONNECTION_ATTEMPTS) return false;
 }
 
 	
