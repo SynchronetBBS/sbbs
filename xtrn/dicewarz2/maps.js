@@ -6,7 +6,7 @@ load(game_dir+"rolldice.js");
 var settings=	loadSettings(game_dir+"dice.ini");
 var players=	new PlayerData(game_dir+settings.player_file);
 var game_data=	new GameData(game_dir+"*.dw");
-var stream=	new ServiceConnection("Dice Warz ][","dicewars");
+var stream=	new ServiceConnection("dicewarz2","dicewars");
 
 function Char(ch,fg,bg)
 {
@@ -134,24 +134,25 @@ function GameData(filemask)
 		this.list[map.game_number]=map;
 		if(map.game_number>this.last_game_number) this.last_game_number=map.game_number;
 		
-		menuText("Storing game data");
+		//menuText("Storing game data");
 		this.saveData(map);
 		
-		menuText("Storing player data");
+		//menuText("Storing player data");
 		for(var p=0;p<map.players.length;p++)
 		{
-			menuText(".",true);
+			//menuText(".",true);
 			var player=map.players[p];
 			this.savePlayer(map,player,p);
 		}
 		
-		menuText("Storing map data");
+		//menuText("Storing map data");
 		for(var t=0;t<map.tiles.length;t++)
 		{
-			menuText(".",true);
+			//menuText(".",true);
 			var tile=map.tiles[t];
 			this.saveTile(map,tile);
 		}
+		stream.sendfile(file_getname(getFileName(map.game_number)));
 	}
 	this.closeGameFile=function(file,map)
 	{
@@ -595,7 +596,7 @@ function Packet(type)
 				var grid=getBorders(map,array[t]);
 				var connections=trace(map,grid,count,match);
 				counted.concat(connections);
-				var group_size=countSparseArray(connections);
+				var group_size=countMembers(connections);
 				if(group_size>largest_group) largest_group=group_size;
 			}
 		}
@@ -738,7 +739,6 @@ function Packet(type)
 	//MAP DATA FUNCTIONS
 	function updateStatus(map)
 	{
-		debug("updating game status");
 		for(var p=0;p<map.players.length;p++) {
 			if(map.players[p].active) {
 				if(countTiles(map,p)==0) {

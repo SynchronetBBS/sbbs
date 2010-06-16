@@ -26,6 +26,8 @@ function splashStart()
 		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 		while(console.inkey(K_NOECHO|K_NOSPIN)=="");
 	}
+	stream.recvfile("players.ini");
+	stream.recvfile("*.dw");
 }
 function splashExit()
 {
@@ -111,7 +113,7 @@ function viewInstructions(section)
 }
 function cycle()
 {
-	chat.receive();
+	chat.cycle();
 }
 
 //LOBBY LOOP
@@ -207,7 +209,7 @@ function lobby()
 	}
 	function initChat()
 	{
-		chat.init("dice warz",78,5,2,19);
+		chat.init("dice warz lobby",78,5,2,19);
 		chat.input_line.init(10,18,70,"\0017","\1k");
 	}
 	function initMenu()
@@ -333,7 +335,7 @@ function run(map)
 					listPlayers();
 					break;
 				case "E":
-					endturn();
+					endTurn();
 					break;
 				case "F":
 					forfeit();
@@ -417,6 +419,7 @@ function run(map)
 					break;
 				case "turn":
 					map.turn=data.turn;
+					debug("received turn notice: " + map.players[map.turn].name);
 					turnAlert();
 					listPlayers();
 					setMenuCommands();
@@ -443,7 +446,15 @@ function run(map)
 	}
 
 	//GAMEPLAY
-	function endturn()
+	function forfeit()
+	{
+		map.players[map.turn].active=false;
+		var data=new Packet("activity");
+		data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
+		stream.send(data);
+		players.scoreLoss(map.players[map.turn].name);
+	}
+	function endTurn()
 	{
 		reinforce();
 		nextTurn(map);
@@ -457,6 +468,7 @@ function run(map)
 			return;
 		}
 		if(map.players[map.turn].AI) {
+			game_data.save(map);
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
 	}

@@ -45,7 +45,7 @@ function showRoll(rolls,attr,x,y)
 	return total;
 }
 function loadDice()
-{								//INITIALIZE SIX SIDED DICE OBJECTS
+{							
 	var dice=[];
 	for(d=1;d<=6;d++)
 	{
@@ -66,7 +66,7 @@ function Roll(pnum)
 	}
 }
 function Die(number)
-{								//DICE CLASS
+{								
 	this.number=number;
 	this.line1="   ";
 	this.line2="   ";

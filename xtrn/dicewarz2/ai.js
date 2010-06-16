@@ -213,8 +213,12 @@ function main()
 			updateStatus(map);
 			nextTurn(map);
 		}
-		game_data.saveData(map);
+		game_data.save(map);
+		mswait(1000);
 	}
+	stream.sendfile(getFileName(map.game_number));
+	mswait(5000);
+	stream.close();
 }
 function attack()
 {
