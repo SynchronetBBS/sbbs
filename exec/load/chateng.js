@@ -160,7 +160,7 @@ function ChatEngine(root)
 		if(!message.scope) message.scope=flag_normal;
 		if(!message.target) message.target=this.chat_room.room;
 		if(!stream.send(message)) {
-			this.alert("message not sent.");
+			this.chat_room.alert("message not sent.");
 		}
 	}
 	this.receive=function()
@@ -239,6 +239,10 @@ function ChatEngine(root)
 			this.send(message);
 			this.chat_room.process(message);
 		}
+	}
+	this.cycle=function()
+	{
+		this.receive();
 	}
 }
 function ChatRoom()
