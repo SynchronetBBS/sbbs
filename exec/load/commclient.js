@@ -9,6 +9,7 @@ load("synchronet-json.js");
 load("sbbsdefs.js");
 load("sockdefs.js");
 
+
 function ServiceConnection(id,alias)
 {
 	const QUERY=				"?";
@@ -19,8 +20,11 @@ function ServiceConnection(id,alias)
 	const CONNECTION_INTERVAL=	5;
 	const MAX_BUFFER=			512;
 	
+	var services=new File(system.ctrl_dir + "services.ini");
+	services.open('r',true);
 	const hub=					"localhost";
-	const port=				10088;
+	const port=				services.iniGetValue("CommServ","Port");
+	services.close();
 
 	this.id=				(id?id:"default");
 	this.queue=				[];
