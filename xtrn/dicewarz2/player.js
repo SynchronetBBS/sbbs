@@ -83,6 +83,9 @@ function PlayerData(filename)
 		}
 		this.file.iniSetObject(score.name,score);
 		this.file.close();
+		var data=new Packet(map,"score");
+		data.score=score;
+		stream.send(data);
 	}
 	this.scoreKill=function(name)
 	{

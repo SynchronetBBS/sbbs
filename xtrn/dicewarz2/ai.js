@@ -213,10 +213,9 @@ function main()
 			updateStatus(map);
 			nextTurn(map);
 		}
-		game_data.save(map);
-		mswait(1000);
+		game_data.saveData(map);
+		mswait(500);
 	}
-	stream.sendfile(getFileName(map.game_number));
 	mswait(5000);
 	stream.close();
 }
@@ -272,7 +271,7 @@ function attack()
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		var data=new Packet("battle");
+		var data=new Packet(map,"battle");
 		data.a=a;
 		data.d=d;
 		stream.send(data);
@@ -287,8 +286,6 @@ function attack()
 		} 
 		attacking.dice=1;
 		
-		game_data.saveActivity(map,attacker + " attacked " + defender + ": " + attacking.dice + " vs " + defending.dice);
-		game_data.saveActivity(map,attacker + ": " + a.total + " " + defender + ": " + d.total);
 		game_data.saveTile(map,attacking);
 		game_data.saveTile(map,defending);
 		computer.AI.moves++;
@@ -308,7 +305,7 @@ function forfeit()
 {
 	map.in_progress=false;
 	map.players[map.turn].active=false;
-	var data=new Packet("activity");
+	var data=new Packet(map,"activity");
 	data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
 	stream.send(data);
 	players.scoreLoss(map.players[map.turn].name);
@@ -323,7 +320,7 @@ function reinforce()
 		total+=placed[p];
 	}
 	var reserved=placeReserves(map,reinforcements-total);
-	var data=new Packet("activity");
+	var data=new Packet(map,"activity");
 	if(total>0) {
 		data.activity=("\1n\1y" + map.players[map.turn].name + " placed " + total + " dice");
 		stream.send(data);

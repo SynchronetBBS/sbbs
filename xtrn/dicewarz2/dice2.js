@@ -449,7 +449,7 @@ function run(map)
 	function forfeit()
 	{
 		map.players[map.turn].active=false;
-		var data=new Packet("activity");
+		var data=new Packet(map,"activity");
 		data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
 		stream.send(data);
 		players.scoreLoss(map.players[map.turn].name);
@@ -460,7 +460,12 @@ function run(map)
 		nextTurn(map);
 		updateStatus(map);
 		taking_turn=false;
-		game_data.saveData(map);
+		var data=new Packet(map,"map");
+		data.in_progress=map.in_progress;
+		data.winner=map.winner;
+		data.round=map.round;
+		stream.send(data);
+		
 		listPlayers();
 		if(map.winner) {
 			activityAlert("\1rGame ended");
@@ -468,7 +473,6 @@ function run(map)
 			return;
 		}
 		if(map.players[map.turn].AI) {
-			game_data.save(map);
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
 	}
@@ -547,7 +551,7 @@ function run(map)
 		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.chat_room.x,chat.chat_room.y+3);
 		chat.chat_room.draw();
 		battle(a,d);
-		var data=new Packet("battle");
+		var data=new Packet(map,"battle");
 		data.a=a;
 		data.d=d;
 		stream.send(data);
@@ -565,11 +569,11 @@ function run(map)
 		attacking.dice=1;
 		drawSector(map,attacking.home.x,attacking.home.y);
 		
-		game_data.saveActivity(map,attacker + " attacked " + defender + ": " + attacking.dice + " vs " + defending.dice);
-		game_data.saveActivity(map,attacker + ": " + a.total + " " + defender + ": " + d.total);
-		game_data.saveTile(map,attacking);
-		game_data.saveTile(map,defending);
-		
+		var data=new Packet(map,"tile");
+		data.tile=attacking;
+		stream.send(data);
+		data.tile=defending;
+		stream.send(data);
 		return coords;
 	}
 	function battle(a,d) 

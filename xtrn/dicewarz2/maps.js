@@ -33,6 +33,7 @@ function MapData(game_number)
 	this.single_player=false;
 	this.winner=false;
 	this.game_number=game_number?game_number:getNewGameNumber();
+	this.filename=getFileName(this.game_number);
 	this.last_update=time();
 }
 function Tile(id)
@@ -161,8 +162,7 @@ function GameData(filemask)
 	}
 	this.openGameFile=function(map) 
 	{
-		var filename=getFileName(map.game_number);
-		var file=new File(filename);
+		var file=new File(map.filename);
 		if(!file.is_open) file.open((file_exists(file.name) ? 'r+':'w+'),true); 
 		return file;
 	}
@@ -171,6 +171,10 @@ function GameData(filemask)
 	}
 	this.savePlayer=function(map,p,n)
 	{
+		var data=new Packet(map,"player");
+		data.player=p;
+		data.pnum=n;
+		stream.send(data);
 		var file=this.openGameFile(map);
 		file.iniSetValue("p"+n,"name",p.name);
 		file.iniSetValue("p"+n,"reserve",p.reserve);
@@ -191,6 +195,9 @@ function GameData(filemask)
 	}
 	this.saveTile=function(map,tile)
 	{
+		var data=new Packet(map,"tile");
+		data.tile=tile;
+		stream.send(data);
 		var file=this.openGameFile(map);
 		file.iniSetValue("t"+tile.id,"d",tile.dice);
 		file.iniSetValue("t"+tile.id,"o",tile.owner);
@@ -203,10 +210,6 @@ function GameData(filemask)
 		}
 		file.iniSetValue("t"+tile.id,"s",slist);
 		this.closeGameFile(file,map);
-		
-		var data=new Packet("tile");
-		data.tile=tile;
-		stream.send(data);
 	}
 	this.update=function()
 	{
@@ -228,9 +231,10 @@ function GameData(filemask)
 	}
 	this.init();
 }
-function Packet(type)
+function Packet(map,type)
 {
 	this.type=type;
+	this.filename=map.filename;
 }
 
 	//GAME DATA FUNCTIONS
@@ -798,12 +802,11 @@ function Packet(type)
 				map.players[map.turn].reserve--;
 				if(!placed[tile.id]) placed[tile.id]=0;
 				placed[tile.id]++;
-				game_data.saveTile(map,tile);
 			} else {
 				pt.splice(rand,1);
 			}
 		}
-		for(var p in placed) {
+		for(p in placed) {
 			game_data.saveTile(map,map.tiles[p]);
 		}
 		return placed;
@@ -820,6 +823,9 @@ function Packet(type)
 			}
 			game_data.savePlayer(map,map.players[map.turn],map.turn);
 		}
+		for(p in placed) {
+			game_data.saveTile(map,map.tiles[p]);
+		}
 		return placed;
 	}
 	function nextTurn(map)
@@ -832,7 +838,7 @@ function Packet(type)
 			nextTurn(map);
 		}
 		else {
-			var data=new Packet("turn");
+			var data=new Packet(map,"turn");
 			data.turn=map.turn;
 			stream.send(data);
 		}
