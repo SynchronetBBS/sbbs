@@ -31,22 +31,20 @@
 load("funclib.js");
 load("synchronet-json.js");
 
-const version=				"$Revision$";
-const hub_address=			argv[0]; //default: bbs.thebrokenbubble.com
-const hub_port=			argv[1]; //default: 10088
-const is_hub=				(hub_address&&hub_port)?false:true;
-
+const VERSION=				"$Revision$";
 const REMOTE=				"*";
 const LOCAL=				"&";
 const FILESYNC=			"@";
 const QUERY=				"?";
 const CONNECTION_TIMEOUT=	5;//SECONDS
-const CONNECTION_INTERVAL=	10;
+const CONNECTION_INTERVAL=	30;
 const CONNECTION_ATTEMPTS=	10;
 const MAX_BUFFER=			512;
 const MAX_RECV=			10240;
 
-var hub=new Server(hub_address,hub_port);
+var modules=[];
+var servers=[];
+var server_map=[];
 var data_queue=[];
 var remote_sessions=[];
 var local_sessions=[];
@@ -54,6 +52,27 @@ var awaiting_auth=[];
 
 server.socket.nonblocking = true;
 //main service loop
+function load_modules()
+{
+	var mfile=new File(system.ctrl_dir + "filesync.ini");
+	mfile.open('r');
+	var list=mfile.iniGetSections();
+	for(l=0;l<list.length;l++) {
+		var module_name=list[l];
+		modules[module_name]=new Object();
+		var module=mfile.iniGetObject(module_name);
+		if(module.working_directory) 
+			modules[module_name].dir=module.working_directory;
+		if(module.handler)
+			load(modules[module_name],module.working_directory+module.handler);
+		if(module.address && module.port) {
+			server_map[module_name]=module.address;
+			if(!servers[module.address]) 
+				servers[module.address]=new Server(module.address,module.port);
+		}
+	}
+	mfile.close();
+}
 function cycle()
 {
 	while(!js.terminated) {
@@ -73,20 +92,29 @@ function cycle()
 			break;
 		}
 	}
-	if(hub.enabled) hub.disconnect();
+	for(var s in servers) {
+		if(servers[s].enabled)
+			servers[s].disconnect();
+	}
 }
 function inbound()
 {
-	if(hub.enabled) hub.receive();
-	for(var s in local_sessions) {
-		receive_from(local_sessions[s]);
+	for(var m in servers) {
+		if(servers[m].enabled) {
+			servers[m].receive();
+		}
+	}
+	for(var l in local_sessions) {
+		receive_from(local_sessions[l]);
 	}
 	receive_from(remote_sessions);
 }
 function outbound()
 {
-	if(hub.enabled) {
-		hub.cycle();
+	for(var s in servers) {
+		if(servers[s].enabled) {
+			servers[s].cycle();
+		}
 	}
 	for(var a=0;a<awaiting_auth.length;a++)	{
 		if(!awaiting_auth[a].cycle()) {
@@ -137,7 +165,7 @@ function authenticate()
 				log("local connection: " + data.alias + " running " + data.id);
 				break;
 			case REMOTE:
-				if(data.version==version) {
+				if(data.version==VERSION) {
 					remote_sessions.push(sock);
 					log("remote connection: " + data.system);
 					break;
@@ -166,22 +194,19 @@ function queue(sock,data)
 	data.descriptor=sock.descriptor;
 	switch(data.type) {
 		case FILESYNC:
-			if(!is_hub && hub.enabled) {
-				hub.enqueue(data);
-			} else if(is_hub && sock.context != LOCAL) {
+			var module_server=servers[server_map[data.id]];
+			if(module_server && module_server.enabled) {
+				module_server.enqueue(data)
+			} else {
 				handle_filesync(sock,data);
 			}
 			break;
 		case QUERY:
-			if(!is_hub && hub.enabled) {
-				hub.enqueue(data);
-			} else if(is_hub) {
-				handle_query(sock,data);
-			}
 			break;
 		default:
-			if(hub.enabled) {
-				hub.enqueue(data);
+			var module_server=servers[server_map[data.id]];
+			if(module_server && module_server.enabled) {
+				module_server.enqueue(data);
 			}
 			for(var r=0;r<remote_sessions.length;r++)	{
 				remote_sessions[r].enqueue(data);
@@ -190,6 +215,9 @@ function queue(sock,data)
 				local_sessions[data.id][s].enqueue(data);
 			}
 			break;
+	}
+	if(modules[data.id] && modules[data.id].handler) {
+		modules[data.id].handler(data);
 	}
 }
 function sessions_active() 
@@ -219,27 +247,27 @@ function count_remote_sockets()
 }
 
 //FILESYNC
-function handle_filesync(socket,query) /* Hub only! */
+function handle_filesync(socket,query)
 {
 	try {
-		var module=get_module(query.id);
+		var module=modules[query.id];
 		if(!module) return false;
 		switch(query.command)
 		{
 			case "trysend":
-				sync_remote(socket,module.working_directory,query);
+				sync_remote(socket,module.dir,query);
 				break;
 			case "tryrecv":
-				sync_local(socket,module.working_directory,query);
-				if(is_hub && socket.context==LOCAL) send_updates(socket,module.working_directory,query); 
+				sync_local(socket,module.dir,query);
+				//send_updates(socket,module.dir,query); 
 				break;
 			case "dorecv":
-				if(recv_file(socket,module.working_directory,query)) {
-					if(is_hub) send_updates(socket,module.working_directory,query);
+				if(recv_file(socket,module.dir,query)) {
+					//send_updates(socket,module.dir,query);
 				}
 				break;
 			case "dosend":
-				send_file(socket,module.working_directory,query);
+				send_file(socket,module.dir,query);
 				break;
 			default:
 				debug("unknown sync request: " + query.command,LOG_WARNING);
@@ -248,7 +276,6 @@ function handle_filesync(socket,query) /* Hub only! */
 	} catch(e) {
 		debug("FILESYNC ERROR: " + e,LOG_WARNING);
 	}
-	
 }
 function sync_remote(socket,dir,query)
 {
@@ -353,23 +380,10 @@ function load_file(filename)
 	d.filemask=file_getname(filename);
 	return d;
 }
-function get_module(id)
-{
-	var comminit=new File(system.ctrl_dir + "filesync.ini");
-	comminit.open('r');
-	var match=comminit.iniGetSections(id);
-	if(!match.length) {
-		debug("module not found, aborting: " + id,LOG_WARNING);
-		return false;
-	}
-	var module=comminit.iniGetObject(id);
-	comminit.close();
-	return module;
-}
 //END FILESYNC
 
 //TODO QUERIES
-function handle_query(socket,query) /* Hub only! */
+function handle_query(socket,query)
 {
 	log("query from: " + socket.remote_ip_address);
 	switch(query.task)
@@ -416,6 +430,53 @@ function notify_sysop(msg)
 }
 //END TODO
 
+function get_server_socket() 
+{
+	var sock=new Socket();
+	sock.queue="";
+	sock.nonblocking=true;
+	sock.enqueue=function(data) {
+		if(data.descriptor==this.descriptor) return false;
+		data.context=REMOTE;
+		data.version=VERSION;
+		data.system=system.name;
+		this.queue+=JSON.stringify(data)+"\r\n";
+	}
+	sock.cycle=sock_cycle;
+	return sock;
+}
+function delete_session(array,index)
+{
+	log("session terminated: " + array[index].remote_ip_address);
+	server.client_remove(array[index]);
+	array[index].close();
+	array.splice(index,1);
+	log("clients: " + server.clients);
+}
+function store_socket(sock,array)
+{
+	debug("connection from " + sock.remote_ip_address,LOG_DEBUG);
+	sock.nonblocking=true;
+	sock.queue="";
+	sock.enqueue=sock_enqueue;
+	sock.cycle=sock_cycle;
+	array.push(sock);
+}	
+function sock_cycle()	
+{
+	if(!this.is_connected) return false;
+	if(this.queue.length>0 && this.write(this.queue.substr(0,MAX_BUFFER))) {
+		this.queue=this.queue.substr(MAX_BUFFER);
+	}
+	return true;
+}
+function sock_enqueue(data)
+{
+	if(data.descriptor==this.descriptor) return false;
+	this.queue+=JSON.stringify(data)+"\r\n";
+}
+
+/* Server object */
 function Server(addr,port)
 {
 	this.address=addr;
@@ -496,58 +557,7 @@ function Server(addr,port)
 		return true;
 	}
 	
-	if(!addr && !port) {
-		this.enabled=false;
-	}
-	else if(!addr || !port) {
-		debug("invalid hub address parameters",LOG_DEBUG);
-		this.enabled=false;
-	}
-}
-function get_server_socket() 
-{
-	var sock=new Socket();
-	sock.queue="";
-	sock.nonblocking=true;
-	sock.enqueue=function(data) {
-		if(data.descriptor==this.descriptor) return false;
-		data.context=REMOTE;
-		data.version=version;
-		data.system=system.name;
-		this.queue+=JSON.stringify(data)+"\r\n";
-	}
-	sock.cycle=sock_cycle;
-	return sock;
-}
-function delete_session(array,index)
-{
-	log("session terminated: " + array[index].remote_ip_address);
-	server.client_remove(array[index]);
-	array[index].close();
-	array.splice(index,1);
-	log("clients: " + server.clients);
-}
-function store_socket(sock,array)
-{
-	debug("connection from " + sock.remote_ip_address,LOG_DEBUG);
-	sock.nonblocking=true;
-	sock.queue="";
-	sock.enqueue=sock_enqueue;
-	sock.cycle=sock_cycle;
-	array.push(sock);
-}	
-function sock_cycle()	
-{
-	if(!this.is_connected) return false;
-	if(this.queue.length>0 && this.write(this.queue.substr(0,MAX_BUFFER))) {
-		this.queue=this.queue.substr(MAX_BUFFER);
-	}
-	return true;
-}
-function sock_enqueue(data)
-{
-	if(data.descriptor==this.descriptor) return false;
-	this.queue+=JSON.stringify(data)+"\r\n";
 }
 
+load_modules();
 cycle();
