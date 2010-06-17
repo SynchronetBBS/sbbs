@@ -216,7 +216,7 @@ function queue(sock,data)
 			}
 			break;
 	}
-	if(modules[data.id] && modules[data.id].handler) {
+	if(!server_map[data.id] && modules[data.id] && modules[data.id].handler) {
 		modules[data.id].handler(data);
 	}
 }
@@ -535,6 +535,9 @@ function Server(addr,port)
 				default:
 					queue(this.sock,data);
 					break;
+			}
+			if(modules[data.id] && modules[data.id].handler) {
+				modules[data.id].handler(data);
 			}
 		}
 	}
