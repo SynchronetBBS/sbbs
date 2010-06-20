@@ -160,7 +160,9 @@ function main() {
 					outline = cmdline;
 				}
 				log("<-- " + srv.host + ": " + outline);
-				srv.server_command(cmdline,onick,ouh);
+				if(!srv.ignore[onick.toUpperCase()]) {
+					srv.server_command(cmdline,onick,ouh);
+				}
 			}
 
 			// Run through some commands.
@@ -273,6 +275,7 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.writeout = Server_writeout;
 	this.buffers=[];
 	this.bot_access = Server_Bot_Access;
+	this.ignore = new Array();
 	
 	this.check_bot_command = function(target,onick,ouh,cmd) {
 		Server_check_bot_command(this,Bot_Commands,target,onick,ouh,cmd);
@@ -299,8 +302,9 @@ function Bot_IRC_Channel(name) {
 	// Functions.
 }
 
-function Server_User(uh) {
+function Server_User(uh,nick) {
 	this.uh = uh;
+	this.nick = nick;
 	this.ident = false;
 	this.last_spoke = false;
 	this.channels=[];
