@@ -54,6 +54,7 @@ Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	srv.channel[chan]=new Bot_IRC_Channel(chan);
+	srv.writeout("WHO " + chan);
 	srv.o(target,"Ok.");
 	return;
 }
@@ -250,5 +251,23 @@ Bot_Commands["MODULES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		str+=m+"("+(Modules[m].enabled?"ENABLED":"DISABLED")+") ";
 	}
 	srv.o(target,str);
+	return;
+}
+
+Bot_Commands["IGNORE"] = new Bot_Command(80,true,false);
+Bot_Commands["IGNORE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	var usr=cmd[0].toUpperCase();
+	if(!srv.users[usr]) {
+		srv.o(target,usr + " is not in my database.");
+		return;
+	} 
+	if(srv.ignore[usr]) {
+		srv.o(target,usr + " removed from ignore list.");
+		srv.ignore[usr]=false;
+		return;
+	}
+	srv.o(target,usr + " added to ignore list.");
+	srv.ignore[usr]=true;
 	return;
 }

@@ -25,7 +25,7 @@ function Server_command(srv,cmdline,onick,ouh) {
 			break;
 		case "352":	// WHO reply.  Process into local cache.
 			var nick = cmd[6].toUpperCase();
-			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
+			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4],cmd[6]);
 			else srv.users[nick].uh=cmd[3] + "@" + cmd[4];
 			srv.users[nick].channels[cmd[2].toUpperCase()]=true;
 			break;
@@ -47,7 +47,7 @@ function Server_command(srv,cmdline,onick,ouh) {
 				break;
 			}
 			// Someone else joining.
-			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh);
+			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
 			else srv.users[onick.toUpperCase()].uh=ouh;
 			srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()]=true;
 			var lvl = srv.bot_access(onick,ouh);
