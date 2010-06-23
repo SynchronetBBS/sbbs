@@ -340,18 +340,6 @@ Bot_Commands["EVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
-Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
-	var query = cmd.join(" ");
-	try {
-		srv.o(target,eval(query));
-	} catch(e) {
-		srv.o(target,"ERROR: "+e);
-	}
-	return;
-}
-
 Bot_Commands["GROUPS"] = new Bot_Command(50,true,false);
 Bot_Commands["GROUPS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	for (g in msg_area.grp_list) {

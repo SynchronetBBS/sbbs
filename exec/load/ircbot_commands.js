@@ -145,6 +145,18 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 Bot_Commands["?"] = Bot_Commands["HELP"];
 
+Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
+Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	var query = cmd.join(" ");
+	try {
+		srv.o(target,eval(query));
+	} catch(e) {
+		srv.o(target,"ERROR: "+e);
+	}
+	return;
+}
+
 Bot_Commands["GREET"] = new Bot_Command(50,false,false);
 Bot_Commands["GREET"].usage =
 	get_cmd_prefix() + "GREET <greeting> or " +
