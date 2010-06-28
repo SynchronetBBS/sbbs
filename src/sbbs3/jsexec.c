@@ -715,15 +715,17 @@ long js_exec(const char *fname, char** args)
 	long double	diff;
 
 	if(fname!=NULL) {
-		if(strcspn(fname,"/\\")==strlen(fname)) {
+		if(isfullpath(fname)) {
+			SAFECOPY(path,fname);
+		}
+		else {
 			SAFEPRINTF3(path,"%s%s%s",orig_cwd,fname,js_ext(fname));
 			if(!fexistcase(path)) {
 				SAFEPRINTF3(path,"%s%s%s",scfg.mods_dir,fname,js_ext(fname));
 				if(scfg.mods_dir[0]==0 || !fexistcase(path))
 					SAFEPRINTF3(path,"%s%s%s",scfg.exec_dir,fname,js_ext(fname));
 			}
-		} else
-			SAFECOPY(path,fname);
+		}
 
 		if(!fexistcase(path)) {
 			lprintf(LOG_ERR,"!Module file (%s) doesn't exist",path);
