@@ -2228,6 +2228,7 @@ static void smtp_thread(void* arg)
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob=NULL;
 	int32		js_result;
+	struct mailproc*	mailproc;
 
 	enum {
 			 SMTP_STATE_INITIAL
@@ -2540,52 +2541,53 @@ static void smtp_thread(void* arg)
 
 					for(i=0;i<mailproc_count;i++) {
 	
-						if(mailproc_list[i].disabled)
+						mailproc=&mailproc_list[i];
+						if(mailproc->disabled)
 							continue;
 
-						if(!mailproc_list[i].process_dnsbl && dnsbl_result.s_addr)
+						if(!mailproc->process_dnsbl && dnsbl_result.s_addr)
 							continue;
 
-						if(!mailproc_list[i].process_spam && spam_bait_result)
+						if(!mailproc->process_spam && spam_bait_result)
 							continue;
 
-						if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user,&client))
+						if(!chk_ar(&scfg,mailproc->ar,&relay_user,&client))
 							continue;
 
-						if(mailproc_list[i].to!=NULL && !mailproc_to_match[i])
+						if(mailproc->to!=NULL && !mailproc_to_match[i])
 							continue;
 
-						if(mailproc_list[i].from!=NULL 
-							&& !findstr_in_list(sender_addr, mailproc_list[i].from))
+						if(mailproc->from!=NULL 
+							&& !findstr_in_list(sender_addr, mailproc->from))
 							continue;
 
-						if(!mailproc_list[i].passthru)
+						if(!mailproc->passthru)
 							msg_handled=TRUE;
 
-						mailcmdstr(mailproc_list[i].cmdline
+						mailcmdstr(mailproc->cmdline
 							,msgtxt_fname, newtxt_fname, logtxt_fname
 							,rcptlst_fname, proc_err_fname
 							,host_name, host_ip, relay_user.number
 							,rcpt_addr
 							,sender, sender_addr, reverse_path, str);
 						lprintf(LOG_INFO,"%04d SMTP Executing external mail processor: %s"
-							,socket, mailproc_list[i].name);
+							,socket, mailproc->name);
 
-						if(mailproc_list[i].native) {
+						if(mailproc->native) {
 							lprintf(LOG_DEBUG,"%04d SMTP Executing external command: %s"
 								,socket, str);
 							if((j=system(str))!=0) {
 								lprintf(LOG_NOTICE,"%04d SMTP system(%s) returned %d (errno: %d)"
 									,socket, str, j, errno);
-								if(mailproc_list[i].ignore_on_error) {
+								if(mailproc->ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) error: %d"
-										,socket, mailproc_list[i].name, j);
+										,socket, mailproc->name, j);
 									msg_handled=TRUE;
 								}
 							}
 						} else {  /* JavaScript */
 							if(!js_mailproc(socket, &client, &relay_user
-								,&mailproc_list[i]
+								,mailproc
 								,str /* cmdline */
 								,msgtxt_fname, newtxt_fname, logtxt_fname
 								,rcpt_addr
@@ -2596,9 +2598,9 @@ static void smtp_thread(void* arg)
 #if 0 /* calling exit() in a script causes js_mailproc to return FALSE */
 								lprintf(LOG_NOTICE,"%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
 									,socket, str, js_result);
-								if(mailproc_list[i].ignore_on_error) {
+								if(mailproc->ignore_on_error) {
 									lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL due to mail processor (%s) failure"
-										,socket, mailproc_list[i].name);
+										,socket, mailproc->name);
 									msg_handled=TRUE;
 								}
 #endif
@@ -2617,7 +2619,7 @@ static void smtp_thread(void* arg)
 								break;
 							truncsp(str);
 							lprintf(LOG_WARNING,"%04d !SMTP External mail processor (%s) error: %s"
-								,socket, mailproc_list[i].name, str);
+								,socket, mailproc->name, str);
 							n=atoi(str);
 							if(n>=100 && n<1000)
 								sockprintf(socket,"%s", str);
@@ -2632,7 +2634,7 @@ static void smtp_thread(void* arg)
 					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
 						lprintf(LOG_NOTICE,"%04d SMTP External mail processor (%s) removed %s file"
 							,socket
-							,mailproc_list[i].name
+							,mailproc->name
 							,fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
 						msg_handled=TRUE;
@@ -2655,7 +2657,7 @@ static void smtp_thread(void* arg)
 			
 				if(msg_handled) {
 					lprintf(LOG_NOTICE,"%04d SMTP Message handled by external mail processor (%s, %u total)"
-						,socket, mailproc_list[i].name, ++mailproc_list[i].handled);
+						,socket, mailproc->name, ++mailproc->handled);
 					continue;
 				}
 
