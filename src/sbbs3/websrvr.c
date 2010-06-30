@@ -1621,14 +1621,16 @@ static BOOL check_ars(http_session_t * session)
 
 				/* Check password as in user.dat */
 				calculate_digest(session, ha1, ha2, digest);
-				if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
-					/* Check against lower-case password */
-					calculate_digest(session, ha1l, ha2, digest);
+				if(thisuser.pass[0]) {	// Zero-length password is "special" (any password will work)
 					if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
-						/* Check against upper-case password */
-						calculate_digest(session, ha1u, ha2, digest);
-						if(memcmp(digest, session->req.auth.digest, sizeof(digest)))
-							return(FALSE);
+						/* Check against lower-case password */
+						calculate_digest(session, ha1l, ha2, digest);
+						if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
+							/* Check against upper-case password */
+							calculate_digest(session, ha1u, ha2, digest);
+							if(memcmp(digest, session->req.auth.digest, sizeof(digest)))
+								return(FALSE);
+						}
 					}
 				}
 
