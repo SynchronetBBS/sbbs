@@ -95,5 +95,6 @@ function URL(url, base)
 			ret += '?'+this.query;
 		if(this.fragment != undefined)
 			ret += '#'+this.fragment;
+		return ret;
 	};
 }
