@@ -36,7 +36,8 @@ function HTTPRequest()
 			throw("Unknown scheme! '"+this.url.scheme+"'");
 		if(this.url.path=='')
 			this.url.path='/';
-		this.request="GET "+this.url.path+" HTTP/1.0";
+		if(this.url.query != '');
+		this.request="GET "+this.url.request_path+" HTTP/1.0";
 		this.request_headers=[];
 		this.AddDefaultHeaders();
 	};
