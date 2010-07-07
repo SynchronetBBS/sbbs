@@ -22,6 +22,9 @@ load("sockdefs.js");
 load("sbbsdefs.js");
 load("irclib.js");
 load("funclib.js");
+load("http.js");
+
+load("synchronet-json.js");
 
 js.branch_limit=0; /* we're not an infinite loop. */
 
