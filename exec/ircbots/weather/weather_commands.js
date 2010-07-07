@@ -13,6 +13,19 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 		catch (e) {};
 	}
+	if(cmd.length==2) {
+		try {
+			if(typeof(srv.channel[target.toUpperCase()][cmd[1].toUpperCase()]) == 'object') {
+				var GeoIP;
+				var geoip_url='http://ipinfodb.com/ip_query2.php?ip='+srv.channel[target.toUpperCase()][cmd[1].toUpperCase()].uh.replace(/^.*\@/,'')+'&timezone=false';
+
+				GeoIP=new XML((new HTTPRequest().Get(geoip_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
+				if(GeoIP.Location[0].Latitude.length()==1 && GeoIP.Location[0].Longitude.length()==1)
+					lstr=GeoIP.Location[0].Latitude+','+GeoIP.Location[0].Longitude;
+			}
+		}
+		catch (e) {};
+	}
 
 	var query = "";
 
