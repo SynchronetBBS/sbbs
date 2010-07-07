@@ -2,23 +2,40 @@ Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
 Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
 	var lstr;
-	if (!cmd[1])
-		cmd[1] = onick;
+	if (!cmd[1]) {
+		var GeoIP;
+		var geoip_url='http://ipinfodb.com/ip_query2.php?ip='+ouh.replace(/^.*\@/,'')+'&timezone=false';
+
+		try {
+			GeoIP=new XML((new HTTPRequest().Get(geoip_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
+			if(GeoIP.Location[0].Latitude.length()==1 && GeoIP.Location[0].Longitude.length()==1)
+				lstr=GeoIP.Location[0].Latitude+','+GeoIP.Location[0].Longitude;
+		}
+		catch (e) {};
+	}
 
 	var query = "";
 
 	var usr = new User(system.matchuser(cmd[1]));
 	cmd.shift();
-	if (typeof(usr)=='object')
-		lstr = usr.location;
-	if (!lstr)
-		lstr = cmd.join(' ');
+	if (!lstr) {
+		if (typeof(usr)=='object')
+			lstr = usr.location;
+		else
+			lstr = cmd.join(' ');
+	}
 	query = encodeURIComponent(lstr);
 
 	var weather_url = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query=" + query;
 	var location_url = "http://api.wunderground.com/auto/wui/geo/GeoLookupXML/index.xml?query=" + query;
 
-	var Location = new XML((new HTTPRequest().Get(location_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
+	try {
+		var Location = new XML((new HTTPRequest().Get(location_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
+	}
+	catch(e) {
+		srv.o(target, "Unable to resolve location "+lstr);
+		return true;
+	}
 
 	switch(Location.location.length()) {
 		case 0:
