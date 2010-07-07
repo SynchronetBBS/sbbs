@@ -59,8 +59,15 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			break;
 		default:
 			srv.o(target, "Multiple matches for "+lstr);
-			for(i in Location.location)
-				srv.o(target, lstr+': '+Location.location[i].name);
+			if(Location.location.length() > 7) {
+				srv.o(target, lstr+" matches "+Location.location.length()+" places... listing the first 7.");
+				for(i=0; i<7; i++)
+					srv.o(target, lstr+': '+Location.location[i].name);
+			}
+			else {
+				for(i in Location.location)
+					srv.o(target, lstr+': '+Location.location[i].name);
+			}
 			break;
 	}
 
