@@ -16,14 +16,15 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 	var query = "";
 
-	var usr = new User(system.matchuser(cmd[1]));
 	cmd.shift();
 	if (!lstr) {
+		var usr = new User(system.matchuser(cmd[1]));
+
 		if (typeof(usr)=='object')
 			lstr = usr.location;
-		else
-			lstr = cmd.join(' ');
 	}
+	if (!lstr)
+		lstr = cmd.join(' ');
 	query = encodeURIComponent(lstr);
 
 	var weather_url = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query=" + query;
