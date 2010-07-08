@@ -183,6 +183,7 @@ Bot_Commands["ADDUSER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	login_user(newuser);
 	newuser.settings |= USER_INACTIVE;
 	newuser.security.level = level;
+	newuser.handle = cmd[1];
 	return;
 }
 
