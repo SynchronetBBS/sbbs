@@ -2,6 +2,15 @@ Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
 Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
 	var lstr;
+
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
 	if (!cmd[1]) {
 		var GeoIP;
 		var geoip_url='http://ipinfodb.com/ip_query2.php?ip='+ouh.replace(/^.*\@/,'')+'&timezone=false';
