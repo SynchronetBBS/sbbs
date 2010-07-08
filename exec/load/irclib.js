@@ -227,8 +227,13 @@ function IRC_split_nuh(str) {
 	if (str[0] == ":")
 		str = str.slice(1);
 
-	tmp[0] = str.split("!")[0];
-	tmp[1] = str.split("!")[1].split("@")[0];
+	if (str.search(/[!]/) != -1) {
+		tmp[0] = str.split("!")[0];
+		tmp[1] = str.split("!")[1].split("@")[0];
+	} else {
+		tmp[0] = undefined;
+		tmp[1] = str.split("@")[0];
+	}
 	tmp[2] = str.split("@")[1];
 	return tmp;
 }
