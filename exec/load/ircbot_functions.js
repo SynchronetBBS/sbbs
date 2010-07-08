@@ -25,9 +25,12 @@ function Server_command(srv,cmdline,onick,ouh) {
 			break;
 		case "352":	// WHO reply.  Process into local cache.
 			var nick = cmd[6].toUpperCase();
-			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4],cmd[6]);
-			else srv.users[nick].uh=cmd[3] + "@" + cmd[4];
+			if(!srv.users[nick])
+				srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4],cmd[6]);
+			else
+				srv.users[nick].uh=cmd[3] + "@" + cmd[4];
 			srv.users[nick].channels[cmd[2].toUpperCase()]=true;
+			srv.users[nick].servername = cmd[5];
 			break;
 		case "433":	// Nick already in use.
 			srv.juped = true;

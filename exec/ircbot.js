@@ -308,6 +308,7 @@ function Bot_IRC_Channel(name) {
 function Server_User(uh,nick) {
 	this.uh = uh;
 	this.nick = nick;
+	this.servername = undefined;
 	this.ident = false;
 	this.last_spoke = false;
 	this.channels=[];
