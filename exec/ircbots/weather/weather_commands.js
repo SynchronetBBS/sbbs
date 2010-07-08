@@ -13,7 +13,7 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 		catch (e) {};
 	}
-	if(cmd.length==2) {
+	if(cmd.length==2 || (cmd.length==3 && cmd[2].search(/^\s*$/)==0)) {
 		try {
 			if(typeof(srv.users[cmd[1].toUpperCase()]) == 'object') {
 				var GeoIP;
