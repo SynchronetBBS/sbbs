@@ -178,7 +178,7 @@ void Healing(struct player *pl)
 	nl();
 
 	if(pl->hps == pl->maxhps)
-		DL(config.textcolor, "Yoy don't need healing.");
+		DL(config.textcolor, "You don't need healing.");
 
 	if(pl->hps < pl->maxhps) {
 		DL(config.textcolor, "You have ",white,commastr(pl->healing),config.textcolor, " healing potions.");
