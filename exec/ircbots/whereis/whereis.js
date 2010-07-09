@@ -64,7 +64,7 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		var usr = new User(system.matchuser(cmd[1]));
 
 		if (typeof(usr)=='object')
-			lstr = usr.location;
+			lstr = find+' is located at '+usr.location;
 	}
 
 	if(!lstr)
