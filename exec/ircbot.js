@@ -67,7 +67,7 @@ if (config.open("r")) {
 		Modules[module_name]=new Object();
 		Modules[module_name].Bot_Commands=new Object();
 		Modules[module_name].enabled=true;
-		Modules[module_name].dir=config.iniGetValue(mysec,"dir");
+		Modules[module_name].dir=backslash(config.iniGetValue(mysec,"dir"));
 		Modules[module_name].load=directory(Modules[module_name].dir+"*.js");
 		Modules[module_name].lib=[];
 		var lib_list=config.iniGetValue(mysec,"lib");
