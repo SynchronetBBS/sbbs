@@ -19,7 +19,8 @@ Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			ret=geo.Latitude+','+geo.Longitude;
 			if(ret=='0,0') {
 				userhost=srv.users[nick.toUpperCase()].servername
-				ret=get_geoip(userhost);
+				geo=get_geoip(userhost);
+				ret=geo.Latitude+','+geo.Longitude;
 			}
 			return ret;
 		}
