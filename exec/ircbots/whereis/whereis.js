@@ -1,6 +1,3 @@
-if(js.global.get_geoip==undefined)
-	load("geoip.js");
-
 Bot_Commands["WHEREIS"] = new Bot_Command(0,false,false);
 Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
@@ -40,7 +37,7 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	else if(cmd.length==2)
 		find=cmd[1];
 	else {
-		srv.o(target,"Usage: whereis <nick>"
+		srv.o(target,"Usage: whereis <nick>");
 		return true;
 	}
 
