@@ -1,5 +1,5 @@
 if(js.global.get_geoip==undefined)
-	load("geoip.js");
+	js.global.load(js.global, "geoip.js");
 
 Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
 Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
