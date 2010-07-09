@@ -16,7 +16,7 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			var userhost=srv.users[nick.toUpperCase()].uh.replace(/^.*\@/,'');
 			// If the hostname is not a FQDN, use the server name and replace the first element...
 			if(userhost.indexOf('.')==-1)
-				userhost += (srv.users[cmd[1].toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
+				userhost += (srv.users[nick.toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
 			geo=get_geoip(userhost);
 			if(geo.CountryName=='Reserved') {
 				userhost=srv.users[nick.toUpperCase()].servername
