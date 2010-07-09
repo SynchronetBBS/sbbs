@@ -1,3 +1,6 @@
+if(js.global.get_geoip==undefined)
+	js.global.load(js.global,"geoip.js");
+
 Bot_Commands["WHEREIS"] = new Bot_Command(0,false,false);
 Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
@@ -21,7 +24,9 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			}
 			return geo;
 		}
-		catch(e) {}
+		catch(e) {
+			log("Error getting nick location for "+nick+": "+e);
+		}
 	}
 
 	// Remove empty cmd args
