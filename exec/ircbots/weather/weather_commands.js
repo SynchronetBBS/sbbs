@@ -1,31 +1,22 @@
+if(js.global.get_geoip==undefined)
+	load("geoip.js");
+
 Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
 Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var i;
 	var lstr;
 
-	function get_geoip(host)
-	{
-		var GeoIP;
-		var geoip_url='http://ipinfodb.com/ip_query2.php?ip='+host+'&timezone=false';
-
-		try {
-			GeoIP=new XML((new HTTPRequest().Get(geoip_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
-			if(GeoIP.Location[0].Latitude.length()==1 && GeoIP.Location[0].Longitude.length()==1)
-				return GeoIP.Location[0].Latitude+','+GeoIP.Location[0].Longitude;
-		}
-		catch(e) {}
-	}
-
 	function get_nicklocation(nick)
 	{
-		var ret;
+		var ret,geo;
 
 		try {
 			var userhost=srv.users[nick.toUpperCase()].uh.replace(/^.*\@/,'');
 			// If the hostname is not a FQDN, use the server name and replace the first element...
 			if(userhost.indexOf('.')==-1)
 				userhost += (srv.users[cmd[1].toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
-			ret=get_geoip(userhost);
+			geo=get_geoip(userhost);
+			ret=geo.Latitude+','+geo.Longitude;
 			if(ret=='0,0') {
 				userhost=srv.users[nick.toUpperCase()].servername
 				ret=get_geoip(userhost);
