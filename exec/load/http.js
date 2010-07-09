@@ -1,7 +1,9 @@
 /* $Id$ */
 
-load('sockdefs.js');
-load("url.js");
+if(js.global.SOCK_STREAM==undefined)
+	load('sockdefs.js');
+if(js.global.URL==undefined)
+	load("url.js");
 
 /*
  * TODO Stuff:
@@ -71,6 +73,7 @@ function HTTPRequest()
 
 	this.ReadHeaders=function() {
 		var header='';
+		var m;
 		this.response_headers=[];
 
 		for(;;) {
@@ -79,6 +82,9 @@ function HTTPRequest()
 				throw("Unable to receive headers");
 			if(header=='')
 				return;
+			m=header.match(/^Content-length:\s+([0-9]+)$/);
+			if(m!=null)
+				this.contentlength=parseInt(m[0]);
 		}
 	};
 

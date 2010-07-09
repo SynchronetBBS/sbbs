@@ -1,4 +1,5 @@
-load("sbbsdefs.js");
+if(js.global.HIGH==undefined)
+	load("sbbsdefs.js");
 
 function attr_to_ansi(atr, curatr)
 {

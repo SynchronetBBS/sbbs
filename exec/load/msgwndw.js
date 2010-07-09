@@ -1,4 +1,5 @@
-load("graphic.js");
+if(js.global.Graphic==undefined)
+	load("graphic.js");
 
 function Window(x,y,w,h)
 {

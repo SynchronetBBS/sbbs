@@ -57,12 +57,17 @@ function Chat(key,engine)
 	}
 }
 //*************MAIN ENGINE*************
-load("commclient.js");
-load("scrollbar.js");
-load("graphic.js");
+if(js.global.ServiceConnection==undefined)
+	load("commclient.js");
+if(js.global.Scrollbar==undefined)
+	load("scrollbar.js");
+if(js.global.Graphic==undefined)
+	load("graphic.js");
 //load("str_cmds.js");
-load("nodedefs.js");
-load("msgwndw.js");
+if(js.global.NODE_WFC==undefined)
+	load("nodedefs.js");
+if(js.global.Window==undefined)
+	load("msgwndw.js");
 
 bbs.sys_status |= SS_PAUSEOFF;	
 oldpass=console.ctrl_key_passthru;

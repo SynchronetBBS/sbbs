@@ -3,9 +3,12 @@
 	USING  FILE I/O FOR USER PRESENCE DETECTION & NAMED QUEUES FOR REAL-TIME MULTIPLAYER DATA
 */
 
-load("sbbsdefs.js");
-load("logging.js");
-load("funclib.js");
+if(js.global.SYS_CLOSED==undefined)
+	load("sbbsdefs.js");
+if(js.global.Logger==undefined)
+	load("logging.js");
+if(js.global.getColor==undefined)
+	load("funclib.js");
 
 var KillFile;
 var KillThread;

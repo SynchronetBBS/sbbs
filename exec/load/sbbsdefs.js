@@ -35,7 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-load("nodedefs.js");
+if(js.global.NODE_WFC==undefined)
+	load("nodedefs.js");
 
 /* Would rather use const than var, but end up with redeclaration errors.	*/
 

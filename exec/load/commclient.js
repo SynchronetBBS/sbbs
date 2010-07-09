@@ -4,10 +4,14 @@
 	by Matt Johnson - 2009
 */
 
-load("funclib.js");
-load("synchronet-json.js");
-load("sbbsdefs.js");
-load("sockdefs.js");
+if(js.global.testSocket==undefined)
+	load("funclib.js");
+if(js.global.JSON==undefined)
+	load("synchronet-json.js");
+if(js.global.SYS_CLOSED==undefined)
+	load("sbbsdefs.js");
+if(js.global.IPPROTO_IP==undefined)
+	load("sockdefs.js");
 
 
 function ServiceConnection(id,alias)
