@@ -15,7 +15,7 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			if(userhost.indexOf('.')==-1)
 				userhost += (srv.users[cmd[1].toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
 			geo=get_geoip(userhost);
-			if(geo.Country=='Reserved') {
+			if(geo.CountryName=='Reserved') {
 				userhost=srv.users[nick.toUpperCase()].servername
 				geo=get_geoip(userhost);
 			}
@@ -43,19 +43,17 @@ Bot_Commands["WHEREIS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 	location=get_nicklocation(find);
 	if (location) {
-		location=get_nicklocation(onick);
-
 		lstr=find+' is ';
 		if(location.City=='')
 			lstr += 'somewhere in ';
 		else
 			lstr += 'around '+location.City+', ';
 
-		if(location.Region!='')
-			lstr += location.Region+', ';
+		if(location.RegionName!='')
+			lstr += location.RegionName+', ';
 
-		if(location.Country!='')
-			lstr += location.Country;
+		if(location.CountryName!='')
+			lstr += location.CountryName;
 	}
 	else {
 		var usr = new User(system.matchuser(cmd[1]));
