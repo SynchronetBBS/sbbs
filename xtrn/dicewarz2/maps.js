@@ -6,7 +6,7 @@ load(game_dir+"rolldice.js");
 var settings=	loadSettings(game_dir+"dice.ini");
 var players=	new PlayerData(game_dir+settings.player_file);
 var game_data=	new GameData(game_dir+"*.dw");
-var stream=	new ServiceConnection("dicewarz2","dicewars");
+var stream=	new ServiceConnection("dicewarz2",user?user.alias:"AI");
 
 function Char(ch,fg,bg)
 {
@@ -29,8 +29,9 @@ function MapData(game_number)
 	this.turn=0;
 	this.round=0;
 	this.attacking=false;
-	this.in_progress=false;
+	this.status=-1;
 	this.single_player=false;
+	this.hidden_names=false;
 	this.winner=false;
 	this.game_number=game_number?game_number:getNewGameNumber();
 	this.filename=getFileName(this.game_number);
@@ -88,16 +89,17 @@ function GameData(filemask)
 		
 		map.num_players=file.iniGetValue(null,"num_players");
 		map.single_player=file.iniGetValue(null,"single_player");
-		map.in_progress=file.iniGetValue(null,"in_progress");
+		map.status=file.iniGetValue(null,"status");
 		map.winner=file.iniGetValue(null,"winner");
 		map.turn=file.iniGetValue(null,"turn");
 		
 		var players=file.iniGetAllObjects("index","p");
+
 		var aifile=new File(game_dir + settings.ai_file);
 		aifile.open("r",true);
 		for(var p=0;p<players.length;p++) {
 			var player=players[p];
-			map.players[player.index]=new Player(player.name,player.vote);
+			map.players[player.index]=new Player(player.name,player.system,player.vote);
 			map.players[player.index].reserve=player.reserve;
 			if(player.AI) {
 				var sort=aifile.iniGetValue(player.name, "sort");
@@ -107,8 +109,10 @@ function GameData(filemask)
 			}
 		}
 		aifile.close();
-		
+
 		var array=file.iniGetAllObjects("index","t");
+		file.close();
+		
 		for(var t=0;t<array.length;t++) {
 			var tile=new Tile(array[t].index);
 			tile.assign(array[t].o,array[t].d);
@@ -171,15 +175,26 @@ function GameData(filemask)
 	}
 	this.savePlayer=function(map,p,n)
 	{
-		var data=new Packet(map,"player");
+		var data=new Packet("player",map);
 		data.player=p;
 		data.pnum=n;
 		stream.send(data);
 		var file=this.openGameFile(map);
 		file.iniSetValue("p"+n,"name",p.name);
+		file.iniSetValue("p"+n,"system",p.system);
 		file.iniSetValue("p"+n,"reserve",p.reserve);
 		file.iniSetValue("p"+n,"vote",p.vote);
 		file.iniSetValue("p"+n,"AI",p.AI?true:false);
+		this.closeGameFile(file,map);
+	}
+	this.removePlayer=function(map,n)
+	{
+		//var data=new Packet("player",map);
+		//data.player=p;
+		//data.pnum=n;
+		//stream.send(data);
+		var file=this.openGameFile(map);
+		file.iniRemoveSection("p"+n);
 		this.closeGameFile(file,map);
 	}
 	this.saveData=function(map)
@@ -187,7 +202,7 @@ function GameData(filemask)
 		var file=this.openGameFile(map);
 		file.iniSetValue(null,"num_players",map.num_players);
 		file.iniSetValue(null,"single_player",map.single_player);
-		file.iniSetValue(null,"in_progress",map.in_progress);
+		file.iniSetValue(null,"status",map.status);
 		file.iniSetValue(null,"winner",map.winner);
 		file.iniSetValue(null,"turn",map.turn);
 		file.iniSetValue(null,"round",map.round);
@@ -195,7 +210,7 @@ function GameData(filemask)
 	}
 	this.saveTile=function(map,tile)
 	{
-		var data=new Packet(map,"tile");
+		var data=new Packet("tile",map);
 		data.tile=tile;
 		stream.send(data);
 		var file=this.openGameFile(map);
@@ -213,28 +228,44 @@ function GameData(filemask)
 	}
 	this.update=function()
 	{
-		if(time()-this.last_update<update_frequency) return false;
-		
-		var game_list=directory(this.files);
-		for(var g=0;g<game_list.length;g++) {
-			var game_number=getGameNumber(game_list[g]);
-			if(this.list[game_number]) {
-				if(this.list[game_number].last_update<file_date(game_list[g])) {
-					debug("file has been modified, reloading: " + game_list[g]);
+		var update=false;
+		if(time()-this.last_update>=update_frequency) {
+			var game_list=directory(this.files);
+			for(var g=0;g<game_list.length;g++) {
+				var game_number=getGameNumber(game_list[g]);
+				if(this.list[game_number]) {
+					if(this.list[game_number].last_update<file_date(game_list[g])) {
+						log("file has been modified, reloading: " + game_list[g]);
+						update=true;
+						this.load(game_list[g]);
+					}
+				} else {
+					log("loading new game data: " + game_list[g]);
+					update=true;
 					this.load(game_list[g]);
 				}
-			} else {
-				this.load(game_list[g]);
 			}
+			for(var l in this.list) {
+				var filename=getFileName(this.list[l].game_number);
+				if(!file_exists(filename)) {
+					log("file no longer exists, removing: " + filename);
+					update=true;
+					delete this.list[l];
+				}
+			}
+			this.last_update=time();
 		}
-		this.last_update=time();
+		return update;
 	}
 	this.init();
 }
-function Packet(map,type)
+function Packet(type,map)
 {
 	this.type=type;
-	this.filename=map.filename;
+	if(map) {
+		this.filename=map.filename;
+		this.game_number=map.game_number;
+	}
 }
 
 	//GAME DATA FUNCTIONS
@@ -277,16 +308,18 @@ function Packet(map,type)
 			var in_game=findPlayer(game,user.alias);
 			
 			if(game.single_player) {
-				if(in_game) sorted.singleplayer.push(i);
+				if(in_game>=0) sorted.singleplayer.push(i);
 			} else {
-				if(in_game) {
+				if(in_game>=0) {
 					sorted.yourgames.push(i);
+				}
+				if(game.status==0) {
+					sorted.started.push(i);
 					if(game.turn==in_game) sorted.yourturn.push(i);
 				}
-				if(game.in_progress) sorted.started.push(i);
-				else if(game.winner) {
+				else if(game.status==1) {
 					sorted.finished.push(i);
-					if(game.winner==user.alias) sorted.yourwins.push(i);
+					if(game.winner==in_game) sorted.yourwins.push(i);
 					else sorted.eliminated.push(i);
 				} else {
 					sorted.waiting.push(i);
@@ -304,7 +337,7 @@ function Packet(map,type)
 	function getGameNumber(filename)
 	{
 		filename=file_getname(filename);
-		var game_number=parseInt(filename.substring(0,filename.indexOf(".")));
+		var game_number=parseInt(filename.substring(0,filename.indexOf(".")),10);
 		return game_number;
 	}
 	function getNewGameNumber()
@@ -636,7 +669,7 @@ function Packet(map,type)
 				var p=random(possibleplayers.length);
 				var name=possibleplayers[p];
 				
-				var player=new Player(name,true);
+				var player=new Player(name,"Computer",true);
 				var sort=aifile.iniGetValue(name, "sort");
 				var check=aifile.iniGetValue(name, "check");
 				var qty=aifile.iniGetValue(name, "quantity");
@@ -649,9 +682,9 @@ function Packet(map,type)
 			aifile.close();
 		}
 	}
-	function addPlayer(map,name,vote)
+	function addPlayer(map,name,sys_name,vote)
 	{
-		map.players.push(new Player(name,vote));
+		map.players.push(new Player(name,sys_name,vote));
 	}
 	function shufflePlayers(map)
 	{
@@ -751,19 +784,22 @@ function Packet(map,type)
 				}
 			}
 		}
-		if(map.single_player && map.in_progress) {
+		if(map.single_player && map.status==0) {
 			for(var p=0;p<map.players.length;p++) {
 				var player=map.players[p];
 				/* for a single player game, find the non-AI player and check whether active. if not, game over */
 				if(!player.AI && !player.active) {
 					debug("inactive game");
-					map.in_progress=false;
+					map.status=1;
 					findWinner(map);
 					return;
 				}
 			}
 		}
-		if(countActivePlayers(map)==1) findWinner(map);
+		if(countActivePlayers(map)==1) {
+			map.status=1;
+			findWinner(map);
+		}
 	}
 	function findWinner(map)
 	{
@@ -777,7 +813,7 @@ function Packet(map,type)
 			}
 		}
 		map.winner=winner;
-		players.scoreWin(map.players[map.winner].name);
+		players.scoreWin(map.players[map.winner]);
 	}
 	function placeReinforcements(map,pt,reinforcements)
 	{
@@ -838,7 +874,7 @@ function Packet(map,type)
 			nextTurn(map);
 		}
 		else {
-			var data=new Packet(map,"turn");
+			var data=new Packet("turn",map);
 			data.turn=map.turn;
 			stream.send(data);
 		}

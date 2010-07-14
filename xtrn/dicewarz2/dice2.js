@@ -58,27 +58,6 @@ function loadGraphic(filename)
 	graphic.load(filename);
 	return graphic;
 }
-function chatInput()
-{
-	chat.input_line.clear();
-	while(1) {
-		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-		if(key) {
-			chat.processKey(key);
-			switch(key) {
-				case '\r':
-				case '\n':
-					hideChatLine();
-					return true;
-				case '\x1b':
-					return false;
-				default:
-					break;
-			}
-		}
-		cycle();
-	}
-}
 function hideChatLine()
 {
 	console.gotoxy(chat.input_line);
@@ -107,6 +86,64 @@ function menuText(string,append)
 	console.putmsg(string,P_SAVEATR);
 	console.pushxy();
 }
+function wrap(msg,lst)
+{
+	console.pushxy();
+	console.putmsg(msg);
+	if(lst) {
+		console.putmsg(" \1w\1h: ");
+		var col=32;
+		var delimiter="\1n\1g,";
+		for(aa=0;aa<lst.length;aa++)
+		{
+			if(aa==lst.length-1) delimiter="";
+			var item=lst[aa]+delimiter;
+			if((col + console.strlen(item))>78) {
+				console.crlf();
+				console.right(31);
+				col=32;
+			}
+			console.putmsg("\1h\1g" + item);
+			col += console.strlen(item);
+		}
+	}
+	console.crlf();
+	console.right();
+}
+function viewRankings()
+{
+	players.load();
+	var scores=sortScores();
+	if(scores.length>0) {
+		clearBlock(2,2,78,16);
+		console.gotoxy(2,2);
+		wrap("\1n\1c " + 
+			format("%-25s\1h\xB3\1n\1c","PLAYER") + 
+			format("%-25s\1h\xB3\1n\1c","SYSTEM") + 
+			format("%6s\1h\xB3\1n\1c","POINTS") + 
+			format("%5s\1h\xB3\1n\1c","KILLS") + 
+			format("%4s\1h\xB3\1n\1c","WINS") + 
+			format("%6s","LOSSES")); 
+		wrap("\1c\1h " +
+			printPadded("\xC5",26,"\xC4","right")  +
+			printPadded("\xC5",26,"\xC4","right")  +
+			printPadded("\xC5",7,"\xC4","right")  +
+			printPadded("\xC5",6,"\xC4","right")  +
+			printPadded("\xC5",5,"\xC4","right")  +
+			printPadded("",6,"\xC4"));
+		for(var s in scores) {
+			var score=scores[s];
+			wrap("\1n\1c " + 
+				format("%-25s\1h\xB3\1n\1c",score.name) + 
+				format("%-25s\1h\xB3\1n\1c",score.system) + 
+				format("%6s\1h\xB3\1n\1c",score.points) + 
+				format("%5s\1h\xB3\1n\1c",score.kills) + 
+				format("%4s\1h\xB3\1n\1c",score.wins) + 
+				format("%6s",score.losses)); 
+		}
+		menuPrompt("\1w\1h[press any key]");
+	}
+}
 function viewInstructions(section)
 {
 
@@ -124,6 +161,7 @@ function lobby()
 	function main()
 	{
 		redraw();
+		var full_redraw=false;
 		while(1)
 		{
 			var cmd=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER,5);
@@ -135,13 +173,13 @@ function lobby()
 					viewRankings();
 					break;
 				case "S":
-					if(selectGame()) return true;
+					if(selectGame()) full_redraw=true;
 					break;
 				case "I":
 					viewInstructions();
 					break;
 				case "B":
-					createNewGame();
+					if(createNewGame()) full_redraw=true;
 					break;
 				case "D":
 					redraw();
@@ -161,37 +199,86 @@ function lobby()
 				default:
 					break;
 				}
-				menu.draw();
+				if(full_redraw) {
+					initMenu();
+					initChat();
+					redraw();
+					full_redraw=false;
+				} else {
+					menu.draw();
+					gameList();
+				}
 			}
 			lobbyCycle();
 		}
 	}
 	function lobbyCycle()
 	{
-		game_data.update();
+		if(game_data.update()) gameList();
 		cycle();
 	}
-	function wrap(msg,lst)
+	function chatInput()
 	{
-		console.pushxy();
-		console.putmsg(msg);
-		console.putmsg(" \1w\1h: ");
-		var col=32;
-		var delimiter="\1n\1g,";
-		for(aa=0;aa<lst.length;aa++)
-		{
-			if(aa==lst.length-1) delimiter="";
-			var item=lst[aa]+delimiter;
-			if((col + console.strlen(item))>78) {
-				console.crlf();
-				console.right(31);
-				col=32;
+		chat.input_line.clear();
+		while(1) {
+			var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(key) {
+				chat.processKey(key);
+				switch(key) {
+					case '\r':
+					case '\n':
+						hideChatLine();
+						return true;
+					case '\x1b':
+						return false;
+					default:
+						break;
+				}
 			}
-			console.putmsg("\1h\1g" + item);
-			col += console.strlen(item);
+			cycle();
 		}
-		console.crlf();
-		console.right();
+	}
+	function viewGameInfo(map)
+	{
+		clearBlock(2,2,78,16);
+		console.gotoxy(2,2);
+		wrap("\1n\1cGAME #\1h" + map.game_number + " \1n\1cINFO");
+		wrap("\1n\1cHidden names\1h: \1n\1c" + map.hidden_names);
+		wrap("\1n\1cPlayers in this game\1h:");
+		for(var p in map.players) {
+			var name=map.players[p].name;
+			if(map.hidden_names) name="Player " + (Number(p)+1);
+			wrap("\1c\1h " + name + " \1n\1cvote\1h: " + map.players[p].vote);
+		}
+		var player=findPlayer(map,user.alias);
+		if(player>=0) {
+			response=menuPrompt("Remove yourself from this game? \1w\1h[y/N]");
+			if(response=='Y') {
+				map.players.splice(player,1);
+				game_data.removePlayer(map,player)
+				return;
+			}
+			response=menuPrompt("Change your vote? \1w\1h[y/N]");
+			if(response=='Y') {
+				current_vote=map.players[player].vote;
+				map.players[player].vote=(current_vote?false:true);
+			}
+		} else {
+			response=menuPrompt("Join this game? \1w\1h[y/N]");
+			if(response!=='Y') {
+				return;
+			}
+			vote=menuPrompt("Vote to start? \1w\1h[y/N]");
+			addPlayer(map,user.alias,system.name,(vote=="Y"?true:false));
+		}
+		if(map.players.length>=settings.min_players) {
+			var vote_to_start=true;
+			for(var p in map.players) {
+				if(vote_to_start) vote_to_start=map.players[p].vote;
+			}
+			if(vote_to_start) startGame(map);
+		}
+		game_data.save(map);
 	}
 	function gameList()
 	{
@@ -234,16 +321,23 @@ function lobby()
 			menuText("Game number: \1w\1h");
 			var num=console.getstr(game_data.last_game_number.toString().length,K_NUMBER|K_NOCRLF|K_NOSPIN);
 			if(!num) {
-				return false;
+				break;
 			}
 			if(game_data.list[num]) {
-				run(game_data.list[num]);
-				return true;
+				map=game_data.list[num];
+				if(map.status>=0) {
+					run(map);
+					return true;
+				} else {
+					viewGameInfo(map);
+				}
+				break;
 			} else {
 				menuText("\1w\1hNo such game!",true);
 				menuPrompt(" [press any key]",true);
 			}
 		}
+		return false;
 	}
 	function startGame(map)
 	{
@@ -252,12 +346,8 @@ function lobby()
 		generateMap(map);
 		shufflePlayers(map);
 		dispersePlayers(map);
-		map.in_progress=true;
+		map.status=0;
 		game_data.save(map);
-	}
-	function joinGame(map)
-	{
-		addPlayer(map,user.alias,getVote());
 	}
 	function createNewGame()
 	{
@@ -270,17 +360,46 @@ function lobby()
 			if(response=='\x1b' || response=='Q') {
 				return false;
 			} else if(response=='Y') {
-				addPlayer(new_game,user.alias,true);
+				addPlayer(new_game,user.alias,system.name,true);
 				startGame(new_game);
 				run(new_game);
-				break;
+				return true;
 			} else if(response=='N') {
-				game_data.save(new_game);
 				break;
 			} else {
 				menuPrompt("Invalid response \1w\1h[press any key]",true);
 			}
 		}
+		while(1) {
+			response=menuPrompt("Start when there are enough players? \1w\1h[y/N]: ");
+			if(response=='\x1b' || response=='Q') {
+				return false;
+			} else if(response=='Y') {
+				addPlayer(new_game,user.alias,system.name,true);
+				break;
+			} else if(response=='N') {
+				addPlayer(new_game,user.alias,system.name,false);
+				break;
+			} else {
+				menuPrompt("Invalid response \1w\1h[press any key]",true);
+			}
+		}
+		while(1) {
+			response=menuPrompt("Hide player names? \1w\1h[y/N]: ");
+			if(response=='\x1b' || response=='Q') {
+				return false;
+			} else if(response=='Y') {
+				new_game.hidden_names=true;
+				break;
+			} else if(response=='N') {
+				new_game.hidden_names=false;
+				break;
+			} else {
+				menuPrompt("Invalid response \1w\1h[press any key]",true);
+			}
+		}
+		game_data.save(new_game);
+		return false;
 	}
 	function getVote()
 	{
@@ -346,19 +465,26 @@ function run(map)
 				case "R":
 					redraw();
 					break;
+				case "\x1b":
+				case "Q":
+					return;
+				default:
+					break;
+				}
+				setMenuCommands();
+			}
+			switch(cmd)
+			{
 				case KEY_UP:
 				case KEY_DOWN:
 				case KEY_HOME:
 				case KEY_END:
 					chat.processKey(cmd);
 					break;
-				case "\x1b":
-				case "Q":
-					return lobby();
-				default:
-					break;
-				}
-				setMenuCommands();
+			}
+			if(update) {
+				menu.draw();
+				update=false;
 			}
 		}
 	}
@@ -379,7 +505,7 @@ function run(map)
 	function setMenuCommands()
 	{
 		update=true;
-		if(player>=0 && map.in_progress) {
+		if(player>=0 && map.status==0) {
 			if(taking_turn) {
 				menu.enable("A");
 				menu.enable("E");
@@ -405,11 +531,33 @@ function run(map)
 		chat.init("dice warz game #" + map.game_number,31,6,48,18); 
 		chat.input_line.init(10,24,70,"\0017","\1k");
 	}
+	function chatInput()
+	{
+		chat.input_line.clear();
+		while(1) {
+			var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(key) {
+				chat.processKey(key);
+				switch(key) {
+					case '\r':
+					case '\n':
+						hideChatLine();
+						return true;
+					case '\x1b':
+						return false;
+					default:
+						break;
+				}
+			}
+			cycle();
+			gameCycle();
+		}
+	}
 	function gameCycle()
 	{
 		cycle();
 		var data=stream.receive();
-		if(data) {
+		if(data && data.game_number==map.game_number) {
 			switch(data.type)
 			{
 				case "battle":
@@ -420,7 +568,7 @@ function run(map)
 				case "turn":
 					map.turn=data.turn;
 					debug("received turn notice: " + map.players[map.turn].name);
-					turnAlert();
+					statusAlert();
 					listPlayers();
 					setMenuCommands();
 					break;
@@ -439,20 +587,16 @@ function run(map)
 				activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
 			}
 		}
-		if(update) {
-			menu.draw();
-			update=false;
-		}
 	}
 
 	//GAMEPLAY
 	function forfeit()
 	{
 		map.players[map.turn].active=false;
-		var data=new Packet(map,"activity");
+		var data=new Packet("activity",map);
 		data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
 		stream.send(data);
-		players.scoreLoss(map.players[map.turn].name);
+		players.scoreLoss(map.players[map.turn]);
 	}
 	function endTurn()
 	{
@@ -460,19 +604,16 @@ function run(map)
 		nextTurn(map);
 		updateStatus(map);
 		taking_turn=false;
-		var data=new Packet(map,"map");
-		data.in_progress=map.in_progress;
-		data.winner=map.winner;
-		data.round=map.round;
-		stream.send(data);
+//		var data=new Packet("map",map);
+//		data.status=map.status;
+//		data.winner=map.winner;
+//		data.round=map.round;
+//		stream.send(data);
+		game_data.saveData(map);
 		
 		listPlayers();
-		if(map.winner) {
-			activityAlert("\1rGame ended");
-			activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
-			return;
-		}
-		if(map.players[map.turn].AI) {
+		statusAlert();
+		if(map.status==0 && map.players[map.turn].AI) {
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
 	}
@@ -536,30 +677,30 @@ function run(map)
 			}
 		}
 		
-		chat.chat_room.clear();
+		chat.channel.clear();
 		var a=new Roll(attacking.owner);
 		for(var r=0;r<attacking.dice;r++) {
 			var roll=random(6)+1;
 			a.roll(roll);
 		}
-		showRoll(a.rolls,LIGHTGRAY+BG_RED,chat.chat_room.x,chat.chat_room.y);
+		showRoll(a.rolls,LIGHTGRAY+BG_RED,chat.channel.x,chat.channel.y);
 		var d=new Roll(defending.owner);
 		for(var r=0;r<defending.dice;r++) {
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.chat_room.x,chat.chat_room.y+3);
-		chat.chat_room.draw();
+		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.channel.x,chat.channel.y+3);
+		chat.channel.draw();
 		battle(a,d);
-		var data=new Packet(map,"battle");
+		var data=new Packet("battle",map);
 		data.a=a;
 		data.d=d;
 		stream.send(data);
 		
 		if(a.total>d.total) {
 			if(countTiles(map,defending.owner)==1) {
-				players.scoreKill(map.players[attacking.owner].name);
-				players.scoreLoss(map.players[defending.owner].name);
+				players.scoreKill(map.players[attacking.owner]);
+				players.scoreLoss(map.players[defending.owner]);
 				map.players[defending.owner].active=false;
 			}
 			defending.assign(attacking.owner,attacking.dice-1);
@@ -569,11 +710,8 @@ function run(map)
 		attacking.dice=1;
 		drawSector(map,attacking.home.x,attacking.home.y);
 		
-		var data=new Packet(map,"tile");
-		data.tile=attacking;
-		stream.send(data);
-		data.tile=defending;
-		stream.send(data);
+		game_data.saveTile(map,attacking);
+		game_data.saveTile(map,defending);
 		return coords;
 	}
 	function battle(a,d) 
@@ -701,10 +839,15 @@ function run(map)
 	}
 
 	//DISPLAY
-	function turnAlert()
+	function statusAlert()
 	{
-		if(map.turn==player) activityAlert("\1c\1hIt is your turn");
-		else activityAlert("\1n\1cIt is " + map.players[map.turn].name + "'s turn");
+		if(map.status==1) {
+			activityAlert("\1y\1hGame ended.");
+			activityAlert("\1y\1h" + map.players[map.winner].name + " won this game.");
+		} else {
+			if(map.turn==player) activityAlert("\1c\1hIt is your turn");
+			else activityAlert("\1n\1cIt is " + map.players[map.turn].name + "'s turn");
+		}
 	}
 	function activityAlert(msg)
 	{
@@ -756,7 +899,7 @@ function run(map)
 	initMenu();
 	initChat();
 	redraw();
-	turnAlert();
+	statusAlert();
 	main();
 }
 

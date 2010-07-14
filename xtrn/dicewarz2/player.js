@@ -1,7 +1,8 @@
 //PLAYER OBJECTS
-function Player(name,vote)
+function Player(name,sys_name,vote)
 {
 	this.name=name;
+	this.system=sys_name;
 	this.vote=vote;
 	this.reserve=0;
 	this.active=true;
@@ -17,6 +18,33 @@ function AI(sort,check,qty)
 }
 
 	//PLAYER FUNCTIONS
+	function compressScores()
+	{
+		compressed=[];
+		for(var s in players.scores)
+		{
+			compressed.push(players.scores[s]);
+		}
+		return compressed;
+	}
+	function sortScores()
+	{ 
+		var scores=compressScores();
+		var numScores=scores.length;
+		for(n=0;n<numScores;n++)
+		{
+			for(m = 0; m < (numScores-1); m++) 
+			{
+				if(scores[m].points < scores[m+1].points) 
+				{
+					holder = scores[m+1];
+					scores[m+1] = scores[m];
+					scores[m] = holder;
+				}
+			}
+		}
+		return scores;
+	}
 	function countActivePlayers(map)
 	{
 		var count=0;
@@ -61,7 +89,6 @@ function AI(sort,check,qty)
 function PlayerData(filename)
 {
 	this.file=new File(filename);
-	this.list=[];
 	this.scores=[];
 	this.load=function()
 	{
@@ -72,6 +99,10 @@ function PlayerData(filename)
 		this.file.close();
 		for(var s in scores) {
 			var score=scores[s];
+			score.points=Number(score.points);
+			score.kills=Number(score.kills);
+			score.wins=Number(score.wins);
+			score.losses=Number(score.losses);
 			this.scores[score.name]=score;
 		}
 	}
@@ -83,57 +114,61 @@ function PlayerData(filename)
 		}
 		this.file.iniSetObject(score.name,score);
 		this.file.close();
-		var data=new Packet(map,"score");
+		var data=new Packet("score");
 		data.score=score;
 		stream.send(data);
 	}
-	this.scoreKill=function(name)
+	this.scoreKill=function(plyr)
 	{
 		this.load();
-		if(!this.scores[name]) this.scores[name]=new Score(name);
+		var name=plyr.name;
+		var sys_name=plyr.system;
+		if(!this.scores[name]) this.scores[name]=new Score(name,sys_name);
 		this.scores[name].kills++;
-		this.scores[name].points+=parseInt(settings.point_set.kill,10);
+		this.scores[name].points+=Number(settings.point_set.kill);
 		this.save(name);
 	}
-	this.scoreWin=function(name)
+	this.scoreWin=function(plyr)
 	{
 		this.load();
-		if(!this.scores[name]) this.scores[name]=new Score(name);
+		var name=plyr.name;
+		var sys_name=plyr.system;
+		if(!this.scores[name]) this.scores[name]=new Score(name,sys_name);
 		this.scores[name].wins++;
-		this.scores[name].points+=parseInt(settings.point_set.win,10);
+		this.scores[name].points+=Number(settings.point_set.win);
 		this.save(name);
 	}
-	this.scoreLoss=function(name)
+	this.scoreLoss=function(plyr)
 	{
 		this.load();
-		if(!this.scores[name]) this.scores[name]=new Score(name);
+		var name=plyr.name;
+		var sys_name=plyr.system;
+		if(!this.scores[name]) this.scores[name]=new Score(name,sys_name);
 		this.scores[name].losses++;
-		this.scores[name].points+=parseInt(settings.point_set.loss,10);
+		this.scores[name].points+=Number(settings.point_set.loss);
+		if(this.scores[name].points<settings.min_points) this.scores[name].points=settings.min_points;
 		this.save(name);
 	}
-	this.scoreForfeit=function(name)
+	this.scoreForfeit=function(plyr)
 	{
 		this.load();
-		if(!this.scores[name]) this.scores[name]=new Score(name);
+		var name=plyr.name;
+		var sys_name=plyr.system;
+		if(!this.scores[name]) this.scores[name]=new Score(name,sys_name);
 		this.scores[name].losses++;
-		this.scores[name].points+=parseInt(settings.point_set.forfeit,10);
+		this.scores[name].points+=Number(settings.point_set.forfeit);
+		if(this.scores[name].points<settings.min_points) this.scores[name].points=settings.min_points;
 		this.save(name);
 	}
+	
+	this.load();
 }
-function Score(name)
+function Score(name,sys_name)
 {
 	this.name=name;
+	this.system=sys_name;
 	this.kills=0;
 	this.wins=0;
 	this.losses=0;
 	this.points=0;
 }
-
-	//PLAYER DATA FUNCTIONS
-	function viewRankings()
-	{
-		clearBlock(2,2,78,16);
-		console.gotoxy(2,2);
-		
-	}
-	

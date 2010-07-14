@@ -204,7 +204,7 @@ function singleAttackQuantity(tlen)
 /* Attack functions */
 function main()
 {
-	while(map.players[map.turn].AI && map.in_progress) {
+	while(map.players[map.turn].AI && map.status==0) {
 		takeTurn();
 		if(countActivePlayers(map)==2 && countTiles(map,map.turn)<map.tiles.length*.4) {
 			forfeit();
@@ -271,15 +271,15 @@ function attack()
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		var data=new Packet(map,"battle");
+		var data=new Packet("battle",map);
 		data.a=a;
 		data.d=d;
 		stream.send(data);
 		
 		if(a.total>d.total) {
 			if(countTiles(map,defending.owner)==1) {
-				players.scoreKill(map.players[attacking.owner].name);
-				players.scoreLoss(map.players[defending.owner].name);
+				players.scoreKill(map.players[attacking.owner]);
+				players.scoreLoss(map.players[defending.owner]);
 				map.players[defending.owner].active=false;
 			}
 			defending.assign(attacking.owner,attacking.dice-1);
@@ -295,7 +295,7 @@ function attack()
 }
 function takeTurn()
 {
-	while(map.in_progress) {
+	while(map.status==0) {
 		if(!attack()) break;
 		updateStatus(map);
 		mswait(500);
@@ -303,12 +303,13 @@ function takeTurn()
 }
 function forfeit()
 {
-	map.in_progress=false;
+	map.status=1;
 	map.players[map.turn].active=false;
-	var data=new Packet(map,"activity");
+	var data=new Packet("activity",map);
 	data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
 	stream.send(data);
-	players.scoreLoss(map.players[map.turn].name);
+	players.scoreLoss(map.players[map.turn]);
+	updateStatus(map);
 }
 function reinforce()
 {
@@ -320,7 +321,7 @@ function reinforce()
 		total+=placed[p];
 	}
 	var reserved=placeReserves(map,reinforcements-total);
-	var data=new Packet(map,"activity");
+	var data=new Packet("activity",map);
 	if(total>0) {
 		data.activity=("\1n\1y" + map.players[map.turn].name + " placed " + total + " dice");
 		stream.send(data);
