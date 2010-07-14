@@ -57,17 +57,12 @@ function Chat(key,engine)
 	}
 }
 //*************MAIN ENGINE*************
-if(js.global.ServiceConnection==undefined)
-	load("commclient.js");
-if(js.global.Scrollbar==undefined)
-	load("scrollbar.js");
-if(js.global.Graphic==undefined)
-	load("graphic.js");
+load("commclient.js");
+load("scrollbar.js");
+load("graphic.js");
 //load("str_cmds.js");
-if(js.global.NODE_WFC==undefined)
-	load("nodedefs.js");
-if(js.global.Window==undefined)
-	load("msgwndw.js");
+load("nodedefs.js");
+load("msgwndw.js");
 
 bbs.sys_status |= SS_PAUSEOFF;	
 oldpass=console.ctrl_key_passthru;
@@ -82,9 +77,9 @@ const flag_message=		0;
 const local_color=			"\1n\1g";
 const remote_color=		"\1n\1c";
 const alert_color=			"\1r\1h";
-const notice_color=		"\1n\1y";
+const notice_color=		"\1n\1w";
 const input_color=			"\1n";
-const private_color=		"\1n\1w";
+const private_color=		"\1n\1y";
 const global_color=		"\1n\1m";
 	
 function ChatEngine(root)
@@ -94,20 +89,20 @@ function ChatEngine(root)
 	var root_dir=(root?root:js.exec_dir);
 	var stream=new ServiceConnection("chat",user.alias);
 	this.input_line=new InputLine();
-	this.chat_room=new ChatRoom();
+	this.channel=new Channel();
 	
 	// USEFUL METHODS 
-	this.init=function(room,c,r,x,y,ix,iy,iw,bg) //NOTE: DESTROYS BUFFER AND MESSAGE LIST
+	this.init=function(chan,c,r,x,y,ix,iy,iw,bg) //NOTE: DESTROYS BUFFER AND MESSAGE LIST
 	{
-		this.changeMessage(room);
+		var channel="#" + chan.replace(/\s+/g,'_');
+		this.joinMessage(channel);
 		this.input_line=new InputLine();
 		this.input_line.init(ix,iy,iw,bg);
-		this.chat_room.init(room,x,y,c,r,bg);
-		this.entryMessage();
+		this.channel.init(channel,x,y,c,r,bg);
 	}
 	this.initbox=function()
 	{
-		this.chat_room.initbox();
+		this.channel.initbox();
 		this.input_line.initbox();
 	}
 	this.exit=function()
@@ -121,28 +116,30 @@ function ChatEngine(root)
 	}
 	this.exitMessage=function()
 	{
-		if(user.compare_ars("QUIET")) return false;
-		var message=new Message(user.alias + " has left the room. " + timeStamp(time()),flag_notice);
-		this.send(message);
+		//if(user.compare_ars("QUIET")) return false;
+		//var message=new Message(user.alias + " has left the chan. " + timeStamp(time()),flag_notice);
+		var quit=new ChannelAction("QUIT",this.channel.chan,user.alias);
+		this.send(quit);
+		//this.send(message);
 	}
-	this.entryMessage=function()
+	this.joinMessage=function(chan)
 	{
-		if(user.compare_ars("QUIET")) return false;
-		var message=new Message(user.alias + " has arrived. " + timeStamp(time()),flag_notice);
-		this.send(message);
-	}
-	this.changeMessage=function(room)
-	{
-		if(user.compare_ars("QUIET")) return false;
-		if(this.chat_room.room && this.chat_room.room!=room) {
-			var message=new Message(user.alias + " joined " + room + ". " + timeStamp(time()),flag_notice);
-			this.send(message);
+		var nick=new Nick(user.alias,user.name);
+		this.send(nick);
+		//if(user.compare_ars("QUIET")) return false;
+		if(this.channel.chan !=chan) {
+			if(this.channel.chan) {
+				var part=new ChannelAction("PART",this.channel.chan,user.alias);
+				this.send(part);
+			}
+			var join=new ChannelAction("JOIN",chan,user.alias);
+			this.send(join);
 		}
 	}
 	this.resize=function(x,y,c,r,ix,iy,iw) //NOTE: DOES NOT DESTROY BUFFER OR MESSAGE LIST
 	{
 		this.input_line.init(ix,iy,iw);
-		this.chat_room.init(x,y,c,r);
+		this.channel.init(x,y,c,r);
 		this.redraw();
 	}
 	this.getUserList=function()
@@ -156,31 +153,31 @@ function ChatEngine(root)
 	}
 	this.redraw=function()
 	{
-		this.chat_room.draw();
+		this.channel.draw();
 		this.input_line.draw();
 	}
 	this.send=function(message)
 	{
 		if(!message.level) message.level=flag_message;
 		if(!message.scope) message.scope=flag_normal;
-		if(!message.target) message.target=this.chat_room.room;
+		if(!message.chan) message.chan=this.channel.chan;
 		if(!stream.send(message)) {
-			this.chat_room.alert("message not sent.");
+			this.channel.alert("message not sent.");
 		}
 	}
 	this.receive=function()
 	{
 		var notices=stream.getNotices();
 		while(notices.length) {
-			this.chat_room.notice(notices.shift());
+			this.channel.notice(notices.shift());
 		}
 		var packet=stream.receive();
 		this.processData(packet);
 	}
 	this.processData=function(packet)
 	{
-		if(packet && packet.txt) {
-			this.chat_room.process(packet);
+		if(packet && packet.func) {
+			this.channel.process(packet);
 		}
 	}
 	this.processKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
@@ -217,7 +214,7 @@ function ChatEngine(root)
 		case KEY_DOWN:
 		case KEY_HOME:	
 		case KEY_END:	
-			this.chat_room.scroll(key);
+			this.channel.scroll(key);
 			break;
 		case '\b':
 			this.input_line.backspace();
@@ -241,8 +238,9 @@ function ChatEngine(root)
 	{
 		var message=this.input_line.submit();
 		if(message) {
+			if(!message.dest) message.dest=this.channel.chan;
 			this.send(message);
-			this.chat_room.process(message);
+			this.channel.process(message);
 		}
 	}
 	this.cycle=function()
@@ -250,7 +248,7 @@ function ChatEngine(root)
 		this.receive();
 	}
 }
-function ChatRoom()
+function Channel()
 {
 	this.columns=console.screen_columns;
 	this.rows=console.screen_rows;
@@ -261,11 +259,14 @@ function ChatRoom()
 	this.fullscreen=true;
 	this.ignored=[];
 	this.box=false;
-	this.room="Main";
+	this.chan="";
 	this.bg="";
 	
-	this.init=function(room,x,y,c,r,bg)
+	this.init=function(chan,x,y,c,r,bg)
 	{
+		if(bg) this.bg=bg;
+		if(chan) this.chan=chan;
+
 		if(!(x || y || c || r)) {
 			this.fullscreen=true;
 			console.ctrlkey_passthru=oldpass;
@@ -282,8 +283,6 @@ function ChatRoom()
 			this.rows=r;
 			this.fullscreen=false;
 		}
-		if(bg) this.bg=bg;
-		if(room) this.room=room;
 		
 		if(this.box) this.initbox();
 		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
@@ -295,7 +294,7 @@ function ChatRoom()
 	this.initbox=function()
 	{
 		this.box=new Window(this.x-1,this.y-1,this.columns+2,this.rows+2);
-		this.box.init("\1n\1cCHAT","\1n\1c" + this.room);
+		this.box.init("\1n\1cCHAT","\1n\1c" + this.chan);
 	}
 	this.ignore=function(alias)
 	{
@@ -304,45 +303,82 @@ function ChatRoom()
 	}
 	this.process=function(data)
 	{
-		if(this.ignored[data.source]==true) return false;
+		if(this.ignored[data.origin]==true) return false;
+		switch(data.func) 
+		{
+		case "JOIN":
+			if(data.chan==this.chan) this.post(data.origin + " joined " + data.chan.substr(1).replace(/_/g,' '),notice_color);
+			break;
+		case "PART":
+			if(data.chan==this.chan) this.post(data.origin + " left " + data.chan.substr(1).replace(/_/g,' '),notice_color);
+			break;
+		case "QUIT":
+			if(data.chan==this.chan) this.post(data.origin + " left chat",notice_color);
+			break;
+		case "PRIVMSG":
+			if(data.dest[0]=="#") {
+				if(data.dest=="#global") {
+					if(data.origin.toUpperCase()==user.alias.toUpperCase()) {
+						this.post(data.msg,global_color,data.origin);
+					} else {
+						this.post(data.msg,global_color + "\1h",data.origin);
+					}
+				} else if(data.dest==this.chan) {
+					if(data.origin.toUpperCase()==user.alias.toUpperCase()) {
+						this.post(data.msg,local_color,data.origin);
+					} else {
+						this.post(data.msg,remote_color,data.origin);						
+					}
+				}
+			} else {
+				if(data.dest.toUpperCase()==user.alias.toUpperCase()) {
+					this.post(data.msg,private_color + "\1h",data.origin);
+				} else if(data.origin.toUpperCase()==user.alias.toUpperCase()) {
+					this.post(data.msg,private_color,data.origin);
+				}
+			}
+			break;
+		}
+		/*
 		switch(data.scope)
 		{
 		case flag_private:
-			if(data.target) {
-				if(data.target==user.alias) this.post(data.txt,private_color + "\1h",data.source);
-				else this.post(data.txt,private_color,data.source + "\1h-" +private_color+ data.target);
+			if(data.chan) {
+				if(data.chan==user.alias) this.post(data.msg,private_color + "\1h",data.origin);
+				else this.post(data.msg,private_color,data.origin + "\1h-" +private_color+ data.chan);
 			}
 			break;
 		case flag_global:
-			switch(data.source) {
+			switch(data.origin) {
 				case user.alias:
-					this.post(data.txt,global_color,data.source);
+					this.post(data.msg,global_color,data.origin);
 					break;
 				default:
-					this.post(data.txt,global_color + "\1h",data.source);
+					this.post(data.msg,global_color + "\1h",data.origin);
 					break;
 			}
 			break;
 		case flag_normal:
 		default:
-			if(data.target==this.room) {
-				if(!data.source) {
+			if(data.chan==this.chan) {
+				if(!data.origin) {
 					switch(data.level) 
 					{
 					case flag_alert:
-						this.post(data.txt,alert_color);
+						this.post(data.msg,alert_color);
 						break;
 					case flag_notice:
 					default:
-						this.post(data.txt,notice_color);
+						this.post(data.msg,notice_color);
 						break;
 					}
-				} else	if(data.source==user.alias) {
-					this.post(data.txt,local_color,data.source);
-				} else this.post(data.txt,remote_color,data.source);
+				} else	if(data.origin==user.alias) {
+					this.post(data.msg,local_color,data.origin);
+				} else this.post(data.msg,remote_color,data.origin);
 			}
 			break;
 		}
+		*/
 	}
 	this.scroll=function(key) 
 	{
@@ -366,7 +402,7 @@ function ChatRoom()
 			this.scrollbar.draw(this.window.index,this.window.length,this.window.height);
 		}
 	}
-	this.post=function(text,color,source,target)
+	this.post=function(text,color,origin,chan)
 	{
 		if(text.indexOf('@')>=0) {
 			if(user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP) {
@@ -374,8 +410,8 @@ function ChatRoom()
 			}
 		}
 		var msg;
-		if(source) {
-			msg="\r" + color + this.bg + source + "\1h: " + color + this.bg + text + "\r\n";
+		if(origin) {
+			msg="\r" + color + this.bg + origin + "\1h: " + color + this.bg + text + "\r\n";
 		} else {
 			msg="\r" + color + this.bg + text + "\r\n";
 		}
@@ -411,13 +447,30 @@ function ChatRoom()
 		}
 	}
 }
-function Message(txt,level,scope,source,target)
+function Message(msg,level,origin,target)
 {
-	this.txt=txt;
+	this.msg=msg;
 	this.level=level;
-	this.scope=scope;
-	this.source=source;
-	this.target=target;
+	this.func="PRIVMSG";
+	this.origin=origin;
+	this.dest=target;
+}
+function ChannelAction(action,chan,origin) 
+{
+	this.func=action;
+	this.chan=chan;
+	this.origin=origin;
+}
+function Nick(nick,username)
+{
+	this.func="NICK";
+	this.nickname=nick;
+	this.hops=1;
+	this.created=time();
+	this.username=nick;
+	this.realname=username;
+	this.hostname=system.inet_addr;
+	this.servername=system.inet_addr;
 }
 function InputLine()
 {
@@ -428,7 +481,6 @@ function InputLine()
 	this.fg=input_color;
 	this.buffer="";
 	this.scope=flag_normal;
-	this.target="";
 	this.box=false;
 	
 	this.clear=function() 
@@ -474,27 +526,24 @@ function InputLine()
 	this.submit=function()
 	{
 		if(strlen(this.buffer)<1) return false;
-		switch(this.buffer.charAt(0))
-		{
-			case ';':
-				if(this.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
-					str_cmds(this.buffer.substr(1));
-					this.reset();
-					return false;
-				} else {
-					break;
-				}
-			case '/':
-				var target=getFirstWord(this.buffer.substr(1));
-				if(target.length>0) {
-					this.target=target;
-					this.buffer=removeSpaces(this.buffer.substr(target.length+1));
-					this.scope=flag_private;
-				}
-			default:
-				break;
+		var dest="";
+		
+		if(this.buffer[0]==";") {
+			if(this.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
+				str_cmds(this.buffer.substr(1));
+				this.reset();
+				return false;
+			}
+		} else if(this.buffer.match(/^\/msg/i)) {
+			var buff=this.buffer.substr(5);
+			dest=getFirstWord(buff);
+			this.buffer=removeSpaces(buff.substr(dest.length+1));
+			this.scope=flag_private;
+		} else if(this.scope==flag_global) {
+			dest="#global";
 		}
-		var msg=new Message(this.buffer,flag_message,this.scope,user.alias,this.target);
+		
+		var msg=new Message(this.buffer,flag_message,user.alias,dest);
 		this.reset();
 		this.clear();
 		return msg;
@@ -534,7 +583,6 @@ function InputLine()
 			this.scope=flag_normal;
 			if(this.box) this.initbox();
 		}
-		this.target="";
 	}
 	this.getxy=function()
 	{

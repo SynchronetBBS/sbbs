@@ -4,15 +4,14 @@
 	by Matt Johnson - 2009
 */
 
-if(js.global.testSocket==undefined)
-	load("funclib.js");
 if(js.global.JSON==undefined)
 	load("synchronet-json.js");
 if(js.global.SYS_CLOSED==undefined)
 	load("sbbsdefs.js");
 if(js.global.IPPROTO_IP==undefined)
 	load("sockdefs.js");
-
+if(js.global.testSocket==undefined)
+	load("funclib.js");
 
 function ServiceConnection(id,alias)
 {
@@ -91,7 +90,7 @@ function ServiceConnection(id,alias)
 		if(!data.id) data.id=this.id;
 		if(!data.system) data.system=system.name;
 		if(!data.context) data.context=LOCAL;
-		if(!data.alias) data.alias=alias;
+		if(!data.origin) data.origin=user.alias;
 		
 		for(var i=0;i<this.queue.length;i++) {
 			var qdata=this.queue.shift();
