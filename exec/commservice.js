@@ -14,7 +14,6 @@
 		commclient.js
 		chateng.js
 		funclib.js
-		FILESYNC.js
 	
 	Add to "/sbbs/ctrl" directory:
 		FILESYNC.ini
@@ -36,8 +35,8 @@ const REMOTE=				"*";
 const LOCAL=				"&";
 const FILESYNC=			"@";
 const QUERY=				"?";
-const CONNECTION_TIMEOUT=	5;//SECONDS
-const CONNECTION_INTERVAL=	30;
+const CONNECTION_TIMEOUT=	1;//SECONDS
+const CONNECTION_INTERVAL=	60;
 const CONNECTION_ATTEMPTS=	10;
 const MAX_BUFFER=			512;
 const MAX_RECV=			10240;
@@ -67,8 +66,16 @@ function load_modules()
 			load(modules[module_name],module.working_directory+module.handler);
 		if(module.address && module.port) {
 			server_map[module_name]=module.address;
-			if(!servers[module.address]) 
-				servers[module.address]=new Server(module.address,module.port);
+			var auth=false;
+			if(module.servername && module.password) {
+				auth=new Object();
+				auth.servername=module.servername;
+				auth.password=module.password;
+				auth.system=system.name;
+			}
+			if(!servers[module.address]) {
+				servers[module.address]=new Server(module.address,module.port,auth);
+			}
 		}
 	}
 	mfile.close();
@@ -144,7 +151,12 @@ function receive_from(sock_array)
 		var sock=sock_array[socks[s]];
 		var data=sock.recvline(MAX_RECV);
 		if(data == null) return false;
-		data=JSON.parse(data);
+		try {
+			data=JSON.parse(data);
+		} catch(e) {
+			log(LOG_ERROR,"error parsing JSON data: " + data);
+			return false;
+		}
 		queue(sock,data);
 	}
 }
@@ -162,7 +174,7 @@ function authenticate()
 			case LOCAL:
 				if(!local_sessions[data.id]) local_sessions[data.id]=[];
 				local_sessions[data.id].push(sock);
-				log("local connection: " + data.alias + " running " + data.id);
+				log("local connection: " + data.origin + " running " + data.id);
 				break;
 			case REMOTE:
 				if(data.version==VERSION) {
@@ -181,7 +193,7 @@ function authenticate()
 		}
 		sock.id=data.id;
 		sock.context=data.context;
-		sock.alias=data.alias;
+		sock.origin=data.origin;
 		sock.system=data.system;
 		server.client_add(sock);
 		awaiting_auth.splice(socks[s],1);
@@ -477,7 +489,7 @@ function sock_enqueue(data)
 }
 
 /* Server object */
-function Server(addr,port)
+function Server(addr,port,auth)
 {
 	this.address=addr;
 	this.port=port;
@@ -486,6 +498,7 @@ function Server(addr,port)
 	this.queue="";
 	this.last_attempt=0;
 	this.attempts=0;
+	this.auth=auth;
 
 	this.connect=function()
 	{
@@ -498,6 +511,9 @@ function Server(addr,port)
 			this.last_attempt=time();
 			return false;
 		} 
+		if(this.auth) {
+			this.sock.enqueue(this.auth);
+		}
 		return true;
 	}
 	this.disconnect=function()
@@ -514,6 +530,7 @@ function Server(addr,port)
 	{
 		if(!this.sock || !this.sock.is_connected) {
 			if(this.attempts>=CONNECTION_ATTEMPTS) {
+				log(LOG_ERROR,"error connecting to server: " + this.address);
 				this.enabled=false;
 				return false;
 			}
@@ -524,7 +541,12 @@ function Server(addr,port)
 		if(this.sock.is_connected && this.sock.data_waiting) {
 			var data=this.sock.recvline(MAX_RECV);
 			if(data == null) return false;
-			data=JSON.parse(data);
+			try {
+				data=JSON.parse(data);
+			} catch(e) {
+				log(LOG_ERROR,"error parsing JSON data: " + data);
+				return false;
+			}
 			switch(data.type) {
 				case FILESYNC:
 					handle_filesync(this.sock,data);
@@ -549,6 +571,7 @@ function Server(addr,port)
 	{
 		if(!this.sock || !this.sock.is_connected) {
 			if(this.attempts>=CONNECTION_ATTEMPTS) {
+				log(LOG_ERROR,"error connecting to server: " + this.address);
 				this.enabled=false;
 				return false;
 			}
