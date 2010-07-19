@@ -64,7 +64,7 @@
 "Delete mail from %s"                                   054 DeleteMailQ
 "OK"                                                    055 OK
 "\r\n_bhForward mail to: w"                         056 ForwardMailTo
-"Save/Append messsage to another file"                  057 SaveMsgToFile
+"Save/Append message to another file"                  057 SaveMsgToFile
 "_yhPath/Filename to write to: n"                   058 FileToWriteTo
 "n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
 "\r\nghMail that you've sent still pending:"\         060 MailSentLstHdr
