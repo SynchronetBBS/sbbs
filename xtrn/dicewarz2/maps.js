@@ -286,9 +286,9 @@ function Packet(type,map)
 	function getPlayerColors(map,p)
 	{
 		var colors=new Object();
-		colors.bg=map.players[p].active?getColor(settings.background_colors[p]):BG_BLACK;
-		colors.fg=map.players[p].active?getColor(settings.foreground_colors[p]):BLACK;
-		colors.txt=map.players[p].active?getColor(settings.text_colors[p]):LIGHTGRAY;
+		colors.bg=getColor(settings.background_colors[p]);
+		colors.fg=getColor(settings.foreground_colors[p]);
+		colors.txt=getColor(settings.text_colors[p]);
 		return colors;
 	}
 	function sortGameData(array)
@@ -803,13 +803,24 @@ function Packet(type,map)
 	}
 	function findWinner(map)
 	{
-		var winner=false;
+		var winner=0;
 		var most_tiles=0;
+		var most_dice=0;
 		
 		for(var p=0;p<map.players.length;p++){
 			if(map.players[p].active) {
 				var num_tiles=countTiles(map,p);
-				if(num_tiles>most_tiles) winner=p;
+				var num_dice=countDice(map,p);
+				if(num_tiles>most_tiles) {
+					most_tiles=num_tiles;
+					most_dice=num_dice;
+					winner=p;
+				} else if(num_tiles==most_tiles) {
+					if(num_dice>most_dice) {
+						most_dice=num_dice;
+						winner=p;
+					}
+				}
 			}
 		}
 		map.winner=winner;

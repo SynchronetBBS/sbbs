@@ -4,7 +4,7 @@ load(game_dir+"maps.js");
 var map=game_data.list[game_number];
 
 var sortFunctions={random:randomSort, wild:wildAndCrazyAISort, killMost:killMostDiceAISort, paranoia:paranoiaAISort, randomAI:randomAISort, groupParanoid:groupAndParanoidAISort};
-var checkFunctions={random:randomAICheck, paranoid:paranoidAICheck, wild:wildAndCrazyAICheck, ultraParanoid:ultraParanoidAICheck};
+var checkFunctions={random:randomAICheck, paranoid:paranoidAICheck, wild:wildAndCrazyAICheck, ultraParanoid:ultraParanoidAICheck, weakest:weakestCheck};
 var qtyFunctions={random:randomAttackQuantity, full:fullAttackQuantity, single:singleAttackQuantity};
 
 /* Callbacks for sorting the targets array */
@@ -76,6 +76,22 @@ function groupAndParanoidAISort(a,b)
 }
 
 /* Callbacks for deciding if a given attack should go into the targets array */
+function weakestCheck(map, base, target) 
+{
+	var target_tiles=countTiles(map, target.owner);
+	var neighbors=getNeighboringTiles(base,map);
+	
+	for(var n=0;n<neighbors.length;n++) {
+		var neighbor=neighbors[n];
+		if(neighbors[n].id==target.id)
+			continue;
+		if(neighbor.owner!=base.owner) {
+			var neighbor_tiles=countTiles(map, neighbor.owner);
+			if(neighbor_tiles<target_tiles) return(false);
+		}
+	}
+	return(true);
+}
 function randomAICheck(map, base, target)
 {
 	var computer=map.players[base.owner];
@@ -108,7 +124,7 @@ function paranoidAICheck(map, base, target)
 		return(true);
 	/* If we are equal, only add to targets if we are maxDice */
 	if(base.dice==target.dice && base.dice==settings.max_dice) {
-			return(true);
+		return(true);
 	}
 	return(false);
 }

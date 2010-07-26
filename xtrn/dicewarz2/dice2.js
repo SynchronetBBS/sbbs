@@ -133,12 +133,16 @@ function viewRankings()
 			printPadded("",6,"\xC4"));
 		for(var s in scores) {
 			var score=scores[s];
-			wrap("\1n\1c " + 
-				format("%-25s\1h\xB3\1n\1c",score.name) + 
-				format("%-25s\1h\xB3\1n\1c",score.system) + 
-				format("%6s\1h\xB3\1n\1c",score.points) + 
-				format("%5s\1h\xB3\1n\1c",score.kills) + 
-				format("%4s\1h\xB3\1n\1c",score.wins) + 
+			var color="\1n\1c";
+			if(score.name==user.alias) {
+				color="\1c\1h";
+			}
+			wrap(color+ " " + 
+				format("%-25s\1h\xB3"+color,score.name) + 
+				format("%-25s\1h\xB3"+color,score.system) + 
+				format("%6s\1h\xB3"+color,score.points) + 
+				format("%5s\1h\xB3"+color,score.kills) + 
+				format("%4s\1h\xB3"+color,score.wins) + 
 				format("%6s",score.losses)); 
 		}
 		menuPrompt("\1w\1h[press any key]");
@@ -431,7 +435,7 @@ function run(map)
 	//INIT/RUN
 	function main()
 	{
-		if(map.single_player && player>=0 && map.players[map.turn].AI) {
+		if(player>=0 && map.players[map.turn].AI) {
 			load(true,game_dir + "ai.js",map.game_number,game_dir);
 		}
 		
@@ -572,6 +576,9 @@ function run(map)
 					listPlayers();
 					setMenuCommands();
 					break;
+				case "player":
+					map.players[data.pnum].reserve=data.player.reserve;
+					break;
 				case "tile":
 					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
 					drawTile(map,map.tiles[data.tile.id]);
@@ -580,6 +587,7 @@ function run(map)
 					activityAlert(data.activity);
 					break;
 				default:
+					debug("unknown data type: " + data.type);
 					break;
 			}
 			if(map.winner) {
@@ -593,10 +601,15 @@ function run(map)
 	function forfeit()
 	{
 		map.players[map.turn].active=false;
+		taking_turn=false;
 		var data=new Packet("activity",map);
 		data.activity=("\1n\1y" + map.players[map.turn].name + " forfeits");
 		stream.send(data);
 		players.scoreLoss(map.players[map.turn]);
+		updateStatus(map);
+		game_data.saveData(map);
+		statusAlert();
+		listPlayers();
 	}
 	function endTurn()
 	{
