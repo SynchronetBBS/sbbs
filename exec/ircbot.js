@@ -178,7 +178,15 @@ function main() {
 					}
 					// Cycle any available module "main" functions
 					for(var m in Modules) {
-						if(Modules[m].main) Modules[m].main(srv,srv.channel[c].name);
+						var module=Modules[m];
+						if(module && module.enabled) {
+							try {
+								if(module.main)module.main(srv,srv.channel[c].name);
+							} catch(e) {
+								srv.o(srv.channel[c].name,m + " module error: " + e);
+								module.enabled=false;
+							}
+						}
 					}
 				}
 			}
@@ -281,10 +289,12 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.ignore = new Array();
 	
 	this.check_bot_command = function(target,onick,ouh,cmd) {
-		Server_check_bot_command(this,Bot_Commands,target,onick,ouh,cmd);
-		for(var bot_cmd in Modules) {
-			if(Modules[bot_cmd].enabled)
-				Server_check_bot_command(this,Modules[bot_cmd].Bot_Commands,target,onick,ouh,cmd);
+		var module=Modules[cmd[0].toUpperCase()];
+		if(module && module.enabled) {
+			if(!module.Bot_Commands[cmd[0].toUpperCase()]) cmd.shift();
+			Server_check_bot_command(this,module.Bot_Commands,target,onick,ouh,cmd);
+		} else {
+			Server_check_bot_command(this,Bot_Commands,target,onick,ouh,cmd);
 		}
 	}
 

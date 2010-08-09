@@ -25,12 +25,9 @@ function Server_command(srv,cmdline,onick,ouh) {
 			break;
 		case "352":	// WHO reply.  Process into local cache.
 			var nick = cmd[6].toUpperCase();
-			if(!srv.users[nick])
-				srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4],cmd[6]);
-			else
-				srv.users[nick].uh=cmd[3] + "@" + cmd[4];
+			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
+			else srv.users[nick].uh=cmd[3] + "@" + cmd[4];
 			srv.users[nick].channels[cmd[2].toUpperCase()]=true;
-			srv.users[nick].servername = cmd[5];
 			break;
 		case "433":	// Nick already in use.
 			srv.juped = true;
@@ -50,7 +47,7 @@ function Server_command(srv,cmdline,onick,ouh) {
 				break;
 			}
 			// Someone else joining.
-			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
+			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh);
 			else srv.users[onick.toUpperCase()].uh=ouh;
 			srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()]=true;
 			var lvl = srv.bot_access(onick,ouh);
@@ -105,17 +102,17 @@ function Server_command(srv,cmdline,onick,ouh) {
 					cmd.shift();
 					cmd.shift();
 					cmd.shift();
-					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
+					srv.check_bot_command(chan.name,onick,ouh,cmd);
 				} else if(cmd[2][0] == truncsp(get_cmd_prefix())) {
 					cmd.shift();
 					cmd.shift();
 					cmd[0] = cmd[0].substr(1).toUpperCase();
-					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
+					srv.check_bot_command(chan.name,onick,ouh,cmd);
 				} else if(get_cmd_prefix()=="") {
 					cmd.shift();
 					cmd.shift();
 					cmd[0] = cmd[0].toUpperCase();
-					srv.check_bot_command(chan.name,onick,ouh,cmd.join(" "));
+					srv.check_bot_command(chan.name,onick,ouh,cmd);
 				}
 			} else if (cmd[1].toUpperCase() == 
 			           srv.curnick.toUpperCase()) { // MSG?
@@ -128,7 +125,7 @@ function Server_command(srv,cmdline,onick,ouh) {
 					srv.ctcp(onick,ouh,cmd);
 					break;
 				}
-				srv.check_bot_command(onick,onick,ouh,cmd.join(" "));
+				srv.check_bot_command(onick,onick,ouh,cmd);
 			}
 			break;
 		case "PING":
@@ -194,8 +191,7 @@ function Server_CTCP_Reply(nick,str) {
 	this.writeout("NOTICE " + nick + " :\1" + str + "\1");
 }
 
-function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
-	var cmd=IRC_parsecommand(cmdline);
+function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmd) {
 	var access_level = srv.bot_access(onick,ouh);
 	var botcmd = bot_cmds[cmd[0].toUpperCase()];
 	if (botcmd) {
@@ -255,7 +251,15 @@ function save_everything() {
 	config.close();
 
 	for (var m in Modules) {
-		if(Modules[m].save) Modules[m].save();
+		var module=Modules[m];
+		if(module && module.enabled) {
+			try {
+				if(module.save) module.save();
+			} catch(e) {
+				srv.o(srv.channel[c].name,m + " module error: " + e);
+				module.enabled=false;
+			}
+		}
 	}
 
 	Config_Last_Write = time();
