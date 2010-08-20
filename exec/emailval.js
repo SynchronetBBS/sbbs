@@ -16,7 +16,7 @@ Email validation system.. one setting for new users (unvalidated) and another
 that is intended for validated users.
 
 STEP 2:
-Edit mailval.js in notepad and edit the following values to match your
+Edit emailval.js in notepad and edit the following values to match your
 pre-validation and post-validation security levels.
         LEVEL_BEFORE_VALIDATION and LEVEL_AFTER_VALIDATION
 
