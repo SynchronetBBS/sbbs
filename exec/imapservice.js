@@ -1443,7 +1443,10 @@ authenticated_command_handlers = {
 						break;
 					case 'UIDNEXT':
 						response.push("UIDNEXT");
-						response.push(index.idx[index.offsets[index.offsets.length-1]].number+1);
+						if(index.offsets.length==0)
+							response.push(1);
+						else
+							response.push(index.idx[index.offsets[index.offsets.length-1]].number+1);
 						break;
 					case 'UIDVALIDITY':
 						response.push("UIDVALIDITY");
