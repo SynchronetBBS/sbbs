@@ -54,7 +54,10 @@ server.socket.nonblocking = true;
 function load_modules()
 {
 	var mfile=new File(system.ctrl_dir + "filesync.ini");
-	mfile.open('r');
+	if(!mfile.open('r')) {
+		log("Error opening module file");
+		exit();
+	}
 	var list=mfile.iniGetSections();
 	for(l=0;l<list.length;l++) {
 		var module_name=list[l];
