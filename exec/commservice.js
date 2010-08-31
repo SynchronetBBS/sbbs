@@ -3,7 +3,7 @@
 	Inter-BBS/Inter-Node socket service
 	for Synchronet v3.15+ 
 	by Matt Johnson - 2009
-	Allows real-time gaming/chatting between LOCAL bbs nodes and REMOTE bbs systems
+	Allows real-time gaming/chatting between "LOCAL" bbs nodes and "SERVER" bbs systems
 
 	The following files can be located in the Synchronet CVS repository:
 	
@@ -16,7 +16,7 @@
 		funclib.js
 	
 	Add to "/sbbs/ctrl" directory:
-		FILESYNC.ini
+		filesync.ini
 	
 	Add to "/sbbs/ctrl/services.ini" file:
 
@@ -30,11 +30,7 @@
 load("funclib.js");
 load("synchronet-json.js");
 
-const VERSION=				"$Revision$";
-const REMOTE=				"*";
-const LOCAL=				"&";
-const FILESYNC=			"@";
-const QUERY=				"?";
+const VERSION=				"$Revision$".split(' ')[1];
 const CONNECTION_TIMEOUT=	1;//SECONDS
 const CONNECTION_INTERVAL=	60;
 const CONNECTION_ATTEMPTS=	10;
@@ -43,52 +39,24 @@ const MAX_RECV=			10240;
 
 var modules=[];
 var servers=[];
-var server_map=[];
+var servers_map=[];
 var data_queue=[];
-var remote_sessions=[];
-var local_sessions=[];
+var remote_clients=[];
+var local_clients=[];
 var awaiting_auth=[];
+var blocking=[];
 
 server.socket.nonblocking = true;
-//main service loop
-function load_modules()
-{
-	var mfile=new File(system.ctrl_dir + "filesync.ini");
-	if(!mfile.open('r')) {
-		log("Error opening module file");
-		exit();
-	}
-	var list=mfile.iniGetSections();
-	for(l=0;l<list.length;l++) {
-		var module_name=list[l];
-		modules[module_name]=new Object();
-		var module=mfile.iniGetObject(module_name);
-		if(module.working_directory) 
-			modules[module_name].dir=module.working_directory;
-		if(module.handler)
-			load(modules[module_name],module.working_directory+module.handler);
-		if(module.address && module.port) {
-			server_map[module_name]=module.address;
-			var auth=false;
-			if(module.servername && module.password) {
-				auth=new Object();
-				auth.servername=module.servername;
-				auth.password=module.password;
-				auth.system=system.name;
-			}
-			if(!servers[module.address]) {
-				servers[module.address]=new Server(module.address,module.port,auth);
-			}
-		}
-	}
-	mfile.close();
-}
+
+/* main service loop */
 function cycle()
 {
 	while(!js.terminated) {
 		try {
-			if(sessions_active()) {
+			if(unknown_sessions_active()) {
 				authenticate();
+			}
+			if(known_sessions_active()) {
 				inbound();
 				outbound();
 			}
@@ -96,7 +64,11 @@ function cycle()
 				if(js.terminated) break;
 				continue;
 			}
-			store_socket(server.socket.accept(),awaiting_auth);
+			
+			var incoming=server.socket.accept();
+			debug("connection from " + incoming.remote_ip_address,LOG_DEBUG);
+			awaiting_auth.push(get_socket(incoming));
+			
 		} catch(e) {
 			debug(e,LOG_WARNING);
 			break;
@@ -107,17 +79,71 @@ function cycle()
 			servers[s].disconnect();
 	}
 }
+
+/* service module initialization (from ctrl/filesync.ini) */
+function load_modules()
+{
+	var mfile=new File(system.ctrl_dir + "filesync.ini");
+	if(!mfile.open('r')) {
+		log(LOG_ERROR,"Error opening module file");
+		return false;
+	}
+	var list=mfile.iniGetSections();
+	for(l=0;l<list.length;l++) {
+		var module_name=list[l];
+		var module=mfile.iniGetObject(module_name);
+		init_module(module,module_name);
+	}
+	mfile.close();
+}
+function init_module(module,module_name) 
+{
+	debug("loading module: " + module_name);
+	modules[module_name]=new Object();
+	
+	/* if a working directory has been provided..... (it should be) */
+	if(module.working_directory) {
+		modules[module_name].dir=module.working_directory;
+	}
+		
+	/* if there is a special handler for this module's data */
+	if(module.handler) {
+		load(modules[module_name],module.working_directory+module.handler);
+	}
+	
+	/* if a server.ini file exists for this module, that will be our hub (if not.. we ARE the hub) */
+	if(file_exists(module.working_directory + "server.ini")) {
+		var sfile=new File(module.working_directory + "server.ini");
+		if(!sfile.open('r')) {
+			log(LOG_ERROR,"Error opening server file");
+			return false;
+		}
+		
+		var host=sfile.iniGetValue("host");
+		var port=sfile.iniGetValue("port");
+		var auth=sfile.iniGetObject("auth");
+		if(auth) {
+			for(var i in auth) auth[i]=eval(auth[i]);
+		}
+		if(host && port) {
+			servers_map[module_name]=host;
+			if(!servers[host]) {
+				servers[host]=new Server(host,port,auth);
+			}
+		}
+	}
+}
+
+/* socket IO */
 function inbound()
 {
 	for(var m in servers) {
-		if(servers[m].enabled) {
-			servers[m].receive();
-		}
+		servers[m].receive();
 	}
-	for(var l in local_sessions) {
-		receive_from(local_sessions[l]);
+	for(var l in local_clients) {
+		receive_from(local_clients[l]);
 	}
-	receive_from(remote_sessions);
+	receive_from(remote_clients);
 }
 function outbound()
 {
@@ -128,20 +154,20 @@ function outbound()
 	}
 	for(var a=0;a<awaiting_auth.length;a++)	{
 		if(!awaiting_auth[a].cycle()) {
-			delete_session(awaiting_auth,a);
+			delete_socket(awaiting_auth,a);
 			a--;
 		}
 	}
-	for(var r=0;r<remote_sessions.length;r++)	{
-		if(!remote_sessions[r].cycle()) {
-			delete_session(remote_sessions,r);
+	for(var r=0;r<remote_clients.length;r++)	{
+		if(!remote_clients[r].cycle()) {
+			delete_socket(remote_clients,r);
 			r--;
 		}
 	}
-	for(var s in local_sessions) {
-		for(var i=0;i<local_sessions[s].length;i++) {
-			if(!local_sessions[s][i].cycle()) {
-				delete_session(local_sessions[s],i);
+	for(var s in local_clients) {
+		for(var i=0;i<local_clients[s].length;i++) {
+			if(!local_clients[s][i].cycle()) {
+				delete_socket(local_clients[s],i);
 				i--;
 			}
 		}
@@ -152,16 +178,73 @@ function receive_from(sock_array)
 	var socks=socket_select(sock_array);
 	for(var s in socks) {
 		var sock=sock_array[socks[s]];
-		var data=sock.recvline(MAX_RECV);
-		if(data == null) return false;
-		try {
-			data=JSON.parse(data);
-		} catch(e) {
-			log(LOG_ERROR,"error parsing JSON data: " + data);
-			return false;
+		var data=sock.receive();
+		if(!data) return false;
+		
+		process_client_data(sock,data);
+		if(!servers_map[data.id] && modules[data.id] && modules[data.id].handler) {
+			modules[data.id].handler(data);
 		}
-		queue(sock,data);
 	}
+}
+function process_server_data(sock,data) 
+{
+	switch(data.func) 
+	{
+	case "FILESYNC":
+		handle_filesync(sock,data);
+		break;
+	case "QUERY":
+		handle_query(sock,data);
+		break;
+	default:
+		queue(data);
+		break;
+	}
+	if(modules[data.id].handler) {
+		modules[data.id].handler(data);
+	}
+}
+function process_client_data(sock,data)
+{
+	switch(data.func) 
+	{
+	case "FILESYNC":
+		var module_server=servers[servers_map[data.id]];
+		if(module_server && module_server.enabled) {
+			module_server.enqueue(data);
+			if(data.blocking && !blocking[sock.descriptor]) {
+				blocking[sock.descriptor]=sock;
+			}
+		} else {
+			handle_filesync(sock,data);
+		}
+		break;
+	case "QUERY":
+		handle_query(sock,data);
+		break;
+	default:
+		queue(data);
+		break;
+	}
+}
+function get_socket(sock) 
+{
+	sock.queue="";
+	sock.nonblocking=true;
+	sock.receive=sock_receive;
+	sock.enqueue=sock_enqueue;
+	sock.cycle=sock_cycle;
+	sock.users=[];
+	return sock;
+}
+function delete_socket(array,index)
+{
+	log("session terminated: " + array[index].remote_ip_address);
+	server.client_remove(array[index]);
+	array[index].close();
+	array.splice(index,1);
+	log("clients: " + server.clients);
 }
 function authenticate()
 {
@@ -169,99 +252,91 @@ function authenticate()
 	for(var s in socks) {
 		var sock=awaiting_auth[socks[s]];
 		if(!sock) continue;
+
 		debug("authenticating socket");
-		var data=sock.recvline();
-		if(data == null) continue;
-		data=JSON.parse(data);
-		switch(data.context) {
-			case LOCAL:
-				if(!local_sessions[data.id]) local_sessions[data.id]=[];
-				local_sessions[data.id].push(sock);
-				log("local connection: " + data.origin + " running " + data.id);
+		var data=sock.receive();
+		if(!data) continue;
+		
+		switch(data.context) 
+		{
+		case "CLIENT":
+			log("local connection: " + data.nickname + " running " + data.id);
+			sock.nickname=data.nickname;
+			if(!local_clients[data.id]) local_clients[data.id]=[];
+			local_clients[data.id].push(sock);
+			server.client_add(sock);
+			awaiting_auth.splice(socks[s],1);
+			queue(data);
+			break;
+		case "SERVER":
+			if(data.version==VERSION) {
+				log("remote connection: " + data.system);
+				sock.system=data.system;
+				remote_clients.push(sock);
+				server.client_add(sock);
+				awaiting_auth.splice(socks[s],1);
 				break;
-			case REMOTE:
-				if(data.version==VERSION) {
-					remote_sessions.push(sock);
-					log("remote connection: " + data.system);
-					break;
-				} else {
-					debug("incompatible with remote server version: " + data.version,LOG_WARNING);
-					sock.close();
-					continue;
-				}
-			default:
-				debug("unknown connection type: " + data.context);
+			} else {
+				debug("incompatible with remote server version: " + data.version,LOG_WARNING);
 				sock.close();
+				awaiting_auth.splice(socks[s],1);
 				continue;
+			}
+		default:
+			debug("unknown connection type: " + data.context,LOG_WARNING);
+			sock.close();
+			awaiting_auth.splice(socks[s],1);
+			continue;
 		}
-		sock.id=data.id;
-		sock.context=data.context;
-		sock.origin=data.origin;
-		sock.system=data.system;
-		server.client_add(sock);
-		awaiting_auth.splice(socks[s],1);
-		queue(sock,data);
 		log("clients: " + server.clients);
 	}
 }
-function queue(sock,data)
+function queue(data)
 { 
-	data.descriptor=sock.descriptor;
-	switch(data.type) {
-		case FILESYNC:
-			var module_server=servers[server_map[data.id]];
-			if(module_server && module_server.enabled) {
-				module_server.enqueue(data)
-			} else {
-				handle_filesync(sock,data);
-			}
-			break;
-		case QUERY:
-			break;
-		default:
-			var module_server=servers[server_map[data.id]];
-			if(module_server && module_server.enabled) {
-				module_server.enqueue(data);
-			}
-			for(var r=0;r<remote_sessions.length;r++)	{
-				remote_sessions[r].enqueue(data);
-			}
-			for(var s=0;local_sessions[data.id] && s<local_sessions[data.id].length;s++)	{
-				local_sessions[data.id][s].enqueue(data);
-			}
-			break;
+	var module_server=servers[servers_map[data.id]];
+	if(module_server && module_server.enabled) {
+		module_server.enqueue(data);
 	}
-	if(!server_map[data.id] && modules[data.id] && modules[data.id].handler) {
-		modules[data.id].handler(data);
+	for(var r=0;r<remote_clients.length;r++)	{
+		remote_clients[r].enqueue(data);
+	}
+	for(var l=0;local_clients[data.id] && l<local_clients[data.id].length;l++)	{
+		local_clients[data.id][l].enqueue(data);
 	}
 }
-function sessions_active() 
+function known_sessions_active() 
 {
-	if(awaiting_auth.length>0 || remote_sessions.length>0) {
+	if(remote_clients.length>0) {
 		return true;
 	}
-	for(var s in local_sessions) {
-		if(local_sessions[s].length>0) {
+	for(var s in local_clients) {
+		if(local_clients[s].length>0) {
 			return true;
 		}
 	}
 	return false;
 }
+function unknown_sessions_active() 
+{
+	if(awaiting_auth.length>0) {
+		return true;
+	}
+}
 function count_local_sockets()
 {
 	var count=0;
-	for(var l in local_sessions)
+	for(var l in local_clients)
 	{
-		if(local_sessions[l].length) count+=local_sessions[l].length;
+		if(local_clients[l].length) count+=local_clients[l].length;
 	}
 	return count;
 }
 function count_remote_sockets()
 {
-	return remote_sessions.length;
+	return remote_clients.length;
 }
 
-//FILESYNC
+/* filesync */
 function handle_filesync(socket,query)
 {
 	try {
@@ -289,7 +364,7 @@ function handle_filesync(socket,query)
 				break;
 		}
 	} catch(e) {
-		debug("FILESYNC ERROR: " + e,LOG_WARNING);
+		debug("FILESYNC ERROR: " + e,LOG_ERROR);
 	}
 }
 function sync_remote(socket,dir,query)
@@ -310,10 +385,10 @@ function sync_remote(socket,dir,query)
 }	
 function send_updates(socket,dir,query)
 {
-	for(r=0;r<remote_sessions.length;r++) {
-		if(remote_sessions[r].descriptor != socket.descriptor) {
+	for(r=0;r<remote_clients.length;r++) {
+		if(remote_clients[r].descriptor != socket.descriptor) {
 			log("sending node updates: " + query.filemask);
-			sync_remote(remote_sessions[r],dir,query);
+			sync_remote(remote_clients[r],dir,query);
 		}
 	}
 }
@@ -329,7 +404,8 @@ function send_file(socket,dir,query)
 		data.descriptor=server.socket.descriptor;
 		data.id=query.id;
 		data.command="dorecv";
-		data.type=FILESYNC;
+		data.requestor=query.requestor;
+		data.func="FILESYNC";
 		socket.enqueue(data);
 		debug("file sent: " + data.filemask,LOG_DEBUG);
 	}
@@ -365,10 +441,12 @@ function recv_file(socket,dir,query)
 	file_rename(filename,filename+".bck");
 	file_rename(file.name,filename);
 	file_utime(filename,time(),query.filedate);
+	
+	if(query.complete && blocking[query.requestor]) {
+		blocking[query.requestor].enqueue({complete:true});
+	}
 	return true;
 }
-
-/* Non-socket file functions */
 function compare_dates(local,remote)
 {
 	if(local<0) return true;
@@ -395,28 +473,21 @@ function load_file(filename)
 	d.filemask=file_getname(filename);
 	return d;
 }
-//END FILESYNC
 
-//TODO QUERIES
+//TODO: queries
 function handle_query(socket,query)
 {
-	log("query from: " + socket.remote_ip_address);
-	switch(query.task)
+	log("query from: " + socket.nickname);
+	switch(query.cmd)
 	{
-		case "who":
+		case "WHO":
 			whos_online(socket,query);
 			break;
-		case "finduser":
+		case "FINDUSER":
 			find_user(socket,query);
 			break;
-		case "pageuser":
+		case "PAGEUSER":
 			page_user(socket,query);
-			break;
-		case "adduser":
-			add_user(socket,query);
-			break;
-		case "removeuser":
-			remove_user(socket,query);
 			break;
 		default:
 			debug("unknown query type: " + query.task,LOG_WARNING);
@@ -424,14 +495,15 @@ function handle_query(socket,query)
 			break;
 	}
 }
-function whos_online(socket)
+function whos_online(socket,data)
 {
-}
-function add_user(socket,data)
-{
-}
-function remove_user(socket,data)
-{
+	for(var l in local_clients[data.id]) {
+		for(var u in local_clients[data.id][l].users) {
+			var usr=local_clients[data.id][l].users[u];
+			debug("USER: " + usr.nickname + " CHAN: " + usr.chan);
+			socket.enqueue(local_clients[data.id][l].users[u]);
+		}
+	}
 }
 function find_user()
 {
@@ -443,40 +515,21 @@ function notify_sysop(msg)
 {
 	system.put_telegram(1,msg);
 }
-//END TODO
 
-function get_server_socket() 
+/* socket prototype methods */
+function sock_receive()
 {
-	var sock=new Socket();
-	sock.queue="";
-	sock.nonblocking=true;
-	sock.enqueue=function(data) {
-		if(data.descriptor==this.descriptor) return false;
-		data.context=REMOTE;
-		data.version=VERSION;
-		data.system=system.name;
-		this.queue+=JSON.stringify(data)+"\r\n";
+	var data=this.recvline(MAX_RECV);
+	if(data == null) return false;
+	try {
+		data=JSON.parse(data);
+		data.descriptor=this.descriptor;
+	} catch(e) {
+		log(LOG_ERROR,"error parsing JSON data: " + data);
+		return false;
 	}
-	sock.cycle=sock_cycle;
-	return sock;
+	return data;
 }
-function delete_session(array,index)
-{
-	log("session terminated: " + array[index].remote_ip_address);
-	server.client_remove(array[index]);
-	array[index].close();
-	array.splice(index,1);
-	log("clients: " + server.clients);
-}
-function store_socket(sock,array)
-{
-	debug("connection from " + sock.remote_ip_address,LOG_DEBUG);
-	sock.nonblocking=true;
-	sock.queue="";
-	sock.enqueue=sock_enqueue;
-	sock.cycle=sock_cycle;
-	array.push(sock);
-}	
 function sock_cycle()	
 {
 	if(!this.is_connected) return false;
@@ -488,10 +541,11 @@ function sock_cycle()
 function sock_enqueue(data)
 {
 	if(data.descriptor==this.descriptor) return false;
+	debug("enqueueing data: " + JSON.stringify(data));
 	this.queue+=JSON.stringify(data)+"\r\n";
 }
 
-/* Server object */
+/* server object */
 function Server(addr,port,auth)
 {
 	this.address=addr;
@@ -502,14 +556,14 @@ function Server(addr,port,auth)
 	this.last_attempt=0;
 	this.attempts=0;
 	this.auth=auth;
+	this.users=[];
 
 	this.connect=function()
 	{
 		debug("connecting to " + this.address + " on port " + this.port,LOG_DEBUG);
-		this.sock=get_server_socket();
+		this.sock=get_socket(new Socket());
 		this.sock.connect(this.address,this.port,CONNECTION_TIMEOUT);
-		if(!this.sock.is_connected) 
-		{
+		if(!this.sock.is_connected) {
 			this.attempts++;
 			this.last_attempt=time();
 			return false;
@@ -541,33 +595,28 @@ function Server(addr,port,auth)
 				this.connect();
 			}
 		}
-		if(this.sock.is_connected && this.sock.data_waiting) {
-			var data=this.sock.recvline(MAX_RECV);
-			if(data == null) return false;
-			try {
-				data=JSON.parse(data);
-			} catch(e) {
-				log(LOG_ERROR,"error parsing JSON data: " + data);
-				return false;
-			}
-			switch(data.type) {
-				case FILESYNC:
-					handle_filesync(this.sock,data);
-					break;
-				case QUERY:
-					handle_query(this.sock,data);
-					break;
-				default:
-					queue(this.sock,data);
-					break;
-			}
-			if(modules[data.id] && modules[data.id].handler) {
-				modules[data.id].handler(data);
-			}
+		if(this.sock.is_connected) {
+			var data=this.sock.receive();
+			if(!data) return false;
+			process_server_data(this.sock,data);
 		}
 	}
 	this.enqueue=function(data)
 	{	
+		if(!this.sock || !this.sock.is_connected) {
+			if(this.attempts>=CONNECTION_ATTEMPTS) {
+				log(LOG_ERROR,"error connecting to server: " + this.address);
+				this.enabled=false;
+				return false;
+			}
+			if((time()-this.last_attempt)>=CONNECTION_INTERVAL) {
+				this.connect();
+			}
+		}
+		data.context="SERVER";
+		data.version=VERSION;
+		data.system=system.name;
+		debug("SENDING: " + JSON.stringify(data));
 		this.sock.enqueue(data);
 	}
 	this.cycle=function()
