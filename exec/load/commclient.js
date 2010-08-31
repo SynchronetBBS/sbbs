@@ -4,61 +4,60 @@
 	by Matt Johnson - 2009
 */
 
-if(js.global.JSON==undefined)
-	load("synchronet-json.js");
-if(js.global.SYS_CLOSED==undefined)
-	load("sbbsdefs.js");
-if(js.global.IPPROTO_IP==undefined)
-	load("sockdefs.js");
-if(js.global.testSocket==undefined)
-	load("funclib.js");
+load("funclib.js");
+load("synchronet-json.js");
+load("sbbsdefs.js");
+load("sockdefs.js");
 
-function ServiceConnection(id,alias)
+function ServiceConnection(id)
 {
-	const QUERY=				"?";
-	const LOCAL=				"&";
-	const FILESYNC=			"@";
 	const CONNECTION_TIMEOUT=	5;
 	const CONNECTION_ATTEMPTS=	2;
 	const CONNECTION_INTERVAL=	5;
 	const MAX_BUFFER=			512;
+	const MAX_RECV=			10240;
 	
 	var services=new File(system.ctrl_dir + "services.ini");
 	services.open('r',true);
+	//hub should point to the local, internal ip address or domain of the computer running commservice.js
 	const hub=					"localhost";
+	//port should point to the port the gaming service is set to use in commservice.js
 	const port=				services.iniGetValue("CommServ","Port");
 	services.close();
 
-	this.id=				(id?id:"default");
+	this.id=				(id?id:"DEFAULT");
 	this.queue=				[];
 	this.notices=			[];
 	this.sock=				false;
+	this.nick=				false;
+	this.registered=		false;
 	
 	var attempts=0;
 	var last_attempt=0;
 	
-	//hub should point to the local, internal ip address or domain of the computer running commservice.js
-	//port should point to the port the gaming service is set to use in commservice.js
-	
-	this.init=function()
+	this.connect=function()
 	{
-		if((time()-last_attempt)<CONNECTION_INTERVAL || attempts>=CONNECTION_ATTEMPTS) {
+		if((time()-last_attempt)<CONNECTION_INTERVAL) return false;
+		if(attempts>=CONNECTION_ATTEMPTS) {
 			debug("error connecting to hub, exiting program",LOG_WARNING);
 			exit();
 		}
+		
 		this.sock=new Socket();
 		this.sock.nonblocking=true;
 		this.sock.connect(hub,port,CONNECTION_TIMEOUT);
-		if(testSocket(this.sock)) {
-			attempts=0;
-			last_attempt=0;
-			return true;
-		} else {
+		
+		if(!this.sock.is_connected) {
 			attempts++;
 			debug("error connecting to hub, attempt " + attempts,LOG_WARNING);
 			last_attempt=time();
+			this.registered=false;
 			return false;
 		}
+
+		attempts=0;
+		last_attempt=0;
+		return true;
 	}
 	this.getNotices=function()
 	{
@@ -70,45 +69,59 @@ function ServiceConnection(id,alias)
 	}
 	this.receive=function()
 	{
-		if(!testSocket(this.sock))
+		if(!this.sock.is_connected)
 		{
-			if(!this.init()) return false;
+			if(!this.connect()) return false;
 		}
-		if(this.sock.data_waiting)
+		if(this.sock.is_connected && this.sock.data_waiting)
 		{
-			var raw_data=this.sock.recvline(10240,CONNECTION_TIMEOUT);
+			var raw_data=this.sock.recvline(MAX_RECV,CONNECTION_TIMEOUT);
 			if(raw_data == null) return false;
-			return(JSON.parse(raw_data));
+			try {
+				var data=JSON.parse(raw_data);
+				return data;
+			} catch(e) {
+				debug("error parsing JSON data: " + raw_data,LOG_ERROR);
+				return false;
+			}
 		}
+	}
+	this.register=function()
+	{
+		debug("registering client");
+		if(!this.nick) {
+			if(user.alias) this.nick=new Nick(user.alias,user.name,system.inet_addr,this.id);
+			else this.nick=new Nick("SYSTEM","SYSTEM",system.inet_addr,this.id);
+		} 
+		this.queue.push(JSON.stringify(this.nick)+"\r\n");
+		this.registered=true;
 	}
 	this.send=function(data)
 	{
-		if(!testSocket(this.sock))
-		{
-			if(!this.init()) return false;
+		if(!this.sock.is_connected) {
+			if(!this.connect()) return false;
 		}
-		if(!data.id) data.id=this.id;
-		if(!data.system) data.system=system.name;
-		if(!data.context) data.context=LOCAL;
-		if(!data.origin) data.origin=user.alias;
+		if(this.sock.is_connected && !this.registered) {
+			this.register();
+		}
+		
+		data.id=this.id;
+		data=JSON.stringify(data)+"\r\n";
+		this.queue.push(data);
 		
 		for(var i=0;i<this.queue.length;i++) {
 			var qdata=this.queue.shift();
 			if(!this.sock.write(qdata)) this.queue.push(qdata);
 		}
-		data=JSON.stringify(data)+"\r\n";
-		if(!this.sock.write(data)) {
-			this.queue.push(data);
-		}
 		return true;
 	}
-	this.recvfile=function(files,blocking)
+	this.recvfile=function(filemask,blocking)
 	{
-		this.filesync(files,"trysend",blocking);
+		this.filesync(filemask,"trysend",blocking);
 	}
-	this.sendfile=function(files,blocking)
+	this.sendfile=function(filemask,blocking)
 	{
-		this.filesync(files,"tryrecv",blocking);
+		this.filesync(filemask,"tryrecv",blocking);
 	}
 	this.filesync=function(filemask,command,blocking)
 	{
@@ -116,7 +129,8 @@ function ServiceConnection(id,alias)
 		q.filemask=filemask;
 		q.command=command;
 		q.blocking=blocking;
-		q.type=FILESYNC;
+		q.requestor=this.sock.descriptor;
+		q.func="FILESYNC";
 		
 		this.send(q);
 		if(q.blocking) {
@@ -132,7 +146,20 @@ function ServiceConnection(id,alias)
 		this.sock.close();
 	}
 
-	if(!this.init() && attempts>=CONNECTION_ATTEMPTS) return false;
+	if(!this.connect() && attempts>=CONNECTION_ATTEMPTS) return false;
+}
+function Nick(nick,username,host,id)
+{
+	this.context="CLIENT";
+	this.id=id;
+	this.func="NICK";
+	this.nickname=nick;
+	this.hops=1;
+	this.created=time();
+	this.username=nick;
+	this.realname=username;
+	this.hostname=host;
+	this.servername=host;
 }
 
 	
