@@ -191,15 +191,18 @@ function lobby()
 				case "C":
 					chatInput();
 					break;
-				case KEY_UP:
-				case KEY_DOWN:
-				case KEY_HOME:
-				case KEY_END:
-					chat.processKey(cmd);
-					break;
 				case "\x1b":
 				case "Q":
 					return false;
+				case KEY_UP:
+				case KEY_DOWN:
+				case KEY_LEFT:
+				case KEY_RIGHT:
+				case KEY_HOME:	
+				case KEY_END:	
+				case '\x15':
+					chat.processKey(cmd);
+					break;
 				default:
 					break;
 				}
@@ -212,7 +215,7 @@ function lobby()
 					menu.draw();
 					gameList();
 				}
-			}
+			} 
 			lobbyCycle();
 		}
 	}
@@ -300,8 +303,9 @@ function lobby()
 	}
 	function initChat()
 	{
-		chat.init("dice warz lobby",78,5,2,19);
+		chat.init(78,5,2,19);
 		chat.input_line.init(10,18,70,"\0017","\1k");
+		chat.joinChan("dice warz lobby",user.alias,user.name);
 	}
 	function initMenu()
 	{
@@ -471,20 +475,24 @@ function run(map)
 					break;
 				case "\x1b":
 				case "Q":
+					chat.partChan("dice warz game #" + map.game_number,user.alias);
 					return;
 				default:
 					break;
 				}
 				setMenuCommands();
-			}
-			switch(cmd)
-			{
-				case KEY_UP:
-				case KEY_DOWN:
-				case KEY_HOME:
-				case KEY_END:
-					chat.processKey(cmd);
-					break;
+			} else {
+				switch(cmd) {
+					case KEY_UP:
+					case KEY_DOWN:
+					case KEY_LEFT:
+					case KEY_RIGHT:
+					case KEY_HOME:	
+					case KEY_END:	
+					case '\x15':
+						chat.processKey(cmd);
+						break;
+				}
 			}
 			if(update) {
 				menu.draw();
@@ -532,8 +540,10 @@ function run(map)
 	}
 	function initChat()
 	{
-		chat.init("dice warz game #" + map.game_number,31,6,48,18); 
+		chat.init(31,6,48,18); 
 		chat.input_line.init(10,24,70,"\0017","\1k");
+		chat.partChan("dice warz lobby",user.alias);
+		chat.joinChan("dice warz game #" + map.game_number,user.alias,user.name);
 	}
 	function chatInput()
 	{
@@ -562,32 +572,32 @@ function run(map)
 		cycle();
 		var data=stream.receive();
 		if(data && data.game_number==map.game_number) {
-			switch(data.type)
+			switch(data.func.toUpperCase())
 			{
-				case "battle":
+				case "BATTLE":
 					battle(data.a,data.d);
 					updateStatus(map);
 					listPlayers();
 					break;
-				case "turn":
+				case "TURN":
 					map.turn=data.turn;
 					debug("received turn notice: " + map.players[map.turn].name);
 					statusAlert();
 					listPlayers();
 					setMenuCommands();
 					break;
-				case "player":
+				case "PLAYER":
 					map.players[data.pnum].reserve=data.player.reserve;
 					break;
-				case "tile":
+				case "TILE":
 					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
 					drawTile(map,map.tiles[data.tile.id]);
 					break;
-				case "activity":
+				case "ACTIVITY":
 					activityAlert(data.activity);
 					break;
 				default:
-					debug("unknown data type: " + data.type);
+					debug("unknown data type: " + data.func);
 					break;
 			}
 			if(map.winner) {
@@ -690,20 +700,20 @@ function run(map)
 			}
 		}
 		
-		chat.channel.clear();
+		chat.chatroom.clear();
 		var a=new Roll(attacking.owner);
 		for(var r=0;r<attacking.dice;r++) {
 			var roll=random(6)+1;
 			a.roll(roll);
 		}
-		showRoll(a.rolls,LIGHTGRAY+BG_RED,chat.channel.x,chat.channel.y);
+		showRoll(a.rolls,LIGHTGRAY+BG_RED,chat.chatroom.x,chat.chatroom.y);
 		var d=new Roll(defending.owner);
 		for(var r=0;r<defending.dice;r++) {
 			var roll=random(6)+1;
 			d.roll(roll);
 		}
-		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.channel.x,chat.channel.y+3);
-		chat.channel.draw();
+		showRoll(d.rolls,BLACK+BG_LIGHTGRAY,chat.chatroom.x,chat.chatroom.y+3);
+		chat.chatroom.draw();
 		battle(a,d);
 		var data=new Packet("battle",map);
 		data.a=a;

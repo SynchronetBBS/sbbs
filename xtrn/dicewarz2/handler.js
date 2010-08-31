@@ -2,7 +2,7 @@ var player_file=this.dir + "players.ini";
 
 function handler(data)
 {
-	switch(data.type.toUpperCase()) {
+	switch(data.func.toUpperCase()) {
 		case "TILE":
 			var file=new File(data.filename);
 			var tile=data.tile;
