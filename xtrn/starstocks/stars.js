@@ -12,55 +12,53 @@ load("commclient.js");
 load("funclib.js");
 load("graphic.js");
 
-var root_dir;
-try { barfitty.barf(barf); } catch(e) { root_dir = e.fileName; }
-root_dir = root_dir.replace(/[^\/\\]*$/,'');
+var root_dir=js.exec_dir;
+var oldpass=console.ctrlkey_passthru;
+var stream=false;
 
-//######################### INITIALIZE PROGRAM VARIABLES #########################
+console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+bbs.sys_status|=SS_MOFF;
 
-	var 	interbbs=			argv[0];
-	var		stream=				interbbs?new ServiceConnection("starstocks"):false;
-	const 	root=				root_dir;
-	const 	cfgname=			"stars.cfg";  
-	const	high_score_file=	"scores.dat";
-	const 	space=				"\xFA";
-	var 	max_companies=		6;
-	var 	max_turns=			80;
-	const	starting_cash=		10000;
-	const  interest_rate=		.05;
-	const  ccolor=				"\1w\1h"
-	var   partial_company=	"\1n+";
-	var 	difficulty=			1;
-	var 	min_difficult=		20;
-	var 	max_difficult=		35;
+var interbbs=argv[0];
+var stream=interbbs?new ServiceConnection("starstocks"):false;
+if(stream) {
+	getFiles(high_score_file);
+	getFiles(cfgname);
+}
+const 	root=				root_dir;
+const 	cfgname=			"stars.cfg";  
+const	high_score_file=	"scores.dat";
+const 	space=				"\xFA";
+var 	max_companies=		6;
+var 	max_turns=			80;
+const	starting_cash=		10000;
+const  interest_rate=		.05;
+const  ccolor=				"\1w\1h"
+var   partial_company=	"\1n+";
+var 	difficulty=			1;
+var 	min_difficult=		20;
+var 	max_difficult=		35;
+var 	scores=			[];	
+var 	border_row=		4;
+var  	border_column=	1;
+var		menu_row=		1;
+var		menu_column=	63;
+var 	columns=
+		rows=
+		min_stars=
+		max_stars=
+		bcolor=
+		starcolor=
+		star=
+		scolor="";
+loadSettings();
+loadHighScores();
+var 	min_normal=		min_stars;
+var 	max_normal=		max_stars;
+var 	game;
+gameMenu();
+quit();
 
-//######################### DO NOT CHANGE THIS SECTION ##########################	
-	var 	scores=			[];		
-	var 	border_row=		4;
-	var  	border_column=	1;
-	var		menu_row=		1;
-	var		menu_column=	63;
-	var 	columns=
-			rows=
-			min_stars=
-			max_stars=
-			bcolor=
-			starcolor=
-			star=
-			scolor="";
-	if(interbbs) getFiles(high_score_file);
-	loadSettings();
-	loadHighScores();
-	partial_company=partial_company;
-	var oldpass=console.ctrlkey_passthru;
-	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-	bbs.sys_status|=SS_MOFF;
-	var 	min_normal=		min_stars;
-	var 	max_normal=		max_stars;
-	var game;
-	gameMenu();
-	if(interbbs) sendFiles(high_score_file);
-	quit();
 //########################## MAIN FUNCTIONS ###################################
 
 function 	gameMenu()
@@ -122,26 +120,50 @@ function 	gameMenu()
 function 	loadHighScores()
 { 
 	for(diff=0;diff<3;diff++) scores[diff]=[];
-	if(!file_exists(root + high_score_file)) return;
 	var sfile=new File(root + high_score_file);
+	if(!file_exists(sfile.name)) return false;
 	sfile.open('r', true);
-	
-	for(sc=0;!(sfile.eof);sc++) 
+	var count=0;
+	var timeout=200;
+	while(!sfile.is_open && count<timeout)
 	{
-		player=sfile.readln();
-		if(player==undefined || player=="") break;
-		score=parseFloat(sfile.readln());
-		diff=parseInt(sfile.readln());
-		date=sfile.readln();
-		scores[diff].push(new Score(player,score,diff,date));
+		mswait(5);
+		count++;
+		sfile.open('r', true);
 	}
-	sfile.close();
+	if(sfile.is_open)
+	{
+		for(sc=0;!(sfile.eof);sc++) 
+		{
+			player=sfile.readln();
+			if(player==undefined || player=="") break;
+			score=parseFloat(sfile.readln());
+			diff=parseInt(sfile.readln());
+			date=sfile.readln();
+			scores[diff].push(new Score(player,score,diff,date));
+		}
+		sfile.close();
+		return true;
+	}
+	else
+	{
+		log("\1r\1hUnable to load scores");
+		return false;
+	}
 }
 function	storeHighScores(tempscore)
 {
 	loadHighScores();
 	scores[tempscore.difficulty].push(tempscore);
 	var sfile=new File(root + high_score_file);
+	
+	var count=0;
+	var timeout=200;
+	while(locked() && count<timeout)
+	{
+		mswait(5);
+		count++;
+	}
 	if(!locked())
 	{
 		lock();
@@ -159,23 +181,46 @@ function	storeHighScores(tempscore)
 			}
 		}
 		sfile.close();
+		if(stream) sendFiles(high_score_file);
 		unlock();
+		return true;
+	}
+	else 
+	{
+		message("\1r\1hUnable to save scores");
+		return false;
 	}
 }
 function 	loadSettings()
 { 
 	var dfile=new File(root + cfgname);
 	dfile.open('r', false);
-	columns=parseInt(dfile.readln());
-	rows=parseInt(dfile.readln());
-	min_stars=parseInt(dfile.readln());
-	max_stars=parseInt(dfile.readln());
-	bcolor=getColor(dfile.readln());
-	starcolor=getColor(dfile.readln());
-	star=dfile.readln();
-	scolor=getColor(dfile.readln());
-	maxturns=dfile.readln();
-	dfile.close();
+	var count=0;
+	var timeout=200;
+	while(!dfile.is_open && count<timeout)
+	{
+		mswait(5);
+		count++;
+		dfile.open('r', true);
+	}
+	if(dfile.is_open)
+	{
+		columns=parseInt(dfile.readln());
+		rows=parseInt(dfile.readln());
+		min_stars=parseInt(dfile.readln());
+		max_stars=parseInt(dfile.readln());
+		bcolor=getColor(dfile.readln());
+		starcolor=getColor(dfile.readln());
+		star=dfile.readln();
+		scolor=getColor(dfile.readln());
+		maxturns=dfile.readln();
+		dfile.close();
+	}
+	else
+	{
+		log("unable to load game settings");
+		exit();
+	}
 }
 function 	mapResize(x,y)
 {
@@ -341,8 +386,10 @@ function 	playGame()
 function 	notify()
 {
 	if(scores[difficulty].length<2) return false;
-	if(game.networth==scores[difficulty][0].score && user.alias!=scores[difficulty][1].player)
+	if(game.networth==scores[difficulty][0].score)
 	{
+		var localuser=system.matchuser(scores[difficulty][1].player,true);
+		if(!localuser>0 || localuser==user.number) return false;
 		system.put_telegram(scores[difficulty][1].player, "\1r\1h" + scores[difficulty][0].player + " \1c\1hbeat your High Score in Star Stocks!\r\n\r\n");
 	}
 }
@@ -565,25 +612,8 @@ function 	wipeCursor()					//SEND CURSOR TO BOTTOM RIGHT CORNER OF SCREEN
 }
 function 	message(msg,x,y,cc)  			//ALERT MESSAGE OUTPUT FUNCTION
 {
-	if(cc)
-	{
-		clear=cc;
-	}
-	else
-	{
-		clear=59;
-	}
-	if(x && y) 
-	{
-		xxx=x;
-		yyy=y;
-	}
-	else
-	{
-		xxx=1;
-		yyy=23;
-	}
-	console.gotoxy(xxx,yyy);
+	var clear=cc?cc:59;
+	console.gotoxy(x?x:1,y?y:23);
 	console.putmsg(msg);
 	cleaned=strip_ctrl(msg);
 	clear-=cleaned.length;
@@ -858,6 +888,7 @@ function 	processNearby(location,prox)
 }
 function 	quit() 
 {
+	if(stream) stream.close();
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	console.clear();
@@ -879,11 +910,11 @@ function 	quit()
 }
 function	getFiles(mask)
 {
-	if(interbbs) stream.recvfile(mask);
+	if(stream) stream.recvfile(mask,true);
 }
 function	sendFiles(mask)
 {
-	if(interbbs) stream.sendfile(mask);
+	if(stream) stream.sendfile(mask,true);
 }
 //########################## CLASSES #########################################
 
