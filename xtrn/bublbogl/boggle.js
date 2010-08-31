@@ -10,9 +10,7 @@
 	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
-var gameroot;
-try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
-gameroot = gameroot.replace(/[^\/\\]*$/,"");
+var gameroot = js.exec_dir;
 
 load("graphic.js");
 load("sbbsdefs.js");
@@ -512,8 +510,9 @@ function getFiles()
 {
 	console.putmsg("\1nPlease wait. Synchronizing game files with hub...\r\n");
 	stream.recvfile("*.bog");
-	//stream.recvfile("players.ini");
-	//stream.recvfile("month.ini");
+	stream.recvfile("players.ini");
+	stream.recvfile("month.ini");
+	mswait(10000);
 }
 function sendFiles()
 {
@@ -521,7 +520,6 @@ function sendFiles()
 	stream.sendfile("players.ini");
 	//stream.sendfile("month.ini");		
 }
-
 
 //GAME OBJECTS
 function Lobby(x,y)
@@ -1088,4 +1086,5 @@ function Game()
 		this.board.draw();
 	}
 }
+
 boggle();
