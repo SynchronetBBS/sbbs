@@ -12,7 +12,7 @@ var root=js.exec_dir;
 load(root + "battle.js");
 load(root + "menu.js");
 
-var stream=new ServiceConnection("sea battle");
+var stream=new ServiceConnection("seabattle");
 var players=new PlayerList();
 var chat=new ChatEngine(root);
 var oldpass=console.ctrl_key_passthru;
@@ -24,7 +24,7 @@ function lobby()
 	var lobby_graphic=new Graphic(80,24);
 	lobby_graphic.load(root+"lobby.bin");
 	var clearinput=true;
-	var scrollBar=new Scrollbar(3,24,35,"horizontal","\1y");
+	var scrollBar=new Scrollbar(3,24,37,"horizontal","\1y");
 	var scroll_index=0;
 	var last_table_number=0;
 	var table_markers=[];
@@ -449,6 +449,7 @@ function playGame(game,join)
 	{
 		chat.init(35,16,45,6);
 		chat.input_line.init(45,23,35,"","\1n");
+		chat.partChan("sea-battle lobby",user.alias);
 		chat.joinChan("sea-battle table " + game.gameNumber,user.alias,user.name);
 	}
 	function initMenu()
@@ -484,19 +485,31 @@ function playGame(game,join)
 					case KEY_RIGHT:
 						if(game.turn==currentplayer.id && !game.finished)
 							attack();
-						else if(!Chat(k,chat) && handleExit()) return true;
+						else if(!Chat(k,chat) && handleExit()) {
+							chat.partChan("sea-battle table " + game.gameNumber,user.alias);
+							return true;
+						}
 						break;
 					case "/":
 						if(!chat.input_line.buffer.length) {
 							gameMenu();
 						}
-						else if(!Chat(k,chat) && handleExit()) return true;
+						else if(!Chat(k,chat) && handleExit()) { 
+							chat.partChan("sea-battle table " + game.gameNumber,user.alias);
+							return true;
+						}
 						break;
 					case "\x1b":	
-						if(handleExit()) return true;
+						if(handleExit()) {
+							chat.partChan("sea-battle table " + game.gameNumber,user.alias);
+							return true;
+						}
 						break;
 					default:
-						if(!Chat(k,chat) && handleExit()) return true;
+						if(!Chat(k,chat) && handleExit()) {
+							chat.partChan("sea-battle table " + game.gameNumber,user.alias);
+							return true;
+						}
 						break;
 				}
 			}
@@ -512,7 +525,9 @@ function playGame(game,join)
 		} else if(game.started) {
 			notice("\1n\1c Game in progress");
 			if(currentplayer && game.turn==currentplayer.id) 
-				notice("\1n\1c It's your turn");
+				notice("\1c\1h It's your turn");
+			else 
+				notice("\1n\1c It's " + players.getAlias(game.turn) + "'s turn");
 		} else {
 			if(game.players.length <2) {
 				notice("\1n\1c Waiting for more players");
@@ -664,9 +679,8 @@ function playGame(game,join)
 				break;
 			case "ENDTURN":
 				game.nextTurn();
-				if(currentplayer) {
-					if(game.turn==currentplayer.id) notice("\1c\1hIt's your turn");
-				}
+				if(currentplayer && game.turn == currentplayer.id) 
+					notice("\1c\1hIt's your turn");
 				infoBar();
 				break;
 			case "ENDGAME":
@@ -685,10 +699,8 @@ function playGame(game,join)
 			case "UPDATE":
 				game.loadGame();
 				game.loadPlayers();
-				if(!currentplayer && game.spectate && game.started)
-				{
-					for(player in game.players)
-					{
+				if(!currentplayer && game.spectate && game.started) {
+					for(player in game.players) {
 						game.players[player].board.hidden=false;
 						game.players[player].board.drawBoard();
 					}
@@ -729,9 +741,13 @@ function playGame(game,join)
 				data.msg=data;
 				break;
 			case "ATTACK":
+			case "ENDTURN":
+			case "ENDGAME":
 			case "UPDATE":
 				break;
 			default:
+				debug("DATA: " + data.toSource());
+				debug("FUNC: " + func);
 				log("Unknown sea-battle data not sent");
 				break;
 		}
@@ -739,9 +755,9 @@ function playGame(game,join)
 		data.gameNumber=game.gameNumber;
 		return data;
 	}
-	function send(data,type)
+	function send(data,func)
 	{
-		var d=packageData(data,type);
+		var d=packageData(data,func);
 		stream.send(d);
 	}
 	function clearAlert()
@@ -762,10 +778,8 @@ function playGame(game,join)
 		var player=currentplayer;
 		var opponent=game.findOpponent();
 		if(!shots) shots=(game.multishot?countShips(player.id):1);
-		while(shots>0)
-		{
+		while(shots>0) {
 			cycle();
-			notify("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + shots + "\1n)");
 			var coords=chooseTarget(opponent);
 			if(!coords) return false;
 			opponent.board.shots[coords.x][coords.y]=true;
@@ -773,14 +787,12 @@ function playGame(game,join)
 			sendAttack(coords,opponent);
 			game.storeShot(coords,opponent.id);
 			var hit=checkShot(coords,opponent);
-			if(game.bonusattack) 
-			{
+			if(game.bonusattack) {
 				if(!hit) shots--;
 			}
 			else shots--;
 			var count=countShips(opponent.id);
-			if(count===0) 
-			{
+			if(count===0) {
 				var p1=game.findCurrentUser();
 				var p2=game.findOpponent();
 				endGame(p1,p2);
@@ -804,22 +816,16 @@ function playGame(game,join)
 		var board=opponent.board;
 		selected={"x":0,"y":0};
 		board.drawSelected(selected.x,selected.y);
-		while(1)
-		{
+		notify("\1nChoose target (\1hshots\1n: \1h" + shots + "\1n)");
+		while(1) {
 			cycle();
 			var key=console.inkey(K_NOECHO|K_NOCRLF|K_UPPER,50);
-			if(key)
-			{
-				notify("\1nChoose target [\1h?\1n] help (\1hshots\1n: \1h" + shots + "\1n)");
-				if(key=="\r")
-				{
-					if(!board.shots[selected.x][selected.y]) 
-					{
+			if(key) {
+				if(key=="\r") {
+					if(!board.shots[selected.x][selected.y]) {
 						board.unDrawSelected(selected.x,selected.y);
 						return selected;
-					}
-					else
-					{
+					} else {
 						notify("\1r\1hInvalid Selection");
 					}
 				}
@@ -876,8 +882,6 @@ function playGame(game,join)
 					case "\x1B":
 						board.unDrawSelected(selected.x,selected.y);
 						return false;
-					case "?":
-						gamehelp.help("choosing target");
 					default:
 						continue;
 				}
