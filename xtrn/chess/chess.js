@@ -462,6 +462,7 @@ function playGame(game)
 	{
 		chat.init(38,15,42,8);
 		chat.input_line.init(42,24,38,"","\1n");
+		chat.partChan("chess lobby",user.alias);
 		chat.joinChan("chess table " + game.gameNumber,user.alias,user.name);
 	}
 	function initMenu()
@@ -499,10 +500,16 @@ function playGame(game)
 					if(!chat.input_line.buffer.length) {
 						showMenu();
 					}
-					else if(!Chat(k,chat) && handleExit()) return;
+					else if(!Chat(k,chat) && handleExit()) {
+						chat.partChan("chess table " + game.gameNumber,user.alias);
+						return;
+					}
 					break;
 				case "\x1b":	
-					if(handleExit()) return;
+					if(handleExit()) {
+						chat.partChan("chess table " + game.gameNumber,user.alias);
+						return true;
+					}
 					break;
 				case "1":
 				case "2":
@@ -513,7 +520,11 @@ function playGame(game)
 				case "8":
 				case "9":
 					if(chat.input_line.buffer.length) {
-						if(!Chat(k,chat) && handleExit()) return;						
+						if(!Chat(k,chat) && handleExit()) {					
+							chat.partChan("chess table " + game.gameNumber,user.alias);
+							return;
+						}
+					}
 					}
 				case KEY_UP:
 				case KEY_DOWN:
@@ -525,7 +536,10 @@ function playGame(game)
 						break;
 					} 
 				default:
-					if(!Chat(k,chat) && handleExit()) return;
+					if(!Chat(k,chat) && handleExit()) {					
+						chat.partChan("chess table " + game.gameNumber,user.alias);
+						return;
+					}
 					break;
 				}
 			}
