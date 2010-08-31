@@ -8,9 +8,7 @@
 */
 
 
-var gameroot;
-try { barfitty.barf(barf); } catch(e) { gameroot = e.fileName; }
-gameroot = gameroot.replace(/[^\/\\]*$/,"");
+var gameroot = js.exec_dir;
 
 load("graphic.js");
 load("sbbsdefs.js")
@@ -21,7 +19,40 @@ load("commclient.js");
 var oldpass=console.ctrl_key_passthru;
 var interbbs=argv[0];
 var stream=interbbs?new ServiceConnection("uberblox"):false;
+var players;
+var scores;
 
+function splashStart()
+{
+	if(stream) getFiles("players.ini");
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status|=SS_PAUSEOFF;
+	console.clear();
+}
+function splashExit()
+{
+	console.ctrlkey_passthru=oldpass;
+	bbs.sys_status&=~SS_MOFF;
+	bbs.sys_status&=~SS_PAUSEOFF;
+	players.storePlayer();
+	console.clear(ANSI_NORMAL);
+	var splash_filename=gameroot + "exit.bin";
+	if(!file_exists(splash_filename)) exit();
+	
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	console.clear(ANSI_NORMAL);
+	exit();
+}
 function blox()
 {
 	const columns=20;
@@ -32,14 +63,12 @@ function blox()
 	var level;
 	var points;
 	var current;
-	var scores;
-	var players;
 	var gameover=false;
 	
 	const points_base=			15;
 	const points_increment=	10;
 	const minimum_cluster=		3;
-	const colors=				[3,3,3,3,3,4,4,4,4,5,5,5,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-5 have 3 colors)
+	const colors=				[3,3,3,3,4,4,4,4,5,5,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
 	const tiles_per_color=		[8,7,6,5,4,10,9,8,7,12,11,10,12,11];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 6 tiles per color times 3 colors = 202)
 		
 	var lobby;
@@ -165,40 +194,8 @@ function blox()
 		console.gotoxy(52,13);
 		console.putmsg(centerString("\1n\1y" + (parseInt(level)+1),13));
 	}
-	function splashStart()
-	{
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
-		bbs.sys_status|=SS_PAUSEOFF;
-		console.clear();
-	}
-	function splashExit()
-	{
-		console.ctrlkey_passthru=oldpass;
-		bbs.sys_status&=~SS_MOFF;
-		bbs.sys_status&=~SS_PAUSEOFF;
-		players.storePlayer();
-		if(interbbs) sendFiles("players.ini");
-		console.clear(ANSI_NORMAL);
-		var splash_filename=gameroot + "exit.bin";
-		if(!file_exists(splash_filename)) exit();
-		
-		var splash_size=file_size(splash_filename);
-		splash_size/=2;		
-		splash_size/=80;	
-		var splash=new Graphic(80,splash_size);
-		splash.load(splash_filename);
-		splash.draw();
-		
-		console.gotoxy(1,23);
-		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
-		console.clear(ANSI_NORMAL);
-		exit();
-	}
 	function init()
 	{
-		if(interbbs) getFiles("players.ini");
 		logo=new Graphic(18,22);
 		logo.load(gameroot + "blox.bin");
 		lobby=new Graphic(80,23);
@@ -581,6 +578,7 @@ function blox()
 			this.file.open('r+',true);
 			this.file.iniSetObject(user.alias,this.players[user.alias]);
 			this.file.close();
+			if(stream) sendFiles("players.ini");
 		}
 		this.findUser=function(alias)
 		{
@@ -620,10 +618,8 @@ function blox()
 		}
 	}
 	
-	splashStart();
 	init();
 	mainLobby();
-	splashExit();
 }
 function getFiles(mask)
 {
@@ -634,5 +630,6 @@ function sendFiles(mask)
 	stream.sendfile(mask);
 }
 
-
+splashStart();
 blox();
+splashExit();
