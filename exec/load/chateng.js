@@ -350,7 +350,7 @@ function ChatRoom()
 	}
 	this.process=function(data)
 	{
-		debug("PROCESSING: " + JSON.stringify(data));
+		//debug("PROCESSING: " + JSON.stringify(data));
 		switch(data.func) 
 		{
 		case "JOIN":

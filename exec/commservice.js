@@ -541,7 +541,7 @@ function sock_cycle()
 function sock_enqueue(data)
 {
 	if(data.descriptor==this.descriptor) return false;
-	debug("enqueueing data: " + JSON.stringify(data));
+	//debug("enqueueing data: " + JSON.stringify(data));
 	this.queue+=JSON.stringify(data)+"\r\n";
 }
 
@@ -616,7 +616,7 @@ function Server(addr,port,auth)
 		data.context="SERVER";
 		data.version=VERSION;
 		data.system=system.name;
-		debug("SENDING: " + JSON.stringify(data));
+//		debug("SENDING: " + JSON.stringify(data));
 		this.sock.enqueue(data);
 	}
 	this.cycle=function()
