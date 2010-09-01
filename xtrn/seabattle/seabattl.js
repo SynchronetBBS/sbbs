@@ -120,31 +120,24 @@ function lobby()
 	{
 		var update=false;
 		var game_files=directory(root+"*.bom");
-		for(i in game_files)
-		{
+		for(i in game_files) {
 			var filename=file_getname(game_files[i]);
 			var gameNumber=parseInt(filename.substring(0,filename.indexOf(".")),10);
-			if(tables[gameNumber]) 
-			{
+			if(tables[gameNumber]) {
 				var lastupdated=file_date(game_files[i]);
 				var lastloaded=tables[gameNumber].lastupdated;
-				if(lastupdated>lastloaded)
-				{
+				if(lastupdated>lastloaded) {
 					loadTable(game_files[i]);
 					update=true;
 				}
-			}
-			else 
-			{
+			} else {
 				loadTable(game_files[i]);
 				update=true;
 			}
 		}
-		for(t in tables)
-		{
+		for(t in tables) {
 			var table=tables[t];
-			if(table && !file_exists(table.gamefile.name)) 
-			{
+			if(table && !file_exists(table.gamefile.name)) {
 				delete tables[t];
 				update=true;
 			}
@@ -517,7 +510,6 @@ function playGame(game,join)
 	}
 	function updateStatus()
 	{
-		notice("\1n\1cGAME STATUS\1h:");
 		if(game.finished) {
 			notice("\1n\1c Game completed");
 			notice("\1n\1c Winner\1h: " + players.getAlias(game.winner));
@@ -684,17 +676,19 @@ function playGame(game,join)
 				infoBar();
 				break;
 			case "ENDGAME":
-				var str1=packet.winner;
-				var str2=packet.loser + "'s";
-				if(currentplayer) {
-					if(packet.loser==currentplayer.id) str2="your";
-				}
+				var str1=players.getAlias(packet.winner);
+				var str2="";
+				if(currentplayer && packet.loser==currentplayer.id) str2="your";
+				else str2=players.getAlias(packet.loser) + "'s";
 				for(player in game.players) {
 					game.players[player].board.hidden=false;
 					game.players[player].board.drawBoard();
 				}
 				notice("\1r\1h" + str1 + " sank all of " + str2 + " ships!");
 				game.finished=true;
+				game.winner=packet.winner;
+				updateStatus();
+				infoBar();
 				break;
 			case "UPDATE":
 				game.loadGame();
@@ -705,15 +699,12 @@ function playGame(game,join)
 						game.players[player].board.drawBoard();
 					}
 				}
+				game.startGame();
+				updateStatus();
 				infoBar();
 				break;
 			default:
 				break;
-		}
-		if(!game.started) 
-		{
-			var start=game.startGame();
-			if(start) infoBar();
 		}
 	}
 	function cycle()
@@ -789,8 +780,9 @@ function playGame(game,join)
 			var hit=checkShot(coords,opponent);
 			if(game.bonusattack) {
 				if(!hit) shots--;
+			} else {
+				shots--;
 			}
-			else shots--;
 			var count=countShips(opponent.id);
 			if(count===0) {
 				var p1=game.findCurrentUser();
@@ -801,12 +793,14 @@ function playGame(game,join)
 			infoBar();
 		}
 		shots=false;
-		game.nextTurn();
 		game.storeGame();
-		if(game.turn==players.getFullName("CPU") && !game.finished) computerTurn();
-		else game.notifyPlayer();
+		if(!game.finished) {
+			game.nextTurn();
+			if(game.turn==players.getFullName("CPU") && !game.finished) computerTurn();
+			else game.notifyPlayer();
+			send(new Packet("ENDTURN"),"ENDTURN");
+		}
 		infoBar();
-		send(new Packet("ENDTURN"),"ENDTURN");
 		return true;
 	}
 	function chooseTarget(opponent)
@@ -983,13 +977,11 @@ function playGame(game,join)
 	function placeShips()
 	{	
 		var board=currentplayer.board;
-		notify("\1nPlace ships [\1h?\1n] help [\1hspace\1n] rotate");
-		for(id in board.ships)
-		{
+		notify("\1n[\1hspace\1n] rotate [\1henter\1n] place");
+		for(id in board.ships) {
 			cycle();
 			var ship=board.ships[id];
-			while(1)
-			{
+			while(1) {
 				var position=selectTile(ship);
 				if(position) 
 				{
@@ -998,13 +990,14 @@ function playGame(game,join)
 				}
 				//else return false;
 			}
-			//TODO: keep track of ships placed
 		}
 		currentplayer.ready=true;
 		game.storeGame();
 		game.storeBoard(currentplayer.id);
 		game.storePlayer(currentplayer.id);
+		game.startGame();
 		updateStatus();
+		infoBar();
 		send(new Packet("UPDATE"),"UPDATE");
 	}
 	function selectTile(ship,placeholder)
@@ -1137,17 +1130,14 @@ function playGame(game,join)
 		var wdata=players.players[winner.id];
 		var ldata=players.players[loser.id];
 		
-		if(winner.name!="CPU")
-		{
+		if(winner.name!="CPU") {
 			wdata.wins++;
 			players.storePlayer(winner.id);
-			if(winner.id==currentplayer.id)
-			{
+			if(winner.id==currentplayer.id)	{
 				notice("\1r\1hYou sank all of " + loser.name + "'s ships!");
 			}
 		}
-		if(loser.name!="CPU")
-		{
+		if(loser.name!="CPU") {
 			ldata.losses++;
 			players.storePlayer(loser.id);
 			game.notifyLoser(loser.id);
@@ -1377,7 +1367,7 @@ function getFiles()
 	notice("Synchronizing player data...");
 	stream.recvfile("players.ini");
 	notice("Synchronizing game data...");
-	stream.recvfile("*.chs");
+	stream.recvfile("*.bom");
 }
 function sendFiles(filename)
 {

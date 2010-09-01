@@ -19,14 +19,11 @@ function GameData(gamefile)
 	
 	this.init=function()
 	{
-		if(gamefile)
-		{
+		if(gamefile) {
 			this.gamefile=new File(gamefile);
 			var fName=file_getname(gamefile);
 			this.loadGame();
-		}
-		else
-		{
+		} else	{
 			this.setFileInfo();
 			this.newGame();
 		}
@@ -203,27 +200,20 @@ function GameData(gamefile)
 		for(p in this.players)
 		{
 			var player=this.players[p];
-			if(!this.findCurrentUser())
-			{
+			if(!this.findCurrentUser())	{
 				var start=starts.pop();
 				hidden=this.spectate && this.started?false:true;
-			}
-			else if(player.id==players.getFullName(user.alias))
-			{
+			} else if(player.id==players.getFullName(user.alias))	{
 				start=starts[0];
 				hidden=false;
-			}
-			else
-			{
+			} else	{
 				start=starts[1];
 				hidden=true;
 			}
-			if(!player.board)
-			{
+			if(!player.board) {
 				player.board=new GameBoard(start.x,start.y,hidden);
 			}
-			if(player.ready)
-			{
+			if(player.ready) {
 				this.loadBoard(player.id);
 			}
 		}
@@ -232,8 +222,7 @@ function GameData(gamefile)
 	this.loadPlayer=function(id,ready)
 	{
 		var player=this.findPlayer(id);
-		if(!player)
-		{
+		if(!player)	{
 			player=new Object();
 			player.id=id;
 			player.name=players.getAlias(id);
@@ -260,18 +249,19 @@ function GameData(gamefile)
 		this.winner=gFile.iniGetValue(null,"winner");
 		this.lastcpuhit=getBoardPosition(gFile.iniGetValue(null,"lastcpuhit"));
 		var playerlist=this.gamefile.iniGetKeys("players");
-		for(player in playerlist)
-		{
-			var ready=this.gamefile.iniGetValue("players",playerlist[player]);
-			this.loadPlayer(playerlist[player],ready);
+		for(var p in playerlist)	{
+			var player=playerlist[p]; 
+			log("loading player: " + player);
+			if(!players.players[player]) players.loadPlayer(player);
+			var ready=this.gamefile.iniGetValue("players",player);
+			this.loadPlayer(player,ready);
 		}
 		gFile.close();
 	}
 	this.startGame=function()
 	{
 		if(this.players.length<2) return false;
-		for(var player in this.players)
-		{
+		for(var player in this.players) {
 			if(!this.players[player].ready) return false;
 		}
 		this.started=true;
@@ -306,19 +296,16 @@ function GameData(gamefile)
 		var player=	this.findPlayer(id);
 		var board=		player.board;
 		var positions=	this.gamefile.iniGetAllObjects("position",id + ".board.");
-		for(pos in positions)
-		{
+		for(pos in positions) {
 			var coords=				getBoardPosition(positions[pos].position);
 			if(positions[pos].shot)		board.shots[coords.x][coords.y]=positions[pos].shot;
-			if(positions[pos].ship_id>=0)	
-			{
+			if(positions[pos].ship_id>=0) {
 				var id=positions[pos].ship_id;
 				var segment=positions[pos].segment;
 				var orientation=positions[pos].orientation;
 				player.board.grid[coords.x][coords.y]={'id':id,'segment':segment,'orientation':orientation};
 				if(segment===0)	player.board.ships[id].orientation=orientation;
-				if(positions[pos].shot)
-				{
+				if(positions[pos].shot)	{
 					board.ships[id].takeHit(segment);
 				}
 			}
@@ -625,6 +612,14 @@ function PlayerList()
 			this.players[players[player]]=pFile.iniGetObject(players[player]);
 		}
 		pFile.close();
+	}
+	this.loadPlayer=function(player_id)
+	{
+		var pFile=new File(root + "players.ini");
+		if(!pFile.open("r",true)) return false; 
+		log("loading player data: " + player_id);
+		this.players[player_id]=pFile.iniGetObject(player_id);
+		debug(this.players[player_id]);
 	}
 	this.getAlias=function(fullname)
 	{
