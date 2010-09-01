@@ -14,7 +14,6 @@ function ServiceConnection(id)
 	const CONNECTION_TIMEOUT=	5;
 	const CONNECTION_ATTEMPTS=	2;
 	const CONNECTION_INTERVAL=	5;
-	const MAX_BUFFER=			512;
 	const MAX_RECV=			10240;
 	
 	var services=new File(system.ctrl_dir + "services.ini");
@@ -109,9 +108,8 @@ function ServiceConnection(id)
 		data=JSON.stringify(data)+"\r\n";
 		this.queue.push(data);
 		
-		for(var i=0;i<this.queue.length;i++) {
-			var qdata=this.queue.shift();
-			if(!this.sock.write(qdata)) this.queue.push(qdata);
+		while(this.queue.length && this.sock.is_connected) {
+			this.sock.write(this.queue.shift());
 		}
 		return true;
 	}
