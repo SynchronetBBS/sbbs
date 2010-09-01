@@ -117,6 +117,7 @@ function splitPadded(string1,string2,length,padding)
 }
 function printPadded(string,length,padding,justification)
 {
+	if(!string) string="";
 	if(!padding) padding=" ";
 	if(!justification) justification="left";
 	var strlength=console.strlen(string);
