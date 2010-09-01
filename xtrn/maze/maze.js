@@ -1,427 +1,536 @@
 /*
-	JAVASCRIPT MAZE RACE 
+	SYNCHRONET MAZE RACE 
+	A Javascript remake 
+	of the Atari game "Maze Craze"
+
 	For Synchronet v3.15+
 	Matt Johnson(2008)
 */
 
-load("qengine.js");
 load("graphic.js");
+load("logging.js");
+load("chateng.js");
 
-var root;
-try { barfitty.barf(barf); } catch(e) { root = e.fileName; }
-root = root.replace(/[^\/\\]*$/,'');
+var oldpass=console.ctrlkey_passthru;
+var root=js.exec_dir;
 
-//TODO:	FIND A BETTER WAY TO DO THIS? 
-//		KILLFILE IS THE MAP FILENAME, REMOVED BY ONLY THE FIRST PERSON TO RUN THE GAME
-//		ALL SUBSEQUENT USERS WHO JOIN THE GAME CANNOT DELETE THE MAP
-var killfile;
-var owner=false;
-js.on_exit("if(owner) file_remove(killfile)");		
+load(root + "mazegen.js");
+load(root + "mazeobj.js");
+load(root + "timer.js");
+load(root + "menu.js");
 
-var MazeLog;
-Maze();
+var stream=new ServiceConnection("mazerace");
+var chat=new ChatEngine(root);
+var generator=new MazeGenerator(10,26);
 
-function Maze() 
+function splashStart()
 {
-	this.oldpass=console.ctrlkey_passthru;
-	this.root=root;
-	this.name="maze";
-	killfile=(this.root + "maze.bin");
-	
-	MazeLog=new Logger(this.root,this.name);
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status|=SS_PAUSEOFF;	
+	console.clear();
+	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
+}
+function splashExit()
+{
+	//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
+	console.ctrlkey_passthru=oldpass;
+	bbs.sys_status&=~SS_MOFF;
+	bbs.sys_status&=~SS_PAUSEOFF;
+	console.clear(ANSI_NORMAL);
+	exit(0);
+}
+function lobby()
+{
+	var players=new PlayerList();
+	var scores=new ScoreList();
+	var background=new Graphic(80,24);
 
-	this.startcolors=["\1g","\1m","\1c","\1r","\1w"];
-	this.color="\1y";
+	var menu;
+	var mazes=[];
+	var update=false;
 	
-	this.stream=new DataQueue(this.root,this.name,MazeLog);
-	this.player=new Player(user.number,this.color,100);
-	this.update=true;
-	this.winner=false;
-	
-	//ENABLE/DISABLE DAMAGE FROM WALL IMPACT
-	this.damage=true;
-
-	//IF THIS PLAYER IS THE FIRST TO RUN THE GAME, HE "OWNS" THE MAP 
-	//AND HIS INSTANCE OF THE GAME WILL BE RESPONSIBLE FOR REMOVING THE MAP FILE
-	this.owner=false; 
-	
-	this.start=false;
-	this.finish=false;
-	
-	this.maze=new Graphic(79,22);
-	this.scores=new Object;
-	
-	this.SplashStart=function()
+	function init()
 	{
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
-		bbs.sys_status|=SS_PAUSEOFF;	
-		console.clear();
-		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
+		updateMazes();
+		initChat();
+		initMenu();
+		background.load(root + "lobby.bin");
+		notice("\1c\1hWelcome to Maze Race!");
+		notice("\1n\1ctype '/' for a list of available menu commands,");
+		notice("\1n\1cor you can just start typing to chat.");
+		notice("\1n\1cPress 'Escape' to quit.");
+		notice(" ");
 	}
-	this.SplashExit=function()
+	function initChat()
 	{
-		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
-		file_remove(this.root + user.number + ".usr");
-		console.ctrlkey_passthru=this.oldpass;
-		bbs.sys_status&=~SS_MOFF;
-		bbs.sys_status&=~SS_PAUSEOFF;
-		Quit();
+		chat.init(56,18,2,4);
+		chat.input_line.init(2,23,56,"","\1n");
+		chat.joinChan("maze race lobby",user.alias,user.name);
 	}
-	this.Main=function()
+	function initMenu()
 	{
-		this.GenerateMaze();	
-		this.LoadMaze();
-		this.FindStartFinish();
-		this.players=[];
-		if(this.RunMaze()) {
-			this.FindWinner();
-			this.winner=false;
-		}
-		else return;
+		var menu_items=[		"~Start New Race"				, 
+								"~Join Race"					,
+								"~Rankings"						,
+								"~Help"							,
+								"Re~draw"						];
+		menu=new Menu(menu_items,"\1n","\1c\1h");
 	}
-	this.GoToStartingPosition=function()
+	function main()
 	{
-		this.player.coords={x:this.start.x.valueOf(), y:this.start.y.valueOf()};
-	}
-	this.SaveScores=function()
-	{
-		var Sorted=this.SortScores();
-		this.scores.score_file.open(w);
-		this.scores.score_file.writeln(PrintPadded("PLAYER:",22) + "WINS:");
-		this.scores.score_file.writeln("");
-		for(score in Sorted) {
-			pScore=this.scores.score_list[score];
-			this.scores.score_file.writeln(PrintPadded(system.username(pScore.user),22) + pScore.score);
-		}
-	}
-	this.LoadScores=function()
-	{
-		var scores=[];
-		this.scores.score_file=new File(this.root + this.name + ".SCO");
-		this.scores.score_file.open('r');
-		this.scores.score_file.readln();
-		this.scores.score_file.readln();
-		while(!this.scores.score_file.eof)
-		{
-			scores.push({'user' : parseInt(this.scores.score_file.readln()), 'score' : parseInt(this.scores.score_file.readln())});
-		}
-		this.scores.score_list=scores;
-		this.scores.score_file.close();
-	}
-	this.CompressScores=function()
-	{
-		compressed=[];
-		for(score in this.scores.score_list)
-		{
-			compressed.push(score);
-		}
-		return compressed;
-	}
-	this.SortScores=function()
-	{ 
-		// The Bubble Sort method.
-		var data=this.CompressScores();
-		var numScores=data.length;
-		for(n=0;n<numScores;n++)
-		{
-			for(m = 0; m < (numScores-1); m++) 
-			{
-				if(this.scores.score_list[data[m]].score < this.scores.score_list[data[m+1]].score) 
-				{
-					var holder = data[m+1];
-					data[m+1] = data[m];
-					data[m] = holder;
+		redraw();
+		while(1) {
+			cycle();
+			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(k) {
+				switch(k.toUpperCase()) {
+					case "/":
+						if(!chat.input_line.buffer.length) {
+							refreshCommands();
+							listCommands();
+							getMenuCommand();
+							redraw();
+						}
+						else if(!Chat(k,chat)) return;
+						break;
+					default:
+						if(!Chat(k,chat)) return;
+						break;
 				}
 			}
 		}
-		return data;
-	}	
-	this.LoadMaze=function()
-	{
-		this.maze.load(this.root + "maze.bin");
-		Log("maze loaded");
 	}
-	this.Redraw=function()
+	function cycle()
 	{
-		this.DrawMaze();
-		this.ShowPlayerInfo();
-		this.player.Draw();
-		for(ply in this.players) {
-			this.players[ply].Draw();
+		chat.cycle();
+		updateMazes();
+		var current=time();
+		for each(var m in mazes) {
+			if(countMembers(m.players)>1) {
+				if(m.timer.countdown && m.timer.countdown>0) {
+					var difference=current-m.timer.lastupdate;
+					if(difference>0) {
+						m.timer.countDown(difference);
+						update=true;
+					}
+				} else	{
+					m.inprogress=true;
+					if(m.players[user.alias]) {	
+						race(m);
+						redraw();
+					}
+				}
+			}
+		}
+		if(update) {
+			listMazes();
+			update=false;
+		}
+		mswait(5);
+	}
+	function listCommands()
+	{
+		var list=menu.getList();
+		chat.chatroom.clear();
+		console.gotoxy(chat.chatroom);
+		console.pushxy();
+		for(l=0;l<list.length;l++) {
+			console.putmsg(list[l]);
+			console.popxy();
+			console.down();
+			console.pushxy();
 		}
 	}
-	this.RunMaze=function()
+	function help()
 	{
-		this.DrawMaze();
-		this.GoToStartingPosition();
-		this.ShowPlayerInfo();
-		
-		while(1) 
-		{
-			this.Receive();
-			if(this.winner==user.number) 
-			{
-				file_remove(this.root + "maze.bin");
-				return true;
-			}
-			if(this.update) 
-			{
-				this.Send();
-				this.player.Draw();
-				if(this.CheckWinner(this.player.coords.x,this.player.coords.y,user.number)) this.winner=user.number;
-			}
-
-			var kk=console.inkey();
-			switch(kk.toUpperCase())
-			{
-				case KEY_DOWN:
-					if(this.CheckWalls(this.player.coords.x-1,this.player.coords.y)) 
-					{
-						kk=false; 
-						this.ShowPlayerInfo(); 
-						break;
-					}
-					this.player.UnDraw();
-					this.player.coords.y++;
-					this.update=true;
-					break;
-				case KEY_UP:
-					if(this.CheckWalls(this.player.coords.x-1,this.player.coords.y-2)) 
-					{
-						kk=false; 
-						this.ShowPlayerInfo(); 
-						break;
-					}
-					this.player.UnDraw();
-					this.player.coords.y--;
-					this.update=true;
-					break;
-				case KEY_LEFT:
-					if(this.CheckWalls(this.player.coords.x-2,this.player.coords.y-1)) 
-					{
-						kk=false; 
-						this.ShowPlayerInfo(); 
-						break;
-					}
-					this.player.UnDraw();
-					this.player.coords.x--;
-					this.update=true;
-					break;
-				case KEY_RIGHT:
-					if(this.CheckWalls(this.player.coords.x,this.player.coords.y-1))
-					{
-						kk=false; 
-						this.ShowPlayerInfo(); 
-						break;
-					}
-					this.player.UnDraw();
-					this.player.coords.x++;
-					this.update=true;
-					break;
-				case "Q":
-					return false;
+	
+	}
+	function notice(txt)
+	{
+		chat.chatroom.notice(txt);
+	}
+	function refreshCommands()
+	{
+		if(countMembers(mazes)>0) {
+			menu.enable(["J"]);
+		} else {
+			menu.disable(["J"]);
+		}
+	}
+	function showRankings()
+	{
+	}
+	function getMenuCommand()
+	{
+		while(1) {
+			var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
+			if(k) 	{
+				switch(k.toUpperCase())
+				{
 				case "R":
-					this.Redraw();
+					showRankings();
+					break;
+				case "H":
+					help();
+					break;
+				case "S":
+					createMaze();
+					break;
+				case "J":
+					selectMaze();
+					break;
 				default:
 					break;
+				}
+				return true;
 			}
 		}
 	}
-	this.CheckWalls=function(posx,posy)
+	function selectMaze()
 	{
-		if(	this.maze.data[posx][posy].ch==" " 	||
-			this.maze.data[posx][posy].ch=="S" 	||
-			this.maze.data[posx][posy].ch=="X"	) return false;
-		else
-		{
-			if(this.damage) 
-			{
-				this.player.health-=5;
-				this.update=true;
-			}
-			if(this.player.health==0) 
-			{
-				this.player.UnDraw();
-				this.GoToStartingPosition();
-				this.player.health=100;
-			}
+		var gameNumber=menuPrompt("\1nEnter maze #\1h: ");
+		if(!mazes[gameNumber]) {
+			notify("No such maze!");
+			return false;
+		}
+		if(!mazes[gameNumber].players[user.alias]) {
+			joinMaze(mazes[gameNumber],user.alias);
+			notice("You joined maze #" + gameNumber);
 			return true;
 		}
 	}
-	this.DrawMaze=function()
+	function createMaze()
 	{
-		console.clear();
-		console.down();
-		this.maze.draw();
-		//console.gotoxy(1,24);
+		var gameNumber=getNewGameNumber();
+		var rootFileName=getRootFileName(gameNumber);
+		var maze=new Maze(rootFileName,gameNumber);
+		joinMaze(maze,user.alias);
+		mazes[maze.gameNumber]=maze;
+	}
+	function joinMaze(maze,player)
+	{
+		maze.players[user.alias]=new Player(player,maze.pcolors.shift(),100);
+		maze.goToStartingPosition(maze.players[player]);
+		storePlayerData(maze,player);
+	}	
+	function updateMazes()
+	{
+		var maze_files=directory(root+"maze*.ini");
+		for(var i=0;i<maze_files.length;i++) {
+			var filename=file_getname(maze_files[i]);
+			var gameNumber=Number(filename.substring(4,filename.indexOf(".")));
+			
+			if(mazes[gameNumber]) {
+				var lastupdate=file_date(maze_files[i]);
+				var lastloaded=mazes[gameNumber].lastupdate;
+				if(lastupdate>lastloaded) {
+					log("Updating maze: " +  maze_files[i]);
+					mazes[gameNumber]=loadMaze(gameNumber);
+					update=true;
+				}
+			} else {
+				log("loading maze: " + maze_files[i]);
+				mazes[gameNumber]=loadMaze(gameNumber);
+				update=true;
+			}
+		}
+		for(m in mazes) {
+			var maze=mazes[m];
+			if(maze && !file_exists(maze.dataFile)) {
+				log("removing deleted maze: " + maze.dataFile);
+				delete mazes[m];
+				update=true;
+			}
+		}
+	}
+	function storePlayerData(maze,player)
+	{
+		var file=new File(maze.dataFile);
+		file.open('r+',true);
+		file.iniSetValue("players",player);
+		file.close();
+		var update=new Packet("PLAYER");
+		update.name=player;
+		stream.send(update);
+	}
+	function loadMaze(gameNumber)
+	{
+		var rootFileName=root + "maze" + gameNumber;
+		return new Maze(rootFileName,gameNumber);
+	}
+	function listMazes()
+	{
+		var ip=new Coords(60,6);
+		clearBlock(60,6,19,7);
+		var wp=new Coords(60,16);
+		clearBlock(60,16,19,7);
+		var in_progress=[];
+		var waiting=[];
+		
+		for(var m in mazes) {
+			var maze=mazes[m];
+			if(maze.in_progress)
+				in_progress.push(maze);
+			else 
+				waiting.push(maze);
+		}
+		
+		console.gotoxy(ip);
+		console.pushxy();
+		for each(var m in in_progress) {
+			console.putmsg("\1n\1cMaze #" + m.gameNumber);
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+		console.gotoxy(wp);
+		console.pushxy();
+		for each(var m in waiting) {
+			console.putmsg("\1n\1cMaze #\1h" + m.gameNumber);
+			if(countMembers(m.players)>1)
+				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+	}
+	function redraw()
+	{
+		background.draw();
+		chat.redraw();
+		listMazes();
+	}
+
+	init();
+	main();
+}
+function race(maze) 
+{
+	var player=maze.players[user.alias];
+	var update=true;
+	
+	function init()
+	{
+		maze.draw();
+		showPlayerInfo();
+	}
+	function main()
+	{
+		while(!maze.winner) {
+			cycle();
+			var k=console.inkey();
+			switch(k.toUpperCase())
+			{
+			case KEY_DOWN:
+			case KEY_UP:
+			case KEY_LEFT:
+			case KEY_RIGHT:
+				movePosition(k);
+				break;
+			case "Q":
+			case "\x1b":
+				delete maze.players[user.alias];
+				return false;
+			case "R":
+				redraw();
+			default:
+				break;
+			}
+		}
+		deleteMaze();
+		console.home();
+		console.cleartoeol();
+		console.putmsg("\1y\1h" + maze.winner + " has won! \1r[press 'Q' to return to the lobby]");
+		return(console.getkeys('Q'));
+	}
+	function processData(packet)
+	{
+		if(packet.gameNumber != maze.gameNumber) return false;
+		switch(packet.func.toUpperCase())
+		{
+			case "MOVE":
+				var p=packet.player;
+				var coords=packet.coords;
+				var health=packet.health;
+				
+				maze.players[p].unDraw();
+				if(maze.players[p].coords.x == player.coords.x && maze.players[p].coords.y == player.coords.y) {
+					player.draw();
+					send();
+				}
+				maze.players[p].coords=coords;
+				maze.players[p].health=health;
+				maze.players[p].draw();
+				showPlayerInfo();
+				break;
+			default:
+				log("Unknown chess data type received");
+				log("packet: " + packet.toSource());
+				break;
+		}
+	}
+	function cycle()
+	{
+		var packet=stream.receive();
+		if(packet)	processData(packet);
+		
+		if(update) {
+			send();
+			player.draw();
+			checkWinner();
+			update=false;
+		}
+	}
+	function movePosition(k)
+	{
+		switch(k)
+		{
+		case KEY_DOWN:
+			if(checkMove(player.coords.x,player.coords.y+1)) {
+				kk=false; 
+				showPlayerInfo(); 
+				break;
+			}
+			player.unDraw();
+			player.coords.y++;
+			update=true;
+			break;
+		case KEY_UP:
+			if(checkMove(player.coords.x,player.coords.y-1)) {
+				kk=false; 
+				showPlayerInfo(); 
+				break;
+			}
+			player.unDraw();
+			player.coords.y--;
+			update=true;
+			break;
+		case KEY_LEFT:
+			if(checkMove(player.coords.x-1,player.coords.y)) {
+				kk=false; 
+				showPlayerInfo(); 
+				break;
+			}
+			player.unDraw();
+			player.coords.x--;
+			update=true;
+			break;
+		case KEY_RIGHT:
+			if(checkMove(player.coords.x+1,player.coords.y)) {
+				kk=false; 
+				showPlayerInfo(); 
+				break;
+			}
+			player.unDraw();
+			player.coords.x++;
+			update=true;
+			break;
+		}
+	}
+	function redraw()
+	{
+		DrawMaze();
+		showPlayerInfo();
+		for(ply in players) {
+			players[ply].draw();
+		}
 		console.center("\1k\1hUse Arrow Keys to Move. First player to reach '\1yX\1k' wins. - [\1cQ\1k]uit [\1cR\1k]edraw");
 	}
-	this.ShowPlayerInfo=function()
+	function checkMove(posx,posy)
+	{
+		var data=maze.maze.data;
+		for each(var p in maze.players) {
+			if(posx == p.coords.x && posy == p.coords.y) {
+				return true;
+			} 
+		}
+		if(	data[posx-1][posy-1].ch==" " || data[posx-1][posy-1].ch=="S" || data[posx-1][posy-1].ch=="X") {
+			return false;
+		}
+		if(maze.damage) {
+			player.health-=5;
+			update=true;
+		}
+		if(player.health==0) {
+			player.unDraw();
+			maze.goToStartingPosition(player);
+			player.health=100;
+		}
+		return true;
+	}
+	function showPlayerInfo()
 	{
 		console.home();
-		console.putmsg(this.player.color + user.alias + "\1k\1h:" + (this.player.health<=25?"\1r":this.player.color) + this.player.health + "\1n" + this.player.color);
-		for(p in this.players)
-		{
-			var ply=this.players[p];
-			console.putmsg(" " + ply.color + system.username(ply.user) + "\1k\1h:" + (ply.health<=25?"\1r":ply.color) + ply.health + "\1n" + ply.color);
+		for(var p in maze.players) {
+			var ply=maze.players[p];
+			console.putmsg(" " + ply.color + ply.name + "\1k\1h:" + (ply.health<=25?"\1r":ply.color) + ply.health);
 		}
 		console.cleartoeol();
 	}
-	this.RemoveOldPlayers=function()
+	function deleteMaze()
 	{
-		var needs_update=false;
-		for(conn in this.players) 
-		{
-			if(!file_exists(this.root + this.players[conn].user + ".usr")) 
-			{
-				needs_update=true;
-				this.players[conn].UnDraw();
-				this.startcolors.push(this.players[conn].color);
-				delete this.players[conn];
-			}
+		if(file_exists(maze.mazeFile)) {
+			file_remove(maze.mazeFile);
 		}
-		if(needs_update) this.ShowPlayerInfo();
-	}
-	this.Receive=function()
-	{
-		this.RemoveOldPlayers();
-		if(this.stream.DataWaiting("move")) 
-		{
-			var data=this.stream.ReceiveData("move");
-			for(item in data)
-			{
-				var user_=data[item].user;
-				var coords=data[item].coords;
-				var health=data[item].health;
-				
-				if(!this.players[user_])
-				{
-					this.update=true;
-					var color=this.startcolors.pop();
-					this.players[user_]=new Player(user_,color,health,coords);
-					this.players[user_].Draw();
-				}
-				else
-				{
-					this.players[user_].UnDraw();
-					this.players[user_].coords=coords;
-					this.players[user_].health=health;
-					this.players[user_].Draw();
-				}
-				if(this.CheckWinner(coords.x,coords.y,user_)) this.winner=user_;
-			}
-			this.ShowPlayerInfo();
+		if(file_exists(maze.dataFile)) {
+			file_remove(maze.dataFile);
 		}
 	}
-	this.Send=function()
+	function send()
 	{
 		var data=new Object;
-		data.user=user.number;
-		data.coords=this.player.coords;
-		data.health=this.player.health;
-		this.stream.SendData(data,"move");
-		this.update=false;
+		data.player=user.alias;
+		data.coords=player.coords;
+		data.health=player.health;
+		data.func="MOVE";
+		data.gameNumber=maze.gameNumber;
+		stream.send(data);
 	}
-	this.FindStartFinish=function()
+	function checkWinner()
 	{
-		this.start=false;
-		this.finish=false;
-		for(posx=0;posx<this.maze.data.length;posx++) 
-		{
-			for(posy=0;posy<this.maze.data[posx].length;posy++)
-			{
-				if(!this.start) if(this.maze.data[posx][posy].ch=="S") 
-				{
-					this.start={'x' : posx+1, 'y' : posy+1};
-					this.maze.data[posx][posy].ch=" ";
-				}
-				if(!this.finish) if(this.maze.data[posx][posy].ch=="X") 
-				{
-					this.finish={'x' : posx+1, 'y' : posy+1};
-					this.maze.data[posx][posy].attr=14;
-				}
-				if(this.start && this.finish) 
-				{
-					Log("start: " + this.start.x + "," + this.start.y +
-						" finish: " + this.finish.x + "," + this.finish.y);
-					return true;
-				}
+		for each(var p in maze.players) {
+			if(p.coords.x == maze.finish.x && p.coords.y == maze.finish.y) {
+				maze.winner=p.name;
+				return true;
 			}
 		}
-		Log("unable to find start & finish");
 		return false;
 	}
-	this.FindWinner=function()
-	{
-		if(this.winner) {
-			console.home();
-			console.cleartoeol();
-			console.putmsg("\1r\1h" + system.username(this.winner) + " has won!\1;\1;");
-		}
+	
+	init();
+	main();
+}
+function getRootFileName(gameNumber)
+{
+	return(root + "maze" + gameNumber);
+}
+function getNewGameNumber()
+{
+	var gNum=1;
+	while(file_exists(root + "maze" + gNum + ".ini")) {
+		gNum++;
 	}
-	this.CheckWinner=function(xx,yy,user)
-	{
-		if(file_exists(this.root + "winner")) return true;
-		if(	xx==this.finish.x &&
-			yy==this.finish.y) {
-			this.winner=user;
-			var winfile=new File(this.root + "winner");
-			winfile.open('w');
-			winfile.close();
-			Log("game over: " + system.username(user) + " wins");
-			return true;
-		}
-		else return false;
-	}
-	this.GenerateMaze=function()
-	{
-		Log("generating maze");
-		if(!file_exists(this.root + "maze.bin")) 
-		{
-			owner=true;
-			load(this.root + "mazegen.js", this.root + "maze.bin");
-		}
-	}
-	function Log(text)
-	{
-		MazeLog.Log(text);
-	}
-	function Quit(ERR)
-	{
-		if(ERR)
-			switch(ERR)
-			{
-				case 100:
-					Log("Error: No root directory specified");
-					break;
-				default:
-					Log("Error: Unknown");
-					break;
-			}
-		exit(0);
-	}
-	this.SplashStart();
-	this.Main();
-	this.SplashExit();
+	return gNum;
+}
+function menuPrompt(text)
+{
+	chat.input_line.clear();
+	console.gotoxy(chat.input_line);
+	console.putmsg(text);
+	var key=console.getkey();
+	chat.input_line.draw();
+	return key;
+}
+function notify(message)
+{
+	chat.chatroom.alert(message);
+}
+function notice(message)
+{
+	chat.chatroom.notice(message);
 }
 
-function Player(user,color,health,coords)
-{
-	this.user=user;
-	this.color=color;
-	this.coords=coords;
-	this.health=health;
-	
-	this.Draw=function()
-	{
-		console.gotoxy(this.coords.x,this.coords.y);
-		console.putmsg(this.color + "\1h\xEA");
-		console.home();
-	}
-	this.UnDraw=function()
-	{
-		console.gotoxy(this.coords.x,this.coords.y);
-		write(" ");
-	}
-}
+splashStart();
+lobby();
+splashExit();
