@@ -1,6 +1,6 @@
 Sample configuration in Synchronet (SBBSCFG.EXE):
 
-[Bubble Boggle]
+[Chess]
  1: Name                       Synchronet Chess
  2: Internal Code              JSCHESS
  3: Start-up Directory         
@@ -47,7 +47,7 @@ NOTE:	This program REQUIRES the associated service to be configured in order
 *****UPDATING YOUR LOCAL LIBRARIES******
 
 Before you attempt to install the inter-BBS service, it is recommended that you
-update your relative 'EXEC/' and 'EXEC/LOAD/' paths (typically '/SBBS/EXEC' and '/SBBS/EXEC/LOAD')
+update your relative 'EXEC/' and 'EXEC/LOAD/' paths
 with the latest files from the Synchronet CVS repository at:
 	
 	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/

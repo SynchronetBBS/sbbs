@@ -525,7 +525,6 @@ function playGame(game)
 							return;
 						}
 					}
-					}
 				case KEY_UP:
 				case KEY_DOWN:
 				case KEY_LEFT:
