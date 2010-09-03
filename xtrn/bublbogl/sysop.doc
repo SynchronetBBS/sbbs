@@ -4,7 +4,7 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
  1: Name                       Bubble Boggle
  2: Internal Code              BUBLBOGL
  3: Start-up Directory         
- 4: Command Line               *../xtrn/bublbogl/boggle.js INTERBBS <SEE INTERBBS.DOC>
+ 4: Command Line               *../xtrn/bublbogl/boggle.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
@@ -20,12 +20,6 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
 17: Place Drop File In         Node Directory
 18: Time Options...
 	
-NOTE:	The command line contains an OPTIONAL argument 'INTERBBS'
-		specifying whether the game is to operate in local
-		or inter-BBS mode. To operate local only, remove the 
-		argument from the command line, otherwise it will attempt
-		to use the inter-BBS service, as described in INTERBBS.DOC.
-		
 NOTE:	It is recommended that you check frequently for updates 
 		from the Synchronet CVS repository located at:
 		
@@ -38,6 +32,7 @@ NOTE:	It is recommended that you check frequently for updates
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/bublbogl/exit.bin
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/bublbogl/lobby.bin
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/bublbogl/sysop.doc
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/bublbogl/interbbs.doc
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/bublbogl/timer.js
 		
 		Replace any outdated local copies with the latest releases from these links.

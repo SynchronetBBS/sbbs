@@ -4,7 +4,7 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
  1: Name                       Uber Blox!
  2: Internal Code              UBERBLOX
  3: Start-up Directory         
- 4: Command Line               *../xtrn/uberblox/blox.js INTERBBS <SEE INTERBBS.DOC>
+ 4: Command Line               *../xtrn/uberblox/blox.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
@@ -20,12 +20,6 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
 17: Place Drop File In         Node Directory
 18: Time Options...
 	
-NOTE:	The command line contains an OPTIONAL argument 'INTERBBS'
-		specifying whether the game is to operate in local
-		or inter-BBS mode. To operate local only, remove the 
-		argument from the command line, otherwise it will attempt
-		to use the inter-BBS service, as described in INTERBBS.DOC.
-		
 NOTE:	It is recommended that you check frequently for updates 
 		from the Synchronet CVS repository located at:
 		
