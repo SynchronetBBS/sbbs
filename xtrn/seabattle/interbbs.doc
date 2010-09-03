@@ -1,0 +1,98 @@
+*****UPDATING YOUR LOCAL LIBRARIES******
+
+Before you attempt to install the inter-BBS service, it is recommended that you
+update your relative 'EXEC/' and 'EXEC/LOAD/' paths
+with the latest files from the Synchronet CVS repository at:
+	
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+	
+	RECOMMENDED UPDATES:
+	
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/timer.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
+		
+	NOTE:	Replace any outdated local copies with the latest release from the links.
+
+*****SETTING UP INTER-BBS SERVICE WITH SYNCHRONET*****
+
+The inter-BBS features of this program require that the appropriate services be configured, 
+and that all of your files are up to date. The following files are needed to operate 
+this program in inter-BBS mode, and can be downloaded from the Synchronet CVS repository at:
+
+	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/
+
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/commservice.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/commclient.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/chateng.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/filesync.ini
+	
+	NOTE: 	Placing these files in their corresponding local equivalent locations
+			will make configuration much easier.
+
+[COMMSERVICE.JS]
+
+	This is a static service that must be included in /ctrl/services.ini in order to 
+	accept connections and relay information to and from the main hub. It is critical
+	for this to be set up properly, for the programs that depend on it will not function
+	properly without it.
+
+	This file must be placed in your relative 'EXEC/' or 'MODS/' path (typically '/SBBS/EXEC/').
+	Once the file is in place, you must add the following to your 'CTRL/SERVICES.INI' file:
+
+		[Commserv]
+		Port=10088
+		Options=STATIC
+		Command=commservice.js bbs.thebrokenbubble.com 10088
+
+	NOTE:	there are two arguments on the command line that tell the service the address and 
+			port of the main hub, which by default is the Broken Bubble BBS, on port 10088. If
+			you wish to act as your own hub (e.g. start your own league), simple remove both
+			arguments from the command line, and direct league nodes to add your URL and port
+			to their SERVICES.INI file. If your system operates on multiple machines and you wish 
+			to share data between local nodes ONLY, setting up this service as a hub makes
+			this possible as well.
+
+	NOTE:	You should also double check to make sure that your services are running
+
+[COMMCLIENT.JS]
+
+	This is the dedicated client that connects to the inter-BBS service. This file handles
+	the transmission of data to and from the service, as well as managing file synchronization
+	for the client (this program). This file is critical for the successful operation of this program 
+	in inter-BBS mode.
+	
+	The file must be placed in your relative 'EXEC/LOAD/' path.
+	There is no further setup required for this to work (unless you changed the default 'Port' setting for the service 
+	in SERVICES.INI). 
+
+[CHATENG.JS]
+
+	This handles all inbound/outbound chat messages, and packages them for delivery via the client and service.
+	this also contains the necessary objects to implement a chat room (windowed or fullscreen). 
+	
+	NOTE:	while this particular program may not have chat features, the service itself still may
+			require this file to be present.
+	
+[FILESYNC.INI]
+
+	This file tells FILESYNC.JS and COMMCLIENT.JS where to store/retrieve inbound/outbound transfers
+	coming from the client and the service. 
+	
+	This file is critical for the service to operate properly. If you have installed the programs that 
+	use this service to their default locations, no additional configuration should be required.
+	
+[SERVER.INI]
+
+	This file should be located in the program's working directory, as it contains information for 
+	the host, port, and any "auth" the program's server might require. Deleting this file will cause
+	your program to function either as local-only, or as a server itself, depending on your setup
+	within the gaming service.
+	
+Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
+
+
+	
