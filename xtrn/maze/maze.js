@@ -27,7 +27,9 @@ function splashStart()
 {
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
-	bbs.sys_status|=SS_PAUSEOFF;	
+	bbs.sys_status|=SS_PAUSEOFF;
+	getFiles("maze*.ini");
+	getFiles("maze*.maz");
 	console.clear();
 	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 }
@@ -38,7 +40,23 @@ function splashExit()
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
 	console.clear(ANSI_NORMAL);
-	exit(0);
+	sendFiles("players.ini");
+	
+	var splash_filename=gameroot + "exit.bin";
+	if(!file_exists(splash_filename)) exit();
+	
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	console.getkey(K_NOSPIN|K_NOECHO);
+	console.clear(ANSI_NORMAL);
+	exit();
 }
 function lobby()
 {
@@ -108,18 +126,22 @@ function lobby()
 		var current=time();
 		for each(var m in mazes) {
 			if(countMembers(m.players)>1) {
-				if(m.timer.countdown && m.timer.countdown>0) {
-					var difference=current-m.timer.lastupdate;
-					if(difference>0) {
-						m.timer.countDown(difference);
-						update=true;
+				if(m.timer.countdown) {
+					if(m.timer.countdown>0) {
+						var difference=current-m.timer.lastupdate;
+						if(difference>0) {
+							m.timer.countDown(difference);
+							update=true;
+						}
+					} else	{
+						m.inprogress=true;
+						if(m.players[user.alias]) {	
+							race(m);
+							redraw();
+						}
 					}
-				} else	{
-					m.inprogress=true;
-					if(m.players[user.alias]) {	
-						race(m);
-						redraw();
-					}
+				} else {
+					initTimer(m);
 				}
 			}
 		}
@@ -205,6 +227,7 @@ function lobby()
 		var gameNumber=getNewGameNumber();
 		var rootFileName=getRootFileName(gameNumber);
 		var maze=new Maze(rootFileName,gameNumber);
+		sendFiles(rootFileName + ".maz");
 		joinMaze(maze,user.alias);
 		mazes[maze.gameNumber]=maze;
 	}
@@ -214,6 +237,13 @@ function lobby()
 		maze.goToStartingPosition(maze.players[player]);
 		storePlayerData(maze,player);
 	}	
+	function initTimer(maze)
+	{
+		var file=new File(maze.dataFile);
+		file.open('r+',true);
+		file.iniSetValue(null,"created",system.timer);
+		file.close();
+	}
 	function updateMazes()
 	{
 		var maze_files=directory(root+"maze*.ini");
@@ -251,6 +281,7 @@ function lobby()
 		file.iniSetValue("players",player);
 		file.close();
 		var update=new Packet("PLAYER");
+		update.dataFile=maze.dataFile;
 		update.name=player;
 		stream.send(update);
 	}
@@ -347,27 +378,27 @@ function race(maze)
 	function processData(packet)
 	{
 		if(packet.gameNumber != maze.gameNumber) return false;
-		switch(packet.func.toUpperCase())
-		{
-			case "MOVE":
-				var p=packet.player;
-				var coords=packet.coords;
-				var health=packet.health;
-				
-				maze.players[p].unDraw();
-				if(maze.players[p].coords.x == player.coords.x && maze.players[p].coords.y == player.coords.y) {
-					player.draw();
-					send();
-				}
-				maze.players[p].coords=coords;
-				maze.players[p].health=health;
-				maze.players[p].draw();
-				showPlayerInfo();
-				break;
-			default:
-				log("Unknown chess data type received");
-				log("packet: " + packet.toSource());
-				break;
+		switch(packet.func.toUpperCase()) {
+		case "MOVE":
+			var p=packet.player;
+			var coords=packet.coords;
+			var health=packet.health;
+			
+			maze.players[p].unDraw();
+			if(maze.players[p].coords.x == player.coords.x && maze.players[p].coords.y == player.coords.y) {
+				player.draw();
+				send();
+			}
+			maze.players[p].coords=coords;
+			maze.players[p].health=health;
+			maze.players[p].draw();
+			showPlayerInfo();
+			checkWinner();
+			break;
+		default:
+			log("Unknown chess data type received");
+			log("packet: " + packet.toSource());
+			break;
 		}
 	}
 	function cycle()
@@ -440,11 +471,11 @@ function race(maze)
 	function checkMove(posx,posy)
 	{
 		var data=maze.maze.data;
-		for each(var p in maze.players) {
+		/*for each(var p in maze.players) {
 			if(posx == p.coords.x && posy == p.coords.y) {
 				return true;
 			} 
-		}
+		}*/
 		if(	data[posx-1][posy-1].ch==" " || data[posx-1][posy-1].ch=="S" || data[posx-1][posy-1].ch=="X") {
 			return false;
 		}
@@ -529,6 +560,14 @@ function notify(message)
 function notice(message)
 {
 	chat.chatroom.notice(message);
+}
+function getFiles(mask)
+{
+	stream.recvfile(mask);
+}
+function sendFiles(mask)
+{
+	stream.sendfile(mask);
 }
 
 splashStart();

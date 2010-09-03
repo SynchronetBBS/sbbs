@@ -1,23 +1,4 @@
 //GAME OBJECTS
-function UserList()
-{
-	this.x=58;
-	this.y=4;
-	this.list=[];
-	this.draw=function()
-	{
-		for(var i in this.list)
-		{
-			console.gotoxy(this.x,this.y+i);
-			console.putmsg(this.color+this.list[i].name);
-		}
-	}
-}
-function User(name)
-{
-	this.name=name;
-	this.joined=false;
-}
 function ScoreList()
 {
 	this.scores;
@@ -30,7 +11,6 @@ function ScoreList()
 	this.SortScores=function()
 	{ 
 	}	
-
 }
 function PlayerList()
 {
@@ -157,9 +137,11 @@ function Maze(rootFile,gameNumber)
 		this.lastupdate=time();
 		this.inprogress=inprogress;
 		
-		var current=system.timer;
-		var difference=current-created;
-		this.timer.init(60-difference);
+		if(created > 0) {
+			var current=system.timer;
+			var difference=current-created;
+			this.timer.init(30-difference);
+		}
 	}
 	this.init();
 }

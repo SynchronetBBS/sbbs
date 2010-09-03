@@ -17,7 +17,6 @@ function MazeGenerator(rows,columns) {
 
 		dfile.open('w');
 		dfile.iniSetValue(null,"inprogress",false);
-		dfile.iniSetValue(null,"created",system.timer);
 		dfile.close();
 
 		mfile.open('wb');
