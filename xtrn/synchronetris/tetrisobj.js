@@ -96,12 +96,13 @@ function Piece(id,fg,bg,u,d,l,r)
 		}
 	}
 }
-function GameBoard(player,x,y)
+function GameBoard(name,x,y)
 {
+	log("creating board for: " + name);
 	this.x=x;
 	this.y=y;
 
-	this.name=player;
+	this.name=name;
 	this.score=0;
 	this.lines=0;
 	this.level=1;
@@ -198,6 +199,7 @@ function GameBoard(player,x,y)
 	}
 	this.unDrawPiece=function()
 	{
+		if(!this.currentPiece) return;
 		var piece=this.currentPiece;
 		var startx=this.x+1;
 		var starty=this.y+1;

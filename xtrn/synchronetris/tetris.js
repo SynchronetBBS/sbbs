@@ -280,6 +280,7 @@ function lobby()
 					else if(!Chat(k,chat)) return;
 					break;
 				case "\x1b":	
+					chat.partChan("tetris lobby",user.alias);
 					return;
 				default:
 					if(!Chat(k,chat)) return;
@@ -380,7 +381,7 @@ function lobby()
 					break;
 				case "J":
 					var g=selectGame();
-					if(g) joinGame(tables[g],players.getPlayerID(user.alias));
+					if(g) joinGame(tables[g],user.alias);
 					break;
 				default:
 					break;
@@ -396,6 +397,10 @@ function lobby()
 		var id=players.getPlayerID(name);
 		if(game.players[id]) {
 			notify("You are already in that game!");
+			return false;
+		}
+		if(game.status>0) {
+			notify("It has already started!");
 			return false;
 		}
 		if(countMembers(game.players) == 3) {
@@ -459,7 +464,7 @@ function playGame(game)
 		}
 		for(var p in game.players) {
 			if(p == currentPlayerID) continue;
-			game.players[p]=new GameBoard(p.name,x + (index*width),y);
+			game.players[p]=new GameBoard(game.players[p].name,x + (index*width),y);
 			index++;
 		}
 		currentPlayer=game.players[currentPlayerID];
@@ -493,6 +498,7 @@ function playGame(game)
 			switch(k)
 			{
 			case " ":
+			case "0":
 				if(!currentPlayer.swapped) {
 					currentPlayer.swapped=true;
 					swapPiece();
@@ -501,7 +507,6 @@ function playGame(game)
 			case "8":
 			case KEY_UP:
 				fullDrop();
-				send("MOVE");
 				setPiece();
 				break;
 			case "2":
@@ -520,9 +525,14 @@ function playGame(game)
 			case KEY_RIGHT:
 				if(move("RIGHT")) send("MOVE");
 				break;
+			case "5":
+				if(rotate("RIGHT")) send("MOVE");
+				break;
+			case "7":
 			case "A":
 				if(rotate("LEFT")) send("MOVE");
 				break;
+			case "9":
 			case "D":
 				if(rotate("RIGHT")) send("MOVE");
 				break;
@@ -550,7 +560,7 @@ function playGame(game)
 	}
 	function cycle()
 	{
-		chat.cycle();
+		//chat.cycle();
 		var packet=stream.receive();
 		if(packet)	processData(packet);
 		if(!currentPlayer || !currentPlayer.active) return;
@@ -569,6 +579,7 @@ function playGame(game)
 			return;
 		}
 		if(move("DOWN")) {
+			log("gravity move");
 			send("MOVE");
 		} else {
 			setPiece();
@@ -584,6 +595,7 @@ function playGame(game)
 		switch(packet.func.toUpperCase())
 		{
 			case "MOVE":
+				if(!game.players[packet.player].currentPiece) break;
 				game.players[packet.player].unDrawPiece();
 				game.players[packet.player].currentPiece.x=packet.x;
 				game.players[packet.player].currentPiece.y=packet.y;
@@ -595,7 +607,10 @@ function playGame(game)
 				game.players[packet.player].drawPiece();
 				break;
 			case "GARBAGE":
+				currentPlayer.clearBoard();
 				loadGarbage(packet.lines);
+				currentPlayer.drawBoard();
+				currentPlayer.drawPiece();
 				break;
 			case "DEAD":
 				killPlayer(packet.player);
@@ -628,7 +643,6 @@ function playGame(game)
 				log("packet: " + packet.toSource());
 				break;
 		}
-		log("received data: " + packet.func);
 	}
 	function packageData(func)
 	{
@@ -636,11 +650,19 @@ function playGame(game)
 		switch(func.toUpperCase())
 		{
 			case "MOVE":
+				if(!currentPlayer.currentPiece) {
+					log("current piece not defined: " + currentPlayer.currentPiece);
+					return;
+				}
 				data.x=currentPlayer.currentPiece.x;
 				data.y=currentPlayer.currentPiece.y;
 				data.o=currentPlayer.currentPiece.o;
 				break;
 			case "PIECE":
+				if(!currentPlayer.currentPiece) {
+					log("current piece not defined: " + currentPlayer.currentPiece);
+					return;
+				}
 				data.piece=currentPlayer.currentPiece.id;
 				break;
 			case "NEXT":
@@ -691,19 +713,19 @@ function playGame(game)
 	/*	gameplay functions */
 	function loadGarbage(lines)
 	{
-		var piece=currentPlayer.currentPiece;
 		var space=random(10);
-		var line=getGarbageLine(space);
 		while(lines>0) {
-			if(piece) {
-				piece.x++;
-				if(checkInterFerence()) {
-					piece.x--;
+			log("loading garbage");
+			if(currentPlayer.currentPiece) {
+				currentPlayer.currentPiece.x++;
+				if(checkInterference()) {
+					currentPlayer.currentPiece.x--;
 					setPiece();
 				}
 			}
-			player.grid.shift();
-			player.grid.push(line);
+			currentPlayer.grid.shift();
+			currentPlayer.grid.push(getGarbageLine(space));
+			lines--;
 		}
 		send("GRID");
 	}
@@ -712,6 +734,8 @@ function playGame(game)
 		while(1) {
 			if(!move("DOWN")) break;
 		}
+		log("full drop move");
+		send("MOVE");
 	}
 	function getLines()
 	{
@@ -903,7 +927,8 @@ function playGame(game)
 	}
 	function checkInterference()
 	{
-		var piece=player.currentPiece;
+		var piece=currentPlayer.currentPiece;
+		if(!piece) return;
 		var piece_matrix=piece.orientation[currentPlayer.currentPiece.o];
 		
 		var yoffset=piece.y;
