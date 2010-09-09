@@ -492,7 +492,7 @@ function playGame(game)
 				}
 				break;
 			}
-			if(!currentPlayer.active) {
+			if(!currentPlayer.active || !currentPlayer.currentPiece) {
 				continue;
 			}
 			switch(k)
@@ -507,6 +507,7 @@ function playGame(game)
 			case "8":
 			case KEY_UP:
 				fullDrop();
+				send("MOVE");
 				setPiece();
 				break;
 			case "2":
@@ -579,7 +580,6 @@ function playGame(game)
 			return;
 		}
 		if(move("DOWN")) {
-			log("gravity move");
 			send("MOVE");
 		} else {
 			setPiece();
@@ -595,7 +595,6 @@ function playGame(game)
 		switch(packet.func.toUpperCase())
 		{
 			case "MOVE":
-				if(!game.players[packet.player].currentPiece) break;
 				game.players[packet.player].unDrawPiece();
 				game.players[packet.player].currentPiece.x=packet.x;
 				game.players[packet.player].currentPiece.y=packet.y;
@@ -650,19 +649,11 @@ function playGame(game)
 		switch(func.toUpperCase())
 		{
 			case "MOVE":
-				if(!currentPlayer.currentPiece) {
-					log("current piece not defined: " + currentPlayer.currentPiece);
-					return;
-				}
 				data.x=currentPlayer.currentPiece.x;
 				data.y=currentPlayer.currentPiece.y;
 				data.o=currentPlayer.currentPiece.o;
 				break;
 			case "PIECE":
-				if(!currentPlayer.currentPiece) {
-					log("current piece not defined: " + currentPlayer.currentPiece);
-					return;
-				}
 				data.piece=currentPlayer.currentPiece.id;
 				break;
 			case "NEXT":
@@ -697,7 +688,7 @@ function playGame(game)
 	function send(func)
 	{
 		var d=packageData(func);
-		stream.send(d);
+		if(d) stream.send(d);
 	}
 	function redraw()
 	{
@@ -715,27 +706,33 @@ function playGame(game)
 	{
 		var space=random(10);
 		while(lines>0) {
-			log("loading garbage");
 			if(currentPlayer.currentPiece) {
 				currentPlayer.currentPiece.x++;
 				if(checkInterference()) {
 					currentPlayer.currentPiece.x--;
 					setPiece();
+				} else {
+					currentPlayer.currentPiece.x--;
 				}
 			}
-			currentPlayer.grid.shift();
+			var topLine=currentPlayer.grid.shift();
+			for(var x=0;x<topLine.length;x++) {
+				if(topLine[x] > 0) {
+					log("garbage overflow");
+					killPlayer(currentPlayerID);
+					return;
+				}
+			}
 			currentPlayer.grid.push(getGarbageLine(space));
 			lines--;
 		}
 		send("GRID");
 	}
 	function fullDrop()
-	{
+	{	
 		while(1) {
 			if(!move("DOWN")) break;
 		}
-		log("full drop move");
-		send("MOVE");
 	}
 	function getLines()
 	{
@@ -845,7 +842,6 @@ function playGame(game)
 	function move(dir)
 	{
 		var piece=currentPlayer.currentPiece;
-		if(!piece) return false;
 		
 		var old_x=piece.x;
 		var old_y=piece.y;
@@ -886,7 +882,6 @@ function playGame(game)
 	function rotate(dir)
 	{
 		var piece=currentPlayer.currentPiece;
-		if(!piece) return false;
 		
 		var old_o=piece.o;
 		var new_o=old_o;
