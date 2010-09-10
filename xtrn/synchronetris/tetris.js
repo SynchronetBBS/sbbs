@@ -21,7 +21,6 @@ var players=new PlayerList();
 var oldpass=console.ctrl_key_passthru;
 
 //BUG REPORT: continuous dropping pieces when you should be dead keeps you alive
-//BUG REPORT: "floating" pieces when getting garbage
 
 function splashStart()
 {
@@ -498,6 +497,11 @@ function playGame(game)
 			if(!currentPlayer.active || !currentPlayer.currentPiece) {
 				continue;
 			}
+			if(checkInterference()) {
+				killPlayer(currentPlayerID);
+				send("DEAD");
+				continue;
+			}
 			switch(k)
 			{
 			case " ":
@@ -544,9 +548,19 @@ function playGame(game)
 				break;
 			}
 		}
-		message("\1n\1r[\1hpress a key\1n\1r]");
-		console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
-		return;
+		console.gotoxy(currentPlayer.x+1,currentPlayer.y+11);
+		console.pushxy();
+		if(game.winner == currentPlayerID) {
+			message("\1g\1hYOU WIN!");
+		} else {
+			message("\1r\1hYOU LOSE!");
+		}
+		message("\1n\1rpress \1hQ \1n\1rto quit");
+		while(1) {
+			if(console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER)=="Q") {
+				return;
+			}
+		}
 	}
 	function handleExit()
 	{
@@ -584,11 +598,15 @@ function playGame(game)
 			getNewPiece();
 			return;
 		}
-		if(move("DOWN")) {
-			send("MOVE");
-		} else if(checkInterference()) {
+		
+		if(checkInterference()) {
 			killPlayer(currentPlayerID);
 			send("DEAD");
+			return;
+		} 
+		
+		if(move("DOWN")) {
+			send("MOVE");
 		} else {
 			setPiece();
 		}
@@ -968,15 +986,12 @@ function playGame(game)
 		}
 		game.players[player].active=false;
 		game.players[player].clearBoard();
-		display(game.players[player],"\1n\1rGAME OVER!");
+		display(game.players[player],"\1n\1r[\1hGAME OVER\1n\1r]");
 		
-		if(activePlayers()==1) {
+		if(activePlayers()<=1) {
 			for (var p in game.players) {
 				if(game.players[p].active) game.winner=p;
 			}
-			endGame();
-		} else if(activePlayers()==0) {
-			game.winner=currentPlayerID;
 			endGame();
 		}
 	}
