@@ -20,6 +20,9 @@ var chat=new ChatEngine(root);
 var players=new PlayerList();
 var oldpass=console.ctrl_key_passthru;
 
+//BUG REPORT: continuous dropping pieces when you should be dead keeps you alive
+//BUG REPORT: "floating" pieces when getting garbage
+
 function splashStart()
 {
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
@@ -541,6 +544,9 @@ function playGame(game)
 				break;
 			}
 		}
+		message("\1n\1r[\1hpress a key\1n\1r]");
+		console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
+		return;
 	}
 	function handleExit()
 	{
@@ -570,9 +576,8 @@ function playGame(game)
 		var difference=system.timer-lastupdate;
 
 		if(difference<pause) return;
-		
 		lastupdate=system.timer;
-		
+
 		getLines();
 
 		if(!currentPlayer.currentPiece) {
@@ -581,12 +586,11 @@ function playGame(game)
 		}
 		if(move("DOWN")) {
 			send("MOVE");
+		} else if(checkInterference()) {
+			killPlayer(currentPlayerID);
+			send("DEAD");
 		} else {
 			setPiece();
-			if(checkInterference()) {
-				killPlayer(currentPlayerID);
-				send("DEAD");
-			}
 		}
 	}
 	function processData(packet)
@@ -595,6 +599,10 @@ function playGame(game)
 		switch(packet.func.toUpperCase())
 		{
 			case "MOVE":
+				if(!game.players[packet.player].currentPiece) {
+					log("received invalid move data");
+					break;
+				}
 				game.players[packet.player].unDrawPiece();
 				game.players[packet.player].currentPiece.x=packet.x;
 				game.players[packet.player].currentPiece.y=packet.y;
@@ -707,12 +715,12 @@ function playGame(game)
 		var space=random(10);
 		while(lines>0) {
 			if(currentPlayer.currentPiece) {
-				currentPlayer.currentPiece.x++;
+				currentPlayer.currentPiece.y++;
 				if(checkInterference()) {
-					currentPlayer.currentPiece.x--;
+					currentPlayer.currentPiece.y--;
 					setPiece();
 				} else {
-					currentPlayer.currentPiece.x--;
+					currentPlayer.currentPiece.y--;
 				}
 			}
 			var topLine=currentPlayer.grid.shift();
@@ -923,8 +931,7 @@ function playGame(game)
 	function checkInterference()
 	{
 		var piece=currentPlayer.currentPiece;
-		if(!piece) return;
-		var piece_matrix=piece.orientation[currentPlayer.currentPiece.o];
+		var piece_matrix=piece.orientation[piece.o];
 		
 		var yoffset=piece.y;
 		var xoffset=piece.x;
@@ -955,9 +962,13 @@ function playGame(game)
 	}
 	function killPlayer(player)
 	{	
+		if(!game.players[player]) {
+			log("player does not exist: " + player);
+			return false;
+		}
 		game.players[player].active=false;
 		game.players[player].clearBoard();
-		display(game.players[player],"\1r\1h[\1n\1rDEAD\1h]");
+		display(game.players[player],"\1n\1rGAME OVER!");
 		
 		if(activePlayers()==1) {
 			for (var p in game.players) {
@@ -1093,23 +1104,23 @@ function loadPiece(index)
 		break;
 	case 6: // RH "L" 2 x 3 MAGENTA
 		up=[
-			[0,7,0],
-			[0,7,0],
-			[0,7,7]
+			[0,6,0],
+			[0,6,0],
+			[0,6,6]
 		];
 		right=[
 			[0,0,0],
-			[7,7,7],
-			[7,0,0]
+			[6,6,6],
+			[6,0,0]
 		];
 		down=[
-			[7,7,0],
-			[0,7,0],
-			[0,7,0]
+			[6,6,0],
+			[0,6,0],
+			[0,6,0]
 		];
 		left=[
-			[0,0,7],
-			[7,7,7],
+			[0,0,6],
+			[6,6,6],
 			[0,0,0]
 		];
 		fg=MAGENTA;
@@ -1117,24 +1128,24 @@ function loadPiece(index)
 		break;
 	case 7: // LH "L" 2 x 3 BLUE
 		up=[
-			[0,6,0],
-			[0,6,0],
-			[6,6,0]
+			[0,7,0],
+			[0,7,0],
+			[7,7,0]
 		];
 		right=[
-			[6,0,0],
-			[6,6,6],
+			[7,0,0],
+			[7,7,7],
 			[0,0,0]
 		];
 		down=[
-			[0,6,6],
-			[0,6,0],
-			[0,6,0]
+			[0,7,7],
+			[0,7,0],
+			[0,7,0]
 		];
 		left=[
 			[0,0,0],
-			[6,6,6],
-			[0,0,6]
+			[7,7,7],
+			[0,0,7]
 		];
 		fg=BLUE;
 		bg=BG_BLUE;
@@ -1199,7 +1210,7 @@ function loadMini(index)
 		grid=[
 			" \xDB ",
 			" \xDB ",
-			" \xDB\xDB "
+			" \xDB\xDB"
 		];
 		fg=MAGENTA;
 		bg=BG_MAGENTA;
