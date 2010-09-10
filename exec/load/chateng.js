@@ -23,7 +23,6 @@ function Chat(key,engine)
 		engine=new ChatEngine();
 		engine.init();
 	}
-	engine.redraw();
 	if(key)
 	{
 		engine.processKey(key);
