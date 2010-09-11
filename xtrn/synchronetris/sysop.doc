@@ -4,7 +4,7 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
  1: Name                       Synchronetris
  2: Internal Code              TETRIS
  3: Start-up Directory         
- 4: Command Line               *../xtrn/bublbogl/tetris.js
+ 4: Command Line               *../xtrn/synchronetris/tetris.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
