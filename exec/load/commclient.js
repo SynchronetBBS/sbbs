@@ -125,7 +125,6 @@ function ServiceConnection(id)
 		q.filemask=filemask;
 		q.command=command;
 		q.blocking=blocking;
-		q.requestor=this.sock.descriptor;
 		q.func="FILESYNC";
 		
 		this.send(q);
