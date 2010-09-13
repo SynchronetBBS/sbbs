@@ -19,7 +19,7 @@ function ServiceConnection(id)
 	var services=new File(system.ctrl_dir + "services.ini");
 	services.open('r',true);
 	//hub should point to the local, internal ip address or domain of the computer running commservice.js
-	const hub=					"localhost";
+	const hub=					system.local_host_name;
 	//port should point to the port the gaming service is set to use in commservice.js
 	const port=				services.iniGetValue("CommServ","Port");
 	services.close();
@@ -68,12 +68,10 @@ function ServiceConnection(id)
 	}
 	this.receive=function()
 	{
-		if(!this.sock.is_connected)
-		{
+		if(!this.sock.is_connected)	{
 			if(!this.connect()) return false;
 		}
-		if(this.sock.is_connected && this.sock.data_waiting)
-		{
+		if(this.sock.is_connected && this.sock.data_waiting) {
 			var raw_data=this.sock.recvline(MAX_RECV,CONNECTION_TIMEOUT);
 			if(raw_data == null) return false;
 			try {
@@ -115,11 +113,11 @@ function ServiceConnection(id)
 	}
 	this.recvfile=function(filemask,blocking)
 	{
-		this.filesync(filemask,"trysend",blocking);
+		this.filesync(filemask,"TRYSEND",blocking);
 	}
 	this.sendfile=function(filemask,blocking)
 	{
-		this.filesync(filemask,"tryrecv",blocking);
+		this.filesync(filemask,"TRYRECV",blocking);
 	}
 	this.filesync=function(filemask,command,blocking)
 	{
@@ -132,8 +130,22 @@ function ServiceConnection(id)
 		
 		this.send(q);
 		if(q.blocking) {
-			/* Do something */
+			var timeout=10;
+			var start=time();
+			while(time()-start<timeout) {
+				var data=this.receive();
+				if(!data) {
+					continue;
+				}
+				if(data.filemask==q.filemask) {
+					log("file received");
+					return true;
+				}
+			}
+			log("file request timed out");
+			return false;
 		}
+		return true;
 	}
 	this.close=function()
 	{
