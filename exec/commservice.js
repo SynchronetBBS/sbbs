@@ -119,16 +119,21 @@ function init_module(module,module_name)
 			return false;
 		}
 		
-		var host=sfile.iniGetValue("host");
-		var port=sfile.iniGetValue("port");
-		var auth=sfile.iniGetObject("auth");
-		if(auth) {
+		var host=sfile.iniGetValue(null,"host");
+		var port=sfile.iniGetValue(null,"port");
+		var auth=false;
+		
+		if(sfile.iniGetSections("auth").length > 0) {
+			auth=sfile.iniGetObject("auth");
 			for(var i in auth) auth[i]=eval(auth[i]);
+			log("creating auth: " + auth.toSource());
 		}
+		
 		if(host && port) {
 			servers_map[module_name]=host;
 			if(!servers[host]) {
 				servers[host]=new Server(host,port,auth);
+				log("created server for: " + module_name);
 			}
 		}
 	}
@@ -211,11 +216,12 @@ function process_client_data(sock,data)
 	{
 	case "FILESYNC":
 		var module_server=servers[servers_map[data.id]];
-		if(module_server && module_server.enabled) {
-			module_server.enqueue(data);
+		if(module_server) {
 			if(data.blocking && !blocking[sock.descriptor]) {
 				blocking[sock.descriptor]=sock;
 			}
+			data.requestor=sock.descriptor;
+			module_server.enqueue(data);
 		} else {
 			handle_filesync(sock,data);
 		}
@@ -235,7 +241,6 @@ function get_socket(sock)
 	sock.receive=sock_receive;
 	sock.enqueue=sock_enqueue;
 	sock.cycle=sock_cycle;
-	sock.users=[];
 	return sock;
 }
 function delete_socket(array,index)
@@ -249,7 +254,7 @@ function delete_socket(array,index)
 function authenticate()
 {
 	var socks=socket_select(awaiting_auth);
-	for(var s in socks) {
+	for(var s=0;s<socks.length;s++) {
 		var sock=awaiting_auth[socks[s]];
 		if(!sock) continue;
 
@@ -264,6 +269,7 @@ function authenticate()
 			sock.nickname=data.nickname;
 			if(!local_clients[data.id]) local_clients[data.id]=[];
 			local_clients[data.id].push(sock);
+			enable_server(data.id);
 			server.client_add(sock);
 			awaiting_auth.splice(socks[s],1);
 			queue(data);
@@ -275,6 +281,7 @@ function authenticate()
 				remote_clients.push(sock);
 				server.client_add(sock);
 				awaiting_auth.splice(socks[s],1);
+				queue(data);
 				break;
 			} else {
 				debug("incompatible with remote server version: " + data.version,LOG_WARNING);
@@ -291,11 +298,19 @@ function authenticate()
 		log("clients: " + server.clients);
 	}
 }
+function enable_server(id)
+{
+	if(servers_map[id]) {
+		servers[servers_map[id]].enabled=true;
+	}
+}
 function queue(data)
 { 
 	var module_server=servers[servers_map[data.id]];
 	if(module_server && module_server.enabled) {
 		module_server.enqueue(data);
+	} else {
+		log("module server not available");
 	}
 	for(var r=0;r<remote_clients.length;r++)	{
 		remote_clients[r].enqueue(data);
@@ -312,6 +327,8 @@ function known_sessions_active()
 	for(var s in local_clients) {
 		if(local_clients[s].length>0) {
 			return true;
+		} else if(servers_map[s]) {
+			//servers[servers_map[s]].disconnect();
 		}
 	}
 	return false;
@@ -344,19 +361,21 @@ function handle_filesync(socket,query)
 		if(!module) return false;
 		switch(query.command)
 		{
-			case "trysend":
+			case "TRYSEND":
 				sync_remote(socket,module.dir,query);
 				break;
-			case "tryrecv":
-				sync_local(socket,module.dir,query);
-				//send_updates(socket,module.dir,query); 
-				break;
-			case "dorecv":
-				if(recv_file(socket,module.dir,query)) {
-					//send_updates(socket,module.dir,query);
+			case "TRYRECV":
+				if(!sync_local(socket,module.dir,query)) {
+					notify_requestor(query);
 				}
 				break;
-			case "dosend":
+			case "DORECV":
+				if(recv_file(socket,module.dir,query)) {
+					send_updates(socket,module.dir,query);
+					notify_requestor(query);
+				}
+				break;
+			case "DOSEND":
 				send_file(socket,module.dir,query);
 				break;
 			default:
@@ -376,7 +395,7 @@ function sync_remote(socket,dir,query)
 		return false;
 	}
 	for(var f=0;f<files.length;f++) {
-		query.command="tryrecv";
+		query.command="TRYRECV";
 		query.filemask=file_getname(files[f]);
 		query.filedate=file_date(files[f]);
 		query.descriptor=server.socket.descriptor;
@@ -403,7 +422,7 @@ function send_file(socket,dir,query)
 	if(data) {
 		data.descriptor=server.socket.descriptor;
 		data.id=query.id;
-		data.command="dorecv";
+		data.command="DORECV";
 		data.requestor=query.requestor;
 		data.func="FILESYNC";
 		socket.enqueue(data);
@@ -415,12 +434,13 @@ function sync_local(socket,dir,query)
 	var r_filedate=query.filedate;
 	var l_filedate=file_date(dir+query.filemask);
 	if(compare_dates(l_filedate,r_filedate)) {
-		query.command="dosend";
+		query.command="DOSEND";
 		query.descriptor=server.socket.descriptor;
 		socket.enqueue(query);
+		return true;
 	} else {
 		debug("skipping file: " + query.filemask);
-		debug("local date: " + l_filedate + " remote date: " + r_filedate);
+		return false;
 	}
 }
 function recv_file(socket,dir,query)
@@ -441,10 +461,6 @@ function recv_file(socket,dir,query)
 	file_rename(filename,filename+".bck");
 	file_rename(file.name,filename);
 	file_utime(filename,time(),query.filedate);
-	
-	if(query.complete && blocking[query.requestor]) {
-		blocking[query.requestor].enqueue({complete:true});
-	}
 	return true;
 }
 function compare_dates(local,remote)
@@ -455,6 +471,16 @@ function compare_dates(local,remote)
 	//will treat numbers with a difference of 1 or 0 as the same, due to issues with some file systems
 	if(Math.abs(local-remote)>1) return true;
 	else return false;
+}
+function notify_requestor(query)
+{
+	var requestor=blocking[query.requestor];
+	if(requestor) {
+		log("notifying requestor: " + blocking[query.requestor].nickname);
+		var data=new Packet("FILESYNC");
+		data.filemask=query.filemask;
+		requestor.enqueue(data);
+	}
 }
 function load_file(filename)
 {
@@ -519,6 +545,7 @@ function notify_sysop(msg)
 /* socket prototype methods */
 function sock_receive()
 {
+	if(!this.data_waiting) return false;
 	var data=this.recvline(MAX_RECV);
 	if(data == null) return false;
 	try {
@@ -541,10 +568,14 @@ function sock_cycle()
 function sock_enqueue(data)
 {
 	if(data.descriptor==this.descriptor) return false;
-	//debug("enqueueing data: " + JSON.stringify(data));
 	this.queue+=JSON.stringify(data)+"\r\n";
 }
 
+/* generic data packet */
+function Packet(func)
+{
+	this.func=func;
+}
 /* server object */
 function Server(addr,port,auth)
 {
@@ -552,7 +583,6 @@ function Server(addr,port,auth)
 	this.port=port;
 	this.sock=false;
 	this.enabled=true;
-	this.queue="";
 	this.last_attempt=0;
 	this.attempts=0;
 	this.auth=auth;
@@ -581,6 +611,7 @@ function Server(addr,port,auth)
 				if(!this.cycle()) break;
 			}
 			this.sock.close();
+			this.enabled=false;
 		}
 	}
 	this.receive=function()
@@ -616,7 +647,6 @@ function Server(addr,port,auth)
 		data.context="SERVER";
 		data.version=VERSION;
 		data.system=system.name;
-//		debug("SENDING: " + JSON.stringify(data));
 		this.sock.enqueue(data);
 	}
 	this.cycle=function()
@@ -634,7 +664,6 @@ function Server(addr,port,auth)
 		if(this.sock) this.sock.cycle();
 		return true;
 	}
-	
 }
 
 load_modules();
