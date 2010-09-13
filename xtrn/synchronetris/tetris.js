@@ -29,7 +29,7 @@ function splashStart()
 	bbs.sys_status |= SS_PAUSEOFF;	
 	console.clear();
 	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-	//getFiles();
+	getFiles();
 }
 function splashExit()
 {
@@ -1245,8 +1245,8 @@ function loadMini(index)
 }
 function getFiles()
 {
-	stream.recvfile("players.ini");
 	stream.recvfile("tetris*.ini");
+	stream.recvfile("players.ini",true);
 }
 function sendFiles(filename)
 {
@@ -1332,6 +1332,7 @@ function storePlayerData(game,id)
 	file.open('r+',true);
 	file.iniSetValue("players",id,game.players[id].active);
 	file.close();
+	sendFiles(game.dataFile);
 }
 function notify(message)
 {

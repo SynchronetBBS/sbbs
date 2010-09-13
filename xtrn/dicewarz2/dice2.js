@@ -26,8 +26,8 @@ function splashStart()
 		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 		while(console.inkey(K_NOECHO|K_NOSPIN)=="");
 	}
-	stream.recvfile("players.ini");
 	stream.recvfile("*.dw");
+	stream.recvfile("players.ini",true);
 }
 function splashExit()
 {

@@ -19,11 +19,10 @@ var stream=false;
 console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 bbs.sys_status|=SS_MOFF;
 
-var interbbs=argv[0];
-var stream=interbbs?new ServiceConnection("starstocks"):false;
-if(stream) {
-	getFiles(high_score_file);
-	getFiles(cfgname);
+if(file_exists(root_dir + "server.ini")) {
+	stream=new ServiceConnection("starstocks");
+	stream.recvfile(cfgname);
+	stream.recvfile(high_score_file,true);
 }
 const 	root=				root_dir;
 const 	cfgname=			"stars.cfg";  
@@ -907,14 +906,6 @@ function 	quit()
 	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 	console.clear();
 	exit();
-}
-function	getFiles(mask)
-{
-	if(stream) stream.recvfile(mask,true);
-}
-function	sendFiles(mask)
-{
-	if(stream) stream.sendfile(mask,true);
 }
 //########################## CLASSES #########################################
 

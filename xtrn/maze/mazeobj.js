@@ -28,12 +28,13 @@ function PlayerList()
 	}
 	this.loadPlayers=function()
 	{
+		var update=false;
 		var pFile=new File(root + "players.ini");
 		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
 		
-		if(!pFile.iniGetValue(this.prefix + user.alias,"name"))
-		{
-			pFile.iniSetObject(this.prefix + user.alias,new Player(user.alias));
+		if(!pFile.iniGetValue(this.prefix + user.alias,"name")) {
+			pFile.iniSetObject(this.prefix + user.alias,new Score(user.alias));
+			update=true;
 		}
 		var players=pFile.iniGetSections();
 		for(player in players)
@@ -42,18 +43,15 @@ function PlayerList()
 			log("Loaded player: " + this.players[players[player]].name);
 		}
 		pFile.close();
+		if(update) {
+			sendFiles(pFile.name);
+		}
 	}
 	this.GetFullName=function(name)
 	{
 		return(this.prefix + name);
 	}
 
-	function Player(name,besttime,wins)
-	{
-		this.name=name?name:user.alias;
-		this.besttime=besttime?besttime:0;
-		this.wins=wins?wins:0;
-	}
 	this.loadPlayers();
 }
 function Maze(rootFile,gameNumber)
@@ -150,6 +148,12 @@ function Coords(x,y)
 	this.x=x;
 	this.y=y;
 }
+function Score(name,besttime,wins)
+{
+	this.name=name;
+	this.besttime=besttime?besttime:0;
+	this.wins=wins?wins:0;
+}
 function Player(name,color,health)
 {
 	this.name=name;
@@ -157,10 +161,15 @@ function Player(name,color,health)
 	this.health=health;
 	this.coords;
 	
-	this.draw=function()
+	this.draw=function(c)
 	{
+		var color="";
+		if(this.health>=75) color=this.color+"\1h";
+		else if(this.health>=50) color=this.color;
+		else if(this.health>=25) color="\1k\1h";
+		else color="\1r";
 		console.gotoxy(this.coords);
-		console.putmsg(this.color + "\1h\xEA");
+		console.putmsg(color + "\xEA");
 		console.home();
 	}
 	this.unDraw=function()

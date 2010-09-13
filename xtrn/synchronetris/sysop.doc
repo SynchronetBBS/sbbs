@@ -4,7 +4,7 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
  1: Name                       Synchronetris
  2: Internal Code              TETRIS
  3: Start-up Directory         
- 4: Command Line               *../xtrn/synchronetris/tetris.js
+ 4: Command Line               *../xtrn/bublbogl/tetris.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
@@ -53,7 +53,6 @@ with the latest files from the Synchronet CVS repository at:
 	
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/timer.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js

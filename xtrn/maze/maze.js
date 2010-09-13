@@ -30,6 +30,7 @@ function splashStart()
 	bbs.sys_status|=SS_PAUSEOFF;
 	getFiles("maze*.ini");
 	getFiles("maze*.maz");
+	getFiles("players.ini",true);
 	console.clear();
 	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 }
@@ -42,7 +43,7 @@ function splashExit()
 	console.clear(ANSI_NORMAL);
 	sendFiles("players.ini");
 	
-	var splash_filename=gameroot + "exit.bin";
+	var splash_filename=root + "exit.bin";
 	if(!file_exists(splash_filename)) exit();
 	
 	var splash_size=file_size(splash_filename);

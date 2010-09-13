@@ -10,7 +10,9 @@
 	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
-var gameroot = js.exec_dir;
+var root = js.exec_dir;
+var stream = false;
+var oldpass=console.ctrl_key_passthru;
 
 load("graphic.js");
 load("sbbsdefs.js");
@@ -18,11 +20,11 @@ load("helpfile.js");
 load("funclib.js");
 load("calendar.js");
 load("commclient.js");
-load(gameroot + "timer.js");
+load(root + "timer.js");
  
-var interbbs=argv[0];
-var stream=interbbs?new ServiceConnection("boggle"):false;
-var oldpass=console.ctrl_key_passthru;
+if(file_exists(root + "server.ini")) {
+	stream=new ServiceConnection("boggle");
+}
 
 var wordvalues=[];
 wordvalues[4]=1;
@@ -49,7 +51,7 @@ function boggle()
 {
 	function init()
 	{
-		if(interbbs) getFiles();
+		if(stream) getFiles();
 		calendar=new Calendar(58,4,"\1y","\0012\1g\1h");
 		players=new PlayerList();
 		player=players.findUser(user.alias);
@@ -73,9 +75,9 @@ function boggle()
 		bbs.sys_status&=~SS_PAUSEOFF;
 		console.attributes=ANSI_NORMAL;
 		players.storePlayer();
-		if(interbbs) sendFiles();
+		if(stream) sendFiles();
 		console.clear();
-		var splash_filename=gameroot + "exit.bin";
+		var splash_filename=root + "exit.bin";
 		if(!file_exists(splash_filename)) exit();
 		
 		var splash_size=file_size(splash_filename);
@@ -302,7 +304,7 @@ function boggle()
 			}
 			
 			var firstletter=word.charAt(0);
-			var filename=gameroot + "dict/" + firstletter + ".dic";
+			var filename=root + "dict/" + firstletter + ".dic";
 			var dict=new File(filename);
 			dict.open('r+',true);
 			
@@ -510,9 +512,8 @@ function getFiles()
 {
 	console.putmsg("\1nPlease wait. Synchronizing game files with hub...\r\n");
 	stream.recvfile("*.bog");
-	stream.recvfile("players.ini");
 	stream.recvfile("month.ini");
-	mswait(10000);
+	stream.recvfile("players.ini",true);
 }
 function sendFiles()
 {
@@ -525,7 +526,7 @@ function sendFiles()
 function Lobby(x,y)
 {
 	this.graphic=new Graphic(80,24);
-	this.graphic.load(gameroot + "lobby.bin");
+	this.graphic.load(root + "lobby.bin");
 	this.x=x;
 	this.y=y;
 	
@@ -536,13 +537,15 @@ function Lobby(x,y)
 }
 function PlayerList()
 {
-	this.file=new File(gameroot + "players.ini");
-	this.players=[];
+	this.file=new File(root + "players.ini");
+	this.players=[]; 
+	var update=false;
 	this.init=function()
 	{
 		this.file.open(file_exists(this.file.name)?'r+':'w+',true);
 		if(!this.file.iniGetValue(user.alias,"name"))
 		{
+			update=true;
 			this.file.iniSetObject(user.alias,new Player());
 		}
 		var plyrs=this.file.iniGetAllObjects();
@@ -564,6 +567,9 @@ function PlayerList()
 			}
 			if(plyr.name==user.alias) plyr.laston=time();
 			this.players[plyr.name]=new Player(plyr.name,plyr.points,days,plyr.laston);
+		}
+		if(stream && update) {
+			sendFiles();
 		}
 	}
 	this.formatDate=function(timet)
@@ -628,7 +634,7 @@ function MonthData()
 	this.currentmonth=this.currentdate.getMonth();
 	this.games=[];
 	this.winner=false;
-	this.datafile=new File(gameroot + "month.ini");
+	this.datafile=new File(root + "month.ini");
 	
 	this.init=function()
 	{
@@ -667,7 +673,7 @@ function MonthData()
 	}
 	this.deleteOldGames=function()
 	{
-		var games=directory(gameroot + "*.bog");
+		var games=directory(root + "*.bog");
 		for(g in games)
 		{
 			file_remove(games[g]);
@@ -703,7 +709,7 @@ function MonthData()
 	}
 	this.loadGames=function()
 	{
-		var list=directory(gameroot + "*.bog");
+		var list=directory(root + "*.bog");
 		for(l in list)
 		{
 			var game=new Game();
@@ -755,7 +761,7 @@ function InfoBox(x,y)
 function GameBoard(x,y)
 { 
 	this.graphic=new Graphic(80,24);
-	this.graphic.load(gameroot + "board.bin");
+	this.graphic.load(root + "board.bin");
 	this.x=x;
 	this.y=y;
 	this.grid;
@@ -1069,12 +1075,12 @@ function Game()
 	{
 		var gNum=1;
 		if(gNum<10) gNum="0"+gNum;
-		while(file_exists(gameroot+gNum+".bog"))
+		while(file_exists(root+gNum+".bog"))
 		{
 			gNum++;
 			if(gNum<10) gNum="0"+gNum;
 		}
-		var fName=gameroot + gNum + ".bog";
+		var fName=root + gNum + ".bog";
 		this.file=new File(fName);
 		this.gamenumber=parseInt(gNum,10);
 	}

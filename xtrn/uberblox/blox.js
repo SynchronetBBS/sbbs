@@ -8,7 +8,8 @@
 */
 
 
-var gameroot = js.exec_dir;
+var root = js.exec_dir;
+var stream=false;
 
 load("graphic.js");
 load("sbbsdefs.js")
@@ -17,14 +18,24 @@ load("funclib.js");
 load("commclient.js");
  
 var oldpass=console.ctrl_key_passthru;
-var interbbs=argv[0];
-var stream=interbbs?new ServiceConnection("uberblox"):false;
+if(file_exists(root + "server.ini")) {
+	stream=new ServiceConnection("uberblox");
+}
+
 var players;
 var scores;
 
+function getFiles(mask,blocking)
+{
+	stream.recvfile(mask,blocking);
+}
+function sendFiles(mask)
+{
+	stream.sendfile(mask);
+}
 function splashStart()
 {
-	if(stream) getFiles("players.ini");
+	if(stream) getFiles("players.ini",true);
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;
@@ -37,7 +48,7 @@ function splashExit()
 	bbs.sys_status&=~SS_PAUSEOFF;
 	players.storePlayer();
 	console.clear(ANSI_NORMAL);
-	var splash_filename=gameroot + "exit.bin";
+	var splash_filename=root + "exit.bin";
 	if(!file_exists(splash_filename)) exit();
 	
 	var splash_size=file_size(splash_filename);
@@ -118,7 +129,7 @@ function blox()
 		console.clear(ANSI_NORMAL);
 		bbs.sys_status&=~SS_PAUSEOFF;
 		bbs.sys_status|=SS_PAUSEON;	
-		var helpfile=gameroot + "help.doc";
+		var helpfile=root + "help.doc";
 		if(file_exists(helpfile)) console.printfile(helpfile);
 		bbs.sys_status&=~SS_PAUSEON;
 		bbs.sys_status|=SS_PAUSEOFF;	
@@ -197,11 +208,11 @@ function blox()
 	function init()
 	{
 		logo=new Graphic(18,22);
-		logo.load(gameroot + "blox.bin");
+		logo.load(root + "blox.bin");
 		lobby=new Graphic(80,23);
-		lobby.load(gameroot + "lobby.bin");
+		lobby.load(root + "lobby.bin");
 		gameend=new Graphic(80,23);
-		gameend.load(gameroot + "gameend.bin");
+		gameend.load(root + "gameend.bin");
 		players=new PlayerList();
 	}
 	function generateLevel()
@@ -524,110 +535,105 @@ function blox()
 		}
 	}
 
-//	GAME OBJECTS
-	
-	function Grid(c,r)
-	{
-		var array=new Array(c);
-		for(var cc=0;cc<array.length;cc++)
-		{
-			array[cc]=new Array(r);
-		}
-		return array;
-	}
-	function PlayerList()
-	{
-		this.file=new File(gameroot + "players.ini");
-		this.players=[];
-		this.init=function()
-		{
-			this.file.open(file_exists(this.file.name)?'r+':'w+',true);
-			if(!this.file.iniGetValue(user.alias,"name"))
-			{
-				this.file.iniSetObject(user.alias,new Player());
-			}
-			var plyrs=this.file.iniGetAllObjects();
-			this.file.close();
-			for(p in plyrs)
-			{
-				var plyr=plyrs[p];
-				if(plyr.name==user.alias) plyr.laston=time();
-				this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston,plyr.sys);
-			}
-		}
-		this.formatDate=function(timet)
-		{
-			var date=new Date(timet*1000);
-			var m=date.getMonth()+1;
-			var d=date.getDate();
-			var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
-			
-			if(m<10) m="0"+m;
-			if(d<10) d="0"+d;
-			if(y<10) y="0"+y;
-			
-			return (m + "/" + d + "/" + y);
-		}
-		this.reset=function()
-		{
-			file_remove(this.file.name);
-			this.init();
-		}
-		this.storePlayer=function()
-		{
-			this.file.open('r+',true);
-			this.file.iniSetObject(user.alias,this.players[user.alias]);
-			this.file.close();
-			if(stream) sendFiles("players.ini");
-		}
-		this.findUser=function(alias)
-		{
-			return this.players[alias];
-		}
-		this.init();
-	}
-	function Player(name,score,laston,sys)
-	{
-		this.name=name?name:user.alias;
-		this.score=score?score:0;
-		this.laston=laston?laston:time();
-		this.sys=sys?sys:system.name;
-	}
-	function Level(grid,tiles)
-	{
-		this.grid=grid;
-		this.tiles=tiles;
-	}
-	function Tile(bg,fg)
-	{
-		this.bg=bg;
-		this.fg=fg;
-		this.draw=function(selected,x,y)
-		{
-			gotoxy(x,y);
-			if(selected)
-			{
-				console.attributes=this.fg;
-				console.putmsg("\xDB\xDB",P_SAVEATR);
-			}
-			else
-			{
-				console.attributes=this.bg;
-				console.putmsg("  ",P_SAVEATR);
-			}	
-		}
-	}
-	
 	init();
 	mainLobby();
 }
-function getFiles(mask)
+//	GAME OBJECTS
+	
+function Grid(c,r)
 {
-	stream.recvfile(mask);
+	var array=new Array(c);
+	for(var cc=0;cc<array.length;cc++)
+	{
+		array[cc]=new Array(r);
+	}
+	return array;
 }
-function sendFiles(mask)
+function PlayerList()
 {
-	stream.sendfile(mask);
+	this.file=new File(root + "players.ini");
+	this.players=[];
+	var update=false;
+	this.init=function()
+	{
+		this.file.open(file_exists(this.file.name)?'r+':'w+',true);
+		if(!this.file.iniGetValue(user.alias,"name")) {
+			update=true;
+			this.file.iniSetObject(user.alias,new Player());
+		}
+		var plyrs=this.file.iniGetAllObjects();
+		this.file.close();
+		for(p in plyrs)
+		{
+			var plyr=plyrs[p];
+			if(plyr.name==user.alias) plyr.laston=time();
+			this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston,plyr.sys);
+		}
+		if(stream && update) {
+			sendFiles("players.ini");
+		}
+	}
+	this.formatDate=function(timet)
+	{
+		var date=new Date(timet*1000);
+		var m=date.getMonth()+1;
+		var d=date.getDate();
+		var y=date.getFullYear()-2000; //assuming no one goes back in time to 1999 to play this
+		
+		if(m<10) m="0"+m;
+		if(d<10) d="0"+d;
+		if(y<10) y="0"+y;
+		
+		return (m + "/" + d + "/" + y);
+	}
+	this.reset=function()
+	{
+		file_remove(this.file.name);
+		this.init();
+	}
+	this.storePlayer=function()
+	{
+		this.file.open('r+',true);
+		this.file.iniSetObject(user.alias,this.players[user.alias]);
+		this.file.close();
+		if(stream) sendFiles("players.ini");
+	}
+	this.findUser=function(alias)
+	{
+		return this.players[alias];
+	}
+	this.init();
+}
+function Player(name,score,laston,sys)
+{
+	this.name=name?name:user.alias;
+	this.score=score?score:0;
+	this.laston=laston?laston:time();
+	this.sys=sys?sys:system.name;
+}
+function Level(grid,tiles)
+{
+	this.grid=grid;
+	this.tiles=tiles;
+}
+function Tile(bg,fg)
+{
+	this.bg=bg;
+	this.fg=fg;
+	this.draw=function(selected,x,y)
+	{
+		gotoxy(x,y);
+		if(selected)
+		{
+			console.attributes=this.fg;
+			console.putmsg("\xDB\xDB",P_SAVEATR);
+		}
+		else
+		{
+			console.attributes=this.bg;
+			console.putmsg("  ",P_SAVEATR);
+		}	
+	}
 }
 
 splashStart();

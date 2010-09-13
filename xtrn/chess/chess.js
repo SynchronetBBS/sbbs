@@ -1984,10 +1984,10 @@ function notice(message)
 
 function getFiles()
 {
-	notice("Synchronizing player data...");
-	stream.recvfile("players.ini");
 	notice("Synchronizing game data...");
 	stream.recvfile("*.chs");
+	notice("Synchronizing player data...");
+	stream.recvfile("players.ini",true);
 }
 function sendFiles(filename)
 {
