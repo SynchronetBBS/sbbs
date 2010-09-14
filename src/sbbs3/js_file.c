@@ -951,11 +951,16 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
 		section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-    object = JS_NewObject(cx, NULL, NULL, obj);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	list = iniReadNamedStringList(p->fp,section);
 	JS_RESUMEREQUEST(cx, rc);
+
+	if(list==NULL)	/* New behavior at request of MCMLXXIX: return NULL/undefined if specified section doesn't exist */
+		return JSVAL_NULL;
+
+    object = JS_NewObject(cx, NULL, NULL, obj);
+
     for(i=0;list && list[i];i++) {
 		JS_DefineProperty(cx, object, list[i]->name
 			,get_value(cx,list[i]->value)
