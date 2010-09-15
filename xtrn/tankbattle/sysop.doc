@@ -4,7 +4,7 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
  1: Name                       Tank Battle!
  2: Internal Code              TANKS
  3: Start-up Directory         
- 4: Command Line               *../xtrn/tanks/tanks.js
+ 4: Command Line               *../xtrn/tankbattle/tanks.js
  5: Clean-up Command Line      
  6: Execution Cost             None
  7: Access Requirements        
@@ -23,21 +23,21 @@ Sample configuration in Synchronet (SBBSCFG.EXE):
 NOTE:	It is recommended that you check frequently for updates 
 		from the Synchronet CVS repository located at:
 		
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/tanks/
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/tankbattle/
 		
 		LINKS:
 		
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/tanks.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/menu.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/timer.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/handler.js
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/lobby.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/map1.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/map2.bin
-		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tanks/interbbs.doc
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/tanks.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/menu.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/timer.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/handler.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/lobby.bin
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/map1.bin
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/map2.bin
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/xtrn/tankbattle/interbbs.doc
 		
 		Replace any outdated local copies with the latest releases from these links.
-		(by default, these files are to be located in your 'XTRN/TANKS/' path)
+		(by default, these files are to be located in your 'XTRN/TANKBATTLE/' path)
 	
 *****UPDATING YOUR LOCAL LIBRARIES******
 
