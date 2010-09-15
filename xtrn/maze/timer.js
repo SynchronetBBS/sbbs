@@ -35,9 +35,10 @@ function Timer(color)
 		console.putmsg(this.color + time);
 		console.attributes=ANSI_NORMAL;
 	}
-	this.countDown=function(difference)
+	this.countDown=function()
 	{
 		if(this.countdown<=0) return false;
+		var difference=time()-this.lastupdate;
 		this.countdown-=difference;
 		this.lastupdate=time();
 		return true;

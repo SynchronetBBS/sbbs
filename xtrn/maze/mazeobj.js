@@ -82,7 +82,6 @@ function Maze(rootFile,gameNumber)
 	}
 	this.goToStartingPosition=function(player)
 	{
-		log(this.start);
 		player.coords=new Coords(this.start.x,this.start.y);
 	}
 	this.findStartFinish=function()
@@ -98,8 +97,6 @@ function Maze(rootFile,gameNumber)
 					this.maze.data[x][y].attr=14;
 				}
 				if(this.start && this.finish) {
-					log("start: " + this.start.x + "," + this.start.y +
-						" finish: " + this.finish.x + "," + this.finish.y);
 					return true;
 				}
 			}
@@ -126,7 +123,6 @@ function Maze(rootFile,gameNumber)
 		file.close();
 		
 		for(var p in players) {
-			log("loading player: " + players[p]);
 			if(!this.players[players[p]]) {
 				this.players[players[p]]=new Player(players[p],this.pcolors.shift(),100);
 			}

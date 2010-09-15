@@ -228,7 +228,7 @@ function lobby()
 		var gameNumber=getNewGameNumber();
 		var rootFileName=getRootFileName(gameNumber);
 		var maze=new Maze(rootFileName,gameNumber);
-		sendFiles(rootFileName + ".maz");
+		sendFiles(maze.mazeFile);
 		joinMaze(maze,user.alias);
 		mazes[maze.gameNumber]=maze;
 	}
@@ -281,10 +281,7 @@ function lobby()
 		file.open('r+',true);
 		file.iniSetValue("players",player);
 		file.close();
-		var update=new Packet("PLAYER");
-		update.dataFile=maze.dataFile;
-		update.name=player;
-		stream.send(update);
+		sendFiles(maze.dataFile);
 	}
 	function loadMaze(gameNumber)
 	{
