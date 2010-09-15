@@ -122,12 +122,11 @@ function lobby()
 	{
 		chat.cycle();
 		updateBattles();
-		var update=false;
 
 		for each(var b in battles) {
 			switch(Number(b.status)) {
 			case -1:
-				if(countMembers(b.players)>0) {
+				if(countMembers(b.players)>1) {
 					initTimer(b);
 					update=true;
 				}
@@ -256,6 +255,13 @@ function lobby()
 	}
 	function createBattle()
 	{
+		for each(var b in battles) {
+			if(b.players[players.getPlayerID(user.alias)]) {
+				menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
+				return false;
+			}
+		}
+	
 		var list=getMapList();
 		chat.chatroom.clear();
 		console.gotoxy(chat.chatroom);
@@ -290,6 +296,14 @@ function lobby()
 	}
 	function joinBattle(battle,name)
 	{
+		if(battle.players[players.getPlayerID(user.alias)]) {
+			menuPrompt("\1r\1hYou are already in that game \1n\1r[\1hpress a key\1n\1r]");
+			return false;
+		}
+		if(countMembers(battle.players) == battle.start.length) {
+			menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
+			return false;
+		}
 		var id=players.getPlayerID(name);
 		var position=countMembers(battle.players);
 		var player=new Player(id,position,100);
@@ -371,7 +385,7 @@ function lobby()
 		console.pushxy();
 		for each(var m in waiting) {
 			console.putmsg("\1n\1cBattle #\1h" + m.gameNumber);
-			if(countMembers(m.players)>0)
+			if(countMembers(m.players)>1)
 				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
 			console.popxy();
 			console.down();
@@ -474,14 +488,23 @@ function playGame(battle)
 				continue;
 			} 
 			moveShot(shot);
-
-			if(checkHit(shot,currentPlayer)) {
-				shots.splice(s,1);
-				s--;
-				hitPlayer(shot.range);
-			} else {
-				drawShot(shot);
+			
+			var hit=false;
+			for(var p in battle.players) {
+				var player=battle.players[p];
+				if(checkHit(shot,player)) {
+					hit=true;
+					shots.splice(s,1);
+					s--;
+					if(p == currentPlayerID) {
+						hitPlayer(shot.range);
+					}
+					break;
+				} 
 			}
+			if(!hit) {
+				drawShot(shot);
+			}			
 		}
 		lastUpdate=system.timer;
 	}
@@ -502,6 +525,11 @@ function playGame(battle)
 			
 			drawTank(battle.players[p]);
 			drawTurret(battle.players[p]);
+			showPlayerInfo();
+			break;
+		case "HEALTH":
+			var p=packet.player;
+			battle.players[p].health=packet.health;
 			break;
 		case "SPLODE":
 			var p=packet.player;
@@ -536,7 +564,10 @@ function playGame(battle)
 			data.range=shotRange;
 			data.color=currentPlayer.color;
 			break;
-		case "SPLIDE":
+		case "HEALTH":
+			data.health=currentPlayer.health;
+			break;
+		case "SPLODE":
 			/* no additional data necessary */
 			break
 		case "TURRET":
@@ -695,15 +726,19 @@ function playGame(battle)
 		currentPlayer.health-=(damage);
 		
 		if(currentPlayer.health<=0) {
+			send("SPLODE");
 			killPlayer(currentPlayer);
 			resetPosition();
-			send("SPLODE");
 		} else if(currentPlayer.health <= 25 && startHealth > 25) {
 			drawTank(currentPlayer);
 			drawTurret(currentPlayer);
+			send("TANK");
 		} else if(currentPlayer.health <= 50 && startHealth > 50) {
 			drawTank(currentPlayer);
 			drawTurret(currentPlayer);
+			send("TANK");
+		} else {
+			send("HEALTH");
 		}
 		showPlayerInfo();
 	}
