@@ -218,6 +218,7 @@ function Graphic_load(filename)
 			this.data[x][y].attr=f.readBin(1);
 		}
 	}
+	f.close();
 	return(true);
 }
 function Graphic_write(xpos, ypos, txt, attr)
