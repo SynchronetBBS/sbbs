@@ -466,7 +466,7 @@ function send_updates(socket,query)
 	for(r=0;r<remote_clients.length;r++) {
 		if(remote_clients[r].descriptor != socket.descriptor) {
 			log("sending server updates: " + query.filemask);
-			sync_remote(remote_clients[r],dir,query);
+			sync_remote(remote_clients[r],module.dir,query);
 		}
 	}
 }
