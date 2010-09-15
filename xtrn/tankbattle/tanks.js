@@ -353,7 +353,7 @@ function lobby()
 		
 		for(var m in battles) {
 			var battle=battles[m];
-			if(battle.in_progress)
+			if(battle.status == 1)
 				in_progress.push(battle);
 			else 
 				waiting.push(battle);
@@ -442,7 +442,7 @@ function playGame(battle)
 				break;
 			case "Q":
 			case "\x1b":
-				delete battle.players[currentPlayerID];
+				deleteBattle();
 				return false;
 			case "R":
 				redraw();
@@ -467,22 +467,21 @@ function playGame(battle)
 			var shot=shots[s];
 
 			unDrawShot(shot);
-			moveShot(shot);
-
 			if(shot.range == 0) {
 				shots.splice(s,1);
 				s--;
+				console.home();
 				continue;
 			} 
-			
-			if(checkHit(shot)) {
+			moveShot(shot);
+
+			if(checkHit(shot,currentPlayer)) {
 				shots.splice(s,1);
 				s--;
 				hitPlayer(shot.range);
-				continue;
+			} else {
+				drawShot(shot);
 			}
-			
-			drawShot(shot);
 		}
 		lastUpdate=system.timer;
 	}
@@ -516,6 +515,7 @@ function playGame(battle)
 			break;
 		case "SHOT":
 			var shot=new Shot(packet.heading,packet.coords,packet.range,packet.player,packet.color);
+			var p=packet.player;
 			drawShot(shot);
 			shots.push(shot);
 			break;
@@ -555,6 +555,7 @@ function playGame(battle)
 	}
 	function deleteBattle()
 	{
+		delete battle.players[currentPlayerID];
 		if(file_exists(battle.dataFile)) {
 			file_remove(battle.dataFile);
 		}
@@ -710,32 +711,32 @@ function playGame(battle)
 	{
 		switch(heading) {
 		case 0:
-			y-=3;
+			y-=2;
 			break;
 		case 45:
-			y-=3;
-			x+=3;
+			y-=2;
+			x+=2;
 			break;
 		case 90:
-			x+=3;
+			x+=2;
 			break;
 		case 135:
-			x+=3;
-			y+=3;
+			x+=2;
+			y+=2;
 			break;
 		case 180:
-			y+=3;
+			y+=2;
 			break;
 		case 225:
-			x-=3;
-			y+=3;
+			x-=2;
+			y+=2;
 			break;
 		case 270:
-			x-=3;
+			x-=2;
 			break;
 		case 315:
-			y-=3;
-			x-=3;
+			y-=2;
+			x-=2;
 			break;
 		}
 		return new Coords(x,y);
@@ -1008,9 +1009,9 @@ function playGame(battle)
 		}
 		return false;
 	}
-	function checkHit(shot)
+	function checkHit(shot,player)
 	{
-		var position=currentPlayer.coords;
+		var position=player.coords;
 		var spots=[];
 		spots.push(new Coords(position.x-2,position.y-2));
 		spots.push(new Coords(position.x-2,position.y-1));
@@ -1033,8 +1034,10 @@ function playGame(battle)
 	{
 		console.home();
 		for(var p in battle.players) {
-			var ply=battle.players[p];
-			console.putmsg(" " + ply.color + ply.name + "\1k\1h:" + (ply.health<=25?"\1r":ply.color) + ply.health);
+			var player=battle.players[p];
+			var name=player.color + players.getAlias(player.name);
+			var hline=(player.health<=25?"\1r":player.color) + player.health;
+			console.putmsg(" " + name + "\1k\1h [\1n" + player.color + "hp\1h:\1n" + hline + "\1k\1h]");
 		}
 		console.cleartoeol();
 	}
@@ -1048,6 +1051,10 @@ function playGame(battle)
 	{
 		console.gotoxy(shot.coords.x,shot.coords.y);
 		console.putmsg(" ");
+		if(checkHit(shot,battle.players[shot.player])) {
+			drawTank(battle.players[shot.player]);
+			drawTurret(battle.players[shot.player]);
+		}
 	}
 	function unDrawTank(tank)
 	{
