@@ -396,10 +396,12 @@ function playGame(battle)
 	var turretCompass=[0,45,90,135,180,225,270,315];
 	var shots=[];
 
-	/* ms tick between cycles */
-	var tick=.05; 
+	/* ms bulletTick between cycles */
+	var bulletTick=.05; 
+	var shotTick=1;
 	var shotRange=40;
 	var lastUpdate=-1;
+	var lastShot=-1;
 	
 	/* main functions */
 	function init()
@@ -431,7 +433,8 @@ function playGame(battle)
 				moveRight();
 				break;
 			case " ":
-				fireShot();
+				if(system.timer - lastShot >= shotTick)
+					fireShot();
 				break;
 			case "A":
 			case "D":
@@ -458,7 +461,7 @@ function playGame(battle)
 		if(packet)	processData(packet);
 		
 		var difference=system.timer-lastUpdate;
-		if(difference < tick) return;
+		if(difference < bulletTick) return;
 				
 		for(var s=0;s<shots.length;s++) {
 			var shot=shots[s];
@@ -466,34 +469,16 @@ function playGame(battle)
 			unDrawShot(shot);
 			moveShot(shot);
 
-			if(shot.duration == 0) {
+			if(shot.range == 0) {
 				shots.splice(s,1);
 				s--;
 				continue;
 			} 
 			
 			if(checkHit(shot)) {
-				var startHealth=currentPlayer.health;
-				
-				currentPlayer.health-=(shot.duration*1.5);
 				shots.splice(s,1);
 				s--;
-				
-				if(currentPlayer.health<=0) {
-					resetPosition();
-					continue;
-				} 
-				
-				if(currentPlayer.health < 50 && startHealth >= 50) {
-					drawTank(currentPlayer);
-					drawTurret(currentPlayer);
-				}
-				if(currentPlayer.health < 25 && startHealth >= 25) {
-					drawTank(currentPlayer);
-					drawTurret(currentPlayer);
-				}
-			
-				showPlayerInfo();
+				hitPlayer(shot.range);
 				continue;
 			}
 			
@@ -519,6 +504,10 @@ function playGame(battle)
 			drawTank(battle.players[p]);
 			drawTurret(battle.players[p]);
 			break;
+		case "SPLODE":
+			var p=packet.player;
+			killPlayer(battle.players[p]);
+			break;
 		case "TURRET":
 			var p=packet.player;
 			battle.players[p].turret=packet.turret;
@@ -526,7 +515,9 @@ function playGame(battle)
 			drawTurret(battle.players[p]);
 			break;
 		case "SHOT":
-			shots.push(new Shot(packet.heading,packet.coords,shotRange,packet.player));
+			var shot=new Shot(packet.heading,packet.coords,packet.range,packet.player,packet.color);
+			drawShot(shot);
+			shots.push(shot);
 			break;
 		default:
 			log("Unknown tank battle data received");
@@ -542,7 +533,12 @@ function playGame(battle)
 		case "SHOT":
 			data.heading=turretCompass[currentPlayer.turret];
 			data.coords=getShotCoords(data.heading,currentPlayer.coords.x,currentPlayer.coords.y);
+			data.range=shotRange;
+			data.color=currentPlayer.color;
 			break;
+		case "SPLIDE":
+			/* no additional data necessary */
+			break
 		case "TURRET":
 			data.turret=currentPlayer.turret;
 			break;
@@ -680,10 +676,35 @@ function playGame(battle)
 	}
 	function fireShot()
 	{
+		lastShot=system.timer;
 		var heading=turretCompass[currentPlayer.turret];
 		var coords=getShotCoords(heading,currentPlayer.coords.x,currentPlayer.coords.y);
-		shots.push(new Shot(heading,coords,shotRange,currentPlayerID));
+		if(checkPosition(coords.x,coords.y)) {
+			hitPlayer(25);
+			return;
+		}
+		var shot=new Shot(heading,coords,shotRange,currentPlayerID,currentPlayer.color);
+		drawShot(shot);
+		shots.push(shot);
 		send("SHOT");
+	}
+	function hitPlayer(damage)
+	{
+		var startHealth=currentPlayer.health;
+		currentPlayer.health-=(damage);
+		
+		if(currentPlayer.health<=0) {
+			killPlayer(currentPlayer);
+			resetPosition();
+			send("SPLODE");
+		} else if(currentPlayer.health <= 25 && startHealth > 25) {
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+		} else if(currentPlayer.health <= 50 && startHealth > 50) {
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+		}
+		showPlayerInfo();
 	}
 	function getShotCoords(heading,x,y)
 	{
@@ -696,7 +717,7 @@ function playGame(battle)
 			x+=3;
 			break;
 		case 90:
-			coords.x+=3;
+			x+=3;
 			break;
 		case 135:
 			x+=3;
@@ -799,7 +820,7 @@ function playGame(battle)
 		}
 		shot.coords.x+=newPosition.x;
 		shot.coords.y+=newPosition.y;
-		shot.duration--;
+		shot.range--;
 	}
 	function getRebound(h,pos,x,y)
 	{
@@ -908,6 +929,48 @@ function playGame(battle)
 		if(pos.x > 0 && pos.y > 0) return 135;
 		if(pos.x > 0 && pos.y < 0) return 45;
 	}
+	function killPlayer(player)
+	{
+		var x=player.coords.x;
+		var y=player.coords.y;
+		
+		console.gotoxy(x,y-2); 
+		console.putmsg("\1n\1r\xB0");
+		console.down();
+		console.left(2);
+		console.putmsg("\1n\1r\xB0\xB0\xB0");
+		console.down();
+		console.left(4);
+		console.putmsg("\1n\1r\xB0\xB0\xB0\xB0\xB0");
+		console.down();
+		console.left(4);
+		console.putmsg("\1n\1r\xB0\xB0\xB0");
+		console.down();
+		console.left(2);
+		console.putmsg("\1n\1r\xB0");
+		mswait(150);
+		console.gotoxy(x-1,y-1); 
+		console.putmsg("\1r\1h\xB1\xB1\xB1");
+		console.down();
+		console.left(3);
+		console.putmsg("\1r\1h\xB1\xB1\xB1");
+		console.down();
+		console.left(3);
+		console.putmsg("\1r\1h\xB1\xB1\xB1");
+		mswait(150);
+		console.gotoxy(x,y-1); 
+		console.putmsg("\1y\1h\xB2");
+		console.down();
+		console.left(2);
+		console.putmsg("\1y\1h\xB2\xB2\xB2");
+		console.down();
+		console.left(2);
+		console.putmsg("\1y\1h\xB2");
+		mswait(150);
+		console.gotoxy(x,y); 
+		console.putmsg("\1y\1h\xDB");
+		mswait(150);
+	}
 	function resetPosition()
 	{
 		unDrawTank(currentPlayer);
@@ -978,7 +1041,8 @@ function playGame(battle)
 	function drawShot(shot)
 	{
 		console.gotoxy(shot.coords.x,shot.coords.y);
-		console.putmsg("\1r\1h\xF9");
+		console.putmsg(shot.color + "\1h\xF9");
+		console.home();
 	}
 	function unDrawShot(shot)
 	{
@@ -1050,6 +1114,7 @@ function playGame(battle)
 				console.putmsg("\1h" + color + "\\");
 				break;
 		}
+		console.home();
 	}
 	function drawTank(tank)
 	{

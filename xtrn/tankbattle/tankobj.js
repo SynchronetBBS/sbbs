@@ -179,12 +179,13 @@ function Player(name,position,health)
 	this.heading=0;
 	this.turret=0;
 }
-function Shot(heading,coords,range,player)
+function Shot(heading,coords,range,player,color)
 {
 	this.heading=heading;
 	this.coords=coords;
 	this.player=player;
-	this.duration=range;
+	this.color=color;
+	this.range=range;
 }
 function Packet(func)
 {
