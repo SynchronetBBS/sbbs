@@ -322,9 +322,7 @@ function weaponshop()
 						break;
 					case 'W':
 						console.writeln("Weapon");
-						buyprice=player.charisma;
-						buyprice*=player.weapon.cost;
-						buyprice/=20;
+						buyprice=player.charisma*player.weapon.cost/20;
 						console.crlf();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
@@ -339,9 +337,7 @@ function weaponshop()
 						break;
 					case 'A':
 						console.writeln("Armour");
-						buyprice=player.charisma;
-						buyprice*=player.armour.cost;
-						buyprice/=20;
+						buyprice=player.charisma*player.armour.cost/20;
 						console.crlf();
 						console.write("I will purchase it for "+buyprice+", okay? ");
 						if(dgn_getkeys("YN")=='Y') {
