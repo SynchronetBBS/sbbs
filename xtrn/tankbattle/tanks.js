@@ -3,849 +3,1158 @@
 	Tank Battle! - Javascript Module for Synchronet 3.14+
 	By Matt Johnson - MCMLXXIX - (2008) 
 	-----------------------------------------------------------
-	The Broken Bubble (MDJ.ATH.CX)
+	The Broken Bubble (bbs.thebrokenbubble.com)
 	-----------------------------------------------------------
 	Home of this and many other original javascript games
 	for Synchronet BBS systems.
 	-----------------------------------------------------------
 */
 
+var root=js.exec_dir;
+
 load("graphic.js");
 load("sbbsdefs.js");
-load("sockdefs.js");
+load("chateng.js");
 
-var root;
-try { barfitty.barf(barf); } catch(e) { root = e.fileName; } //Deuce is a freak
-root = root.replace(/[^\/\\]*$/,'');
+load(root + "timer.js");
+load(root + "menu.js");
+load(root + "tankobj.js");
 
-load("logging.js");
-var game=new TankBattle(root);
-var game_log;
+var oldpass=console.ctrlkey_passthru;
+var stream=new ServiceConnection("tankbattle");
+var chat=new ChatEngine(root);
+var players=new PlayerList();
+var scores=new ScoreList();
 
-function TankBattle(root_dir) 
+function splashStart()
 {
-	this.oldpass=console.ctrlkey_passthru;
-	this.root=root_dir;
-	this.name="tanks";
-	this.queueRoot=this.name + "_";
-	game_log=new Logger(this.root,this.name);
-
-	this.game=new TankMap();
-	
-	this.Main=function()
-	{
-		this.SplashStart();
-		this.LoadMaps();
-		var map_num=this.LoadPlayers();
-		map_num=this.LoadMap(map_num);
-		this.game.DrawMap();
-		this.LoadPlayer(map_num);
-		this.Battle();
-		this.SplashExit();
-	}
-	this.LoadPlayer=function(map_num)
-	{
-		var playerNumber=this.CountPlayers();
-		var start={'x':this.game.tankStart[playerNumber].x,'y':this.game.tankStart[playerNumber].y};
-		var color=this.game.tankColors[playerNumber];
-		var pFilename=this.root + user.number + ".usr";
-		var qName=this.queueRoot+user.number;
-		this.game.player=new Player(pFilename,user.number,qName);
-		this.game.player.WritePlayerFile(map_num);
-		this.game.player.LoadTank(color,start);
-		if(this.game.players.length) this.SendData();
-	}
-	this.SplashStart=function()
-	{
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
-		bbs.sys_status |= SS_PAUSEOFF;		
-		console.clear();
-		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-	}
-	this.SplashExit=function()
-	{
-		//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
-		console.ctrlkey_passthru=this.oldpass;
-		bbs.sys_status&=~SS_MOFF;
-		bbs.sys_status&=~SS_PAUSEOFF;
-	}
-	this.CountPlayers=function()
-	{
-		return this.game.players.length;
-	}
-	this.SendData=function()
-	{ 
-		var data={'update':this.game.player.update,'init':this.game.player.init};
-		for(playerData in this.game.players)
-		{
-			var player=this.game.players[playerData];
-			game_log.Log("Sending data to player: " + system.username(player.user));
-			var dQueue=player.queue;
-			dQueue.write(data);
-		}
-		this.game.player.update=false;
-	}
-	this.ReceiveData=function()
-	{
-		var pQueue=this.game.player.queue;
-		if(pQueue.data_waiting)
-		{
-			while(pQueue.data_waiting) 
-			{
-				this.LoadPlayers();
-				var data=pQueue.read();
-				var pNum=this.FindPlayer(data.init.user);
-				var pData=this.game.players[pNum];
-				
-				game_log.Log("Reading data from player: " + system.username(data.init.user));
-                if(pData)
-                {
-                    if(pData.Exists() && !pData.tank)
-                    {
-                        game_log.Log("Creating tank data for player: " + system.username(data.init.user));
-
-                        var pColor=data.init.color;
-                        var pStart=data.init.start;
-                        var pHeading=data.init.heading;
-                        var pTurret=data.init.turret;
-                        var pCoords=data.init.coords;
-                        pData.LoadTank(pColor,pStart,pHeading,pTurret,pCoords);
-                        this.ShowScores();
-                    }
-                    if(pData.Exists() && data.update)
-                    {
-                        if(data.update.turn) pData.tank.Turn(data.update.turn);
-                        if(data.update.move_tank) pData.tank.MoveTank(data.update.move_tank);
-                        if(data.update.move_turret) pData.tank.TurnTurret(data.update.move_turret);
-                        if(data.update.coords) pData.tank.coords = data.update.coords;
-                        if(data.update.shot_fired)
-                        {
-                            if(this.game.FireShot(pData));
-                                this.ShowScores();
-                        }
-                    }
-                }
-            }
-			return true;
-		}
-		return false;
-	}
-	this.FindPlayer=function(userNumber)
-	{
-		for(player in this.game.players)
-		{
-			if(this.game.players[player].user==userNumber) return player;
-		}
-		return false;
-	}
-	this.LoadPlayers=function()
-	{
-		var map=false;
-		var playerList=directory(this.root+"*.usr");
-		for(item in playerList)
-		{
-			var pFilename=file_getname(playerList[item]);
-			var player=parseInt(pFilename.substring(0,pFilename.indexOf(".")));
-			if(player!=user.number)
-			{
-				var pNum=this.FindPlayer(player);
-				if(!pNum)
-				{
-					var pFile=new File(playerList[item]);
-					pFile.open('r');
-					map=parseInt(pFile.readln());
-					pFile.close();
-					game_log.Log("loading player " + system.username(player) + " pnum: " + pNum);
-					var qName=this.queueRoot+player;
-					this.game.players.push(new Player(pFile.name,player,qName));
-				}
-			}
-		}
-		for(ply in this.game.players)
-		{
-			if(this.game.players[ply])
-			{
-				if(file_exists(this.game.players[ply].playerFile.name));
-				else 
-				{	
-					game_log.Log("removing absent player: " + ply);
-					if(this.game.players[ply].tank) this.game.players[ply].tank.Undraw();
-					delete this.game.players[ply].queue;
-					this.game.players.splice(ply,1);
-				}
-			}
-		}
-		return map;
-	}
-	this.Battle=function()
-	{
-		game_log.Log("Executing gameplay function");
-        var update=true;
-		var lastShot=false;
-
-        while(1)
-		{
-			var shot_fired=false;
-			var move_direction=false;
-			var turn_direction=false;
-			var turret_direction=false;
-
-			if(this.ReceiveData()) this.SendData();
-			
-			var direction=console.inkey(K_NOECHO|K_NOSPIN);
-			switch(direction.toUpperCase())
-			{
-				case "Q":
-					file_remove(this.game.player.playerFile.name);
-					return;
-				case " ":
-					if(lastShot)
-					{
-						if( (time()-lastShot)>=2) shot_fired=true;
- 					}
-					else shot_fired=true;
-					break;
-				case KEY_UP: 
-					move_direction="forward";
-					break;
-				case KEY_DOWN: 
-					move_direction="backward";
-					break;
-				case KEY_LEFT:
-					turn_direction="left";
-					break;
-				case KEY_RIGHT:
-					turn_direction="right";
-					break;
-				case "4":
-				case "D":
-					turret_direction="left";
-					break;
-				case "6":
-				case "F":
-					turret_direction="right";
-					break;
-			}
-			
-			if(turret_direction) this.game.player.tank.TurnTurret(turret_direction);
-			if(turn_direction) this.game.player.tank.Turn(turn_direction);
-			if(move_direction)
-			{
-				if(this.game.CheckWalls(move_direction))
-				{
-					//game_log.Log("cannot move - heading: " + this.game.tank.compass[this.game.tank.heading]);
-					move_direction=false;
-				}
-				else this.game.player.tank.MoveTank(move_direction);
-			}
-			
-			if(update || move_direction || turn_direction || shot_fired || turret_direction)
-			{
-				game_log.Log("sending data updates");
-				this.game.player.update={
-					'move_tank':move_direction,
-					'move_turret':turret_direction,
-					'turn':turn_direction,
-					'shot_fired':shot_fired
-				};
-                this.game.player.Init();
-                this.SendData();
-                update=false;
-				mswait(5);
-            }
-			if(shot_fired) 
-			{
-				lastShot=time();
-				if(this.game.FireShot(this.game.player));
-					this.ShowScores();
-			}
-		}
-	}
-	this.ShowScores=function()
-	{
-		console.home();
-		console.cleartoeol();
-		console.putmsg(this.game.player.tank.color + user.alias + ": " + this.game.player.score);
-		for(player in this.game.players)
-		{
-			var playerData=this.game.players[player];
-			console.putmsg("  " + playerData.tank.color + system.username(playerData.user) + ": " + playerData.score);
-		}
-	}
-	this.LoadMaps=function()
-	{
-		this.game.maps=directory(this.root + "*.map");
-		for(map in this.game.maps)
-		{
-			game_log.Log("map loaded: " + this.game.maps[map]);
-		}
-	}
-	this.LoadMap=function(map)
-	{
-		var map_num=map;
-		if(!map_num) 
-		{
-			console.putmsg("\1n\1c Battle Maps:\r\n\r\n");
-			for(map=1;map<=this.game.maps.length;map++)
-			{
-				var map_name=file_getname(this.game.maps[map-1]);
-				map_name=map_name.slice(0,map_name.indexOf("."));
-				console.putmsg("\1n\1c [\1c\1h" + map + "\1n\1c] " + map_name + "\r\n");
-			}
-			map_num=console.getkeys("Q",this.game.maps.length);
-		}
-		if(map_num=="Q") exit(0);
-		else if(map_num>0 && map_num<=this.game.maps.length)
-		{
-			this.game.LoadMap(map_num-1);
-		}
-		return map_num;
-	}
-	this.Main();
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status|=SS_PAUSEOFF;
+	getFiles("players.ini",true);
+	console.clear();
+	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
 }
-function TankMap()
+function splashExit()
 {
-	this.maps=[];
-	this.players=[];
-	this.player;
-	this.map;
-	this.tankStart=[];
-	this.tankColors=["\1w","\1c","\1y","\1r","\1m","\1g"];
+	//TODO: DRAW AN ANSI SPLASH EXIT SCREEN
+	console.ctrlkey_passthru=oldpass;
+	bbs.sys_status&=~SS_MOFF;
+	bbs.sys_status&=~SS_PAUSEOFF;
+	console.clear(ANSI_NORMAL);
+	sendFiles("players.ini");
 	
-	this.DrawMap=function()
+	var splash_filename=root + "exit.bin";
+	if(!file_exists(splash_filename)) exit();
+	
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	console.getkey(K_NOSPIN|K_NOECHO);
+	console.clear(ANSI_NORMAL);
+	exit();
+}
+function lobby()
+{
+	var background=new Graphic(80,24);
+	var menu;
+	var battles=[];
+	var update=false;
+	
+	function init()
 	{
-		this.map.draw();
+		updateBattles();
+		initChat();
+		initMenu();
+		background.load(root + "lobby.bin");
+		notice("\1c\1hWelcome to Tank Battle!");
+		notice("\1n\1ctype '/' for a list of available menu commands,");
+		notice("\1n\1cor you can just start typing to chat.");
+		notice("\1n\1cPress 'Escape' to quit.");
+		notice(" ");
 	}
-	this.LoadMap=function(map_num)
+	function initChat()
 	{
-		var index=this.maps[map_num];
-		if(index) 
-		{
-			var map_filename=index;
-			var map_size=file_size(map_filename);
-			map_size/=2;	// Divide by two for attr/char pairs
-			map_size/=80;	// Divide by 80 cols.  Size should now be height (assuming int)
-			this.map=new Graphic(80,map_size);
-			this.map.load(map_filename);
-			
-			for(x in this.map.data)
-			{
-				for(y in this.map.data[x])
-				{
-					if(this.map.data[x][y].ch=="X") 
-					{
-						game_log.Log("found map start pos x: " + x + " y: " + y);
-						this.map.data[x][y].ch=" ";
-						this.tankStart.push({'x':parseInt(x)+1,'y':parseInt(y)+1});
-					}
+		chat.init(56,18,2,4);
+		chat.input_line.init(2,23,56,"","\1n");
+		chat.joinChan("tank battle lobby",user.alias,user.name);
+	}
+	function initMenu()
+	{
+		var menu_items=[		"~Start New Battle"				, 
+								"~Join Battle"					,
+								"~Rankings"						,
+								"~Help"							,
+								"Re~draw"						];
+		menu=new Menu(menu_items,"\1n","\1c\1h");
+	}
+	function main()
+	{
+		redraw();
+		while(1) {
+			cycle();
+			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+			if(k) {
+				switch(k.toUpperCase()) {
+					case "/":
+						if(!chat.input_line.buffer.length) {
+							refreshCommands();
+							listCommands();
+							getMenuCommand();
+							redraw();
+						}
+						else if(!Chat(k,chat)) return;
+						break;
+					default:
+						if(!Chat(k,chat)) return;
+						break;
 				}
 			}
-			return true;
 		}
-		else return false;
 	}
-	this.CheckWalls=function(direction)
+	function cycle()
 	{
-		//TO COMPENSATE  FOR THE DIFFERENCE BETWEEN 
-		//TRUE SCREEN POSITION AND ARRAY INDICES
-		var xoffset=-1;
-		var yoffset=-1;
-		
-		var posx=this.player.tank.coords.x;
-		var posy=this.player.tank.coords.y;
-		var spots=[];
-		var heading=this.player.tank.compass[this.player.tank.heading];		
-		game_log.Log("tank position x: " +posx+ " y: " + posy + " h: " + heading);
-		
-		if(direction=="forward")		{
-			//VERTICAL OFFSET
-			if(heading==0) yoffset-=3;
-			if(heading==180) yoffset+=3;
-			
-			//HORIZONTAL OFFSET
-			if(heading==90) xoffset+=3;
-			if(heading==270) xoffset-=3;
-		}
-		if(direction=="backward")
-		{
-			//VERTICAL OFFSET
-			if(heading==0) yoffset+=3;
-			if(heading==180) yoffset-=3;
-			
-			//HORIZONTAL OFFSET
-			if(heading==90) xoffset-=3;
-			if(heading==270) xoffset+=3;
-		}
-		switch(heading)
-		{
-			case 0:
-			case 180:
-				spots.push({'x':posx-3,'y':posy+yoffset});
-				spots.push({'x':posx-2,'y':posy+yoffset});
-				spots.push({'x':posx-1,'y':posy+yoffset});
-				spots.push({'x':posx,'y':posy+yoffset});
-				spots.push({'x':posx+1,'y':posy+yoffset});
+		chat.cycle();
+		updateBattles();
+		var update=false;
+
+		for each(var b in battles) {
+			switch(Number(b.status)) {
+			case -1:
+				if(countMembers(b.players)>0) {
+					initTimer(b);
+					update=true;
+				}
 				break;
-			case 90:
-			case 270:
-				spots.push({'x':posx+xoffset,'y':posy-3});
-				spots.push({'x':posx+xoffset,'y':posy-2});
-				spots.push({'x':posx+xoffset,'y':posy-1});
-				spots.push({'x':posx+xoffset,'y':posy});				
-				spots.push({'x':posx+xoffset,'y':posy+1});
+			case 0:
+				if(!b.timer.countdown) b.loadData();
+				var difference=time()-b.timer.lastupdate;
+				if(!difference>=1) break;
+				if(!b.timer.countDown()) {
+					startGame(b);
+				}
+				update=true;
+				break;
+			case 1:
+				var id=players.getPlayerID(user.alias);
+				if(b.players[id]) {
+					playGame(b);
+					redraw();
+				}
+				break;
+			case 2:
 				break;
 			default:
-				game_log.Log("error scanning heading"); //THIS SHOULD NEVER OCCUR
-		}
-		for(spot=0;spot<spots.length;spot++)
-		{
-			var spotX=spots[spot].x;
-			var spotY=spots[spot].y;
-			if(this.FindSpace(spotX,spotY)) return true;
-		}
-		return false;
-	}
-	this.FireShot=function(tPlayer)
-	{
-		var player=tPlayer;
-		var tank=tPlayer.tank;
-		var x=tank.coords.x;
-		var y=tank.coords.y;
-		var xWalk=0;
-		var yWalk=0;
-		
-		var turret=tank.turretCompass[tank.turret];
-		
-		switch(turret)
-		{
-			case 0:
-				yWalk=-1;
+				log("unknown game status: " + b.status);
+				mswait(500);
 				break;
-			case 45:
-				yWalk=-1;
-				xWalk=1;
-				break
-			case 90:
-				xWalk=1;
-				break;
-			case 135:
-				xWalk=1;
-				yWalk=1;
-				break;
-			case 180:
-				yWalk=1;
-				break;
-			case 225:
-				xWalk=-1;
-				yWalk=1;
-				break;
-			case 270:
-				xWalk=-1;
-				break;
-			case 315:
-				xWalk=-1;
-				yWalk=-1;
-				break;
-		}
-		
-		var xOffset=2*xWalk;
-		var yOffset=2*yWalk;
-		
-		for(distance=0;distance<30;distance++)
-		{
-			var xCheck=x+xOffset+xWalk;
-			var yCheck=y+yOffset+yWalk;
-			var wallPiece=this.FindWall(xCheck,yCheck);
-			
-			if(wallPiece==" ")
-			{
-				if(this.CheckTankHit(xCheck,yCheck,player)) return true;
 			}
-			else
+		}
+		if(update) {
+			listBattles();
+			update=false;
+		}
+		mswait(5);
+	}
+	function initTimer(battle)
+	{
+		log("starting timer for battle: " + battle.gameNumber);
+		battle.status=0;
+		var file=new File(battle.dataFile);
+		file.open('r+',true);
+		file.iniSetValue(null,"created","" + time());
+		file.iniSetValue(null,"status",0);
+		file.close();
+	}
+	function startGame(battle)
+	{
+		log("starting game: " + battle.gameNumber);
+		battle.status=1;
+		storeGame(battle);
+	}
+	function listCommands()
+	{
+		var list=menu.getList();
+		chat.chatroom.clear();
+		console.gotoxy(chat.chatroom);
+		console.pushxy();
+		for(l=0;l<list.length;l++) {
+			console.putmsg(list[l]);
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+	}
+	function help()
+	{
+	
+	}
+	function notice(txt)
+	{
+		chat.chatroom.notice(txt);
+	}
+	function refreshCommands()
+	{
+		if(countMembers(battles)>0) {
+			menu.enable(["J"]);
+		} else {
+			menu.disable(["J"]);
+		}
+	}
+	function showRankings()
+	{
+	}
+	function getMapList()
+	{
+		var maplist=directory(root + "map_*.bin");
+		return maplist;
+	}
+	function getMenuCommand()
+	{
+		while(1) {
+			var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
+			if(k) 	{
+				switch(k.toUpperCase())
+				{
+				case "R":
+					showRankings();
+					break;
+				case "H":
+					help();
+					break;
+				case "S":
+					createBattle();
+					break;
+				case "J":
+					selectBattle();
+					break;
+				default:
+					break;
+				}
+				return true;
+			}
+		}
+	}
+	function selectBattle()
+	{
+		var gameNumber=menuPrompt("\1nEnter battle #\1h: ");
+		if(!battles[gameNumber]) {
+			notify("No such battle!");
+			return false;
+		}
+		if(!battles[gameNumber].players[user.alias]) {
+			joinBattle(battles[gameNumber],user.alias);
+			notice("You joined battle #" + gameNumber);
+			return true;
+		}
+	}
+	function createBattle()
+	{
+		var list=getMapList();
+		chat.chatroom.clear();
+		console.gotoxy(chat.chatroom);
+		console.pushxy();
+		for(l=0;l<list.length;l++) {
+			var fname=file_getname(list[l]).split(".")[0];
+			var mapname=fname.substr(fname.indexOf("_")).replace(/_/g," ");
+			console.putmsg("\1n" + (l+1) + "\1h: \1n\1c" + mapname);
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+		var mapNumber=menuPrompt("\1nChoose a map: ");
+		if(!list[mapNumber-1]) {
+			menuPrompt("\1r\1hNo such map! \1n\1r[\1hpress a key\1n\1r]");
+			return false;
+		}
+		
+		var mapFile=list[mapNumber-1];
+		var battle=new Battle(false,mapFile);
+		
+		var id=players.getPlayerID(user.alias);
+		var position=0;
+		var player=new Player(id,position,100);
+		player.start=battle.start[position];
+		player.color=battle.color[position];
+		player.coords=new Coords(player.start.x,player.start.y);
+		battle.players[id]=player;
+		
+		notice("\1g\1hGame #" + parseInt(battle.gameNumber,10) + " created");
+		storeGame(battle);
+	}
+	function joinBattle(battle,name)
+	{
+		var id=players.getPlayerID(name);
+		var position=countMembers(battle.players);
+		var player=new Player(id,position,100);
+		player.start=battle.start[position];
+		player.color=battle.color[position];
+		player.coords=new Coords(player.start.x,player.start.y);
+		battle.players[id]=player;
+		storePlayerData(battle,id,position);
+	}	
+	function updateBattles()
+	{
+		var battle_files=directory(root+"battle*.ini");
+		for(var i=0;i<battle_files.length;i++) {
+			var filename=file_getname(battle_files[i]);
+			var gameNumber=Number(filename.substring(6,filename.indexOf(".")));
+			
+			if(battles[gameNumber]) {
+				var lastupdate=file_date(battle_files[i]);
+				var lastloaded=battles[gameNumber].lastupdate;
+				if(lastupdate>lastloaded) {
+					log("Updating battle: " +  battle_files[i]);
+					battles[gameNumber].loadData();
+					update=true;
+				}
+			} else {
+				log("loading battle: " + battle_files[i]);
+				loadBattle(battle_files[i]);
+				update=true;
+			}
+		}
+		for(m in battles) {
+			var battle=battles[m];
+			if(battle && !file_exists(battle.dataFile)) {
+				log("removing deleted battle: " + battle.dataFile);
+				delete battles[m];
+				update=true;
+			}
+		}
+	}
+	function loadBattle(dataFile)
+	{
+		var battle=new Battle(dataFile);
+		log("loaded battle: " + battle.gameNumber);
+		battles[battle.gameNumber]=battle;
+	}
+	function storePlayerData(battle,id,position)
+	{
+		var file=new File(battle.dataFile);
+		file.open('r+',true);
+		file.iniSetValue("players",id,position);
+		file.close();
+	}
+	function listBattles()
+	{
+		var ip=new Coords(60,6);
+		clearBlock(60,6,19,7);
+		var wp=new Coords(60,16);
+		clearBlock(60,16,19,7);
+		var in_progress=[];
+		var waiting=[];
+		
+		for(var m in battles) {
+			var battle=battles[m];
+			if(battle.in_progress)
+				in_progress.push(battle);
+			else 
+				waiting.push(battle);
+		}
+		
+		console.gotoxy(ip);
+		console.pushxy();
+		for each(var m in in_progress) {
+			console.putmsg("\1n\1cBattle #" + m.gameNumber);
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+		console.gotoxy(wp);
+		console.pushxy();
+		for each(var m in waiting) {
+			console.putmsg("\1n\1cBattle #\1h" + m.gameNumber);
+			if(countMembers(m.players)>0)
+				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
+			console.popxy();
+			console.down();
+			console.pushxy();
+		}
+	}
+	function redraw()
+	{
+		background.draw();
+		chat.redraw();
+		listBattles();
+	}
+
+	init();
+	main();
+}
+function playGame(battle) 
+{
+	var currentPlayerID=players.getPlayerID(user.alias);
+	var currentPlayer=battle.players[currentPlayerID];
+	var tankCompass=[0,90];
+	var turretCompass=[0,45,90,135,180,225,270,315];
+	var shots=[];
+
+	/* ms tick between cycles */
+	var tick=.05; 
+	var shotRange=40;
+	var lastUpdate=-1;
+	
+	/* main functions */
+	function init()
+	{
+		battle.draw();
+		showPlayerInfo();
+		for each(var p in battle.players) {
+			drawTank(p);
+			drawTurret(p);
+		}
+	}
+	function main()
+	{
+		while(1) {
+			cycle();
+			var k=console.inkey();
+			switch(k.toUpperCase())
 			{
-				if(	turret==0 	|| 
-					turret==90	||
-					turret==180 ||
-					turret==270	)
-				{
-						yWalk*=-1;
-						xWalk*=-1;
+			case KEY_DOWN:
+				moveDown();
+				break;
+			case KEY_UP:
+				moveUp();
+				break;
+			case KEY_LEFT:
+				moveLeft();
+				break;
+			case KEY_RIGHT:
+				moveRight();
+				break;
+			case " ":
+				fireShot();
+				break;
+			case "A":
+			case "D":
+				rotateTurret(k);
+				break;
+			case "Q":
+			case "\x1b":
+				delete battle.players[currentPlayerID];
+				return false;
+			case "R":
+				redraw();
+			default:
+				break;
+			}
+		}
+		deleteBattle();
+		console.home();
+		console.cleartoeol();
+		return(console.getkeys('Q'));
+	}
+	function cycle()
+	{
+		var packet=stream.receive();
+		if(packet)	processData(packet);
+		
+		var difference=system.timer-lastUpdate;
+		if(difference < tick) return;
+				
+		for(var s=0;s<shots.length;s++) {
+			var shot=shots[s];
+
+			unDrawShot(shot);
+			moveShot(shot);
+
+			if(shot.duration == 0) {
+				shots.splice(s,1);
+				s--;
+				continue;
+			} 
+			
+			if(checkHit(shot)) {
+				var startHealth=currentPlayer.health;
+				
+				currentPlayer.health-=(shot.duration*1.5);
+				shots.splice(s,1);
+				s--;
+				
+				if(currentPlayer.health<=0) {
+					resetPosition();
+					continue;
+				} 
+				
+				if(currentPlayer.health < 50 && startHealth >= 50) {
+					drawTank(currentPlayer);
+					drawTurret(currentPlayer);
 				}
-				else if(wallPiece=="\xC5") 
-				{
-					xWalk*=-1;
-					yWalk*=-1;
+				if(currentPlayer.health < 25 && startHealth >= 25) {
+					drawTank(currentPlayer);
+					drawTurret(currentPlayer);
 				}
-				else if(wallPiece=="\xC4")
-				{
-					yWalk*=-1;
-				}
-				else if(wallPiece=="\xB3")
-				{
-					xWalk*=-1;
+			
+				showPlayerInfo();
+				continue;
+			}
+			
+			drawShot(shot);
+		}
+		lastUpdate=system.timer;
+	}
+
+	/* data functions */
+	function processData(packet)
+	{
+		if(packet.gameNumber != battle.gameNumber) return false;
+		switch(packet.func.toUpperCase()) {
+		case "TANK":
+			var p=packet.player;
+			unDrawTank(battle.players[p]);
+			
+			battle.players[p].coords=packet.coords;
+			battle.players[p].health=packet.health;
+			battle.players[p].heading=packet.heading;
+			battle.players[p].turret=packet.turret;
+			
+			drawTank(battle.players[p]);
+			drawTurret(battle.players[p]);
+			break;
+		case "TURRET":
+			var p=packet.player;
+			battle.players[p].turret=packet.turret;
+			drawTank(battle.players[p]);
+			drawTurret(battle.players[p]);
+			break;
+		case "SHOT":
+			shots.push(new Shot(packet.heading,packet.coords,shotRange,packet.player));
+			break;
+		default:
+			log("Unknown tank battle data received");
+			log("packet: " + packet.toSource());
+			break;
+		}
+	}
+	function packageData(func)
+	{
+		var data=new Packet(func);
+		switch(func)
+		{
+		case "SHOT":
+			data.heading=turretCompass[currentPlayer.turret];
+			data.coords=getShotCoords(data.heading,currentPlayer.coords.x,currentPlayer.coords.y);
+			break;
+		case "TURRET":
+			data.turret=currentPlayer.turret;
+			break;
+		case "TANK":
+			data.coords=currentPlayer.coords;
+			data.health=currentPlayer.health;
+			data.heading=currentPlayer.heading;
+			data.turret=currentPlayer.turret;
+			break;
+		}
+		data.gameNumber=battle.gameNumber;
+		data.player=currentPlayerID;
+		return data;
+	}
+	function deleteBattle()
+	{
+		if(file_exists(battle.dataFile)) {
+			file_remove(battle.dataFile);
+		}
+	}
+	function send(func)
+	{
+		var data=packageData(func);
+		stream.send(data);
+	}
+	
+	/* tank functions */
+	function rotateTurret(direction)
+	{
+		// LEFT
+		if(direction.toUpperCase()=="A") {
+			if(currentPlayer.turret==0) currentPlayer.turret=turretCompass.length-1;
+			else currentPlayer.turret--;
+		}
+		// RIGHT
+		if(direction.toUpperCase()=="D") {
+			if(currentPlayer.turret==turretCompass.length-1) currentPlayer.turret=0;
+			else currentPlayer.turret++;
+		}
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TURRET");
+	}
+	function moveDown()
+	{
+		if(currentPlayer.heading != 0) {
+			currentPlayer.heading = 0;
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+			send("TANK");
+			return;
+		}
+		
+		var test_coords=new Coords(currentPlayer.coords.x,currentPlayer.coords.y+1);
+		if(checkWalls(test_coords)) {
+			log("wall interference found");
+			return false;
+		}
+		
+		unDrawTank(currentPlayer);
+		currentPlayer.coords.y++;
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TANK");
+		return true;
+	}
+	function moveUp()
+	{
+		if(currentPlayer.heading != 0) {
+			currentPlayer.heading = 0;
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+			send("TANK");
+			return;
+		}
+		
+		var test_coords=new Coords(currentPlayer.coords.x,currentPlayer.coords.y-1);
+		if(checkWalls(test_coords)) {
+			log("wall interference found");
+			return false;
+		}
+		
+		unDrawTank(currentPlayer);
+		currentPlayer.coords.y--;
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TANK");
+		return true;
+	}
+	function moveLeft()
+	{
+		if(currentPlayer.heading != 90) {
+			currentPlayer.heading = 90;
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+			send("TANK");
+			return;
+		}
+		
+		var test_coords=new Coords(currentPlayer.coords.x-1,currentPlayer.coords.y);
+		if(checkWalls(test_coords)) {
+			log("wall interference found");
+			return false;
+		}
+		
+		unDrawTank(currentPlayer);
+		currentPlayer.coords.x--;
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TANK");
+		return true;
+	}
+	function moveRight()
+	{
+		if(currentPlayer.heading != 90) {
+			currentPlayer.heading = 90;
+			drawTank(currentPlayer);
+			drawTurret(currentPlayer);
+			send("TANK");
+			return;
+		}
+		
+		var test_coords=new Coords(currentPlayer.coords.x+1,currentPlayer.coords.y);
+		if(checkWalls(test_coords)) {
+			log("wall interference found");
+			return false;
+		}
+		
+		unDrawTank(currentPlayer);
+		currentPlayer.coords.x++;
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TANK");
+		return true;
+	}
+	function fireShot()
+	{
+		var heading=turretCompass[currentPlayer.turret];
+		var coords=getShotCoords(heading,currentPlayer.coords.x,currentPlayer.coords.y);
+		shots.push(new Shot(heading,coords,shotRange,currentPlayerID));
+		send("SHOT");
+	}
+	function getShotCoords(heading,x,y)
+	{
+		switch(heading) {
+		case 0:
+			y-=3;
+			break;
+		case 45:
+			y-=3;
+			x+=3;
+			break;
+		case 90:
+			coords.x+=3;
+			break;
+		case 135:
+			x+=3;
+			y+=3;
+			break;
+		case 180:
+			y+=3;
+			break;
+		case 225:
+			x-=3;
+			y+=3;
+			break;
+		case 270:
+			x-=3;
+			break;
+		case 315:
+			y-=3;
+			x-=3;
+			break;
+		}
+		return new Coords(x,y);
+	}
+	function moveShot(shot)
+	{
+		var newPosition=new Coords(0,0);
+		var count=0;
+		while(count<2) {
+			switch(Number(shot.heading))
+			{
+			case 0:
+				if(checkPosition(shot.coords.x,shot.coords.y-1)) {
+					shot.heading=180;
+					continue;
 				}
 				else
-				{
-					switch(turret)
-					{
-						case 45:
-							if(wallPiece=="\xC1" ||
-								wallPiece=="\xD9") 
-								yWalk*=-1;
-							else if(wallPiece=="\xC2" || 
-									wallPiece=="\xB4" ||
-									wallPiece=="\xBF")
-							{
-								xWalk*=-1;
-								yWalk*=-1;
-							}
-							else if(wallPiece=="\xC3" ||
-									wallPiece=="\xDA" ||
-									wallPiece=="\xC0")
-								xWalk*=-1;
-							break;
-						case 135:
-							if(wallPiece=="\xC2" || 
-								wallPiece=="\xDA") 
-								yWalk*=-1;
-							else if(wallPiece=="\xC1" || 
-									wallPiece=="\xB4" ||
-									wallPiece=="\xD9")
-							{
-								xWalk*=-1;
-								yWalk*=-1;
-							}
-							else if(wallPiece=="\xC3" ||
-									wallPiece=="\xC0" ||
-									wallPiece=="\xBF")
-								xWalk*=-1;
-							break;
-						case 225:
-							if(wallPiece=="\xC2" || 
-								wallPiece=="\xDA") 
-								yWalk*=-1;
-							else if(wallPiece=="\xC1" || 
-									wallPiece=="\xC3" ||
-									wallPiece=="\xC0")
-							{
-								xWalk*=-1;
-								yWalk*=-1;
-							}
-							else if(wallPiece=="\xB4" ||
-									wallPiece=="\xD9" ||
-									wallPiece=="\xBF")
-								xWalk*=-1;
-							break;
-						case 315:
-							if(wallPiece=="\xC1" || 
-								wallPiece=="\xC0)") 
-								yWalk*=-1;
-							else if(wallPiece=="\xDA" || 
-									wallPiece=="\xC3" ||
-									wallPiece=="\xC2")
-							{
-								xWalk*=-1;
-								yWalk*=-1;
-							}
-							else if(wallPiece=="\xB4" ||
-									wallPiece=="\xD9" ||
-									wallPiece=="\xBF")
-								xWalk*=-1;
-							break;
-					}
+					newPosition.y=-1;
+				break;
+			case 45:
+				newPosition.x=1;
+				newPosition.y=-1;
+				if(checkPosition(shot.coords.x+newPosition.x,shot.coords.y+newPosition.y)) {
+					shot.heading=getRebound(shot.heading,newPosition,shot.coords.x,shot.coords.y);
+					continue;
+				} 
+				break;
+			case 90:
+				if(checkPosition(shot.coords.x+1,shot.coords.y)) {
+					shot.heading=270;
+					continue;
 				}
+				else
+					newPosition.x=1;
+				break;
+			case 135:
+				newPosition.x=1;
+				newPosition.y=1;
+				if(checkPosition(shot.coords.x+newPosition.x,shot.coords.y+newPosition.y)) {
+					shot.heading=getRebound(shot.heading,newPosition,shot.coords.x,shot.coords.y);
+					continue;
+				} 
+				break;
+			case 180:
+				if(checkPosition(shot.coords.x,shot.coords.y+1)) {
+					shot.heading=0;
+					continue;
+				}
+				else
+					newPosition.y=1;
+				break;
+			case 225:
+				newPosition.x=-1;
+				newPosition.y=1;
+				if(checkPosition(shot.coords.x+newPosition.x,shot.coords.y+newPosition.y)) {
+					shot.heading=getRebound(shot.heading,newPosition,shot.coords.x,shot.coords.y);
+					continue;
+				} 
+				break;
+			case 270:
+				if(checkPosition(shot.coords.x-1,shot.coords.y)) {
+					shot.heading=90;
+					continue;
+				}
+				else
+					newPosition.x=-1;
+				break;
+			case 315:
+				newPosition.x=-1;
+				newPosition.y=-1;
+				if(checkPosition(shot.coords.x+newPosition.x,shot.coords.y+newPosition.y)) {
+					shot.heading=getRebound(shot.heading,newPosition,shot.coords.x,shot.coords.y);
+					continue;
+				} 
+				break;
 			}
-			xOffset+=xWalk;
-			yOffset+=yWalk;
-			
-			var spotX=x+xOffset;
-			var spotY=y+yOffset;
-
-			console.gotoxy(spotX,spotY);
-			console.putmsg("\1h" + player.tank.color + "\xF9");
-			mswait(15);
-			console.gotoxy(spotX,spotY);
-			console.putmsg(" ");
+			break;
 		}
-		return false; //USE FOR TANK IMPACT CHECKING
+		if(count == 2) {
+			log("ERROR: infinite loop detected!");
+			exit();
+		}
+		shot.coords.x+=newPosition.x;
+		shot.coords.y+=newPosition.y;
+		shot.duration--;
 	}
-	this.CheckTankHit=function(spotX,spotY,tPlayer)
+	function getRebound(h,pos,x,y)
 	{
-		//COMPARE EACH POSITION ALONG THE PATH OF THE TANK SHOT
-		//WITH EACH POSITION OCCUPIED BY EACH PLAYER'S TANK
-		//UNTIL A HIT OCCURS, OR THE BULLET PATH STOPS
-	
-		var players=[];
+		var finished=false;
+		x+=pos.x;
+		y+=pos.y;
 		
-		//ADD CURRENT PLAYER'S TANK TO THE LIST TEMPORARILY TO MINIMIZE PROCESSING TIME
-		players.push(this.player); 
-		for(player in this.players)
-		{
-			if(this.players[player].tank) players.push(this.players[player]);
+		/* the easy stuff */
+		switch(battle.map.data[x-1][y-1].ch) {
+		case "\xB3": //vertical bar
+			pos.x*=-1;
+			finished=true;
+			break;
+		case "\xC4": //horizontal bar
+			pos.y*=-1;
+			finished=true;
+			break;
 		}
-		for(a=0;a<5;a++)
-		{
-			for(player in players)
-			{
-				var pTank=players[player].tank;
-				var x=pTank.coords.x-2;
-				var y=pTank.coords.y-2;
-				
-				if(spotX==x+a)
-				{
-					for(b=0;b<5;b++)
-					{
-						if(spotY==y+b)
-						{
-							if(tPlayer.user==players[player].user) players[player].score--;
-							else 
-							{
-								players[player].tank.ResetPosition();
-								tPlayer.tank.ResetPosition();
-								tPlayer.score++;
-							}
-							return true;
-						}
-					}
+		if(!finished) {
+			/* the confusing stuff */	
+			switch(battle.map.data[x-1][y-1].ch) {
+			case "\xD9": //bottom right corner
+				if(pos.x > 0 && pos.y > 0) {
+					pos.x*=-1;
+					pos.y*=-1
+					break;
 				}
+				if(pos.x < 0 && pos.y < 0) {
+					if(random(100) >= 50) {
+						pos.x*=-1;
+					} else {
+						pos.y*=-1;
+					}
+					break;
+				}
+				if(pos.y > 0) {
+					pos.x*=-1;
+					break;
+				}
+				pos.y*=-1;		
+				break;
+			case "\xDA": //top left corner
+				if(pos.x < 0 && pos.y < 0) {
+					pos.x*=-1;
+					pos.y*=-1
+					break;
+				}
+				if(pos.x > 0 && pos.y > 0) {
+					if(random(100) >= 50) {
+						pos.x*=-1;
+					} else {
+						pos.y*=-1;
+					}
+					break;
+				}
+				if(pos.y > 0) {
+					pos.y*=-1;
+					break;
+				}
+				pos.x*=-1;		
+				break;
+			case "\xBF": //top right corner
+				if(pos.x > 0 && pos.y < 0) {
+					pos.x*=-1;
+					pos.y*=-1
+					break;
+				}
+				if(pos.x < 0 && pos.y > 0) {
+					if(random(100) >= 50) {
+						pos.x*=-1;
+					} else {
+						pos.y*=-1;
+					}
+					break;
+				}
+				if(pos.y > 0) {
+					pos.y*=-1;
+					break;
+				}
+				pos.x*=-1;		
+				break;
+			case "\xC0": //bottom left corner
+				if(pos.x < 0 && pos.y > 0) {
+					pos.x*=-1;
+					pos.y*=-1
+					break;
+				}
+				if(pos.x > 0 && pos.y < 0) {
+					if(random(100) >= 50) {
+						pos.x*=-1;
+					} else {
+						pos.y*=-1;
+					}
+					break;
+				}
+				if(pos.y > 0) {
+					pos.x*=-1;
+					break;
+				}
+				pos.y*=-1;		
+				break;
+			}
+		}
+		if(pos.x < 0 && pos.y < 0) return 315;
+		if(pos.x < 0 && pos.y > 0) return 225;
+		if(pos.x > 0 && pos.y > 0) return 135;
+		if(pos.x > 0 && pos.y < 0) return 45;
+	}
+	function resetPosition()
+	{
+		unDrawTank(currentPlayer);
+		currentPlayer.coords=new Coords(currentPlayer.start.x,currentPlayer.start.y);
+		currentPlayer.health=100;
+		showPlayerInfo();
+		drawTank(currentPlayer);
+		drawTurret(currentPlayer);
+		send("TANK");
+	}
+	
+	/* map functions */
+	function checkPosition(x,y)
+	{
+		if(!battle.map.data[x-1] || !battle.map.data[x-1][y-1]) return true;
+		if(battle.map.data[x-1][y-1].ch == " ") return false;
+		return true;
+	}
+	function checkWalls(position)
+	{
+		var spots=[];
+		
+		spots.push(new Coords(position.x-3,position.y-3));
+		spots.push(new Coords(position.x-3,position.y-2));
+		spots.push(new Coords(position.x-3,position.y-1));
+		spots.push(new Coords(position.x-3,position.y));
+		spots.push(new Coords(position.x-3,position.y+1));
+		
+		for(spot=0;spot<spots.length;spot++) {
+			for(var x=0;x<5;x++) {
+				var spotx=spots[spot].x+x;
+				var spoty=spots[spot].y;
+				if(battle.map.data[spotx][spoty].ch !== " ") return true;
 			}
 		}
 		return false;
 	}
-	this.FindWall=function(spotX,spotY)
+	function checkHit(shot)
 	{
-		return this.map.data[spotX-1][spotY-1].ch;
+		var position=currentPlayer.coords;
+		var spots=[];
+		spots.push(new Coords(position.x-2,position.y-2));
+		spots.push(new Coords(position.x-2,position.y-1));
+		spots.push(new Coords(position.x-2,position.y));
+		spots.push(new Coords(position.x-2,position.y+1));
+		spots.push(new Coords(position.x-2,position.y+2));
+		
+		for(spot=0;spot<spots.length;spot++) {
+			for(var x=0;x<5;x++) {
+				var spotx=spots[spot].x+x;
+				var spoty=spots[spot].y;
+				if(shot.coords.x == spotx && shot.coords.y == spoty) return true;
+			}
+		}
+		return false;
 	}
-	this.FindSpace=function(spotX,spotY)
-	{
-		if(this.map.data[spotX][spotY].ch==" ") return false;
-		else return true;
-	}
-}
-function Tank(color,start,heading,turret,coords)
-{
-	this.color=color;
-    this.start=start;
 
-	if(heading) this.heading=heading;
-    else this.heading=0;
-	if(turret) this.turret=turret;
-    else this.turret=0;
-    if(coords) this.coords=eval(coords.toSource());
-    else this.coords=eval(this.start.toSource());
-    this.compass=[0,90,180,270];
-	this.turretCompass=[0,45,90,135,180,225,270,315];
-
-    game_log.Log("created new tank: color: " + color + " coords: " + this.coords.x + "," + this.coords.y);
-
-	this.MoveTank=function(direction)
-	{	
-		this.Undraw();
-		switch(direction)
-		{
-			case "forward":
-				if(this.compass[this.heading]==0) this.coords.y--;
-				if(this.compass[this.heading]==180) this.coords.y++;
-				if(this.compass[this.heading]==90) this.coords.x++;
-				if(this.compass[this.heading]==270) this.coords.x--;
-				break;
-			case "backward":
-				if(this.compass[this.heading]==0) this.coords.y++;
-				if(this.compass[this.heading]==180) this.coords.y--;
-				if(this.compass[this.heading]==90) this.coords.x--;
-				if(this.compass[this.heading]==270) this.coords.x++;
-				break;
-		}
-		this.DrawTank();
-		this.DrawTurret();
-		console.gotoxy(1,1);
-	}
-	this.Turn=function(direction)
+	/* display functions */
+	function showPlayerInfo()
 	{
-		this.Undraw();
-		if(direction=="left") 
-		{
-			if(this.turret==0) this.turret=this.turretCompass.length-2;
-			else if(this.turret==1) this.turret=this.turretCompass.length-1;
-			else this.turret-=2;
-			if(this.heading==0) this.heading=this.compass.length-1;
-			else this.heading--;		
+		console.home();
+		for(var p in battle.players) {
+			var ply=battle.players[p];
+			console.putmsg(" " + ply.color + ply.name + "\1k\1h:" + (ply.health<=25?"\1r":ply.color) + ply.health);
 		}
-		if(direction=="right") 
-		{
-			if(this.turret==this.turretCompass.length-2) this.turret=0;
-			else if(this.turret==this.turretCompass.length-1) this.turret=1;
-			else this.turret+=2;
-			if(this.heading==this.compass.length-1) this.heading=0;
-			else this.heading++;		
-		}
-		this.DrawTank();
-		this.DrawTurret();
-		console.gotoxy(1,1);
+		console.cleartoeol();
 	}
-	this.TurnTurret=function(direction)
+	function drawShot(shot)
 	{
-		this.Undraw();
-		if(direction=="left") 
-		{
-			if(this.turret==0) this.turret=this.turretCompass.length-1;
-			else this.turret--;
-		}
-		if(direction=="right") 
-		{
-			if(this.turret==this.turretCompass.length-1) this.turret=0;
-			else this.turret++;
-		}
-		this.DrawTank();
-		this.DrawTurret();
-		console.gotoxy(1,1);
+		console.gotoxy(shot.coords.x,shot.coords.y);
+		console.putmsg("\1r\1h\xF9");
 	}
-	this.Undraw=function()
+	function unDrawShot(shot)
 	{
-		var x=this.coords.x;
-		var y=this.coords.y;
-		switch(this.compass[this.heading])
+		console.gotoxy(shot.coords.x,shot.coords.y);
+		console.putmsg(" ");
+	}
+	function unDrawTank(tank)
+	{
+		var x=tank.coords.x;
+		var y=tank.coords.y;
+		switch(Number(tank.heading))
 		{
-			case 0:
-			case 180:
-				console.gotoxy(x-2,y-2); 	print("     ");
-				console.gotoxy(x-2,y-1); 	print("     ");
-				console.gotoxy(x-2,y);   	print("     ");
-				console.gotoxy(x-2,y+1); 	print("     ");
-				console.gotoxy(x-2,y+2); 	print("     ");
-				break;
-			case 90:
-			case 270:
-				console.gotoxy(x-2,y-2); 	print("     ");
-				console.gotoxy(x-2,y-1); 	print("     ");
-				console.gotoxy(x-2,y);   	print("     ");
-				console.gotoxy(x-2,y+1); 	print("     ");
-				console.gotoxy(x-2,y+2); 	print("     ");
-				break;
+		case 0:
+			console.gotoxy(x-2,y-2); 	print("     ");
+			console.gotoxy(x-2,y-1); 	print("     ");
+			console.gotoxy(x-2,y);   	print("     ");
+			console.gotoxy(x-2,y+1); 	print("     ");
+			console.gotoxy(x-2,y+2); 	print("     ");
+			break;
+		case 90:
+			console.gotoxy(x-2,y-2); 	print("     ");
+			console.gotoxy(x-2,y-1); 	print("     ");
+			console.gotoxy(x-2,y);   	print("     ");
+			console.gotoxy(x-2,y+1); 	print("     ");
+			console.gotoxy(x-2,y+2); 	print("     ");
+			break;
 		}
 	}
-	this.DrawTurret=function()
+	function drawTurret(tank)
 	{
-		var x=this.coords.x;
-		var y=this.coords.y;
-		console.gotoxy(x,y);
-		switch(this.turretCompass[this.turret])
+		var x=tank.coords.x;
+		var y=tank.coords.y;
+		var color=tank.color;
+		if(tank.health<25) color="\1n\1r";
+		else if(tank.health<50) color="\1k\1h";
+		
+		switch(Number(turretCompass[tank.turret]))
 		{
 			case 0:
 				console.gotoxy(x,y-1);
-				console.putmsg("\1h" + this.color + "\xB3");
+				console.putmsg("\1h" + color + "\xB3");
 				break;
 			case 180:
 				console.gotoxy(x,y+1);
-				console.putmsg("\1h" + this.color + "\xB3");
+				console.putmsg("\1h" + color + "\xB3");
 				break;
 			case 90:
 				console.gotoxy(x+1,y);
-				console.putmsg("\1h" + this.color + "\xC4");
+				console.putmsg("\1h" + color + "\xC4");
 				break;
 			case 270:
 				console.gotoxy(x-1,y);
-				console.putmsg("\1h" + this.color + "\xC4");
+				console.putmsg("\1h" + color + "\xC4");
 				break;
 			case 45:
 				console.gotoxy(x+1,y-1);
-				console.putmsg("\1h" + this.color + "/");
+				console.putmsg("\1h" + color + "/");
 				break;
 			case 135:
 				console.gotoxy(x+1,y+1);
-				console.putmsg("\1h" + this.color + "\\");
+				console.putmsg("\1h" + color + "\\");
 				break;
 			case 225:
 				console.gotoxy(x-1,y+1);
-				console.putmsg("\1h" + this.color + "/");
+				console.putmsg("\1h" + color + "/");
 				break;
 			case 315:
 				console.gotoxy(x-1,y-1);
-				console.putmsg("\1h" + this.color + "\\");
+				console.putmsg("\1h" + color + "\\");
 				break;
 		}
 	}
-	this.DrawTank=function()
+	function drawTank(tank)
 	{
-		var x=this.coords.x;
-		var y=this.coords.y;
-		console.gotoxy(x,y);
-		switch(this.compass[this.heading])
+		var x=tank.coords.x;
+		var y=tank.coords.y;
+		var color=tank.color;
+		if(tank.health<25) color="\1n\1r";
+		else if(tank.health<50) color="\1k\1h";
+		
+		switch(Number(tank.heading))
 		{
-			case 0:
-			case 180:
-				console.gotoxy(x-2,y-2); 
-				console.putmsg("\1k\1h\xFE" + this.color + "\xDA\xC4\xBF" + "\1k\1h\xFE");
-				console.gotoxy(x-2,y-1); 
-				console.putmsg("\1k\1h\xFE" + this.color + "\xB3 \xB3" + "\1k\1h\xFE");
-				console.gotoxy(x-2,y); 
-				console.putmsg("\1k\1h\xFE" + this.color + "\xB3O\xB3" + "\1k\1h\xFE");
-				console.gotoxy(x-2,y+1); 
-				console.putmsg("\1k\1h\xFE" + this.color + "\xB3 \xB3" + "\1k\1h\xFE");
-				console.gotoxy(x-2,y+2); 
-				console.putmsg("\1k\1h\xFE" + this.color + "\xC0\xC4\xD9" + "\1k\1h\xFE");
-				break;
-			case 90:
-			case 270:
-				console.gotoxy(x-2,y-2); 
-				console.putmsg("\1k\1h\xFE\xFE\xFE\xFE\xFE");
-				console.gotoxy(x-2,y-1); 
-				console.putmsg("\1h" + this.color + "\xDA\xC4\xC4\xC4\xBF");
-				console.gotoxy(x-2,y); 
-				console.putmsg("\1h" + this.color + "\xB3 O \xB3");
-				console.gotoxy(x-2,y+1); 
-				console.putmsg("\1h" + this.color + "\xC0\xC4\xC4\xC4\xD9");
-				console.gotoxy(x-2,y+2); 
-				console.putmsg("\1k\1h\xFE\xFE\xFE\xFE\xFE");
-				break;
+		case 0:
+			console.gotoxy(x-2,y-2); 
+			console.putmsg("\1k\1h\xFE" + color + "\xDA\xC4\xBF" + "\1k\1h\xFE");
+			console.gotoxy(x-2,y-1); 
+			console.putmsg("\1k\1h\xFE" + color + "\xB3 \xB3" + "\1k\1h\xFE");
+			console.gotoxy(x-2,y); 
+			console.putmsg("\1k\1h\xFE" + color + "\xB3O\xB3" + "\1k\1h\xFE");
+			console.gotoxy(x-2,y+1); 
+			console.putmsg("\1k\1h\xFE" + color + "\xB3 \xB3" + "\1k\1h\xFE");
+			console.gotoxy(x-2,y+2); 
+			console.putmsg("\1k\1h\xFE" + color + "\xC0\xC4\xD9" + "\1k\1h\xFE");
+			break;
+		case 90:
+			console.gotoxy(x-2,y-2); 
+			console.putmsg("\1k\1h\xFE\xFE\xFE\xFE\xFE");
+			console.gotoxy(x-2,y-1); 
+			console.putmsg("\1h" + color + "\xDA\xC4\xC4\xC4\xBF");
+			console.gotoxy(x-2,y); 
+			console.putmsg("\1h" + color + "\xB3 O \xB3");
+			console.gotoxy(x-2,y+1); 
+			console.putmsg("\1h" + color + "\xC0\xC4\xC4\xC4\xD9");
+			console.gotoxy(x-2,y+2); 
+			console.putmsg("\1k\1h\xFE\xFE\xFE\xFE\xFE");
+			break;
 		}
-		this.DrawTurret();
 	}
-	this.ResetPosition=function()
+	function redraw()
 	{
-		this.Undraw();
-		this.coords=eval(this.start.toSource());
-		game_log.Log("resetting tank position x: " + this.coords.x + " y: " + this.coords.y);
-		this.DrawTank();
+		DrawBattle();
+		showPlayerInfo();
+		for(ply in players) {
+			players[ply].draw();
+		}
+		console.center("\1k\1hUse Arrow Keys to Move. First player to reach '\1yX\1k' wins. - [\1cQ\1k]uit [\1cR\1k]edraw");
 	}
-	this.DrawTank();
+	
+	init();
+	main();
 }
-function Player(playerFileName,userNumber,queueName)
+function getNewGameNumber()
 {
-	game_log.Log("pfile: " + playerFileName + " unum: " + userNumber);
-	this.playerFile=new File(playerFileName);
-
-	this.user=userNumber;
-	this.tank=false;
-	this.score=0;
-	this.update=false;
-	this.init=false;
-	this.queue=new Queue(queueName);
-	this.LoadTank=function(color,start,heading,turret,coords)
-	{
-		this.tank=new Tank(color,start,heading,turret,coords);
-        this.Init();
-    }
-    this.Init=function()
-    {
-        this.init={ 'user':this.user,
-                    'start':this.tank.start,
-                    'color':this.tank.color,
-                    'heading':this.tank.heading,
-                    'turret':this.tank.turret,
-                    'coords':this.tank.coords };
-    }
-    this.Exists=function()
-	{
-		if(file_exists(this.playerFile.name)) return true;
-		else return false;
+	var gNum=1;
+	while(file_exists(root + "battle" + gNum + ".ini")) {
+		gNum++;
 	}
-	this.WritePlayerFile=function(map_num)
-	{
-		game_log.Log("storing player file: " + this.playerFile.name);
-		this.playerFile.open('w+');
-		this.playerFile.writeln(map_num);
-		this.playerFile.close();
-	}
+	return gNum;
 }
+function menuPrompt(text)
+{
+	chat.input_line.clear();
+	console.gotoxy(chat.input_line);
+	console.putmsg(text);
+	var key=console.getkey();
+	chat.input_line.draw();
+	return key;
+}
+function notify(message)
+{
+	chat.chatroom.alert(message);
+}
+function notice(message)
+{
+	chat.chatroom.notice(message);
+}
+function getFiles(mask)
+{
+	stream.recvfile(mask);
+}
+function sendFiles(mask)
+{
+	stream.sendfile(mask);
+}
+function storeGame(battle)
+{
+	//STORE GAME DATA
+	var file=new File(battle.dataFile+".tmp");
+	file.open("w+");
+	
+	file.iniSetValue(null,"gameNumber",battle.gameNumber);
+	file.iniSetValue(null,"mapFile",battle.mapFile);
+	file.iniSetValue(null,"status",battle.status);
+	
+	if(battle.created) file.iniSetValue(null,"created",battle.created);
+	
+	for(var p in battle.players) {
+		file.iniSetValue("players",p,battle.players[p].position);
+	}
+
+	file.close();
+	file_remove(battle.dataFile);
+	file_rename(file.name,battle.dataFile);
+	sendFiles(battle.dataFile);
+}
+
+splashStart();
+lobby();
+splashExit();
