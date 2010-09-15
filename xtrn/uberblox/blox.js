@@ -25,6 +25,12 @@ if(file_exists(root + "server.ini")) {
 var players;
 var scores;
 
+function gotoxy(x,y)
+{
+	var posx=(x*3)+2;
+	var posy=22-(y*2);
+	console.gotoxy(posx,posy);
+}
 function getFiles(mask,blocking)
 {
 	stream.recvfile(mask,blocking);
@@ -266,12 +272,6 @@ function blox()
 		showTiles();
 		console.gotoxy(1,24);
 		console.putmsg("\1nArrow keys : move \1k\1h[\1nENTER\1k\1h]\1n : select \1k\1h[\1nQ\1k\1h]\1n : quit \1k\1h[\1n?\1k\1h]\1n : help \1k\1h[\1nR\1k\1h]\1n : redraw");
-	}
-	function gotoxy(x,y)
-	{
-		var posx=(x*3)+2;
-		var posy=22-(y*2);
-		console.gotoxy(posx,posy);
 	}
 	function movePosition(k)
 	{
