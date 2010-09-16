@@ -9,6 +9,8 @@
 	for Synchronet BBS systems.
 	-----------------------------------------------------------
 */
+//$Id$
+const VERSION="$Revision$".split(' ')[1];
 
 var root=js.exec_dir;
 
@@ -247,16 +249,14 @@ function lobby()
 			notify("No such battle!");
 			return false;
 		}
-		if(!battles[gameNumber].players[user.alias]) {
-			joinBattle(battles[gameNumber],user.alias);
-			notice("You joined battle #" + gameNumber);
-			return true;
-		}
+		joinBattle(battles[gameNumber]);
+		return true;
 	}
 	function createBattle()
 	{
+		var id=players.getPlayerID(user.alias);
 		for each(var b in battles) {
-			if(b.players[players.getPlayerID(user.alias)]) {
+			if(b.players[id]) {
 				menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
 				return false;
 			}
@@ -283,7 +283,6 @@ function lobby()
 		var mapFile=list[mapNumber-1];
 		var battle=new Battle(false,mapFile);
 		
-		var id=players.getPlayerID(user.alias);
 		var position=0;
 		var player=new Player(id,position,100);
 		player.start=battle.start[position];
@@ -294,17 +293,17 @@ function lobby()
 		notice("\1g\1hGame #" + parseInt(battle.gameNumber,10) + " created");
 		storeGame(battle);
 	}
-	function joinBattle(battle,name)
+	function joinBattle(battle)
 	{
-		if(battle.players[players.getPlayerID(user.alias)]) {
+		var id=players.getPlayerID(user.alias);
+		if(battle.players[id]) {
 			menuPrompt("\1r\1hYou are already in that game \1n\1r[\1hpress a key\1n\1r]");
 			return false;
 		}
 		if(countMembers(battle.players) == battle.start.length) {
-			menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
+			menuPrompt("\1r\1hThat game is full \1n\1r[\1hpress a key\1n\1r]");
 			return false;
 		}
-		var id=players.getPlayerID(name);
 		var position=countMembers(battle.players);
 		var player=new Player(id,position,100);
 		player.start=battle.start[position];
@@ -312,6 +311,7 @@ function lobby()
 		player.coords=new Coords(player.start.x,player.start.y);
 		battle.players[id]=player;
 		storePlayerData(battle,id,position);
+		notice("You joined battle #" + battle.gameNumber);
 	}	
 	function updateBattles()
 	{
@@ -385,7 +385,7 @@ function lobby()
 		console.pushxy();
 		for each(var m in waiting) {
 			console.putmsg("\1n\1cBattle #\1h" + m.gameNumber);
-			if(countMembers(m.players)>1)
+			if(m.timer.countdown > 0)
 				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
 			console.popxy();
 			console.down();
@@ -589,6 +589,9 @@ function playGame(battle)
 		delete battle.players[currentPlayerID];
 		if(file_exists(battle.dataFile)) {
 			file_remove(battle.dataFile);
+		}
+		if(file_exists(battle.dataFile + ".bck")) {
+			file_remove(battle.dataFile + ".bck");
 		}
 	}
 	function send(func)
@@ -1206,14 +1209,6 @@ function playGame(battle)
 	
 	init();
 	main();
-}
-function getNewGameNumber()
-{
-	var gNum=1;
-	while(file_exists(root + "battle" + gNum + ".ini")) {
-		gNum++;
-	}
-	return gNum;
 }
 function menuPrompt(text)
 {
