@@ -6,6 +6,8 @@
 	For Synchronet v3.15+
 	Matt Johnson(2008)
 */
+//$Id$
+const VERSION="$Revision$".split(' ')[1];
 
 load("graphic.js");
 load("logging.js");
@@ -22,6 +24,8 @@ load(root + "menu.js");
 var stream=new ServiceConnection("mazerace");
 var chat=new ChatEngine(root);
 var generator=new MazeGenerator(10,26);
+var players=new PlayerList();
+var scores=new ScoreList();
 
 function splashStart()
 {
@@ -61,8 +65,6 @@ function splashExit()
 }
 function lobby()
 {
-	var players=new PlayerList();
-	var scores=new ScoreList();
 	var background=new Graphic(80,24);
 
 	var menu;
@@ -124,26 +126,37 @@ function lobby()
 	{
 		chat.cycle();
 		updateMazes();
-		var current=time();
+
 		for each(var m in mazes) {
-			if(countMembers(m.players)>1) {
-				if(m.timer.countdown) {
-					if(m.timer.countdown>0) {
-						var difference=current-m.timer.lastupdate;
-						if(difference>0) {
-							m.timer.countDown(difference);
-							update=true;
-						}
-					} else	{
-						m.inprogress=true;
-						if(m.players[user.alias]) {	
-							race(m);
-							redraw();
-						}
-					}
-				} else {
+			switch(Number(m.status)) {
+			case -1:
+				if(countMembers(m.players)>1) {
 					initTimer(m);
+					update=true;
 				}
+				break;
+			case 0:
+				if(!m.timer.countdown) m.loadData();
+				var difference=time()-m.timer.lastupdate;
+				if(!difference>=1) break;
+				if(!m.timer.countDown()) {
+					startRace(m);
+				}
+				update=true;
+				break;
+			case 1:
+				var id=players.getPlayerID(user.alias);
+				if(m.players[id]) {
+					race(m);
+					redraw();
+				}
+				break;
+			case 2:
+				break;
+			default:
+				log("unknown game status: " + m.status);
+				mswait(500);
+				break;
 			}
 		}
 		if(update) {
@@ -151,6 +164,24 @@ function lobby()
 			update=false;
 		}
 		mswait(5);
+	}
+	function initTimer(maze)
+	{
+		maze.status=0;
+		var file=new File(maze.dataFile);
+		file.open('r+',true);
+		file.iniSetValue(null,"created","" + time());
+		file.iniSetValue(null,"status",0);
+		file.close();
+	}
+	function startRace(maze)
+	{
+		log("starting race: " + maze.gameNumber);
+		maze.status=1;
+		var file=new File(maze.dataFile);
+		file.open('r+',true);
+		file.iniSetValue(null,"status",1);
+		file.close();
 	}
 	function listCommands()
 	{
@@ -217,34 +248,44 @@ function lobby()
 			notify("No such maze!");
 			return false;
 		}
-		if(!mazes[gameNumber].players[user.alias]) {
-			joinMaze(mazes[gameNumber],user.alias);
-			notice("You joined maze #" + gameNumber);
-			return true;
-		}
+		joinMaze(mazes[gameNumber]);
+		return true;
 	}
 	function createMaze()
 	{
+		var id=players.getPlayerID(user.alias);
+		for each(var m in mazes) {
+			if(m.players[id]) {
+				menuPrompt("\1r\1hYou are already in a game \1n\1r[\1hpress a key\1n\1r]");
+				return false;
+			}
+		}
 		var gameNumber=getNewGameNumber();
 		var rootFileName=getRootFileName(gameNumber);
 		var maze=new Maze(rootFileName,gameNumber);
-		sendFiles(maze.mazeFile);
-		joinMaze(maze,user.alias);
+		maze.players[id]=new Player(id,maze.colors.shift(),100);
+		maze.goToStartingPosition(maze.players[id]);
 		mazes[maze.gameNumber]=maze;
+
+		sendFiles(maze.mazeFile);
+		storeGameData(maze);
 	}
-	function joinMaze(maze,player)
+	function joinMaze(maze)
 	{
-		maze.players[user.alias]=new Player(player,maze.pcolors.shift(),100);
-		maze.goToStartingPosition(maze.players[player]);
-		storePlayerData(maze,player);
+		var id=players.getPlayerID(user.alias);
+		if(maze.players[id]) {
+			menuPrompt("\1r\1hYou are already in that game \1n\1r[\1hpress a key\1n\1r]");
+			return false;
+		}
+		if(countMembers(maze.players) == maze.colors.length) {
+			menuPrompt("\1r\1hThat game is full \1n\1r[\1hpress a key\1n\1r]");
+			return false;
+		}
+		maze.players[id]=new Player(id,maze.colors.shift(),100);
+		maze.goToStartingPosition(maze.players[id]);
+		storePlayerData(maze,id);
+		notice("You joined maze #" + maze.gameNumber);
 	}	
-	function initTimer(maze)
-	{
-		var file=new File(maze.dataFile);
-		file.open('r+',true);
-		file.iniSetValue(null,"created",system.timer);
-		file.close();
-	}
 	function updateMazes()
 	{
 		var maze_files=directory(root+"maze*.ini");
@@ -257,7 +298,9 @@ function lobby()
 				var lastloaded=mazes[gameNumber].lastupdate;
 				if(lastupdate>lastloaded) {
 					log("Updating maze: " +  maze_files[i]);
-					mazes[gameNumber]=loadMaze(gameNumber);
+					log("last update: " + lastloaded);
+					mswait(500);
+					mazes[gameNumber].loadData();
 					update=true;
 				}
 			} else {
@@ -275,14 +318,6 @@ function lobby()
 			}
 		}
 	}
-	function storePlayerData(maze,player)
-	{
-		var file=new File(maze.dataFile);
-		file.open('r+',true);
-		file.iniSetValue("players",player);
-		file.close();
-		sendFiles(maze.dataFile);
-	}
 	function loadMaze(gameNumber)
 	{
 		var rootFileName=root + "maze" + gameNumber;
@@ -299,7 +334,7 @@ function lobby()
 		
 		for(var m in mazes) {
 			var maze=mazes[m];
-			if(maze.in_progress)
+			if(maze.status == 1)
 				in_progress.push(maze);
 			else 
 				waiting.push(maze);
@@ -317,7 +352,7 @@ function lobby()
 		console.pushxy();
 		for each(var m in waiting) {
 			console.putmsg("\1n\1cMaze #\1h" + m.gameNumber);
-			if(countMembers(m.players)>1)
+			if(m.timer.countdown > 0)
 				console.putmsg(" \1n\1c: \1r\1h" + parseInt(m.timer.countdown,10));
 			console.popxy();
 			console.down();
@@ -336,7 +371,8 @@ function lobby()
 }
 function race(maze) 
 {
-	var player=maze.players[user.alias];
+	var currentPlayerID=players.getPlayerID(user.alias);
+	var player=maze.players[currentPlayerID];
 	var update=true;
 	
 	function init()
@@ -359,7 +395,7 @@ function race(maze)
 				break;
 			case "Q":
 			case "\x1b":
-				delete maze.players[user.alias];
+				deleteMaze();
 				return false;
 			case "R":
 				redraw();
@@ -499,17 +535,24 @@ function race(maze)
 	}
 	function deleteMaze()
 	{
+		delete maze.players[currentPlayerID];
 		if(file_exists(maze.mazeFile)) {
 			file_remove(maze.mazeFile);
 		}
+		if(file_exists(maze.mazeFile + ".bck")) {
+			file_remove(maze.mazeFile + ".bck");
+		}
 		if(file_exists(maze.dataFile)) {
 			file_remove(maze.dataFile);
+		}
+		if(file_exists(maze.dataFile + ".bck")) {
+			file_remove(maze.dataFile + ".bck");
 		}
 	}
 	function send()
 	{
 		var data=new Object;
-		data.player=user.alias;
+		data.player=currentPlayerID;
 		data.coords=player.coords;
 		data.health=player.health;
 		data.func="MOVE";
@@ -559,9 +602,37 @@ function notice(message)
 {
 	chat.chatroom.notice(message);
 }
-function getFiles(mask)
+function storeGameData(maze)
 {
-	stream.recvfile(mask);
+	//STORE GAME DATA
+	var file=new File(maze.dataFile+".tmp");
+	file.open("w+");
+	
+	file.iniSetValue(null,"gameNumber",maze.gameNumber);
+	file.iniSetValue(null,"status",maze.status);
+	
+	if(maze.created) file.iniSetValue(null,"created",maze.created);
+	
+	for(var p in maze.players) {
+		file.iniSetValue("players",p,"");
+	}
+
+	file.close();
+	file_remove(maze.dataFile);
+	file_rename(file.name,maze.dataFile);
+	sendFiles(maze.dataFile);
+}
+function storePlayerData(maze,player)
+{
+	var file=new File(maze.dataFile);
+	file.open('r+',true);
+	file.iniSetValue("players",player);
+	file.close();
+	sendFiles(maze.dataFile);
+}
+function getFiles(mask,blocking)
+{
+	stream.recvfile(mask,blocking);
 }
 function sendFiles(mask)
 {

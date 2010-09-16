@@ -16,7 +16,7 @@ function MazeGenerator(rows,columns) {
 		generateMaze(maze,stack);
 
 		dfile.open('w');
-		dfile.iniSetValue(null,"inprogress",false);
+		dfile.iniSetValue(null,"status",-1);
 		dfile.close();
 
 		mfile.open('wb');

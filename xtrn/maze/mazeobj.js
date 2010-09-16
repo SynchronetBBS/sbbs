@@ -14,49 +14,52 @@ function ScoreList()
 }
 function PlayerList()
 {
-	this.prefix=system.qwk_id + "."; //BBS prefix FOR INTERBBS PLAY?? WE'LL SEE
 	this.players=[];
-	this.current;
+	this.prefix=system.qwk_id + ".";
 	
-	this.StorePlayer=function(id)
+	this.storePlayer=function(id)
 	{
 		var player=this.players[id];
 		var pFile=new File(root + "players.ini");
 		pFile.open("r+"); 
 		pFile.iniSetValue(id,"wins",player.wins);
+		pFile.iniSetValue(id,"besttime",player.losses);
 		pFile.close();
+		sendFiles(pFile.name);
 	}
 	this.loadPlayers=function()
 	{
 		var update=false;
 		var pFile=new File(root + "players.ini");
-		pFile.open(file_exists(pFile.name) ? "r+":"w+"); 
+		pFile.open(file_exists(pFile.name) ? "r+":"w+",true); 
 		
 		if(!pFile.iniGetValue(this.prefix + user.alias,"name")) {
 			pFile.iniSetObject(this.prefix + user.alias,new Score(user.alias));
 			update=true;
 		}
 		var players=pFile.iniGetSections();
-		for(player in players)
-		{
+		for(player in players)	{
 			this.players[players[player]]=pFile.iniGetObject(players[player]);
-			log("Loaded player: " + this.players[players[player]].name);
 		}
 		pFile.close();
-		if(update) {
-			sendFiles(pFile.name);
-		}
+		if(update) sendFiles(pFile.name);
 	}
-	this.GetFullName=function(name)
+	this.getPlayer=function(id)
+	{
+		return this.players[id];
+	}
+	this.getAlias=function(id)
+	{
+		return id.substr(id.indexOf(".")+1);
+	}
+	this.getPlayerID=function(name)
 	{
 		return(this.prefix + name);
 	}
-
-	this.loadPlayers();
 }
 function Maze(rootFile,gameNumber)
 {
-	this.pcolors=["\1y","\1g","\1m","\1c","\1r","\1w"];	//LIST OF COLORS USED BY OTHER PLAYERS
+	this.colors=["\1y","\1g","\1m","\1c","\1r","\1w"];	//LIST OF COLORS USED BY OTHER PLAYERS
 	this.maze=new Graphic(79,22);
 	this.timer=new Timer("\1y\1h");
 	this.mazeFile=rootFile+".maz";
@@ -66,8 +69,8 @@ function Maze(rootFile,gameNumber)
 	this.players=[];
 	this.start=false;
 	this.finish=false;
-	this.lastupdate=time();
-	this.inprogress=false;
+	this.lastupdate=-1;
+	this.status=-1;
 	this.winner=false;
 	this.damage=true;
 		
@@ -116,23 +119,24 @@ function Maze(rootFile,gameNumber)
 	this.loadData=function()
 	{
 		var file=new File(this.dataFile);
+		this.lastupdate=file_date(file.name);
 		file.open('r',true);
 		var players=file.iniGetKeys("players");
 		var created=file.iniGetValue(null,"created");
-		var inprogress=file.iniGetValue(null,"inprogress");
+		var status=file.iniGetValue(null,"status");
 		file.close();
 		
 		for(var p in players) {
 			if(!this.players[players[p]]) {
-				this.players[players[p]]=new Player(players[p],this.pcolors.shift(),100);
+				this.players[players[p]]=new Player(players[p],this.colors.shift(),100);
 			}
 			this.goToStartingPosition(this.players[players[p]]);
 		}
+		this.status=status;
 		this.lastupdate=time();
-		this.inprogress=inprogress;
 		
 		if(created > 0) {
-			var current=system.timer;
+			var current=time();
 			var difference=current-created;
 			this.timer.init(30-difference);
 		}

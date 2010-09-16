@@ -37,10 +37,11 @@ function Timer(color)
 	}
 	this.countDown=function()
 	{
-		if(this.countdown<=0) return false;
 		var difference=time()-this.lastupdate;
 		this.countdown-=difference;
-		this.lastupdate=time();
+		
+		if(this.countdown<=0) return false;
+		this.lastupdate="" + time();
 		return true;
 	}
 }
