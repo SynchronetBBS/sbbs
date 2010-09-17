@@ -24,12 +24,12 @@ function Graphic(w,h,attr,ch)
 	else
 		this.width=w;
 
-	this.data=new Array(w);
 	this.scrollback=500;
 	this.loop=false;
 	this.length=0;
 	this.index=0;
 	
+	this.data=new Array(w);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
 			if(y==0) {
@@ -51,6 +51,7 @@ function Graphic(w,h,attr,ch)
 	this.write=Graphic_write;
 	this.scroll=Graphic_scroll;
 	this.putmsg=Graphic_putmsg;
+	this.resize=Graphic_resize;
 }
 function Graphic_sector(ch,attr)
 {
@@ -137,8 +138,11 @@ function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
 			// Do not draw to the bottom left corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][y+yoff].attr;
-				console.write(this.data[x+xoff][y+yoff].ch);
+				console.attributes=this.data[x+xoff][this.index+y+yoff].attr;
+				var ch=this.data[x+xoff][this.index+y+yoff].ch;
+				if(ch == "\r" || ch == "\n" || !ch)
+					ch=this.ch;
+				console.write(ch);
 			}
 			mswait(2);
 		}
@@ -176,7 +180,7 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 		placeholder[x]=new Array(height);
 		for(y=0;y<placeholder[x].length;y++)
 		{
-			placeholder[x][y]={'x':xoff+x,'y':yoff+y};
+			placeholder[x][y]={'x':xoff+x,'y':this.index+yoff+y};
 		}
 	}
 	while(placeholder.length)
@@ -188,7 +192,10 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 				|| position.y != console.screen_rows) {
 			console.gotoxy(xpos+position.x,ypos+position.y);
 			console.attributes=this.data[position.x][position.y].attr;
-			console.write(this.data[position.x][position.y].ch);
+			var ch=this.data[position.x][position.y].ch;
+			if(ch == "\r" || ch == "\n" || !ch)
+				ch=this.ch;
+			console.write(ch);
 			mswait(1);
 		}
 		placeholder[randx].splice(randy,1);
@@ -238,7 +245,10 @@ function Graphic_write(filename)
 }
 function Graphic_end()
 {
-	this.index=this.data[0].length-this.height;
+	var newindex=this.data[0].length-this.height;
+	if(newindex == this.index) return false;
+	this.index=newindex;
+	return true;
 }
 function Graphic_pgup()
 {
@@ -254,7 +264,9 @@ function Graphic_pgdn()
 }
 function Graphic_home()
 {
+	if(this.index == 0) return false;
 	this.index=0;
+	return true;
 }
 function Graphic_scroll(dir)
 {
@@ -281,10 +293,23 @@ function Graphic_scroll(dir)
 		this.length++;
 		break;
 	}
+	return true;
 }
 function Graphic_resize(w,h)
 {
-	/* ToDo: Figure out this complicated bullshit */
+	this.data=new Array(w);
+	this.width=w;
+	this.height=h;
+	this.index=0;
+	this.length=0;
+	for(var y=0; y<h; y++) {
+		for(var x=0; x<w; x++) {
+			if(y==0) {
+				this.data[x]=new Array(h);
+			}
+			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
+		}
+	}
 }
 /* Returns the number of times scrolled */
 function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
@@ -437,13 +462,9 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			case '\7':		/* Beep */
 				break;
 			case '\r':
-				// ToDo: possibly retain \r\n data for resizing of graphic
-				//this.data[x][y]=new Graphic_sector(ch,curattr);
 				x=0;
 				break;
 			case '\n':
-				// ToDo: possibly retain \r\n data for resizing of graphic
-				//this.data[x][y]=new Graphic_sector(ch,curattr);
 				this.length++;
 				if(p<txt.length-1) {
 					y++;
