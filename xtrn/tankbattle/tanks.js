@@ -781,9 +781,10 @@ function playGame(battle)
 	}
 	function moveShot(shot)
 	{
-		var newPosition=new Coords(0,0);
 		var count=0;
-		while(count<2) {
+		while(count<=2) {
+			count++;
+			var newPosition=new Coords(0,0);
 			switch(Number(shot.heading))
 			{
 			case 0:
@@ -853,7 +854,7 @@ function playGame(battle)
 			}
 			break;
 		}
-		if(count == 2) {
+		if(count > 2) {
 			log("ERROR: infinite loop detected!");
 			exit();
 		}
