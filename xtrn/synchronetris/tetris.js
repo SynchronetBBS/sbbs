@@ -3,6 +3,8 @@
 	For Synchronet v3.15+
 	Matt Johnson(2009)
 */
+//$Id$
+const VERSION="$Revision$".split(' ')[1];
 
 load("chateng.js");
 load("graphic.js");
@@ -308,8 +310,7 @@ function lobby()
 				break;
 			case 0:
 				if(!t.timer.countdown) t.loadGame();
-				var current=time();
-				var difference=current-t.timer.lastupdate;
+				var difference=time()-t.timer.lastupdate;
 				if(!difference>=1) break;
 				if(!t.timer.countDown(difference)) {
 					startGame(t);
@@ -353,7 +354,7 @@ function lobby()
 		game.status=0;
 		var file=new File(game.dataFile);
 		file.open('r+',true);
-		file.iniSetValue(null,"created",system.timer);
+		file.iniSetValue(null,"created","" + time());
 		file.iniSetValue(null,"status",0);
 		file.close();
 	}
@@ -438,7 +439,7 @@ function lobby()
 function playGame(game) 
 {
 	var menu;
-	var lastupdate=system.timer;
+	var lastupdate=time();
 	
 	/*	lines per level */
 	var lines=10;
@@ -470,13 +471,6 @@ function playGame(game)
 			index++;
 		}
 		currentPlayer=game.players[currentPlayerID];
-	}
-	function initChat()
-	{
-		chat.init(38,15,42,8);
-		chat.input_line.init(42,24,38,"","\1n");
-		chat.partChan("tetris lobby",user.alias);
-		chat.joinChan("tetris game " + game.gameNumber,user.alias,user.name);
 	}
 	function main()
 	{
@@ -573,9 +567,11 @@ function playGame(game)
 		}
 		killPlayer(currentPlayerID);
 		send("DEAD");
-		if(game.status == 2 && game.winner == currentPlayerID) {
-			if(file_exists(game.dataFile.name))
-				file_remove(game.dataFile.name);
+		if((game.status == 2 && game.winner == currentPlayerID) || countMembers(game.players)==1) {
+			if(file_exists(game.dataFile))
+				file_remove(game.dataFile);
+			if(file_exists(game.dataFile + ".bck"))
+				file_remove(game.dataFile + ".bck");
 		}
 		return true;
 	}
@@ -587,10 +583,10 @@ function playGame(game)
 		if(!currentPlayer || !currentPlayer.active) return;
 		
 		var update=false;
-		var difference=system.timer-lastupdate;
+		var difference=time()-lastupdate;
 
 		if(difference<pause) return;
-		lastupdate=system.timer;
+		lastupdate=time();
 
 		getLines();
 
@@ -645,6 +641,7 @@ function playGame(game)
 				game.players[packet.player].drawNext();
 				break;
 			case "HOLD":
+				game.players[packet.player].unDrawPiece();
 				game.players[packet.player].holdPiece=packet.piece;
 				game.players[packet.player].drawHold();
 				break;
@@ -699,6 +696,8 @@ function playGame(game)
 				data.level=currentPlayer.level;
 				break;
 			case "UPDATE":
+				break;
+			case "PLAYER":
 				break;
 			case "GRID":
 				data.grid=currentPlayer.grid;
@@ -843,14 +842,14 @@ function playGame(game)
 			currentPlayer.drawPiece();
 			currentPlayer.drawNext();
 			currentPlayer.drawHold();
+			send("HOLD");
 			send("PIECE");
 			send("NEXT");
-			send("HOLD");
 		} else {
 			currentPlayer.holdPiece=currentPlayer.currentPiece.id;
+			send("HOLD");
 			getNewPiece();
 			currentPlayer.drawHold();
-			send("HOLD");
 		}
 	}
 	function getNewPiece()
@@ -1017,7 +1016,6 @@ function playGame(game)
 	}
 	
 	initGame();
-	//initChat();
 	main();
 }
 

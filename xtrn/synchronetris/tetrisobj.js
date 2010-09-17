@@ -3,7 +3,7 @@ function Tetris(dataFile)
 	this.timer=new Timer("\1y\1h");
 	this.players=[];
 	this.status=-1;
-	this.lastupdate=0;
+	this.lastupdate=-1;
 	this.garbage=true;
 	this.update=true;
 	this.winner=false;
@@ -41,19 +41,20 @@ function Tetris(dataFile)
 		
 		var created=file.iniGetValue(null,"created");
 		if(created > 0) {
-			var current=system.timer;
+			var current=time();
 			var difference=current-created;
 			this.timer.init(20-difference);
 		}
 
 		this.gameNumber=Number(file.iniGetValue(null,"gameNumber"));
 		this.status=file.iniGetValue(null,"status");
-		this.players=file.iniGetObject("players");
-		for(var p in this.players) {
-			this.players[p]=new Player(players.getAlias(p),this.players[p]);
+		var plist=file.iniGetObject("players");
+		for(var p in plist) {
+			if(!this.players[p]) this.players[p]=new Player(players.getAlias(p),plist[p]);
+			else this.players[p].active=plist[p];
 		}
 		this.update=true;
-
+		log("loaded game: " + this.gameNumber);
 		file.close();
 	}
 	this.redraw=function()

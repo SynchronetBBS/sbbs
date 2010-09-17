@@ -10,7 +10,7 @@ function Timer(color)
 	this.init=function(length)
 	{
 		this.countdown=length;
-		this.lastupdate=time();
+		this.lastupdate="" + time();
 	}
 	this.redraw=function()
 	{
@@ -35,11 +35,13 @@ function Timer(color)
 		console.putmsg(this.color + time);
 		console.attributes=ANSI_NORMAL;
 	}
-	this.countDown=function(difference)
+	this.countDown=function()
 	{
+		var difference=time()-this.lastupdate;
 		this.countdown-=difference;
+		
 		if(this.countdown<=0) return false;
-		this.lastupdate=time();
+		this.lastupdate="" + time();
 		return true;
 	}
 }
