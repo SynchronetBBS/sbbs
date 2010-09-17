@@ -111,6 +111,11 @@ function ChatEngine(root)
 		this.chatroom.initBox();
 		this.input_line.initBox();
 	}
+	this.resize=function(c,r,x,y,ix,iy,iw,bg)
+	{
+		this.input_line.init(ix,iy,iw,bg);
+		this.chatroom.resize(x,y,c,r,bg);
+	}
 	this.exit=function()
 	{
 		this.partGlobal();
@@ -293,6 +298,7 @@ function ChatRoom()
 	this.rows=console.screen_rows;
 	this.x=1;
 	this.y=1;
+	this.message_list=[];
 	this.window;
 	this.scrollbar;
 	this.fullscreen=true;
@@ -307,8 +313,6 @@ function ChatRoom()
 		if(bg) this.bg=bg;
 		if(!(x || y || c || r)) {
 			this.fullscreen=true;
-			console.ctrlkey_passthru=oldpass;
-			bbs.sys_status&=~SS_MOFF;
 			return;
 		}
 		if(x && y) {
@@ -326,8 +330,33 @@ function ChatRoom()
 		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k\1h"); 
 		this.window=new Graphic(this.columns,this.rows,getColor(this.bg));
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
+	}
+	this.resize=function(x,y,c,r,bg)
+	{
+		if(bg) this.bg=bg;
+		if(!(x || y || c || r)) {
+			this.fullscreen=true;
+			return;
+		}
+		if(x && y) {
+			this.x=x;
+			this.y=y;
+			this.fullscreen=false;
+		} 
+		if(c && r) {
+			this.columns=c;
+			this.rows=r;
+			this.fullscreen=false;
+		}
+		
+		if(this.box) this.initBox();
+		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
+		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k\1h"); 
+		
+		this.window.resize(c,r);
+		for(var m=0;m<this.message_list.length;m++) {
+			this.window.putmsg(false,false,this.message_list[m],undefined,true);
+		}
 	}
 	this.addChannel=function(chan)
 	{
@@ -445,23 +474,23 @@ function ChatRoom()
 	this.scroll=function(key) 
 	{
 		if(!this.fullscreen && this.window.length>this.window.height) {
+			var update=false;
 			switch(key)
 			{
 				case '\x02':	/* CTRL-B KEY_HOME */
-					this.window.home();
+					if(this.window.home()) update=true;
 					break;
 				case '\x05':	/* CTRL-E KEY_END */
-					this.window.end();
+					if(this.window.end()) update=true;
 					break;
 				case KEY_DOWN:
-					this.window.scroll(1);
+					if(this.window.scroll(1)) update=true;
 					break;
 				case KEY_UP:
-					this.window.scroll(-1);
+					if(this.window.scroll(-1)) update=true;
 					break;
 			}
-			this.window.draw(this.x,this.y);
-			this.scrollbar.draw(this.window.index,this.window.length,this.window.height);
+			if(update) this.draw();
 		}
 	}
 	this.post=function(text,color,origin,chan)
@@ -480,6 +509,7 @@ function ChatRoom()
 		if(this.fullscreen) {
 			console.putmsg(msg,P_SAVEATR); 
 		} else {
+			this.message_list.push(msg);
 			this.window.putmsg(false,false,msg,undefined,true); 
 			if(this.active) this.draw();
 		}
@@ -500,12 +530,25 @@ function ChatRoom()
 	{
 		this.post(msg,alert_color);
 	}
-	this.draw=function()
+	this.redraw=function()
 	{
 		if(!this.fullscreen) {
 			if(this.box) this.box.draw();
 			this.window.draw(this.x,this.y);
-			if(this.window.length>this.window.height) this.scrollbar.draw(this.window.index,this.window.length,this.window.height);
+		}
+	}
+	this.draw=function()
+	{
+		this.window.draw(this.x,this.y);
+		this.drawScrollBar();
+	}
+	this.drawScrollBar=function()
+	{
+		if(this.window.length>this.window.height) {
+			var index=this.window.index;
+			var range=this.window.length-this.window.height;
+			log("scrollbar: " + index + "/" + range);
+			this.scrollbar.draw(index,range);
 		}
 	}
 }
@@ -552,7 +595,6 @@ function InputLine()
 		if(bg) this.bg=bg;
 		if(fg) this.fg=fg;
 		if(this.box) this.initBox();
-		this.reset();
 	}
 	this.initBox=function()
 	{
