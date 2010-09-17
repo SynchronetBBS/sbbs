@@ -25,25 +25,21 @@ function Graphic(w,h,attr,ch)
 		this.width=w;
 
 	this.data=new Array(w);
-	this.past=new Array(w);
-	this.future=new Array(w);
+	this.scrollback=500;
+	this.loop=false;
 	this.length=0;
-	this.index=1;
-	var x;
-	var y;
+	this.index=0;
 	
-	for(y=0; y<this.height; y++) {
-		for(x=0; x<this.width; x++) {
+	for(var y=0; y<this.height; y++) {
+		for(var x=0; x<this.width; x++) {
 			if(y==0) {
 				this.data[x]=new Array(h);
-				this.past[x]=[];
-				this.future[x]=[];
 			}
 			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
 		}
 	}
 	
-	this.getxy=Graphic_getxy;
+	this.gety=Graphic_gety;
 	this.home=Graphic_home;
 	this.end=Graphic_end;
 	this.pgup=Graphic_pgup;
@@ -51,7 +47,6 @@ function Graphic(w,h,attr,ch)
 	this.draw=Graphic_draw;
 	this.drawfx=Graphic_drawfx;
 	this.drawslow=Graphic_drawslow;
-	this.save=Graphic_save;
 	this.load=Graphic_load;
 	this.write=Graphic_write;
 	this.scroll=Graphic_scroll;
@@ -62,12 +57,13 @@ function Graphic_sector(ch,attr)
 	this.ch=ch;
 	this.attr=attr;
 }
-function Graphic_getxy()
+function Graphic_gety()
 {
-	if(this.length>=this.height) {
-		return this.height;
+	var y=this.length;
+	if(y>=this.height) {
+		y=this.height;
 	}
-	return this.length;
+	return y;
 }
 function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 {
@@ -100,9 +96,11 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 			// Do not draw to the bottom left corner of the screen-would scroll
 			if(xpos+x != console.screen_columns
 					|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][y+yoff].attr;
-				var ch=this.data[x+xoff][y+yoff].ch;
-				console.write(ch?ch:this.ch);
+				console.attributes=this.data[x+xoff][this.index+y+yoff].attr;
+				var ch=this.data[x+xoff][this.index+y+yoff].ch;
+				if(ch == "\r" || ch == "\n" || !ch)
+					ch=this.ch;
+				console.write(ch);
 			}
 		}
 	}
@@ -221,149 +219,72 @@ function Graphic_load(filename)
 	f.close();
 	return(true);
 }
-function Graphic_write(xpos, ypos, txt, attr)
+function Graphic_write(filename)
 {
-	var x=xpos-1;
-	var y=ypos-1;
-	var p=0;
+	var x;
+	var y;
+	var f=new File(filename);
 
-	while(p<txt.length && x<this.width && y<this.height) {
-		this.data[x][y].ch=txt.substr(p++,1);
-		if(attr!=undefined)
-			this.data[x][y].attr=attr;
-		x++;
-		if(x>=this.width) {
-			x=0;
-			y++;
+	if(!(f.open("wb",true,4096)))
+		return(false);
+	for(y=0; y<this.height; y++) {
+		for(x=0; x<this.width; x++) {
+			f.write(this.data[x][y].ch);
+			f.writeBin(this.data[x][y].attr,1);
 		}
 	}
+	f.close();
+	return(true);
 }
 function Graphic_end()
 {
-	while(this.future[0].length) {
-		for(x=0; x<this.width; x++) {
-			this.past[x].push(this.data[x].shift());
-			this.data[x].push(this.future[x].shift());
-		}
-	}
-	this.index=this.length;
+	this.index=this.data[0].length-this.height;
 }
 function Graphic_pgup()
 {
-	var line=0;
-	while(this.past[0].length && line<this.height) {
-		for(x=0; x<this.width; x++) {
-			this.future[x].unshift(this.data[x].pop());
-			this.data[x].unshift(this.past[x].pop());
-		}
-		line++;
-	}
+	this.index -= this.height;
+	if(this.index < 0) this.index = 0;
 }
 function Graphic_pgdn()
 {
-	var line=0;
-	while(this.future[0].length && line<this.height) {
-		for(x=0; x<this.width; x++) {
-			this.past[x].push(this.data[x].shift());
-			this.data[x].push(this.future[x].shift());
-		}
-		line++;
+	this.index += this.height;
+	if(this.index + this.height >= this.data[0].length) {	
+		this.index=this.data[0].length-this.height;
 	}
 }
 function Graphic_home()
 {
-	while(this.past[0].length) {
+	this.index=0;
+}
+function Graphic_scroll(dir)
+{
+	switch(dir){
+	case 1:
+		if(this.index + this.height >= this.data[0].length) {
+			if(!this.loop) return false;
+		}
+		this.index++;
+		break;
+	case -1:
+		if(this.index == 0) {
+			if(!this.loop) return false;
+			this.index=this.height-1;
+		}
+		this.index--;
+		break;
+	default:
 		for(x=0; x<this.width; x++) {
-			this.future[x].unshift(this.data[x].pop());
-			this.data[x].unshift(this.past[x].pop());
+			this.data[x].push(new Graphic_sector(this.ch,this.attribute));
+			if(this.data[x].length > this.scrollback) this.data.shift();
 		}
-	}
-	this.index=1;
-}
-function Graphic_scroll(dir,loop)
-{
-	switch(dir) 
-	{
-		case 1:
-			if(this.index<this.length) this.index++;
-			else if(loop) this.index=1;
-			
-			if(this.future[0].length>0) {
-				for(x=0; x<this.width; x++) {
-					this.past[x].push(this.data[x].shift());
-					this.data[x].push(this.future[x].shift());
-				}
-			} else if(loop) {
-				for(x=0; x<this.width; x++) {
-					if(this.past[0].length>0) {
-						this.past[x].push(this.data[x].shift());
-						this.data[x].push(this.past[x].shift());
-					} else {
-						this.data[x].push(this.data[x].shift());
-					}
-				}
-			}
-			break;
-		case -1:
-			if(this.index>1) this.index--;	
-			else if(loop) this.index=this.length;
-			
-			if(this.past[0].length>0) {
-				for(x=0; x<this.width; x++) {
-					this.future[x].unshift(this.data[x].pop());
-					this.data[x].unshift(this.past[x].pop());
-				}
-			} else if(loop) {
-				for(x=0; x<this.width; x++) {
-					if(this.future[0].length) {
-						this.future[x].unshift(this.data[x].pop());
-						this.data[x].unshift(this.future[x].pop());
-					} else {
-						this.data[x].unshift(this.data[x].pop());
-					} 
-				}
-			}
-			break;
-		default:
-			this.end();
-			for(x=0; x<this.width; x++) {
-				this.past[x].push(this.data[x].shift());
-				this.data[x].push(new Graphic_sector(this.ch,this.attribute));
-			}
-			this.index=++this.length;
-			break;
+		this.index=this.data[0].length-this.height;
+		this.length++;
+		break;
 	}
 }
-/* Converts a text string to binary format and appends it to a file */
-function Graphic_save(file,txt)
+function Graphic_resize(w,h)
 {
-	//currently stores the file without attributes
-	//TODO: store attributes properly
-	var binFile=new File(file);
-	binFile.open('ab');
-	
-	// if regular text or numbers are passed, append the data to file
-	if(typeof txt=='string' || typeof txt=='number') {
-		txt=txt.replace(/(\S)/g,"$1");
-		binFile.write(txt.replace(/ /g," "));
-	}
-	// if an array is passed, check to see if it is 2 dimensional, and write data
-	else if(typeof txt=='object') { 
-		for(t in txt) {
-			if(typeof txt[t]=='object') {
-				for(tt in text[t]) {
-					txt[t][tt]=txt[t][tt].replace(/(\S)/g,"$1");
-					binFile.write(txt[t][tt].replace(/ /g," "));
-				}
-			}
-			else {
-			txt[t]=txt[t].replace(/(\S)/g,"$1");
-			binFile.write(txt[t].replace(/ /g," "));
-			}
-		}
-	}
-	else alert("Incompatible data type");
-	binFile.close();
+	/* ToDo: Figure out this complicated bullshit */
 }
 /* Returns the number of times scrolled */
 function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
@@ -371,7 +292,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	var curattr=attr;
 	var ch;
 	var x=xpos?xpos-1:0;
-	var y=ypos?ypos-1:this.getxy();
+	var y=ypos?ypos-1:this.gety();
 	var p=0;
 	var scrolls=0;
 
@@ -385,13 +306,19 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			return bbs.atcode(code);
 		}
 	)
-	if(scroll && y>=this.height) {
-		scrolls++;
-		this.scroll();
-		y--;
-	} else {
-		this.index=++this.length;
-	}
+	if(y>=this.height) {
+		if(scroll) {
+			scrolls++;
+			this.scroll();
+			y--;
+		} else {
+			alert("Attempt to draw outside of screen");
+			return false;
+		}
+	} 
+	/* wrap text at graphic width */
+	txt=word_wrap(txt,this.width);
+	
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
@@ -402,20 +329,19 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				ch=txt.substr(p++,1).toUpperCase();
 				switch(ch) {
 					case '\1':	/* A "real" ^A code */
-						this.data[x][y].ch=ch;
-						this.data[x][y].attr=curattr;
+						this.data[x][this.index + y].ch=ch;
+						this.data[x][this.index + y].attr=curattr;
 						x++;
 						if(x>=this.width) {
 							x=0;
 							y++;
+							this.length++;
 							if(y>=this.height) {
 								while(scroll && y>=this.height) {
 									scrolls++;
 									this.scroll();
 									y--;
 								}
-							} else {
-								this.index=++this.length;
 							}
 						}
 						break;
@@ -490,10 +416,13 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 					case ']':	/* LF */
 						if(p<txt.length-1) {
 							y++;
-							while(scroll && y>=this.height) {
-								scrolls++;
-								this.scroll();
-								y--;
+							this.length++;
+							if(y>=this.height) {
+								while(scroll && y>=this.height) {
+									scrolls++;
+									this.scroll();
+									y--;
+								}
 							}
 						}
 						break;
@@ -508,23 +437,15 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			case '\7':		/* Beep */
 				break;
 			case '\r':
+				// ToDo: possibly retain \r\n data for resizing of graphic
+				//this.data[x][y]=new Graphic_sector(ch,curattr);
 				x=0;
 				break;
 			case '\n':
+				// ToDo: possibly retain \r\n data for resizing of graphic
+				//this.data[x][y]=new Graphic_sector(ch,curattr);
+				this.length++;
 				if(p<txt.length-1) {
-					y++;
-					while(scroll && y>=this.height) {
-						scrolls++;
-						this.scroll();
-						y--;
-					}
-				}
-				break;
-			default:
-				this.data[x][y]=new Graphic_sector(ch,curattr);
-				x++;
-				if(x>=this.width) {
-					x=0;
 					y++;
 					if(y>=this.height) {
 						while(scroll && y>=this.height) {
@@ -532,8 +453,22 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 							this.scroll();
 							y--;
 						}
-					} else {
-						this.index=++this.length;
+					}
+				}
+				break;
+			default:
+				this.data[x][this.index + y]=new Graphic_sector(ch,curattr);
+				x++;
+				if(x>=this.width) {
+					x=0;
+					y++;
+					this.length++;
+					if(y>=this.height) {
+						while(scroll && y>=this.height) {
+							scrolls++;
+							this.scroll();
+							y--;
+						}
 					}
 				}
 		}
