@@ -180,17 +180,21 @@ function ChatEngine(root)
 	}
 	this.receive=function()
 	{
+		var update=false;
 		var notices=stream.getNotices();
 		while(notices.length) {
+			update=true;
 			this.chatroom.notice(notices.shift());
 		}
 		var packet=stream.receive();
-		this.processData(packet);
+		if(this.processData(packet)) update=true;
+		return update;
 	}
 	this.processData=function(packet)
 	{
 		if(packet && packet.func) {
 			this.chatroom.process(packet);
+			return true;
 		}
 	}
 	this.processKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
@@ -268,7 +272,8 @@ function ChatEngine(root)
 	}
 	this.cycle=function()
 	{
-		this.receive();
+		if(this.receive()) return true;
+		return false;
 	}
 
 	this.joinGlobal();
@@ -310,21 +315,18 @@ function ChatRoom()
 	
 	this.init=function(x,y,c,r,bg)
 	{
-		if(bg) this.bg=bg;
-		if(!(x || y || c || r)) {
+		if(x || y || c || r || bg) {
+			this.fullscreen=false;
+		} else {
 			this.fullscreen=true;
 			return;
 		}
-		if(x && y) {
-			this.x=x;
-			this.y=y;
-			this.fullscreen=false;
-		} 
-		if(c && r) {
-			this.columns=c;
-			this.rows=r;
-			this.fullscreen=false;
-		}
+		if(bg) this.bg=bg;
+		if(x) this.x=x;
+		if(y) this.y=y;
+		if(c) this.columns=c;
+		if(r) this.rows=r;
+		if(bg) this.bg=bg;
 		
 		if(this.box) this.initBox();
 		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
@@ -333,27 +335,23 @@ function ChatRoom()
 	}
 	this.resize=function(x,y,c,r,bg)
 	{
-		if(bg) this.bg=bg;
-		if(!(x || y || c || r)) {
+		if(x || y || c || r || bg) {
+			this.fullscreen=false;
+		} else {
 			this.fullscreen=true;
 			return;
 		}
-		if(x && y) {
-			this.x=x;
-			this.y=y;
-			this.fullscreen=false;
-		} 
-		if(c && r) {
-			this.columns=c;
-			this.rows=r;
-			this.fullscreen=false;
-		}
+		if(bg) this.bg=bg;
+		if(x) this.x=x;
+		if(y) this.y=y;
+		if(c) this.columns=c;
+		if(r) this.rows=r;
 		
 		if(this.box) this.initBox();
 		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k\1h"); 
 		
-		this.window.resize(c,r);
+		this.window.resize(this.columns,this.rows);
 		for(var m=0;m<this.message_list.length;m++) {
 			this.window.putmsg(false,false,this.message_list[m],undefined,true);
 		}
