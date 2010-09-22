@@ -8,7 +8,6 @@ function DigitalClock()
 	this.lastupdate=-1;
 	this.digits=[];
 	this.hidden=false;
-	this.box;
 	
 	this.init=function(x,y,color)
 	{
@@ -16,8 +15,6 @@ function DigitalClock()
 		this.y=y?y:1;
 		this.color=color?color:"\1n\1h";
 		this.loadDigits();
-		this.box=new  Window("TIME",this.x,this.y,this.columns,this.rows);
-		this.box.draw();
  		this.update(true);
 	}
 	this.hide=function()
@@ -44,7 +41,6 @@ function DigitalClock()
 		var time=hours.toString() + ":" + minutes.toString();
 		if(minutes>this.lastupdate || forced) 
 		{
-			this.box.draw();
 			this.lastupdate=minutes;
 			this.drawClock(time);
 		}

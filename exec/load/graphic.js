@@ -88,7 +88,7 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 		return(false)
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
-		alert("Attempt to draw outside of screen");
+		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1));
 		return(false);
 	}
 	for(y=0;y<height; y++) {
@@ -287,10 +287,12 @@ function Graphic_scroll(dir)
 	default:
 		for(x=0; x<this.width; x++) {
 			this.data[x].push(new Graphic_sector(this.ch,this.attribute));
-			if(this.data[x].length > this.scrollback) this.data.shift();
+			if(this.data[x].length > this.scrollback) {
+				this.data.shift();
+			}
 		}
 		this.index=this.data[0].length-this.height;
-		this.length++;
+		if(this.length < this.scrollback) this.length++;
 		break;
 	}
 	return true;
@@ -298,14 +300,14 @@ function Graphic_scroll(dir)
 function Graphic_resize(w,h)
 {
 	this.data=new Array(w);
-	this.width=w;
-	this.height=h;
+	if(w) this.width=w;
+	if(h) this.height=h;
 	this.index=0;
 	this.length=0;
-	for(var y=0; y<h; y++) {
-		for(var x=0; x<w; x++) {
+	for(var y=0; y<this.height; y++) {
+		for(var x=0; x<this.width; x++) {
 			if(y==0) {
-				this.data[x]=new Array(h);
+				this.data[x]=new Array(this.height);
 			}
 			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
 		}
@@ -324,8 +326,9 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	if(curattr==undefined)
 		curattr=this.attribute;
 	/* Expand @-codes */
-	if(txt==undefined || txt==null || txt.length==0)
+	if(txt==undefined || txt==null || txt.length==0) {
 		return(0);
+	}
 	txt=txt.toString().replace(/@(.*)@/g,
 		function (str, code, offset, s) {
 			return bbs.atcode(code);

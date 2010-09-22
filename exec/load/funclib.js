@@ -5,78 +5,124 @@
 
 function getColor(color)
 {
-	if(!color) return false;
-	switch(color.toUpperCase())
+	switch(color)
 	{
 		case "BLACK":
 		case "\1K":
 			return BLACK;
+		case BLACK:
+			return "\1K";
 		case "BLUE":
 		case "\1B":
 			return BLUE;
+		case BLUE:
+			return "\1B";
 		case "CYAN":
 		case "\1C":
 			return CYAN;
+		case CYAN:
+			return "\1C";
 		case "RED":
 		case "\1R":
 			return RED;
+		case RED:
+			return "\1R";
 		case "GREEN":
 		case "\1G":
 			return GREEN;
+		case GREEN:
+			return "\1G";
 		case "BROWN":
 		case "\1Y":
 			return BROWN;
+		case BROWN:
+			return "\1Y";
 		case "MAGENTA":
 		case "\1M":
 			return MAGENTA;
+		case MAGENTA:
+			return "\1M";
 		case "BG_BLUE":
 		case "\0014":
 			return BG_BLUE;
+		case BG_BLUE:
+			return "\0014";
 		case "BG_CYAN":
 		case "\0016":
 			return BG_CYAN;
+		case BG_CYAN:
+			return "\0016";
 		case "BG_RED":
 		case "\0011":
 			return BG_RED;
+		case BG_RED:
+			return "\0011";
 		case "BG_GREEN":
 		case "\0012":
 			return BG_GREEN;
+		case BG_GREEN:
+			return "\0012";
 		case "BG_BROWN":
 		case "\0013":
 			return BG_BROWN;
+		case BG_BROWN:
+			return "\0013";
 		case "BG_MAGENTA":
 		case "\0015":
 			return BG_MAGENTA;
+		case BG_MAGENTA:
+			return "\0015";
 		case "BG_LIGHTGRAY":
 		case "\0017":
-		return BG_LIGHTGRAY;
+			return BG_LIGHTGRAY;
+		case BG_LIGHTGRAY:
+			return "\0017";
 		case "WHITE":
 		case "\1W\1H":
 			return WHITE;
+		case WHITE:
+			return "\1W\1H";
 		case "LIGHTCYAN":
 		case "\1C\1H":
 			return LIGHTCYAN;
+		case LIGHTCYAN:
+			return "\1C\1H";
 		case "LIGHTRED":
 		case "\1R\1H":
 			return LIGHTRED;
+		case LIGHTRED:
+			return "\1R\1H";
 		case "LIGHTGREEN":
 		case "\1G\1H":
 			return LIGHTGREEN;
+		case LIGHTGREEN:
+			return "\1G\1H";
 		case "LIGHTBLUE":
 		case "\1B\1H":
 			return LIGHTBLUE;
+		case LIGHTBLUE:
+			return "\1B\1H";
 		case "YELLOW":
 		case "\1Y\1H":
 			return YELLOW;
+		case YELLOW:
+			return "\1Y\1H";
 		case "LIGHTMAGENTA":
 		case "\1M\1H":
 			return LIGHTMAGENTA;
+		case LIGHTMAGENTA:
+			return "\1M\1H";
 		case "LIGHTGRAY":
 		case "\1N":
+		case "\1W":
 			return LIGHTGRAY;
+		case LIGHTGRAY:
+			return "\1W";
 		case "DARKGRAY":
 		case "\1K\1H":
 			return DARKGRAY;
+		case DARKGRAY:
+			return "\1K\1H";
 		default:
 			return ANSI_NORMAL;
 	}
@@ -103,11 +149,12 @@ function removeSpaces(text)
 }
 function splitPadded(string1,string2,length,padding)
 {
+	if(!string1) string1="";
+	if(!string2) string2="";
 	if(!padding) padding=" ";
 	var strlength=console.strlen(string1 + string2);
-	if(strlength>length)
-	{
-		string=string.substring(0,length);
+	if(strlength>length) {
+		string1=string1.substring(0,length);
 	}
 	var padlength=length-strlength;
 	var padded="";
