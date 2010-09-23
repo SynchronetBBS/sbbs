@@ -10,18 +10,10 @@
 	*	system.text_dir called "cshell" ("/sbbs/text/cshell/") and another within 
 	*	called "xtrn" ("/sbbs/text/cshell/xtrn/"). 
 	*
-	*	MAIN MENU WALLPAPER: 
-	*		width: 60
-	*		height: 22
-	*		file: main.bin
-	*	SUB-MENUS:
-	*		width: 32
-	*		height: 22
-	*		files: message.bin, email.bin, system.bin, file.bin, etc....
+	*	WALLPAPER: 
+	*		file: <menu_name>.<width>x<height>.bin
 	*	RIGHT WINDOW ICON:
-	*		width: 16
-	*		height: 10
-	*		file: icon.bin
+	*		file: icon.16x10.bin
 	******************************************************************************
 
 	This shell relies on having commservice.js, commclient.js, and all other related
@@ -226,7 +218,7 @@ function drawTopline()
 {
 	var sysname=" \1k" + system.name + " : \1b" + system.location;
 	var sysop="\1kSysOp : \1b" + system.operator + " ";
-	var title=splitPadded(sysname,sysop,80," ");
+	var title=splitPadded(sysname,sysop,console.screen_columns," ");
 
 	console.home();
 	console.attributes=settings.shell_bg;
@@ -234,11 +226,10 @@ function drawTopline()
 }
 function drawOutline()
 {
-	console.home();
-	console.down();
 	console.attributes=BG_BLACK + settings.shell_fg;
-	var outline=splitPadded("\xDD","\xDE",80," ");
-	for(var l=0;l<22;l++) {
+	var outline=splitPadded("\xDD","\xDE",console.screen_columns," ");
+	for(var l=2;l<console.screen_rows;l++) {
+		console.gotoxy(1,l);
 		console.putmsg(outline,P_SAVEATR);
 	}
 }
@@ -291,18 +282,18 @@ function expandCenter(width,side)
 function showXtrnSecInfo(m)
 {
 	if(xtrn_area.sec_list[left.curr_xtrnsec]) {
-		center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
+		center.loadWallPaper(
 							system.text_dir + "cshell/xtrn/" + 
-							xtrn_area.sec_list[left.curr_xtrnsec].code + ".bin");
+							xtrn_area.sec_list[left.curr_xtrnsec].code + ".*.bin");
 		center.redraw();
 	}
 }
 function showXtrnProgInfo(m)
 {
 	if(xtrn_area.sec_list[left.curr_xtrnsec].prog_list[m.current]) {
-		center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
+		center.loadWallPaper(
 							system.text_dir + "cshell/xtrn/" + 
-							xtrn_area.sec_list[left.curr_xtrnsec].prog_list[m.current].code + ".bin");
+							xtrn_area.sec_list[left.curr_xtrnsec].prog_list[m.current].code + ".*.bin");
 		center.redraw();
 	}
 }
