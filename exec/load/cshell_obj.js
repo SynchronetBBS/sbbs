@@ -2,7 +2,7 @@
 function MainMenu()		
 {
 	this.x=1;
-	this.y=24;
+	this.y=console.screen_rows;
 	this.menu;
 	
 	this.init=function()
@@ -17,7 +17,7 @@ function MainMenu()
 		menu_items["V"]=new Shortcut("Fa|vorites","menu","favorites");
 		menu_items["S"]=new Shortcut("|Settings","menu","settings");
 		menu_items["L"]=new Shortcut("|Logoff","logoff","");
-		this.menu=new Menu_bottom(menu_items,9,24);	
+		this.menu=new Menu_bottom(menu_items,9,console.screen_rows);	
 	}
 	this.restore=function()
 	{
@@ -66,11 +66,11 @@ function RightWindow()
 	{
 		this.clock.init(this.x,this.y+10,LIGHTBLUE);
 		this.graphic=new Graphic(16,10);
-		this.graphic.load(system.text_dir + "cshell/logo.bin");
+		this.graphic.load(system.text_dir + "cshell/logo.16x10.bin");
 	}
 	this.redraw=function()
 	{
-		drawSeparator(console.screen_columns-18,2,22);
+		drawSeparator(console.screen_columns-18,2,console.screen_rows-2);
 		this.clock.update(true);
 		this.graphic.draw(this.x+1,this.y);
 	}
@@ -90,9 +90,9 @@ function MainWindow()
 	this.init=function()
 	{
 		this.chat.init(settings.main_width,settings.main_height-3,2,5);
-		this.chat.input_line.init(9,24,71,"\0017","\1k");
+		this.chat.input_line.init(9,console.screen_rows,console.screen_columns-9,"\0017","\1k");
 		this.chat.joinChan("BBS MAIN",user.alias,user.name);
-		this.loadWallPaper(settings.main_width,settings.main_height,system.text_dir + "cshell/main.bin");
+		this.loadWallPaper(system.text_dir + "cshell/main.*.bin");
 		this.chat.chatroom.active=false;
 	}
 	this.drawTitle=function()
@@ -118,7 +118,7 @@ function MainWindow()
 	}
 	this.restore=function()
 	{
-		this.loadWallPaper(settings.main_width,settings.main_height,system.text_dir + "cshell/main.bin");
+		this.loadWallPaper(system.text_dir + "cshell/main.*.bin");
 		this.redraw();
 	}
 	this.redraw=function()
@@ -135,9 +135,17 @@ function MainWindow()
 		this.drawTitle();
 		this.chat.redraw();
 	}
-	this.loadWallPaper=function(w,h,file)
+	this.loadWallPaper=function(file)
 	{
-		this.wallpaper=new Graphic(w,h);
+		file=directory(file);
+		var width=0;
+		var height=0;
+		if(file.length) {
+			var size=file_getname(file[0]).split(".")[1].split("x");
+			width=Number(size[0]);
+			height=Number(size[1]);
+		}
+		this.wallpaper=new Graphic(width,height);
 		this.wallpaper.load(file);
 	}
 	this.drawWallPaper=function()
@@ -197,7 +205,7 @@ function SideMenu()
 		if(this.menu) {
 			this.drawTitle();
 			this.menu.draw();
-			drawSeparator(settings.menu_width+2,2,22);
+			drawSeparator(settings.menu_width+2,2,console.screen_rows-2);
 		}	
 	}
 	this.reload=function()
@@ -250,114 +258,96 @@ function SideMenu()
 				this.menu=new Menu_file;
 				this.process=do_filemenu;
 				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "message":
 				this.menu=new Menu_message;
 				this.process=do_messagemenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/message.bin");
+				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
 				break;
 			case "chat":
 				this.menu=new Menu_chat;
 				this.process=do_chatmenu;
 				bbs.node_action=NODE_CHAT;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/chat.bin");
+				center.loadWallPaper(system.text_dir + "cshell/chat.*.bin");
 				break;
 			case "email":
 				this.menu=new Menu_email;
 				this.process=do_emailmenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/email.bin");
+				center.loadWallPaper(system.text_dir + "cshell/email.*.bin");
 				break;
 			case "emailtarget":
 				this.menu=new Menu_emailtarget;
 				this.process=do_emailtargetmenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/email.bin");
+				center.loadWallPaper(system.text_dir + "cshell/email.*.bin");
 				break;
 			case "fileinfo":
 				this.menu=new Menu_fileinfo;
 				this.process=do_fileinfo;
 				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "settings":
 				this.menu=new Menu_settings;
 				this.process=do_settingsmenu;
 				bbs.node_action=NODE_DFLT;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/settings.bin");
+				center.loadWallPaper(system.text_dir + "cshell/settings.*.bin");
 				break;
 			case "filedir":
 				this.menu=new Menu_filedir(value);
 				this.process=do_filedirmenu;
 				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "info":
 				this.menu=new Menu_info;
 				this.process=do_infomenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/info.bin");
+				center.loadWallPaper(system.text_dir + "cshell/info.*.bin");
 				break;
 			case "userlist":
 				this.menu=new Menu_userlist;
 				this.process=do_userlistmenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/userlist.bin");
+				center.loadWallPaper(system.text_dir + "cshell/userlist.*.bin");
 				break;
 			case "fileinfo":
 				this.menu=new Menu_fileinfo;
 				this.process=do_fileinfo;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "chatsettings":
 				this.menu=new Menu_chatsettings;
 				this.process=do_chatsettings;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/chat.bin");
+				center.loadWallPaper(system.text_dir + "cshell/chat.*.bin");
 				break;
 			case "searchmsgtxt":
 				this.menu=new Menu_searchmsgtxt;
 				this.process=do_searchmsgtxt;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/message.bin");
+				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
 				break;
 			case "scantoyou":
 				this.menu=new Menu_yourmsgscan;
 				this.process=do_scantoyou;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/message.bin");
+				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
 				break;
 			case "newscan":
 				this.menu=new Menu_newmsgscan;
 				this.process=do_newscan;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/message.bin");
+				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
 				break;
 			case "download":
 				this.menu=new Menu_download;
 				this.process=do_downloadmenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "filesettings":
 				this.menu=new Menu_filesettings(value);
 				this.process=do_filesettings;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			case "upload":
 				this.menu=new Menu_upload;
 				this.process=do_uploadmenu;
-				center.loadWallPaper(settings.main_width-(settings.menu_width+1),settings.main_height,
-					system.text_dir + "cshell/file.bin");
+				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
 				break;
 			default:
 				log("menu not found: " + name);
