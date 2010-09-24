@@ -1,83 +1,6 @@
-/* MAIN MENU OBJECT */
-function Menu_bottom(items,x,y)
-{
-	this.items=items;
-	this.x=x;
-	this.y=y;
-	
-	this.disable=function(item)
-	{
-		this.items[item].enabled=false;
-	}
-	this.enable=function(item)
-	{
-		this.items[item].enabled=true;
-	}
-	this.clear=function()
-	{
-		console.gotoxy(this);
-		console.cleartoeol(settings.shell_bg);
-	}
-	this.draw=function()
-	{
-		console.gotoxy(this);
-		console.pushxy();
-		console.cleartoeol(settings.shell_bg);
-		console.popxy();
-		for(var i in this.items) {
-			if(this.items[i].enabled==true) {
-				var hc=settings.main_hkey_color;
-				var tc=settings.main_text_color;
-				var bg=settings.shell_bg;
-				
-				var item=this.items[i];
-				for(var c=0;c<item.text.length;c++) {
-					if(item.text[c]=="|") {
-						console.attributes=bg + hc;
-						c++;
-					} else {
-						console.attributes=bg + tc;
-					}
-					console.write(item.text[c]);
-				}
-				console.write(" ");
-			}
-		}
-		console.attributes=ANSI_NORMAL;
-	}
-}
-
-/* SIDE MENU OBJECTS */
-function Menu_sidebar()
-{
-	this.lpadding="";
-	this.rpadding="";
-	this.fg=settings.menu_fg;
-	this.bg=settings.menu_bg;
-	this.hfg=settings.menu_hfg;
-	this.hbg=settings.menu_hbg;
-	this.width=settings.menu_width;
-	this.xpos=settings.menu_x;
-	this.ypos=settings.menu_y;
-	this.hotkeys=
-		KEY_LEFT
-		+KEY_RIGHT
-		+KEY_UP
-		+KEY_DOWN
-		+"\b\x7f\x1b<>Q"
-		+ctrl('O')
-		+ctrl('U')
-		+ctrl('T')
-		+ctrl('K')
-		+ctrl('P');
-	for(var i in bottom.menu.items) {
-		this.hotkeys+=i;
-	}
-	this.addcmd=Item_addcmd;
-}
-
-function Menu_main()
-{
+/* MENU OBJECTS */
+menuobj=[];
+menuobj["main"]=function() {
 	this.title="MAIN";
 	this.items=new Array();
 	this.addcmd("Files","F",user.compare_ars("REST T"));
@@ -87,23 +10,55 @@ function Menu_main()
 	this.addcmd("Settings","S");
 	this.addcmd("Externals","X",user.compare_ars("REST X"));
 	this.addcmd("View","V");
+	this.node_action=NODE_MAIN;
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_favorites()
-{
+menuobj["favorites"]=function() {
 	this.title="FAVORITES";
 	this.items=new Array();
-	this.addcmd("Add Favorite","+",true);
+	this.addcmd(" type +/- from any menu",undefined,true);
+	this.addcmd(" to add/remove favorites",undefined,true);
+	this.addcmd("",undefined,true);
+	for (var f=0;f<favorites.items.length;f++) {
+		if(favorites.items[f].itemID >= 0) {
+			this.addcmd(favorites.items[f].itemTitle,f);
+		}
+		else this.addcmd(favorites.items[f].menuTitle,f);
+	}
+	set_hotkeys(this);
+	fill_menu(this);
+	this.node_action=NODE_MAIN;
+}
+menuobj["delfavorite"]=function() {
+	this.title="EDIT FAVORITES";
+	this.items=new Array();
+	this.addcmd(" choose item to remove",undefined,true);
+	this.addcmd(" from your favorites",undefined,true);
+	this.addcmd("",undefined,true);
+	for (var f=0;f<favorites.items.length;f++) {
+		if(favorites.items[f].itemID >= 0) {
+			this.addcmd(favorites.items[f].itemTitle,f);
+		}
+		else this.addcmd(favorites.items[f].menuTitle,f);
+	}
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_file()
-{
+menuobj["addfavorite"]=function() {
+	this.title="ADD FAVORITE";
+	this.items=new Array();
+	this.addcmd("Add Menu","M");
+	this.addcmd(favorites.mt,undefined,true);
+	this.addcmd("",undefined,true);
+	this.addcmd("Add Program","P");
+	this.addcmd(favorites.it,undefined,true);
+	set_hotkeys(this);
+	fill_menu(this);
+}
+menuobj["file"]=function() {
 	this.title="FILES";
 	this.items=new Array();
-	this.addcmd("[" + file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.toUpperCase() + "]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd("Change Directory","C");
 	this.addcmd("List Files","L");
 	this.addcmd("Scan for New Files","N");
@@ -126,32 +81,29 @@ function Menu_file()
 	this.addcmd("Settings","S");
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XFER;
 }
-function Menu_filedir(changenewscan)
-{
+menuobj["filedir"]=function() {
 	this.title="FILES";
 	this.items=new Array();
-	this.addcmd("[" + file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd("All File Areas","A");
 	this.addcmd("Library","L");
 	this.addcmd("Directory","D");
-	if(changenewscan)
-		this.addcmd("Chg New Scan Date","N");
+	this.addcmd("Chg New Scan Date","N");
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XFER;
 }
-function Menu_settings()
-{
+menuobj["settings"]=function() {
 	this.title="SETTINGS";
 	this.items=new Array();
 	this.addcmd("User Configuration","U");
 	this.addcmd("Minute Bank","B");
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_DFLT;
 }
-function Menu_email()
-{
+menuobj["email"]=function() {
 	this.title="E-MAIL";
 	this.items=new Array();
 	this.addcmd("Send Mail","S");
@@ -160,12 +112,9 @@ function Menu_email()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_message()
-{
+menuobj["message"]=function() {
 	this.title="MESSAGES : " + msg_area.grp_list[bbs.curgrp].name.toUpperCase();
 	this.items=new Array();
-	this.addcmd("[" + msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd("Change Sub","C");
 	this.addcmd("Read Messages","R");
 	this.addcmd("Scan New Messages","N");
@@ -180,8 +129,7 @@ function Menu_message()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_chat()
-{
+menuobj["chat"]=function() {
 	this.title="CHAT";
 	this.items=new Array();
 	this.addcmd("Multinode Chat","M");
@@ -194,27 +142,27 @@ function Menu_chat()
 	this.addcmd("Settings","S");
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_CHAT;
 }
-function Menu_xtrnsecs()
-{
-	this.title="GAMES";
+menuobj["xtrnsecs"]=function() {
+	this.title="EXTERNAL PROGRAMS";
 	this.items=new Array();
 	for(j=0; j<xtrn_area.sec_list.length; j++)
 		this.addcmd(xtrn_area.sec_list[j].name,j.toString());
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XTRN;
 }
-function Menu_xtrnsec(sec)
-{
-	this.title="GAMES : " + xtrn_area.sec_list[sec].name;
+menuobj["xtrnsec"]=function() {
+	this.title="XTRN : " + xtrn_area.sec_list[left.xtrnsec].name;
 	this.items=new Array();
-	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++)
-		this.addcmd(xtrn_area.sec_list[sec].prog_list[j].name,j.toString());
+	for(j=0; j<xtrn_area.sec_list[left.xtrnsec].prog_list.length && j<console.screen_rows-3; j++)
+		this.addcmd(xtrn_area.sec_list[left.xtrnsec].prog_list[j].name,j.toString());
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XTRN;
 }
-function Menu_info()
-{
+menuobj["info"]=function() {
 	this.title="INFO";
 	this.items=new Array();
 	this.addcmd("System Info","I");
@@ -226,8 +174,7 @@ function Menu_info()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_userlist()
-{
+menuobj["userlist"]=function() {
 	this.title="USERS";
 	this.items=new Array();
 	this.addcmd("Logons Today","L");
@@ -236,9 +183,9 @@ function Menu_userlist()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_emailtarget()
-{
+menuobj["emailtarget"]=function() {
 	this.title="E-MAIL";
+	this.info=system.text_dir + "cshell/email.ini";
 	this.items=new Array();
 	this.addcmd('Sysop','S',user.compare_ars("REST S"));
 	this.addcmd('Local User','L',user.compare_ars("REST E"));
@@ -248,8 +195,7 @@ function Menu_emailtarget()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_download()
-{
+menuobj["download"]=function() {
 	this.title="DOWNLOAD";
 	this.items=new Array();
 	this.addcmd('Batch','B',bbs.batch_dnload_total<=0);
@@ -257,13 +203,11 @@ function Menu_download()
 	this.addcmd('From User','U');
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XFER;
 }
-function Menu_upload()
-{
+menuobj["upload"]=function() {
 	this.title="UPLOAD";
 	this.items=new Array();
-	this.addcmd("[" + file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	if(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload || file_area.upload_dir==undefined) {
 		this.addcmd('To Current Dir','C',!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload);
 	}
@@ -274,9 +218,9 @@ function Menu_upload()
 	this.addcmd('To User(s)','U',file_area.user_dir==undefined);
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XFER;
 }
-function Menu_fileinfo()
-{
+menuobj["fileinfo"]=function() {
 	this.title="FILES";
 	this.items=new Array();
 	this.addcmd('File Contents','C');
@@ -287,23 +231,20 @@ function Menu_fileinfo()
 	this.addcmd('Your File Transfer Statistics','S');
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_XFER;
 }
-function Menu_filesettings(value)
-{
-	this.current=value;
+menuobj["filesettings"]=function() {
 	this.title="FILE SETTINGS";
 	this.items=new Array();
 	this.addcmd('Set Batch Flagging '+(user.settings&USER_BATCHFLAG?'Off':'On'),'B');
 	this.addcmd('Set Extended Descriptions '+(user.settings&USER_EXTDESC?'Off':'On'),'S');
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_DFLT;
 }
-function Menu_newmsgscan()
-{
+menuobj["newmsgscan"]=function() {
 	this.title="MESSAGE SCAN";
 	this.items=new Array();
-	this.addcmd("[" + msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd('All Message Areas','A');
 	this.addcmd("Current Group",'G');
 	this.addcmd('Current Sub','S');
@@ -313,12 +254,9 @@ function Menu_newmsgscan()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_yourmsgscan()
-{
+menuobj["yourmsgscan"]=function() {
 	this.title="MESSAGE SCAN";
 	this.items=new Array();
-	this.addcmd("[" + msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd('All Message Areas','A');
 	this.addcmd("Current Group",'G');
 	this.addcmd('Current Sub','S');
@@ -326,20 +264,16 @@ function Menu_yourmsgscan()
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_searchmsgtxt()
-{
+menuobj["searchmsgtxt"]=function() {
 	this.title="MESSAGE SCAN";
 	this.items=new Array();
-	this.addcmd("[" + msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name.toUpperCase()+"]",undefined,true);
-	this.addcmd("",undefined,true);
 	this.addcmd('All Message Areas','A');
 	this.addcmd("Current Group",'G');
 	this.addcmd('Current Sub','S');
 	set_hotkeys(this);
 	fill_menu(this);
 }
-function Menu_chatsettings()
-{
+menuobj["chatsettings"]=function() {
 	this.title="CHAT SETTINGS";
 	this.items=new Array();
 	this.addcmd("Set Split Screen "+(user.chat_settings&CHAT_SPLITP?"Off":"On"),'S');
@@ -347,11 +281,12 @@ function Menu_chatsettings()
 	this.addcmd("Set Alerts "+(user.chat_settings&CHAT_NOACT?"On":"Off"),'A');
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_DFLT;
 }
 
 /* MENU COMMANDS */
-function do_mainmenu(key)
-{
+var menucmd=[];
+menucmd["main"]=function(key) {
 	switch(key) {
 		case 'F':
 			this.loadMenu("file");
@@ -376,16 +311,54 @@ function do_mainmenu(key)
 			break;
 	}
 }
-function do_favorites(key)
-{
-	switch(key) {
-		case '+':
-			add_favorite();
-			break;
+menucmd["favorites"]=function(key) {
+	var fav=favorites.items[key];
+	if(fav) {
+		this.xtrnsec=fav.xtrnsec;
+		this.loadMenu(fav.menuID);
+		if(fav.itemID >= 0) {
+			key=this.menu.items[fav.itemID].id;
+			this.process(key);
+		}
 	}
 }
-function do_infomenu(key)
-{
+menucmd["addfavorite"]=function(key) {
+	if(favorites.mi == "favorites") {
+		/* dont allow favorites of favorites */
+		return false;
+	}
+	var index=favorites.length;
+
+	if(key == 'M') {
+		favorites.items.push(new Favorite(
+			favorites.mi,
+			favorites.mt,
+			undefined,
+			undefined,
+			this.xtrnsec
+		));
+	} else if(key == 'P') {
+		favorites.items.push(new Favorite(
+			favorites.mi,
+			favorites.mt,
+			favorites.ii,
+			favorites.it,
+			this.xtrnsec
+		));
+	}
+	
+	saveSettings();
+	this.loadMenu("favorites");
+}
+menucmd["delfavorite"]=function(key) {
+	var fav=favorites.items[key];
+	if(fav) {
+		favorites.items.splice(key,1);
+	}
+	saveSettings();
+	this.loadMenu("favorites");
+}
+menucmd["info"]=function(key) {
 	switch(key) 
 	{
 		case 'I':
@@ -422,8 +395,7 @@ function do_infomenu(key)
 			break;
 	}
 }
-function do_userlistmenu(key)
-{
+menucmd["userlist"]=function(key) {
 	switch(key) 
 	{
 		case 'L':
@@ -446,21 +418,18 @@ function do_userlistmenu(key)
 			break;
 	}
 }
-function do_xtrnsecs(key)
-{
-	this.curr_xtrnsec=Number(key);
-	this.loadMenu("xtrnsec",this.curr_xtrnsec);
+menucmd["xtrnsecs"]=function(key) {
+	this.xtrnsec=Number(key);
+	this.loadMenu("xtrnsec");
 }
-function do_xtrnsec(key)
-{
+menucmd["xtrnsec"]=function(key) {
 	clear_screen();
 	var current_passthru=console.ctrlkey_passthru;
-	bbs.exec_xtrn(xtrn_area.sec_list[this.curr_xtrnsec].prog_list[Number(key)].number);
+	bbs.exec_xtrn(xtrn_area.sec_list[this.xtrnsec].prog_list[Number(key)].number);
 	console.ctrlkey_passthru=current_passthru;
 	full_redraw=true;
 }
-function do_filemenu(key)
-{
+menucmd["file"]=function(key) {
 	var i;
 	var j;
 	switch(key) 
@@ -540,13 +509,16 @@ function do_filemenu(key)
 			this.redraw();
 			break;
 		case 'N':
-			this.loadMenu("newfiles",true);
+			this.loadMenu("filedir");
+			this.process=menucmd["scannewfile"];
 			break;
 		case 'F':
-			this.loadMenu("searchfilenames",true);
+			this.loadMenu("filedir");
+			this.process=menucmd["scanfilenames"];
 			break;
 		case 'T':
-			this.loadMenu("searchfiledesc",true);
+			this.loadMenu("filedir");
+			this.process=menucmd["scanfiledesc"];
 			break;
 		case 'D':
 			this.loadMenu("download");
@@ -597,14 +569,13 @@ function do_filemenu(key)
 			this.loadMenu("fileinfo");
 			break;
 		case 'S':
-			this.loadMenu("filesettings",cur);
+			this.loadMenu("filesettings");
 			break;
 		default:
 			break;
 	}
 }
-function do_fileinfo(key)
-{
+menucmd["fileinfo"]=function(key) {
 	switch(key) 
 	{
 		case 'C':
@@ -691,8 +662,7 @@ function do_fileinfo(key)
 			break;
 	}
 }
-function do_filedirmenu1(key)
-{
+menucmd["scannewfile"]=function(key) {
 	switch(key) 
 	{
 		case 'A':
@@ -730,8 +700,7 @@ function do_filedirmenu1(key)
 			break;
 	}
 }
-function do_filedirmenu2(key)
-{
+menucmd["scanfilenames"]=function(key) {
 	switch(key)
 	{
 		case 'A':
@@ -769,8 +738,7 @@ function do_filedirmenu2(key)
 			break;
 	}
 }
-function do_filedirmenu3(key)
-{
+menucmd["scanfiledesc"]=function(key) {
 	switch(key) 
 	{
 		case 'A':
@@ -811,8 +779,7 @@ function do_filedirmenu3(key)
 			break;
 	}
 }
-function do_uploadmenu(key)
-{
+menucmd["upload"]=function(key) {
 	switch(key) {
 		case 'C':	// Current dir
 			clear_screen();
@@ -838,8 +805,7 @@ function do_uploadmenu(key)
 			break;
 	}
 }
-function do_downloadmenu(key)
-{
+menucmd["download"]=function(key) {
 	switch(key) 
 	{
 		case 'B':
@@ -863,8 +829,7 @@ function do_downloadmenu(key)
 			break
 	}
 }
-function do_filesettings(key)
-{
+menucmd["filesettings"]=function(key) {
 	switch(key) 
 	{
 		case 'B':
@@ -878,8 +843,7 @@ function do_filesettings(key)
 			break;
 	}
 }
-function do_messagemenu(key)
-{
+menucmd["message"]=function(key) {
 	var i;
 	var j;
 	message: 
@@ -998,8 +962,7 @@ function do_messagemenu(key)
 			break;
 	}
 }
-function do_searchmsgtxt(key)
-{
+menucmd["searchmsgtxt"]=function(key) {
 	switch(key) 
 	{
 		case 'A':
@@ -1034,8 +997,7 @@ function do_searchmsgtxt(key)
 			break;
 	}
 }
-function do_scantoyou(key)
-{
+menucmd["yourmsgscan"]=function(key) {
 	switch(key) 
 	{
 		case 'A':
@@ -1070,8 +1032,7 @@ function do_scantoyou(key)
 			break;
 	}
 }
-function do_newscan(key)
-{
+menucmd["newmsgscan"]=function(key) {
 	switch(key) 
 	{
 		case 'A':
@@ -1114,8 +1075,7 @@ function do_newscan(key)
 			break;
 	}
 }
-function do_emailtargetmenu(key)
-{
+menucmd["emailtarget"]=function(key) {
 	switch(key) 
 	{
 		case 'S':
@@ -1173,8 +1133,7 @@ function do_emailtargetmenu(key)
 			break;
 	}
 }
-function do_emailmenu(key)
-{
+menucmd["email"]=function(key) {
 	var cur=1;
 	this.menu.current=cur;
 	var i;
@@ -1199,8 +1158,7 @@ function do_emailmenu(key)
 	}
 	cur=this.menu.current;
 }
-function do_chatmenu(key)
-{
+menucmd["chat"]=function(key) {
 	var cur=1;
 	this.menu.current=cur;
 	var i;
@@ -1255,8 +1213,7 @@ function do_chatmenu(key)
 	}
 	cur=this.menu.current;
 }
-function do_chatsettings(key)
-{
+menucmd["chatsettings"]=function(key) {
 	switch(key) 
 	{
 		case 'S':
@@ -1274,8 +1231,7 @@ function do_chatsettings(key)
 			break;
 	}
 }
-function do_settingsmenu(key)
-{
+menucmd["settings"]=function(key) {
 	switch(key) 
 	{
 		case 'U':
@@ -1295,84 +1251,93 @@ function do_settingsmenu(key)
 	}
 }
 
-/* MENU FUNCTIONS */
-function Item_addcmd(text,id,disabled)
-{
-	this.add(text,undefined,settings.menu_width,undefined,undefined,disabled);
-	this.items[this.items.length-1].id=id;
-}
-function set_hotkeys(lb)
-{
-	/* USE FIRST AVAILABLE HOTKEY AS TRIGGER */
-	/* RETURN VALUE = ITEM INDEX FOR MENU COMMAND REFERENCE */
-	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	var index=0;
-	for(var i=0;i<lb.items.length;i++) {
-		if(lb.items[i].disabled) continue;
-		
-		while(bottom.menu.items[hotkeys[index]]) index++;
-		lb.items[i].text="|" + hotkeys[index++] + " " + lb.items[i].text;
-		lb.items[i].retval=i;
+/* MENU INFO */
+var menuinfo=[];
+menuinfo["main"]=function() {
+	var wp=directory(system.text_dir + "cshell/mainmenu.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
 	}
 }
-function fill_menu(lb)
-{
-	if(left.previous.length) offset=5;
-	else offset=4;
-	
-	while(lb.items.length<settings.main_height-offset)
-	{
-		lb.add("","",settings.menu_width,undefined,undefined,true);
+menuinfo["xtrnsec"]=function() {
+	center.clear();
+	if(!xtrn_area.sec_list[left.xtrnsec].prog_list[left.menu.current]) return false;
+	var wp=directory(system.text_dir + "cshell/xtrn/" + 
+			xtrn_area.sec_list[left.xtrnsec].prog_list[left.menu.current].code + ".*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
 	}
-	
-	if(left.previous.length) lb.add(format_opt("Previous Menu",settings.menu_width,-1),KEY_LEFT,settings.menu_width);
-	lb.add(format_opt("Main Menu",settings.menu_width,0),KEY_RIGHT,settings.menu_width);
 }
-function format_opt(str, width, expand)
-{
-	var spaces80="                                                                               ";
-	if(expand == -1) {
-		opt='|< ';
-		var cleaned=str;
-		cleaned=cleaned.replace(/\|/g,'');
-		opt+=str+spaces80.substr(0,width-cleaned.length-2);
-		return opt;
-	} else if(expand == 0) {
-		opt=str;
-		var cleaned=opt;
-		cleaned=cleaned.replace(/\|/g,'');
-		opt+=spaces80.substr(0,width-cleaned.length-2);
-		opt+=' |>';
-		return opt;
-	} else if(expand == 1) {
-		opt=str;
-		var cleaned=opt;
-		cleaned=cleaned.replace(/\|/g,'');
-		opt+=spaces80.substr(0,width-cleaned.length-2);
-		opt+=' |+';
-		return opt;
+menuinfo["xtrnsecs"]=function() {
+	center.clear();
+	if(!xtrn_area.sec_list[left.xtrnsec]) return false;
+	var wp=directory(system.text_dir + "cshell/xtrn/" + 
+			xtrn_area.sec_list[left.xtrnsec].code + ".*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
 	}
-	return(str);
 }
-function todo_getfiles(lib, dir)
-{
-	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
-	return(file_size(path)/22);	/* F_IXBSIZE */
+menuinfo["message"]=function() {
+	var wp=directory(system.text_dir + "cshell/message.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
+		return;
+	}
+	var posx=center.chat.chatroom.x+1;
+	var posy=center.chat.chatroom.y-2;
+	setPosition(posx,posy);
+	displayInfo("\1n\1gGROUP\1h:\1n " + msg_area.grp_list[bbs.curgrp].name);
+	displayInfo("\1n\1gSUB  \1h:\1n " + msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name);
 }
-function clear_screen()
-{
-	/*
-	 * Called whenever a command needs to exit the menu for user interaction.
-	 *
-	 * If you'd like a header before non-menu stuff, this is the place to put
-	 * it.
-	 */
-
-	bbs.sys_status&=~SS_MOFF;
-	bbs.sys_status&=~SS_PAUSEOFF;
-	console.clear(ANSI_NORMAL);
-	
-	/* We are going to a line-mode thing... re-enable CTRL keys. */
+menuinfo["chat"]=function() {
+	var wp=directory(system.text_dir + "cshell/chat.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
+		return;
+	}
+	var posx=center.chat.chatroom.x+1;
+	var posy=center.chat.chatroom.y-2;
+	setPosition(posx,posy);
+	displayInfo("\1n\1gChat Handle\1h:\1n " + user.handle);
+}
+menuinfo["file"]=function() {
+	var wp=directory(system.text_dir + "cshell/file.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
+		return;
+	}
+	var posx=center.chat.chatroom.x+1;
+	var posy=center.chat.chatroom.y-2;
+	setPosition(posx,posy);
+	displayInfo("\1n\1gLIB \1h:\1n " + file_area.lib_list[bbs.curlib].description);
+	displayInfo("\1n\1gDIR \1h:\1n " + file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description);
+}
+menuinfo["email"]=function() {
+	var wp=directory(system.text_dir + "cshell/email.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
+		return;
+	}
+	var posx=center.chat.chatroom.x+1;
+	var posy=center.chat.chatroom.y-2;
+	setPosition(posx,posy);
+	displayInfo("\1n\1gMessages sent\1h:\1n " + user.stats.total_emails);
+	displayInfo("\1n\1gNew Messages\1h:\1n " + user.stats.mail_waiting);
+}
+menuinfo["userlist"]=function() {
+	var wp=directory(system.text_dir + "cshell/userlist.*.bin")[0];
+	if(wp) {
+		center.loadWallPaper(wp);
+		center.redraw();
+		return;
+	}
 }
 
 

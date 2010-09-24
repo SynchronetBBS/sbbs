@@ -14,6 +14,16 @@
 	*		file: <menu_name>.<width>x<height>.bin
 	*	RIGHT WINDOW ICON:
 	*		file: icon.16x10.bin
+	*
+	*	NOTE: for a standard 80 x 24 terminal, menu wallpaper has a maximum
+	*	size of 34 x 22, and the main wallpaper has a maximum size of 60 x 22,
+	*	though these numbers largely depend on the size of the side menu and
+	*	right window. The max width can be determined by this formula:
+	*		WALLPAPER WIDTH = 
+	*			SCREEN COLUMNS - RIGHT WINDOW WIDTH - (SIDE MENU WIDTH + 1) - 2
+	*
+	*		DEFAULT SIDE MENU WIDTH: 25 
+	*		DEFAULT RIGHT WINDOW WIDTH: 18
 	******************************************************************************
 
 	This shell relies on having commservice.js, commclient.js, and all other related
@@ -50,29 +60,31 @@ console.ctrlkey_passthru="+KOPTU";
 
 var cmdlist=new CommandList();
 var settings=new Settings();
-var shortcuts=new Favorites();
-var bottom=new MainMenu();
+var favorites=new Favorites();
+var bottom=new BottomLine();
 var right=new RightWindow();
 var center=new MainWindow();
-var left=new SideMenu();
+var left=new LeftWindow();
 
 /* SHELL FUNCTIONS */
 function init()
 {
 	loadSettings();
-	loadFavorites();
 	
 	bottom.init();
 	right.init();
 	center.init();
 	left.init();
 	
+	if(favorites.items.length > 0) {
+		loadMenu("favorites");
+		showLeftWindow();
+	}
 	redraw();
 }
 function shell()
 {
-	while(1)
-	{
+	while(1) {
 		cycle();
 				
 		var cmd="";
@@ -81,34 +93,54 @@ function shell()
 			/* LEFT MENU COMMAND PROCESSING */
 			switch(cmd)
 			{
-				case KEY_UP:
-					lightBarUp(m);
+			case ctrl('R'): /* CTRL-R (Quick Redraw in SyncEdit) */
+			case ctrl('O'): /* CTRL-O - Pause */
+			case ctrl('U'): /* CTRL-U User List */
+			case ctrl('T'): /* CTRL-T Time Info */
+			case ctrl('K'): /* CTRL-K Control Key Menu */
+			case ctrl('P'): /* Ctrl-P Messages */
+				controlkeys.handle(key);
+				continue;
+			case KEY_UP:
+				lightBarUp(left.menu);
+				break;
+			case KEY_DOWN:
+				lightBarDown(left.menu);
+				break;
+			case KEY_HOME:
+				lightBarHome(left.menu);
+				break;
+			case KEY_END:
+				lightBarEnd(left.menu);
+				break;
+			case KEY_LEFT:
+				previousMenu();
+				break;
+			case KEY_RIGHT:
+			case "Q":
+			case "\x1b":
+				hideLeftWindow();
+				center.restore();
+				bottom.restore();
+				continue;
+			case "+":
+				if(left.currentmenu == "favorites" || 
+					left.currentmenu == "addfavorite" ||
+					left.currentmenu == "removefavorite") {
 					break;
-				case KEY_DOWN:
-					lightBarDown(m);
-					break;
-				case KEY_HOME:
-					lightBarHome(m);
-					break;
-				case KEY_END:
-					lightBarEnd(m);
-					break;
-				case KEY_LEFT:
-					previousMenu();
-					break;
-				case KEY_RIGHT:
-				case "Q":
-				case "\x1b":
-					hideSideMenu();
-					center.restore();
-					bottom.restore();
-					continue;
-				default:
-					if(left.menu.items[cmd]) {
-						var item_id=left.menu.items[cmd].id;
-						left.process(item_id);
-					}
-					break;
+				}
+				favorites.mi=left.currentmenu;
+				favorites.mt=left.menu.title;
+				favorites.ii=left.menu.current;
+				favorites.it=left.menu.items[favorites.ii].text.substr(3);
+				loadMenu("addfavorite");
+				break;
+			default:
+				if(left.menu.items[cmd]) {
+					var item_id=left.menu.items[cmd].id;
+					left.process(item_id);
+				}
+				break;
 			}
 		}
 		
@@ -125,9 +157,15 @@ function shell()
 		case ctrl('K'): /* CTRL-K Control Key Menu */
 		case ctrl('P'): /* Ctrl-P Messages */
 			controlkeys.handle(key);
-			break;
+			continue;
 		case " ":
 			redraw();
+			break;
+		case "-":
+			if(!favorites.items.length > 0) {
+				break;
+			}
+			loadMenu("delfavorite");
 			break;
 		case "\x1b":
 		case "Q":
@@ -141,18 +179,11 @@ function shell()
 		}
 		
 		if(!left.menu) continue;
-		var m=left.menu;
-		if(!left.menu_shown) showSideMenu();
+		if(!left.menu_shown) showLeftWindow();
 		if(!left.title_shown) left.drawTitle();
 		
-		/* DISPLAY CURRENT SECTION INFO */
-		switch(left.currentmenu) {
-			case "xtrnsec":
-				showXtrnProgInfo(m);
-				break;
-			case "xtrnsecs":
-				showXtrnSecInfo(m);
-				break;
+		if(menuinfo[left.currentmenu]) {
+			menuinfo[left.currentmenu]();
 		}
 	}
 }
@@ -182,6 +213,10 @@ function redraw()
 	right.redraw();
 	left.redraw();
 	bottom.redraw();
+	
+	if(menuinfo[left.currentmenu]) {
+		menuinfo[left.currentmenu]();
+	}
 	
 	full_redraw=false;
 }
@@ -233,6 +268,58 @@ function drawOutline()
 		console.putmsg(outline,P_SAVEATR);
 	}
 }
+function displayInfo(text)
+{
+	console.putmsg(text);
+	console.popxy();
+	console.down();
+	console.pushxy();
+}
+function setPosition(x,y)
+{
+	console.gotoxy(x,y);
+	console.pushxy();
+}
+function logoff()
+{
+	if(bbs.batch_dnload_total) {
+		if(console.yesno(bbs.text(Menu_downloadBatchQ))) {
+			bbs.batch_download();
+			bbs.logoff();
+		}
+	} else bbs.hangup();
+}
+function loadMenu()
+{
+	return left.loadMenu.apply(left,arguments);
+}
+function chatInput()
+{
+	showChat();
+	while(center.in_chat) {
+		cycle();
+		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
+		if(!key) continue;
+		
+		switch(key) {
+		case '\r':
+			if(!center.chat.input_line.buffer.length) {
+				center.in_chat=false;
+			}
+			break;
+		case '\x09':	/* CTRL-I TAB */
+			center.toggleChannel();
+			continue;
+		case '\x1b':
+			center.in_chat=false;
+			break;
+		default:
+			break;
+		}
+		center.chat.processKey(key);
+	}
+	hideChat();
+}
 
 /* MAIN MENU */
 function hideChat()
@@ -265,7 +352,6 @@ function stretchCenter(height)
 }
 function expandCenter(width,side)
 {
-	log("expanding chat: " + width);
 	var cols=center.chat.chatroom.columns;
 	var x=center.chat.chatroom.x;
 	if(side=="left"){
@@ -278,30 +364,9 @@ function expandCenter(width,side)
 	center.chat.resize(cols,undefined,x,undefined);
 }
 
-/* MENU ITEM INFORMATION */
-function showXtrnSecInfo(m)
-{
-	if(xtrn_area.sec_list[left.curr_xtrnsec]) {
-		center.loadWallPaper(
-							system.text_dir + "cshell/xtrn/" + 
-							xtrn_area.sec_list[left.curr_xtrnsec].code + ".*.bin");
-		center.redraw();
-	}
-}
-function showXtrnProgInfo(m)
-{
-	if(xtrn_area.sec_list[left.curr_xtrnsec].prog_list[m.current]) {
-		center.loadWallPaper(
-							system.text_dir + "cshell/xtrn/" + 
-							xtrn_area.sec_list[left.curr_xtrnsec].prog_list[m.current].code + ".*.bin");
-		center.redraw();
-	}
-}
-
 /* LEFT MENU */
-function hideSideMenu()
+function hideLeftWindow()
 {
-	log("hiding side menu");
 	expandCenter(settings.menu_width+1,"left");
 	delete left.menu;
 	left.currentmenu="";
@@ -309,9 +374,8 @@ function hideSideMenu()
 	left.title_shown=false;
 	left.previous=[];
 }
-function showSideMenu()
+function showLeftWindow()
 {
-	log("showing side menu");
 	expandCenter(-(settings.menu_width+1),"left");
 	drawSeparator(settings.menu_width+2,2,settings.main_height);
 	left.menu_shown=true;
@@ -354,33 +418,107 @@ function previousMenu()
 {
 	left.previousMenu();
 }
+function addcmd(text,id,disabled)
+{
+	this.add(text,undefined,settings.menu_width,undefined,undefined,disabled);
+	this.items[this.items.length-1].id=id;
+}
+function fill_menu(lb)
+{
+	if(left.previous.length) offset=5;
+	else offset=4;
+	
+	while(lb.items.length<settings.main_height-offset)
+	{
+		lb.add("","",settings.menu_width,undefined,undefined,true);
+	}
+	
+	if(left.previous.length) lb.add(format_opt("Previous Menu",settings.menu_width,-1),KEY_LEFT,settings.menu_width);
+	lb.add(format_opt("Main Menu",settings.menu_width,0),KEY_RIGHT,settings.menu_width);
+}
+function set_hotkeys(lb)
+{
+	/* USE FIRST AVAILABLE HOTKEY AS TRIGGER */
+	/* RETURN VALUE = ITEM INDEX FOR MENU COMMAND REFERENCE */
+	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	var index=0;
+	for(var i=0;i<lb.items.length;i++) {
+		if(lb.items[i].disabled) continue;
+		
+		while(bottom.menu.items[hotkeys[index]]) index++;
+		lb.items[i].text="|" + hotkeys[index++] + " " + lb.items[i].text;
+		lb.items[i].retval=i;
+	}
+}
+
+/* MENU FUNCTIONS */
+function format_opt(str, width, expand)
+{
+	var spaces80="                                                                               ";
+	if(expand == -1) {
+		opt='|< ';
+		var cleaned=str;
+		cleaned=cleaned.replace(/\|/g,'');
+		opt+=str+spaces80.substr(0,width-cleaned.length-2);
+		return opt;
+	} else if(expand == 0) {
+		opt=str;
+		var cleaned=opt;
+		cleaned=cleaned.replace(/\|/g,'');
+		opt+=spaces80.substr(0,width-cleaned.length-2);
+		opt+=' |>';
+		return opt;
+	} else if(expand == 1) {
+		opt=str;
+		var cleaned=opt;
+		cleaned=cleaned.replace(/\|/g,'');
+		opt+=spaces80.substr(0,width-cleaned.length-2);
+		opt+=' |+';
+		return opt;
+	}
+	return(str);
+}
+function todo_getfiles(lib, dir)
+{
+	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
+	return(file_size(path)/22);	/* F_IXBSIZE */
+}
+function clear_screen()
+{
+	/*
+	 * Called whenever a command needs to exit the menu for user interaction.
+	 *
+	 * If you'd like a header before non-menu stuff, this is the place to put
+	 * it.
+	 */
+
+	bbs.sys_status&=~SS_MOFF;
+	bbs.sys_status&=~SS_PAUSEOFF;
+	console.clear(ANSI_NORMAL);
+	full_redraw=true;
+	
+	/* We are going to a line-mode thing... re-enable CTRL keys. */
+}
 
 /* USER SETTINGS */
 function saveSettings() 
 {
-	if(file_exists(settings_file.name)) {
-		settings_file.open('w+',true);
-		if(!settings_file.is_open) {
-			log("error opening user settings",LOG_WARNING);
-			return;
-		}
-		settings_file.close();
+	settings_file.open('w+',false);
+	if(!settings_file.is_open) {
+		log("error opening user settings",LOG_WARNING);
+		return;
 	}
-}
-function saveFavorites()
-{
-	if(file_exists(settings_file.name)) {
-		settings_file.open('w+',true);
-		if(!settings_file.is_open) {
-			log("error opening user settings",LOG_WARNING);
-			return;
-		}
-		for each(var s in this.shortcuts) {
-			var values=[s.command];
-			settings_file.iniSetValue("shortcuts",s.text,s.parameters.join(","));
-		}
-		settings_file.close();
+	for(var f=0;f<favorites.items.length;f++) {
+		var fav=favorites.items[f];
+		var value=
+			fav.menuID + "," + 
+			fav.menuTitle + "," + 
+			fav.itemID + "," + 
+			fav.itemTitle + "," + 
+			fav.xtrnsec;
+		settings_file.iniSetValue("favorites",f,value);
 	}
+	settings_file.close();
 }
 function loadSettings()
 {
@@ -390,75 +528,13 @@ function loadSettings()
 			log("error opening user settings",LOG_WARNING);
 			return;
 		}
-		var data=settings_file.iniGetObject("settings");
+		var set=settings_file.iniGetObject("settings");
+		var fav=settings_file.iniGetObject("favorites");
+		settings=new Settings(set);
+		favorites=new Favorites(fav);
 		settings_file.close();
-		settings=new Settings(data);
 	}
 }
-function loadFavorites()
-{
-	if(file_exists(settings_file.name)) {
-		settings_file.open('r',true);
-		if(!settings_file.is_open) {
-			log("error opening user settings",LOG_WARNING);
-			return;
-		}
-		var data=settings_file.iniGetObject("shortcuts");
-		settings_file.close();
-		shortcuts=new Favorites(data);
-	}
-}
-function add_favorite()
-{
- // ToDo: create an interface for adding custom user commands
-}
-
-/* COMMAND LIST FUNCTIONS */
-function loadXtrn()
-{
-}
-function loadMenu()
-{
-	return left.loadMenu.apply(left,arguments);
-}
-function chatInput()
-{
-	showChat();
-	while(center.in_chat) {
-		cycle();
-		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-		if(!key) continue;
-		
-		switch(key) {
-		case '\r':
-		case '\n':
-			if(!center.chat.input_line.buffer.length) {
-				center.in_chat=false;
-			}
-			break;
-		case '\x09':	/* CTRL-I TAB */
-			center.toggleChannel();
-			continue;
-		case '\x1b':
-			center.in_chat=false;
-			break;
-		default:
-			break;
-		}
-		center.chat.processKey(key);
-	}
-	hideChat();
-}
-function logoff()
-{
-	if(bbs.batch_dnload_total) {
-		if(console.yesno(bbs.text(Menu_downloadBatchQ))) {
-			bbs.batch_download();
-			bbs.logoff();
-		}
-	} else bbs.hangup();
-}
-
 
 init();
 shell();

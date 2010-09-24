@@ -1,5 +1,5 @@
 /* MAIN MENU */
-function MainMenu()		
+function BottomLine()		
 {
 	this.x=1;
 	this.y=console.screen_rows;
@@ -17,7 +17,7 @@ function MainMenu()
 		menu_items["V"]=new Shortcut("Fa|vorites","menu","favorites");
 		menu_items["S"]=new Shortcut("|Settings","menu","settings");
 		menu_items["L"]=new Shortcut("|Logoff","logoff","");
-		this.menu=new Menu_bottom(menu_items,9,console.screen_rows);	
+		this.menu=new MainMenu(menu_items,9,console.screen_rows);	
 	}
 	this.restore=function()
 	{
@@ -41,6 +41,59 @@ function MainMenu()
 	}
 	
 }
+function MainMenu(items,x,y)
+{
+	this.items=items;
+	this.x=x;
+	this.y=y;
+	
+	this.disable=function(item)
+	{
+		this.items[item].enabled=false;
+	}
+	this.enable=function(item)
+	{
+		this.items[item].enabled=true;
+	}
+	this.clear=function()
+	{
+		console.gotoxy(this);
+		console.cleartoeol(settings.shell_bg);
+	}
+	this.draw=function()
+	{
+		console.gotoxy(this);
+		console.pushxy();
+		console.cleartoeol(settings.shell_bg);
+		console.popxy();
+		for(var i in this.items) {
+			if(this.items[i].enabled==true) {
+				var hc=settings.main_hkey_color;
+				var tc=settings.main_text_color;
+				var bg=settings.shell_bg;
+				
+				var item=this.items[i];
+				for(var c=0;c<item.text.length;c++) {
+					if(item.text[c]=="|") {
+						console.attributes=bg + hc;
+						c++;
+					} else {
+						console.attributes=bg + tc;
+					}
+					console.write(item.text[c]);
+				}
+				console.write(" ");
+			}
+		}
+		console.attributes=ANSI_NORMAL;
+	}
+}
+function CommandList()
+{
+	this["menu"]=loadMenu;
+	this["chat"]=chatInput;
+	this["logoff"]=logoff;
+}
 function Shortcut() 
 {
 	this.enabled=true;
@@ -58,25 +111,36 @@ function Shortcut()
 function RightWindow()
 {
 	this.clock=new DigitalClock();
-	this.graphic;
-	this.x=console.screen_columns-18;
+	this.width=18;
+	this.logo=new Graphic(this.width-2,10);
+	this.alerts=[];
+	this.update=true;
+	
+	this.x=console.screen_columns-this.width;
 	this.y=2;
 	
 	this.init=function()
 	{
 		this.clock.init(this.x,this.y+10,LIGHTBLUE);
-		this.graphic=new Graphic(16,10);
-		this.graphic.load(system.text_dir + "cshell/logo.16x10.bin");
+		this.logo.load(system.text_dir + "cshell/logo.16x10.bin");
 	}
 	this.redraw=function()
 	{
-		drawSeparator(console.screen_columns-18,2,console.screen_rows-2);
+		drawSeparator(console.screen_columns-this.width,2,console.screen_rows-2);
 		this.clock.update(true);
-		this.graphic.draw(this.x+1,this.y);
+		this.logo.draw(this.x+1,this.y);
+		this.drawAlerts();
 	}
 	this.cycle=function()
 	{
 		this.clock.update();
+		if(this.update) {
+			this.drawAlerts();
+		}
+	}
+	this.drawAlerts=function()
+	{
+		this.update=false;
 	}
 }
 
@@ -84,7 +148,8 @@ function RightWindow()
 function MainWindow()
 {
 	this.in_chat=false;
-	this.wallpaper=false;
+	this.wp=false;
+	this.wp_shown=true;
 	this.chat=new ChatEngine(root);
 	
 	this.init=function()
@@ -92,7 +157,7 @@ function MainWindow()
 		this.chat.init(settings.main_width,settings.main_height-3,2,5);
 		this.chat.input_line.init(9,console.screen_rows,console.screen_columns-9,"\0017","\1k");
 		this.chat.joinChan("BBS MAIN",user.alias,user.name);
-		this.loadWallPaper(system.text_dir + "cshell/main.*.bin");
+		this.loadWallPaper(directory(system.text_dir + "cshell/main.*.bin")[0]);
 		this.chat.chatroom.active=false;
 	}
 	this.drawTitle=function()
@@ -112,21 +177,31 @@ function MainWindow()
 		this.chat.input_line.toggle();
 		this.drawTitle();
 	}
+	this.clear=function()
+	{
+		var posx=center.chat.chatroom.x;
+		var posy=center.chat.chatroom.y-3;
+		clearBlock(posx,posy,center.chat.chatroom.columns,center.chat.chatroom.rows+3);
+		this.wp=false;
+		this.wp_shown=false;
+	}
 	this.cycle=function()
 	{
 		this.chat.cycle();
 	}
 	this.restore=function()
 	{
-		this.loadWallPaper(system.text_dir + "cshell/main.*.bin");
+		this.loadWallPaper(directory(system.text_dir + "cshell/main.*.bin")[0]);
 		this.redraw();
 	}
 	this.redraw=function()
 	{
 		if(this.in_chat) {
 			this.drawChat();
-		} else {
+		} else if(this.wp) {
 			this.drawWallPaper();
+		} else {
+			this.clear();
 		}
 	}
 	
@@ -137,23 +212,35 @@ function MainWindow()
 	}
 	this.loadWallPaper=function(file)
 	{
-		file=directory(file);
-		var width=0;
-		var height=0;
-		if(file.length) {
-			var size=file_getname(file[0]).split(".")[1].split("x");
-			width=Number(size[0]);
-			height=Number(size[1]);
+		var width=this.chat.chatroom.columns;
+		var height=this.chat.chatroom.rows+3;
+		if(file_exists(file)) {
+			var size=file_getname(file).split(".")[1].split("x");
+			if(size[0]) width=Number(size[0]);
+			if(size[1]) height=Number(size[1]);
 		}
-		this.wallpaper=new Graphic(width,height);
-		this.wallpaper.load(file);
+		this.wp=new Graphic(width,height);
+		this.wp.load(file);
 	}
 	this.drawWallPaper=function()
 	{
-		this.wallpaper.draw(this.chat.chatroom.x,this.chat.chatroom.y-3);
+		var posx=this.chat.chatroom.x;
+		var posy=this.chat.chatroom.y-3;
+		var gapx=this.chat.chatroom.columns-this.wp.width;
+		var gapy=(this.chat.chatroom.rows+3)-this.wp.height;
+		if(gapx != 0 || gapy != 0) {
+			posx+=parseInt(gapx/2,10);
+			posy+=parseInt(gapy/2,10);
+		}
+		if(this.wp.width > this.chat.chatroom.columns || 
+			this.wp.height > this.chat.chatroom.rows+3) return false;
+		this.wp.draw(posx,posy);
+		this.wp_shown=true;
 	}
 }
-function SideMenu()
+
+/* SIDE MENU */
+function LeftWindow()
 {
 	var msg_rows=0;
 	var msg_timeouts=new Array();
@@ -166,35 +253,38 @@ function SideMenu()
 	this.title_shown=false;
 
 	this.previous=[];
-	this.curr_xtrnsec=0;
+	this.xtrnsec=0;
 	this.currentmenu;
 	this.menu;
 	this.process;
 
 	this.init=function()
 	{
-		Menu_sidebar.prototype=new Lightbar;
-		Menu_main.prototype=new Menu_sidebar;
-		Menu_file.prototype=new Menu_sidebar;
-		Menu_filedir.prototype=new Menu_sidebar;
-		Menu_settings.prototype=new Menu_sidebar;
-		Menu_email.prototype=new Menu_sidebar;
-		Menu_message.prototype=new Menu_sidebar;
-		Menu_chat.prototype=new Menu_sidebar;
-		Menu_xtrnsecs.prototype=new Menu_sidebar;
-		Menu_xtrnsec.prototype=new Menu_sidebar;
-		Menu_info.prototype=new Menu_sidebar;
-		Menu_userlist.prototype=new Menu_sidebar;
-		Menu_emailtarget.prototype=new Menu_sidebar;
-		Menu_download.prototype=new Menu_sidebar;
-		Menu_upload.prototype=new Menu_sidebar;
-		Menu_fileinfo.prototype=new Menu_sidebar;
-		Menu_filesettings.prototype=new Menu_sidebar;
-		Menu_newmsgscan.prototype=new Menu_sidebar;
-		Menu_yourmsgscan.prototype=new Menu_sidebar;
-		Menu_searchmsgtxt.prototype=new Menu_sidebar;
-		Menu_chatsettings.prototype=new Menu_sidebar;
-		Menu_favorites.prototype=new Menu_sidebar;
+		SideBar.prototype=new Lightbar;
+		
+		menuobj["main"].prototype=new SideBar;
+		menuobj["file"].prototype=new SideBar;
+		menuobj["filedir"].prototype=new SideBar;
+		menuobj["settings"].prototype=new SideBar;
+		menuobj["email"].prototype=new SideBar;
+		menuobj["message"].prototype=new SideBar;
+		menuobj["chat"].prototype=new SideBar;
+		menuobj["xtrnsecs"].prototype=new SideBar;
+		menuobj["xtrnsec"].prototype=new SideBar;
+		menuobj["info"].prototype=new SideBar;
+		menuobj["userlist"].prototype=new SideBar;
+		menuobj["emailtarget"].prototype=new SideBar;
+		menuobj["download"].prototype=new SideBar;
+		menuobj["upload"].prototype=new SideBar;
+		menuobj["fileinfo"].prototype=new SideBar;
+		menuobj["filesettings"].prototype=new SideBar;
+		menuobj["newmsgscan"].prototype=new SideBar;
+		menuobj["yourmsgscan"].prototype=new SideBar;
+		menuobj["searchmsgtxt"].prototype=new SideBar;
+		menuobj["chatsettings"].prototype=new SideBar;
+		menuobj["favorites"].prototype=new SideBar;
+		menuobj["addfavorite"].prototype=new SideBar;
+		menuobj["delfavorite"].prototype=new SideBar;
 	}
 	this.cycle=function()
 	{
@@ -226,145 +316,49 @@ function SideMenu()
 			this.loadMenu(this.previous.pop());
 		}
 	}
-	this.loadMenu=function(name,value)
+	this.loadMenu=function()
 	{
 		if(this.currentmenu) {
-			if(this.currentmenu==name) return false;
+			if(this.currentmenu==arguments[0]) return false;
 			this.previous.push(this.currentmenu);
 		}
-		this.currentmenu=name;
-		switch(name)
-		{
-			case "main":
-				this.menu=new Menu_main;
-				this.process=do_mainmenu;
-				bbs.node_action=NODE_MAIN;
-				break;
-			case "favorites":
-				this.menu=new Menu_favorites;
-				this.process=do_favorites;
-				break;
-			case "xtrnsecs":
-				this.menu=new Menu_xtrnsecs;
-				this.process=do_xtrnsecs;
-				bbs.node_action=NODE_XTRN;
-				break;
-			case "xtrnsec":
-				this.menu=new Menu_xtrnsec(value);
-				this.process=do_xtrnsec;
-				bbs.node_action=NODE_XTRN;
-				break;
-			case "file":
-				this.menu=new Menu_file;
-				this.process=do_filemenu;
-				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "message":
-				this.menu=new Menu_message;
-				this.process=do_messagemenu;
-				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
-				break;
-			case "chat":
-				this.menu=new Menu_chat;
-				this.process=do_chatmenu;
-				bbs.node_action=NODE_CHAT;
-				center.loadWallPaper(system.text_dir + "cshell/chat.*.bin");
-				break;
-			case "email":
-				this.menu=new Menu_email;
-				this.process=do_emailmenu;
-				center.loadWallPaper(system.text_dir + "cshell/email.*.bin");
-				break;
-			case "emailtarget":
-				this.menu=new Menu_emailtarget;
-				this.process=do_emailtargetmenu;
-				center.loadWallPaper(system.text_dir + "cshell/email.*.bin");
-				break;
-			case "fileinfo":
-				this.menu=new Menu_fileinfo;
-				this.process=do_fileinfo;
-				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "settings":
-				this.menu=new Menu_settings;
-				this.process=do_settingsmenu;
-				bbs.node_action=NODE_DFLT;
-				center.loadWallPaper(system.text_dir + "cshell/settings.*.bin");
-				break;
-			case "filedir":
-				this.menu=new Menu_filedir(value);
-				this.process=do_filedirmenu;
-				bbs.node_action=NODE_XFER;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "info":
-				this.menu=new Menu_info;
-				this.process=do_infomenu;
-				center.loadWallPaper(system.text_dir + "cshell/info.*.bin");
-				break;
-			case "userlist":
-				this.menu=new Menu_userlist;
-				this.process=do_userlistmenu;
-				center.loadWallPaper(system.text_dir + "cshell/userlist.*.bin");
-				break;
-			case "fileinfo":
-				this.menu=new Menu_fileinfo;
-				this.process=do_fileinfo;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "chatsettings":
-				this.menu=new Menu_chatsettings;
-				this.process=do_chatsettings;
-				center.loadWallPaper(system.text_dir + "cshell/chat.*.bin");
-				break;
-			case "searchmsgtxt":
-				this.menu=new Menu_searchmsgtxt;
-				this.process=do_searchmsgtxt;
-				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
-				break;
-			case "scantoyou":
-				this.menu=new Menu_yourmsgscan;
-				this.process=do_scantoyou;
-				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
-				break;
-			case "newscan":
-				this.menu=new Menu_newmsgscan;
-				this.process=do_newscan;
-				center.loadWallPaper(system.text_dir + "cshell/message.*.bin");
-				break;
-			case "download":
-				this.menu=new Menu_download;
-				this.process=do_downloadmenu;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "filesettings":
-				this.menu=new Menu_filesettings(value);
-				this.process=do_filesettings;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			case "upload":
-				this.menu=new Menu_upload;
-				this.process=do_uploadmenu;
-				center.loadWallPaper(system.text_dir + "cshell/file.*.bin");
-				break;
-			default:
-				log("menu not found: " + name);
-				return false;
+		this.currentmenu=arguments[0];
+		this.process=menucmd[arguments[0]];
+		this.menu=new menuobj[arguments[0]];
+		if(this.menu.no_action) {
+			bbs.node_action=this.menu.node_action;
 		}
 		this.title_shown=false;
+		if(center.wp_shown) center.clear();
 	}
-	
 }
-
-/* SHORTCUT COMMAND FUNCTIONS */
-function CommandList()
+function SideBar()
 {
-	this["menu"]=loadMenu;
-	this["chat"]=chatInput;
-	this["xtrn"]=loadXtrn;
-	this["logoff"]=logoff;
+	this.lpadding="";
+	this.rpadding="";
+	this.fg=settings.menu_fg;
+	this.bg=settings.menu_bg;
+	this.hfg=settings.menu_hfg;
+	this.hbg=settings.menu_hbg;
+	this.width=settings.menu_width;
+	this.xpos=settings.menu_x;
+	this.ypos=settings.menu_y;
+	this.hotkeys=
+		KEY_LEFT
+		+KEY_RIGHT
+		+KEY_UP
+		+KEY_DOWN
+		+"\b\x7f\x1b<>Q+-"
+		+ctrl('O')
+		+ctrl('U')
+		+ctrl('T')
+		+ctrl('K')
+		+ctrl('P');
+	for(var i in bottom.menu.items) {
+		this.hotkeys+=i;
+	}
+	this.addcmd=addcmd;
+	this.wp_shown=false;
 }
 
 /* DEFAULT USER SETTINGS */
@@ -397,10 +391,24 @@ function Settings(list)
 }
 function Favorites(list)
 {
+	this.items=[];
+	
 	for(var s in list) {
-		var hkey=getHotkey(s);
 		var parameters=list[s].split(",");
-		this[hkey]=new Shortcut(s,parameters.shift());
-		this[hkey].parameters=parameters;
+		var menuID=parameters.shift();
+		var menuTitle=parameters.shift();
+		var itemID=parameters.shift();
+		var itemTitle=parameters.shift();
+		var xtrnsec=parameters.shift();
+		
+		this.items.push(new Favorite(menuID,menuTitle,itemID,itemTitle,xtrnsec));
 	}
+}
+function Favorite(menuID,menuTitle,itemID,itemTitle,xtrnsec)
+{
+	this.menuID=menuID;
+	this.menuTitle=menuTitle;
+	this.itemID=itemID;
+	this.itemTitle=itemTitle;
+	this.xtrnsec=xtrnsec;
 }
