@@ -261,30 +261,9 @@ function LeftWindow()
 	this.init=function()
 	{
 		SideBar.prototype=new Lightbar;
-		
-		menuobj["main"].prototype=new SideBar;
-		menuobj["file"].prototype=new SideBar;
-		menuobj["filedir"].prototype=new SideBar;
-		menuobj["settings"].prototype=new SideBar;
-		menuobj["email"].prototype=new SideBar;
-		menuobj["message"].prototype=new SideBar;
-		menuobj["chat"].prototype=new SideBar;
-		menuobj["xtrnsecs"].prototype=new SideBar;
-		menuobj["xtrnsec"].prototype=new SideBar;
-		menuobj["info"].prototype=new SideBar;
-		menuobj["userlist"].prototype=new SideBar;
-		menuobj["emailtarget"].prototype=new SideBar;
-		menuobj["download"].prototype=new SideBar;
-		menuobj["upload"].prototype=new SideBar;
-		menuobj["fileinfo"].prototype=new SideBar;
-		menuobj["filesettings"].prototype=new SideBar;
-		menuobj["newmsgscan"].prototype=new SideBar;
-		menuobj["yourmsgscan"].prototype=new SideBar;
-		menuobj["searchmsgtxt"].prototype=new SideBar;
-		menuobj["chatsettings"].prototype=new SideBar;
-		menuobj["favorites"].prototype=new SideBar;
-		menuobj["addfavorite"].prototype=new SideBar;
-		menuobj["delfavorite"].prototype=new SideBar;
+		for(var m in menuobj) {
+			menuobj[m].prototype=new SideBar;
+		}
 	}
 	this.cycle=function()
 	{
@@ -365,7 +344,6 @@ function SideBar()
 function Settings(list)
 {
 	this.shell_bg=BG_BROWN;
-	this.shell_fg=BROWN;
 	
 	this.main_hkey_color=YELLOW;
 	this.main_text_color=BLACK;

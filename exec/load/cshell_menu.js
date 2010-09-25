@@ -99,6 +99,9 @@ menuobj["settings"]=function() {
 	this.items=new Array();
 	this.addcmd("User Configuration","U");
 	this.addcmd("Minute Bank","B");
+	this.addcmd("File Settings","F");
+	this.addcmd("Chat Settings","C");
+	this.addcmd("Shell Settings","S");
 	set_hotkeys(this);
 	fill_menu(this);
 	this.node_action=NODE_DFLT;
@@ -283,6 +286,78 @@ menuobj["chatsettings"]=function() {
 	fill_menu(this);
 	this.node_action=NODE_DFLT;
 }
+menuobj["shellsettings"]=function() {
+	this.title="COLOR SETTINGS";
+	this.items=new Array();
+	this.addcmd("Shell Background","sbg");
+	this.addcmd("Main Hotkeys","mhk");
+	this.addcmd("Main Foreground","mtx");
+	this.addcmd("Menu Foreground","mfg");
+	this.addcmd("Menu Background","mbg");
+	this.addcmd("Lightbar Foreground","lfg");
+	this.addcmd("Lightbar Background","lbg");
+	this.addcmd("Local Chat","cl");
+	this.addcmd("Remote Chat","cr");
+	this.addcmd("Global Chat","cg");
+	this.addcmd("Private Chat","cp");
+	this.addcmd("",undefined,true);
+	this.addcmd("Save Settings","s");
+	set_hotkeys(this);
+	fill_menu(this);
+	this.node_action=NODE_DFLT;
+}
+menuobj["setcolorbg"]=function() {
+	this.title="BACKGROUND COLORS";
+	this.items=new Array();
+	this.addcmd("BLACK","BG_BLACK");
+	this.addcmd("BLUE","BG_BLUE");
+	this.addcmd("GRAY","BG_GRAY");
+	this.addcmd("GREEN","BG_GREEN");
+	this.addcmd("BROWN","BG_BROWN");
+	this.addcmd("RED","BG_RED");
+	this.addcmd("CYAN","BG_CYAN");
+	this.addcmd("MAGENTA","BG_MAGENTA");
+	set_hotkeys(this);
+	fill_menu(this);
+	this.node_action=NODE_DFLT;
+}
+menuobj["setcolorfbg"]=function() {
+	this.title="COLORS";
+	this.items=new Array();
+	this.addcmd("BLACK","BLACK");
+	this.addcmd("BLUE","BLUE");
+	this.addcmd("GRAY","GRAY");
+	this.addcmd("GREEN","GREEN");
+	this.addcmd("BROWN","BROWN");
+	this.addcmd("RED","RED");
+	this.addcmd("CYAN","CYAN");
+	this.addcmd("MAGENTA","MAGENTA");
+	set_hotkeys(this);
+	fill_menu(this);
+	this.node_action=NODE_DFLT;
+}
+menuobj["setcolorfg"]=function() {
+	this.title="FOREGROUND COLORS";
+	this.items=new Array();
+	this.addcmd("BLACK","BLACK");
+	this.addcmd("BLUE","BLUE");
+	this.addcmd("LIGHT BLUE","LIGHTBLUE");
+	this.addcmd("LIGHT GRAY","LIGHTGRAY");
+	this.addcmd("DARK GRAY","DARKGRAY");
+	this.addcmd("GREEN","GREEN");
+	this.addcmd("LIGHT GREEN","LIGHTGREEN");
+	this.addcmd("RED","RED");
+	this.addcmd("LIGHT RED","LIGHTRED");
+	this.addcmd("CYAN","CYAN");
+	this.addcmd("LIGHT CYAN","LIGHTCYAN");
+	this.addcmd("YELLOW","YELLOW");
+	this.addcmd("BROWN","BROWN");
+	this.addcmd("MAGENTA","MAGENTA");
+	this.addcmd("LIGHT MAGENTA","LIGHTMAGENTA");
+	set_hotkeys(this);
+	fill_menu(this);
+	this.node_action=NODE_DFLT;
+}
 
 /* MENU COMMANDS */
 var menucmd=[];
@@ -320,6 +395,7 @@ menucmd["favorites"]=function(key) {
 			key=this.menu.items[fav.itemID].id;
 			this.process(key);
 		}
+		this.loadMenu("favorites");
 	}
 }
 menucmd["addfavorite"]=function(key) {
@@ -424,10 +500,8 @@ menucmd["xtrnsecs"]=function(key) {
 }
 menucmd["xtrnsec"]=function(key) {
 	clear_screen();
-	var current_passthru=console.ctrlkey_passthru;
 	bbs.exec_xtrn(xtrn_area.sec_list[this.xtrnsec].prog_list[Number(key)].number);
-	console.ctrlkey_passthru=current_passthru;
-	full_redraw=true;
+	console.ctrlkey_passthru=console.ctrlkey_passthru;
 }
 menucmd["file"]=function(key) {
 	var i;
@@ -931,10 +1005,10 @@ menucmd["message"]=function(key) {
 			this.redraw();
 			break;
 		case 'N':
-			this.loadMenu("newscan");
+			this.loadMenu("newmsgscan");
 			break;
 		case 'Y':
-			this.loadMenu("scantoyou");
+			this.loadMenu("yourmsgscan");
 			break;
 		case 'T':
 			this.loadMenu("searchmsgtxt");
@@ -1004,8 +1078,11 @@ menucmd["yourmsgscan"]=function(key) {
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
 			for(j=0; j<msg_area.grp_list.length; j++) {
-				for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
-					bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
+				for(i=0; i<msg_area.grp_list[j].sub_list.length; i++) {
+					log("scanning base: " + i);
+					log("scanning group: " + j);
+					bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_TOYOU);
+				}
 			}
 			this.redraw();
 			break;
@@ -1248,8 +1325,79 @@ menucmd["settings"]=function(key) {
 			bbs.time_bank();
 			this.redraw();
 			break;
+		case 'F':
+			this.loadMenu("filesettings");
+			break;
+		case 'C':
+			this.loadMenu("chatsettings");
+			break;
+		case 'S':
+			this.loadMenu("shellsettings");
+			break;
 	}
 }
+menucmd["shellsettings"]=function(key) {
+	switch(key) 
+	{
+	case "sbg":
+		settings.temp="shell_bg";
+		this.loadMenu("setcolorbg");
+		break;
+	case "mhk":
+		settings.temp="main_hkey_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "mtx":
+		settings.temp="main_text_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "mfg":
+		settings.temp="menu_fg";
+		this.loadMenu("setcolorfg");
+		break;
+	case "mbg":
+		settings.temp="menu_bg";
+		this.loadMenu("setcolorbg");
+		break;
+	case "lfg":
+		settings.temp="menu_hfg";
+		this.loadMenu("setcolorfg");
+		break;
+	case "lbg":
+		settings.temp="menu_hbg";
+		this.loadMenu("setcolorfbg");
+		break;
+	case "cl":
+		settings.temp="chat_local_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "cr":
+		settings.temp="chat_remote_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "cg":
+		settings.temp="chat_global_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "cp":
+		settings.temp="chat_private_color";
+		this.loadMenu("setcolorfg");
+		break;
+	case "s":
+		saveSettings();
+		break;
+	}
+}
+menucmd["setcolorfg"]=function(key) {
+	settings[settings.temp]=getColor(key);
+	this.init();
+	var current=this.currentmenu;
+	this.currentmenu="";
+	this.loadMenu(current);
+	full_redraw=true;
+}
+menucmd["setcolorbg"]=menucmd["setcolorfg"];
+menucmd["setcolorfbg"]=menucmd["setcolorfg"];
 
 /* MENU INFO */
 var menuinfo=[];

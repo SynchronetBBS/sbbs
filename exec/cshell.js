@@ -54,9 +54,6 @@ var screen_rows=console.screen_rows;
 var screen_columns=console.screen_columns;
 var full_redraw=false;
 var orig_passthru=console.ctrlkey_passthru;
-bbs.sys_status|=SS_MOFF;
-bbs.sys_status|=SS_PAUSEOFF;	
-console.ctrlkey_passthru="+KOPTU";
 
 var cmdlist=new CommandList();
 var settings=new Settings();
@@ -76,7 +73,7 @@ function init()
 	center.init();
 	left.init();
 	
-	if(favorites.items.length > 0) {
+ 	if(favorites.items.length > 0) {
 		loadMenu("favorites");
 		showLeftWindow();
 	}
@@ -218,6 +215,10 @@ function redraw()
 		menuinfo[left.currentmenu]();
 	}
 	
+	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status|=SS_PAUSEOFF;	
+	console.ctrlkey_passthru="+KOPTU";
+	
 	full_redraw=false;
 }
 function drawTitle(x,y,str)
@@ -241,7 +242,7 @@ function drawSeparator(x,y)
 {
 	console.gotoxy(x,y);
 	console.pushxy();
-	console.attributes=BG_BLACK + settings.shell_fg;
+	console.attributes=BG_BLACK + (settings.shell_bg>>4);
 	for(var i=0;i<settings.main_height;i++) {
 		console.putmsg("\xB3",P_SAVEATR);
 		console.popxy();
@@ -261,7 +262,7 @@ function drawTopline()
 }
 function drawOutline()
 {
-	console.attributes=BG_BLACK + settings.shell_fg;
+	console.attributes=BG_BLACK + (settings.shell_bg>>4);
 	var outline=splitPadded("\xDD","\xDE",console.screen_columns," ");
 	for(var l=2;l<console.screen_rows;l++) {
 		console.gotoxy(1,l);
@@ -508,6 +509,7 @@ function saveSettings()
 		log("error opening user settings",LOG_WARNING);
 		return;
 	}
+	settings_file.iniSetObject("settings",settings);
 	for(var f=0;f<favorites.items.length;f++) {
 		var fav=favorites.items[f];
 		var value=
