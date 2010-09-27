@@ -264,46 +264,15 @@ Bot_Commands["PASS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["IDENT"] = new Bot_Command(0,true,false);
-Bot_Commands["IDENT"].usage =
-	"/MSG %s IDENT <nick> <pass>";
-Bot_Commands["IDENT"].help =
-	"Identifies a user by alias and password. Use via private message only.";
-Bot_Commands["IDENT"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	var usr = new User(system.matchuser(onick));
-	if (cmd[2]) { /* Username passed */
-		usr = new User(system.matchuser(cmd[1]));
-		cmd[1] = cmd[2];
+Bot_Commands["SEVAL"] = new Bot_Command(99,true,true);
+Bot_Commands["SEVAL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	var query = cmd.join(" ");
+	try {
+		srv.o(target,eval(query));
+	} catch(e) {
+		srv.o(target,"ERROR: "+e);
 	}
-	if (!usr.number) {
-		srv.o(target,"No such user.");
-		return;
-	}
-	if ((target[0] == "#") || (target[0] == "&")) {
-		if (lvl >= 50) {
-			srv.o(target,"Fool!  You've just broadcasted your password to "
-				+ "a public channel!  Because of this, I've reset your "
-				+ "password.  Pick a new password, then /MSG " + srv.nick + " "
-				+ "PASS <newpass>");
-			usr.security.password = "";
-		} else {
-			srv.o(target,"Is broadcasting a password to a public channel "
-				+ "really a smart idea?");
-		}
-		return;
-	}
-	if (usr.security.password == "") {
-		srv.o(target,"Your password is blank.  Please set one with /MSG "
-			+ srv.nick + " PASS <newpass>, and then use IDENT.");
-		return;
-	}
-	if (cmd[1].toUpperCase() == usr.security.password) {
-		srv.o(target,"You are now recognized as user '" + usr.alias + "'");
-		srv.users[onick.toUpperCase()].ident = usr.number;
-		login_user(usr);
-		return;
-	}
-	srv.o(target,"Incorrect password.");
 	return;
 }
 
@@ -648,3 +617,6 @@ Bot_Commands["PIPE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+for(var bc in Bot_Commands) {
+	js.global.Bot_Commands[bc]=Bot_Commands[bc];
+}
