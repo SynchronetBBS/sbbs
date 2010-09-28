@@ -300,6 +300,8 @@ menuobj["shellsettings"]=function() {
 	this.addcmd("Remote Chat","cr");
 	this.addcmd("Global Chat","cg");
 	this.addcmd("Private Chat","cp");
+	this.addcmd("Clock Foreground","cfg");
+	this.addcmd("Clock Background","cbg");
 	this.addcmd("",undefined,true);
 	this.addcmd("Save Settings","s");
 	set_hotkeys(this);
@@ -311,7 +313,7 @@ menuobj["setcolorbg"]=function() {
 	this.items=new Array();
 	this.addcmd("BLACK","BG_BLACK");
 	this.addcmd("BLUE","BG_BLUE");
-	this.addcmd("GRAY","BG_GRAY");
+	this.addcmd("GRAY","BG_LIGHTGRAY");
 	this.addcmd("GREEN","BG_GREEN");
 	this.addcmd("BROWN","BG_BROWN");
 	this.addcmd("RED","BG_RED");
@@ -501,7 +503,6 @@ menucmd["xtrnsecs"]=function(key) {
 menucmd["xtrnsec"]=function(key) {
 	clear_screen();
 	bbs.exec_xtrn(xtrn_area.sec_list[this.xtrnsec].prog_list[Number(key)].number);
-	console.ctrlkey_passthru=console.ctrlkey_passthru;
 }
 menucmd["file"]=function(key) {
 	var i;
@@ -1383,6 +1384,14 @@ menucmd["shellsettings"]=function(key) {
 		settings.temp="chat_private_color";
 		this.loadMenu("setcolorfg");
 		break;
+	case "cfg":
+		settings.temp="clock_fg";
+		this.loadMenu("setcolorfg");
+		break;
+	case "cbg":
+		settings.temp="clock_bg";
+		this.loadMenu("setcolorbg");
+		break;
 	case "s":
 		saveSettings();
 		break;
@@ -1394,6 +1403,7 @@ menucmd["setcolorfg"]=function(key) {
 	var current=this.currentmenu;
 	this.currentmenu="";
 	this.loadMenu(current);
+	right.init();
 	full_redraw=true;
 }
 menucmd["setcolorbg"]=menucmd["setcolorfg"];

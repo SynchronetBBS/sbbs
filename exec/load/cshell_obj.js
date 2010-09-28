@@ -110,37 +110,78 @@ function Shortcut()
 /* RIGHT WINDOW */
 function RightWindow()
 {
-	this.clock=new DigitalClock();
-	this.width=18;
-	this.logo=new Graphic(this.width-2,10);
-	this.alerts=[];
-	this.update=true;
-	
-	this.x=console.screen_columns-this.width;
+	this.width=settings.right_width;
+	this.x=console.screen_columns-Number(this.width)+1;
 	this.y=2;
-	
+
 	this.init=function()
 	{
-		this.clock.init(this.x,this.y+10,LIGHTBLUE);
-		this.logo.load(system.text_dir + "cshell/logo.16x10.bin");
+		this.clock=new DigitalClock();
+		this.clock_x=this.x;
+		this.clock_y=this.y;
+		this.clock.init(this.clock_x,this.clock_y,this.width-1,settings.clock_fg,settings.clock_bg);
+		
+		this.alert_x=this.x;
+		this.alert_y=this.y+this.clock.height+1;
+		this.alert_height=console.screen_rows-3-this.clock.height;
+		
+		this.chat_msgs=0;
+		this.notices=[];
 	}
 	this.redraw=function()
 	{
 		drawSeparator(console.screen_columns-this.width,2,console.screen_rows-2);
-		this.clock.update(true);
-		this.logo.draw(this.x+1,this.y);
-		this.drawAlerts();
+		this.clock.draw(this.clock_x,this.clock_y);
+		this.drawInfo();
 	}
 	this.cycle=function()
 	{
-		this.clock.update();
+		if(this.clock.update()) {
+			this.clock.draw(this.clock_x,this.clock_y);
+		}
 		if(this.update) {
-			this.drawAlerts();
+			clearBlock(this.alert_x,this.alert_y,this.width-1,this.alert_height);
+			this.drawInfo();
+			this.listNodes();
+			this.update=false;
 		}
 	}
-	this.drawAlerts=function()
+	this.drawInfo=function()
 	{
-		this.update=false;
+		setPosition(this.alert_x,this.alert_y);
+		if(this.chat_msgs > 0) 
+			displayInfo(printPadded("\1r\1h *NEW CHAT MSGS*",this.width-1));
+		if(this.notices.length > 0)
+			displayInfo(printPadded("\1r\1h *NEW NOTICES*",this.width-1));
+		displayInfo("");
+	}
+	this.listNodes=function()
+	{
+		var count=0;
+		for(var n=0;n<system.node_list.length;n++) {	
+			var node=system.node_list[n];
+			switch(node.status) {
+			case NODE_LOGON:
+			case NODE_NEWUSER:
+				if(count++==0) displayInfo(printPadded("\1w\1hNODE STATUS",this.width-1));
+				displayInfo(printPadded("\1n" + (n+1) +"\1h: \1n\1g" + NodeStatus[node.status]));
+				break;
+			case NODE_INUSE:
+				if(count++==0) displayInfo(printPadded("\1w\1hNODE STATUS",this.width-1));
+				displayInfo(printPadded("\1n" + (n+1) +"\1h: \1n\1g" + system.username(node.useron)));
+				break;
+			}
+		}
+	}
+	this.chatAlert=function()
+	{
+		this.chat_msgs++;
+		this.update=true;
+	}
+	this.addNotice=function(text)
+	{
+		this.notices.push(text);
+		this.update=true;
 	}
 }
 
@@ -187,10 +228,12 @@ function MainWindow()
 	}
 	this.cycle=function()
 	{
-		this.chat.cycle();
+		if(this.chat.cycle())
+			right.chatAlert();
 	}
 	this.restore=function()
 	{
+		this.clear();
 		this.loadWallPaper(directory(system.text_dir + "cshell/main.*.bin")[0]);
 		this.redraw();
 	}
@@ -320,14 +363,17 @@ function SideBar()
 	this.hfg=settings.menu_hfg;
 	this.hbg=settings.menu_hbg;
 	this.width=settings.menu_width;
+	this.force_width=settings.menu_width;
 	this.xpos=settings.menu_x;
 	this.ypos=settings.menu_y;
+	this.callback=cycle;
+	this.timeout=10;
 	this.hotkeys=
 		KEY_LEFT
 		+KEY_RIGHT
 		+KEY_UP
 		+KEY_DOWN
-		+"\b\x7f\x1b<>Q+-"
+		+"\b\x7f\x1b<>Q+- "
 		+ctrl('O')
 		+ctrl('U')
 		+ctrl('T')
@@ -343,7 +389,7 @@ function SideBar()
 /* DEFAULT USER SETTINGS */
 function Settings(list)
 {
-	this.shell_bg=BG_BROWN;
+	this.shell_bg=BG_RED;
 	
 	this.main_hkey_color=YELLOW;
 	this.main_text_color=BLACK;
@@ -360,6 +406,10 @@ function Settings(list)
 	this.chat_remote_color=GREEN;
 	this.chat_global_color=MAGENTA;
 	this.chat_private_color=YELLOW;
+	
+	this.clock_fg=BLACK;
+	this.clock_bg=BG_LIGHTGRAY;
+	this.right_width=18;
 	
 	for(var s in list) {
 		this[s]=list[s];

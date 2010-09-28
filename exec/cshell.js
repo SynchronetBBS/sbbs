@@ -83,7 +83,6 @@ function shell()
 {
 	while(1) {
 		cycle();
-				
 		var cmd="";
 		if(left.menu) {
 			cmd=left.menu.getval();
@@ -186,9 +185,44 @@ function shell()
 }
 function cycle()
 {
+	/* Update node action */
+	if(bbs.node_action != system.node_list[bbs.node_num-1].action)
+		system.node_list[bbs.node_num-1].action = bbs.node_action;
+
+	/* Check for messages */
+	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
+		right.addNotice(system.get_telegram(user.number));
+	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
+		right.addNotice(system.get_node_message(bbs.node_num));
+
+	/* Fix up node status */
+	if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
+		system.node_list[bbs.node_num-1].status=NODE_INUSE;
+	}
+
+	/* Check if user data has changed */
+	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
+		user.cached=false;
+		system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
+	}
+
+	/* Interrupted? */
+	if(system.node_list[bbs.node_num-1].misc & NODE_INTR) {
+		bbs.hangup();
+	}
+
+	/* Sysop Chat? */
+	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
+		// TODO: No way of calling bbs.priave_chat(true)
+		// bbs.private_chat();
+		bbs.nodesync();
+		full_redraw=true;
+	}
+
 	right.cycle();
 	center.cycle();
 	left.cycle();
+	
 	if(full_redraw) {
 		redraw();
 	}
@@ -220,6 +254,20 @@ function redraw()
 	console.ctrlkey_passthru="+KOPTU";
 	
 	full_redraw=false;
+}
+function loadWallPaper(file)
+{
+	if(!file_exists(file)) return false;
+	
+	var width=0;
+	var height=0;
+	var size=file_getname(file).split(".")[1].split("x");
+	if(size[0]) width=Number(size[0]);
+	if(size[1]) height=Number(size[1]);
+	
+	var wp=new Graphic(width,height);
+	wp.load(file);
+	return wp;
 }
 function drawTitle(x,y,str)
 {
@@ -289,10 +337,6 @@ function logoff()
 			bbs.logoff();
 		}
 	} else bbs.hangup();
-}
-function loadMenu()
-{
-	return left.loadMenu.apply(left,arguments);
 }
 function chatInput()
 {
@@ -450,6 +494,10 @@ function set_hotkeys(lb)
 		lb.items[i].text="|" + hotkeys[index++] + " " + lb.items[i].text;
 		lb.items[i].retval=i;
 	}
+}
+function loadMenu()
+{
+	return left.loadMenu.apply(left,arguments);
 }
 
 /* MENU FUNCTIONS */
