@@ -5,6 +5,7 @@
 
 function getColor(color)
 {
+	if(isNaN(color)) color=color.toUpperCase();
 	switch(color)
 	{
 		case "BLACK":
@@ -42,6 +43,11 @@ function getColor(color)
 			return MAGENTA;
 		case MAGENTA:
 			return "\1M";
+		case "BG_BLACK":
+		case "\0010":
+			return BG_BLACK;
+		case "BG_BLACK":
+			return "\0010";
 		case "BG_BLUE":
 		case "\0014":
 			return BG_BLUE;
