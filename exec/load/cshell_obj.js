@@ -347,8 +347,6 @@ function Settings(list)
 	
 	this.main_hkey_color=YELLOW;
 	this.main_text_color=BLACK;
-	this.main_height=screen_rows-2;
-	this.main_width=screen_columns-20;
 	
 	this.menu_fg=LIGHTGRAY;
 	this.menu_bg=BLACK;
@@ -366,6 +364,9 @@ function Settings(list)
 	for(var s in list) {
 		this[s]=list[s];
 	}
+
+	this.main_height=console.screen_rows-2;
+	this.main_width=console.screen_columns-20;
 }
 function Favorites(list)
 {
