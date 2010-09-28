@@ -1,0 +1,47 @@
+<mobs>
+	<mob id="0" name="a village guard">
+		<keywords>village guard warrior</keywords>
+		<appearance>the gate is guarded by a single, armor clad warrior.</appearance>
+		<hitpoints>225</hitpoints>
+		<mana>150</mana>
+		<trigger id="hello">
+			<response>Welcome to Noob Village</response>
+		</trigger>
+	</mob>
+	<mob id="1" name="a gypsy shopkeep">
+		<keywords>gypsy shopkeep</keywords>
+		<appearance>an old gypsy has set up shop here.</appearance>
+		<hitpoints>110</hitpoints>
+		<mana>0</mana>
+		<trigger id="hello">
+			<response>Hello, and welcome to my travelling shop. I have many rare items. Don't wait, I won't be here long.</response>
+		</trigger>
+		<trigger id="broken">
+			<response>What? I just arrived here this morning, and I'll be on my way shortly.</response>
+		</trigger>
+	</mob>
+	<mob id="2" name="a peaceful warrior">
+		<keywords>peaceful warrior</keywords>
+		<appearance>a young warrior considers existence on a bench near the fountain.</appearance>
+		<hitpoints>25</hitpoints>
+		<mana>20</mana>
+		<trigger id="hello">
+			<response>Hello, young warrior. Beautiful FOUNTAIN, isn't it? It's my favorite place in this FOREST. I gave up my quest for glory for a simpler life, so you'll always find me here.</response>
+		</trigger>
+		<trigger id="fountain">
+			<response>This is one of the few truly safe places in this world. You needn't worry about doing battle here. The energy here also aids regeneration.</response>
+		</trigger>
+		<trigger id="forest">
+			<response>This is a great place to start out. There's plenty of forest to wander through, and plenty of creatures to hunt. And, if you find yourself injured, you can always come meditate here. You'll be like new in no time.</response>
+		</trigger>
+	</mob>
+	<mob id="3" name="an erstestadt guard">
+		<keywords>erstestadt guard</keywords>
+		<appearance>the gate is guarded by a single, armor clad warrior.</appearance>
+		<hitpoints>225</hitpoints>
+		<mana>150</mana>
+		<trigger id="hello">
+			<response>Greetings, and welcome to Erstestadt. (Check EXP, if low suggest infestation quest.)</response>
+		</trigger>
+	</mob>
+</mobs>

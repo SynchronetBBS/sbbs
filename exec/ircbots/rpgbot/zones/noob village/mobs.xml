@@ -1,0 +1,32 @@
+<mobs>
+	<mob id="0" name="a blind, crippled hermit">
+		<keywords>blind crippled hermit man</keywords>
+		<appearance>an old man sits here, mumbling to himself.</appearance>
+		<class>human</class>
+		<race>mage</race>
+		<hitpoints>20</hitpoints>
+		<mana>20</mana>
+		<inventory>
+			<item id="0"/>
+		</inventory>
+		<equipment>
+			<slot id="wielded" qty="1">
+				<item id="5"/>
+			</slot>
+		</equipment>
+		<trigger id="hello">
+			<response>Greetings! Have you seen my marbles?</response>
+		</trigger>
+		<trigger id="marbles">
+			<response>Yes! I seem to have lost them.</response>
+		</trigger>
+	</mob>
+	<mob id="1" name="a small yellow bird">
+		<keywords>small yellow bird</keywords>
+		<hitpoints>5</hitpoints>
+		<appearance>a little yellow bird is perched in the branches.</appearance>
+		<trigger id="tweet">
+			<response>**Tweedle-dee deedle-dee deet**</response>
+		</trigger>
+	</mob>
+</mobs>

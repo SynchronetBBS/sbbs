@@ -1,0 +1,52 @@
+<zone name="Noob Village" id="0" level="0">
+	<room id="0">
+		<title>Noob Treehouse</title>
+		<description>A rickety shack suspended in a tree above Noob Village Center.</description>
+		<exit name="down" target="1">
+			<door>0</door>
+		</exit>
+		<mob id="0"/>
+	</room>	
+	<room id="1">
+		<title>Noob Village Center</title>
+		<description>The ground here is beaten down by the endless stream of Noobs passing through. All around you are the voices of Noob townsfolk, chattering about their daily routines.</description>
+		<exit name="up" target="0">
+			<door>0</door>
+		</exit>
+		<exit name="north" target="2"/>
+		<exit name="south" target="3"/>
+		<exit name="east" target="4"/>
+		<exit name="west" target="5"/>
+		<mob id="1"/>
+	</room>	
+	<room id="2">
+		<title>North of the Village Center</title>
+		<description>You can still hear the village chatter coming from the South. A narrow path leads into the forest to the North.</description>
+		<exit name="north" target="0" zone="1"/>
+		<exit name="south" target="1"/>
+	</room>	
+	<room id="3">
+		<title>South of the Village Center</title>
+		<description>You can still hear the village chatter coming from the North.	A huge brick wall to the South casts a shadow over this area.</description>
+		<exit name="north" target="1"/>
+		<item id="1"/>
+		<item id="2"/>
+	</room>	
+	<room id="4">
+		<title>East of the Village Center</title>
+		<description>You can still hear the village chatter coming from the West.</description>
+		<exit name="west" target="1"/>
+		<item id="3"/>
+	</room>	
+	<room id="5">
+		<title>West of the Village Center</title>
+		<description>You can still hear the village chatter coming from the East.</description>
+		<exit name="east" target="1"/>
+	</room>	
+	
+	<door name="trapdoor" id="0"> 
+		<key>0</key>
+		<open>false</open>
+		<locked>true</locked>
+	</door>
+</zone>

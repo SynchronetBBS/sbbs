@@ -1,0 +1,254 @@
+<zone name="Noob Forest" id="1" level="0">
+	<room id="0">
+		<title>Noob Village Gates</title>
+		<description>Tall wooden gates at the edge of an expanse of dense forest. A well worn dirt trail leads north.</description>
+		<exit name="north" target="6"/>
+		<exit name="south" target="2" zone="0"/>
+		<exit name="east" target="2"/>
+		<exit name="west" target="1"/>
+		<mob id="0"/>
+	</room>	
+	<room id="1">
+		<title>the edge of the forest</title>
+		<description>High village walls block the south. You can see the gates are to the east.</description>
+		<exit name="north" target="7"/>
+		<exit name="east" target="0"/>
+	</room>	
+	<room id="2">
+		<title>the edge of the forest</title>
+		<description>High village walls block the south. You can see the gates are to the west.</description>
+		<exit name="north" target="5"/>
+		<exit name="east" target="3"/>
+		<exit name="west" target="0"/>
+	</room>	
+	<room id="3">
+		<title>the edge of the forest</title>
+		<description>High village walls block the south. There are neato flowers and shrubs in this corner of the forest.</description>
+		<exit name="north" target="4"/>
+		<exit name="west" target="2"/>
+	</room>	
+	<room id="4">
+		<title>a clearing</title>
+		<description>A clearing in the forest reveals a broken down wagon that looks like it's been here for years. To the north you can see the short iron gates around a cemetary.</description>
+		<exit name="north" target="16"/>
+		<exit name="south" target="3"/>
+		<exit name="west" target="5"/>
+		<mob id="1"/>
+	</room>	
+	<room id="5">
+		<title>the forest</title>
+		<description>Age old trunks lead to a great canopy high above.</description>
+		<exit name="north" target="15"/>
+		<exit name="south" target="2"/>
+		<exit name="east" target="4"/>
+		<exit name="west" target="6"/>
+	</room>	
+	<room id="6">
+		<title>a beaten path</title>
+		<description>Age old trunks lead to a great canopy high above. A well worn path leads north deeper into the forest, and south toward village gates.</description>
+		<exit name="north" target="14"/>
+		<exit name="south" target="0"/>
+		<exit name="east" target="5"/>
+		<exit name="west" target="7"/>
+	</room>
+	<room id="7">
+		<title>the forest</title>
+		<description>Age old trunks lead to a great canopy high above.</description>
+		<exit name="north" target="8"/>
+		<exit name="south" target="1"/>
+		<exit name="east" target="6"/>
+	</room>
+	<room id="8">
+		<title>a beaten path</title>
+		<description>Age old trunks lead to a great canopy high above. A well worn path leads east and west.</description>
+		<exit name="east" target="14"/>
+		<exit name="west" target="9"/>
+	</room>	
+	<room id="9">
+		<title>a beaten path</title>
+		<description>A path follows the forest narrowing to the west, and widening to the east.</description>
+		<exit name="east" target="8"/>
+		<exit name="west" target="10"/>
+	</room>	
+	<room id="10">
+		<title>a beaten path</title>
+		<description>The beaten path winds around rocks and trees in this very dense section of the woods, and continues south.</description>
+		<exit name="south" target="12"/>
+		<exit name="east" target="9"/>
+		<exit name="west" target="11"/>
+	</room>	
+	<room id="11">
+		<title>old ruins</title>
+		<description>What looks to be the remains of a building of some sort, destroyed long ago, is slowly being reclaimed by nature.</description>
+		<exit name="east" target="10"/>
+	</room>
+	<room id="12">
+		<title>a beaten path</title>
+		<description>This dense yet well traveled section of forest leads south to a wooden door in a stone building nestled into the vegetation.</description>
+		<exit name="north" target="10"/>
+		<exit name="south" target="13">
+			<door>0</door>
+		</exit>
+	</room>
+	<room id="13">
+		<title>The Drunken Squirrel</title>
+		<description>Torchlight illuminates a tavern that will be described in greater detail at a later time.</description>
+		<exit name="north" target="12">
+			<door>0</door>
+		</exit>
+	</room>
+	<room id="14">
+		<title>a crossroads</title>
+		<description>The canopy opens to reveal the sky, as the worn path leads west and south. The grass is also clearly trodden to the north.</description>
+		<exit name="north" target="17"/>
+		<exit name="south" target="6"/>
+		<exit name="east" target="15"/>
+		<exit name="west" target="8"/>
+	</room>
+	<room id="15">
+		<title>the forest</title>
+		<description>Age old trunks lead to a great canopy high above. The forest opens up to the west, and a cemetary lies to the east.</description>
+		<exit name="south" target="5"/>
+		<exit name="east" target="16"/>
+		<exit name="west" target="14"/>
+	</room>
+	<room id="16">
+		<title>an old cemetery</title>
+		<description>It doesn't look like this cemetery is still in use, the freshest gravestone looks hundreds of years old.</description>
+		<exit name="south" target="4"/>
+		<exit name="west" target="15"/>
+	</room>
+	<room id="17">
+		<title>a beaten path</title>
+		<description>The path leads north to a small clearing, from which you faintly hear the sound of trickling water. The path south leads back through the trees.</description>
+		<exit name="north" target="19"/>
+		<exit name="south" target="14"/>
+	</room>
+	<room id="19">
+		<title>a peaceful place</title>
+		<description>Stone benches form a wide circle around a beautifully carved fountain. There's no hint as to where the water is coming from. This is a perfect place for meditation.</description>
+		<exit name="south" target="17"/>
+		<exit name="east" target="20"/>
+		<mob id="2"/>
+	</room>
+	<room id="20">
+		<title>a beaten path</title>
+		<description>The trees are sparse here, the breaks in the canopy reveal the sky. The trickle of water is heard from the west. The forest thickens to the east. The path continues.</description>
+		<exit name="east" target="21"/>
+		<exit name="west" target="19"/>
+	</room>
+	<room id="21">
+		<title>a beaten path</title>
+		<description>a path runs east and west through the dense forest. the sound of trickling water can be heard faintly from the west.</description>
+		<exit name="north" target="26"/>
+		<exit name="east" target="22"/>
+		<exit name="west" target="20"/>
+	</room>
+	<room id="22">
+		<title>a beaten path</title>
+		<description>a path runs east and west through the dense forest.</description>
+		<exit name="north" target="27"/>
+		<exit name="east" target="23"/>
+		<exit name="west" target="21"/>
+	</room>
+	<room id="23">
+		<title>a beaten path</title>
+		<description>a path runs east and west through the dense forest.</description>
+		<exit name="east" target="24"/>
+		<exit name="west" target="22"/>
+	</room>
+	<room id="24">
+		<title>a beaten path</title>
+		<description>a path curves north and west through the dense forest.</description>
+		<exit name="north" target="29"/>
+		<exit name="west" target="23"/>
+	</room>
+	<room id="25">
+		<title>the forest</title>
+		<description>the canopy is so thick there's no hint of the sky above.</description>
+		<exit name="north" target="30"/>
+	</room>
+	<room id="26">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="south" target="21"/>
+		<exit name="east" target="27"/>
+	</room>
+	<room id="27">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="south" target="22"/>
+		<exit name="east" target="28"/>
+		<exit name="west" target="26"/>
+	</room>
+	<room id="28">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="east" target="29"/>
+		<exit name="west" target="27"/>
+	</room>
+	<room id="29">
+		<title>a beaten path</title>
+		<description>the forest is dense and the ground is soft. A well travelled path snakes through the trees and runs from the south to the east.</description>
+		<exit name="south" target="24"/>
+		<exit name="east" target="30"/>
+		<exit name="west" target="28"/>
+	</room>
+	<room id="30">
+		<title>a beaten path</title>
+		<description>the forest is dense and the ground is soft. A well travelled path runs east and west.</description>
+		<exit name="north" target="34"/>
+		<exit name="south" target="25"/>
+		<exit name="east" target="31"/>
+		<exit name="west" target="29"/>
+	</room>
+	<room id="31">
+		<title>a beaten path</title>
+		<description>the forest is dense and the ground is soft. A well travelled path runs east and west.</description>
+		<exit name="east" target="32"/>
+		<exit name="west" target="30"/>
+	</room>
+	<room id="32">
+		<title>a beaten path</title>
+		<description>the forest is dense and the ground is soft. a well travelled path runs north and west.</description>
+		<exit name="north" target="36"/>
+		<exit name="west" target="31"/>
+	</room>
+	<room id="33">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="east" target="34"/>
+	</room>
+	<room id="34">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="south" target="30"/>
+		<exit name="east" target="35"/>
+		<exit name="west" target="33"/>
+	</room>
+	<room id="35">
+		<title>the forest</title>
+		<description>the forest is dense and the ground is soft.</description>
+		<exit name="east" target="36"/>
+		<exit name="west" target="34"/>
+	</room>
+	<room id="36">
+		<title>a beaten path</title>
+		<description>the forest is dense and the ground is soft. a well travelled path runs south deeper into the forest, and east toward large wooden gates.</description>
+		<exit name="south" target="32"/>
+		<exit name="east" target="37"/>
+		<exit name="west" target="35"/>
+	</room>
+	<room id="37">
+		<title>erstestatd gates</title>
+		<description>at the edge of the forest lies a huge wooden gate through tall stone walls.</description>
+		<exit name="west" target="36"/>
+		<mob id="3"/>
+	</room>
+	
+	<door name="a wooden door" id="0"> 
+		<key>0</key>
+		<open>false</open>
+		<locked>false</locked>
+	</door>
+</zone>
