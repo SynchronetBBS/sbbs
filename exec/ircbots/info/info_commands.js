@@ -47,21 +47,20 @@ Bot_Commands["SYN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var defstring=parseDefXML(xmldef);
 	
 	var synonyms=defstring.match(/\[[^\[\]]*:\s[^\[\]]*\]/g);
-	for(var s=0;s<synonyms.length;s++) {
-		synonyms[s]=synonyms[s].replace(/\[[^\[\]]*:/g,"").replace(/\]/g,"");
-	}
-	//var examples=text.match(/\".*"/g);
-	if(!synonyms.length) {
+	if(!synonyms || !synonyms.length) {
 		srv.o(target, "no synonyms found: " + word);
 		return;
 	} 
+	for(var s=0;s<synonyms.length;s++) {
+		synonyms[s]=synonyms[s].replace(/\[[^\[\]]*:/g,"").replace(/\]/g,"");
+	}
 	srv.o(target,word + " (synonyms): " + synonyms);
 	return;
 }
 js.global.Bot_Commands["SYN"]=Bot_Commands["SYN"];
 
-Bot_Commands["USAGE"] = new Bot_Command(0,1,false);
-Bot_Commands["USAGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["EX"] = new Bot_Command(0,1,false);
+Bot_Commands["EX"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(!cmd[0]) {
 		srv.o(target,"You didn't specify a word");
@@ -72,16 +71,16 @@ Bot_Commands["USAGE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var defstring=parseDefXML(xmldef);
 	
 	var examples=defstring.match(/"[^"]*"/g);
-	if(!examples.length) {
+	if(!examples || !examples.length) {
 		srv.o(target, "no usage examples found: " + word);
 		return;
 	} 
 	srv.o(target,word + " (usage): " + examples);
 	return;
 }
-js.global.Bot_Commands["USAGE"]=Bot_Commands["USAGE"];
+js.global.Bot_Commands["EX"]=Bot_Commands["EX"];
 
-/*
+/* 
 dog
  n 
 	1: a member of the genus Canis (probably descended from the common wolf) that has been domesticated by man since prehistoric times; occurs in many breeds; 
