@@ -1,0 +1,13 @@
+<classes>
+	<player_class id="mage">
+		<skill id="0" level="1"/>
+		<spell id="0" level="1"/>
+	</player_class>
+	<player_class id="rogue">
+		<skill id="1" level="1"/>
+	</player_class>
+	<player_class id="cleric">
+		<skill id="0" level="1"/>
+		<spell id="1" level="1"/>
+	</player_class>
+</classes>

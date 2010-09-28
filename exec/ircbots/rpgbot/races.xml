@@ -1,0 +1,37 @@
+<races>
+	<player_race id="human">
+		<str>0</str>
+		<dex>0</dex>
+		<con>0</con>
+		<int>0</int>
+		<wis>0</wis>
+	</player_race>
+	<player_race id="dwarf">
+		<str>2</str>
+		<dex>-1</dex>
+		<con>1</con>
+		<int>-1</int>
+		<wis>-1</wis>
+	</player_race>
+	<player_race id="elf">
+		<str>-2</str>
+		<dex>2</dex>
+		<con>-2</con>
+		<int>2</int>
+		<wis>0</wis>
+	</player_race>
+	<player_race id="orc">
+		<str>3</str>
+		<dex>-2</dex>
+		<con>2</con>
+		<int>-2</int>
+		<wis>-1</wis>
+	</player_race>
+	<player_race id="goblin">
+		<str>-2</str>
+		<dex>2</dex>
+		<con>-1</con>
+		<int>1</int>
+		<wis>0</wis>
+	</player_race>
+</races>
