@@ -66,7 +66,7 @@ function Graphic_gety()
 	}
 	return y;
 }
-function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
+function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
 {
 	var x;
 	var y;
@@ -83,6 +83,8 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 		xoff=0;
 	if(yoff==undefined)
 		yoff=0;
+	if(delay==undefined)
+		delay=0;
 	if(xoff+width > this.width || yoff+height > this.height) {
 		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
 		return(false)
@@ -102,6 +104,8 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 				if(ch == "\r" || ch == "\n" || !ch)
 					ch=this.ch;
 				console.write(ch);
+				if(delay)
+					mswait(delay);
 			}
 		}
 	}
@@ -109,45 +113,7 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff)
 }
 function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
 {
-	var x;
-	var y;
-
-	if(xpos==undefined)
-		xpos=1;
-	if(ypos==undefined)
-		ypos=1;
-	if(width==undefined)
-		width=this.width;
-	if(height==undefined)
-		height=this.height;
-	if(xoff==undefined)
-		xoff=0;
-	if(yoff==undefined)
-		yoff=0;
-	if(xoff+width > this.width || yoff+height > this.height) {
-		alert("Attempt to draw from outside of graphic: "+xoff+":"+yoff+" "+width+"x"+height+" "+this.width+"x"+this.height);
-		return(false)
-	}
-	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
-		alert("Attempt to draw outside of screen");
-		return(false);
-	}
-	for(y=0;y<height; y++) {
-		console.gotoxy(xpos,ypos+y);
-		for(x=0; x<width; x++) {
-			// Do not draw to the bottom left corner of the screen-would scroll
-			if(xpos+x != console.screen_columns
-					|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][this.index+y+yoff].attr;
-				var ch=this.data[x+xoff][this.index+y+yoff].ch;
-				if(ch == "\r" || ch == "\n" || !ch)
-					ch=this.ch;
-				console.write(ch);
-			}
-			mswait(2);
-		}
-	}
-	return(true);
+	this.draw(xpos,ypos,width,height,xoff,yoff,2);
 }
 function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 {
