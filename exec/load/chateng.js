@@ -655,7 +655,7 @@ function InputLine()
 			} else if(this.buffer.length<=this.width) {
 				this.getxy();
 				console.left();
-				console.putmsg(" ",P_SAVEATR);
+				console.putmsg(this.bg+" ",P_SAVEATR);
 				this.buffer=this.buffer.substr(0,this.buffer.length-1);
 			} else {
 				this.buffer=this.buffer.substr(0,this.buffer.length-1);
