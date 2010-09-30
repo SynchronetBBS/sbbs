@@ -67,7 +67,6 @@ var left=new LeftWindow();
 function init()
 {
 	loadSettings();
-	
 	bottom.init();
 	right.init();
 	center.init();
@@ -97,7 +96,8 @@ function shell()
 			case ctrl('T'): /* CTRL-T Time Info */
 			case ctrl('K'): /* CTRL-K Control Key Menu */
 			case ctrl('P'): /* Ctrl-P Messages */
-				controlkeys.handle(key);
+			case ctrl('C'): /* Ctrl-P ABORT */
+				handleCtrlKey(cmd);
 				continue;
 			case KEY_UP:
 				lightBarUp(left.menu);
@@ -154,7 +154,8 @@ function shell()
 		case ctrl('T'): /* CTRL-T Time Info */
 		case ctrl('K'): /* CTRL-K Control Key Menu */
 		case ctrl('P'): /* Ctrl-P Messages */
-			controlkeys.handle(key);
+		case ctrl('C'): /* Ctrl-P ABORT */
+			handleCtrlKey(cmd);
 			continue;
 		case " ":
 			redraw();
@@ -236,6 +237,14 @@ function cycle()
 }
 
 /* GLOBAL FUNCTIONS */
+function handleCtrlKey(key)
+{
+	switch(key) {
+		case ctrl('C'): /* Ctrl-P ABORT */
+			console.aborted=false;
+			break;
+	}
+}
 function getHotkey(item)
 {
 	var index=item.indexOf("|")+1;
@@ -243,7 +252,6 @@ function getHotkey(item)
 }	
 function redraw()
 {
-	console.aborted=false;
 	console.clear(ANSI_NORMAL);
 	drawTopline();
 	drawOutline();
@@ -257,9 +265,8 @@ function redraw()
 		menuinfo[left.currentmenu]();
 	}
 	
-	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;	
-	console.ctrlkey_passthru="+KOPTU";
+	console.ctrlkey_passthru="+KOPTUC";
 	full_redraw=false;
 }
 function loadWallPaper(file)
@@ -555,7 +562,6 @@ function clear_screen()
 	 * it.
 	 */
 
-	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
 	console.clear(ANSI_NORMAL);
 	full_redraw=true;
