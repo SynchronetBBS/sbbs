@@ -1379,7 +1379,6 @@ menuinfo["main"]=function() {
 	}
 }
 menuinfo["xtrnsec"]=function() {
-	center.clear();
 	if(!xtrn_area.sec_list[left.xtrnsec].prog_list[left.menu.current]) return false;
 	var wp=directory(system.text_dir + "cshell/xtrn/" + 
 			xtrn_area.sec_list[left.xtrnsec].prog_list[left.menu.current].code + ".*.bin")[0];
@@ -1389,7 +1388,6 @@ menuinfo["xtrnsec"]=function() {
 	}
 }
 menuinfo["xtrnsecs"]=function() {
-	center.clear();
 	if(!xtrn_area.sec_list[left.xtrnsec]) return false;
 	var wp=directory(system.text_dir + "cshell/xtrn/" + 
 			xtrn_area.sec_list[left.xtrnsec].code + ".*.bin")[0];

@@ -154,9 +154,9 @@ function RightWindow()
 		
 		displayInfo("");
 		if(this.chat_msgs > 0) 
-			displayInfo(printPadded("\1r\1h *" + this.chat_msgs + " NEW CHAT MSGS*",this.width-1));
+			displayInfo(printPadded("\1r\1h " + this.chat_msgs + " NEW CHAT MSGS",this.width-1));
 		if(this.notices > 0)
-			displayInfo(printPadded("\1r\1h *" + this.notices + " NEW NOTICES*",this.width-1));
+			displayInfo(printPadded("\1r\1h " + this.notices + " NEW NOTICES",this.width-1));
 	}
 	this.listNodes=function()
 	{
@@ -238,12 +238,11 @@ function MainWindow()
 		var posx=center.chat.chatroom.x;
 		var posy=center.chat.chatroom.y-3;
 		clearBlock(posx,posy,center.chat.chatroom.columns,center.chat.chatroom.rows+3);
-		this.wp=false;
 		this.wp_shown=false;
 	}
 	this.cycle=function()
 	{
-		if(this.chat.cycle())
+		if(this.chat.cycle() && !this.in_chat)
 			right.chatAlert();
 	}
 	this.restore=function()
@@ -295,6 +294,7 @@ function MainWindow()
 		if(gapx != 0 || gapy != 0) {
 			posx+=parseInt(gapx/2,10);
 			posy+=parseInt(gapy/2,10);
+			this.clear();
 		}
 		this.wp.draw(posx,posy);
 		this.wp_shown=true;
@@ -370,7 +370,10 @@ function LeftWindow()
 			bbs.node_action=this.menu.node_action;
 		}
 		this.title_shown=false;
-		if(center.wp_shown) center.clear();
+		if(center.wp_shown) {
+			center.clear();
+			center.wp=false;
+		}
 	}
 }
 function SideBar()
