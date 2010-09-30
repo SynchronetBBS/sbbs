@@ -417,7 +417,7 @@ function Settings(list)
 	this.menu_bg=BLACK;
 	this.menu_hfg=LIGHTCYAN;
 	this.menu_hbg=BLUE;
-	this.menu_width=25;
+	this.menu_width=23;
 	this.menu_x=2;
 	this.menu_y=5;
 	
@@ -435,7 +435,7 @@ function Settings(list)
 	}
 
 	this.main_height=console.screen_rows-2;
-	this.main_width=console.screen_columns-20;
+	this.main_width=console.screen_columns-this.right_width-2;
 }
 function Favorites(list)
 {
