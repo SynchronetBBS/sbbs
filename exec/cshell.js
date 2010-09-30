@@ -78,10 +78,12 @@ function init()
 		showLeftWindow();
 	}
 	redraw();
+	if(left.menu && left.menu.node_action) bbs.node_action=left.menu.node_action;
+	else bbs.node_action=NODE_MAIN;
 }
 function shell()
 {
-	while(1) {
+	while(!js.terminated) {
 		cycle();
 		var cmd="";
 		if(left.menu) {
@@ -165,6 +167,7 @@ function shell()
 			break;
 		case "\x1b":
 		case "Q":
+			center.quitChat();
 			return false;
 		default:
 			var sc=bottom.menu.items[cmd];
@@ -190,10 +193,14 @@ function cycle()
 		system.node_list[bbs.node_num-1].action = bbs.node_action;
 
 	/* Check for messages */
-	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW)
-		right.addNotice(system.get_telegram(user.number));
-	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG)
-		right.addNotice(system.get_node_message(bbs.node_num));
+	if(system.node_list[bbs.node_num-1].misc & NODE_MSGW) {
+		if(!center.in_chat) right.addNotice();
+		center.notice(system.get_telegram(user.number));
+	}
+	if(system.node_list[bbs.node_num-1].misc & NODE_NMSG) {
+		if(!center.in_chat) right.addNotice();
+		center.notice(system.get_node_message(bbs.node_num));
+	}	
 
 	/* Fix up node status */
 	if(system.node_list[bbs.node_num-1].status==NODE_WFC) {
@@ -236,6 +243,7 @@ function getHotkey(item)
 }	
 function redraw()
 {
+	console.aborted=false;
 	console.clear(ANSI_NORMAL);
 	drawTopline();
 	drawOutline();
@@ -252,7 +260,6 @@ function redraw()
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status|=SS_PAUSEOFF;	
 	console.ctrlkey_passthru="+KOPTU";
-	
 	full_redraw=false;
 }
 function loadWallPaper(file)
@@ -331,6 +338,7 @@ function setPosition(x,y)
 }
 function logoff()
 {
+	center.quitChat();
 	if(bbs.batch_dnload_total) {
 		if(console.yesno(bbs.text(Menu_downloadBatchQ))) {
 			bbs.batch_download();
@@ -369,6 +377,8 @@ function chatInput()
 /* MAIN MENU */
 function hideChat()
 {
+	if(left.menu && left.menu.node_action) bbs.node_action=left.menu.node_action;
+	else bbs.node_action=NODE_MAIN;
 	center.chat.chatroom.active=false;
 	center.redraw();
 	bottom.restore();
@@ -376,6 +386,10 @@ function hideChat()
 function showChat()
 {
 	center.in_chat=true;
+	right.chat_msgs=0;
+	right.notices=0;
+	right.update=true;
+	bbs.node_action=NODE_CHAT;
 	center.chat.chatroom.active=true;
 	center.redraw();
 	console.gotoxy(1,center.chat.input_line.y);
