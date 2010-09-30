@@ -126,12 +126,13 @@ function RightWindow()
 		this.alert_height=console.screen_rows-3-this.clock.height;
 		
 		this.chat_msgs=0;
-		this.notices=[];
+		this.notices=0;
 	}
 	this.redraw=function()
 	{
-		drawSeparator(console.screen_columns-this.width,2,console.screen_rows-2);
 		this.clock.draw(this.clock_x,this.clock_y);
+		setPosition(this.alert_x,this.alert_y);
+		this.listNodes();
 		this.drawInfo();
 	}
 	this.cycle=function()
@@ -141,19 +142,21 @@ function RightWindow()
 		}
 		if(this.update) {
 			clearBlock(this.alert_x,this.alert_y,this.width-1,this.alert_height);
-			this.drawInfo();
+			setPosition(this.alert_x,this.alert_y);
 			this.listNodes();
+			this.drawInfo();
 			this.update=false;
 		}
 	}
 	this.drawInfo=function()
 	{
-		setPosition(this.alert_x,this.alert_y);
-		if(this.chat_msgs > 0) 
-			displayInfo(printPadded("\1r\1h *NEW CHAT MSGS*",this.width-1));
-		if(this.notices.length > 0)
-			displayInfo(printPadded("\1r\1h *NEW NOTICES*",this.width-1));
+		if(this.chat_msgs == 0 && this.notices == 0) return false;
+		
 		displayInfo("");
+		if(this.chat_msgs > 0) 
+			displayInfo(printPadded("\1r\1h *" + this.chat_msgs + " NEW CHAT MSGS*",this.width-1));
+		if(this.notices > 0)
+			displayInfo(printPadded("\1r\1h *" + this.notices + " NEW NOTICES*",this.width-1));
 	}
 	this.listNodes=function()
 	{
@@ -170,6 +173,11 @@ function RightWindow()
 				if(count++==0) displayInfo(printPadded("\1w\1hNODE STATUS",this.width-1));
 				displayInfo(printPadded("\1n" + (n+1) +"\1h: \1n\1g" + system.username(node.useron)));
 				break;
+			case NODE_QUIET:
+				if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) {
+					displayInfo(printPadded("\1n" + (n+1) +"\1h: \1n\1g" + system.username(node.useron) + " [Q]"));
+				}
+				break;
 			}
 		}
 	}
@@ -178,9 +186,9 @@ function RightWindow()
 		this.chat_msgs++;
 		this.update=true;
 	}
-	this.addNotice=function(text)
+	this.addNotice=function()
 	{
-		this.notices.push(text);
+		this.notices++;
 		this.update=true;
 	}
 }
@@ -195,11 +203,18 @@ function MainWindow()
 	
 	this.init=function()
 	{
-		this.chat.init(settings.main_width,settings.main_height-3,2,5);
+		this.width=console.screen_columns-right.width-2;
+		this.chat.init(this.width,settings.main_height-3,2,5);
 		this.chat.input_line.init(9,console.screen_rows,console.screen_columns-9,"\0017","\1k");
 		this.chat.joinChan("BBS MAIN",user.alias,user.name);
 		this.loadWallPaper(directory(system.text_dir + "cshell/main.*.bin")[0]);
 		this.chat.chatroom.active=false;
+	}
+	this.quitChat=function()
+	{
+		for(var c in this.chat.chatroom.channels) {
+			this.chat.partChan(c,user.alias);
+		}
 	}
 	this.drawTitle=function()
 	{
@@ -237,6 +252,10 @@ function MainWindow()
 		this.loadWallPaper(directory(system.text_dir + "cshell/main.*.bin")[0]);
 		this.redraw();
 	}
+	this.notice=function(text)
+	{
+		this.chat.chatroom.notice(text.replace("\r\n",""));
+	}
 	this.redraw=function()
 	{
 		if(this.in_chat) {
@@ -246,6 +265,7 @@ function MainWindow()
 		} else {
 			this.clear();
 		}
+		drawSeparator(this.chat.chatroom.x+this.chat.chatroom.columns,2,settings.main_height);
 	}
 	
 	this.drawChat=function()
@@ -255,15 +275,16 @@ function MainWindow()
 	}
 	this.loadWallPaper=function(file)
 	{
-		var width=this.chat.chatroom.columns;
-		var height=this.chat.chatroom.rows+3;
 		if(file_exists(file)) {
 			var size=file_getname(file).split(".")[1].split("x");
-			if(size[0]) width=Number(size[0]);
-			if(size[1]) height=Number(size[1]);
+			var width=Number(size[0]);
+			var height=Number(size[1]);
+			if(width <= this.chat.chatroom.columns && 
+				height <= this.chat.chatroom.rows+3) {
+				this.wp=new Graphic(width,height);
+				this.wp.load(file);
+			}
 		}
-		this.wp=new Graphic(width,height);
-		this.wp.load(file);
 	}
 	this.drawWallPaper=function()
 	{
@@ -275,8 +296,6 @@ function MainWindow()
 			posx+=parseInt(gapx/2,10);
 			posy+=parseInt(gapy/2,10);
 		}
-		if(this.wp.width > this.chat.chatroom.columns || 
-			this.wp.height > this.chat.chatroom.rows+3) return false;
 		this.wp.draw(posx,posy);
 		this.wp_shown=true;
 	}
@@ -409,7 +428,7 @@ function Settings(list)
 	
 	this.clock_fg=BLACK;
 	this.clock_bg=BG_LIGHTGRAY;
-	this.right_width=18;
+	this.right_width=20;
 	
 	for(var s in list) {
 		this[s]=list[s];

@@ -1,5 +1,5 @@
 /* MENU OBJECTS */
-menuobj=[];
+var menuobj=[];
 menuobj["main"]=function() {
 	this.title="MAIN";
 	this.items=new Array();
@@ -44,6 +44,7 @@ menuobj["delfavorite"]=function() {
 	}
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_DFLT;
 }
 menuobj["addfavorite"]=function() {
 	this.title="ADD FAVORITE";
@@ -55,6 +56,7 @@ menuobj["addfavorite"]=function() {
 	this.addcmd(favorites.it,undefined,true);
 	set_hotkeys(this);
 	fill_menu(this);
+	this.node_action=NODE_DFLT;
 }
 menuobj["file"]=function() {
 	this.title="FILES";
@@ -109,7 +111,8 @@ menuobj["settings"]=function() {
 menuobj["email"]=function() {
 	this.title="E-MAIL";
 	this.items=new Array();
-	this.addcmd("Send Mail","S");
+	this.addcmd('SysOp Feedback','F',user.compare_ars("REST S"));
+	this.addcmd("Send E-Mail","E",user.compare_ars("REST S AND REST E AND REST M"));
 	this.addcmd("Read Inbox","R");
 	this.addcmd("Read Sent Messages","M",user.compare_ars("REST K"));
 	set_hotkeys(this);
@@ -124,7 +127,7 @@ menuobj["message"]=function() {
 	this.addcmd("Scan Messages To You","Y");
 	this.addcmd("Search Message Text","T");
 	this.addcmd("Post Message","P",user.compare_ars("REST P"));
-	if(user.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+	if(user.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
 		this.items[7].disabed=true;
 	this.addcmd("Read/Post Auto-Msg","A");
 	this.addcmd("QWK Transfer Menu","Q");
@@ -183,18 +186,6 @@ menuobj["userlist"]=function() {
 	this.addcmd("Logons Today","L");
 	this.addcmd("Sub-Board","S");
 	this.addcmd("All","A");
-	set_hotkeys(this);
-	fill_menu(this);
-}
-menuobj["emailtarget"]=function() {
-	this.title="E-MAIL";
-	this.info=system.text_dir + "cshell/email.ini";
-	this.items=new Array();
-	this.addcmd('Sysop','S',user.compare_ars("REST S"));
-	this.addcmd('Local User','L',user.compare_ars("REST E"));
-	this.addcmd('To Local User w/Attach','A',user.compare_ars("REST E"));
-	this.addcmd('To Remote User','R',user.compare_ars("REST E OR REST M"));
-	this.addcmd('To Remote User w/Attach','T',user.compare_ars("REST E OR REST M"));
 	set_hotkeys(this);
 	fill_menu(this);
 }
@@ -443,25 +434,25 @@ menucmd["info"]=function(key) {
 			clear_screen();
 			bbs.sys_info();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'V':
 			clear_screen();
 			bbs.ver();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'S':
 			clear_screen();
 			bbs.sub_info();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'Y':
 			clear_screen();
 			bbs.user_info();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'U':
 			this.loadMenu("userlist");
@@ -469,7 +460,7 @@ menucmd["info"]=function(key) {
 		case 'T':
 			clear_screen();
 			bbs.text_sec();
-			this.redraw();
+			
 			break;
 	}
 }
@@ -480,19 +471,19 @@ menucmd["userlist"]=function(key) {
 			clear_screen();
 			bbs.list_logons();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'S':
 			clear_screen();
 			bbs.list_users(UL_SUB);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'A':
 			clear_screen();
 			bbs.list_users(UL_ALL);
 			console.pause();
-			this.redraw();
+			
 			break;
 	}
 }
@@ -575,13 +566,13 @@ menucmd["file"]=function(key) {
 					break changedir;
 				}
 			} while(0);
-			this.redraw();
+			
 			break;
 		case 'L':
 			clear_screen();
 			bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'N':
 			this.loadMenu("filedir");
@@ -633,12 +624,12 @@ menucmd["file"]=function(key) {
 					}
 				}
 			} while(0);
-			this.redraw();
+			
 			break;
 		case 'B':
 			clear_screen();
 			bbs.batch_menu();
-			this.redraw();
+			
 			break;
 		case 'V':
 			this.loadMenu("fileinfo");
@@ -680,7 +671,7 @@ menucmd["fileinfo"]=function(key) {
 				}
 			}
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'I':
 			clear_screen();
@@ -710,25 +701,25 @@ menucmd["fileinfo"]=function(key) {
 				}
 			}
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'P':
 			clear_screen();
 			bbs.xfer_policy();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'D':
 			clear_screen();
 			bbs.dir_info();
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'U':
 			clear_screen();
 			bbs.list_users(UL_DIR);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'S':
 			break;
@@ -745,7 +736,7 @@ menucmd["scannewfile"]=function(key) {
 			console.putmsg("\r\nchNew File Scan (All)\r\n");
 			bbs.scan_dirs(FL_ULTIME,true);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'L':
 			/* Scan this lib only */
@@ -754,7 +745,7 @@ menucmd["scannewfile"]=function(key) {
 			for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
 				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'D':
 			/* Scan this dir only */
@@ -762,13 +753,13 @@ menucmd["scannewfile"]=function(key) {
 			console.putmsg("\r\nchNew File Scan (Dir)\r\n");
 			bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'N':
 			// ToDo: Don't clear screen here, just do one line
 			clear_screen();
 			bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
-			this.redraw();
+			
 			break;
 		default:	// Anything else will escape.
 			left.menu.nodraw=true;
@@ -787,7 +778,7 @@ menucmd["scanfilenames"]=function(key) {
 					bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0);
 			}
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'L':
 			/* Scan this lib only */
@@ -797,7 +788,7 @@ menucmd["scanfilenames"]=function(key) {
 			for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
 				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'D':
 			/* Scan this dir only */
@@ -806,7 +797,7 @@ menucmd["scanfilenames"]=function(key) {
 			var spec=bbs.get_filespec();
 			bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,0);
 			console.pause();
-			this.redraw();
+			
 			break;
 		default:	// Anything else will escape.
 			left.menu.nodraw=true;
@@ -826,7 +817,7 @@ menucmd["scanfiledesc"]=function(key) {
 					bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC);
 			}
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'L':
 			/* Scan this lib only */
@@ -837,7 +828,7 @@ menucmd["scanfiledesc"]=function(key) {
 			for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
 				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'D':
 			/* Scan this dir only */
@@ -847,7 +838,7 @@ menucmd["scanfiledesc"]=function(key) {
 			var spec=console.getstr(40,K_LINE|K_UPPER);
 			bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,FL_FINDDESC);
 			console.pause();
-			this.redraw();
+			
 			break;
 		default:	// Anything else will escape.
 			left.menu.nodraw=true;
@@ -859,22 +850,22 @@ menucmd["upload"]=function(key) {
 		case 'C':	// Current dir
 			clear_screen();
 			bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
-			this.redraw();
+			
 			break;
 		case 'P':	// Menu_upload dir
 			clear_screen();
 			bbs.upload_file(file_area.upload_dir);
-			this.redraw();
+			
 			break;
 		case 'S':	// Sysop dir
 			clear_screen();
 			bbs.upload_file(file_area.sysop_dir);
-			this.redraw();
+			
 			break;
 		case 'U':	// To user
 			clear_screen();
 			bbs.upload_file(file_area.user_dir);
-			this.redraw();
+			
 		default:
 			left.menu.nodraw=true;
 			break;
@@ -886,18 +877,18 @@ menucmd["download"]=function(key) {
 		case 'B':
 			clear_screen();
 			bbs.batch_download();
-			this.redraw();
+			
 			break;
 		case 'N':
 			clear_screen();
 			var spec=bbs.get_filespec();
 			bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
-			this.redraw();
+			
 			break;
 		case 'U':
 			clear_screen();
 			bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
-			this.redraw();
+			
 			break;
 		default:
 			left.menu.nodraw=true;
@@ -998,12 +989,12 @@ menucmd["message"]=function(key) {
 				bbs.cursub=i;
 				break;
 			}
-			this.redraw();
+			
 			break;
 		case 'R':
 			clear_screen();
 			bbs.scan_posts();
-			this.redraw();
+			
 			break;
 		case 'N':
 			this.loadMenu("newmsgscan");
@@ -1017,23 +1008,23 @@ menucmd["message"]=function(key) {
 		case 'P':
 			clear_screen();
 			bbs.post_msg();
-			this.redraw();
+			
 			break;
 		case 'A':
 			clear_screen();
 			bbs.auto_msg();
-			this.redraw();
+			
 			break;
 		case 'Q':
 			clear_screen();
 			bbs.qwk_sec();
-			this.redraw();
+			
 			break;
 		case 'V':
 			clear_screen();
 			bbs.sub_info();
 			console.pause();
-			this.redraw();
+			
 			break;
 	}
 }
@@ -1050,7 +1041,7 @@ menucmd["searchmsgtxt"]=function(key) {
 					bbs.scan_posts(msg_area.grp_list[i].sub_list[j].number, SCAN_FIND, str);
 				}
 			}
-			this.redraw();
+			
 			break;
 		case 'G':
 			clear_screen();
@@ -1058,14 +1049,14 @@ menucmd["searchmsgtxt"]=function(key) {
 			str=console.getstr("",40,K_LINE|K_UPPER);
 			for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
 				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
-			this.redraw();
+			
 			break;
 		case 'S':
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
 			str=console.getstr("",40,K_LINE|K_UPPER);
 			bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
-			this.redraw();
+			
 			break;
 		default:
 			left.menu.nodraw=true;
@@ -1085,25 +1076,25 @@ menucmd["yourmsgscan"]=function(key) {
 					bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_TOYOU);
 				}
 			}
-			this.redraw();
+			
 			break;
 		case 'G':
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
 			for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
 				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU);
-			this.redraw();
+			
 			break;
 		case 'S':
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
 			bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
-			this.redraw();
+			
 			break;
 		case 'C':
 			clear_screen();
 			bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
-			this.redraw();
+			
 			break;
 		default:
 			left.menu.nodraw=true;
@@ -1120,94 +1111,36 @@ menucmd["newmsgscan"]=function(key) {
 				for(i=0; i<msg_area.grp_list[j].sub_list.length; i++)
 					bbs.scan_posts(msg_area.grp_list[j].sub_list[i].number, SCAN_NEW);
 			}
-			this.redraw();
+			
 			break;
 		case 'G':
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 			for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
 				bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW);
-			this.redraw();
+			
 			break;
 		case 'S':
 			clear_screen();
 			console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
 			bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
-			this.redraw();
+			
 			break;
 		case 'C':
 			clear_screen();
 			bbs.cfg_msg_scan(SCAN_CFG_NEW);
-			this.redraw();
+			
 			break;
 		case 'P':
 			clear_screen();
 			bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
-			this.redraw();
+			
 			break;
 		case 'R':
 			bbs.reinit_msg_ptrs()
 			break;
 		default:
 			left.menu.nodraw=true;
-			break;
-	}
-}
-menucmd["emailtarget"]=function(key) {
-	switch(key) 
-	{
-		case 'S':
-			clear_screen();
-			bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
-			this.redraw();
-			break;
-		case 'L':
-			clear_screen();
-			console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-			str=console.getstr("",40,K_UPRLWR);
-			if(str!=null && str!="") {
-				if(str=="Sysop")
-					str="1";
-				if(str.search(/\@/)!=-1)
-					bbs.netmail(str);
-				else {
-					i=bbs.finduser(str);
-					if(i>0)
-						bbs.email(i,WM_EMAIL);
-				}
-			}
-			this.redraw();
-			break;
-		case 'A':
-			clear_screen();
-			console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-			str=console.getstr("",40,K_UPRLWR);
-			if(str!=null && str!="") {
-				i=bbs.finduser(str);
-				if(i>0)
-					bbs.email(i,WM_EMAIL|WM_FILE);
-			}
-			this.redraw();
-			break;
-		case 'R':
-			clear_screen();
-			if(console.noyes("\r\nAttach a file"))
-				i=0;
-			else
-				i=WM_FILE;
-			console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
-			str=console.getstr("",60,K_LINE);
-			if(str!=null && str !="")
-				bbs.netmail(str,i);
-			this.redraw();
-			break;
-		case 'T':
-			clear_screen();
-			console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-			str=console.getstr("",40,K_UPRLWR);
-			if(str!=null && str!="")
-				bbs.netmail(str,WM_FILE);
-			this.redraw();
 			break;
 	}
 }
@@ -1218,20 +1151,47 @@ menucmd["email"]=function(key) {
 	var j;
 	switch(key) 
 	{
-		case 'S':
-			this.loadMenu("emailtarget");
-			break;
 		case 'R':
 			clear_screen();
 			bbs.read_mail(MAIL_YOUR);
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'M':
 			clear_screen();
 			bbs.read_mail(MAIL_SENT);
 			console.pause();
-			this.redraw();
+			
+			break;
+		case 'F':
+			clear_screen();
+			bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
+			
+			break;
+		case 'E':
+			clear_screen();
+			bbs.replace_text(EnterNetMailAddress,
+				"_bh[cûb] yE-mail Address (user name, number or user@domain)");	
+			console.putmsg(bbs.text(EnterNetMailAddress) + "\r\n",P_SAVEATR);
+			bbs.revert_text(EnterNetMailAddress);
+
+			str=console.getstr("",60,K_LINE|K_NOCRLF);
+			if(str==null || str=="") break;
+			
+			var attach=WM_FILE;
+			if(console.noyes("\r\nAttach a file")) attach=0;
+
+			if(str.search(/\@/)!=-1) {
+				if(!user.compare_ars("REST M || REST E"))
+					bbs.netmail(str,attach);
+				break;
+			}
+
+			if(str=="SYSOP") str="1";
+			i=bbs.finduser(str);
+			if(i>0 && !user.compare_ars("REST E")) {
+				bbs.email(i,WM_EMAIL,attach);
+			}
 			break;
 	}
 	cur=this.menu.current;
@@ -1247,29 +1207,29 @@ menucmd["chat"]=function(key) {
 		case 'M':
 			clear_screen();
 			bbs.multinode_chat();
-			this.redraw();
+			
 			break;
 		case 'P':
 			clear_screen();
 			bbs.private_chat();
-			this.redraw();
+			
 			break;
 		case 'C':
 			clear_screen();
 			if(!bbs.page_sysop())
 				bbs.page_guru();
-			this.redraw();
+			
 			break;
 		case 'T':
 			clear_screen();
 			bbs.page_guru();
-			this.redraw();
+			
 			break;
 		case 'F':
 			clear_screen();
 			bbs.exec("?finger");
 			console.pause();
-			this.redraw();
+			
 			break;
 		case 'R':
 			clear_screen();
@@ -1278,12 +1238,12 @@ menucmd["chat"]=function(key) {
 			str=console.getstr(str, 50, K_EDIT|K_LINE|K_AUTODEL);
 			if(!console.aborted)
 				bbs.exec("?irc -a "+str);
-			this.redraw();
+			
 			break;
 		case 'I':
 			clear_screen();
 			bbs.exec("?sbbsimsg");
-			this.redraw();
+			
 			break;
 		case 'S':
 			this.loadMenu("chatsettings");
@@ -1319,12 +1279,12 @@ menucmd["settings"]=function(key) {
 			/* Still using this shell? */
 			if(user.command_shell != oldshell)
 				exit(0);
-			this.redraw();
+			
 			break;
 		case 'B':
 			clear_screen();
 			bbs.time_bank();
-			this.redraw();
+			
 			break;
 		case 'F':
 			this.loadMenu("filesettings");
