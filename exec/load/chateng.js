@@ -332,6 +332,7 @@ function ChatRoom()
 		if(this.columns>=console.screen_columns) this.columns=console.screen_columns-1;
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k\1h"); 
 		this.window=new Graphic(this.columns,this.rows,getColor(this.bg));
+		this.window.length=this.window.height-1;
 	}
 	this.resize=function(x,y,c,r,bg)
 	{
@@ -352,6 +353,7 @@ function ChatRoom()
 		this.scrollbar=new Scrollbar(this.x+this.columns,this.y,this.rows,"vertical","\1k\1h"); 
 		
 		this.window.resize(this.columns,this.rows);
+		this.window.length=this.window.height-1;
 		for(var m=0;m<this.message_list.length;m++) {
 			this.window.putmsg(false,false,this.message_list[m],undefined,true);
 		}
@@ -542,10 +544,9 @@ function ChatRoom()
 	}
 	this.drawScrollBar=function()
 	{
-		if(this.window.length>this.window.height) {
+		if(this.message_list.length>this.window.height) {
 			var index=this.window.index;
 			var range=this.window.length-this.window.height;
-			log("scrollbar: " + index + "/" + range);
 			this.scrollbar.draw(index,range);
 		}
 	}
