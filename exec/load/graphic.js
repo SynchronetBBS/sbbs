@@ -300,27 +300,28 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 			return bbs.atcode(code);
 		}
 	)
-	if(y>=this.height) {
-		if(scroll) {
-			scrolls++;
-			this.scroll();
-			y--;
-		} else {
-			alert("Attempt to draw outside of screen");
-			return false;
-		}
-	} 
+	
 	/* wrap text at graphic width */
 	txt=word_wrap(txt,this.width);
 	
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
-	while(p<txt.length && x<this.width && y<this.height) {
-		ch=txt.substr(p++,1);
+	while(p<txt.length) {
+		while(y>=this.height) {
+			if(!scroll) {
+				alert("Attempt to draw outside of screen");
+				return false;
+			}
+			scrolls++;
+			this.scroll();
+			y--;
+		}
+		
+		ch=txt[p++];
 		switch(ch) {
 			case '\1':		/* CTRL-A code */
-				ch=txt.substr(p++,1).toUpperCase();
+				ch=txt[p++].toUpperCase();
 				switch(ch) {
 					case '\1':	/* A "real" ^A code */
 						this.data[x][this.index + y].ch=ch;
@@ -329,14 +330,10 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						if(x>=this.width) {
 							x=0;
 							y++;
+							log("next char: [" + txt[p] + "]");
+							if(txt[p] == '\r') p++;
+							if(txt[p] == '\n') p++;
 							this.length++;
-							if(y>=this.height) {
-								while(scroll && y>=this.height) {
-									scrolls++;
-									this.scroll();
-									y--;
-								}
-							}
 						}
 						break;
 					case 'K':	/* Black */
@@ -408,17 +405,8 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 						x=0;
 						break;
 					case ']':	/* LF */
-						if(p<txt.length-1) {
-							y++;
-							this.length++;
-							if(y>=this.height) {
-								while(scroll && y>=this.height) {
-									scrolls++;
-									this.scroll();
-									y--;
-								}
-							}
-						}
+						y++;
+						this.length++;
 						break;
 					default:	/* Other stuff... specifically, check for right movement */
 						if(ch.charCodeAt(0)>127) {
@@ -435,16 +423,7 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				break;
 			case '\n':
 				this.length++;
-				if(p<txt.length-1) {
-					y++;
-					if(y>=this.height) {
-						while(scroll && y>=this.height) {
-							scrolls++;
-							this.scroll();
-							y--;
-						}
-					}
-				}
+				y++;
 				break;
 			default:
 				this.data[x][this.index + y]=new Graphic_sector(ch,curattr);
@@ -452,16 +431,12 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 				if(x>=this.width) {
 					x=0;
 					y++;
+					if(txt[p] == '\r') p++;
+					if(txt[p] == '\n') p++;
 					this.length++;
-					if(y>=this.height) {
-						while(scroll && y>=this.height) {
-							scrolls++;
-							this.scroll();
-							y--;
-						}
-					}
 				}
 		}
 	}
 	return(scrolls);
 }
+
