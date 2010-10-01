@@ -81,11 +81,11 @@ const input_color=			"\1n";
 const private_color=		"\1n\1y";
 const global_color=		"\1n\1m";
 	
-function ChatEngine(root)
+function ChatEngine()
 {	
 	//TODO: the only time this will be used is for storing chat history
 	//maybe give ALL chat history files their own home, independent of the parent script
-	var root_dir=(root?root:js.exec_dir);
+	var root_dir=js.exec_dir;
 	var stream=new ServiceConnection("chat");
 	this.input_line=new InputLine();
 	this.chatroom=new ChatRoom();
@@ -196,6 +196,7 @@ function ChatEngine(root)
 			this.chatroom.process(packet);
 			return true;
 		}
+		return false;
 	}
 	this.processKey=function(key) //PROCESS ALL INCOMING KEYSTROKES
 	{
