@@ -35,7 +35,7 @@ const CONNECTION_TIMEOUT=	1;//SECONDS
 const CONNECTION_INTERVAL=	60;
 const CONNECTION_ATTEMPTS=	10;
 const MAX_BUFFER=			1024;
-const MAX_RECV=			10240;
+const MAX_RECV=			102400;
 
 var modules=[];
 var servers=[];
@@ -136,6 +136,7 @@ function init_module(module,module_name)
 				log("created server for: " + module_name);
 			}
 		}
+		sfile.close();
 	}
 }
 
@@ -423,13 +424,17 @@ function handle_filesync(socket,query)
 				break;
 			case "TRYRECV":
 				if(!sync_local(socket,module.dir,query)) {
-					send_receipts(query);
+					if(blocking[query.id] && blocking[query.id][query.filemask]) {
+						send_receipts(query);
+					}
 				}
 				break;
 			case "DORECV":
 				if(recv_file(socket,module.dir,query)) {
 					send_updates(socket,query);
-					send_receipts(query);
+					if(blocking[query.id] && blocking[query.id][query.filemask]) {
+						send_receipts(query);
+					}
 				}
 				break;
 			case "DOSEND":
@@ -445,10 +450,11 @@ function handle_filesync(socket,query)
 }
 function sync_remote(socket,dir,query)
 {
-	var files=directory(dir + file_getname(query.filemask));
+	var filemask=dir+file_getname(query.filemask);
+	var files=directory(filemask);
 	if(files.length>0) debug("sending " + files.length + " files",LOG_DEBUG);
 	else {
-		debug("file(s) not found: " + dir + query.filemask,LOG_WARNING);
+		debug("file(s) not found: " + dir + filemask,LOG_WARNING);
 		return false;
 	}
 	for(var f=0;f<files.length;f++) {
@@ -513,15 +519,13 @@ function recv_file(socket,dir,query)
 	}
 	
 	var file=new File(filename + ".tmp");
+	file.base64=true;
 	file.open('wb',true);
 	if(!file.is_open) {
 		log(LOG_WARNING,"error opening file: " + file.name);
 		return false;
 	}
-	
-	while(query.file.length > 0) {
-		file.writeBin(query.file.shift(),1);
-	}
+	file.write(query.file);
 	file.close();
 	
 	file_rename(file.name,filename);
@@ -540,18 +544,18 @@ function compare_dates(local,remote)
 }
 function send_receipts(query)
 {
-	if(blocking[query.id] && blocking[query.id][query.filemask]) {
-		while(blocking[query.id][query.filemask].length) {
-			var receipt=new Packet("FILESYNC");
-			receipt.filemask=query.filemask;
-			blocking[query.id][query.filemask].shift().enqueue(receipt);
-		}
+	while(blocking[query.id][query.filemask].length) {
+		var receipt=new Packet("FILESYNC");
+		receipt.filemask=query.filemask;
+		blocking[query.id][query.filemask].shift().enqueue(receipt);
 	}
 }
 function load_file(filename)
 {
 	var d=new Object();
 	var f=new File(filename);
+	
+	f.base64=true;
 	f.open('rb',true);
 	if(!f.is_open) {
 		log(LOG_WARNING,"error opening file: " + f.name);
@@ -560,11 +564,7 @@ function load_file(filename)
 	d.filesize=file_size(filename);
 	d.filedate=file_date(filename);
 	d.filemask=file_getname(filename);
-	d.file=[];
-	while(1) { 
-		if(f.eof) break; 
-		d.file.push(f.readBin(1)); 
-	}
+	d.file=f.read();
 	f.close();
 	return d;
 }
