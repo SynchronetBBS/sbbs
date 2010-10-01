@@ -6,7 +6,7 @@ load(game_dir+"rolldice.js");
 var settings=	loadSettings(game_dir+"dice.ini");
 var players=	new PlayerData(game_dir+settings.player_file);
 var game_data=	new GameData(game_dir+"*.dw");
-var stream=	new ServiceConnection("dicewarz2");
+var stream=	argv[0]?argv[0]:new ServiceConnection("dicewarz2");
 
 function Char(ch,fg,bg)
 {

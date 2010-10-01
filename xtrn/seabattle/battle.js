@@ -142,6 +142,7 @@ function GameData(gamefile)
 			}
 		}
 		gFile.close();
+		sendFiles(gFile.name);
 	}
 	this.storePlayer=function(id)
 	{
@@ -150,6 +151,7 @@ function GameData(gamefile)
 		var player=this.findPlayer(id);
 		gFile.iniSetValue("players",id,player.ready);
 		gFile.close();
+		sendFiles(gFile.name);
 	}
 	this.storePosition=function(id,x,y)
 	{
@@ -167,6 +169,7 @@ function GameData(gamefile)
 			gFile.iniSetValue(section,"orientation",contents.orientation);
 		}
 		gFile.close();
+		sendFiles(this.gamefile.name);
 	}
 	this.storeShot=function(coords,id)
 	{
@@ -176,6 +179,7 @@ function GameData(gamefile)
 		this.gamefile.iniSetValue(section,"shot",true);
 		this.gamefile.iniSetValue(null,"lastcpuhit",getBoardPosition(this.lastcpuhit));
 		this.gamefile.close();
+		sendFiles(this.gamefile.name);
 	}
 	this.storeGame=function()
 	{
@@ -192,6 +196,7 @@ function GameData(gamefile)
 		gFile.iniSetValue(null,"winner",this.winner);
 		gFile.iniSetValue(null,"singleplayer",this.singleplayer);
 		gFile.close();
+		sendFiles(gFile.name);
 	}
 	this.loadPlayers=function()
 	{
@@ -601,10 +606,12 @@ function PlayerList()
 	}
 	this.loadPlayers=function()
 	{
+		var update=false;
 		var pFile=new File(root + "players.ini");
 		pFile.open((file_exists(pFile.name) ? "r+":"w+"),true); 
 		
 		if(!pFile.iniGetValue(this.prefix + user.alias,"name")) {
+			update=true;
 			pFile.iniSetObject(this.prefix + user.alias,new Player(user.alias));
 		}
 		var players=pFile.iniGetSections();
@@ -612,6 +619,9 @@ function PlayerList()
 			this.players[players[player]]=pFile.iniGetObject(players[player]);
 		}
 		pFile.close();
+		if(update) {
+			sendFiles("players.ini");
+		}
 	}
 	this.loadPlayer=function(player_id)
 	{
