@@ -24,10 +24,10 @@ function Server_command(srv,cmdline,onick,ouh) {
 			srv.is_registered = true;
 			break;
 		case "352":	// WHO reply.  Process into local cache.
-			var nick = cmd[6].toUpperCase();
-			if(!srv.users[nick]) srv.users[nick] = new Server_User(cmd[3] + "@" + cmd[4]);
-			else srv.users[nick].uh=cmd[3] + "@" + cmd[4];
-			srv.users[nick].channels[cmd[2].toUpperCase()]=true;
+			var nick = cmd[6];
+			if(!srv.users[nick.toUpperCase()]) srv.users[nick.toUpperCase()] = new Server_User(cmd[3] + "@" + cmd[4],nick);
+			else srv.users[nick.toUpperCase()].uh=cmd[3] + "@" + cmd[4];
+			srv.users[nick.toUpperCase()].channels[cmd[2].toUpperCase()]=true;
 			break;
 		case "433":	// Nick already in use.
 			srv.juped = true;
@@ -47,7 +47,7 @@ function Server_command(srv,cmdline,onick,ouh) {
 				break;
 			}
 			// Someone else joining.
-			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh);
+			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
 			else srv.users[onick.toUpperCase()].uh=ouh;
 			srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()]=true;
 			var lvl = srv.bot_access(onick,ouh);
