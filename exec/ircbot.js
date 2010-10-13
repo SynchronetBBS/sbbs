@@ -173,7 +173,8 @@ function main() {
 				for (c in srv.channel) {
 					if (!srv.channel[c].is_joined &&
 						(srv.channel[c].lastjoin < time())) {
-						srv.writeout("JOIN " + srv.channel[c].name);
+						if(srv.channel[c].key) srv.writeout("JOIN " + srv.channel[c].name + " " + srv.channel[c].key);
+						else srv.writeout("JOIN " + srv.channel[c].name);
 						srv.channel[c].lastjoin = time() + 60;
 					}
 					// Cycle any available module "main" functions
@@ -265,9 +266,12 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.channel = new Array();
 	var my_channels = channels.split(",");
 	for (c in my_channels) {
-		log ("--- Adding Channel: " + my_channels[c]);
-		this.channel[my_channels[c].toUpperCase()] = new Bot_IRC_Channel(
-			my_channels[c]);
+		my_channels[c]=my_channels[c].split(" ");
+		var name=my_channels[c][0];
+		var key=my_channels[c][1];
+		log ("--- Adding Channel: " + name);
+		this.channel[name.toUpperCase()] = new Bot_IRC_Channel(
+			name,key);
 	}
 	// Dynamic variables (used for the bot's state.
 	this.curnick = nick;
@@ -306,9 +310,10 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	}
 }
 
-function Bot_IRC_Channel(name) {
+function Bot_IRC_Channel(name,key) {
 	// Statics.
 	this.name = name;
+	this.key = key;
 	// Dynamics.
 	this.is_joined = false;
 	this.lastjoin = 0;
