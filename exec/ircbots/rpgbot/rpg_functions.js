@@ -1,6 +1,7 @@
 function Server_command(srv,cmdline,onick,ouh) {
 	var cmd=IRC_parsecommand(cmdline);
 	var player=players.player.(@name == onick);
+	
 	switch (cmd[0]) {
 		case "PART":
 		case "QUIT":
@@ -116,36 +117,41 @@ function handle_command(srv,cmd,player,target) {
 /*	game activity functions */
 
 function display_room(srv,player,z,r) {
-	log("displaying zone: " + z + " room: " + r);
-
 	var zone=zones[z];
 	var room=zone.room.(@id == r);
 	
-	show_room_title(srv,player.@channel,zone,room);
-	show_room_description(srv,player.@channel,zone,room);
-	show_room_exits(srv,player.@channel,zone,room);
-	show_room_items(srv,player.@channel,zone,room);
-	show_room_mobs(srv,player.@channel,zone,room);
+	if(player.@editing == 1) {
+		srv.o(player.@channel,"Editing '" + zone.@name + "' [Z: " + z + " R: " + r + "]");
+	}
+	show_room_title(srv,player.@channel,zone,room,player);
+	show_room_description(srv,player.@channel,zone,room,player);
+	show_room_exits(srv,player.@channel,zone,room,player);
+	show_room_items(srv,player.@channel,zone,room,player);
+	show_room_mobs(srv,player.@channel,zone,room,player);
 	show_room_players(srv,player,zone,room);
 }
 
-function show_room_description(srv,target,zone,room) {
-	srv.o(target,strip_ctrl(room.description));
+function show_room_description(srv,target,zone,room,player) {
+	if(player.@editing == 1) srv.o(target,"[DESC] " + strip_ctrl(room.description));
+	else srv.o(target,strip_ctrl(room.description));
 }
 
-function show_room_title(srv,target,zone,room) {
-	srv.o(target,room.title);
+function show_room_title(srv,target,zone,room,player) {
+	if(player.@editing == 1) srv.o(target,"[TITLE] " + room.title);
+	else srv.o(target,room.title);
 }
 
-function show_room_items(srv,target,zone,room) {
+function show_room_items(srv,target,zone,room,player) {
 	for each(var i in room.item) {
-		srv.o(target,i.appearance);
+		if(player.@editing == 1) srv.o(target,"[ITEM: " + i.@id + "] " + i.appearance);
+		else srv.o(target,i.appearance);
 	}
 }
 
-function show_room_mobs(srv,target,zone,room) {
+function show_room_mobs(srv,target,zone,room,player) {
 	for each(var m in room.mob) {
-		srv.o(target,m.appearance);
+		if(player.@editing == 1) srv.o(target,"[MOB: " + m.@id + "] " + m.appearance);
+		else srv.o(target,m.appearance);
 	}
 }
 
@@ -159,20 +165,22 @@ function show_room_players(srv,player,zone,room) {
 	}
 }
 
-function show_room_exits(srv,target,zone,room) {
-	srv.o(target,get_exit_string(zone,room));
+function show_room_exits(srv,target,zone,room,player) {
+	srv.o(target,get_exit_string(zone,room,player));
 }
 
-function get_exit_string(zone,room) {
+function get_exit_string(zone,room,player) {
 	var exit_str="";
-	for(var e in room.exit) {
+	var exits=room.exit.(@target != "");
+	for(var e in exits) {
 		var prefix="";
-		if(room.exit[e].door) {
-			var door=zone.door.(@id == room.exit[e].door);
+		if(exits[e].door) {
+			var door=zone.door.(@id == exits[e].door);
 			if(door.locked==true) prefix="@";
 			else if(door.open==false) prefix="#";
 		}
-		exit_str+=", "+prefix+room.exit[e].@name;
+		exit_str+=", "+prefix+exits[e].@name.substr(0,1);
+		if(player.@editing == 1) exit_str+="[ID:"+exits[e].@target+"]";
 	}
 	return ("exits: " + exit_str.substr(2));
 }
@@ -372,7 +380,7 @@ function load_zone(dir) {
 
 		log("loading zone file: " + z_file.name);
 		if(!z_file.open("r+")) return false;
-		var zone=new XML(z_file.readAll().join()); 
+		var zone=new XML(z_file.read()); 
 		z_file.close();
 		
 		zone.directory=<directory>{dir}</directory>;
@@ -397,14 +405,14 @@ function load_zone(dir) {
 
 function load_items(file) {
 	if(!file.open("r+")) return false;
-	var items=new XML(file.readAll().join());
+	var items=new XML(file.read());
 	file.close();
 	return items;
 }
 
 function load_mobs(file) {
 	if(!file.open("r+")) return false;
-	var mobs=new XML(file.readAll().join());
+	var mobs=new XML(file.read());
 	file.close();
 	return mobs;
 }
@@ -416,9 +424,14 @@ function load_players() {
 		var p_file=new File(p_list[f]);
 		if(!p_file.open("r+")) return false;
 		log("loading player data: " + p_file.name);
-		var player=new XML(p_file.readAll().join());
+		var player=new XML(p_file.read());
 		p_file.close();
 		player.@active=0;
+		player.@editing=0;
+		if(!zones[player.@zone]) {
+			player.@zone=0;
+			player.@room=1;
+		}
 		players.appendChild(player);
 	}
 }
@@ -435,13 +448,199 @@ function load_zones() {
 function load_classes() {
 	if(!c_file.open("r+")) return false;
 	writeln("loading class data: " + c_file.name);
-	classes=new XML(c_file.readAll().join());
+	classes=new XML(c_file.read());
 	c_file.close();
 }
 
 function load_races() {
 	if(!r_file.open("r+")) return false;
 	writeln("loading race data: " + r_file.name);
-	races=new XML(r_file.readAll().join());
+	races=new XML(r_file.read());
 	r_file.close();
+}
+
+/* game edit functions */
+function find_link(zone,room,start_coords,finish_coords,checked) {
+	
+
+	/* cumulative array for tracking scanned rooms (by room.@id) */
+	checked=checked || [];
+	if(checked[room.@id]) return -1;
+	checked[room.@id] = true;
+	
+	
+	if(!start_coords) start_coords=new Coords(0,0,0);
+	else {
+		/* if the passed starting coordinates match our query, return the current room id */
+		if(start_coords.x == finish_coords.x &&
+			start_coords.y == finish_coords.y &&
+			start_coords.z == finish_coords.z) {
+			return room.@id;
+		}
+	}
+	/* store all room exits in an array */
+	var dirs=[];
+	for(var e=0;e<room.exit.length();e++) {
+		if(room.exit[e].@target == "" || zones[room.exit[e].@zone]) continue;
+		
+		var dir=room.exit[e].@name;
+		var target_id=room.exit[e].@target;
+		var new_coords=get_exit_coords(start_coords,dir);
+		var target=zone.room.(@id == target_id);
+		
+		/* do recursive scan on all rooms */
+		var result=find_link(zone,target,new_coords,finish_coords,checked);
+		if(result >= 0) return result;
+	}
+	return -1;
+}
+
+function get_exit_coords(coords,dir) {
+	var new_coords=new Coords(coords.x,coords.y,coords.z);
+	switch(dir.toString()) {
+	case "north":
+		new_coords.y++;
+		break;
+	case "south":
+		new_coords.y--;
+		break;
+	case "east":
+		new_coords.x++;
+		break;
+	case "west":
+		new_coords.x--;
+		break;
+	case "up":
+		new_coords.z++;
+		break;
+	case "down":
+		new_coords.z--;
+		break;
+	default:
+		log("unknown dir: " + dir);
+		break;
+	}
+	return new_coords;
+}
+
+function create_player(name,player_race,player_class) {
+	var player=
+		<player name={name} active="0" zone="0" room="0">
+			<experience>0</experience>
+			<hitpoints>{base_hitpoints}</hitpoints>
+			<movement>{base_movement}</movement>
+			<mana>{base_mana}</mana>
+			<gold>0</gold>
+			<strength>{base_stats}</strength>
+			<dexterity>{base_stats}</dexterity>
+			<wisdom>{base_stats}</wisdom>
+			<intelligence>{base_stats}</intelligence>
+			<constitution>{base_stats}</constitution>
+			<level>1</level>
+			<travel>walk</travel>
+			<player_class>{player_class}</player_class>
+			<player_race>{player_race}</player_race>
+			<inventory>
+				{global_items.item.(@id == "1").copy()}
+				{global_items.item.(@id == "2").copy()}
+				{global_items.item.(@id == "3").copy()}
+				{global_items.item.(@id == "4").copy()}
+			</inventory>
+			<equipment>
+				<slot id="head" qty="1"/>
+				<slot id="neck" qty="1"/>
+				<slot id="about body" qty="1"/>
+				<slot id="body" qty="1"/>
+				<slot id="waist" qty="1"/>
+				<slot id="wrist" qty="2"/>
+				<slot id="hands" qty="1"/>
+				<slot id="finger" qty="2"/>
+				<slot id="wielded" qty="1"/>
+				<slot id="legs" qty="1"/>
+				<slot id="feet" qty="1"/>
+			</equipment>
+		</player>;
+	return player;
+}
+
+function create_new_room(srv,target,zone,room,player,dir) {
+	var new_id=get_new_room_id(zone);
+	var old_id=room.@id;
+	/* add this room to previous room's exit list */
+	room.exit +=<exit name={dir} target={new_id}/>;
+	
+	/* add new room data to zone */
+	zone.room += 
+		<room id={new_id}>
+			<title>{settings.title}</title>
+			<description>{settings.description}</description>
+		</room>;
+		
+	/* get direction we came from and add that exit to new room */
+	dir=reverse_dir(dir);
+	var new_room=zone.room.(@id == new_id);
+	new_room.exit += <exit name={dir} target={old_id}/>;
+	
+	if(settings.autolink) {
+		var dirs=get_dir_coords(dir);
+		for(var d in dirs) {
+			if(!dirs[d]) continue;
+			var result=find_link(zone,new_room,undefined,dirs[d],undefined);
+			if(result >= 0) {
+				/* add link to found exit */
+				new_room.exit += <exit name={d} target={result}/>;
+				/* add corresponding exit for target room */
+				var target_room=zone.room.(@id == result);
+				target_room.exit += <exit name={reverse_dir(d)} target = {new_id}/>;
+			}
+		}
+	} 
+	
+	/* move player to new room */
+	player.@room=new_id;
+	srv.o(target,"room " + new_id + " created");
+	display_room(srv,player,zone.@id,new_id);
+}
+
+function get_dir_coords(exclude) {
+	var dirs={
+		north:new Coords(0,1,0),
+		south:new Coords(0,-1,0),
+		east:new Coords(1,0,0),
+		west:new Coords(-1,0,0),
+		up:new Coords(0,0,1),
+		down:new Coords(0,0,-1),
+	}
+	delete dirs[exclude];
+	return dirs;
+}
+
+function reverse_dir(dir) {
+	if(dir=="north") dir="south";
+	else if(dir=="south") dir="north";
+	else if(dir=="east") dir="west";
+	else if(dir=="west") dir="east";
+	else if(dir=="up") dir="down";
+	else if(dir=="down") dir="up";
+	return dir;
+}
+
+function get_new_room_id(zone) {
+	var id = 0;
+	var r = zone.room.(@id == id);
+	while(r != undefined) {	
+		id++;
+		r=zone.room.(@id == id);
+	}
+	return id;
+}
+
+function get_new_zone_id() {
+	var id = 0;
+	var z = zones[id];
+	while(z != undefined) {	
+		id++;
+		z=zones[id];
+	}
+	return id;
 }

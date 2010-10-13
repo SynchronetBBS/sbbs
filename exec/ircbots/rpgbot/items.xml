@@ -1,0 +1,38 @@
+<items>
+	<item id="0">
+		<type>food</type>
+		<title>a loaf of bread</title>
+		<keywords>loaf of bread</keywords>
+		<description>
+			It is hard, stale and disgusting.
+		</description>
+		<appearance>a moldy loaf of bread is lying here.</appearance>
+		<weight>1</weight>
+	</item>
+	<item id="1">
+		<equip id="wielded"/>
+		<title>a dull practice sword</title>
+		<keywords>dull practice sword</keywords>
+		<description>The sword is so tarnished and worn that it is barely shiny.</description>
+		<appearance>a battered-looking sword lies at your feet.</appearance>
+		<dice qty="2" sides="4"/>
+		<weight>5</weight>
+	</item>
+	<item id="2">
+		<equip id="body"/>
+		<title>a tattered cotton shirt</title>
+		<keywords>tattered cotton shirt</keywords>
+		<description>The shirt is filthy and offers little protection from the elements.</description>
+		<appearance>a crumpled pile of cloth lies here.</appearance>
+		<armor>10</armor>
+		<weight>1</weight>
+	</item>
+	<item id="3">
+		<type>container</type>
+		<title>a small bag</title>
+		<keywords>small bag</keywords>
+		<description>The bag is small and lightweight.</description>
+		<appearance>a small bag has been discarded here.</appearance>
+		<weight>1</weight>
+	</item>
+</items>

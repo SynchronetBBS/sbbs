@@ -2,7 +2,9 @@ var p_dir=this.dir+"players/";
 var z_dir=this.dir+"zones/";
 var c_file=new File(this.dir+"classes.xml");
 var r_file=new File(this.dir+"races.xml");
+var gi_file=new File(this.dir+"items.xml");
 
+var settings=new Settings();
 var players=[];
 var zones=[];
 var classes=[];
@@ -10,6 +12,7 @@ var races=[];
 var global_items=[];
 var player_attacks=[];
 var mob_attacks=[];
+var global_items=load_items(gi_file);
 
 var activity_timeout=300;	// seconds
 var tick_time=4;	// seconds
@@ -29,7 +32,7 @@ function save() {
 		var p_file=new File(p_dir + player.@name + ".xml");
 		if(!p_file.open("w+")) continue;
 		debug("saving RPG player: " + player.@name);
-		p_file.writeln(player.normalize());
+		p_file.write(player);
 		p_file.close();
 	}
 }
@@ -103,47 +106,19 @@ function update_game_status(srv) {
 	return active;
 }
 
-function create_player(name,player_race,player_class) {
-	var player=
-		<player name={name} active="0" zone="0" room="0">
-			<experience>0</experience>
-			<hitpoints>{base_hitpoints}</hitpoints>
-			<movement>{base_movement}</movement>
-			<mana>{base_mana}</mana>
-			<gold>0</gold>
-			<strength>{base_stats}</strength>
-			<dexterity>{base_stats}</dexterity>
-			<wisdom>{base_stats}</wisdom>
-			<intelligence>{base_stats}</intelligence>
-			<constitution>{base_stats}</constitution>
-			<level>1</level>
-			<travel>walk</travel>
-			<player_class>{player_class}</player_class>
-			<player_race>{player_race}</player_race>
-			<inventory>
-				{items.item.(@id == "1").copy()}
-				{items.item.(@id == "2").copy()}
-				{items.item.(@id == "3").copy()}
-				{items.item.(@id == "4").copy()}
-			</inventory>
-			<equipment>
-				<slot id="head" qty="1"/>
-				<slot id="neck" qty="1"/>
-				<slot id="about body" qty="1"/>
-				<slot id="body" qty="1"/>
-				<slot id="waist" qty="1"/>
-				<slot id="wrist" qty="2"/>
-				<slot id="hands" qty="1"/>
-				<slot id="finger" qty="2"/>
-				<slot id="wielded" qty="1"/>
-				<slot id="legs" qty="1"/>
-				<slot id="feet" qty="1"/>
-			</equipment>
-		</player>;
-	return player;
-}
-
 /*	game objects */
+function Coords(x,y,z)
+{
+	this.x=x;
+	this.y=y;
+	this.z=z;
+}
+function Settings()
+{
+	this.autolink=true;
+	this.title="New Room";
+	this.description="A new room.";
+}
 function Attack(attacker,defender)
 {
 	this.attacker=attacker;
@@ -158,8 +133,10 @@ function Move(item,result)
 /*	Init */
 load_classes();
 load_races();
-load_players();
 /* 	TODO: make zones load on demand, 
 	as loading them all at the start could become a problem 
 	when the world gets bigger */
 load_zones(); 
+load_players();
+
+
