@@ -11,39 +11,29 @@ function Server_command(srv,cmdline,onick,ouh) {
 			}
 			break;
 		case "JOIN":
-			if (cmd[1][0] == ":")
-				cmd[1] = cmd[1].slice(1);
-			var target=cmd[1];
-			//srv.o(target,"Welcome to RPG test!","NOTICE");
-			//srv.o(target,"For a list of classes, type " + get_cmd_prefix() + "RPG CLASSES","NOTICE");
-			//srv.o(target,"For a list of races, type " + get_cmd_prefix() + "RPG RACES","NOTICE");
-			//srv.o(target,"To create a new character, type " + get_cmd_prefix() + "RPG CREATE <race> <class>","NOTICE");
-			//srv.o(target,"Type RPG LOGIN to start playing!","NOTICE");
+			/* if the user has no RPG player, greet them */
+			if(!player.length() > 0) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var target=cmd[1];
+
+				srv.o(target,"Welcome to RPG test, " + onick + "!","NOTICE");
+				srv.o(target,"Type 'help rpg' to get started.","NOTICE");
+			}
 			break;
 		case "PRIVMSG":
+			/* if the user has no RPG player or is not logged in, don't process RPG commands */
+			if(player.@active != 1) break;
+
 			var target=cmd[1];
-			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				/* respond only to private message commands */
-				if(player.@active == 1 && player.@channel == target) {
-					cmd.shift();
-					cmd.shift();
-					/*	handle commands such as north, south, east, west.... */
-					try {
-						handle_command(srv,cmd,player,player.@channel);
-					} catch(e) {
-						srv.o(target,e);
-					}
-				}
-			} else if (cmd[1].toUpperCase() == srv.curnick.toUpperCase()) {
-				if(player.@active ==1 ) {
-					cmd.shift();
-					cmd.shift();
-					/*	handle commands such as north, south, east, west.... */
-					try {
-						handle_command(srv,cmd,player,onick);
-					} catch(e) {
-						srv.o(target,e);
-					}
+			if(player.@channel == target) {
+				cmd.shift();
+				cmd.shift();
+				/*	handle commands such as north, south, east, west.... */
+				try {
+					handle_command(srv,cmd,player,player.@channel);
+				} catch(e) {
+					srv.o(target,e);
 				}
 			}
 			break;
@@ -99,8 +89,30 @@ function handle_command(srv,cmd,player,target) {
 			break;
 	}
 	
+	if(player.@editing == 1) {
+		if(Editor_Commands[cmd[0]]) {
+			Editor_Commands[cmd[0]](srv,target,zone,room,cmd,player);
+		} else if(RPG_Commands[cmd[0]] ||
+			Battle_Commands[cmd[0]] ||
+			Item_Commands[cmd[0]]) {
+			srv.o(target,"You can't do that while editing.");
+		}
+		return;
+	}
 	if(RPG_Commands[cmd[0]]) {
 		RPG_Commands[cmd[0]](srv,target,zone,room,cmd,player);
+		return;
+	} 
+	if(Battle_Commands[cmd[0]]) {
+		Battle_Commands[cmd[0]](srv,target,zone,room,cmd,player);
+		return;
+	}
+	if(Item_Commands[cmd[0]]) {
+		Item_Commands[cmd[0]](srv,target,zone,room,cmd,player);
+		return;
+	}
+	if(Editor_Commands[cmd[0]]) {
+		srv.o(target,"Type 'rpg edit' to enable editing.");
 		return;
 	}
 	
@@ -108,7 +120,7 @@ function handle_command(srv,cmd,player,target) {
 		var mob=room.mob[m];
 		for(var t in mob.trigger) {
 			if(cmd.join().match(mob.trigger[t].@id.toUpperCase())) {
-				srv.o(target,mob.name + " says, '" + mob.trigger[t].response + "'");
+				srv.o(target,mob.@name + " says, '" + mob.trigger[t].response + "'");
 			}
 		}
 	}
@@ -120,38 +132,31 @@ function display_room(srv,player,z,r) {
 	var zone=zones[z];
 	var room=zone.room.(@id == r);
 	
-	if(player.@editing == 1) {
-		srv.o(player.@channel,"Editing '" + zone.@name + "' [Z: " + z + " R: " + r + "]");
-	}
-	show_room_title(srv,player.@channel,zone,room,player);
-	show_room_description(srv,player.@channel,zone,room,player);
-	show_room_exits(srv,player.@channel,zone,room,player);
-	show_room_items(srv,player.@channel,zone,room,player);
-	show_room_mobs(srv,player.@channel,zone,room,player);
+	show_room_title(srv,player.@channel,zone,room);
+	show_room_description(srv,player.@channel,zone,room);
+	show_room_exits(srv,player.@channel,zone,room);
+	show_room_items(srv,player.@channel,zone,room);
+	show_room_mobs(srv,player.@channel,zone,room);
 	show_room_players(srv,player,zone,room);
 }
 
-function show_room_description(srv,target,zone,room,player) {
-	if(player.@editing == 1) srv.o(target,"[DESC] " + strip_ctrl(room.description));
-	else srv.o(target,strip_ctrl(room.description));
+function show_room_description(srv,target,zone,room) {
+	srv.o(target,strip_ctrl(room.description));
 }
 
-function show_room_title(srv,target,zone,room,player) {
-	if(player.@editing == 1) srv.o(target,"[TITLE] " + room.title);
-	else srv.o(target,room.title);
+function show_room_title(srv,target,zone,room) {
+	srv.o(target,room.title);
 }
 
-function show_room_items(srv,target,zone,room,player) {
+function show_room_items(srv,target,zone,room) {
 	for each(var i in room.item) {
-		if(player.@editing == 1) srv.o(target,"[ITEM: " + i.@id + "] " + i.appearance);
-		else srv.o(target,i.appearance);
+		srv.o(target,i.appearance);
 	}
 }
 
-function show_room_mobs(srv,target,zone,room,player) {
+function show_room_mobs(srv,target,zone,room) {
 	for each(var m in room.mob) {
-		if(player.@editing == 1) srv.o(target,"[MOB: " + m.@id + "] " + m.appearance);
-		else srv.o(target,m.appearance);
+		if(room.mob[m].@status != 0) srv.o(target,m.appearance);
 	}
 }
 
@@ -165,11 +170,11 @@ function show_room_players(srv,player,zone,room) {
 	}
 }
 
-function show_room_exits(srv,target,zone,room,player) {
-	srv.o(target,get_exit_string(zone,room,player));
+function show_room_exits(srv,target,zone,room) {
+	srv.o(target,get_exit_string(zone,room));
 }
 
-function get_exit_string(zone,room,player) {
+function get_exit_string(zone,room) {
 	var exit_str="";
 	var exits=room.exit.(@target != "");
 	for(var e in exits) {
@@ -179,8 +184,7 @@ function get_exit_string(zone,room,player) {
 			if(door.locked==true) prefix="@";
 			else if(door.open==false) prefix="#";
 		}
-		exit_str+=", "+prefix+exits[e].@name.substr(0,1);
-		if(player.@editing == 1) exit_str+="[ID:"+exits[e].@target+"]";
+		exit_str+=", "+prefix+exits[e].@name;
 	}
 	return ("exits: " + exit_str.substr(2));
 }
@@ -255,6 +259,7 @@ function find_object(container,keyword) {
 function find_mob(room,keyword) {
 	for(var m in room.mob) {
 		var mob=room.mob[m];
+		if(mob.@status == 0)  continue;
 		if(mob.keywords.match(keyword.toLowerCase())) {
 			return m;
 		}
@@ -353,7 +358,7 @@ function kill(srv,object) {
 	var zone=zones[object.@zone];
 	var room=zone.room.(@id == object.@room);
 	create_corpse(room,object);
-	delete object;
+	object.@status=0;
 }
 
 function create_corpse(room,object) {
@@ -390,11 +395,11 @@ function load_zone(dir) {
 		for(var r in zone.room) {
 			var room=zone.room[r];
 			for(var m in room.mob) {
-				var mob=mobs.mob.(@id == room.mob[m].@id).copy();
-				mob.@id=mob_count++;
-				mob.@room=room.@id;
-				mob.@zone=zone.@id;
-				room.mob[m].appendChild(mob.children());
+				room.mob[m]=mobs.mob.(@id == room.mob[m].@id).copy();
+				room.mob[m].@id=mob_count++;
+				room.mob[m].@room=room.@id;
+				room.mob[m].@zone=zone.@id;
+				room.mob[m].@status=1;
 			}
 		}
 		for (var i in zone..item) {
@@ -459,7 +464,75 @@ function load_races() {
 	r_file.close();
 }
 
-/* game edit functions */
+/* game editor display functions */
+
+function display_room_editor(srv,player,zone,room) {
+	srv.o(player.@channel,"Editing '" + blue + zone.@name + black + 
+		"' [Z:" + blue + " " + zone.@id + black + 
+		" R:" + blue + " " + room.@id + black + "]");
+}
+
+function display_exits_editor(srv,target,zone,room) {
+	var exits=["north","south","east","west","up","down"];
+	for each(var e in exits) {
+		var exit=room.exit.(@name == e);
+		if(exit.@target != undefined) {
+			var exit_str=red + "[" + e +"]";
+			if(zones[exit.@zone]) exit_str+= black + " z:" + blue + " " + exit.@zone;
+			exit_str+= black + " r:" + blue + " " + exit.@target;
+			if(exit.door != undefined) {
+				var door=zone.door.(@id == exit.door);
+				exit_str+= black + " door:" + blue + " " + door.@id;
+				exit_str+= black + " lock:" + blue + " " + door.locked;
+				exit_str+= black + " open:" + blue + " " + door.open;
+			}
+			srv.o(target,exit_str);
+		} else {
+			var start=new Coords(0,0,0);
+			var finish=get_exit_coords(start,e);
+			
+			result=find_link(zone,room,start,finish,undefined);
+			
+			if(result >= 0) {
+				var target_room=zone.room.(@id == result);
+				var exit=target_room.exit.(@name == reverse_dir(e));
+
+				var exit_str=red + "[" + e +"]";
+				exit_str+= black + " r:" + blue + " " + target_room.@id;
+				
+				if(exit.door != undefined) {
+					var door=zone.door.(@id == exit.door);
+					exit_str+= black + " door:" + blue + " " + door.@id;
+					exit_str+= black + " lock:" + blue + " " + door.locked;
+					exit_str+= black + " open:" + blue + " " + door.open;
+				}
+				exit_str+= red + " (unlinked)";
+				srv.o(target,exit_str);
+			}
+		}
+	}
+}
+
+function display_mobs_editor(srv,target,zone,room) {
+	for each(var m in room.mob) {
+		srv.o(target,
+			red + "[mob]" +  
+			black + " id:" + blue + " " + m.@id +
+			black + " name:" + blue + " " + m.@name);
+	}
+}
+
+function display_items_editor(srv,target,zone,room) {
+	for each(var i in room.item) {
+		srv.o(target,
+			red + "[item]" +  
+			black + " id:" + blue + " " + i.@id +
+			black + " name:" + blue + " " + i.title);
+	}
+}
+
+/* game editor functions */
+
 function find_link(zone,room,start_coords,finish_coords,checked) {
 	
 
@@ -598,8 +671,8 @@ function create_new_room(srv,target,zone,room,player,dir) {
 	
 	/* move player to new room */
 	player.@room=new_id;
-	srv.o(target,"room " + new_id + " created");
-	display_room(srv,player,zone.@id,new_id);
+	srv.o(target,"Room " + new_id + " created");
+	display_room_editor(srv,player,zone,new_room);
 }
 
 function get_dir_coords(exclude) {
@@ -611,7 +684,7 @@ function get_dir_coords(exclude) {
 		up:new Coords(0,0,1),
 		down:new Coords(0,0,-1),
 	}
-	delete dirs[exclude];
+	if(exclude) delete dirs[exclude];
 	return dirs;
 }
 

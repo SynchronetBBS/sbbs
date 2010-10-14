@@ -1,3 +1,19 @@
+/* 
+	$Id$
+	Synchronet IRC bot module for ircbot.js
+	
+	Role-playing game bot (MUD) with in-game zone editor
+	using XML data files. 
+	
+	TODO: 
+		add in-game item creation/editing
+		add in-game mob creation/editing
+		add time-based events and zone-cycles
+		...more when I think of it
+		
+	by Matt Johnson : MCMLXXIX (2010)
+*/
+
 var p_dir=this.dir+"players/";
 var z_dir=this.dir+"zones/";
 var c_file=new File(this.dir+"classes.xml");
@@ -13,6 +29,11 @@ var global_items=[];
 var player_attacks=[];
 var mob_attacks=[];
 var global_items=load_items(gi_file);
+
+var black=String.fromCharCode(3)+"1";
+var blue=String.fromCharCode(3)+"2";
+var green=String.fromCharCode(3)+"3";
+var red=String.fromCharCode(3)+"5";
 
 var activity_timeout=300;	// seconds
 var tick_time=4;	// seconds
