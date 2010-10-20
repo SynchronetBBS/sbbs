@@ -616,7 +616,3 @@ Bot_Commands["PIPE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	srv.o(target, "Invalid arguments.");
 	return;
 }
-
-for(var bc in Bot_Commands) {
-	js.global.Bot_Commands[bc]=Bot_Commands[bc];
-}
