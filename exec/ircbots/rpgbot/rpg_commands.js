@@ -1,8 +1,12 @@
+var Battle_Commands=[];
+var Editor_Commands=[];
+var Item_Commands=[];
+var RPG_Commands=[];
+
+/* MAIN BOT COMMANDS */
 Bot_Commands["CREATE"] = new Bot_Command(0,2,false);
-Bot_Commands["CREATE"].help = 
-	"This command creates a new player.";
 Bot_Commands["CREATE"].usage = 
-	get_cmd_prefix() + "CREATE <race> <class>";
+	get_cmd_prefix() + "CREATE HELP";
 Bot_Commands["CREATE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	var current_character=players.player.(@name == onick);
@@ -27,8 +31,6 @@ Bot_Commands["CREATE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["CLASSES"] = new Bot_Command(0,false,false);
-Bot_Commands["CLASSES"].help = 
-	"This provides a list of possible player classes.";
 Bot_Commands["CLASSES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var list=[];
 	for(var c in classes.player_class) {
@@ -38,8 +40,6 @@ Bot_Commands["CLASSES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["RACES"] = new Bot_Command(0,false,false);
-Bot_Commands["RACES"].help = 
-	"This provides a list of possible player races.";
 Bot_Commands["RACES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var list=[];
 	for(var r in races.player_race) {
@@ -49,8 +49,6 @@ Bot_Commands["RACES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["ZONES"] = new Bot_Command(0,false,false);
-Bot_Commands["ZONES"].help = 
-	"This provides a list of zones.";
 Bot_Commands["ZONES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var list=[];
 	for(var z in zones) {
@@ -58,7 +56,7 @@ Bot_Commands["ZONES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	srv.o(target,"Zones: " + list.join(", "));
 }
- 
+
 Bot_Commands["LOGIN"] = new Bot_Command(0,false,false);
 Bot_Commands["LOGIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var player=players.player.(@name == onick);
@@ -82,8 +80,9 @@ Bot_Commands["LOGIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		player.@zone=0;
 	}
 	var zone=zones[player.@zone];
+	var map=zone.map;
 
-	if(!zone.room.(@id == player.@room).length() > 0) {
+	if(!map.room.(@id == player.@room).length() > 0) {
 		player.@room = 0;
 	}
 	
@@ -94,20 +93,96 @@ Bot_Commands["LOGIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 }
 
 Bot_Commands["EDIT"] = new Bot_Command(80,false,false);
+Bot_Commands["EDIT"].usage = 
+	get_cmd_prefix() + "EDIT HELP";
 Bot_Commands["EDIT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var player=players.player.(@name == onick);
 	if(player.@active != 1) {
 		srv.o(target,"You are not logged in.");
 		return;	
 	}
-	if(player.@editing != 1) {
-		player.@editing = 1;
-		var zone=zones[player.@zone];
-		var room=zone.room.(@id == player.@room);
-		display_room_editor(srv,player,zone,room)
-	} else {
-		player.@editing = 0;
-		srv.o(target,"Editor OFF");
+
+	var zone=zones[player.@zone];
+	var map=zone.map;
+	var room=map.room.(@id == player.@room);
+
+	cmd.shift();
+	var edit_cmd=cmd.shift();
+	var value=cmd.shift();
+	
+	if(!edit_cmd) {
+		if(zone.editor[player.@name] == undefined) {
+			player.@editing = "room";
+			edit_cmd="room";
+			value=player.@room;
+		} else {
+			player.@editing=undefined;
+			zone.editor[player.@name]=undefined;
+			srv.o(target,"Editor off.");
+			return;
+		}
+	}
+
+	if(!value) {
+		srv.o(target,"see 'help edit' for command usage.","NOTICE");
+		return;
+	}
+	
+	edit_cmd=("" + edit_cmd).toLowerCase();
+	value=("" + value).toLowerCase();
+	
+	/* If creating something new, initialize a new default object and continue */
+	if(edit_cmd == "new") {
+		var index=create_new_object(zone,map,player,value);
+		if(index >= 0) {
+			srv.o(target, green + value + " " + index + " created.");
+			edit_cmd=value;
+			value=index;
+		} else {
+			srv.o(target,"Unable to create object.");
+			return;
+		}
+	}
+	
+	switch(edit_cmd) {
+	case "item":
+	case "room":
+	case "mob":
+	case "zone":
+	case "exit":
+		for(var e in zone.editor) {
+			if(zone.editor[e] && zone.editor[e][edit_cmd] == value) {
+				srv.o(target,red + edit_cmd + " " + value + " locked for editing by " + e);
+				return;
+			}
+		}
+		if(zone.editor[player.@name] == undefined) {
+			zone.editor[player.@name]=new Editor();
+		}
+		break;
+	default:
+		srv.o(target,"see 'help edit' for usage.");
+		delete zone.editor[player.@name];
+		break;
+	}
+	
+	/* set the object as being edited */
+	switch(edit_cmd) {
+	case "item":
+		init_item_edit(srv,target,zone,player,value);
+		break;
+	case "room":
+		init_room_edit(srv,target,zone,player,value);
+		break;
+	case "mob":
+		init_mob_edit(srv,target,zone,player,value);
+		break;
+	case "zone":
+		init_zone_edit(srv,target,zone,player,value);
+		break;
+	case "exit":
+		init_exit_edit(srv,target,zone,player,value);
+		break;
 	}
 	return;
 }
@@ -140,17 +215,17 @@ Bot_Commands["SAVE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	
 	var zone=zones[player.@zone];
-	mkdir(z_dir + zone.@name.toLowerCase());
-	var z_file=new File(z_dir+zone.@name.toLowerCase()+"/map.xml");
+	var map=zone.map;
+	mkdir(z_dir + map.@name.toLowerCase());
+	var z_file=new File(z_dir+map.@name.toLowerCase()+"/map.xml");
 	if(!z_file.open("w+")) return;
-	z_file.write(zone);
+	z_file.write(map);
 	srv.o(target,"Zone saved");
 	return;
 }
 
 Bot_Commands["HELP"] = new Bot_Command(0,false,false);
 Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
 	var topic=cmd.shift();
 	if(!topic) {
 		var cmd_str="";
@@ -201,23 +276,21 @@ Bot_Commands["RESTORE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	var zone=zones[player.@zone];
-	var zone_dir=z_dir+zone.@name.toLowerCase();
+	var zone_dir=z_dir+map.@name.toLowerCase();
 	zone=load_zone(zone_dir);
 	if(!zone) {
 		srv.o(target,"Error loading zone");
 		return;
 	}
-	zones[zone.@id]=zone;
+	zones[zone.map.@id]=zone;
 	srv.o(target,"Reverted current zone to saved data");
 	return;
 }
 
+
+
 /* BATTLE COMMANDS */
-var Battle_Commands=[];
-
-Battle_Commands["FLEE"] = function (srv,target,zone,room,cmd,player) {
-	
-
+Battle_Commands["FLEE"] = function (srv,target,map,room,cmd,player) {
 	var chance=random(100);
 	if(chance<25) {
 		srv.o(target,"You couldn't escape!");
@@ -227,7 +300,7 @@ Battle_Commands["FLEE"] = function (srv,target,zone,room,cmd,player) {
 	var random_exit=directions[random(directions.length())];
 	
 	if(random_exit.door) {
-		var door=zone.door.(@id == random_exit.door);
+		var door=map.door.(@id == random_exit.door);
 		if(door.open==false) {
 			srv.o(target,"You couldn't escape!");
 			return false;
@@ -243,7 +316,7 @@ Battle_Commands["FLEE"] = function (srv,target,zone,room,cmd,player) {
 	return;
 }
 
-Battle_Commands["KILL"] = function (srv,target,zone,room,cmd,player) {
+Battle_Commands["KILL"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	if(!obj) {
@@ -261,86 +334,19 @@ Battle_Commands["KILL"] = function (srv,target,zone,room,cmd,player) {
 	add_mob_attack(mob,player);
 }
 
+
+
 /* EDITOR COMMANDS */
-var Editor_Commands=[];
-
-Editor_Commands["NEW"] = function (srv,target,zone,room,cmd,player) {
-	cmd.shift();
-	var editor_cmd=cmd.shift();
-	switch(editor_cmd.toUpperCase()) {
-	case "ZONE":
-		var zone_level=cmd.shift();
-		var zone_title=cmd.join(" ");
-
-		if(!zone_title || !zone_level) {
-			srv.o(target,"usage: NEW ZONE <level> <title>");
-			return;
-		}
-		var zone_id=get_new_zone_id();
-		zones[zone_id]=
-			<zone name={zone_title} id={zone_id} level={zone_level}>
-				<room id="0">
-					<title>{settings.title}</title>
-					<description>{settings.description}</description>
-				</room>
-			</zone>;
-		srv.o(target,green + "Zone '" + zone_title + "' created.");
-		player.@room=0;
-		player.@zone=zone_id;
-		display_room_editor(srv,player,zones[zone_id],zones[zone_id].room[0]);
-		break;
-	case "ITEM":
-		srv.o(target,"TODO: Allow dynamic item creation");
-		break;
-	case "MOB":
-		srv.o(target,"TODO: Allow dynamic mob creation");
-		break;
-	case "DOOR":
-		srv.o(target,"TODO: Allow dynamic door creation");
-		break;
-	}
-}
-
-Editor_Commands["SET"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["SET"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var set=cmd.shift();
 	if(!set) {
 		srv.o(target,"Set what?");
 		return;
 	}
-
-	switch(set.toUpperCase()) {
-	case "NEW":
-		switch(cmd.shift().toUpperCase()) {
-		case "TITLE":
-			settings.title=cmd.join(" ");
-			srv.o(target,green + "New room title set to: " + settings.title);
-			break;
-		case "DESCRIPTION":
-			settings.description=cmd.join(" ");
-			srv.o(target,green + "New room description set to: " + settings.description);
-			break;
-		default:
-			srv.o(target,"usage: set new <property> <value>");
-			break;
-		}
-		break;
-	case "CURRENT":
-		switch(cmd.shift().toUpperCase()) {
-		case "TITLE":
-			room.title=cmd.join(" ");
-			srv.o(target,green + "Current room title set to: " + room.title);
-			break;
-		case "DESCRIPTION":
-			room.description=cmd.join(" ");
-			srv.o(target,green + "Current room description set to: " + room.description);
-			break;
-		default:
-			srv.o(target,"usage: set current <property> <value>");
-			break;
-		}
-		break;
-	case "AUTOLINK":
+	
+	switch(set.toLowerCase()) {
+	case "autolink":
 		if(settings.autolink) {
 			settings.autolink=false;
 			srv.o(target,red + "Auto-link disabled.");
@@ -348,93 +354,106 @@ Editor_Commands["SET"] = function (srv,target,zone,room,cmd,player) {
 			settings.autolink=true;
 			srv.o(target,green + "Auto-link enabled.");
 		}
+		return;
+	}
+	
+	switch(player.@editing) {
+	case "room":
+		edit_room_data(srv,target,zone,player,set,cmd);
 		break;
-	case "LINK":
-		var dir=cmd.shift().toLowerCase()
-		switch(dir) {
-		case "north":
-		case "south":
-		case "east":
-		case "west":
-		case "up":
-		case "down":
-			var room_id=cmd.shift();
-			if(!room_id) {
-				srv.o(target,"TODO: auto-link adjacent room if no id is specified");
-			} else {
-				var target_room=zone.room.(@id == room_id);
-				var exit=room.exit.(@name == dir);
-				
-				/* set exit target for current room */
-				if(exit.@target.toString()=="") {
-					room.exit += <exit name={dir} target={room_id}/>;
-					srv.o(target,green + "Room exit added");
-
-				/* change exit target for current room */
-				} else {
-					exit.@target=room_id;
-					srv.o(target,green + "Room target changed");
-				}
-				
-				/* change corresponding exit for target room */
-				if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target = room.@id);
-			}
-			break;
-		default:
-			srv.o(target,"usage: set <direction> <target>");
-			break;
-		}
+	case "item":
+		edit_item_data(srv,target,zone,player,set,cmd);
 		break;
-	deftault:
-		srv.o(target,"Type 'rpg help set' for help.");
+	case "mob":
+		edit_mob_data(srv,target,zone,player,set,cmd);
+		break;
+	case "exit":
+		edit_exit_data(srv,target,zone,player,set,cmd);
+		break;
+	case "zone":
+		edit_zone_data(srv,target,zone,player,set,cmd);
 		break;
 	}
 }
 
-Editor_Commands["UNSET"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["LINK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
-	var set=cmd.shift();
-	if(!set) {
-		srv.o(target,"Unset what?");
+	var link=cmd.shift();
+	if(!link) {
+		srv.o(target,"Type 'rpg help unlink' for help.");
 		return;
 	}
 
-	switch(set.toUpperCase()) {
-	case "LINK":
-		var dir=cmd.shift().toLowerCase()
-		switch(dir) {
-		case "north":
-		case "south":
-		case "east":
-		case "west":
-		case "up":
-		case "down":
-			target_id=room.exit.(@name == dir).@target;
-			target_room=zone.room.(@id == target_id);
+	switch(link.tolowerCase()) {
+	case "north":
+	case "south":
+	case "east":
+	case "west":
+	case "up":
+	case "down":
+		var room_id=cmd.shift();
+		if(!room_id) {
+			srv.o(target,"TODO: auto-link adjacent room if no id is specified");
+		} else {
+			var target_room=map.room.(@id == room_id);
+			var exit=room.exit.(@name == dir);
+			
+			/* set exit target for current room */
+			if(exit.@target.toString()=="") {
+				room.exit += <exit name={dir} target={room_id}/>;
+				srv.o(target,green + "Room exit added");
 
-			/* clear link if no target specified */
-			room.exit.(@name == dir).(@target=undefined);
-			srv.o(target,red + "Room exit deleted");
-
-			/* clear corresponding link in original target room */
-			if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target=undefined);
-			break;
-		default:
-			srv.o(target,"usage: unset <direction>");
-			break;
+			/* change exit target for current room */
+			} else {
+				exit.@target=room_id;
+				srv.o(target,green + "Room target changed");
+			}
+			
+			/* change corresponding exit for target room */
+			if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target = room.@id);
 		}
 		break;
-	deftault:
-		srv.o(target,"Type 'rpg help unset' for help.");
+	default:
+		srv.o(target,"usage: link <direction> <target>");
 		break;
 	}
 }
 
+Editor_Commands["UNLINK"] = function (srv,target,map,room,cmd,player) {
+	cmd.shift();
+	var link=cmd.shift();
+	if(!link) {
+		srv.o(target,"Type 'rpg help unlink' for help.");
+		return;
+	}
 
-Editor_Commands["MOVE"] = function (srv,target,zone,room,cmd,player) {
+	switch(link.tolowerCase()) {
+	case "north":
+	case "south":
+	case "east":
+	case "west":
+	case "up":
+	case "down":
+		target_id=room.exit.(@name == dir).@target;
+		target_room=map.room.(@id == target_id);
+
+		/* clear link if no target specified */
+		room.exit.(@name == dir).(@target=undefined);
+		srv.o(target,red + "Room exit deleted");
+
+		/* clear corresponding link in original target room */
+		if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target=undefined);
+		break;
+	default:
+		srv.o(target,"usage: unlink <direction>");
+		break;
+	}
+}
+
+Editor_Commands["MOVE"] = function (srv,target,map,room,cmd,player) {
 	var exit=room.exit.(@name == cmd[1].toLowerCase());
 	if(exit.@target.toString()=="") {
-		create_new_room(srv,target,zone,room,player,cmd[1].toLowerCase());
+		create_new_room(srv,target,map,room,player,cmd[1].toLowerCase());
 		return true;
 	}
 	
@@ -442,32 +461,46 @@ Editor_Commands["MOVE"] = function (srv,target,zone,room,cmd,player) {
 	player.@room=<room>{exit.@target}</room>;
 
 	zone=zones[player.@zone];
-	room=zone.room.(@id == player.@room);
+	room=map.room.(@id == player.@room);
 	
-	display_room_editor(srv,player,zone,room);
+	list_room_verbose(srv,player,map,room);
 }
 
-Editor_Commands["MOBS"] = function (srv,target,zone,room,cmd,player) {
-	display_mobs_editor(srv,target,zone,room);
+Editor_Commands["MOBS"] = function (srv,target,map,room,cmd,player) {
+	cmd.shift();
+	var param=cmd.shift();
+	if(param && param.toUpperCase() == "ZONE") {
+		list_mobs_verbose(srv,target,zone.mobs);
+		return;
+	}
+		list_mobs_verbose(srv,target,room);
+	return;
 }
 
-Editor_Commands["ITEMS"] = function (srv,target,zone,room,cmd,player) {
-	display_items_editor(srv,target,zone,room);
+Editor_Commands["ITEMS"] = function (srv,target,map,room,cmd,player) {
+	cmd.shift();
+	var param=cmd.shift();
+	if(param && param.toUpperCase() == "ZONE") {
+		list_items_verbose(srv,target,zone.items);
+		return;
+	}
+	list_items_verbose(srv,target,room);
+	return;
 }
 
-Editor_Commands["EXITS"] = function (srv,target,zone,room,cmd,player) {
-	display_exits_editor(srv,target,zone,room);
+Editor_Commands["EXITS"] = function (srv,target,map,room,cmd,player) {
+	list_exits_verbose(srv,player,map);
 }
 
-Editor_Commands["TITLE"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["TITLE"] = function (srv,target,map,room,cmd,player) {
 	srv.o(target,"[title] " + room.title);
 }
 
-Editor_Commands["DESC"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["DESC"] = function (srv,target,map,room,cmd,player) {
 	srv.o(target,"[desc] " + strip_ctrl(room.description));
 }
 
-Editor_Commands["GOTO"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["GOTO"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var dest=cmd.shift();
 	if(!dest) {
@@ -482,25 +515,25 @@ Editor_Commands["GOTO"] = function (srv,target,zone,room,cmd,player) {
 		room=dest;
 	}
 	player.@room=<room>{room}</room>;
-	var room=zone.room.(@id == player.@room);
+	var room=map.room.(@id == player.@room);
 	srv.o(target,"You teleport to " + room.title);
-	display_room_editor(srv,player,zone,room);
+	list_room_verbose(srv,player,map,room);
 	return;
 }
 
-Editor_Commands["LOOK"] = function (srv,target,zone,room,cmd,player) {
+Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	
 	/*	if no target specified, look at room */
 	if(!obj) {
-		display_room_editor(srv,player,zone,room);
+		list_room_verbose(srv,player,map);
 		srv.o(player.@channel,red + "[title]" + black + " " + room.title);
 		srv.o(player.@channel,red + "[desc]" + black + " " + strip_ctrl(room.description));
 
-		display_mobs_editor(srv,player.@channel,zone,room);
-		display_items_editor(srv,player.@channel,zone,room);
-		display_exits_editor(srv,player.@channel,zone,room);
+		list_mobs_verbose(srv,player.@channel,map,room);
+		list_items_verbose(srv,player.@channel,map,room);
+		list_exits_verbose(srv,player,map);
 		return;
 	}
 	
@@ -564,10 +597,10 @@ Editor_Commands["LOOK"] = function (srv,target,zone,room,cmd,player) {
 	return false;
 }
 
-/* ITEM COMMANDS */
-var Item_Commands=[];
 
-Item_Commands["DROP"] = function (srv,target,zone,room,cmd,player) {
+
+/* ITEM COMMANDS */
+Item_Commands["DROP"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	if(!obj) {
@@ -598,7 +631,7 @@ Item_Commands["DROP"] = function (srv,target,zone,room,cmd,player) {
 	return false;
 }
 
-Item_Commands["GET"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["GET"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	if(!obj) {
@@ -670,7 +703,7 @@ Item_Commands["GET"] = function (srv,target,zone,room,cmd,player) {
 	return false;
 }
 
-Item_Commands["PUT"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["PUT"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	if(!obj) {
@@ -726,7 +759,7 @@ Item_Commands["PUT"] = function (srv,target,zone,room,cmd,player) {
 	return false;
 }
 
-Item_Commands["UNLOCK"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["UNLOCK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var name=cmd.shift();
 	if(!name) {
@@ -735,7 +768,7 @@ Item_Commands["UNLOCK"] = function (srv,target,zone,room,cmd,player) {
 	}
 	
 	/*	first check doors in the room */
-	var door=find_door(zone,room,name);
+	var door=find_door(map,room,name);
 	if(door) {
 		if(door.locked == false) {
 			srv.o(target,"It is already unlocked.");
@@ -760,7 +793,7 @@ Item_Commands["UNLOCK"] = function (srv,target,zone,room,cmd,player) {
 	/* then check containers */
 }
 
-Item_Commands["LOCK"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["LOCK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var name=cmd.shift();
 	if(!name) {
@@ -769,7 +802,7 @@ Item_Commands["LOCK"] = function (srv,target,zone,room,cmd,player) {
 	}
 	
 	/*	first check doors in the room */
-	var door=find_door(zone,room,name);
+	var door=find_door(map,room,name);
 	if(door) {
 		if(door.locked == true) {
 			srv.o(target,"It is already locked.");
@@ -799,7 +832,7 @@ Item_Commands["LOCK"] = function (srv,target,zone,room,cmd,player) {
 	/* then check containers */
 }
 
-Item_Commands["OPEN"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["OPEN"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var name=cmd.shift();
 	if(!name) {
@@ -808,7 +841,7 @@ Item_Commands["OPEN"] = function (srv,target,zone,room,cmd,player) {
 	}
 	
 	/*	first check doors in the room */
-	var door=find_door(zone,room,name);
+	var door=find_door(map,room,name);
 	if(door) {
 		if(door.open == true) {
 			srv.o(target,"It is already open.");
@@ -832,7 +865,7 @@ Item_Commands["OPEN"] = function (srv,target,zone,room,cmd,player) {
 	/*	then check containers in inventory */
 }
 
-Item_Commands["CLOSE"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["CLOSE"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var name=cmd.shift();
 	if(!name) {
@@ -841,7 +874,7 @@ Item_Commands["CLOSE"] = function (srv,target,zone,room,cmd,player) {
 	}
 	
 	/*	first check doors in the room */
-	var door=find_door(zone,room,name);
+	var door=find_door(map,room,name);
 	if(door) {
 		if(door.open == false) {
 			srv.o(target,"It is already closed.");
@@ -861,7 +894,7 @@ Item_Commands["CLOSE"] = function (srv,target,zone,room,cmd,player) {
 	/*	then check containers in inventory */
 }
 
-Item_Commands["REMOVE"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["REMOVE"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var keyword=cmd.join(" ");
 	if(!keyword) {
@@ -890,7 +923,7 @@ Item_Commands["REMOVE"] = function (srv,target,zone,room,cmd,player) {
 	}
 }
 
-Item_Commands["WEAR"] = function (srv,target,zone,room,cmd,player) {
+Item_Commands["WEAR"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var keyword=cmd.join(" ");
 	if(!keyword) {
@@ -925,10 +958,10 @@ Item_Commands["WEAR"] = function (srv,target,zone,room,cmd,player) {
 Item_Commands["EQUIP"] = Item_Commands["WEAR"];
 Item_Commands["WIELD"] = Item_Commands["WEAR"];
 
-/* GAMEPLAY COMMANDS */
-var RPG_Commands=[];
 
-RPG_Commands["SCORE"] = function (srv,target,zone,room,cmd,player) {
+
+/* GAMEPLAY COMMANDS */
+RPG_Commands["SCORE"] = function (srv,target,map,room,cmd,player) {
 	srv.o(target,
 		"player: " + player.@name + 
 		" level: " + player.level + 
@@ -948,11 +981,11 @@ RPG_Commands["SCORE"] = function (srv,target,zone,room,cmd,player) {
 		" gold: " + player.gold);
 }
 
-RPG_Commands["STATUS"] = function (srv,target,zone,room,cmd,player) {
+RPG_Commands["STATUS"] = function (srv,target,map,room,cmd,player) {
 	srv.o(target,"<HP:" + player.hitpoints + " MA:" + player.mana + " MV:" + player.movement + ">");
 }
 
-RPG_Commands["MOVE"] = function (srv,target,zone,room,cmd,player) {
+RPG_Commands["MOVE"] = function (srv,target,map,room,cmd,player) {
 	var exit=room.exit.(@name == cmd[1].toLowerCase());
 	if(exit.@target.toString()=="") {
 		srv.o(target,"You cannot go that way.");
@@ -960,7 +993,7 @@ RPG_Commands["MOVE"] = function (srv,target,zone,room,cmd,player) {
 	}
 	
 	if(exit.door) {
-		var door=zone.door.(@id == exit.door);
+		var door=map.door.(@id == exit.door);
 		if(door.open == false) {
 			srv.o(target,"The " + door.@name + " is closed.");
 			return false;
@@ -971,12 +1004,12 @@ RPG_Commands["MOVE"] = function (srv,target,zone,room,cmd,player) {
 	player.@room=<room>{exit.@target}</room>;
 
 	zone=zones[player.@zone];
-	room=zone.room.(@id == player.@room);
+	room=map.room.(@id == player.@room);
 
-	srv.o(target,"You " + player.travel + " " + exit.@name + " to " + room.title + ". " + get_exit_string(zone,room,player));
+	srv.o(target,"You " + player.travel + " " + exit.@name + " to " + room.title + ". " + get_exit_string(map,room,player));
 }
 
-RPG_Commands["EQUIPMENT"] = function (srv,target,zone,room,cmd,player) {
+RPG_Commands["EQUIPMENT"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
 	var eq=player.equipment..item;
 	for each(var i in eq) {
@@ -986,7 +1019,7 @@ RPG_Commands["EQUIPMENT"] = function (srv,target,zone,room,cmd,player) {
 	srv.o(target,"eq: " + str);
 }
 
-RPG_Commands["INVENTORY"] = function (srv,target,zone,room,cmd,player) {
+RPG_Commands["INVENTORY"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
 	for each(var i in player.inventory.item) {
 		list.push(i.title);
@@ -995,7 +1028,7 @@ RPG_Commands["INVENTORY"] = function (srv,target,zone,room,cmd,player) {
 	srv.o(target,"inventory: " + str);
 }
 
-RPG_Commands["LOOK"] = function (srv,target,zone,room,cmd,player) {
+RPG_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var obj=cmd.shift();
 	
@@ -1065,130 +1098,66 @@ RPG_Commands["LOOK"] = function (srv,target,zone,room,cmd,player) {
 	return false;
 }
 
-/* HELP TOPICS */
-var Help_Topics={
-SET:[
-	"change a setting:",
-	"set [new/current] [title/description] <text>",
-	"set link [north,south,east,west,up,down] <room id number>",
-	"set autolink on/off",
-	"note: autolink will automatically add adjacent",
-	" room exit links for you, if any. they can still",
-	" be set/unset manually",
-	"see topic: 'unset'"
-],
 
-UNSET:[
-	"clear an exit link setting:",
-	"unset link [north,south,east,west,up,down]",
-	"see topic: 'set'"
-],
 
-NEW:[
-	"create a new zone or object:",
-	"new zone <level> <title>",
-	"new item <not yet implemented>",
-	"new mob <not yet implemented>",
-	"new door <not yet implemented>"
-],
+/* SERVER COMMANDS */
+Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{ 
+	var player=players.player.(@name == onick);
 
-GOTO:[
-	"move to a different room:",
-	"goto <zone id number> <room id number>"
-],
+	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
+		var chan=get_privmsg_channel(srv,cmd);
+		if(!chan) return;
+		/* if the user has no RPG player or is not logged in, don't process RPG commands */
+		if(player.@active != 1) return;
 
-REMOVE:[
-	"remove a piece of equipment:",
-	"remove <item keyword>"
-],
+		if(player.@channel == chan.name) {
+			cmd.shift();
+			/*	handle commands such as north, south, east, west.... */
+			try {
+				handle_command(srv,cmd,player,player.@channel);
+			} catch(e) {
+				srv.o(chan.name,e,"NOTICE");
+			}
+		}
+	}
+}
 
-WEAR:[
-	"wear a piece of equipment:",
-	"wear <item keyword>"
-],
-WIELD:this.WEAR,
-EQUIP:this.WEAR,
+Server_Commands["PART"] = function (srv,cmd,onick,ouh)	{
+	var player=players.player.(@name == onick);
+	if(player.@active==1) {
+		player.@active=0;
+	}
+}
+Server_Commands["QUIT"]=Server_Commands["KICK"]=Server_Commands["PART"];
 
-GET:[
-	"retrieve an item:",
-	"get <item keyword>",
-	"get <item keyword> <container>",
-	"get all",
-	"get all <container>",
-	"note: a corpse is a container"
-],
+Server_Commands["JOIN"]= function (srv,cmd,onick,ouh) {
+	if (cmd[0][0] == ":")
+		cmd[0] = cmd[0].slice(1);
+	var chan = srv.channel[cmd[0].toUpperCase()];
+	
+	if(!chan) {
+		log("channel not in server channel list");
+		return;
+	}
+	
+	// Me joining.
+	if ((onick == srv.curnick) && !chan.is_joined) {
+		chan.is_joined = true;
+		srv.writeout("WHO " + cmd[0]);
+		return;
+	}
+	
+	var player=players.player.(@name == onick);
+	/* if the user has no RPG player, greet them */
+	if(!player.length() > 0) {
+		if (cmd[1][0] == ":")
+			cmd[1] = cmd[1].slice(1);
+		var target=cmd[1];
 
-PUT:[
-	"place an item in a container:",
-	"put <item keyword> <container>",
-	"put all <container>"
-],
-
-DROP:[
-	"drop an inventory item in the room:",
-	"drop <item keyword>"
-],
-
-OPEN:[
-	"open a container or door:",
-	"open <container keyword>",
-	"open <door keyword>",
-	"see topics: 'close', 'lock', 'unlock'"
-],
-
-CLOSE:[
-	"close a container or door:",
-	"close <container keyword>",
-	"close <door keyword>",
-	"see topics: 'open', 'lock', 'unlock'"
-],
-
-LOCK:[
-	"lock a container or door:",
-	"lock <container keyword>",
-	"lock <door keyword>",
-	"you must have the key in your inventory",
-	"see topics: 'open', 'close', 'unlock'"
-],
-
-UNLOCK:[
-	"unlock a container or door:",
-	"unlock <container keyword>",
-	"unlock <door keyword>",
-	"you must have the key in your inventory",
-	"see topics: 'open', 'close', 'lock'"
-],
-
-KILL:[
-	"attack a mob/person:",
-	"kill <target keyword>"
-],
-ATTACK:this.KILL,
-HIT:this.KILL,
-FIGHT:this.KILL,
-
-FLEE:[
-	"run away from battle:",
-	"see topic: 'kill'" 
-],
-
-EDITOR:[
-	"The default world is very small. To get comfortable you may want to start by creating a new zone, and seeing how everything works.",
-	"You must first create a character and login before you can edit. Once you have logged in, type 'rpg edit' to toggle the editor on/off.",
-	"To create a new zone, turn the editor on and type 'new zone <level> <my new zone name>'.",
-	"By default, all exits will link automatically if the editor finds a room that is adjacent to you upon creating a new room. You can either turn this feature off, or modify those links later if you choose.",
-	"see topics: 'set','unset','new','goto'"
-],
-
-CREATE:[
-	"To start playing, you must first create a character.",
-	"To see a list of character races and classes, type 'rpg classes' and 'rpg races'.",
-	"When you have settled on a combination, type 'rpg create <race> <class>.",
-	"Once your character is created type 'rpg login' to start playing!"
-]
-
-};
-
+		srv.o(target,"Welcome to RPG test, " + onick + "!","NOTICE");
+		srv.o(target,"Type 'rpg help' to get started.","NOTICE");
+	}
+}
 
 
 

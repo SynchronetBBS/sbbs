@@ -128,6 +128,13 @@ function update_game_status(srv) {
 }
 
 /*	game objects */
+function Editor(r,e,i,m)
+{
+	this.room=r;
+	this.exit=e;
+	this.item=i;
+	this.mob=m;
+}
 function Coords(x,y,z)
 {
 	this.x=x;
@@ -137,8 +144,25 @@ function Coords(x,y,z)
 function Settings()
 {
 	this.autolink=true;
-	this.title="New Room";
-	this.description="A new room.";
+	
+	this.default_room_title="New Room";
+	this.default_room_description="a new room.";
+	
+	this.default_item_title="a new item";
+	this.default_item_appearance="a new item hovers in mid-air.";
+	this.default_item_description="the item appears new.";
+	this.default_item_keywords="new item";
+	this.default_item_type="new";
+	this.default_item_weight="1";
+	
+	this.default_mob_name="a new mob";
+	this.default_mob_appearance="a new mob hovers in mid-air.";
+	this.default_mob_keywords="new mob";
+	this.default_mob_hitpoints="1";
+	
+	this.default_zone_title="New Zone";
+	this.default_zone_level=1;
+	
 }
 function Attack(attacker,defender)
 {
