@@ -16,127 +16,26 @@
 
 */
 
-/********** Command Processors. **********/
+/* Server methods */
 function Server_command(srv,cmdline,onick,ouh) {
 	var cmd=IRC_parsecommand(cmdline);
-	switch (cmd[0]) {
-		case "001":	// "Welcome."
-			srv.is_registered = true;
-			break;
-		case "352":	// WHO reply.  Process into local cache.
-			var nick = cmd[6];
-			if(!srv.users[nick.toUpperCase()]) srv.users[nick.toUpperCase()] = new Server_User(cmd[3] + "@" + cmd[4],nick);
-			else srv.users[nick.toUpperCase()].uh=cmd[3] + "@" + cmd[4];
-			srv.users[nick.toUpperCase()].channels[cmd[2].toUpperCase()]=true;
-			break;
-		case "433":	// Nick already in use.
-			srv.juped = true;
-			var newnick = srv.nick+"-"+random(50000).toString(36);
-			srv.writeout("NICK " + newnick);
-			srv.curnick = newnick;
-			log("*** Trying alternative nick, my nick is jupitered.  "
-				+ "(Temp: " + newnick + ")");
-			break;
-		case "JOIN":
-			if (cmd[1][0] == ":")
-				cmd[1] = cmd[1].slice(1);
-			var chan = srv.channel[cmd[1].toUpperCase()];
-			if ((onick == srv.curnick) && chan && !chan.is_joined) {
-				chan.is_joined = true;
-				srv.writeout("WHO " + cmd[1]);
-				break;
-			}
-			// Someone else joining.
-			if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
-			else srv.users[onick.toUpperCase()].uh=ouh;
-			srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()]=true;
-			var lvl = srv.bot_access(onick,ouh);
-			if (lvl >= 50) {
-				var usr = new User(system.matchuser(onick));
-				if (lvl >= 60)
-					srv.writeout("MODE " + cmd[1] + " +o " + onick);
-				if (usr.number > 0) {
-					if (usr.comment)
-						srv.o(cmd[1],"[" + onick + "] " + usr.comment);
-					login_user(usr);
-				}
-			}
-			break;
-		case "PART":
-		case "QUIT":
-		case "KICK":
-			if (cmd[1][0] == ":")
-				cmd[1] = cmd[1].slice(1);
-			var chan = srv.channel[cmd[1].toUpperCase()];
-			if ((onick == srv.curnick) && chan && chan.is_joined) {
-				chan.is_joined = false;
-				break;
-			}
-			// Someone else parting.
-			if(srv.users[onick.toUpperCase()]) {
-				delete srv.users[onick.toUpperCase()].channels[cmd[1].toUpperCase()];
-				var chan_count=0;
-				for(var c in srv.users[onick.toUpperCase()].channels) {
-					chan_count++;
-				}
-				if(chan_count==0) delete srv.users[onick.toUpperCase()];
-			}
-			break;
-		case "PRIVMSG":
-			if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				var chan_str = cmd[1].toUpperCase();
-				var chan = srv.channel[chan_str];
-				if (!chan)
-					break;
-				if (!chan.is_joined)
-					break;
-				if (srv.pipe && srv.pipe[chan_str]) {
-					var thispipe = srv.pipe[chan_str];
-					thispipe.srv.o(thispipe.target, "<" + onick + "> " 
-						+ IRC_string(cmd.join(" "), 2));
-				}
-				cmd[2] = cmd[2].substr(1).toUpperCase();
-				if ((cmd[2].toUpperCase() == truncsp(get_cmd_prefix())) 
-					 && cmd[3]) {
-					cmd[3] = cmd[3].toUpperCase();
-					cmd.shift();
-					cmd.shift();
-					cmd.shift();
-					srv.check_bot_command(chan.name,onick,ouh,cmd);
-				} else if(cmd[2][0] == truncsp(get_cmd_prefix())) {
-					cmd.shift();
-					cmd.shift();
-					cmd[0] = cmd[0].substr(1).toUpperCase();
-					srv.check_bot_command(chan.name,onick,ouh,cmd);
-				} else if(get_cmd_prefix()=="") {
-					cmd.shift();
-					cmd.shift();
-					cmd[0] = cmd[0].toUpperCase();
-					srv.check_bot_command(chan.name,onick,ouh,cmd);
-				}
-			} else if (cmd[1].toUpperCase() == 
-			           srv.curnick.toUpperCase()) { // MSG?
-				cmd[2] = cmd[2].slice(1).toUpperCase();
+	var main_cmd=cmd.shift();
+	if(Server_Commands[main_cmd]) Server_Commands[main_cmd](srv,cmd,onick,ouh);
+	
+	for(var m in Modules) {
+		var module=Modules[m];
+		if(module 
+			&& module.enabled 
+			&& module.Server_Commands[main_cmd]) {
+			try {
+				cmd=IRC_parsecommand(cmdline);
 				cmd.shift();
-				cmd.shift();
-				if (cmd[0][0] == "\1") {
-					cmd[0] = cmd[0].slice(1).toUpperCase();
-					cmd[cmd.length-1] = cmd[cmd.length-1].slice(0,-1);
-					srv.ctcp(onick,ouh,cmd);
-					break;
-				}
-				srv.check_bot_command(onick,onick,ouh,cmd);
+				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);	
+			} catch(e) {
+				log(m + " module error: " + e);
+				module.enabled=false;
 			}
-			break;
-		case "PING":
-			srv.writeout("PONG :" + IRC_string(cmdline));
-			break;
-		case "ERROR":
-			srv.sock.close();
-			srv.sock = 0;
-			break;
-		default:
-			break;
+		}
 	}
 }
 
@@ -187,11 +86,13 @@ function Server_CTCP(onick,ouh,cmd) {
 	return;
 }
 
-function Server_CTCP_Reply(nick,str) {
+function Server_CTCP_reply(nick,str) {
 	this.writeout("NOTICE " + nick + " :\1" + str + "\1");
 }
 
-function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmd) {
+function Server_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
+	var cmd=IRC_parsecommand(cmdline);
+	
 	var access_level = srv.bot_access(onick,ouh);
 	var botcmd = bot_cmds[cmd[0].toUpperCase()];
 	if (botcmd) {
@@ -222,60 +123,7 @@ function Server_check_bot_command(srv,bot_cmds,target,onick,ouh,cmd) {
 	return 0; /* No such command */
 }
 
-//////////////////// Non-object Functions ////////////////////
-
-/* Save everything */
-function save_everything() {
-	if (!config.open("r+"))
-		return false;
-
-	config.iniSetValue(null, "command_prefix", command_prefix);
-	config.iniSetValue(null, "real_name", real_name);
-	config.iniSetValue(null, "config_write_delay", config_write_delay);
-	config.iniSetValue(null, "squelch_list", Squelch_List.join(","));
-
-	for (m in Masks) {
-		var uid_str = format("%04u", m);
-		var us_filename = system.data_dir + "user/" +uid_str+ ".ircbot.ini";
-		var us_file = new File(us_filename);
-		if (us_file.open(file_exists(us_filename) ? 'r+':'w+')) {
-			us_file.iniSetValue(null, "masks", Masks[m].join(","));
-			us_file.close();
-		}
-	}
-
-	for (q in Quotes) {
-		config.iniSetValue("quotes", q, Quotes[q]);
-	}
-
-	config.close();
-
-	for (var m in Modules) {
-		var module=Modules[m];
-		if(module && module.enabled) {
-			try {
-				if(module.save) module.save();
-			} catch(e) {
-				srv.o(srv.channel[c].name,m + " module error: " + e);
-				module.enabled=false;
-			}
-		}
-	}
-
-	Config_Last_Write = time();
-	return true;
-}
-
-function get_cmd_prefix() {
-	if(command_prefix) {
-		if(command_prefix.length<=1) return command_prefix.toUpperCase()+"";
-		return command_prefix.toUpperCase()+" ";
-	}
-	return "";
-}
-
-// return the access level of this user.
-function Server_Bot_Access(nick,uh) {
+function Server_bot_access(nick,uh) { // return the access level of this user.
 	var ucnick = nick.toUpperCase();
 	if (this.users[ucnick] && this.users[ucnick].ident) {
 		var usrnum = this.users[ucnick].ident;
@@ -340,6 +188,96 @@ function Server_target_out(target,str,msgtype) {
 		new_buff.buffer.push(outstr.slice(0, 512) + "\r\n");
 		this.buffers.push(new_buff);
 	}
+}
+
+/* server functions */
+function save_everything() { // save user data, and call save() method for all enabled modules
+	if (!config.open("r+"))
+		return false;
+
+	config.iniSetValue(null, "command_prefix", command_prefix);
+	config.iniSetValue(null, "real_name", real_name);
+	config.iniSetValue(null, "config_write_delay", config_write_delay);
+	config.iniSetValue(null, "squelch_list", Squelch_List.join(","));
+
+	for (m in Masks) {
+		var uid_str = format("%04u", m);
+		var us_filename = system.data_dir + "user/" +uid_str+ ".ircbot.ini";
+		var us_file = new File(us_filename);
+		if (us_file.open(file_exists(us_filename) ? 'r+':'w+')) {
+			us_file.iniSetValue(null, "masks", Masks[m].join(","));
+			us_file.close();
+		}
+	}
+
+	for (q in Quotes) {
+		config.iniSetValue("quotes", q, Quotes[q]);
+	}
+
+	config.close();
+
+	for (var m in Modules) {
+		var module=Modules[m];
+		if(module && module.enabled && module.save) {
+			try {
+				module.save();
+			} catch(e) {
+				log(m + " module error: " + e);
+				module.enabled=false;
+			}
+		}
+	}
+
+	config_last_write = time();
+	return true;
+}
+
+function get_privmsg_channel(srv,cmd) {
+	var chan_str = cmd[0].toUpperCase();
+	var chan = srv.channel[chan_str];
+	if (!chan)
+		return false;
+	if (!chan.is_joined)
+		return false;
+	return chan;
+}
+
+function parse_cmd_prefix(cmd) {
+	cmd[1] = cmd[1].substr(1).toUpperCase();
+	if ((cmd[1].toUpperCase() == truncsp(get_cmd_prefix())) 
+		 && cmd[2]) {
+		cmd.shift();
+		cmd.shift();
+	} else if(cmd[1][0] == truncsp(get_cmd_prefix())) {
+		cmd.shift();
+		cmd[0] = cmd[0].substr(1);
+	} else if(get_cmd_prefix()=="") {
+		cmd.shift();
+	}
+	cmd[0] = cmd[0].toUpperCase();
+	return cmd;
+}
+
+function get_cmd_prefix() {
+	if(command_prefix) {
+		if(command_prefix.length<=1) return command_prefix.toUpperCase()+"";
+		return command_prefix.toUpperCase()+" ";
+	}
+	return "";
+}
+
+function parse_channel_list(str) {
+	var channels=[];
+	if(str) {
+		str = str.split(",");
+		for (var c in str) {
+			var channel=str[c].split(" ");
+			var name=channel[0];
+			var key=channel[1];
+			channels[name.toUpperCase()] = new Bot_IRC_Channel(name,key);
+		}
+	}
+	return channels;
 }
 
 function true_array_len(my_array) {
