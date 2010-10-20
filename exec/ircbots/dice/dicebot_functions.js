@@ -29,7 +29,7 @@ function roll_them_dice(num_dice,num_sides)
 {
 	var total=0;
 	for(var d=0;d<num_dice;d++) {
-		total+=random(num_sides)+1;
+		total+=Math.ceil(Math.random() * num_sides);
 	}
 	return total;
 }
