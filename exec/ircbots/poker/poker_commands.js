@@ -252,7 +252,7 @@ Bot_Commands["BUYIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		return;
 	}
 	if(!poker_games[target].users[onick]) {
-		srv.o(target, onick + ", I have no record for you.");
+		srv.o(target, onick + ", I have no user record for you.");
 		return;
 	}
 	if(poker_games[target].users[onick].money>10) {

@@ -22,6 +22,7 @@ function poker_next_turn(target,srv) {
 	
 	if(poker_count_active_players(poker)==1) {
 		poker.round=3;
+		poker.fold_win=true;
 		poker.deal_next=true;
 	} else	if(poker.current_bet==next_turn_user.bet && next_turn_user.has_bet) {
 		poker.deal_next=true;
@@ -120,34 +121,45 @@ function poker_compare_hands(target,srv) {
 						are the same, it should continue through the list until there is a 
 						clear winner, otherwise it's a split pot */
 					var ranked=false;
-					for(g=ranked_hand.group.length-1;g>=0;g--) {
-						for(v=0;v<ranked_hand.group[g].length;v++) {
-							var p_value=ranked_hand.group[g][v];
-							var w_value=winning_hand.group[g][v];
-							if(p_value>w_value) {
-								/* if the current player's card value is higher than that of 
-									the current ranked winner's, then the current player 
-									becomes the current	ranked winner */
-								winning_hands=[ranked_hand];
-								winning_players=[p];
-								ranked=true;
-								break;
-							} else if(p_value<w_value) {
-								/* if the current player's card value is lower than that of
-									the current ranked winner's, then the current player
-									does not have the winning hand, and we can continue
-									to the next player (if any) */
-								ranked=true;
-								break;
-							}
+					if(ranked_hand.high_card) {
+						if(ranked_hand.high_card>winning_hand.high_card) {
+							winning_hands=[ranked_hand];
+							winning_players=[p];
+							ranked=true;
+						} else if(ranked_hand.high_card<winning_hand.high_card) {
+							ranked=true;
 						}
-						/* If "ranked" == true, that means this player's hand has been
-							compared to the winner's hand to a depth that determines
-							a clear winner between the two hands, and we can stop the 
-							comparison */
-						if(ranked) break;
+					} else {
+						var cards_counted=0;
+						for(g=ranked_hand.group.length-1;g>=0 && cards_counted<5;g--) {
+							for(v=0;v<ranked_hand.group[g].length && cards_counted<5;v++) {
+								var p_value=ranked_hand.group[g][v];
+								var w_value=winning_hand.group[g][v];
+								cards_counted+=g;
+								if(p_value>w_value) {
+									/* if the current player's card value is higher than that of 
+										the current ranked winner's, then the current player 
+										becomes the current	ranked winner */
+									winning_hands=[ranked_hand];
+									winning_players=[p];
+									ranked=true;
+									break;
+								} else if(p_value<w_value) {
+									/* if the current player's card value is lower than that of
+										the current ranked winner's, then the current player
+										does not have the winning hand, and we can continue
+										to the next player (if any) */
+									ranked=true;
+									break;
+								}
+							}
+							/* If "ranked" == true, that means this player's hand has been
+								compared to the winner's hand to a depth that determines
+								a clear winner between the two hands, and we can stop the 
+								comparison */
+							if(ranked) break;
+						}
 					}
-					
 					/* 	If "ranked" == false, that means we went through all of
 						the current hand's card groups without finding a difference
 						between the current hand and the winning hand. This *SHOULD*
@@ -164,12 +176,15 @@ function poker_compare_hands(target,srv) {
 	if(winning_players.length>1) {
 		srv.o(target,winning_players.join(", ") + " split the pot, all having " + winning_hands[0].str + "!");
 	}
-	else srv.o(target,winning_players[0] + " won this hand with " + winning_hands[0].str + "!");
+	else if(poker.fold_win) {
+		srv.o(target,winning_players[0] + " won this hand by default!");
+	} else {
+		srv.o(target,winning_players[0] + " won this hand with " + winning_hands[0].str + "!");
+	}
 	var split_pot=parseInt(poker.pot/winning_hands.length,10);
-	var pstr=winning_players.join(", ");
 	for(p=0;p<winning_players.length;p++) {
 		poker.users[winning_players[p]].money+=split_pot;
-		srv.o(winning_players[p],"Winnings: $" + split_pot);
+		srv.o(winning_players[p],"Winnings: $" + split_pot,"NOTICE");
 	}
 	return winning_players;
 }
@@ -311,9 +326,9 @@ function poker_game_status(target,srv) {
 	if(poker.round>=0 && poker.round<4) {
 		srv.o(target,"Current pot: $" + poker.pot);
 		srv.o(target,"Current bet: $" + poker.current_bet);
-		srv.o(target,"Current turn: " + poker.users_map[poker.turn]);
 	}
 	srv.o(target,state);
+	if(poker.round>=0 && poker.round<4) srv.o(target,"Current turn: " + poker.users_map[poker.turn]);
 }
 
 function poker_reset_game(target,srv) {
@@ -328,6 +343,7 @@ function poker_reset_game(target,srv) {
 	poker.round=-1;
 	poker.current_bet=poker.lg_blind;
 	poker.community_cards=[];
+	poker.fold_win=false;
 	poker.pot=0;
 }
 
