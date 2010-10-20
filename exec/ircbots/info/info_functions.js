@@ -7,7 +7,7 @@ function define(word,dict) {
 	var xml_obj = new XML(body);
 	var definition = xml_obj.Definitions.Definition;
 	if(!definition[0]) {
-		return("No definition found for: " + word);
+		return false;
 	} else {
 		return(definition[0]);
 	}
