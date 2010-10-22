@@ -51,12 +51,14 @@ Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"Invalid channel name","NOTICE");
 		return;
 	}
-	var chan=cmd[0].toUpperCase();
+	var chan=cmd.shift().toUpperCase();
+	var key=cmd.shift();
+	
 	if(srv.channel[chan]) {
 		srv.o(target,"I am already in that channel","NOTICE");
 		return;
 	}
-	srv.channel[chan]=new Bot_IRC_Channel(chan);
+	srv.channel[chan]=new Bot_IRC_Channel(chan,key);
 	srv.writeout("WHO " + chan);
 	srv.o(target,"Ok.","NOTICE");
 	return;
@@ -108,7 +110,6 @@ Bot_Commands["HELP"].usage =
 Bot_Commands["HELP"].help =
 	"Displays helpful information about bot commands.";
 Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
 	function help_out(bot_cmd) {
 		if(bot_cmd) {
 			if(bot_cmd.usage) srv.o(onick,format("Usage: " + bot_cmd.usage,srv.curnick),"NOTICE");
@@ -127,27 +128,48 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(onick,"[" + name + "] " + cmdstr.substr(1).toLowerCase(),"NOTICE");
 	}
 	
-	var hlp_main=cmd.shift();
+	var hlp_main=cmd[1];
+	/* if no module or command was specified, list all commands, and general command usage */
 	if(!hlp_main) {
-		srv.o(target,"Usage: HELP <module> <command> | HELP <command>","NOTICE");
+		srv.o(onick,"Usage: HELP <module> <command> | HELP <command>","NOTICE");
 		list_out(Bot_Commands,"main");
 		for(var m in Modules) {
 			list_out(Modules[m].Bot_Commands,m.toLowerCase());
 		}
+	/* if there is a module matching the first command parameter 
+		display help information for that module */
 	} else	if(Modules[hlp_main.toUpperCase()]) {
 		var module=Modules[hlp_main.toUpperCase()];
-		var hlp_cmd=cmd[0];
+		var hlp_cmd=cmd[2];
+		
+		/* if a command was specified, list that command's help info */
 		if(hlp_cmd) {
 			if(module.Bot_Commands.HELP) {
 				module.Bot_Commands.HELP.command(target,onick,ouh,srv,lvl,cmd);
 			} else {
 				help_out(module.Bot_Commands[help_cmd.toUpperCase()]);
 			}
+		/* if no command was specified, list module's commands */
 		} else {
 			list_out(module.Bot_Commands,hlp_main.toLowerCase());
 		}
 	} else {
-		help_out(Bot_Commands[hlp_main.toUpperCase()])
+		/* if there is help information for the command specified show it */
+		if(Bot_Commands[hlp_main.toUpperCase()]) 
+			help_out(Bot_Commands[hlp_main.toUpperCase()]);
+		
+		/* otherwise if this is not a private message, check the current channel's
+			ACTIVE modules for a command that matches */
+		else if(target != onick) {
+			var chan=srv.channel[target.toUpperCase()];
+			for(var m in chan.modules) {
+				var module=Modules[m];
+				if(module.Bot_Commands.HELP) 
+					module.Bot_Commands.HELP.command(target,onick,ouh,srv,lvl,cmd);
+				else if(module.Bot_Commands[hlp_main.toUpperCase()]) 
+					help_out(module.Bot_Commands[hlp_main.toUpperCase()]);
+			}
+		}
 	}
 	return;
 }
@@ -550,7 +572,7 @@ Server_Commands["QUIT"]=Server_Commands["KICK"]=Server_Commands["PART"];
 Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{ 
 	if(srv.users[onick.toUpperCase()]) srv.users[onick.toUpperCase()].last_spoke=time();
 	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
-		var chan=get_privmsg_channel(srv,cmd);
+		var chan=srv.channel[cmd[0].toUpperCase()];
 		if(!chan) return;
 		
 		if (srv.pipe && srv.pipe[chan.name.toUpperCase()]) {
@@ -560,6 +582,8 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		}
 		
 		cmd=parse_cmd_prefix(cmd);
+		if(!cmd) return false;
+		
 		/* check main bot commands */
 		srv.bot_command(srv,Bot_Commands,chan.name,onick,ouh,cmd.join(" "));
 		

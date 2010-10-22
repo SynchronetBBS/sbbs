@@ -19,11 +19,14 @@
 /* Server methods */
 function Server_command(srv,cmdline,onick,ouh) {
 	var cmd=IRC_parsecommand(cmdline);
+	var chan=get_command_channel(srv,cmd);
 	var main_cmd=cmd.shift();
 	if(Server_Commands[main_cmd]) Server_Commands[main_cmd](srv,cmd,onick,ouh);
-	
 	for(var m in Modules) {
 		var module=Modules[m];
+		if(chan	&& chan.modules[m] != true) {
+			continue;
+		}
 		if(module 
 			&& module.enabled 
 			&& module.Server_Commands[main_cmd]) {
@@ -74,7 +77,7 @@ function Server_CTCP(onick,ouh,cmd) {
 			break;
 		case "VERSION":
 			this.ctcp_reply(onick, "VERSION "
-				+ "Synchronet IRC Bot by Randy E. Sommerfeld <cyan@rrx.ca>");
+				+ "Synchronet IRC Bot by Randy E. Sommerfeld <cyan@rrx.ca>, Module system by Matt D. Johnson <mdj1979@gmail.com>");
 			break;
 		case "FINGER":
 			this.ctcp_reply(onick, "FINGER "
@@ -232,19 +235,30 @@ function save_everything() { // save user data, and call save() method for all e
 	return true;
 }
 
-function get_privmsg_channel(srv,cmd) {
-	var chan_str = cmd[0].toUpperCase();
+function get_command_channel(srv,cmd) {
+	switch(cmd[0]) {
+	case "PRIVMSG":
+		break;
+	case "PART":
+	case "QUIT":
+	case "KICK":
+	case "JOIN":
+		if (cmd[1][0] == ":")
+			cmd[1] = cmd[1].substr(1);
+		break;
+	default:
+		return false;
+	}
+	var chan_str = cmd[1].toUpperCase();
 	var chan = srv.channel[chan_str];
 	if (!chan)
-		return false;
-	if (!chan.is_joined)
 		return false;
 	return chan;
 }
 
 function parse_cmd_prefix(cmd) {
 	cmd[1] = cmd[1].substr(1).toUpperCase();
-	if ((cmd[1].toUpperCase() == truncsp(get_cmd_prefix())) 
+	if ((cmd[1] == truncsp(get_cmd_prefix())) 
 		 && cmd[2]) {
 		cmd.shift();
 		cmd.shift();
@@ -253,6 +267,8 @@ function parse_cmd_prefix(cmd) {
 		cmd[0] = cmd[0].substr(1);
 	} else if(get_cmd_prefix()=="") {
 		cmd.shift();
+	} else {
+		return false;
 	}
 	cmd[0] = cmd[0].toUpperCase();
 	return cmd;
