@@ -7,7 +7,7 @@ Bot_Commands["DEF"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	var xmldef=define(cmd.shift(),"wn");
 	if(!xmldef) {
-		srv.o(target, "word not found: " + word);
+		srv.o(target, "word not found: " + cmd[0]);
 		return;
 	} 
 	var word=xmldef.Word;
@@ -47,7 +47,7 @@ Bot_Commands["SYN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	var xmldef=define(cmd.shift(),"wn");
 	if(!xmldef) {
-		srv.o(target, "no synonyms found: " + word);
+		srv.o(target, "no synonyms found: " + cmd[0]);
 		return;
 	} 
 
@@ -76,7 +76,7 @@ Bot_Commands["INFO"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	var xmldef=define(cmd.shift(),"wn");
 	if(!xmldef) {
-		srv.o(target, "no usage examples found: " + word);
+		srv.o(target, "no usage examples found: " + cmd[0]);
 		return;
 	} 
 	var word=xmldef.Word;
