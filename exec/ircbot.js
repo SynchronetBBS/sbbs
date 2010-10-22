@@ -206,7 +206,7 @@ function main() {
 			var srv = Bot_Servers[my_srv];
 			if (!srv.sock &&(srv.lastcon <time())) { //we're not connected.
 				var consock = IRC_client_connect(srv.host, srv.nick,
-					command_prefix, real_name, srv.port);
+					srv.nick, real_name, srv.port);
 				if (consock) {
 					srv.sock = consock;
 					log("--- Connected to " + srv.host);
@@ -242,6 +242,12 @@ function main() {
 
 			// Run through some commands.
 			if (srv.sock && srv.is_registered) {
+				if(!srv.is_identified) {
+					/* If we have a password for services, send it now */
+					if(srv.svspass) srv.writeout("IDENTIFY " + srv.svspass);
+					// TODO: verify that the raw IDENTIFY command works, and if not, send /MSG NickServ IDENTIFY <Pass>
+					srv.is_identified = true;
+				}
 				for (c in srv.channel) {
 					if (!srv.channel[c].is_joined &&
 						(srv.channel[c].lastjoin < time())) {
@@ -343,6 +349,7 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.max_burst = 5;
 	this.delay = 3;
 	this.is_registered = false;
+	this.is_identified = false;
 	this.juped = false;
 	this.users = new Object();	// Store local nicks & uh info.
 	this.buffers=[];
