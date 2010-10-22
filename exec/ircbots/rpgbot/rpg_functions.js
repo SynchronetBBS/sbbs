@@ -46,7 +46,7 @@ function handle_command(srv,cmd,player,target) {
 			break;
 	}
 	
-	if(player.@editing == 1) {
+	if(player.@editing != undefined) {
 		if(Editor_Commands[cmd[0]]) {
 			Editor_Commands[cmd[0]](srv,target,map,room,cmd,player);
 		} else if(RPG_Commands[cmd[0]] ||
@@ -69,7 +69,7 @@ function handle_command(srv,cmd,player,target) {
 		return;
 	}
 	if(Editor_Commands[cmd[0]]) {
-		srv.o(target,"Type 'rpg edit' to enable editing.");
+		srv.o(target,"Type '" + get_cmd_prefix() + "edit' to enable editing.");
 		return;
 	}
 	
@@ -398,7 +398,7 @@ function load_players() {
 		var player=new XML(p_file.read());
 		p_file.close();
 		player.@active=0;
-		player.@editing=0;
+		player.@editing=undefined;
 		if(!zones[player.@zone]) {
 			player.@zone=0;
 			player.@room=1;
@@ -436,6 +436,8 @@ function list_room_verbose(srv,player,map) {
 	srv.o(player.@channel,"editing '" + blue + map.@name + black + 
 		"' [z:" + blue + " " + map.@id + black + 
 		" r:" + blue + " " + room.@id + black + "]");
+	srv.o(player.@channel,blue + "[title]" + black + " " + room.title);
+	srv.o(player.@channel,blue + "[desc]" + black + " " + strip_ctrl(room.description));
 }
 
 function list_exits_verbose(srv,player,map) {
@@ -445,7 +447,7 @@ function list_exits_verbose(srv,player,map) {
 	for each(var e in exits) {
 		var exit=room.exit.(@name == e);
 		if(exit.@target != undefined) {
-			var exit_str=red + "[" + e +"]";
+			var exit_str=blue + "[" + e +"]";
 			if(zones[exit.@zone]) exit_str+= black + " z:" + blue + " " + exit.@zone;
 			exit_str+= black + " r:" + blue + " " + exit.@target;
 			if(exit.door != undefined) {
@@ -465,7 +467,7 @@ function list_exits_verbose(srv,player,map) {
 				var target_room=map.room.(@id == result);
 				var exit=target_room.exit.(@name == reverse_dir(e));
 
-				var exit_str=red + "[" + e +"]";
+				var exit_str=blue + "[" + e +"]";
 				exit_str+= black + " r:" + blue + " " + target_room.@id;
 				
 				if(exit.door != undefined) {
@@ -482,20 +484,30 @@ function list_exits_verbose(srv,player,map) {
 }
 
 function list_mobs_verbose(srv,target,list) {
+	var count=0;
 	for each(var m in list.mob) {
 		srv.o(target,
-			red + "[mob]" +  
+			blue + "[mob]" +  
 			black + " id:" + blue + " " + m.@id +
 			black + " name:" + blue + " " + m.@name);
+		count++;
+	}
+	if(count == 0) {
+		srv.o(target,red + "there are no mobs to list.");
 	}
 }
 
 function list_items_verbose(srv,target,list) {
+	var count=0;
 	for each(var i in list.item) {
 		srv.o(target,
-			red + "[item]" +  
+			blue + "[item]" +  
 			black + " id:" + blue + " " + i.@id +
 			black + " name:" + blue + " " + i.title);
+		count++;
+	}
+	if(count == 0) {
+		srv.o(target,red + "there are no items to list.");
 	}
 }
 
@@ -568,6 +580,7 @@ function init_room_edit(srv,target,zone,player,id) {
 	player.@editing="room";
 	player.@room=id;
 	list_room_verbose(srv,player,zone.map);
+	list_exits_verbose(srv,player,zone.map);
 }
 
 function init_item_edit(srv,target,zone,player,id) {
@@ -718,7 +731,7 @@ function create_player(name,player_race,player_class) {
 function create_new_object(zone,map,player,object) {
 	switch(object.toUpperCase()) {
 	case "ITEM":
-		var item_id=get_new_item_id(zone.items);
+		var item_id=get_new_object_id(zone.items.item);
 		var item=
 			<item id={item_id}>
 				<type>{settings.default_item_type}</type>
@@ -732,6 +745,16 @@ function create_new_object(zone,map,player,object) {
 		else zone.items=<items>{item}</items>;
 		return item_id;
 	case "MOB":
+		var mob_id=get_new_object_id(zone.mobs.mob);
+		var mob=
+			<mob id={mob_id} name={settings.default_mob_name}>
+				<keywords>{settings.default_mob_keywords}</keywords>
+				<appearance>{settings.default_mob_appearance}</appearance>
+				<hitpoints>{settings.default_mob_hitpoints}</hitpoints>
+			</mob>;
+		if(zone.mobs.mob.length() > 0) zone.mobs.mob += mob;
+		else zone.mobs=<mobs>{mob}</mobs>;
+		return mob_id;
 		break;
 	case "ZONE":
 		var zone_id=get_new_zone_id();
@@ -756,7 +779,7 @@ function create_new_object(zone,map,player,object) {
 }
 
 function create_new_room(srv,target,map,room,player,dir) {
-	var new_id=get_new_room_id(map);
+	var new_id=get_new_object_id(map.room);
 	var old_id=room.@id;
 	/* add this room to previous room's exit list */
 	room.exit +=<exit name={dir} target={new_id}/>;
@@ -792,6 +815,7 @@ function create_new_room(srv,target,map,room,player,dir) {
 	player.@room=new_id;
 	srv.o(target,"Room " + new_id + " created");
 	list_room_verbose(srv,player,map,new_room);
+	list_exits_verbose(srv,player,zone.map);
 }
 
 function get_dir_coords(exclude) {
@@ -881,12 +905,12 @@ function reverse_dir(dir) {
 	return dir;
 }
 
-function get_new_room_id(map) {
+function get_new_object_id(list) {
 	var id = 0;
-	var r = map.room.(@id == id);
-	while(r != undefined) {	
+	var i = list.(@id == id);
+	while(i != undefined) {	
 		id++;
-		r=map.room.(@id == id);
+		i=list.(@id == id);
 	}
 	return id;
 }
@@ -897,16 +921,6 @@ function get_new_zone_id() {
 	while(z != undefined) {	
 		id++;
 		z=zones[id];
-	}
-	return id;
-}
-
-function get_new_item_id(items) {
-	var id = 0;
-	var i = items.item.(@id == id);
-	while(i.length() > 0) {	
-		id++;
-		i=items.item.(@id == id);
 	}
 	return id;
 }

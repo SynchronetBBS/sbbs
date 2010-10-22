@@ -72,28 +72,27 @@ Help_Topics["LINK"]=[
 Help_Topics["SET"]=[
 	"change a setting:",
 	"set [new/current] [title/description] <text>",
-	"set autolink on/off",
+	"set autolink (on/off toggle)",
 	"note: autolink will automatically add adjacent",
 	" room exit links for you, if any. they can still",
 	" be set/unset manually"
 ];
-Help_Topics["NEW"]=[
-	"create a new zone or object:",
-	"new zone <level> <title>",
-	"new item <not yet implemented>",
-	"new mob <not yet implemented>",
-	"new door <not yet implemented>"
-];
 Help_Topics["CREATE"]=[
 	"To start playing, you must first create a character.",
-	"To see a list of character races and classes, type 'rpg classes' and 'rpg races'.",
-	"When you have settled on a combination, type 'rpg create <race> <class>.",
-	"Once your character is created type 'rpg login' to start playing!"
+	"To see a list of character races and classes, type '" 
+	+ get_cmd_prefix() + "classes' and '" 
+	+ get_cmd_prefix() + "races'.",
+	"When you have settled on a combination, type '" 
+	+ get_cmd_prefix() + "create <race> <class>.",
+	"Once your character is created type '" 
+	+ get_cmd_prefix() + "login' to start playing!"
 ]
 Help_Topics["EDIT"]=[
 	"The default world is very small. To get comfortable you may want to start by creating a new zone, and seeing how everything works.",
-	"You must first create a character and login before you can edit. Once you have logged in, type 'rpg edit' to toggle the editor on/off.",
-	"To create a new zone, turn the editor on and type 'new zone <level> <my new zone name>'.",
+	"You must first create a character and login before you can edit. Once you have logged in, type '" 
+	+ get_cmd_prefix() + "edit' to toggle the editor on/off.",
+	"To create a new zone, turn the editor on and type '" 
+	+ get_cmd_prefix() + "edit new zone'.",
 	"By default, all exits will link automatically if the editor finds a room that is adjacent to you upon creating a new room. You can either turn this feature off, or modify those links later if you choose.",
 	"To create new rooms, simply walk in any direction while in edit mode.",
 	"see topics: 'set','unset','new','goto'"

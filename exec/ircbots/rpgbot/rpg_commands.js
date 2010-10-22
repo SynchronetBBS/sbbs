@@ -209,7 +209,7 @@ Bot_Commands["SAVE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"You are not logged in.");
 		return;	
 	}
-	if(player.@editing != 1) {
+	if(player.@editing == undefined) {
 		srv.o(target,"You must be editing to save.");
 		return;
 	}
@@ -226,6 +226,8 @@ Bot_Commands["SAVE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["HELP"] = new Bot_Command(0,false,false);
 Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	log(cmd);
+	cmd.shift();
 	var topic=cmd.shift();
 	if(!topic) {
 		var cmd_str="";
@@ -271,7 +273,7 @@ Bot_Commands["RESTORE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"You are not logged in.");
 		return;	
 	}
-	if(player.@editing != 1) {
+	if(player.@editing == undefined) {
 		srv.o(target,"You must be editing to restore.");
 		return;
 	}
@@ -357,7 +359,8 @@ Editor_Commands["SET"] = function (srv,target,map,room,cmd,player) {
 		return;
 	}
 	
-	switch(player.@editing) {
+	var zone=zones[player.@zone];
+	switch(player.@editing.toString()) {
 	case "room":
 		edit_room_data(srv,target,zone,player,set,cmd);
 		break;
@@ -373,6 +376,9 @@ Editor_Commands["SET"] = function (srv,target,map,room,cmd,player) {
 	case "zone":
 		edit_zone_data(srv,target,zone,player,set,cmd);
 		break;
+	default:
+		log("unknown edit mode: '" + player.@editing + "'");
+		break;
 	}
 }
 
@@ -380,11 +386,11 @@ Editor_Commands["LINK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var link=cmd.shift();
 	if(!link) {
-		srv.o(target,"Type 'rpg help unlink' for help.");
+		srv.o(target,"Type 'help link' for help");
 		return;
 	}
-
-	switch(link.tolowerCase()) {
+	
+	switch(link.toLowerCase()) {
 	case "north":
 	case "south":
 	case "east":
@@ -393,14 +399,35 @@ Editor_Commands["LINK"] = function (srv,target,map,room,cmd,player) {
 	case "down":
 		var room_id=cmd.shift();
 		if(!room_id) {
-			srv.o(target,"TODO: auto-link adjacent room if no id is specified");
-		} else {
+			var start=new Coords(0,0,0);
+			var finish=get_exit_coords(start,link.toLowerCase());
+			room_id=find_link(map,room,start,finish,undefined);
+			if(room_id == -1) {
+				srv.o(target,red + "There is no unlinked exit there");
+				return;
+			}
+
 			var target_room=map.room.(@id == room_id);
-			var exit=room.exit.(@name == dir);
+			var exit=room.exit.(@name == link.toLowerCase());
 			
 			/* set exit target for current room */
 			if(exit.@target.toString()=="") {
-				room.exit += <exit name={dir} target={room_id}/>;
+				room.exit += <exit name={link.toLowerCase()} target={room_id}/>;
+				srv.o(target,green + "Room exit added");
+				/* change corresponding exit for target room */
+				if(settings.autolink) 
+					target_room.exit.(@name == reverse_dir(link.toLowerCase())).(@target = room.@id);
+			} else {
+				srv.o(target,red + "That exit is already linked");
+			}
+			
+		} else {
+			var target_room=map.room.(@id == room_id);
+			var exit=room.exit.(@name == link.toLowerCase());
+			
+			/* set exit target for current room */
+			if(exit.@target.toString()=="") {
+				room.exit += <exit name={link.toLowerCase()} target={room_id}/>;
 				srv.o(target,green + "Room exit added");
 
 			/* change exit target for current room */
@@ -410,7 +437,8 @@ Editor_Commands["LINK"] = function (srv,target,map,room,cmd,player) {
 			}
 			
 			/* change corresponding exit for target room */
-			if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target = room.@id);
+			if(settings.autolink) 
+				target_room.exit.(@name == reverse_dir(link.toLowerCase())).(@target = room.@id);
 		}
 		break;
 	default:
@@ -423,26 +451,27 @@ Editor_Commands["UNLINK"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var link=cmd.shift();
 	if(!link) {
-		srv.o(target,"Type 'rpg help unlink' for help.");
+		srv.o(target,"Type 'help unlink' for help");
 		return;
 	}
 
-	switch(link.tolowerCase()) {
+	switch(link.toLowerCase()) {
 	case "north":
 	case "south":
 	case "east":
 	case "west":
 	case "up":
 	case "down":
-		target_id=room.exit.(@name == dir).@target;
+		target_id=room.exit.(@name == link.toLowerCase()).@target;
 		target_room=map.room.(@id == target_id);
 
 		/* clear link if no target specified */
-		room.exit.(@name == dir).(@target=undefined);
+		room.exit.(@name == link.toLowerCase()).@target=undefined;
 		srv.o(target,red + "Room exit deleted");
 
 		/* clear corresponding link in original target room */
-		if(settings.autolink) target_room.exit.(@name == reverse_dir(dir)).(@target=undefined);
+		if(settings.autolink) 
+			target_room.exit.(@name == reverse_dir(link.toLowerCase())).@target=undefined;
 		break;
 	default:
 		srv.o(target,"usage: unlink <direction>");
@@ -464,16 +493,18 @@ Editor_Commands["MOVE"] = function (srv,target,map,room,cmd,player) {
 	room=map.room.(@id == player.@room);
 	
 	list_room_verbose(srv,player,map,room);
+	list_exits_verbose(srv,player,zone.map);
 }
 
 Editor_Commands["MOBS"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var param=cmd.shift();
 	if(param && param.toUpperCase() == "ZONE") {
+		var zone=zones[player.@zone];
 		list_mobs_verbose(srv,target,zone.mobs);
 		return;
 	}
-		list_mobs_verbose(srv,target,room);
+	list_mobs_verbose(srv,target,room);
 	return;
 }
 
@@ -481,6 +512,7 @@ Editor_Commands["ITEMS"] = function (srv,target,map,room,cmd,player) {
 	cmd.shift();
 	var param=cmd.shift();
 	if(param && param.toUpperCase() == "ZONE") {
+		var zone=zones[player.@zone];
 		list_items_verbose(srv,target,zone.items);
 		return;
 	}
@@ -518,7 +550,7 @@ Editor_Commands["GOTO"] = function (srv,target,map,room,cmd,player) {
 	var room=map.room.(@id == player.@room);
 	srv.o(target,"You teleport to " + room.title);
 	list_room_verbose(srv,player,map,room);
-	return;
+	list_exits_verbose(srv,player,zone.map);
 }
 
 Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
@@ -528,9 +560,6 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 	/*	if no target specified, look at room */
 	if(!obj) {
 		list_room_verbose(srv,player,map);
-		srv.o(player.@channel,red + "[title]" + black + " " + room.title);
-		srv.o(player.@channel,red + "[desc]" + black + " " + strip_ctrl(room.description));
-
 		list_mobs_verbose(srv,player.@channel,map,room);
 		list_items_verbose(srv,player.@channel,map,room);
 		list_exits_verbose(srv,player,map);
@@ -1105,8 +1134,9 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 	var player=players.player.(@name == onick);
 
 	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
-		var chan=get_privmsg_channel(srv,cmd);
+		var chan=srv.channel[cmd[0].toUpperCase()];
 		if(!chan) return;
+		
 		/* if the user has no RPG player or is not logged in, don't process RPG commands */
 		if(player.@active != 1) return;
 
@@ -1141,21 +1171,19 @@ Server_Commands["JOIN"]= function (srv,cmd,onick,ouh) {
 	}
 	
 	// Me joining.
-	if ((onick == srv.curnick) && !chan.is_joined) {
-		chan.is_joined = true;
-		srv.writeout("WHO " + cmd[0]);
+	if (onick == srv.curnick) {
+		if(!chan.is_joined) {
+			chan.is_joined = true;
+			srv.writeout("WHO " + cmd[0]);
+		}
 		return;
 	}
 	
 	var player=players.player.(@name == onick);
 	/* if the user has no RPG player, greet them */
 	if(!player.length() > 0) {
-		if (cmd[1][0] == ":")
-			cmd[1] = cmd[1].slice(1);
-		var target=cmd[1];
-
-		srv.o(target,"Welcome to RPG test, " + onick + "!","NOTICE");
-		srv.o(target,"Type 'rpg help' to get started.","NOTICE");
+		srv.o(chan.name,"Welcome to RPG test, " + onick + "!","NOTICE");
+		srv.o(chan.name,"Type 'rpg help' to get started.","NOTICE");
 	}
 }
 
