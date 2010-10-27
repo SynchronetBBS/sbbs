@@ -303,6 +303,10 @@ Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	} else {
 		while(cmd[0] && cmd[0][0] == "#" || cmd[0][0] == "&") {
 			var chan_str=cmd.shift();
+			if(!srv.channel[chan_str.toUpperCase()]) {
+				srv.o(target,"I am not in channel: " + chan_str.toLowerCase(),"NOTICE");
+				return;
+			}
 			channels.push(chan_str.toUpperCase());
 		}
 	}
@@ -567,7 +571,30 @@ Server_Commands["PART"] = function (srv,cmd,onick,ouh)	{
 		if(chan_count==0) delete srv.users[onick.toUpperCase()];
 	}
 }
-Server_Commands["QUIT"]=Server_Commands["KICK"]=Server_Commands["PART"];
+Server_Commands["QUIT"]=Server_Commands["PART"];
+
+Server_Commands["KICK"] = function (srv,cmd,onick,ouh)	{
+	if (cmd[0][0] == ":")
+		cmd[0] = cmd[0].slice(1);
+		
+	var chan_name=cmd.shift();
+	var kicked=cmd.shift();
+	var chan = srv.channel[chan_name.toUpperCase()];
+	
+	if ((kicked == srv.curnick) && chan && chan.is_joined) {
+		chan.is_joined = false;
+		return;
+	}
+	// Someone else parting.
+	if(srv.users[kicked.toUpperCase()]) {
+		delete srv.users[kicked.toUpperCase()].channels[chan_name.toUpperCase()];
+		var chan_count=0;
+		for(var c in srv.users[kicked.toUpperCase()].channels) {
+			chan_count++;
+		}
+		if(chan_count==0) delete srv.users[kicked.toUpperCase()];
+	}
+}
 
 Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{ 
 	if(srv.users[onick.toUpperCase()]) srv.users[onick.toUpperCase()].last_spoke=time();
