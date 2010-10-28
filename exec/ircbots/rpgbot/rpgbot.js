@@ -25,7 +25,6 @@ var players=[];
 var zones=[];
 var classes=[];
 var races=[];
-var global_items=[];
 var player_attacks=[];
 var mob_attacks=[];
 var global_items=load_items(gi_file);
@@ -35,13 +34,6 @@ var blue=String.fromCharCode(3)+"2";
 var green=String.fromCharCode(3)+"3";
 var red=String.fromCharCode(3)+"5";
 
-var activity_timeout=300;	// seconds
-var tick_time=4;	// seconds
-var max_armor=200;
-var base_hitpoints=20;
-var base_movement=60;
-var base_stats=10;
-var base_mana=20;
 var last_activity=0;	// time_t activity tracker
 var mob_count=0;
 var item_count=0;
@@ -108,17 +100,18 @@ function main(srv,target) {
 
 function update_game_status(srv) {
 	var active=false;
-	if(time()-last_activity<tick_time) {
+	if(time()-last_activity<settings.tick_time) {
 		return false;
 	} else {
 		for(var u in srv.users) {
 			var player=players.player.(@name.toUpperCase() == u);
 			if(player.@active == 1) {
-				if(time()-srv.users[u].last_spoke<activity_timeout){
+				if(time()-srv.users[u].last_spoke<settings.activity_timeout){
 					active=true;
 				} else {
 					player.@active=0;
-					srv.o(player.@channel,"You have been idle too long. Type 'RPG LOGIN' to resume playing RPG.");
+					srv.o(player.@channel,
+						"You have been idle too long. Type 'login' to resume playing.");
 				}
 			}
 		}
@@ -143,6 +136,16 @@ function Coords(x,y,z)
 }
 function Settings()
 {
+	/* game settings */
+	this.activity_timeout=300;	// seconds
+	this.tick_time=4;	// seconds
+	this.max_armor=200;
+	this.base_hitpoints=20;
+	this.base_movement=60;
+	this.base_stats=10;
+	this.base_mana=20;
+	
+	/* editor settings */
 	this.autolink=true;
 	
 	this.default_room_title="New Room";

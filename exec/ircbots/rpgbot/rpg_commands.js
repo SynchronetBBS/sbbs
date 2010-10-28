@@ -52,7 +52,7 @@ Bot_Commands["ZONES"] = new Bot_Command(0,false,false);
 Bot_Commands["ZONES"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var list=[];
 	for(var z in zones) {
-		list.push(zones[z].@name);
+		list.push(zones[z].map.@name);
 	}
 	srv.o(target,"Zones: " + list.join(", "));
 }
@@ -124,8 +124,21 @@ Bot_Commands["EDIT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 
 	if(!value) {
-		srv.o(target,"see 'help edit' for command usage.","NOTICE");
-		return;
+		switch(edit_cmd) {
+		case "room":
+			value=player.@room;
+			break;
+		case "item":
+			if(zone.editor[player.@name]) value=zone.editor[player.@name].item;
+			break;
+		case "mob":
+			if(zone.editor[player.@name]) value=zone.editor[player.@name].mob;
+			break;
+		}
+		if(!value) {
+			srv.o(target,"see 'help edit' for command usage.","NOTICE");
+			return;
+		}
 	}
 	
 	edit_cmd=("" + edit_cmd).toLowerCase();
@@ -559,7 +572,7 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 	
 	/*	if no target specified, look at room */
 	if(!obj) {
-		list_room_verbose(srv,player,map);
+		show_room_details(srv,player,map);
 		list_mobs_verbose(srv,player.@channel,map,room);
 		list_items_verbose(srv,player.@channel,map,room);
 		list_exits_verbose(srv,player,map);
