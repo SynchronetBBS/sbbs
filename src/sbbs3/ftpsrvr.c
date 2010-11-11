@@ -1790,15 +1790,20 @@ static void receive_thread(void* arg)
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 					if(fexistcase(tmp))
 						remove(tmp);
-					system(cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd));
+					cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd);
+					lprintf(LOG_DEBUG,"%04d Extracting DIZ: %s",xfer.ctrl_sock,cmd);
+					system(cmd);
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 						if(fexistcase(tmp))
 							remove(tmp);
-						system(cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"DESC.SDI",cmd)); 
+						cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"DESC.SDI",cmd);
+						lprintf(LOG_DEBUG,"%04d Extracting DIZ: %s",xfer.ctrl_sock,cmd);
+						system(cmd); 
 						fexistcase(tmp);	/* fixes filename case */
 					}
 					if((file=nopen(tmp,O_RDONLY))!=-1) {
+						lprintf(LOG_DEBUG,"%04d Parsing DIZ: %s",xfer.ctrl_sock,tmp);
 						memset(ext,0,sizeof(ext));
 						read(file,ext,sizeof(ext)-1);
 						for(i=sizeof(ext)-1;i;i--)	/* trim trailing spaces */
@@ -1817,7 +1822,8 @@ static void receive_thread(void* arg)
 						close(file);
 						remove(tmp);
 						f.misc|=FM_EXTDESC; 
-					} 
+					} else
+						lprintf(LOG_DEBUG,"%04d DIZ Does not exist: %s",xfer.ctrl_sock,tmp);
 				} 
 			} /* FILE_ID.DIZ support */
 
