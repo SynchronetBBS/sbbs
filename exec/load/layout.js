@@ -79,11 +79,6 @@ function Layout()
 			this.windows[w].cycle.apply(this,arguments);
 	}
 	
-	/* return current window object */
-	this.current_window getter=function() {
-		return this.windows[this.index];
-	}
-
 	/* get a window by name */
 	this.window=function(name) {
 		if(this.windows_map[name.toUpperCase()] >= 0) {
@@ -92,6 +87,11 @@ function Layout()
 		return false;
 	}
 	
+	/* return current window object */
+	this.current_window getter=function() {
+		return this.windows[this.index];
+	}
+
 	/* set current window object by name */
 	this.current_window setter=function(name) {
 		if(this.windows_map[name.toUpperCase()] >= 0) {
@@ -101,17 +101,25 @@ function Layout()
 		return false;
 	}
 	
+	/* draw all layout windows */
+	this.draw=function() {
+		for(var w=0;w<this.windows.length;w++)
+			this.windows[w].draw();
+	}
+	
 	/* handle layout commands/window commands */
 	this.handle_command=function(key) {
 		switch(key.toUpperCase()) {
 		case '\x09':	/* CTRL-I TAB */
+			this.windows[this.index].active=false;
+			this.windows[this.index].drawTitle();
 			this.index++;
-			if(this.index >= this.length) this.index=0;
+			if(this.index >= this.windows.length) this.index=0;
+			this.windows[this.index].active=true;
+			this.windows[this.index].drawTitle();
 			return true;
 		default:
-			if(this[this.index].handle_command)
-				return this[this.index].handle_command(key);
-			return false;
+			return this.windows[this.index].handle_command(key);
 		}
 	}
 }
@@ -134,6 +142,7 @@ function Layout_Window(name)
 	this.tabs=[];
 	this.tabs_map=[];
 	this.index=0;
+	this.active=false;
 	
 	this.scrollbar;
 	this.scrollback=-1;
@@ -256,8 +265,21 @@ function Layout_Window(name)
 	this.handle_command=function(key) {
 		switch(key.toUpperCase()) {
 		case KEY_LEFT:
+			this.index--;
+			if(this.index < 0) this.index=this.tabs.length-1;
+			this.drawTitle();
+			this.draw();
+			return true;
 		case KEY_RIGHT:
-			break;
+			this.index++;
+			if(this.index >= this.tabs.length) this.index=0;
+			this.drawTitle();
+			this.draw();
+			return true;
+		default:
+			if(typeof this.tabs[this.index].handle_command == "function")
+				return this.tabs[this.index].handle_command(key);
+			return false;
 		}
 	}
 	
