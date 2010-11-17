@@ -1,4 +1,6 @@
-if(js.global.HTTPRequest==undefined)
+// $Id$
+
+if(!js.global || js.global.HTTPRequest==undefined)
 	load("http.js");
 
 function get_geoip(host, countryonly)

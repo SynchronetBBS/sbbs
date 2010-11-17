@@ -5,7 +5,7 @@
 
 // $Id$
 
-if(js.global.mail_get_name==undefined)
+if(!js.global || js.global.mail_get_name==undefined)
 	load("mailutil.js");
 
 RFC822HEADER = 0xb0	// from smbdefs.h

@@ -4,9 +4,9 @@
 
 // $Id$
 
-if(js.global.NET_INTERNET==undefined)
+if(!js.global || js.global.NET_INTERNET==undefined)
 	load("sbbsdefs.js");
-if(js.global.mail_get_name==undefined)
+if(!js.global || js.global.mail_get_name==undefined)
 	load("mailutil.js");	// mail_get_name() and mail_get_address()
 
 const RFC822HEADER = 0xb0;	// from smbdefs.h

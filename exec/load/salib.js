@@ -3,7 +3,7 @@
  * $Id$
  */
 
-if(js.global.SOCK_STREAM==undefined)
+if(!js.global || js.global.SOCK_STREAM==undefined)
 	load("sockdefs.js")
 
 function SPAMC_Message(messagefile, addr, port, user)
