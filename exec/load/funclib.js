@@ -46,7 +46,7 @@ function getColor(color)
 		case "BG_BLACK":
 		case "\0010":
 			return BG_BLACK;
-		case "BG_BLACK":
+		case BG_BLACK:
 			return "\0010";
 		case "BG_BLUE":
 		case "\0014":
@@ -320,7 +320,19 @@ function toXML(obj)
 	}
 	return xml;
 }
-	
+function setPosition(x,y) 
+{
+	console.gotoxy(x,y);
+	console.pushxy();
+}
+function pushMessage(txt) 
+{
+	console.popxy();
+	console.putmsg(txt,P_SAVEATR);
+	console.popxy();
+	console.down();
+	console.pushxy();
+}	
 	
 	
 	
