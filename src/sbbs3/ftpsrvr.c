@@ -1405,7 +1405,7 @@ static void send_thread(void* arg)
 				str[0]=0;
 			lprintf(LOG_INFO,"%04d Sent %lu bytes (%lu total) of %s (%lu cps)%s"
 				,xfer.ctrl_sock,total,length,xfer.filename
-				,(total-last_total)/(now-last_report)
+				,(ulong)((total-last_total)/(now-last_report))
 				,str);
 			last_total=total;
 			last_report=now;
