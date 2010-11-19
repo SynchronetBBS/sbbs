@@ -374,14 +374,18 @@ function Layout_Window(name,x,y,w,h)
 	this.handle_command=function(cmd) {
 		switch(cmd) {
 		case KEY_LEFT:
-			this.index--;
-			if(this.index < 0) this.index=tabs.length-1;
+			if(this.index-1<0)
+				this.index=windows.length-1;
+			else 
+				this.index--;
 			this.drawTabs();
 			this.draw();
 			return true;
 		case KEY_RIGHT:
-			this.index++;
-			if(this.index >= tabs.length) this.index=0;
+			if(this.index+1>=windows.length)
+				this.index=0;
+			else 
+				this.index++;
 			this.drawTabs();
 			this.draw();
 			return true;
@@ -493,6 +497,7 @@ function Layout_Window(name,x,y,w,h)
 function Window_Tab()
 {
 	this.status=-1;
+	this.hotkeys=false;
 
 	/* dynamic content and command processor placeholders */
 	this.handle_command;
@@ -517,12 +522,12 @@ function Window_Tab()
 /* chat tab object extends Window_Tab */
 function Tab_Chat(name,x,y,w,h)
 {
+	this.type="chat";
+	this.setProperties(name,x,y,w,h);
 	if(!chat) {
 		load("chateng.js");
 		js.global.chat=new ChatEngine();
 	}
-	this.setProperties(name,x,y,w,h);
-	this.type="chat";
 	
 	this.init=function(chatroom)
 	{
@@ -535,11 +540,11 @@ Tab_Chat.prototype=new Window_Tab;
 /* graphic tab object extends Window_Tab */
 function Tab_Graphic(name,x,y,w,h)
 {
+	this.type="graphic";
+	this.setProperties(name,x,y,w,h);
 	if(!Graphic) {
 		load("graphic.js");
 	}
-	this.setProperties(name,x,y,w,h);
-	this.type="graphic";
 	this.graphic=new Graphic(w,h,layout_settings.wbg);
 	
 	this.putmsg=this.graphic.putmsg;
@@ -553,11 +558,12 @@ Tab_Graphic.prototype=new Window_Tab;
 /* lightbar tab object extends Window_Tab */
 function Tab_Lightbar(name,x,y,w,h)
 {
+	this.type="lightbar";
+	this.hotkeys=true;
+	this.setProperties(name,x,y,w,h);
 	if(!Lightbar) {
 		load("lightbar.js");
 	}
-	this.setProperties(name,x,y,w,h);
-	this.type="lightbar";
 	this.load=function(lightbar) {
 		//ToDo: add lightbar tab native support
 	}
