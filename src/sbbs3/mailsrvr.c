@@ -1984,7 +1984,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 		if(*p==0)
 			break;
 		p2=host_name;
-		for(;*p && !isspace(*p) && p2<host_name+126;p++)  {
+		for(;*p && !isspace((unsigned char)*p) && p2<host_name+126;p++)  {
 			*p2++=*p;
 		}
 		*p2=0;
