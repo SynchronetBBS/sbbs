@@ -91,6 +91,8 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,rd==sizeof(node_t) ? ERR_LOCK : ERR_READ,"node.dab",number+1);
+		close(nodefile);
+		nodefile=-1;
 		return(-2);
 	}
 	if(count>(LOOP_NODEDAB/2)) {
