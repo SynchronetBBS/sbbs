@@ -1559,21 +1559,29 @@ time_t iniGetDateTime(str_list_t list, const char* section, const char* key, tim
 static unsigned parseEnum(const char* value, str_list_t names)
 {
 	unsigned i,count;
+	char val[INI_MAX_VALUE_LEN];
+	char* p=val;
+
+	/* Strip trailing words (enums must be a single word with no white-space) */
+	/* to support comments following enum values */
+	SAFECOPY(val,value);
+	FIND_WHITESPACE(p);
+	*p=0;
 
     if((count=strListCount(names)) == 0)
         return 0;
         
 	/* Look for exact matches first */
 	for(i=0; i<count; i++)
-		if(stricmp(names[i],value)==0)
+		if(stricmp(names[i],val)==0)
 			return(i);
 
 	/* Look for partial matches second */
 	for(i=0; i<count; i++)
-		if(strnicmp(names[i],value,strlen(value))==0)
+		if(strnicmp(names[i],val,strlen(val))==0)
 			return(i);
 
-    i=strtoul(value,NULL,0);
+    i=strtoul(val,NULL,0);
     if(i>=count)
         i=count-1;
 	return i;
