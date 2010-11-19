@@ -375,14 +375,14 @@ function Layout_Window(name,x,y,w,h)
 		switch(cmd) {
 		case KEY_LEFT:
 			if(this.index-1<0)
-				this.index=windows.length-1;
+				this.index=tabs.length-1;
 			else 
 				this.index--;
 			this.drawTabs();
 			this.draw();
 			return true;
 		case KEY_RIGHT:
-			if(this.index+1>=windows.length)
+			if(this.index+1>=tabs.length)
 				this.index=0;
 			else 
 				this.index++;
