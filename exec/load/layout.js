@@ -141,6 +141,7 @@ function Layout(theme)
 		for(var w=0;w<windows.length;w++)
 			windows[w].drawWindow();
 	}
+	this.redraw=this.draw;
 	
 	/* handle layout commands/window commands */
 	this.handle_command=function(cmd) {
@@ -312,7 +313,7 @@ function Layout_Window(name,x,y,w,h)
 	}
 	
 	/* add a named tab to this window */
-	this.add_tab=function(type,name) {
+	this.add_tab=function(type,name,data) {
 		if(!(type && name)) {
 			log(LOG_WARNING, "ERROR: invalid tab parameters");
 			return false;
@@ -362,6 +363,9 @@ function Layout_Window(name,x,y,w,h)
 		if(!tab) {
 			log(LOG_WARNING, "ERROR: invalid tab type specified");
 			return false;
+		}
+		if(data) {
+			tab.init(data);
 		}
 	
 		tabs_map[name.toUpperCase()]=tabs.length;
@@ -489,6 +493,7 @@ function Layout_Window(name,x,y,w,h)
 			tabs[this.index].draw.apply(this,arguments);
 		}
 	}
+	this.redraw=this.draw;
 
 	log(LOG_DEBUG, format("window initialized (x: %i y: %i w: %i h: %i)",this.x,this.y,this.width,this.height));
 }
@@ -508,6 +513,10 @@ function Window_Tab()
 	{
 		clearBlock(this.x,this.y,this.width,this.height,layout_settings.bg);
 	}
+	this.redraw=function()
+	{
+		if(typeof this.draw == "function") this.draw.apply(this,arguments);
+	}
 	
 	this.setProperties=function(name,x,y,w,h)
 	{
@@ -526,13 +535,14 @@ function Tab_Chat(name,x,y,w,h)
 	this.setProperties(name,x,y,w,h);
 	if(!chat) {
 		load("chateng.js");
-		js.global.chat=new ChatEngine();
+		js.global.chat=new ChatEngine("IRC");
 	}
 	
 	this.init=function(chatroom)
 	{
 		chatroom.init(this.x,this.y,this.width,this.height);
-		this.chatroom=chatroom;
+		this.handle_command=chatroom.handle_command;
+		this.draw=chatroom.draw;
 	}
 }
 Tab_Chat.prototype=new Window_Tab;
