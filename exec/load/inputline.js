@@ -4,7 +4,7 @@ full_redraw=false;
 function InputLine(x,y,w,max,bg,fg,title)
 {
 	this.x=1;
-	this.y=1;
+	this.y=24;
 	this.width=79;
 	this.max_buffer=200;
 	
@@ -31,6 +31,16 @@ function InputLine(x,y,w,max,bg,fg,title)
 		if(bg) this.bg=bg;
 		if(fg) this.fg=fg;
 		if(title) this.title=title;
+	
+		if(this.x + this.w > console.screen_columns) {
+			log("input line wider than screen. adjusting to fit.");
+			this.w=console.screen_columns-this.x-1;
+		}
+		if(this.x >= console.screen_columns || this.y > console.screen_rows) {
+			log("input line off the screen. using defaults.");
+			this.x=1;
+			this.y=1;
+		}
 	}
 	this.submit=function()
 	{
@@ -152,6 +162,8 @@ function InputLine(x,y,w,max,bg,fg,title)
 	{
 		console.gotoxy(this);
 		this.printTitle();
+		if(this.x + this.width == console.screen_columns && this.y == console.screen_rows) 
+			console.cleartoeol(this.bg);
 		this.printBuffer();
 	}
 	this.printTitle=function()
