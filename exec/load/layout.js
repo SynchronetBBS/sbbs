@@ -3,8 +3,8 @@
 /*
 	by Matt Johnson (MCMLXXIX) 2010
 	
-	the Layout() object is intended as an array of Layout_Window() objects.
-	the Layout_Window() object contains tabs, which contain whatever content 
+	the Layout() object is intended as an array of Layout_View() objects.
+	the Layout_View() object contains tabs, which contain whatever content 
 	they are supplied with. each tab object should have the following methods, 
 	though it may exist without them:
 	
@@ -31,17 +31,17 @@ var layout_settings;
 function Layout(theme) 
 {
 	/* private properties */
-	var windows=[];
-	var windows_map=[];
+	var views=[];
+	var views_map=[];
 	var index={ value:0 };
 	
-	/* public window index */
+	/* public view index */
 	this.index getter=function() {
 		return index.value;
 	}
 	
 	this.index setter=function(value) {
-		if(isNaN(value) || !windows[value]) return false;
+		if(isNaN(value) || !views[value]) return false;
 		index.value=value;
 		return true;
 	}
@@ -56,10 +56,12 @@ function Layout(theme)
 		/* otherwise, load default color scheme */
 		else {
 			layout_settings=new Layout_Settings(
-				LIGHTGRAY, /* window foreground */
-				BG_BLACK,	/* window background */
-				YELLOW,	/* window highlight foreground */
-				BG_BLUE,	/* window highlight background */
+				LIGHTGRAY, /* view foreground */
+				BG_BLACK,	/* view background */
+				LIGHTRED,	/* menu highlight foreground */
+				RED,	/* menu highlight background (use foreground value) */
+				YELLOW,	/* view highlight foreground */
+				BG_BLUE,	/* view highlight background */
 				LIGHTGRAY,	/* border foreground color */
 				BG_BLACK,	/* border background color */
 				BLACK,		/* tab foreground (normal) */
@@ -73,14 +75,14 @@ function Layout(theme)
 		}
 	}
 
-	/* add a new window to layout */
-	this.add_window=function(name,x,y,w,h) {
+	/* add a new view to layout */
+	this.add_view=function(name,x,y,w,h) {
 		if(!name) {
-			log(LOG_WARNING, "ERROR: no window name specified");
+			log(LOG_WARNING, "ERROR: no view name specified");
 			return false;
 		}
-		if(windows_map[name.toUpperCase()] >= 0) {
-			log(LOG_WARNING, "ERROR: a window with this name already exists: " + name);
+		if(views_map[name.toUpperCase()] >= 0) {
+			log(LOG_WARNING, "ERROR: a view with this name already exists: " + name);
 			return false;
 		} 
 		
@@ -96,70 +98,70 @@ function Layout(theme)
 			|| isNaN(x) || isNaN(y) 
 			|| (x-1+w) > console.screen_columns
 			|| (y-1+h) > console.screen_rows) {
-			log(LOG_WARNING, "ERROR: invalid window parameters");
+			log(LOG_WARNING, "ERROR: invalid view parameters");
 			return false;
 		} 
 
-		var window=new Layout_Window(name,x,y,w,h);
-		window.window_position=windows.length;
-		window.layout_position=index;
-		windows_map[name.toUpperCase()]=windows.length;
-		windows.push(window);
+		var view=new Layout_View(name,x,y,w,h);
+		view.view_position=views.length;
+		view.layout_position=index;
+		views_map[name.toUpperCase()]=views.length;
+		views.push(view);
 		return true;
 	}
 	
 	/* layout update loop */
 	this.cycle=function() {
-		for(var w=0;w<windows.length;w++) 
-			windows[w].cycle.apply(this,arguments);
+		for(var w=0;w<views.length;w++) 
+			views[w].cycle();
 	}
 	
-	/* get a window by name */
-	this.window=function(name) {
-		if(windows_map[name.toUpperCase()] >= 0) {
-			return windows[windows_map[name.toUpperCase()]];
+	/* get a view by name */
+	this.view=function(name) {
+		if(views_map[name.toUpperCase()] >= 0) {
+			return views[views_map[name.toUpperCase()]];
 		} 
 		return false;
 	}
 	
-	/* return current window object */
-	this.current_window getter=function() {
-		return windows[this.index];
+	/* return current view object */
+	this.current_view getter=function() {
+		return views[this.index];
 	}
 
-	/* set current window object by name */
-	this.current_window setter=function(name) {
-		if(windows_map[name.toUpperCase()] >= 0) {
-			this.index=windows_map[name.toUpperCase()];
+	/* set current view object by name */
+	this.current_view setter=function(name) {
+		if(views_map[name.toUpperCase()] >= 0) {
+			this.index=views_map[name.toUpperCase()];
 			return true;
 		} 
 		return false;
 	}
 	
-	/* draw all layout windows */
+	/* draw all layout views */
 	this.draw=function() {
-		for(var w=0;w<windows.length;w++)
-			windows[w].drawWindow();
+		for(var w=0;w<views.length;w++)
+			views[w].drawView();
 	}
 	this.redraw=this.draw;
 	
-	/* handle layout commands/window commands */
+	/* handle layout commands/view commands */
 	this.handle_command=function(cmd) {
 		switch(cmd) {
 		case '\x09':	/* CTRL-I TAB */
 			var old_index=this.index;
-			for(count=0;count<windows.length;count++) {
-				if(this.index+1>=windows.length)
+			for(count=0;count<views.length;count++) {
+				if(this.index+1>=views.length)
 					this.index=0;
 				else 
 					this.index++;
-				if(windows[this.index].interactive) break;
+				if(views[this.index].interactive) break;
 			}
-			windows[old_index].drawTitle();
-			windows[this.index].drawTitle();
+			views[old_index].drawTitle();
+			views[this.index].drawTitle();
 			return true;
 		default:
-			return windows[this.index].handle_command(cmd);
+			return views[this.index].handle_command(cmd);
 		}
 	}
 
@@ -167,17 +169,21 @@ function Layout(theme)
 }
 
 /* layout settings object */
-function Layout_Settings(wfg,wbg,wtfg,wtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg,nfg,pfg)
+function Layout_Settings(vfg,vbg,mhfg,mhbg,vtfg,vtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg,nfg,pfg)
 {
-	/* main window colors */
-	this.wfg=wfg;
-	this.wbg=wbg;
+	/* main view colors */
+	this.vfg=vfg;
+	this.vbg=vbg;
+	
+	/* menu highlights */
+	this.mhfg=mhfg;
+	this.mhbg=mhbg;
 	
 	/* title hightlight colors */
-	this.wtfg=wtfg;
-	this.wtbg=wtbg;
+	this.vtfg=vtfg;
+	this.vtbg=vtbg;
 
-	/* window border color */
+	/* view border color */
 	this.bfg=bfg;
 	this.bbg=bbg;
 	
@@ -198,34 +204,34 @@ function Layout_Settings(wfg,wbg,wtfg,wtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg,nfg,pfg)
 	/* tab user message color */
 	this.pfg=pfg;
 	
-	/* inactive window colors */
+	/* inactive view colors */
 	this.ibg=BG_BLACK;
 	this.ifg=DARKGRAY;
 }
 
-/* tabbed window object */
-function Layout_Window(name,x,y,w,h)
+/* tabbed view object */
+function Layout_View(name,x,y,w,h)
 {
 	this.name=name;
 
-	/* private array containing window tabs 
-		tabs can be anything that will fit in the window
-		such as: chat windows, user list, lightbar menus */
+	/* private array containing view tabs 
+		tabs can be anything that will fit in the view
+		such as: chat views, user list, lightbar menus */
 	var tabs=[];
 	var tabs_map=[];
 	var index={ value:0 };
 	
-	/* private window properties */
+	/* private view properties */
 	var show_title=true;
 	var show_tabs=true;
 	var show_border=true;
 	var interactive=true;
 
-	/* main window position (upper left corner) */
+	/* main view position (upper left corner) */
 	this.x=x;
 	this.y=y;
 	
-	/* window dimensions */
+	/* view dimensions */
 	this.width=w;
 	this.height=h;
 
@@ -245,7 +251,7 @@ function Layout_Window(name,x,y,w,h)
 	this.cycle=function() {
 		for(var t=0;t<tabs.length;t++) 
 			if(typeof tabs[t].cycle == "function") 
-				tabs[t].cycle.apply(this,arguments);
+				tabs[t].cycle();
 	}
 	
 	/* get a tab by name */
@@ -344,27 +350,19 @@ function Layout_Window(name,x,y,w,h)
 			y+=1;
 		}
 		
-		switch(type.toUpperCase()) {
-		case "GRAPHIC":
-			tab=new Tab_Graphic(name,x,y,w,h);
-			break;
-		case "LIGHTBAR":
-			tab=new Tab_Lightbar(name,x,y,w,h);
-			break;
-		case "CHAT":
-			tab=new Tab_Chat(name,x,y,w,h);
-			break;
-		case "CUSTOM":
-			tab=new Window_Tab();
-			tab.setProperties(name,x,y,w,h);
-			tab.type="custom";
-		} 
-		
-		if(!tab) {
-			log(LOG_WARNING, "ERROR: invalid tab type specified");
-			return false;
+		/* if a template exists for the specified tab type */
+		if(Tab_Templates[type.toUpperCase()]) {
+			tab=new Tab_Templates[type.toUpperCase()](name,x,y,w,h);
 		}
-		if(data) {
+		/* otherwise create a custom tab */
+		else {
+			tab=new View_Tab();
+			tab.setProperties(name,x,y,w,h);
+			tab.type=type;
+		}
+		
+		/* if tab has an initialization method */
+		if(typeof tab.init == "function") {
 			tab.init(data);
 		}
 	
@@ -374,26 +372,34 @@ function Layout_Window(name,x,y,w,h)
 		return true;
 	}
 	
-	/* handle window commands */
+	/* handle view commands */
 	this.handle_command=function(cmd) {
-		switch(cmd) {
-		case KEY_LEFT:
-			if(this.index-1<0)
-				this.index=tabs.length-1;
-			else 
-				this.index--;
-			this.drawTabs();
-			this.draw();
-			return true;
-		case KEY_RIGHT:
-			if(this.index+1>=tabs.length)
-				this.index=0;
-			else 
-				this.index++;
-			this.drawTabs();
-			this.draw();
-			return true;
-		default:
+		if(tabs.length > 1) {
+			switch(cmd) {
+			case KEY_LEFT:
+				if(this.index-1<0)
+					this.index=tabs.length-1;
+				else 
+					this.index--;
+				this.drawTabs();
+				this.draw();
+				return true;
+			case KEY_RIGHT:
+				if(this.index+1>=tabs.length)
+					this.index=0;
+				else 
+					this.index++;
+				this.drawTabs();
+				this.draw();
+				return true;
+			default:
+				if(tabs[this.index] &&
+					typeof tabs[this.index].handle_command == "function")
+					return tabs[this.index].handle_command(cmd);
+				return false;
+			}
+		} 
+		else {
 			if(tabs[this.index] &&
 				typeof tabs[this.index].handle_command == "function")
 				return tabs[this.index].handle_command(cmd);
@@ -401,15 +407,15 @@ function Layout_Window(name,x,y,w,h)
 		}
 	}
 	
-	/* draw the window and contents of the currently active tab */
-	this.drawWindow=function() {
+	/* draw the view and contents of the currently active tab */
+	this.drawView=function() {
 		if(this.show_border) this.drawBorder();
 		if(this.show_title) this.drawTitle();
 		if(this.show_tabs) this.drawTabs();
 		this.draw();
 	}
 	
-	/* draw the tab list for the current window */
+	/* draw the tab list for the current view */
 	this.drawTabs=function() {
 		var tab_str="\1n" + getColor(layout_settings.tbg) + getColor(layout_settings.tfg) + "<";
 		for(var t=0;t<tabs.length;t++) {
@@ -450,12 +456,12 @@ function Layout_Window(name,x,y,w,h)
 		console.putmsg(printPadded(tab_str,w-1) + ">",P_SAVEATR);
 	}
 	
-	/* draw the title bar of the current window */
+	/* draw the title bar of the current view */
 	this.drawTitle=function() {
 		var color_str="";
-		if(this.window_position == this.layout_position.value) {
-			color_str+=getColor(layout_settings.wtbg) 
-				+ getColor(layout_settings.wtfg); 
+		if(this.view_position == this.layout_position.value) {
+			color_str+=getColor(layout_settings.vtbg) 
+				+ getColor(layout_settings.vtfg); 
 		} else {
 			color_str+=getColor(layout_settings.ibg) 
 				+ getColor(layout_settings.ifg);
@@ -474,7 +480,7 @@ function Layout_Window(name,x,y,w,h)
 		console.putmsg(color_str + centerString(this.name,w),P_SAVEATR);
 	}
 	
-	/* draw the border of the current window */
+	/* draw the border of the current view */
 	this.drawBorder=function() {
 		var border_color=getColor(layout_settings.bbg) + getColor(layout_settings.bfg);
 		setPosition(this.x,this.y);
@@ -485,29 +491,29 @@ function Layout_Window(name,x,y,w,h)
 		pushMessage(splitPadded(border_color + "\xC0","\xD9",this.width,"\xC4"));
 	}
 	
-	/* draw the contents of the current window */
+	/* draw the contents of the current view */
 	this.draw=function() {
 		if(tabs[this.index] &&
 			typeof tabs[this.index].draw == "function") {
 			tabs[this.index].clear();
-			tabs[this.index].draw.apply(this,arguments);
+			tabs[this.index].draw();
 		}
 	}
 	this.redraw=this.draw;
 
-	log(LOG_DEBUG, format("window initialized (x: %i y: %i w: %i h: %i)",this.x,this.y,this.width,this.height));
+	log(LOG_DEBUG, format("view initialized (x: %i y: %i w: %i h: %i)",this.x,this.y,this.width,this.height));
 }
  
-/* window tab prototype object */
-function Window_Tab()
+/* view tab prototype object */
+function View_Tab()
 {
 	this.status=-1;
 	this.hotkeys=false;
 
 	/* dynamic content and command processor placeholders */
-	this.handle_command;
-	this.cycle;
-	this.draw;
+	// this.handle_command;
+	// this.cycle;
+	// this.draw;
 	
 	this.clear=function()
 	{
@@ -515,9 +521,8 @@ function Window_Tab()
 	}
 	this.redraw=function()
 	{
-		if(typeof this.draw == "function") this.draw.apply(this,arguments);
+		if(typeof this.draw == "function") this.draw();
 	}
-	
 	this.setProperties=function(name,x,y,w,h)
 	{
 		this.name=name;
@@ -528,54 +533,139 @@ function Window_Tab()
 	}
 }
 
-/* chat tab object extends Window_Tab */
-function Tab_Chat(name,x,y,w,h)
-{
+/* pre-defined view tabs */
+var Tab_Templates=[];
+
+Tab_Templates["CHAT"]=function(name,x,y,w,h) {
 	this.type="chat";
-	this.setProperties(name,x,y,w,h);
-	if(!chat) {
-		load("chateng.js");
+	if(!js.global.Window) {
+		load(js.global,"msgwndw.js");
 		js.global.chat=new ChatEngine("IRC");
 	}
-	
-	this.init=function(chatroom)
+	this.setProperties(name,x,y,w,h);
+	this.init=function(window)
 	{
-		chatroom.init(this.x,this.y,this.width,this.height);
-		this.handle_command=chatroom.handle_command;
-		this.draw=chatroom.draw;
+		if(window)
+			this.window=window;
+		else 
+			this.window=new Window();
+		this.window.init(this.x,this.y,this.width,this.height);
+	}
+	this.handle_command=function(cmd)
+	{
+		if(!this.window) return false;
+		if(this.window.handle_command(cmd)) this.draw();
+	}
+	this.draw=function()
+	{
+		if(!this.window) return false;
+		this.window.draw();
 	}
 }
-Tab_Chat.prototype=new Window_Tab;
 
-/* graphic tab object extends Window_Tab */
-function Tab_Graphic(name,x,y,w,h)
-{
+Tab_Templates["GRAPHIC"]=function(name,x,y,w,h) {
 	this.type="graphic";
 	this.setProperties(name,x,y,w,h);
-	if(!Graphic) {
-		load("graphic.js");
+	if(!js.global.Graphic) {
+		load(js.global,"graphic.js");
 	}
-	this.graphic=new Graphic(w,h,layout_settings.wbg);
-	
+	this.graphic=new Graphic(w,h,layout_settings.vbg);
 	this.putmsg=this.graphic.putmsg;
 	this.load=this.graphic.load;
 	this.draw=function() {
 		this.graphic.draw(this.x,this.y);
 	}
 }
-Tab_Graphic.prototype=new Window_Tab;
 
-/* lightbar tab object extends Window_Tab */
-function Tab_Lightbar(name,x,y,w,h)
-{
+Tab_Templates["LIGHTBAR"]=function(name,x,y,w,h) {
 	this.type="lightbar";
 	this.hotkeys=true;
-	this.setProperties(name,x,y,w,h);
-	if(!Lightbar) {
-		load("lightbar.js");
+	if(!js.global.Lightbar) {
+		load(js.global,"lightbar.js");
 	}
-	this.load=function(lightbar) {
-		//ToDo: add lightbar tab native support
+	this.setProperties(name,x,y,w,h);
+	this.init=function(lightbar) {
+		if(lightbar) { 
+			this.lightbar=lightbar;
+		}
+		else {
+			this.lightbar=new Lightbar();
+		}
+		
+		this.lightbar.lpadding="";
+		this.lightbar.rpadding="";
+		this.lightbar.fg=layout_settings.vfg;
+		this.lightbar.bg=layout_settings.vbg;
+		this.lightbar.hfg=layout_settings.mhfg;
+		this.lightbar.hbg=layout_settings.mhbg;
+		this.lightbar.force_width=w;
+		this.lightbar.height=h;
+		this.lightbar.xpos=x;
+		this.lightbar.ypos=y;
+	}
+	this.handle_command=function(key) {
+		return this.lightbar.getval(undefined,key);
+	}
+	this.draw=function() {
+		this.lightbar.draw();
+	}
+	this.add=function(txt, retval, width, lpadding, rpadding, disabled, nodraw)	{
+		this.lightbar.add(txt, retval, width, lpadding, rpadding, disabled, nodraw);
 	}
 }
-Tab_Lightbar.prototype=new Window_Tab;
+
+Tab_Templates["CLOCK"]=function(name,x,y,w,h) {
+	this.type="clock";
+	if(!js.global.DigitalClock) {
+		load(js.global,"clock.js");
+	}
+	this.setProperties(name,x,y,w,h);
+	this.init=function(clock) {
+		if(clock) { 
+			this.clock=clock;
+		}
+		else {
+			this.clock=new DigitalClock();
+		}
+		this.clock.init(this.x,this.y,this.width);
+	}
+	this.cycle=function() {
+		if(!this.clock) return false;
+		if(this.clock.update())
+			this.clock.draw(this.x,this.y);
+	}
+	this.draw=function() {
+		if(!this.clock) return false;
+		this.clock.draw(this.x,this.y);
+	}
+}
+
+Tab_Templates["CALENDAR"]=function(name,x,y,w,h) {
+	this.type="calendar";
+	if(!js.global.Calendar) {
+		load(js.global,"calendar.js");
+	}
+	this.setProperties(name,x,y,w,h);
+	this.init=function(calendar) {
+		if(calendar) { 
+			this.calendar=calendar;
+			this.calendar.x=this.x;
+			this.calendar.y=this.y;
+		}
+		else {
+			this.calendar=new Calendar(this.x,this.y);
+		}
+		this.name=this.calendar.month.name;
+	}
+	this.draw=function() {
+		if(!this.calendar) return false;
+		this.calendar.draw();
+	}
+	this.handle_command=function(key) {
+		if(this.calendar.handle_command(key)) return true;
+		return false;
+	}
+}
+
+for(var tt in Tab_Templates) 
+	Tab_Templates[tt].prototype=new View_Tab;
