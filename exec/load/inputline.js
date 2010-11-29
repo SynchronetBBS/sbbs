@@ -57,7 +57,7 @@ function InputLine(x,y,w,max,bg,fg,title)
 			}
 		}
 		
-		var command=this.buffer;
+		var command=this.buffer + "\r\n";
 		this.reset();
 		this.clear();
 		return command;
