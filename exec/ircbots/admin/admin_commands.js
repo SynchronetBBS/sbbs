@@ -560,6 +560,20 @@ Bot_Commands["OBJKEYS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["TAIL"] = new Bot_Command(90,true,true);
+Bot_Commands["TAIL"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if(tail_history[cmd[0].toUpperCase()]) {
+		delete tail_history[cmd[0].toUpperCase()];
+		srv.o(target,"stopped monitoring: " + cmd[0].toLowerCase());
+	}
+	else {
+		tail_history[cmd[0].toUpperCase()]=new History(cmd[0],target);
+		srv.o(target,"monitoring: " + cmd[0].toLowerCase());
+	}
+	return;
+}
+
 Bot_Commands["PIPE"] = new Bot_Command(80,false,false);
 Bot_Commands["PIPE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (!cmd[1]) {
