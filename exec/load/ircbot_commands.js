@@ -44,6 +44,14 @@ Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["LOAD"] = new Bot_Command(90,false,true);
+Bot_Commands["LOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	load("" + cmd[0]);
+	srv.o(target,"loaded " + cmd[0],"NOTICE");
+	return;
+}
+
 Bot_Commands["JOINCHAN"] = new Bot_Command(99,true,true);
 Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
