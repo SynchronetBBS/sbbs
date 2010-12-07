@@ -278,7 +278,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		qwkmail_last=0;
 		mail=loadmail(&smb,&mailmsgs,useron.number,0,useron.qwk&QWK_ALLMAIL ? 0
 			: LM_UNREAD);
-		if(mailmsgs && !(sys_status&SS_ABORT)) {
+		if(mailmsgs && (online==ON_LOCAL || !(sys_status&SS_ABORT))) {
 			bputs(text[QWKPackingEmail]);
 			if(!(useron.qwk&QWK_NOINDEX)) {
 				SAFEPRINTF(str,"%s000.NDX",cfg.temp_dir);
@@ -537,8 +537,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 	CRLF;
 
-	if(!prepack && (sys_status&SS_ABORT || !online))
+	if(!prepack && online!=ON_LOCAL && ((sys_status&SS_ABORT) || !online)) {
+		bputs(text[Aborted]);
 		return(false);
+	}
 
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
 		char id[LEN_QWKID+1];
