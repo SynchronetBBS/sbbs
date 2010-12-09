@@ -1,60 +1,112 @@
-// $Id$
-
-if(!js.global || js.global.Graphic==undefined)
+if(!js.global || js.global.Graphic==undefined) 
 	load("graphic.js");
 
-function Window(x,y,w,h)
+load("sbbsdefs.js");
+load("funclib.js");
+load("scrollbar.js");
+
+function Window(xpos,ypos,w,h)
 {
-	this.title="";
-	this.x=x;
-	this.y=y;
-	this.width=w;
-	this.height=h;
+	var width=console.screen_columns;
+	var height=console.screen_rows;
+	var x=1;
+	var y=1;
+	var message_list=[];
+	var window;
+	var scrollbar;
 	
-	this.draw=function(color)
+	this.update=true;
+	
+	this.init=function(xpos,ypos,w,h)
 	{
-		color=color?color:DARKGRAY;
-		console.attributes=color;
-		console.gotoxy(this);
-		console.pushxy();
-		console.putmsg("\xDA",P_SAVEATR);
-		if(console.strlen(this.title)>0) {
-			
-			drawLine(false,false,this.width-4-console.strlen(this.title));
-			console.putmsg("\xB4",P_SAVEATR);
-			console.putmsg(this.title,P_SAVEATR);
-			console.attributes=color;
-		} else {
-			drawLine(false,false,this.width-2);
+		if(xpos) x=xpos;
+		if(ypos) y=ypos;
+		if(w) width=w;
+		if(h) height=h;
+		
+		if(width>=console.screen_columns) width=console.screen_columns-1;
+		if(window && window.length > window.height) width-=1;
+		window=new Graphic(width,height);
+		for(var m=0;m<message_list.length;m++) {
+			window.putmsg(false,false,message_list[m],undefined,true);
 		}
-		console.putmsg("\xC3\xBF",P_SAVEATR);
-		var line=2;
-		while(line++<this.height)
-		{
-			console.popxy();
-			console.down();
-			console.pushxy();
-			printf("\xB3%*s\xB3",this.width-2,"");
+		//window.length=window.height-1;
+	}
+	this.handle_command=function(cmd)
+	{
+		switch(cmd) {
+		case KEY_LEFT:
+		case KEY_RIGHT:
+			break;
+		case KEY_DOWN:
+		case KEY_UP:
+		case KEY_HOME:
+		case KEY_END:
+			this.scroll(cmd);
+			break;
+		default:
+			this.post(cmd,"\1n");
+			break;
 		}
-		console.popxy();
-		console.down();
-		console.putmsg(printPadded("\xC0",this.width-1,"\xC4"),P_SAVEATR);
-		var spot=console.getxy();
-		if(spot.y!=console.screen_rows && spot.x!=console.screen_columns) console.putmsg("\xD9",P_SAVEATR);
+		return true;
+	}
+	this.scroll=function(key) 
+	{
+		if(window.length>window.height) {
+			var update=false;
+			switch(key)
+			{
+			case '\x02':	/* CTRL-B KEY_HOME */
+				if(window.home()) update=true;
+				break;
+			case '\x05':	/* CTRL-E KEY_END */
+				if(window.end()) update=true;
+				break;
+			case KEY_DOWN:
+				if(window.scroll(1)) update=true;
+				break;
+			case KEY_UP:
+				if(window.scroll(-1)) update=true;
+				break;
+			}
+			if(update) this.draw();
+		}
+	}
+	this.post=function(text)
+	{
+		text+="\r\n";
+		message_list.push(text);
+		window.putmsg(false,false,text,undefined,true); 
+		this.update=true;
+	}
+	this.list=function(array,color) //DISPLAYS A TEMPORARY MESSAGE IN THE CHAT WINDOW (NOT STORED)
+	{
+		for(var i=0;i<array.length;i++) this.post(array[i],color);
 	}
 	this.clear=function()
 	{
-		clearBlock(this.x,this.y,this.columns,this.rows);
+		clearBlock(x,y,width,height);
+		message_list=[];
 	}
-	this.init=function(title,subtitle)
+	this.draw=function()
 	{
-		var name="";
-		if(title)	{
-			name=title;
-			if(subtitle) {
-				name+="\1n:"+subtitle;
+		this.update=false;
+		if(window.length>window.height) {
+			if(!scrollbar) {
+				width-=1;
+				scrollbar=new Scrollbar(x+width,y,height,"vertical","\1k\1h"); 
+				window=new Graphic(width,height);
+				for(var m=0;m<message_list.length;m++) {
+					window.putmsg(false,false,message_list[m],undefined,true);
+				}
 			}
+			var index=window.index;
+			var range=window.length-window.height;
+			scrollbar.draw(index,range);
 		}
-		this.title=name;
+		window.draw(x,y);
 	}
+	this.redraw=this.draw;
+	
+	this.init(xpos,ypos,w,h);
 }
