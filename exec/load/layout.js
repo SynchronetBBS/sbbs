@@ -26,6 +26,7 @@ load("funclib.js");
 load("sbbsdefs.js");
 
 var layout_settings;
+var tab_settings=new Tab_Settings();
 
 /* main layout object */
 function Layout(theme) 
@@ -146,8 +147,12 @@ function Layout(theme)
 	this.redraw=this.draw;
 	
 	/* handle layout commands/view commands */
-	this.handle_command=function(cmd) {
-		switch(cmd) {
+	this.handle_command=function(str) {
+		cmd=str.split(" ");
+		switch(cmd[0].toUpperCase()) {
+		case "/CLOSE":
+			//ToDo: add window deletion
+			break;
 		case '\x09':	/* CTRL-I TAB */
 			var old_index=this.index;
 			for(count=0;count<views.length;count++) {
@@ -155,16 +160,14 @@ function Layout(theme)
 					this.index=0;
 				else 
 					this.index++;
-				if(views[this.index].interactive) break;
+				if(this.current_view.interactive) break;
 			}
 			views[old_index].drawTitle();
-			views[this.index].drawTitle();
-			return true;
-		default:
-			return views[this.index].handle_command(cmd);
+			this.current_view.drawTitle();
+			break;
 		}
+		return this.current_view.handle_command(str);
 	}
-
 	this.init(theme);
 }
 
@@ -213,6 +216,8 @@ function Layout_Settings(vfg,vbg,mhfg,mhbg,vtfg,vtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg
 function Layout_View(name,x,y,w,h)
 {
 	this.name=name;
+	this.update_tabs=true;
+	this.update_title=true;
 
 	/* private array containing view tabs 
 		tabs can be anything that will fit in the view
@@ -234,7 +239,6 @@ function Layout_View(name,x,y,w,h)
 	/* view dimensions */
 	this.width=w;
 	this.height=h;
-
 	
 	/* public tab index */
 	this.index getter=function() {
@@ -249,9 +253,29 @@ function Layout_View(name,x,y,w,h)
 	
 	/* update loop */
 	this.cycle=function() {
-		for(var t=0;t<tabs.length;t++) 
+		for(var t=0;t<tabs.length;t++) {
 			if(typeof tabs[t].cycle == "function") 
 				tabs[t].cycle();
+			/* if this tab is flagged for an update */
+			if(tabs[t].update) {
+				/* clear tab update flag */
+				tabs[t].update=false;
+				/* if this is the current visible tab, draw */
+				if(t == this.index) 
+					tabs[t].draw();
+				/* flag this view for a tab listing update */
+				else 
+					this.update_tabs=true;
+			}
+		}
+		if(this.show_title && this.update_title) {
+			this.drawTitle();
+			this.update_title=false;
+		}
+		if(this.show_tabs && this.update_tabs) {
+			this.drawTabs();
+			this.update_tabs=false;
+		}
 	}
 	
 	/* get a tab by name */
@@ -352,14 +376,16 @@ function Layout_View(name,x,y,w,h)
 		
 		/* if a template exists for the specified tab type */
 		if(Tab_Templates[type.toUpperCase()]) {
-			tab=new Tab_Templates[type.toUpperCase()](name,x,y,w,h);
+			tab=new Tab_Templates[type.toUpperCase()](this,name,tabs.length,x,y,w,h);
 		}
 		/* otherwise create a custom tab */
 		else {
 			tab=new View_Tab();
-			tab.setProperties(name,x,y,w,h);
 			tab.type=type;
 		}
+		
+		/* assign tab properties */
+		tab.setProperties(this,name,tabs.length,x,y,w,h);
 		
 		/* if tab has an initialization method */
 		if(typeof tab.init == "function") {
@@ -372,10 +398,45 @@ function Layout_View(name,x,y,w,h)
 		return true;
 	}
 	
+	/* delete a named tab from this window */
+	this.del_tab=function(name) {
+		var tab_index=tabs_map[name.toUpperCase()];
+		tabs.splice(tab_index,1);
+		delete tabs_map[name.toUpperCase()];
+		for(var t=0;t<tabs.length;t++) {
+			tabs_map[tabs[t].name.toUpperCase()]=t;
+			tabs[t].view_index=t;
+		}
+		this.update_tabs=true;
+		if(!tabs[this.index])
+			this.index=0;
+		this.current_tab.update=true;
+		log(LOG_DEBUG, "tab deleted: " + name);
+		return true;
+	}
+	
 	/* handle view commands */
-	this.handle_command=function(cmd) {
+	this.handle_command=function(str) {
+		cmd=str.split(" ");
 		if(tabs.length > 1) {
-			switch(cmd) {
+			switch(cmd[0].toUpperCase()) {
+			case "/CLOSE":
+				var name=this.current_tab.name.toUpperCase();
+				if(cmd[1]) {
+					name=cmd[1].toUpperCase();
+					if(!(tabs_map[name] >= 0)) {
+						log(LOG_WARNING, "ERROR: no tab with this name exists: " + cmd[1]);
+						return false;
+					} 
+				}
+				if(tabs[tabs_map[name]].fixed) {
+					log(LOG_WARNING, "ERROR: cannot delete this tab");
+					return false;
+				}
+				if(typeof tabs[this.index].handle_command == "function")
+					tabs[this.index].handle_command(str);
+				this.del_tab(name);
+				break;
 			case KEY_LEFT:
 				if(this.index-1<0)
 					this.index=tabs.length-1;
@@ -392,19 +453,12 @@ function Layout_View(name,x,y,w,h)
 				this.drawTabs();
 				this.draw();
 				return true;
-			default:
-				if(tabs[this.index] &&
-					typeof tabs[this.index].handle_command == "function")
-					return tabs[this.index].handle_command(cmd);
-				return false;
 			}
 		} 
-		else {
-			if(tabs[this.index] &&
-				typeof tabs[this.index].handle_command == "function")
-				return tabs[this.index].handle_command(cmd);
-			return false;
-		}
+		if(tabs[this.index] &&
+			typeof tabs[this.index].handle_command == "function")
+			return tabs[this.index].handle_command(str);
+		return false;
 	}
 	
 	/* draw the view and contents of the currently active tab */
@@ -417,31 +471,6 @@ function Layout_View(name,x,y,w,h)
 	
 	/* draw the tab list for the current view */
 	this.drawTabs=function() {
-		var tab_str="\1n" + getColor(layout_settings.tbg) + getColor(layout_settings.tfg) + "<";
-		for(var t=0;t<tabs.length;t++) {
-			tab_str+="\1n" + getColor(layout_settings.tbg) + " ";
-			if(t == this.index) {
-				tab_str+=getColor(layout_settings.hbg) + getColor(layout_settings.hfg);
-			} else {
-				switch(tabs[t].status) {
-				case -1:
-					tab_str+=getColor(layout_settings.tfg);
-					break;
-				case 0:
-					tab_str+=getColor(layout_settings.nfg);
-					break;
-				case 1:
-					tab_str+=getColor(layout_settings.afg);
-					break;
-				case 2:
-					tab_str+=getColor(layout_settings.pfg);
-					break;
-				}
-			}
-			tab_str+=tabs[t].name;
-		}
-		tab_str+="\1n" + getColor(layout_settings.tbg) + getColor(layout_settings.tfg);
-		
 		var x=this.x;
 		var y=this.y;
 		var w=this.width;
@@ -452,8 +481,92 @@ function Layout_View(name,x,y,w,h)
 			y+=1;
 			w-=2;
 		}
+		
+		var max_width=w-2;
+		var norm_bg="\1n" + getColor(layout_settings.tbg);
+		var left_arrow=getColor(layout_settings.tfg) + "<";
+		var right_arrow=getColor(layout_settings.tfg) + ">";
+		
+		/* populate string with current tab highlight */
+		var tab_str=
+			getColor(layout_settings.hbg) + 
+			getColor(layout_settings.hfg) +
+			tabs[this.index].name +
+			norm_bg;
+		/* 	if the string is shorter than the current window's width,
+			continue adding tabs until it is not, starting to the left */
+		var t=this.index-1;
+		while(t >= 0 && console.strlen(tab_str) < max_width) {
+			if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
+				break;
+			var color=norm_bg;
+			switch(tabs[t].status) {
+			case tab_settings.INACTIVE:
+				color+=getColor(layout_settings.tfg);
+				break;
+			case tab_settings.DEFAULT:
+				color+=getColor(layout_settings.tfg);
+				break;
+			case tab_settings.NOTICE:
+				color+=getColor(layout_settings.nfg);
+				break;
+			case tab_settings.ALERT:
+				color+=getColor(layout_settings.afg);
+				break;
+			case tab_settings.PRIVATE:
+				color+=getColor(layout_settings.pfg);
+				break;
+			}
+			tab_str=
+				color + 
+				tabs[t].name + 
+				norm_bg + 
+				" " +
+				tab_str;
+			t--;
+		}
+		if(t >= 0) left_arrow="\1r\1h<";
+		/* 	if the string is still shorter than the width, 
+			begin adding tabs to the right */
+		t=this.index+1;
+		while(t < tabs.length && console.strlen(tab_str) < max_width) {
+			if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
+				break;
+			var color="";
+			switch(tabs[t].status) {
+			case tab_settings.INACTIVE:
+				color+=getColor(layout_settings.tfg);
+				break;
+			case tab_settings.DEFAULT:
+				color+=getColor(layout_settings.tfg);
+				break;
+			case tab_settings.NOTICE:
+				color+=getColor(layout_settings.nfg);
+				break;
+			case tab_settings.ALERT:
+				color+=getColor(layout_settings.afg);
+				break;
+			case tab_settings.PRIVATE:
+				color+=getColor(layout_settings.pfg);
+				break;
+			}
+			tab_str=
+				tab_str + 
+				norm_bg +
+				" " +
+				color + 
+				tabs[t].name;
+			t++;
+		}
+		if(t < tabs.length) right_arrow="\1r\1h>";
+		
 		console.gotoxy(x,y);
-		console.putmsg(printPadded(tab_str,w-1) + ">",P_SAVEATR);
+		console.putmsg(
+			norm_bg + 
+			left_arrow + 
+			printPadded(tab_str,max_width) + 
+			right_arrow
+			,P_SAVEATR);
 	}
 	
 	/* draw the title bar of the current view */
@@ -501,14 +614,28 @@ function Layout_View(name,x,y,w,h)
 	}
 	this.redraw=this.draw;
 
-	log(LOG_DEBUG, format("view initialized (x: %i y: %i w: %i h: %i)",this.x,this.y,this.width,this.height));
+	log(LOG_DEBUG, 
+		format("view initialized (x: %i y: %i w: %i h: %i)"
+		,this.x,this.y,this.width,this.height));
+}
+
+/* tab status values */
+function Tab_Settings()
+{
+	this.INACTIVE=-1;
+	this.DEFAULT=0;
+	this.NOTICE=1;
+	this.ALERT=2;
+	this.PRIVATE=3;
 }
  
 /* view tab prototype object */
 function View_Tab()
 {
-	this.status=-1;
+	this.status=0;
+	this.fixed=false;
 	this.hotkeys=false;
+	this.update=false;
 
 	/* dynamic content and command processor placeholders */
 	// this.handle_command;
@@ -523,9 +650,11 @@ function View_Tab()
 	{
 		if(typeof this.draw == "function") this.draw();
 	}
-	this.setProperties=function(name,x,y,w,h)
+	this.setProperties=function(parent_view,name,view_index,x,y,w,h)
 	{
+		this.parent_view=parent_view;
 		this.name=name;
+		this.view_index=view_index;
 		this.x=x;
 		this.y=y;
 		this.width=w;
@@ -536,54 +665,136 @@ function View_Tab()
 /* pre-defined view tabs */
 var Tab_Templates=[];
 
-Tab_Templates["CHAT"]=function(name,x,y,w,h) {
+Tab_Templates["CHAT"]=function() 
+{
 	this.type="chat";
 	if(!js.global.Window) {
 		load(js.global,"msgwndw.js");
-		js.global.chat=new ChatEngine("IRC");
 	}
-	this.setProperties(name,x,y,w,h);
-	this.init=function(window)
-	{
-		if(window)
-			this.window=window;
-		else 
-			this.window=new Window();
+	
+	this.init=function(chat) {
+		this.chat=chat;
+		this.channel=this.chat.channels[this.name.toUpperCase()];
+		this.window=new Window();
 		this.window.init(this.x,this.y,this.width,this.height);
+		this.channel.window=this.window;
+		/* override chat channel post method to put messages in a graphic window */
+		this.channel.post=function(msg) {
+			this.window.post(msg);
+		}
+		/* move any waiting messages to window */
+		while(this.channel.message_list.length > 0) 
+			this.window.post(this.channel.message_list.shift());
 	}
-	this.handle_command=function(cmd)
-	{
-		if(!this.window) return false;
-		if(this.window.handle_command(cmd)) this.draw();
+	this.update getter=function() {
+		return this.window.update;
 	}
-	this.draw=function()
-	{
-		if(!this.window) return false;
+	this.update setter=function(update) {
+		this.window.update=update;
+	}
+	this.cycle=function() {
+		/* 	if this tab is not the current view tab,
+			mark this tab for a user list update */
+		if(!this.channel.update_users && this.parent_view.index != this.view_index) {
+			this.channel.update_users=true;
+		}
+	}
+	this.handle_command=function(cmd) {
+		switch(cmd) {
+		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_LEFT:
+		case KEY_RIGHT:
+		case KEY_HOME:
+		case KEY_END:
+			/* pass all window-navigation commands to the window object command handler */
+			return this.window.handle_command(cmd);
+			break;
+		default:
+			/* pass any other commands to the chat command handler */
+			return this.chat.handle_command(this.name,cmd);
+			break;
+		}
+	}
+	this.draw=function() {
 		this.window.draw();
 	}
 }
 
-Tab_Templates["GRAPHIC"]=function(name,x,y,w,h) {
-	this.type="graphic";
-	this.setProperties(name,x,y,w,h);
-	if(!js.global.Graphic) {
-		load(js.global,"graphic.js");
+Tab_Templates["USERLIST"]=function() 
+{
+	this.type="userlist";
+	
+	this.init=function(chat_view) {
+		this.chat_view=chat_view;
+		this.window=new Window();
+		this.window.init(this.x,this.y,this.width,this.height);
 	}
-	this.graphic=new Graphic(w,h,layout_settings.vbg);
-	this.putmsg=this.graphic.putmsg;
-	this.load=this.graphic.load;
+	this.cycle=function() {
+		if(!this.chat_view.current_tab) {
+			this.clear();
+			this.update=false;
+			return;
+		}
+		
+		var chat=this.chat_view.current_tab.chat;
+		var channel=chat.channels[this.chat_view.current_tab.name.toUpperCase()];
+		
+		if(channel && channel.update_users) {
+			channel.update_users=false;
+			
+			var num_users=countMembers(channel.users);
+			this.window.clear();
+			if(num_users > 0) {
+				this.window.init(this.x,this.y,this.width,this.height);
+				for each(var u in channel.users) {
+					var str="";
+					for(var m=0;m<u.modes.length;m++) 
+						str+=u.modes[m];
+					str+=u.nick;
+					this.window.post(str);
+				}
+			}
+		}
+		this.update=this.window.update;
+	}
 	this.draw=function() {
-		this.graphic.draw(this.x,this.y);
+		this.window.draw();
 	}
 }
 
-Tab_Templates["LIGHTBAR"]=function(name,x,y,w,h) {
+Tab_Templates["GRAPHIC"]=function() 
+{
+	this.type="graphic";
+	if(!js.global.Graphic) {
+		load(js.global,"graphic.js");
+	}
+	
+	this.init=function(graphic) {
+		if(graphic)
+			this.graphic=graphic;
+		else 
+			this.graphic=new Graphic(this.width,this.height,layout_settings.vbg);
+	}
+	this.putmsg=function(xpos, ypos, txt, attr, scroll) {
+		this.graphic.putmsg(xpos, ypos, txt, attr, scroll);
+	}
+	this.load=function(file) {
+		this.graphic.load(file);
+	}
+	this.draw=function(xoff,yoff,delay) {
+		this.graphic.draw(this.x,this.y,this.width,this.height,xoff,yoff,delay);
+	}
+}
+
+Tab_Templates["LIGHTBAR"]=function() 
+{
 	this.type="lightbar";
 	this.hotkeys=true;
 	if(!js.global.Lightbar) {
 		load(js.global,"lightbar.js");
 	}
-	this.setProperties(name,x,y,w,h);
+	
 	this.init=function(lightbar) {
 		if(lightbar) { 
 			this.lightbar=lightbar;
@@ -598,10 +809,10 @@ Tab_Templates["LIGHTBAR"]=function(name,x,y,w,h) {
 		this.lightbar.bg=layout_settings.vbg;
 		this.lightbar.hfg=layout_settings.mhfg;
 		this.lightbar.hbg=layout_settings.mhbg;
-		this.lightbar.force_width=w;
-		this.lightbar.height=h;
-		this.lightbar.xpos=x;
-		this.lightbar.ypos=y;
+		this.lightbar.force_width=this.width;
+		this.lightbar.height=this.height;
+		this.lightbar.xpos=this.x;
+		this.lightbar.ypos=this.y;
 	}
 	this.handle_command=function(key) {
 		return this.lightbar.getval(undefined,key);
@@ -614,12 +825,13 @@ Tab_Templates["LIGHTBAR"]=function(name,x,y,w,h) {
 	}
 }
 
-Tab_Templates["CLOCK"]=function(name,x,y,w,h) {
+Tab_Templates["CLOCK"]=function() 
+{
 	this.type="clock";
 	if(!js.global.DigitalClock) {
 		load(js.global,"clock.js");
 	}
-	this.setProperties(name,x,y,w,h);
+	
 	this.init=function(clock) {
 		if(clock) { 
 			this.clock=clock;
@@ -630,22 +842,20 @@ Tab_Templates["CLOCK"]=function(name,x,y,w,h) {
 		this.clock.init(this.x,this.y,this.width);
 	}
 	this.cycle=function() {
-		if(!this.clock) return false;
-		if(this.clock.update())
-			this.clock.draw(this.x,this.y);
+		this.update=this.clock.update();
 	}
 	this.draw=function() {
-		if(!this.clock) return false;
 		this.clock.draw(this.x,this.y);
 	}
 }
 
-Tab_Templates["CALENDAR"]=function(name,x,y,w,h) {
+Tab_Templates["CALENDAR"]=function() 
+{
 	this.type="calendar";
 	if(!js.global.Calendar) {
 		load(js.global,"calendar.js");
 	}
-	this.setProperties(name,x,y,w,h);
+	
 	this.init=function(calendar) {
 		if(calendar) { 
 			this.calendar=calendar;
@@ -658,12 +868,10 @@ Tab_Templates["CALENDAR"]=function(name,x,y,w,h) {
 		this.name=this.calendar.month.name;
 	}
 	this.draw=function() {
-		if(!this.calendar) return false;
 		this.calendar.draw();
 	}
 	this.handle_command=function(key) {
-		if(this.calendar.handle_command(key)) return true;
-		return false;
+		return this.calendar.handle_command(key);
 	}
 }
 
