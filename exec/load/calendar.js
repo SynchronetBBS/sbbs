@@ -33,9 +33,10 @@ Date.prototype.daysInMonth = function()
 {   
 	return new Date(this.getFullYear(), this.getMonth()+1, 0).getDate()
 }
+
 function Calendar(x,y,fg,hl,sel)
 {
-	this.fg=fg?fg:"";
+	this.fg=fg?fg:"\1n";
 	this.hl=hl?hl:"\0012\1g\1h";
 	this.sel=sel?sel:"\0011\1r\1h";
 	this.x=x?x:1;
@@ -118,58 +119,61 @@ function Calendar(x,y,fg,hl,sel)
 		console.gotoxy(posx,posy);
 		day.draw(color);
 	}
+	this.handle_command=function(cmd)
+	{
+		switch(cmd)
+		{
+			case KEY_UP:
+				if(this.selected>7) 
+				{
+					this.drawDay(this.selected);
+					this.selected-=7;
+					this.drawDay(this.selected,this.sel);
+				}	
+				break;
+			case KEY_DOWN:
+				if(this.selected+7<=this.daysinmonth) 
+				{
+					this.drawDay(this.selected);
+					this.selected+=7;
+					this.drawDay(this.selected,this.sel);
+				}	
+				break;
+			case KEY_LEFT:
+				if(this.selected>1) 
+				{
+					this.drawDay(this.selected);
+					this.selected--;
+					this.drawDay(this.selected,this.sel);
+				}	
+				break;
+			case KEY_RIGHT:
+				if(this.selected<this.daysinmonth) 
+				{
+					this.drawDay(this.selected);
+					this.selected++;
+					this.drawDay(this.selected,this.sel);
+				}	
+				break;
+			case "\x1b":
+				this.drawDay(this.selected);
+				this.selected=original;
+				this.drawDay(this.selected,this.sel);
+				return false;
+			case "\r":
+				return true;
+			default:
+				break;
+		}
+	}
 	this.selectDay=function(dir)
 	{
 		var k=dir?dir:undefined;
 		var original=this.selected;
-		while(1)
-		{
-			if(k)
-			{
-				switch(k)
-				{
-					case KEY_UP:
-						if(this.selected>7) 
-						{
-							this.drawDay(this.selected);
-							this.selected-=7;
-							this.drawDay(this.selected,this.sel);
-						}	
-						break;
-					case KEY_DOWN:
-						if(this.selected+7<=this.daysinmonth) 
-						{
-							this.drawDay(this.selected);
-							this.selected+=7;
-							this.drawDay(this.selected,this.sel);
-						}	
-						break;
-					case KEY_LEFT:
-						if(this.selected>1) 
-						{
-							this.drawDay(this.selected);
-							this.selected--;
-							this.drawDay(this.selected,this.sel);
-						}	
-						break;
-					case KEY_RIGHT:
-						if(this.selected<this.daysinmonth) 
-						{
-							this.drawDay(this.selected);
-							this.selected++;
-							this.drawDay(this.selected,this.sel);
-						}	
-						break;
-					case "\x1b":
-						this.drawDay(this.selected);
-						this.selected=original;
-						this.drawDay(this.selected,this.sel);
-						return false;
-					case "\r":
-						return true;
-					default:
-						break;
-				}
+		while(1) {
+			if(k) {
+				if(!this.handle_command(k))
+					return k;
 			}
 			k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 		}
