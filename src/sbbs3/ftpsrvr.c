@@ -588,7 +588,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "credits", &val))
 		return(FALSE);
 
-	JS_NewNumberValue(js_cx,time,&val);
+	JS_NewNumberValue(js_cx,(jsdouble)time,&val);
 	if(!JS_SetProperty(js_cx, file, "time", &val))
 		return(FALSE);
 
@@ -1501,7 +1501,7 @@ static void send_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d DATA socket closed",xfer.ctrl_sock);
 	
 	if(!error) {
-		dur=time(NULL)-start;
+		dur=(long)(time(NULL)-start);
 		cps=dur ? total/dur : total*2;
 		lprintf(LOG_INFO,"%04d Transfer successful: %lu bytes sent in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
@@ -1751,7 +1751,7 @@ static void receive_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d DATA socket %d closed",xfer.ctrl_sock,*xfer.data_sock);
 	
 	if(!error) {
-		dur=time(NULL)-start;
+		dur=(long)(time(NULL)-start);
 		cps=dur ? total/dur : total*2;
 		lprintf(LOG_INFO,"%04d Transfer successful: %lu bytes received in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
@@ -2592,7 +2592,7 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock," QUIT    REIN    PORT    PASV    LIST    NLST    NOOP    HELP");
 			sockprintf(sock," SIZE    MDTM    RETR    STOR    REST    ALLO    ABOR    SYST");
 			sockprintf(sock," TYPE    STRU    MODE    SITE    RNFR*   RNTO*   DELE*   DESC#");
-			sockprintf(sock," FEAT#   OPTS#");
+			sockprintf(sock," FEAT#   OPTS#   EPRT    EPSV");
 			sockprintf(sock,"214 Direct comments to sysop@%s.",scfg.sys_inetaddr);
 			continue;
 		}
@@ -2865,16 +2865,35 @@ static void ctrl_thread(void* arg)
 		}
 #endif
 
-		if(!strnicmp(cmd, "PORT ",5)) {
+		if(strnicmp(cmd, "PORT ",5)==0 || strnicmp(cmd, "EPRT ",5)==0) {
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
 
 			p=cmd+5;
 			SKIP_WHITESPACE(p);
-			sscanf(p,"%u,%u,%u,%u,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
-			data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
-			data_addr.sin_port=(u_short)((p1<<8)|p2);
+			if(strnicmp(cmd, "PORT ",5)==0) {
+				sscanf(p,"%u,%u,%u,%u,%hd,%hd",&h1,&h2,&h3,&h4,&p1,&p2);
+				data_addr.sin_addr.s_addr=htonl((h1<<24)|(h2<<16)|(h3<<8)|h4);
+				data_addr.sin_port=(u_short)((p1<<8)|p2);
+			} else { /* EPRT */
+				char	delim = *p;
+				int		prot;
+
+				if(*p) p++;
+				prot=strtol(p,NULL,/* base: */10);
+				if(prot!=1) {
+					lprintf(LOG_WARNING,"%04d UNSUPPORTED protocol: %d", sock, prot);
+					sockprintf(sock,"522 Network protocol not supported, use (1)");
+					continue;
+				}
+				FIND_CHAR(p,delim);
+				if(*p) p++;
+				data_addr.sin_addr.s_addr=inet_addr(p);
+				FIND_CHAR(p,delim);
+				if(*p) p++;
+				data_addr.sin_port=atoi(p);
+			}
 			if(data_addr.sin_port< IPPORT_RESERVED) {	
 				lprintf(LOG_WARNING,"%04d !SUSPECTED BOUNCE ATTACK ATTEMPT by %s to %s port %u"
 					,sock,user.alias
@@ -2893,8 +2912,8 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if(!stricmp(cmd, "PASV") 
-			|| !stricmp(cmd, "P@SW")) {	/* Kludge required for SMC Barricade V1.2 */
+		if(stricmp(cmd, "PASV")==0 || stricmp(cmd, "P@SW")==0	/* Kludge required for SMC Barricade V1.2 */
+			|| stricmp(cmd, "EPSV")==0) {	
 
 			if(pasv_sock!=INVALID_SOCKET) 
 				ftp_close_socket(&pasv_sock,__LINE__);
@@ -2971,14 +2990,17 @@ static void ctrl_thread(void* arg)
 					,ip_addr&0xff
 					);
 			port=ntohs(addr.sin_port);
-			sockprintf(sock,"227 Entering Passive Mode (%u,%u,%u,%u,%hu,%hu)"
-				,(ip_addr>>24)&0xff
-				,(ip_addr>>16)&0xff
-				,(ip_addr>>8)&0xff
-				,ip_addr&0xff
-				,(port>>8)&0xff
-				,port&0xff
-				);
+			if(stricmp(cmd, "EPSV")==0)
+				sockprintf(sock,"229 Entering Extended Passive Mode (|||%hu|)", port);
+			else
+				sockprintf(sock,"227 Entering Passive Mode (%u,%u,%u,%u,%hu,%hu)"
+					,(ip_addr>>24)&0xff
+					,(ip_addr>>16)&0xff
+					,(ip_addr>>8)&0xff
+					,ip_addr&0xff
+					,(port>>8)&0xff
+					,port&0xff
+					);
 			mode="passive";
 			continue;
 		}
@@ -3787,7 +3809,8 @@ static void ctrl_thread(void* arg)
 				&& !stricmp(p,startup->index_file_name)
 				&& !delecmd) {
 				if(getsize) {
-					sockprintf(sock, "500 Size not available for dynamically generated files");
+					/* Size not available for dynamically generated files */
+					sockprintf(sock, "213 0"); /* report size of 0 to be make Google Chrome happy */
 					continue;
 				}
 				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"w+b"))==NULL) {
@@ -3902,7 +3925,8 @@ static void ctrl_thread(void* arg)
 				&& !delecmd) {
 				success=TRUE;
 				if(getsize) {
-					sockprintf(sock, "500 Size not available for dynamically generated files");
+					/* Size not available for dynamically generated files */
+					sockprintf(sock, "213 0"); /* report size of 0 to be make Google Chrome happy */
 					continue;
 				}
 				else if(getdate)
