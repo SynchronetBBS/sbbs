@@ -25,11 +25,27 @@
 load("funclib.js");
 load("sbbsdefs.js");
 
-var layout_settings;
+var layout_settings=new Layout_Settings(
+	LIGHTGRAY, /* view foreground */
+	BG_BLACK,	/* view background */
+	LIGHTRED,	/* menu highlight foreground */
+	RED,	/* menu highlight background (use foreground value) */
+	YELLOW,	/* view highlight foreground */
+	BG_BLUE,	/* view highlight background */
+	LIGHTGRAY,	/* border foreground color */
+	BG_BLACK,	/* border background color */
+	BLACK,		/* tab foreground (normal) */
+	BG_LIGHTGRAY, /* tab background */
+	LIGHTCYAN,	/* tab highlight foreground */	
+	BG_CYAN,		/* tab highlight background */
+	RED,		/* tab alert foregruond */
+	MAGENTA,	/* tab update foreground */
+	BLUE		/* tab user msg foreground */
+);
 var tab_settings=new Tab_Settings();
 
 /* main layout object */
-function Layout(theme) 
+function Layout() 
 {
 	/* private properties */
 	var views=[];
@@ -56,23 +72,6 @@ function Layout(theme)
 		
 		/* otherwise, load default color scheme */
 		else {
-			layout_settings=new Layout_Settings(
-				LIGHTGRAY, /* view foreground */
-				BG_BLACK,	/* view background */
-				LIGHTRED,	/* menu highlight foreground */
-				RED,	/* menu highlight background (use foreground value) */
-				YELLOW,	/* view highlight foreground */
-				BG_BLUE,	/* view highlight background */
-				LIGHTGRAY,	/* border foreground color */
-				BG_BLACK,	/* border background color */
-				BLACK,		/* tab foreground (normal) */
-				BG_LIGHTGRAY, /* tab background */
-				LIGHTCYAN,	/* tab highlight foreground */	
-				BG_CYAN,		/* tab highlight background */
-				RED,		/* tab alert foregruond */
-				MAGENTA,	/* tab update foreground */
-				BLUE		/* tab user msg foreground */
-			);
 		}
 	}
 
@@ -168,7 +167,7 @@ function Layout(theme)
 		}
 		return this.current_view.handle_command(str);
 	}
-	this.init(theme);
+	this.init();
 }
 
 /* layout settings object */
@@ -249,6 +248,15 @@ function Layout_View(name,x,y,w,h)
 		if(isNaN(value) || !tabs[value]) return false;
 		index.value=value;
 		return true;
+	}
+	
+	/* return a list of tab names */
+	this.tabs getter=function() {
+		var list=[];
+		for each(var t in tabs) {
+			list.push(t.name);
+		}
+		return list;
 	}
 	
 	/* update loop */
@@ -395,6 +403,7 @@ function Layout_View(name,x,y,w,h)
 		tabs_map[name.toUpperCase()]=tabs.length;
 		tabs.push(tab);
 		log(LOG_DEBUG, "new tab created: " + name);
+		this.update_tabs=true;
 		return true;
 	}
 	
@@ -412,6 +421,7 @@ function Layout_View(name,x,y,w,h)
 			this.index=0;
 		this.current_tab.update=true;
 		log(LOG_DEBUG, "tab deleted: " + name);
+		this.update_tabs=true;
 		return true;
 	}
 	
@@ -488,78 +498,80 @@ function Layout_View(name,x,y,w,h)
 		var right_arrow=getColor(layout_settings.tfg) + ">";
 		
 		/* populate string with current tab highlight */
-		var tab_str=
-			getColor(layout_settings.hbg) + 
-			getColor(layout_settings.hfg) +
-			tabs[this.index].name +
-			norm_bg;
-		/* 	if the string is shorter than the current window's width,
-			continue adding tabs until it is not, starting to the left */
-		var t=this.index-1;
-		while(t >= 0 && console.strlen(tab_str) < max_width) {
-			if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
-				break;
-			var color=norm_bg;
-			switch(tabs[t].status) {
-			case tab_settings.INACTIVE:
-				color+=getColor(layout_settings.tfg);
-				break;
-			case tab_settings.DEFAULT:
-				color+=getColor(layout_settings.tfg);
-				break;
-			case tab_settings.NOTICE:
-				color+=getColor(layout_settings.nfg);
-				break;
-			case tab_settings.ALERT:
-				color+=getColor(layout_settings.afg);
-				break;
-			case tab_settings.PRIVATE:
-				color+=getColor(layout_settings.pfg);
-				break;
+		var tab_str="";
+		if(tabs.length > 0) {
+			tab_str+=
+				getColor(layout_settings.hbg) + 
+				getColor(layout_settings.hfg) +
+				tabs[this.index].name +
+				norm_bg;
+			/* 	if the string is shorter than the current window's width,
+				continue adding tabs until it is not, starting to the left */
+			var t=this.index-1;
+			while(t >= 0 && console.strlen(tab_str) < max_width) {
+				if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
+					break;
+				var color=norm_bg;
+				switch(tabs[t].status) {
+				case tab_settings.INACTIVE:
+					color+=getColor(layout_settings.tfg);
+					break;
+				case tab_settings.DEFAULT:
+					color+=getColor(layout_settings.tfg);
+					break;
+				case tab_settings.NOTICE:
+					color+=getColor(layout_settings.nfg);
+					break;
+				case tab_settings.ALERT:
+					color+=getColor(layout_settings.afg);
+					break;
+				case tab_settings.PRIVATE:
+					color+=getColor(layout_settings.pfg);
+					break;
+				}
+				tab_str=
+					color + 
+					tabs[t].name + 
+					norm_bg + 
+					" " +
+					tab_str;
+				t--;
 			}
-			tab_str=
-				color + 
-				tabs[t].name + 
-				norm_bg + 
-				" " +
-				tab_str;
-			t--;
-		}
-		if(t >= 0) left_arrow="\1r\1h<";
-		/* 	if the string is still shorter than the width, 
-			begin adding tabs to the right */
-		t=this.index+1;
-		while(t < tabs.length && console.strlen(tab_str) < max_width) {
-			if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
-				break;
-			var color="";
-			switch(tabs[t].status) {
-			case tab_settings.INACTIVE:
-				color+=getColor(layout_settings.tfg);
-				break;
-			case tab_settings.DEFAULT:
-				color+=getColor(layout_settings.tfg);
-				break;
-			case tab_settings.NOTICE:
-				color+=getColor(layout_settings.nfg);
-				break;
-			case tab_settings.ALERT:
-				color+=getColor(layout_settings.afg);
-				break;
-			case tab_settings.PRIVATE:
-				color+=getColor(layout_settings.pfg);
-				break;
+			if(t >= 0) left_arrow="\1r\1h<";
+			/* 	if the string is still shorter than the width, 
+				begin adding tabs to the right */
+			t=this.index+1;
+			while(t < tabs.length && console.strlen(tab_str) < max_width) {
+				if(console.strlen(tab_str)+tabs[t].name.length+1 > max_width) 
+					break;
+				var color="";
+				switch(tabs[t].status) {
+				case tab_settings.INACTIVE:
+					color+=getColor(layout_settings.tfg);
+					break;
+				case tab_settings.DEFAULT:
+					color+=getColor(layout_settings.tfg);
+					break;
+				case tab_settings.NOTICE:
+					color+=getColor(layout_settings.nfg);
+					break;
+				case tab_settings.ALERT:
+					color+=getColor(layout_settings.afg);
+					break;
+				case tab_settings.PRIVATE:
+					color+=getColor(layout_settings.pfg);
+					break;
+				}
+				tab_str=
+					tab_str + 
+					norm_bg +
+					" " +
+					color + 
+					tabs[t].name;
+				t++;
 			}
-			tab_str=
-				tab_str + 
-				norm_bg +
-				" " +
-				color + 
-				tabs[t].name;
-			t++;
+			if(t < tabs.length) right_arrow="\1r\1h>";
 		}
-		if(t < tabs.length) right_arrow="\1r\1h>";
-		
 		console.gotoxy(x,y);
 		console.putmsg(
 			norm_bg + 
@@ -652,6 +664,7 @@ function View_Tab()
 	}
 	this.setProperties=function(parent_view,name,view_index,x,y,w,h)
 	{
+		//this.parent_view=parent_view;
 		this.parent_view=parent_view;
 		this.name=name;
 		this.view_index=view_index;
@@ -674,17 +687,8 @@ Tab_Templates["CHAT"]=function()
 	
 	this.init=function(chat) {
 		this.chat=chat;
-		this.channel=this.chat.channels[this.name.toUpperCase()];
 		this.window=new Window();
 		this.window.init(this.x,this.y,this.width,this.height);
-		this.channel.window=this.window;
-		/* override chat channel post method to put messages in a graphic window */
-		this.channel.post=function(msg) {
-			this.window.post(msg);
-		}
-		/* move any waiting messages to window */
-		while(this.channel.message_list.length > 0) 
-			this.window.post(this.channel.message_list.shift());
 	}
 	this.update getter=function() {
 		return this.window.update;
@@ -693,6 +697,12 @@ Tab_Templates["CHAT"]=function()
 		this.window.update=update;
 	}
 	this.cycle=function() {
+		this.channel=this.chat.channels[this.name.toUpperCase()];
+		if(!this.channel)
+			return;
+		/* move any waiting messages to window */
+		while(this.channel.message_list.length > 0) 
+			this.window.post(this.channel.message_list.shift());
 		/* 	if this tab is not the current view tab,
 			mark this tab for a user list update */
 		if(!this.channel.update_users && this.parent_view.index != this.view_index) {
@@ -712,7 +722,7 @@ Tab_Templates["CHAT"]=function()
 			break;
 		default:
 			/* pass any other commands to the chat command handler */
-			return this.chat.handle_command(this.name,cmd);
+			return this.chat.handle_command(cmd,this.name);
 			break;
 		}
 	}
@@ -877,3 +887,48 @@ Tab_Templates["CALENDAR"]=function()
 
 for(var tt in Tab_Templates) 
 	Tab_Templates[tt].prototype=new View_Tab;
+
+/* handy functions */
+function updateChatView(chat,view) 
+{
+	/* 	use this function to add/remove tabs
+		from a view automatically when
+		the appropriate data comes through 
+		called by updateChatView() */
+	var data=chat.cycle();
+	if(!data || !data.func) return;
+	switch(data.func) {
+	case "001":
+		log("checking channel tabs");
+		for each(var t in view.tabs) {
+			log("tab: " + t);
+			if(!chat.channels[t.toUpperCase()]) {
+				log("joining channel: " + t.toUpperCase());
+				chat.handle_command("/j " + t,"IRC");
+			}
+		}
+		break;
+	case "JOIN":
+		if(data.origin == chat.nick.nickname) {
+			if(!view.tab(data.chan))
+				view.add_tab("chat",data.chan,chat);
+		}
+		break;
+	case "PART":
+		if(data.origin == chat.nick.nickname) {
+			if(view.tab(data.chan))
+				view.del_tab(data.chan);
+		}
+		break;
+	case "PRIVMSG":
+	case "NOTICE":
+		/* ignore server messages */
+		if(data.origin.search(/[.]/) >= 0) 
+			break;
+		if(data.dest.toUpperCase() == chat.nick.nickname.toUpperCase()) {
+			if(!view.tab(data.origin))
+				view.add_tab("chat",data.origin,chat);
+		}
+		break;
+	}
+}
