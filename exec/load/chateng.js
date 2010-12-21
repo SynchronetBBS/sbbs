@@ -70,7 +70,7 @@ function ChatEngine(protocol,host,port)
 		/* load protocol information */
 		switch(protocol.toUpperCase()) {
 		case "IRC":
-			load("protocols/irc_protocol.js");
+			load("irc_protocol.js");
 			IRC_init.apply(this);
 			break;
 		case "AIM":
