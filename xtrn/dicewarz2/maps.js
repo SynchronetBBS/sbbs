@@ -1,12 +1,11 @@
 load("funclib.js");
 load("commclient.js");
-load(game_dir+"player.js");
-load(game_dir+"rolldice.js");
+load(root+"player.js");
+load(root+"rolldice.js");
 
-var settings=	loadSettings(game_dir+"dice.ini");
-var players=	new PlayerData(game_dir+settings.player_file);
-var game_data=	new GameData(game_dir+"*.dw");
-var stream=	argv[0]?argv[0]:new ServiceConnection("dicewarz2");
+var settings=	loadSettings(root+"dice.ini");
+var players=	new PlayerData(root+settings.player_file);
+var game_data=	new GameData(root+"*.dw");
 
 function Char(ch,fg,bg)
 {
@@ -95,7 +94,7 @@ function GameData(filemask)
 		
 		var players=file.iniGetAllObjects("index","p");
 
-		var aifile=new File(game_dir + settings.ai_file);
+		var aifile=new File(root + settings.ai_file);
 		aifile.open("r",true);
 		for(var p=0;p<players.length;p++) {
 			var player=players[p];
@@ -332,7 +331,7 @@ function getFileName(game_number)
 {
 	var name=game_number;
 	if(name<10) name="0"+name;
-	return game_dir+name+".dw";
+	return root+name+".dw";
 }
 function getGameNumber(filename)
 {
@@ -662,7 +661,7 @@ function addComputers(map)
 {
 	var num=settings.num_players-map.players.length;
 	if(num>0) {
-		var aifile=new File(game_dir + settings.ai_file);
+		var aifile=new File(root + settings.ai_file);
 		aifile.open("r",true);
 		var possibleplayers=aifile.iniGetSections();
 		while(num>0) {

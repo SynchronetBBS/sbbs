@@ -1,14 +1,17 @@
-var game_dir=js.exec_dir;
 load("sbbsdefs.js");
-load("graphic.js");
 load("chateng.js");
-load(game_dir+"maps.js",argv[0]);
-load(game_dir+"menu.js");
+load("inputline.js");
+load("graphic.js");
+load("layout.js");
+load(root+"maps.js");
+load(root+"menu.js");
 
 //GLOBAL VARIABLES
 var oldpass=console.ctrlkey_passthru;
 var menu;
-var chat=new ChatEngine(game_dir);
+var stream=new ServiceConnection("dicewarz2");
+var chat=new ChatEngine("IRC","rrx.ca","6667");
+var input=new InputLine(10,console.screen_rows,console.screen_columns-10,150);
 
 //GLOBAL GAME FUNCTIONS
 function splashStart()
@@ -16,7 +19,7 @@ function splashStart()
 	console.clear();
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 	bbs.sys_status|=SS_MOFF;
-	var splash_filename=game_dir + "welcome.bin";
+	var splash_filename=root + "welcome.bin";
 	if(file_exists(splash_filename)) {
 		var splash=new Graphic(80,24);
 		splash.load(splash_filename);
@@ -33,7 +36,7 @@ function splashExit()
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	console.clear(ANSI_NORMAL);
-	var splash_filename=game_dir + "exit.bin";
+	var splash_filename=root + "exit.bin";
 	if(file_exists(splash_filename)) {
 		var splash_size=file_size(splash_filename);
 		splash_size/=2;		
@@ -53,11 +56,6 @@ function loadGraphic(filename)
 	var graphic=new Graphic(80,24);
 	graphic.load(filename);
 	return graphic;
-}
-function hideChatLine()
-{
-	console.gotoxy(chat.input_line);
-	console.cleartoeol(BG_BROWN);
 }
 function menuPrompt(string,append)
 {
@@ -148,27 +146,32 @@ function viewInstructions(section)
 {
 
 }
-function cycle()
+function cycleChat(view) 
 {
-	chat.cycle();
+	updateChatView(chat,view);
+	view.cycle();
 }
 
 //LOBBY LOOP
 function lobby()
 {
-	var lobby_background=loadGraphic(game_dir+settings.lobby_file);
+	var lobby_background=loadGraphic(root+settings.lobby_file);
+	var chat_window=new Layout_View("chat",2,18,78,6);
 	
 	function main()
 	{
 		redraw();
 		var full_redraw=false;
-		while(1)
-		{
-			var cmd=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER,5);
-			if(cmd) {
+		var hotkeys=true;
+		
+		while(1) {
+			cycle();
+			var cmd=input.inkey(hotkeys);
+			if(!cmd) 
+				continue;
+			if(hotkeys) {
 				menu.clear();
-				switch(cmd)
-				{
+				switch(cmd.toUpperCase())	{
 				case "R":
 					viewRankings();
 					break;
@@ -185,7 +188,8 @@ function lobby()
 					redraw();
 					break;
 				case "C":
-					chatInput();
+					input.draw();
+					hotkeys=false;
 					break;
 				case "\x1b":
 				case "Q":
@@ -194,52 +198,33 @@ function lobby()
 				case KEY_DOWN:
 				case KEY_LEFT:
 				case KEY_RIGHT:
-				case KEY_HOME:	
-				case KEY_END:	
-				case '\x15':
-					chat.processKey(cmd);
+				case KEY_HOME:
+				case KEY_END:
+					chat_window.handle_command(cmd);
 					break;
-				default:
-					break;
-				}
-				if(full_redraw) {
-					initMenu();
-					initChat();
-					redraw();
-					full_redraw=false;
-				} else {
-					menu.draw();
-					gameList();
-				}
-			} 
-			lobbyCycle();
-		}
-	}
-	function lobbyCycle()
-	{
-		if(game_data.update()) gameList();
-		cycle();
-	}
-	function chatInput()
-	{
-		chat.input_line.clear();
-		while(1) {
-			var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(key) {
-				chat.processKey(key);
-				switch(key) {
-					case '\r':
-					case '\n':
-						hideChatLine();
-						return true;
-					case '\x1b':
-						return false;
-					default:
-						break;
 				}
 			}
-			cycle();
+			
+			else if(chat_window.handle_command(cmd))
+				hotkeys=true;
+				
+			if(full_redraw) {
+				initMenu();
+				redraw();
+				full_redraw=false;
+			} 
+			
+			else if(hotkeys) {
+				menu.draw();
+				gameList();
+			}
 		}
+	}
+	function cycle()
+	{
+		if(game_data.update()) gameList();
+		cycleChat(chat_window);
+		mswait(10);
 	}
 	function viewGameInfo(map)
 	{
@@ -299,9 +284,9 @@ function lobby()
 	}
 	function initChat()
 	{
-		chat.init(78,5,2,19);
-		chat.input_line.init(10,18,70,"\0017","\1k");
-		chat.joinChan("dice warz lobby",user.alias,user.name);
+		chat_window.show_title=false;
+		chat_window.show_border=false;
+		chat_window.add_tab("chat","#dice_warz_lobby",chat);
 	}
 	function initMenu()
 	{
@@ -413,8 +398,7 @@ function lobby()
 		console.clear(ANSI_NORMAL);
 		lobby_background.draw();
 		menu.draw();
-		chat.redraw();
-		hideChatLine();
+		chat_window.drawView();
 		gameList();
 	}
 	
@@ -425,7 +409,8 @@ function lobby()
 //GAME LOOP
 function run(map)
 {
-	var game_background=loadGraphic(game_dir+settings.background_file);
+	var game_background=loadGraphic(root+settings.background_file);
+	var chat_window=new Layout_View("chat",48,18,32,6);
 	var activity_window=new Graphic(32,5);
 	var player=findPlayer(map,user.alias);
 	var update=true;
@@ -435,64 +420,108 @@ function run(map)
 	//INIT/RUN
 	function main()
 	{
+		var hotkeys=true;
 		if(player>=0 && map.players[map.turn].AI) {
-			load(true,game_dir + "ai.js",map.game_number,game_dir);
+			load(true,root + "ai.js",map.game_number,root);
 		}
 		
 		while(1)
 		{
-			gameCycle();
-			var cmd=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER,5);
-			if(cmd && menu.items[cmd] && menu.items[cmd].enabled) {
-				menu.clear();
-				switch(cmd)
-				{
-				case "I":
-					viewInstructions();
-					break;
-				case "T":
-					takeTurn();
-					break;
-				case "A":
-					coords=attack(coords);
-					listPlayers();
-					break;
-				case "E":
-					endTurn();
-					break;
-				case "F":
-					forfeit();
-					break;
-				case "C":
-					chatInput();
-					break;
-				case "R":
-					redraw();
-					break;
-				case "\x1b":
-				case "Q":
-					chat.partChan("dice warz game #" + map.game_number,user.alias);
-					return;
-				default:
-					break;
-				}
-				setMenuCommands();
-			} else {
-				switch(cmd) {
+			cycle();
+			var cmd=input.inkey(hotkeys);
+			if(!cmd)
+				continue;
+			if(hotkeys) {
+				if(menu.items[cmd.toUpperCase()] && menu.items[cmd.toUpperCase()].enabled) {
+					menu.clear();
+					switch(cmd.toUpperCase())
+					{
+					case "I":
+						viewInstructions();
+						break;
+					case "T":
+						takeTurn();
+						break;
+					case "A":
+						coords=attack(coords);
+						listPlayers();
+						break;
+					case "E":
+						endTurn();
+						break;
+					case "F":
+						forfeit();
+						break;
+					case "C":
+						input.draw();
+						hotkeys=false;
+						break;
+					case "R":
+						redraw();
+						break;
+					case "\x1b":
+					case "Q":
+						chat.handle_command("/p " + "#dw2_game" + map.game_number,"IRC");
+						return;
+					}
+					setMenuCommands();
+				} 
+				else {
+					switch(cmd) {
 					case KEY_UP:
 					case KEY_DOWN:
 					case KEY_LEFT:
 					case KEY_RIGHT:
 					case KEY_HOME:	
 					case KEY_END:	
-					case '\x15':
-						chat.processKey(cmd);
+						chat_window.handle_command(cmd);
 						break;
+					}
 				}
-			}
-			if(update) {
+			} 
+			else if(chat_window.handle_command(cmd))
+				hotkeys=true;
+					
+			if(hotkeys) 
 				menu.draw();
-				update=false;
+		}
+	}
+	function cycle()
+	{
+		cycleChat(chat_window);
+		var data=stream.receive();
+		if(data && data.game_number==map.game_number) {
+			switch(data.func.toUpperCase())
+			{
+				case "BATTLE":
+					battle(data.a,data.d);
+					updateStatus(map);
+					listPlayers();
+					break;
+				case "TURN":
+					map.turn=data.turn;
+					debug("received turn notice: " + map.players[map.turn].name);
+					statusAlert();
+					listPlayers();
+					setMenuCommands();
+					break;
+				case "PLAYER":
+					map.players[data.pnum].reserve=data.player.reserve;
+					break;
+				case "TILE":
+					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
+					drawTile(map,map.tiles[data.tile.id]);
+					break;
+				case "ACTIVITY":
+					activityAlert(data.activity);
+					break;
+				default:
+					debug("unknown data type: " + data.func);
+					break;
+			}
+			if(map.winner) {
+				activityAlert("\1rGame ended");
+				activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
 			}
 		}
 	}
@@ -536,69 +565,14 @@ function run(map)
 	}
 	function initChat()
 	{
-		chat.init(31,6,48,18); 
-		chat.input_line.init(10,24,70,"\0017","\1k");
-		chat.partChan("dice warz lobby",user.alias);
-		chat.joinChan("dice warz game #" + map.game_number,user.alias,user.name);
-	}
-	function chatInput()
-	{
-		chat.input_line.clear();
-		while(1) {
-			var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(key) {
-				chat.processKey(key);
-				switch(key) {
-					case '\r':
-					case '\n':
-						hideChatLine();
-						return true;
-					case '\x1b':
-						return false;
-					default:
-						break;
-				}
-			}
-			cycle();
-			gameCycle();
-		}
-	}
-	function gameCycle()
-	{
-		cycle();
-		var data=stream.receive();
-		if(data && data.game_number==map.game_number) {
-			switch(data.func.toUpperCase())
-			{
-				case "BATTLE":
-					battle(data.a,data.d);
-					updateStatus(map);
-					listPlayers();
-					break;
-				case "TURN":
-					map.turn=data.turn;
-					debug("received turn notice: " + map.players[map.turn].name);
-					statusAlert();
-					listPlayers();
-					setMenuCommands();
-					break;
-				case "PLAYER":
-					map.players[data.pnum].reserve=data.player.reserve;
-					break;
-				case "TILE":
-					map.tiles[data.tile.id].assign(data.tile.owner,data.tile.dice);
-					drawTile(map,map.tiles[data.tile.id]);
-					break;
-				case "ACTIVITY":
-					activityAlert(data.activity);
-					break;
-				default:
-					debug("unknown data type: " + data.func);
-					break;
-			}
-			if(map.winner) {
-				activityAlert("\1rGame ended");
-				activityAlert("\1rWinner: \1n" + map.players[map.winner].name);
+		chat_window.show_title=false;
+		chat_window.show_border=false;
+		if(chat.registered) {
+			chat.handle_command("/j " + "#dw2_game" + map.game_number,"IRC");
+			chat_window.add_tab("chat","#dw2_game" + map.game_number,chat);
+			for each(var c in chat.channels) {
+				if(c.name.toUpperCase() == "IRC") continue;
+				chat_window.add_tab("chat",c.name,chat);
 			}
 		}
 	}
@@ -633,7 +607,7 @@ function run(map)
 		listPlayers();
 		statusAlert();
 		if(map.status==0 && map.players[map.turn].AI) {
-			load(true,game_dir + "ai.js",map.game_number,game_dir);
+			load(true,root + "ai.js",map.game_number,root);
 		}
 	}
 	function reinforce()
@@ -909,10 +883,9 @@ function run(map)
 		game_background.draw();
 		drawMap(map);
 		listPlayers();
-		chat.redraw();
+		chat_window.drawView();
 		activity_window.draw(48,12);
 		menu.draw();
-		hideChatLine();
 	}
 	
 	initMenu();
@@ -923,5 +896,5 @@ function run(map)
 }
 
 splashStart();
-while(1) if(!lobby()) break;
+lobby();
 splashExit();

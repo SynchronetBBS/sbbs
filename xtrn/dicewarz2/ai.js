@@ -1,6 +1,7 @@
 var game_number=argv[0];
-var game_dir=argv[1];
-load(game_dir+"maps.js");
+var root=argv[1];
+load(root+"maps.js");
+var stream=new ServiceConnection("dicewarz2");
 var map=game_data.list[game_number];
 
 var sortFunctions={random:randomSort, wild:wildAndCrazyAISort, killMost:killMostDiceAISort, paranoia:paranoiaAISort, randomAI:randomAISort, groupParanoid:groupAndParanoidAISort};

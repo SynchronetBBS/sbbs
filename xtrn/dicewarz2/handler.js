@@ -1,6 +1,6 @@
 var player_file=this.dir + "players.ini";
 
-function handler(data)
+function handler(sock,data)
 {
 	switch(data.func.toUpperCase()) {
 		case "TILE":
