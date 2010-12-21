@@ -6,7 +6,10 @@
 //$Id$
 const VERSION="$Revision$".split(' ')[1];
 
+load("inputline.js");
+load("layout.js");
 load("chateng.js");
+load("scrollbar.js");
 load("graphic.js");
 load("sbbsdefs.js");
 load("funclib.js");
@@ -17,11 +20,11 @@ load(root + "tetrisobj.js");
 load(root + "menu.js");
 load(root + "timer.js");
 
-var chat=new ChatEngine(root);
+var chat=new ChatEngine("IRC","rrx.ca","6667");
+var input=new InputLine(42,console.screen_rows-1,38,150);
 var players=new PlayerList();
 var oldpass=console.ctrl_key_passthru;
-
-//BUG REPORT: continuous dropping pieces when you should be dead keeps you alive
+var window=new Layout_View("chat",42,3,38,19);
 
 function splashStart()
 {
@@ -80,19 +83,19 @@ function lobby()
 	}
 	function initChat()
 	{
-		chat.init(38,19,42,3);
-		chat.input_line.init(42,23,38,"","\1n");
-		chat.joinChan("tetris lobby",user.alias,user.name);
+		window.show_title=false;
+		window.show_border=false;
+		window.add_tab("chat","#tetris_lobby",chat);
 	}
 	function initMenu()
 	{
 		menu=new Menu("\1n","\1c\1h");
-		var menu_items=[		"~New Game"		,
-								"~Join Game"	,
-								"~Rankings"		,
-								"~Help"			,
-								"Re~draw"		];
-		menu.add(menu_items);
+		var menu_items=["~New Game",
+						"~Join Game",
+						"~Scores",
+						"~Help",
+						"Re~draw"];
+		menu=new Menu(menu_items,42,console.screen_rows-1,38,"\1w\1h","\1n");	
 	}
 	function processGraphic()
 	{
@@ -107,20 +110,6 @@ function lobby()
 					lobby_graphic.data[posx][posy].ch=" ";
 				}
 			}
-		}
-	}
-
-	function listCommands()
-	{
-		var list=menu.getList();
-		chat.chatroom.clear();
-		console.gotoxy(chat.chatroom);
-		console.pushxy();
-		for(l=0;l<list.length;l++) {
-			console.putmsg(list[l]);
-			console.popxy();
-			console.down();
-			console.pushxy();
 		}
 	}
 	function menuPrompt(msg)
@@ -254,51 +243,54 @@ function lobby()
 		console.clear(ANSI_NORMAL);
 		drawLobby();
 		listTables(true);
-		chat.redraw();
+		window.drawView();
 	}
 
 	function main()
 	{
+		var hotkeys=true;
 		redraw();
+		
 		while(1) {
 			cycle();
-			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,25);
-			if(k) {
+			var k=input.inkey(hotkeys);
+			if(!k) 
+				continue;
+			if(hotkeys) {
 				var range=(tables.length%2==1?tables.length+1:tables.length);
-				switch(k.toUpperCase())
-				{
-				case KEY_LEFT:
+				switch(k.toUpperCase()) {
+				case "+":
 					if(scroll_index>0 && tables.length>4) {
 						scroll_index-=2;
 						listTables();
 					}
 					break;
-				case KEY_RIGHT:
+				case "-":
 					if((scroll_index+1)<=range && tables.length>4) {
 						scroll_index+=2;
 						listTables();
 					}
 					break;
 				case "/":
-					if(!chat.input_line.buffer.length) {
-						lobbyMenu();
-						chat.redraw();
-					}
-					else if(!Chat(k,chat)) return;
+					lobbyMenu();
+					redraw();
 					break;
 				case "\x1b":	
-					chat.partChan("tetris lobby",user.alias);
 					return;
 				default:
-					if(!Chat(k,chat)) return;
+					hotkeys=false;
+					console.ungetstr(k);
 					break;
 				}
 			}
+			else if(window.handle_command(k,"IRC"))
+				hotkeys=true;
 		}
 	}
 	function cycle()
 	{
-		chat.cycle();
+		window.cycle();
+		updateChatView(chat,window);
 		updateTables();
 		var update=false;
 
@@ -365,8 +357,7 @@ function lobby()
 	function lobbyMenu()
 	{
 		refreshCommands();
-		listCommands();
-		menuPrompt("\1nMake a selection: ");
+		menu.draw();
 		
 		var k=console.getkey(K_NOCRLF|K_NOSPIN|K_UPPER);
 		if(k) {
@@ -403,15 +394,15 @@ function lobby()
 	{
 		var id=players.getPlayerID(name);
 		if(game.players[id]) {
-			notify("You are already in that game!");
+			alrt("You are already in that game!");
 			return false;
 		}
 		if(game.status>0) {
-			notify("It has already started!");
+			alrt("It has already started!");
 			return false;
 		}
 		if(countMembers(game.players) == 3) {
-			notify("That game is full!");
+			alrt("That game is full!");
 			return false;
 		}
 		game.players[id]=new Player(name,true);
@@ -420,7 +411,8 @@ function lobby()
 	}	
 	function selectGame()
 	{
-		menuPrompt("\1nEnter Table \1h#: ");
+		console.gotoxy(input);
+		console.putmsg(format("%-41s","\1nEnter Table \1h#: "));
 		var num=console.getkeys("\x1bQ\r",last_table_number);
 		if(tables[num]) {
 			return num;
@@ -1323,19 +1315,18 @@ function storePlayerData(game,id)
 	file.close();
 	sendFiles(game.dataFile);
 }
-function notify(message)
+function notice(txt)
 {
-	chat.chatroom.alert(message);
+	window.current_tab.window.post("\1n\1g" + txt);
 }
-function notice(message)
+function alrt(txt)
 {
-	chat.chatroom.notice(message);
+	window.current_tab.window.post("\1n\1r" + txt);
 }
-function help()
+function help() 
 {
 	//TODO: write help file
 }
-
 
 splashStart();
 lobby();

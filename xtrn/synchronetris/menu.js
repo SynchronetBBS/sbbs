@@ -1,71 +1,52 @@
-function 	Menu(color,hkey_color)		
-{								
+function Menu(items,x,y,w,hl,txt)		
+{								//MENU CLASSES
 	this.items=[];
-	this.color=color;
-	this.hkey_color=hkey_color;
-
-	this.disable=function(items)
+	this.x=x;
+	this.y=y;
+	this.width=w;
+	this.hl=hl;
+	this.txt=txt;
+	
+	this.disable=function(item)
 	{
-		for(item in items)
-		{
-			this.items[items[item]].enabled=false;
-		}
+		this.items[item].enabled=false;
 	}
-	this.enable=function(items)
+	this.enable=function(item)
 	{
-		for(item in items)
-		{
-			this.items[items[item]].enabled=true;
-		}
+		this.items[item].enabled=true;
 	}
-	this.getHotKey=function(item)
-	{
-		var keyindex=item.indexOf("~")+1;
-		return(item.charAt(keyindex));
-	}	
 	this.add=function(items)
 	{
-		for(i=0;i<items.length;i++)
-		{
-			var hotkey=this.getHotKey(items[i]);
-			this.items[hotkey.toUpperCase()]=new MenuItem(items[i],this.color,hotkey,this.hkey_color);
+		for(i=0;i<items.length;i++) {
+			hotkey=get_hotkey(items[i]);
+			this.items[hotkey]=new Item(items[i],hotkey,hl,txt);
 		}
 	}
-	this.countEnabled=function()
+	this.clear=function()
 	{
-		var items=[];
-		for(i in this.items)
-		{
-			if(this.items[i].enabled) items.push(i);
-		}
-		return items;
+		console.gotoxy(this);
+		console.write(format("%*s",this.width,""));
 	}
-	this.getList=function()
+	this.draw=function()
 	{
-		var list=[];
-		list.push(this.color + "\1hMenu Commands:");
-		var items=this.countEnabled();
-		for(item in items)
-		{
-			var cmd=this.items[items[item]];
-			var text=(cmd.displayColor + "[" + cmd.keyColor + cmd.hotkey.toUpperCase() + cmd.displayColor + "] ");
-			text+=cmd.item.replace(("~" + cmd.hotkey) , (cmd.hotkey));
-			list.push(text);
+		var str="";
+		for each(var i in this.items) {
+			if(i.enabled==true) str+=i.text + " ";
 		}
-		return list;
+		console.gotoxy(this);
+		console.attributes=ANSI_NORMAL;
+		console.putmsg(format("%-s",str,this.width));
 	}
+	this.add(items);
 }
-function 	MenuItem(item,color,hotkey,hkey_color)
-{							
-	this.item=color + item;
-	this.displayColor=color;
-	this.keyColor=hkey_color;
-	this.hotkey=hotkey;
+function Item(item,hotkey,hl,txt)
+{								//MENU ITEM OBJECT
 	this.enabled=true;
-	
-	this.Init=function()
-	{
-		this.text=this.item.replace(("~" + this.hotkey) , (this.keyColor + this.hotkey + this.displayColor));
-	}
-	this.Init();
+	this.hotkey=hotkey;
+	this.text=item.replace(("~" + hotkey) , hl + hotkey + txt);
 }
+function get_hotkey(item)
+{
+	keyindex=item.indexOf("~")+1;
+	return item.charAt(keyindex);
+}	
