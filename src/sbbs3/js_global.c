@@ -460,6 +460,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		bg->script = script;
 		*rval = OBJECT_TO_JSVAL(js_CreateQueueObject(cx, obj, NULL, bg->msg_queue));
 		JS_ENDREQUEST(bg->cx);
+		JS_ClearContextThread(bg->cx);
 		success = _beginthread(background_thread,0,bg)!=-1;
 
 	} else {
