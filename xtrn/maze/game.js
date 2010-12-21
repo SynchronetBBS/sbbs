@@ -10,8 +10,9 @@
 const VERSION="$Revision$".split(' ')[1];
 
 load("graphic.js");
-load("logging.js");
 load("chateng.js");
+load("layout.js");
+load("inputline.js");
 
 var oldpass=console.ctrlkey_passthru;
 var root=js.exec_dir;
@@ -22,10 +23,11 @@ load(root + "timer.js");
 load(root + "menu.js");
 
 var stream=argv[0];
-var chat=new ChatEngine();
 var generator=new MazeGenerator(10,26);
 var players=new PlayerList();
 var scores=new ScoreList();
+var input=new InputLine(2,console.screen_rows-1,56,150);
+var chat=new ChatEngine("IRC","rrx.ca","6667");
 
 function splashStart()
 {
@@ -62,7 +64,8 @@ function splashExit()
 function lobby()
 {
 	var background=new Graphic(80,24);
-
+	var window=new Layout_View("chat",2,4,56,18);
+	
 	var menu;
 	var mazes=[];
 	var update=false;
@@ -73,54 +76,61 @@ function lobby()
 		initChat();
 		initMenu();
 		background.load(root + "lobby.bin");
-		notice("\1c\1hWelcome to Maze Race!");
-		notice("\1n\1ctype '/' for a list of available menu commands,");
-		notice("\1n\1cor you can just start typing to chat.");
-		notice("\1n\1cPress 'Escape' to quit.");
+		notice("\1y\1hWelcome to Maze Race!");
+		notice("\1n\1ytype '/' for a list of available menu commands,");
+		notice("\1n\1yor you can just start typing to chat.");
+		notice("\1n\1yPress 'Escape' to quit.");
 		notice(" ");
 	}
 	function initChat()
 	{
-		chat.init(56,18,2,4);
-		chat.input_line.init(2,23,56,"","\1n");
-		chat.joinChan("maze race lobby",user.alias,user.name);
+		window.show_title=false;
+		window.show_border=false;
+		window.add_tab("chat","#maze_race_lobby",chat);
 	}
 	function initMenu()
 	{
-		var menu_items=[		"~Start New Race"				, 
-								"~Join Race"					,
-								"~Rankings"						,
-								"~Help"							,
-								"Re~draw"						];
-		menu=new Menu(menu_items,"\1n","\1c\1h");
+		var menu_items=["~Create Race", 
+						"~Join Race",
+						"~Rankings",
+						"~Help",
+						"Re~draw"];
+		menu=new Menu(menu_items,2,23,56,"\1c\1h","\1n");	
 	}
 	function main()
 	{
+		var hotkeys=true;
 		redraw();
+		
 		while(1) {
 			cycle();
-			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(k) {
+			var k=input.inkey(hotkeys);
+			if(!k) 
+				continue;
+			if(hotkeys) {
 				switch(k.toUpperCase()) {
-					case "/":
-						if(!chat.input_line.buffer.length) {
-							refreshCommands();
-							listCommands();
-							getMenuCommand();
-							redraw();
-						}
-						else if(!Chat(k,chat)) return;
-						break;
-					default:
-						if(!Chat(k,chat)) return;
-						break;
+				case "/":
+					refreshCommands();
+					menu.draw();
+					getMenuCommand();
+					redraw();
+					break;
+				case "\x1b":
+					return;
+				default:
+					hotkeys=false;
+					console.ungetstr(k);
+					break;
 				}
 			}
+			else if(window.handle_command(k,"IRC"))
+				hotkeys=true;
 		}
 	}
 	function cycle()
 	{
-		chat.cycle();
+		window.cycle();
+		updateChatView(chat,window);
 		updateMazes();
 
 		for each(var m in mazes) {
@@ -172,25 +182,12 @@ function lobby()
 	}
 	function startRace(maze)
 	{
-		log("starting race: " + maze.gameNumber);
+		log(LOG_DEBUG,"starting maze: " + maze.gameNumber);
 		maze.status=1;
 		var file=new File(maze.dataFile);
 		file.open('r+',true);
 		file.iniSetValue(null,"status",1);
 		file.close();
-	}
-	function listCommands()
-	{
-		var list=menu.getList();
-		chat.chatroom.clear();
-		console.gotoxy(chat.chatroom);
-		console.pushxy();
-		for(l=0;l<list.length;l++) {
-			console.putmsg(list[l]);
-			console.popxy();
-			console.down();
-			console.pushxy();
-		}
 	}
 	function help()
 	{
@@ -198,7 +195,11 @@ function lobby()
 	}
 	function notice(txt)
 	{
-		chat.chatroom.notice(txt);
+		window.current_tab.window.post("\1n\1g" + txt);
+	}
+	function alrt(txt)
+	{
+		window.current_tab.window.post("\1n\1r" + txt);
 	}
 	function refreshCommands()
 	{
@@ -214,6 +215,7 @@ function lobby()
 	function getMenuCommand()
 	{
 		while(1) {
+			cycle();
 			var k=console.getkey(K_NOCRLF|K_NOSPIN|K_NOECHO|K_UPPER);
 			if(k) 	{
 				switch(k.toUpperCase())
@@ -224,7 +226,7 @@ function lobby()
 				case "H":
 					help();
 					break;
-				case "S":
+				case "C":
 					createMaze();
 					break;
 				case "J":
@@ -241,7 +243,7 @@ function lobby()
 	{
 		var gameNumber=menuPrompt("\1nEnter maze #\1h: ");
 		if(!mazes[gameNumber]) {
-			notify("No such maze!");
+			alrt("No such maze!");
 			return false;
 		}
 		joinMaze(mazes[gameNumber]);
@@ -358,7 +360,7 @@ function lobby()
 	function redraw()
 	{
 		background.draw();
-		chat.redraw();
+		window.drawView();
 		listMazes();
 	}
 
@@ -583,20 +585,12 @@ function getNewGameNumber()
 }
 function menuPrompt(text)
 {
-	chat.input_line.clear();
-	console.gotoxy(chat.input_line);
+	input.clear();
+	console.gotoxy(input);
 	console.putmsg(text);
 	var key=console.getkey();
-	chat.input_line.draw();
+	input.draw();
 	return key;
-}
-function notify(message)
-{
-	chat.chatroom.alert(message);
-}
-function notice(message)
-{
-	chat.chatroom.notice(message);
 }
 function storeGameData(maze)
 {
