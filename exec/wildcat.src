@@ -424,11 +424,15 @@ cmdkey Q
 
 cmdkey R
 	cmd_home
-	print "n\r\nyhReading Messages: [wNy]ew messages, [wSy]earch, "
+	print "n\r\nyhReading Messages: [\1wA\1y]ll messages, [wNy]ew messages, [wSy]earch, "
 	print "[wUy]nread personal,\r\n"
 	print "[wJy]oin, or [wENTERy] to quit? "
 	getstr 5
 	logkey
+
+        cmdstr A
+		msg_read
+                end_cmd
 
 	cmdstr N
 		msg_new_scan
