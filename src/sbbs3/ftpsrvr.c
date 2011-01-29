@@ -3601,7 +3601,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=lib)
 						continue;
-					if(i!=scfg.sysop_dir && i!=scfg.upload_dir 
+					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
 					if(!wildmatchi(scfg.dir[i]->code_suffix, filespec, FALSE))
@@ -3888,7 +3888,7 @@ static void ctrl_thread(void* arg)
 						for(i=0;i<scfg.total_dirs;i++) {
 							if(scfg.dir[i]->lib!=lib)
 								continue;
-							if(i!=scfg.sysop_dir && i!=scfg.upload_dir
+							if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir
 								&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 								continue;
 							fprintf(fp,"%-*s %s\r\n"
@@ -4243,7 +4243,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=lib)
 						continue;
-					if(i!=scfg.sysop_dir && i!=scfg.upload_dir 
+					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir 
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
 					if(!stricmp(scfg.dir[i]->code_suffix,p))
@@ -4443,7 +4443,7 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<scfg.total_dirs;i++) {
 					if(scfg.dir[i]->lib!=curlib)
 						continue;
-					if(i!=scfg.sysop_dir && i!=scfg.upload_dir
+					if(i!=(int)scfg.sysop_dir && i!=(int)scfg.upload_dir
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user,&client))
 						continue;
 					if(!stricmp(scfg.dir[i]->code_suffix,p))
