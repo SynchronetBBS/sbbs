@@ -242,7 +242,7 @@ function GetTelnetPort() {
     var Result = 23;
     
     try {
-        var f = new File(system.ctrl_dir + "sbbs.ini");
+        var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
         if (f.open("r", true)) {
             Result  = f.iniGetValue("BBS", "TelnetPort", 23);
             f.close();
