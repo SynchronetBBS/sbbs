@@ -16,7 +16,7 @@ load("funclib.js");
 var oldpass=console.ctrlkey_passthru;
 
 /* settings */
-var INSERT=false;
+var INSERT=true;
 var TAB_STOPS=4;
 
 /* colors */
@@ -320,11 +320,11 @@ function insert_tab() {
 	for(var t=0;t<TAB_STOPS;t++) {
 		buffer[row].splice(col,0," ");
 		console.right();
+		col++;
 	}
 	console.pushxy();
-	console.write(buffer[row].slice(col).join(""));
+	draw_line(row);
 	console.cleartoeol();
-	col+=TAB_STOPS;
 }
 
 function insert_char(key) {
