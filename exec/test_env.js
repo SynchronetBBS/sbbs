@@ -18,6 +18,7 @@ var oldpass=console.ctrlkey_passthru;
 /* settings */
 var INSERT=true;
 var TAB_STOPS=4;
+var MAX_LINE=79; // TODO: make this unnecessary
 
 /* colors */
 var NORMAL_COLOR="\1n";
@@ -36,7 +37,7 @@ var col=0;
 console.pushxy();
 reset_screen();
 status_line();
-console.popxy();;
+console.popxy();
 
 while(!js.terminated && client.socket.is_connected) {
 	var key=console.inkey(K_NOECHO);
@@ -59,6 +60,9 @@ while(!js.terminated && client.socket.is_connected) {
 		status_line();
 		break;
 	case ctrl('I'): //tab
+		/* TODO: allow line wrapping */
+		if(col+TAB_STOPS >= MAX_LINE)
+			break;
 		insert_tab();
 		break;
 	case ctrl('L'): //clear line
@@ -99,6 +103,9 @@ while(!js.terminated && client.socket.is_connected) {
 		insert_line();
 		break;
 	default: // add key to code matrix
+		/* TODO: allow line wrapping */
+		if(col >= MAX_LINE)
+			break;
 		buffer_key(key);
 		break;
 	}	
@@ -349,7 +356,11 @@ function backspace() {
 		/* otherwise, append the current line of code 
 			to the end of the previous line */ 
 		else {
+			/* TODO: allow line wrapping */
+			if(buffer[row].length + buffer[row-1].length >= MAX_LINE)
+				return;		
 			row--;
+			console.cleartoeol();
 			console.up();
 			console.right(buffer[row].length);
 			col=buffer[row].length;
