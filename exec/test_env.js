@@ -13,21 +13,22 @@
 
 load("sbbsdefs.js");
 load("funclib.js");
+load("graphic.js");
 var oldpass=console.ctrlkey_passthru;
 
 /* settings */
 var INSERT=true;
-var TAB_STOPS=4;
-var MAX_LINE=79; // TODO: make this unnecessary
+const TAB_STOPS=4;
+const MAX_LINE=console.screen_columns-1; // TODO: make this unnecessary
 
 /* colors */
-var NORMAL_COLOR="\1n";
-var TEXT_COLOR="\1k\1h";
-var KEYWORD_COLOR="\1b\1h";
-var DIGIT_COLOR="\1n\1r";
-var BOOL_COLOR="\1b\1h";
-var COMMENT_COLOR="\1n\1g";
-var HIGHLIGHT_COLOR="\1r\1h";
+const NORMAL_COLOR="\1n";
+const TEXT_COLOR="\1k\1h";
+const KEYWORD_COLOR="\1b\1h";
+const DIGIT_COLOR="\1n\1r";
+const BOOL_COLOR="\1b\1h";
+const COMMENT_COLOR="\1n\1g";
+const HIGHLIGHT_COLOR="\1r\1h";
 
 /* data */
 var buffer=[[]];
@@ -48,6 +49,9 @@ while(!js.terminated && client.socket.is_connected) {
 	
 	switch(key) {
 
+	case ctrl('K'): //command list/help
+		list_commands();
+		break;
 	case ctrl('Z'): //evaluate script
 		evaluate();
 		break;
@@ -256,7 +260,9 @@ function move_home() {
 	}
 	/* if we are in the first column but not at the top of the page, move there */
 	else if(row > 0) {
-		row=0;
+		row -= (console.screen_rows-1);
+		if(row < 0)
+			row=0;
 		console.home();
 		console.pushxy();
 		draw_page();
@@ -273,8 +279,10 @@ function move_end() {
 	}
 	/* if we are in the last column but not at the bottom of the page, move there */
 	else if(row < buffer.length-1) {
-		row=buffer.length-1;
-		col=buffer[buffer.length-1].length;
+		row +=( console.screen_rows-1)
+		if(row > buffer.length-1)
+			row=buffer.length-1;
+		col=buffer[row].length;
 		if(buffer.length >= console.screen_rows) 
 			console.gotoxy(col+1,console.screen_rows-1);
 		else
@@ -297,10 +305,21 @@ function insert_line() {
 	/* highlight current row syntax */
 	draw_line(row);
 
-	// set column to zero and move down one line
-	col=0;
-	row++;
+	/* move down one line and reset column */
 	console.crlf();
+	col=0;
+
+	/* transfer any tabs to the new line */
+	var c=0;
+	while(buffer[row][c] == " ") {
+		col++; 
+		c++;
+		console.right();
+		buffer[row+1].unshift(" ");
+	}
+
+	// set row and store position
+	row++;
 	console.pushxy();
 
 	// check for bottom of screen
@@ -310,6 +329,7 @@ function insert_line() {
 		console.crlf();
 		console.up();
 		console.pushxy();
+		draw_line(row);
 	}
 
 	else {
@@ -345,6 +365,7 @@ function del_char() {
 	buffer[row].splice(col,1);
 	//display the rest of the line 
 	console.write(buffer[row].slice(col).join(""));
+	console.cleartoeol();
 }
 
 function backspace() {
@@ -411,14 +432,14 @@ function draw_page() {
 }
 
 function draw_line(r) {
-	console.putmsg("\r" + get_line_syntax(r));
+	console.putmsg("\r" + get_line_syntax(r),P_SAVEATR);
 	console.cleartoeol();
 }
 
 function get_line_syntax(r) {
 	var str=buffer[r].join("");
 	str=str.replace(
-		/(if|for|while|do|var|length|function)/g,
+		/(if|for|while|do|var|length|function|else|each)/g,
 		KEYWORD_COLOR+'$&'+NORMAL_COLOR
 	);
 	str=str.replace(
@@ -492,16 +513,34 @@ function reset_screen() {
 }
 
 function status_line() {
-	var str=
-	"LINE: %d COL: %d INS: %s " +  
-	"[^C] clr [^L] clr line [^Z] exec [^O] ins [ESC] quit";
+	var str1=format("LINE: %d COL: %d INSERT: %s ",row+1,col+1,(INSERT?"ON":"OFF"));  
+	var str2="CTRL-K : HELP";
 
 	console.gotoxy(1,console.screen_rows);
 	console.attributes=BG_BLUE+YELLOW;
 	console.cleartoeol();
-	console.write(format(str,row+1,col+1,(INSERT?"on":"off")));
+	console.write(splitPadded(str1,str2,console.screen_columns-1));
 
 	console.attributes=getColor(NORMAL_COLOR);
+}
+
+function list_commands() {
+	log("listing commands")
+	var clist=new Graphic(26,12,BG_BLUE);
+	clist.putmsg(false,false," ");
+	clist.putmsg(false,false,"\1y\1h Editor Commands");
+	clist.putmsg(false,false,"\1w\1h CTRL-Z \1y: \1rRun Program");
+	clist.putmsg(false,false,"\1w\1h CTRL-C \1y: \1rClear Screen");
+	clist.putmsg(false,false,"\1w\1h CTRL-L \1y: \1rClear Line");
+	clist.putmsg(false,false,"\1w\1h CTRL-O \1y: \1rToggle Insert");
+	clist.putmsg(false,false,"\1w\1h CTRL-F \1y: \1rOpen File \1yTODO");
+	clist.putmsg(false,false,"\1w\1h CTRL-S \1y: \1rSave File \1yTODO");
+	clist.putmsg(false,false,"\1w\1h CTRL-R \1y: \1rRedraw Screen");
+	clist.putmsg(false,false,"\1w\1h ESCAPE \1y: \1rExit Editor");
+	clist.putmsg(false,false,"\1y\1h Press a key to continue");
+	clist.draw((console.screen_columns-26)/2,(console.screen_rows-12)/2);
+	console.getkey(K_NOECHO|K_NOSPIN);
+	redraw();
 }
 
 function evaluate() {
@@ -512,7 +551,7 @@ function evaluate() {
 
 	if(strlen(code) > 0) {		
 		reset_screen();
-		console.attributes=BG_BLACK+BROWN;
+		console.attributes=BG_BLACK+LIGHTGRAY;
 		console.home();
 		
 		try {
