@@ -31,6 +31,7 @@ const COMMENT_COLOR="\1n\1g";
 const HIGHLIGHT_COLOR="\1r\1h";
 
 /* data */
+var filename=system.mods_dir;
 var buffer=[[]];
 var row=0;
 var col=0;
@@ -52,6 +53,12 @@ while(!js.terminated && client.socket.is_connected) {
 	case ctrl('K'): //command list/help
 		list_commands();
 		break;
+	case ctrl('O'): //open file
+		load_file();
+		break;
+	case ctrl('S'): //save file
+		save_file();
+		break;
 	case ctrl('Z'): //evaluate script
 		evaluate();
 		break;
@@ -72,7 +79,7 @@ while(!js.terminated && client.socket.is_connected) {
 	case ctrl('L'): //clear line
 		clear_line();
 		break;
-	case ctrl('O'): //toggle insert
+	case ctrl('T'): //toggle insert
 		INSERT=INSERT?false:true;
 		break;
 	case KEY_DOWN:
@@ -417,6 +424,85 @@ function backspace() {
 	}
 }
 
+function save_file() {
+	var posx=(console.screen_columns-40)/2;
+	var posy=(console.screen_rows-5)/2;
+	
+	var fprompt=new Graphic(40,4,BG_BLUE);
+	fprompt.putmsg(2,2,"\1y\1hENTER FILENAME TO SAVE");
+	fprompt.draw(posx,posy);
+
+	console.gotoxy(posx+1,posy+2);
+	filename=console.getstr(filename,38,K_NOSPIN|K_EDIT|K_LINE|K_NOEXASC);
+
+	var file=new File(filename);
+	if(file_exists(filename)) {
+		fprompt.putmsg(2,3,"\1r\1hOverwrite existing file? [\1wy\1y/\1wN\1y]");
+		fprompt.draw(posx,posy);
+		if(console.getkey(K_NOECHO|K_NOSPIN|K_ALPHA|K_UPPER) != "Y") {
+			log(LOG_DEBUG,"save aborted");
+			redraw();
+			return;
+		}
+	}
+
+	file.open('w',false);
+	if(!file.is_open) {
+		fprompt.putmsg(2,3,"\1r\1hError opening file");
+		fprompt.draw(posx,posy);
+		mswait(1000);
+		redraw();
+		return;
+	}
+
+	for(var y=0;y<buffer.length;y++) {
+		var str=buffer[y].join("");
+		if(str.length > 0)
+			file.writeln(str.replace(/\s{4}/g,"\t"));
+	}
+
+	fprompt.putmsg(2,3,format("%-38s","\1r\1hFile saved"));
+	fprompt.draw(posx,posy);
+	mswait(1000);
+	file.close();
+	redraw();
+}
+
+function load_file() {
+	var posx=(console.screen_columns-40)/2;
+	var posy=(console.screen_rows-5)/2;
+	
+	var fprompt=new Graphic(40,4,BG_BLUE);
+	fprompt.putmsg(2,2,"\1y\1hENTER FILENAME TO LOAD");
+	fprompt.draw(posx,posy);
+
+	console.gotoxy(posx+1,posy+2);
+	var old_file=filename;
+	filename=console.getstr(filename,38,K_NOSPIN|K_EDIT|K_LINE|K_NOEXASC);
+
+	var file=new File(filename);
+	if(!file.open('r',false)) {
+		fprompt.putmsg(2,3,"\1r\1hError opening file");
+		fprompt.draw(posx,posy);
+		filename=old_file;
+		mswait(1000);
+		redraw();
+		return;
+	}
+	
+	clear_screen();
+	reset_screen();
+
+	buffer=file.readAll();
+	file.close();
+	
+	for(var l=0;l<buffer.length;l++) {
+		buffer[l]=buffer[l].replace(/\t/g,"    ");
+		buffer[l]=buffer[l].split("");
+	}
+	redraw();
+}
+
 function draw_page() {
 	var i=row - (console.getxy().y-1);
 	console.home();
@@ -508,7 +594,7 @@ function reset_screen() {
 	console.attributes=getColor(NORMAL_COLOR);
 	console.clear();
 	bbs.sys_status|=SS_PAUSEOFF;	
-	console.ctrlkey_passthru="+KOPTUCLRZI";
+	console.ctrlkey_passthru="+KOPTUCLRSZI";
 	console.popxy();
 }
 
@@ -525,17 +611,18 @@ function status_line() {
 }
 
 function list_commands() {
-	log("listing commands")
-	var clist=new Graphic(26,12,BG_BLUE);
+	var clist=new Graphic(26,14,BG_BLUE);
 	clist.putmsg(false,false," ");
 	clist.putmsg(false,false,"\1y\1h Editor Commands");
 	clist.putmsg(false,false,"\1w\1h CTRL-Z \1y: \1rRun Program");
 	clist.putmsg(false,false,"\1w\1h CTRL-C \1y: \1rClear Screen");
 	clist.putmsg(false,false,"\1w\1h CTRL-L \1y: \1rClear Line");
-	clist.putmsg(false,false,"\1w\1h CTRL-O \1y: \1rToggle Insert");
-	clist.putmsg(false,false,"\1w\1h CTRL-F \1y: \1rOpen File \1yTODO");
-	clist.putmsg(false,false,"\1w\1h CTRL-S \1y: \1rSave File \1yTODO");
+	clist.putmsg(false,false,"\1w\1h CTRL-T \1y: \1rToggle Insert");
+	clist.putmsg(false,false,"\1w\1h CTRL-O \1y: \1rOpen File");
+	clist.putmsg(false,false,"\1w\1h CTRL-S \1y: \1rSave File");
 	clist.putmsg(false,false,"\1w\1h CTRL-R \1y: \1rRedraw Screen");
+	clist.putmsg(false,false,"\1w\1h HOME   \1y: \1rHome/Page Up");
+	clist.putmsg(false,false,"\1w\1h END    \1y: \1rEnd/Page Down");
 	clist.putmsg(false,false,"\1w\1h ESCAPE \1y: \1rExit Editor");
 	clist.putmsg(false,false,"\1y\1h Press a key to continue");
 	clist.draw((console.screen_columns-26)/2,(console.screen_rows-12)/2);
