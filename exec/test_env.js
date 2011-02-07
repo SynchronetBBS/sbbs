@@ -8,7 +8,6 @@
 	
 	full-screen editor with status bar and 
 	most fs editor features. (expect updates)
-	
 */
 
 load("sbbsdefs.js");
@@ -31,6 +30,7 @@ const COMMENT_COLOR="\1n\1g";
 const HIGHLIGHT_COLOR="\1r\1h";
 
 /* data */
+var syspass="";
 var filename=system.mods_dir;
 var buffer=[[]];
 var row=0;
@@ -425,6 +425,8 @@ function backspace() {
 }
 
 function save_file() {
+	if(!verify_system_password())
+		return;
 	var posx=(console.screen_columns-40)/2;
 	var posy=(console.screen_rows-5)/2;
 	
@@ -631,27 +633,52 @@ function list_commands() {
 }
 
 function evaluate() {
+	if(!verify_system_password())
+		return;
 	var code="";
 	for(var y=0;y<buffer.length;y++) 
 		if(buffer[y])
 			code+=buffer[y].join("");
-
 	if(strlen(code) > 0) {		
 		reset_screen();
 		console.attributes=BG_BLACK+LIGHTGRAY;
 		console.home();
-		
 		try {
 			eval(code);
 		}
-
 		catch(e) {
 			alert("ERR: " + e);
 		}
-	
 		console.pause();
 		reset_screen();
 		redraw();
+	}
+}
+
+function verify_system_password() {
+	if(system.check_syspass(syspass))
+		return true;
+	if(user.compare_ars("SYSOP"))
+		return true;
+	var posx=(console.screen_columns-40)/2;
+	var posy=(console.screen_rows-5)/2;
+
+	var fprompt=new Graphic(40,4,BG_BLUE);
+	fprompt.putmsg(2,2,"\1y\1hENTER SYSTEM PASSWORD");
+	fprompt.draw(posx,posy);
+
+	console.gotoxy(posx+1,posy+2);
+	syspass=console.getstr(syspass,38,K_NOSPIN|K_EDIT|K_LINE|K_NOEXASC);
+
+	if(system.check_syspass(syspass))
+		return true;
+	else {
+		syspass="";
+		fprompt.putmsg(2,3,format("%-38s","\1r\1hPassword incorrect"));
+		fprompt.draw(posx,posy);
+		mswait(1000);
+		redraw();
+		return false;
 	}
 }
 
