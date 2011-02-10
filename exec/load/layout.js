@@ -40,7 +40,9 @@ var layout_settings=new Layout_Settings(
 	BG_CYAN,		/* tab highlight background */
 	RED,		/* tab alert foregruond */
 	MAGENTA,	/* tab update foreground */
-	BLUE		/* tab user msg foreground */
+	BLUE,		/* tab user msg foreground */
+	YELLOW,		/* clock foreground */
+	BG_BLUE		/* clock background */
 );
 var tab_settings=new Tab_Settings();
 
@@ -99,6 +101,7 @@ function Layout()
 			|| (x-1+w) > console.screen_columns
 			|| (y-1+h) > console.screen_rows) {
 			log(LOG_WARNING, "ERROR: invalid view parameters");
+			log(LOG_WARNING, format("x:%s y:%s w:%s h:%s",x,y,w,h));
 			return false;
 		} 
 
@@ -161,9 +164,11 @@ function Layout()
 					this.index++;
 				if(this.current_view.interactive) break;
 			}
-			views[old_index].drawTitle();
-			this.current_view.drawTitle();
-			break;
+			if(views[old_index].show_title)
+				views[old_index].drawTitle();
+			if(views[this.index].show_title)
+				this.current_view.drawTitle();
+			return false;
 		}
 		return this.current_view.handle_command(str);
 	}
@@ -171,7 +176,7 @@ function Layout()
 }
 
 /* layout settings object */
-function Layout_Settings(vfg,vbg,mhfg,mhbg,vtfg,vtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg,nfg,pfg)
+function Layout_Settings(vfg,vbg,mhfg,mhbg,vtfg,vtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg,nfg,pfg,cfg,cbg)
 {
 	/* main view colors */
 	this.vfg=vfg;
@@ -205,6 +210,10 @@ function Layout_Settings(vfg,vbg,mhfg,mhbg,vtfg,vtbg,bfg,bbg,tfg,tbg,hfg,hbg,afg
 	
 	/* tab user message color */
 	this.pfg=pfg;
+	
+	/* clock colors */
+	this.cfg=cfg;
+	this.cbg=cbg;
 	
 	/* inactive view colors */
 	this.ibg=BG_BLACK;
@@ -336,6 +345,10 @@ function Layout_View(name,x,y,w,h)
 		return interactive;
 	}
 	
+	this.clear=function() {
+		clearBlock(this.x,this.y,this.width,this.height);
+	}
+	
 	/* return current tab object */
 	this.current_tab getter=function() {
 		return tabs[this.index];
@@ -452,6 +465,7 @@ function Layout_View(name,x,y,w,h)
 					this.index=tabs.length-1;
 				else 
 					this.index--;
+				tabs[this.index].status=tab_settings.DEFAULT;
 				this.drawTabs();
 				this.draw();
 				return true;
@@ -460,6 +474,7 @@ function Layout_View(name,x,y,w,h)
 					this.index=0;
 				else 
 					this.index++;
+				tabs[this.index].status=tab_settings.DEFAULT;
 				this.drawTabs();
 				this.draw();
 				return true;
@@ -734,6 +749,9 @@ Tab_Templates["CHAT"]=function()
 Tab_Templates["USERLIST"]=function() 
 {
 	this.type="userlist";
+	if(!js.global.Window) {
+		load(js.global,"msgwndw.js");
+	}
 	
 	this.init=function(chat_view) {
 		this.chat_view=chat_view;
@@ -801,33 +819,45 @@ Tab_Templates["LIGHTBAR"]=function()
 {
 	this.type="lightbar";
 	this.hotkeys=true;
+	
 	if(!js.global.Lightbar) {
 		load(js.global,"lightbar.js");
 	}
 	
 	this.init=function(lightbar) {
-		if(lightbar) { 
+		/* if this is the initial lightbar, set top level */
+		if(!this.lightbar) 
+			lightbar.top=true;
+		/* if we are stacking menus and the previous lightbar is not top level */
+		else if(!lightbar.previous && !lightbar.top)
+			lightbar.previous=this.lightbar;
+		/* if we are supplied a lightbar, make it fit */
+		if(lightbar)  
 			this.lightbar=lightbar;
-		}
-		else {
+		/* otherwise create a blank lightbar */
+		else
 			this.lightbar=new Lightbar();
-		}
 		
 		this.lightbar.lpadding="";
 		this.lightbar.rpadding="";
-		this.lightbar.fg=layout_settings.vfg;
-		this.lightbar.bg=layout_settings.vbg;
-		this.lightbar.hfg=layout_settings.mhfg;
-		this.lightbar.hbg=layout_settings.mhbg;
 		this.lightbar.force_width=this.width;
 		this.lightbar.height=this.height;
 		this.lightbar.xpos=this.x;
 		this.lightbar.ypos=this.y;
+		
+		this.update=true;
 	}
 	this.handle_command=function(key) {
-		return this.lightbar.getval(undefined,key);
+		key=this.lightbar.getval(undefined,key);
+		if( (key == "\b" || key == "\x7f") && this.lightbar.previous)
+			this.init(this.lightbar.previous);
+		return key;
 	}
 	this.draw=function() {
+		this.lightbar.fg=layout_settings.vfg;
+		this.lightbar.bg=layout_settings.vbg;
+		this.lightbar.hfg=layout_settings.mhfg;
+		this.lightbar.hbg=layout_settings.mhbg;
 		this.lightbar.draw();
 	}
 	this.add=function(txt, retval, width, lpadding, rpadding, disabled, nodraw)	{
@@ -855,6 +885,8 @@ Tab_Templates["CLOCK"]=function()
 		this.update=this.clock.update();
 	}
 	this.draw=function() {
+		this.clock.fg=layout_settings.cfg;
+		this.clock.bg=layout_settings.cbg;
 		this.clock.draw(this.x,this.y);
 	}
 }
@@ -897,6 +929,7 @@ function updateChatView(chat,view)
 		called by updateChatView() */
 	var data=chat.cycle();
 	if(!data || !data.func) return;
+	
 	switch(data.func) {
 	case "001":
 		log("checking channel tabs");
@@ -910,14 +943,24 @@ function updateChatView(chat,view)
 		break;
 	case "JOIN":
 		if(data.origin == chat.nick.nickname) {
-			if(!view.tab(data.chan))
+			if(!view.tab(data.chan)) {
 				view.add_tab("chat",data.chan,chat);
+				view.current_tab=data.chan;
+			}
+		}
+		else if(data.chan != view.current_tab.name) {
+			if(view.tab(data.chan)) 
+				view.tab(data.chan).status=tab_settings.NOTICE;
 		}
 		break;
 	case "PART":
 		if(data.origin == chat.nick.nickname) {
 			if(view.tab(data.chan))
 				view.del_tab(data.chan);
+		}
+		else if(data.chan != view.current_tab.name) {
+			if(view.tab(data.chan)) 
+				view.tab(data.chan).status=tab_settings.NOTICE;
 		}
 		break;
 	case "PRIVMSG":
@@ -928,6 +971,12 @@ function updateChatView(chat,view)
 		if(data.dest.toUpperCase() == chat.nick.nickname.toUpperCase()) {
 			if(!view.tab(data.origin))
 				view.add_tab("chat",data.origin,chat);
+			if(data.origin != view.current_tab.name)
+				view.tab(data.origin).status=tab_settings.PRIVATE;
+		}
+		else if(data.dest != view.current_tab.name) {
+			if(view.tab(data.dest)) 
+				view.tab(data.dest).status=tab_settings.ALERT;
 		}
 		break;
 	}
