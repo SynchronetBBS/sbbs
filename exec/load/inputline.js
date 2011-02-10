@@ -8,8 +8,8 @@ function InputLine(x,y,w,max,bg,fg,title)
 	this.width=79;
 	this.max_buffer=200;
 	
-	this.bg=BG_LIGHTGRAY;
-	this.fg=BLACK;
+	this.bg=BG_BLACK;
+	this.fg=LIGHTGRAY;
 	this.buffer="";
 	
 	this.title_bg=BG_LIGHTGRAY;
@@ -91,13 +91,13 @@ function InputLine(x,y,w,max,bg,fg,title)
 		case '\x1a':	/* CTRL-Z */
 		case '\x1c':	/* CTRL-\ */
 		case '\x1f':	/* CTRL-_ */
-		case '\x7f':	/* DELETE */
 		case '\x1b':	/* ESC */
 		case KEY_UP:
 		case KEY_DOWN:
 		case KEY_LEFT:
 		case KEY_RIGHT:
 			return key;
+		case '\x7f':	/* DELETE */
 		case '\b':
 			this.backspace();
 			return false;
@@ -162,8 +162,8 @@ function InputLine(x,y,w,max,bg,fg,title)
 	{
 		console.gotoxy(this);
 		this.printTitle();
-		if(this.x + this.width == console.screen_columns && this.y == console.screen_rows) 
-			console.cleartoeol(this.bg);
+//		if(this.x + this.width == console.screen_columns && this.y == console.screen_rows) 
+//			console.cleartoeol(this.bg);
 		this.printBuffer();
 	}
 	this.printTitle=function()
