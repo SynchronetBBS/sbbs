@@ -630,6 +630,8 @@ function IRC_processNumeric(data) {
 	case '433':
 		this.server_chan.post(chat_settings.ERROR_COLOR + 
 		data.nick + ": nickname already in use");
+		this.nick=new IRC_Commands["NICK"](user.alias.replace(/[\s.]/g,"_")+"_"+random(100),user.name,system.inet_addr);
+		this.send(this.nick);
 		break;
 	case '436':
 		this.server_chan.post(chat_settings.ERROR_COLOR + 
@@ -934,6 +936,11 @@ function RFC1459_decode(str) {
 				mode:cmd.shift(),
 				hops:cmd.shift().substr(1),
 				info:cmd.join(" ")
+			});
+		case '433':
+			return({
+				func:num,
+				nick:cmd.shift()
 			});
 		case '353':
 			return({
