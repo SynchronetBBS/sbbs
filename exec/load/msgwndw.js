@@ -27,6 +27,7 @@ function Window(xpos,ypos,w,h)
 		if(width>=console.screen_columns) width=console.screen_columns-1;
 		if(window && window.length > window.height) width-=1;
 		window=new Graphic(width,height);
+		window.atcodes=false;
 		for(var m=0;m<message_list.length;m++) {
 			window.putmsg(false,false,message_list[m],undefined,true);
 		}
@@ -96,6 +97,7 @@ function Window(xpos,ypos,w,h)
 				width-=1;
 				scrollbar=new Scrollbar(x+width,y,height,"vertical","\1k\1h"); 
 				window=new Graphic(width,height);
+				window.atcodes=false;
 				for(var m=0;m<message_list.length;m++) {
 					window.putmsg(false,false,message_list[m],undefined,true);
 				}
