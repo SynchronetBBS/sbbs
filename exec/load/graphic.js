@@ -26,6 +26,7 @@ function Graphic(w,h,attr,ch)
 
 	this.scrollback=500;
 	this.loop=false;
+	this.atcodes=true;
 	this.length=0;
 	this.index=0;
 	
@@ -104,10 +105,10 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
 				if(ch == "\r" || ch == "\n" || !ch)
 					ch=this.ch;
 				console.write(ch);
-				if(delay)
-					mswait(delay);
 			}
 		}
+		if(delay)
+			mswait(delay);
 	}
 	return(true);
 }
@@ -174,22 +175,55 @@ function Graphic_load(filename)
 {
 	var x;
 	var y;
+	var file_type=file_getext(filename).substr(1);
 	var f=new File(filename);
 
-	if(!(f.open("rb",true,4096)))
-		return(false);
-	for(y=0; y<this.height; y++) {
-		for(x=0; x<this.width; x++) {
-			this.data[x][y]=new Object;
-			if(f.eof)
-				return(false);
-			this.data[x][y].ch=f.read(1);
-			if(f.eof)
-				return(false);
-			this.data[x][y].attr=f.readBin(1);
+	switch(file_type.toUpperCase()) {
+	case "ANS":
+	/*
+		if(!(f.open("r",true,4096)))
+			return(false);
+		var lines=f.readAll();
+		f.close();
+		
+		var cur_attr=this.attr;
+		var cur_ch=this.ch;
+		var ANSI=String.fromCharCode(27,91);
+		
+		for(y=0; y<this.height && y<lines.length; y++) {
+			var x=0;
+			var index=0;
+			index=lines[y].indexOf(ANSI,index);
+			while(index >= 0) {
+			
+			}
+			
+			txt=txt.toString().replace(/@(.*)@/g,
+				function (str, code, offset, s) {
+					return bbs.atcode(code);
+				}
+			)
+			this.data[x][y]=new Graphic_sector(cur_ch,cur_attr);
 		}
+		break;
+	*/
+	case "BIN":
+		if(!(f.open("rb",true,4096)))
+			return(false);
+		for(y=0; y<this.height; y++) {
+			for(x=0; x<this.width; x++) {
+				this.data[x][y]=new Object;
+				if(f.eof)
+					return(false);
+				this.data[x][y].ch=f.read(1);
+				if(f.eof)
+					return(false);
+				this.data[x][y].attr=f.readBin(1);
+			}
+		}
+		f.close();
+		break;
 	}
-	f.close();
 	return(true);
 }
 function Graphic_write(filename)
@@ -251,7 +285,7 @@ function Graphic_scroll(dir)
 		this.index--;
 		break;
 	default:
-		for(x=0; x<this.width; x++) {
+		for(var x=0; x<this.width; x++) {
 			this.data[x].push(new Graphic_sector(this.ch,this.attribute));
 			if(this.data[x].length > this.scrollback) {
 				this.data.shift();
@@ -295,11 +329,13 @@ function Graphic_putmsg(xpos, ypos, txt, attr, scroll)
 	if(txt==undefined || txt==null || txt.length==0) {
 		return(0);
 	}
-	txt=txt.toString().replace(/@(.*)@/g,
-		function (str, code, offset, s) {
-			return bbs.atcode(code);
-		}
-	)
+	if(this.atcodes) {
+		txt=txt.toString().replace(/@(.*)@/g,
+			function (str, code, offset, s) {
+				return bbs.atcode(code);
+			}
+		)
+	}
 	
 	/* wrap text at graphic width */
 	txt=word_wrap(txt,this.width);
