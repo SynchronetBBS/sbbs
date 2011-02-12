@@ -63,7 +63,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	uchar	ch=0;
 
-	kbincom(timeout);
+	ch=kbincom(timeout);
 
 	if(ch==0) {
 		// moved here from getkey() on AUG-29-2001
