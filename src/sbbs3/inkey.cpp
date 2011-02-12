@@ -41,6 +41,20 @@
 
 #define nosound()	
 
+static int kbincom(unsigned long timeout)
+{
+	int ch;
+
+	if(keybuftop!=keybufbot) {   
+		ch=keybuf[keybufbot++];   
+		if(keybufbot==KEY_BUFSIZE)   
+			keybufbot=0;   
+	} else 
+		ch=incom(timeout);
+
+	return ch;
+}
+
 /****************************************************************************/
 /* Returns character if a key has been hit remotely and responds			*/
 /* Called from functions getkey, msgabort and main_sec						*/
@@ -49,12 +63,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	uchar	ch=0;
 
-	if(keybuftop!=keybufbot) {   
-		ch=keybuf[keybufbot++];   
-		if(keybufbot==KEY_BUFSIZE)   
-			keybufbot=0;   
-	} else 
-		ch=incom(timeout);
+	kbincom(timeout);
 
 	if(ch==0) {
 		// moved here from getkey() on AUG-29-2001
@@ -254,7 +263,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			hotkey_inside--;
 			return(0); 
 		case ESC:
-			i=incom(mode&K_GETSTR ? 3000:1000);
+			i=kbincom(mode&K_GETSTR ? 3000:1000);
 			if(i==NOINP)		// timed-out waiting for '['
 				return(ESC);
 			ch=i;
@@ -270,7 +279,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
 			}
 			while(i<10 && j<30) {		/* up to 3 seconds */
-				ch=incom(100);
+				ch=kbincom(100);
 				if(ch==(NOINP&0xff)) {
 					j++;
 					continue;
