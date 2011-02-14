@@ -87,9 +87,7 @@ function main() {
 			redraw();
 			break;
 		case ctrl('N'): //new file
-			init_screen();
 			new_document();	
-			status_line();
 			break;
 		case ctrl('P'): //purge clipboard
 			clipboard=[];
@@ -286,8 +284,10 @@ function move_down() {
 		files[current].posy--;
 	}
 	/* if we are beyond the length of this line */
-	if(files[current].col > files[current].data[files[current].row].length) 
+	if(files[current].col > files[current].data[files[current].row].length) {
 		console.left(files[current].col-files[current].data[files[current].row].length);
+		files[current].col=files[current].data[files[current].row].length;
+	}
 	/* store the new position */
 	console.pushxy();
 	draw_current_line();
@@ -309,8 +309,10 @@ function move_up() {
 		stay in this files[current].column */
 	console.up();
 	/* if we are beyond the length of this line */
-	if(files[current].col > files[current].data[files[current].row].length) 
+	if(files[current].col > files[current].data[files[current].row].length) {
 		console.left(files[current].col-files[current].data[files[current].row].length);
+		files[current].col=files[current].data[files[current].row].length;
+	}
 	/* store the new position */
 	console.pushxy();
 	/* check to see if we are at the top of the screen */
@@ -551,19 +553,22 @@ function backspace() {
 function close_document() {
 	if(files.length > 1) {
 		files.splice(current,1);
+		while(!files[current]) 
+			current--;
 	}
 	else {
 		files[current]=new Document();
 	}
-	init_screen();
 	redraw();
 }
 
 function next_document() {
+	var pos=console.getxy();
+	files[current].posx=pos.x;
+	files[current].posy=pos.y;
 	current++;
 	if(current >= files.length)
 		current=0;
-	init_screen();
 	redraw();
 }
 
@@ -654,13 +659,15 @@ function load_file() {
 		files[current]=f;
 	}
 	else {
+		var pos=console.getxy();
+		files[current].posx=pos.x;
+		files[current].posy=pos.y;
 		current=files.length;
 		files[current]=f;
 	}
 	console.home();
 	console.right();
 	console.pushxy();
-	init_screen();
 	redraw();
 }
 
@@ -901,13 +908,13 @@ function clear_line() {
 }
 
 function new_document() {
-	console.home();
-	console.right();
-	console.pushxy();
+	var pos=console.getxy();
+	files[current].posx=pos.x;
+	files[current].posy=pos.y;
+	log("storing x: " + files[current].posx + " y: " + files[current].posy);
 	var f=new Document();
 	current=files.length;
 	files.push(f);
-	init_screen();
 	redraw();
 }
 
@@ -917,7 +924,9 @@ function init_screen() {
 	console.clear();
 	bbs.sys_status|=SS_PAUSEOFF;	
 	console.ctrlkey_passthru="+KOPTUJYCLRSZINVXW\G";
-	console.popxy();
+	log("loading x: " + files[current].posx + " y: " + files[current].posy);
+	console.gotoxy(files[current].posx,files[current].posy);
+	console.pushxy();
 }
 
 function status_line() {
@@ -974,8 +983,8 @@ function evaluate() {
 		if(files[current].data[y])
 			code+=files[current].data[y].join("");
 	if(strlen(code) > 0) {		
-		init_screen();
 		console.attributes=BG_BLACK+LIGHTGRAY;
+		console.clear();
 		console.home();
 		js.branch_limit=1000;
 		try {
@@ -987,7 +996,6 @@ function evaluate() {
 		console.aborted=false;
 		js.branch_limit=0;
 		console.pause();
-		init_screen();
 		redraw();
 	}
 }
