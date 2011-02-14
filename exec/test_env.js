@@ -777,7 +777,7 @@ function get_line_syntax(r) {
 		str=files[current].data[r].join("");	
 
 	/* highlight all syntax, regardless of context */
-	str=str.replace(/\b(if|for|while|do|var|length|function|else|continue|case|default|return|this)\b/g,
+	str=str.replace(/\b(if|for|while|do|var|length|function|else|continue|case|default|return|this|break)\b/g,
 		colors.keyword+'$&'+colors.normal
 	);
 	str=str.replace(
@@ -785,8 +785,8 @@ function get_line_syntax(r) {
 		colors.bool+'$&'+colors.normal
 	);
 	str=str.replace(
-		/\b\d\b/g,
-		colors.digit+'$&'+colors.normal
+		/\b(\d+)\b/g,
+		colors.digit+'$1'+colors.normal
 	);
 	str=str.replace(
 		/\/\//g,
@@ -1001,12 +1001,15 @@ function evaluate() {
 		console.attributes=BG_BLACK+LIGHTGRAY;
 		console.clear();
 		console.home();
+		js.branch_counter=0;
 		js.branch_limit=1000;
 		try {
 			eval(code);
 		}
 		catch(e) {
-			alert("ERR: " + e);
+			alert(e);
+			alert("file: " + e.fileName);
+			alert("line: " + e.lineNumber);
 		}
 		console.aborted=false;
 		js.branch_limit=0;
