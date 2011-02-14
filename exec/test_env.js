@@ -157,6 +157,10 @@ function buffer_key(key) {
 	if(settings.insert) {
 		files[current].data[files[current].row].splice(files[current].col++,0,key);
 		if(files[current].data[files[current].row].length >= settings.max_line) {
+			if(files[current].col < settings.max_line) {
+				console.right();
+				console.pushxy();
+			}
 			draw_current_line();
 		}
 		else {
@@ -482,6 +486,9 @@ function cut_line() {
 	/* push current line into line cache */
 	var copy=files[current].data.splice(files[current].row,1);
 	clipboard.push(copy.pop().slice());
+
+	if(!files[current].data[files[current].row])
+		files[current].data[files[current].row]=[];
 	
 	/* draw remainder of code/screen */
 	draw_tail();
