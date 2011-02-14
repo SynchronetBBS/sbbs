@@ -107,6 +107,7 @@ function main() {
 		case ctrl('L'): //clear line
 			clear_line();
 			break;
+
 		case ctrl('T'): //toggle insert
 			settings.insert=settings.insert?false:true;
 			break;
@@ -196,6 +197,7 @@ function move_right() {
 			/* highlight syntax on current line */
 			draw_line(files[current].row-1);
 			/*  move to the first files[current].column of the next line */
+			console.popxy();
 			console.crlf();
 			console.right();
 			console.pushxy();
@@ -233,8 +235,8 @@ function move_left() {
 		console.write("\r ");
 		/* if this line is wider than the screen,
 			move to the right side of the screen */
-		if(files[current].data[files[current].row].length > settings.max_line) {
-			console.right(settings.max_line);
+		if(files[current].data[files[current].row].length >= settings.max_line) {
+			console.right(settings.max_line-1);
 			console.pushxy();
 			if(files[current].posy > 0) 
 				draw_current_line();
@@ -285,7 +287,10 @@ function move_down() {
 	}
 	/* if we are beyond the length of this line */
 	if(files[current].col > files[current].data[files[current].row].length) {
-		console.left(files[current].col-files[current].data[files[current].row].length);
+		var offset=files[current].col-files[current].data[files[current].row].length;
+		if(files[current].col > settings.max_line) 
+			offset=settings.max_line-files[current].data[files[current].row].length;
+		console.left(offset);
 		files[current].col=files[current].data[files[current].row].length;
 	}
 	/* store the new position */
@@ -310,7 +315,10 @@ function move_up() {
 	console.up();
 	/* if we are beyond the length of this line */
 	if(files[current].col > files[current].data[files[current].row].length) {
-		console.left(files[current].col-files[current].data[files[current].row].length);
+		var offset=files[current].col-files[current].data[files[current].row].length;
+		if(files[current].col > settings.max_line) 
+			offset=settings.max_line-files[current].data[files[current].row].length;
+		console.left(offset);
 		files[current].col=files[current].data[files[current].row].length;
 	}
 	/* store the new position */
@@ -340,7 +348,7 @@ function move_home() {
 	}
 	/* if we are in the first files[current].column but not at the top of the page, move there */
 	else if(files[current].row > 0) {
-		files[current].row -= (console.screen_rows-1);
+		files[current].row -= (console.screen_rows-2);
 		files[current].posy=1;
 		if(files[current].row < 0) {
 			files[current].row=0;
@@ -472,17 +480,19 @@ function del_char() {
 
 function cut_line() {
 	/* push current line into line cache */
-	var copy=files[current].data[files[current].row];
-	clipboard.push(copy);
-	files[current].data.splice(files[current].row,1);
+	var copy=files[current].data.splice(files[current].row,1);
+	clipboard.push(copy.pop().slice());
+	
 	/* draw remainder of code/screen */
 	draw_tail();
 }
 
 function copy_line() {
 	/* push current line into line cache */
-	var copy=files[current].data[files[current].row];
-	clipboard.push(copy);
+	var copy=files[current].data.slice(
+		files[current].row,files[current].row+1
+	);
+	clipboard.push(copy.pop().slice());
 }
 
 function paste_line() {
@@ -760,15 +770,15 @@ function get_line_syntax(r) {
 		str=files[current].data[r].join("");	
 
 	/* highlight all syntax, regardless of context */
-	str=str.replace(/(if|for|while|do|var|length|function|else|continue|case|default|return|this)/g,
+	str=str.replace(/\b(if|for|while|do|var|length|function|else|continue|case|default|return|this)\b/g,
 		colors.keyword+'$&'+colors.normal
 	);
 	str=str.replace(
-		/(true|false)/g,
+		/\b(true|false)\b/g,
 		colors.bool+'$&'+colors.normal
 	);
 	str=str.replace(
-		/\d/g,
+		/\b\d\b/g,
 		colors.digit+'$&'+colors.normal
 	);
 	str=str.replace(
@@ -911,7 +921,6 @@ function new_document() {
 	var pos=console.getxy();
 	files[current].posx=pos.x;
 	files[current].posy=pos.y;
-	log("storing x: " + files[current].posx + " y: " + files[current].posy);
 	var f=new Document();
 	current=files.length;
 	files.push(f);
@@ -924,7 +933,6 @@ function init_screen() {
 	console.clear();
 	bbs.sys_status|=SS_PAUSEOFF;	
 	console.ctrlkey_passthru="+KOPTUJYCLRSZINVXW\G";
-	log("loading x: " + files[current].posx + " y: " + files[current].posy);
 	console.gotoxy(files[current].posx,files[current].posy);
 	console.pushxy();
 }
