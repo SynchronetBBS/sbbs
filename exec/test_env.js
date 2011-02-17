@@ -633,12 +633,12 @@ function save_file() {
 		if(str.length > 0)
 			file.writeln(str.replace(/\s{4}/g,"\t"));
 	}
+	file.close();
 	
-	files[current].name=file_getname(file);
+	files[current].name=file_getname(file.name);
 	fprompt.putmsg(2,3,format("%-38s","\1r\1hFile saved"));
 	fprompt.draw(posx,posy);
 	mswait(500);
-	file.close();
 	redraw();
 }
 
@@ -996,8 +996,11 @@ function evaluate() {
 	var code="";
 	for(var y=0;y<files[current].data.length;y++) 
 		if(files[current].data[y])
-			code+=files[current].data[y].join("");
+			code+=files[current].data[y].join("")+"\r\n";
 	if(strlen(code) > 0) {		
+		var pos=console.getxy();
+		files[current].posx=pos.x;
+		files[current].posy=pos.y;
 		console.attributes=BG_BLACK+LIGHTGRAY;
 		console.clear();
 		console.home();
@@ -1007,6 +1010,7 @@ function evaluate() {
 			eval(code);
 		}
 		catch(e) {
+			console.crlf();
 			alert(e);
 			alert("file: " + e.fileName);
 			alert("line: " + e.lineNumber);
