@@ -30,16 +30,16 @@ function Graphic(w,h,attr,ch)
 	this.length=0;
 	this.index=0;
 	
-	this.data=new Array(w);
+	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {
 		for(var x=0; x<this.width; x++) {
 			if(y==0) {
-				this.data[x]=new Array(h);
+				this.data[x]=new Array(this.height);
 			}
 			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
 		}
 	}
-	
+	this.clear=Graphic_clear;
 	this.gety=Graphic_gety;
 	this.home=Graphic_home;
 	this.end=Graphic_end;
@@ -53,6 +53,20 @@ function Graphic(w,h,attr,ch)
 	this.scroll=Graphic_scroll;
 	this.putmsg=Graphic_putmsg;
 	this.resize=Graphic_resize;
+}
+function Graphic_clear()
+{
+	this.data=new Array(this.width);
+	for(var y=0; y<this.height; y++) {
+		for(var x=0; x<this.width; x++) {
+			if(y==0) {
+				this.data[x]=new Array(this.height);
+			}
+			this.data[x][y]=new Graphic_sector(this.ch,this.attribute);
+		}
+	}
+	this.length=0;
+	this.index=0;
 }
 function Graphic_sector(ch,attr)
 {
@@ -114,7 +128,7 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
 }
 function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
 {
-	this.draw(xpos,ypos,width,height,xoff,yoff,2);
+	this.draw(xpos,ypos,width,height,xoff,yoff,3);
 }
 function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 {
@@ -150,8 +164,15 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 			placeholder[x][y]={'x':xoff+x,'y':this.index+yoff+y};
 		}
 	}
+	var count=0;
+	var interval=10;
 	while(placeholder.length)
 	{
+		count++;
+		if(count == interval) {
+			count=0;
+			mswait(20);
+		}
 		var randx=random(placeholder.length);
 		var randy=random(placeholder[randx].length);
 		var position=placeholder[randx][randy];
@@ -163,7 +184,6 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 			if(ch == "\r" || ch == "\n" || !ch)
 				ch=this.ch;
 			console.write(ch);
-			mswait(1);
 		}
 		placeholder[randx].splice(randy,1);
 		if(!placeholder[randx].length) placeholder.splice(randx,1);
@@ -180,7 +200,7 @@ function Graphic_load(filename)
 
 	switch(file_type.toUpperCase()) {
 	case "ANS":
-	/*
+		/*
 		if(!(f.open("r",true,4096)))
 			return(false);
 		var lines=f.readAll();
@@ -205,8 +225,8 @@ function Graphic_load(filename)
 			)
 			this.data[x][y]=new Graphic_sector(cur_ch,cur_attr);
 		}
+		*/
 		break;
-	*/
 	case "BIN":
 		if(!(f.open("rb",true,4096)))
 			return(false);
@@ -288,7 +308,7 @@ function Graphic_scroll(dir)
 		for(var x=0; x<this.width; x++) {
 			this.data[x].push(new Graphic_sector(this.ch,this.attribute));
 			if(this.data[x].length > this.scrollback) 
-				this.data[x]shift();
+				this.data[x].shift();
 		}
 		this.index=this.data[0].length-this.height;
 		if(this.length < this.scrollback) this.length++;
