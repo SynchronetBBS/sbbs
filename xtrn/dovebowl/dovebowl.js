@@ -122,8 +122,12 @@ function play(league)
 			}
 		}
 	}
-	if(gameslb.current==-1)
-		gameslb.current=0;
+	if(gameslb.current==-1) {
+		writeln("No games in this league yet... bug "+inifile.iniGetValue(league, "Owner")+"about that.");
+		writeln("Press any key to continue");
+		console.getkey();
+		return;
+	}
 	var set=gameslb.getval();
 	make_picks(league, set, false);
 }
