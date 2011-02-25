@@ -96,6 +96,8 @@ function InputLine(x,y,w,max,bg,fg,title)
 		case KEY_DOWN:
 		case KEY_LEFT:
 		case KEY_RIGHT:
+		case KEY_HOME:
+		case KEY_END:
 			return key;
 		case '\x7f':	/* DELETE */
 		case '\b':
