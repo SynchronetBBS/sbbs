@@ -24,8 +24,10 @@ function Window(xpos,ypos,w,h)
 		if(w) width=w;
 		if(h) height=h;
 		
-		if(width>=console.screen_columns) width=console.screen_columns-1;
-		if(window && window.length > window.height) width-=1;
+		if(width>=console.screen_columns) 
+			width=console.screen_columns-1;
+		if(window && window.length > window.height) 
+			width-=1;
 		window=new Graphic(width,height);
 		window.atcodes=false;
 		for(var m=0;m<message_list.length;m++) {
@@ -57,10 +59,10 @@ function Window(xpos,ypos,w,h)
 			var update=false;
 			switch(key)
 			{
-			case '\x02':	/* CTRL-B KEY_HOME */
+			case KEY_HOME:	/* CTRL-B KEY_HOME */
 				if(window.home()) update=true;
 				break;
-			case '\x05':	/* CTRL-E KEY_END */
+			case KEY_END:	/* CTRL-E KEY_END */
 				if(window.end()) update=true;
 				break;
 			case KEY_DOWN:
@@ -70,7 +72,8 @@ function Window(xpos,ypos,w,h)
 				if(window.scroll(-1)) update=true;
 				break;
 			}
-			if(update) this.draw();
+			if(update) 
+				this.draw();
 		}
 	}
 	this.post=function(text)
@@ -82,7 +85,8 @@ function Window(xpos,ypos,w,h)
 	}
 	this.list=function(array,color) //DISPLAYS A TEMPORARY MESSAGE IN THE CHAT WINDOW (NOT STORED)
 	{
-		for(var i=0;i<array.length;i++) this.post(array[i],color);
+		for(var i=0;i<array.length;i++) 
+			this.post(array[i],color);
 	}
 	this.clear=function()
 	{
@@ -102,9 +106,7 @@ function Window(xpos,ypos,w,h)
 					window.putmsg(false,false,message_list[m],undefined,true);
 				}
 			}
-			var index=window.index;
-			var range=window.length-window.height;
-			scrollbar.draw(index,range);
+			scrollbar.draw(window.index,window.length);
 		}
 		window.draw(x,y);
 	}

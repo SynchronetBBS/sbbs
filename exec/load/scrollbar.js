@@ -10,53 +10,56 @@ function Scrollbar(x,y,length,orientation,color)
 	this.y=y;
 	this.orientation=orientation;
 	this.length=length-2;
-	this.wrap=false;
-	this.color=color?color:'\1n';
-	this.dark=(color=="\1k"?"\1k\1h":"\1n"+color);
-	this.light=(color=="\1k"?"\1k\1h":color+"\1h");
+	this.color=color?color:'';
 	
 	this.draw=function(index, range)
 	{
-		if(index>=0 && range>=0)	{
-			if(index>range) return; 	//invalid position = do not draw
-			var percentage=index/range;
-			this.index=Math.round(percentage*this.length);
-			if(this.index==0) this.index=1;
-		}		
-		else if(this.index<1) return;	//no position supplied and no index = do not draw
-		if(this.orientation=="vertical") this.drawVert();
-		else this.drawHoriz();
+		if(index>range) 
+			return;
+		if(!index || !range) {
+			if(!this.index && !this.bar)
+				return;
+		}
+		else if(isNaN(index) || isNaN(range))
+			return;
+		this.index=Math.ceil(((index+1)/range)*this.length);
+		this.bar=Math.ceil((this.length/range)*this.length);
+		if(this.orientation == "vertical")
+			this.drawVert(this.index,this.index+this.bar);
+		else 
+			this.drawHoriz(this.index,this.index+this.bar);
 	}
-	this.drawVert=function()
+	this.drawVert=function(s,f)
 	{
 		console.gotoxy(this);
-		console.putmsg(this.light + ascii(30));
-		for(i=1;i<=this.length;i++)	{
-			if(this.x==80)	{
-				console.gotoxy(this.x,this.y+i);
-			} else	{
-				console.down();
-				console.left();
-			}
-			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
-			else console.putmsg(this.dark + '\xB0');
+		console.putmsg('\1n' + this.color + ascii(30),P_SAVEATR);
+		var ch='\xB0';
+		for(var i=1;i<=this.length;i++)	{
+			console.gotoxy(this.x,this.y+i);
+			if(i == s) 
+				ch='\1h\xDB';
+			else if(i > f) 
+				ch='\xB0';
+			console.putmsg(ch,P_SAVEATR);
 		}
-		if(this.x==80)	{
-			console.gotoxy(this.x,this.y+this.length+1);
-		} else	{
-			console.down();
-			console.left();
-		}
-		console.putmsg(this.light + ascii(31));
+		console.gotoxy(this.x,this.y+this.length+1);
+		console.putmsg(ascii(31),P_SAVEATR);
 	}
-	this.drawHoriz=function()
+	this.drawHoriz=function(s,f)
 	{
-		console.gotoxy(this);
-		console.putmsg(this.light + ascii(17));
-		for(i=1;i<=this.length;i++)	{
-			if(i==this.index) console.putmsg(this.color + '\1h\xDB');
-			else console.putmsg(this.dark + '\xB0');
+		if(f > this.length) {
+			s--;
+			f--;
 		}
-		console.putmsg(this.light + ascii(16));
+		console.gotoxy(this);
+		console.putmsg('\1n' + this.color + ascii(17),P_SAVEATR);
+		for(i=1;i<=this.length;i++)	{
+			if(i == s) 
+				ch='\1h\xDB';
+			else if(i == f+1)
+				ch='\xB0';
+			console.putmsg(ch,P_SAVEATR);
+		}
+		console.putmsg(ascii(16),P_SAVEATR);
 	}
 }
