@@ -695,7 +695,7 @@
 	"upcoming event on \1w%s\r\n\r\n"
 "n\r\nTimed Event - Node: %d   Time: %02d:%02d   "\    568 EventInfo
 	"Last Ran: %s\r\n"
-"_rhi\r\n\r\nCarrier will be dropped in %d "\       569 UploadBeforeEvent
+"_rhi\r\n\r\nConnection will be dropped in %d "\       569 UploadBeforeEvent
 	"minutes due to upcoming event.n"
 "_yh\r\nQWK: n"                                     570 QWKPrompt
 "\r\nCtrl-A codes: ~Expand to ANSI, ~Leave in, or "\    571 QWKCtrlACodes
