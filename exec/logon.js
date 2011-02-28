@@ -16,7 +16,7 @@ load("asc2htmlterm.js");
 if(user.security.restrictions&UFLAG_G) {
 	while(bbs.online) {
 		printf("\1y\1hFor our records, please enter your full name: \1w");
-		name=console.getstr(25,K_UPRLWR);
+		name=console.getstr(LEN_NAME,K_UPRLWR);
 		if(!name || !name.length)
 			continue;
 		bbs.log_str("Guest: " + name);
@@ -26,7 +26,7 @@ if(user.security.restrictions&UFLAG_G) {
 
 	while(bbs.online) {
 		printf("\1y\1hPlease enter your e-mail address: \1w");
-		email=console.getstr(50);
+		email=console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
 			continue;
 		bbs.log_str("  " + email);
@@ -37,7 +37,7 @@ if(user.security.restrictions&UFLAG_G) {
 	
 	while(bbs.online) {
 		printf("\1y\1hPlease enter your location (City, State): \1w");
-		location=console.getstr(30,K_UPRLWR);
+		location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
 		bbs.log_str("  " + location);

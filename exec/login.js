@@ -30,7 +30,7 @@ for(var c=0; c<10; c++) {
 	console.print("\r\nNN:\b\b\bLogin: \1w");
 
 	// Get login string
-	var str=console.getstr(/* maximum user name length: */ 25
+	var str=console.getstr(/* maximum user name length: */ LEN_ALIAS
 						 , /* getkey/str mode flags: */ K_UPRLWR | K_TAB | K_ANSI_CPR);
 	truncsp(str);
 	if(!str.length) // blank
@@ -58,7 +58,7 @@ for(var c=0; c<10; c++) {
 				&& netaddr_type(u.netmail) == NET_INTERNET
 				&& !console.noyes("Did you forget your password")) {
 				console.print("\1n\1c\1hPlease confirm your Internet e-mail address: \1y");
-				var email_addr = console.getstr(50);
+				var email_addr = console.getstr(LEN_NETMAIL);
 				if(email_addr.toLowerCase() == u.netmail.toLowerCase()) {
 
 					var msgbase = new MsgBase("mail");
