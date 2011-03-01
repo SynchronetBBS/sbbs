@@ -411,6 +411,8 @@ while(client.socket.is_connected && !quit) {
 				range=cmd[1].split('-');
 				first=Number(range[0]);
 				last=Number(range[1]);
+                                if(last == 0)
+                                   last = msgbase.last_msg;
 			} else
 				first=last=Number(cmd[1]);
 			writeln("224 Overview information follows for articles " + first + " through " + last);
