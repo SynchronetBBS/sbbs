@@ -822,8 +822,10 @@ js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	rc=JS_SUSPENDREQUEST(cx);
 	len=user_rec_len(offset);
 	JS_RESUMEREQUEST(cx, rc);
-	if(len<0)
+	if(len<0) {
+		JS_ReportError(cx,"Invalid user data offset: %d", offset);
 		return(JS_FALSE);
+	}
 
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
 		*rval = INT_TO_JSVAL(0);
