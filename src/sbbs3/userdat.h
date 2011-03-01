@@ -96,7 +96,7 @@ DLLEXPORT char* DLLCALL getnmsg(scfg_t* cfg, int node_num);
 DLLEXPORT int	DLLCALL putnmsg(scfg_t* cfg, int num, char *strin);
 
 DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
-							,BOOL del);
+							,BOOL del, BOOL next);
 
 DLLEXPORT BOOL	DLLCALL chk_ar(scfg_t* cfg, uchar* str, user_t*, client_t*); /* checks access requirements */
 

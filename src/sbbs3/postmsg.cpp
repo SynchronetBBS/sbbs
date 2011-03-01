@@ -135,7 +135,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		if(stricmp(touser,"ALL")
 		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
-				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser,0)) {
+				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser,0,0)) {
 					bputs(text[UnknownUser]);
 					return(false); 
 				} 

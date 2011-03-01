@@ -115,7 +115,7 @@ BOOL sbbs_t::newuser()
 	useron.prot=cfg.new_prot;
 	SAFECOPY(useron.comp,client_name);	/* hostname or CID name */
 	SAFECOPY(useron.note,cid);			/* IP address or CID number */
-	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true))!=0) {	/* Duplicate IP address */
+	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true,false))!=0) {	/* Duplicate IP address */
 		sprintf(useron.comment,"Warning: same IP address as user #%d %s"
 			,i,username(&cfg,i,str));
 		logline(LOG_NOTICE,"N!",useron.comment); 
@@ -219,7 +219,7 @@ BOOL sbbs_t::newuser()
 					|| !strchr(useron.name,' ')
 					|| (cfg.uq&UQ_DUPREAL
 						&& userdatdupe(useron.number,U_NAME,LEN_NAME
-							,useron.name,0)))
+							,useron.name,0,0)))
 					bputs(text[YouCantUseThatName]);
 				else
 					break; 
@@ -242,7 +242,7 @@ BOOL sbbs_t::newuser()
 				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
 				|| (cfg.uq&UQ_DUPHAND
-					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle,0))
+					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle,0,0))
 				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
 			else

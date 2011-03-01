@@ -440,7 +440,7 @@ public:
 	uint	getusrgrp(uint subnum);
 
 	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
-				,bool del);
+				,bool del, bool next);
 	ulong	gettimeleft(bool handle_out_of_time=true);
 	bool	gettimeleft_inside;
 

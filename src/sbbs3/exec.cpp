@@ -1604,7 +1604,7 @@ int sbbs_t::exec(csi_t *csi)
 							break;
 						if(cfg.uq&UQ_DUPREAL
 							&& userdatdupe(useron.number,U_NAME,LEN_NAME
-							,csi->str,0))
+							,csi->str,0,0))
 							break;
 						sprintf(useron.name,"%.*s",LEN_NAME,csi->str);
 						putuserrec(&cfg,useron.number,U_NAME,LEN_NAME
@@ -1616,7 +1616,7 @@ int sbbs_t::exec(csi_t *csi)
 							break;
 						if(cfg.uq&UQ_DUPHAND
 							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
-							,csi->str,0))
+							,csi->str,0,0))
 							break;
 						sprintf(useron.handle,"%.*s",LEN_HANDLE,csi->str);
 						putuserrec(&cfg,useron.number,U_HANDLE,LEN_HANDLE

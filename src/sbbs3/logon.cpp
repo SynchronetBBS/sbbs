@@ -301,7 +301,7 @@ bool sbbs_t::logon()
 							|| strchr(useron.name,0xff)
 							|| (cfg.uq&UQ_DUPREAL
 								&& userdatdupe(useron.number,U_NAME,LEN_NAME
-								,useron.name,0)))
+								,useron.name,0,0)))
 							bputs(text[YouCantUseThatName]);
 						else
 							break; 
@@ -318,7 +318,7 @@ bool sbbs_t::logon()
 						|| strchr(useron.handle,0xff)
 						|| (cfg.uq&UQ_DUPHAND
 							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
-							,useron.handle,0))
+							,useron.handle,0,0))
 						|| trashcan(useron.handle,"name"))
 						bputs(text[YouCantUseThatName]);
 					else

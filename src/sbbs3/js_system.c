@@ -813,6 +813,7 @@ js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	int			len;
 	scfg_t*		cfg;
 	jsrefcount	rc;
+	BOOL		match_all=FALSE;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -831,15 +832,43 @@ js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	if(argc>2)
 		JS_ValueToInt32(cx,argv[2],&usernumber);
-
+		
 	if((p=JS_GetStringBytes(js_str))==NULL) {
 		*rval = INT_TO_JSVAL(0);
 		return(JS_TRUE);
 	}
-
-	rc=JS_SUSPENDREQUEST(cx);
-	*rval = INT_TO_JSVAL(userdatdupe(cfg,usernumber,offset,len,p,FALSE /* deleted users */));
-	JS_RESUMEREQUEST(cx, rc);
+	
+	if(argc > 3)
+		JS_ValueToBoolean(cx,argv[3],&match_all);
+	
+	if(match_all == FALSE) {
+		rc=JS_SUSPENDREQUEST(cx);
+		*rval = INT_TO_JSVAL(userdatdupe(cfg,usernumber,offset,len,p,FALSE,FALSE));
+		JS_RESUMEREQUEST(cx, rc);
+	} else {
+		JSObject* 	array;
+		jsval		val;
+		int 		retval;
+		jsint 		line=0;
+		if((array=JS_NewArrayObject(cx,0,NULL))==NULL)
+			return(JS_FALSE);
+		while(1) {
+			rc=JS_SUSPENDREQUEST(cx);
+			retval=userdatdupe(cfg,usernumber++,offset,len,p,FALSE,TRUE);
+			if(retval > 0) {
+				val = INT_TO_JSVAL(retval);
+				if(!JS_SetElement(cx, array, line++, &val)) {
+					JS_RESUMEREQUEST(cx, rc);
+					break;
+				}
+				usernumber=retval;
+				retval=0;
+			} else
+				break;
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		*rval = OBJECT_TO_JSVAL(array);
+	}
 	return(JS_TRUE);
 }
 
@@ -1528,9 +1557,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
 	},		
-	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber]")
+	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_ARRAY,	JSDOCSTR("field, data [,usernumber, match_all=<tt>false</tt>]")
 	,JSDOCSTR("search user database for data in a specific field (specified by offset), "
-		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip")
+		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip, "
+		"or record at which to begin searching if optional match_all is <i>true</i>")
 	,310
 	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename, find_string")

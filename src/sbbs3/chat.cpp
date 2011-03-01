@@ -1282,7 +1282,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		return(-1);
 
 	if(str[0]=='\'') {
-		j=userdatdupe(0,U_HANDLE,LEN_HANDLE,str+1,0);
+		j=userdatdupe(0,U_HANDLE,LEN_HANDLE,str+1,0,0);
 		if(!j) {
 			bputs(text[UnknownUser]);
 			return(0); 

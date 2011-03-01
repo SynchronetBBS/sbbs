@@ -159,15 +159,16 @@ extern "C" BOOL DLLCALL putmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 /****************************************************************************/
 /* Checks for a duplicate user field starting at user record offset         */
 /* 'offset', reading in 'datlen' chars, comparing to 'str' for each user    */
-/* except 'usernumber' if it is non-zero. Comparison is NOT case sensitive. */
+/* except 'usernumber' if it is non-zero, or starting at 'usernumber' if    */
+/* 'next' is true. Comparison is NOT case sensitive.                        */
 /* 'del' is true if the search is to include deleted/inactive users			*/
 /* Returns the usernumber of the dupe if found, 0 if not                    */
 /****************************************************************************/
 uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
-    ,bool del)
+    ,bool del, bool next)
 {
 	bputs(text[SearchingForDupes]);
-	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del);
+	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del, next);
 	bputs(text[SearchedForDupes]);
 	return(i);
 }

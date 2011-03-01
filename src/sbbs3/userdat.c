@@ -1047,7 +1047,7 @@ void DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node)
 
 /****************************************************************************/
 uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
-						 ,char *dat, BOOL del)
+						 ,char *dat, BOOL del, BOOL next)
 {
     char	str[MAX_PATH+1];
     uint	i;
@@ -1062,8 +1062,12 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1)
 		return(0);
 	length=(long)filelength(file);
-	for(l=0;l<length;l+=U_LEN) {
-		if(usernumber && l/U_LEN==(long)usernumber-1)
+	if(usernumber && next) 
+		l=((long)usernumber) * U_LEN;
+	else
+		l=0;
+	for(;l<length;l+=U_LEN) {
+		if(usernumber && l/U_LEN==(long)usernumber-1) 
 			continue;
 		lseek(file,l+offset,SEEK_SET);
 		i=0;
