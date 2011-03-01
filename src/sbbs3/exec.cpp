@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1603,8 +1603,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(trashcan(csi->str,"name"))
 							break;
 						if(cfg.uq&UQ_DUPREAL
-							&& userdatdupe(useron.number,U_NAME,LEN_NAME
-							,csi->str,0,0))
+							&& userdatdupe(useron.number,U_NAME,LEN_NAME,csi->str))
 							break;
 						sprintf(useron.name,"%.*s",LEN_NAME,csi->str);
 						putuserrec(&cfg,useron.number,U_NAME,LEN_NAME
@@ -1615,8 +1614,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(trashcan(csi->str,"name"))
 							break;
 						if(cfg.uq&UQ_DUPHAND
-							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
-							,csi->str,0,0))
+							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE,csi->str))
 							break;
 						sprintf(useron.handle,"%.*s",LEN_HANDLE,csi->str);
 						putuserrec(&cfg,useron.number,U_HANDLE,LEN_HANDLE

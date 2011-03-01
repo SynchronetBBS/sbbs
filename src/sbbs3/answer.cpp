@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -108,7 +108,7 @@ bool sbbs_t::answer()
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			SAFECOPY(rlogin_pass
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
-			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0, 0);
+			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~TERM_FLAGS;
@@ -192,7 +192,7 @@ bool sbbs_t::answer()
 		rlogin_pass[i]=0;
 		lprintf(LOG_DEBUG,"Node %d SSH login: '%s'"
 			,cfg.node_num, rlogin_name);
-		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0, 0);
+		useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			useron.misc&=~TERM_FLAGS;
@@ -208,7 +208,13 @@ bool sbbs_t::answer()
 					else
 						sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 							,0,useron.alias);
-						logline(LOG_NOTICE,"+!",str);
+					/* crash here Sept-12-2010
+					   str	0x06b3fc4c "(0000)  Guest                      FAILED Password attempt: 'alex2010@sdf.lonestar.org'"
+
+					   and Oct-6-2010
+					   str	0x070ffc4c "(0000)  Woot903                    FAILED Password attempt: 'p67890pppsdsjhsdfhhfhnhnfhfhfdhjksdjkfdskw3902391=`'"	char [261]
+					*/
+					logline(LOG_NOTICE,"+!",str);
 					bputs(text[PasswordPrompt]);
 					console|=CON_R_ECHOX;
 					getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
@@ -338,7 +344,7 @@ bool sbbs_t::answer()
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
 		&& startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
-		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid, 0, 0);
+		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
 			if(!(useron.misc&AUTOLOGON) || !(useron.exempt&FLAG('V')))

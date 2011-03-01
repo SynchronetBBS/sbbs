@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -184,7 +184,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				netmail(csi->str,nulstr,0); 
 			}
 			else if((i=finduser(csi->str))!=0 
-				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str,false,false))!=0))
+				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
 				email(i,nulstr,nulstr,WM_EMAIL);
 			csi->logic=!i;
 			return(0);
@@ -219,7 +219,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				netmail(csi->str,nulstr,WM_FILE); 
 			}
 			else if((i=finduser(csi->str))!=0
-				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str,false,false))!=0))
+				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
 				email(i,nulstr,nulstr,WM_EMAIL|WM_FILE);
 			csi->logic=!i;
 			return(0);

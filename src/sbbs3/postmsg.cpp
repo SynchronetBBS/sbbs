@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -135,7 +135,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		if(stricmp(touser,"ALL")
 		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
-				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser,0,0)) {
+				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser)) {
 					bputs(text[UnknownUser]);
 					return(false); 
 				} 
@@ -456,6 +456,21 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	}
 
 	if(smb->subnum==INVALID_SUB) {	/* e-mail */
+
+		/* exception here during recycle:
+
+	sbbs.dll!savemsg(scfg_t * cfg, smb_t * smb, smbmsg_t * msg, client_t * client, char * msgbuf)  Line 473 + 0xf bytes	C++
+ 	sbbs.dll!js_save_msg(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1519 + 0x25 bytes	C
+ 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
+ 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
+ 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSScript * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
+ 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSScript * script, long * rval)  Line 4188 + 0x19 bytes	C
+ 	sbbs.dll!sbbs_t::js_execfile(const char * cmd, const char * startup_dir)  Line 686 + 0x27 bytes	C++
+ 	sbbs.dll!sbbs_t::external(const char * cmdline, long mode, const char * startup_dir)  Line 413 + 0x1e bytes	C++
+ 	sbbs.dll!event_thread(void * arg)  Line 2745 + 0x71 bytes	C++
+
+	apparently the event_thread is sharing an scfg_t* with another thread! */
+
 
 		smb->status.max_crcs=cfg->mail_maxcrcs;
 		smb->status.max_age=cfg->mail_maxage;

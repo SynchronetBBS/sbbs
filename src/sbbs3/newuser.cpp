@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -115,7 +115,7 @@ BOOL sbbs_t::newuser()
 	useron.prot=cfg.new_prot;
 	SAFECOPY(useron.comp,client_name);	/* hostname or CID name */
 	SAFECOPY(useron.note,cid);			/* IP address or CID number */
-	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true,false))!=0) {	/* Duplicate IP address */
+	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid, /* del */true))!=0) {	/* Duplicate IP address */
 		sprintf(useron.comment,"Warning: same IP address as user #%d %s"
 			,i,username(&cfg,i,str));
 		logline(LOG_NOTICE,"N!",useron.comment); 
@@ -218,8 +218,7 @@ BOOL sbbs_t::newuser()
 				if (!check_name(&cfg,useron.name)
 					|| !strchr(useron.name,' ')
 					|| (cfg.uq&UQ_DUPREAL
-						&& userdatdupe(useron.number,U_NAME,LEN_NAME
-							,useron.name,0,0)))
+						&& userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name)))
 					bputs(text[YouCantUseThatName]);
 				else
 					break; 
@@ -242,7 +241,7 @@ BOOL sbbs_t::newuser()
 				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
 				|| (cfg.uq&UQ_DUPHAND
-					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle,0,0))
+					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle))
 				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
 			else
