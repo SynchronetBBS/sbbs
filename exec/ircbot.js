@@ -320,7 +320,9 @@ function main() {
 			try {
 				DCC_Chats[c].bot_command(cmd);
 			} catch (err) {
-				DCC_Chats[c].o(null,"ERROR: " + err);
+				DCC_Chats[c].o(null,err);
+				DCC_Chats[c].o(null,"file: " + err.fileName);
+				DCC_Chats[c].o(null,"line: " + err.lineNumber);
 			}
 		}
 
