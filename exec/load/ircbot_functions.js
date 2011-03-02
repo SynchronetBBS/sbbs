@@ -77,7 +77,7 @@ function Server_CTCP(onick,ouh,cmd) {
 			break;
 		case "VERSION":
 			this.ctcp_reply(onick, "VERSION "
-				+ "Synchronet IRC Bot by Randy E. Sommerfeld <cyan@rrx.ca>, Module system by Matt D. Johnson <mdj1979@gmail.com>");
+				+ "Synchronet IRC Bot by Randy E. Sommerfeld <cyan@rrx.ca> & Matt D. Johnson <mdj1979@gmail.com>");
 			break;
 		case "FINGER":
 			this.ctcp_reply(onick, "FINGER "
@@ -119,7 +119,9 @@ function Server_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
 		try {
 			botcmd.command(target,onick,ouh,srv,access_level,cmd);
 		} catch (err) {
-			srv.o(target,"ERROR: " + err)
+			srv.o(target,err);
+			srv.o(target,"file: " + err.fileName);
+			srv.o(target,"line: " + err.lineNumber);
 		}
 		return 1;
 	}

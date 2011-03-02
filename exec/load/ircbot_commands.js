@@ -290,6 +290,16 @@ Bot_Commands["PREFIX"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
+Bot_Commands["NICK"] = new Bot_Command(80,1,true);
+Bot_Commands["NICK"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	cmd.shift();
+	if (cmd[0]) {
+		srv.writeout("NICK " + cmd[0]);
+		srv.curnick = cmd[0];
+	}
+	return;
+}
+
 Bot_Commands["MODE"] = new Bot_Command(80,true,true);
 Bot_Commands["MODE"].usage =
 	get_cmd_prefix() + "MODE [ALL or #<chan> #<chan>...] [+/-ALL or +/-<module> +/-<module>...], " +
@@ -605,7 +615,10 @@ Server_Commands["KICK"] = function (srv,cmd,onick,ouh)	{
 }
 
 Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{ 
-	if(srv.users[onick.toUpperCase()]) srv.users[onick.toUpperCase()].last_spoke=time();
+	if(!srv.users[onick.toUpperCase()])	
+		srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
+	srv.users[onick.toUpperCase()].last_spoke=time();
+	
 	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
 		var chan=srv.channel[cmd[0].toUpperCase()];
 		if(!chan) return;
