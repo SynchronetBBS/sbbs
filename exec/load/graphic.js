@@ -128,7 +128,7 @@ function Graphic_draw(xpos,ypos,width,height,xoff,yoff,delay)
 }
 function Graphic_drawslow(xpos,ypos,width,height,xoff,yoff)
 {
-	this.draw(xpos,ypos,width,height,xoff,yoff,3);
+	this.draw(xpos,ypos,width,height,xoff,yoff,5);
 }
 function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 {
@@ -156,28 +156,34 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 		return(false);
 	}
 	var placeholder=new Array(width);
-	for(x=0;x<width;x++)
-	{
+	for(var x=0;x<width;x++) {
 		placeholder[x]=new Array(height);
-		for(y=0;y<placeholder[x].length;y++)
-		{
+		for(var y=0;y<placeholder[x].length;y++) {
 			placeholder[x][y]={'x':xoff+x,'y':this.index+yoff+y};
 		}
 	}
 	var count=0;
 	var interval=10;
-	while(placeholder.length)
-	{
+	while(placeholder.length) {
 		count++;
 		if(count == interval) {
 			count=0;
-			mswait(20);
+			mswait(15);
 		}
 		var randx=random(placeholder.length);
 		var randy=random(placeholder[randx].length);
+		if(!placeholder[randx] || !placeholder[randx].length) {
+			placeholder.splice(randx,1);
+			continue;
+		}
 		var position=placeholder[randx][randy];
-		if(position.x != console.screen_columns
-				|| position.y != console.screen_rows) {
+		if(!position) 
+			continue;
+		if(position.x != console.screen_columns	|| position.y != console.screen_rows) {
+			if(xpos+position.x >= console.screen_columns && ypos+position.y >= console.screen_rows) {
+				placeholder[randx].splice(randy,1);
+				continue;
+			}
 			console.gotoxy(xpos+position.x,ypos+position.y);
 			console.attributes=this.data[position.x][position.y].attr;
 			var ch=this.data[position.x][position.y].ch;
@@ -186,9 +192,8 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 			console.write(ch);
 		}
 		placeholder[randx].splice(randy,1);
-		if(!placeholder[randx].length) placeholder.splice(randx,1);
 	}
-	console.gotoxy(xpos+width,ypos+height);
+	console.home();
 	return(true);
 }
 function Graphic_load(filename)
