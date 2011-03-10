@@ -24,14 +24,15 @@
 	subtree.addItem("|logoff",bbs.hangup);
 
 	// add an item with a hotkey of "e" and 
-	// a return value of the result of function "getval"
-	tree.addItem("it|em four",getval);
+	// a command value of the result of function "getval(4,5,6)"
+	tree.addItem("it|em four",getval,4,5,6);
 	
 	// draw the tree 
 	tree.draw();
 		
 */
 load("sbbsdefs.js");
+load("funclib.js");
 
 /* states for setting tree item visibility */
 var item_status={
@@ -144,6 +145,8 @@ function Tree(xpos,ypos,w,h) {
 	this.draw_list=function() {
 		console.gotoxy(x,y);
 		console.pushxy();
+		
+		var ypos=y;
 		var end=parseInt(this.list.index+(this.height/2),10);
 		if(end > this.list.length-1)
 			end=this.list.length-1;
@@ -152,18 +155,24 @@ function Tree(xpos,ypos,w,h) {
 			index = 0;
 		var l=0;
 		for(;l<this.height && index < this.list.length;l++) {
+			if(ypos >= console.screen_rows)
+				break;
 			var str=this.list[index];
 			console.putmsg(format("%-*s",this.width+(str.length-console.strlen(str)),str));
 			console.popxy();
 			console.down();
 			console.pushxy();
+			ypos++;
 			index++;
 		}
 		for(;l < this.height;l++) {
+			if(ypos >= console.screen_rows)
+				break;
 			console.putmsg(format("%*s",this.width,""));
 			console.popxy();
 			console.down();
 			console.pushxy();
+			ypos++;
 		}
 	}
 	
@@ -582,7 +591,8 @@ function Tree_Item(text,status,command,args) {
 		str+=bg+fg;
 		/* draw text */
 		var c=0;
-		for(;c<this.text.length && (c+offset.length+2)<this.parent.width;c++) {
+		var count=0;
+		for(;c<this.text.length && (count+offset.length+2)<this.parent.width;c++) {
 			if(this.text[c]=="|") {
 				if(this.status == item_status.disabled) 
 					str+=this.text[++c];
@@ -592,6 +602,10 @@ function Tree_Item(text,status,command,args) {
 				}
 			}
 			else {
+				if(this.text[c] == ctrl('A'))
+					count--;
+				else
+					count++;
 				str+=this.text[c];
 			}
 		}
