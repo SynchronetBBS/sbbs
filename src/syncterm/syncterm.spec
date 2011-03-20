@@ -1,6 +1,6 @@
 Summary: An ANSI-BBS terminal which supports telnet, rlogin, and SSH
 Name: SyncTERM
-Version: 0.9.2
+Version: 0.9.4
 Release: 20071001
 Copyright: GPL
 Group: Applications/Communications

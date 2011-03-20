@@ -1,3 +1,12 @@
+Version 0.9.4
+-------------
+X/Y/Zmodem improvements for large files
+Update to Cryptlib 3.4.0
+More output optimization
+Support Cursor Character Absolute sequence
+Add "raw" upload protocol
+Better directory selection on OS X
+
 Version 0.9.3
 -------------
 Fix startup crashes on most PPC based Macs
