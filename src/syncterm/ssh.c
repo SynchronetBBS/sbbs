@@ -56,7 +56,7 @@ void ssh_input_thread(void *args)
 				sprintf(str,"Error %d recieving data",status);
 				strcat(str,"\r\n\r\n");
 				err_len=sizeof(str)-strlen(str)-1;
-				cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_INT_ERRORMESSAGE, str+strlen(str), &err_len);
+				cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
 				uifcmsg("Error recieving data",str);
 				break;
 			}
@@ -104,7 +104,7 @@ void ssh_output_thread(void *args)
 					sprintf(str,"Error %d sending data",status);
 					strcat(str,"\r\n\r\n");
 					err_len=sizeof(str)-strlen(str)-1;
-					cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_INT_ERRORMESSAGE, str+strlen(str), &err_len);
+					cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
 					uifcmsg("Error sending data",str);
 				}
 				sent += ret;
@@ -219,7 +219,7 @@ int ssh_connect(struct bbslist *bbs)
 		sprintf(str,"Error %d activating session",status);
 		strcat(str,"\r\n\r\n");
 		err_len=sizeof(str)-strlen(str)-1;
-		cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_INT_ERRORMESSAGE, str+strlen(str), &err_len);
+		cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, str+strlen(str), &err_len);
 		uifcmsg("Error activating session",str);
 		conn_api.terminate=1;
 		uifc.pop(NULL);
