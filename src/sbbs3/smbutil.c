@@ -475,7 +475,7 @@ void listmsgs(ulong start, ulong count)
 				,beep,i,smb.last_error);
 			break; 
 		}
-		printf("%4lu %-25.25s %-25.25s %.20s\n"
+		printf("%4lu %-25.25s %-25.25s %s\n"
 			,msg.hdr.number,msg.from,msg.to,msg.subj);
 		smb_freemsgmem(&msg);
 		l++; 
