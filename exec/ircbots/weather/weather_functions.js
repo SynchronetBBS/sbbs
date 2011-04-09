@@ -11,11 +11,11 @@ function get_nicklocation(srv,nick)
 		if(userhost.indexOf('.')==-1)
 			userhost += (srv.users[cmd[1].toUpperCase()].servername.replace(/^[^\.]+\./,'.'));
 		geo=get_geoip(userhost);
-		ret=geo.Latitude+','+geo.Longitude;
+		ret=geo.latitude+','+geo.longitude;
 		if(ret=='0,0') {
 			userhost=srv.users[nick.toUpperCase()].servername
 			geo=get_geoip(userhost);
-			ret=geo.Latitude+','+geo.Longitude;
+			ret=geo.latitude+','+geo.longitude;
 		}
 		return ret;
 	}
