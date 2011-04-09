@@ -1095,6 +1095,13 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		if(session->req.ld!=NULL)
 			session->req.ld->status=atoi(status_line);
 
+		if(session->req.ld->status==304
+				|| session->req.ld->status==204
+				|| (session->req.ld->status >= 100 && session->req.ld->status<=199)) {
+			send_file=FALSE;
+			chunked=FALSE;
+		}
+
 		/* Status-Line */
 		safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
 
