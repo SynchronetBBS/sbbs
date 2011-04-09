@@ -28,12 +28,12 @@ load("synchronet-json.js");
 js.branch_limit=0; /* we're not an infinite loop. */
 
 /* Global Arrays */
-var Modules=new Object();
-var Bot_Servers = new Object();
-var Quotes = new Array();
-var Masks = new Object();
-var DCC_Chats = new Array();
-var Squelch_List = new Array();
+var Modules = {};
+var Bot_Servers = {};
+var Quotes = [];
+var Masks = {};
+var DCC_Chats = [];
+var Squelch_List = [];
 
 /* Global Variables */
 var command_prefix = "";
@@ -353,9 +353,9 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.is_registered = false;
 	this.is_identified = false;
 	this.juped = false;
-	this.users = new Object();	// Store local nicks & uh info.
-	this.buffers=[];
-	this.ignore = new Array();
+	this.users = {};	// Store local nicks & uh info.
+	this.buffers= [];
+	this.ignore = [];
 	this.channel = channels;
 
 	// Functions
@@ -376,7 +376,7 @@ function Bot_IRC_Channel(name,key) {
 	this.is_joined = false;
 	this.lastjoin = 0;
 	// Modules active in this channel (associative)
-	this.modules= [];
+	this.modules = [];
 	// Functions.
 }
 
@@ -388,8 +388,8 @@ function Bot_Module(name,dir,load,global,channels,lib) {
 	this.channels=channels;
 	this.lib=lib;
 	this.enabled=true;
-	this.Bot_Commands=new Object();
-	this.Server_Commands=new Object();
+	this.Bot_Commands = {};
+	this.Server_Commands = {};
 }
 
 function Server_User(uh,nick) {
@@ -398,12 +398,12 @@ function Server_User(uh,nick) {
 	this.servername = undefined;
 	this.ident = false;
 	this.last_spoke = false;
-	this.channels=[];
+	this.channels = [];
 }
 
 function Server_Buffer(target) {
-	this.target=target;
-	this.buffer=[];
+	this.target = target;
+	this.buffer = [];
 }
 
 function Bot_Command(min_security,args_needed,ident_needed) {
@@ -423,8 +423,13 @@ function DCC_Chat(sock,id) {
 	this.bot_command = function(cmd) {
 		Server_bot_command(this,Bot_Commands,null,this.id,null,cmd);
 		for(var bot_cmd in Modules) {
-			Server_bot_command(this,Modules[bot_cmd].Bot_Commands,
-				null,this.id,null,cmd
+			Server_bot_command(
+				this,
+				Modules[bot_cmd].Bot_Commands,
+				null,
+				this.id,
+				null,
+				cmd
 			);
 		}
 	}

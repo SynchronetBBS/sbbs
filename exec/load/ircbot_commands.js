@@ -52,8 +52,8 @@ Bot_Commands["LOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["JOINCHAN"] = new Bot_Command(99,true,true);
-Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["JOIN"] = new Bot_Command(99,true,true);
+Bot_Commands["JOIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
 		srv.o(target,"Invalid channel name","NOTICE");
@@ -72,8 +72,8 @@ Bot_Commands["JOINCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["PARTCHAN"] = new Bot_Command(99,true,true);
-Bot_Commands["PARTCHAN"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["PART"] = new Bot_Command(99,true,true);
+Bot_Commands["PART"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if(cmd[0][0]!="#" && cmd[0][0]!="&") {
 		srv.o(target,"Invalid channel name","NOTICE");
@@ -265,9 +265,9 @@ Bot_Commands["GREET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 Bot_Commands["SAVE"] = new Bot_Command(80,false,true);
 Bot_Commands["SAVE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if (save_everything()) {
-		srv.o(target,"Data successfully written.  Congratulations.","NOTICE");
+		srv.o(target,"Data successfully written.  Congratulations.");
 	} else {
-		srv.o(target,"Oops, couldn't write to disk.  Sorry, bud.","NOTICE");
+		srv.o(target,"Oops, couldn't write to disk.  Sorry, bud.");
 	}
 	return;
 }
@@ -282,10 +282,10 @@ Bot_Commands["PREFIX"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
 	if (cmd[0]) {
 		command_prefix = cmd[0].toUpperCase();
-		srv.o(target,"Bot command prefix set: " + command_prefix,"NOTICE");
+		srv.o(target,"Bot command prefix set: " + command_prefix);
 	} else {
 		command_prefix = "";
-		srv.o(target,"Bot command prefix cleared","NOTICE");
+		srv.o(target,"Bot command prefix cleared");
 	}
 	return;
 }
@@ -300,15 +300,82 @@ Bot_Commands["NICK"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["MODE"] = new Bot_Command(80,true,true);
-Bot_Commands["MODE"].usage =
-	get_cmd_prefix() + "MODE [ALL or #<chan> #<chan>...] [+/-ALL or +/-<module> +/-<module>...], " +
-	"-ex: '" + get_cmd_prefix() + "MODE #bbs #synchronet +ALL', " +
-	"-ex: '" + get_cmd_prefix() + "MODE ALL -poker +admin -trivia'";
-Bot_Commands["MODE"].help =
+Bot_Commands["MODULE"] = new Bot_Command(80,true,true);
+Bot_Commands["MODULE"].usage =
+	get_cmd_prefix() + "MODULE [ALL or #<chan> #<chan>...] [+/-ALL or +/-<module> +/-<module>...], " +
+	"-ex: '" + get_cmd_prefix() + "MODULE #bbs #synchronet +ALL', " +
+	"-ex: '" + get_cmd_prefix() + "MODULE ALL -poker +admin -trivia'";
+Bot_Commands["MODULE"].help =
 	"Toggle the status of modules in channels.";
-Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
+Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
+
+	if (cmd[0].toUpperCase() == "ENABLE") {
+		var mod=Modules[cmd[1].toUpperCase()];
+		if (mod) {
+			if(!mod.enabled) {
+				mod.enabled=true;
+				srv.o(target,cmd[1].toUpperCase() + " module enabled.");
+			} else {
+				srv.o(target,cmd[1].toUpperCase() + " module is already enabled.");
+			}
+		} else {
+			srv.o(target,"No such module.");
+		}
+		return;
+	}
+
+	if (cmd[0].toUpperCase() == "DISABLE") {
+		var mod=Modules[cmd[1].toUpperCase()];
+		if (mod) {
+			if(mod.enabled) {
+				mod.enabled=false;
+				srv.o(target,cmd[1].toUpperCase() + " module disabled.");
+			} else {
+				srv.o(target,cmd[1].toUpperCase() + " module is already disabled.");
+			}
+		} else {
+			srv.o(target,"No such module.");
+		}
+		return;
+	}
+
+	if (cmd[0].toUpperCase() == "LIST") {
+		cmd.shift();
+		var chan=cmd.shift();
+		if(chan) {
+			if(!srv.channel[chan.toUpperCase()]) {
+				srv.o(target,"I am not in that channel");
+				return;
+			}
+			chan=srv.channel[chan.toUpperCase()];
+		} else if(target == onick) {
+			var str="modules (msg):";
+			for(m in Modules) {
+				if(Modules[m].enabled) 
+					str+=" +" + m.toLowerCase();
+			}
+			srv.o(target,str);
+			return;
+		} else {
+			chan=srv.channel[target.toUpperCase()];
+		}
+	
+		var str="modules (" + chan.name + "):";
+		var mods=chan.modules;
+		for(m in Modules) {
+			if(Modules[m].enabled) {
+				if(mods[m] == true) str+=" +" + m.toLowerCase();
+				else str+=" -" + m.toLowerCase();
+			}
+		}
+		srv.o(target,str);
+		return;
+	}
+
+	/* If we get this far, then we're manipulating modules being enabled
+	   or disabled on a per-channel basis. */
+
 	/* first parameters should be either a channel name or ALL */
 	var channels=[];
 	var count=0;
@@ -322,7 +389,7 @@ Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		while(cmd[0] && cmd[0][0] == "#" || cmd[0][0] == "&") {
 			var chan_str=cmd.shift();
 			if(!srv.channel[chan_str.toUpperCase()]) {
-				srv.o(target,"I am not in channel: " + chan_str.toLowerCase(),"NOTICE");
+				srv.o(target,"I am not in channel: " + chan_str.toLowerCase());
 				return;
 			}
 			channels.push(chan_str.toUpperCase());
@@ -337,7 +404,7 @@ Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	
 	var mode=cmd.shift();
 	if(!mode) {
-		srv.o(target,"Syntax error","NOTICE");
+		srv.o(target,"Syntax error");
 		return;
 	}
 	
@@ -348,7 +415,7 @@ Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		} else if (mode[0] == "-") {
 			operator = false;
 		} else {
-			srv.o(target,"Syntax error: " + mode[0],"NOTICE");
+			srv.o(target,"Syntax error: " + mode[0]);
 			return;
 		}
 		var mod=mode.substr(1).toUpperCase();
@@ -395,60 +462,19 @@ Bot_Commands["MODE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 				}
 			}
 		} else {
-			srv.o(target,"No such module: " + mod.toLowerCase(),"NOTICE");
+			srv.o(target,"No such module: " + mod.toLowerCase());
 			return;
 		}
 		mode=cmd.shift();
 	}
 	if(count == 0) {
-		srv.o(target,"No mode changes were made","NOTICE");
+		srv.o(target,"No mode changes were made");
 		return;
 	}
-	srv.o(target,"mode set:" + chan_str + mod_str,"NOTICE");
+	srv.o(target,"mode set:" + chan_str + mod_str);
 	return;
 }
-
-Bot_Commands["ENABLE"] = new Bot_Command(80,true,false);
-Bot_Commands["ENABLE"].help =
-	"Enables a module. (global)";
-Bot_Commands["ENABLE"].usage =
-	get_cmd_prefix() + "ENABLE <module>";
-Bot_Commands["ENABLE"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
-	var mod=Modules[cmd[0].toUpperCase()];
-	if (mod) {
-		if(!mod.enabled) {
-			mod.enabled=true;
-			srv.o(target,cmd[0].toUpperCase() + " module enabled.");
-		} else {
-			srv.o(target,cmd[0].toUpperCase() + " module is already enabled.");
-		}
-	} else {
-		srv.o(target,"No such module.");
-	}
-	return;
-}
-
-Bot_Commands["DISABLE"] = new Bot_Command(80,true,false);
-Bot_Commands["DISABLE"].help =
-	"Disables a module. (global)";
-Bot_Commands["DISABLE"].usage =
-	get_cmd_prefix() + "DISABLE <module>";
-Bot_Commands["DISABLE"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
-	var mod=Modules[cmd[0].toUpperCase()];
-	if (mod) {
-		if(mod.enabled) {
-			mod.enabled=false;
-			srv.o(target,cmd[0].toUpperCase() + " module disabled.");
-		} else {
-			srv.o(target,cmd[0].toUpperCase() + " module is already disabled.");
-		}
-	} else {
-		srv.o(target,"No such module.");
-	}
-	return;
-}
+Bot_Commands["MODULES"] = Bot_Commands["MODULE"];
 
 Bot_Commands["ABORT"] = new Bot_Command(80,false,false);
 Bot_Commands["ABORT"].command = function (target,onick,ouh,srv,lvl,cmd) {
@@ -457,44 +483,6 @@ Bot_Commands["ABORT"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["MODULES"] = new Bot_Command(0,false,false);
-Bot_Commands["MODULES"].help =
-	"Lists module status for a channel.";
-Bot_Commands["MODULES"].usage =
-	get_cmd_prefix() + "MODULES <channel>, " +
-	get_cmd_prefix() + "MODULES";
-Bot_Commands["MODULES"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
-	var chan=cmd.shift();
-	if(chan) {
-		if(!srv.channel[chan.toUpperCase()]) {
-			srv.o(target,"I am not in that channel","NOTICE");
-			return;
-		}
-		chan=srv.channel[chan.toUpperCase()];
-	} else if(target == onick) {
-		var str="modules (msg):";
-		for(m in Modules) {
-			if(Modules[m].enabled) 
-				str+=" +" + m.toLowerCase();
-		}
-		srv.o(target,str,"NOTICE");
-		return;
-	} else {
-		chan=srv.channel[target.toUpperCase()];
-	}
-	
-	var str="modules (" + chan.name + "):";
-	var mods=chan.modules;
-	for(m in Modules) {
-		if(Modules[m].enabled) {
-			if(mods[m] == true) str+=" +" + m.toLowerCase();
-			else str+=" -" + m.toLowerCase();
-		}
-	}
-	srv.o(target,str,"NOTICE");
-	return;
-}
 
 Bot_Commands["IGNORE"] = new Bot_Command(80,true,true);
 Bot_Commands["IGNORE"].command = function (target,onick,ouh,srv,lvl,cmd) {
