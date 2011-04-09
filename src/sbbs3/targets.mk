@@ -45,7 +45,7 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(DELFILES) $(DUPEFIND) $(SMBACTIV) \
 			  $(SEXYZ) $(DSTSEDIT)
 
-all:	dlls utils console mono
+all:	dlls utils console
 
 console:	xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
