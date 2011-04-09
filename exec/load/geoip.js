@@ -3,6 +3,13 @@
 if(!js.global || js.global.HTTPRequest==undefined)
 	load("http.js");
 
+var geoipAPIKey='a1ddc4963461ca20bffd54bb926ce74dc1ecbb8a421122cdc3cdfef616f5aad1';	// Enter your API info here!
+
+if(geoipAPIKey==undefined) {
+	log("You need to get a key from http://ipinfodb.com/register.php");
+	exit;
+}
+
 function get_geoip(host, countryonly)
 {
 	var GeoIP;
@@ -37,24 +44,25 @@ function get_geoip(host, countryonly)
 	// Get the best URL
 	if(countryonly) {
 		if(isarray)
-			geoip_url='http://ipinfodb.com/ip_query2_country.php?output=json&ip='+encodeURIComponent(host.join(','));
+			geoip_url='http://api.ipinfodb.com/v3/ip-country/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host.join(','));
 		else if(ishost)
-			geoip_url='http://ipinfodb.com/ip_query2_country.php?output=json&ip='+encodeURIComponent(host);
+			geoip_url='http://api.ipinfodb.com/v3/ip-country/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host);
 		else
-			geoip_url='http://ipinfodb.com/ip_query_country.php?output=json&ip='+encodeURIComponent(host);
+			geoip_url='http://api.ipinfodb.com/v3/ip-country/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host);
 	}
 	else {
 		if(isarray)
-			geoip_url='http://ipinfodb.com/ip_query2.php?output=json&ip='+encodeURIComponent(host.join(','));
+			geoip_url='http://api.ipinfodb.com/v3/ip-city/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host.join(','));
 		else if(ishost)
-			geoip_url='http://ipinfodb.com/ip_query2.php?output=json&ip='+encodeURIComponent(host);
+			geoip_url='http://api.ipinfodb.com/v3/ip-city/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host);
 		else
-			geoip_url='http://ipinfodb.com/ip_query.php?output=json&ip='+encodeURIComponent(host);
+			geoip_url='http://api.ipinfodb.com/v3/ip-city/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host);
 	}
-
 	try {
-		result='ret='+new HTTPRequest().Get(geoip_url);
-		GeoIP=js.eval(result);
+		do {
+			result='ret='+new HTTPRequest().Get(geoip_url);
+			GeoIP=js.eval(result);
+		} while(GeoIP==undefined);
 		if(GeoIP.Locations != undefined) {
 			if(isarray)
 				return GeoIP.Locations;
