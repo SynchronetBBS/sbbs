@@ -1,13 +1,15 @@
 #!/bin/sh
 
+# Debian Linux system service run script (init file) for Synchronet
+#
+# This file normally goes in your /etc/init.d directory
+#
+# $Id$
+
 ########################################
 # Synchronet BBS Debian startup script #
 ########################################
 # by Karloch <karloch@hispamsx.org> 8 Dec 2005
-
-# Please be sure to config your Synchronet BBS in
-# "daemonized" mode if you are going to use this script.
-# You can activate "daemonized" mode at /sbbs/ctrl/sbbs.ini
 
 # You can edit these vars to meet your system configuration
 
@@ -15,10 +17,13 @@ PATH=/bin:/sbin:/usr/bin:/usr/bin
 SBBSROOT=/sbbs
 DAEMON=$SBBSROOT/exec/sbbs
 
+# Command Line options (e.g. daemonize)
 OPTIONS="-d"
 
 export SBBSCTRL=$SBBSROOT/ctrl
 export SHELL=/bin/bash
+# Uncomment if you want core files created with an unlimited size:
+#ulimit -c unlimited
 
 # DO NOT edit anything below this line unless you know what you doing
 
@@ -38,16 +43,18 @@ case "$1" in
       echo -n "Stopping Synchronet BBS services... "
       if start-stop-daemon --quiet --stop --signal 0 --exec $DAEMON
       then
-          start-stop-daemon --quiet --stop --exec $DAEMON
-	  sleep 2
-	  echo "[OK]"
+          if start-stop-daemon --quiet --stop --exec $DAEMON --retry 300
+	  then
+	  	echo "[OK]"
+	  else
+		echo "[timeout]"
+	  fi
       else
           echo "[not running]"
       fi
       ;;
   restart|force-reload)
       $0 stop
-      sleep 40
       $0 start
       ;;
   status)
