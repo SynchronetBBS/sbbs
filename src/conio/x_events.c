@@ -451,9 +451,13 @@ static int x11_event(XEvent *ev)
 					break;
 				if(ev->xselection.requestor!=win)
 					break;
-				x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
-				if(bytes_left > 0 && format==8)
-					x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
+				if(ev->xselection.property) {
+					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
+					if(bytes_left > 0 && format==8)
+						x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
+					else
+						pastebuf=NULL;
+				}
 				else
 					pastebuf=NULL;
 
@@ -849,7 +853,7 @@ void x11_event_thread(void *args)
 									FREE_AND_NULL(pastebuf);
 								}
 								else if(sowner!=None) {
-									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, XA_STRING, None, win, CurrentTime);
+									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, XA_STRING, XA_STRING, win, CurrentTime);
 								}
 								else {
 									/* Set paste buffer */

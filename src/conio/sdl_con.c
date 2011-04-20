@@ -1692,7 +1692,7 @@ int sdl_video_event_thread(void *data)
 										FREE_AND_NULL(sdl_pastebuf);
 									}
 									else if(sowner!=None) {
-										sdl_x11.XConvertSelection(wmi.info.x11.display, CONSOLE_CLIPBOARD, XA_STRING, None, wmi.info.x11.window, CurrentTime);
+										sdl_x11.XConvertSelection(wmi.info.x11.display, CONSOLE_CLIPBOARD, XA_STRING, XA_STRING, wmi.info.x11.window, CurrentTime);
 									}
 									else {
 										/* Set paste buffer */
@@ -1737,9 +1737,14 @@ int sdl_video_event_thread(void *data)
 										req=&(e->xselection);
 										if(req->requestor!=wmi.info.x11.window)
 											break;
-										sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&sdl_pastebuf));
-										if(bytes_left > 0 && format==8)
-											sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&sdl_pastebuf);
+										if(req->property) {
+											sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&sdl_pastebuf));
+											if(bytes_left > 0 && format==8)
+												sdl_x11.XGetWindowProperty(wmi.info.x11.display, wmi.info.x11.window, req->property,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&sdl_pastebuf);
+											else {
+												FREE_AND_NULL(sdl_pastebuf);
+											}
+										}
 										else {
 											FREE_AND_NULL(sdl_pastebuf);
 										}
