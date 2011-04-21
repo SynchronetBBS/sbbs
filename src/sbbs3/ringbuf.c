@@ -178,7 +178,7 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 #endif
 
     /* allowed to write at pEnd */
-	max = (((DWORD) rb->pEnd) - ((DWORD) rb->pHead)) + 1;
+	max = rb->pEnd - rb->pHead + 1;
 
 	/*
 	 * we assume the caller has checked that there is enough room. For this reason
@@ -239,7 +239,7 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
         cnt = len;
 
 	/* allowed to read at pEnd */
-	max = (((DWORD) rb->pEnd) - ((DWORD) rb->pTail)) + 1;
+	max = rb->pEnd - rb->pTail + 1;
 
 	if( max >= cnt ) {
 		first = cnt;
@@ -301,7 +301,7 @@ DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
         cnt = len;
 
     /* allowed to read at pEnd */
-	max = (((DWORD) rb->pEnd) - ((DWORD) rb->pTail)) + 1;
+	max = rb->pEnd - rb->pTail + 1;
 
 	if( max >= cnt ) {
 		first = cnt;

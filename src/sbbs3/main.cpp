@@ -294,7 +294,7 @@ static BOOL winsock_startup(void)
 
 DLLEXPORT void DLLCALL sbbs_srand()
 {
-	DWORD seed = time(NULL) ^ (DWORD)GetCurrentThreadId();
+	DWORD seed;
 
 	xp_randomize();
 #if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
@@ -304,6 +304,8 @@ DLLEXPORT void DLLCALL sbbs_srand()
 		read(rf, &seed, sizeof(seed));
 		close(rf);
 	}
+#else
+	seed = time(NULL) ^ (DWORD)GetCurrentThreadId()
 #endif
 
  	srand(seed);
