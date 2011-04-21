@@ -57,12 +57,12 @@ static int xpd_ansi_readbyte_cb(void)
 	return(-2);
 }
 
-static int dummy_writebyte_cb(unsigned char ch)
+static int dummy_writebyte_cb(const unsigned char ch)
 {
 	return(ch);
 }
 
-static int xpd_ansi_writebyte_cb(unsigned char ch)
+static int xpd_ansi_writebyte_cb(const unsigned char ch)
 {
 	switch(xpd_info.io_type) {
 		case XPD_IO_STDIO:
@@ -116,7 +116,7 @@ static int xpd_ansi_initio_cb(void)
 	return(0);
 }
 
-static int xpd_ansi_writestr_cb(unsigned char *str, size_t len)
+static int xpd_ansi_writestr_cb(const unsigned char *str, size_t len)
 {
 	int i;
 
@@ -128,7 +128,7 @@ static int xpd_ansi_writestr_cb(unsigned char *str, size_t len)
 		case XPD_IO_SOCKET:
 		case XPD_IO_TELNET:
 			for(i=0; i<len; i++) {
-				if(xpd_ansi_writebyte_cb((unsigned char)str[i])<0)
+				if(xpd_ansi_writebyte_cb(str[i])<0)
 					return(-2);
 			}
 	}
@@ -166,7 +166,7 @@ void xpd_parse_cmdline(int argc, char **argv)
 	}
 }
 
-int xpd_exit()
+void xpd_exit()
 {
 	if(xpd_info.doorway_mode)
 		ansi_ciolib_setdoorway(0);
@@ -190,9 +190,10 @@ int xpd_init()
 	}
 	gettextinfo(&ti);
 	cterm_init(ti.screenheight, ti.screenwidth, 1, 1, 0, NULL, CTERM_EMULATION_ANSI_BBS);
+	return 0;
 }
 
-int xpd_doorway(int enable)
+void xpd_doorway(int enable)
 {
 	xpd_info.doorway_mode=enable;
 	ansi_ciolib_setdoorway(enable);
@@ -228,4 +229,5 @@ int xpd_rwrite(const char *data, int data_len)
 
 	/* Re-enable ciolib output */
 	ciolib_ansi_writebyte_cb=xpd_ansi_writebyte_cb;
+	return 0;
 }

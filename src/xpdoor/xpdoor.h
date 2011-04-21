@@ -114,12 +114,12 @@ void xpd_parse_cmdline(int argc, char **argv);
 /*
  * Initialize (turns on Doorway mode)
  */
-int xpd_init();
+int xpd_init(void);
 
 /*
  * Exit (turns off Doorway mode)
  */
-int xpd_exit(void);
+void xpd_exit(void);
 
 /*
  * Parse dropfile

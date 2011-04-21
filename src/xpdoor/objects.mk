@@ -1,5 +1,6 @@
 OBJS = \
                         $(MTOBJODIR)$(DIRSEP)comio$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)dropfiles$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)xpdoor$(OFILE)
 
