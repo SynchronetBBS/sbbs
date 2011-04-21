@@ -1346,7 +1346,7 @@ void ctputs(char *buf)
 	_wscroll=oldscroll;
 }
 
-char *cterm_write(unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
+char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];

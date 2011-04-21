@@ -56,9 +56,9 @@
 
 int	CIOLIB_ANSI_TIMEOUT=500;
 int  (*ciolib_ansi_readbyte_cb)(void)=ansi_readbyte_cb;
-int  (*ciolib_ansi_writebyte_cb)(unsigned char ch)=ansi_writebyte_cb;
+int  (*ciolib_ansi_writebyte_cb)(const unsigned char ch)=ansi_writebyte_cb;
 int  (*ciolib_ansi_initio_cb)(void)=ansi_initio_cb;
-int  (*ciolib_ansi_writestr_cb)(unsigned char *str, size_t len)=ansi_writestr_cb;
+int  (*ciolib_ansi_writestr_cb)(const unsigned char *str, size_t len)=ansi_writestr_cb;
 
 static sem_t	got_key;
 static sem_t	got_input;
@@ -226,7 +226,7 @@ static void ansi_sendch(char ch)
 	}
 }
 
-static void ansi_sendstr(char *str,int len)
+static void ansi_sendstr(const char *str,int len)
 {
 	if(len==-1)
 		len=strlen(str);
@@ -914,12 +914,12 @@ int ansi_readbyte_cb(void)
 	return(ch);
 }
 
-int ansi_writebyte_cb(unsigned char ch)
+int ansi_writebyte_cb(const unsigned char ch)
 {
 	return(fwrite(&ch,1,1,stdout));
 }
 
-int ansi_writestr_cb(unsigned char *str, size_t len)
+int ansi_writestr_cb(const unsigned char *str, size_t len)
 {
 	return(fwrite(str,len,1,stdout));
 }
