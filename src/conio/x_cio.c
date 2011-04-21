@@ -324,6 +324,14 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XAllocWMHints=xp_dlsym(dl,XAllocWMHints))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetWMProperties=xp_dlsym(dl,XSetWMProperties))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 
 	if(sem_init(&pastebuf_set, 0, 0))
 		return(-1);

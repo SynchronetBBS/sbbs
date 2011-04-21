@@ -78,6 +78,8 @@ struct x11 {
 	int		(*XSetIconName)	(Display*, Window, _Xconst char *);
 	int		(*XSynchronize)	(Display*, Bool);
 	Status	(*XGetWindowAttributes)	(Display*,Window,XWindowAttributes*);
+	XWMHints* (*XAllocWMHints) (void);
+	void	(*XSetWMProperties) (Display*, Window, XTextProperty*, XTextProperty*, char**, int, XSizeHints*, XWMHints*, XClassHint*);
 };
 
 

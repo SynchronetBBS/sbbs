@@ -195,6 +195,7 @@ static int init_window()
 	XColor color;
     int i;
 	XWindowAttributes	attr;
+	XWMHints *wmhints;
 
 	dpy = x11.XOpenDisplay(NULL);
     if (dpy == NULL) {
@@ -209,6 +210,14 @@ static int init_window()
     /* Create window, but defer setting a size and GC. */
     win = x11.XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
 			      1, 1, 2, black, black);
+
+	wmhints=x11.XAllocWMHints();
+	if(wmhints) {
+		wmhints->initial_state=NormalState;
+		wmhints->flags = (StateHint | IconPixmapHint | IconMaskHint | InputHint);
+		wmhints->input = True;
+		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, NULL);
+	}
 
 	gcv.function = GXcopy;
     gcv.foreground = white;
