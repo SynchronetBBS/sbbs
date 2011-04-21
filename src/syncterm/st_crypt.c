@@ -32,7 +32,6 @@ void exit_crypt()
  */
 void exit(int code)
 {
-	fclose(fopen("/tmp/Dumbass", "w"));
 	_exit(code);
 }
 
