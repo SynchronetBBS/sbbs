@@ -49,6 +49,7 @@
 #endif
 
 #include "ciolib.h"
+#include "keys.h"
 #include "x_cio.h"
 #include "x_events.h"
 
@@ -150,6 +151,18 @@ int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 		*ypos=x11_window_ypos;
 	
 	return(0);
+}
+
+/* Mouse event/keyboard thread */
+void x11_mouse_thread(void *data)
+{
+	//uint16_t	key=((CIO_KEY_MOUSE&0xFF)<<8)|((CIO_KEY_MOUSE>>8)&0xFF);
+	uint16_t	key=CIO_KEY_MOUSE;
+
+	while(1) {
+		if(mouse_wait())
+			write(key_pipe[1], &key, 2);
+	}
 }
 
 int x_init(void)
@@ -360,6 +373,7 @@ int x_init(void)
 	}
 
 	_beginthread(x11_event_thread,1<<16,NULL);
+	_beginthread(x11_mouse_thread,1<<16,NULL);
 	sem_wait(&init_complete);
 	if(!x11_initialized) {
 		sem_destroy(&pastebuf_set);

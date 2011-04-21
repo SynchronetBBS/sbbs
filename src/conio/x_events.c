@@ -754,13 +754,8 @@ static int x11_event(XEvent *ev)
 						break;
 				}
 				if (scan != 0xffff) {
-					unsigned char ch;
-					ch=scan & 0xff;
-					write(key_pipe[1], &ch, 1);
-					if(!ch) {
-						ch=scan >> 8;
-						write(key_pipe[1], &ch, 1);
-					}
+					uint16_t key=scan;
+					write(key_pipe[1], &key, (scan&0xff)?1:2);
 				}
 				return(1);
 			}
