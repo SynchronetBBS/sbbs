@@ -1117,7 +1117,7 @@ int main(int argc, char **argv)
 
 	/* UIFC initialization */
     memset(&uifc,0,sizeof(uifc));
-	uifc.mode=UIFC_NOCTRL;
+	uifc.mode=UIFC_NOCTRL|UIFC_NHM;
 	uifc.size=sizeof(uifc);
 	uifc.esc_delay=25;
 	url[0]=0;
