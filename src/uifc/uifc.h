@@ -104,6 +104,7 @@
 #define UIFC_IBM	(1<<4)	/* Force use of IBM charset	*/
 #define UIFC_NOCTRL	(1<<5)	/* Don't allow useage of CTRL keys for movement 
 							 * etc in menus (Still available in text boxes) */
+#define UIFC_NHM	(1<<6)	/* Don't hide the mouse pointer */
 
 							/*******************************/
                             /* Bits in uifcapi_t.list mode */
