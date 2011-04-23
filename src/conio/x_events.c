@@ -742,12 +742,12 @@ static int x11_event(XEvent *ev)
 							break;
 						}
 
-						if ((ev->xkey.state & ShiftMask) || (scan & 0x100)) {
+						if (ev->xkey.state & Mod1Mask) {
+							scan = ScanCodes[scan & 0xff].alt;
+						} else if ((ev->xkey.state & ShiftMask) || (scan & 0x100)) {
 							scan = ScanCodes[scan & 0xff].shift;
 						} else if (ev->xkey.state & ControlMask) {
 							scan = ScanCodes[scan & 0xff].ctrl;
-						} else if (ev->xkey.state & Mod1Mask) {
-							scan = ScanCodes[scan & 0xff].alt;
 						}  else
 							scan = ScanCodes[scan & 0xff].base;
 
