@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1673,6 +1673,7 @@ int main(int argc, char **argv)
 						fprintf(statfp,"Unrecognized command '%s'\n\n",argv[i]);
 						fprintf(statfp,usage,MAX_FILE_SIZE);
 						bail(1); 
+						return -1;
 				} 
 				continue;
 			}
@@ -1688,6 +1689,7 @@ int main(int argc, char **argv)
 				fprintf(statfp,"Compiled %s %.5s with %s\n",__DATE__,__TIME__,compiler);
 				fprintf(statfp,"%s\n",os_version(str));
 				bail(0);
+				return 0;
 			}
 
 			arg=argv[i];
@@ -1758,11 +1760,13 @@ int main(int argc, char **argv)
 			if(mode&RECVDIR) {
 				fprintf(statfp,"!Cannot specify both directory and filename\n");
 				bail(1); 
+				return -1;
 			}
 			sprintf(str,"%s",argv[i]+1);
 			if((fp=fopen(str,"r"))==NULL) {
 				fprintf(statfp,"!Error %d opening filelist: %s\n",errno,str);
 				bail(1); 
+				return -1;
 			}
 			while(!feof(fp) && !ferror(fp)) {
 				if(!fgets(str,sizeof(str),fp))
@@ -1778,14 +1782,17 @@ int main(int argc, char **argv)
 				if(mode&RECVDIR) {
 					fprintf(statfp,"!Only one directory can be specified\n");
 					bail(1); 
+					return -1;
 				}
 				if(fnames) {
 					fprintf(statfp,"!Cannot specify both directory and filename\n");
 					bail(1); 
+					return -1;
 				}
 				if(mode&SEND) {
 					fprintf(statfp,"!Cannot send directory '%s'\n",argv[i]);
 					bail(1);
+					return -1;
 				}
 				mode|=RECVDIR; 
 			}
@@ -1800,12 +1807,14 @@ int main(int argc, char **argv)
 		fprintf(statfp,"!No command specified\n\n");
 		fprintf(statfp,usage,MAX_FILE_SIZE);
 		bail(1); 
+		return -1;
 	}
 
 	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
 		fprintf(statfp,"!Must specify filename or filelist\n\n");
 		fprintf(statfp,usage,MAX_FILE_SIZE);
 		bail(1); 
+		return -1;
 	}
 
 	if(sock==INVALID_SOCKET || sock<1) {
@@ -1824,6 +1833,7 @@ int main(int argc, char **argv)
 		fprintf(statfp,"!No socket descriptor specified\n\n");
 		fprintf(errfp,usage,MAX_FILE_SIZE);
 		bail(1);
+		return -1;
 #endif
 	}
 #ifdef __unix__
@@ -1868,12 +1878,14 @@ int main(int argc, char **argv)
 	if(!socket_check(sock, NULL, NULL, 0)) {
 		lprintf(LOG_WARNING,"No socket connection");
 		bail(-1); 
+		return -1;
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
 		if((logfp=fopen(dszlog,"w"))==NULL) {
 			lprintf(LOG_WARNING,"Error %d opening DSZLOG file: %s",errno,dszlog);
 			bail(-1); 
+			return -1;
 		}
 	}
 
@@ -1921,5 +1933,6 @@ int main(int argc, char **argv)
 	fprintf(statfp,"\n");
 
 	bail(retval);
+	return retval;
 }
 
