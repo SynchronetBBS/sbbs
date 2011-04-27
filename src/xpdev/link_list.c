@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -310,6 +310,7 @@ str_list_t DLLCALL listSubStringList(const list_node_t* node, long max)
 {
 	long			count;
 	str_list_t		str_list;
+	link_list_t*	list;
 
 	if(node==NULL)
 		return(NULL);
@@ -317,14 +318,15 @@ str_list_t DLLCALL listSubStringList(const list_node_t* node, long max)
 	if((str_list=strListInit())==NULL)
 		return(NULL);
 
-	MUTEX_LOCK(node->list);
+	list=node->list;
+	MUTEX_LOCK(list);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
 		if(node->data!=NULL)
 			strListAppend(&str_list, (char*)node->data, count++);
 	}
 
-	MUTEX_UNLOCK(node->list);
+	MUTEX_UNLOCK(list);
 
 	return(str_list);
 }
