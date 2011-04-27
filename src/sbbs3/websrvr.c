@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -96,15 +96,14 @@ enum {
 };
 
 static scfg_t	scfg;
-static BOOL		scfg_reloaded=TRUE;
-static BOOL		http_logging_thread_running=FALSE;
-static ulong	active_clients=0;
-static ulong	sockets=0;
-static BOOL		terminate_server=FALSE;
-static BOOL		terminate_http_logging_thread=FALSE;
-static ulong	thread_count=0;
-static SOCKET	server_socket=INVALID_SOCKET;
-static SOCKET	server_socket6=INVALID_SOCKET;
+static volatile BOOL	http_logging_thread_running=FALSE;
+static volatile ulong	active_clients=0;
+static volatile ulong	sockets=0;
+static volatile BOOL	terminate_server=FALSE;
+static volatile BOOL	terminate_http_logging_thread=FALSE;
+static volatile	ulong	thread_count=0;
+static volatile SOCKET	server_socket=INVALID_SOCKET;
+static volatile SOCKET	server_socket6=INVALID_SOCKET;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
@@ -112,14 +111,14 @@ static char		temp_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
 static char		cgi_env_ini[MAX_PATH+1];
 static char		default_auth_list[MAX_PATH+1];
-static time_t	uptime=0;
-static ulong	served=0;
+static volatile	time_t	uptime=0;
+static volatile	ulong	served=0;
 static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static str_list_t cgi_env;
-static ulong session_threads=0;
+static volatile ulong session_threads=0;
 
 static named_string_t** mime_types;
 static named_string_t** cgi_handlers;
@@ -5478,7 +5477,6 @@ void DLLCALL web_server(void* arg)
 			cleanup(1);
 			return;
 		}
-		scfg_reloaded=TRUE;
 
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
 		MKDIR(temp_dir);

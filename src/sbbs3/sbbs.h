@@ -969,7 +969,7 @@ extern "C" {
 		const char*	version_detail;
 		uint32_t*	interface_addr;
 		uint32_t*	options;
-		ulong*		clients;
+		volatile ulong* clients;
 	} js_server_props_t;
 
 	enum {

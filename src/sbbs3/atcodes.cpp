@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -146,7 +146,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	}
 
 	if(!strcmp(sp,"UPTIME")) {
-		extern time_t uptime;
+		extern volatile time_t uptime;
 		time_t up=time(NULL)-uptime;
 		if(up<0)
 			up=0;
@@ -164,7 +164,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen)
 	}
 
 	if(!strcmp(sp,"SERVED")) {
-		extern DWORD served;
+		extern volatile ulong served;
 		safe_snprintf(str,maxlen,"%lu",served);
 		return(str);
 	}

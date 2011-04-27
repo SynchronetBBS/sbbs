@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -69,10 +69,10 @@
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
-static uint32_t	sockets=0;
-static BOOL		terminated=FALSE;
-static time_t	uptime=0;
-static uint32_t	served=0;
+static volatile ulong	sockets=0;
+static volatile BOOL	terminated=FALSE;
+static volatile time_t	uptime=0;
+static volatile ulong	served=0;
 static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
@@ -91,11 +91,11 @@ typedef struct {
 	js_startup_t	js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	ulong		clients;
-	ulong		served;
-	SOCKET		socket;
-	BOOL		running;
-	BOOL		terminated;
+	volatile ulong		clients;
+	volatile ulong		served;
+	volatile SOCKET		socket;
+	volatile BOOL		running;
+	volatile BOOL		terminated;
 } service_t;
 
 typedef struct {

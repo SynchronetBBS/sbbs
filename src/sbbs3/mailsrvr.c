@@ -80,7 +80,7 @@ static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 							"instead of the expected reply:\r\n\"%s ...\"";
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
-#define DNSBL_THROTTLE_VALUE	5000	/* Milliseconds */
+#define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
 #define SPAM_HASH_SUBJECT_MIN_LEN	10	/* characters */
 
 #define STATUS_WFC	"Listening"
@@ -90,34 +90,34 @@ static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static SOCKET	submission_socket=INVALID_SOCKET;
 static SOCKET	pop3_socket=INVALID_SOCKET;
-static ulong	active_clients=0;
-static int		active_sendmail=0;
-static ulong	thread_count=0;
-static BOOL		sendmail_running=FALSE;
-static BOOL		terminate_server=FALSE;
-static BOOL		terminate_sendmail=FALSE;
+static volatile ulong	active_clients=0;
+static volatile int		active_sendmail=0;
+static volatile ulong	thread_count=0;
+static volatile BOOL	sendmail_running=FALSE;
+static volatile BOOL	terminate_server=FALSE;
+static volatile BOOL	terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
 static char		revision[16];
-static time_t	uptime;
+static volatile time_t	uptime;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
 
 struct {
-	ulong	sockets;
-	ulong	errors;
-	ulong	crit_errors;
-	ulong	connections_ignored;
-	ulong	connections_refused;
-	ulong	connections_served;
-	ulong	pop3_served;
-	ulong	smtp_served;
+	volatile ulong	sockets;
+	volatile ulong	errors;
+	volatile ulong	crit_errors;
+	volatile ulong	connections_ignored;
+	volatile ulong	connections_refused;
+	volatile ulong	connections_served;
+	volatile ulong	pop3_served;
+	volatile ulong	smtp_served;
 	/* SMTP: */
-	ulong	sessions_refused;
-	ulong	msgs_ignored;
-	ulong	msgs_refused;
-	ulong	msgs_received;
+	volatile ulong	sessions_refused;
+	volatile ulong	msgs_ignored;
+	volatile ulong	msgs_refused;
+	volatile ulong	msgs_received;
 } stats;
 
 struct mailproc {

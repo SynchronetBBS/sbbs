@@ -79,12 +79,12 @@
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
-static ulong	active_clients=0;
-static ulong	sockets=0;
-static ulong	thread_count=0;
-static time_t	uptime=0;
-static ulong	served=0;
-static BOOL		terminate_server=FALSE;
+static volatile ulong	active_clients=0;
+static volatile ulong	sockets=0;
+static volatile ulong	thread_count=0;
+static volatile time_t	uptime=0;
+static volatile ulong	served=0;
+static volatile BOOL	terminate_server=FALSE;
 static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;

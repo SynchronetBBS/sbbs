@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,11 +76,11 @@
 	#define	SSH_END()
 #endif
 
-time_t	uptime=0;
-DWORD	served=0;
+volatile time_t	uptime=0;
+volatile ulong	served=0;
 
-static	ulong node_threads_running=0;
-static	ulong thread_count=0;
+static	volatile ulong node_threads_running=0;
+static	volatile ulong thread_count=0;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
@@ -305,7 +305,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 		close(rf);
 	}
 #else
-	seed = time(NULL) ^ (DWORD)GetCurrentThreadId()
+	seed = time(NULL) ^ (DWORD)GetCurrentThreadId();
 #endif
 
  	srand(seed);
