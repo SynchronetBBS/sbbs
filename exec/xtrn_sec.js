@@ -123,7 +123,7 @@ while(bbs.online) {
 		if((i=console.getnum(prog_list.length))<1)
 			break;
 		i--;
-		if(file_exists(system.text_dir + "menu/xtrn/" + prog_list[i].code)) {
+		if(file_exists(system.text_dir + "menu/xtrn/" + prog_list[i].code + ".*")) {
 			bbs.menu("xtrn/" + prog_list[i].code);
 			console.line_counter=0;
 		}
