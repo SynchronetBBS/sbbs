@@ -1311,6 +1311,9 @@ char* process_areafix(faddr_t addr, char* inbuf, char* password, char* to)
 	ulong l,m;
 	area_t add_area,del_area;
 
+	lprintf(LOG_INFO,"Areafix Request received from %s"
+			,smb_faddrtoa(&addr,NULL));
+	
 	p=(char *)inbuf;
 
 	while(*p==CTRL_A) {			/* Skip kludge lines 11/05/95 */
@@ -1335,12 +1338,20 @@ char* process_areafix(faddr_t addr, char* inbuf, char* password, char* to)
 
 	i=matchnode(addr,0);
 	if(i>=cfg.nodecfgs) {
+		lprintf(LOG_NOTICE,"Areafix not configured for %s", smb_faddrtoa(&addr,NULL));
 		create_netmail(to,"Areafix Request"
 			,"Your node is not configured for Areafix, please contact your hub.\r\n",addr,FALSE);
 		sprintf(body,"An areafix request was made by node %s.\r\nThis node "
 			"is not currently configured for areafix.\r\n"
 			,smb_faddrtoa(&addr,NULL));
-		return(body); }
+		lprintf(LOG_DEBUG,"areafix debug, nodes=%u",cfg.nodecfgs);
+		{
+			int j;
+			for(j=0;j<cfg.nodecfgs;j++)
+				lprintf(LOG_DEBUG,smb_faddrtoa(&cfg.nodecfg[j].faddr,NULL));
+		}
+		return(body); 
+	}
 
 	if(stricmp(cfg.nodecfg[i].password,password)) {
 		create_netmail(to,"Areafix Request","Invalid Password.",addr,FALSE);
