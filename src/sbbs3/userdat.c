@@ -1682,42 +1682,42 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ULS:
-				if((equal && user->uls!=i) || (!equal && user->uls<i))
+				if(user==NULL || (equal && user->uls!=i) || (!equal && user->uls<i))
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_ULK:
-				if((equal && user->ulb/1024!=i) || (!equal && user->ulb/1024<i))
+				if(user==NULL || (equal && user->ulb/1024!=i) || (!equal && user->ulb/1024<i))
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_ULM:
-				if((equal && user->ulb/(1024*1024)!=i) || (!equal && user->ulb/(1024*1024)<i))
+				if(user==NULL || (equal && user->ulb/(1024*1024)!=i) || (!equal && user->ulb/(1024*1024)<i))
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_DLS:
-				if((equal && user->dls!=i) || (!equal && user->dls<i))
+				if(user==NULL || (equal && user->dls!=i) || (!equal && user->dls<i))
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_DLK:
-				if((equal && user->dlb/1024!=i) || (!equal && user->dlb/1024<i))
+				if(user==NULL || (equal && user->dlb/1024!=i) || (!equal && user->dlb/1024<i))
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_DLM:
-				if((equal && user->dlb/(1024*1024)!=i) || (!equal && user->dlb/(1024*1024)<i))
+				if(user==NULL || (equal && user->dlb/(1024*1024)!=i) || (!equal && user->dlb/(1024*1024)<i))
 					result=not;
 				else
 					result=!not;
