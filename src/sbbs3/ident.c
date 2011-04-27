@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2007 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -42,7 +42,6 @@ BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
-	char*		identity=NULL;
 	int			i;
 	int			result;
 	int			rd;
@@ -125,7 +124,6 @@ BOOL identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 		}
 		buf[rd]=0;
 		truncsp(buf);
-		identity=buf;
 		success=TRUE;
 	} while(0);
 
