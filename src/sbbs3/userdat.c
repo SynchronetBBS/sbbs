@@ -1553,7 +1553,6 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result=!not;
 				else
 					result=not;
-				result=not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				break;
