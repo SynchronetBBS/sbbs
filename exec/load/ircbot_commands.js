@@ -614,7 +614,7 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		if (srv.pipe && srv.pipe[chan.name.toUpperCase()]) {
 			var thispipe = srv.pipe[chan.name.toUpperCase()];
 			thispipe.srv.o(thispipe.target, "<" + onick + "> " 
-				+ IRC_string(cmd.join(" "), 2));
+				+ IRC_string(cmd.join(" "), 1));
 		}
 		
 		cmd=parse_cmd_prefix(cmd);
