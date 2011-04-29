@@ -1553,7 +1553,6 @@ static BOOL check_ars(http_session_t * session)
 				char			ha2[MD5_DIGEST_SIZE*2+1];
 				char			*pass;
 				char			*p;
-				char			*last;
 				time32_t		nonce_time;
 				time32_t		now;
 				MD5				ctx;
@@ -5669,7 +5668,7 @@ void DLLCALL web_server(void* arg)
 				/* FREE()d at the start of the session thread */
 				if((session=malloc(sizeof(http_session_t)))==NULL) {
 					lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for http_session_t"
-						,client_socket, sizeof(http_session_t));
+						,server_socket, sizeof(http_session_t));
 					mswait(3000);
 					continue;
 				}
