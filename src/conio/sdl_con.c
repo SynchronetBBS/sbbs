@@ -275,6 +275,8 @@ void yuv_fillrect(SDL_Overlay *overlay, SDL_Rect *r, int dac_entry)
 	int uplane,vplane;					/* Planar formats */
 	int y0pack, y1pack, u0pack, v0pack;	/* Packed formats */
 
+	if(!overlay)
+		return;
 	if(r->x > overlay->w || r->y > overlay->h)
 		return;
 	if(r->x + r->w > overlay->w)
@@ -619,6 +621,8 @@ int sdl_init(int mode)
 	}
 #endif
 	sdl_init_mode(3);
+	if(yuv.enabled && yuv.overlay==NULL)
+		sdl_init_good=0;
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
 
 	if(sdl_init_good) {
