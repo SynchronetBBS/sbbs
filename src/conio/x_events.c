@@ -308,7 +308,8 @@ static int video_init()
     if(init_window())
 		return(-1);
 
-	vstat.scaling=1;
+	if(vstat.scaling<1)
+		vstat.scaling=1;
 	bitmap_init(x11_drawrect, x11_flush);
 
     /* Initialize mode 3 (text, 80x25, 16 colors) */
