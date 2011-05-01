@@ -135,9 +135,14 @@ ifdef WITH_SDL
  endif
 endif
 
-if (!defined(NO_X)) || (defined(WITH_SDL))
+ifndef NO_X
  CIOLIB_CFLAGS += -DHAS_VSTAT
  CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+else
+ ifdef WITH_SDL
+  CIOLIB_CFLAGS += -DHAS_VSTAT
+  CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+ endif
 endif
 
 ifdef NO_X
