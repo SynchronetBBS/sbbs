@@ -57,6 +57,7 @@ char *sdl_pastebuf=NULL;
 
 SDL_sem *sdl_ufunc_ret;
 int sdl_ufunc_retval;
+SDL_mutex	*funcret_mutex;
 
 SDL_sem	*sdl_flush_sem;
 int pending_updates=0;
@@ -421,6 +422,7 @@ int sdl_user_func_ret(int func, ...)
 	SDL_Event	ev;
 	int		passed=FALSE;
 
+	sdl.mutexP(funcret_mutex);
 	ev.type=SDL_USEREVENT;
 	ev.user.data1=NULL;
 	ev.user.data2=NULL;
@@ -435,11 +437,13 @@ int sdl_user_func_ret(int func, ...)
 			passed=TRUE;
 			break;
 	}
-	if(passed)
+	if(passed) {
 		sdl.SemWait(sdl_ufunc_ret);
+	}
 	else
 		sdl_ufunc_retval=-1;
 	va_end(argptr);
+	sdl.mutexV(funcret_mutex);
 	return(sdl_ufunc_retval);
 }
 
@@ -598,8 +602,10 @@ int sdl_init(int mode)
 	const char *libnames[2]={"X11", NULL};
 #endif
 
-	if(init_sdl_video())
+	if(init_sdl_video()) {
+		fprintf(stderr, "SDL Video Init Failed\n");
 		return(-1);
+	}
 
 	bitmap_init(sdl_drawrect, sdl_flush);
 
@@ -621,8 +627,10 @@ int sdl_init(int mode)
 	}
 #endif
 	sdl_init_mode(3);
-	if(yuv.enabled && yuv.overlay==NULL)
+	if(yuv.enabled && yuv.overlay==NULL) {
+		fprintf(stderr, "YUV Enabled, but overlay is NULL\n");
 		sdl_init_good=0;
+	}
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
 
 	if(sdl_init_good) {
@@ -1810,8 +1818,10 @@ int sdl_video_event_thread(void *data)
 
 int sdl_initciolib(int mode)
 {
-	if(init_sdl_video())
+	if(init_sdl_video()) {
+		fprintf(stderr,"SDL Video Initialization Failed\n");
 		return(-1);
+	}
 	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_keylock=sdl.SDL_CreateMutex();
@@ -1820,6 +1830,7 @@ int sdl_initciolib(int mode)
 	sdl_pastebuf_copied=sdl.SDL_CreateSemaphore(0);
 	sdl_copybuf_mutex=sdl.SDL_CreateMutex();
 #endif
+	funcret_mutex=sdl.SDL_CreateMutex();
 	yuv.mutex=sdl.SDL_CreateMutex();
 	run_sdl_drawing_thread(sdl_video_event_thread, exit_sdl_con);
 	return(sdl_init(mode));
