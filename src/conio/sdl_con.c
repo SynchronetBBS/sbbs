@@ -1812,8 +1812,6 @@ int sdl_initciolib(int mode)
 {
 	if(init_sdl_video())
 		return(-1);
-	if(init_sdl_video()==-1)
-		return(-1);
 	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
 	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
 	sdl_keylock=sdl.SDL_CreateMutex();
