@@ -4,6 +4,7 @@
  */
  
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <fcntl.h>
 #include <limits.h>
@@ -261,9 +262,9 @@ static void resize_window()
 	sh->base_width = bitmap_width*vstat.scaling;
 	sh->base_height = bitmap_height*vstat.scaling;
 
-    sh->min_width = bitmap_width;
-    sh->min_height = bitmap_height;
-    sh->flags = USSize | PMinSize | PSize;
+    sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = bitmap_width;
+    sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = bitmap_height;
+    sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
 
     x11.XSetWMNormalHints(dpy, win, sh);
     x11.XResizeWindow(dpy, win, sh->base_width, sh->base_height);
