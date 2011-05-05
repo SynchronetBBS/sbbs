@@ -248,8 +248,10 @@ static int init_window()
 	return(0);
 }
 
-/* Resize the window. This function is called after a mode change. */
-static void resize_window()
+/*
+ * Actually maps (shows) the window
+ */
+static void map_window()
 {
     XSizeHints *sh;
 
@@ -267,7 +269,6 @@ static void resize_window()
     sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
 
     x11.XSetWMNormalHints(dpy, win, sh);
-    x11.XResizeWindow(dpy, win, sh->base_width, sh->base_height);
     x11.XMapWindow(dpy, win);
 
     x11.XFree(sh);
@@ -277,9 +278,20 @@ static void resize_window()
     return;
 }
 
+/* Resize the window. This function is called after a mode change. */
+static void resize_window()
+{
+    x11.XResizeWindow(dpy, win, bitmap_width*vstat.scaling, bitmap_height*vstat.scaling);
+	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+
+    return;
+}
+
 static int init_mode(int mode)
 {
     int oldcols=vstat.cols;
+	int oldwidth=bitmap_width;
+	int oldheight=bitmap_height;
 
 	bitmap_init_mode(mode, &bitmap_width, &bitmap_height);
 
@@ -294,8 +306,10 @@ static int init_mode(int mode)
 	if(vstat.scaling < 1)
 		vstat.scaling = 1;
 
+    map_window();
     /* Resize window if necessary. */
-    resize_window();
+	if(oldwidth != bitmap_width || oldheight != bitmap_height)
+		resize_window();
 
 	sem_post(&mode_set);
     return(0);
