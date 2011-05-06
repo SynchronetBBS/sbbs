@@ -281,7 +281,7 @@ static void CustomApplicationMain (int argc, char **argv)
     return TRUE;
 }
 
-
+extern char **environ;
 /* Called when the internal event loop has just started running */
 - (void) applicationDidFinishLaunching: (NSNotification *) note
 {
