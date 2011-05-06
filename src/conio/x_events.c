@@ -64,8 +64,8 @@ static unsigned int depth=0;
 static int xfd;
 static unsigned long black;
 static unsigned long white;
-static int bitmap_width;
-static int bitmap_height;
+static int bitmap_width=0;
+static int bitmap_height=0;
 
 /* Array of Graphics Contexts */
 static GC gca[sizeof(dac_default)/sizeof(struct dac_colors)];
@@ -210,7 +210,7 @@ static int init_window()
 
     /* Create window, but defer setting a size and GC. */
     win = x11.XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-			      1, 1, 2, black, black);
+			      640*vstat.scaling, 400*vstat.scaling, 2, black, black);
 
 	wmhints=x11.XAllocWMHints();
 	if(wmhints) {
@@ -282,8 +282,6 @@ static void map_window()
 static void resize_window()
 {
     x11.XResizeWindow(dpy, win, bitmap_width*vstat.scaling, bitmap_height*vstat.scaling);
-	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
-
     return;
 }
 
@@ -308,8 +306,9 @@ static int init_mode(int mode)
 
     map_window();
     /* Resize window if necessary. */
-	if(oldwidth != bitmap_width || oldheight != bitmap_height)
+	if((!(bitmap_width == 0 && bitmap_height == 0)) && (oldwidth != bitmap_width || oldheight != bitmap_height))
 		resize_window();
+	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
 
 	sem_post(&mode_set);
     return(0);
@@ -320,11 +319,11 @@ static int video_init()
     /* If we are running under X, get a connection to the X server and create
        an empty window of size (1, 1). It makes a couple of init functions a
        lot easier. */
+	if(vstat.scaling<1)
+		vstat.scaling=1;
     if(init_window())
 		return(-1);
 
-	if(vstat.scaling<1)
-		vstat.scaling=1;
 	bitmap_init(x11_drawrect, x11_flush);
 
     /* Initialize mode 3 (text, 80x25, 16 colors) */
@@ -407,37 +406,49 @@ static void local_draw_rect(struct update_rect *rect)
 	free(rect->data);
 }
 
+static void handle_resize_event(int width, int height)
+{
+	int newFSH=1;
+	int newFSW=1;
+	int oldscaling=vstat.scaling;
+
+	// No change
+	if((width == vstat.charwidth * vstat.cols * vstat.scaling)
+			&& (height == vstat.charheight * vstat.rows * vstat.scaling))
+		return;
+
+	newFSH=width/bitmap_width;
+	newFSW=height/bitmap_height;
+	if(newFSW<1)
+		newFSW=1;
+	if(newFSH<1)
+		newFSH=1;
+	if(newFSH<newFSW)
+		vstat.scaling=newFSH;
+	else
+		vstat.scaling=newFSW;
+	if(vstat.scaling > 16)
+		vstat.scaling=16;
+	/*
+	 * We only need to resize if the width/height are not even multiples
+	 * Otherwise, we can simply resend everything
+	 */
+	if((width % (vstat.charwidth * vstat.cols) != 0)
+			|| (height % (vstat.charheight * vstat.rows) != 0))
+		resize_window();
+	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
+}
+
 static int x11_event(XEvent *ev)
 {
 	switch (ev->type) {
 		/* Graphics related events */
 		case ConfigureNotify:
-			{
-				int newFSH=1;
-				int newFSW=1;
-
-				x11_window_xpos=ev->xconfigure.x;
-				x11_window_ypos=ev->xconfigure.y;
-				x11_window_width=ev->xconfigure.width;
-				x11_window_height=ev->xconfigure.height;
-				if((ev->xconfigure.width == vstat.charwidth * vstat.cols * vstat.scaling)
-						&& (ev->xconfigure.height == vstat.charheight * vstat.rows * vstat.scaling))
-					break;
-
-				newFSH=ev->xconfigure.width/bitmap_width;
-				newFSW=ev->xconfigure.height/bitmap_height;
-				if(newFSW<1)
-					newFSW=1;
-				if(newFSH<1)
-					newFSH=1;
-				if(newFSH<newFSW)
-					vstat.scaling=newFSH;
-				else
-					vstat.scaling=newFSW;
-				if(vstat.scaling > 16)
-					vstat.scaling=16;
-				resize_window();
-			}
+			x11_window_xpos=ev->xconfigure.x;
+			x11_window_ypos=ev->xconfigure.y;
+			x11_window_width=ev->xconfigure.width;
+			x11_window_height=ev->xconfigure.height;
+			handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			break;
         case NoExpose:
                 break;
