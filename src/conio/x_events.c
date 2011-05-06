@@ -439,6 +439,27 @@ static void handle_resize_event(int width, int height)
 	send_rectangle(0,0,bitmap_width,bitmap_height,TRUE);
 }
 
+static void expose_rect(x,y,width,height)
+{
+	int sx,sy,ex,ey;
+
+	sx=x/vstat.scaling;
+	sy=y/vstat.scaling;
+
+	ex=x+width-1;
+	ey=y+height-1;
+	if((ex+1)%vstat.scaling) {
+		ex += vstat.scaling-(ex%vstat.scaling);
+	}
+	if((ey+1)%vstat.scaling) {
+		ey += vstat.scaling-(ey%vstat.scaling);
+	}
+	ex=ex/vstat.scaling;
+	ey=ey/vstat.scaling;
+
+	send_rectangle(sx, sy, ex-sx+1, ey-sy+1, TRUE);
+}
+
 static int x11_event(XEvent *ev)
 {
 	switch (ev->type) {
@@ -453,16 +474,10 @@ static int x11_event(XEvent *ev)
         case NoExpose:
                 break;
         case GraphicsExpose:
-			send_rectangle(ev->xgraphicsexpose.x/vstat.scaling
-					,ev->xgraphicsexpose.y/vstat.scaling
-					,ev->xgraphicsexpose.width/vstat.scaling+(ev->xgraphicsexpose.width%vstat.scaling?1:0)
-					,ev->xgraphicsexpose.height/vstat.scaling,TRUE+(ev->xgraphicsexpose.height%vstat.scaling?1:0));
+			expose_rect(ev->xgraphicsexpose.x, ev->xgraphicsexpose.y, ev->xgraphicsexpose.width, ev->xgraphicsexpose.height);
 			break;
         case Expose:
-			send_rectangle(ev->xexpose.x/vstat.scaling
-					,ev->xexpose.y/vstat.scaling
-					,ev->xgraphicsexpose.width/vstat.scaling+(ev->xgraphicsexpose.width%vstat.scaling?1:0)
-					,ev->xgraphicsexpose.height/vstat.scaling,TRUE+(ev->xgraphicsexpose.height%vstat.scaling?1:0));
+			expose_rect(ev->xexpose.x, ev->xexpose.y, ev->xexpose.width, ev->xexpose.height);
 			break;
 
 		/* Copy/Paste events */
