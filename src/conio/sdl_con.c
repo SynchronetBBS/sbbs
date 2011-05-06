@@ -1625,7 +1625,7 @@ int sdl_video_event_thread(void *data)
 								sdl.SemPost(sdl_ufunc_ret);
 								break;
 							case SDL_USEREVENT_COPY:
-	#if (defined(__MACH__) && defined(__APPLE__))
+	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
 									sdl.mutexP(sdl_copybuf_mutex);
@@ -1654,7 +1654,7 @@ int sdl_video_event_thread(void *data)
 	#endif
 								break;
 							case SDL_USEREVENT_PASTE:
-	#if (defined(__MACH__) && defined(__APPLE__))
+	#if (defined(__MACH__) && defined(__APPLE__)) && defined(USE_SCRAP_MANAGER)
 								if(!sdl_using_x11) {
 									ScrapRef	scrap;
 									UInt32	fl;
