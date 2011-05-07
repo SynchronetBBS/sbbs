@@ -33,7 +33,7 @@
 
 /* Icon file! */
 #ifdef __BORLANDC__
-#pragma resource "ciolib.res"
+#pragma resource "ciolib.res"		/* DO NOT REMOVE THE EXTRA \r! */
 #endif
 
 #include <stdarg.h>
