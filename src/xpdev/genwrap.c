@@ -42,6 +42,7 @@
 #include <time.h>		/* clock() */
 #include <errno.h>		/* errno */
 #include <ctype.h>		/* toupper/tolower */
+#include <linits.h>		/* CHAR_BIT */
 
 #if defined(__unix__)
 	#include <sys/ioctl.h>		/* ioctl() */
@@ -318,11 +319,11 @@ void DLLCALL xp_randomize(void)
 /****************************************************************************/
 /* Return random number between 0 and n-1									*/
 /****************************************************************************/
-int DLLCALL xp_random(int n)
+long DLLCALL xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
 	long	curr;
-	long	limit=((1U<<31) / n) * n - 1;
+	long	limit=((1U<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
 
 	if(n<2)
 		return(0);

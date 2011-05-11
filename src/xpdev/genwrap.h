@@ -324,7 +324,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 
 /* Mimic the Borland randomize() and random() CRTL functions */
 DLLEXPORT void		DLLCALL xp_randomize(void);
-DLLEXPORT int		DLLCALL	xp_random(int);
+DLLEXPORT long		DLLCALL	xp_random(int);
 
 DLLEXPORT long double  	DLLCALL	xp_timer(void);
 DLLEXPORT char*		DLLCALL os_version(char *str);
