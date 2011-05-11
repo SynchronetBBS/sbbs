@@ -321,15 +321,15 @@ void DLLCALL xp_randomize(void)
 int DLLCALL xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
-	int	curr;
-	int	limit=((1U<<31) / n) * n;
+	long	curr;
+	long	limit=((1U<<31) / n) * n - 1;
 
 	if(n<2)
 		return(0);
 
 	while(1) {
 		curr=random();
-		if(curr < limit)
+		if(curr <= limit)
 			return(curr % n);
 	}
 #else
