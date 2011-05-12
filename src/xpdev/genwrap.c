@@ -322,11 +322,13 @@ void DLLCALL xp_randomize(void)
 long DLLCALL xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
-	long	curr;
-	long	limit=((1U<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
+	long			curr;
+	unsigned long	limit;
 
 	if(n<2)
 		return(0);
+
+	limit = ((1U<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
 
 	while(1) {
 		curr=random();
