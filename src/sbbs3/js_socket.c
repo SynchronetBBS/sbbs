@@ -1187,8 +1187,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	BOOL		b;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
-		return(JS_FALSE);
+		// Prototype access
+		return(JS_TRUE);
 	}
 
     tiny = JSVAL_TO_INT(id);
@@ -1240,8 +1240,8 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	jsrefcount	rc;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
-		return(JS_FALSE);
+		// Protoype access
+		return(JS_TRUE);
 	}
 
     tiny = JSVAL_TO_INT(id);
