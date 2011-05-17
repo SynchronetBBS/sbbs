@@ -928,6 +928,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gettextinfo(&ti);
 					if(p2>p) {
 						cterm.attr=ti.normattr;
+						textattr(cterm.attr);
 						break;
 					}
 					while((p=strtok(p2,";"))!=NULL) {
