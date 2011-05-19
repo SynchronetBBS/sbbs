@@ -206,8 +206,12 @@ Database = new (function() {
 			break;
 		/* if the client wants to unlock, check credentials */
 		case this.settings.LOCK_UNLOCK:
+			var client_lock=record.shadow[record.child_name]._lock[client.id];
 			/* if the client has a lock on this record, release the lock */
-			if(record.shadow[record.child_name]._lock[client.id]) {
+			if(client_lock) {
+				/* if this was a write lock, send an update to all record subscribers */
+				if(client_lock.type == this.settings.LOCK_WRITE)
+					send_updates(record);
 				delete record.shadow[record.child_name]._lock[client.id];
 				return true;
 			}
@@ -245,7 +249,6 @@ Database = new (function() {
 			/* populate this object's children with shadow objects */
 			composite_sketch(record.data[record.child_name],record.shadow[record.child_name]);
 			/* send data updates to all subscribers */
-			send_updates(record);
 			this.updates=true;
 			return true;
 		}
@@ -263,7 +266,6 @@ Database = new (function() {
 			delete record.data[record.child_name];
 			delete record.shadow[record.child_name];
 			/* send data updates to all subscribers */
-			send_updates(record);
 			this.updates=true;
 			return true;
 		}
