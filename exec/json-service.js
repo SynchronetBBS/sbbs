@@ -52,7 +52,7 @@ service = new (function() {
 		for(var s=1;s<this.sockets.length;s++) {
 			if(!this.sockets[s].is_connected) {
 				log(LOG_INFO,"disconnected: " + this.sockets[s].remote_ip_address);
-				database.release(this.sockets[s].descriptor);
+				maindb.release(this.sockets[s].descriptor);
 				this.sockets.splice(s--,1);
 			}
 		} 
