@@ -60,6 +60,7 @@ function JSONdb (fileName) {
 		/* autosave interval */
 		AUTO_SAVE:30 /*seconds*/ *1000,
 		LAST_SAVE:-1,
+		UPDATES:false,
 		
 		/* error constants */
 		ERROR_INVALID_REQUEST:0,
@@ -153,8 +154,10 @@ function JSONdb (fileName) {
 			/* if the client has a lock on this record, release the lock */
 			if(client_lock) {
 				/* if this was a write lock, send an update to all record subscribers */
-				if(client_lock.type == this.settings.LOCK_WRITE)
+				if(client_lock.type == this.settings.LOCK_WRITE) {
+					this.settings.UPDATES=true;
 					send_updates(client,record);
+				}
 				delete record.shadow[record.child_name]._lock[client.id];
 				return true;
 			}
@@ -191,7 +194,6 @@ function JSONdb (fileName) {
 			/* populate this object's children with shadow objects */
 			composite_sketch(record.data[record.child_name],record.shadow[record.child_name]);
 			/* send data updates to all subscribers */
-			this.updates=true;
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -208,7 +210,6 @@ function JSONdb (fileName) {
 			delete record.data[record.child_name];
 			delete record.shadow[record.child_name];
 			/* send data updates to all subscribers */
-			this.updates=true;
 			return true;
 		}
         /* if there is no lock for this client, error */
@@ -305,11 +306,12 @@ function JSONdb (fileName) {
     this.save = function(timestamp) { 
 		if(!this.file)
 			return;
+		if(!this.settings.UPDATES)
+			return;
 		if(!timestamp) 
 			timestamp = Date.now();
 		/* if we are due for a data update, save everything to file */
-        if(timestamp - this.settings.LAST_SAVE >= this.settings.AUTO_SAVE 
-		&& this.updates) {
+        if(timestamp - this.settings.LAST_SAVE >= this.settings.AUTO_SAVE) {
 			//TODO: create n backups before overwriting data file
 			this.file.open("w");
 			// This function gets called every 30 seconds or so
@@ -318,6 +320,7 @@ function JSONdb (fileName) {
 			this.file.write(JSON.stringify(this.data));
 			this.file.close();
 			this.settings.LAST_SAVE=timestamp;
+			this.settings.UPDATES=false;
 		}
     };
     
@@ -367,8 +370,6 @@ function JSONdb (fileName) {
 			var record=identify_remains.call(
 				this,request.client,request.parent_name,request.child_name
 			);
-			
-			log("r: " + record.data.toSource());
 			
 			if(!record) {
 				log(LOG_DEBUG,"db: bad request removed from queue");
