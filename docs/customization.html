@@ -321,15 +321,23 @@ the various trash can files and their function are as follows:
 		the user.
 
 The trash can files also allow special key characters to be used within them,
-the tilde '~' character means &quot;contained within&quot; and the carrot '^' character
-means &quot;beginning with&quot;.  For example:
+the tilde '~' character means &quot;contained within&quot; the carrot '^' character
+means &quot;beginning with&quot;, the '!' character means &quot;negate the match logic&quote;
+and the '*' character means &quote;begins with or ends with&quot; depending on the position
+in the line.  For example:
 
 <b>sysop	</b>in the name.can would mean users could not use the name &quot;sysop&quot;.
 
-<b>sysop^</b>	would mean users could not use names beginning with the word &quot;sysop&quot;,
+<b>sysop^</b> or <b>sysop*</b>	would mean users could not use names beginning with the word &quot;sysop&quot;,
 	like &quot;sysopa&quot; or &quot;sysops&quot; etc.
 
+<b>*sysop</b> or <b>sysop*</b>	would mean users could not use names ending with the word &quot;sysop&quot;,
+	like &quot;thesysop&quot; or &quot;your_sysop&quot; etc.
+
 <b>sysop~</b>	would mean users could not use names that have the word &quot;sysop&quot;
+	anywhere in them, like &quot;imthesysop&quot; or &quot;mesysophere&quot;.
+
+<b>!sysop~</b>	would mean users <em>must</em> use names that have the word &quot;sysop&quot;
 	anywhere in them, like &quot;imthesysop&quot; or &quot;mesysophere&quot;.
 
 These key characters can be used in any of the trash can files.</pre>
