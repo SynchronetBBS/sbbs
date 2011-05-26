@@ -192,15 +192,73 @@ CVS = new (function () {
 		this.socket.send(cmdstr + "\n");
 	}
 	
-	/* check for a response from the cvs server */
-	this.response getter = function() {
-		this.verifyConnection();
-		if(this.socket.poll(1))
-			return this.socket.recvline(4096,10);
-		else
-			return undefined;
-	}
+	/*
+	 * check for a response from the cvs server 
+	 * This will handle whatever it can, and return
+	 * only unhandled responses.
+	 * 
+	 * While it "handles" error, it still returns it.
+	 */
 	
+	this.response getter = function() {
+		for(;;) {
+			this.verifyConnection();
+			if(!this.socket.poll(1))
+				return undefined;
+			var response=this.socket.recvline(4096,10);
+			var space=response.indexOf(' ');
+			if(space < 1)
+				return response;
+			var cmd=response.slice(0, space-1)
+			switch(cmd) {
+				case 'M':
+					log(LOG_INFO, response.substr(space+1));
+					if(js.global.writeln)
+						writeln(response.substr(space+1));
+					break;
+				case 'MT':
+					var m=response.split(' ',3);
+					switch(m[1]) {
+						case 'newline':
+							if(js.global.writeln)
+								writeln('');
+							break;
+						case 'text':
+							log(LOG_INFO, m[2]);
+							if(js.global.write)
+								write(m[2]);
+							break;
+						default:
+							if(m.length > 2) {
+								log(LOG_INFO, m[2]);
+								if(js.global.write)
+									write(m[2]);
+							}
+							break;
+					}
+					break;
+				case 'E':
+					log(LOG_ERR, response.substr(space+1));
+					if(js.global.writeln)
+						writeln(response.substr(space+1));
+					break;
+				case 'F':
+					break;
+				case 'error':
+					var m=response.split(' ',3);
+					if(m[1].length > 0) {
+						log(LOG_ERR, "ERROR "+m[1]+" - "+m[2]);
+					}
+					else {
+						log(LOG_ERR, "ERROR - "+m[2]);
+					}
+					return response;
+				default:
+					return response;
+			}
+		}
+	}
+
 	/* verify that socket is connected to the server */
 	this.verifyConnection = function() {
 		if(!this.socket || !this.socket.is_connected) {
