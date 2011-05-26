@@ -373,7 +373,8 @@ int conn_close(void)
 }
 
 enum failure_reason {
-	 FAILURE_RESOLVE
+	 FAILURE_WHAT_FAILURE
+	,FAILURE_RESOLVE
 	,FAILURE_CANT_CREATE
 	,FAILURE_CONNECT_ERROR
 	,FAILURE_ABORTED
@@ -383,89 +384,97 @@ enum failure_reason {
 
 int conn_socket_connect(struct bbslist *bbs)
 {
-	SOCKET	sock;
-	HOSTENT *ent;
-	SOCKADDR_IN	saddr;
-	char	*p;
-	unsigned int	neta;
-	int		nonblock;
-	struct timeval tv;
-	fd_set	wfd;
-	int		failcode;
+	SOCKET			sock=INVALID_SOCKET;
+	char			*p;
+	int				nonblock;
+	struct timeval	tv;
+	fd_set			wfd;
+	int				failcode=FAILURE_WHAT_FAILURE;
+	struct addrinfo	hints;
+	struct addrinfo	*res;
+	struct addrinfo	*cur;
+	char			portnum[6];
 
-	for(p=bbs->addr;*p;p++)
-		if(*p!='.' && !isdigit(*p))
-			break;
-
-	if(!(*p))
-		neta=inet_addr(bbs->addr);
-	else {
-		uifc.pop("Looking up host");
-		if((ent=gethostbyname(bbs->addr))==NULL) {
-			failcode=FAILURE_RESOLVE;
-			goto connect_failed;
-		}
-		neta=*((unsigned int*)ent->h_addr_list[0]);
-		uifc.pop(NULL);
-	}
-	uifc.pop("Connecting...");
-
-	sock=socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
-	if(sock==INVALID_SOCKET) {
-		failcode=FAILURE_CANT_CREATE;
+	uifc.pop("Looking up host");
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags=PF_UNSPEC;
+	hints.ai_socktype=SOCK_STREAM;
+	hints.ai_protocol=IPPROTO_TCP;
+	hints.ai_flags=AI_ADDRCONFIG|AI_NUMERICSERV;
+	sprintf(portnum, "%hu", bbs->port);
+	if(getaddrinfo(bbs->addr, portnum, &hints, &res)!=0) {
+		failcode=FAILURE_RESOLVE;
 		goto connect_failed;
 	}
-	memset(&saddr,0,sizeof(saddr));
-	saddr.sin_addr.s_addr = neta;
-	saddr.sin_family = AF_INET;
-	saddr.sin_port   = htons((WORD)bbs->port);
+	uifc.pop(NULL);
+	uifc.pop("Connecting...");
 
-	/* Set to non-blocking for the connect */
-	nonblock=-1;
-	ioctlsocket(sock, FIONBIO, &nonblock);
 	/* Drain the input buffer to avoid accidental cancel */
 	while(kbhit())
 		getch();
-	if(connect(sock, (struct sockaddr *)&saddr, sizeof(saddr))) {
-		switch(ERROR_VALUE) {
-			case EINPROGRESS:
-			case EINTR:
-			case EAGAIN:
+	for(cur=res; cur && failcode==FAILURE_WHAT_FAILURE; cur=cur->ai_next) {
+		if(sock==INVALID_SOCKET) {
+			sock=socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
+			if(sock==INVALID_SOCKET) {
+				failcode=FAILURE_CANT_CREATE;
+				goto connect_failed;
+			}
+			/* Set to non-blocking for the connect */
+			nonblock=-1;
+			ioctlsocket(sock, FIONBIO, &nonblock);
+		}
 
+		if(connect(sock, cur->ai_addr, cur->ai_addrlen)) {
+			switch(ERROR_VALUE) {
+				case EINPROGRESS:
+				case EINTR:
+				case EAGAIN:
 #if (!defined(EAGAIN) && defined(EWOULDBLOCK)) || (EAGAIN!=EWOULDBLOCK)
-			case EWOULDBLOCK:
+				case EWOULDBLOCK:
 #endif
-				break;
-			default:
-				failcode=FAILURE_CONNECT_ERROR;
-				goto connect_failed;
-		}
-	}
-	else
-		goto connected;
-	for(;;) {
-		tv.tv_sec=1;
-		tv.tv_usec=0;
+					for(;;) {
+						tv.tv_sec=1;
+						tv.tv_usec=0;
 
-		FD_ZERO(&wfd);
-		FD_SET(sock, &wfd);
-		switch(select(sock+1, NULL, &wfd, NULL, &tv)) {
-			case 0:
-				if(kbhit()) {
-					failcode=FAILURE_ABORTED;
-					goto connect_failed;
-				}
-				break;
-			case -1:
-				failcode=FAILURE_GENERAL;
-				goto connect_failed;
-			case 1:
-				goto connected;
-			default:
-				break;
+						FD_ZERO(&wfd);
+						FD_SET(sock, &wfd);
+						switch(select(sock+1, NULL, &wfd, NULL, &tv)) {
+							case 0:
+								if(kbhit()) {
+									failcode=FAILURE_ABORTED;
+									goto connect_failed;
+								}
+								break;
+							case -1:
+								closesocket(sock);
+								sock=INVALID_SOCKET;
+								continue;
+							case 1:
+								goto connected;
+							default:
+								break;
+						}
+					}
+
+					break;
+				default:
+					closesocket(sock);
+					sock=INVALID_SOCKET;
+					continue;
+			}
 		}
+		else
+			goto connected;
 	}
+	if(!cur) {
+		failcode=FAILURE_CONNECT_ERROR;
+		goto connect_failed;
+	}
+	if(failcode != FAILURE_WHAT_FAILURE)
+		goto connect_failed;
+
 connected:
+	freeaddrinfo(res);
 	nonblock=0;
 	ioctlsocket(sock, FIONBIO, &nonblock);
 	if(!socket_check(sock, NULL, NULL, 0)) {
@@ -477,6 +486,7 @@ connected:
 	return(sock);
 
 connect_failed:
+	freeaddrinfo(res);
 	{
 		char str[LIST_ADDR_MAX+40];
 
