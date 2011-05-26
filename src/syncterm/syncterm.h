@@ -56,6 +56,7 @@ struct syncterm_settings {
 	struct modem_settings mdm;
 	char	TERM[INI_MAX_VALUE_LEN+1];
 	char	list_path[MAX_PATH+1];
+	int		scaling_factor;
 };
 
 extern char *inpath;
