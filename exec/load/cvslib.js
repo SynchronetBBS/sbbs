@@ -206,51 +206,56 @@ CVS = new (function () {
 			if(!this.socket.poll(1))
 				return undefined;
 			var response=this.socket.recvline(4096,10);
-			var space=response.indexOf(' ');
-			if(space < 1)
+			var cmd=response.split(' ', 2);
+			if(cmd.length < 2)
 				return response;
-			var cmd=response.slice(0, space-1)
-			switch(cmd) {
+			switch(cmd[0]) {
 				case 'M':
-					log(LOG_INFO, response.substr(space+1));
+					log(LOG_INFO, cmd[1]);
 					if(js.global.writeln)
-						writeln(response.substr(space+1));
+						writeln(cmd[1]);
 					break;
 				case 'MT':
-					var m=response.split(' ',3);
-					switch(m[1]) {
+					var m=cmd[1].split(' ',2);
+					switch(m[0]) {
 						case 'newline':
 							if(js.global.writeln)
 								writeln('');
 							break;
 						case 'text':
-							log(LOG_INFO, m[2]);
+							log(LOG_INFO, m[1]);
 							if(js.global.write)
-								write(m[2]);
+								write(m[1]);
 							break;
 						default:
-							if(m.length > 2) {
-								log(LOG_INFO, m[2]);
+							if(m.length > 1) {
+								log(LOG_INFO, m[1]);
 								if(js.global.write)
-									write(m[2]);
+									write(m[1]);
 							}
 							break;
 					}
 					break;
 				case 'E':
-					log(LOG_ERR, response.substr(space+1));
+					log(LOG_ERR, m[1]);
 					if(js.global.writeln)
-						writeln(response.substr(space+1));
+						writeln(m[1]);
 					break;
 				case 'F':
 					break;
+				case 'Valid-requests':
+					var m=cmd[1].split(' ');
+					for each(var r in m) {
+						this.validRequests[r] = true;
+					}
+					break;
 				case 'error':
-					var m=response.split(' ',3);
-					if(m[1].length > 0) {
-						log(LOG_ERR, "ERROR "+m[1]+" - "+m[2]);
+					var m=cmd[1].split(' ',2);
+					if(m[0].length > 0) {
+						log(LOG_ERR, "ERROR "+m[0]+" - "+m[1]);
 					}
 					else {
-						log(LOG_ERR, "ERROR - "+m[2]);
+						log(LOG_ERR, "ERROR - "+m[1]);
 					}
 					return response;
 				default:
@@ -280,8 +285,6 @@ CVS = new (function () {
 		/* if cvs has been passed as part of the command, strip it */
 		if(cmd[0].toUpperCase() == "CVS")
 			cmd.shift();
-		
-		
 	}
 
 ////////////////////////////////// PROTOCOL API
@@ -294,12 +297,12 @@ CVS = new (function () {
 		/* request a list of valid server requests */
 		'valid-requests':function() {
 			this.parent.request('valid-requests');
-			var requests=this.parent.response.split(" ");
-			for each(var r in requests) {
-				this.parent.validRequests[r] = true;
+			var request=this.parent.response;
+			if(request != 'ok') {
+				log(LOG_ERR, "Unhandled response: '"+request+"'");
 			}
 		},
-		
+
 		/* tell server what responses we can handle */
 		'Valid-responses':function() {
 			var str="Valid-responses";
