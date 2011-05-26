@@ -74,39 +74,41 @@ CVS = new (function () {
 	
 	/* default accepted responses  */
 	this.validResponses = {
-		'ok':					true,
-		'error':				true,
-		'Valid-requests':		true,
-		'E':					true,
-		'M':					true,
-		'Mbinary':				true,
-		'F':					true,
-		'MT':					true,
-		'Set-sticky':			true,
-		'Clear-sticky':			true,
-		'Set-static-directory':	true,
-		'Clear-static-directory':true,
-		'Mode':					true,
-		'Mod-time':				true,
 		'Checked-in':			true,
-		'Checksum':				true,
+		'Checksum':				false,
+		'Clear-rename':			false,
+		'Clear-static-directory':false,
+		'Clear-sticky':			false,
 		'Copy-file':			true,
-		'Patched':				true,
-		'Rcs-diff':				true,
-		'Renamed':				true,
-		'Template':				true,
-		'Notified':				true,
-		'Module-expansion':		true,
-		'EntriesExtra':			true,
-		'Wrapper-rcsOption':	true,
-		'Clear-rename':			true,
-		'New-entry':			true,
-		'Updated':				true,
-		'Created':				true,
-		'Update-existing':		true,
+		'Created':				false,
+		'E':					true,
+		'EntriesExtra':			false,
+		'F':					true,
+		'M':					true,
+		'MT':					true,
+		'Mbinary':				false,
 		'Merged':				true,
+		'Mod-time':				true,
+		'Mode':					false,
+		'Module-expansion':		false,
+		'New-entry':			false,
+		'Notified':				false,
+		'Patched':				false,
+		'Rcs-diff':				false,
+		'Remove-entry':			true,
 		'Removed':				true,
-		'Remove-entry':			true
+		'Renamed':				false,
+		'Set-checkin-prog':		false,
+		'Set-static-directory':	false,
+		'Set-sticky':			false,
+		'Set-update-prog':		false,
+		'Template':				false,
+		'Update-existing':		true,
+		'Updated':				true,
+		'Valid-requests':		true,
+		'Wrapper-rcsOption':	false,
+		'error':				true,
+		'ok':					true,
 	};
 	
 	/* populated by response to valid-requests  */
@@ -137,7 +139,6 @@ CVS = new (function () {
 	this.init = function() {
 		this.protocol["Valid-responses"]();
 		this.protocol["valid-requests"]();
-		this.protocol["UseUnchanged"]();
 		this.protocol["Root"](this.CVSROOT);
 	}
 	
@@ -154,8 +155,8 @@ CVS = new (function () {
 			this.request(this.CVSUSER);
 			/* send cvs password */
 			this.socket.send("A");
-			for(var c=0;c<CVSPASS.length;c++) 
-				this.socket.sendBin(encode_char(CVSPASS[c]),1);
+			for(var c=0;c<this.CVSPASS.length;c++) 
+				this.socket.sendBin(encode_char(this.CVSPASS[c]),1);
 			this.socket.send("\n");
 			this.request("END AUTH REQUEST");
 			/* end auth  */
@@ -234,31 +235,31 @@ CVS = new (function () {
 	
 		/* request a list of valid server requests */
 		'valid-requests':function() {
-			this.request('valid-requests');
-			var requests=this.response.split(" ");
+			this.parent.request('valid-requests');
+			var requests=this.parent.response.split(" ");
 			for each(var r in requests) {
-				this.validRequests[r] = true;
+				this.parent.validRequests[r] = true;
 			}
 		},
 		
 		/* tell server what responses we can handle */
 		'Valid-responses':function() {
 			var str="Valid-responses";
-			for(var r in this.validResponses) {
-				if(this.validResponses[r] == true)
+			for(var r in this.parent.validResponses) {
+				if(this.parent.validResponses[r] == true)
 					str+=" "+r;
 			}
-			this.request(str);
+			this.parent.request(str);
 		},
 		
 		/* specify CVSROOT on server */
 		'Root':function(pathname) {
-			this.request("Root " + pathname);
+			this.parent.request("Root " + pathname);
 		},
 		
 		/* specify directory on server */
 		'Directory':function(dir,repository) {
-			this.request("Directory " + local-directory);
+			this.parent.request("Directory " + local-directory);
 			/*
 				repository \n
 			*/
@@ -271,22 +272,22 @@ CVS = new (function () {
 		
 		/* tell server that a file has not been modified since last update or checkout */
 		'Unchanged':function(filename) {
-			this.request("Unchanged " + filename);
+			this.parent.request("Unchanged " + filename);
 		},
 		
 		/* send a pre-command-processing argument */
 		'Argument':function(str) {
-			this.request("Argument " + str);
+			this.parent.request("Argument " + str);
 		},
 
 		/* append a pre-command-processing argument */
 		'Argumentx':function(str) {
-			this.request("Argumentx " + str);
+			this.parent.request("Argumentx " + str);
 		},
 		
 		/* notify server that an edit/unedit command took place */
 		'Notify':function(filename) {
-			this.request("Notify " + filename);
+			this.parent.request("Notify " + filename);
 			/*
 				notification-type \t time \t clienthost \t
 				working-dir \t watches \n
@@ -294,21 +295,22 @@ CVS = new (function () {
 		},
 		
 		'Questionable':function(filename) {
-			this.request("Questionable " + filename);
+			this.parent.request("Questionable " + filename);
 		},
 		
 		'Case':function() {
-			this.request("Case");
+			this.parent.request("Case");
 		},
 		
 		'Utf8':function() {
-			this.request("Utf8");
+			this.parent.request("Utf8");
 		},
 		
 		'Global_option':function(option) {
-			this.request("Global_option " + option);
+			this.parent.request("Global_option " + option);
 		},
 	};
+	this.protocol.parent=this;
 	
 ////////////////////////////////// CLIENT API
 
@@ -449,6 +451,3 @@ CVS = new (function () {
 		return values[ch];
 	}
 })();
-
-
-
