@@ -1,6 +1,7 @@
 /* 	
 	Javascript CVS client for Synchronet (2011)
 	-	code by mcmlxxix
+	-	awesome by Deuce
 */
 
 CVS = new (function () {
