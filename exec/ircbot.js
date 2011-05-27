@@ -204,6 +204,11 @@ function main() {
 		for (my_srv in Bot_Servers) {
 			var cmdline;
 			var srv = Bot_Servers[my_srv];
+
+			if(srv.sock && (!srv.sock.is_connected)) {
+				srv.sock.close();
+				src.sock=0;
+			}
 			if (!srv.sock &&(srv.lastcon <time())) { //we're not connected.
 				var consock = IRC_client_connect(srv.host, srv.nick,
 					srv.nick, real_name, srv.port);
