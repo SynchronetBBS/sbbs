@@ -178,6 +178,39 @@ CVS = new (function () {
 		}
 	}
 
+////////////////////////////////// Stuff that should be overwritten
+
+	this.write = function(str) {
+		if(js.global.write)
+			write(str);
+		else if(js.global.print)
+			print(str);
+		else
+			this.writeln(str);
+	}
+
+	this.writeln = function(str) {
+		if(js.global.writeln)
+			writeln(str);
+		if(js.global.print)
+			print(str+"\n");
+		else
+			log(LOG_INFO, str);
+	}
+
+	this.errstr = function(str) {
+		log(LOG_INFO, str);
+		if(js.global.alert)
+			alert(str);
+		else if(js.global.writeln)
+			writeln(str);
+		else if(js.global.print)
+			print(str+"\n");
+	}
+
+	this.flush = function() {
+	}
+
 ////////////////////////////////// MAGIC PROPERTIES
 
 	/*
@@ -261,41 +294,28 @@ CVS = new (function () {
 					this.files[repofile].status=cmd[0];
 					break;
 				case 'M':
-					if(js.global.writeln)
-						writeln(cmd[1]);
-					else
-						log(LOG_INFO, cmd[1]);
+					this.println(cmd[1]);
 					break;
 				case 'MT':
 					var m=split_cmd(cmd[1],2);
 					switch(m[0]) {
 						case 'newline':
-							if(js.global.writeln)
-								writeln('');
+							this.writeln('');
 							break;
 						case 'text':
-							if(js.global.write)
-								write(m[1]);
-							else
-								log(LOG_INFO, m[1]);
+							this.write(m[1]);
 							break;
 						default:
-							if(m.length > 1) {
-								if(js.global.write)
-									write(m[1]);
-								else
-									log(LOG_INFO, m[1]);
-							}
+							if(m.length > 1)
+								this.write(m[1]);
 							break;
 					}
 					break;
 				case 'E':
-					if(js.global.alert)
-						alert(cmd[1]);
-					else
-						log(LOG_ERR, cmd[1]);
+					this.errstr(cmd[1]);
 					break;
 				case 'F':
+					this.flush();
 					break;
 				case 'Valid-requests':
 					var m=cmd[1].split(' ');
@@ -306,11 +326,11 @@ CVS = new (function () {
 				case 'error':
 					var m=cmd[1].split(' ',2);
 					if(m[0].length > 0) {
-						log(LOG_ERR, "ERROR "+m[0]+" - "+m[1]);
+						this.errstr("ERROR "+m[0]+" - "+m[1]);
 					}
 					else {
 						if(m[1].length > 0)
-							log(LOG_ERR, "ERROR - "+m[1]);
+							this.errstr("ERROR - "+m[1]);
 					}
 					return response;
 				default:
