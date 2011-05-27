@@ -252,8 +252,6 @@ CVS = new (function () {
 					var directory=cmd[1];
 					var repofile=this.socket.recvline(65535,10);
 					var entries=this.socket.recvline(65535,10);
-					
-					log(LOG_INFO, directory+(entries.split('/').pop())+" checked in.");
 					break;
 				case 'Merged':
 				case 'Updated':
@@ -264,19 +262,17 @@ CVS = new (function () {
 					var filedata=recv_file(this.socket);
 
 					this.files[repofile]={};
-					this.files[repofile].meta={};
-					this.files[repofile].meta.entries=entries;
-					this.files[repofile].meta.mode=mode;
+					this.files[repofile].entries=entries;
+					this.files[repofile].mode=mode;
 					this.files[repofile].data=filedata;
 					this.files[repofile].status=cmd[0];
-
-					log(LOG_INFO, directory+(entries.split('/').pop())+" "+cmd[0]+".");
 					break;
 				case 'Removed':
 					var directory=cmd[1];
 					var repofile=this.socket.recvline(65535,10);
 
-					log(LOG_INFO, directory+(entries.split('/').pop())+" removed from repository.");
+					this.files[repofile]={};
+					this.files[repofile].status=cmd[0];
 					break;
 				case 'M':
 					if(js.global.writeln)
