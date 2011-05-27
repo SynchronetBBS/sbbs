@@ -16,7 +16,9 @@ CVS = new (function () {
 	this.CVSUSER = "anonymous";
 	this.CVSPASS = "";
 	this.CVSAUTH = "pserver";
-	
+
+	this.files={};
+
 	/* default global options */
 	this.globalOptions = {
 		'z':					-1,	// compression level (0 - 9)
@@ -74,7 +76,7 @@ CVS = new (function () {
 	
 	/* default accepted responses  */
 	this.validResponses = {
-		'Checked-in':			true,	// Required
+		'Checked-in':			true,	// Handled
 		'Checksum':				false,
 		'Clear-rename':			false,
 		'Clear-static-directory':false,
@@ -87,7 +89,7 @@ CVS = new (function () {
 		'M':					true,	// Handled
 		'MT':					true,	// Handled
 		'Mbinary':				false,
-		'Merged':				true,	// Required
+		'Merged':				true,	// Handled
 		'Mod-time':				false,
 		'Mode':					false,
 		'Module-expansion':		false,
@@ -96,7 +98,7 @@ CVS = new (function () {
 		'Patched':				false,
 		'Rcs-diff':				false,
 		'Remove-entry':			false,
-		'Removed':				true,	// Required
+		'Removed':				true,	// Handled
 		'Renamed':				false,
 		'Set-checkin-prog':		false,
 		'Set-static-directory':	false,
@@ -104,7 +106,7 @@ CVS = new (function () {
 		'Set-update-prog':		false,
 		'Template':				false,
 		'Update-existing':		false,
-		'Updated':				true,	// Required
+		'Updated':				true,	// Handled
 		'Valid-requests':		true,	// Handled
 		'Wrapper-rcsOption':	false,
 		'error':				true,	// Handled
@@ -218,6 +220,11 @@ CVS = new (function () {
 			return ret;
 		}
 		
+		function recv_file() {
+			var length=parseInt(this.socket.recvline());
+			return this.socket.recv(length);
+		}
+
 		for(;;) {
 			this.verifyConnection();
 			if(!this.socket.poll(1))
@@ -230,6 +237,36 @@ CVS = new (function () {
 				return response;
 			}
 			switch(cmd[0]) {
+				case 'Checked-in':
+					var directory=cmd[1];
+					var repofile=this.socket.recvline(65535,10);
+					var entries=this.socket.recvline(65535,10);
+					
+					log(LOG_INFO, directory+(entries.split('/').pop())+" checked in.");
+					break;
+				case 'Merged':
+				case 'Updated':
+					var directory=cmd[1];
+					var repofile=this.socket.recvline(65535,10);
+					var entries=this.socket.recvline(65535,10);
+					var mode=this.socket.recvline(65535,10);
+					var filedata=recv_file();
+
+					this.files[repofile]={};
+					this.files[repofile].meta={};
+					this.files[repofile].meta.entries=entries;
+					this.files[repofile].meta.mode=mode;
+					this.files[repofile].data=filedata;
+					this.files[repofile].status=cmd[0];
+
+					log(LOG_INFO, directory+(entries.split('/').pop())+" "+cmd[0]+".");
+					break;
+				case 'Removed':
+					var directory=cmd[1];
+					var repofile=this.socket.recvline(65535,10);
+
+					log(LOG_INFO, directory+(entries.split('/').pop())+" removed from repository.");
+					break;
 				case 'M':
 					log(LOG_INFO, cmd[1]);
 					if(js.global.writeln)
