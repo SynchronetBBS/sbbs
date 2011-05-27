@@ -89,9 +89,10 @@ CVS = new (function () {
 	this.init = function() {
 		this.protocol["Valid-responses"]();
 		this.protocol["valid-requests"]();
+		this.protocol.UseUnchanged();
 		this.protocol.Root(this.CVSROOT);
 	}
-	
+
 	/* authenticate */
 	this.authenticate = function() {
 		/* authenticate client */
@@ -385,6 +386,7 @@ CVS = new (function () {
 			}
 		},
 
+		init:function(root) { this.rcmd('init', root); },
 		'valid-requests':function()	{ this.rcmd('valid-requests'); },
 		'expand-modules':function()	{ this.rcmd('expand-modules'); },
 		ci:function() { this.rcmd('ci'); },
@@ -399,9 +401,10 @@ CVS = new (function () {
 		log:function() { this.rcmd('log'); },
 		co:function() { this.rcmd('co'); },
 		export:function() { this.rcmd('export'); },
+		rannotate:function() { this.rcmd('rannotate'); },
 		rdiff:function() { this.rcmd('rdiff'); },
+		rlog:function() { this.rcmd('rlog'); },
 		rtag:function() { this.rcmd('rtag'); },
-		init:function(root) { this.rcmd('init', root); },
 		update:function() { this.rcmd('update'); },
 		import:function() { this.rcmd('import'); },
 		add:function() { this.rcmd('add'); },
@@ -413,7 +416,9 @@ CVS = new (function () {
 		release:function() { this.rcmd('release'); },
 		noop:function() { this.rcmd('noop'); },
 		'update-patches':function() { this.rcmd('update-patches'); },
+		'gzip-file-contents':function(level) { this.rcmd('gzip-file-contents', level); },
 		'wrapper-sendme-rcsOptions':function() { this.rcmd('wrapper-sendme-rcsOptions'); },
+		version:function() { this.rcmd('version'); },
 
 		cmd:function(cmd, arg1, arg2) {
 			if(!this.parent.validRequests[cmd])
@@ -440,7 +445,21 @@ CVS = new (function () {
 		Questionable:function(filename) { this.cmd("Questionable", filename); },
 		Case:function() { this.cmd("Case"); },
 		Utf8:function() { this.cmd("Utf8"); },
-		Global_option:function(option) { this.cmd("Global_option " + option); },
+		Global_option:function(option) { this.cmd("Global_option ", option); },
+		'Max-dotdot':function(level) { this.cmd('Max-dotdot', level); },
+		'Static-directory':function() { this.cmd('Static-directory'); },
+		Sticky:function(tagspec) { this.cmd('Sticky', tagspec); },
+		Kopt:function(option) { this.cmd('Kopt', option); },
+		'Checkin-time':function(time) { this.cmd('Checkin-time', time); },
+		Modified:function(filename, mode, filedata) { throw("Modified is not implemented!"); },
+		'Is-modified':function(filename) { this.cmd('Is-modified', filename); },
+		UseUnchanged:function() { this.cmd('UseUnchanged'); },
+		'Empty-conflicts':function() { this.cmd('Empty-conflicts'); },
+		'Gzip-stream':function(level) { this.cmd('Gzip-stream', level); },
+		'Kerberos-encrypt':function() { this.cmd('Kerberos-encrypt'); },
+		'Gssapi-encrypt':function() { this.cmd('Gssapi-encrypt'); },
+		'Gssapi-authenticate':function() { this.cmd('Gssapi-authenticate'); },
+		Set:function(varValPair) { this.cmd('Set', varValPair); },
 	};
 	this.protocol.parent=this;
 	
