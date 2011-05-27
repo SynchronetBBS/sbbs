@@ -220,9 +220,9 @@ CVS = new (function () {
 			return ret;
 		}
 		
-		function recv_file() {
-			var length=parseInt(this.socket.recvline());
-			return this.socket.recv(length);
+		function recv_file(socket) {
+			var length=parseInt(socket.recvline());
+			return socket.recv(length);
 		}
 
 		for(;;) {
@@ -250,7 +250,7 @@ CVS = new (function () {
 					var repofile=this.socket.recvline(65535,10);
 					var entries=this.socket.recvline(65535,10);
 					var mode=this.socket.recvline(65535,10);
-					var filedata=recv_file();
+					var filedata=recv_file(this.socket);
 
 					this.files[repofile]={};
 					this.files[repofile].meta={};
@@ -274,7 +274,7 @@ CVS = new (function () {
 						log(LOG_INFO, cmd[1]);
 					break;
 				case 'MT':
-					var m=cmd[1].split_cmd(' ',2);
+					var m=split_cmd(cmd[1],2);
 					switch(m[0]) {
 						case 'newline':
 							if(js.global.writeln)
