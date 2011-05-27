@@ -169,6 +169,34 @@ CVS = new (function () {
 		return null;
 	}
 
+	this.log = function(dir, files, srv, root, user, pw) {
+		// Boilerplate...
+		if(srv)
+			this.CVSSERV = srv;
+		if(root)
+			this.CVSROOT = root;
+		if(user)
+			this.CVSUSER = user;
+		if(pw)
+			this.CVSPASS = pw;
+
+		this.verifyConnection();
+		while(dir.charAt(0)=='/')
+			dir=dir.substr(1);
+		while(dir.charAt(dir.length-1)=='/')
+			dir=dir.substr(0,dir.length-1);
+		this.protocol.Directory('.', this.CVSROOT+(dir.length?'/'+dir:''));
+		this.protocol.Entry('/'+file+'/'+curr_ver+'///');
+		this.protocol.Unchanged(file);
+		this.protocol.Argument(file);
+		this.protocol.update();
+		this.disconnect();
+		if(this.files[(dir.length?dir+'/':'')+file]) {
+			return this.files[(dir.length?dir+'/':'')+file].data;
+		}
+		return null;
+	}
+
 	/* verify that socket is connected to the server */
 	this.verifyConnection = function() {
 		if(!this.socket || !this.socket.is_connected) {
@@ -295,7 +323,7 @@ CVS = new (function () {
 					this.files[repofile].status=cmd[0];
 					break;
 				case 'M':
-					this.println(cmd[1]);
+					this.writeln(cmd[1]);
 					break;
 				case 'MT':
 					var m=split_cmd(cmd[1],2);
