@@ -10,13 +10,13 @@ CVS = new (function () {
 ////////////////////////////////// SETTINGS
 
 	/* connection defaults */
-	this.CVSHOME = argv[0];
 	this.CVSSERV = "cvs.synchro.net";
 	this.CVSROOT = "/cvsroot/sbbs";
 	this.CVSUSER = "anonymous";
 	this.CVSPASS = "";
 	this.CVSAUTH = "pserver";
 
+	/* Files which have been recieved via commands */
 	this.files={};
 
 	/* default accepted responses  */
@@ -60,6 +60,8 @@ CVS = new (function () {
 	
 	/* populated by response to valid-requests  */
 	this.validRequests = {
+		'valid-requests':		true,	// Better be.
+		'Valid-responses':		true,	// Better be.
 	};
 
 ////////////////////////////////// METHODS
@@ -159,6 +161,7 @@ CVS = new (function () {
 		this.protocol.Unchanged(file);
 		this.protocol.Argument(file);
 		this.protocol.update();
+		this.disconnect();
 		if(this.files[(dir.length?dir+'/':'')+file]) {
 			return this.files[(dir.length?dir+'/':'')+file].data;
 		}
@@ -324,6 +327,8 @@ CVS = new (function () {
 		//TODO ---> http://www.cvsnt.org/cvsclient/Requests.html
 	
 		rcmd:function(cmd, arg) {
+			if(!this.parent.validRequests[cmd])
+				throw(cmd+' command not supported by remote!');
 			this.parent.request(cmd+(arg?" "+arg:''));
 			var response=this.parent.response;
 			if(response != 'ok') {
@@ -361,71 +366,32 @@ CVS = new (function () {
 		'update-patches':function() { this.rcmd('update-patches'); },
 		'wrapper-sendme-rcsOptions':function() { this.rcmd('wrapper-sendme-rcsOptions'); },
 
+		cmd:function(cmd, arg1, arg2) {
+			if(!this.parent.validRequests[cmd])
+				throw(cmd+' command not supported by remote!');
+			this.parent.request(cmd+(arg1?" "+arg1:'')+(arg2?"\n"+arg2:''));
+		},
+
 		/* tell server what responses we can handle */
 		'Valid-responses':function() {
-			var str="Valid-responses";
+			var str="";
 			for(var r in this.parent.validResponses) {
 				if(this.parent.validResponses[r] == true)
 					str+=" "+r;
 			}
-			this.parent.request(str);
+			this.cmd('Valid-responses', str);
 		},
-		
-		/* specify CVSROOT on server */
-		'Root':function(pathname) {
-			this.parent.request("Root " + pathname);
-		},
-		
-		/* specify directory on server */
-		'Directory':function(dir,repository) {
-			this.parent.request("Directory " + dir + "\n" + repository);
-		},
-		
-		/* tell server local file revision */
-		'Entry':function(str) {
-			this.parent.request("Entry " + str);
-		},
-		
-		/* tell server that a file has not been modified since last update or checkout */
-		'Unchanged':function(filename) {
-			this.parent.request("Unchanged " + filename);
-		},
-		
-		/* send a pre-command-processing argument */
-		'Argument':function(str) {
-			this.parent.request("Argument " + str);
-		},
-
-		/* append a pre-command-processing argument */
-		'Argumentx':function(str) {
-			this.parent.request("Argumentx " + str);
-		},
-		
-		/* notify server that an edit/unedit command took place */
-		'Notify':function(filename) {
-			throw("Notify is not implemented!");
-			this.parent.request("Notify " + filename);
-			/*
-				notification-type \t time \t clienthost \t
-				working-dir \t watches \n
-			*/
-		},
-		
-		'Questionable':function(filename) {
-			this.parent.request("Questionable " + filename);
-		},
-		
-		'Case':function() {
-			this.parent.request("Case");
-		},
-		
-		'Utf8':function() {
-			this.parent.request("Utf8");
-		},
-		
-		'Global_option':function(option) {
-			this.parent.request("Global_option " + option);
-		},
+		Root:function(pathname) { this.cmd('Root', pathname); },
+		Directory:function(dir,repository) { this.cmd('Directory',dir,repository); },
+		Entry:function(str) { this.cmd("Entry", str); },
+		Unchanged:function(filename) { this.cmd("Unchanged", filename); },
+		Argument:function(str) { this.cmd("Argument", str); },
+		Argumentx:function(str) { this.cmd("Argumentx", str); },
+		Notify:function(filename) { throw("Notify is not implemented!"); },
+		Questionable:function(filename) { this.cmd("Questionable", filename); },
+		Case:function() { this.cmd("Case"); },
+		Utf8:function() { this.cmd("Utf8"); },
+		Global_option:function(option) { this.cmd("Global_option " + option); },
 	};
 	this.protocol.parent=this;
 	
