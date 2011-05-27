@@ -74,41 +74,41 @@ CVS = new (function () {
 	
 	/* default accepted responses  */
 	this.validResponses = {
-		'Checked-in':			true,
+		'Checked-in':			true,	// Required
 		'Checksum':				false,
 		'Clear-rename':			false,
 		'Clear-static-directory':false,
 		'Clear-sticky':			false,
-		'Copy-file':			true,
+		'Copy-file':			false,
 		'Created':				false,
-		'E':					true,
+		'E':					true,	// Handled
 		'EntriesExtra':			false,
-		'F':					true,
-		'M':					true,
-		'MT':					true,
+		'F':					true,	// Handled
+		'M':					true,	// Handled
+		'MT':					true,	// Handled
 		'Mbinary':				false,
-		'Merged':				true,
-		'Mod-time':				true,
+		'Merged':				true,	// Required
+		'Mod-time':				false,
 		'Mode':					false,
 		'Module-expansion':		false,
 		'New-entry':			false,
 		'Notified':				false,
 		'Patched':				false,
 		'Rcs-diff':				false,
-		'Remove-entry':			true,
-		'Removed':				true,
+		'Remove-entry':			false,
+		'Removed':				true,	// Required
 		'Renamed':				false,
 		'Set-checkin-prog':		false,
 		'Set-static-directory':	false,
 		'Set-sticky':			false,
 		'Set-update-prog':		false,
 		'Template':				false,
-		'Update-existing':		true,
-		'Updated':				true,
-		'Valid-requests':		true,
+		'Update-existing':		false,
+		'Updated':				true,	// Required
+		'Valid-requests':		true,	// Handled
 		'Wrapper-rcsOption':	false,
-		'error':				true,
-		'ok':					true,
+		'error':				true,	// Handled
+		'ok':					true,	// Handled
 	};
 	
 	/* populated by response to valid-requests  */
@@ -201,14 +201,34 @@ CVS = new (function () {
 	 */
 	
 	this.response getter = function() {
+		function split_cmd(str, count) {
+			if(count==undefined)
+				count=2;
+
+			var ret=[];
+
+			while(--count) {
+				var space=str.indexOf(' ');
+				if(space==-1)
+					break;
+				ret.push(str.substr(0, space));
+				str=str.substr(space+1);
+			}
+			ret.push(str);
+			return ret;
+		}
+		
 		for(;;) {
 			this.verifyConnection();
 			if(!this.socket.poll(1))
 				return undefined;
-			var response=this.socket.recvline(4096,10);
-			var cmd=response.split(' ', 2);
-			if(cmd.length < 2)
+			var response=this.socket.recvline(65535,10);
+			var cmd=split_cmd(response,2);
+			if(cmd.length < 2) {
+				if(cmd[0] != 'ok')
+					log(LOG_ERR, "Response with no arg: "+response);
 				return response;
+			}
 			switch(cmd[0]) {
 				case 'M':
 					log(LOG_INFO, cmd[1]);
@@ -216,7 +236,7 @@ CVS = new (function () {
 						writeln(cmd[1]);
 					break;
 				case 'MT':
-					var m=cmd[1].split(' ',2);
+					var m=cmd[1].split_cmd(' ',2);
 					switch(m[0]) {
 						case 'newline':
 							if(js.global.writeln)
@@ -237,9 +257,9 @@ CVS = new (function () {
 					}
 					break;
 				case 'E':
-					log(LOG_ERR, m[1]);
+					log(LOG_ERR, cmd[1]);
 					if(js.global.writeln)
-						writeln(m[1]);
+						writeln(cmd[1]);
 					break;
 				case 'F':
 					break;
@@ -255,7 +275,8 @@ CVS = new (function () {
 						log(LOG_ERR, "ERROR "+m[0]+" - "+m[1]);
 					}
 					else {
-						log(LOG_ERR, "ERROR - "+m[1]);
+						if(m[1].length > 0)
+							log(LOG_ERR, "ERROR - "+m[1]);
 					}
 					return response;
 				default:
