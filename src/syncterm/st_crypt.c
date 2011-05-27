@@ -24,6 +24,7 @@ void exit_crypt()
 
 #else
 
+#ifdef __unix__
 /*
  * cryptlib calls fork() to gather entropy.
  * It then calls exit().
@@ -38,6 +39,7 @@ void exit(int code)
 {
 	_exit(code);
 }
+#endif
 
 struct crypt_funcs cl;
 
