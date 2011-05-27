@@ -19,61 +19,6 @@ CVS = new (function () {
 
 	this.files={};
 
-	/* default global options */
-	this.globalOptions = {
-		'z':					-1,	// compression level (0 - 9)
-		'x':					-1,	// encryption
-		'r':					-1,	// read-only on new files
-		'w':					-1	// read/write on new files
-	}
-	
-	/* default common command options */
-	this.commonOptions = {
-		'P':					true, 	// prune empty directories 
-		'R':					true	// recursive directory searching
-	}
-	
-	/* default file filters */
-	this.filter = {
-		'.':					true,
-		'..':					true,
-		'core':					true,
-		'RCSLOG':				true,
-		'tags':					true,
-		'TAGS':					true,
-		'RCS':					true,
-		'.make.state':			true,
-		'.nse_depinfo':			true,
-		'#*':					true,
-		'.#*':					true,
-		'cvslog.*':				true,
-		',*':					true,
-		'CVS':					true,
-		'CVS.adm':				true,
-		'.del-*':				true,
-		'*.a':					true,
-		'*.olb':				true,
-		'*.o':					true,
-		'*.obj':				true,
-		'*.so':					true,
-		'*.Z':					true,
-		'*~':					true,
-		'*.old':				true,
-		'*.elc':				true,
-		'*.ln':					true,
-		'*.bak':				true,
-		'*.BAK':				true,
-		'*.orig':				true,
-		'*.rej':				true,
-		'*.exe':				true,
-		'*.dll':				true,
-		'*.pdb':				true,
-		'*.lib':				true,
-		'*.exp':				true,
-		'_$*':					true,
-		'*$':					true
-	}
-	
 	/* default accepted responses  */
 	this.validResponses = {
 		'Checked-in':			true,	// Handled
@@ -141,7 +86,7 @@ CVS = new (function () {
 	this.init = function() {
 		this.protocol["Valid-responses"]();
 		this.protocol["valid-requests"]();
-		this.protocol["Root"](this.CVSROOT);
+		this.protocol.Root(this.CVSROOT);
 	}
 	
 	/* authenticate */
@@ -163,11 +108,10 @@ CVS = new (function () {
 			this.request("END AUTH REQUEST");
 			/* end auth  */
 			break;
-		case "GSSAPI":
-			// todo??
-			break;
+		default:
+			throw("Unhandled AUTH scheme.");
 		}
-		
+
 		var response=this.response;
 		if(response == "I LOVE YOU") {
 			log(LOG_DEBUG,"authenticated");
@@ -187,13 +131,52 @@ CVS = new (function () {
 	this.disconnect = function() {
 		this.socket.close();
 	}
-	
+
 	/* send a request or command to the cvs server */
 	this.request = function(cmdstr) {
 		this.verifyConnection();
 		this.socket.send(cmdstr + "\n");
 	}
-	
+
+	this.check_update = function(file, dir, curr_ver, srv, root, user, pw) {
+		// Boilerplate...
+		if(srv)
+			this.CVSSERV = srv;
+		if(root)
+			this.CVSROOT = root;
+		if(user)
+			this.CVSUSER = user;
+		if(pw)
+			this.CVSPASS = pw;
+
+		this.verifyConnection();
+		while(dir.charAt(0)=='/')
+			dir=dir.substr(1);
+		while(dir.charAt(dir.length-1)=='/')
+			dir=dir.substr(0,dir.length-1);
+		this.protocol.Directory('.', this.CVSROOT+(dir.length?'/'+dir:''));
+		this.protocol.Entry('/'+file+'/'+curr_ver+'///');
+		this.protocol.Unchanged(file);
+		this.protocol.Argument(file);
+		this.protocol.update();
+		if(this.files[(dir.length?dir+'/':'')+file]) {
+			return this.files[(dir.length?dir+'/':'')+file].data;
+		}
+		return null;
+	}
+
+	/* verify that socket is connected to the server */
+	this.verifyConnection = function() {
+		if(!this.socket || !this.socket.is_connected) {
+			this.connect();
+			if(!this.socket.is_connected) {
+				throw("error connecting to server");
+			}
+		}
+	}
+
+////////////////////////////////// MAGIC PROPERTIES
+
 	/*
 	 * check for a response from the cvs server 
 	 * This will handle whatever it can, and return
@@ -333,29 +316,6 @@ CVS = new (function () {
 		}
 	}
 
-	/* verify that socket is connected to the server */
-	this.verifyConnection = function() {
-		if(!this.socket || !this.socket.is_connected) {
-			this.connect();
-			this.init();
-			if(!this.socket.is_connected) {
-				throw("error connecting to server");
-			}
-		}
-	}
-
-////////////////////////////////// COMMAND LINE API
-
-	/* parse a standard cvs command line string */
-	this.command = function(str) {
-		//  cvs [ cvs_options ] cvs_command [ command_options ] [ command_args ]
-		var cmd=str.split(" ");
-		
-		/* if cvs has been passed as part of the command, strip it */
-		if(cmd[0].toUpperCase() == "CVS")
-			cmd.shift();
-	}
-
 ////////////////////////////////// PROTOCOL API
 
 	/* cvs protocol commands */
@@ -469,55 +429,6 @@ CVS = new (function () {
 	};
 	this.protocol.parent=this;
 	
-////////////////////////////////// CLIENT API
-
-	/* cvs client commands */
-	this.commands = {
-	
-		//TODO ---> http://ximbiot.com/cvs/manual/cvs-1.11.23/cvs_16.html
-		
-		/* retrieve file updates */
-		'update':function(dir,files,options) {
-		
-		},
-		/* checkout files */
-		'checkout':function(repository,options) {
-		
-		},
-		/* add files */
-		'add':function(dir,files,message,options) {
-		
-		},
-		/* administration */
-		'admin':function(dir,files,options) {
-		
-		},
-		/* display which revision modified each line of a file */
-		'annotate':function(dir,filename,options) {
-		
-		},
-		/* commit changes to repository */
-		'commit':function(dir,files,message,options) {
-		
-		},
-		/* compare one file revision to another */
-		'diff':function(dir,filename,options) {
-		
-		},
-		/* export source */
-		'export':function(repository,options) {
-		
-		},
-		/* import source into cvs */
-		'import':function(repository,dir,options) {
-		
-		},
-		/* remove files from repository */
-		'remove':function(dir,files,options) {
-		
-		}
-	}
-
 ////////////////////////////////// INTERNAL FUNCTIONS
 
 	/* cvs password encryption */
