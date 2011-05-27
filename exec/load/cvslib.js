@@ -268,9 +268,10 @@ CVS = new (function () {
 					log(LOG_INFO, directory+(entries.split('/').pop())+" removed from repository.");
 					break;
 				case 'M':
-					log(LOG_INFO, cmd[1]);
 					if(js.global.writeln)
 						writeln(cmd[1]);
+					else
+						log(LOG_INFO, cmd[1]);
 					break;
 				case 'MT':
 					var m=cmd[1].split_cmd(' ',2);
@@ -280,23 +281,26 @@ CVS = new (function () {
 								writeln('');
 							break;
 						case 'text':
-							log(LOG_INFO, m[1]);
 							if(js.global.write)
 								write(m[1]);
+							else
+								log(LOG_INFO, m[1]);
 							break;
 						default:
 							if(m.length > 1) {
-								log(LOG_INFO, m[1]);
 								if(js.global.write)
 									write(m[1]);
+								else
+									log(LOG_INFO, m[1]);
 							}
 							break;
 					}
 					break;
 				case 'E':
-					log(LOG_ERR, cmd[1]);
-					if(js.global.writeln)
-						writeln(cmd[1]);
+					if(js.global.alert)
+						alert(cmd[1]);
+					else
+						log(LOG_ERR, cmd[1]);
 					break;
 				case 'F':
 					break;
@@ -352,14 +356,43 @@ CVS = new (function () {
 
 		//TODO ---> http://www.cvsnt.org/cvsclient/Requests.html
 	
-		/* request a list of valid server requests */
-		'valid-requests':function() {
-			this.parent.request('valid-requests');
-			var request=this.parent.response;
-			if(request != 'ok') {
-				log(LOG_ERR, "Unhandled response: '"+request+"'");
+		rcmd:function(cmd, arg) {
+			this.parent.request(cmd+(arg?" "+arg:''));
+			var response=this.parent.response;
+			if(response != 'ok') {
+				log(LOG_ERR, "Unhandled response: '"+response+"'");
 			}
 		},
+
+		'valid-requests':function()	{ this.rcmd('valid-requests'); },
+		'expand-modules':function()	{ this.rcmd('expand-modules'); },
+		ci:function() { this.rcmd('ci'); },
+		diff:function() { this.rcmd('diff'); },
+		tag:function() { this.rcmd('tag'); },
+		status:function() { this.rcmd('status'); },
+		admin:function() { this.rcmd('admin'); },
+		history:function() { this.rcmd('history'); },
+		watchers:function() { this.rcmd('watchers'); },
+		editors:function() { this.rcmd('editors'); },
+		annotate:function() { this.rcmd('annotate'); },
+		log:function() { this.rcmd('log'); },
+		co:function() { this.rcmd('co'); },
+		export:function() { this.rcmd('export'); },
+		rdiff:function() { this.rcmd('rdiff'); },
+		rtag:function() { this.rcmd('rtag'); },
+		init:function(root) { this.rcmd('init', root); },
+		update:function() { this.rcmd('update'); },
+		import:function() { this.rcmd('import'); },
+		add:function() { this.rcmd('add'); },
+		remove:function() { this.rcmd('remove'); },
+		'watch-on':function() { this.rcmd('watch-on'); },
+		'watch-off':function() { this.rcmd('watch-off'); },
+		'watch-add':function() { this.rcmd('watch-add'); },
+		'watch-remove':function() { this.rcmd('watch-remove'); },
+		release:function() { this.rcmd('release'); },
+		noop:function() { this.rcmd('noop'); },
+		'update-patches':function() { this.rcmd('update-patches'); },
+		'wrapper-sendme-rcsOptions':function() { this.rcmd('wrapper-sendme-rcsOptions'); },
 
 		/* tell server what responses we can handle */
 		'Valid-responses':function() {
@@ -378,15 +411,12 @@ CVS = new (function () {
 		
 		/* specify directory on server */
 		'Directory':function(dir,repository) {
-			this.parent.request("Directory " + local-directory);
-			/*
-				repository \n
-			*/
+			this.parent.request("Directory " + dir + "\n" + repository);
 		},
 		
 		/* tell server local file revision */
 		'Entry':function(str) {
-			
+			this.parent.request("Entry " + str);
 		},
 		
 		/* tell server that a file has not been modified since last update or checkout */
@@ -406,6 +436,7 @@ CVS = new (function () {
 		
 		/* notify server that an edit/unedit command took place */
 		'Notify':function(filename) {
+			throw("Notify is not implemented!");
 			this.parent.request("Notify " + filename);
 			/*
 				notification-type \t time \t clienthost \t
