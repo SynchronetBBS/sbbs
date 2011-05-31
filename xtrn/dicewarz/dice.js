@@ -57,7 +57,7 @@ var		scores=			[];
 var		messages=		[];								//MESSAGES QUEUED FOR DISPLAY UPON RELOADING MAIN MENU
 var		games=			new GameStatusInfo();
 var		settings=		new GameSettings();
-var		dice=			loadDice();
+var		gamedice=		loadDice();
 var 	oldpass=		console.ctrlkey_passthru;
 
 js.on_exit("file_remove(userFileName);");
@@ -902,14 +902,13 @@ function	battle(attackFrom,attackTo,gameNumber)
 	clearArea(16,menuColumn,8);
 	showSelected(attackFrom,"\1n\1r\1h");
 	showSelected(attackTo,"\1n\1r\1h");
-	var totals=rollDice(attackFrom.dice,attackTo.dice);
+	var totals=rollDice(attackFrom.dice,attackTo.dice,gamedice);
 	
 	var defender=attackTo.player;
 	var attacker=attackFrom.player;
 	var defending=attackTo.location;
 	var attacking=attackFrom.location;
-	if(totals[0]>totals[1])
-	{
+	if(totals[0]>totals[1]) {
 		g.players[defender].removeTerritory(defending); 	//REMOVE TILE FROM DEFENDER'S LIST
 		g.players[attacker].territories.push(defending);	//ADD TILE TO ATTACKER'S LIST
 		g.players[defender].totalDice-=(attackTo.dice);
@@ -917,9 +916,7 @@ function	battle(attackFrom,attackTo,gameNumber)
 		g.grid[defending].assign(attacker,g.players[attacker]);
 		g.grid[defending].dice=(attackFrom.dice-1);
 		if(g.players[defender].territories.length==0) 
-		{
 			g.eliminatePlayer(defender,attacker);
-		}
 	}
 	g.grid[attacking].dice=1;
 	attackFrom.show();
@@ -948,14 +945,15 @@ function	forfeit(gameNumber,playerNumber)
 	var p=g.players[playerNumber];
 	
 	if(p.user > 0) {
-		Log("forfeiting " + system.username(g.players[playerNumber].user) + " in game " + gm.gameNumber);
+		Log("forfeiting " + system.username(g.players[playerNumber].user) + " in game " + gameNumber);
 		scores[p.user].losses+=1;
 		scores[p.user].score+=settings.forfeitPoints;
 	}
 	else {
 		Log("forfeiting " + g.players[playerNumber].AI.name + " in game " + gameNumber);
 	}
-	if(g.singlePlayer) 
+	
+	if(g.singlePlayer && p.user > 0) 
 		file_remove(g.fileName);
 	else {
 		var activePlayers=g.countActivePlayers();
@@ -1119,10 +1117,11 @@ function 	takeTurnAI(gameNumber,playerNumber)
 	
 	/* if we are down to two players */
 	if(g.countActivePlayers().length == 2) {
+		var perc = computerPlayer.countTerritory() / g.mapSize;
 		/* if this ai occupies less than a quarter of the map, forfeit the game */
-		if((computerPlayer.countTerritory() / g.mapSize) < (0.25)) {
-			Log("computer player forfeiting game " + gameNumber);
+		if(perc < 0.25) {
 			forfeit(gameNumber,playerNumber);
+			return false;
 		}
 	}
 

@@ -1,17 +1,17 @@
 //#########################DICE ROLLING FUNCTIONS############################
-function	rollDice(a,b)
+function	rollDice(a,b,dice)
 {								//MAIN DICE ROLLING FUNCTION
 	var totals=[0,0];
-	var x=menuColumn;		var y=16;
+	var x=menuColumn;		
+	var y=16;
 
 	bc=console.ansi(BG_RED);
 	fc=console.ansi(LIGHTGRAY);
 
-	fancyRoll(a,x,y,fc,bc);
+	fancyRoll(a,x,y,fc,bc,dice);
 	xx=x;
 	yy=y;
-	for(aa=0;aa<a;aa++)
-	{
+	for(aa=0;aa<a;aa++) {
 		rand=(random(6)+1);
 		dice[rand].display(xx,yy,fc,bc);
 		xx+=4;
@@ -23,11 +23,10 @@ function	rollDice(a,b)
 	bc=console.ansi(BG_LIGHTGRAY);
 	fc=console.ansi(RED);
 
-	fancyRoll(b,x,y,fc,bc);
+	fancyRoll(b,x,y,fc,bc,dice);
 	xx=x;
 	yy=y;
-	for(bb=0;bb<b;bb++)
-	{
+	for(bb=0;bb<b;bb++) {
 		rand=(random(6)+1);
 		totals[1]+=rand;
 		dice[rand].display(xx,yy,fc,bc);
@@ -38,14 +37,12 @@ function	rollDice(a,b)
 	printf("\1n\1r\1hAttacker: " + totals[0] + "\1n   Defender: " + totals[1]);
 	return totals;
 }
-function	fancyRoll(qty,x,y,fc,bc)
+function	fancyRoll(qty,x,y,fc,bc,dice)
 {								//"ROLLING DICE" DISPLAY
-	for(roll=0;roll<8;roll++)
-	{
+	for(roll=0;roll<8;roll++) {
 		xx=x;
 		yy=y;
-		for(dr=0;dr<qty;dr++)
-		{
+		for(dr=0;dr<qty;dr++) {
 			dice[random(6)+1].display(xx,yy,fc,bc);
 			xx+=4;
 		}
@@ -60,13 +57,11 @@ function	Die(number)
 	this.line3="   ";
 	this.dot="\xFE";
 
-	if(this.number==2 || this.number==3)
-	{
+	if(this.number==2 || this.number==3) {
 		this.line1=this.dot+"  ";
 		this.line3="  "+this.dot;
 	}
-	if(this.number==4 || this.number==5 || this.number==6) 	
-	{
+	if(this.number==4 || this.number==5 || this.number==6) {
 		this.line1=this.dot+" "+this.dot;
 		this.line3=this.dot+" "+this.dot;
 	}
@@ -74,8 +69,7 @@ function	Die(number)
 		this.line2=" "+this.dot+" ";
 	if(this.number==6)	
 		this.line2=this.dot+" "+this.dot;
-	this.display=function(x,y,b,f)
-	{
+	this.display=function(x,y,b,f) {
 		console.gotoxy(x,y); y++;
 		printf(f + b + this.line1);
 		console.gotoxy(x,y); y++;
@@ -87,10 +81,8 @@ function	Die(number)
 }
 function	loadDice()
 {								//INITIALIZE SIX SIDED DICE OBJECTS
-	dice_=[];
-	for(d=1;d<=6;d++)
-	{
+	var dice_=[];
+	for(d=1;d<=6;d++) 
 		dice_[d]=new Die(d);
-	}
 	return dice_;
 }
