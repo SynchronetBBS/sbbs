@@ -93,7 +93,7 @@ function 	displayMessages()
 {
 	var x=30;
 	var y=20;
-	var fileName=game_dir + user.alias + ".usr";
+	var fileName=root + user.alias + ".usr";
 	if(file_size(fileName)>0) {
 		var file=new File(fileName);
 		file.open('r',false);

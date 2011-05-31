@@ -20,21 +20,16 @@ function	Player(userNumber, vote)
 	}
 	this.removeTerritory=function(territory)
 	{
-		for(rem in this.territories)
-		{
-			if(this.territories[rem]==territory)
-			{
+		for(rem in this.territories) {
+			if(this.territories[rem]==territory) 
 				this.territories.splice(rem,1);
-			}
 		}
 	}
 	this.countTerritory=function()
 	{
 		var count=0;
-		for(tt in this.territories)
-		{
+		for(tt in this.territories)	
 			count++;
-		}
 		return count;
 	}
 }

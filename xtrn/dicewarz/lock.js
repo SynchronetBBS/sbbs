@@ -1,6 +1,6 @@
 function	Locked(fileName,timeOut)
 {
-	var fname=(game_dir+fileName+".lck");
+	var fname=(root+fileName+".lck");
 	if(file_exists(fname))
 	{
 		if(!timeOut) return true;
@@ -19,7 +19,7 @@ function	Locked(fileName,timeOut)
 }
 function	Lock(fileName)
 {
-	var fname=(game_dir+fileName+".lck");
+	var fname=(root+fileName+".lck");
 	var lockfile=new File(fname);
 		lockfile.open('we', false); 
 	if(!lockfile.is_open) 
@@ -34,12 +34,12 @@ function	Lock(fileName)
 function	Unlock(fileName)
 {
 	if(fileName==-1 || !fileName) return;
-	var fname=(game_dir+fileName+".lck");
+	var fname=(root+fileName+".lck");
 	file_remove(fname);
 }
 function	UnlockAll()
 {
-	var lockList=directory(game_dir + "*.lck"); 		
+	var lockList=directory(root + "*.lck"); 		
 	if(lockList.length)
 	{
 		for(lf in lockList)

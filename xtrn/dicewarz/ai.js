@@ -122,8 +122,7 @@ function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 	var rand=random(100);
 	if(g.grid[base].dice>g.grid[target].dice)
 		return(true);
-	if(g.grid[base].dice==g.grid[target].dice)
-	{
+	if(g.grid[base].dice==g.grid[target].dice) {
 		if(computerPlayer.territories.length>g.grid.length/6 || computerPlayer.reserve>=20)
 			return(true);
 		else {
@@ -131,8 +130,7 @@ function	WildAndCrazyAICheck(gameNumber, playerNumber, base, target)
 				return(true);
 		}
 	}
-	if(rand>50 && g.grid[base].dice==(g.grid[target].dice-1))
-	{
+	if(rand>50 && g.grid[base].dice==(g.grid[target].dice-1)) {
 		if(computerPlayer.territories.length>g.grid.length/6)
 			return(true);
 	}

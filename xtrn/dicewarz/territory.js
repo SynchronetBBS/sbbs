@@ -51,9 +51,6 @@ function 	Territory(location)
 	}
 	this.show=				function()
 	{										//DISPLAY THIS TERRITORY ON THE MAP
-//		ALTERNATE MAP POSITION DISPLAY
-//		display=(this.bfColor + ""+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "");
-
 		display=(this.bfColor + "\xFE"+ blackbg + this.bColor + this.fColor + " " + this.dice + " " + blackbg + this.bfColor + "\xFE");
 		console.gotoxy(this.x-1, this.y);
 		console.putmsg(display);
