@@ -129,7 +129,7 @@ function boggle() {
 						break;
 					case "\x1b":	
 					case "Q":
-						splashExit();
+						return;
 					case "P":
 						for(var d in player.days) {
 							if(player.days[d]==parseInt(current,10)) {
@@ -532,7 +532,6 @@ function splashExit() {
 	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 	console.clear();
-	exit();
 }
 
 client.callback=processUpdates;
@@ -906,7 +905,6 @@ function Score() {
 }
 
 boggle();
-
 client.unsubscribe("boggle.players");
 splashExit();
 
