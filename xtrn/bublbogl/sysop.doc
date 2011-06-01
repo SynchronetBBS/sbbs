@@ -40,7 +40,7 @@ NOTE:	It is recommended that you check frequently for updates
 	
 *****UPDATING YOUR LOCAL LIBRARIES******
 
-Before you attempt to install the inter-BBS service, it is recommended that you
+It is recommended that you
 update your relative 'EXEC/' and 'EXEC/LOAD/' paths (typically '/SBBS/EXEC' and '/SBBS/EXEC/LOAD')
 with the latest files from the Synchronet CVS repository at:
 	

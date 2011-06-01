@@ -10,8 +10,6 @@
 	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
-var root = js.exec_dir;
-var stream = argv[0];
 var oldpass=console.ctrl_key_passthru;
 
 load("graphic.js");
@@ -21,6 +19,9 @@ load("funclib.js");
 load("calendar.js");
 load(root + "timer.js");
  
+splashStart();
+client.subscribe("boggle.players");
+
 var wordvalues=[];
 wordvalues[4]=1;
 wordvalues[5]=2;
@@ -29,68 +30,31 @@ wordvalues[7]=5;
 wordvalues[8]=11;
 
 var max_future=2;
-var calendar;
-var month;
 var current;
 var today;
-var lobby;
-var players;
 var player;
 var input;
 var info;
 var wordlist;
 var playing_game=false;
 var clearalert=false;
+var calendar = new Calendar(58,4,"\1y","\0012\1g\1h");
+var lobby = new Lobby(1,1);
+var date = new Date();
+var data = new GameData();
 
-function boggle()
-{
+function boggle() {
 	function init()
 	{
-		calendar=new Calendar(58,4,"\1y","\0012\1g\1h");
-		players=new PlayerList();
-		player=players.findUser(user.alias);
-		month=new MonthData();
-		lobby=new Lobby(1,1);
+		client.write("boggle.players." + user.alias + ".laston",time(),2);
+		player=findUser(user.alias);
 		current=calendar.selected;
 		today=calendar.selected;
-	}
-	function splashStart()
-	{
-		console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
-		bbs.sys_status|=SS_MOFF;
-		bbs.sys_status |= SS_PAUSEOFF;	
-		console.clear();
-		//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
-	}
-	function splashExit()
-	{
-		console.ctrlkey_passthru=oldpass;
-		bbs.sys_status&=~SS_MOFF;
-		bbs.sys_status&=~SS_PAUSEOFF;
-		console.attributes=ANSI_NORMAL;
-		players.storePlayer();
-		if(stream) sendFiles();
-		console.clear();
-		var splash_filename=root + "exit.bin";
-		if(!file_exists(splash_filename)) exit();
-		
-		var splash_size=file_size(splash_filename);
-		splash_size/=2;		
-		splash_size/=80;	
-		var splash=new Graphic(80,splash_size);
-		splash.load(splash_filename);
-		splash.draw();
-		
-		console.gotoxy(1,23);
-		console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-		while(console.inkey(K_NOECHO|K_NOSPIN)==="");
-		console.clear();
-		exit();
+		updateCalendar();
 	}
 	function updateCalendar()
 	{
-		for(var d in player.days)
-		{
+		for(var d in player.days){
 			calendar.highlights[player.days[d]]=true;
 		}
 	}
@@ -98,10 +62,8 @@ function boggle()
 	{
 		showMessage("\1r\1hJump to which date?\1n\1r: ");
 		var newdate=console.getnum(calendar.daysinmonth);
-		if(newdate>0) 
-		{
-			if(newdate>today+max_future)
-			{
+		if(newdate>0) {
+			if(newdate>today+max_future) {
 				showMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
 				return false;
 			}
@@ -116,10 +78,8 @@ function boggle()
 	function browseCalendar(k)
 	{
 		showMessage("\1r\1hUse Arrow keys to change date and [\1n\1rEnter\1h] to select");
-		if(calendar.selectDay(k)) 
-		{
-			if(calendar.selected>today+max_future)
-			{
+		if(calendar.selectDay(k)) {
+			if(calendar.selected>today+max_future) {
 				showMessage("\1r\1hYou cannot play more than " + max_future + " days ahead");
 				calendar.drawDay(calendar.selected);
 				calendar.selected=current;
@@ -134,7 +94,7 @@ function boggle()
 	{
 		lobby.draw();
 		console.gotoxy(58,2);
-		console.putmsg(centerString("\1c\1h" + month.currentdate.getMonthName() + "\1n\1c - \1c\1h" + month.currentdate.getFullYear(),21));
+		console.putmsg(centerString("\1c\1h" + date.getMonthName() + "\1n\1c - \1c\1h" + date.getFullYear(),21));
 	}
 	function showMessage(txt)
 	{
@@ -153,13 +113,14 @@ function boggle()
 	{
 		redraw();
 		mainloop:
-		while(1)
-		{
+		while(1){
+			if(data.updated) {
+				data.updated=false;
+				showScores();
+			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(k)
-			{
-				switch(k.toUpperCase())
-				{
+			if(k){
+				switch(k.toUpperCase())	{
 					case KEY_UP:
 					case KEY_DOWN:
 					case KEY_LEFT:
@@ -170,10 +131,8 @@ function boggle()
 					case "Q":
 						splashExit();
 					case "P":
-						for(var d in player.days)
-						{
-							if(player.days[d]==parseInt(current,10)) 
-							{
+						for(var d in player.days) {
+							if(player.days[d]==parseInt(current,10)) {
 								showMessage("\1r\1hYou have already played this date");
 								continue mainloop;
 							}
@@ -192,37 +151,38 @@ function boggle()
 						break;
 				}
 			}
+			cycle();
 		}
 	}
 	function playGame()
 	{
 		console.clear(ANSI_NORMAL);
-		var game=month.games[parseInt(current,10)];
+		var gameNumber=parseInt(current,10);
+		var game=new GameBoard(gameNumber,data.boards[gameNumber]);
 		playing_game=true;
 		
 		function play()
 		{
 			redraw();
-			while(1)
-			{
+			while(1){
 				if(!info.cycle()) endGame();
 				var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-				if(k)
-				{
-					switch(k.toUpperCase())
-					{
+				if(k){
+					switch(k.toUpperCase()){
 						case "\x1b":	
-							if(playing_game)
-							{
-								notify("\1r\1hEnd this game? [N,y]: ");
-								if(console.getkey().toUpperCase()=="N") break;
-								input.clear();
+							if(!playing_game)
+								return;
+							notify("\1r\1hEnd this game? [N,y]: ");
+							if(console.getkey().toUpperCase()=="Y") {
 								endGame();
-							}
-							return;
+								return;
+							} 
+							input.clear();
+							break;
 						case "\r":
 						case "\n":
-							if(input.buffer.length) submitWord();
+							if(input.buffer.length) 
+								submitWord();
 							break;
 						case KEY_UP:
 						case KEY_DOWN:
@@ -243,11 +203,14 @@ function boggle()
 							redraw();
 							break;
 						default:
-							if(playing_game)	input.add(k);
-							else notify("\1r\1hThis game has ended");
+							if(playing_game) 
+								input.add(k);
+							else 
+								notify("\1r\1hThis game has ended");
 							break;
 					}
 				}
+				cycle();
 			}
 		}
 		function notify(msg)
@@ -259,31 +222,26 @@ function boggle()
 		{
 			var word=truncsp(input.buffer);
 			input.clear();
-			game.board.clearSelected();
+			game.clearSelected();
 			
-			if(word.length>3)
-			{
-				if(findWord(word))
-				{
-					game.board.drawSelected(false);
+			if(word.length>3){
+				if(findWord(word)){
+					game.drawSelected(false);
 					notify("\1r\1h Word already entered");
 				}
-				else if(checkWord(word)) 
-				{
+				else if(checkWord(word)) {
 					AddPoints(word);
 					AddWord(word);
 					info.draw();
 				}
 			}
-			else
-			{
+			else{
 				notify("\1r\1h Word minimum: 4 letters");
 			}
 		}
 		function findWord(word)
 		{
-			for(w in wordlist.words)
-			{
+			for(w in wordlist.words){
 				if(word==wordlist.words[w]) return true;
 			}
 			return false;
@@ -291,8 +249,7 @@ function boggle()
 		function checkWord(word)
 		{
 			if(word.length<4 || word.length>25 || word.indexOf(" ")>=0) return false;
-			if(!ValidateWord(word))
-			{
+			if(!ValidateWord(word))	{
 				notify("\1r\1h Cannot make word");
 				return false;
 			}
@@ -302,30 +259,26 @@ function boggle()
 			var dict=new File(filename);
 			dict.open('r+',true);
 			
-			if(!scanDictionary(word,0,dict.length,dict)) 
-			{
-				game.board.drawSelected(false);
+			if(!scanDictionary(word,0,dict.length,dict)) {
+				game.drawSelected(false);
 				notify("\1r\1h Word invalid");
 				dict.close();
 				return false;
 			}
 			
 			dict.close();
-			game.board.drawSelected(true);
+			game.drawSelected(true);
 			return true;
 		}
 		function ValidateWord(word)
 		{
 			var match=false;
-			var grid=game.board.grid;
-			for(var x=0;x<grid.length;x++)
-			{
-				for(var y=0;y<grid[x].length;y++)
-				{
+			var grid=game.grid;
+			for(var x=0;x<grid.length;x++){
+				for(var y=0;y<grid[x].length;y++){
 					var position=grid[x][y];
 					var letter=word.charAt(0).toUpperCase();
-					if(position.letter==letter) 
-					{
+					if(position.letter==letter)	{
 						position.selected=true;	
 
 						var start_index=1;
@@ -347,31 +300,24 @@ function boggle()
 			var checky=[	-1,	-1,	0,	1,	1,	1,	0,	-1	];
 			var match=false;
 
-			for(var i=0;i<8;i++)
-			{
+			for(var i=0;i<8;i++){
 				var posx=position.x+checkx[i];
 				var posy=position.y+checky[i];
 				
-				if(posx>=0 && posx<5 && posy>=0 && posy<5)
-				{
+				if(posx>=0 && posx<5 && posy>=0 && posy<5){
 					var checkposition=grid[posx][posy];
-					if(checkposition.letter==letter)
-					{
-						if(!checkposition.selected)
-						{
+					if(checkposition.letter==letter){
+						if(!checkposition.selected)	{
 							var start_index=1;
 							checkposition.selected=true;
-							if(string.length==1) 
-							{
+							if(string.length==1) {
 								return true;
 							}
 							var coords={'x':posx,'y':posy};
-							if(letter=="Q" && string.charAt(1).toUpperCase()=="U")
-							{
+							if(letter=="Q" && string.charAt(1).toUpperCase()=="U") {
 								start_index=2;
 							}
-							if(RouteCheck(coords,string.substr(start_index),grid)) 
-							{
+							if(RouteCheck(coords,string.substr(start_index),grid)) {
 								match=true;
 							}
 							else checkposition.selected=false;
@@ -388,13 +334,11 @@ function boggle()
 			var checkword=dict.readln();
 			while(dict.position<=middle) checkword=dict.readln();
 			var comparison=word.localeCompare(checkword);
-			if(comparison<0) 
-			{
+			if(comparison<0) {
 				return scanDictionary(word,lower,middle,dict);
 			}
 			if(dict.position>upper || upper-lower<2) return false;
-			else if(comparison>0)
-			{
+			else if(comparison>0){
 				return scanDictionary(word,middle,upper,dict);
 			}
 			else return true;
@@ -426,11 +370,11 @@ function boggle()
 		function endGame()
 		{
 			if(!playing_game) return;
-			var p=players.players[user.alias];
+			var p=data.players[user.alias];
 			var points=info.score.points;
 			p.points+=points;
 			p.days.push(parseInt(current,10));
-			players.storePlayer();
+			data.storePlayer();
 			playing_game=false;
 		}
 		init();
@@ -441,53 +385,60 @@ function boggle()
 		var posx=3;
 		var posy=6;
 		var index=0;
+		var count=0;
 		
 		var scores=sortScores();
-		for(var s in scores)
-		{
-			var score=scores[s];
-			var plays=players.getDayCount(score.name);
-			if(score.points>0)
-			{
-				if(score.name==user.alias) console.attributes=LIGHTGREEN;
-				else console.attributes=GREEN;
-				console.gotoxy(posx,posy+index);
+		for(var s=0;s<scores.length;s++) {
+			if(scores[s].name == user.alias) {
+				index = (s-5);
+				if(index < 0)
+					index = 0;
+				break;
+			}
+		}
+		
+		for(var i=0;i<11;i++) {
+			var score=scores[index + i];
+			if(!score) {
+				break;
+			}
+			else if(score.points>0) {
+				if(score.name==user.alias) 
+					console.attributes=LIGHTGREEN;
+				else 
+					console.attributes=GREEN;
+				console.gotoxy(posx,posy+count);
 				console.putmsg(score.name,P_SAVEATR);
 				console.right(23-score.name.length);
 				console.putmsg(printPadded(score.points,5,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(players.getAverage(score.name),P_SAVEATR);
+				console.putmsg(getAverage(score.name),P_SAVEATR);
 				console.right(3);
-				console.putmsg(printPadded(plays,4,undefined,"right"),P_SAVEATR);
+				console.putmsg(printPadded(getDayCount(score.name),4,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(printPadded(players.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
-				index++;
+				console.putmsg(printPadded(formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+				count++;
 			}
 		}
-		if(month.winner)
-		{
+		
+		if(data.winner.name)	{
 			console.gotoxy(48,18);
-			console.putmsg("\1c\1h" + month.winner.name);
+			console.putmsg("\1c\1h" + data.winner.name);
 			console.gotoxy(75,18);
-			console.putmsg("\1c\1h" + month.winner.points);
+			console.putmsg("\1c\1h" + data.winner.points);
 		}
 	}
 	function sortScores()
 	{
 		var sorted=[];
-		for(var p in players.players)
-		{
-			var s=players.players[p];
-			var plays=players.getDayCount(s.name);
-			sorted.push(s);
+		var index=0;
+		for(var p in data.players) {
+			sorted.push(data.players[p]);
 		}
 		var numScores=sorted.length;
-		for(n=0;n<numScores;n++)
-		{
-			for(m = 0; m < (numScores-1); m++) 
-			{
-				if(sorted[m].points < sorted[m+1].points) 
-				{
+		for(n=0;n<numScores;n++) {
+			for(m = 0; m < (numScores-1); m++) {
+				if(sorted[m].points < sorted[m+1].points) {
 					holder = sorted[m+1];
 					sorted[m+1] = sorted[m];
 					sorted[m] = holder;
@@ -496,71 +447,10 @@ function boggle()
 		}
 		return sorted;
 	}
-	
-	splashStart();
-	init();
-	main();
-	splashExit();
-}
-function sendFiles()
-{
-	//stream.sendfile("*.bog");
-	stream.sendfile("players.ini");
-	//stream.sendfile("month.ini");		
-}
-
-//GAME OBJECTS
-function Lobby(x,y)
-{
-	this.graphic=new Graphic(80,24);
-	this.graphic.load(root + "lobby.bin");
-	this.x=x;
-	this.y=y;
-	
-	this.draw=function()
+	function formatDate(timet) 
 	{
-		this.graphic.draw(this.x,this.y);
-	}
-}
-function PlayerList()
-{
-	this.file=new File(root + "players.ini");
-	this.players=[]; 
-	var update=false;
-	this.init=function()
-	{
-		this.file.open(file_exists(this.file.name)?'r+':'w+',true);
-		if(!this.file.iniGetValue(user.alias,"name"))
-		{
-			update=true;
-			this.file.iniSetObject(user.alias,new Player());
-		}
-		var plyrs=this.file.iniGetAllObjects();
-		this.file.close();
-		for(p in plyrs)
-		{
-			var plyr=plyrs[p];
-			var days=plyr.days;
-			if(days)
-			{
-				days=days.toString().split(',');
-				if(plyr.name==user.alias)
-				{
-					for(d in days)
-					{
-						calendar.highlights[days[d]]=true;
-					}
-				}
-			}
-			if(plyr.name==user.alias) plyr.laston=time();
-			this.players[plyr.name]=new Player(plyr.name,plyr.points,days,plyr.laston);
-		}
-		if(stream && update) {
-			sendFiles();
-		}
-	}
-	this.formatDate=function(timet)
-	{
+		if(!timet)
+			return ("never");
 		var date=new Date(timet*1000);
 		var m=date.getMonth()+1;
 		var d=date.getDate();
@@ -572,161 +462,237 @@ function PlayerList()
 		
 		return (m + "/" + d + "/" + y);
 	}
-	this.reset=function()
+	function getAverage(alias)
 	{
-		file_remove(this.file.name);
-		this.init();
-	}
-	this.getAverage=function(alias)
-	{
-		var p=this.findUser(alias);
-		var count=this.getDayCount(alias);
+		var p=findUser(alias);
+		var count=getDayCount(alias);
 		var avg=p.points/count;
-		if(avg>0) 
-		{
+		if(avg>0) {
 			if(avg<10) return("0"+avg.toFixed(1));
 			return avg.toFixed(1);
 		}
 		return 0;
 	}
-	this.getDayCount=function(alias)
+	function getDayCount(alias)
 	{
-		var p=this.findUser(alias);
+		var p=findUser(alias);
 		var count=0;
-		for(play in p.days) count++;
+		for(var d in p.days) count++;
 		return count;
 	}
-	this.storePlayer=function()
+	function findUser(alias)
 	{
-		this.file.open('r+',true);
-		this.file.iniSetObject(user.alias,this.players[user.alias]);
-		this.file.close();
+		return data.players[alias];
 	}
-	this.findUser=function(alias)
-	{
-		return this.players[alias];
+	
+	init();
+	main();
+}
+function cycle() {
+	client.cycle();
+}
+function processUpdates(update) {
+	var p=update.location.split(".");
+	/* if we received something for a different game? */
+	if(p.shift().toUpperCase() != "BOGGLE") 
+		return;
+	var obj=data;
+	while(p.length > 1) {
+		var child=p.shift();
+		obj=obj[child];
 	}
+	obj[p.shift()] = update.data;
+	data.updated=true;
+}
+function splashStart() {
+	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
+	bbs.sys_status|=SS_MOFF;
+	bbs.sys_status |= SS_PAUSEOFF;	
+	console.clear();
+	//TODO: DRAW AN ANSI SPLASH WELCOME SCREEN
+}
+function splashExit() {
+	
+	console.ctrlkey_passthru=oldpass;
+	bbs.sys_status&=~SS_MOFF;
+	bbs.sys_status&=~SS_PAUSEOFF;
+	console.attributes=ANSI_NORMAL;
+	console.clear();
+	var splash_filename=root + "exit.bin";
+	if(!file_exists(splash_filename)) exit();
+	
+	var splash_size=file_size(splash_filename);
+	splash_size/=2;		
+	splash_size/=80;	
+	var splash=new Graphic(80,splash_size);
+	splash.load(splash_filename);
+	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	console.clear();
+	exit();
+}
+
+client.callback=processUpdates;
+
+//GAME OBJECTS
+function GameData() {
+	this.updated=false;
+	
+	this.players=[];
+	this.boards=[];
+	this.winner=undefined;
+	this.month=date.getMonth();
+	
+	this.init=function() {
+		client.lock("boggle.month",2);
+		var month = client.read("boggle.month");
+		if(month != this.month) 
+			this.newMonth();
+		else
+			this.loadMonth();
+		client.unlock("boggle.month");
+		
+		this.players = client.read("boggle.players",1);
+		if(!this.players[user.alias]) {
+			this.players[user.alias] = new Player();
+			this.storePlayer();
+		}
+	}
+	/* load this month's boggle boards */
+	this.loadMonth=function() {
+		console.putmsg("\rPlease wait. Loading puzzles for this month...\r\n");
+		this.winner=client.read("boggle.winner",1);
+		this.boards=client.read("boggle.boards",1);
+	}
+	/* save current player data to database */
+	this.storePlayer = function() {
+		client.write("boggle.players." + user.alias,this.players[user.alias],2);
+	}
+	/* save this round's winner to the database */
+	this.storeRoundWinner=function() {
+		this.players = client.read("boggle.players",1);
+		for(p in this.players) {
+			if(!this.winner) 
+				this.winner=this.players[p];
+			else {
+				if(this.players[p].points>this.winner.points) 
+					this.winner=this.players[p];
+			}
+		}
+		client.write("boggle.winner",this.winner,2);
+	}
+	/* generate a new month's list of boggle boards */
+	this.newMonth=function() {
+		this.storeRoundWinner();
+		
+		client.write("boggle.month",this.month);
+		client.write("boggle.players",{},2);
+			
+		console.putmsg("\rPlease wait. Creating puzzles for new month...\r\n");
+
+		client.lock("boggle.boards",2);
+		this.boards=[];
+		var numdays=date.daysInMonth();
+		for(var dn=1;dn<=numdays;dn++) {
+			var board=this.newBoard();
+			this.boards[dn]=board;
+			client.write("boggle.boards." + dn,board);
+		}
+		client.unlock("boggle.boards");
+	}
+	/* generate a new boggle board */
+	this.newBoard=function() {
+		var dice=this.initDice();
+		var shaken=new Array();
+		for(var d=0;d<25;d++) {
+			var spot=random(dice.length);
+			shaken.push(dice.splice(spot,1).toString());
+		}
+		var grid=[];
+		for(x=0;x<5;x++) {
+			grid.push(new Array(5));
+		}
+		var die=0;
+		for(var x=0;x<grid.length;x++) {
+			for(var y=0;y<grid[x].length;y++) {
+				var randletter=shaken[die].charAt(random(6));
+				grid[x][y]=randletter;
+				die++;
+			}
+		}
+		return grid;
+	}
+	/* load dice values */
+	this.initDice=function() {
+		var dice=[];
+		dice[0]="AAAFRS";
+		dice[1]="AAEEEE";
+		dice[2]="AAFIRS";
+		dice[3]="ADENNN";
+		dice[4]="AEEEEM";
+		dice[5]="AEEGMU";
+		dice[6]="AEGMNN";
+		dice[7]="AFIRSY";
+		dice[8]="BJKQXZ";
+		dice[9]="CCENST";
+		dice[10]="CEIILT";
+		dice[11]="CEILPT";
+		dice[12]="CEIPST";
+		dice[13]="DDHNOT";
+		dice[14]="DHHLOR";
+		dice[15]="DHLNOR";
+		dice[16]="DHLNOR";
+		dice[17]="EIIITT";
+		dice[18]="EMOTTT";
+		dice[19]="ENSSSU";
+		dice[20]="FIPRSY";
+		dice[21]="GORRVW";
+		dice[22]="IPRRRY";
+		dice[23]="NOOTUW";
+		dice[24]="OOOTTU";
+		return dice;
+	}
+
 	this.init();
 }
-function Player(name,points,days,laston)
-{
+
+function Lobby(x,y) {
+	this.graphic=new Graphic(80,24);
+	this.graphic.load(root + "lobby.bin");
+	this.x=x;
+	this.y=y;
+	
+	this.draw=function() {
+		this.graphic.draw(this.x,this.y);
+	}
+}
+
+function Player(name,points,days,laston) {
 	this.name=name?name:user.alias;
 	this.points=points?points:0;
 	this.days=days?days:[];
 	this.laston=laston?laston:false;
 }
-function MonthData()
-{
-	this.currentdate=new Date();
-	this.currentmonth=this.currentdate.getMonth();
-	this.games=[];
-	this.winner=false;
-	this.datafile=new File(root + "month.ini");
-	
-	this.init=function()
-	{
-		this.loadMonth();
-		this.loadGames();
-	}
-	this.loadMonth=function()
-	{
-		if(file_exists(this.datafile.name))
-		{
-			console.putmsg("\rPlease Wait. Loading games for this month...\r\n");
-			var filedate=new Date(file_date(this.datafile.name)*1000);
-			if(filedate.getMonth()!=this.currentmonth)
-			{
-				this.deleteOldGames();
-				this.findRoundWinner();
-				this.newMonth();
-			}
-			else
-			{
-				this.datafile.open('r',true);
-				var name=this.datafile.iniGetValue(null,"winner");
-				var points=this.datafile.iniGetValue(null,"points");
-				this.datafile.close();
-				if(points>0) 
-				{
-					this.winner={"name":name,"points":points};
-				}
-			}
-		}
-		else
-		{
-			console.putmsg("\rPlease Wait. Creating games for new month...\r\n");
-			this.newMonth();
-		}
-	}
-	this.deleteOldGames=function()
-	{
-		var games=directory(root + "*.bog");
-		for(g in games)
-		{
-			file_remove(games[g]);
-		}
-	}
-	this.findRoundWinner=function()
-	{
-		for(p in players.players)
-		{
-			if(!this.winner) this.winner=players.players[p];
-			else
-			{
-				if(players.players[p].points>this.winner.points) this.winner=players.players[p];
-			}
-		}
-		this.datafile.open('w+',true);
-		this.datafile.iniSetValue(null,"winner",this.winner.name);
-		this.datafile.iniSetValue(null,"points",this.winner.points);
-		this.datafile.close();
-		players.reset();
-	}
-	this.newMonth=function()
-	{
-		this.games=[];
-		file_touch(this.datafile.name);
-		var numdays=this.currentdate.daysInMonth();
-		for(var dn=1;dn<=numdays;dn++)
-		{
-			var game=new Game();
-			game.init();
-			this.games.push(game);
-		}
-	}
-	this.loadGames=function()
-	{
-		var list=directory(root + "*.bog");
-		for(l in list)
-		{
-			var game=new Game();
-			game.init(list[l]);
-			this.games[game.gamenumber]=game;
-		}
-	}
-	this.init();
-}
-function InfoBox(x,y)
-{
+
+function InfoBox(x,y) {
 	this.x=x;
 	this.y=y;
 	this.timer;
 	this.score;
 	
-	this.init=function(player)
-	{
+	this.init=function(player) {
 		this.score=new Score();
 		this.timer=new Timer(65,12,"\1b\1h");
 		this.timer.init(180);
 	}
-	this.cycle=function()
-	{
-		if(this.timer.countdown>0)
-		{
+	this.cycle=function() {
+		if(this.timer.countdown>0) {
 			var current=time();
 			var difference=current-this.timer.lastupdate;
-			if(difference>0)
-			{
+			if(difference>0) {
 				this.timer.countDown(current,difference);
 				this.timer.redraw();
 			}
@@ -734,8 +700,7 @@ function InfoBox(x,y)
 		}
 		return false;
 	}
-	this.draw=function()
-	{
+	this.draw=function() {
 		this.timer.redraw();
 		console.gotoxy(64,19);
 		console.putmsg("\1y\1h" + player.name.toUpperCase());
@@ -745,124 +710,106 @@ function InfoBox(x,y)
 		console.putmsg("\1y\1h" + this.score.points);
 	}
 }
-function GameBoard(x,y)
-{ 
-	this.graphic=new Graphic(80,24);
-	this.graphic.load(root + "board.bin");
-	this.x=x;
-	this.y=y;
-	this.grid;
-	
-	this.init=function()
-	{
-		this.grid=[];
-		for(x=0;x<5;x++)
-		{
-			this.grid.push(new Array(5));
-		}
-		this.scanGraphic();
-	}
-	this.scanGraphic=function()
-	{
-		for(x=0;x<this.graphic.data.length;x++) 
-		{
-			for(y=0;y<this.graphic.data[x].length;y++)
-			{
-				var location=this.graphic.data[x][y];
-				if(location.ch=="@") 
-				{
-					var id=this.graphic.data[x+1][y].ch;
-					if(id=="D")
-					{
-						
-						this.dateline=new DateLine(x+1,y+1);
-					}
-					else
-					{
-						var posx=parseInt(this.graphic.data[x+1][y].ch,10);
-						var posy=parseInt(this.graphic.data[x+2][y].ch,10);
-						this.grid[posx][posy]=new LetterBox(x+1,y+1);
-					}
-					this.graphic.data[x][y].ch=" ";
-					this.graphic.data[x+1][y].ch=" ";
-					this.graphic.data[x+2][y].ch=" ";
-				}
-			}
-		}
-	}
-	this.draw=function()
-	{
-		for(x=0;x<this.grid.length;x++)
-		{
-			for(y=0;y<this.grid[x].length;y++)
-			{
-				this.grid[x][y].draw();
-			}
-		}
-	}
-	this.drawSelected=function(valid)
-	{
-		for(x=0;x<this.grid.length;x++)
-		{
-			for(y=0;y<this.grid[x].length;y++)
-			{
-				if(this.grid[x][y].selected) this.grid[x][y].draw(true,valid);
-			}
-		}
-	}
-	this.clearSelected=function()
-	{
-		for(x=0;x<this.grid.length;x++)
-		{
-			for(y=0;y<this.grid[x].length;y++)
-			{
-				this.grid[x][y].selected=false;
-				this.grid[x][y].draw();
-			}
-		}
-	}
+
+function GameBoard(gameNumber,grid) { 
+	this.gameNumber=gameNumber;
+	this.grid=grid;
 	this.init();
 }
-function LetterBox(x,y)
-{
+GameBoard.prototype.init=function(x,y) {
 	this.x=x;
 	this.y=y;
-	//this.letter;
-	this.selected=false;
-	
-	this.draw=function(selected,valid)
-	{
-		var letter=(this.letter=="Q"?"Qu":this.letter);
-		var oldattr=console.attributes;
-		if(selected)
-		{
-			console.attributes=valid?LIGHTGREEN + BG_GREEN:LIGHTRED + BG_RED;
-			console.gotoxy(this.x-2,this.y-1);
-			console.putmsg("     ",P_SAVEATR);
-			console.down();
-			console.left(5);
-			console.putmsg(centerString(letter,5),P_SAVEATR);
-			console.down();
-			console.left(5);
-			console.putmsg("     ",P_SAVEATR);
+	this.graphic=new Graphic(80,24);
+	this.graphic.load(root + "board.bin");
+	this.scanGraphic();
+}
+GameBoard.prototype.scanGraphic=function() {
+	for(x=0;x<this.graphic.data.length;x++) {
+		for(y=0;y<this.graphic.data[x].length;y++) {
+			var location=this.graphic.data[x][y];
+			if(location.ch=="@") {
+				var id=this.graphic.data[x+1][y].ch;
+				if(id=="D")	{
+					this.dateline=new DateLine(x+1,y+1);
+				}
+				else{
+					var posx=parseInt(this.graphic.data[x+1][y].ch,10);
+					var posy=parseInt(this.graphic.data[x+2][y].ch,10);
+					this.grid[posx][posy]=new LetterBox(x+1,y+1,this.grid[posx][posy]);
+				}
+				this.graphic.data[x][y].ch=" ";
+				this.graphic.data[x+1][y].ch=" ";
+				this.graphic.data[x+2][y].ch=" ";
+			}
 		}
-		else 
-		{
-			console.gotoxy(this.x-2,this.y-1);
-			console.attributes=BG_BROWN + YELLOW;
-			console.putmsg("     ",P_SAVEATR);
-			console.down();
-			console.left(5);
-			console.putmsg(centerString(letter,5),P_SAVEATR);
-			console.down();
-			console.left(5);
-			console.putmsg("     ",P_SAVEATR);
-		}
-		console.attributes=oldattr;
 	}
 }
-function DateLine(x,y)
-{
+GameBoard.prototype.draw=function() {
+	this.graphic.draw(this.x,this.y);
+	console.gotoxy(2,2);
+	console.putmsg(centerString(
+		"\1c\1h" + calendar.date.getMonthName() + 
+		" " + this.gameNumber + ", " + 
+		calendar.date.getFullYear()
+	,28));
+	
+	for(x=0;x<this.grid.length;x++) {
+		for(y=0;y<this.grid[x].length;y++) {
+			this.grid[x][y].draw();
+		}
+	}
+}
+GameBoard.prototype.drawSelected=function(valid) {
+	for(x=0;x<this.grid.length;x++)	{
+		for(y=0;y<this.grid[x].length;y++) {
+			if(this.grid[x][y].selected) this.grid[x][y].draw(true,valid);
+		}
+	}
+}
+GameBoard.prototype.clearSelected=function() {
+	for(x=0;x<this.grid.length;x++)	{
+		for(y=0;y<this.grid[x].length;y++) {
+			this.grid[x][y].selected=false;
+			this.grid[x][y].draw();
+		}
+	}
+}
+
+function LetterBox(x,y,letter) {
+	this.x=x;
+	this.y=y;
+	this.letter=letter;
+	this.selected=false;
+}
+LetterBox.prototype.draw = function(selected,valid) {
+	var letter=(this.letter=="Q"?"Qu":this.letter);
+	var oldattr=console.attributes;
+	if(selected){
+		console.attributes=valid?LIGHTGREEN + BG_GREEN:LIGHTRED + BG_RED;
+		console.gotoxy(this.x-2,this.y-1);
+		console.putmsg("     ",P_SAVEATR);
+		console.down();
+		console.left(5);
+		console.putmsg(centerString(letter,5),P_SAVEATR);
+		console.down();
+		console.left(5);
+		console.putmsg("     ",P_SAVEATR);
+	}
+	else {
+		console.gotoxy(this.x-2,this.y-1);
+		console.attributes=BG_BROWN + YELLOW;
+		console.putmsg("     ",P_SAVEATR);
+		console.down();
+		console.left(5);
+		console.putmsg(centerString(letter,5),P_SAVEATR);
+		console.down();
+		console.left(5);
+		console.putmsg("     ",P_SAVEATR);
+	}
+	console.attributes=oldattr;
+}
+
+function DateLine(x,y) {
 	this.x=x;
 	this.y=y;
 	//this.date;
@@ -872,8 +819,8 @@ function DateLine(x,y)
 		console.putmsg(this.date);
 	}
 }
-function MessageLine(x,y)
-{
+
+function MessageLine(x,y) {
 	this.x=x;
 	this.y=y;
 	this.draw=function(txt)
@@ -882,8 +829,8 @@ function MessageLine(x,y)
 		console.putmsg(txt);
 	}
 }
-function InputLine(x,y)
-{
+
+function InputLine(x,y) {
 	this.x=x;
 	this.y=y;
 	this.buffer="";
@@ -924,8 +871,8 @@ function InputLine(x,y)
 		console.putmsg(printPadded("\1n" + text,30));
 	}
 }
-function WordList(x,y)
-{
+
+function WordList(x,y) {
 	this.x=x;
 	this.y=y;
 	this.words=[];
@@ -952,132 +899,21 @@ function WordList(x,y)
 		this.draw();
 	}
 }
-function Score()
-{
+
+function Score() {
 	this.points=0;
 	this.words=0;
 }
-function Game()
-{
-	//this.file;
-	//this.board;
-	//this.gamenumber;
-	//this.info;
-	
-	this.init=function(fileName)
-	{
-		this.board=new GameBoard(1,1);
-		if(fileName)
-		{
-			this.file=new File(fileName);
-			
-			var f=file_getname(fileName);
-			this.gamenumber=parseInt(f.substring(0,f.indexOf(".")),10);
-			this.loadGame();
-		}
-		else
-		{
-			this.setFileInfo();
-			this.generateBoard();
-			this.storeGame();
-		}
-	}
-	this.loadGame=function()
-	{
-		this.file.open('r',true);
-		var grid=this.board.grid;
-		for(x in grid)
-		{
-			for(y in grid[x])
-			{
-				grid[x][y].letter=this.file.readln();
-			}
-		}
-		this.file.close();
-	}
-	this.storeGame=function()
-	{
-		this.file.open('w+');
-		var grid=this.board.grid;
-		for(x in grid)
-		{
-			for(y in grid[x])
-			{
-				this.file.writeln(grid[x][y].letter);
-			}
-		}
-		this.file.close();
-	}
-	this.initDice=function()
-	{
-		var dice=new Array(25);
-		dice[0]="AAAFRS";
-		dice[1]="AAEEEE";
-		dice[2]="AAFIRS";
-		dice[3]="ADENNN";
-		dice[4]="AEEEEM";
-		dice[5]="AEEGMU";
-		dice[6]="AEGMNN";
-		dice[7]="AFIRSY";
-		dice[8]="BJKQXZ";
-		dice[9]="CCENST";
-		dice[10]="CEIILT";
-		dice[11]="CEILPT";
-		dice[12]="CEIPST";
-		dice[13]="DDHNOT";
-		dice[14]="DHHLOR";
-		dice[15]="DHLNOR";
-		dice[16]="DHLNOR";
-		dice[17]="EIIITT";
-		dice[18]="EMOTTT";
-		dice[19]="ENSSSU";
-		dice[20]="FIPRSY";
-		dice[21]="GORRVW";
-		dice[22]="IPRRRY";
-		dice[23]="NOOTUW";
-		dice[24]="OOOTTU";
-		return dice;
-	}
-	this.generateBoard=function()
-	{
-		var dice=this.initDice();
-		var shaken=new Array();
-		for(var d=0;d<25;d++)
-		{
-			var spot=random(dice.length);
-			shaken.push(dice.splice(spot,1).toString());
-		}
-		var die=0;
-		for(var x=0;x<this.board.grid.length;x++)
-		{
-			for(var y=0;y<this.board.grid[x].length;y++)
-			{
-				var randletter=shaken[die].charAt(random(6));
-				this.board.grid[x][y].letter=randletter;
-				die++;
-			}
-		}
-	}
-	this.setFileInfo=function()
-	{
-		var gNum=1;
-		if(gNum<10) gNum="0"+gNum;
-		while(file_exists(root+gNum+".bog"))
-		{
-			gNum++;
-			if(gNum<10) gNum="0"+gNum;
-		}
-		var fName=root + gNum + ".bog";
-		this.file=new File(fName);
-		this.gamenumber=parseInt(gNum,10);
-	}
-	this.draw=function()
-	{
-		this.board.graphic.draw(this.board.x,this.board.y);
-		console.gotoxy(2,2);
-		console.putmsg(centerString("\1c\1h" + calendar.date.getMonthName() + " " + this.gamenumber + ", " + calendar.date.getFullYear(),28));
-		this.board.draw();
-	}
-}
 
 boggle();
+
+client.unsubscribe("boggle.players");
+splashExit();
+
+
+
+
+
+
+
+

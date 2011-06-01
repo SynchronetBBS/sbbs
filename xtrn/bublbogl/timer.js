@@ -37,16 +37,29 @@ function Timer(x,y,color)
 	this.drawClock=function(time)
 	{
 		console.attributes=this.color;
-		for(i=0;i<5;i++)
-		{
+		for(i=0;i<5;i++) {
 			console.gotoxy(this.x,this.y+i);
-			for(d=0;d<time.length;d++)
-			{
+			for(d=0;d<time.length;d++) {
 				var digit=time.charAt(d);
-				if(digit==":") digit=this.digits["colon"][i] + " ";
-				else if(digit==" ");
-				else if(digit==1) digit=" " + this.digits[1][i] + " ";
-				else digit=this.digits[parseInt(digit)][i] + " ";
+				switch(digit) {
+				case ":":
+					digit=this.digits["colon"][i] + " ";
+					break;
+				case "1":
+					digit=" " + this.digits[1][i] + " ";
+					break;
+				case "2":
+				case "3":
+				case "4":
+				case "5":
+				case "6":
+				case "7":
+				case "8":
+				case "9":
+				case "0":
+					digit=this.digits[parseInt(digit,10)][i] + " ";
+					break;
+				}
 				console.write(digit);
 			}
 		}

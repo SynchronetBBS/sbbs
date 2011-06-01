@@ -7,28 +7,50 @@
 	for Synchronet v3.15+
 */
 
-
-var root = js.exec_dir;
-var stream=argv[0];
-
 load("graphic.js");
 load("sbbsdefs.js")
-load("logging.js");
 load("funclib.js");
  
-var oldpass=console.ctrl_key_passthru;
-var players;
-var scores;
+splashStart();
+client.subscribe("uberblox.players");
+client.subscribe("uberblox.alltime");
+
+var oldpass = console.ctrl_key_passthru;
+var data = new GameData();
+
+/* assign callback method to client object */
+client.callback=processUpdates;
+/* cycle client and check for updates */
+function cycle() {
+	client.cycle();
+}
+/* process updates received from the JSON database */
+function processUpdates(update) {
+	switch(update.operation) {
+	case "UPDATE":
+		var p=update.location.split(".");
+		/* if we received something for a different game? */
+		if(p.shift().toUpperCase() != "UBERBLOX") 
+			return;
+		var obj=data;
+		while(p.length > 1) {
+			var child=p.shift();
+			obj=obj[child];
+		}
+		obj[p.shift()] = update.data;
+		data.updated=true;
+		break;
+	case "ERROR":
+		throw(update.error_desc);
+		break;
+	}
+}
 
 function gotoxy(x,y)
 {
 	var posx=(x*3)+2;
 	var posy=22-(y*2);
 	console.gotoxy(posx,posy);
-}
-function sendFiles(mask)
-{
-	stream.sendfile(mask);
 }
 function splashStart()
 {
@@ -42,7 +64,6 @@ function splashExit()
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	players.storePlayer();
 	console.clear(ANSI_NORMAL);
 	var splash_filename=root + "exit.bin";
 	if(!file_exists(splash_filename)) exit();
@@ -58,7 +79,6 @@ function splashExit()
 	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 	console.clear(ANSI_NORMAL);
-	exit();
 }
 function blox()
 {
@@ -73,10 +93,10 @@ function blox()
 	var gameover=false;
 	
 	const points_base=			15;
-	const points_increment=	10;
+	const points_increment=		10;
 	const minimum_cluster=		3;
-	const colors=				[3,3,3,3,4,4,4,4,5,5,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
-	const tiles_per_color=		[8,7,6,5,4,10,9,8,7,12,11,10,12,11];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 6 tiles per color times 3 colors = 202)
+	const colors=				[3,3,3,4,4,4,5,5,5,6,6,6]; //COLORS PER MAP (DEFAULT ex.: levels 1-4 have 3 colors)
+	const tiles_per_color=		[8,7,6,8,7,6,9,8,7,10,9,8];	//TARGET FOR LEVEL COMPLETION (DEFAULT ex. level 1 target: 220 total tiles minus 8 tiles per color times 3 colors = 196)
 		
 	var lobby;
 	var logo;
@@ -93,31 +113,29 @@ function blox()
 	function mainLobby()
 	{
 		drawLobby();
-		while(1)
-		{
+		while(1) {
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(k)
-			{
-				switch(k.toUpperCase())
-				{
-					case "\x1b":	
-					case "Q":
-						return;
-					case "I":
-						showInstructions();
-						drawLobby();
-						break;
-					case "P":
-						main();
-						drawLobby();
-						break;
-					case "R":
-						drawLobby();
-						break;
-					default:
-						break;
+			if(k) {
+				switch(k.toUpperCase())	{
+				case "\x1b":	
+				case "Q":
+					return;
+				case "I":
+					showInstructions();
+					drawLobby();
+					break;
+				case "P":
+					main();
+					drawLobby();
+					break;
+				case "R":
+					drawLobby();
+					break;
+				default:
+					break;
 				}
 			}
+			cycle();
 		}
 	}
 	function showInstructions()
@@ -137,44 +155,39 @@ function blox()
 		gameover=false;
 		generateLevel();
 		redraw();
-		while(1)
-		{
-			if(gameover) 
-			{
+		while(1) {
+			if(gameover) {
 				endGame();
 				while(console.inkey()=="");
 				return;
 			}
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
-			if(k)
-			{
-				switch(k.toUpperCase())
-				{
-					case KEY_UP:
-					case KEY_DOWN:
-					case KEY_LEFT:
-					case KEY_RIGHT:
-						if(selected)
-						{
-							unselect();
-						}
-						movePosition(k);
-						break;
-					case "R":
-						redraw();
-						break;
-					case "\x1b":	
-					case "Q":
-						gameover=true;
-						break;
-					case "\r":
-					case "\n":
-						processSelection();
-						break;
-					default:
-						break;
+			if(k) {
+				switch(k.toUpperCase())	{
+				case KEY_UP:
+				case KEY_DOWN:
+				case KEY_LEFT:
+				case KEY_RIGHT:
+					if(selected)
+						unselect();
+					movePosition(k);
+					break;
+				case "R":
+					redraw();
+					break;
+				case "\x1b":	
+				case "Q":
+					gameover=true;
+					break;
+				case "\r":
+				case "\n":
+					processSelection();
+					break;
+				default:
+					break;
 				}
 			}
+			cycle();
 		}
 	}
 	function drawLobby()
@@ -189,10 +202,10 @@ function blox()
 	}
 	function endGame()
 	{
-		if(players.players[user.alias].score<points) 
+		if(data.players[user.alias].score<points) 
 		{
-			players.players[user.alias].score=points;
-			players.storePlayer();
+			data.players[user.alias].score=points;
+			data.storePlayer();
 		}
 		console.clear();
 		gameend.draw();
@@ -203,13 +216,13 @@ function blox()
 	}
 	function init()
 	{
+		client.write("uberblox.players." + user.alias + ".laston",time(),2);
 		logo=new Graphic(18,22);
 		logo.load(root + "blox.bin");
 		lobby=new Graphic(80,23);
 		lobby.load(root + "lobby.bin");
 		gameend=new Graphic(80,23);
 		gameend.load(root + "gameend.bin");
-		players=new PlayerList();
 	}
 	function generateLevel()
 	{
@@ -478,18 +491,14 @@ function blox()
 	function sortScores()
 	{
 		var sorted=[];
-		for(var p in players.players)
-		{
-			var s=players.players[p];
+		for(var p in data.players) {
+			var s=data.players[p];
 			sorted.push(s);
 		}
 		var numScores=sorted.length;
-		for(n=0;n<numScores;n++)
-		{
-			for(m = 0; m < (numScores-1); m++) 
-			{
-				if(sorted[m].score < sorted[m+1].score) 
-				{
+		for(n=0;n<numScores;n++) {
+			for(m = 0; m < (numScores-1); m++) {
+				if(sorted[m].score < sorted[m+1].score)	{
 					holder = sorted[m+1];
 					sorted[m+1] = sorted[m];
 					sorted[m] = holder;
@@ -505,11 +514,9 @@ function blox()
 		var index=0;
 		
 		var scores=sortScores();
-		for(var s in scores)
-		{
+		for(var s in scores) {
 			var score=scores[s];
-			if(score.score>0)
-			{
+			if(score.score>0) {
 				if(score.name==user.alias) console.attributes=YELLOW;
 				else console.attributes=BROWN;
 				console.gotoxy(posx,posy+index);
@@ -519,48 +526,58 @@ function blox()
 				console.right(25-score.sys.length);
 				console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
 				console.right(3);
-				console.putmsg(printPadded(players.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+				console.putmsg(printPadded(data.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
 				index++;
 			}
+		}
+		if(data.alltime.score > 0) {
+			console.gotoxy(46,20);
+			console.putmsg("\1n\1yName \1h: " + data.alltime.name);
+			console.gotoxy(46,21);
+			console.putmsg("\1n\1yScore\1h: " + data.alltime.score,P_SAVEATR);
 		}
 	}
 
 	init();
 	mainLobby();
 }
+
 //	GAME OBJECTS
-	
 function Grid(c,r)
 {
 	var array=new Array(c);
 	for(var cc=0;cc<array.length;cc++)
-	{
 		array[cc]=new Array(r);
-	}
 	return array;
 }
-function PlayerList()
+function GameData()
 {
-	this.file=new File(root + "players.ini");
 	this.players=[];
-	var update=false;
+	this.alltime=[];
+	this.update=false;
+	this.month=new Date().getMonth();
+	
 	this.init=function()
 	{
-		this.file.open(file_exists(this.file.name)?'r+':'w+',true);
-		if(!this.file.iniGetValue(user.alias,"name")) {
-			update=true;
-			this.file.iniSetObject(user.alias,new Player());
+		client.lock("uberblox.month",2);
+		var month = client.read("uberblox.month");
+		if(month != this.month) 
+			this.reset();
+		client.unlock("uberblox.month");
+		
+		this.alltime = client.read("uberblox.alltime",1);
+		if(!this.alltime.name) {
+			this.alltime={
+				name:"no one",
+				score:0
+			}
+			client.write("uberblox.alltime",this.alltime,2);
 		}
-		var plyrs=this.file.iniGetAllObjects();
-		this.file.close();
-		for(p in plyrs)
-		{
-			var plyr=plyrs[p];
-			if(plyr.name==user.alias) plyr.laston=time();
-			this.players[plyr.name]=new Player(plyr.name,plyr.score,plyr.laston,plyr.sys);
-		}
-		if(stream && update) {
-			sendFiles("players.ini");
+		
+		this.players = client.read("uberblox.players",1); 
+		if(!this.players[user.alias]) {
+			this.players[user.alias] = new Player();
+			client.write("uberblox.players." + user.alias,this.players[user.alias],2);
 		}
 	}
 	this.formatDate=function(timet)
@@ -578,15 +595,23 @@ function PlayerList()
 	}
 	this.reset=function()
 	{
-		file_remove(this.file.name);
-		this.init();
+		client.write("uberblox.month",this.month);
+		client.write("uberblox.players",{},2);
 	}
 	this.storePlayer=function()
 	{
-		this.file.open('r+',true);
-		this.file.iniSetObject(user.alias,this.players[user.alias]);
-		this.file.close();
-		if(stream) sendFiles("players.ini");
+		client.write("uberblox.players." + user.alias,this.players[user.alias],2);
+		
+		client.lock("uberblox.alltime",2);
+		if(this.players[user.alias].score > this.alltime.score) {
+			this.alltime=client.read("uberblox.alltime");
+			if(this.players[user.alias].score > this.alltime.score) {
+				this.alltime.score = this.players[user.alias].score;
+				this.alltime.name = user.alias;
+				client.write("uberblox.alltime",this.alltime);
+			}
+		}
+		client.unlock("uberblox.alltime");
 	}
 	this.findUser=function(alias)
 	{
@@ -626,6 +651,7 @@ function Tile(bg,fg)
 	}
 }
 
-splashStart();
 blox();
+client.unsubscribe("uberblox.players");
+client.unsubscribe("uberblox.alltime");
 splashExit();
