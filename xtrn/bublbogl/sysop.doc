@@ -48,11 +48,21 @@ with the latest files from the Synchronet CVS repository at:
 	
 	RECOMMENDED UPDATES:
 	
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/irc_protocol.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/socket_bg.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/layout.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/inputline.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/funclib.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/calendar.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/event-timer.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/timer.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/clock.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/msgwndw.js
 		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/scrollbar.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/cvs.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-sock.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/json-client.js
+		http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/chateng.js
 		
 	NOTE:	Replace any outdated local copies with the latest releases from these links.
 
