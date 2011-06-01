@@ -1,42 +1,34 @@
-/*						**********************************
-						   ******  STAR STOCKS (2007)   ******
-					   	    ***  for use with Synchronet v3.14  ***
-						   ***  by Matt Johnson  **************                   
-						**********************************
-
-						SET TAB STOPS TO 4 FOR EDITING
-*/
+/*********************************
+*		STAR STOCKS (2007) 		*
+*		for Synchronet v3.15 		*
+*		by Matt Johnson			*
+*********************************/
 
 load("sbbsdefs.js");
-load("commclient.js");
 load("funclib.js");
 load("graphic.js");
 
-var root_dir=js.exec_dir;
 var oldpass=console.ctrlkey_passthru;
-var stream=argv[0];
-
 console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ_";
 bbs.sys_status|=SS_MOFF;
+client.subscribe("starstocks.scores");
 
-const 	root=				root_dir;
 const 	cfgname=			"stars.cfg";  
-const	high_score_file=	"scores.dat";
 const 	space=				"\xFA";
 var 	max_companies=		6;
 var 	max_turns=			80;
 const	starting_cash=		10000;
-const  interest_rate=		.05;
-const  ccolor=				"\1w\1h"
-var   partial_company=	"\1n+";
+const  	interest_rate=		.05;
+const  	ccolor=				"\1w\1h"
+var   	partial_company=	"\1n+";
 var 	difficulty=			1;
 var 	min_difficult=		20;
 var 	max_difficult=		35;
-var 	scores=			[];	
-var 	border_row=		4;
-var  	border_column=	1;
-var		menu_row=		1;
-var		menu_column=	63;
+var 	scores=				[];	
+var 	border_row=			4;
+var  	border_column=		1;
+var		menu_row=			1;
+var		menu_column=		63;
 var 	columns=
 		rows=
 		min_stars=
@@ -45,12 +37,16 @@ var 	columns=
 		starcolor=
 		star=
 		scolor="";
+		
 loadSettings();
-loadHighScores();
+loadScores();
+
 var 	min_normal=		min_stars;
 var 	max_normal=		max_stars;
 var 	game;
+
 gameMenu();
+client.unsubscribe("starstocks.scores");
 quit();
 
 //########################## MAIN FUNCTIONS ###################################
@@ -109,81 +105,22 @@ function 	gameMenu()
 		case "Q": 
 			return;
 		}
+		cycle();
 	}
 }
-function 	loadHighScores()
+function 	loadScores()
 { 
-	for(diff=0;diff<3;diff++) scores[diff]=[];
-	var sfile=new File(root + high_score_file);
-	if(!file_exists(sfile.name)) return false;
-	sfile.open('r', true);
-	var count=0;
-	var timeout=200;
-	while(!sfile.is_open && count<timeout)
-	{
-		mswait(5);
-		count++;
-		sfile.open('r', true);
-	}
-	if(sfile.is_open)
-	{
-		for(sc=0;!(sfile.eof);sc++) 
-		{
-			player=sfile.readln();
-			if(player==undefined || player=="") break;
-			score=parseFloat(sfile.readln());
-			diff=parseInt(sfile.readln());
-			date=sfile.readln();
-			scores[diff].push(new Score(player,score,diff,date));
-		}
-		sfile.close();
-		return true;
-	}
-	else
-	{
-		log("\1r\1hUnable to load scores");
-		return false;
-	}
+	scores = client.read("starstocks.scores",1);
 }
-function	storeHighScores(tempscore)
+function	storeScore(score)
 {
-	loadHighScores();
-	scores[tempscore.difficulty].push(tempscore);
-	var sfile=new File(root + high_score_file);
-	
-	var count=0;
-	var timeout=200;
-	while(locked() && count<timeout)
-	{
-		mswait(5);
-		count++;
-	}
-	if(!locked())
-	{
-		lock();
-		sfile.open('w+', false);
-		for(d in scores)
-		{
-			scores[d]=sortScores(scores[d]);
-			for(score in scores[d])
-			{
-				sfile.writeln(scores[d][score].player);
-				sfile.writeln(scores[d][score].score);
-				sfile.writeln(scores[d][score].difficulty);
-				sfile.writeln(scores[d][score].date);
-				if(score==9) break;
-			}
-		}
-		sfile.close();
-		if(stream) sendFiles(high_score_file);
-		unlock();
-		return true;
-	}
-	else 
-	{
-		message("\1r\1hUnable to save scores");
-		return false;
-	}
+	client.lock("starstocks.scores",2);
+	scores=client.read("starstocks.scores");
+	if(!scores[score.difficulty])
+		scores[score.difficulty] = [];
+	scores[score.difficulty].push(score);
+	client.write("starstocks.scores." + score.difficulty,scores[score.difficulty]);
+	client.unlock("starstocks.scores");
 }
 function 	loadSettings()
 { 
@@ -263,14 +200,14 @@ function 	playGame()
 		{
 			pMenu.display();
 			displayHeader(turn);
-			if(!game.options.length && game.inProgress) game.generateCompanies();
+			if(!game.options.length && game.inProgress) 
+				game.generateCompanies();
 			if(game.options.length)
 			{
 				message("\1r\1hChoose a location to start your company.");
 			}
 			var cmd=console.getkey(K_NOCRLF|K_NOSPIN|K_UPPER|K_NOECHO|K_COLD);	
-			if(pMenu.disabled[cmd]);
-			else
+			if(!(pMenu.disabled[cmd]))
 			{
 				switch(cmd)
 				{
@@ -324,8 +261,7 @@ function 	playGame()
 					{
 						console.home();
 						console.cleartoeol();
-						if(console.noyes("End this game?"));
-						else 
+						if(!(console.noyes("End this game?")))
 						{
 							game.clearOptions();
 							clearRows(23);
@@ -337,8 +273,10 @@ function 	playGame()
 						continue_game=false;
 						delete game;
 					}
-					if(continue_game) continue;
-					else break;
+					if(continue_game) 
+						continue;
+					else 
+						break;
 				default:
 					continue;
 				}
@@ -363,30 +301,47 @@ function 	playGame()
 			displayStocks();
 			getMoney();
 			showMeTheMoney();
-			if(turn>max_turns) game.inProgress=false;
+			if(turn>max_turns) 
+				game.inProgress=false;
 		}
+		cycle();
 	}
 	if(countCompanies(game.companies))
 	{
-		var tempscore=new Score(user.alias,game.networth,difficulty,system.datestr());
-		storeHighScores(tempscore);
-		notify();
+		var score=new Score(user.alias,game.networth,difficulty,system.datestr());
+		storeScore(score);
 		game.completed=true;
 		displaySummary();
 	}
 }
-
-//########################## DISPLAY FUNCTIONS #################################
-function 	notify()
+function 	cycle() 
 {
-	if(scores[difficulty].length<2) return false;
-	if(game.networth==scores[difficulty][0].score)
-	{
-		var localuser=system.matchuser(scores[difficulty][1].player,true);
-		if(!localuser>0 || localuser==user.number) return false;
-		system.put_telegram(scores[difficulty][1].player, "\1r\1h" + scores[difficulty][0].player + " \1c\1hbeat your High Score in Star Stocks!\r\n\r\n");
+	client.cycle();
+}
+function 	processUpdates(update) 
+{
+	switch(update.operation) {
+	case "ERROR":
+		throw(update.error_desc);
+		break;
+	case "UPDATE":
+		var p=update.location.split(".");
+		/* if we received something for a different game? */
+		if(p.shift().toUpperCase() != "STARSTOCKS") 
+			return;
+		var obj=scores;
+		p.shift();
+		while(p.length > 1) {
+			var child=p.shift();
+			obj=obj[child];
+		}
+		obj[p.shift()] = update.data;
+		break;
 	}
 }
+client.callback=processUpdates;
+
+//########################## DISPLAY FUNCTIONS #################################
 function	shortNumber(number)
 {
 	var newnum="";
@@ -435,7 +390,7 @@ function 	sortScores(sort)
 }
 function	viewHighScores()
 {
-	loadHighScores();
+	loadScores();
 	var difficulties=["Easy", "Normal", "Difficult"];
 	for(df in scores)
 	{
@@ -627,6 +582,7 @@ function	sortCompanies()
 	sorted.sort();
 	return sorted;
 }
+
 //########################## MISC FUNCTIONS ###################################
 function	locked()
 {
@@ -787,8 +743,7 @@ function	buyStockXpert(cmd)
 }
 function	canBuyStocks()
 {
-	for(cb in game.companies)
-	{
+	for(cb in game.companies) {
 		if(game.cash>=game.companies[cb].stock_value) return true;
 	}
 	return false;
@@ -882,11 +837,10 @@ function 	processNearby(location,prox)
 }
 function 	quit() 
 {
-	if(stream) stream.close();
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	console.clear();
-	var splash_filename=root_dir + "exit.bin";
+	var splash_filename=root + "exit.bin";
 	if(!file_exists(splash_filename)) exit();
 	
 	var splash_size=file_size(splash_filename);
@@ -900,7 +854,6 @@ function 	quit()
 	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
 	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
 	console.clear();
-	return;
 }
 //########################## CLASSES #########################################
 
