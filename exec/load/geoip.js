@@ -58,17 +58,20 @@ function get_geoip(host, countryonly)
 		else
 			geoip_url='http://api.ipinfodb.com/v3/ip-city/?key='+geoipAPIKey+'&format=json&ip='+encodeURIComponent(host);
 	}
-	try {
-		do {
-			result='ret='+new HTTPRequest().Get(geoip_url);
-			GeoIP=js.eval(result);
-		} while(GeoIP==undefined);
-		if(GeoIP.Locations != undefined) {
-			if(isarray)
-				return GeoIP.Locations;
-			return GeoIP.Locations[0];
+	for(i=0; i<10; i++) {
+		try {
+			do {
+				result='ret='+new HTTPRequest().Get(geoip_url);
+				GeoIP=js.eval(result);
+			} while(GeoIP==undefined);
+			if(GeoIP.Locations != undefined) {
+				if(isarray)
+					return GeoIP.Locations;
+				return GeoIP.Locations[0];
+			}
+			return GeoIP;
 		}
-		return GeoIP;
+		catch(e) {
+		}
 	}
-	catch(e) {}
 }
