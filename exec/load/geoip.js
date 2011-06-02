@@ -60,10 +60,10 @@ function get_geoip(host, countryonly)
 	}
 	for(i=0; i<10; i++) {
 		try {
-			do {
-				result='ret='+new HTTPRequest().Get(geoip_url);
-				GeoIP=js.eval(result);
-			} while(GeoIP==undefined);
+			result='ret='+new HTTPRequest().Get(geoip_url);
+			GeoIP=js.eval(result);
+			if(GeoIP==undefined)
+				continue;
 			if(GeoIP.Locations != undefined) {
 				if(isarray)
 					return GeoIP.Locations;
