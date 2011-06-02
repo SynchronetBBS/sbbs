@@ -67,8 +67,12 @@ function get_geoip(host, countryonly)
 			if(GeoIP.Locations != undefined) {
 				if(isarray)
 					return GeoIP.Locations;
+				if(!GeoIP.Locations[0].countryName)
+					continue;
 				return GeoIP.Locations[0];
 			}
+			if(!GeoIP.countryName)
+				continue;
 			return GeoIP;
 		}
 		catch(e) {
