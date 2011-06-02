@@ -22,7 +22,7 @@ function HTTPRequest()
 			this.request_headers.push("Via: "+client.protocol.toLowerCase()+"/1.0 "+system.name);
 		// Request Headers
 		this.request_headers.push("Accept: text/*");
-		this.request_headers.push("Accept-Charset: ISO-8859-13,Latin-9,ISO-8859-15");
+		this.request_headers.push("Accept-Charset: ISO-8859-13,Latin-9,ISO-8859-15,ISO-8859-1,*;q=0.1");
 		this.request_headers.push("Accept-Encoding: ");
 		this.request_headers.push("Host: "+this.url.host);
 		if(this.referer != undefined)
