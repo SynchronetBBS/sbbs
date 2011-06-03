@@ -68,7 +68,8 @@ function JSONdb (fileName) {
 		ERROR_NOT_LOCKED:2,
 		ERROR_LOCKED_WRITE:3,
 		ERROR_LOCKED_READ:4,
-		ERROR_DUPLICATE_LOCK:5
+		ERROR_DUPLICATE_LOCK:5,
+		ERROR_ARRAY:6
 	};
 	
 	/*************************** database methods ****************************/
@@ -184,6 +185,82 @@ function JSONdb (fileName) {
         }
     };
     
+	/* pop a record off the end of an array */
+	this.pop = function(client,record) {
+		/* if this client has this record locked  */
+		if(record.info.lock[client.id] && 
+		record.info.lock[client.id].type == this.settings.LOCK_WRITE) {
+			if(typeof record.data[record.child_name].pop == "function") 
+				send_packet(client,record.data[record.child_name].pop(),"RESPONSE");
+			else
+				this.error(client,this.settings.ERROR_ARRAY);
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+	
+	/* shift a record off the end of an array */
+	this.shift = function(client,record) {
+		/* if this client has this record locked  */
+		if(record.info.lock[client.id] && 
+		record.info.lock[client.id].type == this.settings.LOCK_WRITE) {
+			if(typeof record.data[record.child_name].shift == "function") 
+				send_packet(client,record.data[record.child_name].shift(),"RESPONSE");
+			else
+				this.error(client,this.settings.ERROR_ARRAY);
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+
+	/* push a record onto the end of an array */
+	this.push = function(client,record,data) {
+		/* if this client has this record locked  */
+		if(record.info.lock[client.id] && 
+		record.info.lock[client.id].type == this.settings.LOCK_WRITE) {
+			if(typeof record.data[record.child_name].pop == "function") {
+				var index = record.data[record.child_name].length;
+				record.data[record.child_name].push(data);
+				/* populate this object's children with shadow objects */
+				composite_sketch(record.data[record.child_name][index],record.shadow[record.child_name][index]);
+			}
+			else
+				this.error(client,this.settings.ERROR_ARRAY);
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+
+	/* push a record onto the end of an array */
+	this.unshift = function(client,record,data) {
+		/* if this client has this record locked  */
+		if(record.info.lock[client.id] && 
+		record.info.lock[client.id].type == this.settings.LOCK_WRITE) {
+			if(typeof record.data[record.child_name].unshift == "function") {
+				var index = record.data[record.child_name].length;
+				record.data[record.child_name].unshift(data);
+				/* populate this object's children with shadow objects */
+				composite_sketch(record.data[record.child_name][index],record.shadow[record.child_name][index]);
+			}
+			else
+				this.error(client,this.settings.ERROR_ARRAY);
+			return true;
+		}
+        /* if there is no lock for this client, error */
+        else {
+            return false;
+        }
+	}
+	
     /* server's data submission method (not directly called by client) */    
     this.write = function(client,record,data) {
 	
@@ -295,6 +372,9 @@ function JSONdb (fileName) {
 		case this.settings.ERROR_DUPLICATE_LOCK:
 			error_desc="Duplicate record lock request";
 			break;
+		case this.settings.ERROR_ARRAY:
+			error_desc="Record is not an array";
+			break;
 		}
 		var error=new Error(error_num,error_desc);
 		send_packet(client,error,"ERROR");
@@ -317,7 +397,7 @@ function JSONdb (fileName) {
 			// This function gets called every 30 seconds or so
 			// And flushes all objects to disk in case of crash
 			// Also, this is called on clean exit.
-			this.file.write(JSON.stringify(this.data));
+			this.file.write(JSON.stringify(this.data,undefined,4));
 			this.file.close();
 			this.settings.LAST_SAVE=timestamp;
 			this.settings.UPDATES=false;
@@ -380,8 +460,20 @@ function JSONdb (fileName) {
 			case "READ":
 				result=this.read(request.client,record);
 				break;
+			case "POP":
+				result=this.pop(request.client,record);
+				break;
+			case "SHIFT":
+				result=this.shift(request.client,record);
+				break;
 			case "WRITE":
 				result=this.write(request.client,record,request.data);
+				break;
+			case "PUSH":
+				result=this.push(request.client,record,request.data);
+				break;
+			case "UNSHIFT":
+				result=this.unshift(request.client,record,request.data);
 				break;
 			case "DELETE":
 				result=this.delete(request.client,record);

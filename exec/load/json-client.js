@@ -145,11 +145,51 @@ function JSONClient(serverAddr,serverPort) {
         },"QUERY");
 		return this.wait("RESPONSE");
     }
+	
+	/* shift object data (lock for reading or writing, blocking) */
+    this.shift=function(location,lock_type) {
+		this.send({
+            operation:"SHIFT",
+            location:location,
+			lock:lock_type
+        },"QUERY");
+		return this.wait("RESPONSE");
+    }
+
+	/* pop object data (lock for reading or writing, blocking) */
+    this.pop=function(location,lock_type) {
+		this.send({
+            operation:"POP",
+            location:location,
+			lock:lock_type
+        },"QUERY");
+		return this.wait("RESPONSE");
+    }
     
 	/* store object data (lock for writing) */
     this.write=function(location,obj,lock_type) {
         this.send({
             operation:"WRITE",
+            location:location,
+            data:obj,
+			lock:lock_type
+        },"QUERY");
+    }
+
+	/* unshift object data (lock for writing) */
+    this.unshift=function(location,obj,lock_type) {
+        this.send({
+            operation:"UNSHIFT",
+            location:location,
+            data:obj,
+			lock:lock_type
+        },"QUERY");
+    }
+
+	/* push object data (lock for writing) */
+    this.push=function(location,obj,lock_type) {
+        this.send({
+            operation:"PUSH",
             location:location,
             data:obj,
 			lock:lock_type
