@@ -14,7 +14,7 @@ Socket.prototype.ping_sent = 0;
 /* socket prototype to automatically encode JSON data */
 Socket.prototype.sendJSON = function(object) {
 	try {
-		var data=JSON.stringify(object)+"\r\n";
+		var data=JSON.stringify(object,this.replacer,this.space)+"\r\n";
 		this.send(data); 
 		log(LOG_DEBUG,"-->" + this.descriptor + ": " + data);
 	} catch(e) {
@@ -28,7 +28,7 @@ Socket.prototype.recvJSON = function() {
 	if(data != null) {
 		log(LOG_DEBUG,"<--" + this.descriptor + ": " + data);
 		try {
-			data=JSON.parse(data);
+			data=JSON.parse(data,this.reviver);
 		} 
 		catch(e) {
 			log(LOG_ERROR,e);

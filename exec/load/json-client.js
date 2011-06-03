@@ -87,10 +87,16 @@ function JSONClient(serverAddr,serverPort) {
 	this.callback;
 	this.updates=[];
 	
+	/* convert null values to undefined when parsing */
+	Socket.prototype.reviver = function(k,v) { if(v == null) return undefined; return v; };
+	
 	/* create new socket connection to server */
     this.connect = function() {
         this.socket=new Socket();
 		this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT);
+		
+		if(!this.socket.is_connected)
+			throw("error connecting to server");
     }
     
     this.disconnect = function() {
@@ -161,6 +167,8 @@ function JSONClient(serverAddr,serverPort) {
 
 	/* receive a data packet */
 	this.receive=function() {
+		if(!this.socket.is_connected)
+			throw("socket disconnected");
 		if(!this.socket.data_waiting) 
 			return false;
 		else
