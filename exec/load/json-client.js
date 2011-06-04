@@ -15,12 +15,18 @@ load("json-sock.js");
 	-	JSONClient.connect();
 	-	JSONClient.disconnect();
 	-	JSONClient.read();
+	-	JSONClient.pop();
+	-	JSONClient.shift();
 	-	JSONClient.write();
+	-	JSONClient.push();
+	-	JSONClient.unshift();
 	-	JSONClient.lock();
 	-	JSONClient.unlock();
 	-	JSONClient.subscribe();
 	-	JSONClient.unsubscribe();
 	-	JSONClient.status();
+	-	JSONClient.who();
+	-	JSONClient.ident();
 	
 	indirect methods: these will generally be called automatically by the other methods
 	and you will not typically need to use them
@@ -83,12 +89,12 @@ function JSONClient(serverAddr,serverPort) {
 		RECV_TIMEOUT:			10
 	};
         
-    this.socket=undefined;
+    this.socket=undefined; 
 	this.callback;
 	this.updates=[];
 	
 	/* convert null values to undefined when parsing */
-	Socket.prototype.reviver = function(k,v) { if(v == null) return undefined; return v; };
+	Socket.prototype.reviver = function(k,v) { if(v === null) return undefined; return v; };
 	
 	/* create new socket connection to server */
     this.connect = function() {
@@ -198,6 +204,8 @@ function JSONClient(serverAddr,serverPort) {
 	
 	/* package an object and send through the socket */
 	this.send=function(obj,func) {
+		if(!this.socket.is_connected)
+			throw("socket disconnected");
 		var packet={
 			func:func,
 			data:obj
@@ -245,6 +253,25 @@ function JSONClient(serverAddr,serverPort) {
 			this.updates.push(packet.data);
 	}
 	
+	/* identify this client as a bbs user */
+	this.ident=function(username,pw) {
+		pw = md5_calc(pw.toUpperCase(),true);
+		this.send({
+            operation:"IDENT",
+            username:username,
+			pw:pw
+        },"ADMIN");
+	}
+
+	/* return a list of record subscriber IP addresses */
+	this.who=function(location) {
+		this.send({
+            operation:"WHO",
+            location:location
+        },"QUERY");
+		return this.wait("RESPONSE");
+	}
+
 	/* retrieve the overall lock and subscription status of an object */
 	this.status=function(location) {
 		this.send({

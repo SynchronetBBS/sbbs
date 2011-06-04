@@ -10,13 +10,19 @@
 
 	methods:
 	
+	-	Database.status(client,location);
+	-	Database.who(client,location); 
 	-	Database.query(client,query);
 	-	Database.cycle(Date.now());
 	-	Database.load();
 	-	Database.save(Date.now());
 	-	Database.lock(client,record,child_name,lock_type);
 	-	Database.read(client,record,child_name);
+	-	Database.pop(client,record,child_name);
+	-	Database.shift(client,record,child_name);
 	-	Database.write(client,record,child_name,data);
+	-	Database.push(client,record,child_name,data);
+	-	Database.unshift(client,record,child_name,data);
 	-	Database.delete(client,record,child_name);
 	-	Database.subscribe(client,record,child_name);
 	-	Database.unsubscribe(client,record,child_name);
@@ -58,7 +64,7 @@ function JSONdb (fileName) {
 		FILE_BUFFER:65535,
 		
 		/* autosave interval */
-		AUTO_SAVE:30 /*seconds*/ *1000,
+		AUTO_SAVE: 300 /*seconds*/ *1000,
 		LAST_SAVE:-1,
 		UPDATES:false,
 		
@@ -311,6 +317,20 @@ function JSONdb (fileName) {
 		return true;
 	}
 
+	/* return a list of subscriptions and associated IP address for clients */
+	this.who = function(client,record) {
+		var data = [];
+		for each(var s in record.info.subscribers) {
+			if(!data[s.remote_ip_address])
+				data[s.remote_ip_address] = [];
+			data[s.remote_ip_address].push(
+				record.parent_name + "." + record.child_name
+			);
+		}
+		send_packet(client,data,"RESPONSE");
+		return true;
+	}
+
 	/* generic query handler, will process locks, reads, writes, and unlocks
 	and put them into the appropriate queues */
 	this.query = function(client,query) {
@@ -492,6 +512,9 @@ function JSONdb (fileName) {
 				break;
 			case "STATUS":
 				result=this.status(request.client,record);
+				break;
+			case "WHO":
+				result=this.who(request.client,record);
 				break;
 			}
 			if(result == true) {
