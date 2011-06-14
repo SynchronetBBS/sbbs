@@ -847,6 +847,19 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	samples=S_RATE*duration/1000;
 	if(samples<=S_RATE/freq*2)
 		samples=S_RATE/freq*2;
+	if(samples > S_RATE/freq*2) {
+		int sample_len;
+
+		makewave(freq,wave,S_RATE*15/2,shape);
+		for(sample_len=S_RATE*15/2-1; sample_len && wave[sample_len]==128; sample_len--)
+			;
+		sample_len++;
+		while(samples > S_RATE*15/2) {
+			if(!xp_play_sample(wave, sample_len, TRUE))
+				return FALSE;
+			samples -= sample_len;
+		}
+	}
 	makewave(freq,wave,samples,shape);
 	return(xp_play_sample(wave, samples, FALSE));
 }
