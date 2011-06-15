@@ -43,6 +43,11 @@ async
 
 inc_main_cmds
 
+compare_ars RIP
+if_true
+	getlines
+	end_if
+
 # Display main Prompt
 print "-c\r\nþ bhMain ncþ h"
 compare_ars exempt T
@@ -60,11 +65,6 @@ if_false
 else
 	getstrupr 60
 	endif
-
-compare_ars RIP
-if_true
-	getlines
-	end_if
 
 # Do nothing for control keys and space
 cmdkey ^@
