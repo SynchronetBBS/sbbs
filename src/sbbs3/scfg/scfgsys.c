@@ -1389,11 +1389,11 @@ If unsure, leave this value set to `0`, the default.
 			while(!done) {
 				i=0;
 				sprintf(opt[i++],"%-16.16s%s","Login",cfg.login_mod);
-				sprintf(opt[i++],"%-16.16s%s","Logon Event",cfg.logon_mod);
-				sprintf(opt[i++],"%-16.16s%s","Sync Event",cfg.sync_mod);
-				sprintf(opt[i++],"%-16.16s%s","Logoff Event",cfg.logoff_mod);
-				sprintf(opt[i++],"%-16.16s%s","Logout Event",cfg.logout_mod);
-				sprintf(opt[i++],"%-16.16s%s","New User Event",cfg.newuser_mod);
+				sprintf(opt[i++],"%-16.16s%s","Logon Module",cfg.logon_mod);
+				sprintf(opt[i++],"%-16.16s%s","Sync Module",cfg.sync_mod);
+				sprintf(opt[i++],"%-16.16s%s","Logoff Module",cfg.logoff_mod);
+				sprintf(opt[i++],"%-16.16s%s","Logout Module",cfg.logout_mod);
+				sprintf(opt[i++],"%-16.16s%s","New User Module",cfg.newuser_mod);
 				sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
 				opt[i][0]=0;
 				SETHELP(WHERE);
