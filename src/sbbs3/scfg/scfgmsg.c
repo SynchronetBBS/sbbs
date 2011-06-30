@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -123,7 +123,7 @@ void msgs_cfg()
 	char*	p;
 	char*	tp;
     char	tmp[128];
-	char	tmp_code[16];
+	char	tmp_code[32];
 	int		j,k,l,q,s;
 	int		i,file,ptridx,n;
 	unsigned total_subs;
@@ -145,19 +145,19 @@ while(1) {
 		j|=WIN_PUT;
 	SETHELP(WHERE);
 /*
-Message Groups:
+`Message Groups:`
 
 This is a listing of message groups for your BBS. Message groups are
-used to logically separate your message sub-boards into groups. Every
+used to logically separate your message `sub-boards` into groups. Every
 sub-board belongs to a message group. You must have at least one message
 group and one sub-board configured.
 
 One popular use for message groups is to separate local sub-boards and
-networked sub-boards. One might have a Local message group that contains
-non-networked sub-boards of various topics and also have a FidoNet
+networked sub-boards. One might have a `Local` message group that contains
+non-networked sub-boards of various topics and also have a `FidoNet`
 message group that contains sub-boards that are echoed across FidoNet.
-Some sysops separate sub-boards into more specific areas such as Main,
-Technical, or Adult. If you have many sub-boards that have a common
+Some sysops separate sub-boards into more specific areas such as `Main`,
+`Technical`, or `Adult`. If you have many sub-boards that have a common
 subject denominator, you may want to have a separate message group for
 those sub-boards for a more organized message structure.
 */
@@ -176,10 +176,10 @@ those sub-boards for a more organized message structure.
 		i&=MSK_OFF;
 		SETHELP(WHERE);
 /*
-Group Long Name:
+`Group Long Name:`
 
 This is a description of the message group which is displayed when a
-user of the system uses the /* command from the main menu.
+user of the system uses the `/*` command from the main menu.
 */
 		strcpy(str,"Main");
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Group Long Name",str,LEN_GLNAME
@@ -187,7 +187,7 @@ user of the system uses the /* command from the main menu.
 			continue;
 		SETHELP(WHERE);
 /*
-Group Short Name:
+`Group Short Name:`
 
 This is a short description of the message group which is used for the
 main menu and reading message prompts.
@@ -199,32 +199,36 @@ main menu and reading message prompts.
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_grps+1);
 			cfg.total_grps=0;
 			bail(1);
-            continue; }
+            continue; 
+		}
 
 		if(cfg.total_grps) {	/* was cfg.total_subs (?) */
             for(j=cfg.total_grps;j>i;j--)   /* insert above */
                 cfg.grp[j]=cfg.grp[j-1];
             for(j=0;j<cfg.total_subs;j++)   /* move sub group numbers */
                 if(cfg.sub[j]->grp>=i)
-                    cfg.sub[j]->grp++; }
+                    cfg.sub[j]->grp++; 
+		}
 
 		if((cfg.grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(grp_t));
-			continue; }
+			continue; 
+		}
 		memset((grp_t *)cfg.grp[i],0,sizeof(grp_t));
 		strcpy(cfg.grp[i]->lname,str);
 		strcpy(cfg.grp[i]->sname,str2);
 		cfg.total_grps++;
 		uifc.changes=1;
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_DEL) {
 		i&=MSK_OFF;
 		SETHELP(WHERE);
 /*
-Delete All Data in Group:
+`Delete All Data in Group:`
 
 If you wish to delete the messages in all the sub-boards in this group,
-select Yes.
+select `Yes`.
 */
 		j=1;
 		strcpy(opt[0],"Yes");
@@ -245,7 +249,8 @@ select Yes.
 					else
 						strcpy(tmp,cfg.sub[j]->data_dir);
 					delfiles(tmp,str);
-					clearptrs(j); }
+					clearptrs(j); 
+				}
 		free(cfg.grp[i]);
 		for(j=0;j<cfg.total_subs;) {
 			if(cfg.sub[j]->grp==i) {	/* delete subs of this group */
@@ -258,26 +263,33 @@ select Yes.
 						for(s=0;s<cfg.qhub[q]->subs;s++)
 							if(cfg.qhub[q]->sub[s]==k)
 								cfg.qhub[q]->sub[s]--;
-					k++; } }
-			else j++; }
+					k++; 
+				} 
+			}
+			else j++; 
+		}
 		for(j=0;j<cfg.total_subs;j++)	/* move sub group numbers down */
 			if(cfg.sub[j]->grp>i)
 				cfg.sub[j]->grp--;
 		cfg.total_grps--;
 		while(i<cfg.total_grps) {
 			cfg.grp[i]=cfg.grp[i+1];
-			i++; }
+			i++; 
+		}
 		uifc.changes=1;
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_GET) {
 		i&=MSK_OFF;
 		savgrp=*cfg.grp[i];
-		continue; }
+		continue; 
+	}
 	if((i&MSK_ON)==MSK_PUT) {
 		i&=MSK_OFF;
 		*cfg.grp[i]=savgrp;
 		uifc.changes=1;
-		continue; }
+		continue; 
+	}
 	done=0;
 	while(!done) {
 		j=0;
@@ -294,11 +306,11 @@ select Yes.
 		sprintf(str,"%s Group",cfg.grp[i]->sname);
 		SETHELP(WHERE);
 /*
-Message Group Configuration:
+`Message Group Configuration:`
 
 This menu allows you to configure the security requirements for access
 to this message group. You can also add, delete, and configure the
-sub-boards of this group by selecting the Messages Sub-boards... option.
+sub-boards of this group by selecting the `Messages Sub-boards...` option.
 */
 		switch(uifc.list(WIN_ACT,6,4,60,&dflt,0,str,opt)) {
 			case -1:
@@ -307,10 +319,10 @@ sub-boards of this group by selecting the Messages Sub-boards... option.
 			case 0:
 				SETHELP(WHERE);
 /*
-Group Long Name:
+`Group Long Name:`
 
 This is a description of the message group which is displayed when a
-user of the system uses the /* command from the main menu.
+user of the system uses the `/*` command from the main menu.
 */
 				strcpy(str,cfg.grp[i]->lname);	/* save incase setting to null */
 				if(!uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
@@ -320,7 +332,7 @@ user of the system uses the /* command from the main menu.
 			case 1:
 				SETHELP(WHERE);
 /*
-Group Short Name:
+`Group Short Name:`
 
 This is a short description of the message group which is used for
 main menu and reading messages prompts.
@@ -335,8 +347,8 @@ main menu and reading messages prompts.
 
 This is an `optional` code prefix used to help generate unique internal
 codes for the sub-boards in this message group. If this option
-is used, sub-board internal codes will be made up of this prefix and the
-specified code suffix for each sub-board.
+is used, sub-board internal codes will be constructed from this prefix
+and the specified code suffix for each sub-board.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
 					,cfg.grp[i]->code_prefix,LEN_CODE,K_EDIT|K_UPPER);
@@ -352,10 +364,10 @@ specified code suffix for each sub-board.
 				opt[2][0]=0;
 				SETHELP(WHERE);
 /*
-Clone Sub-board Options:
+`Clone Sub-board Options:`
 
 If you want to clone the options of the first sub-board of this group
-into all sub-boards of this group, select Yes.
+into all sub-boards of this group, select `Yes`.
 
 The options cloned are posting requirements, reading requirements,
 operator requirments, moderated user requirments, toggle options,
@@ -386,7 +398,10 @@ of CRCs, maximum age of messages, storage method, and data directory.
 								cfg.sub[j]->maxcrcs=cfg.sub[k]->maxcrcs;
 								cfg.sub[j]->maxage=cfg.sub[k]->maxage;
 
-								cfg.sub[j]->faddr=cfg.sub[k]->faddr; } } }
+								cfg.sub[j]->faddr=cfg.sub[k]->faddr; 
+							} 
+						} 
+				}
 				break;
 			case 5:
 				k=0;
@@ -399,7 +414,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 				opt[k][0]=0;
 				SETHELP(WHERE);
 /*
-Export Area File Format:
+`Export Area File Format:`
 
 This menu allows you to choose the format of the area file you wish to
 export the current message group into.
@@ -421,11 +436,13 @@ export the current message group into.
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
 						,str2,sizeof(str2)-1,0)<=0) {
 						uifc.changes=q;
-						break; }
+						break; 
+					}
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,sizeof(str)-1,K_EDIT)<=0) {
 					uifc.changes=q;
-					break; }
+					break; 
+				}
 				if(fexist(str)) {
 					strcpy(opt[0],"Overwrite");
 					strcpy(opt[1],"Append");
@@ -436,7 +453,8 @@ export the current message group into.
 					if(j==-1)
 						break;
 					if(j==0) j=O_WRONLY|O_TRUNC;
-					else	 j=O_WRONLY|O_APPEND; }
+					else	 j=O_WRONLY|O_APPEND; 
+				}
 				else
 					j=O_WRONLY|O_CREAT;
 				if((stream=fnopen(&file,str,j))==NULL) {
@@ -458,18 +476,21 @@ export the current message group into.
 							,cfg.sub[j]->code_suffix);
 						fprintf(stream,"%-30s %-20s %s\r\n"
 							,str,stou(cfg.sub[j]->sname),str2);
-						continue; }
+						continue; 
+					}
 					if(k==2) {		/* AREAS.BBS SBBSecho */
 						fprintf(stream,"%s%-30s %-20s %s\r\n"
 							,cfg.grp[cfg.sub[j]->grp]->code_prefix
 							,cfg.sub[j]->code_suffix
 							,stou(cfg.sub[j]->sname)
 							,str2);
-						continue; }
+						continue; 
+					}
 					if(k==3) {		/* FIDONET.NA */
 						fprintf(stream,"%-20s %s\r\n"
 							,stou(cfg.sub[j]->sname),cfg.sub[j]->lname);
-						continue; }
+						continue; 
+					}
 					fprintf(stream,"%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n%s\r\n"
 							"%s\r\n%s\r\n%s\r\n"
 						,cfg.sub[j]->lname
@@ -497,7 +518,8 @@ export the current message group into.
 						,cfg.sub[j]->ptridx
 						,cfg.sub[j]->mod_arstr
 						);
-					fprintf(stream,"***END-OF-SUB***\r\n\r\n"); }
+					fprintf(stream,"***END-OF-SUB***\r\n\r\n"); 
+				}
 				fclose(stream);
 				uifc.pop(0);
 				sprintf(str,"%lu Message Areas Exported Successfully",ported);
@@ -514,7 +536,7 @@ export the current message group into.
 				opt[k][0]=0;
 				SETHELP(WHERE);
 /*
-Import Area File Format:
+`Import Area File Format:`
 
 This menu allows you to choose the format of the area file you wish to
 import into the current message group.
@@ -537,7 +559,8 @@ import into the current message group.
                     break;
 				if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 					uifc.msg("Open Failure");
-                    break; }
+                    break; 
+				}
 				uifc.pop("Importing Areas...");
 				total_subs = cfg.total_subs;	 /* Save original number of subs */
 				ptridx = 0;
@@ -662,13 +685,7 @@ import into the current message group.
 						} 
 					}
 
-					p=tmp_code;
-					l=strlen(cfg.grp[i]->code_prefix);
-					if(l && strnicmp(p,cfg.grp[i]->code_prefix,l)==0 && strlen(p)!=l)
-						p+=l;									/* Skip code prefix, if supplied */
-                    prep_code(p);								/* Strip invalid chars */
-					SAFECOPY(tmpsub.code_suffix,p);				/* THEN truncate to valid length */
-
+                    SAFECOPY(tmpsub.code_suffix, prep_code(tmp_code,cfg.grp[i]->code_prefix));
 					truncsp(tmpsub.sname);
 					truncsp(tmpsub.lname);
 					truncsp(tmpsub.qwkname);
@@ -683,7 +700,8 @@ import into the current message group.
 						if(cfg.sub[j]->grp!=i)
 							continue;
 						if(!stricmp(cfg.sub[j]->code_suffix,tmpsub.code_suffix))
-							break; }
+							break; 
+					}
 					if(j==total_subs) {
 						j=cfg.total_subs;
 						if((cfg.sub=(sub_t **)realloc(cfg.sub
@@ -699,7 +717,8 @@ import into the current message group.
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
 							break; 
 						}
-						memset(cfg.sub[j],0,sizeof(sub_t)); }
+						memset(cfg.sub[j],0,sizeof(sub_t)); 
+					}
 					if(!k) {
 						n=cfg.sub[j]->ptridx;	/* save original ptridx */
 						memcpy(cfg.sub[j],&tmpsub,sizeof(sub_t));
@@ -740,8 +759,10 @@ import into the current message group.
 
 			case 7:
                 sub_cfg(i);
-				break; } } }
-
+				break; 
+			} 
+		} 
+	}
 }
 
 void msg_opts()
@@ -807,7 +828,7 @@ void msg_opts()
 		opt[i][0]=0;
 		SETHELP(WHERE);
 /*
-Message Options:
+`Message Options:`
 
 This is a menu of system-wide message related options. Messages include
 E-mail and public posts (on sub-boards).
@@ -830,7 +851,7 @@ E-mail and public posts (on sub-boards).
 				strcpy(str,cfg.sys_id);
 				SETHELP(WHERE);
 /*
-BBS ID for QWK Packets:
+`BBS ID for QWK Packets:`
 
 This is a short system ID for your BBS that is used for QWK packets.
 It should be an abbreviation of your BBS name or other related string.
@@ -856,9 +877,9 @@ a unique QWK system ID.
 				i=0;
 				SETHELP(WHERE);
 /*
-United States Time Zone:
+`United States Time Zone:`
 
-If your local time zone is the United States, select Yes.
+If your local time zone is the United States, select `Yes`.
 */
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
@@ -905,7 +926,8 @@ If your local time zone is the United States, select Yes.
                             break;
 						case 7:
 							cfg.sys_timezone=BST;
-							break; }
+							break; 
+					}
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
 					opt[2][0]=0;
@@ -916,7 +938,8 @@ If your local time zone is the United States, select Yes.
                         break;
 					if(!i)
 						cfg.sys_timezone|=DAYLIGHT;
-					break; }
+					break; 
+				}
 				i=0;
 				strcpy(opt[i++],"Midway");
 				strcpy(opt[i++],"Vancouver");
@@ -1043,14 +1066,15 @@ If your local time zone is the United States, select Yes.
 							if(cfg.sys_timezone<0)
 								cfg.sys_timezone-=atoi(p+1);
 							else
-								cfg.sys_timezone+=atoi(p+1); }
+								cfg.sys_timezone+=atoi(p+1); 
+						}
                         break;
 						}
                 break;
 			case 2:
 				SETHELP(WHERE);
 /*
-Maximum Message Base Retry Time:
+`Maximum Message Base Retry Time:`
 
 This is the maximum number of seconds to allow while attempting to open
 or lock a message base (a value in the range of 10 to 45 seconds should
@@ -1065,11 +1089,11 @@ be fine).
 			case 3:
 				SETHELP(WHERE);
 /*
-Maximum Messages Per QWK Packet:
+`Maximum Messages Per QWK Packet:`
 
 This is the maximum number of messages (excluding E-mail), that a user
 can have in one QWK packet for download. This limit does not effect
-QWK network nodes (Q restriction). If set to 0, no limit is imposed.
+QWK network nodes (`Q` restriction). If set to `0`, no limit is imposed.
 */
 
 				ultoa(cfg.max_qwkmsgs,str,10);
@@ -1097,7 +1121,7 @@ imported. If set to `0`, no age limit is imposed.
 			case 5:
 				SETHELP(WHERE);
 /*
-Pre-pack QWK Requirements:
+`Pre-pack QWK Requirements:`
 
 ALL user accounts on the BBS meeting this requirmenet will have a QWK
 packet automatically created for them every day after midnight
@@ -1106,7 +1130,7 @@ packet automatically created for them every day after midnight
 This is mainly intended for QWK network nodes that wish to save connect
 time by having their packets pre-packed. If a large number of users meet
 this requirement, it can take up a large amount of disk space on your
-system (in the DATA\FILE directory).
+system (in the `DATA\FILE` directory).
 */
 				getar("Pre-pack QWK (Use with caution!)",cfg.preqwk_arstr);
 				break;
@@ -1114,7 +1138,7 @@ system (in the DATA\FILE directory).
 				sprintf(str,"%u",cfg.mail_maxage);
                 SETHELP(WHERE);
 /*
-Maximum Age of Mail:
+`Maximum Age of Mail:`
 
 This value is the maximum number of days that mail will be kept.
 */
@@ -1129,14 +1153,14 @@ This value is the maximum number of days that mail will be kept.
 				i=cfg.sys_misc&SM_DELEMAIL ? 0:1;
 				SETHELP(WHERE);
 /*
-Purge Deleted E-mail:
+`Purge Deleted E-mail:`
 
 If you wish to have deleted e-mail physically (and permanently) removed
 from your e-mail database immediately after a users exits the reading
-e-mail prompt, set this option to Immediately.
+e-mail prompt, set this option to `Immediately`.
 
 For the best system performance and to avoid delays when deleting e-mail
-from a large e-mail database, set this option to Daily (the default).
+from a large e-mail database, set this option to `Daily` (the default).
 Your system maintenance will automatically purge deleted e-mail once a
 day.
 */
@@ -1145,16 +1169,18 @@ day.
 					,"Purge Deleted E-mail",opt);
 				if(!i && cfg.sys_misc&SM_DELEMAIL) {
 					cfg.sys_misc&=~SM_DELEMAIL;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && !(cfg.sys_misc&SM_DELEMAIL)) {
 					cfg.sys_misc|=SM_DELEMAIL;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
                 break;
 			case 8:
 				sprintf(str,"%lu",cfg.mail_maxcrcs);
                 SETHELP(WHERE);
 /*
-Maximum Number of Mail CRCs:
+`Maximum Number of Mail CRCs:`
 
 This value is the maximum number of CRCs that will be kept for duplicate
 mail checking. Once this maximum number of CRCs is reached, the oldest
@@ -1171,20 +1197,22 @@ CRCs will be automatically purged.
 				i=cfg.sys_misc&SM_ANON_EM ? 0:1;
 				SETHELP(WHERE);
 /*
-Allow Anonymous E-mail:
+`Allow Anonymous E-mail:`
 
-If you want users with the A exemption to be able to send E-mail
-anonymously, set this option to Yes.
+If you want users with the `A` exemption to be able to send E-mail
+anonymously, set this option to `Yes`.
 */
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Anonymous E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_ANON_EM)) {
 					cfg.sys_misc|=SM_ANON_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&SM_ANON_EM) {
 					cfg.sys_misc&=~SM_ANON_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				break;
 			case 10:
 				strcpy(opt[0],"Yes");
@@ -1193,20 +1221,22 @@ anonymously, set this option to Yes.
 				i=cfg.sys_misc&SM_QUOTE_EM ? 0:1;
 				SETHELP(WHERE);
 /*
-Allow Quoting in E-mail:
+`Allow Quoting in E-mail:`
 
 If you want your users to be allowed to use message quoting when
-responding in E-mail, set this option to Yes.
+responding in E-mail, set this option to `Yes`.
 */
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Quoting in E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_QUOTE_EM)) {
 					cfg.sys_misc|=SM_QUOTE_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&SM_QUOTE_EM) {
 					cfg.sys_misc&=~SM_QUOTE_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				break;
 			case 11:
 				strcpy(opt[0],"Yes");
@@ -1215,20 +1245,22 @@ responding in E-mail, set this option to Yes.
 				i=cfg.sys_misc&SM_FILE_EM ? 0:1;
 				SETHELP(WHERE);
 /*
-Allow File Attachment Uploads in E-mail:
+`Allow File Attachment Uploads in E-mail:`
 
 If you want your users to be allowed to attach an uploaded file to
-an E-mail message, set this option to Yes.
+an E-mail message, set this option to `Yes`.
 */
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow File Attachment Uploads in E-mail",opt);
 				if(!i && !(cfg.sys_misc&SM_FILE_EM)) {
 					cfg.sys_misc|=SM_FILE_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&SM_FILE_EM) {
 					cfg.sys_misc&=~SM_FILE_EM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				break;
 			case 12:
 				strcpy(opt[0],"Yes");
@@ -1237,21 +1269,23 @@ an E-mail message, set this option to Yes.
 				i=cfg.sys_misc&SM_FWDTONET ? 0:1;
 				SETHELP(WHERE);
 /*
-Allow Users to Have Their E-mail Forwarded to NetMail:
+`Allow Users to Have Their E-mail Forwarded to NetMail:`
 
 If you want your users to be able to have any e-mail sent to them
 optionally (at the sender's discretion) forwarded to a NetMail address,
-set this option to Yes.
+set this option to `Yes`.
 */
 
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Forwarding of E-mail to NetMail",opt);
 				if(!i && !(cfg.sys_misc&SM_FWDTONET)) {
 					cfg.sys_misc|=SM_FWDTONET;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&SM_FWDTONET) {
 					cfg.sys_misc&=~SM_FWDTONET;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
                 break;
 			case 13:
 				strcpy(opt[0],"Yes");
@@ -1260,9 +1294,9 @@ set this option to Yes.
 				i=cfg.sys_misc&SM_DELREADM ? 0:1;
 				SETHELP(WHERE);
 /*
-Kill Read E-mail Automatically:
+`Kill Read E-mail Automatically:`
 
-If this option is set to Yes, e-mail that has been read will be
+If this option is set to `Yes`, e-mail that has been read will be
 automatically deleted when message base maintenance is run.
 */
 
@@ -1270,10 +1304,12 @@ automatically deleted when message base maintenance is run.
 					,"Kill Read E-mail Automatically",opt);
 				if(!i && !(cfg.sys_misc&SM_DELREADM)) {
 					cfg.sys_misc|=SM_DELREADM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&SM_DELREADM) {
 					cfg.sys_misc&=~SM_DELREADM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
                 break;
 			case 14:
 				strcpy(opt[0],"Yes");
@@ -1333,17 +1369,17 @@ messages, set this option to ~Yes~.
 				i=1;
 				SETHELP(WHERE);
 /*
-Users Can View Deleted Messages:
+`Users Can View Deleted Messages:`
 
-If this option is set to Yes, then users will be able to view messages
+If this option is set to `Yes`, then users will be able to view messages
 they've sent and deleted or messages sent to them and they've deleted
 with the option of un-deleting the message before the message is
 physically purged from the e-mail database.
 
-If this option is set to No, then when a message is deleted, it is no
+If this option is set to `No`, then when a message is deleted, it is no
 longer viewable (with SBBS) by anyone.
 
-If this option is set to Sysops Only, then only sysops and sub-ops (when
+If this option is set to `Sysops Only`, then only sysops and sub-ops (when
 appropriate) can view deleted messages.
 */
 
@@ -1352,25 +1388,28 @@ appropriate) can view deleted messages.
 				if(!i && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
 					!=(SM_USRVDELM|SM_SYSVDELM)) {
 					cfg.sys_misc|=(SM_USRVDELM|SM_SYSVDELM);
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==1 && cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM)) {
 					cfg.sys_misc&=~(SM_USRVDELM|SM_SYSVDELM);
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
 				else if(i==2 && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
 					!=SM_SYSVDELM) {
 					cfg.sys_misc|=SM_SYSVDELM;
 					cfg.sys_misc&=~SM_USRVDELM;
-					uifc.changes=1; }
+					uifc.changes=1; 
+				}
                 break;
 			case 17:
 				SETHELP(WHERE);
 /*
-Extra Attribute Codes...
+`Extra Attribute Codes...`
 
 Synchronet can suppport the native text attribute codes of other BBS
 programs in messages (menus, posts, e-mail, etc.) To enable the extra
 attribute codes for another BBS program, set the corresponding option
-to Yes.
+to `Yes`.
 */
 
 				j=0;
@@ -1408,5 +1447,9 @@ to Yes.
 							break;
 						case 4:
 							cfg.sys_misc^=SM_RENEGADE;
-							break; } } } }
+							break; 
+				} 
+			} 
+		} 
+	}
 }

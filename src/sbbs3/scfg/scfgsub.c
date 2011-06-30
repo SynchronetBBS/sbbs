@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -68,17 +68,17 @@ while(1) {
 		i|=WIN_PUT;
 	SETHELP(WHERE);
 /*
-Message Sub-boards:
+`Message Sub-boards:`
 
 This is a list of message sub-boards that have been configured for the
 selected message group.
 
 To add a sub-board, select the desired position with the arrow keys and
-hit  INS .
+hit ~ INS ~.
 
-To delete a sub-board, select it with the arrow keys and hit  DEL .
+To delete a sub-board, select it with the arrow keys and hit ~ DEL ~.
 
-To configure a sub-board, select it with the arrow keys and hit  ENTER .
+To configure a sub-board, select it with the arrow keys and hit ~ ENTER ~.
 */
 	i=uifc.list(i,24,1,LEN_SLNAME+5,&dflt,&bar,str,opt);
 	if((signed)i==-1)
@@ -88,7 +88,7 @@ To configure a sub-board, select it with the arrow keys and hit  ENTER .
 		strcpy(str,"General");
 		SETHELP(WHERE);
 /*
-Sub-board Long Name:
+`Sub-board Long Name:`
 
 This is a description of the message sub-board which is displayed in all
 sub-board listings.
@@ -99,7 +99,7 @@ sub-board listings.
 		sprintf(str2,"%.*s",LEN_SSNAME,str);
 		SETHELP(WHERE);
 /*
-Sub-board Short Name:
+`Sub-board Short Name:`
 
 This is a short description of the message sub-board which is displayed
 at the main and reading messages prompts.
@@ -111,7 +111,7 @@ at the main and reading messages prompts.
 		sprintf(str3,"%.10s",str2);
 		SETHELP(WHERE);
 /*
-Sub-board QWK Name:
+`Sub-board QWK Name:`
 
 This is the name of the sub-board used for QWK off-line readers.
 */
@@ -125,11 +125,14 @@ This is the name of the sub-board used for QWK off-line readers.
 		strupr(code);
 		SETHELP(WHERE);
 /*
-Sub-board Internal Code Suffix:
+`Sub-board Internal Code Suffix:`
 
 Every sub-board must have its own unique code for Synchronet to refer to
 it internally. This code should be descriptive of the sub-board's topic,
 usually an abreviation of the sub-board's name.
+
+`Note:` The internal code is constructed from the message group's code
+prefix (if present) and the sub-board's code suffix.
 */
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
 			,K_EDIT|K_UPPER)<1)
@@ -188,9 +191,9 @@ usually an abreviation of the sub-board's name.
 		i&=MSK_OFF;
 		SETHELP(WHERE);
 /*
-Delete Data in Sub-board:
+`Delete Data in Sub-board:`
 
-If you want to delete all the messages for this sub-board, select Yes.
+If you want to delete all the messages for this sub-board, select `Yes`.
 */
 		j=1;
 		strcpy(opt[0],"Yes");
@@ -282,10 +285,10 @@ If you want to delete all the messages for this sub-board, select Yes.
 		sprintf(str,"%s Sub-board",cfg.sub[i]->sname);
 		SETHELP(WHERE);
 /*
-Sub-board Configuration:
+`Sub-board Configuration:`
 
 This menu allows you to configure the individual selected sub-board.
-Options with a trailing ... provide a sub-menu of more options.
+Options with a trailing `...` provide a sub-menu of more options.
 */
 		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT
 			,0,0,60,&opt_dflt,0,str,opt)) {
@@ -295,7 +298,7 @@ Options with a trailing ... provide a sub-menu of more options.
 			case 0:
 				SETHELP(WHERE);
 /*
-Sub-board Long Name:
+`Sub-board Long Name:`
 
 This is a description of the message sub-board which is displayed in all
 sub-board listings.
@@ -308,7 +311,7 @@ sub-board listings.
 			case 1:
 				SETHELP(WHERE);
 /*
-Sub-board Short Name:
+`Sub-board Short Name:`
 
 This is a short description of the message sub-board which is displayed
 at the main and reading messages prompts.
@@ -319,7 +322,7 @@ at the main and reading messages prompts.
 			case 2:
 				SETHELP(WHERE);
 /*
-Sub-board QWK Name:
+`Sub-board QWK Name:`
 
 This is the name of the sub-board used for QWK off-line readers.
 */
@@ -329,11 +332,15 @@ This is the name of the sub-board used for QWK off-line readers.
 			case 3:
                 SETHELP(WHERE);
 /*
-Sub-board Internal Code Suffix:
+`Sub-board Internal Code Suffix:`
 
 Every sub-board must have its own unique code for Synchronet to refer
 to it internally. This code should be descriptive of the sub-board's
 topic, usually an abreviation of the sub-board's name.
+
+`Note:` The internal code displayed is the complete internal code
+constructed from the message group's code prefix and the sub-board's
+code suffix.
 */
                 strcpy(str,cfg.sub[i]->code_suffix);
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
@@ -382,7 +389,7 @@ sub-board's name and group name.
 				sprintf(str,"%lu",cfg.sub[i]->maxmsgs);
                 SETHELP(WHERE);
 /*
-Maximum Number of Messages:
+`Maximum Number of Messages:`
 
 This value is the maximum number of messages that will be kept in the
 sub-board. Once this maximum number of messages is reached, the oldest
@@ -398,7 +405,7 @@ sufficient maximum.
 				sprintf(str,"%u",cfg.sub[i]->maxage);
                 SETHELP(WHERE);
 /*
-Maximum Age of Messages:
+`Maximum Age of Messages:`
 
 This value is the maximum number of days that messages will be kept in
 the sub-board.
@@ -412,7 +419,7 @@ the sub-board.
 				sprintf(str,"%lu",cfg.sub[i]->maxcrcs);
 				SETHELP(WHERE);
 /*
-Maximum Number of CRCs:
+`Maximum Number of CRCs:`
 
 This value is the maximum number of CRCs that will be kept in the
 sub-board for duplicate message checking. Once this maximum number of
@@ -463,10 +470,10 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 					opt[n][0]=0;
 					SETHELP(WHERE);
 /*
-Sub-board Toggle Options:
+`Sub-board Toggle Options:`
 
 This menu allows you to toggle certain options for the selected
-sub-board between two or more settings, such as Yes and No.
+sub-board between two or more settings, such as `Yes` and `No`.
 */
 					n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,36,&tog_dflt,0
 						,"Toggle Options",opt);
@@ -484,12 +491,12 @@ sub-board between two or more settings, such as Yes and No.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Allow Private Posts on Sub-board:
+`Allow Private Posts on Sub-board:`
 
 If you want users to be able to post private messages to other users
-on this sub-board, set this value to Yes. Usually, E-mail is the
+on this sub-board, set this value to `Yes`. Usually, E-mail is the
 preferred method of private communication. If you want users to be able
-to post private messages only on this sub-board, select Only.
+to post private messages only on this sub-board, select `Only`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Private Posts",opt);
@@ -521,12 +528,12 @@ to post private messages only on this sub-board, select Only.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Allow Anonymous Posts on Sub-board:
+`Allow Anonymous Posts on Sub-board:`
 
-If you want users with the A exemption to be able to post anonymously on
-this sub-board, select Yes. If you want all posts on this sub-board to be
-forced anonymous, select Only. If you do not want anonymous posts allowed
-on this sub-board at all, select No.
+If you want users with the `A` exemption to be able to post anonymously on
+this sub-board, select `Yes`. If you want all posts on this sub-board to be
+forced anonymous, select `Only`. If you do not want anonymous posts allowed
+on this sub-board at all, select `No`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Anonymous Posts",opt);
@@ -554,11 +561,11 @@ on this sub-board at all, select No.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-User Real Names in Posts on Sub-board:
+`User Real Names in Posts on Sub-board:`
 
 If you allow aliases on your system, you can have messages on this
 sub-board automatically use the real name of the posting user by setting
-this option to Yes.
+this option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Use Real Names in Posts",opt);
@@ -583,11 +590,11 @@ this option to Yes.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Users Can Edit Posts on Sub-board:
+`Users Can Edit Posts on Sub-board:`
 
 If you wish to allow users to edit their messages after they have been
-posted, this option to Yes. If you wish to allow users to edit only the
-last message on a message base, set this option to Last Post Only.
+posted, this option to `Yes`. If you wish to allow users to edit only the
+last message on a message base, set this option to `Last Post Only`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Users Can Edit Messages",opt);
@@ -630,13 +637,13 @@ last message on a message base, set this option to Last Post Only.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Users Can Delete Posts on Sub-board:
+`Users Can Delete Posts on Sub-board:`
 
 If you want users to be able to delete any of their own posts on this
-sub-board, set this option to Yes. If you want to allow users the
+sub-board, set this option to `Yes`. If you want to allow users the
 ability to delete their message only if it is the last message on the
-sub-board, select Last Post Only. If you want to disallow users from
-deleting any of their posts, set this option to No.
+sub-board, select `Last Post Only`. If you want to disallow users from
+deleting any of their posts, set this option to `No`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Users Can Delete Posts",opt);
@@ -667,10 +674,10 @@ deleting any of their posts, set this option to No.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Default On for New Scan:
+`Default On for New Scan:`
 
 If you want this sub-board to be included in all user new message scans
-by default, set this option to Yes.
+by default, set this option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for New Scan",opt);
@@ -691,11 +698,11 @@ by default, set this option to Yes.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Forced On for New Scan:
+`Forced On for New Scan:`
 
 If you want this sub-board to be included in all user new message scans
 even if the user has removed it from their new scan configuration, set
-this option to Yes.
+this option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Forced New Scan",opt);
@@ -716,10 +723,10 @@ this option to Yes.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Default On for Your Scan:
+`Default On for Your Scan:`
 
 If you want this sub-board to be included in all user personal message
-scans by default, set this option to Yes.
+scans by default, set this option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Default On for Your Scan",opt);
@@ -740,10 +747,10 @@ scans by default, set this option to Yes.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Prompt for 'To' User on Public Posts:
+`Prompt for 'To' User on Public Posts:`
 
 If you want all posts on this sub-board to be prompted for a 'To' user,
-set this option to Yes. This is a useful option for sub-boards that
+set this option to `Yes`. This is a useful option for sub-boards that
 are on a network that does not allow private posts.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
@@ -765,10 +772,10 @@ are on a network that does not allow private posts.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Allow Message Quoting:
+`Allow Message Quoting:`
 
 If you want users to be allowed to quote messages on this sub-board, set
-this option to Yes.
+this option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Allow Message Quoting",opt);
@@ -813,11 +820,11 @@ messages posted in this sub-board, set this option to Yes.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Operator Messages Automatically Permanent:
+`Operator Messages Automatically Permanent:`
 
-If you want messages posted by System and Sub-board Operators to be
+If you want messages posted by `System` and `Sub-board Operators` to be
 automatically permanent (non-purgable) for this sub-board, set this
-option to Yes.
+option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Permanent Operator Messages",opt);
@@ -842,11 +849,11 @@ option to Yes.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Kill Read Messages Automatically:
+`Kill Read Messages Automatically:`
 
 If you want messages that have been read by the intended recipient to
-be automatically deleted by SMBUTIL, set this option to Yes or
-Private if you want only private messages to be automatically deleted.
+be automatically deleted by `SMBUTIL`, set this option to `Yes` or
+`Private` if you want only private messages to be automatically deleted.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Kill Read Messages",opt);
@@ -873,17 +880,17 @@ be automatically deleted by SMBUTIL, set this option to Yes or
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Compress Messages with LZH Encoding:
+`Compress Messages with LZH Encoding:`
 
 If you want all messages in this sub-board to be automatically
-compressed via LZH (Lempel/Ziv/Huffman algorithm used in LHarc, LHA,
-and other popular compression and archive programs), this option to Yes.
+compressed via `LZH` (Lempel/Ziv/Huffman algorithm used in LHarc, LHA,
+and other popular compression and archive programs), this option to `Yes`.
 
 Compression will slow down the reading and writing of messages slightly,
-but the storage space saved can be as much as 50 percent.
+but the storage space saved can be as much as `50 percent`.
 
-Before setting this option to Yes, make sure that all of the SMB
-compatible mail programs you use support the LZH translation.
+Before setting this option to `Yes`, make sure that all of the SMB
+compatible mail programs you use support the `LZH` translation.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Compress Messages (LZH)",opt);
@@ -924,7 +931,7 @@ compatible mail programs you use support the LZH translation.
 					opt[n][0]=0;
 					SETHELP(WHERE);
 /*
-Sub-board Network Options:
+`Sub-board Network Options:`
 
 This menu contains options for the selected sub-board that pertain
 specifically to message networking.
@@ -941,11 +948,11 @@ specifically to message networking.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Append Tag/Origin Line to Posts:
+`Append Tag/Origin Line to Posts:`
 
 If you want to disable the automatic addition of a network tagline or
 origin line to the bottom of outgoing networked posts from this
-sub-board, set this option to No.
+sub-board, set this option to `No`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Append Tag/Origin Line to Posts",opt);
@@ -966,11 +973,11 @@ sub-board, set this option to No.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Export ASCII Characters Only:
+`Export ASCII Characters Only:`
 
 If the network that this sub-board is echoed on does not allow extended
 ASCII (>127) or control codes (<20, not including CR), set this option
-to Yes.
+to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Export ASCII Characters Only",opt);
@@ -991,15 +998,15 @@ to Yes.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Gate Between Net Types:
+`Gate Between Net Types:`
 
 If this sub-board is networked using more than one network technology,
-and you want messages to be gated between the networks, set this
-option to Yes.
+and you want messages to be `gated` between the networks, set this
+option to `Yes`.
 
-If this option is set to No, messages imported from one network type
-will not be exported to another network type. This is the default and
-should be used unless you have specific permission from both networks
+If this option is set to `No`, messages imported from one network type
+will `not` be exported to another network type. This is the default and
+should be used unless you have `specific` permission from both networks
 to gate this sub-board. Incorrectly gated sub-boards can cause duplicate
 messages loops and cross-posted messages.
 
@@ -1025,12 +1032,12 @@ BBS.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Sub-board Networked via QWK Packets:
+`Sub-board Networked via QWK Packets:`
 
 If this sub-board is networked with other BBSs via QWK packets, this
-option should be set to Yes. With this option set to Yes, titles of
+option should be set to `Yes`. With this option set to `Yes`, titles of
 posts on this sub-board will be limited to the QWK packet limitation of
-25 characters. It also allows the Network restriction to function
+25 characters. It also allows the `N`etwork restriction to function
 properly.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
@@ -1048,10 +1055,10 @@ properly.
 						case 4:
 							SETHELP(WHERE);
 /*
-Sub-board QWK Network Tagline:
+`Sub-board QWK Network Tagline:`
 
 If you want to use a different QWK tagline than the configured default
-tagline in the Networks configuration, you should enter that tagline
+tagline in the `Networks` configuration, you should enter that tagline
 here. If this option is left blank, the default tagline is used.
 */
 							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->tagline
@@ -1064,12 +1071,12 @@ here. If this option is left blank, the default tagline is used.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Sub-board Networked via Internet:
+`Sub-board Networked via Internet:`
 
 If this sub-board is networked to the Internet via UUCP or NNTP, this
-option should be set to Yes.
+option should be set to `Yes`.
 
-It will allow the Network user restriction to function properly.
+It will allow the `N`etwork user restriction to function properly.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via Internet",opt);
@@ -1090,12 +1097,12 @@ It will allow the Network user restriction to function properly.
                             opt[2][0]=0;
                             SETHELP(WHERE);
 /*
-Sub-board Networked via PostLink or PCRelay:
+`Sub-board Networked via PostLink or PCRelay:`
 
 If this sub-board is networked with other BBSs via PostLink or PCRelay,
-this option should be set to Yes. With this option set to Yes,
+this option should be set to `Yes`. With this option set to `Yes`,
 titles of posts on this sub-board will be limited to the UTI
-specification limitation of 25 characters. It also allows the Network
+specification limitation of 25 characters. It also allows the `N`etwork
 restriction to function properly.
 */
                             n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
@@ -1117,10 +1124,10 @@ restriction to function properly.
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Sub-board Networked via FidoNet EchoMail:
+`Sub-board Networked via FidoNet EchoMail:`
 
 If this sub-board is part of a FidoNet EchoMail conference, set this
-option to Yes.
+option to `Yes`.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Networked via FidoNet EchoMail",opt);
@@ -1138,10 +1145,10 @@ option to Yes.
 							smb_faddrtoa(&cfg.sub[i]->faddr,str);
 							SETHELP(WHERE);
 /*
-Sub-board FidoNet Address:
+`Sub-board FidoNet Address:`
 
 If this sub-board is part of a FidoNet EchoMail conference, this is
-the address used for this sub-board. Format: Zone:Net/Node[.Point]
+the address used for this sub-board. Format: `Zone:Net/Node[.Point]`
 */
 							uifc.input(WIN_MID|WIN_SAV,0,0,"FidoNet Address"
 								,str,25,K_EDIT);
@@ -1150,11 +1157,11 @@ the address used for this sub-board. Format: Zone:Net/Node[.Point]
 						case 9:
 							SETHELP(WHERE);
 /*
-Sub-board FidoNet Origin Line:
+`Sub-board FidoNet Origin Line:`
 
 If this sub-board is part of a FidoNet EchoMail conference and you
 want to use an origin line other than the default origin line in the
-Networks configuration, set this value to the desired origin line.
+`Networks` configuration, set this value to the desired origin line.
 
 If this option is blank, the default origin line is used.
 */
@@ -1187,7 +1194,7 @@ If this option is blank, the default origin line is used.
 					opt[n][0]=0;
 					SETHELP(WHERE);
 /*
-Sub-board Advanced Options:
+`Sub-board Advanced Options:`
 
 This menu contains options for the selected sub-board that are advanced
 in nature.
@@ -1200,14 +1207,14 @@ in nature.
                         case 0:
 							SETHELP(WHERE);
 /*
-Sub-board QWK Conference Number:
+`Sub-board QWK Conference Number:`
 
 If you wish to have the QWK conference number for this sub-board
 automatically generated by Synchronet (based on the group number
-and sub-board number for the user), set this option to Dynamic.
+and sub-board number for the user), set this option to `Dynamic`.
 
 If you wish to have the same QWK conference number for this sub-board
-regardless of which user access it, set this option to Static
+regardless of which user access it, set this option to `Static`
 by entering the conference number you want to use.
 */
 							if(cfg.sub[i]->qwkconf)
@@ -1227,23 +1234,23 @@ by entering the conference number you want to use.
 							opt[3][0]=0;
 							SETHELP(WHERE);
 /*
-Self-Packing is the slowest storage method because it conserves disk
+`Self-Packing` is the slowest storage method because it conserves disk
   space as it imports messages by using deleted message header and data
   blocks for new messages automatically. If you use this storage method,
-  you will not need to run SMBUTIL P on this message base unless you
+  you will not need to run `SMBUTIL P` on this message base unless you
   accumilate a large number of deleted message blocks and wish to free
   that disk space. You can switch from self-packing to fast allocation
   storage method and back again as you wish.
-Fast Allocation is faster than self-packing because it does not search
+`Fast Allocation` is faster than self-packing because it does not search
   for deleted message blocks for new messages. It automatically places
   all new message blocks at the end of the header and data files. If you
-  use this storage method, you will need to run SMBUTIL P on this
+  use this storage method, you will need to run `SMBUTIL P` on this
   message base periodically or it will continually use up disk space.
-Hyper Allocation is the fastest storage method because it does not
+`Hyper Allocation` is the fastest storage method because it does not
   maintain allocation files at all. Once a message base is setup to use
   this storage method, it should not be changed without first deleting
-  the message base data files in your DATA\DIRS\SUBS directory for this
-  sub-board. You must use SMBUTIL P as with the fast allocation method.
+  the message base data files in your `DATA\DIRS\SUBS` directory for this
+  sub-board. You must use `SMBUTIL P` as with the fast allocation method.
 */
 							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
 								,"Storage Method",opt);
@@ -1293,7 +1300,7 @@ by entering the conference number you want to use.
 						case 2:
 							SETHELP(WHERE);
 /*
-Sub-board Storage Directory:
+`Sub-board Storage Directory:`
 
 Use this if you wish to place the data directory for this sub-board on
 another drive or in another directory besides the default setting.

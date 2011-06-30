@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -58,17 +58,17 @@ char error[256];
 int  backup_level=5;
 
 char *invalid_code=
-"Invalid Internal Code:\n\n"
-"Internal codes can be up to eight characters in length and can only\n"
-"contain valid DOS filename characters. The code you have entered\n"
-"contains one or more invalid characters.";
+	"`Invalid Internal Code:`\n\n"
+	"Internal codes can be up to eight characters in length and can only\n"
+	"contain valid DOS filename characters. The code you have entered\n"
+	"contains one or more invalid characters.";
 
 char *num_flags=
-"Number of Flags Needed:\n\n"
-"If you want users to be required to have all the flags, select All.\n"
-"\n"
-"If you want users to be required to have any one or more of the flags,\n"
-"select One (Allowed).";
+	"`Number of Flags Needed:`\n\n"
+	"If you want users to be required to have all the flags, select `All`.\n"
+	"\n"
+	"If you want users to be required to have any one or more of the flags,\n"
+	"select `One` (Allowed).";
 
 
 void allocfail(uint size)
@@ -217,99 +217,99 @@ int main(int argc, char **argv)
             SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
-FULLPATH(exepath,argv[0],sizeof(exepath));	/* Must do this before chdir */
+	FULLPATH(exepath,argv[0],sizeof(exepath));	/* Must do this before chdir */
 
-if(chdir(cfg.ctrl_dir)!=0) {
-	printf("!ERROR %d changing current directory to: %s\n"
-		,errno,cfg.ctrl_dir);
-	exit(-1);
-}
-FULLPATH(cfg.ctrl_dir,".",sizeof(cfg.ctrl_dir));
-backslashcolon(cfg.ctrl_dir);
-
-uifc.size=sizeof(uifc);
-if(!door_mode) {
-	i=initciolib(ciolib_mode);
-	if(i!=0) {
-    	printf("ciolib library init returned error %d\n",i);
-    	exit(1);
+	if(chdir(cfg.ctrl_dir)!=0) {
+		printf("!ERROR %d changing current directory to: %s\n"
+			,errno,cfg.ctrl_dir);
+		exit(-1);
 	}
-    i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
-}
-else
-    i=uifcinix(&uifc);  /* stdio */
-if(i!=0) {
-    printf("uifc library init returned error %d\n",i);
-    exit(1);
-}
+	FULLPATH(cfg.ctrl_dir,".",sizeof(cfg.ctrl_dir));
+	backslashcolon(cfg.ctrl_dir);
 
-if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
-	allocfail(sizeof(char *)*(MAX_OPTS+1));
-for(i=0;i<(MAX_OPTS+1);i++)
-	if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
-		allocfail(MAX_OPLN);
+	uifc.size=sizeof(uifc);
+	if(!door_mode) {
+		i=initciolib(ciolib_mode);
+		if(i!=0) {
+    		printf("ciolib library init returned error %d\n",i);
+    		exit(1);
+		}
+		i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
+	}
+	else
+		i=uifcinix(&uifc);  /* stdio */
+	if(i!=0) {
+		printf("uifc library init returned error %d\n",i);
+		exit(1);
+	}
 
-if((mopt=(char **)malloc(sizeof(char *)*14))==NULL)
-	allocfail(sizeof(char *)*14);
-for(i=0;i<14;i++)
-	if((mopt[i]=(char *)malloc(64))==NULL)
-		allocfail(64);
+	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
 
-if((p=getenv("SBBSEXEC"))!=NULL)
-	SAFECOPY(str,p);
-else {
-	SAFECOPY(str,exepath);
-	p=strrchr(str,'/');
-	if(p==NULL)
-	    p=strrchr(str,'\\');
-	if(p!=NULL)
-		*p=0;
-	else 
-	   	sprintf(str,"%s../exec",cfg.ctrl_dir);
-}
-FULLPATH(uifc.helpdatfile,str,sizeof(uifc.helpdatfile));
-backslash(uifc.helpdatfile);
-SAFECOPY(uifc.helpixbfile,uifc.helpdatfile);
-strcat(uifc.helpdatfile,"scfghelp.dat");
-strcat(uifc.helpixbfile,"scfghelp.ixb");
+	if((mopt=(char **)malloc(sizeof(char *)*14))==NULL)
+		allocfail(sizeof(char *)*14);
+	for(i=0;i<14;i++)
+		if((mopt[i]=(char *)malloc(64))==NULL)
+			allocfail(64);
 
-sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
-if(uifc.scrn(str)) {
-	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
-	bail(1);
-}
+	if((p=getenv("SBBSEXEC"))!=NULL)
+		SAFECOPY(str,p);
+	else {
+		SAFECOPY(str,exepath);
+		p=strrchr(str,'/');
+		if(p==NULL)
+			p=strrchr(str,'\\');
+		if(p!=NULL)
+			*p=0;
+		else 
+	   		sprintf(str,"%s../exec",cfg.ctrl_dir);
+	}
+	FULLPATH(uifc.helpdatfile,str,sizeof(uifc.helpdatfile));
+	backslash(uifc.helpdatfile);
+	SAFECOPY(uifc.helpixbfile,uifc.helpdatfile);
+	strcat(uifc.helpdatfile,"scfghelp.dat");
+	strcat(uifc.helpixbfile,"scfghelp.ixb");
 
-if(!fexist(uifc.helpdatfile)) {
-    sprintf(errormsg,"Help file (%s) missing!",uifc.helpdatfile);
-    uifc.msg(errormsg);
-}
-if(!fexist(uifc.helpixbfile)) {
-    sprintf(errormsg,"Help file (%s) missing!",uifc.helpixbfile);
-    uifc.msg(errormsg);
-}
-sprintf(str,"%smain.cnf",cfg.ctrl_dir);
-if(!fexist(str)) {
-    sprintf(errormsg,"Main configuration file (%s) missing!",str);
-    uifc.msg(errormsg);
-}
+	sprintf(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
+	if(uifc.scrn(str)) {
+		printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
+		bail(1);
+	}
 
-i=0;
-strcpy(mopt[i++],"Nodes");
-strcpy(mopt[i++],"System");
-strcpy(mopt[i++],"Networks");
-strcpy(mopt[i++],"File Areas");
-strcpy(mopt[i++],"File Options");
-strcpy(mopt[i++],"Chat Features");
-strcpy(mopt[i++],"Message Areas");
-strcpy(mopt[i++],"Message Options");
-strcpy(mopt[i++],"Command Shells");
-strcpy(mopt[i++],"External Programs");
-strcpy(mopt[i++],"Text File Sections");
-mopt[i][0]=0;
-while(1) {
-	SETHELP(WHERE);
+	if(!fexist(uifc.helpdatfile)) {
+		sprintf(errormsg,"Help file (%s) missing!",uifc.helpdatfile);
+		uifc.msg(errormsg);
+	}
+	if(!fexist(uifc.helpixbfile)) {
+		sprintf(errormsg,"Help file (%s) missing!",uifc.helpixbfile);
+		uifc.msg(errormsg);
+	}
+	sprintf(str,"%smain.cnf",cfg.ctrl_dir);
+	if(!fexist(str)) {
+		sprintf(errormsg,"Main configuration file (%s) missing!",str);
+		uifc.msg(errormsg);
+	}
+
+	i=0;
+	strcpy(mopt[i++],"Nodes");
+	strcpy(mopt[i++],"System");
+	strcpy(mopt[i++],"Networks");
+	strcpy(mopt[i++],"File Areas");
+	strcpy(mopt[i++],"File Options");
+	strcpy(mopt[i++],"Chat Features");
+	strcpy(mopt[i++],"Message Areas");
+	strcpy(mopt[i++],"Message Options");
+	strcpy(mopt[i++],"Command Shells");
+	strcpy(mopt[i++],"External Programs");
+	strcpy(mopt[i++],"Text File Sections");
+	mopt[i][0]=0;
+	while(1) {
+		SETHELP(WHERE);
 /*
-Main Configuration Menu:
+`Main Configuration Menu:`
 
 This is the main menu of the Synchronet configuration utility (SCFG).
 From this menu, you have the following choices:
@@ -325,253 +325,257 @@ From this menu, you have the following choices:
 	External Programs	  : Events, editors, and online programs
 	Text File Sections	  : General text file area
 
-Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
+Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.
 */
-	switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
-		,"Configure",mopt)) {
-		case 0:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
+			,"Configure",mopt)) {
+			case 0:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				node_menu();
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop(0);
-			node_menu();
-			free_main_cfg(&cfg);
-			break;
-		case 1:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+			case 1:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading XTRN.CNF...");
+				if(!read_xtrn_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				sys_cfg();
+				free_xtrn_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop("Reading XTRN.CNF...");
-			if(!read_xtrn_cfg(&cfg,error)) {
+			case 2:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading MSGS.CNF...");
+				if(!read_msgs_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				net_cfg();
+				free_msgs_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop(0);
-			sys_cfg();
-			free_xtrn_cfg(&cfg);
-			free_main_cfg(&cfg);
-			break;
-		case 2:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+			case 3:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading FILE.CNF...");
+				if(!read_file_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}	
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				xfer_cfg();
+				free_file_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop("Reading MSGS.CNF...");
-			if(!read_msgs_cfg(&cfg,error)) {
+			case 4:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading FILE.CNF...");
+				if(!read_file_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				xfer_opts();
+				free_file_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop(0);
-			net_cfg();
-			free_msgs_cfg(&cfg);
-			free_main_cfg(&cfg);
-			break;
-		case 3:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+			case 5:
+				uifc.pop("Reading CHAT.CNF...");
+				if(!read_chat_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}	
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				while(1) {
+					i=0;
+					strcpy(opt[i++],"Artificial Gurus");
+					strcpy(opt[i++],"Multinode Chat Actions");
+					strcpy(opt[i++],"Multinode Chat Channels");
+					strcpy(opt[i++],"External Sysop Chat Pagers");
+					opt[i][0]=0;
+					j=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&chat_dflt,0
+						,"Chat Features",opt);
+					if(j==-1) {
+						j=save_changes(WIN_MID);
+						if(j==-1)
+							continue;
+						if(!j) {
+							write_chat_cfg(&cfg,backup_level);
+							refresh_cfg(&cfg);
+						}
+						break;
+					}
+					switch(j) {
+						case 0:
+							guru_cfg();
+							break;
+						case 1:
+							actsets_cfg();
+							break;
+						case 2:
+							chan_cfg();
+							break;
+						case 3:
+							page_cfg();
+							break; 
+					} 
+				}
+				free_chat_cfg(&cfg);
 				break;
-			}
-            uifc.pop("Reading FILE.CNF...");
-            if(!read_file_cfg(&cfg,error)) {
+			case 6:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading MSGS.CNF...");
+				if(!read_msgs_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				msgs_cfg();
+				free_msgs_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}	
-			uifc.pop(0);
-            xfer_cfg();
-            free_file_cfg(&cfg);
-			free_main_cfg(&cfg);
-            break;
-		case 4:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+			case 7:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading MSGS.CNF...");
+				if(!read_msgs_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				msg_opts();
+				free_msgs_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-            uifc.pop("Reading FILE.CNF...");
-            if(!read_file_cfg(&cfg,error)) {
+			case 8:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				shell_cfg();
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop(0);
-			xfer_opts();
-            free_file_cfg(&cfg);
-			free_main_cfg(&cfg);
-            break;
-		case 5:
-            uifc.pop("Reading CHAT.CNF...");
-            if(!read_chat_cfg(&cfg,error)) {
+			case 9:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading XTRN.CNF...");
+				if(!read_xtrn_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				xprogs_cfg();
+				free_xtrn_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}	
-			uifc.pop(0);
-            while(1) {
-                i=0;
-                strcpy(opt[i++],"Artificial Gurus");
-                strcpy(opt[i++],"Multinode Chat Actions");
-                strcpy(opt[i++],"Multinode Chat Channels");
-                strcpy(opt[i++],"External Sysop Chat Pagers");
-				opt[i][0]=0;
-                j=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&chat_dflt,0
-                    ,"Chat Features",opt);
-                if(j==-1) {
-                    j=save_changes(WIN_MID);
-                    if(j==-1)
-                        continue;
-                    if(!j) {
-                        write_chat_cfg(&cfg,backup_level);
-                        refresh_cfg(&cfg);
-                    }
-                    break;
-                }
-                switch(j) {
-                    case 0:
-                        guru_cfg();
-                        break;
-                    case 1:
-                        actsets_cfg();
-                        break;
-                    case 2:
-                        chan_cfg();
-                        break;
-                    case 3:
-                        page_cfg();
-                        break; } }
-            free_chat_cfg(&cfg);
-            break;
-		case 6:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
+			case 10:
+				uifc.pop("Reading MAIN.CNF...");
+				if(!read_main_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
+				uifc.pop("Reading FILE.CNF...");
+				if(!read_file_cfg(&cfg,error)) {
+					uifc.pop(0);
+					sprintf(errormsg,"ERROR: %s",error);
+					uifc.msg(errormsg);
+					break;
+				}
 				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
+				txt_cfg();
+				free_file_cfg(&cfg);
+				free_main_cfg(&cfg);
 				break;
-			}
-			uifc.pop("Reading MSGS.CNF...");
-			if(!read_msgs_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop(0);
-			msgs_cfg();
-			free_msgs_cfg(&cfg);
-			free_main_cfg(&cfg);
-			break;
-		case 7:
-			uifc.pop("Reading MAIN.CNF...");
-            if(!read_main_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop("Reading MSGS.CNF...");
-            if(!read_msgs_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop(0);
-			msg_opts();
-			free_msgs_cfg(&cfg);
-			free_main_cfg(&cfg);
-			break;
-		case 8:
-			uifc.pop("Reading MAIN.CNF...");
-			if(!read_main_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop(0);
-			shell_cfg();
-			free_main_cfg(&cfg);
-            break;
-		case 9:
-			uifc.pop("Reading MAIN.CNF...");
-            if(!read_main_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop("Reading XTRN.CNF...");
-			if(!read_xtrn_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop(0);
-			xprogs_cfg();
-			free_xtrn_cfg(&cfg);
-			free_main_cfg(&cfg);
-			break;
-		case 10:
-			uifc.pop("Reading MAIN.CNF...");
-            if(!read_main_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-            uifc.pop("Reading FILE.CNF...");
-            if(!read_file_cfg(&cfg,error)) {
-				uifc.pop(0);
-				sprintf(errormsg,"ERROR: %s",error);
-				uifc.msg(errormsg);
-				break;
-			}
-			uifc.pop(0);
-            txt_cfg();
-            free_file_cfg(&cfg);
-			free_main_cfg(&cfg);
-            break;
-		case -1:
-			i=0;
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
-			SETHELP(WHERE);
+			case -1:
+				i=0;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
 /*
-Exit SCFG:
+`Exit SCFG:`
 
-If you want to exit the Synchronet configuration utility, select Yes.
-Otherwise, select No or hit  ESC .
+If you want to exit the Synchronet configuration utility, select `Yes`.
+Otherwise, select `No` or hit ~ ESC ~.
 */
-			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SCFG",opt);
-			if(!i)
-				bail(0);
-			break; } }
+				i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SCFG",opt);
+				if(!i)
+					bail(0);
+				break; 
+		} 
+	}
 }
 
 /****************************************************************************/
@@ -594,12 +598,12 @@ int save_changes(int mode)
 	opt[2][0]=0;
 	SETHELP(WHERE);
 /*
-Save uifc.changes:
+`Save uifc.changes:`
 
 You have made some uifc.changes to the configuration. If you want to save
-these uifc.changes, select Yes. If you are positive you DO NOT want to save
-these uifc.changes, select No. If you are not sure and want to review the
-configuration before deciding, hit  ESC .
+these uifc.changes, select `Yes`. If you are positive you DO NOT want to save
+these uifc.changes, select `No`. If you are not sure and want to review the
+configuration before deciding, hit ~ ESC ~.
 */
 	i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
 	if(i!=-1)
@@ -615,163 +619,166 @@ void txt_cfg()
 	uint i;
 	static txtsec_t savtxtsec;
 
-while(1) {
-	for(i=0;i<cfg.total_txtsecs;i++)
-		sprintf(opt[i],"%-25s",cfg.txtsec[i]->name);
-	opt[i][0]=0;
-	j=WIN_ORG|WIN_ACT|WIN_CHE;
-	if(cfg.total_txtsecs)
-		j|=WIN_DEL|WIN_GET;
-	if(cfg.total_txtsecs<MAX_OPTS)
-		j|=WIN_INS|WIN_INSACT|WIN_XTR;
-	if(savtxtsec.name[0])
-		j|=WIN_PUT;
-	SETHELP(WHERE);
+	while(1) {
+		for(i=0;i<cfg.total_txtsecs;i++)
+			sprintf(opt[i],"%-25s",cfg.txtsec[i]->name);
+		opt[i][0]=0;
+		j=WIN_ORG|WIN_ACT|WIN_CHE;
+		if(cfg.total_txtsecs)
+			j|=WIN_DEL|WIN_GET;
+		if(cfg.total_txtsecs<MAX_OPTS)
+			j|=WIN_INS|WIN_INSACT|WIN_XTR;
+		if(savtxtsec.name[0])
+			j|=WIN_PUT;
+		SETHELP(WHERE);
 /*
-Text File Sections:
+`Text File Sections:`
 
-This is a list of General Text File (G-File) Sections configured for
+This is a list of `General Text File (G-File) Sections` configured for
 your system. G-File sections are used to store text files that can be
 viewed freely by the users. Common text file section topics include
-ANSI Artwork, System Information, Game Help Files, and other special
+`ANSI Artwork`, `System Information`, `Game Help Files`, and other special
 interest topics.
 
 To add a text file section, select the desired location with the arrow
-keys and hit  INS .
+keys and hit ~ INS ~.
 
-To delete a text file section, select it and hit  DEL .
+To delete a text file section, select it and hit ~ DEL ~.
 
-To configure a text file, select it and hit  ENTER .
+To configure a text file, select it and hit ~ ENTER ~.
 */
-	i=uifc.list(j,0,0,45,&txt_dflt,&bar,"Text File Sections",opt);
-	if((signed)i==-1) {
-		j=save_changes(WIN_MID);
-		if(j==-1)
-			continue;
-		if(!j) {
-			write_file_cfg(&cfg,backup_level);
-            refresh_cfg(&cfg);
-        }
-		return;
-    }
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
-		strcpy(str,"ANSI Artwork");
-		SETHELP(WHERE);
+		i=uifc.list(j,0,0,45,&txt_dflt,&bar,"Text File Sections",opt);
+		if((signed)i==-1) {
+			j=save_changes(WIN_MID);
+			if(j==-1)
+				continue;
+			if(!j) {
+				write_file_cfg(&cfg,backup_level);
+				refresh_cfg(&cfg);
+			}
+			return;
+		}
+		if((i&MSK_ON)==MSK_INS) {
+			i&=MSK_OFF;
+			strcpy(str,"ANSI Artwork");
+			SETHELP(WHERE);
 /*
-Text Section Name:
+`Text Section Name:`
 
 This is the name of this text section.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
-            ,K_EDIT)<1)
-            continue;
-		sprintf(code,"%.8s",str);
-		p=strchr(code,' ');
-		if(p) *p=0;
-        strupr(code);
-		SETHELP(WHERE);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
+				,K_EDIT)<1)
+				continue;
+			sprintf(code,"%.8s",str);
+			p=strchr(code,' ');
+			if(p) *p=0;
+			strupr(code);
+			SETHELP(WHERE);
 /*
-Text Section Internal Code:
+`Text Section Internal Code:`
 
 Every text file section must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
-			,K_EDIT)<1)
-			continue;
-		if(!code_ok(code)) {
-			uifc.helpbuf=invalid_code;
-			uifc.msg("Invalid Code");
-			uifc.helpbuf=0;
-            continue; }
-		if((cfg.txtsec=(txtsec_t **)realloc(cfg.txtsec
-			,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_txtsecs+1);
-			cfg.total_txtsecs=0;
-			bail(1);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
+				,K_EDIT)<1)
+				continue;
+			if(!code_ok(code)) {
+				uifc.helpbuf=invalid_code;
+				uifc.msg("Invalid Code");
+				uifc.helpbuf=0;
+				continue; }
+			if((cfg.txtsec=(txtsec_t **)realloc(cfg.txtsec
+				,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
+				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_txtsecs+1);
+				cfg.total_txtsecs=0;
+				bail(1);
+				continue; }
+			if(cfg.total_txtsecs)
+				for(j=cfg.total_txtsecs;j>i;j--)
+					cfg.txtsec[j]=cfg.txtsec[j-1];
+			if((cfg.txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL) {
+				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(txtsec_t));
+				continue; }
+			memset((txtsec_t *)cfg.txtsec[i],0,sizeof(txtsec_t));
+			strcpy(cfg.txtsec[i]->name,str);
+			strcpy(cfg.txtsec[i]->code,code);
+			cfg.total_txtsecs++;
+			uifc.changes=1;
 			continue; }
-		if(cfg.total_txtsecs)
-			for(j=cfg.total_txtsecs;j>i;j--)
-                cfg.txtsec[j]=cfg.txtsec[j-1];
-		if((cfg.txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(txtsec_t));
+		if((i&MSK_ON)==MSK_DEL) {
+			i&=MSK_OFF;
+			free(cfg.txtsec[i]);
+			cfg.total_txtsecs--;
+			for(j=i;j<cfg.total_txtsecs;j++)
+				cfg.txtsec[j]=cfg.txtsec[j+1];
+			uifc.changes=1;
 			continue; }
-		memset((txtsec_t *)cfg.txtsec[i],0,sizeof(txtsec_t));
-		strcpy(cfg.txtsec[i]->name,str);
-		strcpy(cfg.txtsec[i]->code,code);
-		cfg.total_txtsecs++;
-		uifc.changes=1;
-		continue; }
-	if((i&MSK_ON)==MSK_DEL) {
-		i&=MSK_OFF;
-		free(cfg.txtsec[i]);
-		cfg.total_txtsecs--;
-		for(j=i;j<cfg.total_txtsecs;j++)
-			cfg.txtsec[j]=cfg.txtsec[j+1];
-		uifc.changes=1;
-		continue; }
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
-		savtxtsec=*cfg.txtsec[i];
-		continue; }
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
-		*cfg.txtsec[i]=savtxtsec;
-		uifc.changes=1;
-        continue; }
-	i=txt_dflt;
-	j=0;
-	done=0;
-	while(!done) {
-		k=0;
-		sprintf(opt[k++],"%-27.27s%s","Name",cfg.txtsec[i]->name);
-		sprintf(opt[k++],"%-27.27s%s","Access Requirements"
-			,cfg.txtsec[i]->arstr);
-		sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
-		opt[k][0]=0;
-		switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
-			,opt)) {
-			case -1:
-				done=1;
-				break;
-			case 0:
-				SETHELP(WHERE);
+		if((i&MSK_ON)==MSK_GET) {
+			i&=MSK_OFF;
+			savtxtsec=*cfg.txtsec[i];
+			continue; }
+		if((i&MSK_ON)==MSK_PUT) {
+			i&=MSK_OFF;
+			*cfg.txtsec[i]=savtxtsec;
+			uifc.changes=1;
+			continue; }
+		i=txt_dflt;
+		j=0;
+		done=0;
+		while(!done) {
+			k=0;
+			sprintf(opt[k++],"%-27.27s%s","Name",cfg.txtsec[i]->name);
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+				,cfg.txtsec[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
+			opt[k][0]=0;
+			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.txtsec[i]->name
+				,opt)) {
+				case -1:
+					done=1;
+					break;
+				case 0:
+					SETHELP(WHERE);
 /*
-Text Section Name:
+`Text Section Name:`
 
 This is the name of this text section.
 */
-				strcpy(str,cfg.txtsec[i]->name);	/* save */
-				if(!uifc.input(WIN_MID|WIN_SAV,0,10
-					,"Text File Section Name"
-					,cfg.txtsec[i]->name,sizeof(cfg.txtsec[i]->name)-1,K_EDIT))
-					strcpy(cfg.txtsec[i]->name,str);
-				break;
-			case 1:
-				sprintf(str,"%s Text Section",cfg.txtsec[i]->name);
-				getar(str,cfg.txtsec[i]->arstr);
-				break;
-			case 2:
-				strcpy(str,cfg.txtsec[i]->code);
-				SETHELP(WHERE);
+					strcpy(str,cfg.txtsec[i]->name);	/* save */
+					if(!uifc.input(WIN_MID|WIN_SAV,0,10
+						,"Text File Section Name"
+						,cfg.txtsec[i]->name,sizeof(cfg.txtsec[i]->name)-1,K_EDIT))
+						strcpy(cfg.txtsec[i]->name,str);
+					break;
+				case 1:
+					sprintf(str,"%s Text Section",cfg.txtsec[i]->name);
+					getar(str,cfg.txtsec[i]->arstr);
+					break;
+				case 2:
+					strcpy(str,cfg.txtsec[i]->code);
+					SETHELP(WHERE);
 /*
-Text Section Internal Code:
+`Text Section Internal Code:`
 
 Every text file section must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,LEN_CODE,K_EDIT);
-				if(code_ok(str))
-					strcpy(cfg.txtsec[i]->code,str);
-				else {
-					uifc.helpbuf=invalid_code;
-					uifc.msg("Invalid Code");
-					uifc.helpbuf=0; }
-				break; } } }
+					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+						,str,LEN_CODE,K_EDIT);
+					if(code_ok(str))
+						strcpy(cfg.txtsec[i]->code,str);
+					else {
+						uifc.helpbuf=invalid_code;
+						uifc.msg("Invalid Code");
+						uifc.helpbuf=0; }
+					break; 
+			} 
+		} 
+	}
 }
 
 void shell_cfg()
@@ -782,128 +789,128 @@ void shell_cfg()
 	uint i;
 	static shell_t savshell;
 
-while(1) {
-	for(i=0;i<cfg.total_shells;i++)
-		sprintf(opt[i],"%-25s",cfg.shell[i]->name);
-	opt[i][0]=0;
-	j=WIN_ORG|WIN_ACT|WIN_CHE;
-	if(cfg.total_shells)
-		j|=WIN_DEL|WIN_GET;
-	if(cfg.total_shells<MAX_OPTS)
-		j|=WIN_INS|WIN_INSACT|WIN_XTR;
-	if(savshell.name[0])
-		j|=WIN_PUT;
-	SETHELP(WHERE);
+	while(1) {
+		for(i=0;i<cfg.total_shells;i++)
+			sprintf(opt[i],"%-25s",cfg.shell[i]->name);
+		opt[i][0]=0;
+		j=WIN_ORG|WIN_ACT|WIN_CHE;
+		if(cfg.total_shells)
+			j|=WIN_DEL|WIN_GET;
+		if(cfg.total_shells<MAX_OPTS)
+			j|=WIN_INS|WIN_INSACT|WIN_XTR;
+		if(savshell.name[0])
+			j|=WIN_PUT;
+		SETHELP(WHERE);
 /*
-Command Shells:
+`Command Shells:`
 
-This is a list of Command Shells configured for your system.
+This is a list of `Command Shells` configured for your system.
 Command shells are the programmable command and menu structures which
 are available for your BBS.
 
 To add a command shell section, select the desired location with the
-arrow keys and hit  INS .
+arrow keys and hit ~ INS ~.
 
-To delete a command shell, select it and hit  DEL .
+To delete a command shell, select it and hit ~ DEL ~.
 
-To configure a command shell, select it and hit  ENTER .
+To configure a command shell, select it and hit ~ ENTER ~.
 */
-	i=uifc.list(j,0,0,45,&shell_dflt,&shell_bar,"Command Shells",opt);
-	if((signed)i==-1) {
-		j=save_changes(WIN_MID);
-		if(j==-1)
-			continue;
-		if(!j) {
-			cfg.new_install=new_install;
-			write_main_cfg(&cfg,backup_level);
-            refresh_cfg(&cfg);
-        }
-		return;
-    }
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
-		strcpy(str,"Menu Shell");
-		SETHELP(WHERE);
+		i=uifc.list(j,0,0,45,&shell_dflt,&shell_bar,"Command Shells",opt);
+		if((signed)i==-1) {
+			j=save_changes(WIN_MID);
+			if(j==-1)
+				continue;
+			if(!j) {
+				cfg.new_install=new_install;
+				write_main_cfg(&cfg,backup_level);
+				refresh_cfg(&cfg);
+			}
+			return;
+		}
+		if((i&MSK_ON)==MSK_INS) {
+			i&=MSK_OFF;
+			strcpy(str,"Menu Shell");
+			SETHELP(WHERE);
 /*
-Command Shell Name:
+`Command Shell Name:`
 
 This is the descriptive name of this command shell.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
-            ,K_EDIT)<1)
-            continue;
-		sprintf(code,"%.8s",str);
-		p=strchr(code,' ');
-		if(p) *p=0;
-        strupr(code);
-		SETHELP(WHERE);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
+				,K_EDIT)<1)
+				continue;
+			sprintf(code,"%.8s",str);
+			p=strchr(code,' ');
+			if(p) *p=0;
+			strupr(code);
+			SETHELP(WHERE);
 /*
-Command Shell Internal Code:
+`Command Shell Internal Code:`
 
 Every command shell must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 
 This code will be the base filename used to load the shell from your
-EXEC directory. e.g. A shell with an internal code of MYBBS would
-indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
+EXEC directory. e.g. A shell with an internal code of `MYBBS` would
+indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
-			,K_EDIT)<1)
-			continue;
-		if(!code_ok(code)) {
-			uifc.helpbuf=invalid_code;
-			uifc.msg("Invalid Code");
-			uifc.helpbuf=0;
-            continue; }
-		if((cfg.shell=(shell_t **)realloc(cfg.shell
-			,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_shells+1);
-			cfg.total_shells=0;
-			bail(1);
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
+				,K_EDIT)<1)
+				continue;
+			if(!code_ok(code)) {
+				uifc.helpbuf=invalid_code;
+				uifc.msg("Invalid Code");
+				uifc.helpbuf=0;
+				continue; }
+			if((cfg.shell=(shell_t **)realloc(cfg.shell
+				,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
+				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_shells+1);
+				cfg.total_shells=0;
+				bail(1);
+				continue; }
+			if(cfg.total_shells)
+				for(j=cfg.total_shells;j>i;j--)
+					cfg.shell[j]=cfg.shell[j-1];
+			if((cfg.shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL) {
+				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(shell_t));
+				continue; }
+			memset((shell_t *)cfg.shell[i],0,sizeof(shell_t));
+			strcpy(cfg.shell[i]->name,str);
+			strcpy(cfg.shell[i]->code,code);
+			cfg.total_shells++;
+			uifc.changes=1;
 			continue; }
-		if(cfg.total_shells)
-			for(j=cfg.total_shells;j>i;j--)
-				cfg.shell[j]=cfg.shell[j-1];
-		if((cfg.shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(shell_t));
+		if((i&MSK_ON)==MSK_DEL) {
+			i&=MSK_OFF;
+			free(cfg.shell[i]);
+			cfg.total_shells--;
+			for(j=i;j<cfg.total_shells;j++)
+				cfg.shell[j]=cfg.shell[j+1];
+			uifc.changes=1;
 			continue; }
-		memset((shell_t *)cfg.shell[i],0,sizeof(shell_t));
-		strcpy(cfg.shell[i]->name,str);
-		strcpy(cfg.shell[i]->code,code);
-		cfg.total_shells++;
-		uifc.changes=1;
-		continue; }
-	if((i&MSK_ON)==MSK_DEL) {
-		i&=MSK_OFF;
-		free(cfg.shell[i]);
-		cfg.total_shells--;
-		for(j=i;j<cfg.total_shells;j++)
-			cfg.shell[j]=cfg.shell[j+1];
-		uifc.changes=1;
-		continue; }
-	if((i&MSK_ON)==MSK_GET) {
-		i&=MSK_OFF;
-		savshell=*cfg.shell[i];
-		continue; }
-	if((i&MSK_ON)==MSK_PUT) {
-		i&=MSK_OFF;
-		*cfg.shell[i]=savshell;
-		uifc.changes=1;
-        continue; }
-	i=shell_dflt;
-	j=0;
-	done=0;
-	while(!done) {
-		k=0;
-		sprintf(opt[k++],"%-27.27s%s","Name",cfg.shell[i]->name);
-		sprintf(opt[k++],"%-27.27s%s","Access Requirements"
-			,cfg.shell[i]->arstr);
-		sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
-		opt[k][0]=0;
-		SETHELP(WHERE);
+		if((i&MSK_ON)==MSK_GET) {
+			i&=MSK_OFF;
+			savshell=*cfg.shell[i];
+			continue; }
+		if((i&MSK_ON)==MSK_PUT) {
+			i&=MSK_OFF;
+			*cfg.shell[i]=savshell;
+			uifc.changes=1;
+			continue; }
+		i=shell_dflt;
+		j=0;
+		done=0;
+		while(!done) {
+			k=0;
+			sprintf(opt[k++],"%-27.27s%s","Name",cfg.shell[i]->name);
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+				,cfg.shell[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
+			opt[k][0]=0;
+			SETHELP(WHERE);
 /*
-Command Shell:
+`Command Shell:`
 
 A command shell is a programmed command and menu structure that you or
 your users can use to navigate the BBS. For every command shell
@@ -915,103 +922,106 @@ to turn Baja source code (.SRC) files into binary files (.BIN) for
 Synchronet to interpret. See the example .SRC files in the TEXT
 directory and the documentation for the Baja compiler for more details.
 */
-		switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
-			,opt)) {
-			case -1:
-				done=1;
-				break;
-			case 0:
-				SETHELP(WHERE);
+			switch(uifc.list(WIN_ACT|WIN_MID,0,0,60,&j,0,cfg.shell[i]->name
+				,opt)) {
+				case -1:
+					done=1;
+					break;
+				case 0:
+					SETHELP(WHERE);
 /*
-Command Shell Name:
+`Command Shell Name:`
 
 This is the descriptive name of this command shell.
 */
-				strcpy(str,cfg.shell[i]->name);    /* save */
-				if(!uifc.input(WIN_MID|WIN_SAV,0,10
-					,"Command Shell Name"
-					,cfg.shell[i]->name,sizeof(cfg.shell[i]->name)-1,K_EDIT))
-					strcpy(cfg.shell[i]->name,str);
-				break;
-			case 1:
-				sprintf(str,"%s Command Shell",cfg.shell[i]->name);
-				getar(str,cfg.shell[i]->arstr);
-				break;
-			case 2:
-				strcpy(str,cfg.shell[i]->code);
-				SETHELP(WHERE);
+					strcpy(str,cfg.shell[i]->name);    /* save */
+					if(!uifc.input(WIN_MID|WIN_SAV,0,10
+						,"Command Shell Name"
+						,cfg.shell[i]->name,sizeof(cfg.shell[i]->name)-1,K_EDIT))
+						strcpy(cfg.shell[i]->name,str);
+					break;
+				case 1:
+					sprintf(str,"%s Command Shell",cfg.shell[i]->name);
+					getar(str,cfg.shell[i]->arstr);
+					break;
+				case 2:
+					strcpy(str,cfg.shell[i]->code);
+					SETHELP(WHERE);
 /*
-Command Shell Internal Code:
+`Command Shell Internal Code:`
 
 Every command shell must have its own unique internal code for
 Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 
 This code will be the base filename used to load the shell from your
-EXEC directory. e.g. A shell with an internal code of MYBBS would
-indicate a Baja shell file named MYBBS.BIN in your EXEC directory.
+EXEC directory. e.g. A shell with an internal code of `MYBBS` would
+indicate a Baja shell file named `MYBBS.BIN` in your EXEC directory.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,LEN_CODE,K_EDIT);
-				if(code_ok(str))
-					strcpy(cfg.shell[i]->code,str);
-				else {
-					uifc.helpbuf=invalid_code;
-					uifc.msg("Invalid Code");
-					uifc.helpbuf=0; }
-				break; } } }
+					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
+						,str,LEN_CODE,K_EDIT);
+					if(code_ok(str))
+						strcpy(cfg.shell[i]->code,str);
+					else {
+						uifc.helpbuf=invalid_code;
+						uifc.msg("Invalid Code");
+						uifc.helpbuf=0; }
+					break; 
+			} 
+		} 
+	}
 }
 
 int whichlogic(void)
 {
 	int i;
 
-i=0;
-strcpy(opt[0],"Greater than or Equal");
-strcpy(opt[1],"Equal");
-strcpy(opt[2],"Not Equal");
-strcpy(opt[3],"Less than");
-opt[4][0]=0;
-SETHELP(WHERE);
+	i=0;
+	strcpy(opt[0],"Greater than or Equal");
+	strcpy(opt[1],"Equal");
+	strcpy(opt[2],"Not Equal");
+	strcpy(opt[3],"Less than");
+	opt[4][0]=0;
+	SETHELP(WHERE);
 /*
-Select Logic for Requirement:
+`Select Logic for Requirement:`
 
 This menu allows you to choose the type of logic evaluation to use
 in determining if the requirement is met. If, for example, the user's
-level is being evaluated and you select Greater than or Equal from
-this menu and set the required level to 50, the user must have level
-50 or higher to meet this requirement. If you selected Equal from
-this menu and set the required level to 50, the user must have level
-50 exactly. If you select Not equal and level 50, then the user
-must have any level BUT 50. And if you select Less than from this
-menu and level 50, the user must have a level below 50.
+level is being evaluated and you select `Greater than or Equal` from
+this menu and set the required level to `50`, the user must have level
+`50 or higher` to meet this requirement. If you selected `Equal` from
+this menu and set the required level to `50`, the user must have level
+`50 exactly`. If you select `Not equal` and level `50`, then the user
+must have `any level BUT 50`. And if you select `Less than` from this
+menu and level `50`, the user must have a level `below 50`.
 */
-i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
-return(i);
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
+	return(i);
 }
 
 int whichcond(void)
 {
 	int i;
 
-i=0;
-strcpy(opt[0],"AND (Both/All)");
-strcpy(opt[1],"OR  (Either/Any)");
-opt[2][0]=0;
-SETHELP(WHERE);
+	i=0;
+	strcpy(opt[0],"AND (Both/All)");
+	strcpy(opt[1],"OR  (Either/Any)");
+	opt[2][0]=0;
+	SETHELP(WHERE);
 /*
-Select Logic for Multiple Requirements:
+`Select Logic for Multiple Requirements:`
 
 If you wish this new parameter to be required along with the other
-parameters, select AND to specify that both or all of the
+parameters, select `AND` to specify that `both` or `all` of the
 parameter requirments must be met.
 
 If you wish this new parameter to only be required if the other
-parameter requirements aren't met, select OR to specify that either
-or any of the parameter requirements must be met.
+parameter requirements aren't met, select `OR` to specify that `either`
+or `any` of the parameter requirements must be met.
 */
-i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
-return(i);
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
+	return(i);
 }
 
 
@@ -1021,8 +1031,8 @@ void getar(char *desc, char *inar)
 	char str[128],ar[128];
 	int i,j,len,done=0,n;
 
-strcpy(ar,inar);
-while(!done) {
+	strcpy(ar,inar);
+	while(!done) {
 	len=strlen(ar);
 	if(len>=30) {	  /* Needs to be shortened */
 		str[0]=0;
@@ -1212,11 +1222,11 @@ while(!done) {
 	opt[i][0]=0;
 	SETHELP(WHERE);
 /*
-Access Requirements:
+`Access Requirements:`
 
 This menu allows you to edit the access requirement string for the
 selected feature/section of your BBS. You can edit the string
-directly (see documentation for details) or use the Set Required...
+directly (see documentation for details) or use the `Set Required...`
 options from this menu to automatically fill in the string for you.
 */
 	sprintf(str,"%s Requirements",desc);
@@ -1255,10 +1265,10 @@ USER		  $U		User's number (1-xxxx)
 			opt[2][0]=0;
 			SETHELP(WHERE);
 /*
-Clear Requirements:
+`Clear Requirements:`
 
-If you wish to clear the current requirement string, select Yes.
-Otherwise, select No.
+If you wish to clear the current requirement string, select `Yes`.
+Otherwise, select `No`.
 */
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
 			if(!i) {
@@ -1275,7 +1285,7 @@ Otherwise, select No.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Level:
+`Required Level:`
 
 You are being prompted to enter the security level to be used in this
 requirement evaluation. The valid range is 0 (zero) through 99.
@@ -1319,7 +1329,7 @@ requirement evaluation. The valid range is 0 (zero) through 99.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Flag:
+`Required Flag:`
 
 You are being prompted to enter the security flag to be used in this
 requirement evaluation. The valid range is A through Z.
@@ -1351,7 +1361,7 @@ requirement evaluation. The valid range is A through Z.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Age:
+`Required Age:`
 
 You are being prompted to enter the user's age to be used in this
 requirement evaluation. The valid range is 0 through 255.
@@ -1387,7 +1397,7 @@ requirement evaluation. The valid range is 0 through 255.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Sex:
+`Required Sex:`
 
 You are being prompted to enter the user's gender to be used in this
 requirement evaluation. The valid values are M or F (for male or
@@ -1418,7 +1428,7 @@ female).
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Connect Rate (BPS):
+`Required Connect Rate (BPS):`
 
 You are being prompted to enter the connect rate to be used in this
 requirement evaluation. The valid range is 300 through 57600.
@@ -1461,7 +1471,7 @@ requirement evaluation. The valid range is 300 through 57600.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Post/Call Ratio:
+`Required Post/Call Ratio:`
 
 You are being prompted to enter the post/call ratio to be used in this
 requirement evaluation (percentage). The valid range is 0 through 100.
@@ -1501,9 +1511,9 @@ requirement evaluation (percentage). The valid range is 0 through 100.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Number of Credits:
+`Required Number of Credits:`
 
-You are being prompted to enter the number of credits (in kilobytes) to
+You are being prompted to enter the number of credits (in `kilobytes`) to
 be used in this requirement evaluation. The valid range is 0 through
 65535.
 */
@@ -1541,11 +1551,11 @@ be used in this requirement evaluation. The valid range is 0 through
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Upload/Download Byte Ratio:
+`Required Upload/Download Byte Ratio:`
 
 You are being prompted to enter the upload/download ratio to be used in
 this requirement evaluation (percentage). The valid range is 0 through
-100. This ratio is based on the number of bytes uploaded by the user
+100. This ratio is based on the number of `bytes` uploaded by the user
 divided by the number of bytes downloaded.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Upload/Download Byte Ratio (percentage)"
@@ -1583,11 +1593,11 @@ divided by the number of bytes downloaded.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Upload/Download File Ratio:
+`Required Upload/Download File Ratio:`
 
 You are being prompted to enter the upload/download ratio to be used in
 this requirement evaluation (percentage). The valid range is 0 through
-100. This ratio is based on the number of files uploaded by the user
+100. This ratio is based on the number of `files` uploaded by the user
 divided by the number of files downloaded.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0
@@ -1630,7 +1640,7 @@ divided by the number of files downloaded.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Time of Day:
+`Required Time of Day:`
 
 You are being prompted to enter the time of day to be used in this
 requirement evaluation (24 hour HH:MM format). The valid range is 0
@@ -1661,7 +1671,7 @@ through 23:59.
 				break;
 			SETHELP(WHERE);
 /*
-Required Day of Week:
+`Required Day of Week:`
 
 You are being prompted to select a day of the week as an access
 requirement value.
@@ -1706,7 +1716,7 @@ requirement value.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Node:
+`Required Node:`
 
 You are being prompted to enter the number of a node to be used in this
 requirement evaluation. The valid range is 1 through 250.
@@ -1745,7 +1755,7 @@ requirement evaluation. The valid range is 1 through 250.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required User Number:
+`Required User Number:`
 
 You are being prompted to enter the user's number to be used in this
 requirement evaluation.
@@ -1785,10 +1795,10 @@ requirement evaluation.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Time Remaining:
+`Required Time Remaining:`
 
 You are being prompted to enter the time remaining to be used in this
-requirement evaluation (in minutes). The valid range is 0 through 255.
+requirement evaluation (in `minutes`). The valid range is 0 through 255.
 */
 			uifc.input(WIN_MID|WIN_SAV,0,0,"Time Remaining (minutes)"
 				,str,3,K_NUMBER);
@@ -1826,7 +1836,7 @@ requirement evaluation (in minutes). The valid range is 0 through 255.
 			str[0]=0;
 			SETHELP(WHERE);
 /*
-Required Days Till User Account Expiration:
+`Required Days Till User Account Expiration:`
 
 You are being prompted to enter the required number of days till the
 user's account will expire.
@@ -1856,8 +1866,10 @@ user's account will expire.
 					break; }
 			strcat(ar,str);
             break;
-			} }
-sprintf(inar,"%.*s",LEN_ARSTR,ar);
+			
+		} 
+	}
+	sprintf(inar,"%.*s",LEN_ARSTR,ar);
 }
 
 int code_ok(char *str)
@@ -1934,15 +1946,21 @@ void errormsg(int line, char* source,  char* action, char* object, ulong access)
 }
 
 /* Prepare a string to be used as an internal code */
-char* prep_code(char *str)
+/* Return the usable code */
+char* prep_code(char *str, const char* prefix)
 {
 	char tmp[1024];
 	int i,j;
 
+	if(prefix!=NULL) {	/* skip the grp/lib prefix, if specified */
+		i=strlen(prefix);
+		if(i && strnicmp(str,prefix,i)==0 && strlen(str)!=i)
+			str+=i;
+	}
 	for(i=j=0;str[i] && i<sizeof(tmp);i++)
 		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?'
 			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
-			tmp[j++]=str[i];
+			tmp[j++]=toupper(str[i]);
 	tmp[j]=0;
 	strcpy(str,tmp);
 	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
