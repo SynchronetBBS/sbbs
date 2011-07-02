@@ -25,7 +25,7 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
         alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
     }
     bbs.hangup();
-	return;
+	exit();
 }
 //Disable spinning cursor at pause prompts
 //bbs.node_settings|=NM_NOPAUSESPIN	
