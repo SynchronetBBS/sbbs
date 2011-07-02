@@ -887,3 +887,7 @@ td.sysinforight {
     background-color: #3f4568;
 	text-align:right;
 } 
+
+p.disclaimer {
+	font-size: 9pt;
+}

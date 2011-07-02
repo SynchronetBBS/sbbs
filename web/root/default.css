@@ -885,3 +885,11 @@ pre.ftp_desc {
 div.ftp_ftr {
  font-size: 8pt;
 }
+
+ol.externals li {
+	list-style: decimal;
+}
+
+p.disclaimer {
+	font-size: 9pt;
+}

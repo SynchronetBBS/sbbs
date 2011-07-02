@@ -28,7 +28,7 @@ if(user.number==0 || user.security.restrictions&UFLAG_G)
     
     template.leftnav.push({html: '<li><a href="/login.ssjs">Login</a></li><li><a href="/newuser.ssjs">New User</a></li>' });
 else
-    template.leftnav.push({html: '<li><a href="/members/userlist.ssjs">User Listing</a></li><li><a href="/members/lastcallers.ssjs">Last Callers</a></li><li><a href="/members/info.ssjs">Information</a></li><li><a href="/members/themes.ssjs">Change Theme</a></li><li><a href="/members/newpw.ssjs">Change Password</a></li><li><a href="/msgs/msgs.ssjs?msg_sub=mail">E-mail</a></li>' });  
+    template.leftnav.push({html: '<li><a href="/members/externals.ssjs">External Programs</a></li><li><a href="/members/userlist.ssjs">User Listing</a></li><li><a href="/members/lastcallers.ssjs">Last Callers</a></li><li><a href="/members/info.ssjs">Information</a></li><li><a href="/members/themes.ssjs">Change Theme</a></li><li><a href="/members/newpw.ssjs">Change Password</a></li><li><a href="/msgs/msgs.ssjs?msg_sub=mail">E-mail</a></li>' });  
 
 if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     template.leftnav.push({html: '<li><a href="/msgs">Message Groups</a></li>' });

@@ -26,6 +26,12 @@ if(http_request.virtual_path=="/members/changepw.ssjs")
 if(http_request.virtual_path=="/nodelist.ssjs")
     template.topnav.push({html: 'Who\'s Online'});
 
+if(http_request.virtual_path=="/ftelnet.ssjs")
+    template.topnav.push({html: 'Flash Telnet'});
+	
+if(http_request.virtual_path=="/members/externals.ssjs")
+    template.topnav.push({html: 'External Program Section'});
+
 if(http_request.virtual_path=="/members/viewprofile.ssjs" && virtual_referer=="/members/userlist.ssjs") {
 	if(is_sysop) {
 		if(http_request.virtual_path=="/members/viewprofile.ssjs")

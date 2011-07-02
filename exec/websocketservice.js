@@ -1,3 +1,5 @@
+// $Id$
+
 // websocketservice.js 
 
 // Synchronet Service for redirecting incoming WebSocket connections to the Telnet server
@@ -9,7 +11,6 @@
 // ; WebSocket Service (used with HtmlTerm)
 // [WebSocket]
 // Port=1123
-// MaxClients=10
 // Options=NO_HOST_LOOKUP
 // Command=websocketservice.js
 
@@ -22,6 +23,7 @@
 load("nodedefs.js");
 load("sockdefs.js");
 load("sbbsdefs.js");
+load("ftelnethelper.js");
 
 // Global constants
 const DEBUG                         = false;
@@ -232,23 +234,6 @@ function GetFromWebSocketClientDraft0() {
                 }
                 break;
         }
-    }
-    
-    return Result;
-}
-
-// Credit to echicken for port lookup code
-function GetTelnetPort() {
-    var Result = 23;
-    
-    try {
-        var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
-        if (f.open("r", true)) {
-            Result  = f.iniGetValue("BBS", "TelnetPort", 23);
-            f.close();
-        }
-    } catch (err) {
-        log(LOG_ERR, "GetTelnetPort() error: " + err.toString());
     }
     
     return Result;
