@@ -7,19 +7,12 @@
 // @format.tab-size 8, @format.use-tabs true
 
 load("sbbsdefs.js");
+options=load("modopts.js","newuser");
 
-send_newuser_welcome = true; // Set to false to disable the new user welcome msg
-ask_qnet=false;		// Set to true to enable QWKnet Node question
-ask_sysop=false;	// Set to true to enable Synchronet Sysop question
 qnet=false;
 
-if(system.name=="Vertrauen") {
-	ask_qnet=true;
-	ask_sysop=true;
-}
-
 if(bbs.sys_status&SS_RLOGIN)
-	ask_qnet=false;
+	options.ask_qnet=false;
 
 console.clear();
 
@@ -28,7 +21,7 @@ if(!user.address.length && user.number>1) {
 	user.address=console.getstr(30,K_LINE);
 }
 
-if(ask_qnet 
+if(options.ask_qnet 
 	&& !console.noyes("\r\nIs this account to be used for QWK Networking (DOVE-Net)\1b")
 	&& !console.noyes("\r\n\1bARE YOU \1wPOSITIVE\1n\1h\1b (If you're unsure, press '\1wN\1b')"))
 	qnet=true;
@@ -94,7 +87,7 @@ if(qnet) {
 	user.security.exemptions|=UFLAG_M;
 }
 
-if(ask_sysop 
+if(options.ask_sysop 
 	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
 	user.security.flags1|=UFLAG_S;
 	if(qnet) {
@@ -109,7 +102,7 @@ if(ask_sysop
 /* Send New User Welcome E-mail */
 /********************************/
 welcome_msg = system.text_dir + "welcome.msg"; 
-if(send_newuser_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
+if(options.send_newuser_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
 	send_newuser_welcome_msg(welcome_msg);
 
 function send_newuser_welcome_msg(fname)
