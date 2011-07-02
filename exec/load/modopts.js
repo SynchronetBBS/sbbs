@@ -16,8 +16,9 @@ function get_mod_options(modname)
 	}
 
 	var obj = ini_file.iniGetObject(modname);
+	ini_file.close();
 	delete ini_file;
 	return obj;
 }
 
-return get_mod_options(argv[0]);
+get_mod_options(argv[0]);
