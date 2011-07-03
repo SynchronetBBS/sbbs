@@ -9,18 +9,11 @@
 load("sbbsdefs.js");
 load("text.js");
 load("asc2htmlterm.js");
+var options = load("modopts.js", "logon");
 
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
-var options = load("modopts.js", "logon");
 if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
     var external_code = console.terminal.substring(5);
-	if (console.autoterm & USER_HTML) {
-		console.terminal = "HTML";
-	} else if (console.autoterm & USER_RIP) {
-		console.terminal = "RIP";
-	} else {
-		console.terminal = "ANSI";
-	}
     if (!bbs.exec_xtrn(external_code)) {
         alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
     }
