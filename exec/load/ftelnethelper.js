@@ -74,8 +74,8 @@ function GetServicesIniValues() {
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 			if (f.open("r", true)) {
-				FFlashSocketPolicyServiceEnabled = f.iniGetValue("FlashSocketPolicyService", "Enabled", true);
-				FFlashSocketPolicyServicePort = f.iniGetValue("FlashSocketPolicyService", "Port", -1);
+				FFlashSocketPolicyServiceEnabled = f.iniGetValue("FlashPolicy", "Enabled", true);
+				FFlashSocketPolicyServicePort = f.iniGetValue("FlashPolicy", "Port", -1);
 				// Override the Enabled flag if we don't have a port
 				if (FFlashSocketPolicyServicePort === -1) FFlashSocketPolicyServiceEnabled = false;
 				f.close();
