@@ -6,10 +6,14 @@ Flash Policy Server
 by Shawn Rapp
 
 This is a service javascript addon that adds a Flash Policy Server to Synchronet BBS version 3 and later.
-This script was designed to support FlashTerm hosted on a Synchronet Website.
+This script was designed to support FlashTerm hosted on a Synchronet Website.  It will also support fTelnet,
+which is now available in the sbbs/web/root/ftelnet directory.
 
 Copy the file flashpolicyserver.js to your Synchronet's exec directory (example C:\sbbs\exec)
-Put the flashpolicy.xml to the ctrl directory (example C:\sbbs\ctrl)
+
+The server will allow flash clients to connect to the Telnet, RLogin (if enabled) and SSH (if enabled) ports.  
+If you want to allow additional ports, edit ctrl\modopts.ini and add them to the extra_ports line in the
+[flashpolicyserver] section.
 
 Now edit ctrl\services.ini 
 Goto Services->Configure and than click the button "Edit Services Configuration File"
@@ -24,67 +28,49 @@ Than add the bellow
 
 Restart Synchronet's Services server.
 
-Download http://www.flashterm.com/files/flashterm_full.zip
-Extract the files in a new directory web\html\flashterm (example C:\sbbs\web\html\flashterm)
+If you want to use FlashTerm instead of the fTelnet, download http://www.flashterm.com/files/flashterm_full.zip
+Extract the files in a new directory web\root\flashterm (example C:\sbbs\web\root\flashterm)
 Edit settings.xml to your settings.
 Now open a browser to your Synchronet's website and goto the \flashterm directory.
 Example http://thedhbbs.com/flashterm/
 
 ***/
 
-// Write a string to the client socket
-function write(str)
-{
-	client.socket.send(str);
-}
+load("ftelnethelper.js");
+var options = load("modopts.js", "flashpolicyserver");
 
-function read_policy()
-{
-	f = new File("../ctrl/flashpolicy.xml");
-	if(!f.open("r")) 
-		return;
-	var txt = f.readAll().toString();
-	// txt.replace(/(\r|\n|\t|,)/g, ''); // Need commas to state multiple nonconsecutive to-ports. -echicken
-	txt = txt.replace(/(\r|\n|\t)/g, ''); // <-- echicken's modified version of above.
-	txt = txt.replace(/>,/g, '>'); // Commas between XML tags can be removed, though. -echicken
-	f.close();
-	return(txt);
-}
+var InString = "";
+var ValidRequest = "<policy-file-request/>";
+var StartTime = time();
 
-
-terminator = false;
-request = "";
-//<policy-file-request/>
-
-while(client.socket.is_connected && !terminator)
-{
-	inByte = client.socket.recvBin(1);
-	inChar = String.fromCharCode(inByte);
-	// if((inByte == 0) || (inChar == " ") // Doesn't trap the null byte as sent by all flash clients (lightIRC in particular)
-	if((inByte == 0) || (inChar == " ") || inChar == String.fromCharCode(000)) // <-- echicken's modified version of above.
-	{
-		terminator = true;
-	}
-	else
-	{
-		request = request + inChar;
+while ((client.socket.is_connected) && (InString.indexOf(ValidRequest) === -1) && ((time() - StartTime) <= 5)) {
+	var Bytes = client.socket.poll(time() - StartTime);
+	if (Bytes > 0) {
+		InString += client.socket.recv(Bytes).replace(/\s/ig, ''); // In case they send <policy-file-request />
 	}
 }
-if(client.socket.is_connected == false)
-{
-	exit();
-}
 
-//request = client.socket.recv(22);
-
-request = truncsp(request);
-log(LOG_DEBUG, "client request: " + request);
-
-if(request == "<policy-file-request/>")
-{
-	policy = read_policy();
-	write(policy);
-	exit();
+if (InString.indexOf(ValidRequest) === -1) {
+	log(LOG_DEBUG, "Ignoring invalid socket policy file request: '" + InString + "'");
 } else {
-	exit();
+	log(LOG_DEBUG, "Answering valid socket policy file request");
+	if (client.socket.is_connected) {
+		client.socket.send('<?xml version="1.0"?><!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">');
+		client.socket.send('<cross-domain-policy>');
+		client.socket.send('<site-control permitted-cross-domain-policies="master-only"/>');
+		client.socket.send('<allow-access-from domain="*" to-ports="' + GetToPorts() + '" />');
+		client.socket.send('</cross-domain-policy>');
+	}
+}
+
+
+function GetToPorts() {
+	var Ports = GetTerminalServerPorts();
+	if (options.extra_ports !== undefined) {
+		var ExtraPorts = options.extra_ports.replace(/\s/ig, ''); // Flash doesn't seem to like spaces in the to-ports
+		if (ExtraPorts !== "") {
+			Ports += "," + ExtraPorts
+		}
+	}
+	return Ports;
 }
