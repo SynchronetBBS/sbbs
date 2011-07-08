@@ -1997,7 +1997,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 		strncpy(ip,p,16);
 		ip[15]=0;
 		check_addr.s_addr = inet_addr(ip);
-		lprintf(LOG_DEBUG,"%04d DEBUG checking %s [%s]",socket,host_name,ip);
+		lprintf(LOG_DEBUG,"%04d SMTP DNSBL checking received header address %s [%s]",socket,host_name,ip);
 		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl,dnsbl_ip))!=0)
 				lprintf(LOG_NOTICE,"%04d SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 					,socket, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
@@ -2884,7 +2884,7 @@ static void smtp_thread(void* arg)
 						is_spam=TRUE;
 
 					if(msg.subj==NULL || strlen(msg.subj) < SPAM_HASH_SUBJECT_MIN_LEN)
-						sources&=~SMB_HASH_SOURCE_SUBJECT;
+						sources&=~(1<<SMB_HASH_SOURCE_SUBJECT);
 					lprintf(LOG_DEBUG,"%04d SMTP Calculating message hashes (sources=%lx, msglen=%u)"
 						,socket, sources, strlen(msgbuf));
 					if((hashes=smb_msghashes(&msg, msgbuf, sources)) != NULL) {
