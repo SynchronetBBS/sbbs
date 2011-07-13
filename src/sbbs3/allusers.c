@@ -37,8 +37,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "dirwrap.h"
-
 #include "sbbs.h"
 
 int  min=0,max=99;
