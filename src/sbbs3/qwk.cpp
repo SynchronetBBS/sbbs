@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -841,7 +841,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	ulong	qwk=useron.qwk;
 	file_t	f;
 
-	sprintf(str,"%.25s",buf);
+	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
 	strupr(str);
 	bprintf("\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"
 		,subnum==INVALID_SUB ? "Mail":cfg.sub[subnum]->qwkname,str);
