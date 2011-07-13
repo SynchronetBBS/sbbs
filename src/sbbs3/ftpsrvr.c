@@ -2096,8 +2096,8 @@ void parsepath(char** pp, user_t* user, client_t* client, int* curlib, int* curd
 	char*	p;
 	char*	tp;
 	char	path[MAX_PATH+1];
-	uint	dir=*curdir;
-	uint	lib=*curlib;
+	int		dir=*curdir;
+	int		lib=*curlib;
 
 	SAFECOPY(path,*pp);
 	p=path;
