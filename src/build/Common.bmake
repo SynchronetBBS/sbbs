@@ -139,6 +139,9 @@ MKSHLIB =       $(CC) -WD
 CFLAGS	=	$(CFLAGS) -Od -D_DEBUG 
 !endif
 
+# Required for C++Builder 2010
+CFLAGS	=	$(CFLAGS) -DHAS_STDINT_H -D_WIN32_WINNT=0x502
+
 # Debug or release build?
 !ifdef DEBUG
 BUILD	=	debug
