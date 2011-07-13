@@ -14,7 +14,7 @@
 #elif defined(_WIN32)
 	#include <Windows.h>
 
-	typedef HMODULE WINAPI dll_handle;
+	typedef HMODULE dll_handle;
 	DLLEXPORT dll_handle DLLCALL xp_dlopen(const char **name, int mode, int major);
 	#define xp_dlsym(handle, name)				((void *)GetProcAddress(handle, #name))
 	#define xp_dlclose(handle)					(FreeLibrary(handle)?0:-1)
