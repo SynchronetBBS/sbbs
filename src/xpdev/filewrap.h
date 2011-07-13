@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -175,7 +175,7 @@ extern "C" {
 	DLLEXPORT FILE * DLLCALL _fsopen(char *pszFilename, char *pszMode, int shmode);
 #endif
 
-#if _MSC_VER < 1300	/* missing prototypes */
+#if defined(_MSC_VER) && (_MSC_VER < 1300)	/* missing prototypes */
 	DLLEXPORT int		DLLCALL	_fseeki64(FILE*, int64_t, int origin);
 	DLLEXPORT int64_t	DLLCALL _ftelli64(FILE*);
 #endif
