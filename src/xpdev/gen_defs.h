@@ -8,7 +8,7 @@
  * @format.tab-size 4           (Plain Text/Source Code File Header)                    *
  * @format.use-tabs true        (see http://www.synchro.net/ptsc_hdr.html)              *
  *                                                                                                                                                      *
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html          *
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html          *
  *                                                                                                                                                      *
  * This library is free software; you can redistribute it and/or                        *
  * modify it under the terms of the GNU Lesser General Public License           *
@@ -144,7 +144,9 @@ enum {
         #endif
 #endif
 
-#if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES) && !defined(HAS_STDINT_H)
+#if !defined(HAS_INTTYPES_H) && !defined(XPDEV_DONT_DEFINE_INTTYPES)
+
+#if !defined(HAS_STDINT_H)
 
 typedef char    int8_t;
 typedef short   int16_t;
@@ -152,6 +154,8 @@ typedef long    int32_t;
 typedef uchar   uint8_t;
 typedef ushort  uint16_t;
 typedef ulong   uint32_t;
+
+#endif
 
 #if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__)
 typedef signed __int64 int64_t;
