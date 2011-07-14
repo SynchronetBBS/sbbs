@@ -1280,10 +1280,7 @@ static int receive_files(char** fname_list, int fnames)
 						break;
 					}
 
-					if(mode&GMODE)
-						return(-1);
-
-					if(++errors>xm.max_errors) {
+					if(++errors>xm.max_errors || (mode&GMODE)) {
 						lprintf(LOG_ERR,"Too many errors (%u)",errors);
 						xmodem_cancel(&xm);
 						break;
