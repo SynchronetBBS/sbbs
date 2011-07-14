@@ -107,7 +107,7 @@ UL_SUF	=	$(LIBFILE)
 !ifdef msc	# Microsoft Visual C++
 CC		=	cl
 LD		=	link
-CCPRE	=	msvc.win32
+CCPRE	=	msvc
 OUTPUT	=	-Fo
 LOUTPUT	=	-Fe
 CFLAGS  =	-nologo -MTd
@@ -139,8 +139,11 @@ MKSHLIB =       $(CC) -WD
 CFLAGS	=	$(CFLAGS) -Od -D_DEBUG 
 !endif
 
-# Required for C++Builder 2010
-CFLAGS	=	$(CFLAGS) -DHAS_STDINT_H -D_WIN32_WINNT=0x502
+# Required for Embarcadero C++Builder 2010
+!if __MAKE__ >= 0x0540
+	CCPRE	=	ecc6
+	CFLAGS	=	$(CFLAGS) -DHAS_STDINT_H -D_WIN32_WINNT=0x502
+!endif
 
 # Debug or release build?
 !ifdef DEBUG
