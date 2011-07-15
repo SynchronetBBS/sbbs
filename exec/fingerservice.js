@@ -412,7 +412,7 @@ if(include_real_name)
 	write(format(" In real life: %s", u.name));
 write("\r\n");
 
-write(format("From: %s\r\n",u.location));
+write(format("From: %-36s Handle: %s\r\n",u.location,u.handle));
 if(include_age_gender) {
 	birth=format("Birth: %s (Age: %u years)"
 		  ,u.birthdate,u.age);
