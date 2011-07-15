@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -693,33 +693,6 @@ static void web_log_msg(log_msg_t* msg)
         MainForm->LogAttributes(msg->level, WebForm->Log->Color, WebForm->Log->Font));
 	WebForm->Log->Lines->Add(Line);
     SendMessage(WebForm->Log->Handle, WM_VSCROLL, SB_BOTTOM, NULL);
-
-#if 0
-    if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
-        AnsiString LogFileName
-            =AnsiString(MainForm->cfg.logs_dir)
-            +"LOGS\\FS"
-            +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
-            +".LOG";
-
-        if(!FileExists(LogFileName)) {
-            FileClose(FileCreate(LogFileName));
-            if(LogStream!=NULL) {
-                fclose(LogStream);
-                LogStream=NULL;
-            }
-        }
-        if(LogStream==NULL)
-            LogStream=_fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
-
-        if(LogStream!=NULL) {
-            Line=SystemTimeToDateTime(msg->time).FormatString("hh:mm:ss")+"  ";
-            Line+=AnsiString(str).Trim();
-            Line+="\n";
-        	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
-        }
-	}
-#endif
 }
 
 static void web_status(void* p, const char *str)
@@ -1160,18 +1133,6 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 	ServiceStatusTimer->Enabled=false;
 	NodeForm->Timer->Enabled=false;
 	ClientForm->Timer->Enabled=false;
-#if 0
-    /* Extra time for callbacks to be called by child threads */
-    start=time(NULL);
-    while(time(NULL)<start+2) {
-        Application->ProcessMessages();
-        YIELD();
-    }
-#endif
-#if 0
-    if(hSCManager!=NULL)
-    	closeServiceHandle(hSCManager);
-#endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
@@ -2204,66 +2165,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
 		if(SaveIniSettings(Sender))
             Registry->WriteBool("Imported",true);   /* Use the .ini file for these settings from now on */
-
-#if 0
-        /******************************************************/
-        /* Copy global values into each server startup struct */
-        /******************************************************/
-
-        /* used to be handled in bbs_start() */
-        SAFECOPY(bbs_startup.ctrl_dir,global.ctrl_dir);
-        SAFECOPY(bbs_startup.temp_dir,global.temp_dir);
-        SAFECOPY(bbs_startup.host_name,global.host_name);
-        bbs_startup.sem_chk_freq=global.sem_chk_freq;
-
-        /* JavaScript operational parameters */
-        bbs_startup.js_max_bytes=global.js.max_bytes;
-        bbs_startup.js_cx_stack=global.js.cx_stack;
-        bbs_startup.js_branch_limit=global.js.branch_limit;
-        bbs_startup.js_gc_interval=global.js.gc_interval;
-        bbs_startup.js_yield_interval=global.js.yield_interval;
-
-        /* used to be handled in mail_start() */
-        SAFECOPY(mail_startup.ctrl_dir
-            ,global.ctrl_dir);
-        SAFECOPY(mail_startup.host_name
-            ,global.host_name);
-        mail_startup.sem_chk_freq=global.sem_chk_freq;
-
-        /* used to be handled in ftp_start() */
-        SAFECOPY(ftp_startup.ctrl_dir
-            ,global.ctrl_dir);
-        SAFECOPY(ftp_startup.temp_dir
-            ,global.temp_dir);
-        SAFECOPY(ftp_startup.host_name
-            ,global.host_name);
-        ftp_startup.sem_chk_freq=global.sem_chk_freq;
-
-        /* JavaScript operational parameters */
-        ftp_startup.js_max_bytes=global.js.max_bytes;
-        ftp_startup.js_cx_stack=global.js.cx_stack;
-
-        /* used to be handled in web_start() */
-        SAFECOPY(web_startup.ctrl_dir,global.ctrl_dir);
-        SAFECOPY(web_startup.host_name,global.host_name);
-        web_startup.sem_chk_freq=global.sem_chk_freq;
-
-        /* JavaScript operational parameters */
-        web_startup.js_max_bytes=global.js.max_bytes;
-        web_startup.js_cx_stack=global.js.cx_stack;
-
-        /* used to be handled in ServicesStartExecute() */
-        SAFECOPY(services_startup.ctrl_dir,global.ctrl_dir);
-        SAFECOPY(services_startup.host_name,global.host_name);
-        services_startup.sem_chk_freq=global.sem_chk_freq;
-
-        /* JavaScript operational parameters */
-        services_startup.js_max_bytes=global.js.max_bytes;
-        services_startup.js_cx_stack=global.js.cx_stack;
-        services_startup.js_branch_limit=global.js.branch_limit;
-        services_startup.js_gc_interval=global.js.gc_interval;
-        services_startup.js_yield_interval=global.js.yield_interval;
-#endif
     }
 
     Registry->CloseKey();
@@ -2410,7 +2311,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     NodeForm->Timer->Enabled=true;
     ClientForm->Timer->Enabled=true;
 
-    SemFileTimer->Interval=global.sem_chk_freq;
+    SemFileTimer->Interval=global.sem_chk_freq*1000;
     SemFileTimer->Enabled=true;
 
     StatsTimer->Interval=cfg.node_stat_check*1000;
@@ -3300,7 +3201,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SAFECOPY(services_startup.host_name,global.host_name);
         SAFECOPY(services_startup.ctrl_dir,global.ctrl_dir);
         SAFECOPY(services_startup.temp_dir,global.temp_dir);
-        services_startup.sem_chk_freq=global.sem_chk_freq;
+        services_startup.sem_chk_freq=global.sem_chk_freq ;
 
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeForm->Timer->Interval=PropertiesDlg->NodeIntUpDown->Position*1000;
