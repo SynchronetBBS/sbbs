@@ -25,7 +25,9 @@ log(LOG_INFO,"Using temp directory: " + temp_dir);
 putenv("CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs");
 
 var platform = system.platform.toLowerCase();
-var make = (platform=="win32" ? "make":"gmake");
+if(system.architecture=="x64")
+	platform += "-x64";
+var make = (platform=="win32" ? "make":"gmake JSLIB=mozjs");
 var msdev = '"C:\\Program Files\\Microsoft Visual Studio\\Common\\MSDev98\\Bin\\msdev"';
 var build_output = "build_output.txt";
 var archive;
@@ -75,8 +77,8 @@ if(platform=="win32") {
 																,"> " + build_output]);
 } else {	/* Unix */
 	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
-	builds.push(["src/sbbs3/umonitor"	,"gmake"				,"2> " + build_output]);
-	builds.push(["src/sbbs3/uedit"		,"gmake"				,"2> " + build_output]);
+	builds.push(["src/sbbs3/umonitor"	,"gmake RELEASE=1"		,"2> " + build_output]);
+	builds.push(["src/sbbs3/uedit"		,"gmake RELEASE=1"		,"2> " + build_output]);
 }
 
 var win32_dist
@@ -93,8 +95,15 @@ var win32_dist
 		"lib/cryptlib/win32.release/cl32.dll"
 	];
 
-chdir(temp_dir);
+var nix_dist
+	= [ "README.TXT",
+		"FILE_ID.DIZ",
+		"src/sbbs3/gcc.*.exe.release/*",
+		"src/sbbs3/gcc.*.lib.release/*",
+		"src/sbbs3/*/gcc.*.exe.release/*",
+	];
 
+chdir(temp_dir);
 var system_description=system.local_host_name + " - " + system.os_version;
 
 var file = new File("README.TXT");
@@ -115,15 +124,15 @@ if(file.open("wt")) {
 	file.writeln("Builds verified on " + system.timestr());
 	file.writeln(system_description);
 	file.writeln();
-	file.writeln("For more details, see http://synchro.net/docs/source.html");
+	file.writeln("For more details, see http://wiki.synchro.net/dev:source");
 	if(platform!="win32")
-		file.writeln("and http://synchro.net/docs/sbbsunix.txt");
+		file.writeln("and http://wiki.synchro.net/install:nix");
 	file.close();
 }
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
-	file.writeln(format("Synchronet-%s BBS Software",system.platform));
+	file.writeln(format("Synchronet-%s (%s) BBS Software",system.platform, system.architecture));
 	file.writeln(format("C/C++ source code archive (%s)",system.datestr()));
 	if(platform=="win32")
 		file.writeln("Unzip *with* directories!");
@@ -132,7 +141,7 @@ if(file.open("wt")) {
 }
 
 var start = time();
-
+if(1) {
 for(i in builds) {
 	var sub_dir = builds[i][0];
 	var build_dir = temp_dir + "/" + sub_dir;
@@ -178,6 +187,9 @@ body += elapsed_time(time()-start) + " - total\n";
 send_email(system.platform + " builds successful", lfexpand(body));
 
 chdir(temp_dir);
+
+system.exec("cvs -d:pserver:testbuild@cvs.synchro.net:/cvsroot/sbbs tag -RF goodbuild_" + platform);
+
 var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
@@ -188,47 +200,51 @@ log(LOG_INFO,format("Copying %s to %s",lib,dest));
 if(!file_copy(lib,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",lib,dest));
 
-if(platform=="win32") {
-
-	var file = new File("README.TXT");
-	if(file.open("wt")) {
-		file.writeln(format("Synchronet-Win32 Version 3 Development Executable Archive (%s)\n"
-			,system.datestr()));
-		file.writeln("This archive contains a snap-shot of Synchronet-Win32 executable files");
-		file.writeln("created on " + system.timestr());
-		file.writeln();
-		file.writeln("The files in this archive are not necessarily well-tested, DO NOT");
-		file.writeln("constitute an official Synchronet release, and are NOT SUPPORTED!");
-		file.writeln();
-		file.writeln("USE THESE FILES AT YOUR OWN RISK");
-		file.writeln();
-		file.writeln("BACKUP YOUR WORKING EXECUTABLE FILES (i.e. *.exe and *.dll)");
-		file.writeln("BEFORE over-writing them with the files in this archive!");
-		file.close();
-	}
-
-	var file = new File("FILE_ID.DIZ");
-	if(file.open("wt")) {
-		file.writeln(format("Synchronet-%s BBS Software",system.platform));
-		file.writeln(format("Development Executable Archive (%s)",system.datestr()));
-		file.writeln("Snapshot for experimental purposes only!");
-		file.writeln("http://www.synchro.net");
-		file.close();
-	}
-
-	archive = "sbbs_dev.zip";
-
-	var cmd_line = "pkzip25 -add " + archive 
-		+ " -exclude=makehelp.exe -exclude=v4upgrade.exe " + win32_dist.join(" ");
-	log(LOG_INFO, "Executing: " + cmd_line);
-	system.exec(cmd_line);
-
-	dest = file_area.dir["sbbs"].path+archive;	
-
-	log(LOG_INFO,format("Copying %s to %s",archive,dest));
-	if(!file_copy(archive,dest))
-		log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+var file = new File("README.TXT");
+if(file.open("wt")) {
+	file.writeln(format("Synchronet-%s (%s) Version 3 Development Executable Archive (%s)\n"
+		,system.platform,system.architecture,system.datestr()));
+	file.writeln(format("This archive contains a snap-shot of Synchronet-%s executable files"
+		,system.platform));
+	file.writeln("created on " + system.timestr());
+	file.writeln();
+	file.writeln("The files in this archive are not necessarily well-tested, DO NOT");
+	file.writeln("constitute an official Synchronet release, and are NOT SUPPORTED!");
+	file.writeln();
+	file.writeln("USE THESE FILES AT YOUR OWN RISK");
+	file.writeln();
+	file.writeln("BACKUP YOUR WORKING EXECUTABLE FILES");
+	file.writeln("BEFORE over-writing them with the files in this archive!");
+	file.close();
 }
+
+var file = new File("FILE_ID.DIZ");
+if(file.open("wt")) {
+	file.writeln(format("Synchronet-%s BBS Software",system.platform));
+	file.writeln(format("Development Executable Archive (%s)",system.datestr()));
+	file.writeln("Snapshot for experimental purposes only!");
+	file.writeln("http://www.synchro.net");
+	file.close();
+}
+}
+var cmd_line;
+if(platform=="win32") {
+	archive = "sbbs_dev.zip";
+	cmd_line = "pkzip25 -add " + archive 
+		+ " -exclude=makehelp.exe -exclude=v4upgrade.exe " + win32_dist.join(" ");
+} else {
+	archive = "sbbs_dev.tgz";
+	cmd_line = "pax -s :.*/makehelp.*::p -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
+}
+
+log(LOG_INFO, "Executing: " + cmd_line);
+system.exec(cmd_line);
+
+dest = file_area.dir["sbbs"].path+archive;	
+
+log(LOG_INFO,format("Copying %s to %s",archive,dest));
+if(!file_copy(archive,dest))
+	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
 
 bail(0);
 /* end */
