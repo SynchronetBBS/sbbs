@@ -11,6 +11,11 @@ const user_list_ext = ".list.sub";
 
 log(LOG_INFO,"ListServer " + REVISION);
 
+//function log(level, msg)
+//{
+//js.global.log(level,"ListServer " + msg);
+//}
+
 js.auto_terminate=false;
 
 var ini_fname = file_cfgname(system.ctrl_dir, "listserver.ini");
@@ -78,7 +83,7 @@ if(mailbase.open()==false) {
 /* Inbound message from SMTP Server? */
 if(js.global.recipient_list_filename!=undefined) {	
 
-	log("reverse_path = " + reverse_path);
+	log(LOG_DEBUG,"reverse_path = " + reverse_path);
 	if(reverse_path=='' || reverse_path=='<>') {
 		log(LOG_WARNING,"No reverse path");
 		exit();
@@ -137,7 +142,7 @@ if(js.global.recipient_list_filename!=undefined) {
 			var list = list_array[l];
 /** DEBUG
 			for(var p in list)
-				log("list_array["+l+"]."+p+" = "+list[p]);
+				log(LOG_DEBUG,"list_array["+l+"]."+p+" = "+list[p]);
 **/
 			recipient=rcpt_list[r].To;
 			if(!recipient)	// for pre v3.15 compatibility
@@ -179,6 +184,7 @@ if(js.global.recipient_list_filename!=undefined) {
 	resp_hdr.from_net_type	= NET_INTERNET;
 	resp_hdr.from_agent		= AGENT_PROCESS;
 	resp_hdr.reply_id		= header.id;
+	resp_hdr.attr			= MSG_NOREPLY;
 
 	/* Write response to message */
 	if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
@@ -199,9 +205,12 @@ for(var l in list_array) {
 
 	var list = list_array[l];
 
-	if(list.disabled)
+	if(list.disabled) {
+		log(LOG_INFO,format("%s: disabled", list.name));
 		continue;
+	}
 
+	log(LOG_INFO,format("Processing list: %s", list.name));
 	msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
 		log(LOG_ERR,format("%s !ERROR %d (%s) opening msgbase: %s"
@@ -213,17 +222,10 @@ for(var l in list_array) {
 	/* Get subscriber list */
 	var user_list = get_user_list(list);
 	if(!user_list.length) {
+		log(LOG_INFO,format("%s has no subscribers", list.name));
 		delete msgbase;
 		continue;
 	}
-
-/***
-	if(!user_list.length) {
-		log(LOG_NOTICE,"No subscribers to list: " + list.name);
-		delete msgbase;
-		continue;
-	}
-***/
 
 	var ptr=NaN;
 	/* Get export message pointer */
@@ -345,6 +347,42 @@ for(var l in list_array) {
 			file_remove(ptr_fname);
 	}
 	delete ini_file;
+}
+
+/* Process bounced messages here: */
+{
+	log(LOG_INFO,"Scanning for bounced e-mail messages");
+	var total_msgs = mailbase.total_msgs;
+	var num;
+
+	for(num=0;num<=total_msgs && !js.terminated; num++) {
+		hdr = mailbase.get_msg_header(
+			/* retrieve by offset? */	true,
+			/* message number */		num
+			);
+		if(hdr == null)
+			continue;
+		if(hdr.attr&MSG_DELETE)/* marked for deletion */
+			continue;
+		if(hdr.to_agent != AGENT_PROCESS)
+			continue;
+		for(var l in list_array) {
+
+			var list = list_array[l];
+
+			if(list.disabled)
+				continue;
+	
+		}
+
+		if(hdr.to == listserver_name || hdr.subject == "Delivery failure: Synchronet ListServer Response") {
+			log(LOG_INFO,format("Deleting bounce message #%u to %s", hdr.number, hdr.to));
+			if(!mailbase.remove_msg(/* by offset: */ true, num))
+				log(LOG_ERR,format("!ERROR %d (%s) removing message #%u to %s"
+					,mailbase.status, mailbase.error, hdr.number, hdr.to));
+		}
+	}
+	log(LOG_INFO,"Scanned for bounced e-mail messages");
 }
 
 /* clean-up */
