@@ -9,7 +9,7 @@ template.title = system.name + " - External Program Section";
 template.html = "";
 
 var options = load("modopts.js", "logon");
-if (!options.rlogin_auto_xtrn) {
+if (!options || !options.rlogin_auto_xtrn) {
 	templatefile = "ftelnet_disabled.inc";
 	if (user.security.level >= 90) {
 		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li></ul>";
