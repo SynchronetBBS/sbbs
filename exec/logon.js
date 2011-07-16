@@ -12,7 +12,7 @@ load("asc2htmlterm.js");
 var options = load("modopts.js", "logon");
 
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
-if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
+if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
     var external_code = console.terminal.substring(5);
     if (!bbs.exec_xtrn(external_code)) {
         alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
@@ -227,7 +227,8 @@ if(user.security.level==99				/* Sysop logging on */
 
 // Set rlogin_xtrn_menu=true in [logon] section of ctrl/modopts.ini
 // if you want your RLogin server to act as a door game server only
-if(options.rlogin_xtrn_menu
+if(options
+	&& options.rlogin_xtrn_menu
 	&& bbs.sys_status&SS_RLOGIN) {
 	bbs.xtrn_sec();
 	bbs.hangup();
