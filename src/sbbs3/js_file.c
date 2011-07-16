@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -956,8 +956,10 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	list = iniReadNamedStringList(p->fp,section);
 	JS_RESUMEREQUEST(cx, rc);
 
-	if(list==NULL)	/* New behavior at request of MCMLXXIX: return NULL/undefined if specified section doesn't exist */
-		return JSVAL_NULL;
+	if(list==NULL) {	/* New behavior at request of MCMLXXIX: return NULL/undefined if specified section doesn't exist */
+		*rval = JSVAL_NULL;
+		return(JS_TRUE);
+	}
 
     object = JS_NewObject(cx, NULL, NULL, obj);
 
@@ -1081,6 +1083,33 @@ sbbs_t::js_execfile(const char * 0x0226b59a, const char * 0x022060fa) line 668 +
 sbbs_t::external(const char * 0x0226b599, long 0x00000100, const char * 0x022060fa) line 413 + 30 bytes
 event_thread(void * 0x022622b8) line 2745 + 113 bytes
 _threadstart(void * 0x0227dab0) line 187 + 13 bytes
+
+
+and July-15-2010:
+
+ 	20000000()	
+ 	js32.dll!JS_SetElement(JSContext * cx, JSObject * obj, long index, long * vp)  Line 3178 + 0x20 bytes	C
+>	sbbs.dll!js_iniGetAllObjects(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1081 + 0x18 bytes	C
+ 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
+ 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
+ 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSScript * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
+ 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSScript * script, long * rval)  Line 4188 + 0x19 bytes	C
+ 	sbbs.dll!sbbs_t::js_execfile(const char * cmd, const char * startup_dir)  Line 686 + 0x27 bytes	C++
+ 	sbbs.dll!sbbs_t::external(const char * cmdline, long mode, const char * startup_dir)  Line 413 + 0x1e bytes	C++
+ 	sbbs.dll!event_thread(void * arg)  Line 2745 + 0x71 bytes	C++
+
+And July-22-2010:
+
+ 	js32.dll!JS_SetElement(JSContext * cx, JSObject * obj, long index, long * vp)  Line 3178 + 0x20 bytes	C
+>	sbbs.dll!js_iniGetAllObjects(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1095 + 0x18 bytes	C
+ 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
+ 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
+ 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSScript * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
+ 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSScript * script, long * rval)  Line 4188 + 0x19 bytes	C
+ 	websrvr.dll!exec_ssjs(http_session_t * session, char * script)  Line 4638 + 0x24 bytes	C
+ 	websrvr.dll!respond(http_session_t * session)  Line 4684 + 0x12 bytes	C
+ 	websrvr.dll!http_session_thread(void * arg)  Line 5091 + 0xc bytes	C
+
 
   */
         if(!JS_SetElement(cx, array, i, &val))
