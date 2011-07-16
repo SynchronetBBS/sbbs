@@ -37,7 +37,7 @@ if(hdr.attr & MSG_MODERATED) {
 	if(!(hdr.attr & MSG_VALIDATED))
 		error("Message pending moderator validation");
 }
-if(hdr.from_ext != null) {
+if(Number(hdr.from_ext) > 0) {
 	template.u_num = hdr.from_ext;
 	usr = new User(template.u_num);
 	template.author_firston = strftime("%m/%d/%y",usr.stats.firston_date);
