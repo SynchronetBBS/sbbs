@@ -1371,6 +1371,9 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_QUIET:
 			case AR_OS2:
 			case AR_DOS:
+			case AR_WIN32:
+			case AR_UNIX:
+			case AR_LINUX:
 				break;
 			default:
 				(*ptrptr)++;
