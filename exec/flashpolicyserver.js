@@ -67,7 +67,7 @@ if (InString.indexOf(ValidRequest) === -1) {
 function GetToPorts() {
 	var Ports = GetTerminalServerPorts();
 	if (options && (options.extra_ports !== undefined)) {
-		var ExtraPorts = options.extra_ports.replace(/\s/ig, ''); // Flash doesn't seem to like spaces in the to-ports
+		var ExtraPorts = options.extra_ports.toString().replace(/\s/ig, ''); // Flash doesn't seem to like spaces in the to-ports
 		if (ExtraPorts !== "") {
 			Ports += "," + ExtraPorts
 		}
