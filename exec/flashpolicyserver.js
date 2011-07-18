@@ -55,11 +55,7 @@ if (InString.indexOf(ValidRequest) === -1) {
 } else {
 	log(LOG_DEBUG, "Answering valid socket policy file request");
 	if (client.socket.is_connected) {
-		client.socket.send('<?xml version="1.0"?><!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">');
-		client.socket.send('<cross-domain-policy>');
-		client.socket.send('<site-control permitted-cross-domain-policies="master-only"/>');
-		client.socket.send('<allow-access-from domain="*" to-ports="' + GetToPorts() + '" />');
-		client.socket.send('</cross-domain-policy>');
+		client.socket.send("<?xml version=\"1.0\"?><!DOCTYPE cross-domain-policy SYSTEM \"/xml/dtds/cross-domain-policy.dtd\"><cross-domain-policy><site-control permitted-cross-domain-policies=\"master-only\"/><allow-access-from domain=\"*\" to-ports=\"" + GetToPorts() + "\" /></cross-domain-policy>\0");
 	}
 }
 
