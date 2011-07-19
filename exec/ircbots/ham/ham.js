@@ -3,6 +3,7 @@ if(!js.global || js.global.HTTPRequest==undefined)
 
 //Bot_Commands={};
 //function Bot_Command(x,y,z){}
+//js.global.config_filename='hambot.ini';
 
 Bot_Commands["CALLSIGN"] = new Bot_Command(0,false,false);
 Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
@@ -106,6 +107,34 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 	}
 
+	function HamcallCallsign(callsign, srv, target) {
+		var req=new HTTPRequest();
+		var config = new File(system.ctrl_dir + js.global.config_filename);
+		if(!config.open('r')) {
+			log("Unable to open config!");
+			exit(1);
+		}
+
+		req.SetupGet('http://hamcall.net/call?callsign='+callsign);
+		req.request_headers.push("Cookie: callsign="+config.iniGetValue("module_Ham", 'callsign')+'; password='+config.iniGetValue("module_Ham", 'password'));
+		req.SendRequest();
+		req.ReadResponse();
+
+		config.close();
+
+		var m=req.body.match(/Tell them you found it on HamCall.net, the world's largest callsign database!.*?<BR>([\x00-\xff]*?)(<font size|<\/td>)/);
+		if(m) {
+			m[1]=m[1].replace(/<[^>]*>/g,' ');
+			m[1]=m[1].replace(/[\r\n]/g,' ');
+			m[1]=m[1].replace(/\s+/g,' ');
+			m[1] += ' (Found on HamCall.net)';
+			srv.o(target, m[1]);
+		}
+		else {
+			srv.o(target, "Unable to lookup on HamCall.net");
+		}
+	}
+
 	if(callsign.search(/(C[F-K]|C[Y-Z]|V[A-GOXY]|X[J-O])/)==0) {
 		CanadaCallsign(callsign, srv, target);
 	}
@@ -113,12 +142,13 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		USCallsign(callsign,srv,target);
 	}
 	else {
-		srv.o(target,"Callsign country not supported.");
+		HamcallCallsign(callsign, srv, target);
 	}
 
 	return true;
 }
 
-//var dumb={o:function(x,y) {log(y);}};
-//Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
-//Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
+var dumb={o:function(x,y) {log(y);}};
+Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
+Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
+Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
