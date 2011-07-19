@@ -44,6 +44,23 @@ function HTTPRequest()
 		this.AddDefaultHeaders();
 	};
 
+	this.SetupPost=function(url, referer, base, data) {
+		this.referer=referer;
+		this.base=base;
+		this.url=new URL(url, this.base);
+		if(this.url.scheme!='http')
+			throw("Unknown scheme! '"+this.url.scheme+"'");
+		if(this.url.path=='')
+			this.url.path='/';
+		if(this.url.query != '');
+		this.request="POST "+this.url.request_path+" HTTP/1.0";
+		this.request_headers=[];
+		this.AddDefaultHeaders();
+		this.body=data;
+		this.request_headers.push("Content-Type: application/x-www-form-urlencoded");
+		this.request_headers.push("Content-Length: "+data.length);
+	};
+
 	this.SendRequest=function() {
 		var i;
 
@@ -82,6 +99,7 @@ function HTTPRequest()
 				throw("Unable to receive headers");
 			if(header=='')
 				return;
+			this.response_headers.push(header);
 			m=header.match(/^Content-length:\s+([0-9]+)$/);
 			if(m!=null)
 				this.contentlength=parseInt(m[0]);
@@ -105,6 +123,13 @@ function HTTPRequest()
 
 	this.Get=function(url, referer, base) {
 		this.SetupGet(url,referer,base);
+		this.SendRequest();
+		this.ReadResponse();
+		return(this.body);
+	};
+
+	this.Post=function(url, data, referer, base) {
+		this.SetupPost(url,referer,base,data);
 		this.SendRequest();
 		this.ReadResponse();
 		return(this.body);
