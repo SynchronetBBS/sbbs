@@ -33,7 +33,7 @@ writeln("<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>");
 writeln("<title>"+file.name.replace(/^.*[\/\\]/,'')+"</title>");
 writeln("</head>");
 writeln('<body style="background-color: black;">');
-writeln("<pre>");
+writeln('<pre style="font-family: Courier New, monospace">');
 write(html_encode(text.join("\r\n")
 	,/* es-ASCII: */true
 	,/* white-sp: */false
