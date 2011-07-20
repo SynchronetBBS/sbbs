@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -56,7 +56,6 @@ char **opt;
 /* void uifc.bail(int code); */
 int main();
 
-uchar node_swap=1;
 long misc=0;
 config_t cfg;
 
@@ -257,7 +256,7 @@ int main(int argc, char **argv)
 	dflt=0;
 	while(1) {
 		uifc.helpbuf=
-	" SBBSecho Configuration \r\n\r\n"
+	"~ SBBSecho Configuration ~\r\n\r\n"
 	"Move through the various options using the arrow keys.  Select the\r\n"
 	"highlighted options by pressing ENTER.\r\n\r\n";
 		i=0;
@@ -289,7 +288,7 @@ int main(int argc, char **argv)
 
 			case 1:
 	uifc.helpbuf=
-	" Maximum Packet Size \r\n\r\n"
+	"~ Maximum Packet Size ~\r\n\r\n"
 	"This is the maximum file size that SBBSecho will create when placing\r\n"
 	"outgoing messages into packets.  The default size is 250k.\r\n";
 				sprintf(str,"%lu",cfg.maxpktsize);
@@ -300,7 +299,7 @@ int main(int argc, char **argv)
 
 			case 2:
 	uifc.helpbuf=
-	" Maximum Bundle Size \r\n\r\n"
+	"~ Maximum Bundle Size ~\r\n\r\n"
 	"This is the maximum file size that SBBSecho will create when placing\r\n"
 	"outgoing packets into bundles.  The default size is 250k.\r\n";
 				sprintf(str,"%lu",cfg.maxbdlsize);
@@ -311,7 +310,7 @@ int main(int argc, char **argv)
 
 			case 3:
 	uifc.helpbuf=
-	" Areafix Failure Notification \r\n\r\n"
+	"~ Areafix Failure Notification ~\r\n\r\n"
 	"Setting this option to a user number (usually #1), enables the\r\n"
 	"automatic notification of that user, via e-mail, of failed areafix\r\n"
 	"attempts. Setting this option to 0, disables this feature.\r\n";
@@ -323,7 +322,7 @@ int main(int argc, char **argv)
 
 			case 4:
 	uifc.helpbuf=
-	" Nodes... \r\n\r\n"
+	"~ Nodes... ~\r\n\r\n"
 	"From this menu you can configure the area manager options for your\r\n"
 	"uplink nodes.\r\n";
 				i=0;
@@ -340,7 +339,7 @@ int main(int argc, char **argv)
 						i&=MSK_OFF;
 						str[0]=0;
 	uifc.helpbuf=
-	" Address \r\n\r\n"
+	"~ Address ~\r\n\r\n"
 	"This is the FidoNet style address of the node you wish to add\r\n";
 						if(uifc.input(WIN_MID,0,0
 							,"Node Address (ALL wildcard allowed)",str
@@ -382,7 +381,7 @@ int main(int argc, char **argv)
 						continue; }
 					while(1) {
 	uifc.helpbuf=
-	" Node Options \r\n\r\n"
+	"~ Node Options ~\r\n\r\n"
 	"These are the configurable options available for this node.\r\n";
 						j=0;
 						sprintf(opt[j++],"%-20.20s %s","Address"
@@ -423,7 +422,7 @@ int main(int argc, char **argv)
 						switch(k) {
 							case 0:
 	uifc.helpbuf=
-	" Address \r\n\r\n"
+	"~ Address ~\r\n\r\n"
 	"This is the FidoNet style address of this node.\r\n";
 								strcpy(str,wcfaddrtoa(&cfg.nodecfg[i].faddr));
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -433,7 +432,7 @@ int main(int argc, char **argv)
 								break;
 							case 1:
 	uifc.helpbuf=
-	" Archive Type \r\n\r\n"
+	"~ Archive Type ~\r\n\r\n"
 	"This is the compression type that will be used for compressing packets\r\n"
 	"to and decompressing packets from this node.\r\n";
 								for(j=0;j<cfg.arcdefs;j++)
@@ -453,7 +452,7 @@ int main(int argc, char **argv)
 								break;
 							case 2:
 	uifc.helpbuf=
-	" Packet Type \r\n\r\n"
+	"~ Packet Type ~\r\n\r\n"
 	"This is the packet header type that will be used in mail packets to\r\n"
 	"this node.  SBBSecho defaults to using type 2.2.\r\n";
 								j=0;
@@ -470,7 +469,7 @@ int main(int argc, char **argv)
 								break;
 							case 3:
 	uifc.helpbuf=
-	" Packet Password \r\n\r\n"
+	"~ Packet Password ~\r\n\r\n"
 	"This is an optional password that SBBSecho will place into packets\r\n"
 	"destined for this node.\r\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -479,7 +478,7 @@ int main(int argc, char **argv)
 								break;
 							case 4:
 	uifc.helpbuf=
-	" Areafix Password \r\n\r\n"
+	"~ Areafix Password ~\r\n\r\n"
 	"This is the password that will be used by this node when doing remote\r\n"
 	"areamanager functions.\r\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
@@ -488,7 +487,7 @@ int main(int argc, char **argv)
 								break;
 							case 5:
 	uifc.helpbuf=
-	" Areafix Flag \r\n\r\n"
+	"~ Areafix Flag ~\r\n\r\n"
 	"This is a flag to to be given to this node allowing access to one or\r\n"
 	"more of the configured echo lists\r\n";
 								while(1) {
@@ -566,7 +565,7 @@ int main(int argc, char **argv)
 								break;
 							case 10:
 	uifc.helpbuf=
-	" Route To \r\n\r\n"
+	"~ Route To ~\r\n\r\n"
 	"When using a FLO type mailer, this is the node number of an address\r\n"
 	"to route mail to for this node.\r\n";
 								strcpy(str,wcfaddrtoa(&cfg.nodecfg[i].route));
@@ -583,7 +582,7 @@ int main(int argc, char **argv)
 
 			case 5:
 	uifc.helpbuf=
-	" Paths... \r\n\r\n"
+	"~ Paths... ~\r\n\r\n"
 	"From this menu you can configure the paths that SBBSecho will use\r\n"
 	"when importing and exporting.\r\n";
 				j=0;
@@ -609,7 +608,7 @@ int main(int argc, char **argv)
 					switch(j) {
 						case 0:
 	uifc.helpbuf=
-	" Inbound Directory \r\n\r\n"
+	"~ Inbound Directory ~\r\n\r\n"
 	"This is the complete path (drive and directory) where your front\r\n"
 	"end mailer stores, and where SBBSecho will look for, incoming message\r\n"
 	"bundles and packets.";
@@ -619,7 +618,7 @@ int main(int argc, char **argv)
 
 						case 1:
 	uifc.helpbuf=
-	" Secure Inbound Directory \r\n\r\n"
+	"~ Secure Inbound Directory ~\r\n\r\n"
 	"This is the complete path (drive and directory) where your front\r\n"
 	"end mailer stores, and where SBBSecho will look for, incoming message\r\n"
 	"bundles and packets for SECURE sessions.";
@@ -629,7 +628,7 @@ int main(int argc, char **argv)
 
 						case 2:
 	uifc.helpbuf=
-	" Outbound Directory \r\n\r\n"
+	"~ Outbound Directory ~\r\n\r\n"
 	"This is the complete path (drive and directory) where your front\r\n"
 	"end mailer will look for, and where SBBSecho will place, outgoing\r\n"
 	"message bundles and packets.";
@@ -639,7 +638,7 @@ int main(int argc, char **argv)
 
 						case 3:
 	uifc.helpbuf=
-	" Area File \r\n\r\n"
+	"~ Area File ~\r\n\r\n"
 	"This is the complete path (drive, directory, and filename) of the\r\n"
 	"file SBBSecho will use as your AREAS.BBS file.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Areafile",cfg.areafile
@@ -648,7 +647,7 @@ int main(int argc, char **argv)
 
 						case 4:
 	uifc.helpbuf=
-	" Log File \r\n\r\n"
+	"~ Log File ~\r\n\r\n"
 	"This is the complete path (drive, directory, and filename) of the\r\n"
 	"file SBBSecho will use to log information each time it is run.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Logfile",cfg.logfile
@@ -667,10 +666,10 @@ int main(int argc, char **argv)
 				break;
 			case 7:
 	uifc.helpbuf=
-	" Log Options \r\n"
+	"~ Log Options ~\r\n"
 	"\r\n"
 	"Each loggable item can be toggled off or on from this menu. You must run\r\n"
-	"SBBSecho with the /L command line option for any of these items to be\r\n"
+	"`SBBSecho` with the `/L` command line option for any of these items to be\r\n"
 	"logged.";
 				j=0;
 				while(1) {
@@ -767,27 +766,27 @@ int main(int argc, char **argv)
 
 			case 8:
 	uifc.helpbuf=
-	"Secure Operation tells SBBSecho to check the AREAS.BBS file to insure\r\n"
+	"`Secure Operation` tells SBBSecho to check the AREAS.BBS file to insure\r\n"
 	"    that the packet origin exists there as well as check the password of\r\n"
 	"    that node (if configured).\r\n\r\n"
-	"Swap for Executables tells SBBSecho whether or not it should swap\r\n"
-	"    out of memory when executing external executables.\r\n\r\n"
-	"Fuzzy Zone Operation when set to yes if SBBSecho receives an inbound\r\n"
+	"`Convert Existing Tear Lines` tells SBBSecho to convert any tear lines\r\n"
+	"    (`---`) existing in the message text to to `===`.\r\n\r\n"
+	"`Fuzzy Zone Operation` when set to yes if SBBSecho receives an inbound\r\n"
 	"    netmail with no international zone information, it will compare the\r\n"
 	"    net/node of the destination to the net/node information in your AKAs\r\n"
 	"    and assume the zone of a matching AKA.\r\n\r\n"
-	"Store PATH/SEEN-BY/Unkown Kludge Lines in Message Base allows you to\r\n"
+	"`Store PATH/SEEN-BY/Unkown Kludge Lines in Message Base` allows you to\r\n"
 	"    determine whether or not SBBSecho will store this information from\r\n"
 	"    incoming messages in the Synchronet message base.\r\n\r\n"
-	"Allow Nodes to Add Areas in the AREAS.BBS List when set to YES allows\r\n"
+	"`Allow Nodes to Add Areas in the AREAS.BBS List` when set to `YES` allows\r\n"
 	"    uplinks to add areas listed in the AREAS.BBS file\r\n";
 				j=0;
 				while(1) {
 					i=0;
 					sprintf(opt[i++],"%-50.50s%-3.3s","Secure Operation"
 						,misc&SECURE ? "Yes":"No");
-					sprintf(opt[i++],"%-50.50s%-3.3s","Swap for Executables"
-						,node_swap ? "Yes":"No");
+					sprintf(opt[i++],"%-50.50s%-3.3s","Convert Existing Tear Lines"
+						,misc&CONVERT_TEAR ? "Yes":"No");
 					sprintf(opt[i++],"%-50.50s%-3.3s","Fuzzy Zone Operation"
 						,misc&FUZZY_ZONE ? "Yes":"No");
 					sprintf(opt[i++],"%-50.50s%-3.3s","Store PATH Lines in "
@@ -815,10 +814,7 @@ int main(int argc, char **argv)
 							misc^=SECURE;
 							break;
 						case 1:
-							if(node_swap)
-								node_swap=0;
-							else
-								node_swap=1;
+							misc^=CONVERT_TEAR;
 							break;
 						case 2:
 							misc^=FUZZY_ZONE;
@@ -852,7 +848,7 @@ int main(int argc, char **argv)
 				break;
 			case 9:
 	uifc.helpbuf=
-	" Archive Programs \r\n\r\n"
+	"~ Archive Programs ~\r\n\r\n"
 	"These are the archiving programs (types) which are available for\r\n"
 	"compressing outgoing packets.\r\n";
 				i=0;
@@ -869,7 +865,7 @@ int main(int argc, char **argv)
 						i&=MSK_OFF;
 						str[0]=0;
 	uifc.helpbuf=
-	" Packer Name \r\n\r\n"
+	"~ Packer Name ~\r\n\r\n"
 	"This is the identifying name of the archiving program\r\n";
 						if(uifc.input(WIN_MID,0,0
 							,"Packer Name",str,25,K_EDIT|K_UPPER)<1)
@@ -959,7 +955,7 @@ int main(int argc, char **argv)
 				break;
 			case 10:
 	uifc.helpbuf=
-	" Additional Echo Lists \r\n\r\n"
+	"~ Additional Echo Lists ~\r\n\r\n"
 	"This feature allows you to specify echo lists (in addition to your\r\n"
 	"AREAS.BBS file) for SBBSecho to search for area add requests.\r\n";
 				i=0;
@@ -976,7 +972,7 @@ int main(int argc, char **argv)
 						i&=MSK_OFF;
 						str[0]=0;
 	uifc.helpbuf=
-	" Echo List \r\n\r\n"
+	"~ Echo List ~\r\n\r\n"
 	"This is the path and filename of the echo list file you wish\r\n"
 	"to add.\r\n";
 						if(uifc.input(WIN_MID|WIN_SAV,0,0
@@ -1084,7 +1080,7 @@ int main(int argc, char **argv)
 										x&=MSK_OFF;
 										str[0]=0;
 	uifc.helpbuf=
-	" Echo List Flag \r\n\r\n"
+	"~ Echo List Flag ~\r\n\r\n"
 	"These flags determine which nodes have access to the current\r\n"
 	"echolist file\r\n";
 										if(uifc.input(WIN_MID|WIN_SAV,0,0
@@ -1125,7 +1121,7 @@ int main(int argc, char **argv)
 										continue; }
 									strcpy(str,cfg.listcfg[i].flag[x].flag);
 	uifc.helpbuf=
-	" Echo List Flag \r\n\r\n"
+	"~ Echo List Flag ~\r\n\r\n"
 	"These flags determine which nodes have access to the current\r\n"
 	"echolist file\r\n";
 										uifc.input(WIN_MID|WIN_SAV,0,0,"Echo List Flag"
@@ -1138,9 +1134,9 @@ int main(int argc, char **argv)
 
 			case -1:
 	uifc.helpbuf=
-	" Save Configuration File \r\n\r\n"
-	"Select Yes to save the config file, No to quit without saving,\r\n"
-	"or hit  ESC  to go back to the menu.\r\n\r\n";
+	"~ Save Configuration File ~\r\n\r\n"
+	"Select `Yes` to save the config file, `No` to quit without saving,\r\n"
+	"or hit ~ ESC ~ to go back to the menu.\r\n\r\n";
 				i=0;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1155,10 +1151,10 @@ int main(int argc, char **argv)
 				}
 				if(!cfg.check_path)
 					fprintf(stream,"NOPATHCHECK\n");
-				if(!node_swap)
-					fprintf(stream,"NOSWAP\n");
 				if(cfg.notify)
 					fprintf(stream,"NOTIFY %u\n",cfg.notify);
+				if(misc&CONVERT_TEAR)
+					fprintf(stream,"CONVERT_TEAR\n");
 				if(misc&SECURE)
 					fprintf(stream,"SECURE_ECHOMAIL\n");
 				if(misc&KILL_EMPTY_MAIL)
