@@ -350,6 +350,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	char	find_buf[128];
 	char	tmp[128];
 	int		i;
+	int		quit=0;
 	uint 	usub,ugrp,reads=0;
 	uint	lp=0;
 	long	org_mode=mode;
@@ -687,13 +688,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		l=getkeys(str,smb.msgs);
 		if(l&0x80000000L) {
 			if((long)l==-1) { /* ctrl-c */
-				if(msg.total_hfields)
-					smb_freemsgmem(&msg);
-				if(post)
-					free(post);
-				smb_close(&smb);
-				smb_stack(&smb,SMB_STACK_POP);
-				return(1); 
+				quit=1;
+				break; 
 			}
 			smb.curmsg=(l&~0x80000000L)-1;
 			do_find=false;
@@ -723,7 +719,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					domsg=1;
 				break;
 			case 'B':   /* Skip sub-board */
-				if(mode&SCAN_NEW && !noyes(text[RemoveFromNewScanQ]))
+				if(mode&SCAN_NEW && text[RemoveFromNewScanQ][0] && !noyes(text[RemoveFromNewScanQ]))
 					subscan[subnum].cfg&=~SUB_CFG_NSCAN;
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
@@ -829,7 +825,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				bputs(text[SearchStringPrompt]);
 				if(!getstr(find_buf,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
-				if(yesno(text[DisplaySubjectsOnlyQ]))
+				if(text[DisplaySubjectsOnlyQ][0] && yesno(text[DisplaySubjectsOnlyQ]))
 					searchposts(subnum,post,(long)i,smb.msgs,find_buf);
 				else {
 					smb.curmsg=i;
@@ -909,13 +905,9 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				}
 				break;
 			case 'Q':   /* Quit */
-				if(msg.total_hfields)
-					smb_freemsgmem(&msg);
-				if(post)
-					free(post);
-				smb_close(&smb);
-				smb_stack(&smb,SMB_STACK_POP);
-				return(1);
+				quit=1;
+				done=1;
+				break;
 			case 'T':   /* List titles of next ten messages */
 				domsg=0;
 				if(!smb.msgs)
@@ -1153,17 +1145,21 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		smb_freemsgmem(&msg);
 	if(post)
 		free(post);
-	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
-		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron,&client)
+	if(!quit
+		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
+		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron,&client) && text[Post][0]
 		&& !(useron.rest&FLAG('P'))) {
 		sprintf(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))
 			postmsg(subnum,0,0); 
 	}
+	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND))
+		&& !(subscan[subnum].cfg&SUB_CFG_NSCAN) && text[AddSubToNewScanQ][0] && yesno(text[AddSubToNewScanQ]))
+		subscan[subnum].cfg|=SUB_CFG_NSCAN;
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
-	return(0);
+	return(quit);
 }
 
 /****************************************************************************/

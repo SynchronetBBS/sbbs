@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -53,7 +53,7 @@ void sbbs_t::scansubs(long mode)
 		return;
 
 	if(ch!='A' && mode&(SCAN_FIND|SCAN_TOYOU)) {
-		if(yesno(text[DisplaySubjectsOnlyQ])) i=1;
+		if(text[DisplaySubjectsOnlyQ][0] && yesno(text[DisplaySubjectsOnlyQ])) i=1;
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))
@@ -133,7 +133,10 @@ void sbbs_t::scanallsubs(long mode)
 	ulong	subs_scanned=0;
 
 	if(/* action==NODE_MAIN && */ mode&(SCAN_FIND|SCAN_TOYOU)) {
-		i=yesno(text[DisplaySubjectsOnlyQ]);
+		if(text[DisplaySubjectsOnlyQ][0])
+			i=yesno(text[DisplaySubjectsOnlyQ]);
+		else
+			i=0;
 		if(mode&SCAN_FIND) {
 			bputs(text[SearchStringPrompt]);
 			if(!getstr(str,40,K_LINE|K_UPPER))

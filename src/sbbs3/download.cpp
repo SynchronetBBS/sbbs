@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -206,11 +206,13 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	sprintf(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
 	remove(protlog);                        /* Deletes the protocol log */
 	if(useron.misc&AUTOHANG)
-		autohang=1;
-	else
+		autohang=true;
+	else if(text[HangUpAfterXferQ][0])
 		autohang=yesno(text[HangUpAfterXferQ]);
+	else
+		autohang=false;
 	if(sys_status&SS_ABORT || !online) {	/* if ctrl-c or hangup */
-		autohang=0;
+		autohang=false;
 		return(-1); 
 	}
 	bputs(text[StartXferNow]);

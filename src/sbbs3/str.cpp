@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -778,7 +778,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 /****************************************************************************/
 void sbbs_t::subinfo(uint subnum)
 {
-	char str[256];
+	char str[MAX_PATH+1];
 
 	bputs(text[SubInfoHdr]);
 	bprintf(text[SubInfoLongName],cfg.sub[subnum]->lname);
@@ -791,7 +791,7 @@ void sbbs_t::subinfo(uint subnum)
 		bprintf(text[SubInfoFidoNet]
 			,cfg.sub[subnum]->origline
 			,smb_faddrtoa(&cfg.sub[subnum]->faddr,str));
-	sprintf(str,"%s%s.msg",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	SAFEPRINTF2(str,"%s%s.msg",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	if(fexist(str) && yesno(text[SubInfoViewFileQ]))
 		printfile(str,0);
 }
@@ -801,7 +801,7 @@ void sbbs_t::subinfo(uint subnum)
 /****************************************************************************/
 void sbbs_t::dirinfo(uint dirnum)
 {
-	char str[256];
+	char str[MAX_PATH+1];
 
 	bputs(text[DirInfoHdr]);
 	bprintf(text[DirInfoLongName],cfg.dir[dirnum]->lname);
@@ -809,7 +809,7 @@ void sbbs_t::dirinfo(uint dirnum)
 	if(cfg.dir[dirnum]->exts[0])
 		bprintf(text[DirInfoAllowedExts],cfg.dir[dirnum]->exts);
 	bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
-	sprintf(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	SAFEPRINTF2(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if(fexist(str) && yesno(text[DirInfoViewFileQ]))
 		printfile(str,0);
 }
@@ -855,22 +855,25 @@ void sbbs_t::sys_info()
 		bprintf(text[SiSysFaddr],smb_faddrtoa(&cfg.faddr[i],tmp));
 	if(cfg.sys_psname[0])				/* PostLink/PCRelay */
 		bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
-	bprintf(text[SiSysLocation],cfg.sys_location);
-	bprintf(text[SiSysop],cfg.sys_op);
+	if(cfg.sys_location[0])
+		bprintf(text[SiSysLocation],cfg.sys_location);
+	if(cfg.sys_op[0])
+		bprintf(text[SiSysop],cfg.sys_op);
 	bprintf(text[SiSysNodes],cfg.sys_nodes);
 //	bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
-	bprintf(text[SiNodePhone],cfg.node_phone);
+	if(cfg.node_phone[0])
+		bprintf(text[SiNodePhone],cfg.node_phone);
 	bprintf(text[SiTotalLogons],ultoac(stats.logons,tmp));
 	bprintf(text[SiLogonsToday],ultoac(stats.ltoday,tmp));
 	bprintf(text[SiTotalTime],ultoac(stats.timeon,tmp));
 	bprintf(text[SiTimeToday],ultoac(stats.ttoday,tmp));
 	ver();
-	if(yesno(text[ViewSysInfoFileQ])) {
+	if(text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {
 		CLS;
 		sprintf(tmp,"%ssystem.msg", cfg.text_dir);
 		printfile(tmp,0); 
 	}
-	if(yesno(text[ViewLogonMsgQ])) {
+	if(text[ViewLogonMsgQ][0] && yesno(text[ViewLogonMsgQ])) {
 		CLS;
 		menu("logon"); 
 	}

@@ -110,7 +110,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			xtrn_sec();
 			return(0);
 		case CS_LOGOFF:
-			if(!noyes(text[LogOffQ])) {
+			if(text[LogOffQ][0]==0 || !noyes(text[LogOffQ])) {
 				if(cfg.logoff_mod[0])
 					exec_bin(cfg.logoff_mod,csi);
 				user_event(EVENT_LOGOFF);
@@ -276,7 +276,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(fexist(str)) {
 				bputs(text[ErrorLogHdr]);
 				printfile(str,0);
-				if(!noyes(text[DeleteErrorLogQ]))
+				if(text[DeleteErrorLogQ][0] && !noyes(text[DeleteErrorLogQ]))
 					remove(str); 
 			}
 			else
@@ -287,7 +287,7 @@ int sbbs_t::exec_function(csi_t *csi)
 					break; 
 			}
 			if(i<=cfg.sys_nodes || criterrs) {
-				if(!noyes(text[ClearErrCounter])) {
+				if(text[ClearErrCounter][0]==0 || !noyes(text[ClearErrCounter])) {
 					for(i=1;i<=cfg.sys_nodes;i++) {
 						if(getnodedat(i,&node,true)==0) {
 							node.errors=0;
@@ -322,7 +322,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(fexist(str)) {
 				printfile(str,0);
 				CRLF;
-				if(!noyes(text[DeleteGuruLogQ]))
+				if(text[DeleteGuruLogQ][0] && !noyes(text[DeleteGuruLogQ]))
 					remove(str); 
 			}
 			return(0);

@@ -658,8 +658,8 @@ void sbbs_t::chatsection()
 				no_rip_menu=1;
 				if(sysop_page())
 					break;
-				if(cfg.total_gurus && chk_ar(cfg.guru[0]->ar,&useron,&client)) {
-					sprintf(str,text[ChatWithGuruInsteadQ],cfg.guru[0]->name);
+				if(cfg.total_gurus && chk_ar(cfg.guru[0]->ar,&useron,&client) && text[ChatWithGuruInsteadQ][0]) {
+					SAFEPRINTF(str,text[ChatWithGuruInsteadQ],cfg.guru[0]->name);
 					if(!yesno(str))
 						break; 
 				}

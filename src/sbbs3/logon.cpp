@@ -79,12 +79,12 @@ bool sbbs_t::logon()
 		useron.rows=0;
 		useron.misc&=~(ANSI|RIP|WIP|NO_EXASCII|COLOR|HTML);
 		useron.misc|=autoterm;
-		if(!(useron.misc&ANSI) && yesno(text[AnsiTerminalQ]))
+		if(!(useron.misc&ANSI) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
 			useron.misc|=ANSI;
 		if(useron.misc&(RIP|WIP|HTML)
-			|| (useron.misc&ANSI && yesno(text[ColorTerminalQ])))
+			|| (useron.misc&ANSI && text[ColorTerminalQ][0] && yesno(text[ColorTerminalQ])))
 			useron.misc|=COLOR;
-		if(!yesno(text[ExAsciiTerminalQ]))
+		if(text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
 			useron.misc|=NO_EXASCII;
 		for(i=0;i<cfg.total_xedits;i++)
 			if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit)
@@ -344,7 +344,10 @@ bool sbbs_t::logon()
 						break; 
 				}
 			if(cfg.uq&UQ_PHONE && !useron.phone[0]) {
-				i=yesno(text[CallingFromNorthAmericaQ]);
+				if(text[CallingFromNorthAmericaQ][0])
+					i=yesno(text[CallingFromNorthAmericaQ]);
+				else
+					i=0;
 				while(online) {
 					bputs(text[EnterYourPhoneNumber]);
 					if(i) {
@@ -514,13 +517,13 @@ bool sbbs_t::logon()
 	sys_status&=~SS_PAUSEON;	/* Turn off the pause override flag */
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
-	if(mailw) {
+	if(text[ReadYourMailNowQ][0] && mailw) {
 		if(yesno(text[ReadYourMailNowQ]))
 			readmail(useron.number,MAIL_YOUR); 
 	}
-	if(usrgrps && useron.misc&ASK_NSCAN && yesno(text[NScanAllGrpsQ]))
+	if(usrgrps && useron.misc&ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);
-	if(usrgrps && useron.misc&ASK_SSCAN && yesno(text[SScanAllGrpsQ]))
+	if(usrgrps && useron.misc&ASK_SSCAN && text[SScanAllGrpsQ][0] && yesno(text[SScanAllGrpsQ]))
 		scanallsubs(SCAN_TOYOU);
 	return(true);
 }
