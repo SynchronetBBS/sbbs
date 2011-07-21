@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -167,27 +167,25 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 
 	fprintf(qwk_fp,"%*s",QWK_BLOCK_LEN,"");		/* Init header to space */
 
-	if(msg->from_net.addr && (uint)subnum==INVALID_SUB) {
-		if(mode&QM_TO_QNET)
-			sprintf(from,"%.128s",msg->from);
-		else if(msg->from_net.type==NET_FIDO)
+	/* QWKE compatible kludges */
+	SAFECOPY(from,msg->from);
+	if(msg->from_net.addr && (uint)subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
+		if(msg->from_net.type==NET_FIDO)
 			sprintf(from,"%.128s@%.128s"
 				,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
 		else if(msg->from_net.type==NET_INTERNET || strchr((char*)msg->from_net.addr,'@')!=NULL)
 			sprintf(from,"%.128s",(char*)msg->from_net.addr);
 		else
 			sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
-		if(strlen(from)>25) {
-			size+=fprintf(qwk_fp,"From: %.128s%c%c",from,QWK_NEWLINE,QWK_NEWLINE);
-			sprintf(from,"%.128s",msg->from); 
-		} 
 	}
-	else {
-		sprintf(from,"%.128s",msg->from);
-		if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)	   /* from user */
-			SAFECOPY(from,text[Anonymous]); 
-	}
+	if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
+		SAFECOPY(from,text[Anonymous]); 
+	else if((subnum==INVALID_SUB || (useron.qwk&QWK_EXT)) && strlen(from) > QWK_HFIELD_LEN) {
+		size+=fprintf(qwk_fp,"From: %.128s%c", from, QWK_NEWLINE);
+		SAFECOPY(from,msg->from); 
+	} 
 
+	SAFECOPY(to,msg->to);
 	if(msg->to_net.addr && (uint)subnum==INVALID_SUB) {
 		if(msg->to_net.type==NET_FIDO)
 			sprintf(to,"%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
@@ -209,16 +207,16 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		}
 		else
 			sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
-		if(strlen(to)>25) {
-			size+=fprintf(qwk_fp,"To: %.128s%c%c",to,QWK_NEWLINE,QWK_NEWLINE);
-			if(msg->to_net.type==NET_QWK)
-				SAFECOPY(to,"NETMAIL");
-			else
-				sprintf(to,"%.128s",msg->to); 
-		} 
 	}
-	else
-		sprintf(to,"%.128s",msg->to);
+	if((subnum==INVALID_SUB || (useron.qwk&QWK_EXT)) && strlen(to) > QWK_HFIELD_LEN) {
+		size+=fprintf(qwk_fp,"To: %.128s%c", to, QWK_NEWLINE);
+		if(msg->to_net.type==NET_QWK)
+			SAFECOPY(to,"NETMAIL");
+		else
+			SAFECOPY(to,msg->to); 
+	}
+	if((useron.qwk&QWK_EXT) && strlen(msg->subj) > QWK_HFIELD_LEN)
+		size+=fprintf(qwk_fp,"Subject: %.128s%c", msg->subj, QWK_NEWLINE);
 
 	if(msg->from_net.type==NET_QWK && mode&QM_VIA && !msg->forwarded)
 		size+=fprintf(qwk_fp,"@VIA: %s%c"

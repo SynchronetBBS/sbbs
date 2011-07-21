@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -203,6 +203,66 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					fputc(ch,stream);
 			fclose(stream); 
 		}
+	}
+
+	if(useron.qwk&QWK_EXT) {
+		/****************************/
+		/* Create TOREADER.EXT file */
+		/****************************/
+		SAFEPRINTF(str,"%sTOREADER.EXT",cfg.temp_dir);
+		if((stream=fopen(str,"wb"))==NULL) {
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
+
+		fprintf(stream,"ALIAS %s\r\n", useron.alias);
+
+		/* Double-checked with multimail (qwk.cc): */
+		for(i=0;i<usrgrps;i++) 
+			for(j=0;j<usrsubs[i];j++) {
+				fprintf(stream,"AREA %u "
+					,cfg.sub[usrsub[i][j]]->qwkconf ? cfg.sub[usrsub[i][j]]->qwkconf : ((i+1)*1000)+j+1);
+				switch(subscan[usrsub[i][j]].cfg&(SUB_CFG_NSCAN|SUB_CFG_YSCAN)) {
+					case SUB_CFG_NSCAN|SUB_CFG_YSCAN:
+						fputc('p', stream);	// p   for personal messages
+						break;
+					case SUB_CFG_NSCAN:
+						fputc('a', stream); // a   for all messages
+						break;
+				}
+				switch(cfg.sub[usrsub[i][j]]->misc&(SUB_PRIV|SUB_PONLY)) {
+					case SUB_PRIV|SUB_PONLY:
+						fputc('P', stream);	// P   if the area is private mail only
+						break;
+					case SUB_PRIV:
+						fputc('X', stream); // X   if either private or public mail is allowed
+						break;
+					default:
+						fputc('O', stream);	// O   if the area is public mail only
+						break;
+				}
+				if(useron.qwk&QWK_BYSELF)
+					fputc('w', stream);		// w   if this area should include mail written by themselves
+				if(cfg.sub[usrsub[i][j]]->misc&SUB_FORCED)
+					fputc('F', stream);		// F   if this area is forced to be read
+				if(!chk_ar(cfg.sub[usrsub[i][j]]->post_ar,&useron,&client))
+					fputc('R', stream);		// R   if the area is read-only (no posting at all allowed)
+				if(cfg.sub[usrsub[i][j]]->misc&SUB_QNET)
+					fputc('Q', stream);		// I   if the area is an internet area
+				if(cfg.sub[usrsub[i][j]]->misc&SUB_INET)
+					fputc('I', stream);		// I   if the area is an internet area
+				if(cfg.sub[usrsub[i][j]]->misc&SUB_FIDO)
+					fputc('E', stream);		// E   if the area is an echomail area
+				if((cfg.sub[usrsub[i][j]]->misc&(SUB_FIDO|SUB_INET|SUB_QNET))==0)
+					fputc('L', stream);		// L   if the area is a local message area
+				if((cfg.sub[usrsub[i][j]]->misc&SUB_NAME)==0)
+					fputc('H', stream);		// H   if the area is an handles only message area
+				if(cfg.sub[usrsub[i][j]]->misc&SUB_ANON)
+					fputc('A', stream);		// A   if the area allows messages 'from' any name (pick-an-alias)
+				
+				fprintf(stream,"\r\n");
+			}
+		fclose(stream);
 	}
 
 	/****************************************************/

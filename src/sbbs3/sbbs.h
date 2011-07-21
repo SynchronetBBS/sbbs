@@ -334,7 +334,7 @@ public:
 	char 	temp_uler[31];  /* User who uploaded the files to temp dir */
 	char 	temp_file[41];	/* Origin of extracted temp files */
 	long 	temp_cdt;		/* Credit value of file that was extracted */
-	char 	autohang;		/* Used for auto-hangup after transfer */
+	bool 	autohang;		/* Used for auto-hangup after transfer */
 	size_t 	logcol; 		/* Current column of log file */
 	uint 	criterrs; 		/* Critical error counter */
 
@@ -741,6 +741,7 @@ public:
 
 	/* un_rep.cpp */
 	bool	unpack_rep(char* repfile=NULL);
+	uint	resolve_qwkconf(uint n);
 
 	/* msgtoqwk.cpp */
 	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum, int conf, FILE* hdrs_dat);
