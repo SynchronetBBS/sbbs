@@ -201,14 +201,10 @@ function init_users() {
 function main() {
 	log("*** Entering Main Loop. ***");
 	while (!js.terminated) {
+		// Build array of sockets for select()
+		var socks=[];
 		for (my_srv in Bot_Servers) {
-			var cmdline;
-			var srv = Bot_Servers[my_srv];
-
-			if(srv.sock && (!srv.sock.is_connected)) {
-				srv.sock.close();
-				src.sock=0;
-			}
+			var srv=Bot_Servers[my_srv];
 			if (!srv.sock &&(srv.lastcon <time())) { //we're not connected.
 				var consock = IRC_client_connect(srv.host, srv.nick,
 					srv.nick, real_name, srv.port);
@@ -224,117 +220,140 @@ function main() {
 						+ "retry in 60 seconds.");
 					srv.lastcon = time() + 60;
 				}
-			} else if (srv.sock && srv.sock.data_waiting &&
-					(cmdline=srv.sock.recvline(4096,0))) {
-				var onick;
-				var ouh;
-				var outline;
-				var sorigin = cmdline.split(" ")[0].slice(1);
-				if ((cmdline[0] == ":") && sorigin.match(/[@]/)) {
-					onick = sorigin.split("!")[0];
-					ouh = sorigin.split("!")[1];
-					outline = "["+onick+"("+ouh+")] " + cmdline;
-				} else {
-					onick = "";
-					ouh = "";
-					outline = cmdline;
-				}
-				log("<-- " + srv.host + ": " + outline);
-				if(!srv.ignore[onick.toUpperCase()]) {
-					srv.server_command(srv,cmdline,onick,ouh);
-				}
 			}
-
-			// Run through some commands.
-			if (srv.sock && srv.is_registered) {
-				if(!srv.is_identified) {
-					/* If we have a password for services, send it now */
-					if(srv.svspass) srv.writeout("IDENTIFY " + srv.svspass);
-					// TODO: verify that the raw IDENTIFY command works, and if not, send /MSG NickServ IDENTIFY <Pass>
-					srv.is_identified = true;
-				}
-				for (c in srv.channel) {
-					if (!srv.channel[c].is_joined &&
-						(srv.channel[c].lastjoin < time())) {
-						if(srv.channel[c].key) srv.writeout("JOIN " + srv.channel[c].name + " " + srv.channel[c].key);
-						else srv.writeout("JOIN " + srv.channel[c].name);
-						srv.channel[c].lastjoin = time() + 60;
+			else if(srv.sock) {
+				// Run through some commands.
+				if (srv.is_registered) {
+					if(!srv.is_identified) {
+						/* If we have a password for services, send it now */
+						if(srv.svspass) srv.writeout("IDENTIFY " + srv.svspass);
+						// TODO: verify that the raw IDENTIFY command works, and if not, send /MSG NickServ IDENTIFY <Pass>
+						srv.is_identified = true;
 					}
-					// Cycle any available module "main" functions
-					for(var m in Modules) {
-						var module=Modules[m];
-						if(module && module.enabled && module.main) {
-							try {
-								module.main(srv,srv.channel[c].name);
-							} catch(e) {
-								srv.o(srv.channel[c].name,m.toLowerCase() + " module error: " + e,"NOTICE");
-								module.enabled=false;
+					for (c in srv.channel) {
+						if (!srv.channel[c].is_joined &&
+							(srv.channel[c].lastjoin < time())) {
+							if(srv.channel[c].key) srv.writeout("JOIN " + srv.channel[c].name + " " + srv.channel[c].key);
+							else srv.writeout("JOIN " + srv.channel[c].name);
+							srv.channel[c].lastjoin = time() + 60;
+						}
+						// Cycle any available module "main" functions
+						for(var m in Modules) {
+							var module=Modules[m];
+							if(module && module.enabled && module.main) {
+								try {
+									module.main(srv,srv.channel[c].name);
+								} catch(e) {
+									srv.o(srv.channel[c].name,m.toLowerCase() + " module error: " + e,"NOTICE");
+									module.enabled=false;
+								}
 							}
 						}
 					}
 				}
-			}
 			
-			// Cycle server output buffer (srv.buffer)
-			while(srv.sock && srv.burst<srv.max_burst) {
-				srv.burst++;
-				if(!srv.buffers.length>0) break;
-				var next_output=srv.buffers.shift();
-				srv.sock.write(next_output.buffer.shift());
-				if(next_output.buffer.length) srv.buffers.push(next_output);
-			}
-			var curtime=system.timer;
-			if ((curtime-srv.lastout)>srv.delay) {
-				srv.lastout=system.timer;
-				srv.burst=0;
-			}
-		}
-
-		/* Take care of DCC chat sessions */
-		for (c in DCC_Chats) {
-			if (!DCC_Chats[c].sock.is_connected) {
-				log("Closing session.");
-				DCC_Chats[c].sock.close();
-				delete DCC_Chats[c];
-				continue;
-			}
-			if (DCC_Chats[c].waiting_for_password) {
-				var dcc_pwd;
-				if (dcc_pwd=DCC_Chats[c].sock.readln()) {
-					var usr = new User(system.matchuser(DCC_Chats[c].id));
-					if (!usr ||
-						(dcc_pwd.toUpperCase() != usr.security.password)) {
-						DCC_Chats[c].o(null,"Access Denied.");
-						DCC_Chats[c].sock.close();
-						delete DCC_Chats[c];
+				// Cycle server output buffer (srv.buffer)
+				while(srv.burst<srv.max_burst) {
+					srv.burst++;
+					if(!srv.buffers.length>0) break;
+					var next_output=srv.buffers.shift();
+					if(!srv.sock.write(next_output.buffer.shift())) {
+						srv.sock.close();
+						src.sock=0;
 						continue;
 					}
-					if (dcc_pwd.toUpperCase() == usr.security.password) {
-						DCC_Chats[c].waiting_for_password = false;
-						DCC_Chats[c].o(null,"Welcome aboard.");
+					if(next_output.buffer.length) srv.buffers.push(next_output);
+				}
+				var curtime=system.timer;
+				if ((curtime-srv.lastout)>srv.delay) {
+					srv.lastout=system.timer;
+					srv.burst=0;
+				}
+
+				// Push into the select array
+				srv.sock.srv=my_srv;
+				socks.push(srv.sock);
+			}
+		}
+		for (c in DCC_Chats) {
+			DCC_Chats[c].sock.chat=c;
+			socks.push(DCC_Chats[c].sock);
+		}
+		var ready=socket_select(socks, 0.1);
+
+		for(var s in ready) {
+			if(socks[s].srv != undefined) {
+				var srv=Bot_Servers[socks[s].srv];
+				if(srv.sock && (!srv.sock.is_connected)) {
+					srv.sock.close();
+					src.sock=0;
+				}
+				if (srv.sock && srv.sock.poll(0.1) &&
+						(cmdline=srv.sock.recvline(4096,0))) {
+					var onick;
+					var ouh;
+					var outline;
+					var sorigin = cmdline.split(" ")[0].slice(1);
+					if ((cmdline[0] == ":") && sorigin.match(/[@]/)) {
+						onick = sorigin.split("!")[0];
+						ouh = sorigin.split("!")[1];
+						outline = "["+onick+"("+ouh+")] " + cmdline;
+					} else {
+						onick = "";
+						ouh = "";
+						outline = cmdline;
+					}
+					log("<-- " + srv.host + ": " + outline);
+					if(!srv.ignore[onick.toUpperCase()]) {
+						srv.server_command(srv,cmdline,onick,ouh);
 					}
 				}
-				continue;
+
 			}
-			var line = DCC_Chats[c].sock.readln();
-			if (!line || line == "")
-				continue;
-			var usr = new User(system.matchuser(DCC_Chats[c].id));
-			var cmd = line.split(" ");
-			cmd[0] = cmd[0].toUpperCase();
-			try {
-				DCC_Chats[c].bot_command(cmd);
-			} catch (err) {
-				DCC_Chats[c].o(null,err);
-				DCC_Chats[c].o(null,"file: " + err.fileName);
-				DCC_Chats[c].o(null,"line: " + err.lineNumber);
+			if(socks[s].chat != undefined) {
+				var c=socks[s].chat;
+				if (!DCC_Chats[c].sock.is_connected) {
+					log("Closing session.");
+					DCC_Chats[c].sock.close();
+					delete DCC_Chats[c];
+					continue;
+				}
+				if (DCC_Chats[c].waiting_for_password) {
+					var dcc_pwd;
+					if (dcc_pwd=DCC_Chats[c].sock.readln()) {
+						var usr = new User(system.matchuser(DCC_Chats[c].id));
+						if (!usr ||
+							(dcc_pwd.toUpperCase() != usr.security.password)) {
+							DCC_Chats[c].o(null,"Access Denied.");
+							DCC_Chats[c].sock.close();
+							delete DCC_Chats[c];
+							continue;
+						}
+						if (dcc_pwd.toUpperCase() == usr.security.password) {
+							DCC_Chats[c].waiting_for_password = false;
+							DCC_Chats[c].o(null,"Welcome aboard.");
+						}
+					}
+					continue;
+				}
+				var line = DCC_Chats[c].sock.readln();
+				if (!line || line == "")
+					continue;
+				var usr = new User(system.matchuser(DCC_Chats[c].id));
+				var cmd = line.split(" ");
+				cmd[0] = cmd[0].toUpperCase();
+				try {
+					DCC_Chats[c].bot_command(cmd);
+				} catch (err) {
+					DCC_Chats[c].o(null,err);
+					DCC_Chats[c].o(null,"file: " + err.fileName);
+					DCC_Chats[c].o(null,"line: " + err.lineNumber);
+				}
 			}
 		}
 
 		if ( (time() - config_last_write) > config_write_delay )
 			save_everything();
-
-		mswait(10); /* Don't peg the CPU */
 	}
 }
 
