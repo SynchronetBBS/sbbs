@@ -213,7 +213,7 @@ else {
         if(http_request.query[required[req]]==undefined || http_request.query[required[req]]=='') {
             err=1;
             template.errs[required[req]]="REQUIRED";
-            template.err_message="Please fill in the required fields\r\n";
+            template.err_message="Please fill in the required fields.\r\n";
         }
     }
     for(len in maxlengths) {
@@ -226,7 +226,7 @@ else {
     if(gender != 'M' && gender != 'F') {
 		if(template.sex_required==required_str || template.sex_required != '') {
 	        err=1;
-    	    template.err_message+="Please specify gender (M or F)\r\n";
+    	    template.err_message+="Please specify gender (M or F).\r\n";
         	template.errs["gender"]="Male or Female";
 		}
     }
@@ -267,12 +267,12 @@ else {
     }
 	if(!system.check_name(http_request.query.alias)) {
 		err=1;
-        template.err_message+="Please choose a different alias\r\n";
+        template.err_message+="Please choose a different alias.\r\n";
         template.errs["alias"]="Bad format";
     }
-    else if((system.newuser_questions & UQ_DUPHAND) && system.matchuserdata(50,http_request.query["handle"])) {
+    else if((system.newuser_questions & UQ_DUPHAND) && system.matchuserdata(U_HANDLE,http_request.query["handle"])) {
         err=1;
-        template.err_message+="Please choose a different chat handle\r\n";
+        template.err_message+="Please choose a different chat handle.\r\n";
         template.errs["handle"]="Duplicate handle";
     }
     else if(system.matchuser(http_request.query["alias"])) {
@@ -280,11 +280,26 @@ else {
         template.err_message+="Please choose a different alias.\r\n";
         template.errs["alias"]="Duplicate alias";
     }
-    else if((system.newuser_questions & UQ_DUPREAL) && system.matchuser(http_request.query["name"])) {
+    else if((system.newuser_questions & UQ_ALIASES) && (system.newuser_questions & UQ_REALNAME)) {
+		if(!system.check_name(http_request.query["name"])) {
+			err=1;
+			template.err_message+="Please choose a different name.\r\n";
+			template.errs["name"]="Bad format";
+		}
+		if(http_request.query["name"].indexOf(' ') < 1) {
+			err=1;
+			template.err_message+="Please enter your first and last name.\r\n";
+			template.errs["name"]="Invalid name";
+		}
+	}
+    else if((system.newuser_questions & UQ_DUPREAL) && system.matchuserdata(U_NAME,http_request.query["name"])) {
         err=1;
         template.err_message+="A user "+(system.newuser_questions & UQ_COMPANY?"for that company":"with that name")+" already exists.\r\n";
         template.errs["name"]="Duplicate "+(system.newuser_questions & UQ_COMPANY?"company":"name");
     }
+
+	/* TODO: reject prepended white-space in more fields (e.g. location, handle, email address) and trim trailing white-space */
+
     if(err)
         showform();
 
@@ -361,9 +376,9 @@ else {
 	if(do_rightnav)
 		write_template("rightnav.inc");
     if(http_request.query.netmail != undefined && http_request.query.netmail != '')
-        template.response=format("<p>Your account has been created and the password has been mailed to: %s.</p>" ,http_request.query.netmail);
+        template.response=format("Your account has been created and the password has been mailed to: %s." ,http_request.query.netmail);
     else
-        template.response=format("<p>Your account has been created and the password is: %s </p>" ,newpw);
+        template.response=format("Your account has been created and the password is: %s " ,newpw);
     write_template("newuser_created.inc");
     if(do_footer)
 	write_template("footer.inc");
