@@ -818,14 +818,14 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 	if(l>=0)							  /* ptr specified */
 		subscan[subnum].ptr=l;
 	else if(l) {						  /* relative ptr specified */
-		getlastmsg(subnum,&last,0);
+		getlastmsg(subnum,&last,/* time_t* */NULL);
 		if(-l>(long)last)
 			subscan[subnum].ptr=0;
 		else
 			subscan[subnum].ptr=last+l; 
 	}
 	else if(reset)
-		getlastmsg(subnum,&(subscan[subnum].ptr),0);
+		getlastmsg(subnum,&(subscan[subnum].ptr),/* time_t* */NULL);
 }
 
 
