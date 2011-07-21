@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -1176,7 +1176,7 @@ int	SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hf
 /****************************************************************************/
 int SMBCALL smb_hfield_add_str(smbmsg_t* msg, ushort type, const char* str, BOOL insert)
 {
-	return smb_hfield_add(msg, type, strlen(str), (void*)str, insert);
+	return smb_hfield_add(msg, type, str==NULL ? 0:strlen(str), (void*)str, insert);
 }
 
 /****************************************************************************/
@@ -1241,7 +1241,45 @@ int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* d
 /****************************************************************************/
 int SMBCALL smb_hfield_append_str(smbmsg_t* msg, ushort type, const char* str)
 {
-	return smb_hfield_append(msg, type, strlen(str), (void*)str);
+	return smb_hfield_append(msg, type, str==NULL ? 0:strlen(str), (void*)str);
+}
+
+/****************************************************************************/
+/* Replaces an header field value (in memory only)							*/
+/****************************************************************************/
+int SMBCALL smb_hfield_replace(smbmsg_t* msg, ushort type, size_t length, const void* data)
+{
+	int		i;
+	void*	p;
+
+	if(msg->total_hfields<1)
+		return(SMB_ERR_NOT_FOUND);
+
+	/* search for the last header field of this type */
+	for(i=msg->total_hfields-1;i>=0;i--)
+		if(msg->hfield[i].type == type)
+			break;
+	if(i<0)
+		return(SMB_ERR_NOT_FOUND);
+
+	if((p=(BYTE*)realloc(msg->hfield_dat[i],length+1))==NULL) 
+		return(SMB_ERR_MEM);	/* Allocate 1 extra for ASCIIZ terminator */
+
+	msg->hfield_dat[i]=p;
+	memset(p,0,length+1);
+	memcpy(p,data,length);
+	msg->hfield[i].length=length;
+	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
+
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
+/* Replace an existing ASCIIZ header field value (in memory only)			*/
+/****************************************************************************/
+int SMBCALL smb_hfield_replace_str(smbmsg_t* msg, ushort type, const char* str)
+{
+	return smb_hfield_replace(msg, type, str==NULL ? 0:strlen(str), (void*)str);
 }
 
 /****************************************************************************/
