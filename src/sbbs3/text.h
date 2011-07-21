@@ -805,6 +805,7 @@ enum {
 	,CantReadSub
 	,CantPostMsg
 	,OperatorPrompt
+	,AddSubToNewScanQ
 
 	,TOTAL_TEXT
 };
