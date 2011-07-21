@@ -1247,7 +1247,7 @@ int SMBCALL smb_hfield_append_str(smbmsg_t* msg, ushort type, const char* str)
 /****************************************************************************/
 /* Replaces an header field value (in memory only)							*/
 /****************************************************************************/
-int SMBCALL smb_hfield_replace(smbmsg_t* msg, ushort type, size_t length, const void* data)
+int SMBCALL smb_hfield_replace(smbmsg_t* msg, ushort type, size_t length, void* data)
 {
 	int		i;
 	void*	p;
