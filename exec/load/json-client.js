@@ -71,16 +71,12 @@ function JSONClient(serverAddr,serverPort) {
 	this.VERSION = "$Revision$".split(' ')[1];
 	
 	this.serverAddr=serverAddr;
-    if(this.serverAddr==undefined) {
-        this.serverAddr="bbs.thebrokenbubble.com"; 
-		log(LOG_DEBUG,"using default server address: " + this.serverAddr);
-	}
+    if(this.serverAddr==undefined) 
+		throw("no host specified");
 
 	this.serverPort=serverPort;
-    if(this.serverPort==undefined) {
-        this.serverPort=10088;
-		log(LOG_DEBUG,"using default server port: " + this.serverPort);
-	}
+    if(this.serverPort==undefined)
+		throw("no port specified");
 	
 	this.settings={
 		CONNECTION_TIMEOUT:		5,
@@ -247,7 +243,7 @@ function JSONClient(serverAddr,serverPort) {
 		var packet=this.receive();
 		if(!packet)
 			return false;
-		else if(this.callback)
+		else if(typeof this.callback == "function")
 			this.callback(packet.data);
 		else 
 			this.updates.push(packet.data);
