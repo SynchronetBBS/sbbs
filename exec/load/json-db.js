@@ -41,6 +41,9 @@ function JSONdb (fileName) {
 		this.file=new File(fileName);
     else 
 		this.file=undefined;
+	
+	/* load modopts */
+	this.options = load("modopts.js","jsondb");
 		
     /* master database object */
     this.data={};
@@ -63,8 +66,6 @@ function JSONdb (fileName) {
 		/* file read buffer */
 		FILE_BUFFER:65535,
 		
-		/* autosave interval */
-		AUTO_SAVE: 300 /*seconds*/ *1000,
 		LAST_SAVE:-1,
 		UPDATES:false,
 		
@@ -411,13 +412,16 @@ function JSONdb (fileName) {
 		if(!timestamp) 
 			timestamp = Date.now();
 		/* if we are due for a data update, save everything to file */
-        if(timestamp - this.settings.LAST_SAVE >= this.settings.AUTO_SAVE) {
+        if(timestamp - this.settings.LAST_SAVE >= (this.options.save_interval * 1000)) {
 			//TODO: create n backups before overwriting data file
 			this.file.open("w");
 			// This function gets called every 30 seconds or so
 			// And flushes all objects to disk in case of crash
 			// Also, this is called on clean exit.
-			this.file.write(JSON.stringify(this.data,undefined,4));
+			if(this.options.readable)
+				this.file.write(JSON.stringify(this.data,undefined,'\t'));
+			else 
+				this.file.write(JSON.stringify(this.data));
 			this.file.close();
 			this.settings.LAST_SAVE=timestamp;
 			this.settings.UPDATES=false;
@@ -445,7 +449,7 @@ function JSONdb (fileName) {
 		
         /* initialize autosave timer */
         this.settings.LAST_SAVE = Date.now();
-		log(LOG_INFO,"JSON database initialized (v" + this.VERSION + ")");
+		log(LOG_INFO,"database initialized (v" + this.VERSION + ")");
 	}
     
 	/* release any locks or subscriptions held by a disconnected client */
@@ -642,11 +646,11 @@ function JSONdb (fileName) {
 	
 	/* if the requested child object does not exist, create it */
 	function verify(data,shadow,child_name) {
-		if(!data[child_name]) {
+		if(data[child_name] === undefined) {
 			log(LOG_DEBUG,"creating new data: " + child_name);
 			data[child_name]={};
 		}
-		if(!shadow[child_name]) {
+		if(shadow[child_name] === undefined) {
 			log(LOG_DEBUG,"creating new shadow: " + child_name);
 			shadow[child_name]=new Shadow();
 		}
