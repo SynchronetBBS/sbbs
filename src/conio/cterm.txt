@@ -290,6 +290,10 @@ CSI [ p1 [ ; p2 ] ] sp D
 		34 - Commodore 128 (UPPER)
 		35 - Commodore 128 (Lower)
 		36 - Atari
+		37 - P0T NOoDLE (Amiga) 
+		38 - mO'sOul (Amiga)    
+		39 - MicroKnight (Amiga)
+		40 - Topaz (Amiga)      
 	Not all fonts are supported in all modes.  If a font is not supported in
 	the current mode, no action is taken.
 
