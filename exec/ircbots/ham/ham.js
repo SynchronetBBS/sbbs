@@ -5,6 +5,45 @@ if(!js.global || js.global.HTTPRequest==undefined)
 //function Bot_Command(x,y,z){}
 //js.global.config_filename='hambot.ini';
 
+var last_update=0;
+var update_interval=2;
+var last_wflength=-1;
+function main(srv,target)
+{	
+	if((time() - last_update) < update_interval) return;
+
+	var config = new File(system.ctrl_dir + js.global.config_filename);
+	var watch=new File();
+	if(!config.open('r')) {
+		log("Unable to open config!");
+		return;
+	}
+	var wfname=config.iniGetValue("module_Ham", 'watchfile');
+	config.close();
+	if(wfname.length > 0) {
+		var wf=new File(wfname);
+		var len=wf.length;
+		// Ignore contents at start up.
+		if(last_wflength==-1)
+			last_wflength=len;
+		// If the file is truncated, start over
+		if(last_wflength > len)
+			last_wflength=0;
+		if(len > last_wflength) {
+			if(wf.open("r")) {
+				var l;
+				wf.position=last_wflength;
+				while(l=wf.readln()) {
+					srv.o(target, l);
+				}
+				last_wflength=wf.position;
+				wf.close();
+			}
+		}
+	}
+	last_update=time();
+}
+
 Bot_Commands["CALLSIGN"] = new Bot_Command(0,false,false);
 Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var callsign;
@@ -47,10 +86,10 @@ Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		req.SendRequest();
 		req.ReadResponse();
 
-		m=req.body.match(/(license.jsp\?licKey=[^\s]*)/);
+		m=req.body.match(/license.jsp\?licKey=[^\s]*/g);
 
-		if(m) {
-			var response=new HTTPRequest().Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/'+m[1]);
+		if(m && m.length) {
+			var response=new HTTPRequest().Get('http://wireless2.fcc.gov/UlsApp/UlsSearch/'+m[m.length-1]);
 			m=response.match(/In the case of City, state and zip[^-]*?-->([\x00-\xff]*?)<\/td>/);
 			if(m) {
 				var info=callsign+':';
