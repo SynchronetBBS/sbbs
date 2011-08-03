@@ -44,6 +44,24 @@ function main(srv,target)
 	last_update=time();
 }
 
+Bot_Commands["Z"] = new Bot_Command(0, false, false);
+Bot_Commands["Z"].command = function (target, onick, ouh, srv, lbl, cmd) {
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
+		}
+	}
+
+	if(cmd.length == 1) {
+		var d=new Date(time()*1000);
+		srv.o(target,d.toGMTString());
+	}
+
+	return true;
+}
+
 Bot_Commands["CALLSIGN"] = new Bot_Command(0,false,false);
 Bot_Commands["CALLSIGN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	var callsign;
