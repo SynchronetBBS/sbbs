@@ -6,7 +6,7 @@
 
 load("sbbsdefs.js");
 
-var email_passwords = true;
+options=load("modopts.js","login");
 
 // The following 2 lines are only required for "Re-login" capability
 bbs.logout();
@@ -49,7 +49,7 @@ for(var c=0; c<10; c++) {
 		bbs.logon();
 		exit();
 	}
-	if(email_passwords) {
+	if(options && options.email_passwords) {
 		var usernum = system.matchuser(str);
 		if(usernum) {
 			var u = new User(usernum);

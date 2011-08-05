@@ -10,8 +10,8 @@ load("sbbsdefs.js");
 /* text.dat entries */
 load("text.js");
 
-var multicolumn = true;
-var sort = false;
+if((options=load("modopts.js","xtrn_sec")) == null)
+	options = {multicolumn: true, sort: false};	// default values
 
 function sort_by_name(a, b)
 { 
@@ -50,7 +50,7 @@ while(bbs.online) {
 		}
 		else {
 	
-			if(sort)
+			if(options.sort)
 				sec_list.sort(sort_by_name);
 			for(i in sec_list)
 				console.uselect(Number(i),"External Program Section"
@@ -75,23 +75,23 @@ while(bbs.online) {
 			bbs.menu("xtrn" + (xtrn_area.sec_list[xsec].number+1)); 
 		}
 		else {
-			if(sort)
+			if(options.sort)
 				prog_list.sort(sort_by_name);
 			printf(bbs.text(XtrnProgLstHdr),xtrn_area.sec_list[xsec].name);
 			write(bbs.text(XtrnProgLstTitles));
-			if(multicolumn && prog_list.length >= 10) {
+			if(options.multicolumn && prog_list.length >= 10) {
 				write("     ");
 				write(bbs.text(XtrnProgLstTitles)); 
 			}
 			console.crlf();
 			write(bbs.text(XtrnProgLstUnderline));
-			if(multicolumn && prog_list.length >= 10) {
+			if(options.multicolumn && prog_list.length >= 10) {
 				write("     ");
 				write(bbs.text(XtrnProgLstUnderline)); 
 			}
 			console.crlf();
 			var n;
-			if(multicolumn && prog_list.length >= 10)
+			if(options.multicolumn && prog_list.length >= 10)
 				n=Math.floor(prog_list.length/2)+(prog_list.length&1);
 			else
 				n=prog_list.length;
@@ -101,7 +101,7 @@ while(bbs.online) {
 					,prog_list[i].name
 					,prog_list[i].cost);
 
-				if(multicolumn
+				if(options.multicolumn
 					&& prog_list.length>=10) {
 					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
 					if(j<prog_list.length) {
