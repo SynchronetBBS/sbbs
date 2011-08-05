@@ -6,13 +6,16 @@
 
 load("sbbsdefs.js");
 
-options=load("modopts.js","login");
+if((options=load("modopts.js","login")) == null)
+	options={email_passwords: true};
 
 // The following 2 lines are only required for "Re-login" capability
 bbs.logout();
 system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
 var guest = system.matchuser("guest");
+
+//load("loadfont.js", "-P", system.data_dir + "VERT.FNT");
 
 for(var c=0; c<10; c++) {
 
