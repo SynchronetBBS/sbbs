@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -113,6 +113,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	jsuint		lib_index;
 	jsuint		dir_index;
 	uint		l,d;
+	BOOL		is_op;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"file_area",&val) && val!=JSVAL_VOID)
@@ -407,8 +408,16 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "link", &val))
 				return(NULL);
 
+			if(user!=NULL 
+				&& (user->level>=SYSOP_LEVEL 
+					|| (cfg->dir[d]->op_ar[0]!=0 
+						&& chk_ar(cfg,cfg->dir[d]->op_ar,user,client))))
+				is_op=TRUE;
+			else
+				is_op=FALSE;
+
 			if(user==NULL 
-				|| (chk_ar(cfg,cfg->dir[d]->ul_ar,user,client) && !(user->rest&FLAG('U'))))
+				|| ((is_op || user->exempt&FLAG('U') || chk_ar(cfg,cfg->dir[d]->ul_ar,user,client)) && !(user->rest&FLAG('U'))))
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;
@@ -430,10 +439,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "is_exempt", &val))
 				return(NULL);
 
-			if(user!=NULL 
-				&& (user->level>=SYSOP_LEVEL 
-					|| (cfg->dir[d]->op_ar[0]!=0 
-						&& chk_ar(cfg,cfg->dir[d]->op_ar,user,client))))
+			if(is_op)
 				val=JSVAL_TRUE;
 			else
 				val=JSVAL_FALSE;

@@ -289,6 +289,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(usrlibs) {
 				i=usrdir[curlib][curdir[curlib]];
 				if(cfg.upload_dir!=INVALID_DIR
+					&& !dir_op(i) && !(useron.exempt&FLAG('U'))
 					&& !chk_ar(cfg.dir[i]->ul_ar,&useron,&client))
 					i=cfg.upload_dir; 
 			} else

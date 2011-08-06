@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -266,14 +266,16 @@ bool sbbs_t::upload(uint dirnum)
 		bputs(text[CantUploadHere]);
 		return(false);
 	}
-	if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron,&client)) {
-		bputs(dirnum==cfg.user_dir ? text[CantUploadToUser] : 
-			dirnum==cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
-		return(false); 
-	}
-	if(getfiles(&cfg,dirnum)>=cfg.dir[dirnum]->maxfiles) {
-		bputs(dirnum==cfg.user_dir ? text[UserDirFull] : text[DirFull]);
-		return(false);
+	if(!(useron.exempt&FLAG('U')) && !dir_op(dirnum)) {
+		if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron,&client)) {
+			bputs(dirnum==cfg.user_dir ? text[CantUploadToUser] : 
+				dirnum==cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
+			return(false); 
+		}
+		if(cfg.dir[dirnum]->maxfiles && getfiles(&cfg,dirnum)>=cfg.dir[dirnum]->maxfiles) {
+			bputs(dirnum==cfg.user_dir ? text[UserDirFull] : text[DirFull]);
+			return(false);
+		}
 	}
 
 	if(sys_status&SS_EVENT && online==ON_REMOTE && !dir_op(dirnum))
@@ -574,10 +576,6 @@ bool sbbs_t::bulkupload(uint dirnum)
 	SYNC;
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
-		if(getfiles(&cfg,dirnum)>=cfg.dir[dirnum]->maxfiles) {
-			bputs(text[DirFull]);
-			break; 
-		}
 		sprintf(str,"%s%s",path,dirent->d_name);
 		if(isdir(str))
 			continue;
