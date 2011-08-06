@@ -124,7 +124,7 @@ BOOL direxist(char *dir)
 
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 {
-	return(user->level>=SYSOP_LEVEL || user->exempt&FLAG('R')
+	return(user->level>=SYSOP_LEVEL
 		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client)));
 }
 
@@ -4067,7 +4067,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 
-				if(delecmd && !dir_op(&scfg,&user,&client,dir)) {
+				if(delecmd && !dir_op(&scfg,&user,&client,dir) && !(user.exempt&FLAG('R'))) {
 					lprintf(LOG_WARNING,"%04d !%s has insufficient access to delete files in /%s/%s"
 						,sock,user.alias
 						,scfg.lib[scfg.dir[dir]->lib]->sname
@@ -4270,13 +4270,25 @@ static void ctrl_thread(void* arg)
 
 				append=(strnicmp(cmd,"APPE",4)==0);
 			
-				if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)) {
-					lprintf(LOG_WARNING,"%04d !%s has insufficient access to upload to /%s/%s"
-						,sock,user.alias
-						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code_suffix);
-					sockprintf(sock,"553 Insufficient access.");
-					continue;
+				if(!dir_op(&scfg,&user,&client,dir) && !(user.exempt&FLAG('U'))) {
+					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)) {
+						lprintf(LOG_WARNING,"%04d !%s cannot upload to /%s/%s (insufficient access)"
+							,sock,user.alias
+							,scfg.lib[scfg.dir[dir]->lib]->sname
+							,scfg.dir[dir]->code_suffix);
+						sockprintf(sock,"553 Insufficient access.");
+						continue;
+					}
+
+					if(scfg.dir[dir]->maxfiles && getfiles(&scfg,dir)>=scfg.dir[dir]->maxfiles) {
+						lprintf(LOG_WARNING,"%04d !%s cannot upload to /%s/%s (directory full: %u files)"
+							,sock,user.alias
+							,scfg.lib[scfg.dir[dir]->lib]->sname
+							,scfg.dir[dir]->code_suffix
+							,getfiles(&scfg,dir));
+						sockprintf(sock,"553 Directory full.");
+						continue;
+					}
 				}
 				if(*p=='-'
 					|| strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)
