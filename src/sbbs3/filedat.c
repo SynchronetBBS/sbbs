@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -187,7 +187,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 			read(file,&c,1);
 			if(c==ETX) break; 
 		}
-		if(l/F_LEN>=MAX_FILES || l/F_LEN>=cfg->dir[f->dir]->maxfiles) {
+		if(l/F_LEN>=MAX_FILES) {
 			close(file);
 			return(FALSE); 
 		} 
