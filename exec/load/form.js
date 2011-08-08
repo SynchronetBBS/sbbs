@@ -53,12 +53,7 @@ function formEdit(obj)
 				break;
 			case '\r':
 			case '\n':
-				var item = form.items[form.index];
-				var coords = form.coords(form.index);
-				console.gotoxy(coords.x + form.len + 2, coords.y);
-				console.attributes = BG_LIGHTGRAY + BLACK;
-				item.value = console.getstr(item.value.toString(),form.max,K_EDIT|K_AUTODEL);
-				form.drawItem(form.index);
+				form.edit();
 				break;
 			case '\b':
 			case '\x11':
@@ -98,6 +93,17 @@ function Form(obj)
 	);
 	
 	this.box.show_tabs = false;
+	
+	this.edit = function() {
+		var item = this.items[this.index];
+		var coords = this.coords(this.index);
+		console.attributes = BG_LIGHTGRAY + BLACK;
+		console.gotoxy(coords.x + this.len + 2, coords.y);
+		clearLine(this.max);
+		console.gotoxy(coords.x + this.len + 2, coords.y);
+		item.value = console.getstr(item.value.toString(),this.max,K_EDIT|K_AUTODEL);
+		this.drawItem(this.index);
+	}
 	
 	this.draw = function() {
 		this.box.drawView();
