@@ -48,9 +48,9 @@ var tree_settings={
 	// non-current item/empty space background 
 	bg:BG_BLACK,
 	// current item foreground
-	lfg:LIGHTCYAN,
+	lfg:YELLOW,
 	// current item background
-	lbg:BG_BLUE,
+	lbg:BG_BROWN,
 	// disabled item foreground
 	dfg:DARKGRAY,
 	// hotkey foreground
@@ -89,15 +89,15 @@ function Tree(xpos,ypos,w,h) {
 	//	this.parent_index;
 	//	this.parent;
 	//	this.hotkey;
-	
+	this.type="tree";
 	this.status=item_status.enabled;
 	this.text="";
 	this.items=[];
 
 	/* add a menu item */
-	this.addItem=function(text,status,command,args) {
+	this.addItem=function(text,command,args) {
 		var args = Array.prototype.slice.apply(arguments);
-		var item=new Tree_Item(args.shift(),args.shift(),args.shift(),args);
+		var item=new Tree_Item(args.shift(),args.shift(),args);
 		item.parent=this;
 		item.parent_index=this.items.length;
 		this.items.push(item);
@@ -105,11 +105,9 @@ function Tree(xpos,ypos,w,h) {
 	}
 	
 	/* add a sub-tree */
-	this.addTree=function(text,status) {
+	this.addTree=function(text) {
 		var tree=new Tree();
 		tree.text=text;
-		if(status != undefined)
-			tree.status=status;
 		tree.parent=this;
 		tree.parent_index=this.items.length;
 		this.items.push(tree);
@@ -134,7 +132,7 @@ function Tree(xpos,ypos,w,h) {
 		if(this.depth > 0) 
 			this.post_tree(offset);
 		/* if this tree is open, draw its items */
-		if(this.open) 
+		if(this.open && this.items.length > 0) 
 			this.post_items(offset);
 		/* draw list at top level tree only */
 		if(this.depth == 0)
@@ -165,10 +163,11 @@ function Tree(xpos,ypos,w,h) {
 			ypos++;
 			index++;
 		}
+		console.attributes=tree_settings.bg;
 		for(;l < this.height;l++) {
 			if(ypos >= console.screen_rows)
 				break;
-			console.putmsg(format("%*s",this.width,""));
+			console.putmsg(format("%*s",this.width,""),P_SAVEATR);
 			console.popxy();
 			console.down();
 			console.pushxy();
@@ -271,24 +270,22 @@ function Tree(xpos,ypos,w,h) {
 	
 	/* handle a menu command */
 	this.handle_command=function(cmd) {
-		/* if this menu tree is empty */
-		if(this.depth == 0 && !this.items.length)
-			return false;
 		/* initialize return value */
 		var retval=false;
-		if(retval == false) {
-			/* check to see if the current tree item is a subtree */
-			if(this.open && this.items[this.index] && 
-				typeof this.items[this.index].handle_command == "function") 
-				/* if so, pass control to the next subtree */
-				retval=this.items[this.index].handle_command(cmd);
-		}
+		/* if this menu tree is empty */
+		if(this.depth == 0 && !this.items.length)
+			return retval;
+		/* check to see if the current tree item is a subtree */
+		if(this.open && this.items[this.index] && 
+			this.items[this.index].type=="tree") 
+			/* if so, pass control to the next subtree */
+			retval=this.items[this.index].handle_command(cmd);
 		/* otherwise let this menu handle the command */
 		if(retval == false) {
 			/* process the command */
 			retval=this.process_command(cmd);
 			/* update current item's index if it is a tree */
-			if(this.items[this.index] && typeof this.items[this.index].update_index == "function") 
+			if(this.items[this.index] && this.items[this.index].type == "tree") 
 				this.items[this.index].update_index(cmd);
 		}
 		if(retval == false) {
@@ -307,6 +304,7 @@ function Tree(xpos,ypos,w,h) {
 	
 	/* update this tree's index based on the command used to enter it */
 	this.update_index=function(cmd) {
+		log("handling cmd: " + cmd);
 		if(!this.open) 
 			this.index=-1;
 		else {
@@ -320,7 +318,7 @@ function Tree(xpos,ypos,w,h) {
 			}
 		}
 		/* update current item's index if it is a tree */
-		if(this.items[this.index] && typeof this.items[this.index].update_index == "function") 
+		if(this.items[this.index] && this.items[this.index].type == "tree") 
 			this.items[this.index].update_index(cmd);
 	}
 	
@@ -329,9 +327,6 @@ function Tree(xpos,ypos,w,h) {
 		/* if we are at the tree heading, 
 			for status toggle */
 		switch(cmd.toUpperCase()) {
-		case '+':
-			if(this.open)
-				return true;
 		case '\r':
 			if(this.index < 0) {
 				this.toggle();
@@ -378,7 +373,6 @@ function Tree(xpos,ypos,w,h) {
 				return true;
 			else
 				return false;
-		case '-':
 		case '\b':
 			if(this.depth > 0) {
 				if(this.open) {
@@ -394,8 +388,12 @@ function Tree(xpos,ypos,w,h) {
 	
 	/* scan tree for possible hotkey matches */
 	this.match_hotkey=function(cmd) {
+		if(!cmd.match(/\w/))
+			return false;
 		var pattern=new RegExp(cmd,"i");
-		var stop=this.index>0?this.index-1:this.items.length-1;
+		var stop=this.items.length-1;
+		if(this.depth == 0)
+			stop=this.index>0?this.index-1:0;
 		for(var i=this.index+1;;i++) {
 			if(i == -1)
 				continue;
@@ -436,6 +434,39 @@ function Tree(xpos,ypos,w,h) {
 			return(0);
 		else
 			return(this.parent.depth+1);
+	}
+	
+	/* return hash value of current item */
+	this.hash=function() {
+		var str="";
+		if(this.parent)
+			str+=this.parent.hash()+"\t";
+		str+=this.text;
+		return str;
+	}
+	
+	/* find item based on hash value */
+	this.unhash=function(hash) {
+		hash=hash.split("\t");
+		var text=hash.shift();
+		for(var i=0;i<this.items.length;i++) {
+			if(this.items[i].text == text) {
+				if(this.items[i].type == "tree" && hash.length > 0)
+					return this.items[i].unhash(hash.join("\t"));
+				else return this.items[i];
+			}
+		}
+		return false;
+	}
+
+	/* return the currently selected item */
+	this.current_item getter=function() {
+		if(!this.open || !this.items[this.index])
+			return this;
+		if(this.items[this.index].type == "tree") 
+			return this.items[this.index].current_item;
+		else 
+			return this.items[this.index];
 	}
 	
 	/* trace back to main tree to see if this tree is the current item */
@@ -523,20 +554,18 @@ function Tree(xpos,ypos,w,h) {
 }
 
 /* tree item object */
-function Tree_Item(text,status,command,args) {
+function Tree_Item(text,command,args) {
 	/* 
 	this.parent_index;
 	this.parent;
 	this.hotkey;
 	*/
+	this.type="item";
 	if(text != undefined)
 		this.text=text;
 	else
 		this.text="";
-	if(status != undefined)
-		this.status=status;
-	else
-		this.status=item_status.enabled;
+	this.status=item_status.enabled;
 	
 	/* item return value or command handler */
 	this.command=command;
@@ -549,6 +578,11 @@ function Tree_Item(text,status,command,args) {
 	}
 	/* command arguments */
 	this.args=args;
+	
+	/* return item pointer */
+	this.hash=function() {
+		return this.parent.hash()+"\t"+this.text;
+	}
 	
 	/* draw the current item text into the master list */
 	this.draw=function(offset) {
