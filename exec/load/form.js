@@ -23,24 +23,48 @@ if(js.global.getColor == undefined)
 	load("funclib.js");
 if(js.global.Layout == undefined)
 	load("layout.js");
+if(js.global.Scrollbar == undefined)
+	load("scrollbar.js");
 	
-function formEdit(obj)
+function formEdit(obj,parent)
 {
-	function Form(obj) 
+	function Form(obj,parent) 
 	{
-		this.full_redraw = false;
+		var full_redraw = false;
+		this.parent = parent;
+		this.typelen = 4;
 		this.keylen = 3;
 		this.max_value = 25;
-		this.max_height;
+		this.max_lines;
 		this.index = 0;
 		this.line = 1;
 		this.items = [];
 		
+		this.full_redraw getter = function() {
+			return full_redraw;
+		}
+		
+		this.full_redraw setter = function(bool) {
+			if(this.parent)
+				this.parent.full_redraw = bool;
+			full_redraw = bool;
+		}
+		
 		this.init = function() {
+			/* determine object type */
+			if(typeof obj != "object")
+				throw("invalid data type: " + typeof obj);
+			else if(obj.length != undefined)
+				this.type = "array";
+			else
+				this.type = "object";
+			
 			/* load object values into form */
 			for(var k in obj) {
 				if(console.strlen(k) > this.keylen)
 					this.keylen = console.strlen(k);
+				if(console.strlen(typeof obj[k]) > this.typelen)
+					this.typelen = console.strlen(typeof obj[k]);
 				this.items.push({
 					key:k,
 					value:obj[k],
@@ -49,10 +73,10 @@ function formEdit(obj)
 			}
 			
 			/* initialize editing window */
-			var posx = (console.screen_columns / 2) - ((this.keylen + 25)/2) -1;
-			var posy = (console.screen_rows / 2) - (this.items.length / 2) -2;
 			var height = this.items.length + 3;
-			var width = this.keylen + this.max_value + 4;
+			var width = this.typelen + this.keylen + this.max_value + 4;
+			var posx = (console.screen_columns / 2) - (width / 2);
+			var posy = (console.screen_rows / 2) - (height / 2);
 			
 			if(posx < 1)
 				posx = 1;
@@ -66,14 +90,18 @@ function formEdit(obj)
 			}
 		
 			this.box = new Layout_View(
-				printPadded("KEY",this.keylen+2) + splitPadded("VALUE","ESC",this.max_value),
+				printPadded("KEY",this.typelen+1) + 
+				printPadded("KEY",this.keylen+1) + 
+				splitPadded("VALUE","ESC",this.max_value),
 				posx,
 				posy,
 				width,
 				height
 			);
-			this.max_height = this.box.height - 3;
+			
+			this.max_lines = this.box.height - 3;
 			this.box.show_tabs = false;
+			this.scrollbar = new Scrollbar(posx + width -1, posy + 2, this.max_lines, "vertical");
 			this.box.drawView();
 		}
 		
@@ -81,15 +109,16 @@ function formEdit(obj)
 			var item = this.items[this.index];
 			
 			if(item.type == "object") {
-				item.value = formEdit(item.value);
-				this.draw();
+				this.full_redraw = true;
+				item.value = formEdit(item.value,this);
+				this.draw(true);
 			}
 			else {
 				var coords = this.coords(this.index);
 				console.attributes = BG_LIGHTGRAY + BLACK;
-				console.gotoxy(coords.x + this.keylen + 2, coords.y);
+				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
 				clearLine(this.max_value);
-				console.gotoxy(coords.x + this.keylen + 2, coords.y);
+				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
 				
 				var newvalue = console.getstr(item.value.toString(),this.max_value,K_EDIT|K_AUTODEL);
 				switch(item.type) {
@@ -110,27 +139,46 @@ function formEdit(obj)
 			}
 		}
 		
-		this.draw = function() {
+		this.draw = function(all) {
 			/* if a full redraw is requested, draw everything */
 			if(this.full_redraw) {
+				if(this.parent)
+					this.parent.draw(all);
+					
 				this.full_redraw = false;
 				this.box.drawView();
 			}
 			
-			/* find starting point */
-			var i = (this.index+1) - this.max_height;
-			var c = 0;
-			if(i < 0)
-				i = 0;
-			while(i < this.items.length && c < this.max_height) {
-				this.drawItem(i,this.index == i);
-				i++;
-				c++;
+			/* declare starting index for scrollbar usage */
+			var first_line = 0;
+			
+			if(all) {
+				/* find starting point */
+				i = (this.index+1) - this.max_lines;
+				var c = 0;
+				if(i < 0)
+					i = 0;
+				first_line = i;
+
+				while(i < this.items.length && c < this.max_lines) {
+					this.drawItem(i,this.index == i);
+					i++;
+					c++;
+				}
 			}
+			
+			else 
+				this.drawItem(this.index,true);
+			
+			if(this.items.length > this.max_lines) 
+				this.scrollbar.draw(first_line,this.items.length);
 		}
 		
 		this.object getter = function() {
-			var obj = {};
+			if(this.type == "array")
+				obj = [];
+			else
+				obj = {};
 			for(var i = 0; i < this.items.length; i++) {
 				var item = this.items[i];
 				obj[item.key] = item.value;
@@ -142,8 +190,8 @@ function formEdit(obj)
 			var posx = this.box.x + 1;
 			var posy = this.box.y + 2;
 			
-			if(this.index >= this.max_height) 
-				posy += this.max_height - (this.index - i) - 1;
+			if(this.index >= this.max_lines) 
+				posy += this.max_lines - (this.index - i) - 1;
 			else 
 				posy += i;
 			return {
@@ -154,46 +202,74 @@ function formEdit(obj)
 		
 		this.drawItem = function(i,curr) {
 			var coords = this.coords(i);
+			var item = this.items[i];
+			var value = item.value;
+			var type = item.type;
+			if(type == "object") {
+				if(item.value.length != undefined) {
+					type = "array";
+					value = "[Array]";
+				}
+				else
+					value = "[Object]";
+					
+			}
+			
 			console.gotoxy(coords);
 			if(curr) 
 				console.putmsg(getColor(layout_settings.lbg) + getColor(layout_settings.lfg) + 
-					printPadded(this.items[i].key,this.keylen + 2) + "\1w" + 
-					printPadded(this.items[i].value,this.max_value)
+					printPadded(type,this.typelen + 1) + 
+					printPadded(item.key,this.keylen + 1) + "\1w" + 
+					printPadded(value,this.max_value)
 				);
 			else
 				console.putmsg(getColor(layout_settings.vbg) + getColor(layout_settings.vfg) + 
-					printPadded(this.items[i].key,this.keylen + 2) + "\1h" +
-					printPadded(this.items[i].value,this.max_value)
+					printPadded(type,this.typelen + 1) + 
+					printPadded(item.key,this.keylen + 1) + "\1h" + 
+					printPadded(value,this.max_value)
 				);
 		}
 		
 		this.init();
 	}
 
-	var form = new Form(obj);
+	var form = new Form(obj,parent);
 	var update = false;
 	var redraw = false;
-	form.draw();
+	form.draw(true);
 	
 	while(!js.terminated) {
 		
-		if(redraw) 
-			form.draw();
-			
-		else if(update) 
-			form.drawItem(form.index,true);
+		if(update) 
+			form.draw(redraw);
 			
 		redraw = false;
 		update = true;
 		var cmd = console.inkey(K_NOECHO,1);
 
 		switch(cmd) {
+		case KEY_HOME:
+			form.drawItem(form.index);
+			if(form.index >= form.max_lines)
+				redraw = true;
+			form.index = 0;
+			form.line = 1;
+			break;
+		case KEY_END:
+			form.drawItem(form.index);
+			form.index = form.items.length-1;
+			form.line = form.items.length;
+			if(form.index >= form.max_lines - 1) {
+				form.line = form.max_lines;
+				redraw = true;
+			}
+			break;
 		case KEY_DOWN:
 			form.drawItem(form.index);
 			form.index++;
-			if(form.line < form.max_height)
+			if(form.line < form.max_lines)
 				form.line++;
-			if(form.index >= form.max_height)
+			if(form.index >= form.max_lines)
 				redraw = true;
 			if(form.index >= form.items.length) {
 				form.index = 0;
@@ -209,8 +285,8 @@ function formEdit(obj)
 				form.index = form.items.length-1;
 				form.line = form.items.length;
 			}
-			if(form.index >= form.max_height - 1) {
-				form.line = form.max_height;
+			if(form.index >= form.max_lines - 1) {
+				form.line = form.max_lines;
 				redraw = true;
 			}
 			break;
@@ -228,7 +304,5 @@ function formEdit(obj)
 		}
 	}
 	
-	/* just in case?? */
-	return form.object;
 }
 
