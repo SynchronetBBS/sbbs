@@ -34,7 +34,7 @@ function formEdit(obj,parent)
 		this.parent = parent;
 		this.typelen = 4;
 		this.keylen = 3;
-		this.max_value = 25;
+		this.max_value = 40;
 		this.max_lines;
 		this.index = 0;
 		this.line = 1;
@@ -45,8 +45,6 @@ function formEdit(obj,parent)
 		}
 		
 		this.full_redraw setter = function(bool) {
-			if(this.parent)
-				this.parent.full_redraw = bool;
 			full_redraw = bool;
 		}
 		
@@ -109,33 +107,29 @@ function formEdit(obj,parent)
 			var item = this.items[this.index];
 			
 			if(item.type == "object") {
-				this.full_redraw = true;
 				item.value = formEdit(item.value,this);
+				this.full_redraw = true;
 				this.draw(true);
 			}
-			else {
+			else if(item.type != "function") {
 				var coords = this.coords(this.index);
 				console.attributes = BG_LIGHTGRAY + BLACK;
 				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
 				clearLine(this.max_value);
 				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
 				
-				var newvalue = console.getstr(item.value.toString(),this.max_value,K_EDIT|K_AUTODEL);
+				var newvalue = console.getstr(item.value.toString().replace(/\r\n/g,'\\r\\n'),this.max_value,K_EDIT|K_AUTODEL);
 				switch(item.type) {
 					case "number":
 						item.value = Number(newvalue);
 						break;
-					case "function":
-						item.value = eval(newvalue);
-						break;
 					case "boolean":
-						item.value = Bool(newvalue);
+						item.value = Boolean(eval(newvalue));
 						break;
 					case "string":
-						item.value = newvalue;
+						item.value = newvalue.replace(/\\\\/g,"\\");
 						break;
 				}
-				this.drawItem(this.index);
 			}
 		}
 		
@@ -205,6 +199,8 @@ function formEdit(obj,parent)
 			var item = this.items[i];
 			var value = item.value;
 			var type = item.type;
+			var can_edit = true;
+			
 			if(type == "object") {
 				if(item.value.length != undefined) {
 					type = "array";
@@ -214,20 +210,35 @@ function formEdit(obj,parent)
 					value = "[Object]";
 					
 			}
+			else if(type == "function") {
+				can_edit = false;
+				type = "function";
+				value = "{...}";
+			}
+			else if(type == "string") {
+				value = value.replace(/\r\n/g,'\\r\\n');
+			}
+			else {
+				value = value.toString();
+			}
 			
 			console.gotoxy(coords);
-			if(curr) 
-				console.putmsg(getColor(layout_settings.lbg) + getColor(layout_settings.lfg) + 
+			if(curr) {
+				console.attributes = layout_settings.lbg + (can_edit?layout_settings.lfg:RED);
+				console.write(
 					printPadded(type,this.typelen + 1) + 
-					printPadded(item.key,this.keylen + 1) + "\1w" + 
+					printPadded(item.key,this.keylen + 1) + 
 					printPadded(value,this.max_value)
 				);
-			else
-				console.putmsg(getColor(layout_settings.vbg) + getColor(layout_settings.vfg) + 
+			}
+			else {
+				console.attributes = layout_settings.vbg + (can_edit?layout_settings.vfg:RED);
+				console.write(
 					printPadded(type,this.typelen + 1) + 
-					printPadded(item.key,this.keylen + 1) + "\1h" + 
+					printPadded(item.key,this.keylen + 1) + 
 					printPadded(value,this.max_value)
 				);
+			}
 		}
 		
 		this.init();
