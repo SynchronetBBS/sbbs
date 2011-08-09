@@ -199,21 +199,27 @@ function formEdit(obj,parent)
 			var item = this.items[i];
 			var value = item.value;
 			var type = item.type;
-			var can_edit = true;
+			var bg = layout_settings.vbg;
+			var fg = layout_settings.vfg;
 			
+			if(curr) {
+				bg = layout_settings.lbg;
+				fg = layout_settings.lfg;
+			}
 			if(type == "object") {
 				if(item.value.length != undefined) {
 					type = "array";
 					value = "[Array]";
 				}
-				else
+				else {
 					value = "[Object]";
-					
+				}
+				fg = LIGHTGREEN;
 			}
 			else if(type == "function") {
-				can_edit = false;
 				type = "function";
 				value = "{...}";
+				fg = RED;
 			}
 			else if(type == "string") {
 				value = value.replace(/\r\n/g,'\\r\\n');
@@ -223,22 +229,12 @@ function formEdit(obj,parent)
 			}
 			
 			console.gotoxy(coords);
-			if(curr) {
-				console.attributes = layout_settings.lbg + (can_edit?layout_settings.lfg:RED);
-				console.write(
-					printPadded(type,this.typelen + 1) + 
-					printPadded(item.key,this.keylen + 1) + 
-					printPadded(value,this.max_value)
-				);
-			}
-			else {
-				console.attributes = layout_settings.vbg + (can_edit?layout_settings.vfg:RED);
-				console.write(
-					printPadded(type,this.typelen + 1) + 
-					printPadded(item.key,this.keylen + 1) + 
-					printPadded(value,this.max_value)
-				);
-			}
+			console.attributes = bg + fg;
+			console.write(
+				printPadded(type,this.typelen + 1) + 
+				printPadded(item.key,this.keylen + 1) + 
+				printPadded(value,this.max_value)
+			);
 		}
 		
 		this.init();
@@ -308,6 +304,7 @@ function formEdit(obj,parent)
 		case '\b':
 		case '\x11':
 		case '\x1b':
+			clearBlock(form.box.x,form.box.y,form.box.width,form.box.height);
 			return form.object;
 		default:
 			update = false;
