@@ -6,6 +6,7 @@
 function Scrollbar(x,y,length,orientation,color)
 {
 	this.index;
+	this.bar;
 	this.x=x;
 	this.y=y;
 	this.orientation=orientation;
@@ -16,14 +17,14 @@ function Scrollbar(x,y,length,orientation,color)
 	{
 		if(index>range) 
 			return;
-		if(!index || !range) {
-			if(!this.index && !this.bar)
-				return;
-		}
-		else if(isNaN(index) || isNaN(range))
+		if((isNaN(index) || isNaN(range)) &&
+			(!this.index || !this.bar))
 			return;
+			
 		this.index=Math.ceil(((index+1)/range)*this.length);
 		this.bar=Math.ceil((this.length/range)*this.length);
+		
+		
 		if(this.orientation == "vertical")
 			this.drawVert(this.index,this.index+this.bar);
 		else 
