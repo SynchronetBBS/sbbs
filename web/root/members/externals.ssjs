@@ -1,19 +1,30 @@
 /* $Id$ */
 
 load("../web/lib/template.ssjs");
-load("ftelnethelper.js");
 
 var sub='';
 
 template.title = system.name + " - External Program Section";
 template.html = "";
 
-var options = load("modopts.js", "logon");
-if (!options || !options.rlogin_auto_xtrn) {
-	templatefile = "ftelnet_disabled.inc";
-	if (user.security.level >= 90) {
-		template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li></ul>";
-	}
+var options = null;
+try {
+  load("ftelnethelper.js");
+  options = load("modopts.js", "logon");
+} catch (e) {
+  // Ignore, just means modopts.js doesn't exist and so an error will be displayed below
+}
+
+if (!options) {
+    templatefile = "ftelnet_disabled.inc";
+    if (user.security.level >= 90) {
+        template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Check out the latest <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/ftelnethelper.js'>exec/load/ftelnethelper.js</a></b>, <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/exec/load/modopts.js'>exec/load/modopts.js</a></b> and <b><a href='http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/ctrl/modopts.ini'>ctrl/modopts.ini</a></b> files from CVS</li></ul>";
+    }
+} else if (!options.rlogin_auto_xtrn) {
+    templatefile = "ftelnet_disabled.inc";
+    if (user.security.level >= 90) {
+        template.SysOpMessage = "Actually, it looks like you're the SysOp, so here's what you can do to enable it:<br /><ul><li>Enable the rlogin_auto_xtrn feature of the logon module<ul><li>To do this, ensure that the <b>rlogin_auto_xtrn=</b> line in the <b>[logon]</b> section of <b>sbbs/ctrl/modopts.ini</b> is set to <b>true</b></li><li>(Currently, it's set to <b>" + options.rlogin_auto_xtrn + "</b>)</ul>";
+    }
 } else if (!IsFlashSocketPolicyServerEnabled()) {
 	templatefile = "ftelnet_disabled.inc";
 	if (user.security.level >= 90) {
