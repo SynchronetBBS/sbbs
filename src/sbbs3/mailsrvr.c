@@ -2224,6 +2224,7 @@ static void smtp_thread(void* arg)
 	SOCKADDR_IN server_addr;
 	IN_ADDR		dnsbl_result;
 	BOOL*		mailproc_to_match;
+	int			mailproc_match;
 	JSRuntime*	js_runtime=NULL;
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob=NULL;
@@ -3670,23 +3671,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d SMTP NAME ALIAS: %s (for %s)"
 					,socket,p,rcpt_addr);
 		
-			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
-				p+=4;
-				for(i=0;i<scfg.total_subs;i++)
-					if(!stricmp(p,scfg.sub[i]->code))
-						break;
-				if(i>=scfg.total_subs) {
-					lprintf(LOG_NOTICE,"%04d !SMTP UNKNOWN SUB-BOARD: %s", socket, p);
-					sockprintf(socket, "550 Unknown sub-board: %s", p);
-					continue;
-				}
-				subnum=i;
-				sockprintf(socket,ok_rsp);
-				state=SMTP_STATE_RCPT_TO;
-				rcpt_count++;
-				continue;
-			}
-
+			/* Check if message is to be processed by an external mail processor */
 			for(i=0;i<mailproc_count;i++) {
 
 				if(!mailproc_list[i].process_dnsbl && dnsbl_result.s_addr)
@@ -3704,15 +3689,34 @@ static void smtp_thread(void* arg)
 						break;
 				}
 			}
+			mailproc_match=i;
+
+			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
+				p+=4;
+				for(i=0;i<scfg.total_subs;i++)
+					if(!stricmp(p,scfg.sub[i]->code))
+						break;
+				if(i>=scfg.total_subs) {
+					lprintf(LOG_NOTICE,"%04d !SMTP UNKNOWN SUB-BOARD: %s", socket, p);
+					sockprintf(socket, "550 Unknown sub-board: %s", p);
+					continue;
+				}
+				subnum=i;
+				sockprintf(socket,ok_rsp);
+				state=SMTP_STATE_RCPT_TO;
+				rcpt_count++;
+				continue;
+			}
+
 			/* destined for a (non-passthru) external mail processor */
-			if(i<mailproc_count) {
+			if(mailproc_match<mailproc_count) {
 				fprintf(rcptlst,"[%u]\n",rcpt_count++);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 #if 0	/* should we fall-through to the sysop account? */
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),1);
 #endif
 				lprintf(LOG_INFO,"%04d SMTP Routing mail for %s to External Mail Processor: %s"
-					,socket, rcpt_addr, mailproc_list[i].name);
+					,socket, rcpt_addr, mailproc_list[mailproc_match].name);
 				sockprintf(socket,ok_rsp);
 				state=SMTP_STATE_RCPT_TO;
 				continue;
