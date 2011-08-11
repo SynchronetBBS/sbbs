@@ -196,11 +196,14 @@ ifndef os
 endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
+machine		:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+machine		:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine) ; fi)
 ifeq ($(os),darwin)
- machine		:=	$(shell ld -w 2>&1 | sed -E 's/.*[[:space:]]//')
-else
- machine		:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
- machine		:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine) ; fi)
+ ifeq ("$(machine)","")
+  ifeq ($(shell sysctl hw.optional.x86_64),hw.optional.x86_64: 1)
+   machine	:= x86_64
+  endif
+ endif
 endif
 
 ifeq ($(machine),x86_64)
