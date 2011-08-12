@@ -109,14 +109,10 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_MAXBYTES:
 			JS_NewNumberValue(cx,cx->runtime->gcMaxBytes,vp);
 			break;
-		case PROP_GLOBAL:
-			*vp = OBJECT_TO_JSVAL(cx->globalObject);
-			break;
-#else
-		case PROP_GLOBAL:
-			*vp = OBJECT_TO_JSVAL(JS_GetParent(cx,obj));
-			break;
 #endif
+		case PROP_GLOBAL:
+			*vp = OBJECT_TO_JSVAL(JS_GetGlobalObject(cx));	
+			break;
 	}
 
 	return(JS_TRUE);
