@@ -30,9 +30,9 @@ function sortnumber(a,b) {
 // Generate a list of boards & their sub-boards, using client-side JS to toggle visibility of certain elements
 function printBoards() {
 	for(mg in msg_area.grp_list) {
-		print("<div class='standardBorder standardPadding underMargin subBoardHeaderColor' onclick=toggleVisibility('grp" + msg_area.grp_list[mg].number + "')>");
-		print("<div class='headingFont'><span onmouseover='this.className=\"fakeUlLink\"' onmouseout='this.className=\"\"'>" + msg_area.grp_list[mg].name + "</span></div>");
-		print("<div id=stats" + msg_area.grp_list[mg].number + "></div>");
+		print("<div class='standardBorder standardPadding underMargin subBoardHeaderColor'>");
+		print("<div class='headingFont'><a class=ulLink href='javascript:toggleVisibility(\"grp" + msg_area.grp_list[mg].number + "\")'>" + msg_area.grp_list[mg].name + "</a></div>");
+		print("<div id=stats" + msg_area.grp_list[mg].number + " onclick=toggleVisibility('grp" + msg_area.grp_list[mg].number + "')></div>");
 		print("</div>");
 		print("<div id=grp" + msg_area.grp_list[mg].number + " style=display:none;>");
 		var a = 0;
@@ -214,9 +214,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 			print("<script language=javascript type=text/javascript>");
 			print("var threadHeader" + threadNumber + " = document.createElement('div');");
 			print("threadHeader" + threadNumber + ".id = 'threadHeader" + threadNumber + "';");
-			print("threadHeader" + threadNumber + ".onclick = function() { toggleVisibility('threadContainer" + threadNumber + "'); };");
-//			print("threadHeader" + threadNumber + ".innerHTML += '<a name=" + header.number + "></a><a class=\"ulLink headingFont\" href=javascript:function(){toggleVisibility(\"threadContainer" + threadNumber + "\");}>" + html_encode(header.subject, false, false, false, false).replace(/'/g, "&apos;") + "</a><br />Started by " + header.from + " on " + system.timestr(parseInt(header.when_written_time)) + "';");
-			print("threadHeader" + threadNumber + ".innerHTML += '<a name=" + header.number + "></a><div class=headingFont><span onmouseover=this.className=\"fakeUlLink\" onmouseout=this.className=\"\">" + html_encode(header.subject, false, false, false, false).replace(/'/g, "&apos;") + "</span></div><br />Started by " + header.from + " on " + system.timestr(parseInt(header.when_written_time)) + "';");
+			print("threadHeader" + threadNumber + ".innerHTML += '<a name=" + header.number + "></a><a class=\"ulLink headingFont\" href=javascript:toggleVisibility(\"threadContainer" + threadNumber + "\")>" + html_encode(header.subject, false, false, false, false).replace(/'/g, "&apos;") + "</a><br />Started by " + header.from + " on " + system.timestr(parseInt(header.when_written_time)) + "';");
 			print("var threadContainer" + threadNumber + " = document.createElement('div');");
 			print("threadContainer" + threadNumber + ".id = 'threadContainer" + threadNumber + "';");
 
