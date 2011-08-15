@@ -160,6 +160,10 @@ textarea {
 	text-decoration: underline;
 }
 
+.fakeUlLink {
+	text-decoration: underline;
+}
+
 .textFile {
 	width: 765px;
 	/* Wrapping stuff from http://www.longren.org/wrapping-text-inside-pre-tags/ */

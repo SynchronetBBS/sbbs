@@ -165,6 +165,10 @@ textarea {
 	text-decoration: underline;
 }
 
+.fakeUlLink {
+	text-decoration: underline;
+}
+
 .textFile {
 	width: 765px;
 	/* Wrapping stuff from http://www.longren.org/wrapping-text-inside-pre-tags/ */
@@ -215,6 +219,7 @@ textarea {
 	width: 765px;
 	float: right;
 	margin-top: 10px;
+	margin-bottom: 10px;
 	border-style: solid;
 	border-color: #FFFFFF;
 	border-width: 1px;
@@ -232,4 +237,5 @@ textarea {
 	border-color: #FFFFFF;
 	border-width: 1px;	
 	background-color: #330033;
+	margin-top: 10px;
 }

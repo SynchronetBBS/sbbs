@@ -155,10 +155,6 @@ textarea {
 }
 
 .fakeUlLink {
-	text-decoration: none;
-}
-
-.fakeUlLink:hover {
 	text-decoration: underline;
 }
 
