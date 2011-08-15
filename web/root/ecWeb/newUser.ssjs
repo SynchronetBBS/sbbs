@@ -155,7 +155,7 @@ if(http_request.query.hasOwnProperty('action') && http_request.query.action == '
 		print("User account created.");
 	}
 
-} else if(user.alias == webIni.guestUser) {
+} else if(user.alias.toUpperCase() == webIni.guestUser.toUpperCase()) {
 
 	print("<form name=newUser id=newUser action=./newUser.ssjs method=post onsubmit='return validateNewUserForm()'>");
 	print("<input type=hidden name=action value=newUser />");
