@@ -26,6 +26,7 @@ function openPage(pageTitle) {
 	var c = 0;
 	var d = directory(webIni.webRoot + "/sidebar/*");
 	for(var f in d) {
+		if(file_isdir(d[f])) continue;
 		print("<div class='sidebarBox standardBorder standardPadding underMargin'>");
 		if(file_getext(d[f]).toUpperCase() == ".SSJS" || file_getext(d[f]).toUpperCase() == ".JS") load(d[f]);
 		if(file_getext(d[f]).toUpperCase() == ".TXT" || file_getext(d[f]).toUpperCase() == ".HTML") {
