@@ -17,7 +17,7 @@ openPage(system.name);
 
 var d = directory(webIni.webRoot + "/pages/*");
 for(f in d) {
-	if(file_getname(d[f]) != http_request.query.page.toString()) continue;
+	if(file_isdir(d[f]) || file_getname(d[f]) != http_request.query.page.toString()) continue;
         if(file_getext(d[f]).toUpperCase() == ".SSJS") {
 			load(d[f]);
 			break;
