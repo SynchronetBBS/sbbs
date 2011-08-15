@@ -16,9 +16,10 @@
 function insertCaptcha() {
 	var d = directory(webIni.webRoot + "/lib/captchaAnsis/*");
 	var randomFont = Math.floor(Math.random() * (d.length));
-	var f = directory(d[randomFont] + "*");
+	while(d[randomFont].match(/CVS/) != null) randomFont = Math.floor(Math.random() * (d.length));
+	var f = directory(d[randomFont] + "*.a??"); // We're looking for .asc and .ans files.
 	var captchaString = "";
-	print("<div style=background-color:black;height:100px;float:left;>");
+	print("<div style='background-color:black;height:100px;float:left;'>");
 	for(i = 0; i < webIni.captchaLength; i++) {
 		var randomLetter = Math.floor(Math.random() * (f.length));
 		var g = new File(f[randomLetter]);
