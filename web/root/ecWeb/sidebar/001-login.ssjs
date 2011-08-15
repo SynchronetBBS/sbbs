@@ -4,7 +4,7 @@
 /* A sidebar widget to generate either a login form (with a signup link) or a
    list of functions for logged-in users. */
 
-if(user.alias != webIni.guestUser) {
+if(user.alias.toUpperCase() != webIni.guestUser.toUpperCase()) {
 	print("You are logged in as <b>" + user.alias + "</b><br />");
 	print("<script language=javascript type=text/javascript>document.write('<a class=link href=./?logout=true&callback=' + location.pathname + location.search + '>Log out</a>');</script><br />");
 	print("<br /><a class=link href=./pages.ssjs?page=" + webIni.forumPage + "&action=newMessageScan>Scan for new messages</a>");
