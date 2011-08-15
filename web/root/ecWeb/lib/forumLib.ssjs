@@ -31,7 +31,7 @@ function sortnumber(a,b) {
 function printBoards() {
 	for(mg in msg_area.grp_list) {
 		print("<div class='standardBorder standardPadding underMargin subBoardHeaderColor' onclick=toggleVisibility('grp" + msg_area.grp_list[mg].number + "')>");
-		print("<div class='headingFont'>" + msg_area.grp_list[mg].name + "</div>");
+		print("<div class='headingFont'><a class=ulLink href=javascript:function(){toggleVisibility('grp" + msg_area.grp_list[mg].number + "');}>" + msg_area.grp_list[mg].name + "</a></div>");
 		print("<div id=stats" + msg_area.grp_list[mg].number + "></div>");
 		print("</div>");
 		print("<div id=grp" + msg_area.grp_list[mg].number + " style=display:none;>");
@@ -120,7 +120,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 
 	for(m = mm; m <= msgBase.last_msg; m++) {
 		header = msgBase.get_msg_header(m);
-		body = msgBase.get_msg_body(m);
+		body = msgBase.get_msg_body(m,strip_ctrl_a=true);
 		if(!header || !body || threadedMessages.hasOwnProperty(header.number)) continue;
 		if(newOnly && header.number <= scanPointer) continue; // This message precedes our scan pointer - don't waste any more time on it.
 		if(subBoardCode == 'mail' && header.to != user.alias && header.to_ext != user.number && header.from != user.alias && header.from_ext != user.number) continue; // lol :|
@@ -215,7 +215,7 @@ function printSubBoard(subBoardCode, threadNumber, newOnly, scanPointer, mg, sb)
 			print("var threadHeader" + threadNumber + " = document.createElement('div');");
 			print("threadHeader" + threadNumber + ".id = 'threadHeader" + threadNumber + "';");
 			print("threadHeader" + threadNumber + ".onclick = function() { toggleVisibility('threadContainer" + threadNumber + "'); };");
-			print("threadHeader" + threadNumber + ".innerHTML += '<a name=" + header.number + "></a><span class=headingFont>" + html_encode(header.subject, false, false, false, false).replace(/'/g, "&apos;") + "</span><br />Started by " + header.from + " on " + system.timestr(parseInt(header.when_written_time)) + "';");
+			print("threadHeader" + threadNumber + ".innerHTML += '<a name=" + header.number + "></a><a class=\"ulLink headingFont\" href=javascript:function(){toggleVisibility(\"threadContainer" + threadNumber + "\");}>" + html_encode(header.subject, false, false, false, false).replace(/'/g, "&apos;") + "</a><br />Started by " + header.from + " on " + system.timestr(parseInt(header.when_written_time)) + "';");
 			print("var threadContainer" + threadNumber + " = document.createElement('div');");
 			print("threadContainer" + threadNumber + ".id = 'threadContainer" + threadNumber + "';");
 
