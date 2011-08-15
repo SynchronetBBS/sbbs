@@ -32,7 +32,7 @@ function printBoards() {
 	for(mg in msg_area.grp_list) {
 		print("<div class='standardBorder standardPadding underMargin subBoardHeaderColor'>");
 		print("<div class='headingFont'><a class=ulLink href='javascript:toggleVisibility(\"grp" + msg_area.grp_list[mg].number + "\")'>" + msg_area.grp_list[mg].name + "</a></div>");
-		print("<div id=stats" + msg_area.grp_list[mg].number + " onclick=toggleVisibility('grp" + msg_area.grp_list[mg].number + "')></div>");
+		print("<div id=stats" + msg_area.grp_list[mg].number + "></div>");
 		print("</div>");
 		print("<div id=grp" + msg_area.grp_list[mg].number + " style=display:none;>");
 		var a = 0;
