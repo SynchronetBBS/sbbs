@@ -13,7 +13,7 @@ load(webIni.webRoot + '/lib/captchaLib.ssjs');
 openPage("New User Registration");
 print("<span class=titleFont>New User Registration</span><br /><br />");
 
-if(http_request.query.hasOwnProperty('action') && http_request.query.action == 'newUser' && user.alias == webIni.guestUser) {
+if(http_request.query.hasOwnProperty('action') && http_request.query.action == 'newUser' && user.alias.toUpperCase() == webIni.guestUser.toUpperCase()) {
 
 	/* The various 'x not provided' errors should only crop up if somebody
 	   messed with our newuser form or posted from another form. */
