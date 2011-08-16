@@ -11,6 +11,7 @@ f.open("r");
 var webIni = f.iniGetObject();
 f.close();
 
+// Returns a string of random characters 'length' characters long
 function randomString(length) {
         var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
         var str = '';
@@ -18,22 +19,47 @@ function randomString(length) {
         return str;
 }
 
+// Returns an unopened file object representing the user's .session file
+function getSessionKeyFile(userNumber) {
+	var sessionKeyFile = userNumber;
+	while(sessionKeyFile.length < 4) sessionKeyFile = "0" + sessionKeyFile;
+	sessionKeyFile += ".session";
+	var f =	new File(system.data_dir + "user/" + sessionKeyFile);
+	return f;
+}
+
 if(http_request.query.hasOwnProperty('username') && http_request.query.hasOwnProperty('password')) {
-	var sessionKey = randomString(30); // user.note seems to truncate at 30
+	// Script was (we'll assume) called from the login form.  Attempt to authenticate the user.
+	var sessionKey = randomString(512); // Arbitrary length, can be shorter, have seen problems with longer.
 	var UID = system.matchuser(http_request.query.username);
 	var u = new User(UID);
 	if(u && http_request.query.password.toString().toUpperCase() == u.security.password.toUpperCase()) {
-		set_cookie('synchronet', UID + ',' + sessionKey, time() + webIni.sessionTimeout, system.inet_addr, "/");
-		login(u.alias, u.security.password);
-		u.note = sessionKey; 
+			// The supplied username was valid, and the supplied password is correct. Create a cookie, log the user in and populate their .session file.
+			set_cookie('synchronet', UID + ',' + sessionKey, time() + webIni.sessionTimeout, system.inet_addr, "/");
+			login(u.alias, u.security.password);
+			var f = getSessionKeyFile(user.number.toString());
+			if(f.open("w"))	{
+					// If this fails, the user will only be logged in for the duration of this page load.
+					f.write(sessionKey);
+					f.close();
+			}
 	}
 } else if(http_request.header.hasOwnProperty('cookie') && http_request.header.cookie.match(/synchronet\=\d+,\w+/) != null && !http_request.query.hasOwnProperty('logout')) {
+	// A 'synchronet' cookie exists and matches our '<user.number>,<sessionKey>' format.
 	var cookie = http_request.header.cookie.toString().match(/\d+,\w+/)[0].split(',');
 	var u = new User(cookie[0]);
-	if(u && u.note == cookie[1].toString()) {
-		set_cookie('synchronet', u.number + ',' + cookie[1], time() + webIni.sessionTimeout, system.inet_addr, "/");
-		login(u.alias, u.security.password);
-		u.note = cookie[1];
+	var sessionKey = false;
+	var f = getSessionKeyFile(u.number.toString());
+	if(f.exists) {
+			f.open("r");
+			sessionKey = f.read();
+			f.close();
+	}
+	// If the user was not valid, 'f' should not have existed, and sessionKey will evaluate false.
+	if(u && sessionKey && sessionKey == cookie[1].toString()) {
+			// The user specified in the cookie exists, and the sessionKey from the cookie matches that on file. Update the cookie's expiration and log the user in.
+			set_cookie('synchronet', u.number + ',' + cookie[1], time() + webIni.sessionTimeout, system.inet_addr, "/");
+			login(u.alias, u.security.password);
 	}
 }
 
