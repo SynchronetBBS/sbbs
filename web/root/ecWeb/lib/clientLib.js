@@ -65,83 +65,92 @@ function validateNewUserForm() {
 	for(e in theForm.elements) {
 		if(theForm.elements[e].id == 'alias') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'password1') {
 			if(theForm.elements[e].value.length < 4) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'password2') {
 			if(theForm.elements[e].value != theForm.password1.value) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Password mismatch';
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'realName') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'location') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 
 		}
 		if(theForm.elements[e].id == 'handle') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 
 		}
 		if(theForm.elements[e].id == 'streetAddress') {
 			if(theForm.elements[e].value.length < 6) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'phone') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'computer') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'sex') {
@@ -149,29 +158,32 @@ function validateNewUserForm() {
 		}
 		if(theForm.elements[e].id == 'birthDate') {
 			if(theForm.elements[e].value.match(/\d\d-\d\d-\d\d/) == null) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Invalid date (DD-MM-YY)';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'company') {
 			if(theForm.elements[e].value.length < 1) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 		if(theForm.elements[e].id == 'netmail') {
 			if(theForm.elements[e].value.length < 5) {
-				theForm.elements[e].style.backgroundColor = '#FF9999';
+				theForm.elements[e].style.backgroundColor = '#660000';
 				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = 'Too short';
 				returnValue = false;
 			} else {
-				theForm.elements[e].style.backgroundColor = '#CCFFCC';
+				theForm.elements[e].style.backgroundColor = '#003300';
+				document.getElementById(theForm.elements[e].id + 'Error').innerHTML = '';
 			}
 		}
 	}
