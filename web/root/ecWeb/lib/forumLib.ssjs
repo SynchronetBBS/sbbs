@@ -42,8 +42,7 @@ function printBoards() {
 			var msgBase = new MsgBase(msg_area.grp_list[mg].sub_list[sb].code);
 			msgBase.open();
 			b = b + msgBase.total_msgs;
-			// The onclick below is just to provide more consistent click-to-expand behavior of the boxes in the forum
-			print("<div class='standardBorder standardPadding underMargin treeIndent messageBoxColor' onclick=window.location='./pages.ssjs?page=" + webIni.forumPage + "&action=viewSubBoard&subBoard=" + msg_area.grp_list[mg].sub_list[sb].code + "'>");
+			print("<div class='standardBorder standardPadding underMargin treeIndent messageBoxColor'>");
 			print("<a class=ulLink href=./pages.ssjs?page=" + webIni.forumPage + "&action=viewSubBoard&subBoard=" + msg_area.grp_list[mg].sub_list[sb].code + ">" + msg_area.grp_list[mg].sub_list[sb].name + "</a><br />");
 			print(msgBase.total_msgs + " messages");
 			if(msgBase.last_msg > 0) {
