@@ -17,6 +17,6 @@ if(user.alias.toUpperCase() != webIni.guestUser.toUpperCase()) {
 	print("<input type=submit value='Log in' />");
 	print("</form>");
 	print("<a class=link href=./newUser.ssjs>Register</a>");
-	if(http_request.query.hasOwnProperty('loginfail')) print("<i>Invalid username or password</i>");
+	if(http_request.query.hasOwnProperty('loginfail')) print("<br /><i>Invalid username or password</i>");
 }
 
