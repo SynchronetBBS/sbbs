@@ -626,10 +626,11 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		}
 		
 		/* check main bot commands */
-		try 
+		try {
 			srv.bot_command(srv,Bot_Commands,chan.name,onick,ouh,cmd.join(" "));
-		catch(e)
+		} catch(e) {
 			srv.o(chan.name,e);
+		}
 		
 		for(var m in Modules) {
 			var module=Modules[m];
