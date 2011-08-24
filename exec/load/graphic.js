@@ -205,32 +205,118 @@ function Graphic_load(filename)
 
 	switch(file_type.toUpperCase()) {
 	case "ANS":
-		/*
 		if(!(f.open("r",true,4096)))
 			return(false);
 		var lines=f.readAll();
 		f.close();
 		
-		var cur_attr=this.attr;
-		var cur_ch=this.ch;
-		var ANSI=String.fromCharCode(27,91);
+		var attr = this.attr;
+		var bg = BG_BLACK;
+		var fg = LIGHTGRAY;
+		var i = 0;
+		var y = 0;
 		
-		for(y=0; y<this.height && y<lines.length; y++) {
-			var x=0;
-			var index=0;
-			index=lines[y].indexOf(ANSI,index);
-			while(index >= 0) {
+		while(lines.length > 0) {	
+			var x = 0;
+			var line = lines.shift();
 			
-			}
-			
-			txt=txt.toString().replace(/@(.*)@/g,
+			/* parse 'ATCODES'?? 
+			line = line.replace(/@(.*)@/g,
 				function (str, code, offset, s) {
 					return bbs.atcode(code);
 				}
-			)
-			this.data[x][y]=new Graphic_sector(cur_ch,cur_attr);
+			);
+			*/
+			
+			while(line.length > 0) {
+				/* parse an attribute sequence*/
+				var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
+				if(m !== null) {
+					line = line.substr(m.shift().length);
+					if(m[0] == 0) {
+						bg = BG_BLACK;
+						fg = LIGHTGRAY;
+						i = 0;
+						m.shift();
+					}
+					if(m[0] == 1) {
+						i = HIGH;
+						m.shift();
+					}
+					if(m[0] >= 40) {
+						switch(Number(m.shift())) {
+						case 40:
+							bg = BG_BLACK;
+							break;
+						case 41:
+							bg = BG_RED;
+							break;
+						case 42: 
+							bg = BG_GREEN;
+							break;
+						case 43:
+							bg = BG_BROWN;
+							break;
+						case 44:
+							bg = BG_BLUE;
+							break;
+						case 45:
+							bg = BG_MAGENTA;
+							break;
+						case 46:
+							bg = BG_CYAN;
+							break;
+						case 47:
+							bg = BG_LIGHTGRAY;
+							break;
+						}
+					}
+					if(m[0] >= 30) {
+						switch(Number(m.shift())) {
+						case 30:
+							fg = BLACK;
+							break;
+						case 31:
+							fg = RED;
+							break;
+						case 32:
+							fg = GREEN;
+							break;
+						case 33:
+							fg = BROWN;
+							break;
+						case 34:
+							fg = BLUE;
+							break;
+						case 35:
+							fg = MAGENTA;
+							break;
+						case 36:
+							fg = CYAN;
+							break;
+						case 37:
+							fg = LIGHTGRAY;
+							break;
+						}
+					}
+					attr = bg + fg + i;
+					continue;
+				}
+				/* parse a positional sequence */
+				var n = line.match(/^\x1b\[(\d+)C/);
+				if(n !== null) {
+					line = line.substr(n.shift().length);
+					x+=Number(n.shift());
+					continue;
+				}
+				/* set character and attribute */
+				var ch = line[0];
+				line = line.substr(1);
+				this.data[x][y]=new Graphic_sector(ch,attr);
+				x++;
+			}
+			y++;
 		}
-		*/
 		break;
 	case "BIN":
 		if(!(f.open("rb",true,4096)))
