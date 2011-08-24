@@ -198,8 +198,6 @@ function Graphic_drawfx(xpos,ypos,width,height,xoff,yoff)
 }
 function Graphic_load(filename)
 {
-	var x;
-	var y;
 	var file_type=file_getext(filename).substr(1);
 	var f=new File(filename);
 
@@ -215,8 +213,7 @@ function Graphic_load(filename)
 		var fg = LIGHTGRAY;
 		var i = 0;
 		var y = 0;
-		
-		while(lines.length > 0) {	
+		while(lines.length > 0 && y < this.height) {	
 			var x = 0;
 			var line = lines.shift();
 			
@@ -228,7 +225,7 @@ function Graphic_load(filename)
 			);
 			*/
 			
-			while(line.length > 0) {
+			while(line.length > 0 && x < this.width) {
 				/* parse an attribute sequence*/
 				var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
 				if(m !== null) {
@@ -321,8 +318,8 @@ function Graphic_load(filename)
 	case "BIN":
 		if(!(f.open("rb",true,4096)))
 			return(false);
-		for(y=0; y<this.height; y++) {
-			for(x=0; x<this.width; x++) {
+		for(var y=0; y<this.height; y++) {
+			for(var x=0; x<this.width; x++) {
 				this.data[x][y]=new Object;
 				if(f.eof)
 					return(false);
@@ -333,6 +330,9 @@ function Graphic_load(filename)
 			}
 		}
 		f.close();
+		break;
+	default:
+		throw("unsupported file type");
 		break;
 	}
 	return(true);
