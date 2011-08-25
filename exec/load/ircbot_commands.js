@@ -259,7 +259,7 @@ Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"Couldn't find a quote that matches your criteria.");
 		return;
 	}
-	srv.o(target, quotes[random(Quotes.length)]);
+	srv.o(target, Quotes[random(Quotes.length)]);
 	return;
 }
 
