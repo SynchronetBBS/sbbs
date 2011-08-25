@@ -81,6 +81,7 @@ static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
+#define BAD_LOGIN_DELAY			5000	/* Milliseconds */
 #define SPAM_HASH_SUBJECT_MIN_LEN	10	/* characters */
 
 #define STATUS_WFC	"Listening"
@@ -860,18 +861,21 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: %s"
 					,socket, username);
+			mswait(BAD_LOGIN_DELAY);
 			sockprintf(socket,pop_err);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
 			lprintf(LOG_ERR,"%04d !POP3 ERROR %d getting data on user (%s)"
 				,socket, i, username);
+			mswait(BAD_LOGIN_DELAY);
 			sockprintf(socket, pop_err);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d !POP3 DELETED or INACTIVE user #%u (%s)"
 				,socket, user.number, username);
+			mswait(BAD_LOGIN_DELAY);
 			sockprintf(socket, pop_err);
 			break;
 		}
@@ -888,6 +892,7 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
 				lprintf(LOG_DEBUG,"%04d !POP3 resp digest: %s",socket,response);
 #endif
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,pop_err);
 				break;
 			}
@@ -898,6 +903,7 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d !POP3 FAILED Password attempt for user %s"
 					,socket, username);
+			mswait(BAD_LOGIN_DELAY);
 			sockprintf(socket, pop_err);
 			break;
 		}
@@ -2867,6 +2873,8 @@ static void smtp_thread(void* arg)
 						lprintf(LOG_INFO,"%04d SMTP %s posted a message on %s"
 							,socket, sender_addr, scfg.sub[subnum]->sname);
 						sockprintf(socket,ok_rsp);
+						if(relay_user.number != 0)
+							user_posted_msg(&scfg, &relay_user, 1);
 						signal_smtp_sem();
 					}
 					free(msgbuf);
@@ -3032,6 +3040,8 @@ static void smtp_thread(void* arg)
 					}
 					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s to %s <%s>"
 						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
+					if(relay_user.number!=0)
+						user_sent_email(&scfg, &relay_user, 1, usernum==1);
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
 						if(newmsg.idx.to)
 							for(i=1;i<=scfg.sys_nodes;i++) {
@@ -3239,12 +3249,14 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
 						,socket, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				continue;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d getting data on user (%s)"
 					,socket, i, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				continue;
@@ -3252,6 +3264,7 @@ static void smtp_thread(void* arg)
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, relay_user.number, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				break;
@@ -3263,6 +3276,7 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d !SMTP FAILED Password attempt for user %s"
 						,socket, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				break;
@@ -3525,11 +3539,24 @@ static void smtp_thread(void* arg)
 				SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
 				spamlog(&scfg, "SMTP", "REFUSED", tmp
 					,host_name, host_ip, rcpt_addr, reverse_path);
-				sockprintf(socket, "552 Too many recipients");
+				sockprintf(socket, "452 Too many recipients");
 				stats.msgs_refused++;
 				continue;
 			}
 
+			if(relay_user.number && (relay_user.etoday+rcpt_count) >= scfg.level_emailperday[relay_user.level]
+				&& !(relay_user.exempt&FLAG('M'))) {
+				lprintf(LOG_NOTICE,"%04d !SMTP EMAILS PER DAY LIMIT (%u) REACHED FOR: %s"
+					,socket, scfg.level_emailperday[relay_user.level], relay_user.alias);
+				SAFEPRINTF2(tmp,"Maximum emails per day (%u) for %s"
+					,scfg.level_emailperday[relay_user.level], relay_user.alias);
+				spamlog(&scfg, "SMTP", "REFUSED", tmp
+					,host_name, host_ip, rcpt_addr, reverse_path);
+				sockprintf(socket, "452 Too many emails today");
+				stats.msgs_refused++;
+				continue;
+			}
+				
 			/* Check for SPAM bait recipient */
 			if((spam_bait_result=findstr(rcpt_addr,spam_bait))==TRUE) {
 				char	reason[256];
@@ -3824,15 +3851,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 			}
-			if(cmd==SMTP_CMD_MAIL) {
-#if 0	/* TODO implement later */
-				if(useron.etoday>=cfg.level_emailperday[useron.level]
-					&& !(useron.rest&FLAG('Q'))) {
-					bputs(text[TooManyEmailsToday]);
-					continue; 
-				}
-#endif
-			} else
+			if(cmd!=SMTP_CMD_MAIL)
 				telegram=TRUE;
 
 			fprintf(rcptlst,"[%u]\n",rcpt_count++);
