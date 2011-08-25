@@ -700,15 +700,24 @@ void sbbs_t::readmail(uint usernumber, int which)
 			case 'U':   /* user edit */
 				msg.hdr.number=msg.idx.number;
 				smb_getmsgidx(&smb,&msg);
-				useredit(which==MAIL_SENT ? msg.idx.to : msg.idx.from);
+				if((which==MAIL_SENT ? msg.idx.to : msg.idx.from) == 0) {
+					bputs(text[UnknownUser]);
+					domsg=false;
+				} else
+					useredit(which==MAIL_SENT ? msg.idx.to : msg.idx.from);
 				break;
 			case 'P':   /* Purge author and all mail to/from */
-				if(noyes(text[AreYouSureQ]))
+				if(noyes(text[UeditDeleteQ]))
 					break;
 				msg.hdr.number=msg.idx.number;
 				smb_getmsgidx(&smb,&msg);
-				purgeuser(msg.idx.from);
-				if(smb.curmsg<smb.msgs-1) smb.curmsg++;
+				if((which==MAIL_SENT ? msg.idx.to : msg.idx.from) == 0) {
+					bputs(text[UnknownUser]);
+					domsg=false;
+				} else {
+					purgeuser(msg.idx.from);
+					if(smb.curmsg<smb.msgs-1) smb.curmsg++;
+				}
 				break;
 			case '?':
 				strcpy(str,which==MAIL_YOUR ? "mailread" : which==MAIL_ALL
