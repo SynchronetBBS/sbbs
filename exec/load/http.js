@@ -94,7 +94,7 @@ function HTTPRequest()
 		this.response_headers=[];
 
 		for(;;) {
-			header=this.sock.recvline(4096);
+			header=this.sock.recvline(4096, 120);
 			if(header==null)
 				throw("Unable to receive headers");
 			if(header=='')

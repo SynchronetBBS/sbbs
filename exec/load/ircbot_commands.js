@@ -621,7 +621,6 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		if(!cmd) return false;
 		
 		if(cmd[0].length == 0) {
-			srv.o(chan.name,"Type '" + get_cmd_prefix() + "HELP' for a list of commands.");
 			return false;
 		}
 		
