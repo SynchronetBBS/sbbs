@@ -247,6 +247,7 @@ enum {
 
 static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char		tmp[128];
 	const char*	p=NULL;
 	const char*	nulstr="";
 	ulong		val=0;
@@ -478,7 +479,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(sbbs->current_msg==NULL || sbbs->current_msg->to_net.type==NET_NONE)
 				p=nulstr;
 			else
-				p=smb_netaddr(&sbbs->current_msg->to_net);
+				p=smb_netaddrstr(&sbbs->current_msg->to_net,tmp);
 			break;
 		case BBS_PROP_MSG_TO_AGENT:
 			if(sbbs->current_msg!=NULL)
@@ -500,7 +501,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(sbbs->current_msg==NULL || sbbs->current_msg->from_net.type==NET_NONE)
 				p=nulstr;
 			else
-				p=smb_netaddr(&sbbs->current_msg->from_net);
+				p=smb_netaddrstr(&sbbs->current_msg->from_net,tmp);
 			break;
 		case BBS_PROP_MSG_FROM_AGENT:
 			if(sbbs->current_msg!=NULL)
@@ -522,7 +523,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(sbbs->current_msg==NULL || sbbs->current_msg->replyto_net.type==NET_NONE)
 				p=nulstr;
 			else
-				p=smb_netaddr(&sbbs->current_msg->replyto_net);
+				p=smb_netaddrstr(&sbbs->current_msg->replyto_net,tmp);
 			break;
 		case BBS_PROP_MSG_REPLYTO_AGENT:
 			if(sbbs->current_msg!=NULL)

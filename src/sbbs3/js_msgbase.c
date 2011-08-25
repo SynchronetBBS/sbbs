@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -722,6 +722,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	char			date[128];
 	char			msg_id[256];
 	char			reply_id[256];
+	char			tmp[128];
 	char*			val;
 	int				i;
 	smbmsg_t		remsg;
@@ -761,12 +762,12 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsval id)
 	LAZY_INTEGER_EXPAND("from_agent", p->msg.from_agent, JSPROP_ENUMERATE);
 	LAZY_INTEGER_EXPAND("replyto_agent", p->msg.replyto_agent, JSPROP_ENUMERATE);
 	LAZY_INTEGER_EXPAND("to_net_type", p->msg.to_net.type, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("to_net_addr", p->msg.to_net.type && p->msg.to_net.addr, smb_netaddr(&(p->msg).to_net), JSPROP_ENUMERATE);
+	LAZY_STRING_COND("to_net_addr", p->msg.to_net.type && p->msg.to_net.addr, smb_netaddrstr(&(p->msg).to_net,tmp), JSPROP_ENUMERATE);
 	LAZY_INTEGER_EXPAND("from_net_type", p->msg.from_net.type, JSPROP_ENUMERATE);
 	/* exception here because p->msg.from_net is NULL */
-	LAZY_STRING_COND("from_net_addr", p->msg.from_net.type && p->msg.from_net.addr, smb_netaddr(&(p->msg).from_net), JSPROP_ENUMERATE);
+	LAZY_STRING_COND("from_net_addr", p->msg.from_net.type && p->msg.from_net.addr, smb_netaddrstr(&(p->msg).from_net,tmp), JSPROP_ENUMERATE);
 	LAZY_INTEGER_EXPAND("replyto_net_type", p->msg.replyto_net.type, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type && p->msg.replyto_net.addr, smb_netaddr(&(p->msg).replyto_net), JSPROP_ENUMERATE);
+	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.type && p->msg.replyto_net.addr, smb_netaddrstr(&(p->msg).replyto_net,tmp), JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_ip_addr", (val=smb_get_hfield(&(p->msg),SENDERIPADDR,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_host_name", (val=smb_get_hfield(&(p->msg),SENDERHOSTNAME,NULL))!=NULL, val, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("from_protocol", (val=smb_get_hfield(&(p->msg),SENDERPROTOCOL,NULL))!=NULL, val, JSPROP_ENUMERATE);
@@ -1754,7 +1755,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_id [,strip_ctrl_a=<tt>false</tt>] "
 		"[,rfc822_encoded=<tt>false</tt>] [,include_tails=<tt>true</tt>]")
-	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure. "
+	,JSDOCSTR("returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
 		"The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the "
 		"returned body text."
 	)
