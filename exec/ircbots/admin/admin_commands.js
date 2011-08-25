@@ -461,39 +461,6 @@ Bot_Commands["EXEC"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	return;
 }
 
-Bot_Commands["ADDQUOTE"] = new Bot_Command(80,true,false);
-Bot_Commands["ADDQUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	cmd.shift();
-	var the_quote = cmd.join(" ");
-	quotes.push(the_quote);
-	srv.o(target,"Thanks for the quote!");
-	return;
-}
-
-Bot_Commands["QUOTE"] = new Bot_Command(0,false,false);
-Bot_Commands["QUOTE"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	if (cmd[1]) {
-		cmd.shift();
-		var searched_quotes = new Object();
-		var search_params = cmd.join(" ");
-		var lucky_number;
-		while (true_array_len(searched_quotes) < quotes.length) {
-			lucky_number = random(quotes.length);
-			if (!searched_quotes[lucky_number]) {
-				if (quotes[lucky_number].toUpperCase().match(search_params.toUpperCase())) {
-					srv.o(target, quotes[lucky_number]);
-					return;
-				}
-				searched_quotes[lucky_number] = true;
-			}
-		}
-		srv.o(target,"Couldn't find a quote that matches your criteria.");
-		return;
-	}
-	srv.o(target, quotes[random(quotes.length)]);
-	return;
-}
-
 Bot_Commands["SAY"] = new Bot_Command(80,true,false);
 Bot_Commands["SAY"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	cmd.shift();
