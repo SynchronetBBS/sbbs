@@ -697,11 +697,11 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 
 	if(strlen(pass)<4) {
 		bputs(text[PasswordTooShort]);
-		return(0); 
+		return(false); 
 	}
 	if(!strcmp(pass,user->pass)) {
 		bputs(text[PasswordNotChanged]);
-		return(0); 
+		return(false); 
 	}
 	d=strlen(pass);
 	for(c=1;c<d;c++)
@@ -709,21 +709,21 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 			break;
 	if(c==d) {
 		bputs(text[PasswordInvalid]);
-		return(0); 
+		return(false); 
 	}
 	for(c=0;c<3;c++)	/* check for 1234 and ABCD */
 		if(pass[c]!=pass[c+1]+1)
 			break;
 	if(c==3) {
 		bputs(text[PasswordObvious]);
-		return(0); 
+		return(false); 
 	}
 	for(c=0;c<3;c++)	/* check for 4321 and ZYXW */
 		if(pass[c]!=pass[c+1]-1)
 			break;
 	if(c==3) {
 		bputs(text[PasswordObvious]);
-		return(0); 
+		return(false); 
 	}
 	SAFECOPY(name,user->name);
 	strupr(name);
@@ -768,9 +768,9 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 		)
 		{
 		bputs(text[PasswordObvious]);
-		return(0); 
+		return(false); 
 	}
-	return(1);
+	return(!trashcan(pass,"password"));
 }
 
 /****************************************************************************/
