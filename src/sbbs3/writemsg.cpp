@@ -1119,7 +1119,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	idxrec_t	idx=msg->idx;
 	time32_t	now32;
 
-	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP) {
+	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return; 
 	}

@@ -64,7 +64,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 
 	SAFECOPY(title,subj);
 
-	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP) {
+	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return(false); 
 	}

@@ -265,7 +265,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				}
 			}
 
-			if(useron.etoday>=cfg.level_emailperday[useron.level]
+			if(useron.etoday>=cfg.level_emailperday[useron.level] && !(useron.exempt&FLAG('M'))
 				&& !(useron.rest&FLAG('Q'))) {
 				bputs(text[TooManyEmailsToday]);
 				continue; 

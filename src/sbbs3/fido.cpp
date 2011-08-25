@@ -114,7 +114,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode)
 	fmsghdr_t hdr;
 	struct tm tm;
 
-	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP) {
+	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return(false); 
 	}
