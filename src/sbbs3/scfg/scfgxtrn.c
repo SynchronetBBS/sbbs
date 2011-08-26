@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1114,7 +1114,7 @@ set this option to `No`.
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Intercept I/O"
 					,opt)) {
 					case 0: /* Standard I/O */
-						if(cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO) != XTRN_STDIO) {
+						if((cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_CONIO)) != XTRN_STDIO) {
 							cfg.xtrn[i]->misc|=XTRN_STDIO;
 							cfg.xtrn[i]->misc&=~XTRN_CONIO;
 							uifc.changes=1;
@@ -1616,7 +1616,7 @@ This is the internal code for the external editor.
 		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.xedit[i]->rcmd);
 		sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
 		sprintf(opt[k++],"%-32.32s%s%s","Intercept I/O"
-			,cfg.xedit[i]->misc&XTRN_STDIO ? "Yes"
+			,cfg.xedit[i]->misc&XTRN_STDIO ? "Standard"
 				:cfg.xedit[i]->misc&XTRN_CONIO ? "Console":"No"
 			,(cfg.xedit[i]->misc&(XTRN_STDIO|WWIVCOLOR))
 				==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
