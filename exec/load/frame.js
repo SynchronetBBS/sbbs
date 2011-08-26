@@ -21,8 +21,8 @@
 		
 METHODS:
 
-	frame.open();				//populates frame contents in character map
-	frame.close();				//removes frame contents from character map
+	frame.open();				//populates frame contents in character canvas
+	frame.close();				//removes frame contents from character canvas
 	frame.draw();				//draws the characters occupied by 'frame' coords/dimensions 
 	frame.cycle();				//checks the display matrix for updated characters and displays them 
 	frame.load(filename):			//loads a binary graphic (.BIN) or ANSI graphic (.ANS) file into the frame
@@ -77,14 +77,14 @@ load("sbbsdefs.js");
 function Frame(x,y,width,height,attr,frame) {
 
 	/* matrix representing frame positional and dimensional limits */
-	function CharMap(x,y,width,height) {
+	function Canvas(x,y,width,height) {
 		/* private properties */
 		var properties = {
 			x:undefined,
 			y:undefined,
 			width:undefined,
 			height:undefined,
-			map:[],
+			canvas:[],
 			update:{}
 		}
 
@@ -149,13 +149,12 @@ function Frame(x,y,width,height,attr,frame) {
 			}
 			properties.update = {};
  		}
-		this.draw = function(xpos,ypos,width,height) {
-			var xoff = xpos - properties.x;
-			var yoff = ypos - properties.y;
-			for(var y=0;y<height;y++) {
-				console.gotoxy(xpos,ypos + y);
-				for(var x=0;x<width;x++) {
-					drawChar(x+xoff,y+yoff,xpos,ypos);
+		this.draw = function(frame) {
+			for(var xoff = 0;xoff<frame.width;xoff++) {
+				for(var yoff = 0;yoff<frame.height;yoff++) {
+					var x = frame.x - properties.x;
+					var y = frame.y - properties.y;
+					updateChar(xoff + x,yoff + y);
 				}
 			}
 		}
@@ -164,7 +163,7 @@ function Frame(x,y,width,height,attr,frame) {
 				for(var yoff = 0;yoff<frame.height;yoff++) {
 					var x = frame.x - properties.x;
 					var y = frame.y - properties.y;
-					properties.map[xoff+x][yoff+y][frame.id] = 
+					properties.canvas[xoff+x][yoff+y][frame.id] = 
 						new CharPointer(frame,xoff,yoff);
 					updateChar(xoff + x,yoff + y);
 				}
@@ -175,7 +174,7 @@ function Frame(x,y,width,height,attr,frame) {
 				for(var yoff = 0;yoff<frame.height;yoff++) {
 					var x = frame.x - properties.x;
 					var y = frame.y - properties.y;
-					delete properties.map[xoff+x][yoff+y][frame.id];
+					delete properties.canvas[xoff+x][yoff+y][frame.id];
 					updateChar(xoff + x,yoff + y);
 				}
 			}
@@ -185,8 +184,8 @@ function Frame(x,y,width,height,attr,frame) {
 				for(var yoff = 0;yoff<frame.height;yoff++) {
 					var x = frame.x - properties.x;
 					var y = frame.y - properties.y;
-					delete properties.map[xoff+x][yoff+y][frame.id];
-					properties.map[xoff+x][yoff+y][frame.id] = 
+					delete properties.canvas[xoff+x][yoff+y][frame.id];
+					properties.canvas[xoff+x][yoff+y][frame.id] = 
 						new CharPointer(frame,xoff,yoff);
 					updateChar(xoff + x,yoff + y);
 				}
@@ -197,12 +196,12 @@ function Frame(x,y,width,height,attr,frame) {
 				for(var yoff = 0;yoff<frame.height;yoff++) {
 					var x = frame.x - properties.x;
 					var y = frame.y - properties.y;
-					for(var f in properties.map[xoff+x][yoff+y]) {
-						var cp = properties.map[xoff+x][yoff+y][f];
+					for(var f in properties.canvas[xoff+x][yoff+y]) {
+						var cp = properties.canvas[xoff+x][yoff+y][f];
 						if(cp.frame.id == frame.id)
 							continue;
-						delete properties.map[xoff+x][yoff+y][f];
-						properties.map[xoff+x][yoff+y][f] = 
+						delete properties.canvas[xoff+x][yoff+y][f];
+						properties.canvas[xoff+x][yoff+y][f] = 
 							cp;
 					}
 					updateChar(xoff + x,yoff + y);
@@ -222,16 +221,16 @@ function Frame(x,y,width,height,attr,frame) {
 			properties.update[y][x] = 1;
 		}
 		function drawChar(x,y,xpos,ypos) {
-			var sector = getLast(properties.map[x][y]);
+			var pointer = getLast(properties.canvas[x][y]);
 			var ch = undefined;
 			var attr = undefined;
 
-			if(sector instanceof CharPointer) {
-				ch = sector.frame.data[sector.x][sector.y].ch;
-				attr = sector.frame.data[sector.x][sector.y].attr;
+			if(pointer instanceof CharPointer) {
+				ch = pointer.frame.getData(pointer).ch;
+				attr = pointer.frame.getData(pointer).attr;
 			}
 			console.attributes = attr;
-			if(xpos == console.screen_columns && ypos == console.screen_rows) 
+			if(xpos == console.screen_columns && ypos == console.screen_rows)  
 				console.cleartoeol();
 			else if(ch == undefined)
 				console.write(" ");
@@ -245,9 +244,9 @@ function Frame(x,y,width,height,attr,frame) {
 			this.height = height;
 			
 			for(var w = 0;w<this.width;w++) {
-				properties.map.push(new Array(height));
+				properties.canvas.push(new Array(height));
 				for(var h = 0;h<this.height;h++)
-					properties.map[w][h] = {}; 
+					properties.canvas[w][h] = {}; 
 			}
 		}
 		init.apply(this,arguments);
@@ -273,34 +272,36 @@ function Frame(x,y,width,height,attr,frame) {
 		width:undefined,
 		height:undefined,
 		attr:undefined,
-		map:undefined,
+		canvas:undefined,
 		data:[],
-		parent:undefined,
-		child:[],
-		cursor:{x:0,y:0},
 		id:0
+	}
+	var relations = {
+		parent:undefined,
+		child:[]
+	}
+	var position = {
+		cursor:{x:0,y:0},
+		offset:{x:0,y:0}
 	}
 		
 	/* protected properties */
 	this.id getter = function() {
-		if(properties.parent)
-			return properties.parent.id+""+properties.id;
+		if(relations.parent)
+			return relations.parent.id+""+properties.id;
 		return properties.id;
 	}
 	this.parent getter = function() {
-		return properties.parent;
+		return relations.parent;
 	}
 	this.child getter = function() {
-		return properties.child;
+		return relations.child;
 	}
 	this.child setter = function(frame) {
-		properties.child.push(frame);
+		relations.child.push(frame);
 	}
-	this.data getter = function() {
-		return properties.data;
-	}
-	this.map getter = function() {
-		return properties.map;
+	this.canvas getter = function() {
+		return properties.canvas;
 	}
 	this.attr getter = function() {
 		return properties.attr;
@@ -317,106 +318,117 @@ function Frame(x,y,width,height,attr,frame) {
 	this.x getter = function() { 
 		if(properties.x)
 			return properties.x;
-		return properties.map.x; 
+		return properties.canvas.x; 
 	}
 	this.x setter = function(x) {
 		if(x == undefined)
 			return;
 		if(x < 1 || isNaN(x))
 			throw("invalid x coordinate: " + x);
-		else if(x > (properties.map.x + properties.map.width - 1) || x < properties.map.x)
+		else if(x > (properties.canvas.x + properties.canvas.width - 1) || x < properties.canvas.x)
 			throw("invalid x coordinate: " + x);
 		properties.x = x;
 	}
 	this.y getter = function() { 
 		if(properties.y)
 			return properties.y;
-		return properties.map.y; 
+		return properties.canvas.y; 
 	}
 	this.y setter = function(y) {
 		if(y == undefined)
 			return;
 		if(y < 1 || isNaN(y))
 			throw("invalid y coordinate: " + y);
-		else if(y > (properties.map.y + properties.map.height - 1) || y < properties.map.y)
+		else if(y > (properties.canvas.y + properties.canvas.height - 1) || y < properties.canvas.y)
 			throw("invalid y coordinate: " + y);
 		properties.y = y;
 	}
 	this.width getter = function() {
 		if(properties.width)
 			return properties.width;
-		return properties.map.width;
+		return properties.canvas.width;
 	}
 	this.width setter = function(width) {
 		if(width == undefined)
 			return;
 		else if(width < 1 || isNaN(width))
 			throw("invalid width: " + width);
-		else if((properties.x + width) > (properties.map.x + properties.map.width))
+		else if((properties.x + width) > (properties.canvas.x + properties.canvas.width))
 			throw("invalid width: " + width);
 		properties.width = width;
 	}
 	this.height getter = function() {
 		if(properties.height)
 			return properties.height;
-		return properties.map.height;
+		return properties.canvas.height;
 	}
 	this.height setter = function(height) {
 		if(height == undefined)
 			return;
 		else if(height < 1 || isNaN(height)) 
 			throw("invalid height: " + height);
-		else if((properties.y+ height) > (properties.map.y + properties.map.height))
+		else if((properties.y+ height) > (properties.canvas.y + properties.canvas.height))
 			throw("invalid height: " + height);
 		properties.height = height;
 	}
 
 	/* public methods */
+	this.getData = function(pointer) {
+		return properties.data[pointer.x + position.offset.x][pointer.y + position.offset.y];
+	}
+	this.setData = function(pointer,ch,attr) {
+		properties.data
+			[pointer.x + position.offset.x]
+			[pointer.y + position.offset.y].ch = ch;
+		properties.data
+			[pointer.x + position.offset.x]
+			[pointer.y + position.offset.y].attr = attr;
+	}
 	this.bottom = function() {
-		properties.map.bottom(this);
+		properties.canvas.bottom(this);
 	}
 	this.top = function() {
-		properties.map.top(this);
+		properties.canvas.top(this);
 	}
 	this.open = function() {
-		properties.map.add(this);
-		for each(var c in properties.child) 
+		properties.canvas.add(this);
+		for each(var c in relations.child) 
 			c.open();
 	}
 	this.close = function() {
-		for each(var c in properties.child) 
+		for each(var c in relations.child) 
 			c.close();
-		properties.map.remove(this);
+		properties.canvas.remove(this);
 	}
 	this.move = function(x,y) {
-		if(this.x+x < properties.map.x ||
-			this.x+x + this.width > properties.map.x + properties.map.width)
+		if(this.x+x < properties.canvas.x ||
+			this.x+x + this.width > properties.canvas.x + properties.canvas.width)
 			return false;
-		if(this.y+y < properties.map.y ||
-			this.y+y + this.height > properties.map.y + properties.map.height)
+		if(this.y+y < properties.canvas.y ||
+			this.y+y + this.height > properties.canvas.y + properties.canvas.height)
 			return false;
-		properties.map.remove(this);
+		properties.canvas.remove(this);
 		this.x += x;
 		this.y += y;
-		properties.map.add(this);
+		properties.canvas.add(this);
 	}
 	this.moveTo = function(x,y) {
-		if(x < properties.map.x || x + this.width > properties.map.x + properties.map.width)
+		if(x < properties.canvas.x || x + this.width > properties.canvas.x + properties.canvas.width)
 			return false;
-		if(y < properties.map.y || y + this.height > properties.map.y + properties.map.height)
+		if(y < properties.canvas.y || y + this.height > properties.canvas.y + properties.canvas.height)
 			return false;
-		properties.map.remove(this);
+		properties.canvas.remove(this);
 		this.x = x;
 		this.y = y;
-		properties.map.add(this);
+		properties.canvas.add(this);
 	}
 	this.draw = function() {
-		properties.map.draw(this.x,this.y,this.width,this.height);
+		properties.canvas.draw(this);
 	}
 	this.cycle = function() {
-		return properties.map.cycle();
+		return properties.canvas.cycle();
 	}
-	this.load = function(filename) {
+	this.load = function(filename,width,height) {
 		var f=new File(filename);
 		switch(file_getext(filename).substr(1).toUpperCase()) {
 		case "ANS":
@@ -431,10 +443,10 @@ function Frame(x,y,width,height,attr,frame) {
 			var i = 0;
 
 			var y = 0;
-			while(lines.length > 0 && y < this.height) {	
+			while(lines.length > 0) {	
 				var x = 0;
 				var line = lines.shift();
-				while(line.length > 0 && x < this.width) {
+				while(line.length > 0) {
 					/* parse an attribute sequence*/
 					var m = line.match(/^\x1b\[(\d+);?(\d*);?(\d*)m/);
 					if(m !== null) {
@@ -525,10 +537,12 @@ function Frame(x,y,width,height,attr,frame) {
 			}
 			break;
 		case "BIN":
+			if(width == undefined || height == undefined)
+				throw("unknown graphic dimensions");
 			if(!(f.open("rb",true,4096)))
 				return(false);
-			for(var y=0; y<this.height; y++) {
-				for(var x=0; x<this.width; x++) {
+			for(var y=0; y<height; y++) {
+				for(var x=0; x<width; x++) {
 					var c = new Char();
 					if(f.eof)
 						return(false);
@@ -546,28 +560,37 @@ function Frame(x,y,width,height,attr,frame) {
 			break;
 		}
 	}
-	this.scroll = function(dir) {
-		if(dir == undefined) {
+	this.scroll = function(x,y) {
+		/* for putmsg() only, add a new line to the data matrix */
+		if(x == undefined && y == undefined) {
 			for(var x = 0;x<this.width;x++) {
-				for(var y = 0;y<this.height;y++) {
-					if(properties.data[x][y+1]) {
-						properties.data[x][y].ch = properties.data[x][y+1].ch;
-						properties.data[x][y].attr = properties.data[x][y+1].attr;
-					}
-					else {
-						properties.data[x][y].ch = undefined;
-						properties.data[x][y].attr = this.attr;
-					}
-					properties.map.update(this,x,y);
-				}
+				for(var y = 0;y<this.height;y++) 
+					properties.canvas.update(this,x,y);
+				properties.data[x].push(new Char(undefined,this.attr));
 			}
+			position.offset.y++;
+		}
+		/* otherwise, adjust the x/y offset */
+		else {
+			if(typeof x == "number")
+				position.offset.x += x;
+			if(typeof y == "number")
+				position.offset.y += y;
+			if(position.offset.x < 0)
+				position.offset.x = 0;
+			if(position.offset.y < 0)
+				position.offset.y = 0;
+			if(position.offset.x + this.width > properties.data.length)
+				position.offset.x = properties.data.length - this.width;
+			if(position.offset.y + this.height > properties.data[0].length)
+				position.offset.y = properties.data[0].length - this.height;
 		}
 	}
 
 	/* console method emulation */
 	this.home = function() {
-		properties.cursor.x = 0;
-		properties.cursor.y = 0;
+		position.cursor.x = 0;
+		position.cursor.y = 0;
 	}
 	this.clear = function(attr) {
 		if(attr == undefined)
@@ -576,7 +599,7 @@ function Frame(x,y,width,height,attr,frame) {
 			for(var y = 0;y<this.height;y++) {
 				properties.data[x][y].ch = undefined;
 				properties.data[x][y].attr = attr;
-				properties.map.update(this,x,y);
+				properties.canvas.update(this,x,y);
 			}
 		}
 		this.home();
@@ -585,7 +608,7 @@ function Frame(x,y,width,height,attr,frame) {
 		if(attr == undefined)
 			attr = this.attr;
 		for(var x = 0;x<this.width;x++) {
-			properties.map.update(this,x,y);
+			properties.canvas.update(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
@@ -593,23 +616,24 @@ function Frame(x,y,width,height,attr,frame) {
 	this.cleartoeol = function(attr) {
 		if(attr == undefined)
 			attr = this.attr;
-		for(var x = properties.cursor.x;x<this.width;x++) {
-			properties.map.update(this,x,y);
+		for(var x = position.cursor.x;x<this.width;x++) {
+			properties.canvas.update(this,x,y);
 			properties.data[x][y].ch = undefined;
 			properties.data[x][y].attr = attr;
 		}
 	}
 	this.crlf = function() {
-		properties.cursor.x = 0;
-		if(properties.cursor.y < this.height-1) 
-			properties.cursor.y += 1;
+		position.cursor.x = 0;
+		if(position.cursor.y < this.height-1) 
+			position.cursor.y += 1;
 		else {}
 	}
 	this.putmsg = function(str) {
 		str = str.split('');
 		var control_a = false;
 		var curattr = this.attr;
-		var pos = properties.cursor;
+		var pos = position.cursor;
+		var off = position.offset;
 
 		while(str.length > 0) {
 			if(pos.x >= this.width) {
@@ -625,9 +649,8 @@ function Frame(x,y,width,height,attr,frame) {
 			if(control_a) {
 				switch(ch) {
 				case '\1':	/* A "real" ^A code */
-					properties.data[pos.x][pos.y].ch=ch;
-					properties.data[pos.x][pos.y].attr=curattr;
-					properties.map.update(this,pos.x,pos.y);
+					this.setData(position.cursor,ch,attr);
+					properties.canvas.update(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				case 'K':	/* Black */
@@ -725,9 +748,8 @@ function Frame(x,y,width,height,attr,frame) {
 					pos.y++;
 					break;
 				default:
-					properties.data[pos.x][pos.y].ch=ch;
-					properties.data[pos.x][pos.y].attr=curattr;
-					properties.map.update(this,pos.x,pos.y);
+					this.setData(position.cursor,ch,attr);
+					properties.canvas.update(this,pos.x,pos.y);
 					pos.x++;
 					break;
 				}
@@ -735,21 +757,21 @@ function Frame(x,y,width,height,attr,frame) {
 		}
 	}
 	this.center = function(str) {
-		properties.cursor.x = Math.ceil(this.width/2) - Math.ceil(console.strlen(str)/2) + 1;
-		if(properties.cursor.x < 0)
-			properties.cursor.x = 0;
+		position.cursor.x = Math.ceil(this.width/2) - Math.ceil(console.strlen(str)/2) + 1;
+		if(position.cursor.x < 0)
+			position.cursor.x = 0;
 		this.putmsg(str);
 	}
 	this.gotoxy = function(x,y) {
 		if(x <= this.width)
-			properties.cursor.x = x-1;
+			position.cursor.x = x-1;
 		if(y <= this.height)
-			properties.cursor.y = y-1;
+			position.cursor.y = y-1;
 	}
 	this.getxy = function() {
 		var xy = {
-			x:properties.cursor.x+1,
-			y:properties.cursor.y+1
+			x:position.cursor.x+1,
+			y:position.cursor.y+1
 		}
 		return xy;
 	}
@@ -764,12 +786,12 @@ function Frame(x,y,width,height,attr,frame) {
 	function init(x,y,width,height,attr,frame) {
 		if(frame instanceof Frame) {
 			properties.id = frame.child.length;
-			properties.map = frame.map;
-			properties.parent = frame;
+			properties.canvas = frame.canvas;
+			relations.parent = frame;
 			frame.child = this;
 		}
 		else {
-			properties.map = new CharMap(x,y,width,height);
+			properties.canvas = new Canvas(x,y,width,height);
 		}
 
 		this.transparent = false;
