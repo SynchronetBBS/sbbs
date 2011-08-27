@@ -148,7 +148,7 @@ function Lightbar_getval(current,key)
 		this.draw();
 		
 	/* Main loop */
-	while(1) {
+	while(bbs.online) {
 	
 		last_cur=this.current;
 		/* Get input */
