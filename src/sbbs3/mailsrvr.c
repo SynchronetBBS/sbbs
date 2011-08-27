@@ -558,6 +558,15 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))
 			return(0);
 
+	/* non-standard, but documented in draft-newman-msgheader-originfo-05 */
+	sockprintf(socket,"Originator-Info: account=%s; ip-address=%s; hostname=%s; protocol=%s; port=%s"
+		,msg->from_ext
+		,smb_get_hfield(msg,SENDERIPADDR,NULL)
+		,smb_get_hfield(msg,SENDERHOSTNAME,NULL)
+		,smb_get_hfield(msg,SENDERPROTOCOL,NULL)
+		,smb_get_hfield(msg,SENDERPORT,NULL)
+		);
+
     for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
 			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
@@ -1431,7 +1440,7 @@ static BOOL email_addr_is_exempt(const char* addr)
 }
 
 static void exempt_email_addr(const char* comment
-							  ,const char* fromname, const char* fromaddr
+							  ,const char* fromname, const char* fromext, const char* fromaddr
 							  ,const char* toaddr)
 {
 	char	fname[MAX_PATH+1];
@@ -1446,8 +1455,12 @@ static void exempt_email_addr(const char* comment
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
-			fprintf(fp,"\n;%s from \"%s\" %s on %s\n%s\n"
-				,comment, fromname, fromaddr, timestr(&scfg,time(NULL),tmp), to);
+			fprintf(fp,"\n;%s from \"%s\" "
+				,comment, fromname);
+			if(fromext!=NULL)
+				fprintf(fp,"#%s ",fromext);
+			fprintf(fp,"%s on %s\n%s\n"
+				,fromaddr, timestr(&scfg,time(NULL),tmp), to);
 			fclose(fp);
 		}
 	}
@@ -2158,9 +2171,11 @@ static void smtp_thread(void* arg)
 	char		reverse_path[128];
 	char		date[64];
 	char		qwkid[32];
+	char		rcpt_to[128];
 	char		rcpt_name[128];
 	char		rcpt_addr[128];
 	char		sender[128];
+	char		sender_ext[128];
 	char		sender_addr[128];
 	char		hello_name[128];
 	char		user_name[LEN_ALIAS+1];
@@ -2524,16 +2539,16 @@ static void smtp_thread(void* arg)
 
 						section=sec_list[rcpt_count];
 
-						SAFECOPY(rcpt_name,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
+						SAFECOPY(rcpt_to,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
 						usernum=iniReadInteger(rcptlst,section				,smb_hfieldtype(RECIPIENTEXT),0);
-						SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),rcpt_name,value));
+						SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),rcpt_to,value));
 
 						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
 							lprintf(LOG_INFO,"%04d SMTP Created telegram (%ld/%u bytes) from %s to %s <%s>"
-								,socket, length, strlen(telegram_buf), sender_addr, rcpt_name, rcpt_addr);
+								,socket, length, strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
 							lprintf(LOG_ERR,"%04d !SMTP ERROR %d creating telegram from %s to %s <%s>"
-								,socket, i, sender_addr, rcpt_name, rcpt_addr);
+								,socket, i, sender_addr, rcpt_to, rcpt_addr);
 					}
 					iniFreeStringList(sec_list);
 					free(telegram_buf);
@@ -2805,10 +2820,12 @@ static void smtp_thread(void* arg)
 					subnum=INVALID_SUB;
 					continue;
 				}
-				if(relay_user.number && subnum!=INVALID_SUB) {
-					nettype=NET_NONE;
+				if(relay_user.number) {
 					SAFEPRINTF(str,"%u",relay_user.number);
 					smb_hfield_str(&msg, SENDEREXT, str);
+				}
+				if(relay_user.number && subnum!=INVALID_SUB) {
+					nettype=NET_NONE;
 					smb_hfield_str(&msg, SENDER, relay_user.alias);
 				} else {
 					nettype=NET_INTERNET;
@@ -2977,6 +2994,8 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
+				lprintf(LOG_DEBUG,"%04d SMTP Recipient name: '%s'", socket, rcpt_name);
+
 				sec_list=iniReadSectionList(rcptlst,NULL);	/* Each section is a recipient */
 				for(rcpt_count=0; sec_list!=NULL
 					&& sec_list[rcpt_count]!=NULL 
@@ -2984,7 +3003,7 @@ static void smtp_thread(void* arg)
 				
 					section=sec_list[rcpt_count];
 
-					SAFECOPY(rcpt_name,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
+					SAFECOPY(rcpt_to,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
 					usernum=iniReadInteger(rcptlst,section				,smb_hfieldtype(RECIPIENTEXT),0);
 					agent=iniReadShortInt(rcptlst,section				,smb_hfieldtype(RECIPIENTAGENT),AGENT_PERSON);
 					nettype=iniReadShortInt(rcptlst,section				,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
@@ -3013,7 +3032,7 @@ static void smtp_thread(void* arg)
 						,server_name
 						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
-						,rcpt_name,msgdate(msg.hdr.when_imported,date)
+						,rcpt_to,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
@@ -3038,8 +3057,11 @@ static void smtp_thread(void* arg)
 							,socket, i, smb.last_error);
 						break;
 					}
-					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s to %s <%s>"
-						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
+					sender_ext[0]=0;
+					if(msg.from_ext!=NULL)
+						SAFEPRINTF(sender_ext," #%s",msg.from_ext);
+					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s%s %s to %s <%s>"
+						,socket, newmsg.hdr.number, sender, sender_ext, smb_netaddrstr(&msg.from_net,tmp), rcpt_name, rcpt_addr);
 					if(relay_user.number!=0)
 						user_sent_email(&scfg, &relay_user, 1, usernum==1);
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
@@ -3322,12 +3344,14 @@ static void smtp_thread(void* arg)
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
 					,socket, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				continue;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d getting data on user (%s)"
 					,socket, i, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				continue;
@@ -3335,6 +3359,7 @@ static void smtp_thread(void* arg)
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, relay_user.number, user_name);
+				mswait(BAD_LOGIN_DELAY);
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				continue;
@@ -3355,6 +3380,7 @@ static void smtp_thread(void* arg)
 			if(strcmp(p,str)) {
 				lprintf(LOG_WARNING,"%04d !SMTP %s FAILED CRAM-MD5 authentication"
 					,socket,relay_user.alias);
+				mswait(BAD_LOGIN_DELAY);
 #if 0
 				lprintf(LOG_DEBUG,"%04d !SMTP calc digest: %s"
 					,socket,str);
@@ -4122,6 +4148,7 @@ static void sendmail_thread(void* arg)
 	char		str[128];
 	char		resp[512];
 	char		toaddr[256];
+	char		fromext[128];
 	char		fromaddr[256];
 	char		challenge[256];
 	char		secret[64];
@@ -4263,8 +4290,18 @@ static void sendmail_thread(void* arg)
 
 			active_sendmail=1, update_clients();
 
-			lprintf(LOG_INFO,"0000 SEND Message #%lu from %s to %s"
-				,msg.hdr.number, msg.from, msg.to_net.addr);
+			fromext[0]=0;
+			if(msg.from_ext)
+				SAFEPRINTF(fromext," #%s", msg.from_ext);
+			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
+				SAFECOPY(fromaddr,msg.reverse_path);
+			else 
+				usermailaddr(&scfg,fromaddr,msg.from);
+			truncstr(fromaddr," ");
+
+			lprintf(LOG_INFO,"0000 SEND Message #%lu from %s%s %s to %s <%s>"
+				,msg.hdr.number, msg.from, fromext, fromaddr
+				,msg.to, msg.to_net.addr);
 			status("Sending");
 #ifdef _WIN32
 			if(startup->outbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
@@ -4533,11 +4570,6 @@ static void sendmail_thread(void* arg)
 			}
 
 			/* MAIL */
-			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
-				SAFECOPY(fromaddr,msg.reverse_path);
-			else 
-				usermailaddr(&scfg,fromaddr,msg.from);
-			truncstr(fromaddr," ");
 			if(fromaddr[0]=='<')
 				sockprintf(sock,"MAIL FROM: %s",fromaddr);
 			else
@@ -4586,7 +4618,7 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,/* immediate: */buf[0]=='5');
 				continue;
 			}
-			lprintf(LOG_DEBUG,"%04d SEND message transfer complete (%lu lines)", sock, lines);
+			lprintf(LOG_INFO,"%04d SEND message transfer complete (%lu lines)", sock, lines);
 
 			/* Now lets mark this message for deletion without corrupting the index */
 			msg.hdr.attr|=MSG_DELETE;
@@ -4598,7 +4630,7 @@ static void sendmail_thread(void* arg)
 				delfattach(&scfg,&msg);
 
 			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
-				exempt_email_addr("SEND Auto-exempting",msg.from,fromaddr,toaddr);
+				exempt_email_addr("SEND Auto-exempting",msg.from,fromext,fromaddr,toaddr);
 
 			/* QUIT */
 			sockprintf(sock,"QUIT");
