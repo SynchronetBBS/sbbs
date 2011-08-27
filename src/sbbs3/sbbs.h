@@ -135,6 +135,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "filewrap.h"
 #include "datewrap.h"
 #include "sockwrap.h"
+#include "eventwrap.h"
 #include "link_list.h"
 #include "msg_queue.h"
 #include "xpdatetime.h"
@@ -209,7 +210,7 @@ public:
 	uchar	telnet_local_option[0x100];
 	uchar	telnet_remote_option[0x100];
 	void	send_telnet_cmd(uchar cmd, uchar opt);
-	void	request_telnet_opt(uchar cmd, uchar opt);
+	bool	request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack=0);
 
     uchar	telnet_cmd[64];
     uint	telnet_cmdlen;
@@ -217,6 +218,7 @@ public:
 	uchar	telnet_last_rxch;
 	char	telnet_location[128];
 	char	terminal[TELNET_TERM_MAXLEN+1];
+	xpevent_t	telnet_ack_event;
 
 	time_t	event_time;				// Time of next exclusive event
 	char*	event_code;				// Internal code of next exclusive event
