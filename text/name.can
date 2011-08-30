@@ -6,10 +6,15 @@ all
 sysop~
 netmail
 anonymous
+user
+system
+admin
+administrator
 @~
 #~
 !~
 :~
+;~
 a
 b
 c
