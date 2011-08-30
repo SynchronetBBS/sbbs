@@ -892,6 +892,26 @@ js_confirm(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_deny(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JSString *	str;
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+	    return(JS_FALSE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	*rval = BOOLEAN_TO_JSVAL(sbbs->noyes(JS_GetStringBytes(str)));
+	JS_RESUMEREQUEST(cx, rc);
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		instr[81];
@@ -973,8 +993,13 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
 	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
-		"based on users confirmation (ala client-side JS)")
+		"based on user's confirmation (ala client-side JS, <i>true</i> = yes)")
 	,310
+	},
+	{"deny",			js_deny,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
+	,JSDOCSTR("displays a No/Yes prompt and returns <i>true</i> or <i>false</i> "
+		"based on user's denial (<i>true</i> = no)")
+	,31501
 	},
     {0}
 };
