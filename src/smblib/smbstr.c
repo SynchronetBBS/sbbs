@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2009 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -56,6 +56,9 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SENDERPROTOCOL:	return("SenderProtocol");
 		case SENDERPORT_BIN:	return("SenderPortBin");
 		case SENDERPORT:		return("SenderPort");
+		case SENDERUSERID:		return("SenderUserID");
+		case SENDERTIME:		return("SenderTime");
+		case SENDERSERVER:		return("SenderServer");
 
 		case REPLYTO:			return("Reply-To");				/* RFC-compliant */
 		case REPLYTOAGENT:		return("Reply-ToAgent");
