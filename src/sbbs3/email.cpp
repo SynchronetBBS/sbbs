@@ -306,6 +306,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode)
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
+	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

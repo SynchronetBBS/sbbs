@@ -1517,7 +1517,7 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(body[0])
 			truncsp(body);
-		if((p->status=savemsg(scfg, &(p->smb), &msg, client, body))==SMB_SUCCESS) {
+		if((p->status=savemsg(scfg, &(p->smb), &msg, client, /* ToDo server hostname: */NULL, body))==SMB_SUCCESS) {
 			*rval = JSVAL_TRUE;
 
 			if(rcpt_list!=NULL) {	/* Sending to a list of recipients */

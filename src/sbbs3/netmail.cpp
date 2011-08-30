@@ -256,6 +256,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode)
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
+	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
@@ -463,6 +464,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode)
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
+	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

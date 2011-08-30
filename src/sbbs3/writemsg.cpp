@@ -1146,6 +1146,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 	/* Security logging */
 	msg_client_hfields(msg,&client);
+	smb_hfield_str(msg,SENDERSERVER,startup->host_name);
 
 	username(&cfg,usernumber,touser);
 	smb_hfield_str(msg,RECIPIENT,touser);

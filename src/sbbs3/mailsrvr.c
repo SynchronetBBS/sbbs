@@ -558,13 +558,16 @@ static ulong sockmimetext(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxl
 		if(!sockprintf(socket,"In-Reply-To: %s",msg->reply_id))
 			return(0);
 
-	/* non-standard, but documented in draft-newman-msgheader-originfo-05 */
-	sockprintf(socket,"Originator-Info: account=%s; ip-address=%s; hostname=%s; protocol=%s; port=%s"
+	/* non-standard, but documented (mostly) in draft-newman-msgheader-originfo-05 */
+	sockprintf(socket,"Originator-Info: account=%s; login-id=%s; server=%s; client=%s; addr=%s; prot=%s; port=%s; time=%s"
 		,msg->from_ext
-		,smb_get_hfield(msg,SENDERIPADDR,NULL)
+		,smb_get_hfield(msg,SENDERUSERID,NULL)
+		,smb_get_hfield(msg,SENDERSERVER,NULL)
 		,smb_get_hfield(msg,SENDERHOSTNAME,NULL)
+		,smb_get_hfield(msg,SENDERIPADDR,NULL)
 		,smb_get_hfield(msg,SENDERPROTOCOL,NULL)
 		,smb_get_hfield(msg,SENDERPORT,NULL)
+		,smb_get_hfield(msg,SENDERTIME,NULL)
 		);
 
     for(i=0;i<msg->total_hfields;i++) { 
@@ -2881,7 +2884,7 @@ static void smtp_thread(void* arg)
 					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
 
 					smb.subnum=subnum;
-					if((i=savemsg(&scfg, &smb, &msg, &client, msgbuf))!=SMB_SUCCESS) {
+					if((i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf))!=SMB_SUCCESS) {
 						lprintf(LOG_WARNING,"%04d !SMTP ERROR %d (%s) saving message"
 							,socket,i,smb.last_error);
 						sockprintf(socket, "452 ERROR %d (%s) saving message"
@@ -2983,7 +2986,7 @@ static void smtp_thread(void* arg)
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
-				i=savemsg(&scfg, &smb, &msg, &client, msgbuf);
+				i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf);
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);

@@ -836,7 +836,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL delfattach(scfg_t*, smbmsg_t*);
 
 	/* postmsg.cpp */
-	DLLEXPORT int		DLLCALL savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, char* msgbuf);
+	DLLEXPORT int		DLLCALL savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf);
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t*, uint subnum);
 	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT char*		DLLCALL msg_program_id(char* pid);
