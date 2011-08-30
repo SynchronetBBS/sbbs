@@ -211,13 +211,13 @@ BOOL sbbs_t::newuser()
 			break; 
 		}
 		if(!online) return(FALSE);
-		if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
+		if((cfg.uq&UQ_ALIASES) && (cfg.uq&UQ_REALNAME)) {
 			while(online) {
 				bputs(text[EnterYourRealName]);
 				getstr(useron.name,LEN_NAME,kmode);
 				if (!check_name(&cfg,useron.name)
 					|| !strchr(useron.name,' ')
-					|| (cfg.uq&UQ_DUPREAL
+					|| ((cfg.uq&UQ_DUPREAL)
 						&& userdatdupe(useron.number,U_NAME,LEN_NAME,useron.name)))
 					bputs(text[YouCantUseThatName]);
 				else
@@ -235,12 +235,12 @@ BOOL sbbs_t::newuser()
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			sprintf(useron.handle,"%.*s",LEN_HANDLE,useron.alias);
-		while(cfg.uq&UQ_HANDLE && online) {
+		while((cfg.uq&UQ_HANDLE) && online) {
 			bputs(text[EnterYourHandle]);
 			if(!getstr(useron.handle,LEN_HANDLE
 				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
-				|| (cfg.uq&UQ_DUPHAND
+				|| ((cfg.uq&UQ_DUPHAND)
 					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle))
 				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
@@ -257,10 +257,10 @@ BOOL sbbs_t::newuser()
 					break; 
 			}
 		if(!online) return(FALSE);
-		while(cfg.uq&UQ_LOCATION && online) {
+		while((cfg.uq&UQ_LOCATION) && online) {
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode)
-				&& (cfg.uq&UQ_NOCOMMAS || strchr(useron.location,',')))
+				&& ((cfg.uq&UQ_NOCOMMAS) || strchr(useron.location,',')))
 				break;
 			bputs(text[CommaInLocationRequired]);
 			useron.location[0]=0; 
@@ -299,7 +299,7 @@ BOOL sbbs_t::newuser()
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); 
 		}
-		while(cfg.uq&UQ_BIRTH && online) {
+		while((cfg.uq&UQ_BIRTH) && online) {
 			bprintf(text[EnterYourBirthday]
 				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
@@ -348,7 +348,7 @@ BOOL sbbs_t::newuser()
 	if(i<cfg.total_xedits)
 		useron.xedit=i+1;
 
-	if(cfg.total_xedits && cfg.uq&UQ_XEDIT && text[UseExternalEditorQ][0]) {
+	if(cfg.total_xedits && (cfg.uq&UQ_XEDIT) && text[UseExternalEditorQ][0]) {
 		if(yesno(text[UseExternalEditorQ])) {
 			for(i=0;i<cfg.total_xedits;i++)
 				uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name,cfg.xedit[i]->ar);
@@ -358,7 +358,7 @@ BOOL sbbs_t::newuser()
 			useron.xedit=0;
 	}
 
-	if(cfg.total_shells>1 && cfg.uq&UQ_CMDSHELL) {
+	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL)) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
