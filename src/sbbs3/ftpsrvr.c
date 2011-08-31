@@ -2329,6 +2329,14 @@ static struct {
 	ulong	attempts;	/* number of consectuive failed login attempts */
 } bad_login;
 
+static void new_connection(SOCKET sock, SOCKADDR_IN* addr)
+{
+	if(bad_login.attempts && memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+		lprintf(LOG_WARNING,"%04d Delaying acceptance of suspicious connection from: %s", sock, inet_ntoa(addr->sin_addr));
+		mswait(bad_login.attempts*1000);
+	}
+}
+
 static void goodlogin(SOCKADDR_IN* addr)
 {
 	if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
@@ -2339,8 +2347,6 @@ static void goodlogin(SOCKADDR_IN* addr)
 
 static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
 {
-	mswait(5000);	/* As recommended by RFC2577 */
-
 	if(addr!=NULL) {
 		if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
 			if(++bad_login.attempts >= 10) {
@@ -2348,10 +2354,12 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passw
 				*login_attempts=bad_login.attempts;
 			}
 		} else {
-			bad_login.attempts=0;
+			bad_login.attempts=1;
 			bad_login.addr = addr->sin_addr;
 		}
 	}
+
+	mswait(5000);	/* As recommended by RFC2577 */
 
 	if(++(*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
@@ -5004,6 +5012,8 @@ void DLLCALL ftp_server(void* arg)
 				ftp_close_socket(&client_socket,__LINE__);
 				continue;
 			}
+			
+			new_connection(client_socket, &client_addr);
 
 			if(active_clients>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
@@ -5026,7 +5036,7 @@ void DLLCALL ftp_server(void* arg)
 			ftp->socket=client_socket;
 			ftp->client_addr=client_addr;
 
-			_beginthread (ctrl_thread, 0, ftp);
+			_beginthread(ctrl_thread, 0, ftp);
 			served++;
 		}
 

@@ -81,7 +81,6 @@ static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
-#define BAD_LOGIN_DELAY			5000	/* Milliseconds */
 #define SPAM_HASH_SUBJECT_MIN_LEN	10	/* characters */
 
 #define STATUS_WFC	"Listening"
@@ -714,6 +713,57 @@ static u_long resolve_ip(char *inaddr)
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
+/****************************************************************************/
+/* Consecutive failed login (possible password hack) attempt tracking		*/
+/****************************************************************************/
+/* Counter is global so it is tracked between multiple connections.			*/
+/* Failed consecutive login attempts > 10 will generate a hacklog entry	and	*/
+/* immediately disconnect (after the usual failed-login delay).				*/
+/* A failed login from a different host resets the counter.					*/
+/* A successful login from the same host resets the counter.				*/
+/****************************************************************************/
+
+static struct {
+	IN_ADDR addr;		/* host with consecutive failed login attmepts */
+	ulong	attempts;	/* number of consectuive failed login attempts */
+} bad_login;
+
+
+static void new_connection(SOCKET sock, const char* prot, SOCKADDR_IN* addr)
+{
+	if(bad_login.attempts && memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+		lprintf(LOG_WARNING,"%04d %s Delaying acceptance of suspicious connection from: %s", sock, prot, inet_ntoa(addr->sin_addr));
+		mswait(bad_login.attempts*1000);
+	}
+}
+
+static void goodlogin(SOCKADDR_IN* addr)
+{
+	if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+		memset(&bad_login.addr,0,sizeof(bad_login.addr));
+		bad_login.attempts=0;
+	}
+}
+
+static void badlogin(SOCKET sock, BOOL pop3, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
+{
+	if(addr!=NULL) {
+		if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+			if(++bad_login.attempts >= 10)
+				hacklog(&scfg, pop3 ? "POP3 LOGIN" : "SMTP LOGIN", user, passwd, host, addr);
+		} else {
+			bad_login.attempts=1;
+			bad_login.addr = addr->sin_addr;
+		}
+	}
+
+	mswait(5000);
+
+	if(pop3)
+		sockprintf(sock,pop_err);
+	else /* SMTP */
+		sockprintf(sock,badauth_rsp);
+}
 
 static void pop3_thread(void* arg)
 {
@@ -873,22 +923,19 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d !POP3 UNKNOWN USER: %s"
 					,socket, username);
-			mswait(BAD_LOGIN_DELAY);
-			sockprintf(socket,pop_err);
+			badlogin(socket, /* pop3: */TRUE, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
 			lprintf(LOG_ERR,"%04d !POP3 ERROR %d getting data on user (%s)"
 				,socket, i, username);
-			mswait(BAD_LOGIN_DELAY);
-			sockprintf(socket, pop_err);
+			badlogin(socket, /* pop3: */TRUE, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d !POP3 DELETED or INACTIVE user #%u (%s)"
 				,socket, user.number, username);
-			mswait(BAD_LOGIN_DELAY);
-			sockprintf(socket, pop_err);
+			badlogin(socket, /* pop3: */TRUE, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(apop) {
@@ -904,8 +951,7 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
 				lprintf(LOG_DEBUG,"%04d !POP3 resp digest: %s",socket,response);
 #endif
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,pop_err);
+				badlogin(socket, /* pop3: */TRUE, username, response, host_name, &pop3.client_addr);
 				break;
 			}
 		} else if(stricmp(password,user.pass)) {
@@ -915,10 +961,12 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d !POP3 FAILED Password attempt for user %s"
 					,socket, username);
-			mswait(BAD_LOGIN_DELAY);
-			sockprintf(socket, pop_err);
+			badlogin(socket, /* pop3: */TRUE, username, password, host_name, &pop3.client_addr);
 			break;
 		}
+
+		goodlogin(&pop3.client_addr);
+
 		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
 		putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
 
@@ -3274,24 +3322,19 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
 						,socket, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				continue;
+				badlogin(socket, /* pop3: */FALSE, user_name, user_pass, host_name, &smtp.client_addr);
+				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d getting data on user (%s)"
 					,socket, i, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
-				continue;
+				badlogin(socket, /* pop3: */FALSE, NULL, NULL, NULL, NULL);
+				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, relay_user.number, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
+				badlogin(socket, /* pop3: */FALSE, NULL, NULL, NULL, NULL);
 				break;
 			}
 			if(stricmp(user_pass,relay_user.pass)) {
@@ -3301,11 +3344,12 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d !SMTP FAILED Password attempt for user %s"
 						,socket, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
+				badlogin(socket, /* pop3: */FALSE, user_name, user_pass, host_name, &smtp.client_addr);
 				break;
 			}
+
+			goodlogin(&smtp.client_addr);
+
 			/* Update client display */
 			client.user=relay_user.alias;
 			client_on(socket,&client,TRUE /* update */);
@@ -3347,25 +3391,20 @@ static void smtp_thread(void* arg)
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s"
 					,socket, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				continue;
+				badlogin(socket, /* pop3: */FALSE, user_name, user_pass, host_name, &smtp.client_addr);
+				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d getting data on user (%s)"
 					,socket, i, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
-				continue;
+				badlogin(socket, /* pop3: */FALSE, NULL, NULL, NULL, NULL);
+				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, relay_user.number, user_name);
-				mswait(BAD_LOGIN_DELAY);
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
-				continue;
+				badlogin(socket, /* pop3: */FALSE, NULL, NULL, NULL, NULL);
+				break;
 			}
 			/* Calculate correct response */
 			memset(secret,0,sizeof(secret));
@@ -3383,17 +3422,18 @@ static void smtp_thread(void* arg)
 			if(strcmp(p,str)) {
 				lprintf(LOG_WARNING,"%04d !SMTP %s FAILED CRAM-MD5 authentication"
 					,socket,relay_user.alias);
-				mswait(BAD_LOGIN_DELAY);
 #if 0
 				lprintf(LOG_DEBUG,"%04d !SMTP calc digest: %s"
 					,socket,str);
 				lprintf(LOG_DEBUG,"%04d !SMTP resp digest: %s"
 					,socket,p);
 #endif
-				sockprintf(socket,badauth_rsp);
-				relay_user.number=0;
-				continue;
+				badlogin(socket, /* pop3: */FALSE, user_name, p, host_name, &smtp.client_addr);
+				break;
 			}
+
+			goodlogin(&smtp.client_addr);
+
 			/* Update client display */
 			client.user=relay_user.alias;
 			client_on(socket,&client,TRUE /* update */);
@@ -5240,6 +5280,8 @@ void DLLCALL mail_server(void* arg)
 					continue;
 				}
 
+				new_connection(client_socket, "SMTP", &client_addr);
+
 				if(active_clients>=startup->max_clients) {
 					lprintf(LOG_WARNING,"%04d SMTP !MAXIMUM CLIENTS (%u) reached, access denied (%u total)"
 						,client_socket, startup->max_clients, ++stats.connections_refused);
@@ -5304,6 +5346,8 @@ void DLLCALL mail_server(void* arg)
 					continue;
 				}
 
+				new_connection(client_socket, "POP3", &client_addr);
+
 				if(active_clients>=startup->max_clients) {
 					lprintf(LOG_WARNING,"%04d POP3 !MAXIMUM CLIENTS (%u) reached, access denied (%u total)"
 						,client_socket, startup->max_clients, ++stats.connections_refused);
@@ -5312,7 +5356,6 @@ void DLLCALL mail_server(void* arg)
 					mail_close_socket(client_socket);
 					continue;
 				}
-
 
 				l=1;
 
