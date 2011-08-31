@@ -38,7 +38,9 @@
 #include "sbbs.h"
 #include "js_request.h"
 
-#include <jscntxt.h>	/* Needed for Context-private data structure */
+#ifdef _DEBUG
+	#include <jscntxt.h>	/* Needed for Context-private data structure */
+#endif
 
 enum {
 	 PROP_VERSION
