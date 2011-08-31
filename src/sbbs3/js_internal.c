@@ -446,7 +446,8 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_branch_t* branch)
 
 	strListFree(&branch->exit_func);
 
-	branch->auto_terminate = auto_terminate;
+	if(auto_terminate)
+		branch->auto_terminate = TRUE;
 }
 
 JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch, js_startup_t* startup)
