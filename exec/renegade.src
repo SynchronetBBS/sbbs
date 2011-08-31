@@ -272,6 +272,23 @@ cmdkey V
 	mail_read_sent
 	end_cmd
 
+# Netmail
+cmdkey N
+        int i
+        copy i _netmail_misc
+        or i _inetmail_misc
+        and i NMAIL_FILE
+        compare i 0
+        if_false
+		no_yes "\r\nAttach a file"
+		endi_if
+	if_true
+		mail_send_netmail
+	else	
+		mail_send_netfile
+		end_if
+	end_cmd
+
 cmdkey Q
 	cmd_pop
 	goto main

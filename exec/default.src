@@ -407,7 +407,14 @@ cmdkey F
 	end_cmd
 
 cmdkey N
-	no_yes "\r\nAttach a file"
+        int i
+        copy i _netmail_misc
+        or i _inetmail_misc
+        and i NMAIL_FILE
+        compare i 0
+        if_false
+		no_yes "\r\nAttach a file"
+		endi_if
 	if_true
 		mail_send_netmail
 	else	
