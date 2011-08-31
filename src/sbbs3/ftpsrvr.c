@@ -2314,9 +2314,45 @@ void ftp_printfile(SOCKET sock, const char* name, unsigned code)
 	}
 }
 
-static BOOL badlogin(SOCKET sock, ulong* login_attempts)
+/****************************************************************************/
+/* Consecutive failed login (possible password hack) attempt tracking		*/
+/****************************************************************************/
+/* Counter is global so it is tracked between multiple connections.			*/
+/* Failed consecutive login attempts > 10 will generate a hacklog entry	and	*/
+/* immediately disconnect (after the usual failed-login delay).				*/
+/* A failed login from a different host resets the counter.					*/
+/* A successful login from the same host resets the counter.				*/
+/****************************************************************************/
+
+static struct {
+	IN_ADDR addr;		/* host with consecutive failed login attmepts */
+	ulong	attempts;	/* number of consectuive failed login attempts */
+} bad_login;
+
+static void goodlogin(SOCKADDR_IN* addr)
+{
+	if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+		memset(&bad_login.addr,0,sizeof(bad_login.addr));
+		bad_login.attempts=0;
+	}
+}
+
+static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
 {
 	mswait(5000);	/* As recommended by RFC2577 */
+
+	if(addr!=NULL) {
+		if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
+			if(++bad_login.attempts >= 10) {
+				hacklog(&scfg, "FTP LOGIN", user, passwd, host, addr);
+				*login_attempts=bad_login.attempts;
+			}
+		} else {
+			bad_login.attempts=0;
+			bad_login.addr = addr->sin_addr;
+		}
+	}
+
 	if(++(*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
 		return(TRUE);
@@ -2643,7 +2679,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s, Password: %s",sock,user.alias,p);
 				else
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: %s",sock,user.alias);
-				if(badlogin(sock,&login_attempts))
+				if(badlogin(sock, &login_attempts, user.alias, p, host_name, &ftp.client_addr))
 					break;
 				continue;
 			}
@@ -2658,7 +2694,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_WARNING,"%04d !DELETED or INACTIVE user #%d (%s)"
 					,sock,user.number,user.alias);
 				user.number=0;
-				if(badlogin(sock,&login_attempts))
+				if(badlogin(sock, &login_attempts, NULL, NULL, NULL, NULL))
 					break;
 				continue;
 			}
@@ -2666,7 +2702,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_WARNING,"%04d !T RESTRICTED user #%d (%s)"
 					,sock,user.number,user.alias);
 				user.number=0;
-				if(badlogin(sock,&login_attempts))
+				if(badlogin(sock, &login_attempts, NULL, NULL, NULL, NULL))
 					break;
 				continue;
 			}
@@ -2691,7 +2727,7 @@ static void ctrl_thread(void* arg)
 				if(trashcan(&scfg,password,"email")) {
 					lprintf(LOG_NOTICE,"%04d !BLOCKED e-mail address: %s",sock,password);
 					user.number=0;
-					if(badlogin(sock,&login_attempts))
+					if(badlogin(sock, &login_attempts, NULL, NULL, NULL, NULL))
 						break;
 					continue;
 				}
@@ -2710,7 +2746,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !FAILED Password attempt for user %s"
 						,sock, user.alias);
 				user.number=0;
-				if(badlogin(sock,&login_attempts))
+				if(badlogin(sock, &login_attempts, user.alias, password, host_name, &ftp.client_addr))
 					break;
 				continue;
 			}
@@ -2723,7 +2759,7 @@ static void ctrl_thread(void* arg)
 				client.user=str;
 			}
 			client_on(sock,&client,TRUE /* update */);
-
+			goodlogin(&ftp.client_addr);
 
 			lprintf(LOG_INFO,"%04d %s logged in (%u today, %u total)"
 				,sock,user.alias,user.ltoday+1, user.logons+1);
@@ -2898,7 +2934,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_WARNING,"%04d !SUSPECTED BOUNCE ATTACK ATTEMPT by %s to %s port %u"
 					,sock,user.alias
 					,inet_ntoa(data_addr.sin_addr),data_addr.sin_port);
-				hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+				hacklog(&scfg, "FTP BOUNCE", user.alias, cmd, host_name, &ftp.client_addr);
 				sockprintf(sock,"504 Bad port number.");	
 #ifdef _WIN32
 				if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -4118,7 +4154,7 @@ static void ctrl_thread(void* arg)
 					success=FALSE;
 					lprintf(LOG_WARNING,"%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
-					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+					hacklog(&scfg, "FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 #ifdef _WIN32
 					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
@@ -4296,7 +4332,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
-					hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
+					hacklog(&scfg, "FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 #ifdef _WIN32
 					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
