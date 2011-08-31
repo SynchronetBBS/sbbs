@@ -76,6 +76,7 @@ static volatile ulong	served=0;
 static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
+static link_list_t login_attempt_list;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -442,13 +443,29 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
+{
+	char reason[128];
+	ulong count;
+
+	SAFEPRINTF(reason,"%s LOGIN", prot);
+	count=loginFailure(&login_attempt_list, addr, prot, user, passwd);
+	if(count>=LOGIN_ATTEMPT_HACKLOG)
+		hacklog(&scfg, reason, user, passwd, host, addr);
+	if(count>=LOGIN_ATTEMPT_FILTER)
+		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
+			,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
+
+	mswait(LOGIN_ATTEMPT_DELAY);
+}
+
 static JSBool
 js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		p;
+	char*		user;
+	char*		pass;
 	JSBool		inc_logons=JS_FALSE;
 	jsval		val;
-	JSString*	js_str;
 	service_client_t* client;
 	jsrefcount	rc;
 
@@ -457,58 +474,50 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	/* User name */
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+	/* User name or number */
+	if((user=js_ValueToStringBytes(cx, argv[0], NULL))==NULL) 
 		return(JS_FALSE);
 
-	if((p=JS_GetStringBytes(js_str))==NULL) 
+	/* Password */
+	if((pass=js_ValueToStringBytes(cx, argv[1], NULL))==NULL) 
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&client->user,0,sizeof(user_t));
 
+	/* ToDo Deuce: did you mean to do this *before* the above memset(0) ? */
 	if(client->user.number) {
 		if(client->subscan!=NULL)
 			putmsgptrs(&scfg, client->user.number, client->subscan);
 	}
 
-	if(isdigit(*p))
-		client->user.number=atoi(p);
-	else if(*p)
-		client->user.number=matchuser(&scfg,p,FALSE);
+	if(isdigit(*user))
+		client->user.number=atoi(user);
+	else if(*user)
+		client->user.number=matchuser(&scfg,user,FALSE);
 
 	if(getuserdat(&scfg,&client->user)!=0) {
 		lprintf(LOG_NOTICE,"%04d %s !USER NOT FOUND: '%s'"
-			,client->socket,client->service->protocol,p);
+			,client->socket,client->service->protocol,user);
+		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
 
 	if(client->user.misc&(DELETED|INACTIVE)) {
 		lprintf(LOG_WARNING,"%04d %s !DELETED OR INACTIVE USER #%d: %s"
-			,client->socket,client->service->protocol,client->user.number,p);
+			,client->socket,client->service->protocol,client->user.number,user);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
 
 	/* Password */
-	if(client->user.pass[0]) {
-		if((js_str=JS_ValueToString(cx, argv[1]))==NULL)  {
-			JS_RESUMEREQUEST(cx, rc);
-			return(JS_FALSE);
-		}
-
-		if((p=JS_GetStringBytes(js_str))==NULL) {
-			JS_RESUMEREQUEST(cx, rc);
-			return(JS_FALSE);
-		}
-
-		if(stricmp(client->user.pass,p)) { /* Wrong password */
-			lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
-				,client->socket,client->service->protocol,client->user.alias);
-			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);
-		}
+	if(client->user.pass[0] && stricmp(client->user.pass,pass)) { /* Wrong password */
+		lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
+			,client->socket,client->service->protocol,client->user.alias);
+		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -555,6 +564,9 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
 	JS_SetProperty(cx, obj, "logged_in", &val);
+
+	if(client->user.pass[0])
+		loginSuccess(&login_attempt_list, &client->addr);
 
 	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
 
@@ -1006,6 +1018,7 @@ static void js_service_thread(void* arg)
 	client_t				client;
 	service_t*				service;
 	service_client_t		service_client;
+	list_node_t*			login_attempt;
 	/* JavaScript-specific */
 	char					spath[MAX_PATH+1];
 	char					fname[MAX_PATH+1];
@@ -1107,6 +1120,13 @@ static void js_service_thread(void* arg)
 	}
 
 	update_clients();
+
+	if((login_attempt=loginAttempted(&login_attempt_list, &service_client.addr)) != NULL
+		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
+		lprintf(LOG_NOTICE,"%04d %s Delaying suspicious connection from: %s"
+			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+	}
 
 	/* RUN SCRIPT */
 	SAFECOPY(fname,service->cmd);
@@ -1358,6 +1378,7 @@ static void native_service_thread(void* arg)
 	client_t				client;
 	service_t*				service;
 	service_client_t		service_client=*(service_client_t*)arg;
+	list_node_t*			login_attempt;
 
 	free(arg);
 
@@ -1451,6 +1472,13 @@ static void native_service_thread(void* arg)
 
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
+
+	if((login_attempt=loginAttempted(&login_attempt_list, &service_client.addr)) != NULL
+		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
+		lprintf(LOG_NOTICE,"%04d %s Delaying suspicious connection from: %s"
+			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+	}
 
 	/* RUN SCRIPT */
 	if(strpbrk(service->cmd,"/\\")==NULL)
@@ -1606,6 +1634,22 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 
 static void cleanup(int code)
 {
+	char				tmp[128];
+	login_attempt_t*	login_attempt;
+
+	while((login_attempt=loginAttemptPop(&login_attempt_list)) != NULL) {
+		if(login_attempt->count > 1)
+			lprintf(LOG_NOTICE,"0000 %s Multiple (%u) failed login attempts from %s, last occurred on %.24s (user: %s, password: %s)"
+				,login_attempt->prot
+				,login_attempt->count, inet_ntoa(login_attempt->addr)
+				,ctime_r(&login_attempt->time, tmp)
+				,login_attempt->user
+				,login_attempt->pass
+				);
+		loginAttemptFree(login_attempt);
+	}
+	loginAttemptListFree(&login_attempt_list);
+
 	FREE_AND_NULL(service);
 	services=0;
 
@@ -1707,6 +1751,8 @@ void DLLCALL services_thread(void* arg)
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
+
+	loginAttemptListInit(&login_attempt_list);
 
 	uptime=0;
 	served=0;

@@ -2661,3 +2661,78 @@ BOOL DLLCALL check_name(scfg_t* cfg, const char* name)
  	return TRUE;
 } 
 
+/****************************************************************************/
+/* Login attempt/hack tracking												*/
+/****************************************************************************/
+
+/****************************************************************************/
+link_list_t* DLLCALL loginAttemptListInit(link_list_t* list)
+{
+	return listInit(list, LINK_LIST_MUTEX);
+}
+
+/****************************************************************************/
+BOOL DLLCALL loginAttemptListFree(link_list_t* list)
+{
+	return listFree(list);
+}
+
+/****************************************************************************/
+list_node_t* DLLCALL loginAttempted(link_list_t* list, SOCKADDR_IN* addr)
+{
+	list_node_t*		node;
+	login_attempt_t*	attempt;
+
+	for(node=listFirstNode(list); node!=NULL; node=listNextNode(node)) {
+		attempt=node->data;
+		if(memcmp(&attempt->addr,&addr->sin_addr,sizeof(attempt->addr))==0)
+			return node;
+	}
+	return NULL;
+}
+
+/****************************************************************************/
+login_attempt_t* DLLCALL loginAttemptPop(link_list_t* list)
+{
+	return listPopNode(list);
+}
+
+/****************************************************************************/
+void DLLCALL loginAttemptFree(void* data)
+{
+	free(data);
+}
+
+/****************************************************************************/
+void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
+{
+	list_node_t*		node;
+
+	if((node=loginAttempted(list, addr)) != NULL)
+		listRemoveNode(list, node, /* freeData: */TRUE);
+}
+
+/****************************************************************************/
+ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* prot, const char* user, const char* pass)
+{
+	list_node_t*		node;
+	login_attempt_t*	attempt;
+
+	if((node=loginAttempted(list, addr)) != NULL) {
+		attempt=node->data;
+		/* Don't count consecutive duplicate attempts (same name and password): */
+		if(strcmp(attempt->user,user)==0 && (pass==NULL || strcmp(attempt->pass,pass)==0))
+			return attempt->count;
+	}
+	else if((attempt=calloc(sizeof(login_attempt_t),sizeof(char))) != NULL)
+		listPushNode(list, attempt);
+	if(attempt==NULL)
+		return 0;
+	attempt->prot=prot;
+	attempt->time=time(NULL);
+	attempt->addr=addr->sin_addr;
+	SAFECOPY(attempt->user, user);
+	SAFECOPY(attempt->pass, pass);
+	attempt->count++;
+	return attempt->count;
+}

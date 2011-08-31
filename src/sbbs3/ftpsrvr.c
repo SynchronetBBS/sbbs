@@ -89,6 +89,7 @@ static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
+static link_list_t	login_attempt_list;
 
 #ifdef SOCKET_DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
@@ -2314,6 +2315,16 @@ void ftp_printfile(SOCKET sock, const char* name, unsigned code)
 	}
 }
 
+static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
+{
+#ifdef _WIN32
+	if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+		PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
+	return hacklog(&scfg, prot, user, text, host, addr);
+}
+
 /****************************************************************************/
 /* Consecutive failed login (possible password hack) attempt tracking		*/
 /****************************************************************************/
@@ -2324,42 +2335,22 @@ void ftp_printfile(SOCKET sock, const char* name, unsigned code)
 /* A successful login from the same host resets the counter.				*/
 /****************************************************************************/
 
-static struct {
-	IN_ADDR addr;		/* host with consecutive failed login attmepts */
-	ulong	attempts;	/* number of consectuive failed login attempts */
-} bad_login;
-
-static void new_connection(SOCKET sock, SOCKADDR_IN* addr)
-{
-	if(bad_login.attempts && memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
-		lprintf(LOG_WARNING,"%04d Delaying acceptance of suspicious connection from: %s", sock, inet_ntoa(addr->sin_addr));
-		mswait(bad_login.attempts*1000);
-	}
-}
-
-static void goodlogin(SOCKADDR_IN* addr)
-{
-	if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
-		memset(&bad_login.addr,0,sizeof(bad_login.addr));
-		bad_login.attempts=0;
-	}
-}
-
 static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passwd, char* host, SOCKADDR_IN* addr)
 {
+	ulong count;
+
 	if(addr!=NULL) {
-		if(memcmp(&bad_login.addr,&addr->sin_addr,sizeof(bad_login.addr))==0) {
-			if(++bad_login.attempts >= 10) {
-				hacklog(&scfg, "FTP LOGIN", user, passwd, host, addr);
-				*login_attempts=bad_login.attempts;
-			}
-		} else {
-			bad_login.attempts=1;
-			bad_login.addr = addr->sin_addr;
-		}
+		count=loginFailure(&login_attempt_list, addr, "FTP", user, passwd);
+		if(count>=LOGIN_ATTEMPT_HACKLOG)
+			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
+		if(count>=LOGIN_ATTEMPT_FILTER)
+			filter_ip(&scfg, "FTP", "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
+				,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
+		if(count > *login_attempts)
+			*login_attempts=count;
 	}
 
-	mswait(5000);	/* As recommended by RFC2577 */
+	mswait(LOGIN_ATTEMPT_DELAY);	/* As recommended by RFC2577 */
 
 	if(++(*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
@@ -2469,6 +2460,7 @@ static void ctrl_thread(void* arg)
 	JSString*	js_str;
 	js_branch_t	js_branch;
 #endif
+	list_node_t*	login_attempt;
 
 	SetThreadName("FTP CTRL");
 	thread_up(TRUE /* setuid */);
@@ -2483,7 +2475,7 @@ static void ctrl_thread(void* arg)
 	
 	lprintf(LOG_DEBUG,"%04d CTRL thread started", sock);
 
-	free(arg);	/* unexplicable assertion here on July 26, 2001 */
+	free(arg);
 
 #ifdef _WIN32
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -2563,6 +2555,12 @@ static void ctrl_thread(void* arg)
 	client.protocol="FTP";
 	client.user="<unknown>";
 	client_on(sock,&client,FALSE /* update */);
+
+	if((login_attempt=loginAttempted(&login_attempt_list, &ftp.client_addr)) != NULL
+		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
+		lprintf(LOG_NOTICE,"%04d Delaying suspicious connection from: %s", sock, inet_ntoa(ftp.client_addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+	}
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);
 	sockprintf(sock," Synchronet FTP Server %s-%s Ready"
@@ -2760,14 +2758,14 @@ static void ctrl_thread(void* arg)
 			}
 
 			/* Update client display */
-			if(user.pass[0])
+			if(user.pass[0]) {
 				client.user=user.alias;
-			else {	/* anonymous */
+				loginSuccess(&login_attempt_list, &ftp.client_addr);
+			} else {	/* anonymous */
 				sprintf(str,"%s <%.32s>",user.alias,password);
 				client.user=str;
 			}
 			client_on(sock,&client,TRUE /* update */);
-			goodlogin(&ftp.client_addr);
 
 			lprintf(LOG_INFO,"%04d %s logged in (%u today, %u total)"
 				,sock,user.alias,user.ltoday+1, user.logons+1);
@@ -2942,12 +2940,8 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_WARNING,"%04d !SUSPECTED BOUNCE ATTACK ATTEMPT by %s to %s port %u"
 					,sock,user.alias
 					,inet_ntoa(data_addr.sin_addr),data_addr.sin_port);
-				hacklog(&scfg, "FTP BOUNCE", user.alias, cmd, host_name, &ftp.client_addr);
+				ftp_hacklog("FTP BOUNCE", user.alias, cmd, host_name, &ftp.client_addr);
 				sockprintf(sock,"504 Bad port number.");	
-#ifdef _WIN32
-				if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
-					PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
-#endif
 				continue; /* As recommended by RFC2577 */
 			}
 			data_addr.sin_port=htons(data_addr.sin_port);
@@ -4162,11 +4156,7 @@ static void ctrl_thread(void* arg)
 					success=FALSE;
 					lprintf(LOG_WARNING,"%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
-					hacklog(&scfg, "FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
-#ifdef _WIN32
-					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
-						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
-#endif
+					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 				} else {
 					if(fexistcase(fname)) {
 						success=TRUE;
@@ -4340,11 +4330,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !ILLEGAL FILENAME ATTEMPT by %s: %s"
 						,sock,user.alias,p);
 					sockprintf(sock,"553 Illegal filename attempt");
-					hacklog(&scfg, "FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
-#ifdef _WIN32
-					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
-						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
-#endif
+					ftp_hacklog("FTP FILENAME", user.alias, cmd, host_name, &ftp.client_addr);
 					continue;
 				}
 				SAFEPRINTF2(fname,"%s%s",scfg.dir[dir]->path,p);
@@ -4540,11 +4526,7 @@ static void ctrl_thread(void* arg)
 			!strnicmp(cmd,"SITE EXEC",9)) {
 			lprintf(LOG_WARNING,"%04d !SUSPECTED HACK ATTEMPT by %s: '%s'"
 				,sock,user.alias,cmd);
-			hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
-#ifdef _WIN32
-			if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
-				PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
-#endif
+			ftp_hacklog("FTP", user.alias, cmd, host_name, &ftp.client_addr);
 		}		
 		sockprintf(sock,"500 Syntax error: '%s'",cmd);
 		lprintf(LOG_WARNING,"%04d !UNSUPPORTED COMMAND from %s: '%s'"
@@ -4646,9 +4628,24 @@ static void ctrl_thread(void* arg)
 
 static void cleanup(int code, int line)
 {
+	char				tmp[128];
+	login_attempt_t*	login_attempt;
+
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"0000 cleanup called from line %d",line);
 #endif
+
+	while((login_attempt=loginAttemptPop(&login_attempt_list)) != NULL) {
+		if(login_attempt->count > 1)
+			lprintf(LOG_NOTICE,"0000 Multiple (%u) failed login attempts from %s, last occurred on %.24s (user: %s, password: %s)"
+				,login_attempt->count, inet_ntoa(login_attempt->addr)
+				,ctime_r(&login_attempt->time, tmp)
+				,login_attempt->user
+				,login_attempt->pass
+				);
+		loginAttemptFree(login_attempt);
+	}
+	loginAttemptListFree(&login_attempt_list);
 	free_cfg(&scfg);
 	free_text(text);
 
@@ -4768,6 +4765,7 @@ void DLLCALL ftp_server(void* arg)
 	js_server_props.interface_addr=&startup->interface_addr;
 #endif
 
+	loginAttemptListInit(&login_attempt_list);
 
 	uptime=0;
 	served=0;
@@ -5013,8 +5011,6 @@ void DLLCALL ftp_server(void* arg)
 				continue;
 			}
 			
-			new_connection(client_socket, &client_addr);
-
 			if(active_clients>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
