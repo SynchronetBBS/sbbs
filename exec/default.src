@@ -414,7 +414,7 @@ cmdkey N
         compare i 0
         if_false
 		no_yes "\r\nAttach a file"
-		endi_if
+		end_if
 	if_true
 		mail_send_netmail
 	else	
