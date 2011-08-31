@@ -300,6 +300,7 @@ fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 
 /****************************************************************************/
 /* Returns ASCIIZ representation of network address (net_t)					*/
+/* NOT THREAD-SAFE!															*/
 /****************************************************************************/
 char* SMBCALL smb_netaddr(net_t* net)
 {
