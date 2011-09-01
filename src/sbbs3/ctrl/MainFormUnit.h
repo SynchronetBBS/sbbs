@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -201,7 +201,7 @@ __published:	// IDE-managed Components
     TMenuItem *BBSViewAnotherDaysLog;
     TMenuItem *BBSViewYesterdaysLog;
     TMenuItem *BBSViewTodaysLog;
-	TMenuItem *ViewErrorLog;
+    TMenuItem *BBSViewErrorLogMenuItem;
 	TMenuItem *ViewStatisticsLog;
     TAction *UserList;
     TToolButton *UserListButton;
@@ -316,6 +316,15 @@ __published:	// IDE-managed Components
     TMenuItem *WebPauseMenuItem;
     TMenuItem *ServicesPauseMenuItem;
     TMenuItem *LogoffMessage;
+    TPopupMenu *StatusBarPopupMenu;
+    TMenuItem *ClearErrorCounter;
+    TAction *ClearErrors;
+    TMenuItem *ClearErrorMenuItem;
+    TMenuItem *BBSEditModOptsMenuItem;
+    TAction *ViewErrorLog;
+    TMenuItem *ViewErrorLogPopupMenuItem;
+    TMenuItem *BBSEditPasswordFilterMenuItem;
+    TMenuItem *BBSEditBadPasswordMessageMenuItem;
     TMenuItem *ViewLoginAttemptsMenuItem;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
@@ -357,7 +366,6 @@ __published:	// IDE-managed Components
 	void __fastcall CtrlMenuItemEditClick(TObject *Sender);
     void __fastcall UpTimerTick(TObject *Sender);
     void __fastcall LogTimerTick(TObject *Sender);
-    void __fastcall BBSViewErrorLogMenuItemClick(TObject *Sender);
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditExecute(TObject *Sender);
@@ -406,6 +414,8 @@ __published:	// IDE-managed Components
     void __fastcall WebConfigureExecute(TObject *Sender);
     void __fastcall ViewServicesExecute(TObject *Sender);
     void __fastcall SemFileTimerTick(TObject *Sender);
+    void __fastcall ClearErrorsExecute(TObject *Sender);
+    void __fastcall ViewErrorLogExecute(TObject *Sender);
     void __fastcall ViewLoginAttemptsMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

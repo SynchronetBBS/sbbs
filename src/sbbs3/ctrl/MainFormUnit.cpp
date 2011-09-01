@@ -2997,15 +2997,6 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::BBSViewErrorLogMenuItemClick(TObject *Sender)
-{
-	char filename[MAX_PATH+1];
-
-    sprintf(filename,"%sERROR.LOG"
-    	,MainForm->cfg.logs_dir);
-    ViewFile(filename,"Error Log");
-}
-//---------------------------------------------------------------------------
 
 void __fastcall TMainForm::ChatToggleExecute(TObject *Sender)
 {
@@ -3823,6 +3814,30 @@ TFont* __fastcall TMainForm::LogAttributes(int log_level, TColor Color, TFont* F
         return Font;
 
     return LogFont[log_level];
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ClearErrorsExecute(TObject *Sender)
+{
+    errors=0;
+
+    node_t node;
+    for(int i=0;i<cfg.sys_nodes;i++) {
+    	int file;
+       	if(NodeForm->getnodedat(i+1,&node,&file))
+            break;
+        node.errors=0;
+        if(NodeForm->putnodedat(i+1,&node,file))
+            break;
+    }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ViewErrorLogExecute(TObject *Sender)
+{
+	char filename[MAX_PATH+1];
+
+    sprintf(filename,"%sERROR.LOG"
+    	,MainForm->cfg.logs_dir);
+    ViewFile(filename,"Error Log");
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ViewLoginAttemptsMenuItemClick(TObject *Sender)
