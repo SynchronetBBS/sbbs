@@ -365,10 +365,9 @@ BOOL iniRemoveKey(str_list_t* list, const char* section, const char* key)
 
 BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
 {
-	size_t	i;
 	char*	vp=NULL;
 
-	i=get_value(*list, section, key, NULL, &vp);
+	get_value(*list, section, key, NULL, &vp);
 
 	if(vp==NULL)
 		return(FALSE);

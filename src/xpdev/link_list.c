@@ -46,10 +46,10 @@
 	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock((pthread_mutex_t*)&list->mutex);		}
 	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock((pthread_mutex_t*)&list->mutex);		}
 #else
-	#define MUTEX_INIT(list)
-	#define MUTEX_DESTROY(list)
-	#define MUTEX_LOCK(list)
-	#define MUTEX_UNLOCK(list)
+	#define MUTEX_INIT(list)	(void)list
+	#define MUTEX_DESTROY(list)	(void)list
+	#define MUTEX_LOCK(list)	(void)list
+	#define MUTEX_UNLOCK(list)	(void)list
 #endif
 
 link_list_t* DLLCALL listInit(link_list_t* list, long flags)
