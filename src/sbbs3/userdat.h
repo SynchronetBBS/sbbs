@@ -129,7 +129,8 @@ DLLEXPORT BOOL	DLLCALL check_name(scfg_t* cfg, const char* name);
 /* Login attempt/hack tracking */
 typedef struct {
 	IN_ADDR		addr;	/* host with consecutive failed login attmepts */
-	ulong		count;	/* number of consectuive failed login attempts */
+	ulong		count;	/* number of consecutive failed login attempts */
+	ulong		dupes;	/* number of consecutive dupliate login attempts (same name and password) */
 	time_t		time;	/* time of last attempt */
 	const char*	prot;	/* protocol used in last attempt */
 	char		user[128];
@@ -139,6 +140,7 @@ typedef struct {
 DLLEXPORT link_list_t*		DLLCALL	loginAttemptListInit(link_list_t*);
 DLLEXPORT BOOL				DLLCALL	loginAttemptListFree(link_list_t*);
 DLLEXPORT list_node_t*		DLLCALL loginAttempted(link_list_t*, SOCKADDR_IN*);
+DLLEXPORT ulong				DLLCALL loginAttempts(link_list_t*, SOCKADDR_IN*);
 DLLEXPORT void				DLLCALL	loginSuccess(link_list_t*, SOCKADDR_IN*);
 DLLEXPORT ulong				DLLCALL loginFailure(link_list_t*, SOCKADDR_IN*, const char* prot, const char* user, const char* pass);
 

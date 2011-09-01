@@ -2347,11 +2347,12 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passw
 				,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
 		if(count > *login_attempts)
 			*login_attempts=count;
-	}
+	} else
+		(*login_attempts)++;
 
 	mswait(startup->login_attempt_delay);	/* As recommended by RFC2577 */
 
-	if(++(*login_attempts)>=3) {
+	if((*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
 		return(TRUE);
 	}
@@ -2459,7 +2460,6 @@ static void ctrl_thread(void* arg)
 	JSString*	js_str;
 	js_branch_t	js_branch;
 #endif
-	list_node_t*	login_attempt;
 
 	SetThreadName("FTP CTRL");
 	thread_up(TRUE /* setuid */);
@@ -2556,10 +2556,10 @@ static void ctrl_thread(void* arg)
 	client_on(sock,&client,FALSE /* update */);
 
 	if(startup->login_attempt_throttle
-		&& (login_attempt=loginAttempted(startup->login_attempt_list, &ftp.client_addr)) != NULL
-		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_DEBUG,"%04d Throttling suspicious connection from: %s", sock, inet_ntoa(ftp.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &ftp.client_addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d Throttling suspicious connection from: %s (%u login attempts)"
+			,sock, inet_ntoa(ftp.client_addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);

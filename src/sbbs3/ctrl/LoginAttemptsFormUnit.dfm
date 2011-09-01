@@ -19,12 +19,15 @@ object LoginAttemptsForm: TLoginAttemptsForm
   object ListView: TListView
     Left = 0
     Top = 0
-    Width = 488
-    Height = 766
+    Width = 480
+    Height = 755
     Align = alClient
     Columns = <
       item
         Caption = 'Count'
+      end
+      item
+        Caption = 'Dupes'
       end
       item
         AutoSize = True

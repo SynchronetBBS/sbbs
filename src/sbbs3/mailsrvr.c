@@ -762,6 +762,7 @@ static void pop3_thread(void* arg)
 	long		l;
 	ulong		lines;
 	ulong		lines_sent;
+	ulong		login_attempts;
 	int32_t		msgs;
 	long		msgnum;
 	ulong		bytes;
@@ -773,7 +774,6 @@ static void pop3_thread(void* arg)
 	client_t	client;
 	mail_t*		mail;
 	pop3_t		pop3=*(pop3_t*)arg;
-	list_node_t*	login_attempt;
 
 	SetThreadName("POP3");
 	thread_up(TRUE /* setuid */);
@@ -844,10 +844,10 @@ static void pop3_thread(void* arg)
 	status(str);
 
 	if(startup->login_attempt_throttle
-		&& (login_attempt=loginAttempted(startup->login_attempt_list, &pop3.client_addr)) != NULL
-		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_DEBUG,"%04d POP3 Throttling suspicious connection from: %s", socket, inet_ntoa(pop3.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &pop3.client_addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d POP3 Throttling suspicious connection from: %s (%u login attempts)"
+			,socket, inet_ntoa(pop3.client_addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
 	mail=NULL;
@@ -2247,6 +2247,7 @@ static void smtp_thread(void* arg)
 	ulong		hdr_len=0;
 	ulong		length;
 	ulong		badcmds=0;
+	ulong		login_attempts;
 	BOOL		esmtp=FALSE;
 	BOOL		telegram=FALSE;
 	BOOL		forward=FALSE;
@@ -2287,7 +2288,6 @@ static void smtp_thread(void* arg)
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob=NULL;
 	int32		js_result;
-	list_node_t*	login_attempt;
 	struct mailproc*	mailproc;
 
 	enum {
@@ -2487,10 +2487,10 @@ static void smtp_thread(void* arg)
 	status(str);
 
 	if(startup->login_attempt_throttle
-		&& (login_attempt=loginAttempted(startup->login_attempt_list, &smtp.client_addr)) != NULL
-		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_DEBUG,"%04d SMTP Throttling suspicious connection from: %s", socket, inet_ntoa(smtp.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &smtp.client_addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d SMTP Throttling suspicious connection from: %s (%u login attempts)"
+			,socket, inet_ntoa(smtp.client_addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
 	/* SMTP session active: */

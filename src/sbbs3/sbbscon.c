@@ -2119,15 +2119,17 @@ int main(int argc, char** argv)
 						for(node=listFirstNode(&login_attempt_list); node!=NULL; node=listNextNode(node)) {
 							login_attempt=node->data;
 							localtime_r(&login_attempt->time,&tm);
-							printf("%u unique attempts from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
-								,login_attempt->count, inet_ntoa(login_attempt->addr)
+							printf("%u attempts (%u duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
+								,login_attempt->count
+								,login_attempt->dupes
+								,inet_ntoa(login_attempt->addr)
 								,login_attempt->prot
 								,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec
 								,login_attempt->user
 								,login_attempt->pass
 								);
 							count++;
-							total+=login_attempt->count;
+							total+=(login_attempt->count-login_attempt->dupes);
 						}
 						listUnlock(&login_attempt_list);
 						if(count)

@@ -2692,6 +2692,16 @@ list_node_t* DLLCALL loginAttempted(link_list_t* list, SOCKADDR_IN* addr)
 }
 
 /****************************************************************************/
+ulong DLLCALL loginAttempts(link_list_t* list, SOCKADDR_IN* addr)
+{
+	list_node_t*		node;
+
+	if((node=loginAttempted(list, addr))==NULL)
+		return 0;
+	return ((login_attempt_t*)node->data)->count - ((login_attempt_t*)node->data)->dupes;
+}
+
+/****************************************************************************/
 void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
 {
 	list_node_t*		node;
@@ -2700,6 +2710,8 @@ void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
 		listRemoveNode(list, node, /* freeData: */TRUE);
 }
 
+/****************************************************************************/
+/* Returns number of *unique* login attempts (excludes consecutive dupes)	*/
 /****************************************************************************/
 ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* prot, const char* user, const char* pass)
 {
@@ -2713,7 +2725,7 @@ ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* pro
 		attempt=node->data;
 		/* Don't count consecutive duplicate attempts (same name and password): */
 		if(strcmp(attempt->user,user)==0 && (pass==NULL || strcmp(attempt->pass,pass)==0))
-			return attempt->count;
+			attempt->dupes++;
 	}
 	else if((attempt=calloc(sizeof(login_attempt_t),sizeof(char))) != NULL)
 		listPushNode(list, attempt);
@@ -2725,5 +2737,5 @@ ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* pro
 	SAFECOPY(attempt->user, user);
 	SAFECOPY(attempt->pass, pass);
 	attempt->count++;
-	return attempt->count;
+	return attempt->count-attempt->dupes;
 }

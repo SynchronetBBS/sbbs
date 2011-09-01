@@ -1017,7 +1017,7 @@ static void js_service_thread(void* arg)
 	client_t				client;
 	service_t*				service;
 	service_client_t		service_client;
-	list_node_t*			login_attempt;
+	ulong					login_attempts;
 	/* JavaScript-specific */
 	char					spath[MAX_PATH+1];
 	char					fname[MAX_PATH+1];
@@ -1121,11 +1121,10 @@ static void js_service_thread(void* arg)
 	update_clients();
 
 	if(startup->login_attempt_throttle
-		&& (login_attempt=loginAttempted(startup->login_attempt_list, &service_client.addr)) != NULL
-		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s"
-			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
+			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
 	/* RUN SCRIPT */
@@ -1378,7 +1377,7 @@ static void native_service_thread(void* arg)
 	client_t				client;
 	service_t*				service;
 	service_client_t		service_client=*(service_client_t*)arg;
-	list_node_t*			login_attempt;
+	ulong					login_attempts;
 
 	free(arg);
 
@@ -1474,11 +1473,10 @@ static void native_service_thread(void* arg)
 	client_on(socket,&client,FALSE /* update */);
 
 	if(startup->login_attempt_throttle
-		&& (login_attempt=loginAttempted(startup->login_attempt_list, &service_client.addr)) != NULL
-		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s"
-			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
+		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%u login attempts)"
+			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr), login_attempts);
+		mswait(login_attempts*startup->login_attempt_throttle);
 	}
 
 	/* RUN SCRIPT */
