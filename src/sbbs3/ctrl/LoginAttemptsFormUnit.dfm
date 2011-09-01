@@ -11,6 +11,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poDefault
   OnClose = FormClose
   OnShow = FormShow
   PixelsPerInch = 96
@@ -30,9 +31,11 @@ object LoginAttemptsForm: TLoginAttemptsForm
         Caption = 'Address'
       end
       item
+        AutoSize = True
         Caption = 'Protocol'
       end
       item
+        AutoSize = True
         Caption = 'User'
       end
       item
