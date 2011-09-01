@@ -79,7 +79,7 @@ static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 #define DEFAULT_LOGIN_ATTEMPT_DELAY		5000	/* milliseconds */
 #define DEFAULT_LOGIN_ATTEMPT_THROTTLE	1000	/* milliseconds */
 #define DEFAULT_LOGIN_ATTEMPT_HACKLOG	10		/* write to hack.log after this many consecutive unique attempts */
-#define DEFAULT_LOGIN_ATTEMPT_FILTER	100		/* filter client IP address after this many consecutive unique attempts */
+#define DEFAULT_LOGIN_ATTEMPT_FILTER	50		/* filter client IP address after this many consecutive unique attempts */
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 {
