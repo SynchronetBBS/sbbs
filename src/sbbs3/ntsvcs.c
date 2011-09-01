@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -70,6 +70,7 @@ ftp_startup_t		ftp_startup;
 mail_startup_t		mail_startup;
 services_startup_t	services_startup;
 web_startup_t		web_startup;
+link_list_t			login_attempt_list;
 
 typedef struct {
 	char*					name;
@@ -1200,6 +1201,8 @@ int main(int argc, char** argv)
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
 		,VERSION,REVISION,COPYRIGHT_NOTICE);
 
+	loginAttemptListInit(&login_attempt_list);
+
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
 		ctrl_dir="\\sbbs\\ctrl";		/* Not set? Use default */
@@ -1220,6 +1223,7 @@ int main(int argc, char** argv)
 	bbs_startup.recycle=svc_recycle;
     bbs_startup.terminated=svc_terminated;
 	bbs_startup.clients=svc_clients;
+	bbs_startup.login_attempt_list=&login_attempt_list;
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize FTP startup structure */
@@ -1231,6 +1235,7 @@ int main(int argc, char** argv)
 	ftp_startup.recycle=svc_recycle;
     ftp_startup.terminated=svc_terminated;
 	ftp_startup.clients=svc_clients;
+	ftp_startup.login_attempt_list=&login_attempt_list;
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Web Server startup structure */
@@ -1253,6 +1258,7 @@ int main(int argc, char** argv)
 	mail_startup.recycle=svc_recycle;
     mail_startup.terminated=svc_terminated;
 	mail_startup.clients=svc_clients;
+	mail_startup.login_attempt_list=&login_attempt_list;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Services startup structure */
@@ -1264,6 +1270,7 @@ int main(int argc, char** argv)
 	services_startup.recycle=svc_recycle;
     services_startup.terminated=svc_terminated;
 	services_startup.clients=svc_clients;
+	services_startup.login_attempt_list=&login_attempt_list;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 
 	/* Read .ini file here */

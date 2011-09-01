@@ -62,6 +62,7 @@ USEFORM("ServicesCfgDlgUnit.cpp", ServicesCfgDlg);
 USEFORM("PreviewFormUnit.cpp", PreviewForm);
 USEFORM("WebFormUnit.cpp", WebForm);
 USEFORM("WebCfgDlgUnit.cpp", WebCfgDlg);
+USEFORM("LoginAttemptsFormUnit.cpp", LoginAttemptsForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
@@ -87,6 +88,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
          Application->CreateForm(__classid(TUserListForm), &UserListForm);
          Application->CreateForm(__classid(TEventsForm), &EventsForm);
          Application->CreateForm(__classid(TServicesForm), &ServicesForm);
+         Application->CreateForm(__classid(TLoginAttemptsForm), &LoginAttemptsForm);
          if(cmd[0] && isdir(cmd))
             SAFECOPY(MainForm->global.ctrl_dir,cmd);
          sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir, NULL /* auto-hostname */);

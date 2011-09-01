@@ -89,7 +89,6 @@ static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
-static link_list_t	login_attempt_list;
 
 #ifdef SOCKET_DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
@@ -2340,17 +2339,17 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts, char* user, char* passw
 	ulong count;
 
 	if(addr!=NULL) {
-		count=loginFailure(&login_attempt_list, addr, "FTP", user, passwd);
-		if(count>=LOGIN_ATTEMPT_HACKLOG)
+		count=loginFailure(startup->login_attempt_list, addr, "FTP", user, passwd);
+		if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
-		if(count>=LOGIN_ATTEMPT_FILTER)
+		if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 			filter_ip(&scfg, "FTP", "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 				,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
 		if(count > *login_attempts)
 			*login_attempts=count;
 	}
 
-	mswait(LOGIN_ATTEMPT_DELAY);	/* As recommended by RFC2577 */
+	mswait(startup->login_attempt_delay);	/* As recommended by RFC2577 */
 
 	if(++(*login_attempts)>=3) {
 		sockprintf(sock,"421 Too many failed login attempts.");
@@ -2556,10 +2555,11 @@ static void ctrl_thread(void* arg)
 	client.user="<unknown>";
 	client_on(sock,&client,FALSE /* update */);
 
-	if((login_attempt=loginAttempted(&login_attempt_list, &ftp.client_addr)) != NULL
+	if(startup->login_attempt_throttle
+		&& (login_attempt=loginAttempted(startup->login_attempt_list, &ftp.client_addr)) != NULL
 		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_NOTICE,"%04d Delaying suspicious connection from: %s", sock, inet_ntoa(ftp.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+		lprintf(LOG_DEBUG,"%04d Throttling suspicious connection from: %s", sock, inet_ntoa(ftp.client_addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
 	}
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);
@@ -2760,7 +2760,7 @@ static void ctrl_thread(void* arg)
 			/* Update client display */
 			if(user.pass[0]) {
 				client.user=user.alias;
-				loginSuccess(&login_attempt_list, &ftp.client_addr);
+				loginSuccess(startup->login_attempt_list, &ftp.client_addr);
 			} else {	/* anonymous */
 				sprintf(str,"%s <%.32s>",user.alias,password);
 				client.user=str;
@@ -4628,24 +4628,10 @@ static void ctrl_thread(void* arg)
 
 static void cleanup(int code, int line)
 {
-	char				tmp[128];
-	login_attempt_t*	login_attempt;
-
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"0000 cleanup called from line %d",line);
 #endif
 
-	while((login_attempt=loginAttemptPop(&login_attempt_list)) != NULL) {
-		if(login_attempt->count > 1)
-			lprintf(LOG_NOTICE,"0000 Multiple (%u) failed login attempts from %s, last occurred on %.24s (user: %s, password: %s)"
-				,login_attempt->count, inet_ntoa(login_attempt->addr)
-				,ctime_r(&login_attempt->time, tmp)
-				,login_attempt->user
-				,login_attempt->pass
-				);
-		loginAttemptFree(login_attempt);
-	}
-	loginAttemptListFree(&login_attempt_list);
 	free_cfg(&scfg);
 	free_text(text);
 
@@ -4764,8 +4750,6 @@ void DLLCALL ftp_server(void* arg)
 	js_server_props.options=&startup->options;
 	js_server_props.interface_addr=&startup->interface_addr;
 #endif
-
-	loginAttemptListInit(&login_attempt_list);
 
 	uptime=0;
 	served=0;

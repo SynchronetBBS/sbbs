@@ -76,7 +76,6 @@ static volatile ulong	served=0;
 static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
-static link_list_t login_attempt_list;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -449,14 +448,14 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 	ulong count;
 
 	SAFEPRINTF(reason,"%s LOGIN", prot);
-	count=loginFailure(&login_attempt_list, addr, prot, user, passwd);
-	if(count>=LOGIN_ATTEMPT_HACKLOG)
+	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
+	if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
 		hacklog(&scfg, reason, user, passwd, host, addr);
-	if(count>=LOGIN_ATTEMPT_FILTER)
+	if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 		filter_ip(&scfg, prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 			,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
 
-	mswait(LOGIN_ATTEMPT_DELAY);
+	mswait(startup->login_attempt_delay);
 }
 
 static JSBool
@@ -566,7 +565,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_SetProperty(cx, obj, "logged_in", &val);
 
 	if(client->user.pass[0])
-		loginSuccess(&login_attempt_list, &client->addr);
+		loginSuccess(startup->login_attempt_list, &client->addr);
 
 	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
 
@@ -1121,11 +1120,12 @@ static void js_service_thread(void* arg)
 
 	update_clients();
 
-	if((login_attempt=loginAttempted(&login_attempt_list, &service_client.addr)) != NULL
+	if(startup->login_attempt_throttle
+		&& (login_attempt=loginAttempted(startup->login_attempt_list, &service_client.addr)) != NULL
 		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_NOTICE,"%04d %s Delaying suspicious connection from: %s"
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s"
 			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
 	}
 
 	/* RUN SCRIPT */
@@ -1473,11 +1473,12 @@ static void native_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client,FALSE /* update */);
 
-	if((login_attempt=loginAttempted(&login_attempt_list, &service_client.addr)) != NULL
+	if(startup->login_attempt_throttle
+		&& (login_attempt=loginAttempted(startup->login_attempt_list, &service_client.addr)) != NULL
 		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_NOTICE,"%04d %s Delaying suspicious connection from: %s"
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s"
 			,socket, service->protocol, inet_ntoa(service_client.addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
 	}
 
 	/* RUN SCRIPT */
@@ -1634,22 +1635,6 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 
 static void cleanup(int code)
 {
-	char				tmp[128];
-	login_attempt_t*	login_attempt;
-
-	while((login_attempt=loginAttemptPop(&login_attempt_list)) != NULL) {
-		if(login_attempt->count > 1)
-			lprintf(LOG_NOTICE,"0000 %s Multiple (%u) failed login attempts from %s, last occurred on %.24s (user: %s, password: %s)"
-				,login_attempt->prot
-				,login_attempt->count, inet_ntoa(login_attempt->addr)
-				,ctime_r(&login_attempt->time, tmp)
-				,login_attempt->user
-				,login_attempt->pass
-				);
-		loginAttemptFree(login_attempt);
-	}
-	loginAttemptListFree(&login_attempt_list);
-
 	FREE_AND_NULL(service);
 	services=0;
 
@@ -1751,8 +1736,6 @@ void DLLCALL services_thread(void* arg)
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-
-	loginAttemptListInit(&login_attempt_list);
 
 	uptime=0;
 	served=0;

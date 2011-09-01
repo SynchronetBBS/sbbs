@@ -116,14 +116,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include <cryptlib.h>
 #endif
 
-/***********************/
-/* Synchronet-specific */
-/***********************/
-#include "startup.h"
-#ifdef __cplusplus
-	#include "threadwrap.h"	/* pthread_mutex_t */
-#endif
-
 /* xpdev */
 #ifndef LINK_LIST_THREADSAFE
  #define LINK_LIST_THREADSAFE
@@ -139,6 +131,14 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "link_list.h"
 #include "msg_queue.h"
 #include "xpdatetime.h"
+
+/***********************/
+/* Synchronet-specific */
+/***********************/
+#include "startup.h"
+#ifdef __cplusplus
+	#include "threadwrap.h"	/* pthread_mutex_t */
+#endif
 
 #include "smblib.h"
 #include "ars_defs.h"

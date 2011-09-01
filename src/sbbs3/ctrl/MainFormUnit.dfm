@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 538
-  Top = 491
+  Left = 290
+  Top = 545
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -10,7 +10,7 @@ object MainForm: TMainForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -46,11 +46,11 @@ object MainForm: TMainForm
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object HorizontalSplitter: TSplitter
     Left = 0
-    Top = 195
+    Top = 164
     Width = 632
     Height = 1
     Cursor = crVSplit
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 121
+    Height = 164
     Align = alClient
     AutoSize = True
     Center = True
@@ -13499,7 +13499,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 30
     Width = 632
-    Height = 165
+    Height = 134
     Align = alTop
     BevelOuter = bvNone
     Constraints.MinHeight = 100
@@ -13507,18 +13507,18 @@ object MainForm: TMainForm
     TabOrder = 1
     Visible = False
     object TopVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 165
+      Width = 2
+      Height = 134
       Cursor = crHSplit
       MinSize = 1
     end
     object UpperLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 165
+      Width = 235
+      Height = 134
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13526,10 +13526,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 165
+      Width = 395
+      Height = 134
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13539,26 +13539,26 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 121
+    Height = 164
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     object BottomVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 121
+      Width = 2
+      Height = 164
       Cursor = crHSplit
       MinSize = 1
     end
     object LowerLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 121
+      Width = 235
+      Height = 164
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -13566,10 +13566,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 121
+      Width = 395
+      Height = 164
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -13579,7 +13579,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 317
+    Top = 329
     Width = 632
     Height = 25
     Panels = <
@@ -14273,10 +14273,15 @@ object MainForm: TMainForm
         ImageIndex = 29
         OnClick = ViewLogClick
       end
+      object ViewLoginAttemptsMenuItem: TMenuItem
+        Caption = 'Login Attempts...'
+        OnClick = ViewLoginAttemptsMenuItemClick
+      end
       object ViewHackAttemptLogMenuItem: TMenuItem
         AutoHotkeys = maManual
         Caption = 'Hack Attempt Log...'
         Hint = 'HACK.LOG'
+        ImageIndex = 31
         OnClick = ViewLogClick
       end
     end

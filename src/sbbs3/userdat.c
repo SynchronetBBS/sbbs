@@ -2692,18 +2692,6 @@ list_node_t* DLLCALL loginAttempted(link_list_t* list, SOCKADDR_IN* addr)
 }
 
 /****************************************************************************/
-login_attempt_t* DLLCALL loginAttemptPop(link_list_t* list)
-{
-	return listPopNode(list);
-}
-
-/****************************************************************************/
-void DLLCALL loginAttemptFree(void* data)
-{
-	free(data);
-}
-
-/****************************************************************************/
 void DLLCALL loginSuccess(link_list_t* list, SOCKADDR_IN* addr)
 {
 	list_node_t*		node;
@@ -2717,6 +2705,9 @@ ulong DLLCALL loginFailure(link_list_t* list, SOCKADDR_IN* addr, const char* pro
 {
 	list_node_t*		node;
 	login_attempt_t*	attempt;
+
+	if(list==NULL)
+		return 0;
 
 	if((node=loginAttempted(list, addr)) != NULL) {
 		attempt=node->data;

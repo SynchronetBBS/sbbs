@@ -12,7 +12,7 @@
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
       ServicesCfgDlgUnit.obj ..\sbbs_ini.obj PreviewFormUnit.obj WebFormUnit.obj 
-      WebCfgDlgUnit.obj"/>
+      WebCfgDlgUnit.obj LoginAttemptsFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -24,7 +24,8 @@
       UserListFormUnit.dfm UserMsgFormUnit.dfm PropertiesDlgUnit.dfm 
       EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm 
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
-      ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm WebCfgDlgUnit.dfm"/>
+      ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm 
+      WebCfgDlgUnit.dfm LoginAttemptsFormUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib 
       ..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib websrvr.lib"/>
     <LIBRARIES value="bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib 
@@ -112,6 +113,7 @@
       <FILE FILENAME="..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib" FORMNAME="" UNITNAME="xpdev_mt.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="websrvr.lib" FORMNAME="" UNITNAME="websrvr.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WebCfgDlgUnit.cpp" FORMNAME="WebCfgDlg" UNITNAME="WebCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="LoginAttemptsFormUnit.cpp" FORMNAME="LoginAttemptsForm" UNITNAME="LoginAttemptsFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -122,7 +124,7 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=15
-Release=0
+Release=1
 Build=0
 Debug=0
 PreRelease=0
@@ -135,13 +137,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.15.0.0
+FileVersion=3.15.1.0
 InternalName=
-LegalCopyright=(C) 2009 Rob Swindell
+LegalCopyright=(C) 2011 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
-ProductVersion=3.15a
+ProductVersion=3.15b
 Comments=
 
 [HistoryLists\hlIncludePath]
@@ -205,9 +207,10 @@ Item25=..\;..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
 Item26=..\..\..\Borland\CBuilder4\Projects;..\Lib;$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
-Count=2
-Item0=$(BCB)\source\vcl;C:\src\xpdev\
-Item1=$(BCB)\source\vcl
+Count=3
+Item0=$(BCB)\source\vcl;C:\src\xpdev\;C:\src\sbbs3\
+Item1=$(BCB)\source\vcl;C:\src\xpdev\
+Item2=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
 Count=7
@@ -238,11 +241,6 @@ RemoteDebug=0
 ShowInfoMsgs=0
 LinkDebugVcl=0
 LinkCGLIB=0
-
-[CORBA]
-AddServerUnit=1
-AddClientUnit=1
-PrecompiledHeaders=1
 
 [Language]
 ActiveLang=

@@ -103,7 +103,6 @@ static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
-static link_list_t	login_attempt_list;
 
 struct {
 	volatile ulong	sockets;
@@ -731,15 +730,15 @@ static void badlogin(SOCKET sock, const char* prot, const char* resp, char* user
 
 	if(addr!=NULL) {
 		SAFEPRINTF(reason,"%s LOGIN", prot);
-		count=loginFailure(&login_attempt_list, addr, prot, user, passwd);
-		if(count>=LOGIN_ATTEMPT_HACKLOG)
+		count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
+		if(startup->login_attempt_hack_threshold && count>=startup->login_attempt_hack_threshold)
 			hacklog(&scfg, reason, user, passwd, host, addr);
-		if(count>=LOGIN_ATTEMPT_FILTER)
+		if(startup->login_attempt_filter_threshold && count>=startup->login_attempt_filter_threshold)
 			filter_ip(&scfg, (char*)prot, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS"
 				,host, inet_ntoa(addr->sin_addr), user, /* fname: */NULL);
 	}
 
-	mswait(LOGIN_ATTEMPT_DELAY);
+	mswait(startup->login_attempt_delay);
 	sockprintf(sock,(char*)resp);
 }
 
@@ -844,10 +843,11 @@ static void pop3_thread(void* arg)
 	SAFEPRINTF(str,"POP3: %s", host_ip);
 	status(str);
 
-	if((login_attempt=loginAttempted(&login_attempt_list, &pop3.client_addr)) != NULL
+	if(startup->login_attempt_throttle
+		&& (login_attempt=loginAttempted(startup->login_attempt_list, &pop3.client_addr)) != NULL
 		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_NOTICE,"%04d POP3 Delaying suspicious connection from: %s", socket, inet_ntoa(pop3.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+		lprintf(LOG_DEBUG,"%04d POP3 Throttling suspicious connection from: %s", socket, inet_ntoa(pop3.client_addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
 	}
 
 	mail=NULL;
@@ -951,7 +951,7 @@ static void pop3_thread(void* arg)
 		}
 
 		if(user.pass[0])
-			loginSuccess(&login_attempt_list, &pop3.client_addr);
+			loginSuccess(startup->login_attempt_list, &pop3.client_addr);
 
 		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
 		putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
@@ -2486,10 +2486,11 @@ static void smtp_thread(void* arg)
 	SAFEPRINTF(str,"SMTP: %s",host_ip);
 	status(str);
 
-	if((login_attempt=loginAttempted(&login_attempt_list, &smtp.client_addr)) != NULL
+	if(startup->login_attempt_throttle
+		&& (login_attempt=loginAttempted(startup->login_attempt_list, &smtp.client_addr)) != NULL
 		&& ((login_attempt_t*)login_attempt->data)->count > 1) {
-		lprintf(LOG_NOTICE,"%04d SMTP Delaying suspicious connection from: %s", socket, inet_ntoa(smtp.client_addr.sin_addr));
-		mswait(((login_attempt_t*)login_attempt->data)->count*1000);
+		lprintf(LOG_DEBUG,"%04d SMTP Throttling suspicious connection from: %s", socket, inet_ntoa(smtp.client_addr.sin_addr));
+		mswait(((login_attempt_t*)login_attempt->data)->count*startup->login_attempt_throttle);
 	}
 
 	/* SMTP session active: */
@@ -3342,7 +3343,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if(relay_user.pass[0])
-				loginSuccess(&login_attempt_list, &smtp.client_addr);
+				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
 
 			/* Update client display */
 			client.user=relay_user.alias;
@@ -3427,7 +3428,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if(relay_user.pass[0])
-				loginSuccess(&login_attempt_list, &smtp.client_addr);
+				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
 
 			/* Update client display */
 			client.user=relay_user.alias;
@@ -4706,21 +4707,6 @@ void DLLCALL mail_terminate(void)
 static void cleanup(int code)
 {
 	int					i;
-	char				tmp[128];
-	login_attempt_t*	login_attempt;
-
-	while((login_attempt=loginAttemptPop(&login_attempt_list)) != NULL) {
-		if(login_attempt->count > 1)
-			lprintf(LOG_NOTICE,"0000 %s Multiple (%u) failed login attempts from %s, last occurred on %.24s (user: %s, password: %s)"
-				,login_attempt->prot
-				,login_attempt->count, inet_ntoa(login_attempt->addr)
-				,ctime_r(&login_attempt->time, tmp)
-				,login_attempt->user
-				,login_attempt->pass
-				);
-		loginAttemptFree(login_attempt);
-	}
-	loginAttemptListFree(&login_attempt_list);
 
 	free_cfg(&scfg);
 
@@ -4884,8 +4870,6 @@ void DLLCALL mail_server(void* arg)
 	js_server_props.clients=&active_clients;
 	js_server_props.options=&startup->options;
 	js_server_props.interface_addr=&startup->interface_addr;
-
-	loginAttemptListInit(&login_attempt_list);
 
 	uptime=0;
 	memset(&stats,0,sizeof(stats));

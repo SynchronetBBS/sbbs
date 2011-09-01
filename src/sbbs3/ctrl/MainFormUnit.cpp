@@ -71,6 +71,7 @@
 #include "PropertiesDlgUnit.h"
 #include "ConfigWizardUnit.h"
 #include "PreviewFormUnit.h"
+#include "LoginAttemptsFormUnit.h"
 
 #include "sbbs_ini.h"		// sbbs_read_ini()
 #include "userdat.h"		// lastuser()
@@ -151,6 +152,7 @@ link_list_t mail_log_list;
 link_list_t ftp_log_list;
 link_list_t web_log_list;
 link_list_t services_log_list;
+link_list_t	login_attempt_list;
 
 DWORD	MaxLogLen=20000;
 int     threads=1;
@@ -826,6 +828,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     UseFileAssociations=true;
     Initialized=false;
 
+	loginAttemptListInit(&login_attempt_list);
+
     char* p;
     if((p=getenv("SBBSCTRL"))!=NULL)
         SAFECOPY(global.ctrl_dir,p);
@@ -855,6 +859,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.thread_up=thread_up;
     bbs_startup.client_on=client_on;
     bbs_startup.socket_open=socket_open;
+	bbs_startup.login_attempt_list=&login_attempt_list;
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
@@ -879,6 +884,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.lines_per_yield=10;
     mail_startup.max_clients=10;
     mail_startup.max_msg_size=10*1024*1024;
+	mail_startup.login_attempt_list=&login_attempt_list;
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
@@ -901,6 +907,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.html_index_file,"00index.html");
     strcpy(ftp_startup.html_index_script,"ftp-html.js");
+	ftp_startup.login_attempt_list=&login_attempt_list;
 
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
@@ -915,6 +922,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     web_startup.thread_up=thread_up;
     web_startup.client_on=client_on;
     web_startup.socket_open=socket_open;
+	web_startup.login_attempt_list=&login_attempt_list;
 
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
@@ -930,6 +938,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     services_startup.thread_up=thread_up;
     services_startup.client_on=client_on;
     services_startup.socket_open=socket_open;
+	services_startup.login_attempt_list=&login_attempt_list;
 
     bbs_log=INVALID_HANDLE_VALUE;
     event_log=INVALID_HANDLE_VALUE;
@@ -3816,9 +3825,9 @@ TFont* __fastcall TMainForm::LogAttributes(int log_level, TColor Color, TFont* F
     return LogFont[log_level];
 }
 //---------------------------------------------------------------------------
-
-
-
-
-
+void __fastcall TMainForm::ViewLoginAttemptsMenuItemClick(TObject *Sender)
+{
+    LoginAttemptsForm->Show();
+}
+//---------------------------------------------------------------------------
 
