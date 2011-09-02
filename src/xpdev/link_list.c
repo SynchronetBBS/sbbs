@@ -225,6 +225,8 @@ BOOL DLLCALL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 
 BOOL DLLCALL listLock(link_list_t* list)
 {
+	if(list==NULL)
+		return(FALSE);
 	MUTEX_LOCK(list);
 	list->flags|=LINK_LIST_LOCKED;
 	return(TRUE);
@@ -232,11 +234,15 @@ BOOL DLLCALL listLock(link_list_t* list)
 
 BOOL DLLCALL listIsLocked(const link_list_t* list)
 {
+	if(list==NULL)
+		return(FALSE);
 	return((list->flags&LINK_LIST_LOCKED) ? TRUE : FALSE);
 }
 
 BOOL DLLCALL listUnlock(link_list_t* list)
 {
+	if(list==NULL)
+		return(FALSE);
 	list->flags&=~LINK_LIST_LOCKED;
 	MUTEX_UNLOCK(list);
 	return(TRUE);
