@@ -79,7 +79,7 @@ link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 
 BOOL DLLCALL listFreeNodeData(list_node_t* node)
 {
-	if(node!=NULL && node->data!=NULL && !(node->flags&LINK_LIST_NODE_LOCKED)) {
+	if(node!=NULL && node->data!=NULL && !(node->flags&LINK_LIST_LOCKED)) {
 		free(node->data);
 		node->data = NULL;
 		return(TRUE);
@@ -94,7 +94,7 @@ long DLLCALL listFreeNodes(link_list_t* list)
 
 	for(node=list->first; node!=NULL; node=next) {
 
-		if(node->flags&LINK_LIST_NODE_LOCKED)
+		if(node->flags&LINK_LIST_LOCKED)
 			break;
 
 		if((list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
@@ -223,14 +223,23 @@ BOOL DLLCALL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 
 #endif
 
-void DLLCALL listLock(const link_list_t* list)
+BOOL DLLCALL listLock(link_list_t* list)
 {
 	MUTEX_LOCK(list);
+	list->flags|=LINK_LIST_LOCKED;
+	return(TRUE);
 }
 
-void DLLCALL listUnlock(const link_list_t* list)
+BOOL DLLCALL listIsLocked(const link_list_t* list)
 {
+	return((list->flags&LINK_LIST_LOCKED) ? TRUE : FALSE);
+}
+
+BOOL DLLCALL listUnlock(link_list_t* list)
+{
+	list->flags&=~LINK_LIST_LOCKED;
 	MUTEX_UNLOCK(list);
+	return(TRUE);
 }
 
 long DLLCALL listCountNodes(const link_list_t* list)
@@ -266,6 +275,9 @@ list_node_t* DLLCALL listFindNode(const link_list_t* list, const void* data, siz
 	for(node=list->first; node!=NULL; node=node->next) {
 		if(length==0) {
 			if(node->data==data)
+				break;
+		} else if(data==NULL) {
+			if(node->tag==(list_node_tag_t)length)
 				break;
 		} else if(node->data!=NULL && memcmp(node->data,data,length)==0)
 			break;
@@ -426,15 +438,15 @@ void* DLLCALL listNodeData(const list_node_t* node)
 
 BOOL DLLCALL listNodeIsLocked(const list_node_t* node)
 {
-	return(node!=NULL && node->flags&LINK_LIST_NODE_LOCKED);
+	return(node!=NULL && node->flags&LINK_LIST_LOCKED);
 }
 
 BOOL DLLCALL listLockNode(list_node_t* node)
 {
-	if(node==NULL || node->flags&LINK_LIST_NODE_LOCKED)
+	if(node==NULL || node->flags&LINK_LIST_LOCKED)
 		return(FALSE);
 
-	node->flags|=LINK_LIST_NODE_LOCKED;
+	node->flags|=LINK_LIST_LOCKED;
 
 	return(TRUE);
 }
@@ -444,7 +456,7 @@ BOOL DLLCALL listUnlockNode(list_node_t* node)
 	if(!listNodeIsLocked(node))
 		return(FALSE);
 
-	node->flags&=~LINK_LIST_NODE_LOCKED;
+	node->flags&=~LINK_LIST_LOCKED;
 
 	return(TRUE);
 }
@@ -488,7 +500,7 @@ static list_node_t* DLLCALL list_add_node(link_list_t* list, list_node_t* node, 
 	return(node);
 }
 
-list_node_t* DLLCALL listAddNode(link_list_t* list, void* data, list_node_t* after)
+list_node_t* DLLCALL listAddNode(link_list_t* list, void* data, list_node_tag_t tag, list_node_t* after)
 {
 	list_node_t* node;
 
@@ -500,11 +512,12 @@ list_node_t* DLLCALL listAddNode(link_list_t* list, void* data, list_node_t* aft
 
 	memset(node,0,sizeof(list_node_t));
 	node->data = data;
+	node->tag = tag;
 
 	return(list_add_node(list,node,after));
 }
 
-long DLLCALL listAddNodes(link_list_t* list, void** data, list_node_t* after)
+long DLLCALL listAddNodes(link_list_t* list, void** data, list_node_tag_t* tag, list_node_t* after)
 {
 	long			i;
 	list_node_t*	node=NULL;
@@ -513,13 +526,13 @@ long DLLCALL listAddNodes(link_list_t* list, void** data, list_node_t* after)
 		return(-1);
 
 	for(i=0; data[i]!=NULL ;i++)
-		if((node=listAddNode(list,data[i],node==NULL ? after:node))==NULL)
+		if((node=listAddNode(list,data[i],tag==NULL ? LIST_NODE_TAG_DEFAULT : *(tag++),node==NULL ? after:node))==NULL)
 			return(i);
 
 	return(i);
 }
 
-list_node_t* DLLCALL listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_t* after)
+list_node_t* DLLCALL listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_tag_t tag, list_node_t* after)
 {
 	list_node_t*	node;
 	void*			buf;
@@ -528,7 +541,7 @@ list_node_t* DLLCALL listAddNodeData(link_list_t* list, const void* data, size_t
 		return(NULL);
 	memcpy(buf,data,length);
 
-	if((node=listAddNode(list,buf,after))==NULL) {
+	if((node=listAddNode(list,buf,tag,after))==NULL) {
 		free(buf);
 		return(NULL);
 	}
@@ -537,7 +550,7 @@ list_node_t* DLLCALL listAddNodeData(link_list_t* list, const void* data, size_t
 	return(node);
 }
 
-list_node_t* DLLCALL listAddNodeString(link_list_t* list, const char* str, list_node_t* after)
+list_node_t* DLLCALL listAddNodeString(link_list_t* list, const char* str, list_node_tag_t tag, list_node_t* after)
 {
 	list_node_t*	node;
 	char*			buf;
@@ -548,7 +561,7 @@ list_node_t* DLLCALL listAddNodeString(link_list_t* list, const char* str, list_
 	if((buf=strdup(str))==NULL)
 		return(NULL);
 
-	if((node=listAddNode(list,buf,after))==NULL) {
+	if((node=listAddNode(list,buf,tag,after))==NULL) {
 		free(buf);
 		return(NULL);
 	}
@@ -557,7 +570,7 @@ list_node_t* DLLCALL listAddNodeString(link_list_t* list, const char* str, list_
 	return(node);
 }
 
-long DLLCALL listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* after)
+long DLLCALL listAddStringList(link_list_t* list, str_list_t str_list, list_node_tag_t* tag, list_node_t* after)
 {
 	long			i;
 	list_node_t*	node=NULL;
@@ -566,7 +579,7 @@ long DLLCALL listAddStringList(link_list_t* list, str_list_t str_list, list_node
 		return(-1);
 
 	for(i=0; str_list[i]!=NULL ;i++)
-		if((node=listAddNodeString(list,str_list[i],node==NULL ? after:node))==NULL)
+		if((node=listAddNodeString(list,str_list[i],tag==NULL ? LIST_NODE_TAG_DEFAULT : *(tag++),node==NULL ? after:node))==NULL)
 			return(i);
 
 	return(i);
@@ -582,7 +595,7 @@ long DLLCALL listAddNodeList(link_list_t* list, const link_list_t* src, list_nod
 		return(-1);
 
 	for(src_node=src->first; src_node!=NULL; src_node=src_node->next, count++) {
-		if((node=listAddNode(list, src_node->data, node==NULL ? after:node))==NULL)
+		if((node=listAddNode(list, src_node->data, src_node->tag, node==NULL ? after:node))==NULL)
 			return(count);
 		node->flags = src_node->flags;
 	}
@@ -618,7 +631,7 @@ link_list_t* DLLCALL listExtract(link_list_t* dest_list, const list_node_t* node
 		return(NULL);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
-		listAddNode(list, node->data, list->last);
+		listAddNode(list, node->data, node->tag, list->last);
 		count++;
 	}
 
@@ -636,7 +649,7 @@ static void* list_remove_node(link_list_t* list, list_node_t* node, BOOL free_da
 	if(node==NULL)
 		return(NULL);
 
-	if(node->flags&LINK_LIST_NODE_LOCKED)
+	if(node->flags&LINK_LIST_LOCKED)
 		return(NULL);
 
 	if(node->prev!=NULL)
@@ -671,6 +684,24 @@ void* DLLCALL listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_dat
 	MUTEX_LOCK(list);
 
 	data = list_remove_node(list, node, free_data);
+
+	MUTEX_UNLOCK(list);
+
+	return(data);
+}
+
+void* DLLCALL listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, BOOL free_data)
+{
+	void*			data=NULL;
+	list_node_t*	node;
+
+	if(list==NULL)
+		return(NULL);
+
+	MUTEX_LOCK(list);
+		
+	if((node=listFindTaggedNode(list, tag)) != NULL)
+		data = list_remove_node(list, node, free_data);
 
 	MUTEX_UNLOCK(list);
 
@@ -718,8 +749,10 @@ BOOL DLLCALL listSwapNodes(list_node_t* node1, list_node_t* node2)
 #endif
 
 	tmp=*node1;
+	node1->tag=node2->tag;
 	node1->data=node2->data;
 	node1->flags=node2->flags;
+	node2->tag=tmp.tag;
 	node2->data=tmp.data;
 	node2->flags=tmp.flags;
 
