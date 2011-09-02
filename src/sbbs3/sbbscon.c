@@ -107,13 +107,13 @@ BOOL				has_web=FALSE;
 web_startup_t		web_startup;
 ulong				thread_count=1;
 ulong				socket_count=0;
-ulong				client_count=0;
 ulong				error_count=0;
 int					prompt_len=0;
 static scfg_t		scfg;					/* To allow rerun */
 static ulong		served=0;
 char				ini_file[MAX_PATH+1];
 link_list_t			login_attempt_list;
+link_list_t			client_list;
 
 #ifdef __unix__
 char				new_uid_name[32];
@@ -261,7 +261,7 @@ static int lputs(int level, char *str)
 	}
 	/* re-display prompt with current stats */
 	if(prompt!=NULL)
-		prompt_len = printf(prompt, thread_count, socket_count, client_count, served, error_count);
+		prompt_len = printf(prompt, thread_count, socket_count, client_list.count, served, error_count);
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 
@@ -590,21 +590,21 @@ static void socket_open(void* p, BOOL open)
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 {
-   	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
+	if(on) {
+		if(update) {
+			list_node_t*	node;
 
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
+			listLock(&client_list);
+			if((node=listFindTaggedNode(&client_list, sock)) != NULL)
+				memcpy(node->data, client, sizeof(client_t));
+			listUnlock(&client_list);
+		} else {
+			served++;
+			listAddNodeData(&client_list, client, sizeof(client_t), sock, LAST_NODE);
+		}
+	} else
+		listRemoveTaggedNode(&client_list, sock, /* free_data: */TRUE);
 
-	pthread_mutex_lock(&mutex);
-	if(on && !update) {
-		client_count++;
-	    served++;
-	} else if(!on && client_count>0)
-		client_count--;
-	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
@@ -1212,6 +1212,7 @@ int main(int argc, char** argv)
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	SetThreadName("Main");
+	listInit(&client_list, LINK_LIST_MUTEX);
 	loginAttemptListInit(&login_attempt_list);
 	atexit(cleanup);
 
@@ -2138,6 +2139,33 @@ int main(int argc, char** argv)
 						printf("%u total unique failed login attempts (potential password hack attempts)\n", total);
 					}
 					break;
+				case 'c':	/* Show connected clients: */
+					printf("\nConnected clients:\n\n");
+					{
+						unsigned long		total=0;
+						struct tm			tm;
+						list_node_t*		node;
+						client_t*			client;
+
+					    listLock(&client_list);
+						count=0;
+						for(node=listFirstNode(&client_list); node!=NULL; node=listNextNode(node)) {
+							client=node->data;
+							localtime_r(&client->time,&tm);
+							printf("%04d %s %s %s %s port %u since %u/%u %02u:%02u:%02u\n"
+								,node->tag
+								,client->protocol
+								,client->user
+								,client->addr
+								,client->host
+								,client->port
+								,tm.tm_mon+1,tm.tm_mday,tm.tm_hour,tm.tm_min,tm.tm_sec
+								);
+							count++;
+						}
+						listUnlock(&client_list);
+					}
+					break;
                 case '?': /* only print help if user requests it */
 					printf("\nSynchronet Console Version %s%c Help\n\n",VERSION,REVISION);
 					printf("q   = quit\n");
@@ -2147,6 +2175,7 @@ int main(int argc, char** argv)
 					printf("d   = down node (toggle)\n");
 					printf("i   = interrupt node (toggle)\n");
 					printf("a   = show failed login attempts\n");
+					printf("c   = show connected clients\n");
 					printf("r   = recycle servers (when not in use)\n");
 					printf("s   = shutdown servers (when not in use)\n");
 					printf("t   = terminate servers (immediately)\n");
