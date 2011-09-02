@@ -223,17 +223,11 @@ BOOL DLLCALL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 
 #endif
 
-#if defined(__BORLANDC__)
-	#pragma argsused
-#endif
 void DLLCALL listLock(const link_list_t* list)
 {
 	MUTEX_LOCK(list);
 }
 
-#if defined(__BORLANDC__)
-	#pragma argsused
-#endif
 void DLLCALL listUnlock(const link_list_t* list)
 {
 	MUTEX_UNLOCK(list);
