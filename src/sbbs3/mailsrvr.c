@@ -2534,7 +2534,7 @@ static void smtp_thread(void* arg)
 					, socket, lines, ftell(msgtxt)-hdr_len, hdr_lines, hdr_len);
 
 				if(!socket_check(socket, NULL, NULL, 0)) {
-					lprintf(LOG_ERR,"%04d !SMTP sender disconnected (premature evacuation)", socket);
+					lprintf(LOG_WARNING,"%04d !SMTP sender disconnected (premature evacuation)", socket);
 					continue;
 				}
 
