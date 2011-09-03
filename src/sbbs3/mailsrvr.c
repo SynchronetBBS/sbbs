@@ -1955,8 +1955,10 @@ static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 		truncsp(p);
 		if(*type==RFC822HEADER || *type==SMTPRECEIVED)
 			smb_hfield_append_str(msg,*type,"\r\n");
-		else /* Unfold other common header field types (e.g. Subject, From, To) */
+		else { /* Unfold other common header field types (e.g. Subject, From, To) */
 			smb_hfield_append_str(msg,*type," ");
+			SKIP_WHITESPACE(p);
+		}
 		return smb_hfield_append_str(msg, *type, p);
 	}
 
