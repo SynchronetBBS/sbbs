@@ -50,7 +50,7 @@
 	#define MUTEX_UNLOCK(list)	(void)list
 #endif
 
-#if defined(_WIN32) && !defined(LINK_LIST_USE_MALLOC)
+#if defined(_WIN32) && defined(LINK_LIST_USE_HEAPALLOC)
 	#define malloc(size)	HeapAlloc(GetProcessHeap(), /* flags: */0, size)
 	#define free(ptr)		HeapFree(GetProcessHeap(), /* flags: */0, ptr)
 #endif
