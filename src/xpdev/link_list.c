@@ -54,7 +54,7 @@
 
 link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 {
-	if(flags&LINK_LIST_MALLOC || list==NULL) {
+	if((flags&LINK_LIST_MALLOC) || list==NULL) {
 		if((list=(link_list_t*)malloc(sizeof(link_list_t)))==NULL)
 			return(NULL);
 		flags |= LINK_LIST_MALLOC;
@@ -92,12 +92,17 @@ long DLLCALL listFreeNodes(link_list_t* list)
 	list_node_t* node;
 	list_node_t* next;
 
+	if(list==NULL)
+		return(-1);
+
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=next) {
 
 		if(node->flags&LINK_LIST_LOCKED)
 			break;
 
-		if((list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
+		if(((list->flags&LINK_LIST_ALWAYS_FREE) || (node->flags&LINK_LIST_MALLOC))
 			&& !(list->flags&LINK_LIST_NEVER_FREE))
 			listFreeNodeData(node);
 
@@ -112,6 +117,8 @@ long DLLCALL listFreeNodes(link_list_t* list)
 	list->first = node;
 	if(!list->count)
 		list->last = NULL;
+
+	MUTEX_UNLOCK(list);
 
 	return(list->count);
 }
@@ -228,7 +235,7 @@ BOOL DLLCALL listLock(link_list_t* list)
 	if(list==NULL)
 		return(FALSE);
 	MUTEX_LOCK(list);
-	list->flags|=LINK_LIST_LOCKED;
+	list->locks++;
 	return(TRUE);
 }
 
@@ -236,14 +243,16 @@ BOOL DLLCALL listIsLocked(const link_list_t* list)
 {
 	if(list==NULL)
 		return(FALSE);
-	return((list->flags&LINK_LIST_LOCKED) ? TRUE : FALSE);
+	return(list->locks > 0 ? TRUE : FALSE);
 }
 
 BOOL DLLCALL listUnlock(link_list_t* list)
 {
 	if(list==NULL)
 		return(FALSE);
-	list->flags&=~LINK_LIST_LOCKED;
+	if(list->locks < 1)	/* Not locked */
+		return(FALSE);
+	list->locks--;
 	MUTEX_UNLOCK(list);
 	return(TRUE);
 }
@@ -444,12 +453,12 @@ void* DLLCALL listNodeData(const list_node_t* node)
 
 BOOL DLLCALL listNodeIsLocked(const list_node_t* node)
 {
-	return(node!=NULL && node->flags&LINK_LIST_LOCKED);
+	return(node!=NULL && (node->flags&LINK_LIST_LOCKED));
 }
 
 BOOL DLLCALL listLockNode(list_node_t* node)
 {
-	if(node==NULL || node->flags&LINK_LIST_LOCKED)
+	if(node==NULL || (node->flags&LINK_LIST_LOCKED))
 		return(FALSE);
 
 	node->flags|=LINK_LIST_LOCKED;

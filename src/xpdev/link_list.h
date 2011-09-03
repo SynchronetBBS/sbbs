@@ -60,7 +60,7 @@ extern "C" {
 #define LINK_LIST_NEVER_FREE	(1<<2)	/* NEVER free node data (careful of memory leaks!) */
 #define LINK_LIST_MUTEX			(1<<3)	/* Mutex-protected linked-list */
 #define LINK_LIST_SEMAPHORE		(1<<4)	/* Semaphore attached to linked-list */
-#define LINK_LIST_LOCKED		(1<<5)	/* List or Node is locked */
+#define LINK_LIST_LOCKED		(1<<5)	/* Node is locked */
 #define LINK_LIST_ATTACH		(1<<6)	/* Attach during init */
 
 /* in case the default tag type is not sufficient for your needs, you can over-ride */
@@ -87,6 +87,7 @@ typedef struct link_list {
 	long				count;			/* number of nodes in list */
 	void*				private_data;	/* for use by the application/caller */
 	long				refs;			/* reference counter (attached clients) */
+	long				locks;			/* recursive lock counter */
 #if defined(LINK_LIST_THREADSAFE)
 	pthread_mutex_t		mutex;
 	sem_t				sem;
@@ -111,9 +112,11 @@ DLLEXPORT BOOL	DLLCALL	listSemTryWaitBlock(link_list_t*, unsigned long timeout);
 #endif
 
 /* Lock/unlock linked lists (works best for mutex-protected lists) */
+/* Locks are recusive (e.g. must call Unlock for each call to Lock */
 DLLEXPORT BOOL	DLLCALL	listLock(link_list_t*);
-DLLEXPORT BOOL	DLLCALL	listIsLocked(const link_list_t*);
 DLLEXPORT BOOL	DLLCALL	listUnlock(link_list_t*);
+DLLEXPORT BOOL	DLLCALL	listIsLocked(const link_list_t*);
+#define	listForceUnlock(list)	while(listUnlock(list)==TRUE)
 
 /* Return count or index of nodes, or -1 on error */
 DLLEXPORT long	DLLCALL	listCountNodes(const link_list_t*);
@@ -151,7 +154,7 @@ DLLEXPORT list_node_t*	DLLCALL	listNextNode(const list_node_t*);
 DLLEXPORT list_node_t*	DLLCALL	listPrevNode(const list_node_t*);
 DLLEXPORT void*			DLLCALL	listNodeData(const list_node_t*);
 
-/* Primitive node locking */
+/* Primitive node locking (not recursive) */
 DLLEXPORT BOOL DLLCALL	listLockNode(list_node_t*);
 DLLEXPORT BOOL DLLCALL	listUnlockNode(list_node_t*);
 DLLEXPORT BOOL DLLCALL	listNodeIsLocked(const list_node_t*);
