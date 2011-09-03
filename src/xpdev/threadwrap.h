@@ -109,7 +109,7 @@ pthread_mutex_t pthread_mutex_initializer(BOOL recursive);
 #define SetThreadName(c)
 #endif
 
-#if defined(PTHREAD_MUTEX_RECURSIVE_NP) && !defined(PTHREAD_MUTEX_RECURSIVE)
+#if !defined(PTHREAD_MUTEX_RECURSIVE)
 	#define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
 #endif
 #if defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP) && !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER)
