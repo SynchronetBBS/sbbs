@@ -114,6 +114,7 @@ pthread_mutex_t pthread_mutex_initializer(BOOL recursive)
 		pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);
 	pthread_mutex_init(&mutex, &attr);
 #else	/* Assumes recursive (e.g. Windows) */
+	(void)recursive;
 	pthread_mutex_init(&mutex,NULL);
 #endif
 	return(mutex);
