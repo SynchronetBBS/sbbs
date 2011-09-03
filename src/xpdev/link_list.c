@@ -41,15 +41,18 @@
 #include "genwrap.h"
 
 #if defined(LINK_LIST_THREADSAFE)
-	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init((pthread_mutex_t*)&list->mutex,NULL);	}
 	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) { while(pthread_mutex_destroy((pthread_mutex_t*)&list->mutex)==EBUSY) SLEEP(1);}	}
 	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock((pthread_mutex_t*)&list->mutex);		}
 	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock((pthread_mutex_t*)&list->mutex);		}
 #else
-	#define MUTEX_INIT(list)	(void)list
 	#define MUTEX_DESTROY(list)	(void)list
 	#define MUTEX_LOCK(list)	(void)list
 	#define MUTEX_UNLOCK(list)	(void)list
+#endif
+
+#if defined(_WIN32) && !defined(LINK_LIST_USE_MALLOC)
+	#define malloc(size)	HeapAlloc(GetProcessHeap(), /* flags: */0, size)
+	#define free(ptr)		HeapFree(GetProcessHeap(), /* flags: */0, ptr)
 #endif
 
 link_list_t* DLLCALL listInit(link_list_t* list, long flags)
@@ -64,9 +67,10 @@ link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 
 	list->flags = flags;
 
-	MUTEX_INIT(list);
-
 #if defined(LINK_LIST_THREADSAFE)
+	if(list->flags&LINK_LIST_MUTEX)
+		list->mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+
 	if(list->flags&LINK_LIST_SEMAPHORE) 
 		sem_init(&list->sem,0,0);
 #endif
