@@ -3,11 +3,12 @@ object UserListForm: TUserListForm
   Top = 245
   Width = 870
   Height = 640
+  BorderIcons = [biSystemMenu, biMaximize]
   Caption = 'Synchronet User List'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
+  Font.Height = -10
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   FormStyle = fsStayOnTop
@@ -15,75 +16,76 @@ object UserListForm: TUserListForm
   Position = poDefault
   OnClose = FormClose
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object ListView: TListView
     Left = 0
     Top = 0
-    Width = 862
-    Height = 607
+    Width = 854
+    Height = 602
     Align = alClient
     Columns = <
       item
         Caption = 'Num'
-        Width = 40
+        Width = 33
       end
       item
         Caption = 'Alias'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Name'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Lev'
-        Width = 40
+        Width = 33
       end
       item
         Caption = 'Age'
-        Width = 40
+        Width = 33
       end
       item
         Caption = 'Sex'
-        Width = 40
+        Width = 33
       end
       item
         Caption = 'Location'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Protocol'
-        Width = 70
+        Width = 57
       end
       item
         Caption = 'Address'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Host Name'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Phone'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Email'
-        Width = 100
+        Width = 81
       end
       item
         Caption = 'Logons'
-        Width = 60
+        Width = 49
       end
       item
         Caption = 'First On'
-        Width = 70
+        Width = 57
       end
       item
         Caption = 'Last On'
-        Width = 70
+        Width = 57
       end>
+    RowSelect = True
     PopupMenu = PopupMenu
     TabOrder = 0
     ViewStyle = vsReport
@@ -98,6 +100,21 @@ object UserListForm: TUserListForm
     object EditUserPopup: TMenuItem
       Caption = 'Edit User'
       OnClick = EditUserPopupClick
+    end
+    object CopyPopup: TMenuItem
+      Caption = 'Copy'
+      ShortCut = 16451
+      OnClick = CopyPopupClick
+    end
+    object CopyAllPopup: TMenuItem
+      Caption = 'Copy All'
+      ShortCut = 16449
+      OnClick = CopyAllPopupClick
+    end
+    object RefreshPopup: TMenuItem
+      Caption = 'Refresh'
+      ShortCut = 116
+      OnClick = RefreshPopupClick
     end
   end
 end
