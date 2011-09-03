@@ -1212,7 +1212,7 @@ int main(int argc, char** argv)
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	SetThreadName("Main");
-	listInit(&client_list, LINK_LIST_MUTEX);
+	listInit(&client_list, 0); //LINK_LIST_MUTEX);
 	loginAttemptListInit(&login_attempt_list);
 	atexit(cleanup);
 
@@ -2138,6 +2138,9 @@ int main(int argc, char** argv)
 						printf("%u failed login attempters (potential password hackers)\n", count);
 						printf("%u total unique failed login attempts (potential password hack attempts)\n", total);
 					}
+					break;
+				case 'A':
+					printf("\n%u login attempts cleared\n", loginAttemptListClear(&login_attempt_list));
 					break;
 				case 'c':	/* Show connected clients: */
 					printf("\nConnected clients:\n\n");
