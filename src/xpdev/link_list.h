@@ -89,7 +89,9 @@ typedef struct link_list {
 	long				refs;			/* reference counter (attached clients) */
 	long				locks;			/* recursive lock counter */
 #if defined(LINK_LIST_THREADSAFE)
+	pthread_mutex_t		mmutex;
 	pthread_mutex_t		mutex;
+	pthread_t			tid;
 	sem_t				sem;
 #endif
 } link_list_t;
@@ -119,15 +121,15 @@ DLLEXPORT BOOL	DLLCALL	listIsLocked(const link_list_t*);
 #define	listForceUnlock(list)	while(listUnlock(list)==TRUE)
 
 /* Return count or index of nodes, or -1 on error */
-DLLEXPORT long	DLLCALL	listCountNodes(const link_list_t*);
-DLLEXPORT long	DLLCALL	listNodeIndex(const link_list_t*, list_node_t*);
+DLLEXPORT long	DLLCALL	listCountNodes(link_list_t*);
+DLLEXPORT long	DLLCALL	listNodeIndex(link_list_t*, list_node_t*);
 
 /* Get/Set list private data */
 DLLEXPORT void*	DLLCALL	listSetPrivateData(link_list_t*, void*);
 DLLEXPORT void*	DLLCALL	listGetPrivateData(link_list_t*);
 
 /* Return an allocated string list (which must be freed), array of all strings in linked list */
-DLLEXPORT str_list_t DLLCALL listStringList(const link_list_t*);
+DLLEXPORT str_list_t DLLCALL listStringList(link_list_t*);
 
 /* Return an allocated string list (which must be freed), subset of strings in linked list */
 DLLEXPORT str_list_t DLLCALL listSubStringList(const list_node_t*, long max);
@@ -140,16 +142,16 @@ DLLEXPORT void*	DLLCALL listFreeStringList(str_list_t);
 DLLEXPORT link_list_t*	DLLCALL	listExtract(link_list_t* dest_list, const list_node_t* src_node, long max);
 
 /* Simple search functions returning found node or NULL on error */
-DLLEXPORT list_node_t*	DLLCALL	listNodeAt(const link_list_t*, long index);
+DLLEXPORT list_node_t*	DLLCALL	listNodeAt(link_list_t*, long index);
 /* Find a specific node by data */
 /* Pass length of 0 to search by data pointer rather than by data content comparison (memcmp) */
-DLLEXPORT list_node_t*	DLLCALL	listFindNode(const link_list_t*, const void* data, size_t length);
+DLLEXPORT list_node_t*	DLLCALL	listFindNode(link_list_t*, const void* data, size_t length);
 /* Find a specific node by its tag value */
 #define listFindTaggedNode(list, tag)	listFindNode(list, NULL, tag)
 
 /* Convenience functions */
 DLLEXPORT list_node_t*	DLLCALL	listFirstNode(const link_list_t*);
-DLLEXPORT list_node_t*	DLLCALL	listLastNode(const link_list_t*);
+DLLEXPORT list_node_t*	DLLCALL	listLastNode(link_list_t*);
 DLLEXPORT list_node_t*	DLLCALL	listNextNode(const list_node_t*);
 DLLEXPORT list_node_t*	DLLCALL	listPrevNode(const list_node_t*);
 DLLEXPORT void*			DLLCALL	listNodeData(const list_node_t*);

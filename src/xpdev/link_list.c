@@ -42,8 +42,42 @@
 
 #if defined(LINK_LIST_THREADSAFE)
 	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) { while(pthread_mutex_destroy((pthread_mutex_t*)&list->mutex)==EBUSY) SLEEP(1);}	}
-	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock((pthread_mutex_t*)&list->mutex);		}
-	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock((pthread_mutex_t*)&list->mutex);		}
+	#define MUTEX_LOCK(list)	{ \
+		if(list->flags&LINK_LIST_MUTEX) { \
+			pthread_mutex_lock((pthread_mutex_t*)&list->mmutex); \
+			if(!pthread_equal(list->tid, pthread_self())) { \
+				pthread_mutex_lock((pthread_mutex_t*)&list->mutex); \
+				list->tid = pthread_self(); \
+			} \
+			list->locks++; \
+			pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex); \
+		} \
+	}
+	#define MUTEX_UNLOCK(list)	{ \
+		if(list->flags&LINK_LIST_MUTEX) { \
+			pthread_mutex_lock((pthread_mutex_t*)&list->mmutex); \
+			if(!pthread_equal(list->tid, pthread_self())) { \
+				/* ERROR! */ \
+fprintf(stderr, "BAD UNLOCK (tid=%08x self=%08x)...\n", list->tid, pthread_self()); \
+				pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex); \
+				return FALSE; \
+			} \
+			else if(list->locks == 0) { \
+fprintf(stderr, "Zero locks!...\n"); \
+				/* ERROR! */ \
+				pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex); \
+				return FALSE; \
+			} \
+			else { \
+				list->locks--; \
+				if(list->locks == 0) { \
+					pthread_mutex_unlock((pthread_mutex_t*)&list->mutex); \
+					memset(&list->tid, 0xff, sizeof(list->tid)); \
+				} \
+			} \
+			pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex); \
+		} \
+	}
 #else
 	#define MUTEX_DESTROY(list)	(void)list
 	#define MUTEX_LOCK(list)	(void)list
@@ -68,8 +102,11 @@ link_list_t* DLLCALL listInit(link_list_t* list, long flags)
 	list->flags = flags;
 
 #if defined(LINK_LIST_THREADSAFE)
-	if(list->flags&LINK_LIST_MUTEX)
+	if(list->flags&LINK_LIST_MUTEX) {
+		list->mmutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 		list->mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
+		memset(&list->tid, 0xff, sizeof(list->tid));
+	}
 
 	if(list->flags&LINK_LIST_SEMAPHORE) 
 		sem_init(&list->sem,0,0);
@@ -239,29 +276,29 @@ BOOL DLLCALL listLock(link_list_t* list)
 	if(list==NULL)
 		return(FALSE);
 	MUTEX_LOCK(list);
-	list->locks++;
 	return(TRUE);
 }
 
 BOOL DLLCALL listIsLocked(const link_list_t* list)
 {
+	BOOL	ret;
 	if(list==NULL)
 		return(FALSE);
-	return(list->locks > 0 ? TRUE : FALSE);
+	pthread_mutex_lock((pthread_mutex_t*)&list->mmutex);
+	ret = list->locks > 0 ? TRUE : FALSE;
+	pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex);
+	return(ret);
 }
 
 BOOL DLLCALL listUnlock(link_list_t* list)
 {
 	if(list==NULL)
 		return(FALSE);
-	if(list->locks < 1)	/* Not locked */
-		return(FALSE);
-	list->locks--;
 	MUTEX_UNLOCK(list);
 	return(TRUE);
 }
 
-long DLLCALL listCountNodes(const link_list_t* list)
+long DLLCALL listCountNodes(link_list_t* list)
 {
 	long			count=0;
 	list_node_t*	node;
@@ -282,7 +319,7 @@ long DLLCALL listCountNodes(const link_list_t* list)
 	return(count);
 }
 
-list_node_t* DLLCALL listFindNode(const link_list_t* list, const void* data, size_t length)
+list_node_t* DLLCALL listFindNode(link_list_t* list, const void* data, size_t length)
 {
 	list_node_t* node;
 
@@ -307,7 +344,7 @@ list_node_t* DLLCALL listFindNode(const link_list_t* list, const void* data, siz
 	return(node);
 }
 
-str_list_t DLLCALL listStringList(const link_list_t* list)
+str_list_t DLLCALL listStringList(link_list_t* list)
 {
 	list_node_t*	node;
 	str_list_t		str_list;
@@ -370,7 +407,7 @@ list_node_t* DLLCALL listFirstNode(const link_list_t* list)
 	return(list->first);
 }
 
-list_node_t* DLLCALL listLastNode(const link_list_t* list)
+list_node_t* DLLCALL listLastNode(link_list_t* list)
 {
 	list_node_t* node;
 	list_node_t* last=NULL;
@@ -391,7 +428,7 @@ list_node_t* DLLCALL listLastNode(const link_list_t* list)
 	return(last);
 }
 
-long DLLCALL listNodeIndex(const link_list_t* list, list_node_t* find_node)
+long DLLCALL listNodeIndex(link_list_t* list, list_node_t* find_node)
 {
 	long			i=0;
 	list_node_t*	node;
@@ -413,7 +450,7 @@ long DLLCALL listNodeIndex(const link_list_t* list, list_node_t* find_node)
 	return(i);
 }
 
-list_node_t* DLLCALL listNodeAt(const link_list_t* list, long index)
+list_node_t* DLLCALL listNodeAt(link_list_t* list, long index)
 {
 	long			i=0;
 	list_node_t*	node;
