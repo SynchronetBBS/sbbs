@@ -851,6 +851,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(js_CreateQueueClass(js_cx, js_glob)==NULL)
 			break;
 
+		/* COM Class */
+		if(js_CreateCOMClass(js_cx, js_glob)==NULL)
+			break;
+
 		/* user-specific objects */
 		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;

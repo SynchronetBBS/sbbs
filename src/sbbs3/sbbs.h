@@ -1095,6 +1095,10 @@ extern "C" {
 	/* js_conio.c */
 	JSObject* js_CreateConioObject(JSContext* cx, JSObject* parent);
 
+	/* js_com.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent ,char *name, SOCKET sock);
+
 #endif
 
 /* str_util.c */

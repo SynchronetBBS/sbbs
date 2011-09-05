@@ -154,6 +154,9 @@ else
 endif
 
 CFLAGS	+=	$(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS)
+CFLAGS	+=	-I../comio
+vpath %.c ../comio
+OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
 LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(CIOLIB-MT_LDFLAGS)
 
 # Monolithic Synchronet executable Build Rule

@@ -3625,6 +3625,10 @@ JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 	if(js_CreateUserClass(js_cx, js_glob, cfg)==NULL) 
 		return(NULL);
 
+	/* COM Class */
+	if(js_CreateCOMClass(js_cx, js_glob)==NULL)
+		return(NULL);
+
 	/* Area Objects */
 	if(!js_CreateUserObjects(js_cx, js_glob, cfg, /* user: */NULL, client, /* html_index_fname: */NULL, /* subscan: */NULL)) 
 		return(NULL);

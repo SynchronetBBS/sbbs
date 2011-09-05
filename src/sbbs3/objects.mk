@@ -15,6 +15,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)bulkmail$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)chat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)chk_ar$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)comio$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)con_hi$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)con_out$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE)\
@@ -42,6 +43,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)ident$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_bbs$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_console$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_file$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)js_file_area$(OFILE)\
