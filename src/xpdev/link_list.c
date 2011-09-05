@@ -81,7 +81,7 @@ fprintf(stderr, "Zero locks!...\n"); \
 #else
 	#define MUTEX_DESTROY(list)	(void)list
 	#define MUTEX_LOCK(list)	list->locks++
-	#define MUTEX_UNLOCK(list)	{ if(list->locks) list->locks-- }
+	#define MUTEX_UNLOCK(list)	{ if(list->locks) list->locks--; }
 #endif
 
 #if defined(_WIN32) && defined(LINK_LIST_USE_HEAPALLOC)
