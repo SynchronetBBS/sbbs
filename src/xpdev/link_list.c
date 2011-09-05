@@ -80,8 +80,8 @@ fprintf(stderr, "Zero locks!...\n"); \
 	}
 #else
 	#define MUTEX_DESTROY(list)	(void)list
-	#define MUTEX_LOCK(list)	(void)list
-	#define MUTEX_UNLOCK(list)	(void)list
+	#define MUTEX_LOCK(list)	list->locks++
+	#define MUTEX_UNLOCK(list)	{ if(list->locks) list->locks-- }
 #endif
 
 #if defined(_WIN32) && defined(LINK_LIST_USE_HEAPALLOC)
@@ -284,9 +284,13 @@ BOOL DLLCALL listIsLocked(const link_list_t* list)
 	BOOL	ret;
 	if(list==NULL)
 		return(FALSE);
+#if defined(LINK_LIST_THREADSAFE)
 	pthread_mutex_lock((pthread_mutex_t*)&list->mmutex);
+#endif
 	ret = list->locks > 0 ? TRUE : FALSE;
+#if defined(LINK_LIST_THREADSAFE)
 	pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex);
+#endif
 	return(ret);
 }
 
