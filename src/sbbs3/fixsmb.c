@@ -47,7 +47,7 @@
 
 smb_t	smb;
 BOOL	renumber=FALSE;
-BOOL	undelete=FALSE;
+BOOL	smb_undelete=FALSE;
 char*	usage="usage: fixsmb [-renumber] [-undelete] <smb_file> [[smb_file] [...]]\n";
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
@@ -196,7 +196,7 @@ int fixsmb(char* sub)
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
 		printf("#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
 
-		if(undelete)
+		if(smb_undelete)
 			msg.hdr.attr&=~MSG_DELETE;
 
 		/* Create hash record */
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 			if(!stricmp(argv[i],"-renumber"))
 				renumber=TRUE;
 			else if(!stricmp(argv[i],"-undelete"))
-				undelete=TRUE;
+				smb_undelete=TRUE;
 		} else
 			strListPush(&list,argv[i]);
 	}
