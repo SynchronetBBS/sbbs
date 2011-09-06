@@ -46,7 +46,9 @@
 		if(list->flags&LINK_LIST_MUTEX) { \
 			pthread_mutex_lock((pthread_mutex_t*)&list->mmutex); \
 			if(!pthread_equal(list->tid, pthread_self())) { \
+				pthread_mutex_unlock((pthread_mutex_t*)&list->mmutex); \
 				pthread_mutex_lock((pthread_mutex_t*)&list->mutex); \
+				pthread_mutex_lock((pthread_mutex_t*)&list->mmutex); \
 				list->tid = pthread_self(); \
 			} \
 			list->locks++; \
