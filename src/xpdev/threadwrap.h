@@ -66,6 +66,7 @@ extern "C" {
 	/* POSIX threads */
 	typedef DWORD pthread_t;
 	#define pthread_self()				GetCurrentThreadId()
+	#define pthread_equal(t1,t2)		((t1)==(t2))
 
 	/* POSIX mutexes */
 	#ifdef PTHREAD_MUTEX_AS_WIN32_MUTEX	/* Much slower/heavier than critical sections */
