@@ -95,7 +95,7 @@ extern "C" {
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
 
-pthread_mutex_t pthread_mutex_initializer(BOOL recursive);
+pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
 
 #if defined(_POSIX_THREADS)
 
@@ -110,15 +110,6 @@ pthread_mutex_t pthread_mutex_initializer(BOOL recursive);
 #define SetThreadName(c)
 #endif
 
-#if defined(__linux__)
-#if !defined(PTHREAD_MUTEX_RECURSIVE)
-	#define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
-#endif
-#if defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP) && !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER)
-	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
-#endif
-#endif
-
 #else
 
 int pthread_mutex_init(pthread_mutex_t*, void* attr);
@@ -131,11 +122,11 @@ int pthread_mutex_destroy(pthread_mutex_t*);
 
 #endif
 
-#if !defined(PTHREAD_MUTEX_INITIALIZER)
-	#define PTHREAD_MUTEX_INITIALIZER				pthread_mutex_initializer(/* recursive: */FALSE)
+#if !defined(PTHREAD_MUTEX_INITIALIZER_NP)
+	#define PTHREAD_MUTEX_INITIALIZER_NP			pthread_mutex_initializer_np(/* recursive: */FALSE)
 #endif
-#if !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER)
-	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER		pthread_mutex_initializer(/* recursive: */TRUE)
+#if !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP)
+	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP	pthread_mutex_initializer_np(/* recursive: */TRUE)
 #endif
 
 #if defined(__cplusplus)

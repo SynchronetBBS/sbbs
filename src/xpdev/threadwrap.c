@@ -104,14 +104,18 @@ ulong _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
-pthread_mutex_t pthread_mutex_initializer(BOOL recursive)
+pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive)
 {
 	pthread_mutex_t	mutex;
 #if defined(_POSIX_THREADS)
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	if(recursive)
+#if defined(__linux__) && !defined(__USE_UNIX98)
+		pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE_NP);
+#else
 		pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);
+#endif
 	pthread_mutex_init(&mutex, &attr);
 #else	/* Assumes recursive (e.g. Windows) */
 	(void)recursive;
