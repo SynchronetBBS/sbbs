@@ -10,7 +10,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2008 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,7 +39,7 @@
 
 #include "sbbs.h"
 
-#define FILELIST_VER "3.10"
+#define FILELIST_VER "3.15"
 
 #define MAX_NOTS 25
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 		|| strcmp(argv[1],"--help")==0 
 		|| strcmp(argv[1],"/?")==0
 		) {
-		printf("\n   usage: FILELIST <dir_code or * for ALL> [switches] [outfile]\n");
+		printf("\n   usage: FILELIST <dir_code or - for ALL> [switches] [outfile]\n");
 		printf("\n");
 		printf("switches: -lib name All directories of specified library\n");
 		printf("          -not code Exclude specific directory\n");
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 	dirnum=libnum=-1;
-	if(argv[1][0]=='*')
+	if(argv[1][0]=='*' || strcmp(argv[1],"-")==0)
 		misc|=ALL;
 	else if(argv[1][0]!='-') {
 		strupr(argv[1]);
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 			misc|=(HDR|PAD|CDT_|PLUS|MINUS);
 
 		else if(i!=1) {
-			if(argv[i][0]=='*') {
+			if(argv[i][0]=='*' || strcmp(argv[i],"-")==0) {
 				misc|=AUTO;
 				continue; }
 			if((j=nopen(argv[i],omode))==-1) {
