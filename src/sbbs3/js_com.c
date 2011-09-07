@@ -35,8 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "comio.h"
 #include "sbbs.h"
+#include "comio.h"
 #include "js_request.h"
 
 #ifdef JAVASCRIPT
@@ -502,7 +502,6 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	private_t*	p;
 	jsrefcount	rc;
-	BOOL		b;
 	double		d;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -529,7 +528,7 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case COM_PROP_BAUD_RATE:
 			JS_ValueToNumber(cx,*vp,&d);
-			p->baud_rate=d;
+			p->baud_rate=(long)d;
 			rc=JS_SUSPENDREQUEST(cx);
 			if(p->is_open)
 				comSetBaudRate(p->com, p->baud_rate);
@@ -558,9 +557,6 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_com_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
-	ulong		cnt;
-	BOOL		rd;
-	BOOL		wr;
 	private_t*	p;
 	JSString*	js_str;
 	jsrefcount	rc;
@@ -734,7 +730,6 @@ static JSClass js_com_class = {
 static JSBool
 js_com_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uintN	i;
 	private_t* p;
 	char*	protocol=NULL;
 	char*		fname;
@@ -762,10 +757,10 @@ js_com_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Class used for serial port communications",310);
+	js_DescribeSyncObject(cx,obj,"Class used for serial port communications",31501);
 	js_DescribeSyncConstructor(cx,obj,"To create a new COM object: "
-		"<tt>load('comdefs.js'); var s = new COM(<i>device</i>)</tt><br>"
-		"where <i>device</i> = <tt>COMx</tt> (ie: COM1) for Win32 or <tt>/dev/ttyXY</tt> for *nix (ie: /dev/ttyu0)"
+		"var c = new COM('<i>device</i>')</tt><br>"
+		"where <i>device</i> = <tt>COMx</tt> (e.g. COM1) for Win32 or <tt>/dev/ttyXY</tt> for *nix (e.g. /dev/ttyu0)"
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", com_prop_desc, JSPROP_READONLY);
 #endif
@@ -789,7 +784,7 @@ JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent)
 	return(comobj);
 }
 
-JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent, char *name, COM_HANDLE com)
+JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE com)
 {
 	JSObject*	obj;
 	private_t*	p;

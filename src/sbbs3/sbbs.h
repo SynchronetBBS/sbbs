@@ -140,6 +140,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#include "threadwrap.h"	/* pthread_mutex_t */
 #endif
 
+#include "comio.h"
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
@@ -1097,7 +1098,7 @@ extern "C" {
 
 	/* js_com.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateCOMClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent ,char *name, SOCKET sock);
+	DLLEXPORT JSObject* DLLCALL js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE sock);
 
 #endif
 

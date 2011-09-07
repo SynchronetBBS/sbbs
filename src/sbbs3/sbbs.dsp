@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\..\include\mozilla\nspr" /I "..\xpdev" /I "..\smblib" /I "..\..\include\cryptlib" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /D "RINGBUF_MUTEX" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "USE_CRYPTLIB" /FR /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include\mozilla\js" /I "..\..\include\mozilla\nspr" /I "..\xpdev" /I "..\smblib" /I "..\..\include\cryptlib" /I "..\comio" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /D "RINGBUF_MUTEX" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "USE_CRYPTLIB" /FR /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\..\include\mozilla\nspr" /I "..\xpdev" /I "..\smblib" /I "..\..\include\cryptlib" /D "_DEBUG" /D "USE_CRYPTLIB" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /D "RINGBUF_MUTEX" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\include\mozilla\js" /I "..\..\include\mozilla\nspr" /I "..\xpdev" /I "..\smblib" /I "..\..\include\cryptlib" /I "..\comio" /D "_DEBUG" /D "USE_CRYPTLIB" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "SMB_EXPORTS" /D "JAVASCRIPT" /D "RINGBUF_SEM" /D "RINGBUF_MUTEX" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -124,6 +124,14 @@ SOURCE=.\chat.cpp
 # Begin Source File
 
 SOURCE=.\chk_ar.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\comio\comio.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\comio\comio_win32.c
 # End Source File
 # Begin Source File
 
@@ -232,6 +240,10 @@ SOURCE=.\js_bbs.cpp
 # Begin Source File
 
 SOURCE=.\js_client.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\js_com.c
 # End Source File
 # Begin Source File
 
