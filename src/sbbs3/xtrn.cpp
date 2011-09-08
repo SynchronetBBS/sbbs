@@ -35,9 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifdef __unix__
-	#define TTYDEFCHARS		// needed for ttydefchars definition
-#endif
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
@@ -47,6 +44,8 @@
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
 
+	#define TTYDEFCHARS		// needed for ttydefchars definition
+	#include <sys/ttydefaults.h>	// Linux - it's motherfucked.
 #if defined(__FreeBSD__)
 	#include <libutil.h>	// forkpty()
 #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DARWIN__)
