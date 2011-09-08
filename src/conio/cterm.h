@@ -35,70 +35,80 @@
 #define _CTERM_H_
 
 #include <stdio.h>	/* FILE* */
+#include <link_list.h>
 
-enum {
+typedef enum {
 	 CTERM_MUSIC_NORMAL
 	,CTERM_MUSIC_LEGATO
 	,CTERM_MUSIC_STACATTO
-};
+} cterm_noteshape_t;
 
-enum {
+typedef enum {
 	 CTERM_LOG_NONE
 	,CTERM_LOG_ASCII
 	,CTERM_LOG_RAW
-};
+} cterm_log_t;
+
+typedef enum {
+	 CTERM_EMULATION_ANSI_BBS
+	,CTERM_EMULATION_PETASCII
+	,CTERM_EMULATION_ATASCII
+} cterm_emulation_t;
+
+typedef enum {
+	CTERM_MUSIC_SYNCTERM,
+	CTERM_MUSIC_BANSI,
+	CTERM_MUSIC_ENABLED
+} cterm_music_t;
 
 #define CTERM_LOG_MASK	0x7f
 #define CTERM_LOG_PAUSED	0x80
 
 struct cterminal {
-	int emulation;
-	int c64reversemode;
-	int	height;
-	int	width;
-	int	x;
-	int	y;
-	char *buffer;
-	unsigned char	attr;
-	int save_xpos;
-	int save_ypos;
-	char	escbuf[1024];
-	int	sequence;
-	int music_enable;
-	char	musicbuf[1024];
-	int music;
-	int quiet;
-	int	tempo;
-	int	octave;
-	int notelen;
-	int noteshape;
-	int musicfore;
-	char *scrollback;
-	int backpos;
-	int backlines;
-	int	xpos;
-	int ypos;
-	int log;
-	FILE* logfile;
-	char	DA[1024];
-	char	fontbuf[4096];
-	int		font_slot;
-	int		font_size;
-	int		font_read;
-	int		font_start_time;
-	int		doorway_mode;
-	int		doorway_char;
-	int		cursor;
-};
+	/* conio stuff */
+	int	x;		// X position of the left side on the screen
+	int	y;		// Y position of the top pn the screen
 
-#define CTERM_MUSIC_SYNCTERM	0
-#define	CTERM_MUSIC_BANSI		1
-#define	CTERM_MUSIC_ENABLED		2
+	/* emulation mode */
+	cterm_emulation_t	emulation;
+	int					height;			// Height of the terminal buffer
+	int					width;			// Width of the terminal buffer
+	int					quiet;			// No sounds are made
+	char				*scrollback;
+	int					backlines;		// Number of lines in scrollback
+	char				DA[1024];		// Device Attributes
 
-enum {
-	 CTERM_EMULATION_ANSI_BBS
-	,CTERM_EMULATION_PETASCII
-	,CTERM_EMULATION_ATASCII
+	/* emulation state */
+	int					c64reversemode;	// Commodore 64 reverse mode state
+	unsigned char		attr;			// Current attribute
+	int					save_xpos;		// Saved position (for later restore)
+	int					save_ypos;
+	int					sequence;		// An escape sequence is being parsed
+	char				escbuf[1024];
+	cterm_music_t		music_enable;	// The remotely/locally controled music state
+	char				musicbuf[1024];
+	int					music;			// ANSI music is being parsed
+	int					tempo;
+	int					octave;
+	int					notelen;
+	cterm_noteshape_t	noteshape;
+	int					musicfore;
+	int					playnote_thread_running;
+	link_list_t			notes;
+	sem_t				playnote_thread_terminated;
+	sem_t				note_completed_sem;
+	int					backpos;
+	int					xpos;
+	int					ypos;
+	cterm_log_t			log;
+	FILE*				logfile;
+	char				fontbuf[4096];	// Remote font
+	int					font_read;		// Current position in fontbuf
+	int					font_slot;
+	int					font_size;		// Bytes
+	int					doorway_mode;
+	int					doorway_char;	// Indicates next char is a "doorway" mode char
+	int					cursor;			// Current cursor mode (Normal or None)
 };
 
 #ifdef __cplusplus

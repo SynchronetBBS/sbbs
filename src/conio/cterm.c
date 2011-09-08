@@ -173,10 +173,6 @@ struct note_params {
 	int	foreground;
 };
 
-static int playnote_thread_running=FALSE;
-static link_list_t	notes;
-sem_t	playnote_thread_terminated;
-sem_t	note_completed_sem;
 
 void playnote_thread(void *args)
 {
@@ -186,19 +182,19 @@ void playnote_thread(void *args)
 	struct note_params *note;
 	int	device_open=FALSE;
 
-	playnote_thread_running=TRUE;
+	cterm.playnote_thread_running=TRUE;
 	while(1) {
 		if(device_open) {
-			if(!listSemTryWaitBlock(&notes,5000)) {
+			if(!listSemTryWaitBlock(&cterm.notes,5000)) {
 				xptone_close();
 				device_open=FALSE;
-				listSemWait(&notes);
+				listSemWait(&cterm.notes);
 			}
 		}
 		else
-			listSemWait(&notes);
+			listSemWait(&cterm.notes);
 		device_open=xptone_open();
-		note=listShiftNode(&notes);
+		note=listShiftNode(&cterm.notes);
 		if(note==NULL)
 			break;
 		if(note->dotted)
@@ -229,11 +225,11 @@ void playnote_thread(void *args)
 			SLEEP(duration);
 		SLEEP(pauselen);
 		if(note->foreground)
-			sem_post(&note_completed_sem);
+			sem_post(&cterm.note_completed_sem);
 		free(note);
 	}
-	playnote_thread_running=FALSE;
-	sem_post(&playnote_thread_terminated);
+	cterm.playnote_thread_running=FALSE;
+	sem_post(&cterm.playnote_thread_terminated);
 }
 
 void play_music(void)
@@ -419,7 +415,7 @@ void play_music(void)
 					np->tempo=cterm.tempo;
 					np->noteshape=cterm.noteshape;
 					np->foreground=cterm.musicfore;
-					listPushNode(&notes, np);
+					listPushNode(&cterm.notes, np);
 					if(cterm.musicfore)
 						fore_count++;
 				}
@@ -439,7 +435,7 @@ void play_music(void)
 	cterm.music=0;
 	cterm.musicbuf[0]=0;
 	while(fore_count) {
-		sem_wait(&note_completed_sem);
+		sem_wait(&cterm.note_completed_sem);
 		fore_count--;
 	}
 }
@@ -620,7 +616,6 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							}
 							if(i>255)
 								break;
-							cterm.font_start_time=time(NULL);
 							cterm.font_read=0;
 							cterm.font_slot=i;
 							switch(j) {
@@ -1234,20 +1229,20 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 	}
 	strcat(cterm.DA,"c");
 	/* Did someone call _init() without calling _end()? */
-	if(playnote_thread_running) {
-		if(sem_trywait(&playnote_thread_terminated)==-1) {
-			listSemPost(&notes);
-			sem_wait(&playnote_thread_terminated);
+	if(cterm.playnote_thread_running) {
+		if(sem_trywait(&cterm.playnote_thread_terminated)==-1) {
+			listSemPost(&cterm.notes);
+			sem_wait(&cterm.playnote_thread_terminated);
 		}
-		sem_destroy(&playnote_thread_terminated);
-		sem_destroy(&note_completed_sem);
-		listFree(&notes);
+		sem_destroy(&cterm.playnote_thread_terminated);
+		sem_destroy(&cterm.note_completed_sem);
+		listFree(&cterm.notes);
 	}
 	/* Fire up note playing thread */
-	if(!playnote_thread_running) {
-		listInit(&notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-		sem_init(&note_completed_sem,0,0);
-		sem_init(&playnote_thread_terminated,0,0);
+	if(!cterm.playnote_thread_running) {
+		listInit(&cterm.notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+		sem_init(&cterm.note_completed_sem,0,0);
+		sem_init(&cterm.playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, NULL);
 	}
 
@@ -2084,13 +2079,13 @@ void cterm_end(void)
 		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 		FREE_AND_NULL(conio_fontdata[i].desc);
 	}
-	if(playnote_thread_running) {
-		if(sem_trywait(&playnote_thread_terminated)==-1) {
-			listSemPost(&notes);
-			sem_wait(&playnote_thread_terminated);
+	if(cterm.playnote_thread_running) {
+		if(sem_trywait(&cterm.playnote_thread_terminated)==-1) {
+			listSemPost(&cterm.notes);
+			sem_wait(&cterm.playnote_thread_terminated);
 		}
-		sem_destroy(&playnote_thread_terminated);
-		sem_destroy(&note_completed_sem);
-		listFree(&notes);
+		sem_destroy(&cterm.playnote_thread_terminated);
+		sem_destroy(&cterm.note_completed_sem);
+		listFree(&cterm.notes);
 	}
 }
