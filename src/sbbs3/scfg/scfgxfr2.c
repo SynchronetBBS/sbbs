@@ -37,33 +37,61 @@
 
 #define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 
-void create_raw_dir_list(const char* list_file)
+static void append_dir_list(const char* parent, const char* dir, FILE* fp, int depth, int max_depth)
 {
-	char	path[MAX_PATH+1];
-	char*	p;
-	glob_t	g;
-	int		gi;
-	FILE*	fp;
+	char		path[MAX_PATH+1];
+	char*		p;
+	glob_t		g;
+	unsigned	gi;
+	BOOL		empty=TRUE;
+
+	SAFECOPY(path,dir);
+	backslash(path);
+	strcat(path,ALLFILES);
+
+	glob(path,GLOB_MARK,NULL,&g);
+   	for(gi=0;gi<g.gl_pathc;gi++) {
+		if(*lastchar(g.gl_pathv[gi])=='/') {
+			if(getdirsize(g.gl_pathv[gi], /* include_subdirs */ FALSE, /* subdir_only */FALSE) > 0) {
+				SAFECOPY(path,g.gl_pathv[gi]+strlen(parent));
+				p=lastchar(path);
+				if(IS_PATH_DELIM(*p))
+					*p=0;
+				fprintf(fp,"%s\n",path);
+			}
+			if(max_depth==0 || depth+1 < max_depth) {
+				append_dir_list(parent, g.gl_pathv[gi], fp, depth+1, max_depth);
+			}
+		}
+	}
+	globfree(&g);
+}
+
+BOOL create_raw_dir_list(const char* list_file)
+{
+	char		path[MAX_PATH+1];
+	char*		p;
+	int			k=0;
+	FILE*		fp;
 
 	SAFECOPY(path, list_file);
 	if((p=getfname(path))!=NULL)
 		*p=0;
 	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory",path,sizeof(path)-1
 		,K_EDIT)<1)
-		return;
-	strcat(path,ALLFILES);
+		return(FALSE);
+	k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Recursive",uifcYesNoOpts);
+	if(k<0)
+		return(FALSE);
 	if((fp=fopen(list_file,"w"))==NULL) {
 		SAFEPRINTF2(path,"Create Failure (%u): %s", errno, list_file);
 		uifc.msg(path);
-		return; 
+		return(FALSE); 
 	}
-	glob(path,0,NULL,&g);
-   	for(gi=0;gi<g.gl_pathc;gi++) {
-		if(isdir(g.gl_pathv[gi]))
-			fprintf(fp,"%s\n",getfname(g.gl_pathv[gi]));
-	}
-	globfree(&g);
+	backslash(path);
+	append_dir_list(path, path, fp, /* depth: */0, /* max_depth: */k);
 	fclose(fp);
+	return(TRUE);
 }
 
 
@@ -74,7 +102,7 @@ void xfer_cfg()
 	char tmp_code[32];
 	int file,j,k,q;
 	uint i;
-	long ported;
+	long ported,added;
 	static lib_t savlib;
 	dir_t tmpdir;
 	FILE *stream;
@@ -437,7 +465,7 @@ export to.
 				break;
 
 			case 7:
-				ported=0;
+				ported=added=0;
 				k=0;
 				SETHELP(WHERE);
 /*
@@ -468,9 +496,10 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 					backslash(str);
 					strcat(str,"dirs.raw");
 				}
-				if(k==3)
-					create_raw_dir_list(tmpnam(str));
-				else {
+				if(k==3) {
+					if(!create_raw_dir_list(str))
+						break;
+				} else {
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 						,str,sizeof(str)-1,K_EDIT)<=0)
 						break;
@@ -498,7 +527,7 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 						continue;
 					memset(&tmpdir,0,sizeof(dir_t));
 					tmpdir.misc=DEFAULT_DIR_OPTIONS;
-					tmpdir.maxfiles=1000;
+					tmpdir.maxfiles=MAX_FILES;
 					tmpdir.up_pct=cfg.cdt_up_pct;
 					tmpdir.dn_pct=cfg.cdt_dn_pct; 
 
@@ -526,7 +555,7 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 						while(*p && *p<=' ') p++;	/* Skip space */
 						SAFECOPY(tmpdir.sname,p); 
 						SAFECOPY(tmpdir.lname,p); 
-						ported++; 
+						ported++;
 					}
 					else {
 						sprintf(tmpdir.lname,"%.*s",LEN_SLNAME,str);
@@ -613,13 +642,15 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 							==NULL) {
 							errormsg(WHERE,ERR_ALLOC,"dir",sizeof(dir_t));
 							break; }
-						memset(cfg.dir[j],0,sizeof(dir_t)); }
+						memset(cfg.dir[j],0,sizeof(dir_t)); 
+						added++;
+					}
 					if(k==1) {
 						SAFECOPY(cfg.dir[j]->code_suffix,tmpdir.code_suffix);
 						SAFECOPY(cfg.dir[j]->sname,tmpdir.code_suffix);
 						SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
 						if(j==cfg.total_dirs) {
-							cfg.dir[j]->maxfiles=1000;
+							cfg.dir[j]->maxfiles=MAX_FILES;
 							cfg.dir[j]->up_pct=cfg.cdt_up_pct;
 							cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; 
 						}
@@ -634,7 +665,7 @@ command: `DIR /ON /AD /B > DIRS.RAW`
 				}
 				fclose(stream);
 				uifc.pop(0);
-				sprintf(str,"%lu File Areas Imported Successfully",ported);
+				sprintf(str,"%lu File Areas Imported Successfully (%u added)",ported, added);
                 uifc.msg(str);
                 break;
 
@@ -760,7 +791,7 @@ this directory will be stored. Example: `C:\XFER\GAMES`
 			continue; }
 		memset((dir_t *)cfg.dir[dirnum[i]],0,sizeof(dir_t));
 		cfg.dir[dirnum[i]]->lib=libnum;
-		cfg.dir[dirnum[i]]->maxfiles=MAX_FILES<500 ? MAX_FILES:500;
+		cfg.dir[dirnum[i]]->maxfiles=MAX_FILES;
 		if(stricmp(str2,"OFFLINE"))
 			cfg.dir[dirnum[i]]->misc=DEFAULT_DIR_OPTIONS;
 		strcpy(cfg.dir[dirnum[i]]->code_suffix,code);
