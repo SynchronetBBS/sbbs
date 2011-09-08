@@ -182,8 +182,10 @@ void* DLLCALL listSetPrivateData(link_list_t* list, void* p)
 	if(list==NULL)
 		return(NULL);
 
+	listLock(list);
 	old=list->private_data;
 	list->private_data=p;
+	listUnlock(list);
 	return(old);
 }
 
@@ -364,12 +366,18 @@ void* DLLCALL listFreeStringList(str_list_t list)
 	return(list);
 }
 
-list_node_t* DLLCALL listFirstNode(const link_list_t* list)
+list_node_t* DLLCALL listFirstNode(link_list_t* list)
 {
+	list_node_t*	node;
+
 	if(list==NULL)
 		return(NULL);
 
-	return(list->first);
+	listLock(list);
+	node=list->first;
+	listUnlock(list);
+
+	return(node);
 }
 
 list_node_t* DLLCALL listLastNode(link_list_t* list)
@@ -380,14 +388,12 @@ list_node_t* DLLCALL listLastNode(link_list_t* list)
 	if(list==NULL)
 		return(NULL);
 
-	if(list->last!=NULL)
-		return(list->last);
-
 	listLock(list);
-
-	for(node=list->first; node!=NULL; node=node->next)
-		last=node;
-
+	if(list->last!=NULL)
+		last=list->last;
+	else
+		for(node=list->first; node!=NULL; node=node->next)
+			last=node;
 	listUnlock(list);
 
 	return(last);
@@ -435,26 +441,44 @@ list_node_t* DLLCALL listNodeAt(link_list_t* list, long index)
 
 list_node_t* DLLCALL listNextNode(const list_node_t* node)
 {
+	list_node_t*	next;
+
 	if(node==NULL)
 		return(NULL);
 
-	return(node->next);
+	listLock(node->list);
+	next=node->next;
+	listUnlock(node->list);
+
+	return(next);
 }
 
 list_node_t* DLLCALL listPrevNode(const list_node_t* node)
 {
+	list_node_t*	prev;
+
 	if(node==NULL)
 		return(NULL);
 
-	return(node->prev);
+	listLock(node->list);
+	prev=node->prev;
+	listUnlock(node->list);
+
+	return(prev);
 }
 
 void* DLLCALL listNodeData(const list_node_t* node)
 {
+	void*	data;
+
 	if(node==NULL)
 		return(NULL);
 
-	return(node->data);
+	listLock(node->list);
+	data=node->data;
+	listUnlock(node->list);
+
+	return(data);
 }
 
 BOOL DLLCALL listNodeIsLocked(const list_node_t* node)
@@ -467,7 +491,9 @@ BOOL DLLCALL listLockNode(list_node_t* node)
 	if(node==NULL || (node->flags&LINK_LIST_LOCKED))
 		return(FALSE);
 
+	listLock(node->list);
 	node->flags|=LINK_LIST_LOCKED;
+	listUnlock(node->list);
 
 	return(TRUE);
 }
@@ -477,7 +503,9 @@ BOOL DLLCALL listUnlockNode(list_node_t* node)
 	if(!listNodeIsLocked(node))
 		return(FALSE);
 
+	listLock(node->list);
 	node->flags&=~LINK_LIST_LOCKED;
+	listUnlock(node->list);
 
 	return(TRUE);
 }

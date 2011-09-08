@@ -150,7 +150,7 @@ DLLEXPORT list_node_t*	DLLCALL	listFindNode(link_list_t*, const void* data, size
 #define listFindTaggedNode(list, tag)	listFindNode(list, NULL, tag)
 
 /* Convenience functions */
-DLLEXPORT list_node_t*	DLLCALL	listFirstNode(const link_list_t*);
+DLLEXPORT list_node_t*	DLLCALL	listFirstNode(link_list_t*);
 DLLEXPORT list_node_t*	DLLCALL	listLastNode(link_list_t*);
 DLLEXPORT list_node_t*	DLLCALL	listNextNode(const list_node_t*);
 DLLEXPORT list_node_t*	DLLCALL	listPrevNode(const list_node_t*);
