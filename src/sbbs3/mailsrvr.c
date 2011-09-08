@@ -749,8 +749,8 @@ static void pop3_thread(void* arg)
 	char		buf[512];
 	char		host_name[128];
 	char		host_ip[64];
-	char		username[LEN_ALIAS+1];
-	char		password[LEN_PASS+1];
+	char		username[128];
+	char		password[128];
 	char		challenge[256];
 	char		digest[MD5_DIGEST_SIZE];
 	char*		response="";
@@ -2220,8 +2220,8 @@ static void smtp_thread(void* arg)
 	char		sender_ext[128];
 	char		sender_addr[128];
 	char		hello_name[128];
-	char		user_name[LEN_ALIAS+1];
-	char		user_pass[LEN_PASS+1];
+	char		user_name[128];
+	char		user_pass[128];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		spam_bait[MAX_PATH+1];
