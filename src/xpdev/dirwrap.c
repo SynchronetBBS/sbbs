@@ -313,13 +313,19 @@ long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only
 	SAFECOPY(match,path);
 	backslash(match);
 	strcat(match,ALLFILES);
-	glob(match,subdir_only ? GLOB_ONLYDIR:GLOB_MARK,NULL,&g);
-	if(include_subdirs || subdir_only)
+	glob(match,GLOB_MARK,NULL,&g);
+	if(include_subdirs && !subdir_only)
 		count=g.gl_pathc;
 	else
-   		for(gi=0;gi<g.gl_pathc;gi++)
-			if(*lastchar(g.gl_pathv[gi])!='/')
-				count++;
+		for(gi=0;gi<g.gl_pathc;gi++) {
+			if(*lastchar(g.gl_pathv[gi])=='/') {
+				if(!include_subdirs)
+					continue;
+			} else
+				if(subdir_only)
+					continue;
+			count++;
+		}
 	globfree(&g);
 	return(count);
 }
