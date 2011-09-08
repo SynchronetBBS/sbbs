@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -3040,7 +3040,8 @@ js_list_named_queues(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		return(JS_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	for(node=listFirstNode(&named_queues);node!=NULL;node=listNextNode(node)) {
+	listLock(&named_queues);
+	for(node=named_queues.first;node!=NULL;node=node->next) {
 		if((q=listNodeData(node))==NULL)
 			continue;
 		JS_RESUMEREQUEST(cx, rc);
@@ -3051,6 +3052,7 @@ js_list_named_queues(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 		}
 		rc=JS_SUSPENDREQUEST(cx);
 	}
+	listUnlock(&named_queues);
 	JS_RESUMEREQUEST(cx, rc);
 
     *rval = OBJECT_TO_JSVAL(array);
