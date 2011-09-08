@@ -51,16 +51,17 @@
     <USERDEFINES value="SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib;..\..\comio"/>
     <LIBPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM -DRINGBUF_MUTEX 
-      -DUSE_CRYPTLIB -I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
-      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\include\cryptlib -boa"/>
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib 
+      -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\..\include\cryptlib 
+      -I..\..\comio -src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM 
+      -DRINGBUF_MUTEX -DUSE_CRYPTLIB -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -146,35 +147,39 @@ ProductName=Synchronet BBS
 ProductVersion=3.15b
 Comments=
 
+[Excluded Packages]
+c:\borland\cbuilder6\Bin\dclite60.bpl=Borland Integrated Translation Environment
+
 [HistoryLists\hlIncludePath]
-Count=27
-Item0=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib
-Item1=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item2=..\;$(BCB)\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
-Item3=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item4=..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item5=..\;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
-Item6=..\;..;$(BCB)\include;$(BCB)\include\vcl
-Item7=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Count=28
+Item0=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib;..\..\comio
+Item1=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl;..\..\..\include\cryptlib
+Item2=..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item3=..\;$(BCB)\Projects;..;..\..\xpdev;..\..\smblib;$(BCB)\include;$(BCB)\include\vcl
+Item4=$(BCB)\Projects;..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item5=..\;..;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item6=..\;..\..\xpdev;$(BCB)\include;$(BCB)\include\vcl
+Item7=..\;..;$(BCB)\include;$(BCB)\include\vcl
 Item8=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item9=..\;..;$(BCB)\include;$(BCB)\include\vcl
+Item9=..\;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
 Item10=..\;..;$(BCB)\include;$(BCB)\include\vcl
-Item11=..;$(BCB)\include;$(BCB)\include\vcl
-Item12=..\DLL;..;$(BCB)\include;$(BCB)\include\vcl
-Item13=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item11=..\;..;$(BCB)\include;$(BCB)\include\vcl
+Item12=..;$(BCB)\include;$(BCB)\include\vcl
+Item13=..\DLL;..;$(BCB)\include;$(BCB)\include\vcl
 Item14=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item15=..;$(BCB)\include;$(BCB)\include\vcl
-Item16=..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
-Item17=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item18=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item19=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item20=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item21=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item22=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item23=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item24=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item25=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
-Item26=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item15=..\DLL;..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item16=..;$(BCB)\include;$(BCB)\include\vcl
+Item17=..\..\sbbs3;$(BCB)\include;$(BCB)\include\vcl
+Item18=..;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item19=..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item20=..\;..\..\sbbs3;..;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item21=..\;..\..\sbbs3;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item22=..\;..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item23=..\..\..\BORLAND\CBUILDER4\OBJREPOS;..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item24=..\;..\..\sbbs3;..;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item25=..\;..\..\sbbs3;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item26=..\;..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
+Item27=..\..\..\Borland\CBuilder4\Projects;$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
 Count=27
@@ -242,9 +247,9 @@ ShowInfoMsgs=0
 LinkDebugVcl=0
 LinkCGLIB=0
 
-[Language]
-ActiveLang=
-ProjectLang=
-RootDir=
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
   </IDEOPTIONS>
 </PROJECT>
