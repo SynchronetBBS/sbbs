@@ -40,6 +40,7 @@
 #define DUMP
 
 struct terminal term;
+struct cterminal	*cterm;
 
 #define TRANSFER_WIN_WIDTH	66
 #define TRANSFER_WIN_HEIGHT	18
@@ -187,11 +188,11 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	strcpy(nbuf, bbs->name);
 	if(safe_mode)
 		strcat(nbuf, " (SAFE)");
-	if(cterm.log)
+	if(cterm->log)
 		strcat(nbuf, " (Logging)");
 	if(speed)
 		sprintf(strchr(nbuf,0)," (%d)", speed);
-	if(cterm.doorway_mode)
+	if(cterm->doorway_mode)
 		strcat(nbuf, " (DrWy)");
 	switch(ooii_mode) {
 	case 1:
@@ -989,7 +990,7 @@ void raw_upload(FILE *fp)
 		 * allow speed changes. */
 		while((inch=recv_byte(NULL, 0))>=0) {
 			ch[0]=inch;
-			cterm_write(ch, 1, NULL, 0, NULL);
+			cterm_write(cterm, ch, 1, NULL, 0, NULL);
 		}
 		if(r==0)
 			break;
@@ -1029,7 +1030,7 @@ void ascii_upload(FILE *fp)
 		 * allow speed changes. */
 		while((inch=recv_byte(NULL, 0))>=0) {
 			ch[0]=inch;
-			cterm_write(ch, 1, NULL, 0, NULL);
+			cterm_write(cterm, ch, 1, NULL, 0, NULL);
 		}
 	}
 	fclose(fp);
@@ -1820,7 +1821,7 @@ void music_control(struct bbslist *bbs)
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
-	i=cterm.music_enable;
+	i=cterm->music_enable;
 	uifc.helpbuf="`ANSI Music Setup`\n\n"
 				"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
 				"                      Enables Delete Line\n"
@@ -1842,7 +1843,7 @@ void music_control(struct bbslist *bbs)
 				"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
 				"according to the ANSI spec.  Specifically ESC[|.";
 	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",opts)!=-1)
-		cterm.music_enable=i;
+		cterm->music_enable=i;
 	uifcbail();
 	setup_mouse_events();
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
@@ -1917,7 +1918,7 @@ void capture_control(struct bbslist *bbs)
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 	init_uifc(FALSE, FALSE);
 
-	if(!cterm.log) {
+	if(!cterm->log) {
 		struct file_pick fpick;
 		char *opts[3]={
 						 "ASCII"
@@ -1935,12 +1936,12 @@ void capture_control(struct bbslist *bbs)
 			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, NULL, UIFC_FP_ALLOWENTRY);
 
 			if(j!=-1 && fpick.files>=1)
-				cterm_openlog(fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
+				cterm_openlog(cterm, fpick.selected[0], i?CTERM_LOG_RAW:CTERM_LOG_ASCII);
 			filepick_free(&fpick);
 		}
 	}
 	else {
-		if(cterm.log & CTERM_LOG_PAUSED) {
+		if(cterm->log & CTERM_LOG_PAUSED) {
 			char *opts[3]={
 							 "Unpause"
 							,"Close"
@@ -1952,10 +1953,10 @@ void capture_control(struct bbslist *bbs)
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
 					case 0:
-						cterm.log=cterm.log & CTERM_LOG_MASK;
+						cterm->log=cterm->log & CTERM_LOG_MASK;
 						break;
 					case 1:
-						cterm_closelog();
+						cterm_closelog(cterm);
 						break;
 				}
 			}
@@ -1972,10 +1973,10 @@ void capture_control(struct bbslist *bbs)
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
 					case 0:
-						cterm.log=cterm.log |= CTERM_LOG_PAUSED;
+						cterm->log=cterm->log |= CTERM_LOG_PAUSED;
 						break;
 					case 1:
-						cterm_closelog();
+						cterm_closelog(cterm);
 						break;
 				}
 			}
@@ -2087,7 +2088,7 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 #ifdef WITH_WXWIDGETS
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(outbuf, outbuf_size, prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, prn, sizeof(prn), &speed); \
 		outbuf_size=0; \
 		if(html_mode==HTML_MODE_RAISED) { \
 			if(html_startx != wherex() || html_starty != wherey()) { \
@@ -2102,7 +2103,7 @@ int html_urlredirect(const char *uri, char *buf, size_t bufsize, char *uribuf, s
 #else
 #define WRITE_OUTBUF()	\
 	if(outbuf_size > 0) { \
-		cterm_write(outbuf, outbuf_size, prn, sizeof(prn), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, prn, sizeof(prn), &speed); \
 		outbuf_size=0; \
 		if(prn[0]) \
 			conn_send(prn, strlen(prn), 0); \
@@ -2181,9 +2182,13 @@ BOOL doterm(struct bbslist *bbs)
 			emulation = CTERM_EMULATION_ATASCII;
 			break;
 	}
-	cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
+	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, emulation);
+	if(!cterm) {
+		FREE_AND_NULL(cterm);
+		return FALSE;
+	}
 	scrollback_cols=term.width;
-	cterm.music_enable=bbs->music;
+	cterm->music_enable=bbs->music;
 	ch[1]=0;
 	zrqbuf[0]=0;
 #ifndef WITHOUT_OOII
@@ -2225,9 +2230,9 @@ BOOL doterm(struct bbslist *bbs)
 							}
 #endif
 							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
-							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
-							scrollback_lines=cterm.backpos;
-							cterm_end();
+							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
+							scrollback_lines=cterm->backpos;
+							cterm_end(cterm);
 							conn_close();
 							hidemouse();
 							return(FALSE);
@@ -2401,7 +2406,7 @@ BOOL doterm(struct bbslist *bbs)
 			key=getch();
 			if(key==0 || key==0xff) {
 				key|=getch()<<8;
-				if(cterm.doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
+				if(cterm->doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
 					ch[0]=0;
 					ch[1]=key>>8;
 					conn_send(ch,2,0);
@@ -2480,18 +2485,18 @@ BOOL doterm(struct bbslist *bbs)
 					if(bbs->conn_type != CONN_TYPE_RLOGIN && bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED && bbs->conn_type != CONN_TYPE_SSH) {
 						if(bbs->user[0]) {
 							conn_send(bbs->user,strlen(bbs->user),0);
-							conn_send(cterm.emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
+							conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
 							SLEEP(10);
 						}
 						if(bbs->password[0]) {
 							conn_send(bbs->password,strlen(bbs->password),0);
-							conn_send(cterm.emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
+							conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
 							SLEEP(10);
 						}
 					}
 					if(bbs->syspass[0]) {
 						conn_send(bbs->syspass,strlen(bbs->syspass),0);
-						conn_send(cterm.emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
+						conn_send(cterm->emulation==CTERM_EMULATION_ATASCII?"\x9b":"\r",1,0);
 					}
 					key = 0;
 					break;
@@ -2538,9 +2543,9 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 							uifcbail();
 							setup_mouse_events();
-							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
-							scrollback_lines=cterm.backpos;
-							cterm_end();
+							cterm_clearscreen(cterm,cterm->attr);	/* Clear screen into scrollback */
+							scrollback_lines=cterm->backpos;
+							cterm_end(cterm);
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
@@ -2575,9 +2580,9 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
-							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
-							scrollback_lines=cterm.backpos;
-							cterm_end();
+							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
+							scrollback_lines=cterm->backpos;
+							cterm_end(cterm);
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
@@ -2598,7 +2603,7 @@ BOOL doterm(struct bbslist *bbs)
 							font_control(bbs);
 							break;
 						case 10:
-							cterm.doorway_mode=!cterm.doorway_mode;
+							cterm->doorway_mode=!cterm->doorway_mode;
 							break;
 
 #ifdef WITHOUT_OOII
@@ -2623,9 +2628,9 @@ BOOL doterm(struct bbslist *bbs)
 								html_mode=HTML_MODE_HIDDEN;
 							}
 #endif
-							cterm_clearscreen(cterm.attr);	/* Clear screen into scrollback */
-							scrollback_lines=cterm.backpos;
-							cterm_end();
+							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
+							scrollback_lines=cterm->backpos;
+							cterm_end(cterm);
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
@@ -2671,7 +2676,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 			}
-			if(key && cterm.emulation == CTERM_EMULATION_ATASCII) {
+			if(key && cterm->emulation == CTERM_EMULATION_ATASCII) {
 				/* Translate keys to ATASCII */
 				switch(key) {
 					case '\r':
@@ -2720,7 +2725,7 @@ BOOL doterm(struct bbslist *bbs)
 						break;
 				}
 			}
-			else if(key && cterm.emulation == CTERM_EMULATION_PETASCII) {
+			else if(key && cterm->emulation == CTERM_EMULATION_PETASCII) {
 				/* Translate keys to PETSCII */
 				switch(key) {
 					case '\r':

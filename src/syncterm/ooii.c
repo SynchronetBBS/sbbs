@@ -8,6 +8,7 @@
 #include <ciolib.h>
 #include <cterm.h>
 #include <time.h>
+#include "term.h"
 #include "ooii.h"
 #include "ooii_cmenus.h"
 #include "ooii_bmenus.h"
@@ -154,12 +155,12 @@ static void term_gotoxy(int x, int y)
 	char	ansistr[32];
 
 	sprintf(ansistr, "\x1b[%d;%dH", y, x);
-	cterm_write(ansistr, strlen(ansistr), NULL, 0, NULL);
+	cterm_write(cterm, ansistr, strlen(ansistr), NULL, 0, NULL);
 }
 
 static void term_clearscreen(void)
 {
-	cterm_write("\x1b[0m\x1b[2J\x1b[H", 11, NULL, 0, NULL);
+	cterm_write(cterm, "\x1b[0m\x1b[2J\x1b[H", 11, NULL, 0, NULL);
 }
 
 const int 	term_colours[8]={0,4,2,6,1,5,3,7};
@@ -173,7 +174,7 @@ static void term_setattr(int attr)
 	int oa;
 
 	str[0]=0;
-	if(cterm.attr==attr)
+	if(cterm->attr==attr)
 		return;
 
 	bl=attr&0x80;
@@ -181,7 +182,7 @@ static void term_setattr(int attr)
 	fg=attr&0x07;
 	br=attr&0x08;
 
-	oa=cterm.attr;
+	oa=cterm->attr;
 	obl=oa&0x80;
 	obg=(oa>>4)&0x7;
 	ofg=oa&0x07;
@@ -205,7 +206,7 @@ static void term_setattr(int attr)
 	if(bg!=obg)
 		sprintf(str+strlen(str),"4%d;",term_colours[bg]);
 	str[strlen(str)-1]='m';
-	cterm_write(str, strlen(str), NULL, 0, NULL);
+	cterm_write(cterm, str, strlen(str), NULL, 0, NULL);
 }
 
 static void readInPix(char codeCh, int ooii_mode) {
@@ -259,11 +260,11 @@ static void readInPix(char codeCh, int ooii_mode) {
 	}
 
 	if (codeCh>='A' && codeCh<='E')
-		cterm_write(ooii_cmenus[ooii_mode-1][fptr], strlen(ooii_cmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_cmenus[ooii_mode-1][fptr], strlen(ooii_cmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh>='F' && codeCh<='K')
-		cterm_write(ooii_bmenus[ooii_mode-1][fptr], strlen(ooii_bmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_bmenus[ooii_mode-1][fptr], strlen(ooii_bmenus[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 	else if (codeCh=='0')
-		cterm_write(ooii_logon[ooii_mode-1][fptr], strlen(ooii_logon[ooii_mode-1][fptr])-1, NULL, 0, NULL);
+		cterm_write(cterm, ooii_logon[ooii_mode-1][fptr], strlen(ooii_logon[ooii_mode-1][fptr])-1, NULL, 0, NULL);
 
 	/* We don't overwrite the status line, so we don't need to redraw it */
 	/* statusLine(); */
@@ -277,20 +278,20 @@ static int readInText(char *codeStr) {
 	switch ((char)codeStr[0]) {
 		case '1':
 			term_setattr(BROWN);
-	    	cterm_write("You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("shelf behind him translates his jumble into \"What would you like?\"  You\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("start to wonder what ever happened to the old standard human language.\r\n\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "shelf behind him translates his jumble into \"What would you like?\"  You\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "start to wonder what ever happened to the old standard human language.\r\n\r\n", -1, NULL, 0, NULL);
 	    	term_setattr(LIGHTGREEN);
-	    	cterm_write("\"Give me the House Special,\" you smirk.\r\n\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "\"Give me the House Special,\" you smirk.\r\n\r\n", -1, NULL, 0, NULL);
 	    	term_setattr(GREEN);
-	    	cterm_write("The bartender stares at you with one eye and then drools in agreement.  He\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("vanishes from behind the bar and pops back up a few seconds later.  He\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("slides you the mysterious drink as he begins to chuckle.  White smoke\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("slithers from the bubbling green slime over onto the bar counter.\r\n\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "The bartender stares at you with one eye and then drools in agreement.  He\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "vanishes from behind the bar and pops back up a few seconds later.  He\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "slides you the mysterious drink as he begins to chuckle.  White smoke\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "slithers from the bubbling green slime over onto the bar counter.\r\n\r\n", -1, NULL, 0, NULL);
 	    	term_setattr(LIGHTGREEN);
-	    	cterm_write("\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n", -1, NULL, 0, NULL);
-	    	cterm_write("with that same smirk on his face, \"Youkla telph me.\"\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n", -1, NULL, 0, NULL);
+	    	cterm_write(cterm, "with that same smirk on his face, \"Youkla telph me.\"\r\n", -1, NULL, 0, NULL);
 	    	break;
 	}
 
@@ -349,209 +350,209 @@ static int readSmallMenu(char *codeStr) {
 	switch ((char)codeStr[0]) {
 		case 'a':
 			term_setattr(LIGHTGREEN);
-			cterm_write("Supply Room\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Supply Room\r\n", -1, NULL, 0, NULL);
 			term_setattr(GREEN);
-			cterm_write("~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
-			cterm_write("-[A]  Armor\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[E]  Equipment\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[P]  Power Supply/Ammo\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Suits/Outfits\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[W]  Weapons\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[I]  Supply Inventory\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[C]  Check\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[A]  Armor\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[E]  Equipment\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[P]  Power Supply/Ammo\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Suits/Outfits\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[W]  Weapons\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[I]  Supply Inventory\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[C]  Check\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Supply Room>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Room>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'b':
 			term_setattr(WHITE);
-			cterm_write("Recruit Chambers\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Recruit Chambers\r\n", -1, NULL, 0, NULL);
 			term_setattr(RED);
-			cterm_write("~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
-			cterm_write("-[A]  Adjust Specs\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[C]  Check Status\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[M]  Morgue Listing\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[R]  Roster Status\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[T]  Training Room\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[U]  Use Equipment\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[V]  View Recruit\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[A]  Adjust Specs\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[C]  Check Status\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[M]  Morgue Listing\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[R]  Roster Status\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[T]  Training Room\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[U]  Use Equipment\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[V]  View Recruit\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Chambers>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Chambers>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'c':
 			term_setattr(LIGHTMAGENTA);
-			cterm_write("Adjust Specifications:\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Adjust Specifications:\r\n", -1, NULL, 0, NULL);
 			term_setattr(MAGENTA);
-			cterm_write("~~~~~~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "~~~~~~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTGREEN);
-			cterm_write("-[A]  Ansi Color On/Off\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[C]  Combat Action/Stat-Random\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[D]  Disable/Enable Ansiterm\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[E]  Expert Menus On/Off\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[F]  Fight-Text Delay Change\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[P]  Password Change\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[Q]  Quote for Combat\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Scanner Scroll/Stationary\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[T]  Terminate Yourself\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[A]  Ansi Color On/Off\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[C]  Combat Action/Stat-Random\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[D]  Disable/Enable Ansiterm\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[E]  Expert Menus On/Off\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[F]  Fight-Text Delay Change\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[P]  Password Change\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[Q]  Quote for Combat\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Scanner Scroll/Stationary\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[T]  Terminate Yourself\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Specs>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Specs>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'd':
 			codeStr++;
 
 			term_setattr(LIGHTMAGENTA);
-			cterm_write("Storage Bank:\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Storage Bank:\r\n", -1, NULL, 0, NULL);
 			term_setattr(MAGENTA);
-			cterm_write("~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(WHITE);
 
-			cterm_write("Crystals in Savings : ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Crystals in Savings : ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			strcat(menuBlock,"\r\n");
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 
-			cterm_write("Crystals on Loan    : ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Crystals on Loan    : ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			strcat(menuBlock,"\r\n");
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 
-			cterm_write("\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
-			cterm_write("-[D]  Deposit\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[W]  Withdraw\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[L]  Make a Loan\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[P]  Pay off Loan\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[D]  Deposit\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[W]  Withdraw\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[L]  Make a Loan\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[P]  Pay off Loan\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (zz>0)
-				cterm_write("-[S]  Squadron Account\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[S]  Squadron Account\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("-[T]  Transfer Crystals\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Exit to Chambers\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[T]  Transfer Crystals\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit to Chambers\r\n\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			term_setattr(WHITE);
 
-			cterm_write("You have ", -1, NULL, 0, NULL);
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
-			cterm_write(" crystals onhand.\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "You have ", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, " crystals onhand.\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Bank>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Bank>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'e' :
 			codeStr++;
 
 			term_setattr(YELLOW);
-			cterm_write("You are now in the Games Room, a delightful place to leisurely relax from\r\n", -1, NULL, 0, NULL);
-			cterm_write("the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "You are now in the Games Room, a delightful place to leisurely relax from\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(WHITE);
 			getBlock(&codeStr,menuBlock);
-			cterm_write("Games Left :[ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Games Left :[ ", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
-			cterm_write("\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTGREEN);
 
-			cterm_write("-[A]  Arm Wrestling\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[B]  Barl's Bar\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[L]  Loot Crystals\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[M]  Meat Darts\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[R]  Roach Races\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  SharpShooter\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[A]  Arm Wrestling\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[B]  Barl's Bar\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[L]  Loot Crystals\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[M]  Meat Darts\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[R]  Roach Races\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  SharpShooter\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Games Room>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Games Room>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'f' :
 			codeStr++;
 
-			term_setattr(WHITE); cterm_write("Sentry Post\r\n", -1, NULL, 0, NULL);
-			term_setattr(RED); cterm_write("~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(WHITE); cterm_write(cterm, "Sentry Post\r\n", -1, NULL, 0, NULL);
+			term_setattr(RED); cterm_write(cterm, "~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
 			getBlock(&codeStr,menuBlock);
 			yy=atoi(menuBlock);
 			if (yy>0) {
 
-				cterm_write("-[O]  Offer Guard Items\r\n\r\n", -1, NULL, 0, NULL);
-				cterm_write("-[V]  View Gate Guard\r\n", -1, NULL, 0, NULL);
-				cterm_write("-[U]  Upgrade Gate Guard\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[O]  Offer Guard Items\r\n\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[V]  View Gate Guard\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[U]  Upgrade Gate Guard\r\n", -1, NULL, 0, NULL);
 			}
 			else
-				cterm_write("-[R]  Requisition New Guard\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[R]  Requisition New Guard\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("-[C]  Check Your Status\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[C]  Check Your Status\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Sentry Post>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Sentry Post>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'g':
 			codeStr++;
 
-			term_setattr(WHITE); cterm_write("Electronic-Mail\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTGRAY);   cterm_write("~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(WHITE); cterm_write(cterm, "Electronic-Mail\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTGRAY);   cterm_write(cterm, "~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 
 			if (menuBlock[0]>48) {
 				term_setattr(YELLOW);
-				cterm_write("-[M]  Mass Mail to Squadron\r\n\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[M]  Mass Mail to Squadron\r\n\r\n", -1, NULL, 0, NULL);
 			}
 
 			term_setattr(LIGHTCYAN);
-			cterm_write("-[R]  Read E-Mail\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Send E-Mail\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to Comm. Post\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[R]  Read E-Mail\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Send E-Mail\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to Comm. Post\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<E-Mail>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<E-Mail>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'h':
 			term_setattr(LIGHTCYAN);
-			cterm_write("\r\nHelp Information:\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\nHelp Information:\r\n", -1, NULL, 0, NULL);
 			term_setattr(CYAN);
-			cterm_write("~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(WHITE);
-			cterm_write("-[1]  Scenario\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[2]  Character\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[3]  Complex\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[4]  Wastelands\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[5]  Bases\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[6]  Bulletin Info\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[7]  Logon News Info\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[0]  Exit\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(WHITE);
+			cterm_write(cterm, "-[1]  Scenario\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[2]  Character\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[3]  Complex\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[4]  Wastelands\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[5]  Bases\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[6]  Bulletin Info\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[7]  Logon News Info\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[0]  Exit\r\n\r\n", -1, NULL, 0, NULL);
 			break;
 
 		case 'i':
 			codeStr++;
 
-			term_setattr(LIGHTCYAN); cterm_write("Medical Center\r\n", -1, NULL, 0, NULL);
-			term_setattr(CYAN);   cterm_write("~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTGREEN);
+			term_setattr(LIGHTCYAN); cterm_write(cterm, "Medical Center\r\n", -1, NULL, 0, NULL);
+			term_setattr(CYAN);   cterm_write(cterm, "~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTGREEN);
 
-			cterm_write("Radiation   :[ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Radiation   :[ ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (zz<44)
 				term_setattr(WHITE);
 			else
 				term_setattr(LIGHTRED);
-			cterm_write(menuBlock, -1, NULL, 0, NULL); cterm_write("%\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL); cterm_write(cterm, "%\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTGREEN);
-			cterm_write("Hit Points  :[ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Hit Points  :[ ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (zz>5)
@@ -559,69 +560,69 @@ static int readSmallMenu(char *codeStr) {
 			else
 				term_setattr(LIGHTRED);
 
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
-			cterm_write(" (", -1, NULL, 0, NULL);
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
-			cterm_write(")\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, " (", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, ")\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTGREEN);
-			cterm_write("Infectious  :[ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Infectious  :[ ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			term_setattr(WHITE);
 
-			cterm_write(diseases[zz], -1, NULL, 0, NULL); cterm_write("\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, diseases[zz], -1, NULL, 0, NULL); cterm_write(cterm, "\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(CYAN);
 
-			cterm_write("-[M]  Medical Treatment\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[R]  Radiation Treatment\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[N]  Neutralize Disease\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[V]  Vaccinate Disease\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[M]  Medical Treatment\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[R]  Radiation Treatment\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[N]  Neutralize Disease\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[V]  Vaccinate Disease\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Medical Center>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Medical Center>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'j' :
 			term_setattr(LIGHTMAGENTA);
-			cterm_write("Records Room\r\n", -1, NULL, 0, NULL);
-			term_setattr(MAGENTA);   cterm_write("~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTGREEN);
-			cterm_write("-[A]  Total Ability\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[B]  Bravery\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[C]  Combat Accuracy\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[E]  Experience\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[K]  Total Kills\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[O]  Owned Crystals\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[P]  Power\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Squadrons\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[W]  Wealth\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[H]  Hall of Fame\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Records Room\r\n", -1, NULL, 0, NULL);
+			term_setattr(MAGENTA);   cterm_write(cterm, "~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTGREEN);
+			cterm_write(cterm, "-[A]  Total Ability\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[B]  Bravery\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[C]  Combat Accuracy\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[E]  Experience\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[K]  Total Kills\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[O]  Owned Crystals\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[P]  Power\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Squadrons\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[W]  Wealth\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[H]  Hall of Fame\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Records>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Records>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'k':
 			codeStr++;
 
-			term_setattr(LIGHTGREEN); cterm_write("Supply Armor\r\n", -1, NULL, 0, NULL);
-			term_setattr(GREEN);  cterm_write("~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);  term_setattr(WHITE);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Supply Armor\r\n", -1, NULL, 0, NULL);
+			term_setattr(GREEN);  cterm_write(cterm, "~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);  term_setattr(WHITE);
 
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
-			cterm_write(armors[zz], -1, NULL, 0, NULL);
-			cterm_write(" / ", -1, NULL, 0, NULL);
+			cterm_write(cterm, armors[zz], -1, NULL, 0, NULL);
+			cterm_write(cterm, " / ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
-			cterm_write(menuBlock, -1, NULL, 0, NULL);
-			cterm_write(" Hits\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, " Hits\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTCYAN);
-			cterm_write("-[B]  Buy Armor\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Sell Armor\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[B]  Buy Armor\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Sell Armor\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Supply Armor>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Armor>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'l':
@@ -629,13 +630,13 @@ static int readSmallMenu(char *codeStr) {
 			getBlock(&codeStr,menuBlock);
 
 			term_setattr(LIGHTBLUE);
-			cterm_write("Armor Types           Hits     Crystals\r\n", -1, NULL, 0, NULL); term_setattr(CYAN);
-			cterm_write("~~~~~~~~~~~           ~~~~     ~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
+			cterm_write(cterm, "Armor Types           Hits     Crystals\r\n", -1, NULL, 0, NULL); term_setattr(CYAN);
+			cterm_write(cterm, "~~~~~~~~~~~           ~~~~     ~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
 
 			for (zz=1;zz<5;zz++) {
 				sprintf(buf,"-[%d]  - %s",zz,armors[zz]);
 				strljust(buf,23,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 				switch (zz) {
 					case 1:
@@ -653,7 +654,7 @@ static int readSmallMenu(char *codeStr) {
 
 				}
 				strrjust(buf,3,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 
 				if (menuBlock[0]==48)
@@ -662,7 +663,7 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"%ld",aPrice[zz]*MultA);
 
 				strrjust(buf,13,' ');
-				cterm_write(buf, -1, NULL, 0, NULL); cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL); cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			}
 			break;
 
@@ -670,16 +671,16 @@ static int readSmallMenu(char *codeStr) {
 		case 'm' : codeStr++;
 
 			if (codeStr[0]=='1') {
-				term_setattr(LIGHTGREEN); cterm_write("Supply Equipment\r\n", -1, NULL, 0, NULL);
-				term_setattr(GREEN);  cterm_write("~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+				term_setattr(LIGHTGREEN); cterm_write(cterm, "Supply Equipment\r\n", -1, NULL, 0, NULL);
+				term_setattr(GREEN);  cterm_write(cterm, "~~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			}
 			else {
 				term_setattr(LIGHTCYAN);
-				cterm_write("\r\n-[B]  Buy Equipment\r\n", -1, NULL, 0, NULL);
-				cterm_write("-[S]  Sell Equipment\r\n\r\n", -1, NULL, 0, NULL);
-				cterm_write("-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "\r\n-[B]  Buy Equipment\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[S]  Sell Equipment\r\n\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 				term_setattr(LIGHTBLUE);
-				cterm_write("-<Supply Equip>  é ", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-<Supply Equip>  é ", -1, NULL, 0, NULL);
 			}
 			break;
 
@@ -687,8 +688,8 @@ static int readSmallMenu(char *codeStr) {
 			getBlock(&codeStr,menuBlock);
 
 			term_setattr(LIGHTBLUE);
-			cterm_write("Equipment                 Crystals\r\n", -1, NULL, 0, NULL); term_setattr(CYAN);
-			cterm_write("~~~~~~~~~                 ~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
+			cterm_write(cterm, "Equipment                 Crystals\r\n", -1, NULL, 0, NULL); term_setattr(CYAN);
+			cterm_write(cterm, "~~~~~~~~~                 ~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
 
 			for (zz=1;zz<13;zz++) {
 				if (zz<=9)
@@ -697,7 +698,7 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"-[%d] - %s",zz,equips[zz]);
 
 				strljust(buf,28,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 				if (menuBlock[0]==48)
 					sprintf(buf,"%ld",ePrice[zz]);
@@ -705,10 +706,10 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"%ld",ePrice[zz]*MultE);
 
 				strrjust(buf,6,' ');
-				cterm_write(buf, -1, NULL, 0, NULL); cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL); cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			}
 
-			cterm_write("\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			break;
 
 		case 'o':
@@ -716,31 +717,31 @@ static int readSmallMenu(char *codeStr) {
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 
-			term_setattr(LIGHTGREEN); cterm_write("Supply Suits\r\n", -1, NULL, 0, NULL);
-			term_setattr(GREEN);  cterm_write("~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
-			term_setattr(WHITE);  cterm_write("Suit : ", -1, NULL, 0, NULL);
-			cterm_write(suits[zz], -1, NULL, 0, NULL);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Supply Suits\r\n", -1, NULL, 0, NULL);
+			term_setattr(GREEN);  cterm_write(cterm, "~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(WHITE);  cterm_write(cterm, "Suit : ", -1, NULL, 0, NULL);
+			cterm_write(cterm, suits[zz], -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTCYAN);
-			cterm_write("\r\n\r\n-[B]  Buy a Suit\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Sell a Suit\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n\r\n-[B]  Buy a Suit\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Sell a Suit\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Supply Suits>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Suits>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'p' :
 			codeStr++;
 			getBlock(&codeStr,menuBlock);
 
-			term_setattr(LIGHTBLUE); cterm_write("Suits/Outfits               Crystals\r\n", -1, NULL, 0, NULL);
-			term_setattr(CYAN);  cterm_write("~~~~~~~~~~~~~               ~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE); cterm_write(cterm, "Suits/Outfits               Crystals\r\n", -1, NULL, 0, NULL);
+			term_setattr(CYAN);  cterm_write(cterm, "~~~~~~~~~~~~~               ~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
 			for (zz=1;zz<3;zz++) {
 				sprintf(buf,"-[%d]  - %s",zz,suits[zz]);
 				strljust(buf,30,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 				if (menuBlock[0]==48)
 					sprintf(buf,"%ld",sPrice[zz]);
@@ -748,45 +749,45 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"%ld",sPrice[zz]*MultS);
 
 				strrjust(buf,6,' ');
-				cterm_write(buf, -1, NULL, 0, NULL); cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL); cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			}
 			break;
 
 		case 'q' : codeStr++;
 
-			term_setattr(LIGHTGREEN);  cterm_write("Supply Weapons\r\n", -1, NULL, 0, NULL);
-			term_setattr(GREEN);   cterm_write("~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(WHITE);
+			term_setattr(LIGHTGREEN);  cterm_write(cterm, "Supply Weapons\r\n", -1, NULL, 0, NULL);
+			term_setattr(GREEN);   cterm_write(cterm, "~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(WHITE);
 
 			for (yy=1;yy<3;yy++) {
 				getBlock(&codeStr,menuBlock);
 				zz=atoi(menuBlock);
-				cterm_write(weapons[zz], -1, NULL, 0, NULL); cterm_write(" / ", -1, NULL, 0, NULL);
+				cterm_write(cterm, weapons[zz], -1, NULL, 0, NULL); cterm_write(cterm, " / ", -1, NULL, 0, NULL);
 				getBlock(&codeStr,menuBlock);
 				zz=atoi(menuBlock);
-				cterm_write(ammos[zz], -1, NULL, 0, NULL); cterm_write(" / ", -1, NULL, 0, NULL);
+				cterm_write(cterm, ammos[zz], -1, NULL, 0, NULL); cterm_write(cterm, " / ", -1, NULL, 0, NULL);
 				getBlock(&codeStr,menuBlock);
-				cterm_write(menuBlock, -1, NULL, 0, NULL);  cterm_write(" Rds\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);  cterm_write(cterm, " Rds\r\n", -1, NULL, 0, NULL);
 			}
 
 			term_setattr(LIGHTCYAN);
-			cterm_write("\r\n-[B]  Buy Weapon\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[S]  Sell Weapon\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n-[B]  Buy Weapon\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Sell Weapon\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Supply Weapons>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Weapons>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'r' : codeStr++;
 			getBlock(&codeStr,menuBlock);
 
-			term_setattr(LIGHTBLUE); cterm_write("Hand-to-Hand Weapons        Crystals\r\n", -1, NULL, 0, NULL);
-			term_setattr(CYAN);  cterm_write("~~~~~~~~~~~~~~~~~~~~        ~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE); cterm_write(cterm, "Hand-to-Hand Weapons        Crystals\r\n", -1, NULL, 0, NULL);
+			term_setattr(CYAN);  cterm_write(cterm, "~~~~~~~~~~~~~~~~~~~~        ~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
 			for (zz=1;zz<7;zz++) {
 				sprintf(buf,"-[%d]  - %s",zz,weapons[zz]);
 				strljust(buf,30,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 				if (menuBlock[0]==48)
 					sprintf(buf,"%ld",wPrice[zz]);
@@ -794,11 +795,11 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"%ld",wPrice[zz]*MultW);
 
 				strrjust(buf,6,' ');
-				cterm_write(buf, -1, NULL, 0, NULL); cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL); cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			}
 
-			term_setattr(LIGHTBLUE); cterm_write("\r\nLong-Range Weapons          Crystals\r\n", -1, NULL, 0, NULL);
-			term_setattr(CYAN);  cterm_write("~~~~~~~~~~~~~~~~~~          ~~~~~~~~\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE); cterm_write(cterm, "\r\nLong-Range Weapons          Crystals\r\n", -1, NULL, 0, NULL);
+			term_setattr(CYAN);  cterm_write(cterm, "~~~~~~~~~~~~~~~~~~          ~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
 			for (zz=7;zz<13;zz++) {
@@ -808,7 +809,7 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"-[%d] - %s",zz,weapons[zz+1]);
 
 				strljust(buf,30,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 				if (menuBlock[0]==48)
 					sprintf(buf,"%ld",wPrice[zz+1]);
@@ -816,7 +817,7 @@ static int readSmallMenu(char *codeStr) {
 					sprintf(buf,"%ld",wPrice[zz+1]*MultW);
 
 				strrjust(buf,6,' ');
-				cterm_write(buf, -1, NULL, 0, NULL);  cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, buf, -1, NULL, 0, NULL);  cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 			}
 			break;
 
@@ -824,57 +825,57 @@ static int readSmallMenu(char *codeStr) {
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 
-			term_setattr(LIGHTGREEN); cterm_write("Squadrons Menu\r\n", -1, NULL, 0, NULL);
-			term_setattr(GREEN);  cterm_write("~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Squadrons Menu\r\n", -1, NULL, 0, NULL);
+			term_setattr(GREEN);  cterm_write(cterm, "~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL); term_setattr(LIGHTCYAN);
 
-			cterm_write("-[S]  Show Squadrons/Leaders\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[S]  Show Squadrons/Leaders\r\n", -1, NULL, 0, NULL);
 
 			if (zz>0)
-				cterm_write("-[M]  Show Squadron Members\r\n", -1, NULL, 0, NULL);
-			cterm_write("\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[M]  Show Squadron Members\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 
 			if (zz==0)
-				cterm_write("-[D]  Declare a Squadron\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[D]  Declare a Squadron\r\n", -1, NULL, 0, NULL);
 			else
 			if (zz<10)
-				cterm_write("-[Q]  Quit your Squadron\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[Q]  Quit your Squadron\r\n", -1, NULL, 0, NULL);
 			else
-				cterm_write("-[L]  Leader Options\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[L]  Leader Options\r\n", -1, NULL, 0, NULL);
 
 			if (zz==0)
-				cterm_write("-[R]  Recruit to a Squadron\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[R]  Recruit to a Squadron\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("\r\n-[*]  Return to HQ\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n-[*]  Return to HQ\r\n\r\n", -1, NULL, 0, NULL);
 
-			term_setattr(LIGHTBLUE); cterm_write("-<Squadrons>  é ", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE); cterm_write(cterm, "-<Squadrons>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 't' : codeStr++;
 			getBlock(&codeStr,menuBlock);
 
-			term_setattr(WHITE); cterm_write("Sighting : ", -1, NULL, 0, NULL);
-			term_setattr(LIGHTMAGENTA); cterm_write(menuBlock, -1, NULL, 0, NULL);
+			term_setattr(WHITE); cterm_write(cterm, "Sighting : ", -1, NULL, 0, NULL);
+			term_setattr(LIGHTMAGENTA); cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
-			cterm_write("\r\n\r\n-[L]  ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n\r\n-[L]  ", -1, NULL, 0, NULL);
 			term_setattr(CYAN);
-			cterm_write("Long-Range Combat\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTCYAN); cterm_write("-[H]  ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Long-Range Combat\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTCYAN); cterm_write(cterm, "-[H]  ", -1, NULL, 0, NULL);
 			term_setattr(CYAN);
-			cterm_write("Hand-to-Hand Combat\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "Hand-to-Hand Combat\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 
 			if (!zz) {
-				term_setattr(LIGHTCYAN); cterm_write("-[R]  ", -1, NULL, 0, NULL);
-				term_setattr(CYAN);   cterm_write("Run like hell!\r\n", -1, NULL, 0, NULL);
+				term_setattr(LIGHTCYAN); cterm_write(cterm, "-[R]  ", -1, NULL, 0, NULL);
+				term_setattr(CYAN);   cterm_write(cterm, "Run like hell!\r\n", -1, NULL, 0, NULL);
 			}
 
-			term_setattr(LIGHTCYAN); cterm_write("\r\n-[C]  ", -1, NULL, 0, NULL); term_setattr(MAGENTA); cterm_write("Check Status\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTCYAN); cterm_write(  "-[V]  ", -1, NULL, 0, NULL); term_setattr(MAGENTA); cterm_write("View Opponent\r\n\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTCYAN); cterm_write(  "-[M]  ", -1, NULL, 0, NULL); term_setattr(LIGHTGRAY); cterm_write("Toggle Combat Modes\r\n\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTBLUE);  cterm_write("-<Combat>  é ", -1, NULL, 0, NULL);
+			term_setattr(LIGHTCYAN); cterm_write(cterm, "\r\n-[C]  ", -1, NULL, 0, NULL); term_setattr(MAGENTA); cterm_write(cterm, "Check Status\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTCYAN); cterm_write(cterm,   "-[V]  ", -1, NULL, 0, NULL); term_setattr(MAGENTA); cterm_write(cterm, "View Opponent\r\n\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTCYAN); cterm_write(cterm,   "-[M]  ", -1, NULL, 0, NULL); term_setattr(LIGHTGRAY); cterm_write(cterm, "Toggle Combat Modes\r\n\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE);  cterm_write(cterm, "-<Combat>  é ", -1, NULL, 0, NULL);
 			break;
 
 
@@ -882,97 +883,97 @@ static int readSmallMenu(char *codeStr) {
 			getBlock(&codeStr,menuBlock);
 			strcpy(tempBlock,menuBlock);
 
-			term_setattr(WHITE);  cterm_write("Camp :[ ", -1, NULL, 0, NULL);
-			term_setattr(LIGHTGREEN); cterm_write(menuBlock, -1, NULL, 0, NULL);
-			term_setattr(WHITE);  cterm_write(" ]:\r\n", -1, NULL, 0, NULL); term_setattr(RED);
+			term_setattr(WHITE);  cterm_write(cterm, "Camp :[ ", -1, NULL, 0, NULL);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+			term_setattr(WHITE);  cterm_write(cterm, " ]:\r\n", -1, NULL, 0, NULL); term_setattr(RED);
 
-			for (zz=0;zz<(10+strlen(menuBlock));zz++) cterm_write("~", -1, NULL, 0, NULL);
-			cterm_write("\r\n", -1, NULL, 0, NULL);
+			for (zz=0;zz<(10+strlen(menuBlock));zz++) cterm_write(cterm, "~", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(CYAN);
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (zz>0)
-				cterm_write("-[A]  Attack recruit\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[A]  Attack recruit\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("-[L]  Leave a message\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[L]  Leave a message\r\n\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (!zz)
-				cterm_write("-[B]  Borrow camper's items\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[B]  Borrow camper's items\r\n", -1, NULL, 0, NULL);
 			else
-				cterm_write("-[S]  Steal camper's items\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[S]  Steal camper's items\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("-[G]  Give camper items\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[V]  View ", -1, NULL, 0, NULL);
-			cterm_write(tempBlock, -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[G]  Give camper items\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[V]  View ", -1, NULL, 0, NULL);
+			cterm_write(cterm, tempBlock, -1, NULL, 0, NULL);
 
-			cterm_write("\r\n-[C]  Check your status\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[D]  Drop your items\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[P]  Pick up items\r\n\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[*]  Leave campsite\r\n\r\n", -1, NULL, 0, NULL);
-			term_setattr(LIGHTBLUE); cterm_write("-<Camp>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n-[C]  Check your status\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[D]  Drop your items\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[P]  Pick up items\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Leave campsite\r\n\r\n", -1, NULL, 0, NULL);
+			term_setattr(LIGHTBLUE); cterm_write(cterm, "-<Camp>  é ", -1, NULL, 0, NULL);
 			break;
 
 		case 'v':
 			codeStr++;
-			term_setattr(LIGHTGREEN); cterm_write("Hit Points   :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Hit Points   :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
 			getBlock(&codeStr,menuBlock);
-			cterm_write(menuBlock, -1, NULL, 0, NULL); cterm_write(" ", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL); cterm_write(cterm, " ", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			sprintf(buf,"(%s)\r\n",menuBlock);
-			cterm_write(buf, -1, NULL, 0, NULL);
+			cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
-			term_setattr(LIGHTGREEN); cterm_write("Applications :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Applications :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
 			getBlock(&codeStr,menuBlock);
 			sprintf(buf,"%s current, ",menuBlock);
-			cterm_write(buf, -1, NULL, 0, NULL);
+			cterm_write(cterm, buf, -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			sprintf(buf,"%s total\r\n",menuBlock);
-			cterm_write(buf, -1, NULL, 0, NULL);
+			cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
-			term_setattr(LIGHTGREEN); cterm_write("Radiation    :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
+			term_setattr(LIGHTGREEN); cterm_write(cterm, "Radiation    :[ ", -1, NULL, 0, NULL); term_setattr(WHITE);
 			getBlock(&codeStr,menuBlock);
-			cterm_write(menuBlock, -1, NULL, 0, NULL); cterm_write("%\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL); cterm_write(cterm, "%\r\n\r\n", -1, NULL, 0, NULL);
 
-			term_setattr(WHITE); cterm_write("Also, you are ", -1, NULL, 0, NULL);
+			term_setattr(WHITE); cterm_write(cterm, "Also, you are ", -1, NULL, 0, NULL);
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			switch (zz) {
 				case 0 :
-					cterm_write("not very hungry.\r\n", -1, NULL, 0, NULL);
+					cterm_write(cterm, "not very hungry.\r\n", -1, NULL, 0, NULL);
 					break;
 				case 1 :
-					cterm_write("a little hungry.\r\n", -1, NULL, 0, NULL);
+					cterm_write(cterm, "a little hungry.\r\n", -1, NULL, 0, NULL);
 					break;
 				case 2 :
-					cterm_write("hungry.\r\n", -1, NULL, 0, NULL);
+					cterm_write(cterm, "hungry.\r\n", -1, NULL, 0, NULL);
 					break;
 				case 3 :
-					cterm_write("extremely hungry!\r\n", -1, NULL, 0, NULL);
+					cterm_write(cterm, "extremely hungry!\r\n", -1, NULL, 0, NULL);
 					break;
 				case 4 :
 					term_setattr(LIGHTRED);
-					cterm_write("DYING ", -1, NULL, 0, NULL);
+					cterm_write(cterm, "DYING ", -1, NULL, 0, NULL);
 					term_setattr(WHITE);
-					cterm_write("of hunger!!\r\n", -1, NULL, 0, NULL);
+					cterm_write(cterm, "of hunger!!\r\n", -1, NULL, 0, NULL);
 					break;
 			}
 
 			term_setattr(YELLOW);
-			cterm_write("\r\n-[Q]  Quick Heal\r\n", -1, NULL, 0, NULL);
-			cterm_write("-[U]  Use an Application\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\n-[Q]  Quick Heal\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[U]  Use an Application\r\n", -1, NULL, 0, NULL);
 
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			if (zz==1)
-				cterm_write("-[R]  Use Rations\r\n", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-[R]  Use Rations\r\n", -1, NULL, 0, NULL);
 
-			cterm_write("-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write("-<Medpacks>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Medpacks>  é ", -1, NULL, 0, NULL);
 			break;
 	}
 
@@ -983,9 +984,9 @@ static int readSmallMenu(char *codeStr) {
 static void checkStamp(int xx,int yy,char stampStr[20]) {  // used w/ incomingCheck
 	term_gotoxy(xx+1, yy+1);
 	term_setattr(LIGHTCYAN);
-	cterm_write(stampStr, -1, NULL, 0, NULL);
+	cterm_write(cterm, stampStr, -1, NULL, 0, NULL);
 	term_setattr(CYAN);
-	cterm_write("é", -1, NULL, 0, NULL);
+	cterm_write(cterm, "é", -1, NULL, 0, NULL);
 	return;
 }
 
@@ -1003,16 +1004,16 @@ static int incomingCheckStatus(char *codeStr) {
 	who=atoi(menuBlock);
 
 	term_setattr(who);
-	cterm_write("\r\nÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
+	cterm_write(cterm, "\r\nÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
 	term_setattr(LIGHTCYAN);
-	cterm_write("Recruit   ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "Recruit   ", -1, NULL, 0, NULL);
 	term_setattr(CYAN);
-	cterm_write("é", -1, NULL, 0, NULL);
+	cterm_write(cterm, "é", -1, NULL, 0, NULL);
 	term_setattr(who);
 	term_gotoxy(34,3);
-	cterm_write(" ³", -1, NULL, 0, NULL);
+	cterm_write(cterm, " ³", -1, NULL, 0, NULL);
 	term_gotoxy(1,4);
-	cterm_write("ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
 
 	checkStamp(0,4,"Location  ");
 	checkStamp(27,4,"Strength   ");
@@ -1025,7 +1026,7 @@ static int incomingCheckStatus(char *codeStr) {
 	checkStamp(54,6,"Bravery       ");
 
 	term_gotoxy(1, 8);
-	cterm_write("ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
 
 	checkStamp(0,8,"Crystals  ");
 	checkStamp(27,8,"Disease    ");
@@ -1036,28 +1037,28 @@ static int incomingCheckStatus(char *codeStr) {
 
 	term_gotoxy(1,11);
 	term_setattr(who);
-	cterm_write("ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
 
 	checkStamp(0,11,"Weapon    ");
 	checkStamp(0,12,"Weapon    ");
 
 	term_gotoxy(1, 14);
 	term_setattr(who);
-	cterm_write("ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
 
 	checkStamp(0,14,"Armor     ");
 	checkStamp(0,15,"Outfit    ");
 
 	term_gotoxy(1,17);
 	term_setattr(who);
-	cterm_write("ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ", -1, NULL, 0, NULL);
 
 	for (zz=1;zz<4;zz++)
 		checkStamp(0,16+zz,"Equipment ");
 
 	term_gotoxy(1, 21);
 	term_setattr(who);
-	cterm_write("ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
+	cterm_write(cterm, "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ", -1, NULL, 0, NULL);
 
 	term_gotoxy(1, 23);
 
@@ -1231,32 +1232,32 @@ static int incomingMapScanner(char *codeStr)
 			term_clearscreen();
 			term_gotoxy(1, 1);
 			term_setattr(1);
-			cterm_write("\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
-			cterm_write("³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("ÖÄ", -1, NULL, 0, NULL); term_setattr(13); cterm_write("Infrared", -1, NULL, 0, NULL); term_setattr(5);
-			cterm_write("Ä·", -1, NULL, 0, NULL); term_setattr(13); cterm_write("     Compass      Sector Monitor     System Monitor           ", -1, NULL, 0, NULL);
-			term_setattr(1); cterm_write("³\r\n", -1, NULL, 0, NULL);
-			cterm_write("³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ", -1, NULL, 0, NULL);
-			term_setattr(1); cterm_write("³\r\n", -1, NULL, 0, NULL);
-			cterm_write("³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("Ç          ¶   [         ]    [ ]  ", -1, NULL, 0, NULL); term_setattr(13);
-			cterm_write("Items         Hit Points", -1, NULL, 0, NULL); term_setattr(5); cterm_write(" [:            ", -1, NULL, 0, NULL);
-			term_setattr(1); cterm_write("³\r\n", -1, NULL, 0, NULL);
-			cterm_write("³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("Ç          ¶                  [ ]  ", -1, NULL, 0, NULL); term_setattr(13);
-			cterm_write("Campers       Radiation  ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("[:            ", -1, NULL, 0, NULL);
-			term_setattr(1); cterm_write("³\r\n", -1, NULL, 0, NULL);
-			cterm_write("³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("ÓÄÄÄ", -1, NULL, 0, NULL); term_setattr(13); cterm_write("scan", -1, NULL, 0, NULL); term_setattr(5);
-			cterm_write("ÄÄÄ½    ", -1, NULL, 0, NULL); term_setattr(13); cterm_write("Time :        ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("[ ]  ", -1, NULL, 0, NULL);
-			term_setattr(13); cterm_write("Bases         Condition  ", -1, NULL, 0, NULL); term_setattr(5); cterm_write("[:            ", -1, NULL, 0, NULL);
-			term_setattr(1); cterm_write("³\r\n", -1, NULL, 0, NULL);
-			cterm_write("ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "ÖÄ", -1, NULL, 0, NULL); term_setattr(13); cterm_write(cterm, "Infrared", -1, NULL, 0, NULL); term_setattr(5);
+			cterm_write(cterm, "Ä·", -1, NULL, 0, NULL); term_setattr(13); cterm_write(cterm, "     Compass      Sector Monitor     System Monitor           ", -1, NULL, 0, NULL);
+			term_setattr(1); cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ", -1, NULL, 0, NULL);
+			term_setattr(1); cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "Ç          ¶   [         ]    [ ]  ", -1, NULL, 0, NULL); term_setattr(13);
+			cterm_write(cterm, "Items         Hit Points", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, " [:            ", -1, NULL, 0, NULL);
+			term_setattr(1); cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "Ç          ¶                  [ ]  ", -1, NULL, 0, NULL); term_setattr(13);
+			cterm_write(cterm, "Campers       Radiation  ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
+			term_setattr(1); cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³ ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "ÓÄÄÄ", -1, NULL, 0, NULL); term_setattr(13); cterm_write(cterm, "scan", -1, NULL, 0, NULL); term_setattr(5);
+			cterm_write(cterm, "ÄÄÄ½    ", -1, NULL, 0, NULL); term_setattr(13); cterm_write(cterm, "Time :        ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "[ ]  ", -1, NULL, 0, NULL);
+			term_setattr(13); cterm_write(cterm, "Bases         Condition  ", -1, NULL, 0, NULL); term_setattr(5); cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
+			term_setattr(1); cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n", -1, NULL, 0, NULL);
 			break;
 
 		case 'T' :
 			term_gotoxy(1, 9);
 			term_setattr(1);
-			cterm_write("ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
-			cterm_write("³                                                                           ³\r\n", -1, NULL, 0, NULL);
-			cterm_write("³                                                                           ³\r\n", -1, NULL, 0, NULL);
-			cterm_write("ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³                                                                           ³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "³                                                                           ³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n", -1, NULL, 0, NULL);
 			break;
 
 		case 'M' :
@@ -1306,11 +1307,11 @@ static int incomingMapScanner(char *codeStr)
 					setScanCol(scan[0]);
 
 				if (strlen(scan)==2) {
-					cterm_write(scan, -1, NULL, 0, NULL);
-					cterm_write(" ", -1, NULL, 0, NULL);
+					cterm_write(cterm, scan, -1, NULL, 0, NULL);
+					cterm_write(cterm, " ", -1, NULL, 0, NULL);
 				}
 				else
-					cterm_write(scan, -1, NULL, 0, NULL);
+					cterm_write(cterm, scan, -1, NULL, 0, NULL);
 			}
 
 			term_gotoxy(1,14);
@@ -1327,19 +1328,19 @@ static int incomingMapScanner(char *codeStr)
 						term_setattr(14);
 						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock,",");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 2 :
 						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock,",");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 3 :
 						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock," ");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 4 : 
@@ -1347,7 +1348,7 @@ static int incomingMapScanner(char *codeStr)
 						term_setattr(15);
 						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock," ");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 5 : 
@@ -1355,14 +1356,14 @@ static int incomingMapScanner(char *codeStr)
 						term_setattr(14);
 						getBlock(&codeStr,menuBlock);
 						strcat(menuBlock," ");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 6 :
 						getBlock(&codeStr,menuBlock);
-						cterm_write("(", 1, NULL, 0, NULL);
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
-						cterm_write(")", 1, NULL, 0, NULL);
+						cterm_write(cterm, "(", 1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, ")", 1, NULL, 0, NULL);
 						break;
 
 					case 7 :
@@ -1374,7 +1375,7 @@ static int incomingMapScanner(char *codeStr)
 						else
 							term_setattr(14);
 						strcat(menuBlock,"% ");
-						cterm_write(menuBlock, -1, NULL, 0, NULL);
+						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 8 :
@@ -1384,13 +1385,13 @@ static int incomingMapScanner(char *codeStr)
 						yy=atoi(menuBlock);
 
 						switch (yy) {
-							case 0 : cterm_write("Not Hungry", -1, NULL, 0, NULL); break;
-							case 1 : cterm_write("Bit Hungry", -1, NULL, 0, NULL); break;
-							case 2 : cterm_write("Hungry    ", -1, NULL, 0, NULL); break;
+							case 0 : cterm_write(cterm, "Not Hungry", -1, NULL, 0, NULL); break;
+							case 1 : cterm_write(cterm, "Bit Hungry", -1, NULL, 0, NULL); break;
+							case 2 : cterm_write(cterm, "Hungry    ", -1, NULL, 0, NULL); break;
 							case 3 : term_setattr(12);
-								cterm_write("HUNGRY!   ", -1, NULL, 0, NULL); break;
+								cterm_write(cterm, "HUNGRY!   ", -1, NULL, 0, NULL); break;
 							case 4 : term_setattr(12+128);
-								cterm_write("STARVING!!", -1, NULL, 0, NULL); break;
+								cterm_write(cterm, "STARVING!!", -1, NULL, 0, NULL); break;
 						}
 						break;
 				}
@@ -1402,11 +1403,11 @@ static int incomingMapScanner(char *codeStr)
 				term_gotoxy(34,5);
 
 				if (codeStr[0]=='0')
-					cterm_write(" ", -1, NULL, 0, NULL);
+					cterm_write(cterm, " ", -1, NULL, 0, NULL);
 				else
 				{
 					term_setattr(12);
-					cterm_write("û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "û", -1, NULL, 0, NULL);
 				}
 
 				codeStr++;
@@ -1418,11 +1419,11 @@ static int incomingMapScanner(char *codeStr)
 				term_gotoxy(34,6);
 
 				if (codeStr[0]=='0')
-					cterm_write(" ", -1, NULL, 0, NULL);
+					cterm_write(cterm, " ", -1, NULL, 0, NULL);
 				else
 				{
 					term_setattr(12);
-					cterm_write("û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "û", -1, NULL, 0, NULL);
 				}
 
 				codeStr++;
@@ -1434,11 +1435,11 @@ static int incomingMapScanner(char *codeStr)
 				term_gotoxy(34,7);
 
 				if (codeStr[0]=='0')
-					cterm_write(" ", -1, NULL, 0, NULL);
+					cterm_write(cterm, " ", -1, NULL, 0, NULL);
 				else
 				{
 					term_setattr(12);
-					cterm_write("û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "û", -1, NULL, 0, NULL);
 
 					codeStr++;
 					codeStr++;
@@ -1450,7 +1451,7 @@ static int incomingMapScanner(char *codeStr)
 					getBlock(&codeStr,menuBlock);
 					term_setattr(14);
 					strcat(menuBlock," is stationed nearby.");
-					cterm_write(menuBlock, -1, NULL, 0, NULL);
+					cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 				}
 			}
 			break;
@@ -1461,77 +1462,77 @@ static int incomingMapScanner(char *codeStr)
 			getBlock(&codeStr,menuBlock);
 			zz=atoi(menuBlock);
 			term_gotoxy(3,10);
-			cterm_write("                                                                          ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "                                                                          ", -1, NULL, 0, NULL);
 			term_gotoxy(3,11);
-			cterm_write("                                                                          ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "                                                                          ", -1, NULL, 0, NULL);
 			term_gotoxy(3,10);
 
 			term_setattr(11);
 
 			switch (zz) {
-				case 2 : cterm_write("Crumbling walls of ancient cities scatter the plains, and smoke lazily", -1, NULL, 0, NULL);
+				case 2 : cterm_write(cterm, "Crumbling walls of ancient cities scatter the plains, and smoke lazily", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("rises from the destructed relics of the past.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "rises from the destructed relics of the past.", -1, NULL, 0, NULL);
 					break;
 
-				case 3 : cterm_write("Coldness creeps upon you like death in this vast range of empty desert.", -1, NULL, 0, NULL);
+				case 3 : cterm_write(cterm, "Coldness creeps upon you like death in this vast range of empty desert.", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("Harsh winds rip sand against your body like tiny shards of glass.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "Harsh winds rip sand against your body like tiny shards of glass.", -1, NULL, 0, NULL);
 					break;
 
-				case 4 : cterm_write("The black muck from the swamp slithers between your toes as you make your", -1, NULL, 0, NULL);
+				case 4 : cterm_write(cterm, "The black muck from the swamp slithers between your toes as you make your", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("way through the bubbling slime.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "way through the bubbling slime.", -1, NULL, 0, NULL);
 					break;
 
-				case 5 : cterm_write("High upon the scorched mountains, small blackening caves can be seen.", -1, NULL, 0, NULL);
+				case 5 : cterm_write(cterm, "High upon the scorched mountains, small blackening caves can be seen.", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("Possibly lurking within, horrible creatures wait for your trespassing.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "Possibly lurking within, horrible creatures wait for your trespassing.", -1, NULL, 0, NULL);
 					break;
 
-				case 6 : cterm_write("A mist glides along the flat terrain and summons you forward.", -1, NULL, 0, NULL);
+				case 6 : cterm_write(cterm, "A mist glides along the flat terrain and summons you forward.", -1, NULL, 0, NULL);
 					break;
 
 				case 7 : ; break; // pits
 
-				case 8 : cterm_write("A small hole in the ground leads down into a realm of darkness.", -1, NULL, 0, NULL);
+				case 8 : cterm_write(cterm, "A small hole in the ground leads down into a realm of darkness.", -1, NULL, 0, NULL);
 					break;
 
-				case 9 : cterm_write("From the pre-war years, an Airforce Base lies half buried from nuclear", -1, NULL, 0, NULL);
+				case 9 : cterm_write(cterm, "From the pre-war years, an Airforce Base lies half buried from nuclear", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("ash and metallic scraps.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "ash and metallic scraps.", -1, NULL, 0, NULL);
 					break;
 
-				case 10: cterm_write("A disabled missile silo remains intact from heavy bombing in this area.", -1, NULL, 0, NULL);
+				case 10: cterm_write(cterm, "A disabled missile silo remains intact from heavy bombing in this area.", -1, NULL, 0, NULL);
 					break;
 
-				case 11: cterm_write("In an effortless HeXonium attempt to clean the wastelands, radiation dumps", -1, NULL, 0, NULL);
+				case 11: cterm_write(cterm, "In an effortless HeXonium attempt to clean the wastelands, radiation dumps", -1, NULL, 0, NULL);
 					term_gotoxy(3,11);
-					cterm_write("lay wretched with oozing radioactive substances forming.", -1, NULL, 0, NULL);
+					cterm_write(cterm, "lay wretched with oozing radioactive substances forming.", -1, NULL, 0, NULL);
 					break;
 
-				case 12: cterm_write("This unmarked road is littered with dead shrubs and rotting vegatation.", -1, NULL, 0, NULL);
+				case 12: cterm_write(cterm, "This unmarked road is littered with dead shrubs and rotting vegatation.", -1, NULL, 0, NULL);
 					break;
 
-				case 13: cterm_write("Darkness swirls around the infamous and towering Hydrite Prison.", -1, NULL, 0, NULL);
+				case 13: cterm_write(cterm, "Darkness swirls around the infamous and towering Hydrite Prison.", -1, NULL, 0, NULL);
 					break;
 
-				case 14: cterm_write("As you look up, you notice a small hole that leads upwards.", -1, NULL, 0, NULL);
+				case 14: cterm_write(cterm, "As you look up, you notice a small hole that leads upwards.", -1, NULL, 0, NULL);
 					break;
 
-				case 15: cterm_write("You cautiously wade through the black murky water of this shallow stream.", -1, NULL, 0, NULL);
+				case 15: cterm_write(cterm, "You cautiously wade through the black murky water of this shallow stream.", -1, NULL, 0, NULL);
 					break;
 			}
 			break;
 
 		case 'P' : codeStr++;
 			term_gotoxy(3,10);
-			cterm_write("                                                                          ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "                                                                          ", -1, NULL, 0, NULL);
 			term_gotoxy(3,11);
-			cterm_write("                                                                          ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "                                                                          ", -1, NULL, 0, NULL);
 			term_gotoxy(3,10);
 			term_setattr(11);
-			cterm_write("20 foot pit!", -1, NULL, 0, NULL);
+			cterm_write(cterm, "20 foot pit!", -1, NULL, 0, NULL);
 			break;
 	}
 

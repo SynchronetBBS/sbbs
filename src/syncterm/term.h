@@ -16,6 +16,7 @@ struct terminal {
 };
 
 extern struct terminal term;
+extern struct cterminal	*cterm;
 extern int log_level;
 
 BOOL doterm(struct bbslist *);

@@ -115,14 +115,12 @@ struct cterminal {
 extern "C" {
 #endif
 
-extern struct cterminal cterm;
-
-void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation);
-char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed);
-int cterm_openlog(char *logfile, int logtype);
-void cterm_closelog(void);
-void cterm_end(void);
-void cterm_clearscreen(char attr);
+struct cterminal *cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation);
+char *cterm_write(struct cterminal *cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
+void cterm_closelog(struct cterminal *cterm);
+void cterm_end(struct cterminal *cterm);
+void cterm_clearscreen(struct cterminal *cterm, char attr);
 #ifdef __cplusplus
 }
 #endif

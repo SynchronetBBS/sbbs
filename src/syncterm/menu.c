@@ -31,20 +31,20 @@ void viewscroll(void)
     gettextinfo(&txtinfo);
 	/* too large for alloca() */
 	scrollback=(char *)malloc((scrollback_buf==NULL?0:(term.width*2*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*2));
-	if(cterm.scrollback != NULL)
-		memcpy(scrollback,cterm.scrollback,term.width*2*settings.backlines);
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
+	if(cterm->scrollback != NULL)
+		memcpy(scrollback,cterm->scrollback,term.width*2*settings.backlines);
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm->backpos)*cterm->width*2);
 	drawwin();
-	top=cterm.backpos;
+	top=cterm->backpos;
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
-		if(top>cterm.backpos)
-			top=cterm.backpos;
+		if(top>cterm->backpos)
+			top=cterm->backpos;
 		puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top));
-		switch(cterm.emulation) {
+		switch(cterm->emulation) {
 		case CTERM_EMULATION_ATASCII:
 			cputs("3crollback");
 			break;
@@ -54,8 +54,8 @@ void viewscroll(void)
 		default:
 			cputs("Scrollback");
 		}
-		gotoxy(cterm.width-9,1);
-		switch(cterm.emulation) {
+		gotoxy(cterm->width-9,1);
+		switch(cterm->emulation) {
 		case CTERM_EMULATION_ATASCII:
 			cputs("3crollback");
 			break;
@@ -125,7 +125,7 @@ void viewscroll(void)
 				break;
 		}
 	}
-	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm.backpos)*cterm.width*2);
+	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm->backpos)*cterm->width*2);
 	gotoxy(x,y);
 	free(scrollback);
 	return;

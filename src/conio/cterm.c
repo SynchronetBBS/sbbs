@@ -61,8 +61,6 @@
 
 #define	BUFSIZE	2048
 
-struct cterminal cterm;
-
 const int cterm_tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};
 
 const char *octave="C#D#EF#G#A#B";
@@ -174,27 +172,29 @@ struct note_params {
 };
 
 
-void playnote_thread(void *args)
+static void playnote_thread(void *args)
 {
 	/* Tempo is quarter notes per minute */
 	int duration;
 	int pauselen;
 	struct note_params *note;
 	int	device_open=FALSE;
+	struct cterminal *cterm=(struct cterminal *)args;
 
-	cterm.playnote_thread_running=TRUE;
+
+	cterm->playnote_thread_running=TRUE;
 	while(1) {
 		if(device_open) {
-			if(!listSemTryWaitBlock(&cterm.notes,5000)) {
+			if(!listSemTryWaitBlock(&cterm->notes,5000)) {
 				xptone_close();
 				device_open=FALSE;
-				listSemWait(&cterm.notes);
+				listSemWait(&cterm->notes);
 			}
 		}
 		else
-			listSemWait(&cterm.notes);
+			listSemWait(&cterm->notes);
 		device_open=xptone_open();
-		note=listShiftNode(&cterm.notes);
+		note=listShiftNode(&cterm->notes);
 		if(note==NULL)
 			break;
 		if(note->dotted)
@@ -225,14 +225,14 @@ void playnote_thread(void *args)
 			SLEEP(duration);
 		SLEEP(pauselen);
 		if(note->foreground)
-			sem_post(&cterm.note_completed_sem);
+			sem_post(&cterm->note_completed_sem);
 		free(note);
 	}
-	cterm.playnote_thread_running=FALSE;
-	sem_post(&cterm.playnote_thread_terminated);
+	cterm->playnote_thread_running=FALSE;
+	sem_post(&cterm->playnote_thread_terminated);
 }
 
-void play_music(void)
+static void play_music(struct cterminal *cterm)
 {
 	int		i;
 	char	*p;
@@ -246,35 +246,35 @@ void play_music(void)
 	struct	note_params *np;
 	int		fore_count;
 
-	if(cterm.quiet) {
-		cterm.music=0;
-		cterm.musicbuf[0]=0;
+	if(cterm->quiet) {
+		cterm->music=0;
+		cterm->musicbuf[0]=0;
 		return;
 	}
-	p=cterm.musicbuf;
+	p=cterm->musicbuf;
 	fore_count=0;
-	if(cterm.music==1) {
+	if(cterm->music==1) {
 		switch(toupper(*p)) {
 			case 'F':
-				cterm.musicfore=TRUE;
+				cterm->musicfore=TRUE;
 				p++;
 				break;
 			case 'B':
-				cterm.musicfore=FALSE;
+				cterm->musicfore=FALSE;
 				p++;
 				break;
 			case 'N':
 				if(!isdigit(*(p+1))) {
-					cterm.noteshape=CTERM_MUSIC_NORMAL;
+					cterm->noteshape=CTERM_MUSIC_NORMAL;
 					p++;
 				}
 				break;
 			case 'L':
-				cterm.noteshape=CTERM_MUSIC_LEGATO;
+				cterm->noteshape=CTERM_MUSIC_LEGATO;
 				p++;
 				break;
 			case 'S':
-				cterm.noteshape=CTERM_MUSIC_STACATTO;
+				cterm->noteshape=CTERM_MUSIC_STACATTO;
 				p++;
 				break;
 		}
@@ -287,19 +287,19 @@ void play_music(void)
 				p++;
 				switch(toupper(*p)) {
 					case 'F':
-						cterm.musicfore=TRUE;
+						cterm->musicfore=TRUE;
 						break;
 					case 'B':
-						cterm.musicfore=FALSE;
+						cterm->musicfore=FALSE;
 						break;
 					case 'N':
-						cterm.noteshape=CTERM_MUSIC_NORMAL;
+						cterm->noteshape=CTERM_MUSIC_NORMAL;
 						break;
 					case 'L':
-						cterm.noteshape=CTERM_MUSIC_LEGATO;
+						cterm->noteshape=CTERM_MUSIC_LEGATO;
 						break;
 					case 'S':
-						cterm.noteshape=CTERM_MUSIC_STACATTO;
+						cterm->noteshape=CTERM_MUSIC_STACATTO;
 						break;
 					default:
 						p--;
@@ -310,31 +310,31 @@ void play_music(void)
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.tempo=strtoul(numbuf,NULL,10);
-				if(cterm.tempo>255)
-					cterm.tempo=255;
-				if(cterm.tempo<32)
-					cterm.tempo=32;
+				cterm->tempo=strtoul(numbuf,NULL,10);
+				if(cterm->tempo>255)
+					cterm->tempo=255;
+				if(cterm->tempo<32)
+					cterm->tempo=32;
 				break;
 			case 'O':						/* Octave */
 				out=numbuf;
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.octave=strtoul(numbuf,NULL,10);
-				if(cterm.octave>6)
-					cterm.octave=6;
+				cterm->octave=strtoul(numbuf,NULL,10);
+				if(cterm->octave>6)
+					cterm->octave=6;
 				break;
 			case 'L':
 				out=numbuf;
 				while(isdigit(*(p+1)))
 					*(out++)=*(++p);
 				*out=0;
-				cterm.notelen=strtoul(numbuf,NULL,10);
-				if(cterm.notelen<1)
-					cterm.notelen=1;
-				if(cterm.notelen>64)
-					cterm.notelen=64;
+				cterm->notelen=strtoul(numbuf,NULL,10);
+				if(cterm->notelen<1)
+					cterm->notelen=1;
+				if(cterm->notelen>64)
+					cterm->notelen=64;
 				break;
 			case 'N':						/* Note by number */
 				if(isdigit(*(p+1))) {
@@ -360,7 +360,7 @@ void play_music(void)
 			case 'G':
 			case 'P':
 				note=toupper(*p);
-				notelen=cterm.notelen;
+				notelen=cterm->notelen;
 				dotted=0;
 				i=1;
 				while(i) {
@@ -402,7 +402,7 @@ void play_music(void)
 						offset=1;
 					}
 					else {
-						notenum=cterm.octave*12+1;
+						notenum=cterm->octave*12+1;
 						notenum+=(out-octave);
 					}
 				}
@@ -412,39 +412,39 @@ void play_music(void)
 					np->notenum=notenum;
 					np->notelen=notelen;
 					np->dotted=dotted;
-					np->tempo=cterm.tempo;
-					np->noteshape=cterm.noteshape;
-					np->foreground=cterm.musicfore;
-					listPushNode(&cterm.notes, np);
-					if(cterm.musicfore)
+					np->tempo=cterm->tempo;
+					np->noteshape=cterm->noteshape;
+					np->foreground=cterm->musicfore;
+					listPushNode(&cterm->notes, np);
+					if(cterm->musicfore)
 						fore_count++;
 				}
 				break;
 			case '<':							/* Down one octave */
-				cterm.octave--;
-				if(cterm.octave<0)
-					cterm.octave=0;
+				cterm->octave--;
+				if(cterm->octave<0)
+					cterm->octave=0;
 				break;
 			case '>':							/* Up one octave */
-				cterm.octave++;
-				if(cterm.octave>6)
-					cterm.octave=6;
+				cterm->octave++;
+				if(cterm->octave>6)
+					cterm->octave=6;
 				break;
 		}
 	}
-	cterm.music=0;
-	cterm.musicbuf[0]=0;
+	cterm->music=0;
+	cterm->musicbuf[0]=0;
 	while(fore_count) {
-		sem_wait(&cterm.note_completed_sem);
+		sem_wait(&cterm->note_completed_sem);
 		fore_count--;
 	}
 }
 
-void scrolldown(void)
+static void scrolldown(struct cterminal *cterm)
 {
 	int x,y;
 
-	movetext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-2,cterm.x,cterm.y+1);
+	movetext(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-2,cterm->x,cterm->y+1);
 	x=wherex();
 	y=wherey();
 	gotoxy(1,1);
@@ -452,27 +452,27 @@ void scrolldown(void)
 	gotoxy(x,y);
 }
 
-void scrollup(void)
+static void scrollup(struct cterminal *cterm)
 {
 	int x,y;
 
-	cterm.backpos++;
-	if(cterm.scrollback!=NULL) {
-		if(cterm.backpos>cterm.backlines) {
-			memmove(cterm.scrollback,cterm.scrollback+cterm.width*2,cterm.width*2*(cterm.backlines-1));
-			cterm.backpos--;
+	cterm->backpos++;
+	if(cterm->scrollback!=NULL) {
+		if(cterm->backpos>cterm->backlines) {
+			memmove(cterm->scrollback,cterm->scrollback+cterm->width*2,cterm->width*2*(cterm->backlines-1));
+			cterm->backpos--;
 		}
-		gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y,cterm.scrollback+(cterm.backpos-1)*cterm.width*2);
+		gettext(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y,cterm->scrollback+(cterm->backpos-1)*cterm->width*2);
 	}
-	movetext(cterm.x,cterm.y+1,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.x,cterm.y);
+	movetext(cterm->x,cterm->y+1,cterm->x+cterm->width-1,cterm->y+cterm->height-1,cterm->x,cterm->y);
 	x=wherex();
 	y=wherey();
-	gotoxy(1,cterm.height);
+	gotoxy(1,cterm->height);
 	clreol();
 	gotoxy(x,y);
 }
 
-void dellines(int lines)
+static void dellines(struct cterminal * cterm, int lines)
 {
 	int i;
 	int linestomove;
@@ -480,18 +480,18 @@ void dellines(int lines)
 
 	if(lines<1)
 		return;
-	linestomove=cterm.height-wherey();
-	movetext(cterm.x,cterm.y+wherey()-1+lines,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.x,cterm.y+wherey()-1);
+	linestomove=cterm->height-wherey();
+	movetext(cterm->x,cterm->y+wherey()-1+lines,cterm->x+cterm->width-1,cterm->y+cterm->height-1,cterm->x,cterm->y+wherey()-1);
 	x=wherex();
 	y=wherey();
-	for(i=cterm.height-lines+1; i<=cterm.height; i++) {
+	for(i=cterm->height-lines+1; i<=cterm->height; i++) {
 		gotoxy(1,i);
 		clreol();
 	}
 	gotoxy(x,y);
 }
 
-void clear2bol(void)
+static void clear2bol(struct cterminal * cterm)
 {
 	char *buf;
 	int i,j,k;
@@ -500,30 +500,30 @@ void clear2bol(void)
 	buf=(char *)alloca(k*2);
 	j=0;
 	for(i=0;i<k;i++) {
-		if(cterm.emulation == CTERM_EMULATION_ATASCII)
+		if(cterm->emulation == CTERM_EMULATION_ATASCII)
 			buf[j++]=0;
 		else
 			buf[j++]=' ';
-		buf[j++]=cterm.attr;
+		buf[j++]=cterm->attr;
 	}
-	puttext(cterm.x,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,buf);
+	puttext(cterm->x,cterm->y+wherey()-1,cterm->x+wherex()-1,cterm->y+wherey()-1,buf);
 }
 
-void cterm_clearscreen(char attr)
+void cterm_clearscreen(struct cterminal *cterm, char attr)
 {
-	if(cterm.scrollback!=NULL) {
-		cterm.backpos+=cterm.height;
-		if(cterm.backpos>cterm.backlines) {
-			memmove(cterm.scrollback,cterm.scrollback+cterm.width*2*(cterm.backpos-cterm.backlines),cterm.width*2*(cterm.backlines-(cterm.backpos-cterm.backlines)));
-			cterm.backpos=cterm.backlines;
+	if(cterm->scrollback!=NULL) {
+		cterm->backpos+=cterm->height;
+		if(cterm->backpos>cterm->backlines) {
+			memmove(cterm->scrollback,cterm->scrollback+cterm->width*2*(cterm->backpos-cterm->backlines),cterm->width*2*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+			cterm->backpos=cterm->backlines;
 		}
-		gettext(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1,cterm.scrollback+(cterm.backpos-cterm.height)*cterm.width*2);
+		gettext(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1,cterm->scrollback+(cterm->backpos-cterm->height)*cterm->width*2);
 	}
 	clrscr();
 	gotoxy(1,1);
 }
 
-void do_ansi(char *retbuf, size_t retsize, int *speed)
+static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
 {
 	char	*p;
 	char	*p2;
@@ -532,82 +532,82 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 	int		row,col;
 	struct text_info ti;
 
-	switch(cterm.escbuf[0]) {
+	switch(cterm->escbuf[0]) {
 		case '[':
 			/* ANSI stuff */
-			p=cterm.escbuf+strlen(cterm.escbuf)-1;
-			if(cterm.escbuf[1]>=60 && cterm.escbuf[1] <= 63) {	/* Private extenstions */
+			p=cterm->escbuf+strlen(cterm->escbuf)-1;
+			if(cterm->escbuf[1]>=60 && cterm->escbuf[1] <= 63) {	/* Private extenstions */
 				switch(*p) {
 					case 'M':
-						if(cterm.escbuf[1] == '=') {	/* ANSI Music setup */
-							i=strtoul(cterm.escbuf+2,NULL,10);
+						if(cterm->escbuf[1] == '=') {	/* ANSI Music setup */
+							i=strtoul(cterm->escbuf+2,NULL,10);
 							switch(i) {
 								case 1:					/* BANSI (ESC[N) music only) */
-									cterm.music_enable=CTERM_MUSIC_BANSI;
+									cterm->music_enable=CTERM_MUSIC_BANSI;
 									break;
 								case 2:					/* ESC[M ANSI music */
-									cterm.music_enable=CTERM_MUSIC_ENABLED;
+									cterm->music_enable=CTERM_MUSIC_ENABLED;
 									break;
 								default:					/* Disable ANSI Music */
-									cterm.music_enable=CTERM_MUSIC_SYNCTERM;
+									cterm->music_enable=CTERM_MUSIC_SYNCTERM;
 									break;
 							}
 						}
 						break;
 					case 'h':
-						if(!strcmp(cterm.escbuf,"[?25h")) {
-							cterm.cursor=_NORMALCURSOR;
-							_setcursortype(cterm.cursor);
+						if(!strcmp(cterm->escbuf,"[?25h")) {
+							cterm->cursor=_NORMALCURSOR;
+							_setcursortype(cterm->cursor);
 						}
-						if(!strcmp(cterm.escbuf,"[?31h")) {
+						if(!strcmp(cterm->escbuf,"[?31h")) {
 							i=getvideoflags();
 							i|=CIOLIB_VIDEO_ALTCHARS;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[?32h")) {
+						if(!strcmp(cterm->escbuf,"[?32h")) {
 							i=getvideoflags();
 							i|=CIOLIB_VIDEO_NOBRIGHT;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[?33h")) {
+						if(!strcmp(cterm->escbuf,"[?33h")) {
 							i=getvideoflags();
 							i|=CIOLIB_VIDEO_BGBRIGHT;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[=255h"))
-							cterm.doorway_mode=1;
+						if(!strcmp(cterm->escbuf,"[=255h"))
+							cterm->doorway_mode=1;
 						break;
 					case 'l':
-						if(!strcmp(cterm.escbuf,"[?25l")) {
-							cterm.cursor=_NOCURSOR;
-							_setcursortype(cterm.cursor);
+						if(!strcmp(cterm->escbuf,"[?25l")) {
+							cterm->cursor=_NOCURSOR;
+							_setcursortype(cterm->cursor);
 						}
-						if(!strcmp(cterm.escbuf,"[?31l")) {
+						if(!strcmp(cterm->escbuf,"[?31l")) {
 							i=getvideoflags();
 							i&=~CIOLIB_VIDEO_ALTCHARS;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[?32l")) {
+						if(!strcmp(cterm->escbuf,"[?32l")) {
 							i=getvideoflags();
 							i&=~CIOLIB_VIDEO_NOBRIGHT;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[?33l")) {
+						if(!strcmp(cterm->escbuf,"[?33l")) {
 							i=getvideoflags();
 							i&=~CIOLIB_VIDEO_BGBRIGHT;
 							setvideoflags(i);
 						}
-						if(!strcmp(cterm.escbuf,"[=255l"))
-							cterm.doorway_mode=0;
+						if(!strcmp(cterm->escbuf,"[=255l"))
+							cterm->doorway_mode=0;
 						break;
 					case '{':
-						if(cterm.escbuf[1] == '=') {	/* Font loading */
+						if(cterm->escbuf[1] == '=') {	/* Font loading */
 							i=255;
 							j=0;
-							if(strlen(cterm.escbuf)>2) {
-								if((p=strtok(cterm.escbuf+2,";"))!=NULL) {
+							if(strlen(cterm->escbuf)>2) {
+								if((p=strtok(cterm->escbuf+2,";"))!=NULL) {
 									i=strtoul(p,NULL,10);
-									if(!i && cterm.escbuf[2] != '0')
+									if(!i && cterm->escbuf[2] != '0')
 										i=255;
 									if((p=strtok(NULL,";"))!=NULL) {
 										j=strtoul(p,NULL,10);
@@ -616,20 +616,20 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							}
 							if(i>255)
 								break;
-							cterm.font_read=0;
-							cterm.font_slot=i;
+							cterm->font_read=0;
+							cterm->font_slot=i;
 							switch(j) {
 								case 0:
-									cterm.font_size=4096;
+									cterm->font_size=4096;
 									break;
 								case 1:
-									cterm.font_size=3586;
+									cterm->font_size=3586;
 									break;
 								case 2:
-									cterm.font_size=2048;
+									cterm->font_size=2048;
 									break;
 								default:
-									cterm.font_size=0;
+									cterm->font_size=0;
 									break;
 							}
 						}
@@ -641,18 +641,18 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case '@':	/* Insert Char */
 					i=wherex();
 					j=wherey();
-					k=strtoul(cterm.escbuf+1,NULL,10);
+					k=strtoul(cterm->escbuf+1,NULL,10);
 					if(k<1)
 						k=1;
-					if(k>cterm.width - j)
-						k=cterm.width - j;
-					movetext(cterm.x+i-1,cterm.y+j-1,cterm.x+cterm.width-1-k,cterm.y+j-1,cterm.x+i-1+k,cterm.y+j-1);
+					if(k>cterm->width - j)
+						k=cterm->width - j;
+					movetext(cterm->x+i-1,cterm->y+j-1,cterm->x+cterm->width-1-k,cterm->y+j-1,cterm->x+i-1+k,cterm->y+j-1);
 					for(l=0; l< k; l++)
 						putch(' ');
 					gotoxy(i,j);
 					break;
 				case 'A':	/* Cursor Up */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()-i;
@@ -661,29 +661,29 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(wherex(),i);
 					break;
 				case 'B':	/* Cursor Down */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()+i;
-					if(i>cterm.height)
-						i=cterm.height;
+					if(i>cterm->height)
+						i=cterm->height;
 					gotoxy(wherex(),i);
 					break;
 				case 'C':	/* Cursor Right */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherex()+i;
-					if(i>cterm.width)
-						i=cterm.width;
+					if(i>cterm->width)
+						i=cterm->width;
 					gotoxy(i,wherey());
 					break;
 				case 'D':	/* Cursor Left and Font Select */
 					if(*(p-1)==' ') {	/* Font Select */
 						i=0;
 						j=0;
-						if(strlen(cterm.escbuf)>2) {
-							if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
+						if(strlen(cterm->escbuf)>2) {
+							if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
 								i=strtoul(p,NULL,10);
 								if((p=strtok(NULL,";"))!=NULL) {
 									j=strtoul(p,NULL,10);
@@ -697,7 +697,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						}
 					}
 					else {
-						i=strtoul(cterm.escbuf+1,NULL,10);
+						i=strtoul(cterm->escbuf+1,NULL,10);
 						if(i==0)
 							i=1;
 						i=wherex()-i;
@@ -707,16 +707,16 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					}
 					break;
 				case 'E':	/* Cursor next line */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()+i;
-					if(i>cterm.height)
-						i=cterm.height;
+					if(i>cterm->height)
+						i=cterm->height;
 					gotoxy(1,i);
 					break;
 				case 'F':	/* Cursor preceding line */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
 					i=wherey()-i;
@@ -725,11 +725,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(1,i);
 					break;
 				case 'G':
-					col=strtoul(cterm.escbuf+1,NULL,10);
+					col=strtoul(cterm->escbuf+1,NULL,10);
 					if(col<1)
 						col=1;
-					if(col>cterm.width)
-						col=cterm.width;
+					if(col>cterm->width)
+						col=cterm->width;
 					gotoxy(col,wherey());
 					break;
 				case 'f':
@@ -737,8 +737,8 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					row=1;
 					col=1;
 					*p=0;
-					if(strlen(cterm.escbuf)>1) {
-						if((p=strtok(cterm.escbuf+1,";"))!=NULL) {
+					if(strlen(cterm->escbuf)>1) {
+						if((p=strtok(cterm->escbuf+1,";"))!=NULL) {
 							row=strtoul(p,NULL,10);
 							if((p=strtok(NULL,";"))!=NULL) {
 								col=strtoul(p,NULL,10);
@@ -749,27 +749,27 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						row=1;
 					if(col<1)
 						col=1;
-					if(row>cterm.height)
-						row=cterm.height;
-					if(col>cterm.width)
-						col=cterm.width;
+					if(row>cterm->height)
+						row=cterm->height;
+					if(col>cterm->width)
+						col=cterm->width;
 					gotoxy(col,row);
 					break;
 				case 'J':
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					switch(i) {
 						case 0:
 							clreol();
 							row=wherey();
 							col=wherex();
-							for(i=row+1;i<=cterm.height;i++) {
+							for(i=row+1;i<=cterm->height;i++) {
 								gotoxy(1,i);
 								clreol();
 							}
 							gotoxy(col,row);
 							break;
 						case 1:
-							clear2bol();
+							clear2bol(cterm);
 							row=wherey();
 							col=wherex();
 							for(i=row-1;i>=1;i--) {
@@ -779,19 +779,19 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							gotoxy(col,row);
 							break;
 						case 2:
-							cterm_clearscreen((char)cterm.attr);
+							cterm_clearscreen(cterm, (char)cterm->attr);
 							gotoxy(1,1);
 							break;
 					}
 					break;
 				case 'K':
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					switch(i) {
 						case 0:
 							clreol();
 							break;
 						case 1:
-							clear2bol();
+							clear2bol(cterm);
 							break;
 						case 2:
 							row=wherey();
@@ -805,13 +805,13 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'L':		/* Insert line */
 					row=wherey();
 					col=wherex();
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
-					if(i>cterm.height-row)
-						i=cterm.height-row;
+					if(i>cterm->height-row)
+						i=cterm->height-row;
 					if(i)
-						movetext(cterm.x,cterm.y+row-1,cterm.x+cterm.width-1,cterm.y+cterm.height-1-i,cterm.x,cterm.y+row-1+i);
+						movetext(cterm->x,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+cterm->height-1-i,cterm->x,cterm->y+row-1+i);
 					for(j=0;j<i;j++) {
 						gotoxy(1,row+j);
 						clreol();
@@ -819,74 +819,74 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					gotoxy(col,row);
 					break;
 				case 'M':	/* ANSI music and also supposed to be delete line! */
-					if(cterm.music_enable==CTERM_MUSIC_ENABLED) {
-						cterm.music=1;
+					if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
+						cterm->music=1;
 					}
 					else {
-						i=strtoul(cterm.escbuf+1,NULL,10);
+						i=strtoul(cterm->escbuf+1,NULL,10);
 						if(i<1)
 							i=1;
-						dellines(i);
+						dellines(cterm, i);
 					}
 					break;
 				case 'N':
 					/* BananANSI style... does NOT start with MF or MB */
 					/* This still conflicts (ANSI erase field) */
-					if(cterm.music_enable >= CTERM_MUSIC_BANSI)
-						cterm.music=2;
+					if(cterm->music_enable >= CTERM_MUSIC_BANSI)
+						cterm->music=2;
 					break;
 				case 'P':	/* Delete char */
 					row=wherey();
 					col=wherex();
 
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i==0)
 						i=1;
-					if(i>cterm.width-col+1)
-						i=cterm.width-col+1;
-					movetext(cterm.x+col-1+i,cterm.y+row-1,cterm.x+cterm.width-1,cterm.y+row-1,cterm.x+col-1,cterm.y+row-1);
-					gotoxy(cterm.width-i,col);
+					if(i>cterm->width-col+1)
+						i=cterm->width-col+1;
+					movetext(cterm->x+col-1+i,cterm->y+row-1,cterm->x+cterm->width-1,cterm->y+row-1,cterm->x+col-1,cterm->y+row-1);
+					gotoxy(cterm->width-i,col);
 					clreol();
 					gotoxy(col,row);
 					break;
 				case 'S':
-					i=strtoul(cterm.escbuf+1,NULL,10);
-					if(i==0 && cterm.escbuf[1] != '0')
+					i=strtoul(cterm->escbuf+1,NULL,10);
+					if(i==0 && cterm->escbuf[1] != '0')
 						i=1;
 					for(j=0; j<i; j++)
-						scrollup();
+						scrollup(cterm);
 					break;
 				case 'T':
-					i=strtoul(cterm.escbuf+1,NULL,10);
-					if(i==0 && cterm.escbuf[1] != '0')
+					i=strtoul(cterm->escbuf+1,NULL,10);
+					if(i==0 && cterm->escbuf[1] != '0')
 						i=1;
 					for(j=0; j<i; j++)
-						scrolldown();
+						scrolldown(cterm);
 					break;
 #if 0
 				case 'U':
 					gettextinfo(&ti);
-					cterm_clearscreen(ti.normattr);
+					cterm_clearscreen(cterm, ti.normattr);
 					gotoxy(1,1);
 					break;
 #endif
 				case 'X':
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(i<1)
 						i=1;
-					if(i>cterm.width-wherex())
-						i=cterm.width-wherex();
+					if(i>cterm->width-wherex())
+						i=cterm->width-wherex();
 					p2=alloca(i*2);
 					j=0;
 					for(k=0;k<i;k++) {
 						p2[j++]=' ';
-						p2[j++]=cterm.attr;
+						p2[j++]=cterm->attr;
 					}
-					puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1+i-1,cterm.y+wherey()-1,p2);
+					puttext(cterm->x+wherex()-1,cterm->y+wherey()-1,cterm->x+wherex()-1+i-1,cterm->y+wherey()-1,p2);
 					break;
 				case 'Z':
-					i=strtoul(cterm.escbuf+1,NULL,10);
-					if(i==0 && cterm.escbuf[0] != '0')
+					i=strtoul(cterm->escbuf+1,NULL,10);
+					if(i==0 && cterm->escbuf[0] != '0')
 						i=1;
 					for(j=(sizeof(cterm_tabs)/sizeof(cterm_tabs[0]))-1;j>=0;j--) {
 						if(cterm_tabs[j]<wherex()) {
@@ -901,11 +901,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'b':	/* ToDo?  Banana ANSI */
 					break;
 				case 'c':	/* Device Attributes */
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					if(!i) {
 						if(retbuf!=NULL) {
-							if(strlen(retbuf)+strlen(cterm.DA) < retsize)
-								strcat(retbuf,cterm.DA);
+							if(strlen(retbuf)+strlen(cterm->DA) < retsize)
+								strcat(retbuf,cterm->DA);
 						}
 					}
 					break;
@@ -919,120 +919,120 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					break;
 				case 'm':
 					*(p--)=0;
-					p2=cterm.escbuf+1;
+					p2=cterm->escbuf+1;
 					gettextinfo(&ti);
 					if(p2>p) {
-						cterm.attr=ti.normattr;
-						textattr(cterm.attr);
+						cterm->attr=ti.normattr;
+						textattr(cterm->attr);
 						break;
 					}
 					while((p=strtok(p2,";"))!=NULL) {
 						p2=NULL;
 						switch(strtoul(p,NULL,10)) {
 							case 0:
-								cterm.attr=ti.normattr;
+								cterm->attr=ti.normattr;
 								break;
 							case 1:
-								cterm.attr|=8;
+								cterm->attr|=8;
 								break;
 							case 2:
-								cterm.attr&=247;
+								cterm->attr&=247;
 								break;
 							case 4:	/* Underscore */
 								break;
 							case 5:
 							case 6:
-								cterm.attr|=128;
+								cterm->attr|=128;
 								break;
 							case 7:
 							case 27:
-								i=cterm.attr&7;
-								j=cterm.attr&112;
-								cterm.attr &= 136;
-								cterm.attr |= j>>4;
-								cterm.attr |= i<<4;
+								i=cterm->attr&7;
+								j=cterm->attr&112;
+								cterm->attr &= 136;
+								cterm->attr |= j>>4;
+								cterm->attr |= i<<4;
 								break;
 							case 8:
-								j=cterm.attr&112;
-								cterm.attr&=112;
-								cterm.attr |= j>>4;
+								j=cterm->attr&112;
+								cterm->attr&=112;
+								cterm->attr |= j>>4;
 								break;
 							case 22:
-								cterm.attr &= 0xf7;
+								cterm->attr &= 0xf7;
 								break;
 							case 25:
-								cterm.attr &= 0x7f;
+								cterm->attr &= 0x7f;
 								break;
 							case 30:
-								cterm.attr&=248;
+								cterm->attr&=248;
 								break;
 							case 31:
-								cterm.attr&=248;
-								cterm.attr|=4;
+								cterm->attr&=248;
+								cterm->attr|=4;
 								break;
 							case 32:
-								cterm.attr&=248;
-								cterm.attr|=2;
+								cterm->attr&=248;
+								cterm->attr|=2;
 								break;
 							case 33:
-								cterm.attr&=248;
-								cterm.attr|=6;
+								cterm->attr&=248;
+								cterm->attr|=6;
 								break;
 							case 34:
-								cterm.attr&=248;
-								cterm.attr|=1;
+								cterm->attr&=248;
+								cterm->attr|=1;
 								break;
 							case 35:
-								cterm.attr&=248;
-								cterm.attr|=5;
+								cterm->attr&=248;
+								cterm->attr|=5;
 								break;
 							case 36:
-								cterm.attr&=248;
-								cterm.attr|=3;
+								cterm->attr&=248;
+								cterm->attr|=3;
 								break;
 							case 37:
 							case 39:
-								cterm.attr&=248;
-								cterm.attr|=7;
+								cterm->attr&=248;
+								cterm->attr|=7;
 								break;
 							case 40:
-								cterm.attr&=143;
+								cterm->attr&=143;
 								break;
 							case 41:
-								cterm.attr&=143;
-								cterm.attr|=4<<4;
+								cterm->attr&=143;
+								cterm->attr|=4<<4;
 								break;
 							case 42:
-								cterm.attr&=143;
-								cterm.attr|=2<<4;
+								cterm->attr&=143;
+								cterm->attr|=2<<4;
 								break;
 							case 43:
-								cterm.attr&=143;
-								cterm.attr|=6<<4;
+								cterm->attr&=143;
+								cterm->attr|=6<<4;
 								break;
 							case 44:
-								cterm.attr&=143;
-								cterm.attr|=1<<4;
+								cterm->attr&=143;
+								cterm->attr|=1<<4;
 								break;
 							case 45:
-								cterm.attr&=143;
-								cterm.attr|=5<<4;
+								cterm->attr&=143;
+								cterm->attr|=5<<4;
 								break;
 							case 46:
-								cterm.attr&=143;
-								cterm.attr|=3<<4;
+								cterm->attr&=143;
+								cterm->attr|=3<<4;
 								break;
 							case 47:
 							case 49:
-								cterm.attr&=143;
-								cterm.attr|=7<<4;
+								cterm->attr&=143;
+								cterm->attr|=7<<4;
 								break;
 						}
 					}
-					textattr(cterm.attr);
+					textattr(cterm->attr);
 					break;
 				case 'n':
-					i=strtoul(cterm.escbuf+1,NULL,10);
+					i=strtoul(cterm->escbuf+1,NULL,10);
 					switch(i) {
 						case 5:
 							if(retbuf!=NULL) {
@@ -1050,7 +1050,7 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 							break;
 						case 255:
 							if(retbuf!=NULL) {
-								sprintf(tmp,"%c[%d;%dR",27,cterm.height,cterm.width);
+								sprintf(tmp,"%c[%d;%dR",27,cterm->height,cterm->width);
 								if(strlen(retbuf)+strlen(tmp) < retsize)
 									strcat(retbuf,tmp);
 							}
@@ -1082,11 +1082,11 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 						int newspeed=0;
 
 						*(--p)=0;
-						if(cterm.escbuf[1]) {
-							p=strtok(cterm.escbuf+1,";");
+						if(cterm->escbuf[1]) {
+							p=strtok(cterm->escbuf+1,";");
 							if(p!=NULL) {
-								if(p!=cterm.escbuf+1 || strtoul(p,NULL,10)<2) {
-									if(p==cterm.escbuf+1)
+								if(p!=cterm->escbuf+1 || strtoul(p,NULL,10)<2) {
+									if(p==cterm->escbuf+1)
 										p=strtok(NULL,";");
 									if(p!=NULL) {
 										switch(strtoul(p,NULL,10)) {
@@ -1141,13 +1141,13 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 					}
 					break;
 				case 's':
-					cterm.save_xpos=wherex();
-					cterm.save_ypos=wherey();
+					cterm->save_xpos=wherex();
+					cterm->save_ypos=wherey();
 					break;
 				case 'u':
-					if(cterm.save_ypos>0 && cterm.save_ypos<=cterm.height
-							&& cterm.save_xpos>0 && cterm.save_xpos<=cterm.width) {
-						gotoxy(cterm.save_xpos,cterm.save_ypos);
+					if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
+							&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
+						gotoxy(cterm->save_xpos,cterm->save_ypos);
 					}
 					break;
 				case 'y':	/* ToDo?  VT100 Tests */
@@ -1155,69 +1155,72 @@ void do_ansi(char *retbuf, size_t retsize, int *speed)
 				case 'z':	/* ToDo?  Reset */
 					break;
 				case '|':	/* SyncTERM ANSI Music */
-					cterm.music=1;
+					cterm->music=1;
 					break;
 			}
 			break;
 #if 0
 		case 'D':
-			scrollup();
+			scrollup(cterm);
 			break;
 		case 'M':
-			scrolldown();
+			scrolldown(cterm);
 			break;
 #endif
 		case 'c':
 			/* ToDo: Reset Terminal */
 			break;
 	}
-	cterm.escbuf[0]=0;
-	cterm.sequence=0;
+	cterm->escbuf[0]=0;
+	cterm->sequence=0;
 }
 
-void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation)
+struct cterminal *cterm_init(int height, int width, int xpos, int ypos, int backlines, unsigned char *scrollback, int emulation)
 {
 	char	*revision="$Revision$";
 	char *in;
 	char	*out;
 	int		i;
 	struct text_info ti;
+	struct cterminal *cterm;
 
-	memset(&cterm, 0, sizeof(cterm));
-	cterm.x=xpos;
-	cterm.y=ypos;
-	cterm.height=height;
-	cterm.width=width;
+	if((cterm=malloc(sizeof(struct cterminal)))==NULL)
+		return cterm;
+	memset(cterm, 0, sizeof(cterm));
+	cterm->x=xpos;
+	cterm->y=ypos;
+	cterm->height=height;
+	cterm->width=width;
 	gettextinfo(&ti);
-	cterm.attr=ti.normattr;
-	cterm.save_xpos=0;
-	cterm.save_ypos=0;
-	cterm.escbuf[0]=0;
-	cterm.sequence=0;
-	cterm.music_enable=CTERM_MUSIC_BANSI;
-	cterm.music=0;
-	cterm.tempo=120;
-	cterm.octave=4;
-	cterm.notelen=4;
-	cterm.noteshape=CTERM_MUSIC_NORMAL;
-	cterm.musicfore=TRUE;
-	cterm.backpos=0;
-	cterm.backlines=backlines;
-	cterm.scrollback=scrollback;
-	cterm.log=CTERM_LOG_NONE;
-	cterm.logfile=NULL;
-	cterm.emulation=emulation;
-	cterm.cursor=_NORMALCURSOR;
-	if(cterm.scrollback!=NULL)
-		memset(cterm.scrollback,0,cterm.width*2*cterm.backlines);
-	textattr(cterm.attr);
-	_setcursortype(cterm.cursor);
-	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winleft != cterm.y+cterm.height-1)
-		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
-	cterm_clearscreen(cterm.attr);
+	cterm->attr=ti.normattr;
+	cterm->save_xpos=0;
+	cterm->save_ypos=0;
+	cterm->escbuf[0]=0;
+	cterm->sequence=0;
+	cterm->music_enable=CTERM_MUSIC_BANSI;
+	cterm->music=0;
+	cterm->tempo=120;
+	cterm->octave=4;
+	cterm->notelen=4;
+	cterm->noteshape=CTERM_MUSIC_NORMAL;
+	cterm->musicfore=TRUE;
+	cterm->backpos=0;
+	cterm->backlines=backlines;
+	cterm->scrollback=scrollback;
+	cterm->log=CTERM_LOG_NONE;
+	cterm->logfile=NULL;
+	cterm->emulation=emulation;
+	cterm->cursor=_NORMALCURSOR;
+	if(cterm->scrollback!=NULL)
+		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
+	textattr(cterm->attr);
+	_setcursortype(cterm->cursor);
+	if(ti.winleft != cterm->x || ti.wintop != cterm->y || ti.winright != cterm->x+cterm->width-1 || ti.winleft != cterm->y+cterm->height-1)
+		window(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1);
+	cterm_clearscreen(cterm, cterm->attr);
 	gotoxy(1,1);
-	strcpy(cterm.DA,"\x1b[=67;84;101;114;109;");
-	out=strchr(cterm.DA, 0);
+	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
+	out=strchr(cterm->DA, 0);
 	if(out != NULL) {
 		for(in=revision; *in; in++) {
 			if(isdigit(*in))
@@ -1227,33 +1230,34 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 		}
 		*out=0;
 	}
-	strcat(cterm.DA,"c");
+	strcat(cterm->DA,"c");
 	/* Did someone call _init() without calling _end()? */
-	if(cterm.playnote_thread_running) {
-		if(sem_trywait(&cterm.playnote_thread_terminated)==-1) {
-			listSemPost(&cterm.notes);
-			sem_wait(&cterm.playnote_thread_terminated);
+	if(cterm->playnote_thread_running) {
+		if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
+			listSemPost(&cterm->notes);
+			sem_wait(&cterm->playnote_thread_terminated);
 		}
-		sem_destroy(&cterm.playnote_thread_terminated);
-		sem_destroy(&cterm.note_completed_sem);
-		listFree(&cterm.notes);
+		sem_destroy(&cterm->playnote_thread_terminated);
+		sem_destroy(&cterm->note_completed_sem);
+		listFree(&cterm->notes);
 	}
 	/* Fire up note playing thread */
-	if(!cterm.playnote_thread_running) {
-		listInit(&cterm.notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-		sem_init(&cterm.note_completed_sem,0,0);
-		sem_init(&cterm.playnote_thread_terminated,0,0);
-		_beginthread(playnote_thread, 0, NULL);
+	if(!cterm->playnote_thread_running) {
+		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+		sem_init(&cterm->note_completed_sem,0,0);
+		sem_init(&cterm->playnote_thread_terminated,0,0);
+		_beginthread(playnote_thread, 0, cterm);
 	}
 
 	/* Set up tabs for ATASCII */
-	if(cterm.emulation == CTERM_EMULATION_ATASCII) {
+	if(cterm->emulation == CTERM_EMULATION_ATASCII) {
 		for(i=0; i<(sizeof(cterm_tabs)/sizeof(cterm_tabs[0])); i++)
-			cterm.escbuf[cterm_tabs[i]]=1;
+			cterm->escbuf[cterm_tabs[i]]=1;
 	}
+	return cterm;
 }
 
-void ctputs(char *buf)
+static void ctputs(struct cterminal *cterm, char *buf)
 {
 	char *outp;
 	char *p;
@@ -1267,8 +1271,8 @@ void ctputs(char *buf)
 	_wscroll=0;
 	cx=wherex();
 	cy=wherey();
-	if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-		fputs(buf, cterm.logfile);
+	if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
+		fputs(buf, cterm->logfile);
 	for(p=buf;*p;p++) {
 		switch(*p) {
 			case '\r':
@@ -1278,8 +1282,8 @@ void ctputs(char *buf)
 				*p=0;
 				cputs(outp);
 				outp=p+1;
-				if(cy==cterm.height)
-					scrollup();
+				if(cy==cterm->height)
+					scrollup(cterm);
 				else
 					cy++;
 				gotoxy(cx,cy);
@@ -1304,30 +1308,30 @@ void ctputs(char *buf)
 						break;
 					}
 				}
-				if(cx>cterm.width) {
+				if(cx>cterm->width) {
 					cx=1;
-					if(cy==cterm.height)
-						scrollup();
+					if(cy==cterm->height)
+						scrollup(cterm);
 					else
 						cy++;
 				}
 				gotoxy(cx,cy);
 				break;
 			default:
-				if(cy==cterm.height
-						&& cx==cterm.width) {
+				if(cy==cterm->height
+						&& cx==cterm->width) {
 					char ch;
 					ch=*(p+1);
 					*(p+1)=0;
 					cputs(outp);
 					*(p+1)=ch;
 					outp=p+1;
-					scrollup();
+					scrollup(cterm);
 					cx=1;
 					gotoxy(cx,cy);
 				}
 				else {
-					if(cx==cterm.width) {
+					if(cx==cterm->width) {
 						cx=1;
 						cy++;
 					}
@@ -1342,7 +1346,7 @@ void ctputs(char *buf)
 	_wscroll=oldscroll;
 }
 
-char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
+char *cterm_write(struct cterminal * cterm, const unsigned char *buf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
@@ -1358,11 +1362,11 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 	if(retbuf!=NULL)
 		retbuf[0]=0;
 	gettextinfo(&ti);
-	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winbottom != cterm.y+cterm.height-1)
-		window(cterm.x,cterm.y,cterm.x+cterm.width-1,cterm.y+cterm.height-1);
-	gotoxy(cterm.xpos,cterm.ypos);
-	textattr(cterm.attr);
-	_setcursortype(cterm.cursor);
+	if(ti.winleft != cterm->x || ti.wintop != cterm->y || ti.winright != cterm->x+cterm->width-1 || ti.winbottom != cterm->y+cterm->height-1)
+		window(cterm->x,cterm->y,cterm->x+cterm->width-1,cterm->y+cterm->height-1);
+	gotoxy(cterm->xpos,cterm->ypos);
+	textattr(cterm->attr);
+	_setcursortype(cterm->cursor);
 	ch[1]=0;
 	if(buflen==-1)
 		buflen=strlen(buf);
@@ -1370,77 +1374,77 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 		case 0:
 			break;
 		default:
-			if(cterm.log==CTERM_LOG_RAW && cterm.logfile != NULL)
-				fwrite(buf, buflen, 1, cterm.logfile);
+			if(cterm->log==CTERM_LOG_RAW && cterm->logfile != NULL)
+				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
 			for(j=0;j<buflen;j++) {
-				if(strlen(prn) >= sizeof(prn)-sizeof(cterm.escbuf)) {
-					ctputs(prn);
+				if(strlen(prn) >= sizeof(prn)-sizeof(cterm->escbuf)) {
+					ctputs(cterm, prn);
 					prn[0]=0;
 				}
 				ch[0]=buf[j];
-				if(cterm.font_size) {
-					cterm.fontbuf[cterm.font_read++]=ch[0];
-					if(cterm.font_read == cterm.font_size) {
+				if(cterm->font_size) {
+					cterm->fontbuf[cterm->font_read++]=ch[0];
+					if(cterm->font_read == cterm->font_size) {
 						char *buf;
 
-						if((buf=(char *)malloc(cterm.font_size))!=NULL) {
-							memcpy(buf,cterm.fontbuf,cterm.font_size);
-							if(cterm.font_slot >= CONIO_FIRST_FREE_FONT) {
-								switch(cterm.font_size) {
+						if((buf=(char *)malloc(cterm->font_size))!=NULL) {
+							memcpy(buf,cterm->fontbuf,cterm->font_size);
+							if(cterm->font_slot >= CONIO_FIRST_FREE_FONT) {
+								switch(cterm->font_size) {
 									case 4096:
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].eight_by_sixteen);
-										conio_fontdata[cterm.font_slot].eight_by_sixteen=buf;
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].desc);
-										conio_fontdata[cterm.font_slot].desc=strdup("Remote Defined Font");
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);
+										conio_fontdata[cterm->font_slot].eight_by_sixteen=buf;
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 									case 3586:
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].eight_by_fourteen);
-										conio_fontdata[cterm.font_slot].eight_by_fourteen=buf;
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].desc);
-										conio_fontdata[cterm.font_slot].desc=strdup("Remote Defined Font");
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_fourteen);
+										conio_fontdata[cterm->font_slot].eight_by_fourteen=buf;
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 									case 2048:
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].eight_by_eight);
-										conio_fontdata[cterm.font_slot].eight_by_eight=buf;
-										FREE_AND_NULL(conio_fontdata[cterm.font_slot].desc);
-										conio_fontdata[cterm.font_slot].desc=strdup("Remote Defined Font");
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_eight);
+										conio_fontdata[cterm->font_slot].eight_by_eight=buf;
+										FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+										conio_fontdata[cterm->font_slot].desc=strdup("Remote Defined Font");
 										break;
 								}
 							}
 							else
 								FREE_AND_NULL(buf);
 						}
-						cterm.font_size=0;
+						cterm->font_size=0;
 					}
 				}
-				else if(cterm.sequence) {
-					k=strlen(cterm.escbuf);
-					if(k+1 >= sizeof(cterm.escbuf)) {
+				else if(cterm->sequence) {
+					k=strlen(cterm->escbuf);
+					if(k+1 >= sizeof(cterm->escbuf)) {
 						/* Broken sequence detected */
 						strcat(prn,"\033");
-						strcat(prn,cterm.escbuf);
-						cterm.escbuf[0]=0;
-						cterm.sequence=0;
+						strcat(prn,cterm->escbuf);
+						cterm->escbuf[0]=0;
+						cterm->sequence=0;
 					}
 					else {
-						strcat(cterm.escbuf,ch);
+						strcat(cterm->escbuf,ch);
 						if(k) {
-							if(cterm.escbuf[0] != '[') {	/* Not a CSI code. */
+							if(cterm->escbuf[0] != '[') {	/* Not a CSI code. */
 								/* ANSI control characters */
 								if(ch[0] >= 32 && ch[0] <= 47) {
 									/* Legal intermediate character */
 								}
 								else if(ch[0] >= 48 && ch[0] <= 126) {
 									/* Terminating character */
-									do_ansi(retbuf, retsize, speed);
+									do_ansi(cterm, retbuf, retsize, speed);
 								}
 								else {
 									/* Broken sequence detected */
 									strcat(prn,"\033");
-									strcat(prn,cterm.escbuf);
-									cterm.escbuf[0]=0;
-									cterm.sequence=0;
+									strcat(prn,cterm->escbuf);
+									cterm->escbuf[0]=0;
+									cterm->sequence=0;
 								}
 							}
 							else {
@@ -1449,37 +1453,37 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 								/* the last character defines the set of legal next characters */
 								if(ch[0] >= 48 && ch[0] <= 63) {
 									/* Parameter character.  Only legal after '[' and other param chars */
-									if(cterm.escbuf[k]!='[' 
-											&& (cterm.escbuf[k] < 48 || cterm.escbuf[k] > 63)) {
+									if(cterm->escbuf[k]!='[' 
+											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63)) {
 										/* Broken sequence detected */
 										strcat(prn,"\033");
-										strcat(prn,cterm.escbuf);
-										cterm.escbuf[0]=0;
-										cterm.sequence=0;
+										strcat(prn,cterm->escbuf);
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
 									}
 								}
 								else if(ch[0] >= 32 && ch[0] <= 47) {
 									/* Intermediate character.  Legal after '[', param, or intermetiate chars */
-									if(cterm.escbuf[k]!='[' 
-											&& (cterm.escbuf[k] < 48 || cterm.escbuf[k] > 63) 
-											&& (cterm.escbuf[k] < 32 || cterm.escbuf[k] > 47)) {
+									if(cterm->escbuf[k]!='[' 
+											&& (cterm->escbuf[k] < 48 || cterm->escbuf[k] > 63) 
+											&& (cterm->escbuf[k] < 32 || cterm->escbuf[k] > 47)) {
 										/* Broken sequence detected */
 										strcat(prn,"\033");
-										strcat(prn,cterm.escbuf);
-										cterm.escbuf[0]=0;
-										cterm.sequence=0;
+										strcat(prn,cterm->escbuf);
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
 									}
 								}
 								else if(ch[0] >= 64 && ch[0] <= 126) {
 										/* Terminating character.  Always legal at this point. */
-									do_ansi(retbuf, retsize, speed);
+									do_ansi(cterm, retbuf, retsize, speed);
 								}
 								else {
 									/* Broken sequence detected */
 									strcat(prn,"\033");
-									strcat(prn,cterm.escbuf);
-									cterm.escbuf[0]=0;
-									cterm.sequence=0;
+									strcat(prn,cterm->escbuf);
+									cterm->escbuf[0]=0;
+									cterm->sequence=0;
 								}
 							}
 						}
@@ -1494,78 +1498,78 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 							}
 							else if(ch[0] >= 48 && ch[0] <= 126) {
 								/* Terminating character */
-								do_ansi(retbuf, retsize, speed);
+								do_ansi(cterm, retbuf, retsize, speed);
 							}
 							else {
 								/* Broken sequence detected */
 								strcat(prn,"\033");
-								strcat(prn,cterm.escbuf);
-								cterm.escbuf[0]=0;
-								cterm.sequence=0;
+								strcat(prn,cterm->escbuf);
+								cterm->escbuf[0]=0;
+								cterm->sequence=0;
 							}
 						}
 						if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
 							if(prn[0])	/* Don't display the ESC */
 								prn[strlen(prn)-1]=0;
-							ctputs(prn);
+							ctputs(cterm, prn);
 							prn[0]=0;
-							cterm.sequence=1;
+							cterm->sequence=1;
 						}
 					}
 				}
-				else if (cterm.music) {
+				else if (cterm->music) {
 					if(ch[0]==14) {
 						hold_update=0;
 						puttext_can_move=0;
 						gotoxy(wherex(),wherey());
-						_setcursortype(cterm.cursor);
+						_setcursortype(cterm->cursor);
 						hold_update=1;
 						puttext_can_move=1;
-						play_music();
+						play_music(cterm);
 					}
 					else {
 						if(strchr(musicchars,ch[0])!=NULL)
-							strcat(cterm.musicbuf,ch);
+							strcat(cterm->musicbuf,ch);
 						else {
 							/* Kill non-music strings */
-							cterm.music=0;
-							cterm.musicbuf[0]=0;
+							cterm->music=0;
+							cterm->musicbuf[0]=0;
 						}
 					}
 				}
 				else {
-					if(cterm.emulation == CTERM_EMULATION_ATASCII) {
-						if(cterm.attr==7) {
+					if(cterm->emulation == CTERM_EMULATION_ATASCII) {
+						if(cterm->attr==7) {
 							switch(buf[j]) {
 								case 27:	/* ESC */
-									cterm.attr=1;
+									cterm->attr=1;
 									break;
 								case 28:	/* Up (TODO: Wraps??) */
 									l=wherey()-1;
 									if(l<1)
-										l=cterm.height;
+										l=cterm->height;
 									gotoxy(wherex(),l);
 									break;
 								case 29:	/* Down (TODO: Wraps??) */
 									l=wherey()+1;
-									if(l>cterm.height)
+									if(l>cterm->height)
 										l=1;
 									gotoxy(wherex(),l);
 									break;
 								case 30:	/* Left (TODO: Wraps around to same line?) */
 									l=wherex()-1;
 									if(l<1)
-										l=cterm.width;
+										l=cterm->width;
 									gotoxy(l,wherey());
 									break;
 								case 31:	/* Right (TODO: Wraps around to same line?) */
 									l=wherex()+1;
-									if(l>cterm.width)
+									if(l>cterm->width)
 										l=1;
 									gotoxy(l,wherey());
 									break;
 								case 125:	/* Clear Screen */
-									cterm_clearscreen(cterm.attr);
+									cterm_clearscreen(cterm, cterm->attr);
 									break;
 								case 126:	/* Backspace (TODO: Wraps around to previous line?) */
 											/* DOES NOT delete char, merely erases */
@@ -1576,7 +1580,7 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 										k--;
 										if(k<1)
 											break;
-										l=cterm.width;
+										l=cterm->width;
 									}
 									gotoxy(l,k);
 									putch(0);
@@ -1585,18 +1589,18 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 								/* We abuse the ESC buffer for tab stops */
 								case 127:	/* Tab (Wraps around to next line) */
 									l=wherex();
-									for(k=l+1; k<=cterm.width; k++) {
-										if(cterm.escbuf[k]) {
+									for(k=l+1; k<=cterm->width; k++) {
+										if(cterm->escbuf[k]) {
 											l=k;
 											break;
 										}
 									}
-									if(k>cterm.width) {
+									if(k>cterm->width) {
 										l=1;
 										k=wherey()+1;
-										if(k>cterm.height) {
-											scrollup();
-											k=cterm.height;
+										if(k>cterm->height) {
+											scrollup(cterm);
+											k=cterm->height;
 										}
 										gotoxy(l,k);
 									}
@@ -1605,34 +1609,34 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 									break;
 								case 155:	/* Return */
 									k=wherey();
-									if(k==cterm.height)
-										scrollup();
+									if(k==cterm->height)
+										scrollup(cterm);
 									else
 										k++;
 									gotoxy(1,k);
 									break;
 								case 156:	/* Delete Line */
-									dellines(1);
+									dellines(cterm, 1);
 									gotoxy(1,wherey());
 									break;
 								case 157:	/* Insert Line */
 									l=wherex();
 									k=wherey();
-									if(k<cterm.height)
-										movetext(cterm.x,cterm.y+k-1
-												,cterm.x+cterm.width-1,cterm.y+cterm.height-2
-												,cterm.x,cterm.y+k);
+									if(k<cterm->height)
+										movetext(cterm->x,cterm->y+k-1
+												,cterm->x+cterm->width-1,cterm->y+cterm->height-2
+												,cterm->x,cterm->y+k);
 									gotoxy(1,k);
 									clreol();
 									break;
 								case 158:	/* Clear Tab */
-									cterm.escbuf[wherex()]=0;
+									cterm->escbuf[wherex()]=0;
 									break;
 								case 159:	/* Set Tab */
-									cterm.escbuf[wherex()]=1;
+									cterm->escbuf[wherex()]=1;
 									break;
 								case 253:	/* Beep */
-									if(!cterm.quiet) {
+									if(!cterm->quiet) {
 										#ifdef __unix__
 											putch(7);
 										#else
@@ -1643,21 +1647,21 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 								case 254:	/* Delete Char */
 									l=wherex();
 									k=wherey();
-									if(l<cterm.width)
-										movetext(cterm.x+l,cterm.y+k-1
-												,cterm.x+cterm.width-1,cterm.y+k-1
-												,cterm.x+l-1,cterm.y+k-1);
-									gotoxy(cterm.width,k);
+									if(l<cterm->width)
+										movetext(cterm->x+l,cterm->y+k-1
+												,cterm->x+cterm->width-1,cterm->y+k-1
+												,cterm->x+l-1,cterm->y+k-1);
+									gotoxy(cterm->width,k);
 									clreol();
 									gotoxy(l,k);
 									break;
 								case 255:	/* Insert Char */
 									l=wherex();
 									k=wherey();
-									if(l<cterm.width)
-										movetext(cterm.x+l-1,cterm.y+k-1
-												,cterm.x+cterm.width-2,cterm.y+k-1
-												,cterm.x+l,cterm.y+k-1);
+									if(l<cterm->width)
+										movetext(cterm->x+l-1,cterm->y+k-1
+												,cterm->x+cterm->width-2,cterm->y+k-1
+												,cterm->x+l,cterm->y+k-1);
 									putch(0);
 									gotoxy(l,k);
 									break;
@@ -1683,12 +1687,12 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 										/* No translation */
 									}
 									ch[0] = k;
-									ch[1] = cterm.attr;
-									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+									ch[1] = cterm->attr;
+									puttext(cterm->x+wherex()-1,cterm->y+wherey()-1,cterm->x+wherex()-1,cterm->y+wherey()-1,ch);
 									ch[1]=0;
-									if(wherex()==cterm.width) {
-										if(wherey()==cterm.height) {
-											scrollup();
+									if(wherex()==cterm->width) {
+										if(wherey()==cterm->height) {
+											scrollup(cterm);
 											gotoxy(1,wherey());
 										}
 										else
@@ -1703,8 +1707,8 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 							switch(buf[j]) {
 								case 155:	/* Return */
 									k=wherey();
-									if(k==cterm.height)
-										scrollup();
+									if(k==cterm->height)
+										scrollup(cterm);
 									else
 										k++;
 									gotoxy(1,k);
@@ -1731,13 +1735,13 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 										/* No translation */
 									}
 									ch[0] = k;
-									ch[1] = cterm.attr;
-									puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+									ch[1] = cterm->attr;
+									puttext(cterm->x+wherex()-1,cterm->y+wherey()-1,cterm->x+wherex()-1,cterm->y+wherey()-1,ch);
 									ch[1]=0;
-									if(wherex()==cterm.width) {
-										if(wherey()==cterm.height) {
-											scrollup();
-											gotoxy(1,cterm.height);
+									if(wherex()==cterm->width) {
+										if(wherey()==cterm->height) {
+											scrollup(cterm);
+											gotoxy(1,cterm->height);
 										}
 										else
 											gotoxy(1,wherey()+1);
@@ -1746,10 +1750,10 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 										gotoxy(wherex()+1,wherey());
 									break;
 							}
-							cterm.attr=7;
+							cterm->attr=7;
 						}
 					}
-					else if(cterm.emulation == CTERM_EMULATION_PETASCII) {
+					else if(cterm->emulation == CTERM_EMULATION_PETASCII) {
 						switch(buf[j]) {
 							case 5:		/* White */
 							case 28:	/* Red */
@@ -1767,58 +1771,58 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 							case 156:	/* Purple */
 							case 158:	/* Yellow */
 							case 159:	/* Cyan */
-								cterm.attr &= 0xf0;
+								cterm->attr &= 0xf0;
 								switch(buf[j]) {
 									case 5:		/* White */
-										cterm.attr |= 1;
+										cterm->attr |= 1;
 										break;
 									case 28:	/* Red */
-										cterm.attr |= 2;
+										cterm->attr |= 2;
 										break;
 									case 30:	/* Green */
-										cterm.attr |= 5;
+										cterm->attr |= 5;
 										break;
 									case 31:	/* Blue */
-										cterm.attr |= 6;
+										cterm->attr |= 6;
 										break;
 									case 129:	/* Orange */
-										cterm.attr |= 8;
+										cterm->attr |= 8;
 										break;
 									case 144:	/* Black */
-										cterm.attr |= 0;
+										cterm->attr |= 0;
 										break;
 									case 149:	/* Brown */
-										cterm.attr |= 9;
+										cterm->attr |= 9;
 										break;
 									case 150:	/* Light Red */
-										cterm.attr |= 10;
+										cterm->attr |= 10;
 										break;
 									case 151:	/* Dark Gray */
-										cterm.attr |= 11;
+										cterm->attr |= 11;
 										break;
 									case 152:	/* Grey */
-										cterm.attr |= 12;
+										cterm->attr |= 12;
 										break;
 									case 153:	/* Light Green */
-										cterm.attr |= 13;
+										cterm->attr |= 13;
 										break;
 									case 154:	/* Light Blue */
-										cterm.attr |= 14;
+										cterm->attr |= 14;
 										break;
 									case 155:	/* Light Gray */
-										cterm.attr |= 15;
+										cterm->attr |= 15;
 										break;
 									case 156:	/* Purple */
-										cterm.attr |= 4;
+										cterm->attr |= 4;
 										break;
 									case 158:	/* Yellow */
-										cterm.attr |= 7;
+										cterm->attr |= 7;
 										break;
 									case 159:	/* Cyan */
-										cterm.attr |= 3;
+										cterm->attr |= 3;
 										break;
 								}
-								textattr(cterm.attr);
+								textattr(cterm->attr);
 								break;
 
 							/* Movement */
@@ -1827,13 +1831,13 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 								gotoxy(1, wherey());
 								/* Fall-through */
 							case 17:
-								if(wherey()==cterm.height)
-									scrollup();
+								if(wherey()==cterm->height)
+									scrollup(cterm);
 								else
 									gotoxy(wherex(), wherey()+1);
 								break;
 							case 147:
-								cterm_clearscreen(cterm.attr);
+								cterm_clearscreen(cterm, cterm->attr);
 								/* Fall through */
 							case 19:
 								gotoxy(1,1);
@@ -1845,30 +1849,30 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 								if(l==1) {
 									if(k==1)
 										break;
-									gotoxy((l=cterm.width), k-1);
+									gotoxy((l=cterm->width), k-1);
 								}
 								else
 									gotoxy(--l, k);
-								if(l<cterm.width)
-									movetext(cterm.x+l,cterm.y+k-1
-											,cterm.x+cterm.width-1,cterm.y+k-1
-											,cterm.x+l-1,cterm.y+k-1);
-								gotoxy(cterm.width,k);
+								if(l<cterm->width)
+									movetext(cterm->x+l,cterm->y+k-1
+											,cterm->x+cterm->width-1,cterm->y+k-1
+											,cterm->x+l-1,cterm->y+k-1);
+								gotoxy(cterm->width,k);
 								clreol();
 								gotoxy(l,k);
 								break;
 							case 157:	/* Cursor Left (wraps) */
 								if(wherex()==1) {
 									if(wherey() > 1)
-										gotoxy(cterm.width, wherey()-1);
+										gotoxy(cterm->width, wherey()-1);
 								}
 								else
 									gotoxy(wherex()-1, wherey());
 								break;
 							case 29:	/* Cursor Right (wraps) */
-								if(wherex()==cterm.width) {
-									if(wherey()==cterm.height) {
-										scrollup();
+								if(wherex()==cterm->width) {
+									if(wherey()==cterm->height) {
+										scrollup(cterm);
 										gotoxy(1,wherey());
 									}
 									else
@@ -1886,10 +1890,10 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 										/* Erase under cursor. */
 								l=wherex();
 								k=wherey();
-								if(l<=cterm.width)
-									movetext(cterm.x+l-1,cterm.y+k-1
-											,cterm.x+cterm.width-2,cterm.y+k-1
-											,cterm.x+l,cterm.y+k-1);
+								if(l<=cterm->width)
+									movetext(cterm->x+l-1,cterm->y+k-1
+											,cterm->x+cterm->width-2,cterm->y+k-1
+											,cterm->x+l,cterm->y+k-1);
 								putch(' ');
 								gotoxy(l,k);
 								break;
@@ -1908,15 +1912,15 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 									setfont(34,FALSE,1);
 								break;
 							case 18:	/* Reverse mode on */
-								cterm.c64reversemode = 1;
+								cterm->c64reversemode = 1;
 								break;
 							case 146:	/* Reverse mode off */
-								cterm.c64reversemode = 0;
+								cterm->c64reversemode = 0;
 								break;
 
 							/* Extras */
 							case 7:			/* Beep */
-								if(!cterm.quiet) {
+								if(!cterm->quiet) {
 									#ifdef __unix__
 										putch(7);
 									#else
@@ -1955,15 +1959,15 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 									else
 										k -= 128;
 								}
-								if(cterm.c64reversemode)
+								if(cterm->c64reversemode)
 									k+=128;
 								ch[0] = k;
-								ch[1] = cterm.attr;
-								puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+								ch[1] = cterm->attr;
+								puttext(cterm->x+wherex()-1,cterm->y+wherey()-1,cterm->x+wherex()-1,cterm->y+wherey()-1,ch);
 								ch[1]=0;
-								if(wherex()==cterm.width) {
-									if(wherey()==cterm.height) {
-										scrollup();
+								if(wherex()==cterm->width) {
+									if(wherey()==cterm->height) {
+										scrollup(cterm);
 										gotoxy(1,wherey());
 									}
 									else
@@ -1975,14 +1979,14 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 						}
 					}
 					else {	/* ANSI-BBS */
-						if(cterm.doorway_char) {
-							ctputs(prn);
-							ch[1]=cterm.attr;
-							puttext(cterm.x+wherex()-1,cterm.y+wherey()-1,cterm.x+wherex()-1,cterm.y+wherey()-1,ch);
+						if(cterm->doorway_char) {
+							ctputs(cterm, prn);
+							ch[1]=cterm->attr;
+							puttext(cterm->x+wherex()-1,cterm->y+wherey()-1,cterm->x+wherex()-1,cterm->y+wherey()-1,ch);
 							ch[1]=0;
-							if(wherex()==cterm.width) {
-								if(wherey()==cterm.height) {
-									scrollup();
+							if(wherex()==cterm->width) {
+								if(wherey()==cterm->height) {
+									scrollup(cterm);
 									gotoxy(1,wherey());
 								}
 								else
@@ -1990,20 +1994,20 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 							}
 							else
 								gotoxy(wherex()+1,wherey());
-							cterm.doorway_char=0;
+							cterm->doorway_char=0;
 						}
 						else {
 							switch(buf[j]) {
 								case 0:
-									if(cterm.doorway_mode)
-										cterm.doorway_char=1;
+									if(cterm->doorway_mode)
+										cterm->doorway_char=1;
 									break;
 								case 7:			/* Beep */
-									ctputs(prn);
+									ctputs(cterm, prn);
 									prn[0]=0;
-									if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-										fputs("\x07", cterm.logfile);
-									if(!cterm.quiet) {
+									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
+										fputs("\x07", cterm->logfile);
+									if(!cterm->quiet) {
 										#ifdef __unix__
 											putch(7);
 										#else
@@ -2012,17 +2016,17 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 									}
 									break;
 								case 12:		/* ^L - Clear screen */
-									ctputs(prn);
+									ctputs(cterm, prn);
 									prn[0]=0;
-									if(cterm.log==CTERM_LOG_ASCII && cterm.logfile != NULL)
-										fputs("\x0c", cterm.logfile);
-									cterm_clearscreen((char)cterm.attr);
+									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
+										fputs("\x0c", cterm->logfile);
+									cterm_clearscreen(cterm, (char)cterm->attr);
 									gotoxy(1,1);
 									break;
 								case 27:		/* ESC */
-									ctputs(prn);
+									ctputs(cterm, prn);
 									prn[0]=0;
-									cterm.sequence=1;
+									cterm->sequence=1;
 									break;
 								default:
 									strcat(prn,ch);
@@ -2031,14 +2035,14 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 					}
 				}
 			}
-			ctputs(prn);
+			ctputs(cterm, prn);
 			prn[0]=0;
 			break;
 	}
-	cterm.xpos=wherex();
-	cterm.ypos=wherey();
+	cterm->xpos=wherex();
+	cterm->ypos=wherey();
 #if 0
-	if(ti.winleft != cterm.x || ti.wintop != cterm.y || ti.winright != cterm.x+cterm.width-1 || ti.winleft != cterm.y+cterm.height-1)
+	if(ti.winleft != cterm->x || ti.wintop != cterm->y || ti.winright != cterm->x+cterm->width-1 || ti.winleft != cterm->y+cterm->height-1)
 		window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
 	gotoxy(ti.curx,ti.cury);
 	textattr(ti.attribute);
@@ -2047,45 +2051,46 @@ char *cterm_write(const unsigned char *buf, int buflen, char *retbuf, size_t ret
 	hold_update=olddmc;
 	puttext_can_move=oldptnm;
 	gotoxy(wherex(),wherey());
-	_setcursortype(cterm.cursor);
+	_setcursortype(cterm->cursor);
 	return(retbuf);
 }
 
-int cterm_openlog(char *logfile, int logtype)
+int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)
 {
-	cterm.logfile=fopen(logfile, "a");
-	if(cterm.logfile==NULL)
+	cterm->logfile=fopen(logfile, "a");
+	if(cterm->logfile==NULL)
 		return(0);
-	cterm.log=logtype;
+	cterm->log=logtype;
 	return(1);
 }
 
-void cterm_closelog()
+void cterm_closelog(struct cterminal *cterm)
 {
-	if(cterm.logfile != NULL)
-		fclose(cterm.logfile);
-	cterm.logfile=NULL;
-	cterm.log=CTERM_LOG_NONE;
+	if(cterm->logfile != NULL)
+		fclose(cterm->logfile);
+	cterm->logfile=NULL;
+	cterm->log=CTERM_LOG_NONE;
 }
 
-void cterm_end(void)
+void cterm_end(struct cterminal *cterm)
 {
 	int i;
 
-	cterm_closelog();
+	cterm_closelog(cterm);
 	for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
 		FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
 		FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
 		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 		FREE_AND_NULL(conio_fontdata[i].desc);
 	}
-	if(cterm.playnote_thread_running) {
-		if(sem_trywait(&cterm.playnote_thread_terminated)==-1) {
-			listSemPost(&cterm.notes);
-			sem_wait(&cterm.playnote_thread_terminated);
+	if(cterm->playnote_thread_running) {
+		if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
+			listSemPost(&cterm->notes);
+			sem_wait(&cterm->playnote_thread_terminated);
 		}
-		sem_destroy(&cterm.playnote_thread_terminated);
-		sem_destroy(&cterm.note_completed_sem);
-		listFree(&cterm.notes);
+		sem_destroy(&cterm->playnote_thread_terminated);
+		sem_destroy(&cterm->note_completed_sem);
+		listFree(&cterm->notes);
 	}
+	free(cterm);
 }
