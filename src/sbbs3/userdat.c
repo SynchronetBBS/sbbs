@@ -2695,7 +2695,7 @@ static list_node_t* login_attempted(link_list_t* list, SOCKADDR_IN* addr)
 	list_node_t*		node;
 	login_attempt_t*	attempt;
 
-	for(node=listFirstNode(list); node!=NULL; node=listNextNode(node)) {
+	for(node=list->first; node!=NULL; node=node->next) {
 		attempt=node->data;
 		if(memcmp(&attempt->addr,&addr->sin_addr,sizeof(attempt->addr))==0)
 			break;
