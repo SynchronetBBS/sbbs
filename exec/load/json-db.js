@@ -42,9 +42,6 @@ function JSONdb (fileName) {
     else 
 		this.file=undefined;
 	
-	/* load modopts */
-	this.options = load("modopts.js","jsondb");
-		
     /* master database object */
     this.data={};
     
@@ -64,9 +61,14 @@ function JSONdb (fileName) {
 		LOCK_WRITE:2,
 		
 		/* file read buffer */
-		FILE_BUFFER:65535,
+		FILE_BUFFER:524288,
 		
+		/* misc settings */
+		FILE:system.data_dir + "json-db.ini",
 		LAST_SAVE:-1,
+		SAVE_INTERVAL:-1,
+		KEEP_READABLE:false,
+		READ_ONLY:false,
 		UPDATES:false,
 		
 		/* error constants */
@@ -76,7 +78,8 @@ function JSONdb (fileName) {
 		ERROR_LOCKED_WRITE:3,
 		ERROR_LOCKED_READ:4,
 		ERROR_DUPLICATE_LOCK:5,
-		ERROR_ARRAY:6
+		ERROR_ARRAY:6,
+		ERROR_READ_ONLY:7
 	};
 	
 	/*************************** database methods ****************************/
@@ -135,6 +138,11 @@ function JSONdb (fileName) {
 			break;
 		/* if the client wants to write... */
 		case this.settings.LOCK_WRITE:
+			/* if this db is read-only */
+			if(this.settings.READ_ONLY) {
+				this.error(client,this.settings.ERROR_READ_ONLY);
+				return true;
+			}
 			/* if this is a duplicate lock attempt */
 			if(record.info.lock[client.id]) {
 				this.error(client,this.settings.ERROR_DUPLICATE_LOCK);
@@ -396,6 +404,9 @@ function JSONdb (fileName) {
 		case this.settings.ERROR_ARRAY:
 			error_desc="Record is not an array";
 			break;
+		case this.settings.READ_ONLY:
+			error_desc="Record is read-only";
+			break;
 		}
 		var error=new Error(error_num,error_desc);
 		send_packet(client,error,"ERROR");
@@ -404,53 +415,58 @@ function JSONdb (fileName) {
     /* internal periodic data storage method 
 	TODO: this should probably eventually be a background
 	thread to prevent lag when writing a large database to file */
-    this.save = function(timestamp) { 
+    this.save = function() { 
 		if(!this.file)
 			return;
-		if(!this.settings.UPDATES)
-			return;
-		if(!timestamp) 
-			timestamp = Date.now();
 		/* if we are due for a data update, save everything to file */
-        if(timestamp - this.settings.LAST_SAVE >= (this.options.save_interval * 1000)) {
-			//TODO: create n backups before overwriting data file
-			this.file.open("w");
-			// This function gets called every 30 seconds or so
-			// And flushes all objects to disk in case of crash
-			// Also, this is called on clean exit.
-			if(this.options.readable)
-				this.file.write(JSON.stringify(this.data,undefined,'\t'));
-			else 
-				this.file.write(JSON.stringify(this.data));
-			this.file.close();
-			this.settings.LAST_SAVE=timestamp;
-			this.settings.UPDATES=false;
-		}
+		//TODO: create n backups before overwriting data file
+		if(!this.file.open("w",false))
+			return;
+		// This function gets called every 30 seconds or so
+		// And flushes all objects to disk in case of crash
+		// Also, this is called on clean exit.
+		if(this.settings.KEEP_READABLE)
+			this.file.write(JSON.stringify(this.data,undefined,'\t'));
+		else 
+			this.file.write(JSON.stringify(this.data));
+		this.file.close();
+		this.settings.LAST_SAVE=Date.now();
+		this.settings.UPDATES=false;
     };
     
     /* data initialization (likely happens only once) */
     this.load = function() { 
 		if(!this.file)
 			return;
-		if(file_exists(this.file.name)) {
-			this.file.open("r");
-			this.data = JSON.parse(
-				this.file.readAll(this.settings.FILE_BUFFER).join('\n')
-			);
-			this.file.close(); 
-		}
+		if(!file_exists(this.file.name))
+			return;
+		if(!this.file.open("r",true))
+			return;
+		this.data = JSON.parse(
+			this.file.readAll(this.settings.FILE_BUFFER).join('\n')
+		);
+		this.file.close(); 
+        this.shadow=composite_sketch(this.data);
     };
 	
-	/* create a copy of data object keys and give them 
-	locking properties */
+	/* initialize db and settings */
 	this.init = function() {
-		this.load();
-        this.shadow=composite_sketch(this.data);
-		
+		/* load general db settings */
+		if(file_exists(this.settings.FILE)) {
+			var file = new File(this.settings.FILE);
+			file.open("r",true);
+			var settings = file.iniGetObject();
+			file.close(); 
+			if(settings.save_interval)
+				this.settings.SAVE_INTERVAL = Number(settings.save_interval);
+			if(settings.keep_readable)
+				this.settings.KEEP_READABLE = Boolean(settings.keep_readable);
+		}
+
         /* initialize autosave timer */
         this.settings.LAST_SAVE = Date.now();
 		log(LOG_INFO,"database initialized (v" + this.VERSION + ")");
-	}
+	};
     
 	/* release any locks or subscriptions held by a disconnected client */
 	this.release = function(client_id) {
@@ -459,12 +475,10 @@ function JSONdb (fileName) {
 			if(this.queue[c].client.id == client_id)
 				this.queue.splice(c--,1);
 		}
-	}
+	};
 	
     /* main "loop" called by server */
     this.cycle = function(timestamp) {
-		this.save();
-		
 		/* process request queue, removing successful operations */
 		for(var r=0;r<this.queue.length;r++) {
 			var request=this.queue[r];
@@ -537,7 +551,16 @@ function JSONdb (fileName) {
 				); 
 			}
 		} 
-    };
+		if(!this.settings.UPDATES)
+			return;
+		if(!this.settings.SAVE_INTERVAL > 0)
+			return;
+		if(!timestamp)
+			timestamp = Date.now();
+        if(timestamp - this.settings.LAST_SAVE < (this.settings.SAVE_INTERVAL * 1000)) 
+			return;
+		this.save();
+	};
 
 	/**************************** database objects *****************************/
 	/* locking object generated by Database.lock() method 
@@ -730,6 +753,7 @@ function JSONdb (fileName) {
 
 	/* constructor */
 	this.init();
+	this.load();
 };
 
 
