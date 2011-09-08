@@ -707,43 +707,14 @@ BOOL sbbs_write_ini(
 	if(global!=&global_buf) {
 		section = "Global";
 
-		if(global->ctrl_dir[0]==0)
-			iniRemoveKey(lp,section,strCtrlDirectory);
-		else
-			iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
-
-		if(global->temp_dir[0]==0)
-			iniRemoveKey(lp,section,strTempDirectory);
-		else
-			iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
-
-		if(global->host_name[0]==0)
-			iniRemoveKey(lp,section,strHostName);
-		else
-			iniSetString(lp,section,strHostName,global->host_name,&style);
-	
-		if(global->sem_chk_freq==0)
-			iniRemoveKey(lp,section,strSemFileCheckFrequency);
-		else
-			iniSetShortInt(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
-		if(global->interface_addr==INADDR_ANY)
-			iniRemoveKey(lp,section,strInterface);
-		else
-			iniSetIpAddress(lp,section,strInterface,global->interface_addr,&style);
-		if(global->log_level==DEFAULT_LOG_LEVEL)
-			iniRemoveKey(lp,section,strLogLevel);
-		else
-			iniSetLogLevel(lp,section,strLogLevel,global->log_level,&style);
-
-		if(global->bind_retry_count==DEFAULT_BIND_RETRY_COUNT)
-			iniRemoveKey(lp,section,strBindRetryCount);
-		else
-			iniSetInteger(lp,section,strBindRetryCount,global->bind_retry_count,&style);
-		if(global->bind_retry_delay==DEFAULT_BIND_RETRY_DELAY)
-			iniRemoveKey(lp,section,strBindRetryDelay);
-		else
-			iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
-
+		iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
+		iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
+		iniSetString(lp,section,strHostName,global->host_name,&style);
+		iniSetShortInt(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
+		iniSetIpAddress(lp,section,strInterface,global->interface_addr,&style);
+		iniSetLogLevel(lp,section,strLogLevel,global->log_level,&style);
+		iniSetInteger(lp,section,strBindRetryCount,global->bind_retry_count,&style);
+		iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
 		iniSetInteger(lp,section,strLoginAttemptDelay,global->login_attempt_delay,&style);
 		iniSetInteger(lp,section,strLoginAttemptThrottle,global->login_attempt_throttle,&style);
 		iniSetInteger(lp,section,strLoginAttemptHackThreshold,global->login_attempt_hack_threshold,&style);
