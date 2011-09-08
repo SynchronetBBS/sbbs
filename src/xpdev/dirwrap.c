@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -175,7 +175,7 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 		glob->gl_pathv=NULL;
 	}
 
-	if(_dos_findfirst((char*)pattern,_A_NORMAL,&ff)!=0)
+	if(_dos_findfirst((char*)pattern,(flags&GLOB_PERIOD) ? _A_HIDDEN : _A_NORMAL,&ff)!=0)
 		return(GLOB_NOMATCH);
 
 	do {
@@ -236,7 +236,7 @@ int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 
 	ff_handle=_findfirst((char*)pattern,&ff);
 	while(ff_handle!=-1) {
-		if((flags&GLOB_PERIOD || ff.name[0]!='.') &&
+		if((flags&GLOB_PERIOD || (ff.name[0]!='.' && !(ff.attrib&_A_HIDDEN))) &&
 			(!(flags&GLOB_ONLYDIR) || ff.attrib&_A_SUBDIR)) {
 			if((new_pathv=(char**)realloc(glob->gl_pathv
 				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
@@ -299,6 +299,30 @@ void DLLCALL globfree(glob_t* glob)
 }
 
 #endif /* !defined(__unix__) */
+
+long DLLCALL getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only)
+{
+	char		match[MAX_PATH+1];
+	glob_t		g;
+	unsigned	gi;
+	long		count=0;
+
+	if(!isdir(path))
+		return -1;
+
+	SAFECOPY(match,path);
+	backslash(match);
+	strcat(match,ALLFILES);
+	glob(match,subdir_only ? GLOB_ONLYDIR:GLOB_MARK,NULL,&g);
+	if(include_subdirs || subdir_only)
+		count=g.gl_pathc;
+	else
+   		for(gi=0;gi<g.gl_pathc;gi++)
+			if(*lastchar(g.gl_pathv[gi])!='/')
+				count++;
+	globfree(&g);
+	return(count);
+}
 
 /****************************************************************************/
 /* POSIX directory operations using Microsoft _findfirst/next API.			*/

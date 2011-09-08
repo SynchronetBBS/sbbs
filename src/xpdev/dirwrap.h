@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2010 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2011 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -227,6 +227,7 @@ DLLEXPORT BOOL		DLLCALL isfullpath(const char* filename);
 DLLEXPORT char*		DLLCALL getfname(const char* path);
 DLLEXPORT char*		DLLCALL getfext(const char* path);
 DLLEXPORT int		DLLCALL getfattr(const char* filename);
+DLLEXPORT long		DLLCALL	getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only);
 DLLEXPORT ulong		DLLCALL getdisksize(const char* path, ulong unit);
 DLLEXPORT ulong		DLLCALL getfreediskspace(const char* path, ulong unit);
 DLLEXPORT ulong		DLLCALL delfiles(const char *inpath, const char *spec);
