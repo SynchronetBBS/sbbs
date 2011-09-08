@@ -16,7 +16,7 @@
 SRC_ROOT	= ../..
 include $(SRC_ROOT)/build/Common.gmake
 
-CFLAGS	+=	-I../
+CFLAGS	+=	-I../ -I../comio
 
 ifdef STATIC
  LDFLAGS	+=	-static
