@@ -79,6 +79,7 @@ struct cterminal {
 	char				DA[1024];		// Device Attributes
 
 	/* emulation state */
+	int					started;		// Indicates that conio functions are being called
 	int					c64reversemode;	// Commodore 64 reverse mode state
 	unsigned char		attr;			// Current attribute
 	int					save_xpos;		// Saved position (for later restore)
@@ -109,6 +110,28 @@ struct cterminal {
 	int					doorway_mode;
 	int					doorway_char;	// Indicates next char is a "doorway" mode char
 	int					cursor;			// Current cursor mode (Normal or None)
+
+	/* conio function pointers */
+	void	(*ciolib_gotoxy)		(int,int);
+	int		(*ciolib_wherex)		(void);
+	int		(*ciolib_wherey)		(void);
+	int		(*ciolib_gettext)		(int,int,int,int,unsigned char *);
+	void	(*ciolib_gettextinfo)	(struct text_info *);
+	void	(*ciolib_textattr)		(int);
+	void	(*ciolib_setcursortype)(int);
+	int		(*ciolib_movetext)		(int,int,int,int,int,int);
+	void	(*ciolib_clreol)		(void);
+	void	(*ciolib_clrscr)		(void);
+	void	(*ciolib_setvideoflags)(int flags);
+	int		(*ciolib_getvideoflags)(void);
+	int		(*ciolib_putch)		(int);
+	int		(*ciolib_puttext)		(int,int,int,int,unsigned char *);
+	void	(*ciolib_window)		(int,int,int,int);
+	int		(*ciolib_cputs)		(char *);
+	int		(*ciolib_setfont)		(int font, int force, int font_num);
+	int 	*_wscroll;
+	int		*puttext_can_move;
+	int		*hold_update;
 };
 
 #ifdef __cplusplus
@@ -121,6 +144,7 @@ int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 void cterm_closelog(struct cterminal *cterm);
 void cterm_end(struct cterminal *cterm);
 void cterm_clearscreen(struct cterminal *cterm, char attr);
+void cterm_start(struct cterminal *cterm);
 #ifdef __cplusplus
 }
 #endif
