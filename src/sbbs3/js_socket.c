@@ -1284,7 +1284,6 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SOCK_PROP_DESCRIPTOR:
 			*vp = INT_TO_JSVAL(p->sock);
-			p->is_connected = TRUE;
 			break;
 		case SOCK_PROP_NONBLOCKING:
 			*vp = BOOLEAN_TO_JSVAL(p->nonblocking);
