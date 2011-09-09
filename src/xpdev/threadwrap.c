@@ -188,3 +188,55 @@ int pthread_mutex_destroy(pthread_mutex_t* mutex)
 }
 
 #endif	/* POSIX thread mutexes */
+
+/************************************************************************/
+/* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
+/************************************************************************/
+
+int	protected_int32_init(protected_int32_t* prot, int32_t value)
+{
+	prot->value = value;
+	return pthread_mutex_init(&prot->mutex,NULL);
+}
+
+int	protected_int64_init(protected_int64_t* prot, int64_t value)
+{
+	prot->value = value;
+	return pthread_mutex_init(&prot->mutex,NULL);
+}
+
+int32_t protected_int32_adjust(protected_int32_t* i, int32_t adjustment)
+{
+	int32_t	newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value += adjustment;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
+{
+	uint32_t newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value += adjustment;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
+{
+	int64_t	newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value += adjustment;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}
+
+uint64_t protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
+{
+	uint64_t newval;
+	pthread_mutex_lock(&i->mutex);
+	newval = i->value += adjustment;
+	pthread_mutex_unlock(&i->mutex);
+	return newval;
+}

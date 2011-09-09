@@ -129,6 +129,53 @@ int pthread_mutex_destroy(pthread_mutex_t*);
 	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP	pthread_mutex_initializer_np(/* recursive: */TRUE)
 #endif
 
+/************************************************************************/
+/* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
+/************************************************************************/
+/* Use of these types and functions is not as fast as your compiler or  */
+/* platform-specific functions (e.g. InterlockedIncrement on Windows or */
+/* atomic_add_int on FreeBSD) but they have the advantage of always		*/
+/* working and being thread-safe on all platforms that support pthread	*/
+/* mutexes.																*/
+/************************************************************************/
+typedef struct {
+	int32_t				value;
+	pthread_mutex_t		mutex;
+} protected_int32_t;
+
+typedef struct {
+	uint32_t			value;
+	pthread_mutex_t		mutex;
+} protected_uint32_t;
+
+typedef struct {
+	int64_t				value;
+	pthread_mutex_t		mutex;
+} protected_int64_t;
+
+typedef struct {
+	uint64_t			value;
+	pthread_mutex_t		mutex;
+} protected_uint64_t;
+
+/* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
+int			protected_int32_init(protected_int32_t*,	int32_t value);
+#define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
+int			protected_int64_init(protected_int64_t*,	int64_t value);
+#define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
+
+/* Return new value: */
+int32_t		protected_int32_adjust(protected_int32_t*,	int32_t adjustment);
+uint32_t	protected_uint32_adjust(protected_uint32_t*,int32_t adjustment);
+int64_t		protected_int64_adjust(protected_int64_t*,	int64_t adjustment);
+uint64_t	protected_uint64_adjust(protected_uint64_t*,int64_t adjustment);
+
+/* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */
+#define protected_int32_destroy(i)	pthread_mutex_destroy(&i.mutex)
+#define protected_uint32_destroy	protected_int32_destroy	
+#define protected_int64_destroy		protected_int32_destroy	
+#define protected_uint64_destroy	protected_int32_destroy	
+
 #if defined(__cplusplus)
 }
 #endif
