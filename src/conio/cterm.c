@@ -2538,26 +2538,28 @@ void cterm_end(struct cterminal *cterm)
 {
 	int i;
 
-	cterm_closelog(cterm);
+	if(cterm) {
+		cterm_closelog(cterm);
 #ifdef CTERM_WITHOUT_CONIO
-	FREE_AND_NULL(BD->vmem);
-	FREE_AND_NULL(BD);
+		FREE_AND_NULL(BD->vmem);
+		FREE_AND_NULL(BD);
 #else
-	for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
-		FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
-		FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
-		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
-		FREE_AND_NULL(conio_fontdata[i].desc);
-	}
-#endif
-	if(cterm->playnote_thread_running) {
-		if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
-			listSemPost(&cterm->notes);
-			sem_wait(&cterm->playnote_thread_terminated);
+		for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
+			FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+			FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+			FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+			FREE_AND_NULL(conio_fontdata[i].desc);
 		}
-		sem_destroy(&cterm->playnote_thread_terminated);
-		sem_destroy(&cterm->note_completed_sem);
-		listFree(&cterm->notes);
+#endif
+		if(cterm->playnote_thread_running) {
+			if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
+				listSemPost(&cterm->notes);
+				sem_wait(&cterm->playnote_thread_terminated);
+			}
+			sem_destroy(&cterm->playnote_thread_terminated);
+			sem_destroy(&cterm->note_completed_sem);
+			listFree(&cterm->notes);
+		}
+		free(cterm);
 	}
-	free(cterm);
 }
