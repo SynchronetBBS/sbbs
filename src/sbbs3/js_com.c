@@ -580,17 +580,17 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->last_error);
 			break;
 		case COM_PROP_IS_OPEN:
-			if(!p->is_open)
-				*vp = JSVAL_FALSE;
-			else
+			if(p->is_open)
 				*vp = JSVAL_TRUE;
+			else
+				*vp = JSVAL_FALSE;
 			break;
 		case COM_PROP_DEBUG:
 			*vp = BOOLEAN_TO_JSVAL(p->debug);
 			break;
 		case COM_PROP_DESCRIPTOR:
 			*vp = INT_TO_JSVAL(p->com);
-			p->is_open = TRUE;
+			//p->is_open = TRUE;
 			break;
 		case COM_PROP_NETWORK_ORDER:
 			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
@@ -750,6 +750,7 @@ js_com_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	p->dev=strdup(fname);
 	p->network_byte_order = TRUE;
 	p->baud_rate = 9600;
+	
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
