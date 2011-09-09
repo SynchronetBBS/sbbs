@@ -43,8 +43,10 @@
 #include <string.h>
 #include "sockwrap.h"
 #include "spyon.h"
-#include "cterm.h"
 #include "ciolib.h"
+#include "cterm.h"
+
+struct cterminal *cterm;
 
 int spyon(char *sockname)  {
 	SOCKET		spy_sock=INVALID_SOCKET;
@@ -91,8 +93,8 @@ int spyon(char *sockname)  {
 	gotoxy(1,ti.screenheight);
 	cputs("Local spy mode... press CTRL-C to return to monitor");
 	clreol();
-	cterm_init(ti.screenheight-1,ti.screenwidth,1,1,0,NULL,CTERM_EMULATION_ANSI_BBS);
-	while(spy_sock!=INVALID_SOCKET)  {
+	cterm=cterm_init(ti.screenheight-1,ti.screenwidth,1,1,0,NULL,CTERM_EMULATION_ANSI_BBS);
+	while(spy_sock!=INVALID_SOCKET && cterm != NULL)  {
 		struct timeval tv;
 		tv.tv_sec=0;
 		tv.tv_usec=100;
@@ -116,7 +118,7 @@ int spyon(char *sockname)  {
 					telnet_strip++;
 					if(buf==255 && telnet_strip==2) {
 						telnet_strip=0;
-						cterm_write(&buf,1,NULL,0,NULL);
+						cterm_write(cterm, &buf,1,NULL,0,NULL);
 					}
 					if(telnet_strip==3)
 						telnet_strip=0;
@@ -125,7 +127,7 @@ int spyon(char *sockname)  {
 					if(buf==255)
 						telnet_strip=1;
 					else
-						cterm_write(&buf,1,NULL,0,NULL);
+						cterm_write(cterm, &buf,1,NULL,0,NULL);
 			}
 			else if(i<0) {
 				close(spy_sock);
@@ -152,6 +154,7 @@ int spyon(char *sockname)  {
 			}
 		}
 	}
+	cterm_end(cterm);
 	puttext(1,1,ti.screenwidth,ti.screenheight,scrn);
 	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
 	textattr(ti.attribute);
