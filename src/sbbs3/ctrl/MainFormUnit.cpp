@@ -718,7 +718,7 @@ static void web_clients(void* p, int clients)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
 
-    WebForm->ProgressBar->Max=MainForm->ftp_startup.max_clients;
+    WebForm->ProgressBar->Max=MainForm->web_startup.max_clients;
 	WebForm->ProgressBar->Position=clients;
 
     ReleaseMutex(mutex);
