@@ -1793,10 +1793,10 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	if(i>length)
 		i=length;
 
-	if(i>0 && buf[i-1]=='\r')
-		buf[--i]=0;
-	else
-		buf[i]=0;
+	while(i>0 && buf[i-1]=='\r')
+		i--;
+
+	buf[i]=0;
 
 	if(startup->options&WEB_OPT_DEBUG_RX) {
 		lprintf(LOG_DEBUG,"%04d RX: %s",session->socket,buf);
