@@ -750,7 +750,7 @@ js_com_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval 
 	p->dev=strdup(fname);
 	p->network_byte_order = TRUE;
 	p->baud_rate = 9600;
-	
+	p->com = COM_HANDLE_INVALID;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
