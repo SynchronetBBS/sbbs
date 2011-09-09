@@ -1414,7 +1414,7 @@ char *cterm_write(struct cterminal * cterm, const unsigned char *buf, int buflen
 				if(cterm->font_size) {
 					cterm->fontbuf[cterm->font_read++]=ch[0];
 					if(cterm->font_read == cterm->font_size) {
-						// TODO: Need to make this bit optional...
+#ifndef CTERM_WITHOUT_CONIO
 						char *buf;
 
 						if((buf=(char *)malloc(cterm->font_size))!=NULL) {
@@ -1444,6 +1444,7 @@ char *cterm_write(struct cterminal * cterm, const unsigned char *buf, int buflen
 							else
 								FREE_AND_NULL(buf);
 						}
+#ifndef CTERM_WITHOUT_CONIO
 						cterm->font_size=0;
 					}
 				}
@@ -2112,12 +2113,14 @@ void cterm_end(struct cterminal *cterm)
 	int i;
 
 	cterm_closelog(cterm);
+#ifndef CTERM_WITHOUT_CONIO
 	for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {
 		FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
 		FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
 		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
 		FREE_AND_NULL(conio_fontdata[i].desc);
 	}
+#endif
 	if(cterm->playnote_thread_running) {
 		if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
 			listSemPost(&cterm->notes);
