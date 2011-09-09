@@ -137,21 +137,22 @@ struct cterminal {
 	int		(*ciolib_gettext)		(int,int,int,int,unsigned char *);
 	void	(*ciolib_gettextinfo)	(struct text_info *);
 	void	(*ciolib_textattr)		(int);
-	void	(*ciolib_setcursortype)(int);
+	void	(*ciolib_setcursortype)	(int);
 	int		(*ciolib_movetext)		(int,int,int,int,int,int);
 	void	(*ciolib_clreol)		(void);
 	void	(*ciolib_clrscr)		(void);
-	void	(*ciolib_setvideoflags)(int flags);
-	int		(*ciolib_getvideoflags)(void);
-	int		(*ciolib_putch)		(int);
+	void	(*ciolib_setvideoflags)	(int flags);
+	int		(*ciolib_getvideoflags)	(void);
+	int		(*ciolib_putch)			(int);
 	int		(*ciolib_puttext)		(int,int,int,int,unsigned char *);
 	void	(*ciolib_window)		(int,int,int,int);
-	int		(*ciolib_cputs)		(char *);
+	int		(*ciolib_cputs)			(char *);
 	int		(*ciolib_setfont)		(int font, int force, int font_num);
 #endif
 	int 	*_wscroll;
 	int		*puttext_can_move;
 	int		*hold_update;
+	void	*extra;
 };
 
 #ifdef __cplusplus
