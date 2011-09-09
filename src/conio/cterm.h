@@ -112,6 +112,25 @@ struct cterminal {
 	int					cursor;			// Current cursor mode (Normal or None)
 
 	/* conio function pointers */
+#ifdef CTERM_WITHOUT_CONIO
+	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
+	int		(*ciolib_wherex)		(struct cterminal *);
+	int		(*ciolib_wherey)		(struct cterminal *);
+	int		(*ciolib_gettext)		(struct cterminal *,int,int,int,int,unsigned char *);
+	void	(*ciolib_gettextinfo)	(struct cterminal *,struct text_info *);
+	void	(*ciolib_textattr)		(struct cterminal *,int);
+	void	(*ciolib_setcursortype)	(struct cterminal *,int);
+	int		(*ciolib_movetext)		(struct cterminal *,int,int,int,int,int,int);
+	void	(*ciolib_clreol)		(struct cterminal *);
+	void	(*ciolib_clrscr)		(struct cterminal *);
+	void	(*ciolib_setvideoflags)	(struct cterminal *,int flags);
+	int		(*ciolib_getvideoflags)	(struct cterminal *);
+	int		(*ciolib_putch)			(struct cterminal *,int);
+	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,unsigned char *);
+	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
+	int		(*ciolib_cputs)			(struct cterminal *,char *);
+	int		(*ciolib_setfont)		(struct cterminal *,int font, int force, int font_num);
+#else
 	void	(*ciolib_gotoxy)		(int,int);
 	int		(*ciolib_wherex)		(void);
 	int		(*ciolib_wherey)		(void);
@@ -129,6 +148,7 @@ struct cterminal {
 	void	(*ciolib_window)		(int,int,int,int);
 	int		(*ciolib_cputs)		(char *);
 	int		(*ciolib_setfont)		(int font, int force, int font_num);
+#endif
 	int 	*_wscroll;
 	int		*puttext_can_move;
 	int		*hold_update;
