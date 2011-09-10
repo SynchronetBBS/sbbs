@@ -110,10 +110,11 @@ extern "C" {
 
 static bbs_startup_t* startup=NULL;
 
-static void status(const char* str)
+static const char* status(const char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
 	    startup->status(startup->cbdata,str);
+	return str;
 }
 
 static void update_clients()
@@ -4082,7 +4083,7 @@ void sbbs_t::daily_maint(void)
 		backup(str,sbbs->cfg.mail_backup_level,FALSE);
 	}
 
-	lputs(LOG_INFO,"Checking for inactive/expired user records...");
+	lputs(LOG_INFO,status("Checking for inactive/expired user records..."));
 	lastusernum=lastuser(&sbbs->cfg);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
 
@@ -4175,7 +4176,7 @@ void sbbs_t::daily_maint(void)
 		}
 	}
 
-	lputs(LOG_INFO,"Purging deleted/expired e-mail");
+	lputs(LOG_INFO,status("Purging deleted/expired e-mail"));
 	SAFEPRINTF(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
 	sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
 	sbbs->smb.subnum=INVALID_SUB;
@@ -4198,6 +4199,7 @@ void sbbs_t::daily_maint(void)
 		sbbs->external(sbbs->cmdstr(sbbs->cfg.sys_daily,nulstr,nulstr,NULL)
 			,EX_OFFLINE); 
 	}
+	status(STATUS_WFC);
 }
 
 const char* DLLCALL js_ver(void)
