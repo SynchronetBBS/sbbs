@@ -10,6 +10,7 @@
 #define SCROLL_LINES	100000
 #define BUF_SIZE		1024
 
+struct cterminal *cterm;
 
 void viewscroll(void)
 {
@@ -19,19 +20,19 @@ void viewscroll(void)
 	struct	text_info txtinfo;
 
     gettextinfo(&txtinfo);
-	cterm.backpos+=cterm.height;
-	if(cterm.backpos>cterm.backlines) {
-		memmove(cterm.scrollback,cterm.scrollback+cterm.width*2*(cterm.backpos-cterm.backlines),cterm.width*2*(cterm.backlines-(cterm.backpos-cterm.backlines)));
-		cterm.backpos=cterm.backlines;
+	cterm->backpos+=cterm->height;
+	if(cterm->backpos>cterm->backlines) {
+		memmove(cterm->scrollback,cterm->scrollback+cterm->width*2*(cterm->backpos-cterm->backlines),cterm->width*2*(cterm->backlines-(cterm->backpos-cterm->backlines)));
+		cterm->backpos=cterm->backlines;
 	}
-	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm.scrollback+(cterm.backpos)*cterm.width*2);
-	top=cterm.backpos;
+	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width*2);
+	top=cterm->backpos;
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
-		if(top>cterm.backpos)
-			top=cterm.backpos;
-		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm.scrollback+(txtinfo.screenwidth*2*top));
+		if(top>cterm->backpos)
+			top=cterm->backpos;
+		puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(txtinfo.screenwidth*2*top));
 		key=getch();
 		switch(key) {
 			case 0xff:
@@ -138,7 +139,11 @@ int main(int argc, char **argv)
 		return(-1);
 	}
 
-	cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
+	cterm=cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, scrollbuf, CTERM_EMULATION_ANSI_BBS);
+	if(!cterm) {
+		fputs("ERROR Initializing CTerm!\n", stderr);
+		return 1;
+	}
 	if(infile) {
 		if((f=fopen(infile,"r"))==NULL) {
 			cprintf("Cannot read %s\n\n\rPress any key to exit.",argv[1]);
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
 	while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
 		if(expand)
 			lfexpand(buf, &len);
-		cterm_write(buf, len, NULL, 0, &speed);
+		cterm_write(cterm, buf, len, NULL, 0, &speed);
 	}
 	if(ansi) {
 		puts("");
