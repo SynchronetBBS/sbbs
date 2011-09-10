@@ -447,7 +447,7 @@ int conn_socket_connect(struct bbslist *bbs)
 				case EINPROGRESS:
 				case EINTR:
 				case EAGAIN:
-#if (!defined(EAGAIN) && defined(EWOULDBLOCK)) || (EAGAIN!=EWOULDBLOCK)
+#if (EAGAIN!=EWOULDBLOCK)
 				case EWOULDBLOCK:
 #endif
 					for(;;) {
