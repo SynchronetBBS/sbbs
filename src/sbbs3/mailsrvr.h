@@ -58,6 +58,7 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	max_msg_size;
+	DWORD	max_msgs_waiting;	/* Max unread msgs in user's inbox */
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 

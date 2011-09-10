@@ -2253,6 +2253,7 @@ static void smtp_thread(void* arg)
 	ulong		length;
 	ulong		badcmds=0;
 	ulong		login_attempts;
+	ulong		waiting;
 	BOOL		esmtp=FALSE;
 	BOOL		telegram=FALSE;
 	BOOL		forward=FALSE;
@@ -2585,7 +2586,7 @@ static void smtp_thread(void* arg)
 					sec_list=iniReadSectionList(rcptlst,NULL);	/* Each section is a recipient */
 					for(rcpt_count=0; sec_list!=NULL
 						&& sec_list[rcpt_count]!=NULL 
-						&& rcpt_count<startup->max_recipients; rcpt_count++) {
+						&& (startup->max_recipients==0 || rcpt_count<startup->max_recipients); rcpt_count++) {
 
 						section=sec_list[rcpt_count];
 
@@ -3049,7 +3050,7 @@ static void smtp_thread(void* arg)
 				sec_list=iniReadSectionList(rcptlst,NULL);	/* Each section is a recipient */
 				for(rcpt_count=0; sec_list!=NULL
 					&& sec_list[rcpt_count]!=NULL 
-					&& rcpt_count<startup->max_recipients; rcpt_count++) {
+					&& (startup->max_recipients==0 || rcpt_count<startup->max_recipients); rcpt_count++) {
 				
 					section=sec_list[rcpt_count];
 
@@ -3504,6 +3505,7 @@ static void smtp_thread(void* arg)
 			if(relay_user.number==0
 				&& !chk_email_addr(socket,p,host_name,host_ip,NULL,NULL,"REVERSE PATH")) {
 				sockprintf(socket, "554 Sender not allowed.");
+				stats.msgs_refused++;
 				break;
 			}
 			SKIP_WHITESPACE(p);
@@ -3571,6 +3573,7 @@ static void smtp_thread(void* arg)
 
 			p=buf+8;
 			SKIP_WHITESPACE(p);
+			SAFECOPY(rcpt_to,p);
 			SAFECOPY(str,p);
 			p=strrchr(str,'<');
 			if(p==NULL)
@@ -3603,21 +3606,31 @@ static void smtp_thread(void* arg)
 			SAFECOPY(rcpt_addr,p);
 
 			/* Check recipient counter */
-			if(rcpt_count>=startup->max_recipients) {
-				lprintf(LOG_NOTICE,"%04d !SMTP MAXIMUM RECIPIENTS (%d) REACHED"
-					,socket, startup->max_recipients);
-				SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
-				spamlog(&scfg, "SMTP", "REFUSED", tmp
-					,host_name, host_ip, rcpt_addr, reverse_path);
-				sockprintf(socket, "452 Too many recipients");
-				stats.msgs_refused++;
-				continue;
+			if(startup->max_recipients) {
+				if(rcpt_count>=startup->max_recipients) {
+					lprintf(LOG_NOTICE,"%04d !SMTP MAXIMUM RECIPIENTS (%d) REACHED"
+						,socket, startup->max_recipients);
+					SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
+					spamlog(&scfg, "SMTP", "REFUSED", tmp
+						,host_name, host_ip, rcpt_addr, reverse_path);
+					sockprintf(socket, "452 Too many recipients");
+					stats.msgs_refused++;
+					continue;
+				}
+				if(relay_user.number!=0 && !(relay_user.exempt&FLAG('M'))
+					&& rcpt_count+(waiting=getmail(&scfg,relay_user.number,/* sent: */TRUE)) > startup->max_recipients) {
+					lprintf(LOG_NOTICE,"%04d !SMTP MAXIMUM PENDING SENT EMAILS (%u) REACHED for User #%u (%s)"
+						,socket, waiting, relay_user.number, relay_user.alias);
+					sockprintf(socket, "452 Too many pending emails sent");
+					stats.msgs_refused++;
+					continue;
+				}
 			}
 
 			if(relay_user.number && (relay_user.etoday+rcpt_count) >= scfg.level_emailperday[relay_user.level]
 				&& !(relay_user.exempt&FLAG('M'))) {
-				lprintf(LOG_NOTICE,"%04d !SMTP EMAILS PER DAY LIMIT (%u) REACHED FOR: %s"
-					,socket, scfg.level_emailperday[relay_user.level], relay_user.alias);
+				lprintf(LOG_NOTICE,"%04d !SMTP EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
+					,socket, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
 				SAFEPRINTF2(tmp,"Maximum emails per day (%u) for %s"
 					,scfg.level_emailperday[relay_user.level], relay_user.alias);
 				spamlog(&scfg, "SMTP", "REFUSED", tmp
@@ -3654,7 +3667,8 @@ static void smtp_thread(void* arg)
 			/* Check for blocked recipients */
 			if(relay_user.number==0
 				&& !chk_email_addr(socket,rcpt_addr,host_name,host_ip,rcpt_addr,reverse_path,"RECIPIENT")) {
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
+				stats.msgs_refused++;
 				continue;
 			}
 
@@ -3885,29 +3899,46 @@ static void smtp_thread(void* arg)
 			}
 
 			if(usernum==UINT_MAX) {
-				lprintf(LOG_INFO,"%04d SMTP Blocked tag: %s", socket, buf+8);
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				lprintf(LOG_INFO,"%04d SMTP Blocked tag: %s", socket, rcpt_to);
+				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(!usernum) {
-				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER:%s", socket, buf+8);
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				lprintf(LOG_WARNING,"%04d !SMTP UNKNOWN USER: %s", socket, rcpt_to);
+				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			user.number=usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d getting data on user #%u (%s)"
 					,socket, i, usernum, p);
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, usernum, p);
-				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				sockprintf(socket, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
-			if(cmd==SMTP_CMD_SEND) { /* Check if user online */
+			if(cmd==SMTP_CMD_MAIL) {
+				if((user.rest&FLAG('M')) && relay_user.number==0) {
+					lprintf(LOG_NOTICE,"%04d !SMTP M-restricted user #u (%s) cannot receive unauthenticated SMTP mail"
+						,socket, user.number, user.alias);
+					sockprintf(socket, "550 Closed mailbox: %s", rcpt_to);
+					stats.msgs_refused++;
+					continue;
+				}
+				if(startup->max_msgs_waiting && !(user.exempt&FLAG('W')) 
+					&& (waiting=getmail(&scfg, user.number, /* sent: */FALSE)) > startup->max_msgs_waiting) {
+					lprintf(LOG_NOTICE,"%04d !SMTP User #%u (%s) mailbox (%u msgs) exceeds the maximum (%u) msgs waiting"
+						,socket, user.number, user.alias, waiting, startup->max_msgs_waiting);
+					sockprintf(socket, "450 Mailbox full: %s", rcpt_to);
+					stats.msgs_refused++;
+					continue;
+				}
+			}
+			else if(cmd==SMTP_CMD_SEND) { /* Check if user online */
 				for(i=0;i<scfg.sys_nodes;i++) {
 					getnodedat(&scfg, i+1, &node, 0);
 					if(node.status==NODE_INUSE && node.useron==user.number
@@ -4486,7 +4517,7 @@ static void sendmail_thread(void* arg)
 				server_addr.sin_port = htons(port);
 
 				if((node=listFindNode(&failed_server_list,&server_addr,sizeof(server_addr))) != NULL) {
-					lprintf(LOG_INFO,"%04d SEND skipping failed server (error %d) at port %u on %s [%s]"
+					lprintf(LOG_INFO,"%04d SEND skipping failed SMTP server: Error %d connecting to port %u on %s [%s]"
 					,sock
 					,node->tag
 					,ntohs(server_addr.sin_port)
@@ -4882,7 +4913,6 @@ void DLLCALL mail_server(void* arg)
 	if(startup->rescan_frequency==0)		startup->rescan_frequency=3600;	/* 60 minutes */
 	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
-	if(startup->max_recipients==0) 			startup->max_recipients=100;
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 
 #ifdef JAVASCRIPT

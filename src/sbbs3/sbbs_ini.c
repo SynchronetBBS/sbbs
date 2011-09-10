@@ -72,10 +72,11 @@ static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 static const char*	strJavaScriptLoadPath		="JavaScriptLoadPath";
 static const char*	strSemFileCheckFrequency	="SemFileCheckFrequency";
 
-#define DEFAULT_LOG_LEVEL		LOG_DEBUG
-#define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
-#define DEFAULT_BIND_RETRY_COUNT	2
-#define DEFAULT_BIND_RETRY_DELAY	15
+#define DEFAULT_LOG_LEVEL				LOG_DEBUG
+#define DEFAULT_MAX_MSG_SIZE			(20*1024*1024)	/* 20MB */
+#define DEFAULT_MAX_MSGS_WAITING		100
+#define DEFAULT_BIND_RETRY_COUNT		2
+#define DEFAULT_BIND_RETRY_DELAY		15
 #define DEFAULT_LOGIN_ATTEMPT_DELAY		5000	/* milliseconds */
 #define DEFAULT_LOGIN_ATTEMPT_THROTTLE	1000	/* milliseconds */
 #define DEFAULT_LOGIN_ATTEMPT_HACKLOG	10		/* write to hack.log after this many consecutive unique attempts */
@@ -478,6 +479,8 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"MaxRecipients",100);
 		mail->max_msg_size
 			=iniGetInteger(list,section,"MaxMsgSize",DEFAULT_MAX_MSG_SIZE);
+		mail->max_msgs_waiting
+			=iniGetInteger(list,section,"MaxMsgsWaiting",DEFAULT_MAX_MSGS_WAITING);
 
 		SAFECOPY(mail->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
@@ -937,6 +940,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetShortInt(lp,section,"MaxRecipients",mail->max_recipients,&style))
 			break;
 		if(!iniSetInteger(lp,section,"MaxMsgSize",mail->max_msg_size,&style))
+			break;
+		if(!iniSetInteger(lp,section,"MaxMsgsWaiting",mail->max_msgs_waiting,&style))
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0
