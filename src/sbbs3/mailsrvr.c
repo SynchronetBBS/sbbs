@@ -4223,6 +4223,7 @@ static void sendmail_thread(void* arg)
 	long		l;
 	size_t		len;
 	BOOL		sending_locally=FALSE;
+	link_list_t	failed_server_list;
 
 	SetThreadName("SendMail");
 	thread_up(TRUE /* setuid */);
@@ -4235,6 +4236,8 @@ static void sendmail_thread(void* arg)
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
 
+	listInit(&failed_server_list, /* flags: */0);
+
 	while(server_socket!=INVALID_SOCKET && !terminate_sendmail) {
 
 		if(startup->options&MAIL_OPT_NO_SENDMAIL) {
@@ -4244,6 +4247,8 @@ static void sendmail_thread(void* arg)
 
 		if(active_sendmail!=0)
 			active_sendmail=0, update_clients();
+
+		listFreeNodes(&failed_server_list);
 
 		smb_close(&smb);
 
@@ -4343,8 +4348,8 @@ static void sendmail_thread(void* arg)
 				usermailaddr(&scfg,fromaddr,msg.from);
 			truncstr(fromaddr," ");
 
-			lprintf(LOG_INFO,"0000 SEND Message #%lu from %s%s %s to %s <%s>"
-				,msg.hdr.number, msg.from, fromext, fromaddr
+			lprintf(LOG_INFO,"0000 SEND Message #%lu (%u of %u) from %s%s %s to %s <%s>"
+				,msg.hdr.number, l+1, msgs, msg.from, fromext, fromaddr
 				,msg.to, msg.to_net.addr);
 			status("Sending");
 #ifdef _WIN32
@@ -4458,6 +4463,8 @@ static void sendmail_thread(void* arg)
 			strcpy(err,"UNKNOWN ERROR");
 			success=FALSE;
 			for(j=0;j<2 && !success;j++) {
+				list_node_t*	node;
+
 				if(j) {
 					if(startup->options&MAIL_OPT_RELAY_TX || !mx2[0])
 						break;
@@ -4478,6 +4485,17 @@ static void sendmail_thread(void* arg)
 				server_addr.sin_family = AF_INET;
 				server_addr.sin_port = htons(port);
 
+				if((node=listFindNode(&failed_server_list,&server_addr,sizeof(server_addr))) != NULL) {
+					lprintf(LOG_INFO,"%04d SEND skipping failed server (error %d) at port %u on %s [%s]"
+					,sock
+					,node->tag
+					,ntohs(server_addr.sin_port)
+					,server,inet_ntoa(server_addr.sin_addr));
+					SAFEPRINTF2(err,"Error %d connecting to SMTP server: %s"
+						,node->tag, server);
+					continue;
+				}
+
 				if((server==mx || server==mx2) 
 					&& ((ip_addr&0xff)==127 || ip_addr==0)) {
 					SAFEPRINTF2(err,"Bad IP address (%s) for MX server: %s"
@@ -4496,6 +4514,7 @@ static void sendmail_thread(void* arg)
 						,i, server);
 					SAFEPRINTF2(err,"Error %d connecting to SMTP server: %s"
 						,i, server);
+					listAddNodeData(&failed_server_list,&server_addr,sizeof(server_addr),i,NULL);
 					continue;
 				}
 				success=TRUE;
@@ -4689,6 +4708,8 @@ static void sendmail_thread(void* arg)
 	}
 	if(sock!=INVALID_SOCKET)
 		mail_close_socket(sock);
+
+	listFree(&failed_server_list);
 
 	smb_freemsgtxt(msgtxt);
 	smb_freemsgmem(&msg);
