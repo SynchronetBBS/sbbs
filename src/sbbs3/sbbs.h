@@ -233,7 +233,7 @@ public:
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	js_branch_t	js_branch;
-	long		js_execfile(const char *fname, const char* startup_dir);
+	long		js_execfile(const char *fname, const char* startup_dir, JSObject* scope=NULL);
 	bool		js_init(ulong* stack_frame);
 	void		js_cleanup(const char* node);
 	void		js_create_user_objects(void);

@@ -157,7 +157,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
-			external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
+			if(cfg.hotkey[i]->cmd[0]=='?')
+				js_execfile(cmdstr(cfg.hotkey[i]->cmd+1,nulstr,nulstr,NULL), /* startup_dir: */NULL, /* scope: */js_glob);
+			else
+				external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
 				RESTORELINE; 

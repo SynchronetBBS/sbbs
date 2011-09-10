@@ -573,7 +573,7 @@ static const char* js_ext(const char* fname)
 	return("");
 }
 
-long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
+long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope)
 {
 	char*		p;
 	char*		args=NULL;
@@ -581,7 +581,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
 	int			argc=0;
 	char		cmdline[MAX_PATH+1];
 	char		path[MAX_PATH+1];
-	JSObject*	js_scope=NULL;
+	JSObject*	js_scope=scope;
 	JSScript*	js_script=NULL;
 	jsval		rval;
 	int32		result=0;
@@ -618,7 +618,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
 	}
 
 	JS_BEGINREQUEST(js_cx);
-	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
+	if(js_scope==NULL)
+		js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
 
 	if(js_scope!=NULL) {
 
@@ -661,28 +662,33 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir)
 		return -1;
 	}
 
-	js_branch.counter=0;	// Reset loop counter
+	if(scope==NULL) {
+		js_branch.counter=0;	// Reset loop counter
 
 #ifdef USE_JS_OPERATION_CALLBACK
-	JS_SetOperationCallback(js_cx, js_OperationCallback);
+		JS_SetOperationCallback(js_cx, js_OperationCallback);
 #else
-	JS_SetBranchCallback(js_cx, js_BranchCallback);
+		JS_SetBranchCallback(js_cx, js_BranchCallback);
 #endif
 
-	js_PrepareToExecute(js_cx, js_glob, path, startup_dir);
+		js_PrepareToExecute(js_cx, js_glob, path, startup_dir);
+	}
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
-	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
-	if(rval!=JSVAL_VOID)
-		JS_ValueToInt32(js_cx,rval,&result);
+	if(scope==NULL) {
+		JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+		if(rval!=JSVAL_VOID)
+			JS_ValueToInt32(js_cx,rval,&result);
 
-	js_EvalOnExit(js_cx, js_scope, &js_branch);
+		js_EvalOnExit(js_cx, js_scope, &js_branch);
+	}
 
 	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
 
 	JS_DestroyScript(js_cx, js_script);
 
-	JS_ClearScope(js_cx, js_scope);
+	if(scope==NULL)
+		JS_ClearScope(js_cx, js_scope);
 
 	JS_GC(js_cx);
 
