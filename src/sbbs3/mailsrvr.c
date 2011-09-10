@@ -3111,7 +3111,7 @@ static void smtp_thread(void* arg)
 					sender_ext[0]=0;
 					if(msg.from_ext!=NULL)
 						SAFEPRINTF(sender_ext," #%s",msg.from_ext);
-					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s%s %s to %s <%s>"
+					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s%s %s to %s [%s]"
 						,socket, newmsg.hdr.number, sender, sender_ext, smb_netaddrstr(&msg.from_net,tmp), rcpt_name, rcpt_addr);
 					if(relay_user.number!=0)
 						user_sent_email(&scfg, &relay_user, 1, usernum==1);
@@ -4314,6 +4314,8 @@ static void sendmail_thread(void* arg)
 			continue;
 		if(smb.status.last_msg==last_msg && time(NULL)-last_scan<startup->rescan_frequency)
 			continue;
+		lprintf(LOG_DEBUG, "0000 SEND last_msg=%u, smb.status.last_msg=%u, elapsed=%u"
+			,last_msg, smb.status.last_msg, time(NULL)-last_scan);
 		last_msg=smb.status.last_msg;
 		last_scan=time(NULL);
 		mail=loadmail(&smb,&msgs,/* to network */0,MAIL_YOUR,0);
@@ -4379,10 +4381,11 @@ static void sendmail_thread(void* arg)
 				usermailaddr(&scfg,fromaddr,msg.from);
 			truncstr(fromaddr," ");
 
-			lprintf(LOG_INFO,"0000 SEND Message #%lu (%u of %u) from %s%s %s to %s <%s>"
+			lprintf(LOG_INFO,"0000 SEND Message #%lu (%u of %u) from %s%s %s to %s [%s]"
 				,msg.hdr.number, l+1, msgs, msg.from, fromext, fromaddr
 				,msg.to, msg.to_net.addr);
-			status("Sending");
+			SAFEPRINTF2(str,"Sending (%u of %u)", l+1, msgs);
+			status(str);
 #ifdef _WIN32
 			if(startup->outbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
@@ -4400,6 +4403,7 @@ static void sendmail_thread(void* arg)
 			port=0;
 			mx2[0]=0;
 
+			sending_locally=FALSE;
 			/* Check if this is a local email ToDo */
 			SAFECOPY(to,(char*)msg.to_net.addr);
 			truncstr(to,"> ");
@@ -4474,6 +4478,16 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 
+			if(startup->connect_timeout) {	/* Use non-blocking socket */
+				long nbio=1;
+				if((i=ioctlsocket(sock, FIONBIO, &nbio))!=0) {
+					remove_msg_intransit(&smb,&msg);
+					lprintf(LOG_ERR,"%04d !SEND ERROR %d (%d) disabling blocking on socket"
+						,sock, i, ERROR_VALUE);
+					continue;
+				}
+			}
+
 			memset(&addr,0,sizeof(addr));
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
@@ -4538,8 +4552,7 @@ static void sendmail_thread(void* arg)
 					,sock
 					,ntohs(server_addr.sin_port)
 					,server,inet_ntoa(server_addr.sin_addr));
-				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
-					i=ERROR_VALUE;
+				if((i=nonblocking_connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr), startup->connect_timeout))!=0) {
 					lprintf(LOG_WARNING,"%04d !SEND ERROR %d connecting to SMTP server: %s"
 						,sock
 						,i, server);

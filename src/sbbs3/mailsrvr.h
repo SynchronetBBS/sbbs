@@ -57,8 +57,9 @@ typedef struct {
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
-    DWORD	max_msg_size;
-	DWORD	max_msgs_waiting;	/* Max unread msgs in user's inbox */
+    DWORD	max_msg_size;		/* Max msg size in bytes (0=unlimited) */
+	DWORD	max_msgs_waiting;	/* Max msgs in user's inbox (0=unlimited) */
+	DWORD	connect_timeout;	/* in seconds, for non-blocking connect (0=blocking socket) */
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
