@@ -239,7 +239,7 @@ BOOL DLLCALL listLock(link_list_t* list)
 	if(list==NULL)
 		return(FALSE);
 #if defined(LINK_LIST_THREADSAFE)
-	if((ret=pthread_mutex_lock(&list->mutex))==0)
+	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_lock(&list->mutex))==0)
 #endif
 		list->locks++;
 	return(ret);
@@ -259,7 +259,7 @@ BOOL DLLCALL listUnlock(link_list_t* list)
 	if(list==NULL)
 		return(FALSE);
 #if defined(LINK_LIST_THREADSAFE)
-	if((ret=pthread_mutex_unlock(&list->mutex))==0)
+	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_unlock(&list->mutex))==0)
 #endif
 		list->locks--;
 	return(ret);
