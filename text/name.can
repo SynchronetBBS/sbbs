@@ -6,7 +6,12 @@ all
 sysop~
 netmail
 anonymous
+anon
 user
+root
+help
+info
+support
 system
 admin
 administrator
