@@ -553,7 +553,7 @@ list_node_t* DLLCALL listAddNode(link_list_t* list, void* data, list_node_tag_t 
 {
 	list_node_t* node;
 
-	if(list==NULL || data==NULL)
+	if(list==NULL)
 		return(NULL);
 
 	if((node=(list_node_t*)malloc(sizeof(list_node_t)))==NULL)
